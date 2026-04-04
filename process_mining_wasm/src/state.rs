@@ -8,6 +8,7 @@ use process_mining::core::{EventLog, OCEL};
 pub enum StoredObject {
     EventLog(EventLog),
     OCEL(OCEL),
+    #[allow(dead_code)]
     JsonString(String),
 }
 

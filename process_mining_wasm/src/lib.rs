@@ -11,7 +11,6 @@ use state::*;
 use types::*;
 
 use wasm_bindgen::prelude::*;
-use state::AppState;
 
 #[wasm_bindgen(start)]
 pub fn init_wasm() {

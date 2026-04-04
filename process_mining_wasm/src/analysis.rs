@@ -1,5 +1,4 @@
 use wasm_bindgen::prelude::*;
-use process_mining::{EventLog, OCEL};
 use crate::state::{get_or_init_state, StoredObject};
 use serde_json::json;
 
