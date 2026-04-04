@@ -478,6 +478,66 @@ export class EventLogHandle {
   }
 
   /**
+   * Variant Complexity - measure Shannon entropy and variant diversity
+   */
+  getVariantComplexity(activityKey: string = 'concept:name'): any {
+    const json = this.wasmModule.analyze_variant_complexity(this.handle, activityKey);
+    return JSON.parse(json);
+  }
+
+  /**
+   * Activity Transition Matrix - compute Markov chain transition probabilities
+   */
+  getTransitionMatrix(activityKey: string = 'concept:name'): any {
+    const json = this.wasmModule.compute_activity_transition_matrix(this.handle, activityKey);
+    return JSON.parse(json);
+  }
+
+  /**
+   * Temporal Speedup Analysis - identify process acceleration/deceleration patterns
+   */
+  analyzeProcessSpeedup(options: { timestampKey?: string; windowSize?: number } = {}): any {
+    const timestampKey = options.timestampKey || 'time:timestamp';
+    const windowSize = options.windowSize || 50;
+
+    const json = this.wasmModule.analyze_process_speedup(this.handle, timestampKey, windowSize);
+    return JSON.parse(json);
+  }
+
+  /**
+   * Trace Similarity Matrix - compute pairwise trace distance/similarity
+   */
+  getTraceSimilarityMatrix(activityKey: string = 'concept:name'): any {
+    const json = this.wasmModule.compute_trace_similarity_matrix(this.handle, activityKey);
+    return JSON.parse(json);
+  }
+
+  /**
+   * Temporal Bottlenecks - identify time-based performance bottlenecks
+   */
+  getTemporalBottlenecks(
+    options: { activityKey?: string; timestampKey?: string } = {}
+  ): any {
+    const activityKey = options.activityKey || 'concept:name';
+    const timestampKey = options.timestampKey || 'time:timestamp';
+
+    const json = this.wasmModule.analyze_temporal_bottlenecks(
+      this.handle,
+      activityKey,
+      timestampKey
+    );
+    return JSON.parse(json);
+  }
+
+  /**
+   * Activity Ordering - extract mandatory predecessor ordering from traces
+   */
+  getActivityOrdering(activityKey: string = 'concept:name'): any {
+    const json = this.wasmModule.extract_activity_ordering(this.handle, activityKey);
+    return JSON.parse(json);
+  }
+
+  /**
    * Generate dotted chart data for visualization
    */
   getDottedChart(activityKey: string = 'concept:name'): any {
