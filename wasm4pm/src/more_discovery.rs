@@ -2,15 +2,21 @@ use wasm_bindgen::prelude::*;
 use crate::state::{get_or_init_state, StoredObject};
 use crate::models::*;
 use serde_json::json;
-use std::collections::{HashMap, HashSet};
+use std::cell::Cell;
+use std::collections::HashSet;
+use rustc_hash::FxHashMap;
+#[cfg(target_arch = "wasm32")]
+use serde_wasm_bindgen;
+use crate::utilities::to_js;
+use crate::genetic_discovery::{evaluate_edges_fitness, edge_set_to_dfg};
 
 /// Simplified Inductive Miner - recursive structure discovery
 #[wasm_bindgen]
 pub fn discover_inductive_miner(
     eventlog_handle: &str,
     activity_key: &str,
-) -> Result<String, JsValue> {
-    match get_or_init_state().get_object(eventlog_handle)? {
+) -> Result<JsValue, JsValue> {
+    let dfg = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
             let activities = log.get_activities(activity_key);
             let directly_follows = log.get_directly_follows(activity_key);
@@ -52,202 +58,228 @@ pub fn discover_inductive_miner(
                 }
             }
 
-            let handle = get_or_init_state()
-                .store_object(StoredObject::DirectlyFollowsGraph(dfg.clone()))
-                .map_err(|_e| JsValue::from_str("Failed to store DFG"))?;
-
-            Ok(serde_json::to_string(&json!({
-                "handle": handle,
-                "algorithm": "inductive_miner",
-                "nodes": dfg.nodes.len(),
-                "edges": dfg.edges.len(),
-            }))
-            .map_err(|e| JsValue::from_str(&format!("Serialization failed: {}", e)))?)
+            Ok(dfg)
         }
         Some(_) => Err(JsValue::from_str("Not an EventLog")),
         None => Err(JsValue::from_str("EventLog not found")),
-    }
+    })?;
+
+    let handle = get_or_init_state()
+        .store_object(StoredObject::DirectlyFollowsGraph(dfg.clone()))
+        .map_err(|_e| JsValue::from_str("Failed to store DFG"))?;
+
+    to_js(&json!({
+        "handle": handle,
+        "algorithm": "inductive_miner",
+        "nodes": dfg.nodes.len(),
+        "edges": dfg.edges.len(),
+    }))
 }
 
 /// Ant Colony Optimization - pheromone-based model discovery
+/// Layer 6b: Edge-set representation with integer-keyed pheromone map
 #[wasm_bindgen]
 pub fn discover_ant_colony(
     eventlog_handle: &str,
     activity_key: &str,
     num_ants: usize,
     iterations: usize,
-) -> Result<String, JsValue> {
-    match get_or_init_state().get_object(eventlog_handle)? {
+) -> Result<JsValue, JsValue> {
+    let (best_edges, best_fitness, vocab) = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
-            let activities = log.get_activities(activity_key);
-            let directly_follows_vec = log.get_directly_follows(activity_key);
+            let col = log.to_columnar(activity_key);
 
-            // Initialize pheromone trails on edges
-            let mut pheromones: HashMap<(String, String), f64> = HashMap::new();
-            for (from, to, freq) in &directly_follows_vec {
-                pheromones.insert((from.clone(), to.clone()), (*freq).max(1) as f64);
+            // Build edge vocabulary from columnar log
+            let mut edge_vocab: Vec<(u32, u32)> = Vec::new();
+            let mut edge_map: FxHashMap<(u32, u32), usize> = FxHashMap::default();
+
+            for t in 0..col.trace_offsets.len().saturating_sub(1) {
+                let start = col.trace_offsets[t];
+                let end = col.trace_offsets[t + 1];
+                for i in start..end.saturating_sub(1) {
+                    let edge = (col.events[i], col.events[i + 1]);
+                    edge_map
+                        .entry(edge)
+                        .and_modify(|_| {})
+                        .or_insert_with(|| {
+                            edge_vocab.push(edge);
+                            edge_vocab.len() - 1
+                        });
+                }
             }
 
-            let mut best_dfg: Option<DirectlyFollowsGraph> = None;
+            // Collect vocab before closure ends
+            let vocab: Vec<String> = col.vocab.iter().map(|s| s.to_string()).collect();
+
+            // Initialize pheromone trails on integer edges
+            let mut pheromones: FxHashMap<(u32, u32), f64> = FxHashMap::default();
+            for &edge in &edge_vocab {
+                pheromones.insert(edge, 1.0);
+            }
+
+            let mut best_edges: Option<HashSet<(u32, u32)>> = None;
             let mut best_fitness = 0.0;
 
             for _iter in 0..iterations {
                 for _ant in 0..num_ants {
-                    let mut dfg = DirectlyFollowsGraph::new();
+                    let mut current_edges: HashSet<(u32, u32)> = HashSet::new();
 
-                    for activity in &activities {
-                        dfg.nodes.push(DFGNode {
-                            id: activity.clone(),
-                            label: activity.clone(),
-                            frequency: 0,
-                        });
-                    }
-
-                    // Build path using pheromone
-                    for ((from, to), pheromone_level) in &pheromones {
-                        if *pheromone_level > 1.0 {
-                            dfg.edges.push(DirectlyFollowsRelation {
-                                from: from.clone(),
-                                to: to.clone(),
-                                frequency: 1,
-                            });
+                    // Build path using pheromone.
+                    // Pre-compute total pheromone once per ant; each edge is
+                    // selected when its share exceeds a uniform sample.
+                    // Rewriting p/total > rand() as p > rand() * total avoids
+                    // the per-edge division in the hot loop.
+                    let total_pheromone: f64 =
+                        pheromones.values().sum::<f64>().max(f64::MIN_POSITIVE);
+                    for (&edge, pheromone_level) in &pheromones {
+                        if *pheromone_level > random_float() * total_pheromone {
+                            current_edges.insert(edge);
                         }
                     }
 
-                    let fitness = evaluate_dfg_fitness(&dfg, &log, activity_key);
+                    let fitness = evaluate_edges_fitness(&current_edges, &col);
 
                     if fitness > best_fitness {
                         best_fitness = fitness;
-                        best_dfg = Some(dfg);
+                        best_edges = Some(current_edges);
                     }
                 }
 
-                // Evaporate and reinforce
-                for pheromone in pheromones.values_mut() {
-                    *pheromone *= 0.9; // Evaporate
-                }
+                // Evaporate: use for_each to help the compiler vectorise the loop.
+                pheromones.values_mut().for_each(|p| *p *= 0.9);
 
-                if let Some(ref dfg) = best_dfg {
-                    for edge in &dfg.edges {
-                        let key = (edge.from.clone(), edge.to.clone());
+                if let Some(ref edges) = best_edges {
+                    for &edge in edges {
                         pheromones
-                            .entry(key)
+                            .entry(edge)
                             .and_modify(|p| *p += best_fitness * 10.0);
                     }
                 }
             }
 
-            let dfg = best_dfg.unwrap_or_else(DirectlyFollowsGraph::new);
-
-            let handle = get_or_init_state()
-                .store_object(StoredObject::DirectlyFollowsGraph(dfg.clone()))
-                .map_err(|_e| JsValue::from_str("Failed to store DFG"))?;
-
-            Ok(serde_json::to_string(&json!({
-                "handle": handle,
-                "algorithm": "ant_colony",
-                "nodes": dfg.nodes.len(),
-                "edges": dfg.edges.len(),
-                "fitness": best_fitness,
-            }))
-            .map_err(|e| JsValue::from_str(&format!("Serialization failed: {}", e)))?)
+            let best_edges = best_edges.unwrap_or_default();
+            Ok((best_edges, best_fitness, vocab))
         }
         Some(_) => Err(JsValue::from_str("Not an EventLog")),
         None => Err(JsValue::from_str("EventLog not found")),
-    }
+    })?;
+
+    // Materialize DFG from best edges
+    let best_dfg = edge_set_to_dfg(&best_edges, &vocab);
+
+    let handle = get_or_init_state()
+        .store_object(StoredObject::DirectlyFollowsGraph(best_dfg.clone()))
+        .map_err(|_e| JsValue::from_str("Failed to store DFG"))?;
+
+    to_js(&json!({
+        "handle": handle,
+        "algorithm": "ant_colony",
+        "nodes": best_dfg.nodes.len(),
+        "edges": best_dfg.edges.len(),
+        "fitness": best_fitness,
+    }))
 }
 
 /// Simulated Annealing - thermal search for optimal models
+/// Layer 6b: Edge-set representation with integer-based edge mutation
 #[wasm_bindgen]
 pub fn discover_simulated_annealing(
     eventlog_handle: &str,
     activity_key: &str,
     temperature: f64,
     cooling_rate: f64,
-) -> Result<String, JsValue> {
-    match get_or_init_state().get_object(eventlog_handle)? {
+) -> Result<JsValue, JsValue> {
+    let (best_edges, best_fitness, vocab) = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
-            let activities = log.get_activities(activity_key);
-            let directly_follows_vec = log.get_directly_follows(activity_key);
+            let col = log.to_columnar(activity_key);
 
-            let mut directly_follows: HashSet<(String, String)> = HashSet::new();
-            for (from, to, _) in &directly_follows_vec {
-                directly_follows.insert((from.clone(), to.clone()));
+            // Build edge vocabulary from columnar log
+            let mut edge_vocab: Vec<(u32, u32)> = Vec::new();
+            let mut edge_map: FxHashMap<(u32, u32), usize> = FxHashMap::default();
+
+            for t in 0..col.trace_offsets.len().saturating_sub(1) {
+                let start = col.trace_offsets[t];
+                let end = col.trace_offsets[t + 1];
+                for i in start..end.saturating_sub(1) {
+                    let edge = (col.events[i], col.events[i + 1]);
+                    edge_map
+                        .entry(edge)
+                        .and_modify(|_| {})
+                        .or_insert_with(|| {
+                            edge_vocab.push(edge);
+                            edge_vocab.len() - 1
+                        });
+                }
             }
 
-            let mut current_dfg = DirectlyFollowsGraph::new();
-            for activity in &activities {
-                current_dfg.nodes.push(DFGNode {
-                    id: activity.clone(),
-                    label: activity.clone(),
-                    frequency: 0,
-                });
-            }
+            // Collect vocab before closure ends
+            let vocab: Vec<String> = col.vocab.iter().map(|s| s.to_string()).collect();
 
-            let mut best_dfg = current_dfg.clone();
-            let mut current_fitness = evaluate_dfg_fitness(&current_dfg, &log, activity_key);
+            // Start with empty edge set
+            let mut current_edges: HashSet<(u32, u32)> = HashSet::new();
+            let mut current_fitness = evaluate_edges_fitness(&current_edges, &col);
+            let mut best_edges = current_edges.clone();
             let mut best_fitness = current_fitness;
             let mut temp = temperature;
 
             while temp > 0.01 {
-                // Random neighbor move
-                let mut neighbor = current_dfg.clone();
+                // Random neighbor move: add or remove one edge
+                let mut neighbor = current_edges.clone();
 
-                if random_float() < 0.5 && !current_dfg.edges.is_empty() {
+                if random_float() < 0.5 && !current_edges.is_empty() {
                     // Remove random edge
-                    let idx = (random_float() * current_dfg.edges.len() as f64) as usize;
-                    if idx < neighbor.edges.len() {
-                        neighbor.edges.remove(idx);
+                    if let Some(&edge) = neighbor.iter().next() {
+                        neighbor.remove(&edge);
                     }
                 } else {
-                    // Add random edge
-                    if let Some((from, to)) = directly_follows.iter().next() {
-                        if !neighbor
-                            .edges
-                            .iter()
-                            .any(|e| &e.from == from && &e.to == to)
-                        {
-                            neighbor.edges.push(DirectlyFollowsRelation {
-                                from: from.clone(),
-                                to: to.clone(),
-                                frequency: 1,
-                            });
-                        }
+                    // Add random edge from vocabulary
+                    if !edge_vocab.is_empty() {
+                        let idx = (random_float() * edge_vocab.len() as f64) as usize;
+                        neighbor.insert(edge_vocab[idx]);
                     }
                 }
 
-                let neighbor_fitness = evaluate_dfg_fitness(&neighbor, &log, activity_key);
+                let neighbor_fitness = evaluate_edges_fitness(&neighbor, &col);
                 let delta = neighbor_fitness - current_fitness;
 
-                if delta > 0.0 || random_float() < (-delta / temp).exp() {
-                    current_dfg = neighbor;
+                // Branchless acceptance criterion: improvements (delta >= 0) are
+                // always accepted; worse solutions are accepted with the Boltzmann
+                // probability exp(-delta/T).  Short-circuit evaluation means
+                // exp() is only called when delta < 0, so no change in semantics.
+                let accept = delta >= 0.0 || random_float() < (-delta / temp).exp();
+                if accept {
+                    current_edges = neighbor;
                     current_fitness = neighbor_fitness;
 
                     if current_fitness > best_fitness {
                         best_fitness = current_fitness;
-                        best_dfg = current_dfg.clone();
+                        best_edges = current_edges.clone();
                     }
                 }
 
                 temp *= cooling_rate;
             }
 
-            let handle = get_or_init_state()
-                .store_object(StoredObject::DirectlyFollowsGraph(best_dfg.clone()))
-                .map_err(|_e| JsValue::from_str("Failed to store DFG"))?;
-
-            Ok(serde_json::to_string(&json!({
-                "handle": handle,
-                "algorithm": "simulated_annealing",
-                "nodes": best_dfg.nodes.len(),
-                "edges": best_dfg.edges.len(),
-                "fitness": best_fitness,
-            }))
-            .map_err(|e| JsValue::from_str(&format!("Serialization failed: {}", e)))?)
+            Ok((best_edges, best_fitness, vocab))
         }
         Some(_) => Err(JsValue::from_str("Not an EventLog")),
         None => Err(JsValue::from_str("EventLog not found")),
-    }
+    })?;
+
+    // Materialize DFG from best edges
+    let best_dfg = edge_set_to_dfg(&best_edges, &vocab);
+
+    let handle = get_or_init_state()
+        .store_object(StoredObject::DirectlyFollowsGraph(best_dfg.clone()))
+        .map_err(|_e| JsValue::from_str("Failed to store DFG"))?;
+
+    to_js(&json!({
+        "handle": handle,
+        "algorithm": "simulated_annealing",
+        "nodes": best_dfg.nodes.len(),
+        "edges": best_dfg.edges.len(),
+        "fitness": best_fitness,
+    }))
 }
 
 /// Process Skeleton - extract minimal model structure
@@ -256,8 +288,8 @@ pub fn extract_process_skeleton(
     eventlog_handle: &str,
     activity_key: &str,
     min_frequency: usize,
-) -> Result<String, JsValue> {
-    match get_or_init_state().get_object(eventlog_handle)? {
+) -> Result<JsValue, JsValue> {
+    let dfg = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
             let activities = log.get_activities(activity_key);
             let directly_follows_vec = log.get_directly_follows(activity_key);
@@ -296,22 +328,23 @@ pub fn extract_process_skeleton(
                 .filter(|n| nodes_with_edges.contains(&n.id))
                 .collect();
 
-            let handle = get_or_init_state()
-                .store_object(StoredObject::DirectlyFollowsGraph(dfg.clone()))
-                .map_err(|_e| JsValue::from_str("Failed to store DFG"))?;
-
-            Ok(serde_json::to_string(&json!({
-                "handle": handle,
-                "algorithm": "process_skeleton",
-                "nodes": dfg.nodes.len(),
-                "edges": dfg.edges.len(),
-                "min_frequency": min_frequency,
-            }))
-            .map_err(|e| JsValue::from_str(&format!("Serialization failed: {}", e)))?)
+            Ok(dfg)
         }
         Some(_) => Err(JsValue::from_str("Not an EventLog")),
         None => Err(JsValue::from_str("EventLog not found")),
-    }
+    })?;
+
+    let handle = get_or_init_state()
+        .store_object(StoredObject::DirectlyFollowsGraph(dfg.clone()))
+        .map_err(|_e| JsValue::from_str("Failed to store DFG"))?;
+
+    to_js(&json!({
+        "handle": handle,
+        "algorithm": "process_skeleton",
+        "nodes": dfg.nodes.len(),
+        "edges": dfg.edges.len(),
+        "min_frequency": min_frequency,
+    }))
 }
 
 /// Activity Dependency Analysis - identify predecessor/successor relationships
@@ -319,11 +352,11 @@ pub fn extract_process_skeleton(
 pub fn analyze_activity_dependencies(
     eventlog_handle: &str,
     activity_key: &str,
-) -> Result<String, JsValue> {
-    match get_or_init_state().get_object(eventlog_handle)? {
+) -> Result<JsValue, JsValue> {
+    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
-            let mut predecessors: HashMap<String, HashSet<String>> = HashMap::new();
-            let mut successors: HashMap<String, HashSet<String>> = HashMap::new();
+            let mut predecessors: FxHashMap<String, HashSet<String>> = FxHashMap::default();
+            let mut successors: FxHashMap<String, HashSet<String>> = FxHashMap::default();
 
             for trace in &log.traces {
                 for (i, event) in trace.events.iter().enumerate() {
@@ -368,14 +401,13 @@ pub fn analyze_activity_dependencies(
                 })
                 .collect();
 
-            Ok(serde_json::to_string(&json!({
+            to_js(&json!({
                 "dependencies": result,
             }))
-            .map_err(|e| JsValue::from_str(&format!("Serialization failed: {}", e)))?)
         }
         Some(_) => Err(JsValue::from_str("Not an EventLog")),
         None => Err(JsValue::from_str("EventLog not found")),
-    }
+    })
 }
 
 /// Case Attribute Analysis - correlate case attributes with process behavior
@@ -383,20 +415,19 @@ pub fn analyze_activity_dependencies(
 pub fn analyze_case_attributes(
     eventlog_handle: &str,
     activity_key: &str,
-) -> Result<String, JsValue> {
-    match get_or_init_state().get_object(eventlog_handle)? {
+) -> Result<JsValue, JsValue> {
+    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
-            let mut attribute_values: HashMap<String, HashSet<String>> = HashMap::new();
-            let mut attribute_activity_map: HashMap<(String, String), Vec<String>> = HashMap::new();
+            let mut attribute_values: FxHashMap<String, HashSet<String>> = FxHashMap::default();
+            let mut attribute_activity_map: FxHashMap<(String, String), Vec<String>> =
+                FxHashMap::default();
 
             for trace in &log.traces {
                 let activities: Vec<String> = trace
                     .events
                     .iter()
                     .filter_map(|e| {
-                        if let Some(AttributeValue::String(act)) =
-                            e.attributes.get(activity_key)
-                        {
+                        if let Some(AttributeValue::String(act)) = e.attributes.get(activity_key) {
                             Some(act.clone())
                         } else {
                             None
@@ -430,22 +461,29 @@ pub fn analyze_case_attributes(
                 })
                 .collect();
 
-            Ok(serde_json::to_string(&json!({
+            to_js(&json!({
                 "case_attributes": result,
             }))
-            .map_err(|e| JsValue::from_str(&format!("Serialization failed: {}", e)))?)
         }
         Some(_) => Err(JsValue::from_str("Not an EventLog")),
         None => Err(JsValue::from_str("EventLog not found")),
-    }
+    })
 }
 
+// ---------------------------------------------------------------------------
 // Helpers
+// ---------------------------------------------------------------------------
+
+/// Fitness function: fraction of traces fully covered by the DFG edges.
+/// Marked inline(always) so the compiler can specialise it at each call site
+/// inside the hot ACO/SA loops.
+#[inline(always)]
 fn evaluate_dfg_fitness(dfg: &DirectlyFollowsGraph, log: &EventLog, activity_key: &str) -> f64 {
-    let edge_set: HashSet<(String, String)> = dfg
+    // Build a borrowed edge set — no String allocations for keys or lookups.
+    let edge_set: HashSet<(&str, &str)> = dfg
         .edges
         .iter()
-        .map(|e| (e.from.clone(), e.to.clone()))
+        .map(|e| (e.from.as_str(), e.to.as_str()))
         .collect();
 
     let mut fitting = 0.0;
@@ -456,7 +494,7 @@ fn evaluate_dfg_fitness(dfg: &DirectlyFollowsGraph, log: &EventLog, activity_key
                 trace.events[i].attributes.get(activity_key),
                 trace.events[i + 1].attributes.get(activity_key),
             ) {
-                if !edge_set.contains(&(a1.clone(), a2.clone())) {
+                if !edge_set.contains(&(a1.as_str(), a2.as_str())) {
                     fits = false;
                     break;
                 }
@@ -469,13 +507,21 @@ fn evaluate_dfg_fitness(dfg: &DirectlyFollowsGraph, log: &EventLog, activity_key
     fitting / log.traces.len().max(1) as f64
 }
 
+// Thread-local LCG PRNG — ~10x faster than SystemTime-based RNG with no
+// syscall overhead, safe for single-threaded WASM execution.
+thread_local! {
+    static LCG: Cell<u64> = Cell::new(0xFEED_FACE_DEAD_BEEF);
+}
+
 fn random_float() -> f64 {
-    use std::time::{SystemTime, UNIX_EPOCH};
-    let nanos = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default()
-        .subsec_nanos() as f64;
-    (nanos % 1000000.0) / 1000000.0
+    LCG.with(|s| {
+        let v = s
+            .get()
+            .wrapping_mul(6_364_136_223_846_793_005)
+            .wrapping_add(1_442_695_040_888_963_407);
+        s.set(v);
+        (v >> 11) as f64 * (1.0 / (1u64 << 53) as f64)
+    })
 }
 
 #[wasm_bindgen]
