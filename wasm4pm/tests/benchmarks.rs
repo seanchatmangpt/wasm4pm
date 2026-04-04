@@ -17,6 +17,7 @@
 //! Without real data, benchmarks generate synthetic logs (same behavior, synthetic data).
 //! License for real data: CC BY 4.0 (free to use, attribution required)
 
+use std::fs;
 use wasm4pm::models::{AttributeValue, Event, EventLog, Trace};
 use wasm4pm::state::{get_or_init_state, StoredObject};
 use wasm4pm::discovery::{discover_dfg, discover_declare};
@@ -46,6 +47,14 @@ use std::time::Instant;
 use std::path::Path;
 
 // ── Data Source & Tier Detection ──────────────────────────────────────────
+
+fn get_benchmark_sizes() -> Vec<usize> {
+    if get_data_source().contains("Real") {
+        vec![7_065]  // Real BPI 2020 size
+    } else {
+        vec![100, 1_000, 5_000, 10_000]  // Synthetic sizes
+    }
+}
 
 thread_local! {
     static DATA_SOURCE: std::cell::RefCell<String> = std::cell::RefCell::new(String::new());
@@ -121,54 +130,146 @@ fn skip_test_if_wrong_tier(tier: u32) -> bool {
 
 // ── XES Loading from Fixtures ──────────────────────────────────────────────
 
+fn parse_xes_file(content: &str) -> EventLog {
+    let mut log = EventLog::new();
+    let mut current_trace: Option<Trace> = None;
+    let mut current_event: Option<Event> = None;
+
+    for line in content.lines() {
+        let trimmed = line.trim();
+
+        if trimmed.starts_with("<trace>") {
+            current_trace = Some(Trace {
+                attributes: HashMap::new(),
+                events: Vec::new(),
+            });
+        }
+
+        if trimmed.starts_with("</trace>") {
+            if let Some(trace) = current_trace.take() {
+                log.traces.push(trace);
+            }
+        }
+
+        if trimmed.starts_with("<event>") {
+            current_event = Some(Event {
+                attributes: HashMap::new(),
+            });
+        }
+
+        if trimmed.starts_with("</event>") {
+            if let Some(event) = current_event.take() {
+                if let Some(ref mut trace) = current_trace {
+                    trace.events.push(event);
+                }
+            }
+        }
+
+        // Parse string attributes
+        if trimmed.starts_with("<string") {
+            if let Some(key_start) = trimmed.find("key=\"") {
+                let key_start = key_start + 5;
+                if let Some(key_end) = trimmed[key_start..].find("\"") {
+                    let key = trimmed[key_start..key_start + key_end].to_string();
+                    if let Some(val_start) = trimmed.find("value=\"") {
+                        let val_start = val_start + 7;
+                        if let Some(val_end) = trimmed[val_start..].find("\"") {
+                            let value = trimmed[val_start..val_start + val_end].to_string();
+
+                            if let Some(ref mut event) = current_event {
+                                event.attributes.insert(
+                                    key,
+                                    AttributeValue::String(value),
+                                );
+                            } else if let Some(ref mut trace) = current_trace {
+                                trace.attributes.insert(
+                                    key,
+                                    AttributeValue::String(value),
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Parse date/timestamp attributes
+        if trimmed.starts_with("<date") || trimmed.contains("time:timestamp") {
+            if let Some(key_start) = trimmed.find("key=\"") {
+                let key_start = key_start + 5;
+                if let Some(key_end) = trimmed[key_start..].find("\"") {
+                    let key = trimmed[key_start..key_start + key_end].to_string();
+                    if let Some(val_start) = trimmed.find("value=\"") {
+                        let val_start = val_start + 7;
+                        if let Some(val_end) = trimmed[val_start..].find("\"") {
+                            let value = trimmed[val_start..val_start + val_end].to_string();
+
+                            if let Some(ref mut event) = current_event {
+                                event.attributes.insert(
+                                    key,
+                                    AttributeValue::String(value),
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    log
+}
+
 fn load_real_dataset(dataset: &str) -> Option<EventLog> {
     // Try to load real datasets from fixtures
     let fixture_paths = match dataset {
         "bpi2020" => vec![
+            "wasm4pm/tests/fixtures/BPI_2020_Travel_Permits_Actual.xes",
+            "wasm4pm/wasm4pm/tests/fixtures/BPI_2020_Travel_Permits_Actual.xes",
             "tests/fixtures/BPI_2020_Travel_Permits_Actual.xes",
             "tests/fixtures/BPI_2020_Domestic_Declarations.xes",
             "./BPI_2020_Travel_Permits_Actual.xes",
         ],
         "bpi2013" => vec![
+            "wasm4pm/tests/fixtures/BPI_2013_Incidents.xes",
             "tests/fixtures/BPI_2013_Incidents.xes",
             "./BPI_2013_Incidents.xes",
         ],
         "bpi2019" => vec![
+            "wasm4pm/tests/fixtures/BPI_2019_Invoice_Purchase_to_Pay.xes",
             "tests/fixtures/BPI_2019_Invoice_Purchase_to_Pay.xes",
             "./BPI_2019_Invoice_Purchase_to_Pay.xes",
         ],
         "road_traffic" => vec![
+            "wasm4pm/tests/fixtures/Road_Traffic_Fine_Management.xes",
             "tests/fixtures/Road_Traffic_Fine_Management.xes",
             "./Road_Traffic_Fine_Management.xes",
         ],
         "bpi2015" => vec![
+            "wasm4pm/tests/fixtures/BPI_2015_Building_Permits.xes",
             "tests/fixtures/BPI_2015_Building_Permits.xes",
             "./BPI_2015_Building_Permits.xes",
         ],
         _ => return None,
     };
 
-    for path in fixture_paths {
-        if Path::new(&path).exists() {
-            eprintln!("✓ Loaded real {} dataset from: {}", dataset, path);
-            set_data_source(&format!("Real {} ({} cases)", dataset.to_uppercase(),
-                match dataset {
-                    "bpi2020" => "7,065",
-                    "bpi2013" => "7,500",
-                    "bpi2019" => "200,000",
-                    "road_traffic" => "150,370",
-                    "bpi2015" => "150,000",
-                    _ => "unknown",
-                }
-            ));
-            return Some(match dataset {
-                "bpi2020" => generate_synthetic_log(7_065),
-                "bpi2013" => generate_synthetic_log(7_500),
-                "bpi2019" => generate_synthetic_log(200_000),
-                "road_traffic" => generate_synthetic_log(150_370),
-                "bpi2015" => generate_synthetic_log(150_000),
-                _ => return None,
-            });
+    for path in fixture_paths.iter() {
+        if Path::new(path).exists() {
+            if let Ok(content) = fs::read_to_string(&path) {
+                let log = parse_xes_file(&content);
+                set_data_source(&format!("Real {} ({} cases)", dataset.to_uppercase(),
+                    match dataset {
+                        "bpi2020" => "7,065",
+                        "bpi2013" => "7,500",
+                        "bpi2019" => "200,000",
+                        "road_traffic" => "150,370",
+                        "bpi2015" => "150,000",
+                        _ => "unknown",
+                    }
+                ));
+                eprintln!("✓ Loaded {} dataset ({} traces)", dataset, log.traces.len());
+                return Some(log);
+            }
         }
     }
     None
@@ -667,6 +768,9 @@ fn bench_tier_1_essential() {
     println!("Datasets: BPI 2020 Travel (7K), BPI 2013 Incidents (7.5K), Sepsis (1K)");
     println!("Total Time: ~2-3 minutes");
     println!("{}", "=".repeat(70));
+
+    // Pre-load real dataset so individual tests know to use it
+    let _ = load_real_dataset("bpi2020");
 
     // Run all 35 tests (they will use tier 1 data)
     bench_dfg();
