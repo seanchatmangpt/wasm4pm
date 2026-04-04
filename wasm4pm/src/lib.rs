@@ -16,6 +16,15 @@ pub mod more_discovery;
 pub mod final_analytics;
 pub mod streaming;
 pub mod streaming_conformance;
+pub mod performance_dfg;
+pub mod filters;
+pub mod declare_conformance;
+pub mod temporal_profile;
+pub mod alignments;
+pub mod prediction;
+pub mod anomaly;
+pub mod social_network;
+pub mod process_tree;
 
 // Suppress unused warnings for re-exported modules
 #[allow(unused)]

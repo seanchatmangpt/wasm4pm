@@ -2,6 +2,33 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use rustc_hash::FxHashMap;
 
+/// Parse an ISO 8601 / RFC 3339 timestamp string into milliseconds since Unix epoch.
+/// Handles formats: "2024-01-01T10:00:00+00:00", "2024-01-01T10:00:00Z",
+///                  "2024-01-01T10:00:00.123+00:00", "2024-01-01T10:00:00" (naive UTC)
+pub fn parse_timestamp_ms(s: &str) -> Option<i64> {
+    use chrono::{DateTime, NaiveDateTime, TimeZone, Utc};
+    // Try RFC 3339 / ISO 8601 with offset first
+    if let Ok(dt) = DateTime::parse_from_rfc3339(s) {
+        return Some(dt.timestamp_millis());
+    }
+    // Try with space instead of T
+    if let Ok(dt) = DateTime::parse_from_rfc3339(&s.replacen(' ', "T", 1)) {
+        return Some(dt.timestamp_millis());
+    }
+    // Naive datetime (assume UTC)
+    for fmt in &[
+        "%Y-%m-%dT%H:%M:%S%.f",
+        "%Y-%m-%dT%H:%M:%S",
+        "%Y-%m-%d %H:%M:%S%.f",
+        "%Y-%m-%d %H:%M:%S",
+    ] {
+        if let Ok(ndt) = NaiveDateTime::parse_from_str(s, fmt) {
+            return Some(Utc.from_utc_datetime(&ndt).timestamp_millis());
+        }
+    }
+    None
+}
+
 /// Attribute value types for event data
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "tag", content = "value")]
@@ -604,5 +631,44 @@ impl StreamingConformanceChecker {
             deviations,
             fitness,
         }
+    }
+}
+
+/// Temporal profile: per-pair mean and standard-deviation of time differences (ms).
+#[derive(Debug, Clone)]
+pub struct TemporalProfile {
+    /// (from_activity, to_activity) → (mean_ms, std_ms, count)
+    pub pairs: HashMap<(String, String), (f64, f64, usize)>,
+}
+
+impl TemporalProfile {
+    pub fn new() -> Self { TemporalProfile { pairs: HashMap::new() } }
+}
+
+/// N-gram predictor: maps activity prefixes of length n to next-activity distributions.
+#[derive(Debug, Clone)]
+pub struct NGramPredictor {
+    pub n: usize,
+    /// prefix → HashMap<next_activity, count>
+    pub counts: HashMap<Vec<String>, HashMap<String, usize>>,
+}
+
+impl NGramPredictor {
+    pub fn new(n: usize) -> Self {
+        NGramPredictor { n, counts: HashMap::new() }
+    }
+
+    /// Return ranked next-activity predictions for a given prefix.
+    pub fn predict(&self, prefix: &[String]) -> Vec<(String, f64)> {
+        let key_len = self.n.min(prefix.len());
+        let key = prefix[prefix.len() - key_len..].to_vec();
+        let Some(dist) = self.counts.get(&key) else { return vec![] };
+        let total: usize = dist.values().sum();
+        if total == 0 { return vec![]; }
+        let mut result: Vec<(String, f64)> = dist.iter()
+            .map(|(act, &cnt)| (act.clone(), cnt as f64 / total as f64))
+            .collect();
+        result.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+        result
     }
 }
