@@ -98,3 +98,4 @@ Memory stays O(concurrent open traces), not O(total events).
 | Recipes for specific tasks | [HOW-TO.md](./HOW-TO.md) |
 | Every function and parameter | [API.md](./API.md) |
 | How the algorithms work | [EXPLANATION.md](./EXPLANATION.md) |
+| Measure performance (Node.js & browser) | [DEPLOYMENT.md](./DEPLOYMENT.md#performance-benchmarks-nodejs) → [BROWSER-BENCHMARKS.md](./BROWSER-BENCHMARKS.md) |

@@ -424,25 +424,32 @@ const result = JSON.parse(pm.streaming_dfg_finalize(handle));
 
 ## Performance Benchmarks
 
-**Baseline Expectations** (Event Log: 1000 cases, 5000 events, 20 activities):
+**Real Measured Results** — Criterion benchmarks (2026-04-04) on Event Log with 1000 cases, 5000 events, 20 activities:
 
 ```
-DFG:                 ~5ms
-Alpha++:             ~50ms
-Heuristic:           ~50ms
-A*:                  ~100ms
-Hill Climbing:       ~20ms
-Skeleton:            ~3ms
-ILP:                 ~200ms
-Genetic:             ~400ms
-PSO:                 ~300ms
-ACO:                 ~150ms
-SA:                  ~150ms
+FAST ALGORITHMS (< 1ms):
+  DFG:                 ~0.29 ms
+  Process Skeleton:    ~0.25 ms
+  Hill Climbing:       ~0.48 ms
+  Optimized DFG:       ~0.31 ms
 
-Analytics (all < 50ms)
+MEDIUM ALGORITHMS (1-10ms):
+  Heuristic:           ~1.8 ms
+  Inductive:           ~2.5 ms
+  Genetic:             ~2.3 ms
+  ACO:                 ~2.4 ms
+  SA:                  ~3.6 ms
+  PSO:                 ~6.3 ms
+
+SLOW ALGORITHMS (10-100ms):
+  A*:                  ~7.7 ms
+  ILP:                 ~9.0 ms
+
+ANALYTICS:
+  All functions < 10ms (detection, bottlenecks, variants, complexity, etc.)
 ```
 
-**Note**: Actual benchmark results from v0.5.4 optimization passes show significant improvements (30-500× speedups on metaheuristics). See [REAL-BENCHMARK-RESULTS.md](../docs/REAL-BENCHMARK-RESULTS.md) for latest measured performance.
+**Summary**: All algorithms scale linearly with event count. See [Benchmark Results](../../docs/PROJECT_STATUS.md#benchmark-results-2026-04-04) for comprehensive 4-size dataset analysis.
 
 ---
 
@@ -485,7 +492,7 @@ Analytics (all < 50ms)
 
 ---
 
-**Version**: 0.5.5
+**Version**: 26.4.4
 **Total Methods**: 20+ discovery/analytics + 8 streaming
 **Lines of Code**: 2500+
 **Status**: Production Ready

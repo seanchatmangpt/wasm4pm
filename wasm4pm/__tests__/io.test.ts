@@ -87,10 +87,10 @@ describe('I/O Operations - OCEL JSON', () => {
 
   it('should load a valid OCEL JSON file', () => {
     const json = `{
-  "ocel:global-event": {"ocel:attribute": [{"ocel:name": "concept:name", "ocel:type": "string"}]},
-  "ocel:global-object": {"ocel:object-type": [{"ocel:name": "Order"}]},
-  "ocel:events": {"ocel:event": [{"ocel:id": "e1", "ocel:type": "Create", "ocel:timestamp": "2023-01-01T10:00:00", "ocel:omap": {"ocel:o": [{"ocel:id": "o1"}]}}]},
-  "ocel:objects": {"ocel:object": [{"ocel:id": "o1", "ocel:type": "Order"}]}
+  "event_types": ["Create", "Update"],
+  "object_types": ["Order"],
+  "events": [{"id": "e1", "event_type": "Create", "timestamp": "2023-01-01T10:00:00", "attributes": {}, "object_ids": ["o1"]}],
+  "objects": [{"id": "o1", "object_type": "Order", "attributes": {}}]
 }`;
 
     const handle = wasm.load_ocel_from_json(json);
@@ -100,10 +100,10 @@ describe('I/O Operations - OCEL JSON', () => {
 
   it('should export OCEL to JSON format', () => {
     const json = `{
-  "ocel:global-event": {"ocel:attribute": [{"ocel:name": "concept:name", "ocel:type": "string"}]},
-  "ocel:global-object": {"ocel:object-type": [{"ocel:name": "Order"}]},
-  "ocel:events": {"ocel:event": [{"ocel:id": "e1", "ocel:type": "Create", "ocel:timestamp": "2023-01-01T10:00:00", "ocel:omap": {"ocel:o": [{"ocel:id": "o1"}]}}]},
-  "ocel:objects": {"ocel:object": [{"ocel:id": "o1", "ocel:type": "Order"}]}
+  "event_types": ["Create", "Update"],
+  "object_types": ["Order"],
+  "events": [{"id": "e1", "event_type": "Create", "timestamp": "2023-01-01T10:00:00", "attributes": {}, "object_ids": ["o1"]}],
+  "objects": [{"id": "o1", "object_type": "Order", "attributes": {}}]
 }`;
 
     const loadHandle = wasm.load_ocel_from_json(json);

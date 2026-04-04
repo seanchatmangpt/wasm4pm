@@ -178,6 +178,31 @@ const stats = JSON.parse(wasm4pm.streaming_dfg_stats(handle));
 3. Process in chunks
 4. Use Web Workers (browser) or Worker Threads (Node.js)
 
+### Q: How does browser performance compare to Node.js?
+**A:** Browser performance is typically 2-3x slower than Node.js due to V8 JIT optimization patterns and WebAssembly memory model differences.
+
+To measure and compare:
+
+```bash
+# Run Node.js benchmarks
+npm run bench
+
+# Run browser benchmarks (headless Chromium)
+npm run bench:browser
+
+# Compare results
+node benchmarks/compare.js results/nodejs_bench.json results/browser_bench.json
+```
+
+**Typical results:**
+- Node.js: 2-50ms per algorithm
+- Browser: 5-150ms per algorithm
+- Speedup: 0.3-0.5x (browser is slower)
+
+**Note:** Despite slower absolute times, browser performance is still excellent for production use. Most algorithms complete in milliseconds.
+
+See [BROWSER-BENCHMARKS.md](./BROWSER-BENCHMARKS.md) for detailed performance analysis and optimization strategies.
+
 ---
 
 ## Data Handling

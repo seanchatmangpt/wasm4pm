@@ -104,11 +104,42 @@ npm run test:integration
 ```
 Tests real-world workflows and algorithms.
 
-### Performance Benchmarks
+### Performance Benchmarks (Node.js)
 ```bash
 npm run bench
 ```
-Runs performance tests and generates reports.
+Runs Node.js performance benchmarks using parallel worker threads. Tests all algorithms across multiple log sizes.
+
+#### CI Mode (Faster)
+```bash
+npm run bench:ci
+```
+Fast benchmark run with reduced iterations for CI/CD pipelines (3-5 minutes).
+
+### Browser Performance Benchmarks
+```bash
+npm run bench:browser
+```
+Runs performance benchmarks in headless Chromium browser environment. Tests web-target WASM build across algorithm suite.
+
+#### Browser CI Mode
+```bash
+npm run bench:browser:ci
+```
+Fast browser benchmarks for CI pipelines (reduced iterations, ~3 minutes).
+
+#### Browser Benchmark Dashboard
+After running benchmarks, view results interactively:
+```bash
+open wasm4pm/benchmarks/dashboard.html
+```
+Upload JSON result files for visualization and analysis.
+
+#### Compare Node.js vs Browser Performance
+```bash
+node wasm4pm/benchmarks/compare.js results/nodejs_bench.json results/browser_bench.json
+```
+Side-by-side performance comparison showing speedup ratios and distribution.
 
 ### Watch Mode (Development)
 ```bash

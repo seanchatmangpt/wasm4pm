@@ -11,5 +11,14 @@ export default defineConfig({
       include: ['__tests__/**/*.test.*'],
     },
     testTimeout: 30000,
+    browser: {
+      provider: 'playwright',
+      headless: true,
+      instances: [
+        {
+          browser: 'chromium',
+        },
+      ],
+    },
   },
 });
