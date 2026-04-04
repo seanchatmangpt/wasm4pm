@@ -214,8 +214,8 @@ Push and create pull request
 - [DEVELOPMENT.md](./DEVELOPMENT.md) - Dev guide
 
 ### Issues & Discussions
-- GitHub Issues: https://github.com/aarkue/rust4pm/issues
-- GitHub Discussions: https://github.com/aarkue/rust4pm/discussions
+- GitHub Issues: https://github.com/seanchatmangpt/wasm4pm/issues
+- GitHub Discussions: https://github.com/seanchatmangpt/wasm4pm/discussions
 
 ### Contributing
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines
@@ -259,4 +259,4 @@ See [../LICENSE-MIT](../LICENSE-MIT) and [../LICENSE-APACHE](../LICENSE-APACHE)
 **Last Updated:** April 4, 2026
 **Status:** Production Ready
 
-For the latest information, visit: https://github.com/aarkue/rust4pm
+For the latest information, visit: https://github.com/seanchatmangpt/wasm4pm

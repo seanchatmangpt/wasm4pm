@@ -10,7 +10,7 @@ A production-ready npm package with comprehensive build, test, and deployment in
 
 ### 1. Enhanced package.json
 
-**File:** `/home/user/rust4pm/process_mining_wasm/package.json`
+**File:** `/home/user/wasm4pm/package.json`
 
 Enhanced with:
 - **Dev Dependencies:** vitest, @testing-library/*, typescript, wasm-pack, @types/node, prettier, typedoc
@@ -112,7 +112,7 @@ Development quick reference:
 
 ### 3. GitHub Actions CI/CD Workflow
 
-**File:** `/home/user/rust4pm/.github/workflows/wasm-build.yml`
+**File:** `/home/user/wasm4pm/.github/workflows/wasm-build.yml`
 
 Comprehensive CI/CD pipeline with:
 - **Build Matrix:** Ubuntu, macOS, Windows
@@ -278,7 +278,7 @@ Directory for test data files (ready for population)
 
 ### 7. Root Repository Updates
 
-**File:** `/home/user/rust4pm/README.md`
+**File:** `/home/user/wasm4pm/README.md`
 
 Enhanced with:
 - process_mining_wasm section
@@ -292,14 +292,13 @@ Enhanced with:
 ## File Structure
 
 ```
-/home/user/rust4pm/
+/home/user/wasm4pm/
 ├── .github/
 │   └── workflows/
 │       └── wasm-build.yml              [NEW] CI/CD workflow
 │
-├── process_mining_wasm/
-│   ├── src/
-│   │   └── lib.rs                      [Existing] Rust bindings
+├── src/
+│   ├── lib.rs                      [Existing] Rust bindings
 │   ├── examples/
 │   │   ├── nodejs.js                   [Existing] Node.js example
 │   │   └── browser.html                [Existing] Browser example
@@ -378,7 +377,7 @@ Total Updated Files: 4
 ### Initial Setup
 
 ```bash
-cd /home/user/rust4pm/process_mining_wasm
+cd /home/user/wasm4pm
 
 # Install dependencies
 npm install
@@ -501,7 +500,7 @@ git push origin feature-branch
 
 ## Support and Issues
 
-- **GitHub Issues:** https://github.com/aarkue/rust4pm/issues
+- **GitHub Issues:** https://github.com/seanchatmangpt/wasm4pm/issues
 - **Documentation:** See process_mining_wasm/README.md and linked guides
 - **Development Help:** See DEVELOPMENT.md and CONTRIBUTING.md
 

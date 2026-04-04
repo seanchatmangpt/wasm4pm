@@ -78,7 +78,7 @@
 ## 📁 Project Structure
 
 ```
-rust4pm/
+wasm4pm/
 ├── README.md                    # Main project guide (wasm4pm focused)
 ├── QUICKSTART.md               # 5-minute setup
 ├── TUTORIAL.md                 # Real-world examples
@@ -213,8 +213,8 @@ npm install wasm4pm
 
 ### GitHub
 ```bash
-git clone https://github.com/seanchatmangpt/rust4pm
-cd rust4pm/wasm4pm
+git clone https://github.com/seanchatmangpt/wasm4pm
+cd wasm4pm
 npm install && npm run build:all
 ```
 
@@ -317,7 +317,7 @@ Total documentation: **5000+ lines** following 80/20 principle
 ## 📞 Support
 
 - **Documentation**: README.md, QUICKSTART.md, TUTORIAL.md, FAQ.md
-- **Issues**: GitHub Issues (github.com/seanchatmangpt/rust4pm)
+- **Issues**: GitHub Issues (github.com/seanchatmangpt/wasm4pm)
 - **Examples**: See examples/ directory
 - **Performance**: Check THESIS.md benchmarks
 
