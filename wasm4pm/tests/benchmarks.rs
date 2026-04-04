@@ -1,4 +1,4 @@
-use process_mining_wasm::models::{AttributeValue, Event, EventLog, Trace};
+use wasm4pm::models::{AttributeValue, Event, EventLog, Trace};
 use std::collections::HashMap;
 use std::time::Instant;
 
