@@ -301,6 +301,100 @@ export class EventLogHandle {
   }
 
   /**
+   * A* Search-based discovery - informed heuristic search for optimal models
+   */
+  discoverAStar(
+    options: { activityKey?: string; maxIterations?: number } = {}
+  ): DFGHandle {
+    const activityKey = options.activityKey || 'concept:name';
+    const maxIterations = options.maxIterations || 1000;
+
+    const json = this.wasmModule.discover_astar(this.handle, activityKey, maxIterations);
+    const result = JSON.parse(json);
+    return new DFGHandle(result.handle, this.wasmModule);
+  }
+
+  /**
+   * Hill Climbing - greedy local optimization to maximal fitness
+   */
+  discoverHillClimbing(activityKey: string = 'concept:name'): DFGHandle {
+    const json = this.wasmModule.discover_hill_climbing(this.handle, activityKey);
+    const result = JSON.parse(json);
+    return new DFGHandle(result.handle, this.wasmModule);
+  }
+
+  /**
+   * Analyze trace variants - extract unique process paths and frequencies
+   */
+  getTraceVariants(activityKey: string = 'concept:name'): any {
+    const json = this.wasmModule.analyze_trace_variants(this.handle, activityKey);
+    return JSON.parse(json);
+  }
+
+  /**
+   * Sequential Pattern Mining - find frequent activity sequences
+   */
+  mineSequentialPatterns(
+    options: {
+      activityKey?: string;
+      minSupport?: number;
+      patternLength?: number;
+    } = {}
+  ): any {
+    const activityKey = options.activityKey || 'concept:name';
+    const minSupport = options.minSupport || 0.01;
+    const patternLength = options.patternLength || 3;
+
+    const json = this.wasmModule.mine_sequential_patterns(
+      this.handle,
+      activityKey,
+      minSupport,
+      patternLength
+    );
+    return JSON.parse(json);
+  }
+
+  /**
+   * Detect concept drift - identify where process behavior changes
+   */
+  detectConceptDrift(
+    options: { activityKey?: string; windowSize?: number } = {}
+  ): any {
+    const activityKey = options.activityKey || 'concept:name';
+    const windowSize = options.windowSize || 50;
+
+    const json = this.wasmModule.detect_concept_drift(this.handle, activityKey, windowSize);
+    return JSON.parse(json);
+  }
+
+  /**
+   * Cluster traces - group similar traces for variant analysis
+   */
+  clusterTraces(options: { activityKey?: string; numClusters?: number } = {}): any {
+    const activityKey = options.activityKey || 'concept:name';
+    const numClusters = options.numClusters || 5;
+
+    const json = this.wasmModule.cluster_traces(this.handle, activityKey, numClusters);
+    return JSON.parse(json);
+  }
+
+  /**
+   * Analyze start/end activities - find entry and exit points in process
+   */
+  getStartEndActivities(activityKey: string = 'concept:name'): any {
+    const json = this.wasmModule.analyze_start_end_activities(this.handle, activityKey);
+    return JSON.parse(json);
+  }
+
+  /**
+   * Activity co-occurrence - find activities that happen together in traces
+   */
+  getActivityCooccurrence(activityKey: string = 'concept:name'): any {
+    const json = this.wasmModule.analyze_activity_cooccurrence(this.handle, activityKey);
+    return JSON.parse(json);
+  }
+
+  /**
    * Generate dotted chart data for visualization
    */
   getDottedChart(activityKey: string = 'concept:name'): any {
