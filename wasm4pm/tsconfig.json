@@ -18,16 +18,6 @@
     "types": ["vitest/globals", "node"],
     "allowSyntheticDefaultImports": true
   },
-  "include": [
-    "**/*.ts",
-    "**/*.tsx",
-    "__tests__/**/*.ts",
-    "examples/**/*.ts"
-  ],
-  "exclude": [
-    "node_modules",
-    "pkg",
-    "target",
-    "dist"
-  ]
+  "include": ["**/*.ts", "**/*.tsx", "__tests__/**/*.ts", "examples/**/*.ts"],
+  "exclude": ["node_modules", "pkg", "target", "dist"]
 }

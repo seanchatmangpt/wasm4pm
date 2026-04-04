@@ -3,7 +3,7 @@
  * Tests the complete workflow of the WASM module
  */
 
-const pm = require('../pkg/process_mining_wasm.js');
+const pm = require('../pkg/wasm4pm.js');
 
 // Sample XES content for testing
 const SAMPLE_XES = `<?xml version="1.0" encoding="UTF-8"?>

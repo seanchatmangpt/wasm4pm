@@ -3,6 +3,10 @@ use crate::state::{get_or_init_state, StoredObject};
 use crate::models::*;
 use serde_json::json;
 use std::collections::HashMap;
+use rustc_hash::FxHashMap;
+#[cfg(target_arch = "wasm32")]
+use serde_wasm_bindgen;
+use crate::utilities::to_js;
 
 /// Discover Petri Net using Alpha++ algorithm
 #[wasm_bindgen]
@@ -10,8 +14,9 @@ pub fn discover_alpha_plus_plus(
     eventlog_handle: &str,
     activity_key: &str,
     min_support: f64,
-) -> Result<String, JsValue> {
-    match get_or_init_state().get_object(eventlog_handle)? {
+) -> Result<JsValue, JsValue> {
+    // Compute inside closure (no store — avoids mutex re-entry), store outside.
+    let pn = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
             // Simplified Alpha++ implementation
             let mut pn = PetriNet::new();
@@ -71,8 +76,8 @@ pub fn discover_alpha_plus_plus(
 
             // Add directly-follows arcs
             let relations = log.get_directly_follows(activity_key);
+            let threshold = (log.traces.len() as f64 * min_support) as usize;
             for (from, to, freq) in relations {
-                let threshold = (log.traces.len() as f64 * min_support) as usize;
                 if freq >= threshold {
                     pn.arcs.push(PetriNetArc {
                         from: format!("p_{}", from),
@@ -104,22 +109,25 @@ pub fn discover_alpha_plus_plus(
                 }
             }
 
-            // Store and return handle
-            let handle = get_or_init_state()
-                .store_object(StoredObject::PetriNet(pn.clone()))
-                .map_err(|_e| JsValue::from_str("Failed to store PetriNet"))?;
-
-            Ok(serde_json::to_string(&json!({
-                "handle": handle,
-                "places": pn.places.len(),
-                "transitions": pn.transitions.len(),
-                "arcs": pn.arcs.len(),
-            }))
-            .map_err(|e| JsValue::from_str(&format!("Serialization failed: {}", e)))?)
+            Ok(pn)
         }
         Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
         None => Err(JsValue::from_str("EventLog not found")),
-    }
+    })?;
+
+    let n_places = pn.places.len();
+    let n_transitions = pn.transitions.len();
+    let n_arcs = pn.arcs.len();
+    let handle = get_or_init_state()
+        .store_object(StoredObject::PetriNet(pn))
+        .map_err(|_e| JsValue::from_str("Failed to store PetriNet"))?;
+
+    to_js(&json!({
+        "handle": handle,
+        "places": n_places,
+        "transitions": n_transitions,
+        "arcs": n_arcs,
+    }))
 }
 
 /// Discover DFG with frequency filtering
@@ -128,8 +136,9 @@ pub fn discover_dfg_filtered(
     eventlog_handle: &str,
     activity_key: &str,
     min_frequency: usize,
-) -> Result<String, JsValue> {
-    match get_or_init_state().get_object(eventlog_handle)? {
+) -> Result<JsValue, JsValue> {
+    // Compute inside closure (no store — avoids mutex re-entry), store outside.
+    let dfg = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
             let mut dfg = DirectlyFollowsGraph::new();
 
@@ -143,14 +152,21 @@ pub fn discover_dfg_filtered(
                 });
             }
 
+            // Build O(1) index: activity name → node position
+            let node_index: FxHashMap<&str, usize> = all_activities
+                .iter()
+                .enumerate()
+                .map(|(i, a)| (a.as_str(), i))
+                .collect();
+
             // Count activity frequencies
             for trace in &log.traces {
                 for event in &trace.events {
                     if let Some(AttributeValue::String(activity)) =
                         event.attributes.get(activity_key)
                     {
-                        if let Some(node) = dfg.nodes.iter_mut().find(|n| &n.id == activity) {
-                            node.frequency += 1;
+                        if let Some(&idx) = node_index.get(activity.as_str()) {
+                            dfg.nodes[idx].frequency += 1;
                         }
                     }
                 }
@@ -168,64 +184,64 @@ pub fn discover_dfg_filtered(
                 }
             }
 
-            // Get start and end activities
+            // Get start and end activities using .first()/.last() — no index arithmetic
             for trace in &log.traces {
-                if !trace.events.is_empty() {
-                    if let Some(AttributeValue::String(activity)) =
-                        trace.events[0].attributes.get(activity_key)
-                    {
-                        *dfg.start_activities.entry(activity.clone()).or_insert(0) += 1;
-                    }
-                    if let Some(AttributeValue::String(activity)) =
-                        trace.events[trace.events.len() - 1]
-                            .attributes
-                            .get(activity_key)
-                    {
-                        *dfg.end_activities.entry(activity.clone()).or_insert(0) += 1;
-                    }
+                if let Some(act) = trace.events.first()
+                    .and_then(|e| e.attributes.get(activity_key))
+                    .and_then(|v| v.as_string())
+                {
+                    *dfg.start_activities.entry(act.to_owned()).or_insert(0) += 1;
+                }
+                if let Some(act) = trace.events.last()
+                    .and_then(|e| e.attributes.get(activity_key))
+                    .and_then(|v| v.as_string())
+                {
+                    *dfg.end_activities.entry(act.to_owned()).or_insert(0) += 1;
                 }
             }
 
-            // Store and return handle
-            let handle = get_or_init_state()
-                .store_object(StoredObject::DirectlyFollowsGraph(dfg.clone()))
-                .map_err(|_e| JsValue::from_str("Failed to store DFG"))?;
-
-            Ok(serde_json::to_string(&json!({
-                "handle": handle,
-                "nodes": dfg.nodes.len(),
-                "edges": dfg.edges.len(),
-                "min_frequency_applied": min_frequency,
-            }))
-            .map_err(|e| JsValue::from_str(&format!("Serialization failed: {}", e)))?)
+            Ok(dfg)
         }
         Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
         None => Err(JsValue::from_str("EventLog not found")),
-    }
+    })?;
+
+    let n_nodes = dfg.nodes.len();
+    let n_edges = dfg.edges.len();
+    let handle = get_or_init_state()
+        .store_object(StoredObject::DirectlyFollowsGraph(dfg))
+        .map_err(|_e| JsValue::from_str("Failed to store DFG"))?;
+
+    to_js(&json!({
+        "handle": handle,
+        "nodes": n_nodes,
+        "edges": n_edges,
+        "min_frequency_applied": min_frequency,
+    }))
 }
 
 /// Export DFG to JSON
 #[wasm_bindgen]
 pub fn export_dfg_to_json(handle: &str) -> Result<String, JsValue> {
-    match get_or_init_state().get_object(handle)? {
+    get_or_init_state().with_object(handle, |obj| match obj {
         Some(StoredObject::DirectlyFollowsGraph(dfg)) => {
-            serde_json::to_string(&dfg)
+            serde_json::to_string(dfg)
                 .map_err(|e| JsValue::from_str(&format!("Serialization failed: {}", e)))
         }
         Some(_) => Err(JsValue::from_str("Object is not a DFG")),
         None => Err(JsValue::from_str("DFG not found")),
-    }
+    })
 }
 
 /// Export PetriNet to JSON
 #[wasm_bindgen]
 pub fn export_petri_net_to_json(handle: &str) -> Result<String, JsValue> {
-    match get_or_init_state().get_object(handle)? {
+    get_or_init_state().with_object(handle, |obj| match obj {
         Some(StoredObject::PetriNet(pn)) => {
-            serde_json::to_string(&pn)
+            serde_json::to_string(pn)
                 .map_err(|e| JsValue::from_str(&format!("Serialization failed: {}", e)))
         }
         Some(_) => Err(JsValue::from_str("Object is not a PetriNet")),
         None => Err(JsValue::from_str("PetriNet not found")),
-    }
+    })
 }

@@ -9,6 +9,9 @@ keywords = ["process-mining", "wasm", "webassembly", "process-discovery", "confo
 categories = ["wasm", "algorithms", "data-analysis"]
 
 [profile.release]
-opt-level = "z"
+opt-level = 3
 lto = true
 codegen-units = 1
+strip = "debuginfo"
+
+wasm-opt = false

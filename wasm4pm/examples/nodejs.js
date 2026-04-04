@@ -261,20 +261,14 @@ try {
   const petriNet = JSON.parse(petriNetJson);
   log('✓ Petri Net discovered', 'green');
   log(`  Places: ${petriNet.places ? petriNet.places.length : 0}`, 'green');
-  log(
-    `  Transitions: ${petriNet.transitions ? petriNet.transitions.length : 0}`,
-    'green'
-  );
+  log(`  Transitions: ${petriNet.transitions ? petriNet.transitions.length : 0}`, 'green');
 
   // Try DECLARE discovery
   log('Discovering DECLARE constraints...', 'blue');
   const declareJson = pm.discover_declare(logHandle);
   const declare = JSON.parse(declareJson);
   log('✓ DECLARE constraints discovered', 'green');
-  log(
-    `  Constraints: ${declare.constraints ? declare.constraints.length : 0}`,
-    'green'
-  );
+  log(`  Constraints: ${declare.constraints ? declare.constraints.length : 0}`, 'green');
 } catch (error) {
   log(`✗ Error in discovery: ${error.message}`, 'red');
 }
@@ -331,10 +325,7 @@ try {
 
   log('Step 2: Analyze events', 'blue');
   const stats = JSON.parse(pm.analyze_event_statistics(handle));
-  log(
-    `✓ Found ${stats.num_events} events in ${stats.num_traces} traces`,
-    'green'
-  );
+  log(`✓ Found ${stats.num_events} events in ${stats.num_traces} traces`, 'green');
 
   log('Step 3: Discover process model', 'blue');
   const model = JSON.parse(pm.discover_dfg(handle));
@@ -342,10 +333,7 @@ try {
 
   log('Step 4: Analyze durations', 'blue');
   const durationStats = JSON.parse(pm.analyze_case_duration(handle));
-  log(
-    `✓ Average duration: ${Math.round(durationStats.mean_duration / 60000)} minutes`,
-    'green'
-  );
+  log(`✓ Average duration: ${Math.round(durationStats.mean_duration / 60000)} minutes`, 'green');
 
   log('\n✓ Complete workflow finished successfully!', 'green');
 } catch (error) {

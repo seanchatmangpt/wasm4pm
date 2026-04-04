@@ -2,7 +2,7 @@ use once_cell::sync::Lazy;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use wasm_bindgen::prelude::*;
-use crate::models::{EventLog, OCEL, PetriNet, DirectlyFollowsGraph, DeclareModel};
+use crate::models::{EventLog, OCEL, PetriNet, DirectlyFollowsGraph, DeclareModel, StreamingDfgBuilder};
 
 /// A wrapper around different types of objects that can be stored in the WASM state
 pub enum StoredObject {
@@ -13,6 +13,7 @@ pub enum StoredObject {
     DeclareModel(DeclareModel),
     #[allow(dead_code)]
     JsonString(String),
+    StreamingDfgBuilder(StreamingDfgBuilder),
 }
 
 /// Global application state for managing objects
@@ -46,13 +47,39 @@ impl AppState {
         Ok(id)
     }
 
-    /// Retrieve an object by handle
+    /// Retrieve an object by handle (clones — prefer with_object for performance)
     pub fn get_object(&self, id: &str) -> Result<Option<StoredObject>, JsValue> {
         let objects = self
             .objects
             .lock()
             .map_err(|e| JsValue::from_str(&format!("Failed to lock objects: {}", e)))?;
         Ok(objects.get(id).cloned())
+    }
+
+    /// Execute a closure with a borrowed reference to the named object — zero clone.
+    /// Use this instead of get_object() for all algorithm calls.
+    pub fn with_object<F, R>(&self, id: &str, f: F) -> Result<R, JsValue>
+    where
+        F: FnOnce(Option<&StoredObject>) -> Result<R, JsValue>,
+    {
+        let objects = self
+            .objects
+            .lock()
+            .map_err(|e| JsValue::from_str(&format!("Failed to lock objects: {}", e)))?;
+        f(objects.get(id))
+    }
+
+    /// Execute a closure with a mutable reference to the named object — zero clone.
+    /// Use this for in-place mutation (e.g., streaming builder ingestion).
+    pub fn with_object_mut<F, R>(&self, id: &str, f: F) -> Result<R, JsValue>
+    where
+        F: FnOnce(Option<&mut StoredObject>) -> Result<R, JsValue>,
+    {
+        let mut objects = self
+            .objects
+            .lock()
+            .map_err(|e| JsValue::from_str(&format!("Failed to lock objects: {}", e)))?;
+        f(objects.get_mut(id))
     }
 
     /// Delete an object by handle
@@ -93,6 +120,7 @@ impl Clone for StoredObject {
             StoredObject::DirectlyFollowsGraph(dfg) => StoredObject::DirectlyFollowsGraph(dfg.clone()),
             StoredObject::DeclareModel(dm) => StoredObject::DeclareModel(dm.clone()),
             StoredObject::JsonString(s) => StoredObject::JsonString(s.clone()),
+            StoredObject::StreamingDfgBuilder(b) => StoredObject::StreamingDfgBuilder(b.clone()),
         }
     }
 }

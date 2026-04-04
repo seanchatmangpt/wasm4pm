@@ -115,21 +115,61 @@ For real-time analysis, use DFG or Process Skeleton (fast, ~0.3ms per 100 events
 Large logs (100K+ events) may use 50-500MB.
 
 ### Q: Can I use wasm4pm for real-time streaming?
-**A:** Yes, design your streaming pipeline:
+**A:** Yes. wasm4pm has a purpose-built streaming API designed for IoT devices and
+memory-constrained environments. Unlike the batch API, the streaming builder never
+holds the full event log in memory — once a trace is closed its buffer is freed and
+its data lives only in compact count tables.
 
 ```javascript
-const log = wasm4pm.createEventLog();
+await wasm4pm.init();
 
-for await (const event of eventStream) {
-  log.addEvent(event);
-  
-  // Periodic analysis every 100 events
-  if (log.getEventCount() % 100 === 0) {
-    const model = wasm4pm.discoverDFG(log);
-    console.log('Updated model:', model);
-  }
-}
+// 1. Open a streaming session
+const handle = wasm4pm.streaming_dfg_begin();
+
+// 2. Add events one-by-one as they arrive from sensors / queues
+wasm4pm.streaming_dfg_add_event(handle, 'case-42', 'Order Received');
+wasm4pm.streaming_dfg_add_event(handle, 'case-42', 'Payment Checked');
+wasm4pm.streaming_dfg_add_event(handle, 'case-43', 'Order Received');
+
+// 3. Close a trace when the case completes (frees the per-trace buffer)
+wasm4pm.streaming_dfg_close_trace(handle, 'case-42');
+
+// 4. Get a live DFG snapshot at any point (non-destructive)
+const dfgJson = wasm4pm.streaming_dfg_snapshot(handle);
+console.log('Live DFG:', JSON.parse(dfgJson));
+
+// 5. Add events in bulk (chunked ingestion)
+const chunk = [
+  { case_id: 'case-44', activity: 'Order Received' },
+  { case_id: 'case-44', activity: 'Fulfillment' },
+];
+wasm4pm.streaming_dfg_add_batch(handle, JSON.stringify(chunk));
+wasm4pm.streaming_dfg_close_trace(handle, 'case-44');
+
+// 6. Finalize: flush remaining open traces, store DFG, free the builder
+const result = JSON.parse(wasm4pm.streaming_dfg_finalize(handle));
+// result.dfg_handle can now be used with conformance checking, etc.
+console.log(`Finalized DFG: ${result.nodes} nodes, ${result.edges} edges`);
 ```
+
+Memory stays at **O(open_traces × avg_trace_length)** — typically kilobytes even when
+millions of events have been processed in closed traces.
+
+### Q: What memory stats are available for a streaming session?
+**A:**
+```javascript
+const stats = JSON.parse(wasm4pm.streaming_dfg_stats(handle));
+// {
+//   event_count: 1500,      total events seen
+//   trace_count: 120,       closed traces
+//   open_traces: 3,         currently buffered traces
+//   activities: 18,         unique activities discovered
+//   edge_pairs: 42,         unique directly-follows pairs
+//   open_trace_events: 12   events buffered in open traces
+// }
+```
+
+`open_trace_events` is the dominant memory cost — it drops to 0 after each `close_trace` or `flush_open` call.
 
 ### Q: How do I optimize for large datasets?
 **A:**

@@ -2,3 +2,7 @@
 resolver = "2"
 
 members = ["wasm4pm"]
+
+[profile.bench]
+opt-level = 3
+lto = false

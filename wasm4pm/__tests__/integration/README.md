@@ -5,7 +5,9 @@ This directory contains comprehensive integration tests for the process_mining_w
 ## Test Files
 
 ### nodejs.test.ts
+
 Node.js integration tests covering:
+
 - WASM module initialization
 - XES file loading and analysis
 - OCEL JSON loading and analysis
@@ -18,12 +20,15 @@ Node.js integration tests covering:
 - Result consistency
 
 **Run with:**
+
 ```bash
 npm run test:integration:nodejs
 ```
 
 ### browser.test.ts
+
 Browser environment integration tests covering:
+
 - WASM initialization in browser context
 - Async operations and promises
 - DOM element interaction
@@ -36,6 +41,7 @@ Browser environment integration tests covering:
 - Worker communication patterns
 
 **Run with:**
+
 ```bash
 npm run test:integration:browser
 ```
@@ -62,6 +68,7 @@ npm run test:coverage
 ## Test Data
 
 Tests use sample data from `../fixtures/`:
+
 - `sample.xes` - Standard XES event log
 - `sample.json` - OCEL (Object-Centric Event Log) in JSON format
 
@@ -108,6 +115,7 @@ Each test file follows this pattern:
 ## Writing New Tests
 
 ### Basic Test Template
+
 ```typescript
 describe('Feature Name', () => {
   beforeEach(() => {
@@ -132,6 +140,7 @@ describe('Feature Name', () => {
 ```
 
 ### Async Test Template
+
 ```typescript
 test('should handle async operation', async () => {
   const result = await asyncFunction();
@@ -140,6 +149,7 @@ test('should handle async operation', async () => {
 ```
 
 ### Error Test Template
+
 ```typescript
 test('should handle errors gracefully', () => {
   expect(() => {
@@ -151,10 +161,12 @@ test('should handle errors gracefully', () => {
 ## Test Configuration
 
 Tests are configured in:
+
 - `jest.config.js` - Main Jest configuration
 - `jest.setup.js` - Global setup and utilities
 
 Key settings:
+
 - **Timeout**: 30 seconds (configurable per test)
 - **Environment**: Node.js or browser
 - **Coverage**: Statements > 80%, Branches > 75%
@@ -164,12 +176,14 @@ Key settings:
 Test data files in `../fixtures/`:
 
 **sample.xes** (XES Event Log)
+
 - 3 traces
 - 14 events
 - 5 activities
 - 3 resources
 
 **sample.json** (OCEL)
+
 - 10 events
 - 7 objects
 - 3 object types
@@ -178,12 +192,14 @@ Test data files in `../fixtures/`:
 ## Coverage
 
 Current coverage goals:
+
 - Statements: > 80%
 - Branches: > 75%
 - Functions: > 85%
 - Lines: > 80%
 
 View coverage report:
+
 ```bash
 npm run test:coverage
 ```
@@ -191,16 +207,19 @@ npm run test:coverage
 ## Debugging Tests
 
 ### Verbose Output
+
 ```bash
 npm run test:integration -- --verbose
 ```
 
 ### Single Test
+
 ```bash
 npm run test:integration -- --testNamePattern="test name"
 ```
 
 ### Debug Mode
+
 ```bash
 node --inspect-brk node_modules/.bin/jest --runInBand
 ```
@@ -218,6 +237,7 @@ node --inspect-brk node_modules/.bin/jest --runInBand
 ## Troubleshooting
 
 ### Tests Not Found
+
 ```bash
 # Ensure test files exist
 ls -la integration/*.test.ts
@@ -227,16 +247,19 @@ npm run build:all
 ```
 
 ### Timeout Errors
+
 - Increase timeout: `jest.setTimeout(60000);`
 - Check for hanging operations
 - Verify async/await usage
 
 ### Module Not Found
+
 - Install dependencies: `npm install`
 - Build WASM: `npm run build`
 - Check import paths
 
 ### Fixture Loading Fails
+
 ```bash
 # Verify fixture files exist
 ls -la ../fixtures/
@@ -248,11 +271,13 @@ file ../fixtures/sample.xes
 ## Performance
 
 Average test execution times:
+
 - Node.js tests: ~5 seconds
 - Browser tests: ~10 seconds
 - Total suite: ~15 seconds
 
 Optimize by:
+
 - Mocking expensive operations
 - Using beforeAll for shared setup
 - Parallel test execution (Jest default)
