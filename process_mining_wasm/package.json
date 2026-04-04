@@ -1,0 +1,30 @@
+{
+  "name": "process_mining_wasm",
+  "version": "0.5.4",
+  "description": "WebAssembly and JavaScript bindings for the process_mining library",
+  "main": "pkg/process_mining_wasm.js",
+  "types": "pkg/process_mining_wasm.d.ts",
+  "files": [
+    "pkg/"
+  ],
+  "scripts": {
+    "build": "wasm-pack build --target bundler",
+    "build:nodejs": "wasm-pack build --target nodejs",
+    "build:web": "wasm-pack build --target web",
+    "build:all": "npm run build && npm run build:nodejs && npm run build:web"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aarkue/rust4pm.git"
+  },
+  "keywords": [
+    "process-mining",
+    "wasm",
+    "webassembly"
+  ],
+  "author": "",
+  "license": "MIT OR Apache-2.0",
+  "devDependencies": {
+    "wasm-pack": "^1.3.4"
+  }
+}

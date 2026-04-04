@@ -2,5 +2,5 @@
 resolver = "2"
 
 members = ["macros_process_mining",
-	"process_mining", "r4pm",
+	"process_mining", "r4pm", "process_mining_wasm",
 ]
