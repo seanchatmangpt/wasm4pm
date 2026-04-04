@@ -57,6 +57,62 @@ Whenever a new version of the Rust4PM project is released, the following steps h
 ## `r4pm`
 CLI automatically generated from functions exposed in the `process_mining` crate.
 
+## `process_mining_wasm`
+WebAssembly and JavaScript bindings for the `process_mining` crate, enabling process mining in the browser and Node.js.
+
+### Quick Start
+
+```bash
+npm install process_mining_wasm
+```
+
+```javascript
+const pm = require('process_mining_wasm');
+
+pm.init();
+
+// Load an event log
+const logHandle = pm.load_eventlog_from_xes(xesContent);
+
+// Analyze it
+const stats = pm.analyze_event_statistics(logHandle);
+console.log(JSON.parse(pm.object_to_json(stats)));
+
+// Discover process models
+const dfg = pm.discover_dfg(logHandle);
+```
+
+### Documentation
+
+- [Getting Started Guide](./process_mining_wasm/GETTING_STARTED.md) - Quick start and common workflows
+- [API Reference](./process_mining_wasm/API.md) - Complete function documentation
+- [Architecture Guide](./process_mining_wasm/ARCHITECTURE.md) - Design and implementation details
+
+### Building from Source
+
+```bash
+cd process_mining_wasm
+npm install
+npm run build:all
+npm test
+```
+
+### Available Build Targets
+
+- **Bundler** (recommended): For use with webpack, vite, etc.
+- **Node.js**: For server-side processing
+- **Web**: For direct browser use via script tags
+
+### CI/CD Pipeline
+
+Automated builds and tests via GitHub Actions:
+- Builds WASM for all targets (Linux, macOS, Windows)
+- Runs unit and integration tests
+- Tests with Node.js 18.x and 20.x
+- Generates API documentation
+- Publishes to npm on release
+
+See [.github/workflows/wasm-build.yml](./.github/workflows/wasm-build.yml) for configuration.
 
 ## LICENSE
 This project is licensed under either Apache License Version 2.0 or MIT License at your option.

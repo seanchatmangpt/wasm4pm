@@ -1,0 +1,160 @@
+name: WASM Build & Test
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'process_mining_wasm/**'
+      - 'process_mining/**'
+      - '.github/workflows/wasm-build.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'process_mining_wasm/**'
+      - 'process_mining/**'
+      - '.github/workflows/wasm-build.yml'
+  release:
+    types: [published]
+
+jobs:
+  build-and-test:
+    name: Build WASM and Run Tests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        node-version: [18.x, 20.x]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: process_mining_wasm
+
+      - name: Install wasm-pack
+        run: curl https://rustwasm.org/wasm-pack/installer/init.sh -sSf | sh
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: 'process_mining_wasm/package-lock.json'
+
+      - name: Install Node dependencies
+        run: npm ci
+        working-directory: process_mining_wasm
+
+      - name: Build WASM (bundler target)
+        run: npm run build
+        working-directory: process_mining_wasm
+
+      - name: Build WASM (Node.js target)
+        run: npm run build:nodejs
+        working-directory: process_mining_wasm
+
+      - name: Build WASM (web target)
+        run: npm run build:web
+        working-directory: process_mining_wasm
+
+      - name: Check TypeScript
+        run: npm run type:check
+        working-directory: process_mining_wasm
+
+      - name: Check code format
+        run: npm run format:check
+        working-directory: process_mining_wasm
+
+      - name: Run unit tests
+        run: npm run test:unit
+        working-directory: process_mining_wasm
+
+      - name: Run integration tests
+        run: npm run test:integration
+        working-directory: process_mining_wasm
+        if: hashFiles('process_mining_wasm/__tests__/integration.test.js') != '' || hashFiles('process_mining_wasm/__tests__/integration.test.ts') != ''
+
+      - name: Generate documentation
+        run: npm run docs
+        working-directory: process_mining_wasm
+        if: matrix.os == 'ubuntu-latest' && matrix.node-version == '20.x'
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-${{ matrix.os }}-node${{ matrix.node-version }}
+          path: process_mining_wasm/coverage
+
+      - name: Upload documentation
+        uses: actions/upload-artifact@v4
+        if: matrix.os == 'ubuntu-latest' && matrix.node-version == '20.x'
+        with:
+          name: docs
+          path: process_mining_wasm/docs
+
+  publish-npm:
+    name: Publish to npm
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: process_mining_wasm
+
+      - name: Install wasm-pack
+        run: curl https://rustwasm.org/wasm-pack/installer/init.sh -sSf | sh
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: process_mining_wasm
+
+      - name: Build WASM for publication
+        run: npm run build:all
+        working-directory: process_mining_wasm
+
+      - name: Publish to npm
+        run: npm publish
+        working-directory: process_mining_wasm
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Create GitHub release comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const version = require('./process_mining_wasm/package.json').version;
+            github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: `wasm-v${version}`,
+              name: `WASM v${version}`,
+              body: `Published to npm as \`process_mining_wasm@${version}\``,
+              draft: false,
+              prerelease: false,
+            });

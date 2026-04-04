@@ -19,7 +19,10 @@ impl WasmEventLog {
     /// Get the number of events in the log
     pub fn event_count(&self) -> Result<usize, JsValue> {
         match get_or_init_state().get_object(&self.handle)? {
-            Some(StoredObject::EventLog(log)) => Ok(log.len()),
+            Some(StoredObject::EventLog(log)) => {
+                let count = log.traces.iter().map(|t| t.events.len()).sum();
+                Ok(count)
+            }
             Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
             None => Err(JsValue::from_str("EventLog not found")),
         }
@@ -28,7 +31,7 @@ impl WasmEventLog {
     /// Get the number of cases in the log
     pub fn case_count(&self) -> Result<usize, JsValue> {
         match get_or_init_state().get_object(&self.handle)? {
-            Some(StoredObject::EventLog(log)) => Ok(log.cases().len()),
+            Some(StoredObject::EventLog(log)) => Ok(log.traces.len()),
             Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
             None => Err(JsValue::from_str("EventLog not found")),
         }
@@ -55,10 +58,11 @@ impl WasmEventLog {
     pub fn stats(&self) -> Result<String, JsValue> {
         match get_or_init_state().get_object(&self.handle)? {
             Some(StoredObject::EventLog(log)) => {
+                let event_count: usize = log.traces.iter().map(|t| t.events.len()).sum();
                 let stats = json!({
-                    "event_count": log.len(),
-                    "case_count": log.cases().len(),
-                    "attribute_count": log.attributes().len(),
+                    "event_count": event_count,
+                    "case_count": log.traces.len(),
+                    "attribute_count": log.attributes.len(),
                 });
                 serde_json::to_string(&stats)
                     .map_err(|e| JsValue::from_str(&e.to_string()))
@@ -91,7 +95,7 @@ impl WasmOCEL {
     /// Get the number of events in the OCEL
     pub fn event_count(&self) -> Result<usize, JsValue> {
         match get_or_init_state().get_object(&self.handle)? {
-            Some(StoredObject::OCEL(ocel)) => Ok(ocel.events().len()),
+            Some(StoredObject::OCEL(ocel)) => Ok(ocel.events.len()),
             Some(_) => Err(JsValue::from_str("Object is not an OCEL")),
             None => Err(JsValue::from_str("OCEL not found")),
         }
@@ -100,7 +104,7 @@ impl WasmOCEL {
     /// Get the number of objects in the OCEL
     pub fn object_count(&self) -> Result<usize, JsValue> {
         match get_or_init_state().get_object(&self.handle)? {
-            Some(StoredObject::OCEL(ocel)) => Ok(ocel.objects().len()),
+            Some(StoredObject::OCEL(ocel)) => Ok(ocel.objects.len()),
             Some(_) => Err(JsValue::from_str("Object is not an OCEL")),
             None => Err(JsValue::from_str("OCEL not found")),
         }
@@ -111,8 +115,8 @@ impl WasmOCEL {
         match get_or_init_state().get_object(&self.handle)? {
             Some(StoredObject::OCEL(ocel)) => {
                 let stats = json!({
-                    "event_count": ocel.events().len(),
-                    "object_count": ocel.objects().len(),
+                    "event_count": ocel.events.len(),
+                    "object_count": ocel.objects.len(),
                 });
                 serde_json::to_string(&stats)
                     .map_err(|e| JsValue::from_str(&e.to_string()))

@@ -9,39 +9,43 @@ pub fn analyze_dotted_chart(eventlog_handle: &str) -> Result<String, JsValue> {
     match get_or_init_state().get_object(eventlog_handle)? {
         Some(StoredObject::EventLog(log)) => {
             // Collect statistics for dotted chart
-            let cases = log.cases();
             let mut data = Vec::new();
+            let mut total_events = 0;
 
-            for (case_id, case) in cases {
+            for (case_idx, trace) in log.traces.iter().enumerate() {
                 let mut events_in_case = Vec::new();
-                for (idx, event) in case.iter().enumerate() {
+                for (idx, event) in trace.events.iter().enumerate() {
                     events_in_case.push(json!({
-                        "timestamp": event.timestamp(),
+                        "timestamp": event.timestamp().to_string(),
                         "activity": event.activity(),
                         "sequence": idx,
                     }));
                 }
-                data.push(json!({
-                    "case_id": case_id,
-                    "events": events_in_case,
-                    "duration": if case.is_empty() {
-                        0
+                total_events += trace.events.len();
+
+                let duration = if !trace.events.is_empty() {
+                    let first_time = trace.events.first().map(|e| e.timestamp());
+                    let last_time = trace.events.last().map(|e| e.timestamp());
+                    if let (Some(f), Some(l)) = (first_time, last_time) {
+                        l.signed_duration_since(*f).num_seconds()
                     } else {
-                        let first_time = case.first().map(|e| e.timestamp());
-                        let last_time = case.last().map(|e| e.timestamp());
-                        if let (Some(f), Some(l)) = (first_time, last_time) {
-                            l.signed_duration_since(*f).num_seconds()
-                        } else {
-                            0
-                        }
-                    },
+                        0
+                    }
+                } else {
+                    0
+                };
+
+                data.push(json!({
+                    "case_id": case_idx,
+                    "events": events_in_case,
+                    "duration": duration,
                 }));
             }
 
             serde_json::to_string(&json!({
                 "type": "dotted_chart",
-                "case_count": cases.len(),
-                "total_events": log.len(),
+                "case_count": log.traces.len(),
+                "total_events": total_events,
                 "cases": data
             }))
             .map_err(|e| JsValue::from_str(&format!("Analysis failed: {}", e)))
@@ -59,18 +63,28 @@ pub fn analyze_event_statistics(eventlog_handle: &str) -> Result<String, JsValue
             // Count activity occurrences
             let mut activity_counts: std::collections::HashMap<String, usize> =
                 std::collections::HashMap::new();
-            for case in log.cases().values() {
-                for event in case {
-                    *activity_counts.entry(event.activity().to_string()).or_insert(0) += 1;
+            let mut total_events = 0;
+
+            for trace in &log.traces {
+                for event in &trace.events {
+                    total_events += 1;
+                    *activity_counts
+                        .entry(event.activity().to_string())
+                        .or_insert(0) += 1;
                 }
             }
 
+            let total_cases = log.traces.len();
             let stats = json!({
-                "total_events": log.len(),
-                "total_cases": log.cases().len(),
+                "total_events": total_events,
+                "total_cases": total_cases,
                 "unique_activities": activity_counts.len(),
                 "activity_frequencies": activity_counts,
-                "avg_events_per_case": log.len() as f64 / log.cases().len().max(1) as f64,
+                "avg_events_per_case": if total_cases > 0 {
+                    total_events as f64 / total_cases as f64
+                } else {
+                    0.0
+                },
             });
 
             serde_json::to_string(&stats)
@@ -86,19 +100,17 @@ pub fn analyze_event_statistics(eventlog_handle: &str) -> Result<String, JsValue
 pub fn analyze_ocel_statistics(ocel_handle: &str) -> Result<String, JsValue> {
     match get_or_init_state().get_object(ocel_handle)? {
         Some(StoredObject::OCEL(ocel)) => {
-            let events = ocel.events();
-            let objects = ocel.objects();
-
             let mut object_type_counts: std::collections::HashMap<String, usize> =
                 std::collections::HashMap::new();
-            for obj in objects.values() {
-                let otype = obj.object_type();
-                *object_type_counts.entry(otype.to_string()).or_insert(0) += 1;
+
+            for obj in &ocel.objects {
+                let otype = obj.object_type.clone();
+                *object_type_counts.entry(otype).or_insert(0) += 1;
             }
 
             let stats = json!({
-                "total_events": events.len(),
-                "total_objects": objects.len(),
+                "total_events": ocel.events.len(),
+                "total_objects": ocel.objects.len(),
                 "object_types": object_type_counts,
             });
 
@@ -115,11 +127,10 @@ pub fn analyze_ocel_statistics(ocel_handle: &str) -> Result<String, JsValue> {
 pub fn analyze_case_duration(eventlog_handle: &str) -> Result<String, JsValue> {
     match get_or_init_state().get_object(eventlog_handle)? {
         Some(StoredObject::EventLog(log)) => {
-            let cases = log.cases();
             let mut durations = Vec::new();
 
-            for case in cases.values() {
-                if let (Some(first), Some(last)) = (case.first(), case.last()) {
+            for trace in &log.traces {
+                if let (Some(first), Some(last)) = (trace.events.first(), trace.events.last()) {
                     let duration = last
                         .timestamp()
                         .signed_duration_since(*first.timestamp())
