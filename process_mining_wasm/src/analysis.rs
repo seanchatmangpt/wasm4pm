@@ -7,7 +7,6 @@ use serde_json::json;
 pub fn analyze_dotted_chart(eventlog_handle: &str) -> Result<String, JsValue> {
     match get_or_init_state().get_object(eventlog_handle)? {
         Some(StoredObject::EventLog(log)) => {
-            // Collect statistics for dotted chart
             let mut data = Vec::new();
             let mut total_events = 0;
 
@@ -39,13 +38,9 @@ pub fn analyze_dotted_chart(eventlog_handle: &str) -> Result<String, JsValue> {
 pub fn analyze_event_statistics(eventlog_handle: &str) -> Result<String, JsValue> {
     match get_or_init_state().get_object(eventlog_handle)? {
         Some(StoredObject::EventLog(log)) => {
-            let mut total_events = 0;
+            let total_events = log.event_count();
+            let total_cases = log.case_count();
 
-            for trace in &log.traces {
-                total_events += trace.events.len();
-            }
-
-            let total_cases = log.traces.len();
             let stats = json!({
                 "total_events": total_events,
                 "total_cases": total_cases,
@@ -70,8 +65,8 @@ pub fn analyze_ocel_statistics(ocel_handle: &str) -> Result<String, JsValue> {
     match get_or_init_state().get_object(ocel_handle)? {
         Some(StoredObject::OCEL(ocel)) => {
             let stats = json!({
-                "total_events": ocel.events.len(),
-                "total_objects": ocel.objects.len(),
+                "total_events": ocel.event_count(),
+                "total_objects": ocel.object_count(),
             });
 
             serde_json::to_string(&stats)
@@ -87,12 +82,8 @@ pub fn analyze_ocel_statistics(ocel_handle: &str) -> Result<String, JsValue> {
 pub fn analyze_case_duration(eventlog_handle: &str) -> Result<String, JsValue> {
     match get_or_init_state().get_object(eventlog_handle)? {
         Some(StoredObject::EventLog(log)) => {
-            // Calculate case statistics based on event counts
-            let mut event_counts = Vec::new();
-
-            for trace in &log.traces {
-                event_counts.push(trace.events.len());
-            }
+            let mut event_counts: Vec<usize> =
+                log.traces.iter().map(|t| t.events.len()).collect();
 
             let stats = if !event_counts.is_empty() {
                 event_counts.sort();
