@@ -12,6 +12,7 @@ pub mod advanced_algorithms;
 pub mod ilp_discovery;
 pub mod genetic_discovery;
 pub mod fast_discovery;
+pub mod more_discovery;
 
 // Suppress unused warnings for re-exported modules
 #[allow(unused)]
