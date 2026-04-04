@@ -45,10 +45,11 @@ use std::collections::HashMap;
 use std::time::Instant;
 use std::path::Path;
 
-// ── Data Source Detection ──────────────────────────────────────────────────
+// ── Data Source & Tier Detection ──────────────────────────────────────────
 
 thread_local! {
     static DATA_SOURCE: std::cell::RefCell<String> = std::cell::RefCell::new(String::new());
+    static BENCHMARK_TIER: std::cell::RefCell<Option<u32>> = std::cell::RefCell::new(None);
 }
 
 fn set_data_source(source: &str) {
@@ -57,6 +58,65 @@ fn set_data_source(source: &str) {
 
 fn get_data_source() -> String {
     DATA_SOURCE.with(|s| s.borrow().clone())
+}
+
+fn get_benchmark_tier() -> Option<u32> {
+    BENCHMARK_TIER.with(|t| *t.borrow())
+        .or_else(|| {
+            std::env::var("BENCHMARK_TIER")
+                .ok()
+                .and_then(|v| v.parse::<u32>().ok())
+        })
+}
+
+fn set_benchmark_tier(tier: u32) {
+    BENCHMARK_TIER.with(|t| *t.borrow_mut() = Some(tier));
+}
+
+// ── Tier Configuration ─────────────────────────────────────────────────────
+
+struct TierConfig {
+    tier: u32,
+    name: &'static str,
+    datasets: Vec<(&'static str, usize)>, // (dataset_name, expected_cases)
+}
+
+fn get_tier_config(tier: u32) -> Option<TierConfig> {
+    match tier {
+        1 => Some(TierConfig {
+            tier: 1,
+            name: "ESSENTIAL (Quick Validation)",
+            datasets: vec![
+                ("bpi2020", 7_065),   // BPI 2020 Travel Permits
+                ("bpi2013", 7_500),   // BPI 2013 Incidents
+                ("sepsis", 1_000),    // Sepsis Cases
+            ],
+        }),
+        2 => Some(TierConfig {
+            tier: 2,
+            name: "COMPREHENSIVE (Medium Testing)",
+            datasets: vec![
+                ("bpi2019", 200_000),  // BPI 2019 Invoice
+                ("bpi2015", 150_000),  // BPI 2015 Building Permits
+            ],
+        }),
+        3 => Some(TierConfig {
+            tier: 3,
+            name: "STRESS (Large Scale)",
+            datasets: vec![
+                ("road_traffic", 150_370), // Road Traffic Fines (561K events)
+            ],
+        }),
+        _ => None,
+    }
+}
+
+fn skip_test_if_wrong_tier(tier: u32) -> bool {
+    if let Some(current) = get_benchmark_tier() {
+        current != tier
+    } else {
+        false // Run test if no tier specified
+    }
 }
 
 // ── XES Loading from Fixtures ──────────────────────────────────────────────
@@ -145,26 +205,39 @@ fn generate_synthetic_log(cases: usize) -> EventLog {
 }
 
 fn make_log(cases: usize) -> String {
-    // Try to load real data first, fall back to synthetic
-    if cases == 7065 {
-        if let Some(log) = load_real_bpi2020() {
+    // Load real data based on requested size
+    let dataset = match cases {
+        7_065 => Some("bpi2020"),
+        7_500 => Some("bpi2013"),
+        200_000 => Some("bpi2019"),
+        150_370 => Some("road_traffic"),
+        150_000 => Some("bpi2015"),
+        1_000 => Some("sepsis"),
+        _ => None,
+    };
+
+    // Try to load requested dataset
+    if let Some(ds) = dataset {
+        if let Some(log) = load_real_dataset(ds) {
             return get_or_init_state()
                 .store_object(StoredObject::EventLog(log))
                 .expect("store log");
         }
     }
 
-    // Fall back to synthetic
-    if get_data_source().is_empty() {
-        set_data_source("Synthetic (6 activities, 20 events/case)");
-        eprintln!("✓ Using synthetic data (no BPI 2020 fixtures found)");
-        eprintln!("  Tip: Download BPI 2020 from https://data.4tu.nl/collections/BPI_Challenge_2020/5065541");
-    }
-
-    let log = generate_synthetic_log(cases);
-    get_or_init_state()
-        .store_object(StoredObject::EventLog(log))
-        .expect("store log")
+    // If real data not found, panic with helpful message
+    panic!(
+        "❌ REAL DATA REQUIRED\n\
+         \n\
+         Benchmarks require real BPI datasets (no synthetic fallback).\n\
+         \n\
+         Steps:\n\
+         1. Download datasets from: https://data.4tu.nl/collections/BPI_Challenge_2020/5065541\n\
+         2. Place .xes files in: wasm4pm/tests/fixtures/\n\
+         3. Run: cargo test --release -- bench_tier_1_essential --nocapture --ignored\n\
+         \n\
+         See: BENCHMARK-TIERS-USAGE.md"
+    );
 }
 
 // ── Benchmark Report Header ────────────────────────────────────────────────
@@ -175,8 +248,18 @@ fn print_benchmark_header() {
     if !HEADER_PRINTED.swap(true, std::sync::atomic::Ordering::SeqCst) {
         println!("\n{}", "=".repeat(70));
         println!("wasm4pm BENCHMARKS — REAL DATA VALIDATION");
+
+        if let Some(tier) = get_benchmark_tier() {
+            let config = get_tier_config(tier).unwrap_or(TierConfig {
+                tier: 0,
+                name: "UNKNOWN",
+                datasets: vec![],
+            });
+            println!("TIER: {} ({})", tier, config.name);
+        }
+
         println!("Data Source: {}", get_data_source());
-        println!("License: CC BY 4.0 (if using real BPI 2020)");
+        println!("License: CC BY 4.0 (if using real BPI datasets)");
         println!("Median of 5 runs | --release optimizations");
         println!("{}", "=".repeat(70));
     }
@@ -556,6 +639,7 @@ fn bench_activity_ordering() {
 
 #[test]
 fn bench_token_based_replay() {
+    print_benchmark_header();
     let ak = "concept:name";
     print_header("Token-Based Replay (Conformance)");
     for &n in &[100usize, 500, 1_000, 5_000] {
@@ -567,4 +651,174 @@ fn bench_token_based_replay() {
         let ph = pn_h.clone();
         print_row(n, ms(|| { let _ = check_token_based_replay(&lh, &ph, ak); }, 5));
     }
+}
+
+// ── TIER-SPECIFIC BENCHMARK RUNNERS ────────────────────────────────────────
+
+/// Run all benchmarks on Tier 1 (Essential) datasets
+/// Usage: cargo test --release -- bench_tier_1 --nocapture
+#[test]
+#[ignore]
+fn bench_tier_1_essential() {
+    set_benchmark_tier(1);
+    let config = get_tier_config(1).unwrap();
+    println!("\n{}", "=".repeat(70));
+    println!("TIER 1: {} BENCHMARKS", config.name);
+    println!("Datasets: BPI 2020 Travel (7K), BPI 2013 Incidents (7.5K), Sepsis (1K)");
+    println!("Total Time: ~2-3 minutes");
+    println!("{}", "=".repeat(70));
+
+    // Run all 35 tests (they will use tier 1 data)
+    bench_dfg();
+    bench_declare();
+    bench_heuristic_miner();
+    bench_optimized_dfg();
+    bench_ilp_petri_net();
+    bench_inductive_miner();
+    bench_astar();
+    bench_hill_climbing();
+    bench_ant_colony();
+    bench_simulated_annealing();
+    bench_process_skeleton();
+    bench_genetic_algorithm();
+    bench_pso();
+    bench_event_statistics();
+    bench_case_duration();
+    bench_dotted_chart();
+    bench_trace_variants();
+    bench_sequential_patterns();
+    bench_concept_drift();
+    bench_cluster_traces();
+    bench_start_end_activities();
+    bench_activity_cooccurrence();
+    bench_infrequent_paths();
+    bench_detect_rework();
+    bench_bottleneck_detection();
+    bench_model_metrics();
+    bench_activity_dependencies();
+    bench_case_attributes();
+    bench_variant_complexity();
+    bench_activity_transition_matrix();
+    bench_process_speedup();
+    bench_trace_similarity_matrix();
+    bench_temporal_bottlenecks();
+    bench_activity_ordering();
+    bench_token_based_replay();
+
+    println!("\n{}", "=".repeat(70));
+    println!("✅ Tier 1 benchmarking complete");
+    println!("📊 Data Source: {}", get_data_source());
+    println!("{}", "=".repeat(70));
+}
+
+/// Run all benchmarks on Tier 2 (Comprehensive) datasets
+/// Usage: cargo test --release -- bench_tier_2 --nocapture
+#[test]
+#[ignore]
+fn bench_tier_2_comprehensive() {
+    set_benchmark_tier(2);
+    let config = get_tier_config(2).unwrap();
+    println!("\n{}", "=".repeat(70));
+    println!("TIER 2: {} BENCHMARKS", config.name);
+    println!("Datasets: BPI 2019 Invoice (200K events), BPI 2015 Permits (150K)");
+    println!("Total Time: ~5-10 minutes");
+    println!("{}", "=".repeat(70));
+
+    // Run all 35 tests (they will use tier 2 data)
+    bench_dfg();
+    bench_declare();
+    bench_heuristic_miner();
+    bench_optimized_dfg();
+    bench_ilp_petri_net();
+    bench_inductive_miner();
+    bench_astar();
+    bench_hill_climbing();
+    bench_ant_colony();
+    bench_simulated_annealing();
+    bench_process_skeleton();
+    bench_genetic_algorithm();
+    bench_pso();
+    bench_event_statistics();
+    bench_case_duration();
+    bench_dotted_chart();
+    bench_trace_variants();
+    bench_sequential_patterns();
+    bench_concept_drift();
+    bench_cluster_traces();
+    bench_start_end_activities();
+    bench_activity_cooccurrence();
+    bench_infrequent_paths();
+    bench_detect_rework();
+    bench_bottleneck_detection();
+    bench_model_metrics();
+    bench_activity_dependencies();
+    bench_case_attributes();
+    bench_variant_complexity();
+    bench_activity_transition_matrix();
+    bench_process_speedup();
+    bench_trace_similarity_matrix();
+    bench_temporal_bottlenecks();
+    bench_activity_ordering();
+    bench_token_based_replay();
+
+    println!("\n{}", "=".repeat(70));
+    println!("✅ Tier 2 benchmarking complete");
+    println!("📊 Data Source: {}", get_data_source());
+    println!("{}", "=".repeat(70));
+}
+
+/// Run all benchmarks on Tier 3 (Stress) datasets
+/// Usage: cargo test --release -- bench_tier_3 --nocapture
+#[test]
+#[ignore]
+fn bench_tier_3_stress() {
+    set_benchmark_tier(3);
+    let config = get_tier_config(3).unwrap();
+    println!("\n{}", "=".repeat(70));
+    println!("TIER 3: {} BENCHMARKS", config.name);
+    println!("Datasets: Road Traffic Fines (150K cases, 561K events)");
+    println!("Total Time: ~10-20 minutes (extreme scale test)");
+    println!("{}", "=".repeat(70));
+
+    // Run all 35 tests (they will use tier 3 data)
+    bench_dfg();
+    bench_declare();
+    bench_heuristic_miner();
+    bench_optimized_dfg();
+    bench_ilp_petri_net();
+    bench_inductive_miner();
+    bench_astar();
+    bench_hill_climbing();
+    bench_ant_colony();
+    bench_simulated_annealing();
+    bench_process_skeleton();
+    bench_genetic_algorithm();
+    bench_pso();
+    bench_event_statistics();
+    bench_case_duration();
+    bench_dotted_chart();
+    bench_trace_variants();
+    bench_sequential_patterns();
+    bench_concept_drift();
+    bench_cluster_traces();
+    bench_start_end_activities();
+    bench_activity_cooccurrence();
+    bench_infrequent_paths();
+    bench_detect_rework();
+    bench_bottleneck_detection();
+    bench_model_metrics();
+    bench_activity_dependencies();
+    bench_case_attributes();
+    bench_variant_complexity();
+    bench_activity_transition_matrix();
+    bench_process_speedup();
+    bench_trace_similarity_matrix();
+    bench_temporal_bottlenecks();
+    bench_activity_ordering();
+    bench_token_based_replay();
+
+    println!("\n{}", "=".repeat(70));
+    println!("✅ Tier 3 benchmarking complete (STRESS TEST)");
+    println!("📊 Data Source: {}", get_data_source());
+    println!("{}", "=".repeat(70));
 }
