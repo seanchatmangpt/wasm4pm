@@ -14,6 +14,8 @@ pub mod genetic_discovery;
 pub mod fast_discovery;
 pub mod more_discovery;
 pub mod final_analytics;
+pub mod streaming;
+pub mod streaming_conformance;
 
 // Suppress unused warnings for re-exported modules
 #[allow(unused)]

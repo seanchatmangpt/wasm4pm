@@ -2,7 +2,11 @@ use wasm_bindgen::prelude::*;
 use crate::state::{get_or_init_state, StoredObject};
 use crate::models::*;
 use serde_json::json;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
+use rustc_hash::FxHashMap;
+#[cfg(target_arch = "wasm32")]
+use serde_wasm_bindgen;
+use crate::utilities::to_js;
 
 /// A* Search-based process discovery - informed heuristic search
 #[wasm_bindgen]
@@ -10,8 +14,8 @@ pub fn discover_astar(
     eventlog_handle: &str,
     activity_key: &str,
     max_iterations: usize,
-) -> Result<String, JsValue> {
-    match get_or_init_state().get_object(eventlog_handle)? {
+) -> Result<JsValue, JsValue> {
+    let (best_dfg, iterations) = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
             let activities = log.get_activities(activity_key);
             let directly_follows = log.get_directly_follows(activity_key);
@@ -33,46 +37,49 @@ pub fn discover_astar(
                 open_set.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
                 let (current_dfg, _score) = open_set.pop().unwrap();
 
-                // Add edges with highest frequency
-                for (from, to, freq) in &directly_follows {
-                    if !current_dfg.edges.iter().any(|e| &e.from == from && &e.to == to) {
+                // Build candidate DFGs via iterator chain; heuristic is inlined,
+                // no separate complexity_penalty binding needed
+                let new_candidates: Vec<(DirectlyFollowsGraph, f64)> = directly_follows
+                    .iter()
+                    .filter(|(from, to, _)| {
+                        !current_dfg.edges.iter().any(|e| &e.from == from && &e.to == to)
+                    })
+                    .filter_map(|(from, to, freq)| {
                         let mut new_dfg = current_dfg.clone();
                         new_dfg.edges.push(DirectlyFollowsRelation {
                             from: from.clone(),
                             to: to.clone(),
                             frequency: *freq,
                         });
-
-                        let fitness = evaluate_dfg_fitness(&new_dfg, &log, activity_key);
-                        let complexity_penalty = new_dfg.edges.len() as f64 / 100.0;
-                        let heuristic = fitness - complexity_penalty;
-
-                        if fitness > 0.5 {
-                            open_set.push((new_dfg, heuristic));
-                        }
-                    }
-                }
+                        let fitness = evaluate_dfg_fitness(&new_dfg, log, activity_key);
+                        let edge_count = new_dfg.edges.len();
+                        (fitness > 0.5)
+                            .then(|| (new_dfg, fitness - edge_count as f64 / 100.0))
+                    })
+                    .collect();
+                open_set.extend(new_candidates);
 
                 best_dfg = current_dfg;
                 iterations += 1;
             }
 
-            let handle = get_or_init_state()
-                .store_object(StoredObject::DirectlyFollowsGraph(best_dfg.clone()))
-                .map_err(|_e| JsValue::from_str("Failed to store DFG"))?;
-
-            Ok(serde_json::to_string(&json!({
-                "handle": handle,
-                "algorithm": "astar",
-                "nodes": best_dfg.nodes.len(),
-                "edges": best_dfg.edges.len(),
-                "iterations": iterations,
-            }))
-            .map_err(|e| JsValue::from_str(&format!("Serialization failed: {}", e)))?)
+            Ok((best_dfg, iterations))
         }
         Some(_) => Err(JsValue::from_str("Not an EventLog")),
         None => Err(JsValue::from_str("EventLog not found")),
-    }
+    })?;
+
+    let handle = get_or_init_state()
+        .store_object(StoredObject::DirectlyFollowsGraph(best_dfg.clone()))
+        .map_err(|_e| JsValue::from_str("Failed to store DFG"))?;
+
+    to_js(&json!({
+        "handle": handle,
+        "algorithm": "astar",
+        "nodes": best_dfg.nodes.len(),
+        "edges": best_dfg.edges.len(),
+        "iterations": iterations,
+    }))
 }
 
 /// Hill Climbing - greedy local optimization
@@ -80,67 +87,91 @@ pub fn discover_astar(
 pub fn discover_hill_climbing(
     eventlog_handle: &str,
     activity_key: &str,
-) -> Result<String, JsValue> {
-    match get_or_init_state().get_object(eventlog_handle)? {
+) -> Result<JsValue, JsValue> {
+    let current_dfg = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
-            let activities = log.get_activities(activity_key);
-            let directly_follows_vec = log.get_directly_follows(activity_key);
-            let mut directly_follows: HashSet<(String, String)> = HashSet::new();
-            for (from, to, _) in &directly_follows_vec {
-                directly_follows.insert((from.clone(), to.clone()));
-            }
+            // Build columnar view once — integer-keyed ops throughout
+            let col = log.to_columnar(activity_key);
 
-            let mut current_dfg = DirectlyFollowsGraph::new();
-            for activity in &activities {
-                current_dfg.nodes.push(DFGNode {
-                    id: activity.clone(),
-                    label: activity.clone(),
-                    frequency: 0,
-                });
-            }
+            // Current edge set as integer pairs — O(1) membership test
+            let mut current_edges: HashSet<(u32, u32)> = HashSet::new();
 
             let mut improved = true;
             while improved {
                 improved = false;
-                let mut best_neighbor = current_dfg.clone();
-                let mut best_fitness = evaluate_dfg_fitness(&current_dfg, &log, activity_key);
 
-                for (from, to) in &directly_follows {
-                    if !current_dfg.edges.iter().any(|e| &e.from == from && &e.to == to) {
-                        let mut neighbor = current_dfg.clone();
-                        neighbor.edges.push(DirectlyFollowsRelation {
-                            from: from.clone(),
-                            to: to.clone(),
-                            frequency: 1,
-                        });
+                // Single O(events) pass over flat array — compute marginal gain for every
+                // candidate edge simultaneously, instead of calling evaluate_dfg_fitness
+                // once per candidate (old: O(E × events) per iteration).
+                //
+                // gain[pair] = number of traces where `pair` is the ONLY consecutive pair
+                // absent from current_edges.  Adding that edge makes exactly those traces fit.
+                let mut gain: FxHashMap<(u32, u32), usize> =
+                    FxHashMap::default();
 
-                        let fitness = evaluate_dfg_fitness(&neighbor, &log, activity_key);
-                        if fitness > best_fitness {
-                            best_fitness = fitness;
-                            best_neighbor = neighbor;
-                            improved = true;
+                for t in 0..col.trace_offsets.len().saturating_sub(1) {
+                    let start = col.trace_offsets[t];
+                    let end   = col.trace_offsets[t + 1];
+                    if start >= end { continue; }
+
+                    // Track the unique missing pair (if exactly one exists)
+                    let mut sole_missing: Option<(u32, u32)> = None;
+                    let mut multi = false;
+
+                    for i in start..end - 1 {
+                        let pair = (col.events[i], col.events[i + 1]);
+                        if !current_edges.contains(&pair) {
+                            match sole_missing {
+                                None           => sole_missing = Some(pair),
+                                Some(p) if p == pair => {} // same pair repeated — still sole
+                                Some(_)        => { multi = true; break; }
+                            }
+                        }
+                    }
+
+                    if !multi {
+                        if let Some(p) = sole_missing {
+                            *gain.entry(p).or_insert(0) += 1;
                         }
                     }
                 }
 
-                current_dfg = best_neighbor;
+                // Add the edge with the highest marginal gain
+                if let Some((&best_pair, _)) = gain.iter().max_by_key(|(_, &v)| v) {
+                    current_edges.insert(best_pair);
+                    improved = true;
+                }
             }
 
-            let handle = get_or_init_state()
-                .store_object(StoredObject::DirectlyFollowsGraph(current_dfg.clone()))
-                .map_err(|_e| JsValue::from_str("Failed to store DFG"))?;
+            // Materialise back to DFG
+            let mut dfg = DirectlyFollowsGraph::new();
+            dfg.nodes.extend(col.vocab.iter().map(|&act| DFGNode {
+                id: act.to_owned(),
+                label: act.to_owned(),
+                frequency: 0,
+            }));
+            dfg.edges.extend(current_edges.iter().map(|&(f, t)| DirectlyFollowsRelation {
+                from: col.vocab[f as usize].to_owned(),
+                to:   col.vocab[t as usize].to_owned(),
+                frequency: 1,
+            }));
 
-            Ok(serde_json::to_string(&json!({
-                "handle": handle,
-                "algorithm": "hill_climbing",
-                "nodes": current_dfg.nodes.len(),
-                "edges": current_dfg.edges.len(),
-            }))
-            .map_err(|e| JsValue::from_str(&format!("Serialization failed: {}", e)))?)
+            Ok(dfg)
         }
         Some(_) => Err(JsValue::from_str("Not an EventLog")),
         None => Err(JsValue::from_str("EventLog not found")),
-    }
+    })?;
+
+    let handle = get_or_init_state()
+        .store_object(StoredObject::DirectlyFollowsGraph(current_dfg.clone()))
+        .map_err(|_e| JsValue::from_str("Failed to store DFG"))?;
+
+    to_js(&json!({
+        "handle": handle,
+        "algorithm": "hill_climbing",
+        "nodes": current_dfg.nodes.len(),
+        "edges": current_dfg.edges.len(),
+    }))
 }
 
 /// Trace Variants - extract unique process paths and their frequencies
@@ -148,10 +179,10 @@ pub fn discover_hill_climbing(
 pub fn analyze_trace_variants(
     eventlog_handle: &str,
     activity_key: &str,
-) -> Result<String, JsValue> {
-    match get_or_init_state().get_object(eventlog_handle)? {
+) -> Result<JsValue, JsValue> {
+    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
-            let mut variants: HashMap<Vec<String>, usize> = HashMap::new();
+            let mut variants: FxHashMap<Vec<String>, usize> = FxHashMap::default();
 
             for trace in &log.traces {
                 let mut path = Vec::new();
@@ -180,16 +211,15 @@ pub fn analyze_trace_variants(
                 })
                 .collect();
 
-            Ok(serde_json::to_string(&json!({
+            to_js(&json!({
                 "total_variants": variant_list.len(),
                 "top_variants": top_variants,
                 "coverage": (top_variants.len() as f64 / variant_list.len().max(1) as f64 * 100.0),
             }))
-            .map_err(|e| JsValue::from_str(&format!("Serialization failed: {}", e)))?)
         }
         Some(_) => Err(JsValue::from_str("Not an EventLog")),
         None => Err(JsValue::from_str("EventLog not found")),
-    }
+    })
 }
 
 /// Sequential Pattern Mining - find frequent activity sequences
@@ -199,10 +229,10 @@ pub fn mine_sequential_patterns(
     activity_key: &str,
     min_support: f64,
     pattern_length: usize,
-) -> Result<String, JsValue> {
-    match get_or_init_state().get_object(eventlog_handle)? {
+) -> Result<JsValue, JsValue> {
+    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
-            let mut patterns: HashMap<Vec<String>, usize> = HashMap::new();
+            let mut patterns: FxHashMap<Vec<String>, usize> = FxHashMap::default();
             let min_count = ((log.traces.len() as f64 * min_support).ceil()) as usize;
 
             for trace in &log.traces {
@@ -243,16 +273,15 @@ pub fn mine_sequential_patterns(
                 })
                 .collect();
 
-            Ok(serde_json::to_string(&json!({
+            to_js(&json!({
                 "pattern_length": pattern_length,
                 "patterns": result_patterns,
                 "min_support": min_support,
             }))
-            .map_err(|e| JsValue::from_str(&format!("Serialization failed: {}", e)))?)
         }
         Some(_) => Err(JsValue::from_str("Not an EventLog")),
         None => Err(JsValue::from_str("EventLog not found")),
-    }
+    })
 }
 
 /// Concept Drift Detection - identify where process behavior changes
@@ -261,8 +290,8 @@ pub fn detect_concept_drift(
     eventlog_handle: &str,
     activity_key: &str,
     window_size: usize,
-) -> Result<String, JsValue> {
-    match get_or_init_state().get_object(eventlog_handle)? {
+) -> Result<JsValue, JsValue> {
+    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
             let mut drifts = Vec::new();
             let mut previous_activities: HashSet<String> = HashSet::new();
@@ -297,85 +326,163 @@ pub fn detect_concept_drift(
                 previous_activities = current_activities;
             }
 
-            Ok(serde_json::to_string(&json!({
+            to_js(&json!({
                 "drifts_detected": drifts.len(),
                 "drifts": drifts,
                 "window_size": window_size,
             }))
-            .map_err(|e| JsValue::from_str(&format!("Serialization failed: {}", e)))?)
         }
         Some(_) => Err(JsValue::from_str("Not an EventLog")),
         None => Err(JsValue::from_str("EventLog not found")),
+    })
+}
+
+/// Helper: Encode traces as bitsets for O(1) Jaccard similarity
+/// Returns (bitsets, activity_index) where bitsets[i] is u128 encoding of trace i
+fn encode_traces_as_bitsets(log: &EventLog, activity_key: &str) -> (Vec<u128>, FxHashMap<String, u16>) {
+    // Build activity_index: each unique activity gets a bit position 0..127
+    let mut activity_index: FxHashMap<String, u16> = FxHashMap::default();
+    let mut next_bit = 0u16;
+
+    // First pass: collect all unique activities
+    for trace in &log.traces {
+        for event in &trace.events {
+            if let Some(AttributeValue::String(activity)) = event.attributes.get(activity_key) {
+                if !activity_index.contains_key(activity) && next_bit < 128 {
+                    activity_index.insert(activity.clone(), next_bit);
+                    next_bit += 1;
+                }
+            }
+        }
+    }
+
+    // Second pass: encode each trace as a bitset
+    let mut bitsets = Vec::new();
+    for trace in &log.traces {
+        let mut bitset: u128 = 0;
+        for event in &trace.events {
+            if let Some(AttributeValue::String(activity)) = event.attributes.get(activity_key) {
+                if let Some(&bit_pos) = activity_index.get(activity) {
+                    bitset |= 1u128 << bit_pos;
+                }
+            }
+        }
+        bitsets.push(bitset);
+    }
+
+    (bitsets, activity_index)
+}
+
+/// Helper: Compute Jaccard similarity between two bitsets
+/// jaccard(a, b) = popcount(a & b) / popcount(a | b)
+#[inline]
+fn jaccard_bitset(a: u128, b: u128) -> f64 {
+    let intersection = (a & b).count_ones() as f64;
+    let union = (a | b).count_ones() as f64;
+    if union == 0.0 {
+        0.0
+    } else {
+        intersection / union
     }
 }
 
-/// Process Clustering - group similar traces
+/// Helper: Recompute cluster center using majority voting on each bit
+fn recompute_center(cluster_indices: &[usize], bitsets: &[u128]) -> u128 {
+    if cluster_indices.is_empty() {
+        return 0u128;
+    }
+
+    let mut center: u128 = 0;
+    let threshold = (cluster_indices.len() as f64 / 2.0).ceil() as usize;
+
+    // For each of 128 bits: count how many traces have bit set
+    for bit_pos in 0..128 {
+        let bit_mask = 1u128 << bit_pos;
+        let count = cluster_indices
+            .iter()
+            .filter(|&&idx| (bitsets[idx] & bit_mask) != 0)
+            .count();
+        // Set bit in center if majority of traces have it
+        if count >= threshold {
+            center |= bit_mask;
+        }
+    }
+
+    center
+}
+
+/// Process Clustering - group similar traces using bitset-based k-means
+/// Time complexity: O(T×K) where T = traces, K = clusters (vs O(T×K×A) for string-based)
 #[wasm_bindgen]
 pub fn cluster_traces(
     eventlog_handle: &str,
     activity_key: &str,
     num_clusters: usize,
-) -> Result<String, JsValue> {
-    match get_or_init_state().get_object(eventlog_handle)? {
+) -> Result<JsValue, JsValue> {
+    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
+            if log.traces.is_empty() {
+                return to_js(&json!({
+                    "num_clusters": num_clusters,
+                    "cluster_sizes": [],
+                    "total_traces": 0,
+                }));
+            }
+
+            let num_clusters = num_clusters.min(log.traces.len());
+
+            // Encode all traces as bitsets: O(T×A) but amortized O(T) after index build
+            let (bitsets, _activity_index) = encode_traces_as_bitsets(log, activity_key);
+
+            let mut cluster_centers: Vec<u128> = vec![0u128; num_clusters];
             let mut clusters: Vec<Vec<usize>> = vec![Vec::new(); num_clusters];
-            let mut cluster_centers: Vec<Vec<String>> = vec![Vec::new(); num_clusters];
 
-            // Initialize centers randomly from traces
+            // Initialize centers from first K traces
             for i in 0..num_clusters {
-                if i < log.traces.len() {
-                    let activities: Vec<String> = log.traces[i]
-                        .events
-                        .iter()
-                        .filter_map(|e| {
-                            if let Some(AttributeValue::String(act)) =
-                                e.attributes.get(activity_key)
-                            {
-                                Some(act.clone())
-                            } else {
-                                None
-                            }
-                        })
-                        .collect();
-                    cluster_centers[i] = activities;
-                }
+                cluster_centers[i] = bitsets[i];
             }
 
-            // Assign traces to closest cluster
-            for (trace_idx, trace) in log.traces.iter().enumerate() {
-                let trace_activities: Vec<String> = trace
-                    .events
-                    .iter()
-                    .filter_map(|e| {
-                        if let Some(AttributeValue::String(act)) =
-                            e.attributes.get(activity_key)
-                        {
-                            Some(act.clone())
-                        } else {
-                            None
+            // K-means: converge with bitset operations
+            let max_iterations = 10;
+            let mut converged = false;
+            let mut iteration = 0;
+
+            while !converged && iteration < max_iterations {
+                iteration += 1;
+                converged = true;
+
+                // Clear cluster assignments
+                for cluster in &mut clusters {
+                    cluster.clear();
+                }
+
+                // Assignment: O(T×K) — integer bitwise ops, no String operations
+                for (trace_idx, &bitset) in bitsets.iter().enumerate() {
+                    let mut best_cluster = 0;
+                    let mut best_similarity = -1.0;
+
+                    for (center_idx, &center) in cluster_centers.iter().enumerate() {
+                        let similarity = jaccard_bitset(bitset, center);
+                        if similarity > best_similarity {
+                            best_similarity = similarity;
+                            best_cluster = center_idx;
                         }
-                    })
-                    .collect();
-
-                let mut best_cluster = 0;
-                let mut best_similarity = -1.0;
-
-                for (center_idx, center) in cluster_centers.iter().enumerate() {
-                    let common = trace_activities
-                        .iter()
-                        .filter(|a| center.contains(a))
-                        .count();
-                    let similarity = common as f64 / (trace_activities.len().max(center.len())) as f64;
-
-                    if similarity > best_similarity {
-                        best_similarity = similarity;
-                        best_cluster = center_idx;
                     }
+
+                    clusters[best_cluster].push(trace_idx);
                 }
 
-                clusters[best_cluster].push(trace_idx);
+                // Update centers using majority voting: O(K×128) = O(K)
+                for (center_idx, cluster_indices) in clusters.iter().enumerate() {
+                    let new_center = recompute_center(cluster_indices, &bitsets);
+                    if new_center != cluster_centers[center_idx] {
+                        converged = false;
+                    }
+                    cluster_centers[center_idx] = new_center;
+                }
             }
 
+            // Build result
             let cluster_sizes: Vec<_> = clusters
                 .iter()
                 .enumerate()
@@ -388,16 +495,16 @@ pub fn cluster_traces(
                 })
                 .collect();
 
-            Ok(serde_json::to_string(&json!({
+            to_js(&json!({
                 "num_clusters": num_clusters,
                 "cluster_sizes": cluster_sizes,
                 "total_traces": log.traces.len(),
+                "iterations": iteration,
             }))
-            .map_err(|e| JsValue::from_str(&format!("Serialization failed: {}", e)))?)
         }
         Some(_) => Err(JsValue::from_str("Not an EventLog")),
         None => Err(JsValue::from_str("EventLog not found")),
-    }
+    })
 }
 
 /// Start/End Activity Analysis - find entry and exit points
@@ -405,12 +512,12 @@ pub fn cluster_traces(
 pub fn analyze_start_end_activities(
     eventlog_handle: &str,
     activity_key: &str,
-) -> Result<String, JsValue> {
-    match get_or_init_state().get_object(eventlog_handle)? {
+) -> Result<JsValue, JsValue> {
+    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
-            let mut start_acts: HashMap<String, usize> = HashMap::new();
-            let mut end_acts: HashMap<String, usize> = HashMap::new();
-            let mut start_end_pairs: HashMap<(String, String), usize> = HashMap::new();
+            let mut start_acts: FxHashMap<String, usize> = FxHashMap::default();
+            let mut end_acts: FxHashMap<String, usize> = FxHashMap::default();
+            let mut start_end_pairs: FxHashMap<(String, String), usize> = FxHashMap::default();
 
             for trace in &log.traces {
                 if !trace.events.is_empty() {
@@ -454,16 +561,15 @@ pub fn analyze_start_end_activities(
             ends.sort_by(|a, b| b.1.cmp(&a.1));
             pairs.sort_by(|a, b| b.1.cmp(&a.1));
 
-            Ok(serde_json::to_string(&json!({
+            to_js(&json!({
                 "start_activities": starts.iter().take(10).map(|(a, c)| json!({"activity": a, "count": c})).collect::<Vec<_>>(),
                 "end_activities": ends.iter().take(10).map(|(a, c)| json!({"activity": a, "count": c})).collect::<Vec<_>>(),
                 "start_end_pairs": pairs.iter().take(10).map(|(p, c)| json!({"start": p.0, "end": p.1, "count": c})).collect::<Vec<_>>(),
             }))
-            .map_err(|e| JsValue::from_str(&format!("Serialization failed: {}", e)))?)
         }
         Some(_) => Err(JsValue::from_str("Not an EventLog")),
         None => Err(JsValue::from_str("EventLog not found")),
-    }
+    })
 }
 
 /// Activity Co-occurrence - find activities that happen together
@@ -471,10 +577,10 @@ pub fn analyze_start_end_activities(
 pub fn analyze_activity_cooccurrence(
     eventlog_handle: &str,
     activity_key: &str,
-) -> Result<String, JsValue> {
-    match get_or_init_state().get_object(eventlog_handle)? {
+) -> Result<JsValue, JsValue> {
+    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
-            let mut cooccurrence: HashMap<(String, String), usize> = HashMap::new();
+            let mut cooccurrence: FxHashMap<(String, String), usize> = FxHashMap::default();
 
             for trace in &log.traces {
                 let activities: Vec<String> = trace
@@ -518,45 +624,42 @@ pub fn analyze_activity_cooccurrence(
                 })
                 .collect();
 
-            Ok(serde_json::to_string(&json!({
+            to_js(&json!({
                 "cooccurrences": result,
             }))
-            .map_err(|e| JsValue::from_str(&format!("Serialization failed: {}", e)))?)
         }
         Some(_) => Err(JsValue::from_str("Not an EventLog")),
         None => Err(JsValue::from_str("EventLog not found")),
-    }
+    })
 }
 
 // Helper: Evaluate DFG fitness
+#[inline(always)]
 fn evaluate_dfg_fitness(dfg: &DirectlyFollowsGraph, log: &EventLog, activity_key: &str) -> f64 {
-    let edge_set: HashSet<(String, String)> = dfg
+    // Build a borrowed edge set — no String allocations for keys or lookups.
+    let edge_set: HashSet<(&str, &str)> = dfg
         .edges
         .iter()
-        .map(|e| (e.from.clone(), e.to.clone()))
+        .map(|e| (e.from.as_str(), e.to.as_str()))
         .collect();
 
-    let mut fitting = 0.0;
-    for trace in &log.traces {
-        let mut trace_fits = true;
-        for i in 0..trace.events.len().saturating_sub(1) {
-            if let (
-                Some(AttributeValue::String(a1)),
-                Some(AttributeValue::String(a2)),
-            ) = (
-                trace.events[i].attributes.get(activity_key),
-                trace.events[i + 1].attributes.get(activity_key),
-            ) {
-                if !edge_set.contains(&(a1.clone(), a2.clone())) {
-                    trace_fits = false;
-                    break;
+    let fitting = log
+        .traces
+        .iter()
+        .filter(|trace| {
+            trace.events.windows(2).all(|pair| {
+                // as_string() returns Option<&str> without any allocation.
+                match (
+                    pair[0].attributes.get(activity_key).and_then(|v| v.as_string()),
+                    pair[1].attributes.get(activity_key).and_then(|v| v.as_string()),
+                ) {
+                    (Some(a1), Some(a2)) => edge_set.contains(&(a1, a2)),
+                    // Missing activity key — treat as non-fitting pair.
+                    _ => false,
                 }
-            }
-        }
-        if trace_fits {
-            fitting += 1.0;
-        }
-    }
+            })
+        })
+        .count() as f64;
 
     fitting / log.traces.len().max(1) as f64
 }

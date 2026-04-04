@@ -1,11 +1,14 @@
 use wasm_bindgen::prelude::*;
 use crate::state::{get_or_init_state, StoredObject};
 use serde_json::json;
+#[cfg(target_arch = "wasm32")]
+use serde_wasm_bindgen;
+use crate::utilities::to_js;
 
 /// Perform dotted chart analysis on an EventLog
 #[wasm_bindgen]
-pub fn analyze_dotted_chart(eventlog_handle: &str) -> Result<String, JsValue> {
-    match get_or_init_state().get_object(eventlog_handle)? {
+pub fn analyze_dotted_chart(eventlog_handle: &str) -> Result<JsValue, JsValue> {
+    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
             let mut data = Vec::new();
             let mut total_events = 0;
@@ -20,23 +23,22 @@ pub fn analyze_dotted_chart(eventlog_handle: &str) -> Result<String, JsValue> {
                 }));
             }
 
-            serde_json::to_string(&json!({
+            to_js(&json!({
                 "type": "dotted_chart",
                 "case_count": log.traces.len(),
                 "total_events": total_events,
                 "cases": data
             }))
-            .map_err(|e| JsValue::from_str(&format!("Analysis failed: {}", e)))
         }
         Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
         None => Err(JsValue::from_str("EventLog not found")),
-    }
+    })
 }
 
 /// Get event statistics from an EventLog
 #[wasm_bindgen]
-pub fn analyze_event_statistics(eventlog_handle: &str) -> Result<String, JsValue> {
-    match get_or_init_state().get_object(eventlog_handle)? {
+pub fn analyze_event_statistics(eventlog_handle: &str) -> Result<JsValue, JsValue> {
+    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
             let total_events = log.event_count();
             let total_cases = log.case_count();
@@ -51,36 +53,34 @@ pub fn analyze_event_statistics(eventlog_handle: &str) -> Result<String, JsValue
                 },
             });
 
-            serde_json::to_string(&stats)
-                .map_err(|e| JsValue::from_str(&format!("Analysis failed: {}", e)))
+            to_js(&stats)
         }
         Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
         None => Err(JsValue::from_str("EventLog not found")),
-    }
+    })
 }
 
 /// Get object statistics from an OCEL
 #[wasm_bindgen]
-pub fn analyze_ocel_statistics(ocel_handle: &str) -> Result<String, JsValue> {
-    match get_or_init_state().get_object(ocel_handle)? {
+pub fn analyze_ocel_statistics(ocel_handle: &str) -> Result<JsValue, JsValue> {
+    get_or_init_state().with_object(ocel_handle, |obj| match obj {
         Some(StoredObject::OCEL(ocel)) => {
             let stats = json!({
                 "total_events": ocel.event_count(),
                 "total_objects": ocel.object_count(),
             });
 
-            serde_json::to_string(&stats)
-                .map_err(|e| JsValue::from_str(&format!("Analysis failed: {}", e)))
+            to_js(&stats)
         }
         Some(_) => Err(JsValue::from_str("Object is not an OCEL")),
         None => Err(JsValue::from_str("OCEL not found")),
-    }
+    })
 }
 
 /// Analyze case duration from an EventLog
 #[wasm_bindgen]
-pub fn analyze_case_duration(eventlog_handle: &str) -> Result<String, JsValue> {
-    match get_or_init_state().get_object(eventlog_handle)? {
+pub fn analyze_case_duration(eventlog_handle: &str) -> Result<JsValue, JsValue> {
+    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
             let mut event_counts: Vec<usize> =
                 log.traces.iter().map(|t| t.events.len()).collect();
@@ -108,12 +108,11 @@ pub fn analyze_case_duration(eventlog_handle: &str) -> Result<String, JsValue> {
                 })
             };
 
-            serde_json::to_string(&stats)
-                .map_err(|e| JsValue::from_str(&format!("Analysis failed: {}", e)))
+            to_js(&stats)
         }
         Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
         None => Err(JsValue::from_str("EventLog not found")),
-    }
+    })
 }
 
 /// Get list of available analysis functions

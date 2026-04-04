@@ -145,11 +145,7 @@ export enum OCELAttributeType {
 /**
  * OCEL Attribute value
  */
-export type OCELAttributeValue =
-  | string
-  | number
-  | boolean
-  | string; // timestamp as ISO 8601
+export type OCELAttributeValue = string | number | boolean | string; // timestamp as ISO 8601
 
 /**
  * OCEL Event
@@ -534,12 +530,20 @@ export interface Importable<T, ImportErr, ImportOpts> {
   /**
    * Import from string content
    */
-  importFromString(content: string, format: FileFormat, options?: ImportOpts): Promise<T | ImportErr>;
+  importFromString(
+    content: string,
+    format: FileFormat,
+    options?: ImportOpts
+  ): Promise<T | ImportErr>;
 
   /**
    * Import from byte array
    */
-  importFromBytes(bytes: ArrayBuffer, format: FileFormat, options?: ImportOpts): Promise<T | ImportErr>;
+  importFromBytes(
+    bytes: ArrayBuffer,
+    format: FileFormat,
+    options?: ImportOpts
+  ): Promise<T | ImportErr>;
 }
 
 /**
@@ -599,11 +603,14 @@ export interface OCELIOError {
 export interface FunctionBinding {
   name: string;
   description?: string;
-  parameters: Record<string, {
-    type: string;
-    description?: string;
-    required: boolean;
-  }>;
+  parameters: Record<
+    string,
+    {
+      type: string;
+      description?: string;
+      required: boolean;
+    }
+  >;
   returnType: string;
   examples?: string[];
 }
@@ -640,18 +647,12 @@ export interface ProcessMiningAPI {
     /**
      * Discover a Petri Net using the Alpha++ algorithm
      */
-    alphaPlusPlusPetriNet(
-      log: EventLog,
-      options?: AlphaPlusPlusConfig
-    ): Promise<PetriNet | Error>;
+    alphaPlusPlusPetriNet(log: EventLog, options?: AlphaPlusPlusConfig): Promise<PetriNet | Error>;
 
     /**
      * Discover a Directly-Follows Graph
      */
-    discoverDFG(
-      log: EventLog,
-      options?: DFGOptions
-    ): Promise<DirectlyFollowsGraph | Error>;
+    discoverDFG(log: EventLog, options?: DFGOptions): Promise<DirectlyFollowsGraph | Error>;
 
     /**
      * Discover an Object-Centric DFG
@@ -664,9 +665,7 @@ export interface ProcessMiningAPI {
     /**
      * Discover DECLARE constraints
      */
-    discoverDECLARE(
-      log: EventLog
-    ): Promise<DeclareModel | Error>;
+    discoverDECLARE(log: EventLog): Promise<DeclareModel | Error>;
 
     /**
      * Discover Object-Centric DECLARE constraints
@@ -728,10 +727,7 @@ export interface ProcessMiningAPI {
     /**
      * Generate dotted chart data
      */
-    getDottedChart(
-      log: EventLog,
-      options?: DottedChartOptions
-    ): Promise<DottedChartData | Error>;
+    getDottedChart(log: EventLog, options?: DottedChartOptions): Promise<DottedChartData | Error>;
 
     /**
      * Get event timestamp histogram
@@ -755,10 +751,7 @@ export interface ProcessMiningAPI {
     /**
      * Check conformance using token-based replay
      */
-    checkTokenBasedReplay(
-      log: EventLog,
-      petriNet: PetriNet
-    ): Promise<ConformanceResult | Error>;
+    checkTokenBasedReplay(log: EventLog, petriNet: PetriNet): Promise<ConformanceResult | Error>;
   };
 
   // -------- I/O --------
@@ -766,10 +759,7 @@ export interface ProcessMiningAPI {
     /**
      * Load an EventLog
      */
-    loadEventLog(
-      path: string,
-      options?: EventLogImportOptions
-    ): Promise<EventLog | Error>;
+    loadEventLog(path: string, options?: EventLogImportOptions): Promise<EventLog | Error>;
 
     /**
      * Save an EventLog
@@ -783,19 +773,12 @@ export interface ProcessMiningAPI {
     /**
      * Load OCEL
      */
-    loadOCEL(
-      path: string,
-      options?: OCELImportOptions
-    ): Promise<OCEL | Error>;
+    loadOCEL(path: string, options?: OCELImportOptions): Promise<OCEL | Error>;
 
     /**
      * Save OCEL
      */
-    saveOCEL(
-      ocel: OCEL,
-      path: string,
-      options?: OCELExportOptions
-    ): Promise<void | Error>;
+    saveOCEL(ocel: OCEL, path: string, options?: OCELExportOptions): Promise<void | Error>;
   };
 
   // -------- Bindings Registry --------
@@ -808,9 +791,6 @@ export interface ProcessMiningAPI {
     /**
      * Call a registered function dynamically
      */
-    callFunction(
-      name: string,
-      params: Record<string, unknown>
-    ): Promise<unknown | Error>;
+    callFunction(name: string, params: Record<string, unknown>): Promise<unknown | Error>;
   };
 }

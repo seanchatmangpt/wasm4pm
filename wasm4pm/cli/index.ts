@@ -196,8 +196,7 @@ class WASM4PMCLI {
       }
 
       const outputFile =
-        this.config.outputFile ||
-        filePath.replace(/\.[^.]+$/, `.exported.${format}`);
+        this.config.outputFile || filePath.replace(/\.[^.]+$/, `.exported.${format}`);
       writeFileSync(outputFile, exported);
       console.log(`✅ Exported to ${outputFile}`);
     } catch (error) {
@@ -226,8 +225,7 @@ class WASM4PMCLI {
   private saveResult(result: any): void {
     if (!this.config.outputFile) return;
 
-    const content =
-      typeof result === 'string' ? result : JSON.stringify(result, null, 2);
+    const content = typeof result === 'string' ? result : JSON.stringify(result, null, 2);
     writeFileSync(this.config.outputFile, content);
     console.log(`✅ Results saved to ${this.config.outputFile}`);
   }

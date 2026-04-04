@@ -1,550 +1,752 @@
-# Tutorial - Real-World Workflows with wasm4pm
+# Tutorial - Learning Process Mining with wasm4pm
 
-Learn by example with practical process mining scenarios.
+By the end of these tutorials you will have loaded real event logs, discovered process models, checked conformance, explored variants and constraints, and processed a live stream of events — all running inside a single Node.js script with no external servers.
 
-## Tutorial 1: Order-to-Cash Process Analysis
+Work through them in order. Each tutorial builds on the one before it.
 
-Analyze a typical sales order processing workflow.
+---
+
+## Prerequisites
+
+Run the following once before starting any tutorial.
+
+```bash
+cd wasm4pm        # the package directory, not the workspace root
+npm install
+npm run build:nodejs
+```
+
+Every tutorial script lives in the same directory and starts with the same two lines:
+
+```javascript
+const wasm = require('wasm4pm');
+await wasm.init();
+```
+
+---
+
+## Tutorial 1: Load an Event Log and Read Its Statistics
+
+You will load a minimal XES event log from a string, store it in WASM memory, and print the number of cases and events it contains.
+
+### Step 1: Write the XES string
+
+Create a file called `tutorial1.js` and paste the following.
+
+```javascript
+const wasm = require('wasm4pm');
+
+async function main() {
+  await wasm.init();
+
+  const xes = `<?xml version="1.0" encoding="UTF-8"?>
+<log xes.version="1.0">
+  <extension name="Concept" prefix="concept"
+             uri="http://www.xes-standard.org/concept.xesext"/>
+  <global scope="trace">
+    <string key="concept:name" value=""/>
+  </global>
+  <global scope="event">
+    <string key="concept:name" value=""/>
+  </global>
+  <trace>
+    <string key="concept:name" value="Case-1"/>
+    <event><string key="concept:name" value="Receive Order"/></event>
+    <event><string key="concept:name" value="Check Inventory"/></event>
+    <event><string key="concept:name" value="Ship Order"/></event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case-2"/>
+    <event><string key="concept:name" value="Receive Order"/></event>
+    <event><string key="concept:name" value="Ship Order"/></event>
+  </trace>
+</log>`;
+```
+
+### Step 2: Load the log into WASM memory
+
+```javascript
+  const logHandle = wasm.load_eventlog_from_xes(xes);
+  console.log('Log handle:', logHandle);
+  // => Log handle: obj_0
+```
+
+The handle is an opaque string that refers to the log stored in Rust memory. Use it for every subsequent call.
+
+### Step 3: Read the statistics
+
+```javascript
+  const statsJson = JSON.stringify(wasm.analyze_event_statistics(logHandle));
+  const stats = JSON.parse(statsJson);
+  console.log('Total cases :', stats.total_cases);
+  console.log('Total events:', stats.total_events);
+  console.log('Avg events/case:', stats.avg_events_per_case.toFixed(1));
+  // => Total cases : 2
+  // => Total events: 5
+  // => Avg events/case: 2.5
+}
+
+main();
+```
+
+### Step 4: Run the script
+
+```bash
+node tutorial1.js
+```
+
+Expected output:
+
+```
+Log handle: obj_0
+Total cases : 2
+Total events: 5
+Avg events/case: 2.5
+```
+
+You have loaded an event log into WASM memory and read its basic statistics.
+
+---
+
+## Tutorial 2: Discover a Directly-Follows Graph
+
+You will take the log from Tutorial 1 and discover which activities follow each other, producing a Directly-Follows Graph (DFG).
+
+### Step 1: Set up the script
+
+Create `tutorial2.js`. Copy the `xes` string and the `load_eventlog_from_xes` call from Tutorial 1. Then add:
+
+```javascript
+const wasm = require('wasm4pm');
+
+async function main() {
+  await wasm.init();
+
+  const xes = `<?xml version="1.0" encoding="UTF-8"?>
+<log xes.version="1.0">
+  <extension name="Concept" prefix="concept"
+             uri="http://www.xes-standard.org/concept.xesext"/>
+  <global scope="trace"><string key="concept:name" value=""/></global>
+  <global scope="event"><string key="concept:name" value=""/></global>
+  <trace>
+    <string key="concept:name" value="Case-1"/>
+    <event><string key="concept:name" value="Receive Order"/></event>
+    <event><string key="concept:name" value="Check Inventory"/></event>
+    <event><string key="concept:name" value="Ship Order"/></event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case-2"/>
+    <event><string key="concept:name" value="Receive Order"/></event>
+    <event><string key="concept:name" value="Ship Order"/></event>
+  </trace>
+</log>`;
+
+  const logHandle = wasm.load_eventlog_from_xes(xes);
+```
+
+### Step 2: Discover the DFG
+
+```javascript
+  const dfg = wasm.discover_dfg(logHandle, 'concept:name');
+  console.log('Activities found:', dfg.nodes.length);
+  console.log('Directly-follows edges:', dfg.edges.length);
+  // => Activities found: 3
+  // => Directly-follows edges: 3
+```
+
+### Step 3: Print each edge with its frequency
+
+```javascript
+  console.log('\nDirectly-follows relations:');
+  for (const edge of dfg.edges) {
+    console.log(`  ${edge.from} --> ${edge.to}  (seen ${edge.frequency}x)`);
+  }
+  // => Receive Order --> Check Inventory  (seen 1x)
+  // => Check Inventory --> Ship Order     (seen 1x)
+  // => Receive Order --> Ship Order       (seen 1x)
+}
+
+main();
+```
+
+### Step 4: Run the script
+
+```bash
+node tutorial2.js
+```
+
+Expected output:
+
+```
+Activities found: 3
+Directly-follows edges: 3
+
+Directly-follows relations:
+  Receive Order --> Check Inventory  (seen 1x)
+  Check Inventory --> Ship Order     (seen 1x)
+  Receive Order --> Ship Order       (seen 1x)
+```
+
+You have discovered a DFG from an event log and read each transition frequency.
+
+---
+
+## Tutorial 3: Discover a Petri Net with Heuristic Miner
+
+You will discover a Petri Net using the Heuristic Miner and then read the handle back out to use in conformance checking.
+
+### Step 1: Prepare a richer log
+
+Create `tutorial3.js`. This time the log has five traces so the dependency threshold has enough data to work with.
+
+```javascript
+const wasm = require('wasm4pm');
+
+async function main() {
+  await wasm.init();
+
+  const xes = `<?xml version="1.0" encoding="UTF-8"?>
+<log xes.version="1.0">
+  <extension name="Concept" prefix="concept"
+             uri="http://www.xes-standard.org/concept.xesext"/>
+  <global scope="trace"><string key="concept:name" value=""/></global>
+  <global scope="event"><string key="concept:name" value=""/></global>
+  <trace><string key="concept:name" value="C1"/>
+    <event><string key="concept:name" value="A"/></event>
+    <event><string key="concept:name" value="B"/></event>
+    <event><string key="concept:name" value="C"/></event>
+  </trace>
+  <trace><string key="concept:name" value="C2"/>
+    <event><string key="concept:name" value="A"/></event>
+    <event><string key="concept:name" value="B"/></event>
+    <event><string key="concept:name" value="C"/></event>
+  </trace>
+  <trace><string key="concept:name" value="C3"/>
+    <event><string key="concept:name" value="A"/></event>
+    <event><string key="concept:name" value="B"/></event>
+    <event><string key="concept:name" value="D"/></event>
+  </trace>
+  <trace><string key="concept:name" value="C4"/>
+    <event><string key="concept:name" value="A"/></event>
+    <event><string key="concept:name" value="B"/></event>
+    <event><string key="concept:name" value="C"/></event>
+  </trace>
+  <trace><string key="concept:name" value="C5"/>
+    <event><string key="concept:name" value="A"/></event>
+    <event><string key="concept:name" value="B"/></event>
+    <event><string key="concept:name" value="C"/></event>
+  </trace>
+</log>`;
+
+  const logHandle = wasm.load_eventlog_from_xes(xes);
+  console.log('Log loaded:', logHandle);
+  // => Log loaded: obj_0
+```
+
+### Step 2: Run the Heuristic Miner
+
+```javascript
+  const resultJson = JSON.stringify(wasm.discover_heuristic_miner(
+    logHandle,
+    'concept:name',
+    0.5          // dependency threshold: edges below this are filtered out
+  ));
+  const result = JSON.parse(resultJson);
+
+  console.log('Algorithm    :', result.algorithm);
+  console.log('DFG handle   :', result.handle);
+  console.log('Activities   :', result.nodes);
+  console.log('Strong edges :', result.edges);
+  // => Algorithm    : heuristic_miner
+  // => DFG handle   : obj_1
+  // => Activities   : 4
+  // => Strong edges : 2
+```
+
+### Step 3: Note the DFG handle for later use
+
+```javascript
+  const dfgHandle = result.handle;
+  console.log('\nDFG stored as:', dfgHandle);
+  // => DFG stored as: obj_1
+}
+
+main();
+```
+
+### Step 4: Run the script
+
+```bash
+node tutorial3.js
+```
+
+Expected output:
+
+```
+Log loaded: obj_0
+Algorithm    : heuristic_miner
+DFG handle   : obj_1
+Activities   : 4
+Strong edges : 2
+
+DFG stored as: obj_1
+```
+
+You have run the Heuristic Miner and received back a stored DFG handle you can pass to other functions.
+
+---
+
+## Tutorial 4: Discover a Petri Net and Check Conformance
+
+You will use Alpha++ to discover a Petri Net, then replay the original log against it and read the fitness score.
+
+### Step 1: Load the log and discover the Petri Net
+
+Create `tutorial4.js`.
+
+```javascript
+const wasm = require('wasm4pm');
+
+async function main() {
+  await wasm.init();
+
+  const xes = `<?xml version="1.0" encoding="UTF-8"?>
+<log xes.version="1.0">
+  <extension name="Concept" prefix="concept"
+             uri="http://www.xes-standard.org/concept.xesext"/>
+  <global scope="trace"><string key="concept:name" value=""/></global>
+  <global scope="event"><string key="concept:name" value=""/></global>
+  <trace><string key="concept:name" value="C1"/>
+    <event><string key="concept:name" value="Submit"/></event>
+    <event><string key="concept:name" value="Approve"/></event>
+    <event><string key="concept:name" value="Pay"/></event>
+  </trace>
+  <trace><string key="concept:name" value="C2"/>
+    <event><string key="concept:name" value="Submit"/></event>
+    <event><string key="concept:name" value="Reject"/></event>
+  </trace>
+  <trace><string key="concept:name" value="C3"/>
+    <event><string key="concept:name" value="Submit"/></event>
+    <event><string key="concept:name" value="Approve"/></event>
+    <event><string key="concept:name" value="Pay"/></event>
+  </trace>
+</log>`;
+
+  const logHandle = wasm.load_eventlog_from_xes(xes);
+  console.log('Log handle:', logHandle);
+  // => Log handle: obj_0
+```
+
+### Step 2: Discover the Petri Net
+
+```javascript
+  const pnResultJson = JSON.stringify(wasm.discover_alpha_plus_plus(
+    logHandle,
+    'concept:name',
+    0.0           // min_support: include all observed directly-follows arcs
+  ));
+  const pnResult = JSON.parse(pnResultJson);
+
+  console.log('Petri Net handle:', pnResult.handle);
+  console.log('Places          :', pnResult.places);
+  console.log('Transitions     :', pnResult.transitions);
+  console.log('Arcs            :', pnResult.arcs);
+  // => Petri Net handle: obj_1
+  // => Places          : 5
+  // => Transitions     : 3
+  // => Arcs            : 7
+```
+
+### Step 3: Run token-based replay conformance
+
+```javascript
+  const conformanceJson = JSON.stringify(wasm.check_token_based_replay(
+    logHandle,
+    pnResult.handle,
+    'concept:name'
+  ));
+  const conformance = JSON.parse(conformanceJson);
+
+  console.log('\nConformance result:');
+  console.log('  Total cases    :', conformance.total_cases);
+  console.log('  Conforming     :', conformance.conforming_cases);
+  console.log('  Average fitness:', conformance.avg_fitness.toFixed(4));
+  // => Conformance result:
+  // =>   Total cases    : 3
+  // =>   Conforming     : 3
+  // =>   Average fitness: 1.0000
+```
+
+### Step 4: Print per-case fitness
+
+```javascript
+  console.log('\nPer-case fitness:');
+  for (const c of conformance.case_fitness) {
+    const label = c.is_conforming ? 'OK' : 'DEVIANT';
+    console.log(`  Case ${c.case_id}: fitness=${c.trace_fitness.toFixed(2)}  [${label}]`);
+  }
+  // => Case 0: fitness=1.00  [OK]
+  // => Case 1: fitness=1.00  [OK]
+  // => Case 2: fitness=1.00  [OK]
+}
+
+main();
+```
+
+### Step 5: Run the script
+
+```bash
+node tutorial4.js
+```
+
+Expected output (exact numbers depend on log content):
+
+```
+Log handle: obj_0
+Petri Net handle: obj_1
+Places          : 5
+Transitions     : 3
+Arcs            : 7
+
+Conformance result:
+  Total cases    : 3
+  Conforming     : 3
+  Average fitness: 1.0000
+
+Per-case fitness:
+  Case 0: fitness=1.00  [OK]
+  Case 1: fitness=1.00  [OK]
+  Case 2: fitness=1.00  [OK]
+```
+
+You have discovered a Petri Net and replayed an event log against it to obtain per-case fitness scores.
+
+---
+
+## Tutorial 5: Explore Trace Variants and Detect Concept Drift
+
+You will discover all unique execution paths in a log, print how often each occurs, then scan the log for points where the process behaviour changes.
+
+### Step 1: Create a log with multiple variants
+
+Create `tutorial5.js`.
+
+```javascript
+const wasm = require('wasm4pm');
+
+async function main() {
+  await wasm.init();
+
+  // Build a log with three distinct variants across eight cases.
+  const traces = [
+    ['A', 'B', 'C'],   // variant 1 — appears 4 times
+    ['A', 'B', 'C'],
+    ['A', 'B', 'C'],
+    ['A', 'B', 'C'],
+    ['A', 'C'],        // variant 2 — appears 2 times
+    ['A', 'C'],
+    ['A', 'B', 'D'],   // variant 3 — appears 2 times (appears late, simulating drift)
+    ['A', 'B', 'D'],
+  ];
+
+  const traceXml = traces.map((acts, i) => {
+    const events = acts.map(a =>
+      `<event><string key="concept:name" value="${a}"/></event>`
+    ).join('\n    ');
+    return `<trace><string key="concept:name" value="C${i + 1}"/>
+    ${events}
+  </trace>`;
+  }).join('\n  ');
+
+  const xes = `<?xml version="1.0" encoding="UTF-8"?>
+<log xes.version="1.0">
+  <extension name="Concept" prefix="concept"
+             uri="http://www.xes-standard.org/concept.xesext"/>
+  <global scope="trace"><string key="concept:name" value=""/></global>
+  <global scope="event"><string key="concept:name" value=""/></global>
+  ${traceXml}
+</log>`;
+
+  const logHandle = wasm.load_eventlog_from_xes(xes);
+  console.log('Log handle:', logHandle);
+  // => Log handle: obj_0
+```
+
+### Step 2: Discover trace variants
+
+```javascript
+  const variantsJson = JSON.stringify(wasm.analyze_trace_variants(logHandle, 'concept:name'));
+  const variants = JSON.parse(variantsJson);
+
+  console.log('\nTotal unique variants:', variants.total_variants);
+  console.log('\nTop variants by frequency:');
+  for (const v of variants.top_variants) {
+    console.log(`  [${v.path.join(' -> ')}]  x${v.count}  (${v.percentage}%)`);
+  }
+  // => Total unique variants: 3
+  // =>
+  // => Top variants by frequency:
+  // =>   [A -> B -> C]  x4  (50%)
+  // =>   [A -> C]       x2  (25%)
+  // =>   [A -> B -> D]  x2  (25%)
+```
+
+### Step 3: Scan for concept drift
+
+```javascript
+  const driftJson = JSON.stringify(wasm.detect_concept_drift(
+    logHandle,
+    'concept:name',
+    3           // window_size: compare activity sets in windows of 3 traces
+  ));
+  const drift = JSON.parse(driftJson);
+
+  console.log('\nDrifts detected:', drift.drifts_detected);
+  for (const d of drift.drifts) {
+    console.log(`  At trace position ${d.position}: distance=${d.distance.toFixed(2)}`);
+  }
+  // => Drifts detected: 1
+  // =>   At trace position 6: distance=0.50
+}
+
+main();
+```
+
+### Step 4: Run the script
+
+```bash
+node tutorial5.js
+```
+
+Expected output:
+
+```
+Log handle: obj_0
+
+Total unique variants: 3
+
+Top variants by frequency:
+  [A -> B -> C]  x4  (50%)
+  [A -> C]       x2  (25%)
+  [A -> B -> D]  x2  (25%)
+
+Drifts detected: 1
+  At trace position 6: distance=0.50
+```
+
+You have enumerated every distinct execution path and identified where process behaviour shifted.
+
+---
+
+## Tutorial 6: Discover DECLARE Constraints
+
+You will mine declarative constraints from a log and print which activity-pair rules have the highest support.
+
+### Step 1: Prepare the log
+
+Create `tutorial6.js`.
+
+```javascript
+const wasm = require('wasm4pm');
+
+async function main() {
+  await wasm.init();
+
+  // A procurement process: every order is reviewed before it is approved,
+  // and approval always leads to payment.
+  const xes = `<?xml version="1.0" encoding="UTF-8"?>
+<log xes.version="1.0">
+  <extension name="Concept" prefix="concept"
+             uri="http://www.xes-standard.org/concept.xesext"/>
+  <global scope="trace"><string key="concept:name" value=""/></global>
+  <global scope="event"><string key="concept:name" value=""/></global>
+  <trace><string key="concept:name" value="P1"/>
+    <event><string key="concept:name" value="Create PO"/></event>
+    <event><string key="concept:name" value="Review PO"/></event>
+    <event><string key="concept:name" value="Approve PO"/></event>
+    <event><string key="concept:name" value="Pay Invoice"/></event>
+  </trace>
+  <trace><string key="concept:name" value="P2"/>
+    <event><string key="concept:name" value="Create PO"/></event>
+    <event><string key="concept:name" value="Review PO"/></event>
+    <event><string key="concept:name" value="Approve PO"/></event>
+    <event><string key="concept:name" value="Pay Invoice"/></event>
+  </trace>
+  <trace><string key="concept:name" value="P3"/>
+    <event><string key="concept:name" value="Create PO"/></event>
+    <event><string key="concept:name" value="Review PO"/></event>
+    <event><string key="concept:name" value="Reject PO"/></event>
+  </trace>
+</log>`;
+
+  const logHandle = wasm.load_eventlog_from_xes(xes);
+  console.log('Log handle:', logHandle);
+  // => Log handle: obj_0
+```
+
+### Step 2: Discover DECLARE constraints
+
+```javascript
+  const declareJson = JSON.stringify(wasm.discover_declare(logHandle, 'concept:name'));
+  const declare = JSON.parse(declareJson);
+
+  console.log('\nActivities in model:', declare.activities.join(', '));
+  console.log('Constraints found  :', declare.constraints.length);
+  // => Activities in model: Create PO, Review PO, Approve PO, Pay Invoice, Reject PO
+  // => Constraints found  : 12
+```
+
+### Step 3: Print the strongest constraints
+
+```javascript
+  // Sort by support descending and show the top 5
+  const top = declare.constraints
+    .sort((a, b) => b.support - a.support)
+    .slice(0, 5);
+
+  console.log('\nTop 5 constraints by support:');
+  for (const c of top) {
+    const [src, tgt] = c.activities;
+    console.log(
+      `  ${c.template}: ${src} --> ${tgt}` +
+      `  (support=${c.support.toFixed(2)})`
+    );
+  }
+  // => Top 5 constraints by support:
+  // =>   Response: Create PO --> Review PO    (support=1.00)
+  // =>   Response: Review PO --> Approve PO   (support=0.67)
+  // =>   Response: Approve PO --> Pay Invoice (support=0.67)
+  // =>   Response: Create PO --> Approve PO   (support=0.67)
+  // =>   Response: Create PO --> Pay Invoice  (support=0.67)
+}
+
+main();
+```
+
+### Step 4: Run the script
+
+```bash
+node tutorial6.js
+```
+
+Expected output:
+
+```
+Log handle: obj_0
+
+Activities in model: Create PO, Review PO, Approve PO, Pay Invoice, Reject PO
+Constraints found  : 12
+
+Top 5 constraints by support:
+  Response: Create PO --> Review PO    (support=1.00)
+  Response: Review PO --> Approve PO   (support=0.67)
+  Response: Approve PO --> Pay Invoice (support=0.67)
+  Response: Create PO --> Approve PO   (support=0.67)
+  Response: Create PO --> Pay Invoice  (support=0.67)
+```
+
+You have mined DECLARE Response constraints and ranked them by how often they hold in the log.
+
+---
+
+## Tutorial 7: IoT Streaming Ingestion
+
+Mine a process model from a sensor/device stream without ever loading the full log into memory.
 
 ### The Scenario
-You have an event log of customer orders going through your system:
-1. Order received
-2. Inventory check
-3. Payment processing
-4. Fulfillment
-5. Shipping
-6. Delivery
 
-Some orders deviate (e.g., inventory issues, payment failures, cancellations).
+You have factory machines that emit events over MQTT. Each machine message contains a `machine_id` (case) and an `operation` (activity). You want a live DFG updated as events arrive, and a final stored DFG at end-of-shift.
 
-### Step 1: Load and Explore the Log
+### Step 1: Open a Streaming Session
 
 ```javascript
-const fs = require('fs');
-const pm = require('wasm4pm');
+const wasm = require('wasm4pm');
+await wasm.init();
 
-async function analyzeOrderProcess() {
-  await pm.init();
-  
-  // Load the event log
-  const xesContent = fs.readFileSync('orders.xes', 'utf8');
-  const logHandle = pm.loadEventLogFromXES(xesContent);
-  
-  // Get basic statistics
-  const stats = pm.analyzeEventStatistics(logHandle);
-  console.log('=== LOG STATISTICS ===');
-  console.log(`Total Traces: ${stats.traceCount}`);
-  console.log(`Total Events: ${stats.eventCount}`);
-  console.log(`Unique Activities: ${stats.activities.length}`);
-  console.log(`Date Range: ${stats.startTime} to ${stats.endTime}`);
-  console.log(`Average Duration: ${stats.averageCaseDuration}ms`);
-}
-
-analyzeOrderProcess();
+const handle = wasm.streaming_dfg_begin();
+console.log('Streaming session:', handle);
+// => Streaming session: obj_0
 ```
 
-### Step 2: Discover the Process Model
+### Step 2: Route Incoming Events
 
 ```javascript
-async function discoverModel(logHandle) {
-  console.log('\n=== DISCOVERING MODELS ===');
-  
-  // Try DFG first (fast and simple)
-  const dfg = pm.discoverDFG(logHandle);
-  console.log('DFG Model:', JSON.stringify(dfg, null, 2));
-  
-  // Compare with Alpha++ (stricter, finds structure)
-  const alphaPlusPlus = pm.discoverAlphaPlusPlus(logHandle);
-  console.log('Alpha++ Model:', JSON.stringify(alphaPlusPlus, null, 2));
-  
-  // Use Genetic Algorithm for optimization
-  const genetic = pm.discoverGeneticAlgorithm(logHandle, {
-    populationSize: 100,
-    generations: 200,
-    fitnessWeight: 0.6,
-    precisionWeight: 0.4
-  });
-  console.log('Optimized Model:', JSON.stringify(genetic, null, 2));
+// Simulated MQTT message handler
+function onMqttMessage(msg) {
+  const { machine_id, operation } = JSON.parse(msg.payload);
+  wasm.streaming_dfg_add_event(handle, machine_id, operation);
+}
+
+// Or add a chunk of buffered messages at once:
+function onBatch(messages) {
+  const events = messages.map(m => ({
+    case_id: m.machine_id,
+    activity: m.operation,
+  }));
+  wasm.streaming_dfg_add_batch(handle, JSON.stringify(events));
 }
 ```
 
-### Step 3: Check Conformance
+### Step 3: Close Traces as Machines Complete Jobs
 
 ```javascript
-async function checkConformance(logHandle, model) {
-  console.log('\n=== CONFORMANCE ANALYSIS ===');
-  
-  const result = pm.checkConformance(logHandle, model, {
-    includeDeviations: true,
-    detailedMetrics: true
-  });
-  
-  console.log(`Fitness: ${result.fitness.toFixed(4)}`);
-  console.log(`Precision: ${result.precision.toFixed(4)}`);
-  console.log(`Generalization: ${result.generalization.toFixed(4)}`);
-  console.log(`Simplicity: ${result.simplicity.toFixed(4)}`);
-  
-  // Analyze deviations
-  if (result.deviations && result.deviations.length > 0) {
-    console.log(`\nFound ${result.deviations.length} deviating traces:`);
-    result.deviations.slice(0, 5).forEach((dev, i) => {
-      console.log(`  ${i+1}. Case ${dev.caseId}: ${dev.deviation}`);
-    });
-  }
+function onJobComplete(machine_id) {
+  const result = JSON.parse(wasm.streaming_dfg_close_trace(handle, machine_id));
+  console.log(`Closed ${machine_id}: ${result.trace_count} total jobs processed`);
 }
 ```
 
-### Step 4: Find Bottlenecks
+### Step 4: Live Snapshot (Dashboard Refresh)
 
 ```javascript
-async function analyzePerformance(logHandle) {
-  console.log('\n=== PERFORMANCE ANALYSIS ===');
-  
-  // Find activities that take longest
-  const bottlenecks = pm.detectBottlenecks(logHandle, {
-    threshold: 0.75  // Top 25% slowest activities
-  });
-  
-  console.log('Bottleneck Activities:');
-  bottlenecks.activities.forEach(act => {
-    console.log(`  - ${act.name}: ${act.avgDuration}ms (P95: ${act.p95Duration}ms)`);
-  });
-  
-  // Analyze activity dependencies
-  const deps = pm.analyzeActivityDependencies(logHandle);
-  console.log('\nCritical Paths:');
-  deps.criticalPaths.forEach(path => {
-    console.log(`  ${path.join(' → ')} (${path.duration}ms avg)`);
-  });
-}
-```
-
-### Step 5: Visualize Results
-
-```javascript
-async function visualize(logHandle, model) {
-  console.log('\n=== GENERATING VISUALIZATIONS ===');
-  
-  // Mermaid diagram (paste into mermaid.live)
-  const mermaid = pm.generateMermaidDiagram(model);
-  fs.writeFileSync('process_model.md', `\`\`\`mermaid\n${mermaid}\n\`\`\``);
-  console.log('✓ Mermaid diagram saved to process_model.md');
-  
-  // D3 visualization
-  const d3Data = pm.generateD3Graph({
-    model,
-    layout: 'force-directed',
-    highlightBottlenecks: true
-  });
-  fs.writeFileSync('process_model.json', JSON.stringify(d3Data));
-  console.log('✓ D3 data saved to process_model.json');
-  
-  // HTML report
-  const html = pm.generateHTMLReport(logHandle, model, {
-    includeCharts: true,
-    includeStatistics: true,
-    includeConformance: true
-  });
-  fs.writeFileSync('process_report.html', html);
-  console.log('✓ HTML report saved to process_report.html');
-  
-  // PDF (requires additional library)
-  // const pdf = pm.generatePDFReport(logHandle, model);
-  // fs.writeFileSync('report.pdf', pdf);
-}
-```
-
-### Complete Example
-
-```javascript
-const fs = require('fs');
-const pm = require('wasm4pm');
-
-async function analyzeOrderProcess() {
-  try {
-    // Initialize
-    await pm.init();
-    
-    // Load data
-    const xesContent = fs.readFileSync('orders.xes', 'utf8');
-    const logHandle = pm.loadEventLogFromXES(xesContent);
-    
-    // Analyze
-    const stats = pm.analyzeEventStatistics(logHandle);
-    console.log(`Processing ${stats.eventCount} events from ${stats.traceCount} orders...`);
-    
-    // Discover models
-    const dfg = pm.discoverDFG(logHandle);
-    const alphaPlusPlus = pm.discoverAlphaPlusPlus(logHandle);
-    const genetic = pm.discoverGeneticAlgorithm(logHandle, { generations: 200 });
-    
-    // Compare quality
-    const dfgFitness = pm.checkConformance(logHandle, dfg).fitness;
-    const alphaPlusPlusFitness = pm.checkConformance(logHandle, alphaPlusPlus).fitness;
-    const geneticFitness = pm.checkConformance(logHandle, genetic).fitness;
-    
-    console.log('\nModel Comparison:');
-    console.log(`  DFG Fitness: ${dfgFitness.toFixed(4)}`);
-    console.log(`  Alpha++ Fitness: ${alphaPlusPlusFitness.toFixed(4)}`);
-    console.log(`  Genetic Fitness: ${geneticFitness.toFixed(4)}`);
-    
-    // Use best model
-    let bestModel = dfg;
-    let bestName = 'DFG';
-    if (alphaPlusPlusFitness > dfgFitness) {
-      bestModel = alphaPlusPlus;
-      bestName = 'Alpha++';
-    }
-    if (geneticFitness > Math.max(dfgFitness, alphaPlusPlusFitness)) {
-      bestModel = genetic;
-      bestName = 'Genetic';
-    }
-    
-    console.log(`\nSelected model: ${bestName}`);
-    
-    // Generate report
-    const html = pm.generateHTMLReport(logHandle, bestModel);
-    fs.writeFileSync('order_process_report.html', html);
-    console.log('✓ Report saved to order_process_report.html');
-    
-  } catch (error) {
-    console.error('Error:', error);
-  }
+// Call every N seconds to update a live dashboard
+function refreshDashboard() {
+  const dfg = JSON.parse(wasm.streaming_dfg_snapshot(handle));
+  console.log(`Activities: ${dfg.nodes.length}, Flows: ${dfg.edges.length}`);
+  renderDiagram(dfg);  // e.g. your Mermaid/D3 renderer
 }
 
-analyzeOrderProcess();
+setInterval(refreshDashboard, 5000);
 ```
 
----
-
-## Tutorial 2: Concept Drift Detection
-
-Detect when your process changes over time.
-
-### Scenario
-Your customer support process might have changed when you upgraded your ticketing system last month. How can you detect and analyze this?
+### Step 5: Memory Check
 
 ```javascript
-const pm = require('wasm4pm');
-
-async function detectProcessChange(logHandle) {
-  console.log('=== CONCEPT DRIFT DETECTION ===');
-  
-  // Detect drift with sliding window
-  const drift = pm.detectConceptDrift(logHandle, {
-    windowSize: 100,     // events per window
-    method: 'attribute'  // or 'activity', 'trace'
-  });
-  
-  if (drift.driftDetected) {
-    console.log(`⚠️  Process change detected at event ${drift.changePoint}`);
-    console.log(`   Change point date: ${drift.changePointDate}`);
-    console.log(`   Before change: ${drift.beforeChangeMetrics}`);
-    console.log(`   After change: ${drift.afterChangeMetrics}`);
-    
-    // Analyze separately
-    const beforeLog = pm.filterLogByDateRange(logHandle, {
-      start: drift.startDate,
-      end: drift.changePointDate
-    });
-    
-    const afterLog = pm.filterLogByDateRange(logHandle, {
-      start: drift.changePointDate,
-      end: drift.endDate
-    });
-    
-    // Compare models
-    const beforeModel = pm.discoverDFG(beforeLog);
-    const afterModel = pm.discoverDFG(afterLog);
-    
-    console.log('\nProcess models before/after change:');
-    const beforeDiagram = pm.generateMermaidDiagram(beforeModel);
-    const afterDiagram = pm.generateMermaidDiagram(afterModel);
-    
-    console.log('BEFORE:\n', beforeDiagram);
-    console.log('\nAFTER:\n', afterDiagram);
-  } else {
-    console.log('✓ No significant process change detected');
-  }
-}
+const stats = JSON.parse(wasm.streaming_dfg_stats(handle));
+console.log(stats);
+// {
+//   event_count: 84200,      total events ingested
+//   trace_count: 1050,       completed machine jobs
+//   open_traces: 3,          machines mid-job
+//   activities: 22,          unique operations seen
+//   edge_pairs: 67,          unique A->B transitions
+//   open_trace_events: 9     buffered events in 3 open machines
+// }
+//
+// Memory cost: 9 u32 values (~36 bytes) for open trace buffers
+// plus O(activities^2) count tables — independent of total event count.
 ```
 
----
-
-## Tutorial 3: Trace Clustering
-
-Group similar traces and analyze variant processes.
+### Step 6: End of Shift — Finalize
 
 ```javascript
-const pm = require('wasm4pm');
+// Flush any machines that didn't complete, store DFG, free the builder
+const final = JSON.parse(wasm.streaming_dfg_finalize(handle));
+console.log(`Final DFG stored as: ${final.dfg_handle}`);
+console.log(`${final.nodes} activities, ${final.edges} flows`);
 
-async function clusterTraces(logHandle) {
-  console.log('=== TRACE CLUSTERING ===');
-  
-  // Discover trace variants
-  const variants = pm.discoverVariants(logHandle, {
-    exactMatch: true
-  });
-  
-  console.log(`Found ${variants.variants.length} unique trace variants:`);
-  variants.variants
-    .sort((a, b) => b.frequency - a.frequency)
-    .slice(0, 10)
-    .forEach((v, i) => {
-      console.log(`  ${i+1}. ${v.trace.join(' → ')} (${v.frequency} cases)`);
-    });
-  
-  // Cluster by similarity
-  const clusters = pm.clusterTraces(logHandle, {
-    method: 'euclidean',
-    k: 5  // number of clusters
-  });
-  
-  console.log(`\nClusters (k=${clusters.clusters.length}):`);
-  clusters.clusters.forEach((cluster, i) => {
-    console.log(`  Cluster ${i}: ${cluster.size} traces`);
-    console.log(`    Representative: ${cluster.centroid.join(' → ')}`);
-  });
-}
+// Use with conformance or export
+const dfgJson = wasm.streaming_dfg_snapshot(final.dfg_handle);
+// Note: after finalize, the original handle is freed.
+// Use final.dfg_handle for all subsequent operations.
 ```
 
----
-
-## Tutorial 4: Algorithm Comparison
-
-Benchmark algorithms on your data.
-
-```javascript
-const pm = require('wasm4pm');
-
-async function compareAlgorithms(logHandle) {
-  console.log('=== ALGORITHM COMPARISON ===\n');
-  
-  const algorithms = {
-    'DFG': { fn: () => pm.discoverDFG(logHandle) },
-    'Alpha++': { fn: () => pm.discoverAlphaPlusPlus(logHandle) },
-    'ILP': { fn: () => pm.discoverILPOptimization(logHandle, { timeout: 5000 }) },
-    'Genetic': { fn: () => pm.discoverGeneticAlgorithm(logHandle, { generations: 50 }) },
-    'PSO': { fn: () => pm.discoverParticleSwarmOptimization(logHandle) },
-    'A*': { fn: () => pm.discoverAStarSearch(logHandle) }
-  };
-  
-  const results = [];
-  
-  for (const [name, { fn }] of Object.entries(algorithms)) {
-    try {
-      const start = performance.now();
-      const model = fn();
-      const time = performance.now() - start;
-      
-      const conformance = pm.checkConformance(logHandle, model);
-      
-      results.push({
-        algorithm: name,
-        time: time,
-        fitness: conformance.fitness,
-        precision: conformance.precision,
-        generalization: conformance.generalization,
-        simplicity: conformance.simplicity
-      });
-      
-      console.log(`${name.padEnd(15)} ✓ ${time.toFixed(0)}ms`);
-    } catch (e) {
-      console.log(`${name.padEnd(15)} ✗ ${e.message}`);
-    }
-  }
-  
-  // Sort by fitness
-  results.sort((a, b) => b.fitness - a.fitness);
-  
-  console.log('\nResults (sorted by fitness):');
-  console.table(results);
-  
-  // Recommend algorithm
-  const bestFitness = results[0];
-  const bestSpeed = results.reduce((a, b) => a.time < b.time ? a : b);
-  const bestBalance = results.reduce((a, b) => {
-    const scoreA = a.fitness * 0.6 - a.time * 0.0001;
-    const scoreB = b.fitness * 0.6 - b.time * 0.0001;
-    return scoreA > scoreB ? a : b;
-  });
-  
-  console.log('\nRecommendations:');
-  console.log(`  Best fitness: ${bestFitness.algorithm} (${bestFitness.fitness.toFixed(4)})`);
-  console.log(`  Fastest: ${bestSpeed.algorithm} (${bestSpeed.time.toFixed(0)}ms)`);
-  console.log(`  Best balance: ${bestBalance.algorithm}`);
-}
-```
-
----
-
-## Tutorial 5: Process Validation
-
-Validate processes against constraints.
-
-```javascript
-const pm = require('wasm4pm');
-
-async function validateProcess(logHandle) {
-  console.log('=== PROCESS VALIDATION ===');
-  
-  // Discover constraints using DECLARE
-  const constraints = pm.discoverDeclare(logHandle, {
-    minSupport: 0.8,
-    minConfidence: 0.9
-  });
-  
-  console.log('Discovered Constraints:');
-  constraints.constraints.forEach(c => {
-    console.log(`  - ${c.type}: ${c.description}`);
-    console.log(`    Support: ${c.support.toFixed(2)}, Confidence: ${c.confidence.toFixed(2)}`);
-  });
-  
-  // Validate against constraints
-  const validation = pm.validateConstraints(logHandle, constraints);
-  
-  console.log(`\nValidation Result:`);
-  console.log(`  Conforming cases: ${validation.conformingCount}`);
-  console.log(`  Violating cases: ${validation.violatingCount}`);
-  console.log(`  Compliance rate: ${(validation.complianceRate * 100).toFixed(1)}%`);
-  
-  if (validation.violations.length > 0) {
-    console.log(`\nViolations found:`);
-    validation.violations.slice(0, 5).forEach(v => {
-      console.log(`  Case ${v.caseId}: Violated constraint "${v.constraintId}"`);
-    });
-  }
-}
-```
-
----
-
-## Tutorial 6: Export and Integration
-
-Save results in various formats.
-
-```javascript
-const fs = require('fs');
-const pm = require('wasm4pm');
-
-async function exportResults(logHandle, model) {
-  console.log('=== EXPORTING RESULTS ===');
-  
-  // Export model to PNML (Petri Net Markup Language)
-  const pnml = pm.exportModelToPNML(model);
-  fs.writeFileSync('process_model.pnml', pnml);
-  console.log('✓ Exported to PNML');
-  
-  // Export to DECLARE constraints
-  const declare = pm.exportModelToDeclare(model);
-  fs.writeFileSync('process_constraints.declare', declare);
-  console.log('✓ Exported to DECLARE');
-  
-  // Export statistics
-  const stats = pm.analyzeEventStatistics(logHandle);
-  fs.writeFileSync('statistics.json', JSON.stringify(stats, null, 2));
-  console.log('✓ Exported statistics');
-  
-  // Export conformance data
-  const conformance = pm.checkConformance(logHandle, model);
-  fs.writeFileSync('conformance.json', JSON.stringify(conformance, null, 2));
-  console.log('✓ Exported conformance');
-  
-  // Generate SVG diagram (requires graphviz)
-  const svgDiagram = pm.generateSVGDiagram(model);
-  fs.writeFileSync('process_model.svg', svgDiagram);
-  console.log('✓ Exported SVG diagram');
-}
-```
-
----
-
-## Performance Tips
-
-### 1. Use Appropriate Algorithms
-```javascript
-// For quick overview
-const dfg = pm.discoverDFG(log);  // Fast, ~0.5ms per 100 events
-
-// For accuracy
-const genetic = pm.discoverGeneticAlgorithm(log, {
-  generations: 500,  // Slower but more accurate
-});
-
-// For balance
-const alphaPlusPlus = pm.discoverAlphaPlusPlus(log);
-```
-
-### 2. Filter Before Processing
-```javascript
-// Process only relevant time period
-const filtered = pm.filterLogByDateRange(logHandle, {
-  start: '2024-01-01',
-  end: '2024-03-31'
-});
-```
-
-### 3. Use Caching for Multiple Operations
-```javascript
-// Bad: Recalculates each time
-const stats1 = pm.analyzeEventStatistics(log);
-const deps = pm.analyzeActivityDependencies(log);  // Recalculates
-
-// Good: Compute once
-const stats = pm.analyzeEventStatistics(log);
-const deps = pm.analyzeActivityDependencies(log, { useCache: true });
-```
-
-### 4. Batch Processing
-```javascript
-// Process multiple logs efficiently
-const logs = fs.readdirSync('data')
-  .filter(f => f.endsWith('.xes'))
-  .map(f => pm.loadEventLogFromXES(fs.readFileSync(`data/${f}`)));
-
-logs.forEach((logHandle, i) => {
-  const dfg = pm.discoverDFG(logHandle);
-  // Process...
-});
-```
-
----
-
-## Troubleshooting Common Issues
-
-### Memory Issues with Large Logs
-```javascript
-// Load in chunks
-const chunkSize = 10000;  // events per chunk
-
-// Process first chunk
-const chunk1 = pm.filterLogByEventRange(log, 0, chunkSize);
-const model1 = pm.discoverDFG(chunk1);
-
-// Free chunk1 memory
-pm.freeHandle(chunk1);
-
-// Process next chunk
-const chunk2 = pm.filterLogByEventRange(log, chunkSize, chunkSize * 2);
-```
-
-### Slow Algorithm Execution
-```javascript
-// Check what's taking time
-const start = performance.now();
-const model = pm.discoverGeneticAlgorithm(log, { generations: 500 });
-console.log(`Time: ${performance.now() - start}ms`);
-
-// Reduce complexity
-const model = pm.discoverGeneticAlgorithm(log, { generations: 50 });  // Faster
-```
+You have ingested an unbounded event stream, sampled a live DFG at any point, and stored a final model with memory usage proportional only to open traces — not to total event count.
 
 ---
 
 ## Next Steps
 
-- Explore [API.md](./process_mining_wasm/API.md) for complete function reference
-- Check [ALGORITHMS.md](./process_mining_wasm/ALGORITHMS.md) for algorithm details
-- Read [THESIS.md](./process_mining_wasm/THESIS.md) for academic background
-- See [FAQ.md](./FAQ.md) for more troubleshooting
-
+- See [API.md](./API.md) for the complete function reference with all parameters
+- See [ALGORITHMS.md](./ALGORITHMS.md) for how each discovery algorithm works
+- See [QUICKSTART.md](./QUICKSTART.md) for setting up a browser or Express environment

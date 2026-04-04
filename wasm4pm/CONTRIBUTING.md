@@ -95,13 +95,13 @@ use wasm_bindgen::prelude::*;
 pub fn my_new_function(handle: String, param: f64) -> String {
     // Get object from store
     let obj = get_object(&handle)?;
-    
+
     // Process
     let result = obj.do_something(param)?;
-    
+
     // Store result
     let result_handle = store_object(result);
-    
+
     // Return handle or JSON
     Ok(result_handle)
 }
@@ -218,21 +218,25 @@ console.log(`Took ${performance.now() - startTime}ms`);
 
 Edit `API.md` when adding or modifying functions:
 
-```markdown
+````markdown
 ### function_name(param1, param2)
 
 Brief description.
 
 **Parameters:**
+
 - `param1` (type): Description
 
 **Returns:** type - Description
 
 **Example:**
+
 ```javascript
 const result = function_name(arg1, arg2);
 ```
-```
+````
+
+````
 
 ### Update Getting Started
 
@@ -265,7 +269,7 @@ Update `ARCHITECTURE.md` for significant design changes:
 
 ```bash
 git push origin my-feature-branch
-```
+````
 
 2. **Create PR on GitHub**:
    - Title: Clear, concise description
@@ -277,15 +281,18 @@ git push origin my-feature-branch
 
 ```markdown
 ## Description
+
 Adds support for discovering DECLARE constraints from event logs.
 
 ## Changes
+
 - Implement `discover_declare()` function in Rust
 - Add integration tests
 - Update API documentation
 - Add usage example to GETTING_STARTED.md
 
 ## Testing
+
 - Unit tests pass locally
 - Tested with sample XES files
 - No performance regressions
@@ -324,6 +331,7 @@ Maintainers handle releases using:
 ```
 
 This:
+
 - Bumps version
 - Runs all checks
 - Creates git tag
@@ -332,6 +340,7 @@ This:
 ## Recognition
 
 Contributors are recognized in:
+
 - GitHub Contributors page
 - Release notes
 - Changelog

@@ -32,27 +32,27 @@ pub fn load_ocel_from_json(content: &str) -> Result<String, JsValue> {
 /// Export EventLog to JSON string
 #[wasm_bindgen]
 pub fn export_eventlog_to_json(handle: &str) -> Result<String, JsValue> {
-    match get_or_init_state().get_object(handle)? {
+    get_or_init_state().with_object(handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
-            serde_json::to_string(&log)
+            serde_json::to_string(log)
                 .map_err(|e| JsValue::from_str(&format!("Failed to serialize EventLog: {}", e)))
         }
         Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
         None => Err(JsValue::from_str("EventLog not found")),
-    }
+    })
 }
 
 /// Export OCEL to JSON string
 #[wasm_bindgen]
 pub fn export_ocel_to_json(handle: &str) -> Result<String, JsValue> {
-    match get_or_init_state().get_object(handle)? {
+    get_or_init_state().with_object(handle, |obj| match obj {
         Some(StoredObject::OCEL(ocel)) => {
-            serde_json::to_string(&ocel)
+            serde_json::to_string(ocel)
                 .map_err(|e| JsValue::from_str(&format!("Failed to serialize OCEL: {}", e)))
         }
         Some(_) => Err(JsValue::from_str("Object is not an OCEL")),
         None => Err(JsValue::from_str("OCEL not found")),
-    }
+    })
 }
 
 /// Get information about supported formats

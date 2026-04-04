@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import * as wasm from '../pkg/process_mining_wasm.js';
+import * as wasm from '../pkg/wasm4pm.js';
 
 describe('I/O Operations - EventLog XES', () => {
   beforeEach(async () => {
@@ -33,7 +33,7 @@ describe('I/O Operations - EventLog XES', () => {
   <global scope="event"><string key="concept:name" value="undefined"/><date key="time:timestamp" value="1970-01-01T00:00:00.000+00:00"/></global>
   <trace><string key="concept:name" value="Case1"/><event><string key="concept:name" value="ActivityA"/><date key="time:timestamp" value="2023-01-01T10:00:00"/></event></trace>
 </log>`;
-    
+
     expect(() => {
       const handle = wasm.load_eventlog_from_xes(xes);
       expect(handle).toBeTruthy();
@@ -53,7 +53,7 @@ describe('I/O Operations - EventLog XES', () => {
 
     const loadHandle = wasm.load_eventlog_from_xes(xes);
     const xesContent = wasm.export_eventlog_to_xes(loadHandle);
-    
+
     expect(xesContent).toBeTruthy();
     expect(typeof xesContent).toBe('string');
     expect(xesContent).toContain('<?xml');
@@ -87,12 +87,12 @@ describe('I/O Operations - OCEL JSON', () => {
 
   it('should load a valid OCEL JSON file', () => {
     const json = `{
-  "ocel:global-event": {"ocel:attribute": [{"ocel:name": "concept:name", "ocel:type": "string"}]},
-  "ocel:global-object": {"ocel:object-type": [{"ocel:name": "Order"}]},
-  "ocel:events": {"ocel:event": [{"ocel:id": "e1", "ocel:type": "Create", "ocel:timestamp": "2023-01-01T10:00:00", "ocel:omap": {"ocel:o": [{"ocel:id": "o1"}]}}]},
-  "ocel:objects": {"ocel:object": [{"ocel:id": "o1", "ocel:type": "Order"}]}
+  "event_types": ["Create", "Update"],
+  "object_types": ["Order"],
+  "events": [{"id": "e1", "event_type": "Create", "timestamp": "2023-01-01T10:00:00", "attributes": {}, "object_ids": ["o1"]}],
+  "objects": [{"id": "o1", "object_type": "Order", "attributes": {}}]
 }`;
-    
+
     const handle = wasm.load_ocel_from_json(json);
     expect(handle).toBeTruthy();
     expect(typeof handle).toBe('string');
@@ -100,18 +100,18 @@ describe('I/O Operations - OCEL JSON', () => {
 
   it('should export OCEL to JSON format', () => {
     const json = `{
-  "ocel:global-event": {"ocel:attribute": [{"ocel:name": "concept:name", "ocel:type": "string"}]},
-  "ocel:global-object": {"ocel:object-type": [{"ocel:name": "Order"}]},
-  "ocel:events": {"ocel:event": [{"ocel:id": "e1", "ocel:type": "Create", "ocel:timestamp": "2023-01-01T10:00:00", "ocel:omap": {"ocel:o": [{"ocel:id": "o1"}]}}]},
-  "ocel:objects": {"ocel:object": [{"ocel:id": "o1", "ocel:type": "Order"}]}
+  "event_types": ["Create", "Update"],
+  "object_types": ["Order"],
+  "events": [{"id": "e1", "event_type": "Create", "timestamp": "2023-01-01T10:00:00", "attributes": {}, "object_ids": ["o1"]}],
+  "objects": [{"id": "o1", "object_type": "Order", "attributes": {}}]
 }`;
 
     const loadHandle = wasm.load_ocel_from_json(json);
     const jsonContent = wasm.export_ocel_to_json(loadHandle);
-    
+
     expect(jsonContent).toBeTruthy();
     expect(typeof jsonContent).toBe('string');
-    
+
     const jsonObj = JSON.parse(jsonContent);
     expect(jsonObj).toBeTruthy();
   });

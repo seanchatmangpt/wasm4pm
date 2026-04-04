@@ -9,15 +9,15 @@
  *   await server.start();
  */
 
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
   TextContent,
   ToolResultBlockParam,
-} from "@modelcontextprotocol/sdk/types.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import * as wasm4pm from "./client.js";
+} from '@modelcontextprotocol/sdk/types.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import * as wasm4pm from './client.js';
 
 interface ToolInput {
   [key: string]: unknown;
@@ -39,8 +39,8 @@ export class Wasm4pmMCPServer {
   constructor() {
     this.server = new Server(
       {
-        name: "wasm4pm",
-        version: "0.5.4",
+        name: 'wasm4pm',
+        version: '0.5.4',
       },
       {
         capabilities: {
@@ -75,229 +75,224 @@ export class Wasm4pmMCPServer {
     return [
       // Discovery Algorithms
       {
-        name: "discover_dfg",
+        name: 'discover_dfg',
         description:
-          "Discover a Directly-Follows Graph (DFG) process model. Fastest algorithm, good for quick overviews.",
+          'Discover a Directly-Follows Graph (DFG) process model. Fastest algorithm, good for quick overviews.',
         inputSchema: {
-          type: "object",
+          type: 'object',
           properties: {
             xes_content: {
-              type: "string",
-              description: "XES event log content as string",
+              type: 'string',
+              description: 'XES event log content as string',
             },
             min_frequency: {
-              type: "number",
-              description:
-                "Minimum edge frequency (0-1). Default: 0.0 (include all edges)",
+              type: 'number',
+              description: 'Minimum edge frequency (0-1). Default: 0.0 (include all edges)',
             },
           },
-          required: ["xes_content"],
+          required: ['xes_content'],
         },
       },
       {
-        name: "discover_alpha_plus_plus",
+        name: 'discover_alpha_plus_plus',
         description:
-          "Discover a Petri Net using Alpha++ algorithm. Balanced accuracy and performance.",
+          'Discover a Petri Net using Alpha++ algorithm. Balanced accuracy and performance.',
         inputSchema: {
-          type: "object",
+          type: 'object',
           properties: {
             xes_content: {
-              type: "string",
-              description: "XES event log content",
+              type: 'string',
+              description: 'XES event log content',
             },
           },
-          required: ["xes_content"],
+          required: ['xes_content'],
         },
       },
       {
-        name: "discover_ilp_optimization",
+        name: 'discover_ilp_optimization',
         description:
-          "Discover optimal process model using Integer Linear Programming. Highest quality but slower.",
+          'Discover optimal process model using Integer Linear Programming. Highest quality but slower.',
         inputSchema: {
-          type: "object",
+          type: 'object',
           properties: {
             xes_content: {
-              type: "string",
-              description: "XES event log content",
+              type: 'string',
+              description: 'XES event log content',
             },
             timeout_ms: {
-              type: "number",
-              description: "Timeout in milliseconds. Default: 30000",
+              type: 'number',
+              description: 'Timeout in milliseconds. Default: 30000',
             },
           },
-          required: ["xes_content"],
+          required: ['xes_content'],
         },
       },
       {
-        name: "discover_genetic_algorithm",
+        name: 'discover_genetic_algorithm',
         description:
-          "Discover process model using evolutionary algorithm. Good for complex processes.",
+          'Discover process model using evolutionary algorithm. Good for complex processes.',
         inputSchema: {
-          type: "object",
+          type: 'object',
           properties: {
             xes_content: {
-              type: "string",
-              description: "XES event log content",
+              type: 'string',
+              description: 'XES event log content',
             },
             population_size: {
-              type: "number",
-              description: "Population size. Default: 50",
+              type: 'number',
+              description: 'Population size. Default: 50',
             },
             generations: {
-              type: "number",
-              description: "Number of generations. Default: 100",
+              type: 'number',
+              description: 'Number of generations. Default: 100',
             },
           },
-          required: ["xes_content"],
+          required: ['xes_content'],
         },
       },
       {
-        name: "discover_variants",
-        description:
-          "Discover all unique trace variants in the event log and their frequencies.",
+        name: 'discover_variants',
+        description: 'Discover all unique trace variants in the event log and their frequencies.',
         inputSchema: {
-          type: "object",
+          type: 'object',
           properties: {
             xes_content: {
-              type: "string",
-              description: "XES event log content",
+              type: 'string',
+              description: 'XES event log content',
             },
           },
-          required: ["xes_content"],
+          required: ['xes_content'],
         },
       },
       // Analysis
       {
-        name: "check_conformance",
+        name: 'check_conformance',
         description:
-          "Check if event log conforms to a process model. Returns fitness, precision, and deviations.",
+          'Check if event log conforms to a process model. Returns fitness, precision, and deviations.',
         inputSchema: {
-          type: "object",
+          type: 'object',
           properties: {
             xes_content: {
-              type: "string",
-              description: "XES event log content",
+              type: 'string',
+              description: 'XES event log content',
             },
             model_json: {
-              type: "string",
-              description: "Process model as JSON",
+              type: 'string',
+              description: 'Process model as JSON',
             },
             include_deviations: {
-              type: "boolean",
-              description: "Include detailed deviation information. Default: true",
+              type: 'boolean',
+              description: 'Include detailed deviation information. Default: true',
             },
           },
-          required: ["xes_content", "model_json"],
+          required: ['xes_content', 'model_json'],
         },
       },
       {
-        name: "analyze_statistics",
+        name: 'analyze_statistics',
         description:
-          "Analyze event log statistics: trace count, event count, duration, activities, etc.",
+          'Analyze event log statistics: trace count, event count, duration, activities, etc.',
         inputSchema: {
-          type: "object",
+          type: 'object',
           properties: {
             xes_content: {
-              type: "string",
-              description: "XES event log content",
+              type: 'string',
+              description: 'XES event log content',
             },
           },
-          required: ["xes_content"],
+          required: ['xes_content'],
         },
       },
       {
-        name: "detect_bottlenecks",
-        description:
-          "Identify activities that are process bottlenecks based on execution time.",
+        name: 'detect_bottlenecks',
+        description: 'Identify activities that are process bottlenecks based on execution time.',
         inputSchema: {
-          type: "object",
+          type: 'object',
           properties: {
             xes_content: {
-              type: "string",
-              description: "XES event log content",
+              type: 'string',
+              description: 'XES event log content',
             },
             threshold: {
-              type: "number",
-              description: "Threshold percentile (0-1). Default: 0.75 (top 25%)",
+              type: 'number',
+              description: 'Threshold percentile (0-1). Default: 0.75 (top 25%)',
             },
           },
-          required: ["xes_content"],
+          required: ['xes_content'],
         },
       },
       {
-        name: "detect_concept_drift",
-        description: "Detect if the process changes over time (concept drift).",
+        name: 'detect_concept_drift',
+        description: 'Detect if the process changes over time (concept drift).',
         inputSchema: {
-          type: "object",
+          type: 'object',
           properties: {
             xes_content: {
-              type: "string",
-              description: "XES event log content",
+              type: 'string',
+              description: 'XES event log content',
             },
             window_size: {
-              type: "number",
-              description: "Window size for drift detection. Default: 100",
+              type: 'number',
+              description: 'Window size for drift detection. Default: 100',
             },
           },
-          required: ["xes_content"],
+          required: ['xes_content'],
         },
       },
       // Visualization
       {
-        name: "generate_mermaid_diagram",
-        description:
-          "Generate Mermaid diagram of process model. Can be visualized at mermaid.live",
+        name: 'generate_mermaid_diagram',
+        description: 'Generate Mermaid diagram of process model. Can be visualized at mermaid.live',
         inputSchema: {
-          type: "object",
+          type: 'object',
           properties: {
             model_json: {
-              type: "string",
-              description: "Process model as JSON",
+              type: 'string',
+              description: 'Process model as JSON',
             },
           },
-          required: ["model_json"],
+          required: ['model_json'],
         },
       },
       {
-        name: "generate_html_report",
-        description:
-          "Generate comprehensive HTML report with statistics, model, and analysis.",
+        name: 'generate_html_report',
+        description: 'Generate comprehensive HTML report with statistics, model, and analysis.',
         inputSchema: {
-          type: "object",
+          type: 'object',
           properties: {
             xes_content: {
-              type: "string",
-              description: "XES event log content",
+              type: 'string',
+              description: 'XES event log content',
             },
             model_json: {
-              type: "string",
-              description: "Process model as JSON",
+              type: 'string',
+              description: 'Process model as JSON',
             },
           },
-          required: ["xes_content", "model_json"],
+          required: ['xes_content', 'model_json'],
         },
       },
       // Utilities
       {
-        name: "compare_algorithms",
+        name: 'compare_algorithms',
         description:
-          "Compare multiple discovery algorithms on the same event log. Returns fitness and execution time for each.",
+          'Compare multiple discovery algorithms on the same event log. Returns fitness and execution time for each.',
         inputSchema: {
-          type: "object",
+          type: 'object',
           properties: {
             xes_content: {
-              type: "string",
-              description: "XES event log content",
+              type: 'string',
+              description: 'XES event log content',
             },
             algorithms: {
-              type: "array",
-              items: { type: "string" },
+              type: 'array',
+              items: { type: 'string' },
               description:
-                "Algorithms to compare. Options: dfg, alpha_plus_plus, genetic, ilp, pso, a_star, declare, heuristic, inductive, hill_climbing, ant_colony, simulated_annealing, process_skeleton",
-              default: ["dfg", "alpha_plus_plus", "genetic"],
+                'Algorithms to compare. Options: dfg, alpha_plus_plus, genetic, ilp, pso, a_star, declare, heuristic, inductive, hill_climbing, ant_colony, simulated_annealing, process_skeleton',
+              default: ['dfg', 'alpha_plus_plus', 'genetic'],
             },
           },
-          required: ["xes_content"],
+          required: ['xes_content'],
         },
       },
     ];
@@ -306,10 +301,7 @@ export class Wasm4pmMCPServer {
   /**
    * Execute a tool by name
    */
-  private async executeTool(
-    toolName: string,
-    input: ToolInput
-  ): Promise<ToolResultBlockParam> {
+  private async executeTool(toolName: string, input: ToolInput): Promise<ToolResultBlockParam> {
     try {
       // Initialize wasm4pm if needed
       await wasm4pm.init();
@@ -318,19 +310,19 @@ export class Wasm4pmMCPServer {
 
       switch (toolName) {
         // Discovery algorithms
-        case "discover_dfg": {
+        case 'discover_dfg': {
           const log = wasm4pm.loadEventLogFromXES(input.xes_content as string);
           result = wasm4pm.discoverDFG(log);
           break;
         }
 
-        case "discover_alpha_plus_plus": {
+        case 'discover_alpha_plus_plus': {
           const log = wasm4pm.loadEventLogFromXES(input.xes_content as string);
           result = wasm4pm.discoverAlphaPlusPlus(log);
           break;
         }
 
-        case "discover_ilp_optimization": {
+        case 'discover_ilp_optimization': {
           const log = wasm4pm.loadEventLogFromXES(input.xes_content as string);
           result = wasm4pm.discoverILPOptimization(log, {
             timeout: input.timeout_ms as number | undefined,
@@ -338,7 +330,7 @@ export class Wasm4pmMCPServer {
           break;
         }
 
-        case "discover_genetic_algorithm": {
+        case 'discover_genetic_algorithm': {
           const log = wasm4pm.loadEventLogFromXES(input.xes_content as string);
           result = wasm4pm.discoverGeneticAlgorithm(log, {
             populationSize: input.population_size as number | undefined,
@@ -347,14 +339,14 @@ export class Wasm4pmMCPServer {
           break;
         }
 
-        case "discover_variants": {
+        case 'discover_variants': {
           const log = wasm4pm.loadEventLogFromXES(input.xes_content as string);
           result = wasm4pm.discoverVariants(log);
           break;
         }
 
         // Analysis
-        case "check_conformance": {
+        case 'check_conformance': {
           const log = wasm4pm.loadEventLogFromXES(input.xes_content as string);
           const model = JSON.parse(input.model_json as string);
           result = wasm4pm.checkConformance(log, model, {
@@ -363,13 +355,13 @@ export class Wasm4pmMCPServer {
           break;
         }
 
-        case "analyze_statistics": {
+        case 'analyze_statistics': {
           const log = wasm4pm.loadEventLogFromXES(input.xes_content as string);
           result = wasm4pm.analyzeEventStatistics(log);
           break;
         }
 
-        case "detect_bottlenecks": {
+        case 'detect_bottlenecks': {
           const log = wasm4pm.loadEventLogFromXES(input.xes_content as string);
           result = wasm4pm.detectBottlenecks(log, {
             threshold: input.threshold as number | undefined,
@@ -377,7 +369,7 @@ export class Wasm4pmMCPServer {
           break;
         }
 
-        case "detect_concept_drift": {
+        case 'detect_concept_drift': {
           const log = wasm4pm.loadEventLogFromXES(input.xes_content as string);
           result = wasm4pm.detectConceptDrift(log, {
             windowSize: input.window_size as number | undefined,
@@ -386,13 +378,13 @@ export class Wasm4pmMCPServer {
         }
 
         // Visualization
-        case "generate_mermaid_diagram": {
+        case 'generate_mermaid_diagram': {
           const model = JSON.parse(input.model_json as string);
           result = wasm4pm.generateMermaidDiagram(model);
           break;
         }
 
-        case "generate_html_report": {
+        case 'generate_html_report': {
           const log = wasm4pm.loadEventLogFromXES(input.xes_content as string);
           const model = JSON.parse(input.model_json as string);
           result = wasm4pm.generateHTMLReport(log, model);
@@ -400,12 +392,12 @@ export class Wasm4pmMCPServer {
         }
 
         // Utilities
-        case "compare_algorithms": {
+        case 'compare_algorithms': {
           const log = wasm4pm.loadEventLogFromXES(input.xes_content as string);
           const algorithms = (input.algorithms as string[]) || [
-            "dfg",
-            "alpha_plus_plus",
-            "genetic",
+            'dfg',
+            'alpha_plus_plus',
+            'genetic',
           ];
           result = await this.compareAlgorithms(log, algorithms);
           break;
@@ -416,23 +408,20 @@ export class Wasm4pmMCPServer {
       }
 
       return {
-        type: "tool_result",
+        type: 'tool_result',
         content: [
           {
-            type: "text",
-            text:
-              typeof result === "string"
-                ? result
-                : JSON.stringify(result, null, 2),
+            type: 'text',
+            text: typeof result === 'string' ? result : JSON.stringify(result, null, 2),
           },
         ],
       };
     } catch (error) {
       return {
-        type: "tool_result",
+        type: 'tool_result',
         content: [
           {
-            type: "text",
+            type: 'text',
             text: `Error: ${error instanceof Error ? error.message : String(error)}`,
           },
         ],
@@ -453,47 +442,47 @@ export class Wasm4pmMCPServer {
         let model: unknown;
 
         switch (algo) {
-          case "dfg":
+          case 'dfg':
             model = wasm4pm.discoverDFG(logHandle);
             break;
-          case "alpha_plus_plus":
+          case 'alpha_plus_plus':
             model = wasm4pm.discoverAlphaPlusPlus(logHandle);
             break;
-          case "genetic":
+          case 'genetic':
             model = wasm4pm.discoverGeneticAlgorithm(logHandle, {
               generations: 50,
             });
             break;
-          case "ilp":
+          case 'ilp':
             model = wasm4pm.discoverILPOptimization(logHandle, {
               timeout: 5000,
             });
             break;
-          case "pso":
+          case 'pso':
             model = wasm4pm.discoverParticleSwarmOptimization(logHandle);
             break;
-          case "a_star":
+          case 'a_star':
             model = wasm4pm.discoverAStarSearch(logHandle);
             break;
-          case "declare":
+          case 'declare':
             model = wasm4pm.discoverDeclare(logHandle);
             break;
-          case "heuristic":
+          case 'heuristic':
             model = wasm4pm.discoverHeuristicMiner(logHandle);
             break;
-          case "inductive":
+          case 'inductive':
             model = wasm4pm.discoverInductiveMiner(logHandle);
             break;
-          case "hill_climbing":
+          case 'hill_climbing':
             model = wasm4pm.discoverHillClimbing(logHandle);
             break;
-          case "ant_colony":
+          case 'ant_colony':
             model = wasm4pm.discoverAntColonyOptimization(logHandle);
             break;
-          case "simulated_annealing":
+          case 'simulated_annealing':
             model = wasm4pm.discoverSimulatedAnnealing(logHandle);
             break;
-          case "process_skeleton":
+          case 'process_skeleton':
             model = wasm4pm.discoverProcessSkeleton(logHandle);
             break;
           default:
@@ -506,10 +495,8 @@ export class Wasm4pmMCPServer {
         results[algo] = {
           time_ms: Math.round(time * 100) / 100,
           fitness: Math.round((conformance.fitness || 0) * 10000) / 10000,
-          precision:
-            Math.round((conformance.precision || 0) * 10000) / 10000,
-          generalization:
-            Math.round((conformance.generalization || 0) * 10000) / 10000,
+          precision: Math.round((conformance.precision || 0) * 10000) / 10000,
+          generalization: Math.round((conformance.generalization || 0) * 10000) / 10000,
           success: true,
         };
       } catch (e) {
@@ -528,7 +515,7 @@ export class Wasm4pmMCPServer {
    */
   async start(): Promise<void> {
     this.server.connect(this.transport);
-    console.error("wasm4pm MCP server started");
+    console.error('wasm4pm MCP server started');
   }
 }
 

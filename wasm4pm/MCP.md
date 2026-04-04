@@ -5,6 +5,7 @@ Exposes wasm4pm as an MCP server, enabling Claude and other MCP clients to use p
 ## What is MCP?
 
 **Model Context Protocol** is a standard for communication between AI models (like Claude) and tools/services. It allows Claude to:
+
 - Discover available tools dynamically
 - Execute tools with proper input validation
 - Receive structured results
@@ -17,6 +18,7 @@ The wasm4pm MCP server exposes 14 discovery algorithms, analysis functions, and 
 ### Available MCP Tools
 
 #### Discovery Algorithms
+
 - `discover_dfg` - Directly-Follows Graph (fastest)
 - `discover_alpha_plus_plus` - Petri Net discovery
 - `discover_ilp_optimization` - Integer Linear Programming
@@ -24,21 +26,25 @@ The wasm4pm MCP server exposes 14 discovery algorithms, analysis functions, and 
 - `discover_variants` - Find unique trace variants
 
 #### Analysis Tools
+
 - `check_conformance` - Verify log against model
 - `analyze_statistics` - Log statistics and metrics
 - `detect_bottlenecks` - Find slow activities
 - `detect_concept_drift` - Detect process changes
 
 #### Visualization Tools
+
 - `generate_mermaid_diagram` - Generate Mermaid process diagram
 - `generate_html_report` - Create comprehensive HTML report
 
 #### Utilities
+
 - `compare_algorithms` - Benchmark multiple algorithms
 
 ## Installation
 
 ### Prerequisites
+
 ```bash
 npm install @modelcontextprotocol/sdk
 npm install wasm4pm
@@ -47,6 +53,7 @@ npm install wasm4pm
 ### Setup
 
 #### 1. Create MCP Server File
+
 ```typescript
 // mcp_server.ts (already provided)
 import Wasm4pmMCPServer from 'wasm4pm/src/mcp_server';
@@ -128,10 +135,11 @@ Output:
 ```
 
 Example:
+
 ```javascript
 const result = await mcp.call('discover_dfg', {
   xes_content: xesFileContent,
-  min_frequency: 0.05
+  min_frequency: 0.05,
 });
 ```
 
@@ -260,9 +268,7 @@ Edit `~/.config/Claude/claude_desktop_config.json`:
   "mcpServers": {
     "wasm4pm": {
       "command": "/usr/local/bin/node",
-      "args": [
-        "/path/to/wasm4pm/dist/mcp_server.js"
-      ]
+      "args": ["/path/to/wasm4pm/dist/mcp_server.js"]
     }
   }
 }
@@ -279,9 +285,7 @@ Edit `%APPDATA%\Claude\claude_desktop_config.json`:
   "mcpServers": {
     "wasm4pm": {
       "command": "node",
-      "args": [
-        "C:\\path\\to\\wasm4pm\\dist\\mcp_server.js"
-      ]
+      "args": ["C:\\path\\to\\wasm4pm\\dist\\mcp_server.js"]
     }
   }
 }
@@ -318,6 +322,7 @@ mcp-inspector node dist/mcp_server.js
 ```
 
 This opens a web interface where you can:
+
 - See available tools
 - Test tool calls
 - View request/response JSON
@@ -327,13 +332,13 @@ This opens a web interface where you can:
 
 MCP tool execution time (measured on wasm4pm operations):
 
-| Operation | Time | Notes |
-|-----------|------|-------|
-| discover_dfg (100 events) | 0.5ms | Fastest |
-| analyze_statistics (1000 events) | 1-2ms | Quick analysis |
-| discover_alpha_plus_plus (1000 events) | 50ms | Balanced |
-| discover_genetic_algorithm (1000 events, 100 generations) | 400ms | High quality |
-| check_conformance (10k events) | 100-200ms | Depends on model size |
+| Operation                                                 | Time      | Notes                 |
+| --------------------------------------------------------- | --------- | --------------------- |
+| discover_dfg (100 events)                                 | 0.5ms     | Fastest               |
+| analyze_statistics (1000 events)                          | 1-2ms     | Quick analysis        |
+| discover_alpha_plus_plus (1000 events)                    | 50ms      | Balanced              |
+| discover_genetic_algorithm (1000 events, 100 generations) | 400ms     | High quality          |
+| check_conformance (10k events)                            | 100-200ms | Depends on model size |
 
 ## Limitations
 
@@ -367,6 +372,7 @@ ls -la dist/
 ### Timeout errors
 
 Reduce algorithm complexity:
+
 ```javascript
 {
   algorithm: 'discover_genetic_algorithm',
@@ -410,4 +416,3 @@ To add more MCP tools:
 - [MCP TypeScript SDK](https://github.com/modelcontextprotocol/typescript-sdk)
 - [Claude Integration Guide](https://claude.ai/docs)
 - [wasm4pm Documentation](./README.md)
-

@@ -8,51 +8,67 @@ Configuration file for Claude Code agents working on the wasm4pm project.
 
 - **Status**: Production-Ready (v0.5.4)
 - **Primary Language**: Rust (WASM) + TypeScript
-- **Location**: `/home/user/wasm4pm/`
+- **Location**: `/Users/sac/wasm4pm/`
 - **Repository**: https://github.com/seanchatmangpt/wasm4pm
 
 ## Project Structure
 
 ```
-wasm4pm/
-├── src/
-│   ├── lib.rs                    # WASM module entry
-│   ├── models.rs                 # Core data structures
-│   ├── state.rs                  # Global state management
-│   ├── discovery.rs              # Basic discovery algorithms
-│   ├── advanced_algorithms.rs    # Heuristic, Inductive, etc.
-│   ├── ilp_discovery.rs          # ILP Optimization
-│   ├── genetic_discovery.rs      # Genetic Algorithm
-│   ├── fast_discovery.rs         # A*, Hill Climbing, etc.
-│   ├── more_discovery.rs         # ACO, Simulated Annealing
-│   ├── final_analytics.rs        # Analytics functions
-│   ├── client.ts                 # TypeScript bindings
-│   ├── visualizations.ts         # Visualization generation
-│   └── mcp_server.ts             # MCP integration
-├── Cargo.toml                    # Rust manifest
-├── package.json                  # npm manifest
-├── wasm-pack.toml                # WASM build config
-├── benchmarks/                   # Performance tests
-├── __tests__/                    # Test suite
-├── examples/                     # Usage examples
-└── [documentation]
+wasm4pm/                          # Cargo workspace root
+├── Cargo.toml                    # Workspace manifest (members: ["wasm4pm"])
+├── docs/                         # Documentation
+└── wasm4pm/                      # Package — run npm/cargo commands from here
+    ├── src/
+    │   ├── lib.rs                # WASM module entry
+    │   ├── models.rs             # Core data structures
+    │   ├── state.rs              # Global state management
+    │   ├── discovery.rs          # Basic discovery algorithms
+    │   ├── advanced_algorithms.rs# Heuristic, Inductive, etc.
+    │   ├── algorithms.rs         # Algorithm utilities
+    │   ├── analysis.rs           # Analysis functions
+    │   ├── conformance.rs        # Conformance checking
+    │   ├── ilp_discovery.rs      # ILP Optimization
+    │   ├── genetic_discovery.rs  # Genetic Algorithm
+    │   ├── fast_discovery.rs     # A*, Hill Climbing, etc.
+    │   ├── more_discovery.rs     # ACO, Simulated Annealing
+    │   ├── final_analytics.rs    # Analytics functions
+    │   ├── io.rs                 # I/O utilities
+    │   ├── types.rs              # Type definitions
+    │   ├── utilities.rs          # Shared utilities
+    │   ├── xes_format.rs         # XES format parsing
+    │   ├── api.ts                # API surface types
+    │   ├── client.ts             # TypeScript bindings
+    │   ├── visualizations.ts     # Visualization generation
+    │   └── mcp_server.ts         # MCP integration
+    ├── Cargo.toml                # Rust manifest
+    ├── package.json              # npm manifest
+    ├── wasm-pack.toml            # WASM build config
+    ├── benchmarks/               # Performance tests
+    ├── __tests__/                # Test suite
+    └── examples/                 # Usage examples
 ```
 
 ## Build Commands
 
 ### WASM Compilation
-```bash
-# Single target (bundler - default for npm)
-npm run build:bundler
 
-# All targets (bundler, Node.js, web)
+> Run these from the `wasm4pm/` subdirectory (the package, not the workspace root).
+
+```bash
+# Default build (bundler target — for npm publishing)
+npm run build
+
+# Node.js target
+npm run build:nodejs
+
+# Web/browser target
+npm run build:web
+
+# All targets
 npm run build:all
 
-# Development build (no optimizations, faster)
-npm run build:dev
-
-# Release build (optimized, slow compilation)
-npm run build:release
+# Build MCP server TypeScript
+npm run build:mcp
 ```
 
 ### Cargo Commands
@@ -73,23 +89,20 @@ cargo doc --open
 ## Testing
 
 ```bash
-# All tests
+# All tests (unit + integration)
 npm test
 
 # Unit tests only
 npm run test:unit
 
+# Unit tests in watch mode
+npm run test:unit:watch
+
 # Integration tests only
 npm run test:integration
 
-# Watch mode (development)
-npm run test:watch
-
-# Coverage report
-npm run test:coverage
-
-# Performance benchmarks
-npm run bench
+# Browser tests
+npm run test:browser
 ```
 
 ## Key Technologies
@@ -124,7 +137,7 @@ npm run bench
 
 ### Client & Integration
 - `src/client.ts` (500+ lines) - Complete TypeScript client library
-- `src/mcp_server.ts` (NEW) - MCP integration for Claude
+- `src/mcp_server.ts` - MCP integration for Claude
 - `src/visualizations.ts` (380 lines) - Mermaid, D3, HTML report generation
 
 ### Documentation (in `docs/` folder)
@@ -304,7 +317,7 @@ npm run start:mcp
 - ✅ Update documentation in `.md` files
 - ✅ Modify `Cargo.toml`, `package.json` for dependencies
 - ✅ Create feature branches and commit
-- ✅ Push to designated branch (`claude/create-wasm-js-1qypZ`)
+- ✅ Push to `main` branch
 
 ### Requires Confirmation
 - ⚠️ Removing files or directories (verify unused first)
@@ -322,28 +335,34 @@ npm run start:mcp
 ## Useful Commands Quick Reference
 
 ```bash
+# Run from wasm4pm/ subdirectory
+
 # Setup
 npm install                    # Install dependencies
-npm run build:all            # Build for all targets
+npm run build:all              # Build for all targets
 
 # Development
-npm run build:dev            # Fast dev build
-npm run test:watch           # Run tests on file changes
-npm run format               # Auto-format code
+npm run build                  # Build bundler target
+npm run test:unit:watch        # Run unit tests on file changes
+npm run format                 # Auto-format code
 
 # Testing
-npm test                     # Run all tests
-npm run bench               # Run performance benchmarks
+npm test                       # Run all tests (unit + integration)
+npm run test:unit              # Unit tests only
+npm run test:integration       # Integration tests only
+
+# Lint / type-check
+npm run lint                   # format:check + type:check
 
 # Documentation
-npm run docs                # Generate TypeScript docs
+npm run docs                   # Generate TypeScript docs
 
 # MCP (Claude Integration)
-npm run start:mcp           # Start MCP server
+npm run start:mcp              # Build + start MCP server
 
 # Release
-npm run build:release       # Optimized production build
-npm publish                 # Publish to npm
+npm run build:all && npm run lint && npm test   # Pre-publish checks
+npm publish                    # Publish to npm
 ```
 
 ## Important Notes
