@@ -1,10 +1,10 @@
-mod models;
-mod state;
-mod types;
-mod io;
-mod discovery;
-mod analysis;
-mod conformance;
+pub mod models;
+pub mod state;
+pub mod types;
+pub mod io;
+pub mod discovery;
+pub mod analysis;
+pub mod conformance;
 
 // Suppress unused warnings for re-exported modules
 #[allow(unused)]
