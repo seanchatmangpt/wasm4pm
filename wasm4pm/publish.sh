@@ -100,7 +100,7 @@ if [ $? -eq 0 ]; then
     echo ""
     echo "Next steps:"
     echo "  git push origin main --tags"
-    echo "  Create GitHub release at: https://github.com/aarkue/rust4pm/releases"
+    echo "  Create GitHub release at: https://github.com/seanchatmangpt/wasm4pm/releases"
 else
     echo -e "${RED}npm publish failed${NC}"
     echo "Rolling back git changes..."

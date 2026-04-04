@@ -303,7 +303,7 @@ npm audit
 For build issues:
 - Check wasm-pack documentation: https://rustwasm.github.io/docs/wasm-pack/
 - Check npm documentation: https://docs.npmjs.com/
-- File issues on GitHub: https://github.com/seanchatmangpt/rust4pm/issues
+- File issues on GitHub: https://github.com/seanchatmangpt/wasm4pm/issues
 
 ---
 

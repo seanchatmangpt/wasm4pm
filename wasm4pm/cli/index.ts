@@ -314,7 +314,7 @@ EXAMPLES:
   wasm4pm export data/log.json xes -o log.xes
 
 DOCUMENTATION:
-  https://github.com/seanchatmangpt/rust4pm/tree/main/process_mining_wasm
+  https://github.com/seanchatmangpt/wasm4pm
     `);
   }
 }

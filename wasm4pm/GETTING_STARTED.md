@@ -86,7 +86,7 @@ fetch('eventlog.xes')
 <!DOCTYPE html>
 <html>
 <head>
-  <script src="./node_modules/process_mining_wasm/pkg/process_mining_wasm.js"></script>
+  <script src="./node_modules/wasm4pm/pkg/wasm4pm.js"></script>
 </head>
 <body>
   <input type="file" id="xesFile" accept=".xes"/>
@@ -96,16 +96,16 @@ fetch('eventlog.xes')
   <script>
     async function analyzeLog() {
       // Initialize
-      rust4pm.init();
+      wasm4pm.init();
 
       // Read file
       const file = document.getElementById('xesFile').files[0];
       const content = await file.text();
 
       // Load and analyze
-      const logHandle = rust4pm.load_eventlog_from_xes(content);
-      const stats = rust4pm.analyze_event_statistics(logHandle);
-      const results = JSON.parse(rust4pm.object_to_json(stats));
+      const logHandle = wasm4pm.load_eventlog_from_xes(content);
+      const stats = wasm4pm.analyze_event_statistics(logHandle);
+      const results = JSON.parse(wasm4pm.object_to_json(stats));
 
       // Display results
       document.getElementById('results').textContent = 
@@ -363,7 +363,7 @@ This package requires WebAssembly support. Modern browsers (released after 2017)
 ## Support
 
 For issues, questions, or contributions, visit:
-https://github.com/aarkue/rust4pm
+https://github.com/seanchatmangpt/wasm4pm
 
 ## License
 

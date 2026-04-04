@@ -396,7 +396,7 @@ Choose whichever works for you.
 ## Community & Support
 
 ### Q: How do I report bugs?
-**A:** GitHub Issues: https://github.com/seanchatmangpt/rust4pm/issues
+**A:** GitHub Issues: https://github.com/seanchatmangpt/wasm4pm/issues
 
 Include:
 - wasm4pm version
@@ -405,7 +405,7 @@ Include:
 - Error message
 
 ### Q: How do I request features?
-**A:** GitHub Discussions: https://github.com/seanchatmangpt/rust4pm/discussions
+**A:** GitHub Discussions: https://github.com/seanchatmangpt/wasm4pm/discussions
 
 ### Q: Is there a community Slack/Discord?
 **A:** Not yet, but may be created for v1.0. Follow GitHub for updates.
@@ -420,6 +420,6 @@ Include:
 - **Documentation**: Check README.md, QUICKSTART.md, TUTORIAL.md
 - **Examples**: See examples/ directory
 - **Benchmarks**: See THESIS.md for performance data
-- **GitHub**: https://github.com/seanchatmangpt/rust4pm
+- **GitHub**: https://github.com/seanchatmangpt/wasm4pm
 - **npm**: https://www.npmjs.com/package/wasm4pm
 

@@ -23,8 +23,8 @@ Build, test, publish, and deploy wasm4pm to production.
 
 ### Clone and Setup
 ```bash
-git clone https://github.com/seanchatmangpt/rust4pm
-cd rust4pm
+git clone https://github.com/seanchatmangpt/wasm4pm
+cd wasm4pm
 
 # Install Node dependencies
 cd process_mining_wasm
@@ -578,7 +578,7 @@ cat CHANGELOG.md
 ## Support and Resources
 
 - **npm**: https://www.npmjs.com/package/wasm4pm
-- **GitHub**: https://github.com/seanchatmangpt/rust4pm
-- **Issues**: https://github.com/seanchatmangpt/rust4pm/issues
+- **GitHub**: https://github.com/seanchatmangpt/wasm4pm
+- **Issues**: https://github.com/seanchatmangpt/wasm4pm/issues
 - **Documentation**: See docs/ directory
 

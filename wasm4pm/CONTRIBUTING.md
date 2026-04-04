@@ -1,6 +1,6 @@
 # Contributing to process_mining_wasm
 
-Thank you for your interest in contributing! This document provides guidelines for contributing to the WASM bindings of rust4pm.
+Thank you for your interest in contributing! This document provides guidelines for contributing to the WASM bindings of wasm4pm.
 
 ## Table of Contents
 
@@ -30,11 +30,11 @@ Be respectful, inclusive, and professional in all interactions.
 ```bash
 # Fork the repository on GitHub
 # Clone your fork
-git clone https://github.com/your-username/rust4pm.git
-cd rust4pm/process_mining_wasm
+git clone https://github.com/your-username/wasm4pm.git
+cd wasm4pm
 
 # Add upstream remote
-git remote add upstream https://github.com/aarkue/rust4pm.git
+git remote add upstream https://github.com/seanchatmangpt/wasm4pm.git
 ```
 
 ## Development Setup
@@ -336,4 +336,4 @@ Contributors are recognized in:
 - Release notes
 - Changelog
 
-Thank you for contributing to rust4pm!
+Thank you for contributing to wasm4pm!
