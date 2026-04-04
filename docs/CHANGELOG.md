@@ -1,5 +1,56 @@
 # Changelog
 
+## v26.4.5 (2026-04-04)
+
+### Headline: Streaming Conformance Checking
+- `store_dfg_from_json(json)` — deserialize a DFG JSON string into a stored object; bridges `discover_dfg` output (inline JSON) to handle-based APIs
+- `streaming_conformance_begin(dfg_handle)` — open a streaming conformance session against a reference DFG
+- `streaming_conformance_add_event(handle, case_id, activity)` — append one event to an open trace
+- `streaming_conformance_close_trace(handle, case_id)` — replay trace against DFG, return conformance result (fitness, deviations)
+- `streaming_conformance_stats(handle)` — live statistics: event_count, closed/open traces, conforming/deviating counts, avg_fitness
+- `streaming_conformance_finalize(handle)` — flush open traces, return full summary, free session
+- Memory model: **O(open_traces × avg_trace_length)** — identical to streaming DFG builder
+
+### Browser Test Infrastructure
+- Added headless Chromium test suite via `@vitest/browser` + Playwright
+- Enabled all previously-skipped browser and type wrapper tests
+- Fixed `FileReader`, `ProgressEvent`, `StorageEvent` polyfills for Node.js test environment
+- Browser benchmark suite: 13+ algorithms × 4 log sizes, median/min/max/p95 metrics
+- `benchmarks/compare.js`: Node.js vs Browser performance comparison CLI
+- `benchmarks/dashboard.html`: interactive Chart.js benchmark dashboard
+
+### Bug Fixes
+- `WasmEventLog` and `WasmOCEL` constructors now export correctly via `#[wasm_bindgen(constructor)]` — previously methods threw "null pointer passed to rust"
+- Fixed `npm test` script: use `build:nodejs` before unit tests, `build:web` before browser tests
+
+### Test Improvements
+- 72 unit tests passing (was 66), 44 integration tests passing (was 41)
+- New `integration.test.ts` suite (16 tests): full init→load→discover→analyze workflow
+- 4 streaming conformance tests covering conforming traces, deviations, stats, finalization
+
+### Documentation
+- `docs/BROWSER-BENCHMARKS.md` — new 359-line browser benchmarking guide
+- Expanded `docs/DEPLOYMENT.md`, `docs/FAQ.md`, `docs/QUICKSTART.md`, `docs/README.md` with browser benchmark references
+
+## 0.5.5
+
+### Streaming / IoT Event Ingestion API
+- `streaming_dfg_begin()` — open a streaming DFG session, returns handle
+- `streaming_dfg_add_event(handle, case_id, activity)` — append one event to an open trace
+- `streaming_dfg_add_batch(handle, events_json)` — bulk-add a JSON array of events
+- `streaming_dfg_close_trace(handle, case_id)` — fold trace into running counts and free its buffer
+- `streaming_dfg_flush_open(handle)` — close all currently-open traces at once
+- `streaming_dfg_snapshot(handle)` — non-destructive DFG snapshot (same format as `discover_dfg`)
+- `streaming_dfg_finalize(handle)` — flush, store DFG, free builder, return DFG handle
+- `streaming_dfg_stats(handle)` — memory/progress statistics
+- Memory model: **O(open_traces × avg_trace_length)** — closed traces live only in compact count tables; suitable for IoT and embedded pipelines
+
+### Performance
+- Single-pass columnar DFG: activities encoded as `u32` IDs; `FxHashMap<(u32,u32), usize>` edge counting (~6× smaller entries than string pairs)
+- Marginal-gain Hill Climbing rewrite: 177× speedup on 50K-case logs (8.7 s → 49 ms)
+- DECLARE columnar rewrite: ~26% faster via flat `bool` arrays reused across traces
+- `FxHashMap` used throughout hot paths for O(1) fixed-width key hashing
+
 ## 0.5.4
 
 - Add `stream_xes_bufread` function for streaming XES traces from a `BufRead` (supports gzipped input)

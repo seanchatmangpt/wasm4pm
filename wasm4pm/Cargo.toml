@@ -1,6 +1,6 @@
 [package]
 name = "wasm4pm"
-version = "0.5.4"
+version = "26.4.5"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 description = "High-performance process mining algorithms in WebAssembly for JavaScript/TypeScript"
@@ -15,20 +15,54 @@ wasm-bindgen = "0.2.92"
 wasm-bindgen-futures = "0.4.42"
 serde_json = "1.0.105"
 serde = { version = "1.0.188", features = ["derive"] }
+serde-wasm-bindgen = "0.6"
 once_cell = "1.19"
-uuid = { version = "1.16.0", features = ["v4", "js"] }
+uuid = { version = "1.16.0", features = ["v4"] }
 chrono = { version = "0.4.40", features = ["serde"] }
 console_error_panic_hook = "0.1"
 itertools = "0.14.0"
 indexmap = "2.0"
+rustc-hash = "2"
+smallvec = { version = "1.13", features = ["serde"] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 web-sys = { version = "0.3", features = [] }
+uuid = { version = "1.16.0", features = ["v4", "js"] }
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+simd-json = "0.13"
+
+[[bench]]
+name = "fast_algorithms"
+harness = false
+
+[[bench]]
+name = "medium_algorithms"
+harness = false
+
+[[bench]]
+name = "slow_algorithms"
+harness = false
+
+[[bench]]
+name = "analytics"
+harness = false
+
+[[bench]]
+name = "conformance"
+harness = false
 
 [features]
 default = []
 console_error_panic_hook = []
 
 [profile.release]
-opt-level = "z"
+opt-level = 3
 lto = true
+codegen-units = 1
+strip = "debuginfo"
+
+[profile.bench]
+opt-level = 3
+lto = false

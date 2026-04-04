@@ -91,7 +91,10 @@ export class ProcessMiningClient {
  * Handle to an EventLog stored in WASM memory
  */
 export class EventLogHandle {
-  constructor(private handle: string, private wasmModule: any) {}
+  constructor(
+    private handle: string,
+    private wasmModule: any
+  ) {}
 
   /**
    * Get the handle ID
@@ -105,8 +108,7 @@ export class EventLogHandle {
    */
   getStats(): api.EventLogStats {
     try {
-      const json = this.wasmModule.analyze_event_statistics(this.handle);
-      return JSON.parse(json);
+      return this.wasmModule.analyze_event_statistics(this.handle);
     } catch (error) {
       throw new Error(`Failed to get event log statistics: ${error}`);
     }
@@ -130,8 +132,7 @@ export class EventLogHandle {
    * Get unique activities
    */
   getActivities(activityKey: string = 'concept:name'): string[] {
-    const json = this.wasmModule.get_activities(this.handle, activityKey);
-    return JSON.parse(json);
+    return this.wasmModule.get_activities(this.handle, activityKey);
   }
 
   /**
@@ -144,32 +145,28 @@ export class EventLogHandle {
     median: number;
     count: number;
   } {
-    const json = this.wasmModule.get_trace_length_statistics(this.handle);
-    return JSON.parse(json);
+    return this.wasmModule.get_trace_length_statistics(this.handle);
   }
 
   /**
    * Get activity frequencies
    */
   getActivityFrequencies(activityKey: string = 'concept:name'): Array<[string, number]> {
-    const json = this.wasmModule.get_activity_frequencies(this.handle, activityKey);
-    return JSON.parse(json);
+    return this.wasmModule.get_activity_frequencies(this.handle, activityKey);
   }
 
   /**
    * Get all attribute names used in the log
    */
   getAttributeNames(): string[] {
-    const json = this.wasmModule.get_attribute_names(this.handle);
-    return JSON.parse(json);
+    return this.wasmModule.get_attribute_names(this.handle);
   }
 
   /**
    * Filter the log to keep only traces containing the specified activity
    */
   filterByActivity(activity: string, activityKey: string = 'concept:name'): EventLogHandle {
-    const json = this.wasmModule.filter_log_by_activity(this.handle, activityKey, activity);
-    const result = JSON.parse(json);
+    const result = this.wasmModule.filter_log_by_activity(this.handle, activityKey, activity);
     return new EventLogHandle(result.handle, this.wasmModule);
   }
 
@@ -177,22 +174,18 @@ export class EventLogHandle {
    * Filter the log to keep only traces within the specified length range
    */
   filterByTraceLength(minLength: number, maxLength: number): EventLogHandle {
-    const json = this.wasmModule.filter_log_by_trace_length(this.handle, minLength, maxLength);
-    const result = JSON.parse(json);
+    const result = this.wasmModule.filter_log_by_trace_length(this.handle, minLength, maxLength);
     return new EventLogHandle(result.handle, this.wasmModule);
   }
 
   /**
    * Discover a Directly-Follows Graph (DFG)
    */
-  discoverDFG(
-    options: { activityKey?: string; minFrequency?: number } = {}
-  ): DFGHandle {
+  discoverDFG(options: { activityKey?: string; minFrequency?: number } = {}): DFGHandle {
     const activityKey = options.activityKey || 'concept:name';
     const minFrequency = options.minFrequency || 1;
 
-    const json = this.wasmModule.discover_dfg_filtered(this.handle, activityKey, minFrequency);
-    const result = JSON.parse(json);
+    const result = this.wasmModule.discover_dfg_filtered(this.handle, activityKey, minFrequency);
     return new DFGHandle(result.handle, this.wasmModule);
   }
 
@@ -200,8 +193,7 @@ export class EventLogHandle {
    * Discover DECLARE constraints
    */
   discoverDECLARE(activityKey: string = 'concept:name'): DeclareModelHandle {
-    const json = this.wasmModule.discover_declare(this.handle, activityKey);
-    const result = JSON.parse(json);
+    const result = this.wasmModule.discover_declare(this.handle, activityKey);
     return new DeclareModelHandle(result.handle, this.wasmModule);
   }
 
@@ -214,8 +206,7 @@ export class EventLogHandle {
     const activityKey = options.activityKey || 'concept:name';
     const minSupport = options.minSupport || 0.1;
 
-    const json = this.wasmModule.discover_alpha_plus_plus(this.handle, activityKey, minSupport);
-    const result = JSON.parse(json);
+    const result = this.wasmModule.discover_alpha_plus_plus(this.handle, activityKey, minSupport);
     return new PetriNetHandle(result.handle, this.wasmModule);
   }
 
@@ -223,8 +214,7 @@ export class EventLogHandle {
    * Discover optimal Petri Net using ILP constraint-based optimization
    */
   discoverILPPetriNet(activityKey: string = 'concept:name'): PetriNetHandle {
-    const json = this.wasmModule.discover_ilp_petri_net(this.handle, activityKey);
-    const result = JSON.parse(json);
+    const result = this.wasmModule.discover_ilp_petri_net(this.handle, activityKey);
     return new PetriNetHandle(result.handle, this.wasmModule);
   }
 
@@ -242,13 +232,12 @@ export class EventLogHandle {
     const fitnessWeight = options.fitnessWeight || 0.7;
     const simplicityWeight = options.simplicityWeight || 0.3;
 
-    const json = this.wasmModule.discover_optimized_dfg(
+    const result = this.wasmModule.discover_optimized_dfg(
       this.handle,
       activityKey,
       fitnessWeight,
       simplicityWeight
     );
-    const result = JSON.parse(json);
     return new DFGHandle(result.handle, this.wasmModule);
   }
 
@@ -266,13 +255,12 @@ export class EventLogHandle {
     const populationSize = options.populationSize || 50;
     const generations = options.generations || 20;
 
-    const json = this.wasmModule.discover_genetic_algorithm(
+    const result = this.wasmModule.discover_genetic_algorithm(
       this.handle,
       activityKey,
       populationSize,
       generations
     );
-    const result = JSON.parse(json);
     return new DFGHandle(result.handle, this.wasmModule);
   }
 
@@ -290,27 +278,23 @@ export class EventLogHandle {
     const swarmSize = options.swarmSize || 30;
     const iterations = options.iterations || 50;
 
-    const json = this.wasmModule.discover_pso_algorithm(
+    const result = this.wasmModule.discover_pso_algorithm(
       this.handle,
       activityKey,
       swarmSize,
       iterations
     );
-    const result = JSON.parse(json);
     return new DFGHandle(result.handle, this.wasmModule);
   }
 
   /**
    * A* Search-based discovery - informed heuristic search for optimal models
    */
-  discoverAStar(
-    options: { activityKey?: string; maxIterations?: number } = {}
-  ): DFGHandle {
+  discoverAStar(options: { activityKey?: string; maxIterations?: number } = {}): DFGHandle {
     const activityKey = options.activityKey || 'concept:name';
     const maxIterations = options.maxIterations || 1000;
 
-    const json = this.wasmModule.discover_astar(this.handle, activityKey, maxIterations);
-    const result = JSON.parse(json);
+    const result = this.wasmModule.discover_astar(this.handle, activityKey, maxIterations);
     return new DFGHandle(result.handle, this.wasmModule);
   }
 
@@ -318,8 +302,7 @@ export class EventLogHandle {
    * Hill Climbing - greedy local optimization to maximal fitness
    */
   discoverHillClimbing(activityKey: string = 'concept:name'): DFGHandle {
-    const json = this.wasmModule.discover_hill_climbing(this.handle, activityKey);
-    const result = JSON.parse(json);
+    const result = this.wasmModule.discover_hill_climbing(this.handle, activityKey);
     return new DFGHandle(result.handle, this.wasmModule);
   }
 
@@ -327,8 +310,7 @@ export class EventLogHandle {
    * Analyze trace variants - extract unique process paths and frequencies
    */
   getTraceVariants(activityKey: string = 'concept:name'): any {
-    const json = this.wasmModule.analyze_trace_variants(this.handle, activityKey);
-    return JSON.parse(json);
+    return this.wasmModule.analyze_trace_variants(this.handle, activityKey);
   }
 
   /**
@@ -345,26 +327,22 @@ export class EventLogHandle {
     const minSupport = options.minSupport || 0.01;
     const patternLength = options.patternLength || 3;
 
-    const json = this.wasmModule.mine_sequential_patterns(
+    return this.wasmModule.mine_sequential_patterns(
       this.handle,
       activityKey,
       minSupport,
       patternLength
     );
-    return JSON.parse(json);
   }
 
   /**
    * Detect concept drift - identify where process behavior changes
    */
-  detectConceptDrift(
-    options: { activityKey?: string; windowSize?: number } = {}
-  ): any {
+  detectConceptDrift(options: { activityKey?: string; windowSize?: number } = {}): any {
     const activityKey = options.activityKey || 'concept:name';
     const windowSize = options.windowSize || 50;
 
-    const json = this.wasmModule.detect_concept_drift(this.handle, activityKey, windowSize);
-    return JSON.parse(json);
+    return this.wasmModule.detect_concept_drift(this.handle, activityKey, windowSize);
   }
 
   /**
@@ -374,32 +352,28 @@ export class EventLogHandle {
     const activityKey = options.activityKey || 'concept:name';
     const numClusters = options.numClusters || 5;
 
-    const json = this.wasmModule.cluster_traces(this.handle, activityKey, numClusters);
-    return JSON.parse(json);
+    return this.wasmModule.cluster_traces(this.handle, activityKey, numClusters);
   }
 
   /**
    * Analyze start/end activities - find entry and exit points in process
    */
   getStartEndActivities(activityKey: string = 'concept:name'): any {
-    const json = this.wasmModule.analyze_start_end_activities(this.handle, activityKey);
-    return JSON.parse(json);
+    return this.wasmModule.analyze_start_end_activities(this.handle, activityKey);
   }
 
   /**
    * Activity co-occurrence - find activities that happen together in traces
    */
   getActivityCooccurrence(activityKey: string = 'concept:name'): any {
-    const json = this.wasmModule.analyze_activity_cooccurrence(this.handle, activityKey);
-    return JSON.parse(json);
+    return this.wasmModule.analyze_activity_cooccurrence(this.handle, activityKey);
   }
 
   /**
    * Inductive Miner - recursive structure discovery with direct follows graph
    */
   discoverInductiveMiner(activityKey: string = 'concept:name'): DFGHandle {
-    const json = this.wasmModule.discover_inductive_miner(this.handle, activityKey);
-    const result = JSON.parse(json);
+    const result = this.wasmModule.discover_inductive_miner(this.handle, activityKey);
     return new DFGHandle(result.handle, this.wasmModule);
   }
 
@@ -413,13 +387,12 @@ export class EventLogHandle {
     const numAnts = options.numAnts || 20;
     const iterations = options.iterations || 10;
 
-    const json = this.wasmModule.discover_ant_colony(
+    const result = this.wasmModule.discover_ant_colony(
       this.handle,
       activityKey,
       numAnts,
       iterations
     );
-    const result = JSON.parse(json);
     return new DFGHandle(result.handle, this.wasmModule);
   }
 
@@ -433,31 +406,23 @@ export class EventLogHandle {
     const temperature = options.temperature || 100.0;
     const coolingRate = options.coolingRate || 0.95;
 
-    const json = this.wasmModule.discover_simulated_annealing(
+    const result = this.wasmModule.discover_simulated_annealing(
       this.handle,
       activityKey,
       temperature,
       coolingRate
     );
-    const result = JSON.parse(json);
     return new DFGHandle(result.handle, this.wasmModule);
   }
 
   /**
    * Extract Process Skeleton - minimal model keeping only frequent edges
    */
-  extractProcessSkeleton(
-    options: { activityKey?: string; minFrequency?: number } = {}
-  ): DFGHandle {
+  extractProcessSkeleton(options: { activityKey?: string; minFrequency?: number } = {}): DFGHandle {
     const activityKey = options.activityKey || 'concept:name';
     const minFrequency = options.minFrequency || 2;
 
-    const json = this.wasmModule.extract_process_skeleton(
-      this.handle,
-      activityKey,
-      minFrequency
-    );
-    const result = JSON.parse(json);
+    const result = this.wasmModule.extract_process_skeleton(this.handle, activityKey, minFrequency);
     return new DFGHandle(result.handle, this.wasmModule);
   }
 
@@ -465,32 +430,28 @@ export class EventLogHandle {
    * Analyze Activity Dependencies - identify predecessors and successors
    */
   getActivityDependencies(activityKey: string = 'concept:name'): any {
-    const json = this.wasmModule.analyze_activity_dependencies(this.handle, activityKey);
-    return JSON.parse(json);
+    return this.wasmModule.analyze_activity_dependencies(this.handle, activityKey);
   }
 
   /**
    * Analyze Case Attributes - correlate case-level attributes with process
    */
   getCaseAttributeAnalysis(activityKey: string = 'concept:name'): any {
-    const json = this.wasmModule.analyze_case_attributes(this.handle, activityKey);
-    return JSON.parse(json);
+    return this.wasmModule.analyze_case_attributes(this.handle, activityKey);
   }
 
   /**
    * Variant Complexity - measure Shannon entropy and variant diversity
    */
   getVariantComplexity(activityKey: string = 'concept:name'): any {
-    const json = this.wasmModule.analyze_variant_complexity(this.handle, activityKey);
-    return JSON.parse(json);
+    return this.wasmModule.analyze_variant_complexity(this.handle, activityKey);
   }
 
   /**
    * Activity Transition Matrix - compute Markov chain transition probabilities
    */
   getTransitionMatrix(activityKey: string = 'concept:name'): any {
-    const json = this.wasmModule.compute_activity_transition_matrix(this.handle, activityKey);
-    return JSON.parse(json);
+    return this.wasmModule.compute_activity_transition_matrix(this.handle, activityKey);
   }
 
   /**
@@ -500,57 +461,45 @@ export class EventLogHandle {
     const timestampKey = options.timestampKey || 'time:timestamp';
     const windowSize = options.windowSize || 50;
 
-    const json = this.wasmModule.analyze_process_speedup(this.handle, timestampKey, windowSize);
-    return JSON.parse(json);
+    return this.wasmModule.analyze_process_speedup(this.handle, timestampKey, windowSize);
   }
 
   /**
    * Trace Similarity Matrix - compute pairwise trace distance/similarity
    */
   getTraceSimilarityMatrix(activityKey: string = 'concept:name'): any {
-    const json = this.wasmModule.compute_trace_similarity_matrix(this.handle, activityKey);
-    return JSON.parse(json);
+    return this.wasmModule.compute_trace_similarity_matrix(this.handle, activityKey);
   }
 
   /**
    * Temporal Bottlenecks - identify time-based performance bottlenecks
    */
-  getTemporalBottlenecks(
-    options: { activityKey?: string; timestampKey?: string } = {}
-  ): any {
+  getTemporalBottlenecks(options: { activityKey?: string; timestampKey?: string } = {}): any {
     const activityKey = options.activityKey || 'concept:name';
     const timestampKey = options.timestampKey || 'time:timestamp';
 
-    const json = this.wasmModule.analyze_temporal_bottlenecks(
-      this.handle,
-      activityKey,
-      timestampKey
-    );
-    return JSON.parse(json);
+    return this.wasmModule.analyze_temporal_bottlenecks(this.handle, activityKey, timestampKey);
   }
 
   /**
    * Activity Ordering - extract mandatory predecessor ordering from traces
    */
   getActivityOrdering(activityKey: string = 'concept:name'): any {
-    const json = this.wasmModule.extract_activity_ordering(this.handle, activityKey);
-    return JSON.parse(json);
+    return this.wasmModule.extract_activity_ordering(this.handle, activityKey);
   }
 
   /**
    * Generate dotted chart data for visualization
    */
   getDottedChart(activityKey: string = 'concept:name'): any {
-    const json = this.wasmModule.analyze_dotted_chart(this.handle);
-    return JSON.parse(json);
+    return this.wasmModule.analyze_dotted_chart(this.handle);
   }
 
   /**
    * Calculate case durations
    */
   calculateCaseDurations(timestampKey: string = 'time:timestamp'): any[] {
-    const json = this.wasmModule.calculate_trace_durations(this.handle, timestampKey);
-    return JSON.parse(json);
+    return this.wasmModule.calculate_trace_durations(this.handle, timestampKey);
   }
 
   /**
@@ -593,7 +542,10 @@ export class EventLogHandle {
  * Handle to an OCEL stored in WASM memory
  */
 export class OCELHandle {
-  constructor(private handle: string, private wasmModule: any) {}
+  constructor(
+    private handle: string,
+    private wasmModule: any
+  ) {}
 
   /**
    * Get the handle ID
@@ -606,8 +558,7 @@ export class OCELHandle {
    * Get basic statistics about the OCEL
    */
   getStats(): { total_events: number; total_objects: number } {
-    const json = this.wasmModule.analyze_ocel_statistics(this.handle);
-    return JSON.parse(json);
+    return this.wasmModule.analyze_ocel_statistics(this.handle);
   }
 
   /**
@@ -629,8 +580,7 @@ export class OCELHandle {
    */
   discoverOCDFG(options: { minFrequency?: number } = {}): DFGHandle {
     const minFrequency = options.minFrequency || 1;
-    const json = this.wasmModule.discover_ocel_dfg(this.handle);
-    const result = JSON.parse(json);
+    const result = this.wasmModule.discover_ocel_dfg(this.handle);
     return new DFGHandle(result.handle, this.wasmModule);
   }
 
@@ -653,7 +603,10 @@ export class OCELHandle {
  * Handle to a Directly-Follows Graph
  */
 export class DFGHandle {
-  constructor(private handle: string, private wasmModule: any) {}
+  constructor(
+    private handle: string,
+    private wasmModule: any
+  ) {}
 
   /**
    * Get the handle ID
@@ -682,7 +635,10 @@ export class DFGHandle {
  * Handle to a Petri Net
  */
 export class PetriNetHandle {
-  constructor(private handle: string, private wasmModule: any) {}
+  constructor(
+    private handle: string,
+    private wasmModule: any
+  ) {}
 
   /**
    * Get the handle ID
@@ -703,8 +659,7 @@ export class PetriNetHandle {
    * Check conformance of an EventLog against this Petri Net
    */
   checkConformance(log: EventLogHandle, activityKey: string = 'concept:name'): any {
-    const json = this.wasmModule.check_token_based_replay(log.getId(), this.handle, activityKey);
-    return JSON.parse(json);
+    return this.wasmModule.check_token_based_replay(log.getId(), this.handle, activityKey);
   }
 
   /**
@@ -719,7 +674,10 @@ export class PetriNetHandle {
  * Handle to a DECLARE model
  */
 export class DeclareModelHandle {
-  constructor(private handle: string, private wasmModule: any) {}
+  constructor(
+    private handle: string,
+    private wasmModule: any
+  ) {}
 
   /**
    * Get the handle ID

@@ -28,6 +28,7 @@ Welcome to the wasm4pm documentation. This folder contains comprehensive guides 
 - **[BENCHMARK-TIERS-USAGE.md](./BENCHMARK-TIERS-USAGE.md)** - Running performance benchmarks
 - **[BENCHMARK-RESULTS-INTERPRETATION.md](./BENCHMARK-RESULTS-INTERPRETATION.md)** - Understanding benchmark output
 - **[BENCHMARK-REAL-DATA-PLAN.md](./BENCHMARK-REAL-DATA-PLAN.md)** - Real data benchmarking strategy
+- **[BROWSER-BENCHMARKS.md](./BROWSER-BENCHMARKS.md)** - Browser performance testing with headless Chromium
 
 ### Strategic Documents
 - **[HBR-BLUE-OCEAN-CHATMANGPT-VS-CELONIS.md](./HBR-BLUE-OCEAN-CHATMANGPT-VS-CELONIS.md)** - Strategic positioning
@@ -45,6 +46,7 @@ Welcome to the wasm4pm documentation. This folder contains comprehensive guides 
 - **Understand algorithms** → Read [ALGORITHMS.md](./ALGORITHMS.md)
 - **Troubleshoot issues** → Check [FAQ.md](./FAQ.md)
 - **Run benchmarks** → Follow [BENCHMARK-TIERS-USAGE.md](./BENCHMARK-TIERS-USAGE.md)
+- **Test in browser** → See [BROWSER-BENCHMARKS.md](./BROWSER-BENCHMARKS.md)
 - **Read the paper** → See [THESIS.md](./THESIS.md)
 
 ## 📖 Document Descriptions
@@ -90,6 +92,13 @@ Current development status, completed features, in-progress work, and future roa
 
 ### Data & Benchmarking Files
 Documentation about available datasets, how to run benchmarks at different tiers, and interpretation of results.
+
+### BROWSER-BENCHMARKS.md
+Guide for running performance benchmarks in browser environments using headless Chromium. Includes:
+- Browser benchmark setup and execution
+- Comparing Node.js vs browser performance
+- Interactive dashboard for results visualization
+- Tools for performance analysis and regression detection
 
 ### Strategic Documents
 Business and competitive analysis documents comparing wasm4pm/ChatmanGPT positioning against Celonis in various dimensions.

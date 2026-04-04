@@ -26,11 +26,13 @@ npm run build:all
 This generates three distribution types:
 
 1. **Bundler** (default) - For webpack, rollup, parcel
+
    ```bash
    npm run build
    ```
 
 2. **Web** - For direct browser `<script>` tags
+
    ```bash
    npm run build:web
    ```
@@ -91,6 +93,7 @@ npm run bench
 ```
 
 Expected results:
+
 - DFG discovery (1000 cases): ~27ms
 - Alpha++ (1000 cases): ~50ms
 - Bundle size: ~600KB (180KB gzipped)
@@ -219,6 +222,7 @@ npm run type:check
 ### Performance degradation
 
 Profile with DevTools:
+
 1. Open Chrome DevTools → Performance
 2. Record while running algorithms
 3. Look for bottlenecks in WASM execution
@@ -301,6 +305,7 @@ npm audit
 ## Support
 
 For build issues:
+
 - Check wasm-pack documentation: https://rustwasm.github.io/docs/wasm-pack/
 - Check npm documentation: https://docs.npmjs.com/
 - File issues on GitHub: https://github.com/seanchatmangpt/wasm4pm/issues

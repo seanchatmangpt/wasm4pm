@@ -10,6 +10,8 @@
     <img src="https://img.shields.io/github/stars/seanchatmangpt/wasm4pm" alt="GitHub stars"/></a>
 </p>
 <img src="logo.png" width="300" alt="Rust4PM Logo"/>
+<br/>
+<img src="Ferris emerges from the black hole.png" width="300" alt="Ferris emerges from the black hole"/>
 </div>
 
 ---
