@@ -9,9 +9,9 @@
   ],
   "exports": {
     ".": {
-      "types": "./pkg/process_mining_wasm.d.ts",
-      "import": "./pkg/process_mining_wasm.js",
-      "require": "./pkg/process_mining_wasm.js"
+      "types": "./pkg/wasm4pm.d.ts",
+      "import": "./pkg/wasm4pm.js",
+      "require": "./pkg/wasm4pm.js"
     }
   },
   "scripts": {
@@ -19,6 +19,8 @@
     "build:nodejs": "wasm-pack build --target nodejs",
     "build:web": "wasm-pack build --target web",
     "build:all": "npm run build && npm run build:nodejs && npm run build:web",
+    "build:mcp": "tsc src/mcp_server.ts --outDir dist --module commonjs --target es2020",
+    "start:mcp": "npm run build:mcp && node dist/mcp_server.js",
     "test": "npm run test:unit && npm run test:integration",
     "test:unit": "vitest run",
     "test:unit:watch": "vitest",
@@ -28,18 +30,18 @@
     "format": "prettier --write \"**/*.{js,ts,json,md}\"",
     "format:check": "prettier --check \"**/*.{js,ts,json,md}\"",
     "type:check": "tsc --noEmit",
-    "docs": "typedoc --out docs pkg/process_mining_wasm.d.ts",
+    "docs": "typedoc --out docs pkg/wasm4pm.d.ts",
     "prepublishOnly": "npm run build:all && npm run lint && npm run test",
     "prepare": "npm run build:all"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/aarkue/rust4pm.git",
-    "directory": "process_mining_wasm"
+    "url": "https://github.com/seanchatmangpt/rust4pm.git",
+    "directory": "wasm4pm"
   },
-  "homepage": "https://github.com/aarkue/rust4pm/tree/main/process_mining_wasm",
+  "homepage": "https://github.com/seanchatmangpt/rust4pm/tree/main/wasm4pm",
   "bugs": {
-    "url": "https://github.com/aarkue/rust4pm/issues"
+    "url": "https://github.com/seanchatmangpt/rust4pm/issues"
   },
   "keywords": [
     "process-mining",
@@ -57,6 +59,7 @@
     "node": ">=14.0.0"
   },
   "devDependencies": {
+    "@modelcontextprotocol/sdk": "^0.1.0",
     "@testing-library/dom": "^9.3.3",
     "@testing-library/jest-dom": "^6.1.5",
     "@types/node": "^20.10.6",
