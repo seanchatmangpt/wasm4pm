@@ -220,6 +220,87 @@ export class EventLogHandle {
   }
 
   /**
+   * Discover optimal Petri Net using ILP constraint-based optimization
+   */
+  discoverILPPetriNet(activityKey: string = 'concept:name'): PetriNetHandle {
+    const json = this.wasmModule.discover_ilp_petri_net(this.handle, activityKey);
+    const result = JSON.parse(json);
+    return new PetriNetHandle(result.handle, this.wasmModule);
+  }
+
+  /**
+   * Discover DFG using weighted fitness-simplicity optimization
+   */
+  discoverOptimizedDFG(
+    options: {
+      activityKey?: string;
+      fitnessWeight?: number;
+      simplicityWeight?: number;
+    } = {}
+  ): DFGHandle {
+    const activityKey = options.activityKey || 'concept:name';
+    const fitnessWeight = options.fitnessWeight || 0.7;
+    const simplicityWeight = options.simplicityWeight || 0.3;
+
+    const json = this.wasmModule.discover_optimized_dfg(
+      this.handle,
+      activityKey,
+      fitnessWeight,
+      simplicityWeight
+    );
+    const result = JSON.parse(json);
+    return new DFGHandle(result.handle, this.wasmModule);
+  }
+
+  /**
+   * Discover process model using Genetic Algorithm evolution
+   */
+  discoverGeneticAlgorithm(
+    options: {
+      activityKey?: string;
+      populationSize?: number;
+      generations?: number;
+    } = {}
+  ): DFGHandle {
+    const activityKey = options.activityKey || 'concept:name';
+    const populationSize = options.populationSize || 50;
+    const generations = options.generations || 20;
+
+    const json = this.wasmModule.discover_genetic_algorithm(
+      this.handle,
+      activityKey,
+      populationSize,
+      generations
+    );
+    const result = JSON.parse(json);
+    return new DFGHandle(result.handle, this.wasmModule);
+  }
+
+  /**
+   * Discover process model using Particle Swarm Optimization
+   */
+  discoverPSOAlgorithm(
+    options: {
+      activityKey?: string;
+      swarmSize?: number;
+      iterations?: number;
+    } = {}
+  ): DFGHandle {
+    const activityKey = options.activityKey || 'concept:name';
+    const swarmSize = options.swarmSize || 30;
+    const iterations = options.iterations || 50;
+
+    const json = this.wasmModule.discover_pso_algorithm(
+      this.handle,
+      activityKey,
+      swarmSize,
+      iterations
+    );
+    const result = JSON.parse(json);
+    return new DFGHandle(result.handle, this.wasmModule);
+  }
+
+  /**
    * Generate dotted chart data for visualization
    */
   getDottedChart(activityKey: string = 'concept:name'): any {

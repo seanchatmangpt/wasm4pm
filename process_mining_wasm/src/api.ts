@@ -675,6 +675,52 @@ export interface ProcessMiningAPI {
       ocel: OCEL,
       options?: OCDeclareDiscoveryOptions
     ): Promise<OCDeclareModel | Error>;
+
+    /**
+     * Discover optimal Petri Net using ILP constraint-based optimization
+     */
+    discoverILPPetriNet(
+      log: EventLog,
+      options?: {
+        activityKey?: string;
+      }
+    ): Promise<PetriNet | Error>;
+
+    /**
+     * Discover DFG using weighted fitness-simplicity optimization
+     */
+    discoverOptimizedDFG(
+      log: EventLog,
+      options?: {
+        activityKey?: string;
+        fitnessWeight?: number;
+        simplicityWeight?: number;
+      }
+    ): Promise<DirectlyFollowsGraph | Error>;
+
+    /**
+     * Discover process model using Genetic Algorithm evolution
+     */
+    discoverGeneticAlgorithm(
+      log: EventLog,
+      options?: {
+        activityKey?: string;
+        populationSize?: number;
+        generations?: number;
+      }
+    ): Promise<DirectlyFollowsGraph | Error>;
+
+    /**
+     * Discover process model using Particle Swarm Optimization
+     */
+    discoverPSOAlgorithm(
+      log: EventLog,
+      options?: {
+        activityKey?: string;
+        swarmSize?: number;
+        iterations?: number;
+      }
+    ): Promise<DirectlyFollowsGraph | Error>;
   };
 
   // -------- Analysis --------

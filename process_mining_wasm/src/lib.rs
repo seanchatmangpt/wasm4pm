@@ -9,6 +9,8 @@ pub mod algorithms;
 pub mod utilities;
 pub mod xes_format;
 pub mod advanced_algorithms;
+pub mod ilp_discovery;
+pub mod genetic_discovery;
 
 // Suppress unused warnings for re-exported modules
 #[allow(unused)]
