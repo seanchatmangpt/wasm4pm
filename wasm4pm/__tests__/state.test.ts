@@ -30,7 +30,7 @@ describe('State Management - Object Storage', () => {
   });
 
   it('should store OCEL and return a handle', () => {
-    const json = `{"ocel:global-event":{"ocel:attribute":[{"ocel:name":"concept:name","ocel:type":"string"}]},"ocel:global-object":{"ocel:object-type":[{"ocel:name":"Order"}]},"ocel:events":{"ocel:event":[{"ocel:id":"e1","ocel:type":"Create","ocel:timestamp":"2023-01-01T10:00:00","ocel:omap":{"ocel:o":[{"ocel:id":"o1"}]}}]},"ocel:objects":{"ocel:object":[{"ocel:id":"o1","ocel:type":"Order"}]}}`;
+    const json = `{"event_types":["Create"],"object_types":["Order"],"events":[{"id":"e1","event_type":"Create","timestamp":"2023-01-01T10:00:00","attributes":{},"object_ids":["o1"]}],"objects":[{"id":"o1","object_type":"Order","attributes":{}}]}`;
 
     const handle = wasm.load_ocel_from_json(json);
 

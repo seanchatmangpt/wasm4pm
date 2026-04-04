@@ -86,17 +86,19 @@ describe('process_mining_wasm Browser Integration', () => {
       expect(isValidXES('test.json')).toBe(false);
     });
 
-    test('should handle file read', (done) => {
-      const reader = new FileReader();
-      const mockFile = new File(['test content'], 'test.xes');
+    test('should handle file read', () => {
+      return new Promise<void>((resolve) => {
+        const reader = new FileReader();
+        const mockFile = new File(['test content'], 'test.xes');
 
-      reader.onload = (e) => {
-        const content = e.target?.result;
-        expect(content).toBe('test content');
-        done();
-      };
+        reader.onload = (e) => {
+          const content = e.target?.result;
+          expect(content).toBe('test content');
+          resolve();
+        };
 
-      reader.readAsText(mockFile);
+        reader.readAsText(mockFile);
+      });
     });
 
     test('should handle multiple file formats', () => {
@@ -182,17 +184,19 @@ describe('process_mining_wasm Browser Integration', () => {
   });
 
   describe('Error Handling', () => {
-    test('should handle file read errors', (done) => {
-      const reader = new FileReader();
-      reader.onerror = vi.fn(() => {
-        expect(reader.onerror).toBeDefined();
-        done();
-      });
+    test('should handle file read errors', () => {
+      return new Promise<void>((resolve) => {
+        const reader = new FileReader();
+        reader.onerror = vi.fn(() => {
+          expect(reader.onerror).toBeDefined();
+          resolve();
+        });
 
-      // Trigger error
-      if (reader.onerror) {
-        reader.onerror(new ProgressEvent('error'));
-      }
+        // Trigger error
+        if (reader.onerror) {
+          reader.onerror(new ProgressEvent('error'));
+        }
+      });
     });
 
     test('should handle invalid JSON', () => {

@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WASM4PM Browser Benchmark Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu,
+          Cantarell, sans-serif;
+        background: linear-gradient(135deg, #1e1e2e 0%, #2d2d44 100%);
+        color: #e0e0e0;
+        padding: 20px;
+        min-height: 100vh;
+      }
+
+      .container {
+        max-width: 1400px;
+        margin: 0 auto;
+      }
+
+      header {
+        text-align: center;
+        margin-bottom: 40px;
+        border-bottom: 2px solid #4a4a6a;
+        padding-bottom: 20px;
+      }
+
+      h1 {
+        font-size: 2.5em;
+        margin-bottom: 10px;
+        background: linear-gradient(135deg, #64b5f6 0%, #81c784 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .subtitle {
+        color: #b0b0b0;
+        font-size: 1.1em;
+      }
+
+      .controls {
+        display: flex;
+        gap: 20px;
+        margin-bottom: 30px;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+
+      .control-group {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+
+      button {
+        padding: 10px 20px;
+        background: linear-gradient(135deg, #64b5f6 0%, #4da6f5 100%);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 1em;
+        transition: all 0.3s ease;
+      }
+
+      button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(100, 181, 246, 0.4);
+      }
+
+      button:active {
+        transform: translateY(0);
+      }
+
+      input[type='file'] {
+        padding: 8px 12px;
+        background: #3a3a52;
+        color: #e0e0e0;
+        border: 1px solid #4a4a6a;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 40px;
+      }
+
+      .stat-card {
+        background: #2d2d44;
+        border: 1px solid #4a4a6a;
+        border-radius: 8px;
+        padding: 20px;
+        transition: all 0.3s ease;
+      }
+
+      .stat-card:hover {
+        border-color: #64b5f6;
+        box-shadow: 0 4px 12px rgba(100, 181, 246, 0.2);
+      }
+
+      .stat-label {
+        color: #b0b0b0;
+        font-size: 0.9em;
+        text-transform: uppercase;
+        margin-bottom: 10px;
+        letter-spacing: 1px;
+      }
+
+      .stat-value {
+        font-size: 2em;
+        font-weight: bold;
+        color: #64b5f6;
+      }
+
+      .stat-unit {
+        font-size: 0.5em;
+        color: #b0b0b0;
+        margin-left: 5px;
+      }
+
+      .charts-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+        gap: 30px;
+        margin-bottom: 40px;
+      }
+
+      .chart-container {
+        background: #2d2d44;
+        border: 1px solid #4a4a6a;
+        border-radius: 8px;
+        padding: 20px;
+        position: relative;
+        height: 400px;
+      }
+
+      .chart-title {
+        font-size: 1.2em;
+        font-weight: bold;
+        margin-bottom: 15px;
+        color: #64b5f6;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        background: #2d2d44;
+        border: 1px solid #4a4a6a;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+
+      th {
+        background: #3a3a52;
+        padding: 15px;
+        text-align: left;
+        color: #64b5f6;
+        font-weight: bold;
+        border-bottom: 2px solid #4a4a6a;
+      }
+
+      td {
+        padding: 12px 15px;
+        border-bottom: 1px solid #4a4a6a;
+      }
+
+      tr:hover {
+        background: #353552;
+      }
+
+      tr:last-child td {
+        border-bottom: none;
+      }
+
+      .time-value {
+        color: #81c784;
+        font-weight: bold;
+      }
+
+      .size-value {
+        color: #ffb74d;
+        font-weight: bold;
+      }
+
+      .algo-name {
+        color: #64b5f6;
+        font-weight: bold;
+      }
+
+      .no-data {
+        text-align: center;
+        padding: 40px;
+        color: #b0b0b0;
+        font-size: 1.1em;
+      }
+
+      footer {
+        text-align: center;
+        margin-top: 40px;
+        padding-top: 20px;
+        border-top: 1px solid #4a4a6a;
+        color: #b0b0b0;
+        font-size: 0.9em;
+      }
+
+      .error {
+        background: #c62828;
+        color: white;
+        padding: 15px;
+        border-radius: 6px;
+        margin-bottom: 20px;
+      }
+
+      .success {
+        background: #2e7d32;
+        color: white;
+        padding: 15px;
+        border-radius: 6px;
+        margin-bottom: 20px;
+      }
+
+      @media (max-width: 768px) {
+        .charts-grid {
+          grid-template-columns: 1fr;
+        }
+
+        h1 {
+          font-size: 1.8em;
+        }
+
+        .controls {
+          flex-direction: column;
+        }
+
+        .control-group {
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>WASM4PM Browser Benchmarks</h1>
+        <p class="subtitle">Interactive Performance Analysis Dashboard</p>
+      </header>
+
+      <div class="controls">
+        <div class="control-group">
+          <label for="jsonInput">Load Results (JSON):</label>
+          <input type="file" id="jsonInput" accept=".json" />
+        </div>
+        <button onclick="loadSampleData()">Load Sample Data</button>
+        <button onclick="exportData()">Export as JSON</button>
+      </div>
+
+      <div id="message"></div>
+
+      <div class="stats-grid" id="statsGrid"></div>
+
+      <div class="charts-grid">
+        <div class="chart-container">
+          <div class="chart-title">Performance by Algorithm (Median Time)</div>
+          <canvas id="algoChart"></canvas>
+        </div>
+        <div class="chart-container">
+          <div class="chart-title">Scalability (Time vs Log Size)</div>
+          <canvas id="scaleChart"></canvas>
+        </div>
+      </div>
+
+      <div style="background: #2d2d44; border: 1px solid #4a4a6a; border-radius: 8px; padding: 20px; margin-bottom: 40px; overflow-x: auto;">
+        <h2 style="margin-bottom: 20px; color: #64b5f6;">Detailed Results</h2>
+        <table id="resultsTable">
+          <thead>
+            <tr>
+              <th>Algorithm</th>
+              <th>Log Size</th>
+              <th>Median (ms)</th>
+              <th>Min (ms)</th>
+              <th>Max (ms)</th>
+              <th>P95 (ms)</th>
+              <th>Iterations</th>
+            </tr>
+          </thead>
+          <tbody id="resultsBody">
+            <tr>
+              <td colspan="7" class="no-data">No data loaded. Click "Load Sample Data" or upload a JSON file.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <footer>
+        <p>WASM4PM Browser Benchmark Dashboard — Performance analysis for WebAssembly process mining algorithms</p>
+      </footer>
+    </div>
+
+    <script>
+      let currentData = null;
+      let algoChart = null;
+      let scaleChart = null;
+
+      document.getElementById('jsonInput').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            try {
+              const data = JSON.parse(event.target.result);
+              loadData(data);
+              showMessage('Data loaded successfully!', 'success');
+            } catch (error) {
+              showMessage('Error parsing JSON: ' + error.message, 'error');
+            }
+          };
+          reader.readAsText(file);
+        }
+      });
+
+      function showMessage(msg, type) {
+        const messageDiv = document.getElementById('message');
+        messageDiv.className = type;
+        messageDiv.textContent = msg;
+        setTimeout(() => {
+          messageDiv.textContent = '';
+          messageDiv.className = '';
+        }, 4000);
+      }
+
+      function loadData(data) {
+        currentData = data.results || data;
+        renderDashboard();
+      }
+
+      function loadSampleData() {
+        // Sample benchmark data
+        const sampleData = [
+          { algorithm: 'discover_dfg', size: 100, medianMs: 2.5, minMs: 2.2, maxMs: 3.1, p95Ms: 3.0, iterations: 5 },
+          { algorithm: 'discover_dfg', size: 1000, medianMs: 8.3, minMs: 7.9, maxMs: 9.2, p95Ms: 9.1, iterations: 5 },
+          { algorithm: 'discover_dfg', size: 5000, medianMs: 42.1, minMs: 40.5, maxMs: 44.8, p95Ms: 44.5, iterations: 5 },
+          { algorithm: 'discover_heuristic_miner', size: 100, medianMs: 3.2, minMs: 2.9, maxMs: 3.8, p95Ms: 3.7, iterations: 5 },
+          { algorithm: 'discover_heuristic_miner', size: 1000, medianMs: 12.4, minMs: 11.8, maxMs: 13.2, p95Ms: 13.1, iterations: 5 },
+          { algorithm: 'discover_heuristic_miner', size: 5000, medianMs: 65.3, minMs: 62.1, maxMs: 68.9, p95Ms: 68.5, iterations: 5 },
+          { algorithm: 'discover_alpha_plus_plus', size: 100, medianMs: 1.8, minMs: 1.6, maxMs: 2.1, p95Ms: 2.0, iterations: 5 },
+          { algorithm: 'discover_alpha_plus_plus', size: 1000, medianMs: 6.2, minMs: 5.9, maxMs: 6.8, p95Ms: 6.7, iterations: 5 },
+          { algorithm: 'discover_alpha_plus_plus', size: 5000, medianMs: 31.5, minMs: 30.1, maxMs: 33.2, p95Ms: 33.0, iterations: 5 },
+          { algorithm: 'analyze_event_statistics', size: 100, medianMs: 0.8, minMs: 0.7, maxMs: 0.95, p95Ms: 0.94, iterations: 5 },
+          { algorithm: 'analyze_event_statistics', size: 1000, medianMs: 2.1, minMs: 2.0, maxMs: 2.3, p95Ms: 2.25, iterations: 5 },
+          { algorithm: 'analyze_event_statistics', size: 5000, medianMs: 8.9, minMs: 8.5, maxMs: 9.4, p95Ms: 9.3, iterations: 5 },
+        ];
+        loadData(sampleData);
+        showMessage('Sample data loaded', 'success');
+      }
+
+      function renderDashboard() {
+        if (!currentData || currentData.length === 0) {
+          showMessage('No data to display', 'error');
+          return;
+        }
+
+        renderStats();
+        renderCharts();
+        renderTable();
+      }
+
+      function renderStats() {
+        const stats = {
+          measurements: currentData.length,
+          avgMedian: (currentData.reduce((sum, r) => sum + r.medianMs, 0) / currentData.length).toFixed(2),
+          minTime: Math.min(...currentData.map(r => r.minMs)).toFixed(2),
+          maxTime: Math.max(...currentData.map(r => r.maxMs)).toFixed(2),
+        };
+
+        const statsGrid = document.getElementById('statsGrid');
+        statsGrid.innerHTML = `
+          <div class="stat-card">
+            <div class="stat-label">Total Measurements</div>
+            <div class="stat-value">${stats.measurements}</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Average Median Time</div>
+            <div class="stat-value">${stats.avgMedian}<span class="stat-unit">ms</span></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Fastest Run</div>
+            <div class="stat-value">${stats.minTime}<span class="stat-unit">ms</span></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Slowest Run</div>
+            <div class="stat-value">${stats.maxTime}<span class="stat-unit">ms</span></div>
+          </div>
+        `;
+      }
+
+      function renderCharts() {
+        renderAlgoChart();
+        renderScaleChart();
+      }
+
+      function renderAlgoChart() {
+        const algoData = {};
+        for (const result of currentData) {
+          if (!algoData[result.algorithm]) {
+            algoData[result.algorithm] = [];
+          }
+          algoData[result.algorithm].push(result.medianMs);
+        }
+
+        const labels = Object.keys(algoData).sort();
+        const avgTimes = labels.map(algo => {
+          const times = algoData[algo];
+          return (times.reduce((a, b) => a + b, 0) / times.length).toFixed(2);
+        });
+
+        const ctx = document.getElementById('algoChart').getContext('2d');
+        if (algoChart) algoChart.destroy();
+        algoChart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: [{
+              label: 'Median Time (ms)',
+              data: avgTimes,
+              backgroundColor: 'rgba(100, 181, 246, 0.7)',
+              borderColor: 'rgba(100, 181, 246, 1)',
+              borderWidth: 2,
+            }],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                labels: { color: '#e0e0e0' },
+              },
+            },
+            scales: {
+              y: {
+                ticks: { color: '#b0b0b0' },
+                grid: { color: '#4a4a6a' },
+              },
+              x: {
+                ticks: { color: '#b0b0b0' },
+                grid: { color: '#4a4a6a' },
+              },
+            },
+          },
+        });
+      }
+
+      function renderScaleChart() {
+        const sizes = [...new Set(currentData.map(r => r.size))].sort((a, b) => a - b);
+        const algos = [...new Set(currentData.map(r => r.algorithm))];
+
+        const datasets = algos.map((algo, idx) => {
+          const times = sizes.map(size => {
+            const result = currentData.find(r => r.algorithm === algo && r.size === size);
+            return result ? result.medianMs : null;
+          });
+
+          const colors = [
+            'rgba(100, 181, 246, 0.7)',
+            'rgba(129, 199, 132, 0.7)',
+            'rgba(255, 167, 38, 0.7)',
+            'rgba(244, 67, 54, 0.7)',
+            'rgba(171, 71, 188, 0.7)',
+          ];
+
+          return {
+            label: algo,
+            data: times,
+            borderColor: colors[idx % colors.length],
+            backgroundColor: colors[idx % colors.length],
+            borderWidth: 2,
+            tension: 0.4,
+          };
+        });
+
+        const ctx = document.getElementById('scaleChart').getContext('2d');
+        if (scaleChart) scaleChart.destroy();
+        scaleChart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: sizes,
+            datasets: datasets,
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                labels: { color: '#e0e0e0' },
+              },
+            },
+            scales: {
+              y: {
+                ticks: { color: '#b0b0b0' },
+                grid: { color: '#4a4a6a' },
+              },
+              x: {
+                ticks: { color: '#b0b0b0' },
+                grid: { color: '#4a4a6a' },
+              },
+            },
+          },
+        });
+      }
+
+      function renderTable() {
+        const tbody = document.getElementById('resultsBody');
+        const sorted = [...currentData].sort((a, b) => {
+          if (a.algorithm !== b.algorithm) return a.algorithm.localeCompare(b.algorithm);
+          return a.size - b.size;
+        });
+
+        tbody.innerHTML = sorted.map(r => `
+          <tr>
+            <td><span class="algo-name">${r.algorithm}</span></td>
+            <td><span class="size-value">${r.size}</span></td>
+            <td><span class="time-value">${r.medianMs.toFixed(2)}</span></td>
+            <td>${r.minMs.toFixed(2)}</td>
+            <td>${r.maxMs.toFixed(2)}</td>
+            <td>${r.p95Ms.toFixed(2)}</td>
+            <td>${r.iterations}</td>
+          </tr>
+        `).join('');
+      }
+
+      function exportData() {
+        if (!currentData) {
+          showMessage('No data to export', 'error');
+          return;
+        }
+        const json = JSON.stringify(currentData, null, 2);
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `wasm4pm_benchmarks_${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showMessage('Data exported successfully', 'success');
+      }
+
+      // Load sample data on startup
+      loadSampleData();
+    </script>
+  </body>
+</html>
