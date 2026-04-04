@@ -137,11 +137,11 @@ wasm4pm visualize data/log.xes dfg --output diagram.png
 
 | Document | Purpose |
 |----------|---------|
-| [**QUICKSTART.md**](./QUICKSTART.md) | 5-minute setup and first algorithm |
-| [**TUTORIAL.md**](./TUTORIAL.md) | Step-by-step examples and workflows |
+| [**QUICKSTART.md**](./docs/QUICKSTART.md) | 5-minute setup and first algorithm |
+| [**TUTORIAL.md**](./docs/TUTORIAL.md) | Step-by-step examples and workflows |
 | [**API.md**](./wasm4pm/API.md) | Complete function reference |
 | [**ALGORITHMS.md**](./wasm4pm/ALGORITHMS.md) | Algorithm descriptions and parameters |
-| [**DEPLOYMENT.md**](./DEPLOYMENT.md) | Build, test, and publish |
+| [**DEPLOYMENT.md**](./docs/DEPLOYMENT.md) | Build, test, and publish |
 | [**FAQ.md**](./FAQ.md) | Common questions and troubleshooting |
 | [**MCP.md**](./wasm4pm/MCP.md) | Model Context Protocol integration with Claude |
 | [**THESIS.md**](./wasm4pm/THESIS.md) | Academic benchmarking and research |
@@ -310,7 +310,7 @@ If you use wasm4pm in your research, please cite:
 
 ## 🙋 Support
 
-- **Documentation**: See [TUTORIAL.md](./TUTORIAL.md) and [FAQ.md](./FAQ.md)
+- **Documentation**: See [TUTORIAL.md](./docs/TUTORIAL.md) and [FAQ.md](./docs/FAQ.md)
 - **Issues**: Report bugs on [GitHub](https://github.com/seanchatmangpt/wasm4pm/issues)
 - **Discussions**: Join [GitHub Discussions](https://github.com/seanchatmangpt/wasm4pm/discussions)
 
