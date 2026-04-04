@@ -2,12 +2,15 @@ use once_cell::sync::Lazy;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use wasm_bindgen::prelude::*;
-use process_mining::core::{EventLog, OCEL};
+use crate::models::{EventLog, OCEL, PetriNet, DirectlyFollowsGraph, DeclareModel};
 
 /// A wrapper around different types of objects that can be stored in the WASM state
 pub enum StoredObject {
     EventLog(EventLog),
     OCEL(OCEL),
+    PetriNet(PetriNet),
+    DirectlyFollowsGraph(DirectlyFollowsGraph),
+    DeclareModel(DeclareModel),
     #[allow(dead_code)]
     JsonString(String),
 }
@@ -86,6 +89,9 @@ impl Clone for StoredObject {
         match self {
             StoredObject::EventLog(el) => StoredObject::EventLog(el.clone()),
             StoredObject::OCEL(o) => StoredObject::OCEL(o.clone()),
+            StoredObject::PetriNet(pn) => StoredObject::PetriNet(pn.clone()),
+            StoredObject::DirectlyFollowsGraph(dfg) => StoredObject::DirectlyFollowsGraph(dfg.clone()),
+            StoredObject::DeclareModel(dm) => StoredObject::DeclareModel(dm.clone()),
             StoredObject::JsonString(s) => StoredObject::JsonString(s.clone()),
         }
     }

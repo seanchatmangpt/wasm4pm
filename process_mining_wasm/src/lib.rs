@@ -1,8 +1,10 @@
+mod models;
 mod state;
 mod types;
 mod io;
 mod discovery;
 mod analysis;
+mod conformance;
 
 // Suppress unused warnings for re-exported modules
 #[allow(unused)]

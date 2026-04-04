@@ -2976,11 +2976,11 @@ version = "0.5.4"
 dependencies = [
  "chrono",
  "console_error_panic_hook",
+ "indexmap 2.6.0",
+ "itertools",
  "once_cell",
- "process_mining",
  "serde",
  "serde_json",
- "thiserror 1.0.64",
  "uuid",
  "wasm-bindgen",
  "wasm-bindgen-futures",
