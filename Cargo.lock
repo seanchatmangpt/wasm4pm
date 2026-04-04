@@ -882,7 +882,7 @@ dependencies = [
 
 [[package]]
 name = "wasm4pm"
-version = "0.5.4"
+version = "26.4.5"
 dependencies = [
  "chrono",
  "console_error_panic_hook",

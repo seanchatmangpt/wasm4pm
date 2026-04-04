@@ -1,5 +1,42 @@
 import { describe, it, expect, vi, beforeEach, test } from 'vitest';
 
+// Polyfill browser APIs not available in Node.js test environment
+if (typeof FileReader === 'undefined') {
+  (globalThis as any).FileReader = class MockFileReader {
+    result: string | ArrayBuffer | null = null;
+    onload: ((e: any) => void) | null = null;
+    onerror: ((e: any) => void) | null = null;
+    readAsText(file: File) {
+      file.text().then((text) => {
+        this.result = text;
+        if (this.onload) {
+          this.onload({ target: this });
+        }
+      });
+    }
+  };
+}
+
+if (typeof ProgressEvent === 'undefined') {
+  (globalThis as any).ProgressEvent = class MockProgressEvent {
+    type: string;
+    constructor(type: string, _init?: object) { this.type = type; }
+  };
+}
+
+if (typeof StorageEvent === 'undefined') {
+  (globalThis as any).StorageEvent = class MockStorageEvent {
+    type: string;
+    key: string | null;
+    newValue: string | null;
+    constructor(type: string, init: { key?: string; newValue?: string } = {}) {
+      this.type = type;
+      this.key = init.key ?? null;
+      this.newValue = init.newValue ?? null;
+    }
+  };
+}
+
 /**
  * Browser Integration Tests for process_mining_wasm
  *
