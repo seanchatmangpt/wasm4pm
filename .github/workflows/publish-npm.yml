@@ -27,7 +27,7 @@ jobs:
           targets: wasm32-unknown-unknown
 
       - name: Install wasm-pack
-        run: curl https://rustwasm.org/wasm-pack/installer/init.sh -sSf | sh
+        run: npm install -g wasm-pack
 
       - name: Install dependencies
         run: cd wasm4pm && npm install
