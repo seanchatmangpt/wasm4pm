@@ -1,7 +1,6 @@
 use wasm_bindgen::prelude::*;
-use process_mining::core::{EventLog, OCEL};
+use process_mining::{EventLog, OCEL};
 use process_mining::discovery::case_centric::{alpha_plus_plus, discover_dfg};
-use process_mining::core::process_models::object_centric::OCDirectlyFollowsGraph;
 use crate::state::{get_or_init_state, StoredObject};
 
 /// Options for Alpha++ algorithm

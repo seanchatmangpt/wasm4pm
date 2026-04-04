@@ -1,7 +1,6 @@
 use wasm_bindgen::prelude::*;
-use process_mining::core::{EventLog, OCEL, Importable, Exportable};
+use process_mining::{EventLog, OCEL, Importable, Exportable};
 use crate::state::{get_or_init_state, StoredObject};
-use crate::types::{WasmEventLog, WasmOCEL};
 
 /// Load an EventLog from XES string content
 #[wasm_bindgen]
