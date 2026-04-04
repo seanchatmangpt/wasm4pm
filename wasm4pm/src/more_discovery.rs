@@ -8,7 +8,6 @@ use rustc_hash::FxHashMap;
 #[cfg(target_arch = "wasm32")]
 use serde_wasm_bindgen;
 use crate::utilities::to_js;
-use crate::genetic_discovery::{evaluate_edges_fitness, edge_set_to_dfg};
 
 /// Simplified Inductive Miner - recursive structure discovery
 #[wasm_bindgen]
@@ -473,7 +472,6 @@ pub fn analyze_case_attributes(
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
 /// Fitness function: fraction of traces fully covered by the DFG edges.
 /// Marked inline(always) so the compiler can specialise it at each call site
 /// inside the hot ACO/SA loops.
@@ -522,6 +520,70 @@ fn random_float() -> f64 {
         s.set(v);
         (v >> 11) as f64 * (1.0 / (1u64 << 53) as f64)
     })
+}
+
+// Helper: Evaluate fitness of an edge set against columnar log (zero string allocation)
+#[inline]
+fn evaluate_edges_fitness(edge_set: &HashSet<(u32, u32)>, col: &ColumnarLog) -> f64 {
+    let mut fitting_traces = 0;
+    let total_traces = col.trace_offsets.len().saturating_sub(1);
+
+    for t in 0..total_traces {
+        let start = col.trace_offsets[t];
+        let end = col.trace_offsets[t + 1];
+
+        // Check if all consecutive pairs in this trace are in the edge set
+        let trace_fits = if end > start + 1 {
+            (start..end.saturating_sub(1)).all(|i| {
+                let from = col.events[i];
+                let to = col.events[i + 1];
+                edge_set.contains(&(from, to))
+            })
+        } else {
+            true // Empty or single-event traces are considered fitting
+        };
+
+        if trace_fits {
+            fitting_traces += 1;
+        }
+    }
+
+    // Fitness = balance of fit and simplicity
+    let fit_ratio = fitting_traces as f64 / total_traces.max(1) as f64;
+    let complexity_penalty = 1.0 / (1.0 + (edge_set.len() as f64 / 20.0));
+
+    fit_ratio * 0.8 + complexity_penalty * 0.2
+}
+
+// Helper: Materialize a DirectlyFollowsGraph from edge set and vocabulary
+fn edge_set_to_dfg(edge_set: &HashSet<(u32, u32)>, vocab: &[String]) -> DirectlyFollowsGraph {
+    let mut dfg = DirectlyFollowsGraph::new();
+
+    // Add all activities as nodes
+    for activity in vocab.iter() {
+        dfg.nodes.push(DFGNode {
+            id: activity.clone(),
+            label: activity.clone(),
+            frequency: 1,
+        });
+    }
+
+    // Add edges from edge set
+    for &(from_id, to_id) in edge_set {
+        let from_idx = from_id as usize;
+        let to_idx = to_id as usize;
+
+        // Only add edge if indices are valid
+        if from_idx < vocab.len() && to_idx < vocab.len() {
+            dfg.edges.push(DirectlyFollowsRelation {
+                from: vocab[from_idx].clone(),
+                to: vocab[to_idx].clone(),
+                frequency: 1,
+            });
+        }
+    }
+
+    dfg
 }
 
 #[wasm_bindgen]

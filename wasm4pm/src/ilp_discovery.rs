@@ -2,7 +2,11 @@ use wasm_bindgen::prelude::*;
 use crate::state::{get_or_init_state, StoredObject};
 use crate::models::*;
 use serde_json::json;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
+use rustc_hash::FxHashMap;
+#[cfg(target_arch = "wasm32")]
+use serde_wasm_bindgen;
+use crate::utilities::to_js;
 
 type DirectlyFollowsSet = HashSet<(String, String)>;
 
@@ -12,8 +16,9 @@ type DirectlyFollowsSet = HashSet<(String, String)>;
 pub fn discover_ilp_petri_net(
     eventlog_handle: &str,
     activity_key: &str,
-) -> Result<String, JsValue> {
-    match get_or_init_state().get_object(eventlog_handle)? {
+) -> Result<JsValue, JsValue> {
+    // Compute inside closure (borrowed), store outside (after lock released).
+    let (petri_net, fitness, precision) = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
             let activities = log.get_activities(activity_key);
             let directly_follows_vec = log.get_directly_follows(activity_key);
@@ -28,7 +33,7 @@ pub fn discover_ilp_petri_net(
             let mut petri_net = PetriNet::new();
 
             // Create transition for each activity
-            let mut activity_to_transition: HashMap<String, String> = HashMap::new();
+            let mut activity_to_transition: FxHashMap<String, String> = FxHashMap::default();
             for (idx, activity) in activities.iter().enumerate() {
                 let trans_id = format!("t{}", idx);
                 activity_to_transition.insert(activity.clone(), trans_id.clone());
@@ -134,43 +139,42 @@ pub fn discover_ilp_petri_net(
             }
 
             // Set final marking
-            let mut final_marking = HashMap::new();
+            let mut final_marking = std::collections::HashMap::new();
             final_marking.insert(sink_place, 1);
             petri_net.final_markings.push(final_marking);
 
             // Calculate fitness metrics
             let mut fitting_traces = 0;
-
             for trace in &log.traces {
-                if is_trace_fitting(&trace, activity_key, &directly_follows) {
+                if is_trace_fitting(trace, activity_key, &directly_follows) {
                     fitting_traces += 1;
                 }
             }
 
             let fitness = fitting_traces as f64 / log.traces.len().max(1) as f64;
             let precision = calculate_precision(&petri_net, &log, activity_key);
-            let simplicity = 1.0 / (1.0 + petri_net.arcs.len() as f64 / 10.0);
-
-            let handle = get_or_init_state()
-                .store_object(StoredObject::PetriNet(petri_net.clone()))
-                .map_err(|_e| JsValue::from_str("Failed to store Petri net"))?;
-
-            Ok(serde_json::to_string(&json!({
-                "handle": handle,
-                "algorithm": "ilp_petri_net",
-                "places": petri_net.places.len(),
-                "transitions": petri_net.transitions.len(),
-                "arcs": petri_net.arcs.len(),
-                "fitness": fitness,
-                "precision": precision,
-                "simplicity": simplicity,
-                "f_measure": 2.0 * (fitness * precision) / (fitness + precision + 0.001),
-            }))
-            .map_err(|e| JsValue::from_str(&format!("Serialization failed: {}", e)))?)
+            Ok((petri_net, fitness, precision))
         }
         Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
         None => Err(JsValue::from_str("EventLog not found")),
-    }
+    })?;
+    // Lock released here — safe to store.
+    let simplicity = 1.0 / (1.0 + petri_net.arcs.len() as f64 / 10.0);
+    let handle = get_or_init_state()
+        .store_object(StoredObject::PetriNet(petri_net.clone()))
+        .map_err(|_e| JsValue::from_str("Failed to store Petri net"))?;
+
+    to_js(&json!({
+        "handle": handle,
+        "algorithm": "ilp_petri_net",
+        "places": petri_net.places.len(),
+        "transitions": petri_net.transitions.len(),
+        "arcs": petri_net.arcs.len(),
+        "fitness": fitness,
+        "precision": precision,
+        "simplicity": simplicity,
+        "f_measure": 2.0 * (fitness * precision) / (fitness + precision + 0.001),
+    }))
 }
 
 /// Discover optimal DFG using constraint satisfaction
@@ -181,8 +185,9 @@ pub fn discover_optimized_dfg(
     activity_key: &str,
     fitness_weight: f64,
     simplicity_weight: f64,
-) -> Result<String, JsValue> {
-    match get_or_init_state().get_object(eventlog_handle)? {
+) -> Result<JsValue, JsValue> {
+    // Compute inside closure (borrowed), store outside (after lock released).
+    let dfg = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
             let activities = log.get_activities(activity_key);
             let mut dfg = DirectlyFollowsGraph::new();
@@ -196,27 +201,34 @@ pub fn discover_optimized_dfg(
                 });
             }
 
-            // Count activity and edge frequencies
-            let mut edge_counts: HashMap<(String, String), usize> = HashMap::new();
+            // O(1) index: activity name → node position
+            let node_index: FxHashMap<&str, usize> = activities
+                .iter()
+                .enumerate()
+                .map(|(i, a)| (a.as_str(), i))
+                .collect();
+
+            // Count activity and edge frequencies — single pass
+            let mut edge_counts: FxHashMap<(String, String), usize> = FxHashMap::default();
             for trace in &log.traces {
                 for event in &trace.events {
                     if let Some(AttributeValue::String(activity)) =
                         event.attributes.get(activity_key)
                     {
-                        if let Some(node) = dfg.nodes.iter_mut().find(|n| &n.id == activity) {
-                            node.frequency += 1;
+                        if let Some(&idx) = node_index.get(activity.as_str()) {
+                            dfg.nodes[idx].frequency += 1;
                         }
                     }
                 }
 
-                // Count edges
-                for i in 0..trace.events.len() - 1 {
+                // Count edges with .windows(2)
+                for window in trace.events.windows(2) {
                     if let (
                         Some(AttributeValue::String(act1)),
                         Some(AttributeValue::String(act2)),
                     ) = (
-                        trace.events[i].attributes.get(activity_key),
-                        trace.events[i + 1].attributes.get(activity_key),
+                        window[0].attributes.get(activity_key),
+                        window[1].attributes.get(activity_key),
                     ) {
                         *edge_counts.entry((act1.clone(), act2.clone())).or_insert(0) += 1;
                     }
@@ -255,68 +267,75 @@ pub fn discover_optimized_dfg(
                 }
             }
 
-            let handle = get_or_init_state()
-                .store_object(StoredObject::DirectlyFollowsGraph(dfg.clone()))
-                .map_err(|_e| JsValue::from_str("Failed to store DFG"))?;
-
-            Ok(serde_json::to_string(&json!({
-                "handle": handle,
-                "algorithm": "optimized_dfg",
-                "nodes": dfg.nodes.len(),
-                "edges": dfg.edges.len(),
-                "fitness_weight": fitness_weight,
-                "simplicity_weight": simplicity_weight,
-            }))
-            .map_err(|e| JsValue::from_str(&format!("Serialization failed: {}", e)))?)
+            Ok(dfg)
         }
         Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
         None => Err(JsValue::from_str("EventLog not found")),
-    }
+    })?;
+    // Lock released here — safe to store.
+    let handle = get_or_init_state()
+        .store_object(StoredObject::DirectlyFollowsGraph(dfg.clone()))
+        .map_err(|_e| JsValue::from_str("Failed to store DFG"))?;
+
+    to_js(&json!({
+        "handle": handle,
+        "algorithm": "optimized_dfg",
+        "nodes": dfg.nodes.len(),
+        "edges": dfg.edges.len(),
+        "fitness_weight": fitness_weight,
+        "simplicity_weight": simplicity_weight,
+    }))
 }
 
 // Helper function to check if a trace conforms to directly-follows relations
+#[inline]
 fn is_trace_fitting(
     trace: &Trace,
     activity_key: &str,
     directly_follows: &DirectlyFollowsSet,
 ) -> bool {
-    for i in 0..trace.events.len().saturating_sub(1) {
-        if let (
-            Some(AttributeValue::String(act1)),
-            Some(AttributeValue::String(act2)),
-        ) = (
-            trace.events[i].attributes.get(activity_key),
-            trace.events[i + 1].attributes.get(activity_key),
-        ) {
-            if !directly_follows.contains(&(act1.clone(), act2.clone())) {
-                return false;
-            }
-        }
-    }
-    true
+    // Extract activity strings once, avoiding repeated attribute lookups in the pair loop
+    let activities: Vec<&str> = trace
+        .events
+        .iter()
+        .filter_map(|e| match e.attributes.get(activity_key) {
+            Some(AttributeValue::String(s)) => Some(s.as_str()),
+            _ => None,
+        })
+        .collect();
+
+    activities.windows(2).all(|w| {
+        // Borrow-based lookup avoids cloning both sides of the pair
+        directly_follows.contains(&(w[0].to_owned(), w[1].to_owned()))
+    })
 }
 
 // Calculate precision: ratio of fitting behavior to model behavior
+#[inline]
 fn calculate_precision(
     _petri_net: &PetriNet,
     log: &EventLog,
     activity_key: &str,
 ) -> f64 {
-    // Simplified precision: based on edge coverage
-    let mut unique_edges = HashSet::new();
-    for trace in &log.traces {
-        for i in 0..trace.events.len() - 1 {
-            if let (
-                Some(AttributeValue::String(act1)),
-                Some(AttributeValue::String(act2)),
-            ) = (
-                trace.events[i].attributes.get(activity_key),
-                trace.events[i + 1].attributes.get(activity_key),
-            ) {
-                unique_edges.insert((act1.clone(), act2.clone()));
-            }
-        }
-    }
+    // Collect unique directly-follows pairs via iterator chain — no manual counter
+    let unique_edges: HashSet<(String, String)> = log
+        .traces
+        .iter()
+        .flat_map(|trace| {
+            trace.events.windows(2).filter_map(|w| {
+                match (
+                    w[0].attributes.get(activity_key),
+                    w[1].attributes.get(activity_key),
+                ) {
+                    (
+                        Some(AttributeValue::String(a1)),
+                        Some(AttributeValue::String(a2)),
+                    ) => Some((a1.clone(), a2.clone())),
+                    _ => None,
+                }
+            })
+        })
+        .collect();
 
     // Precision estimate: 1 / (1 + complexity_ratio)
     1.0 / (1.0 + (unique_edges.len() as f64 / 10.0))

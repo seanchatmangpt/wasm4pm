@@ -9,6 +9,7 @@
 ## Tier System: Which Dataset to Use?
 
 ### Tier 1: Essential (Quick Validation)
+
 - **BPI 2020 Travel Permits** (7,065 cases, 86,581 events) — 30-35 seconds
   - Best for: Standard credible benchmarks
   - File: `BPI_2020_Travel_Permits_Actual.xes`
@@ -23,6 +24,7 @@
   - File: `Sepsis_Cases_Actual.xes`
 
 ### Tier 2: Comprehensive (Medium Testing)
+
 - **BPI 2019 Invoice Purchase** (200K events, 1.6M events total) — 2-5 minutes
   - Best for: Scalability profiling, complex algorithms
   - File: `BPI_2019_Invoice_Purchase_to_Pay.xes`
@@ -32,6 +34,7 @@
   - File: `BPI_2015_Building_Permits.xes`
 
 ### Tier 3: Stress Testing (Large Scale)
+
 - **Road Traffic Fines** (150K cases, 561K events) — 5-10 minutes
   - Best for: Memory profiling, extreme scale validation
   - File: `Road_Traffic_Fine_Management.xes`
@@ -64,7 +67,7 @@ License: CC BY 4.0 (if using real BPI 2020)
 ======================================================================
 
 DFG Discovery
-Cases        Events       Median ms 
+Cases        Events       Median ms
 ------------------------------------
 7065         141300       XXX.XX
 ...
@@ -73,6 +76,7 @@ Cases        Events       Median ms
 ## Fallback: Synthetic Data
 
 If real datasets aren't available, benchmarks automatically generate synthetic data:
+
 - Uses synthetic logs (6 activities, 20 events/case, variable sizes)
 - All 35 tests pass (not credible for publication)
 - Great for development, testing, CI/CD pipelines
@@ -80,6 +84,7 @@ If real datasets aren't available, benchmarks automatically generate synthetic d
 ## For ChatmanGPT's Competitive Strategy
 
 **Recommended sequence:**
+
 1. **Start:** Tier 1 - BPI 2020 Travel Permits (credible, publishable)
 2. **Validate:** Tier 2 - BPI 2019 (shows scalability)
 3. **Stress Test:** Tier 3 - Road Traffic Fines (ultimate benchmark)

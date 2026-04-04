@@ -2,89 +2,114 @@ use wasm_bindgen::prelude::*;
 use crate::state::{get_or_init_state, StoredObject};
 use crate::models::*;
 use serde_json::json;
-use std::collections::{HashMap, HashSet};
+use std::cell::Cell;
+use std::collections::HashSet;
+use rustc_hash::FxHashMap;
+#[cfg(target_arch = "wasm32")]
+use serde_wasm_bindgen;
+use crate::utilities::to_js;
 
-type DirectlyFollowsSet = HashSet<(String, String)>;
+type EdgeSet = HashSet<(u32, u32)>;
 
 /// Genetic Algorithm for process model discovery
-/// Evolves a population of DFGs to find models that fit the log well
+/// Evolves a population of edge sets to find models that fit the log well
 #[wasm_bindgen]
 pub fn discover_genetic_algorithm(
     eventlog_handle: &str,
     activity_key: &str,
     population_size: usize,
     generations: usize,
-) -> Result<String, JsValue> {
-    match get_or_init_state().get_object(eventlog_handle)? {
-        Some(StoredObject::EventLog(log)) => {
-            let activities = log.get_activities(activity_key);
-            let directly_follows_vec = log.get_directly_follows(activity_key);
+) -> Result<JsValue, JsValue> {
+    // Compute inside closure (borrowed), store outside (after lock released).
+    let (best_edges, best_fitness, vocab) =
+        get_or_init_state().with_object(eventlog_handle, |obj| match obj {
+            Some(StoredObject::EventLog(log)) => {
+                let col = log.to_columnar(activity_key);
 
-            // Convert to set for fast lookup
-            let mut directly_follows: DirectlyFollowsSet = HashSet::new();
-            for (from, to, _freq) in &directly_follows_vec {
-                directly_follows.insert((from.clone(), to.clone()));
-            }
+                // Build edge vocabulary from columnar log
+                let mut edge_vocab: Vec<(u32, u32)> = Vec::new();
+                let mut edge_map: FxHashMap<(u32, u32), usize> = FxHashMap::default();
 
-            // Initialize population with random DFGs
-            let mut population: Vec<(DirectlyFollowsGraph, f64)> = Vec::new();
-
-            // Create initial population
-            for _ in 0..population_size {
-                let dfg = create_random_dfg(&activities, &directly_follows, 0.7);
-                let fitness = evaluate_fitness(&dfg, &log, activity_key);
-                population.push((dfg, fitness));
-            }
-
-            // Evolution loop
-            for _generation in 0..generations {
-                // Sort by fitness (descending)
-                population.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
-
-                // Keep top performers (elitism)
-                let elite_size = (population_size / 4).max(1);
-                let mut new_population = population[..elite_size].to_vec();
-
-                // Generate offspring through crossover and mutation
-                while new_population.len() < population_size {
-                    let parent1 = &population[rand_select(&population)].0;
-                    let parent2 = &population[rand_select(&population)].0;
-
-                    let mut child = crossover(parent1, parent2);
-                    mutate(&mut child, 0.1); // 10% mutation rate
-
-                    let fitness = evaluate_fitness(&child, &log, activity_key);
-                    new_population.push((child, fitness));
+                for t in 0..col.trace_offsets.len().saturating_sub(1) {
+                    let start = col.trace_offsets[t];
+                    let end = col.trace_offsets[t + 1];
+                    for i in start..end.saturating_sub(1) {
+                        let edge = (col.events[i], col.events[i + 1]);
+                        edge_map
+                            .entry(edge)
+                            .and_modify(|_| {})
+                            .or_insert_with(|| {
+                                edge_vocab.push(edge);
+                                edge_vocab.len() - 1
+                            });
+                    }
                 }
 
-                // Trim to population size
-                new_population.truncate(population_size);
-                population = new_population;
+                // Collect vocab before closure ends
+                let vocab: Vec<String> = col.vocab.iter().map(|s| s.to_string()).collect();
+
+                // Initialize population with random edge sets
+                let mut population: Vec<(EdgeSet, f64)> = Vec::new();
+
+                for _ in 0..population_size {
+                    let edge_set = create_random_edge_set(&edge_vocab, 0.7);
+                    let fitness = evaluate_edges_fitness(&edge_set, &col);
+                    population.push((edge_set, fitness));
+                }
+
+                // Evolution loop
+                for _generation in 0..generations {
+                    // Sort by fitness (descending)
+                    population.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+
+                    // Keep top performers (elitism)
+                    let elite_size = (population_size / 4).max(1);
+                    let mut new_population = population[..elite_size].to_vec();
+
+                    // Generate offspring through crossover and mutation
+                    while new_population.len() < population_size {
+                        let parent1 = population[rand_select(&population)].0.clone();
+                        let parent2 = population[rand_select(&population)].0.clone();
+
+                        let mut child = crossover_edges(&parent1, &parent2);
+                        mutate_edges(&mut child, 0.1); // 10% mutation rate
+
+                        let fitness = evaluate_edges_fitness(&child, &col);
+                        new_population.push((child, fitness));
+                    }
+
+                    // Trim to population size
+                    new_population.truncate(population_size);
+                    population = new_population;
+                }
+
+                // Get best solution
+                population.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+                let best_fitness = population[0].1;
+                let best_edges = population.remove(0).0;
+                Ok((best_edges, best_fitness, vocab))
             }
+            Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
+            None => Err(JsValue::from_str("EventLog not found")),
+        })?;
+    // Lock released here — safe to store.
 
-            // Get best solution
-            population.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
-            let best_dfg = &population[0].0;
-            let best_fitness = population[0].1;
+    // Materialize DFG from best edges
+    let best_dfg = edge_set_to_dfg(&best_edges, &vocab);
 
-            let handle = get_or_init_state()
-                .store_object(StoredObject::DirectlyFollowsGraph(best_dfg.clone()))
-                .map_err(|_e| JsValue::from_str("Failed to store DFG"))?;
+    let handle = get_or_init_state()
+        .store_object(StoredObject::DirectlyFollowsGraph(best_dfg.clone()))
+        .map_err(|_e| JsValue::from_str("Failed to store DFG"))?;
 
-            Ok(serde_json::to_string(&json!({
-                "handle": handle,
-                "algorithm": "genetic_algorithm",
-                "nodes": best_dfg.nodes.len(),
-                "edges": best_dfg.edges.len(),
-                "final_fitness": best_fitness,
-                "population_size": population_size,
-                "generations": generations,
-            }))
-            .map_err(|e| JsValue::from_str(&format!("Serialization failed: {}", e)))?)
-        }
-        Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
-    }
+    to_js(&json!({
+        "handle": handle,
+        "algorithm": "genetic_algorithm",
+        "nodes": best_dfg.nodes.len(),
+        "edges": best_dfg.edges.len(),
+        "final_fitness": best_fitness,
+        "population_size": population_size,
+        "generations": generations,
+    }))
 }
 
 /// Particle Swarm Optimization for process discovery
@@ -95,101 +120,217 @@ pub fn discover_pso_algorithm(
     activity_key: &str,
     swarm_size: usize,
     iterations: usize,
-) -> Result<String, JsValue> {
-    match get_or_init_state().get_object(eventlog_handle)? {
-        Some(StoredObject::EventLog(log)) => {
-            let activities = log.get_activities(activity_key);
-            let directly_follows_vec = log.get_directly_follows(activity_key);
+) -> Result<JsValue, JsValue> {
+    // Compute inside closure (borrowed), store outside (after lock released).
+    let (best_edges, best_fitness, vocab) =
+        get_or_init_state().with_object(eventlog_handle, |obj| match obj {
+            Some(StoredObject::EventLog(log)) => {
+                let col = log.to_columnar(activity_key);
 
-            // Convert to set for fast lookup
-            let mut directly_follows: DirectlyFollowsSet = HashSet::new();
-            for (from, to, _freq) in &directly_follows_vec {
-                directly_follows.insert((from.clone(), to.clone()));
-            }
+                // Build edge vocabulary from columnar log
+                let mut edge_vocab: Vec<(u32, u32)> = Vec::new();
+                let mut edge_map: FxHashMap<(u32, u32), usize> = FxHashMap::default();
 
-            // Initialize swarm (particles)
-            let mut particles: Vec<(DirectlyFollowsGraph, f64)> = Vec::new();
-            let mut best_global: Option<(DirectlyFollowsGraph, f64)> = None;
-
-            for _ in 0..swarm_size {
-                let dfg = create_random_dfg(&activities, &directly_follows, 0.6);
-                let fitness = evaluate_fitness(&dfg, &log, activity_key);
-
-                if best_global.is_none() || fitness > best_global.as_ref().unwrap().1 {
-                    best_global = Some((dfg.clone(), fitness));
-                }
-
-                particles.push((dfg, fitness));
-            }
-
-            // PSO iterations
-            for _iter in 0..iterations {
-                for i in 0..particles.len() {
-                    let current_fitness = particles[i].1;
-                    let best_global_fitness = best_global.as_ref().unwrap().1;
-
-                    // Move toward best solution with some randomness
-                    let improvement_rate = 0.5 + (best_global_fitness - current_fitness).max(0.0) / 10.0;
-                    let move_probability = improvement_rate.min(0.9);
-
-                    if random_float() < move_probability {
-                        particles[i].0 = blend_dfgs(
-                            &particles[i].0,
-                            &best_global.as_ref().unwrap().0,
-                            0.3,
-                        );
-
-                        // Add small mutation for exploration
-                        mutate(&mut particles[i].0, 0.05);
-                    }
-
-                    let new_fitness = evaluate_fitness(&particles[i].0, &log, activity_key);
-                    particles[i].1 = new_fitness;
-
-                    // Update global best
-                    if new_fitness > best_global.as_ref().unwrap().1 {
-                        best_global = Some((particles[i].0.clone(), new_fitness));
+                for t in 0..col.trace_offsets.len().saturating_sub(1) {
+                    let start = col.trace_offsets[t];
+                    let end = col.trace_offsets[t + 1];
+                    for i in start..end.saturating_sub(1) {
+                        let edge = (col.events[i], col.events[i + 1]);
+                        edge_map
+                            .entry(edge)
+                            .and_modify(|_| {})
+                            .or_insert_with(|| {
+                                edge_vocab.push(edge);
+                                edge_vocab.len() - 1
+                            });
                     }
                 }
+
+                // Collect vocab before closure ends
+                let vocab: Vec<String> = col.vocab.iter().map(|s| s.to_string()).collect();
+
+                // Initialize swarm (particles)
+                let mut particles: Vec<(EdgeSet, f64)> = Vec::new();
+                let mut best_global: Option<(EdgeSet, f64)> = None;
+
+                for _ in 0..swarm_size {
+                    let edge_set = create_random_edge_set(&edge_vocab, 0.6);
+                    let fitness = evaluate_edges_fitness(&edge_set, &col);
+
+                    if best_global.is_none() || fitness > best_global.as_ref().unwrap().1 {
+                        best_global = Some((edge_set.clone(), fitness));
+                    }
+
+                    particles.push((edge_set, fitness));
+                }
+
+                // PSO iterations
+                for _iter in 0..iterations {
+                    for i in 0..particles.len() {
+                        let current_fitness = particles[i].1;
+                        let best_global_fitness = best_global.as_ref().unwrap().1;
+
+                        // Move toward best solution with some randomness
+                        let improvement_rate =
+                            0.5 + (best_global_fitness - current_fitness).max(0.0) / 10.0;
+                        let move_probability = improvement_rate.min(0.9);
+
+                        if random_float() < move_probability {
+                            particles[i].0 = blend_edges(
+                                &particles[i].0,
+                                &best_global.as_ref().unwrap().0,
+                                0.3,
+                            );
+
+                            // Add small mutation for exploration
+                            mutate_edges(&mut particles[i].0, 0.05);
+                        }
+
+                        let new_fitness = evaluate_edges_fitness(&particles[i].0, &col);
+                        particles[i].1 = new_fitness;
+
+                        // Update global best
+                        if new_fitness > best_global.as_ref().unwrap().1 {
+                            best_global = Some((particles[i].0.clone(), new_fitness));
+                        }
+                    }
+                }
+
+                match best_global {
+                    Some((edges, fitness)) => Ok((edges, fitness, vocab)),
+                    None => Err(JsValue::from_str("Failed to find best solution")),
+                }
             }
+            Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
+            None => Err(JsValue::from_str("EventLog not found")),
+        })?;
+    // Lock released here — safe to store.
 
-            let (best_dfg, best_fitness) = match best_global {
-                Some((dfg, fitness)) => (dfg, fitness),
-                None => return Err(JsValue::from_str("Failed to find best solution")),
-            };
+    // Materialize DFG from best edges
+    let best_dfg = edge_set_to_dfg(&best_edges, &vocab);
 
-            let handle = get_or_init_state()
-                .store_object(StoredObject::DirectlyFollowsGraph(best_dfg.clone()))
-                .map_err(|_e| JsValue::from_str("Failed to store DFG"))?;
+    let handle = get_or_init_state()
+        .store_object(StoredObject::DirectlyFollowsGraph(best_dfg.clone()))
+        .map_err(|_e| JsValue::from_str("Failed to store DFG"))?;
 
-            Ok(serde_json::to_string(&json!({
-                "handle": handle,
-                "algorithm": "pso_algorithm",
-                "nodes": best_dfg.nodes.len(),
-                "edges": best_dfg.edges.len(),
-                "final_fitness": best_fitness,
-                "swarm_size": swarm_size,
-                "iterations": iterations,
-            }))
-            .map_err(|e| JsValue::from_str(&format!("Serialization failed: {}", e)))?)
+    to_js(&json!({
+        "handle": handle,
+        "algorithm": "pso_algorithm",
+        "nodes": best_dfg.nodes.len(),
+        "edges": best_dfg.edges.len(),
+        "final_fitness": best_fitness,
+        "swarm_size": swarm_size,
+        "iterations": iterations,
+    }))
+}
+
+// Helper: Create random edge set from vocabulary
+fn create_random_edge_set(edge_vocab: &[(u32, u32)], inclusion_probability: f64) -> EdgeSet {
+    let mut edge_set: EdgeSet = HashSet::new();
+    for &edge in edge_vocab {
+        if random_float() < inclusion_probability {
+            edge_set.insert(edge);
         }
-        Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+    }
+    edge_set
+}
+
+// Helper: Evaluate fitness of an edge set against columnar log (zero string allocation)
+#[inline]
+fn evaluate_edges_fitness(edge_set: &EdgeSet, col: &ColumnarLog) -> f64 {
+    let mut fitting_traces = 0;
+    let total_traces = col.trace_offsets.len().saturating_sub(1);
+
+    for t in 0..total_traces {
+        let start = col.trace_offsets[t];
+        let end = col.trace_offsets[t + 1];
+
+        // Check if all consecutive pairs in this trace are in the edge set
+        let trace_fits = if end > start + 1 {
+            (start..end.saturating_sub(1)).all(|i| {
+                let from = col.events[i];
+                let to = col.events[i + 1];
+                edge_set.contains(&(from, to))
+            })
+        } else {
+            true // Empty or single-event traces are considered fitting
+        };
+
+        if trace_fits {
+            fitting_traces += 1;
+        }
+    }
+
+    // Fitness = balance of fit and simplicity
+    let fit_ratio = fitting_traces as f64 / total_traces.max(1) as f64;
+    let complexity_penalty = 1.0 / (1.0 + (edge_set.len() as f64 / 20.0));
+
+    fit_ratio * 0.8 + complexity_penalty * 0.2
+}
+
+// Helper: Crossover operation on edge sets
+fn crossover_edges(parent1: &EdgeSet, parent2: &EdgeSet) -> EdgeSet {
+    let mut child: EdgeSet = HashSet::new();
+
+    // Copy all edges from parent1
+    for &edge in parent1 {
+        child.insert(edge);
+    }
+
+    // Add edges from parent2 with 50% probability
+    for &edge in parent2 {
+        if random_float() < 0.5 {
+            child.insert(edge);
+        }
+    }
+
+    child
+}
+
+// Helper: Blend two edge sets
+fn blend_edges(set1: &EdgeSet, set2: &EdgeSet, ratio: f64) -> EdgeSet {
+    let mut result: EdgeSet = HashSet::new();
+
+    // Copy all edges from set1
+    for &edge in set1 {
+        result.insert(edge);
+    }
+
+    // Add edges from set2 with given probability
+    for &edge in set2 {
+        if random_float() < ratio || set1.contains(&edge) {
+            result.insert(edge);
+        }
+    }
+
+    result
+}
+
+// Helper: Mutation operation on edge sets
+fn mutate_edges(edge_set: &mut EdgeSet, mutation_rate: f64) {
+    if random_float() < mutation_rate {
+        if !edge_set.is_empty() && random_float() < 0.5 {
+            // Remove random edge
+            if let Some(&edge) = edge_set.iter().next() {
+                edge_set.remove(&edge);
+            }
+        } else {
+            // Add random edge (simple mutation: add a random u32 pair)
+            let from = (random_float() * u32::MAX as f64) as u32;
+            let to = (random_float() * u32::MAX as f64) as u32;
+            if from != to {
+                edge_set.insert((from, to));
+            }
+        }
     }
 }
 
-// Helper: Create random DFG structure
-fn create_random_dfg(
-    activities: &[String],
-    directly_follows: &DirectlyFollowsSet,
-    inclusion_probability: f64,
-) -> DirectlyFollowsGraph {
+// Helper: Materialize a DirectlyFollowsGraph from edge set and vocabulary
+fn edge_set_to_dfg(edge_set: &EdgeSet, vocab: &[String]) -> DirectlyFollowsGraph {
     let mut dfg = DirectlyFollowsGraph::new();
 
     // Add all activities as nodes
-    let mut activity_frequencies: HashMap<String, usize> = HashMap::new();
-    for activity in activities {
-        activity_frequencies.insert(activity.clone(), 1);
+    for activity in vocab.iter() {
         dfg.nodes.push(DFGNode {
             id: activity.clone(),
             label: activity.clone(),
@@ -197,12 +338,16 @@ fn create_random_dfg(
         });
     }
 
-    // Add edges based on directly-follows with probability
-    for (from, to) in directly_follows {
-        if random_float() < inclusion_probability {
+    // Add edges from edge set
+    for &(from_id, to_id) in edge_set {
+        let from_idx = from_id as usize;
+        let to_idx = to_id as usize;
+
+        // Only add edge if indices are valid
+        if from_idx < vocab.len() && to_idx < vocab.len() {
             dfg.edges.push(DirectlyFollowsRelation {
-                from: from.clone(),
-                to: to.clone(),
+                from: vocab[from_idx].clone(),
+                to: vocab[to_idx].clone(),
                 frequency: 1,
             });
         }
@@ -211,140 +356,59 @@ fn create_random_dfg(
     dfg
 }
 
-// Helper: Evaluate fitness of a DFG against the event log
-fn evaluate_fitness(dfg: &DirectlyFollowsGraph, log: &EventLog, activity_key: &str) -> f64 {
-    let mut fitting_traces = 0.0;
-    let edge_set: HashSet<(String, String)> = dfg
-        .edges
-        .iter()
-        .map(|e| (e.from.clone(), e.to.clone()))
-        .collect();
+// Helper: Random selection from population.
+// For small populations (≤ 50, the typical benchmark size) we use a direct
+// fitness-proportionate computation instead of building and scanning a
+// cumulative-weight array, keeping the hot path branch-free.
+fn rand_select<T>(items: &[(T, f64)]) -> usize {
+    let n = items.len();
+    debug_assert!(n > 0, "rand_select called with empty slice");
 
-    for trace in &log.traces {
-        let mut trace_fits = true;
-        for i in 0..trace.events.len() - 1 {
-            if let (
-                Some(AttributeValue::String(act1)),
-                Some(AttributeValue::String(act2)),
-            ) = (
-                trace.events[i].attributes.get(activity_key),
-                trace.events[i + 1].attributes.get(activity_key),
-            ) {
-                if !edge_set.contains(&(act1.clone(), act2.clone())) {
-                    trace_fits = false;
-                    break;
+    // Fast path: for small populations compute the selection directly.
+    if n <= 50 {
+        let total: f64 = items.iter().map(|(_, f)| f.max(0.0)).sum();
+        if total > 0.0 {
+            let mut threshold = random_float() * total;
+            for (i, (_, fitness)) in items.iter().enumerate() {
+                threshold -= fitness.max(0.0);
+                if threshold <= 0.0 {
+                    return i;
                 }
             }
         }
-        if trace_fits {
-            fitting_traces += 1.0;
-        }
+        // Fallback (e.g. all fitnesses are zero): uniform random index.
+        return (random_float() * n as f64) as usize % n;
     }
 
-    // Fitness = balance of fit and simplicity
-    let fit_ratio = fitting_traces / log.traces.len().max(1) as f64;
-    let complexity_penalty = 1.0 / (1.0 + (dfg.edges.len() as f64 / 20.0));
-
-    fit_ratio * 0.8 + complexity_penalty * 0.2
-}
-
-// Helper: Crossover operation
-fn crossover(parent1: &DirectlyFollowsGraph, parent2: &DirectlyFollowsGraph) -> DirectlyFollowsGraph {
-    let mut child = DirectlyFollowsGraph::new();
-
-    // Copy all nodes from parent1
-    child.nodes = parent1.nodes.clone();
-
-    // Combine edges from both parents
-    let mut edge_set: HashSet<(String, String)> = HashSet::new();
-    for edge in &parent1.edges {
-        edge_set.insert((edge.from.clone(), edge.to.clone()));
-    }
-    for edge in &parent2.edges {
-        if random_float() < 0.5 {
-            edge_set.insert((edge.from.clone(), edge.to.clone()));
-        }
-    }
-
-    // Build edges from set
-    for (from, to) in edge_set {
-        child.edges.push(DirectlyFollowsRelation {
-            from,
-            to,
-            frequency: 1,
-        });
-    }
-
-    child.start_activities = parent1.start_activities.clone();
-    child.end_activities = parent1.end_activities.clone();
-
-    child
-}
-
-// Helper: Blend two DFGs
-fn blend_dfgs(dfg1: &DirectlyFollowsGraph, dfg2: &DirectlyFollowsGraph, ratio: f64) -> DirectlyFollowsGraph {
-    let mut result = DirectlyFollowsGraph::new();
-    result.nodes = dfg1.nodes.clone();
-
-    let set1: HashSet<(String, String)> = dfg1
-        .edges
-        .iter()
-        .map(|e| (e.from.clone(), e.to.clone()))
-        .collect();
-
-    for edge in &dfg2.edges {
-        let key = (edge.from.clone(), edge.to.clone());
-        if random_float() < ratio || set1.contains(&key) {
-            if !result.edges.iter().any(|e| e.from == edge.from && e.to == edge.to) {
-                result.edges.push(edge.clone());
+    // General path for larger populations: same algorithm, same cost, but
+    // kept separate so the fast path compiles without a branch on `n`.
+    let total: f64 = items.iter().map(|(_, f)| f.max(0.0)).sum();
+    if total > 0.0 {
+        let mut threshold = random_float() * total;
+        for (i, (_, fitness)) in items.iter().enumerate() {
+            threshold -= fitness.max(0.0);
+            if threshold <= 0.0 {
+                return i;
             }
         }
     }
-
-    result
-}
-
-// Helper: Mutation operation
-fn mutate(dfg: &mut DirectlyFollowsGraph, mutation_rate: f64) {
-    if random_float() < mutation_rate {
-        if !dfg.edges.is_empty() && random_float() < 0.5 {
-            // Remove random edge
-            let idx = (random_float() * dfg.edges.len() as f64) as usize;
-            if idx < dfg.edges.len() {
-                dfg.edges.remove(idx);
-            }
-        } else if !dfg.nodes.len() < 2 {
-            // Add random edge between nodes
-            let from_idx = (random_float() * dfg.nodes.len() as f64) as usize;
-            let to_idx = (random_float() * dfg.nodes.len() as f64) as usize;
-            if from_idx != to_idx && from_idx < dfg.nodes.len() && to_idx < dfg.nodes.len() {
-                let from = dfg.nodes[from_idx].id.clone();
-                let to = dfg.nodes[to_idx].id.clone();
-                if !dfg.edges.iter().any(|e| e.from == from && e.to == to) {
-                    dfg.edges.push(DirectlyFollowsRelation {
-                        from,
-                        to,
-                        frequency: 1,
-                    });
-                }
-            }
-        }
-    }
-}
-
-// Helper: Random selection from population
-fn rand_select<T>(_items: &[(T, f64)]) -> usize {
-    ((random_float() * _items.len() as f64) as usize).min(_items.len() - 1)
+    (random_float() * n as f64) as usize % n
 }
 
 // Helper: Random float between 0 and 1
+// Uses a thread-local LCG (linear congruential generator) to avoid the
+// syscall overhead of SystemTime::now() on every invocation.
+thread_local! {
+    static LCG_STATE: Cell<u64> = Cell::new(0xDEAD_BEEF_CAFE_BABE);
+}
 fn random_float() -> f64 {
-    use std::time::{SystemTime, UNIX_EPOCH};
-    let duration = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default();
-    let nanos = duration.subsec_nanos() as f64;
-    (nanos % 1000000.0) / 1000000.0
+    LCG_STATE.with(|s| {
+        let next = s.get()
+            .wrapping_mul(6_364_136_223_846_793_005)
+            .wrapping_add(1_442_695_040_888_963_407);
+        s.set(next);
+        (next >> 11) as f64 * (1.0 / (1u64 << 53) as f64)
+    })
 }
 
 #[wasm_bindgen]

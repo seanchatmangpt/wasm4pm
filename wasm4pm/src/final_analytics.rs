@@ -2,60 +2,68 @@ use wasm_bindgen::prelude::*;
 use crate::state::{get_or_init_state, StoredObject};
 use crate::models::*;
 use serde_json::json;
-use std::collections::HashMap;
+use std::collections::HashSet;
+use rustc_hash::FxHashMap;
+use itertools::Itertools;
+#[cfg(target_arch = "wasm32")]
+use serde_wasm_bindgen;
+use crate::utilities::to_js;
 
 /// Variant Complexity - measure variant entropy and diversity
 #[wasm_bindgen]
 pub fn analyze_variant_complexity(
     eventlog_handle: &str,
     activity_key: &str,
-) -> Result<String, JsValue> {
-    match get_or_init_state().get_object(eventlog_handle)? {
+) -> Result<JsValue, JsValue> {
+    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
-            let mut variants: HashMap<Vec<String>, usize> = HashMap::new();
             let total = log.traces.len() as f64;
 
-            for trace in &log.traces {
-                let path: Vec<String> = trace
-                    .events
-                    .iter()
-                    .filter_map(|e| {
-                        if let Some(AttributeValue::String(a)) = e.attributes.get(activity_key) {
-                            Some(a.clone())
-                        } else {
-                            None
-                        }
-                    })
-                    .collect();
-                *variants.entry(path).or_insert(0) += 1;
-            }
+            // Single-pass: build variant counts with itertools::counts()
+            let variants = log
+                .traces
+                .iter()
+                .map(|trace| {
+                    trace
+                        .events
+                        .iter()
+                        .filter_map(|e| {
+                            if let Some(AttributeValue::String(a)) = e.attributes.get(activity_key)
+                            {
+                                Some(a.clone())
+                            } else {
+                                None
+                            }
+                        })
+                        .collect::<Vec<String>>()
+                })
+                .counts();
 
-            // Calculate Shannon entropy
-            let mut entropy = 0.0;
-            for count in variants.values() {
-                let p = *count as f64 / total;
-                entropy -= p * p.log2();
-            }
+            // Shannon entropy — use mul_add to reduce rounding error (enables FMA)
+            let entropy: f64 = variants.values().fold(0.0_f64, |acc, &count| {
+                let p = count as f64 / total;
+                // acc + (- p * log2(p))  =>  p.log2().mul_add(-p, acc)
+                p.log2().mul_add(-p, acc)
+            });
 
             let coverage_top_10: f64 = variants
                 .values()
-                .map(|v| (*v as f64 / total).max(0.0))
+                .map(|&v| v as f64 / total)
                 .take(10)
                 .sum();
 
-            Ok(serde_json::to_string(&json!({
+            to_js(&json!({
                 "total_variants": variants.len(),
                 "entropy": entropy,
-                "max_entropy": (total.log2()),
+                "max_entropy": total.log2(),
                 "normalized_entropy": entropy / total.log2(),
                 "top_10_coverage": coverage_top_10,
-                "predominant_variant_size": variants.values().max().copied().unwrap_or(0),
+                "predominant_variant_size": variants.values().copied().max().unwrap_or(0),
             }))
-            .map_err(|e| JsValue::from_str(&format!("Serialization failed: {}", e)))?)
         }
         Some(_) => Err(JsValue::from_str("Not an EventLog")),
         None => Err(JsValue::from_str("EventLog not found")),
-    }
+    })
 }
 
 /// Activity Transition Matrix - co-activity flow matrix
@@ -63,27 +71,30 @@ pub fn analyze_variant_complexity(
 pub fn compute_activity_transition_matrix(
     eventlog_handle: &str,
     activity_key: &str,
-) -> Result<String, JsValue> {
-    match get_or_init_state().get_object(eventlog_handle)? {
+) -> Result<JsValue, JsValue> {
+    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
             let activities = log.get_activities(activity_key);
-            let mut transitions: HashMap<(String, String), usize> = HashMap::new();
-            let mut activity_total: HashMap<String, usize> = HashMap::new();
+            let mut transitions: FxHashMap<(String, String), usize> = FxHashMap::default();
+            let mut activity_total: FxHashMap<String, usize> = FxHashMap::default();
 
             for activity in &activities {
                 activity_total.insert(activity.clone(), 0);
             }
 
             for trace in &log.traces {
-                for i in 0..trace.events.len().saturating_sub(1) {
-                    if let (Some(AttributeValue::String(a1)), Some(AttributeValue::String(a2))) = (
-                        trace.events[i].attributes.get(activity_key),
-                        trace.events[i + 1].attributes.get(activity_key),
+                trace.events.windows(2).for_each(|w| {
+                    if let (
+                        Some(AttributeValue::String(a1)),
+                        Some(AttributeValue::String(a2)),
+                    ) = (
+                        w[0].attributes.get(activity_key),
+                        w[1].attributes.get(activity_key),
                     ) {
                         *transitions.entry((a1.clone(), a2.clone())).or_insert(0) += 1;
                         *activity_total.entry(a1.clone()).or_insert(0) += 1;
                     }
-                }
+                });
             }
 
             // Compute transition probabilities
@@ -100,15 +111,14 @@ pub fn compute_activity_transition_matrix(
                 })
                 .collect();
 
-            Ok(serde_json::to_string(&json!({
+            to_js(&json!({
                 "matrix": matrix_data,
                 "num_activities": activities.len(),
             }))
-            .map_err(|e| JsValue::from_str(&format!("Serialization failed: {}", e)))?)
         }
         Some(_) => Err(JsValue::from_str("Not an EventLog")),
         None => Err(JsValue::from_str("EventLog not found")),
-    }
+    })
 }
 
 /// Process Speedup Analysis - identify where process accelerates/decelerates
@@ -116,9 +126,9 @@ pub fn compute_activity_transition_matrix(
 pub fn analyze_process_speedup(
     eventlog_handle: &str,
     timestamp_key: &str,
-    window_size: usize,
-) -> Result<String, JsValue> {
-    match get_or_init_state().get_object(eventlog_handle)? {
+    _window_size: usize,
+) -> Result<JsValue, JsValue> {
+    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
             let mut time_gaps: Vec<f64> = Vec::new();
 
@@ -139,11 +149,10 @@ pub fn analyze_process_speedup(
             }
 
             if time_gaps.is_empty() {
-                return Ok(serde_json::to_string(&json!({
+                return to_js(&json!({
                     "message": "No timestamps found",
                     "gaps": []
-                }))
-                .map_err(|e| JsValue::from_str(&format!("Serialization failed: {}", e)))?);
+                }));
             }
 
             time_gaps.sort_by(|a, b| a.partial_cmp(b).unwrap());
@@ -152,17 +161,16 @@ pub fn analyze_process_speedup(
             let percentile_25 = time_gaps[(time_gaps.len() as f64 * 0.25) as usize];
             let percentile_75 = time_gaps[(time_gaps.len() as f64 * 0.75) as usize];
 
-            Ok(serde_json::to_string(&json!({
+            to_js(&json!({
                 "avg_gap": mean,
                 "p25": percentile_25,
                 "p75": percentile_75,
                 "speedup_range": percentile_75 - percentile_25,
             }))
-            .map_err(|e| JsValue::from_str(&format!("Serialization failed: {}", e)))?)
         }
         Some(_) => Err(JsValue::from_str("Not an EventLog")),
         None => Err(JsValue::from_str("EventLog not found")),
-    }
+    })
 }
 
 /// Trace Distance Matrix - compute pairwise trace similarity
@@ -170,45 +178,29 @@ pub fn analyze_process_speedup(
 pub fn compute_trace_similarity_matrix(
     eventlog_handle: &str,
     activity_key: &str,
-) -> Result<String, JsValue> {
-    match get_or_init_state().get_object(eventlog_handle)? {
+) -> Result<JsValue, JsValue> {
+    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
             let mut similarities = Vec::new();
 
+            // Pre-compute HashSet<&str> per trace — O(n log n) once, O(1) per pair lookup
+            let trace_sets: Vec<HashSet<&str>> = log.traces
+                .iter()
+                .map(|trace| {
+                    trace.events
+                        .iter()
+                        .filter_map(|e| e.attributes.get(activity_key)?.as_string())
+                        .collect()
+                })
+                .collect();
+
             for i in 0..log.traces.len() {
                 for j in (i + 1)..log.traces.len() {
-                    let trace_i: Vec<String> = log.traces[i]
-                        .events
-                        .iter()
-                        .filter_map(|e| {
-                            if let Some(AttributeValue::String(a)) = e.attributes.get(activity_key)
-                            {
-                                Some(a.clone())
-                            } else {
-                                None
-                            }
-                        })
-                        .collect();
-
-                    let trace_j: Vec<String> = log.traces[j]
-                        .events
-                        .iter()
-                        .filter_map(|e| {
-                            if let Some(AttributeValue::String(a)) = e.attributes.get(activity_key)
-                            {
-                                Some(a.clone())
-                            } else {
-                                None
-                            }
-                        })
-                        .collect();
-
-                    // Jaccard similarity
-                    let common = trace_i
-                        .iter()
-                        .filter(|a| trace_j.contains(a))
+                    // Jaccard via set intersection/union — O(min(|i|,|j|)) per pair
+                    let common = trace_sets[i]
+                        .intersection(&trace_sets[j])
                         .count();
-                    let union = trace_i.len() + trace_j.len() - common;
+                    let union = trace_sets[i].len() + trace_sets[j].len() - common;
                     let similarity = if union > 0 {
                         common as f64 / union as f64
                     } else {
@@ -225,15 +217,14 @@ pub fn compute_trace_similarity_matrix(
                 }
             }
 
-            Ok(serde_json::to_string(&json!({
+            to_js(&json!({
                 "similar_pairs": similarities,
                 "total_pairs": (log.traces.len() * (log.traces.len() - 1)) / 2,
             }))
-            .map_err(|e| JsValue::from_str(&format!("Serialization failed: {}", e)))?)
         }
         Some(_) => Err(JsValue::from_str("Not an EventLog")),
         None => Err(JsValue::from_str("EventLog not found")),
-    }
+    })
 }
 
 /// Process Bottleneck Timeline - identify temporal bottlenecks
@@ -242,10 +233,10 @@ pub fn analyze_temporal_bottlenecks(
     eventlog_handle: &str,
     activity_key: &str,
     timestamp_key: &str,
-) -> Result<String, JsValue> {
-    match get_or_init_state().get_object(eventlog_handle)? {
+) -> Result<JsValue, JsValue> {
+    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
-            let mut activity_durations: HashMap<String, Vec<f64>> = HashMap::new();
+            let mut activity_durations: FxHashMap<String, Vec<f64>> = FxHashMap::default();
 
             for trace in &log.traces {
                 let activities: Vec<(String, String)> = trace
@@ -287,14 +278,13 @@ pub fn analyze_temporal_bottlenecks(
                 })
                 .collect();
 
-            Ok(serde_json::to_string(&json!({
+            to_js(&json!({
                 "bottlenecks": bottlenecks,
             }))
-            .map_err(|e| JsValue::from_str(&format!("Serialization failed: {}", e)))?)
         }
         Some(_) => Err(JsValue::from_str("Not an EventLog")),
         None => Err(JsValue::from_str("EventLog not found")),
-    }
+    })
 }
 
 /// Activity Ordering - extract mandatory activity ordering from log
@@ -302,24 +292,36 @@ pub fn analyze_temporal_bottlenecks(
 pub fn extract_activity_ordering(
     eventlog_handle: &str,
     activity_key: &str,
-) -> Result<String, JsValue> {
-    match get_or_init_state().get_object(eventlog_handle)? {
+) -> Result<JsValue, JsValue> {
+    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
-            let mut mandatory_predecessors: HashMap<String, std::collections::HashSet<String>> =
-                HashMap::new();
+            let mut mandatory_predecessors: FxHashMap<String, HashSet<String>> = FxHashMap::default();
 
             for trace in &log.traces {
-                let mut seen: std::collections::HashSet<String> = std::collections::HashSet::new();
-                for event in &trace.events {
-                    if let Some(AttributeValue::String(activity)) =
-                        event.attributes.get(activity_key)
-                    {
-                        mandatory_predecessors
-                            .entry(activity.clone())
-                            .or_insert_with(std::collections::HashSet::new)
-                            .extend(seen.clone());
-                        seen.insert(activity.clone());
-                    }
+                // Collect only events that carry the activity key, preserving order
+                let activities: Vec<&str> = trace
+                    .events
+                    .iter()
+                    .filter_map(|e| {
+                        if let Some(AttributeValue::String(a)) = e.attributes.get(activity_key) {
+                            Some(a.as_str())
+                        } else {
+                            None
+                        }
+                    })
+                    .collect();
+
+                for (pos, &activity) in activities.iter().enumerate() {
+                    // All activities that appear before this position are predecessors
+                    let predecessors: HashSet<String> = activities
+                        .iter()
+                        .take(pos)
+                        .map(|&a| a.to_owned())
+                        .collect();
+                    mandatory_predecessors
+                        .entry(activity.to_owned())
+                        .or_insert_with(HashSet::new)
+                        .extend(predecessors);
                 }
             }
 
@@ -333,14 +335,13 @@ pub fn extract_activity_ordering(
                 })
                 .collect();
 
-            Ok(serde_json::to_string(&json!({
+            to_js(&json!({
                 "activity_ordering": result,
             }))
-            .map_err(|e| JsValue::from_str(&format!("Serialization failed: {}", e)))?)
         }
         Some(_) => Err(JsValue::from_str("Not an EventLog")),
         None => Err(JsValue::from_str("EventLog not found")),
-    }
+    })
 }
 
 #[wasm_bindgen]

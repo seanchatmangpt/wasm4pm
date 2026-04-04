@@ -5,7 +5,7 @@ Architecture, extension points, and internal design documentation.
 ## Project Structure
 
 ```
-process_mining_wasm/
+wasm4pm/
 ├── src/                           # Rust WASM implementation
 │   ├── lib.rs                    # Entry point, module exports
 │   ├── api.ts                    # TypeScript API definitions (reference)
@@ -26,7 +26,7 @@ process_mining_wasm/
 │   ├── conformance.rs            # Token-based replay
 │   ├── utilities.rs              # Helper functions
 │   ├── xes_format.rs             # XES parser/generator
-│   └── bindings.rs               # Dynamic function registry
+│   └── streaming.rs              # Streaming DFG builder (IoT/chunked ingestion)
 │
 ├── cli/                          # Command-line interface
 │   └── index.ts                  # wasm4pm CLI commands
@@ -99,6 +99,7 @@ const stats = log.getStats();  // Uses handle internally
 ```
 
 Benefits:
+
 - Prevents copying large objects across WASM boundary
 - Automatic memory management in Rust
 - Multiple JavaScript references to same object
@@ -124,32 +125,30 @@ pub fn discover_new_algorithm(
 ) -> Result<String, JsValue> {
     match get_or_init_state().get_object(eventlog_handle)? {
         Some(StoredObject::EventLog(log)) => {
-            // 1. Extract activities and directly-follows
-            let activities = log.get_activities(activity_key);
-            let directly_follows = log.get_directly_follows(activity_key);
-            
+            // 1. Build columnar view for efficient integer-key counting
+            let col = log.to_columnar(activity_key);
+
             // 2. Run algorithm
             let mut dfg = DirectlyFollowsGraph::new();
-            // ... algorithm implementation ...
-            
-            // 3. Store result
-            let handle = get_or_init_state()
-                .store_object(StoredObject::DirectlyFollowsGraph(dfg.clone()))
-                .map_err(|_e| JsValue::from_str("Failed to store"))?;
-            
-            // 4. Return metadata
-            Ok(serde_json::to_string(&json!({
-                "handle": handle,
-                "algorithm": "new_algorithm",
-                "nodes": dfg.nodes.len(),
-                "edges": dfg.edges.len(),
-            }))
-            .map_err(|e| JsValue::from_str(&format!("Serialization: {}", e)))?)
+            // ... algorithm implementation using col.events / col.vocab ...
+
+            Ok(dfg)
         }
         Some(_) => Err(JsValue::from_str("Not an EventLog")),
         None => Err(JsValue::from_str("EventLog not found")),
-    }
-}
+    })?;
+    // Lock released here — safe to store without mutex re-entry
+    let handle = get_or_init_state()
+        .store_object(StoredObject::DirectlyFollowsGraph(dfg.clone()))
+        .map_err(|_e| JsValue::from_str("Failed to store"))?;
+
+    Ok(serde_json::to_string(&json!({
+        "handle": handle,
+        "algorithm": "new_algorithm",
+        "nodes": dfg.nodes.len(),
+        "edges": dfg.edges.len(),
+    }))
+    .map_err(|e| JsValue::from_str(&format!("Serialization: {}", e)))?)
 ```
 
 ### 2. Register Module
@@ -312,27 +311,23 @@ Compute metrics only when requested:
 All WASM functions return `Result<String, JsValue>`:
 
 ```rust
-match get_or_init_state().get_object(handle)? {
+get_or_init_state().with_object(handle, |obj| match obj {
     Some(StoredObject::EventLog(log)) => {
-        // Success path
+        // Success path — log is borrowed, no clone
         Ok(serde_json::to_string(&json!({ ... }))?)
     }
-    Some(_) => {
-        Err(JsValue::from_str("Wrong object type"))
-    }
-    None => {
-        Err(JsValue::from_str("Handle not found"))
-    }
-}
+    Some(_) => Err(JsValue::from_str("Wrong object type")),
+    None => Err(JsValue::from_str("Handle not found")),
+})
 ```
 
 JavaScript receives error:
 
 ```typescript
 try {
-    const result = log.discoverDFG();
+  const result = log.discoverDFG();
 } catch (error) {
-    console.error("Discovery failed:", error.message);
+  console.error('Discovery failed:', error.message);
 }
 ```
 
@@ -350,8 +345,8 @@ log::debug!("Message: {}", value);
 ### In JavaScript
 
 ```typescript
-console.log("Handle:", log.getId());
-console.log("Stats:", log.getStats());
+console.log('Handle:', log.getId());
+console.log('Stats:', log.getStats());
 ```
 
 ### Check WASM Memory
@@ -390,18 +385,18 @@ In `__tests__/integration.test.js`:
 
 ```javascript
 describe('Discovery Algorithms', () => {
-    it('should discover DFG from event log', async () => {
-        const log = client.loadEventLogFromJSON(testData);
-        const dfg = log.discoverDFG();
-        expect(dfg.toJSON().nodes.length).toBeGreaterThan(0);
-    });
+  it('should discover DFG from event log', async () => {
+    const log = client.loadEventLogFromJSON(testData);
+    const dfg = log.discoverDFG();
+    expect(dfg.toJSON().nodes.length).toBeGreaterThan(0);
+  });
 });
 ```
 
 ## Browser Compatibility
 
 | Algorithm | Safari | Chrome | Firefox | Edge |
-|-----------|--------|--------|---------|------|
+| --------- | ------ | ------ | ------- | ---- |
 | DFG       | ✅     | ✅     | ✅      | ✅   |
 | Alpha++   | ✅     | ✅     | ✅      | ✅   |
 | ILP       | ✅     | ✅     | ✅      | ✅   |
@@ -440,18 +435,14 @@ console.log(`Discovery took ${duration.toFixed(1)}ms`);
 
 ## Future Enhancements
 
-Potential areas for extension:
-
-- [ ] Streaming/incremental discovery
-- [ ] Parallel algorithm execution (worker threads)
+- [ ] Streaming conformance checking (token replay on streaming builder)
+- [ ] Parallel algorithm execution (web workers)
 - [ ] More visualization options
 - [ ] Conformance metrics refinement
-- [ ] Interactive model refinement
-- [ ] Process clustering
 - [ ] Anomaly detection
 
 ---
 
-**Version**: 0.5.4  
+**Version**: 0.5.5  
 **Last Updated**: 2026-04-04  
 **Audience**: Contributors and maintainers

@@ -1,3 +1,5 @@
+import { describe, it, expect, vi, beforeEach, test } from 'vitest';
+
 /**
  * Browser Integration Tests for process_mining_wasm
  *
@@ -13,22 +15,22 @@
 describe('process_mining_wasm Browser Integration', () => {
   // Mock DOM elements
   const mockDocument = {
-    getElementById: jest.fn(),
-    querySelector: jest.fn(),
-    createElement: jest.fn(),
+    getElementById: vi.fn(),
+    querySelector: vi.fn(),
+    createElement: vi.fn(),
   };
 
   // Mock Window/Browser APIs
   const mockWindow = {
-    fetch: jest.fn(),
+    fetch: vi.fn(),
     URL: {
-      createObjectURL: jest.fn((blob) => 'blob:mock-url'),
-      revokeObjectURL: jest.fn(),
+      createObjectURL: vi.fn((blob) => 'blob:mock-url'),
+      revokeObjectURL: vi.fn(),
     },
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('DOM Integration', () => {
@@ -57,10 +59,10 @@ describe('process_mining_wasm Browser Integration', () => {
 
     test('should attach event listeners', () => {
       const mockElement = {
-        addEventListener: jest.fn(),
+        addEventListener: vi.fn(),
       };
 
-      const callback = jest.fn();
+      const callback = vi.fn();
       mockElement.addEventListener('click', callback);
 
       expect(mockElement.addEventListener).toHaveBeenCalledWith('click', callback);
@@ -99,7 +101,7 @@ describe('process_mining_wasm Browser Integration', () => {
 
     test('should handle multiple file formats', () => {
       const formats = ['.xes', '.json', '.xml'];
-      const files = formats.map(fmt => new File(['content'], `test${fmt}`));
+      const files = formats.map((fmt) => new File(['content'], `test${fmt}`));
 
       expect(files).toHaveLength(3);
       files.forEach((file, i) => {
@@ -110,7 +112,7 @@ describe('process_mining_wasm Browser Integration', () => {
 
   describe('Async Operations', () => {
     test('should handle async file loading', async () => {
-      const loadFile = jest.fn(async () => {
+      const loadFile = vi.fn(async () => {
         return 'file content';
       });
 
@@ -138,9 +140,7 @@ describe('process_mining_wasm Browser Integration', () => {
 
       const timeoutRace = Promise.race([
         slowOp(),
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Timeout')), 100)
-        ),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 100)),
       ]);
 
       await expect(timeoutRace).rejects.toThrow('Timeout');
@@ -169,7 +169,7 @@ describe('process_mining_wasm Browser Integration', () => {
     });
 
     test('should handle resource cleanup', () => {
-      const cleanup = jest.fn();
+      const cleanup = vi.fn();
 
       try {
         throw new Error('Operation failed');
@@ -184,7 +184,7 @@ describe('process_mining_wasm Browser Integration', () => {
   describe('Error Handling', () => {
     test('should handle file read errors', (done) => {
       const reader = new FileReader();
-      reader.onerror = jest.fn(() => {
+      reader.onerror = vi.fn(() => {
         expect(reader.onerror).toBeDefined();
         done();
       });
@@ -216,7 +216,9 @@ describe('process_mining_wasm Browser Integration', () => {
     test('should recover from individual failures', () => {
       const operations = [
         () => 'success1',
-        () => { throw new Error('failure'); },
+        () => {
+          throw new Error('failure');
+        },
         () => 'success2',
       ];
 
@@ -278,7 +280,7 @@ describe('process_mining_wasm Browser Integration', () => {
 
   describe('Browser Features', () => {
     test('should handle visibility change events', () => {
-      const handler = jest.fn();
+      const handler = vi.fn();
       const listeners: Record<string, Function[]> = {};
 
       const addEventListener = (event: string, callback: Function) => {
@@ -297,7 +299,7 @@ describe('process_mining_wasm Browser Integration', () => {
     });
 
     test('should handle storage events', () => {
-      const handler = jest.fn();
+      const handler = vi.fn();
 
       const storageEvent = new StorageEvent('storage', {
         key: 'testKey',
@@ -310,7 +312,7 @@ describe('process_mining_wasm Browser Integration', () => {
     });
 
     test('should provide progress feedback', async () => {
-      const progressCallback = jest.fn();
+      const progressCallback = vi.fn();
       let progress = 0;
 
       while (progress < 100) {
@@ -320,9 +322,7 @@ describe('process_mining_wasm Browser Integration', () => {
       }
 
       expect(progressCallback.mock.calls.length).toBeGreaterThan(0);
-      expect(progressCallback.mock.calls[
-        progressCallback.mock.calls.length - 1
-      ][0]).toBe(100);
+      expect(progressCallback.mock.calls[progressCallback.mock.calls.length - 1][0]).toBe(100);
     });
   });
 

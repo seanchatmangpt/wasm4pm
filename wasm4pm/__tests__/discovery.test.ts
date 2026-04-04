@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import * as wasm from '../pkg/process_mining_wasm.js';
+import * as wasm from '../pkg/wasm4pm.js';
 
 describe('Discovery - Alpha++ Algorithm', () => {
   beforeEach(async () => {

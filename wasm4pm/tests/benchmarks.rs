@@ -746,7 +746,8 @@ fn bench_token_based_replay() {
     for &n in &[100usize, 500, 1_000, 5_000] {
         let log_h = make_log(n);
         let pn_json = discover_ilp_petri_net(&log_h, ak).expect("ILP discovery");
-        let pn_data: serde_json::Value = serde_json::from_str(&pn_json).unwrap();
+        let pn_json_str = pn_json.as_string().expect("JsValue is not a string");
+        let pn_data: serde_json::Value = serde_json::from_str(&pn_json_str).unwrap();
         let pn_h = pn_data["handle"].as_str().unwrap().to_string();
         let lh = log_h.clone();
         let ph = pn_h.clone();

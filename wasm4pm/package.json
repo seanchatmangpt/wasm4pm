@@ -1,6 +1,6 @@
 {
   "name": "wasm4pm",
-  "version": "0.1.0",
+  "version": "26.4.4",
   "description": "Process Mining in WebAssembly - High-Speed Algorithms for Browser and Node.js",
   "main": "pkg/wasm4pm.js",
   "types": "pkg/wasm4pm.d.ts",
@@ -15,9 +15,9 @@
     }
   },
   "scripts": {
-    "build": "wasm-pack build --target bundler",
-    "build:nodejs": "wasm-pack build --target nodejs",
-    "build:web": "wasm-pack build --target web",
+    "build": "RUSTFLAGS=\"-C target-feature=+simd128\" wasm-pack build --target bundler",
+    "build:nodejs": "RUSTFLAGS=\"-C target-feature=+simd128\" wasm-pack build --target nodejs",
+    "build:web": "RUSTFLAGS=\"-C target-feature=+simd128\" wasm-pack build --target web",
     "build:all": "npm run build && npm run build:nodejs && npm run build:web",
     "build:mcp": "tsc src/mcp_server.ts --outDir dist --module commonjs --target es2020",
     "start:mcp": "npm run build:mcp && node dist/mcp_server.js",
@@ -31,6 +31,9 @@
     "format:check": "prettier --check \"**/*.{js,ts,json,md}\"",
     "type:check": "tsc --noEmit",
     "docs": "typedoc --out docs pkg/wasm4pm.d.ts",
+    "bench": "node benchmarks/wasm_bench_runner.js",
+    "bench:ci": "node benchmarks/wasm_bench_runner.js --ci",
+    "bench:build": "npm run build:nodejs && npm run bench",
     "prepublishOnly": "npm run build:all && npm run lint && npm run test",
     "prepare": "npm run build:all"
   },
@@ -59,14 +62,12 @@
     "node": ">=14.0.0"
   },
   "devDependencies": {
-    "@modelcontextprotocol/sdk": "^0.1.0",
     "@testing-library/dom": "^9.3.3",
     "@testing-library/jest-dom": "^6.1.5",
     "@types/node": "^20.10.6",
     "prettier": "^3.1.1",
     "typescript": "^5.3.3",
     "typedoc": "^0.25.4",
-    "vitest": "^1.1.0",
-    "wasm-pack": "^1.3.4"
+    "vitest": "^1.1.0"
   }
 }

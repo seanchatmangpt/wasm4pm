@@ -3,15 +3,20 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import * as wasm from '../pkg/process_mining_wasm.js';
+import * as wasm from '../pkg/wasm4pm.js';
 
 describe('Analysis - Event Statistics', () => {
   beforeEach(async () => {
-    try { await wasm.init(); await wasm.clear_all_objects(); } catch (e) {}
+    try {
+      await wasm.init();
+      await wasm.clear_all_objects();
+    } catch (e) {}
   });
 
   afterEach(async () => {
-    try { await wasm.clear_all_objects(); } catch (e) {}
+    try {
+      await wasm.clear_all_objects();
+    } catch (e) {}
   });
 
   it('should analyze event statistics from EventLog', () => {
@@ -50,11 +55,16 @@ describe('Analysis - Event Statistics', () => {
 
 describe('Analysis - Case Duration', () => {
   beforeEach(async () => {
-    try { await wasm.init(); await wasm.clear_all_objects(); } catch (e) {}
+    try {
+      await wasm.init();
+      await wasm.clear_all_objects();
+    } catch (e) {}
   });
 
   afterEach(async () => {
-    try { await wasm.clear_all_objects(); } catch (e) {}
+    try {
+      await wasm.clear_all_objects();
+    } catch (e) {}
   });
 
   it('should analyze case duration from EventLog', () => {

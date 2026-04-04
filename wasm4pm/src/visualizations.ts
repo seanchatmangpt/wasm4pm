@@ -49,7 +49,7 @@ export function dfgToMermaid(dfg: api.DirectlyFollowsGraph): string {
   let diagram = 'graph LR\n';
 
   // Add nodes with frequency labels
-  const maxFreq = Math.max(...dfg.nodes.map(n => n.frequency));
+  const maxFreq = Math.max(...dfg.nodes.map((n) => n.frequency));
   for (const node of dfg.nodes) {
     const sizePercent = Math.max(20, (node.frequency / maxFreq) * 100);
     const fontSize = Math.max(10, sizePercent / 5);
@@ -58,7 +58,7 @@ export function dfgToMermaid(dfg: api.DirectlyFollowsGraph): string {
 
   // Add edges with frequency labels
   for (const edge of dfg.edges) {
-    const lineWidth = Math.max(1, Math.min(5, edge.frequency / maxFreq * 5));
+    const lineWidth = Math.max(1, Math.min(5, (edge.frequency / maxFreq) * 5));
     diagram += `  ${edge.from} -->|${edge.frequency}| ${edge.to} style ${edge.from}-${edge.to} stroke-width:${lineWidth}px\n`;
   }
 
@@ -115,7 +115,10 @@ export function declareToMermaid(model: api.DeclareModel): string {
  * @param dfg The Directly-Follows Graph
  * @returns HTML with embedded D3 visualization
  */
-export function dfgToD3HTML(dfg: api.DirectlyFollowsGraph, containerId: string = 'visualization'): string {
+export function dfgToD3HTML(
+  dfg: api.DirectlyFollowsGraph,
+  containerId: string = 'visualization'
+): string {
   const nodes = dfg.nodes.map((n, i) => ({
     id: n.id,
     label: n.label,
@@ -123,7 +126,7 @@ export function dfgToD3HTML(dfg: api.DirectlyFollowsGraph, containerId: string =
     index: i,
   }));
 
-  const links = dfg.edges.map(e => ({
+  const links = dfg.edges.map((e) => ({
     source: e.from,
     target: e.to,
     value: e.frequency,
@@ -348,7 +351,8 @@ ${dfgMermaid}
         ${log.activities
           .slice(0, 10)
           .map(
-            (a, i) => `<li style="padding: 8px 0; border-bottom: 1px solid #eee;">${i + 1}. ${a}</li>`
+            (a, i) =>
+              `<li style="padding: 8px 0; border-bottom: 1px solid #eee;">${i + 1}. ${a}</li>`
           )
           .join('')}
       </ul>

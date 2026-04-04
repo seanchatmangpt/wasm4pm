@@ -103,8 +103,9 @@ describe('process_mining_wasm Node.js Integration', () => {
 
     test('OCEL has Order, Item, and Package object types', () => {
       const ocel = JSON.parse(ocelContent);
-      const objectTypes = ocel['ocel:global-object']['ocel:object-type']
-        .map((t: any) => t['ocel:name']);
+      const objectTypes = ocel['ocel:global-object']['ocel:object-type'].map(
+        (t: any) => t['ocel:name']
+      );
 
       expect(objectTypes).toContain('Order');
       expect(objectTypes).toContain('Item');
@@ -115,18 +116,16 @@ describe('process_mining_wasm Node.js Integration', () => {
   describe('Data Integrity', () => {
     test('XES activities should match expected workflow', () => {
       const activities = ['Request', 'Review', 'Approve', 'Reject', 'Complete'];
-      activities.forEach(activity => {
+      activities.forEach((activity) => {
         expect(xesContent).toContain(`value="${activity}"`);
       });
     });
 
     test('XES should have consistent timestamps', () => {
-      const timestampMatches = xesContent.match(
-        /time:timestamp" value="([^"]+)"/g
-      ) || [];
+      const timestampMatches = xesContent.match(/time:timestamp" value="([^"]+)"/g) || [];
 
       expect(timestampMatches.length).toBeGreaterThan(0);
-      timestampMatches.forEach(match => {
+      timestampMatches.forEach((match) => {
         expect(match).toMatch(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
       });
     });
