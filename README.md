@@ -52,6 +52,13 @@ Verify event logs against discovered models:
 - Fitness and precision metrics
 - Trace classification (conforming/deviating)
 
+### Claude Integration via MCP
+Use wasm4pm directly with Claude through the Model Context Protocol:
+- Discover models with natural language requests
+- Analyze processes conversationally
+- Generate visualizations on demand
+- See [MCP.md](./wasm4pm/MCP.md) for setup
+
 ## 📦 Installation
 
 ```bash
@@ -132,11 +139,12 @@ wasm4pm visualize data/log.xes dfg --output diagram.png
 |----------|---------|
 | [**QUICKSTART.md**](./QUICKSTART.md) | 5-minute setup and first algorithm |
 | [**TUTORIAL.md**](./TUTORIAL.md) | Step-by-step examples and workflows |
-| [**API.md**](./process_mining_wasm/API.md) | Complete function reference |
-| [**ALGORITHMS.md**](./process_mining_wasm/ALGORITHMS.md) | Algorithm descriptions and parameters |
+| [**API.md**](./wasm4pm/API.md) | Complete function reference |
+| [**ALGORITHMS.md**](./wasm4pm/ALGORITHMS.md) | Algorithm descriptions and parameters |
 | [**DEPLOYMENT.md**](./DEPLOYMENT.md) | Build, test, and publish |
 | [**FAQ.md**](./FAQ.md) | Common questions and troubleshooting |
-| [**THESIS.md**](./process_mining_wasm/THESIS.md) | Academic benchmarking and research |
+| [**MCP.md**](./wasm4pm/MCP.md) | Model Context Protocol integration with Claude |
+| [**THESIS.md**](./wasm4pm/THESIS.md) | Academic benchmarking and research |
 
 ## 📊 Performance
 

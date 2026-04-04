@@ -1,11 +1,11 @@
 [package]
-name = "process_mining_wasm"
+name = "wasm4pm"
 version = "0.5.4"
 edition = "2021"
 license = "MIT OR Apache-2.0"
-description = "WebAssembly and JavaScript bindings for the process_mining library"
-repository = "https://github.com/aarkue/rust4pm"
-documentation = "https://docs.rs/process_mining/"
+description = "High-performance process mining algorithms in WebAssembly for JavaScript/TypeScript"
+repository = "https://github.com/seanchatmangpt/rust4pm"
+documentation = "https://github.com/seanchatmangpt/rust4pm/blob/main/README.md"
 
 [lib]
 crate-type = ["cdylib", "rlib"]

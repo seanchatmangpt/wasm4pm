@@ -213,23 +213,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "process_mining_wasm"
-version = "0.5.4"
-dependencies = [
- "chrono",
- "console_error_panic_hook",
- "indexmap",
- "itertools",
- "once_cell",
- "serde",
- "serde_json",
- "uuid",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "web-sys",
-]
-
-[[package]]
 name = "quote"
 version = "1.0.37"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -391,6 +374,23 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1f01b580c9ac74c8d8f0c0e4afb04eeef2acf145458e52c03845ee9cd23e3d12"
 dependencies = [
  "unicode-ident",
+]
+
+[[package]]
+name = "wasm4pm"
+version = "0.5.4"
+dependencies = [
+ "chrono",
+ "console_error_panic_hook",
+ "indexmap",
+ "itertools",
+ "once_cell",
+ "serde",
+ "serde_json",
+ "uuid",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
 ]
 
 [[package]]
