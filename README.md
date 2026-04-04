@@ -9,9 +9,7 @@
   <a href="https://github.com/seanchatmangpt/wasm4pm">
     <img src="https://img.shields.io/github/stars/seanchatmangpt/wasm4pm" alt="GitHub stars"/></a>
 </p>
-<img src="logo.png" width="300" alt="Rust4PM Logo"/>
-<br/>
-<img src="Ferris emerges from the black hole.png" width="300" alt="Ferris emerges from the black hole"/>
+<img src="Ferris emerges from the black hole.png" width="300" alt="wasm4pm logo: Ferris emerges from the black hole"/>
 </div>
 
 ---
