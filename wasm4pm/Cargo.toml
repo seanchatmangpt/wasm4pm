@@ -1,0 +1,34 @@
+[package]
+name = "wasm4pm"
+version = "0.5.4"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+description = "High-performance process mining algorithms in WebAssembly for JavaScript/TypeScript"
+repository = "https://github.com/seanchatmangpt/rust4pm"
+documentation = "https://github.com/seanchatmangpt/rust4pm/blob/main/README.md"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+wasm-bindgen = "0.2.92"
+wasm-bindgen-futures = "0.4.42"
+serde_json = "1.0.105"
+serde = { version = "1.0.188", features = ["derive"] }
+once_cell = "1.19"
+uuid = { version = "1.16.0", features = ["v4", "js"] }
+chrono = { version = "0.4.40", features = ["serde"] }
+console_error_panic_hook = "0.1"
+itertools = "0.14.0"
+indexmap = "2.0"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+web-sys = { version = "0.3", features = [] }
+
+[features]
+default = []
+console_error_panic_hook = []
+
+[profile.release]
+opt-level = "z"
+lto = true

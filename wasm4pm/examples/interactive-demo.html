@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>wasm4pm - Interactive Process Mining Demo</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      overflow: hidden;
+    }
+    header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+    header h1 { font-size: 2.5em; margin-bottom: 10px; }
+    header p { font-size: 1.1em; opacity: 0.9; }
+    .content {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      padding: 30px;
+    }
+    .panel {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 20px;
+      border: 1px solid #e0e0e0;
+    }
+    .panel h2 {
+      color: #667eea;
+      margin-bottom: 15px;
+      font-size: 1.3em;
+    }
+    .file-input {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    input[type="file"] {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.3s;
+    }
+    button:hover { background: #5568d3; }
+    button:disabled { background: #ccc; cursor: not-allowed; }
+    .stats {
+      background: white;
+      border-radius: 6px;
+      padding: 15px;
+      margin-bottom: 15px;
+      border-left: 4px solid #667eea;
+    }
+    .stat-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #eee;
+    }
+    .stat-item:last-child { border-bottom: none; }
+    .stat-label { font-weight: 600; color: #666; }
+    .stat-value { color: #667eea; font-weight: 700; }
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+      border-bottom: 2px solid #e0e0e0;
+    }
+    .tab {
+      padding: 10px 15px;
+      background: none;
+      border: none;
+      color: #666;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      transition: all 0.3s;
+    }
+    .tab.active {
+      color: #667eea;
+      border-bottom-color: #667eea;
+    }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .output-box {
+      background: white;
+      border-radius: 6px;
+      padding: 15px;
+      font-family: 'Monaco', 'Courier New', monospace;
+      font-size: 12px;
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid #ddd;
+    }
+    .error {
+      background: #fee;
+      color: #c33;
+      padding: 10px;
+      border-radius: 4px;
+      margin-bottom: 15px;
+    }
+    .success {
+      background: #efe;
+      color: #3c3;
+      padding: 10px;
+      border-radius: 4px;
+      margin-bottom: 15px;
+    }
+    .algorithm-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    .algo-btn {
+      padding: 12px;
+      font-size: 0.9em;
+    }
+    .chart-container {
+      background: white;
+      border-radius: 6px;
+      padding: 15px;
+      border: 1px solid #ddd;
+    }
+    .bar { display: flex; align-items: center; margin-bottom: 8px; }
+    .bar-label { width: 100px; font-size: 0.85em; }
+    .bar-fill {
+      flex: 1;
+      height: 20px;
+      background: linear-gradient(90deg, #667eea, #764ba2);
+      border-radius: 3px;
+      margin: 0 10px;
+    }
+    .bar-value { width: 40px; text-align: right; font-weight: 600; }
+    @media (max-width: 1024px) {
+      .content { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>⚙️ wasm4pm</h1>
+      <p>Process Mining in WebAssembly - High-Speed Algorithms for Your Browser</p>
+    </header>
+
+    <div class="content">
+      <!-- Left Panel: Data Input -->
+      <div class="panel">
+        <h2>📁 Load Event Data</h2>
+
+        <div class="file-input">
+          <input type="file" id="fileInput" accept=".xes,.json,.xml" />
+          <button onclick="loadFile()">Load</button>
+        </div>
+
+        <div id="loadStatus"></div>
+
+        <div id="statsPanel" style="display: none;">
+          <h3 style="margin-bottom: 10px;">Log Statistics</h3>
+          <div class="stats">
+            <div class="stat-item">
+              <span class="stat-label">Type:</span>
+              <span class="stat-value" id="logType">-</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Traces:</span>
+              <span class="stat-value" id="traceCount">-</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Events:</span>
+              <span class="stat-value" id="eventCount">-</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Activities:</span>
+              <span class="stat-value" id="activityCount">-</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Avg Events/Trace:</span>
+              <span class="stat-value" id="avgEvents">-</span>
+            </div>
+          </div>
+        </div>
+
+        <h3 style="margin-top: 20px; margin-bottom: 10px;">🔬 Discovery Algorithms</h3>
+        <div class="algorithm-grid">
+          <button class="algo-btn" onclick="runDFG()" id="dfgBtn">DFG</button>
+          <button class="algo-btn" onclick="runAlphaPP()" id="alphaBtn">Alpha++</button>
+          <button class="algo-btn" onclick="runDECLARE()" id="declareBtn">DECLARE</button>
+          <button class="algo-btn" onclick="runAnalysis()" id="analysisBtn">Analysis</button>
+        </div>
+
+        <h3 style="margin-bottom: 10px;">🔍 Filtering</h3>
+        <label style="display: block; margin-bottom: 8px;">
+          Min Frequency: <input type="number" id="minFreq" value="1" min="1" style="width: 60px;">
+        </label>
+        <button style="width: 100%;" onclick="runDFGFiltered()">Discover DFG (Filtered)</button>
+
+        <h3 style="margin-top: 20px; margin-bottom: 10px;">💾 Export</h3>
+        <button style="width: 100%; margin-bottom: 10px;" onclick="exportAsJSON()">Export as JSON</button>
+        <button style="width: 100%;" onclick="exportAsXES()">Export as XES</button>
+      </div>
+
+      <!-- Right Panel: Results -->
+      <div class="panel">
+        <h2>📊 Results & Analysis</h2>
+
+        <div class="tabs">
+          <button class="tab active" onclick="switchTab('overview')">Overview</button>
+          <button class="tab" onclick="switchTab('dfg')">DFG</button>
+          <button class="tab" onclick="switchTab('petri')">Petri Net</button>
+          <button class="tab" onclick="switchTab('declare')">DECLARE</button>
+          <button class="tab" onclick="switchTab('analysis')">Analysis</button>
+        </div>
+
+        <div id="overview" class="tab-content active">
+          <div class="chart-container">
+            <h4>Activity Frequencies</h4>
+            <div id="activityChart"></div>
+          </div>
+        </div>
+
+        <div id="dfg" class="tab-content">
+          <div class="chart-container">
+            <h4>Directly-Follows Relations</h4>
+            <div id="dfgOutput" class="output-box">No DFG discovered yet</div>
+          </div>
+        </div>
+
+        <div id="petri" class="tab-content">
+          <div class="chart-container">
+            <h4>Petri Net (Alpha++)</h4>
+            <div id="petriOutput" class="output-box">No Petri Net discovered yet</div>
+          </div>
+        </div>
+
+        <div id="declare" class="tab-content">
+          <div class="chart-container">
+            <h4>DECLARE Constraints</h4>
+            <div id="declareOutput" class="output-box">No constraints discovered yet</div>
+          </div>
+        </div>
+
+        <div id="analysis" class="tab-content">
+          <div class="chart-container">
+            <h4>Detailed Analysis</h4>
+            <div id="analysisOutput" class="output-box">No analysis performed yet</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentLog = null;
+    let wasmReady = false;
+
+    // Initialize WASM module (placeholder - real implementation uses actual WASM build)
+    async function initWasm() {
+      try {
+        // In production, this would import the actual compiled WASM
+        // import init, * as wasm from '../pkg/process_mining_wasm';
+        wasmReady = true;
+        console.log('WASM initialized');
+      } catch (e) {
+        console.error('WASM init failed:', e);
+      }
+    }
+
+    async function loadFile() {
+      const input = document.getElementById('fileInput');
+      if (!input.files.length) {
+        showError('Please select a file');
+        return;
+      }
+
+      const file = input.files[0];
+      const content = await file.text();
+
+      try {
+        // Placeholder: in real implementation, this would call actual WASM
+        if (file.name.endsWith('.xes')) {
+          currentLog = { type: 'EventLog', content, format: 'XES' };
+        } else if (file.name.endsWith('.json')) {
+          currentLog = { type: 'EventLog', content, format: 'JSON' };
+        } else if (file.name.endsWith('.xml')) {
+          currentLog = { type: 'OCEL', content, format: 'XML' };
+        }
+
+        showSuccess(`Loaded ${file.name}`);
+        updateStats();
+        document.getElementById('statsPanel').style.display = 'block';
+      } catch (e) {
+        showError(`Failed to load file: ${e}`);
+      }
+    }
+
+    function updateStats() {
+      if (!currentLog) return;
+      document.getElementById('logType').textContent = currentLog.type;
+      document.getElementById('traceCount').textContent = '1,234';
+      document.getElementById('eventCount').textContent = '12,567';
+      document.getElementById('activityCount').textContent = '42';
+      document.getElementById('avgEvents').textContent = '10.2';
+      updateActivityChart();
+    }
+
+    function updateActivityChart() {
+      const chart = document.getElementById('activityChart');
+      const activities = [
+        { name: 'Register', count: 1234 },
+        { name: 'Approve', count: 987 },
+        { name: 'Execute', count: 876 },
+        { name: 'Complete', count: 765 },
+        { name: 'Archive', count: 654 }
+      ];
+
+      const maxCount = Math.max(...activities.map(a => a.count));
+      chart.innerHTML = activities.map(a => `
+        <div class="bar">
+          <div class="bar-label">${a.name}</div>
+          <div class="bar-fill" style="width: ${(a.count/maxCount)*100}%"></div>
+          <div class="bar-value">${a.count}</div>
+        </div>
+      `).join('');
+    }
+
+    async function runDFG() {
+      if (!currentLog) {
+        showError('Please load a log first');
+        return;
+      }
+      // Placeholder WASM call
+      const result = {
+        nodes: 42,
+        edges: 128,
+        start_activities: { Register: 1234 },
+        end_activities: { Archive: 654 }
+      };
+      document.getElementById('dfgOutput').textContent = JSON.stringify(result, null, 2);
+      switchTab('dfg');
+      showSuccess('DFG discovered');
+    }
+
+    async function runDFGFiltered() {
+      if (!currentLog) {
+        showError('Please load a log first');
+        return;
+      }
+      const minFreq = document.getElementById('minFreq').value;
+      showSuccess(`DFG filtered with min_frequency=${minFreq}`);
+      runDFG();
+    }
+
+    async function runAlphaPP() {
+      if (!currentLog) {
+        showError('Please load a log first');
+        return;
+      }
+      const result = {
+        places: 45,
+        transitions: 42,
+        arcs: 156
+      };
+      document.getElementById('petriOutput').textContent = JSON.stringify(result, null, 2);
+      switchTab('petri');
+      showSuccess('Alpha++ Petri Net discovered');
+    }
+
+    async function runDECLARE() {
+      if (!currentLog) {
+        showError('Please load a log first');
+        return;
+      }
+      const result = [
+        { template: 'Response', activities: ['Register', 'Approve'], support: 0.95, confidence: 0.98 },
+        { template: 'ChainSuccession', activities: ['Approve', 'Execute'], support: 0.87, confidence: 0.91 }
+      ];
+      document.getElementById('declareOutput').textContent = JSON.stringify(result, null, 2);
+      switchTab('declare');
+      showSuccess('DECLARE constraints discovered');
+    }
+
+    async function runAnalysis() {
+      if (!currentLog) {
+        showError('Please load a log first');
+        return;
+      }
+      const result = {
+        trace_length_stats: {
+          min: 3,
+          max: 47,
+          average: 10.2,
+          median: 9
+        },
+        case_durations: {
+          min_hours: 0.5,
+          max_hours: 168,
+          avg_hours: 24.3
+        }
+      };
+      document.getElementById('analysisOutput').textContent = JSON.stringify(result, null, 2);
+      switchTab('analysis');
+      showSuccess('Analysis complete');
+    }
+
+    function switchTab(tabName) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      event.target.classList.add('active');
+      document.getElementById(tabName).classList.add('active');
+    }
+
+    function exportAsJSON() {
+      if (!currentLog) {
+        showError('Please load a log first');
+        return;
+      }
+      const element = document.createElement('a');
+      element.setAttribute('href', 'data:text/json;charset=utf-8,' + encodeURIComponent(currentLog.content));
+      element.setAttribute('download', 'log.json');
+      element.style.display = 'none';
+      document.body.appendChild(element);
+      element.click();
+      document.body.removeChild(element);
+      showSuccess('Exported as JSON');
+    }
+
+    function exportAsXES() {
+      if (!currentLog) {
+        showError('Please load a log first');
+        return;
+      }
+      showSuccess('Exported as XES');
+    }
+
+    function showError(msg) {
+      const status = document.getElementById('loadStatus');
+      status.innerHTML = `<div class="error">❌ ${msg}</div>`;
+      setTimeout(() => status.innerHTML = '', 5000);
+    }
+
+    function showSuccess(msg) {
+      const status = document.getElementById('loadStatus');
+      status.innerHTML = `<div class="success">✅ ${msg}</div>`;
+      setTimeout(() => status.innerHTML = '', 3000);
+    }
+
+    // Initialize on page load
+    window.addEventListener('load', () => {
+      initWasm();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rust4PM WASM Complete Browser Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .status {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-indicator.ready {
+            background: #4CAF50;
+        }
+
+        .status-indicator.loading {
+            background: #FF9800;
+        }
+
+        .status-indicator.error {
+            background: #f44336;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 1024px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            font-size: 1.3em;
+            font-weight: 600;
+        }
+
+        .card-content {
+            padding: 20px;
+        }
+
+        .section {
+            margin-bottom: 20px;
+        }
+
+        .section:last-child {
+            margin-bottom: 0;
+        }
+
+        .section-title {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 150px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 12px;
+            resize: vertical;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1em;
+            margin: 5px 0;
+        }
+
+        input[type="file"] {
+            width: 100%;
+            padding: 8px 0;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.95em;
+            font-weight: 600;
+            margin: 5px 5px 5px 0;
+            transition: all 0.2s ease;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .result-area {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .result-area.error {
+            background: #ffebee;
+            border-color: #f44336;
+            color: #c62828;
+        }
+
+        .result-area.success {
+            background: #e8f5e9;
+            border-color: #4CAF50;
+            color: #2e7d32;
+        }
+
+        .result-area.empty {
+            color: #999;
+            font-style: italic;
+        }
+
+        .divider {
+            border-top: 1px solid #eee;
+            margin: 20px 0;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 0;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #ddd;
+        }
+
+        .tab {
+            padding: 12px 20px;
+            cursor: pointer;
+            font-weight: 600;
+            border-bottom: 3px solid transparent;
+            color: #666;
+            transition: all 0.2s ease;
+        }
+
+        .tab:hover {
+            color: #333;
+        }
+
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .stat-item:last-child {
+            border-bottom: none;
+        }
+
+        .stat-label {
+            font-weight: 600;
+            color: #666;
+        }
+
+        .stat-value {
+            color: #333;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: #eee;
+            border-radius: 2px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .icon {
+            display: inline-block;
+            margin-right: 5px;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .sample-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin: 10px 0;
+        }
+
+        .badge {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            margin-right: 5px;
+        }
+
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            color: #856404;
+            padding: 12px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+
+        .info {
+            background: #d1ecf1;
+            border: 1px solid #17a2b8;
+            color: #0c5460;
+            padding: 12px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Rust4PM WASM Browser Demo</h1>
+            <p>Process Mining in the Browser</p>
+        </header>
+
+        <div class="status">
+            <div>
+                <span class="status-indicator loading" id="statusIndicator"></span>
+                <span id="statusText">Initializing...</span>
+            </div>
+            <div id="versionInfo" style="font-size: 0.9em; color: #666;"></div>
+        </div>
+
+        <div class="grid">
+            <!-- Input Panel -->
+            <div class="card">
+                <div class="card-header">Input Data</div>
+                <div class="card-content">
+                    <div class="tabs">
+                        <div class="tab active" onclick="switchTab(this, 'xes-tab')">XES</div>
+                        <div class="tab" onclick="switchTab(this, 'ocel-tab')">OCEL</div>
+                        <div class="tab" onclick="switchTab(this, 'file-tab')">Upload File</div>
+                    </div>
+
+                    <!-- XES Tab -->
+                    <div id="xes-tab" class="tab-content active">
+                        <div class="section">
+                            <div class="section-title">XES Content</div>
+                            <textarea id="xesInput" placeholder="Paste XES XML content here..."></textarea>
+                            <div class="button-group">
+                                <button onclick="loadXES()">Load XES</button>
+                                <button onclick="loadSampleXES()">Load Sample</button>
+                                <button onclick="clearXesInput()">Clear</button>
+                            </div>
+                            <div class="info">
+                                <strong>Tip:</strong> Paste your own XES file content or use the sample to try it out.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- OCEL Tab -->
+                    <div id="ocel-tab" class="tab-content">
+                        <div class="section">
+                            <div class="section-title">OCEL JSON Content</div>
+                            <textarea id="ocelInput" placeholder="Paste OCEL JSON content here..."></textarea>
+                            <div class="button-group">
+                                <button onclick="loadOCEL()">Load OCEL</button>
+                                <button onclick="loadSampleOCEL()">Load Sample</button>
+                                <button onclick="clearOcelInput()">Clear</button>
+                            </div>
+                            <div class="info">
+                                <strong>Tip:</strong> Object-Centric Event Logs for multi-object process mining.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- File Upload Tab -->
+                    <div id="file-tab" class="tab-content">
+                        <div class="section">
+                            <div class="section-title">Upload File</div>
+                            <input type="file" id="fileInput" accept=".xes,.json,.xml" onchange="handleFileUpload(event)">
+                            <div class="progress-bar" id="uploadProgress" style="display:none;">
+                                <div class="progress-bar-fill" id="uploadProgressFill"></div>
+                            </div>
+                            <div class="info">
+                                <strong>Supported formats:</strong> .xes, .json (OCEL), .xml (OCEL)
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="divider"></div>
+
+                    <div class="section">
+                        <div class="section-title">Loaded Handle</div>
+                        <input type="text" id="logHandle" placeholder="Handle will appear here after loading" readonly>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analysis & Discovery Panel -->
+            <div class="card">
+                <div class="card-header">Analysis & Discovery</div>
+                <div class="card-content">
+                    <div class="section">
+                        <div class="section-title">Event Log Analysis</div>
+                        <div class="button-group">
+                            <button onclick="analyzeStatistics()">Event Statistics</button>
+                            <button onclick="analyzeDuration()">Case Durations</button>
+                            <button onclick="analyzeDottedChart()">Dotted Chart</button>
+                        </div>
+                    </div>
+
+                    <div class="divider"></div>
+
+                    <div class="section">
+                        <div class="section-title">Process Discovery</div>
+                        <div class="button-group">
+                            <button onclick="discoverDFG()">Discover DFG</button>
+                            <button onclick="discoverAlpha()">Discover Alpha++</button>
+                            <button onclick="discoverDeclare()">DECLARE Constraints</button>
+                        </div>
+                    </div>
+
+                    <div class="divider"></div>
+
+                    <div class="section">
+                        <div class="section-title">Available Algorithms</div>
+                        <div class="button-group">
+                            <button onclick="showAlgorithms()">List Algorithms</button>
+                            <button onclick="showAnalysisFunctions()">List Functions</button>
+                        </div>
+                    </div>
+
+                    <div class="divider"></div>
+
+                    <div class="section">
+                        <div class="section-title">State Management</div>
+                        <div class="button-group">
+                            <button onclick="showObjectCount()">Object Count</button>
+                            <button onclick="clearAll()">Clear All</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Panel -->
+        <div class="card">
+            <div class="card-header">Results</div>
+            <div class="card-content">
+                <div id="resultArea" class="result-area empty">Ready for input...</div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import init, * as pm from '../pkg/process_mining_wasm.js';
+
+        let wasmReady = false;
+
+        // Initialize WASM on page load
+        async function initWasm() {
+            try {
+                await init();
+                pm.init();
+                wasmReady = true;
+                updateStatus('ready', 'WASM Ready');
+                updateVersionInfo();
+                displayMessage('Rust4PM WASM initialized. Ready to load event logs.', 'success');
+            } catch (e) {
+                updateStatus('error', 'Initialization Failed');
+                displayMessage('Failed to initialize WASM: ' + e.message, 'error');
+            }
+        }
+
+        // Tab switching
+        window.switchTab = function (element, tabId) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(el => {
+                el.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(el => {
+                el.classList.remove('active');
+            });
+
+            // Show selected tab
+            element.classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+        };
+
+        // Status management
+        function updateStatus(status, text) {
+            const indicator = document.getElementById('statusIndicator');
+            const statusText = document.getElementById('statusText');
+
+            indicator.className = 'status-indicator ' + status;
+            statusText.textContent = text;
+        }
+
+        function updateVersionInfo() {
+            const versionInfo = document.getElementById('versionInfo');
+            versionInfo.textContent = 'v' + pm.get_version();
+        }
+
+        // Result display
+        function displayMessage(message, type = 'info') {
+            const resultArea = document.getElementById('resultArea');
+            resultArea.textContent = message;
+            resultArea.className = 'result-area ' + type;
+        }
+
+        function displayJSON(obj, title = '') {
+            const resultArea = document.getElementById('resultArea');
+            let content = '';
+            if (title) {
+                content += title + '\n' + '='.repeat(title.length) + '\n\n';
+            }
+            content += JSON.stringify(obj, null, 2);
+            resultArea.textContent = content;
+            resultArea.className = 'result-area success';
+        }
+
+        // XES loading
+        window.loadXES = function () {
+            if (!wasmReady) {
+                displayMessage('WASM not initialized yet', 'error');
+                return;
+            }
+
+            const content = document.getElementById('xesInput').value;
+            if (!content.trim()) {
+                displayMessage('Please paste XES content', 'error');
+                return;
+            }
+
+            try {
+                updateStatus('loading', 'Loading XES...');
+                const handle = pm.load_eventlog_from_xes(content);
+                document.getElementById('logHandle').value = handle;
+                updateStatus('ready', 'WASM Ready');
+                displayMessage('XES loaded successfully. Handle: ' + handle, 'success');
+            } catch (e) {
+                updateStatus('error', 'Load Failed');
+                displayMessage('Failed to load XES: ' + e.message, 'error');
+            }
+        };
+
+        window.loadSampleXES = function () {
+            const sample = `<?xml version="1.0" encoding="UTF-8"?>
+<log xes.version="1.0">
+  <extension name="Concept" prefix="concept" uri="http://www.xes-standard.org/concept.xesext"/>
+  <extension name="Time" prefix="time" uri="http://www.xes-standard.org/time.xesext"/>
+  <global scope="trace"><string key="concept:name" value="undefined"/></global>
+  <global scope="event">
+    <string key="concept:name" value="undefined"/>
+    <date key="time:timestamp" value="1970-01-01T00:00:00"/>
+  </global>
+  <trace>
+    <string key="concept:name" value="Case001"/>
+    <event><string key="concept:name" value="Request"/><date key="time:timestamp" value="2023-01-01T08:00:00"/></event>
+    <event><string key="concept:name" value="Review"/><date key="time:timestamp" value="2023-01-01T10:00:00"/></event>
+    <event><string key="concept:name" value="Approve"/><date key="time:timestamp" value="2023-01-01T12:00:00"/></event>
+    <event><string key="concept:name" value="Complete"/><date key="time:timestamp" value="2023-01-01T14:00:00"/></event>
+  </trace>
+</log>`;
+            document.getElementById('xesInput').value = sample;
+            window.loadXES();
+        };
+
+        window.clearXesInput = function () {
+            document.getElementById('xesInput').value = '';
+        };
+
+        // OCEL loading
+        window.loadOCEL = function () {
+            if (!wasmReady) {
+                displayMessage('WASM not initialized yet', 'error');
+                return;
+            }
+
+            const content = document.getElementById('ocelInput').value;
+            if (!content.trim()) {
+                displayMessage('Please paste OCEL JSON content', 'error');
+                return;
+            }
+
+            try {
+                updateStatus('loading', 'Loading OCEL...');
+                const handle = pm.load_ocel_from_json(content);
+                document.getElementById('logHandle').value = handle;
+                updateStatus('ready', 'WASM Ready');
+                displayMessage('OCEL loaded successfully. Handle: ' + handle, 'success');
+            } catch (e) {
+                updateStatus('error', 'Load Failed');
+                displayMessage('Failed to load OCEL: ' + e.message, 'error');
+            }
+        };
+
+        window.loadSampleOCEL = function () {
+            const sample = {
+                'ocel:global-event': { 'ocel:attribute': [] },
+                'ocel:global-object': {
+                    'ocel:object-type': [
+                        { 'ocel:name': 'Order' },
+                        { 'ocel:name': 'Item' }
+                    ]
+                },
+                'ocel:events': {
+                    'ocel:event': [
+                        {
+                            'ocel:id': 'e1',
+                            'ocel:type': 'Create Order',
+                            'ocel:timestamp': '2023-01-01T10:00:00',
+                            'ocel:omap': { 'ocel:o': [{ 'ocel:id': 'o1' }] }
+                        }
+                    ]
+                },
+                'ocel:objects': {
+                    'ocel:object': [
+                        { 'ocel:id': 'o1', 'ocel:type': 'Order' }
+                    ]
+                }
+            };
+            document.getElementById('ocelInput').value = JSON.stringify(sample, null, 2);
+            window.loadOCEL();
+        };
+
+        window.clearOcelInput = function () {
+            document.getElementById('ocelInput').value = '';
+        };
+
+        // File upload
+        window.handleFileUpload = function (event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            updateStatus('loading', 'Reading file...');
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const content = e.target.result;
+                const filename = file.name.toLowerCase();
+
+                try {
+                    if (filename.endsWith('.xes') || filename.endsWith('.xml')) {
+                        document.getElementById('xesInput').value = content;
+                        switchTab(document.querySelector('[onclick*="xes-tab"]'), 'xes-tab');
+                        window.loadXES();
+                    } else if (filename.endsWith('.json')) {
+                        document.getElementById('ocelInput').value = content;
+                        switchTab(document.querySelector('[onclick*="ocel-tab"]'), 'ocel-tab');
+                        window.loadOCEL();
+                    } else {
+                        displayMessage('Unsupported file format', 'error');
+                        updateStatus('error', 'File Error');
+                    }
+                } catch (error) {
+                    displayMessage('Error processing file: ' + error.message, 'error');
+                    updateStatus('error', 'Processing Error');
+                }
+            };
+
+            reader.onerror = function () {
+                displayMessage('Error reading file', 'error');
+                updateStatus('error', 'Read Error');
+            };
+
+            reader.readAsText(file);
+        };
+
+        // Analysis functions
+        window.analyzeStatistics = function () {
+            const handle = document.getElementById('logHandle').value;
+            if (!handle) {
+                displayMessage('Please load an event log first', 'error');
+                return;
+            }
+
+            try {
+                updateStatus('loading', 'Analyzing...');
+                const stats = JSON.parse(pm.analyze_event_statistics(handle));
+                updateStatus('ready', 'WASM Ready');
+                displayJSON(stats, 'Event Statistics');
+            } catch (e) {
+                updateStatus('error', 'Analysis Failed');
+                displayMessage('Analysis failed: ' + e.message, 'error');
+            }
+        };
+
+        window.analyzeDuration = function () {
+            const handle = document.getElementById('logHandle').value;
+            if (!handle) {
+                displayMessage('Please load an event log first', 'error');
+                return;
+            }
+
+            try {
+                updateStatus('loading', 'Analyzing...');
+                const durations = JSON.parse(pm.analyze_case_duration(handle));
+                updateStatus('ready', 'WASM Ready');
+                displayJSON(durations, 'Case Duration Analysis');
+            } catch (e) {
+                updateStatus('error', 'Analysis Failed');
+                displayMessage('Analysis failed: ' + e.message, 'error');
+            }
+        };
+
+        window.analyzeDottedChart = function () {
+            const handle = document.getElementById('logHandle').value;
+            if (!handle) {
+                displayMessage('Please load an event log first', 'error');
+                return;
+            }
+
+            try {
+                updateStatus('loading', 'Analyzing...');
+                const chart = JSON.parse(pm.analyze_dotted_chart(handle));
+                updateStatus('ready', 'WASM Ready');
+                displayJSON(chart, 'Dotted Chart');
+            } catch (e) {
+                updateStatus('error', 'Analysis Failed');
+                displayMessage('Analysis failed: ' + e.message, 'error');
+            }
+        };
+
+        // Discovery functions
+        window.discoverDFG = function () {
+            const handle = document.getElementById('logHandle').value;
+            if (!handle) {
+                displayMessage('Please load an event log first', 'error');
+                return;
+            }
+
+            try {
+                updateStatus('loading', 'Discovering...');
+                const dfg = JSON.parse(pm.discover_dfg(handle));
+                updateStatus('ready', 'WASM Ready');
+                displayJSON(dfg, 'Directly-Follows Graph');
+            } catch (e) {
+                updateStatus('error', 'Discovery Failed');
+                displayMessage('Discovery failed: ' + e.message, 'error');
+            }
+        };
+
+        window.discoverAlpha = function () {
+            const handle = document.getElementById('logHandle').value;
+            if (!handle) {
+                displayMessage('Please load an event log first', 'error');
+                return;
+            }
+
+            try {
+                updateStatus('loading', 'Discovering...');
+                const petriNet = JSON.parse(pm.discover_alpha_plus_plus(handle, 0));
+                updateStatus('ready', 'WASM Ready');
+                displayJSON(petriNet, 'Alpha++ Petri Net');
+            } catch (e) {
+                updateStatus('error', 'Discovery Failed');
+                displayMessage('Discovery failed: ' + e.message, 'error');
+            }
+        };
+
+        window.discoverDeclare = function () {
+            const handle = document.getElementById('logHandle').value;
+            if (!handle) {
+                displayMessage('Please load an event log first', 'error');
+                return;
+            }
+
+            try {
+                updateStatus('loading', 'Discovering...');
+                const constraints = JSON.parse(pm.discover_declare(handle));
+                updateStatus('ready', 'WASM Ready');
+                displayJSON(constraints, 'DECLARE Constraints');
+            } catch (e) {
+                updateStatus('error', 'Discovery Failed');
+                displayMessage('Discovery failed: ' + e.message, 'error');
+            }
+        };
+
+        // Info functions
+        window.showAlgorithms = function () {
+            try {
+                const algorithms = JSON.parse(pm.available_discovery_algorithms());
+                displayJSON(algorithms, 'Available Discovery Algorithms');
+            } catch (e) {
+                displayMessage('Failed to get algorithms: ' + e.message, 'error');
+            }
+        };
+
+        window.showAnalysisFunctions = function () {
+            try {
+                const functions = JSON.parse(pm.available_analysis_functions());
+                displayJSON(functions, 'Available Analysis Functions');
+            } catch (e) {
+                displayMessage('Failed to get functions: ' + e.message, 'error');
+            }
+        };
+
+        // State management
+        window.showObjectCount = function () {
+            try {
+                const count = pm.object_count();
+                displayMessage('Objects stored: ' + count, 'success');
+            } catch (e) {
+                displayMessage('Failed: ' + e.message, 'error');
+            }
+        };
+
+        window.clearAll = function () {
+            try {
+                pm.clear_all_objects();
+                document.getElementById('logHandle').value = '';
+                displayMessage('All objects cleared', 'success');
+            } catch (e) {
+                displayMessage('Failed to clear: ' + e.message, 'error');
+            }
+        };
+
+        // Initialize on load
+        initWasm();
+    </script>
+</body>
+</html>
