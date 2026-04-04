@@ -85,7 +85,7 @@ Test Coverage Areas:
 ================================================================================
 
 1. Navigate to WASM project:
-   cd /home/user/rust4pm/process_mining_wasm
+   cd /home/user/wasm4pm
 
 2. Build WASM module:
    npm run build
@@ -176,22 +176,22 @@ The vitest tests comprehensively map to the Rust test files:
 ================================================================================
 
 Configuration:
-  /home/user/rust4pm/process_mining_wasm/vitest.config.ts
+  /home/user/wasm4pm/vitest.config.ts
 
 Test Modules:
-  /home/user/rust4pm/process_mining_wasm/__tests__/io.test.ts
-  /home/user/rust4pm/process_mining_wasm/__tests__/discovery.test.ts
-  /home/user/rust4pm/process_mining_wasm/__tests__/analysis.test.ts
-  /home/user/rust4pm/process_mining_wasm/__tests__/state.test.ts
-  /home/user/rust4pm/process_mining_wasm/__tests__/types.test.ts
+  /home/user/wasm4pm/__tests__/io.test.ts
+  /home/user/wasm4pm/__tests__/discovery.test.ts
+  /home/user/wasm4pm/__tests__/analysis.test.ts
+  /home/user/wasm4pm/__tests__/state.test.ts
+  /home/user/wasm4pm/__tests__/types.test.ts
 
 Documentation:
-  /home/user/rust4pm/process_mining_wasm/IMPLEMENTATION_CHECKLIST.md
-  /home/user/rust4pm/process_mining_wasm/TEST_IMPLEMENTATION_SUMMARY.txt
+  /home/user/wasm4pm/IMPLEMENTATION_CHECKLIST.md
+  /home/user/wasm4pm/TEST_IMPLEMENTATION_SUMMARY.txt
 
 Sample Data (Existing):
-  /home/user/rust4pm/process_mining_wasm/__tests__/fixtures/sample.xes
-  /home/user/rust4pm/process_mining_wasm/__tests__/fixtures/sample.json
+  /home/user/wasm4pm/__tests__/fixtures/sample.xes
+  /home/user/wasm4pm/__tests__/fixtures/sample.json
 
 ================================================================================
                           SUCCESS CRITERIA
@@ -220,7 +220,7 @@ All requirements met:
 ================================================================================
 
 Step 1: Build the WASM module (if not already built)
-  cd /home/user/rust4pm/process_mining_wasm
+  cd /home/user/wasm4pm
   npm run build
 
 Step 2: Run the test suite

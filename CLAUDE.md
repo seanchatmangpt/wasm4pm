@@ -8,8 +8,8 @@ Configuration file for Claude Code agents working on the wasm4pm project.
 
 - **Status**: Production-Ready (v0.5.4)
 - **Primary Language**: Rust (WASM) + TypeScript
-- **Location**: `/home/user/rust4pm/wasm4pm/`
-- **Repository**: https://github.com/seanchatmangpt/rust4pm
+- **Location**: `/home/user/wasm4pm/`
+- **Repository**: https://github.com/seanchatmangpt/wasm4pm
 
 ## Project Structure
 

@@ -312,11 +312,11 @@ npm run test:unit -- --coverage
 ```
 
 ### File Locations
-- Main test files: `/home/user/rust4pm/process_mining_wasm/__tests__/*.test.ts`
-- Configuration: `/home/user/rust4pm/process_mining_wasm/vitest.config.ts`
-- Fixtures: `/home/user/rust4pm/process_mining_wasm/__tests__/fixtures/`
-- Documentation: `/home/user/rust4pm/process_mining_wasm/__tests__/README.md`
-- Guide: `/home/user/rust4pm/process_mining_wasm/__tests__/TESTING_GUIDE.md`
+- Main test files: `/home/user/wasm4pm/__tests__/*.test.ts`
+- Configuration: `/home/user/wasm4pm/vitest.config.ts`
+- Fixtures: `/home/user/wasm4pm/__tests__/fixtures/`
+- Documentation: `/home/user/wasm4pm/__tests__/README.md`
+- Guide: `/home/user/wasm4pm/__tests__/TESTING_GUIDE.md`
 
 ## Success Criteria - All Met ✅
 
