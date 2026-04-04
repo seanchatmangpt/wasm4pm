@@ -1,0 +1,72 @@
+{
+  "name": "wasm4pm",
+  "version": "0.1.0",
+  "description": "Process Mining in WebAssembly - High-Speed Algorithms for Browser and Node.js",
+  "main": "pkg/wasm4pm.js",
+  "types": "pkg/wasm4pm.d.ts",
+  "files": [
+    "pkg/"
+  ],
+  "exports": {
+    ".": {
+      "types": "./pkg/wasm4pm.d.ts",
+      "import": "./pkg/wasm4pm.js",
+      "require": "./pkg/wasm4pm.js"
+    }
+  },
+  "scripts": {
+    "build": "wasm-pack build --target bundler",
+    "build:nodejs": "wasm-pack build --target nodejs",
+    "build:web": "wasm-pack build --target web",
+    "build:all": "npm run build && npm run build:nodejs && npm run build:web",
+    "build:mcp": "tsc src/mcp_server.ts --outDir dist --module commonjs --target es2020",
+    "start:mcp": "npm run build:mcp && node dist/mcp_server.js",
+    "test": "npm run test:unit && npm run test:integration",
+    "test:unit": "vitest run",
+    "test:unit:watch": "vitest",
+    "test:integration": "node __tests__/integration.test.js",
+    "test:browser": "npm run build:web && vitest run --browser",
+    "lint": "npm run format:check && npm run type:check",
+    "format": "prettier --write \"**/*.{js,ts,json,md}\"",
+    "format:check": "prettier --check \"**/*.{js,ts,json,md}\"",
+    "type:check": "tsc --noEmit",
+    "docs": "typedoc --out docs pkg/wasm4pm.d.ts",
+    "prepublishOnly": "npm run build:all && npm run lint && npm run test",
+    "prepare": "npm run build:all"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/seanchatmangpt/rust4pm.git",
+    "directory": "wasm4pm"
+  },
+  "homepage": "https://github.com/seanchatmangpt/rust4pm/tree/main/wasm4pm",
+  "bugs": {
+    "url": "https://github.com/seanchatmangpt/rust4pm/issues"
+  },
+  "keywords": [
+    "process-mining",
+    "wasm",
+    "webassembly",
+    "javascript",
+    "typescript",
+    "rust",
+    "data-mining",
+    "event-log"
+  ],
+  "author": "rust4pm contributors",
+  "license": "MIT OR Apache-2.0",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/sdk": "^0.1.0",
+    "@testing-library/dom": "^9.3.3",
+    "@testing-library/jest-dom": "^6.1.5",
+    "@types/node": "^20.10.6",
+    "prettier": "^3.1.1",
+    "typescript": "^5.3.3",
+    "typedoc": "^0.25.4",
+    "vitest": "^1.1.0",
+    "wasm-pack": "^1.3.4"
+  }
+}

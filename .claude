@@ -1,0 +1,358 @@
+# Claude Code Configuration for wasm4pm
+
+## Project Settings
+
+name = "wasm4pm"
+description = "High-performance process mining algorithms in WebAssembly"
+version = "0.5.4"
+language = "rust"
+
+## Build Configuration
+
+[build]
+command = "cargo check"
+release_command = "npm run build:release"
+test_command = "npm test"
+watch_patterns = ["wasm4pm/src/**/*.rs", "wasm4pm/src/**/*.ts", "wasm4pm/Cargo.toml", "wasm4pm/package.json"]
+
+## Project Structure
+
+[paths]
+source = "wasm4pm/src"
+tests = "wasm4pm/__tests__"
+benchmarks = "wasm4pm/benchmarks"
+examples = "wasm4pm/examples"
+docs = "."
+
+## Editor Configuration
+
+[editor]
+indent_size = 2
+indent_type = "spaces"
+line_length = 100
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+## Rust Specific
+
+[rust]
+edition = "2021"
+format_on_save = true
+lint_on_save = true
+clippy_on_save = true
+check_formatting = "cargo fmt --all -- --check"
+apply_formatting = "cargo fmt --all"
+check_linting = "cargo clippy --all-targets -- -D warnings"
+
+## TypeScript Specific
+
+[typescript]
+strict = true
+target = "ES2020"
+module = "ESNext"
+lib = ["ES2020", "DOM"]
+declaration = true
+declaration_maps = true
+source_maps = true
+
+## Testing
+
+[testing]
+framework = "vitest"
+test_command = "npm test"
+watch_command = "npm run test:watch"
+coverage_command = "npm run test:coverage"
+test_directory = "wasm4pm/__tests__"
+integration_test_directory = "wasm4pm/__tests__/integration"
+
+## Performance
+
+[performance]
+benchmark_command = "npm run bench"
+profile_command = "cargo build --release"
+measure_metrics = true
+track_build_time = true
+track_test_time = true
+
+## Git Configuration
+
+[git]
+branch_prefix = "claude/"
+commit_template = "{message}\n\nhttps://claude.ai/code/session_{session_id}"
+require_signed_commits = false
+auto_stash = true
+auto_fetch = true
+
+## Documentation
+
+[docs]
+readme = "README.md"
+contributing = "CLAUDE.md"
+changelog = "CHANGELOG.md"
+architecture = "wasm4pm/ARCHITECTURE.md"
+api_reference = "wasm4pm/API.md"
+quick_start = "QUICKSTART.md"
+tutorials = "TUTORIAL.md"
+faq = "FAQ.md"
+
+## Dependencies
+
+[dependencies]
+min_rust_version = "1.70"
+min_node_version = "16.0"
+min_npm_version = "7.0"
+required_tools = ["cargo", "npm", "wasm-pack", "rustfmt", "clippy"]
+
+## Code Style
+
+[style]
+max_line_length = 100
+use_trailing_commas = true
+align_imports = false
+group_imports = true
+sort_imports = true
+
+[naming]
+variable_case = "snake_case"
+function_case = "snake_case"
+constant_case = "SCREAMING_SNAKE_CASE"
+type_case = "PascalCase"
+module_case = "snake_case"
+
+## Linting Rules
+
+[linting]
+warn_unused_variables = true
+warn_unused_imports = true
+deny_warnings = false
+max_complexity = 10
+max_nesting = 4
+
+## AI Assistant Behavior
+
+[assistant]
+default_model = "claude-opus-4-6"
+fast_mode_enabled = true
+code_generation_style = "concise"
+documentation_level = "comprehensive"
+test_coverage_required = true
+performance_aware = true
+
+## Context Configuration
+
+[context]
+include_test_files = true
+include_benchmarks = true
+include_examples = true
+include_docs = true
+max_file_size = 100000
+ignore_patterns = [
+  "node_modules/",
+  "target/",
+  ".git/",
+  "dist/",
+  "pkg/",
+  "coverage/",
+  "*.lock"
+]
+
+## Integration Points
+
+[integrations.mcp]
+enabled = true
+server_command = "npm run start:mcp"
+server_port = 3000
+
+[integrations.npm]
+package_manager = "npm"
+install_command = "npm install"
+publish_command = "npm publish"
+
+[integrations.github]
+auto_create_pr = false
+auto_push = false
+require_pr_review = false
+
+## Development Workflow
+
+[workflow]
+pre_commit_hooks = ["npm run format", "cargo fmt"]
+pre_test_hooks = ["cargo clippy"]
+pre_build_hooks = ["npm run lint"]
+auto_reload = true
+auto_test = true
+
+## Extensions
+
+[extensions]
+enabled = [
+  "rust-analyzer",
+  "prettier",
+  "eslint",
+  "crates",
+  "better-comments"
+]
+
+## Security
+
+[security]
+check_vulnerabilities = true
+scan_dependencies = true
+require_code_review = false
+enable_sandboxing = true
+
+## Remote Configuration
+
+[remote]
+repository_url = "https://github.com/seanchatmangpt/rust4pm"
+branch = "claude/create-wasm-js-1qypZ"
+auto_sync = true
+require_clean_working_tree = false
+
+## Notification Settings
+
+[notifications]
+notify_on_build_failure = true
+notify_on_test_failure = true
+notify_on_deployment = true
+notify_on_git_push = true
+
+## Debugging
+
+[debugging]
+debug_mode = false
+log_level = "info"
+verbose_output = true
+save_debug_logs = true
+debug_log_path = "debug.log"
+
+## Session Configuration
+
+[session]
+auto_save_session = true
+session_timeout = 3600
+preserve_context = true
+context_size = "full"
+compression_enabled = true
+
+## Cache Configuration
+
+[cache]
+enable_cache = true
+cache_directory = ".claude_cache"
+cache_ttl = 3600
+clear_on_startup = false
+
+## Environment Variables
+
+[env]
+RUST_BACKTRACE = "1"
+RUST_LOG = "debug"
+NODE_ENV = "development"
+CARGO_NET_OFFLINE = "false"
+WASM_PACK_PROFILE = "release"
+
+## Custom Commands
+
+[commands]
+# Quick build
+build_dev = "npm run build:dev"
+build_release = "npm run build:release"
+build_all = "npm run build:all"
+
+# Testing
+test_all = "npm test"
+test_unit = "npm run test:unit"
+test_integration = "npm run test:integration"
+test_watch = "npm run test:watch"
+
+# Development
+format = "npm run format"
+lint = "npm run lint"
+docs = "npm run docs"
+
+# MCP
+start_mcp = "npm run start:mcp"
+
+# Deployment
+publish = "npm publish"
+release = "npm run build:release && npm publish"
+
+## Aliases
+
+[aliases]
+test = "npm test"
+build = "npm run build:all"
+fmt = "npm run format"
+doc = "npm run docs"
+ci = "npm run lint && npm test"
+clean = "rm -rf dist pkg target node_modules"
+fresh = "clean && npm install && npm run build:all"
+
+## Task Management
+
+[tasks]
+auto_create_tasks = false
+task_template = "work/{category}/{task}"
+task_naming = "kebab-case"
+
+## Notifications & Alerts
+
+[alerts]
+performance_regression_threshold = 0.10
+test_failure_threshold = 1
+build_failure_threshold = 0
+unused_code_warning = true
+
+## Code Review Settings
+
+[review]
+auto_review_on_commit = false
+review_coverage_threshold = 80
+review_complexity_threshold = "high"
+suggest_improvements = true
+
+## Performance Monitoring
+
+[monitoring]
+track_build_time = true
+track_test_time = true
+track_compilation_time = true
+performance_baseline = "benchmarks/results.csv"
+
+## Quality Gates
+
+[quality]
+minimum_test_coverage = 70
+maximum_complexity = 10
+maximum_nesting = 4
+require_documentation = true
+require_examples = true
+
+## Output Verbosity
+
+[verbosity]
+show_timings = true
+show_progress = true
+colorize_output = true
+verbose_errors = true
+verbose_warnings = false
+
+## Workspace
+
+[workspace]
+members = ["wasm4pm"]
+resolver = "2"
+default_member = "wasm4pm"
+
+## Final Notes
+
+# This configuration enables optimal development workflow for wasm4pm
+# Run 'claude init' to verify all settings are correct
+# See CLAUDE.md for detailed guidelines and best practices
+# See README.md for project overview
+# See QUICKSTART.md to get started
+
+version = "1.0"
+last_updated = "2026-04-04"
+maintainer = "wasm4pm"

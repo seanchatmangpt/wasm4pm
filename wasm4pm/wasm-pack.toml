@@ -1,0 +1,14 @@
+[package]
+name = "wasm4pm"
+version = "0.1.0"
+description = "Process Mining in WebAssembly - High-Speed Algorithms for Browser and Node.js"
+repository = "https://github.com/seanchatmangpt/rust4pm"
+license = "MIT OR Apache-2.0"
+authors = ["rust4pm contributors"]
+keywords = ["process-mining", "wasm", "webassembly", "process-discovery", "conformance"]
+categories = ["wasm", "algorithms", "data-analysis"]
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1

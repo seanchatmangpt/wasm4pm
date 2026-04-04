@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rust4PM WASM Browser Example</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .section {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        textarea {
+            width: 100%;
+            height: 150px;
+            font-family: monospace;
+            margin: 10px 0;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .result {
+            background-color: #f9f9f9;
+            padding: 10px;
+            border-left: 4px solid #4CAF50;
+            margin: 10px 0;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .error {
+            background-color: #ffebee;
+            border-left: 4px solid #f44336;
+        }
+        h2 {
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <h1>Rust4PM WASM Examples</h1>
+
+    <div class="section">
+        <h2>1. Load EventLog (XES)</h2>
+        <p>Paste XES content below and click "Load":</p>
+        <textarea id="xesContent" placeholder="Paste XES XML content here..."></textarea>
+        <button onclick="loadXES()">Load EventLog</button>
+        <div id="loadResult" class="result"></div>
+    </div>
+
+    <div class="section">
+        <h2>2. Load OCEL (JSON)</h2>
+        <p>Paste OCEL JSON content below and click "Load":</p>
+        <textarea id="ocelContent" placeholder="Paste OCEL JSON content here..."></textarea>
+        <button onclick="loadOCEL()">Load OCEL</button>
+        <div id="ocelResult" class="result"></div>
+    </div>
+
+    <div class="section">
+        <h2>3. Analysis & Discovery</h2>
+        <p>EventLog Handle: <input type="text" id="logHandle" placeholder="Handle from step 1"></p>
+        <button onclick="analyzeStats()">Get Event Statistics</button>
+        <button onclick="discoverDFG()">Discover DFG</button>
+        <button onclick="discoverAlpha()">Discover Alpha++</button>
+        <div id="analysisResult" class="result"></div>
+    </div>
+
+    <div class="section">
+        <h2>4. Object Management</h2>
+        <button onclick="showObjectCount()">Show Object Count</button>
+        <button onclick="clearAll()">Clear All Objects</button>
+        <div id="stateResult" class="result"></div>
+    </div>
+
+    <script type="module">
+        import init, * as pm from './pkg/process_mining_wasm.js';
+
+        let wasmReady = false;
+
+        async function initWasm() {
+            try {
+                await init();
+                pm.init();
+                wasmReady = true;
+                console.log('WASM initialized, version:', pm.get_version());
+            } catch (e) {
+                displayError('Failed to initialize WASM: ' + e.message, 'loadResult');
+            }
+        }
+
+        window.loadXES = function() {
+            if (!wasmReady) {
+                displayError('WASM not initialized', 'loadResult');
+                return;
+            }
+
+            const content = document.getElementById('xesContent').value;
+            if (!content.trim()) {
+                displayError('Please paste XES content', 'loadResult');
+                return;
+            }
+
+            try {
+                const handle = pm.load_eventlog_from_xes(content);
+                document.getElementById('logHandle').value = handle;
+                const stats = JSON.parse(pm.analyze_event_statistics(handle));
+                displayResult('EventLog loaded successfully!\nHandle: ' + handle + '\n\nStatistics:\n' + JSON.stringify(stats, null, 2), 'loadResult');
+            } catch (e) {
+                displayError('Failed to load EventLog: ' + e.message, 'loadResult');
+            }
+        };
+
+        window.loadOCEL = function() {
+            if (!wasmReady) {
+                displayError('WASM not initialized', 'ocelResult');
+                return;
+            }
+
+            const content = document.getElementById('ocelContent').value;
+            if (!content.trim()) {
+                displayError('Please paste OCEL JSON content', 'ocelResult');
+                return;
+            }
+
+            try {
+                const handle = pm.load_ocel_from_json(content);
+                const stats = JSON.parse(pm.analyze_ocel_statistics(handle));
+                displayResult('OCEL loaded successfully!\nHandle: ' + handle + '\n\nStatistics:\n' + JSON.stringify(stats, null, 2), 'ocelResult');
+            } catch (e) {
+                displayError('Failed to load OCEL: ' + e.message, 'ocelResult');
+            }
+        };
+
+        window.analyzeStats = function() {
+            const handle = document.getElementById('logHandle').value;
+            if (!handle) {
+                displayError('Please provide an EventLog handle', 'analysisResult');
+                return;
+            }
+
+            try {
+                const stats = JSON.parse(pm.analyze_event_statistics(handle));
+                displayResult('Event Statistics:\n' + JSON.stringify(stats, null, 2), 'analysisResult');
+            } catch (e) {
+                displayError('Analysis failed: ' + e.message, 'analysisResult');
+            }
+        };
+
+        window.discoverDFG = function() {
+            const handle = document.getElementById('logHandle').value;
+            if (!handle) {
+                displayError('Please provide an EventLog handle', 'analysisResult');
+                return;
+            }
+
+            try {
+                const dfg = pm.discover_dfg(handle);
+                const result = JSON.parse(dfg);
+                displayResult('DFG Discovery Result:\n' + JSON.stringify(result, null, 2), 'analysisResult');
+            } catch (e) {
+                displayError('Discovery failed: ' + e.message, 'analysisResult');
+            }
+        };
+
+        window.discoverAlpha = function() {
+            const handle = document.getElementById('logHandle').value;
+            if (!handle) {
+                displayError('Please provide an EventLog handle', 'analysisResult');
+                return;
+            }
+
+            try {
+                const petriNet = pm.discover_alpha_plus_plus(handle, 0);
+                const result = JSON.parse(petriNet);
+                displayResult('Alpha++ Discovery Result:\n' + JSON.stringify(result, null, 2), 'analysisResult');
+            } catch (e) {
+                displayError('Discovery failed: ' + e.message, 'analysisResult');
+            }
+        };
+
+        window.showObjectCount = function() {
+            try {
+                const count = pm.object_count();
+                displayResult('Objects stored: ' + count, 'stateResult');
+            } catch (e) {
+                displayError('Failed to get object count: ' + e.message, 'stateResult');
+            }
+        };
+
+        window.clearAll = function() {
+            try {
+                pm.clear_all_objects();
+                document.getElementById('logHandle').value = '';
+                displayResult('All objects cleared', 'stateResult');
+            } catch (e) {
+                displayError('Failed to clear objects: ' + e.message, 'stateResult');
+            }
+        };
+
+        function displayResult(message, elementId) {
+            const el = document.getElementById(elementId);
+            el.textContent = message;
+            el.className = 'result';
+        }
+
+        function displayError(message, elementId) {
+            const el = document.getElementById(elementId);
+            el.textContent = message;
+            el.className = 'result error';
+        }
+
+        // Initialize on page load
+        initWasm();
+    </script>
+</body>
+</html>
