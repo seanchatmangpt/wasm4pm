@@ -209,24 +209,24 @@ $$F = 2 \cdot \frac{F \times P}{F + P}$$
 
 | Algorithm | 100 Cases | 1K Cases | 10K Cases | Fitness | Precision | F-Measure |
 |-----------|-----------|----------|-----------|---------|-----------|-----------|
-| DFG | 0.5ms | 5ms | 50ms | 0.95 | 0.92 | 0.935 |
-| Alpha++ | 5ms | 50ms | 500ms | 0.98 | 0.96 | 0.970 |
-| Heuristic | 5ms | 50ms | 500ms | 0.94 | 0.91 | 0.925 |
-| Inductive | 5ms | 50ms | 500ms | 0.97 | 0.94 | 0.955 |
-| ILP | 20ms | 200ms | 2000ms | 0.99 | 0.98 | 0.985 |
-| A* Search | 10ms | 100ms | 1000ms | 0.97 | 0.96 | 0.965 |
-| Genetic | 40ms | 400ms | 4000ms | 0.97 | 0.95 | 0.960 |
-| PSO | 30ms | 300ms | 3000ms | 0.96 | 0.94 | 0.950 |
-| ACO | 15ms | 150ms | 1500ms | 0.96 | 0.93 | 0.945 |
-| SA | 15ms | 150ms | 1500ms | 0.95 | 0.92 | 0.935 |
-| Hill Climbing | 2ms | 20ms | 200ms | 0.92 | 0.89 | 0.905 |
-| Skeleton | 0.3ms | 3ms | 30ms | 0.88 | 0.85 | 0.865 |
+| DFG | 0.50ms | 5.00ms | 50.00ms | 0.95 | 0.92 | 0.935 |
+| Alpha++ | 5.00ms | 50.00ms | 500.00ms | 0.98 | 0.96 | 0.970 |
+| Heuristic | 5.00ms | 50.00ms | 500.00ms | 0.94 | 0.91 | 0.925 |
+| Inductive | 5.00ms | 50.00ms | 500.00ms | 0.97 | 0.94 | 0.955 |
+| ILP | 20.00ms | 200.00ms | 2000.00ms | 0.99 | 0.98 | 0.985 |
+| A* Search | 10.00ms | 100.00ms | 1000.00ms | 0.97 | 0.96 | 0.965 |
+| Genetic | 40.00ms | 400.00ms | 4000.00ms | 0.97 | 0.95 | 0.960 |
+| PSO | 30.00ms | 300.00ms | 3000.00ms | 0.96 | 0.94 | 0.950 |
+| ACO | 15.00ms | 150.00ms | 1500.00ms | 0.96 | 0.93 | 0.945 |
+| SA | 15.00ms | 150.00ms | 1500.00ms | 0.95 | 0.92 | 0.935 |
+| Hill Climbing | 2.00ms | 20.00ms | 200.00ms | 0.92 | 0.89 | 0.905 |
+| Skeleton | 0.30ms | 3.00ms | 30.00ms | 0.88 | 0.85 | 0.865 |
 
 **Key Findings:**
-- DFG and Skeleton: <50ms even for 10K cases (ultra-fast baselines)
-- Classical algorithms: 50-500ms (practical for interactive use)
-- Metaheuristics: 150-4000ms (trade latency for quality)
-- ILP optimal but slowest (200ms-2s)
+- DFG and Skeleton: <50.00ms even for 10K cases (ultra-fast baselines)
+- Classical algorithms: 50.00-500.00ms (practical for interactive use)
+- Metaheuristics: 150.00-4000.00ms (trade latency for quality)
+- ILP optimal but slowest (200.00ms-2000.00ms)
 
 ### 4.2 Scalability Analysis
 
@@ -240,44 +240,44 @@ Genetic:       t(n) = 0.4n         (R² = 0.995)
 ```
 
 **Conclusion:** All algorithms exhibit linear scalability. Practical limits:
-- Interactive (< 100ms): DFG, Skeleton, Hill Climbing
-- Standard (< 500ms): Alpha++, Heuristic, Inductive
-- Batch (< 5000ms): ILP, Genetic, PSO
+- Interactive (< 100.00ms): DFG, Skeleton, Hill Climbing
+- Standard (< 500.00ms): Alpha++, Heuristic, Inductive
+- Batch (< 5000.00ms): ILP, Genetic, PSO
 
 ### 4.3 Quality vs Speed Trade-offs
 
 Pareto frontier analysis:
 
 ```
-High Quality/Slow:  ILP (0.985 F-measure, 200ms+)
-Balanced:           Alpha++ (0.97 F-measure, 50ms)
-Fast/Acceptable:    Heuristic (0.925 F-measure, 50ms)
-Ultra-Fast:         DFG (0.935 F-measure, 5ms)
+High Quality/Slow:  ILP (0.985 F-measure, 200.00ms+)
+Balanced:           Alpha++ (0.97 F-measure, 50.00ms)
+Fast/Acceptable:    Heuristic (0.925 F-measure, 50.00ms)
+Ultra-Fast:         DFG (0.935 F-measure, 5.00ms)
 ```
 
 ### 4.4 Analytics Function Performance
 
-All analytics functions execute in < 50ms:
+All analytics functions execute in < 50.00ms:
 
 | Function | 1K Cases | Execution | Quality |
 |----------|----------|-----------|---------|
-| Variants | 50ms | ✅ | Exact |
-| Patterns | 45ms | ✅ | Exact |
-| Complexity | 30ms | ✅ | Exact |
-| Drift Detection | 40ms | ✅ | Heuristic |
-| Clustering | 35ms | ✅ | Approximate |
-| Similarity | 45ms | ✅ | Exact |
+| Variants | 50.00ms | ✅ | Exact |
+| Patterns | 45.00ms | ✅ | Exact |
+| Complexity | 30.00ms | ✅ | Exact |
+| Drift Detection | 40.00ms | ✅ | Heuristic |
+| Clustering | 35.00ms | ✅ | Approximate |
+| Similarity | 45.00ms | ✅ | Exact |
 
 ### 4.5 Memory Efficiency
 
-WASM binary size: 609KB (raw), 180KB (gzipped)
+WASM binary size: 609.00KB (raw), 180.00KB (gzipped)
 
 Runtime memory per log:
-- 1K cases: 150KB
-- 5K cases: 750KB  
-- 10K cases: 1.5MB
+- 1K cases: 150.00KB
+- 5K cases: 750.00KB  
+- 10K cases: 1.50MB
 
-Practical browser limit: ~100MB (handles 250K+ events)
+Practical browser limit: ~100.00MB (handles 250K+ events)
 
 ### 4.6 Comparative Analysis
 
@@ -300,9 +300,9 @@ Practical browser limit: ~100MB (handles 250K+ events)
 ### 5.1 Algorithm Selection
 
 **For Production Processes:**
-- Start with DFG (baseline, 5ms)
-- Refine with Heuristic/Alpha++ (50ms, high quality)
-- Validate with ILP if needed (optimal, 200ms+)
+- Start with DFG (baseline, 5.00ms)
+- Refine with Heuristic/Alpha++ (50.00ms, high quality)
+- Validate with ILP if needed (optimal, 200.00ms+)
 
 **For Noisy Logs:**
 - Genetic Algorithm (0.97 fitness, handles outliers)
@@ -310,9 +310,9 @@ Practical browser limit: ~100MB (handles 250K+ events)
 - Ant Colony (distributed exploration)
 
 **For Real-time Interactive:**
-- Hill Climbing (< 20ms)
-- DFG (< 5ms)
-- Process Skeleton (< 3ms)
+- Hill Climbing (< 20.00ms)
+- DFG (< 5.00ms)
+- Process Skeleton (< 3.00ms)
 
 ### 5.2 WASM-Specific Considerations
 
@@ -324,7 +324,7 @@ Practical browser limit: ~100MB (handles 250K+ events)
 
 **Limitations:**
 - Cannot use rayon parallelization
-- 100MB practical memory limit
+- 100.00MB practical memory limit
 - Slower than native for very large logs
 - Browser security model restrictions
 
@@ -373,7 +373,7 @@ On real logs (BPI Challenge):
 
 This thesis demonstrates that **comprehensive, production-grade process mining is viable in WebAssembly**. Our implementation of 14 discovery algorithms and 20+ analytics functions achieves:
 
-✅ **Practical Performance**: 3-400ms for interactive use, <5s for batch analysis  
+✅ **Practical Performance**: 3.00-400.00ms for interactive use, <5.00s for batch analysis  
 ✅ **Competitive Quality**: 95-99% fitness on benchmarks, comparable to desktop tools  
 ✅ **Accessibility**: Deploy to millions via browser, zero installation  
 ✅ **Privacy**: Client-side computation, no data transmission required  
@@ -419,11 +419,11 @@ Weijters, A. J., & van der Aalst, W. M. (2003). Rediscovering workflow models fr
 
 | Cases | Events | Activities | Time (ms) | Fitness | Precision | Memory (KB) |
 |-------|--------|------------|-----------|---------|-----------|------------|
-| 100 | 500 | 10 | 0.5 | 0.95 | 0.92 | 50 |
-| 500 | 2500 | 15 | 2.5 | 0.95 | 0.92 | 250 |
-| 1000 | 5000 | 20 | 5.0 | 0.95 | 0.92 | 500 |
-| 5000 | 25000 | 25 | 25.0 | 0.95 | 0.92 | 2500 |
-| 10000 | 50000 | 30 | 50.0 | 0.95 | 0.92 | 5000 |
+| 100 | 500 | 10 | 0.50 | 0.95 | 0.92 | 50.00 |
+| 500 | 2500 | 15 | 2.50 | 0.95 | 0.92 | 250.00 |
+| 1000 | 5000 | 20 | 5.00 | 0.95 | 0.92 | 500.00 |
+| 5000 | 25000 | 25 | 25.00 | 0.95 | 0.92 | 2500.00 |
+| 10000 | 50000 | 30 | 50.00 | 0.95 | 0.92 | 5000.00 |
 
 ### A.2 Quality Metrics by Algorithm
 
@@ -440,10 +440,10 @@ Linear model: Time(n) = a·n + b
 
 | Algorithm | Coefficient (a) | Intercept (b) | R² | Linear? |
 |-----------|-----------------|---------------|-----|---------|
-| DFG | 0.005 | 0.1 | 0.998 | ✅ |
-| Alpha++ | 0.050 | 0.5 | 0.997 | ✅ |
-| ILP | 0.200 | 5.0 | 0.996 | ✅ |
-| Genetic | 0.400 | 10.0 | 0.995 | ✅ |
+| DFG | 0.005 | 0.10 | 0.998 | ✅ |
+| Alpha++ | 0.050 | 0.50 | 0.997 | ✅ |
+| ILP | 0.200 | 5.00 | 0.996 | ✅ |
+| Genetic | 0.400 | 10.00 | 0.995 | ✅ |
 
 ---
 
@@ -509,37 +509,37 @@ With 100x increased benchmark load (10K to 1M events), we observe:
 
 | Algorithm | 10K Cases | 50K Cases | 100K Cases | 500K Cases | 1M Cases |
 |-----------|-----------|-----------|-----------|-----------|----------|
-| DFG | 50ms | 250ms | 500ms | 2.5s | 5s |
-| Alpha++ | 500ms | 2.5s | 5s | 25s | 50s |
-| Heuristic | 500ms | 2.5s | 5s | 25s | 50s |
-| Inductive | 500ms | 2.5s | 5s | 25s | 50s |
-| ILP | 2s | 10s | 20s | 100s | 200s |
-| A* Search | 1s | 5s | 10s | 50s | 100s |
-| Genetic | 4s | 20s | 40s | 200s | 400s |
-| PSO | 3s | 15s | 30s | 150s | 300s |
-| ACO | 1.5s | 7.5s | 15s | 75s | 150s |
-| SA | 1.5s | 7.5s | 15s | 75s | 150s |
-| Hill Climbing | 200ms | 1s | 2s | 10s | 20s |
-| Process Skeleton | 30ms | 150ms | 300ms | 1.5s | 3s |
+| DFG | 50.00ms | 250.00ms | 500.00ms | 2.50s | 5.00s |
+| Alpha++ | 500.00ms | 2.50s | 5.00s | 25.00s | 50.00s |
+| Heuristic | 500.00ms | 2.50s | 5.00s | 25.00s | 50.00s |
+| Inductive | 500.00ms | 2.50s | 5.00s | 25.00s | 50.00s |
+| ILP | 2.00s | 10.00s | 20.00s | 100.00s | 200.00s |
+| A* Search | 1.00s | 5.00s | 10.00s | 50.00s | 100.00s |
+| Genetic | 4.00s | 20.00s | 40.00s | 200.00s | 400.00s |
+| PSO | 3.00s | 15.00s | 30.00s | 150.00s | 300.00s |
+| ACO | 1.50s | 7.50s | 15.00s | 75.00s | 150.00s |
+| SA | 1.50s | 7.50s | 15.00s | 75.00s | 150.00s |
+| Hill Climbing | 200.00ms | 1.00s | 2.00s | 10.00s | 20.00s |
+| Process Skeleton | 30.00ms | 150.00ms | 300.00ms | 1.50s | 3.00s |
 
 **Key Observations:**
 - **Linear scalability maintained** across all algorithms at 100x scale
-- **Fast algorithms still practical**: DFG, Skeleton, Hill Climbing < 5s even at 1M
-- **Classical algorithms practical for batch**: Alpha++ 50s for 1M (still acceptable)
+- **Fast algorithms still practical**: DFG, Skeleton, Hill Climbing < 5.00s even at 1M
+- **Classical algorithms practical for batch**: Alpha++ 50.00s for 1M (still acceptable)
 - **Metaheuristics require distributed**: Genetic Algorithm 6+ minutes at max scale
 
 #### Memory Scaling at 100x Load
 
 | Dataset Size | Events | Estimated RAM | WASM Memory % |
 |------------|--------|---------------|--------------|
-| 10K cases | 500K | 50MB | 50% |
-| 50K cases | 2.5M | 250MB | 250% ⚠️ |
-| 100K cases | 5M | 500MB | 500% ⚠️ |
-| 500K cases | 25M | 2.5GB | N/A |
-| 1M cases | 50M | 5GB | N/A |
+| 10K cases | 500K | 50.00MB | 50.00% |
+| 50K cases | 2.5M | 250.00MB | 250.00% ⚠️ |
+| 100K cases | 5M | 500.00MB | 500.00% ⚠️ |
+| 500K cases | 25M | 2.50GB | N/A |
+| 1M cases | 50M | 5.00GB | N/A |
 
 **Practical Limits in Current WASM:**
-- Browser instances: ~100MB practical (50K cases max)
+- Browser instances: ~100.00MB practical (50K cases max)
 - Server-side Node.js: Can leverage full system memory
 - Recommendation: Use streaming/chunking for > 100K cases
 
@@ -552,9 +552,9 @@ With 100x increased benchmark load (10K to 1M events), we observe:
 **Dataset**: Process execution with 262,200 events, 13,087 traces
 
 Results using wasm4pm in browser:
-- **DFG Discovery**: 2.3 seconds
-- **Alpha++ Model**: 23 seconds  
-- **ILP Optimal**: 200+ seconds (batch processing)
+- **DFG Discovery**: 2.30 seconds
+- **Alpha++ Model**: 23.00 seconds  
+- **ILP Optimal**: 200.00+ seconds (batch processing)
 - **Quality (F-measure)**: 0.89 (near ProM parity)
 
 **Conclusion**: Wasm4pm handles real event logs effectively with competitive quality.
@@ -572,7 +572,7 @@ Sensitive information: Cannot leave hospital network
 - Generate recommendations
 - All computation client-side (HIPAA-compliant)
 
-Results: Identified 3 critical bottlenecks, estimated 30% efficiency gain.
+Results: Identified 3 critical bottlenecks, estimated 30.00% efficiency gain.
 
 ### 8.3 Supply Chain Visibility
 
