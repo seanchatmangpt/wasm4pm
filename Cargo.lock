@@ -2961,6 +2961,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "process_mining_wasm"
+version = "0.5.4"
+dependencies = [
+ "chrono",
+ "once_cell",
+ "process_mining",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.64",
+ "uuid",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
+]
+
+[[package]]
 name = "psm"
 version = "0.1.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
