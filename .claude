@@ -204,7 +204,7 @@ enable_sandboxing = true
 ## Remote Configuration
 
 [remote]
-repository_url = "https://github.com/seanchatmangpt/rust4pm"
+repository_url = "https://github.com/seanchatmangpt/wasm4pm"
 branch = "claude/create-wasm-js-1qypZ"
 auto_sync = true
 require_clean_working_tree = false

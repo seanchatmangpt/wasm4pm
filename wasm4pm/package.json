@@ -36,12 +36,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/seanchatmangpt/rust4pm.git",
+    "url": "https://github.com/seanchatmangpt/wasm4pm.git",
     "directory": "wasm4pm"
   },
-  "homepage": "https://github.com/seanchatmangpt/rust4pm/tree/main/wasm4pm",
+  "homepage": "https://github.com/seanchatmangpt/wasm4pm/tree/main/wasm4pm",
   "bugs": {
-    "url": "https://github.com/seanchatmangpt/rust4pm/issues"
+    "url": "https://github.com/seanchatmangpt/wasm4pm/issues"
   },
   "keywords": [
     "process-mining",
@@ -53,7 +53,7 @@
     "data-mining",
     "event-log"
   ],
-  "author": "rust4pm contributors",
+  "author": "wasm4pm contributors",
   "license": "MIT OR Apache-2.0",
   "engines": {
     "node": ">=14.0.0"

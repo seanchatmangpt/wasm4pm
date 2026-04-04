@@ -3,7 +3,7 @@
 
 cff-version: 1.2.0
 title: >-
-  Rust4PM: A Versatile Process Mining Library for
+  WASM4PM: A Versatile Process Mining Library for
   When Performance Matters
 message: 'If you use this software, please cite it as below.'
 type: software
@@ -11,7 +11,7 @@ authors:
   - family-names: Küsters
     given-names: Aaron
     orcid: 'https://orcid.org/0009-0006-9195-5380'
-repository-code: 'https://github.com/aarkue/rust4pm'
+repository-code: 'https://github.com/seanchatmangpt/wasm4pm'
 url: 'https://crates.io/crates/process_mining'
 license: MIT
 version: 2.0.4
@@ -23,7 +23,7 @@ preferred-citation:
       given-names: 'Aaron'
     - family-names: 'van der Aalst'
       given-names: 'Wil M. P.'
-  title: '{Rust4PM}: A Versatile Process Mining Library for When Performance Matters'
+  title: '{WASM4PM}: A Versatile Process Mining Library for When Performance Matters'
   year: 2024
   collection-title: 'BPM (Demos / Resources Forum)'
   collection-type: proceedings

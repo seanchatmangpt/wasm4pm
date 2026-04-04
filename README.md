@@ -6,8 +6,8 @@
     <img src="https://img.shields.io/npm/v/wasm4pm" alt="npm version"/></a>
   <a href="https://www.npmjs.com/package/wasm4pm">
     <img src="https://img.shields.io/npm/dm/wasm4pm" alt="npm downloads"/></a>
-  <a href="https://github.com/seanchatmangpt/rust4pm">
-    <img src="https://img.shields.io/github/stars/seanchatmangpt/rust4pm" alt="GitHub stars"/></a>
+  <a href="https://github.com/seanchatmangpt/wasm4pm">
+    <img src="https://img.shields.io/github/stars/seanchatmangpt/wasm4pm" alt="GitHub stars"/></a>
 </p>
 <img src="logo.png" width="300" alt="Rust4PM Logo"/>
 </div>
@@ -291,7 +291,7 @@ Choose whichever license works best for your use case.
 ## 🔗 Links
 
 - **NPM Package**: https://www.npmjs.com/package/wasm4pm
-- **GitHub**: https://github.com/seanchatmangpt/rust4pm
+- **GitHub**: https://github.com/seanchatmangpt/wasm4pm
 - **Documentation**: See docs/ directory
 - **Research Paper**: [THESIS.md](./process_mining_wasm/THESIS.md)
 
@@ -304,15 +304,15 @@ If you use wasm4pm in your research, please cite:
   title={wasm4pm: Process Mining for WebAssembly},
   author={Sean Chat Man GPT},
   year={2026},
-  url={https://github.com/seanchatmangpt/rust4pm}
+  url={https://github.com/seanchatmangpt/wasm4pm}
 }
 ```
 
 ## 🙋 Support
 
 - **Documentation**: See [TUTORIAL.md](./TUTORIAL.md) and [FAQ.md](./FAQ.md)
-- **Issues**: Report bugs on [GitHub](https://github.com/seanchatmangpt/rust4pm/issues)
-- **Discussions**: Join [GitHub Discussions](https://github.com/seanchatmangpt/rust4pm/discussions)
+- **Issues**: Report bugs on [GitHub](https://github.com/seanchatmangpt/wasm4pm/issues)
+- **Discussions**: Join [GitHub Discussions](https://github.com/seanchatmangpt/wasm4pm/discussions)
 
 ---
 
