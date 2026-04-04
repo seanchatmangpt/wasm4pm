@@ -8,6 +8,7 @@ pub mod conformance;
 pub mod algorithms;
 pub mod utilities;
 pub mod xes_format;
+pub mod advanced_algorithms;
 
 // Suppress unused warnings for re-exported modules
 #[allow(unused)]
