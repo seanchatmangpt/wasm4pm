@@ -395,6 +395,89 @@ export class EventLogHandle {
   }
 
   /**
+   * Inductive Miner - recursive structure discovery with direct follows graph
+   */
+  discoverInductiveMiner(activityKey: string = 'concept:name'): DFGHandle {
+    const json = this.wasmModule.discover_inductive_miner(this.handle, activityKey);
+    const result = JSON.parse(json);
+    return new DFGHandle(result.handle, this.wasmModule);
+  }
+
+  /**
+   * Ant Colony Optimization - pheromone-based distributed search
+   */
+  discoverAntColony(
+    options: { activityKey?: string; numAnts?: number; iterations?: number } = {}
+  ): DFGHandle {
+    const activityKey = options.activityKey || 'concept:name';
+    const numAnts = options.numAnts || 20;
+    const iterations = options.iterations || 10;
+
+    const json = this.wasmModule.discover_ant_colony(
+      this.handle,
+      activityKey,
+      numAnts,
+      iterations
+    );
+    const result = JSON.parse(json);
+    return new DFGHandle(result.handle, this.wasmModule);
+  }
+
+  /**
+   * Simulated Annealing - thermal search with cooling schedule
+   */
+  discoverSimulatedAnnealing(
+    options: { activityKey?: string; temperature?: number; coolingRate?: number } = {}
+  ): DFGHandle {
+    const activityKey = options.activityKey || 'concept:name';
+    const temperature = options.temperature || 100.0;
+    const coolingRate = options.coolingRate || 0.95;
+
+    const json = this.wasmModule.discover_simulated_annealing(
+      this.handle,
+      activityKey,
+      temperature,
+      coolingRate
+    );
+    const result = JSON.parse(json);
+    return new DFGHandle(result.handle, this.wasmModule);
+  }
+
+  /**
+   * Extract Process Skeleton - minimal model keeping only frequent edges
+   */
+  extractProcessSkeleton(
+    options: { activityKey?: string; minFrequency?: number } = {}
+  ): DFGHandle {
+    const activityKey = options.activityKey || 'concept:name';
+    const minFrequency = options.minFrequency || 2;
+
+    const json = this.wasmModule.extract_process_skeleton(
+      this.handle,
+      activityKey,
+      minFrequency
+    );
+    const result = JSON.parse(json);
+    return new DFGHandle(result.handle, this.wasmModule);
+  }
+
+  /**
+   * Analyze Activity Dependencies - identify predecessors and successors
+   */
+  getActivityDependencies(activityKey: string = 'concept:name'): any {
+    const json = this.wasmModule.analyze_activity_dependencies(this.handle, activityKey);
+    return JSON.parse(json);
+  }
+
+  /**
+   * Analyze Case Attributes - correlate case-level attributes with process
+   */
+  getCaseAttributeAnalysis(activityKey: string = 'concept:name'): any {
+    const json = this.wasmModule.analyze_case_attributes(this.handle, activityKey);
+    return JSON.parse(json);
+  }
+
+  /**
    * Generate dotted chart data for visualization
    */
   getDottedChart(activityKey: string = 'concept:name'): any {
