@@ -4,6 +4,12 @@ mod io;
 mod discovery;
 mod analysis;
 
+// Suppress unused warnings for re-exported modules
+#[allow(unused)]
+use state::*;
+#[allow(unused)]
+use types::*;
+
 use wasm_bindgen::prelude::*;
 use state::AppState;
 
