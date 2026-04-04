@@ -4,6 +4,8 @@ use crate::models::*;
 use serde_json::json;
 use std::collections::{HashMap, HashSet};
 
+type DirectlyFollowsSet = HashSet<(String, String)>;
+
 /// Genetic Algorithm for process model discovery
 /// Evolves a population of DFGs to find models that fit the log well
 #[wasm_bindgen]
@@ -16,7 +18,13 @@ pub fn discover_genetic_algorithm(
     match get_or_init_state().get_object(eventlog_handle)? {
         Some(StoredObject::EventLog(log)) => {
             let activities = log.get_activities(activity_key);
-            let directly_follows = log.get_directly_follows(activity_key);
+            let directly_follows_vec = log.get_directly_follows(activity_key);
+
+            // Convert to set for fast lookup
+            let mut directly_follows: DirectlyFollowsSet = HashSet::new();
+            for (from, to, _freq) in &directly_follows_vec {
+                directly_follows.insert((from.clone(), to.clone()));
+            }
 
             // Initialize population with random DFGs
             let mut population: Vec<(DirectlyFollowsGraph, f64)> = Vec::new();
@@ -91,7 +99,13 @@ pub fn discover_pso_algorithm(
     match get_or_init_state().get_object(eventlog_handle)? {
         Some(StoredObject::EventLog(log)) => {
             let activities = log.get_activities(activity_key);
-            let directly_follows = log.get_directly_follows(activity_key);
+            let directly_follows_vec = log.get_directly_follows(activity_key);
+
+            // Convert to set for fast lookup
+            let mut directly_follows: DirectlyFollowsSet = HashSet::new();
+            for (from, to, _freq) in &directly_follows_vec {
+                directly_follows.insert((from.clone(), to.clone()));
+            }
 
             // Initialize swarm (particles)
             let mut particles: Vec<(DirectlyFollowsGraph, f64)> = Vec::new();
@@ -139,8 +153,10 @@ pub fn discover_pso_algorithm(
                 }
             }
 
-            let best_dfg = &best_global.unwrap().0;
-            let best_fitness = best_global.unwrap().1;
+            let (best_dfg, best_fitness) = match best_global {
+                Some((dfg, fitness)) => (dfg, fitness),
+                None => return Err(JsValue::from_str("Failed to find best solution")),
+            };
 
             let handle = get_or_init_state()
                 .store_object(StoredObject::DirectlyFollowsGraph(best_dfg.clone()))
@@ -165,7 +181,7 @@ pub fn discover_pso_algorithm(
 // Helper: Create random DFG structure
 fn create_random_dfg(
     activities: &[String],
-    directly_follows: &HashSet<(String, String)>,
+    directly_follows: &DirectlyFollowsSet,
     inclusion_probability: f64,
 ) -> DirectlyFollowsGraph {
     let mut dfg = DirectlyFollowsGraph::new();

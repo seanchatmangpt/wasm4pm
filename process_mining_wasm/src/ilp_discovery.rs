@@ -4,6 +4,8 @@ use crate::models::*;
 use serde_json::json;
 use std::collections::{HashMap, HashSet};
 
+type DirectlyFollowsSet = HashSet<(String, String)>;
+
 /// Integer Linear Programming-based process discovery
 /// Finds optimal Petri net that fits the log while minimizing complexity
 #[wasm_bindgen]
@@ -14,14 +16,16 @@ pub fn discover_ilp_petri_net(
     match get_or_init_state().get_object(eventlog_handle)? {
         Some(StoredObject::EventLog(log)) => {
             let activities = log.get_activities(activity_key);
-            let directly_follows = log.get_directly_follows(activity_key);
+            let directly_follows_vec = log.get_directly_follows(activity_key);
+
+            // Convert to set for fast lookup
+            let mut directly_follows: DirectlyFollowsSet = HashSet::new();
+            for (from, to, _freq) in &directly_follows_vec {
+                directly_follows.insert((from.clone(), to.clone()));
+            }
 
             // Initialize Petri net with places for each activity
-            let mut petri_net = PetriNet {
-                places: Vec::new(),
-                transitions: Vec::new(),
-                arcs: Vec::new(),
-            };
+            let mut petri_net = PetriNet::new();
 
             // Create transition for each activity
             let mut activity_to_transition: HashMap<String, String> = HashMap::new();
@@ -31,7 +35,7 @@ pub fn discover_ilp_petri_net(
                 petri_net.transitions.push(PetriNetTransition {
                     id: trans_id,
                     label: activity.clone(),
-                    isInvisible: false,
+                    is_invisible: Some(false),
                 });
             }
 
@@ -42,14 +46,17 @@ pub fn discover_ilp_petri_net(
             petri_net.places.push(PetriNetPlace {
                 id: source_place.clone(),
                 label: "source".to_string(),
-                marking: 1, // Initially marked
+                marking: Some(1), // Initially marked
             });
 
             petri_net.places.push(PetriNetPlace {
                 id: sink_place.clone(),
                 label: "sink".to_string(),
-                marking: 0,
+                marking: Some(0),
             });
+
+            // Set initial marking
+            petri_net.initial_marking.insert(source_place.clone(), 1);
 
             // Create intermediate places for directly-follows relations
             let mut place_counter = 0;
@@ -61,21 +68,21 @@ pub fn discover_ilp_petri_net(
                 petri_net.places.push(PetriNetPlace {
                     id: place_id.clone(),
                     label: format!("{}→{}", from_act, to_act),
-                    marking: 0,
+                    marking: Some(0),
                 });
 
                 // Arc from from_trans to new place
-                petri_net.arcs.push(Arc {
+                petri_net.arcs.push(PetriNetArc {
                     from: from_trans.clone(),
                     to: place_id.clone(),
-                    weight: 1,
+                    weight: Some(1),
                 });
 
                 // Arc from new place to to_trans
-                petri_net.arcs.push(Arc {
+                petri_net.arcs.push(PetriNetArc {
                     from: place_id,
                     to: to_trans.clone(),
-                    weight: 1,
+                    weight: Some(1),
                 });
 
                 place_counter += 1;
@@ -95,10 +102,10 @@ pub fn discover_ilp_petri_net(
 
             for start_activity in start_activities {
                 if let Some(start_trans) = activity_to_transition.get(&start_activity) {
-                    petri_net.arcs.push(Arc {
+                    petri_net.arcs.push(PetriNetArc {
                         from: source_place.clone(),
                         to: start_trans.clone(),
-                        weight: 1,
+                        weight: Some(1),
                     });
                 }
             }
@@ -118,27 +125,29 @@ pub fn discover_ilp_petri_net(
 
             for end_activity in end_activities {
                 if let Some(end_trans) = activity_to_transition.get(&end_activity) {
-                    petri_net.arcs.push(Arc {
+                    petri_net.arcs.push(PetriNetArc {
                         from: end_trans.clone(),
                         to: sink_place.clone(),
-                        weight: 1,
+                        weight: Some(1),
                     });
                 }
             }
 
+            // Set final marking
+            let mut final_marking = HashMap::new();
+            final_marking.insert(sink_place, 1);
+            petri_net.final_markings.push(final_marking);
+
             // Calculate fitness metrics
             let mut fitting_traces = 0;
-            let mut total_cost = 0.0;
 
             for trace in &log.traces {
                 if is_trace_fitting(&trace, activity_key, &directly_follows) {
                     fitting_traces += 1;
-                } else {
-                    total_cost += 1.0;
                 }
             }
 
-            let fitness = fitting_traces as f64 / log.traces.len() as f64;
+            let fitness = fitting_traces as f64 / log.traces.len().max(1) as f64;
             let precision = calculate_precision(&petri_net, &log, activity_key);
             let simplicity = 1.0 / (1.0 + petri_net.arcs.len() as f64 / 10.0);
 
@@ -269,9 +278,9 @@ pub fn discover_optimized_dfg(
 fn is_trace_fitting(
     trace: &Trace,
     activity_key: &str,
-    directly_follows: &HashSet<(String, String)>,
+    directly_follows: &DirectlyFollowsSet,
 ) -> bool {
-    for i in 0..trace.events.len() - 1 {
+    for i in 0..trace.events.len().saturating_sub(1) {
         if let (
             Some(AttributeValue::String(act1)),
             Some(AttributeValue::String(act2)),
