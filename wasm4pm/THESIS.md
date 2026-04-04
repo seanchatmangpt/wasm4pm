@@ -11,7 +11,7 @@
 
 ## Abstract
 
-This thesis presents wasm4pm, a comprehensive process mining toolkit compiled to WebAssembly (WASM) for execution in JavaScript environments. We implement and evaluate 14 process discovery algorithms and 20+ analytics functions in pure Rust, achieving sub-second execution on event logs with 10,000+ events while maintaining mathematical rigor comparable to desktop tools. Our contributions include: (1) the first production-grade process mining system compiled to WASM with support for multiple discovery paradigms, (2) comprehensive benchmarking of classical, optimization, and metaheuristic algorithms, (3) empirical validation showing 95-99% fitness on synthetic benchmarks with 3-400ms execution times, and (4) an open-source toolkit enabling process mining in browsers and Node.js without native dependencies. Through systematic evaluation across algorithm families, dataset sizes, and quality metrics, we demonstrate that WASM-compiled algorithms achieve comparable performance to native implementations while enabling novel use cases in web-based process analysis.
+This thesis presents wasm4pm, a comprehensive process mining toolkit compiled to WebAssembly (WASM) for execution in JavaScript environments. We implement and evaluate 14 process discovery algorithms and 20+ analytics functions in pure Rust, achieving sub-second execution on event logs with 10,000 cases for most algorithms while maintaining mathematical rigor comparable to desktop tools. Our contributions include: (1) the first production-grade process mining system compiled to WASM with support for multiple discovery paradigms, (2) comprehensive benchmarking of classical, optimization, and metaheuristic algorithms across log sizes from 100 to 50,000 cases, (3) empirical timing data showing fast algorithms (DFG, Inductive Miner, Process Skeleton) complete 10,000-case logs in under 140ms and 50,000-case logs in under 1 second, and (4) an open-source toolkit enabling process mining in browsers and Node.js without native dependencies. Quality metrics (fitness, precision, F-measure) require ground-truth reference models and are deferred to future work with real-world labelled logs. Through systematic timing evaluation across algorithm families and dataset sizes, we demonstrate that WASM-compiled algorithms achieve near-native performance enabling novel use cases in web-based process analysis.
 
 **Keywords:** process mining, WebAssembly, discovery algorithms, performance benchmarking, distributed systems
 
@@ -45,10 +45,10 @@ This thesis addresses:
 
 ### 1.3 Contributions
 
-1. **Complete WASM toolkit** with 14 discovery + 20+ analytics algorithms
-2. **Comprehensive benchmarking** across all algorithm families and dataset sizes
-3. **Quality evaluation** with fitness, precision, simplicity, and F-measure metrics
-4. **Scalability analysis** from 100 to 10,000+ events
+1. **Complete WASM toolkit** with 14 discovery + 21 analytics algorithms
+2. **Comprehensive timing benchmarks** across all algorithm families and dataset sizes (100–50K cases)
+3. **Scalability analysis** with measured slopes and practical scale tiers per algorithm
+4. **Memory characterization** from 1.4 MB (100 cases) to 684 MB (50K cases)
 5. **Open-source implementation** (MIT/Apache dual license)
 6. **Production-ready deployment** ready for npm publication
 
@@ -159,47 +159,38 @@ wasm4pm employs three-layer design:
 
 #### 3.3.1 Dataset Generation
 
-Synthetic logs with controlled properties:
+Synthetic event logs generated with fixed structure:
 
 ```rust
-struct SyntheticLog {
-    num_cases: usize,
-    num_events: usize,
-    num_activities: usize,
-    process_model: ProcessModel,
+fn create_eventlog(num_cases: usize, events_per_case: usize) -> EventLog {
+    let activities = ["Start", "A", "B", "C", "D", "End"]; // 6 activities
+    // Each case: sequential events cycling through activities
 }
 ```
 
-Sizes tested: 100, 500, 1,000, 5,000, 10,000 cases
+- **Activities**: 6 (fixed)
+- **Events per case**: 20 (fixed)
+- **Dataset sizes**: 100, 1,000, 5,000, 10,000, 25,000, 50,000 cases
+- **Total events**: 2,000 to 1,000,000
 
-#### 3.3.2 Quality Metrics
+#### 3.3.2 Performance Measurement
 
-**Fitness**: Traces fitting model behavior
-$$F = \frac{\text{fitting traces}}{\text{total traces}}$$
+- **Timing**: `std::time::Instant` — wall-clock nanoseconds, converted to milliseconds
+- **Repetitions**: 5 runs per configuration; **median** reported
+- **Memory**: formula `(case_count × 4096 + event_count × 512) / 1024` bytes → KB
+- **Scalability**: observed slope from measured data
 
-**Precision**: Model behavior matching log behavior (simplified)
-$$P = \frac{1}{1 + \frac{\text{model complexity}}{10}}$$
+#### 3.3.3 Quality Metrics
 
-**Simplicity**: Inverse complexity penalty
-$$S = \frac{1}{1 + \frac{\text{# edges}}{50}}$$
-
-**F-Measure**: Harmonic mean of fitness and precision
-$$F = 2 \cdot \frac{F \times P}{F + P}$$
-
-#### 3.3.3 Performance Measurement
-
-- **Execution time**: Wall-clock milliseconds (modern.now())
-- **Memory**: Estimated from structure sizes
-- **Model complexity**: Edge count
-- **Scalability**: Time vs. log size curve fitting
+Quality metrics (fitness, precision, F-measure) require a known ground-truth reference model and token-based replay — infrastructure not exercised in these benchmarks. **Section 4 reports only measured timing and memory.** Academic quality comparisons are deferred to future work with real-world labelled logs.
 
 ### 3.4 Experimental Setup
 
-- **Hardware**: Single-threaded JavaScript runtime
-- **Browser**: Chrome 90+ (WASM support)
-- **Node.js**: 14.0+
-- **Runs per configuration**: 5 (averaged)
-- **Warm-up runs**: 1 (JIT compilation)
+- **Hardware**: Linux x86-64, single core, native Rust release build
+- **Rust profile**: `opt-level = "z"`, LTO enabled, `codegen-units = 1`
+- **Test harness**: `cargo test --release -- --ignored --nocapture`
+- **Runs per configuration**: 5 (median reported to reduce JIT/OS noise)
+- **Genetic Algorithm**: 3 runs (slower; median still reported)
 
 ---
 
@@ -207,77 +198,124 @@ $$F = 2 \cdot \frac{F \times P}{F + P}$$
 
 ### 4.1 Algorithm Performance Benchmarks
 
-| Algorithm | 100 Cases | 1K Cases | 10K Cases | Fitness | Precision | F-Measure |
-|-----------|-----------|----------|-----------|---------|-----------|-----------|
-| DFG | 0.5ms | 5ms | 50ms | 0.95 | 0.92 | 0.935 |
-| Alpha++ | 5ms | 50ms | 500ms | 0.98 | 0.96 | 0.970 |
-| Heuristic | 5ms | 50ms | 500ms | 0.94 | 0.91 | 0.925 |
-| Inductive | 5ms | 50ms | 500ms | 0.97 | 0.94 | 0.955 |
-| ILP | 20ms | 200ms | 2000ms | 0.99 | 0.98 | 0.985 |
-| A* Search | 10ms | 100ms | 1000ms | 0.97 | 0.96 | 0.965 |
-| Genetic | 40ms | 400ms | 4000ms | 0.97 | 0.95 | 0.960 |
-| PSO | 30ms | 300ms | 3000ms | 0.96 | 0.94 | 0.950 |
-| ACO | 15ms | 150ms | 1500ms | 0.96 | 0.93 | 0.945 |
-| SA | 15ms | 150ms | 1500ms | 0.95 | 0.92 | 0.935 |
-| Hill Climbing | 2ms | 20ms | 200ms | 0.92 | 0.89 | 0.905 |
-| Skeleton | 0.3ms | 3ms | 30ms | 0.88 | 0.85 | 0.865 |
+Timing measured as median of 5 runs, native Rust `--release` build. Quality metrics (fitness, precision, F-measure) are deferred to future work — see Section 3.3.3.
+
+| Algorithm | 100 Cases | 1K Cases | 5K Cases | 10K Cases | 25K Cases | 50K Cases |
+|-----------|-----------|----------|----------|-----------|-----------|-----------|
+| DFG | 0.86ms | 11.09ms | 59.39ms | 130.13ms | 470.87ms | 924.49ms |
+| Optimized DFG | 0.85ms | 8.51ms | 51.60ms | 137.73ms | 401.19ms | 779.46ms |
+| Inductive Miner | 0.76ms | 8.26ms | 50.46ms | 117.32ms | 404.87ms | 795.63ms |
+| Heuristic (θ=0.5) | 0.94ms | 10.27ms | 62.89ms | 159.63ms | 453.93ms | 889.07ms |
+| Hill Climbing | 0.86ms | 9.87ms | 66.05ms | 145.88ms | 423.37ms | 954.87ms |
+| Process Skeleton (min_freq=2) | 0.78ms | 7.99ms | 53.89ms | 139.69ms | 384.11ms | 720.37ms |
+| A* Search (iter=1000) | 0.84ms | 8.50ms | 61.43ms | 142.79ms | 454.00ms | — |
+| ILP Petri Net | 1.16ms | 11.94ms | 72.79ms | 161.16ms | 555.05ms | — |
+| DECLARE | 1.68ms | 30.47ms | 162.52ms | 342.47ms | 1907.93ms | — |
+| Sim. Annealing (T=1.0, cool=0.95) | 1.47ms | 15.46ms | 170.29ms | 343.02ms | — | — |
+| Ant Colony (ants=20, iter=10) | 34.95ms | 416.25ms | 2021.41ms | 4154.66ms | — | — |
+| Genetic (pop=50, gen=20) | 10.03ms | 420.25ms | 5164.91ms | — | — | — |
+| PSO (swarm=30, iter=20) | 21.07ms | 1056.07ms | 5639.58ms | — | — | — |
+
+*"—" = not benchmarked at that scale (practical limit reached)*
+
+**Intermediate data points for scale-limited metaheuristics (500 cases):** ACO = 198.45ms, Genetic = 767.98ms, PSO = 573.02ms. These algorithms grow super-linearly and are impractical beyond 1K–5K cases for interactive use.
 
 **Key Findings:**
-- DFG and Skeleton: <50ms even for 10K cases (ultra-fast baselines)
-- Classical algorithms: 50-500ms (practical for interactive use)
-- Metaheuristics: 150-4000ms (trade latency for quality)
-- ILP optimal but slowest (200ms-2s)
+- Process Skeleton, Inductive Miner, Optimized DFG: fastest tier, sub-140ms at 10K cases, sub-second at 50K
+- DFG, Heuristic, Hill Climbing, A* Search: mid-tier, 130–160ms at 10K cases
+- ILP, DECLARE, Simulated Annealing: moderate cost, 160–343ms at 10K cases
+- Metaheuristics (ACO, Genetic, PSO): high cost at scale; practical limit ~1K–5K cases for interactive use
 
 ### 4.2 Scalability Analysis
 
-Linear regression analysis on execution time:
+Observed slopes computed from measured data points (slope = time at 1K cases / 1000):
 
 ```
-DFG:           t(n) = 0.005n       (R² = 0.998)
-Alpha++:       t(n) = 0.05n        (R² = 0.997)
-ILP:           t(n) = 0.2n         (R² = 0.996)
-Genetic:       t(n) = 0.4n         (R² = 0.995)
+DFG:              ~0.011 ms/case   (11.09ms @ 1K; 130.13ms @ 10K)
+Optimized DFG:    ~0.009 ms/case   ( 8.51ms @ 1K; 137.73ms @ 10K)
+Inductive Miner:  ~0.008 ms/case   ( 8.26ms @ 1K; 117.32ms @ 10K)
+Heuristic Miner:  ~0.010 ms/case   (10.27ms @ 1K; 159.63ms @ 10K)
+ILP Petri Net:    ~0.012 ms/case   (11.94ms @ 1K; 161.16ms @ 10K)
+Process Skeleton: ~0.008 ms/case   ( 7.99ms @ 1K; 139.69ms @ 10K)
+Genetic:          non-linear       (10.03ms @ 100c; 420.25ms @ 1K; 5164.91ms @ 5K)
+PSO:              non-linear       (21.07ms @ 100c; 1056.07ms @ 1K; 5639.58ms @ 5K)
+ACO:              non-linear       (34.95ms @ 100c; 416.25ms @ 1K; 4154.66ms @ 10K)
 ```
 
-**Conclusion:** All algorithms exhibit linear scalability. Practical limits:
-- Interactive (< 100ms): DFG, Skeleton, Hill Climbing
-- Standard (< 500ms): Alpha++, Heuristic, Inductive
-- Batch (< 5000ms): ILP, Genetic, PSO
+Most algorithms exhibit approximately linear scaling with case count. Metaheuristics (Genetic, PSO, ACO) show super-linear growth due to per-iteration population operations; they are practical only up to ~1K–5K cases.
+
+**Practical scale tiers (based on 10K-case timings):**
+- Interactive (< 150ms at 10K): Process Skeleton (139.69ms), Inductive Miner (117.32ms), A* Search (142.79ms)
+- Standard (< 350ms at 10K): DFG (130.13ms), Heuristic (159.63ms), ILP (161.16ms), Sim. Annealing (343.02ms)
+- Large-batch (50K cases, < 1s): Process Skeleton (720ms), Inductive Miner (796ms), Optimized DFG (779ms)
+- Scale-limited (ACO, Genetic, PSO): practical limit ~1K–5K cases
 
 ### 4.3 Quality vs Speed Trade-offs
 
-Pareto frontier analysis:
+Quality metrics (fitness, precision, F-measure) require ground-truth reference models and token-based replay and are deferred to future work. Speed tiers are based solely on measured execution times.
 
+Speed tiers at 10K cases:
 ```
-High Quality/Slow:  ILP (0.985 F-measure, 200ms+)
-Balanced:           Alpha++ (0.97 F-measure, 50ms)
-Fast/Acceptable:    Heuristic (0.925 F-measure, 50ms)
-Ultra-Fast:         DFG (0.935 F-measure, 5ms)
+Ultra-Fast  (< 120ms):  Inductive Miner (117ms), Process Skeleton (140ms)
+Fast        (< 165ms):  A* Search (143ms), Optimized DFG (138ms), DFG (130ms),
+                        Heuristic (160ms), ILP (161ms), Hill Climbing (146ms)
+Moderate    (< 350ms):  Simulated Annealing (343ms), DECLARE (342ms)
+Scale-Limited:          ACO (4155ms @ 10K), Genetic (5165ms @ 5K), PSO (5640ms @ 5K)
 ```
+
+Algorithm choice should be driven by acceptable latency and the theoretical properties of each algorithm (e.g., ILP produces provably optimal Petri nets; Inductive Miner guarantees sound block-structured models).
 
 ### 4.4 Analytics Function Performance
 
-All analytics functions execute in < 50ms:
+Timing measured as median of 5 runs, native Rust `--release` build.
 
-| Function | 1K Cases | Execution | Quality |
-|----------|----------|-----------|---------|
-| Variants | 50ms | ✅ | Exact |
-| Patterns | 45ms | ✅ | Exact |
-| Complexity | 30ms | ✅ | Exact |
-| Drift Detection | 40ms | ✅ | Heuristic |
-| Clustering | 35ms | ✅ | Approximate |
-| Similarity | 45ms | ✅ | Exact |
+| Function | 100c | 1K | 5K | 10K | 25K | 50K |
+|----------|------|----|----|-----|-----|-----|
+| Event Statistics | 0.60ms | 5.39ms | 30.97ms | 87.10ms | 233.55ms | 501.94ms |
+| Case Duration | 0.60ms | 6.00ms | 35.18ms | 95.89ms | 283.36ms | 503.52ms |
+| Dotted Chart | 0.61ms | 6.52ms | 37.38ms | 98.20ms | 286.82ms | 585.93ms |
+| Trace Variants | 0.69ms | 7.93ms | 52.00ms | 129.24ms | 329.60ms | 649.83ms |
+| Sequential Patterns | 0.90ms | 9.62ms | 63.44ms | 144.63ms | 369.18ms | — |
+| Concept Drift (window=50) | 3.47ms | 60.02ms | 304.67ms | 637.13ms | 1673.57ms | — |
+| Cluster Traces (k=5) | 0.76ms | 8.09ms | 46.36ms | 118.58ms | — | — |
+| Start/End Activities | 0.58ms | 5.77ms | 36.14ms | 98.94ms | 250.77ms | 558.11ms |
+| Activity Co-occurrence | 1.84ms | 19.82ms | 112.12ms | 220.13ms | 549.01ms | — |
+| Infrequent Paths (θ=0.1) | 0.69ms | 7.63ms | 43.90ms | 116.41ms | 323.99ms | 607.79ms |
+| Detect Rework | 0.68ms | 7.18ms | 46.27ms | 108.56ms | 332.35ms | 628.78ms |
+| Bottleneck Detection (60s) | 0.70ms | 7.35ms | 48.70ms | 108.96ms | 335.67ms | 642.81ms |
+| Model Metrics | 0.97ms | 10.92ms | 64.15ms | 161.97ms | 464.72ms | 886.03ms |
+| Activity Dependencies | 0.83ms | 8.64ms | 56.53ms | 112.71ms | 325.64ms | — |
+| Case Attributes | 0.87ms | 9.12ms | 55.10ms | 124.62ms | 388.41ms | 781.71ms |
+| Variant Complexity | 0.66ms | 7.01ms | 39.75ms | 122.56ms | 326.42ms | — |
+| Activity Transition Matrix | 1.73ms | 9.61ms | 57.06ms | 145.58ms | 362.60ms | — |
+| Process Speedup | 0.62ms | 5.93ms | 39.88ms | 101.66ms | 286.42ms | — |
+| Trace Similarity Matrix (O(n²)) | 19.65ms | — | — | — | — | — |
+| Temporal Bottlenecks | 0.69ms | 7.07ms | 41.99ms | 115.78ms | 307.35ms | — |
+| Activity Ordering | 1.44ms | 12.45ms | 71.85ms | 165.24ms | 424.47ms | 860.12ms |
+| Token-Based Replay | 0.64ms | 7.42ms | 49.07ms | 107.02ms | — | — |
+
+*"—" = not benchmarked at that scale*
+
+**Additional Token-Based Replay data point:** 500 cases = 3.67ms (measured). Scales approximately linearly.
+
+**Note:** Trace Similarity Matrix has O(n²) complexity and is limited to small logs (tested to 100 cases only; 500 cases = 554.85ms). All other analytics functions scale approximately linearly with case count and complete 10K-case logs in under 170ms. Concept Drift detection is the most expensive standard analytic at 637ms for 10K cases due to windowed comparison operations.
 
 ### 4.5 Memory Efficiency
 
-WASM binary size: 609KB (raw), 180KB (gzipped)
+WASM binary size: 609KB (raw), ~180KB (gzipped)
 
-Runtime memory per log:
-- 1K cases: 150KB
-- 5K cases: 750KB  
-- 10K cases: 1.5MB
+Runtime memory estimates per log (formula: `(cases × 4096 + events × 512) / 1024` KB, with 20 events/case):
 
-Practical browser limit: ~100MB (handles 250K+ events)
+| Cases | Events | Estimated Memory |
+|-------|--------|-----------------|
+| 100 | 2,000 | 1,400 KB (1.37 MB) |
+| 1,000 | 20,000 | 14,000 KB (13.67 MB) |
+| 5,000 | 100,000 | 70,000 KB (68.36 MB) |
+| 10,000 | 200,000 | 140,000 KB (136.72 MB) |
+| 25,000 | 500,000 | 350,000 KB (341.80 MB) |
+| 50,000 | 1,000,000 | 700,000 KB (683.59 MB) |
+
+Practical browser limit of ~100MB supports logs up to approximately 5,000 cases (68 MB). Node.js with higher heap limits can handle 25K–50K case logs. For privacy-preserving in-browser analysis, logs up to ~5K cases are comfortably within browser constraints.
 
 ### 4.6 Comparative Analysis
 
@@ -300,19 +338,20 @@ Practical browser limit: ~100MB (handles 250K+ events)
 ### 5.1 Algorithm Selection
 
 **For Production Processes:**
-- Start with DFG (baseline, 5ms)
-- Refine with Heuristic/Alpha++ (50ms, high quality)
-- Validate with ILP if needed (optimal, 200ms+)
+- Start with DFG (baseline: 130ms at 10K, 924ms at 50K)
+- Refine with Heuristic Miner (160ms at 10K) or Inductive Miner (117ms at 10K, sound block-structured models)
+- Validate with ILP if optimality required (161ms at 10K; not tested beyond 25K)
 
 **For Noisy Logs:**
-- Genetic Algorithm (0.97 fitness, handles outliers)
-- Simulated Annealing (escape local optima)
-- Ant Colony (distributed exploration)
+- Genetic Algorithm (theoretical noise tolerance; practical limit ~1K–5K cases: 420ms@1K, 5165ms@5K)
+- Simulated Annealing (escape local optima; 343ms at 10K)
+- Ant Colony (distributed exploration; practical limit ~1K–5K: 416ms@1K, 4155ms@10K)
 
-**For Real-time Interactive:**
-- Hill Climbing (< 20ms)
-- DFG (< 5ms)
-- Process Skeleton (< 3ms)
+**For Real-time Interactive (< 150ms at 10K cases):**
+- Inductive Miner (117ms at 10K, guaranteed sound model structure)
+- Optimized DFG (138ms at 10K)
+- A* Search (143ms at 10K)
+- Process Skeleton (140ms at 10K; fastest at 50K: 720ms)
 
 ### 5.2 WASM-Specific Considerations
 
@@ -324,7 +363,7 @@ Practical browser limit: ~100MB (handles 250K+ events)
 
 **Limitations:**
 - Cannot use rayon parallelization
-- 100MB practical memory limit
+- ~100MB practical browser memory limit (supports ~5K cases at 68MB estimated)
 - Slower than native for very large logs
 - Browser security model restrictions
 
@@ -338,17 +377,9 @@ Practical browser limit: ~100MB (handles 250K+ events)
 
 ### 5.4 Accuracy Validation
 
-On synthetic logs with known ground truth:
+Quality metrics (fitness, precision, F-measure) require ground-truth reference models and full token-based replay infrastructure. These metrics are **deferred to future work** with real-world labelled logs (e.g., BPI Challenge datasets). See Section 3.3.3.
 
-- DFG: 95% recall of true process
-- Alpha++: 98% recall
-- ILP: 99% recall (optimal)
-- Genetic: 97% recall (discovers creative variants)
-
-On real logs (BPI Challenge):
-- Fitness: 88-99% depending on algorithm/log
-- Precision: 85-98%
-- F-measures: 0.86-0.985
+Algorithm correctness is validated structurally: Inductive Miner is guaranteed to produce sound, block-structured process trees; ILP produces provably optimal Petri nets given the dependency matrix; DFG is deterministic and lossless. Empirical fitness/precision comparisons against known ground-truth models are a planned extension.
 
 ### 5.5 Limitations and Future Work
 
@@ -373,11 +404,11 @@ On real logs (BPI Challenge):
 
 This thesis demonstrates that **comprehensive, production-grade process mining is viable in WebAssembly**. Our implementation of 14 discovery algorithms and 20+ analytics functions achieves:
 
-✅ **Practical Performance**: 3-400ms for interactive use, <5s for batch analysis  
-✅ **Competitive Quality**: 95-99% fitness on benchmarks, comparable to desktop tools  
+✅ **Practical Performance**: 117–161ms at 10K cases for fast algorithms; sub-second at 50K for Process Skeleton (720ms), Inductive Miner (796ms), Optimized DFG (779ms)  
+✅ **Broad Coverage**: 14 discovery algorithms + 21 analytics functions, all measured across 100–50K case logs  
 ✅ **Accessibility**: Deploy to millions via browser, zero installation  
 ✅ **Privacy**: Client-side computation, no data transmission required  
-✅ **Flexibility**: Choose algorithm based on speed/quality requirements  
+✅ **Flexibility**: Choose algorithm based on speed tier — from 117ms (Inductive Miner) to scale-limited metaheuristics (ACO, GA, PSO) for deeper search  
 
 The open-source wasm4pm toolkit enables novel use cases where process mining was previously impractical: educational tools, embedded analytics, compliance analysis, and real-time monitoring. As WASM matures with threading, SIMD, and GPU support, we expect further performance improvements.
 
@@ -415,35 +446,38 @@ Weijters, A. J., & van der Aalst, W. M. (2003). Rediscovering workflow models fr
 
 ## Appendix A: Detailed Benchmark Tables
 
-### A.1 DFG Performance
+### A.1 DFG Performance (Measured)
 
-| Cases | Events | Activities | Time (ms) | Fitness | Precision | Memory (KB) |
-|-------|--------|------------|-----------|---------|-----------|------------|
-| 100 | 500 | 10 | 0.5 | 0.95 | 0.92 | 50 |
-| 500 | 2500 | 15 | 2.5 | 0.95 | 0.92 | 250 |
-| 1000 | 5000 | 20 | 5.0 | 0.95 | 0.92 | 500 |
-| 5000 | 25000 | 25 | 25.0 | 0.95 | 0.92 | 2500 |
-| 10000 | 50000 | 30 | 50.0 | 0.95 | 0.92 | 5000 |
+Benchmark setup: 6 activities, 20 events/case, median of 5 runs, native Rust `--release` build. Memory estimated via formula `(cases × 4096 + events × 512) / 1024` KB.
 
-### A.2 Quality Metrics by Algorithm
+| Cases | Events | Time (ms) | Memory (KB) |
+|-------|--------|-----------|------------|
+| 100 | 2,000 | 0.86 | 1,400 |
+| 1,000 | 20,000 | 11.09 | 14,000 |
+| 5,000 | 100,000 | 59.39 | 70,000 |
+| 10,000 | 200,000 | 130.13 | 140,000 |
+| 25,000 | 500,000 | 470.87 | 350,000 |
+| 50,000 | 1,000,000 | 924.49 | 700,000 |
 
-| Algorithm | Min Fitness | Max Fitness | Mean F-Measure | Std Dev |
-|-----------|------------|------------|-----------------|---------|
-| DFG | 0.88 | 0.97 | 0.935 | 0.03 |
-| Alpha++ | 0.95 | 0.99 | 0.970 | 0.02 |
-| ILP | 0.97 | 0.99 | 0.985 | 0.01 |
-| Genetic | 0.92 | 0.99 | 0.960 | 0.04 |
+*Fitness, Precision, and F-Measure columns omitted — quality metrics require ground-truth reference models and are deferred to future work (see Section 3.3.3).*
 
-### A.3 Scalability Coefficients
+### A.2 Scalability Coefficients (From Measured Data)
 
-Linear model: Time(n) = a·n + b
+Approximate linear slope derived from 1K-case measurement (slope = T(1K) / 1000):
 
-| Algorithm | Coefficient (a) | Intercept (b) | R² | Linear? |
-|-----------|-----------------|---------------|-----|---------|
-| DFG | 0.005 | 0.1 | 0.998 | ✅ |
-| Alpha++ | 0.050 | 0.5 | 0.997 | ✅ |
-| ILP | 0.200 | 5.0 | 0.996 | ✅ |
-| Genetic | 0.400 | 10.0 | 0.995 | ✅ |
+| Algorithm | Slope (ms/case) | 1K Cases | 10K Cases | Scaling |
+|-----------|-----------------|----------|-----------|---------|
+| Process Skeleton | ~0.008 | 7.99ms | 139.69ms | ~linear |
+| Inductive Miner | ~0.008 | 8.26ms | 117.32ms | ~linear |
+| Optimized DFG | ~0.009 | 8.51ms | 137.73ms | ~linear |
+| DFG | ~0.011 | 11.09ms | 130.13ms | ~linear |
+| Heuristic Miner | ~0.010 | 10.27ms | 159.63ms | ~linear |
+| ILP Petri Net | ~0.012 | 11.94ms | 161.16ms | ~linear |
+| Genetic Algorithm | non-linear | 420.25ms | — (not measured) | super-linear |
+| PSO | non-linear | 1056.07ms | — (not measured) | super-linear |
+| ACO | non-linear | 416.25ms | 4154.66ms | super-linear |
+
+*R² values not computed — curve fitting was not performed on measured data.*
 
 ---
 
@@ -499,49 +533,20 @@ Total: 4,100 lines of production code
 
 ---
 
-## Appendix D: Extended Benchmarks (100x Load)
+## Appendix D: Ultra-Scale Performance (Extrapolation Note)
 
 ### D.1 Ultra-Scale Performance Analysis
 
-With 100x increased benchmark load (10K to 1M events), we observe:
+**Note:** Benchmarks in this thesis were measured up to 50,000 cases (see Section 4). Performance at 100K–1M cases has **not been measured** and any numbers beyond that range would be speculative extrapolation. Based on the observed approximately linear scaling of fast algorithms (slope ~0.011ms/case for DFG), rough projections for informational purposes only:
 
-#### Performance at Scale
+- **DFG at 100K cases**: ~1.1s extrapolated (linear); actual may vary
+- **Process Skeleton at 100K**: ~0.8s extrapolated (linear); actual may vary
+- **Metaheuristics (ACO, GA, PSO)**: impractical beyond ~5K cases due to super-linear growth; extrapolation not meaningful
 
-| Algorithm | 10K Cases | 50K Cases | 100K Cases | 500K Cases | 1M Cases |
-|-----------|-----------|-----------|-----------|-----------|----------|
-| DFG | 50ms | 250ms | 500ms | 2.5s | 5s |
-| Alpha++ | 500ms | 2.5s | 5s | 25s | 50s |
-| Heuristic | 500ms | 2.5s | 5s | 25s | 50s |
-| Inductive | 500ms | 2.5s | 5s | 25s | 50s |
-| ILP | 2s | 10s | 20s | 100s | 200s |
-| A* Search | 1s | 5s | 10s | 50s | 100s |
-| Genetic | 4s | 20s | 40s | 200s | 400s |
-| PSO | 3s | 15s | 30s | 150s | 300s |
-| ACO | 1.5s | 7.5s | 15s | 75s | 150s |
-| SA | 1.5s | 7.5s | 15s | 75s | 150s |
-| Hill Climbing | 200ms | 1s | 2s | 10s | 20s |
-| Process Skeleton | 30ms | 150ms | 300ms | 1.5s | 3s |
-
-**Key Observations:**
-- **Linear scalability maintained** across all algorithms at 100x scale
-- **Fast algorithms still practical**: DFG, Skeleton, Hill Climbing < 5s even at 1M
-- **Classical algorithms practical for batch**: Alpha++ 50s for 1M (still acceptable)
-- **Metaheuristics require distributed**: Genetic Algorithm 6+ minutes at max scale
-
-#### Memory Scaling at 100x Load
-
-| Dataset Size | Events | Estimated RAM | WASM Memory % |
-|------------|--------|---------------|--------------|
-| 10K cases | 500K | 50MB | 50% |
-| 50K cases | 2.5M | 250MB | 250% ⚠️ |
-| 100K cases | 5M | 500MB | 500% ⚠️ |
-| 500K cases | 25M | 2.5GB | N/A |
-| 1M cases | 50M | 5GB | N/A |
-
-**Practical Limits in Current WASM:**
-- Browser instances: ~100MB practical (50K cases max)
-- Server-side Node.js: Can leverage full system memory
-- Recommendation: Use streaming/chunking for > 100K cases
+**Practical Limits in Current WASM (based on measured memory estimates):**
+- Browser instances: ~100MB practical limit → supports up to ~5K cases (68MB estimated)
+- Server-side Node.js: Higher heap limits → 25K–50K case logs feasible (342–684MB)
+- Recommendation: Use streaming/chunking for logs beyond 5K cases in browser environments
 
 ---
 
@@ -551,13 +556,14 @@ With 100x increased benchmark load (10K to 1M events), we observe:
 
 **Dataset**: Process execution with 262,200 events, 13,087 traces
 
-Results using wasm4pm in browser:
-- **DFG Discovery**: 2.3 seconds
-- **Alpha++ Model**: 23 seconds  
-- **ILP Optimal**: 200+ seconds (batch processing)
-- **Quality (F-measure)**: 0.89 (near ProM parity)
+*Note: Actual BPI Challenge benchmarks have not been run. The following is an extrapolation based on measured synthetic-log performance (Section 4). Real-world logs may differ due to varied trace lengths, activity counts, and structure.*
 
-**Conclusion**: Wasm4pm handles real event logs effectively with competitive quality.
+Extrapolated timing estimates for 13K traces (interpolating between 10K and 25K measured data):
+- **DFG Discovery**: ~180–470ms (between 10K: 130ms and 25K: 471ms measured)
+- **Inductive Miner**: ~150–405ms estimated range
+- **ILP**: ~200–555ms estimated range
+
+**Quality metrics (fitness, precision, F-measure) on real logs are deferred to future work** — see Section 3.3.3 and 5.4. Structural correctness of algorithm implementations is validated by design (Inductive Miner produces sound process trees; ILP produces optimal Petri nets).
 
 ### 8.2 Healthcare Process Mining
 
@@ -572,7 +578,7 @@ Sensitive information: Cannot leave hospital network
 - Generate recommendations
 - All computation client-side (HIPAA-compliant)
 
-Results: Identified 3 critical bottlenecks, estimated 30% efficiency gain.
+*Note: This is a hypothetical use-case scenario illustrating wasm4pm's privacy-preserving deployment model. Actual deployment results would depend on specific log structure and organizational context.*
 
 ### 8.3 Supply Chain Visibility
 
@@ -601,7 +607,7 @@ Constraint: Sensitive financial data cannot leave institution
 - Compare with regulatory model
 - Generate compliance report
 
-Performance: Full audit cycle in < 30 seconds, all client-side.
+*Note: This is a hypothetical use-case illustrating the privacy-preserving deployment model. Actual audit cycle timing would depend on log size and algorithm selection — for logs up to 10K cases, fast algorithms (DFG, Inductive Miner) complete in under 200ms based on measured benchmarks.*
 
 ---
 
@@ -959,14 +965,18 @@ Where:
   O_algo = startup overhead
 ```
 
-**Example (DFG)**:
+**Example (DFG, from measured data in Section 4.1)**:
 ```
-T(n) ≈ 0.005n + 0.1 ms
+Observed data points (median of 5 runs, --release build):
+  - 100 cases  (2,000 events):    0.86 ms
+  - 1,000 cases (20,000 events):  11.09 ms
+  - 5,000 cases (100,000 events): 59.39 ms
+  - 10,000 cases (200,000 events): 130.13 ms
+  - 25,000 cases (500,000 events): 470.87 ms
+  - 50,000 cases (1,000,000 events): 924.49 ms
 
-Validation (R² = 0.998):
-  - 100 events: 0.6 ms (predicted 0.6)
-  - 1000 events: 5.1 ms (predicted 5.1)
-  - 10000 events: 50.1 ms (predicted 50.1)
+Observed linear slope: ~0.011 ms/case (from 11.09ms @ 1K cases)
+Startup overhead (100-case intercept): ~0.86 ms
 ```
 
 This model enables predictive SLA specification.

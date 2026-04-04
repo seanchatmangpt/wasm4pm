@@ -127,16 +127,16 @@ npm run bench
 - `src/mcp_server.ts` (NEW) - MCP integration for Claude
 - `src/visualizations.ts` (380 lines) - Mermaid, D3, HTML report generation
 
-### Documentation
-- `README.md` - Project overview
-- `QUICKSTART.md` - 5-minute setup
-- `TUTORIAL.md` - Real-world examples
-- `DEPLOYMENT.md` - Build & publish
-- `FAQ.md` - Common questions
-- `MCP.md` - Claude integration
-- `API.md` - Complete API reference
-- `ALGORITHMS.md` - Algorithm descriptions
-- `THESIS.md` - Academic paper & benchmarks
+### Documentation (in `docs/` folder)
+- `README.md` - Project overview (at root)
+- `docs/QUICKSTART.md` - 5-minute setup
+- `docs/TUTORIAL.md` - Real-world examples
+- `docs/DEPLOYMENT.md` - Build & publish
+- `docs/FAQ.md` - Common questions
+- `docs/MCP.md` - Claude integration
+- `docs/API.md` - Complete API reference
+- `docs/ALGORITHMS.md` - Algorithm descriptions
+- `docs/THESIS.md` - Academic paper & benchmarks
 
 ## Development Guidelines
 
@@ -370,23 +370,23 @@ npm publish                 # Publish to npm
 
 ## Getting Help
 
-1. **Check Documentation**: README.md, QUICKSTART.md, FAQ.md
+1. **Check Documentation**: README.md, [docs/QUICKSTART.md](./docs/QUICKSTART.md), [docs/FAQ.md](./docs/FAQ.md)
 2. **Run Tests**: `npm test` to verify environment
 3. **Check Examples**: See `examples/` directory
-4. **Read API**: See `API.md` for function signatures
+4. **Read API**: See [docs/API.md](./docs/API.md) for function signatures
 5. **Review Source**: Algorithm implementations in `src/`
 
 ## Related Documents
 
-- **README.md** - Project overview and features
-- **QUICKSTART.md** - 5-minute setup guide
-- **TUTORIAL.md** - Real-world examples
-- **DEPLOYMENT.md** - Build, test, publish guide
-- **FAQ.md** - Troubleshooting and common questions
-- **MCP.md** - Claude integration guide
-- **API.md** - Complete API reference
-- **ALGORITHMS.md** - Algorithm descriptions
-- **PROJECT_STATUS.md** - Current project status
+- **[README.md](./README.md)** - Project overview and features
+- **[docs/QUICKSTART.md](./docs/QUICKSTART.md)** - 5-minute setup guide
+- **[docs/TUTORIAL.md](./docs/TUTORIAL.md)** - Real-world examples
+- **[docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md)** - Build, test, publish guide
+- **[docs/FAQ.md](./docs/FAQ.md)** - Troubleshooting and common questions
+- **[docs/MCP.md](./docs/MCP.md)** - Claude integration guide
+- **[docs/API.md](./docs/API.md)** - Complete API reference
+- **[docs/ALGORITHMS.md](./docs/ALGORITHMS.md)** - Algorithm descriptions
+- **[docs/PROJECT_STATUS.md](./docs/PROJECT_STATUS.md)** - Current project status
 
 ## Project Status
 
