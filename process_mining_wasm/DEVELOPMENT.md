@@ -1,420 +1,457 @@
-# Development Quick Reference
+# Development Guide for wasm4pm
 
-Fast reference for common development tasks in process_mining_wasm.
+Architecture, extension points, and internal design documentation.
 
-## Project Layout
+## Project Structure
 
 ```
 process_mining_wasm/
-├── src/                    # Rust source code
-│   └── lib.rs             # Main WASM bindings
-├── pkg/                   # Built WASM (bundler)
-├── pkg-nodejs/            # Built WASM (Node.js)
-├── pkg-web/               # Built WASM (browser)
-├── __tests__/             # Test files
-│   ├── basic.test.ts      # Unit tests
-│   ├── integration.test.js # Integration tests
-│   └── data/              # Test data files
-├── examples/              # Usage examples
-│   ├── nodejs.js          # Node.js example
-│   └── browser.html       # Browser example
-├── Cargo.toml             # Rust config
-├── package.json           # Node.js config
-├── tsconfig.json          # TypeScript config
-├── vitest.config.ts       # Test config
-├── .prettierrc             # Code formatting
-├── build.sh               # Build script
-├── test.sh                # Test script
-├── publish.sh             # Publish script
-├── README.md              # Project overview
-├── GETTING_STARTED.md     # Quick start
-├── API.md                 # API reference
-├── ARCHITECTURE.md        # Design guide
-├── CONTRIBUTING.md        # Contribution guide
-└── DEVELOPMENT.md         # This file
+├── src/                           # Rust WASM implementation
+│   ├── lib.rs                    # Entry point, module exports
+│   ├── api.ts                    # TypeScript API definitions (reference)
+│   ├── client.ts                 # TypeScript client library
+│   ├── visualizations.ts         # Mermaid & D3 generation
+│   │
+│   ├── models.rs                 # Core data structures
+│   ├── state.rs                  # Global object storage (AppState)
+│   ├── io.rs                     # Load/export functions
+│   ├── types.rs                  # Type utilities
+│   │
+│   ├── discovery.rs              # Basic discovery (DFG, Alpha++)
+│   ├── ilp_discovery.rs          # ILP optimization algorithms
+│   ├── genetic_discovery.rs      # Evolutionary algorithms
+│   ├── advanced_algorithms.rs    # Heuristic, rework, bottleneck detection
+│   │
+│   ├── analysis.rs               # Statistics and analysis
+│   ├── conformance.rs            # Token-based replay
+│   ├── utilities.rs              # Helper functions
+│   ├── xes_format.rs             # XES parser/generator
+│   └── bindings.rs               # Dynamic function registry
+│
+├── cli/                          # Command-line interface
+│   └── index.ts                  # wasm4pm CLI commands
+│
+├── examples/                      # Example applications
+│   ├── interactive-demo.html      # Browser demo
+│   └── react-component.tsx        # React integration
+│
+├── __tests__/                    # Test suites
+│   ├── unit.test.ts              # Unit tests
+│   ├── integration.test.js        # Integration tests
+│   └── fixtures/                 # Test data
+│
+├── Cargo.toml                    # Rust configuration
+├── wasm-pack.toml                # WASM build config
+├── tsconfig.json                 # TypeScript configuration
+├── package.json                  # npm configuration
+├── BUILD.md                      # Build instructions
+├── README.md                     # User documentation
+└── DEVELOPMENT.md                # This file
 ```
 
-## Quick Commands
+## Architecture Overview
 
-### Building
+### Three-Layer Design
 
-```bash
-# Build default (bundler target)
-npm run build
-
-# Build all targets
-npm run build:all
-
-# Build specific targets
-npm run build:nodejs
-npm run build:web
-
-# Using build script
-./build.sh
+```
+┌─────────────────────────────────────┐
+│   JavaScript Client / Examples      │  Presentation & Integration
+├─────────────────────────────────────┤
+│   TypeScript API (client.ts)        │  High-level API bindings
+├─────────────────────────────────────┤
+│   WASM Bindings & Models (Rust)    │  Algorithm implementation
+└─────────────────────────────────────┘
 ```
 
-### Testing
+### Data Flow
 
-```bash
-# All tests
-npm test
-
-# Unit tests
-npm run test:unit
-
-# Watch mode
-npm run test:unit:watch
-
-# Integration tests
-npm run test:integration
-
-# Browser tests
-npm run test:browser
-
-# Using test script
-./test.sh              # All tests
-./test.sh --unit-only  # Unit only
-./test.sh --watch      # Watch mode
-./test.sh --all        # Include browser tests
+```
+Event Log (JSON/XES)
+    ↓
+[load_eventlog_from_json]
+    ↓
+EventLog Model (in WASM memory)
+    ↓
+[discover_*] algorithms
+    ↓
+Process Model (DFG/PetriNet/DECLARE)
+    ↓
+[export_to_json]
+    ↓
+JSON output / Visualization
 ```
 
-### Code Quality
+## Handle-Based Memory Management
 
-```bash
-# Format code
-npm run format
-
-# Check formatting
-npm run format:check
-
-# Type checking
-npm run type:check
-
-# All checks
-npm run lint
-
-# Generate docs
-npm run docs
-```
-
-### Publishing
-
-```bash
-./publish.sh patch
-./publish.sh minor
-./publish.sh major
-```
-
-## Development Workflow
-
-### 1. Create Feature Branch
-
-```bash
-git checkout -b feature/my-feature
-```
-
-### 2. Make Changes
-
-Edit Rust code in `src/lib.rs`:
+Objects larger than primitives use handles to manage memory:
 
 ```rust
-#[wasm_bindgen]
-pub fn my_function(param: String) -> String {
-    // Implementation
-}
+// Rust side - store in global AppState
+let handle = get_or_init_state()
+    .store_object(StoredObject::EventLog(log))?;
+// Returns: "eventlog_123"
+
+// JavaScript side - hold the handle
+const log = new EventLogHandle("eventlog_123", wasmModule);
+
+// Later - access the object
+const stats = log.getStats();  // Uses handle internally
 ```
 
-### 3. Build and Test
+Benefits:
+- Prevents copying large objects across WASM boundary
+- Automatic memory management in Rust
+- Multiple JavaScript references to same object
+- Simple cleanup: `log.delete()`
 
-```bash
-npm run build
-npm run test
-npm run lint
-```
+## Adding a New Discovery Algorithm
 
-### 4. Fix Issues
+### 1. Implement in Rust
 
-```bash
-npm run format
-npm run type:check
-```
-
-### 5. Commit Changes
-
-```bash
-git add .
-git commit -m "feat: Add my function"
-```
-
-### 6. Push and Create PR
-
-```bash
-git push origin feature/my-feature
-```
-
-## Adding New Code
-
-### New WASM Function
-
-**File:** `src/lib.rs`
+Create `src/new_algorithm.rs`:
 
 ```rust
+use wasm_bindgen::prelude::*;
+use crate::state::{get_or_init_state, StoredObject};
+use crate::models::*;
+use serde_json::json;
+
 #[wasm_bindgen]
-pub fn discover_new_algorithm(handle: String, threshold: f64) -> String {
-    match get_object::<EventLog>(&handle) {
-        Some(log) => {
-            // Implement algorithm
-            let result = log.discover(threshold);
+pub fn discover_new_algorithm(
+    eventlog_handle: &str,
+    activity_key: &str,
+    param1: f64,
+) -> Result<String, JsValue> {
+    match get_or_init_state().get_object(eventlog_handle)? {
+        Some(StoredObject::EventLog(log)) => {
+            // 1. Extract activities and directly-follows
+            let activities = log.get_activities(activity_key);
+            let directly_follows = log.get_directly_follows(activity_key);
             
-            // Store and return
-            store_object(result)
+            // 2. Run algorithm
+            let mut dfg = DirectlyFollowsGraph::new();
+            // ... algorithm implementation ...
+            
+            // 3. Store result
+            let handle = get_or_init_state()
+                .store_object(StoredObject::DirectlyFollowsGraph(dfg.clone()))
+                .map_err(|_e| JsValue::from_str("Failed to store"))?;
+            
+            // 4. Return metadata
+            Ok(serde_json::to_string(&json!({
+                "handle": handle,
+                "algorithm": "new_algorithm",
+                "nodes": dfg.nodes.len(),
+                "edges": dfg.edges.len(),
+            }))
+            .map_err(|e| JsValue::from_str(&format!("Serialization: {}", e)))?)
         }
-        None => error!("Object not found")
+        Some(_) => Err(JsValue::from_str("Not an EventLog")),
+        None => Err(JsValue::from_str("EventLog not found")),
     }
 }
 ```
 
-### New Test
+### 2. Register Module
 
-**File:** `__tests__/new-feature.test.ts`
+Edit `src/lib.rs`:
+
+```rust
+pub mod new_algorithm;
+```
+
+### 3. Add TypeScript Types
+
+Edit `src/api.ts`:
 
 ```typescript
-import { describe, it, expect } from 'vitest';
+discovery: {
+  discoverNewAlgorithm(
+    log: EventLog,
+    options?: {
+      activityKey?: string;
+      param1?: number;
+    }
+  ): Promise<DirectlyFollowsGraph | Error>;
+}
+```
 
-describe('new feature', () => {
-  it('should work', () => {
-    expect(true).toBe(true);
-  });
+### 4. Add Client Method
+
+Edit `src/client.ts`:
+
+```typescript
+discoverNewAlgorithm(
+  options: {
+    activityKey?: string;
+    param1?: number;
+  } = {}
+): DFGHandle {
+  const activityKey = options.activityKey || 'concept:name';
+  const param1 = options.param1 || 0.5;
+
+  const json = this.wasmModule.discover_new_algorithm(
+    this.handle,
+    activityKey,
+    param1
+  );
+  const result = JSON.parse(json);
+  return new DFGHandle(result.handle, this.wasmModule);
+}
+```
+
+### 5. Test It
+
+```bash
+npm test
+# Add test case in __tests__/unit.test.ts
+```
+
+## Adding a New Analysis Function
+
+Similar pattern to discovery:
+
+```rust
+#[wasm_bindgen]
+pub fn analyze_new_metric(
+    eventlog_handle: &str,
+    activity_key: &str,
+) -> Result<String, JsValue> {
+    // Implementation
+    Ok(serde_json::to_string(&json!({
+        "metric": value,
+    }))?)
+}
+```
+
+Then expose on EventLogHandle in client.ts:
+
+```typescript
+getNewMetric(): number {
+  const json = this.wasmModule.analyze_new_metric(this.handle);
+  return JSON.parse(json).metric;
+}
+```
+
+## Working with Event Logs
+
+### EventLog Structure
+
+```rust
+pub struct EventLog {
+    pub attributes: HashMap<String, AttributeValue>,
+    pub traces: Vec<Trace>,  // Cases
+}
+
+pub struct Trace {
+    pub attributes: HashMap<String, AttributeValue>,
+    pub events: Vec<Event>,
+}
+
+pub struct Event {
+    pub attributes: HashMap<String, AttributeValue>,
+}
+```
+
+### Common Operations
+
+```rust
+// Get activities
+let activities = log.get_activities("concept:name");
+
+// Get directly-follows relations
+let relations = log.get_directly_follows("concept:name");
+// Returns: Vec<(String, String, usize)>
+
+// Iterate traces
+for trace in &log.traces {
+    for (i, event) in trace.events.iter().enumerate() {
+        let activity = event.attributes.get("concept:name");
+    }
+}
+
+// Event count
+let total = log.event_count();  // Sum of all trace lengths
+let cases = log.case_count();   // Number of traces
+```
+
+## Performance Optimization Tips
+
+### 1. Minimize Boundary Crossing
+
+✅ Good: Process all data in Rust, return aggregated result
+❌ Bad: Call JavaScript frequently in loops
+
+### 2. Use Appropriate Algorithms
+
+- DFG: Fast, simple overview (O(n))
+- Alpha++: Solid, handles noise (O(n log n))
+- ILP: Optimal but slower (O(n²))
+- Genetic: Flexible, best for complex cases (O(g×p×n))
+
+### 3. Memory Management
+
+```rust
+// Release objects when done
+let handle = get_or_init_state().store_object(obj)?;
+// Use handle...
+get_or_init_state().delete_object(&handle)?;
+```
+
+### 4. Lazy Computation
+
+Compute metrics only when requested:
+
+```rust
+// Don't compute all metrics upfront
+// Only compute what was asked for
+```
+
+## Error Handling Pattern
+
+All WASM functions return `Result<String, JsValue>`:
+
+```rust
+match get_or_init_state().get_object(handle)? {
+    Some(StoredObject::EventLog(log)) => {
+        // Success path
+        Ok(serde_json::to_string(&json!({ ... }))?)
+    }
+    Some(_) => {
+        Err(JsValue::from_str("Wrong object type"))
+    }
+    None => {
+        Err(JsValue::from_str("Handle not found"))
+    }
+}
+```
+
+JavaScript receives error:
+
+```typescript
+try {
+    const result = log.discoverDFG();
+} catch (error) {
+    console.error("Discovery failed:", error.message);
+}
+```
+
+## Debugging Tips
+
+### In Rust
+
+Enable debug logging:
+
+```rust
+console_log::init_with_level(web_sys::console::LogLevel::Debug);
+log::debug!("Message: {}", value);
+```
+
+### In JavaScript
+
+```typescript
+console.log("Handle:", log.getId());
+console.log("Stats:", log.getStats());
+```
+
+### Check WASM Memory
+
+In DevTools console:
+
+```javascript
+// Inspect WASM module
+console.log(wasm4pm);
+
+// Check exported functions
+Object.keys(wasm4pm).slice(0, 20);
+```
+
+## Testing Strategy
+
+### Unit Tests (Rust)
+
+In `src/lib.rs`:
+
+```rust
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_discovery_empty_log() {
+        // Test edge cases
+    }
+}
+```
+
+### Integration Tests (JavaScript)
+
+In `__tests__/integration.test.js`:
+
+```javascript
+describe('Discovery Algorithms', () => {
+    it('should discover DFG from event log', async () => {
+        const log = client.loadEventLogFromJSON(testData);
+        const dfg = log.discoverDFG();
+        expect(dfg.toJSON().nodes.length).toBeGreaterThan(0);
+    });
 });
 ```
 
-### New Documentation
+## Browser Compatibility
 
-Add section to relevant document:
-- `API.md` - Function reference
-- `GETTING_STARTED.md` - Usage examples
-- `ARCHITECTURE.md` - Design details
+| Algorithm | Safari | Chrome | Firefox | Edge |
+|-----------|--------|--------|---------|------|
+| DFG       | ✅     | ✅     | ✅      | ✅   |
+| Alpha++   | ✅     | ✅     | ✅      | ✅   |
+| ILP       | ✅     | ✅     | ✅      | ✅   |
+| Genetic   | ✅     | ✅     | ✅      | ✅   |
+| PSO       | ✅     | ✅     | ✅      | ✅   |
 
-## Environment Setup
+Minimum: ES2020, WebAssembly support
 
-### First Time Setup
+## Performance Profiling
 
-```bash
-# Install Rust target
-rustup target add wasm32-unknown-unknown
-
-# Install wasm-pack
-curl https://rustwasm.org/wasm-pack/installer/init.sh -sSf | sh
-
-# Clone and setup
-git clone https://github.com/aarkue/rust4pm.git
-cd rust4pm/process_mining_wasm
-npm install
-
-# Verify
-npm run build
-npm test
-```
-
-### System Requirements
-
-| Tool | Version | Install |
-|------|---------|---------|
-| Rust | 1.70+ | https://rustup.rs/ |
-| Node.js | 14+ | https://nodejs.org/ |
-| wasm-pack | Latest | `curl https://rustwasm.org/wasm-pack/installer/init.sh -sSf \| sh` |
-
-## Debugging
-
-### Rust Debugging
+### Bundle Analysis
 
 ```bash
-# Build with debug info
-RUSTFLAGS="-g" wasm-pack build --target bundler
-
-# Use debugger in browser DevTools
+npm run build:all
+wc -c pkg/wasm4pm_bg.wasm
 ```
 
-### JavaScript Debugging
-
-```bash
-# Run tests with output
-npm run test:unit -- --reporter=verbose
-
-# Debug specific test
-npm run test:unit -- __tests__/my.test.ts
-
-# Watch mode for debugging
-npm run test:unit:watch
-```
-
-### Memory Issues
+### Runtime Profiling
 
 ```javascript
-const pm = require('process_mining_wasm');
-
-// Check object count
-console.log(pm.object_count());
-
-// Clean up
-pm.delete_object(handle);
-pm.clear_all_objects();
-
-// Check again
-console.log(pm.object_count());
-```
-
-## Performance Optimization
-
-### Profiling
-
-```javascript
-// Time a function
 const start = performance.now();
-const result = pm.discover_dfg(handle);
-const end = performance.now();
-console.log(`Took ${end - start}ms`);
+const dfg = log.discoverDFG();
+const duration = performance.now() - start;
+console.log(`Discovery took ${duration.toFixed(1)}ms`);
 ```
 
-### Build Optimization
+## Contributing Checklist
 
-```bash
-# Current (in Cargo.toml [profile.release])
-# opt-level = "z"  # Size optimization
-# lto = true       # Link-time optimization
+- [ ] Rust code compiles: `cargo check --target wasm32-unknown-unknown`
+- [ ] WASM builds: `npm run build`
+- [ ] Tests pass: `npm test`
+- [ ] TypeScript types valid: `npm run type:check`
+- [ ] Code formatted: `npm run format`
+- [ ] Added documentation
+- [ ] Updated changelog
 
-# For different optimization
-# opt-level = 3    # Speed optimization (larger binary)
-```
+## Future Enhancements
 
-## Common Issues
+Potential areas for extension:
 
-### Build Fails
+- [ ] Streaming/incremental discovery
+- [ ] Parallel algorithm execution (worker threads)
+- [ ] More visualization options
+- [ ] Conformance metrics refinement
+- [ ] Interactive model refinement
+- [ ] Process clustering
+- [ ] Anomaly detection
 
-```bash
-# Clean build
-rm -rf pkg target node_modules
-npm install
-npm run build
-```
+---
 
-### Tests Fail
-
-```bash
-# Ensure WASM is built
-npm run build
-
-# Run specific test
-npm run test:unit -- __tests__/failing.test.ts
-
-# Check dependencies
-npm install
-npm audit fix
-```
-
-### Type Errors
-
-```bash
-# Check TypeScript
-npm run type:check
-
-# Generate definitions
-npm run build
-```
-
-## File Modification Checklist
-
-When modifying files:
-
-| File | Why | Check |
-|------|-----|-------|
-| `src/lib.rs` | Add function | Build, test, doc |
-| `__tests__/*.test.*` | Add test | npm test |
-| `API.md` | Update API | Syntax, examples |
-| `GETTING_STARTED.md` | Update guide | Accuracy |
-| `package.json` | Update deps | `npm install` |
-| `Cargo.toml` | Update deps | `cargo build` |
-
-## Git Workflow
-
-```bash
-# Create branch
-git checkout -b feature/name
-
-# Make changes
-# ... edit files ...
-
-# Stage changes
-git add .
-
-# Commit
-git commit -m "feat: description"
-
-# Push
-git push origin feature/name
-
-# Create PR on GitHub
-```
-
-## Continuous Integration
-
-GitHub Actions runs on every push:
-- Builds on Linux, macOS, Windows
-- Tests on Node 18 and 20
-- Checks formatting
-- Type checking
-- Generates documentation
-
-See `.github/workflows/wasm-build.yml`
-
-## Resource Limits
-
-- Maximum bundle size: Monitor with `wasm-opt`
-- Memory per object: Varies by data
-- Maximum objects: Limited by available memory
-- Timeout for tests: 30 seconds
-
-## Getting Help
-
-1. Check existing issues
-2. Review ARCHITECTURE.md
-3. Look at examples/
-4. Check CONTRIBUTING.md
-5. Ask in GitHub Discussions
-
-## Important Files
-
-| File | Purpose |
-|------|---------|
-| `src/lib.rs` | WASM function implementations |
-| `package.json` | NPM dependencies and scripts |
-| `Cargo.toml` | Rust dependencies |
-| `__tests__/` | Test suite |
-| `API.md` | Function documentation |
-| `GETTING_STARTED.md` | Usage guide |
-| `ARCHITECTURE.md` | Design documentation |
-
-## Build Artifacts
-
-Generated during build:
-- `pkg/process_mining_wasm.wasm` - Compiled WASM
-- `pkg/process_mining_wasm.js` - JavaScript glue
-- `pkg/process_mining_wasm.d.ts` - TypeScript definitions
-
-## Next Steps
-
-After changes:
-1. `npm test` - Ensure tests pass
-2. `npm run lint` - Check code quality
-3. `npm run build:all` - Build all targets
-4. `git push` - Push to GitHub
-5. Create Pull Request
-
-## Documentation Standards
-
-All code should have:
-- JSDoc/TSDoc comments
-- Example usage
-- Parameter descriptions
-- Return type descriptions
-- Error handling documented
+**Version**: 0.5.4  
+**Last Updated**: 2026-04-04  
+**Audience**: Contributors and maintainers
