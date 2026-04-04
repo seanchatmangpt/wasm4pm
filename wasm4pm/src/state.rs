@@ -2,7 +2,7 @@ use once_cell::sync::Lazy;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use wasm_bindgen::prelude::*;
-use crate::models::{EventLog, OCEL, PetriNet, DirectlyFollowsGraph, DeclareModel, StreamingDfgBuilder, StreamingConformanceChecker};
+use crate::models::{EventLog, OCEL, PetriNet, DirectlyFollowsGraph, DeclareModel, StreamingDfgBuilder, StreamingConformanceChecker, TemporalProfile, NGramPredictor};
 
 /// A wrapper around different types of objects that can be stored in the WASM state
 pub enum StoredObject {
@@ -15,6 +15,8 @@ pub enum StoredObject {
     JsonString(String),
     StreamingDfgBuilder(StreamingDfgBuilder),
     StreamingConformanceChecker(StreamingConformanceChecker),
+    TemporalProfile(TemporalProfile),
+    NGramPredictor(NGramPredictor),
 }
 
 /// Global application state for managing objects
@@ -123,6 +125,8 @@ impl Clone for StoredObject {
             StoredObject::JsonString(s) => StoredObject::JsonString(s.clone()),
             StoredObject::StreamingDfgBuilder(b) => StoredObject::StreamingDfgBuilder(b.clone()),
             StoredObject::StreamingConformanceChecker(c) => StoredObject::StreamingConformanceChecker(c.clone()),
+            StoredObject::TemporalProfile(p) => StoredObject::TemporalProfile(p.clone()),
+            StoredObject::NGramPredictor(p) => StoredObject::NGramPredictor(p.clone()),
         }
     }
 }
