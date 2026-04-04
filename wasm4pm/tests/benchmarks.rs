@@ -409,7 +409,7 @@ fn bench_dfg() {
 fn bench_declare() {
     let ak = "concept:name";
     print_header("DECLARE");
-    for &n in &[100usize, 1_000, 5_000, 10_000] {
+    for n in get_benchmark_sizes() {
         let h = make_log(n);
         print_row(n, ms(|| { let _ = discover_declare(&h, ak); }, 5));
     }
@@ -419,7 +419,7 @@ fn bench_declare() {
 fn bench_heuristic_miner() {
     let ak = "concept:name";
     print_header("Heuristic Miner (θ=0.5)");
-    for &n in &[100usize, 1_000, 5_000, 10_000] {
+    for n in get_benchmark_sizes() {
         let h = make_log(n);
         print_row(n, ms(|| { let _ = discover_heuristic_miner(&h, ak, 0.5); }, 5));
     }
@@ -429,7 +429,7 @@ fn bench_heuristic_miner() {
 fn bench_optimized_dfg() {
     let ak = "concept:name";
     print_header("Optimized DFG (fitness=0.8, simplicity=0.2)");
-    for &n in &[100usize, 1_000, 5_000, 10_000] {
+    for n in get_benchmark_sizes() {
         let h = make_log(n);
         print_row(n, ms(|| { let _ = discover_optimized_dfg(&h, ak, 0.8, 0.2); }, 5));
     }
@@ -439,7 +439,7 @@ fn bench_optimized_dfg() {
 fn bench_ilp_petri_net() {
     let ak = "concept:name";
     print_header("ILP Petri Net");
-    for &n in &[100usize, 1_000, 5_000, 10_000] {
+    for n in get_benchmark_sizes() {
         let h = make_log(n);
         print_row(n, ms(|| { let _ = discover_ilp_petri_net(&h, ak); }, 5));
     }
@@ -449,7 +449,7 @@ fn bench_ilp_petri_net() {
 fn bench_inductive_miner() {
     let ak = "concept:name";
     print_header("Inductive Miner");
-    for &n in &[100usize, 1_000, 5_000, 10_000] {
+    for n in get_benchmark_sizes() {
         let h = make_log(n);
         print_row(n, ms(|| { let _ = discover_inductive_miner(&h, ak); }, 5));
     }
@@ -459,7 +459,7 @@ fn bench_inductive_miner() {
 fn bench_astar() {
     let ak = "concept:name";
     print_header("A* Search (iter=1000)");
-    for &n in &[100usize, 1_000, 5_000, 10_000] {
+    for n in get_benchmark_sizes() {
         let h = make_log(n);
         print_row(n, ms(|| { let _ = discover_astar(&h, ak, 1000); }, 5));
     }
@@ -469,7 +469,7 @@ fn bench_astar() {
 fn bench_hill_climbing() {
     let ak = "concept:name";
     print_header("Hill Climbing");
-    for &n in &[100usize, 1_000, 5_000, 10_000] {
+    for n in get_benchmark_sizes() {
         let h = make_log(n);
         print_row(n, ms(|| { let _ = discover_hill_climbing(&h, ak); }, 5));
     }
@@ -479,7 +479,7 @@ fn bench_hill_climbing() {
 fn bench_ant_colony() {
     let ak = "concept:name";
     print_header("Ant Colony Optimization (ants=20, iter=10)");
-    for &n in &[100usize, 500, 1_000] {
+    for n in get_benchmark_sizes() {
         let h = make_log(n);
         print_row(n, ms(|| { let _ = discover_ant_colony(&h, ak, 20, 10); }, 3));
     }
@@ -489,7 +489,7 @@ fn bench_ant_colony() {
 fn bench_simulated_annealing() {
     let ak = "concept:name";
     print_header("Simulated Annealing (T=1.0, cool=0.95)");
-    for &n in &[100usize, 1_000, 5_000, 10_000] {
+    for n in get_benchmark_sizes() {
         let h = make_log(n);
         print_row(n, ms(|| { let _ = discover_simulated_annealing(&h, ak, 1.0, 0.95); }, 5));
     }
@@ -499,7 +499,7 @@ fn bench_simulated_annealing() {
 fn bench_process_skeleton() {
     let ak = "concept:name";
     print_header("Process Skeleton (min_freq=2)");
-    for &n in &[100usize, 1_000, 5_000, 10_000] {
+    for n in get_benchmark_sizes() {
         let h = make_log(n);
         print_row(n, ms(|| { let _ = extract_process_skeleton(&h, ak, 2); }, 5));
     }
@@ -509,7 +509,7 @@ fn bench_process_skeleton() {
 fn bench_genetic_algorithm() {
     let ak = "concept:name";
     print_header("Genetic Algorithm (pop=50, gen=20)");
-    for &n in &[100usize, 500] {
+    for n in get_benchmark_sizes() {
         let h = make_log(n);
         print_row(n, ms(|| { let _ = discover_genetic_algorithm(&h, ak, 50, 20); }, 3));
     }
@@ -519,7 +519,7 @@ fn bench_genetic_algorithm() {
 fn bench_pso() {
     let ak = "concept:name";
     print_header("Particle Swarm Optimization (swarm=30, iter=20)");
-    for &n in &[100usize, 500] {
+    for n in get_benchmark_sizes() {
         let h = make_log(n);
         print_row(n, ms(|| { let _ = discover_pso_algorithm(&h, ak, 30, 20); }, 3));
     }
@@ -530,7 +530,7 @@ fn bench_pso() {
 #[test]
 fn bench_event_statistics() {
     print_header("Event Statistics");
-    for &n in &[100usize, 1_000, 5_000, 10_000] {
+    for n in get_benchmark_sizes() {
         let h = make_log(n);
         print_row(n, ms(|| { let _ = analyze_event_statistics(&h); }, 5));
     }
@@ -539,7 +539,7 @@ fn bench_event_statistics() {
 #[test]
 fn bench_case_duration() {
     print_header("Case Duration");
-    for &n in &[100usize, 1_000, 5_000, 10_000] {
+    for n in get_benchmark_sizes() {
         let h = make_log(n);
         print_row(n, ms(|| { let _ = analyze_case_duration(&h); }, 5));
     }
@@ -548,7 +548,7 @@ fn bench_case_duration() {
 #[test]
 fn bench_dotted_chart() {
     print_header("Dotted Chart");
-    for &n in &[100usize, 1_000, 5_000, 10_000] {
+    for n in get_benchmark_sizes() {
         let h = make_log(n);
         print_row(n, ms(|| { let _ = analyze_dotted_chart(&h); }, 5));
     }
@@ -558,7 +558,7 @@ fn bench_dotted_chart() {
 fn bench_trace_variants() {
     let ak = "concept:name";
     print_header("Trace Variants");
-    for &n in &[100usize, 1_000, 5_000, 10_000] {
+    for n in get_benchmark_sizes() {
         let h = make_log(n);
         print_row(n, ms(|| { let _ = analyze_trace_variants(&h, ak); }, 5));
     }
@@ -568,7 +568,7 @@ fn bench_trace_variants() {
 fn bench_sequential_patterns() {
     let ak = "concept:name";
     print_header("Sequential Patterns (min_sup=0.1, len=3)");
-    for &n in &[100usize, 1_000, 5_000, 10_000] {
+    for n in get_benchmark_sizes() {
         let h = make_log(n);
         print_row(n, ms(|| { let _ = mine_sequential_patterns(&h, ak, 0.1, 3); }, 5));
     }
@@ -578,7 +578,7 @@ fn bench_sequential_patterns() {
 fn bench_concept_drift() {
     let ak = "concept:name";
     print_header("Concept Drift (window=50)");
-    for &n in &[100usize, 1_000, 5_000] {
+    for n in get_benchmark_sizes() {
         let h = make_log(n);
         print_row(n, ms(|| { let _ = detect_concept_drift(&h, ak, 50); }, 5));
     }
@@ -588,7 +588,7 @@ fn bench_concept_drift() {
 fn bench_cluster_traces() {
     let ak = "concept:name";
     print_header("Cluster Traces (k=5)");
-    for &n in &[100usize, 500, 1_000, 5_000] {
+    for n in get_benchmark_sizes() {
         let h = make_log(n);
         print_row(n, ms(|| { let _ = cluster_traces(&h, ak, 5); }, 5));
     }
@@ -598,7 +598,7 @@ fn bench_cluster_traces() {
 fn bench_start_end_activities() {
     let ak = "concept:name";
     print_header("Start/End Activities");
-    for &n in &[100usize, 1_000, 5_000, 10_000] {
+    for n in get_benchmark_sizes() {
         let h = make_log(n);
         print_row(n, ms(|| { let _ = analyze_start_end_activities(&h, ak); }, 5));
     }
@@ -608,7 +608,7 @@ fn bench_start_end_activities() {
 fn bench_activity_cooccurrence() {
     let ak = "concept:name";
     print_header("Activity Co-occurrence");
-    for &n in &[100usize, 1_000, 5_000, 10_000] {
+    for n in get_benchmark_sizes() {
         let h = make_log(n);
         print_row(n, ms(|| { let _ = analyze_activity_cooccurrence(&h, ak); }, 5));
     }
@@ -618,7 +618,7 @@ fn bench_activity_cooccurrence() {
 fn bench_infrequent_paths() {
     let ak = "concept:name";
     print_header("Infrequent Paths (θ=0.1)");
-    for &n in &[100usize, 1_000, 5_000, 10_000] {
+    for n in get_benchmark_sizes() {
         let h = make_log(n);
         print_row(n, ms(|| { let _ = analyze_infrequent_paths(&h, ak, 0.1); }, 5));
     }
@@ -628,7 +628,7 @@ fn bench_infrequent_paths() {
 fn bench_detect_rework() {
     let ak = "concept:name";
     print_header("Detect Rework");
-    for &n in &[100usize, 1_000, 5_000, 10_000] {
+    for n in get_benchmark_sizes() {
         let h = make_log(n);
         print_row(n, ms(|| { let _ = detect_rework(&h, ak); }, 5));
     }
@@ -639,7 +639,7 @@ fn bench_bottleneck_detection() {
     let ak = "concept:name";
     let tk = "time:timestamp";
     print_header("Bottleneck Detection (threshold=60s)");
-    for &n in &[100usize, 1_000, 5_000, 10_000] {
+    for n in get_benchmark_sizes() {
         let h = make_log(n);
         print_row(n, ms(|| { let _ = detect_bottlenecks(&h, ak, tk, 60); }, 5));
     }
@@ -649,7 +649,7 @@ fn bench_bottleneck_detection() {
 fn bench_model_metrics() {
     let ak = "concept:name";
     print_header("Model Metrics");
-    for &n in &[100usize, 1_000, 5_000, 10_000] {
+    for n in get_benchmark_sizes() {
         let h = make_log(n);
         print_row(n, ms(|| { let _ = compute_model_metrics(&h, ak); }, 5));
     }
@@ -659,7 +659,7 @@ fn bench_model_metrics() {
 fn bench_activity_dependencies() {
     let ak = "concept:name";
     print_header("Activity Dependencies");
-    for &n in &[100usize, 1_000, 5_000, 10_000] {
+    for n in get_benchmark_sizes() {
         let h = make_log(n);
         print_row(n, ms(|| { let _ = analyze_activity_dependencies(&h, ak); }, 5));
     }
@@ -669,7 +669,7 @@ fn bench_activity_dependencies() {
 fn bench_case_attributes() {
     let ak = "concept:name";
     print_header("Case Attributes");
-    for &n in &[100usize, 1_000, 5_000, 10_000] {
+    for n in get_benchmark_sizes() {
         let h = make_log(n);
         print_row(n, ms(|| { let _ = analyze_case_attributes(&h, ak); }, 5));
     }
@@ -679,7 +679,7 @@ fn bench_case_attributes() {
 fn bench_variant_complexity() {
     let ak = "concept:name";
     print_header("Variant Complexity");
-    for &n in &[100usize, 1_000, 5_000, 10_000] {
+    for n in get_benchmark_sizes() {
         let h = make_log(n);
         print_row(n, ms(|| { let _ = analyze_variant_complexity(&h, ak); }, 5));
     }
@@ -689,7 +689,7 @@ fn bench_variant_complexity() {
 fn bench_activity_transition_matrix() {
     let ak = "concept:name";
     print_header("Activity Transition Matrix");
-    for &n in &[100usize, 1_000, 5_000, 10_000] {
+    for n in get_benchmark_sizes() {
         let h = make_log(n);
         print_row(n, ms(|| { let _ = compute_activity_transition_matrix(&h, ak); }, 5));
     }
@@ -699,7 +699,7 @@ fn bench_activity_transition_matrix() {
 fn bench_process_speedup() {
     let tk = "time:timestamp";
     print_header("Process Speedup (window=50)");
-    for &n in &[100usize, 1_000, 5_000, 10_000] {
+    for n in get_benchmark_sizes() {
         let h = make_log(n);
         print_row(n, ms(|| { let _ = analyze_process_speedup(&h, tk, 50); }, 5));
     }
@@ -709,7 +709,7 @@ fn bench_process_speedup() {
 fn bench_trace_similarity_matrix() {
     let ak = "concept:name";
     print_header("Trace Similarity Matrix (O(n²) — small logs only)");
-    for &n in &[100usize, 500] {
+    for n in get_benchmark_sizes() {
         let h = make_log(n);
         print_row(n, ms(|| { let _ = compute_trace_similarity_matrix(&h, ak); }, 3));
     }
@@ -720,7 +720,7 @@ fn bench_temporal_bottlenecks() {
     let ak = "concept:name";
     let tk = "time:timestamp";
     print_header("Temporal Bottlenecks");
-    for &n in &[100usize, 1_000, 5_000, 10_000] {
+    for n in get_benchmark_sizes() {
         let h = make_log(n);
         print_row(n, ms(|| { let _ = analyze_temporal_bottlenecks(&h, ak, tk); }, 5));
     }
@@ -730,7 +730,7 @@ fn bench_temporal_bottlenecks() {
 fn bench_activity_ordering() {
     let ak = "concept:name";
     print_header("Activity Ordering");
-    for &n in &[100usize, 1_000, 5_000, 10_000] {
+    for n in get_benchmark_sizes() {
         let h = make_log(n);
         print_row(n, ms(|| { let _ = extract_activity_ordering(&h, ak); }, 5));
     }
