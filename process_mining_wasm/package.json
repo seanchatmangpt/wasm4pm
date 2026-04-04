@@ -1,9 +1,9 @@
 {
-  "name": "process_mining_wasm",
-  "version": "0.5.4",
-  "description": "WebAssembly and JavaScript bindings for the process_mining library",
-  "main": "pkg/process_mining_wasm.js",
-  "types": "pkg/process_mining_wasm.d.ts",
+  "name": "wasm4pm",
+  "version": "0.1.0",
+  "description": "Process Mining in WebAssembly - High-Speed Algorithms for Browser and Node.js",
+  "main": "pkg/wasm4pm.js",
+  "types": "pkg/wasm4pm.d.ts",
   "files": [
     "pkg/"
   ],
