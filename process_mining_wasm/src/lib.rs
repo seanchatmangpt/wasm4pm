@@ -5,6 +5,9 @@ pub mod io;
 pub mod discovery;
 pub mod analysis;
 pub mod conformance;
+pub mod algorithms;
+pub mod utilities;
+pub mod xes_format;
 
 // Suppress unused warnings for re-exported modules
 #[allow(unused)]
