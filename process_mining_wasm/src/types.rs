@@ -1,7 +1,6 @@
 use wasm_bindgen::prelude::*;
-use process_mining::core::{EventLog, OCEL};
 use crate::state::{get_or_init_state, StoredObject};
-use serde_json::{json, Value};
+use serde_json::json;
 
 /// Wrapper for EventLog - stores handle in WASM state
 #[wasm_bindgen]
@@ -37,18 +36,10 @@ impl WasmEventLog {
         }
     }
 
-    /// Get attributes as JSON
-    pub fn attributes(&self) -> Result<String, JsValue> {
+    /// Get attributes count
+    pub fn attribute_count(&self) -> Result<usize, JsValue> {
         match get_or_init_state().get_object(&self.handle)? {
-            Some(StoredObject::EventLog(log)) => {
-                let attrs: Vec<String> = log
-                    .attributes()
-                    .keys()
-                    .map(|s| s.to_string())
-                    .collect();
-                serde_json::to_string(&attrs)
-                    .map_err(|e| JsValue::from_str(&e.to_string()))
-            }
+            Some(StoredObject::EventLog(log)) => Ok(log.attributes.len()),
             Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
             None => Err(JsValue::from_str("EventLog not found")),
         }

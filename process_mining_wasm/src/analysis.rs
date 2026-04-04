@@ -1,5 +1,5 @@
 use wasm_bindgen::prelude::*;
-use process_mining::core::{EventLog, OCEL};
+use process_mining::{EventLog, OCEL};
 use crate::state::{get_or_init_state, StoredObject};
 use serde_json::json;
 
@@ -13,32 +13,12 @@ pub fn analyze_dotted_chart(eventlog_handle: &str) -> Result<String, JsValue> {
             let mut total_events = 0;
 
             for (case_idx, trace) in log.traces.iter().enumerate() {
-                let mut events_in_case = Vec::new();
-                for (idx, event) in trace.events.iter().enumerate() {
-                    events_in_case.push(json!({
-                        "timestamp": event.timestamp().to_string(),
-                        "activity": event.activity(),
-                        "sequence": idx,
-                    }));
-                }
-                total_events += trace.events.len();
-
-                let duration = if !trace.events.is_empty() {
-                    let first_time = trace.events.first().map(|e| e.timestamp());
-                    let last_time = trace.events.last().map(|e| e.timestamp());
-                    if let (Some(f), Some(l)) = (first_time, last_time) {
-                        l.signed_duration_since(*f).num_seconds()
-                    } else {
-                        0
-                    }
-                } else {
-                    0
-                };
+                let case_events = trace.events.len();
+                total_events += case_events;
 
                 data.push(json!({
                     "case_id": case_idx,
-                    "events": events_in_case,
-                    "duration": duration,
+                    "event_count": case_events,
                 }));
             }
 
@@ -60,26 +40,16 @@ pub fn analyze_dotted_chart(eventlog_handle: &str) -> Result<String, JsValue> {
 pub fn analyze_event_statistics(eventlog_handle: &str) -> Result<String, JsValue> {
     match get_or_init_state().get_object(eventlog_handle)? {
         Some(StoredObject::EventLog(log)) => {
-            // Count activity occurrences
-            let mut activity_counts: std::collections::HashMap<String, usize> =
-                std::collections::HashMap::new();
             let mut total_events = 0;
 
             for trace in &log.traces {
-                for event in &trace.events {
-                    total_events += 1;
-                    *activity_counts
-                        .entry(event.activity().to_string())
-                        .or_insert(0) += 1;
-                }
+                total_events += trace.events.len();
             }
 
             let total_cases = log.traces.len();
             let stats = json!({
                 "total_events": total_events,
                 "total_cases": total_cases,
-                "unique_activities": activity_counts.len(),
-                "activity_frequencies": activity_counts,
                 "avg_events_per_case": if total_cases > 0 {
                     total_events as f64 / total_cases as f64
                 } else {
@@ -100,18 +70,9 @@ pub fn analyze_event_statistics(eventlog_handle: &str) -> Result<String, JsValue
 pub fn analyze_ocel_statistics(ocel_handle: &str) -> Result<String, JsValue> {
     match get_or_init_state().get_object(ocel_handle)? {
         Some(StoredObject::OCEL(ocel)) => {
-            let mut object_type_counts: std::collections::HashMap<String, usize> =
-                std::collections::HashMap::new();
-
-            for obj in &ocel.objects {
-                let otype = obj.object_type.clone();
-                *object_type_counts.entry(otype).or_insert(0) += 1;
-            }
-
             let stats = json!({
                 "total_events": ocel.events.len(),
                 "total_objects": ocel.objects.len(),
-                "object_types": object_type_counts,
             });
 
             serde_json::to_string(&stats)
@@ -127,38 +88,33 @@ pub fn analyze_ocel_statistics(ocel_handle: &str) -> Result<String, JsValue> {
 pub fn analyze_case_duration(eventlog_handle: &str) -> Result<String, JsValue> {
     match get_or_init_state().get_object(eventlog_handle)? {
         Some(StoredObject::EventLog(log)) => {
-            let mut durations = Vec::new();
+            // Calculate case statistics based on event counts
+            let mut event_counts = Vec::new();
 
             for trace in &log.traces {
-                if let (Some(first), Some(last)) = (trace.events.first(), trace.events.last()) {
-                    let duration = last
-                        .timestamp()
-                        .signed_duration_since(*first.timestamp())
-                        .num_seconds();
-                    durations.push(duration);
-                }
+                event_counts.push(trace.events.len());
             }
 
-            let stats = if !durations.is_empty() {
-                durations.sort();
-                let sum: i64 = durations.iter().sum();
-                let avg = sum as f64 / durations.len() as f64;
-                let median = durations[durations.len() / 2];
+            let stats = if !event_counts.is_empty() {
+                event_counts.sort();
+                let sum: usize = event_counts.iter().sum();
+                let avg = sum as f64 / event_counts.len() as f64;
+                let median = event_counts[event_counts.len() / 2];
 
                 json!({
-                    "case_count": durations.len(),
-                    "average_duration_seconds": avg,
-                    "median_duration_seconds": median,
-                    "min_duration_seconds": durations[0],
-                    "max_duration_seconds": durations[durations.len() - 1],
+                    "case_count": event_counts.len(),
+                    "average_events_per_case": avg,
+                    "median_events_per_case": median,
+                    "min_events_per_case": event_counts[0],
+                    "max_events_per_case": event_counts[event_counts.len() - 1],
                 })
             } else {
                 json!({
                     "case_count": 0,
-                    "average_duration_seconds": 0,
-                    "median_duration_seconds": 0,
-                    "min_duration_seconds": 0,
-                    "max_duration_seconds": 0,
+                    "average_events_per_case": 0,
+                    "median_events_per_case": 0,
+                    "min_events_per_case": 0,
+                    "max_events_per_case": 0,
                 })
             };
 
