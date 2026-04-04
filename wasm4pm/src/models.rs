@@ -484,3 +484,125 @@ pub struct ConformanceResult {
     pub conforming_cases: usize,
     pub total_cases: usize,
 }
+
+/// Streaming conformance deviation for a single trace
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StreamingConformanceDeviation {
+    pub position: usize,
+    pub from_activity: String,
+    pub to_activity: String,
+}
+
+/// Streaming conformance result for a single closed trace
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StreamingConformanceTraceResult {
+    pub case_id: String,
+    pub is_conforming: bool,
+    pub deviations: Vec<StreamingConformanceDeviation>,
+    pub fitness: f64,
+}
+
+/// Streaming DFG-based conformance checker.
+///
+/// Checks each trace against a reference DFG as events arrive.  When a trace
+/// is closed (`streaming_conformance_close_trace`) the activity sequence is
+/// replayed against the DFG edge-set and any missing directly-follows pairs
+/// are reported as deviations.  Memory is proportional to open concurrent
+/// traces, not total events seen.
+#[derive(Debug, Clone)]
+pub struct StreamingConformanceChecker {
+    /// Valid directly-follows pairs from the reference DFG
+    pub dfg_edges: std::collections::HashSet<(String, String)>,
+    /// Start activities from the reference DFG
+    pub start_activities: std::collections::HashSet<String>,
+    /// End activities from the reference DFG
+    pub end_activities: std::collections::HashSet<String>,
+    /// Open traces: case_id → activity sequence
+    pub open_traces: HashMap<String, Vec<String>>,
+    /// Accumulated results for closed traces
+    pub results: Vec<StreamingConformanceTraceResult>,
+    /// Total events processed
+    pub event_count: usize,
+}
+
+impl StreamingConformanceChecker {
+    /// Create a new checker from a `DirectlyFollowsGraph`.
+    pub fn from_dfg(dfg: &DirectlyFollowsGraph) -> Self {
+        let dfg_edges: std::collections::HashSet<(String, String)> = dfg.edges
+            .iter()
+            .map(|e| (e.from.clone(), e.to.clone()))
+            .collect();
+        let start_activities: std::collections::HashSet<String> =
+            dfg.start_activities.keys().cloned().collect();
+        let end_activities: std::collections::HashSet<String> =
+            dfg.end_activities.keys().cloned().collect();
+        StreamingConformanceChecker {
+            dfg_edges,
+            start_activities,
+            end_activities,
+            open_traces: HashMap::new(),
+            results: Vec::new(),
+            event_count: 0,
+        }
+    }
+
+    /// Append one event to an in-progress trace.
+    pub fn add_event(&mut self, case_id: &str, activity: &str) {
+        self.event_count += 1;
+        self.open_traces
+            .entry(case_id.to_string())
+            .or_default()
+            .push(activity.to_string());
+    }
+
+    /// Close a trace: check conformance and return result.
+    /// Returns `None` if the case was never opened.
+    pub fn close_trace(&mut self, case_id: &str) -> Option<StreamingConformanceTraceResult> {
+        let activities = self.open_traces.remove(case_id)?;
+        let result = self.check_trace(case_id, &activities);
+        self.results.push(result.clone());
+        Some(result)
+    }
+
+    fn check_trace(&self, case_id: &str, activities: &[String]) -> StreamingConformanceTraceResult {
+        let mut deviations = Vec::new();
+
+        if activities.is_empty() {
+            return StreamingConformanceTraceResult {
+                case_id: case_id.to_string(),
+                is_conforming: true,
+                deviations,
+                fitness: 1.0,
+            };
+        }
+
+        let mut valid_steps = 0usize;
+        let total_steps = if activities.len() > 1 { activities.len() - 1 } else { 0 };
+
+        for i in 0..total_steps {
+            let pair = (activities[i].clone(), activities[i + 1].clone());
+            if self.dfg_edges.contains(&pair) {
+                valid_steps += 1;
+            } else {
+                deviations.push(StreamingConformanceDeviation {
+                    position: i,
+                    from_activity: activities[i].clone(),
+                    to_activity: activities[i + 1].clone(),
+                });
+            }
+        }
+
+        let fitness = if total_steps == 0 {
+            1.0
+        } else {
+            valid_steps as f64 / total_steps as f64
+        };
+
+        StreamingConformanceTraceResult {
+            case_id: case_id.to_string(),
+            is_conforming: deviations.is_empty(),
+            deviations,
+            fitness,
+        }
+    }
+}

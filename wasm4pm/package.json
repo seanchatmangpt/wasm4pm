@@ -1,6 +1,6 @@
 {
   "name": "wasm4pm",
-  "version": "26.4.4",
+  "version": "26.4.5",
   "description": "Process Mining in WebAssembly - High-Speed Algorithms for Browser and Node.js",
   "main": "pkg/wasm4pm.js",
   "types": "pkg/wasm4pm.d.ts",
@@ -21,7 +21,7 @@
     "build:all": "npm run build && npm run build:nodejs && npm run build:web",
     "build:mcp": "tsc src/mcp_server.ts --outDir dist --module commonjs --target es2020",
     "start:mcp": "npm run build:mcp && node dist/mcp_server.js",
-    "test": "npm run build:all && npm run test:unit ; npm run test:browser",
+    "test": "npm run build:nodejs && npm run test:unit && npm run build:web && npm run test:browser",
     "test:unit": "vitest run --exclude '__tests__/integration/browser.test.ts'",
     "test:unit:watch": "vitest",
     "test:integration": "vitest run __tests__/integration/",

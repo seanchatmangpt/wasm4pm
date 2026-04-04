@@ -66,7 +66,9 @@ impl WasmEventLog {
     }
 }
 
+#[wasm_bindgen]
 impl WasmEventLog {
+    #[wasm_bindgen(constructor)]
     pub fn new(handle: String) -> Self {
         WasmEventLog { handle }
     }
@@ -119,7 +121,9 @@ impl WasmOCEL {
     }
 }
 
+#[wasm_bindgen]
 impl WasmOCEL {
+    #[wasm_bindgen(constructor)]
     pub fn new(handle: String) -> Self {
         WasmOCEL { handle }
     }
