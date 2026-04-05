@@ -3,6 +3,7 @@ use crate::state::{get_or_init_state, StoredObject};
 use crate::models::*;
 use serde_json::json;
 use std::collections::{HashMap, HashSet};
+use statrs::statistics::{Data, Median};
 
 /// Serialize `val` across the WASM boundary.
 ///
@@ -87,11 +88,16 @@ pub fn get_trace_length_statistics(eventlog_handle: &str) -> Result<JsValue, JsV
                 let sum: usize = lengths.iter().sum();
                 let avg = sum as f64 / lengths.len() as f64;
 
+                // Use statrs Data struct for proper median calculation
+                let lengths_f64: Vec<f64> = lengths.iter().map(|&x| x as f64).collect();
+                let data = Data::new(lengths_f64);
+                let median = data.median();
+
                 json!({
                     "min": min,
                     "max": max,
                     "average": avg,
-                    "median": lengths[lengths.len() / 2],
+                    "median": median as usize,
                     "count": lengths.len(),
                 })
             } else {

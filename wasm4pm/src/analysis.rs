@@ -2,6 +2,7 @@ use wasm_bindgen::prelude::*;
 use crate::state::{get_or_init_state, StoredObject};
 use serde_json::json;
 use crate::utilities::to_js;
+use statrs::statistics::{Data, Median};
 
 /// Perform dotted chart analysis on an EventLog
 #[wasm_bindgen]
@@ -87,7 +88,11 @@ pub fn analyze_case_duration(eventlog_handle: &str) -> Result<JsValue, JsValue> 
                 event_counts.sort();
                 let sum: usize = event_counts.iter().sum();
                 let avg = sum as f64 / event_counts.len() as f64;
-                let median = event_counts[event_counts.len() / 2];
+
+                // Use statrs for proper median calculation
+                let counts_f64: Vec<f64> = event_counts.iter().map(|&x| x as f64).collect();
+                let data = Data::new(counts_f64);
+                let median = data.median() as usize;
 
                 json!({
                     "case_count": event_counts.len(),

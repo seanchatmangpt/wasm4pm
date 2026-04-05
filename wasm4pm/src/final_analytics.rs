@@ -156,8 +156,12 @@ pub fn analyze_process_speedup(
             time_gaps.sort_by(|a, b| a.partial_cmp(b).unwrap());
 
             let mean: f64 = time_gaps.iter().sum::<f64>() / time_gaps.len() as f64;
-            let percentile_25 = time_gaps[(time_gaps.len() as f64 * 0.25) as usize];
-            let percentile_75 = time_gaps[(time_gaps.len() as f64 * 0.75) as usize];
+
+            // Calculate percentiles using index-based approach
+            let p25_idx = ((time_gaps.len() as f64 - 1.0) * 0.25).round() as usize;
+            let p75_idx = ((time_gaps.len() as f64 - 1.0) * 0.75).round() as usize;
+            let percentile_25 = time_gaps[p25_idx];
+            let percentile_75 = time_gaps[p75_idx];
 
             to_js(&json!({
                 "avg_gap": mean,
