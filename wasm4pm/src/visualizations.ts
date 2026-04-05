@@ -8,7 +8,7 @@
  * - HTML reports
  */
 
-import * as api from './api';
+import * as api from './api.js';
 
 /**
  * Generate Mermaid diagram for a Petri Net

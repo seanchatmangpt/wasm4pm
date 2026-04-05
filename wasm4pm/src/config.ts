@@ -3,7 +3,7 @@
  * Defines all configuration structures, validation, and execution profiles
  */
 
-import { Wasm4pmError, ErrorCode, ErrorRecovery } from './errors';
+import { Wasm4pmError, ErrorCode, ErrorRecovery } from './errors.js';
 
 /**
  * Supported data source formats

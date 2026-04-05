@@ -4,9 +4,9 @@
  * Provides incremental processing with progress tracking and fault tolerance
  */
 
-import { Wasm4pmConfig, ExecutionProfile } from './config';
-import { ExecutableStep } from './pipeline';
-import { Wasm4pmError, ErrorCode, ErrorRecovery } from './errors';
+import { Wasm4pmConfig, ExecutionProfile } from './config.js';
+import { ExecutableStep } from './pipeline.js';
+import { Wasm4pmError, ErrorCode, ErrorRecovery } from './errors.js';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';

@@ -4,7 +4,7 @@
  * Tracks execution metadata, timing, and outputs for audit trail and debugging
  */
 
-import { Wasm4pmConfig, ExecutionProfile } from './config';
+import { Wasm4pmConfig, ExecutionProfile } from './config.js';
 
 /**
  * Complete execution receipt containing all metadata about a pipeline run
