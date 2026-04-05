@@ -38,7 +38,7 @@ jobs:
         run: cd wasm4pm && npm run build:all
 
       - name: Run tests
-        run: cd wasm4pm && npm run test:unit || true
+        run: cd wasm4pm && npm run test:unit
 
       - name: Publish to npm
         run: cd wasm4pm && npm publish --ignore-scripts

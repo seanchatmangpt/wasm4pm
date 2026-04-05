@@ -1,0 +1,3 @@
+packages:
+  - 'wasm4pm'
+  - 'packages/*'
