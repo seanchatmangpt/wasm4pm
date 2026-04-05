@@ -1,0 +1,48 @@
+{
+  "observability": {
+    "enabled": true,
+    "json_logs": {
+      "enabled": true,
+      "path": "./logs/local.jsonl",
+      "format": "jsonl",
+      "buffer_size": 500,
+      "rotation": {
+        "enabled": true,
+        "max_size_mb": 100,
+        "max_files": 10
+      }
+    },
+    "cli_output": {
+      "enabled": true,
+      "level": "info",
+      "quiet": false,
+      "verbose": false,
+      "progress_bar": true,
+      "color": true
+    },
+    "otel": {
+      "enabled": false,
+      "service_name": "wasm4pm-local"
+    },
+    "secret_redaction": {
+      "enabled": true,
+      "patterns": [
+        "password",
+        "api_key",
+        "secret",
+        "token",
+        "bearer",
+        "oauth"
+      ],
+      "preserve_patterns": [
+        "email"
+      ]
+    },
+    "event_filtering": {
+      "log_level": "info",
+      "enable_debug": false,
+      "enable_trace": false,
+      "sample_rate": 1.0
+    }
+  }
+}

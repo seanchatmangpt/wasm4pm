@@ -2,12 +2,9 @@ use wasm_bindgen::prelude::*;
 use crate::state::{get_or_init_state, StoredObject};
 use crate::models::*;
 use serde_json::json;
-use std::cell::Cell;
 use std::collections::HashSet;
 use rustc_hash::FxHashMap;
-#[cfg(target_arch = "wasm32")]
-use serde_wasm_bindgen;
-use crate::utilities::to_js;
+use crate::utilities::{to_js, evaluate_edges_fitness};
 
 type EdgeSet = HashSet<(u32, u32)>;
 
@@ -60,7 +57,7 @@ pub fn discover_genetic_algorithm(
                 // Evolution loop
                 for _generation in 0..generations {
                     // Sort by fitness (descending)
-                    population.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+                    population.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
 
                     // Keep top performers (elitism)
                     let elite_size = (population_size / 4).max(1);
@@ -84,7 +81,7 @@ pub fn discover_genetic_algorithm(
                 }
 
                 // Get best solution
-                population.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+                population.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
                 let best_fitness = population[0].1;
                 let best_edges = population.remove(0).0;
                 Ok((best_edges, best_fitness, vocab))
@@ -175,7 +172,7 @@ pub fn discover_pso_algorithm(
                             0.5 + (best_global_fitness - current_fitness).max(0.0) / 10.0;
                         let move_probability = improvement_rate.min(0.9);
 
-                        if random_float() < move_probability {
+                        if fastrand::f64() < move_probability {
                             particles[i].0 = blend_edges(
                                 &particles[i].0,
                                 &best_global.as_ref().unwrap().0,
@@ -228,7 +225,7 @@ pub fn discover_pso_algorithm(
 fn create_random_edge_set(edge_vocab: &[(u32, u32)], inclusion_probability: f64) -> EdgeSet {
     let mut edge_set: EdgeSet = HashSet::new();
     for &edge in edge_vocab {
-        if random_float() < inclusion_probability {
+        if fastrand::f64() < inclusion_probability {
             edge_set.insert(edge);
         }
     }
@@ -237,36 +234,6 @@ fn create_random_edge_set(edge_vocab: &[(u32, u32)], inclusion_probability: f64)
 
 // Helper: Evaluate fitness of an edge set against columnar log (zero string allocation)
 #[inline]
-fn evaluate_edges_fitness(edge_set: &EdgeSet, col: &ColumnarLog) -> f64 {
-    let mut fitting_traces = 0;
-    let total_traces = col.trace_offsets.len().saturating_sub(1);
-
-    for t in 0..total_traces {
-        let start = col.trace_offsets[t];
-        let end = col.trace_offsets[t + 1];
-
-        // Check if all consecutive pairs in this trace are in the edge set
-        let trace_fits = if end > start + 1 {
-            (start..end.saturating_sub(1)).all(|i| {
-                let from = col.events[i];
-                let to = col.events[i + 1];
-                edge_set.contains(&(from, to))
-            })
-        } else {
-            true // Empty or single-event traces are considered fitting
-        };
-
-        if trace_fits {
-            fitting_traces += 1;
-        }
-    }
-
-    // Fitness = balance of fit and simplicity
-    let fit_ratio = fitting_traces as f64 / total_traces.max(1) as f64;
-    let complexity_penalty = 1.0 / (1.0 + (edge_set.len() as f64 / 20.0));
-
-    fit_ratio * 0.8 + complexity_penalty * 0.2
-}
 
 // Helper: Crossover operation on edge sets
 fn crossover_edges(parent1: &EdgeSet, parent2: &EdgeSet) -> EdgeSet {
@@ -279,7 +246,7 @@ fn crossover_edges(parent1: &EdgeSet, parent2: &EdgeSet) -> EdgeSet {
 
     // Add edges from parent2 with 50% probability
     for &edge in parent2 {
-        if random_float() < 0.5 {
+        if fastrand::f64() < 0.5 {
             child.insert(edge);
         }
     }
@@ -298,7 +265,7 @@ fn blend_edges(set1: &EdgeSet, set2: &EdgeSet, ratio: f64) -> EdgeSet {
 
     // Add edges from set2 with given probability
     for &edge in set2 {
-        if random_float() < ratio || set1.contains(&edge) {
+        if fastrand::f64() < ratio || set1.contains(&edge) {
             result.insert(edge);
         }
     }
@@ -308,16 +275,16 @@ fn blend_edges(set1: &EdgeSet, set2: &EdgeSet, ratio: f64) -> EdgeSet {
 
 // Helper: Mutation operation on edge sets
 fn mutate_edges(edge_set: &mut EdgeSet, mutation_rate: f64) {
-    if random_float() < mutation_rate {
-        if !edge_set.is_empty() && random_float() < 0.5 {
+    if fastrand::f64() < mutation_rate {
+        if !edge_set.is_empty() && fastrand::f64() < 0.5 {
             // Remove random edge
             if let Some(&edge) = edge_set.iter().next() {
                 edge_set.remove(&edge);
             }
         } else {
             // Add random edge (simple mutation: add a random u32 pair)
-            let from = (random_float() * u32::MAX as f64) as u32;
-            let to = (random_float() * u32::MAX as f64) as u32;
+            let from = (fastrand::f64() * u32::MAX as f64) as u32;
+            let to = (fastrand::f64() * u32::MAX as f64) as u32;
             if from != to {
                 edge_set.insert((from, to));
             }
@@ -368,7 +335,7 @@ fn rand_select<T>(items: &[(T, f64)]) -> usize {
     if n <= 50 {
         let total: f64 = items.iter().map(|(_, f)| f.max(0.0)).sum();
         if total > 0.0 {
-            let mut threshold = random_float() * total;
+            let mut threshold = fastrand::f64() * total;
             for (i, (_, fitness)) in items.iter().enumerate() {
                 threshold -= fitness.max(0.0);
                 if threshold <= 0.0 {
@@ -377,14 +344,14 @@ fn rand_select<T>(items: &[(T, f64)]) -> usize {
             }
         }
         // Fallback (e.g. all fitnesses are zero): uniform random index.
-        return (random_float() * n as f64) as usize % n;
+        return (fastrand::f64() * n as f64) as usize % n;
     }
 
     // General path for larger populations: same algorithm, same cost, but
     // kept separate so the fast path compiles without a branch on `n`.
     let total: f64 = items.iter().map(|(_, f)| f.max(0.0)).sum();
     if total > 0.0 {
-        let mut threshold = random_float() * total;
+        let mut threshold = fastrand::f64() * total;
         for (i, (_, fitness)) in items.iter().enumerate() {
             threshold -= fitness.max(0.0);
             if threshold <= 0.0 {
@@ -392,24 +359,9 @@ fn rand_select<T>(items: &[(T, f64)]) -> usize {
             }
         }
     }
-    (random_float() * n as f64) as usize % n
+    (fastrand::f64() * n as f64) as usize % n
 }
 
-// Helper: Random float between 0 and 1
-// Uses a thread-local LCG (linear congruential generator) to avoid the
-// syscall overhead of SystemTime::now() on every invocation.
-thread_local! {
-    static LCG_STATE: Cell<u64> = Cell::new(0xDEAD_BEEF_CAFE_BABE);
-}
-fn random_float() -> f64 {
-    LCG_STATE.with(|s| {
-        let next = s.get()
-            .wrapping_mul(6_364_136_223_846_793_005)
-            .wrapping_add(1_442_695_040_888_963_407);
-        s.set(next);
-        (next >> 11) as f64 * (1.0 / (1u64 << 53) as f64)
-    })
-}
 
 #[wasm_bindgen]
 pub fn genetic_discovery_info() -> String {

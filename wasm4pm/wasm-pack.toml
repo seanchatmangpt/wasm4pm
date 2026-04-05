@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Process Mining in WebAssembly - High-Speed Algorithms for Browser and Node.js"
 repository = "https://github.com/seanchatmangpt/wasm4pm"
 license = "MIT OR Apache-2.0"
-authors = ["wasm4pm contributors"]
+authors = "wasm4pm contributors"
 keywords = ["process-mining", "wasm", "webassembly", "process-discovery", "conformance"]
 categories = ["wasm", "algorithms", "data-analysis"]
 
@@ -13,5 +13,4 @@ opt-level = 3
 lto = true
 codegen-units = 1
 strip = "debuginfo"
-
 wasm-opt = false

@@ -1,0 +1,83 @@
+{
+  "event_types": ["Create", "Send", "Deliver", "Return"],
+  "object_types": ["Order", "Package", "Shipment"],
+  "events": [
+    {
+      "id": "evt001",
+      "event_type": "Create",
+      "timestamp": "2023-01-01T10:00:00Z",
+      "attributes": {
+        "tag": "String",
+        "value": "order_created"
+      },
+      "object_ids": ["Order001", "Package001"],
+      "object_refs": []
+    },
+    {
+      "id": "evt002",
+      "event_type": "Send",
+      "timestamp": "2023-01-01T11:00:00Z",
+      "attributes": {
+        "tag": "String",
+        "value": "order_sent"
+      },
+      "object_ids": ["Order001", "Shipment001"],
+      "object_refs": []
+    },
+    {
+      "id": "evt003",
+      "event_type": "Deliver",
+      "timestamp": "2023-01-02T14:00:00Z",
+      "attributes": {
+        "tag": "String",
+        "value": "order_delivered"
+      },
+      "object_ids": ["Order001"],
+      "object_refs": []
+    }
+  ],
+  "objects": [
+    {
+      "id": "Order001",
+      "object_type": "Order",
+      "attributes": {
+        "tag": "String",
+        "value": "Standard Order"
+      },
+      "changes": [],
+      "embedded_relations": []
+    },
+    {
+      "id": "Package001",
+      "object_type": "Package",
+      "attributes": {
+        "tag": "Int",
+        "value": 5000
+      },
+      "changes": [],
+      "embedded_relations": []
+    },
+    {
+      "id": "Shipment001",
+      "object_type": "Shipment",
+      "attributes": {
+        "tag": "String",
+        "value": "Express"
+      },
+      "changes": [],
+      "embedded_relations": []
+    }
+  ],
+  "object_relations": [
+    {
+      "from": "Order001",
+      "to": "Package001",
+      "qualifier": "contains"
+    },
+    {
+      "from": "Order001",
+      "to": "Shipment001",
+      "qualifier": "shipped_by"
+    }
+  ]
+}

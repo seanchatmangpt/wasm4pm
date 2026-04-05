@@ -1,0 +1,13 @@
+# Invalid configuration - unsupported algorithm
+
+[source]
+type = "xes"
+path = "./test-data/sample.xes"
+
+[discovery]
+algorithm = "unsupported_algorithm"
+timeout = 30000
+
+[output]
+format = "pnml"
+path = "./results/model.pnml"

@@ -20,7 +20,9 @@ if (typeof FileReader === 'undefined') {
 if (typeof ProgressEvent === 'undefined') {
   (globalThis as any).ProgressEvent = class MockProgressEvent {
     type: string;
-    constructor(type: string, _init?: object) { this.type = type; }
+    constructor(type: string, _init?: object) {
+      this.type = type;
+    }
   };
 }
 
@@ -231,7 +233,7 @@ describe('process_mining_wasm Browser Integration', () => {
 
         // Trigger error
         if (reader.onerror) {
-          reader.onerror(new ProgressEvent('error'));
+          reader.onerror(new ProgressEvent('error') as ProgressEvent<FileReader>);
         }
       });
     });

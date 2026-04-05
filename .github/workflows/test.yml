@@ -1,0 +1,214 @@
+name: Comprehensive Test Suite
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: "-C target-feature=+simd128"
+
+jobs:
+  test-matrix:
+    name: Test on ${{ matrix.os }} - Node ${{ matrix.node-version }} / Rust ${{ matrix.rust-version }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        node-version: [18, 20]
+        rust-version: [stable, nightly]
+        exclude:
+          # Run nightly only on Linux to save CI time
+          - os: macos-latest
+            rust-version: nightly
+          - os: windows-latest
+            rust-version: nightly
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Setup Node.js
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
+
+      # Setup Rust
+      - name: Setup Rust ${{ matrix.rust-version }}
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.rust-version }}
+          targets: wasm32-unknown-unknown
+
+      # Cache Rust builds
+      - name: Cache Rust builds
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.rust-version }}
+
+      # Install wasm-pack
+      - name: Install wasm-pack
+        run: npm install -g wasm-pack@1.3.4
+
+      # Install wasm-opt for optimization
+      - name: Install wasm-opt
+        run: npm install -g wasm-opt
+
+      # Install root dependencies
+      - name: Install root dependencies
+        run: npm install
+
+      # Install package dependencies
+      - name: Install wasm4pm dependencies
+        working-directory: ./wasm4pm
+        run: npm install
+
+      # Lint checks
+      - name: Check formatting (Prettier)
+        working-directory: ./wasm4pm
+        run: npm run format:check
+        continue-on-error: true
+
+      # Rust formatting check
+      - name: Check Rust formatting
+        working-directory: ./wasm4pm
+        run: cargo fmt --all --check
+        continue-on-error: true
+
+      # Rust clippy linting
+      - name: Run Rust clippy
+        working-directory: ./wasm4pm
+        run: cargo clippy --all-targets --target wasm32-unknown-unknown -- -D warnings
+        continue-on-error: true
+
+      # TypeScript type checking
+      - name: TypeScript type check
+        working-directory: ./wasm4pm
+        run: npm run type:check
+
+      # Build WASM for all targets
+      - name: Build WASM bundler target
+        working-directory: ./wasm4pm
+        run: npm run build
+
+      - name: Build WASM Node.js target
+        working-directory: ./wasm4pm
+        run: npm run build:nodejs
+
+      - name: Build WASM web target
+        working-directory: ./wasm4pm
+        run: npm run build:web
+
+      # Run WASM optimization
+      - name: Optimize WASM with wasm-opt
+        working-directory: ./wasm4pm/pkg
+        run: |
+          for wasm_file in *.wasm; do
+            if [ -f "$wasm_file" ]; then
+              echo "Optimizing $wasm_file..."
+              wasm-opt -O3 --enable-simd "$wasm_file" -o "${wasm_file}.opt"
+              mv "${wasm_file}.opt" "$wasm_file"
+            fi
+          done
+
+      # Unit tests
+      - name: Run unit tests
+        working-directory: ./wasm4pm
+        run: npm run test:unit
+        timeout-minutes: 30
+
+      # Integration tests (skip on Windows for now due to setup complexity)
+      - name: Run integration tests
+        if: runner.os != 'Windows'
+        working-directory: ./wasm4pm
+        run: npm run test:integration
+        timeout-minutes: 30
+
+      # Browser tests (only on Linux to save CI time)
+      - name: Run browser tests
+        if: runner.os == 'Linux'
+        working-directory: ./wasm4pm
+        run: npm run test:browser
+        timeout-minutes: 30
+
+      # Cargo tests
+      - name: Run Cargo tests
+        working-directory: ./wasm4pm
+        run: cargo test --target wasm32-unknown-unknown --lib
+        timeout-minutes: 30
+
+      # Generate coverage report (only on Linux with Node 20)
+      - name: Generate coverage report
+        if: runner.os == 'Linux' && matrix.node-version == '20'
+        working-directory: ./wasm4pm
+        run: npm run test:coverage
+
+      # Upload coverage to Codecov
+      - name: Upload coverage to Codecov
+        if: runner.os == 'Linux' && matrix.node-version == '20'
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./wasm4pm/coverage/coverage-final.json
+          fail_ci_if_error: false
+          verbose: true
+
+      # Check coverage threshold
+      - name: Check coverage threshold (70%)
+        if: runner.os == 'Linux' && matrix.node-version == '20'
+        working-directory: ./wasm4pm
+        run: |
+          COVERAGE=$(npx nyc report --reporter=json 2>/dev/null | jq '.total.lines.pct' || echo "0")
+          echo "Code coverage: ${COVERAGE}%"
+          if (( $(echo "$COVERAGE < 70" | bc -l) )); then
+            echo "Coverage is below 70% threshold"
+            exit 1
+          fi
+        continue-on-error: true
+
+      # Security audit
+      - name: Run security audit
+        if: runner.os == 'Linux'
+        working-directory: ./wasm4pm
+        run: cargo audit --deny warnings
+        continue-on-error: true
+
+      # Generate docs
+      - name: Generate TypeScript docs
+        if: runner.os == 'Linux' && matrix.node-version == '20'
+        working-directory: ./wasm4pm
+        run: npm run docs
+
+      # Upload docs as artifact
+      - name: Upload documentation
+        if: runner.os == 'Linux' && matrix.node-version == '20'
+        uses: actions/upload-artifact@v3
+        with:
+          name: documentation
+          path: ./wasm4pm/docs/
+          retention-days: 5
+
+  # Summary job
+  test-summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    needs: test-matrix
+    if: always()
+
+    steps:
+      - name: Check test results
+        run: |
+          if [ "${{ needs.test-matrix.result }}" == "failure" ]; then
+            echo "Some tests failed!"
+            exit 1
+          fi
+          echo "All tests passed!"

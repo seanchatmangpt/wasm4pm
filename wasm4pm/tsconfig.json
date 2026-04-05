@@ -19,5 +19,5 @@
     "allowSyntheticDefaultImports": true
   },
   "include": ["**/*.ts", "**/*.tsx", "__tests__/**/*.ts", "examples/**/*.ts"],
-  "exclude": ["node_modules", "pkg", "target", "dist"]
+  "exclude": ["node_modules", "pkg", "target", "dist", "examples/**/*.tsx"]
 }

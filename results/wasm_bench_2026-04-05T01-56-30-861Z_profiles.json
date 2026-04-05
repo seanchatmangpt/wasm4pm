@@ -1,0 +1,257 @@
+{
+  "timestamp": "2026-04-05T01:57:37.993Z",
+  "version": "v26.4.5",
+  "totalMeasurements": 74,
+  "totalAlgorithms": 21,
+  "executionProfiles": {
+    "fast": {
+      "count": 19,
+      "algorithms": [
+        "discover_dfg",
+        "discover_declare",
+        "extract_process_skeleton",
+        "analyze_event_statistics",
+        "detect_rework"
+      ],
+      "stats": {
+        "count": 19,
+        "min": 0.002167000000099506,
+        "max": 9.202832999999828,
+        "mean": "1.907",
+        "median": "0.641",
+        "p95": "9.203",
+        "stddev": "2.515"
+      },
+      "bySize": {
+        "100": {
+          "count": 5,
+          "min": 0.002167000000099506,
+          "max": 0.26591700000000174,
+          "mean": "0.100",
+          "median": "0.067",
+          "p95": "0.266",
+          "stddev": "0.089"
+        },
+        "1000": {
+          "count": 5,
+          "min": 0.002167000000099506,
+          "max": 0.8645830000000387,
+          "mean": "0.579",
+          "median": "0.641",
+          "p95": "0.865",
+          "stddev": "0.304"
+        },
+        "5000": {
+          "count": 5,
+          "min": 0.005083000000013271,
+          "max": 4.428875000000062,
+          "mean": "2.551",
+          "median": "2.749",
+          "p95": "4.429",
+          "stddev": "1.435"
+        },
+        "10000": {
+          "count": 4,
+          "min": 0.008041999999932159,
+          "max": 9.202832999999828,
+          "mean": "5.023",
+          "median": "5.856",
+          "p95": "9.203",
+          "stddev": "3.291"
+        }
+      },
+      "meets_targets": {
+        "small_100": true,
+        "medium_1k": true,
+        "medium_10k": true
+      }
+    },
+    "balanced": {
+      "count": 16,
+      "algorithms": [
+        "discover_heuristic_miner",
+        "discover_alpha_plus_plus",
+        "discover_inductive_miner",
+        "discover_hill_climbing"
+      ],
+      "stats": {
+        "count": 16,
+        "min": 0.04183399999988069,
+        "max": 50.40908300000001,
+        "mean": "6.767",
+        "median": "2.875",
+        "p95": "50.409",
+        "stddev": "12.012"
+      },
+      "bySize": {
+        "100": {
+          "count": 4,
+          "min": 0.04183399999988069,
+          "max": 0.13629199999991215,
+          "mean": "0.088",
+          "median": "0.104",
+          "p95": "0.136",
+          "stddev": "0.036"
+        },
+        "1000": {
+          "count": 4,
+          "min": 0.6375840000000608,
+          "max": 1.4687089999999898,
+          "mean": "1.073",
+          "median": "1.222",
+          "p95": "1.469",
+          "stddev": "0.308"
+        },
+        "5000": {
+          "count": 4,
+          "min": 2.8754169999999704,
+          "max": 11.544999999999845,
+          "mean": "6.188",
+          "median": "6.103",
+          "p95": "11.545",
+          "stddev": "3.298"
+        },
+        "10000": {
+          "count": 4,
+          "min": 5.981374999999957,
+          "max": 50.40908300000001,
+          "mean": "19.717",
+          "median": "13.479",
+          "p95": "50.409",
+          "stddev": "17.920"
+        }
+      },
+      "meets_targets": {
+        "small_100": true,
+        "medium_1k": true,
+        "medium_10k": true
+      }
+    },
+    "quality": {
+      "count": 18,
+      "algorithms": [
+        "discover_astar",
+        "discover_simulated_annealing",
+        "discover_ant_colony",
+        "discover_genetic_algorithm",
+        "discover_pso_algorithm",
+        "discover_ilp_petri_net"
+      ],
+      "stats": {
+        "count": 18,
+        "min": 0.38504099999998687,
+        "max": 39.193708000000015,
+        "mean": "7.170",
+        "median": "3.253",
+        "p95": "39.194",
+        "stddev": "10.141"
+      },
+      "bySize": {
+        "100": {
+          "count": 6,
+          "min": 0.38504099999998687,
+          "max": 1.2831669999999917,
+          "mean": "0.734",
+          "median": "0.766",
+          "p95": "1.283",
+          "stddev": "0.296"
+        },
+        "500": {
+          "count": 3,
+          "min": 1.4490000000000123,
+          "max": 5.39058399999999,
+          "mean": "3.221",
+          "median": "2.825",
+          "p95": "5.391",
+          "stddev": "1.633"
+        },
+        "1000": {
+          "count": 6,
+          "min": 2.998625000000004,
+          "max": 11.53000000000003,
+          "mean": "5.423",
+          "median": "5.555",
+          "p95": "11.530",
+          "stddev": "2.945"
+        },
+        "5000": {
+          "count": 3,
+          "min": 17.540208000000007,
+          "max": 39.193708000000015,
+          "mean": "27.484",
+          "median": "25.717",
+          "p95": "39.194",
+          "stddev": "8.928"
+        }
+      },
+      "meets_targets": {
+        "small_100": true,
+        "medium_1k": true,
+        "medium_10k": true
+      }
+    },
+    "analytics": {
+      "count": 21,
+      "algorithms": [
+        "analyze_trace_variants",
+        "mine_sequential_patterns",
+        "detect_concept_drift",
+        "cluster_traces",
+        "analyze_variant_complexity",
+        "compute_activity_transition_matrix"
+      ],
+      "stats": {
+        "count": 21,
+        "min": 0.15837500000020555,
+        "max": 146.42916699999978,
+        "mean": "11.429",
+        "median": "1.733",
+        "p95": "30.894",
+        "stddev": "30.929"
+      },
+      "bySize": {
+        "100": {
+          "count": 6,
+          "min": 0.15837500000020555,
+          "max": 1.7333329999999023,
+          "mean": "0.462",
+          "median": "0.222",
+          "p95": "1.733",
+          "stddev": "0.570"
+        },
+        "1000": {
+          "count": 6,
+          "min": 0.7950000000000728,
+          "max": 30.89362499999993,
+          "mean": "6.107",
+          "median": "1.299",
+          "p95": "30.894",
+          "stddev": "11.086"
+        },
+        "5000": {
+          "count": 6,
+          "min": 3.692207999999937,
+          "max": 146.42916699999978,
+          "mean": "28.678",
+          "median": "5.960",
+          "p95": "146.429",
+          "stddev": "52.668"
+        },
+        "10000": {
+          "count": 3,
+          "min": 7.192249999999831,
+          "max": 12.848083999999972,
+          "mean": "9.510",
+          "median": "8.491",
+          "p95": "12.848",
+          "stddev": "2.419"
+        }
+      },
+      "meets_targets": {
+        "small_100": true,
+        "medium_1k": true,
+        "medium_10k": true
+      }
+    }
+  }
+}

@@ -1,0 +1,29 @@
+# Lab Validation System
+
+# Build outputs
+dist/
+*.d.ts
+
+# WASM installation
+.wasm4pm-test/
+node_modules/
+
+# Test artifacts
+reports/*.json
+!fixtures/expected-results.json
+
+# Dependencies
+package-lock.json
+yarn.lock
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment
+.env
+.env.local

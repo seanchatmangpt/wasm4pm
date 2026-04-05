@@ -4,8 +4,6 @@ use crate::models::*;
 use serde_json::json;
 use std::collections::HashSet;
 use rustc_hash::FxHashMap;
-#[cfg(target_arch = "wasm32")]
-use serde_wasm_bindgen;
 use crate::utilities::to_js;
 
 /// A* Search-based process discovery - informed heuristic search
@@ -34,7 +32,7 @@ pub fn discover_astar(
             let mut iterations = 0;
 
             while !open_set.is_empty() && iterations < max_iterations {
-                open_set.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+                open_set.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
                 let (current_dfg, _score) = open_set.pop().unwrap();
 
                 // Build candidate DFGs via iterator chain; heuristic is inlined,

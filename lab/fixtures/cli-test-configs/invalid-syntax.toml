@@ -1,0 +1,9 @@
+# Invalid configuration - malformed TOML
+
+[source
+type = "xes"
+path = "./test-data/sample.xes"
+
+[discovery]
+algorithm = "dfg"
+timeout = 30000

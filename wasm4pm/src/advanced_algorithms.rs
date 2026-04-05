@@ -4,8 +4,6 @@ use crate::models::*;
 use serde_json::json;
 use std::collections::HashSet;
 use rustc_hash::FxHashMap;
-#[cfg(target_arch = "wasm32")]
-use serde_wasm_bindgen;
 use crate::utilities::to_js;
 
 /// Heuristic Miner - discovers process models from real-world logs
@@ -136,7 +134,7 @@ pub fn analyze_infrequent_paths(
             infrequent_paths.sort_by(|a, b| {
                 let freq_a = a["frequency"].as_f64().unwrap_or(0.0);
                 let freq_b = b["frequency"].as_f64().unwrap_or(0.0);
-                freq_b.partial_cmp(&freq_a).unwrap()
+                freq_b.partial_cmp(&freq_a).unwrap_or(std::cmp::Ordering::Equal)
             });
 
             to_js(&json!({
@@ -260,7 +258,7 @@ pub fn detect_bottlenecks(
             bottlenecks.sort_by(|a, b| {
                 let avg_a = a["avg_duration"].as_f64().unwrap_or(0.0);
                 let avg_b = b["avg_duration"].as_f64().unwrap_or(0.0);
-                avg_b.partial_cmp(&avg_a).unwrap()
+                avg_b.partial_cmp(&avg_a).unwrap_or(std::cmp::Ordering::Equal)
             });
 
             to_js(&json!({

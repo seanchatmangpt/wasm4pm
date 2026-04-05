@@ -1,0 +1,72 @@
+{
+  "description": "Expected DFG output for edge case XES files",
+  "edge_cases": [
+    {
+      "name": "Single Event",
+      "description": "Log with only 1 event in 1 trace",
+      "expected_dfg": {
+        "nodes": 1,
+        "edges": 0,
+        "start_activities": 1,
+        "end_activities": 1
+      },
+      "properties": {
+        "no_transitions": true,
+        "single_node": true
+      },
+      "comments": [
+        "Single event cannot have transitions",
+        "DFG should have exactly 1 node, 0 edges",
+        "Node is both start and end activity"
+      ]
+    },
+    {
+      "name": "Single Trace (Multiple Events)",
+      "description": "Log with 1 trace containing multiple events",
+      "expected_dfg": {
+        "nodes_min": 2,
+        "edges_min": 1,
+        "single_trace": true
+      },
+      "properties": {
+        "deterministic_path": true
+      },
+      "comments": [
+        "Single trace provides one execution path",
+        "All observed transitions have frequency 1",
+        "No other variants to consider"
+      ]
+    },
+    {
+      "name": "Empty Log",
+      "description": "Log with 0 events (may not be loadable)",
+      "expected_dfg": {
+        "nodes": 0,
+        "edges": 0
+      },
+      "properties": {
+        "may_reject": true
+      },
+      "comments": [
+        "Empty logs may raise an error or return empty DFG",
+        "Behavior depends on implementation"
+      ]
+    },
+    {
+      "name": "Single Activity Repeated",
+      "description": "Log where same activity repeats in sequence",
+      "expected_dfg": {
+        "nodes": 1,
+        "edges": 1,
+        "self_loop": true
+      },
+      "properties": {
+        "self_loop_frequency_gt_zero": true
+      },
+      "comments": [
+        "Self-loop represents activity followed by itself",
+        "Should be captured as edge A→A with appropriate frequency"
+      ]
+    }
+  ]
+}
