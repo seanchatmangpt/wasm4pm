@@ -1,6 +1,7 @@
 pub mod models;
 pub mod state;
 pub mod types;
+pub mod error;
 pub mod io;
 pub mod discovery;
 pub mod analysis;
