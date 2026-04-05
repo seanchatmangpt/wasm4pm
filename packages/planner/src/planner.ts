@@ -7,7 +7,7 @@
  */
 
 import { v4 as uuidv4 } from 'uuid';
-import { blake3 } from 'blake3';
+import { hash as blake3Hash } from 'blake3';
 import type { ErrorInfo } from '@wasm4pm/contracts';
 import { createError } from '@wasm4pm/contracts';
 import type { DAG } from './dag';
@@ -393,7 +393,7 @@ function computePlanHash(
   };
 
   const hashInput = JSON.stringify(normalized);
-  const hash = blake3(Buffer.from(hashInput, 'utf-8'));
+  const hash = blake3Hash(Buffer.from(hashInput, 'utf-8'));
   return hash.toString('hex');
 }
 

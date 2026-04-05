@@ -553,14 +553,14 @@ export class Instrumentation {
    * Generate a W3C-compliant span ID (16 hex chars)
    */
   static generateSpanId(): string {
-    return Array.from({ length: 8 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+    return Array.from({ length: 16 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
   }
 
   /**
    * Generate a W3C-compliant trace ID (32 hex chars)
    */
   static generateTraceId(): string {
-    return Array.from({ length: 16 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+    return Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
   }
 
   /**

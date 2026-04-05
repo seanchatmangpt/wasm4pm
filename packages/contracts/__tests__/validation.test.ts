@@ -20,6 +20,7 @@ describe('receipt validation', () => {
       .setConfig({ algorithm: 'test' })
       .setInput({ data: 123 })
       .setPlan({ steps: [] })
+        .setOutput({})
       .setTiming('2026-04-04T10:00:00Z', '2026-04-04T10:01:00Z')
       .setStatus('success')
       .setSummary({
@@ -223,6 +224,7 @@ describe('receipt validation', () => {
         .setConfig(config)
         .setInput(input)
         .setPlan(plan)
+        .setOutput({})
         .setTiming('2026-04-04T10:00:00Z', '2026-04-04T10:01:00Z')
         .setStatus('success')
         .setSummary({})

@@ -5,6 +5,15 @@
  */
 
 import { EngineState, ErrorInfo } from '@wasm4pm/types';
+import {
+  VALID_TRANSITIONS,
+  canTransition,
+  getValidTransitions,
+  TransitionValidator,
+} from './transitions';
+
+// Re-export for backward compatibility
+export { TransitionValidator };
 
 /**
  * Lifecycle event emitted when state transitions occur
@@ -16,20 +25,6 @@ export interface LifecycleEvent {
   reason?: string;
   metadata?: Record<string, unknown>;
 }
-
-/**
- * Defines valid transitions from each state
- */
-const VALID_TRANSITIONS: Record<EngineState, Set<EngineState>> = {
-  uninitialized: new Set(['bootstrapping']),
-  bootstrapping: new Set(['ready', 'failed']),
-  ready: new Set(['planning', 'degraded', 'failed']),
-  planning: new Set(['running', 'ready', 'degraded', 'failed']),
-  running: new Set(['watching', 'ready', 'degraded', 'failed']),
-  watching: new Set(['ready', 'degraded', 'failed']),
-  degraded: new Set(['ready', 'bootstrapping', 'failed']),
-  failed: new Set(['bootstrapping']),
-};
 
 /**
  * State machine managing engine lifecycle transitions
@@ -81,14 +76,14 @@ export class StateMachine {
    * Validates if a transition from current state to target state is valid
    */
   canTransition(targetState: EngineState): boolean {
-    return VALID_TRANSITIONS[this.currentState]?.has(targetState) ?? false;
+    return canTransition(this.currentState, targetState);
   }
 
   /**
    * Gets valid next states from current state
    */
   getValidTransitions(): EngineState[] {
-    return Array.from(VALID_TRANSITIONS[this.currentState] || []);
+    return getValidTransitions(this.currentState);
   }
 
   /**
@@ -99,7 +94,7 @@ export class StateMachine {
     if (!this.canTransition(targetState)) {
       throw new Error(
         `Invalid state transition: ${this.currentState} -> ${targetState}. ` +
-        `Valid transitions from ${this.currentState}: ${this.getValidTransitions().join(', ')}`
+          `Valid transitions from ${this.currentState}: ${this.getValidTransitions().join(', ')}`
       );
     }
 
@@ -166,77 +161,5 @@ export class StateMachine {
    */
   isDegraded(): boolean {
     return this.currentState === 'degraded';
-  }
-}
-
-/**
- * Transition validator with recovery context
- * Ensures transitions are valid for the current recovery mode
- */
-export class TransitionValidator {
-  /**
-   * Validates a transition and returns recovery suggestions
-   */
-  static validateTransition(
-    currentState: EngineState,
-    targetState: EngineState,
-    errors?: ErrorInfo[]
-  ): { valid: boolean; suggestion?: string } {
-    if (!VALID_TRANSITIONS[currentState]?.has(targetState)) {
-      return {
-        valid: false,
-        suggestion: `Cannot transition from ${currentState} to ${targetState}. ` +
-          `Valid next states: ${Array.from(VALID_TRANSITIONS[currentState] || []).join(', ')}`,
-      };
-    }
-
-    // Additional validation for error states
-    if (targetState === 'ready' && errors && errors.length > 0) {
-      const hasFatalErrors = errors.some((e) => e.severity === 'fatal');
-      if (hasFatalErrors) {
-        return {
-          valid: false,
-          suggestion: 'Cannot transition to ready state with fatal errors. Consider failed or degraded state.',
-        };
-      }
-    }
-
-    return { valid: true };
-  }
-
-  /**
-   * Suggests the best target state based on current state and error condition
-   */
-  static suggestRecoveryState(
-    currentState: EngineState,
-    errors?: ErrorInfo[]
-  ): EngineState | null {
-    if (!errors || errors.length === 0) {
-      // No errors, try to return to ready
-      if (currentState !== 'ready') {
-        return 'ready';
-      }
-      return null;
-    }
-
-    const hasFatalErrors = errors.some((e) => e.severity === 'fatal');
-    const hasRecoverableErrors = errors.some((e) => e.recoverable);
-
-    if (hasFatalErrors) {
-      return 'failed';
-    }
-
-    if (hasRecoverableErrors) {
-      if (VALID_TRANSITIONS[currentState]?.has('degraded')) {
-        return 'degraded';
-      }
-    }
-
-    // Try to go to ready if possible
-    if (VALID_TRANSITIONS[currentState]?.has('ready')) {
-      return 'ready';
-    }
-
-    return null;
   }
 }

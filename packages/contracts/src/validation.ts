@@ -24,13 +24,41 @@ export function validateReceipt(receipt: unknown): ValidationResult {
   const errors: string[] = [];
   const warnings: string[] = [];
 
-  // Type check
-  if (!isReceipt(receipt)) {
+  if (!receipt || typeof receipt !== 'object') {
     errors.push('Invalid receipt structure or missing required fields');
     return { valid: false, errors, warnings };
   }
 
-  const r = receipt as Receipt;
+  const r = receipt as Record<string, any>;
+
+  // Check required string fields
+  const requiredStrings = ['run_id', 'schema_version', 'config_hash', 'input_hash', 'plan_hash', 'output_hash', 'start_time', 'end_time'] as const;
+  for (const field of requiredStrings) {
+    if (typeof r[field] !== 'string') {
+      errors.push(`Missing or invalid required field: ${field}`);
+    }
+  }
+
+  if (typeof r.duration_ms !== 'number') {
+    errors.push('Missing or invalid required field: duration_ms');
+  }
+
+  if (typeof r.summary !== 'object' || r.summary === null) {
+    errors.push('Missing or invalid required field: summary');
+  }
+
+  if (typeof r.algorithm !== 'object' || r.algorithm === null) {
+    errors.push('Missing or invalid required field: algorithm');
+  }
+
+  if (typeof r.model !== 'object' || r.model === null) {
+    errors.push('Missing or invalid required field: model');
+  }
+
+  // If basic structure is invalid, return early
+  if (errors.length > 0) {
+    return { valid: false, errors, warnings };
+  }
 
   // Schema version check
   if (r.schema_version !== '1.0') {
@@ -43,7 +71,7 @@ export function validateReceipt(receipt: unknown): ValidationResult {
   }
 
   // Validate hash format (BLAKE3 hashes are 64 hex characters)
-  const hashErrors = validateHashFormats(r);
+  const hashErrors = validateHashFormats(r as Receipt);
   errors.push(...hashErrors);
 
   // Validate timestamps are ISO 8601

@@ -21,6 +21,8 @@ export class KernelError extends Error {
   readonly recoverable: boolean;
   readonly timestamp: Date;
 
+  readonly cause: Error | undefined;
+
   constructor(
     message: string,
     code: KernelErrorCode,
@@ -30,9 +32,10 @@ export class KernelError extends Error {
       recoverable?: boolean;
     }
   ) {
-    super(message, { cause: options?.cause });
+    super(message);
     this.name = 'KernelError';
     this.code = code;
+    this.cause = options?.cause;
     this.context = options?.context ?? {};
     this.recoverable = options?.recoverable ?? false;
     this.timestamp = new Date();

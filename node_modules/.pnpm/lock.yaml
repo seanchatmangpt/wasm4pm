@@ -136,10 +136,6 @@ importers:
         version: 1.6.1(@types/node@20.19.39)(@vitest/browser@1.6.1)
 
   packages/observability:
-    dependencies:
-      '@wasm4pm/contracts':
-        specifier: workspace:*
-        version: link:../contracts
     devDependencies:
       '@types/node':
         specifier: ^20.0.0
@@ -262,13 +258,6 @@ importers:
         version: 1.6.1(@types/node@20.19.39)(@vitest/browser@1.6.1)
 
   packages/testing:
-    dependencies:
-      '@wasm4pm/contracts':
-        specifier: workspace:*
-        version: link:../contracts
-      '@wasm4pm/engine':
-        specifier: workspace:*
-        version: link:../engine
     devDependencies:
       '@types/node':
         specifier: ^20.10.0

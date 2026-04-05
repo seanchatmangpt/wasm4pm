@@ -6,6 +6,8 @@
 
 import { SourceRegistry, sourceRegistry as contractRegistry } from '@wasm4pm/contracts';
 import { FileSourceAdapter, FileSourceConfig } from './file-source.js';
+import { HttpSourceAdapter, HttpSourceConfig } from './http-source.js';
+import { StreamSourceAdapter, StreamSourceConfig } from './stream-source.js';
 
 /**
  * Extension of SourceRegistry with helper functions for registration
@@ -14,9 +16,24 @@ export class ExtendedSourceRegistry extends SourceRegistry {
   /**
    * Register the built-in file adapter
    */
-  registerFileAdapter(): void {
-    const config: FileSourceConfig = { filePath: '' };
-    const adapter = new FileSourceAdapter(config);
+  registerFileAdapter(config?: FileSourceConfig): void {
+    const adapter = new FileSourceAdapter(config ?? { filePath: '' });
+    this.register(adapter);
+  }
+
+  /**
+   * Register the HTTP adapter
+   */
+  registerHttpAdapter(config?: HttpSourceConfig): void {
+    const adapter = new HttpSourceAdapter(config ?? { url: '' });
+    this.register(adapter);
+  }
+
+  /**
+   * Register the stream (stdin) adapter
+   */
+  registerStreamAdapter(config?: StreamSourceConfig): void {
+    const adapter = new StreamSourceAdapter(config ?? {});
     this.register(adapter);
   }
 
@@ -25,6 +42,8 @@ export class ExtendedSourceRegistry extends SourceRegistry {
    */
   registerBuiltins(): void {
     this.registerFileAdapter();
+    this.registerHttpAdapter();
+    this.registerStreamAdapter();
   }
 }
 
@@ -40,6 +59,6 @@ export function createSourceRegistry(): ExtendedSourceRegistry {
 /**
  * Export the contract registry as default singleton
  */
-export { sourceRegistry };
+export { contractRegistry as sourceRegistry };
 export { SourceRegistry } from '@wasm4pm/contracts';
 export type { SourceAdapter, Capabilities, EventStream, RetryStrategy } from '@wasm4pm/contracts';
