@@ -12,9 +12,9 @@ import {
   type WatchConfig,
   type WatchEvent,
   type ExecutionReceipt,
-} from '../src/watch';
-import { Wasm4pmConfig, ExecutionProfile, SourceFormat, StepType } from '../src/config';
-import { type ExecutableStep } from '../src/pipeline';
+} from '../src/watch.js';
+import { Wasm4pmConfig, ExecutionProfile, SourceFormat, StepType } from '../src/config.js';
+import { type ExecutableStep } from '../src/pipeline.js';
 
 /**
  * Mock execution plan for testing

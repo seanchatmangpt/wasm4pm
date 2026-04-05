@@ -1,0 +1,153 @@
+name: npm Install Smoke Test
+
+on:
+  push:
+    tags:
+      - 'v*'
+  pull_request:
+    paths:
+      - 'wasm4pm/**'
+      - '.github/workflows/smoke-test.yml'
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: "-C target-feature=+simd128"
+
+jobs:
+  smoke-test:
+    name: Standalone npm Install Smoke Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Cache Rust builds
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install wasm-pack
+        run: npm install -g wasm-pack@1.3.4
+
+      - name: Install dependencies
+        working-directory: ./wasm4pm
+        run: npm install
+
+      - name: Build nodejs target
+        working-directory: ./wasm4pm
+        run: npm run build:nodejs
+
+      - name: Remove wasm-pack generated pkg/.gitignore
+        working-directory: ./wasm4pm
+        run: rm -f pkg/.gitignore
+
+      - name: Pack tarball
+        working-directory: ./wasm4pm
+        run: |
+          npm pack
+          echo "TARBALL=$(ls wasm4pm-*.tgz)" >> $GITHUB_ENV
+
+      - name: Install from tarball in clean directory
+        run: |
+          mkdir -p /tmp/smoke-test-$$
+          cp wasm4pm/${{ env.TARBALL }} /tmp/smoke-test-$$/
+          cd /tmp/smoke-test-$$
+          npm init -y
+          npm install ./${{ env.TARBALL }}
+
+      - name: Verify require works
+        working-directory: /tmp/smoke-test-$$
+        run: |
+          node -e "
+            const pm = require('wasm4pm');
+            console.log('--- Smoke Test: require() ---');
+
+            // 1. Module loads
+            console.log('OK require(\"wasm4pm\")');
+
+            // 2. Classes exported
+            if (!pm.WasmEventLog)  throw new Error('WasmEventLog not exported');
+            if (!pm.WasmOCEL)      throw new Error('WasmOCEL not exported');
+            if (!pm.OperationResult) throw new Error('OperationResult not exported');
+            console.log('OK classes: WasmEventLog, WasmOCEL, OperationResult');
+
+            // 3. Discovery functions exported
+            const discoveryFns = [
+              'discover_dfg',
+              'discover_alpha_plus_plus',
+              'discover_heuristic_miner',
+              'discover_inductive_miner',
+              'discover_genetic_algorithm',
+            ];
+            for (const fn of discoveryFns) {
+              if (typeof pm[fn] !== 'function') throw new Error(fn + ' not exported');
+            }
+            console.log('OK discovery functions:', discoveryFns.join(', '));
+
+            // 4. Analysis functions exported
+            const analysisFns = [
+              'analyze_trace_variants',
+              'analyze_case_duration',
+              'analyze_event_statistics',
+            ];
+            for (const fn of analysisFns) {
+              if (typeof pm[fn] !== 'function') throw new Error(fn + ' not exported');
+            }
+            console.log('OK analysis functions:', analysisFns.join(', '));
+
+            // 5. I/O functions exported
+            const ioFns = [
+              'load_eventlog_from_json',
+              'load_eventlog_from_xes',
+              'export_eventlog_to_json',
+            ];
+            for (const fn of ioFns) {
+              if (typeof pm[fn] !== 'function') throw new Error(fn + ' not exported');
+            }
+            console.log('OK I/O functions:', ioFns.join(', '));
+
+            // 6. Utility exports
+            if (typeof pm.get_version !== 'function') throw new Error('get_version not exported');
+            if (typeof pm.clear_all_objects !== 'function') throw new Error('clear_all_objects not exported');
+            console.log('OK utility functions: get_version, clear_all_objects');
+
+            // 7. Actually call a function to verify WASM loads and executes
+            const version = pm.get_version();
+            console.log('OK get_version() returned:', version);
+
+            // 8. Load an event log and run discovery
+            const sv = (s) => ({ tag: 'String', value: s });
+            const sampleLog = JSON.stringify({
+              attributes: {},
+              traces: [
+                { attributes: {}, events: [{ attributes: { 'concept:name': sv('A') } }, { attributes: { 'concept:name': sv('B') } }, { attributes: { 'concept:name': sv('C') } }] },
+                { attributes: {}, events: [{ attributes: { 'concept:name': sv('A') } }, { attributes: { 'concept:name': sv('B') } }, { attributes: { 'concept:name': sv('C') } }] },
+                { attributes: {}, events: [{ attributes: { 'concept:name': sv('A') } }, { attributes: { 'concept:name': sv('C') } }] },
+              ]
+            });
+            const handle = pm.load_eventlog_from_json(sampleLog);
+            console.log('OK load_eventlog_from_json() handle:', handle);
+
+            const dfg = pm.discover_dfg(handle, 'concept:name');
+            console.log('OK discover_dfg() returned result');
+
+            pm.clear_all_objects();
+            console.log('OK clear_all_objects()');
+
+            console.log('');
+            console.log('=== ALL SMOKE TESTS PASSED ===');
+          "
+
+      - name: Cleanup
+        if: always()
+        run: rm -rf /tmp/smoke-test-*

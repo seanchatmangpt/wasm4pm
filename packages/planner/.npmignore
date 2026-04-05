@@ -1,0 +1,19 @@
+# npm publish: include dist/, exclude dev files
+__tests__/
+src/
+*.test.ts
+*.spec.ts
+*.tsbuildinfo
+coverage/
+node_modules/
+.env
+.env.local
+.env.*.local
+.nyc_output/
+*.log
+*.swp
+*.swo
+*~
+.DS_Store
+.vscode/
+.idea/

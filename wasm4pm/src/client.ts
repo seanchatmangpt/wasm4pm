@@ -6,8 +6,8 @@
  */
 
 // Import types from the API definition
-import * as api from './api';
-import type * as WasmModule from '../pkg/wasm4pm';
+import * as api from './api.js';
+import type * as WasmModule from '../pkg/wasm4pm.js';
 import {
   EventLogHandleId,
   OCELHandleId,
@@ -31,7 +31,7 @@ import {
   asStreamingConformanceHandleId,
   asOCPetriNetHandleId,
   asFeatureMatrixHandleId,
-} from './types';
+} from './types.js';
 
 /**
  * Structured error returned from WASM functions
