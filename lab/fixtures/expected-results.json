@@ -1,0 +1,93 @@
+{
+  "tests": [
+    {
+      "name": "Small Log (100 events) - fast profile",
+      "category": "performance",
+      "status": "PASS",
+      "claim": "100 events completes in <1000ms with fast profile"
+    },
+    {
+      "name": "Small Log (100 events) - balanced profile",
+      "category": "performance",
+      "status": "PASS",
+      "claim": "100 events completes in <1000ms with balanced profile"
+    },
+    {
+      "name": "Small Log (100 events) - quality profile",
+      "category": "performance",
+      "status": "PASS",
+      "claim": "100 events completes in <1000ms with quality profile"
+    },
+    {
+      "name": "Small Log (1K events) - fast profile",
+      "category": "performance",
+      "status": "PASS",
+      "claim": "1000 events completes in <1000ms with fast profile"
+    },
+    {
+      "name": "Small Log (1K events) - balanced profile",
+      "category": "performance",
+      "status": "PASS",
+      "claim": "1000 events completes in <1000ms with balanced profile"
+    },
+    {
+      "name": "Small Log (1K events) - quality profile",
+      "category": "performance",
+      "status": "PASS",
+      "claim": "1000 events completes in <1000ms with quality profile"
+    },
+    {
+      "name": "Small Log Consistency (±10% variance)",
+      "category": "performance",
+      "status": "PASS",
+      "claim": "Same log runs produce consistent latency within ±10%"
+    },
+    {
+      "name": "Medium Log (10K events) - fast profile",
+      "category": "performance",
+      "status": "PASS",
+      "claim": "10K events completes in <5000ms with fast profile"
+    },
+    {
+      "name": "Medium Log (100K events) - fast profile",
+      "category": "performance",
+      "status": "PASS",
+      "claim": "100K events completes in <30000ms with fast profile"
+    },
+    {
+      "name": "Scaling Analysis (O(n) detection)",
+      "category": "performance",
+      "status": "PASS",
+      "claim": "DFG algorithm exhibits linear O(n) scaling"
+    },
+    {
+      "name": "Profile Tiers - Latency Ordering",
+      "category": "performance",
+      "status": "PASS",
+      "claim": "fast profile < balanced profile < quality profile (latency)"
+    },
+    {
+      "name": "Stress: Deep Trace (1000 events per trace)",
+      "category": "performance",
+      "status": "PASS",
+      "claim": "Handle traces with 1000+ events without degradation"
+    },
+    {
+      "name": "Stress: Wide Log (10K+ unique activities)",
+      "category": "performance",
+      "status": "PASS",
+      "claim": "Handle logs with many unique activities"
+    },
+    {
+      "name": "Stress: High Variant Diversity (5K events)",
+      "category": "performance",
+      "status": "PASS",
+      "claim": "Handle logs with high trace variant diversity"
+    }
+  ],
+  "summary": {
+    "total": 14,
+    "passed": 14,
+    "failed": 0
+  }
+}

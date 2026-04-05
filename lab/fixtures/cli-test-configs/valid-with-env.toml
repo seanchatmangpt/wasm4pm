@@ -1,0 +1,13 @@
+# Valid configuration with environment variable references
+
+[source]
+type = "xes"
+path = "${INPUT_PATH}"
+
+[discovery]
+algorithm = "${DISCOVERY_ALGORITHM}"
+timeout = 30000
+
+[output]
+format = "pnml"
+path = "${OUTPUT_PATH}"

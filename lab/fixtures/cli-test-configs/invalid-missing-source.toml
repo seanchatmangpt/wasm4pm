@@ -1,0 +1,9 @@
+# Invalid configuration - missing source section
+
+[discovery]
+algorithm = "dfg"
+timeout = 30000
+
+[output]
+format = "pnml"
+path = "./results/model.pnml"

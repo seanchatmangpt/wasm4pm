@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>wasm4pm Service - JavaScript Examples</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #f5f5f5;
+      color: #333;
+    }
+    .container {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    h1 {
+      color: #2c3e50;
+      border-bottom: 2px solid #3498db;
+      padding-bottom: 10px;
+    }
+    h2 {
+      color: #34495e;
+      margin-top: 30px;
+    }
+    .section {
+      margin: 20px 0;
+      padding: 15px;
+      background: #f8f9fa;
+      border-left: 4px solid #3498db;
+      border-radius: 4px;
+    }
+    .example {
+      margin: 20px 0;
+      padding: 15px;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+    }
+    button {
+      background: #3498db;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      margin: 5px 5px 5px 0;
+    }
+    button:hover {
+      background: #2980b9;
+    }
+    button:disabled {
+      background: #95a5a6;
+      cursor: not-allowed;
+    }
+    .output {
+      background: #f5f5f5;
+      border: 1px solid #ddd;
+      padding: 10px;
+      border-radius: 4px;
+      margin-top: 10px;
+      max-height: 300px;
+      overflow-y: auto;
+      font-size: 12px;
+    }
+    .success {
+      color: #27ae60;
+    }
+    .error {
+      color: #e74c3c;
+    }
+    .info {
+      color: #3498db;
+    }
+    code {
+      background: #f5f5f5;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: 'Courier New', monospace;
+    }
+    .status-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: bold;
+      margin: 5px 5px 5px 0;
+    }
+    .status-running {
+      background: #f39c12;
+      color: white;
+    }
+    .status-completed {
+      background: #27ae60;
+      color: white;
+    }
+    .status-queued {
+      background: #3498db;
+      color: white;
+    }
+    .status-failed {
+      background: #e74c3c;
+      color: white;
+    }
+    .progress-bar {
+      width: 100%;
+      height: 20px;
+      background: #ecf0f1;
+      border-radius: 10px;
+      overflow: hidden;
+      margin: 10px 0;
+    }
+    .progress-fill {
+      height: 100%;
+      background: #3498db;
+      transition: width 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>wasm4pm Service - JavaScript/Browser Examples</h1>
+
+    <!-- Service Configuration -->
+    <div class="section">
+      <h3>Service Configuration</h3>
+      <label>Service URL: <input type="text" id="serviceUrl" value="http://localhost:3001" style="width: 300px;"></label>
+    </div>
+
+    <!-- Example 1: Health Check -->
+    <h2>1. Health Check</h2>
+    <div class="section">
+      <p>Check server status and health metrics</p>
+      <button onclick="example1_healthCheck()">Run Health Check</button>
+      <div id="output-health" class="output"></div>
+    </div>
+
+    <!-- Example 2: Get Documentation -->
+    <h2>2. Get OpenAPI Documentation</h2>
+    <div class="section">
+      <p>Retrieve OpenAPI specification for all endpoints</p>
+      <button onclick="example2_getDocumentation()">Get OpenAPI Docs</button>
+      <div id="output-docs" class="output"></div>
+    </div>
+
+    <!-- Example 3: Submit Run -->
+    <h2>3. Submit Run</h2>
+    <div class="section">
+      <p>Submit a process mining run with custom configuration</p>
+      <div>
+        <label>Algorithm:</label>
+        <select id="algorithmSelect">
+          <option value="heuristic">Heuristic</option>
+          <option value="genetic">Genetic</option>
+          <option value="inductive">Inductive</option>
+        </select>
+      </div>
+      <button onclick="example3_submitRun()">Submit Run</button>
+      <div id="output-submit" class="output"></div>
+    </div>
+
+    <!-- Example 4: Check Run Status -->
+    <h2>4. Check Run Status</h2>
+    <div class="section">
+      <p>Check the status of a submitted run</p>
+      <div>
+        <label>Run ID: <input type="text" id="runIdInput" placeholder="run_2026-04-04T..." style="width: 300px;"></label>
+      </div>
+      <button onclick="example4_checkRunStatus()">Check Status</button>
+      <button onclick="example4_pollRunStatus()">Poll Until Complete</button>
+      <div id="output-status" class="output"></div>
+    </div>
+
+    <!-- Example 5: Watch Run -->
+    <h2>5. Watch Run Execution</h2>
+    <div class="section">
+      <p>Stream execution events as run progresses</p>
+      <div>
+        <label>Run ID: <input type="text" id="watchRunId" placeholder="run_2026-04-04T..." style="width: 300px;"></label>
+      </div>
+      <button onclick="example5_watchRun()">Start Watching</button>
+      <button id="stopWatchBtn" onclick="example5_stopWatching()" disabled>Stop Watching</button>
+      <div id="output-watch" class="output"></div>
+    </div>
+
+    <!-- Example 6: Explain Configuration -->
+    <h2>6. Explain Configuration</h2>
+    <div class="section">
+      <p>Get explanation of a process mining configuration</p>
+      <div>
+        <label>Mode:</label>
+        <select id="explainMode">
+          <option value="brief">Brief</option>
+          <option value="full">Full</option>
+        </select>
+      </div>
+      <button onclick="example6_explainConfig()">Get Explanation</button>
+      <div id="output-explain" class="output"></div>
+    </div>
+
+    <!-- Example 7: Cancel Run -->
+    <h2>7. Cancel Run</h2>
+    <div class="section">
+      <p>Cancel a queued or running process</p>
+      <div>
+        <label>Run ID: <input type="text" id="cancelRunId" placeholder="run_2026-04-04T..." style="width: 300px;"></label>
+      </div>
+      <button onclick="example7_cancelRun()">Cancel Run</button>
+      <div id="output-cancel" class="output"></div>
+    </div>
+
+    <!-- Example 8: Complete Workflow -->
+    <h2>8. Complete Workflow</h2>
+    <div class="section">
+      <p>Execute a complete workflow: check status → submit run → monitor progress → get result</p>
+      <button onclick="example8_completeWorkflow()">Run Complete Workflow</button>
+      <div id="output-workflow" class="output"></div>
+    </div>
+
+    <!-- Example 9: Error Handling -->
+    <h2>9. Error Handling</h2>
+    <div class="section">
+      <p>Demonstrate error handling for various error cases</p>
+      <button onclick="example9_errorHandling()">Test Error Cases</button>
+      <div id="output-errors" class="output"></div>
+    </div>
+
+    <!-- Example 10: Batch Operations -->
+    <h2>10. Batch Operations</h2>
+    <div class="section">
+      <p>Submit multiple runs and track all in parallel</p>
+      <div>
+        <label>Number of runs: <input type="number" id="batchCount" value="5" min="1" max="10"></label>
+      </div>
+      <button onclick="example10_batchOperations()">Submit Batch</button>
+      <div id="output-batch" class="output"></div>
+    </div>
+  </div>
+
+  <script>
+    const SERVICE_BASE_URL = () => document.getElementById('serviceUrl').value;
+
+    /**
+     * API Helper Functions
+     */
+    async function apiRequest(method, path, body = null) {
+      try {
+        const options = {
+          method,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        };
+
+        if (body) {
+          options.body = JSON.stringify(body);
+        }
+
+        const response = await fetch(`${SERVICE_BASE_URL()}${path}`, options);
+        const data = await response.json();
+
+        return {
+          status: response.status,
+          body: data,
+          headers: response.headers,
+        };
+      } catch (err) {
+        throw new Error(`Request failed: ${err.message}`);
+      }
+    }
+
+    function formatOutput(output) {
+      return typeof output === 'string' ? output : JSON.stringify(output, null, 2);
+    }
+
+    function addOutput(elementId, message, type = 'info') {
+      const element = document.getElementById(elementId);
+      const timestamp = new Date().toLocaleTimeString();
+      const className = type === 'error' ? 'error' : type === 'success' ? 'success' : 'info';
+      element.innerHTML +=
+        `<div class="${className}">[${timestamp}] ${message}</div>`;
+      element.scrollTop = element.scrollHeight;
+    }
+
+    function clearOutput(elementId) {
+      document.getElementById(elementId).innerHTML = '';
+    }
+
+    /**
+     * Example 1: Health Check
+     */
+    async function example1_healthCheck() {
+      const elementId = 'output-health';
+      clearOutput(elementId);
+
+      try {
+        addOutput(elementId, 'Fetching server status...');
+        const response = await apiRequest('GET', '/status');
+
+        if (response.status === 200) {
+          addOutput(elementId, 'Server Status:', 'success');
+          addOutput(elementId, `- Server: ${response.body.server}`);
+          addOutput(elementId, `- Uptime: ${response.body.uptime_ms}ms`);
+          addOutput(elementId, `- Queue Depth: ${response.body.queued}`);
+          addOutput(elementId, `- Completed: ${response.body.completed}`);
+          addOutput(elementId, `- Failed: ${response.body.failed}`);
+          addOutput(elementId, formatOutput(response.body), 'success');
+        } else {
+          addOutput(elementId, `Error: ${response.status}`, 'error');
+        }
+      } catch (err) {
+        addOutput(elementId, `Error: ${err.message}`, 'error');
+      }
+    }
+
+    /**
+     * Example 2: Get Documentation
+     */
+    async function example2_getDocumentation() {
+      const elementId = 'output-docs';
+      clearOutput(elementId);
+
+      try {
+        addOutput(elementId, 'Fetching OpenAPI spec...');
+        const response = await apiRequest('GET', '/api/docs');
+
+        if (response.status === 200) {
+          addOutput(elementId, 'OpenAPI Specification:', 'success');
+          addOutput(elementId, `- Version: ${response.body.openapi}`);
+          addOutput(elementId, `- Title: ${response.body.info.title}`);
+          addOutput(elementId, `- API Version: ${response.body.info.version}`);
+          addOutput(elementId, `- Endpoints: ${Object.keys(response.body.paths).join(', ')}`);
+          addOutput(elementId, formatOutput(response.body), 'success');
+        } else {
+          addOutput(elementId, `Error: ${response.status}`, 'error');
+        }
+      } catch (err) {
+        addOutput(elementId, `Error: ${err.message}`, 'error');
+      }
+    }
+
+    /**
+     * Example 3: Submit Run
+     */
+    async function example3_submitRun() {
+      const elementId = 'output-submit';
+      clearOutput(elementId);
+
+      try {
+        const algorithm = document.getElementById('algorithmSelect').value;
+        const config = `[algorithm]
+name = "${algorithm}"
+threshold = 0.5
+
+[input]
+file = "log.xes"`;
+
+        addOutput(elementId, `Submitting run with algorithm: ${algorithm}...`);
+        const response = await apiRequest('POST', '/run', { config });
+
+        if (response.status === 202) {
+          const runId = response.body.run_id;
+          addOutput(elementId, `Run submitted successfully!`, 'success');
+          addOutput(elementId, `- Run ID: ${runId}`);
+          addOutput(elementId, `- Status: ${response.body.status}`);
+          addOutput(elementId, `- Started At: ${response.body.started_at}`);
+
+          // Store run ID for later use
+          document.getElementById('runIdInput').value = runId;
+          document.getElementById('watchRunId').value = runId;
+
+          addOutput(elementId, formatOutput(response.body), 'success');
+        } else {
+          addOutput(elementId, `Error: ${response.status}`, 'error');
+          addOutput(elementId, formatOutput(response.body), 'error');
+        }
+      } catch (err) {
+        addOutput(elementId, `Error: ${err.message}`, 'error');
+      }
+    }
+
+    /**
+     * Example 4: Check Run Status
+     */
+    async function example4_checkRunStatus() {
+      const elementId = 'output-status';
+      clearOutput(elementId);
+
+      try {
+        const runId = document.getElementById('runIdInput').value;
+        if (!runId) {
+          addOutput(elementId, 'Please enter a Run ID', 'error');
+          return;
+        }
+
+        addOutput(elementId, `Checking status for run: ${runId}...`);
+        const response = await apiRequest('GET', `/run/${runId}`);
+
+        if (response.status === 200) {
+          addOutput(elementId, `Run Status:`, 'success');
+          addOutput(elementId, `- Run ID: ${response.body.run_id}`);
+          addOutput(elementId, `- Status: ${response.body.status}`);
+          addOutput(elementId, `- Progress: ${response.body.progress}%`);
+          addOutput(elementId, `- Started At: ${response.body.started_at}`);
+
+          if (response.body.finished_at) {
+            addOutput(elementId, `- Finished At: ${response.body.finished_at}`);
+            addOutput(elementId, `- Duration: ${response.body.duration_ms}ms`);
+          }
+
+          if (response.body.receipt) {
+            addOutput(elementId, `- Receipt: ${JSON.stringify(response.body.receipt)}`);
+          }
+
+          addOutput(elementId, formatOutput(response.body), 'success');
+        } else {
+          addOutput(elementId, `Error: ${response.status}`, 'error');
+        }
+      } catch (err) {
+        addOutput(elementId, `Error: ${err.message}`, 'error');
+      }
+    }
+
+    /**
+     * Example 4b: Poll Run Status Until Complete
+     */
+    async function example4_pollRunStatus() {
+      const elementId = 'output-status';
+      clearOutput(elementId);
+
+      try {
+        const runId = document.getElementById('runIdInput').value;
+        if (!runId) {
+          addOutput(elementId, 'Please enter a Run ID', 'error');
+          return;
+        }
+
+        addOutput(elementId, `Polling run: ${runId}...`);
+
+        for (let i = 0; i < 30; i++) {
+          const response = await apiRequest('GET', `/run/${runId}`);
+
+          if (response.status === 200) {
+            const { status, progress, finished_at } = response.body;
+            addOutput(elementId, `[${i + 1}] Status: ${status}, Progress: ${progress}%`);
+
+            if (status === 'completed' || status === 'failed') {
+              addOutput(elementId, `Run completed with status: ${status}`, 'success');
+              if (response.body.receipt) {
+                addOutput(
+                  elementId,
+                  `Receipt: ${JSON.stringify(response.body.receipt)}`,
+                  'success'
+                );
+              }
+              break;
+            }
+          }
+
+          // Wait 500ms before next poll
+          await new Promise((resolve) => setTimeout(resolve, 500));
+        }
+      } catch (err) {
+        addOutput(elementId, `Error: ${err.message}`, 'error');
+      }
+    }
+
+    /**
+     * Example 5: Watch Run
+     */
+    let watchIntervalId = null;
+
+    async function example5_watchRun() {
+      const elementId = 'output-watch';
+      clearOutput(elementId);
+
+      try {
+        const runId = document.getElementById('watchRunId').value;
+        if (!runId) {
+          addOutput(elementId, 'Please enter a Run ID', 'error');
+          return;
+        }
+
+        addOutput(elementId, `Watching run: ${runId}...`);
+        document.getElementById('stopWatchBtn').disabled = false;
+
+        // Poll for progress updates
+        let isComplete = false;
+        watchIntervalId = setInterval(async () => {
+          try {
+            const response = await apiRequest('GET', `/run/${runId}`);
+            if (response.status === 200) {
+              const { status, progress } = response.body;
+              const timestamp = new Date().toLocaleTimeString();
+              addOutput(elementId, `[${timestamp}] ${status} - ${progress}%`);
+
+              if (status === 'completed' || status === 'failed') {
+                isComplete = true;
+                example5_stopWatching();
+              }
+            }
+          } catch (err) {
+            // Ignore errors during polling
+          }
+        }, 500);
+      } catch (err) {
+        addOutput(elementId, `Error: ${err.message}`, 'error');
+      }
+    }
+
+    function example5_stopWatching() {
+      if (watchIntervalId) {
+        clearInterval(watchIntervalId);
+        watchIntervalId = null;
+      }
+      document.getElementById('stopWatchBtn').disabled = true;
+      addOutput('output-watch', 'Watching stopped.', 'success');
+    }
+
+    /**
+     * Example 6: Explain Configuration
+     */
+    async function example6_explainConfig() {
+      const elementId = 'output-explain';
+      clearOutput(elementId);
+
+      try {
+        const mode = document.getElementById('explainMode').value;
+        const config = `[algorithm]
+name = "heuristic"
+threshold = 0.5`;
+
+        addOutput(elementId, `Explaining configuration (${mode} mode)...`);
+        const response = await apiRequest('POST', '/explain', { config, mode });
+
+        if (response.status === 200) {
+          addOutput(elementId, `Explanation (${mode} mode):`, 'success');
+          addOutput(elementId, response.body.explanation);
+          addOutput(elementId, formatOutput(response.body), 'success');
+        } else {
+          addOutput(elementId, `Error: ${response.status}`, 'error');
+        }
+      } catch (err) {
+        addOutput(elementId, `Error: ${err.message}`, 'error');
+      }
+    }
+
+    /**
+     * Example 7: Cancel Run
+     */
+    async function example7_cancelRun() {
+      const elementId = 'output-cancel';
+      clearOutput(elementId);
+
+      try {
+        const runId = document.getElementById('cancelRunId').value;
+        if (!runId) {
+          addOutput(elementId, 'Please enter a Run ID', 'error');
+          return;
+        }
+
+        addOutput(elementId, `Cancelling run: ${runId}...`);
+        const response = await apiRequest('DELETE', `/run/${runId}`);
+
+        if (response.status === 200) {
+          addOutput(elementId, `Run cancelled successfully!`, 'success');
+          addOutput(elementId, `- Status: ${response.body.status}`);
+          addOutput(elementId, formatOutput(response.body), 'success');
+        } else if (response.status === 404) {
+          addOutput(elementId, `Run not found`, 'error');
+        } else if (response.status === 409) {
+          addOutput(elementId, `Cannot cancel: ${response.body.message}`, 'error');
+        } else {
+          addOutput(elementId, `Error: ${response.status}`, 'error');
+        }
+      } catch (err) {
+        addOutput(elementId, `Error: ${err.message}`, 'error');
+      }
+    }
+
+    /**
+     * Example 8: Complete Workflow
+     */
+    async function example8_completeWorkflow() {
+      const elementId = 'output-workflow';
+      clearOutput(elementId);
+
+      try {
+        // Step 1: Check status
+        addOutput(elementId, 'Step 1: Checking server status...');
+        let response = await apiRequest('GET', '/status');
+        if (response.status === 200) {
+          addOutput(elementId, `Queue depth: ${response.body.queued}, Completed: ${response.body.completed}`, 'success');
+        }
+
+        // Step 2: Explain config
+        addOutput(elementId, 'Step 2: Explaining configuration...');
+        response = await apiRequest('POST', '/explain', {
+          config: '[algorithm]\nname = "heuristic"',
+          mode: 'brief',
+        });
+        if (response.status === 200) {
+          addOutput(elementId, `Explanation: ${response.body.explanation.substring(0, 80)}...`, 'success');
+        }
+
+        // Step 3: Submit run
+        addOutput(elementId, 'Step 3: Submitting run...');
+        response = await apiRequest('POST', '/run', {
+          config: '[test]\nkey = "value"',
+        });
+        if (response.status === 202) {
+          const runId = response.body.run_id;
+          addOutput(elementId, `Run submitted: ${runId}`, 'success');
+
+          // Step 4: Monitor progress
+          addOutput(elementId, 'Step 4: Monitoring progress...');
+          for (let i = 0; i < 15; i++) {
+            const statusResponse = await apiRequest('GET', `/run/${runId}`);
+            if (statusResponse.status === 200) {
+              const { status, progress } = statusResponse.body;
+              addOutput(elementId, `Progress: ${status} - ${progress}%`);
+
+              if (status === 'completed') {
+                addOutput(elementId, 'Run completed!', 'success');
+                break;
+              }
+            }
+            await new Promise((resolve) => setTimeout(resolve, 200));
+          }
+        }
+
+        // Step 5: Final status
+        addOutput(elementId, 'Step 5: Final server status...');
+        response = await apiRequest('GET', '/status');
+        if (response.status === 200) {
+          addOutput(elementId, `Completed: ${response.body.completed}`, 'success');
+        }
+
+        addOutput(elementId, 'Workflow complete!', 'success');
+      } catch (err) {
+        addOutput(elementId, `Error: ${err.message}`, 'error');
+      }
+    }
+
+    /**
+     * Example 9: Error Handling
+     */
+    async function example9_errorHandling() {
+      const elementId = 'output-errors';
+      clearOutput(elementId);
+
+      try {
+        // Error 1: Missing config
+        addOutput(elementId, 'Error 1: Missing config parameter');
+        let response = await apiRequest('POST', '/run', {});
+        addOutput(elementId, `Status: ${response.status}, Code: ${response.body.code}`, response.status === 400 ? 'success' : 'error');
+
+        // Error 2: Non-existent run
+        addOutput(elementId, 'Error 2: Non-existent run ID');
+        response = await apiRequest('GET', '/run/run_invalid');
+        addOutput(elementId, `Status: ${response.status}, Code: ${response.body.code}`, response.status === 404 ? 'success' : 'error');
+
+        // Error 3: Non-existent endpoint
+        addOutput(elementId, 'Error 3: Non-existent endpoint');
+        response = await apiRequest('GET', '/nonexistent');
+        addOutput(elementId, `Status: ${response.status}, Code: ${response.body.code}`, response.status === 404 ? 'success' : 'error');
+
+        addOutput(elementId, 'Error handling tests complete', 'success');
+      } catch (err) {
+        addOutput(elementId, `Error: ${err.message}`, 'error');
+      }
+    }
+
+    /**
+     * Example 10: Batch Operations
+     */
+    async function example10_batchOperations() {
+      const elementId = 'output-batch';
+      clearOutput(elementId);
+
+      try {
+        const count = parseInt(document.getElementById('batchCount').value);
+        addOutput(elementId, `Submitting ${count} runs in batch...`);
+
+        const runIds = [];
+        for (let i = 0; i < count; i++) {
+          const response = await apiRequest('POST', '/run', {
+            config: `[test${i}]\nkey = "value"`,
+          });
+
+          if (response.status === 202) {
+            runIds.push(response.body.run_id);
+            addOutput(elementId, `Run ${i + 1}: ${response.body.run_id}`, 'success');
+          } else {
+            addOutput(elementId, `Run ${i + 1}: Failed (${response.status})`, 'error');
+          }
+        }
+
+        // Check server status
+        addOutput(elementId, 'Checking server status...');
+        const statusResponse = await apiRequest('GET', '/status');
+        if (statusResponse.status === 200) {
+          addOutput(elementId, `Queue depth: ${statusResponse.body.queued}`);
+        }
+
+        // Check individual statuses
+        addOutput(elementId, 'Individual run statuses:');
+        for (const runId of runIds) {
+          const response = await apiRequest('GET', `/run/${runId}`);
+          if (response.status === 200) {
+            addOutput(elementId, `${runId.substring(0, 20)}...: ${response.body.status}`);
+          }
+        }
+
+        addOutput(elementId, 'Batch operations complete', 'success');
+      } catch (err) {
+        addOutput(elementId, `Error: ${err.message}`, 'error');
+      }
+    }
+  </script>
+</body>
+</html>

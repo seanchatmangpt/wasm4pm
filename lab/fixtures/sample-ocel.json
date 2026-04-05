@@ -1,0 +1,106 @@
+{
+  "ocel:version": "2.0",
+  "ocel:name": "Sample OCEL Log",
+  "ocel:time:timestamp": "2026-01-01T10:00:00Z",
+  "ocel:objects": [
+    {
+      "ocel:oid": "order_1",
+      "ocel:type": "order",
+      "ocel:ovmap": {
+        "amount": "1000.00",
+        "customer": "Alice",
+        "status": "completed"
+      }
+    },
+    {
+      "ocel:oid": "order_2",
+      "ocel:type": "order",
+      "ocel:ovmap": {
+        "amount": "500.00",
+        "customer": "Bob",
+        "status": "rejected"
+      }
+    },
+    {
+      "ocel:oid": "invoice_1",
+      "ocel:type": "invoice",
+      "ocel:ovmap": {
+        "amount": "1000.00",
+        "date": "2026-01-01",
+        "status": "paid"
+      }
+    }
+  ],
+  "ocel:events": [
+    {
+      "ocel:eid": "event_1",
+      "ocel:activity": "Create Order",
+      "ocel:timestamp": "2026-01-01T10:00:00Z",
+      "ocel:omap": ["order_1"],
+      "ocel:vmap": {
+        "resource": "system",
+        "cost": "10.00"
+      }
+    },
+    {
+      "ocel:eid": "event_2",
+      "ocel:activity": "Check Payment",
+      "ocel:timestamp": "2026-01-01T10:01:00Z",
+      "ocel:omap": ["order_1"],
+      "ocel:vmap": {
+        "resource": "payment_system",
+        "duration": "60"
+      }
+    },
+    {
+      "ocel:eid": "event_3",
+      "ocel:activity": "Approve Order",
+      "ocel:timestamp": "2026-01-01T10:02:00Z",
+      "ocel:omap": ["order_1"],
+      "ocel:vmap": {
+        "resource": "manager_1",
+        "notes": "Approved"
+      }
+    },
+    {
+      "ocel:eid": "event_4",
+      "ocel:activity": "Create Invoice",
+      "ocel:timestamp": "2026-01-01T10:03:00Z",
+      "ocel:omap": ["order_1", "invoice_1"],
+      "ocel:vmap": {
+        "resource": "system",
+        "cost": "5.00"
+      }
+    },
+    {
+      "ocel:eid": "event_5",
+      "ocel:activity": "Create Order",
+      "ocel:timestamp": "2026-01-01T10:05:00Z",
+      "ocel:omap": ["order_2"],
+      "ocel:vmap": {
+        "resource": "system",
+        "cost": "10.00"
+      }
+    },
+    {
+      "ocel:eid": "event_6",
+      "ocel:activity": "Check Payment",
+      "ocel:timestamp": "2026-01-01T10:06:00Z",
+      "ocel:omap": ["order_2"],
+      "ocel:vmap": {
+        "resource": "payment_system",
+        "duration": "45"
+      }
+    },
+    {
+      "ocel:eid": "event_7",
+      "ocel:activity": "Reject Order",
+      "ocel:timestamp": "2026-01-01T10:07:00Z",
+      "ocel:omap": ["order_2"],
+      "ocel:vmap": {
+        "resource": "manager_2",
+        "notes": "Insufficient funds"
+      }
+    }
+  ]
+}
