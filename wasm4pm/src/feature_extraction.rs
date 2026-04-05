@@ -55,6 +55,13 @@ pub fn extract_case_features(
 
                 let mut feature_vec = Map::new();
 
+                // Add case ID if available
+                if let Some(case_id) = trace.attributes.get("concept:name")
+                    .and_then(|v| v.as_string())
+                {
+                    feature_vec.insert("case_id".to_string(), Value::String(case_id.to_string()));
+                }
+
                 // Extract requested features
                 for feature in &features_list {
                     match feature.as_str() {
@@ -117,16 +124,10 @@ pub fn extract_case_features(
                 // Add target variable
                 match target.as_str() {
                     "remaining_time" => {
-                        // Estimate as some fraction of elapsed time (simplified)
-                        if let Some(elapsed) =
-                            compute_elapsed_time(&trace, timestamp_key)
-                        {
-                            // Naive heuristic: remaining ~50% of elapsed
-                            let remaining = elapsed / 2;
-                            feature_vec.insert("remaining_time".to_string(), Value::Number(
-                                remaining.into(),
-                            ));
-                        }
+                        // For complete traces, remaining time is 0 (case is finished)
+                        feature_vec.insert("remaining_time".to_string(), Value::Number(
+                            0.into(),
+                        ));
                     }
                     "outcome" => {
                         // Get last activity as outcome
@@ -229,6 +230,24 @@ pub fn extract_prefix_features(
                         ));
                     }
 
+                    // Remaining time: total duration - elapsed in prefix
+                    if let (Some(total_duration), Some(prefix_elapsed)) = (
+                        compute_elapsed_time(&trace, timestamp_key),
+                        compute_elapsed_time_in_events(prefix_events, timestamp_key),
+                    ) {
+                        let remaining = (total_duration - prefix_elapsed).max(0);
+                        feature_vec.insert("remaining_time".to_string(), Value::Number(
+                            remaining.into(),
+                        ));
+                    }
+
+                    // Add case ID if available
+                    if let Some(case_id) = trace.attributes.get("concept:name")
+                        .and_then(|v| v.as_string())
+                    {
+                        feature_vec.insert("case_id".to_string(), Value::String(case_id.to_string()));
+                    }
+
                     // Target: next activity (what comes after the prefix)
                     if prefix_idx < trace.events.len() {
                         if let Some(next_activity) = trace.events[prefix_idx]
@@ -252,6 +271,11 @@ pub fn extract_prefix_features(
         Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
         None => Err(JsValue::from_str("EventLog not found")),
     })
+}
+
+/// CSV escape helper: wraps values in quotes and escapes internal quotes.
+fn csv_escape(s: &str) -> String {
+    format!("\"{}\"", s.replace('"', "\"\""))
 }
 
 /// Export features as CSV string.
@@ -280,16 +304,17 @@ pub fn export_features_csv(features_json: &str) -> Result<String, JsValue> {
     // Build CSV
     let mut csv = String::new();
 
-    // Header row
-    csv.push_str(&keys.join(","));
+    // Header row (with escaping)
+    let header_row: Vec<String> = keys.iter().map(|k| csv_escape(k)).collect();
+    csv.push_str(&header_row.join(","));
     csv.push('\n');
 
-    // Data rows
+    // Data rows (with escaping)
     for feature in features {
         let row: Vec<String> = keys
             .iter()
             .map(|k| {
-                feature
+                let value_str = feature
                     .get(k)
                     .map(|v| match v {
                         Value::String(s) => s.clone(),
@@ -297,7 +322,8 @@ pub fn export_features_csv(features_json: &str) -> Result<String, JsValue> {
                         Value::Bool(b) => b.to_string(),
                         _ => String::new(),
                     })
-                    .unwrap_or_else(|| String::new())
+                    .unwrap_or_else(|| String::new());
+                csv_escape(&value_str)
             })
             .collect();
         csv.push_str(&row.join(","));
@@ -500,16 +526,23 @@ fn count_activities_in_events(
     counts
 }
 
-/// Count activities that appear more than once in a trace (rework)
+/// Count total rework (extra executions of activities that appear more than once)
+/// E.g., if A appears 3 times: (3-1) = 2 extra executions
 fn count_rework(trace: &Trace, activity_key: &str) -> usize {
     let counts = count_activities(trace, activity_key);
-    counts.values().filter(|&&count| count > 1).count()
+    counts.values()
+        .filter(|&&c| c > 1)
+        .map(|&c| c - 1)
+        .sum()
 }
 
-/// Count activities that appear more than once in events
+/// Count total rework in a slice of events
 fn count_rework_in_events(events: &[Event], activity_key: &str) -> usize {
     let counts = count_activities_in_events(events, activity_key);
-    counts.values().filter(|&&count| count > 1).count()
+    counts.values()
+        .filter(|&&c| c > 1)
+        .map(|&c| c - 1)
+        .sum()
 }
 
 /// Count unique activities in a trace
@@ -594,26 +627,4 @@ fn compute_avg_inter_event_time(trace: &Trace, timestamp_key: &str) -> Option<f6
     } else {
         Some(0.0)
     }
-}
-
-/// Parse timestamp string to milliseconds (using models.rs function)
-fn parse_timestamp_ms(s: &str) -> Option<i64> {
-    use chrono::{DateTime, NaiveDateTime, TimeZone, Utc};
-    if let Ok(dt) = DateTime::parse_from_rfc3339(s) {
-        return Some(dt.timestamp_millis());
-    }
-    if let Ok(dt) = DateTime::parse_from_rfc3339(&s.replacen(' ', "T", 1)) {
-        return Some(dt.timestamp_millis());
-    }
-    for fmt in &[
-        "%Y-%m-%dT%H:%M:%S%.f",
-        "%Y-%m-%dT%H:%M:%S",
-        "%Y-%m-%d %H:%M:%S%.f",
-        "%Y-%m-%d %H:%M:%S",
-    ] {
-        if let Ok(ndt) = NaiveDateTime::parse_from_str(s, fmt) {
-            return Some(Utc.from_utc_datetime(&ndt).timestamp_millis());
-        }
-    }
-    None
 }

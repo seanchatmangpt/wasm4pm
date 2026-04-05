@@ -62,7 +62,7 @@ pub fn get_ocel_type_statistics(ocel_handle: &str) -> Result<JsValue, JsValue> {
                     let event_count = ocel
                         .events
                         .iter()
-                        .filter(|e| e.object_ids.contains(&obj.id))
+                        .filter(|e| e.all_object_ids().any(|oid| oid == obj.id))
                         .count();
                     total_events += event_count;
                 }
@@ -105,88 +105,92 @@ pub fn get_ocel_type_statistics(ocel_handle: &str) -> Result<JsValue, JsValue> {
 /// - Stores the flattened EventLog in state and returns its handle
 #[wasm_bindgen]
 pub fn flatten_ocel_to_eventlog(ocel_handle: &str, object_type: &str) -> Result<String, JsValue> {
-    get_or_init_state().with_object(ocel_handle, |obj| match obj {
-        Some(StoredObject::OCEL(ocel)) => {
-            // Get all objects of the target type
-            let target_objects: Vec<&OCELObject> = ocel
-                .objects
-                .iter()
-                .filter(|o| o.object_type == object_type)
-                .collect();
-
-            if target_objects.is_empty() {
-                return Err(wasm_err(
-                    codes::INVALID_INPUT,
-                    format!("No objects found of type '{}'", object_type),
-                ));
-            }
-
-            // Create the flattened EventLog
-            let mut event_log = EventLog::new();
-
-            // For each object of the target type, create a trace
-            for obj in target_objects {
-                // Collect all events that reference this object
-                let mut events_for_obj: Vec<&OCELEvent> = ocel
-                    .events
-                    .iter()
-                    .filter(|e| e.object_ids.contains(&obj.id))
-                    .collect();
-
-                // Sort events by timestamp (ascending)
-                events_for_obj.sort_by(|a, b| a.timestamp.cmp(&b.timestamp));
-
-                // Create a trace with ID = object ID
-                let mut trace = Trace {
-                    attributes: {
-                        let mut attrs = HashMap::new();
-                        // Add object ID and type as trace attributes
-                        attrs.insert(
-                            "object_id".to_string(),
-                            AttributeValue::String(obj.id.clone()),
-                        );
-                        attrs.insert(
-                            "object_type".to_string(),
-                            AttributeValue::String(obj.object_type.clone()),
-                        );
-                        // Also copy object attributes
-                        attrs.extend(obj.attributes.clone());
-                        attrs
-                    },
-                    events: Vec::new(),
-                };
-
-                // Add events to the trace
-                for ocel_event in events_for_obj {
-                    let mut event_attrs = HashMap::new();
-
-                    // Add event type as activity
-                    event_attrs.insert(
-                        "concept:name".to_string(),
-                        AttributeValue::String(ocel_event.event_type.clone()),
-                    );
-
-                    // Add timestamp
-                    event_attrs.insert(
-                        "time:timestamp".to_string(),
-                        AttributeValue::String(ocel_event.timestamp.clone()),
-                    );
-
-                    // Copy event attributes
-                    event_attrs.extend(ocel_event.attributes.clone());
-
-                    trace.events.push(Event {
-                        attributes: event_attrs,
-                    });
-                }
-
-                event_log.traces.push(trace);
-            }
-
-            // Store the flattened EventLog and return its handle
-            get_or_init_state().store_object(StoredObject::EventLog(event_log))
-        }
+    // First, extract and clone the OCEL data out of the lock
+    let ocel_clone = get_or_init_state().with_object(ocel_handle, |obj| match obj {
+        Some(StoredObject::OCEL(ocel)) => Ok(ocel.clone()),
         Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an OCEL")),
         None => Err(wasm_err(codes::INVALID_HANDLE, format!("OCEL '{}' not found", ocel_handle))),
-    })
+    })?;
+
+    // Now process outside the lock to avoid deadlock
+    let ocel = &ocel_clone;
+
+    // Get all objects of the target type
+    let target_objects: Vec<&OCELObject> = ocel
+        .objects
+        .iter()
+        .filter(|o| o.object_type == object_type)
+        .collect();
+
+    if target_objects.is_empty() {
+        return Err(wasm_err(
+            codes::INVALID_INPUT,
+            format!("No objects found of type '{}'", object_type),
+        ));
+    }
+
+    // Create the flattened EventLog
+    let mut event_log = EventLog::new();
+
+    // For each object of the target type, create a trace
+    for obj in target_objects {
+        // Collect all events that reference this object
+        let mut events_for_obj: Vec<&OCELEvent> = ocel
+            .events
+            .iter()
+            .filter(|e| e.all_object_ids().any(|oid| oid == obj.id))
+            .collect();
+
+        // Sort events by timestamp (ascending)
+        events_for_obj.sort_by(|a, b| a.timestamp.cmp(&b.timestamp));
+
+        // Create a trace with ID = object ID
+        let mut trace = Trace {
+            attributes: {
+                let mut attrs = HashMap::new();
+                // Add object ID and type as trace attributes
+                attrs.insert(
+                    "object_id".to_string(),
+                    AttributeValue::String(obj.id.clone()),
+                );
+                attrs.insert(
+                    "object_type".to_string(),
+                    AttributeValue::String(obj.object_type.clone()),
+                );
+                // Also copy object attributes
+                attrs.extend(obj.attributes.clone());
+                attrs
+            },
+            events: Vec::new(),
+        };
+
+        // Add events to the trace
+        for ocel_event in events_for_obj {
+            let mut event_attrs = HashMap::new();
+
+            // Add event type as activity
+            event_attrs.insert(
+                "concept:name".to_string(),
+                AttributeValue::String(ocel_event.event_type.clone()),
+            );
+
+            // Add timestamp
+            event_attrs.insert(
+                "time:timestamp".to_string(),
+                AttributeValue::String(ocel_event.timestamp.clone()),
+            );
+
+            // Copy event attributes
+            event_attrs.extend(ocel_event.attributes.clone());
+
+            trace.events.push(Event {
+                attributes: event_attrs,
+            });
+        }
+
+        event_log.traces.push(trace);
+    }
+
+    // Store the flattened EventLog and return its handle (now outside the original lock)
+    get_or_init_state().store_object(StoredObject::EventLog(event_log))
 }

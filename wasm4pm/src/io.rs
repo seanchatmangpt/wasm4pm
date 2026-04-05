@@ -20,8 +20,11 @@ pub fn load_eventlog_from_json(content: &str) -> Result<String, JsValue> {
 /// Load an OCEL from JSON string
 #[wasm_bindgen]
 pub fn load_ocel_from_json(content: &str) -> Result<String, JsValue> {
-    let ocel: OCEL = serde_json::from_str(content)
+    let mut ocel: OCEL = serde_json::from_str(content)
         .map_err(|e| JsValue::from_str(&format!("Failed to parse OCEL JSON: {}", e)))?;
+
+    // Normalize relations: merge embedded relations from objects into global object_relations
+    ocel.normalize_relations();
 
     let handle = get_or_init_state()
         .store_object(StoredObject::OCEL(ocel))
@@ -194,6 +197,7 @@ pub fn load_ocel_from_xml(content: &str) -> Result<String, JsValue> {
                     object_type,
                     attributes,
                     changes: Vec::new(),
+                    embedded_relations: Vec::new(),
                 });
             }
             _ => {}

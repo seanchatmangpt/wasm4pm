@@ -100,12 +100,17 @@ pub fn discover_ocel_dfg(ocel_handle: &str) -> Result<JsValue, JsValue> {
             // Get directly-follows relations within same objects
             let mut events_by_object: FxHashMap<String, Vec<(usize, &str)>> = FxHashMap::default();
             for (idx, event) in ocel.events.iter().enumerate() {
-                for obj_id in &event.object_ids {
+                for obj_id in event.all_object_ids() {
                     events_by_object
-                        .entry(obj_id.clone())
+                        .entry(obj_id.to_string())
                         .or_insert_with(Vec::new)
                         .push((idx, event.event_type.as_str()));
                 }
+            }
+
+            // Sort events by timestamp (ISO 8601 sort works lexicographically for ISO format)
+            for events in events_by_object.values_mut() {
+                events.sort_by_key(|(idx, _)| ocel.events[*idx].timestamp.clone());
             }
 
             // Build an edge map for O(1) frequency updates instead of O(n)
@@ -178,17 +183,28 @@ pub fn discover_ocel_dfg_per_type(ocel_handle: &str) -> Result<JsValue, JsValue>
 
                 // Collect events for each object of this type
                 for (idx, event) in ocel.events.iter().enumerate() {
-                    for obj_id in &event.object_ids {
+                    for obj_id in event.all_object_ids() {
                         if let Some(events) = events_by_object.get_mut(obj_id) {
                             events.push((idx, event.event_type.as_str()));
                         }
                     }
                 }
 
-                // Count activity frequencies and build edges (same logic as discover_ocel_dfg)
-                for event in &ocel.events {
-                    if let Some(node) = dfg.nodes.iter_mut().find(|n| &n.id == &event.event_type) {
-                        node.frequency += 1;
+                // Sort events by timestamp (ISO 8601 sort works lexicographically for ISO format)
+                for events in events_by_object.values_mut() {
+                    events.sort_by_key(|(idx, _)| ocel.events[*idx].timestamp.clone());
+                }
+
+                // Count activity frequencies only for relevant events of this object type
+                let mut activity_counts: FxHashMap<String, usize> = FxHashMap::default();
+                for events in events_by_object.values() {
+                    for (_, event_type) in events {
+                        *activity_counts.entry(event_type.to_string()).or_insert(0) += 1;
+                    }
+                }
+                for node in &mut dfg.nodes {
+                    if let Some(count) = activity_counts.get(&node.id) {
+                        node.frequency = *count;
                     }
                 }
 

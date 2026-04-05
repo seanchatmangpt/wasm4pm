@@ -82,15 +82,11 @@ pub fn analyze_resource_utilization(
                                     .get("concept:name")
                                     .and_then(|v| v.as_string())
                                 {
-                                    resource_activities
+                                    *resource_activities
                                         .entry(resource.to_string())
                                         .or_insert_with(HashMap::new)
-                                        .insert(activity.to_string(), 0);
-                                    *resource_activities
-                                        .get_mut(&resource.to_string())
-                                        .unwrap()
-                                        .get_mut(activity)
-                                        .unwrap() += 1;
+                                        .entry(activity.to_string())
+                                        .or_insert(0) += 1;
                                 }
                             }
                         }
