@@ -56,145 +56,145 @@ pub fn export_ocel_to_json(handle: &str) -> Result<String, JsValue> {
     })
 }
 
-/// Load an OCEL from XML string
-/// Simple XML parser supporting basic OCEL-XML structure with events and objects
+/// Load an OCEL from XML string using roxmltree parser
+/// Supports OCEL-XML structure with events, objects, and typed attributes
 #[wasm_bindgen]
 pub fn load_ocel_from_xml(content: &str) -> Result<String, JsValue> {
+    let doc = roxmltree::Document::parse(content)
+        .map_err(|e| JsValue::from_str(&format!("Failed to parse XML: {}", e)))?;
+
     let mut ocel = OCEL::new();
-    let mut current_event: Option<OCELEvent> = None;
-    let mut current_object: Option<OCELObject> = None;
 
-    for line in content.lines() {
-        let trimmed = line.trim();
-
-        // Skip empty lines and XML prologue
-        if trimmed.is_empty() || trimmed.starts_with("<?") {
-            continue;
-        }
-
-        // Parse event type declarations
-        if trimmed.contains("<eventType") || trimmed.contains("<event-type") {
-            if let Some(type_name) = extract_xml_attr(trimmed, "name") {
-                if !ocel.event_types.contains(&type_name.to_string()) {
-                    ocel.event_types.push(type_name.to_string());
-                }
-            }
-            continue;
-        }
-
-        // Parse object type declarations
-        if trimmed.contains("<objectType") || trimmed.contains("<object-type") {
-            if let Some(type_name) = extract_xml_attr(trimmed, "name") {
-                if !ocel.object_types.contains(&type_name.to_string()) {
-                    ocel.object_types.push(type_name.to_string());
-                }
-            }
-            continue;
-        }
-
-        // Parse event opening tags
-        if trimmed.starts_with("<event") && !trimmed.starts_with("</event") {
-            let event_id = extract_xml_attr(trimmed, "id")
-                .map(|s| s.to_string())
-                .unwrap_or_else(|| format!("event_{}", ocel.events.len()));
-            let event_type = extract_xml_attr(trimmed, "type")
-                .map(|s| s.to_string())
-                .unwrap_or_else(|| "Activity".to_string());
-            let timestamp = extract_xml_attr(trimmed, "timestamp")
-                .map(|s| s.to_string())
-                .unwrap_or_else(|| "1970-01-01T00:00:00Z".to_string());
-
-            current_event = Some(OCELEvent {
-                id: event_id,
-                event_type,
-                timestamp,
-                attributes: HashMap::new(),
-                object_ids: Vec::new(),
-            });
-            continue;
-        }
-
-        // Parse object opening tags
-        if trimmed.starts_with("<object") && !trimmed.starts_with("</object") {
-            let object_id = extract_xml_attr(trimmed, "id")
-                .map(|s| s.to_string())
-                .unwrap_or_else(|| format!("obj_{}", ocel.objects.len()));
-            let object_type = extract_xml_attr(trimmed, "type")
-                .map(|s| s.to_string())
-                .unwrap_or_else(|| "Object".to_string());
-
-            current_object = Some(OCELObject {
-                id: object_id,
-                object_type,
-                attributes: HashMap::new(),
-            });
-            continue;
-        }
-
-        // Parse object references in events
-        if (trimmed.starts_with("<omap") || trimmed.starts_with("<object-ref")) && !trimmed.ends_with("/>") {
-            if let Some(ref mut event) = current_event {
-                if let Some(object_id) = extract_xml_attr(trimmed, "id") {
-                    event.object_ids.push(object_id.to_string());
-                }
-            }
-            continue;
-        }
-
-        // Parse string attributes
-        if trimmed.starts_with("<string") {
-            if let (Some(key), Some(value)) = (extract_xml_attr(trimmed, "key"), extract_xml_attr(trimmed, "value")) {
-                if let Some(ref mut event) = current_event {
-                    event.attributes.insert(key.to_string(), AttributeValue::String(value.to_string()));
-                } else if let Some(ref mut object) = current_object {
-                    object.attributes.insert(key.to_string(), AttributeValue::String(value.to_string()));
-                }
-            }
-            continue;
-        }
-
-        // Parse int attributes
-        if trimmed.starts_with("<int") {
-            if let (Some(key), Some(value_str)) = (extract_xml_attr(trimmed, "key"), extract_xml_attr(trimmed, "value")) {
-                if let Ok(value) = value_str.parse::<i64>() {
-                    if let Some(ref mut event) = current_event {
-                        event.attributes.insert(key.to_string(), AttributeValue::Int(value));
-                    } else if let Some(ref mut object) = current_object {
-                        object.attributes.insert(key.to_string(), AttributeValue::Int(value));
+    // Extract event and object type declarations
+    for node in doc.root().children() {
+        match node.tag_name().name() {
+            "eventType" | "event-type" => {
+                if let Some(type_name) = node.attribute("name") {
+                    if !ocel.event_types.contains(&type_name.to_string()) {
+                        ocel.event_types.push(type_name.to_string());
                     }
                 }
             }
-            continue;
-        }
-
-        // Parse float attributes
-        if trimmed.starts_with("<float") {
-            if let (Some(key), Some(value_str)) = (extract_xml_attr(trimmed, "key"), extract_xml_attr(trimmed, "value")) {
-                if let Ok(value) = value_str.parse::<f64>() {
-                    if let Some(ref mut event) = current_event {
-                        event.attributes.insert(key.to_string(), AttributeValue::Float(value));
-                    } else if let Some(ref mut object) = current_object {
-                        object.attributes.insert(key.to_string(), AttributeValue::Float(value));
+            "objectType" | "object-type" => {
+                if let Some(type_name) = node.attribute("name") {
+                    if !ocel.object_types.contains(&type_name.to_string()) {
+                        ocel.object_types.push(type_name.to_string());
                     }
                 }
             }
-            continue;
-        }
+            "event" => {
+                let event_id = node
+                    .attribute("id")
+                    .map(|s| s.to_string())
+                    .unwrap_or_else(|| format!("event_{}", ocel.events.len()));
+                let event_type = node
+                    .attribute("type")
+                    .map(|s| s.to_string())
+                    .unwrap_or_else(|| "Activity".to_string());
+                let timestamp = node
+                    .attribute("timestamp")
+                    .map(|s| s.to_string())
+                    .unwrap_or_else(|| "1970-01-01T00:00:00Z".to_string());
 
-        // Close event
-        if trimmed == "</event>" {
-            if let Some(event) = current_event.take() {
-                ocel.events.push(event);
-            }
-            continue;
-        }
+                let mut attributes = HashMap::new();
+                let mut object_ids = Vec::new();
 
-        // Close object
-        if trimmed == "</object>" {
-            if let Some(object) = current_object.take() {
-                ocel.objects.push(object);
+                // Parse child elements (attributes and object references)
+                for child in node.children() {
+                    match child.tag_name().name() {
+                        "string" => {
+                            if let (Some(key), Some(value)) = (child.attribute("key"), child.attribute("value")) {
+                                attributes.insert(key.to_string(), AttributeValue::String(value.to_string()));
+                            }
+                        }
+                        "int" => {
+                            if let (Some(key), Some(value_str)) = (child.attribute("key"), child.attribute("value")) {
+                                if let Ok(value) = value_str.parse::<i64>() {
+                                    attributes.insert(key.to_string(), AttributeValue::Int(value));
+                                }
+                            }
+                        }
+                        "float" => {
+                            if let (Some(key), Some(value_str)) = (child.attribute("key"), child.attribute("value")) {
+                                if let Ok(value) = value_str.parse::<f64>() {
+                                    attributes.insert(key.to_string(), AttributeValue::Float(value));
+                                }
+                            }
+                        }
+                        "boolean" => {
+                            if let (Some(key), Some(value_str)) = (child.attribute("key"), child.attribute("value")) {
+                                let value = value_str == "true" || value_str == "1";
+                                attributes.insert(key.to_string(), AttributeValue::Boolean(value));
+                            }
+                        }
+                        "omap" | "object-ref" => {
+                            if let Some(object_id) = child.attribute("id") {
+                                object_ids.push(object_id.to_string());
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+
+                ocel.events.push(OCELEvent {
+                    id: event_id,
+                    event_type,
+                    timestamp,
+                    attributes,
+                    object_ids,
+                });
             }
-            continue;
+            "object" => {
+                let object_id = node
+                    .attribute("id")
+                    .map(|s| s.to_string())
+                    .unwrap_or_else(|| format!("obj_{}", ocel.objects.len()));
+                let object_type = node
+                    .attribute("type")
+                    .map(|s| s.to_string())
+                    .unwrap_or_else(|| "Object".to_string());
+
+                let mut attributes = HashMap::new();
+
+                // Parse child elements (attributes)
+                for child in node.children() {
+                    match child.tag_name().name() {
+                        "string" => {
+                            if let (Some(key), Some(value)) = (child.attribute("key"), child.attribute("value")) {
+                                attributes.insert(key.to_string(), AttributeValue::String(value.to_string()));
+                            }
+                        }
+                        "int" => {
+                            if let (Some(key), Some(value_str)) = (child.attribute("key"), child.attribute("value")) {
+                                if let Ok(value) = value_str.parse::<i64>() {
+                                    attributes.insert(key.to_string(), AttributeValue::Int(value));
+                                }
+                            }
+                        }
+                        "float" => {
+                            if let (Some(key), Some(value_str)) = (child.attribute("key"), child.attribute("value")) {
+                                if let Ok(value) = value_str.parse::<f64>() {
+                                    attributes.insert(key.to_string(), AttributeValue::Float(value));
+                                }
+                            }
+                        }
+                        "boolean" => {
+                            if let (Some(key), Some(value_str)) = (child.attribute("key"), child.attribute("value")) {
+                                let value = value_str == "true" || value_str == "1";
+                                attributes.insert(key.to_string(), AttributeValue::Boolean(value));
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+
+                ocel.objects.push(OCELObject {
+                    id: object_id,
+                    object_type,
+                    attributes,
+                });
+            }
+            _ => {}
         }
     }
 
@@ -223,18 +223,6 @@ pub fn get_ocel_object_count(ocel_handle: &str) -> Result<usize, JsValue> {
         Some(_) => Err(JsValue::from_str("Object is not an OCEL")),
         None => Err(JsValue::from_str("OCEL not found")),
     })
-}
-
-/// Helper function to extract XML attribute values
-fn extract_xml_attr(line: &str, attr_name: &str) -> Option<String> {
-    let pattern = format!("{}=\"", attr_name);
-    if let Some(start) = line.find(&pattern) {
-        let value_start = start + pattern.len();
-        if let Some(end) = line[value_start..].find('"') {
-            return Some(line[value_start..value_start + end].to_string());
-        }
-    }
-    None
 }
 
 /// Get information about supported formats
