@@ -1,0 +1,43 @@
+{
+  "name": "@wasm4pm/validators",
+  "version": "26.4.5",
+  "description": "Validators for @wasm4pm/wasm4pm - CLI, HTTP, WebSocket, Observability, I/O, Performance",
+  "type": "module",
+  "exports": {
+    ".": "./index.mjs",
+    "./cli": "./cli.mjs",
+    "./http": "./http.mjs",
+    "./websocket": "./websocket.mjs",
+    "./observability": "./observability.mjs",
+    "./io": "./io.mjs",
+    "./performance": "./performance.mjs"
+  },
+  "bin": {
+    "wasm4pm-validate": "./index.mjs",
+    "wasm4pm-validate-cli": "./cli.mjs",
+    "wasm4pm-validate-http": "./http.mjs",
+    "wasm4pm-validate-ws": "./websocket.mjs",
+    "wasm4pm-validate-observability": "./observability.mjs",
+    "wasm4pm-validate-io": "./io.mjs",
+    "wasm4pm-validate-performance": "./performance.mjs"
+  },
+  "scripts": {
+    "validate": "node index.mjs",
+    "validate:cli": "node cli.mjs",
+    "validate:http": "node http.mjs",
+    "validate:ws": "node websocket.mjs",
+    "validate:observability": "node observability.mjs",
+    "validate:io": "node io.mjs",
+    "validate:performance": "node performance.mjs",
+    "validate:all": "node index.mjs --output validation-report.json"
+  },
+  "keywords": [
+    "process-mining",
+    "wasm",
+    "validation",
+    "testing",
+    "conformance"
+  ],
+  "author": "Sean Chatman",
+  "license": "MIT"
+}
