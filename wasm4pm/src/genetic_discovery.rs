@@ -60,7 +60,7 @@ pub fn discover_genetic_algorithm(
                 // Evolution loop
                 for _generation in 0..generations {
                     // Sort by fitness (descending)
-                    population.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+                    population.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
 
                     // Keep top performers (elitism)
                     let elite_size = (population_size / 4).max(1);
@@ -84,7 +84,7 @@ pub fn discover_genetic_algorithm(
                 }
 
                 // Get best solution
-                population.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+                population.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
                 let best_fitness = population[0].1;
                 let best_edges = population.remove(0).0;
                 Ok((best_edges, best_fitness, vocab))

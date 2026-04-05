@@ -34,7 +34,7 @@ pub fn discover_astar(
             let mut iterations = 0;
 
             while !open_set.is_empty() && iterations < max_iterations {
-                open_set.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+                open_set.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
                 let (current_dfg, _score) = open_set.pop().unwrap();
 
                 // Build candidate DFGs via iterator chain; heuristic is inlined,
