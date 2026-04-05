@@ -1,0 +1,29 @@
+# wasm4pm Configuration
+# Place this at: ./wasm4pm.toml or ~/.wasm4pm/config.toml
+
+version = "26.4.5"
+
+[execution]
+profile = "balanced"  # Options: fast, balanced, quality, stream
+timeout = 300000      # milliseconds (5 minutes)
+max_memory = 1073741824  # bytes (1 GB)
+
+[observability]
+log_level = "info"    # Options: debug, info, warn, error
+metrics_enabled = false
+
+[watch]
+enabled = false
+interval = 1000       # milliseconds
+debounce = 300        # milliseconds
+
+[output]
+format = "human"      # Options: human, json
+destination = "stdout"  # stdout, stderr, or file path
+pretty = true
+colorize = true
+
+[observability.otel]
+enabled = false
+endpoint = "http://localhost:4318"
+# headers = { "Authorization" = "Bearer token" }
