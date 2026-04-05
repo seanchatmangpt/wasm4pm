@@ -7,6 +7,18 @@
 
 // Import types from the API definition
 import * as api from './api';
+import {
+  EventLogHandleId,
+  OCELHandleId,
+  DFGHandleId,
+  PetriNetHandleId,
+  DeclareHandleId,
+  asEventLogHandleId,
+  asOCELHandleId,
+  asDFGHandleId,
+  asPetriNetHandleId,
+  asDeclareHandleId,
+} from './types';
 
 /**
  * Main client for wasm4pm operations
@@ -44,7 +56,7 @@ export class ProcessMiningClient {
   loadEventLogFromJSON(jsonContent: string): EventLogHandle {
     if (!this.initialized) throw new Error('Client not initialized. Call init() first.');
 
-    const handle = this.wasmModule.load_eventlog_from_json(jsonContent);
+    const handle = asEventLogHandleId(this.wasmModule.load_eventlog_from_json(jsonContent));
     return new EventLogHandle(handle, this.wasmModule);
   }
 
@@ -54,7 +66,7 @@ export class ProcessMiningClient {
   loadEventLogFromXES(xesContent: string): EventLogHandle {
     if (!this.initialized) throw new Error('Client not initialized. Call init() first.');
 
-    const handle = this.wasmModule.load_eventlog_from_xes(xesContent);
+    const handle = asEventLogHandleId(this.wasmModule.load_eventlog_from_xes(xesContent));
     return new EventLogHandle(handle, this.wasmModule);
   }
 
@@ -64,19 +76,10 @@ export class ProcessMiningClient {
   loadOCELFromJSON(jsonContent: string): OCELHandle {
     if (!this.initialized) throw new Error('Client not initialized. Call init() first.');
 
-    const handle = this.wasmModule.load_ocel_from_json(jsonContent);
+    const handle = asOCELHandleId(this.wasmModule.load_ocel_from_json(jsonContent));
     return new OCELHandle(handle, this.wasmModule);
   }
 
-  /**
-   * Load an OCEL from XML string
-   */
-  loadOCELFromXML(xmlContent: string): OCELHandle {
-    if (!this.initialized) throw new Error('Client not initialized. Call init() first.');
-
-    const handle = this.wasmModule.load_ocel_from_xml(xmlContent);
-    return new OCELHandle(handle, this.wasmModule);
-  }
 
   /**
    * Get the version of wasm4pm
@@ -92,14 +95,14 @@ export class ProcessMiningClient {
  */
 export class EventLogHandle {
   constructor(
-    private handle: string,
+    private handle: EventLogHandleId,
     private wasmModule: any
   ) {}
 
   /**
    * Get the handle ID
    */
-  getId(): string {
+  getId(): EventLogHandleId {
     return this.handle;
   }
 
@@ -167,7 +170,7 @@ export class EventLogHandle {
    */
   filterByActivity(activity: string, activityKey: string = 'concept:name'): EventLogHandle {
     const result = this.wasmModule.filter_log_by_activity(this.handle, activityKey, activity);
-    return new EventLogHandle(result.handle, this.wasmModule);
+    return new EventLogHandle(asEventLogHandleId(result.handle), this.wasmModule);
   }
 
   /**
@@ -175,7 +178,7 @@ export class EventLogHandle {
    */
   filterByTraceLength(minLength: number, maxLength: number): EventLogHandle {
     const result = this.wasmModule.filter_log_by_trace_length(this.handle, minLength, maxLength);
-    return new EventLogHandle(result.handle, this.wasmModule);
+    return new EventLogHandle(asEventLogHandleId(result.handle), this.wasmModule);
   }
 
   /**
@@ -186,7 +189,7 @@ export class EventLogHandle {
     const minFrequency = options.minFrequency || 1;
 
     const result = this.wasmModule.discover_dfg_filtered(this.handle, activityKey, minFrequency);
-    return new DFGHandle(result.handle, this.wasmModule);
+    return new DFGHandle(asDFGHandleId(result.handle), this.wasmModule);
   }
 
   /**
@@ -194,7 +197,7 @@ export class EventLogHandle {
    */
   discoverDECLARE(activityKey: string = 'concept:name'): DeclareModelHandle {
     const result = this.wasmModule.discover_declare(this.handle, activityKey);
-    return new DeclareModelHandle(result.handle, this.wasmModule);
+    return new DeclareModelHandle(asDeclareHandleId(result.handle), this.wasmModule);
   }
 
   /**
@@ -207,7 +210,7 @@ export class EventLogHandle {
     const minSupport = options.minSupport || 0.1;
 
     const result = this.wasmModule.discover_alpha_plus_plus(this.handle, activityKey, minSupport);
-    return new PetriNetHandle(result.handle, this.wasmModule);
+    return new PetriNetHandle(asPetriNetHandleId(result.handle), this.wasmModule);
   }
 
   /**
@@ -215,7 +218,7 @@ export class EventLogHandle {
    */
   discoverILPPetriNet(activityKey: string = 'concept:name'): PetriNetHandle {
     const result = this.wasmModule.discover_ilp_petri_net(this.handle, activityKey);
-    return new PetriNetHandle(result.handle, this.wasmModule);
+    return new PetriNetHandle(asPetriNetHandleId(result.handle), this.wasmModule);
   }
 
   /**
@@ -238,7 +241,7 @@ export class EventLogHandle {
       fitnessWeight,
       simplicityWeight
     );
-    return new DFGHandle(result.handle, this.wasmModule);
+    return new DFGHandle(asDFGHandleId(result.handle), this.wasmModule);
   }
 
   /**
@@ -261,7 +264,7 @@ export class EventLogHandle {
       populationSize,
       generations
     );
-    return new DFGHandle(result.handle, this.wasmModule);
+    return new DFGHandle(asDFGHandleId(result.handle), this.wasmModule);
   }
 
   /**
@@ -284,7 +287,7 @@ export class EventLogHandle {
       swarmSize,
       iterations
     );
-    return new DFGHandle(result.handle, this.wasmModule);
+    return new DFGHandle(asDFGHandleId(result.handle), this.wasmModule);
   }
 
   /**
@@ -295,7 +298,7 @@ export class EventLogHandle {
     const maxIterations = options.maxIterations || 1000;
 
     const result = this.wasmModule.discover_astar(this.handle, activityKey, maxIterations);
-    return new DFGHandle(result.handle, this.wasmModule);
+    return new DFGHandle(asDFGHandleId(result.handle), this.wasmModule);
   }
 
   /**
@@ -303,7 +306,7 @@ export class EventLogHandle {
    */
   discoverHillClimbing(activityKey: string = 'concept:name'): DFGHandle {
     const result = this.wasmModule.discover_hill_climbing(this.handle, activityKey);
-    return new DFGHandle(result.handle, this.wasmModule);
+    return new DFGHandle(asDFGHandleId(result.handle), this.wasmModule);
   }
 
   /**
@@ -374,7 +377,7 @@ export class EventLogHandle {
    */
   discoverInductiveMiner(activityKey: string = 'concept:name'): DFGHandle {
     const result = this.wasmModule.discover_inductive_miner(this.handle, activityKey);
-    return new DFGHandle(result.handle, this.wasmModule);
+    return new DFGHandle(asDFGHandleId(result.handle), this.wasmModule);
   }
 
   /**
@@ -393,7 +396,7 @@ export class EventLogHandle {
       numAnts,
       iterations
     );
-    return new DFGHandle(result.handle, this.wasmModule);
+    return new DFGHandle(asDFGHandleId(result.handle), this.wasmModule);
   }
 
   /**
@@ -412,7 +415,7 @@ export class EventLogHandle {
       temperature,
       coolingRate
     );
-    return new DFGHandle(result.handle, this.wasmModule);
+    return new DFGHandle(asDFGHandleId(result.handle), this.wasmModule);
   }
 
   /**
@@ -423,7 +426,7 @@ export class EventLogHandle {
     const minFrequency = options.minFrequency || 2;
 
     const result = this.wasmModule.extract_process_skeleton(this.handle, activityKey, minFrequency);
-    return new DFGHandle(result.handle, this.wasmModule);
+    return new DFGHandle(asDFGHandleId(result.handle), this.wasmModule);
   }
 
   /**
@@ -543,14 +546,14 @@ export class EventLogHandle {
  */
 export class OCELHandle {
   constructor(
-    private handle: string,
+    private handle: OCELHandleId,
     private wasmModule: any
   ) {}
 
   /**
    * Get the handle ID
    */
-  getId(): string {
+  getId(): OCELHandleId {
     return this.handle;
   }
 
@@ -561,19 +564,6 @@ export class OCELHandle {
     return this.wasmModule.analyze_ocel_statistics(this.handle);
   }
 
-  /**
-   * Get number of events
-   */
-  getEventCount(): number {
-    return this.wasmModule.get_ocel_event_count(this.handle);
-  }
-
-  /**
-   * Get number of objects
-   */
-  getObjectCount(): number {
-    return this.wasmModule.get_ocel_object_count(this.handle);
-  }
 
   /**
    * Discover Object-Centric DFG
@@ -581,7 +571,7 @@ export class OCELHandle {
   discoverOCDFG(options: { minFrequency?: number } = {}): DFGHandle {
     const minFrequency = options.minFrequency || 1;
     const result = this.wasmModule.discover_ocel_dfg(this.handle);
-    return new DFGHandle(result.handle, this.wasmModule);
+    return new DFGHandle(asDFGHandleId(result.handle), this.wasmModule);
   }
 
   /**
@@ -604,14 +594,14 @@ export class OCELHandle {
  */
 export class DFGHandle {
   constructor(
-    private handle: string,
+    private handle: DFGHandleId,
     private wasmModule: any
   ) {}
 
   /**
    * Get the handle ID
    */
-  getId(): string {
+  getId(): DFGHandleId {
     return this.handle;
   }
 
@@ -636,14 +626,14 @@ export class DFGHandle {
  */
 export class PetriNetHandle {
   constructor(
-    private handle: string,
+    private handle: PetriNetHandleId,
     private wasmModule: any
   ) {}
 
   /**
    * Get the handle ID
    */
-  getId(): string {
+  getId(): PetriNetHandleId {
     return this.handle;
   }
 
@@ -675,14 +665,14 @@ export class PetriNetHandle {
  */
 export class DeclareModelHandle {
   constructor(
-    private handle: string,
+    private handle: DeclareHandleId,
     private wasmModule: any
   ) {}
 
   /**
    * Get the handle ID
    */
-  getId(): string {
+  getId(): DeclareHandleId {
     return this.handle;
   }
 

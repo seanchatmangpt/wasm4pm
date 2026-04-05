@@ -1,0 +1,18 @@
+{
+  "private": true,
+  "scripts": {
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "lint": "pnpm -r lint",
+    "build:wasm": "pnpm --filter wasm4pm build:all",
+    "dev": "pnpm --filter @wasm4pm/engine build && pnpm --filter @wasm4pm/cli build"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3",
+    "prettier": "^3.1.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "packageManager": "pnpm@9.15.0"
+}

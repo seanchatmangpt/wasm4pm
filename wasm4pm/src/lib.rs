@@ -37,7 +37,6 @@ use wasm_bindgen::prelude::*;
 #[wasm_bindgen(start)]
 pub fn init_wasm() {
     // Initialize panic hook for better error messages in console
-    #[cfg(feature = "console_error_panic_hook")]
     console_error_panic_hook::set_once();
 }
 
@@ -55,5 +54,5 @@ fn init_state() {
 
 #[wasm_bindgen]
 pub fn get_version() -> String {
-    "0.5.4".to_string()
+    env!("CARGO_PKG_VERSION").to_string()
 }
