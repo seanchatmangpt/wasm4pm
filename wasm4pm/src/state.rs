@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use wasm_bindgen::prelude::*;
 use crate::models::{EventLog, OCEL, PetriNet, DirectlyFollowsGraph, DeclareModel, StreamingDfgBuilder, StreamingConformanceChecker, TemporalProfile, NGramPredictor};
+use crate::error::{wasm_err, codes};
 
 /// A wrapper around different types of objects that can be stored in the WASM state
 pub enum StoredObject {
@@ -38,14 +39,14 @@ impl AppState {
         let mut counter = self
             .counter
             .lock()
-            .map_err(|e| JsValue::from_str(&format!("Failed to lock counter: {}", e)))?;
+            .map_err(|e| wasm_err(codes::INTERNAL_ERROR, format!("Failed to lock counter: {}", e)))?;
         let id = format!("obj_{}", counter);
         *counter += 1;
 
         let mut objects = self
             .objects
             .lock()
-            .map_err(|e| JsValue::from_str(&format!("Failed to lock objects: {}", e)))?;
+            .map_err(|e| wasm_err(codes::INTERNAL_ERROR, format!("Failed to lock objects: {}", e)))?;
         objects.insert(id.clone(), obj);
         Ok(id)
     }
@@ -55,7 +56,7 @@ impl AppState {
         let objects = self
             .objects
             .lock()
-            .map_err(|e| JsValue::from_str(&format!("Failed to lock objects: {}", e)))?;
+            .map_err(|e| wasm_err(codes::INTERNAL_ERROR, format!("Failed to lock objects: {}", e)))?;
         Ok(objects.get(id).cloned())
     }
 
@@ -68,7 +69,7 @@ impl AppState {
         let objects = self
             .objects
             .lock()
-            .map_err(|e| JsValue::from_str(&format!("Failed to lock objects: {}", e)))?;
+            .map_err(|e| wasm_err(codes::INTERNAL_ERROR, format!("Failed to lock objects: {}", e)))?;
         f(objects.get(id))
     }
 
@@ -81,7 +82,7 @@ impl AppState {
         let mut objects = self
             .objects
             .lock()
-            .map_err(|e| JsValue::from_str(&format!("Failed to lock objects: {}", e)))?;
+            .map_err(|e| wasm_err(codes::INTERNAL_ERROR, format!("Failed to lock objects: {}", e)))?;
         f(objects.get_mut(id))
     }
 
@@ -90,7 +91,7 @@ impl AppState {
         let mut objects = self
             .objects
             .lock()
-            .map_err(|e| JsValue::from_str(&format!("Failed to lock objects: {}", e)))?;
+            .map_err(|e| wasm_err(codes::INTERNAL_ERROR, format!("Failed to lock objects: {}", e)))?;
         Ok(objects.remove(id).is_some())
     }
 
@@ -99,7 +100,7 @@ impl AppState {
         let objects = self
             .objects
             .lock()
-            .map_err(|e| JsValue::from_str(&format!("Failed to lock objects: {}", e)))?;
+            .map_err(|e| wasm_err(codes::INTERNAL_ERROR, format!("Failed to lock objects: {}", e)))?;
         Ok(objects.len())
     }
 
@@ -108,7 +109,7 @@ impl AppState {
         let mut objects = self
             .objects
             .lock()
-            .map_err(|e| JsValue::from_str(&format!("Failed to lock objects: {}", e)))?;
+            .map_err(|e| wasm_err(codes::INTERNAL_ERROR, format!("Failed to lock objects: {}", e)))?;
         objects.clear();
         Ok(())
     }

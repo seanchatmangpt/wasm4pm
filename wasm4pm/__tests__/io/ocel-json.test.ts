@@ -5,6 +5,7 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as wasm from '../../pkg/wasm4pm.js';
+import { OCEL_MINIMAL } from '../helpers/fixtures';
 
 describe('I/O Operations - OCEL JSON', () => {
   beforeEach(async () => {
@@ -25,27 +26,13 @@ describe('I/O Operations - OCEL JSON', () => {
   });
 
   it('should load a valid OCEL JSON file', () => {
-    const json = `{
-  "event_types": ["Create", "Update"],
-  "object_types": ["Order"],
-  "events": [{"id": "e1", "event_type": "Create", "timestamp": "2023-01-01T10:00:00", "attributes": {}, "object_ids": ["o1"]}],
-  "objects": [{"id": "o1", "object_type": "Order", "attributes": {}}]
-}`;
-
-    const handle = wasm.load_ocel_from_json(json);
+    const handle = wasm.load_ocel_from_json(OCEL_MINIMAL);
     expect(handle).toBeTruthy();
     expect(typeof handle).toBe('string');
   });
 
   it('should export OCEL to JSON format', () => {
-    const json = `{
-  "event_types": ["Create", "Update"],
-  "object_types": ["Order"],
-  "events": [{"id": "e1", "event_type": "Create", "timestamp": "2023-01-01T10:00:00", "attributes": {}, "object_ids": ["o1"]}],
-  "objects": [{"id": "o1", "object_type": "Order", "attributes": {}}]
-}`;
-
-    const loadHandle = wasm.load_ocel_from_json(json);
+    const loadHandle = wasm.load_ocel_from_json(OCEL_MINIMAL);
     const jsonContent = wasm.export_ocel_to_json(loadHandle);
 
     expect(jsonContent).toBeTruthy();

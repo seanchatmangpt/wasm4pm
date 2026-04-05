@@ -3,6 +3,7 @@ use crate::state::{get_or_init_state, StoredObject};
 use serde_json::json;
 use crate::utilities::to_js;
 use statrs::statistics::{Data, Median};
+use crate::error::{wasm_err, codes};
 
 /// Perform dotted chart analysis on an EventLog
 #[wasm_bindgen]
@@ -29,8 +30,8 @@ pub fn analyze_dotted_chart(eventlog_handle: &str) -> Result<JsValue, JsValue> {
                 "cases": data
             }))
         }
-        Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
+        None => Err(wasm_err(codes::INVALID_HANDLE, format!("EventLog '{}' not found", eventlog_handle))),
     })
 }
 
@@ -54,8 +55,8 @@ pub fn analyze_event_statistics(eventlog_handle: &str) -> Result<JsValue, JsValu
 
             to_js(&stats)
         }
-        Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
+        None => Err(wasm_err(codes::INVALID_HANDLE, format!("EventLog '{}' not found", eventlog_handle))),
     })
 }
 
@@ -71,8 +72,8 @@ pub fn analyze_ocel_statistics(ocel_handle: &str) -> Result<JsValue, JsValue> {
 
             to_js(&stats)
         }
-        Some(_) => Err(JsValue::from_str("Object is not an OCEL")),
-        None => Err(JsValue::from_str("OCEL not found")),
+        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an OCEL")),
+        None => Err(wasm_err(codes::INVALID_HANDLE, format!("OCEL '{}' not found", ocel_handle))),
     })
 }
 
@@ -113,8 +114,8 @@ pub fn analyze_case_duration(eventlog_handle: &str) -> Result<JsValue, JsValue> 
 
             to_js(&stats)
         }
-        Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
+        None => Err(wasm_err(codes::INVALID_HANDLE, format!("EventLog '{}' not found", eventlog_handle))),
     })
 }
 

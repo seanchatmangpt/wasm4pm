@@ -382,8 +382,8 @@ pub fn discover_declare(eventlog_handle: &str, activity_key: &str) -> Result<JsV
 
             to_js(&model)
         }
-        Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
+        None => Err(wasm_err(codes::INVALID_HANDLE, format!("EventLog '{}' not found", eventlog_handle))),
     })
 }
 

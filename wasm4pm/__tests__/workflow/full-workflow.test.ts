@@ -5,39 +5,9 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as pm from '../../pkg/wasm4pm.js';
+import { XES_WORKFLOW, OCEL_MINIMAL } from '../helpers/fixtures';
 
-// Sample XES content for testing
-const SAMPLE_XES = `<?xml version="1.0" encoding="UTF-8"?>
-<log xes.version="1.0" xmlns="http://www.xes-standard.org/">
-  <trace>
-    <string key="concept:name" value="Case1"/>
-    <event>
-      <string key="concept:name" value="Activity A"/>
-      <date key="time:timestamp" value="2023-01-01T10:00:00.000+00:00"/>
-    </event>
-    <event>
-      <string key="concept:name" value="Activity B"/>
-      <date key="time:timestamp" value="2023-01-01T10:05:00.000+00:00"/>
-    </event>
-    <event>
-      <string key="concept:name" value="Activity C"/>
-      <date key="time:timestamp" value="2023-01-01T10:10:00.000+00:00"/>
-    </event>
-  </trace>
-  <trace>
-    <string key="concept:name" value="Case2"/>
-    <event>
-      <string key="concept:name" value="Activity A"/>
-      <date key="time:timestamp" value="2023-01-01T11:00:00.000+00:00"/>
-    </event>
-    <event>
-      <string key="concept:name" value="Activity B"/>
-      <date key="time:timestamp" value="2023-01-01T11:05:00.000+00:00"/>
-    </event>
-  </trace>
-</log>`;
-
-// OCEL sample for testing
+// OCEL sample for testing (separate from minimal for workflow)
 const SAMPLE_OCEL = `{
   "event_types": ["CreateOrder", "ProcessOrder"],
   "object_types": ["Order"],
@@ -87,38 +57,38 @@ describe('Process Mining WASM - Integration Tests', () => {
   });
 
   it('should load XES event log and return handle', () => {
-    const logHandle = pm.load_eventlog_from_xes(SAMPLE_XES);
+    const logHandle = pm.load_eventlog_from_xes(XES_WORKFLOW);
     expect(logHandle).toBeTruthy();
     expect(typeof logHandle).toBe('string');
   });
 
   it('should track object count in state', () => {
     const initialCount = pm.object_count();
-    const logHandle = pm.load_eventlog_from_xes(SAMPLE_XES);
+    const logHandle = pm.load_eventlog_from_xes(XES_WORKFLOW);
     const newCount = pm.object_count();
     expect(newCount).toBeGreaterThan(initialCount);
   });
 
   it('should analyze event statistics', () => {
-    const logHandle = pm.load_eventlog_from_xes(SAMPLE_XES);
+    const logHandle = pm.load_eventlog_from_xes(XES_WORKFLOW);
     const stats = pm.analyze_event_statistics(logHandle);
     expect(stats).toBeTruthy();
   });
 
   it('should analyze case duration', () => {
-    const logHandle = pm.load_eventlog_from_xes(SAMPLE_XES);
+    const logHandle = pm.load_eventlog_from_xes(XES_WORKFLOW);
     const durations = pm.analyze_case_duration(logHandle);
     expect(durations).toBeTruthy();
   });
 
   it('should discover DFG from EventLog', () => {
-    const logHandle = pm.load_eventlog_from_xes(SAMPLE_XES);
+    const logHandle = pm.load_eventlog_from_xes(XES_WORKFLOW);
     const dfg = pm.discover_dfg(logHandle, 'concept:name');
     expect(dfg).toBeTruthy();
   });
 
   it('should export EventLog to XES format', () => {
-    const logHandle = pm.load_eventlog_from_xes(SAMPLE_XES);
+    const logHandle = pm.load_eventlog_from_xes(XES_WORKFLOW);
     const exportedXes = pm.export_eventlog_to_xes(logHandle);
     expect(exportedXes).toBeTruthy();
     expect(exportedXes).toContain('<?xml');
@@ -132,7 +102,7 @@ describe('Process Mining WASM - Integration Tests', () => {
   });
 
   it('should delete objects by handle', () => {
-    const logHandle = pm.load_eventlog_from_xes(SAMPLE_XES);
+    const logHandle = pm.load_eventlog_from_xes(XES_WORKFLOW);
     const countBefore = pm.object_count();
     const deleted = pm.delete_object(logHandle);
     expect(deleted).toBe(true);
@@ -141,7 +111,7 @@ describe('Process Mining WASM - Integration Tests', () => {
   });
 
   it('should clear all objects from state', () => {
-    pm.load_eventlog_from_xes(SAMPLE_XES);
+    pm.load_eventlog_from_xes(XES_WORKFLOW);
     const countBefore = pm.object_count();
     expect(countBefore).toBeGreaterThan(0);
 
