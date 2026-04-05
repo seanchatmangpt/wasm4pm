@@ -8,19 +8,7 @@ use wasm_bindgen::prelude::*;
 use crate::state::{get_or_init_state, StoredObject};
 use crate::models::{AttributeValue, parse_timestamp_ms};
 use std::collections::HashMap;
-
-fn median_sorted(v: &mut Vec<f64>) -> f64 {
-    if v.is_empty() { return 0.0; }
-    v.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
-    let mid = v.len() / 2;
-    if v.len() % 2 == 0 { (v[mid - 1] + v[mid]) / 2.0 } else { v[mid] }
-}
-
-fn percentile_sorted(v: &[f64], p: f64) -> f64 {
-    if v.is_empty() { return 0.0; }
-    let idx = ((v.len() as f64 - 1.0) * p / 100.0).round() as usize;
-    v[idx.min(v.len() - 1)]
-}
+use statrs::statistics::{Data, Median};
 
 /// Discover a time-annotated DFG from an EventLog.
 ///
@@ -89,13 +77,20 @@ pub fn discover_performance_dfg(
 
             let edges: Vec<serde_json::Value> = edge_times.into_iter().map(|(key, durs)| {
                 let valid: Vec<f64> = durs.iter().copied().filter(|v| v.is_finite()).collect();
-                let mut sorted = valid.clone();
                 let mean_ms = if valid.is_empty() { 0.0 } else {
                     valid.iter().sum::<f64>() / valid.len() as f64
                 };
-                let median_ms = median_sorted(&mut sorted);
+
+                // Use statrs Data for median calculation
+                let data = Data::new(valid.clone());
+                let median_ms = data.median();
+
+                // For percentile, we need to sort and index manually
+                let mut sorted = valid.clone();
                 sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
-                let p95_ms = percentile_sorted(&sorted, 95.0);
+                let p95_idx = ((sorted.len() as f64 - 1.0) * 0.95).round() as usize;
+                let p95_ms = if sorted.is_empty() { 0.0 } else { sorted[p95_idx.min(sorted.len() - 1)] };
+
                 serde_json::json!({
                     "from": key.0, "to": key.1,
                     "count": durs.len(),
