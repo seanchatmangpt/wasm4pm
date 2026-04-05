@@ -17,6 +17,8 @@ export type TemporalProfileHandleId = Brand<string, 'TemporalProfile'>;
 export type NGramPredictorHandleId = Brand<string, 'NGramPredictor'>;
 export type StreamingDFGHandleId = Brand<string, 'StreamingDFG'>;
 export type StreamingConformanceHandleId = Brand<string, 'StreamingConformance'>;
+export type OCPetriNetHandleId = Brand<string, 'OCPetriNet'>;
+export type FeatureMatrixHandleId = Brand<string, 'FeatureMatrix'>;
 
 /**
  * Helper function to cast a plain string to an EventLogHandleId.
@@ -56,4 +58,12 @@ export function asStreamingDFGHandleId(handle: string): StreamingDFGHandleId {
 
 export function asStreamingConformanceHandleId(handle: string): StreamingConformanceHandleId {
   return handle as StreamingConformanceHandleId;
+}
+
+export function asOCPetriNetHandleId(handle: string): OCPetriNetHandleId {
+  return handle as OCPetriNetHandleId;
+}
+
+export function asFeatureMatrixHandleId(handle: string): FeatureMatrixHandleId {
+  return handle as FeatureMatrixHandleId;
 }

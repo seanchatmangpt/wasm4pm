@@ -437,6 +437,182 @@ export interface ObjectAttributeChanges {
 }
 
 // ============================================================================
+// OCEL 2.0 EXTENSIONS
+// ============================================================================
+
+/**
+ * OCEL Event-Object Reference
+ */
+export interface OCELEventObjectRef {
+  object_id: string;
+  qualifier: string;
+}
+
+/**
+ * OCEL Object Relation (linking objects to each other)
+ */
+export interface OCELObjectRelation {
+  source_id: string;
+  target_id: string;
+  qualifier: string;
+}
+
+/**
+ * OCEL Object Attribute Change history
+ */
+export interface OCELObjectAttributeChange {
+  timestamp: string;
+  attribute_name: string;
+  value: OCELAttributeValue;
+}
+
+/**
+ * OCEL 2.0 extension with object relations and attribute changes
+ */
+export interface OCEL2 extends OCEL {
+  object_relations?: OCELObjectRelation[];
+}
+
+// ============================================================================
+// OBJECT-CENTRIC PETRI NETS
+// ============================================================================
+
+/**
+ * Object-Centric Petri Net Place
+ */
+export interface OCPetriNetPlace {
+  id: string;
+  label: string;
+  object_type: string;
+}
+
+/**
+ * Object-Centric Petri Net Transition
+ */
+export interface OCPetriNetTransition {
+  id: string;
+  label: string;
+  is_silent: boolean;
+}
+
+/**
+ * Object-Centric Petri Net Arc
+ */
+export interface OCPetriNetArc {
+  source: string;
+  target: string;
+  object_type: string;
+  is_variable: boolean;
+}
+
+/**
+ * Object-Centric Petri Net model
+ */
+export interface OCPetriNet {
+  places: OCPetriNetPlace[];
+  transitions: OCPetriNetTransition[];
+  arcs: OCPetriNetArc[];
+  object_types: string[];
+}
+
+// ============================================================================
+// FEATURE EXTRACTION
+// ============================================================================
+
+/**
+ * Feature extraction configuration
+ */
+export interface FeatureExtractionConfig {
+  features: string[];
+  target: 'remaining_time' | 'outcome' | 'next_activity';
+}
+
+/**
+ * Feature vector for a single case/prefix
+ */
+export interface FeatureVector {
+  [key: string]: number | string;
+}
+
+// ============================================================================
+// DATA QUALITY
+// ============================================================================
+
+/**
+ * Data quality issue
+ */
+export interface DataQualityIssue {
+  type: string;
+  attribute?: string;
+  trace_id?: string;
+  event_count?: number;
+  event_indices?: number[];
+}
+
+/**
+ * Data quality assessment result
+ */
+export interface DataQualityResult {
+  valid: boolean;
+  issues: DataQualityIssue[];
+  total_issues: number;
+}
+
+// ============================================================================
+// SCHEMA INFERENCE
+// ============================================================================
+
+/**
+ * Inferred schema from event log
+ */
+export interface SchemaInference {
+  inferred_keys: {
+    activity_key: string;
+    timestamp_key: string;
+    resource_key?: string;
+    case_id_key?: string;
+  };
+  attribute_types: { [key: string]: string };
+  confidence: number;
+}
+
+// ============================================================================
+// RESOURCE ANALYSIS
+// ============================================================================
+
+/**
+ * Resource utilization statistics
+ */
+export interface ResourceUtilization {
+  resource_id: string;
+  total_events: number;
+  unique_activities: number;
+  avg_workload: number;
+  max_workload: number;
+  idle_time: number;
+}
+
+/**
+ * Resource-Activity interaction matrix
+ */
+export interface ResourceActivityMatrix {
+  resources: string[];
+  activities: string[];
+  interactions: Record<string, Record<string, number>>;
+}
+
+/**
+ * Resource bottleneck information
+ */
+export interface ResourceBottleneck {
+  resource_id: string;
+  activity: string;
+  waiting_time: number;
+  frequency: number;
+  severity: number;
+}
+
+// ============================================================================
 // CONFORMANCE MODULE - Model Checking
 // ============================================================================
 
