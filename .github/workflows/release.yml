@@ -95,10 +95,98 @@ jobs:
             sbom-*.json
           retention-days: 30
 
+  smoke-test:
+    name: npm Install Smoke Test
+    runs-on: ubuntu-latest
+    needs: verify-release
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Cache Rust builds
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install wasm-pack
+        run: npm install -g wasm-pack@1.3.4
+
+      - name: Install dependencies
+        working-directory: ./wasm4pm
+        run: npm install
+
+      - name: Build nodejs target
+        working-directory: ./wasm4pm
+        run: npm run build:nodejs
+
+      - name: Remove wasm-pack generated pkg/.gitignore
+        working-directory: ./wasm4pm
+        run: rm -f pkg/.gitignore
+
+      - name: Pack and install from tarball
+        run: |
+          cd wasm4pm
+          npm pack
+          TARBALL=$(ls wasm4pm-*.tgz)
+          mkdir -p /tmp/smoke-test-$$
+          cp "$TARBALL" /tmp/smoke-test-$$/
+          cd /tmp/smoke-test-$$
+          npm init -y
+          npm install ./"$TARBALL"
+
+      - name: Verify exports and WASM execution
+        run: |
+          cd /tmp/smoke-test-*
+          node -e "
+            const pm = require('wasm4pm');
+
+            // Verify classes
+            if (!pm.WasmEventLog) throw new Error('WasmEventLog missing');
+            if (!pm.WasmOCEL) throw new Error('WasmOCEL missing');
+
+            // Verify key functions
+            const required = [
+              'discover_dfg', 'discover_alpha_plus_plus', 'discover_heuristic_miner',
+              'load_eventlog_from_json', 'get_version', 'clear_all_objects',
+            ];
+            for (const fn of required) {
+              if (typeof pm[fn] !== 'function') throw new Error(fn + ' not exported');
+            }
+
+            // Verify WASM actually executes
+            const version = pm.get_version();
+            const sv = (s) => ({ tag: 'String', value: s });
+            const log = JSON.stringify({
+              attributes: {},
+              traces: [
+                { attributes: {}, events: [{ attributes: { 'concept:name': sv('A') } }, { attributes: { 'concept:name': sv('B') } }] },
+                { attributes: {}, events: [{ attributes: { 'concept:name': sv('A') } }, { attributes: { 'concept:name': sv('C') } }] },
+              ]
+            });
+            const handle = pm.load_eventlog_from_json(log);
+            pm.discover_dfg(handle, 'concept:name');
+            pm.clear_all_objects();
+
+            console.log('Smoke test PASSED - version:', version);
+          "
+
+      - name: Cleanup
+        if: always()
+        run: rm -rf /tmp/smoke-test-*
+
   build-and-publish:
     name: Build and Publish
     runs-on: ubuntu-latest
-    needs: verify-release
+    needs: [verify-release, smoke-test]
     timeout-minutes: 60
     permissions:
       contents: write
@@ -137,9 +225,15 @@ jobs:
       - name: Install wasm-opt
         run: npm install -g wasm-opt
 
+      # Setup pnpm (required for monorepo workspace builds)
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
       # Install dependencies
       - name: Install dependencies
-        run: npm install
+        run: pnpm install
 
       - name: Install wasm4pm dependencies
         working-directory: ./wasm4pm
@@ -148,8 +242,10 @@ jobs:
       # Build everything
       - name: Build all targets
         run: |
-          echo "=== Building wasm4pm ==="
+          echo "=== Building WASM targets ==="
           npm run build:wasm
+          echo "=== Building TypeScript packages ==="
+          pnpm -r --parallel build
           echo "=== Build complete ==="
 
       # Generate schemas and types

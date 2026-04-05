@@ -9,19 +9,21 @@ Watch mode provides incremental, streaming processing of event logs with progres
 ### Core Classes
 
 #### `WatchMode`
+
 Main class for streaming execution with checkpointing.
 
 ```typescript
 class WatchMode {
-  constructor(plan: ExecutableStep[], config: Wasm4pmConfig, watchConfig?: WatchConfig)
-  async *start(): AsyncIterable<WatchEvent>
-  async saveCheckpoint(progress: ProgressInfo): Promise<void>
-  async resume(checkpoint?: Checkpoint): Promise<void>
-  async stop(): Promise<void>
+  constructor(plan: ExecutableStep[], config: Wasm4pmConfig, watchConfig?: WatchConfig);
+  async *start(): AsyncIterable<WatchEvent>;
+  async saveCheckpoint(progress: ProgressInfo): Promise<void>;
+  async resume(checkpoint?: Checkpoint): Promise<void>;
+  async stop(): Promise<void>;
 }
 ```
 
 **Key Features:**
+
 - Async iterable implementation for streaming events
 - Handles source abstraction (file, memory, socket)
 - Manages heartbeat and checkpoint intervals
@@ -31,16 +33,17 @@ class WatchMode {
 
 ```typescript
 interface StreamSource {
-  open(): Promise<void>
-  hasMore(): Promise<boolean>
-  readNext(count: number): Promise<unknown[]>
-  getPosition(): Promise<number>
-  getChecksum(): Promise<string>
-  close(): Promise<void>
+  open(): Promise<void>;
+  hasMore(): Promise<boolean>;
+  readNext(count: number): Promise<unknown[]>;
+  getPosition(): Promise<number>;
+  getChecksum(): Promise<string>;
+  close(): Promise<void>;
 }
 ```
 
 **Implementations:**
+
 - `MemoryStreamSource` - For in-memory arrays and JSON data
 - `FileStreamSource` - For file-based sources with JSON lines format
 
@@ -48,12 +51,12 @@ interface StreamSource {
 
 ```typescript
 type WatchEvent =
-  | { type: "heartbeat"; timestamp: string; lag_ms: number }
-  | { type: "progress"; processed: number; total: number }
-  | { type: "reconnect"; attempt: number; backoff_ms: number }
-  | { type: "checkpoint"; progress_hash: string }
-  | { type: "error"; error: ErrorInfo; recoverable: boolean }
-  | { type: "complete"; receipt: ExecutionReceipt };
+  | { type: 'heartbeat'; timestamp: string; lag_ms: number }
+  | { type: 'progress'; processed: number; total: number }
+  | { type: 'reconnect'; attempt: number; backoff_ms: number }
+  | { type: 'checkpoint'; progress_hash: string }
+  | { type: 'error'; error: ErrorInfo; recoverable: boolean }
+  | { type: 'complete'; receipt: ExecutionReceipt };
 ```
 
 **Event Details:**
@@ -91,14 +94,14 @@ type WatchEvent =
 
 ```typescript
 interface WatchConfig {
-  heartbeatIntervalMs?: number;        // Default: 1000
-  heartbeatEventThreshold?: number;    // Default: 10 events
-  checkpointIntervalMs?: number;       // Default: 5000
-  checkpointPath?: string;             // Default: .wasm4pm/checkpoint
-  maxReconnectAttempts?: number;       // Default: 10
-  initialBackoffMs?: number;           // Default: 100
-  maxBackoffMs?: number;               // Default: 5000
-  backoffMultiplier?: number;          // Default: 2.5
+  heartbeatIntervalMs?: number; // Default: 1000
+  heartbeatEventThreshold?: number; // Default: 10 events
+  checkpointIntervalMs?: number; // Default: 5000
+  checkpointPath?: string; // Default: .wasm4pm/checkpoint
+  maxReconnectAttempts?: number; // Default: 10
+  initialBackoffMs?: number; // Default: 100
+  maxBackoffMs?: number; // Default: 5000
+  backoffMultiplier?: number; // Default: 2.5
 }
 ```
 
@@ -131,7 +134,9 @@ const config: Wasm4pmConfig = {
   },
 };
 
-const plan = [/* ... execution plan ... */];
+const plan = [
+  /* ... execution plan ... */
+];
 const watch = new WatchMode(plan, config);
 
 for await (const event of watch.start()) {
@@ -219,6 +224,7 @@ try {
 ### Directory Creation
 
 Checkpoint directories are created automatically if missing:
+
 ```typescript
 await watch.saveCheckpoint(progress);
 // Creates .wasm4pm/checkpoint and any parent directories
@@ -238,6 +244,7 @@ attempt 5: wait 5000ms (max)
 ```
 
 **Default Formula:**
+
 ```
 backoff_n = min(initial * multiplier^(n-1), maxBackoff)
 ```
@@ -256,6 +263,7 @@ backoff_n = min(initial * multiplier^(n-1), maxBackoff)
 ### Emission Triggers
 
 Heartbeat emits when EITHER:
+
 - Time since last heartbeat >= `heartbeatIntervalMs`, OR
 - Events processed since last heartbeat >= `heartbeatEventThreshold`
 
@@ -302,11 +310,13 @@ Watch mode auto-detects source type:
 ### Recoverable Errors
 
 These trigger reconnection:
+
 - `EXECUTION_FAILED` → `RETRY`
 
 ### Non-Recoverable Errors
 
 These immediately fail:
+
 - `CONFIG_INVALID` → `RECONFIGURE`
 - `SOURCE_UNAVAILABLE` → `VALIDATE_INPUT`
 - `PARSE_FAILED` → `VALIDATE_INPUT`
@@ -316,10 +326,10 @@ These immediately fail:
 
 ```typescript
 interface ErrorInfo {
-  code: string;           // Error code for classification
-  message: string;        // Human-readable message
-  recoverable: boolean;   // Whether to retry
-  timestamp: string;      // ISO 8601 when error occurred
+  code: string; // Error code for classification
+  message: string; // Human-readable message
+  recoverable: boolean; // Whether to retry
+  timestamp: string; // ISO 8601 when error occurred
 }
 ```
 
@@ -340,6 +350,7 @@ interface ErrorInfo {
 ### Throughput
 
 Measured with 100 events:
+
 - Without checkpointing: ~50-100 events/ms
 - With checkpointing: ~40-80 events/ms (file system dependent)
 
@@ -352,6 +363,7 @@ npm run test:unit -- watch.test.ts
 ```
 
 **Test Coverage:**
+
 - [x] Streaming and progress events
 - [x] Heartbeat timing and thresholds
 - [x] Checkpoint creation and round-trip
@@ -373,6 +385,7 @@ async *start(): AsyncIterable<WatchEvent>
 Initiates streaming processing. Returns async iterable of events.
 
 **Throws:**
+
 - Non-recoverable errors immediately
 - Recoverable errors emitted as error events (unless no handler)
 
@@ -397,6 +410,7 @@ async resume(checkpoint?: Checkpoint): Promise<void>
 Resume from checkpoint file or provided checkpoint data. Verifies integrity via hash.
 
 **Throws:**
+
 - `STATE_CORRUPTED` if hash verification fails
 
 ### `WatchMode.stop()`

@@ -12,7 +12,7 @@
 
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
-import { ProcessMiningClient, EventLogHandle } from '../src/client';
+import { ProcessMiningClient, EventLogHandle } from '../src/client.js';
 
 interface CLIConfig {
   activityKey: string;
