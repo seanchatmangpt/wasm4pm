@@ -31,11 +31,22 @@ jobs:
       - name: Install wasm-pack
         run: npm install -g wasm-pack
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
       - name: Install dependencies
+        run: pnpm install
+
+      - name: Install wasm4pm dependencies
         run: cd wasm4pm && npm install
 
       - name: Build WASM
         run: cd wasm4pm && npm run build:all
+
+      - name: Build TypeScript packages
+        run: pnpm -r --parallel build
 
       - name: Run tests
         run: cd wasm4pm && npm run test:unit
