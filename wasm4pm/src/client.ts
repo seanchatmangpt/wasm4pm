@@ -114,10 +114,12 @@ export class ProcessMiningClient {
 
   /**
    * Load an OCEL from XML string
-   * @deprecated XML loading not yet implemented. Use loadOCELFromJSON() instead.
    */
   loadOCELFromXML(xmlContent: string): OCELHandle {
-    throw new Error('OCEL XML loading not implemented. Use loadOCELFromJSON() instead.');
+    if (!this.initialized) throw new Error('Client not initialized. Call init() first.');
+
+    const handle = asOCELHandleId(this.wasmModule.load_ocel_from_xml(xmlContent));
+    return new OCELHandle(handle, this.wasmModule);
   }
 
   /**
@@ -605,18 +607,16 @@ export class OCELHandle {
 
   /**
    * Get the total number of events in the OCEL
-   * @deprecated Use getStats().total_events instead
    */
-  getOCELEventCount(): number {
-    throw new Error('getOCELEventCount() not implemented. Use getStats().total_events instead.');
+  getEventCount(): number {
+    return this.wasmModule.get_ocel_event_count(this.handle);
   }
 
   /**
    * Get the total number of objects in the OCEL
-   * @deprecated Use getStats().total_objects instead
    */
-  getOCELObjectCount(): number {
-    throw new Error('getOCELObjectCount() not implemented. Use getStats().total_objects instead.');
+  getObjectCount(): number {
+    return this.wasmModule.get_ocel_object_count(this.handle);
   }
 
   /**
