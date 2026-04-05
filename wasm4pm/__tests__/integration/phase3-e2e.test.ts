@@ -31,13 +31,13 @@ import {
   XES_SEQUENTIAL,
   XES_PARALLEL,
   XES_WORKFLOW,
-} from '../helpers/fixtures';
+} from '../helpers/fixtures.js';
 import {
   Wasm4pmConfig,
   ExecutionProfile,
   SourceFormat,
   ExecutionMode,
-} from '../../src/config';
+} from '../../src/config.js';
 
 /**
  * Helper: Hash function for determinism verification

@@ -10,8 +10,8 @@ import {
   ExecutionProfile,
   resolveProfile,
   PipelineStep as ConfigPipelineStep,
-} from './config';
-import { Wasm4pmError, ErrorCode, ErrorRecovery } from './errors';
+} from './config.js';
+import { Wasm4pmError, ErrorCode, ErrorRecovery } from './errors.js';
 
 /**
  * Represents a single executable step in the pipeline with WASM binding details
