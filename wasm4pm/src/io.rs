@@ -142,6 +142,7 @@ pub fn load_ocel_from_xml(content: &str) -> Result<String, JsValue> {
                     timestamp,
                     attributes,
                     object_ids,
+                    object_refs: Vec::new(),
                 });
             }
             "object" => {
@@ -192,6 +193,7 @@ pub fn load_ocel_from_xml(content: &str) -> Result<String, JsValue> {
                     id: object_id,
                     object_type,
                     attributes,
+                    changes: Vec::new(),
                 });
             }
             _ => {}

@@ -2,11 +2,8 @@ use wasm_bindgen::prelude::*;
 use crate::state::{get_or_init_state, StoredObject};
 use crate::models::*;
 use serde_json::json;
-use std::cell::Cell;
 use std::collections::HashSet;
 use rustc_hash::FxHashMap;
-#[cfg(target_arch = "wasm32")]
-use serde_wasm_bindgen;
 use crate::utilities::to_js;
 
 /// Simplified Inductive Miner - recursive structure discovery
@@ -131,7 +128,7 @@ pub fn discover_ant_colony(
                     let total_pheromone: f64 =
                         pheromones.values().sum::<f64>().max(f64::MIN_POSITIVE);
                     for (&edge, pheromone_level) in &pheromones {
-                        if *pheromone_level > random_float() * total_pheromone {
+                        if *pheromone_level > fastrand::f64() * total_pheromone {
                             current_edges.insert(edge);
                         }
                     }
@@ -225,7 +222,7 @@ pub fn discover_simulated_annealing(
                 // Random neighbor move: add or remove one edge
                 let mut neighbor = current_edges.clone();
 
-                if random_float() < 0.5 && !current_edges.is_empty() {
+                if fastrand::f64() < 0.5 && !current_edges.is_empty() {
                     // Remove random edge
                     if let Some(&edge) = neighbor.iter().next() {
                         neighbor.remove(&edge);
@@ -233,7 +230,7 @@ pub fn discover_simulated_annealing(
                 } else {
                     // Add random edge from vocabulary
                     if !edge_vocab.is_empty() {
-                        let idx = (random_float() * edge_vocab.len() as f64) as usize;
+                        let idx = (fastrand::f64() * edge_vocab.len() as f64) as usize;
                         neighbor.insert(edge_vocab[idx]);
                     }
                 }
@@ -245,7 +242,7 @@ pub fn discover_simulated_annealing(
                 // always accepted; worse solutions are accepted with the Boltzmann
                 // probability exp(-delta/T).  Short-circuit evaluation means
                 // exp() is only called when delta < 0, so no change in semantics.
-                let accept = delta >= 0.0 || random_float() < (-delta / temp).exp();
+                let accept = delta >= 0.0 || fastrand::f64() < (-delta / temp).exp();
                 if accept {
                     current_edges = neighbor;
                     current_fitness = neighbor_fitness;
@@ -474,54 +471,6 @@ pub fn analyze_case_attributes(
 // ---------------------------------------------------------------------------
 /// Fitness function: fraction of traces fully covered by the DFG edges.
 /// Marked inline(always) so the compiler can specialise it at each call site
-/// inside the hot ACO/SA loops.
-#[inline(always)]
-fn evaluate_dfg_fitness(dfg: &DirectlyFollowsGraph, log: &EventLog, activity_key: &str) -> f64 {
-    // Build a borrowed edge set — no String allocations for keys or lookups.
-    let edge_set: HashSet<(&str, &str)> = dfg
-        .edges
-        .iter()
-        .map(|e| (e.from.as_str(), e.to.as_str()))
-        .collect();
-
-    let mut fitting = 0.0;
-    for trace in &log.traces {
-        let mut fits = true;
-        for i in 0..trace.events.len().saturating_sub(1) {
-            if let (Some(AttributeValue::String(a1)), Some(AttributeValue::String(a2))) = (
-                trace.events[i].attributes.get(activity_key),
-                trace.events[i + 1].attributes.get(activity_key),
-            ) {
-                if !edge_set.contains(&(a1.as_str(), a2.as_str())) {
-                    fits = false;
-                    break;
-                }
-            }
-        }
-        if fits {
-            fitting += 1.0;
-        }
-    }
-    fitting / log.traces.len().max(1) as f64
-}
-
-// Thread-local LCG PRNG — ~10x faster than SystemTime-based RNG with no
-// syscall overhead, safe for single-threaded WASM execution.
-thread_local! {
-    static LCG: Cell<u64> = Cell::new(0xFEED_FACE_DEAD_BEEF);
-}
-
-fn random_float() -> f64 {
-    LCG.with(|s| {
-        let v = s
-            .get()
-            .wrapping_mul(6_364_136_223_846_793_005)
-            .wrapping_add(1_442_695_040_888_963_407);
-        s.set(v);
-        (v >> 11) as f64 * (1.0 / (1u64 << 53) as f64)
-    })
-}
-
 // Helper: Evaluate fitness of an edge set against columnar log (zero string allocation)
 #[inline]
 fn evaluate_edges_fitness(edge_set: &HashSet<(u32, u32)>, col: &ColumnarLog) -> f64 {

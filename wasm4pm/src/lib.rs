@@ -3,6 +3,8 @@ pub mod state;
 pub mod types;
 pub mod error;
 pub mod io;
+pub mod ocel_io;
+pub mod ocel_flatten;
 pub mod discovery;
 pub mod analysis;
 pub mod conformance;
@@ -26,6 +28,10 @@ pub mod prediction;
 pub mod anomaly;
 pub mod social_network;
 pub mod process_tree;
+pub mod text_encoding;
+pub mod feature_extraction;
+pub mod resource_analysis;
+pub mod data_quality;
 
 // Suppress unused warnings for re-exported modules
 #[allow(unused)]

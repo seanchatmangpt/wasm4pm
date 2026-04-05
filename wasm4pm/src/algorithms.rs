@@ -4,8 +4,6 @@ use crate::models::*;
 use serde_json::json;
 use std::collections::HashMap;
 use rustc_hash::FxHashMap;
-#[cfg(target_arch = "wasm32")]
-use serde_wasm_bindgen;
 use crate::utilities::to_js;
 use crate::error::{wasm_err, codes};
 

@@ -40,11 +40,13 @@ open benchmarks/dashboard.html
 ## Output
 
 All benchmarks produce:
+
 - **JSON** — Full data with all metrics
 - **CSV** — Easy import to spreadsheets
 - **Console** — Formatted table summary
 
 Results saved to `results/` directory:
+
 ```
 results/
 ├── browser_bench_2024-01-15T10-30-45-123Z.json
@@ -55,11 +57,11 @@ results/
 
 ## Algorithms Tested
 
-| Category | Algorithms |
-|----------|-----------|
-| **Fast** | DFG, Declare, Heuristic Miner, Alpha++, Inductive Miner, Hill Climbing, Event Stats, Trace Variants |
-| **Medium** | A*, Simulated Annealing, Ant Colony |
-| **Analytics** | Variant Complexity, Activity Transition Matrix, Rework Detection |
+| Category      | Algorithms                                                                                          |
+| ------------- | --------------------------------------------------------------------------------------------------- |
+| **Fast**      | DFG, Declare, Heuristic Miner, Alpha++, Inductive Miner, Hill Climbing, Event Stats, Trace Variants |
+| **Medium**    | A\*, Simulated Annealing, Ant Colony                                                                |
+| **Analytics** | Variant Complexity, Activity Transition Matrix, Rework Detection                                    |
 
 ## Log Sizes
 
@@ -70,14 +72,14 @@ results/
 
 ## Files
 
-| File | Purpose |
-|------|---------|
-| `__tests__/benchmarks/browser.bench.ts` | Browser benchmark tests |
-| `benchmarks/wasm_bench_runner.js` | Node.js benchmark coordinator |
-| `benchmarks/wasm_bench_worker.js` | Node.js worker implementation |
-| `benchmarks/compare.js` | Node vs Browser comparison |
-| `benchmarks/dashboard.html` | Interactive results viewer |
-| `benchmarks/BROWSER_BENCHMARKS.md` | Detailed documentation |
+| File                                    | Purpose                       |
+| --------------------------------------- | ----------------------------- |
+| `__tests__/benchmarks/browser.bench.ts` | Browser benchmark tests       |
+| `benchmarks/wasm_bench_runner.js`       | Node.js benchmark coordinator |
+| `benchmarks/wasm_bench_worker.js`       | Node.js worker implementation |
+| `benchmarks/compare.js`                 | Node vs Browser comparison    |
+| `benchmarks/dashboard.html`             | Interactive results viewer    |
+| `benchmarks/BROWSER_BENCHMARKS.md`      | Detailed documentation        |
 
 ## Customization
 

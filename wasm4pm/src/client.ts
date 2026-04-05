@@ -986,13 +986,6 @@ export class OCPetriNetHandle {
   }
 }
 
-// Type definitions for client API
-export interface EventLogStats {
-  total_events: number;
-  total_cases: number;
-  avg_events_per_case: number;
-}
-
 /**
  * Convenience function to load a file from the browser
  */

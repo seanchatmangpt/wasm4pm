@@ -5,8 +5,6 @@ use serde_json::json;
 use std::collections::HashSet;
 use rustc_hash::FxHashMap;
 use itertools::Itertools;
-#[cfg(target_arch = "wasm32")]
-use serde_wasm_bindgen;
 use crate::utilities::to_js;
 
 /// Variant Complexity - measure variant entropy and diversity
