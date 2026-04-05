@@ -2,130 +2,14 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import { existsSync } from 'fs';
 import * as toml from 'toml';
-
-/**
- * Provenance tracking for configuration values.
- * Indicates where a configuration value came from and its original value.
- */
-export type ProvenanceSource = 'config' | 'env' | 'default' | 'cli';
-
-export interface Provenance {
-  value: unknown;
-  source: ProvenanceSource;
-  path?: string; // File path if source is 'config'
-}
-
-/**
- * Execution profile for wasm4pm
- * - fast: Minimal processing, max throughput
- * - balanced: Default, trade-off between speed and accuracy
- * - quality: Maximum accuracy, slower processing
- * - stream: Streaming/incremental processing
- */
-export type ExecutionProfile = 'fast' | 'balanced' | 'quality' | 'stream';
-
-/**
- * Output format specification
- * - human: Pretty-printed human-readable format
- * - json: Machine-readable JSON format
- */
-export type OutputFormat = 'human' | 'json';
-
-/**
- * Source kind for configuration
- * - file: Configuration loaded from file (TOML or JSON)
- * - env: Configuration from environment variables
- * - cli: Configuration from command-line arguments
- */
-export type SourceKind = 'file' | 'env' | 'cli';
-
-/**
- * OpenTelemetry configuration
- */
-export interface OtelConfig {
-  enabled: boolean;
-  endpoint?: string;
-  headers?: Record<string, string>;
-}
-
-/**
- * Observability configuration
- */
-export interface ObservabilityConfig {
-  otel?: OtelConfig;
-  logLevel?: 'debug' | 'info' | 'warn' | 'error';
-  metricsEnabled?: boolean;
-}
-
-/**
- * Watch mode configuration
- */
-export interface WatchConfig {
-  enabled: boolean;
-  interval: number; // milliseconds
-  debounce?: number; // milliseconds
-}
-
-/**
- * Output configuration
- */
-export interface OutputConfig {
-  format: OutputFormat;
-  destination: string; // stdout, stderr, or file path
-  pretty?: boolean;
-  colorize?: boolean;
-}
-
-/**
- * Base configuration structure for wasm4pm
- */
-export interface BaseConfig {
-  version: string; // e.g., "26.4.5"
-  source: {
-    kind: SourceKind;
-    path?: string;
-  };
-  execution: {
-    profile: ExecutionProfile;
-    timeout?: number; // milliseconds
-    maxMemory?: number; // bytes
-  };
-  observability?: ObservabilityConfig;
-  watch?: WatchConfig;
-  output?: OutputConfig;
-}
-
-/**
- * Complete configuration with metadata
- */
-export interface Config extends BaseConfig {
-  metadata: {
-    loadTime: number; // timestamp
-    hash: string; // BLAKE3 hash of normalized config
-    provenance: Record<string, Provenance>;
-  };
-}
-
-/**
- * CLI overrides for configuration
- */
-export interface CliOverrides {
-  profile?: ExecutionProfile;
-  configPath?: string;
-  outputFormat?: OutputFormat;
-  outputDestination?: string;
-  watchEnabled?: boolean;
-  [key: string]: unknown;
-}
-
-/**
- * Configuration loading options
- */
-export interface LoadConfigOptions {
-  cliOverrides?: CliOverrides;
-  configSearchPaths?: string[];
-  env?: NodeJS.ProcessEnv;
-}
+import type {
+  BaseConfig,
+  Config,
+  CliOverrides,
+  LoadConfigOptions,
+  ExecutionProfile,
+} from './types.js';
+import type { ProvenanceMap } from './provenance.js';
 
 /**
  * Load configuration from multiple sources with provenance tracking.
@@ -255,9 +139,17 @@ function getDefaultSearchPaths(): string[] {
  */
 function getDefaultConfig(): BaseConfig {
   return {
+    schemaVersion: 1,
     version: '26.4.5',
     source: {
       kind: 'cli'
+    },
+    sink: {
+      kind: 'stdout'
+    },
+    algorithm: {
+      name: 'alpha',
+      parameters: {}
     },
     execution: {
       profile: 'balanced',
@@ -266,12 +158,16 @@ function getDefaultConfig(): BaseConfig {
     },
     observability: {
       logLevel: 'info',
-      metricsEnabled: false
+      metricsEnabled: false,
+      otel: {
+        enabled: false,
+        exporter: 'otlp',
+        required: false
+      }
     },
     watch: {
       enabled: false,
-      interval: 1000,
-      debounce: 300
+      poll_interval: 1000
     },
     output: {
       format: 'human',

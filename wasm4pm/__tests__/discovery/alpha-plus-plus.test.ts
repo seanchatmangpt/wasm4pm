@@ -32,7 +32,7 @@ describe('Discovery - Alpha++ Algorithm', () => {
 
   it('should fail when EventLog handle is invalid', () => {
     expect(() => {
-      wasm.discover_alpha_plus_plus('obj_999999', 0);
+      wasm.discover_alpha_plus_plus('obj_999999', 'concept:name', 0);
     }).toThrow();
   });
 });

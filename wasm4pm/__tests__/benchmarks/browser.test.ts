@@ -14,7 +14,7 @@ import * as pm from '../../pkg/wasm4pm.js';
 
 // ── Configuration ────────────────────────────────────────────────────────────
 
-const ITERATIONS = globalThis.CI_MODE ? 3 : 5;
+const ITERATIONS = (globalThis as Record<string, unknown>).CI_MODE ? 3 : 5;
 const BENCHMARK_RESULTS: BenchmarkResult[] = [];
 
 interface BenchmarkResult {

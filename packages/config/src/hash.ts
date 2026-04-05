@@ -1,46 +1,40 @@
 import { hash as blake3 } from 'blake3';
-import type { BaseConfig } from './config.js';
+import type { BaseConfig } from './types.js';
 
 /**
  * Normalize configuration for hashing.
- * Removes fields that vary with each load (e.g., timestamps).
- * Creates a canonical representation for determinism verification.
- *
- * @param config Configuration to normalize
- * @returns Normalized configuration suitable for hashing
+ * Excludes source/metadata — only hashes semantic config values.
  */
 function normalizeConfig(config: BaseConfig): string {
-  // Create a copy with only the fields that matter for determinism
-  const normalized = {
+  const normalized: Record<string, unknown> = {
+    schemaVersion: config.schemaVersion,
     version: config.version,
+    sink: config.sink,
+    algorithm: config.algorithm,
     execution: config.execution,
     observability: config.observability,
     watch: config.watch,
-    output: config.output
+    output: config.output,
   };
+  return stableStringify(normalized);
+}
 
-  // Convert to JSON with stable key ordering
-  return JSON.stringify(normalized, Object.keys(normalized).sort());
+/**
+ * Deterministic JSON.stringify with sorted keys at all levels.
+ */
+function stableStringify(obj: unknown): string {
+  if (obj === null || obj === undefined) return 'null';
+  if (typeof obj !== 'object') return JSON.stringify(obj);
+  if (Array.isArray(obj)) return '[' + obj.map(stableStringify).join(',') + ']';
+  const sorted = Object.keys(obj as Record<string, unknown>).sort();
+  const parts = sorted
+    .filter(k => (obj as Record<string, unknown>)[k] !== undefined)
+    .map(k => JSON.stringify(k) + ':' + stableStringify((obj as Record<string, unknown>)[k]));
+  return '{' + parts.join(',') + '}';
 }
 
 /**
  * Compute BLAKE3 hash of configuration.
- * Used for determinism verification and config fingerprinting.
- *
- * The hash includes:
- * - version
- * - execution profile and settings
- * - observability configuration
- * - watch configuration
- * - output configuration
- *
- * The hash excludes:
- * - source information (file path, kind)
- * - metadata (timestamps, provenance)
- * - CLI overrides that are temporary
- *
- * @param config Configuration to hash
- * @returns BLAKE3 hash as hex string
  */
 export function hashConfig(config: BaseConfig): string {
   const normalized = normalizeConfig(config);
@@ -49,59 +43,36 @@ export function hashConfig(config: BaseConfig): string {
 }
 
 /**
- * Verify configuration hash for determinism.
- * Useful for checking if configuration has changed.
- *
- * @param config Configuration to hash
- * @param expectedHash Hash to compare against
- * @returns true if hashes match
+ * Verify configuration hash for determinism checking.
  */
 export function verifyConfigHash(config: BaseConfig, expectedHash: string): boolean {
   return hashConfig(config) === expectedHash;
 }
 
 /**
- * Create a fingerprint of the configuration.
- * Shorter than full hash, suitable for logging/UI.
- *
- * @param config Configuration to fingerprint
- * @returns Short 8-character fingerprint
+ * Short 8-char fingerprint suitable for logging/UI.
  */
 export function fingerprintConfig(config: BaseConfig): string {
-  const fullHash = hashConfig(config);
-  return fullHash.slice(0, 8);
+  return hashConfig(config).slice(0, 8);
 }
 
 /**
- * Compute hash of specific config section.
- * Useful for checking if a particular setting has changed.
- *
- * @param section Configuration section to hash
- * @returns BLAKE3 hash as hex string
+ * Hash an arbitrary config section.
  */
 export function hashConfigSection(section: unknown): string {
-  const normalized = JSON.stringify(section);
+  const normalized = stableStringify(section);
   const digest = blake3(normalized);
   return digest.toString('hex');
 }
 
 /**
- * Compare two configurations and report differences.
- * Useful for debugging config changes.
- *
- * @param config1 First configuration
- * @param config2 Second configuration
- * @returns Detailed diff information
+ * Diff two configs and report changes.
  */
 export interface ConfigDiff {
   changed: boolean;
   hash1: string;
   hash2: string;
-  differences: Array<{
-    path: string;
-    before: unknown;
-    after: unknown;
-  }>;
+  differences: Array<{ path: string; before: unknown; after: unknown }>;
 }
 
 export function diffConfigs(config1: BaseConfig, config2: BaseConfig): ConfigDiff {
@@ -109,29 +80,20 @@ export function diffConfigs(config1: BaseConfig, config2: BaseConfig): ConfigDif
   const hash2 = hashConfig(config2);
   const differences: ConfigDiff['differences'] = [];
 
-  function walkDiff(obj1: any, obj2: any, prefix = '') {
-    const keys = new Set([...Object.keys(obj1), ...Object.keys(obj2)]);
-
-    for (const key of keys) {
-      const path = prefix ? `${prefix}.${key}` : key;
-      const val1 = obj1[key];
-      const val2 = obj2[key];
-
-      if (typeof val1 === 'object' && val1 !== null &&
-          typeof val2 === 'object' && val2 !== null) {
-        walkDiff(val1, val2, path);
-      } else if (val1 !== val2) {
-        differences.push({ path, before: val1, after: val2 });
+  function walk(a: unknown, b: unknown, prefix = '') {
+    if (a === b) return;
+    const aObj = typeof a === 'object' && a !== null && !Array.isArray(a);
+    const bObj = typeof b === 'object' && b !== null && !Array.isArray(b);
+    if (aObj && bObj) {
+      const keys = new Set([...Object.keys(a as any), ...Object.keys(b as any)]);
+      for (const key of keys) {
+        walk((a as any)[key], (b as any)[key], prefix ? `${prefix}.${key}` : key);
       }
+    } else if (a !== b) {
+      differences.push({ path: prefix, before: a, after: b });
     }
   }
 
-  walkDiff(config1, config2);
-
-  return {
-    changed: hash1 !== hash2,
-    hash1,
-    hash2,
-    differences
-  };
+  walk(config1, config2);
+  return { changed: hash1 !== hash2, hash1, hash2, differences };
 }

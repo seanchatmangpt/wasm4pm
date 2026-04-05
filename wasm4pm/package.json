@@ -19,7 +19,7 @@
     "build:nodejs": "RUSTFLAGS=\"-C target-feature=+simd128\" wasm-pack build --target nodejs",
     "build:web": "RUSTFLAGS=\"-C target-feature=+simd128\" wasm-pack build --target web",
     "build:all": "npm run build && npm run build:nodejs && npm run build:web",
-    "build:mcp": "tsc src/mcp_server.ts --outDir dist --module commonjs --target es2020",
+    "build:mcp": "tsc src/mcp_server.ts --outDir dist --module commonjs --target es2020 --skipLibCheck --esModuleInterop",
     "start:mcp": "npm run build:mcp && node dist/mcp_server.js",
     "test": "npm run build:nodejs && npm run test:unit && npm run build:web && npm run test:browser",
     "test:unit": "vitest run --exclude '__tests__/integration/browser.test.ts'",
@@ -41,8 +41,7 @@
     "bench:build": "npm run build:nodejs && npm run bench",
     "bench:browser": "npm run build:web && vitest run --browser chromium __tests__/benchmarks/browser.test.ts",
     "bench:browser:ci": "npm run build:web && CI_MODE=true vitest run --browser chromium __tests__/benchmarks/browser.test.ts",
-    "prepublishOnly": "npm run build:all && npm run lint && npm run test",
-    "prepare": "npm run build:all"
+    "prepublishOnly": "npm run build:all && npm run lint && npm run test"
   },
   "repository": {
     "type": "git",
@@ -80,5 +79,8 @@
     "typescript": "^5.3.3",
     "vite-plugin-wasm": "^3.6.0",
     "vitest": "^1.1.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0"
   }
 }

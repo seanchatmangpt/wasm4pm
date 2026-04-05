@@ -1,0 +1,43 @@
+{
+  "name": "@wasm4pm/planner",
+  "version": "26.4.5",
+  "description": "Process mining planning and optimization",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest",
+    "test:watch": "vitest --watch",
+    "lint": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@wasm4pm/contracts": "workspace:*",
+    "blake3": "^2.1.4",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/uuid": "^9.0.7",
+    "typescript": "^5.3.3",
+    "vitest": "^1.1.0"
+  },
+  "keywords": [
+    "process-mining",
+    "planning",
+    "optimization"
+  ],
+  "author": "Sean Chatman",
+  "license": "MIT"
+}

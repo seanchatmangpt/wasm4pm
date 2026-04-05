@@ -1,0 +1,705 @@
+/**
+ * registry.ts
+ * Algorithm registry for wasm4pm process mining algorithms
+ * Maintains metadata, profiles, and execution configuration for all 15+ discovery algorithms
+ */
+
+import { PlanStepType } from '@wasm4pm/planner';
+
+/**
+ * Complexity class for O(n) analysis
+ */
+export type ComplexityClass = 'O(n)' | 'O(n log n)' | 'O(n²)' | 'O(n³)' | 'Exponential' | 'NP-Hard';
+
+/**
+ * Speed tier: 0-100 (lower = faster)
+ * 0-10: instant (<1ms), 10-30: very fast (1-10ms), 30-50: fast (10-100ms)
+ * 50-70: moderate (100ms-1s), 70-85: slow (1-10s), 85-100: very slow (10s+)
+ */
+export type SpeedTier = number; // 0-100
+
+/**
+ * Quality tier: 0-100 (higher = better model quality)
+ * 0-30: basic (DFG, skeleton), 30-50: good (heuristic), 50-70: high (genetic, ILP)
+ * 70-85: very high (multi-pass), 85-100: optimal (ILP with full search)
+ */
+export type QualityTier = number; // 0-100
+
+/**
+ * Execution profile: which algorithms are recommended
+ */
+export type ExecutionProfile = 'fast' | 'balanced' | 'quality' | 'stream';
+
+/**
+ * Algorithm metadata
+ */
+export interface AlgorithmMetadata {
+  /** Unique algorithm identifier */
+  id: string;
+
+  /** Display name */
+  name: string;
+
+  /** Long description */
+  description: string;
+
+  /** Output type: 'dfg', 'petrinet', 'declare', etc. */
+  outputType: 'dfg' | 'petrinet' | 'declare' | 'tree';
+
+  /** Complexity class */
+  complexity: ComplexityClass;
+
+  /** Speed tier (0-100, lower is faster) */
+  speedTier: SpeedTier;
+
+  /** Quality tier (0-100, higher is better) */
+  qualityTier: QualityTier;
+
+  /** Parameters this algorithm accepts */
+  parameters: AlgorithmParameter[];
+
+  /** Which profiles include this algorithm */
+  supportedProfiles: ExecutionProfile[];
+
+  /** Estimated duration per 100 events in milliseconds */
+  estimatedDurationMs: number;
+
+  /** Estimated memory usage in MB for typical 10k event log */
+  estimatedMemoryMB: number;
+
+  /** Whether this algorithm can handle noise/incomplete data well */
+  robustToNoise: boolean;
+
+  /** Whether this algorithm scales well to large logs (100k+ events) */
+  scalesWell: boolean;
+
+  /** References or academic papers */
+  references?: string[];
+}
+
+/**
+ * Algorithm parameter definition
+ */
+export interface AlgorithmParameter {
+  name: string;
+  type: 'number' | 'string' | 'boolean' | 'select';
+  description: string;
+  required: boolean;
+  default?: unknown;
+  min?: number;
+  max?: number;
+  options?: unknown[];
+}
+
+/**
+ * Algorithm registry - manages all known algorithms
+ */
+export class AlgorithmRegistry {
+  private algorithms: Map<string, AlgorithmMetadata> = new Map();
+  private profileMap: Map<ExecutionProfile, string[]> = new Map();
+
+  constructor() {
+    this.registerAllAlgorithms();
+    this.buildProfileMap();
+  }
+
+  /**
+   * Register all wasm4pm algorithms
+   */
+  private registerAllAlgorithms(): void {
+    // Basic discovery - Directly Follows Graph
+    this.register({
+      id: 'dfg',
+      name: 'DFG (Directly Follows Graph)',
+      description:
+        'Discovers a directly-follows graph from an event log. Fastest algorithm with minimal memory overhead.',
+      outputType: 'dfg',
+      complexity: 'O(n)',
+      speedTier: 5,
+      qualityTier: 30,
+      parameters: [
+        {
+          name: 'activity_key',
+          type: 'string',
+          description: 'Event attribute key for activity names',
+          required: true,
+          default: 'concept:name',
+        },
+      ],
+      supportedProfiles: ['fast', 'balanced', 'quality', 'stream'],
+      estimatedDurationMs: 0.5,
+      estimatedMemoryMB: 20,
+      robustToNoise: true,
+      scalesWell: true,
+    });
+
+    // Process Skeleton
+    this.register({
+      id: 'process_skeleton',
+      name: 'Process Skeleton',
+      description: 'Discovers a minimal process skeleton with start and end activities. Very fast.',
+      outputType: 'dfg',
+      complexity: 'O(n)',
+      speedTier: 3,
+      qualityTier: 25,
+      parameters: [
+        {
+          name: 'activity_key',
+          type: 'string',
+          description: 'Event attribute key for activity names',
+          required: true,
+          default: 'concept:name',
+        },
+      ],
+      supportedProfiles: ['fast', 'balanced', 'quality', 'stream'],
+      estimatedDurationMs: 0.3,
+      estimatedMemoryMB: 10,
+      robustToNoise: true,
+      scalesWell: true,
+    });
+
+    // Alpha++ (improved Alpha algorithm)
+    this.register({
+      id: 'alpha_plus_plus',
+      name: 'Alpha++ (Improved Alpha)',
+      description:
+        'Enhanced version of classic Alpha algorithm. Discovers place-transition Petri nets with better noise handling.',
+      outputType: 'petrinet',
+      complexity: 'O(n²)',
+      speedTier: 20,
+      qualityTier: 45,
+      parameters: [
+        {
+          name: 'activity_key',
+          type: 'string',
+          description: 'Event attribute key for activity names',
+          required: true,
+          default: 'concept:name',
+        },
+      ],
+      supportedProfiles: ['balanced', 'quality'],
+      estimatedDurationMs: 5,
+      estimatedMemoryMB: 100,
+      robustToNoise: false,
+      scalesWell: false,
+    });
+
+    // Heuristic Miner
+    this.register({
+      id: 'heuristic_miner',
+      name: 'Heuristic Miner',
+      description:
+        'Discovers models from real-world logs with noise. Uses dependency threshold to filter weak dependencies.',
+      outputType: 'dfg',
+      complexity: 'O(n²)',
+      speedTier: 25,
+      qualityTier: 50,
+      parameters: [
+        {
+          name: 'activity_key',
+          type: 'string',
+          description: 'Event attribute key for activity names',
+          required: true,
+          default: 'concept:name',
+        },
+        {
+          name: 'dependency_threshold',
+          type: 'number',
+          description: 'Threshold for dependency ratio (0-1)',
+          required: false,
+          default: 0.5,
+          min: 0,
+          max: 1,
+        },
+      ],
+      supportedProfiles: ['balanced', 'quality'],
+      estimatedDurationMs: 10,
+      estimatedMemoryMB: 150,
+      robustToNoise: true,
+      scalesWell: true,
+    });
+
+    // Inductive Miner
+    this.register({
+      id: 'inductive_miner',
+      name: 'Inductive Miner',
+      description: 'Recursively partitions event log to discover process trees. Handles noise well.',
+      outputType: 'tree',
+      complexity: 'O(n log n)',
+      speedTier: 30,
+      qualityTier: 55,
+      parameters: [
+        {
+          name: 'activity_key',
+          type: 'string',
+          description: 'Event attribute key for activity names',
+          required: true,
+          default: 'concept:name',
+        },
+        {
+          name: 'noise_threshold',
+          type: 'number',
+          description: 'Infrequent behavior threshold (0-1)',
+          required: false,
+          default: 0.2,
+          min: 0,
+          max: 1,
+        },
+      ],
+      supportedProfiles: ['balanced', 'quality'],
+      estimatedDurationMs: 15,
+      estimatedMemoryMB: 180,
+      robustToNoise: true,
+      scalesWell: true,
+    });
+
+    // Genetic Algorithm
+    this.register({
+      id: 'genetic_algorithm',
+      name: 'Genetic Algorithm',
+      description: 'Uses evolutionary computation to discover high-quality models. Best quality for complex processes.',
+      outputType: 'petrinet',
+      complexity: 'Exponential',
+      speedTier: 75,
+      qualityTier: 80,
+      parameters: [
+        {
+          name: 'activity_key',
+          type: 'string',
+          description: 'Event attribute key for activity names',
+          required: true,
+          default: 'concept:name',
+        },
+        {
+          name: 'population_size',
+          type: 'number',
+          description: 'Population size for genetic algorithm',
+          required: false,
+          default: 50,
+          min: 10,
+          max: 500,
+        },
+        {
+          name: 'generations',
+          type: 'number',
+          description: 'Number of generations to evolve',
+          required: false,
+          default: 100,
+          min: 10,
+          max: 1000,
+        },
+      ],
+      supportedProfiles: ['quality'],
+      estimatedDurationMs: 40,
+      estimatedMemoryMB: 250,
+      robustToNoise: true,
+      scalesWell: false,
+    });
+
+    // PSO (Particle Swarm Optimization)
+    this.register({
+      id: 'pso',
+      name: 'Particle Swarm Optimization (PSO)',
+      description: 'Swarm-based algorithm for discovering Petri nets. Balances exploration and exploitation.',
+      outputType: 'petrinet',
+      complexity: 'Exponential',
+      speedTier: 70,
+      qualityTier: 75,
+      parameters: [
+        {
+          name: 'activity_key',
+          type: 'string',
+          description: 'Event attribute key for activity names',
+          required: true,
+          default: 'concept:name',
+        },
+        {
+          name: 'swarm_size',
+          type: 'number',
+          description: 'Number of particles',
+          required: false,
+          default: 30,
+          min: 10,
+          max: 300,
+        },
+        {
+          name: 'iterations',
+          type: 'number',
+          description: 'Number of iterations',
+          required: false,
+          default: 50,
+          min: 10,
+          max: 500,
+        },
+      ],
+      supportedProfiles: ['quality'],
+      estimatedDurationMs: 35,
+      estimatedMemoryMB: 220,
+      robustToNoise: true,
+      scalesWell: false,
+    });
+
+    // A* Search
+    this.register({
+      id: 'a_star',
+      name: 'A* Search',
+      description: 'Heuristic search algorithm for discovering optimal or near-optimal Petri nets.',
+      outputType: 'petrinet',
+      complexity: 'Exponential',
+      speedTier: 60,
+      qualityTier: 70,
+      parameters: [
+        {
+          name: 'activity_key',
+          type: 'string',
+          description: 'Event attribute key for activity names',
+          required: true,
+          default: 'concept:name',
+        },
+        {
+          name: 'max_iterations',
+          type: 'number',
+          description: 'Maximum search iterations',
+          required: false,
+          default: 10000,
+          min: 1000,
+          max: 100000,
+        },
+      ],
+      supportedProfiles: ['quality'],
+      estimatedDurationMs: 50,
+      estimatedMemoryMB: 200,
+      robustToNoise: false,
+      scalesWell: false,
+    });
+
+    // Hill Climbing
+    this.register({
+      id: 'hill_climbing',
+      name: 'Hill Climbing',
+      description: 'Greedy local search for Petri net discovery. Fast with reasonable quality.',
+      outputType: 'petrinet',
+      complexity: 'O(n²)',
+      speedTier: 40,
+      qualityTier: 55,
+      parameters: [
+        {
+          name: 'activity_key',
+          type: 'string',
+          description: 'Event attribute key for activity names',
+          required: true,
+          default: 'concept:name',
+        },
+        {
+          name: 'max_iterations',
+          type: 'number',
+          description: 'Maximum iterations for hill climbing',
+          required: false,
+          default: 100,
+          min: 10,
+          max: 1000,
+        },
+      ],
+      supportedProfiles: ['balanced', 'quality'],
+      estimatedDurationMs: 20,
+      estimatedMemoryMB: 150,
+      robustToNoise: true,
+      scalesWell: true,
+    });
+
+    // ILP (Integer Linear Programming)
+    this.register({
+      id: 'ilp',
+      name: 'ILP (Integer Linear Programming)',
+      description: 'Optimal model discovery using integer programming. Best theoretical quality, slower.',
+      outputType: 'petrinet',
+      complexity: 'NP-Hard',
+      speedTier: 80,
+      qualityTier: 90,
+      parameters: [
+        {
+          name: 'activity_key',
+          type: 'string',
+          description: 'Event attribute key for activity names',
+          required: true,
+          default: 'concept:name',
+        },
+        {
+          name: 'timeout_seconds',
+          type: 'number',
+          description: 'Timeout for solver in seconds',
+          required: false,
+          default: 30,
+          min: 1,
+          max: 300,
+        },
+      ],
+      supportedProfiles: ['quality'],
+      estimatedDurationMs: 20,
+      estimatedMemoryMB: 300,
+      robustToNoise: false,
+      scalesWell: false,
+    });
+
+    // Ant Colony Optimization (ACO)
+    this.register({
+      id: 'aco',
+      name: 'Ant Colony Optimization (ACO)',
+      description: 'Swarm intelligence algorithm inspired by ant pheromones. Discovers high-quality Petri nets.',
+      outputType: 'petrinet',
+      complexity: 'Exponential',
+      speedTier: 65,
+      qualityTier: 75,
+      parameters: [
+        {
+          name: 'activity_key',
+          type: 'string',
+          description: 'Event attribute key for activity names',
+          required: true,
+          default: 'concept:name',
+        },
+        {
+          name: 'colony_size',
+          type: 'number',
+          description: 'Number of ants',
+          required: false,
+          default: 40,
+          min: 10,
+          max: 500,
+        },
+        {
+          name: 'iterations',
+          type: 'number',
+          description: 'Number of iterations',
+          required: false,
+          default: 100,
+          min: 10,
+          max: 1000,
+        },
+      ],
+      supportedProfiles: ['quality'],
+      estimatedDurationMs: 45,
+      estimatedMemoryMB: 200,
+      robustToNoise: true,
+      scalesWell: false,
+    });
+
+    // Simulated Annealing
+    this.register({
+      id: 'simulated_annealing',
+      name: 'Simulated Annealing',
+      description: 'Probabilistic technique for finding near-optimal Petri net models.',
+      outputType: 'petrinet',
+      complexity: 'Exponential',
+      speedTier: 55,
+      qualityTier: 65,
+      parameters: [
+        {
+          name: 'activity_key',
+          type: 'string',
+          description: 'Event attribute key for activity names',
+          required: true,
+          default: 'concept:name',
+        },
+        {
+          name: 'initial_temperature',
+          type: 'number',
+          description: 'Initial temperature',
+          required: false,
+          default: 100,
+          min: 1,
+          max: 1000,
+        },
+        {
+          name: 'cooling_rate',
+          type: 'number',
+          description: 'Temperature cooling rate',
+          required: false,
+          default: 0.95,
+          min: 0.8,
+          max: 0.99,
+        },
+      ],
+      supportedProfiles: ['quality'],
+      estimatedDurationMs: 30,
+      estimatedMemoryMB: 180,
+      robustToNoise: true,
+      scalesWell: false,
+    });
+
+    // Declare (constraint-based)
+    this.register({
+      id: 'declare',
+      name: 'Declare (Constraints)',
+      description: 'Discovers declarative (constraint-based) process models. Good for flexible processes.',
+      outputType: 'declare',
+      complexity: 'O(n²)',
+      speedTier: 35,
+      qualityTier: 50,
+      parameters: [
+        {
+          name: 'activity_key',
+          type: 'string',
+          description: 'Event attribute key for activity names',
+          required: true,
+          default: 'concept:name',
+        },
+        {
+          name: 'support_threshold',
+          type: 'number',
+          description: 'Minimum support for constraints (0-1)',
+          required: false,
+          default: 0.8,
+          min: 0,
+          max: 1,
+        },
+      ],
+      supportedProfiles: ['balanced', 'quality'],
+      estimatedDurationMs: 12,
+      estimatedMemoryMB: 120,
+      robustToNoise: true,
+      scalesWell: true,
+    });
+
+    // Optimized DFG (ILP variant)
+    this.register({
+      id: 'optimized_dfg',
+      name: 'Optimized DFG (ILP)',
+      description: 'ILP-based DFG optimization. Minimal model with best fitness.',
+      outputType: 'dfg',
+      complexity: 'NP-Hard',
+      speedTier: 70,
+      qualityTier: 85,
+      parameters: [
+        {
+          name: 'activity_key',
+          type: 'string',
+          description: 'Event attribute key for activity names',
+          required: true,
+          default: 'concept:name',
+        },
+        {
+          name: 'timeout_seconds',
+          type: 'number',
+          description: 'Solver timeout in seconds',
+          required: false,
+          default: 15,
+          min: 1,
+          max: 300,
+        },
+      ],
+      supportedProfiles: ['quality'],
+      estimatedDurationMs: 15,
+      estimatedMemoryMB: 250,
+      robustToNoise: false,
+      scalesWell: false,
+    });
+  }
+
+  /**
+   * Register a single algorithm
+   */
+  register(metadata: AlgorithmMetadata): void {
+    this.algorithms.set(metadata.id, metadata);
+  }
+
+  /**
+   * Get algorithm by ID
+   */
+  get(algorithmId: string): AlgorithmMetadata | undefined {
+    return this.algorithms.get(algorithmId);
+  }
+
+  /**
+   * List all algorithms
+   */
+  list(): AlgorithmMetadata[] {
+    return Array.from(this.algorithms.values());
+  }
+
+  /**
+   * Get algorithms for a profile
+   */
+  getForProfile(profile: ExecutionProfile): AlgorithmMetadata[] {
+    const ids = this.profileMap.get(profile) || [];
+    return ids.map((id) => this.algorithms.get(id)!).filter((a) => a !== undefined);
+  }
+
+  /**
+   * Build profile map from algorithm registrations
+   */
+  private buildProfileMap(): void {
+    const profileMap = new Map<ExecutionProfile, Set<string>>();
+    const profiles: ExecutionProfile[] = ['fast', 'balanced', 'quality', 'stream'];
+
+    for (const profile of profiles) {
+      profileMap.set(profile, new Set());
+    }
+
+    for (const [id, metadata] of this.algorithms) {
+      for (const profile of metadata.supportedProfiles) {
+        const set = profileMap.get(profile);
+        if (set) {
+          set.add(id);
+        }
+      }
+    }
+
+    // Convert sets to arrays
+    for (const [profile, set] of profileMap) {
+      this.profileMap.set(profile, Array.from(set));
+    }
+  }
+
+  /**
+   * Suggest best algorithm for a profile and log size
+   */
+  suggestForProfile(profile: ExecutionProfile, logSize: number): AlgorithmMetadata | undefined {
+    const algorithms = this.getForProfile(profile);
+
+    if (algorithms.length === 0) {
+      return undefined;
+    }
+
+    // For very small logs, prefer speed
+    // For medium logs, balance speed and quality
+    // For large logs, prefer algorithms that scale well
+    const isSmallLog = logSize < 1000;
+    const isLargeLog = logSize > 100000;
+
+    let candidates = algorithms;
+
+    if (isLargeLog) {
+      candidates = candidates.filter((a) => a.scalesWell);
+    }
+
+    if (candidates.length === 0) {
+      candidates = algorithms;
+    }
+
+    // Sort by: quality tier (desc) and speed tier (asc)
+    candidates.sort((a, b) => {
+      if (b.qualityTier !== a.qualityTier) {
+        return b.qualityTier - a.qualityTier; // higher quality first
+      }
+      return a.speedTier - b.speedTier; // lower speed (faster) first
+    });
+
+    return candidates[0];
+  }
+}
+
+/**
+ * Create a singleton registry instance
+ */
+let registryInstance: AlgorithmRegistry | null = null;
+
+/**
+ * Get or create the global algorithm registry
+ */
+export function getRegistry(): AlgorithmRegistry {
+  if (!registryInstance) {
+    registryInstance = new AlgorithmRegistry();
+  }
+  return registryInstance;
+}

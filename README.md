@@ -18,22 +18,33 @@
 
 ## What is wasm4pm?
 
-**wasm4pm** is a sophisticated process mining library compiled to WebAssembly, bringing production-grade process discovery, conformance checking, and analysis capabilities to browsers and Node.js.
+**wasm4pm** is a comprehensive, enterprise-grade process mining platform compiled to WebAssembly. It brings production-grade process discovery, conformance checking, analysis, and automation capabilities to browsers, Node.js, and containers.
 
-Process mining extracts actionable insights from event logs by discovering process models, detecting deviations, and analyzing performance bottlenecks. **wasm4pm** makes this accessible to JavaScript developers with near-native performance.
+Process mining extracts actionable insights from event logs by discovering process models, detecting deviations, and analyzing performance bottlenecks. **wasm4pm** makes this accessible to JavaScript developers with near-native performance, plus professional CLI tools, HTTP APIs, and observability for enterprise deployments.
+
+### Version 26.4.5 (April 2026)
+**Major Release:** Added 10 new packages (engine, config, service, observability, contracts, types, kernel, planner, templates, testing) while maintaining 100% backward compatibility. Introduces professional CLI tool (pmctl), configuration management, HTTP service layer, and comprehensive observability.
 
 ## 🚀 Key Capabilities
 
-### 14 Discovery Algorithms
-Automatically discover process models from event logs:
-- **DFG** - Directly-Follows Graph (fastest, simplest)
-- **Alpha++** - Petri net discovery (balanced performance/quality)
+### Discovery Layer
+**14 Discovery Algorithms** with 4 execution profiles (Fast, Balanced, Quality, Stream):
+- **DFG** - Directly-Follows Graph (0.5ms/100 events)
+- **Alpha++** - Petri net discovery (5ms/100 events)
 - **ILP Optimization** - Constraint-based optimal models
 - **Genetic Algorithm** - Evolutionary discovery with fitness tuning
 - **Particle Swarm Optimization** - Intelligence-based model evolution
 - **A* Search** - Heuristic model discovery
 - **DECLARE** - Constraint pattern discovery
+- **Streaming Conformance** - Real-time trace validation (NEW)
 - **Heuristic Miner**, **Inductive Miner**, **Hill Climbing**, **Ant Colony**, **Simulated Annealing**, **Process Skeleton**, **Optimized DFG**
+
+### Professional Tools (NEW in v26.4.5)
+- **pmctl CLI** - Command-line interface with init, run, watch, status, explain commands
+- **Configuration System** - TOML/JSON/environment-based configuration with Zod validation
+- **HTTP Service** - Express-based REST API + WebSocket streaming (OpenAPI documented)
+- **Engine Lifecycle** - State machine for controlled algorithm execution
+- **Observability** - Non-blocking logging with console, file, HTTP sinks
 
 ### 20+ Analytics Functions
 Analyze process characteristics:
@@ -70,6 +81,30 @@ npm install wasm4pm
 ### Requirements
 - Node.js 16+ or modern browser
 - ~2MB WASM binary (gzipped: ~600KB)
+
+## 🎯 What's New in v26.4.5
+
+### 10 New Packages
+1. **@wasm4pm/pmctl** - Professional CLI tool
+2. **@wasm4pm/config** - Configuration management
+3. **@wasm4pm/engine** - Execution engine lifecycle
+4. **@wasm4pm/service** - HTTP service layer
+5. **@wasm4pm/observability** - Non-blocking logging
+6. **@wasm4pm/contracts** - Type-safe contracts (Zod)
+7. **@wasm4pm/types** - Shared TypeScript definitions
+8. **@wasm4pm/kernel** - WASM kernel operations
+9. **@wasm4pm/planner** - Algorithm recommendation
+10. Plus: connectors, sinks, templates, testing, ocel
+
+### Highlights
+- **Streaming Conformance:** Real-time trace validation (177× faster)
+- **Browser Tests:** Complete Chromium test suite, interactive benchmarks
+- **Configuration:** TOML/JSON/env variables with precedence
+- **Receipts:** Audit trails with BLAKE3 provenance tracking
+- **Service Mode:** Deploy as Express HTTP server
+- **100% Compatible:** No breaking changes from v26.4.4
+
+See [RELEASE_NOTES.md](./RELEASE_NOTES.md) for complete details.
 
 ## ⚡ Quick Start
 

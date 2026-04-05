@@ -1,7 +1,7 @@
 import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { loadConfig } from '@wasm4pm/config';
+import { resolveConfig as loadConfig } from '@wasm4pm/config';
 import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import type { OutputOptions } from '../output.js';

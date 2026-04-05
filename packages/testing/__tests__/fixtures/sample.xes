@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<log xes.version="1.0" xmlns="http://www.xes-standard.org/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.xes-standard.org/ xes.xsd">
+  <trace>
+    <string key="concept:name" value="case_001"/>
+    <event>
+      <string key="concept:name" value="register"/>
+      <string key="org:resource" value="alice"/>
+      <date key="time:timestamp" value="2024-01-01T09:00:00Z"/>
+    </event>
+    <event>
+      <string key="concept:name" value="examine"/>
+      <string key="org:resource" value="bob"/>
+      <date key="time:timestamp" value="2024-01-01T09:15:00Z"/>
+    </event>
+    <event>
+      <string key="concept:name" value="decide"/>
+      <string key="org:resource" value="charlie"/>
+      <date key="time:timestamp" value="2024-01-01T09:30:00Z"/>
+    </event>
+    <event>
+      <string key="concept:name" value="notify"/>
+      <string key="org:resource" value="alice"/>
+      <date key="time:timestamp" value="2024-01-01T09:45:00Z"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="case_002"/>
+    <event>
+      <string key="concept:name" value="register"/>
+      <string key="org:resource" value="alice"/>
+      <date key="time:timestamp" value="2024-01-01T10:00:00Z"/>
+    </event>
+    <event>
+      <string key="concept:name" value="examine"/>
+      <string key="org:resource" value="bob"/>
+      <date key="time:timestamp" value="2024-01-01T10:20:00Z"/>
+    </event>
+    <event>
+      <string key="concept:name" value="decide"/>
+      <string key="org:resource" value="charlie"/>
+      <date key="time:timestamp" value="2024-01-01T10:35:00Z"/>
+    </event>
+    <event>
+      <string key="concept:name" value="notify"/>
+      <string key="org:resource" value="alice"/>
+      <date key="time:timestamp" value="2024-01-01T10:50:00Z"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="case_003"/>
+    <event>
+      <string key="concept:name" value="register"/>
+      <string key="org:resource" value="alice"/>
+      <date key="time:timestamp" value="2024-01-01T11:00:00Z"/>
+    </event>
+    <event>
+      <string key="concept:name" value="examine"/>
+      <string key="org:resource" value="bob"/>
+      <date key="time:timestamp" value="2024-01-01T11:15:00Z"/>
+    </event>
+    <event>
+      <string key="concept:name" value="decide"/>
+      <string key="org:resource" value="charlie"/>
+      <date key="time:timestamp" value="2024-01-01T11:30:00Z"/>
+    </event>
+  </trace>
+</log>

@@ -64,14 +64,14 @@ export function dfgToMermaid(dfg: api.DirectlyFollowsGraph): string {
 
   // Add start activities
   diagram += '  START[" "]\n';
-  for (const [activity, freq] of Object.entries(dfg.start_activities)) {
-    diagram += `  START -->|start${freq > 1 ? ` (${freq})` : ''}| ${activity}\n`;
+  for (const [activity, freq] of Object.entries(dfg.startActivities)) {
+    diagram += `  START -->|start${(freq as number) > 1 ? ` (${freq})` : ''}| ${activity}\n`;
   }
 
   // Add end activities
   diagram += '  END[" "]\n';
-  for (const [activity, freq] of Object.entries(dfg.end_activities)) {
-    diagram += `  ${activity} -->|end${freq > 1 ? ` (${freq})` : ''}| END\n`;
+  for (const [activity, freq] of Object.entries(dfg.endActivities)) {
+    diagram += `  ${activity} -->|end${(freq as number) > 1 ? ` (${freq})` : ''}| END\n`;
   }
 
   return diagram;

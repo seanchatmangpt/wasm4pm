@@ -1,18 +1,37 @@
 {
+  "name": "wasm4pm",
+  "version": "26.4.5",
+  "description": "High-performance process mining monorepo with WASM acceleration",
+  "license": "MIT",
   "private": true,
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@9.15.0",
   "scripts": {
-    "build": "pnpm -r build",
+    "build": "pnpm -r --parallel build",
     "test": "pnpm -r test",
     "lint": "pnpm -r lint",
+    "clean": "pnpm -r clean && rm -rf node_modules",
+    "release": "pnpm run build && pnpm run test && pnpm run lint",
+    "release:verify": "bash .github/scripts/verify-release.sh",
+    "release:verify-versions": "bash .github/scripts/verify-versions.sh",
+    "release:verify-parity": "bash .github/scripts/verify-parity.sh",
+    "release:generate-schemas": "bash .github/scripts/generate-schemas.sh",
+    "release:generate-changelog": "bash .github/scripts/generate-changelog.sh",
+    "release:generate-sbom": "bash .github/scripts/generate-sbom.sh",
+    "release:full": "pnpm run release:verify && pnpm run release:verify-versions && pnpm run release:generate-schemas && pnpm run release:generate-changelog && pnpm run release:generate-sbom",
     "build:wasm": "pnpm --filter wasm4pm build:all",
-    "dev": "pnpm --filter @wasm4pm/engine build && pnpm --filter @wasm4pm/cli build"
+    "build:engine": "pnpm --filter @wasm4pm/engine build",
+    "build:cli": "pnpm --filter @wasm4pm/pmctl build",
+    "build:all": "pnpm run build:wasm && pnpm run build:engine && pnpm run build:cli",
+    "dev": "pnpm run build:engine && pnpm run build:cli",
+    "ci:test": "pnpm run lint && pnpm run test",
+    "ci:build": "pnpm run build:all"
   },
   "devDependencies": {
     "typescript": "^5.3.3",
     "prettier": "^3.1.1"
-  },
-  "engines": {
-    "node": ">=18.0.0"
-  },
-  "packageManager": "pnpm@9.15.0"
+  }
 }
