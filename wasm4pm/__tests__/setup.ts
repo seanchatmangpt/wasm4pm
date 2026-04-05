@@ -9,8 +9,8 @@ import * as wasm from '../pkg/wasm4pm.js';
 // Initialize WASM module before each test
 beforeEach(async () => {
   try {
-    await wasm.default();
-    await wasm.clear_all_objects();
+    wasm.init();
+    wasm.clear_all_objects();
   } catch (e) {
     console.warn('WASM initialization warning:', e);
     throw new Error(`Failed to initialize WASM module: ${e}`);
@@ -20,7 +20,7 @@ beforeEach(async () => {
 // Clean up handles after each test
 afterEach(async () => {
   try {
-    await wasm.clear_all_objects();
+    wasm.clear_all_objects();
   } catch (e) {
     console.warn('WASM cleanup warning:', e);
   }

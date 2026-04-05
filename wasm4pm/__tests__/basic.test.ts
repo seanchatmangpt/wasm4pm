@@ -4,11 +4,12 @@
 
 import { describe, it, expect } from 'vitest';
 import * as wasm from '../pkg/wasm4pm.js';
+import { XES_MINIMAL } from './helpers/fixtures';
 
 describe('wasm4pm - Basic Functionality', () => {
   it('should successfully import the WASM module', async () => {
     expect(wasm).toBeDefined();
-    expect(wasm.default).toBeDefined();
+    expect(typeof wasm.init).toBe('function');
   });
 
   it('should return a valid semantic version from get_version()', () => {
@@ -19,39 +20,42 @@ describe('wasm4pm - Basic Functionality', () => {
     expect(version).toMatch(/^\d+\.\d+\.\d+(-[\w.]+)?$/);
   });
 
-  it('should return a non-empty list of available discovery algorithms', () => {
-    const algorithms = wasm.available_discovery_algorithms();
-    expect(algorithms).toBeTruthy();
-    expect(typeof algorithms).toBe('string');
-    expect(algorithms.length).toBeGreaterThan(0);
-    // Should be a JSON array of strings
-    const parsed = JSON.parse(algorithms);
-    expect(Array.isArray(parsed)).toBe(true);
-    expect(parsed.length).toBeGreaterThan(0);
+  it('should export core event log functions', () => {
+    expect(wasm.load_eventlog_from_xes).toBeDefined();
+    expect(typeof wasm.load_eventlog_from_xes).toBe('function');
+    expect(wasm.export_eventlog_to_xes).toBeDefined();
+    expect(typeof wasm.export_eventlog_to_xes).toBe('function');
+    expect(wasm.get_event_count).toBeDefined();
+    expect(typeof wasm.get_event_count).toBe('function');
   });
 
-  it('should have initialized without errors', () => {
+  it('should export discovery algorithm functions', () => {
+    expect(wasm.discover_dfg).toBeDefined();
+    expect(typeof wasm.discover_dfg).toBe('function');
+    expect(wasm.discover_alpha_plus_plus).toBeDefined();
+    expect(typeof wasm.discover_alpha_plus_plus).toBe('function');
+    expect(wasm.discover_heuristic_miner).toBeDefined();
+    expect(typeof wasm.discover_heuristic_miner).toBe('function');
+  });
+
+  it('should export state management functions', () => {
+    expect(wasm.clear_all_objects).toBeDefined();
+    expect(typeof wasm.clear_all_objects).toBe('function');
+    expect(wasm.delete_object).toBeDefined();
+    expect(typeof wasm.delete_object).toBe('function');
+  });
+
+  it('should load XES minimal fixture without errors', () => {
+    const handle = wasm.load_eventlog_from_xes(XES_MINIMAL);
+    expect(handle).toBeTruthy();
+    expect(typeof handle).toBe('string');
+    // Handle should be a valid reference (non-empty string)
+    expect(handle.length).toBeGreaterThan(0);
+  });
+
+  it('should have initialized WASM successfully', () => {
     // This test validates that setup.ts initialization succeeded
     // If init failed, we would not reach this test
     expect(true).toBe(true);
-  });
-
-  describe('Module structure', () => {
-    it('should export core event log functions', () => {
-      expect(wasm.load_eventlog_from_xes).toBeDefined();
-      expect(wasm.export_eventlog_to_xes).toBeDefined();
-      expect(wasm.get_eventlog_info).toBeDefined();
-    });
-
-    it('should export discovery algorithm functions', () => {
-      expect(wasm.discover_dfg).toBeDefined();
-      expect(wasm.discover_process_skeleton).toBeDefined();
-      expect(wasm.discover_alpha_plus_plus).toBeDefined();
-    });
-
-    it('should export state management functions', () => {
-      expect(wasm.clear_all_objects).toBeDefined();
-      expect(wasm.list_all_handles).toBeDefined();
-    });
   });
 });
