@@ -32,6 +32,7 @@ pub mod text_encoding;
 pub mod feature_extraction;
 pub mod resource_analysis;
 pub mod data_quality;
+pub mod capability_registry;
 
 // Suppress unused warnings for re-exported modules
 #[allow(unused)]
