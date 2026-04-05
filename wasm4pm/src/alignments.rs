@@ -109,9 +109,12 @@ fn fire_transition(
     Some(new_marking)
 }
 
-/// Heuristic: remaining trace length (optimistic estimate).
-fn heuristic(trace_len: usize, current_trace_index: usize) -> f64 {
-    (trace_len - current_trace_index) as f64
+/// Heuristic: admissible (but uninformed) estimate for weighted costs.
+/// Using 0 ensures A* optimality even with variable cost weights.
+/// A more sophisticated heuristic would estimate remaining cost,
+/// but that requires domain-specific knowledge.
+fn heuristic(_trace_len: usize, _current_trace_index: usize) -> f64 {
+    0.0
 }
 
 /// Compute optimal alignment for a single trace using A*.
@@ -149,14 +152,20 @@ fn compute_trace_alignment(
             break;
         }
 
-        let state_key = (state.trace_index, format!("{:?}", state.marking));
+        // Create deterministic state key by sorting marking entries
+        let mut marking_vec: Vec<_> = state.marking.iter().collect();
+        marking_vec.sort_by_key(|(k, _)| k.as_str());
+        let state_key = (state.trace_index, format!("{:?}", marking_vec));
         if closed_set.contains(&state_key) {
             continue;
         }
         closed_set.insert(state_key);
 
-        // Check if goal reached (all trace consumed and all initial tokens consumed)
-        if state.trace_index == trace_len && state.marking == petri_net.initial_marking {
+        // Check if goal reached (all trace consumed and marking is a final marking)
+        if state.trace_index == trace_len
+            && (petri_net.final_markings.is_empty()
+                || petri_net.final_markings.iter().any(|fm| fm == &state.marking))
+        {
             let (sync_count, log_count, model_count) = count_moves(&state.path);
             best_solution = Some((state.cost, state.path.clone(), sync_count, log_count, model_count));
             break;
@@ -203,19 +212,25 @@ fn compute_trace_alignment(
             }
         }
 
-        // 3. Model move: fire any transition (including invisible ones)
+        // 3. Model move: fire any transition (invisible transitions have cost 0)
         for transition in &petri_net.transitions {
             if let Some(new_marking) = fire_transition(petri_net, &state.marking, &transition.id) {
+                // Invisible transitions (empty label) or marked as invisible have cost 0
+                let move_cost = if transition.is_invisible.unwrap_or(false) || transition.label.is_empty() {
+                    0.0
+                } else {
+                    model_move_cost
+                };
                 let mut new_path = state.path.clone();
                 new_path.push(format!("model:{}", transition.label));
                 successors.push((
                     AlignmentState {
                         trace_index: state.trace_index,
                         marking: new_marking,
-                        cost: state.cost + model_move_cost,
+                        cost: state.cost + move_cost,
                         path: new_path,
                     },
-                    model_move_cost,
+                    move_cost,
                 ));
             }
         }
@@ -315,11 +330,15 @@ pub fn compute_optimal_alignments(
                     model_move_cost,
                 );
 
-                total_cost += cost;
+                // Only include in total if alignment was found (cost is finite)
+                if cost.is_finite() {
+                    total_cost += cost;
+                }
 
                 alignments.push(json!({
                     "case_id": case_id,
-                    "cost": cost,
+                    "alignment_found": cost.is_finite(),
+                    "cost": if cost.is_finite() { cost } else { -1.0 }, // Use -1 as marker for no alignment
                     "sync_moves": sync_count,
                     "log_moves": log_count,
                     "model_moves": model_count,

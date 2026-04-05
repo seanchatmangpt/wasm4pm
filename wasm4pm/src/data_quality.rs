@@ -2,7 +2,7 @@ use wasm_bindgen::prelude::*;
 use serde_json::{json, Value};
 use std::collections::{HashMap, HashSet};
 use crate::state::{get_or_init_state, StoredObject};
-use crate::models::*;
+use crate::models::{*, parse_timestamp_ms};
 use crate::utilities::to_js;
 
 /// Check data quality of an EventLog for common issues
@@ -88,7 +88,10 @@ pub fn check_data_quality(
                         .get(timestamp_key)
                         .and_then(|v| v.as_string())
                         .unwrap_or("unknown");
-                    let sig = (activity.to_string(), timestamp.to_string(), format!("{:?}", event.attributes));
+                    // Sort attributes by key to ensure deterministic hashing
+                    let mut sorted_attrs: Vec<_> = event.attributes.iter().collect();
+                    sorted_attrs.sort_by_key(|(k, _)| k.as_str());
+                    let sig = (activity.to_string(), timestamp.to_string(), format!("{:?}", sorted_attrs));
 
                     *event_signatures.entry(sig).or_insert(0) += 1;
                 }
@@ -144,17 +147,7 @@ pub fn check_ocel_data_quality(ocel_handle: &str) -> Result<JsValue, JsValue> {
 
             // Check referential integrity: events reference existing objects
             for event in &ocel.events {
-                for obj_ref in &event.object_refs {
-                    if !valid_object_ids.contains(&obj_ref.object_id) {
-                        issues.push(json!({
-                            "type": "missing_object_reference",
-                            "event_id": event.id,
-                            "object_id": obj_ref.object_id
-                        }));
-                    }
-                }
-                // Also check object_ids array
-                for obj_id in &event.object_ids {
+                for obj_id in event.all_object_ids() {
                     if !valid_object_ids.contains(obj_id) {
                         issues.push(json!({
                             "type": "missing_object_reference",
@@ -168,11 +161,8 @@ pub fn check_ocel_data_quality(ocel_handle: &str) -> Result<JsValue, JsValue> {
             // Check for orphan objects (objects not referenced by any event)
             let mut referenced_objects = HashSet::new();
             for event in &ocel.events {
-                for obj_ref in &event.object_refs {
-                    referenced_objects.insert(obj_ref.object_id.clone());
-                }
-                for obj_id in &event.object_ids {
-                    referenced_objects.insert(obj_id.clone());
+                for obj_id in event.all_object_ids() {
+                    referenced_objects.insert(obj_id.to_string());
                 }
             }
 
@@ -558,33 +548,5 @@ fn infer_case_id_key(log: &EventLog, attr_stats: &HashMap<String, AttributeStats
         }
     }
 
-    None
-}
-
-/// Parse ISO 8601 timestamp to milliseconds (reuses existing utility)
-fn parse_timestamp_ms(s: &str) -> Option<i64> {
-    use chrono::{DateTime, NaiveDateTime, TimeZone, Utc};
-
-    // Try RFC 3339 / ISO 8601 with offset first
-    if let Ok(dt) = DateTime::parse_from_rfc3339(s) {
-        return Some(dt.timestamp_millis());
-    }
-
-    // Try with space instead of T
-    if let Ok(dt) = DateTime::parse_from_rfc3339(&s.replacen(' ', "T", 1)) {
-        return Some(dt.timestamp_millis());
-    }
-
-    // Naive datetime (assume UTC)
-    for fmt in &[
-        "%Y-%m-%dT%H:%M:%S%.f",
-        "%Y-%m-%dT%H:%M:%S",
-        "%Y-%m-%d %H:%M:%S%.f",
-        "%Y-%m-%d %H:%M:%S",
-    ] {
-        if let Ok(ndt) = NaiveDateTime::parse_from_str(s, fmt) {
-            return Some(Utc.from_utc_datetime(&ndt).timestamp_millis());
-        }
-    }
     None
 }
