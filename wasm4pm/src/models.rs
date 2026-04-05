@@ -216,6 +216,29 @@ pub struct OCELEventAttribute {
     pub attribute_type: String,
 }
 
+/// OCEL Event-Object Reference (OCEL 2.0)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OCELEventObjectRef {
+    pub object_id: String,
+    pub qualifier: String, // e.g., "item", "customer", "resource"
+}
+
+/// OCEL Object Attribute Change (OCEL 2.0)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OCELObjectAttributeChange {
+    pub timestamp: String,
+    pub attribute_name: String,
+    pub value: AttributeValue,
+}
+
+/// OCEL Object Relation (OCEL 2.0)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OCELObjectRelation {
+    pub source_id: String,
+    pub target_id: String,
+    pub qualifier: String, // e.g., "belongs-to", "created-by"
+}
+
 /// OCEL Event
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OCELEvent {
@@ -224,6 +247,15 @@ pub struct OCELEvent {
     pub timestamp: String, // ISO 8601
     pub attributes: HashMap<String, AttributeValue>,
     pub object_ids: Vec<String>,
+    #[serde(default)]
+    pub object_refs: Vec<OCELEventObjectRef>,
+}
+
+impl OCELEvent {
+    /// Extract object IDs from object_refs
+    pub fn get_object_ids(&self) -> Vec<String> {
+        self.object_refs.iter().map(|r| r.object_id.clone()).collect()
+    }
 }
 
 /// OCEL Object
@@ -232,6 +264,8 @@ pub struct OCELObject {
     pub id: String,
     pub object_type: String,
     pub attributes: HashMap<String, AttributeValue>,
+    #[serde(default)]
+    pub changes: Vec<OCELObjectAttributeChange>,
 }
 
 /// Object-Centric Event Log
@@ -241,6 +275,8 @@ pub struct OCEL {
     pub object_types: Vec<String>,
     pub events: Vec<OCELEvent>,
     pub objects: Vec<OCELObject>,
+    #[serde(default)]
+    pub object_relations: Vec<OCELObjectRelation>,
 }
 
 impl OCEL {
@@ -250,6 +286,7 @@ impl OCEL {
             object_types: Vec::new(),
             events: Vec::new(),
             objects: Vec::new(),
+            object_relations: Vec::new(),
         }
     }
 
