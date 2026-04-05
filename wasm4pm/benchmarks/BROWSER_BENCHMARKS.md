@@ -20,6 +20,7 @@ npm run bench:browser
 ```
 
 This will:
+
 1. Build the web WASM target (`build:web`)
 2. Start Vitest browser runner
 3. Execute all 13 algorithms across 3 log sizes
@@ -39,6 +40,7 @@ Reduces iterations from 5 to 3, completing 10x faster while maintaining reliable
 The browser benchmarks test **13 algorithms** across **3 log sizes**:
 
 ### Fast Algorithms (O(n) to O(n²))
+
 - `discover_dfg` — Directly-Follows Graph
 - `discover_declare` — Declare pattern mining
 - `discover_heuristic_miner` — Heuristic mining
@@ -49,16 +51,19 @@ The browser benchmarks test **13 algorithms** across **3 log sizes**:
 - `analyze_trace_variants` — Trace variants
 
 ### Medium Algorithms (O(n² log n) to O(n³))
-- `discover_astar` — A* search
+
+- `discover_astar` — A\* search
 - `discover_simulated_annealing` — Simulated annealing
 - `discover_ant_colony` — Ant colony optimization
 
 ### Analytics
+
 - `analyze_variant_complexity` — Variant complexity
 - `compute_activity_transition_matrix` — Transition matrix
 - `detect_rework` — Rework detection
 
 ### Log Sizes Tested
+
 - **100 cases** — Small log, fast algorithms
 - **500 cases** — Medium log, all algorithms
 - **1000 cases** — Large log, stressful
@@ -89,11 +94,13 @@ node benchmarks/compare.js results/nodejs_bench.json results/browser_bench.json
 ```
 
 Generates a side-by-side comparison showing:
+
 - Performance speedup (Node/Browser ratio)
 - Distribution of performance differences
 - Overall performance impression
 
 Example output:
+
 ```
 Algorithm                       Cases  Node ms    Browser ms  Speedup  Status
 ──────────────────────────────────────────────────────────────────────────────
@@ -118,6 +125,7 @@ open benchmarks/dashboard.html
 ```
 
 Features:
+
 - **Upload JSON** — Load benchmark results from file
 - **Interactive charts** — Bar charts and line graphs
 - **Statistics cards** — Summary metrics (avg time, min/max)
@@ -135,6 +143,7 @@ results/
 ```
 
 Format:
+
 ```json
 {
   "timestamp": "2024-01-15T10:30:45.123Z",
@@ -164,8 +173,8 @@ Edit `__tests__/benchmarks/browser.bench.ts`:
 const BENCHMARK_TASKS: BenchmarkTask[] = [
   {
     algorithm: 'discover_dfg',
-    sizes: [100, 1000, 5000],  // Add/remove sizes
-    params: {}
+    sizes: [100, 1000, 5000], // Add/remove sizes
+    params: {},
   },
   // Add new algorithms...
 ];
@@ -174,13 +183,15 @@ const BENCHMARK_TASKS: BenchmarkTask[] = [
 ### Change Iteration Count
 
 Edit line 16 in `browser.bench.ts`:
+
 ```typescript
-const ITERATIONS = globalThis.CI_MODE ? 3 : 5;  // Change from 5 to 10
+const ITERATIONS = globalThis.CI_MODE ? 3 : 5; // Change from 5 to 10
 ```
 
 ### Adjust Log Generation
 
 Parameters in `generateXES()`:
+
 - `numCases` — Number of process cases
 - `numActivities` — Number of distinct activities
 - `avgEvents` — Average events per case
@@ -189,18 +200,21 @@ Parameters in `generateXES()`:
 ## Performance Tips
 
 ### Faster Benchmarking
+
 - Use CI mode: `npm run bench:browser:ci`
 - Reduce iterations in config
 - Test fewer algorithms at once
 - Use smaller log sizes
 
 ### Reliable Results
+
 - Run multiple times and average
 - Close other applications to reduce variance
 - Use consistent hardware/environment
 - Warm up algorithms before timing (already done)
 
 ### Analyzing Results
+
 - Compare medians (robust to outliers)
 - Check p95 for tail latency
 - Plot median vs size for scalability
@@ -209,11 +223,13 @@ Parameters in `generateXES()`:
 ## Environment Details
 
 **Browser Runtime:**
+
 - Chromium (headless)
 - Playwright 1.40+
 - V8 JavaScript engine
 
 **WASM Build Target:**
+
 - `--target web` (browser-optimized)
 - SIMD128 enabled (`-C target-feature=+simd128`)
 - Optimized binary (wasm-opt)
@@ -221,23 +237,29 @@ Parameters in `generateXES()`:
 ## Troubleshooting
 
 ### "Playwright not installed"
+
 ```bash
 npx playwright install
 ```
 
 ### "Cannot find module 'pkg/wasm4pm.js'"
+
 ```bash
 npm run build:web
 ```
 
 ### Tests timeout
+
 Increase timeout in `vitest.config.ts`:
+
 ```typescript
-testTimeout: 60000  // 60 seconds
+testTimeout: 60000; // 60 seconds
 ```
 
 ### Browser not launching
+
 Check Playwright is properly installed:
+
 ```bash
 npx playwright install --with-deps
 ```

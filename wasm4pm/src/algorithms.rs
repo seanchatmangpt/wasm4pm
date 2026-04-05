@@ -4,9 +4,8 @@ use crate::models::*;
 use serde_json::json;
 use std::collections::HashMap;
 use rustc_hash::FxHashMap;
-#[cfg(target_arch = "wasm32")]
-use serde_wasm_bindgen;
 use crate::utilities::to_js;
+use crate::error::{wasm_err, codes};
 
 /// Discover Petri Net using Alpha++ algorithm
 #[wasm_bindgen]
@@ -111,8 +110,8 @@ pub fn discover_alpha_plus_plus(
 
             Ok(pn)
         }
-        Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
+        None => Err(wasm_err(codes::INVALID_HANDLE, format!("EventLog '{}' not found", eventlog_handle))),
     })?;
 
     let n_places = pn.places.len();
@@ -120,7 +119,7 @@ pub fn discover_alpha_plus_plus(
     let n_arcs = pn.arcs.len();
     let handle = get_or_init_state()
         .store_object(StoredObject::PetriNet(pn))
-        .map_err(|_e| JsValue::from_str("Failed to store PetriNet"))?;
+        .map_err(|_e| wasm_err(codes::INTERNAL_ERROR, "Failed to store PetriNet"))?;
 
     to_js(&json!({
         "handle": handle,
@@ -202,15 +201,15 @@ pub fn discover_dfg_filtered(
 
             Ok(dfg)
         }
-        Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
+        None => Err(wasm_err(codes::INVALID_HANDLE, format!("EventLog '{}' not found", eventlog_handle))),
     })?;
 
     let n_nodes = dfg.nodes.len();
     let n_edges = dfg.edges.len();
     let handle = get_or_init_state()
         .store_object(StoredObject::DirectlyFollowsGraph(dfg))
-        .map_err(|_e| JsValue::from_str("Failed to store DFG"))?;
+        .map_err(|_e| wasm_err(codes::INTERNAL_ERROR, "Failed to store DFG"))?;
 
     to_js(&json!({
         "handle": handle,
@@ -228,8 +227,8 @@ pub fn export_dfg_to_json(handle: &str) -> Result<String, JsValue> {
             serde_json::to_string(dfg)
                 .map_err(|e| JsValue::from_str(&format!("Serialization failed: {}", e)))
         }
-        Some(_) => Err(JsValue::from_str("Object is not a DFG")),
-        None => Err(JsValue::from_str("DFG not found")),
+        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not a DFG")),
+        None => Err(wasm_err(codes::INVALID_HANDLE, format!("DFG '{}' not found", handle))),
     })
 }
 
@@ -239,9 +238,9 @@ pub fn export_petri_net_to_json(handle: &str) -> Result<String, JsValue> {
     get_or_init_state().with_object(handle, |obj| match obj {
         Some(StoredObject::PetriNet(pn)) => {
             serde_json::to_string(pn)
-                .map_err(|e| JsValue::from_str(&format!("Serialization failed: {}", e)))
+                .map_err(|_e| wasm_err(codes::INTERNAL_ERROR, "Serialization failed"))
         }
-        Some(_) => Err(JsValue::from_str("Object is not a PetriNet")),
-        None => Err(JsValue::from_str("PetriNet not found")),
+        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not a PetriNet")),
+        None => Err(wasm_err(codes::INVALID_HANDLE, format!("PetriNet '{}' not found", handle))),
     })
 }

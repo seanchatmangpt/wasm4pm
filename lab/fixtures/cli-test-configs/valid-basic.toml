@@ -1,0 +1,13 @@
+# Valid basic configuration for pmctl testing
+
+[source]
+type = "xes"
+path = "./test-data/sample.xes"
+
+[discovery]
+algorithm = "dfg"
+timeout = 30000
+
+[output]
+format = "pnml"
+path = "./results/model.pnml"

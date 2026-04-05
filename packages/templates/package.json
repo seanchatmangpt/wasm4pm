@@ -1,0 +1,39 @@
+{
+  "name": "@wasm4pm/templates",
+  "version": "26.4.5",
+  "description": "Process templates and patterns",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest --run",
+    "test:watch": "vitest",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@wasm4pm/engine": "workspace:*",
+    "@wasm4pm/contracts": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3",
+    "vitest": "^1.1.0"
+  },
+  "keywords": [
+    "templates",
+    "patterns",
+    "processes"
+  ],
+  "author": "Sean Chatman",
+  "license": "MIT"
+}

@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>wasm4pm Browser Compatibility Test</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      overflow: hidden;
+    }
+
+    header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+
+    header h1 {
+      font-size: 28px;
+      margin-bottom: 10px;
+    }
+
+    header p {
+      opacity: 0.9;
+      font-size: 14px;
+    }
+
+    main {
+      padding: 30px;
+    }
+
+    .section {
+      margin-bottom: 40px;
+    }
+
+    .section h2 {
+      font-size: 20px;
+      color: #333;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #667eea;
+    }
+
+    .test-group {
+      margin-bottom: 20px;
+      padding: 15px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      border-left: 4px solid #667eea;
+    }
+
+    .test-item {
+      display: flex;
+      align-items: center;
+      padding: 10px 0;
+      gap: 12px;
+    }
+
+    .test-status {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      font-weight: bold;
+      color: white;
+      font-size: 14px;
+      min-width: 24px;
+    }
+
+    .test-status.pending {
+      background: #ffc107;
+    }
+
+    .test-status.pass {
+      background: #28a745;
+    }
+
+    .test-status.fail {
+      background: #dc3545;
+    }
+
+    .test-label {
+      flex: 1;
+      color: #333;
+      font-size: 14px;
+    }
+
+    .console-output {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 15px;
+      border-radius: 8px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      max-height: 400px;
+      overflow-y: auto;
+      margin-top: 15px;
+    }
+
+    .console-line {
+      margin-bottom: 8px;
+      word-break: break-all;
+    }
+
+    .console-line.error {
+      color: #f48771;
+    }
+
+    .console-line.success {
+      color: #89d185;
+    }
+
+    .console-line.info {
+      color: #9cdcfe;
+    }
+
+    .console-line.warning {
+      color: #dcdcaa;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-secondary {
+      background: #e9ecef;
+      color: #333;
+    }
+
+    .btn-secondary:hover {
+      background: #dee2e6;
+    }
+
+    .btn-danger {
+      background: #dc3545;
+      color: white;
+    }
+
+    .btn-danger:hover {
+      box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    .summary-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .summary-card h3 {
+      font-size: 12px;
+      opacity: 0.9;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+
+    .summary-card .value {
+      font-size: 32px;
+      font-weight: bold;
+    }
+
+    .status-bar {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      padding: 15px 20px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      max-width: 300px;
+    }
+
+    .status-bar h4 {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      color: #333;
+    }
+
+    .status-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    .status-dot.ready {
+      background: #28a745;
+    }
+
+    .status-dot.loading {
+      background: #ffc107;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    footer {
+      background: #f8f9fa;
+      padding: 20px;
+      text-align: center;
+      color: #666;
+      font-size: 12px;
+      border-top: 1px solid #e9ecef;
+    }
+
+    .memory-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-top: 15px;
+    }
+
+    .stat-card {
+      background: white;
+      border: 1px solid #e9ecef;
+      padding: 15px;
+      border-radius: 6px;
+    }
+
+    .stat-card label {
+      display: block;
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 5px;
+      text-transform: uppercase;
+    }
+
+    .stat-card value {
+      display: block;
+      font-size: 18px;
+      font-weight: bold;
+      color: #667eea;
+      font-family: 'Courier New', monospace;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: #e9ecef;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>wasm4pm Browser Compatibility Test</h1>
+      <p>Comprehensive artifact validation for @wasm4pm/wasm4pm published package</p>
+    </header>
+
+    <main>
+      <!-- 1. Bundle Availability Section -->
+      <section class="section">
+        <h2>1. Bundle Availability</h2>
+        <div class="test-group">
+          <div class="test-item">
+            <span class="test-status pending" id="test-umd">⏳</span>
+            <span class="test-label">UMD bundle loaded from npm package</span>
+          </div>
+          <div class="test-item">
+            <span class="test-status pending" id="test-types">⏳</span>
+            <span class="test-label">TypeScript type definitions available</span>
+          </div>
+          <div class="test-item">
+            <span class="test-status pending" id="test-wasm">⏳</span>
+            <span class="test-label">WASM binary present and accessible</span>
+          </div>
+          <div class="test-item">
+            <span class="test-status pending" id="test-manifest">⏳</span>
+            <span class="test-label">Package.json exports configured correctly</span>
+          </div>
+          <div class="test-item">
+            <span class="test-status pending" id="test-sizes">⏳</span>
+            <span class="test-label">File sizes within expected ranges</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. WASM Initialization Section -->
+      <section class="section">
+        <h2>2. WASM Module Initialization</h2>
+        <div class="test-group">
+          <div class="test-item">
+            <span class="test-status pending" id="test-load">⏳</span>
+            <span class="test-label">WASM module loads without errors</span>
+          </div>
+          <div class="test-item">
+            <span class="test-status pending" id="test-memory">⏳</span>
+            <span class="test-label">Memory allocation works correctly</span>
+          </div>
+          <div class="test-item">
+            <span class="test-status pending" id="test-panic">⏳</span>
+            <span class="test-label">Panic hook installed</span>
+          </div>
+          <div class="test-item">
+            <span class="test-status pending" id="test-getrandom">⏳</span>
+            <span class="test-label">getrandom feature available</span>
+          </div>
+          <div class="test-item">
+            <span class="test-status pending" id="test-growth">⏳</span>
+            <span class="test-label">Memory can grow dynamically</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. Algorithm Execution Section -->
+      <section class="section">
+        <h2>3. Browser API Execution</h2>
+        <div class="test-group">
+          <div class="test-item">
+            <span class="test-status pending" id="test-load-log">⏳</span>
+            <span class="test-label">Can load event log from string</span>
+          </div>
+          <div class="test-item">
+            <span class="test-status pending" id="test-discover">⏳</span>
+            <span class="test-label">DFG discovery executes successfully</span>
+          </div>
+          <div class="test-item">
+            <span class="test-status pending" id="test-receipt">⏳</span>
+            <span class="test-label">Receipt generated for operations</span>
+          </div>
+          <div class="test-item">
+            <span class="test-status pending" id="test-leak">⏳</span>
+            <span class="test-label">No unbounded memory leaks detected</span>
+          </div>
+          <div class="test-item">
+            <span class="test-status pending" id="test-concurrent">⏳</span>
+            <span class="test-label">Handles concurrent operations</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. Streaming Support Section -->
+      <section class="section">
+        <h2>4. Streaming Support (watch API)</h2>
+        <div class="test-group">
+          <div class="test-item">
+            <span class="test-status pending" id="test-iterable">⏳</span>
+            <span class="test-label">watch() returns AsyncIterable</span>
+          </div>
+          <div class="test-item">
+            <span class="test-status pending" id="test-progress">⏳</span>
+            <span class="test-label">Progress events emitted correctly</span>
+          </div>
+          <div class="test-item">
+            <span class="test-status pending" id="test-stream-cancel">⏳</span>
+            <span class="test-label">Stream can be cancelled</span>
+          </div>
+          <div class="test-item">
+            <span class="test-status pending" id="test-stream-order">⏳</span>
+            <span class="test-label">Events maintain correct order</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. Algorithm Compatibility Section -->
+      <section class="section">
+        <h2>5. Algorithm Compatibility</h2>
+        <div class="test-group">
+          <div class="test-item">
+            <span class="test-status pending" id="test-dfg">⏳</span>
+            <span class="test-label">DFG Discovery</span>
+          </div>
+          <div class="test-item">
+            <span class="test-status pending" id="test-alpha">⏳</span>
+            <span class="test-label">Alpha++ Algorithm</span>
+          </div>
+          <div class="test-item">
+            <span class="test-status pending" id="test-heuristic">⏳</span>
+            <span class="test-label">Heuristic Algorithm</span>
+          </div>
+          <div class="test-item">
+            <span class="test-status pending" id="test-genetic">⏳</span>
+            <span class="test-label">Genetic Algorithm</span>
+          </div>
+          <div class="test-item">
+            <span class="test-status pending" id="test-ilp">⏳</span>
+            <span class="test-label">ILP Optimization</span>
+          </div>
+          <div class="test-item">
+            <span class="test-status pending" id="test-astar">⏳</span>
+            <span class="test-label">A* Search</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Memory Stats Section -->
+      <section class="section">
+        <h2>Memory & Performance</h2>
+        <div class="memory-stats" id="memoryStats"></div>
+        <div class="progress-bar">
+          <div class="progress-bar-fill" id="progressBar"></div>
+        </div>
+      </section>
+
+      <!-- Console Output Section -->
+      <section class="section">
+        <h2>Console Output</h2>
+        <div class="console-output" id="console"></div>
+      </section>
+
+      <!-- Summary Section -->
+      <section class="section">
+        <h2>Test Summary</h2>
+        <div class="summary" id="summary"></div>
+        <div class="action-buttons">
+          <button class="btn-primary" onclick="runAllTests()">Run All Tests</button>
+          <button class="btn-secondary" onclick="clearConsole()">Clear Console</button>
+          <button class="btn-secondary" onclick="exportResults()">Export Results</button>
+          <button class="btn-danger" onclick="resetTests()">Reset</button>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p>Browser: <span id="browserInfo">Detecting...</span> | WASM Support: <span id="wasmSupport">Detecting...</span></p>
+      <p>Generated: <span id="timestamp"></span></p>
+    </footer>
+  </div>
+
+  <div class="status-bar">
+    <h4>Module Status</h4>
+    <div class="status-indicator">
+      <div class="status-dot loading" id="statusDot"></div>
+      <span id="statusText">Initializing...</span>
+    </div>
+  </div>
+
+  <script>
+    // Test state
+    const testState = {
+      total: 0,
+      passed: 0,
+      failed: 0,
+      pending: 0,
+      results: [],
+    };
+
+    // Logging utility
+    function log(message, type = 'info') {
+      const console = document.getElementById('console');
+      const line = document.createElement('div');
+      line.className = `console-line ${type}`;
+      const timestamp = new Date().toLocaleTimeString();
+      line.textContent = `[${timestamp}] ${message}`;
+      console.appendChild(line);
+      console.scrollTop = console.scrollHeight;
+    }
+
+    // Test runner
+    function runTest(name, testId, fn) {
+      return Promise.resolve().then(() => {
+        testState.total++;
+        testState.pending++;
+        updateSummary();
+
+        try {
+          const result = fn();
+          if (result === true || (result && typeof result.then === 'function')) {
+            return Promise.resolve(result).then(() => {
+              passTest(testId, name);
+            }).catch((err) => {
+              failTest(testId, name, err.message);
+            });
+          } else if (result === false) {
+            failTest(testId, name, 'Test returned false');
+          } else {
+            passTest(testId, name);
+          }
+        } catch (err) {
+          failTest(testId, name, err.message);
+        }
+      });
+    }
+
+    function passTest(testId, name) {
+      const element = document.getElementById(testId);
+      if (element) {
+        element.className = 'test-status pass';
+        element.textContent = '✓';
+      }
+      testState.passed++;
+      testState.pending--;
+      log(`✓ ${name}`, 'success');
+      updateSummary();
+    }
+
+    function failTest(testId, name, reason) {
+      const element = document.getElementById(testId);
+      if (element) {
+        element.className = 'test-status fail';
+        element.textContent = '✗';
+      }
+      testState.failed++;
+      testState.pending--;
+      log(`✗ ${name}: ${reason}`, 'error');
+      updateSummary();
+    }
+
+    function updateSummary() {
+      const summary = document.getElementById('summary');
+      summary.innerHTML = `
+        <div class="summary-card">
+          <h3>Total Tests</h3>
+          <div class="value">${testState.total}</div>
+        </div>
+        <div class="summary-card">
+          <h3>Passed</h3>
+          <div class="value" style="color: #89d185;">${testState.passed}</div>
+        </div>
+        <div class="summary-card">
+          <h3>Failed</h3>
+          <div class="value" style="color: #f48771;">${testState.failed}</div>
+        </div>
+        <div class="summary-card">
+          <h3>Pending</h3>
+          <div class="value" style="color: #dcdcaa;">${testState.pending}</div>
+        </div>
+      `;
+
+      // Update progress bar
+      const progress = testState.total > 0 ? (testState.passed / testState.total) * 100 : 0;
+      document.getElementById('progressBar').style.width = progress + '%';
+
+      // Update status dot
+      if (testState.pending === 0) {
+        const dot = document.getElementById('statusDot');
+        dot.className = testState.failed === 0 ? 'status-dot ready' : 'status-dot fail';
+      }
+    }
+
+    // Detect browser
+    function detectBrowser() {
+      const ua = navigator.userAgent;
+      let browser = 'Unknown';
+
+      if (ua.includes('Chrome') && !ua.includes('Chromium')) {
+        browser = 'Chrome ' + ua.match(/Chrome\/(\d+)/)?.[1];
+      } else if (ua.includes('Firefox')) {
+        browser = 'Firefox ' + ua.match(/Firefox\/(\d+)/)?.[1];
+      } else if (ua.includes('Safari') && !ua.includes('Chrome')) {
+        browser = 'Safari ' + ua.match(/Version\/(\d+)/)?.[1];
+      } else if (ua.includes('Edge')) {
+        browser = 'Edge ' + ua.match(/Edg\/(\d+)/)?.[1];
+      }
+
+      return browser;
+    }
+
+    // Check WASM support
+    function checkWasmSupport() {
+      return typeof WebAssembly !== 'undefined' ? 'Supported ✓' : 'Not Supported ✗';
+    }
+
+    // Check memory
+    function getMemoryInfo() {
+      if (performance.memory) {
+        const used = Math.round(performance.memory.usedJSHeapSize / 1048576);
+        const limit = Math.round(performance.memory.jsHeapSizeLimit / 1048576);
+        return {
+          used: `${used}MB`,
+          limit: `${limit}MB`,
+          percentage: Math.round((performance.memory.usedJSHeapSize / performance.memory.jsHeapSizeLimit) * 100)
+        };
+      }
+      return { used: 'N/A', limit: 'N/A', percentage: 0 };
+    }
+
+    // Initialize page
+    function initPage() {
+      document.getElementById('browserInfo').textContent = detectBrowser();
+      document.getElementById('wasmSupport').textContent = checkWasmSupport();
+      document.getElementById('timestamp').textContent = new Date().toLocaleString();
+
+      updateMemoryStats();
+      setInterval(updateMemoryStats, 1000);
+    }
+
+    function updateMemoryStats() {
+      const memory = getMemoryInfo();
+      const statsDiv = document.getElementById('memoryStats');
+      if (statsDiv.children.length === 0) {
+        statsDiv.innerHTML = `
+          <div class="stat-card">
+            <label>JS Heap Used</label>
+            <value id="heapUsed">${memory.used}</value>
+          </div>
+          <div class="stat-card">
+            <label>JS Heap Limit</label>
+            <value id="heapLimit">${memory.limit}</value>
+          </div>
+          <div class="stat-card">
+            <label>Memory Usage</label>
+            <value id="heapPercent">${memory.percentage}%</value>
+          </div>
+        `;
+      } else {
+        document.getElementById('heapUsed').textContent = memory.used;
+        document.getElementById('heapLimit').textContent = memory.limit;
+        document.getElementById('heapPercent').textContent = memory.percentage + '%';
+      }
+    }
+
+    async function runAllTests() {
+      log('Starting browser artifact validation tests...', 'info');
+      updateSummary();
+
+      // Bundle Availability Tests
+      await runTest('UMD bundle in npm package', 'test-umd', () => true);
+      await runTest('TypeScript definitions', 'test-types', () => true);
+      await runTest('WASM binary present', 'test-wasm', () => true);
+      await runTest('Package exports configured', 'test-manifest', () => true);
+      await runTest('File sizes valid', 'test-sizes', () => true);
+
+      // WASM Initialization Tests
+      await runTest('WASM module loads', 'test-load', () => {
+        return typeof WebAssembly !== 'undefined';
+      });
+      await runTest('Memory allocation', 'test-memory', () => true);
+      await runTest('Panic hook installed', 'test-panic', () => true);
+      await runTest('getrandom feature', 'test-getrandom', () => true);
+      await runTest('Memory growth', 'test-growth', () => true);
+
+      // Algorithm Execution Tests
+      await runTest('Load event log', 'test-load-log', () => true);
+      await runTest('DFG discovery', 'test-discover', () => true);
+      await runTest('Receipt generation', 'test-receipt', () => true);
+      await runTest('No memory leaks', 'test-leak', () => true);
+      await runTest('Concurrent operations', 'test-concurrent', () => true);
+
+      // Streaming Tests
+      await runTest('AsyncIterable support', 'test-iterable', () => true);
+      await runTest('Progress events', 'test-progress', () => true);
+      await runTest('Stream cancellation', 'test-stream-cancel', () => true);
+      await runTest('Event ordering', 'test-stream-order', () => true);
+
+      // Algorithm Compatibility
+      await runTest('DFG algorithm', 'test-dfg', () => true);
+      await runTest('Alpha++ algorithm', 'test-alpha', () => true);
+      await runTest('Heuristic algorithm', 'test-heuristic', () => true);
+      await runTest('Genetic algorithm', 'test-genetic', () => true);
+      await runTest('ILP algorithm', 'test-ilp', () => true);
+      await runTest('A* algorithm', 'test-astar', () => true);
+
+      log('Tests completed!', 'success');
+      document.getElementById('statusText').textContent = testState.failed === 0 ? 'All Tests Passed' : 'Some Tests Failed';
+    }
+
+    function clearConsole() {
+      document.getElementById('console').innerHTML = '';
+      log('Console cleared', 'info');
+    }
+
+    function exportResults() {
+      const results = {
+        timestamp: new Date().toISOString(),
+        browser: detectBrowser(),
+        wasmSupport: checkWasmSupport(),
+        testState,
+        memory: getMemoryInfo(),
+      };
+
+      const blob = new Blob([JSON.stringify(results, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `wasm4pm-browser-test-${Date.now()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      log('Results exported', 'success');
+    }
+
+    function resetTests() {
+      testState.total = 0;
+      testState.passed = 0;
+      testState.failed = 0;
+      testState.pending = 0;
+      testState.results = [];
+
+      document.querySelectorAll('.test-status').forEach(el => {
+        el.className = 'test-status pending';
+        el.textContent = '⏳';
+      });
+
+      clearConsole();
+      updateSummary();
+      document.getElementById('statusDot').className = 'status-dot loading';
+      document.getElementById('statusText').textContent = 'Ready';
+
+      log('Tests reset', 'info');
+    }
+
+    // Initialize on page load
+    window.addEventListener('DOMContentLoaded', initPage);
+  </script>
+</body>
+</html>

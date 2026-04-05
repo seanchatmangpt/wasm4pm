@@ -1,0 +1,57 @@
+{
+  "description": "Expected DFG output for sequential XES (3 identical traces: Start→Process→End)",
+  "input": "sequential.xes",
+  "expected_dfg": {
+    "nodes": [
+      {
+        "id": "Start",
+        "label": "Start",
+        "frequency": 3
+      },
+      {
+        "id": "Process",
+        "label": "Process",
+        "frequency": 3
+      },
+      {
+        "id": "End",
+        "label": "End",
+        "frequency": 3
+      }
+    ],
+    "edges": [
+      {
+        "from": "Start",
+        "to": "Process",
+        "frequency": 3
+      },
+      {
+        "from": "Process",
+        "to": "End",
+        "frequency": 3
+      }
+    ],
+    "start_activities": {
+      "Start": 3
+    },
+    "end_activities": {
+      "End": 3
+    }
+  },
+  "properties": {
+    "num_nodes": 3,
+    "num_edges": 2,
+    "num_start_activities": 1,
+    "num_end_activities": 1,
+    "total_events": 9,
+    "total_traces": 3,
+    "variants": 1
+  },
+  "comments": [
+    "Sequential XES has 3 identical traces, each with [Start, Process, End]",
+    "DFG should have 3 nodes (Start, Process, End) with frequencies 3 each",
+    "Edges: Start→Process (freq 3), Process→End (freq 3)",
+    "No spurious edges like Start→End or Process→Start",
+    "Single variant (all traces identical)"
+  ]
+}

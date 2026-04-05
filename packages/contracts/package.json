@@ -1,0 +1,75 @@
+{
+  "name": "@wasm4pm/contracts",
+  "version": "26.4.5",
+  "description": "Runtime contracts, receipts, and hash verification",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./receipt": {
+      "import": "./dist/receipt.js",
+      "types": "./dist/receipt.d.ts"
+    },
+    "./hash": {
+      "import": "./dist/hash.js",
+      "types": "./dist/hash.d.ts"
+    },
+    "./receipt-builder": {
+      "import": "./dist/receipt-builder.js",
+      "types": "./dist/receipt-builder.d.ts"
+    },
+    "./validation": {
+      "import": "./dist/validation.js",
+      "types": "./dist/validation.d.ts"
+    },
+    "./plan": {
+      "import": "./dist/plan.js",
+      "types": "./dist/plan.d.ts"
+    },
+    "./status": {
+      "import": "./dist/status.js",
+      "types": "./dist/status.d.ts"
+    },
+    "./explain": {
+      "import": "./dist/explain.js",
+      "types": "./dist/explain.d.ts"
+    },
+    "./errors": {
+      "import": "./dist/errors.js",
+      "types": "./dist/errors.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest",
+    "test:watch": "vitest --watch",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "blake3": "^2.1.4",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/uuid": "^9.0.7",
+    "typescript": "^5.3.3",
+    "vitest": "^1.1.0"
+  },
+  "keywords": [
+    "contracts",
+    "receipts",
+    "hashing",
+    "blake3",
+    "verification"
+  ],
+  "author": "Sean Chatman",
+  "license": "MIT"
+}

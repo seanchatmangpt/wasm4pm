@@ -1,0 +1,56 @@
+{
+  "description": "Expected DFG output for noisy XES with deviations",
+  "input": "noisy.xes",
+  "expected_dfg": {
+    "nodes": [
+      {
+        "id": "Start",
+        "label": "Start"
+      },
+      {
+        "id": "Process",
+        "label": "Process"
+      },
+      {
+        "id": "Rework",
+        "label": "Rework"
+      },
+      {
+        "id": "End",
+        "label": "End"
+      }
+    ],
+    "edges": [
+      {
+        "from": "Start",
+        "to": "Process"
+      },
+      {
+        "from": "Start",
+        "to": "Rework"
+      },
+      {
+        "from": "Rework",
+        "to": "Process"
+      },
+      {
+        "from": "Process",
+        "to": "End"
+      }
+    ]
+  },
+  "properties": {
+    "num_nodes_min": 4,
+    "num_edges_min": 4,
+    "has_variant_deviations": true,
+    "handles_rework_gracefully": true
+  },
+  "comments": [
+    "Noisy XES has variations: some traces include Rework activity",
+    "DFG should capture all observed transitions including Rework",
+    "Different traces follow different paths but all are valid",
+    "Algorithm should handle gracefully without failure",
+    "Edge frequencies may vary (not all paths equally frequent)",
+    "Demonstrates algorithm robustness to real-world variance"
+  ]
+}

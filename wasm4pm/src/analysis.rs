@@ -1,9 +1,9 @@
 use wasm_bindgen::prelude::*;
 use crate::state::{get_or_init_state, StoredObject};
 use serde_json::json;
-#[cfg(target_arch = "wasm32")]
-use serde_wasm_bindgen;
 use crate::utilities::to_js;
+use statrs::statistics::{Data, Median};
+use crate::error::{wasm_err, codes};
 
 /// Perform dotted chart analysis on an EventLog
 #[wasm_bindgen]
@@ -30,8 +30,8 @@ pub fn analyze_dotted_chart(eventlog_handle: &str) -> Result<JsValue, JsValue> {
                 "cases": data
             }))
         }
-        Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
+        None => Err(wasm_err(codes::INVALID_HANDLE, format!("EventLog '{}' not found", eventlog_handle))),
     })
 }
 
@@ -55,8 +55,8 @@ pub fn analyze_event_statistics(eventlog_handle: &str) -> Result<JsValue, JsValu
 
             to_js(&stats)
         }
-        Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
+        None => Err(wasm_err(codes::INVALID_HANDLE, format!("EventLog '{}' not found", eventlog_handle))),
     })
 }
 
@@ -72,8 +72,8 @@ pub fn analyze_ocel_statistics(ocel_handle: &str) -> Result<JsValue, JsValue> {
 
             to_js(&stats)
         }
-        Some(_) => Err(JsValue::from_str("Object is not an OCEL")),
-        None => Err(JsValue::from_str("OCEL not found")),
+        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an OCEL")),
+        None => Err(wasm_err(codes::INVALID_HANDLE, format!("OCEL '{}' not found", ocel_handle))),
     })
 }
 
@@ -89,7 +89,11 @@ pub fn analyze_case_duration(eventlog_handle: &str) -> Result<JsValue, JsValue> 
                 event_counts.sort();
                 let sum: usize = event_counts.iter().sum();
                 let avg = sum as f64 / event_counts.len() as f64;
-                let median = event_counts[event_counts.len() / 2];
+
+                // Use statrs for proper median calculation
+                let counts_f64: Vec<f64> = event_counts.iter().map(|&x| x as f64).collect();
+                let data = Data::new(counts_f64);
+                let median = data.median() as usize;
 
                 json!({
                     "case_count": event_counts.len(),
@@ -110,8 +114,8 @@ pub fn analyze_case_duration(eventlog_handle: &str) -> Result<JsValue, JsValue> 
 
             to_js(&stats)
         }
-        Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
+        None => Err(wasm_err(codes::INVALID_HANDLE, format!("EventLog '{}' not found", eventlog_handle))),
     })
 }
 

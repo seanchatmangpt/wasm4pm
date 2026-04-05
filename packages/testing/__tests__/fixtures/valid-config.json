@@ -1,0 +1,27 @@
+{
+  "discovery": {
+    "algorithm": "dfg",
+    "timeout": 30000,
+    "parameters": {
+      "minSupport": 0.5,
+      "minConfidence": 0.5
+    }
+  },
+  "source": {
+    "kind": "file",
+    "path": "./sample.xes",
+    "format": "xes"
+  },
+  "sinks": [
+    {
+      "kind": "file",
+      "type": "receipt",
+      "path": "./receipt.json"
+    },
+    {
+      "kind": "file",
+      "type": "model",
+      "path": "./model.json"
+    }
+  ]
+}

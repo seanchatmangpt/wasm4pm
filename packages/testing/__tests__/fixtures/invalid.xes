@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<log xes.version="1.0" xmlns="http://www.xes-standard.org/">
+  <trace>
+    <!-- Missing required concept:name attribute -->
+    <event>
+      <string key="org:resource" value="alice"/>
+    </event>
+  </trace>
+</log>

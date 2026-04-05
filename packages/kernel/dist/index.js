@@ -1,0 +1,20 @@
+/**
+ * @wasm4pm/kernel
+ * Core kernel — versioned API facade over wasm4pm WASM algorithms
+ *
+ * Provides: Kernel class, algorithm registry, version checks, deterministic hashing,
+ * and Rust→TypeScript error propagation.
+ */
+// Kernel API facade
+export { Kernel } from './api.js';
+// Registry exports
+export { AlgorithmRegistry, getRegistry, } from './registry.js';
+// Handler exports
+export { implementAlgorithmStep, listAlgorithms, validateAlgorithmParameters, } from './handlers.js';
+// Versioning exports
+export { KERNEL_VERSION, MIN_WASM4PM_VERSION, checkCompatibility, assertCompatibility, parseSemVer, compareSemVer, satisfiesMinimum, isMajorCompatible, } from './versioning.js';
+// Hashing exports
+export { hashOutput, hashRaw, hashAlgorithmResult, verifyOutputHash, canonicalize, } from './hashing.js';
+// Error exports
+export { KernelError, isKernelError, classifyRustError, toTypedError, wrapKernelCall, } from './errors.js';
+//# sourceMappingURL=index.js.map

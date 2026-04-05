@@ -1,0 +1,1 @@
+{"version":3,"file":"noop.d.ts","sourceRoot":"","sources":["../src/noop.ts"],"names":[],"mappings":"AAAA;;;;GAIG;AAEH,OAAO,KAAK,EAAE,IAAI,EAAE,MAAM,EAAE,MAAM,YAAY,CAAC;AAgB/C;;;;GAIG;AACH,qBAAa,UAAW,YAAW,MAAM;IACvC,SAAS,IAAI,IAAI;IAIX,KAAK,IAAI,OAAO,CAAC,IAAI,CAAC;IAEtB,QAAQ,IAAI,OAAO,CAAC,IAAI,CAAC;CAChC"}

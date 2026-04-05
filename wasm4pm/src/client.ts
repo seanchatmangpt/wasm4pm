@@ -7,6 +7,63 @@
 
 // Import types from the API definition
 import * as api from './api';
+import type * as WasmModule from '../pkg/wasm4pm';
+import {
+  EventLogHandleId,
+  OCELHandleId,
+  DFGHandleId,
+  PetriNetHandleId,
+  DeclareHandleId,
+  TemporalProfileHandleId,
+  NGramPredictorHandleId,
+  StreamingDFGHandleId,
+  StreamingConformanceHandleId,
+  OCPetriNetHandleId,
+  FeatureMatrixHandleId,
+  asEventLogHandleId,
+  asOCELHandleId,
+  asDFGHandleId,
+  asPetriNetHandleId,
+  asDeclareHandleId,
+  asTemporalProfileHandleId,
+  asNGramPredictorHandleId,
+  asStreamingDFGHandleId,
+  asStreamingConformanceHandleId,
+  asOCPetriNetHandleId,
+  asFeatureMatrixHandleId,
+} from './types';
+
+/**
+ * Structured error returned from WASM functions
+ */
+export interface WasmError {
+  code: string;
+  message: string;
+}
+
+/**
+ * Parse a WASM error response
+ * WASM functions return JSON-stringified errors: {"code":"...", "message":"..."}
+ */
+export function parseWasmError(error: unknown): WasmError {
+  if (typeof error === 'string') {
+    try {
+      const parsed = JSON.parse(error);
+      if (parsed.code && parsed.message) {
+        return { code: parsed.code, message: parsed.message };
+      }
+    } catch {
+      // Not valid JSON, treat as generic error
+    }
+    return { code: 'UNKNOWN_ERROR', message: error };
+  }
+
+  if (error instanceof Error) {
+    return { code: 'ERROR', message: error.message };
+  }
+
+  return { code: 'UNKNOWN_ERROR', message: String(error) };
+}
 
 /**
  * Main client for wasm4pm operations
@@ -14,7 +71,7 @@ import * as api from './api';
  */
 export class ProcessMiningClient {
   private initialized: boolean = false;
-  private wasmModule: any = null;
+  private wasmModule: typeof WasmModule | null = null;
   private objects: Map<string, any> = new Map();
 
   /**
@@ -44,8 +101,8 @@ export class ProcessMiningClient {
   loadEventLogFromJSON(jsonContent: string): EventLogHandle {
     if (!this.initialized) throw new Error('Client not initialized. Call init() first.');
 
-    const handle = this.wasmModule.load_eventlog_from_json(jsonContent);
-    return new EventLogHandle(handle, this.wasmModule);
+    const handle = asEventLogHandleId(this.wasmModule!.load_eventlog_from_json(jsonContent));
+    return new EventLogHandle(handle, this.wasmModule!);
   }
 
   /**
@@ -54,8 +111,8 @@ export class ProcessMiningClient {
   loadEventLogFromXES(xesContent: string): EventLogHandle {
     if (!this.initialized) throw new Error('Client not initialized. Call init() first.');
 
-    const handle = this.wasmModule.load_eventlog_from_xes(xesContent);
-    return new EventLogHandle(handle, this.wasmModule);
+    const handle = asEventLogHandleId(this.wasmModule!.load_eventlog_from_xes(xesContent));
+    return new EventLogHandle(handle, this.wasmModule!);
   }
 
   /**
@@ -64,8 +121,8 @@ export class ProcessMiningClient {
   loadOCELFromJSON(jsonContent: string): OCELHandle {
     if (!this.initialized) throw new Error('Client not initialized. Call init() first.');
 
-    const handle = this.wasmModule.load_ocel_from_json(jsonContent);
-    return new OCELHandle(handle, this.wasmModule);
+    const handle = asOCELHandleId(this.wasmModule!.load_ocel_from_json(jsonContent));
+    return new OCELHandle(handle, this.wasmModule!);
   }
 
   /**
@@ -74,8 +131,76 @@ export class ProcessMiningClient {
   loadOCELFromXML(xmlContent: string): OCELHandle {
     if (!this.initialized) throw new Error('Client not initialized. Call init() first.');
 
-    const handle = this.wasmModule.load_ocel_from_xml(xmlContent);
-    return new OCELHandle(handle, this.wasmModule);
+    const handle = asOCELHandleId(this.wasmModule!.load_ocel_from_xml(xmlContent));
+    return new OCELHandle(handle, this.wasmModule!);
+  }
+
+  /**
+   * Discover a Temporal Profile from an EventLog
+   */
+  discoverTemporalProfile(
+    log: EventLogHandle,
+    options: { activityKey?: string; timestampKey?: string } = {}
+  ): TemporalProfileHandle {
+    if (!this.initialized) throw new Error('Client not initialized. Call init() first.');
+    const activityKey = options.activityKey || 'concept:name';
+    const timestampKey = options.timestampKey || 'time:timestamp';
+    const handle = asTemporalProfileHandleId(
+      this.wasmModule!.discover_temporal_profile(log.getId(), activityKey, timestampKey)
+    );
+    return new TemporalProfileHandle(handle, this.wasmModule!);
+  }
+
+  /**
+   * Build an N-Gram Predictor from an EventLog
+   */
+  buildNGramPredictor(
+    log: EventLogHandle,
+    options: { activityKey?: string; n?: number } = {}
+  ): NGramPredictorHandle {
+    if (!this.initialized) throw new Error('Client not initialized. Call init() first.');
+    const activityKey = options.activityKey || 'concept:name';
+    const n = options.n || 3;
+    const handle = asNGramPredictorHandleId(
+      this.wasmModule!.build_ngram_predictor(log.getId(), activityKey, n)
+    );
+    return new NGramPredictorHandle(handle, this.wasmModule!);
+  }
+
+  /**
+   * Begin a Streaming DFG builder
+   */
+  beginStreamingDFG(): StreamingDFGHandle {
+    if (!this.initialized) throw new Error('Client not initialized. Call init() first.');
+    const handle = asStreamingDFGHandleId(this.wasmModule!.streaming_dfg_begin());
+    return new StreamingDFGHandle(handle, this.wasmModule!);
+  }
+
+  /**
+   * Begin a Streaming Conformance checker against a reference DFG
+   */
+  beginStreamingConformance(dfg: DFGHandle): StreamingConformanceHandle {
+    if (!this.initialized) throw new Error('Client not initialized. Call init() first.');
+    const handle = asStreamingConformanceHandleId(
+      this.wasmModule!.streaming_conformance_begin(dfg.getId())
+    );
+    return new StreamingConformanceHandle(handle, this.wasmModule!);
+  }
+
+  /**
+   * Get the capability registry metadata
+   */
+  getCapabilityRegistry(): any {
+    if (!this.initialized) throw new Error('Client not initialized. Call init() first.');
+    return this.wasmModule!.get_capability_registry();
+  }
+
+  /**
+   * Run OC performance analysis on an OCEL
+   */
+  analyzeOCPerformance(ocel: OCELHandle): any {
+    if (!this.initialized) throw new Error('Client not initialized. Call init() first.');
+    return this.wasmModule!.oc_performance_analysis(ocel.getId());
   }
 
   /**
@@ -83,7 +208,7 @@ export class ProcessMiningClient {
    */
   getVersion(): string {
     if (!this.initialized) throw new Error('Client not initialized. Call init() first.');
-    return this.wasmModule.get_version();
+    return this.wasmModule!.get_version();
   }
 }
 
@@ -92,14 +217,14 @@ export class ProcessMiningClient {
  */
 export class EventLogHandle {
   constructor(
-    private handle: string,
-    private wasmModule: any
+    private handle: EventLogHandleId,
+    private wasmModule: typeof WasmModule
   ) {}
 
   /**
    * Get the handle ID
    */
-  getId(): string {
+  getId(): EventLogHandleId {
     return this.handle;
   }
 
@@ -167,7 +292,7 @@ export class EventLogHandle {
    */
   filterByActivity(activity: string, activityKey: string = 'concept:name'): EventLogHandle {
     const result = this.wasmModule.filter_log_by_activity(this.handle, activityKey, activity);
-    return new EventLogHandle(result.handle, this.wasmModule);
+    return new EventLogHandle(asEventLogHandleId(result.handle), this.wasmModule);
   }
 
   /**
@@ -175,7 +300,7 @@ export class EventLogHandle {
    */
   filterByTraceLength(minLength: number, maxLength: number): EventLogHandle {
     const result = this.wasmModule.filter_log_by_trace_length(this.handle, minLength, maxLength);
-    return new EventLogHandle(result.handle, this.wasmModule);
+    return new EventLogHandle(asEventLogHandleId(result.handle), this.wasmModule);
   }
 
   /**
@@ -186,7 +311,7 @@ export class EventLogHandle {
     const minFrequency = options.minFrequency || 1;
 
     const result = this.wasmModule.discover_dfg_filtered(this.handle, activityKey, minFrequency);
-    return new DFGHandle(result.handle, this.wasmModule);
+    return new DFGHandle(asDFGHandleId(result.handle), this.wasmModule);
   }
 
   /**
@@ -194,7 +319,7 @@ export class EventLogHandle {
    */
   discoverDECLARE(activityKey: string = 'concept:name'): DeclareModelHandle {
     const result = this.wasmModule.discover_declare(this.handle, activityKey);
-    return new DeclareModelHandle(result.handle, this.wasmModule);
+    return new DeclareModelHandle(asDeclareHandleId(result.handle), this.wasmModule);
   }
 
   /**
@@ -207,7 +332,7 @@ export class EventLogHandle {
     const minSupport = options.minSupport || 0.1;
 
     const result = this.wasmModule.discover_alpha_plus_plus(this.handle, activityKey, minSupport);
-    return new PetriNetHandle(result.handle, this.wasmModule);
+    return new PetriNetHandle(asPetriNetHandleId(result.handle), this.wasmModule);
   }
 
   /**
@@ -215,7 +340,7 @@ export class EventLogHandle {
    */
   discoverILPPetriNet(activityKey: string = 'concept:name'): PetriNetHandle {
     const result = this.wasmModule.discover_ilp_petri_net(this.handle, activityKey);
-    return new PetriNetHandle(result.handle, this.wasmModule);
+    return new PetriNetHandle(asPetriNetHandleId(result.handle), this.wasmModule);
   }
 
   /**
@@ -238,7 +363,7 @@ export class EventLogHandle {
       fitnessWeight,
       simplicityWeight
     );
-    return new DFGHandle(result.handle, this.wasmModule);
+    return new DFGHandle(asDFGHandleId(result.handle), this.wasmModule);
   }
 
   /**
@@ -261,7 +386,7 @@ export class EventLogHandle {
       populationSize,
       generations
     );
-    return new DFGHandle(result.handle, this.wasmModule);
+    return new DFGHandle(asDFGHandleId(result.handle), this.wasmModule);
   }
 
   /**
@@ -284,7 +409,7 @@ export class EventLogHandle {
       swarmSize,
       iterations
     );
-    return new DFGHandle(result.handle, this.wasmModule);
+    return new DFGHandle(asDFGHandleId(result.handle), this.wasmModule);
   }
 
   /**
@@ -295,7 +420,7 @@ export class EventLogHandle {
     const maxIterations = options.maxIterations || 1000;
 
     const result = this.wasmModule.discover_astar(this.handle, activityKey, maxIterations);
-    return new DFGHandle(result.handle, this.wasmModule);
+    return new DFGHandle(asDFGHandleId(result.handle), this.wasmModule);
   }
 
   /**
@@ -303,7 +428,7 @@ export class EventLogHandle {
    */
   discoverHillClimbing(activityKey: string = 'concept:name'): DFGHandle {
     const result = this.wasmModule.discover_hill_climbing(this.handle, activityKey);
-    return new DFGHandle(result.handle, this.wasmModule);
+    return new DFGHandle(asDFGHandleId(result.handle), this.wasmModule);
   }
 
   /**
@@ -374,7 +499,7 @@ export class EventLogHandle {
    */
   discoverInductiveMiner(activityKey: string = 'concept:name'): DFGHandle {
     const result = this.wasmModule.discover_inductive_miner(this.handle, activityKey);
-    return new DFGHandle(result.handle, this.wasmModule);
+    return new DFGHandle(asDFGHandleId(result.handle), this.wasmModule);
   }
 
   /**
@@ -393,7 +518,7 @@ export class EventLogHandle {
       numAnts,
       iterations
     );
-    return new DFGHandle(result.handle, this.wasmModule);
+    return new DFGHandle(asDFGHandleId(result.handle), this.wasmModule);
   }
 
   /**
@@ -412,7 +537,7 @@ export class EventLogHandle {
       temperature,
       coolingRate
     );
-    return new DFGHandle(result.handle, this.wasmModule);
+    return new DFGHandle(asDFGHandleId(result.handle), this.wasmModule);
   }
 
   /**
@@ -423,7 +548,7 @@ export class EventLogHandle {
     const minFrequency = options.minFrequency || 2;
 
     const result = this.wasmModule.extract_process_skeleton(this.handle, activityKey, minFrequency);
-    return new DFGHandle(result.handle, this.wasmModule);
+    return new DFGHandle(asDFGHandleId(result.handle), this.wasmModule);
   }
 
   /**
@@ -531,6 +656,156 @@ export class EventLogHandle {
   }
 
   /**
+   * Extract case-level features for predictive modeling
+   */
+  extractCaseFeatures(
+    activityKey: string = 'concept:name',
+    timestampKey: string = 'time:timestamp',
+    config: api.FeatureExtractionConfig = { features: [], target: 'outcome' }
+  ): Promise<api.FeatureVector[]> {
+    try {
+      const result = this.wasmModule.extract_case_features(
+        this.handle,
+        activityKey,
+        timestampKey,
+        JSON.stringify(config)
+      );
+      return Promise.resolve(JSON.parse(result));
+    } catch (error) {
+      return Promise.reject(new Error(`Failed to extract case features: ${error}`));
+    }
+  }
+
+  /**
+   * Extract prefix-level features for remaining time/outcome prediction
+   */
+  extractPrefixFeatures(
+    activityKey: string = 'concept:name',
+    timestampKey: string = 'time:timestamp',
+    prefixLength: number = 5
+  ): Promise<api.FeatureVector[]> {
+    try {
+      const result = this.wasmModule.extract_prefix_features(
+        this.handle,
+        activityKey,
+        timestampKey,
+        prefixLength
+      );
+      return Promise.resolve(JSON.parse(result));
+    } catch (error) {
+      return Promise.reject(new Error(`Failed to extract prefix features: ${error}`));
+    }
+  }
+
+  /**
+   * Export extracted features as CSV
+   */
+  exportFeaturesAsCSV(
+    activityKey: string = 'concept:name',
+    timestampKey: string = 'time:timestamp',
+    config: api.FeatureExtractionConfig = { features: [], target: 'outcome' }
+  ): Promise<string> {
+    try {
+      const featuresJson = this.wasmModule.export_features_json(
+        this.handle,
+        activityKey,
+        timestampKey,
+        JSON.stringify(config)
+      );
+      const result = this.wasmModule.export_features_csv(featuresJson);
+      return Promise.resolve(result);
+    } catch (error) {
+      return Promise.reject(new Error(`Failed to export features as CSV: ${error}`));
+    }
+  }
+
+  /**
+   * Check data quality of the event log
+   */
+  checkDataQuality(
+    activityKey: string = 'concept:name',
+    timestampKey: string = 'time:timestamp'
+  ): Promise<api.DataQualityResult> {
+    try {
+      const result = this.wasmModule.check_data_quality(this.handle, activityKey, timestampKey);
+      return Promise.resolve(JSON.parse(result));
+    } catch (error) {
+      return Promise.reject(new Error(`Failed to check data quality: ${error}`));
+    }
+  }
+
+  /**
+   * Infer event log schema automatically
+   */
+  inferSchema(): Promise<api.SchemaInference> {
+    try {
+      const result = this.wasmModule.infer_eventlog_schema(this.handle);
+      return Promise.resolve(JSON.parse(result));
+    } catch (error) {
+      return Promise.reject(new Error(`Failed to infer schema: ${error}`));
+    }
+  }
+
+  /**
+   * Analyze resource utilization
+   */
+  analyzeResourceUtilization(
+    resourceKey: string = 'org:resource',
+    timestampKey: string = 'time:timestamp'
+  ): Promise<api.ResourceUtilization[]> {
+    try {
+      const result = this.wasmModule.analyze_resource_utilization(
+        this.handle,
+        resourceKey,
+        timestampKey
+      );
+      return Promise.resolve(JSON.parse(result));
+    } catch (error) {
+      return Promise.reject(new Error(`Failed to analyze resource utilization: ${error}`));
+    }
+  }
+
+  /**
+   * Analyze resource-activity interactions
+   */
+  analyzeResourceActivityMatrix(
+    resourceKey: string = 'org:resource',
+    activityKey: string = 'concept:name'
+  ): Promise<api.ResourceActivityMatrix> {
+    try {
+      const result = this.wasmModule.analyze_resource_activity_matrix(
+        this.handle,
+        resourceKey,
+        activityKey
+      );
+      return Promise.resolve(JSON.parse(result));
+    } catch (error) {
+      return Promise.reject(new Error(`Failed to analyze resource-activity matrix: ${error}`));
+    }
+  }
+
+  /**
+   * Identify resource bottlenecks
+   */
+  identifyResourceBottlenecks(
+    resourceKey: string = 'org:resource',
+    timestampKey: string = 'time:timestamp',
+    activityKey: string = 'concept:name'
+  ): Promise<api.ResourceBottleneck[]> {
+    try {
+      const result = this.wasmModule.identify_resource_bottlenecks(
+        this.handle,
+        resourceKey,
+        timestampKey,
+        activityKey
+      );
+      return Promise.resolve(JSON.parse(result));
+    } catch (error) {
+      return Promise.reject(new Error(`Failed to identify resource bottlenecks: ${error}`));
+    }
+  }
+
+  /**
    * Cleanup: delete the log from WASM memory
    */
   delete(): void {
@@ -543,14 +818,14 @@ export class EventLogHandle {
  */
 export class OCELHandle {
   constructor(
-    private handle: string,
-    private wasmModule: any
+    private handle: OCELHandleId,
+    private wasmModule: typeof WasmModule
   ) {}
 
   /**
    * Get the handle ID
    */
-  getId(): string {
+  getId(): OCELHandleId {
     return this.handle;
   }
 
@@ -562,14 +837,14 @@ export class OCELHandle {
   }
 
   /**
-   * Get number of events
+   * Get the total number of events in the OCEL
    */
   getEventCount(): number {
     return this.wasmModule.get_ocel_event_count(this.handle);
   }
 
   /**
-   * Get number of objects
+   * Get the total number of objects in the OCEL
    */
   getObjectCount(): number {
     return this.wasmModule.get_ocel_object_count(this.handle);
@@ -581,7 +856,7 @@ export class OCELHandle {
   discoverOCDFG(options: { minFrequency?: number } = {}): DFGHandle {
     const minFrequency = options.minFrequency || 1;
     const result = this.wasmModule.discover_ocel_dfg(this.handle);
-    return new DFGHandle(result.handle, this.wasmModule);
+    return new DFGHandle(asDFGHandleId(result.handle), this.wasmModule);
   }
 
   /**
@@ -589,6 +864,54 @@ export class OCELHandle {
    */
   toJSON(): string {
     return this.wasmModule.export_ocel_to_json(this.handle);
+  }
+
+  /**
+   * List all object types in the OCEL
+   */
+  listObjectTypes(): Promise<string[]> {
+    try {
+      const result = this.wasmModule.list_ocel_object_types(this.handle);
+      return Promise.resolve(JSON.parse(result));
+    } catch (error) {
+      return Promise.reject(new Error(`Failed to list object types: ${error}`));
+    }
+  }
+
+  /**
+   * Get statistics for each object type
+   */
+  getTypeStatistics(): Promise<Record<string, any>> {
+    try {
+      const result = this.wasmModule.get_ocel_type_statistics(this.handle);
+      return Promise.resolve(JSON.parse(result));
+    } catch (error) {
+      return Promise.reject(new Error(`Failed to get type statistics: ${error}`));
+    }
+  }
+
+  /**
+   * Flatten OCEL to EventLog for a specific object type
+   */
+  flattenToEventLog(objectType: string): EventLogHandle {
+    try {
+      const result = this.wasmModule.flatten_ocel_to_eventlog(this.handle, objectType);
+      return new EventLogHandle(asEventLogHandleId(result), this.wasmModule);
+    } catch (error) {
+      throw new Error(`Failed to flatten OCEL to EventLog: ${error}`);
+    }
+  }
+
+  /**
+   * Discover DFG for each object type
+   */
+  discoverDFGPerType(): Promise<Record<string, api.DirectlyFollowsGraph>> {
+    try {
+      const result = this.wasmModule.discover_ocel_dfg_per_type(this.handle);
+      return Promise.resolve(JSON.parse(result));
+    } catch (error) {
+      return Promise.reject(new Error(`Failed to discover DFG per type: ${error}`));
+    }
   }
 
   /**
@@ -604,14 +927,14 @@ export class OCELHandle {
  */
 export class DFGHandle {
   constructor(
-    private handle: string,
-    private wasmModule: any
+    private handle: DFGHandleId,
+    private wasmModule: typeof WasmModule
   ) {}
 
   /**
    * Get the handle ID
    */
-  getId(): string {
+  getId(): DFGHandleId {
     return this.handle;
   }
 
@@ -636,14 +959,14 @@ export class DFGHandle {
  */
 export class PetriNetHandle {
   constructor(
-    private handle: string,
-    private wasmModule: any
+    private handle: PetriNetHandleId,
+    private wasmModule: typeof WasmModule
   ) {}
 
   /**
    * Get the handle ID
    */
-  getId(): string {
+  getId(): PetriNetHandleId {
     return this.handle;
   }
 
@@ -675,14 +998,14 @@ export class PetriNetHandle {
  */
 export class DeclareModelHandle {
   constructor(
-    private handle: string,
-    private wasmModule: any
+    private handle: DeclareHandleId,
+    private wasmModule: typeof WasmModule
   ) {}
 
   /**
    * Get the handle ID
    */
-  getId(): string {
+  getId(): DeclareHandleId {
     return this.handle;
   }
 
@@ -690,7 +1013,13 @@ export class DeclareModelHandle {
    * Get the model as JSON
    */
   toJSON(): api.DeclareModel {
-    const json = this.wasmModule.export_declare_model_to_json(this.handle);
+    // Phase 2A: export function not yet in WASM .d.ts; cast to preserve forward compat
+    const exportFn = (this.wasmModule as any).export_declare_model_to_json as
+      | ((handle: string) => string)
+      | undefined;
+    if (!exportFn)
+      throw new Error('export_declare_model_to_json not available in current WASM build');
+    const json = exportFn(this.handle);
     return JSON.parse(json);
   }
 
@@ -702,11 +1031,242 @@ export class DeclareModelHandle {
   }
 }
 
-// Type definitions for client API
-export interface EventLogStats {
-  total_events: number;
-  total_cases: number;
-  avg_events_per_case: number;
+/**
+ * Handle to an Object-Centric Petri Net
+ */
+export class OCPetriNetHandle {
+  constructor(
+    private handle: OCPetriNetHandleId,
+    private wasmModule: typeof WasmModule
+  ) {}
+
+  /**
+   * Get the handle ID
+   */
+  getId(): OCPetriNetHandleId {
+    return this.handle;
+  }
+
+  /**
+   * Get the OC Petri Net as JSON
+   */
+  toJSON(): api.OCPetriNet {
+    // Phase 2A: export function not yet in WASM .d.ts; cast to preserve forward compat
+    const exportFn = (this.wasmModule as any).export_oc_petri_net_to_json as
+      | ((handle: string) => string)
+      | undefined;
+    if (!exportFn)
+      throw new Error('export_oc_petri_net_to_json not available in current WASM build');
+    const json = exportFn(this.handle);
+    return JSON.parse(json);
+  }
+
+  /**
+   * Export as PNML format (Petri Net Markup Language)
+   */
+  toPNML(): string {
+    // Phase 2A: export function not yet in WASM .d.ts; cast to preserve forward compat
+    const exportFn = (this.wasmModule as any).export_oc_petri_net_to_pnml as
+      | ((handle: string) => string)
+      | undefined;
+    if (!exportFn)
+      throw new Error('export_oc_petri_net_to_pnml not available in current WASM build');
+    return exportFn(this.handle);
+  }
+
+  /**
+   * Cleanup
+   */
+  delete(): void {
+    this.wasmModule.delete_object(this.handle);
+  }
+}
+
+/**
+ * Handle to a Temporal Profile stored in WASM memory
+ */
+export class TemporalProfileHandle {
+  constructor(
+    private handle: TemporalProfileHandleId,
+    private wasmModule: typeof WasmModule
+  ) {}
+
+  getId(): TemporalProfileHandleId {
+    return this.handle;
+  }
+
+  /**
+   * Check conformance of an EventLog against this temporal profile
+   * @param log - EventLog to check
+   * @param zeta - z-score threshold for deviation detection (default 2.0)
+   */
+  checkConformance(
+    log: EventLogHandle,
+    options: { activityKey?: string; timestampKey?: string; zeta?: number } = {}
+  ): any {
+    const activityKey = options.activityKey || 'concept:name';
+    const timestampKey = options.timestampKey || 'time:timestamp';
+    const zeta = options.zeta || 2.0;
+    return this.wasmModule.check_temporal_conformance(
+      log.getId(),
+      this.handle,
+      activityKey,
+      timestampKey,
+      zeta
+    );
+  }
+
+  delete(): void {
+    this.wasmModule.delete_object(this.handle);
+  }
+}
+
+/**
+ * Handle to an N-Gram Predictor stored in WASM memory
+ */
+export class NGramPredictorHandle {
+  constructor(
+    private handle: NGramPredictorHandleId,
+    private wasmModule: typeof WasmModule
+  ) {}
+
+  getId(): NGramPredictorHandleId {
+    return this.handle;
+  }
+
+  /**
+   * Predict the next activity given a prefix of activities
+   * @param prefix - array of activity names forming the prefix
+   */
+  predictNextActivity(prefix: string[]): any {
+    return this.wasmModule.predict_next_activity(this.handle, JSON.stringify(prefix));
+  }
+
+  /**
+   * Score the likelihood of a complete trace
+   * @param activities - array of activity names in the trace
+   */
+  scoreTraceLikelihood(activities: string[]): any {
+    return this.wasmModule.score_trace_likelihood(this.handle, JSON.stringify(activities));
+  }
+
+  delete(): void {
+    this.wasmModule.delete_object(this.handle);
+  }
+}
+
+/**
+ * Handle to a Streaming DFG builder stored in WASM memory
+ */
+export class StreamingDFGHandle {
+  constructor(
+    private handle: StreamingDFGHandleId,
+    private wasmModule: typeof WasmModule
+  ) {}
+
+  getId(): StreamingDFGHandleId {
+    return this.handle;
+  }
+
+  /**
+   * Add a single event to the streaming DFG
+   */
+  addEvent(caseId: string, activity: string): any {
+    return this.wasmModule.streaming_dfg_add_event(this.handle, caseId, activity);
+  }
+
+  /**
+   * Add a batch of events as JSON array
+   * @param eventsJson - JSON string of [{case_id, activity}, ...]
+   */
+  addBatch(eventsJson: string): any {
+    return this.wasmModule.streaming_dfg_add_batch(this.handle, eventsJson);
+  }
+
+  /**
+   * Close a trace (mark case as complete)
+   */
+  closeTrace(caseId: string): any {
+    return this.wasmModule.streaming_dfg_close_trace(this.handle, caseId);
+  }
+
+  /**
+   * Flush all open traces (close them without explicit close)
+   */
+  flushOpen(): any {
+    return this.wasmModule.streaming_dfg_flush_open(this.handle);
+  }
+
+  /**
+   * Take a snapshot of the current DFG state
+   */
+  snapshot(): any {
+    return this.wasmModule.streaming_dfg_snapshot(this.handle);
+  }
+
+  /**
+   * Finalize the streaming DFG and produce the final result
+   */
+  finalize(): any {
+    return this.wasmModule.streaming_dfg_finalize(this.handle);
+  }
+
+  /**
+   * Get current statistics
+   */
+  stats(): any {
+    return this.wasmModule.streaming_dfg_stats(this.handle);
+  }
+
+  delete(): void {
+    this.wasmModule.delete_object(this.handle);
+  }
+}
+
+/**
+ * Handle to a Streaming Conformance checker stored in WASM memory
+ */
+export class StreamingConformanceHandle {
+  constructor(
+    private handle: StreamingConformanceHandleId,
+    private wasmModule: typeof WasmModule
+  ) {}
+
+  getId(): StreamingConformanceHandleId {
+    return this.handle;
+  }
+
+  /**
+   * Add a single event for conformance checking
+   */
+  addEvent(caseId: string, activity: string): any {
+    return this.wasmModule.streaming_conformance_add_event(this.handle, caseId, activity);
+  }
+
+  /**
+   * Close a trace (mark case as complete)
+   */
+  closeTrace(caseId: string): any {
+    return this.wasmModule.streaming_conformance_close_trace(this.handle, caseId);
+  }
+
+  /**
+   * Get current conformance statistics
+   */
+  stats(): any {
+    return this.wasmModule.streaming_conformance_stats(this.handle);
+  }
+
+  /**
+   * Finalize and produce final conformance results
+   */
+  finalize(): any {
+    return this.wasmModule.streaming_conformance_finalize(this.handle);
+  }
+
+  delete(): void {
+    this.wasmModule.delete_object(this.handle);
+  }
 }
 
 /**
@@ -719,4 +1279,127 @@ export async function loadFileAsText(file: File): Promise<string> {
     reader.onerror = () => reject(new Error('Failed to read file'));
     reader.readAsText(file);
   });
+}
+
+// ============================================================================
+// TEXT ENCODING FUNCTIONS
+// ============================================================================
+
+/**
+ * Get a reference to the WASM module (for text encoding functions)
+ */
+let wasmModuleGlobal: any = null;
+
+/**
+ * Initialize the global WASM module reference
+ */
+export function initializeWasmModule(wasmModule: any): void {
+  wasmModuleGlobal = wasmModule;
+}
+
+/**
+ * Encode DFG as plain text representation
+ */
+export async function encodeTextAsText(dfgHandle: DFGHandle): Promise<string> {
+  if (!wasmModuleGlobal) {
+    throw new Error('WASM module not initialized. Call initializeWasmModule() first.');
+  }
+  try {
+    return wasmModuleGlobal.encode_dfg_as_text(dfgHandle.getId());
+  } catch (error) {
+    throw new Error(`Failed to encode DFG as text: ${error}`);
+  }
+}
+
+/**
+ * Encode variants as text representation
+ */
+export async function encodeVariantsAsText(
+  logHandle: EventLogHandle,
+  activityKey: string = 'concept:name',
+  topN: number = 10
+): Promise<string> {
+  if (!wasmModuleGlobal) {
+    throw new Error('WASM module not initialized. Call initializeWasmModule() first.');
+  }
+  try {
+    return wasmModuleGlobal.encode_variants_as_text(logHandle.getId(), activityKey, topN);
+  } catch (error) {
+    throw new Error(`Failed to encode variants as text: ${error}`);
+  }
+}
+
+/**
+ * Encode event log as text summary
+ */
+export async function encodeLogAsText(logHandle: EventLogHandle): Promise<string> {
+  if (!wasmModuleGlobal) {
+    throw new Error('WASM module not initialized. Call initializeWasmModule() first.');
+  }
+  try {
+    return wasmModuleGlobal.encode_statistics_as_text(logHandle.getId());
+  } catch (error) {
+    throw new Error(`Failed to encode log as text: ${error}`);
+  }
+}
+
+/**
+ * Encode Petri Net as text representation
+ */
+export async function encodePetriNetAsText(petriNetHandle: PetriNetHandle): Promise<string> {
+  if (!wasmModuleGlobal) {
+    throw new Error('WASM module not initialized. Call initializeWasmModule() first.');
+  }
+  try {
+    return wasmModuleGlobal.encode_petri_net_as_text(petriNetHandle.getId());
+  } catch (error) {
+    throw new Error(`Failed to encode Petri Net as text: ${error}`);
+  }
+}
+
+/**
+ * Encode OCEL as text representation
+ */
+export async function encodeOCELAsText(ocelHandle: OCELHandle): Promise<string> {
+  if (!wasmModuleGlobal) {
+    throw new Error('WASM module not initialized. Call initializeWasmModule() first.');
+  }
+  try {
+    return wasmModuleGlobal.encode_ocel_as_text(ocelHandle.getId());
+  } catch (error) {
+    throw new Error(`Failed to encode OCEL as text: ${error}`);
+  }
+}
+
+/**
+ * Encode object-centric Petri Net as text representation
+ */
+export async function encodeOCPetriNetAsText(ocpnHandle: OCPetriNetHandle): Promise<string> {
+  if (!wasmModuleGlobal) {
+    throw new Error('WASM module not initialized. Call initializeWasmModule() first.');
+  }
+  try {
+    return wasmModuleGlobal.encode_oc_petri_net_as_text(ocpnHandle.getId());
+  } catch (error) {
+    throw new Error(`Failed to encode OC Petri Net as text: ${error}`);
+  }
+}
+
+/**
+ * Encode process model comparison as text
+ */
+export async function encodeModelComparisonAsText(
+  model1Handle: DFGHandle | PetriNetHandle,
+  model2Handle: DFGHandle | PetriNetHandle
+): Promise<string> {
+  if (!wasmModuleGlobal) {
+    throw new Error('WASM module not initialized. Call initializeWasmModule() first.');
+  }
+  try {
+    const id1 = model1Handle instanceof DFGHandle ? model1Handle.getId() : model1Handle.getId();
+    const id2 = model2Handle instanceof DFGHandle ? model2Handle.getId() : model2Handle.getId();
+    return wasmModuleGlobal.encode_model_comparison_as_text(id1, id2);
+  } catch (error) {
+    throw new Error(`Failed to encode model comparison as text: ${error}`);
+  }
 }

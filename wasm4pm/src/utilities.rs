@@ -3,8 +3,7 @@ use crate::state::{get_or_init_state, StoredObject};
 use crate::models::*;
 use serde_json::json;
 use std::collections::{HashMap, HashSet};
-#[cfg(target_arch = "wasm32")]
-use serde_wasm_bindgen;
+use statrs::statistics::{Data, Median};
 
 /// Serialize `val` across the WASM boundary.
 ///
@@ -89,11 +88,16 @@ pub fn get_trace_length_statistics(eventlog_handle: &str) -> Result<JsValue, JsV
                 let sum: usize = lengths.iter().sum();
                 let avg = sum as f64 / lengths.len() as f64;
 
+                // Use statrs Data struct for proper median calculation
+                let lengths_f64: Vec<f64> = lengths.iter().map(|&x| x as f64).collect();
+                let data = Data::new(lengths_f64);
+                let median = data.median();
+
                 json!({
                     "min": min,
                     "max": max,
                     "average": avg,
-                    "median": lengths[lengths.len() / 2],
+                    "median": median as usize,
                     "count": lengths.len(),
                 })
             } else {
@@ -111,6 +115,41 @@ pub fn get_trace_length_statistics(eventlog_handle: &str) -> Result<JsValue, JsV
         Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
         None => Err(JsValue::from_str("EventLog not found")),
     })
+}
+
+/// Evaluate fitness of an edge set against columnar log (zero string allocation)
+/// Used by genetic algorithm, PSO, ACO, and simulated annealing discovery algorithms.
+/// Fitness = 80% trace fit + 20% simplicity penalty (based on edge count).
+#[inline]
+pub(crate) fn evaluate_edges_fitness(edge_set: &HashSet<(u32, u32)>, col: &ColumnarLog) -> f64 {
+    let mut fitting_traces = 0;
+    let total_traces = col.trace_offsets.len().saturating_sub(1);
+
+    for t in 0..total_traces {
+        let start = col.trace_offsets[t];
+        let end = col.trace_offsets[t + 1];
+
+        // Check if all consecutive pairs in this trace are in the edge set
+        let trace_fits = if end > start + 1 {
+            (start..end.saturating_sub(1)).all(|i| {
+                let from = col.events[i];
+                let to = col.events[i + 1];
+                edge_set.contains(&(from, to))
+            })
+        } else {
+            true // Empty or single-event traces are considered fitting
+        };
+
+        if trace_fits {
+            fitting_traces += 1;
+        }
+    }
+
+    // Fitness = balance of fit and simplicity
+    let fit_ratio = fitting_traces as f64 / total_traces.max(1) as f64;
+    let complexity_penalty = 1.0 / (1.0 + (edge_set.len() as f64 / 20.0));
+
+    fit_ratio * 0.8 + complexity_penalty * 0.2
 }
 
 /// Get all attribute names used in the log

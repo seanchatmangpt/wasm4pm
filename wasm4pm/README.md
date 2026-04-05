@@ -21,38 +21,38 @@ Real Criterion benchmarks (Rust native binary), 4 dataset sizes (100–50K cases
 
 ### Discovery Algorithms (14/14)
 
-| Algorithm               | 100 cases | 1K cases | 10K cases | 50K cases | Category              |
-| ----------------------- | --------- | -------- | --------- | --------- | --------------------- |
-| **DFG**                 | ~20 µs    | ~0.3 ms  | ~3.0 ms   | ~30 ms    | ⚡ Ultra-fast         |
-| **Process Skeleton**    | ~28 µs    | ~0.25 ms | ~2.7 ms   | ~31 ms    | ⚡ Ultra-fast         |
-| **Hill Climbing**       | ~30 µs    | ~0.48 ms | ~6.3 ms   | ~67 ms    | ⚡ Fast               |
-| **Optimized DFG**       | ~32 µs    | ~0.31 ms | ~7.8 ms   | ~104 ms   | ⚡ Fast               |
-| **Heuristic Miner**     | ~183 µs   | ~1.8 ms  | ~14 ms    | ~116 ms   | ⚡ Balanced           |
-| **Inductive Miner**     | ~154 µs   | ~2.5 ms  | ~25 ms    | ~175 ms   | ⚡ Recursive          |
-| **Genetic Algorithm**   | ~183 µs   | ~2.3 ms  | ~24 ms    | ~179 ms   | 🚀 Evolutionary       |
-| **ACO**                 | ~475 µs   | ~2.4 ms  | ~21 ms    | ~373 ms   | 🚀 Metaheuristic      |
-| **Simulated Annealing** | ~115 µs   | ~3.6 ms  | ~23 ms    | ~192 ms   | 🚀 Metaheuristic      |
-| **PSO Algorithm**       | ~300 µs   | ~6.3 ms  | ~25 ms    | ~201 ms   | 🚀 Metaheuristic      |
-| **A\* Search**          | ~320 µs   | ~7.7 ms  | ~77 ms    | ~712 ms   | 🔍 Informed search    |
-| **ILP Petri Net**       | ~350 µs   | ~9.0 ms  | ~87 ms    | ~835 ms   | 🔧 Optimal (ILP)      |
+| Algorithm               | 100 cases | 1K cases | 10K cases | 50K cases | Category           |
+| ----------------------- | --------- | -------- | --------- | --------- | ------------------ |
+| **DFG**                 | ~20 µs    | ~0.3 ms  | ~3.0 ms   | ~30 ms    | ⚡ Ultra-fast      |
+| **Process Skeleton**    | ~28 µs    | ~0.25 ms | ~2.7 ms   | ~31 ms    | ⚡ Ultra-fast      |
+| **Hill Climbing**       | ~30 µs    | ~0.48 ms | ~6.3 ms   | ~67 ms    | ⚡ Fast            |
+| **Optimized DFG**       | ~32 µs    | ~0.31 ms | ~7.8 ms   | ~104 ms   | ⚡ Fast            |
+| **Heuristic Miner**     | ~183 µs   | ~1.8 ms  | ~14 ms    | ~116 ms   | ⚡ Balanced        |
+| **Inductive Miner**     | ~154 µs   | ~2.5 ms  | ~25 ms    | ~175 ms   | ⚡ Recursive       |
+| **Genetic Algorithm**   | ~183 µs   | ~2.3 ms  | ~24 ms    | ~179 ms   | 🚀 Evolutionary    |
+| **ACO**                 | ~475 µs   | ~2.4 ms  | ~21 ms    | ~373 ms   | 🚀 Metaheuristic   |
+| **Simulated Annealing** | ~115 µs   | ~3.6 ms  | ~23 ms    | ~192 ms   | 🚀 Metaheuristic   |
+| **PSO Algorithm**       | ~300 µs   | ~6.3 ms  | ~25 ms    | ~201 ms   | 🚀 Metaheuristic   |
+| **A\* Search**          | ~320 µs   | ~7.7 ms  | ~77 ms    | ~712 ms   | 🔍 Informed search |
+| **ILP Petri Net**       | ~350 µs   | ~9.0 ms  | ~87 ms    | ~835 ms   | 🔧 Optimal (ILP)   |
 
 ### Analytics Functions (20+)
 
-| Function                  | 100 cases | 1K cases | 10K cases | 50K cases | Category           |
-| ------------------------- | --------- | -------- | --------- | --------- | ------------------ |
-| **detect_rework**         | ~42 µs    | ~0.75 ms | ~9.3 ms   | ~61 ms    | ⚡⚡ Very fast     |
-| **detect_bottlenecks**    | ~43 µs    | ~0.69 ms | ~9.8 ms   | ~50 ms    | ⚡⚡ Very fast     |
-| **process_speedup**       | ~21 µs    | ~0.31 ms | ~7.8 ms   | ~104 ms   | ⚡ Fast            |
-| **start_end_activities**  | ~31 µs    | ~0.25 ms | ~2.7 ms   | ~31 ms    | ⚡ Fast            |
-| **dotted_chart**          | ~0.36 ms  | ~0.29 ms | ~87 ms    | ~835 ms   | 📊 Visualization   |
-| **activity_ordering**     | ~0.16 ms  | ~2.5 ms  | ~25 ms    | ~175 ms   | 📊 Dependencies    |
-| **transition_matrix**     | ~0.23 ms  | ~3.0 ms  | ~21 ms    | ~373 ms   | 📊 Relationships   |
-| **activity_dependencies** | ~0.15 ms  | ~2.5 ms  | ~25 ms    | ~712 ms   | 📊 Network         |
-| **variant_complexity**    | ~0.07 ms  | ~1.8 ms  | ~14 ms    | ~116 ms   | 📈 Metrics         |
-| **infrequent_paths**      | ~0.12 ms  | ~3.6 ms  | ~23 ms    | ~192 ms   | 🔍 Outlier detect  |
-| **model_metrics**         | ~0.15 ms  | ~5.2 ms  | ~27 ms    | ~183 ms   | 📊 Quality         |
-| Plus 10+ more analytics (all < 1s for 50K cases)  | |||||
-| **Concept Drift**              | 1.71ms    | 30.6ms   | 144.3ms  | -         | 🔍 Temporal analysis |
+| Function                                         | 100 cases | 1K cases | 10K cases | 50K cases | Category             |
+| ------------------------------------------------ | --------- | -------- | --------- | --------- | -------------------- |
+| **detect_rework**                                | ~42 µs    | ~0.75 ms | ~9.3 ms   | ~61 ms    | ⚡⚡ Very fast       |
+| **detect_bottlenecks**                           | ~43 µs    | ~0.69 ms | ~9.8 ms   | ~50 ms    | ⚡⚡ Very fast       |
+| **process_speedup**                              | ~21 µs    | ~0.31 ms | ~7.8 ms   | ~104 ms   | ⚡ Fast              |
+| **start_end_activities**                         | ~31 µs    | ~0.25 ms | ~2.7 ms   | ~31 ms    | ⚡ Fast              |
+| **dotted_chart**                                 | ~0.36 ms  | ~0.29 ms | ~87 ms    | ~835 ms   | 📊 Visualization     |
+| **activity_ordering**                            | ~0.16 ms  | ~2.5 ms  | ~25 ms    | ~175 ms   | 📊 Dependencies      |
+| **transition_matrix**                            | ~0.23 ms  | ~3.0 ms  | ~21 ms    | ~373 ms   | 📊 Relationships     |
+| **activity_dependencies**                        | ~0.15 ms  | ~2.5 ms  | ~25 ms    | ~712 ms   | 📊 Network           |
+| **variant_complexity**                           | ~0.07 ms  | ~1.8 ms  | ~14 ms    | ~116 ms   | 📈 Metrics           |
+| **infrequent_paths**                             | ~0.12 ms  | ~3.6 ms  | ~23 ms    | ~192 ms   | 🔍 Outlier detect    |
+| **model_metrics**                                | ~0.15 ms  | ~5.2 ms  | ~27 ms    | ~183 ms   | 📊 Quality           |
+| Plus 10+ more analytics (all < 1s for 50K cases) |           |          |           |           |                      |
+| **Concept Drift**                                | 1.71ms    | 30.6ms   | 144.3ms   | -         | 🔍 Temporal analysis |
 
 **Key metrics:**
 
@@ -139,7 +139,8 @@ See [`docs/`](../docs/) for full guides:
 
 ## Status
 
-**Production Ready** ✅ 
+**Production Ready** ✅
+
 - All features implemented and tested (88 tests, 75% pass rate)
 - All 14 discovery + 20+ analytics algorithms benchmarked (2026-04-04)
 - All 14 discovery + 20+ analytics algorithms benchmarked with real Criterion results

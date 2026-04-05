@@ -3,9 +3,8 @@ use crate::state::{get_or_init_state, StoredObject};
 use crate::models::*;
 use serde_json::json;
 use rustc_hash::FxHashMap;
-#[cfg(target_arch = "wasm32")]
-use serde_wasm_bindgen;
 use crate::utilities::to_js;
+use crate::error::{wasm_err, codes};
 
 /// Discover a Directly-Follows Graph (DFG) from an EventLog
 #[wasm_bindgen]
@@ -66,8 +65,8 @@ pub fn discover_dfg(
 
             to_js(&dfg)
         }
-        Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
+        None => Err(wasm_err(codes::INVALID_HANDLE, format!("EventLog '{}' not found", eventlog_handle))),
     })
 }
 
@@ -101,12 +100,17 @@ pub fn discover_ocel_dfg(ocel_handle: &str) -> Result<JsValue, JsValue> {
             // Get directly-follows relations within same objects
             let mut events_by_object: FxHashMap<String, Vec<(usize, &str)>> = FxHashMap::default();
             for (idx, event) in ocel.events.iter().enumerate() {
-                for obj_id in &event.object_ids {
+                for obj_id in event.all_object_ids() {
                     events_by_object
-                        .entry(obj_id.clone())
+                        .entry(obj_id.to_string())
                         .or_insert_with(Vec::new)
                         .push((idx, event.event_type.as_str()));
                 }
+            }
+
+            // Sort events by timestamp (ISO 8601 sort works lexicographically for ISO format)
+            for events in events_by_object.values_mut() {
+                events.sort_by_key(|(idx, _)| ocel.events[*idx].timestamp.clone());
             }
 
             // Build an edge map for O(1) frequency updates instead of O(n)
@@ -127,7 +131,7 @@ pub fn discover_ocel_dfg(ocel_handle: &str) -> Result<JsValue, JsValue> {
 
             // Collect start/end event types using .first()/.last() to eliminate
             // manual bounds checks and the len()-1 index expression.
-            for obj_id in &ocel.object_types {
+            for obj_id in events_by_object.keys() {
                 if let Some(events) = events_by_object.get(obj_id) {
                     if let Some(first) = events.first() {
                         *dfg.start_activities.entry(first.1.to_string()).or_insert(0) += 1;
@@ -140,8 +144,102 @@ pub fn discover_ocel_dfg(ocel_handle: &str) -> Result<JsValue, JsValue> {
 
             to_js(&dfg)
         }
-        Some(_) => Err(JsValue::from_str("Object is not an OCEL")),
-        None => Err(JsValue::from_str("OCEL not found")),
+        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an OCEL")),
+        None => Err(wasm_err(codes::INVALID_HANDLE, format!("OCEL '{}' not found", ocel_handle))),
+    })
+}
+
+/// Discover a Directly-Follows Graph (DFG) per object type from an OCEL
+#[wasm_bindgen]
+pub fn discover_ocel_dfg_per_type(ocel_handle: &str) -> Result<JsValue, JsValue> {
+    get_or_init_state().with_object(ocel_handle, |obj| match obj {
+        Some(StoredObject::OCEL(ocel)) => {
+            let mut result: FxHashMap<String, DirectlyFollowsGraph> = FxHashMap::default();
+
+            // For each object type, discover a separate DFG
+            for obj_type in &ocel.object_types {
+                let mut dfg = DirectlyFollowsGraph::new();
+
+                // Initialize nodes for activities
+                let mut activity_nodes: FxHashMap<String, bool> = FxHashMap::default();
+                for event in &ocel.events {
+                    activity_nodes.insert(event.event_type.clone(), false);
+                }
+                for activity in activity_nodes.keys() {
+                    dfg.nodes.push(DFGNode {
+                        id: activity.clone(),
+                        label: activity.clone(),
+                        frequency: 0,
+                    });
+                }
+
+                // Get all events for objects of this type
+                let mut events_by_object: FxHashMap<String, Vec<(usize, &str)>> = FxHashMap::default();
+                for obj in &ocel.objects {
+                    if &obj.object_type == obj_type {
+                        events_by_object.insert(obj.id.clone(), Vec::new());
+                    }
+                }
+
+                // Collect events for each object of this type
+                for (idx, event) in ocel.events.iter().enumerate() {
+                    for obj_id in event.all_object_ids() {
+                        if let Some(events) = events_by_object.get_mut(obj_id) {
+                            events.push((idx, event.event_type.as_str()));
+                        }
+                    }
+                }
+
+                // Sort events by timestamp (ISO 8601 sort works lexicographically for ISO format)
+                for events in events_by_object.values_mut() {
+                    events.sort_by_key(|(idx, _)| ocel.events[*idx].timestamp.clone());
+                }
+
+                // Count activity frequencies only for relevant events of this object type
+                let mut activity_counts: FxHashMap<String, usize> = FxHashMap::default();
+                for events in events_by_object.values() {
+                    for (_, event_type) in events {
+                        *activity_counts.entry(event_type.to_string()).or_insert(0) += 1;
+                    }
+                }
+                for node in &mut dfg.nodes {
+                    if let Some(count) = activity_counts.get(&node.id) {
+                        node.frequency = *count;
+                    }
+                }
+
+                let mut edge_map: FxHashMap<(String, String), usize> = FxHashMap::default();
+                for events in events_by_object.values() {
+                    for pair in events.windows(2) {
+                        let from = pair[0].1;
+                        let to = pair[1].1;
+                        *edge_map.entry((from.to_string(), to.to_string())).or_insert(0) += 1;
+                    }
+                }
+                for ((from, to), freq) in edge_map {
+                    dfg.edges.push(DirectlyFollowsRelation { from, to, frequency: freq });
+                }
+
+                // Collect start/end activities (now correctly using events_by_object.keys())
+                for obj_id in events_by_object.keys() {
+                    if let Some(events) = events_by_object.get(obj_id) {
+                        if let Some(first) = events.first() {
+                            *dfg.start_activities.entry(first.1.to_string()).or_insert(0) += 1;
+                        }
+                        if let Some(last) = events.last() {
+                            *dfg.end_activities.entry(last.1.to_string()).or_insert(0) += 1;
+                        }
+                    }
+                }
+
+                result.insert(obj_type.clone(), dfg);
+            }
+
+            // Return as JSON: { "Order": { ... DFG ... }, "Item": { ... } }
+            to_js(&result)
+        }
+        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an OCEL")),
+        None => Err(wasm_err(codes::INVALID_HANDLE, format!("OCEL '{}' not found", ocel_handle))),
     })
 }
 
@@ -300,8 +398,8 @@ pub fn discover_declare(eventlog_handle: &str, activity_key: &str) -> Result<JsV
 
             to_js(&model)
         }
-        Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
+        None => Err(wasm_err(codes::INVALID_HANDLE, format!("EventLog '{}' not found", eventlog_handle))),
     })
 }
 

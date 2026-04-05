@@ -13,11 +13,10 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
-  TextContent,
-  ToolResultBlockParam,
+  type CallToolResult,
 } from '@modelcontextprotocol/sdk/types.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import * as wasm4pm from './client.js';
+import * as wasm from '../pkg/wasm4pm.js';
 
 interface ToolInput {
   [key: string]: unknown;
@@ -64,7 +63,7 @@ export class Wasm4pmMCPServer {
 
     // Handle tool execution
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
-      return this.executeTool(request.params.name, request.params.arguments);
+      return this.executeTool(request.params.name, (request.params.arguments ?? {}) as ToolInput);
     });
   }
 
@@ -79,7 +78,7 @@ export class Wasm4pmMCPServer {
         description:
           'Discover a Directly-Follows Graph (DFG) process model. Fastest algorithm, good for quick overviews.',
         inputSchema: {
-          type: 'object',
+          type: 'object' as const,
           properties: {
             xes_content: {
               type: 'string',
@@ -98,7 +97,7 @@ export class Wasm4pmMCPServer {
         description:
           'Discover a Petri Net using Alpha++ algorithm. Balanced accuracy and performance.',
         inputSchema: {
-          type: 'object',
+          type: 'object' as const,
           properties: {
             xes_content: {
               type: 'string',
@@ -113,7 +112,7 @@ export class Wasm4pmMCPServer {
         description:
           'Discover optimal process model using Integer Linear Programming. Highest quality but slower.',
         inputSchema: {
-          type: 'object',
+          type: 'object' as const,
           properties: {
             xes_content: {
               type: 'string',
@@ -132,7 +131,7 @@ export class Wasm4pmMCPServer {
         description:
           'Discover process model using evolutionary algorithm. Good for complex processes.',
         inputSchema: {
-          type: 'object',
+          type: 'object' as const,
           properties: {
             xes_content: {
               type: 'string',
@@ -154,7 +153,7 @@ export class Wasm4pmMCPServer {
         name: 'discover_variants',
         description: 'Discover all unique trace variants in the event log and their frequencies.',
         inputSchema: {
-          type: 'object',
+          type: 'object' as const,
           properties: {
             xes_content: {
               type: 'string',
@@ -170,7 +169,7 @@ export class Wasm4pmMCPServer {
         description:
           'Check if event log conforms to a process model. Returns fitness, precision, and deviations.',
         inputSchema: {
-          type: 'object',
+          type: 'object' as const,
           properties: {
             xes_content: {
               type: 'string',
@@ -178,11 +177,7 @@ export class Wasm4pmMCPServer {
             },
             model_json: {
               type: 'string',
-              description: 'Process model as JSON',
-            },
-            include_deviations: {
-              type: 'boolean',
-              description: 'Include detailed deviation information. Default: true',
+              description: 'Process model as JSON (Petri Net handle or serialized model)',
             },
           },
           required: ['xes_content', 'model_json'],
@@ -193,7 +188,7 @@ export class Wasm4pmMCPServer {
         description:
           'Analyze event log statistics: trace count, event count, duration, activities, etc.',
         inputSchema: {
-          type: 'object',
+          type: 'object' as const,
           properties: {
             xes_content: {
               type: 'string',
@@ -207,7 +202,7 @@ export class Wasm4pmMCPServer {
         name: 'detect_bottlenecks',
         description: 'Identify activities that are process bottlenecks based on execution time.',
         inputSchema: {
-          type: 'object',
+          type: 'object' as const,
           properties: {
             xes_content: {
               type: 'string',
@@ -215,7 +210,7 @@ export class Wasm4pmMCPServer {
             },
             threshold: {
               type: 'number',
-              description: 'Threshold percentile (0-1). Default: 0.75 (top 25%)',
+              description: 'Threshold in seconds. Default: 3600 (1 hour)',
             },
           },
           required: ['xes_content'],
@@ -225,7 +220,7 @@ export class Wasm4pmMCPServer {
         name: 'detect_concept_drift',
         description: 'Detect if the process changes over time (concept drift).',
         inputSchema: {
-          type: 'object',
+          type: 'object' as const,
           properties: {
             xes_content: {
               type: 'string',
@@ -241,35 +236,18 @@ export class Wasm4pmMCPServer {
       },
       // Visualization
       {
-        name: 'generate_mermaid_diagram',
-        description: 'Generate Mermaid diagram of process model. Can be visualized at mermaid.live',
+        name: 'encode_dfg_as_text',
+        description:
+          'Discover a DFG and encode it as LLM-readable text. Describes activities, edge paths with frequencies.',
         inputSchema: {
-          type: 'object',
-          properties: {
-            model_json: {
-              type: 'string',
-              description: 'Process model as JSON',
-            },
-          },
-          required: ['model_json'],
-        },
-      },
-      {
-        name: 'generate_html_report',
-        description: 'Generate comprehensive HTML report with statistics, model, and analysis.',
-        inputSchema: {
-          type: 'object',
+          type: 'object' as const,
           properties: {
             xes_content: {
               type: 'string',
-              description: 'XES event log content',
-            },
-            model_json: {
-              type: 'string',
-              description: 'Process model as JSON',
+              description: 'XES event log content (a DFG will be discovered first)',
             },
           },
-          required: ['xes_content', 'model_json'],
+          required: ['xes_content'],
         },
       },
       // Utilities
@@ -278,7 +256,7 @@ export class Wasm4pmMCPServer {
         description:
           'Compare multiple discovery algorithms on the same event log. Returns fitness and execution time for each.',
         inputSchema: {
-          type: 'object',
+          type: 'object' as const,
           properties: {
             xes_content: {
               type: 'string',
@@ -289,10 +267,128 @@ export class Wasm4pmMCPServer {
               items: { type: 'string' },
               description:
                 'Algorithms to compare. Options: dfg, alpha_plus_plus, genetic, ilp, pso, a_star, declare, heuristic, inductive, hill_climbing, ant_colony, simulated_annealing, process_skeleton',
-              default: ['dfg', 'alpha_plus_plus', 'genetic'],
             },
           },
           required: ['xes_content'],
+        },
+      },
+      // OCEL / Object-Centric Process Mining
+      {
+        name: 'load_ocel',
+        description:
+          'Load an Object-Centric Event Log from JSON (OCEL 2.0 standard). Returns an opaque handle for subsequent OCEL operations.',
+        inputSchema: {
+          type: 'object' as const,
+          properties: {
+            ocel_json: {
+              type: 'string',
+              description: 'OCEL 2.0 JSON content with events, objects, objectTypes, eventTypes',
+            },
+          },
+          required: ['ocel_json'],
+        },
+      },
+      {
+        name: 'flatten_ocel',
+        description:
+          'Project an OCEL onto a single object type, producing a classic EventLog handle.',
+        inputSchema: {
+          type: 'object' as const,
+          properties: {
+            ocel_handle: {
+              type: 'string',
+              description: 'Handle to a loaded OCEL (from load_ocel)',
+            },
+            object_type: {
+              type: 'string',
+              description: 'Object type to project onto (e.g., "Order", "Item")',
+            },
+          },
+          required: ['ocel_handle', 'object_type'],
+        },
+      },
+      {
+        name: 'discover_ocel_dfg_per_type',
+        description: 'Discover a separate Directly-Follows Graph for each object type in an OCEL.',
+        inputSchema: {
+          type: 'object' as const,
+          properties: {
+            ocel_handle: {
+              type: 'string',
+              description: 'Handle to a loaded OCEL',
+            },
+          },
+          required: ['ocel_handle'],
+        },
+      },
+      {
+        name: 'discover_oc_petri_net',
+        description:
+          'Discover Object-Centric Petri Nets from an OCEL. Supports alpha++ and heuristic algorithms.',
+        inputSchema: {
+          type: 'object' as const,
+          properties: {
+            ocel_handle: {
+              type: 'string',
+              description: 'Handle to a loaded OCEL',
+            },
+            algorithm: {
+              type: 'string',
+              description: 'Discovery algorithm: "alpha++" (default) or "heuristic"',
+            },
+          },
+          required: ['ocel_handle'],
+        },
+      },
+      {
+        name: 'encode_ocel_as_text',
+        description:
+          'Convert an OCEL into an LLM-readable summary with event types, object types, and statistics.',
+        inputSchema: {
+          type: 'object' as const,
+          properties: {
+            ocel_handle: {
+              type: 'string',
+              description: 'Handle to a loaded OCEL (from load_ocel)',
+            },
+          },
+          required: ['ocel_handle'],
+        },
+      },
+      // Feature Extraction
+      {
+        name: 'extract_case_features',
+        description:
+          'Extract ML-ready feature vectors from an event log for predictive process mining.',
+        inputSchema: {
+          type: 'object' as const,
+          properties: {
+            xes_content: {
+              type: 'string',
+              description: 'XES event log content',
+            },
+            features: {
+              type: 'array',
+              items: { type: 'string' },
+              description:
+                'Features to extract: trace_length, elapsed_time, activity_counts, rework_count, unique_activities, avg_inter_event_time',
+            },
+            target: {
+              type: 'string',
+              description:
+                'Target variable: "remaining_time", "outcome", or "next_activity". Default: "outcome"',
+            },
+          },
+          required: ['xes_content'],
+        },
+      },
+      // Registry
+      {
+        name: 'get_capability_registry',
+        description: 'Get the complete catalog of all wasm4pm functions organized by category.',
+        inputSchema: {
+          type: 'object' as const,
+          properties: {},
         },
       },
     ];
@@ -301,105 +397,159 @@ export class Wasm4pmMCPServer {
   /**
    * Execute a tool by name
    */
-  private async executeTool(toolName: string, input: ToolInput): Promise<ToolResultBlockParam> {
+  private async executeTool(toolName: string, input: ToolInput): Promise<CallToolResult> {
     try {
-      // Initialize wasm4pm if needed
-      await wasm4pm.init();
-
       let result: unknown;
 
       switch (toolName) {
-        // Discovery algorithms
+        // Discovery algorithms — use WASM functions directly
         case 'discover_dfg': {
-          const log = wasm4pm.loadEventLogFromXES(input.xes_content as string);
-          result = wasm4pm.discoverDFG(log);
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
+          const minFreq = (input.min_frequency as number) ?? 0;
+          if (minFreq > 0) {
+            result = wasm.discover_dfg_filtered(logHandle, 'concept:name', minFreq);
+          } else {
+            result = wasm.discover_dfg(logHandle, 'concept:name');
+          }
           break;
         }
 
         case 'discover_alpha_plus_plus': {
-          const log = wasm4pm.loadEventLogFromXES(input.xes_content as string);
-          result = wasm4pm.discoverAlphaPlusPlus(log);
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
+          result = wasm.discover_alpha_plus_plus(logHandle, 'concept:name', 0.1);
           break;
         }
 
         case 'discover_ilp_optimization': {
-          const log = wasm4pm.loadEventLogFromXES(input.xes_content as string);
-          result = wasm4pm.discoverILPOptimization(log, {
-            timeout: input.timeout_ms as number | undefined,
-          });
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
+          result = wasm.discover_ilp_petri_net(logHandle, 'concept:name');
           break;
         }
 
         case 'discover_genetic_algorithm': {
-          const log = wasm4pm.loadEventLogFromXES(input.xes_content as string);
-          result = wasm4pm.discoverGeneticAlgorithm(log, {
-            populationSize: input.population_size as number | undefined,
-            generations: input.generations as number | undefined,
-          });
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
+          const popSize = (input.population_size as number) ?? 50;
+          const generations = (input.generations as number) ?? 100;
+          result = wasm.discover_genetic_algorithm(logHandle, 'concept:name', popSize, generations);
           break;
         }
 
         case 'discover_variants': {
-          const log = wasm4pm.loadEventLogFromXES(input.xes_content as string);
-          result = wasm4pm.discoverVariants(log);
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
+          result = wasm.analyze_trace_variants(logHandle, 'concept:name');
           break;
         }
 
         // Analysis
         case 'check_conformance': {
-          const log = wasm4pm.loadEventLogFromXES(input.xes_content as string);
-          const model = JSON.parse(input.model_json as string);
-          result = wasm4pm.checkConformance(log, model, {
-            includeDeviations: input.include_deviations as boolean | undefined,
-          });
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
+          const netHandle = input.model_json as string;
+          result = wasm.check_token_based_replay(logHandle, netHandle, 'concept:name');
           break;
         }
 
         case 'analyze_statistics': {
-          const log = wasm4pm.loadEventLogFromXES(input.xes_content as string);
-          result = wasm4pm.analyzeEventStatistics(log);
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
+          result = wasm.analyze_event_statistics(logHandle);
           break;
         }
 
         case 'detect_bottlenecks': {
-          const log = wasm4pm.loadEventLogFromXES(input.xes_content as string);
-          result = wasm4pm.detectBottlenecks(log, {
-            threshold: input.threshold as number | undefined,
-          });
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
+          const threshold = BigInt((input.threshold as number) ?? 3600);
+          result = wasm.detect_bottlenecks(logHandle, 'concept:name', 'time:timestamp', threshold);
           break;
         }
 
         case 'detect_concept_drift': {
-          const log = wasm4pm.loadEventLogFromXES(input.xes_content as string);
-          result = wasm4pm.detectConceptDrift(log, {
-            windowSize: input.window_size as number | undefined,
-          });
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
+          const windowSize = (input.window_size as number) ?? 100;
+          result = wasm.detect_concept_drift(logHandle, 'concept:name', windowSize);
           break;
         }
 
-        // Visualization
-        case 'generate_mermaid_diagram': {
-          const model = JSON.parse(input.model_json as string);
-          result = wasm4pm.generateMermaidDiagram(model);
-          break;
-        }
-
-        case 'generate_html_report': {
-          const log = wasm4pm.loadEventLogFromXES(input.xes_content as string);
-          const model = JSON.parse(input.model_json as string);
-          result = wasm4pm.generateHTMLReport(log, model);
+        // Visualization / text encoding
+        case 'encode_dfg_as_text': {
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
+          const dfgResult = wasm.discover_dfg(logHandle, 'concept:name');
+          const dfgHandle =
+            typeof dfgResult === 'object' && dfgResult?.handle
+              ? dfgResult.handle
+              : String(dfgResult);
+          result = wasm.encode_dfg_as_text(dfgHandle);
           break;
         }
 
         // Utilities
         case 'compare_algorithms': {
-          const log = wasm4pm.loadEventLogFromXES(input.xes_content as string);
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
           const algorithms = (input.algorithms as string[]) || [
             'dfg',
             'alpha_plus_plus',
             'genetic',
           ];
-          result = await this.compareAlgorithms(log, algorithms);
+          result = this.compareAlgorithms(logHandle, algorithms);
+          break;
+        }
+
+        // OCEL / Object-Centric Process Mining
+        case 'load_ocel': {
+          const handle = wasm.load_ocel_from_json(input.ocel_json as string);
+          result = { ocel_handle: handle, message: 'OCEL loaded successfully' };
+          break;
+        }
+
+        case 'flatten_ocel': {
+          const logHandle = wasm.flatten_ocel_to_eventlog(
+            input.ocel_handle as string,
+            input.object_type as string
+          );
+          result = {
+            eventlog_handle: logHandle,
+            object_type: input.object_type,
+            message: `OCEL flattened to EventLog for object type '${input.object_type}'`,
+          };
+          break;
+        }
+
+        case 'discover_ocel_dfg_per_type': {
+          result = wasm.discover_ocel_dfg_per_type(input.ocel_handle as string);
+          break;
+        }
+
+        case 'discover_oc_petri_net': {
+          const algorithm = (input.algorithm as string) || 'alpha++';
+          result = wasm.discover_oc_petri_net(input.ocel_handle as string, algorithm);
+          break;
+        }
+
+        case 'encode_ocel_as_text': {
+          result = wasm.encode_ocel_summary_as_text(input.ocel_handle as string);
+          break;
+        }
+
+        // Feature Extraction
+        case 'extract_case_features': {
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
+          const features = (input.features as string[]) || [
+            'trace_length',
+            'activity_counts',
+            'rework_count',
+          ];
+          const target = (input.target as string) || 'outcome';
+          const configJson = JSON.stringify({ features, target });
+          result = wasm.extract_case_features(
+            logHandle,
+            'concept:name',
+            'time:timestamp',
+            configJson
+          );
+          break;
+        }
+
+        // Registry
+        case 'get_capability_registry': {
+          result = wasm.get_capability_registry();
           break;
         }
 
@@ -408,7 +558,6 @@ export class Wasm4pmMCPServer {
       }
 
       return {
-        type: 'tool_result',
         content: [
           {
             type: 'text',
@@ -418,7 +567,6 @@ export class Wasm4pmMCPServer {
       };
     } catch (error) {
       return {
-        type: 'tool_result',
         content: [
           {
             type: 'text',
@@ -433,70 +581,88 @@ export class Wasm4pmMCPServer {
   /**
    * Compare multiple algorithms on the same log
    */
-  private async compareAlgorithms(logHandle: string, algorithms: string[]) {
+  private compareAlgorithms(logHandle: string, algorithms: string[]) {
     const results: Record<string, unknown> = {};
 
     for (const algo of algorithms) {
       try {
         const start = performance.now();
-        let model: unknown;
+        let modelHandle: string;
 
         switch (algo) {
-          case 'dfg':
-            model = wasm4pm.discoverDFG(logHandle);
+          case 'dfg': {
+            const r = wasm.discover_dfg(logHandle, 'concept:name');
+            modelHandle = typeof r === 'object' && r?.handle ? r.handle : String(r);
             break;
-          case 'alpha_plus_plus':
-            model = wasm4pm.discoverAlphaPlusPlus(logHandle);
+          }
+          case 'alpha_plus_plus': {
+            const r = wasm.discover_alpha_plus_plus(logHandle, 'concept:name', 0.1);
+            modelHandle = typeof r === 'object' && r?.handle ? r.handle : String(r);
             break;
-          case 'genetic':
-            model = wasm4pm.discoverGeneticAlgorithm(logHandle, {
-              generations: 50,
-            });
+          }
+          case 'genetic': {
+            const r = wasm.discover_genetic_algorithm(logHandle, 'concept:name', 50, 50);
+            modelHandle = typeof r === 'object' && r?.handle ? r.handle : String(r);
             break;
-          case 'ilp':
-            model = wasm4pm.discoverILPOptimization(logHandle, {
-              timeout: 5000,
-            });
+          }
+          case 'ilp': {
+            const r = wasm.discover_ilp_petri_net(logHandle, 'concept:name');
+            modelHandle = typeof r === 'object' && r?.handle ? r.handle : String(r);
             break;
-          case 'pso':
-            model = wasm4pm.discoverParticleSwarmOptimization(logHandle);
+          }
+          case 'pso': {
+            const r = wasm.discover_pso_algorithm(logHandle, 'concept:name', 30, 50);
+            modelHandle = typeof r === 'object' && r?.handle ? r.handle : String(r);
             break;
-          case 'a_star':
-            model = wasm4pm.discoverAStarSearch(logHandle);
+          }
+          case 'a_star': {
+            const r = wasm.discover_astar(logHandle, 'concept:name', 1000);
+            modelHandle = typeof r === 'object' && r?.handle ? r.handle : String(r);
             break;
-          case 'declare':
-            model = wasm4pm.discoverDeclare(logHandle);
+          }
+          case 'declare': {
+            const r = wasm.discover_declare(logHandle, 'concept:name');
+            modelHandle = typeof r === 'object' && r?.handle ? r.handle : String(r);
             break;
-          case 'heuristic':
-            model = wasm4pm.discoverHeuristicMiner(logHandle);
+          }
+          case 'heuristic': {
+            const r = wasm.discover_heuristic_miner(logHandle, 'concept:name', 0.5);
+            modelHandle = typeof r === 'object' && r?.handle ? r.handle : String(r);
             break;
-          case 'inductive':
-            model = wasm4pm.discoverInductiveMiner(logHandle);
+          }
+          case 'inductive': {
+            const r = wasm.discover_inductive_miner(logHandle, 'concept:name');
+            modelHandle = typeof r === 'object' && r?.handle ? r.handle : String(r);
             break;
-          case 'hill_climbing':
-            model = wasm4pm.discoverHillClimbing(logHandle);
+          }
+          case 'hill_climbing': {
+            const r = wasm.discover_hill_climbing(logHandle, 'concept:name');
+            modelHandle = typeof r === 'object' && r?.handle ? r.handle : String(r);
             break;
-          case 'ant_colony':
-            model = wasm4pm.discoverAntColonyOptimization(logHandle);
+          }
+          case 'ant_colony': {
+            const r = wasm.discover_ant_colony(logHandle, 'concept:name', 20, 10);
+            modelHandle = typeof r === 'object' && r?.handle ? r.handle : String(r);
             break;
-          case 'simulated_annealing':
-            model = wasm4pm.discoverSimulatedAnnealing(logHandle);
+          }
+          case 'simulated_annealing': {
+            const r = wasm.discover_simulated_annealing(logHandle, 'concept:name', 100.0, 0.95);
+            modelHandle = typeof r === 'object' && r?.handle ? r.handle : String(r);
             break;
-          case 'process_skeleton':
-            model = wasm4pm.discoverProcessSkeleton(logHandle);
+          }
+          case 'process_skeleton': {
+            const r = wasm.extract_process_skeleton(logHandle, 'concept:name', 2);
+            modelHandle = typeof r === 'object' && r?.handle ? r.handle : String(r);
             break;
+          }
           default:
             throw new Error(`Unknown algorithm: ${algo}`);
         }
 
         const time = performance.now() - start;
-        const conformance = wasm4pm.checkConformance(logHandle, model as never);
-
         results[algo] = {
           time_ms: Math.round(time * 100) / 100,
-          fitness: Math.round((conformance.fitness || 0) * 10000) / 10000,
-          precision: Math.round((conformance.precision || 0) * 10000) / 10000,
-          generalization: Math.round((conformance.generalization || 0) * 10000) / 10000,
+          model_handle: modelHandle,
           success: true,
         };
       } catch (e) {

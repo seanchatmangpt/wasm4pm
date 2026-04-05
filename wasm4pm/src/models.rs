@@ -1,6 +1,33 @@
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::collections::HashMap;
 use rustc_hash::FxHashMap;
+
+/// Parse an ISO 8601 / RFC 3339 timestamp string into milliseconds since Unix epoch.
+/// Handles formats: "2024-01-01T10:00:00+00:00", "2024-01-01T10:00:00Z",
+///                  "2024-01-01T10:00:00.123+00:00", "2024-01-01T10:00:00" (naive UTC)
+pub fn parse_timestamp_ms(s: &str) -> Option<i64> {
+    use chrono::{DateTime, NaiveDateTime, TimeZone, Utc};
+    // Try RFC 3339 / ISO 8601 with offset first
+    if let Ok(dt) = DateTime::parse_from_rfc3339(s) {
+        return Some(dt.timestamp_millis());
+    }
+    // Try with space instead of T
+    if let Ok(dt) = DateTime::parse_from_rfc3339(&s.replacen(' ', "T", 1)) {
+        return Some(dt.timestamp_millis());
+    }
+    // Naive datetime (assume UTC)
+    for fmt in &[
+        "%Y-%m-%dT%H:%M:%S%.f",
+        "%Y-%m-%dT%H:%M:%S",
+        "%Y-%m-%d %H:%M:%S%.f",
+        "%Y-%m-%d %H:%M:%S",
+    ] {
+        if let Ok(ndt) = NaiveDateTime::parse_from_str(s, fmt) {
+            return Some(Utc.from_utc_datetime(&ndt).timestamp_millis());
+        }
+    }
+    None
+}
 
 /// Attribute value types for event data
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -50,6 +77,58 @@ impl AttributeValue {
 }
 
 pub type Attributes = HashMap<String, AttributeValue>;
+
+/// Custom deserializer for OCEL attributes that handles both:
+/// 1. HashMap format: {"key1": value1, "key2": value2}
+/// 2. Array format: [{"name": "key1", "value": value1}, {"name": "key2", "value": value2}]
+fn deserialize_ocel_attributes<'de, D>(deserializer: D) -> Result<Attributes, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    use serde::de::{self, Visitor};
+    use std::fmt;
+
+    struct AttributesVisitor;
+
+    impl<'de> Visitor<'de> for AttributesVisitor {
+        type Value = Attributes;
+
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            formatter.write_str("a map or array of {name, value} objects")
+        }
+
+        fn visit_map<A>(self, map: A) -> Result<Attributes, A::Error>
+        where
+            A: de::MapAccess<'de>,
+        {
+            Deserialize::deserialize(de::value::MapAccessDeserializer::new(map))
+        }
+
+        fn visit_seq<A>(self, seq: A) -> Result<Attributes, A::Error>
+        where
+            A: de::SeqAccess<'de>,
+        {
+            #[derive(Deserialize)]
+            struct NamedAttribute {
+                name: String,
+                #[serde(default)]
+                value: Option<AttributeValue>,
+            }
+
+            let visitor = de::value::SeqAccessDeserializer::new(seq);
+            let attrs: Vec<NamedAttribute> = Deserialize::deserialize(visitor)?;
+            let mut result = Attributes::new();
+            for attr in attrs {
+                if let Some(v) = attr.value {
+                    result.insert(attr.name, v);
+                }
+            }
+            Ok(result)
+        }
+    }
+
+    deserializer.deserialize_any(AttributesVisitor)
+}
 
 /// Event within a trace
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -189,31 +268,97 @@ pub struct OCELEventAttribute {
     pub attribute_type: String,
 }
 
+/// OCEL Event-Object Reference (OCEL 2.0)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OCELEventObjectRef {
+    #[serde(rename = "objectId", alias = "object_id")]
+    pub object_id: String,
+    pub qualifier: String, // e.g., "item", "customer", "resource"
+}
+
+/// OCEL Object Attribute Change (OCEL 2.0)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OCELObjectAttributeChange {
+    pub timestamp: String,
+    pub attribute_name: String,
+    pub value: AttributeValue,
+}
+
+/// OCEL Object Relation (OCEL 2.0)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OCELObjectRelation {
+    pub source_id: String,
+    pub target_id: String,
+    pub qualifier: String, // e.g., "belongs-to", "created-by"
+}
+
 /// OCEL Event
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OCELEvent {
     pub id: String,
+    #[serde(rename = "type", alias = "event_type")]
     pub event_type: String,
+    #[serde(rename = "time", alias = "timestamp")]
     pub timestamp: String, // ISO 8601
+    #[serde(default, deserialize_with = "deserialize_ocel_attributes")]
     pub attributes: HashMap<String, AttributeValue>,
+    #[serde(default)]
     pub object_ids: Vec<String>,
+    #[serde(rename = "relationships", alias = "object_refs", default)]
+    pub object_refs: Vec<OCELEventObjectRef>,
+}
+
+impl OCELEvent {
+    /// Extract object IDs from both object_ids and object_refs
+    pub fn all_object_ids(&self) -> impl Iterator<Item = &str> {
+        self.object_ids
+            .iter()
+            .map(|s| s.as_str())
+            .chain(self.object_refs.iter().map(|r| r.object_id.as_str()))
+    }
+
+    /// Extract object IDs from object_refs only (deprecated, use all_object_ids)
+    #[deprecated(since = "0.6.0", note = "use all_object_ids() instead")]
+    pub fn get_object_ids(&self) -> Vec<String> {
+        self.object_refs.iter().map(|r| r.object_id.clone()).collect()
+    }
+}
+
+/// OCEL Object Relation Reference (for embedded relations in objects)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OCELObjectRelRef {
+    #[serde(rename = "objectId", alias = "object_id")]
+    pub object_id: String,
+    pub qualifier: String,
 }
 
 /// OCEL Object
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OCELObject {
     pub id: String,
+    #[serde(rename = "type", alias = "object_type")]
     pub object_type: String,
+    #[serde(default, deserialize_with = "deserialize_ocel_attributes")]
     pub attributes: HashMap<String, AttributeValue>,
+    #[serde(default)]
+    pub changes: Vec<OCELObjectAttributeChange>,
+    #[serde(rename = "relationships", default)]
+    pub embedded_relations: Vec<OCELObjectRelRef>,
 }
 
 /// Object-Centric Event Log
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OCEL {
+    #[serde(rename = "eventTypes", alias = "event_types", default)]
     pub event_types: Vec<String>,
+    #[serde(rename = "objectTypes", alias = "object_types", default)]
     pub object_types: Vec<String>,
+    #[serde(default)]
     pub events: Vec<OCELEvent>,
+    #[serde(default)]
     pub objects: Vec<OCELObject>,
+    #[serde(default)]
+    pub object_relations: Vec<OCELObjectRelation>,
 }
 
 impl OCEL {
@@ -223,6 +368,7 @@ impl OCEL {
             object_types: Vec::new(),
             events: Vec::new(),
             objects: Vec::new(),
+            object_relations: Vec::new(),
         }
     }
 
@@ -232,6 +378,22 @@ impl OCEL {
 
     pub fn object_count(&self) -> usize {
         self.objects.len()
+    }
+
+    /// Normalize object relations: merge embedded relations from objects into global object_relations.
+    /// Call this after deserialization if the OCEL 2.0 JSON contained relations in objects.
+    pub fn normalize_relations(&mut self) {
+        let mut all_relations = self.object_relations.clone();
+        for obj in &self.objects {
+            for rel in &obj.embedded_relations {
+                all_relations.push(OCELObjectRelation {
+                    source_id: obj.id.clone(),
+                    target_id: rel.object_id.clone(),
+                    qualifier: rel.qualifier.clone(),
+                });
+            }
+        }
+        self.object_relations = all_relations;
     }
 }
 
@@ -426,9 +588,11 @@ impl StreamingDfgBuilder {
         for pair in events.windows(2) {
             *self.edge_counts.entry((pair[0], pair[1])).or_insert(0) += 1;
         }
-        // Start / end
+        // Start / end (safe: events non-empty due to line 446 check)
         *self.start_counts.entry(events[0]).or_insert(0) += 1;
-        *self.end_counts.entry(*events.last().unwrap()).or_insert(0) += 1;
+        if let Some(last) = events.last() {
+            *self.end_counts.entry(*last).or_insert(0) += 1;
+        }
         self.trace_count += 1;
         true
     }
@@ -604,5 +768,44 @@ impl StreamingConformanceChecker {
             deviations,
             fitness,
         }
+    }
+}
+
+/// Temporal profile: per-pair mean and standard-deviation of time differences (ms).
+#[derive(Debug, Clone)]
+pub struct TemporalProfile {
+    /// (from_activity, to_activity) → (mean_ms, std_ms, count)
+    pub pairs: HashMap<(String, String), (f64, f64, usize)>,
+}
+
+impl TemporalProfile {
+    pub fn new() -> Self { TemporalProfile { pairs: HashMap::new() } }
+}
+
+/// N-gram predictor: maps activity prefixes of length n to next-activity distributions.
+#[derive(Debug, Clone)]
+pub struct NGramPredictor {
+    pub n: usize,
+    /// prefix → HashMap<next_activity, count>
+    pub counts: HashMap<Vec<String>, HashMap<String, usize>>,
+}
+
+impl NGramPredictor {
+    pub fn new(n: usize) -> Self {
+        NGramPredictor { n, counts: HashMap::new() }
+    }
+
+    /// Return ranked next-activity predictions for a given prefix.
+    pub fn predict(&self, prefix: &[String]) -> Vec<(String, f64)> {
+        let key_len = self.n.min(prefix.len());
+        let key = prefix[prefix.len() - key_len..].to_vec();
+        let Some(dist) = self.counts.get(&key) else { return vec![] };
+        let total: usize = dist.values().sum();
+        if total == 0 { return vec![]; }
+        let mut result: Vec<(String, f64)> = dist.iter()
+            .map(|(act, &cnt)| (act.clone(), cnt as f64 / total as f64))
+            .collect();
+        result.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+        result
     }
 }

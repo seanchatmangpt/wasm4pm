@@ -1,0 +1,4 @@
+packages:
+  - 'wasm4pm'
+  - 'apps/*'
+  - 'packages/*'

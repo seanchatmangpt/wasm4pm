@@ -1,0 +1,70 @@
+{
+  "name": "@wasm4pm/service",
+  "version": "26.4.5",
+  "description": "HTTP service layer for wasm4pm with Express server, request queuing, and WebSocket streaming",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./server": {
+      "import": "./dist/http-server.js",
+      "types": "./dist/http-server.d.ts"
+    },
+    "./middleware": {
+      "import": "./dist/middleware.js",
+      "types": "./dist/middleware.d.ts"
+    },
+    "./openapi": {
+      "import": "./dist/openapi.js",
+      "types": "./dist/openapi.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest",
+    "test:watch": "vitest --watch",
+    "test:coverage": "vitest --coverage",
+    "lint": "tsc --noEmit",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "clean": "rm -rf dist *.tsbuildinfo",
+    "start": "node dist/bin.js"
+  },
+  "bin": {
+    "wasm4pm-service": "./dist/bin.js"
+  },
+  "dependencies": {
+    "@wasm4pm/engine": "workspace:*",
+    "@wasm4pm/types": "workspace:*",
+    "express": "^4.18.2",
+    "uuid": "^9.0.1",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.10.0",
+    "@types/uuid": "^9.0.7",
+    "prettier": "^3.1.1",
+    "typescript": "^5.3.3",
+    "vitest": "^1.1.0"
+  },
+  "keywords": [
+    "wasm4pm",
+    "http",
+    "api",
+    "service",
+    "express",
+    "websocket",
+    "openapi"
+  ],
+  "author": "Sean Chatman",
+  "license": "MIT OR Apache-2.0"
+}

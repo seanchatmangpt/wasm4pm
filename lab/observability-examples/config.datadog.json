@@ -1,0 +1,70 @@
+{
+  "observability": {
+    "enabled": true,
+    "json_logs": {
+      "enabled": true,
+      "path": "./logs/datadog.jsonl",
+      "format": "jsonl",
+      "buffer_size": 2000
+    },
+    "cli_output": {
+      "enabled": true,
+      "level": "info",
+      "quiet": false,
+      "verbose": false,
+      "progress_bar": true,
+      "color": true
+    },
+    "otel": {
+      "enabled": true,
+      "service_name": "wasm4pm-datadog",
+      "environment": "production",
+      "exporters": {
+        "traces": {
+          "type": "otlp",
+          "enabled": true,
+          "endpoint": "http://localhost:4317",
+          "protocol": "grpc",
+          "headers": {
+            "dd-trace-enabled": "true"
+          }
+        },
+        "metrics": {
+          "type": "datadog",
+          "enabled": true,
+          "api_key": "${DD_API_KEY}",
+          "site": "datadoghq.com",
+          "interval_ms": 10000
+        },
+        "logs": {
+          "type": "datadog",
+          "enabled": true,
+          "api_key": "${DD_API_KEY}",
+          "site": "datadoghq.com",
+          "service": "wasm4pm-lab"
+        }
+      }
+    },
+    "secret_redaction": {
+      "enabled": true,
+      "patterns": [
+        "password",
+        "api_key",
+        "secret",
+        "token",
+        "bearer",
+        "oauth",
+        "dd_api_key"
+      ],
+      "preserve_patterns": [
+        "email"
+      ]
+    },
+    "event_filtering": {
+      "log_level": "info",
+      "enable_debug": false,
+      "enable_trace": false,
+      "sample_rate": 1.0
+    }
+  }
+}
