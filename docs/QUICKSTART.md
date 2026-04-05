@@ -44,7 +44,7 @@ async function main() {
   console.log(`\nFlows (${dfg.edges.length}):`);
   dfg.edges.forEach(e => console.log(`  ${e.source} -> ${e.target}  (${e.count})`));
 
-  pm.freeHandle(logHandle);
+  pm.delete_object(logHandle);
 }
 
 main();

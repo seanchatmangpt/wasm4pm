@@ -43,8 +43,8 @@ For OCEL XML use `pm.load_ocel_from_xml(xmlContent)` instead.
 Goal: produce a DFG from a loaded event log.
 
 ```javascript
-const dfgHandle = pm.discover_dfg(logHandle);
-const dfg = JSON.parse(pm.object_to_json(dfgHandle));
+const dfgHandle = pm.discover_dfg(logHandle, 'concept:name');
+const dfg = dfgHandle;
 // dfg.nodes  — activity names
 // dfg.edges  — { from, to, count } pairs
 ```
@@ -58,7 +58,7 @@ Goal: produce a structured process model with noise filtering.
 ```javascript
 // threshold 0.0 = no filtering; 0.1 = drop activities appearing < 10 % of cases
 const netHandle = pm.discover_alpha_plus_plus(logHandle, 0.1);
-const net = JSON.parse(pm.object_to_json(netHandle));
+const net = netHandle;
 ```
 
 Raise the threshold to suppress infrequent paths. Lower it to include everything.
@@ -70,11 +70,11 @@ Raise the threshold to suppress infrequent paths. Lower it to include everything
 Goal: run two algorithms and inspect both results side by side.
 
 ```javascript
-const dfgHandle  = pm.discover_dfg(logHandle);
+const dfgHandle  = pm.discover_dfg(logHandle, 'concept:name');
 const alphaHandle = pm.discover_alpha_plus_plus(logHandle, 0.0);
 
-const dfgJson   = JSON.parse(pm.object_to_json(dfgHandle));
-const alphaJson = JSON.parse(pm.object_to_json(alphaHandle));
+const dfgJson   = dfgHandle;
+const alphaJson = alphaHandle;
 
 console.log('DFG nodes :', dfgJson.nodes.length);
 console.log('Alpha nodes:', alphaJson.places?.length ?? alphaJson.nodes?.length);
@@ -90,7 +90,7 @@ Goal: measure how well a log fits a discovered model.
 
 ```javascript
 const netHandle    = pm.discover_alpha_plus_plus(logHandle, 0.0);
-const conformance  = JSON.parse(pm.object_to_json(pm.check_conformance(logHandle, netHandle)));
+const conformance  = pm.check_token_based_replay(logHandle, netHandle, 'concept:name');
 
 console.log('Fitness   :', conformance.fitness);
 console.log('Precision :', conformance.precision);
