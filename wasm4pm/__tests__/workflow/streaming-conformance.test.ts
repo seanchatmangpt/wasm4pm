@@ -72,7 +72,9 @@ describe('Streaming Conformance', () => {
 
   it('should detect non-conforming traces', () => {
     const logHandle = pm.load_eventlog_from_xes(SAMPLE_XES);
-    const dfgHandle = pm.store_dfg_from_json(JSON.stringify(pm.discover_dfg(logHandle, 'concept:name')));
+    const dfgHandle = pm.store_dfg_from_json(
+      JSON.stringify(pm.discover_dfg(logHandle, 'concept:name'))
+    );
 
     const sessionHandle = pm.streaming_conformance_begin(dfgHandle);
 
@@ -90,7 +92,9 @@ describe('Streaming Conformance', () => {
 
   it('should report stats for open session', () => {
     const logHandle = pm.load_eventlog_from_xes(SAMPLE_XES);
-    const dfgHandle = pm.store_dfg_from_json(JSON.stringify(pm.discover_dfg(logHandle, 'concept:name')));
+    const dfgHandle = pm.store_dfg_from_json(
+      JSON.stringify(pm.discover_dfg(logHandle, 'concept:name'))
+    );
     const sessionHandle = pm.streaming_conformance_begin(dfgHandle);
 
     pm.streaming_conformance_add_event(sessionHandle, 'c1', 'Activity A');
@@ -107,7 +111,9 @@ describe('Streaming Conformance', () => {
 
   it('should finalize and return summary', () => {
     const logHandle = pm.load_eventlog_from_xes(SAMPLE_XES);
-    const dfgHandle = pm.store_dfg_from_json(JSON.stringify(pm.discover_dfg(logHandle, 'concept:name')));
+    const dfgHandle = pm.store_dfg_from_json(
+      JSON.stringify(pm.discover_dfg(logHandle, 'concept:name'))
+    );
     const sessionHandle = pm.streaming_conformance_begin(dfgHandle);
 
     pm.streaming_conformance_add_event(sessionHandle, 'c1', 'Activity A');
