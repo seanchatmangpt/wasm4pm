@@ -227,7 +227,7 @@ export function wrapWasm<T>(fn: () => T, context?: { step?: string }): T {
     throw new Wasm4pmError(raw, code, {
       cause: err instanceof Error ? err : null,
       nextAction,
-      step: context?.step || null,
+      step: context?.step || undefined,
     });
   }
 }

@@ -1,0 +1,7 @@
+node_modules
+dist
+*.test.ts
+.git
+.gitignore
+README.md
+vitest.config.ts

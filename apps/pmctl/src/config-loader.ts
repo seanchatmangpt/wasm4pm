@@ -1,4 +1,4 @@
-import { loadConfig } from '@wasm4pm/config';
+import { resolveConfig as loadConfig } from '@wasm4pm/config';
 import type { Config, CliOverrides, LoadConfigOptions } from '@wasm4pm/config';
 import type { HumanFormatter, JSONFormatter } from './output.js';
 

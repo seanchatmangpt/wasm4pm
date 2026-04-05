@@ -1,0 +1,40 @@
+{
+  "name": "@wasm4pm/kernel",
+  "version": "26.4.5",
+  "description": "Core kernel and runtime utilities",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsc --project tsconfig.json",
+    "test": "vitest",
+    "test:watch": "vitest --watch",
+    "test:coverage": "vitest --coverage",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@wasm4pm/contracts": "workspace:*",
+    "@wasm4pm/planner": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3",
+    "vitest": "^1.1.0"
+  },
+  "keywords": [
+    "kernel",
+    "runtime",
+    "utilities"
+  ],
+  "author": "Sean Chatman",
+  "license": "MIT"
+}

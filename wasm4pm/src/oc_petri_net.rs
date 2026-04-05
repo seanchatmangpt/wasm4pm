@@ -43,7 +43,7 @@ pub fn discover_oc_petri_net(
     // For each object type, flatten and discover Petri Net
     for obj_type in &ocel.object_types {
         // Flatten OCEL to EventLog for this object type
-        let flattened_log = flatten_ocel_to_eventlog_internal(&ocel, obj_type)?;
+        let flattened_log = flatten_ocel_to_eventlog_for_type(&ocel, obj_type)?;
 
         // Store flattened log temporarily
         let temp_handle = get_or_init_state()
@@ -91,8 +91,11 @@ pub fn discover_oc_petri_net(
     to_js(&result)
 }
 
-/// Flatten OCEL to EventLog for a specific object type (internal helper)
-fn flatten_ocel_to_eventlog_internal(
+/// Flatten OCEL to EventLog for a specific object type.
+///
+/// Public so that sibling OC modules (`oc_performance`, `oc_conformance`) can
+/// reuse the same flattening logic.
+pub fn flatten_ocel_to_eventlog_for_type(
     ocel: &OCEL,
     object_type: &str,
 ) -> Result<crate::models::EventLog, JsValue> {

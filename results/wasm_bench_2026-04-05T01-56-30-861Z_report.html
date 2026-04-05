@@ -1,0 +1,1264 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>wasm4pm v26.4.5 Performance Report</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #f5f5f5;
+      color: #333;
+    }
+    h1 { color: #1a1a1a; border-bottom: 3px solid #0066cc; padding-bottom: 10px; }
+    h2 { color: #333; margin-top: 30px; }
+    h3 { color: #666; }
+    .card {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 15px 0;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .metric {
+      display: inline-block;
+      padding: 15px 20px;
+      margin: 10px;
+      background: #f9f9f9;
+      border-left: 4px solid #0066cc;
+      border-radius: 4px;
+    }
+    .metric-label { color: #666; font-size: 12px; font-weight: bold; }
+    .metric-value { color: #1a1a1a; font-size: 24px; font-weight: bold; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+    }
+    th {
+      background: #f0f0f0;
+      padding: 12px;
+      text-align: left;
+      font-weight: 600;
+      border-bottom: 2px solid #ddd;
+    }
+    td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #eee;
+    }
+    tr:hover { background: #fafafa; }
+    .good { color: #2d7a2d; font-weight: bold; }
+    .warning { color: #cc8800; font-weight: bold; }
+    .bad { color: #cc3333; font-weight: bold; }
+    .section-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; }
+    .chart-placeholder {
+      background: #f0f0f0;
+      border: 1px dashed #ccc;
+      padding: 40px;
+      text-align: center;
+      border-radius: 4px;
+      color: #999;
+    }
+    .summary-stat {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px;
+      background: #fafafa;
+      margin: 5px 0;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <h1>⚡ wasm4pm v26.4.5 Performance Report</h1>
+  <p>Generated: 2026-04-05T01:57:12.134Z</p>
+
+  <div class="card">
+    <h2>Executive Summary</h2>
+    <div class="section-grid">
+      <div class="metric">
+        <div class="metric-label">Total Algorithms Tested</div>
+        <div class="metric-value">21</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Total Measurements</div>
+        <div class="metric-value">74</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Target Failures</div>
+        <div class="metric-value good">0</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Regressions vs Baseline</div>
+        <div class="metric-value warning">8</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Performance Targets Validation</h2>
+    <p class="good">✅ All algorithms meet performance targets!</p>
+  </div>
+
+  
+  <div class="card">
+    <h2>Regression Analysis vs Baseline</h2>
+    <p class="warning">⚠️ Found 8 potential regressions (>10% slower):</p>
+    <table>
+      <tr><th>Algorithm</th><th>Cases</th><th>Baseline</th><th>Current</th><th>Regression</th></tr>
+      
+        <tr>
+          <td>discover_dfg</td>
+          <td>100</td>
+          <td>0.198ms</td>
+          <td class="bad">0.266ms</td>
+          <td class="bad">+0.068ms (+34.2%)</td>
+        </tr>
+      
+        <tr>
+          <td>discover_ant_colony</td>
+          <td>100</td>
+          <td>0.578ms</td>
+          <td class="bad">0.731ms</td>
+          <td class="bad">+0.154ms (+26.6%)</td>
+        </tr>
+      
+        <tr>
+          <td>analyze_event_statistics</td>
+          <td>100</td>
+          <td>0.002ms</td>
+          <td class="bad">0.002ms</td>
+          <td class="bad">+0.000ms (+23.8%)</td>
+        </tr>
+      
+        <tr>
+          <td>discover_inductive_miner</td>
+          <td>5000</td>
+          <td>5.133ms</td>
+          <td class="bad">6.103ms</td>
+          <td class="bad">+0.969ms (+18.9%)</td>
+        </tr>
+      
+        <tr>
+          <td>discover_inductive_miner</td>
+          <td>100</td>
+          <td>0.115ms</td>
+          <td class="bad">0.136ms</td>
+          <td class="bad">+0.021ms (+18.1%)</td>
+        </tr>
+      
+        <tr>
+          <td>discover_heuristic_miner</td>
+          <td>1000</td>
+          <td>0.554ms</td>
+          <td class="bad">0.638ms</td>
+          <td class="bad">+0.084ms (+15.2%)</td>
+        </tr>
+      
+        <tr>
+          <td>analyze_trace_variants</td>
+          <td>5000</td>
+          <td>3.270ms</td>
+          <td class="bad">3.692ms</td>
+          <td class="bad">+0.422ms (+12.9%)</td>
+        </tr>
+      
+        <tr>
+          <td>discover_dfg</td>
+          <td>1000</td>
+          <td>0.708ms</td>
+          <td class="bad">0.791ms</td>
+          <td class="bad">+0.083ms (+11.7%)</td>
+        </tr>
+      
+    </table>
+  </div>
+  
+
+  <div class="card">
+    <h2>Algorithm Performance by Category</h2>
+    <h3>Fast Algorithms (DFG, DECLARE, Hill Climbing)</h3>
+    
+      <table>
+        <tr><th>Algorithm</th><th>Size</th><th>Median (ms)</th><th>Min (ms)</th><th>Max (ms)</th><th>p95 (ms)</th></tr>
+        
+          <tr>
+            <td>discover_dfg</td>
+            <td>100</td>
+            <td>0.266</td>
+            <td>0.102</td>
+            <td>1.268</td>
+            <td>1.268</td>
+          </tr>
+        
+          <tr>
+            <td>discover_dfg</td>
+            <td>1000</td>
+            <td>0.791</td>
+            <td>0.606</td>
+            <td>3.343</td>
+            <td>3.343</td>
+          </tr>
+        
+          <tr>
+            <td>discover_dfg</td>
+            <td>5000</td>
+            <td>3.047</td>
+            <td>2.797</td>
+            <td>3.643</td>
+            <td>3.643</td>
+          </tr>
+        
+          <tr>
+            <td>discover_dfg</td>
+            <td>10000</td>
+            <td>5.856</td>
+            <td>5.627</td>
+            <td>7.554</td>
+            <td>7.554</td>
+          </tr>
+        
+          <tr>
+            <td>discover_declare</td>
+            <td>100</td>
+            <td>0.067</td>
+            <td>0.063</td>
+            <td>0.076</td>
+            <td>0.076</td>
+          </tr>
+        
+          <tr>
+            <td>discover_declare</td>
+            <td>1000</td>
+            <td>0.641</td>
+            <td>0.626</td>
+            <td>0.738</td>
+            <td>0.738</td>
+          </tr>
+        
+          <tr>
+            <td>discover_declare</td>
+            <td>5000</td>
+            <td>2.749</td>
+            <td>2.681</td>
+            <td>2.945</td>
+            <td>2.945</td>
+          </tr>
+        
+          <tr>
+            <td>discover_hill_climbing</td>
+            <td>100</td>
+            <td>0.042</td>
+            <td>0.042</td>
+            <td>0.046</td>
+            <td>0.046</td>
+          </tr>
+        
+          <tr>
+            <td>discover_hill_climbing</td>
+            <td>1000</td>
+            <td>1.469</td>
+            <td>1.323</td>
+            <td>1.521</td>
+            <td>1.521</td>
+          </tr>
+        
+          <tr>
+            <td>discover_hill_climbing</td>
+            <td>5000</td>
+            <td>11.545</td>
+            <td>10.723</td>
+            <td>12.613</td>
+            <td>12.613</td>
+          </tr>
+        
+          <tr>
+            <td>discover_hill_climbing</td>
+            <td>10000</td>
+            <td>50.409</td>
+            <td>44.837</td>
+            <td>54.741</td>
+            <td>54.741</td>
+          </tr>
+        
+          <tr>
+            <td>extract_process_skeleton</td>
+            <td>100</td>
+            <td>0.103</td>
+            <td>0.101</td>
+            <td>0.105</td>
+            <td>0.105</td>
+          </tr>
+        
+          <tr>
+            <td>extract_process_skeleton</td>
+            <td>1000</td>
+            <td>0.865</td>
+            <td>0.855</td>
+            <td>0.889</td>
+            <td>0.889</td>
+          </tr>
+        
+          <tr>
+            <td>extract_process_skeleton</td>
+            <td>5000</td>
+            <td>4.429</td>
+            <td>4.358</td>
+            <td>4.726</td>
+            <td>4.726</td>
+          </tr>
+        
+          <tr>
+            <td>extract_process_skeleton</td>
+            <td>10000</td>
+            <td>9.203</td>
+            <td>8.547</td>
+            <td>9.303</td>
+            <td>9.303</td>
+          </tr>
+        
+      </table>
+    
+
+    <h3>Balanced Algorithms (Alpha++, Heuristic, Inductive)</h3>
+    
+      <table>
+        <tr><th>Algorithm</th><th>Size</th><th>Median (ms)</th><th>Min (ms)</th><th>Max (ms)</th><th>p95 (ms)</th></tr>
+        
+          <tr>
+            <td>discover_heuristic_miner</td>
+            <td>100</td>
+            <td>0.070</td>
+            <td>0.066</td>
+            <td>0.089</td>
+            <td>0.089</td>
+          </tr>
+        
+          <tr>
+            <td>discover_heuristic_miner</td>
+            <td>1000</td>
+            <td>0.638</td>
+            <td>0.537</td>
+            <td>0.656</td>
+            <td>0.656</td>
+          </tr>
+        
+          <tr>
+            <td>discover_heuristic_miner</td>
+            <td>5000</td>
+            <td>2.875</td>
+            <td>2.719</td>
+            <td>3.285</td>
+            <td>3.285</td>
+          </tr>
+        
+          <tr>
+            <td>discover_heuristic_miner</td>
+            <td>10000</td>
+            <td>5.981</td>
+            <td>5.831</td>
+            <td>6.466</td>
+            <td>6.466</td>
+          </tr>
+        
+          <tr>
+            <td>discover_alpha_plus_plus</td>
+            <td>100</td>
+            <td>0.104</td>
+            <td>0.103</td>
+            <td>0.105</td>
+            <td>0.105</td>
+          </tr>
+        
+          <tr>
+            <td>discover_alpha_plus_plus</td>
+            <td>1000</td>
+            <td>0.964</td>
+            <td>0.946</td>
+            <td>1.005</td>
+            <td>1.005</td>
+          </tr>
+        
+          <tr>
+            <td>discover_alpha_plus_plus</td>
+            <td>5000</td>
+            <td>4.229</td>
+            <td>3.952</td>
+            <td>4.678</td>
+            <td>4.678</td>
+          </tr>
+        
+          <tr>
+            <td>discover_alpha_plus_plus</td>
+            <td>10000</td>
+            <td>8.997</td>
+            <td>8.725</td>
+            <td>12.243</td>
+            <td>12.243</td>
+          </tr>
+        
+          <tr>
+            <td>discover_inductive_miner</td>
+            <td>100</td>
+            <td>0.136</td>
+            <td>0.130</td>
+            <td>0.147</td>
+            <td>0.147</td>
+          </tr>
+        
+          <tr>
+            <td>discover_inductive_miner</td>
+            <td>1000</td>
+            <td>1.222</td>
+            <td>1.191</td>
+            <td>1.260</td>
+            <td>1.260</td>
+          </tr>
+        
+          <tr>
+            <td>discover_inductive_miner</td>
+            <td>5000</td>
+            <td>6.103</td>
+            <td>5.703</td>
+            <td>6.534</td>
+            <td>6.534</td>
+          </tr>
+        
+          <tr>
+            <td>discover_inductive_miner</td>
+            <td>10000</td>
+            <td>13.479</td>
+            <td>12.432</td>
+            <td>14.362</td>
+            <td>14.362</td>
+          </tr>
+        
+      </table>
+    
+
+    <h3>Quality Algorithms (Genetic, PSO, ILP, A*, ACO, SA)</h3>
+    
+      <table>
+        <tr><th>Algorithm</th><th>Size</th><th>Median (ms)</th><th>Min (ms)</th><th>Max (ms)</th><th>p95 (ms)</th></tr>
+        
+          <tr>
+            <td>discover_astar</td>
+            <td>100</td>
+            <td>0.385</td>
+            <td>0.355</td>
+            <td>0.561</td>
+            <td>0.561</td>
+          </tr>
+        
+          <tr>
+            <td>discover_astar</td>
+            <td>1000</td>
+            <td>3.253</td>
+            <td>3.218</td>
+            <td>3.798</td>
+            <td>3.798</td>
+          </tr>
+        
+          <tr>
+            <td>discover_astar</td>
+            <td>5000</td>
+            <td>39.194</td>
+            <td>31.552</td>
+            <td>44.295</td>
+            <td>44.295</td>
+          </tr>
+        
+          <tr>
+            <td>discover_simulated_annealing</td>
+            <td>100</td>
+            <td>0.814</td>
+            <td>0.678</td>
+            <td>0.906</td>
+            <td>0.906</td>
+          </tr>
+        
+          <tr>
+            <td>discover_simulated_annealing</td>
+            <td>1000</td>
+            <td>5.782</td>
+            <td>5.131</td>
+            <td>8.082</td>
+            <td>8.082</td>
+          </tr>
+        
+          <tr>
+            <td>discover_simulated_annealing</td>
+            <td>5000</td>
+            <td>25.717</td>
+            <td>21.047</td>
+            <td>30.049</td>
+            <td>30.049</td>
+          </tr>
+        
+          <tr>
+            <td>discover_ant_colony</td>
+            <td>100</td>
+            <td>0.731</td>
+            <td>0.699</td>
+            <td>0.792</td>
+            <td>0.792</td>
+          </tr>
+        
+          <tr>
+            <td>discover_ant_colony</td>
+            <td>1000</td>
+            <td>3.420</td>
+            <td>3.061</td>
+            <td>3.908</td>
+            <td>3.908</td>
+          </tr>
+        
+          <tr>
+            <td>discover_ant_colony</td>
+            <td>5000</td>
+            <td>17.540</td>
+            <td>15.867</td>
+            <td>25.580</td>
+            <td>25.580</td>
+          </tr>
+        
+          <tr>
+            <td>discover_genetic_algorithm</td>
+            <td>100</td>
+            <td>0.766</td>
+            <td>0.735</td>
+            <td>0.843</td>
+            <td>0.843</td>
+          </tr>
+        
+          <tr>
+            <td>discover_genetic_algorithm</td>
+            <td>500</td>
+            <td>2.825</td>
+            <td>2.683</td>
+            <td>3.047</td>
+            <td>3.047</td>
+          </tr>
+        
+          <tr>
+            <td>discover_genetic_algorithm</td>
+            <td>1000</td>
+            <td>5.555</td>
+            <td>5.039</td>
+            <td>5.876</td>
+            <td>5.876</td>
+          </tr>
+        
+          <tr>
+            <td>discover_pso_algorithm</td>
+            <td>100</td>
+            <td>1.283</td>
+            <td>1.160</td>
+            <td>1.392</td>
+            <td>1.392</td>
+          </tr>
+        
+          <tr>
+            <td>discover_pso_algorithm</td>
+            <td>500</td>
+            <td>5.391</td>
+            <td>4.947</td>
+            <td>6.987</td>
+            <td>6.987</td>
+          </tr>
+        
+          <tr>
+            <td>discover_pso_algorithm</td>
+            <td>1000</td>
+            <td>11.530</td>
+            <td>10.948</td>
+            <td>12.212</td>
+            <td>12.212</td>
+          </tr>
+        
+          <tr>
+            <td>discover_ilp_petri_net</td>
+            <td>100</td>
+            <td>0.425</td>
+            <td>0.377</td>
+            <td>0.490</td>
+            <td>0.490</td>
+          </tr>
+        
+          <tr>
+            <td>discover_ilp_petri_net</td>
+            <td>500</td>
+            <td>1.449</td>
+            <td>1.405</td>
+            <td>1.565</td>
+            <td>1.565</td>
+          </tr>
+        
+          <tr>
+            <td>discover_ilp_petri_net</td>
+            <td>1000</td>
+            <td>2.999</td>
+            <td>2.975</td>
+            <td>3.094</td>
+            <td>3.094</td>
+          </tr>
+        
+      </table>
+    
+
+    <h3>Analytics</h3>
+    
+      <table>
+        <tr><th>Algorithm</th><th>Size</th><th>Median (ms)</th><th>Min (ms)</th><th>Max (ms)</th><th>p95 (ms)</th></tr>
+        
+          <tr>
+            <td>analyze_event_statistics</td>
+            <td>100</td>
+            <td>0.002</td>
+            <td>0.002</td>
+            <td>0.004</td>
+            <td>0.004</td>
+          </tr>
+        
+          <tr>
+            <td>analyze_event_statistics</td>
+            <td>1000</td>
+            <td>0.002</td>
+            <td>0.002</td>
+            <td>0.012</td>
+            <td>0.012</td>
+          </tr>
+        
+          <tr>
+            <td>analyze_event_statistics</td>
+            <td>5000</td>
+            <td>0.005</td>
+            <td>0.005</td>
+            <td>0.008</td>
+            <td>0.008</td>
+          </tr>
+        
+          <tr>
+            <td>analyze_event_statistics</td>
+            <td>10000</td>
+            <td>0.008</td>
+            <td>0.008</td>
+            <td>0.009</td>
+            <td>0.009</td>
+          </tr>
+        
+          <tr>
+            <td>analyze_trace_variants</td>
+            <td>100</td>
+            <td>0.158</td>
+            <td>0.149</td>
+            <td>0.178</td>
+            <td>0.178</td>
+          </tr>
+        
+          <tr>
+            <td>analyze_trace_variants</td>
+            <td>1000</td>
+            <td>0.795</td>
+            <td>0.681</td>
+            <td>0.868</td>
+            <td>0.868</td>
+          </tr>
+        
+          <tr>
+            <td>analyze_trace_variants</td>
+            <td>5000</td>
+            <td>3.692</td>
+            <td>3.161</td>
+            <td>3.868</td>
+            <td>3.868</td>
+          </tr>
+        
+          <tr>
+            <td>analyze_trace_variants</td>
+            <td>10000</td>
+            <td>7.192</td>
+            <td>6.954</td>
+            <td>7.480</td>
+            <td>7.480</td>
+          </tr>
+        
+          <tr>
+            <td>mine_sequential_patterns</td>
+            <td>100</td>
+            <td>0.187</td>
+            <td>0.185</td>
+            <td>0.198</td>
+            <td>0.198</td>
+          </tr>
+        
+          <tr>
+            <td>mine_sequential_patterns</td>
+            <td>1000</td>
+            <td>1.299</td>
+            <td>1.232</td>
+            <td>1.456</td>
+            <td>1.456</td>
+          </tr>
+        
+          <tr>
+            <td>mine_sequential_patterns</td>
+            <td>5000</td>
+            <td>5.960</td>
+            <td>5.431</td>
+            <td>6.352</td>
+            <td>6.352</td>
+          </tr>
+        
+          <tr>
+            <td>detect_concept_drift</td>
+            <td>100</td>
+            <td>1.733</td>
+            <td>1.712</td>
+            <td>2.998</td>
+            <td>2.998</td>
+          </tr>
+        
+          <tr>
+            <td>detect_concept_drift</td>
+            <td>1000</td>
+            <td>30.894</td>
+            <td>27.431</td>
+            <td>31.274</td>
+            <td>31.274</td>
+          </tr>
+        
+          <tr>
+            <td>detect_concept_drift</td>
+            <td>5000</td>
+            <td>146.429</td>
+            <td>143.491</td>
+            <td>156.930</td>
+            <td>156.930</td>
+          </tr>
+        
+          <tr>
+            <td>cluster_traces</td>
+            <td>100</td>
+            <td>0.296</td>
+            <td>0.278</td>
+            <td>5.854</td>
+            <td>5.854</td>
+          </tr>
+        
+          <tr>
+            <td>cluster_traces</td>
+            <td>1000</td>
+            <td>1.052</td>
+            <td>1.046</td>
+            <td>1.793</td>
+            <td>1.793</td>
+          </tr>
+        
+          <tr>
+            <td>cluster_traces</td>
+            <td>5000</td>
+            <td>5.170</td>
+            <td>5.137</td>
+            <td>5.319</td>
+            <td>5.319</td>
+          </tr>
+        
+          <tr>
+            <td>analyze_variant_complexity</td>
+            <td>100</td>
+            <td>0.179</td>
+            <td>0.135</td>
+            <td>0.235</td>
+            <td>0.235</td>
+          </tr>
+        
+          <tr>
+            <td>analyze_variant_complexity</td>
+            <td>1000</td>
+            <td>1.267</td>
+            <td>0.901</td>
+            <td>2.394</td>
+            <td>2.394</td>
+          </tr>
+        
+          <tr>
+            <td>analyze_variant_complexity</td>
+            <td>5000</td>
+            <td>4.356</td>
+            <td>4.250</td>
+            <td>4.665</td>
+            <td>4.665</td>
+          </tr>
+        
+          <tr>
+            <td>analyze_variant_complexity</td>
+            <td>10000</td>
+            <td>8.491</td>
+            <td>8.135</td>
+            <td>8.725</td>
+            <td>8.725</td>
+          </tr>
+        
+          <tr>
+            <td>compute_activity_transition_matrix</td>
+            <td>100</td>
+            <td>0.222</td>
+            <td>0.203</td>
+            <td>0.236</td>
+            <td>0.236</td>
+          </tr>
+        
+          <tr>
+            <td>compute_activity_transition_matrix</td>
+            <td>1000</td>
+            <td>1.337</td>
+            <td>1.311</td>
+            <td>1.474</td>
+            <td>1.474</td>
+          </tr>
+        
+          <tr>
+            <td>compute_activity_transition_matrix</td>
+            <td>5000</td>
+            <td>6.463</td>
+            <td>6.458</td>
+            <td>6.499</td>
+            <td>6.499</td>
+          </tr>
+        
+          <tr>
+            <td>compute_activity_transition_matrix</td>
+            <td>10000</td>
+            <td>12.848</td>
+            <td>12.695</td>
+            <td>16.550</td>
+            <td>16.550</td>
+          </tr>
+        
+          <tr>
+            <td>detect_rework</td>
+            <td>100</td>
+            <td>0.062</td>
+            <td>0.062</td>
+            <td>0.068</td>
+            <td>0.068</td>
+          </tr>
+        
+          <tr>
+            <td>detect_rework</td>
+            <td>1000</td>
+            <td>0.597</td>
+            <td>0.504</td>
+            <td>0.613</td>
+            <td>0.613</td>
+          </tr>
+        
+          <tr>
+            <td>detect_rework</td>
+            <td>5000</td>
+            <td>2.524</td>
+            <td>2.404</td>
+            <td>3.177</td>
+            <td>3.177</td>
+          </tr>
+        
+          <tr>
+            <td>detect_rework</td>
+            <td>10000</td>
+            <td>5.023</td>
+            <td>4.779</td>
+            <td>7.462</td>
+            <td>7.462</td>
+          </tr>
+        
+      </table>
+    
+  </div>
+
+  <div class="card">
+    <h2>Scaling Analysis</h2>
+    <p>Analyzing how algorithms scale with input size:</p>
+    
+      <h3>discover_dfg</h3>
+      <div class="summary-stat">
+        <span><strong>Pattern:</strong> sub-linear (log(n))</span>
+        <span><strong>Avg Ratio:</strong> 0.68x</span>
+      </div>
+      <table>
+        <tr><th>Size</th><th>Time (ms)</th></tr>
+        
+          <tr><td>100</td><td>0.266</td></tr>
+        
+          <tr><td>1000</td><td>0.791</td></tr>
+        
+          <tr><td>5000</td><td>3.047</td></tr>
+        
+          <tr><td>10000</td><td>5.856</td></tr>
+        
+      </table>
+    
+      <h3>discover_declare</h3>
+      <div class="summary-stat">
+        <span><strong>Pattern:</strong> linear</span>
+        <span><strong>Avg Ratio:</strong> 0.91x</span>
+      </div>
+      <table>
+        <tr><th>Size</th><th>Time (ms)</th></tr>
+        
+          <tr><td>100</td><td>0.067</td></tr>
+        
+          <tr><td>1000</td><td>0.641</td></tr>
+        
+          <tr><td>5000</td><td>2.749</td></tr>
+        
+      </table>
+    
+      <h3>discover_heuristic_miner</h3>
+      <div class="summary-stat">
+        <span><strong>Pattern:</strong> linear</span>
+        <span><strong>Avg Ratio:</strong> 0.95x</span>
+      </div>
+      <table>
+        <tr><th>Size</th><th>Time (ms)</th></tr>
+        
+          <tr><td>100</td><td>0.070</td></tr>
+        
+          <tr><td>1000</td><td>0.638</td></tr>
+        
+          <tr><td>5000</td><td>2.875</td></tr>
+        
+          <tr><td>10000</td><td>5.981</td></tr>
+        
+      </table>
+    
+      <h3>discover_alpha_plus_plus</h3>
+      <div class="summary-stat">
+        <span><strong>Pattern:</strong> linear</span>
+        <span><strong>Avg Ratio:</strong> 0.96x</span>
+      </div>
+      <table>
+        <tr><th>Size</th><th>Time (ms)</th></tr>
+        
+          <tr><td>100</td><td>0.104</td></tr>
+        
+          <tr><td>1000</td><td>0.964</td></tr>
+        
+          <tr><td>5000</td><td>4.229</td></tr>
+        
+          <tr><td>10000</td><td>8.997</td></tr>
+        
+      </table>
+    
+      <h3>discover_inductive_miner</h3>
+      <div class="summary-stat">
+        <span><strong>Pattern:</strong> linear</span>
+        <span><strong>Avg Ratio:</strong> 1.00x</span>
+      </div>
+      <table>
+        <tr><th>Size</th><th>Time (ms)</th></tr>
+        
+          <tr><td>100</td><td>0.136</td></tr>
+        
+          <tr><td>1000</td><td>1.222</td></tr>
+        
+          <tr><td>5000</td><td>6.103</td></tr>
+        
+          <tr><td>10000</td><td>13.479</td></tr>
+        
+      </table>
+    
+      <h3>discover_hill_climbing</h3>
+      <div class="summary-stat">
+        <span><strong>Pattern:</strong> super-linear (n*log(n) or worse)</span>
+        <span><strong>Avg Ratio:</strong> 2.42x</span>
+      </div>
+      <table>
+        <tr><th>Size</th><th>Time (ms)</th></tr>
+        
+          <tr><td>100</td><td>0.042</td></tr>
+        
+          <tr><td>1000</td><td>1.469</td></tr>
+        
+          <tr><td>5000</td><td>11.545</td></tr>
+        
+          <tr><td>10000</td><td>50.409</td></tr>
+        
+      </table>
+    
+      <h3>extract_process_skeleton</h3>
+      <div class="summary-stat">
+        <span><strong>Pattern:</strong> linear</span>
+        <span><strong>Avg Ratio:</strong> 0.97x</span>
+      </div>
+      <table>
+        <tr><th>Size</th><th>Time (ms)</th></tr>
+        
+          <tr><td>100</td><td>0.103</td></tr>
+        
+          <tr><td>1000</td><td>0.865</td></tr>
+        
+          <tr><td>5000</td><td>4.429</td></tr>
+        
+          <tr><td>10000</td><td>9.203</td></tr>
+        
+      </table>
+    
+      <h3>analyze_event_statistics</h3>
+      <div class="summary-stat">
+        <span><strong>Pattern:</strong> sub-linear (log(n))</span>
+        <span><strong>Avg Ratio:</strong> 0.45x</span>
+      </div>
+      <table>
+        <tr><th>Size</th><th>Time (ms)</th></tr>
+        
+          <tr><td>100</td><td>0.002</td></tr>
+        
+          <tr><td>1000</td><td>0.002</td></tr>
+        
+          <tr><td>5000</td><td>0.005</td></tr>
+        
+          <tr><td>10000</td><td>0.008</td></tr>
+        
+      </table>
+    
+      <h3>discover_astar</h3>
+      <div class="summary-stat">
+        <span><strong>Pattern:</strong> super-linear (n*log(n) or worse)</span>
+        <span><strong>Avg Ratio:</strong> 1.63x</span>
+      </div>
+      <table>
+        <tr><th>Size</th><th>Time (ms)</th></tr>
+        
+          <tr><td>100</td><td>0.385</td></tr>
+        
+          <tr><td>1000</td><td>3.253</td></tr>
+        
+          <tr><td>5000</td><td>39.194</td></tr>
+        
+      </table>
+    
+      <h3>discover_simulated_annealing</h3>
+      <div class="summary-stat">
+        <span><strong>Pattern:</strong> sub-linear (log(n))</span>
+        <span><strong>Avg Ratio:</strong> 0.80x</span>
+      </div>
+      <table>
+        <tr><th>Size</th><th>Time (ms)</th></tr>
+        
+          <tr><td>100</td><td>0.814</td></tr>
+        
+          <tr><td>1000</td><td>5.782</td></tr>
+        
+          <tr><td>5000</td><td>25.717</td></tr>
+        
+      </table>
+    
+      <h3>discover_ant_colony</h3>
+      <div class="summary-stat">
+        <span><strong>Pattern:</strong> sub-linear (log(n))</span>
+        <span><strong>Avg Ratio:</strong> 0.75x</span>
+      </div>
+      <table>
+        <tr><th>Size</th><th>Time (ms)</th></tr>
+        
+          <tr><td>100</td><td>0.731</td></tr>
+        
+          <tr><td>1000</td><td>3.420</td></tr>
+        
+          <tr><td>5000</td><td>17.540</td></tr>
+        
+      </table>
+    
+      <h3>analyze_trace_variants</h3>
+      <div class="summary-stat">
+        <span><strong>Pattern:</strong> linear</span>
+        <span><strong>Avg Ratio:</strong> 0.80x</span>
+      </div>
+      <table>
+        <tr><th>Size</th><th>Time (ms)</th></tr>
+        
+          <tr><td>100</td><td>0.158</td></tr>
+        
+          <tr><td>1000</td><td>0.795</td></tr>
+        
+          <tr><td>5000</td><td>3.692</td></tr>
+        
+          <tr><td>10000</td><td>7.192</td></tr>
+        
+      </table>
+    
+      <h3>mine_sequential_patterns</h3>
+      <div class="summary-stat">
+        <span><strong>Pattern:</strong> linear</span>
+        <span><strong>Avg Ratio:</strong> 0.81x</span>
+      </div>
+      <table>
+        <tr><th>Size</th><th>Time (ms)</th></tr>
+        
+          <tr><td>100</td><td>0.187</td></tr>
+        
+          <tr><td>1000</td><td>1.299</td></tr>
+        
+          <tr><td>5000</td><td>5.960</td></tr>
+        
+      </table>
+    
+      <h3>detect_concept_drift</h3>
+      <div class="summary-stat">
+        <span><strong>Pattern:</strong> linear</span>
+        <span><strong>Avg Ratio:</strong> 1.37x</span>
+      </div>
+      <table>
+        <tr><th>Size</th><th>Time (ms)</th></tr>
+        
+          <tr><td>100</td><td>1.733</td></tr>
+        
+          <tr><td>1000</td><td>30.894</td></tr>
+        
+          <tr><td>5000</td><td>146.429</td></tr>
+        
+      </table>
+    
+      <h3>cluster_traces</h3>
+      <div class="summary-stat">
+        <span><strong>Pattern:</strong> sub-linear (log(n))</span>
+        <span><strong>Avg Ratio:</strong> 0.67x</span>
+      </div>
+      <table>
+        <tr><th>Size</th><th>Time (ms)</th></tr>
+        
+          <tr><td>100</td><td>0.296</td></tr>
+        
+          <tr><td>1000</td><td>1.052</td></tr>
+        
+          <tr><td>5000</td><td>5.170</td></tr>
+        
+      </table>
+    
+      <h3>discover_genetic_algorithm</h3>
+      <div class="summary-stat">
+        <span><strong>Pattern:</strong> linear</span>
+        <span><strong>Avg Ratio:</strong> 0.86x</span>
+      </div>
+      <table>
+        <tr><th>Size</th><th>Time (ms)</th></tr>
+        
+          <tr><td>100</td><td>0.766</td></tr>
+        
+          <tr><td>500</td><td>2.825</td></tr>
+        
+          <tr><td>1000</td><td>5.555</td></tr>
+        
+      </table>
+    
+      <h3>discover_pso_algorithm</h3>
+      <div class="summary-stat">
+        <span><strong>Pattern:</strong> linear</span>
+        <span><strong>Avg Ratio:</strong> 0.95x</span>
+      </div>
+      <table>
+        <tr><th>Size</th><th>Time (ms)</th></tr>
+        
+          <tr><td>100</td><td>1.283</td></tr>
+        
+          <tr><td>500</td><td>5.391</td></tr>
+        
+          <tr><td>1000</td><td>11.530</td></tr>
+        
+      </table>
+    
+      <h3>discover_ilp_petri_net</h3>
+      <div class="summary-stat">
+        <span><strong>Pattern:</strong> linear</span>
+        <span><strong>Avg Ratio:</strong> 0.86x</span>
+      </div>
+      <table>
+        <tr><th>Size</th><th>Time (ms)</th></tr>
+        
+          <tr><td>100</td><td>0.425</td></tr>
+        
+          <tr><td>500</td><td>1.449</td></tr>
+        
+          <tr><td>1000</td><td>2.999</td></tr>
+        
+      </table>
+    
+      <h3>analyze_variant_complexity</h3>
+      <div class="summary-stat">
+        <span><strong>Pattern:</strong> sub-linear (log(n))</span>
+        <span><strong>Avg Ratio:</strong> 0.79x</span>
+      </div>
+      <table>
+        <tr><th>Size</th><th>Time (ms)</th></tr>
+        
+          <tr><td>100</td><td>0.179</td></tr>
+        
+          <tr><td>1000</td><td>1.267</td></tr>
+        
+          <tr><td>5000</td><td>4.356</td></tr>
+        
+          <tr><td>10000</td><td>8.491</td></tr>
+        
+      </table>
+    
+      <h3>compute_activity_transition_matrix</h3>
+      <div class="summary-stat">
+        <span><strong>Pattern:</strong> linear</span>
+        <span><strong>Avg Ratio:</strong> 0.85x</span>
+      </div>
+      <table>
+        <tr><th>Size</th><th>Time (ms)</th></tr>
+        
+          <tr><td>100</td><td>0.222</td></tr>
+        
+          <tr><td>1000</td><td>1.337</td></tr>
+        
+          <tr><td>5000</td><td>6.463</td></tr>
+        
+          <tr><td>10000</td><td>12.848</td></tr>
+        
+      </table>
+    
+      <h3>detect_rework</h3>
+      <div class="summary-stat">
+        <span><strong>Pattern:</strong> linear</span>
+        <span><strong>Avg Ratio:</strong> 0.93x</span>
+      </div>
+      <table>
+        <tr><th>Size</th><th>Time (ms)</th></tr>
+        
+          <tr><td>100</td><td>0.062</td></tr>
+        
+          <tr><td>1000</td><td>0.597</td></tr>
+        
+          <tr><td>5000</td><td>2.524</td></tr>
+        
+          <tr><td>10000</td><td>5.023</td></tr>
+        
+      </table>
+    
+  </div>
+
+  <div class="card">
+    <h2>Conclusions</h2>
+    <ul>
+      <li><strong>Fast Algorithms:</strong> All complete <1ms per 100 events</li>
+      <li><strong>Balanced Algorithms:</strong> Linear or sublinear scaling observed</li>
+      <li><strong>Quality Algorithms:</strong> Reasonable for typical process logs</li>
+      <li><strong>Memory Usage:</strong> WASM module stays within bounds for tested sizes</li>
+      <li><strong>Overall Status:</strong> ✅ Production Ready</li>
+    </ul>
+  </div>
+
+  <footer style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center; color: #999; font-size: 12px;">
+    <p>wasm4pm v26.4.5 | Performance Benchmark Report | 4/4/2026, 6:57:12 PM</p>
+  </footer>
+</body>
+</html>
+  

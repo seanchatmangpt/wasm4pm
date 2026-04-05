@@ -1,0 +1,39 @@
+{
+  "name": "@wasm4pm/observability",
+  "version": "26.4.5",
+  "description": "Optional non-blocking OTEL observability layer for wasm4pm",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "clean": "rm -rf dist",
+    "type-check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3",
+    "vitest": "^1.0.0",
+    "@types/node": "^20.0.0"
+  },
+  "keywords": [
+    "observability",
+    "otel",
+    "opentelemetry",
+    "tracing",
+    "process-mining"
+  ],
+  "author": "Sean Chatman",
+  "license": "MIT"
+}

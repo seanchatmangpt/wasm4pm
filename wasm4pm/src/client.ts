@@ -14,6 +14,10 @@ import {
   DFGHandleId,
   PetriNetHandleId,
   DeclareHandleId,
+  TemporalProfileHandleId,
+  NGramPredictorHandleId,
+  StreamingDFGHandleId,
+  StreamingConformanceHandleId,
   OCPetriNetHandleId,
   FeatureMatrixHandleId,
   asEventLogHandleId,
@@ -21,6 +25,10 @@ import {
   asDFGHandleId,
   asPetriNetHandleId,
   asDeclareHandleId,
+  asTemporalProfileHandleId,
+  asNGramPredictorHandleId,
+  asStreamingDFGHandleId,
+  asStreamingConformanceHandleId,
   asOCPetriNetHandleId,
   asFeatureMatrixHandleId,
 } from './types';
@@ -125,6 +133,74 @@ export class ProcessMiningClient {
 
     const handle = asOCELHandleId(this.wasmModule!.load_ocel_from_xml(xmlContent));
     return new OCELHandle(handle, this.wasmModule!);
+  }
+
+  /**
+   * Discover a Temporal Profile from an EventLog
+   */
+  discoverTemporalProfile(
+    log: EventLogHandle,
+    options: { activityKey?: string; timestampKey?: string } = {}
+  ): TemporalProfileHandle {
+    if (!this.initialized) throw new Error('Client not initialized. Call init() first.');
+    const activityKey = options.activityKey || 'concept:name';
+    const timestampKey = options.timestampKey || 'time:timestamp';
+    const handle = asTemporalProfileHandleId(
+      this.wasmModule!.discover_temporal_profile(log.getId(), activityKey, timestampKey)
+    );
+    return new TemporalProfileHandle(handle, this.wasmModule!);
+  }
+
+  /**
+   * Build an N-Gram Predictor from an EventLog
+   */
+  buildNGramPredictor(
+    log: EventLogHandle,
+    options: { activityKey?: string; n?: number } = {}
+  ): NGramPredictorHandle {
+    if (!this.initialized) throw new Error('Client not initialized. Call init() first.');
+    const activityKey = options.activityKey || 'concept:name';
+    const n = options.n || 3;
+    const handle = asNGramPredictorHandleId(
+      this.wasmModule!.build_ngram_predictor(log.getId(), activityKey, n)
+    );
+    return new NGramPredictorHandle(handle, this.wasmModule!);
+  }
+
+  /**
+   * Begin a Streaming DFG builder
+   */
+  beginStreamingDFG(): StreamingDFGHandle {
+    if (!this.initialized) throw new Error('Client not initialized. Call init() first.');
+    const handle = asStreamingDFGHandleId(this.wasmModule!.streaming_dfg_begin());
+    return new StreamingDFGHandle(handle, this.wasmModule!);
+  }
+
+  /**
+   * Begin a Streaming Conformance checker against a reference DFG
+   */
+  beginStreamingConformance(dfg: DFGHandle): StreamingConformanceHandle {
+    if (!this.initialized) throw new Error('Client not initialized. Call init() first.');
+    const handle = asStreamingConformanceHandleId(
+      this.wasmModule!.streaming_conformance_begin(dfg.getId())
+    );
+    return new StreamingConformanceHandle(handle, this.wasmModule!);
+  }
+
+  /**
+   * Get the capability registry metadata
+   */
+  getCapabilityRegistry(): any {
+    if (!this.initialized) throw new Error('Client not initialized. Call init() first.');
+    return this.wasmModule!.get_capability_registry();
+  }
+
+  /**
+   * Run OC performance analysis on an OCEL
+   */
+  analyzeOCPerformance(ocel: OCELHandle): any {
+    if (!this.initialized) throw new Error('Client not initialized. Call init() first.');
+    return this.wasmModule!.oc_performance_analysis(ocel.getId());
   }
 
   /**
@@ -630,12 +706,13 @@ export class EventLogHandle {
     config: api.FeatureExtractionConfig = { features: [], target: 'outcome' }
   ): Promise<string> {
     try {
-      const result = this.wasmModule.export_features_csv(
+      const featuresJson = this.wasmModule.export_features_json(
         this.handle,
         activityKey,
         timestampKey,
         JSON.stringify(config)
       );
+      const result = this.wasmModule.export_features_csv(featuresJson);
       return Promise.resolve(result);
     } catch (error) {
       return Promise.reject(new Error(`Failed to export features as CSV: ${error}`));
@@ -819,7 +896,7 @@ export class OCELHandle {
   flattenToEventLog(objectType: string): EventLogHandle {
     try {
       const result = this.wasmModule.flatten_ocel_to_eventlog(this.handle, objectType);
-      return new EventLogHandle(asEventLogHandleId(result.handle), this.wasmModule);
+      return new EventLogHandle(asEventLogHandleId(result), this.wasmModule);
     } catch (error) {
       throw new Error(`Failed to flatten OCEL to EventLog: ${error}`);
     }
@@ -936,7 +1013,13 @@ export class DeclareModelHandle {
    * Get the model as JSON
    */
   toJSON(): api.DeclareModel {
-    const json = this.wasmModule.export_declare_model_to_json(this.handle);
+    // Phase 2A: export function not yet in WASM .d.ts; cast to preserve forward compat
+    const exportFn = (this.wasmModule as any).export_declare_model_to_json as
+      | ((handle: string) => string)
+      | undefined;
+    if (!exportFn)
+      throw new Error('export_declare_model_to_json not available in current WASM build');
+    const json = exportFn(this.handle);
     return JSON.parse(json);
   }
 
@@ -968,7 +1051,13 @@ export class OCPetriNetHandle {
    * Get the OC Petri Net as JSON
    */
   toJSON(): api.OCPetriNet {
-    const json = this.wasmModule.export_oc_petri_net_to_json(this.handle);
+    // Phase 2A: export function not yet in WASM .d.ts; cast to preserve forward compat
+    const exportFn = (this.wasmModule as any).export_oc_petri_net_to_json as
+      | ((handle: string) => string)
+      | undefined;
+    if (!exportFn)
+      throw new Error('export_oc_petri_net_to_json not available in current WASM build');
+    const json = exportFn(this.handle);
     return JSON.parse(json);
   }
 
@@ -976,12 +1065,205 @@ export class OCPetriNetHandle {
    * Export as PNML format (Petri Net Markup Language)
    */
   toPNML(): string {
-    return this.wasmModule.export_oc_petri_net_to_pnml(this.handle);
+    // Phase 2A: export function not yet in WASM .d.ts; cast to preserve forward compat
+    const exportFn = (this.wasmModule as any).export_oc_petri_net_to_pnml as
+      | ((handle: string) => string)
+      | undefined;
+    if (!exportFn)
+      throw new Error('export_oc_petri_net_to_pnml not available in current WASM build');
+    return exportFn(this.handle);
   }
 
   /**
    * Cleanup
    */
+  delete(): void {
+    this.wasmModule.delete_object(this.handle);
+  }
+}
+
+/**
+ * Handle to a Temporal Profile stored in WASM memory
+ */
+export class TemporalProfileHandle {
+  constructor(
+    private handle: TemporalProfileHandleId,
+    private wasmModule: typeof WasmModule
+  ) {}
+
+  getId(): TemporalProfileHandleId {
+    return this.handle;
+  }
+
+  /**
+   * Check conformance of an EventLog against this temporal profile
+   * @param log - EventLog to check
+   * @param zeta - z-score threshold for deviation detection (default 2.0)
+   */
+  checkConformance(
+    log: EventLogHandle,
+    options: { activityKey?: string; timestampKey?: string; zeta?: number } = {}
+  ): any {
+    const activityKey = options.activityKey || 'concept:name';
+    const timestampKey = options.timestampKey || 'time:timestamp';
+    const zeta = options.zeta || 2.0;
+    return this.wasmModule.check_temporal_conformance(
+      log.getId(),
+      this.handle,
+      activityKey,
+      timestampKey,
+      zeta
+    );
+  }
+
+  delete(): void {
+    this.wasmModule.delete_object(this.handle);
+  }
+}
+
+/**
+ * Handle to an N-Gram Predictor stored in WASM memory
+ */
+export class NGramPredictorHandle {
+  constructor(
+    private handle: NGramPredictorHandleId,
+    private wasmModule: typeof WasmModule
+  ) {}
+
+  getId(): NGramPredictorHandleId {
+    return this.handle;
+  }
+
+  /**
+   * Predict the next activity given a prefix of activities
+   * @param prefix - array of activity names forming the prefix
+   */
+  predictNextActivity(prefix: string[]): any {
+    return this.wasmModule.predict_next_activity(this.handle, JSON.stringify(prefix));
+  }
+
+  /**
+   * Score the likelihood of a complete trace
+   * @param activities - array of activity names in the trace
+   */
+  scoreTraceLikelihood(activities: string[]): any {
+    return this.wasmModule.score_trace_likelihood(this.handle, JSON.stringify(activities));
+  }
+
+  delete(): void {
+    this.wasmModule.delete_object(this.handle);
+  }
+}
+
+/**
+ * Handle to a Streaming DFG builder stored in WASM memory
+ */
+export class StreamingDFGHandle {
+  constructor(
+    private handle: StreamingDFGHandleId,
+    private wasmModule: typeof WasmModule
+  ) {}
+
+  getId(): StreamingDFGHandleId {
+    return this.handle;
+  }
+
+  /**
+   * Add a single event to the streaming DFG
+   */
+  addEvent(caseId: string, activity: string): any {
+    return this.wasmModule.streaming_dfg_add_event(this.handle, caseId, activity);
+  }
+
+  /**
+   * Add a batch of events as JSON array
+   * @param eventsJson - JSON string of [{case_id, activity}, ...]
+   */
+  addBatch(eventsJson: string): any {
+    return this.wasmModule.streaming_dfg_add_batch(this.handle, eventsJson);
+  }
+
+  /**
+   * Close a trace (mark case as complete)
+   */
+  closeTrace(caseId: string): any {
+    return this.wasmModule.streaming_dfg_close_trace(this.handle, caseId);
+  }
+
+  /**
+   * Flush all open traces (close them without explicit close)
+   */
+  flushOpen(): any {
+    return this.wasmModule.streaming_dfg_flush_open(this.handle);
+  }
+
+  /**
+   * Take a snapshot of the current DFG state
+   */
+  snapshot(): any {
+    return this.wasmModule.streaming_dfg_snapshot(this.handle);
+  }
+
+  /**
+   * Finalize the streaming DFG and produce the final result
+   */
+  finalize(): any {
+    return this.wasmModule.streaming_dfg_finalize(this.handle);
+  }
+
+  /**
+   * Get current statistics
+   */
+  stats(): any {
+    return this.wasmModule.streaming_dfg_stats(this.handle);
+  }
+
+  delete(): void {
+    this.wasmModule.delete_object(this.handle);
+  }
+}
+
+/**
+ * Handle to a Streaming Conformance checker stored in WASM memory
+ */
+export class StreamingConformanceHandle {
+  constructor(
+    private handle: StreamingConformanceHandleId,
+    private wasmModule: typeof WasmModule
+  ) {}
+
+  getId(): StreamingConformanceHandleId {
+    return this.handle;
+  }
+
+  /**
+   * Add a single event for conformance checking
+   */
+  addEvent(caseId: string, activity: string): any {
+    return this.wasmModule.streaming_conformance_add_event(this.handle, caseId, activity);
+  }
+
+  /**
+   * Close a trace (mark case as complete)
+   */
+  closeTrace(caseId: string): any {
+    return this.wasmModule.streaming_conformance_close_trace(this.handle, caseId);
+  }
+
+  /**
+   * Get current conformance statistics
+   */
+  stats(): any {
+    return this.wasmModule.streaming_conformance_stats(this.handle);
+  }
+
+  /**
+   * Finalize and produce final conformance results
+   */
+  finalize(): any {
+    return this.wasmModule.streaming_conformance_finalize(this.handle);
+  }
+
   delete(): void {
     this.wasmModule.delete_object(this.handle);
   }
@@ -1055,7 +1337,7 @@ export async function encodeLogAsText(logHandle: EventLogHandle): Promise<string
     throw new Error('WASM module not initialized. Call initializeWasmModule() first.');
   }
   try {
-    return wasmModuleGlobal.encode_log_as_text(logHandle.getId());
+    return wasmModuleGlobal.encode_statistics_as_text(logHandle.getId());
   } catch (error) {
     throw new Error(`Failed to encode log as text: ${error}`);
   }

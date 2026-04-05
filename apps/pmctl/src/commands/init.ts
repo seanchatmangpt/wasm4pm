@@ -167,8 +167,8 @@ async function validateConfigFiles(dirpath: string, formatter: HumanFormatter | 
   try {
     // Try to load TOML if it exists
     if (existsSync(tomlPath)) {
-      const { loadConfig } = await import('@wasm4pm/config');
-      await loadConfig({ configSearchPaths: [dirpath] });
+      const { resolveConfig } = await import('@wasm4pm/config');
+      await resolveConfig({ configSearchPaths: [dirpath] });
       if (formatter instanceof (await import('../output.js')).HumanFormatter) {
         const humanFormatter = formatter as HumanFormatter;
         humanFormatter.debug(`✓ TOML config is valid: ${tomlPath}`);
@@ -178,8 +178,8 @@ async function validateConfigFiles(dirpath: string, formatter: HumanFormatter | 
 
     // Try to load JSON if it exists
     if (existsSync(jsonPath)) {
-      const { loadConfig } = await import('@wasm4pm/config');
-      await loadConfig({ configSearchPaths: [dirpath] });
+      const { resolveConfig } = await import('@wasm4pm/config');
+      await resolveConfig({ configSearchPaths: [dirpath] });
       if (formatter instanceof (await import('../output.js')).HumanFormatter) {
         const humanFormatter = formatter as HumanFormatter;
         humanFormatter.debug(`✓ JSON config is valid: ${jsonPath}`);

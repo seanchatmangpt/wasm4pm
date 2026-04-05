@@ -34,6 +34,9 @@ pub mod resource_analysis;
 pub mod data_quality;
 pub mod capability_registry;
 pub mod oc_petri_net;
+pub mod oc_conformance;
+pub mod oc_performance;
+pub mod recommendations;
 
 // Suppress unused warnings for re-exported modules
 #[allow(unused)]

@@ -286,7 +286,7 @@ export class WatchMode {
             currentTraceIndex: processed,
           });
 
-          const hash = this.computeProgressHash({ processed, total });
+          const hash = this.computeProgressHash({ processed, total, currentTraceIndex: processed });
           yield {
             type: 'checkpoint',
             progress_hash: hash,
@@ -332,7 +332,11 @@ export class WatchMode {
   /**
    * Save current progress to checkpoint file
    */
-  async saveCheckpoint(progress: { processed: number; total: number; currentTraceIndex: number }): Promise<void> {
+  async saveCheckpoint(progress: {
+    processed: number;
+    total: number;
+    currentTraceIndex: number;
+  }): Promise<void> {
     try {
       const checkpointDir = path.dirname(this.watchConfig.checkpointPath);
 
@@ -376,11 +380,9 @@ export class WatchMode {
       // Verify checkpoint integrity
       const hash = this.computeProgressHash(checkpoint.progress);
       if (hash !== checkpoint.progressHash) {
-        throw new Wasm4pmError(
-          'Checkpoint integrity check failed',
-          ErrorCode.STATE_CORRUPTED,
-          { nextAction: ErrorRecovery.REINITIALIZE }
-        );
+        throw new Wasm4pmError('Checkpoint integrity check failed', ErrorCode.STATE_CORRUPTED, {
+          nextAction: ErrorRecovery.REINITIALIZE,
+        });
       }
 
       this.currentCheckpoint = checkpoint;
@@ -433,7 +435,11 @@ export class WatchMode {
   /**
    * Compute hash of progress for integrity checking
    */
-  private computeProgressHash(progress: { processed: number; total: number; currentTraceIndex: number }): string {
+  private computeProgressHash(progress: {
+    processed: number;
+    total: number;
+    currentTraceIndex: number;
+  }): string {
     const content = JSON.stringify(progress);
     return crypto.createHash('sha256').update(content).digest('hex').substring(0, 16);
   }

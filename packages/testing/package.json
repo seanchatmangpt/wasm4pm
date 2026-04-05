@@ -1,0 +1,42 @@
+{
+  "name": "@wasm4pm/testing",
+  "version": "26.4.5",
+  "description": "Testing utilities and fixtures",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest",
+    "test:watch": "vitest --watch",
+    "test:coverage": "vitest --coverage",
+    "test:run": "vitest run",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@wasm4pm/engine": "workspace:*",
+    "@wasm4pm/contracts": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.3",
+    "vitest": "^1.1.0"
+  },
+  "keywords": [
+    "testing",
+    "fixtures",
+    "utilities"
+  ],
+  "author": "Sean Chatman",
+  "license": "MIT"
+}

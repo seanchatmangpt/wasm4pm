@@ -233,7 +233,7 @@ describe('process_mining_wasm Browser Integration', () => {
 
         // Trigger error
         if (reader.onerror) {
-          reader.onerror(new ProgressEvent('error'));
+          reader.onerror(new ProgressEvent('error') as ProgressEvent<FileReader>);
         }
       });
     });
