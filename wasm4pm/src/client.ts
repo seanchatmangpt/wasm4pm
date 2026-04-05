@@ -13,11 +13,15 @@ import {
   DFGHandleId,
   PetriNetHandleId,
   DeclareHandleId,
+  OCPetriNetHandleId,
+  FeatureMatrixHandleId,
   asEventLogHandleId,
   asOCELHandleId,
   asDFGHandleId,
   asPetriNetHandleId,
   asDeclareHandleId,
+  asOCPetriNetHandleId,
+  asFeatureMatrixHandleId,
 } from './types';
 
 /**
@@ -575,6 +579,155 @@ export class EventLogHandle {
   }
 
   /**
+   * Extract case-level features for predictive modeling
+   */
+  extractCaseFeatures(
+    activityKey: string = 'concept:name',
+    timestampKey: string = 'time:timestamp',
+    config: api.FeatureExtractionConfig = { features: [], target: 'outcome' }
+  ): Promise<api.FeatureVector[]> {
+    try {
+      const result = this.wasmModule.extract_case_features(
+        this.handle,
+        activityKey,
+        timestampKey,
+        JSON.stringify(config)
+      );
+      return Promise.resolve(JSON.parse(result));
+    } catch (error) {
+      return Promise.reject(new Error(`Failed to extract case features: ${error}`));
+    }
+  }
+
+  /**
+   * Extract prefix-level features for remaining time/outcome prediction
+   */
+  extractPrefixFeatures(
+    activityKey: string = 'concept:name',
+    timestampKey: string = 'time:timestamp',
+    prefixLength: number = 5
+  ): Promise<api.FeatureVector[]> {
+    try {
+      const result = this.wasmModule.extract_prefix_features(
+        this.handle,
+        activityKey,
+        timestampKey,
+        prefixLength
+      );
+      return Promise.resolve(JSON.parse(result));
+    } catch (error) {
+      return Promise.reject(new Error(`Failed to extract prefix features: ${error}`));
+    }
+  }
+
+  /**
+   * Export extracted features as CSV
+   */
+  exportFeaturesAsCSV(
+    activityKey: string = 'concept:name',
+    timestampKey: string = 'time:timestamp',
+    config: api.FeatureExtractionConfig = { features: [], target: 'outcome' }
+  ): Promise<string> {
+    try {
+      const result = this.wasmModule.export_features_csv(
+        this.handle,
+        activityKey,
+        timestampKey,
+        JSON.stringify(config)
+      );
+      return Promise.resolve(result);
+    } catch (error) {
+      return Promise.reject(new Error(`Failed to export features as CSV: ${error}`));
+    }
+  }
+
+  /**
+   * Check data quality of the event log
+   */
+  checkDataQuality(
+    activityKey: string = 'concept:name',
+    timestampKey: string = 'time:timestamp'
+  ): Promise<api.DataQualityResult> {
+    try {
+      const result = this.wasmModule.check_data_quality(this.handle, activityKey, timestampKey);
+      return Promise.resolve(JSON.parse(result));
+    } catch (error) {
+      return Promise.reject(new Error(`Failed to check data quality: ${error}`));
+    }
+  }
+
+  /**
+   * Infer event log schema automatically
+   */
+  inferSchema(): Promise<api.SchemaInference> {
+    try {
+      const result = this.wasmModule.infer_eventlog_schema(this.handle);
+      return Promise.resolve(JSON.parse(result));
+    } catch (error) {
+      return Promise.reject(new Error(`Failed to infer schema: ${error}`));
+    }
+  }
+
+  /**
+   * Analyze resource utilization
+   */
+  analyzeResourceUtilization(
+    resourceKey: string = 'org:resource',
+    timestampKey: string = 'time:timestamp'
+  ): Promise<api.ResourceUtilization[]> {
+    try {
+      const result = this.wasmModule.analyze_resource_utilization(
+        this.handle,
+        resourceKey,
+        timestampKey
+      );
+      return Promise.resolve(JSON.parse(result));
+    } catch (error) {
+      return Promise.reject(new Error(`Failed to analyze resource utilization: ${error}`));
+    }
+  }
+
+  /**
+   * Analyze resource-activity interactions
+   */
+  analyzeResourceActivityMatrix(
+    resourceKey: string = 'org:resource',
+    activityKey: string = 'concept:name'
+  ): Promise<api.ResourceActivityMatrix> {
+    try {
+      const result = this.wasmModule.analyze_resource_activity_matrix(
+        this.handle,
+        resourceKey,
+        activityKey
+      );
+      return Promise.resolve(JSON.parse(result));
+    } catch (error) {
+      return Promise.reject(new Error(`Failed to analyze resource-activity matrix: ${error}`));
+    }
+  }
+
+  /**
+   * Identify resource bottlenecks
+   */
+  identifyResourceBottlenecks(
+    resourceKey: string = 'org:resource',
+    timestampKey: string = 'time:timestamp',
+    activityKey: string = 'concept:name'
+  ): Promise<api.ResourceBottleneck[]> {
+    try {
+      const result = this.wasmModule.identify_resource_bottlenecks(
+        this.handle,
+        resourceKey,
+        timestampKey,
+        activityKey
+      );
+      return Promise.resolve(JSON.parse(result));
+    } catch (error) {
+      return Promise.reject(new Error(`Failed to identify resource bottlenecks: ${error}`));
+    }
+  }
+
+  /**
    * Cleanup: delete the log from WASM memory
    */
   delete(): void {
@@ -633,6 +786,54 @@ export class OCELHandle {
    */
   toJSON(): string {
     return this.wasmModule.export_ocel_to_json(this.handle);
+  }
+
+  /**
+   * List all object types in the OCEL
+   */
+  listObjectTypes(): Promise<string[]> {
+    try {
+      const result = this.wasmModule.list_ocel_object_types(this.handle);
+      return Promise.resolve(JSON.parse(result));
+    } catch (error) {
+      return Promise.reject(new Error(`Failed to list object types: ${error}`));
+    }
+  }
+
+  /**
+   * Get statistics for each object type
+   */
+  getTypeStatistics(): Promise<Record<string, any>> {
+    try {
+      const result = this.wasmModule.get_ocel_type_statistics(this.handle);
+      return Promise.resolve(JSON.parse(result));
+    } catch (error) {
+      return Promise.reject(new Error(`Failed to get type statistics: ${error}`));
+    }
+  }
+
+  /**
+   * Flatten OCEL to EventLog for a specific object type
+   */
+  flattenToEventLog(objectType: string): EventLogHandle {
+    try {
+      const result = this.wasmModule.flatten_ocel_to_eventlog(this.handle, objectType);
+      return new EventLogHandle(asEventLogHandleId(result.handle), this.wasmModule);
+    } catch (error) {
+      throw new Error(`Failed to flatten OCEL to EventLog: ${error}`);
+    }
+  }
+
+  /**
+   * Discover DFG for each object type
+   */
+  discoverDFGPerType(): Promise<Record<string, api.DirectlyFollowsGraph>> {
+    try {
+      const result = this.wasmModule.discover_ocel_dfg_per_type(this.handle);
+      return Promise.resolve(JSON.parse(result));
+    } catch (error) {
+      return Promise.reject(new Error(`Failed to discover DFG per type: ${error}`));
+    }
   }
 
   /**
@@ -746,6 +947,45 @@ export class DeclareModelHandle {
   }
 }
 
+/**
+ * Handle to an Object-Centric Petri Net
+ */
+export class OCPetriNetHandle {
+  constructor(
+    private handle: OCPetriNetHandleId,
+    private wasmModule: any
+  ) {}
+
+  /**
+   * Get the handle ID
+   */
+  getId(): OCPetriNetHandleId {
+    return this.handle;
+  }
+
+  /**
+   * Get the OC Petri Net as JSON
+   */
+  toJSON(): api.OCPetriNet {
+    const json = this.wasmModule.export_oc_petri_net_to_json(this.handle);
+    return JSON.parse(json);
+  }
+
+  /**
+   * Export as PNML format (Petri Net Markup Language)
+   */
+  toPNML(): string {
+    return this.wasmModule.export_oc_petri_net_to_pnml(this.handle);
+  }
+
+  /**
+   * Cleanup
+   */
+  delete(): void {
+    this.wasmModule.delete_object(this.handle);
+  }
+}
+
 // Type definitions for client API
 export interface EventLogStats {
   total_events: number;
@@ -763,4 +1003,127 @@ export async function loadFileAsText(file: File): Promise<string> {
     reader.onerror = () => reject(new Error('Failed to read file'));
     reader.readAsText(file);
   });
+}
+
+// ============================================================================
+// TEXT ENCODING FUNCTIONS
+// ============================================================================
+
+/**
+ * Get a reference to the WASM module (for text encoding functions)
+ */
+let wasmModuleGlobal: any = null;
+
+/**
+ * Initialize the global WASM module reference
+ */
+export function initializeWasmModule(wasmModule: any): void {
+  wasmModuleGlobal = wasmModule;
+}
+
+/**
+ * Encode DFG as plain text representation
+ */
+export async function encodeTextAsText(dfgHandle: DFGHandle): Promise<string> {
+  if (!wasmModuleGlobal) {
+    throw new Error('WASM module not initialized. Call initializeWasmModule() first.');
+  }
+  try {
+    return wasmModuleGlobal.encode_dfg_as_text(dfgHandle.getId());
+  } catch (error) {
+    throw new Error(`Failed to encode DFG as text: ${error}`);
+  }
+}
+
+/**
+ * Encode variants as text representation
+ */
+export async function encodeVariantsAsText(
+  logHandle: EventLogHandle,
+  activityKey: string = 'concept:name',
+  topN: number = 10
+): Promise<string> {
+  if (!wasmModuleGlobal) {
+    throw new Error('WASM module not initialized. Call initializeWasmModule() first.');
+  }
+  try {
+    return wasmModuleGlobal.encode_variants_as_text(logHandle.getId(), activityKey, topN);
+  } catch (error) {
+    throw new Error(`Failed to encode variants as text: ${error}`);
+  }
+}
+
+/**
+ * Encode event log as text summary
+ */
+export async function encodeLogAsText(logHandle: EventLogHandle): Promise<string> {
+  if (!wasmModuleGlobal) {
+    throw new Error('WASM module not initialized. Call initializeWasmModule() first.');
+  }
+  try {
+    return wasmModuleGlobal.encode_log_as_text(logHandle.getId());
+  } catch (error) {
+    throw new Error(`Failed to encode log as text: ${error}`);
+  }
+}
+
+/**
+ * Encode Petri Net as text representation
+ */
+export async function encodePetriNetAsText(petriNetHandle: PetriNetHandle): Promise<string> {
+  if (!wasmModuleGlobal) {
+    throw new Error('WASM module not initialized. Call initializeWasmModule() first.');
+  }
+  try {
+    return wasmModuleGlobal.encode_petri_net_as_text(petriNetHandle.getId());
+  } catch (error) {
+    throw new Error(`Failed to encode Petri Net as text: ${error}`);
+  }
+}
+
+/**
+ * Encode OCEL as text representation
+ */
+export async function encodeOCELAsText(ocelHandle: OCELHandle): Promise<string> {
+  if (!wasmModuleGlobal) {
+    throw new Error('WASM module not initialized. Call initializeWasmModule() first.');
+  }
+  try {
+    return wasmModuleGlobal.encode_ocel_as_text(ocelHandle.getId());
+  } catch (error) {
+    throw new Error(`Failed to encode OCEL as text: ${error}`);
+  }
+}
+
+/**
+ * Encode object-centric Petri Net as text representation
+ */
+export async function encodeOCPetriNetAsText(ocpnHandle: OCPetriNetHandle): Promise<string> {
+  if (!wasmModuleGlobal) {
+    throw new Error('WASM module not initialized. Call initializeWasmModule() first.');
+  }
+  try {
+    return wasmModuleGlobal.encode_oc_petri_net_as_text(ocpnHandle.getId());
+  } catch (error) {
+    throw new Error(`Failed to encode OC Petri Net as text: ${error}`);
+  }
+}
+
+/**
+ * Encode process model comparison as text
+ */
+export async function encodeModelComparisonAsText(
+  model1Handle: DFGHandle | PetriNetHandle,
+  model2Handle: DFGHandle | PetriNetHandle
+): Promise<string> {
+  if (!wasmModuleGlobal) {
+    throw new Error('WASM module not initialized. Call initializeWasmModule() first.');
+  }
+  try {
+    const id1 = model1Handle instanceof DFGHandle ? model1Handle.getId() : model1Handle.getId();
+    const id2 = model2Handle instanceof DFGHandle ? model2Handle.getId() : model2Handle.getId();
+    return wasmModuleGlobal.encode_model_comparison_as_text(id1, id2);
+  } catch (error) {
+    throw new Error(`Failed to encode model comparison as text: ${error}`);
+  }
 }
