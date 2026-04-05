@@ -120,11 +120,7 @@ function percentile(arr: number[], p: number): number {
   return s[Math.floor((s.length * p) / 100)];
 }
 
-function callAlgorithm(
-  name: string,
-  handle: string,
-  params: Record<string, any> = {}
-): any {
+function callAlgorithm(name: string, handle: string, params: Record<string, any> = {}): any {
   const ACTIVITY_KEY = 'concept:name';
 
   switch (name) {
@@ -330,7 +326,8 @@ describe('WASM4PM Browser Benchmarks', () => {
       console.log(`Environment: Browser (Chromium headless)`);
 
       // Verify results are reasonable
-      const avgMedian = BENCHMARK_RESULTS.reduce((sum, r) => sum + r.medianMs, 0) / BENCHMARK_RESULTS.length;
+      const avgMedian =
+        BENCHMARK_RESULTS.reduce((sum, r) => sum + r.medianMs, 0) / BENCHMARK_RESULTS.length;
       expect(avgMedian).toBeGreaterThan(0);
       expect(avgMedian).toBeLessThan(10000); // Average should be reasonable
     });

@@ -12,30 +12,30 @@ import { Wasm4pmConfig, ExecutionProfile } from './config';
  */
 export interface ExecutionReceipt {
   // Identification
-  runId: string;                                    // Unique run identifier: "run_<ISO_timestamp>_<random4>"
-  engineVersion: string;                            // Version of wasm4pm engine (0.5.4)
-  configHash: string;                               // Deterministic hash of configuration (32-char hex)
+  runId: string; // Unique run identifier: "run_<ISO_timestamp>_<random4>"
+  engineVersion: string; // Version of wasm4pm engine (0.5.4)
+  configHash: string; // Deterministic hash of configuration (32-char hex)
 
   // Execution context
-  profile: ExecutionProfile;                        // Execution profile that was used
-  pipeline: string[];                               // List of step IDs that executed (in order)
+  profile: ExecutionProfile; // Execution profile that was used
+  pipeline: string[]; // List of step IDs that executed (in order)
 
   // Timing information
   timing: {
-    total_ms: number;                               // Total execution time in milliseconds
-    steps: Record<string, number>;                  // Per-step timing keyed by step ID
+    total_ms: number; // Total execution time in milliseconds
+    steps: Record<string, number>; // Per-step timing keyed by step ID
   };
 
   // Results
-  outputs: Record<string, unknown>;                 // Final outputs keyed by step ID or result name
+  outputs: Record<string, unknown>; // Final outputs keyed by step ID or result name
 
   // Receipt metadata
   receipt: {
-    startedAt: string;                              // ISO 8601 timestamp when execution started
-    finishedAt: string;                             // ISO 8601 timestamp when execution finished
-    inputDataSize?: number;                         // Size of input data in bytes
-    outputDataSize?: number;                        // Size of output data in bytes
-    sourceFormat?: string;                          // Input source format (xes, csv, json, etc)
+    startedAt: string; // ISO 8601 timestamp when execution started
+    finishedAt: string; // ISO 8601 timestamp when execution finished
+    inputDataSize?: number; // Size of input data in bytes
+    outputDataSize?: number; // Size of output data in bytes
+    sourceFormat?: string; // Input source format (xes, csv, json, etc)
   };
 }
 
@@ -196,7 +196,7 @@ function sortObjectKeys(obj: any): any {
   }
 
   if (Array.isArray(obj)) {
-    return obj.map(item => sortObjectKeys(item));
+    return obj.map((item) => sortObjectKeys(item));
   }
 
   const sorted: Record<string, any> = {};

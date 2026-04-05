@@ -3,17 +3,17 @@
  * Defines all configuration structures, validation, and execution profiles
  */
 
-import { Wasm4pmError, ErrorCode, ErrorRecovery } from "./errors";
+import { Wasm4pmError, ErrorCode, ErrorRecovery } from './errors';
 
 /**
  * Supported data source formats
  */
 export enum SourceFormat {
-  XES = "xes",
-  CSV = "csv",
-  JSON = "json",
-  PARQUET = "parquet",
-  ARROW = "arrow",
+  XES = 'xes',
+  CSV = 'csv',
+  JSON = 'json',
+  PARQUET = 'parquet',
+  ARROW = 'arrow',
 }
 
 /**
@@ -41,19 +41,19 @@ export interface SourceConfig {
  */
 export enum ExecutionProfile {
   /** Fast discovery: DFG + statistics (1-5ms per 100 events) */
-  FAST = "fast",
+  FAST = 'fast',
 
   /** Balanced: Alpha++, stats, conformance, variants (20-50ms per 100 events) */
-  BALANCED = "balanced",
+  BALANCED = 'balanced',
 
   /** High quality: Multiple algorithms, comprehensive analysis (100-500ms per 100 events) */
-  QUALITY = "quality",
+  QUALITY = 'quality',
 
   /** Streaming mode: Streaming DFG and conformance checking */
-  STREAM = "stream",
+  STREAM = 'stream',
 
   /** Research mode: All algorithms including genetic, PSO, A*, simulated annealing */
-  RESEARCH = "research",
+  RESEARCH = 'research',
 }
 
 /**
@@ -61,13 +61,13 @@ export enum ExecutionProfile {
  */
 export enum ExecutionMode {
   /** Compute everything synchronously */
-  SYNC = "sync",
+  SYNC = 'sync',
 
   /** Offload to Web Workers (browser only) */
-  WORKER = "worker",
+  WORKER = 'worker',
 
   /** Stream results incrementally */
-  STREAMING = "streaming",
+  STREAMING = 'streaming',
 }
 
 /**
@@ -110,7 +110,7 @@ export interface OutputConfig {
   includeRawResults?: boolean;
 
   /** Output format preference: json, csv, parquet */
-  format?: "json" | "csv" | "parquet";
+  format?: 'json' | 'csv' | 'parquet';
 
   /** Optional callback for streaming output delivery */
   onProgress?: (progress: { step: string; percentage: number; result?: unknown }) => void;
@@ -121,28 +121,28 @@ export interface OutputConfig {
  */
 export enum StepType {
   // Discovery algorithms
-  DFG = "dfg",
-  ALPHA_PLUS_PLUS = "alpha_plus_plus",
-  HEURISTIC_MINER = "heuristic_miner",
-  INDUCTIVE_MINER = "inductive_miner",
-  GENETIC = "genetic",
-  PSO = "pso",
-  A_STAR = "a_star",
-  ILP = "ilp",
-  ACO = "aco",
-  SIMULATED_ANNEALING = "simulated_annealing",
+  DFG = 'dfg',
+  ALPHA_PLUS_PLUS = 'alpha_plus_plus',
+  HEURISTIC_MINER = 'heuristic_miner',
+  INDUCTIVE_MINER = 'inductive_miner',
+  GENETIC = 'genetic',
+  PSO = 'pso',
+  A_STAR = 'a_star',
+  ILP = 'ilp',
+  ACO = 'aco',
+  SIMULATED_ANNEALING = 'simulated_annealing',
 
   // Analysis
-  STATISTICS = "statistics",
-  CONFORMANCE = "conformance",
-  VARIANTS = "variants",
-  PERFORMANCE = "performance",
-  CLUSTERING = "clustering",
+  STATISTICS = 'statistics',
+  CONFORMANCE = 'conformance',
+  VARIANTS = 'variants',
+  PERFORMANCE = 'performance',
+  CLUSTERING = 'clustering',
 
   // Utilities
-  FILTER = "filter",
-  TRANSFORM = "transform",
-  VALIDATE = "validate",
+  FILTER = 'filter',
+  TRANSFORM = 'transform',
+  VALIDATE = 'validate',
 }
 
 /**
@@ -173,7 +173,7 @@ export interface PipelineStep {
  */
 export interface Wasm4pmConfig {
   /** Version of the configuration schema */
-  version: "1.0";
+  version: '1.0';
 
   /** Source data configuration */
   source: SourceConfig;
@@ -203,7 +203,7 @@ export interface ValidationIssue {
   path: string;
 
   /** Type of validation issue */
-  type: "missing" | "invalid" | "type_error" | "constraint_violation";
+  type: 'missing' | 'invalid' | 'type_error' | 'constraint_violation';
 
   /** Human-readable error message */
   message: string;
@@ -223,13 +223,13 @@ export function validateConfig(config: unknown): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
 
   // Type check
-  if (!config || typeof config !== "object") {
+  if (!config || typeof config !== 'object') {
     return [
       {
-        path: "$",
-        type: "type_error",
-        message: "Configuration must be a non-null object",
-        suggestion: "Ensure config is passed as an object literal or parsed JSON",
+        path: '$',
+        type: 'type_error',
+        message: 'Configuration must be a non-null object',
+        suggestion: 'Ensure config is passed as an object literal or parsed JSON',
       },
     ];
   }
@@ -237,95 +237,98 @@ export function validateConfig(config: unknown): ValidationIssue[] {
   const cfg = config as Record<string, unknown>;
 
   // Check version
-  if (cfg.version !== "1.0") {
+  if (cfg.version !== '1.0') {
     issues.push({
-      path: "version",
-      type: "invalid",
+      path: 'version',
+      type: 'invalid',
       message: `Invalid or missing version. Expected "1.0", got ${cfg.version}`,
       suggestion: 'Set version to "1.0"',
     });
   }
 
   // Check source
-  if (!cfg.source || typeof cfg.source !== "object") {
+  if (!cfg.source || typeof cfg.source !== 'object') {
     issues.push({
-      path: "source",
-      type: "missing",
-      message: "source configuration is required",
-      suggestion: "Add a source configuration object with format and content",
+      path: 'source',
+      type: 'missing',
+      message: 'source configuration is required',
+      suggestion: 'Add a source configuration object with format and content',
     });
   } else {
     const source = cfg.source as Record<string, unknown>;
 
     if (!source.format || !Object.values(SourceFormat).includes(source.format as SourceFormat)) {
       issues.push({
-        path: "source.format",
-        type: "invalid",
-        message: `Invalid or missing source format. Expected one of: ${Object.values(SourceFormat).join(", ")}`,
+        path: 'source.format',
+        type: 'invalid',
+        message: `Invalid or missing source format. Expected one of: ${Object.values(SourceFormat).join(', ')}`,
         suggestion: `Set source.format to a valid format`,
       });
     }
 
-    if (!source.content || typeof source.content !== "string") {
+    if (!source.content || typeof source.content !== 'string') {
       issues.push({
-        path: "source.content",
-        type: "missing",
-        message: "source.content is required and must be a string",
-        suggestion: "Provide the source data as a string",
+        path: 'source.content',
+        type: 'missing',
+        message: 'source.content is required and must be a string',
+        suggestion: 'Provide the source data as a string',
       });
     }
   }
 
   // Check execution
-  if (!cfg.execution || typeof cfg.execution !== "object") {
+  if (!cfg.execution || typeof cfg.execution !== 'object') {
     issues.push({
-      path: "execution",
-      type: "missing",
-      message: "execution configuration is required",
-      suggestion: "Add an execution configuration object with a profile",
+      path: 'execution',
+      type: 'missing',
+      message: 'execution configuration is required',
+      suggestion: 'Add an execution configuration object with a profile',
     });
   } else {
     const execution = cfg.execution as Record<string, unknown>;
 
-    if (!execution.profile || !Object.values(ExecutionProfile).includes(execution.profile as ExecutionProfile)) {
+    if (
+      !execution.profile ||
+      !Object.values(ExecutionProfile).includes(execution.profile as ExecutionProfile)
+    ) {
       issues.push({
-        path: "execution.profile",
-        type: "invalid",
-        message: `Invalid or missing execution profile. Expected one of: ${Object.values(ExecutionProfile).join(", ")}`,
-        suggestion: "Set execution.profile to a valid profile name",
+        path: 'execution.profile',
+        type: 'invalid',
+        message: `Invalid or missing execution profile. Expected one of: ${Object.values(ExecutionProfile).join(', ')}`,
+        suggestion: 'Set execution.profile to a valid profile name',
       });
     }
 
     if (execution.mode && !Object.values(ExecutionMode).includes(execution.mode as ExecutionMode)) {
       issues.push({
-        path: "execution.mode",
-        type: "invalid",
-        message: `Invalid execution mode. Expected one of: ${Object.values(ExecutionMode).join(", ")}`,
-        suggestion: "Set execution.mode to a valid execution mode or omit it",
+        path: 'execution.mode',
+        type: 'invalid',
+        message: `Invalid execution mode. Expected one of: ${Object.values(ExecutionMode).join(', ')}`,
+        suggestion: 'Set execution.mode to a valid execution mode or omit it',
       });
     }
 
-    if (execution.maxEvents !== undefined && typeof execution.maxEvents !== "number") {
+    if (execution.maxEvents !== undefined && typeof execution.maxEvents !== 'number') {
       issues.push({
-        path: "execution.maxEvents",
-        type: "type_error",
-        message: "execution.maxEvents must be a number",
+        path: 'execution.maxEvents',
+        type: 'type_error',
+        message: 'execution.maxEvents must be a number',
       });
     }
 
-    if (execution.maxMemoryMB !== undefined && typeof execution.maxMemoryMB !== "number") {
+    if (execution.maxMemoryMB !== undefined && typeof execution.maxMemoryMB !== 'number') {
       issues.push({
-        path: "execution.maxMemoryMB",
-        type: "type_error",
-        message: "execution.maxMemoryMB must be a number",
+        path: 'execution.maxMemoryMB',
+        type: 'type_error',
+        message: 'execution.maxMemoryMB must be a number',
       });
     }
 
-    if (execution.timeoutMs !== undefined && typeof execution.timeoutMs !== "number") {
+    if (execution.timeoutMs !== undefined && typeof execution.timeoutMs !== 'number') {
       issues.push({
-        path: "execution.timeoutMs",
-        type: "type_error",
-        message: "execution.timeoutMs must be a number",
+        path: 'execution.timeoutMs',
+        type: 'type_error',
+        message: 'execution.timeoutMs must be a number',
       });
     }
   }
@@ -334,26 +337,26 @@ export function validateConfig(config: unknown): ValidationIssue[] {
   if (cfg.pipeline && Array.isArray(cfg.pipeline)) {
     const pipeline = cfg.pipeline as unknown[];
     pipeline.forEach((step, idx) => {
-      if (!step || typeof step !== "object") {
+      if (!step || typeof step !== 'object') {
         issues.push({
           path: `pipeline[${idx}]`,
-          type: "type_error",
-          message: "Pipeline step must be an object",
+          type: 'type_error',
+          message: 'Pipeline step must be an object',
         });
       } else {
         const s = step as Record<string, unknown>;
-        if (!s.id || typeof s.id !== "string") {
+        if (!s.id || typeof s.id !== 'string') {
           issues.push({
             path: `pipeline[${idx}].id`,
-            type: "missing",
-            message: "Pipeline step must have an id (string)",
+            type: 'missing',
+            message: 'Pipeline step must have an id (string)',
           });
         }
         if (!s.type || !Object.values(StepType).includes(s.type as StepType)) {
           issues.push({
             path: `pipeline[${idx}].type`,
-            type: "invalid",
-            message: `Invalid step type. Expected one of: ${Object.values(StepType).join(", ")}`,
+            type: 'invalid',
+            message: `Invalid step type. Expected one of: ${Object.values(StepType).join(', ')}`,
           });
         }
       }
@@ -374,12 +377,16 @@ export function assertConfigValid(config: unknown): asserts config is Wasm4pmCon
   const issues = validateConfig(config);
 
   if (issues.length > 0) {
-    const issueMessages = issues.map((issue) => `${issue.path}: ${issue.message}`).join("; ");
+    const issueMessages = issues.map((issue) => `${issue.path}: ${issue.message}`).join('; ');
 
-    throw new Wasm4pmError(`Configuration validation failed: ${issueMessages}`, ErrorCode.CONFIG_INVALID, {
-      nextAction: ErrorRecovery.RECONFIGURE,
-      context: { issues },
-    });
+    throw new Wasm4pmError(
+      `Configuration validation failed: ${issueMessages}`,
+      ErrorCode.CONFIG_INVALID,
+      {
+        nextAction: ErrorRecovery.RECONFIGURE,
+        context: { issues },
+      }
+    );
   }
 }
 
@@ -395,16 +402,16 @@ export function resolveProfile(profile: ExecutionProfile): PipelineStep[] {
     case ExecutionProfile.FAST:
       return [
         {
-          id: "step_dfg",
+          id: 'step_dfg',
           type: StepType.DFG,
           required: true,
           parallelizable: true,
         },
         {
-          id: "step_stats",
+          id: 'step_stats',
           type: StepType.STATISTICS,
           required: true,
-          dependsOn: ["step_dfg"],
+          dependsOn: ['step_dfg'],
           parallelizable: true,
         },
       ];
@@ -412,30 +419,30 @@ export function resolveProfile(profile: ExecutionProfile): PipelineStep[] {
     case ExecutionProfile.BALANCED:
       return [
         {
-          id: "step_alpha",
+          id: 'step_alpha',
           type: StepType.ALPHA_PLUS_PLUS,
           required: true,
           parallelizable: true,
         },
         {
-          id: "step_stats",
+          id: 'step_stats',
           type: StepType.STATISTICS,
           required: true,
-          dependsOn: ["step_alpha"],
+          dependsOn: ['step_alpha'],
           parallelizable: true,
         },
         {
-          id: "step_conformance",
+          id: 'step_conformance',
           type: StepType.CONFORMANCE,
           required: true,
-          dependsOn: ["step_alpha"],
+          dependsOn: ['step_alpha'],
           parallelizable: true,
         },
         {
-          id: "step_variants",
+          id: 'step_variants',
           type: StepType.VARIANTS,
           required: true,
-          dependsOn: ["step_alpha"],
+          dependsOn: ['step_alpha'],
           parallelizable: true,
         },
       ];
@@ -444,22 +451,22 @@ export function resolveProfile(profile: ExecutionProfile): PipelineStep[] {
       return [
         // Primary algorithm with alternatives
         {
-          id: "step_genetic",
+          id: 'step_genetic',
           type: StepType.GENETIC,
           required: true,
           parallelizable: true,
           parameters: { generations: 50, populationSize: 30 },
         },
         {
-          id: "step_ilp",
+          id: 'step_ilp',
           type: StepType.ILP,
           required: false,
-          dependsOn: ["step_genetic"],
+          dependsOn: ['step_genetic'],
           parallelizable: true,
           parameters: { timeout: 10000 },
         },
         {
-          id: "step_heuristic",
+          id: 'step_heuristic',
           type: StepType.HEURISTIC_MINER,
           required: true,
           parallelizable: true,
@@ -467,31 +474,31 @@ export function resolveProfile(profile: ExecutionProfile): PipelineStep[] {
 
         // Comprehensive analysis
         {
-          id: "step_stats",
+          id: 'step_stats',
           type: StepType.STATISTICS,
           required: true,
-          dependsOn: ["step_genetic"],
+          dependsOn: ['step_genetic'],
           parallelizable: true,
         },
         {
-          id: "step_conformance",
+          id: 'step_conformance',
           type: StepType.CONFORMANCE,
           required: true,
-          dependsOn: ["step_genetic"],
+          dependsOn: ['step_genetic'],
           parallelizable: true,
         },
         {
-          id: "step_variants",
+          id: 'step_variants',
           type: StepType.VARIANTS,
           required: true,
-          dependsOn: ["step_genetic"],
+          dependsOn: ['step_genetic'],
           parallelizable: true,
         },
         {
-          id: "step_performance",
+          id: 'step_performance',
           type: StepType.PERFORMANCE,
           required: true,
-          dependsOn: ["step_genetic"],
+          dependsOn: ['step_genetic'],
           parallelizable: true,
         },
       ];
@@ -499,17 +506,17 @@ export function resolveProfile(profile: ExecutionProfile): PipelineStep[] {
     case ExecutionProfile.STREAM:
       return [
         {
-          id: "step_stream_dfg",
+          id: 'step_stream_dfg',
           type: StepType.DFG,
           required: true,
           parallelizable: true,
           parameters: { streaming: true },
         },
         {
-          id: "step_stream_conformance",
+          id: 'step_stream_conformance',
           type: StepType.CONFORMANCE,
           required: true,
-          dependsOn: ["step_stream_dfg"],
+          dependsOn: ['step_stream_dfg'],
           parallelizable: true,
           parameters: { streaming: true },
         },
@@ -519,53 +526,53 @@ export function resolveProfile(profile: ExecutionProfile): PipelineStep[] {
       return [
         // All discovery algorithms
         {
-          id: "step_dfg",
+          id: 'step_dfg',
           type: StepType.DFG,
           required: true,
           parallelizable: true,
         },
         {
-          id: "step_alpha",
+          id: 'step_alpha',
           type: StepType.ALPHA_PLUS_PLUS,
           required: true,
           parallelizable: true,
         },
         {
-          id: "step_genetic",
+          id: 'step_genetic',
           type: StepType.GENETIC,
           required: true,
           parallelizable: true,
           parameters: { generations: 100, populationSize: 50 },
         },
         {
-          id: "step_pso",
+          id: 'step_pso',
           type: StepType.PSO,
           required: true,
           parallelizable: true,
           parameters: { particles: 30, iterations: 100 },
         },
         {
-          id: "step_astar",
+          id: 'step_astar',
           type: StepType.A_STAR,
           required: true,
           parallelizable: true,
         },
         {
-          id: "step_aco",
+          id: 'step_aco',
           type: StepType.ACO,
           required: true,
           parallelizable: true,
           parameters: { ants: 20, iterations: 50 },
         },
         {
-          id: "step_annealing",
+          id: 'step_annealing',
           type: StepType.SIMULATED_ANNEALING,
           required: true,
           parallelizable: true,
           parameters: { temperature: 100, coolingRate: 0.95 },
         },
         {
-          id: "step_ilp",
+          id: 'step_ilp',
           type: StepType.ILP,
           required: false,
           parallelizable: true,
@@ -574,38 +581,38 @@ export function resolveProfile(profile: ExecutionProfile): PipelineStep[] {
 
         // Full analysis
         {
-          id: "step_stats",
+          id: 'step_stats',
           type: StepType.STATISTICS,
           required: true,
-          dependsOn: ["step_dfg"],
+          dependsOn: ['step_dfg'],
           parallelizable: true,
         },
         {
-          id: "step_conformance",
+          id: 'step_conformance',
           type: StepType.CONFORMANCE,
           required: true,
-          dependsOn: ["step_alpha"],
+          dependsOn: ['step_alpha'],
           parallelizable: true,
         },
         {
-          id: "step_variants",
+          id: 'step_variants',
           type: StepType.VARIANTS,
           required: true,
-          dependsOn: ["step_dfg"],
+          dependsOn: ['step_dfg'],
           parallelizable: true,
         },
         {
-          id: "step_performance",
+          id: 'step_performance',
           type: StepType.PERFORMANCE,
           required: true,
-          dependsOn: ["step_dfg"],
+          dependsOn: ['step_dfg'],
           parallelizable: true,
         },
         {
-          id: "step_clustering",
+          id: 'step_clustering',
           type: StepType.CLUSTERING,
           required: true,
-          dependsOn: ["step_dfg"],
+          dependsOn: ['step_dfg'],
           parallelizable: true,
         },
       ];

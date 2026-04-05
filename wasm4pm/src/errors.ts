@@ -9,45 +9,45 @@
  */
 export enum ErrorCode {
   // Configuration errors
-  CONFIG_INVALID = "CONFIG_INVALID",
-  CONFIG_INCOMPLETE = "CONFIG_INCOMPLETE",
-  CONFIG_TYPE_MISMATCH = "CONFIG_TYPE_MISMATCH",
+  CONFIG_INVALID = 'CONFIG_INVALID',
+  CONFIG_INCOMPLETE = 'CONFIG_INCOMPLETE',
+  CONFIG_TYPE_MISMATCH = 'CONFIG_TYPE_MISMATCH',
 
   // Source/input errors
-  SOURCE_UNAVAILABLE = "SOURCE_UNAVAILABLE",
-  SOURCE_EMPTY = "SOURCE_EMPTY",
-  SOURCE_TOO_LARGE = "SOURCE_TOO_LARGE",
+  SOURCE_UNAVAILABLE = 'SOURCE_UNAVAILABLE',
+  SOURCE_EMPTY = 'SOURCE_EMPTY',
+  SOURCE_TOO_LARGE = 'SOURCE_TOO_LARGE',
 
   // Parsing errors
-  PARSE_FAILED = "PARSE_FAILED",
-  FORMAT_UNSUPPORTED = "FORMAT_UNSUPPORTED",
-  SCHEMA_VIOLATION = "SCHEMA_VIOLATION",
+  PARSE_FAILED = 'PARSE_FAILED',
+  FORMAT_UNSUPPORTED = 'FORMAT_UNSUPPORTED',
+  SCHEMA_VIOLATION = 'SCHEMA_VIOLATION',
 
   // Execution errors
-  EXECUTION_FAILED = "EXECUTION_FAILED",
-  HANDLE_NOT_FOUND = "HANDLE_NOT_FOUND",
-  TYPE_MISMATCH = "TYPE_MISMATCH",
-  RESOURCE_LIMIT_EXCEEDED = "RESOURCE_LIMIT_EXCEEDED",
+  EXECUTION_FAILED = 'EXECUTION_FAILED',
+  HANDLE_NOT_FOUND = 'HANDLE_NOT_FOUND',
+  TYPE_MISMATCH = 'TYPE_MISMATCH',
+  RESOURCE_LIMIT_EXCEEDED = 'RESOURCE_LIMIT_EXCEEDED',
 
   // State errors
-  STATE_CORRUPTED = "STATE_CORRUPTED",
-  OPERATION_NOT_ALLOWED = "OPERATION_NOT_ALLOWED",
+  STATE_CORRUPTED = 'STATE_CORRUPTED',
+  OPERATION_NOT_ALLOWED = 'OPERATION_NOT_ALLOWED',
 
   // Unknown errors
-  UNKNOWN = "UNKNOWN",
+  UNKNOWN = 'UNKNOWN',
 }
 
 /**
  * Describes the next action the caller should take to recover from an error
  */
 export enum ErrorRecovery {
-  RETRY = "RETRY",
-  RECONFIGURE = "RECONFIGURE",
-  REDUCE_SCOPE = "REDUCE_SCOPE",
-  VALIDATE_INPUT = "VALIDATE_INPUT",
-  FREE_RESOURCES = "FREE_RESOURCES",
-  REINITIALIZE = "REINITIALIZE",
-  CONTACT_SUPPORT = "CONTACT_SUPPORT",
+  RETRY = 'RETRY',
+  RECONFIGURE = 'RECONFIGURE',
+  REDUCE_SCOPE = 'REDUCE_SCOPE',
+  VALIDATE_INPUT = 'VALIDATE_INPUT',
+  FREE_RESOURCES = 'FREE_RESOURCES',
+  REINITIALIZE = 'REINITIALIZE',
+  CONTACT_SUPPORT = 'CONTACT_SUPPORT',
 }
 
 /**
@@ -73,7 +73,7 @@ export class Wasm4pmError extends Error {
     }
   ) {
     super(message);
-    this.name = "Wasm4pmError";
+    this.name = 'Wasm4pmError';
     this.code = code;
     this.cause = options?.cause || null;
     this.nextAction = options?.nextAction || ErrorRecovery.CONTACT_SUPPORT;
@@ -110,7 +110,7 @@ export class Wasm4pmError extends Error {
     if (this.step) {
       parts.push(`(during: ${this.step})`);
     }
-    return parts.join(" ");
+    return parts.join(' ');
   }
 }
 
@@ -123,53 +123,57 @@ export class Wasm4pmError extends Error {
  * @returns ErrorCode matching the error pattern
  */
 export function classifyWasmError(raw: string, context?: { step?: string }): ErrorCode {
-  if (!raw || typeof raw !== "string") {
+  if (!raw || typeof raw !== 'string') {
     return ErrorCode.UNKNOWN;
   }
 
   const lowerRaw = raw.toLowerCase();
 
   // Handle not found
-  if (lowerRaw.includes("not found")) {
+  if (lowerRaw.includes('not found')) {
     return ErrorCode.HANDLE_NOT_FOUND;
   }
 
   // Type mismatch
-  if (lowerRaw.includes("is not a") || lowerRaw.includes("is not an") || lowerRaw.includes("object is not")) {
+  if (
+    lowerRaw.includes('is not a') ||
+    lowerRaw.includes('is not an') ||
+    lowerRaw.includes('object is not')
+  ) {
     return ErrorCode.TYPE_MISMATCH;
   }
 
   // Parsing failures
-  if (lowerRaw.includes("invalid json") || lowerRaw.includes("failed to parse")) {
+  if (lowerRaw.includes('invalid json') || lowerRaw.includes('failed to parse')) {
     return ErrorCode.PARSE_FAILED;
   }
 
   // Resource limits
-  if (lowerRaw.includes("exceeds maximum") || lowerRaw.includes("exceeds limit")) {
+  if (lowerRaw.includes('exceeds maximum') || lowerRaw.includes('exceeds limit')) {
     return ErrorCode.RESOURCE_LIMIT_EXCEEDED;
   }
 
   // Configuration issues
   if (
-    lowerRaw.includes("missing") ||
-    lowerRaw.includes("unknown operator") ||
-    lowerRaw.includes("must have") ||
-    lowerRaw.includes("field")
+    lowerRaw.includes('missing') ||
+    lowerRaw.includes('unknown operator') ||
+    lowerRaw.includes('must have') ||
+    lowerRaw.includes('field')
   ) {
     return ErrorCode.CONFIG_INVALID;
   }
 
   // Execution failures
   if (
-    lowerRaw.includes("failed to lock") ||
-    lowerRaw.includes("failed to store") ||
-    lowerRaw.includes("failed to serialize")
+    lowerRaw.includes('failed to lock') ||
+    lowerRaw.includes('failed to store') ||
+    lowerRaw.includes('failed to serialize')
   ) {
     return ErrorCode.EXECUTION_FAILED;
   }
 
   // Source/initialization issues
-  if (lowerRaw.includes("failed to read") || lowerRaw.includes("not initialized")) {
+  if (lowerRaw.includes('failed to read') || lowerRaw.includes('not initialized')) {
     return ErrorCode.SOURCE_UNAVAILABLE;
   }
 
