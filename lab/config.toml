@@ -1,0 +1,65 @@
+# lab/config.toml - Post-Publication Validation Configuration
+
+[artifact]
+# The npm package to validate
+name = "wasm4pm"
+# Version to test: "latest", "26.4.5", etc.
+version = "latest"
+# NPM registry URL
+registry = "https://registry.npmjs.org"
+
+[environment]
+# Expected Node.js version (semver compatible)
+node_version = ">=14.0.0"
+# Expected platform (darwin, linux, win32)
+platform = "darwin"
+# Platforms to test (can be overridden at runtime)
+supported_platforms = ["darwin", "linux", "win32"]
+
+[test]
+# Default test timeout (milliseconds)
+timeout_ms = 30000
+# Number of concurrent tests (1 = sequential)
+concurrency = 1
+# Test categories to run (can be filtered at runtime)
+categories = ["algorithms", "performance", "conformance", "io", "analytics"]
+
+[algorithms]
+# Algorithm-specific performance targets (milliseconds per 100 events)
+dfg_target_ms = 1.0
+alpha_plus_target_ms = 5.0
+genetic_target_ms = 50.0
+ilp_target_ms = 20.0
+process_skeleton_target_ms = 0.5
+
+[performance]
+# Memory limits (MB)
+max_memory_mb = 512
+# Allowed performance variance from baseline (percent)
+variance_tolerance_percent = 10.0
+
+[output]
+# Report output directory
+report_dir = "reports"
+# Fixture/test data directory
+fixtures_dir = "fixtures"
+# Baseline expected results file
+baseline_file = "fixtures/expected-results.json"
+
+[validation]
+# Fail if baseline comparison shows regressions
+fail_on_regression = true
+# Generate detailed diff reports
+detailed_diffs = true
+# Save artifact installation metadata
+track_artifact_metadata = true
+
+[logging]
+# Log level: "debug", "info", "warn", "error"
+level = "info"
+# Log to file
+file = null
+# Include timestamps in logs
+timestamps = true
+# Include durations in logs
+durations = true

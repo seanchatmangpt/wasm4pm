@@ -1,0 +1,80 @@
+{
+  "description": "Expected DFG output for parallel XES with concurrent execution",
+  "input": "parallel.xes",
+  "expected_dfg": {
+    "nodes": [
+      {
+        "id": "Start",
+        "label": "Start",
+        "frequency": 1
+      },
+      {
+        "id": "TaskA",
+        "label": "TaskA",
+        "frequency": 1
+      },
+      {
+        "id": "TaskB",
+        "label": "TaskB",
+        "frequency": 1
+      },
+      {
+        "id": "Merge",
+        "label": "Merge",
+        "frequency": 1
+      },
+      {
+        "id": "End",
+        "label": "End",
+        "frequency": 1
+      }
+    ],
+    "edges": [
+      {
+        "from": "Start",
+        "to": "TaskA",
+        "frequency": 1
+      },
+      {
+        "from": "Start",
+        "to": "TaskB",
+        "frequency": 1
+      },
+      {
+        "from": "TaskA",
+        "to": "Merge",
+        "frequency": 1
+      },
+      {
+        "from": "TaskB",
+        "to": "Merge",
+        "frequency": 1
+      },
+      {
+        "from": "Merge",
+        "to": "End",
+        "frequency": 1
+      }
+    ],
+    "start_activities": {
+      "Start": 1
+    },
+    "end_activities": {
+      "End": 1
+    }
+  },
+  "properties": {
+    "num_nodes": 5,
+    "num_edges": 5,
+    "num_start_activities": 1,
+    "num_end_activities": 1,
+    "allows_parallelism": true
+  },
+  "comments": [
+    "Parallel XES demonstrates fork/join pattern",
+    "Start→{TaskA, TaskB} shows parallel split",
+    "TaskA and TaskB converge at Merge (synchronization point)",
+    "DFG captures both paths without requiring exclusivity",
+    "Edge frequencies should all be 1 (single execution)"
+  ]
+}

@@ -1,0 +1,30 @@
+[
+  {
+    "case_id": "Case1",
+    "activity": "Activity A",
+    "timestamp": "2023-01-01T10:00:00Z",
+    "resource": "Resource1",
+    "cost": 100
+  },
+  {
+    "case_id": "Case1",
+    "activity": "Activity B",
+    "timestamp": "2023-01-01T11:00:00Z",
+    "resource": "Resource2",
+    "cost": 150
+  },
+  {
+    "case_id": "Case2",
+    "activity": "Activity A",
+    "timestamp": "2023-01-02T10:00:00Z",
+    "resource": "Resource1",
+    "cost": 100
+  },
+  {
+    "case_id": "Case2",
+    "activity": "Activity B",
+    "timestamp": "2023-01-02T11:00:00Z",
+    "resource": "Resource2",
+    "cost": 150
+  }
+]

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<log xes.version="1.0">
+  <trace>
+    <string key="concept:name" value="Case1"/>
+    <event>
+      <string key="concept:name" value="Activity A"/>
+      <!-- INVALID: missing timestamp -->
+    </event>
+  </trace>
+  <notAClosed tag="this should break">
+</log>

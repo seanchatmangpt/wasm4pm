@@ -1,0 +1,43 @@
+{
+  "description": "Expected DFG output for minimal XES (1 trace, 2 events: A→B)",
+  "input": "minimal.xes",
+  "expected_dfg": {
+    "nodes": [
+      {
+        "id": "A",
+        "label": "A",
+        "frequency": 1
+      },
+      {
+        "id": "B",
+        "label": "B",
+        "frequency": 1
+      }
+    ],
+    "edges": [
+      {
+        "from": "A",
+        "to": "B",
+        "frequency": 1
+      }
+    ],
+    "start_activities": {
+      "A": 1
+    },
+    "end_activities": {
+      "B": 1
+    }
+  },
+  "properties": {
+    "num_nodes": 2,
+    "num_edges": 1,
+    "num_start_activities": 1,
+    "num_end_activities": 1
+  },
+  "comments": [
+    "Minimal XES has exactly 1 trace with events [A, B]",
+    "DFG should have 2 nodes and 1 edge (A->B)",
+    "No spurious edges should exist",
+    "A is the only start activity, B is the only end activity"
+  ]
+}
