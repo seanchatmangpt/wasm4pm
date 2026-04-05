@@ -128,6 +128,10 @@ jobs:
         working-directory: ./wasm4pm
         run: npm run build:nodejs
 
+      - name: Remove wasm-pack generated pkg/.gitignore
+        working-directory: ./wasm4pm
+        run: rm -f pkg/.gitignore
+
       - name: Pack and install from tarball
         run: |
           cd wasm4pm
@@ -160,10 +164,12 @@ jobs:
 
             // Verify WASM actually executes
             const version = pm.get_version();
+            const sv = (s) => ({ tag: 'String', value: s });
             const log = JSON.stringify({
+              attributes: {},
               traces: [
-                { events: [{ 'concept:name': 'A' }, { 'concept:name': 'B' }] },
-                { events: [{ 'concept:name': 'A' }, { 'concept:name': 'C' }] },
+                { attributes: {}, events: [{ attributes: { 'concept:name': sv('A') } }, { attributes: { 'concept:name': sv('B') } }] },
+                { attributes: {}, events: [{ attributes: { 'concept:name': sv('A') } }, { attributes: { 'concept:name': sv('C') } }] },
               ]
             });
             const handle = pm.load_eventlog_from_json(log);

@@ -51,6 +51,29 @@ jobs:
       - name: Run tests
         run: cd wasm4pm && npm run test:unit
 
+      - name: Remove wasm-pack generated pkg/.gitignore
+        run: rm -f wasm4pm/pkg/.gitignore
+
+      - name: Smoke test - verify npm pack includes pkg/
+        run: |
+          cd wasm4pm
+          npm pack
+          TARBALL=$(ls wasm4pm-*.tgz)
+          mkdir -p /tmp/smoke-test-$$
+          cp "$TARBALL" /tmp/smoke-test-$$/
+          cd /tmp/smoke-test-$$
+          npm init -y
+          npm install "./$TARBALL"
+          node -e "
+            const pm = require('wasm4pm');
+            if (!pm.WasmEventLog) throw new Error('WasmEventLog missing');
+            if (typeof pm.discover_dfg !== 'function') throw new Error('discover_dfg missing');
+            const v = pm.get_version();
+            console.log('Smoke test PASSED - version:', v);
+          "
+          rm -rf /tmp/smoke-test-*
+          rm -f /tmp/wasm4pm-*.tgz
+
       - name: Publish to npm
         run: cd wasm4pm && npm publish --ignore-scripts
         env:
