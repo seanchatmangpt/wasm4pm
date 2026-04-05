@@ -153,7 +153,7 @@ pub fn analyze_process_speedup(
                 }));
             }
 
-            time_gaps.sort_by(|a, b| a.partial_cmp(b).unwrap());
+            time_gaps.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
 
             let mean: f64 = time_gaps.iter().sum::<f64>() / time_gaps.len() as f64;
 

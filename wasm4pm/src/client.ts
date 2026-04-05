@@ -7,6 +7,7 @@
 
 // Import types from the API definition
 import * as api from './api';
+import type * as WasmModule from '../pkg/wasm4pm';
 import {
   EventLogHandleId,
   OCELHandleId,
@@ -62,7 +63,7 @@ export function parseWasmError(error: unknown): WasmError {
  */
 export class ProcessMiningClient {
   private initialized: boolean = false;
-  private wasmModule: any = null;
+  private wasmModule: typeof WasmModule | null = null;
   private objects: Map<string, any> = new Map();
 
   /**
@@ -92,8 +93,8 @@ export class ProcessMiningClient {
   loadEventLogFromJSON(jsonContent: string): EventLogHandle {
     if (!this.initialized) throw new Error('Client not initialized. Call init() first.');
 
-    const handle = asEventLogHandleId(this.wasmModule.load_eventlog_from_json(jsonContent));
-    return new EventLogHandle(handle, this.wasmModule);
+    const handle = asEventLogHandleId(this.wasmModule!.load_eventlog_from_json(jsonContent));
+    return new EventLogHandle(handle, this.wasmModule!);
   }
 
   /**
@@ -102,8 +103,8 @@ export class ProcessMiningClient {
   loadEventLogFromXES(xesContent: string): EventLogHandle {
     if (!this.initialized) throw new Error('Client not initialized. Call init() first.');
 
-    const handle = asEventLogHandleId(this.wasmModule.load_eventlog_from_xes(xesContent));
-    return new EventLogHandle(handle, this.wasmModule);
+    const handle = asEventLogHandleId(this.wasmModule!.load_eventlog_from_xes(xesContent));
+    return new EventLogHandle(handle, this.wasmModule!);
   }
 
   /**
@@ -112,8 +113,8 @@ export class ProcessMiningClient {
   loadOCELFromJSON(jsonContent: string): OCELHandle {
     if (!this.initialized) throw new Error('Client not initialized. Call init() first.');
 
-    const handle = asOCELHandleId(this.wasmModule.load_ocel_from_json(jsonContent));
-    return new OCELHandle(handle, this.wasmModule);
+    const handle = asOCELHandleId(this.wasmModule!.load_ocel_from_json(jsonContent));
+    return new OCELHandle(handle, this.wasmModule!);
   }
 
   /**
@@ -122,8 +123,8 @@ export class ProcessMiningClient {
   loadOCELFromXML(xmlContent: string): OCELHandle {
     if (!this.initialized) throw new Error('Client not initialized. Call init() first.');
 
-    const handle = asOCELHandleId(this.wasmModule.load_ocel_from_xml(xmlContent));
-    return new OCELHandle(handle, this.wasmModule);
+    const handle = asOCELHandleId(this.wasmModule!.load_ocel_from_xml(xmlContent));
+    return new OCELHandle(handle, this.wasmModule!);
   }
 
   /**
@@ -131,7 +132,7 @@ export class ProcessMiningClient {
    */
   getVersion(): string {
     if (!this.initialized) throw new Error('Client not initialized. Call init() first.');
-    return this.wasmModule.get_version();
+    return this.wasmModule!.get_version();
   }
 }
 
@@ -141,7 +142,7 @@ export class ProcessMiningClient {
 export class EventLogHandle {
   constructor(
     private handle: EventLogHandleId,
-    private wasmModule: any
+    private wasmModule: typeof WasmModule
   ) {}
 
   /**
@@ -741,7 +742,7 @@ export class EventLogHandle {
 export class OCELHandle {
   constructor(
     private handle: OCELHandleId,
-    private wasmModule: any
+    private wasmModule: typeof WasmModule
   ) {}
 
   /**
@@ -850,7 +851,7 @@ export class OCELHandle {
 export class DFGHandle {
   constructor(
     private handle: DFGHandleId,
-    private wasmModule: any
+    private wasmModule: typeof WasmModule
   ) {}
 
   /**
@@ -882,7 +883,7 @@ export class DFGHandle {
 export class PetriNetHandle {
   constructor(
     private handle: PetriNetHandleId,
-    private wasmModule: any
+    private wasmModule: typeof WasmModule
   ) {}
 
   /**
@@ -921,7 +922,7 @@ export class PetriNetHandle {
 export class DeclareModelHandle {
   constructor(
     private handle: DeclareHandleId,
-    private wasmModule: any
+    private wasmModule: typeof WasmModule
   ) {}
 
   /**
@@ -953,7 +954,7 @@ export class DeclareModelHandle {
 export class OCPetriNetHandle {
   constructor(
     private handle: OCPetriNetHandleId,
-    private wasmModule: any
+    private wasmModule: typeof WasmModule
   ) {}
 
   /**

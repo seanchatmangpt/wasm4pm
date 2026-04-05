@@ -4,6 +4,7 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as wasm from '../../pkg/wasm4pm.js';
+import { XES_MINIMAL } from '../helpers/fixtures';
 
 describe('Type Wrapper - WasmEventLog', () => {
   beforeEach(async () => {
@@ -20,9 +21,7 @@ describe('Type Wrapper - WasmEventLog', () => {
   });
 
   it('should create WasmEventLog from handle', () => {
-    const xes = `<?xml version="1.0"?><log xes.version="1.0"><extension name="Concept" prefix="concept" uri="http://www.xes-standard.org/concept.xesext"/><global scope="trace"><string key="concept:name" value="undefined"/></global><global scope="event"><string key="concept:name" value="undefined"/><date key="time:timestamp" value="1970-01-01T00:00:00.000+00:00"/></global><trace><string key="concept:name" value="Case1"/><event><string key="concept:name" value="ActivityA"/><date key="time:timestamp" value="2023-01-01T10:00:00"/></event></trace></log>`;
-
-    const handle = wasm.load_eventlog_from_xes(xes);
+    const handle = wasm.load_eventlog_from_xes(XES_MINIMAL);
     expect(handle).toBeTruthy();
 
     const wasmLog = new wasm.WasmEventLog(handle);
@@ -30,9 +29,7 @@ describe('Type Wrapper - WasmEventLog', () => {
   });
 
   it('should retrieve event count from WasmEventLog', () => {
-    const xes = `<?xml version="1.0"?><log xes.version="1.0"><extension name="Concept" prefix="concept" uri="http://www.xes-standard.org/concept.xesext"/><global scope="trace"><string key="concept:name" value="undefined"/></global><global scope="event"><string key="concept:name" value="undefined"/><date key="time:timestamp" value="1970-01-01T00:00:00.000+00:00"/></global><trace><string key="concept:name" value="Case1"/><event><string key="concept:name" value="ActivityA"/><date key="time:timestamp" value="2023-01-01T10:00:00"/></event></trace></log>`;
-
-    const handle = wasm.load_eventlog_from_xes(xes);
+    const handle = wasm.load_eventlog_from_xes(XES_MINIMAL);
     const wasmLog = new wasm.WasmEventLog(handle);
 
     expect(() => {
@@ -41,9 +38,7 @@ describe('Type Wrapper - WasmEventLog', () => {
   });
 
   it('should retrieve case count from WasmEventLog', () => {
-    const xes = `<?xml version="1.0"?><log xes.version="1.0"><extension name="Concept" prefix="concept" uri="http://www.xes-standard.org/concept.xesext"/><global scope="trace"><string key="concept:name" value="undefined"/></global><global scope="event"><string key="concept:name" value="undefined"/><date key="time:timestamp" value="1970-01-01T00:00:00.000+00:00"/></global><trace><string key="concept:name" value="Case1"/><event><string key="concept:name" value="ActivityA"/><date key="time:timestamp" value="2023-01-01T10:00:00"/></event></trace></log>`;
-
-    const handle = wasm.load_eventlog_from_xes(xes);
+    const handle = wasm.load_eventlog_from_xes(XES_MINIMAL);
     const wasmLog = new wasm.WasmEventLog(handle);
 
     expect(() => {
@@ -52,9 +47,7 @@ describe('Type Wrapper - WasmEventLog', () => {
   });
 
   it('should retrieve stats from WasmEventLog', () => {
-    const xes = `<?xml version="1.0"?><log xes.version="1.0"><extension name="Concept" prefix="concept" uri="http://www.xes-standard.org/concept.xesext"/><global scope="trace"><string key="concept:name" value="undefined"/></global><global scope="event"><string key="concept:name" value="undefined"/><date key="time:timestamp" value="1970-01-01T00:00:00.000+00:00"/></global><trace><string key="concept:name" value="Case1"/><event><string key="concept:name" value="ActivityA"/><date key="time:timestamp" value="2023-01-01T10:00:00"/></event></trace></log>`;
-
-    const handle = wasm.load_eventlog_from_xes(xes);
+    const handle = wasm.load_eventlog_from_xes(XES_MINIMAL);
     const wasmLog = new wasm.WasmEventLog(handle);
 
     expect(() => {

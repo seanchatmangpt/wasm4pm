@@ -70,30 +70,67 @@ export const XES_PARALLEL = `<?xml version="1.0" encoding="UTF-8"?>
  * Use for: OCEL-specific tests
  */
 export const OCEL_MINIMAL = `{
-  "ocel:version": "1.0.0",
-  "ocel:objectTypes": ["Order"],
-  "ocel:eventTypes": ["Create", "Ship"],
-  "ocel:events": [
+  "event_types": ["Create", "Ship"],
+  "object_types": ["Order"],
+  "events": [
     {
-      "ocel:eid": "evt1",
-      "ocel:etype": "Create",
-      "ocel:timestamp": "2023-01-01T10:00:00Z",
-      "ocel:omap": ["Order-1"],
-      "attributes": {}
+      "id": "evt1",
+      "event_type": "Create",
+      "timestamp": "2023-01-01T10:00:00Z",
+      "attributes": {},
+      "object_ids": ["Order-1"],
+      "object_refs": []
     },
     {
-      "ocel:eid": "evt2",
-      "ocel:etype": "Ship",
-      "ocel:timestamp": "2023-01-01T11:00:00Z",
-      "ocel:omap": ["Order-1"],
-      "attributes": {}
+      "id": "evt2",
+      "event_type": "Ship",
+      "timestamp": "2023-01-01T11:00:00Z",
+      "attributes": {},
+      "object_ids": ["Order-1"],
+      "object_refs": []
     }
   ],
-  "ocel:objects": [
+  "objects": [
     {
-      "ocel:oid": "Order-1",
-      "ocel:otype": "Order",
-      "attributes": {}
+      "id": "Order-1",
+      "object_type": "Order",
+      "attributes": {},
+      "changes": []
     }
-  ]
+  ],
+  "object_relations": []
 }`;
+
+/**
+ * Multi-trace XES for workflow testing with multiple cases
+ * Use for: full workflow tests, integration scenarios
+ */
+export const XES_WORKFLOW = `<?xml version="1.0" encoding="UTF-8"?>
+<log xes.version="1.0" xmlns="http://www.xes-standard.org/">
+  <trace>
+    <string key="concept:name" value="Case1"/>
+    <event>
+      <string key="concept:name" value="Activity A"/>
+      <date key="time:timestamp" value="2023-01-01T10:00:00.000+00:00"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Activity B"/>
+      <date key="time:timestamp" value="2023-01-01T10:05:00.000+00:00"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Activity C"/>
+      <date key="time:timestamp" value="2023-01-01T10:10:00.000+00:00"/>
+    </event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="Case2"/>
+    <event>
+      <string key="concept:name" value="Activity A"/>
+      <date key="time:timestamp" value="2023-01-01T11:00:00.000+00:00"/>
+    </event>
+    <event>
+      <string key="concept:name" value="Activity B"/>
+      <date key="time:timestamp" value="2023-01-01T11:05:00.000+00:00"/>
+    </event>
+  </trace>
+</log>`;
