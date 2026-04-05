@@ -249,7 +249,8 @@ await pm.init();
 
 const fs = require('fs');
 const logHandle = pm.load_eventlog_from_xes(fs.readFileSync('log.xes', 'utf8'));
-const dfg = JSON.parse(pm.object_to_json(pm.discover_dfg(logHandle)));
+const dfg = pm.discover_dfg(logHandle, 'concept:name');
+console.log(`${dfg.nodes.length} activities, ${dfg.edges.length} flows`);
 ```
 
 Node.js 16+ is required; 18+ is recommended.
@@ -279,19 +280,25 @@ Always wrap loading and discovery calls when processing user-supplied data.
 
 ### How to export results to JSON
 
-Goal: serialize any result object to a plain JSON string for storage or API responses.
+Goal: serialize discovered models and analysis results to JSON format.
 
 ```javascript
-// Any handle — log, DFG, Petri net, stats, etc.
-const jsonString = pm.object_to_json(anyHandle);
-const data = JSON.parse(jsonString);
+// Export DFG to JSON
+const dfgJson = pm.export_dfg_to_json(dfgHandle);
+
+// Export Petri net to JSON
+const netJson = pm.export_petri_net_to_json(netHandle);
+
+// Export event log to JSON
+const logJson = pm.export_eventlog_to_json(logHandle);
 
 // Persist to disk (Node.js)
 const fs = require('fs');
-fs.writeFileSync('result.json', JSON.stringify(data, null, 2));
+fs.writeFileSync('dfg.json', dfgJson);
+fs.writeFileSync('model.json', netJson);
 
 // Return from an Express endpoint
-res.json(data);
+res.json(JSON.parse(dfgJson));
 ```
 
 To round-trip an EventLog back to XES use `pm.export_eventlog_to_xes(logHandle)`.
@@ -317,13 +324,13 @@ Similarly, `pm.available_analysis_functions()` lists all analysis functions.
 Goal: find the min, max, and average time cases take to complete.
 
 ```javascript
-const durHandle = pm.analyze_case_duration(logHandle);
-const durations = JSON.parse(pm.object_to_json(durHandle));
+const durations = pm.analyze_case_duration(logHandle);
 
 console.log('Min  :', durations.min);
 console.log('Max  :', durations.max);
-console.log('Avg  :', durations.average);
+console.log('Mean :', durations.mean);
 console.log('Median:', durations.median);
+console.log('Std Dev:', durations.stddev);
 ```
 
 ---
@@ -345,3 +352,334 @@ const stats = JSON.parse(pm.streaming_dfg_stats(handle));
 ```
 
 Call `pm.streaming_dfg_flush_open(handle)` to close all open traces and drive `open_trace_events` to 0.
+
+---
+
+### How to discover advanced algorithms (Genetic, ILP, Ant Colony)
+
+Goal: use high-quality optimization algorithms for best-effort discovery.
+
+```javascript
+// Genetic Algorithm (40-200ms, high quality)
+const netGA = pm.discover_genetic_algorithm(logHandle, 50, 100);
+// 50 generations, population 100
+
+// ILP Optimization (20-100ms, provably optimal with timeout)
+const netILP = pm.discover_ilp_petri_net(logHandle, 30000);
+// 30 second timeout
+
+// Ant Colony Optimization (exploration-exploitation balance)
+const netACO = pm.discover_ant_colony(logHandle, 100, 0.9);
+// 100 iterations, 0.9 evaporation rate
+```
+
+---
+
+### How to detect anomalies and concept drift
+
+Goal: identify unusual behavior and process changes over time.
+
+```javascript
+// Score how anomalous each trace is (0=normal, 1=highly anomalous)
+const scores = pm.score_log_anomalies(logHandle);
+scores.forEach((item, idx) => {
+  console.log(`Trace ${idx}: anomaly score ${item.score}`);
+});
+
+// Detect where process behavior changes (concept drift)
+const drift = pm.detect_concept_drift(logHandle, 50);
+// 50-trace sliding window
+console.log(`Drift detected at positions: ${drift.change_points}`);
+
+// Find temporal bottlenecks (slow transitions)
+const bottlenecks = pm.analyze_temporal_bottlenecks(logHandle);
+console.log(`Slowest activity: ${bottlenecks[0].activity}`);
+```
+
+---
+
+### How to analyze resource efficiency
+
+Goal: understand who does what and find bottlenecks in resource allocation.
+
+```javascript
+// Who does what?
+const matrix = pm.analyze_resource_activity_matrix(logHandle, 'org:resource');
+// Returns 2D matrix: resources x activities
+
+// How busy are resources?
+const utilization = pm.analyze_resource_utilization(logHandle, 'org:resource');
+console.log(utilization);
+// { "Alice": 0.85, "Bob": 0.92, "Charlie": 0.42 }
+
+// Who are the bottlenecks?
+const bottlenecks = pm.identify_resource_bottlenecks(logHandle, 'org:resource');
+console.log(`Resource bottleneck: ${bottlenecks[0].resource}`);
+
+// How do resources collaborate?
+const network = pm.discover_working_together_network(logHandle, 'org:resource');
+// Shows which resources work on same cases
+```
+
+---
+
+### How to mine activity patterns
+
+Goal: discover frequent activity sequences and co-occurrence patterns.
+
+```javascript
+// Find frequently occurring activity sequences
+const patterns = pm.mine_sequential_patterns(logHandle, 0.1);
+// minSupport=0.1 means "appears in ≥10% of traces"
+
+console.log(`Found ${patterns.length} frequent patterns`);
+patterns.forEach(p => {
+  console.log(`${p.sequence.join(' → ')} (support: ${p.support})`);
+});
+
+// Which activities happen together in same case?
+const cooccurrence = pm.analyze_activity_cooccurrence(logHandle);
+console.log(cooccurrence);
+// { "Register,Approve": 125, "Register,Reject": 45, ... }
+
+// Activity ordering relationships
+const ordering = pm.analyze_activity_ordering(logHandle);
+console.log(`${ordering.length} ordering constraints discovered`);
+```
+
+---
+
+### How to cluster similar traces
+
+Goal: group traces by behavioral similarity.
+
+```javascript
+const k = 3;  // Desired number of clusters
+const clusters = pm.cluster_traces(logHandle, k);
+
+// clusters[i] = cluster ID for trace i
+console.log(`Assigned ${clusters.length} traces to ${k} clusters`);
+
+// Count traces per cluster
+const clusterCounts = {};
+clusters.forEach(cid => {
+  clusterCounts[cid] = (clusterCounts[cid] || 0) + 1;
+});
+console.log('Cluster sizes:', clusterCounts);
+```
+
+---
+
+### How to extract features for ML
+
+Goal: convert process data into feature vectors for machine learning.
+
+```javascript
+// Case-level features (one vector per trace)
+const caseFeatures = pm.extract_case_features(logHandle);
+// Returns JSON array suitable for ML models
+
+// Prefix-level features (for remaining time prediction)
+const prefixFeatures = pm.extract_prefix_features(logHandle);
+// More granular, one vector per possible prefix
+
+// Activity ordering as features
+const orderingFeatures = pm.extract_activity_ordering(logHandle);
+
+// Export to CSV for use in sklearn, PyTorch, etc.
+const csv = pm.export_features_csv(caseFeatures);
+const fs = require('fs');
+fs.writeFileSync('features.csv', csv);
+```
+
+---
+
+### How to analyze Object-Centric Event Logs (OCEL)
+
+Goal: work with multi-object processes.
+
+```javascript
+const ocelHandle = pm.load_ocel_from_json(ocelJsonContent);
+
+// Get basic statistics
+const stats = pm.analyze_ocel_statistics(ocelHandle);
+console.log(`${stats.num_events} events, ${stats.num_objects} objects`);
+console.log(`Object types: ${stats.object_types.join(', ')}`);
+
+// Discover object-aware DFG (one per object type)
+const dfgPerType = pm.discover_ocel_dfg_per_type(ocelHandle);
+Object.entries(dfgPerType).forEach(([type, dfg]) => {
+  console.log(`${type}: ${dfg.nodes.length} activities`);
+});
+
+// Convert to traditional event log (flatten)
+const flatLogHandle = pm.flatten_ocel_to_eventlog(ocelHandle);
+
+// Export OCEL 2.0 format
+const ocel2Json = pm.export_ocel2_to_json(ocelHandle);
+```
+
+---
+
+### How to filter logs before discovery
+
+Goal: clean up logs to focus on main process behavior.
+
+```javascript
+// Keep only high-frequency activities
+const topActivities = ['Register', 'Approve', 'Close', 'Payment'];
+const filtered = pm.filter_log_by_activity(logHandle, topActivities);
+
+// Keep traces of reasonable length
+const goodLength = pm.filter_log_by_trace_length(logHandle, 3, 50);
+
+// Keep only "happy path" traces (start→end)
+const happyPath = pm.filter_by_start_activity(logHandle, 'Register');
+const complete = pm.filter_by_end_activity(happyPath, 'Close');
+
+// Keep only traces with specific directly-follows pattern
+const withApproval = pm.filter_by_directly_follows(logHandle, 'Register', 'Approve');
+
+// Keep top 80% of traces (by frequency)
+const mainVariants = pm.filter_by_variant_coverage(logHandle, 80);
+
+// Discover model from cleaned log
+const net = pm.discover_alpha_plus_plus(mainVariants, 0.05);
+```
+
+---
+
+### How to check data quality
+
+Goal: identify data issues before process mining.
+
+```javascript
+// Check event log quality
+const quality = pm.check_data_quality(logHandle);
+console.log(quality);
+// { 
+//   "issues": [...],
+//   "has_timestamps": true,
+//   "has_activities": true,
+//   "missing_values": 5,
+//   "duplicate_events": 2
+// }
+
+// Check OCEL data quality
+const ocelQuality = pm.check_ocel_data_quality(ocelHandle);
+
+// Validate specific requirements
+if (!pm.validate_has_timestamps(logHandle)) {
+  console.warn('Log has no timestamps - time-based analysis unavailable');
+}
+if (!pm.validate_has_activities(logHandle)) {
+  throw new Error('Log has no activity attribute');
+}
+
+// Infer schema
+const schema = pm.infer_eventlog_schema(logHandle);
+console.log('Inferred attributes:', schema.attributes);
+```
+
+---
+
+### How to generate text summaries (for LLMs)
+
+Goal: convert WASM objects to natural language for Claude/GPT integration.
+
+```javascript
+// Convert DFG to text
+const dfgText = pm.encode_dfg_as_text(dfgHandle);
+console.log(dfgText);
+// Returns: "Activities: Register, Approve, Close\nFlows: Register→Approve (100)"
+
+// Convert Petri net to text
+const netText = pm.encode_petri_net_as_text(netHandle);
+
+// Convert conformance results to text
+const confText = pm.encode_conformance_as_text(logHandle, netHandle, 'concept:name');
+
+// Convert trace variants to text
+const variantText = pm.encode_variants_as_text(logHandle);
+
+// Use with LLM
+const llmPrompt = `Analyze this process: ${dfgText}\n${confText}`;
+// Send to Claude API
+```
+
+---
+
+### How to set up monitoring and recommendations
+
+Goal: get AI-powered suggestions for process improvement.
+
+```javascript
+// Get recommendations for the log
+const recs = pm.generate_recommendations(logHandle, 'optimization');
+console.log(recs);
+// Returns: [
+//   { type: "variant_reduction", severity: "high", description: "..." },
+//   { type: "bottleneck", severity: "medium", resource: "Alice", ... },
+//   ...
+// ]
+
+// Get module status/capabilities
+const caps = pm.get_capability_registry();
+console.log('Available algorithms:', caps.discovery_algorithms);
+console.log('Available analysis:', caps.analysis_functions);
+
+// Check specific module status
+const discoveryStatus = pm.discovery_info();
+console.log(discoveryStatus);  // { status: "operational", ... }
+```
+
+---
+
+### How to compute model metrics
+
+Goal: analyze structural properties of discovered models.
+
+```javascript
+// Get Petri net metrics
+const metrics = pm.compute_model_metrics(netHandle);
+console.log(metrics);
+// {
+//   "places": 12,
+//   "transitions": 8,
+//   "arcs": 25,
+//   "complexity_score": 0.35,
+//   "fitness_guarantee": true
+// }
+
+// Compute alignments (how well traces fit the model)
+const alignments = pm.compute_alignments(logHandle, netHandle, 'concept:name');
+alignments.forEach(align => {
+  console.log(`Trace ${align.trace_id}: fitness=${align.fitness}`);
+});
+
+// Compute optimal alignments (slower, guaranteed optimal)
+const optimalAligns = pm.compute_optimal_alignments(logHandle, netHandle, 'concept:name');
+```
+
+---
+
+### How to compute activity transition matrix
+
+Goal: understand which activities tend to follow which.
+
+```javascript
+// Get transition matrix
+const matrix = pm.compute_activity_transition_matrix(logHandle);
+// matrix[i][j] = number of times activity i is followed by activity j
+
+// Get list of activities to interpret matrix
+const activities = pm.get_activities(logHandle);
+
+// Print as table
+console.log('Activity Transition Matrix:');
+console.log('From \\ To', activities.join('\t'));
+activities.forEach((from, i) => {
+  const row = activities.map((_, j) => matrix[i][j]);
+  console.log(from, row.join('\t'));
+});
+```
