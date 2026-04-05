@@ -47,3 +47,31 @@ export {
 
 // No-op implementation
 export { NoopTracer } from './noop.js';
+
+// Observability layer
+export { ObservabilityLayer, getObservabilityLayer } from './observability.js';
+
+// Instrumentation utilities
+export { Instrumentation } from './instrumentation.js';
+export type {
+  EventType,
+  StateChangeEvent,
+  PlanGeneratedEvent,
+  AlgorithmEvent,
+  IOEvent,
+  ProgressEvent,
+  ErrorEventData,
+} from './instrumentation.js';
+
+// Observability wrapper and types
+export { ObservabilityWrapper } from './observability-wrapper.js';
+export type { SafeEmitResult } from './observability-wrapper.js';
+
+export type {
+  RequiredOtelAttributes,
+  ObservabilityConfig,
+  CliEvent,
+  JsonEvent,
+  OtelEvent,
+  ObservabilityResult,
+} from './types.js';

@@ -19,8 +19,26 @@ export type {
 export { Engine, createSimpleEngine, createFullEngine } from './engine';
 export type { Kernel, Planner, Executor } from './engine';
 
-// Lifecycle management
-export { StateMachine, TransitionValidator } from './lifecycle';
+// State definitions and metadata
+export {
+  STATE_METADATA,
+  ALL_STATES,
+  isOperationalState,
+  isTerminalState,
+  isProcessingState,
+} from './state';
+export type { StateMetadata } from './state';
+
+// Transition rules and validation
+export {
+  VALID_TRANSITIONS,
+  canTransition,
+  getValidTransitions,
+  TransitionValidator,
+} from './transitions';
+
+// Lifecycle management (StateMachine)
+export { StateMachine } from './lifecycle';
 export type { LifecycleEvent } from './lifecycle';
 
 // Status tracking
@@ -40,6 +58,18 @@ export type {
   StepResult,
 } from './execution';
 
+// Bootstrap
+export { bootstrapEngine, createBootstrapError } from './bootstrap';
+export type { BootstrapKernel, BootstrapResult } from './bootstrap';
+
+// Watch mode (heartbeat + checkpointing)
+export { WatchSession, heartbeatToStatusUpdate } from './watch';
+export type { WatchConfig, HeartbeatEvent } from './watch';
+
+// Checkpointing
+export { CheckpointManager } from './checkpointing';
+export type { Checkpoint } from './checkpointing';
+
 // WASM loader
 export {
   WasmLoader,
@@ -51,4 +81,4 @@ export type {
   WasmModule,
   WasmLoaderConfig,
   WasmLoaderStatus,
-};
+} from './wasm-loader';

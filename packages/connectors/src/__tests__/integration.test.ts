@@ -84,7 +84,7 @@ describe('FileSourceAdapter - Integration', () => {
 
     it('should support checkpoint recovery', async () => {
       const filePath = join(tempDir, 'test.json');
-      const events = Array.from({ length: 30 }, (_, i) => ({
+      const events = Array.from({ length: 150 }, (_, i) => ({
         event_id: i + 1,
         activity: `activity_${i}`,
       }));

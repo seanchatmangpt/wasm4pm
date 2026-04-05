@@ -123,6 +123,7 @@ export function sendValidationError(
   errors: Record<string, string[]>
 ): void {
   res.status(400).json({
+    message: 'Validation failed',
     error: 'Validation failed',
     code: 'VALIDATION_ERROR',
     details: errors,

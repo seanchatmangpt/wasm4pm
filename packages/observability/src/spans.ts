@@ -5,7 +5,7 @@
  */
 
 import { RequiredFields } from './fields.js';
-import { SpanContext, generateSpanId } from './context.js';
+import { SpanContext } from './context.js';
 
 // ---- Core span types ----
 

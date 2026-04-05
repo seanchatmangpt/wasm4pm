@@ -23,10 +23,7 @@
     "test:run": "vitest run",
     "clean": "rm -rf dist"
   },
-  "dependencies": {
-    "@wasm4pm/engine": "workspace:*",
-    "@wasm4pm/contracts": "workspace:*"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@types/node": "^20.10.0",
     "typescript": "^5.3.3",

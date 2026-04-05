@@ -15,6 +15,7 @@ describe('Receipt types', () => {
       .setConfig({ algorithm: 'test' })
       .setInput({ data: 123 })
       .setPlan({ steps: [] })
+        .setOutput({})
       .setTiming('2026-04-04T10:00:00Z', '2026-04-04T10:01:00Z')
       .setStatus('success')
       .setSummary({
@@ -91,6 +92,7 @@ describe('Receipt types', () => {
         .setConfig({})
         .setInput({})
         .setPlan({})
+        .setOutput({})
         .setTiming('2026-04-04T10:00:00Z', '2026-04-04T10:01:00Z')
         .setStatus('failed')
         .setError({
@@ -117,6 +119,7 @@ describe('Receipt types', () => {
         .setConfig({ parameters: Array(1000).fill({ key: 'value' }) })
         .setInput({ traces: Array(1000).fill({ events: [] }) })
         .setPlan({ steps: Array(100).fill({ name: 'step' }) })
+        .setOutput({})
         .setTiming('2026-04-04T10:00:00Z', '2026-04-04T10:01:00Z')
         .setStatus('success')
         .setSummary({
@@ -167,6 +170,7 @@ describe('Receipt types', () => {
         .setConfig({})
         .setInput({})
         .setPlan({})
+        .setOutput({})
         .setTiming('2026-04-04T10:00:00Z', '2026-04-04T10:01:00Z')
         .setStatus('failed')
         .setError({ code: 'ERROR', message: 'Failed' })
@@ -184,6 +188,7 @@ describe('Receipt types', () => {
         .setConfig({})
         .setInput({})
         .setPlan({})
+        .setOutput({})
         .setTiming('2026-04-04T10:00:00Z', '2026-04-04T10:01:00Z')
         .setStatus('success')
         .setSummary({})
@@ -210,6 +215,7 @@ describe('Receipt types', () => {
         .setConfig({})
         .setInput({})
         .setPlan({})
+        .setOutput({})
         .setTiming('2026-04-04T10:00:00Z', '2026-04-04T10:01:00Z')
         .setStatus('failed')
         .setError({
@@ -247,6 +253,7 @@ describe('Receipt types', () => {
         .setConfig({})
         .setInput({})
         .setPlan({})
+        .setOutput({})
         .setTiming('2026-04-04T10:00:00Z', '2026-04-04T10:01:00Z')
         .setStatus('success')
         .setSummary({})

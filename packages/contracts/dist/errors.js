@@ -97,7 +97,7 @@ const REMEDIATIONS = {
     ALGORITHM_NOT_FOUND: 'The requested algorithm is not available. Run: pmctl list-algorithms to see available options.',
     // WASM runtime errors
     WASM_INIT_FAILED: 'Failed to initialize the WASM module. Ensure Node.js/browser is compatible (Node 16+, modern browser). Try reinstalling the package: npm install @wasm4pm/engine',
-    WASM_MEMORY_EXCEEDED: 'Insufficient memory in WASM sandbox. Process your data in smaller batches or increase available memory.',
+    WASM_MEMORY_EXCEEDED: 'Insufficient memory in WASM sandbox. Try processing your data in smaller batches or check available memory limits.',
     // Sink errors
     SINK_FAILED: 'Failed to write output to sink. Check the sink configuration and ensure the destination exists and is writable.',
     SINK_PERMISSION: 'Permission denied writing to the sink destination. Check directory permissions: chmod 755 <dir>',

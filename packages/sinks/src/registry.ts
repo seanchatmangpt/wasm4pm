@@ -6,6 +6,8 @@
 
 import { SinkRegistry, sinkRegistry as contractRegistry } from '@wasm4pm/contracts';
 import { FileLogSinkAdapter, FileLogSinkConfig } from './file-log-sink.js';
+import { StdoutSinkAdapter, StdoutSinkConfig } from './stdout-sink.js';
+import { HttpSinkAdapter, HttpSinkConfig } from './http-sink.js';
 
 /**
  * Extension of SinkRegistry with helper functions for registration
@@ -26,10 +28,31 @@ export class ExtendedSinkRegistry extends SinkRegistry {
   }
 
   /**
+   * Register the stdout sink adapter
+   *
+   * Note: Registers as 'custom' kind since the SinkAdapterKind union
+   * does not include 'stdout' — the contract allows 'custom' for this.
+   */
+  registerStdoutAdapter(config?: Partial<StdoutSinkConfig>): void {
+    const adapter = new StdoutSinkAdapter(config);
+    this.register(adapter);
+  }
+
+  /**
+   * Register the HTTP sink adapter
+   */
+  registerHttpAdapter(config?: HttpSinkConfig): void {
+    const adapter = new HttpSinkAdapter(config ?? { url: '' });
+    this.register(adapter);
+  }
+
+  /**
    * Auto-detect and register adapters based on available implementations
    */
   registerBuiltins(config?: Partial<FileLogSinkConfig>): void {
     this.registerFileAdapter(config);
+    this.registerStdoutAdapter();
+    this.registerHttpAdapter();
   }
 }
 
@@ -45,7 +68,7 @@ export function createSinkRegistry(config?: Partial<FileLogSinkConfig>): Extende
 /**
  * Export the contract registry as default singleton
  */
-export { sinkRegistry };
+export { contractRegistry as sinkRegistry };
 export { SinkRegistry } from '@wasm4pm/contracts';
 export type {
   SinkAdapter,

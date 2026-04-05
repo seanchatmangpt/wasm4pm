@@ -4,7 +4,7 @@
  * no allocations, no branching, no async work.
  */
 
-import type { Span, Tracer, SpanEvent } from './spans.js';
+import type { Span, Tracer } from './spans.js';
 
 /** Singleton no-op span returned by the no-op tracer. */
 const NOOP_SPAN: Span = Object.freeze({

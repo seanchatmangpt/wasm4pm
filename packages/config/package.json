@@ -10,9 +10,21 @@
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
     },
-    "./validate": {
-      "import": "./dist/validate.js",
-      "types": "./dist/validate.d.ts"
+    "./schema": {
+      "import": "./dist/schema.js",
+      "types": "./dist/schema.d.ts"
+    },
+    "./resolver": {
+      "import": "./dist/resolver.js",
+      "types": "./dist/resolver.d.ts"
+    },
+    "./provenance": {
+      "import": "./dist/provenance.js",
+      "types": "./dist/provenance.d.ts"
+    },
+    "./types": {
+      "import": "./dist/types.js",
+      "types": "./dist/types.d.ts"
     },
     "./hash": {
       "import": "./dist/hash.js",

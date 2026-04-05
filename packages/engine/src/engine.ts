@@ -15,6 +15,9 @@ import {
 import { StateMachine, TransitionValidator, LifecycleEvent } from './lifecycle';
 import { StatusTracker, formatStatus } from './status';
 import { WasmLoader, WasmLoaderConfig, WasmModule } from './wasm-loader';
+import { bootstrapEngine, createBootstrapError } from './bootstrap';
+import { WatchSession, WatchConfig, HeartbeatEvent } from './watch';
+import { Checkpoint } from './checkpointing';
 import {
   ObservabilityWrapper,
   Instrumentation,
@@ -62,6 +65,8 @@ export class Engine {
   private transitionUnsubscribe?: () => void;
   private wasmLoader: WasmLoader;
   private wasmModule?: WasmModule;
+  private watchSession?: WatchSession;
+  private watchConfig?: WatchConfig;
   private observability: ObservabilityWrapper;
   private traceId?: string;
   private requiredOtelAttrs?: RequiredOtelAttributes;
@@ -74,17 +79,20 @@ export class Engine {
    * @param executor Optional executor for running plans
    * @param wasmLoaderConfig Optional WASM loader configuration
    * @param observabilityConfig Optional observability configuration (OTEL, JSON logging)
+   * @param watchConfig Optional watch mode configuration (heartbeat, checkpointing)
    */
   constructor(
     kernel: Kernel,
     planner?: Planner,
     executor?: Executor,
     wasmLoaderConfig?: WasmLoaderConfig,
-    observabilityConfig?: ObservabilityConfig
+    observabilityConfig?: ObservabilityConfig,
+    watchConfig?: WatchConfig
   ) {
     this.kernel = kernel;
     this.planner = planner;
     this.executor = executor;
+    this.watchConfig = watchConfig;
     this.stateMachine = new StateMachine();
     this.statusTracker = new StatusTracker();
     this.wasmLoader = WasmLoader.getInstance(wasmLoaderConfig);
@@ -145,37 +153,29 @@ export class Engine {
       }
 
       // Transition to bootstrapping
+      const fromState = this.state();
       this.stateMachine.transition('bootstrapping', 'Starting WASM and kernel initialization');
       this.statusTracker.setState('bootstrapping');
 
       // Emit state change event to bootstrapping
       const stateChangeStart = Instrumentation.createStateChangeEvent(
         this.traceId,
-        'uninitialized',
+        fromState,
         'bootstrapping',
         this.requiredOtelAttrs,
         { reason: 'Starting WASM and kernel initialization' }
       );
       this.observability.emitOtelSafe(stateChangeStart.otelEvent);
 
-      // Initialize WASM module
-      await this.wasmLoader.init();
-      this.wasmModule = this.wasmLoader.get();
-
-      // Initialize kernel
-      await this.kernel.init();
-
-      // Verify kernel is ready
-      if (!this.kernel.isReady()) {
-        throw new Error('Kernel initialization failed: kernel not ready');
-      }
+      // Delegate to bootstrap module
+      const result = await bootstrapEngine(this.kernel, this.wasmLoader);
+      this.wasmModule = result.wasmModule;
 
       // Transition to ready
       this.stateMachine.transition('ready', 'WASM and kernel initialized successfully');
       this.statusTracker.setState('ready');
 
       // Emit state change to ready
-      const bootstrapDuration = Date.now() - bootstrapStart;
       const stateChangeReady = Instrumentation.createStateChangeEvent(
         this.traceId,
         'bootstrapping',
@@ -183,7 +183,7 @@ export class Engine {
         this.requiredOtelAttrs,
         { reason: 'WASM and kernel initialized successfully' }
       );
-      stateChangeReady.event.durationMs = bootstrapDuration;
+      stateChangeReady.event.durationMs = result.durationMs;
       this.observability.emitOtelSafe(stateChangeReady.otelEvent);
 
       // Emit bootstrap metrics to JSON layer
@@ -193,24 +193,17 @@ export class Engine {
         event_type: 'bootstrap_completed',
         run_id: this.requiredOtelAttrs['run.id'],
         data: {
-          duration_ms: bootstrapDuration,
+          duration_ms: result.durationMs,
           trace_id: this.traceId,
         },
       });
     } catch (err) {
-      const error: ErrorInfo = {
-        code: 'BOOTSTRAP_FAILED',
-        message: err instanceof Error ? err.message : String(err),
-        severity: 'fatal',
-        recoverable: true,
-        suggestion: 'Check WASM module and kernel configuration and try again',
-      };
+      const error = createBootstrapError(err);
 
       this.statusTracker.addError(error);
 
       // Emit error event
       if (this.requiredOtelAttrs) {
-        const bootstrapDuration = Date.now() - bootstrapStart;
         const errorEvent = Instrumentation.createErrorEvent(
           this.traceId!,
           error.code,
@@ -478,7 +471,7 @@ export class Engine {
   /**
    * Watches execution progress with streaming status updates
    * Transitions: ready -> watching -> ready | degraded | failed
-   * Emits StatusUpdate for each change
+   * Includes heartbeat and checkpointing via WatchSession
    */
   async *watch(plan: ExecutionPlan): AsyncIterable<StatusUpdate> {
     try {
@@ -503,16 +496,63 @@ export class Engine {
       this.stateMachine.transition('watching', `Starting watched execution: ${this.currentRunId}`);
       this.statusTracker.setState('watching');
 
+      // Create and start watch session with heartbeat + checkpointing
+      this.watchSession = new WatchSession(this.currentRunId, plan, this.watchConfig);
+      this.watchSession.start(
+        (heartbeat: HeartbeatEvent) => {
+          this.observability.emitJsonSafe({
+            timestamp: heartbeat.timestamp.toISOString(),
+            component: 'engine',
+            event_type: 'heartbeat',
+            run_id: this.currentRunId,
+            data: {
+              sequence: heartbeat.sequenceNumber,
+              state: heartbeat.state,
+              progress: heartbeat.progress,
+              uptime_ms: heartbeat.uptimeMs,
+            },
+          });
+        },
+        (checkpoint: Checkpoint) => {
+          this.observability.emitJsonSafe({
+            timestamp: checkpoint.timestamp.toISOString(),
+            component: 'engine',
+            event_type: 'checkpoint',
+            run_id: this.currentRunId,
+            data: {
+              checkpoint_id: checkpoint.id,
+              sequence: checkpoint.sequenceNumber,
+              state: checkpoint.state,
+              progress: checkpoint.progress,
+            },
+          });
+        }
+      );
+
       // Yield initial status
       yield this.createStatusUpdate();
 
       // Watch execution
       const updates = this.executor.watch(plan);
       for await (const update of updates) {
-        // Update tracker with new state and progress
+        // Update tracker and watch session
         this.statusTracker.setState(update.state);
+        this.watchSession.updateState(update.state, update.progress);
+
         if (update.error) {
           this.statusTracker.addError(update.error);
+        }
+
+        // Check watch session health
+        if (!this.watchSession.isHealthy()) {
+          const degradeError: ErrorInfo = {
+            code: 'HEARTBEAT_FAILURE',
+            message: `Missed ${this.watchSession.getMissedHeartbeats()} consecutive heartbeats`,
+            severity: 'warning',
+            recoverable: true,
+          };
+          this.statusTracker.addError(degradeError);
+          yield this.createStatusUpdate(degradeError);
         }
 
         // Yield the update
@@ -521,13 +561,24 @@ export class Engine {
         // If execution ended, transition state
         if (update.state === 'ready' || update.state === 'failed') {
           this.statusTracker.finish();
+          this.watchSession.stop();
           this.stateMachine.transition('ready', 'Watched execution completed');
           break;
         }
       }
 
+      // Clean up watch session
+      if (this.watchSession.isActive()) {
+        this.watchSession.stop();
+      }
+
       this.statusTracker.setState(this.state());
     } catch (err) {
+      // Stop watch session on error
+      if (this.watchSession?.isActive()) {
+        this.watchSession.stop();
+      }
+
       this.statusTracker.finish();
 
       const error: ErrorInfo = {
@@ -554,6 +605,13 @@ export class Engine {
 
       throw err;
     }
+  }
+
+  /**
+   * Gets the current watch session (if active)
+   */
+  getWatchSession(): WatchSession | undefined {
+    return this.watchSession;
   }
 
   /**
@@ -705,6 +763,35 @@ export class Engine {
       event.reason ? `- ${event.reason}` : ''
     );
   }
+
+  /**
+   * Get observability statistics from the observability wrapper
+   */
+  getObservabilityStats(): { emitCount: number; errorCount: number; errorRate: number } {
+    return this.observability.getStats();
+  }
+
+  /**
+   * Get observability errors that have been recorded
+   */
+  getObservabilityErrors(): Array<{ timestamp: Date; layer: string; message: string }> {
+    return this.observability.getErrors();
+  }
+
+  /**
+   * Shutdown observability layer gracefully
+   */
+  async shutdownObservability(): Promise<{ success: boolean; error?: string; timestamp: Date }> {
+    const result = await this.observability.shutdown();
+    if (!result.success && result.error) {
+      console.warn(`[Engine] Observability shutdown error: ${result.error}`);
+    }
+    return {
+      success: result.success,
+      error: result.error,
+      timestamp: result.timestamp || new Date()
+    };
+  }
 }
 
 /**
@@ -726,7 +813,8 @@ export function createFullEngine(
   planner: Planner,
   executor: Executor,
   wasmConfig?: WasmLoaderConfig,
-  obsConfig?: ObservabilityConfig
+  obsConfig?: ObservabilityConfig,
+  watchConfig?: WatchConfig
 ): Engine {
-  return new Engine(kernel, planner, executor, wasmConfig, obsConfig);
+  return new Engine(kernel, planner, executor, wasmConfig, obsConfig, watchConfig);
 }

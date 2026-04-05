@@ -184,10 +184,10 @@ export class HttpSourceAdapter implements SourceAdapter {
     };
 
     if (config.auth) {
-      if (config.auth.type === 'bearer' && config.auth.token) {
-        this.auth = new BearerAuthConfig(config.auth.token);
-      } else if (config.auth.type === 'basic' && config.auth.username) {
-        this.auth = new BasicAuthConfig(config.auth.username, config.auth.password ?? '');
+      if (config.auth.type === 'bearer') {
+        this.auth = new BearerAuthConfig(config.auth.token ?? '');
+      } else if (config.auth.type === 'basic') {
+        this.auth = new BasicAuthConfig(config.auth.username ?? '', config.auth.password ?? '');
       }
     }
   }

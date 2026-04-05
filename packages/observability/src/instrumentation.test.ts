@@ -4,15 +4,7 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import {
-  Instrumentation,
-  StateChangeEvent,
-  PlanGeneratedEvent,
-  AlgorithmEvent,
-  IOEvent,
-  ProgressEvent,
-  ErrorEventData,
-} from './instrumentation';
+import { Instrumentation } from './instrumentation';
 import { RequiredOtelAttributes } from './types';
 
 describe('Instrumentation', () => {
@@ -316,7 +308,7 @@ describe('Instrumentation', () => {
 
     it('should include error context', () => {
       const context = { failedComponent: 'kernel', retries: 3 };
-      const { event, otelEvent } = Instrumentation.createErrorEvent(
+      const { event } = Instrumentation.createErrorEvent(
         traceId,
         'RETRY_EXHAUSTED',
         'All retries failed',

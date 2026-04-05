@@ -195,7 +195,7 @@ const REMEDIATIONS: Record<ErrorCode, string> = {
   WASM_INIT_FAILED:
     'Failed to initialize the WASM module. Ensure Node.js/browser is compatible (Node 16+, modern browser). Try reinstalling the package: npm install @wasm4pm/engine',
   WASM_MEMORY_EXCEEDED:
-    'Insufficient memory in WASM sandbox. Process your data in smaller batches or increase available memory.',
+    'Insufficient memory in WASM sandbox. Try processing your data in smaller batches or check available memory limits.',
 
   // Sink errors
   SINK_FAILED:
