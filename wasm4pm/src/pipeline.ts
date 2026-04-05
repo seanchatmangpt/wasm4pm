@@ -17,14 +17,14 @@ import { Wasm4pmError, ErrorCode, ErrorRecovery } from './errors';
  * Represents a single executable step in the pipeline with WASM binding details
  */
 export interface ExecutableStep {
-  stepId: string;                    // Unique step identifier from config
-  type: StepType;                    // Step type enum
-  wasmFunction: string;              // Name of WASM function to call
-  params: Record<string, unknown>;   // Parameters to pass to WASM function
-  dependencies: string[];            // Step IDs that must complete first
-  timeout?: number;                  // Optional timeout in ms
-  retryable: boolean;                // Whether step can be retried on failure
-  required: boolean;                 // Whether this step is required
+  stepId: string; // Unique step identifier from config
+  type: StepType; // Step type enum
+  wasmFunction: string; // Name of WASM function to call
+  params: Record<string, unknown>; // Parameters to pass to WASM function
+  dependencies: string[]; // Step IDs that must complete first
+  timeout?: number; // Optional timeout in ms
+  retryable: boolean; // Whether step can be retried on failure
+  required: boolean; // Whether this step is required
 }
 
 /**
@@ -55,7 +55,7 @@ const STEP_TYPE_TO_WASM: Record<StepType, string> = {
   [StepType.FILTER]: 'filter_log',
   [StepType.TRANSFORM]: 'transform_log',
   [StepType.VALIDATE]: 'validate_log',
-}
+};
 
 /**
  * PipelineResolver translates Wasm4pmConfig to executable pipeline steps
@@ -136,7 +136,7 @@ export class PipelineResolver {
    * @throws Wasm4pmError if dependencies are invalid
    */
   private validateDependencies(steps: ExecutableStep[]): void {
-    const stepIds = new Set(steps.map(s => s.stepId));
+    const stepIds = new Set(steps.map((s) => s.stepId));
 
     for (const step of steps) {
       for (const dep of step.dependencies) {
@@ -182,7 +182,7 @@ export class PipelineResolver {
  * @throws Wasm4pmError if circular dependencies are detected
  */
 export function topologicalSort(steps: ExecutableStep[]): ExecutableStep[] {
-  const stepMap = new Map(steps.map(s => [s.stepId, s]));
+  const stepMap = new Map(steps.map((s) => [s.stepId, s]));
   const visited = new Set<string>();
   const sorted: ExecutableStep[] = [];
   const recursionStack = new Set<string>();
@@ -236,7 +236,7 @@ export function topologicalSort(steps: ExecutableStep[]): ExecutableStep[] {
  * @returns Set of all steps that must complete before this step
  */
 export function getTransitiveDependencies(stepId: string, steps: ExecutableStep[]): Set<string> {
-  const stepMap = new Map(steps.map(s => [s.stepId, s]));
+  const stepMap = new Map(steps.map((s) => [s.stepId, s]));
   const dependencies = new Set<string>();
 
   function collectDeps(id: string) {

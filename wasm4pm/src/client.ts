@@ -80,7 +80,6 @@ export class ProcessMiningClient {
     return new OCELHandle(handle, this.wasmModule);
   }
 
-
   /**
    * Get the version of wasm4pm
    */
@@ -563,7 +562,6 @@ export class OCELHandle {
   getStats(): { total_events: number; total_objects: number } {
     return this.wasmModule.analyze_ocel_statistics(this.handle);
   }
-
 
   /**
    * Discover Object-Centric DFG
