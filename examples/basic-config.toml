@@ -1,0 +1,101 @@
+# wasm4pm Configuration (TOML Format)
+# Version: 26.4.5
+# This is the default configuration template for wasm4pm projects
+
+[engine]
+# Execution profile: fast, balanced (default), quality, stream
+profile = "balanced"
+
+# Log level: debug, info (default), warn, error
+log_level = "info"
+
+# Maximum memory in MB
+max_memory_mb = 2048
+
+# Execution timeout in seconds
+timeout_seconds = 300
+
+# Enable/disable verbose output
+verbose = false
+
+[discovery]
+# Default discovery algorithm if not specified in CLI
+# Options: dfg, alpha++, genetic, pso, astar, ilp, declare, etc.
+default_algorithm = "dfg"
+
+# Genetic algorithm parameters (used when profile = "quality")
+genetic_populations = 50
+genetic_generations = 100
+
+# PSO (Particle Swarm Optimization) parameters
+pso_particles = 30
+pso_iterations = 50
+
+# A* Search parameters
+astar_max_depth = 20
+
+# ILP Optimization timeout (seconds)
+ilp_timeout_seconds = 60
+
+# Hill Climbing iterations
+hill_climbing_iterations = 100
+
+# Ant Colony Optimization parameters
+aco_ants = 20
+aco_iterations = 50
+
+[output]
+# Output format: human (default), json
+format = "human"
+
+# Output destination: stdout (default), stderr, or file path
+destination = "stdout"
+
+# Pretty-print JSON output (if format = json)
+pretty = true
+
+[watch]
+# File pattern to match (glob pattern)
+pattern = "*.xes"
+
+# Poll interval in milliseconds
+poll_interval_ms = 5000
+
+# Enable watch mode by default
+enabled = false
+
+[observability]
+# Enable observability/logging
+enabled = true
+
+# Log level
+level = "info"
+
+# Log sinks: console (default), file, http
+sinks = ["console"]
+
+# File sink configuration (if sinks includes "file")
+file_path = "./wasm4pm.log"
+file_max_size_mb = 100
+file_max_files = 5
+
+# HTTP sink configuration (if sinks includes "http")
+http_endpoint = "http://localhost:3000/logs"
+http_batch_size = 10
+http_flush_interval_ms = 5000
+
+[metadata]
+# Project name
+project_name = "my-process-mining-project"
+
+# Project description
+description = "Process mining analysis using wasm4pm"
+
+# Author/team
+author = "Your Name"
+
+# Environment: development, staging, production
+environment = "development"
+
+# Tags for organization
+tags = ["process-mining", "discovery"]
