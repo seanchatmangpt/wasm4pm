@@ -3,8 +3,6 @@ use crate::state::{get_or_init_state, StoredObject};
 use crate::models::*;
 use serde_json::json;
 use std::collections::{HashMap, HashSet};
-#[cfg(target_arch = "wasm32")]
-use serde_wasm_bindgen;
 
 /// Serialize `val` across the WASM boundary.
 ///

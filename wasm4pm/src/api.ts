@@ -612,6 +612,15 @@ export interface ResourceBottleneck {
   severity: number;
 }
 
+/**
+ * Event log statistics
+ */
+export interface EventLogStats {
+  total_events: number;
+  total_cases: number;
+  avg_events_per_case: number;
+}
+
 // ============================================================================
 // CONFORMANCE MODULE - Model Checking
 // ============================================================================
@@ -809,15 +818,6 @@ export interface BindingsRegistry {
  * Complete process_mining library API
  */
 export interface ProcessMiningAPI {
-  // -------- Core Types --------
-  EventLog: typeof EventLog;
-  OCEL: typeof OCEL;
-  PetriNet: typeof PetriNet;
-  DirectlyFollowsGraph: typeof DirectlyFollowsGraph;
-  Event: typeof Event;
-  Trace: typeof Trace;
-  Attribute: typeof Attribute;
-
   // -------- Discovery --------
   discovery: {
     /**

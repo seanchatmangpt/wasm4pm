@@ -81,9 +81,7 @@ function compareResults(nodeResults, browserResults) {
     }
   }
 
-  return comparisons.sort(
-    (a, b) => a.algorithm.localeCompare(b.algorithm) || a.size - b.size
-  );
+  return comparisons.sort((a, b) => a.algorithm.localeCompare(b.algorithm) || a.size - b.size);
 }
 
 function printComparisonTable(comparisons) {
@@ -171,7 +169,9 @@ function main() {
     console.log('Benchmark Comparison Tool');
     console.log('Usage: node compare.js <nodejs-json> <browser-json>');
     console.log('\nExample:');
-    console.log('  node benchmarks/compare.js results/nodejs_result.json results/browser_result.json');
+    console.log(
+      '  node benchmarks/compare.js results/nodejs_result.json results/browser_result.json'
+    );
     process.exit(1);
   }
 
@@ -186,7 +186,9 @@ function main() {
   const browserResults = loadResults(browserFile);
 
   console.log(`✓ Loaded ${(nodeResults.results || nodeResults).length} Node.js measurements`);
-  console.log(`✓ Loaded ${(browserResults.results || browserResults).length} Browser measurements\n`);
+  console.log(
+    `✓ Loaded ${(browserResults.results || browserResults).length} Browser measurements\n`
+  );
 
   const comparisons = compareResults(nodeResults, browserResults);
 
@@ -194,9 +196,7 @@ function main() {
   printStatistics(comparisons);
 
   console.log('\n═'.repeat(70));
-  console.log(
-    'Tip: Use these results to optimize browser performance and identify bottlenecks.'
-  );
+  console.log('Tip: Use these results to optimize browser performance and identify bottlenecks.');
 }
 
 main();

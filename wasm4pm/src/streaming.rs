@@ -2,7 +2,6 @@ use wasm_bindgen::prelude::*;
 use crate::state::{get_or_init_state, StoredObject};
 use crate::models::StreamingDfgBuilder;
 use serde_json::json;
-use serde_wasm_bindgen;
 
 /// Begin a new streaming DFG session.
 ///

@@ -33,6 +33,7 @@ open benchmarks/dashboard.html
 ## Features
 
 ### Node.js Benchmarks
+
 ✅ **Parallel execution** — 4 worker threads run simultaneously
 ✅ **All algorithms** — 20+ discovery and analytics algorithms
 ✅ **Full range** — Tests 100 to 10,000 case logs
@@ -40,6 +41,7 @@ open benchmarks/dashboard.html
 ✅ **Export** — JSON and CSV formats for analysis
 
 ### Browser Benchmarks
+
 ✅ **Web target** — Browser-optimized WASM binary
 ✅ **Headless** — Runs in Chromium (no GUI)
 ✅ **Live tests** — 13+ algorithms across 3 log sizes
@@ -75,6 +77,7 @@ node benchmarks/compare.js \
 ```
 
 Output shows:
+
 - Side-by-side performance metrics
 - Speedup ratios (Node time / Browser time)
 - Statistical distribution
@@ -89,6 +92,7 @@ open benchmarks/dashboard.html
 ```
 
 **Features:**
+
 - Load benchmark JSON files
 - Bar charts by algorithm
 - Line graphs for scalability
@@ -101,6 +105,7 @@ open benchmarks/dashboard.html
 All benchmarks produce:
 
 ### JSON Format
+
 ```json
 {
   "timestamp": "2024-01-15T10:30:45.123Z",
@@ -120,6 +125,7 @@ All benchmarks produce:
 ```
 
 ### CSV Format
+
 ```
 algorithm,size,median_ms,min_ms,max_ms,p95_ms,iterations
 discover_dfg,100,2.340,2.150,2.890,2.870,7
@@ -128,6 +134,7 @@ discover_dfg,100,2.340,2.150,2.890,2.870,7
 ## Algorithms Tested
 
 ### Fast Algorithms
+
 - discover_dfg
 - discover_declare
 - discover_heuristic_miner
@@ -138,6 +145,7 @@ discover_dfg,100,2.340,2.150,2.890,2.870,7
 - analyze_event_statistics
 
 ### Medium Algorithms
+
 - discover_astar
 - discover_simulated_annealing
 - discover_ant_colony
@@ -147,6 +155,7 @@ discover_dfg,100,2.340,2.150,2.890,2.870,7
 - cluster_traces
 
 ### Analytics
+
 - analyze_variant_complexity
 - compute_activity_transition_matrix
 - detect_rework
@@ -154,12 +163,14 @@ discover_dfg,100,2.340,2.150,2.890,2.870,7
 ## Performance Tips
 
 ### Faster Benchmarking
+
 ```bash
 npm run bench:ci           # Reduces iterations (3 vs 7)
 npm run bench:browser:ci   # Browser CI mode
 ```
 
 ### Reliable Results
+
 1. Run multiple times
 2. Close other applications
 3. Use consistent hardware
@@ -167,6 +178,7 @@ npm run bench:browser:ci   # Browser CI mode
 5. Compare medians (robust to outliers)
 
 ### Analysis
+
 - Use dashboard for visualization
 - Export to CSV for spreadsheet analysis
 - Run monthly to track trends
@@ -202,28 +214,33 @@ const BENCHMARK_TASKS: BenchmarkTask[] = [
 ];
 
 // Change iteration count
-const ITERATIONS = globalThis.CI_MODE ? 3 : 5;  // Edit here
+const ITERATIONS = globalThis.CI_MODE ? 3 : 5; // Edit here
 ```
 
 ## Troubleshooting
 
 ### "Module not found"
+
 ```bash
 npm run build:all  # Rebuild WASM
 ```
 
 ### "Playwright not installed"
+
 ```bash
 npx playwright install
 ```
 
 ### Tests timeout
+
 Increase in `vitest.config.ts`:
+
 ```typescript
-testTimeout: 60000  // 60 seconds
+testTimeout: 60000; // 60 seconds
 ```
 
 ### Browser won't launch
+
 ```bash
 npx playwright install --with-deps
 ```
@@ -261,17 +278,20 @@ npx playwright install --with-deps
 ## Best Practices
 
 ### Baseline Creation
+
 1. Run benchmarks on clean main branch
 2. Save results with descriptive names
 3. Use as baseline for comparisons
 
 ### Regression Detection
+
 1. Run benchmarks after major changes
 2. Compare against baseline
 3. Investigate >10% regressions
 4. File performance issues
 
 ### Optimization Tracking
+
 1. Record optimization attempts
 2. Before/after measurements
 3. Build performance history
@@ -288,16 +308,16 @@ npx playwright install --with-deps
 
 Typical results on modern hardware (MacBook Pro M1, 2021):
 
-| Algorithm | 100 cases | 1000 cases | 5000 cases |
-|-----------|-----------|-----------|-----------|
-| DFG | 2-3ms | 8-10ms | 40-50ms |
-| Heuristic Miner | 3-4ms | 12-15ms | 60-80ms |
-| Alpha++ | 1-2ms | 6-8ms | 30-40ms |
-| A* | 5-8ms | 30-50ms | 150-200ms |
-| Simulated Annealing | 10-15ms | 60-100ms | 300-500ms |
-| Event Statistics | 1ms | 2-3ms | 8-10ms |
+| Algorithm           | 100 cases | 1000 cases | 5000 cases |
+| ------------------- | --------- | ---------- | ---------- |
+| DFG                 | 2-3ms     | 8-10ms     | 40-50ms    |
+| Heuristic Miner     | 3-4ms     | 12-15ms    | 60-80ms    |
+| Alpha++             | 1-2ms     | 6-8ms      | 30-40ms    |
+| A\*                 | 5-8ms     | 30-50ms    | 150-200ms  |
+| Simulated Annealing | 10-15ms   | 60-100ms   | 300-500ms  |
+| Event Statistics    | 1ms       | 2-3ms      | 8-10ms     |
 
-*(Browser benchmarks typically 40-60% slower than Node.js)*
+_(Browser benchmarks typically 40-60% slower than Node.js)_
 
 ## Contributing
 

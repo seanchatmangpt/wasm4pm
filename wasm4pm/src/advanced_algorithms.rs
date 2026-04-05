@@ -4,8 +4,6 @@ use crate::models::*;
 use serde_json::json;
 use std::collections::HashSet;
 use rustc_hash::FxHashMap;
-#[cfg(target_arch = "wasm32")]
-use serde_wasm_bindgen;
 use crate::utilities::to_js;
 
 /// Heuristic Miner - discovers process models from real-world logs
