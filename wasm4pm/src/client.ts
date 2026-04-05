@@ -21,6 +21,38 @@ import {
 } from './types';
 
 /**
+ * Structured error returned from WASM functions
+ */
+export interface WasmError {
+  code: string;
+  message: string;
+}
+
+/**
+ * Parse a WASM error response
+ * WASM functions return JSON-stringified errors: {"code":"...", "message":"..."}
+ */
+export function parseWasmError(error: unknown): WasmError {
+  if (typeof error === 'string') {
+    try {
+      const parsed = JSON.parse(error);
+      if (parsed.code && parsed.message) {
+        return { code: parsed.code, message: parsed.message };
+      }
+    } catch {
+      // Not valid JSON, treat as generic error
+    }
+    return { code: 'UNKNOWN_ERROR', message: error };
+  }
+
+  if (error instanceof Error) {
+    return { code: 'ERROR', message: error.message };
+  }
+
+  return { code: 'UNKNOWN_ERROR', message: String(error) };
+}
+
+/**
  * Main client for wasm4pm operations
  * Handles initialization, data management, and algorithm execution
  */

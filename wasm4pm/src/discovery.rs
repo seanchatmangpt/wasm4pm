@@ -6,6 +6,7 @@ use rustc_hash::FxHashMap;
 #[cfg(target_arch = "wasm32")]
 use serde_wasm_bindgen;
 use crate::utilities::to_js;
+use crate::error::{wasm_err, codes};
 
 /// Discover a Directly-Follows Graph (DFG) from an EventLog
 #[wasm_bindgen]
@@ -66,8 +67,8 @@ pub fn discover_dfg(
 
             to_js(&dfg)
         }
-        Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
+        None => Err(wasm_err(codes::INVALID_HANDLE, format!("EventLog '{}' not found", eventlog_handle))),
     })
 }
 
@@ -140,8 +141,8 @@ pub fn discover_ocel_dfg(ocel_handle: &str) -> Result<JsValue, JsValue> {
 
             to_js(&dfg)
         }
-        Some(_) => Err(JsValue::from_str("Object is not an OCEL")),
-        None => Err(JsValue::from_str("OCEL not found")),
+        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an OCEL")),
+        None => Err(wasm_err(codes::INVALID_HANDLE, format!("OCEL '{}' not found", ocel_handle))),
     })
 }
 
