@@ -130,6 +130,13 @@ function getDefaults(): Record<string, unknown> {
       pretty: true,
       colorize: true,
     },
+    prediction: {
+      enabled: false,
+      activityKey: 'concept:name',
+      ngramOrder: 2,
+      driftWindowSize: 10,
+      tasks: [],
+    },
   };
 }
 
@@ -171,6 +178,32 @@ function parseEnvConfig(env: NodeJS.ProcessEnv): Record<string, unknown> {
       otel: { ...existingOtel, endpoint: env.WASM4PM_OTEL_ENDPOINT },
     };
   }
+  if (env.WASM4PM_PREDICTION_ENABLED) {
+    config.prediction = {
+      ...(config.prediction as any),
+      enabled: env.WASM4PM_PREDICTION_ENABLED === 'true' || env.WASM4PM_PREDICTION_ENABLED === '1',
+    };
+  }
+  if (env.WASM4PM_PREDICTION_TASKS) {
+    config.prediction = {
+      ...(config.prediction as any),
+      tasks: env.WASM4PM_PREDICTION_TASKS.split(',').map(t => t.trim()).filter(Boolean),
+    };
+  }
+  if (env.WASM4PM_PREDICTION_ACTIVITY_KEY) {
+    config.prediction = {
+      ...(config.prediction as any),
+      activityKey: env.WASM4PM_PREDICTION_ACTIVITY_KEY,
+    };
+  }
+  if (env.WASM4PM_PREDICTION_NGRAM_ORDER) {
+    const n = parseInt(env.WASM4PM_PREDICTION_NGRAM_ORDER, 10);
+    if (!isNaN(n)) config.prediction = { ...(config.prediction as any), ngramOrder: n };
+  }
+  if (env.WASM4PM_PREDICTION_DRIFT_WINDOW) {
+    const w = parseInt(env.WASM4PM_PREDICTION_DRIFT_WINDOW, 10);
+    if (!isNaN(w)) config.prediction = { ...(config.prediction as any), driftWindowSize: w };
+  }
 
   return config;
 }
@@ -199,6 +232,21 @@ function parseCliOverrides(cli: CliOverrides): Record<string, unknown> {
     if (cli.sinkPath) sink.path = cli.sinkPath;
     if (cli.sinkUrl) sink.url = cli.sinkUrl;
     config.sink = sink;
+  }
+  if (
+    cli.predictionEnabled !== undefined ||
+    cli.predictionTasks ||
+    cli.predictionActivityKey ||
+    cli.predictionNgramOrder !== undefined ||
+    cli.predictionDriftWindow !== undefined
+  ) {
+    const prediction: Record<string, unknown> = {};
+    if (cli.predictionEnabled !== undefined) prediction.enabled = cli.predictionEnabled;
+    if (cli.predictionTasks) prediction.tasks = cli.predictionTasks;
+    if (cli.predictionActivityKey) prediction.activityKey = cli.predictionActivityKey;
+    if (cli.predictionNgramOrder !== undefined) prediction.ngramOrder = cli.predictionNgramOrder;
+    if (cli.predictionDriftWindow !== undefined) prediction.driftWindowSize = cli.predictionDriftWindow;
+    config.prediction = prediction;
   }
 
   return config;
@@ -276,6 +324,14 @@ format = "human"       # human | json
 destination = "stdout"
 pretty = true
 colorize = true
+
+[prediction]
+enabled = false
+activityKey = "concept:name"
+ngramOrder = 2           # 2–5
+driftWindowSize = 10
+# tasks = ["next_activity", "remaining_time", "drift", "outcome", "features", "resource"]
+tasks = []
 `;
 }
 
@@ -298,6 +354,13 @@ export function getExampleJsonConfig(): string {
       },
       watch: { enabled: false, poll_interval: 1000 },
       output: { format: 'human', destination: 'stdout', pretty: true, colorize: true },
+      prediction: {
+        enabled: false,
+        activityKey: 'concept:name',
+        ngramOrder: 2,
+        driftWindowSize: 10,
+        tasks: [],
+      },
     },
     null,
     2,

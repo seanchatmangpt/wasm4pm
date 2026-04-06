@@ -56,6 +56,12 @@ export interface CliOverrides {
   sinkKind?: SinkKind;
   sinkPath?: string;
   sinkUrl?: string;
+  // Prediction overrides
+  predictionEnabled?: boolean;
+  predictionTasks?: string[];
+  predictionActivityKey?: string;
+  predictionNgramOrder?: number;
+  predictionDriftWindow?: number;
   [key: string]: unknown;
 }
 

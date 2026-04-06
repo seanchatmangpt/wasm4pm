@@ -48,6 +48,26 @@ export const run = defineCommand({
       type: 'boolean',
       description: 'Suppress non-error output',
     },
+    prediction: {
+      type: 'boolean',
+      description: 'Enable prediction phase after discovery',
+    },
+    'prediction-tasks': {
+      type: 'string',
+      description: 'Comma-separated prediction tasks to run (next_activity,remaining_time,drift,outcome,features,resource)',
+    },
+    'prediction-activity-key': {
+      type: 'string',
+      description: 'Activity attribute key for prediction (default: concept:name)',
+    },
+    'prediction-ngram-order': {
+      type: 'string',
+      description: 'N-gram order for next-activity prediction (2–5, default: 2)',
+    },
+    'prediction-drift-window': {
+      type: 'string',
+      description: 'Window size for drift detection (default: 10)',
+    },
   },
   async run(ctx) {
     const formatter = getFormatter({
@@ -67,6 +87,17 @@ export const run = defineCommand({
           cliOverrides: {
             profile: ctx.args.algorithm
               ? (getProfileFromAlgorithm(ctx.args.algorithm) as 'fast' | 'balanced' | 'quality' | 'stream')
+              : undefined,
+            predictionEnabled: typeof ctx.args.prediction === 'boolean' ? ctx.args.prediction : undefined,
+            predictionTasks: ctx.args['prediction-tasks']
+              ? String(ctx.args['prediction-tasks']).split(',').map(t => t.trim()).filter(Boolean)
+              : undefined,
+            predictionActivityKey: ctx.args['prediction-activity-key'] as string | undefined,
+            predictionNgramOrder: ctx.args['prediction-ngram-order']
+              ? parseInt(ctx.args['prediction-ngram-order'] as string, 10) || undefined
+              : undefined,
+            predictionDriftWindow: ctx.args['prediction-drift-window']
+              ? parseInt(ctx.args['prediction-drift-window'] as string, 10) || undefined
               : undefined,
           },
         });
