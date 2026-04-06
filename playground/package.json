@@ -1,0 +1,30 @@
+{
+  "name": "@wasm4pm/playground",
+  "version": "0.0.0",
+  "description": "Local dev behavior simulation — tests local source using real harnesses",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vitest",
+    "run": "vitest run",
+    "run:verbose": "vitest run --reporter=verbose",
+    "scenario": "vitest run --reporter=verbose -t",
+    "clean": "rm -rf node_modules"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.3",
+    "vitest": "^1.1.0"
+  },
+  "dependencies": {
+    "@wasm4pm/config": "file:../packages/config",
+    "@wasm4pm/contracts": "file:../packages/contracts",
+    "@wasm4pm/engine": "file:../packages/engine",
+    "@wasm4pm/kernel": "file:../packages/kernel",
+    "@wasm4pm/observability": "file:../packages/observability",
+    "@wasm4pm/planner": "file:../packages/planner",
+    "@wasm4pm/templates": "file:../packages/templates",
+    "@wasm4pm/testing": "file:../packages/testing",
+    "@wasm4pm/types": "file:../packages/types"
+  }
+}

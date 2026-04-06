@@ -2,3 +2,5 @@ packages:
   - 'wasm4pm'
   - 'apps/*'
   - 'packages/*'
+  - 'playground'
+  - 'lab'
