@@ -37,10 +37,12 @@ export const main = defineCommand({
     'drift-watch': driftWatch,
     doctor,
     diff,
+    results,
+    compare,
   },
 });
 
 /**
  * Export all commands for testing and programmatic use
  */
-export { run, watch, status, explain, init, predict, driftWatch, doctor, diff };
+export { run, watch, status, explain, init, predict, driftWatch, doctor, diff, results, compare };
