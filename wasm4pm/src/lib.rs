@@ -26,6 +26,9 @@ pub mod temporal_profile;
 pub mod alignments;
 pub mod prediction;
 pub mod prediction_additions;
+pub mod prediction_features;
+pub mod prediction_drift;
+pub mod prediction_next_activity;
 pub mod anomaly;
 pub mod social_network;
 pub mod process_tree;
@@ -38,6 +41,9 @@ pub mod oc_petri_net;
 pub mod oc_conformance;
 pub mod oc_performance;
 pub mod recommendations;
+pub mod prediction_outcome;
+pub mod prediction_resource;
+pub mod prediction_remaining_time;
 
 // Suppress unused warnings for re-exported modules
 #[allow(unused)]

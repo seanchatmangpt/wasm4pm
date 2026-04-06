@@ -38,6 +38,7 @@ export {
   watchConfigSchema,
   outputConfigSchema,
   executionConfigSchema,
+  predictionConfigSchema,
 } from './schema.js';
 
 // Provenance
@@ -61,6 +62,7 @@ export type {
   WatchConfig,
   OutputConfig,
   ExecutionConfig,
+  PredictionConfig,
   SourceKind,
   SinkKind,
   ExecutionProfile,

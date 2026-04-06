@@ -4,6 +4,7 @@ import { watch } from './commands/watch.js';
 import { status } from './commands/status.js';
 import { explain } from './commands/explain.js';
 import { init } from './commands/init.js';
+import { predict } from './commands/predict.js';
 
 export const main = defineCommand({
   meta: {
@@ -27,10 +28,11 @@ export const main = defineCommand({
     status,
     explain,
     init,
+    predict,
   },
 });
 
 /**
  * Export all commands for testing and programmatic use
  */
-export { run, watch, status, explain, init };
+export { run, watch, status, explain, init, predict };
