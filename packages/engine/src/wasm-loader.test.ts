@@ -10,7 +10,7 @@ import {
   WasmErrorCode,
   createWasmLoader,
   getWasmLoader,
-} from './wasm-loader';
+} from './wasm-loader.js';
 import { ObservabilityLayer } from '@wasm4pm/observability';
 
 /**

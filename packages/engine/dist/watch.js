@@ -15,14 +15,24 @@ const DEFAULT_WATCH_CONFIG = {
  * Handles heartbeat emission, checkpoint persistence, and health tracking
  */
 export class WatchSession {
+    runId;
+    plan;
+    config;
+    checkpointManager;
+    heartbeatTimer;
+    checkpointTimer;
+    heartbeatSequence = 0;
+    missedHeartbeats = 0;
+    startedAt;
+    lastHeartbeat;
+    active = false;
+    onHeartbeat;
+    onCheckpoint;
+    currentState = 'watching';
+    currentProgress = 0;
     constructor(runId, plan, config) {
         this.runId = runId;
         this.plan = plan;
-        this.heartbeatSequence = 0;
-        this.missedHeartbeats = 0;
-        this.active = false;
-        this.currentState = 'watching';
-        this.currentProgress = 0;
         this.config = { ...DEFAULT_WATCH_CONFIG, ...config };
         this.checkpointManager = new CheckpointManager(runId);
         this.startedAt = new Date();

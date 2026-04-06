@@ -7,14 +7,17 @@
  * Tracks engine execution progress and status
  */
 export class StatusTracker {
-    constructor() {
-        this.state = 'uninitialized';
-        this.progress = 0;
-        this.errors = [];
-        this.stepsCompleted = 0;
-        this.totalSteps = 0;
-        this.metadata = {};
-    }
+    state = 'uninitialized';
+    runId;
+    planId;
+    progress = 0;
+    errors = [];
+    startedAt;
+    finishedAt;
+    stepsCompleted = 0;
+    totalSteps = 0;
+    currentStepId;
+    metadata = {};
     /**
      * Updates the current state
      */

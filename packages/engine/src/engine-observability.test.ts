@@ -5,10 +5,10 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { Engine } from './engine';
-import type { Kernel, Planner, Executor } from './engine';
+import { Engine } from './engine.js';
+import type { Kernel, Planner, Executor } from './engine.js';
 import type { ExecutionPlan, ExecutionReceipt } from '@wasm4pm/types';
-import type { WasmLoaderConfig } from './wasm-loader';
+import type { WasmLoaderConfig } from './wasm-loader.js';
 
 // Mock implementations
 class MockKernel implements Kernel {

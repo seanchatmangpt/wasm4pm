@@ -7,10 +7,11 @@
  * Manages checkpoints for a given run
  */
 export class CheckpointManager {
+    runId;
+    checkpoints = [];
+    sequenceCounter = 0;
     constructor(runId) {
         this.runId = runId;
-        this.checkpoints = [];
-        this.sequenceCounter = 0;
     }
     /**
      * Create and store a new checkpoint

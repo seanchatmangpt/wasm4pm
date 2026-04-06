@@ -15,6 +15,21 @@ import { ObservabilityWrapper, Instrumentation, } from '@wasm4pm/observability';
  * Integrated with observability for OTEL tracing per PRD §18
  */
 export class Engine {
+    stateMachine;
+    statusTracker;
+    kernel;
+    planner;
+    executor;
+    currentRunId;
+    transitionUnsubscribe;
+    wasmLoader;
+    wasmModule;
+    watchSession;
+    watchConfig;
+    observability;
+    traceId;
+    requiredOtelAttrs;
+    observabilityErrors = [];
     /**
      * Creates a new Engine instance
      * @param kernel WASM kernel implementation
@@ -25,7 +40,6 @@ export class Engine {
      * @param watchConfig Optional watch mode configuration (heartbeat, checkpointing)
      */
     constructor(kernel, planner, executor, wasmLoaderConfig, observabilityConfig, watchConfig) {
-        this.observabilityErrors = [];
         this.kernel = kernel;
         this.planner = planner;
         this.executor = executor;

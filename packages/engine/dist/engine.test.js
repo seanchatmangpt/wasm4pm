@@ -3,12 +3,10 @@
  * Tests for Engine lifecycle, state machine, and error handling
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { createSimpleEngine, createFullEngine, StateMachine, StatusTracker, } from './index';
+import { createSimpleEngine, createFullEngine, StateMachine, StatusTracker, } from './index.js';
 // Mock implementations
 class MockKernel {
-    constructor() {
-        this.ready = false;
-    }
+    ready = false;
     async init() {
         this.ready = true;
     }
