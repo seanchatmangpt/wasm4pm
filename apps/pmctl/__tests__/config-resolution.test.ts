@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { loadConfig } from '@wasm4pm/config';
+import { resolveConfig as loadConfig } from "@wasm4pm/config";;
 import type { CliOverrides } from '@wasm4pm/config';
 
 describe('Config Resolution Order', () => {
@@ -39,7 +39,7 @@ profile = "balanced"
 
       // CLI override should win
       expect(config.execution.profile).toBe('quality');
-      expect(config.metadata.provenance['execution']?.source).toBe('cli');
+      expect(config.metadata.provenance['execution.profile']?.source).toBe('cli');
     });
 
     it('should load from TOML with second priority', async () => {
@@ -60,7 +60,7 @@ timeout = 60000
       // TOML should be applied
       expect(config.execution.profile).toBe('fast');
       expect(config.execution.timeout).toBe(60000);
-      expect(config.metadata.provenance['execution']?.source).toBe('config');
+      expect(config.metadata.provenance['execution.profile']?.source).toBe('toml');
     });
 
     it('should prefer TOML over JSON', async () => {
@@ -91,7 +91,7 @@ profile = "fast"
       // TOML should win
       expect(config.execution.profile).toBe('fast');
       expect(config.source.kind).toBe('file');
-      expect(config.source.path).toBe(tomlPath);
+      expect(config.metadata.provenance['execution.profile']?.path).toBe(tomlPath);
     });
 
     it('should load from JSON when TOML not present', async () => {
@@ -111,7 +111,7 @@ profile = "fast"
 
       expect(config.execution.profile).toBe('balanced');
       expect(config.output?.format).toBe('json');
-      expect(config.source.path).toBe(jsonPath);
+      expect(config.metadata.provenance['execution.profile']?.path).toBe(jsonPath);
     });
 
     it('should merge CLI overrides with file config', async () => {
@@ -144,8 +144,8 @@ destination = "stdout"
       expect(config.output?.format).toBe('json');
 
       // Verify provenance
-      expect(config.metadata.provenance['execution']?.source).toBe('config');
-      expect(config.metadata.provenance['output']?.source).toBe('cli');
+      expect(config.metadata.provenance['execution.profile']?.source).toBe('toml');
+      expect(config.metadata.provenance['output.format']?.source).toBe('cli');
     });
 
     it('should track file path in provenance', async () => {
@@ -162,10 +162,8 @@ profile = "quality"
         configSearchPaths: [tmpDir],
       });
 
-      expect(config.metadata.provenance['execution']?.path).toBe(tomlPath);
-      expect(config.metadata.provenance['execution']?.value).toEqual({
-        profile: 'quality',
-      });
+      expect(config.metadata.provenance['execution.profile']?.path).toBe(tomlPath);
+      expect(config.metadata.provenance['execution.profile']?.value).toBe('quality');
     });
 
     it('should apply defaults for missing config fields', async () => {
@@ -181,7 +179,7 @@ profile = "quality"
 
       // Check provenance
       expect(config.metadata.provenance['version']?.source).toBe('default');
-      expect(config.metadata.provenance['execution']?.source).toBe('default');
+      expect(config.metadata.provenance['execution.profile']?.source).toBe('default');
     });
   });
 
@@ -297,7 +295,7 @@ timeout = -1000
       // Env vars should override defaults but lose to file/CLI
       expect(config.execution.profile).toBe('fast');
       expect(config.observability?.logLevel).toBe('debug');
-      expect(config.metadata.provenance['execution']?.source).toBe('env');
+      expect(config.metadata.provenance['execution.profile']?.source).toBe('env');
     });
 
     it('should parse boolean WASM4PM_WATCH from env', async () => {
@@ -411,11 +409,9 @@ timeout = 600000
 
       const prov = config.metadata.provenance;
       expect(prov['version']).toBeDefined();
-      expect(prov['execution']).toBeDefined();
-      expect(prov['execution']?.value).toEqual({
-        profile: 'quality',
-        timeout: 600000,
-      });
+      expect(prov['execution.profile']).toBeDefined();
+      expect(prov['execution.profile']?.value).toBe('quality');
+      expect(prov['execution.timeout']?.value).toBe(600000);
     });
   });
 
@@ -442,7 +438,7 @@ profile = "balanced"
       });
 
       expect(config.execution.profile).toBe('balanced');
-      expect(config.source.path).toBe(path.join(dir2, 'wasm4pm.toml'));
+      expect(config.metadata.provenance['execution.profile']?.path).toBe(path.join(dir2, 'wasm4pm.toml'));
     });
 
     it('should use first matching config file', async () => {
@@ -475,7 +471,7 @@ profile = "balanced"
       });
 
       expect(config.execution.profile).toBe('fast');
-      expect(config.source.path).toBe(path.join(dir1, 'wasm4pm.toml'));
+      expect(config.metadata.provenance['execution.profile']?.path).toBe(path.join(dir1, 'wasm4pm.toml'));
     });
   });
 });
