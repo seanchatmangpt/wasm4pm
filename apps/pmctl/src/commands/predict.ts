@@ -5,6 +5,7 @@ import { EXIT_CODES } from '../exit-codes.js';
 import type { OutputOptions } from '../output.js';
 import { WasmLoader } from '@wasm4pm/engine';
 import { loadPmctlConfig, buildCliOverrides } from '../config-loader.js';
+import { savePredictionResult } from './results.js';
 
 const VALID_TASKS = [
   'next-activity',
@@ -80,6 +81,10 @@ export const predict = defineCommand({
       type: 'boolean',
       description: 'Suppress non-error output',
       alias: 'q',
+    },
+    'no-save': {
+      type: 'boolean',
+      description: 'Do not persist the result to .wasm4pm/results/',
     },
   },
   async run(ctx) {
@@ -167,7 +172,15 @@ export const predict = defineCommand({
         formatHumanOutput(formatter, task as PredictTask, result);
       }
 
-      // Step 8: Free handles
+      // Step 8: Persist result (unless --no-save)
+      if (!ctx.args['no-save']) {
+        const savedPath = await savePredictionResult(task, inputPath, activityKey, result);
+        if (savedPath && formatter instanceof HumanFormatter) {
+          formatter.debug(`Result saved: ${savedPath}`);
+        }
+      }
+
+      // Step 9: Free handles
       try { wasm.delete_object(logHandle); } catch { /* best-effort */ }
 
       process.exit(EXIT_CODES.success);
