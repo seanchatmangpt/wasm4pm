@@ -1,6 +1,6 @@
 # Performance Benchmarks
 
-All 18 wasm4pm tools are benchmarked against a standard 500-event XES log
+All {{ results | length }} wasm4pm tools are benchmarked against a standard 500-event XES log
 compiled to WASM at optimization level 3. Numbers represent median wall-clock time across 100 warm
 invocations with the WASM module already loaded. Cold-start (module instantiation) is measured
 separately and is not included here.
@@ -29,24 +29,8 @@ SLA budgets apply a tier-specific multiplier to the baseline:
 
 | Tool | Tier | Baseline (ms) | SLA Budget (ms) |
 |------|------|--------------|----------------|
-| Get Capability Registry | FastTier | 0.1 | 0.5 |
-| Encode DFG as Text | FastTier | 0.3 | 1.5 |
-| Discover DFG | FastTier | 0.5 | 2.5 |
-| Encode OCEL as Text | FastTier | 0.8 | 4 |
-| Discover Variants | FastTier | 1 | 5 |
-| Load OCEL | FastTier | 1.5 | 7.5 |
-| Analyze Statistics | FastTier | 2 | 10 |
-| Flatten OCEL | MediumTier | 3 | 15 |
-| Discover OCEL DFG Per Type | MediumTier | 4.5 | 22.5 |
-| Detect Bottlenecks | MediumTier | 5 | 25 |
-| Discover Alpha++ | MediumTier | 5 | 25 |
-| Detect Concept Drift | MediumTier | 6 | 30 |
-| Extract Case Features | MediumTier | 7 | 35 |
-| Check Conformance | MediumTier | 8 | 40 |
-| Discover ILP Optimization | SlowTier | 20 | 60 |
-| Discover Genetic Algorithm | SlowTier | 40 | 120 |
-| Discover OC Petri Net | SlowTier | 50 | 150 |
-| Compare Algorithms | SlowTier | 75 | 225 |
+{% for row in results %}| {{ row.label }} | {{ row.tier }} | {{ row.durationMs }} | {{ (row.durationMs | float * 3) if row.tier == "SlowTier" else (row.durationMs | float * 5) }} |
+{% endfor %}
 
 ---
 

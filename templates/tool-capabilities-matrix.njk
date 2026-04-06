@@ -1,0 +1,64 @@
+# wasm4pm Tool Capabilities
+
+Complete capability reference for all {{ results | length }} wasm4pm MCP tools.
+Derived from the O* surface ontology — numbers here are always current.
+
+---
+
+## Fast Tier
+
+Tools that complete in under 2 ms on a 500-event benchmark log. Safe for synchronous,
+interactive, and real-time pipeline use.
+
+| Tool | Input | OCEL | Handle | ms |
+|------|-------|------|--------|----|
+{% for row in results %}{% if row.tier == "FastTier" %}| {{ row.label }} | `{{ row.inputFormat }}` | {{ "yes" if row.supportsOCEL == "true" else "—" }} | {{ "yes" if row.requiresHandle == "true" else "—" }} | {{ row.durationMs }} |
+{% endif %}{% endfor %}
+
+---
+
+## Medium Tier
+
+Tools that complete in 3–8 ms on a 500-event benchmark log. Suitable for on-demand analysis
+triggered per user action.
+
+| Tool | Input | OCEL | Handle | ms |
+|------|-------|------|--------|----|
+{% for row in results %}{% if row.tier == "MediumTier" %}| {{ row.label }} | `{{ row.inputFormat }}` | {{ "yes" if row.supportsOCEL == "true" else "—" }} | {{ "yes" if row.requiresHandle == "true" else "—" }} | {{ row.durationMs }} |
+{% endif %}{% endfor %}
+
+---
+
+## Slow Tier
+
+Tools that complete in 20–75 ms on a 500-event benchmark log. Run in dedicated worker pods
+or batch queues for production workloads.
+
+| Tool | Input | OCEL | Handle | ms |
+|------|-------|------|--------|----|
+{% for row in results %}{% if row.tier == "SlowTier" %}| {{ row.label }} | `{{ row.inputFormat }}` | {{ "yes" if row.supportsOCEL == "true" else "—" }} | {{ "yes" if row.requiresHandle == "true" else "—" }} | {{ row.durationMs }} |
+{% endif %}{% endfor %}
+
+---
+
+## Summary
+
+{% set fastCount = 0 %}{% set medCount = 0 %}{% set slowCount = 0 %}{% for row in results %}{% if row.tier == "FastTier" %}{% set fastCount = fastCount + 1 %}{% endif %}{% if row.tier == "MediumTier" %}{% set medCount = medCount + 1 %}{% endif %}{% if row.tier == "SlowTier" %}{% set slowCount = slowCount + 1 %}{% endif %}{% endfor %}| Tier | Count |
+|------|-------|
+| FastTier | {{ fastCount }} |
+| MediumTier | {{ medCount }} |
+| SlowTier | {{ slowCount }} |
+| **Total** | **{{ results | length }}** |
+
+**Column key:**
+- **OCEL** — tool natively handles OCEL 2.0 object-centric logs
+- **Handle** — tool requires a pre-loaded in-process handle (call `load_ocel` first)
+- **ms** — baseline median duration on 500-event benchmark log
+
+---
+
+## See Also
+
+- [Algorithm Reference](./reference/algorithms.md) — tier definitions and output formats
+- [HTTP API Reference](./reference/http-api.md) — endpoint paths and request schema
+- [Performance Benchmarks](./reference/benchmarks.md) — SLA budgets and regression gate

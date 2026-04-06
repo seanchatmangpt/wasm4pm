@@ -1,8 +1,8 @@
-# Real Benchmark Results - v0.5.4
+# Real Benchmark Results - v26.4.5
 ## wasm4pm Complete Benchmark Suite
 
-**Date**: April 4, 2026  
-**Build**: v0.5.4  
+**Date**: April 4, 2026
+**Build**: v26.4.5
 **Benchmarks**: 74 measurements across 21 algorithms (13 discovery + 8 analytics)  
 **Execution Time**: 3.1 seconds total  
 **Environment**: Node.js WASM module, median of 7 runs per size  
