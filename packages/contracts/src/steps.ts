@@ -1,0 +1,49 @@
+/**
+ * Plan step type values shared across @wasm4pm/planner and @wasm4pm/testing.
+ *
+ * Extracted here to break the circular dependency: testing tests planner,
+ * so testing cannot import from planner. Both can safely import from contracts.
+ *
+ * The 14 discover_* values correspond to KernelAlgorithm individuals in the ostar
+ * ontology and are reflected in ALGORITHM_ID_TO_STEP_TYPE from @wasm4pm/templates.
+ * The remaining 13 lifecycle/analysis values are structural and not yet in the ontology.
+ */
+
+export const PLAN_STEP_TYPE_VALUES = [
+  // Initialization and setup
+  'bootstrap',
+  'init_wasm',
+  // Source loading
+  'load_source',
+  'validate_source',
+  // Discovery algorithms (14 — derived from KernelAlgorithm ontology individuals)
+  'discover_dfg',
+  'discover_process_skeleton',
+  'discover_alpha_plus_plus',
+  'discover_heuristic',
+  'discover_inductive',
+  'discover_hill_climbing',
+  'discover_declare',
+  'discover_genetic',
+  'discover_pso',
+  'discover_a_star',
+  'discover_ilp',
+  'discover_aco',
+  'discover_simulated_annealing',
+  'discover_optimized_dfg',
+  // Analysis
+  'analyze_statistics',
+  'analyze_conformance',
+  'analyze_variants',
+  'analyze_performance',
+  'analyze_clustering',
+  // Utilities
+  'filter_log',
+  'transform_log',
+  // Output and cleanup
+  'generate_reports',
+  'write_sink',
+  'cleanup',
+] as const;
+
+export type PlanStepTypeValue = typeof PLAN_STEP_TYPE_VALUES[number];

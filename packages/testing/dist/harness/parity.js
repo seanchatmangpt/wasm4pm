@@ -5,6 +5,7 @@
  * that `run(config)` executes. This harness captures both outputs and compares them
  * structurally.
  */
+import { PLAN_STEP_TYPE_VALUES } from '@wasm4pm/contracts';
 /**
  * Compare explain output with actual plan steps.
  * Returns a detailed parity result.
@@ -68,27 +69,21 @@ export async function checkParityBatch(planner, configs) {
  * Looks for known step type patterns in the text.
  */
 function extractStepsFromExplain(text) {
-    const knownSteps = [
-        'bootstrap', 'init_wasm', 'load_source', 'validate_source',
-        'discover_dfg', 'discover_alpha_plus_plus', 'discover_heuristic',
-        'discover_inductive', 'discover_genetic', 'discover_pso',
-        'discover_a_star', 'discover_ilp', 'discover_aco',
-        'discover_simulated_annealing',
-        'analyze_statistics', 'analyze_conformance', 'analyze_variants',
-        'analyze_performance', 'analyze_clustering',
-        'filter_log', 'transform_log',
-        'generate_reports', 'write_sink', 'cleanup',
-    ];
+    const knownSteps = [...PLAN_STEP_TYPE_VALUES];
     const lowerText = text.toLowerCase();
-    const found = [];
+    // Find each known step and record its first position in the text
+    const hits = [];
     for (const step of knownSteps) {
         const normalized = step.replace(/_/g, '[_ -]?');
         const pattern = new RegExp(normalized, 'i');
-        if (pattern.test(lowerText)) {
-            found.push(step);
+        const match = pattern.exec(lowerText);
+        if (match) {
+            hits.push({ step, pos: match.index });
         }
     }
-    return found;
+    // Return in text order (preserves the order explain() rendered the steps)
+    hits.sort((a, b) => a.pos - b.pos);
+    return hits.map((h) => h.step);
 }
 /**
  * Check if the common elements between two arrays appear in the same relative order.
