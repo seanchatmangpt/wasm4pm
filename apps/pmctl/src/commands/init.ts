@@ -79,7 +79,7 @@ This is a wasm4pm process mining project initialized with pmctl.
 
 1. Install dependencies:
    \`\`\`bash
-   npm install
+   pnpm install
    \`\`\`
 
 2. Copy and configure environment:
@@ -123,9 +123,9 @@ Configuration is resolved in this order (highest to lowest priority):
 ## Documentation
 
 For more information on wasm4pm, see:
-- [Configuration Guide](https://github.com/seanchatmangpt/wasm4pm/docs/CONFIG.md)
-- [Algorithm Reference](https://github.com/seanchatmangpt/wasm4pm/docs/ALGORITHMS.md)
-- [API Documentation](https://github.com/seanchatmangpt/wasm4pm/docs/API.md)
+- [Configuration Reference](https://github.com/seanchatmangpt/wasm4pm/tree/main/docs/reference/config-schema.md)
+- [Algorithm Reference](https://github.com/seanchatmangpt/wasm4pm/tree/main/docs/reference/algorithms.md)
+- [API Documentation](https://github.com/seanchatmangpt/wasm4pm/tree/main/docs/reference/http-api.md)
 `;
 }
 

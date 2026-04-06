@@ -3,7 +3,7 @@
  * Watch/streaming execution mode with heartbeat and checkpointing
  * Provides real-time monitoring of long-running executions
  */
-import { CheckpointManager } from './checkpointing';
+import { CheckpointManager } from './checkpointing.js';
 const DEFAULT_WATCH_CONFIG = {
     heartbeatIntervalMs: 5000,
     checkpointingEnabled: true,

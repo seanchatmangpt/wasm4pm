@@ -425,6 +425,34 @@ export class Wasm4pmMCPServer {
           required: ['xes_content', 'trace'],
         },
       },
+      // Concept Drift Detection (van der Aalst's 4th prediction perspective)
+      {
+        name: 'detect_concept_drift',
+        description:
+          'Detect concept drift in a process log using windowed Jaccard distance and EWMA smoothing (α=0.3). Returns drift points, trend direction (rising/stable/falling), and an interpretation. Claude uses this to answer "Has the process changed over time?"',
+        inputSchema: {
+          type: 'object' as const,
+          properties: {
+            xes_content: {
+              type: 'string',
+              description: 'XES event log content to analyze for drift',
+            },
+            window_size: {
+              type: 'number',
+              description: 'Number of traces per sliding window (default: 50)',
+            },
+            alpha: {
+              type: 'number',
+              description: 'EWMA smoothing factor α ∈ (0,1] (default: 0.3). Higher = more weight on recent windows.',
+            },
+            activity_key: {
+              type: 'string',
+              description: 'XES activity attribute key (default: concept:name)',
+            },
+          },
+          required: ['xes_content'],
+        },
+      },
       // Feature Extraction
       {
         name: 'extract_case_features',
@@ -598,49 +626,158 @@ export class Wasm4pmMCPServer {
           break;
         }
 
-        // Predictive Process Mining
+        // Predictive Process Mining — all handles freed within this tick (no memory accumulation)
         case 'predict_next_activity': {
           const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
-          const n = (input.n as number) ?? 2;
-          const k = (input.k as number) ?? 5;
-          const predictorHandle = wasm.build_ngram_predictor(logHandle, 'concept:name', n);
-          const prefixJson = JSON.stringify(input.prefix as string[]);
-          result = wasm.predict_next_k(String(predictorHandle), prefixJson, k);
+          try {
+            const n = (input.n as number) ?? 2;
+            const k = (input.k as number) ?? 5;
+            const actKey = (input.activity_key as string) ?? 'concept:name';
+            const predictorHandle = wasm.build_ngram_predictor(logHandle, actKey, n);
+            try {
+              const prefixJson = JSON.stringify(input.prefix as string[]);
+              const raw = wasm.predict_next_k(String(predictorHandle), prefixJson, k);
+              const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+              const prefix = input.prefix as string[];
+              const predictions = Array.isArray(parsed) ? parsed : (parsed?.predictions ?? []);
+              const top = predictions[0];
+              result = {
+                predictions,
+                interpretation: top
+                  ? `After ${prefix.join('→')}, the most likely next activity is "${top.activity}" (probability: ${(top.probability * 100).toFixed(1)}%). ${predictions.length} candidates ranked by ${n}-gram model trained from the log.`
+                  : `No prediction available for prefix: ${prefix.join('→')}. The prefix may not appear in the training log.`,
+                prefix,
+                n_gram_order: n,
+              };
+            } finally {
+              try { wasm.delete_object(String(predictorHandle)); } catch { /* best-effort */ }
+            }
+          } finally {
+            try { wasm.delete_object(logHandle); } catch { /* best-effort */ }
+          }
           break;
         }
 
         case 'predict_case_duration': {
           const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
-          const modelHandle = wasm.build_remaining_time_model(logHandle, 'concept:name', 'time:timestamp');
-          const prefixJson = JSON.stringify(input.prefix as string[]);
-          result = wasm.predict_case_duration(String(modelHandle), prefixJson);
+          try {
+            const actKey = (input.activity_key as string) ?? 'concept:name';
+            const modelHandle = wasm.build_remaining_time_model(logHandle, actKey, 'time:timestamp');
+            try {
+              const prefixJson = JSON.stringify(input.prefix as string[]);
+              const raw = wasm.predict_case_duration(String(modelHandle), prefixJson);
+              const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+              const prefix = input.prefix as string[];
+              const remainingMs = typeof parsed === 'number' ? parsed : (parsed?.remaining_ms ?? parsed?.prediction ?? 0);
+              const remainingHours = remainingMs / 1000 / 3600;
+              result = {
+                remaining_ms: remainingMs,
+                remaining_hours: parseFloat(remainingHours.toFixed(2)),
+                interpretation: remainingMs > 0
+                  ? `Based on cases with a similar prefix (${prefix.join('→')}), the expected remaining time is approximately ${remainingHours.toFixed(1)} hours.`
+                  : `No duration estimate available for prefix: ${prefix.join('→')}. The prefix may not appear in completed cases.`,
+                prefix,
+              };
+            } finally {
+              try { wasm.delete_object(String(modelHandle)); } catch { /* best-effort */ }
+            }
+          } finally {
+            try { wasm.delete_object(logHandle); } catch { /* best-effort */ }
+          }
           break;
         }
 
         case 'score_trace_anomaly': {
           const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
-          const dfgHandle = wasm.discover_dfg_handle(logHandle, 'concept:name');
-          const traceJson = JSON.stringify(input.trace as string[]);
-          result = wasm.score_trace_anomaly(String(dfgHandle), traceJson);
+          try {
+            const actKey = (input.activity_key as string) ?? 'concept:name';
+            const dfgHandle = wasm.discover_dfg_handle(logHandle, actKey);
+            try {
+              const trace = input.trace as string[];
+              const traceJson = JSON.stringify(trace);
+              const raw = wasm.score_trace_anomaly(String(dfgHandle), traceJson);
+              const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+              const score = typeof parsed === 'number' ? parsed : (parsed?.score ?? 0);
+              const isAnomalous = score > 0.5;
+              result = {
+                score: parseFloat(score.toFixed(4)),
+                is_anomalous: isAnomalous,
+                interpretation: isAnomalous
+                  ? `This trace is anomalous (score ${score.toFixed(3)} > 0.5). One or more transitions (${trace.join('→')}) are rare or absent in the reference process model. Consider reviewing this case for deviations.`
+                  : `This trace follows normal process patterns (score ${score.toFixed(3)} ≤ 0.5). All transitions appear in the reference model at expected frequencies.`,
+                trace,
+              };
+            } finally {
+              try { wasm.delete_object(String(dfgHandle)); } catch { /* best-effort */ }
+            }
+          } finally {
+            try { wasm.delete_object(logHandle); } catch { /* best-effort */ }
+          }
+          break;
+        }
+
+        // Concept Drift Detection
+        case 'detect_concept_drift': {
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
+          try {
+            const actKey = (input.activity_key as string) ?? 'concept:name';
+            const windowSize = (input.window_size as number) ?? 50;
+            const alpha = (input.alpha as number) ?? 0.3;
+            const driftRaw = wasm.detect_drift(logHandle, actKey, windowSize);
+            const driftResult = typeof driftRaw === 'string' ? JSON.parse(driftRaw) : driftRaw;
+            const drifts = driftResult?.drifts ?? [];
+            const driftCount = driftResult?.drifts_detected ?? drifts.length;
+            // Compute EWMA over drift distances
+            const distances = drifts.map((d: any) => d.distance ?? 0);
+            const ewmaRaw = distances.length > 0
+              ? wasm.compute_ewma(JSON.stringify(distances), alpha)
+              : null;
+            const ewmaResult = ewmaRaw
+              ? (typeof ewmaRaw === 'string' ? JSON.parse(ewmaRaw) : ewmaRaw)
+              : { trend: 'stable', last_value: 0, smoothed: [] };
+            const trend = ewmaResult?.trend ?? 'stable';
+            const ewmaValue = ewmaResult?.last_value ?? 0;
+            result = {
+              drifts_detected: driftCount,
+              drift_points: drifts,
+              trend,
+              ewma: parseFloat(ewmaValue.toFixed(4)),
+              interpretation: driftCount === 0
+                ? 'No concept drift detected in this log. The process appears stable across the observation period.'
+                : trend === 'rising'
+                  ? `Concept drift detected — ${driftCount} drift point(s) found and the EWMA trend is rising (${ewmaValue.toFixed(3)}). The process is actively changing. Investigate the most recent drift points for root cause.`
+                  : trend === 'falling'
+                    ? `${driftCount} historical drift point(s) detected, but the process appears to be stabilizing (EWMA trend falling to ${ewmaValue.toFixed(3)}).`
+                    : `${driftCount} drift point(s) detected. The EWMA is stable at ${ewmaValue.toFixed(3)}, suggesting historical change that has now plateaued.`,
+              window_size: windowSize,
+              alpha,
+            };
+          } finally {
+            try { wasm.delete_object(logHandle); } catch { /* best-effort */ }
+          }
           break;
         }
 
         // Feature Extraction
         case 'extract_case_features': {
           const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
-          const features = (input.features as string[]) || [
-            'trace_length',
-            'activity_counts',
-            'rework_count',
-          ];
-          const target = (input.target as string) || 'outcome';
-          const configJson = JSON.stringify({ features, target });
-          result = wasm.extract_case_features(
-            logHandle,
-            'concept:name',
-            'time:timestamp',
-            configJson
-          );
+          try {
+            const features = (input.features as string[]) || [
+              'trace_length',
+              'activity_counts',
+              'rework_count',
+            ];
+            const target = (input.target as string) || 'outcome';
+            const configJson = JSON.stringify({ features, target });
+            result = wasm.extract_case_features(
+              logHandle,
+              'concept:name',
+              'time:timestamp',
+              configJson
+            );
+          } finally {
+            try { wasm.delete_object(logHandle); } catch { /* best-effort */ }
+          }
           break;
         }
 

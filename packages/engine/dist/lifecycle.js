@@ -3,7 +3,7 @@
  * State machine and transition rules for engine lifecycle
  * Validates state transitions, enforces invariants, and emits lifecycle events
  */
-import { canTransition, getValidTransitions, TransitionValidator, } from './transitions';
+import { canTransition, getValidTransitions, TransitionValidator, } from './transitions.js';
 // Re-export for backward compatibility
 export { TransitionValidator };
 /**
