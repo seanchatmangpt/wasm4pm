@@ -21,7 +21,6 @@ uuid = { version = "1.16.0", features = ["v4"] }
 chrono = { version = "0.4.40", features = ["serde"] }
 console_error_panic_hook = "0.1"
 itertools = "0.14.0"
-indexmap = "2.0"
 rustc-hash = "2"
 smallvec = { version = "1.13", features = ["serde"] }
 roxmltree = "0.19"
