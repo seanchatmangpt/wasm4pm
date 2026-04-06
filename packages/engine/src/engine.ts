@@ -12,12 +12,12 @@ import {
   StatusUpdate,
   ErrorInfo,
 } from '@wasm4pm/types';
-import { StateMachine, TransitionValidator, LifecycleEvent } from './lifecycle';
-import { StatusTracker, formatStatus } from './status';
-import { WasmLoader, WasmLoaderConfig, WasmModule } from './wasm-loader';
-import { bootstrapEngine, createBootstrapError } from './bootstrap';
-import { WatchSession, WatchConfig, HeartbeatEvent } from './watch';
-import { Checkpoint } from './checkpointing';
+import { StateMachine, TransitionValidator, LifecycleEvent } from './lifecycle.js';
+import { StatusTracker, formatStatus } from './status.js';
+import { WasmLoader, WasmLoaderConfig, WasmModule } from './wasm-loader.js';
+import { bootstrapEngine, createBootstrapError } from './bootstrap.js';
+import { WatchSession, WatchConfig, HeartbeatEvent } from './watch.js';
+import { Checkpoint } from './checkpointing.js';
 import {
   ObservabilityWrapper,
   Instrumentation,

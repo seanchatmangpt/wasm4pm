@@ -5,7 +5,7 @@
  */
 
 import { StatusUpdate, EngineState, ExecutionPlan } from '@wasm4pm/types';
-import { CheckpointManager, Checkpoint } from './checkpointing';
+import { CheckpointManager, Checkpoint } from './checkpointing.js';
 
 /**
  * Configuration for watch mode

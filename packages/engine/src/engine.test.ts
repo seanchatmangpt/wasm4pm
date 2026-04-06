@@ -10,8 +10,8 @@ import {
   createFullEngine,
   StateMachine,
   StatusTracker,
-} from './index';
-import type { Kernel, Planner, Executor } from './engine';
+} from './index.js';
+import type { Kernel, Planner, Executor } from './engine.js';
 import type { ExecutionPlan, ExecutionReceipt } from '@wasm4pm/types';
 
 // Mock implementations

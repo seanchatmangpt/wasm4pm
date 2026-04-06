@@ -11,13 +11,11 @@ export { TransitionValidator };
  * Enforces valid state transitions and emits events for lifecycle changes
  */
 export class StateMachine {
-    constructor() {
-        this.currentState = 'uninitialized';
-        this.listeners = new Set();
-        this.transitionHistory = [];
-        this.lastTransitionTime = null;
-        this.stateEnteredAt = new Date();
-    }
+    currentState = 'uninitialized';
+    listeners = new Set();
+    transitionHistory = [];
+    lastTransitionTime = null;
+    stateEnteredAt = new Date();
     /**
      * Gets the current state
      */

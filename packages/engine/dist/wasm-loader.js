@@ -20,8 +20,14 @@ export var WasmErrorCode;
  * Handles panic hooks, memory validation, and runtime detection
  */
 export class WasmLoader {
+    static instance;
+    module;
+    initialized = false;
+    config;
+    observability;
+    panicHook;
+    runtimeEnvironment;
     constructor(config = {}) {
-        this.initialized = false;
         this.config = config;
         this.observability = config.observability || new ObservabilityLayer();
         this.runtimeEnvironment = this.detectRuntimeEnvironment();
@@ -224,8 +230,8 @@ export class WasmLoader {
             const message = err instanceof Error ? err.message : String(err);
             throw new Error(`Failed to load WASM module: ${message}`);
         }
-        if (!wasmModule || typeof wasmModule !== "object") {
-            const hasExports = typeof wasmModule.load_eventlog_from_xes === "function" || Object.keys(wasmModule).length > 5; if (!hasExports) throw new Error("Invalid WASM module: no process mining exports found");
+        if (!wasmModule || !wasmModule.memory) {
+            throw new Error('Invalid WASM module: missing memory or exports');
         }
         return wasmModule;
     }
