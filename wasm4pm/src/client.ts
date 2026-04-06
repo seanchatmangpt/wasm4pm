@@ -168,6 +168,24 @@ export class ProcessMiningClient {
   }
 
   /**
+   * Build a Remaining Time Model from a completed EventLog.
+   * Fits a Weibull survival model and per-bucket statistics.
+   * @param log - handle to a loaded EventLog
+   * @param activityKey - attribute holding the activity name (default: 'concept:name')
+   * @param timestampKey - attribute holding the timestamp (default: 'time:timestamp')
+   */
+  buildRemainingTimeModel(
+    log: EventLogHandle,
+    options: { activityKey?: string; timestampKey?: string } = {}
+  ): RemainingTimeModelHandle {
+    if (!this.initialized) throw new Error('Client not initialized. Call init() first.');
+    const activityKey = options.activityKey || 'concept:name';
+    const timestampKey = options.timestampKey || 'time:timestamp';
+    const handle = this.wasmModule!.build_remaining_time_model(log.getId(), activityKey, timestampKey);
+    return new RemainingTimeModelHandle(handle as string, this.wasmModule!);
+  }
+
+  /**
    * Begin a Streaming DFG builder
    */
   beginStreamingDFG(): StreamingDFGHandle {
@@ -1135,7 +1153,7 @@ export class NGramPredictorHandle {
   }
 
   /**
-   * Predict the next activity given a prefix of activities
+   * Predict the next activity given a prefix of activities (simple, returns raw value)
    * @param prefix - array of activity names forming the prefix
    */
   predictNextActivity(prefix: string[]): any {
@@ -1143,11 +1161,85 @@ export class NGramPredictorHandle {
   }
 
   /**
-   * Score the likelihood of a complete trace
+   * Predict top-k next activities with probabilities, confidence, and entropy.
+   * Returns `{ activities: string[], probabilities: number[], confidence: number, entropy: number }`
+   * @param prefix - array of activity names forming the current prefix
+   * @param k - number of top candidates to return
+   */
+  predictNextK(prefix: string[], k: number): any {
+    return JSON.parse(this.wasmModule.predict_next_k(this.handle, JSON.stringify(prefix), k));
+  }
+
+  /**
+   * Beam-search future paths from the current prefix.
+   * Returns an array of `{ sequence: string[], probability: number, length: number }`
+   * sorted by descending probability.
+   * @param prefix - array of activity names forming the current prefix
+   * @param beamWidth - number of beams (candidate paths) to keep at each step
+   * @param maxSteps - maximum number of future activities to project
+   */
+  predictBeamPaths(prefix: string[], beamWidth: number, maxSteps: number): any {
+    return JSON.parse(this.wasmModule.predict_beam_paths(this.handle, JSON.stringify(prefix), beamWidth, maxSteps));
+  }
+
+  /**
+   * Score the likelihood of a complete trace (returns plain log-probability float).
    * @param activities - array of activity names in the trace
    */
   scoreTraceLikelihood(activities: string[]): any {
     return this.wasmModule.score_trace_likelihood(this.handle, JSON.stringify(activities));
+  }
+
+  /**
+   * Score trace likelihood with structured output.
+   * Returns `{ log_likelihood: number, normalized: number }`
+   * @param activities - array of activity names in the trace
+   */
+  computeTraceLikelihood(activities: string[]): any {
+    return this.wasmModule.compute_trace_likelihood(this.handle, JSON.stringify(activities));
+  }
+
+  delete(): void {
+    this.wasmModule.delete_object(this.handle);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// RemainingTimeModelHandle
+// ---------------------------------------------------------------------------
+
+/**
+ * Handle to a Remaining Time Model stored in WASM memory.
+ * Answers "When will this case complete?"
+ *
+ * Build with `ProcessMiningClient.buildRemainingTimeModel()`.
+ */
+export class RemainingTimeModelHandle {
+  constructor(
+    private handle: string,
+    private wasmModule: typeof WasmModule
+  ) {}
+
+  getId(): string {
+    return this.handle;
+  }
+
+  /**
+   * Estimate remaining time for a running case given its activity prefix.
+   * Returns `{ remaining_ms: number, confidence: number, method: string }`
+   * @param prefix - array of activity names observed so far
+   */
+  predictCaseDuration(prefix: string[]): any {
+    return this.wasmModule.predict_case_duration(this.handle, JSON.stringify(prefix));
+  }
+
+  /**
+   * Instantaneous hazard rate at a given elapsed time.
+   * Returns `{ hazard_rate, survival_probability, cumulative_hazard, median_remaining_ms, shape, scale }`
+   * @param elapsedMs - milliseconds elapsed since case start
+   */
+  predictHazardRate(elapsedMs: number): any {
+    return this.wasmModule.predict_hazard_rate(this.handle, elapsedMs);
   }
 
   delete(): void {
@@ -1402,4 +1494,156 @@ export async function encodeModelComparisonAsText(
   } catch (error) {
     throw new Error(`Failed to encode model comparison as text: ${error}`);
   }
+}
+
+// =============================================================================
+// Van der Aalst Prediction API — standalone functions
+// =============================================================================
+// These wrap the six perspective modules introduced in Phase 4.
+// They all require the global WASM module (call initializeWasmModule() first).
+
+// ---------------------------------------------------------------------------
+// Outcome prediction (answers "Does this case complete normally?")
+// ---------------------------------------------------------------------------
+
+/**
+ * Score how anomalous a trace is relative to a DFG model.
+ * Returns `{ score: number [0–1], is_anomalous: boolean, threshold: number }`
+ * @param dfgHandle - handle to a discovered DFG
+ * @param trace - array of activity names
+ */
+export function scoreAnomaly(dfgHandle: DFGHandle, trace: string[]): any {
+  if (!wasmModuleGlobal) throw new Error('WASM module not initialized');
+  return wasmModuleGlobal.score_anomaly(dfgHandle.getId(), JSON.stringify(trace));
+}
+
+/**
+ * Estimate the probability that a running case completes normally given its prefix.
+ * Returns `{ coverage: number [0–1], matching_traces: number, normal_completions: number }`
+ * @param logHandle - handle to a completed EventLog used as reference
+ * @param prefix - activity prefix of the running case
+ * @param activityKey - attribute key for the activity name
+ */
+export function computeBoundaryCoverage(
+  logHandle: EventLogHandle,
+  prefix: string[],
+  activityKey: string = 'concept:name'
+): any {
+  if (!wasmModuleGlobal) throw new Error('WASM module not initialized');
+  return wasmModuleGlobal.compute_boundary_coverage(logHandle.getId(), JSON.stringify(prefix), activityKey);
+}
+
+// ---------------------------------------------------------------------------
+// Drift detection (answers "Has the process changed?")
+// ---------------------------------------------------------------------------
+
+/**
+ * Detect where process behaviour shifts in an event log using a sliding window.
+ * Returns `{ drifts_detected: number, drifts: [{position, distance, type}], window_size, method }`
+ * @param logHandle - handle to an EventLog
+ * @param activityKey - attribute key for the activity name
+ * @param windowSize - number of traces per window (default 10)
+ */
+export function detectDrift(
+  logHandle: EventLogHandle,
+  activityKey: string = 'concept:name',
+  windowSize: number = 10
+): any {
+  if (!wasmModuleGlobal) throw new Error('WASM module not initialized');
+  return JSON.parse(wasmModuleGlobal.detect_drift(logHandle.getId(), activityKey, windowSize));
+}
+
+/**
+ * Compute Exponential Moving Average over a numeric series.
+ * Returns `{ smoothed: number[], trend: "rising"|"falling"|"stable", last_value: number }`
+ * @param values - time-series of numeric values (e.g. throughput times)
+ * @param alpha - smoothing factor in (0,1]; 0.3 is a good default
+ */
+export function computeEwma(values: number[], alpha: number = 0.3): any {
+  if (!wasmModuleGlobal) throw new Error('WASM module not initialized');
+  return JSON.parse(wasmModuleGlobal.compute_ewma(JSON.stringify(values), alpha));
+}
+
+// ---------------------------------------------------------------------------
+// Feature extraction (answers "What describes this case?")
+// ---------------------------------------------------------------------------
+
+/**
+ * Extract numeric features from a case prefix for ML or bandit models.
+ * Returns `{ length, last_activity, unique_activities, rework_count, activity_frequency_entropy }`
+ * @param prefix - array of activity names observed so far
+ */
+export function extractPrefixFeatures(prefix: string[]): any {
+  if (!wasmModuleGlobal) throw new Error('WASM module not initialized');
+  return wasmModuleGlobal.extract_prefix_features_wasm(JSON.stringify(prefix));
+}
+
+/**
+ * Count consecutive repeated activities (loops/rework) in a trace.
+ * Returns `{ rework_count, rework_ratio, repeated_pairs: string[] }`
+ * @param trace - array of activity names
+ */
+export function computeReworkScore(trace: string[]): any {
+  if (!wasmModuleGlobal) throw new Error('WASM module not initialized');
+  return wasmModuleGlobal.compute_rework_score(JSON.stringify(trace));
+}
+
+/**
+ * Build a transition probability graph (probabilistic DFG) from an event log.
+ * Returns `{ edges: [{from, to, probability, count}], activities: string[] }`
+ * @param logHandle - handle to an EventLog
+ * @param activityKey - attribute key for the activity name
+ */
+export function buildTransitionProbabilities(
+  logHandle: EventLogHandle,
+  activityKey: string = 'concept:name'
+): any {
+  if (!wasmModuleGlobal) throw new Error('WASM module not initialized');
+  return wasmModuleGlobal.build_transition_probabilities(logHandle.getId(), activityKey);
+}
+
+// ---------------------------------------------------------------------------
+// Resource & intervention (answers "What should we do?")
+// ---------------------------------------------------------------------------
+
+/**
+ * Estimate average wait time using the M/M/1 queueing model.
+ * Returns `{ wait_time: number, utilization: number, is_stable: boolean }`
+ * @param arrivalRate - events arriving per unit time
+ * @param serviceRate - events processed per unit time
+ */
+export function estimateQueueDelay(arrivalRate: number, serviceRate: number): any {
+  if (!wasmModuleGlobal) throw new Error('WASM module not initialized');
+  return wasmModuleGlobal.estimate_queue_delay(arrivalRate, serviceRate);
+}
+
+/**
+ * Rank intervention options using a greedy UCB-like heuristic.
+ * Returns an array of `{ name, score, rank }` sorted by descending score.
+ * @param interventions - array of `{ name: string, utility: number }` objects
+ * @param exploitationWeight - 0–1; higher = favour top utility (default 0.7)
+ */
+export function rankInterventions(
+  interventions: Array<{ name: string; utility: number }>,
+  exploitationWeight: number = 0.7
+): any {
+  if (!wasmModuleGlobal) throw new Error('WASM module not initialized');
+  return wasmModuleGlobal.rank_interventions(JSON.stringify(interventions), exploitationWeight);
+}
+
+/**
+ * Select the next intervention using the UCB1 multi-armed bandit algorithm.
+ * Returns `{ selected: string, arm_index, ucb_score, mean_reward, exploration_bonus }`
+ * @param banditState - `{ arms: [{name, total_reward, pull_count}], total_pulls }`
+ * @param explorationFactor - controls exploration vs exploitation (default √2 ≈ 1.414)
+ */
+export function selectIntervention(
+  banditState: {
+    arms: Array<{ name: string; total_reward: number; pull_count: number }>;
+    total_pulls: number;
+  },
+  explorationFactor: number = Math.SQRT2
+): any {
+  if (!wasmModuleGlobal) throw new Error('WASM module not initialized');
+  return wasmModuleGlobal.select_intervention(JSON.stringify(banditState), explorationFactor);
 }

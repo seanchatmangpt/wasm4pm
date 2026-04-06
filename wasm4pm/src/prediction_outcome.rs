@@ -148,8 +148,11 @@ pub fn compute_boundary_coverage(
 ///
 /// Returns `{ log_likelihood: number, normalized: number }`.
 /// `log_likelihood` is the raw sum of log-probabilities; `normalized` divides by the number of steps.
+///
+/// Unlike `score_trace_likelihood` in the base prediction module (which returns a plain float),
+/// this returns a structured object with both raw and normalised values.
 #[wasm_bindgen]
-pub fn score_trace_likelihood(
+pub fn compute_trace_likelihood(
     model_handle: &str,
     trace_json: &str,
 ) -> Result<JsValue, JsValue> {

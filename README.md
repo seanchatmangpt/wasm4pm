@@ -44,6 +44,25 @@ Process mining extracts actionable insights from event logs by discovering proce
 - **Engine Lifecycle** - State machine for controlled algorithm execution
 - **Observability** - Non-blocking logging with console, file, HTTP sinks
 
+### Predictive Process Mining (NEW in Phase 4)
+18 prediction algorithms organized by Van der Aalst process mining perspectives:
+
+| Perspective | Question | Algorithms |
+|-------------|----------|-----------|
+| **Next Activity** | What happens next? | Top-k prediction, beam search |
+| **Remaining Time** | When does it finish? | Weibull regression, hazard rate |
+| **Outcome** | Does it complete normally? | Anomaly score, boundary coverage, trace likelihood |
+| **Drift** | Has the process changed? | EWMA, Jaccard window detection |
+| **Features** | What describes this case? | Prefix features, rework score, transition graph |
+| **Resource** | What should we do? | M/M/1 queue model, UCB1 bandit, intervention ranking |
+
+Run predictions from the CLI:
+```bash
+pmctl predict next-activity --input log.xes
+pmctl predict drift --input log.xes
+pmctl predict features --input log.xes --prefix '["A","B","C"]'
+```
+
 ### 20+ Analytics Functions
 Analyze process characteristics:
 - Trace variants and sequential patterns
