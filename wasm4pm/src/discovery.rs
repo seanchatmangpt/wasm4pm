@@ -70,6 +70,65 @@ pub fn discover_dfg(
     })
 }
 
+/// Discover a DFG and store it in WASM state, returning a handle string.
+///
+/// Identical to `discover_dfg` but stores the result internally so that
+/// handle-based functions (e.g. `score_anomaly`) can reference it.
+#[wasm_bindgen]
+pub fn discover_dfg_handle(
+    eventlog_handle: &str,
+    activity_key: &str,
+) -> Result<JsValue, JsValue> {
+    let dfg = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
+        Some(StoredObject::EventLog(log)) => {
+            let mut dfg = DirectlyFollowsGraph::new();
+            let col = log.to_columnar(activity_key);
+
+            dfg.nodes.extend(col.vocab.iter().map(|&act| DFGNode {
+                id: act.to_owned(),
+                label: act.to_owned(),
+                frequency: 0,
+            }));
+
+            let mut edge_counts: FxHashMap<(u32, u32), usize> = FxHashMap::default();
+
+            for t in 0..col.trace_offsets.len().saturating_sub(1) {
+                let start = col.trace_offsets[t];
+                let end   = col.trace_offsets[t + 1];
+                if start >= end { continue; }
+
+                for &id in &col.events[start..end] {
+                    dfg.nodes[id as usize].frequency += 1;
+                }
+                for i in start..end - 1 {
+                    *edge_counts.entry((col.events[i], col.events[i + 1])).or_insert(0) += 1;
+                }
+                *dfg.start_activities
+                    .entry(col.vocab[col.events[start] as usize].to_owned())
+                    .or_insert(0) += 1;
+                *dfg.end_activities
+                    .entry(col.vocab[col.events[end - 1] as usize].to_owned())
+                    .or_insert(0) += 1;
+            }
+
+            dfg.edges.extend(edge_counts.into_iter().map(|((f, t), freq)| {
+                DirectlyFollowsRelation {
+                    from: col.vocab[f as usize].to_owned(),
+                    to:   col.vocab[t as usize].to_owned(),
+                    frequency: freq,
+                }
+            }));
+
+            Ok(dfg)
+        }
+        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
+        None => Err(wasm_err(codes::INVALID_HANDLE, format!("EventLog '{}' not found", eventlog_handle))),
+    })?;
+
+    let handle = get_or_init_state().store_object(StoredObject::DirectlyFollowsGraph(dfg))?;
+    Ok(JsValue::from_str(&handle))
+}
+
 /// Discover a Directly-Follows Graph (DFG) from an OCEL
 #[wasm_bindgen]
 pub fn discover_ocel_dfg(ocel_handle: &str) -> Result<JsValue, JsValue> {
