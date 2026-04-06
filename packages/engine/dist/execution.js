@@ -226,6 +226,77 @@ export async function executePlan(plan, dispatcher, runId, onProgress) {
                 // Continue if optional step failed
             }
         }
+        // --- Prediction phase ---
+        // After discovery steps, run prediction tasks if configured
+        const predictionResults = {};
+        if (plan.prediction && plan.prediction.tasks.length > 0) {
+            const { tasks, activityKey, ngramOrder, driftWindowSize } = plan.prediction;
+            onProgress?.({
+                state: 'running',
+                progress: 100,
+                message: `Running prediction phase (${tasks.length} tasks)`,
+            });
+            // Step 1: Build n-gram predictor model
+            const ngramStep = {
+                id: 'prediction:build_ngram',
+                name: 'build_ngram_predictor',
+                inputs: { activityKey, ngramOrder },
+                optional: true,
+            };
+            const ngramContext = {
+                planId: plan.planId,
+                runId,
+                stepIndex: executionOrder.length,
+                totalSteps: executionOrder.length + tasks.length + 1,
+                previousResults: new Map(previousResults),
+            };
+            try {
+                const ngramResult = await dispatcher.dispatch(ngramStep, ngramContext);
+                previousResults.set(ngramStep.id, ngramResult);
+                if (ngramResult.success) {
+                    predictionResults['ngram_model'] = ngramResult.output;
+                }
+            }
+            catch {
+                // n-gram build is optional; continue with individual tasks
+            }
+            // Step 2: Run each requested prediction task
+            for (let t = 0; t < tasks.length; t++) {
+                const task = tasks[t];
+                const predStep = {
+                    id: `prediction:${task}`,
+                    name: taskToKernelCall(task),
+                    inputs: { activityKey, ngramOrder, driftWindowSize },
+                    optional: true,
+                };
+                const predContext = {
+                    planId: plan.planId,
+                    runId,
+                    stepIndex: executionOrder.length + 1 + t,
+                    totalSteps: executionOrder.length + tasks.length + 1,
+                    previousResults: new Map(previousResults),
+                };
+                try {
+                    const result = await dispatcher.dispatch(predStep, predContext);
+                    previousResults.set(predStep.id, result);
+                    if (result.success) {
+                        predictionResults[task] = result.output;
+                    }
+                    else if (result.error) {
+                        errors.push(result.error);
+                    }
+                }
+                catch (err) {
+                    errors.push({
+                        code: 'PREDICTION_TASK_FAILED',
+                        message: `Prediction task '${task}' failed: ${err instanceof Error ? err.message : String(err)}`,
+                        severity: 'warning',
+                        recoverable: true,
+                        context: { task },
+                    });
+                }
+            }
+        }
         const finishedAt = new Date();
         return {
             runId,
@@ -236,6 +307,7 @@ export async function executePlan(plan, dispatcher, runId, onProgress) {
             durationMs: finishedAt.getTime() - startedAt.getTime(),
             progress: 100,
             errors,
+            ...(Object.keys(predictionResults).length > 0 && { predictionResults }),
         };
     }
     catch (err) {
@@ -263,6 +335,20 @@ export async function executePlan(plan, dispatcher, runId, onProgress) {
             progress: Math.round((stepsCompleted / plan.totalSteps) * 100),
             errors,
         };
+    }
+}
+/**
+ * Maps a prediction task name to the corresponding kernel call name
+ */
+function taskToKernelCall(task) {
+    switch (task) {
+        case 'drift': return 'detect_concept_drift';
+        case 'features': return 'build_transition_probabilities';
+        case 'next_activity': return 'predict_next_activity';
+        case 'remaining_time': return 'predict_remaining_time';
+        case 'outcome': return 'predict_outcome';
+        case 'resource': return 'predict_resource';
+        default: return task;
     }
 }
 /**

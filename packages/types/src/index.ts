@@ -12,6 +12,12 @@ export interface ExecutionPlan {
   totalSteps: number;
   estimatedDurationMs?: number;
   metadata?: Record<string, unknown>;
+  prediction?: {
+    tasks: string[];        // ['next_activity', 'drift', 'outcome', ...]
+    activityKey: string;
+    ngramOrder: number;
+    driftWindowSize?: number;
+  };
 }
 
 /**
@@ -92,4 +98,5 @@ export interface ExecutionReceipt {
   progress: number;
   errors: ErrorInfo[];
   metadata?: Record<string, unknown>;
+  predictionResults?: Record<string, unknown>;
 }

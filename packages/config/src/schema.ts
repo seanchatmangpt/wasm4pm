@@ -77,6 +77,16 @@ export const executionConfigSchema = z.object({
   maxMemory: z.number().int().positive().optional(),
 }).describe('Execution configuration');
 
+export const predictionConfigSchema = z.object({
+  enabled: z.boolean().default(false),
+  activityKey: z.string().default('concept:name'),
+  ngramOrder: z.number().int().min(2).max(5).default(2),
+  driftWindowSize: z.number().int().positive().default(10),
+  tasks: z.array(
+    z.enum(['next_activity', 'remaining_time', 'outcome', 'drift', 'features', 'resource'])
+  ).default([]),
+}).describe('Prediction configuration — which prediction tasks to run');
+
 // --- Root Schema ---
 
 export const configSchema = z.object({
@@ -89,6 +99,7 @@ export const configSchema = z.object({
   observability: observabilityConfigSchema.default({}),
   watch: watchConfigSchema.optional(),
   output: outputConfigSchema.default({}),
+  prediction: predictionConfigSchema.optional(),
 }).describe('wasm4pm configuration');
 
 /**
@@ -204,6 +215,14 @@ function zodToJsonSchema(schema: z.ZodTypeAny): Record<string, unknown> {
         type: 'object',
         additionalProperties: zodToJsonSchema(def.valueType),
       };
+    }
+    case 'ZodArray': {
+      const result: Record<string, unknown> = {
+        type: 'array',
+        items: zodToJsonSchema(def.type),
+      };
+      if (def.description) result.description = def.description;
+      return result;
     }
     case 'ZodUnknown':
       return {};

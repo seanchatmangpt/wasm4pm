@@ -11,6 +11,12 @@ export interface ExecutionPlan {
     totalSteps: number;
     estimatedDurationMs?: number;
     metadata?: Record<string, unknown>;
+    prediction?: {
+        tasks: string[];
+        activityKey: string;
+        ngramOrder: number;
+        driftWindowSize?: number;
+    };
 }
 /**
  * Individual step in an execution plan
@@ -77,5 +83,6 @@ export interface ExecutionReceipt {
     progress: number;
     errors: ErrorInfo[];
     metadata?: Record<string, unknown>;
+    predictionResults?: Record<string, unknown>;
 }
 //# sourceMappingURL=index.d.ts.map
