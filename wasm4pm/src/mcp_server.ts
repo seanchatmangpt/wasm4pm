@@ -218,7 +218,8 @@ export class Wasm4pmMCPServer {
       },
       {
         name: 'detect_concept_drift',
-        description: 'Detect if the process changes over time (concept drift).',
+        description:
+          'Detect if and where the process changes over time (concept drift) using Jaccard-window analysis. Returns drift points with positions and distances. Claude uses this to answer "Has this process changed over time?"',
         inputSchema: {
           type: 'object' as const,
           properties: {
@@ -228,7 +229,7 @@ export class Wasm4pmMCPServer {
             },
             window_size: {
               type: 'number',
-              description: 'Window size for drift detection. Default: 100',
+              description: 'Number of traces per sliding window. Default: 5',
             },
           },
           required: ['xes_content'],
@@ -355,6 +356,75 @@ export class Wasm4pmMCPServer {
           required: ['ocel_handle'],
         },
       },
+      // Predictive Process Mining
+      {
+        name: 'predict_next_activity',
+        description:
+          'Given an activity prefix, predict the top-k most likely next activities with probabilities. Builds an n-gram model from the log on-the-fly. Claude uses this to answer "Given Submit→Review, what comes next?"',
+        inputSchema: {
+          type: 'object' as const,
+          properties: {
+            xes_content: {
+              type: 'string',
+              description: 'XES event log content used to train the predictor',
+            },
+            prefix: {
+              type: 'array',
+              items: { type: 'string' },
+              description: 'Sequence of activity names seen so far, e.g. ["Register", "Check"]',
+            },
+            k: {
+              type: 'number',
+              description: 'Number of top candidates to return. Default: 5',
+            },
+            n: {
+              type: 'number',
+              description: 'N-gram context size (how many preceding activities to use). Default: 2',
+            },
+          },
+          required: ['xes_content', 'prefix'],
+        },
+      },
+      {
+        name: 'predict_case_duration',
+        description:
+          'Predict the remaining time (ms) for a running case given its activity prefix. Builds a bucket-based remaining-time model from the log. Claude uses this to answer "How long until this case closes?"',
+        inputSchema: {
+          type: 'object' as const,
+          properties: {
+            xes_content: {
+              type: 'string',
+              description: 'XES event log content used to train the model (completed cases)',
+            },
+            prefix: {
+              type: 'array',
+              items: { type: 'string' },
+              description: 'Activity names executed so far in the running case',
+            },
+          },
+          required: ['xes_content', 'prefix'],
+        },
+      },
+      {
+        name: 'score_trace_anomaly',
+        description:
+          'Score a trace (sequence of activity names) for anomaly against the reference DFG discovered from the log. Returns a normalized 0-1 score and an is_anomalous flag. Claude uses this to answer "Is this trace unusual?"',
+        inputSchema: {
+          type: 'object' as const,
+          properties: {
+            xes_content: {
+              type: 'string',
+              description: 'XES event log content used as reference (the "normal" process)',
+            },
+            trace: {
+              type: 'array',
+              items: { type: 'string' },
+              description: 'The trace to evaluate, e.g. ["Register", "Skip Approval", "Close"]',
+            },
+          },
+          required: ['xes_content', 'trace'],
+        },
+      },
       // Feature Extraction
       {
         name: 'extract_case_features',
@@ -463,8 +533,8 @@ export class Wasm4pmMCPServer {
 
         case 'detect_concept_drift': {
           const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
-          const windowSize = (input.window_size as number) ?? 100;
-          result = wasm.detect_concept_drift(logHandle, 'concept:name', windowSize);
+          const windowSize = (input.window_size as number) ?? 5;
+          result = wasm.detect_drift(logHandle, 'concept:name', windowSize);
           break;
         }
 
@@ -525,6 +595,33 @@ export class Wasm4pmMCPServer {
 
         case 'encode_ocel_as_text': {
           result = wasm.encode_ocel_summary_as_text(input.ocel_handle as string);
+          break;
+        }
+
+        // Predictive Process Mining
+        case 'predict_next_activity': {
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
+          const n = (input.n as number) ?? 2;
+          const k = (input.k as number) ?? 5;
+          const predictorHandle = wasm.build_ngram_predictor(logHandle, 'concept:name', n);
+          const prefixJson = JSON.stringify(input.prefix as string[]);
+          result = wasm.predict_next_k(String(predictorHandle), prefixJson, k);
+          break;
+        }
+
+        case 'predict_case_duration': {
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
+          const modelHandle = wasm.build_remaining_time_model(logHandle, 'concept:name', 'time:timestamp');
+          const prefixJson = JSON.stringify(input.prefix as string[]);
+          result = wasm.predict_case_duration(String(modelHandle), prefixJson);
+          break;
+        }
+
+        case 'score_trace_anomaly': {
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
+          const dfgHandle = wasm.discover_dfg_handle(logHandle, 'concept:name');
+          const traceJson = JSON.stringify(input.trace as string[]);
+          result = wasm.score_trace_anomaly(String(dfgHandle), traceJson);
           break;
         }
 
