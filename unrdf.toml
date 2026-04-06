@@ -1,0 +1,142 @@
+[project]
+name = "wasm4pm"
+version = "26.4.5"
+
+[ontology]
+source = "/Users/sac/ostar/ontology/core/wasm4pm_surface.ttl"
+format = "turtle"
+
+[generation]
+output_dir = "."
+templates_dir = "./templates"
+
+[[generation.rules]]
+name = "algorithms-reference"
+description = "Full tool table grouped by performance tier with input/output formats, OCEL support, and baseline duration"
+query = """
+PREFIX wasm4pm: <urn:wasm4pm:>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+SELECT ?toolId ?label ?tier ?inputFormat ?outputFormat ?supportsOCEL ?durationMs
+WHERE {
+  ?tool a wasm4pm:Tool ;
+        wasm4pm:toolId ?toolId ;
+        skos:prefLabel ?label ;
+        wasm4pm:performanceTier ?tierIRI ;
+        wasm4pm:inputFormat ?inputFormat ;
+        wasm4pm:outputFormat ?outputFormat ;
+        wasm4pm:supportsOCEL ?supportsOCEL ;
+        wasm4pm:durationMs ?durationMs .
+  BIND(STRAFTER(STR(?tierIRI), "urn:wasm4pm:") AS ?tier)
+}
+ORDER BY ?tier ?durationMs
+"""
+template = "./templates/algorithms-reference.njk"
+output_file = "docs/reference/algorithms.md"
+enabled = true
+mode = "overwrite"
+
+[[generation.rules]]
+name = "http-api-reference"
+description = "HTTP endpoint table with toolId, human label, endpoint path, and input format for the Kubernetes service"
+query = """
+PREFIX wasm4pm: <urn:wasm4pm:>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+SELECT ?toolId ?label ?endpoint ?inputFormat ?outputFormat
+WHERE {
+  ?tool a wasm4pm:Tool ;
+        wasm4pm:toolId ?toolId ;
+        skos:prefLabel ?label ;
+        wasm4pm:k8sEndpoint ?endpoint ;
+        wasm4pm:inputFormat ?inputFormat ;
+        wasm4pm:outputFormat ?outputFormat .
+}
+ORDER BY ?endpoint
+"""
+template = "./templates/http-api-reference.njk"
+output_file = "docs/reference/http-api.md"
+enabled = true
+mode = "overwrite"
+
+[[generation.rules]]
+name = "benchmarks-reference"
+description = "Performance table ordered by baseline duration with computed SLA budgets per tier"
+query = """
+PREFIX wasm4pm: <urn:wasm4pm:>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+SELECT ?toolId ?label ?tier ?durationMs
+WHERE {
+  ?tool a wasm4pm:Tool ;
+        wasm4pm:toolId ?toolId ;
+        skos:prefLabel ?label ;
+        wasm4pm:performanceTier ?tierIRI ;
+        wasm4pm:durationMs ?durationMs .
+  BIND(STRAFTER(STR(?tierIRI), "urn:wasm4pm:") AS ?tier)
+}
+ORDER BY ?durationMs
+"""
+template = "./templates/benchmarks-reference.njk"
+output_file = "docs/reference/benchmarks.md"
+enabled = true
+mode = "overwrite"
+
+[[generation.rules]]
+name = "tool-catalog"
+description = "TypeScript catalog of all wasm4pm tools with typed constants, a ToolSpec record, and helper functions"
+query = """
+PREFIX wasm4pm: <urn:wasm4pm:>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+SELECT ?toolId ?label ?tier ?inputFormat ?outputFormat ?supportsOCEL ?requiresHandle ?durationMs ?endpoint
+WHERE {
+  ?tool a wasm4pm:Tool ;
+        wasm4pm:toolId ?toolId ;
+        skos:prefLabel ?label ;
+        wasm4pm:performanceTier ?tierIRI ;
+        wasm4pm:inputFormat ?inputFormat ;
+        wasm4pm:outputFormat ?outputFormat ;
+        wasm4pm:supportsOCEL ?supportsOCEL ;
+        wasm4pm:requiresHandle ?requiresHandle ;
+        wasm4pm:durationMs ?durationMs ;
+        wasm4pm:k8sEndpoint ?endpoint .
+  BIND(STRAFTER(STR(?tierIRI), "urn:wasm4pm:") AS ?tier)
+}
+ORDER BY ?toolId
+"""
+template = "./templates/tool-catalog.njk"
+output_file = "packages/templates/src/index.ts"
+enabled = true
+mode = "overwrite"
+
+[[generation.rules]]
+name = "tool-capabilities-matrix"
+description = "Full capability matrix for all 18 tools grouped by tier, with summary counts — primary reference for README"
+query = """
+PREFIX wasm4pm: <urn:wasm4pm:>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+SELECT ?toolId ?label ?tier ?inputFormat ?supportsOCEL ?requiresHandle ?durationMs
+WHERE {
+  ?tool a wasm4pm:Tool ;
+        wasm4pm:toolId ?toolId ;
+        skos:prefLabel ?label ;
+        wasm4pm:performanceTier ?tierIRI ;
+        wasm4pm:inputFormat ?inputFormat ;
+        wasm4pm:supportsOCEL ?supportsOCEL ;
+        wasm4pm:requiresHandle ?requiresHandle ;
+        wasm4pm:durationMs ?durationMs .
+  BIND(STRAFTER(STR(?tierIRI), "urn:wasm4pm:") AS ?tier)
+}
+ORDER BY ?tier ?durationMs
+"""
+template = "./templates/tool-capabilities-matrix.njk"
+output_file = "docs/TOOLS.md"
+enabled = true
+mode = "overwrite"

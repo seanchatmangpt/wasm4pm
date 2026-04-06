@@ -390,7 +390,7 @@ npm cache clean --force
 npm install wasm4pm
 
 # Or specify version
-npm install wasm4pm@0.5.4
+npm install wasm4pm@26.4.5
 ```
 
 ### Q: TypeScript "module not found" error
@@ -412,11 +412,11 @@ npm install wasm4pm@0.5.4
 ### Q: How do I modify wasm4pm source?
 **A:**
 ```bash
-cd process_mining_wasm
-npm install
+cd wasm4pm
+pnpm install
 # Edit src/lib.rs, src/discovery.rs, etc.
-npm run build:dev
-npm test
+pnpm run build:dev
+pnpm test
 ```
 
 ### Q: Can I extend wasm4pm?

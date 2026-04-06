@@ -808,5 +808,5 @@ When publishing benchmarks using these datasets, cite the original sources:
 ---
 
 **Last Updated**: April 2026
-**Status**: Production-ready for wasm4pm v0.5.4+
+**Status**: Production-ready for wasm4pm v26.4.5+
 **Maintained by**: wasm4pm project
