@@ -243,6 +243,11 @@ export class WasmLoader {
       throw new Error('Module not loaded');
     }
 
+    // wasm-pack bundler target does not expose .memory directly — skip if absent
+    if (!this.module.memory) {
+      return;
+    }
+
     try {
       const buffer = this.module.memory.buffer;
 
@@ -295,7 +300,7 @@ export class WasmLoader {
       // Import from the built wasm4pm package
       // Path is relative to where this file runs
       const modulePath = this.config.modulePath ||
-        '../../wasm4pm/pkg/wasm4pm.js';
+        '../../../wasm4pm/pkg/wasm4pm.js';
 
       // Use dynamic import for flexibility
       wasmModule = await import(modulePath);

@@ -167,6 +167,10 @@ export class WasmLoader {
         if (!this.module) {
             throw new Error('Module not loaded');
         }
+        // wasm-pack bundler target does not expose .memory directly — skip if absent
+        if (!this.module.memory) {
+            return;
+        }
         try {
             const buffer = this.module.memory.buffer;
             // Check memory is accessible
@@ -212,7 +216,7 @@ export class WasmLoader {
             // Import from the built wasm4pm package
             // Path is relative to where this file runs
             const modulePath = this.config.modulePath ||
-                '../../wasm4pm/pkg/wasm4pm.js';
+                '../../../wasm4pm/pkg/wasm4pm.js';
             // Use dynamic import for flexibility
             wasmModule = await import(modulePath);
         }
@@ -220,8 +224,8 @@ export class WasmLoader {
             const message = err instanceof Error ? err.message : String(err);
             throw new Error(`Failed to load WASM module: ${message}`);
         }
-        if (!wasmModule || !wasmModule.memory) {
-            throw new Error('Invalid WASM module: missing memory or exports');
+        if (!wasmModule || typeof wasmModule !== "object") {
+            const hasExports = typeof wasmModule.load_eventlog_from_xes === "function" || Object.keys(wasmModule).length > 5; if (!hasExports) throw new Error("Invalid WASM module: no process mining exports found");
         }
         return wasmModule;
     }

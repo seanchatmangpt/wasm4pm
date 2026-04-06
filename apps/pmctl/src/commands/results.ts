@@ -93,7 +93,7 @@ async function listResultFiles(dir: string): Promise<Array<{ name: string; filep
 export const results = defineCommand({
   meta: {
     name: 'results',
-    description: 'List and inspect saved prediction results from .wasm4pm/results/',
+    description: 'List and inspect saved discovery and prediction results from .wasm4pm/results/',
   },
   args: {
     cat: {
@@ -180,7 +180,10 @@ export const results = defineCommand({
         if (formatter instanceof HumanFormatter) {
           formatter.info('No saved results found.');
           formatter.log(`  Directory: ${dir}`);
-          formatter.log('  Run "pmctl predict <task> --input <file.xes>" to create results.');
+          formatter.log('');
+          formatter.log('  Results are saved automatically when you run:');
+          formatter.log('    pmctl run <log.xes>                       (discovery)');
+          formatter.log('    pmctl predict <task> --input <log.xes>    (prediction)');
         } else {
           (formatter as JSONFormatter).success('No saved results', { directory: dir, count: 0, results: [] });
         }
@@ -205,7 +208,7 @@ export const results = defineCommand({
       }
 
       const humanFormatter = formatter as HumanFormatter;
-      humanFormatter.info(`Saved prediction results (${files.length} total)`);
+      humanFormatter.info(`Saved results (${files.length} total — discovery + prediction)`);
       humanFormatter.log(`  Directory: ${dir}`);
       humanFormatter.log('');
       humanFormatter.log(`  #   Saved at              Task              File`);

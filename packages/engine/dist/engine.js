@@ -3,11 +3,11 @@
  * Main Engine class implementing the lifecycle and state machine
  * Orchestrates bootstrap, planning, execution, and monitoring
  */
-import { StateMachine, TransitionValidator } from './lifecycle';
-import { StatusTracker, formatStatus } from './status';
-import { WasmLoader } from './wasm-loader';
-import { bootstrapEngine, createBootstrapError } from './bootstrap';
-import { WatchSession } from './watch';
+import { StateMachine, TransitionValidator } from './lifecycle.js';
+import { StatusTracker, formatStatus } from './status.js';
+import { WasmLoader } from './wasm-loader.js';
+import { bootstrapEngine, createBootstrapError } from './bootstrap.js';
+import { WatchSession } from './watch.js';
 import { ObservabilityWrapper, Instrumentation, } from '@wasm4pm/observability';
 /**
  * Main Engine class orchestrating the complete lifecycle

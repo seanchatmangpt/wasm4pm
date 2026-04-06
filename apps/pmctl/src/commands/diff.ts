@@ -54,6 +54,10 @@ interface DiffResult {
     totalLog1: number;
     totalLog2: number;
   };
+  /** Jaccard similarity over DFG edge sets: |E1∩E2| / |E1∪E2|. Range [0,1]. 1 = identical structure. */
+  jaccard: number;
+  /** One-line human summary of the structural distance. */
+  summary: string;
 }
 
 export const diff = defineCommand({
@@ -281,6 +285,21 @@ function computeDiff(
   const uniqueLog2 = [...vKeys2].filter((k) => !vKeys1.has(k)).length;
   const sharedVariants = [...vKeys1].filter((k) => vKeys2.has(k)).length;
 
+  // --- Jaccard similarity over DFG edge sets ---
+  // J = |E1 ∩ E2| / |E1 ∪ E2|   (1.0 = identical structure, 0.0 = no overlap)
+  const allEdgeKeys = new Set([...edgeMap1.keys(), ...edgeMap2.keys()]);
+  const intersectionSize = [...edgeMap1.keys()].filter((k) => edgeMap2.has(k)).length;
+  const jaccard = allEdgeKeys.size > 0 ? intersectionSize / allEdgeKeys.size : 1.0;
+
+  const summary =
+    jaccard >= 0.9
+      ? `Structurally nearly identical (Jaccard ${jaccard.toFixed(3)})`
+      : jaccard >= 0.7
+        ? `Minor structural changes (Jaccard ${jaccard.toFixed(3)})`
+        : jaccard >= 0.4
+          ? `Significant structural drift (Jaccard ${jaccard.toFixed(3)})`
+          : `Processes are more different than similar (Jaccard ${jaccard.toFixed(3)})`;
+
   return {
     activities: { added, removed, shared },
     edges: { added: addedEdges, removed: removedEdges, changed: changedEdges },
@@ -291,6 +310,8 @@ function computeDiff(
       totalLog1: vKeys1.size,
       totalLog2: vKeys2.size,
     },
+    jaccard,
+    summary,
   };
 }
 
@@ -314,9 +335,23 @@ function printHumanDiff(
 
   const line = (s: string) => formatter.log(s);
 
+  // Sparkbar helper (8 chars, ▓ filled ░ empty)
+  const sparkBar = (val: number, min: number, max: number, width = 8): string => {
+    if (max <= min) return '▓'.repeat(width);
+    const ratio = Math.max(0, Math.min(1, (val - min) / (max - min)));
+    const filled = Math.round(ratio * width);
+    return '▓'.repeat(filled) + '░'.repeat(width - filled);
+  };
+
   line('');
   line(bold(`Process Diff: ${log1Name} → ${log2Name}`));
   line('━'.repeat(60));
+
+  // --- Jaccard similarity banner (structural distance at a glance) ---
+  const jaccardColor = result.jaccard >= 0.7 ? green : result.jaccard >= 0.4 ? cyan : red;
+  const jaccardBar = sparkBar(result.jaccard, 0, 1);
+  line('');
+  line(`  ${bold('Structural similarity:')} ${jaccardColor(result.jaccard.toFixed(3))}  ${jaccardBar}  ${result.summary}`);
 
   // --- Activities section ---
   line('');

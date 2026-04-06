@@ -72,6 +72,14 @@ export const driftWatch = defineCommand({
       description: `Poll interval in milliseconds (default: ${DEFAULT_INTERVAL_MS})`,
       alias: 'n',
     },
+    alpha: {
+      type: 'string',
+      description: `EWMA smoothing factor α ∈ (0,1] — higher = more weight on recent windows (default: ${EWMA_ALPHA})`,
+    },
+    threshold: {
+      type: 'string',
+      description: `Jaccard distance alert threshold — drift above this triggers ⚠ ALERT (default: ${DRIFT_THRESHOLD})`,
+    },
     json: {
       type: 'boolean',
       description: 'Emit newline-delimited JSON instead of human-readable output',
@@ -83,6 +91,8 @@ export const driftWatch = defineCommand({
     const activityKey: string = (ctx.args['activity-key'] as string) || DEFAULT_ACTIVITY_KEY;
     const windowSize: number = parseInt((ctx.args.window as string) || String(DEFAULT_WINDOW), 10) || DEFAULT_WINDOW;
     const intervalMs: number = parseInt((ctx.args.interval as string) || String(DEFAULT_INTERVAL_MS), 10) || DEFAULT_INTERVAL_MS;
+    const ewmaAlpha: number = parseFloat((ctx.args.alpha as string) || String(EWMA_ALPHA)) || EWMA_ALPHA;
+    const driftThreshold: number = parseFloat((ctx.args.threshold as string) || String(DRIFT_THRESHOLD)) || DRIFT_THRESHOLD;
     const jsonMode: boolean = ctx.args.json === true;
 
     // ── Step 1: Validate input file ──────────────────────────────────────────
@@ -113,7 +123,7 @@ export const driftWatch = defineCommand({
         `${BOLD}[drift-watch]${RESET} Streaming EWMA drift monitor started`,
       );
       console.log(
-        `  file=${inputPath}  activity-key=${activityKey}  window=${windowSize}  interval=${intervalMs}ms  α=${EWMA_ALPHA}`,
+        `  file=${inputPath}  activity-key=${activityKey}  window=${windowSize}  interval=${intervalMs}ms  α=${ewmaAlpha}  threshold=${driftThreshold}`,
       );
       console.log('  Press Ctrl+C to stop.\n');
     }
@@ -185,7 +195,7 @@ export const driftWatch = defineCommand({
       // ── compute_ewma ─────────────────────────────────────────────────────
       let ewmaResult: EwmaResult;
       try {
-        const raw: string = wasm.compute_ewma(JSON.stringify(distanceHistory), EWMA_ALPHA) as string;
+        const raw: string = wasm.compute_ewma(JSON.stringify(distanceHistory), ewmaAlpha) as string;
         ewmaResult = JSON.parse(raw) as EwmaResult;
       } catch (err) {
         console.error(`[drift-watch] compute_ewma failed: ${err instanceof Error ? err.message : String(err)}`);
@@ -214,7 +224,7 @@ export const driftWatch = defineCommand({
         process.stdout.write(JSON.stringify(line) + '\n');
       } else {
         // One-line status
-        const driftColor = ewma > DRIFT_THRESHOLD ? RED : ewma > DRIFT_THRESHOLD / 2 ? YELLOW : GREEN;
+        const driftColor = ewma > driftThreshold ? RED : ewma > driftThreshold / 2 ? YELLOW : GREEN;
         const statusLine =
           `${CYAN}[${ts}]${RESET} ` +
           `drift=${driftColor}${ewma.toFixed(4)}${RESET} (${trendArrow(trend)}) | ` +

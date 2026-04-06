@@ -1,6 +1,6 @@
 {
   "name": "@wasm4pm/pmctl",
-  "version": "26.4.5",
+  "version": "26.4.6",
   "description": "CLI tool for process mining and workflow discovery",
   "type": "module",
   "bin": {
