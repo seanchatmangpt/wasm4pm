@@ -235,6 +235,9 @@ pub fn generate_benchmark_data() -> BenchmarkSuite {
             memory_kb: size / 20,
             model_complexity: (size as f64 / 80.0) as usize,
         });
+
+        // Prediction algorithm benchmarks use real measured wall-clock timings.
+        // See wasm4pm/__tests__/prediction/bench-*.test.ts for actual numbers.
     }
 
     suite

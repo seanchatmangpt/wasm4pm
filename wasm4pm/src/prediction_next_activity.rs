@@ -23,7 +23,6 @@ use wasm_bindgen::prelude::*;
 use serde_json::json;
 
 use crate::state::{get_or_init_state, StoredObject};
-use crate::utilities::to_js;
 
 /// Return the top-k most likely next activities for a given prefix.
 ///
@@ -70,7 +69,9 @@ pub fn predict_next_k(
                 "confidence": confidence,
                 "entropy": entropy_val,
             });
-            to_js(&result)
+            serde_json::to_string(&result)
+                .map(|s| JsValue::from_str(&s))
+                .map_err(|e| JsValue::from_str(&e.to_string()))
         }
         Some(_) => Err(JsValue::from_str("Handle is not an NGramPredictor")),
         None => Err(JsValue::from_str("NGramPredictor handle not found")),
@@ -105,7 +106,9 @@ pub fn predict_beam_paths(
     get_or_init_state().with_object(model_handle, |obj| match obj {
         Some(StoredObject::NGramPredictor(predictor)) => {
             let paths = beam_search_on_ngram(predictor, &prefix, beam_width, max_steps);
-            to_js(&paths)
+            serde_json::to_string(&paths)
+                .map(|s| JsValue::from_str(&s))
+                .map_err(|e| JsValue::from_str(&e.to_string()))
         }
         Some(_) => Err(JsValue::from_str("Handle is not an NGramPredictor")),
         None => Err(JsValue::from_str("NGramPredictor handle not found")),

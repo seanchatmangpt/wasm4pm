@@ -9,7 +9,6 @@
 use wasm_bindgen::prelude::*;
 use crate::state::{get_or_init_state, StoredObject};
 use crate::models::AttributeValue;
-use crate::utilities::to_js;
 use serde_json::json;
 use std::collections::HashSet;
 
@@ -72,12 +71,15 @@ pub fn detect_drift(
                 previous_activities = current_activities;
             }
 
-            to_js(&json!({
+            let result = json!({
                 "drifts_detected": drifts.len(),
                 "drifts": drifts,
                 "window_size": window_size,
                 "method": "jaccard_window"
-            }))
+            });
+            serde_json::to_string(&result)
+                .map(|s| JsValue::from_str(&s))
+                .map_err(|e| JsValue::from_str(&e.to_string()))
         }
         Some(_) => Err(JsValue::from_str("Handle is not an EventLog")),
         None => Err(JsValue::from_str("EventLog handle not found")),
@@ -104,11 +106,10 @@ pub fn compute_ewma(values_json: &str, alpha: f64) -> Result<JsValue, JsValue> {
         .map_err(|e| JsValue::from_str(&format!("Invalid values JSON: {}", e)))?;
 
     if values.is_empty() {
-        return to_js(&json!({
-            "smoothed": [],
-            "trend": "stable",
-            "last_value": null
-        }));
+        let r = json!({ "smoothed": [], "trend": "stable", "last_value": null });
+        return serde_json::to_string(&r)
+            .map(|s| JsValue::from_str(&s))
+            .map_err(|e| JsValue::from_str(&e.to_string()));
     }
 
     // Compute EWMA inline (same logic as prediction_additions::ewma)
@@ -138,11 +139,14 @@ pub fn compute_ewma(values_json: &str, alpha: f64) -> Result<JsValue, JsValue> {
 
     let last_value = *smoothed.last().unwrap();
 
-    to_js(&json!({
+    let result = json!({
         "smoothed": smoothed,
         "trend": trend,
         "last_value": last_value
-    }))
+    });
+    serde_json::to_string(&result)
+        .map(|s| JsValue::from_str(&s))
+        .map_err(|e| JsValue::from_str(&e.to_string()))
 }
 
 #[cfg(test)]
