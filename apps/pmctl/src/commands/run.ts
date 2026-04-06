@@ -3,6 +3,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import { resolveConfig as loadConfig } from '@wasm4pm/config';
 import { WasmLoader } from '@wasm4pm/engine';
+import { ALGORITHM_CLI_ALIASES } from '@wasm4pm/templates';
 import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { savePredictionResult } from './results.js';
@@ -35,6 +36,7 @@ const ALGORITHMS = [
 ] as const;
 
 type Algorithm = (typeof ALGORITHMS)[number];
+
 
 /**
  * Invoke the appropriate WASM discovery function for the given algorithm.
@@ -188,14 +190,17 @@ export const run = defineCommand({
          : config?.execution?.profile === 'fast'    ? 'dfg'
          : 'heuristic');
 
-      const algoLower = rawAlgo.toLowerCase().replace(/[+_]/g, '-');
-      const resolvedAlgo = ALGORITHMS.find(
-        (a) => a === algoLower || a === algoLower.replace(/-plus-plus/, '-'),
-      );
+      // Accept kernel registry IDs (heuristic_miner) or CLI aliases (heuristic)
+      const resolvedAlgo: Algorithm | undefined =
+        (ALGORITHM_CLI_ALIASES[rawAlgo] as Algorithm | undefined) ??
+        (() => {
+          const algoLower = rawAlgo.toLowerCase().replace(/[+_]/g, '-');
+          return ALGORITHMS.find((a) => a === algoLower || a === algoLower.replace(/-plus-plus/, '-'));
+        })();
 
       if (!resolvedAlgo) {
         formatter.error(
-          `Unknown algorithm: "${rawAlgo}"\nAvailable: ${ALGORITHMS.join(', ')}`,
+          `Unknown algorithm: "${rawAlgo}"\nAvailable: ${Object.keys(ALGORITHM_CLI_ALIASES).join(', ')}`,
         );
         process.exit(EXIT_CODES.source_error);
       }

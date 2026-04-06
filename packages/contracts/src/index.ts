@@ -107,6 +107,10 @@ export type {
 } from './explain.js';
 export { isExplainSnapshot, EXPLAIN_JSON_SCHEMA } from './explain.js';
 
+// Plan step type values — shared between @wasm4pm/planner and @wasm4pm/testing
+export { PLAN_STEP_TYPE_VALUES } from './steps.js';
+export type { PlanStepTypeValue } from './steps.js';
+
 // All JSON schemas collected for convenience
 export const ALL_JSON_SCHEMAS = {
   typedError: TYPED_ERROR_JSON_SCHEMA,

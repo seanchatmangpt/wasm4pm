@@ -1,5 +1,6 @@
 import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
+import { ALGORITHM_CLI_ALIASES } from '@wasm4pm/templates';
 import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { WasmLoader } from '@wasm4pm/engine';
@@ -20,9 +21,13 @@ const ALGORITHMS = [
   'hill-climbing',
   'simulated-annealing',
   'ant-colony',
+  'declare',
+  'skeleton',
+  'dfg-optimized',
 ] as const;
 
 type Algorithm = (typeof ALGORITHMS)[number];
+
 
 interface ModelStats {
   algorithm: Algorithm;
@@ -80,6 +85,15 @@ function runDiscovery(
       break;
     case 'ant-colony':
       raw = wasm['discover_ant_colony'](logHandle, activityKey, 20, 20);
+      break;
+    case 'declare':
+      raw = wasm['discover_declare'](logHandle, activityKey);
+      break;
+    case 'skeleton':
+      raw = wasm['discover_process_skeleton'](logHandle, activityKey);
+      break;
+    case 'dfg-optimized':
+      raw = wasm['discover_dfg_optimized'](logHandle, activityKey, 0.5, 0.5);
       break;
     default: {
       // Exhaustiveness guard — TypeScript ensures this is unreachable
@@ -226,23 +240,24 @@ export const compare = defineCommand({
       const rawAlgos = (ctx.args.algorithms as string)
         .split(/[\s,]+/)
         .map((s) => s.trim().toLowerCase())
-        .filter(Boolean) as string[];
+        .filter(Boolean);
 
-      // Validate
-      const invalid = rawAlgos.filter((a) => !ALGORITHMS.includes(a as Algorithm));
+      // Resolve kernel IDs to CLI aliases, then validate
+      const resolved = rawAlgos.map((a) => ALGORITHM_CLI_ALIASES[a] ?? a);
+      const invalid = resolved.filter((a) => !ALGORITHMS.includes(a as Algorithm));
       if (invalid.length > 0) {
         formatter.error(
-          `Unknown algorithm(s): ${invalid.join(', ')}. Available: ${ALGORITHMS.join(', ')}`,
+          `Unknown algorithm(s): ${invalid.join(', ')}. Available: ${Object.keys(ALGORITHM_CLI_ALIASES).join(', ')}`,
         );
         process.exit(EXIT_CODES.source_error);
       }
 
-      if (rawAlgos.length < 2) {
+      if (resolved.length < 2) {
         formatter.error('Please specify at least two algorithms to compare.');
         process.exit(EXIT_CODES.source_error);
       }
 
-      const algos = rawAlgos as Algorithm[];
+      const algos = resolved as Algorithm[];
 
       // Validate input file
       const inputPath = ctx.args.input as string;

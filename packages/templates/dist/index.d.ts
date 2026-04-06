@@ -33,4 +33,6 @@ export declare function getOCELTools(): ToolSpec[];
  * Call load_ocel or discover_dfg first to obtain a handle.
  */
 export declare function getHandleTools(): ToolSpec[];
+export * from './algorithm-registry.js';
+export * from './prediction-tasks.js';
 //# sourceMappingURL=index.d.ts.map

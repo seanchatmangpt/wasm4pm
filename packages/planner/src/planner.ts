@@ -10,6 +10,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { hash as blake3Hash } from 'blake3';
 import type { ErrorInfo } from '@wasm4pm/contracts';
 import { createError } from '@wasm4pm/contracts';
+import { ALGORITHM_ID_TO_STEP_TYPE, getProfileAlgorithms, ALGORITHM_DISPLAY_NAMES } from '@wasm4pm/templates';
 import type { DAG } from './dag';
 import { topologicalSort, validateDAG } from './dag';
 import type { PlanStep } from './steps';
@@ -46,6 +47,11 @@ export interface Config {
     maxMemoryMB?: number;
     timeoutMs?: number;
     enableProfiling?: boolean;
+    parameters?: Record<string, unknown>;
+  };
+  algorithm?: {
+    /** Override the profile's default discovery algorithm with a specific registry ID */
+    name?: string;
     parameters?: Record<string, unknown>;
   };
   output?: {
@@ -100,80 +106,68 @@ export interface ExecutionPlan {
 }
 
 /**
- * Maps execution profile to default pipeline steps
+ * Maps execution profile to default pipeline steps.
+ * Discovery algorithms align with the registry's supportedProfiles field.
+ *
+ * fast    → dfg + process_skeleton (O(n), instant)
+ * balanced → heuristic_miner + alpha_plus_plus + conformance/variant analysis
+ * quality → genetic_algorithm + ilp + all analyses
+ * stream  → dfg only (streaming-safe)
+ */
+/**
+ * Returns the profile's primary discovery step types + standard analysis steps.
+ * Discovery algorithm IDs come from @wasm4pm/generated (ontology-derived).
+ * Analysis steps are structural and always appended for non-fast profiles.
  */
 function getDefaultPipeline(profile: string): PlanStepType[] {
-  switch (profile.toLowerCase()) {
-    case 'fast':
-      return [
-        PlanStepType.DISCOVER_DFG,
-        PlanStepType.ANALYZE_STATISTICS,
-      ];
+  const discoveryIds = getProfileAlgorithms(profile);
+  const discoverySteps = discoveryIds
+    .map((id) => ALGORITHM_ID_TO_STEP_TYPE[id])
+    .filter((st): st is string => Boolean(st))
+    .map((st) => st as PlanStepType);
 
-    case 'balanced':
-      return [
-        PlanStepType.DISCOVER_ALPHA_PLUS_PLUS,
+  // Analysis steps per profile
+  const analysisSteps: PlanStepType[] = (() => {
+    switch (profile.toLowerCase()) {
+      case 'fast':   return [PlanStepType.ANALYZE_STATISTICS];
+      case 'stream': return [PlanStepType.ANALYZE_STATISTICS];
+      case 'balanced': return [
         PlanStepType.ANALYZE_STATISTICS,
         PlanStepType.ANALYZE_CONFORMANCE,
         PlanStepType.ANALYZE_VARIANTS,
       ];
-
-    case 'quality':
-      return [
-        PlanStepType.DISCOVER_HEURISTIC,
-        PlanStepType.DISCOVER_INDUCTIVE,
+      case 'quality': return [
         PlanStepType.ANALYZE_STATISTICS,
         PlanStepType.ANALYZE_CONFORMANCE,
         PlanStepType.ANALYZE_VARIANTS,
         PlanStepType.ANALYZE_PERFORMANCE,
       ];
-
-    case 'stream':
-      return [
-        PlanStepType.DISCOVER_DFG,
-        PlanStepType.ANALYZE_STATISTICS,
-      ];
-
-    case 'research':
-      return [
-        PlanStepType.DISCOVER_DFG,
-        PlanStepType.DISCOVER_ALPHA_PLUS_PLUS,
-        PlanStepType.DISCOVER_HEURISTIC,
-        PlanStepType.DISCOVER_INDUCTIVE,
-        PlanStepType.DISCOVER_GENETIC,
-        PlanStepType.DISCOVER_PSO,
-        PlanStepType.DISCOVER_A_STAR,
-        PlanStepType.DISCOVER_ILP,
-        PlanStepType.DISCOVER_ACO,
-        PlanStepType.DISCOVER_SIMULATED_ANNEALING,
+      case 'research': return [
         PlanStepType.ANALYZE_STATISTICS,
         PlanStepType.ANALYZE_CONFORMANCE,
         PlanStepType.ANALYZE_VARIANTS,
         PlanStepType.ANALYZE_PERFORMANCE,
         PlanStepType.ANALYZE_CLUSTERING,
       ];
+      default: return [PlanStepType.ANALYZE_STATISTICS];
+    }
+  })();
 
-    default:
-      // Default to balanced if profile is unknown
-      return getDefaultPipeline('balanced');
-  }
+  return [...discoverySteps, ...analysisSteps];
 }
 
 /**
- * Converts PlanStepType to algorithm name for step creation
+ * Converts PlanStepType to algorithm display name for step description.
+ * Discovery step names come from the ontology via ALGORITHM_DISPLAY_NAMES.
+ * Lifecycle/analysis step names are structural and hardcoded here.
  */
 function algorithmNameFromStepType(stepType: PlanStepType): string {
-  const mapping: Record<PlanStepType, string> = {
-    [PlanStepType.DISCOVER_DFG]: 'DFG',
-    [PlanStepType.DISCOVER_ALPHA_PLUS_PLUS]: 'Alpha++',
-    [PlanStepType.DISCOVER_HEURISTIC]: 'Heuristic Miner',
-    [PlanStepType.DISCOVER_INDUCTIVE]: 'Inductive Miner',
-    [PlanStepType.DISCOVER_GENETIC]: 'Genetic Algorithm',
-    [PlanStepType.DISCOVER_PSO]: 'Particle Swarm Optimization',
-    [PlanStepType.DISCOVER_A_STAR]: 'A* Search',
-    [PlanStepType.DISCOVER_ILP]: 'Integer Linear Programming',
-    [PlanStepType.DISCOVER_ACO]: 'Ant Colony Optimization',
-    [PlanStepType.DISCOVER_SIMULATED_ANNEALING]: 'Simulated Annealing',
+  // For discovery steps, reverse-lookup the kernel ID via ALGORITHM_ID_TO_STEP_TYPE
+  const entry = Object.entries(ALGORITHM_ID_TO_STEP_TYPE).find(([, st]) => st === stepType);
+  if (entry) return ALGORITHM_DISPLAY_NAMES[entry[0]] ?? stepType;
+
+  // Lifecycle and analysis steps — not in the ontology yet
+  const lifecycle: Partial<Record<PlanStepType, string>> = {
     [PlanStepType.ANALYZE_STATISTICS]: 'Statistics',
     [PlanStepType.ANALYZE_CONFORMANCE]: 'Conformance Checking',
     [PlanStepType.ANALYZE_VARIANTS]: 'Variant Analysis',
@@ -189,8 +183,7 @@ function algorithmNameFromStepType(stepType: PlanStepType): string {
     [PlanStepType.WRITE_SINK]: 'Write Sink',
     [PlanStepType.CLEANUP]: 'Cleanup',
   };
-
-  return mapping[stepType] || stepType;
+  return lifecycle[stepType] ?? stepType;
 }
 
 /**
@@ -252,20 +245,41 @@ export function plan(config: Config): ExecutionPlan {
   steps.push(createLoadSourceStep(sourceKind));
   steps.push(createValidateSourceStep());
 
-  // 3. Add discovery and analysis steps based on profile
-  const defaultAlgorithms = getDefaultPipeline(profile);
+  // 3. Add discovery and analysis steps based on profile (or algorithm override)
+  //
+  // If config.algorithm.name is set, replace the profile's discovery steps with
+  // that single algorithm. Analysis steps from the profile are preserved.
+  let pipelineSteps = getDefaultPipeline(profile);
 
-  for (const algoType of defaultAlgorithms) {
+  const algorithmOverride = config.algorithm?.name;
+  if (algorithmOverride) {
+    const overrideStepType = ALGORITHM_ID_TO_STEP_TYPE[algorithmOverride];
+    if (!overrideStepType) {
+      throw new PlannerError(
+        createError('CONFIG_INVALID', `Unknown algorithm: "${algorithmOverride}". See ALGORITHM_ID_TO_STEP_TYPE for valid IDs.`, { algorithmName: algorithmOverride })
+      );
+    }
+    // Keep analysis steps, replace discovery steps with the override
+    const analysisOnly = pipelineSteps.filter(
+      (s) => !s.toString().includes('discover')
+    );
+    pipelineSteps = [overrideStepType as PlanStepType, ...analysisOnly];
+  }
+
+  for (const algoType of pipelineSteps) {
     let stepType = algoType;
     const algoName = algorithmNameFromStepType(algoType);
     let planStep: PlanStep;
+    const algoParams = algorithmOverride
+      ? { ...(config.execution.parameters || {}), ...(config.algorithm?.parameters || {}) }
+      : (config.execution.parameters || {});
 
-    if (algoType.startsWith('DISCOVER_') || algoType.toString().includes('DISCOVER')) {
+    if (algoType.toString().includes('discover')) {
       // It's a discovery algorithm
       planStep = createAlgorithmStep(
         algoName,
         algoType as PlanStepType,
-        config.execution.parameters || {},
+        algoParams,
         true,
         ['validate_source'],
         true

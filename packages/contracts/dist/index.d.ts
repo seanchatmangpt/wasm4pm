@@ -27,6 +27,8 @@ export type { Status, LifecycleState } from './status.js';
 export { isStatus, isLifecycleState, isValidTransition, LIFECYCLE_STATES, STATE_TRANSITIONS, STATUS_JSON_SCHEMA, } from './status.js';
 export type { ExplainSnapshot, PhaseTiming, ResourceUsage, ExecutionProfile as ExplainExecutionProfile, } from './explain.js';
 export { isExplainSnapshot, EXPLAIN_JSON_SCHEMA } from './explain.js';
+export { PLAN_STEP_TYPE_VALUES } from './steps.js';
+export type { PlanStepTypeValue } from './steps.js';
 export declare const ALL_JSON_SCHEMAS: {
     readonly typedError: {
         readonly $schema: "https://json-schema.org/draft/2020-12/schema";

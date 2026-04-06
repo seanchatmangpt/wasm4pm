@@ -247,3 +247,6 @@ export function getOCELTools(): ToolSpec[] {
 export function getHandleTools(): ToolSpec[] {
   return TOOL_IDS.filter((id) => TOOLS[id].requiresHandle).map((id) => TOOLS[id]);
 }
+
+export * from './algorithm-registry.js';
+export * from './prediction-tasks.js';
