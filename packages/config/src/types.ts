@@ -9,6 +9,7 @@ import type {
   watchConfigSchema,
   outputConfigSchema,
   executionConfigSchema,
+  predictionConfigSchema,
 } from './schema.js';
 import type { ProvenanceMap } from './provenance.js';
 
@@ -23,6 +24,7 @@ export type ObservabilityConfig = z.infer<typeof observabilityConfigSchema>;
 export type WatchConfig = z.infer<typeof watchConfigSchema>;
 export type OutputConfig = z.infer<typeof outputConfigSchema>;
 export type ExecutionConfig = z.infer<typeof executionConfigSchema>;
+export type PredictionConfig = z.infer<typeof predictionConfigSchema>;
 
 export type SourceKind = SourceConfig['kind'];
 export type SinkKind = SinkConfig['kind'];
