@@ -3,7 +3,7 @@
  */
 
 export { main } from './cli.js';
-export { run, watch, status, explain, init } from './cli.js';
+export { run, watch, status, explain, init, results, compare } from './cli.js';
 
 export { getFormatter, HumanFormatter, JSONFormatter, StreamingOutput } from './output.js';
 export type { OutputOptions } from './output.js';
