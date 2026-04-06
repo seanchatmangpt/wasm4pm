@@ -25,6 +25,7 @@ pub mod declare_conformance;
 pub mod temporal_profile;
 pub mod alignments;
 pub mod prediction;
+pub mod prediction_additions;
 pub mod anomaly;
 pub mod social_network;
 pub mod process_tree;
