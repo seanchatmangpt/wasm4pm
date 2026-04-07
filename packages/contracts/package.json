@@ -51,6 +51,7 @@
     "build": "tsc",
     "test": "vitest",
     "test:watch": "vitest --watch",
+    "lint": "tsc --noEmit",
     "clean": "rm -rf dist"
   },
   "dependencies": {

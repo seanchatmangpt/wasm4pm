@@ -1,6 +1,6 @@
 {
   "name": "@wasm4pm/pmctl",
-  "version": "26.4.6",
+  "version": "26.4.7",
   "description": "CLI tool for process mining and workflow discovery",
   "type": "module",
   "bin": {
@@ -23,11 +23,13 @@
     "dev": "tsc --watch",
     "test": "vitest run",
     "test:watch": "vitest",
+    "lint": "tsc --noEmit",
     "clean": "rm -rf dist"
   },
   "dependencies": {
     "@wasm4pm/config": "workspace:*",
     "@wasm4pm/engine": "workspace:*",
+    "@wasm4pm/ml": "workspace:^",
     "@wasm4pm/templates": "workspace:*",
     "citty": "^0.1.6",
     "consola": "^3.2.3"

@@ -102,6 +102,30 @@ export interface WasmModule {
     activity_key: string,
     timeout_seconds: number
   ): Promise<{ handle: string }>;
+
+  // POWL Discovery - 8 inductive miner variants
+  discover_powl_from_log(
+    log_json: string,
+    variant: string
+  ): Promise<{ root: number; node_count: number; repr: string; variant: string }>;
+
+  discover_powl_from_log_config(
+    log_json: string,
+    activity_key: string,
+    variant: string,
+    min_trace_count: number,
+    noise_threshold: number
+  ): Promise<{
+    root: number;
+    node_count: number;
+    repr: string;
+    variant: string;
+    config: {
+      activity_key: string;
+      min_trace_count: number;
+      noise_threshold: number;
+    };
+  }>;
 }
 
 /**
@@ -133,15 +157,28 @@ export interface AlgorithmStepOutput {
 function stepTypeToAlgorithmId(stepType: PlanStepType): string {
   const mapping: Record<PlanStepType, string> = {
     [PlanStepType.DISCOVER_DFG]: 'dfg',
+    [PlanStepType.DISCOVER_PROCESS_SKELETON]: 'process_skeleton',
     [PlanStepType.DISCOVER_ALPHA_PLUS_PLUS]: 'alpha_plus_plus',
     [PlanStepType.DISCOVER_HEURISTIC]: 'heuristic_miner',
     [PlanStepType.DISCOVER_INDUCTIVE]: 'inductive_miner',
+    [PlanStepType.DISCOVER_HILL_CLIMBING]: 'hill_climbing',
+    [PlanStepType.DISCOVER_DECLARE]: 'declare',
     [PlanStepType.DISCOVER_GENETIC]: 'genetic_algorithm',
     [PlanStepType.DISCOVER_PSO]: 'pso',
     [PlanStepType.DISCOVER_A_STAR]: 'a_star',
     [PlanStepType.DISCOVER_ILP]: 'ilp',
     [PlanStepType.DISCOVER_ACO]: 'aco',
     [PlanStepType.DISCOVER_SIMULATED_ANNEALING]: 'simulated_annealing',
+    [PlanStepType.DISCOVER_OPTIMIZED_DFG]: 'optimized_dfg',
+    // POWL Discovery
+    [PlanStepType.DISCOVER_POWL]: 'powl',
+    [PlanStepType.DISCOVER_POWL_TREE]: 'powl_tree',
+    [PlanStepType.DISCOVER_POWL_MAXIMAL]: 'powl_maximal',
+    [PlanStepType.DISCOVER_POWL_DYNAMIC_CLUSTERING]: 'powl_dynamic_clustering',
+    [PlanStepType.DISCOVER_POWL_DECISION_GRAPH_MAX]: 'powl_decision_graph_max',
+    [PlanStepType.DISCOVER_POWL_DECISION_GRAPH_CLUSTERING]: 'powl_decision_graph_clustering',
+    [PlanStepType.DISCOVER_POWL_DECISION_GRAPH_CYCLIC]: 'powl_decision_graph_cyclic',
+    [PlanStepType.DISCOVER_POWL_DECISION_GRAPH_CYCLIC_STRICT]: 'powl_decision_graph_cyclic_strict',
     // Map these to non-discovery types (won't be found)
     [PlanStepType.BOOTSTRAP]: 'unknown',
     [PlanStepType.INIT_WASM]: 'unknown',
@@ -157,6 +194,13 @@ function stepTypeToAlgorithmId(stepType: PlanStepType): string {
     [PlanStepType.GENERATE_REPORTS]: 'unknown',
     [PlanStepType.WRITE_SINK]: 'unknown',
     [PlanStepType.CLEANUP]: 'unknown',
+    // ML Analysis
+    [PlanStepType.ML_CLASSIFY]: 'ml_classify',
+    [PlanStepType.ML_CLUSTER]: 'ml_cluster',
+    [PlanStepType.ML_FORECAST]: 'ml_forecast',
+    [PlanStepType.ML_ANOMALY]: 'ml_anomaly',
+    [PlanStepType.ML_REGRESS]: 'ml_regress',
+    [PlanStepType.ML_PCA]: 'ml_pca',
   };
 
   return mapping[stepType] || 'unknown';
@@ -357,6 +401,39 @@ export async function implementAlgorithmStep(
           timeout
         );
         modelHandle = result.handle;
+        break;
+      }
+
+      // POWL Discovery variants
+      case 'powl':
+      case 'powl_tree':
+      case 'powl_maximal':
+      case 'powl_dynamic_clustering':
+      case 'powl_decision_graph_max':
+      case 'powl_decision_graph_clustering':
+      case 'powl_decision_graph_cyclic':
+      case 'powl_decision_graph_cyclic_strict': {
+        // POWL discovery requires log JSON instead of handle
+        // We need to get the log JSON from the event log handle first
+        // For now, we'll use the basic discover_powl_from_log function
+        const variant = (params.variant as string) || 'decision_graph_cyclic';
+
+        // Get log JSON from WASM module (need to serialize the event log)
+        // For now, we'll need to handle this differently since POWL functions take JSON
+        const logJson = params.log_json as string;
+
+        if (!logJson) {
+          throw new Error(
+            `POWL discovery requires log_json parameter. ` +
+            `Use Kernel.run_powl() instead of Kernel.run() for POWL discovery.`
+          );
+        }
+
+        const powlResult = await wasmModule.discover_powl_from_log(logJson, variant);
+
+        // Store the POWL result as a handle
+        // POWL results include: root, node_count, repr, variant
+        modelHandle = JSON.stringify(powlResult);
         break;
       }
 

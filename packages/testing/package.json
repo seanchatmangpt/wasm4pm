@@ -21,6 +21,7 @@
     "test:watch": "vitest --watch",
     "test:coverage": "vitest --coverage",
     "test:run": "vitest run",
+    "lint": "tsc --noEmit",
     "clean": "rm -rf dist"
   },
   "dependencies": {
