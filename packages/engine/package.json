@@ -13,9 +13,9 @@
   },
   "scripts": {
     "build": "tsc",
+    "lint": "tsc --noEmit",
     "clean": "rm -rf dist",
-    "test": "vitest",
-    "type-check": "tsc --noEmit"
+    "test": "vitest"
   },
   "dependencies": {
     "@wasm4pm/types": "workspace:*",

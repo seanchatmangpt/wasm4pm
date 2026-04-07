@@ -1,1 +1,40 @@
+# Rust
 /target
+**/*.rs.bk
+
+# WASM
+*.wasm
+wasm4pm/pkg/
+wasm4pm/pkg-nodejs/
+wasm4pm/pkg-web/
+
+# Node
+node_modules/
+.pnpm-store/
+
+# TypeScript build
+dist/
+*.tsbuildinfo
+
+# Test & coverage
+coverage/
+.nyc_output/
+
+# wasm4pm runtime
+.wasm4pm/
+results/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment
+.env
+.env.local
+.env.*.local

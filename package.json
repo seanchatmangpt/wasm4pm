@@ -1,6 +1,6 @@
 {
   "name": "wasm4pm",
-  "version": "26.4.5",
+  "version": "26.4.7",
   "description": "High-performance process mining monorepo with WASM acceleration",
   "license": "MIT",
   "private": true,
@@ -31,7 +31,12 @@
     "ci:build": "pnpm run build:all",
     "generate": "unrdf sync --config unrdf.toml",
     "generate:algorithms": "unrdf sync --config unrdf.toml --rule algorithm-registry && pnpm --filter @wasm4pm/templates build",
-    "generate:prediction-tasks": "unrdf sync --config unrdf.toml --rule prediction-tasks && pnpm --filter @wasm4pm/templates build"
+    "generate:prediction-tasks": "unrdf sync --config unrdf.toml --rule prediction-tasks && pnpm --filter @wasm4pm/templates build",
+    "format": "prettier --write 'packages/*/src/**/*.ts' 'apps/*/src/**/*.ts' 'packages/*/src/**/*.json'",
+    "format:check": "prettier --check 'packages/*/src/**/*.ts' 'apps/*/src/**/*.ts' 'packages/*/src/**/*.json'",
+    "health": "node scripts/health.mjs",
+    "prepare": "node scripts/setup-hooks.mjs",
+    "postinstall": "node scripts/check-engines.mjs"
   },
   "devDependencies": {
     "typescript": "^5.3.3",

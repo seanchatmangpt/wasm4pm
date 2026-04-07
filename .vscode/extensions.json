@@ -1,0 +1,13 @@
+{
+  "recommendations": [
+    "esbenp.prettier-vscode",
+    "dbaeumer.vscode-eslint",
+    "bradlc.vscode-tailwindcss",
+    "biomejs.biome",
+    "rust-lang.rust-analyzer",
+    "tamasfe.even-better-toml",
+    "yzhang.markdown-all-in-one",
+    "vitest.explorer",
+    "ms-vscode.makefile-tools"
+  ]
+}

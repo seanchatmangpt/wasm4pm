@@ -1,6 +1,6 @@
 {
   "name": "@wasm4pm/kernel",
-  "version": "26.4.5",
+  "version": "26.4.7",
   "description": "Core kernel and runtime utilities",
   "type": "module",
   "main": "./dist/index.js",
@@ -20,6 +20,7 @@
     "test": "vitest",
     "test:watch": "vitest --watch",
     "test:coverage": "vitest --coverage",
+    "lint": "tsc --noEmit",
     "clean": "rm -rf dist"
   },
   "dependencies": {

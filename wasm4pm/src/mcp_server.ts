@@ -443,7 +443,8 @@ export class Wasm4pmMCPServer {
             },
             alpha: {
               type: 'number',
-              description: 'EWMA smoothing factor α ∈ (0,1] (default: 0.3). Higher = more weight on recent windows.',
+              description:
+                'EWMA smoothing factor α ∈ (0,1] (default: 0.3). Higher = more weight on recent windows.',
             },
             activity_key: {
               type: 'string',
@@ -475,6 +476,127 @@ export class Wasm4pmMCPServer {
               type: 'string',
               description:
                 'Target variable: "remaining_time", "outcome", or "next_activity". Default: "outcome"',
+            },
+          },
+          required: ['xes_content'],
+        },
+      },
+      // ML Tools (micro-ml powered)
+      {
+        name: 'ml_classify_traces',
+        description:
+          'Classify traces using ML (k-NN or logistic regression). Extracts features automatically, trains a classifier, and returns per-trace predictions with confidence scores.',
+        inputSchema: {
+          type: 'object' as const,
+          properties: {
+            xes_content: {
+              type: 'string',
+              description: 'XES event log content as string',
+            },
+            method: {
+              type: 'string',
+              enum: ['knn', 'logistic_regression'],
+              description: 'Classification method (default: knn)',
+            },
+            k: {
+              type: 'number',
+              description: 'Number of neighbors for k-NN (default: 5)',
+            },
+          },
+          required: ['xes_content'],
+        },
+      },
+      {
+        name: 'ml_cluster_traces',
+        description:
+          'Cluster traces by similarity using ML (k-means or DBSCAN). Automatically extracts features and groups traces into clusters.',
+        inputSchema: {
+          type: 'object' as const,
+          properties: {
+            xes_content: {
+              type: 'string',
+              description: 'XES event log content as string',
+            },
+            method: {
+              type: 'string',
+              enum: ['kmeans', 'dbscan'],
+              description: 'Clustering method (default: kmeans)',
+            },
+            k: {
+              type: 'number',
+              description: 'Number of clusters for k-means (default: 3)',
+            },
+            eps: {
+              type: 'number',
+              description: 'DBSCAN epsilon (default: 1.0)',
+            },
+          },
+          required: ['xes_content'],
+        },
+      },
+      {
+        name: 'ml_forecast_throughput',
+        description:
+          'Forecast future process throughput and detect seasonal patterns using trend analysis and seasonal decomposition.',
+        inputSchema: {
+          type: 'object' as const,
+          properties: {
+            xes_content: {
+              type: 'string',
+              description: 'XES event log content as string',
+            },
+            forecast_periods: {
+              type: 'number',
+              description: 'Number of future periods to forecast (default: 5)',
+            },
+          },
+          required: ['xes_content'],
+        },
+      },
+      {
+        name: 'ml_detect_anomalies',
+        description:
+          'Enhanced anomaly detection using peak finding and seasonal decomposition on drift distance series. Identifies anomalous process windows.',
+        inputSchema: {
+          type: 'object' as const,
+          properties: {
+            xes_content: {
+              type: 'string',
+              description: 'XES event log content as string',
+            },
+          },
+          required: ['xes_content'],
+        },
+      },
+      {
+        name: 'ml_regress_remaining_time',
+        description:
+          'Predict remaining case time using linear regression on extracted trace features. Returns per-trace predictions with R-squared and error metrics.',
+        inputSchema: {
+          type: 'object' as const,
+          properties: {
+            xes_content: {
+              type: 'string',
+              description: 'XES event log content as string',
+            },
+          },
+          required: ['xes_content'],
+        },
+      },
+      {
+        name: 'ml_pca_reduce',
+        description:
+          'Reduce high-dimensional trace features to fewer dimensions using PCA. Returns transformed data, explained variance, and component loadings.',
+        inputSchema: {
+          type: 'object' as const,
+          properties: {
+            xes_content: {
+              type: 'string',
+              description: 'XES event log content as string',
+            },
+            n_components: {
+              type: 'number',
+              description: 'Number of PCA components (default: 2)',
             },
           },
           required: ['xes_content'],
@@ -650,10 +772,18 @@ export class Wasm4pmMCPServer {
                 n_gram_order: n,
               };
             } finally {
-              try { wasm.delete_object(String(predictorHandle)); } catch { /* best-effort */ }
+              try {
+                wasm.delete_object(String(predictorHandle));
+              } catch {
+                /* best-effort */
+              }
             }
           } finally {
-            try { wasm.delete_object(logHandle); } catch { /* best-effort */ }
+            try {
+              wasm.delete_object(logHandle);
+            } catch {
+              /* best-effort */
+            }
           }
           break;
         }
@@ -662,27 +792,43 @@ export class Wasm4pmMCPServer {
           const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
           try {
             const actKey = (input.activity_key as string) ?? 'concept:name';
-            const modelHandle = wasm.build_remaining_time_model(logHandle, actKey, 'time:timestamp');
+            const modelHandle = wasm.build_remaining_time_model(
+              logHandle,
+              actKey,
+              'time:timestamp'
+            );
             try {
               const prefixJson = JSON.stringify(input.prefix as string[]);
               const raw = wasm.predict_case_duration(String(modelHandle), prefixJson);
               const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
               const prefix = input.prefix as string[];
-              const remainingMs = typeof parsed === 'number' ? parsed : (parsed?.remaining_ms ?? parsed?.prediction ?? 0);
+              const remainingMs =
+                typeof parsed === 'number'
+                  ? parsed
+                  : (parsed?.remaining_ms ?? parsed?.prediction ?? 0);
               const remainingHours = remainingMs / 1000 / 3600;
               result = {
                 remaining_ms: remainingMs,
                 remaining_hours: parseFloat(remainingHours.toFixed(2)),
-                interpretation: remainingMs > 0
-                  ? `Based on cases with a similar prefix (${prefix.join('→')}), the expected remaining time is approximately ${remainingHours.toFixed(1)} hours.`
-                  : `No duration estimate available for prefix: ${prefix.join('→')}. The prefix may not appear in completed cases.`,
+                interpretation:
+                  remainingMs > 0
+                    ? `Based on cases with a similar prefix (${prefix.join('→')}), the expected remaining time is approximately ${remainingHours.toFixed(1)} hours.`
+                    : `No duration estimate available for prefix: ${prefix.join('→')}. The prefix may not appear in completed cases.`,
                 prefix,
               };
             } finally {
-              try { wasm.delete_object(String(modelHandle)); } catch { /* best-effort */ }
+              try {
+                wasm.delete_object(String(modelHandle));
+              } catch {
+                /* best-effort */
+              }
             }
           } finally {
-            try { wasm.delete_object(logHandle); } catch { /* best-effort */ }
+            try {
+              wasm.delete_object(logHandle);
+            } catch {
+              /* best-effort */
+            }
           }
           break;
         }
@@ -708,10 +854,18 @@ export class Wasm4pmMCPServer {
                 trace,
               };
             } finally {
-              try { wasm.delete_object(String(dfgHandle)); } catch { /* best-effort */ }
+              try {
+                wasm.delete_object(String(dfgHandle));
+              } catch {
+                /* best-effort */
+              }
             }
           } finally {
-            try { wasm.delete_object(logHandle); } catch { /* best-effort */ }
+            try {
+              wasm.delete_object(logHandle);
+            } catch {
+              /* best-effort */
+            }
           }
           break;
         }
@@ -729,11 +883,12 @@ export class Wasm4pmMCPServer {
             const driftCount = driftResult?.drifts_detected ?? drifts.length;
             // Compute EWMA over drift distances
             const distances = drifts.map((d: any) => d.distance ?? 0);
-            const ewmaRaw = distances.length > 0
-              ? wasm.compute_ewma(JSON.stringify(distances), alpha)
-              : null;
+            const ewmaRaw =
+              distances.length > 0 ? wasm.compute_ewma(JSON.stringify(distances), alpha) : null;
             const ewmaResult = ewmaRaw
-              ? (typeof ewmaRaw === 'string' ? JSON.parse(ewmaRaw) : ewmaRaw)
+              ? typeof ewmaRaw === 'string'
+                ? JSON.parse(ewmaRaw)
+                : ewmaRaw
               : { trend: 'stable', last_value: 0, smoothed: [] };
             const trend = ewmaResult?.trend ?? 'stable';
             const ewmaValue = ewmaResult?.last_value ?? 0;
@@ -742,18 +897,23 @@ export class Wasm4pmMCPServer {
               drift_points: drifts,
               trend,
               ewma: parseFloat(ewmaValue.toFixed(4)),
-              interpretation: driftCount === 0
-                ? 'No concept drift detected in this log. The process appears stable across the observation period.'
-                : trend === 'rising'
-                  ? `Concept drift detected — ${driftCount} drift point(s) found and the EWMA trend is rising (${ewmaValue.toFixed(3)}). The process is actively changing. Investigate the most recent drift points for root cause.`
-                  : trend === 'falling'
-                    ? `${driftCount} historical drift point(s) detected, but the process appears to be stabilizing (EWMA trend falling to ${ewmaValue.toFixed(3)}).`
-                    : `${driftCount} drift point(s) detected. The EWMA is stable at ${ewmaValue.toFixed(3)}, suggesting historical change that has now plateaued.`,
+              interpretation:
+                driftCount === 0
+                  ? 'No concept drift detected in this log. The process appears stable across the observation period.'
+                  : trend === 'rising'
+                    ? `Concept drift detected — ${driftCount} drift point(s) found and the EWMA trend is rising (${ewmaValue.toFixed(3)}). The process is actively changing. Investigate the most recent drift points for root cause.`
+                    : trend === 'falling'
+                      ? `${driftCount} historical drift point(s) detected, but the process appears to be stabilizing (EWMA trend falling to ${ewmaValue.toFixed(3)}).`
+                      : `${driftCount} drift point(s) detected. The EWMA is stable at ${ewmaValue.toFixed(3)}, suggesting historical change that has now plateaued.`,
               window_size: windowSize,
               alpha,
             };
           } finally {
-            try { wasm.delete_object(logHandle); } catch { /* best-effort */ }
+            try {
+              wasm.delete_object(logHandle);
+            } catch {
+              /* best-effort */
+            }
           }
           break;
         }
@@ -776,7 +936,195 @@ export class Wasm4pmMCPServer {
               configJson
             );
           } finally {
-            try { wasm.delete_object(logHandle); } catch { /* best-effort */ }
+            try {
+              wasm.delete_object(logHandle);
+            } catch {
+              /* best-effort */
+            }
+          }
+          break;
+        }
+
+        // ML Tools (micro-ml powered — dynamic import for lazy loading)
+        case 'ml_classify_traces': {
+          const { classifyTraces } = await import('@wasm4pm/ml');
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
+          try {
+            const configJson = JSON.stringify({
+              features: [
+                'trace_length',
+                'elapsed_time',
+                'activity_counts',
+                'rework_count',
+                'unique_activities',
+                'avg_inter_event_time',
+              ],
+              target: 'outcome',
+            });
+            const rawFeatures = wasm.extract_case_features(
+              logHandle,
+              'concept:name',
+              'time:timestamp',
+              configJson
+            );
+            const features =
+              typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
+            result = await classifyTraces(features, {
+              method: (input.method as 'knn' | 'logistic_regression') || 'knn',
+              k: (input.k as number) ?? 5,
+            });
+          } finally {
+            try {
+              wasm.delete_object(logHandle);
+            } catch {
+              /* best-effort */
+            }
+          }
+          break;
+        }
+
+        case 'ml_cluster_traces': {
+          const { clusterTraces } = await import('@wasm4pm/ml');
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
+          try {
+            const configJson = JSON.stringify({
+              features: [
+                'trace_length',
+                'elapsed_time',
+                'activity_counts',
+                'rework_count',
+                'unique_activities',
+              ],
+            });
+            const rawFeatures = wasm.extract_case_features(
+              logHandle,
+              'concept:name',
+              'time:timestamp',
+              configJson
+            );
+            const features =
+              typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
+            result = await clusterTraces(features, {
+              method: (input.method as 'kmeans' | 'dbscan') || 'kmeans',
+              k: (input.k as number) ?? 3,
+              eps: (input.eps as number) ?? 1.0,
+            });
+          } finally {
+            try {
+              wasm.delete_object(logHandle);
+            } catch {
+              /* best-effort */
+            }
+          }
+          break;
+        }
+
+        case 'ml_forecast_throughput': {
+          const { forecastThroughput } = await import('@wasm4pm/ml');
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
+          try {
+            const driftRaw = wasm.detect_drift(logHandle, 'concept:name', 5);
+            const driftResult = typeof driftRaw === 'string' ? JSON.parse(driftRaw) : driftRaw;
+            const distances = (driftResult?.drifts ?? []).map(
+              (d: { distance: number }) => d.distance ?? 0
+            );
+            result = await forecastThroughput(distances, {
+              forecastPeriods: (input.forecast_periods as number) ?? 5,
+            });
+          } finally {
+            try {
+              wasm.delete_object(logHandle);
+            } catch {
+              /* best-effort */
+            }
+          }
+          break;
+        }
+
+        case 'ml_detect_anomalies': {
+          const { detectEnhancedAnomalies } = await import('@wasm4pm/ml');
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
+          try {
+            const driftRaw = wasm.detect_drift(logHandle, 'concept:name', 10);
+            const driftResult = typeof driftRaw === 'string' ? JSON.parse(driftRaw) : driftRaw;
+            const distances = (driftResult?.drifts ?? []).map(
+              (d: { distance: number }) => d.distance ?? 0
+            );
+            result = await detectEnhancedAnomalies(distances);
+          } finally {
+            try {
+              wasm.delete_object(logHandle);
+            } catch {
+              /* best-effort */
+            }
+          }
+          break;
+        }
+
+        case 'ml_regress_remaining_time': {
+          const { regressRemainingTime } = await import('@wasm4pm/ml');
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
+          try {
+            const configJson = JSON.stringify({
+              features: [
+                'trace_length',
+                'elapsed_time',
+                'rework_count',
+                'unique_activities',
+                'avg_inter_event_time',
+              ],
+              target: 'remaining_time',
+            });
+            const rawFeatures = wasm.extract_case_features(
+              logHandle,
+              'concept:name',
+              'time:timestamp',
+              configJson
+            );
+            const features =
+              typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
+            result = await regressRemainingTime(features);
+          } finally {
+            try {
+              wasm.delete_object(logHandle);
+            } catch {
+              /* best-effort */
+            }
+          }
+          break;
+        }
+
+        case 'ml_pca_reduce': {
+          const { reduceFeaturesPCA } = await import('@wasm4pm/ml');
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
+          try {
+            const configJson = JSON.stringify({
+              features: [
+                'trace_length',
+                'elapsed_time',
+                'activity_counts',
+                'rework_count',
+                'unique_activities',
+                'avg_inter_event_time',
+              ],
+            });
+            const rawFeatures = wasm.extract_case_features(
+              logHandle,
+              'concept:name',
+              'time:timestamp',
+              configJson
+            );
+            const features =
+              typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
+            result = await reduceFeaturesPCA(features, {
+              nComponents: (input.n_components as number) ?? 2,
+            });
+          } finally {
+            try {
+              wasm.delete_object(logHandle);
+            } catch {
+              /* best-effort */
+            }
           }
           break;
         }
