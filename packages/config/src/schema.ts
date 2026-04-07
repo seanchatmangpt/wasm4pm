@@ -1,9 +1,17 @@
 import { z } from 'zod';
+import { ALGORITHM_IDS, PREDICTION_TASKS } from '@wasm4pm/templates';
 
 /**
  * Schema version for config format migration.
  */
 export const SCHEMA_VERSION = 1;
+
+// Re-export for consumers that import from @wasm4pm/config
+export { ALGORITHM_IDS } from '@wasm4pm/templates';
+export type { AlgorithmId } from '@wasm4pm/templates';
+
+export const algorithmIdSchema = z.enum(ALGORITHM_IDS)
+  .describe('Algorithm ID: one of the registered wasm4pm kernel algorithms');
 
 // --- Enum Schemas ---
 
@@ -40,7 +48,7 @@ export const sinkConfigSchema = z.object({
 }).describe('Sink configuration');
 
 export const algorithmConfigSchema = z.object({
-  name: z.string().min(1),
+  name: algorithmIdSchema.default('dfg'),
   parameters: z.record(z.unknown()).default({}),
 }).describe('Algorithm configuration');
 
@@ -82,9 +90,7 @@ export const predictionConfigSchema = z.object({
   activityKey: z.string().default('concept:name'),
   ngramOrder: z.number().int().min(2).max(5).default(2),
   driftWindowSize: z.number().int().positive().default(10),
-  tasks: z.array(
-    z.enum(['next_activity', 'remaining_time', 'outcome', 'drift', 'features', 'resource'])
-  ).default([]),
+  tasks: z.array(z.enum(PREDICTION_TASKS)).default([]),
 }).describe('Prediction configuration — which prediction tasks to run');
 
 // --- Root Schema ---
@@ -94,7 +100,7 @@ export const configSchema = z.object({
   version: z.string().regex(/^\d+\.\d+\.\d+$/),
   source: sourceConfigSchema,
   sink: sinkConfigSchema.default({ kind: 'stdout' }),
-  algorithm: algorithmConfigSchema.default({ name: 'alpha', parameters: {} }),
+  algorithm: algorithmConfigSchema.default({ name: 'dfg', parameters: {} }),
   execution: executionConfigSchema.default({}),
   observability: observabilityConfigSchema.default({}),
   watch: watchConfigSchema.optional(),

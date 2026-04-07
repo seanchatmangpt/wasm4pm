@@ -26,6 +26,18 @@ import {
 } from '@wasm4pm/observability';
 
 /**
+ * Result returned from Kernel.run()
+ */
+export interface KernelRunResult {
+  handle: string;
+  algorithm: string;
+  outputType: string;
+  durationMs: number;
+  params: Record<string, unknown>;
+  hash: string;
+}
+
+/**
  * Kernel interface - abstract definition of WASM kernel
  * The engine calls kernel methods but doesn't depend on implementation details
  */
@@ -33,6 +45,14 @@ export interface Kernel {
   init(): Promise<void>;
   shutdown(): Promise<void>;
   isReady(): boolean;
+  /** Run a discovery algorithm by registry ID. Optional — not all kernel implementations support it. */
+  run?(
+    algorithmName: string,
+    eventLogHandle: string,
+    params?: Record<string, unknown>
+  ): Promise<KernelRunResult>;
+  /** List all available algorithm IDs. Optional. */
+  algorithms?(): Array<{ id: string; name: string; outputType: string }>;
 }
 
 /**
