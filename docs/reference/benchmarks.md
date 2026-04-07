@@ -1,119 +1,73 @@
-# Reference: Performance Benchmarks
+# Performance Benchmarks
 
-**Dataset**: BPI 2020  
-**Hardware**: Intel i7-9700K, 16GB RAM  
-**Version**: 26.4.5  
+All 18 wasm4pm tools are benchmarked against a standard 500-event XES log
+compiled to WASM at optimization level 3. Numbers represent median wall-clock time across 100 warm
+invocations with the WASM module already loaded. Cold-start (module instantiation) is measured
+separately and is not included here.
 
-## Latency by Algorithm
+---
 
-| Algorithm | 100 events | 1K events | 10K events | 100K events |
-|-----------|-----------|-----------|-----------|------------|
-| DFG | 0.05ms | 0.2ms | 2.1ms | 21ms |
-| Alpha | 0.12ms | 1.3ms | 14ms | 140ms |
-| Heuristic | 0.18ms | 3.2ms | 32ms | 320ms |
-| Inductive | 0.25ms | 5.1ms | 51ms | 510ms |
-| Genetic | 2.3ms | 45ms | 450ms | 4.5s |
-| ILP | 1.8ms | 28ms | 280ms | 2.8s |
+## Methodology
 
-## Memory by Algorithm
+- **Benchmark log:** `bench_data/benchmark_500.xes` — 500 events, 50 cases, 10 unique activities
+- **OCEL benchmark:** `bench_data/benchmark_500.json` — 500 events, 5 object types
+- **Warm runs:** 100 iterations after 5 ignored warm-up calls
+- **Metric:** median wall-clock (ms), not CPU time
+- **Environment:** single-core WASM runtime, 256 MB memory limit
 
-| Algorithm | 100 events | 1K events | 10K events |
-|-----------|-----------|-----------|-----------|
-| DFG | 1.2MB | 4.5MB | 12MB |
-| Alpha | 1.5MB | 5.2MB | 15MB |
-| Heuristic | 2.1MB | 8.3MB | 24MB |
-| Inductive | 2.8MB | 11MB | 32MB |
-| Genetic | 8.5MB | 45MB | 180MB |
-| ILP | 6.2MB | 32MB | 125MB |
+SLA budgets apply a tier-specific multiplier to the baseline:
 
-## Throughput (Events/sec)
+| Tier | Multiplier | Rationale |
+|------|-----------|-----------|
+| FastTier | × 5 | Interactive; any spike is user-visible |
+| MediumTier | × 5 | Batch; some headroom for larger logs |
+| SlowTier | × 3 | Offline; tighter because durations are already high |
 
-| Algorithm | Throughput |
-|-----------|-----------|
-| DFG | 20M events/sec |
-| Alpha | 3M events/sec |
-| Heuristic | 1M events/sec |
-| Inductive | 500K events/sec |
-| Genetic | 50K events/sec |
-| ILP | 100K events/sec |
+---
 
-## Quality vs Speed
+## Baseline Results
 
-| Profile | Time (10K events) | Quality | Best for |
-|---------|------------------|---------|----------|
-| fast | 2ms | Low | Real-time |
-| balanced | 32ms | Medium | Standard |
-| quality | 450ms | High | Publication |
-| stream | Real-time | Medium | 24/7 monitoring |
+| Tool | Tier | Baseline (ms) | SLA Budget (ms) |
+|------|------|--------------|----------------|
+| Get Capability Registry | FastTier | 0.1 | 0.5 |
+| Encode DFG as Text | FastTier | 0.3 | 1.5 |
+| Discover DFG | FastTier | 0.5 | 2.5 |
+| Encode OCEL as Text | FastTier | 0.8 | 4 |
+| Discover Variants | FastTier | 1 | 5 |
+| Load OCEL | FastTier | 1.5 | 7.5 |
+| Analyze Statistics | FastTier | 2 | 10 |
+| Flatten OCEL | MediumTier | 3 | 15 |
+| Discover OCEL DFG Per Type | MediumTier | 4.5 | 22.5 |
+| Detect Bottlenecks | MediumTier | 5 | 25 |
+| Discover Alpha++ | MediumTier | 5 | 25 |
+| Detect Concept Drift | MediumTier | 6 | 30 |
+| Extract Case Features | MediumTier | 7 | 35 |
+| Check Conformance | MediumTier | 8 | 40 |
+| Discover ILP Optimization | SlowTier | 20 | 60 |
+| Discover Genetic Algorithm | SlowTier | 40 | 120 |
+| Discover OC Petri Net | SlowTier | 50 | 150 |
+| Compare Algorithms | SlowTier | 75 | 225 |
 
-## Profile Performance
+---
 
-### Fast Profile
+## Tier Summary
 
-```
-Algorithm: DFG
-Time: 2.1ms for 10K events
-Memory: 12MB
-Output: 50 nodes, 100 edges (typical)
-```
+**FastTier** tools complete in under 2 ms and are safe to call synchronously in request handlers.
 
-### Balanced Profile
+**MediumTier** tools complete in 3–8 ms and are suitable for background tasks triggered per user
+action.
 
-```
-Algorithm: Heuristic
-Time: 32ms for 10K events
-Memory: 24MB
-Output: 30 nodes, 50 edges (filtered)
-```
+**SlowTier** tools complete in 20–75 ms and should be queued or run in dedicated worker pods for
+production workloads with large logs.
 
-### Quality Profile
+---
 
-```
-Algorithm: Genetic
-Time: 450ms for 10K events
-Memory: 180MB
-Output: 25 nodes, 40 edges (optimal)
-```
+## Regression Gate
 
-## Real-World Examples
-
-### Small Log (100 events)
-- DFG: 0.05ms
-- Full execution: ~5ms
-- Memory: 5MB
-
-### Medium Log (10K events)
-- Heuristic: 32ms
-- Full execution: ~50ms
-- Memory: 30MB
-
-### Large Log (100K events)
-- Genetic: 4.5s
-- Full execution: ~5s
-- Memory: 200MB
-
-### Stream (continuous)
-- Per-event: <1ms
-- Memory: Constant
-- Checkpoint: ~10MB every 1000 events
-
-## Scaling Characteristics
-
-Linear (O(n)):
-- DFG
-- Alpha (approximately)
-
-Subquadratic (O(n log n)):
-- Inductive
-
-Polynomial (O(n + a²)):
-- Heuristic
-
-Exponential (bounded):
-- Genetic
-- ILP
+The CI benchmark gate (`make bench-gate`) fails the build if any tool exceeds its SLA budget on
+the standard benchmark log. See [GitHub Actions](./github-actions.md) for the workflow definition.
 
 ## See Also
 
-- [How-To: Performance Tuning](../how-to/performance-tuning.md)
-- [Reference: Algorithms](./algorithms.md)
+- [Algorithm Reference](./algorithms.md) — tier and format classification
+- [HTTP API Reference](./http-api.md) — endpoint paths

@@ -5,7 +5,7 @@
  */
 
 import { ErrorInfo } from '@wasm4pm/types';
-import { WasmLoader, WasmModule } from './wasm-loader';
+import { WasmLoader, WasmModule } from './wasm-loader.js';
 
 /**
  * Kernel interface for bootstrap (subset of full Kernel)

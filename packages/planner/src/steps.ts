@@ -16,15 +16,19 @@ export enum PlanStepType {
 
   // Discovery algorithms
   DISCOVER_DFG = 'discover_dfg',
+  DISCOVER_PROCESS_SKELETON = 'discover_process_skeleton',
   DISCOVER_ALPHA_PLUS_PLUS = 'discover_alpha_plus_plus',
   DISCOVER_HEURISTIC = 'discover_heuristic',
   DISCOVER_INDUCTIVE = 'discover_inductive',
+  DISCOVER_HILL_CLIMBING = 'discover_hill_climbing',
+  DISCOVER_DECLARE = 'discover_declare',
   DISCOVER_GENETIC = 'discover_genetic',
   DISCOVER_PSO = 'discover_pso',
   DISCOVER_A_STAR = 'discover_a_star',
   DISCOVER_ILP = 'discover_ilp',
   DISCOVER_ACO = 'discover_aco',
   DISCOVER_SIMULATED_ANNEALING = 'discover_simulated_annealing',
+  DISCOVER_OPTIMIZED_DFG = 'discover_optimized_dfg',
 
   // Analysis
   ANALYZE_STATISTICS = 'analyze_statistics',

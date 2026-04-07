@@ -3,6 +3,17 @@
 In 5 minutes you will have a working Node.js script that loads a process event
 log and prints the directly-follows graph (DFG) it discovered.
 
+## API Styles
+
+wasm4pm exposes two API styles:
+
+| Style | Naming | Use when... |
+|-------|--------|-------------|
+| **Direct FFI** | `load_eventlog_from_xes()`, `discover_dfg()` | Browser `<script>` tags, maximum performance |
+| **Client wrapper** | `loadEventLogFromXES()`, `discoverDFG()` | Node.js, TypeScript, framework integration |
+
+Both call the same WASM functions. The examples below use direct FFI (no import wrapper needed). For the client wrapper, see [how-to/nodejs-integration.md](./how-to/nodejs-integration.md).
+
 ## Install
 
 ```bash

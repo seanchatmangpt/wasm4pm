@@ -24,6 +24,8 @@ export {
   validate,
   validatePartial,
   toJsonSchema,
+  ALGORITHM_IDS,
+  algorithmIdSchema,
   sourceKindSchema,
   sinkKindSchema,
   executionProfileSchema,
@@ -40,6 +42,11 @@ export {
   executionConfigSchema,
   predictionConfigSchema,
 } from './schema.js';
+export type { AlgorithmId } from './schema.js';
+
+// Re-export generated constants so consumers can get them from @wasm4pm/config
+export { PREDICTION_TASKS, VALID_PREDICT_CLI_TASKS, CLI_SLUG_TO_TASK_ID, TASK_ID_TO_CLI_SLUG } from '@wasm4pm/templates';
+export type { PredictionTask, PredictCliTask } from '@wasm4pm/templates';
 
 // Provenance
 export {

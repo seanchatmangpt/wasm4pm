@@ -748,5 +748,5 @@ You have ingested an unbounded event stream, sampled a live DFG at any point, an
 ## Next Steps
 
 - See [API.md](./API.md) for the complete function reference with all parameters
-- See [ALGORITHMS.md](./ALGORITHMS.md) for how each discovery algorithm works
+- See [reference/algorithms.md](./reference/algorithms.md) for how each discovery algorithm works
 - See [QUICKSTART.md](./QUICKSTART.md) for setting up a browser or Express environment

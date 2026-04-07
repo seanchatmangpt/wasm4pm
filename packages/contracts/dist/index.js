@@ -33,6 +33,8 @@ export { validateReceipt, verifyReceiptHashes, detectTampering, } from './valida
 export { isPlan, validatePlanDAG, normalizePlan, sortNodes, sortEdges, PLAN_JSON_SCHEMA, } from './plan.js';
 export { isStatus, isLifecycleState, isValidTransition, LIFECYCLE_STATES, STATE_TRANSITIONS, STATUS_JSON_SCHEMA, } from './status.js';
 export { isExplainSnapshot, EXPLAIN_JSON_SCHEMA } from './explain.js';
+// Plan step type values — shared between @wasm4pm/planner and @wasm4pm/testing
+export { PLAN_STEP_TYPE_VALUES } from './steps.js';
 // All JSON schemas collected for convenience
 export const ALL_JSON_SCHEMAS = {
     typedError: TYPED_ERROR_JSON_SCHEMA,

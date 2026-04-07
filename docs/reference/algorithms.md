@@ -1,166 +1,66 @@
-# Reference: Algorithm Matrix
+# Algorithm Reference
 
-## Complete Algorithm Comparison
+wasm4pm provides 18 process mining tools across three performance tiers.
+Each tier reflects typical execution time for a benchmark log of 500 events. Tier boundaries
+are FastTier (< 1 ms), MediumTier (< 10 ms), and SlowTier (< 100 ms).
 
-### DFG (Directly-Follows Graph)
+---
 
-```toml
-[discovery]
-algorithm = "dfg"
-profile = "fast"
-```
+## Fast Tier
 
-| Metric | Value |
-|--------|-------|
-| Time | O(n) |
-| Space | O(a²) |
-| Quality | Low |
-| Speed | 0.1ms/100 events |
-| Output | DFG |
-| Best for | Real-time, dashboards |
+Suitable for interactive use and real-time pipelines. Sub-millisecond to 2 ms per 500-event log.
 
-### Alpha Miner (α)
+| Tool | Input | Output | OCEL | Duration |
+|------|-------|--------|------|----------|
+| Get Capability Registry | `none` | `json` | no | 0.1 ms |
+| Encode DFG as Text | `handle` | `text` | no | 0.3 ms |
+| Discover DFG | `xes` | `json` | no | 0.5 ms |
+| Encode OCEL as Text | `handle` | `text` | yes | 0.8 ms |
+| Discover Variants | `handle` | `json` | no | 1 ms |
+| Load OCEL | `ocel2` | `handle` | yes | 1.5 ms |
+| Analyze Statistics | `handle` | `json` | no | 2 ms |
 
-```toml
-[discovery]
-algorithm = "alpha"
-profile = "fast"
-```
+---
 
-| Metric | Value |
-|--------|-------|
-| Time | O(n log n) |
-| Space | O(a²) |
-| Quality | Medium |
-| Speed | 0.12ms/100 events |
-| Output | Petri Net |
-| Best for | Structured processes |
+## Medium Tier
 
-### Heuristic Miner
+Suitable for batch processing and on-demand analysis. 3 ms to 8 ms per 500-event log.
 
-```toml
-[discovery]
-algorithm = "heuristic"
-profile = "balanced"
-noise_threshold = 0.2
-```
+| Tool | Input | Output | OCEL | Duration |
+|------|-------|--------|------|----------|
+| Flatten OCEL | `handle` | `json` | yes | 3 ms |
+| Discover OCEL DFG Per Type | `handle` | `json` | yes | 4.5 ms |
+| Detect Bottlenecks | `handle` | `json` | no | 5 ms |
+| Discover Alpha++ | `xes` | `json` | no | 5 ms |
+| Detect Concept Drift | `handle` | `json` | no | 6 ms |
+| Extract Case Features | `handle` | `json` | no | 7 ms |
+| Check Conformance | `xes` | `json` | no | 8 ms |
 
-| Metric | Value |
-|--------|-------|
-| Time | O(n + a²) |
-| Space | O(a²) |
-| Quality | Medium-High |
-| Speed | 3ms/100 events |
-| Output | Petri Net |
-| Best for | Noisy logs |
-| Parameters | noise_threshold (0.0-1.0) |
+---
 
-### Inductive Miner
+## Slow Tier
 
-```toml
-[discovery]
-algorithm = "inductive"
-profile = "balanced"
-```
+Suitable for offline discovery and comparative studies. 20 ms to 75 ms per 500-event log.
 
-| Metric | Value |
-|--------|-------|
-| Time | O(n log n) |
-| Space | O(a²) |
-| Quality | High |
-| Speed | 5ms/100 events |
-| Output | Process Tree |
-| Best for | Complex structures |
+| Tool | Input | Output | OCEL | Duration |
+|------|-------|--------|------|----------|
+| Discover ILP Optimization | `xes` | `json` | no | 20 ms |
+| Discover Genetic Algorithm | `xes` | `json` | no | 40 ms |
+| Discover OC Petri Net | `handle` | `json` | yes | 50 ms |
+| Compare Algorithms | `xes` | `json` | no | 75 ms |
 
-### Genetic Algorithm
+---
 
-```toml
-[discovery]
-algorithm = "genetic"
-profile = "quality"
-population_size = 100
-generations = 50
-```
+## Input Formats
 
-| Metric | Value |
-|--------|-------|
-| Time | O(g×n×p) |
-| Space | O(g×p×a²) |
-| Quality | Very High |
-| Speed | 40ms/100 events |
-| Output | Petri Net |
-| Best for | Best-effort accuracy |
-| Parameters | population_size, generations |
-
-### ILP Optimization
-
-```toml
-[discovery]
-algorithm = "ilp"
-profile = "quality"
-timeout_ms = 30000
-```
-
-| Metric | Value |
-|--------|-------|
-| Time | O(2^a) (bounded) |
-| Space | O(2^a) |
-| Quality | Optimal |
-| Speed | Variable (bounded by timeout) |
-| Output | Petri Net |
-| Best for | Correctness-critical |
-| Parameters | timeout_ms |
-
-## Profile → Algorithm Mapping
-
-| Profile | Primary | Secondary |
-|---------|---------|-----------|
-| **fast** | DFG | Alpha |
-| **balanced** | Heuristic | Inductive |
-| **quality** | Genetic | ILP |
-| **stream** | DFG | Fast variants |
-| **research** | All | All |
-
-## Complexity Analysis
-
-```
-        Quality
-           ↑
-        ILP ●
-          / \
-       Genetic
-       /     \
-  Inductive  ●
-    /         \
-Heuristic ●    \
-  /             \
-Alpha●           \
-  /               \
-DFG ●─────────────→ Speed
-```
-
-## Parameter Reference
-
-### Heuristic
-
-- `noise_threshold` (0.0-1.0): Filter infrequent follows
-- `dependency_threshold` (0.0-1.0): Minimum dependency strength
-- `concurrency_threshold` (0.0-1.0): Detect parallelism
-
-### Genetic
-
-- `population_size` (10-500): Population size
-- `generations` (10-200): Iterations
-- `mutation_rate` (0.0-1.0): Mutation probability
-- `elite_size` (1-50): Keep best N
-
-### ILP
-
-- `timeout_ms` (1000-3600000): Max search time
-- `timeout_search` (1000-3600000): Search timeout
+| Format | Description |
+|--------|-------------|
+| `xes` | IEEE XES event log |
+| `ocel2` | OCEL 2.0 object-centric event log (JSON) |
+| `handle` | Pre-loaded in-process WASM handle (use `load_ocel` or `discover_dfg` first) |
+| `none` | No input required |
 
 ## See Also
 
-- [How-To: Choose Algorithm](../how-to/choose-algorithm.md)
-- [Explanation: Profiles](../explanation/profiles.md)
-- [Reference: Benchmarks](./benchmarks.md)
+- [HTTP API Reference](./http-api.md) — endpoint paths and request schema
+- [Performance Benchmarks](./benchmarks.md) — SLA budgets and methodology

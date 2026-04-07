@@ -4,7 +4,7 @@
  * Provides real-time monitoring of long-running executions
  */
 import { StatusUpdate, EngineState, ExecutionPlan } from '@wasm4pm/types';
-import { CheckpointManager, Checkpoint } from './checkpointing';
+import { CheckpointManager, Checkpoint } from './checkpointing.js';
 /**
  * Configuration for watch mode
  */

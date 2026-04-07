@@ -69,5 +69,26 @@ export function buildCliOverrides(args: Record<string, unknown>): CliOverrides {
     overrides.watchEnabled = args.watch;
   }
 
+  if (typeof args.predictionEnabled === 'boolean') {
+    overrides.predictionEnabled = args.predictionEnabled;
+  }
+  if (args.predictionTasks) {
+    overrides.predictionTasks = String(args.predictionTasks)
+      .split(',')
+      .map(t => t.trim())
+      .filter(Boolean);
+  }
+  if (args.predictionActivityKey) {
+    overrides.predictionActivityKey = String(args.predictionActivityKey);
+  }
+  if (args.predictionNgramOrder) {
+    const n = Number(args.predictionNgramOrder);
+    if (!isNaN(n)) overrides.predictionNgramOrder = n;
+  }
+  if (args.predictionDriftWindow) {
+    const w = Number(args.predictionDriftWindow);
+    if (!isNaN(w)) overrides.predictionDriftWindow = w;
+  }
+
   return overrides;
 }

@@ -3,7 +3,7 @@
  * State machine and transition rules for engine lifecycle
  * Validates state transitions, enforces invariants, and emits lifecycle events
  */
-import { canTransition, getValidTransitions, TransitionValidator, } from './transitions';
+import { canTransition, getValidTransitions, TransitionValidator, } from './transitions.js';
 // Re-export for backward compatibility
 export { TransitionValidator };
 /**
@@ -11,13 +11,11 @@ export { TransitionValidator };
  * Enforces valid state transitions and emits events for lifecycle changes
  */
 export class StateMachine {
-    constructor() {
-        this.currentState = 'uninitialized';
-        this.listeners = new Set();
-        this.transitionHistory = [];
-        this.lastTransitionTime = null;
-        this.stateEnteredAt = new Date();
-    }
+    currentState = 'uninitialized';
+    listeners = new Set();
+    transitionHistory = [];
+    lastTransitionTime = null;
+    stateEnteredAt = new Date();
     /**
      * Gets the current state
      */

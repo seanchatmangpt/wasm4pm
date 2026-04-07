@@ -223,7 +223,7 @@ wscat -c ws://localhost:3000/api/v1/stream
 | Document | Purpose |
 |----------|---------|
 | [**API.md**](./docs/API.md) | Complete function reference + pmctl commands |
-| [**ALGORITHMS.md**](./docs/ALGORITHMS.md) | Algorithm descriptions and parameters |
+| [**ALGORITHMS.md**](./docs/reference/algorithms.md) | Algorithm descriptions and parameters |
 | [**FAQ.md**](./docs/FAQ.md) | Troubleshooting and common questions |
 
 ### Package Documentation
@@ -240,12 +240,11 @@ wscat -c ws://localhost:3000/api/v1/stream
 | Document | Purpose |
 |----------|---------|
 | [**BROWSER-BENCHMARKS.md**](./docs/BROWSER-BENCHMARKS.md) | Browser performance testing |
-| [**MCP.md**](./docs/MCP.md) | Claude integration (Model Context Protocol) |
-| [**THESIS.md**](./docs/THESIS.md) | Academic research and benchmarks |
+| [**MCP.md**](./wasm4pm/MCP.md) | Claude integration (Model Context Protocol) |
 
 ## 📊 Performance
 
-**Benchmarking Results** (See [BROWSER-BENCHMARKS.md](./docs/BROWSER-BENCHMARKS.md) and [THESIS.md](./docs/THESIS.md) for full details):
+**Benchmarking Results** (See [BROWSER-BENCHMARKS.md](./docs/BROWSER-BENCHMARKS.md) and [reference/benchmarks.md](./docs/reference/benchmarks.md) for full details):
 
 | Algorithm | 100 events | 1K events | 10K events | 100K events |
 |-----------|-----------|-----------|-----------|-----------|
@@ -330,15 +329,18 @@ wasm4pm/                           # Monorepo root
 │       │   └── client.ts           # TypeScript bindings
 │       ├── benchmarks/             # Performance tests
 │       └── __tests__/              # Integration tests
-├── docs/                           # Documentation
+├── docs/                           # Documentation (Diataxis)
+│   ├── INDEX.md                    # Full doc index
 │   ├── QUICKSTART.md
 │   ├── TUTORIAL.md
 │   ├── DEPLOYMENT.md
 │   ├── API.md
-│   ├── ALGORITHMS.md
 │   ├── FAQ.md
-│   ├── BROWSER-BENCHMARKS.md
-│   └── ...
+│   ├── tutorials/                  # 7 hands-on guides
+│   ├── how-to/                     # 20 task-focused guides
+│   ├── explanation/                # 12 conceptual deep-dives
+│   ├── reference/                  # 16 technical specs
+│   └── BROWSER-BENCHMARKS.md
 ├── examples/                       # Example scripts
 ├── RELEASE_NOTES.md                # This version's highlights
 ├── MIGRATION_GUIDE.md              # Upgrade guide
@@ -430,7 +432,7 @@ Choose whichever license works best for your use case.
 - **NPM Package**: https://www.npmjs.com/package/wasm4pm
 - **GitHub**: https://github.com/seanchatmangpt/wasm4pm
 - **Documentation**: See docs/ directory
-- **Research Paper**: [THESIS.md](./process_mining_wasm/THESIS.md)
+- **Research Paper**: See [REAL-BENCHMARK-RESULTS.md](./docs/REAL-BENCHMARK-RESULTS.md) for benchmarks and performance data
 
 ## 📚 Citation
 

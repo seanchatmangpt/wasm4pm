@@ -128,7 +128,7 @@ This documentation uses the **Diataxis framework**, which organizes content into
 ### Observability
 - [Observability Design](explanation/observability-design.md)
   - 3-layer model, non-blocking guarantees, secret redaction
-- [Why Telemetry Never Breaks Execution](explanation/otel-non-breaking.md)
+- [Why Telemetry Never Breaks Execution](explanation/observability-design.md)
 
 ### Algorithms
 - [Algorithm Selection and Profiles](explanation/profiles.md)
@@ -143,7 +143,7 @@ This documentation uses the **Diataxis framework**, which organizes content into
 ### Philosophy
 - [Why No Runtime Arguments](explanation/design-no-runtime-args.md)
   - System design principles, binding early, reproducibility
-- [Why Receipts Matter](explanation/design-receipts.md)
+- [Why Receipts Matter](explanation/receipts.md)
   - Auditability, compliance, verification
 - [Error Handling Philosophy](explanation/error-handling.md)
   - 12 error codes, mandatory remediation
@@ -163,8 +163,6 @@ This documentation uses the **Diataxis framework**, which organizes content into
 ### APIs
 - [CLI Commands](reference/cli-commands.md) — All pmctl commands and flags
 - [HTTP API Endpoints](reference/http-api.md) — /run, /watch, /status, /explain
-- [JavaScript/TypeScript Types](reference/types.ts) — Complete type definitions
-- [Rust FFI Bindings](reference/rust-bindings.md) — WASM-bindgen signatures
 
 ### Configuration
 - [Config Schema](reference/config-schema.md) — Complete TOML/JSON format
@@ -186,9 +184,7 @@ This documentation uses the **Diataxis framework**, which organizes content into
 - [GitHub Actions](reference/github-actions.md) — CI/CD workflows
 
 ### Internals
-- [WASM Memory Model](reference/wasm-memory.md)
-- [Panic Hooks](reference/panic-hooks.md)
-- [Build Configuration](reference/build-config.md)
+See [explanation/execution-substrate.md](explanation/execution-substrate.md) for the engine architecture, and [DEPLOYMENT.md](./DEPLOYMENT.md) for build configuration.
 
 ---
 
@@ -288,10 +284,10 @@ A: Yes! See [How-To: Custom Sink](how-to/custom-sink.md) to extend the system.
 
 ## 📋 Documentation Checklist
 
-- ✅ Tutorials: 7 hands-on guides (beginner → advanced)
+- ✅ Tutorials: 7 hands-on guides (beginner to advanced)
 - ✅ How-To Guides: 20 task-focused instructions
-- ✅ Explanations: 9 conceptual deep-dives
-- ✅ Reference: 30+ technical specifications
+- ✅ Explanations: 12 conceptual deep-dives
+- ✅ Reference: 16 technical specifications
 - ✅ Cross-linking: Every doc links related content
 - ✅ Examples: 50+ code samples
 - ✅ Search: Topic-based index above
@@ -316,6 +312,13 @@ A: Yes! See [How-To: Custom Sink](how-to/custom-sink.md) to extend the system.
 docs/
 ├── INDEX.md                          ← You are here
 ├── DIATAXIS.md                       ← Framework overview
+├── QUICKSTART.md                     ← 5-minute setup
+├── TUTORIAL.md                       ← Step-by-step examples
+├── DEPLOYMENT.md                     ← Build, test, deploy
+├── API.md                            ← Complete API reference
+├── FAQ.md                            ← Troubleshooting
+├── CHANGELOG.md                      ← Version history
+├── PROJECT_STATUS.md                 ← Roadmap
 ├── tutorials/                        ← Practical + Learning
 │   ├── first-model.md
 │   ├── watch-mode.md
@@ -329,11 +332,20 @@ docs/
 │   ├── choose-algorithm.md
 │   ├── export-formats.md
 │   ├── debug-config.md
+│   ├── monitor-jobs.md
 │   ├── nodejs-integration.md
 │   ├── browser-integration.md
+│   ├── custom-sink.md
 │   ├── docker-deploy.md
+│   ├── kubernetes-deploy.md
 │   ├── cicd-setup.md
-│   └── otel-datadog.md
+│   ├── otel-datadog.md
+│   ├── version-control.md
+│   ├── environment-variables.md
+│   ├── multi-env-config.md
+│   ├── performance-tuning.md
+│   ├── error-recovery.md
+│   └── testing-workflows.md
 ├── explanation/                      ← Theoretical + Learning
 │   ├── execution-substrate.md
 │   ├── determinism.md
@@ -343,18 +355,23 @@ docs/
 │   ├── ocpm.md
 │   ├── streaming.md
 │   ├── error-handling.md
-│   └── engine-states.md
+│   ├── design-no-runtime-args.md
+│   ├── receipts.md
+│   ├── engine-states.md
+│   └── watch-reconnection.md
 └── reference/                        ← Theoretical + Doing
     ├── cli-commands.md
     ├── http-api.md
     ├── config-schema.md
     ├── error-codes.md
-    ├── algorithms.md
-    ├── types.ts
+    ├── exit-codes.md
     ├── environment-variables.md
+    ├── data-types.md
     ├── docker.md
     ├── kubernetes.md
     ├── github-actions.md
+    ├── algorithm-parameters.md
+    ├── algorithms.md
     └── benchmarks.md
 ```
 

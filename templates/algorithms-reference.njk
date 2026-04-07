@@ -1,0 +1,54 @@
+# Algorithm Reference
+
+wasm4pm provides {{ results | length }} process mining tools across three performance tiers.
+Each tier reflects typical execution time for a benchmark log of 500 events. Tier boundaries
+are FastTier (< 1 ms), MediumTier (< 10 ms), and SlowTier (< 100 ms).
+
+---
+
+## Fast Tier
+
+Suitable for interactive use and real-time pipelines. Sub-millisecond to 2 ms per 500-event log.
+
+| Tool | Input | Output | OCEL | Duration |
+|------|-------|--------|------|----------|
+{% for row in results %}{% if row.tier == "FastTier" %}| {{ row.label }} | `{{ row.inputFormat }}` | `{{ row.outputFormat }}` | {{ "yes" if row.supportsOCEL == "true" else "no" }} | {{ row.durationMs }} ms |
+{% endif %}{% endfor %}
+
+---
+
+## Medium Tier
+
+Suitable for batch processing and on-demand analysis. 3 ms to 8 ms per 500-event log.
+
+| Tool | Input | Output | OCEL | Duration |
+|------|-------|--------|------|----------|
+{% for row in results %}{% if row.tier == "MediumTier" %}| {{ row.label }} | `{{ row.inputFormat }}` | `{{ row.outputFormat }}` | {{ "yes" if row.supportsOCEL == "true" else "no" }} | {{ row.durationMs }} ms |
+{% endif %}{% endfor %}
+
+---
+
+## Slow Tier
+
+Suitable for offline discovery and comparative studies. 20 ms to 75 ms per 500-event log.
+
+| Tool | Input | Output | OCEL | Duration |
+|------|-------|--------|------|----------|
+{% for row in results %}{% if row.tier == "SlowTier" %}| {{ row.label }} | `{{ row.inputFormat }}` | `{{ row.outputFormat }}` | {{ "yes" if row.supportsOCEL == "true" else "no" }} | {{ row.durationMs }} ms |
+{% endif %}{% endfor %}
+
+---
+
+## Input Formats
+
+| Format | Description |
+|--------|-------------|
+| `xes` | IEEE XES event log |
+| `ocel2` | OCEL 2.0 object-centric event log (JSON) |
+| `handle` | Pre-loaded in-process WASM handle (use `load_ocel` or `discover_dfg` first) |
+| `none` | No input required |
+
+## See Also
+
+- [HTTP API Reference](./http-api.md) — endpoint paths and request schema
+- [Performance Benchmarks](./benchmarks.md) — SLA budgets and methodology
