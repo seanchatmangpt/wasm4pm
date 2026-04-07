@@ -9,149 +9,134 @@ Build, test, publish, and deploy wasm4pm to production.
 4. [Publishing to npm](#publishing-to-npm)
 5. [Using in Production](#using-in-production)
 6. [Docker Deployment](#docker-deployment)
-7. [Troubleshooting](#troubleshooting)
+7. [Performance Optimization](#performance-optimization)
+8. [Troubleshooting](#troubleshooting)
 
 ---
 
 ## Development Setup
 
 ### Prerequisites
-- **Node.js**: 16.x or later (18.x recommended)
+- **Node.js**: 18.x or later (22.x recommended)
+- **pnpm**: 8.x or later (`npm install -g pnpm`)
 - **Rust**: 1.70+ (install from https://rustup.rs/)
 - **wasm-pack**: `cargo install wasm-pack`
-- **npm**: Comes with Node.js
 
 ### Clone and Setup
 ```bash
 git clone https://github.com/seanchatmangpt/wasm4pm
 cd wasm4pm
 
-# Install Node dependencies
-cd process_mining_wasm
-npm install
+# Install all workspace dependencies (pnpm monorepo)
+pnpm install
 
-# Verify setup
-npm run build:bundler
-npm test
+# Build all packages
+pnpm build
+
+# Run all tests
+pnpm test
 ```
 
 ---
 
 ## Building
 
-### For Bundlers (Webpack, Vite, etc.)
-```bash
-npm run build:bundler
-```
-- Output: `pkg/` directory
-- Size: ~2MB (WASM binary)
-- Gzipped: ~600KB
-- Use in: Webpack, Vite, Next.js, React, Vue
+The project is a **pnpm monorepo** with 16 packages. Build from the workspace root.
 
-### For Node.js
+### All Packages
 ```bash
-npm run build:nodejs
+pnpm build
 ```
-- Output: `pkg/` directory
-- Target: Server-side JavaScript
-- Use in: Express, FastAPI, backend services
 
-### For Web (Direct Script Tag)
+### WASM Core Only
 ```bash
-npm run build:web
+pnpm build:wasm        # alias for pnpm --filter wasm4pm build:all
 ```
-- Output: `pkg/` directory
-- Use: `<script src="pkg/wasm4pm.js"></script>`
-- Size: Larger, includes runtime
 
-### Build All Targets
+### Specific Targets (from wasm4pm/ subdirectory)
 ```bash
-npm run build:all
+cd wasm4pm
+
+# For Bundlers (Webpack, Vite, etc.)
+pnpm run build:bundler
+# Output: pkg/ directory, ~2MB WASM (gzipped: ~600KB)
+
+# For Node.js
+pnpm run build:nodejs
+
+# For Web (Direct Script Tag)
+pnpm run build:web
+
+# All targets
+pnpm run build:all
 ```
-Builds for bundler, Node.js, and web targets.
+
+### Engine + CLI
+```bash
+pnpm build:engine       # @wasm4pm/engine
+pnpm build:cli          # @wasm4pm/pmctl
+```
 
 ### Development Build
 ```bash
-npm run build:dev
+pnpm run build:dev
 ```
-- No optimizations
-- Faster compilation
-- Larger binary (~5MB)
+- No optimizations, faster compilation, larger binary (~5MB)
 - Use for local development only
 
 ### Release Build (Optimized)
 ```bash
-npm run build:release
+pnpm run build:release
 ```
-- Full optimization (WASM size -70%)
-- Optimizations: LTO, dead code elimination
-- Slower compilation (~60s)
+- Full optimization (WASM size -70%): LTO, dead code elimination
 - Use for production
 
 ---
 
 ## Testing
 
-### Unit Tests
+### All Tests (monorepo-wide)
 ```bash
-npm test
+pnpm test
 ```
-Runs all unit tests with Vitest.
+
+### Unit Tests (from wasm4pm/ subdirectory)
+```bash
+cd wasm4pm
+pnpm test
+```
 
 ### Integration Tests
 ```bash
-npm run test:integration
+cd wasm4pm
+pnpm run test:integration
 ```
-Tests real-world workflows and algorithms.
 
-### Performance Benchmarks (Node.js)
+### Performance Benchmarks (Rust Criterion + WASM workers)
 ```bash
-npm run bench
+make bench             # Full suite: Rust + WASM, concurrent
+make bench-rust        # Criterion-only (5 groups in parallel)
+make bench-wasm        # Node.js WASM workers only
+make bench-quick       # Smoke-test (compile check)
 ```
-Runs Node.js performance benchmarks using parallel worker threads. Tests all algorithms across multiple log sizes.
-
-#### CI Mode (Faster)
-```bash
-npm run bench:ci
-```
-Fast benchmark run with reduced iterations for CI/CD pipelines (3-5 minutes).
 
 ### Browser Performance Benchmarks
 ```bash
-npm run bench:browser
+cd wasm4pm
+pnpm run bench:browser
 ```
-Runs performance benchmarks in headless Chromium browser environment. Tests web-target WASM build across algorithm suite.
-
-#### Browser CI Mode
-```bash
-npm run bench:browser:ci
-```
-Fast browser benchmarks for CI pipelines (reduced iterations, ~3 minutes).
-
-#### Browser Benchmark Dashboard
-After running benchmarks, view results interactively:
-```bash
-open wasm4pm/benchmarks/dashboard.html
-```
-Upload JSON result files for visualization and analysis.
-
-#### Compare Node.js vs Browser Performance
-```bash
-node wasm4pm/benchmarks/compare.js results/nodejs_bench.json results/browser_bench.json
-```
-Side-by-side performance comparison showing speedup ratios and distribution.
 
 ### Watch Mode (Development)
 ```bash
-npm run test:watch
+cd wasm4pm
+pnpm run test:watch
 ```
-Automatically reruns tests on file changes.
 
 ### Coverage Report
 ```bash
-npm run test:coverage
+cd wasm4pm
+pnpm run test:coverage
 ```
-Generates code coverage report.
 
 ---
 
@@ -173,36 +158,38 @@ Generates code coverage report.
 ### Publishing Steps
 
 #### 1. Update Version
-Edit `package.json` and `Cargo.toml`:
+Edit `package.json` (workspace root and `wasm4pm/` subdirectory) and `wasm4pm/Cargo.toml`:
 ```json
 {
-  "version": "0.6.0"
+  "version": "26.5.0"
 }
 ```
 
 #### 2. Run Tests
 ```bash
-npm test
-npm run test:integration
-npm run bench
+pnpm test
+pnpm run release:verify
 ```
 
 #### 3. Build Release
 ```bash
-npm run build:release
+pnpm run build:all
 ```
 
 #### 4. Generate Changelog
-Document changes since last version.
+```bash
+pnpm run release:generate-changelog
+```
 
 #### 5. Create Git Tag
 ```bash
-git tag -a v0.6.0 -m "Release version 0.6.0"
-git push origin v0.6.0
+git tag -a v26.5.0 -m "Release version 26.5.0"
+git push origin v26.5.0
 ```
 
 #### 6. Publish to npm
 ```bash
+cd wasm4pm
 npm publish
 ```
 
@@ -210,11 +197,14 @@ Verify: https://www.npmjs.com/package/wasm4pm
 
 #### 7. Create GitHub Release
 ```bash
-gh release create v0.6.0 --title "wasm4pm v0.6.0" --body "Release notes..."
+gh release create v26.5.0 --title "wasm4pm v26.5.0" --body "Release notes..."
 ```
 
 ### CI/CD Automation
-GitHub Actions automatically publishes on release (see `.github/workflows/publish.yml`).
+GitHub Actions automatically publishes on release (see `.github/workflows/`). Run the full release verification locally:
+```bash
+pnpm run release:full
+```
 
 ---
 
@@ -377,51 +367,16 @@ export default {
 
 ## Docker Deployment
 
-### Dockerfile for Node.js Service
-```dockerfile
-FROM node:18-alpine
+For detailed Docker guides, see:
+- [how-to/docker-deploy.md](./how-to/docker-deploy.md) — Production deployment recipes
+- [reference/docker.md](./reference/docker.md) — Dockerfile reference and compose examples
 
-WORKDIR /app
-
-# Copy package files
-COPY package.json package-lock.json ./
-
-# Install dependencies
-RUN npm ci --production
-
-# Copy application code
-COPY . .
-
-# Copy wasm4pm package
-COPY node_modules/wasm4pm ./node_modules/wasm4pm
-
-# Expose port
-EXPOSE 3000
-
-# Start service
-CMD ["node", "server.js"]
-```
-
-### Docker Compose
-```yaml
-version: '3.8'
-
-services:
-  process-mining-api:
-    build: .
-    ports:
-      - "3000:3000"
-    environment:
-      - NODE_ENV=production
-      - LOG_LEVEL=info
-    volumes:
-      - ./data:/app/data
-    restart: unless-stopped
-```
-
-### Build and Run
+### Quick Start
 ```bash
+# Build the WASM service image
 docker build -t wasm4pm-service .
+
+# Run
 docker run -p 3000:3000 wasm4pm-service
 ```
 
@@ -594,14 +549,14 @@ import 'wasm-feature-detect';
 
 ### Checking Version
 ```javascript
-const version = wasm4pm.getVersion();
+const version = wasm4pm.get_version();
 console.log(`wasm4pm v${version}`);
 ```
 
 ### Migration Guide
 Always check CHANGELOG.md for breaking changes:
 ```bash
-cat CHANGELOG.md
+cat docs/CHANGELOG.md
 ```
 
 ---

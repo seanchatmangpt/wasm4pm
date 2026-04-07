@@ -1,0 +1,239 @@
+[project]
+name = "wasm4pm"
+version = "26.4.5"
+
+[ontology]
+source = "/Users/sac/ostar/plugins/wasm4pm/ontology/surface.ttl"
+format = "turtle"
+
+# Additional ontology sources (loaded alongside surface.ttl)
+[[ontology.additional]]
+source = "/Users/sac/ostar/plugins/wasm4pm/ontology/lifecycle.ttl"
+format = "turtle"
+
+[[ontology.additional]]
+source = "/Users/sac/ostar/plugins/wasm4pm/ontology/git.ttl"
+format = "turtle"
+
+[generation]
+output_dir = "."
+templates_dir = "./templates"
+
+[[generation.rules]]
+name = "algorithms-reference"
+description = "Full tool table grouped by performance tier with input/output formats, OCEL support, and baseline duration"
+query = """
+PREFIX wasm4pm: <urn:wasm4pm:>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+SELECT ?toolId ?label ?tier ?inputFormat ?outputFormat ?supportsOCEL ?durationMs
+WHERE {
+  ?tool a wasm4pm:Tool ;
+        wasm4pm:toolId ?toolId ;
+        skos:prefLabel ?label ;
+        wasm4pm:performanceTier ?tierIRI ;
+        wasm4pm:inputFormat ?inputFormat ;
+        wasm4pm:outputFormat ?outputFormat ;
+        wasm4pm:supportsOCEL ?supportsOCEL ;
+        wasm4pm:durationMs ?durationMs .
+  BIND(STRAFTER(STR(?tierIRI), "urn:wasm4pm:") AS ?tier)
+}
+ORDER BY ?tier ?durationMs
+"""
+template = "./templates/algorithms-reference.njk"
+output_file = "docs/reference/algorithms.md"
+enabled = true
+mode = "overwrite"
+
+[[generation.rules]]
+name = "http-api-reference"
+description = "HTTP endpoint table with toolId, human label, endpoint path, and input format for the Kubernetes service"
+query = """
+PREFIX wasm4pm: <urn:wasm4pm:>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+SELECT ?toolId ?label ?endpoint ?inputFormat ?outputFormat
+WHERE {
+  ?tool a wasm4pm:Tool ;
+        wasm4pm:toolId ?toolId ;
+        skos:prefLabel ?label ;
+        wasm4pm:k8sEndpoint ?endpoint ;
+        wasm4pm:inputFormat ?inputFormat ;
+        wasm4pm:outputFormat ?outputFormat .
+}
+ORDER BY ?endpoint
+"""
+template = "./templates/http-api-reference.njk"
+output_file = "docs/reference/http-api.md"
+enabled = true
+mode = "overwrite"
+
+[[generation.rules]]
+name = "benchmarks-reference"
+description = "Performance table ordered by baseline duration with computed SLA budgets per tier"
+query = """
+PREFIX wasm4pm: <urn:wasm4pm:>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+SELECT ?toolId ?label ?tier ?durationMs
+WHERE {
+  ?tool a wasm4pm:Tool ;
+        wasm4pm:toolId ?toolId ;
+        skos:prefLabel ?label ;
+        wasm4pm:performanceTier ?tierIRI ;
+        wasm4pm:durationMs ?durationMs .
+  BIND(STRAFTER(STR(?tierIRI), "urn:wasm4pm:") AS ?tier)
+}
+ORDER BY ?durationMs
+"""
+template = "./templates/benchmarks-reference.njk"
+output_file = "docs/reference/benchmarks.md"
+enabled = true
+mode = "overwrite"
+
+[[generation.rules]]
+name = "tool-catalog"
+description = "TypeScript catalog of all wasm4pm tools with typed constants, a ToolSpec record, and helper functions"
+query = """
+PREFIX wasm4pm: <urn:wasm4pm:>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+SELECT ?toolId ?label ?tier ?inputFormat ?outputFormat ?supportsOCEL ?requiresHandle ?durationMs ?endpoint
+WHERE {
+  ?tool a wasm4pm:Tool ;
+        wasm4pm:toolId ?toolId ;
+        skos:prefLabel ?label ;
+        wasm4pm:performanceTier ?tierIRI ;
+        wasm4pm:inputFormat ?inputFormat ;
+        wasm4pm:outputFormat ?outputFormat ;
+        wasm4pm:supportsOCEL ?supportsOCEL ;
+        wasm4pm:requiresHandle ?requiresHandle ;
+        wasm4pm:durationMs ?durationMs ;
+        wasm4pm:k8sEndpoint ?endpoint .
+  BIND(STRAFTER(STR(?tierIRI), "urn:wasm4pm:") AS ?tier)
+}
+ORDER BY ?toolId
+"""
+template = "./templates/tool-catalog.njk"
+output_file = "packages/templates/src/index.ts"
+enabled = true
+mode = "overwrite"
+
+[[generation.rules]]
+name = "tool-capabilities-matrix"
+description = "Full capability matrix for all 18 tools grouped by tier, with summary counts — primary reference for README"
+query = """
+PREFIX wasm4pm: <urn:wasm4pm:>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+SELECT ?toolId ?label ?tier ?inputFormat ?supportsOCEL ?requiresHandle ?durationMs
+WHERE {
+  ?tool a wasm4pm:Tool ;
+        wasm4pm:toolId ?toolId ;
+        skos:prefLabel ?label ;
+        wasm4pm:performanceTier ?tierIRI ;
+        wasm4pm:inputFormat ?inputFormat ;
+        wasm4pm:supportsOCEL ?supportsOCEL ;
+        wasm4pm:requiresHandle ?requiresHandle ;
+        wasm4pm:durationMs ?durationMs .
+  BIND(STRAFTER(STR(?tierIRI), "urn:wasm4pm:") AS ?tier)
+}
+ORDER BY ?tier ?durationMs
+"""
+template = "./templates/tool-capabilities-matrix.njk"
+output_file = "docs/TOOLS.md"
+enabled = true
+mode = "overwrite"
+
+[[generation.rules]]
+name = "git-lifecycle"
+description = "Git commit type distribution and PR lifecycle states from the wasm4pm git ontology — used as XES event sources for process mining predictions"
+query = """
+PREFIX git: <urn:wasm4pm:git:>
+PREFIX github: <urn:wasm4pm:github:>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+
+SELECT ?type ?label ?definition WHERE {
+  ?type a git:CommitType .
+  OPTIONAL { ?type rdfs:label ?label }
+  OPTIONAL { ?type skos:definition ?definition }
+} ORDER BY ?label
+"""
+template = "./templates/git-lifecycle.njk"
+output_file = "docs/GIT_LIFECYCLE.md"
+enabled = true
+mode = "overwrite"
+
+[[generation.rules]]
+name = "prediction-otel-attrs"
+description = "OTel attribute names for process mining predictions — sourced from weaver registry, used by pmctl and MCP server instrumentation"
+query = """
+PREFIX wasm4pm: <urn:wasm4pm:>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT ?tool ?tier ?durationMs WHERE {
+  ?tool a wasm4pm:Tool ;
+        wasm4pm:performanceTier ?tier ;
+        wasm4pm:durationMs ?durationMs .
+  FILTER(?durationMs <= 10)
+} ORDER BY ?durationMs
+"""
+template = "./templates/prediction-otel-attrs.njk"
+output_file = "docs/PREDICTION_OTEL.md"
+enabled = true
+mode = "overwrite"
+
+[[generation.rules]]
+name = "algorithm-registry"
+description = "TypeScript constants for ALGORITHM_IDS, ALGORITHM_ID_TO_STEP_TYPE, and PROFILE_ALGORITHMS — derived from KernelAlgorithm ontology individuals. Consumed by @wasm4pm/config (schema validation) and @wasm4pm/planner (step generation)."
+query = """
+PREFIX wasm4pm: <urn:wasm4pm:>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+SELECT ?kernelId ?plannerStepType ?outputType ?speedTier ?qualityTier ?profileId ?cliAlias ?label
+WHERE {
+  ?algo a wasm4pm:KernelAlgorithm ;
+        wasm4pm:kernelId ?kernelId ;
+        wasm4pm:plannerStepType ?plannerStepType ;
+        wasm4pm:outputType ?outputType ;
+        wasm4pm:speedTier ?speedTier ;
+        wasm4pm:qualityTier ?qualityTier ;
+        wasm4pm:cliAlias ?cliAlias ;
+        skos:prefLabel ?label ;
+        wasm4pm:supportedIn ?profile .
+  ?profile wasm4pm:profileId ?profileId .
+}
+ORDER BY ?speedTier ?profileId
+"""
+template = "./templates/algorithm-registry.njk"
+output_file = "packages/templates/src/algorithm-registry.ts"
+enabled = true
+mode = "overwrite"
+
+[[generation.rules]]
+name = "prediction-tasks"
+description = "TypeScript constants for PREDICTION_TASKS (underscore, for config enum) and VALID_PREDICT_CLI_TASKS (hyphen, for pmctl argument parsing) — derived from PredictionTask ontology individuals."
+query = """
+PREFIX wasm4pm: <urn:wasm4pm:>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+
+SELECT ?taskId ?cliSlug ?label
+WHERE {
+  ?task a wasm4pm:PredictionTask ;
+        wasm4pm:taskId ?taskId ;
+        wasm4pm:cliSlug ?cliSlug ;
+        skos:prefLabel ?label .
+}
+ORDER BY ?taskId
+"""
+template = "./templates/prediction-tasks.njk"
+output_file = "packages/templates/src/prediction-tasks.ts"
+enabled = true
+mode = "overwrite"

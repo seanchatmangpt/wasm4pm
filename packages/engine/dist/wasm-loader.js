@@ -20,8 +20,14 @@ export var WasmErrorCode;
  * Handles panic hooks, memory validation, and runtime detection
  */
 export class WasmLoader {
+    static instance;
+    module;
+    initialized = false;
+    config;
+    observability;
+    panicHook;
+    runtimeEnvironment;
     constructor(config = {}) {
-        this.initialized = false;
         this.config = config;
         this.observability = config.observability || new ObservabilityLayer();
         this.runtimeEnvironment = this.detectRuntimeEnvironment();
@@ -167,6 +173,10 @@ export class WasmLoader {
         if (!this.module) {
             throw new Error('Module not loaded');
         }
+        // wasm-pack bundler target does not expose .memory directly — skip if absent
+        if (!this.module.memory) {
+            return;
+        }
         try {
             const buffer = this.module.memory.buffer;
             // Check memory is accessible
@@ -212,7 +222,7 @@ export class WasmLoader {
             // Import from the built wasm4pm package
             // Path is relative to where this file runs
             const modulePath = this.config.modulePath ||
-                '../../wasm4pm/pkg/wasm4pm.js';
+                '../../../wasm4pm/pkg/wasm4pm.js';
             // Use dynamic import for flexibility
             wasmModule = await import(modulePath);
         }

@@ -3,13 +3,9 @@
  * Perspective: "Does this case complete normally?" — Van der Aalst
  *
  * Algorithms:
+ *   score_anomaly             — DFG-based anomaly score [0,1]
  *   compute_boundary_coverage — fraction of matching traces that complete normally
  *   compute_trace_likelihood  — structured log-likelihood { ll, normalized }
- *
- * NOTE: score_anomaly requires a DFG stored as a handle. discover_dfg returns
- * the DFG as a JS object (not a stored handle), so score_anomaly cannot be
- * called with its result. This is a known API mismatch tracked for a future
- * fix: add discover_dfg_handle() that stores the DFG and returns a string handle.
  */
 
 import { describe, it, expect, afterAll } from 'vitest';
@@ -28,6 +24,60 @@ async function loadWasm() {
   w.init();
   return w;
 }
+
+// ─── score_anomaly ────────────────────────────────────────────────────────────
+
+describe('score_anomaly', () => {
+  it('sample — normal trace scores low', async () => {
+    const wasm = await loadWasm();
+    const log = wasm.load_eventlog_from_xes(SAMPLE);
+    const dfg = wasm.discover_dfg_handle(log, 'concept:name');
+    const t = performance.now();
+    const result = JSON.parse(wasm.score_anomaly(dfg, JSON.stringify(['Request', 'Review', 'Approve', 'Complete'])));
+    const dur = Number((performance.now() - t).toFixed(3));
+    expect(result.score).toBeGreaterThanOrEqual(0);
+    expect(result.score).toBeLessThanOrEqual(1);
+    expect(result).toHaveProperty('is_anomalous');
+    rows.push({ algorithm: 'score_anomaly', dataset: 'sample', traces: SAMPLE_TRACES, durationMs: dur, note: `score=${result.score?.toFixed(3)} anomalous=${result.is_anomalous}` });
+  });
+
+  it('sample — all-missing-edges trace is anomalous', async () => {
+    const wasm = await loadWasm();
+    const log = wasm.load_eventlog_from_xes(SAMPLE);
+    const dfg = wasm.discover_dfg_handle(log, 'concept:name');
+    const result = JSON.parse(wasm.score_anomaly(dfg, JSON.stringify(['ZZZ_X', 'ZZZ_Y', 'ZZZ_Z'])));
+    expect(result.is_anomalous).toBe(true);
+    expect(result.score).toBeGreaterThan(0.7);
+  });
+
+  it('sample — 1 000 calls latency', async () => {
+    const wasm = await loadWasm();
+    const log = wasm.load_eventlog_from_xes(SAMPLE);
+    const dfg = wasm.discover_dfg_handle(log, 'concept:name');
+    const trace = JSON.stringify(['Request', 'Review', 'Approve', 'Complete']);
+    const t = performance.now();
+    for (let i = 0; i < 1000; i++) wasm.score_anomaly(dfg, trace);
+    const perCall = Number(((performance.now() - t) / 1000).toFixed(4));
+    rows.push({ algorithm: 'score_anomaly(1k)', dataset: 'sample', traces: SAMPLE_TRACES, durationMs: perCall, note: 'ms/call' });
+    expect(perCall).toBeLessThan(5);
+  });
+
+  it('BPI 2020 — known good sequence scores low', async () => {
+    if (!BPI) return;
+    const wasm = await loadWasm();
+    const log = wasm.load_eventlog_from_xes(BPI);
+    const dfg = wasm.discover_dfg_handle(log, 'concept:name');
+    const prefix = JSON.stringify(['Declaration SUBMITTED by EMPLOYEE', 'Declaration APPROVED by ADMINISTRATION']);
+    const t = performance.now();
+    const result = JSON.parse(wasm.score_anomaly(dfg, prefix));
+    const dur = Number((performance.now() - t).toFixed(3));
+    rows.push({ algorithm: 'score_anomaly', dataset: 'BPI2020', traces: BPI_TRACES, durationMs: dur, note: `score=${result.score?.toFixed(3)}` });
+    expect(result.score).toBeGreaterThanOrEqual(0);
+    expect(result.score).toBeLessThanOrEqual(1);
+  });
+});
+
+// ─── compute_boundary_coverage ───────────────────────────────────────────────
 
 describe('compute_boundary_coverage', () => {
   it('sample — prefix [Request, Review]', async () => {

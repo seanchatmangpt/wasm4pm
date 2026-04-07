@@ -4,12 +4,10 @@
  * Per PRD §22: Phase 2 Integration OTEL observability wiring
  */
 import { describe, it, expect, beforeEach } from 'vitest';
-import { Engine } from './engine';
+import { Engine } from './engine.js';
 // Mock implementations
 class MockKernel {
-    constructor() {
-        this.ready = false;
-    }
+    ready = false;
     async init() {
         this.ready = true;
         await new Promise((resolve) => setTimeout(resolve, 10)); // Simulate init time

@@ -10,7 +10,7 @@ import {
   canTransition,
   getValidTransitions,
   TransitionValidator,
-} from './transitions';
+} from './transitions.js';
 
 // Re-export for backward compatibility
 export { TransitionValidator };

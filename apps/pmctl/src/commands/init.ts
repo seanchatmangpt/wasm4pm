@@ -79,7 +79,7 @@ This is a wasm4pm process mining project initialized with pmctl.
 
 1. Install dependencies:
    \`\`\`bash
-   npm install
+   pnpm install
    \`\`\`
 
 2. Copy and configure environment:
@@ -123,9 +123,9 @@ Configuration is resolved in this order (highest to lowest priority):
 ## Documentation
 
 For more information on wasm4pm, see:
-- [Configuration Guide](https://github.com/seanchatmangpt/wasm4pm/docs/CONFIG.md)
-- [Algorithm Reference](https://github.com/seanchatmangpt/wasm4pm/docs/ALGORITHMS.md)
-- [API Documentation](https://github.com/seanchatmangpt/wasm4pm/docs/API.md)
+- [Configuration Reference](https://github.com/seanchatmangpt/wasm4pm/tree/main/docs/reference/config-schema.md)
+- [Algorithm Reference](https://github.com/seanchatmangpt/wasm4pm/tree/main/docs/reference/algorithms.md)
+- [API Documentation](https://github.com/seanchatmangpt/wasm4pm/tree/main/docs/reference/http-api.md)
 `;
 }
 
@@ -136,12 +136,12 @@ async function safeWriteFile(
   filepath: string,
   content: string,
   force: boolean,
-  formatter: HumanFormatter | JSONFormatter
+  formatter: HumanFormatter | JSONFormatter,
+  outputFormat: 'human' | 'json'
 ): Promise<boolean> {
   if (existsSync(filepath) && !force) {
-    if (formatter instanceof (await import('../output.js')).HumanFormatter) {
-      const humanFormatter = formatter as HumanFormatter;
-      humanFormatter.warn(`File already exists: ${filepath} (use --force to overwrite)`);
+    if (outputFormat === 'human') {
+      (formatter as HumanFormatter).warn(`File already exists: ${filepath} (use --force to overwrite)`);
     }
     return false;
   }
@@ -160,7 +160,7 @@ async function ensureDirectory(dirpath: string): Promise<void> {
 /**
  * Validate configuration files by attempting to load them
  */
-async function validateConfigFiles(dirpath: string, formatter: HumanFormatter | JSONFormatter): Promise<boolean> {
+async function validateConfigFiles(dirpath: string, formatter: HumanFormatter | JSONFormatter, outputFormat: 'human' | 'json'): Promise<boolean> {
   const tomlPath = path.join(dirpath, 'wasm4pm.toml');
   const jsonPath = path.join(dirpath, 'wasm4pm.json');
 
@@ -169,9 +169,8 @@ async function validateConfigFiles(dirpath: string, formatter: HumanFormatter | 
     if (existsSync(tomlPath)) {
       const { resolveConfig } = await import('@wasm4pm/config');
       await resolveConfig({ configSearchPaths: [dirpath] });
-      if (formatter instanceof (await import('../output.js')).HumanFormatter) {
-        const humanFormatter = formatter as HumanFormatter;
-        humanFormatter.debug(`✓ TOML config is valid: ${tomlPath}`);
+      if (outputFormat === 'human') {
+        (formatter as HumanFormatter).debug(`✓ TOML config is valid: ${tomlPath}`);
       }
       return true;
     }
@@ -180,18 +179,16 @@ async function validateConfigFiles(dirpath: string, formatter: HumanFormatter | 
     if (existsSync(jsonPath)) {
       const { resolveConfig } = await import('@wasm4pm/config');
       await resolveConfig({ configSearchPaths: [dirpath] });
-      if (formatter instanceof (await import('../output.js')).HumanFormatter) {
-        const humanFormatter = formatter as HumanFormatter;
-        humanFormatter.debug(`✓ JSON config is valid: ${jsonPath}`);
+      if (outputFormat === 'human') {
+        (formatter as HumanFormatter).debug(`✓ JSON config is valid: ${jsonPath}`);
       }
       return true;
     }
 
     return true;
   } catch (error) {
-    if (formatter instanceof (await import('../output.js')).HumanFormatter) {
-      const humanFormatter = formatter as HumanFormatter;
-      humanFormatter.warn(`Configuration validation failed: ${error instanceof Error ? error.message : String(error)}`);
+    if (outputFormat === 'human') {
+      (formatter as HumanFormatter).warn(`Configuration validation failed: ${error instanceof Error ? error.message : String(error)}`);
     }
     return false;
   }
@@ -231,8 +228,9 @@ export const init = defineCommand({
     },
   },
   async run(ctx) {
+    const outputFormat = ctx.args.format as 'human' | 'json';
     const formatter = getFormatter({
-      format: ctx.args.format as 'human' | 'json',
+      format: outputFormat,
       verbose: ctx.args.verbose,
       quiet: ctx.args.quiet,
     });
@@ -243,11 +241,7 @@ export const init = defineCommand({
       const force = ctx.args.force ?? false;
 
       if (configFormat !== 'toml' && configFormat !== 'json') {
-        if (formatter instanceof (await import('../output.js')).JSONFormatter) {
-          formatter.error(`Invalid format: ${configFormat}. Must be 'toml' or 'json'`);
-        } else {
-          formatter.error(`Invalid format: ${configFormat}. Must be 'toml' or 'json'`);
-        }
+        formatter.error(`Invalid format: ${configFormat}. Must be 'toml' or 'json'`);
         const { EXIT_CODES } = await import('../exit-codes.js');
         process.exit(EXIT_CODES.config_error);
       }
@@ -257,26 +251,26 @@ export const init = defineCommand({
       const configPath = path.join(cwd, configFilename);
       const configContent = configFormat === 'toml' ? getExampleTomlConfig() : getExampleJsonConfig();
 
-      const configCreated = await safeWriteFile(configPath, configContent, force, formatter);
+      const configCreated = await safeWriteFile(configPath, configContent, force, formatter, outputFormat);
 
       // Create .env.example
       const envPath = path.join(cwd, '.env.example');
-      const envCreated = await safeWriteFile(envPath, getEnvExampleContent(), force, formatter);
+      const envCreated = await safeWriteFile(envPath, getEnvExampleContent(), force, formatter, outputFormat);
 
       // Create .gitignore if it doesn't exist
       const gitignorePath = path.join(cwd, '.gitignore');
       const gitignoreCreated = !existsSync(gitignorePath)
-        ? await safeWriteFile(gitignorePath, getGitignoreContent(), force, formatter)
+        ? await safeWriteFile(gitignorePath, getGitignoreContent(), force, formatter, outputFormat)
         : false;
 
       // Create README.md if it doesn't exist
       const readmePath = path.join(cwd, 'README.md');
       const readmeCreated = !existsSync(readmePath)
-        ? await safeWriteFile(readmePath, getReadmeContent(), force, formatter)
+        ? await safeWriteFile(readmePath, getReadmeContent(), force, formatter, outputFormat)
         : false;
 
       // Validate configuration files
-      const isValid = await validateConfigFiles(cwd, formatter);
+      const isValid = await validateConfigFiles(cwd, formatter, outputFormat);
 
       // Prepare result
       const filesCreated = [];
@@ -296,8 +290,8 @@ export const init = defineCommand({
         ],
       };
 
-      if (formatter instanceof (await import('../output.js')).JSONFormatter) {
-        formatter.success('Configuration initialized', initResult);
+      if (outputFormat === 'json') {
+        (formatter as JSONFormatter).success('Configuration initialized', initResult);
       } else {
         const humanFormatter = formatter as HumanFormatter;
         if (filesCreated.length > 0) {
@@ -318,8 +312,8 @@ export const init = defineCommand({
         }
       }
     } catch (error) {
-      if (formatter instanceof (await import('../output.js')).JSONFormatter) {
-        formatter.error('Initialization failed', error);
+      if (outputFormat === 'json') {
+        (formatter as JSONFormatter).error('Initialization failed', error);
       } else {
         formatter.error(`Initialization failed: ${error instanceof Error ? error.message : String(error)}`);
       }

@@ -4,7 +4,7 @@
  * Validates state transitions, enforces invariants, and emits lifecycle events
  */
 import { EngineState } from '@wasm4pm/types';
-import { TransitionValidator } from './transitions';
+import { TransitionValidator } from './transitions.js';
 export { TransitionValidator };
 /**
  * Lifecycle event emitted when state transitions occur

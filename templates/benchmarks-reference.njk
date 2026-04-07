@@ -1,0 +1,57 @@
+# Performance Benchmarks
+
+All {{ results | length }} wasm4pm tools are benchmarked against a standard 500-event XES log
+compiled to WASM at optimization level 3. Numbers represent median wall-clock time across 100 warm
+invocations with the WASM module already loaded. Cold-start (module instantiation) is measured
+separately and is not included here.
+
+---
+
+## Methodology
+
+- **Benchmark log:** `bench_data/benchmark_500.xes` — 500 events, 50 cases, 10 unique activities
+- **OCEL benchmark:** `bench_data/benchmark_500.json` — 500 events, 5 object types
+- **Warm runs:** 100 iterations after 5 ignored warm-up calls
+- **Metric:** median wall-clock (ms), not CPU time
+- **Environment:** single-core WASM runtime, 256 MB memory limit
+
+SLA budgets apply a tier-specific multiplier to the baseline:
+
+| Tier | Multiplier | Rationale |
+|------|-----------|-----------|
+| FastTier | × 5 | Interactive; any spike is user-visible |
+| MediumTier | × 5 | Batch; some headroom for larger logs |
+| SlowTier | × 3 | Offline; tighter because durations are already high |
+
+---
+
+## Baseline Results
+
+| Tool | Tier | Baseline (ms) | SLA Budget (ms) |
+|------|------|--------------|----------------|
+{% for row in results %}| {{ row.label }} | {{ row.tier }} | {{ row.durationMs }} | {{ (row.durationMs | float * 3) if row.tier == "SlowTier" else (row.durationMs | float * 5) }} |
+{% endfor %}
+
+---
+
+## Tier Summary
+
+**FastTier** tools complete in under 2 ms and are safe to call synchronously in request handlers.
+
+**MediumTier** tools complete in 3–8 ms and are suitable for background tasks triggered per user
+action.
+
+**SlowTier** tools complete in 20–75 ms and should be queued or run in dedicated worker pods for
+production workloads with large logs.
+
+---
+
+## Regression Gate
+
+The CI benchmark gate (`make bench-gate`) fails the build if any tool exceeds its SLA budget on
+the standard benchmark log. See [GitHub Actions](./github-actions.md) for the workflow definition.
+
+## See Also
+
+- [Algorithm Reference](./algorithms.md) — tier and format classification
+- [HTTP API Reference](./http-api.md) — endpoint paths

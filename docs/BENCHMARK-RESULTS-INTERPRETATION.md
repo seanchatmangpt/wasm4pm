@@ -447,4 +447,4 @@ All algorithms run with fixed default parameters:
 
 **Document Version:** 1.0  
 **Last Updated:** April 2026  
-**Benchmark Platform:** Rust 1.70+, wasm4pm v0.5.4
+**Benchmark Platform:** Rust 1.70+, wasm4pm v26.4.5

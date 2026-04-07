@@ -12,18 +12,30 @@ import {
   StatusUpdate,
   ErrorInfo,
 } from '@wasm4pm/types';
-import { StateMachine, TransitionValidator, LifecycleEvent } from './lifecycle';
-import { StatusTracker, formatStatus } from './status';
-import { WasmLoader, WasmLoaderConfig, WasmModule } from './wasm-loader';
-import { bootstrapEngine, createBootstrapError } from './bootstrap';
-import { WatchSession, WatchConfig, HeartbeatEvent } from './watch';
-import { Checkpoint } from './checkpointing';
+import { StateMachine, TransitionValidator, LifecycleEvent } from './lifecycle.js';
+import { StatusTracker, formatStatus } from './status.js';
+import { WasmLoader, WasmLoaderConfig, WasmModule } from './wasm-loader.js';
+import { bootstrapEngine, createBootstrapError } from './bootstrap.js';
+import { WatchSession, WatchConfig, HeartbeatEvent } from './watch.js';
+import { Checkpoint } from './checkpointing.js';
 import {
   ObservabilityWrapper,
   Instrumentation,
   RequiredOtelAttributes,
   ObservabilityConfig,
 } from '@wasm4pm/observability';
+
+/**
+ * Result returned from Kernel.run()
+ */
+export interface KernelRunResult {
+  handle: string;
+  algorithm: string;
+  outputType: string;
+  durationMs: number;
+  params: Record<string, unknown>;
+  hash: string;
+}
 
 /**
  * Kernel interface - abstract definition of WASM kernel
@@ -33,6 +45,14 @@ export interface Kernel {
   init(): Promise<void>;
   shutdown(): Promise<void>;
   isReady(): boolean;
+  /** Run a discovery algorithm by registry ID. Optional — not all kernel implementations support it. */
+  run?(
+    algorithmName: string,
+    eventLogHandle: string,
+    params?: Record<string, unknown>
+  ): Promise<KernelRunResult>;
+  /** List all available algorithm IDs. Optional. */
+  algorithms?(): Array<{ id: string; name: string; outputType: string }>;
 }
 
 /**

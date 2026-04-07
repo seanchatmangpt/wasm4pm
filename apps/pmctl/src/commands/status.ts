@@ -1,6 +1,7 @@
 import { defineCommand } from 'citty';
 import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
+import { WasmLoader } from '@wasm4pm/engine';
 import type { OutputOptions } from '../output.js';
 
 export interface StatusOptions extends OutputOptions {
@@ -37,45 +38,55 @@ export const status = defineCommand({
     });
 
     try {
-      // Step 1: Retrieve engine status (placeholder - in real implementation, would call engine.status())
-      const engineStatus = {
-        state: 'ready',
-        progress: 100,
-        errors: [] as any[],
-        metadata: {
-          wasmLoaded: false,
-          kernelReady: false,
-          uptime: 0,
-        },
-      };
-
-      // Step 2: Gather system information
+      // Step 1: Gather system information
       const memoryUsage = process.memoryUsage();
       const uptime = process.uptime();
 
+      // Step 2: Check WASM module status
+      let wasmLoaded = false;
+      let wasmVersion: string | null = null;
+      let kernelReady = false;
+      let wasmError: string | null = null;
+
+      try {
+        const loader = WasmLoader.getInstance();
+        await loader.init();
+        const wasm = loader.get();
+        wasmLoaded = true;
+
+        // Try to get the version from the WASM module
+        if (typeof wasm.get_version === 'function') {
+          wasmVersion = String(wasm.get_version());
+        }
+        kernelReady = wasmLoaded; // kernel is ready if WASM loaded successfully
+      } catch (err) {
+        wasmError = err instanceof Error ? err.message : String(err);
+      }
+
+      // Step 3: Build status report
       const statusReport = {
         engine: {
-          state: engineStatus.state,
-          progress: engineStatus.progress,
+          state: wasmLoaded ? 'ready' : 'unavailable',
+          wasmLoaded,
+          kernelReady,
+          version: wasmVersion,
+          error: wasmError,
         },
         system: {
           platform: process.platform,
+          arch: process.arch,
           nodeVersion: process.version,
           uptime: Math.round(uptime),
-          memory: {
-            heapUsed: Math.round(memoryUsage.heapUsed / 1024 / 1024),
-            heapTotal: Math.round(memoryUsage.heapTotal / 1024 / 1024),
-            external: Math.round(memoryUsage.external / 1024 / 1024),
-          },
         },
-        wasm: {
-          loaded: engineStatus.metadata?.wasmLoaded || false,
-          kernelReady: engineStatus.metadata?.kernelReady || false,
+        memory: {
+          heapUsed: Math.round(memoryUsage.heapUsed / 1024 / 1024),
+          heapTotal: Math.round(memoryUsage.heapTotal / 1024 / 1024),
+          external: Math.round(memoryUsage.external / 1024 / 1024),
+          rss: Math.round(memoryUsage.rss / 1024 / 1024),
         },
-        errors: engineStatus.errors.length,
       };
 
-      // Step 3: Format and output status
+      // Step 4: Format and output status
       if (formatter instanceof JSONFormatter) {
         formatter.success('System status retrieved', statusReport);
       } else {
@@ -84,39 +95,30 @@ export const status = defineCommand({
 
         // Engine status section
         formatter.log('Engine Status:');
-        formatter.log(`  State: ${engineStatus.state}`);
-        formatter.log(`  Progress: ${engineStatus.progress}%`);
+        formatter.log(`  State: ${statusReport.engine.state}`);
+        formatter.log(`  WASM Loaded: ${wasmLoaded ? 'Yes' : 'No'}`);
+        if (wasmVersion) {
+          formatter.log(`  WASM Version: ${wasmVersion}`);
+        }
+        if (wasmError && ctx.args.verbose) {
+          formatter.log(`  WASM Error: ${wasmError}`);
+        }
+        formatter.log(`  Kernel Ready: ${kernelReady ? 'Yes' : 'No'}`);
 
         // System section
         formatter.log('');
         formatter.log('System Information:');
-        formatter.log(`  Platform: ${statusReport.system.platform}`);
+        formatter.log(`  Platform: ${statusReport.system.platform}/${statusReport.system.arch}`);
         formatter.log(`  Node Version: ${statusReport.system.nodeVersion}`);
         formatter.log(`  Uptime: ${Math.floor(statusReport.system.uptime / 60)}m ${statusReport.system.uptime % 60}s`);
 
         // Memory section
         formatter.log('');
         formatter.log('Memory Usage:');
-        formatter.log(`  Heap Used: ${statusReport.system.memory.heapUsed} MB`);
-        formatter.log(`  Heap Total: ${statusReport.system.memory.heapTotal} MB`);
-        formatter.log(`  External: ${statusReport.system.memory.external} MB`);
-
-        // WASM section
-        formatter.log('');
-        formatter.log('WASM Module:');
-        formatter.log(`  Loaded: ${statusReport.wasm.loaded ? 'Yes' : 'No'}`);
-        formatter.log(`  Kernel Ready: ${statusReport.wasm.kernelReady ? 'Yes' : 'No'}`);
-
-        // Errors section
-        if (statusReport.errors > 0) {
-          formatter.log('');
-          formatter.log(`Errors: ${statusReport.errors}`);
-          if (ctx.args.verbose) {
-            engineStatus.errors.forEach((err: any, idx: number) => {
-              formatter.log(`  ${idx + 1}. [${err.code}] ${err.message}`);
-            });
-          }
-        }
+        formatter.log(`  Heap Used: ${statusReport.memory.heapUsed} MB`);
+        formatter.log(`  Heap Total: ${statusReport.memory.heapTotal} MB`);
+        formatter.log(`  RSS: ${statusReport.memory.rss} MB`);
+        formatter.log(`  External: ${statusReport.memory.external} MB`);
 
         formatter.log('');
       }

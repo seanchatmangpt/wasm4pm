@@ -4,9 +4,9 @@
  * Orchestrates bootstrap, planning, execution, and monitoring
  */
 import { EngineState, ExecutionPlan, ExecutionReceipt, EngineStatus, StatusUpdate, ErrorInfo } from '@wasm4pm/types';
-import { LifecycleEvent } from './lifecycle';
-import { WasmLoaderConfig, WasmModule } from './wasm-loader';
-import { WatchSession, WatchConfig } from './watch';
+import { LifecycleEvent } from './lifecycle.js';
+import { WasmLoaderConfig, WasmModule } from './wasm-loader.js';
+import { WatchSession, WatchConfig } from './watch.js';
 import { ObservabilityConfig } from '@wasm4pm/observability';
 /**
  * Kernel interface - abstract definition of WASM kernel
@@ -134,7 +134,7 @@ export declare class Engine {
     /**
      * Gets WASM loader status including memory usage and version info
      */
-    getWasmStatus(): import("./wasm-loader").WasmLoaderStatus;
+    getWasmStatus(): import("./wasm-loader.js").WasmLoaderStatus;
     /**
      * Gets WASM memory statistics
      */

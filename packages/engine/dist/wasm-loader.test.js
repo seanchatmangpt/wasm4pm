@@ -3,12 +3,15 @@
  * Tests for WASM module initialization, lifecycle, and error handling
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { WasmLoader, WasmErrorCode, createWasmLoader, getWasmLoader, } from './wasm-loader';
+import { WasmLoader, WasmErrorCode, createWasmLoader, getWasmLoader, } from './wasm-loader.js';
 import { ObservabilityLayer } from '@wasm4pm/observability';
 /**
  * Mock WASM module for testing
  */
 class MockWasmModule {
+    memory;
+    version;
+    init;
     constructor(versionString) {
         // Create a small memory buffer for testing
         try {

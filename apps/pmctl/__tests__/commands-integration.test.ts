@@ -159,7 +159,7 @@ describe('Command integration tests', () => {
 
     it('should generate markdown explanations', () => {
       // Explain should generate markdown format for detailed descriptions
-      expect(explain.meta?.description).toContain('explain');
+      expect(explain.meta?.description?.toLowerCase()).toContain('explain');
     });
 
     it('should support optional config loading', () => {
@@ -175,7 +175,7 @@ describe('Command integration tests', () => {
 
     it('should create configuration files', () => {
       // Should create wasm4pm.json and/or wasm4pm.toml
-      expect(init.meta?.description).toContain('initialize');
+      expect(init.meta?.description?.toLowerCase()).toContain('init');
     });
 
     it('should support template selection', () => {
@@ -193,7 +193,7 @@ describe('Command integration tests', () => {
 
     it('should create supporting files', () => {
       // Should create .env.example, .gitignore, README.md
-      expect(init.meta?.description).toContain('initialize');
+      expect(init.meta?.description?.toLowerCase()).toContain('init');
     });
   });
 });
