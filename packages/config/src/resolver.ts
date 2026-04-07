@@ -110,7 +110,7 @@ function getDefaults(): Record<string, unknown> {
     version: '26.4.5',
     source: { kind: 'file' },
     sink: { kind: 'stdout' },
-    algorithm: { name: 'alpha', parameters: {} },
+    algorithm: { name: 'dfg', parameters: {} },
     execution: {
       profile: 'balanced',
       timeout: 300000,
@@ -345,7 +345,7 @@ export function getExampleJsonConfig(): string {
       version: '26.4.5',
       source: { kind: 'file' },
       sink: { kind: 'stdout' },
-      algorithm: { name: 'alpha', parameters: {} },
+      algorithm: { name: 'dfg', parameters: {} },
       execution: { profile: 'balanced', timeout: 300000 },
       observability: {
         logLevel: 'info',

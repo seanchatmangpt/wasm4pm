@@ -6,16 +6,9 @@ import type { OutputOptions } from '../output.js';
 import { WasmLoader } from '@wasm4pm/engine';
 import { loadPmctlConfig, buildCliOverrides } from '../config-loader.js';
 import { savePredictionResult } from './results.js';
+import { VALID_PREDICT_CLI_TASKS } from '@wasm4pm/templates';
 
-const VALID_TASKS = [
-  'next-activity',
-  'remaining-time',
-  'outcome',
-  'drift',
-  'features',
-  'resource',
-] as const;
-
+const VALID_TASKS = VALID_PREDICT_CLI_TASKS;
 type PredictTask = (typeof VALID_TASKS)[number];
 
 export interface PredictOptions extends OutputOptions {
