@@ -23,7 +23,7 @@ echo "[hook] Lint passed."
 const PRE_PUSH = `#!/bin/sh
 # wasm4pm pre-push hook
 echo "[hook] Running tests..."
-pnpm --filter '!lab' --filter '!playground' test || { echo "[hook] Tests failed. Push aborted."; exit 1; }
+pnpm --filter wasm4pm --filter 'apps/*' --filter 'packages/*' test || { echo "[hook] Tests failed. Push aborted."; exit 1; }
 echo "[hook] Tests passed."
 `;
 
