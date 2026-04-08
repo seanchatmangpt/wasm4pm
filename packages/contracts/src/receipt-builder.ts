@@ -4,8 +4,8 @@
  */
 
 import { v4 as uuidv4 } from 'uuid';
-import { Receipt, ErrorInfo, ExecutionSummary, AlgorithmInfo, ModelInfo } from './receipt';
-import { hashData } from './hash';
+import { Receipt, ErrorInfo, ExecutionSummary, AlgorithmInfo, ModelInfo } from './receipt.js';
+import { hashData } from './hash.js';
 
 /**
  * Fluent builder for constructing Receipt objects
