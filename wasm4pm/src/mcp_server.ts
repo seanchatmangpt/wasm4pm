@@ -16,7 +16,7 @@ import {
   type CallToolResult,
 } from '@modelcontextprotocol/sdk/types.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import * as wasm from '../pkg/wasm4pm.js';
+import * as wasm from '../pkg/pictl.js';
 
 interface ToolInput {
   [key: string]: unknown;
