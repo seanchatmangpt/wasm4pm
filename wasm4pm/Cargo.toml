@@ -12,15 +12,8 @@ keywords = [
     "process-mining",
     "wasm",
     "webassembly",
-    "data-mining",
-    "event-log",
-    "process-discovery",
-    "conformance",
     "petri-net",
     "bpm",
-    "business-process-management",
-    "analytics",
-    "prediction",
 ]
 categories = [
     "wasm",
