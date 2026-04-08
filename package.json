@@ -35,7 +35,6 @@
     "format": "prettier --write 'packages/*/src/**/*.ts' 'apps/*/src/**/*.ts' 'packages/*/src/**/*.json'",
     "format:check": "prettier --check 'packages/*/src/**/*.ts' 'apps/*/src/**/*.ts' 'packages/*/src/**/*.json'",
     "health": "node scripts/health.mjs",
-    "prepare": "node scripts/setup-hooks.mjs",
     "postinstall": "node scripts/check-engines.mjs"
   },
   "devDependencies": {
