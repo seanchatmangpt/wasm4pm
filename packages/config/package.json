@@ -1,6 +1,6 @@
 {
   "name": "@wasm4pm/config",
-  "version": "26.4.5",
+  "version": "26.4.7",
   "description": "Configuration management system for wasm4pm with Zod schemas and provenance tracking",
   "type": "module",
   "main": "./dist/index.js",

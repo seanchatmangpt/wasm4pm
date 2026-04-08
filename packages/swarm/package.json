@@ -1,6 +1,6 @@
 {
   "name": "@wasm4pm/swarm",
-  "version": "26.4.6",
+  "version": "26.4.7",
   "description": "Autonomic swarm coordinator for wasm4pm — multi-worker process mining with convergence detection",
   "type": "module",
   "main": "./dist/index.js",

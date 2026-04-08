@@ -1,5 +1,40 @@
 # Changelog
 
+## v26.4.7 (2026-04-07)
+
+### Headline: Monorepo Consolidation — 16 packages → 9
+
+- **Deleted packages**: `@wasm4pm/types`, `@wasm4pm/templates`, `@wasm4pm/connectors`, `@wasm4pm/sinks`, `@wasm4pm/ocel`, `@wasm4pm/wasm4pm` (TS wrapper), `@wasm4pm/service`
+- **Merged into `@wasm4pm/contracts`**: types (`EngineError`), templates (algorithm registry, prediction tasks), step type values (POWL, ML)
+- **Merged into `@wasm4pm/engine`**: connectors (file, http, stream, ws sources), sinks (stdout, file, http, artifacts)
+- **`@wasm4pm/planner`**: removed circular dependency on `@wasm4pm/kernel`
+- **`@wasm4pm/config`**: dependency changed from `@wasm4pm/kernel` → `@wasm4pm/contracts`
+
+### DX Improvements
+- Pre-commit hooks: `pnpm prepare` installs lint + test hooks automatically
+- `.editorconfig`, `.vscode/settings.json`, `.vscode/extensions.json` for consistent dev environment
+- GitHub Actions CI: `typescript.yml` workflow for PR validation
+- `scripts/health.mjs` — one-command health check for all engines
+- `scripts/check-engines.mjs` — verify Rust + WASM + Node.js readiness
+- Lint scripts added to all 9 packages + pmctl
+
+### pmctl doctor — 6 checks → 17 checks
+- WASM load verification, SIMD detection, config file discovery, config validation
+- XES event log discovery, system memory, disk space, git hooks
+- Source/sink configuration, algorithm availability, observability setup
+- Watch configuration, output directory
+
+### Bug Fixes
+- Fixed ESM runtime error (`ERR_MODULE_NOT_FOUND`) — added `.js` extensions to relative imports in `receipt-builder.ts` and `validation.ts`
+- Fixed stale `@wasm4pm/types` import in `execution.test.ts`
+- Fixed `WebAssembly` namespace reference in `wasm-loader.test.ts`
+- Fixed `powl.ts` type cast (`as any`)
+
+### Breaking Changes
+- All imports from `@wasm4pm/types` → `@wasm4pm/contracts`
+- All imports from `@wasm4pm/templates` → `@wasm4pm/contracts`
+- `ErrorInfo` type from `@wasm4pm/types` renamed to `EngineError` (avoids collision with contracts' `ErrorInfo`)
+
 ## v26.4.5 (2026-04-04)
 
 ### Headline: Streaming Conformance Checking

@@ -1,6 +1,6 @@
 {
   "name": "@wasm4pm/planner",
-  "version": "26.4.5",
+  "version": "26.4.7",
   "description": "Process mining planning and optimization",
   "type": "module",
   "main": "./dist/index.js",

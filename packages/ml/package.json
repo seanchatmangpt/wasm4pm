@@ -1,7 +1,7 @@
 {
-  "name": "@wasm4pm/testing",
+  "name": "@wasm4pm/ml",
   "version": "26.4.7",
-  "description": "Testing utilities and fixtures",
+  "description": "ML-powered process mining analysis using micro-ml — classification, clustering, forecasting, anomaly detection, PCA",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -13,19 +13,19 @@
   },
   "files": [
     "dist",
-    "src"
+    "src",
+    "README.md"
   ],
   "scripts": {
     "build": "tsc",
     "test": "vitest",
     "test:watch": "vitest --watch",
     "test:coverage": "vitest --coverage",
-    "test:run": "vitest run",
     "lint": "tsc --noEmit",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
-    "@wasm4pm/contracts": "workspace:*"
+    "micro-ml": "^1.0.0"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
@@ -33,10 +33,16 @@
     "vitest": "^1.1.0"
   },
   "keywords": [
-    "testing",
-    "fixtures",
-    "utilities"
+    "machine-learning",
+    "process-mining",
+    "classification",
+    "clustering",
+    "forecasting",
+    "anomaly-detection",
+    "pca",
+    "wasm4pm",
+    "micro-ml"
   ],
   "author": "Sean Chatman",
-  "license": "MIT"
+  "license": "MIT OR Apache-2.0"
 }
