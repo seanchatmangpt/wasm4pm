@@ -1,6 +1,6 @@
-# @wasm4pm/kernel
+# @pictl/kernel
 
-Core kernel for algorithm registration and step execution in the wasm4pm process mining pipeline.
+Core kernel for algorithm registration and step execution in the pictl process mining pipeline.
 
 ## Overview
 
@@ -16,7 +16,7 @@ The kernel package provides:
 The `AlgorithmRegistry` now supports deployment profile filtering:
 
 ```typescript
-import { getRegistry } from '@wasm4pm/kernel';
+import { getRegistry } from '@pictl/kernel';
 
 const registry = getRegistry();
 
@@ -68,7 +68,7 @@ Kernel Layer
     ├─ Registry: Algorithm metadata lookup
     └─ Handlers: WASM function invocation
     ↓ (algorithm ID, parameters)
-WASM Layer (wasm4pm)
+WASM Layer (pictl)
     └─ discover_* functions (Rust compiled to WASM)
 ```
 
@@ -79,7 +79,7 @@ WASM Layer (wasm4pm)
 The `AlgorithmRegistry` maintains metadata for all discovery algorithms:
 
 ```typescript
-import { getRegistry } from '@wasm4pm/kernel';
+import { getRegistry } from '@pictl/kernel';
 
 const registry = getRegistry();
 
@@ -130,8 +130,8 @@ Four execution profiles balance speed vs quality:
 The handler executes algorithm steps:
 
 ```typescript
-import { implementAlgorithmStep } from '@wasm4pm/kernel';
-import { PlanStepType, type PlanStep } from '@wasm4pm/planner';
+import { implementAlgorithmStep } from '@pictl/kernel';
+import { PlanStepType, type PlanStep } from '@pictl/planner';
 
 const step: PlanStep = {
   id: 'discover_dfg',
@@ -177,7 +177,7 @@ const output = await implementAlgorithmStep(step, wasmModule, eventLogHandle);
 Validate parameters before execution:
 
 ```typescript
-import { validateAlgorithmParameters } from '@wasm4pm/kernel';
+import { validateAlgorithmParameters } from '@pictl/kernel';
 
 const result = validateAlgorithmParameters('genetic_algorithm', {
   activity_key: 'concept:name',
@@ -197,13 +197,13 @@ if (result.valid) {
 ### Install
 
 ```bash
-pnpm install @wasm4pm/kernel
+pnpm install @pictl/kernel
 ```
 
 ### Registry Usage
 
 ```typescript
-import { getRegistry } from '@wasm4pm/kernel';
+import { getRegistry } from '@pictl/kernel';
 
 const registry = getRegistry();
 
@@ -224,10 +224,10 @@ for (const algo of registry.list()) {
 ### Handler Usage
 
 ```typescript
-import { implementAlgorithmStep } from '@wasm4pm/kernel';
-import { PlanStepType, type PlanStep } from '@wasm4pm/planner';
+import { implementAlgorithmStep } from '@pictl/kernel';
+import { PlanStepType, type PlanStep } from '@pictl/planner';
 
-// Initialize WASM module (from wasm4pm)
+// Initialize WASM module (from pictl)
 const wasmModule = await initWasm4pm();
 
 // Load event log (returns handle string)
@@ -259,7 +259,7 @@ try {
 ### Profile-Based Selection
 
 ```typescript
-import { getRegistry } from '@wasm4pm/kernel';
+import { getRegistry } from '@pictl/kernel';
 
 const registry = getRegistry();
 
@@ -474,7 +474,7 @@ try {
 
 ## References
 
-- [wasm4pm Documentation](https://github.com/seanchatmangpt/wasm4pm)
+- [pictl Documentation](https://github.com/seanchatmangpt/pictl)
 - [Algorithm Papers](./docs/algorithms.md)
 - [Performance Benchmarks](./docs/benchmarks.md)
 
