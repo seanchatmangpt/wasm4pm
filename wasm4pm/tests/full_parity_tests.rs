@@ -7,7 +7,7 @@
 
 use std::collections::{HashMap, HashSet};
 use std::fs;
-use wasm4pm::models::{AttributeValue, EventLog};
+use pictl::models::{AttributeValue, EventLog};
 
 const FIXTURES_DIR: &str = "tests/fixtures";
 
@@ -603,9 +603,9 @@ fn test_bpmn_export_validation() {
     println!("\n=== BPMN Export Validation Test ===");
 
     // Test that BPMN export produces valid XML
-    use wasm4pm::powl::conversion::to_bpmn::to_bpmn_xml;
-    use wasm4pm::powl_arena::PowlArena;
-    use wasm4pm::powl_parser::parse_powl_model_string;
+    use pictl::powl::conversion::to_bpmn::to_bpmn_xml;
+    use pictl::powl_arena::PowlArena;
+    use pictl::powl_parser::parse_powl_model_string;
 
     let test_cases = vec![
         ("A", "single activity"),
@@ -720,11 +720,11 @@ fn test_final_integration() {
     println!("\n=== Final Integration Test ===");
 
     // Test the complete pipeline: parse → analyze → export
-    use wasm4pm::powl::analysis::complexity::measure;
-    use wasm4pm::powl::conversion::to_bpmn::to_bpmn_xml;
-    use wasm4pm::powl::footprints::apply;
-    use wasm4pm::powl_arena::PowlArena;
-    use wasm4pm::powl_parser::parse_powl_model_string;
+    use pictl::powl::analysis::complexity::measure;
+    use pictl::powl::conversion::to_bpmn::to_bpmn_xml;
+    use pictl::powl::footprints::apply;
+    use pictl::powl_arena::PowlArena;
+    use pictl::powl_parser::parse_powl_model_string;
 
     let powl_str = "X(A, PO=(nodes={B, C}, order={}))";
     let mut arena = PowlArena::new();

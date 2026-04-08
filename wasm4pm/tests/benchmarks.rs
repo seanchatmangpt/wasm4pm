@@ -21,37 +21,37 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 use std::time::Instant;
-use wasm4pm::advanced_algorithms::{
+use pictl::advanced_algorithms::{
     analyze_infrequent_paths, compute_model_metrics, detect_bottlenecks, detect_rework,
     discover_heuristic_miner,
 };
-use wasm4pm::analysis::{analyze_case_duration, analyze_dotted_chart, analyze_event_statistics};
-use wasm4pm::conformance::check_token_based_replay;
-use wasm4pm::discovery::{discover_declare, discover_dfg};
-use wasm4pm::fast_discovery::{
+use pictl::analysis::{analyze_case_duration, analyze_dotted_chart, analyze_event_statistics};
+use pictl::conformance::check_token_based_replay;
+use pictl::discovery::{discover_declare, discover_dfg};
+use pictl::fast_discovery::{
     analyze_activity_cooccurrence, analyze_start_end_activities, analyze_trace_variants,
     cluster_traces, detect_concept_drift, discover_astar, discover_hill_climbing,
     mine_sequential_patterns,
 };
-use wasm4pm::final_analytics::{
+use pictl::final_analytics::{
     analyze_process_speedup, analyze_temporal_bottlenecks, analyze_variant_complexity,
     compute_activity_transition_matrix, compute_trace_similarity_matrix, extract_activity_ordering,
 };
-use wasm4pm::genetic_discovery::{discover_genetic_algorithm, discover_pso_algorithm};
-use wasm4pm::ilp_discovery::{discover_ilp_petri_net, discover_optimized_dfg};
-use wasm4pm::incremental_dfg::{IncrementalDFG, StreamingDFG};
-use wasm4pm::models::{AttributeValue, Event, EventLog, Trace};
-use wasm4pm::more_discovery::{
+use pictl::genetic_discovery::{discover_genetic_algorithm, discover_pso_algorithm};
+use pictl::ilp_discovery::{discover_ilp_petri_net, discover_optimized_dfg};
+use pictl::incremental_dfg::{IncrementalDFG, StreamingDFG};
+use pictl::models::{AttributeValue, Event, EventLog, Trace};
+use pictl::more_discovery::{
     analyze_activity_dependencies, analyze_case_attributes, discover_ant_colony,
     discover_inductive_miner, discover_simulated_annealing, extract_process_skeleton,
 };
-use wasm4pm::state::{get_or_init_state, StoredObject};
-use wasm4pm::streaming::streaming_alpha::StreamingAlphaPlusBuilder;
-use wasm4pm::streaming::streaming_astar::StreamingAStarBuilder;
-use wasm4pm::streaming::streaming_declare::StreamingDeclareBuilder;
-use wasm4pm::streaming::streaming_hill_climbing::StreamingHillClimbingBuilder;
-use wasm4pm::streaming::streaming_inductive::StreamingInductiveBuilder;
-use wasm4pm::streaming::{StreamStats, StreamingAlgorithm};
+use pictl::state::{get_or_init_state, StoredObject};
+use pictl::streaming::streaming_alpha::StreamingAlphaPlusBuilder;
+use pictl::streaming::streaming_astar::StreamingAStarBuilder;
+use pictl::streaming::streaming_declare::StreamingDeclareBuilder;
+use pictl::streaming::streaming_hill_climbing::StreamingHillClimbingBuilder;
+use pictl::streaming::streaming_inductive::StreamingInductiveBuilder;
+use pictl::streaming::{StreamStats, StreamingAlgorithm};
 
 // ── Data Source & Tier Detection ──────────────────────────────────────────
 

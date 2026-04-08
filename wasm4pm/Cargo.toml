@@ -1,12 +1,12 @@
 [package]
-name = "wasm4pm"
+name = "pictl"
 version = "26.4.9"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 description = "High-performance process mining algorithms in WebAssembly for JavaScript/TypeScript"
-repository = "https://github.com/seanchatmangpt/wasm4pm"
-documentation = "https://docs.rs/wasm4pm"
-homepage = "https://github.com/seanchatmangpt/wasm4pm"
+repository = "https://github.com/seanchatmangpt/pictl"
+documentation = "https://docs.rs/pictl"
+homepage = "https://github.com/seanchatmangpt/pictl"
 readme = "README.md"
 keywords = [
     "process-mining",

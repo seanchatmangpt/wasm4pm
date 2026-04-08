@@ -2,16 +2,16 @@
 /// All sweeps use full four-size range; O(n²) algorithms capped at 1K cases.
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use std::time::Duration;
-use wasm4pm::advanced_algorithms::{
+use pictl::advanced_algorithms::{
     analyze_infrequent_paths, compute_model_metrics, detect_bottlenecks, detect_rework,
 };
-use wasm4pm::analysis::analyze_dotted_chart;
-use wasm4pm::fast_discovery::{analyze_activity_cooccurrence, analyze_start_end_activities};
-use wasm4pm::final_analytics::{
+use pictl::analysis::analyze_dotted_chart;
+use pictl::fast_discovery::{analyze_activity_cooccurrence, analyze_start_end_activities};
+use pictl::final_analytics::{
     analyze_process_speedup, analyze_temporal_bottlenecks, analyze_variant_complexity,
     compute_activity_transition_matrix, compute_trace_similarity_matrix, extract_activity_ordering,
 };
-use wasm4pm::more_discovery::analyze_activity_dependencies;
+use pictl::more_discovery::analyze_activity_dependencies;
 
 #[path = "helpers.rs"]
 mod helpers;
