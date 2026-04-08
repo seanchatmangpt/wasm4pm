@@ -224,8 +224,8 @@ export function validateBPMN(bpmnXml: string): BPMNValidationResult {
 
       // Validate sequence flows reference valid elements
       if (element.type === 'sequenceFlow') {
-        const sourceRef = element.sourceRef;
-        const targetRef = element.targetRef;
+        const sourceRef = element.sourceRef as string | undefined;
+        const targetRef = element.targetRef as string | undefined;
 
         if (!sourceRef) {
           errors.push({ element: elementPath, attribute: 'sourceRef', message: 'Missing sourceRef', severity: 'error' });
