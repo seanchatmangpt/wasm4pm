@@ -125,18 +125,18 @@ describe('Planner', () => {
       const result = plan({ ...testConfig, execution: { profile: 'quality' } });
       const typeSet = new Set(result.steps.map((s) => s.type));
 
-      expect(typeSet.has(PlanStepType.DISCOVER_HEURISTIC)).toBe(true);
-      expect(typeSet.has(PlanStepType.DISCOVER_INDUCTIVE)).toBe(true);
+      expect(typeSet.has(PlanStepType.DISCOVER_GENETIC)).toBe(true);
+      expect(typeSet.has(PlanStepType.DISCOVER_ILP)).toBe(true);
       expect(typeSet.has(PlanStepType.ANALYZE_PERFORMANCE)).toBe(true);
     });
 
-    it('should generate correct steps for "research" profile', () => {
+    it('should default to balanced for unknown profile including "research"', () => {
       const result = plan({ ...testConfig, execution: { profile: 'research' } });
       const typeSet = new Set(result.steps.map((s) => s.type));
 
-      expect(typeSet.has(PlanStepType.DISCOVER_GENETIC)).toBe(true);
-      expect(typeSet.has(PlanStepType.DISCOVER_PSO)).toBe(true);
-      expect(typeSet.has(PlanStepType.DISCOVER_ACO)).toBe(true);
+      // research falls back to balanced profile
+      expect(typeSet.has(PlanStepType.DISCOVER_ALPHA_PLUS_PLUS)).toBe(true);
+      expect(typeSet.has(PlanStepType.DISCOVER_HEURISTIC)).toBe(true);
     });
 
     it('should default to balanced for unknown profile', () => {
@@ -145,6 +145,92 @@ describe('Planner', () => {
 
       // Should match balanced profile
       expect(typeSet.has(PlanStepType.DISCOVER_ALPHA_PLUS_PLUS)).toBe(true);
+    });
+  });
+
+  describe('plan() - ML analysis steps', () => {
+    it('should generate ML steps when ml config is enabled', () => {
+      const mlConfig = {
+        ...testConfig,
+        ml: { enabled: true, tasks: ['classify', 'cluster'] },
+      };
+      const result = plan(mlConfig);
+      const typeSet = new Set(result.steps.map((s) => s.type));
+
+      expect(typeSet.has(PlanStepType.ML_CLASSIFY)).toBe(true);
+      expect(typeSet.has(PlanStepType.ML_CLUSTER)).toBe(true);
+    });
+
+    it('should generate all 6 ML step types when all tasks enabled', () => {
+      const mlConfig = {
+        ...testConfig,
+        ml: { enabled: true, tasks: ['classify', 'cluster', 'forecast', 'anomaly', 'regress', 'pca'] },
+      };
+      const result = plan(mlConfig);
+      const typeSet = new Set(result.steps.map((s) => s.type));
+
+      expect(typeSet.has(PlanStepType.ML_CLASSIFY)).toBe(true);
+      expect(typeSet.has(PlanStepType.ML_CLUSTER)).toBe(true);
+      expect(typeSet.has(PlanStepType.ML_FORECAST)).toBe(true);
+      expect(typeSet.has(PlanStepType.ML_ANOMALY)).toBe(true);
+      expect(typeSet.has(PlanStepType.ML_REGRESS)).toBe(true);
+      expect(typeSet.has(PlanStepType.ML_PCA)).toBe(true);
+    });
+
+    it('should not generate ML steps when ml is disabled', () => {
+      const mlConfig = {
+        ...testConfig,
+        ml: { enabled: false, tasks: ['classify'] },
+      };
+      const result = plan(mlConfig);
+      const typeSet = new Set(result.steps.map((s) => s.type));
+
+      expect(typeSet.has(PlanStepType.ML_CLASSIFY)).toBe(false);
+      expect(typeSet.has(PlanStepType.ML_CLUSTER)).toBe(false);
+    });
+
+    it('should not generate ML steps when ml is absent', () => {
+      const result = plan(testConfig);
+      const typeSet = new Set(result.steps.map((s) => s.type));
+
+      expect(typeSet.has(PlanStepType.ML_CLASSIFY)).toBe(false);
+    });
+
+    it('should pass ML parameters to step', () => {
+      const mlConfig = {
+        ...testConfig,
+        ml: { enabled: true, tasks: ['classify'], method: 'knn', k: 7, targetKey: 'result' },
+      };
+      const result = plan(mlConfig);
+      const classifyStep = result.steps.find((s) => s.type === PlanStepType.ML_CLASSIFY);
+
+      expect(classifyStep).toBeDefined();
+      expect(classifyStep!.parameters.method).toBe('knn');
+      expect(classifyStep!.parameters.k).toBe(7);
+      expect(classifyStep!.parameters.target_key).toBe('result');
+    });
+
+    it('should skip unknown ML tasks', () => {
+      const mlConfig = {
+        ...testConfig,
+        ml: { enabled: true, tasks: ['classify', 'nonexistent_task'] },
+      };
+      const result = plan(mlConfig);
+      const typeSet = new Set(result.steps.map((s) => s.type));
+
+      expect(typeSet.has(PlanStepType.ML_CLASSIFY)).toBe(true);
+      expect(typeSet.has(PlanStepType.ML_CLUSTER)).toBe(false);
+    });
+
+    it('should produce deterministic plans for ML configs', () => {
+      const mlConfig = {
+        ...testConfig,
+        ml: { enabled: true, tasks: ['classify', 'forecast'] },
+      };
+      const plan1 = plan(JSON.parse(JSON.stringify(mlConfig)));
+      const plan2 = plan(JSON.parse(JSON.stringify(mlConfig)));
+
+      expect(plan1.hash).toBe(plan2.hash);
     });
   });
 
