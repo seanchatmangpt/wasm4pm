@@ -1,7 +1,7 @@
 # Algorithm Reference
 
-wasm4pm provides 18 process mining tools across three performance tiers.
-Each tier reflects typical execution time for a benchmark log of 500 events. Tier boundaries
+wasm4pm provides 18 process mining tools across three performance tiers, plus 6 ML analysis
+tasks. Each tier reflects typical execution time for a benchmark log of 500 events. Tier boundaries
 are FastTier (< 1 ms), MediumTier (< 10 ms), and SlowTier (< 100 ms).
 
 ---
@@ -51,6 +51,24 @@ Suitable for offline discovery and comparative studies. 20 ms to 75 ms per 500-e
 
 ---
 
+## ML Analysis Tasks
+
+ML tasks run post-discovery via `pmctl ml <task>` or automatically when `[ml]` config is enabled.
+
+| Task | CLI Alias | Description | Key Parameters |
+|------|-----------|-------------|----------------|
+| ML Classification | `ml classify` | Classify traces by label | `--method knn`, `-k 5` |
+| ML Clustering | `ml cluster` | Cluster traces into groups | `--method kmeans`, `-k 3` |
+| ML Forecasting | `ml forecast` | Time series prediction | `--forecast-periods 5` |
+| ML Anomaly Detection | `ml anomaly` | Detect anomalous traces | `--eps 1.0` |
+| ML Regression | `ml regress` | Remaining-time regression | `--method linear_regression` |
+| ML PCA | `ml pca` | Feature dimensionality reduction | `--n-components 2` |
+
+ML tasks can also run via `pmctl run` when the config has `[ml] enabled = true`. The `ml` profile
+selects all 6 ML algorithms for the planner.
+
+---
+
 ## Input Formats
 
 | Format | Description |
@@ -62,5 +80,6 @@ Suitable for offline discovery and comparative studies. 20 ms to 75 ms per 500-e
 
 ## See Also
 
+- [Reference: Config Schema](./config-schema.md) — `[ml]` section for ML configuration
 - [HTTP API Reference](./http-api.md) — endpoint paths and request schema
 - [Performance Benchmarks](./benchmarks.md) — SLA budgets and methodology

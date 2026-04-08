@@ -13,14 +13,14 @@ The docs follow the **Diataxis framework** — see [INDEX.md](./INDEX.md) for th
 - **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Build, test, and deploy guide
 
 ### Diataxis Sections
-- **[tutorials/](./tutorials/)** - Hands-on learning guides (7 tutorials, beginner to advanced)
-- **[how-to/](./how-to/)** - Task-focused recipes (20 guides)
-- **[explanation/](./explanation/)** - Conceptual deep dives (12 topics)
-- **[reference/](./reference/)** - Technical specifications (16 references)
+- **[tutorials/](./tutorials/)** - Hands-on learning guides (8 tutorials, beginner to advanced)
+- **[how-to/](./how-to/)** - Task-focused recipes (26 guides)
+- **[explanation/](./explanation/)** - Conceptual deep dives (17 topics)
+- **[reference/](./reference/)** - Technical specifications (18 references)
 
 ### Reference
 - **[API.md](./API.md)** - Complete API reference for all functions
-- **[reference/algorithms.md](./reference/algorithms.md)** - All 14+ discovery algorithms with parameters
+- **[reference/algorithms.md](./reference/algorithms.md)** - 18 tools + 6 ML analysis tasks
 - **[reference/cli-commands.md](./reference/cli-commands.md)** - pmctl CLI reference
 
 ### Advanced Topics
@@ -91,5 +91,5 @@ If you find unclear sections or have suggestions for improving the documentation
 ---
 
 **Last Updated**: April 2026
-**Version**: 26.4.5
+**Version**: 26.4.7
 **Status**: Production Ready

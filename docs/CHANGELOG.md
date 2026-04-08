@@ -2,6 +2,41 @@
 
 ## v26.4.7 (2026-04-07)
 
+### Headline: ML Integration — All 10 Gaps Closed
+
+Phase 1 — CLI Registration:
+- `pmctl ml` command: classify, cluster, forecast, anomaly, regress, pca subtasks
+- `pmctl powl` command: POWL process model discovery
+
+Phase 2 — Dispatcher Wiring:
+- `packages/kernel/src/step-dispatcher.ts` bridges engine StepDispatcher to kernel ML handlers
+- All 6 ML step types (`ml_classify`, `ml_cluster`, `ml_forecast`, `ml_anomaly`, `ml_regress`, `ml_pca`) dispatch correctly
+
+Phase 3 — Planner / Config / Registry:
+- 6 ML entries in algorithm registry (ids, step types, output types, CLI aliases, display names)
+- New `[ml]` config section: `enabled`, `tasks`, `method`, `k`, `targetKey`, `forecastPeriods`, `nComponents`, `eps`
+- Planner generates ML analysis steps when `config.ml.enabled`
+
+Phase 4 — pmctl Integration:
+- `pmctl run`: ML post-discovery phase when ML config enabled
+- `pmctl drift-watch --enhanced`: ML anomaly detection overlay on EWMA drift
+
+Phase 5 — ML Observability:
+- New event types: `MlModelTraining`, `MlPredictionMade`, `MlFeatureExtraction`, `MlAnomalyDetected`
+- `MlAnalysisEvent` interface with OTEL attributes (`ml.task`, `ml.method`, `ml.confidence`, etc.)
+- `mlAnalysis` span in `RunningSpans`
+
+Phase 6 — ML Testing Infrastructure:
+- `ML_CLASSIFY_CONFIG` and `ML_ALL_TASKS_CONFIG` test fixtures
+- `createMockMlAdapter()` for deterministic ML mock results
+- `checkMlDeterminism()` with epsilon-tolerance for numeric ML outputs
+
+Phase 7 — Swarm ML Support:
+- `resultType` field on `WorkerResult` (`discovery` | `ml`)
+- `checkMlConvergence()` with epsilon-tolerance numeric comparison
+- `ml_ensemble` aggregation strategy (majority-vote, average, union by algorithm type)
+- ML worker detection in `runWorker()`
+
 ### Headline: Monorepo Consolidation — 16 packages → 9
 
 - **Deleted packages**: `@wasm4pm/types`, `@wasm4pm/templates`, `@wasm4pm/connectors`, `@wasm4pm/sinks`, `@wasm4pm/ocel`, `@wasm4pm/wasm4pm` (TS wrapper), `@wasm4pm/service`
