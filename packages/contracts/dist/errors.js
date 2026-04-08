@@ -96,7 +96,7 @@ const REMEDIATIONS = {
     ALGORITHM_FAILED: 'The algorithm encountered an error during execution. Check the detailed error message and try with different parameters or a smaller dataset.',
     ALGORITHM_NOT_FOUND: 'The requested algorithm is not available. Run: pmctl list-algorithms to see available options.',
     // WASM runtime errors
-    WASM_INIT_FAILED: 'Failed to initialize the WASM module. Ensure Node.js/browser is compatible (Node 16+, modern browser). Try reinstalling the package: npm install @wasm4pm/engine',
+    WASM_INIT_FAILED: 'Failed to initialize the WASM module. Ensure Node.js/browser is compatible (Node 16+, modern browser). Try reinstalling the package: npm install @pictl/engine',
     WASM_MEMORY_EXCEEDED: 'Insufficient memory in WASM sandbox. Try processing your data in smaller batches or check available memory limits.',
     // Sink errors
     SINK_FAILED: 'Failed to write output to sink. Check the sink configuration and ensure the destination exists and is writable.',

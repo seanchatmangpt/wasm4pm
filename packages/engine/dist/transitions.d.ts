@@ -3,7 +3,7 @@
  * Valid state transitions and transition validation
  * Enforces the engine state machine invariants
  */
-import { EngineState, ErrorInfo } from '@wasm4pm/types';
+import { EngineState, EngineError } from '@wasm4pm/contracts';
 /**
  * Map of valid transitions from each state
  *
@@ -30,13 +30,13 @@ export declare class TransitionValidator {
     /**
      * Validates a transition and returns recovery suggestions
      */
-    static validateTransition(currentState: EngineState, targetState: EngineState, errors?: ErrorInfo[]): {
+    static validateTransition(currentState: EngineState, targetState: EngineState, errors?: EngineError[]): {
         valid: boolean;
         suggestion?: string;
     };
     /**
      * Suggests the best target state based on current state and error condition
      */
-    static suggestRecoveryState(currentState: EngineState, errors?: ErrorInfo[]): EngineState | null;
+    static suggestRecoveryState(currentState: EngineState, errors?: EngineError[]): EngineState | null;
 }
 //# sourceMappingURL=transitions.d.ts.map

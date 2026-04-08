@@ -1,6 +1,6 @@
-# pmctl CLI Testing Guide
+# pictl CLI Testing Guide
 
-This document describes how to test the pmctl CLI scaffolding.
+This document describes how to test the pictl CLI scaffolding.
 
 ## Unit Tests
 
@@ -59,18 +59,18 @@ node dist/bin.js
 
 Expected output:
 ```
-pmctl v26.4.5
+pictl v26.4.5
 High-performance process mining and workflow discovery CLI
 
 USAGE:
-  pmctl [COMMAND] [OPTIONS]
+  pictl [COMMAND] [OPTIONS]
 
 COMMANDS:
   run       Run process discovery on input event log
   watch     Watch for changes and re-run discovery automatically
   status    Show status of discovery operations and system health
   explain   Explain a discovered model or algorithm
-  init      Initialize a new pmctl project with configuration
+  init      Initialize a new pictl project with configuration
 ```
 
 ### Test Individual Commands

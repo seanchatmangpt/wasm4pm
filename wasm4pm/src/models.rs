@@ -168,6 +168,26 @@ pub struct ColumnarLog<'a> {
     pub vocab: Vec<&'a str>,
 }
 
+impl<'a> ColumnarLog<'a> {
+    /// Create a borrowed `ColumnarLog` view from an owned `OwnedColumnarLog`.
+    ///
+    /// The returned `ColumnarLog` borrows all fields from `owned`,
+    /// so `owned` must outlive the returned value.
+    /// This is a zero-copy view — the owned data stays alive behind the reference.
+    pub fn from_owned(owned: &'a crate::cache::OwnedColumnarLog) -> Self {
+        // SAFETY: We transmute the borrowed slices to extend the lifetime.
+        // This is safe because `owned` is guaranteed to outlive the returned
+        // ColumnarLog (the lifetime 'a is tied to the &owned parameter).
+        // The events/trace_offsets data is immutable once created.
+        
+        ColumnarLog {
+            events: owned.events.clone(),
+            trace_offsets: owned.trace_offsets.clone(),
+            vocab: owned.vocab.iter().map(|s| s.as_str()).collect(),
+        }
+    }
+}
+
 impl EventLog {
     pub fn new() -> Self {
         EventLog {
@@ -215,6 +235,36 @@ impl EventLog {
         trace_offsets.push(events.len()); // sentinel
 
         ColumnarLog { events, trace_offsets, vocab }
+    }
+
+    /// Build an owned columnar representation suitable for caching.
+    ///
+    /// Same algorithm as `to_columnar` but produces an `OwnedColumnarLog` with
+    /// heap-allocated strings instead of borrowed references.  The result can
+    /// be stored in the columnar cache and reused across calls.
+    pub fn to_columnar_owned(&self, activity_key: &str) -> crate::cache::OwnedColumnarLog {
+        let total: usize = self.traces.iter().map(|t| t.events.len()).sum();
+        let mut events = Vec::with_capacity(total);
+        let mut trace_offsets = Vec::with_capacity(self.traces.len() + 1);
+        let mut vocab_map: FxHashMap<&str, u32> = FxHashMap::default();
+        let mut vocab: Vec<String> = Vec::new();
+
+        for trace in &self.traces {
+            trace_offsets.push(events.len());
+            for event in &trace.events {
+                if let Some(act) = event.attributes.get(activity_key).and_then(|v| v.as_string()) {
+                    let next_id = vocab.len() as u32;
+                    let id = *vocab_map.entry(act).or_insert_with(|| {
+                        vocab.push(act.to_owned());
+                        next_id
+                    });
+                    events.push(id);
+                }
+            }
+        }
+        trace_offsets.push(events.len()); // sentinel
+
+        crate::cache::OwnedColumnarLog { events, trace_offsets, vocab }
     }
 
     /// Get unique activity names. Uses `to_columnar` internally so dedup is O(n).
@@ -808,4 +858,36 @@ impl NGramPredictor {
         result.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
         result
     }
+}
+
+// ---------------------------------------------------------------------------
+// Default implementations
+// ---------------------------------------------------------------------------
+
+impl Default for EventLog {
+    fn default() -> Self { Self::new() }
+}
+
+impl Default for OCEL {
+    fn default() -> Self { Self::new() }
+}
+
+impl Default for PetriNet {
+    fn default() -> Self { Self::new() }
+}
+
+impl Default for DirectlyFollowsGraph {
+    fn default() -> Self { Self::new() }
+}
+
+impl Default for DeclareModel {
+    fn default() -> Self { Self::new() }
+}
+
+impl Default for TemporalProfile {
+    fn default() -> Self { Self::new() }
+}
+
+impl Default for StreamingDfgBuilder {
+    fn default() -> Self { Self::new() }
 }

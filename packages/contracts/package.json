@@ -1,5 +1,5 @@
 {
-  "name": "@wasm4pm/contracts",
+  "name": "@pictl/contracts",
   "version": "26.4.7",
   "description": "Runtime contracts, receipts, and hash verification",
   "type": "module",

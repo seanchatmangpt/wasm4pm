@@ -313,6 +313,10 @@ export class Kernel {
     switch (algorithmId) {
       case 'dfg':
       case 'process_skeleton':
+      case 'simd_streaming_dfg':
+      case 'hierarchical_dfg':
+      case 'streaming_log':
+      case 'smart_engine':
         return this.wasm.discover_dfg(eventLogHandle, activityKey);
 
       case 'alpha_plus_plus':

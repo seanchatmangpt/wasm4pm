@@ -1,5 +1,5 @@
 {
-  "name": "@wasm4pm/ml",
+  "name": "@pictl/ml",
   "version": "26.4.7",
   "description": "ML-powered process mining analysis using micro-ml — classification, clustering, forecasting, anomaly detection, PCA",
   "type": "module",

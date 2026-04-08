@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { resolveConfig as loadConfig } from "@wasm4pm/config";;
-import type { CliOverrides } from '@wasm4pm/config';
+import { resolveConfig as loadConfig } from "@pictl/config";;
+import type { CliOverrides } from '@pictl/config';
 
 describe('Config Resolution Order', () => {
   let tmpDir: string;
@@ -23,7 +23,7 @@ describe('Config Resolution Order', () => {
   describe('CLI > TOML > JSON > ENV > defaults', () => {
     it('should apply CLI override with highest priority', async () => {
       // Set up files with conflicting values
-      const tomlPath = path.join(tmpDir, 'wasm4pm.toml');
+      const tomlPath = path.join(tmpDir, 'pictl.toml');
       await fs.writeFile(
         tomlPath,
         `version = "26.4.5"
@@ -43,7 +43,7 @@ profile = "balanced"
     });
 
     it('should load from TOML with second priority', async () => {
-      const tomlPath = path.join(tmpDir, 'wasm4pm.toml');
+      const tomlPath = path.join(tmpDir, 'pictl.toml');
       await fs.writeFile(
         tomlPath,
         `version = "26.4.5"
@@ -65,7 +65,7 @@ timeout = 60000
 
     it('should prefer TOML over JSON', async () => {
       // Create both TOML and JSON
-      const tomlPath = path.join(tmpDir, 'wasm4pm.toml');
+      const tomlPath = path.join(tmpDir, 'pictl.toml');
       const jsonPath = path.join(tmpDir, 'wasm4pm.json');
 
       await fs.writeFile(
@@ -115,7 +115,7 @@ profile = "fast"
     });
 
     it('should merge CLI overrides with file config', async () => {
-      const tomlPath = path.join(tmpDir, 'wasm4pm.toml');
+      const tomlPath = path.join(tmpDir, 'pictl.toml');
       await fs.writeFile(
         tomlPath,
         `version = "26.4.5"
@@ -149,7 +149,7 @@ destination = "stdout"
     });
 
     it('should track file path in provenance', async () => {
-      const tomlPath = path.join(tmpDir, 'wasm4pm.toml');
+      const tomlPath = path.join(tmpDir, 'pictl.toml');
       await fs.writeFile(
         tomlPath,
         `version = "26.4.5"
@@ -185,7 +185,7 @@ profile = "quality"
 
   describe('Configuration Validation', () => {
     it('should reject invalid TOML', async () => {
-      const tomlPath = path.join(tmpDir, 'wasm4pm.toml');
+      const tomlPath = path.join(tmpDir, 'pictl.toml');
       await fs.writeFile(tomlPath, `invalid toml content [[[`);
 
       try {
@@ -215,7 +215,7 @@ profile = "quality"
     });
 
     it('should validate execution profile enum', async () => {
-      const tomlPath = path.join(tmpDir, 'wasm4pm.toml');
+      const tomlPath = path.join(tmpDir, 'pictl.toml');
       await fs.writeFile(
         tomlPath,
         `version = "26.4.5"
@@ -258,7 +258,7 @@ profile = "invalid_profile"
     });
 
     it('should validate timeout is positive', async () => {
-      const tomlPath = path.join(tmpDir, 'wasm4pm.toml');
+      const tomlPath = path.join(tmpDir, 'pictl.toml');
       await fs.writeFile(
         tomlPath,
         `version = "26.4.5"
@@ -340,7 +340,7 @@ timeout = -1000
 
   describe('Hash and Provenance', () => {
     it('should compute deterministic config hash', async () => {
-      const tomlPath = path.join(tmpDir, 'wasm4pm.toml');
+      const tomlPath = path.join(tmpDir, 'pictl.toml');
       await fs.writeFile(
         tomlPath,
         `version = "26.4.5"
@@ -362,7 +362,7 @@ profile = "balanced"
     });
 
     it('should detect config changes in hash', async () => {
-      const tomlPath = path.join(tmpDir, 'wasm4pm.toml');
+      const tomlPath = path.join(tmpDir, 'pictl.toml');
 
       // First config
       await fs.writeFile(
@@ -393,7 +393,7 @@ profile = "fast"
     });
 
     it('should include all config values in provenance', async () => {
-      const tomlPath = path.join(tmpDir, 'wasm4pm.toml');
+      const tomlPath = path.join(tmpDir, 'pictl.toml');
       await fs.writeFile(
         tomlPath,
         `version = "26.4.5"
@@ -425,7 +425,7 @@ timeout = 600000
 
       // Write to dir2
       await fs.writeFile(
-        path.join(dir2, 'wasm4pm.toml'),
+        path.join(dir2, 'pictl.toml'),
         `version = "26.4.5"
 [execution]
 profile = "balanced"
@@ -438,7 +438,7 @@ profile = "balanced"
       });
 
       expect(config.execution.profile).toBe('balanced');
-      expect(config.metadata.provenance['execution.profile']?.path).toBe(path.join(dir2, 'wasm4pm.toml'));
+      expect(config.metadata.provenance['execution.profile']?.path).toBe(path.join(dir2, 'pictl.toml'));
     });
 
     it('should use first matching config file', async () => {
@@ -450,7 +450,7 @@ profile = "balanced"
 
       // Write to both
       await fs.writeFile(
-        path.join(dir1, 'wasm4pm.toml'),
+        path.join(dir1, 'pictl.toml'),
         `version = "26.4.5"
 [execution]
 profile = "fast"
@@ -458,7 +458,7 @@ profile = "fast"
       );
 
       await fs.writeFile(
-        path.join(dir2, 'wasm4pm.toml'),
+        path.join(dir2, 'pictl.toml'),
         `version = "26.4.5"
 [execution]
 profile = "balanced"
@@ -471,7 +471,7 @@ profile = "balanced"
       });
 
       expect(config.execution.profile).toBe('fast');
-      expect(config.metadata.provenance['execution.profile']?.path).toBe(path.join(dir1, 'wasm4pm.toml'));
+      expect(config.metadata.provenance['execution.profile']?.path).toBe(path.join(dir1, 'pictl.toml'));
     });
   });
 });

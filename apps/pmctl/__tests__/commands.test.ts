@@ -5,7 +5,7 @@ import { run, watch, status, explain, init } from '../src/cli.js';
 import { EXIT_CODES } from '../src/exit-codes.js';
 
 /**
- * Integration tests for pmctl commands
+ * Integration tests for pictl commands
  * Tests command wiring to engine, config loading, output formatting, and exit codes
  */
 

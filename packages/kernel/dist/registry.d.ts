@@ -6,7 +6,7 @@
 /**
  * Complexity class for O(n) analysis
  */
-export type ComplexityClass = 'O(n)' | 'O(n log n)' | 'O(n²)' | 'O(n³)' | 'Exponential' | 'NP-Hard';
+export type ComplexityClass = 'O(n)' | 'O(n log n)' | 'O(n²)' | 'O(n³)' | 'O(n * d²)' | 'Exponential' | 'NP-Hard';
 /**
  * Speed tier: 0-100 (lower = faster)
  * 0-10: instant (<1ms), 10-30: very fast (1-10ms), 30-50: fast (10-100ms)
@@ -34,7 +34,7 @@ export interface AlgorithmMetadata {
     /** Long description */
     description: string;
     /** Output type: 'dfg', 'petrinet', 'declare', etc. */
-    outputType: 'dfg' | 'petrinet' | 'declare' | 'tree';
+    outputType: 'dfg' | 'petrinet' | 'declare' | 'tree' | 'ml_result';
     /** Complexity class */
     complexity: ComplexityClass;
     /** Speed tier (0-100, lower is faster) */

@@ -1,8 +1,8 @@
-# pmctl CLI Architecture
+# pictl CLI Architecture
 
 ## Overview
 
-pmctl is a modular CLI tool built with:
+pictl is a modular CLI tool built with:
 - **citty** - Command routing and argument parsing
 - **consola** - Human-friendly terminal output
 - **TypeScript** - Type-safe implementation
@@ -64,7 +64,7 @@ All commands registered in `cli.ts`:
 
 ```typescript
 export const main = defineCommand({
-  meta: { name: 'pmctl', version: '26.4.5' },
+  meta: { name: 'pictl', version: '26.4.5' },
   subCommands: {
     run,      // Discovery execution
     watch,    // File watching mode
@@ -78,7 +78,7 @@ export const main = defineCommand({
 ### Command Invocation
 
 ```
-pmctl [COMMAND] [OPTIONS]
+pictl [COMMAND] [OPTIONS]
 │      │         └─ Command-specific arguments
 │      └─ Routed to corresponding defineCommand()
 └─ Entry point (bin.ts) → runMain(cli.ts)
@@ -130,7 +130,7 @@ EXIT_CODES = {
 
 Exit codes propagate to shell:
 ```bash
-pmctl run --config bad.json
+pictl run --config bad.json
 # Returns: exit code 1 (config_error)
 
 echo $?  # Prints: 1
@@ -206,7 +206,7 @@ Connect commands to engine:
 
 ```typescript
 // In run.ts
-import { engine } from '@wasm4pm/engine';
+import { engine } from '@pictl/engine';
 
 async run(ctx) {
   const config = loadConfigFile(ctx.args.config);
@@ -333,25 +333,25 @@ const isVerbose = Boolean(ctx.args.verbose);
 
 ### Interactive Mode
 ```bash
-pmctl interactive
+pictl interactive
 # Guided wizard for configuration
 ```
 
 ### Plugin System
 ```bash
-pmctl plugin install custom-algorithm
-pmctl run --algorithm custom-algorithm
+pictl plugin install custom-algorithm
+pictl run --algorithm custom-algorithm
 ```
 
 ### Streaming Results
 ```bash
-pmctl run --stream results.ndjson
+pictl run --stream results.ndjson
 # Outputs NDJSON for large result sets
 ```
 
 ### Debugging
 ```bash
-pmctl run --debug
+pictl run --debug
 # Verbose logging, performance metrics
 ```
 
@@ -367,7 +367,7 @@ pmctl run --debug
 - **@types/node** (20.10.0) - Node types
 
 ### Deferred
-- **@wasm4pm/engine** - Algorithm execution (workspace:*)
+- **@pictl/engine** - Algorithm execution (workspace:*)
 - **chokidar** - File watching (Phase 2)
 - **yaml** - YAML config support (Phase 2)
 

@@ -1,11 +1,11 @@
 /**
- * MCP Server Integration for wasm4pm
+ * MCP Server Integration for pictl
  *
- * Exposes wasm4pm process mining capabilities as Model Context Protocol (MCP) tools.
- * Enables Claude and other MCP clients to use wasm4pm for process discovery, analysis, and visualization.
+ * Exposes pictl process mining capabilities as Model Context Protocol (MCP) tools.
+ * Enables Claude and other MCP clients to use pictl for process discovery, analysis, and visualization.
  *
  * Usage:
- *   const server = new Wasm4pmMCPServer();
+ *   const server = new PictlMCPServer();
  *   await server.start();
  */
 
@@ -23,22 +23,22 @@ interface ToolInput {
 }
 
 /**
- * Wasm4pm MCP Server
+ * pictl MCP Server
  *
- * Provides MCP interface to wasm4pm functionality including:
- * - Process discovery (14 algorithms)
+ * Provides MCP interface to pictl functionality including:
+ * - Process discovery (18 algorithms)
  * - Conformance checking
  * - Process analysis and visualization
  * - Event log import/export
  */
-export class Wasm4pmMCPServer {
+export class PictlMCPServer {
   private server: Server;
   private transport: StdioServerTransport;
 
   constructor() {
     this.server = new Server(
       {
-        name: 'wasm4pm',
+        name: 'pictl',
         version: '0.5.4',
       },
       {
@@ -602,13 +602,134 @@ export class Wasm4pmMCPServer {
           required: ['xes_content'],
         },
       },
+      // Advanced Discovery
+      {
+        name: 'discover_dfg_simd',
+        description:
+          'Discover a Directly-Follows Graph using SIMD-accelerated edge computation. Significantly faster than standard DFG for large logs (10k+ traces).',
+        inputSchema: {
+          type: 'object' as const,
+          properties: {
+            xes_content: {
+              type: 'string',
+              description: 'XES event log content as string',
+            },
+            min_frequency: {
+              type: 'number',
+              description: 'Minimum edge frequency (0-1). Default: 0.0 (include all edges)',
+            },
+          },
+          required: ['xes_content'],
+        },
+      },
+      {
+        name: 'discover_dfg_hierarchical',
+        description:
+          'Discover a hierarchical Directly-Follows Graph by chunking the log into depth levels. Reveals sub-process structure within large event logs.',
+        inputSchema: {
+          type: 'object' as const,
+          properties: {
+            xes_content: {
+              type: 'string',
+              description: 'XES event log content as string',
+            },
+            max_depth: {
+              type: 'number',
+              description: 'Maximum hierarchy depth. Default: 3',
+            },
+          },
+          required: ['xes_content'],
+        },
+      },
+      {
+        name: 'streaming_log_estimate',
+        description:
+          'Probabilistic streaming log processor that estimates DFG statistics using bounded memory. Suitable for infinite or very large streams where full materialization is impractical.',
+        inputSchema: {
+          type: 'object' as const,
+          properties: {
+            xes_content: {
+              type: 'string',
+              description: 'XES event log content (processed incrementally)',
+            },
+            sample_rate: {
+              type: 'number',
+              description: 'Sampling rate between 0 and 1. Default: 1.0 (process all traces)',
+            },
+          },
+          required: ['xes_content'],
+        },
+      },
+      {
+        name: 'smart_engine_run',
+        description:
+          'Smart execution engine with automatic algorithm selection and result caching. Analyzes the log to pick the best algorithm, caches intermediate results, and returns the discovery output with provenance.',
+        inputSchema: {
+          type: 'object' as const,
+          properties: {
+            xes_content: {
+              type: 'string',
+              description: 'XES event log content as string',
+            },
+            algorithm: {
+              type: 'string',
+              description:
+                'Override automatic algorithm selection. Options: dfg, heuristic, alpha_plus_plus, genetic, ilp, inductive. Default: auto-select based on log size and complexity.',
+            },
+            cache_key: {
+              type: 'string',
+              description:
+                'Optional cache key for deduplication. Default: auto-generated from log hash.',
+            },
+          },
+          required: ['xes_content'],
+        },
+      },
       // Registry
       {
         name: 'get_capability_registry',
-        description: 'Get the complete catalog of all wasm4pm functions organized by category.',
+        description: 'Get the complete catalog of all pictl functions organized by category.',
         inputSchema: {
           type: 'object' as const,
           properties: {},
+        },
+      },
+      // Cache management
+      {
+        name: 'clear_caches',
+        description: 'Clear all parsing and encoding caches (parse, columnar, interner).',
+        inputSchema: {
+          type: 'object' as const,
+          properties: {},
+        },
+      },
+      {
+        name: 'cache_stats',
+        description:
+          'Get cache hit/miss statistics. Returns parse hits, parse misses, columnar entries, and interner entries.',
+        inputSchema: {
+          type: 'object' as const,
+          properties: {},
+        },
+      },
+      // SIMD conformance
+      {
+        name: 'simd_replay',
+        description:
+          'SIMD-accelerated token replay for conformance checking. Discovers a DFG from the log, builds a Petri net, then replays every trace and returns fitness/precision/per-case diagnostics.',
+        inputSchema: {
+          type: 'object' as const,
+          properties: {
+            xes_content: {
+              type: 'string',
+              description: 'XES event log content as string',
+            },
+            activity_key: {
+              type: 'string',
+              description: 'Activity attribute key (default: concept:name)',
+            },
+          },
+          required: ['xes_content'],
         },
       },
     ];
@@ -947,7 +1068,7 @@ export class Wasm4pmMCPServer {
 
         // ML Tools (micro-ml powered — dynamic import for lazy loading)
         case 'ml_classify_traces': {
-          const { classifyTraces } = await import('@wasm4pm/ml');
+          const { classifyTraces } = await import('@pictl/ml');
           const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
           try {
             const configJson = JSON.stringify({
@@ -984,7 +1105,7 @@ export class Wasm4pmMCPServer {
         }
 
         case 'ml_cluster_traces': {
-          const { clusterTraces } = await import('@wasm4pm/ml');
+          const { clusterTraces } = await import('@pictl/ml');
           const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
           try {
             const configJson = JSON.stringify({
@@ -1020,7 +1141,7 @@ export class Wasm4pmMCPServer {
         }
 
         case 'ml_forecast_throughput': {
-          const { forecastThroughput } = await import('@wasm4pm/ml');
+          const { forecastThroughput } = await import('@pictl/ml');
           const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
           try {
             const driftRaw = wasm.detect_drift(logHandle, 'concept:name', 5);
@@ -1042,7 +1163,7 @@ export class Wasm4pmMCPServer {
         }
 
         case 'ml_detect_anomalies': {
-          const { detectEnhancedAnomalies } = await import('@wasm4pm/ml');
+          const { detectEnhancedAnomalies } = await import('@pictl/ml');
           const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
           try {
             const driftRaw = wasm.detect_drift(logHandle, 'concept:name', 10);
@@ -1062,7 +1183,7 @@ export class Wasm4pmMCPServer {
         }
 
         case 'ml_regress_remaining_time': {
-          const { regressRemainingTime } = await import('@wasm4pm/ml');
+          const { regressRemainingTime } = await import('@pictl/ml');
           const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
           try {
             const configJson = JSON.stringify({
@@ -1095,7 +1216,7 @@ export class Wasm4pmMCPServer {
         }
 
         case 'ml_pca_reduce': {
-          const { reduceFeaturesPCA } = await import('@wasm4pm/ml');
+          const { reduceFeaturesPCA } = await import('@pictl/ml');
           const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
           try {
             const configJson = JSON.stringify({
@@ -1129,9 +1250,105 @@ export class Wasm4pmMCPServer {
           break;
         }
 
+        // Advanced Discovery
+        case 'discover_dfg_simd': {
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
+          try {
+            const minFreq = (input.min_frequency as number) ?? 0;
+            if (minFreq > 0) {
+              result = wasm.discover_dfg_simd(logHandle, 'concept:name', minFreq);
+            } else {
+              result = wasm.discover_dfg_simd(logHandle, 'concept:name', 0.0);
+            }
+          } finally {
+            try {
+              wasm.delete_object(logHandle);
+            } catch {
+              /* best-effort */
+            }
+          }
+          break;
+        }
+
+        case 'discover_dfg_hierarchical': {
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
+          try {
+            const maxDepth = (input.max_depth as number) ?? 3;
+            result = wasm.discover_dfg_hierarchical(logHandle, 'concept:name', maxDepth);
+          } finally {
+            try {
+              wasm.delete_object(logHandle);
+            } catch {
+              /* best-effort */
+            }
+          }
+          break;
+        }
+
+        case 'streaming_log_estimate': {
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
+          try {
+            const sampleRate = (input.sample_rate as number) ?? 1.0;
+            result = wasm.streaming_log_estimate(logHandle, 'concept:name', sampleRate);
+          } finally {
+            try {
+              wasm.delete_object(logHandle);
+            } catch {
+              /* best-effort */
+            }
+          }
+          break;
+        }
+
+        case 'smart_engine_run': {
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
+          try {
+            const algorithm = (input.algorithm as string) || 'auto';
+            const cacheKey = (input.cache_key as string) || undefined;
+            result = wasm.smart_engine_run(logHandle, 'concept:name', algorithm, cacheKey ?? '');
+          } finally {
+            try {
+              wasm.delete_object(logHandle);
+            } catch {
+              /* best-effort */
+            }
+          }
+          break;
+        }
+
         // Registry
         case 'get_capability_registry': {
           result = wasm.get_capability_registry();
+          break;
+        }
+
+        // Cache management
+        case 'clear_caches': {
+          wasm.clear_all_caches();
+          result = { status: 'ok', message: 'All caches cleared' };
+          break;
+        }
+
+        case 'cache_stats': {
+          const rawStats = wasm.get_cache_stats();
+          result = typeof rawStats === 'string' ? JSON.parse(rawStats) : rawStats;
+          break;
+        }
+
+        // SIMD conformance
+        case 'simd_replay': {
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
+          try {
+            const actKey = (input.activity_key as string) || 'concept:name';
+            const rawReplay = wasm.simd_token_replay(logHandle, actKey);
+            result = typeof rawReplay === 'string' ? JSON.parse(rawReplay) : rawReplay;
+          } finally {
+            try {
+              wasm.delete_object(logHandle);
+            } catch {
+              /* best-effort */
+            }
+          }
           break;
         }
 
@@ -1263,7 +1480,7 @@ export class Wasm4pmMCPServer {
    */
   async start(): Promise<void> {
     this.server.connect(this.transport);
-    console.error('wasm4pm MCP server started');
+    console.error('pictl MCP server started');
   }
 }
 
@@ -1271,7 +1488,7 @@ export class Wasm4pmMCPServer {
  * Entry point for MCP server
  */
 async function main(): Promise<void> {
-  const server = new Wasm4pmMCPServer();
+  const server = new PictlMCPServer();
   await server.start();
 }
 
@@ -1279,4 +1496,4 @@ if (require.main === module) {
   main().catch(console.error);
 }
 
-export default Wasm4pmMCPServer;
+export default PictlMCPServer;

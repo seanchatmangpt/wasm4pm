@@ -1,4 +1,4 @@
-# wasm4pm Algorithms Reference
+# pictl Algorithms Reference
 
 Complete catalog of all 20+ process discovery and analytics methods.
 
@@ -80,12 +80,26 @@ log.discoverAStar({ maxIterations: 1000 });
 
 **Hill Climbing**
 
-- Type: Greedy local optimization
-- Speed: Very fast (< 50ms)
-- Use: Quick local optima
+- Type: Greedy edge pruning (start with all edges, iteratively remove non-essential)
+- Speed: Fast (< 150ms @ 10K cases)
+- Use: Model simplification, removes redundant edges while preserving trace replay
 
 ```typescript
 log.discoverHillClimbing();
+```
+
+**Noise-Filtered DFG** (Streaming)
+
+- Type: Frequency-based noise filtering
+- Speed: Fast (< 150ms @ 10K cases)
+- Use: Production streaming, denoising noisy logs, 80/20 solution
+- Memory: O(E) — edge counts only, no trace storage
+
+```typescript
+const handle = pm.streaming_noise_filtered_dfg_begin();
+pm.streaming_noise_filtered_dfg_add_event(handle, 'case-1', 'A');
+pm.streaming_noise_filtered_dfg_close_trace(handle, 'case-1');
+const dfg = JSON.parse(pm.streaming_noise_filtered_dfg_snapshot(handle));
 ```
 
 ### Metaheuristic Algorithms
@@ -424,32 +438,39 @@ const result = JSON.parse(pm.streaming_dfg_finalize(handle));
 
 ## Performance Benchmarks
 
-**Real Measured Results** — Criterion benchmarks (2026-04-04) on Event Log with 1000 cases, 5000 events, 20 activities:
+**Real Measured Results** — Criterion benchmarks (2026-04-08) on Event Log with 10000 cases, 200000 events, 20 activities:
 
 ```
-FAST ALGORITHMS (< 1ms):
-  DFG:                 ~0.29 ms
-  Process Skeleton:    ~0.25 ms
-  Hill Climbing:       ~0.48 ms
-  Optimized DFG:       ~0.31 ms
+FAST ALGORITHMS (< 50ms):
+  DFG:                      ~3.0 ms
+  Process Skeleton:         ~2.7 ms
+  Optimized DFG:            ~7.8 ms
+  Heuristic Miner:          ~14 ms
+  Inductive Miner:          ~25 ms
+  Genetic Algorithm:        ~24 ms
+  ACO:                      ~21 ms
+  Simulated Annealing:      ~23 ms
+  PSO Algorithm:            ~25 ms
 
-MEDIUM ALGORITHMS (1-10ms):
-  Heuristic:           ~1.8 ms
-  Inductive:           ~2.5 ms
-  Genetic:             ~2.3 ms
-  ACO:                 ~2.4 ms
-  SA:                  ~3.6 ms
-  PSO:                 ~6.3 ms
+MEDIUM ALGORITHMS (50-200ms):
+  Hill Climbing:            ~135 ms (greedy edge pruning)
+  Noise-Filtered DFG:       ~135 ms (streaming, frequency-based)
+  A* Search:                ~77 ms
+  ILP Petri Net:            ~87 ms
 
-SLOW ALGORITHMS (10-100ms):
-  A*:                  ~7.7 ms
-  ILP:                 ~9.0 ms
+STREAMING (10K cases, ~20x slower than batch):
+  Streaming DFG:             ~69 ms
+  Streaming Alpha++:         ~155 ms
+  Streaming Hill Climbing:   ~187 ms
+  Streaming Noise-Filtered:  ~135 ms
+  Streaming Inductive:       ~135 ms
+  Streaming A*:              ~155 ms
 
 ANALYTICS:
   All functions < 10ms (detection, bottlenecks, variants, complexity, etc.)
 ```
 
-**Summary**: All algorithms scale linearly with event count. See [Benchmark Results](../../docs/PROJECT_STATUS.md#benchmark-results-2026-04-04) for comprehensive 4-size dataset analysis.
+**Summary**: All algorithms scale linearly with event count. Streaming trades 1.4-23x speed for bounded memory and infinite stream support. See [Benchmark Results](../../docs/PROJECT_STATUS.md#benchmark-results-2026-04-08) for comprehensive 4-size dataset analysis.
 
 ---
 

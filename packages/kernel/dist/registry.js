@@ -488,6 +488,120 @@ export class AlgorithmRegistry {
             robustToNoise: false,
             scalesWell: false,
         });
+        // ── ML Analysis ──────────────────────────────────────────
+        this.register({
+            id: 'ml_classify',
+            name: 'ML Trace Classification',
+            description: 'Classify traces by outcome using k-NN, logistic regression, decision tree, or naive Bayes.',
+            outputType: 'ml_result',
+            complexity: 'O(n²)',
+            speedTier: 40,
+            qualityTier: 60,
+            parameters: [
+                { name: 'activity_key', type: 'string', description: 'Event attribute key for activity names', required: true, default: 'concept:name' },
+                { name: 'method', type: 'select', description: 'Classification method', required: false, default: 'knn', options: ['knn', 'logistic_regression', 'decision_tree', 'naive_bayes'] },
+                { name: 'k', type: 'number', description: 'Number of neighbors for k-NN', required: false, default: 5, min: 1, max: 50 },
+                { name: 'target_key', type: 'string', description: 'Target variable key for classification', required: false, default: 'outcome' },
+            ],
+            supportedProfiles: ['balanced', 'quality'],
+            estimatedDurationMs: 25,
+            estimatedMemoryMB: 50,
+            robustToNoise: true,
+            scalesWell: true,
+        });
+        this.register({
+            id: 'ml_cluster',
+            name: 'ML Trace Clustering',
+            description: 'Cluster traces by similarity using k-means or DBSCAN.',
+            outputType: 'ml_result',
+            complexity: 'O(n²)',
+            speedTier: 35,
+            qualityTier: 55,
+            parameters: [
+                { name: 'activity_key', type: 'string', description: 'Activity key', required: true, default: 'concept:name' },
+                { name: 'method', type: 'select', description: 'Clustering method', required: false, default: 'kmeans', options: ['kmeans', 'dbscan'] },
+                { name: 'k', type: 'number', description: 'Number of clusters', required: false, default: 3, min: 2, max: 20 },
+                { name: 'eps', type: 'number', description: 'DBSCAN epsilon', required: false, default: 1.0, min: 0.01, max: 100 },
+            ],
+            supportedProfiles: ['balanced', 'quality'],
+            estimatedDurationMs: 20,
+            estimatedMemoryMB: 60,
+            robustToNoise: true,
+            scalesWell: true,
+        });
+        this.register({
+            id: 'ml_forecast',
+            name: 'ML Throughput Forecasting',
+            description: 'Forecast future process throughput with trend analysis and seasonal decomposition.',
+            outputType: 'ml_result',
+            complexity: 'O(n log n)',
+            speedTier: 30,
+            qualityTier: 50,
+            parameters: [
+                { name: 'activity_key', type: 'string', description: 'Activity key', required: true, default: 'concept:name' },
+                { name: 'forecast_periods', type: 'number', description: 'Future periods to forecast', required: false, default: 5, min: 1, max: 50 },
+            ],
+            supportedProfiles: ['balanced', 'quality'],
+            estimatedDurationMs: 15,
+            estimatedMemoryMB: 30,
+            robustToNoise: false,
+            scalesWell: true,
+        });
+        this.register({
+            id: 'ml_anomaly',
+            name: 'ML Anomaly Detection',
+            description: 'Detect anomalous process windows using peak finding and seasonal decomposition on drift distances.',
+            outputType: 'ml_result',
+            complexity: 'O(n log n)',
+            speedTier: 30,
+            qualityTier: 55,
+            parameters: [
+                { name: 'activity_key', type: 'string', description: 'Activity key', required: true, default: 'concept:name' },
+                { name: 'smoothing_method', type: 'select', description: 'Smoothing algorithm', required: false, default: 'sma', options: ['sma', 'ema'] },
+            ],
+            supportedProfiles: ['balanced', 'quality'],
+            estimatedDurationMs: 15,
+            estimatedMemoryMB: 30,
+            robustToNoise: true,
+            scalesWell: true,
+        });
+        this.register({
+            id: 'ml_regress',
+            name: 'ML Remaining Time Regression',
+            description: 'Predict remaining case time using linear, polynomial, or exponential regression.',
+            outputType: 'ml_result',
+            complexity: 'O(n)',
+            speedTier: 25,
+            qualityTier: 50,
+            parameters: [
+                { name: 'activity_key', type: 'string', description: 'Activity key', required: true, default: 'concept:name' },
+                { name: 'method', type: 'select', description: 'Regression method', required: false, default: 'linear_regression', options: ['linear_regression', 'polynomial_regression', 'exponential_regression'] },
+                { name: 'target_key', type: 'string', description: 'Target variable', required: false, default: 'remaining_time' },
+            ],
+            supportedProfiles: ['balanced', 'quality'],
+            estimatedDurationMs: 10,
+            estimatedMemoryMB: 40,
+            robustToNoise: false,
+            scalesWell: true,
+        });
+        this.register({
+            id: 'ml_pca',
+            name: 'ML PCA Feature Reduction',
+            description: 'Reduce high-dimensional trace features using Principal Component Analysis.',
+            outputType: 'ml_result',
+            complexity: 'O(n * d²)',
+            speedTier: 35,
+            qualityTier: 50,
+            parameters: [
+                { name: 'activity_key', type: 'string', description: 'Activity key', required: true, default: 'concept:name' },
+                { name: 'n_components', type: 'number', description: 'Number of PCA components', required: false, default: 2, min: 1, max: 50 },
+            ],
+            supportedProfiles: ['balanced', 'quality'],
+            estimatedDurationMs: 20,
+            estimatedMemoryMB: 50,
+            robustToNoise: false,
+            scalesWell: true,
+        });
     }
     /**
      * Register a single algorithm

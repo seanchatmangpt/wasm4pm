@@ -3,7 +3,7 @@
  * Engine lifecycle and state machine for wasm4pm
  * Provides state management, error handling, and execution orchestration
  */
-export type { EngineState, EngineStatus, ExecutionPlan, ExecutionReceipt, ErrorInfo, StatusUpdate, PlanStep, } from '@wasm4pm/types';
+export type { EngineState, EngineStatus, ExecutionPlan, ExecutionReceipt, EngineError, StatusUpdate, PlanStep, } from '@wasm4pm/contracts';
 export { Engine, createSimpleEngine, createFullEngine } from './engine.js';
 export type { Kernel, Planner, Executor } from './engine.js';
 export { STATE_METADATA, ALL_STATES, isOperationalState, isTerminalState, isProcessingState, } from './state.js';

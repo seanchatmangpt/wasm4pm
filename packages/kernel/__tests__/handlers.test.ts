@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { PlanStepType, type PlanStep } from '@wasm4pm/planner';
+import { PlanStepType, type PlanStep } from '@pictl/planner';
 import {
   implementAlgorithmStep,
   listAlgorithms,

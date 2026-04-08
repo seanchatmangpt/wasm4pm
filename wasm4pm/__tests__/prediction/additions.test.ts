@@ -13,8 +13,7 @@ describe('Prediction Additions', () => {
         'A→C': 0.15,
         'A→D': 0.05,
       };
-      const sorted = Object.entries(ngram)
-        .sort(([, a], [, b]) => b - a);
+      const sorted = Object.entries(ngram).sort(([, a], [, b]) => b - a);
 
       expect(sorted[0][1]).toBeGreaterThan(sorted[1][1]);
       expect(sorted[0][1]).toBe(0.8);
@@ -34,21 +33,19 @@ describe('Prediction Additions', () => {
     it('should generate multiple future paths', () => {
       // Beam search with width=3 should generate 3 paths
       const beamWidth = 3;
-      const paths = Array(beamWidth).fill(0).map((_, i) => ({
-        sequence: ['B', 'C', 'D'].slice(0, i + 1),
-        probability: 0.9 - (i * 0.1),
-      }));
+      const paths = Array(beamWidth)
+        .fill(0)
+        .map((_, i) => ({
+          sequence: ['B', 'C', 'D'].slice(0, i + 1),
+          probability: 0.9 - i * 0.1,
+        }));
 
       expect(paths.length).toBe(3);
       expect(paths[0].probability).toBeGreaterThan(paths[2].probability);
     });
 
     it('should maintain probability ordering', () => {
-      const paths = [
-        { probability: 0.7 },
-        { probability: 0.2 },
-        { probability: 0.1 },
-      ];
+      const paths = [{ probability: 0.7 }, { probability: 0.2 }, { probability: 0.1 }];
 
       for (let i = 1; i < paths.length; i++) {
         expect(paths[i - 1].probability).toBeGreaterThanOrEqual(paths[i].probability);
@@ -79,19 +76,13 @@ describe('Prediction Additions', () => {
         { from: 'A', to: 'C', prob: 0.2 },
       ];
 
-      const totalFromA = edges
-        .filter(e => e.from === 'A')
-        .reduce((sum, e) => sum + e.prob, 0);
+      const totalFromA = edges.filter((e) => e.from === 'A').reduce((sum, e) => sum + e.prob, 0);
 
       expect(totalFromA).toBeCloseTo(1.0);
     });
 
     it('should sort edges by probability', () => {
-      const edges = [
-        { prob: 0.2 },
-        { prob: 0.8 },
-        { prob: 0.1 },
-      ].sort((a, b) => b.prob - a.prob);
+      const edges = [{ prob: 0.2 }, { prob: 0.8 }, { prob: 0.1 }].sort((a, b) => b.prob - a.prob);
 
       expect(edges[0].prob).toBe(0.8);
       expect(edges[2].prob).toBe(0.1);
@@ -181,10 +172,10 @@ describe('Prediction Additions', () => {
     it('should compute activity frequency entropy', () => {
       const prefix = ['A', 'A', 'B', 'C'];
       const freq: Record<string, number> = {};
-      prefix.forEach(a => freq[a] = (freq[a] || 0) + 1);
+      prefix.forEach((a) => (freq[a] = (freq[a] || 0) + 1));
 
       const total = prefix.length;
-      const probs = Object.values(freq).map(c => c / total);
+      const probs = Object.values(freq).map((c) => c / total);
       const entropy = -probs.reduce((sum, p) => sum + p * Math.log(p), 0);
 
       expect(entropy).toBeGreaterThan(0);
@@ -202,12 +193,13 @@ describe('Prediction Additions', () => {
       ];
       const prefix = ['A', 'B'];
 
-      const matching = allTraces.filter(t =>
-        t.length >= prefix.length && t.slice(0, prefix.length).every((a, i) => a === prefix[i])
+      const matching = allTraces.filter(
+        (t) =>
+          t.length >= prefix.length && t.slice(0, prefix.length).every((a, i) => a === prefix[i])
       );
 
       expect(matching.length).toBe(4); // all traces match
-      const normalCount = matching.filter(t => t[t.length - 1] !== 'Error').length;
+      const normalCount = matching.filter((t) => t[t.length - 1] !== 'Error').length;
       const coverage = normalCount / matching.length;
 
       expect(coverage).toBeCloseTo(0.75);
@@ -217,8 +209,9 @@ describe('Prediction Additions', () => {
       const allTraces = [['X', 'Y', 'Z']];
       const prefix = ['A', 'B'];
 
-      const matching = allTraces.filter(t =>
-        t.length >= prefix.length && t.slice(0, prefix.length).every((a, i) => a === prefix[i])
+      const matching = allTraces.filter(
+        (t) =>
+          t.length >= prefix.length && t.slice(0, prefix.length).every((a, i) => a === prefix[i])
       );
 
       expect(matching.length).toBe(0);
@@ -264,7 +257,10 @@ describe('Prediction Additions', () => {
       const trace = ['Request', 'Validate', 'Process', 'Process', 'Complete'];
 
       // 1. Top-k next from 'Process'
-      const topK = [{ activity: 'Process', prob: 0.6 }, { activity: 'Complete', prob: 0.4 }];
+      const topK = [
+        { activity: 'Process', prob: 0.6 },
+        { activity: 'Complete', prob: 0.4 },
+      ];
       expect(topK.length).toBeGreaterThan(0);
 
       // 7. Rework (Process→Process = 1 rework)

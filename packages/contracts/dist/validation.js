@@ -2,7 +2,7 @@
  * Receipt validation and tampering detection
  * Verifies cryptographic integrity of receipts
  */
-import { verifyHash } from './hash';
+import { verifyHash } from './hash.js';
 /**
  * Validate receipt structure and all required fields
  * @param receipt Receipt to validate

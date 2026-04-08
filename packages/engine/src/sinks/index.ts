@@ -1,5 +1,5 @@
 /**
- * @wasm4pm/sinks
+ * @pictl/sinks
  *
  * Output sinks for writing models, reports, and receipts.
  * Includes built-in file, stdout, and HTTP sinks with an extensible registry.

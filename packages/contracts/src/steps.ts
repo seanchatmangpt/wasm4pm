@@ -1,11 +1,11 @@
 /**
- * Plan step type values shared across @wasm4pm/planner and @wasm4pm/testing.
+ * Plan step type values shared across @pictl/planner and @pictl/testing.
  *
  * Extracted here to break the circular dependency: testing tests planner,
  * so testing cannot import from planner. Both can safely import from contracts.
  *
  * The 14 discover_* values correspond to KernelAlgorithm individuals in the ostar
- * ontology and are reflected in ALGORITHM_ID_TO_STEP_TYPE from @wasm4pm/templates.
+ * ontology and are reflected in ALGORITHM_ID_TO_STEP_TYPE from @pictl/templates.
  * The remaining 13 lifecycle/analysis values are structural and not yet in the ontology.
  */
 

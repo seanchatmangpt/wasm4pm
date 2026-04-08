@@ -26,18 +26,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
 import * as pm from '../../pkg/wasm4pm.js';
-import {
-  XES_MINIMAL,
-  XES_SEQUENTIAL,
-  XES_PARALLEL,
-  XES_WORKFLOW,
-} from '../helpers/fixtures.js';
-import {
-  Wasm4pmConfig,
-  ExecutionProfile,
-  SourceFormat,
-  ExecutionMode,
-} from '../../src/config.js';
+import { XES_MINIMAL, XES_SEQUENTIAL, XES_PARALLEL, XES_WORKFLOW } from '../helpers/fixtures.js';
+import { Wasm4pmConfig, ExecutionProfile, SourceFormat, ExecutionMode } from '../../src/config.js';
 
 /**
  * Helper: Hash function for determinism verification

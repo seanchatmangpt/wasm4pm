@@ -1,0 +1,85 @@
+# ostar.toml — O* runtime configuration for wasm4pm/lab
+#
+# Use: OSTAR_CONFIG=./ostar.toml ostar [command]
+# Load order: ostar.toml values < environment variable overrides
+# Secrets go in .env — never here
+
+# ── Project ───────────────────────────────────────────────────────────────────
+[project]
+name         = "wasm4pm-lab"
+version      = "26.4.6"
+service_name = "wasm4pm-lab"
+
+# ── LLM Provider ─────────────────────────────────────────────────────────────
+[llm]
+# Override with: GROQ_MODEL
+model               = "openai/gpt-oss-20b"
+temperature         = 0.2
+max_tokens          = 131072
+timeout_ms          = 30000
+reasoning_effort    = "medium"
+structured_outputs  = true
+parallel_tool_calls = true
+service_tier        = "on_demand"
+
+# ── MCP Server ────────────────────────────────────────────────────────────────
+[mcp]
+transport                = "stdio"
+sse_port                 = 3001
+sse_host                 = "0.0.0.0"
+# Override with: PM4PY_MCP_URL
+pm4py_url                = "http://localhost:7015"
+pm4py_context_timeout_ms = 1500
+
+# ── Open Ontologies ───────────────────────────────────────────────────────────
+[open_ontologies]
+# Override with: OPEN_ONTOLOGIES_BIN
+bin  = "/Users/sac/.local/bin/open-ontologies"
+# Override with: OPEN_ONTOLOGIES_URL
+url  = ""
+mode = "stdio"
+
+# ── OpenTelemetry ─────────────────────────────────────────────────────────────
+[otel]
+# Override with: OTEL_EXPORTER_OTLP_ENDPOINT
+endpoint = ""
+# Override with: OTEL_EXPORTER_OTLP_PROTOCOL
+protocol = "http"
+enabled  = false
+
+# ── Pipeline ─────────────────────────────────────────────────────────────────
+[pipeline]
+input_dir      = "tests"
+profile_path   = "profiles/trust/strict-enterprise.json"
+query_dir      = "validators/sparql/suites"
+max_iterations = 5
+# Override with: OSTAR_VERBOSE=1
+verbose        = false
+
+# ── Pipeline Autonomics ───────────────────────────────────────────────────────
+[pipeline.autonomics]
+# Override with: MAX_ITERATIONS
+max_iterations   = 10
+# Override with: MAX_STEPS
+max_steps        = 20
+# Override with: MAX_EPISODES
+max_episodes     = 5
+# Override with: CONVERGENCE_RUNS
+convergence_runs = 2
+
+# ── Filesystem Paths ─────────────────────────────────────────────────────────
+[paths]
+# Override with: WASM4PM_REPO
+wasm4pm_repo  = ".."
+# Override with: XES_PATH
+xes_path      = "fixtures/sample-xes-1.0.xes"
+# Override with: REPO_PATH
+repo_path     = ".."
+artifacts_dir = "reports"
+receipts_dir  = ".wasm4pm/receipts"
+
+# ── Federation ───────────────────────────────────────────────────────────────
+[federation]
+# Override with: OSTAR_FEDERATION_LIVE=1
+live         = false
+profile_path = "profiles/federation/default.json"

@@ -15,7 +15,7 @@ import { powl } from './commands/powl.js';
 
 export const main = defineCommand({
   meta: {
-    name: 'pmctl',
+    name: 'pictl',
     version: '26.4.7',
     description: 'High-performance process mining and workflow discovery CLI',
   },
@@ -26,7 +26,7 @@ export const main = defineCommand({
     },
     config: {
       type: 'string',
-      description: 'Path to config file (pmctl.toml, pmctl.json, or PMC_CONFIG_PATH)',
+      description: 'Path to config file (pictl.toml, wasm4pm.json, or PMC_CONFIG_PATH)',
     },
   },
   async run() {
@@ -37,47 +37,47 @@ export const main = defineCommand({
     const RESET = '\x1b[0m';
 
     process.stdout.write(`
-${BOLD}pmctl${RESET} v26.4.6  —  Process Mining CLI  ${DIM}(wasm4pm)${RESET}
+${BOLD}pictl${RESET} v26.4.6  —  Process Mining CLI  ${DIM}(wasm4pm)${RESET}
 
 ${BOLD}DISCOVERY${RESET}
-  ${GREEN}pmctl run${RESET} <log.xes>                   Discover a process model (default: heuristic miner)
-  ${GREEN}pmctl run${RESET} <log.xes> --algorithm dfg   Use a specific algorithm
-  ${GREEN}pmctl compare${RESET} dfg,heuristic -i <log>  Compare algorithms side-by-side with sparklines
-  ${GREEN}pmctl diff${RESET} <log1.xes> <log2.xes>      Compare two logs — activities, edges, Jaccard distance
+  ${GREEN}pictl run${RESET} <log.xes>                   Discover a process model (default: heuristic miner)
+  ${GREEN}pictl run${RESET} <log.xes> --algorithm dfg   Use a specific algorithm
+  ${GREEN}pictl compare${RESET} dfg,heuristic -i <log>  Compare algorithms side-by-side with sparklines
+  ${GREEN}pictl diff${RESET} <log1.xes> <log2.xes>      Compare two logs — activities, edges, Jaccard distance
 
 ${BOLD}PREDICTION${RESET}  ${DIM}(van der Aalst's six perspectives)${RESET}
-  ${GREEN}pmctl predict${RESET} next-activity  -i <log> --prefix "Submit,Approve"
-  ${GREEN}pmctl predict${RESET} remaining-time -i <log> --prefix "Submit"
-  ${GREEN}pmctl predict${RESET} outcome        -i <log>
-  ${GREEN}pmctl predict${RESET} drift          -i <log>
-  ${GREEN}pmctl predict${RESET} features       -i <log>
-  ${GREEN}pmctl predict${RESET} resource       -i <log>
+  ${GREEN}pictl predict${RESET} next-activity  -i <log> --prefix "Submit,Approve"
+  ${GREEN}pictl predict${RESET} remaining-time -i <log> --prefix "Submit"
+  ${GREEN}pictl predict${RESET} outcome        -i <log>
+  ${GREEN}pictl predict${RESET} drift          -i <log>
+  ${GREEN}pictl predict${RESET} features       -i <log>
+  ${GREEN}pictl predict${RESET} resource       -i <log>
 
 ${BOLD}MONITORING${RESET}
-  ${GREEN}pmctl drift-watch${RESET} --input <log.xes>   Live EWMA concept drift monitor (Ctrl+C to stop)
+  ${GREEN}pictl drift-watch${RESET} --input <log.xes>   Live EWMA concept drift monitor (Ctrl+C to stop)
 
 ${BOLD}ML ANALYSIS${RESET}  ${DIM}(classification, clustering, forecasting, anomaly, regression, PCA)${RESET}
-  ${GREEN}pmctl ml${RESET} classify   -i <log>           Classify traces (knn, logistic_regression)
-  ${GREEN}pmctl ml${RESET} cluster    -i <log>           Cluster traces (kmeans, dbscan)
-  ${GREEN}pmctl ml${RESET} forecast   -i <log>           Forecast drift trends
-  ${GREEN}pmctl ml${RESET} anomaly    -i <log>           Detect anomalies in drift signal
-  ${GREEN}pmctl ml${RESET} regress    -i <log>           Regress remaining time
-  ${GREEN}pmctl ml${RESET} pca        -i <log>           PCA dimensionality reduction
+  ${GREEN}pictl ml${RESET} classify   -i <log>           Classify traces (knn, logistic_regression)
+  ${GREEN}pictl ml${RESET} cluster    -i <log>           Cluster traces (kmeans, dbscan)
+  ${GREEN}pictl ml${RESET} forecast   -i <log>           Forecast drift trends
+  ${GREEN}pictl ml${RESET} anomaly    -i <log>           Detect anomalies in drift signal
+  ${GREEN}pictl ml${RESET} regress    -i <log>           Regress remaining time
+  ${GREEN}pictl ml${RESET} pca        -i <log>           PCA dimensionality reduction
 
 ${BOLD}POWL${RESET}  ${DIM}(process-oriented workflow language)${RESET}
-  ${GREEN}pmctl powl${RESET} construct  -i <log>          Construct POWL model from log
-  ${GREEN}pmctl powl${RESET} replay     -i <log>          Replay log against POWL model
+  ${GREEN}pictl powl${RESET} construct  -i <log>          Construct POWL model from log
+  ${GREEN}pictl powl${RESET} replay     -i <log>          Replay log against POWL model
 
 ${BOLD}RESULTS & HEALTH${RESET}
-  ${GREEN}pmctl results${RESET}                         View all saved discovery & prediction results
-  ${GREEN}pmctl results${RESET} --last                  Print the most recent result
-  ${GREEN}pmctl doctor${RESET}                          Check environment health (Node, WASM, config, XES)
-  ${GREEN}pmctl status${RESET}                          WASM module status and memory usage
+  ${GREEN}pictl results${RESET}                         View all saved discovery & prediction results
+  ${GREEN}pictl results${RESET} --last                  Print the most recent result
+  ${GREEN}pictl doctor${RESET}                          Check environment health (Node, WASM, config, XES)
+  ${GREEN}pictl status${RESET}                          WASM module status and memory usage
 
 ${BOLD}SETUP${RESET}
-  ${GREEN}pmctl init${RESET}                            Scaffold wasm4pm.toml + .env.example in current dir
+  ${GREEN}pictl init${RESET}                            Scaffold pictl.toml + .env.example in current dir
 
-${DIM}Run ${BOLD}pmctl <command> --help${RESET}${DIM} for detailed usage and all flags.${RESET}
+${DIM}Run ${BOLD}pictl <command> --help${RESET}${DIM} for detailed usage and all flags.${RESET}
 ${DIM}Algorithms: dfg, alpha, heuristic, inductive, ilp, genetic, pso, astar, hill-climbing, ant-colony, declare${RESET}
 ${CYAN}
 Activity key defaults to "concept:name" (XES standard). Pass --activity-key to override.${RESET}

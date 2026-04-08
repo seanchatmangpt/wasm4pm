@@ -1,9 +1,9 @@
 /**
- * @wasm4pm/config — Configuration management with Zod schemas and provenance tracking.
+ * @pictl/config — Configuration management with Zod schemas and provenance tracking.
  *
  * @example
  * ```ts
- * import { resolveConfig } from '@wasm4pm/config';
+ * import { resolveConfig } from '@pictl/config';
  *
  * const config = await resolveConfig({
  *   cliOverrides: { profile: 'quality' },
@@ -44,9 +44,9 @@ export {
 } from './schema.js';
 export type { AlgorithmId } from './schema.js';
 
-// Re-export generated constants so consumers can get them from @wasm4pm/config
-export { PREDICTION_TASKS, VALID_PREDICT_CLI_TASKS, CLI_SLUG_TO_TASK_ID, TASK_ID_TO_CLI_SLUG } from '@wasm4pm/contracts';
-export type { PredictionTask, PredictCliTask } from '@wasm4pm/contracts';
+// Re-export generated constants so consumers can get them from @pictl/config
+export { PREDICTION_TASKS, VALID_PREDICT_CLI_TASKS, CLI_SLUG_TO_TASK_ID, TASK_ID_TO_CLI_SLUG } from '@pictl/contracts';
+export type { PredictionTask, PredictCliTask } from '@pictl/contracts';
 
 // Provenance
 export {

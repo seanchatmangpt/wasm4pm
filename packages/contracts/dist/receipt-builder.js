@@ -3,7 +3,7 @@
  * Encapsulates hashing and validation logic
  */
 import { v4 as uuidv4 } from 'uuid';
-import { hashData } from './hash';
+import { hashData } from './hash.js';
 /**
  * Fluent builder for constructing Receipt objects
  * All setters return the builder for method chaining

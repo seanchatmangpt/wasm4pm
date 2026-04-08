@@ -7,12 +7,25 @@
  */
 
 import { describe, it, expect, afterAll } from 'vitest';
-import { readXes, countTraces, printTable, BenchRow, SAMPLE_XES, BPI_XES } from './bench-helpers.js';
+import {
+  readXes,
+  countTraces,
+  printTable,
+  BenchRow,
+  SAMPLE_XES,
+  BPI_XES,
+} from './bench-helpers.js';
 
 const SAMPLE = readXes(SAMPLE_XES);
 const SAMPLE_TRACES = countTraces(SAMPLE);
 let BPI: string, BPI_TRACES: number;
-try { BPI = readXes(BPI_XES); BPI_TRACES = countTraces(BPI); } catch { BPI = ''; BPI_TRACES = 0; }
+try {
+  BPI = readXes(BPI_XES);
+  BPI_TRACES = countTraces(BPI);
+} catch {
+  BPI = '';
+  BPI_TRACES = 0;
+}
 
 const rows: BenchRow[] = [];
 afterAll(() => printTable(rows));
@@ -32,7 +45,13 @@ describe('detect_drift', () => {
     const dur = Number((performance.now() - t).toFixed(3));
     expect(result).toHaveProperty('drifts_detected');
     expect(result).toHaveProperty('method');
-    rows.push({ algorithm: 'detect_drift(w=2)', dataset: 'sample', traces: SAMPLE_TRACES, durationMs: dur, note: `${result.drifts_detected} drifts` });
+    rows.push({
+      algorithm: 'detect_drift(w=2)',
+      dataset: 'sample',
+      traces: SAMPLE_TRACES,
+      durationMs: dur,
+      note: `${result.drifts_detected} drifts`,
+    });
   });
 
   it('BPI 2020 — window=50', async () => {
@@ -42,7 +61,13 @@ describe('detect_drift', () => {
     const t = performance.now();
     const result = JSON.parse(wasm.detect_drift(log, 'concept:name', 50));
     const dur = Number((performance.now() - t).toFixed(3));
-    rows.push({ algorithm: 'detect_drift(w=50)', dataset: 'BPI2020', traces: BPI_TRACES, durationMs: dur, note: `${result.drifts_detected} drifts` });
+    rows.push({
+      algorithm: 'detect_drift(w=50)',
+      dataset: 'BPI2020',
+      traces: BPI_TRACES,
+      durationMs: dur,
+      note: `${result.drifts_detected} drifts`,
+    });
     expect(result.drifts_detected).toBeGreaterThanOrEqual(0);
   });
 
@@ -53,7 +78,13 @@ describe('detect_drift', () => {
     const t = performance.now();
     const result = JSON.parse(wasm.detect_drift(log, 'concept:name', 100));
     const dur = Number((performance.now() - t).toFixed(3));
-    rows.push({ algorithm: 'detect_drift(w=100)', dataset: 'BPI2020', traces: BPI_TRACES, durationMs: dur, note: `${result.drifts_detected} drifts` });
+    rows.push({
+      algorithm: 'detect_drift(w=100)',
+      dataset: 'BPI2020',
+      traces: BPI_TRACES,
+      durationMs: dur,
+      note: `${result.drifts_detected} drifts`,
+    });
     expect(result.drifts_detected).toBeGreaterThanOrEqual(0);
   });
 });
@@ -67,7 +98,13 @@ describe('compute_ewma', () => {
     const dur = Number((performance.now() - t).toFixed(3));
     expect(result.smoothed.length).toBe(values.length);
     expect(result).toHaveProperty('trend');
-    rows.push({ algorithm: 'compute_ewma(stable)', dataset: 'synthetic', traces: 0, durationMs: dur, note: `trend=${result.trend}` });
+    rows.push({
+      algorithm: 'compute_ewma(stable)',
+      dataset: 'synthetic',
+      traces: 0,
+      durationMs: dur,
+      note: `trend=${result.trend}`,
+    });
   });
 
   it('spike series — EWMA reacts at index 3', async () => {

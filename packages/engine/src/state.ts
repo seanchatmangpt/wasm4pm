@@ -4,7 +4,7 @@
  * Provides type-safe state introspection and classification
  */
 
-import { EngineState } from '@wasm4pm/contracts';
+import { EngineState } from '@pictl/contracts';
 
 // Re-export for convenience
 export type { EngineState };

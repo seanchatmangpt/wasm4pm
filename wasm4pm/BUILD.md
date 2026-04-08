@@ -1,6 +1,6 @@
-# Building and Publishing wasm4pm
+# Building and Publishing pictl
 
-Complete guide for building, testing, and publishing the wasm4pm npm package.
+Complete guide for building, testing, and publishing the pictl npm package.
 
 ## Prerequisites
 
@@ -176,8 +176,8 @@ npm publish                 # Latest (default)
 
 ```bash
 # Create a test directory
-mkdir test-wasm4pm
-cd test-wasm4pm
+mkdir test-pictl
+cd test-pictl
 
 # Install from local tarball
 npm install ../process_mining_wasm

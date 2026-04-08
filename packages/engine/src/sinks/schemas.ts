@@ -1,7 +1,7 @@
 /**
  * JSON Schema definitions for sink configurations
  *
- * Used for validation of user-supplied sink config in wasm4pm.toml or CLI args.
+ * Used for validation of user-supplied sink config in pictl.toml or CLI args.
  */
 
 /**

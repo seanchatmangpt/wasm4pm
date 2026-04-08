@@ -11,7 +11,7 @@ import {
   validateTraceCompleteness,
   validateNoDuplicates,
   type EventLogSchema,
-} from '@wasm4pm/testing';
+} from '@pictl/testing';
 
 describe('Event Log Validators', () => {
   // Skip XES tests in Node.js (DOMParser is browser-only)

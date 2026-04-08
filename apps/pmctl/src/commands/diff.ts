@@ -3,7 +3,7 @@ import * as fs from 'fs/promises';
 import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import type { OutputOptions } from '../output.js';
-import { WasmLoader } from '@wasm4pm/engine';
+import { WasmLoader } from '@pictl/engine';
 
 export interface DiffOptions extends OutputOptions {
   log1?: string;

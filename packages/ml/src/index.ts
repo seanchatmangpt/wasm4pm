@@ -1,5 +1,5 @@
 /**
- * @wasm4pm/ml
+ * @pictl/ml
  *
  * ML-powered process mining analysis using micro-ml.
  * Classification, clustering, forecasting, anomaly detection, PCA.

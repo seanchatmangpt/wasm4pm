@@ -3,7 +3,7 @@
  * Engine status tracking and reporting
  * Maintains accurate progress, timing, and error information
  */
-import { EngineState, ErrorInfo, EngineStatus, ExecutionReceipt, ExecutionPlan } from '@wasm4pm/types';
+import { EngineState, EngineError, EngineStatus, ExecutionReceipt, ExecutionPlan } from '@wasm4pm/contracts';
 /**
  * Tracks engine execution progress and status
  */
@@ -46,7 +46,7 @@ export declare class StatusTracker {
     /**
      * Adds an error to the error list
      */
-    addError(error: ErrorInfo): void;
+    addError(error: EngineError): void;
     /**
      * Clears all errors
      */
@@ -91,7 +91,7 @@ export declare class StatusTracker {
 /**
  * Formats error information for display
  */
-export declare function formatError(error: ErrorInfo): string;
+export declare function formatError(error: EngineError): string;
 /**
  * Formats status for display
  */

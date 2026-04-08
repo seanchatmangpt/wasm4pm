@@ -1,5 +1,5 @@
 /**
- * Template static data — merged from @wasm4pm/templates.
+ * Template static data — merged from @pictl/templates.
  *
  * Lives in contracts (leaf package) to avoid circular dependency
  * between planner ↔ kernel.

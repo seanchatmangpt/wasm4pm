@@ -1,5 +1,5 @@
 /**
- * pmctl - High-performance process mining CLI
+ * pictl - High-performance process mining CLI
  */
 
 export { main } from './cli.js';
@@ -12,7 +12,7 @@ export { EXIT_CODES } from './exit-codes.js';
 export type { ExitCode } from './exit-codes.js';
 
 export {
-  PmctlError,
+  PictlError,
   ConfigError,
   SourceError,
   ExecutionError,

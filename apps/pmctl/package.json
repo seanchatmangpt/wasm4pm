@@ -1,10 +1,10 @@
 {
-  "name": "@wasm4pm/pmctl",
+  "name": "@pictl/cli",
   "version": "26.4.7",
-  "description": "CLI tool for process mining and workflow discovery",
+  "description": "pictl — Process Intelligence Control CLI",
   "type": "module",
   "bin": {
-    "pmctl": "./dist/bin/pmctl.js"
+    "pictl": "./dist/bin/pmctl.js"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -27,10 +27,10 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@wasm4pm/config": "workspace:*",
-    "@wasm4pm/engine": "workspace:*",
-    "@wasm4pm/ml": "workspace:^",
-    "@wasm4pm/contracts": "workspace:*",
+    "@pictl/config": "workspace:*",
+    "@pictl/engine": "workspace:*",
+    "@pictl/ml": "workspace:^",
+    "@pictl/contracts": "workspace:*",
     "citty": "^0.1.6",
     "consola": "^3.2.3"
   },

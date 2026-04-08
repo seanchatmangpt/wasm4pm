@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { run, watch, status, explain, init } from '../src/cli.js';
 
 /**
- * Happy path tests for pmctl commands
+ * Happy path tests for pictl commands
  * Verify that each command has correct structure for successful execution
  */
 
@@ -26,7 +26,7 @@ describe('Happy path: run command', () => {
 
   it('basic run flow: config -> algorithm -> input -> output', async () => {
     // This demonstrates the expected command usage:
-    // pmctl run --config pmctl.json --algorithm genetic --input log.xes --output results.json
+    // pictl run --config pmctl.json --algorithm genetic --input log.xes --output results.json
     expect(run.args?.config).toBeDefined();
     expect(run.args?.algorithm).toBeDefined();
     expect(run.args?.input).toBeDefined();
@@ -165,7 +165,7 @@ describe('Happy path: init command', () => {
   });
 
   it('should scaffold a project with default template', () => {
-    // pmctl init
+    // pictl init
     expect(init.run).toBeDefined();
   });
 
@@ -185,13 +185,13 @@ describe('Happy path: init command', () => {
   });
 
   it('should allow force overwrite of existing files', () => {
-    // pmctl init --force
+    // pictl init --force
     expect(init.args?.force).toBeDefined();
   });
 
   it('init flow: select template -> create dirs -> write configs -> validate -> output', async () => {
     // This demonstrates the expected flow
-    // pmctl init --format toml --force
+    // pictl init --format toml --force
     expect(init.run).toBeDefined();
   });
 
@@ -242,27 +242,27 @@ describe('Happy path: output formatting', () => {
 
 describe('Happy path: configuration resolution', () => {
   it('should load configuration from current directory', () => {
-    // pmctl run -> automatically finds wasm4pm.json or wasm4pm.toml
+    // pictl run -> automatically finds wasm4pm.json or pictl.toml
     expect(run.args?.config).toBeDefined();
   });
 
   it('should allow explicit config file path', () => {
-    // pmctl run --config /path/to/config.json
+    // pictl run --config /path/to/config.json
     expect(run.args?.config).toBeDefined();
   });
 
   it('should support CLI overrides of config values', () => {
-    // pmctl run --algorithm genetic (overrides config profile)
+    // pictl run --algorithm genetic (overrides config profile)
     expect(run.args?.algorithm).toBeDefined();
   });
 
   it('should respect environment variables with WASM4PM_ prefix', () => {
-    // WASM4PM_PROFILE=quality pmctl run
+    // WASM4PM_PROFILE=quality pictl run
     expect(run.run).toBeDefined();
   });
 
   it('should apply sensible defaults when nothing specified', () => {
-    // pmctl run (without args, uses defaults)
+    // pictl run (without args, uses defaults)
     expect(run.run).toBeDefined();
   });
 });
@@ -275,7 +275,7 @@ describe('Happy path: error recovery', () => {
   });
 
   it('should suggest corrective actions', () => {
-    // "Use: pmctl init to create a configuration file"
+    // "Use: pictl init to create a configuration file"
     // "Use: pmctl explain to understand algorithms"
     expect(run.run).toBeDefined();
   });
@@ -292,21 +292,21 @@ describe('Happy path: error recovery', () => {
   });
 
   it('should provide debugging information in verbose mode', () => {
-    // pmctl run --verbose
+    // pictl run --verbose
     expect(run.args?.verbose).toBeDefined();
   });
 });
 
 describe('Happy path: real-world usage scenarios', () => {
   it('scenario 1: quick DFG discovery', async () => {
-    // pmctl run --algorithm dfg --input log.xes --output results.json
+    // pictl run --algorithm dfg --input log.xes --output results.json
     expect(run.args?.algorithm).toBeDefined();
     expect(run.args?.input).toBeDefined();
     expect(run.args?.output).toBeDefined();
   });
 
   it('scenario 2: high-quality process model with multiple algorithms', async () => {
-    // pmctl run --config quality.toml --output models/
+    // pictl run --config quality.toml --output models/
     expect(run.args?.config).toBeDefined();
     expect(run.args?.output).toBeDefined();
   });
@@ -331,8 +331,8 @@ describe('Happy path: real-world usage scenarios', () => {
   });
 
   it('scenario 6: bootstrap new project', async () => {
-    // pmctl init --format toml
-    // Then: pmctl run --algorithm alpha
+    // pictl init --format toml
+    // Then: pictl run --algorithm alpha
     expect(init.args?.configFormat).toBeDefined() || expect(init.args?.format).toBeDefined();
   });
 
@@ -342,7 +342,7 @@ describe('Happy path: real-world usage scenarios', () => {
   });
 
   it('scenario 8: export results in json for downstream processing', async () => {
-    // pmctl run --format json > results.json
+    // pictl run --format json > results.json
     expect(run.args?.format).toBeDefined();
   });
 });

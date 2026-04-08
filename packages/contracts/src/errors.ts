@@ -173,9 +173,9 @@ export interface ErrorInfo {
 const REMEDIATIONS: Record<ErrorCode, string> = {
   // Configuration errors
   CONFIG_INVALID:
-    'Check your wasm4pm.toml syntax. Run: pmctl init to generate a valid config.',
+    'Check your pictl.toml syntax. Run: pictl init to generate a valid config.',
   CONFIG_MISSING:
-    'Configuration file not found. Create wasm4pm.toml in your project root or run: pmctl init',
+    'Configuration file not found. Create pictl.toml in your project root or run: pictl init',
 
   // Source errors
   SOURCE_NOT_FOUND:
@@ -189,11 +189,11 @@ const REMEDIATIONS: Record<ErrorCode, string> = {
   ALGORITHM_FAILED:
     'The algorithm encountered an error during execution. Check the detailed error message and try with different parameters or a smaller dataset.',
   ALGORITHM_NOT_FOUND:
-    'The requested algorithm is not available. Run: pmctl list-algorithms to see available options.',
+    'The requested algorithm is not available. Run: pictl list-algorithms to see available options.',
 
   // WASM runtime errors
   WASM_INIT_FAILED:
-    'Failed to initialize the WASM module. Ensure Node.js/browser is compatible (Node 16+, modern browser). Try reinstalling the package: npm install @wasm4pm/engine',
+    'Failed to initialize the WASM module. Ensure Node.js/browser is compatible (Node 16+, modern browser). Try reinstalling the package: npm install @pictl/engine',
   WASM_MEMORY_EXCEEDED:
     'Insufficient memory in WASM sandbox. Try processing your data in smaller batches or check available memory limits.',
 
@@ -279,7 +279,7 @@ const RECOVERABLE: Record<ErrorCode, boolean> = {
  *
  * @example
  * ```ts
- * const error = createError('CONFIG_MISSING', 'wasm4pm.toml not found in /path/to/project');
+ * const error = createError('CONFIG_MISSING', 'pictl.toml not found in /path/to/project');
  * console.error(formatError(error)); // Human-readable output
  * process.exit(error.exit_code);    // Proper exit code
  * ```
@@ -411,7 +411,7 @@ export function formatErrorJSON(error: ErrorInfo): Record<string, any> {
  *
  * @example
  * ```ts
- * const error = createError('CONFIG_INVALID', 'Invalid syntax in wasm4pm.toml');
+ * const error = createError('CONFIG_INVALID', 'Invalid syntax in pictl.toml');
  * logError(error, 'human');    // Colored terminal output
  * logError(error, 'json');     // JSON for structured logging
  * ```

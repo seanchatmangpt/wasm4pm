@@ -1,6 +1,6 @@
 /**
  * e2e-explain.test.ts
- * Explain command tests for pmctl
+ * Explain command tests for pictl
  * Tests: Execution tracing, decisions, recommendations
  */
 

@@ -7,7 +7,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Engine } from './engine.js';
 import type { Kernel, Planner, Executor } from './engine.js';
-import type { ExecutionPlan, ExecutionReceipt } from '@wasm4pm/contracts';
+import type { ExecutionPlan, ExecutionReceipt } from '@pictl/contracts';
 import type { WasmLoaderConfig } from './wasm-loader.js';
 
 // Mock implementations

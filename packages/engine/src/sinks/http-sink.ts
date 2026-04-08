@@ -13,9 +13,9 @@ import {
   ExistsBehavior,
   AtomicityLevel,
   FailureMode,
-} from '@wasm4pm/contracts';
-import { ok, err, error } from '@wasm4pm/contracts';
-import { createError } from '@wasm4pm/contracts';
+} from '@pictl/contracts';
+import { ok, err, error } from '@pictl/contracts';
+import { createError } from '@pictl/contracts';
 
 /**
  * Configuration for HttpSinkAdapter

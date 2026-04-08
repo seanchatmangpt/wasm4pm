@@ -7,7 +7,7 @@ import { OtelEvent, RequiredOtelAttributes, JsonEvent } from './types.js';
 /**
  * Event types emitted by the engine
  */
-export type EventType = 'StateChange' | 'PlanGenerated' | 'AlgorithmStarted' | 'AlgorithmCompleted' | 'SourceStarted' | 'SourceCompleted' | 'SinkStarted' | 'SinkCompleted' | 'Progress' | 'Error';
+export type EventType = 'StateChange' | 'PlanGenerated' | 'AlgorithmStarted' | 'AlgorithmCompleted' | 'SourceStarted' | 'SourceCompleted' | 'SinkStarted' | 'SinkCompleted' | 'Progress' | 'Error' | 'MlModelTraining' | 'MlPredictionMade' | 'MlFeatureExtraction' | 'MlAnomalyDetected';
 /**
  * State change event
  */
@@ -99,6 +99,30 @@ export interface ErrorEventData {
     errorMessage: string;
     severity: 'info' | 'warning' | 'error' | 'fatal';
     context?: Record<string, any>;
+    requiredAttrs: RequiredOtelAttributes;
+}
+/**
+ * ML analysis event
+ */
+export interface MlAnalysisEvent {
+    type: 'MlModelTraining' | 'MlPredictionMade' | 'MlFeatureExtraction' | 'MlAnomalyDetected';
+    traceId: string;
+    spanId: string;
+    parentSpanId?: string;
+    runId: string;
+    mlTask: string;
+    method?: string;
+    durationMs?: number;
+    status: 'OK' | 'ERROR' | 'UNSET';
+    mlAttributes?: {
+        modelType?: string;
+        confidence?: number;
+        featureCount?: number;
+        clusterCount?: number;
+        anomalyCount?: number;
+        rSquared?: number;
+        explainedVariance?: number[];
+    };
     requiredAttrs: RequiredOtelAttributes;
 }
 /**
@@ -203,6 +227,23 @@ export declare class Instrumentation {
         otelEvent: OtelEvent;
         jsonEvent: JsonEvent;
     };
+    /**
+     * Create ML analysis started event with OTEL span
+     */
+    static createMlAnalysisStartedEvent(traceId: string, mlTask: string, method: string, requiredAttrs: RequiredOtelAttributes, options?: {
+        parentSpanId?: string;
+    }): {
+        event: MlAnalysisEvent;
+        otelEvent: OtelEvent;
+    };
+    /**
+     * Create ML analysis completed event
+     */
+    static createMlAnalysisCompletedEvent(traceId: string, spanId: string, mlTask: string, method: string, requiredAttrs: RequiredOtelAttributes, options?: {
+        status?: 'OK' | 'ERROR';
+        durationMs?: number;
+        mlAttributes?: MlAnalysisEvent['mlAttributes'];
+    }): OtelEvent;
     /**
      * Generate a W3C-compliant span ID (16 hex chars)
      */

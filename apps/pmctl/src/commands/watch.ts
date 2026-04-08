@@ -2,7 +2,7 @@ import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
 import { watch as fsWatch } from 'fs';
 import * as path from 'path';
-import { resolveConfig as loadConfig } from '@wasm4pm/config';
+import { resolveConfig as loadConfig } from '@pictl/config';
 import { StreamingOutput, HumanFormatter } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import type { OutputOptions } from '../output.js';

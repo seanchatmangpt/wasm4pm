@@ -14,13 +14,26 @@
  */
 
 import { describe, it, expect, afterAll } from 'vitest';
-import { readXes, countTraces, printTable, BenchRow, SAMPLE_XES, BPI_XES } from './bench-helpers.js';
+import {
+  readXes,
+  countTraces,
+  printTable,
+  BenchRow,
+  SAMPLE_XES,
+  BPI_XES,
+} from './bench-helpers.js';
 
 // Read files once at module level (synchronous FS reads, not WASM handles)
 const SAMPLE = readXes(SAMPLE_XES);
 const SAMPLE_TRACES = countTraces(SAMPLE);
 let BPI: string, BPI_TRACES: number;
-try { BPI = readXes(BPI_XES); BPI_TRACES = countTraces(BPI); } catch { BPI = ''; BPI_TRACES = 0; }
+try {
+  BPI = readXes(BPI_XES);
+  BPI_TRACES = countTraces(BPI);
+} catch {
+  BPI = '';
+  BPI_TRACES = 0;
+}
 
 const rows: BenchRow[] = [];
 afterAll(() => printTable(rows));
@@ -45,7 +58,13 @@ describe('predict_next_activity', () => {
     expect(result.length).toBeGreaterThan(0);
     expect(result[0]).toHaveProperty('activity');
     expect(result[0]).toHaveProperty('probability');
-    rows.push({ algorithm: 'predict_next_activity', dataset: 'sample', traces: SAMPLE_TRACES, durationMs: dur, note: `top=${result[0]?.activity}` });
+    rows.push({
+      algorithm: 'predict_next_activity',
+      dataset: 'sample',
+      traces: SAMPLE_TRACES,
+      durationMs: dur,
+      note: `top=${result[0]?.activity}`,
+    });
   });
 
   it('sample — probabilities sum to ≤1', async () => {
@@ -65,7 +84,13 @@ describe('predict_next_activity', () => {
     const t = performance.now();
     for (let i = 0; i < 1000; i++) wasm.predict_next_activity(model, prefix);
     const perCall = Number(((performance.now() - t) / 1000).toFixed(4));
-    rows.push({ algorithm: 'predict_next_activity(1k)', dataset: 'sample', traces: SAMPLE_TRACES, durationMs: perCall, note: 'ms/call' });
+    rows.push({
+      algorithm: 'predict_next_activity(1k)',
+      dataset: 'sample',
+      traces: SAMPLE_TRACES,
+      durationMs: perCall,
+      note: 'ms/call',
+    });
     expect(perCall).toBeLessThan(5);
   });
 
@@ -78,7 +103,13 @@ describe('predict_next_activity', () => {
     const t = performance.now();
     const result = JSON.parse(wasm.predict_next_activity(model, prefix));
     const dur = Number((performance.now() - t).toFixed(3));
-    rows.push({ algorithm: 'predict_next_activity', dataset: 'BPI2020', traces: BPI_TRACES, durationMs: dur, note: `top=${result[0]?.activity}` });
+    rows.push({
+      algorithm: 'predict_next_activity',
+      dataset: 'BPI2020',
+      traces: BPI_TRACES,
+      durationMs: dur,
+      note: `top=${result[0]?.activity}`,
+    });
     expect(Array.isArray(result)).toBe(true);
     expect(result.length).toBeGreaterThan(0);
   });
@@ -92,19 +123,34 @@ describe('score_trace_likelihood', () => {
     const log = wasm.load_eventlog_from_xes(SAMPLE);
     const model = wasm.build_ngram_predictor(log, 'concept:name', 2);
     const t = performance.now();
-    const score = wasm.score_trace_likelihood(model, JSON.stringify(['Request', 'Review', 'Approve', 'Complete']));
+    const score = wasm.score_trace_likelihood(
+      model,
+      JSON.stringify(['Request', 'Review', 'Approve', 'Complete'])
+    );
     const dur = Number((performance.now() - t).toFixed(3));
     expect(typeof score).toBe('number');
     expect(score).toBeLessThan(0); // log-probability is always negative
-    rows.push({ algorithm: 'score_trace_likelihood', dataset: 'sample', traces: SAMPLE_TRACES, durationMs: dur, note: `ll=${score?.toFixed(3)}` });
+    rows.push({
+      algorithm: 'score_trace_likelihood',
+      dataset: 'sample',
+      traces: SAMPLE_TRACES,
+      durationMs: dur,
+      note: `ll=${score?.toFixed(3)}`,
+    });
   });
 
   it('sample — normal trace more likely than reversed (anomalous) trace', async () => {
     const wasm = await loadWasm();
     const log = wasm.load_eventlog_from_xes(SAMPLE);
     const model = wasm.build_ngram_predictor(log, 'concept:name', 2);
-    const normal = wasm.score_trace_likelihood(model, JSON.stringify(['Request', 'Review', 'Approve', 'Complete']));
-    const anomal = wasm.score_trace_likelihood(model, JSON.stringify(['Complete', 'Approve', 'Review', 'Request']));
+    const normal = wasm.score_trace_likelihood(
+      model,
+      JSON.stringify(['Request', 'Review', 'Approve', 'Complete'])
+    );
+    const anomal = wasm.score_trace_likelihood(
+      model,
+      JSON.stringify(['Complete', 'Approve', 'Review', 'Request'])
+    );
     expect(normal).toBeGreaterThan(anomal);
   });
 
@@ -116,7 +162,13 @@ describe('score_trace_likelihood', () => {
     const t = performance.now();
     for (let i = 0; i < 1000; i++) wasm.score_trace_likelihood(model, trace);
     const perCall = Number(((performance.now() - t) / 1000).toFixed(4));
-    rows.push({ algorithm: 'score_trace_likelihood(1k)', dataset: 'sample', traces: SAMPLE_TRACES, durationMs: perCall, note: 'ms/call' });
+    rows.push({
+      algorithm: 'score_trace_likelihood(1k)',
+      dataset: 'sample',
+      traces: SAMPLE_TRACES,
+      durationMs: perCall,
+      note: 'ms/call',
+    });
     expect(perCall).toBeLessThan(5);
   });
 
@@ -133,7 +185,13 @@ describe('score_trace_likelihood', () => {
     const t = performance.now();
     const score = wasm.score_trace_likelihood(model, trace);
     const dur = Number((performance.now() - t).toFixed(3));
-    rows.push({ algorithm: 'score_trace_likelihood', dataset: 'BPI2020', traces: BPI_TRACES, durationMs: dur, note: `ll=${score?.toFixed(3)}` });
+    rows.push({
+      algorithm: 'score_trace_likelihood',
+      dataset: 'BPI2020',
+      traces: BPI_TRACES,
+      durationMs: dur,
+      note: `ll=${score?.toFixed(3)}`,
+    });
     expect(typeof score).toBe('number');
   });
 });
@@ -151,7 +209,13 @@ describe('predict_next_k', () => {
     expect(result.activities.length).toBeGreaterThan(0);
     expect(result.confidence).toBeGreaterThan(0);
     expect(result).toHaveProperty('entropy');
-    rows.push({ algorithm: 'predict_next_k(k=3)', dataset: 'sample', traces: SAMPLE_TRACES, durationMs: dur, note: `top=${result.activities[0]}` });
+    rows.push({
+      algorithm: 'predict_next_k(k=3)',
+      dataset: 'sample',
+      traces: SAMPLE_TRACES,
+      durationMs: dur,
+      note: `top=${result.activities[0]}`,
+    });
   });
 
   it('sample — 1 000 calls latency', async () => {
@@ -162,7 +226,13 @@ describe('predict_next_k', () => {
     const t = performance.now();
     for (let i = 0; i < 1000; i++) wasm.predict_next_k(model, prefix, 3);
     const perCall = Number(((performance.now() - t) / 1000).toFixed(4));
-    rows.push({ algorithm: 'predict_next_k(1k)', dataset: 'sample', traces: SAMPLE_TRACES, durationMs: perCall, note: 'ms/call' });
+    rows.push({
+      algorithm: 'predict_next_k(1k)',
+      dataset: 'sample',
+      traces: SAMPLE_TRACES,
+      durationMs: perCall,
+      note: 'ms/call',
+    });
     expect(perCall).toBeLessThan(5);
   });
 
@@ -175,7 +245,13 @@ describe('predict_next_k', () => {
     const t = performance.now();
     for (let i = 0; i < 1000; i++) wasm.predict_next_k(model, prefix, 3);
     const perCall = Number(((performance.now() - t) / 1000).toFixed(4));
-    rows.push({ algorithm: 'predict_next_k(1k)', dataset: 'BPI2020', traces: BPI_TRACES, durationMs: perCall, note: 'ms/call' });
+    rows.push({
+      algorithm: 'predict_next_k(1k)',
+      dataset: 'BPI2020',
+      traces: BPI_TRACES,
+      durationMs: perCall,
+      note: 'ms/call',
+    });
     expect(perCall).toBeLessThan(10);
   });
 });
@@ -194,7 +270,13 @@ describe('predict_beam_paths', () => {
     if (result.length > 1) {
       expect(result[0].probability).toBeGreaterThanOrEqual(result[1].probability);
     }
-    rows.push({ algorithm: 'predict_beam_paths(w=3,s=4)', dataset: 'sample', traces: SAMPLE_TRACES, durationMs: dur, note: `${result.length} paths` });
+    rows.push({
+      algorithm: 'predict_beam_paths(w=3,s=4)',
+      dataset: 'sample',
+      traces: SAMPLE_TRACES,
+      durationMs: dur,
+      note: `${result.length} paths`,
+    });
   });
 
   it('BPI 2020 — beam=5 steps=5', async () => {
@@ -206,7 +288,13 @@ describe('predict_beam_paths', () => {
     const t = performance.now();
     const result = JSON.parse(wasm.predict_beam_paths(model, prefix, 5, 5));
     const dur = Number((performance.now() - t).toFixed(3));
-    rows.push({ algorithm: 'predict_beam_paths(w=5,s=5)', dataset: 'BPI2020', traces: BPI_TRACES, durationMs: dur, note: `${result.length} paths` });
+    rows.push({
+      algorithm: 'predict_beam_paths(w=5,s=5)',
+      dataset: 'BPI2020',
+      traces: BPI_TRACES,
+      durationMs: dur,
+      note: `${result.length} paths`,
+    });
     expect(Array.isArray(result)).toBe(true);
   });
 });

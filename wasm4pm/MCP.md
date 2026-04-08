@@ -1,6 +1,6 @@
-# Model Context Protocol (MCP) Integration for wasm4pm
+# Model Context Protocol (MCP) Integration for pictl
 
-Exposes wasm4pm as an MCP server, enabling Claude and other MCP clients to use process mining capabilities.
+Exposes pictl as an MCP server, enabling Claude and other MCP clients to use process mining capabilities.
 
 ## What is MCP?
 
@@ -11,9 +11,9 @@ Exposes wasm4pm as an MCP server, enabling Claude and other MCP clients to use p
 - Receive structured results
 - Handle errors gracefully
 
-## MCP Server for wasm4pm
+## MCP Server for pictl
 
-The wasm4pm MCP server exposes 14 discovery algorithms, analysis functions, and visualization capabilities as MCP tools.
+The pictl MCP server exposes 14 discovery algorithms, analysis functions, and visualization capabilities as MCP tools.
 
 ### Available MCP Tools
 
@@ -47,7 +47,7 @@ The wasm4pm MCP server exposes 14 discovery algorithms, analysis functions, and 
 
 ```bash
 npm install @modelcontextprotocol/sdk
-npm install wasm4pm
+npm install @pictl/cli
 ```
 
 ### Setup
@@ -56,9 +56,9 @@ npm install wasm4pm
 
 ```typescript
 // mcp_server.ts (already provided)
-import Wasm4pmMCPServer from 'wasm4pm/src/mcp_server';
+import PictlMCPServer from 'wasm4pm/src/mcp_server';
 
-const server = new Wasm4pmMCPServer();
+const server = new PictlMCPServer();
 await server.start();
 ```
 
@@ -69,7 +69,7 @@ Add to your Claude configuration (e.g., in `.claude.json` or Claude desktop conf
 ```json
 {
   "mcpServers": {
-    "wasm4pm": {
+    "pictl": {
       "command": "node",
       "args": ["dist/mcp_server.js"],
       "cwd": "./path/to/wasm4pm"
@@ -266,7 +266,7 @@ Edit `~/.config/Claude/claude_desktop_config.json`:
 ```json
 {
   "mcpServers": {
-    "wasm4pm": {
+    "pictl": {
       "command": "/usr/local/bin/node",
       "args": ["/path/to/wasm4pm/dist/mcp_server.js"]
     }
@@ -283,7 +283,7 @@ Edit `%APPDATA%\Claude\claude_desktop_config.json`:
 ```json
 {
   "mcpServers": {
-    "wasm4pm": {
+    "pictl": {
       "command": "node",
       "args": ["C:\\path\\to\\wasm4pm\\dist\\mcp_server.js"]
     }
@@ -330,7 +330,7 @@ This opens a web interface where you can:
 
 ## Performance
 
-MCP tool execution time (measured on wasm4pm operations):
+MCP tool execution time (measured on pictl operations):
 
 | Operation                                                 | Time      | Notes                 |
 | --------------------------------------------------------- | --------- | --------------------- |
@@ -383,7 +383,7 @@ Reduce algorithm complexity:
 }
 ```
 
-## Example: Using wasm4pm MCP from Claude
+## Example: Using pictl MCP from Claude
 
 ```
 Human: I have an event log (BPI_2019.xes). Can you:
@@ -415,4 +415,4 @@ To add more MCP tools:
 - [MCP Protocol Specification](https://spec.modelcontextprotocol.io/)
 - [MCP TypeScript SDK](https://github.com/modelcontextprotocol/typescript-sdk)
 - [Claude Integration Guide](https://claude.ai/docs)
-- [wasm4pm Documentation](./README.md)
+- [pictl Documentation](./README.md)

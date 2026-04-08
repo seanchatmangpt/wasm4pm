@@ -1,4 +1,4 @@
-# Development Guide for wasm4pm
+# Development Guide for pictl
 
 Architecture, extension points, and internal design documentation.
 
@@ -29,7 +29,7 @@ wasm4pm/
 │   └── streaming.rs              # Streaming DFG builder (IoT/chunked ingestion)
 │
 ├── cli/                          # Command-line interface
-│   └── index.ts                  # wasm4pm CLI commands
+│   └── index.ts                  # pictl CLI commands
 │
 ├── examples/                      # Example applications
 │   ├── interactive-demo.html      # Browser demo
@@ -355,10 +355,10 @@ In DevTools console:
 
 ```javascript
 // Inspect WASM module
-console.log(wasm4pm);
+console.log(pm);
 
 // Check exported functions
-Object.keys(wasm4pm).slice(0, 20);
+Object.keys(pm).slice(0, 20);
 ```
 
 ## Testing Strategy

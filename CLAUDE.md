@@ -1,14 +1,14 @@
-# CLAUDE.md — wasm4pm Project Guidelines
+# CLAUDE.md — pictl Project Guidelines
 
 ## What this project is
 
-**wasm4pm** is a process mining platform with two layers:
+**pictl** is a process mining platform with two layers:
 
-1. **Rust/WASM core** (`wasm4pm/` — Cargo workspace member) — 14 discovery algorithms compiled to WebAssembly via wasm-pack. This is the algorithm backend. Users rarely touch it directly.
+1. **Rust/WASM core** (`wasm4pm/` — Cargo workspace member) — 21 algorithms (15 discovery + 6 ML) compiled to WebAssembly via wasm-pack. This is the algorithm backend. Users rarely touch it directly.
 
-2. **TypeScript monorepo** (`packages/` + `apps/`) — 9 packages that wrap, orchestrate, and expose the WASM core via a professional CLI (`pmctl`), configuration system, observability, contracts, and testing harnesses.
+2. **TypeScript monorepo** (`packages/` + `apps/`) — 9 packages that wrap, orchestrate, and expose the WASM core via a professional CLI (`pictl`), configuration system, observability, contracts, and testing harnesses.
 
-The primary entry point for users is **`pmctl`** (`apps/pmctl/`). The primary entry point for developers extending the system is the **`packages/`** monorepo.
+The primary entry point for users is **`pictl`** (`apps/pmctl/`). The primary entry point for developers extending the system is the **`packages/`** monorepo.
 
 ---
 
@@ -23,7 +23,7 @@ wasm4pm/
 │   └── package.json        # npm package for the compiled WASM
 ├── packages/               # TypeScript monorepo (9 packages)
 ├── apps/
-│   └── pmctl/              # CLI tool (@wasm4pm/pmctl v26.4.6)
+│   └── pmctl/              # CLI tool (@pictl/cli v26.4.6)
 ├── lab/                    # Post-publish artifact validation (tests published npm package)
 └── playground/             # Local dev behavior testing (tests local source)
 ```
@@ -34,15 +34,15 @@ wasm4pm/
 
 | Package | Role |
 |---|---|
-| `@wasm4pm/contracts` | Shared types + receipts + errors + plans + hashing + algorithm registry + prediction tasks (leaf package, no deps) |
-| `@wasm4pm/engine` | Engine lifecycle state machine (uninitialized → bootstrapping → ready → planning → running → watching / degraded / failed) |
-| `@wasm4pm/kernel` | WASM facade — 15 registered algorithms, `run(algorithmName, handle, params)`, streaming via `stream()` |
-| `@wasm4pm/config` | Zod-validated config, `resolveConfig()`, 5-layer precedence (CLI > TOML > JSON > ENV > defaults), provenance tracking |
-| `@wasm4pm/planner` | `plan(config)` → `ExecutionPlan`, `explain(config)` → string. 4 profiles: fast/balanced/quality/stream |
-| `@wasm4pm/observability` | 3-layer: CLI human output, JSONL machine output, OTEL spans. `Instrumentation.create*Event()` |
-| `@wasm4pm/testing` | Parity harness, determinism harness, CLI harness, OtelCapture, certification gates, fixtures, mocks |
-| `@wasm4pm/ml` | Micro-ML analysis: classify, cluster, forecast, anomaly, regress, PCA |
-| `@wasm4pm/swarm` | Multi-worker coordinator with convergence detection |
+| `@pictl/contracts` | Shared types + receipts + errors + plans + hashing + algorithm registry + prediction tasks (leaf package, no deps) |
+| `@pictl/engine` | Engine lifecycle state machine (uninitialized → bootstrapping → ready → planning → running → watching / degraded / failed) |
+| `@pictl/kernel` | WASM facade — 21 registered algorithms, `run(algorithmName, handle, params)`, streaming via `stream()` |
+| `@pictl/config` | Zod-validated config, `resolveConfig()`, 5-layer precedence (CLI > TOML > JSON > ENV > defaults), provenance tracking |
+| `@pictl/planner` | `plan(config)` → `ExecutionPlan`, `explain(config)` → string. 4 profiles: fast/balanced/quality/stream |
+| `@pictl/observability` | 3-layer: CLI human output, JSONL machine output, OTEL spans. `Instrumentation.create*Event()` |
+| `@pictl/testing` | Parity harness, determinism harness, CLI harness, OtelCapture, certification gates, fixtures, mocks |
+| `@pictl/ml` | Micro-ML analysis: classify, cluster, forecast, anomaly, regress, PCA |
+| `@pictl/swarm` | Multi-worker coordinator with convergence detection |
 
 ---
 
@@ -78,37 +78,39 @@ Key API: `engine.bootstrap()`, `engine.plan(config)`, `engine.run(plan)`, `engin
 }
 ```
 
-ENV var mappings: `WASM4PM_PROFILE`, `WASM4PM_ALGORITHM`, `WASM4PM_OUTPUT_FORMAT`, `WASM4PM_LOG_LEVEL`, `WASM4PM_WATCH`, `WASM4PM_OTEL_ENABLED`, `WASM4PM_OTEL_ENDPOINT`
+ENV var mappings: `PICTL_PROFILE`, `PICTL_ALGORITHM`, `PICTL_OUTPUT_FORMAT`, `PICTL_LOG_LEVEL`, `PICTL_WATCH`, `PICTL_OTEL_ENABLED`, `PICTL_OTEL_ENDPOINT`
 
-Config file names searched: `wasm4pm.toml`, `wasm4pm.json`
+Config file names searched: `pictl.toml`, `pictl.json`
 
 ---
 
-## pmctl commands (11 total)
+## pictl commands (13 total)
 
 | Command | Exit codes | Description |
 |---|---|---|
-| `pmctl run <log.xes>` | 0 success, 2 bad input, 3 WASM fail | Process discovery |
-| `pmctl compare <algos> -i <log>` | 0 | Side-by-side algorithm comparison with ASCII sparklines |
-| `pmctl diff <log1> <log2>` | 0 | Compare two logs via Jaccard similarity on DFG edges |
-| `pmctl predict <task> -i <log>` | 0 | Predictive mining (next-activity, remaining-time, outcome, drift, features, resource) |
-| `pmctl drift-watch -i <log>` | 0 | Real-time EWMA drift monitoring (streaming) |
-| `pmctl watch` | 0 | Config file watcher — re-runs discovery on change |
-| `pmctl status` | 0 | WASM engine health + system info |
-| `pmctl doctor` | 0 all ok, 1 any fail | 6-check environment diagnostic |
-| `pmctl explain` | 0 | Human/academic algorithm explanations |
-| `pmctl init` | 0 | Scaffold `wasm4pm.toml`, `.env.example`, `.gitignore` |
-| `pmctl results` | 0 | Browse/inspect saved results in `.wasm4pm/results/` |
+| `pictl run <log.xes>` | 0 success, 2 bad input, 3 WASM fail | Process discovery |
+| `pictl compare <algos> -i <log>` | 0 | Side-by-side algorithm comparison with ASCII sparklines |
+| `pictl diff <log1> <log2>` | 0 | Compare two logs via Jaccard similarity on DFG edges |
+| `pictl predict <task> -i <log>` | 0 | Predictive mining (next-activity, remaining-time, outcome, drift, features, resource) |
+| `pictl drift-watch -i <log>` | 0 | Real-time EWMA drift monitoring (streaming) |
+| `pictl watch` | 0 | Config file watcher — re-runs discovery on change |
+| `pictl status` | 0 | WASM engine health + system info |
+| `pictl doctor` | 0 all ok, 1 any fail | 6-check environment diagnostic |
+| `pictl explain` | 0 | Human/academic algorithm explanations |
+| `pictl init` | 0 | Scaffold `pictl.toml`, `.env.example`, `.gitignore` |
+| `pictl results` | 0 | Browse/inspect saved results in `.pictl/results/` |
+| `pictl ml <task> -i <log>` | 0 | ML-powered process mining (classify, cluster, forecast, anomaly, regress, pca) |
+| `pictl powl <subcommand>` | 0 | POWL model analysis (parse, simplify, convert, diff, complexity, footprints, conformance, import, discover) |
 
 **Exit code contract:** 0=success, 1=config_error, 2=source_error, 3=execution_error, 4=partial_failure, 5=system_error
 
 **Output formats:** `--format human` (consola colored output) or `--format json` (`{ status, message, ...data }`)
 
-Auto-saves: discovery and prediction results to `.wasm4pm/results/<timestamp>-<task>.json` (pass `--no-save` to skip)
+Auto-saves: discovery and prediction results to `.pictl/results/<timestamp>-<task>.json` (pass `--no-save` to skip)
 
 ---
 
-## Kernel algorithms (15 registered)
+## Kernel algorithms (21 registered)
 
 From `packages/kernel/src/registry.ts`:
 
@@ -129,7 +131,20 @@ From `packages/kernel/src/registry.ts`:
 | `optimized_dfg` | 70 | 85 | DFG |
 | `ilp` | 80 | 90 | Petrinet |
 
-Profiles: `fast` → dfg/skeleton; `balanced` → heuristic/alpha; `quality` → genetic/ilp; `stream` → streaming-dfg
+### ML Analysis Algorithms
+
+| Algorithm ID | Speed | Quality | Output |
+|---|---|---|---|
+| `ml_classify` | 40 | 60 | ml_result |
+| `ml_cluster` | 35 | 55 | ml_result |
+| `ml_forecast` | 30 | 50 | ml_result |
+| `ml_anomaly` | 30 | 55 | ml_result |
+| `ml_regress` | 25 | 50 | ml_result |
+| `ml_pca` | 35 | 50 | ml_result |
+
+ML algorithms support `balanced` and `quality` profiles.
+
+Profiles: `fast` → dfg/skeleton; `balanced` → heuristic/alpha + all ML; `quality` → genetic/ilp + all ML; `stream` → streaming-dfg
 
 ---
 
@@ -137,17 +152,17 @@ Profiles: `fast` → dfg/skeleton; `balanced` → heuristic/alpha; `quality` →
 
 ### Layers
 - **`packages/*/src/__tests__/`** — unit tests per package (inline mocks, internal correctness)
-- **`playground/`** — local dev behavior (uses `@wasm4pm/testing` harnesses against local source)
+- **`playground/`** — local dev behavior (uses `@pictl/testing` harnesses against local source)
 - **`lab/`** — post-publish validation (runs against installed npm artifact)
 
-### `@wasm4pm/testing` harnesses
+### `@pictl/testing` harnesses
 
 ```typescript
-import { checkParity, checkParityBatch }    from '@wasm4pm/testing'; // explain() == plan()
-import { checkDeterminism, stableReceiptHash, receiptsMatch } from '@wasm4pm/testing';
-import { runCli, assertExitCode, assertJsonOutput, createCliTestEnv, EXIT_CODES } from '@wasm4pm/testing';
-import { OtelCapture, createOtelCapture }   from '@wasm4pm/testing';
-import { CertificationGate, runCertification } from '@wasm4pm/testing';
+import { checkParity, checkParityBatch }    from '@pictl/testing'; // explain() == plan()
+import { checkDeterminism, stableReceiptHash, receiptsMatch } from '@pictl/testing';
+import { runCli, assertExitCode, assertJsonOutput, createCliTestEnv, EXIT_CODES } from '@pictl/testing';
+import { OtelCapture, createOtelCapture }   from '@pictl/testing';
+import { CertificationGate, runCertification } from '@pictl/testing';
 ```
 
 ---
@@ -161,7 +176,7 @@ pnpm test                     # test all packages
 cd packages/engine && npm test # test one package
 ```
 
-### pmctl CLI
+### pictl CLI
 ```bash
 cd apps/pmctl
 npm run build                 # tsc → dist/
@@ -182,6 +197,13 @@ npm test                      # vitest unit + integration
 cargo check                   # fast type check
 cargo build --release         # build WASM library
 cargo test                    # Rust unit tests
+```
+
+### MCP Server (wasm4pm/)
+```bash
+cd wasm4pm
+npm run build:mcp            # compile MCP server
+npm run start:mcp            # build + run MCP server
 ```
 
 ---
@@ -234,7 +256,11 @@ packages/observability/src/instrumentation.ts
 packages/observability/src/fields.ts
 packages/planner/src/planner.ts
 packages/planner/src/explain.ts
+apps/pmctl/src/ml-runner.ts    # ML task execution logic
+apps/pmctl/src/commands/ml.ts  # `pictl ml` command
+apps/pmctl/src/commands/powl.ts # `pictl powl` command
 wasm4pm/src/                 # Rust algorithm implementations (still live)
+wasm4pm/src/mcp_server.ts      # WASM MCP server
 ```
 
 ---
@@ -242,9 +268,9 @@ wasm4pm/src/                 # Rust algorithm implementations (still live)
 ## Common gotchas
 
 - `WasmLoader` is a **singleton** — call `WasmLoader.reset()` between tests that need a clean state
-- All receipts auto-save to `.wasm4pm/results/` unless `--no-save` is passed
+- All receipts auto-save to `.pictl/results/` unless `--no-save` is passed
 - ENV vars do **not** beat file config — precedence is CLI > file > ENV > defaults
 - `assertRequiredAttributes()`, `assertValidTraces()`, `assertNonBlocking()` in OtelCapture return `string[]` (violations), not void/throw
 - OTEL span `startTime`/`endTime` are in **nanoseconds** (`Date.now() * 1_000_000`)
 - "bad algorithm" exit code is `SOURCE_ERROR` (2), not `CONFIG_ERROR` (1) — intentional
-- `@wasm4pm/planner`'s `plan()` is **synchronous** (no async), but `PlannerLike` accepts either
+- `@pictl/planner`'s `plan()` is **synchronous** (no async), but `PlannerLike` accepts either

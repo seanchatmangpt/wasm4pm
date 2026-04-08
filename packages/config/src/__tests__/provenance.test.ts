@@ -13,17 +13,17 @@ describe('Provenance', () => {
       const map = trackProvenance(
         { execution: { profile: 'fast', timeout: 60000 } },
         'toml',
-        './wasm4pm.toml',
+        './pictl.toml',
       );
       expect(map['execution.profile']).toEqual({
         value: 'fast',
         source: 'toml',
-        path: './wasm4pm.toml',
+        path: './pictl.toml',
       });
       expect(map['execution.timeout']).toEqual({
         value: 60000,
         source: 'toml',
-        path: './wasm4pm.toml',
+        path: './pictl.toml',
       });
     });
 

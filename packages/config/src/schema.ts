@@ -1,14 +1,14 @@
 import { z } from 'zod';
-import { ALGORITHM_IDS, PREDICTION_TASKS } from '@wasm4pm/contracts';
+import { ALGORITHM_IDS, PREDICTION_TASKS } from '@pictl/contracts';
 
 /**
  * Schema version for config format migration.
  */
 export const SCHEMA_VERSION = 1;
 
-// Re-export for consumers that import from @wasm4pm/config
-export { ALGORITHM_IDS } from '@wasm4pm/contracts';
-export type { AlgorithmId } from '@wasm4pm/contracts';
+// Re-export for consumers that import from @pictl/config
+export { ALGORITHM_IDS } from '@pictl/contracts';
+export type { AlgorithmId } from '@pictl/contracts';
 
 export const algorithmIdSchema = z
   .enum(ALGORITHM_IDS)

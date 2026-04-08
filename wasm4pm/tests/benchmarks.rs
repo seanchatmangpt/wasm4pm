@@ -42,6 +42,15 @@ use wasm4pm::final_analytics::{
 };
 use wasm4pm::analysis::{analyze_event_statistics, analyze_case_duration, analyze_dotted_chart};
 use wasm4pm::conformance::check_token_based_replay;
+use wasm4pm::streaming::{
+    StreamingAlgorithm, StreamStats,
+};
+use wasm4pm::streaming::streaming_alpha::StreamingAlphaPlusBuilder;
+use wasm4pm::streaming::streaming_declare::StreamingDeclareBuilder;
+use wasm4pm::streaming::streaming_inductive::StreamingInductiveBuilder;
+use wasm4pm::streaming::streaming_hill_climbing::StreamingHillClimbingBuilder;
+use wasm4pm::streaming::streaming_astar::StreamingAStarBuilder;
+use wasm4pm::incremental_dfg::{IncrementalDFG, StreamingDFG};
 use std::collections::HashMap;
 use std::time::Instant;
 use std::path::Path;
@@ -296,7 +305,7 @@ fn generate_synthetic_log(cases: usize) -> EventLog {
             attrs.insert("concept:name".to_string(), AttributeValue::String(act.to_string()));
             attrs.insert(
                 "time:timestamp".to_string(),
-                AttributeValue::Date(format!("2024-01-01T{:02}:{:02}:00Z", evt / 60, evt % 60)),
+                AttributeValue::String(format!("2024-01-01T{:02}:{:02}:00Z", evt / 60, evt % 60)),
             );
             trace.events.push(Event { attributes: attrs });
         }
@@ -752,6 +761,160 @@ fn bench_token_based_replay() {
         let lh = log_h.clone();
         let ph = pn_h.clone();
         print_row(n, ms(|| { let _ = check_token_based_replay(&lh, &ph, ak); }, 5));
+    }
+}
+
+// ── STREAMING ALGORITHMS (7 tests) ──────────────────────────────────────────
+
+fn make_synthetic_traces(cases: usize) -> Vec<(String, Vec<String>)> {
+    let activities = ["Start", "A", "B", "C", "D", "End"];
+    let mut traces = Vec::new();
+    for case_id in 0..cases {
+        let events: Vec<String> = (0..20)
+            .map(|evt| activities[evt % activities.len()].to_string())
+            .collect();
+        traces.push((format!("case_{}", case_id), events));
+    }
+    traces
+}
+
+#[test]
+fn bench_streaming_dfg() {
+    print_benchmark_header();
+    print_header("Streaming DFG");
+    for &n in &[100usize, 1_000, 5_000, 10_000] {
+        let traces = make_synthetic_traces(n);
+        print_row(n, ms(|| {
+            let mut dfg = StreamingDFG::new();
+            for (case_id, events) in &traces {
+                for act in events {
+                    dfg.process_event(act);
+                }
+                dfg.end_trace();
+            }
+            let _ = dfg.snapshot();
+        }, 5));
+    }
+}
+
+#[test]
+fn bench_streaming_alpha_plus() {
+    print_header("Streaming Alpha++");
+    for &n in &[100usize, 1_000, 5_000, 10_000] {
+        let traces = make_synthetic_traces(n);
+        print_row(n, ms(|| {
+            let mut builder = StreamingAlphaPlusBuilder::new();
+            for (case_id, events) in &traces {
+                for act in events {
+                    builder.add_event(case_id, act);
+                }
+                builder.close_trace(case_id);
+            }
+            let _ = builder.snapshot();
+        }, 5));
+    }
+}
+
+#[test]
+fn bench_streaming_declare() {
+    print_header("Streaming DECLARE (threshold=0.6)");
+    for &n in &[100usize, 1_000, 5_000, 10_000] {
+        let traces = make_synthetic_traces(n);
+        print_row(n, ms(|| {
+            let mut builder = StreamingDeclareBuilder::new().with_threshold(0.6);
+            for (case_id, events) in &traces {
+                for act in events {
+                    builder.add_event(case_id, act);
+                }
+                builder.close_trace(case_id);
+            }
+            let _ = builder.snapshot();
+        }, 5));
+    }
+}
+
+#[test]
+fn bench_streaming_inductive() {
+    print_header("Streaming Inductive Miner");
+    for &n in &[100usize, 1_000, 5_000, 10_000] {
+        let traces = make_synthetic_traces(n);
+        print_row(n, ms(|| {
+            let mut builder = StreamingInductiveBuilder::new();
+            for (case_id, events) in &traces {
+                for act in events {
+                    builder.add_event(case_id, act);
+                }
+                builder.close_trace(case_id);
+            }
+            let _ = builder.snapshot();
+        }, 5));
+    }
+}
+
+#[test]
+fn bench_streaming_hill_climbing() {
+    print_header("Streaming Hill Climbing (noise=0.2)");
+    for &n in &[100usize, 1_000, 5_000, 10_000] {
+        let traces = make_synthetic_traces(n);
+        print_row(n, ms(|| {
+            let mut builder = StreamingHillClimbingBuilder::new().with_noise_threshold(0.2);
+            for (case_id, events) in &traces {
+                for act in events {
+                    builder.add_event(case_id, act);
+                }
+                builder.close_trace(case_id);
+            }
+            let _ = builder.snapshot();
+        }, 5));
+    }
+}
+
+#[test]
+fn bench_streaming_astar() {
+    print_header("Streaming A* (weight=0.5)");
+    for &n in &[100usize, 1_000, 5_000, 10_000] {
+        let traces = make_synthetic_traces(n);
+        print_row(n, ms(|| {
+            let mut builder = StreamingAStarBuilder::new().with_heuristic_weight(0.5);
+            for (case_id, events) in &traces {
+                for act in events {
+                    builder.add_event(case_id, act);
+                }
+                builder.close_trace(case_id);
+            }
+            let _ = builder.snapshot();
+        }, 5));
+    }
+}
+
+#[test]
+fn bench_streaming_incremental_dfg_merge() {
+    print_header("Incremental DFG Merge (4 threads)");
+    for &n in &[100usize, 1_000, 5_000, 10_000] {
+        let traces = make_synthetic_traces(n);
+        print_row(n, ms(|| {
+            let chunk_size = (traces.len() + 3) / 4;
+            let chunks: Vec<_> = traces.chunks(chunk_size).collect();
+
+            let mut partials: Vec<IncrementalDFG> = chunks.iter()
+                .map(|chunk| {
+                    let mut dfg = IncrementalDFG::new();
+                    for (case_id, events) in *chunk {
+                        for (i, act) in events.iter().enumerate() {
+                            dfg.process_event(i as u32, i == 0);
+                        }
+                        dfg.end_trace();
+                    }
+                    dfg
+                })
+                .collect();
+
+            let mut merged = IncrementalDFG::new();
+            for partial in partials {
+                merged.merge(&partial);
+            }
+            let _ = merged.snapshot();
+        }, 5));
     }
 }
 

@@ -75,6 +75,10 @@ export declare const INLINE_CONTENT_CONFIG: TestConfig;
 export declare const BARE_MINIMUM_CONFIG: TestConfig;
 /** Edge case: maxed-out timeouts and memory */
 export declare const MAX_RESOURCES_CONFIG: TestConfig;
+/** ML-enabled config with classification and clustering */
+export declare const ML_CLASSIFY_CONFIG: TestConfig;
+/** ML config with all tasks enabled */
+export declare const ML_ALL_TASKS_CONFIG: TestConfig;
 /** Invalid configs for negative testing */
 export declare const INVALID_CONFIGS: Record<string, unknown>;
 /** All valid configs as an array for iteration */

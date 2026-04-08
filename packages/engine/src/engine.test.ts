@@ -12,7 +12,7 @@ import {
   StatusTracker,
 } from './index.js';
 import type { Kernel, Planner, Executor } from './engine.js';
-import type { ExecutionPlan, ExecutionReceipt } from '@wasm4pm/contracts';
+import type { ExecutionPlan, ExecutionReceipt } from '@pictl/contracts';
 
 // Mock implementations
 
@@ -879,7 +879,7 @@ describe('Engine WASM Integration', () => {
     });
 
     it('should pass through observability layer', () => {
-      const obsLayer = new (require('@wasm4pm/observability').ObservabilityLayer)();
+      const obsLayer = new (require('@pictl/observability').ObservabilityLayer)();
       const engineObs = createFullEngine(
         kernel,
         planner,

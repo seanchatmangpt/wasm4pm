@@ -1,12 +1,12 @@
 import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
-import { ALGORITHM_CLI_ALIASES } from '@wasm4pm/contracts';
+import { ALGORITHM_CLI_ALIASES } from '@pictl/contracts';
 import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
-import { WasmLoader } from '@wasm4pm/engine';
+import { WasmLoader } from '@pictl/engine';
 
 /**
- * Algorithms supported by `pmctl compare`.
+ * Algorithms supported by `pictl compare`.
  * Each entry describes how to invoke the discovery function via the WASM module.
  */
 const ALGORITHMS = [
@@ -227,6 +227,10 @@ export const compare = defineCommand({
       description: 'Suppress non-error output',
       alias: 'q',
     },
+    'cache-stats': {
+      type: 'boolean',
+      description: 'Print cache hit/miss statistics after comparison',
+    },
   },
   async run(ctx) {
     const formatter = getFormatter({
@@ -381,6 +385,26 @@ export const compare = defineCommand({
         '  Legend: ▓▓▓▓▓▓▓▓ = max  ░░░░░░░░ = min   bars are relative within this comparison',
       );
       humanFormatter.log('');
+
+      // Print cache statistics if requested
+      if (ctx.args['cache-stats'] && typeof wasm.get_cache_stats === 'function') {
+        try {
+          const statsRaw = wasm.get_cache_stats();
+          const stats = typeof statsRaw === 'string' ? JSON.parse(statsRaw) : statsRaw;
+          const hitRate =
+            stats.parse_hits + stats.parse_misses > 0
+              ? ((stats.parse_hits / (stats.parse_hits + stats.parse_misses)) * 100).toFixed(1)
+              : 'N/A';
+          humanFormatter.info('Cache statistics:');
+          humanFormatter.info(`  Parse hits: ${stats.parse_hits}`);
+          humanFormatter.info(`  Parse misses: ${stats.parse_misses}`);
+          humanFormatter.info(`  Hit rate: ${hitRate}%`);
+          humanFormatter.info(`  Columnar entries: ${stats.columnar_entries}`);
+          humanFormatter.info(`  Interner entries: ${stats.interner_entries}`);
+        } catch {
+          // best-effort — cache stats not available
+        }
+      }
 
       process.exit(EXIT_CODES.success);
     } catch (error) {

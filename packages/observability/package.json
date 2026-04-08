@@ -1,5 +1,5 @@
 {
-  "name": "@wasm4pm/observability",
+  "name": "@pictl/observability",
   "version": "26.4.7",
   "description": "Optional non-blocking OTEL observability layer for wasm4pm",
   "type": "module",

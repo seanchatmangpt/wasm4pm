@@ -1,4 +1,4 @@
-# pmctl CLI - Implementation Summary
+# pictl CLI - Implementation Summary
 
 **Date:** April 4, 2026
 **Version:** 26.4.5
@@ -96,10 +96,10 @@ Exports for programmatic use:
 - Type declarations exported
 
 **Package.json**
-- Name: @wasm4pm/pmctl
+- Name: @pictl/cli
 - Version: 26.4.5
 - Type: module (ESM)
-- Bin entry: pmctl → ./dist/bin.js
+- Bin entry: pictl → ./dist/bin.js
 - Dependencies: citty, consola
 - DevDeps: typescript, vitest, @types/node
 - Scripts: build, dev, test, test:watch, clean
@@ -211,12 +211,12 @@ node dist/bin.js
 
 ### Run Command
 ```bash
-node dist/bin.js run --config pmctl.json --input log.xes --format json
+node dist/bin.js run --config pictl.json --input log.xes --format json
 ```
 
 ### Watch Mode
 ```bash
-node dist/bin.js watch --config pmctl.json --interval 1000
+node dist/bin.js watch --config pictl.json --interval 1000
 ```
 
 ### Status Report
@@ -368,7 +368,7 @@ watcher.on('change', () => rerun());
 ## Next Steps
 
 1. **Phase 2:** Engine integration
-   - Connect commands to @wasm4pm/engine
+   - Connect commands to @pictl/engine
    - Implement file I/O
    - Add configuration validation
 
@@ -393,7 +393,7 @@ watcher.on('change', () => rerun());
 
 ✅ **All PRD §8 requirements implemented and verified**
 
-The pmctl CLI scaffolding is complete and ready for the next phase (engine integration). The tool provides:
+The pictl CLI scaffolding is complete and ready for the next phase (engine integration). The tool provides:
 - Complete command structure
 - Full output formatting system
 - Proper exit code handling
@@ -402,7 +402,7 @@ The pmctl CLI scaffolding is complete and ready for the next phase (engine integ
 - Test structure
 - No external implementation details
 
-Ready to integrate with @wasm4pm/engine when available.
+Ready to integrate with @pictl/engine when available.
 
 ---
 

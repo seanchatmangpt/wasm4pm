@@ -1,5 +1,5 @@
 /**
- * @wasm4pm/contracts
+ * @pictl/contracts
  *
  * Shared type definitions and contracts for the wasm4pm ecosystem.
  * Provides interfaces for source connectors, sink adapters, compatibility matrices,
@@ -8,10 +8,10 @@
  * All schemas are versioned and export both TypeScript types and JSON schemas.
  */
 
-// Engine types (merged from @wasm4pm/types)
+// Engine types (merged from @pictl/types)
 export * from './types.js';
 
-// Template static data (merged from @wasm4pm/templates)
+// Template static data (merged from @pictl/templates)
 export * from './templates/index.js';
 
 // Import schemas for the ALL_JSON_SCHEMAS constant
@@ -113,7 +113,7 @@ export type {
 } from './explain.js';
 export { isExplainSnapshot, EXPLAIN_JSON_SCHEMA } from './explain.js';
 
-// Plan step type values — shared between @wasm4pm/planner and @wasm4pm/testing
+// Plan step type values — shared between @pictl/planner and @pictl/testing
 export { PLAN_STEP_TYPE_VALUES } from './steps.js';
 export type { PlanStepTypeValue } from './steps.js';
 

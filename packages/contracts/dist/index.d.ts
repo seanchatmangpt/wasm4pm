@@ -1,5 +1,5 @@
 /**
- * @wasm4pm/contracts
+ * @pictl/contracts
  *
  * Shared type definitions and contracts for the wasm4pm ecosystem.
  * Provides interfaces for source connectors, sink adapters, compatibility matrices,
@@ -7,6 +7,8 @@
  *
  * All schemas are versioned and export both TypeScript types and JSON schemas.
  */
+export * from './types.js';
+export * from './templates/index.js';
 export * from './errors.js';
 export type { ErrorInfo as ErrorDetails, ErrorCode } from './errors.js';
 export { createError, formatError, formatErrorJSON, logError, validateErrorSystem, createTypedError, resolveErrorCode, isTypedError, TYPED_ERROR_CODES, TYPED_ERROR_NAMES, TYPED_ERROR_JSON_SCHEMA, } from './errors.js';

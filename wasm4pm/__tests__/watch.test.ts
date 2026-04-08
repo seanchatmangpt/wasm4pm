@@ -79,11 +79,7 @@ describe('WatchMode - Streaming', () => {
 
   it('should emit progress events while streaming', async () => {
     const plan = createMockPlan();
-    const testData = JSON.stringify([
-      { activity: 'A' },
-      { activity: 'B' },
-      { activity: 'C' },
-    ]);
+    const testData = JSON.stringify([{ activity: 'A' }, { activity: 'B' }, { activity: 'C' }]);
     const config = createMockConfig(testData);
 
     const watch = new WatchMode(plan, config);
@@ -467,7 +463,9 @@ describe('WatchMode - Event Ordering', () => {
 
   it('should handle large datasets without memory issues', async () => {
     const plan = createMockPlan();
-    const largeData = JSON.stringify(Array.from({ length: 1000 }, (_, i) => ({ id: i, value: Math.random() })));
+    const largeData = JSON.stringify(
+      Array.from({ length: 1000 }, (_, i) => ({ id: i, value: Math.random() }))
+    );
     const config = createMockConfig(largeData);
 
     const watchConfig: WatchConfig = {

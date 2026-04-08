@@ -36,19 +36,19 @@ export function printTable(rows: BenchRow[]): void {
   console.log('\n' + '='.repeat(72));
   console.log(
     'Algorithm'.padEnd(38) +
-    'Dataset'.padEnd(10) +
-    'Traces'.padEnd(8) +
-    'Time(ms)'.padEnd(10) +
-    'Note'
+      'Dataset'.padEnd(10) +
+      'Traces'.padEnd(8) +
+      'Time(ms)'.padEnd(10) +
+      'Note'
   );
   console.log('-'.repeat(72));
   for (const r of rows) {
     console.log(
       r.algorithm.padEnd(38) +
-      r.dataset.padEnd(10) +
-      String(r.traces).padEnd(8) +
-      String(r.durationMs).padEnd(10) +
-      (r.note ?? '')
+        r.dataset.padEnd(10) +
+        String(r.traces).padEnd(8) +
+        String(r.durationMs).padEnd(10) +
+        (r.note ?? '')
     );
   }
   console.log('='.repeat(72) + '\n');

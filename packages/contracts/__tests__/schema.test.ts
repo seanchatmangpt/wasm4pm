@@ -68,13 +68,13 @@ const validStatus: Status = {
 
 describe('TypedError schema', () => {
   it('createTypedError creates valid TypedError', () => {
-    const err = createTypedError('CONFIG_INVALID', 'Bad config', { file: 'wasm4pm.toml' });
+    const err = createTypedError('CONFIG_INVALID', 'Bad config', { file: 'pictl.toml' });
     expect(isTypedError(err)).toBe(true);
     expect(err.schema_version).toBe('1.0');
     expect(err.code).toBe(TYPED_ERROR_CODES.CONFIG_INVALID);
     expect(err.code).toBe(10);
     expect(err.message).toBe('Bad config');
-    expect(err.context).toEqual({ file: 'wasm4pm.toml' });
+    expect(err.context).toEqual({ file: 'pictl.toml' });
   });
 
   it('all error codes map to 0-255 range', () => {

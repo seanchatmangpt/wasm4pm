@@ -11,7 +11,7 @@ import {
   EngineStatus,
   StatusUpdate,
   EngineError,
-} from '@wasm4pm/contracts';
+} from '@pictl/contracts';
 import { StateMachine, TransitionValidator, LifecycleEvent } from './lifecycle.js';
 import { StatusTracker, formatStatus } from './status.js';
 import { WasmLoader, WasmLoaderConfig, WasmModule } from './wasm-loader.js';
@@ -23,7 +23,7 @@ import {
   Instrumentation,
   RequiredOtelAttributes,
   ObservabilityConfig,
-} from '@wasm4pm/observability';
+} from '@pictl/observability';
 
 /**
  * Result returned from Kernel.run()

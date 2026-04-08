@@ -83,7 +83,17 @@ pub fn discover_ant_colony(
 ) -> Result<JsValue, JsValue> {
     let (best_edges, best_fitness, vocab) = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
-            let col = log.to_columnar(activity_key);
+            let col_owned = crate::cache::columnar_cache_get(eventlog_handle, activity_key)
+                .unwrap_or_else(|| {
+                    let owned = log.to_columnar_owned(activity_key);
+                    crate::cache::columnar_cache_insert(
+                        eventlog_handle.to_string(),
+                        activity_key.to_string(),
+                        owned.clone(),
+                    );
+                    owned
+                });
+            let col = ColumnarLog::from_owned(&col_owned);
 
             // Build edge vocabulary from columnar log
             let mut edge_vocab: Vec<(u32, u32)> = Vec::new();
@@ -187,7 +197,17 @@ pub fn discover_simulated_annealing(
 ) -> Result<JsValue, JsValue> {
     let (best_edges, best_fitness, vocab) = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
-            let col = log.to_columnar(activity_key);
+            let col_owned = crate::cache::columnar_cache_get(eventlog_handle, activity_key)
+                .unwrap_or_else(|| {
+                    let owned = log.to_columnar_owned(activity_key);
+                    crate::cache::columnar_cache_insert(
+                        eventlog_handle.to_string(),
+                        activity_key.to_string(),
+                        owned.clone(),
+                    );
+                    owned
+                });
+            let col = ColumnarLog::from_owned(&col_owned);
 
             // Build edge vocabulary from columnar log
             let mut edge_vocab: Vec<(u32, u32)> = Vec::new();

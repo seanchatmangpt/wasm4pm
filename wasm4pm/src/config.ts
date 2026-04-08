@@ -1,9 +1,9 @@
 /**
- * Configuration Schema for wasm4pm Engine
+ * Configuration Schema for pictl Engine
  * Defines all configuration structures, validation, and execution profiles
  */
 
-import { Wasm4pmError, ErrorCode, ErrorRecovery } from './errors.js';
+import { PictlError, ErrorCode, ErrorRecovery } from './errors.js';
 
 /**
  * Supported data source formats
@@ -169,9 +169,9 @@ export interface PipelineStep {
 }
 
 /**
- * Top-level configuration for the wasm4pm engine
+ * Top-level configuration for the pictl engine
  */
-export interface Wasm4pmConfig {
+export interface PictlConfig {
   /** Version of the configuration schema */
   version: '1.0';
 
@@ -367,19 +367,19 @@ export function validateConfig(config: unknown): ValidationIssue[] {
 }
 
 /**
- * Asserts that a configuration is valid, throwing a Wasm4pmError if not
- * Type guard that narrows the type to Wasm4pmConfig
+ * Asserts that a configuration is valid, throwing a PictlError if not
+ * Type guard that narrows the type to PictlConfig
  *
  * @param config - Configuration to validate
- * @throws Wasm4pmError - If validation fails
+ * @throws PictlError - If validation fails
  */
-export function assertConfigValid(config: unknown): asserts config is Wasm4pmConfig {
+export function assertConfigValid(config: unknown): asserts config is PictlConfig {
   const issues = validateConfig(config);
 
   if (issues.length > 0) {
     const issueMessages = issues.map((issue) => `${issue.path}: ${issue.message}`).join('; ');
 
-    throw new Wasm4pmError(
+    throw new PictlError(
       `Configuration validation failed: ${issueMessages}`,
       ErrorCode.CONFIG_INVALID,
       {
@@ -619,7 +619,7 @@ export function resolveProfile(profile: ExecutionProfile): PipelineStep[] {
 
     default:
       const _exhaustive: never = profile;
-      throw new Wasm4pmError(
+      throw new PictlError(
         `Unknown execution profile: ${profile}`,
         ErrorCode.CONFIG_INVALID,
 
@@ -629,3 +629,9 @@ export function resolveProfile(profile: ExecutionProfile): PipelineStep[] {
       );
   }
 }
+
+/**
+ * Type alias for backward compatibility
+ * @deprecated Use PictlConfig instead
+ */
+export type Wasm4pmConfig = PictlConfig;

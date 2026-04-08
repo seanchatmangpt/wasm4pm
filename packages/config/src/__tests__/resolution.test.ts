@@ -52,7 +52,7 @@ describe('Resolution', () => {
     });
 
     it('TOML file overrides JSON when both exist', async () => {
-      await fs.writeFile(path.join(tmpDir, 'wasm4pm.toml'), '[execution]\nprofile = "quality"');
+      await fs.writeFile(path.join(tmpDir, 'pictl.toml'), '[execution]\nprofile = "quality"');
       await fs.writeFile(
         path.join(tmpDir, 'wasm4pm.json'),
         JSON.stringify({ version: '26.4.5', source: { kind: 'file' }, execution: { profile: 'fast' } }),
@@ -63,7 +63,7 @@ describe('Resolution', () => {
     });
 
     it('CLI overrides everything', async () => {
-      await fs.writeFile(path.join(tmpDir, 'wasm4pm.toml'), '[execution]\nprofile = "quality"');
+      await fs.writeFile(path.join(tmpDir, 'pictl.toml'), '[execution]\nprofile = "quality"');
       const cfg = await resolveConfig({
         cliOverrides: { profile: 'fast' },
         configSearchPaths: [tmpDir],
@@ -79,7 +79,7 @@ describe('Resolution', () => {
   describe('source, sink, algorithm', () => {
     it('loads source config from TOML', async () => {
       await fs.writeFile(
-        path.join(tmpDir, 'wasm4pm.toml'),
+        path.join(tmpDir, 'pictl.toml'),
         `version = "1.0.0"\n[source]\nkind = "http"\nurl = "http://localhost:9000/events"`,
       );
       const cfg = await resolveConfig({ configSearchPaths: [tmpDir] });
@@ -89,7 +89,7 @@ describe('Resolution', () => {
 
     it('loads sink config from TOML', async () => {
       await fs.writeFile(
-        path.join(tmpDir, 'wasm4pm.toml'),
+        path.join(tmpDir, 'pictl.toml'),
         `version = "1.0.0"\n[source]\nkind = "file"\n[sink]\nkind = "file"\npath = "./out.pnml"`,
       );
       const cfg = await resolveConfig({ configSearchPaths: [tmpDir] });
@@ -99,7 +99,7 @@ describe('Resolution', () => {
 
     it('loads algorithm config from TOML', async () => {
       await fs.writeFile(
-        path.join(tmpDir, 'wasm4pm.toml'),
+        path.join(tmpDir, 'pictl.toml'),
         `version = "1.0.0"\n[source]\nkind = "file"\n[algorithm]\nname = "heuristic"\n[algorithm.parameters]\nthreshold = 0.8`,
       );
       const cfg = await resolveConfig({ configSearchPaths: [tmpDir] });
@@ -147,7 +147,7 @@ describe('Resolution', () => {
   describe('observability config', () => {
     it('loads otel config with exporter and required fields', async () => {
       await fs.writeFile(
-        path.join(tmpDir, 'wasm4pm.toml'),
+        path.join(tmpDir, 'pictl.toml'),
         `version = "1.0.0"\n[source]\nkind = "file"\n[observability.otel]\nenabled = true\nexporter = "console"\nendpoint = "http://localhost:4318"\nrequired = true`,
       );
       const cfg = await resolveConfig({ configSearchPaths: [tmpDir] });
@@ -172,7 +172,7 @@ describe('Resolution', () => {
   describe('watch config', () => {
     it('loads watch with poll_interval and checkpoint_dir', async () => {
       await fs.writeFile(
-        path.join(tmpDir, 'wasm4pm.toml'),
+        path.join(tmpDir, 'pictl.toml'),
         `version = "1.0.0"\n[source]\nkind = "file"\n[watch]\nenabled = true\npoll_interval = 500\ncheckpoint_dir = "/tmp/ckpts"`,
       );
       const cfg = await resolveConfig({ configSearchPaths: [tmpDir] });
@@ -208,7 +208,7 @@ describe('Resolution', () => {
 
     it('preserves explicit schema version from file', async () => {
       await fs.writeFile(
-        path.join(tmpDir, 'wasm4pm.toml'),
+        path.join(tmpDir, 'pictl.toml'),
         `version = "1.0.0"\nschema_version = 1\n[source]\nkind = "file"`,
       );
       const cfg = await resolveConfig({ configSearchPaths: [tmpDir] });
@@ -240,7 +240,7 @@ describe('Resolution', () => {
     });
 
     it('includes provenance for all resolved values', async () => {
-      await fs.writeFile(path.join(tmpDir, 'wasm4pm.toml'), '[source]\nkind = "file"\n[execution]\nprofile = "fast"');
+      await fs.writeFile(path.join(tmpDir, 'pictl.toml'), '[source]\nkind = "file"\n[execution]\nprofile = "fast"');
       const cfg = await resolveConfig({
         cliOverrides: { outputFormat: 'json' },
         configSearchPaths: [tmpDir],
@@ -259,7 +259,7 @@ describe('Resolution', () => {
   describe('deep merge behavior', () => {
     it('merges partial file config with defaults', async () => {
       await fs.writeFile(
-        path.join(tmpDir, 'wasm4pm.toml'),
+        path.join(tmpDir, 'pictl.toml'),
         `version = "1.0.0"\n[source]\nkind = "file"\n[execution]\ntimeout = 60000`,
       );
       const cfg = await resolveConfig({ configSearchPaths: [tmpDir] });
@@ -271,7 +271,7 @@ describe('Resolution', () => {
 
     it('CLI output.destination merges with file output.format', async () => {
       await fs.writeFile(
-        path.join(tmpDir, 'wasm4pm.toml'),
+        path.join(tmpDir, 'pictl.toml'),
         `version = "1.0.0"\n[source]\nkind = "file"\n[output]\nformat = "json"`,
       );
       const cfg = await resolveConfig({
@@ -287,7 +287,7 @@ describe('Resolution', () => {
 
   describe('error handling', () => {
     it('throws on invalid TOML syntax', async () => {
-      await fs.writeFile(path.join(tmpDir, 'wasm4pm.toml'), '[execution\nbad');
+      await fs.writeFile(path.join(tmpDir, 'pictl.toml'), '[execution\nbad');
       await expect(resolveConfig({ configSearchPaths: [tmpDir] })).rejects.toThrow(/Failed to parse TOML/);
     });
 
@@ -297,12 +297,12 @@ describe('Resolution', () => {
     });
 
     it('throws on schema-invalid file config', async () => {
-      await fs.writeFile(path.join(tmpDir, 'wasm4pm.toml'), '[execution]\nprofile = "turbo"');
+      await fs.writeFile(path.join(tmpDir, 'pictl.toml'), '[execution]\nprofile = "turbo"');
       await expect(resolveConfig({ configSearchPaths: [tmpDir] })).rejects.toThrow(/validation failed/i);
     });
 
     it('handles empty config file gracefully', async () => {
-      await fs.writeFile(path.join(tmpDir, 'wasm4pm.toml'), '');
+      await fs.writeFile(path.join(tmpDir, 'pictl.toml'), '');
       const cfg = await resolveConfig({ configSearchPaths: [tmpDir] });
       expect(cfg.version).toBe('26.4.5');
     });
@@ -335,7 +335,7 @@ describe('Resolution', () => {
 
   describe('example configs', () => {
     it('provides valid TOML example', async () => {
-      await fs.writeFile(path.join(tmpDir, 'wasm4pm.toml'), getExampleTomlConfig());
+      await fs.writeFile(path.join(tmpDir, 'pictl.toml'), getExampleTomlConfig());
       const cfg = await resolveConfig({ configSearchPaths: [tmpDir] });
       expect(cfg.version).toBe('26.4.5');
       expect(cfg.execution.profile).toBe('balanced');

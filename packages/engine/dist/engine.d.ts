@@ -3,11 +3,22 @@
  * Main Engine class implementing the lifecycle and state machine
  * Orchestrates bootstrap, planning, execution, and monitoring
  */
-import { EngineState, ExecutionPlan, ExecutionReceipt, EngineStatus, StatusUpdate, ErrorInfo } from '@wasm4pm/types';
+import { EngineState, ExecutionPlan, ExecutionReceipt, EngineStatus, StatusUpdate, EngineError } from '@wasm4pm/contracts';
 import { LifecycleEvent } from './lifecycle.js';
 import { WasmLoaderConfig, WasmModule } from './wasm-loader.js';
 import { WatchSession, WatchConfig } from './watch.js';
 import { ObservabilityConfig } from '@wasm4pm/observability';
+/**
+ * Result returned from Kernel.run()
+ */
+export interface KernelRunResult {
+    handle: string;
+    algorithm: string;
+    outputType: string;
+    durationMs: number;
+    params: Record<string, unknown>;
+    hash: string;
+}
 /**
  * Kernel interface - abstract definition of WASM kernel
  * The engine calls kernel methods but doesn't depend on implementation details
@@ -16,6 +27,14 @@ export interface Kernel {
     init(): Promise<void>;
     shutdown(): Promise<void>;
     isReady(): boolean;
+    /** Run a discovery algorithm by registry ID. Optional — not all kernel implementations support it. */
+    run?(algorithmName: string, eventLogHandle: string, params?: Record<string, unknown>): Promise<KernelRunResult>;
+    /** List all available algorithm IDs. Optional. */
+    algorithms?(): Array<{
+        id: string;
+        name: string;
+        outputType: string;
+    }>;
 }
 /**
  * Planner interface - generates execution plans
@@ -103,7 +122,7 @@ export declare class Engine {
      * Transitions engine to degraded state on non-fatal error
      * Allows recovery attempts
      */
-    degrade(error: ErrorInfo, reason?: string): Promise<void>;
+    degrade(error: EngineError, reason?: string): Promise<void>;
     /**
      * Attempts recovery from degraded state
      * Transitions: degraded -> bootstrapping -> ready

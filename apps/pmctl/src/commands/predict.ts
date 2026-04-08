@@ -3,10 +3,10 @@ import * as fs from 'fs/promises';
 import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import type { OutputOptions } from '../output.js';
-import { WasmLoader } from '@wasm4pm/engine';
-import { loadPmctlConfig, buildCliOverrides } from '../config-loader.js';
+import { WasmLoader } from '@pictl/engine';
+import { loadPictlConfig, buildCliOverrides } from '../config-loader.js';
 import { savePredictionResult } from './results.js';
-import { VALID_PREDICT_CLI_TASKS } from '@wasm4pm/contracts';
+import { VALID_PREDICT_CLI_TASKS } from '@pictl/contracts';
 
 const VALID_TASKS = VALID_PREDICT_CLI_TASKS;
 type PredictTask = (typeof VALID_TASKS)[number];
@@ -102,7 +102,7 @@ export const predict = defineCommand({
         predictionNgramOrder: ctx.args['ngram-order'],
         predictionDriftWindow: ctx.args['drift-window'],
       });
-      const config = await loadPmctlConfig(cliOverrides, formatter);
+      const config = await loadPictlConfig(cliOverrides, formatter);
       const pred = config.prediction;
 
       // Resolve parameters: CLI flag > config > hardcoded default

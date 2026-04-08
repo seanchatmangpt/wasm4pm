@@ -3,7 +3,7 @@
  * State machine and transition rules for engine lifecycle
  * Validates state transitions, enforces invariants, and emits lifecycle events
  */
-import { EngineState } from '@wasm4pm/types';
+import { EngineState } from '@wasm4pm/contracts';
 import { TransitionValidator } from './transitions.js';
 export { TransitionValidator };
 /**

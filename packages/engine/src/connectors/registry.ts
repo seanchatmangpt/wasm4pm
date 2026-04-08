@@ -4,7 +4,7 @@
  * Re-exports SourceRegistry from contracts and provides helper functions
  */
 
-import { SourceRegistry, sourceRegistry as contractRegistry } from '@wasm4pm/contracts';
+import { SourceRegistry, sourceRegistry as contractRegistry } from '@pictl/contracts';
 import { FileSourceAdapter, FileSourceConfig } from './file-source.js';
 import { HttpSourceAdapter, HttpSourceConfig } from './http-source.js';
 import { StreamSourceAdapter, StreamSourceConfig } from './stream-source.js';
@@ -70,5 +70,5 @@ export function createSourceRegistry(): ExtendedSourceRegistry {
  * Export the contract registry as default singleton
  */
 export { contractRegistry as sourceRegistry };
-export { SourceRegistry } from '@wasm4pm/contracts';
-export type { SourceAdapter, Capabilities, EventStream, RetryStrategy } from '@wasm4pm/contracts';
+export { SourceRegistry } from '@pictl/contracts';
+export type { SourceAdapter, Capabilities, EventStream, RetryStrategy } from '@pictl/contracts';

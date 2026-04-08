@@ -3,7 +3,7 @@
  * Bootstrap logic for engine initialization
  * Loads WASM, initializes kernel, validates readiness
  */
-import { ErrorInfo } from '@wasm4pm/types';
+import { EngineError } from '@wasm4pm/contracts';
 import { WasmLoader, WasmModule } from './wasm-loader.js';
 /**
  * Kernel interface for bootstrap (subset of full Kernel)
@@ -27,5 +27,5 @@ export declare function bootstrapEngine(kernel: BootstrapKernel, wasmLoader: Was
 /**
  * Creates a structured error for bootstrap failures
  */
-export declare function createBootstrapError(err: unknown): ErrorInfo;
+export declare function createBootstrapError(err: unknown): EngineError;
 //# sourceMappingURL=bootstrap.d.ts.map

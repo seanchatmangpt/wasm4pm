@@ -1,5 +1,5 @@
 /**
- * Type definitions for @wasm4pm/ml
+ * Type definitions for @pictl/ml
  *
  * Result interfaces for all ML operations.
  */
