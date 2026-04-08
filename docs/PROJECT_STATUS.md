@@ -3,7 +3,7 @@
 ## Overview
 **wasm4pm** - High-performance process mining algorithms compiled to WebAssembly for JavaScript/TypeScript environments.
 
-**Status**: Production-Ready (v26.4.4)
+**Status**: Production-Ready (v26.4.7)
 
 ---
 
@@ -18,7 +18,38 @@
 - ✅ Visualization (Mermaid diagrams, D3 graphs, HTML reports, SVG output)
 - ✅ CLI wrapper (TypeScript-based command-line interface)
 
-### 2. Documentation (80/20 Focused)
+### 2. ML Analysis (v26.4.7)
+- ✅ 6 ML tasks: classify, cluster, forecast, anomaly detection, regression, PCA
+- ✅ `pmctl ml` command with all 6 subtasks
+- ✅ Config-driven ML via `[ml]` section (enabled, tasks, method, k, etc.)
+- ✅ Post-discovery ML phase in `pmctl run`
+- ✅ Enhanced drift-watch with ML anomaly detection (`--enhanced` flag)
+- ✅ ML observability (4 event types, OTEL attributes)
+- ✅ Swarm ML support (convergence, ensemble aggregation)
+- ✅ ML test infrastructure (mocks, fixtures, epsilon-tolerance determinism)
+
+### 3. TypeScript Monorepo (9 packages)
+- ✅ `@wasm4pm/contracts` — shared types, receipts, algorithm registry, prediction tasks
+- ✅ `@wasm4pm/engine` — 8-state lifecycle, planner integration, WASM loader
+- ✅ `@wasm4pm/kernel` — 15 registered algorithms, ML step dispatcher
+- ✅ `@wasm4pm/config` — Zod-validated config, 5-layer precedence, `[ml]` section
+- ✅ `@wasm4pm/planner` — execution plans, 6 profiles (fast/balanced/quality/stream/ml/research)
+- ✅ `@wasm4pm/observability` — 3-layer output, OTEL spans, ML event types
+- ✅ `@wasm4pm/testing` — parity, determinism, CLI, OTEL capture harnesses
+- ✅ `@wasm4pm/ml` — micro-ML: classify, cluster, forecast, anomaly, regress, PCA
+- ✅ `@wasm4pm/swarm` — multi-worker coordinator, ML ensemble aggregation
+
+### 4. pmctl CLI (13 commands)
+- ✅ `run` — process discovery with optional ML post-analysis
+- ✅ `compare` — side-by-side algorithm comparison
+- ✅ `diff` — compare two event logs
+- ✅ `predict` — predictive mining (6 task types)
+- ✅ `ml` — ML analysis (6 subtasks)
+- ✅ `powl` — POWL process model discovery
+- ✅ `drift-watch` — real-time EWMA drift monitoring with `--enhanced` ML anomaly detection
+- ✅ `watch`, `status`, `doctor`, `explain`, `init`, `results`
+
+### 5. Documentation (80/20 Focused)
 - ✅ **README.md** - Project overview, features, quick start (updated for wasm4pm)
 - ✅ **QUICKSTART.md** - 5-minute setup guide
 - ✅ **TUTORIAL.md** - 6 real-world workflow examples
@@ -29,7 +60,7 @@
 - ✅ **ALGORITHMS.md** - Algorithm descriptions
 - ✅ **THESIS.md** - Academic benchmarking (500+ lines)
 
-### 3. Build & Testing
+### 6. Build & Testing
 - ✅ npm package configuration
 - ✅ wasm-pack build system (bundler, Node.js, web targets)
 - ✅ Unit tests (Vitest)
@@ -38,14 +69,14 @@
 - ✅ Performance benchmarks (14 algorithms x 5 dataset sizes)
 - ✅ CI/CD pipeline (GitHub Actions)
 
-### 4. Project Refactoring
+### 7. Project Refactoring
 - ✅ Removed unused crates (process_mining, r4pm, macros_process_mining)
 - ✅ Renamed process_mining_wasm → wasm4pm
 - ✅ Updated all references (Cargo.toml, package.json, documentation)
 - ✅ Streamlined workspace (single-crate focus)
 - ✅ Verified clean builds
 
-### 5. Claude Integration
+### 8. Claude Integration
 - ✅ MCP TypeScript SDK wrapper
 - ✅ 11 MCP tools exposed (discovery, analysis, visualization)
 - ✅ MCP server implementation
@@ -378,11 +409,11 @@ Total documentation: **5000+ lines** following 80/20 principle
 
 ---
 
-**wasm4pm v26.4.4** - Ready for production use ✨
+**wasm4pm v26.4.7** - Ready for production use
 
 ---
 
-**Last Updated**: 2026-04-04
+**Last Updated**: 2026-04-07
 **Status**: Production Ready — All features implemented, tested, documented
 **Test Status**: 88 tests, 66 passing (75% pass rate)
 **Build Status**: All targets compiling successfully

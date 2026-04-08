@@ -1,8 +1,8 @@
 # Reference: Configuration Schema
 
-**Format**: TOML or JSON  
-**Validation**: Zod schema  
-**Version**: 26.4.5  
+**Format**: TOML or JSON
+**Validation**: Zod schema
+**Version**: 26.4.7
 
 ## Complete Schema (TOML)
 
@@ -10,7 +10,7 @@
 # Discovery configuration
 [discovery]
 algorithm = "dfg"                # dfg, alpha, heuristic, inductive, genetic, ilp
-profile = "balanced"             # fast, balanced, quality, stream
+profile = "balanced"             # fast, balanced, quality, stream, ml
 timeout_ms = 300000
 params = {}
 
@@ -29,6 +29,17 @@ directory = "output"
 format = "json"                  # json, pnml, bpmn, mermaid
 formats = ["json", "pnml"]
 overwrite = "skip"               # skip, overwrite, error
+
+# ML analysis
+[ml]
+enabled = false                  # Enable ML post-discovery analysis
+tasks = ["classify", "cluster"]  # Tasks to run
+method = "knn"                   # ML method (knn, kmeans, etc.)
+k = 5                            # Neighbors / clusters
+target_key = "outcome"           # Classification target
+forecast_periods = 5             # Forecast horizon
+n_components = 2                 # PCA components
+eps = 1.0                        # DBSCAN epsilon
 
 # Observability
 [observability]
@@ -54,7 +65,7 @@ patterns = ["api_key", "password"]
 | Field | Type | Required | Default | Values |
 |-------|------|----------|---------|--------|
 | algorithm | string | No | dfg | See [Algorithm Matrix](./algorithms.md) |
-| profile | string | No | balanced | fast, balanced, quality, stream, research |
+| profile | string | No | balanced | fast, balanced, quality, stream, ml, research |
 | timeout_ms | number | No | 300000 | 1000-3600000 |
 
 ### source
@@ -75,6 +86,19 @@ patterns = ["api_key", "password"]
 | format | string | Yes | — |
 | overwrite | string | No | skip |
 
+### ml
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| enabled | boolean | No | false | Enable ML analysis |
+| tasks | string[] | No | [] | classify, cluster, forecast, anomaly, regress, pca |
+| method | string | No | — | knn, kmeans, linear_regression, etc. |
+| k | number | No | — | Neighbors (classify) or clusters (cluster) |
+| target_key | string | No | "outcome" | Classification target attribute |
+| forecast_periods | number | No | 5 | Number of periods to forecast |
+| n_components | number | No | 2 | PCA components |
+| eps | number | No | 1.0 | DBSCAN epsilon for anomaly detection |
+
 ### observability
 
 | Field | Type | Required | Default |
@@ -84,9 +108,10 @@ patterns = ["api_key", "password"]
 
 ## Validation Rules
 
-- `algorithm`: Must be valid algorithm name
-- `profile`: Must be one of 5 profiles
+- `algorithm`: Must be valid algorithm name (14 discovery + 6 ML)
+- `profile`: Must be one of 6 profiles (fast, balanced, quality, stream, ml, research)
 - `timeout_ms`: Must be >= 1000
+- `ml.tasks`: Each task must be one of: classify, cluster, forecast, anomaly, regress, pca
 - `source.path`: Must exist (if type=file)
 - `source.format`: Must match file extension
 - `sink.directory`: Must be writable
@@ -99,6 +124,29 @@ patterns = ["api_key", "password"]
 [source]
 type = "file"
 path = "events.xes"
+
+[sink]
+type = "file"
+directory = "output"
+```
+
+### Discovery + ML Analysis
+
+```toml
+[source]
+type = "file"
+path = "events.xes"
+format = "xes"
+
+[discovery]
+algorithm = "heuristic"
+profile = "balanced"
+
+[ml]
+enabled = true
+tasks = ["classify", "cluster"]
+method = "knn"
+k = 5
 
 [sink]
 type = "file"
@@ -120,6 +168,10 @@ format = "jsonl"
 watch = true
 checkpoint_dir = "/var/cache/wasm4pm"
 
+[ml]
+enabled = true
+tasks = ["classify", "cluster", "forecast", "anomaly", "regress", "pca"]
+
 [sink]
 type = "file"
 directory = "/output"
@@ -138,5 +190,6 @@ endpoint = "http://jaeger:4318"
 ## See Also
 
 - [Reference: Algorithm Parameters](./algorithm-parameters.md)
+- [Reference: Prediction Config](./prediction-config.md)
 - [How-To: Debug Config](../how-to/debug-config.md)
 - [Explanation: Config Resolution](../explanation/config-resolution.md)
