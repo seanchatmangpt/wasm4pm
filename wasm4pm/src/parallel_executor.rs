@@ -195,11 +195,40 @@ pub fn compute_dfg_parallel(col: &ColumnarLog) -> DirectlyFollowsGraph {
         return DirectlyFollowsGraph::new();
     }
 
-    // Split trace indices into chunks for parallel processing.
-    // Each chunk is a range of trace indices.
-    let partials: Vec<PartialDfg> = (0..num_traces)
+    // Dynamic batching: process multiple traces per task to reduce spawn overhead.
+    // BATCH_SIZE = 4 balances parallelism with task scheduling cost.
+    const BATCH_SIZE: usize = 4;
+
+    // Convert chunks to Vec for parallel iteration
+    let trace_chunks: Vec<_> = (0..num_traces)
+        .collect::<Vec<_>>()
+        .chunks(BATCH_SIZE)
+        .collect();
+
+    let partials: Vec<PartialDfg> = trace_chunks
         .into_par_iter()
-        .map(|t| PartialDfg::from_trace_range(col, t..t + 1))
+        .map(|chunk| {
+            // Process all traces in this batch sequentially within the task
+            let mut merged = PartialDfg::new();
+            for &t in chunk {
+                if t >= num_traces { break; }
+                let partial = PartialDfg::from_trace_range(col, t..t + 1);
+                // Merge into batch result
+                for (id, cnt) in partial.node_counts {
+                    *merged.node_counts.entry(id).or_insert(0) += cnt;
+                }
+                for (edge, cnt) in partial.edge_counts {
+                    *merged.edge_counts.entry(edge).or_insert(0) += cnt;
+                }
+                for (id, cnt) in partial.start_counts {
+                    *merged.start_counts.entry(id).or_insert(0) += cnt;
+                }
+                for (id, cnt) in partial.end_counts {
+                    *merged.end_counts.entry(id).or_insert(0) += cnt;
+                }
+            }
+            merged
+        })
         .collect();
 
     // Merge all partial results
@@ -257,11 +286,23 @@ pub fn run_algorithms_parallel(
     #[cfg(not(target_arch = "wasm32"))]
     {
         use rayon::prelude::*;
-        algorithm_names
-            .par_iter()
-            .map(|name| {
-                let result = run_single_algorithm(log, activity_key, name);
-                (name.to_string(), result)
+
+        // Batch algorithm execution to reduce task spawn overhead.
+        // For 14 algorithms, batching by 4 reduces spawns from 14 to 4.
+        const BATCH_SIZE: usize = 4;
+
+        // Convert chunks to Vec for parallel iteration
+        let chunks: Vec<_> = algorithm_names.chunks(BATCH_SIZE).collect();
+
+        chunks.into_par_iter()
+            .flat_map(|chunk| {
+                // Process algorithms in this chunk sequentially within the task
+                chunk.iter()
+                    .map(|name| {
+                        let result = run_single_algorithm(log, activity_key, name);
+                        (name.to_string(), result)
+                    })
+                    .collect::<Vec<_>>()
             })
             .collect()
     }

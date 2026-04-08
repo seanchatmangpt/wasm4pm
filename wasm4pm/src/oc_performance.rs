@@ -76,27 +76,43 @@ fn compute_edge_stats(durs: &[f64]) -> (f64, f64, f64) {
 }
 
 /// Build per-type performance DFGs directly from the OCEL, without flattening.
+///
+/// Optimized to use single-pass aggregation: builds type → events index
+/// in one pass instead of N+1 pattern (initialization + separate population).
 fn build_performance_dfgs(ocel: &OCEL) -> FxHashMap<String, PerformanceDFG> {
     let mut result: FxHashMap<String, PerformanceDFG> = FxHashMap::default();
 
-    for obj_type in &ocel.object_types {
-        // Map object-id → vec of (event-index, event-type, timestamp-ms)
-        let mut events_by_object: FxHashMap<String, Vec<(usize, &str, Option<i64>)>> =
-            FxHashMap::default();
-        for obj in &ocel.objects {
-            if &obj.object_type == obj_type {
-                events_by_object.insert(obj.id.clone(), Vec::new());
-            }
-        }
+    // Pre-compute object_id → object_type lookup for O(1) access
+    let obj_to_type: FxHashMap<String, &str> = ocel.objects
+        .iter()
+        .map(|obj| (obj.id.clone(), obj.object_type.as_str()))
+        .collect();
 
-        for (idx, event) in ocel.events.iter().enumerate() {
-            let ts_ms = parse_timestamp_ms(&event.timestamp);
-            for obj_id in event.all_object_ids() {
-                if let Some(events) = events_by_object.get_mut(obj_id) {
-                    events.push((idx, event.event_type.as_str(), ts_ms));
-                }
+    // Single-pass aggregation: build (obj_type, obj_id) → events index
+    // This eliminates the N+1 pattern of initializing then populating separately
+    let mut type_events: FxHashMap<&str, FxHashMap<String, Vec<(usize, &str, Option<i64>)>>> =
+        FxHashMap::default();
+
+    for (idx, event) in ocel.events.iter().enumerate() {
+        let ts_ms = parse_timestamp_ms(&event.timestamp);
+        for obj_id in event.all_object_ids() {
+            // Get object type from pre-computed map
+            if let Some(&obj_type) = obj_to_type.get(obj_id) {
+                type_events
+                    .entry(obj_type)
+                    .or_insert_with(FxHashMap::default)
+                    .entry(obj_id.to_string())
+                    .or_insert_with(Vec::new)
+                    .push((idx, event.event_type.as_str(), ts_ms));
             }
         }
+    }
+
+    // Process each object type using the pre-built index
+    for obj_type in &ocel.object_types {
+        // Get the events for this type, removing from the index to allow mutation
+        let mut events_by_object = type_events.remove(obj_type.as_str())
+            .unwrap_or(FxHashMap::default());
 
         // Sort by timestamp (ISO 8601 lexicographic sort)
         for events in events_by_object.values_mut() {
@@ -226,23 +242,34 @@ pub fn oc_performance_analysis(ocel_handle: &str) -> Result<JsValue, JsValue> {
 
     let mut result = serde_json::Map::new();
 
-    for obj_type in &ocel.object_types {
-        // Collect all inter-event durations for objects of this type
-        let mut events_by_object: FxHashMap<String, Vec<Option<i64>>> = FxHashMap::default();
-        for obj in &ocel.objects {
-            if &obj.object_type == obj_type {
-                events_by_object.insert(obj.id.clone(), Vec::new());
-            }
-        }
+    // Pre-compute object_id → object_type lookup for O(1) access
+    let obj_to_type: FxHashMap<String, &str> = ocel.objects
+        .iter()
+        .map(|obj| (obj.id.clone(), obj.object_type.as_str()))
+        .collect();
 
-        for event in &ocel.events {
-            let ts_ms = parse_timestamp_ms(&event.timestamp);
-            for obj_id in event.all_object_ids() {
-                if let Some(timestamps) = events_by_object.get_mut(obj_id) {
-                    timestamps.push(ts_ms);
-                }
+    // Single-pass aggregation: build (obj_type, obj_id) → timestamps index
+    let mut type_timestamps: FxHashMap<&str, FxHashMap<String, Vec<Option<i64>>>> =
+        FxHashMap::default();
+
+    for event in &ocel.events {
+        let ts_ms = parse_timestamp_ms(&event.timestamp);
+        for obj_id in event.all_object_ids() {
+            if let Some(&obj_type) = obj_to_type.get(obj_id) {
+                type_timestamps
+                    .entry(obj_type)
+                    .or_insert_with(FxHashMap::default)
+                    .entry(obj_id.to_string())
+                    .or_insert_with(Vec::new)
+                    .push(ts_ms);
             }
         }
+    }
+
+    // Process each object type using the pre-built index
+    for obj_type in &ocel.object_types {
+        let events_by_object = type_timestamps.remove(obj_type.as_str())
+            .unwrap_or(FxHashMap::default());
 
         let mut durations: Vec<f64> = Vec::new();
         for timestamps in events_by_object.values() {
