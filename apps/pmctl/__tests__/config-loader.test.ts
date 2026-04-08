@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { loadPmctlConfig, buildCliOverrides } from '../src/config-loader.js';
-import type { CliOverrides } from '@wasm4pm/config';
+import { loadPictlConfig, buildCliOverrides } from '../src/config-loader.js';
+import type { CliOverrides } from '@pictl/config';
 
 describe('Config Loader', () => {
   describe('buildCliOverrides', () => {
@@ -40,20 +40,20 @@ describe('Config Loader', () => {
     });
   });
 
-  describe('loadPmctlConfig', () => {
+  describe('loadPictlConfig', () => {
     it('should load config with CLI overrides', async () => {
       const cliOverrides: CliOverrides = {
         profile: 'fast',
       };
 
-      const config = await loadPmctlConfig(cliOverrides);
+      const config = await loadPictlConfig(cliOverrides);
 
       expect(config.execution.profile).toBe('fast');
       expect(config.execution.profile).toBe('fast'); // CLI override applied
     });
 
     it('should load default config when no overrides provided', async () => {
-      const config = await loadPmctlConfig({});
+      const config = await loadPictlConfig({});
 
       expect(config.version).toBeDefined();
       expect(config.execution.profile).toBe('balanced'); // default
@@ -66,7 +66,7 @@ describe('Config Loader', () => {
         outputFormat: 'json',
       };
 
-      const config = await loadPmctlConfig(cliOverrides);
+      const config = await loadPictlConfig(cliOverrides);
 
       expect(config.output?.format).toBe('json');
       expect(config.execution.profile).toBe('balanced'); // default when no profile override

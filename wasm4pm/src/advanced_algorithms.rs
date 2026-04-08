@@ -21,7 +21,17 @@ pub fn discover_heuristic_miner(
 
             // Single-pass columnar approach: integer-keyed follows/precedes maps
             // are ~6× smaller than (String,String) maps and hash in O(1).
-            let col = log.to_columnar(activity_key);
+            let col_owned = crate::cache::columnar_cache_get(eventlog_handle, activity_key)
+                .unwrap_or_else(|| {
+                    let owned = log.to_columnar_owned(activity_key);
+                    crate::cache::columnar_cache_insert(
+                        eventlog_handle.to_string(),
+                        activity_key.to_string(),
+                        owned.clone(),
+                    );
+                    owned
+                });
+            let col = ColumnarLog::from_owned(&col_owned);
 
             // Nodes pre-allocated from vocabulary
             dfg.nodes.extend(col.vocab.iter().map(|&act| DFGNode {

@@ -5,7 +5,7 @@
  * These provide typed alternatives to the `unknown` artifact parameter in SinkAdapter.write().
  */
 
-import type { ArtifactType } from '@wasm4pm/contracts';
+import type { ArtifactType } from '@pictl/contracts';
 
 /**
  * Receipt artifact — proof of execution

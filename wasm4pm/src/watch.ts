@@ -4,9 +4,9 @@
  * Provides incremental processing with progress tracking and fault tolerance
  */
 
-import { Wasm4pmConfig, ExecutionProfile } from './config.js';
+import { PictlConfig, ExecutionProfile } from './config.js';
 import { ExecutableStep } from './pipeline.js';
-import { Wasm4pmError, ErrorCode, ErrorRecovery } from './errors.js';
+import { PictlError, ErrorCode, ErrorRecovery } from './errors.js';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
@@ -54,7 +54,7 @@ export interface WatchConfig {
   heartbeatIntervalMs?: number; // Default: 1000ms
   heartbeatEventThreshold?: number; // Default: 10 events
   checkpointIntervalMs?: number; // Default: 5000ms
-  checkpointPath?: string; // Default: .wasm4pm/checkpoint
+  checkpointPath?: string; // Default: .pictl/checkpoint
   maxReconnectAttempts?: number; // Default: 10
   initialBackoffMs?: number; // Default: 100ms
   maxBackoffMs?: number; // Default: 5000ms
@@ -152,7 +152,7 @@ class FileStreamSource implements StreamSource {
 
   async open(): Promise<void> {
     if (!fs.existsSync(this.filePath)) {
-      throw new Wasm4pmError(
+      throw new PictlError(
         `Source file not found: ${this.filePath}`,
         ErrorCode.SOURCE_UNAVAILABLE,
         { nextAction: ErrorRecovery.VALIDATE_INPUT }
@@ -175,7 +175,7 @@ class FileStreamSource implements StreamSource {
       const lines = chunk.split('\n').filter((line) => line.trim());
       return lines.map((line) => JSON.parse(line));
     } catch (err) {
-      throw new Wasm4pmError(
+      throw new PictlError(
         `Failed to parse source file at position ${this.position}`,
         ErrorCode.PARSE_FAILED,
         { nextAction: ErrorRecovery.VALIDATE_INPUT, cause: err as Error }
@@ -201,7 +201,7 @@ class FileStreamSource implements StreamSource {
  */
 export class WatchMode {
   private plan: ExecutableStep[];
-  private config: Wasm4pmConfig;
+  private config: PictlConfig;
   private watchConfig: Required<WatchConfig>;
   private source: StreamSource | null = null;
   private isRunning: boolean = false;
@@ -210,14 +210,14 @@ export class WatchMode {
   private eventsSinceHeartbeat: number = 0;
   private currentCheckpoint: Checkpoint | null = null;
 
-  constructor(plan: ExecutableStep[], config: Wasm4pmConfig, watchConfig: WatchConfig = {}) {
+  constructor(plan: ExecutableStep[], config: PictlConfig, watchConfig: WatchConfig = {}) {
     this.plan = plan;
     this.config = config;
     this.watchConfig = {
       heartbeatIntervalMs: watchConfig.heartbeatIntervalMs ?? 1000,
       heartbeatEventThreshold: watchConfig.heartbeatEventThreshold ?? 10,
       checkpointIntervalMs: watchConfig.checkpointIntervalMs ?? 5000,
-      checkpointPath: watchConfig.checkpointPath ?? '.wasm4pm/checkpoint',
+      checkpointPath: watchConfig.checkpointPath ?? '.pictl/checkpoint',
       maxReconnectAttempts: watchConfig.maxReconnectAttempts ?? 10,
       initialBackoffMs: watchConfig.initialBackoffMs ?? 100,
       maxBackoffMs: watchConfig.maxBackoffMs ?? 5000,
@@ -380,7 +380,7 @@ export class WatchMode {
       // Verify checkpoint integrity
       const hash = this.computeProgressHash(checkpoint.progress);
       if (hash !== checkpoint.progressHash) {
-        throw new Wasm4pmError('Checkpoint integrity check failed', ErrorCode.STATE_CORRUPTED, {
+        throw new PictlError('Checkpoint integrity check failed', ErrorCode.STATE_CORRUPTED, {
           nextAction: ErrorRecovery.REINITIALIZE,
         });
       }
@@ -448,7 +448,7 @@ export class WatchMode {
    * Check if error is recoverable
    */
   private isRecoverableError(err: unknown): boolean {
-    if (err instanceof Wasm4pmError) {
+    if (err instanceof PictlError) {
       return err.nextAction === ErrorRecovery.RETRY;
     }
     return false;
@@ -458,7 +458,7 @@ export class WatchMode {
    * Format error for event emission
    */
   private formatError(err: unknown): ErrorInfo {
-    if (err instanceof Wasm4pmError) {
+    if (err instanceof PictlError) {
       return {
         code: err.code,
         message: err.message,
@@ -514,7 +514,7 @@ export class WatchMode {
  */
 export async function* watchWithReconnection(
   plan: ExecutableStep[],
-  config: Wasm4pmConfig,
+  config: PictlConfig,
   watchConfig: WatchConfig = {}
 ): AsyncIterable<WatchEvent> {
   const maxAttempts = watchConfig.maxReconnectAttempts ?? 10;

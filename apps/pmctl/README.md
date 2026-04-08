@@ -1,4 +1,4 @@
-# @wasm4pm/pmctl - Professional CLI Tool
+# @pictl/cli - Professional CLI Tool
 
 **Professional command-line interface for process mining discovery, analysis, and automation.**
 
@@ -26,20 +26,20 @@ Status: Production Ready
 
 ### Global Installation
 ```bash
-npm install -g @wasm4pm/pmctl
-pmctl --version
+npm install -g @pictl/cli
+pictl --version
 ```
 
 ### Local Installation
 ```bash
-npm install @wasm4pm/pmctl
-npx pmctl --help
+npm install @pictl/cli
+npx pictl --help
 ```
 
 ### From Workspace
 ```bash
 pnpm install
-pnpm --filter @wasm4pm/pmctl build
+pnpm --filter @pictl/cli build
 node apps/pmctl/dist/bin.js --help
 ```
 
@@ -50,96 +50,96 @@ node apps/pmctl/dist/bin.js --help
 ### 1. Initialize Project
 ```bash
 # Create configuration files
-pmctl init
+pictl init
 
 # With specific format
-pmctl init --configFormat json
+pictl init --configFormat json
 
 # Override existing files
-pmctl init --force
+pictl init --force
 ```
 
 Output:
 ```
-✓ Created wasm4pm.toml
+✓ Created pictl.toml
 ✓ Created .env.example
 ✓ Created .gitignore
 ✓ Created README.md
 
 Next steps:
-  1. Edit wasm4pm.toml with your preferences
-  2. Run: pmctl run data/log.xes --profile balanced
-  3. Check: pmctl status
+  1. Edit pictl.toml with your preferences
+  2. Run: pictl run data/log.xes --profile balanced
+  3. Check: pictl status
 ```
 
 ### 2. Run Discovery
 ```bash
 # Basic usage
-pmctl run data/eventlog.xes
+pictl run data/eventlog.xes
 
 # With algorithm selection
-pmctl run data/eventlog.xes --algorithm genetic
+pictl run data/eventlog.xes --algorithm genetic
 
 # With profile optimization
-pmctl run data/eventlog.xes --profile quality
+pictl run data/eventlog.xes --profile quality
 
 # Specify output file
-pmctl run data/eventlog.xes --output result.json
+pictl run data/eventlog.xes --output result.json
 
 # JSON output format
-pmctl run data/eventlog.xes --format json > result.json
+pictl run data/eventlog.xes --format json > result.json
 ```
 
 ### 3. Watch Directory
 ```bash
 # Watch for new files
-pmctl watch data/ --output results/
+pictl watch data/ --output results/
 
 # With specific profile
-pmctl watch data/ --profile fast --output results/
+pictl watch data/ --profile fast --output results/
 
 # Verbose logging
-pmctl watch data/ --verbose
+pictl watch data/ --verbose
 ```
 
 ### 4. Check Status
 ```bash
 # Quick status
-pmctl status
+pictl status
 
 # Detailed status
-pmctl status --verbose
+pictl status --verbose
 
 # JSON output
-pmctl status --format json
+pictl status --format json
 ```
 
 ### 5. Get Explanations
 ```bash
 # Explain an algorithm
-pmctl explain --algorithm genetic
+pictl explain --algorithm genetic
 
 # Detailed explanation
-pmctl explain --algorithm genetic --level detailed
+pictl explain --algorithm genetic --level detailed
 
 # Academic details
-pmctl explain --algorithm genetic --level academic
+pictl explain --algorithm genetic --level academic
 
 # Explain with current config
-pmctl explain --config
+pictl explain --config
 ```
 
 ---
 
 ## Commands
 
-### pmctl init
+### pictl init
 
-Initialize a new wasm4pm project with configuration templates.
+Initialize a new pictl project with configuration templates.
 
 **Usage:**
 ```bash
-pmctl init [OPTIONS]
+pictl init [OPTIONS]
 ```
 
 **Options:**
@@ -152,25 +152,25 @@ pmctl init [OPTIONS]
 ```
 
 **Output Files:**
-- `wasm4pm.toml` - Main configuration file
+- `pictl.toml` - Main configuration file
 - `.env.example` - Environment variables template
 - `.gitignore` - Git ignore patterns
 - `README.md` - Project documentation
 
 **Example:**
 ```bash
-pmctl init --configFormat toml --force
+pictl init --configFormat toml --force
 ```
 
 ---
 
-### pmctl run
+### pictl run
 
 Execute a discovery algorithm on event log(s).
 
 **Usage:**
 ```bash
-pmctl run <LOG_FILE> [OPTIONS]
+pictl run <LOG_FILE> [OPTIONS]
 ```
 
 **Arguments:**
@@ -211,18 +211,18 @@ pmctl run <LOG_FILE> [OPTIONS]
 
 **Example:**
 ```bash
-pmctl run data/log.xes --algorithm genetic --profile quality --output model.json
+pictl run data/log.xes --algorithm genetic --profile quality --output model.json
 ```
 
 ---
 
-### pmctl watch
+### pictl watch
 
 Monitor a directory for new event logs and process them continuously.
 
 **Usage:**
 ```bash
-pmctl watch <DIRECTORY> [OPTIONS]
+pictl watch <DIRECTORY> [OPTIONS]
 ```
 
 **Arguments:**
@@ -250,7 +250,7 @@ pmctl watch <DIRECTORY> [OPTIONS]
 
 **Example:**
 ```bash
-pmctl watch data/ \
+pictl watch data/ \
   --algorithm alpha++ \
   --profile balanced \
   --output results/ \
@@ -259,13 +259,13 @@ pmctl watch data/ \
 
 ---
 
-### pmctl status
+### pictl status
 
 Show system status and engine information.
 
 **Usage:**
 ```bash
-pmctl status [OPTIONS]
+pictl status [OPTIONS]
 ```
 
 **Options:**
@@ -286,7 +286,7 @@ pmctl status [OPTIONS]
 
 **Example:**
 ```bash
-pmctl status --verbose --format json
+pictl status --verbose --format json
 ```
 
 **Output:**
@@ -313,7 +313,7 @@ pmctl status --verbose --format json
     "version": "26.4.5"
   },
   "config": {
-    "source": "./wasm4pm.toml",
+    "source": "./pictl.toml",
     "hash": "abc123...",
     "valid": true
   }
@@ -322,13 +322,13 @@ pmctl status --verbose --format json
 
 ---
 
-### pmctl explain
+### pictl explain
 
 Get detailed explanations of algorithms and models.
 
 **Usage:**
 ```bash
-pmctl explain [OPTIONS]
+pictl explain [OPTIONS]
 ```
 
 **Options:**
@@ -370,14 +370,14 @@ and > is the directly-follows relation...
 
 **Example:**
 ```bash
-pmctl explain --algorithm genetic --level detailed
+pictl explain --algorithm genetic --level detailed
 ```
 
 ---
 
 ## Configuration
 
-### Configuration File (wasm4pm.toml)
+### Configuration File (pictl.toml)
 
 ```toml
 # Engine settings
@@ -404,38 +404,38 @@ destination = "stdout"            # stdout, stderr, or filepath
 enabled = true
 level = "info"
 sinks = ["console"]               # console, file, http
-file_path = "./wasm4pm.log"
+file_path = "./pictl.log"
 ```
 
 ### Configuration Resolution
 
 Priority (high to low):
 1. CLI arguments (`--profile quality`)
-2. TOML file (`./wasm4pm.toml`)
-3. JSON file (`./wasm4pm.json`)
-4. Environment variables (`WASM4PM_PROFILE=quality`)
+2. TOML file (`./pictl.toml`)
+3. JSON file (`./pictl.json`)
+4. Environment variables (`PICTL_PROFILE=quality`)
 5. Defaults
 
 ### Environment Variables
 
 ```bash
 # Engine configuration
-WASM4PM_PROFILE=quality
-WASM4PM_LOG_LEVEL=info
-WASM4PM_MAX_MEMORY_MB=2048
-WASM4PM_TIMEOUT_SECONDS=300
+PICTL_PROFILE=quality
+PICTL_LOG_LEVEL=info
+PICTL_MAX_MEMORY_MB=2048
+PICTL_TIMEOUT_SECONDS=300
 
 # Discovery configuration
-WASM4PM_DEFAULT_ALGORITHM=genetic
-WASM4PM_GENETIC_POPULATIONS=50
+PICTL_DEFAULT_ALGORITHM=genetic
+PICTL_GENETIC_POPULATIONS=50
 
 # Output configuration
-WASM4PM_OUTPUT_FORMAT=json
-WASM4PM_OUTPUT_DESTINATION=./results/
+PICTL_OUTPUT_FORMAT=json
+PICTL_OUTPUT_DESTINATION=./results/
 
 # Feature flags
-WASM4PM_WATCH_ENABLED=true
-WASM4PM_VERBOSE=true
+PICTL_WATCH_ENABLED=true
+PICTL_VERBOSE=true
 ```
 
 ---
@@ -458,7 +458,7 @@ For scripting and CI/CD integration:
 
 **Example:**
 ```bash
-pmctl run data.xes || exit $?
+pictl run data.xes || exit $?
 ```
 
 ---
@@ -467,12 +467,12 @@ pmctl run data.xes || exit $?
 
 ### Example 1: Basic Discovery
 ```bash
-pmctl run data/eventlog.xes --output model.json
+pictl run data/eventlog.xes --output model.json
 ```
 
 ### Example 2: Quality Analysis
 ```bash
-pmctl run data/eventlog.xes \
+pictl run data/eventlog.xes \
   --algorithm genetic \
   --profile quality \
   --output result.json \
@@ -481,7 +481,7 @@ pmctl run data/eventlog.xes \
 
 ### Example 3: Continuous Monitoring
 ```bash
-pmctl watch data/ \
+pictl watch data/ \
   --profile fast \
   --output results/ \
   --verbose
@@ -493,16 +493,16 @@ pmctl watch data/ \
 set -e
 
 # Initialize
-pmctl init --force
+pictl init --force
 
 # Run discovery
-pmctl run data/log.xes --algorithm alpha++ --output model.json
+pictl run data/log.xes --algorithm alpha++ --output model.json
 
 # Check status
-pmctl status --verbose
+pictl status --verbose
 
 # Explain results
-pmctl explain --model model.json
+pictl explain --model model.json
 ```
 
 ### Example 5: Docker Deployment
@@ -511,12 +511,12 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-RUN npm install -g @wasm4pm/pmctl
+RUN npm install -g @pictl/cli
 
-COPY wasm4pm.toml .
+COPY pictl.toml .
 COPY data/ ./data/
 
-CMD ["pmctl", "run", "data/eventlog.xes", "--profile", "balanced"]
+CMD ["pictl", "run", "data/eventlog.xes", "--profile", "balanced"]
 ```
 
 ---
@@ -526,8 +526,8 @@ CMD ["pmctl", "run", "data/eventlog.xes", "--profile", "balanced"]
 ### Issue: "Command not found"
 **Solution:** Install globally or use npx
 ```bash
-npm install -g @wasm4pm/pmctl
-pmctl --version
+npm install -g @pictl/cli
+pictl --version
 ```
 
 ### Issue: "File not found"
@@ -537,28 +537,28 @@ pmctl --version
 ls -la data/eventlog.xes
 
 # Use absolute path if relative doesn't work
-pmctl run /absolute/path/to/eventlog.xes
+pictl run /absolute/path/to/eventlog.xes
 ```
 
 ### Issue: "Config validation error"
 **Solution:** Run init to generate valid config
 ```bash
-pmctl init --force
-# Edit wasm4pm.toml as needed
+pictl init --force
+# Edit pictl.toml as needed
 ```
 
 ### Issue: "Memory exceeded"
 **Solution:** Use streaming profile or reduce algorithm complexity
 ```bash
-pmctl run data.xes --profile stream --algorithm dfg
+pictl run data.xes --profile stream --algorithm dfg
 ```
 
 ### Issue: "Timeout"
 **Solution:** Increase timeout or use faster profile
 ```bash
-WASM4PM_TIMEOUT_SECONDS=600 pmctl run data.xes
+PICTL_TIMEOUT_SECONDS=600 pictl run data.xes
 # OR
-pmctl run data.xes --profile fast
+pictl run data.xes --profile fast
 ```
 
 ---
@@ -577,17 +577,17 @@ pmctl run data.xes --profile fast
 
 3. **Monitor Memory**
    ```bash
-   pmctl status --format json | jq .memory
+   pictl status --format json | jq .memory
    ```
 
 4. **Use Watch Mode for Batches**
    ```bash
-   pmctl watch data/ --profile fast
+   pictl watch data/ --profile fast
    ```
 
 5. **Enable Logging Strategically**
    ```bash
-   WASM4PM_LOG_LEVEL=warn pmctl run data.xes
+   PICTL_LOG_LEVEL=warn pictl run data.xes
    ```
 
 ---
@@ -599,14 +599,14 @@ pmctl run data.xes --profile fast
 # Install dependencies
 pnpm install
 
-# Build pmctl
-pnpm --filter @wasm4pm/pmctl build
+# Build pictl
+pnpm --filter @pictl/cli build
 
 # Run tests
-pnpm --filter @wasm4pm/pmctl test
+pnpm --filter @pictl/cli test
 
 # Watch mode
-pnpm --filter @wasm4pm/pmctl dev
+pnpm --filter @pictl/cli dev
 ```
 
 ### Adding New Commands
@@ -622,17 +622,17 @@ pnpm --filter @wasm4pm/pmctl dev
 ### Programmatic Usage
 
 ```typescript
-import { pmctl } from '@wasm4pm/pmctl';
+import { pictl } from '@pictl/cli';
 
 // Run discovery
-const result = await pmctl.run('data.xes', {
+const result = await pictl.run('data.xes', {
   algorithm: 'genetic',
   profile: 'quality',
   output: 'result.json'
 });
 
 // Watch directory
-pmctl.watch('data/', {
+pictl.watch('data/', {
   profile: 'fast',
   output: 'results/'
 }).on('processed', (file) => {
@@ -640,7 +640,7 @@ pmctl.watch('data/', {
 });
 
 // Get status
-const status = await pmctl.status();
+const status = await pictl.status();
 console.log(status.engine.status);
 ```
 

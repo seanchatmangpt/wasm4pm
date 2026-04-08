@@ -10,7 +10,7 @@ import type { BaseConfig, Config, CliOverrides, LoadConfigOptions } from './type
 /**
  * Resolution order (highest to lowest priority):
  *  1. CLI arguments
- *  2. TOML config file (wasm4pm.toml)
+ *  2. TOML config file (pictl.toml)
  *  3. JSON config file (wasm4pm.json)
  *  4. Environment variables (WASM4PM_* prefix)
  *  5. Defaults
@@ -36,7 +36,7 @@ export async function resolveConfig(options?: LoadConfigOptions): Promise<Config
 
   for (const dir of searchPaths) {
     // Try TOML first (higher priority)
-    const tomlPath = path.join(dir, 'wasm4pm.toml');
+    const tomlPath = path.join(dir, 'pictl.toml');
     if (existsSync(tomlPath)) {
       try {
         const content = await fs.readFile(tomlPath, 'utf-8');
@@ -281,7 +281,7 @@ function isPlainObject(v: unknown): v is Record<string, unknown> {
  */
 export function getExampleTomlConfig(): string {
   return `# wasm4pm Configuration
-# Place at: ./wasm4pm.toml or ~/.wasm4pm/wasm4pm.toml
+# Place at: ./pictl.toml or ~/.wasm4pm/pictl.toml
 
 schema_version = ${SCHEMA_VERSION}
 version = "26.4.5"

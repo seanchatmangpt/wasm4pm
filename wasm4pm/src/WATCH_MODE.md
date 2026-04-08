@@ -97,7 +97,7 @@ interface WatchConfig {
   heartbeatIntervalMs?: number; // Default: 1000
   heartbeatEventThreshold?: number; // Default: 10 events
   checkpointIntervalMs?: number; // Default: 5000
-  checkpointPath?: string; // Default: .wasm4pm/checkpoint
+  checkpointPath?: string; // Default: .pictl/checkpoint
   maxReconnectAttempts?: number; // Default: 10
   initialBackoffMs?: number; // Default: 100
   maxBackoffMs?: number; // Default: 5000
@@ -227,7 +227,7 @@ Checkpoint directories are created automatically if missing:
 
 ```typescript
 await watch.saveCheckpoint(progress);
-// Creates .wasm4pm/checkpoint and any parent directories
+// Creates .pictl/checkpoint and any parent directories
 ```
 
 ## Reconnection Logic

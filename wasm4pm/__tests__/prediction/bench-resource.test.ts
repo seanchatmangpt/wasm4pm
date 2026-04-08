@@ -31,7 +31,13 @@ describe('estimate_queue_delay', () => {
     expect(result.wait_time).toBeCloseTo(2.0, 1);
     expect(result.utilization).toBeCloseTo(0.5, 2);
     expect(result.is_stable).toBe(true);
-    rows.push({ algorithm: 'estimate_queue_delay(stable)', dataset: 'n/a', traces: 0, durationMs: dur, note: `W=${result.wait_time}s ρ=${result.utilization}` });
+    rows.push({
+      algorithm: 'estimate_queue_delay(stable)',
+      dataset: 'n/a',
+      traces: 0,
+      durationMs: dur,
+      note: `W=${result.wait_time}s ρ=${result.utilization}`,
+    });
   });
 
   it('high-utilization queue λ=0.9 μ=1.0 → W=10.0s', () => {
@@ -51,7 +57,13 @@ describe('estimate_queue_delay', () => {
       wasm.estimate_queue_delay(0.5, 1.0);
     }
     const perCall = Number(((performance.now() - t) / 1_000_000).toFixed(6));
-    rows.push({ algorithm: 'estimate_queue_delay (1M)', dataset: 'n/a', traces: 0, durationMs: perCall, note: 'ms/call (O(1))' });
+    rows.push({
+      algorithm: 'estimate_queue_delay (1M)',
+      dataset: 'n/a',
+      traces: 0,
+      durationMs: perCall,
+      note: 'ms/call (O(1))',
+    });
     expect(perCall).toBeLessThan(0.1); // should be sub-100µs
   });
 });
@@ -62,8 +74,8 @@ describe('rank_interventions', () => {
   const interventions = [
     { name: 'escalate', utility: 0.9 },
     { name: 'reassign', utility: 0.6 },
-    { name: 'notify',   utility: 0.4 },
-    { name: 'wait',     utility: 0.2 },
+    { name: 'notify', utility: 0.4 },
+    { name: 'wait', utility: 0.2 },
   ];
 
   it('exploit-dominant (w=0.9) — top is highest utility', () => {
@@ -72,7 +84,13 @@ describe('rank_interventions', () => {
     const dur = ms(performance.now() - t);
     expect(Array.isArray(result)).toBe(true);
     expect(result[0].name).toBe('escalate');
-    rows.push({ algorithm: 'rank_interventions(w=0.9)', dataset: 'n/a', traces: 0, durationMs: dur, note: `top=${result[0].name}` });
+    rows.push({
+      algorithm: 'rank_interventions(w=0.9)',
+      dataset: 'n/a',
+      traces: 0,
+      durationMs: dur,
+      note: `top=${result[0].name}`,
+    });
   });
 
   it('balanced (w=0.5) — stable ordering', () => {
@@ -99,7 +117,13 @@ describe('rank_interventions', () => {
       wasm.rank_interventions(JSON.stringify(interventions), 0.7);
     }
     const perCall = Number(((performance.now() - t) / 100_000).toFixed(5));
-    rows.push({ algorithm: 'rank_interventions (100k)', dataset: 'n/a', traces: 0, durationMs: perCall, note: 'ms/call' });
+    rows.push({
+      algorithm: 'rank_interventions (100k)',
+      dataset: 'n/a',
+      traces: 0,
+      durationMs: perCall,
+      note: 'ms/call',
+    });
     expect(perCall).toBeLessThan(1);
   });
 });
@@ -120,7 +144,13 @@ describe('select_intervention (UCB1)', () => {
     const result = JSON.parse(wasm.select_intervention(JSON.stringify(bandit), Math.SQRT2));
     const dur = ms(performance.now() - t);
     expect(result.selected).toBe('C');
-    rows.push({ algorithm: 'select_intervention(UCB1)', dataset: 'n/a', traces: 0, durationMs: dur, note: `selected=${result.selected}` });
+    rows.push({
+      algorithm: 'select_intervention(UCB1)',
+      dataset: 'n/a',
+      traces: 0,
+      durationMs: dur,
+      note: `selected=${result.selected}`,
+    });
   });
 
   it('high-performing arm dominates after enough pulls', () => {
@@ -163,7 +193,13 @@ describe('select_intervention (UCB1)', () => {
       wasm.select_intervention(s, Math.SQRT2);
     }
     const perCall = Number(((performance.now() - t) / 1_000_000).toFixed(6));
-    rows.push({ algorithm: 'select_intervention (1M)', dataset: 'n/a', traces: 0, durationMs: perCall, note: 'ms/call (O(k))' });
+    rows.push({
+      algorithm: 'select_intervention (1M)',
+      dataset: 'n/a',
+      traces: 0,
+      durationMs: perCall,
+      note: 'ms/call (O(k))',
+    });
     expect(perCall).toBeLessThan(0.5);
   });
 });

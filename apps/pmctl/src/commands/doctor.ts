@@ -89,7 +89,7 @@ async function resolveWasmPkgDir(): Promise<string | null> {
       try {
         const raw = await fs.readFile(pkgJson, 'utf-8');
         const pkg = JSON.parse(raw) as { name?: string; workspaces?: unknown };
-        if (pkg.name === 'wasm4pm' || pkg.name === '@wasm4pm/root') {
+        if (pkg.name === 'wasm4pm' || pkg.name === '@pictl/root') {
           return path.join(dir, 'wasm4pm', 'pkg');
         }
       } catch {
@@ -228,7 +228,7 @@ async function checkSimdSupport(): Promise<CheckResult> {
 // ────────────────────────────────────────────────────────────────────────────
 
 async function checkConfigFound(): Promise<CheckResult> {
-  const configNames = ['wasm4pm.toml', 'wasm4pm.json', 'pmctl.toml', 'pmctl.json'];
+  const configNames = ['pictl.toml', 'pictl.json', 'wasm4pm.toml', 'wasm4pm.json'];
   const cwd = process.cwd();
   const searchDirs: string[] = [cwd];
   let current = cwd;
@@ -252,8 +252,8 @@ async function checkConfigFound(): Promise<CheckResult> {
   return {
     name: 'Config file',
     status: 'warn',
-    message: 'No wasm4pm.toml / wasm4pm.json found in current directory or parents',
-    fix: 'Create a config with: pmctl init    (defaults work fine without one)',
+    message: 'No pictl.toml / wasm4pm.json found in current directory or parents',
+    fix: 'Create a config with: pictl init    (defaults work fine without one)',
   };
 }
 
@@ -262,7 +262,7 @@ async function checkConfigFound(): Promise<CheckResult> {
 // ────────────────────────────────────────────────────────────────────────────
 
 async function checkConfigValidation(): Promise<CheckResult> {
-  const configNames = ['wasm4pm.toml', 'wasm4pm.json', 'pmctl.toml', 'pmctl.json'];
+  const configNames = ['pictl.toml', 'pictl.json', 'wasm4pm.toml', 'wasm4pm.json'];
   const cwd = process.cwd();
   let configPath: string | null = null;
 
@@ -306,7 +306,7 @@ async function checkConfigValidation(): Promise<CheckResult> {
     }
   }
 
-  // TOML configs — basic check (full validation requires @wasm4pm/config)
+  // TOML configs — basic check (full validation requires @pictl/config)
   try {
     const raw = await fs.readFile(configPath, 'utf-8');
     const lines = raw.split('\n').filter((l) => l.trim() && !l.trim().startsWith('#'));
@@ -315,7 +315,7 @@ async function checkConfigValidation(): Promise<CheckResult> {
         name: 'Config validation',
         status: 'warn',
         message: `${path.basename(configPath)} is empty`,
-        fix: 'Add configuration or run: pmctl init',
+        fix: 'Add configuration or run: pictl init',
       };
     }
     return {
@@ -368,7 +368,7 @@ async function checkXesFiles(): Promise<CheckResult> {
       name: 'XES event logs',
       status: 'warn',
       message: 'No .xes files found in current directory (depth ≤ 2)',
-      fix: 'Place an XES event log here, or pass --input <path> to pmctl run/predict',
+      fix: 'Place an XES event log here, or pass --input <path> to pictl run/predict',
     };
   }
 
@@ -513,24 +513,24 @@ async function checkTypeScriptCompilation(): Promise<CheckResult> {
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// Check 13: @wasm4pm/ml (micro-ml) available
+// Check 13: @pictl/ml (micro-ml) available
 // ────────────────────────────────────────────────────────────────────────────
 
 async function checkMicroMl(): Promise<CheckResult> {
   try {
     // Try to resolve the package
-    const mlPath = await import('@wasm4pm/ml');
+    const mlPath = await import('@pictl/ml');
     const hasClassify = typeof mlPath.classifyTraces === 'function';
     if (hasClassify) {
-      return { name: '@wasm4pm/ml', status: 'ok', message: 'micro-ml ML package available (classify, cluster, forecast, anomaly, regress, pca)' };
+      return { name: '@pictl/ml', status: 'ok', message: 'micro-ml ML package available (classify, cluster, forecast, anomaly, regress, pca)' };
     }
-    return { name: '@wasm4pm/ml', status: 'warn', message: 'Package found but classifyTraces not exported' };
+    return { name: '@pictl/ml', status: 'warn', message: 'Package found but classifyTraces not exported' };
   } catch {
     return {
-      name: '@wasm4pm/ml',
+      name: '@pictl/ml',
       status: 'warn',
-      message: '@wasm4pm/ml not resolvable — ML commands will not work',
-      fix: 'Install the ML package: pnpm install @wasm4pm/ml',
+      message: '@pictl/ml not resolvable — ML commands will not work',
+      fix: 'Install the ML package: pnpm install @pictl/ml',
     };
   }
 }
@@ -742,7 +742,7 @@ function renderBadge(status: CheckResult['status']): string {
 
 function printReport(formatter: HumanFormatter, report: DoctorReport): void {
   formatter.log('');
-  formatter.log('pmctl doctor — system health check');
+  formatter.log('pictl doctor — system health check');
   formatter.log('─'.repeat(58));
 
   for (const check of report.checks) {
@@ -760,9 +760,9 @@ function printReport(formatter: HumanFormatter, report: DoctorReport): void {
   formatter.log('');
 
   if (report.healthy) {
-    formatter.success('All required checks passed. pmctl is ready to use.');
+    formatter.success('All required checks passed. pictl is ready to use.');
   } else {
-    formatter.error('One or more required checks failed. Fix the issues above and re-run: pmctl doctor');
+    formatter.error('One or more required checks failed. Fix the issues above and re-run: pictl doctor');
   }
   formatter.log('');
 }
@@ -830,12 +830,12 @@ export const doctor = defineCommand({
 
     if (formatter instanceof JSONFormatter) {
       if (report.healthy) {
-        formatter.success('pmctl environment is healthy', {
+        formatter.success('pictl environment is healthy', {
           ...report,
           checks: report.checks.map((c) => ({ ...c })),
         });
       } else {
-        formatter.warn('pmctl environment has issues', {
+        formatter.warn('pictl environment has issues', {
           ...report,
           checks: report.checks.map((c) => ({ ...c })),
         });

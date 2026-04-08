@@ -1,7 +1,7 @@
 import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
 import { stat } from 'fs/promises';
-import { WasmLoader } from '@wasm4pm/engine';
+import { WasmLoader } from '@pictl/engine';
 import { EXIT_CODES } from '../exit-codes.js';
 
 const EWMA_ALPHA = 0.3;
@@ -278,7 +278,7 @@ export const driftWatch = defineCommand({
       // ── Enhanced ML anomaly detection (if --enhanced) ─────────────────────
       if (enhancedMode && distanceHistory.length >= 10) {
         try {
-          const { detectEnhancedAnomalies } = await import('@wasm4pm/ml');
+          const { detectEnhancedAnomalies } = await import('@pictl/ml');
           const anomalyResult = await detectEnhancedAnomalies(distanceHistory);
           const peakIndices = (anomalyResult as any).peakIndices as number[] | undefined;
           const peakCount = peakIndices?.length ?? 0;

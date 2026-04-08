@@ -1,6 +1,6 @@
-# Contributing to process_mining_wasm
+# Contributing to pictl
 
-Thank you for your interest in contributing! This document provides guidelines for contributing to the WASM bindings of wasm4pm.
+Thank you for your interest in contributing! This document provides guidelines for contributing to the WASM bindings of pictl.
 
 ## Table of Contents
 
@@ -345,4 +345,4 @@ Contributors are recognized in:
 - Release notes
 - Changelog
 
-Thank you for contributing to wasm4pm!
+Thank you for contributing to pictl!

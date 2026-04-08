@@ -1,10 +1,10 @@
 /**
- * Error Model for wasm4pm Engine
+ * Error Model for pictl Engine
  * Provides comprehensive error handling with classification, context, and recovery guidance
  */
 
 /**
- * Error codes for wasm4pm operations
+ * Error codes for pictl operations
  * Used to classify and handle errors consistently across the engine
  */
 export enum ErrorCode {
@@ -51,10 +51,10 @@ export enum ErrorRecovery {
 }
 
 /**
- * Enhanced error class with structured context for wasm4pm operations
+ * Enhanced error class with structured context for pictl operations
  * Extends Error with error classification, root cause tracking, and recovery guidance
  */
-export class Wasm4pmError extends Error {
+export class PictlError extends Error {
   readonly code: ErrorCode;
   readonly cause: Error | null;
   readonly nextAction: ErrorRecovery;
@@ -73,7 +73,7 @@ export class Wasm4pmError extends Error {
     }
   ) {
     super(message);
-    this.name = 'Wasm4pmError';
+    this.name = 'PictlError';
     this.code = code;
     this.cause = options?.cause || null;
     this.nextAction = options?.nextAction || ErrorRecovery.CONTACT_SUPPORT;
@@ -82,7 +82,7 @@ export class Wasm4pmError extends Error {
     this.timestamp = new Date();
 
     // Maintain proper prototype chain for instanceof checks
-    Object.setPrototypeOf(this, Wasm4pmError.prototype);
+    Object.setPrototypeOf(this, PictlError.prototype);
   }
 
   /**
@@ -122,7 +122,7 @@ export class Wasm4pmError extends Error {
  * @param context - Optional context including the execution step
  * @returns ErrorCode matching the error pattern
  */
-export function classifyWasmError(raw: string, context?: { step?: string }): ErrorCode {
+export function classifyPictlError(raw: string, context?: { step?: string }): ErrorCode {
   if (!raw || typeof raw !== 'string') {
     return ErrorCode.UNKNOWN;
   }
@@ -182,20 +182,20 @@ export function classifyWasmError(raw: string, context?: { step?: string }): Err
 
 /**
  * Wraps a WASM function call with error handling and classification
- * Converts raw WASM errors to structured Wasm4pmError instances
+ * Converts raw WASM errors to structured PictlError instances
  *
  * @template T - Return type of the wrapped function
  * @param fn - Function that calls WASM code
  * @param context - Optional context including the execution step
  * @returns Result of the function call
- * @throws Wasm4pmError - Classified and contextualized error
+ * @throws PictlError - Classified and contextualized error
  */
-export function wrapWasm<T>(fn: () => T, context?: { step?: string }): T {
+export function wrapPictlOperation<T>(fn: () => T, context?: { step?: string }): T {
   try {
     return fn();
   } catch (err) {
     const raw = err instanceof Error ? err.message : String(err);
-    const code = classifyWasmError(raw, context);
+    const code = classifyPictlError(raw, context);
 
     // Determine recovery action based on error code
     let nextAction = ErrorRecovery.CONTACT_SUPPORT;
@@ -224,7 +224,7 @@ export function wrapWasm<T>(fn: () => T, context?: { step?: string }): T {
         break;
     }
 
-    throw new Wasm4pmError(raw, code, {
+    throw new PictlError(raw, code, {
       cause: err instanceof Error ? err : null,
       nextAction,
       step: context?.step || undefined,
@@ -233,15 +233,15 @@ export function wrapWasm<T>(fn: () => T, context?: { step?: string }): T {
 }
 
 /**
- * Type guard to check if an error is a Wasm4pmError
+ * Type guard to check if an error is a PictlError
  * Optionally filters by specific error code
  *
  * @param err - Error to check
  * @param code - Optional specific ErrorCode to match
- * @returns true if err is a Wasm4pmError (and matches code if specified)
+ * @returns true if err is a PictlError (and matches code if specified)
  */
-export function isWasm4pmError(err: unknown, code?: ErrorCode): err is Wasm4pmError {
-  if (!(err instanceof Wasm4pmError)) {
+export function isPictlError(err: unknown, code?: ErrorCode): err is PictlError {
+  if (!(err instanceof PictlError)) {
     return false;
   }
   if (code !== undefined) {

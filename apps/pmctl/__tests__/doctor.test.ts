@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { doctor } from '../src/cli.js';
 
 /**
- * Tests for `pmctl doctor` — zero-argument environment health check.
+ * Tests for `pictl doctor` — zero-argument environment health check.
  *
  * We test command shape (args, meta) and internal logic (check functions)
  * without invoking process.exit, following the same pattern as commands.test.ts.
@@ -84,7 +84,7 @@ describe('doctor — system memory check', () => {
 
 describe('doctor — config file detection', () => {
   it('recognises valid config filenames', () => {
-    const validNames = ['wasm4pm.toml', 'wasm4pm.json', 'pmctl.toml', 'pmctl.json'];
+    const validNames = ['pictl.toml', 'pictl.json', 'wasm4pm.toml', 'wasm4pm.json'];
     validNames.forEach((name) => {
       expect(name).toMatch(/\.(toml|json)$/);
     });

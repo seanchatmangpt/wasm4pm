@@ -6,7 +6,7 @@
  * structurally.
  */
 
-import { PLAN_STEP_TYPE_VALUES } from '@wasm4pm/contracts';
+import { PLAN_STEP_TYPE_VALUES } from '@pictl/contracts';
 
 export interface PlanStep {
   id: string;

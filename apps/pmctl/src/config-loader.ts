@@ -1,15 +1,15 @@
-import { resolveConfig as loadConfig } from '@wasm4pm/config';
-import type { Config, CliOverrides, LoadConfigOptions } from '@wasm4pm/config';
+import { resolveConfig as loadConfig } from '@pictl/config';
+import type { Config, CliOverrides, LoadConfigOptions } from '@pictl/config';
 import type { HumanFormatter, JSONFormatter } from './output.js';
 
 /**
- * Load configuration for pmctl command with error handling and user feedback
+ * Load configuration for pictl command with error handling and user feedback
  * @param cliOverrides CLI arguments (--config, --profile, etc.)
  * @param formatter Output formatter for error messages
  * @returns Loaded and validated configuration
  * @throws Error with appropriate exit code on failure
  */
-export async function loadPmctlConfig(
+export async function loadPictlConfig(
   cliOverrides: CliOverrides = {},
   formatter?: HumanFormatter | JSONFormatter
 ): Promise<Config> {
@@ -43,12 +43,12 @@ export async function loadPmctlConfig(
 
 /**
  * Build CLI overrides from command arguments
- * Maps pmctl flags to @wasm4pm/config CliOverrides interface
+ * Maps pictl flags to @pictl/config CliOverrides interface
  */
 export function buildCliOverrides(args: Record<string, unknown>): CliOverrides {
   const overrides: CliOverrides = {};
 
-  // Map pmctl command arguments to config overrides
+  // Map pictl command arguments to config overrides
   if (args.config) {
     overrides.configPath = args.config as string;
   }

@@ -1,7 +1,7 @@
 {
-  "name": "@wasm4pm/validators",
+  "name": "@pictl/validators",
   "version": "26.4.5",
-  "description": "Validators for @wasm4pm/wasm4pm - CLI, HTTP, WebSocket, Observability, I/O, Performance",
+  "description": "Validators for @pictl/wasm4pm - CLI, HTTP, WebSocket, Observability, I/O, Performance",
   "type": "module",
   "exports": {
     ".": "./index.mjs",

@@ -1,7 +1,7 @@
 /**
  * CLI integration test helpers.
  *
- * Provides utilities to spawn pmctl as a child process, capture stdout/stderr,
+ * Provides utilities to spawn pictl as a child process, capture stdout/stderr,
  * and assert on exit codes without depending on the actual CLI implementation.
  */
 
@@ -24,7 +24,7 @@ export interface CliTestEnv {
   cleanup: () => Promise<void>;
 }
 
-/** Known exit codes — must match pmctl exit-codes.ts */
+/** Known exit codes — must match pictl exit-codes.ts */
 export const EXIT_CODES = {
   SUCCESS: 0,
   CONFIG_ERROR: 1,
@@ -76,7 +76,7 @@ export function runCli(
   },
 ): Promise<CliResult> {
   const cliPath = options?.cliPath ?? 'npx';
-  const fullArgs = cliPath === 'npx' ? ['pmctl', ...args] : args;
+  const fullArgs = cliPath === 'npx' ? ['pictl', ...args] : args;
   const timeout = options?.timeout ?? 30000;
 
   return new Promise((resolve) => {

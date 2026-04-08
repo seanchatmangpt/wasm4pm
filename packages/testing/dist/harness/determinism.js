@@ -7,11 +7,20 @@
  */
 /** Fields expected to change between runs (non-deterministic) */
 const UNSTABLE_FIELDS = new Set([
-    'run_id', 'runId',
-    'start_time', 'startTime', 'startedAt',
-    'end_time', 'endTime', 'finishedAt',
-    'duration_ms', 'durationMs',
+    'run_id',
+    'runId',
+    'start_time',
+    'startTime',
+    'startedAt',
+    'end_time',
+    'endTime',
+    'finishedAt',
+    'duration_ms',
+    'durationMs',
     'timestamp',
+    // ML-specific stochastic fields
+    'ml.confidence',
+    'ml.predictions',
 ]);
 /**
  * Compute a stable hash of a receipt by zeroing out non-deterministic fields.
@@ -47,7 +56,7 @@ export async function checkDeterminism(producer, iterations = 5) {
                 unstableFields.push(key);
                 continue;
             }
-            const values = receipts.map(r => canonicalize(r[key]));
+            const values = receipts.map((r) => canonicalize(r[key]));
             const unique = new Set(values);
             if (unique.size === 1) {
                 stableFields.push(key);
@@ -111,5 +120,65 @@ function simpleHash(input) {
         hash = (hash * 0x01000193) >>> 0;
     }
     return hash.toString(16).padStart(8, '0');
+}
+/**
+ * Check ML determinism with epsilon-tolerance for numeric fields.
+ * ML outputs (confidence, regression coefficients, etc.) may vary slightly
+ * between runs due to floating-point nondeterminism.
+ *
+ * @param producer - Function that produces ML result
+ * @param iterations - Number of iterations to run (default 5)
+ * @param epsilon - Maximum allowed difference for numeric fields (default 0.01)
+ */
+export async function checkMlDeterminism(producer, iterations = 5, epsilon = 0.01) {
+    const results = [];
+    for (let i = 0; i < iterations; i++) {
+        results.push(await producer());
+    }
+    const stableFields = [];
+    const unstableFields = [];
+    const hashes = [];
+    for (const result of results) {
+        hashes.push(stableReceiptHash(result));
+    }
+    // Compare field-by-field with epsilon tolerance for numerics
+    const allKeys = new Set();
+    for (const r of results) {
+        for (const k of Object.keys(r))
+            allKeys.add(k);
+    }
+    for (const key of allKeys) {
+        if (UNSTABLE_FIELDS.has(key)) {
+            unstableFields.push(key);
+            continue;
+        }
+        const values = results.map((r) => r[key]);
+        const allNumeric = values.every((v) => typeof v === 'number');
+        if (allNumeric) {
+            const nums = values;
+            const maxDiff = Math.max(...nums) - Math.min(...nums);
+            if (maxDiff <= epsilon) {
+                stableFields.push(key);
+            }
+            else {
+                unstableFields.push(key);
+            }
+        }
+        else {
+            const serialized = values.map((v) => JSON.stringify(v));
+            if (new Set(serialized).size === 1) {
+                stableFields.push(key);
+            }
+            else {
+                unstableFields.push(key);
+            }
+        }
+    }
+    const uniqueHashes = new Set(hashes);
+    const passed = unstableFields.length === 0;
+    const details = passed
+        ? `ML determinism verified: ${iterations} iterations, epsilon=${epsilon}`
+        : `ML non-deterministic: unstable fields [${unstableFields.join(', ')}]`;
+    return { passed, iterations, stableFields, unstableFields, hashes, details };
 }
 //# sourceMappingURL=determinism.js.map

@@ -81,6 +81,7 @@ export declare const RunningSpans: {
     readonly runStart: () => string;
     readonly sourceRead: () => string;
     readonly algorithmExec: (alg: string) => string;
+    readonly mlAnalysis: (task: string) => string;
     readonly sinkWrite: () => string;
     readonly runEnd: () => string;
 };

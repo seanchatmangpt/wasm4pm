@@ -1,6 +1,6 @@
 /**
  * e2e-run.test.ts
- * End-to-end tests for pmctl run command flow
+ * End-to-end tests for pictl run command flow
  * Tests: Config load → Planner → Engine → Algorithm → Receipt
  */
 

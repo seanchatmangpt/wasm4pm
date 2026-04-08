@@ -122,7 +122,7 @@ describe('Enhanced Planner', () => {
       expect(contractsPlan.plan_id).toBe(executionPlan.id);
       expect(contractsPlan.nodes).toBeDefined();
       expect(contractsPlan.edges).toBeDefined();
-      expect(contractsPlan.metadata.planner).toBe('@wasm4pm/planner');
+      expect(contractsPlan.metadata.planner).toBe('@pictl/planner');
     });
 
     it('should map step types to correct node kinds', () => {

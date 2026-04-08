@@ -25,4 +25,14 @@ export declare function checkDeterminism(producer: () => Promise<Record<string, 
  * Compare two receipts for determinism (ignoring unstable fields).
  */
 export declare function receiptsMatch(a: Record<string, unknown>, b: Record<string, unknown>): boolean;
+/**
+ * Check ML determinism with epsilon-tolerance for numeric fields.
+ * ML outputs (confidence, regression coefficients, etc.) may vary slightly
+ * between runs due to floating-point nondeterminism.
+ *
+ * @param producer - Function that produces ML result
+ * @param iterations - Number of iterations to run (default 5)
+ * @param epsilon - Maximum allowed difference for numeric fields (default 0.01)
+ */
+export declare function checkMlDeterminism(producer: () => Promise<Record<string, unknown>>, iterations?: number, epsilon?: number): Promise<DeterminismResult>;
 //# sourceMappingURL=determinism.d.ts.map

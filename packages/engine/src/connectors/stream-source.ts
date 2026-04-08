@@ -13,9 +13,9 @@ import {
   EventStream,
   Result,
   SourceAdapterKind,
-} from '@wasm4pm/contracts';
-import { ok, err, error } from '@wasm4pm/contracts';
-import { createError } from '@wasm4pm/contracts';
+} from '@pictl/contracts';
+import { ok, err, error } from '@pictl/contracts';
+import { createError } from '@pictl/contracts';
 
 /**
  * Configuration for StreamSourceAdapter
@@ -93,7 +93,7 @@ class StreamEventStream implements EventStream {
  * StreamSourceAdapter - Reads event logs from Readable streams
  *
  * Use cases:
- * - `echo '{"a":1}' | pmctl run` (stdin pipe)
+ * - `echo '{"a":1}' | pictl run` (stdin pipe)
  * - Programmatic stream injection in tests or libraries
  *
  * Features:

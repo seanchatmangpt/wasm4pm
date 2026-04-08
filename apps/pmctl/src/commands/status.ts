@@ -1,7 +1,7 @@
 import { defineCommand } from 'citty';
 import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
-import { WasmLoader } from '@wasm4pm/engine';
+import { WasmLoader } from '@pictl/engine';
 import type { OutputOptions } from '../output.js';
 
 export interface StatusOptions extends OutputOptions {

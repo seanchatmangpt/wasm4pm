@@ -2,7 +2,7 @@
  * convergence.ts
  *
  * SHA-256 based convergence detection for the wasm4pm swarm.
- * Reuses hashOutput from @wasm4pm/kernel for consistent hashing.
+ * Reuses hashOutput from @pictl/kernel for consistent hashing.
  */
 
 import { createHash } from 'node:crypto'
@@ -10,7 +10,7 @@ import type { WorkerResult, SwarmConvergenceReport } from './types.js'
 
 /**
  * Compute SHA-256 hash of any JSON-serializable value (sorted keys).
- * Mirrors hashOutput() from @wasm4pm/kernel/src/hashing.ts.
+ * Mirrors hashOutput() from @pictl/kernel/src/hashing.ts.
  */
 export function hashOutput(data: unknown): string {
   const normalized = JSON.stringify(sortKeys(data))

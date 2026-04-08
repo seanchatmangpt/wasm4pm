@@ -13,7 +13,7 @@ export interface Provenance {
 
 /**
  * Provenance map: dot-separated config path → provenance record.
- * Example: "algorithm.name" → { value: "alpha", source: "toml", path: "./wasm4pm.toml" }
+ * Example: "algorithm.name" → { value: "alpha", source: "toml", path: "./pictl.toml" }
  */
 export type ProvenanceMap = Record<string, Provenance>;
 

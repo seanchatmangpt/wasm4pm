@@ -1,6 +1,6 @@
 /**
  * e2e-error-handling.test.ts
- * Error code and error handling tests for pmctl
+ * Error code and error handling tests for pictl
  * Tests exit codes: 0, 1, 2, 3, 4, 5
  */
 

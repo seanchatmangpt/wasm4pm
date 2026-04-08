@@ -54,6 +54,23 @@ export interface WasmModule {
     discover_optimized_dfg(eventlog_handle: string, activity_key: string, timeout_seconds: number): Promise<{
         handle: string;
     }>;
+    discover_powl_from_log(log_json: string, variant: string): Promise<{
+        root: number;
+        node_count: number;
+        repr: string;
+        variant: string;
+    }>;
+    discover_powl_from_log_config(log_json: string, activity_key: string, variant: string, min_trace_count: number, noise_threshold: number): Promise<{
+        root: number;
+        node_count: number;
+        repr: string;
+        variant: string;
+        config: {
+            activity_key: string;
+            min_trace_count: number;
+            noise_threshold: number;
+        };
+    }>;
 }
 /**
  * Algorithm step execution output

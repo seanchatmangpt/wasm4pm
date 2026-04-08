@@ -7,7 +7,7 @@
  *   - After each round: Reflection LLM synthesizes convergence
  *
  * Usage:
- *   import { runSwarm } from '@wasm4pm/swarm'
+ *   import { runSwarm } from '@pictl/swarm'
  *   const artifact = await runSwarm(config)
  */
 

@@ -11,7 +11,7 @@ import {
   createWasmLoader,
   getWasmLoader,
 } from './wasm-loader.js';
-import { ObservabilityLayer } from '@wasm4pm/observability';
+import { ObservabilityLayer } from '@pictl/observability';
 
 /**
  * Mock WASM module for testing

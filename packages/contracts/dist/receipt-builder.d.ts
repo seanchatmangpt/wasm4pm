@@ -2,7 +2,7 @@
  * Builder pattern for constructing Receipt objects
  * Encapsulates hashing and validation logic
  */
-import { Receipt, ErrorInfo, ExecutionSummary, AlgorithmInfo, ModelInfo } from './receipt';
+import { Receipt, ErrorInfo, ExecutionSummary, AlgorithmInfo, ModelInfo } from './receipt.js';
 /**
  * Fluent builder for constructing Receipt objects
  * All setters return the builder for method chaining

@@ -3,11 +3,11 @@ import { main, run, watch, status, explain, init } from '../src/cli.js';
 import { EXIT_CODES } from '../src/exit-codes.js';
 import { HumanFormatter, JSONFormatter } from '../src/output.js';
 
-describe('pmctl CLI', () => {
+describe('pictl CLI', () => {
   describe('Command definitions', () => {
     it('should define main command with version', () => {
-      expect(main.meta?.name).toBe('pmctl');
-      expect(main.meta?.version).toBe('26.4.5');
+      expect(main.meta?.name).toBe('pictl');
+      expect(main.meta?.version).toBe('26.4.7');
     });
 
     it('should have all required subcommands', () => {

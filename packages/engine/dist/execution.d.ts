@@ -3,7 +3,7 @@
  * Plan execution engine with topological sort and step dispatch
  * Handles step execution, dependency tracking, and progress updates
  */
-import { ExecutionPlan, ExecutionReceipt, ErrorInfo, StatusUpdate, PlanStep } from '@wasm4pm/types';
+import { ExecutionPlan, ExecutionReceipt, EngineError, StatusUpdate, PlanStep } from '@wasm4pm/contracts';
 /**
  * Step handler function type
  * Called to execute a specific step
@@ -16,7 +16,7 @@ export interface StepResult {
     stepId: string;
     success: boolean;
     output?: Record<string, unknown>;
-    error?: ErrorInfo;
+    error?: EngineError;
     durationMs?: number;
     metadata?: Record<string, unknown>;
 }

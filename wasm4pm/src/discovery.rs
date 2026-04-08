@@ -20,7 +20,17 @@ pub fn discover_dfg(
             //   1. to_columnar() encodes activities as u32 IDs into a flat Vec<u32>
             //   2. One sequential scan computes node freq, edge counts, start/end — all at once
             //   3. Integer-keyed HashMap<(u32,u32),usize> is ~6× smaller than (String,String)
-            let col = log.to_columnar(activity_key);
+            let col_owned = crate::cache::columnar_cache_get(eventlog_handle, activity_key)
+                .unwrap_or_else(|| {
+                    let owned = log.to_columnar_owned(activity_key);
+                    crate::cache::columnar_cache_insert(
+                        eventlog_handle.to_string(),
+                        activity_key.to_string(),
+                        owned.clone(),
+                    );
+                    owned
+                });
+            let col = ColumnarLog::from_owned(&col_owned);
 
             // Pre-allocate nodes from vocabulary (already deduplicated by to_columnar)
             dfg.nodes.extend(col.vocab.iter().map(|&act| DFGNode {
@@ -82,7 +92,18 @@ pub fn discover_dfg_handle(
     let dfg = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
             let mut dfg = DirectlyFollowsGraph::new();
-            let col = log.to_columnar(activity_key);
+
+            let col_owned = crate::cache::columnar_cache_get(eventlog_handle, activity_key)
+                .unwrap_or_else(|| {
+                    let owned = log.to_columnar_owned(activity_key);
+                    crate::cache::columnar_cache_insert(
+                        eventlog_handle.to_string(),
+                        activity_key.to_string(),
+                        owned.clone(),
+                    );
+                    owned
+                });
+            let col = ColumnarLog::from_owned(&col_owned);
 
             dfg.nodes.extend(col.vocab.iter().map(|&act| DFGNode {
                 id: act.to_owned(),
@@ -366,7 +387,17 @@ pub fn discover_declare(eventlog_handle: &str, activity_key: &str) -> Result<JsV
             // instead of O(E) re-scanning per pair.
             // For 1K cases with A=20: ~20ms → ~0.1ms (200x gain)
 
-            let col = log.to_columnar(activity_key);
+            let col_owned = crate::cache::columnar_cache_get(eventlog_handle, activity_key)
+                .unwrap_or_else(|| {
+                    let owned = log.to_columnar_owned(activity_key);
+                    crate::cache::columnar_cache_insert(
+                        eventlog_handle.to_string(),
+                        activity_key.to_string(),
+                        owned.clone(),
+                    );
+                    owned
+                });
+            let col = ColumnarLog::from_owned(&col_owned);
             let n = col.vocab.len();
             let total_cases = col.trace_offsets.len().saturating_sub(1);
 

@@ -109,9 +109,7 @@ describe('WebSocket - Event Sequence', () => {
 
     if (progressEvents.length > 1) {
       for (let i = 1; i < progressEvents.length; i++) {
-        expect(progressEvents[i].processed).toBeGreaterThanOrEqual(
-          progressEvents[i - 1].processed
-        );
+        expect(progressEvents[i].processed).toBeGreaterThanOrEqual(progressEvents[i - 1].processed);
       }
     }
   });
@@ -246,7 +244,9 @@ describe('WebSocket - Large Logs', () => {
 describe('WebSocket - Integration', () => {
   it('should handle concurrent instances', async () => {
     const plan = createMockPlan();
-    const config = createMockConfig(JSON.stringify(Array.from({ length: 20 }, (_, i) => ({ id: i }))));
+    const config = createMockConfig(
+      JSON.stringify(Array.from({ length: 20 }, (_, i) => ({ id: i })))
+    );
 
     const watch1 = new WatchMode(plan, config);
     const watch2 = new WatchMode(plan, config);

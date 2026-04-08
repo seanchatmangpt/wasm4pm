@@ -1,4 +1,4 @@
-# pmctl CLI Scaffolding Verification Checklist
+# pictl CLI Scaffolding Verification Checklist
 
 ## PRD §8 Requirements - Build Status
 
@@ -83,9 +83,9 @@
 **File:** `/Users/sac/wasm4pm/apps/pmctl/src/bin.ts` (11 lines)
 
 ### Requirement 6: Create `package.json` ✅
-- [x] name: "@wasm4pm/pmctl"
+- [x] name: "@pictl/cli"
 - [x] version: "26.4.5"
-- [x] bin entry: "pmctl": "./dist/bin.js"
+- [x] bin entry: "pictl": "./dist/bin.js"
 - [x] Dependencies: citty, consola
 - [x] DevDependencies: typescript, vitest, @types/node
 - [x] Scripts: build, dev, test, test:watch, clean
@@ -274,4 +274,4 @@ All scaffolding requirements from PRD §8 have been implemented and verified. Th
 **Build Command:** `npm run build`
 **Test Command:** `npm test`
 **Main Entry:** `dist/bin.js`
-**Bin Command:** `pmctl` (after install)
+**Bin Command:** `pictl` (after install)

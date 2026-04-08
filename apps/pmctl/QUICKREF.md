@@ -1,4 +1,4 @@
-# pmctl CLI - Quick Reference
+# pictl CLI - Quick Reference
 
 ## Build & Test
 
@@ -23,42 +23,42 @@ npm run clean
 
 ### run - Discover process model
 ```bash
-pmctl run --config pmctl.json --input log.xes --output model.json
-pmctl run -c config.json -a genetic -i log.xes -o result.json
-pmctl run --config pmctl.json --format json --verbose
+pictl run --config pictl.json --input log.xes --output model.json
+pictl run -c config.json -a genetic -i log.xes -o result.json
+pictl run --config pictl.json --format json --verbose
 ```
 
 **Args:** config, algorithm, input, output, format, verbose, quiet
 
 ### watch - Auto-rerun on changes
 ```bash
-pmctl watch --config pmctl.json --interval 1000
-pmctl watch -c pmctl.json --format json
+pictl watch --config pictl.json --interval 1000
+pictl watch -c pictl.json --format json
 ```
 
 **Args:** config, interval, format, verbose, quiet
 
 ### status - Show system status
 ```bash
-pmctl status
-pmctl status --format json --verbose
+pictl status
+pictl status --format json --verbose
 ```
 
 **Args:** format, verbose, quiet
 
 ### explain - Explain model/algorithm
 ```bash
-pmctl explain --algorithm genetic
-pmctl explain --model model.json --level detailed
-pmctl explain --algorithm alpha --format json
+pictl explain --algorithm genetic
+pictl explain --model model.json --level detailed
+pictl explain --algorithm alpha --format json
 ```
 
 **Args:** model, algorithm, level, format, verbose, quiet
 
 ### init - Create new project
 ```bash
-pmctl init --template basic --output ./my-project
-pmctl init -t advanced -o ./project --force
+pictl init --template basic --output ./my-project
+pictl init -t advanced -o ./project --force
 ```
 
 **Args:** template, output, force, format, verbose, quiet
@@ -190,12 +190,12 @@ grep -r "TODO" src/
 
 ## Package Info
 
-- **Name:** @wasm4pm/pmctl
+- **Name:** @pictl/cli
 - **Version:** 26.4.5
 - **Type:** ESM (module)
 - **Node:** 18.0.0+
 - **Main:** dist/index.js
-- **Bin:** dist/bin.js → pmctl
+- **Bin:** dist/bin.js → pictl
 
 ## Testing
 
@@ -230,7 +230,7 @@ npm test -- --coverage
 1. **Enable verbosity:** Add `-v` or `--verbose` to any command
 2. **Suppress output:** Add `-q` or `--quiet` to any command
 3. **JSON output:** Add `--format json` for scripting
-4. **Help text:** Run command without args (or `pmctl --help` when integrated)
+4. **Help text:** Run command without args (or `pictl --help` when integrated)
 5. **Watch mode:** Good for development, auto-reruns on input changes
 
 ## Troubleshooting

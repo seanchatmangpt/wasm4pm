@@ -209,6 +209,30 @@ pub fn load_eventlog_from_xes(content: &str) -> Result<String, JsValue> {
     Ok(handle)
 }
 
+/// Parse XES format with parse cache — skips re-parsing if content hash matches.
+///
+/// Uses `crate::cache::hash_xes_content` to fingerprint the raw XES string and
+/// `crate::cache::parse_cache_get` / `parse_cache_insert` to avoid redundant
+/// XML parsing.  Falls back to the normal parse path on cache miss.
+#[wasm_bindgen]
+pub fn load_eventlog_from_xes_cached(content: &str) -> Result<String, JsValue> {
+    let hash = crate::cache::hash_xes_content(content);
+
+    if let Some(cached_handle) = crate::cache::parse_cache_get(&hash) {
+        // Verify the handle still exists in state (it may have been evicted).
+        let exists = get_or_init_state().with_object(&cached_handle, |obj| Ok(obj.is_some()))?;
+        if exists {
+            return Ok(cached_handle);
+        }
+        // Handle was evicted — fall through to re-parse and re-insert.
+    }
+
+    // Cache miss (or evicted) — delegate to the normal parse path.
+    let handle = load_eventlog_from_xes(content)?;
+    crate::cache::parse_cache_insert(hash, handle.clone());
+    Ok(handle)
+}
+
 /// Export EventLog to XES format (generates valid XES XML)
 #[wasm_bindgen]
 pub fn export_eventlog_to_xes(eventlog_handle: &str) -> Result<String, JsValue> {
@@ -332,6 +356,7 @@ pub fn xes_format_info() -> String {
         "description": "eXtensible Event Stream - industry standard for process logs",
         "functions": [
             "load_eventlog_from_xes",
+            "load_eventlog_from_xes_cached",
             "export_eventlog_to_xes"
         ],
         "note": "Supports basic XES structure with string, int, float, date, boolean attributes"

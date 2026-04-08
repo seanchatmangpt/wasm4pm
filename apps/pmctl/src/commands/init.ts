@@ -5,7 +5,7 @@ import { existsSync } from 'fs';
 import { getFormatter } from '../output.js';
 import type { OutputOptions } from '../output.js';
 import type { HumanFormatter, JSONFormatter } from '../output.js';
-import { getExampleTomlConfig, getExampleJsonConfig } from '@wasm4pm/config';
+import { getExampleTomlConfig, getExampleJsonConfig } from '@pictl/config';
 
 // Template content generators
 function getEnvExampleContent(): string {
@@ -71,9 +71,9 @@ results/
 }
 
 function getReadmeContent(): string {
-  return `# pmctl Project
+  return `# pictl Project
 
-This is a wasm4pm process mining project initialized with pmctl.
+This is a wasm4pm process mining project initialized with pictl.
 
 ## Setup
 
@@ -87,35 +87,35 @@ This is a wasm4pm process mining project initialized with pmctl.
    cp .env.example .env
    \`\`\`
 
-3. Edit \`wasm4pm.toml\` or \`wasm4pm.json\` to customize configuration
+3. Edit \`pictl.toml\` or \`wasm4pm.json\` to customize configuration
 
 ## Usage
 
 ### Run process discovery
 \`\`\`bash
-pmctl run --config wasm4pm.toml --algorithm dfg --input data/log.xes
+pictl run --config pictl.toml --algorithm dfg --input data/log.xes
 \`\`\`
 
 ### Watch mode
 \`\`\`bash
-pmctl watch --config wasm4pm.toml --interval 1000
+pictl watch --config pictl.toml --interval 1000
 \`\`\`
 
 ### Check status
 \`\`\`bash
-pmctl status --format human
+pictl status --format human
 \`\`\`
 
 ### Explain algorithm
 \`\`\`bash
-pmctl explain --algorithm genetic --level detailed
+pictl explain --algorithm genetic --level detailed
 \`\`\`
 
 ## Configuration
 
 Configuration is resolved in this order (highest to lowest priority):
 1. CLI arguments (--config, --profile, etc.)
-2. \`wasm4pm.toml\` in current directory
+2. \`pictl.toml\` in current directory
 3. \`wasm4pm.json\` in current directory
 4. Environment variables with \`WASM4PM_\` prefix
 5. Default values
@@ -161,13 +161,13 @@ async function ensureDirectory(dirpath: string): Promise<void> {
  * Validate configuration files by attempting to load them
  */
 async function validateConfigFiles(dirpath: string, formatter: HumanFormatter | JSONFormatter, outputFormat: 'human' | 'json'): Promise<boolean> {
-  const tomlPath = path.join(dirpath, 'wasm4pm.toml');
+  const tomlPath = path.join(dirpath, 'pictl.toml');
   const jsonPath = path.join(dirpath, 'wasm4pm.json');
 
   try {
     // Try to load TOML if it exists
     if (existsSync(tomlPath)) {
-      const { resolveConfig } = await import('@wasm4pm/config');
+      const { resolveConfig } = await import('@pictl/config');
       await resolveConfig({ configSearchPaths: [dirpath] });
       if (outputFormat === 'human') {
         (formatter as HumanFormatter).debug(`✓ TOML config is valid: ${tomlPath}`);
@@ -177,7 +177,7 @@ async function validateConfigFiles(dirpath: string, formatter: HumanFormatter | 
 
     // Try to load JSON if it exists
     if (existsSync(jsonPath)) {
-      const { resolveConfig } = await import('@wasm4pm/config');
+      const { resolveConfig } = await import('@pictl/config');
       await resolveConfig({ configSearchPaths: [dirpath] });
       if (outputFormat === 'human') {
         (formatter as HumanFormatter).debug(`✓ JSON config is valid: ${jsonPath}`);
@@ -247,7 +247,7 @@ export const init = defineCommand({
       }
 
       // Create config file
-      const configFilename = configFormat === 'toml' ? 'wasm4pm.toml' : 'wasm4pm.json';
+      const configFilename = configFormat === 'toml' ? 'pictl.toml' : 'wasm4pm.json';
       const configPath = path.join(cwd, configFilename);
       const configContent = configFormat === 'toml' ? getExampleTomlConfig() : getExampleJsonConfig();
 
@@ -286,7 +286,7 @@ export const init = defineCommand({
         instructions: [
           `1. Review and edit ${configFilename} to customize your configuration`,
           '2. Copy .env.example to .env and add any secret values',
-          '3. Use "pmctl run --help" to see available options',
+          '3. Use "pictl run --help" to see available options',
         ],
       };
 

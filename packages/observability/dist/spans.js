@@ -58,6 +58,7 @@ export const RunningSpans = {
     runStart: () => spanName('running', 'run_start'),
     sourceRead: () => spanName('running', 'source_read'),
     algorithmExec: (alg) => spanName('running', `algorithm.${alg}`),
+    mlAnalysis: (task) => spanName('running', `ml.${task}`),
     sinkWrite: () => spanName('running', 'sink_write'),
     runEnd: () => spanName('running', 'run_end'),
 };

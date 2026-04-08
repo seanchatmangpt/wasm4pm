@@ -1,9 +1,9 @@
 import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { resolveConfig as loadConfig } from '@wasm4pm/config';
-import { WasmLoader } from '@wasm4pm/engine';
-import { ALGORITHM_CLI_ALIASES } from '@wasm4pm/contracts';
+import { resolveConfig as loadConfig } from '@pictl/config';
+import { WasmLoader } from '@pictl/engine';
+import { ALGORITHM_CLI_ALIASES } from '@pictl/contracts';
 import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { savePredictionResult } from './results.js';
@@ -19,7 +19,7 @@ export interface RunOptions extends OutputOptions {
   timeout?: number;
 }
 
-/** All algorithms supported by pmctl run, mapped to their WASM discovery functions. */
+/** All algorithms supported by pictl run, mapped to their WASM discovery functions. */
 const ALGORITHMS = [
   'dfg',
   'alpha',
@@ -35,6 +35,9 @@ const ALGORITHMS = [
   'declare',
   'skeleton',
   'dfg-optimized',
+  'simd-dfg',
+  'hierarchical-dfg',
+  'smart-engine',
 ] as const;
 
 type Algorithm = (typeof ALGORITHMS)[number];
@@ -95,6 +98,15 @@ function runDiscovery(
     case 'dfg-optimized':
       raw = wasm.discover_dfg_optimized(logHandle, activityKey, 0.5, 0.5);
       break;
+    case 'simd-dfg':
+      raw = wasm.discover_dfg_simd(logHandle, activityKey, 0.0);
+      break;
+    case 'hierarchical-dfg':
+      raw = wasm.discover_dfg_hierarchical(logHandle, activityKey, 3);
+      break;
+    case 'smart-engine':
+      raw = wasm.smart_engine_run(logHandle, activityKey, 'auto', '');
+      break;
     default: {
       const _never: never = algo;
       throw new Error(`Unknown algorithm: ${_never}`);
@@ -123,7 +135,7 @@ export const run = defineCommand({
     },
     config: {
       type: 'string',
-      description: 'Path to configuration file (wasm4pm.toml or wasm4pm.json)',
+      description: 'Path to configuration file (pictl.toml or wasm4pm.json)',
     },
     algorithm: {
       type: 'string',
@@ -161,6 +173,26 @@ export const run = defineCommand({
       type: 'boolean',
       description: 'Do not auto-save the result to .wasm4pm/results/',
     },
+    simd: {
+      type: 'boolean',
+      description: 'Use SIMD-accelerated DFG discovery (shortcut for --algorithm simd-dfg)',
+    },
+    hierarchical: {
+      type: 'boolean',
+      description: 'Use hierarchical chunking DFG (shortcut for --algorithm hierarchical-dfg)',
+    },
+    'smart-engine': {
+      type: 'boolean',
+      description: 'Use smart execution engine with caching (shortcut for --algorithm smart-engine)',
+    },
+    'no-cache': {
+      type: 'boolean',
+      description: 'Disable all caching (parse, columnar, interner)',
+    },
+    'cache-stats': {
+      type: 'boolean',
+      description: 'Print cache hit/miss statistics after run',
+    },
   },
   async run(ctx) {
     const formatter = getFormatter({
@@ -185,7 +217,17 @@ export const run = defineCommand({
       }
 
       // Step 2: Resolve algorithm (fixes operator-precedence bug: --algorithm flag was ignored)
+      // Shortcut flags override --algorithm if both are provided
+      const shortcutAlgo: string | undefined = ctx.args.simd
+        ? 'simd-dfg'
+        : ctx.args.hierarchical
+          ? 'hierarchical-dfg'
+          : ctx.args['smart-engine']
+            ? 'smart-engine'
+            : undefined;
+
       const rawAlgo: string =
+        shortcutAlgo ??
         (ctx.args.algorithm as string | undefined) ??
         (config?.execution?.profile === 'quality'
           ? 'heuristic'
@@ -216,7 +258,7 @@ export const run = defineCommand({
 
       if (!inputPath) {
         formatter.error(
-          'Input file required.\n\nUsage:  pmctl run <log.xes>\n        pmctl run <log.xes> --algorithm heuristic\n\nRun "pmctl --help" to see all commands.'
+          'Input file required.\n\nUsage:  pictl run <log.xes>\n        pictl run <log.xes> --algorithm heuristic\n\nRun "pictl --help" to see all commands.'
         );
         process.exit(EXIT_CODES.source_error);
       }
@@ -238,6 +280,16 @@ export const run = defineCommand({
       const loader = WasmLoader.getInstance();
       await loader.init();
       const wasm = loader.get();
+
+      // Step 4b: Handle --no-cache flag
+      if (ctx.args['no-cache']) {
+        if (typeof wasm.clear_all_caches === 'function') {
+          wasm.clear_all_caches();
+          if (formatter instanceof HumanFormatter) {
+            formatter.debug('Caches cleared (--no-cache)');
+          }
+        }
+      }
 
       // Step 5: Parse XES and load log
       if (formatter instanceof HumanFormatter) {
@@ -355,12 +407,36 @@ export const run = defineCommand({
           }
         }
         formatter.log('');
-        formatter.log('  Run "pmctl results" to view saved results.');
+        formatter.log('  Run "pictl results" to view saved results.');
         formatter.log(
-          '  Run "pmctl compare dfg,heuristic -i ' +
+          '  Run "pictl compare dfg,heuristic -i ' +
             path.basename(inputPath) +
             '" to compare algorithms.'
         );
+      }
+
+      // Step 12: Print cache statistics if requested
+      if (ctx.args['cache-stats'] && typeof wasm.get_cache_stats === 'function') {
+        try {
+          const statsRaw = wasm.get_cache_stats();
+          const stats = typeof statsRaw === 'string' ? JSON.parse(statsRaw) : statsRaw;
+          if (formatter instanceof JSONFormatter) {
+            formatter.success('Cache statistics', { cache: stats });
+          } else if (formatter instanceof HumanFormatter) {
+            const hitRate =
+              stats.parse_hits + stats.parse_misses > 0
+                ? ((stats.parse_hits / (stats.parse_hits + stats.parse_misses)) * 100).toFixed(1)
+                : 'N/A';
+            formatter.info('Cache statistics:');
+            formatter.info(`  Parse hits: ${stats.parse_hits}`);
+            formatter.info(`  Parse misses: ${stats.parse_misses}`);
+            formatter.info(`  Hit rate: ${hitRate}%`);
+            formatter.info(`  Columnar entries: ${stats.columnar_entries}`);
+            formatter.info(`  Interner entries: ${stats.interner_entries}`);
+          }
+        } catch {
+          // best-effort — cache stats not available
+        }
       }
 
       process.exit(EXIT_CODES.success);
@@ -369,7 +445,7 @@ export const run = defineCommand({
         formatter.error('Discovery failed', error);
       } else {
         formatter.error(
-          `Discovery failed: ${error instanceof Error ? error.message : String(error)}\n\nRun "pmctl doctor" to check your environment.`
+          `Discovery failed: ${error instanceof Error ? error.message : String(error)}\n\nRun "pictl doctor" to check your environment.`
         );
       }
       process.exit(EXIT_CODES.execution_error);
@@ -428,6 +504,12 @@ function getProfileFromAlgorithm(algorithm: string): string {
     declare: 'balanced',
     skeleton: 'fast',
     'dfg-optimized': 'fast',
+    'simd-dfg': 'fast',
+    'simd_dfg': 'fast',
+    'hierarchical-dfg': 'balanced',
+    'hierarchical_dfg': 'balanced',
+    'smart-engine': 'balanced',
+    'smart_engine': 'balanced',
     hill: 'balanced',
     'hill-climbing': 'balanced',
   };

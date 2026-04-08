@@ -1,5 +1,5 @@
 {
-  "name": "@wasm4pm/planner",
+  "name": "@pictl/planner",
   "version": "26.4.7",
   "description": "Process mining planning and optimization",
   "type": "module",
@@ -23,7 +23,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@wasm4pm/contracts": "workspace:*",
+    "@pictl/contracts": "workspace:*",
     "blake3": "^2.1.4",
     "uuid": "^9.0.1"
   },

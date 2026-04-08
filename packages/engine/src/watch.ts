@@ -4,7 +4,7 @@
  * Provides real-time monitoring of long-running executions
  */
 
-import { StatusUpdate, EngineState, ExecutionPlan } from '@wasm4pm/contracts';
+import { StatusUpdate, EngineState, ExecutionPlan } from '@pictl/contracts';
 import { CheckpointManager, Checkpoint } from './checkpointing.js';
 
 /**

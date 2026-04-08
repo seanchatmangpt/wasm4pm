@@ -4,7 +4,7 @@
  * Ensures same input always produces the same hash, regardless of key ordering
  *
  * Uses Node.js built-in crypto (SHA-256) for zero-dependency portability.
- * For receipt/config hashing, use @wasm4pm/contracts hashData() (BLAKE3).
+ * For receipt/config hashing, use @pictl/contracts hashData() (BLAKE3).
  */
 
 import { createHash } from 'node:crypto';

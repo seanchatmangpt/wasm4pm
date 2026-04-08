@@ -1,5 +1,5 @@
 /**
- * Exit codes for pmctl CLI
+ * Exit codes for pictl CLI
  * Follows standard Unix/POSIX conventions
  */
 export const EXIT_CODES = {

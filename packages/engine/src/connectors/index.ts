@@ -1,5 +1,5 @@
 /**
- * @wasm4pm/connectors
+ * @pictl/connectors
  *
  * Source adapters for reading event logs from various sources.
  * Includes built-in file, HTTP, stream, and WebSocket adapters with an extensible registry.

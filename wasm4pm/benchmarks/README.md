@@ -1,6 +1,6 @@
-# WASM4PM Benchmarking Suite
+# pictl Benchmarking Suite
 
-Comprehensive performance testing for WASM4PM algorithms in both Node.js and browser environments.
+Comprehensive performance testing for pictl algorithms in both Node.js and browser environments.
 
 ## Quick Start
 
@@ -140,9 +140,20 @@ discover_dfg,100,2.340,2.150,2.890,2.870,7
 - discover_heuristic_miner
 - discover_alpha_plus_plus
 - discover_inductive_miner
-- discover_hill_climbing
+- discover_hill_climbing (greedy edge pruning)
+- discover_noise_filtered_dfg (streaming, frequency-based)
 - extract_process_skeleton
 - analyze_event_statistics
+
+### Streaming Algorithms
+
+- streaming_dfg
+- streaming_alpha_plus_plus
+- streaming_declare
+- streaming_inductive_miner
+- streaming_hill_climbing (trace-storage greedy pruning)
+- streaming_noise_filtered_dfg (80/20 production choice)
+- streaming_astar
 
 ### Medium Algorithms
 
@@ -306,16 +317,37 @@ npx playwright install --with-deps
 
 ## Performance Baseline
 
-Typical results on modern hardware (MacBook Pro M1, 2021):
+Typical results on modern hardware (Apple M3 Max MacBook Pro):
 
-| Algorithm           | 100 cases | 1000 cases | 5000 cases |
-| ------------------- | --------- | ---------- | ---------- |
-| DFG                 | 2-3ms     | 8-10ms     | 40-50ms    |
-| Heuristic Miner     | 3-4ms     | 12-15ms    | 60-80ms    |
-| Alpha++             | 1-2ms     | 6-8ms      | 30-40ms    |
-| A\*                 | 5-8ms     | 30-50ms    | 150-200ms  |
-| Simulated Annealing | 10-15ms   | 60-100ms   | 300-500ms  |
-| Event Statistics    | 1ms       | 2-3ms      | 8-10ms     |
+### Batch Algorithms (10K cases)
+
+| Algorithm          | Time (ms) | Notes                      |
+| ------------------ | --------- | -------------------------- |
+| DFG                | ~3        | Ultra-fast baseline        |
+| Process Skeleton   | ~2.7      | Ultra-fast                 |
+| Hill Climbing      | ~135      | Greedy edge pruning        |
+| Noise-Filtered DFG | ~135      | Streaming-only, 80/20 rule |
+| Heuristic Miner    | ~14       | Balanced quality/speed     |
+| Inductive Miner    | ~25       | Recursive sound models     |
+| A\*                | ~77       | Informed search            |
+| ILP                | ~87       | Optimal ILP                |
+
+### Streaming Algorithms (10K cases)
+
+| Algorithm                    | Time (ms) | vs Batch    | Notes                         |
+| ---------------------------- | --------- | ----------- | ----------------------------- |
+| Streaming DFG                | ~69       | 23x slower  | Trace storage overhead        |
+| Streaming Alpha++            | ~155      | 34x slower  | Complex cut detection         |
+| Streaming Hill Climbing      | ~187      | 1.4x slower | Trace-storage greedy pruning  |
+| Streaming Noise-Filtered DFG | ~135      | Same        | O(E) memory, no trace storage |
+| Streaming Inductive Miner    | ~135      | 5.4x slower | Cut detection on traces       |
+| Streaming A\*                | ~155      | 2x slower   | Heuristic-guided on traces    |
+
+**Streaming tradeoffs:**
+
+- **Noise-Filtered DFG** is the 80/20 choice: same speed as batch HC, bounded memory
+- **Hill Climbing** trades 1.4x speed for model minimization guarantees
+- **Simple streaming (DFG, Alpha++)** pays 20-35x overhead for stream processing
 
 _(Browser benchmarks typically 40-60% slower than Node.js)_
 

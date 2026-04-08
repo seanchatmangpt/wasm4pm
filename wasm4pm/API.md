@@ -1,9 +1,9 @@
-# wasm4pm API Reference
+# pictl API Reference
 
 All functions are exported from the WASM module. Import the module before calling any function.
 
 ```javascript
-const pm = require('wasm4pm'); // Node.js (CommonJS)
+const pm = require('wasm4pm'); // Node.js (CommonJS) — npm package name stays (internal WASM)
 import * as pm from 'wasm4pm'; // ES modules
 ```
 
@@ -39,14 +39,14 @@ pm.init(): string
 
 **Parameters** — none
 
-**Returns** `string` — `"Rust4PM WASM initialized successfully"`
+**Returns** `string` — `"pictl WASM initialized successfully"`
 
 **Throws** — never
 
 **Example**
 
 ```javascript
-const pm = require('wasm4pm');
+const pm = require('wasm4pm'); // npm package name stays (internal WASM)
 pm.init();
 ```
 

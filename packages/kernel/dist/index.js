@@ -8,13 +8,15 @@
 // Kernel API facade
 export { Kernel } from './api.js';
 // Registry exports
-export { AlgorithmRegistry, getRegistry, } from './registry.js';
+export { AlgorithmRegistry, getRegistry } from './registry.js';
 // Handler exports
-export { implementAlgorithmStep, listAlgorithms, validateAlgorithmParameters, } from './handlers.js';
+export { implementAlgorithmStep, listAlgorithms, validateAlgorithmParameters } from './handlers.js';
 // Versioning exports
 export { KERNEL_VERSION, MIN_WASM4PM_VERSION, checkCompatibility, assertCompatibility, parseSemVer, compareSemVer, satisfiesMinimum, isMajorCompatible, } from './versioning.js';
 // Hashing exports
 export { hashOutput, hashRaw, hashAlgorithmResult, verifyOutputHash, canonicalize, } from './hashing.js';
 // Error exports
 export { KernelError, isKernelError, classifyRustError, toTypedError, wrapKernelCall, } from './errors.js';
+// Step dispatcher bridge
+export { buildKernelStepHandlers } from './step-dispatcher.js';
 //# sourceMappingURL=index.js.map

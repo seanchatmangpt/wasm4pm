@@ -1,10 +1,10 @@
-# Architecture of wasm4pm
+# Architecture of pictl
 
-Design, structure, and internals of the wasm4pm module.
+Design, structure, and internals of the pictl module.
 
 ## Overview
 
-wasm4pm is a self-contained Rust crate compiled to WebAssembly. It implements all process mining algorithms natively — there is no dependency on an external Rust library. JavaScript receives opaque string handles; all data lives in WASM linear memory.
+pictl is a self-contained Rust crate compiled to WebAssembly. It implements all process mining algorithms natively — there is no dependency on an external Rust library. JavaScript receives opaque string handles; all data lives in WASM linear memory.
 
 ## Architecture Diagram
 

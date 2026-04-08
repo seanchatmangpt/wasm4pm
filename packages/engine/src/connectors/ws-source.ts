@@ -13,8 +13,8 @@ import {
   EventStream,
   Result,
   SourceAdapterKind,
-} from '@wasm4pm/contracts';
-import { ok, err, isOk } from '@wasm4pm/contracts';
+} from '@pictl/contracts';
+import { ok, err, isOk } from '@pictl/contracts';
 
 /**
  * Configuration for WebSocketSourceAdapter
@@ -145,7 +145,7 @@ class WebSocketEventStream implements EventStream {
 /**
  * WebSocketSourceAdapter — reads event data from a WebSocket server.
  *
- * Implements the SourceAdapter contract from @wasm4pm/contracts.
+ * Implements the SourceAdapter contract from @pictl/contracts.
  * Each WebSocket message should be a JSON event object or an array of events.
  */
 export class WebSocketSourceAdapter implements SourceAdapter {

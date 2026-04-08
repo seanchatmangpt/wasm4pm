@@ -1,5 +1,5 @@
 {
-  "name": "@wasm4pm/kernel",
+  "name": "@pictl/kernel",
   "version": "26.4.7",
   "description": "Core kernel and runtime utilities",
   "type": "module",
@@ -24,9 +24,9 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@wasm4pm/contracts": "workspace:*",
-    "@wasm4pm/planner": "workspace:*",
-    "@wasm4pm/ml": "workspace:*"
+    "@pictl/contracts": "workspace:*",
+    "@pictl/planner": "workspace:*",
+    "@pictl/ml": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.3.3",

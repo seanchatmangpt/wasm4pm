@@ -2,7 +2,11 @@ use once_cell::sync::Lazy;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use wasm_bindgen::prelude::*;
-use crate::models::{EventLog, OCEL, PetriNet, DirectlyFollowsGraph, DeclareModel, StreamingDfgBuilder, StreamingConformanceChecker, TemporalProfile, NGramPredictor};
+use crate::models::{EventLog, OCEL, PetriNet, DirectlyFollowsGraph, DeclareModel, StreamingConformanceChecker, TemporalProfile, NGramPredictor};
+use crate::streaming::{StreamingDfgBuilder, StreamingSkeletonBuilder, StreamingHeuristicBuilder};
+use crate::incremental_dfg::IncrementalDFG;
+use crate::incremental_dfg::StreamingDFG;
+use crate::streaming_pipeline::StreamingPipeline;
 use crate::error::{wasm_err, codes};
 
 /// A wrapper around different types of objects that can be stored in the WASM state
@@ -15,9 +19,14 @@ pub enum StoredObject {
     #[allow(dead_code)]
     JsonString(String),
     StreamingDfgBuilder(StreamingDfgBuilder),
+    StreamingSkeletonBuilder(StreamingSkeletonBuilder),
+    StreamingHeuristicBuilder(StreamingHeuristicBuilder),
     StreamingConformanceChecker(StreamingConformanceChecker),
     TemporalProfile(TemporalProfile),
     NGramPredictor(NGramPredictor),
+    IncrementalDFG(IncrementalDFG),
+    StreamingDFG(StreamingDFG),
+    StreamingPipeline(StreamingPipeline),
 }
 
 /// Global application state for managing objects
@@ -125,9 +134,14 @@ impl Clone for StoredObject {
             StoredObject::DeclareModel(dm) => StoredObject::DeclareModel(dm.clone()),
             StoredObject::JsonString(s) => StoredObject::JsonString(s.clone()),
             StoredObject::StreamingDfgBuilder(b) => StoredObject::StreamingDfgBuilder(b.clone()),
+            StoredObject::StreamingSkeletonBuilder(b) => StoredObject::StreamingSkeletonBuilder(b.clone()),
+            StoredObject::StreamingHeuristicBuilder(b) => StoredObject::StreamingHeuristicBuilder(b.clone()),
             StoredObject::StreamingConformanceChecker(c) => StoredObject::StreamingConformanceChecker(c.clone()),
             StoredObject::TemporalProfile(p) => StoredObject::TemporalProfile(p.clone()),
             StoredObject::NGramPredictor(p) => StoredObject::NGramPredictor(p.clone()),
+            StoredObject::IncrementalDFG(d) => StoredObject::IncrementalDFG(d.clone()),
+            StoredObject::StreamingDFG(d) => StoredObject::StreamingDFG(d.clone()),
+            StoredObject::StreamingPipeline(p) => StoredObject::StreamingPipeline(p.clone()),
         }
     }
 }

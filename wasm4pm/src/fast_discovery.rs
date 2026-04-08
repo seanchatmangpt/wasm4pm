@@ -89,55 +89,65 @@ pub fn discover_hill_climbing(
     let current_dfg = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
             // Build columnar view once — integer-keyed ops throughout
-            let col = log.to_columnar(activity_key);
+            let col_owned = crate::cache::columnar_cache_get(eventlog_handle, activity_key)
+                .unwrap_or_else(|| {
+                    let owned = log.to_columnar_owned(activity_key);
+                    crate::cache::columnar_cache_insert(
+                        eventlog_handle.to_string(),
+                        activity_key.to_string(),
+                        owned.clone(),
+                    );
+                    owned
+                });
+            let col = ColumnarLog::from_owned(&col_owned);
 
-            // Current edge set as integer pairs — O(1) membership test
+            // Start with ALL observed edges, then greedily prune
             let mut current_edges: HashSet<(u32, u32)> = HashSet::new();
+            for t in 0..col.trace_offsets.len().saturating_sub(1) {
+                let start = col.trace_offsets[t];
+                let end   = col.trace_offsets[t + 1];
+                for i in start..end.saturating_sub(1) {
+                    current_edges.insert((col.events[i], col.events[i + 1]));
+                }
+            }
 
+            // Greedy pruning: iteratively remove the edge with lowest removal cost
+            // Removal cost = number of traces where this edge appears exactly once
+            // (i.e., traces that would "break" if this edge were removed)
             let mut improved = true;
-            while improved {
+            while improved && current_edges.len() > 1 {
                 improved = false;
 
-                // Single O(events) pass over flat array — compute marginal gain for every
-                // candidate edge simultaneously, instead of calling evaluate_dfg_fitness
-                // once per candidate (old: O(E × events) per iteration).
-                //
-                // gain[pair] = number of traces where `pair` is the ONLY consecutive pair
-                // absent from current_edges.  Adding that edge makes exactly those traces fit.
-                let mut gain: FxHashMap<(u32, u32), usize> =
-                    FxHashMap::default();
+                let mut removal_cost: FxHashMap<(u32, u32), usize> = FxHashMap::default();
 
                 for t in 0..col.trace_offsets.len().saturating_sub(1) {
                     let start = col.trace_offsets[t];
                     let end   = col.trace_offsets[t + 1];
                     if start >= end { continue; }
 
-                    // Track the unique missing pair (if exactly one exists)
-                    let mut sole_missing: Option<(u32, u32)> = None;
-                    let mut multi = false;
-
-                    for i in start..end - 1 {
+                    // Count occurrences of each edge in this trace
+                    let mut pair_counts: FxHashMap<(u32, u32), usize> = FxHashMap::default();
+                    for i in start..end.saturating_sub(1) {
                         let pair = (col.events[i], col.events[i + 1]);
-                        if !current_edges.contains(&pair) {
-                            match sole_missing {
-                                None           => sole_missing = Some(pair),
-                                Some(p) if p == pair => {} // same pair repeated — still sole
-                                Some(_)        => { multi = true; break; }
-                            }
+                        if current_edges.contains(&pair) {
+                            *pair_counts.entry(pair).or_insert(0) += 1;
                         }
                     }
 
-                    if !multi {
-                        if let Some(p) = sole_missing {
-                            *gain.entry(p).or_insert(0) += 1;
+                    // Edges appearing exactly once in this trace are essential for it
+                    for (&pair, &count) in &pair_counts {
+                        if count == 1 {
+                            *removal_cost.entry(pair).or_insert(0) += 1;
                         }
                     }
                 }
 
-                // Add the edge with the highest marginal gain
-                if let Some((&best_pair, _)) = gain.iter().max_by_key(|(_, &v)| v) {
-                    current_edges.insert(best_pair);
-                    improved = true;
+                // Remove the edge with lowest (zero) removal cost
+                if let Some((&worst, _)) = removal_cost.iter().min_by_key(|(_, &v)| v) {
+                    if removal_cost[&worst] == 0 {
+                        current_edges.remove(&worst);
+                        improved = true;
+                    }
                 }
             }
 

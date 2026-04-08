@@ -6,7 +6,7 @@ import { run, watch, status, explain, init } from '../src/cli.js';
 import { EXIT_CODES } from '../src/exit-codes.js';
 
 /**
- * Integration tests for pmctl commands
+ * Integration tests for pictl commands
  * Tests command execution flow, error handling, and exit codes
  */
 
@@ -174,7 +174,7 @@ describe('Command integration tests', () => {
     });
 
     it('should create configuration files', () => {
-      // Should create wasm4pm.json and/or wasm4pm.toml
+      // Should create wasm4pm.json and/or pictl.toml
       expect(init.meta?.description?.toLowerCase()).toContain('init');
     });
 

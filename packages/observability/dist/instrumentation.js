@@ -122,7 +122,7 @@ export class Instrumentation {
             span_id: spanId,
             name: `algorithm.${algorithmName}`,
             kind: 'INTERNAL',
-            start_time: now - ((options?.durationMs || 0) * 1000000),
+            start_time: now - (options?.durationMs || 0) * 1000000,
             end_time: now,
             status: {
                 code: status,
@@ -180,7 +180,7 @@ export class Instrumentation {
             span_id: spanId,
             name: `source.${sourceKind}`,
             kind: 'CLIENT',
-            start_time: now - ((options?.durationMs || 0) * 1000000),
+            start_time: now - (options?.durationMs || 0) * 1000000,
             end_time: now,
             status: { code: status, message: options?.errorMessage },
             attributes: {
@@ -234,7 +234,7 @@ export class Instrumentation {
             span_id: spanId,
             name: `sink.${sinkKind}`,
             kind: 'PRODUCER',
-            start_time: now - ((options?.durationMs || 0) * 1000000),
+            start_time: now - (options?.durationMs || 0) * 1000000,
             end_time: now,
             status: { code: status, message: options?.errorMessage },
             attributes: {
@@ -332,6 +332,76 @@ export class Instrumentation {
             },
         };
         return { event, otelEvent, jsonEvent };
+    }
+    /**
+     * Create ML analysis started event with OTEL span
+     */
+    static createMlAnalysisStartedEvent(traceId, mlTask, method, requiredAttrs, options) {
+        const spanId = this.generateSpanId();
+        const now = Date.now() * 1000000;
+        const event = {
+            type: 'MlModelTraining',
+            traceId,
+            spanId,
+            parentSpanId: options?.parentSpanId,
+            runId: requiredAttrs['run.id'],
+            mlTask,
+            method,
+            status: 'UNSET',
+            requiredAttrs,
+        };
+        const otelEvent = {
+            trace_id: traceId,
+            span_id: spanId,
+            parent_span_id: options?.parentSpanId,
+            name: `ml.${mlTask}`,
+            kind: 'INTERNAL',
+            start_time: now,
+            status: { code: 'UNSET' },
+            attributes: {
+                ...requiredAttrs,
+                'ml.task': mlTask,
+                'ml.method': method,
+            },
+        };
+        return { event, otelEvent };
+    }
+    /**
+     * Create ML analysis completed event
+     */
+    static createMlAnalysisCompletedEvent(traceId, spanId, mlTask, method, requiredAttrs, options) {
+        const now = Date.now() * 1000000;
+        const status = options?.status || 'OK';
+        return {
+            trace_id: traceId,
+            span_id: spanId,
+            name: `ml.${mlTask}`,
+            kind: 'INTERNAL',
+            start_time: now - (options?.durationMs || 0) * 1000000,
+            end_time: now,
+            status: { code: status },
+            attributes: {
+                ...requiredAttrs,
+                'ml.task': mlTask,
+                'ml.method': method,
+                'ml.duration_ms': options?.durationMs || 0,
+                ...(options?.mlAttributes?.confidence !== undefined && {
+                    'ml.confidence': options.mlAttributes.confidence,
+                }),
+                ...(options?.mlAttributes?.featureCount !== undefined && {
+                    'ml.feature_count': options.mlAttributes.featureCount,
+                }),
+                ...(options?.mlAttributes?.clusterCount !== undefined && {
+                    'ml.cluster_count': options.mlAttributes.clusterCount,
+                }),
+                ...(options?.mlAttributes?.anomalyCount !== undefined && {
+                    'ml.anomaly_count': options.mlAttributes.anomalyCount,
+                }),
+                ...(options?.mlAttributes?.rSquared !== undefined && {
+                    'ml.r_squared': options.mlAttributes.rSquared,
+                }),
+            },
+        };
     }
     /**
      * Generate a W3C-compliant span ID (16 hex chars)

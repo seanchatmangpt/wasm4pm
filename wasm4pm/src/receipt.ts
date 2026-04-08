@@ -4,7 +4,7 @@
  * Tracks execution metadata, timing, and outputs for audit trail and debugging
  */
 
-import { Wasm4pmConfig, ExecutionProfile } from './config.js';
+import { PictlConfig, ExecutionProfile } from './config.js';
 
 /**
  * Complete execution receipt containing all metadata about a pipeline run
@@ -13,7 +13,7 @@ import { Wasm4pmConfig, ExecutionProfile } from './config.js';
 export interface ExecutionReceipt {
   // Identification
   runId: string; // Unique run identifier: "run_<ISO_timestamp>_<random4>"
-  engineVersion: string; // Version of wasm4pm engine (0.5.4)
+  engineVersion: string; // Version of pictl engine (0.5.4)
   configHash: string; // Deterministic hash of configuration (32-char hex)
 
   // Execution context
@@ -45,7 +45,7 @@ export interface ExecutionReceipt {
  * Provides a fluent interface for receipt construction
  */
 export class ReceiptBuilder {
-  private config: Wasm4pmConfig;
+  private config: PictlConfig;
   private startTimestamp: Date | null = null;
   private stepTimings: Map<string, number> = new Map();
   private outputs: Map<string, unknown> = new Map();
@@ -54,7 +54,7 @@ export class ReceiptBuilder {
   private outputDataSize?: number;
   private sourceFormat?: string;
 
-  constructor(config: Wasm4pmConfig) {
+  constructor(config: PictlConfig) {
     this.config = config;
     this.sourceFormat = config.source.format;
   }
@@ -176,7 +176,7 @@ export function generateRunId(): string {
  * @param config - Configuration to hash
  * @returns Hex string hash (32 chars, like MD5)
  */
-export function hashConfig(config: Wasm4pmConfig): string {
+export function hashConfig(config: PictlConfig): string {
   // Create a deterministic representation by sorting keys
   const sortedConfig = sortObjectKeys(config);
   const jsonStr = JSON.stringify(sortedConfig);

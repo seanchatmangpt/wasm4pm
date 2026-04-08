@@ -1,5 +1,5 @@
 {
-  "name": "@wasm4pm/engine",
+  "name": "@pictl/engine",
   "version": "26.4.7",
   "description": "Engine lifecycle and state machine for wasm4pm",
   "type": "module",
@@ -18,8 +18,8 @@
     "test": "vitest"
   },
   "dependencies": {
-    "@wasm4pm/contracts": "workspace:*",
-    "@wasm4pm/observability": "workspace:*"
+    "@pictl/contracts": "workspace:*",
+    "@pictl/observability": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.3.3",

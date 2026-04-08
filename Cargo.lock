@@ -1071,6 +1071,7 @@ dependencies = [
  "getrandom 0.2.17",
  "itertools 0.14.0",
  "once_cell",
+ "rayon",
  "roxmltree",
  "rustc-hash",
  "serde",

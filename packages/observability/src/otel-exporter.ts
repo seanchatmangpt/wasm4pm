@@ -119,7 +119,7 @@ export class OtelExporter {
           scopeSpans: [
             {
               scope: {
-                name: '@wasm4pm/observability',
+                name: '@pictl/observability',
                 version: '26.4.5',
               },
               spans: events.map((event) => ({

@@ -83,7 +83,7 @@ export const ALGORITHM_OUTPUT_TYPES: Record<string, string> = {
   ml_pca: 'ml_result',
 };
 
-/** Maps kernel registry ID → CLI alias for pmctl run/compare */
+/** Maps kernel registry ID → CLI alias for pictl run/compare */
 export const ALGORITHM_CLI_ALIASES: Record<string, string> = {
   process_skeleton: 'skeleton',
   dfg: 'dfg',

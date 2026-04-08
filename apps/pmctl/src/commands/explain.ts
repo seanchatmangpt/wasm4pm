@@ -1,5 +1,5 @@
 import { defineCommand } from 'citty';
-import { resolveConfig as loadConfig } from '@wasm4pm/config';
+import { resolveConfig as loadConfig } from '@pictl/config';
 import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import type { OutputOptions } from '../output.js';

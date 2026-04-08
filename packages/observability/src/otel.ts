@@ -114,7 +114,7 @@ export class OtelTracer implements Tracer {
           resource: { attributes: [] },
           scopeSpans: [
             {
-              scope: { name: '@wasm4pm/observability', version: '26.4.5' },
+              scope: { name: '@pictl/observability', version: '26.4.5' },
               spans: batch.map((s) => ({
                 traceId: s.traceId,
                 spanId: s.spanId,
