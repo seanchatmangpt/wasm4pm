@@ -10,11 +10,13 @@ import { doctor } from './commands/doctor.js';
 import { diff } from './commands/diff.js';
 import { results } from './commands/results.js';
 import { compare } from './commands/compare.js';
+import { ml } from './commands/ml.js';
+import { powl } from './commands/powl.js';
 
 export const main = defineCommand({
   meta: {
     name: 'pmctl',
-    version: '26.4.5',
+    version: '26.4.7',
     description: 'High-performance process mining and workflow discovery CLI',
   },
   args: {
@@ -54,6 +56,18 @@ ${BOLD}PREDICTION${RESET}  ${DIM}(van der Aalst's six perspectives)${RESET}
 ${BOLD}MONITORING${RESET}
   ${GREEN}pmctl drift-watch${RESET} --input <log.xes>   Live EWMA concept drift monitor (Ctrl+C to stop)
 
+${BOLD}ML ANALYSIS${RESET}  ${DIM}(classification, clustering, forecasting, anomaly, regression, PCA)${RESET}
+  ${GREEN}pmctl ml${RESET} classify   -i <log>           Classify traces (knn, logistic_regression)
+  ${GREEN}pmctl ml${RESET} cluster    -i <log>           Cluster traces (kmeans, dbscan)
+  ${GREEN}pmctl ml${RESET} forecast   -i <log>           Forecast drift trends
+  ${GREEN}pmctl ml${RESET} anomaly    -i <log>           Detect anomalies in drift signal
+  ${GREEN}pmctl ml${RESET} regress    -i <log>           Regress remaining time
+  ${GREEN}pmctl ml${RESET} pca        -i <log>           PCA dimensionality reduction
+
+${BOLD}POWL${RESET}  ${DIM}(process-oriented workflow language)${RESET}
+  ${GREEN}pmctl powl${RESET} construct  -i <log>          Construct POWL model from log
+  ${GREEN}pmctl powl${RESET} replay     -i <log>          Replay log against POWL model
+
 ${BOLD}RESULTS & HEALTH${RESET}
   ${GREEN}pmctl results${RESET}                         View all saved discovery & prediction results
   ${GREEN}pmctl results${RESET} --last                  Print the most recent result
@@ -82,10 +96,26 @@ Activity key defaults to "concept:name" (XES standard). Pass --activity-key to o
     diff,
     results,
     compare,
+    ml,
+    powl,
   },
 });
 
 /**
  * Export all commands for testing and programmatic use
  */
-export { run, watch, status, explain, init, predict, driftWatch, doctor, diff, results, compare };
+export {
+  run,
+  watch,
+  status,
+  explain,
+  init,
+  predict,
+  driftWatch,
+  doctor,
+  diff,
+  results,
+  compare,
+  ml,
+  powl,
+};

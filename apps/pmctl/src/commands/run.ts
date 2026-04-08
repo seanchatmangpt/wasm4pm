@@ -7,6 +7,8 @@ import { ALGORITHM_CLI_ALIASES } from '@wasm4pm/contracts';
 import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { savePredictionResult } from './results.js';
+import { executeMlTask } from '../ml-runner.js';
+import type { MlTask } from '../ml-runner.js';
 import type { OutputOptions } from '../output.js';
 
 export interface RunOptions extends OutputOptions {
@@ -37,7 +39,6 @@ const ALGORITHMS = [
 
 type Algorithm = (typeof ALGORITHMS)[number];
 
-
 /**
  * Invoke the appropriate WASM discovery function for the given algorithm.
  * Reuses the dispatch table pattern from compare.ts.
@@ -46,7 +47,7 @@ function runDiscovery(
   wasm: Record<string, any>,
   algo: Algorithm,
   logHandle: string,
-  activityKey: string,
+  activityKey: string
 ): { raw: unknown; elapsedMs: number } {
   const t0 = performance.now();
   let raw: unknown;
@@ -186,33 +187,36 @@ export const run = defineCommand({
       // Step 2: Resolve algorithm (fixes operator-precedence bug: --algorithm flag was ignored)
       const rawAlgo: string =
         (ctx.args.algorithm as string | undefined) ??
-        (config?.execution?.profile === 'quality' ? 'heuristic'
-         : config?.execution?.profile === 'fast'    ? 'dfg'
-         : 'heuristic');
+        (config?.execution?.profile === 'quality'
+          ? 'heuristic'
+          : config?.execution?.profile === 'fast'
+            ? 'dfg'
+            : 'heuristic');
 
       // Accept kernel registry IDs (heuristic_miner) or CLI aliases (heuristic)
       const resolvedAlgo: Algorithm | undefined =
         (ALGORITHM_CLI_ALIASES[rawAlgo] as Algorithm | undefined) ??
         (() => {
           const algoLower = rawAlgo.toLowerCase().replace(/[+_]/g, '-');
-          return ALGORITHMS.find((a) => a === algoLower || a === algoLower.replace(/-plus-plus/, '-'));
+          return ALGORITHMS.find(
+            (a) => a === algoLower || a === algoLower.replace(/-plus-plus/, '-')
+          );
         })();
 
       if (!resolvedAlgo) {
         formatter.error(
-          `Unknown algorithm: "${rawAlgo}"\nAvailable: ${Object.keys(ALGORITHM_CLI_ALIASES).join(', ')}`,
+          `Unknown algorithm: "${rawAlgo}"\nAvailable: ${Object.keys(ALGORITHM_CLI_ALIASES).join(', ')}`
         );
         process.exit(EXIT_CODES.source_error);
       }
 
       // Step 3: Resolve input path (positional OR --file/-i)
       const inputPath: string | undefined =
-        (ctx.args.input as string | undefined) ||
-        (ctx.args.file as string | undefined);
+        (ctx.args.input as string | undefined) || (ctx.args.file as string | undefined);
 
       if (!inputPath) {
         formatter.error(
-          'Input file required.\n\nUsage:  pmctl run <log.xes>\n        pmctl run <log.xes> --algorithm heuristic\n\nRun "pmctl --help" to see all commands.',
+          'Input file required.\n\nUsage:  pmctl run <log.xes>\n        pmctl run <log.xes> --algorithm heuristic\n\nRun "pmctl --help" to see all commands.'
         );
         process.exit(EXIT_CODES.source_error);
       }
@@ -221,7 +225,7 @@ export const run = defineCommand({
         await fs.access(inputPath);
       } catch {
         formatter.error(
-          `Input file not found: ${inputPath}\n\nCheck that the path is correct and the file is readable.`,
+          `Input file not found: ${inputPath}\n\nCheck that the path is correct and the file is readable.`
         );
         process.exit(EXIT_CODES.source_error);
       }
@@ -251,8 +255,43 @@ export const run = defineCommand({
 
       const { raw, elapsedMs } = runDiscovery(wasm, resolvedAlgo, logHandle, activityKey);
 
+      // Step 6b: Run ML analysis if configured
+      const mlResults: Record<string, unknown> = {};
+      const mlConfig = (config as any)?.ml;
+      if (mlConfig?.enabled && mlConfig.tasks && mlConfig.tasks.length > 0) {
+        if (formatter instanceof HumanFormatter) {
+          formatter.info(`Running ML analysis (${mlConfig.tasks.length} tasks)...`);
+        }
+
+        for (const task of mlConfig.tasks) {
+          try {
+            const mlResult = await executeMlTask(wasm, task as MlTask, logHandle, activityKey, {
+              method: mlConfig.method,
+              k: mlConfig.k,
+              targetKey: mlConfig.targetKey,
+              forecastPeriods: mlConfig.forecastPeriods,
+              nComponents: mlConfig.nComponents,
+              eps: mlConfig.eps,
+            });
+            mlResults[task] = mlResult;
+          } catch (err) {
+            formatter.warn(
+              `ML task '${task}' failed: ${err instanceof Error ? err.message : String(err)}`
+            );
+          }
+        }
+
+        if (Object.keys(mlResults).length > 0 && formatter instanceof HumanFormatter) {
+          formatter.info(`ML analysis complete: ${Object.keys(mlResults).join(', ')}`);
+        }
+      }
+
       // Step 7: Free handle
-      try { wasm.delete_object(logHandle); } catch { /* best-effort */ }
+      try {
+        wasm.delete_object(logHandle);
+      } catch {
+        /* best-effort */
+      }
 
       // Normalise result (WASM may return string or object)
       const resultData = typeof raw === 'string' ? JSON.parse(raw) : raw;
@@ -265,6 +304,7 @@ export const run = defineCommand({
         input: inputPath,
         elapsedMs: Math.round(elapsedMs * 100) / 100,
         model: resultData,
+        ...(Object.keys(mlResults).length > 0 && { ml: mlResults }),
       };
 
       // Step 9: Auto-save result to .wasm4pm/results/ (unless --no-save)
@@ -273,7 +313,7 @@ export const run = defineCommand({
           `discover-${resolvedAlgo}`,
           inputPath,
           activityKey,
-          result as unknown as Record<string, unknown>,
+          result as unknown as Record<string, unknown>
         );
         if (savedPath && formatter instanceof HumanFormatter) {
           formatter.debug(`Result saved: ${path.relative(process.cwd(), savedPath)}`);
@@ -316,7 +356,11 @@ export const run = defineCommand({
         }
         formatter.log('');
         formatter.log('  Run "pmctl results" to view saved results.');
-        formatter.log('  Run "pmctl compare dfg,heuristic -i ' + path.basename(inputPath) + '" to compare algorithms.');
+        formatter.log(
+          '  Run "pmctl compare dfg,heuristic -i ' +
+            path.basename(inputPath) +
+            '" to compare algorithms.'
+        );
       }
 
       process.exit(EXIT_CODES.success);
@@ -325,7 +369,7 @@ export const run = defineCommand({
         formatter.error('Discovery failed', error);
       } else {
         formatter.error(
-          `Discovery failed: ${error instanceof Error ? error.message : String(error)}\n\nRun "pmctl doctor" to check your environment.`,
+          `Discovery failed: ${error instanceof Error ? error.message : String(error)}\n\nRun "pmctl doctor" to check your environment.`
         );
       }
       process.exit(EXIT_CODES.execution_error);

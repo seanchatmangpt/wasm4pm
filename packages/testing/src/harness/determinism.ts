@@ -17,11 +17,20 @@ export interface DeterminismResult {
 
 /** Fields expected to change between runs (non-deterministic) */
 const UNSTABLE_FIELDS = new Set([
-  'run_id', 'runId',
-  'start_time', 'startTime', 'startedAt',
-  'end_time', 'endTime', 'finishedAt',
-  'duration_ms', 'durationMs',
+  'run_id',
+  'runId',
+  'start_time',
+  'startTime',
+  'startedAt',
+  'end_time',
+  'endTime',
+  'finishedAt',
+  'duration_ms',
+  'durationMs',
   'timestamp',
+  // ML-specific stochastic fields
+  'ml.confidence',
+  'ml.predictions',
 ]);
 
 /**
@@ -38,7 +47,7 @@ export function stableReceiptHash(receipt: Record<string, unknown>): string {
  */
 export async function checkDeterminism(
   producer: () => Promise<Record<string, unknown>>,
-  iterations = 5,
+  iterations = 5
 ): Promise<DeterminismResult> {
   const receipts: Record<string, unknown>[] = [];
   const hashes: string[] = [];
@@ -66,7 +75,7 @@ export async function checkDeterminism(
         unstableFields.push(key);
         continue;
       }
-      const values = receipts.map(r => canonicalize(r[key]));
+      const values = receipts.map((r) => canonicalize(r[key]));
       const unique = new Set(values);
       if (unique.size === 1) {
         stableFields.push(key);
@@ -132,4 +141,75 @@ function simpleHash(input: string): string {
     hash = (hash * 0x01000193) >>> 0;
   }
   return hash.toString(16).padStart(8, '0');
+}
+
+/**
+ * Check ML determinism with epsilon-tolerance for numeric fields.
+ * ML outputs (confidence, regression coefficients, etc.) may vary slightly
+ * between runs due to floating-point nondeterminism.
+ *
+ * @param producer - Function that produces ML result
+ * @param iterations - Number of iterations to run (default 5)
+ * @param epsilon - Maximum allowed difference for numeric fields (default 0.01)
+ */
+export async function checkMlDeterminism(
+  producer: () => Promise<Record<string, unknown>>,
+  iterations = 5,
+  epsilon = 0.01
+): Promise<DeterminismResult> {
+  const results: Record<string, unknown>[] = [];
+
+  for (let i = 0; i < iterations; i++) {
+    results.push(await producer());
+  }
+
+  const stableFields: string[] = [];
+  const unstableFields: string[] = [];
+  const hashes: string[] = [];
+
+  for (const result of results) {
+    hashes.push(stableReceiptHash(result));
+  }
+
+  // Compare field-by-field with epsilon tolerance for numerics
+  const allKeys = new Set<string>();
+  for (const r of results) {
+    for (const k of Object.keys(r)) allKeys.add(k);
+  }
+
+  for (const key of allKeys) {
+    if (UNSTABLE_FIELDS.has(key)) {
+      unstableFields.push(key);
+      continue;
+    }
+
+    const values = results.map((r) => r[key]);
+    const allNumeric = values.every((v) => typeof v === 'number');
+
+    if (allNumeric) {
+      const nums = values as number[];
+      const maxDiff = Math.max(...nums) - Math.min(...nums);
+      if (maxDiff <= epsilon) {
+        stableFields.push(key);
+      } else {
+        unstableFields.push(key);
+      }
+    } else {
+      const serialized = values.map((v) => JSON.stringify(v));
+      if (new Set(serialized).size === 1) {
+        stableFields.push(key);
+      } else {
+        unstableFields.push(key);
+      }
+    }
+  }
+
+  const uniqueHashes = new Set(hashes);
+  const passed = unstableFields.length === 0;
+
+  const details = passed
+    ? `ML determinism verified: ${iterations} iterations, epsilon=${epsilon}`
+    : `ML non-deterministic: unstable fields [${unstableFields.join(', ')}]`;
+
+  return { passed, iterations, stableFields, unstableFields, hashes, details };
 }

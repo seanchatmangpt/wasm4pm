@@ -1,0 +1,17 @@
+{
+  "num_cases": 1,
+  "num_events": 42,
+  "case_arrival_average": null,
+  "activities": [
+    "check ticket",
+    "decide",
+    "examine casually",
+    "examine thoroughly",
+    "pay compensation",
+    "register request",
+    "reinitiate request",
+    "reject request"
+  ],
+  "start_activities": ["register request"],
+  "end_activities": ["pay compensation", "reject request"]
+}

@@ -1,0 +1,1409 @@
+{
+  "attributes": {},
+  "traces": [
+    {
+      "attributes": {
+        "case:concept:name": {
+          "tag": "String",
+          "value": "3"
+        }
+      },
+      "events": [
+        {
+          "attributes": {
+            "activity": {
+              "tag": "String",
+              "value": "register request"
+            },
+            "org:resource": {
+              "tag": "String",
+              "value": "Pete"
+            },
+            "timestamp": {
+              "tag": "Date",
+              "value": "2010-12-30T14:32:00+00:00"
+            },
+            "Activity": {
+              "tag": "String",
+              "value": "register request"
+            },
+            "Resource": {
+              "tag": "String",
+              "value": "Pete"
+            },
+            "Costs": {
+              "tag": "String",
+              "value": "50"
+            },
+            "case:creator": {
+              "tag": "String",
+              "value": "Fluxicon Nitro"
+            }
+          }
+        },
+        {
+          "attributes": {
+            "activity": {
+              "tag": "String",
+              "value": "examine casually"
+            },
+            "org:resource": {
+              "tag": "String",
+              "value": "Mike"
+            },
+            "timestamp": {
+              "tag": "Date",
+              "value": "2010-12-30T15:06:00+00:00"
+            },
+            "Activity": {
+              "tag": "String",
+              "value": "examine casually"
+            },
+            "Resource": {
+              "tag": "String",
+              "value": "Mike"
+            },
+            "Costs": {
+              "tag": "String",
+              "value": "400"
+            },
+            "case:creator": {
+              "tag": "String",
+              "value": "Fluxicon Nitro"
+            }
+          }
+        },
+        {
+          "attributes": {
+            "activity": {
+              "tag": "String",
+              "value": "check ticket"
+            },
+            "org:resource": {
+              "tag": "String",
+              "value": "Ellen"
+            },
+            "timestamp": {
+              "tag": "Date",
+              "value": "2010-12-30T16:34:00+00:00"
+            },
+            "Activity": {
+              "tag": "String",
+              "value": "check ticket"
+            },
+            "Resource": {
+              "tag": "String",
+              "value": "Ellen"
+            },
+            "Costs": {
+              "tag": "String",
+              "value": "100"
+            },
+            "case:creator": {
+              "tag": "String",
+              "value": "Fluxicon Nitro"
+            }
+          }
+        },
+        {
+          "attributes": {
+            "activity": {
+              "tag": "String",
+              "value": "decide"
+            },
+            "org:resource": {
+              "tag": "String",
+              "value": "Sara"
+            },
+            "timestamp": {
+              "tag": "Date",
+              "value": "2011-01-06T09:18:00+00:00"
+            },
+            "Activity": {
+              "tag": "String",
+              "value": "decide"
+            },
+            "Resource": {
+              "tag": "String",
+              "value": "Sara"
+            },
+            "Costs": {
+              "tag": "String",
+              "value": "200"
+            },
+            "case:creator": {
+              "tag": "String",
+              "value": "Fluxicon Nitro"
+            }
+          }
+        },
+        {
+          "attributes": {
+            "activity": {
+              "tag": "String",
+              "value": "reinitiate request"
+            },
+            "org:resource": {
+              "tag": "String",
+              "value": "Sara"
+            },
+            "timestamp": {
+              "tag": "Date",
+              "value": "2011-01-06T12:18:00+00:00"
+            },
+            "Activity": {
+              "tag": "String",
+              "value": "reinitiate request"
+            },
+            "Resource": {
+              "tag": "String",
+              "value": "Sara"
+            },
+            "Costs": {
+              "tag": "String",
+              "value": "200"
+            },
+            "case:creator": {
+              "tag": "String",
+              "value": "Fluxicon Nitro"
+            }
+          }
+        },
+        {
+          "attributes": {
+            "activity": {
+              "tag": "String",
+              "value": "examine thoroughly"
+            },
+            "org:resource": {
+              "tag": "String",
+              "value": "Sean"
+            },
+            "timestamp": {
+              "tag": "Date",
+              "value": "2011-01-06T13:06:00+00:00"
+            },
+            "Activity": {
+              "tag": "String",
+              "value": "examine thoroughly"
+            },
+            "Resource": {
+              "tag": "String",
+              "value": "Sean"
+            },
+            "Costs": {
+              "tag": "String",
+              "value": "400"
+            },
+            "case:creator": {
+              "tag": "String",
+              "value": "Fluxicon Nitro"
+            }
+          }
+        },
+        {
+          "attributes": {
+            "activity": {
+              "tag": "String",
+              "value": "check ticket"
+            },
+            "org:resource": {
+              "tag": "String",
+              "value": "Pete"
+            },
+            "timestamp": {
+              "tag": "Date",
+              "value": "2011-01-08T11:43:00+00:00"
+            },
+            "Activity": {
+              "tag": "String",
+              "value": "check ticket"
+            },
+            "Resource": {
+              "tag": "String",
+              "value": "Pete"
+            },
+            "Costs": {
+              "tag": "String",
+              "value": "100"
+            },
+            "case:creator": {
+              "tag": "String",
+              "value": "Fluxicon Nitro"
+            }
+          }
+        },
+        {
+          "attributes": {
+            "activity": {
+              "tag": "String",
+              "value": "decide"
+            },
+            "org:resource": {
+              "tag": "String",
+              "value": "Sara"
+            },
+            "timestamp": {
+              "tag": "Date",
+              "value": "2011-01-09T09:55:00+00:00"
+            },
+            "Activity": {
+              "tag": "String",
+              "value": "decide"
+            },
+            "Resource": {
+              "tag": "String",
+              "value": "Sara"
+            },
+            "Costs": {
+              "tag": "String",
+              "value": "200"
+            },
+            "case:creator": {
+              "tag": "String",
+              "value": "Fluxicon Nitro"
+            }
+          }
+        },
+        {
+          "attributes": {
+            "activity": {
+              "tag": "String",
+              "value": "pay compensation"
+            },
+            "org:resource": {
+              "tag": "String",
+              "value": "Ellen"
+            },
+            "timestamp": {
+              "tag": "Date",
+              "value": "2011-01-15T10:45:00+00:00"
+            },
+            "Activity": {
+              "tag": "String",
+              "value": "pay compensation"
+            },
+            "Resource": {
+              "tag": "String",
+              "value": "Ellen"
+            },
+            "Costs": {
+              "tag": "String",
+              "value": "200"
+            },
+            "case:creator": {
+              "tag": "String",
+              "value": "Fluxicon Nitro"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "attributes": {
+        "case:concept:name": {
+          "tag": "String",
+          "value": "2"
+        }
+      },
+      "events": [
+        {
+          "attributes": {
+            "activity": {
+              "tag": "String",
+              "value": "register request"
+            },
+            "org:resource": {
+              "tag": "String",
+              "value": "Mike"
+            },
+            "timestamp": {
+              "tag": "Date",
+              "value": "2010-12-30T11:32:00+00:00"
+            },
+            "Activity": {
+              "tag": "String",
+              "value": "register request"
+            },
+            "Resource": {
+              "tag": "String",
+              "value": "Mike"
+            },
+            "Costs": {
+              "tag": "String",
+              "value": "50"
+            },
+            "case:creator": {
+              "tag": "String",
+              "value": "Fluxicon Nitro"
+            }
+          }
+        },
+        {
+          "attributes": {
+            "activity": {
+              "tag": "String",
+              "value": "check ticket"
+            },
+            "org:resource": {
+              "tag": "String",
+              "value": "Mike"
+            },
+            "timestamp": {
+              "tag": "Date",
+              "value": "2010-12-30T12:12:00+00:00"
+            },
+            "Activity": {
+              "tag": "String",
+              "value": "check ticket"
+            },
+            "Resource": {
+              "tag": "String",
+              "value": "Mike"
+            },
+            "Costs": {
+              "tag": "String",
+              "value": "100"
+            },
+            "case:creator": {
+              "tag": "String",
+              "value": "Fluxicon Nitro"
+            }
+          }
+        },
+        {
+          "attributes": {
+            "activity": {
+              "tag": "String",
+              "value": "examine casually"
+            },
+            "org:resource": {
+              "tag": "String",
+              "value": "Sean"
+            },
+            "timestamp": {
+              "tag": "Date",
+              "value": "2010-12-30T14:16:00+00:00"
+            },
+            "Activity": {
+              "tag": "String",
+              "value": "examine casually"
+            },
+            "Resource": {
+              "tag": "String",
+              "value": "Sean"
+            },
+            "Costs": {
+              "tag": "String",
+              "value": "400"
+            },
+            "case:creator": {
+              "tag": "String",
+              "value": "Fluxicon Nitro"
+            }
+          }
+        },
+        {
+          "attributes": {
+            "activity": {
+              "tag": "String",
+              "value": "decide"
+            },
+            "org:resource": {
+              "tag": "String",
+              "value": "Sara"
+            },
+            "timestamp": {
+              "tag": "Date",
+              "value": "2011-01-05T11:22:00+00:00"
+            },
+            "Activity": {
+              "tag": "String",
+              "value": "decide"
+            },
+            "Resource": {
+              "tag": "String",
+              "value": "Sara"
+            },
+            "Costs": {
+              "tag": "String",
+              "value": "200"
+            },
+            "case:creator": {
+              "tag": "String",
+              "value": "Fluxicon Nitro"
+            }
+          }
+        },
+        {
+          "attributes": {
+            "activity": {
+              "tag": "String",
+              "value": "pay compensation"
+            },
+            "org:resource": {
+              "tag": "String",
+              "value": "Ellen"
+            },
+            "timestamp": {
+              "tag": "Date",
+              "value": "2011-01-08T12:05:00+00:00"
+            },
+            "Activity": {
+              "tag": "String",
+              "value": "pay compensation"
+            },
+            "Resource": {
+              "tag": "String",
+              "value": "Ellen"
+            },
+            "Costs": {
+              "tag": "String",
+              "value": "200"
+            },
+            "case:creator": {
+              "tag": "String",
+              "value": "Fluxicon Nitro"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "attributes": {
+        "case:concept:name": {
+          "tag": "String",
+          "value": "1"
+        }
+      },
+      "events": [
+        {
+          "attributes": {
+            "activity": {
+              "tag": "String",
+              "value": "register request"
+            },
+            "org:resource": {
+              "tag": "String",
+              "value": "Pete"
+            },
+            "timestamp": {
+              "tag": "Date",
+              "value": "2010-12-30T11:02:00+00:00"
+            },
+            "Activity": {
+              "tag": "String",
+              "value": "register request"
+            },
+            "Resource": {
+              "tag": "String",
+              "value": "Pete"
+            },
+            "Costs": {
+              "tag": "String",
+              "value": "50"
+            },
+            "case:creator": {
+              "tag": "String",
+              "value": "Fluxicon Nitro"
+            }
+          }
+        },
+        {
+          "attributes": {
+            "activity": {
+              "tag": "String",
+              "value": "examine thoroughly"
+            },
+            "org:resource": {
+              "tag": "String",
+              "value": "Sue"
+            },
+            "timestamp": {
+              "tag": "Date",
+              "value": "2010-12-31T10:06:00+00:00"
+            },
+            "Activity": {
+              "tag": "String",
+              "value": "examine thoroughly"
+            },
+            "Resource": {
+              "tag": "String",
+              "value": "Sue"
+            },
+            "Costs": {
+              "tag": "String",
+              "value": "400"
+            },
+            "case:creator": {
+              "tag": "String",
+              "value": "Fluxicon Nitro"
+            }
+          }
+        },
+        {
+          "attributes": {
+            "activity": {
+              "tag": "String",
+              "value": "check ticket"
+            },
+            "org:resource": {
+              "tag": "String",
+              "value": "Mike"
+            },
+            "timestamp": {
+              "tag": "Date",
+              "value": "2011-01-05T15:12:00+00:00"
+            },
+            "Activity": {
+              "tag": "String",
+              "value": "check ticket"
+            },
+            "Resource": {
+              "tag": "String",
+              "value": "Mike"
+            },
+            "Costs": {
+              "tag": "String",
+              "value": "100"
+            },
+            "case:creator": {
+              "tag": "String",
+              "value": "Fluxicon Nitro"
+            }
+          }
+        },
+        {
+          "attributes": {
+            "activity": {
+              "tag": "String",
+              "value": "decide"
+            },
+            "org:resource": {
+              "tag": "String",
+              "value": "Sara"
+            },
+            "timestamp": {
+              "tag": "Date",
+              "value": "2011-01-06T11:18:00+00:00"
+            },
+            "Activity": {
+              "tag": "String",
+              "value": "decide"
+            },
+            "Resource": {
+              "tag": "String",
+              "value": "Sara"
+            },
+            "Costs": {
+              "tag": "String",
+              "value": "200"
+            },
+            "case:creator": {
+              "tag": "String",
+              "value": "Fluxicon Nitro"
+            }
+          }
+        },
+        {
+          "attributes": {
+            "activity": {
+              "tag": "String",
+              "value": "reject request"
+            },
+            "org:resource": {
+              "tag": "String",
+              "value": "Pete"
+            },
+            "timestamp": {
+              "tag": "Date",
+              "value": "2011-01-07T14:24:00+00:00"
+            },
+            "Activity": {
+              "tag": "String",
+              "value": "reject request"
+            },
+            "Resource": {
+              "tag": "String",
+              "value": "Pete"
+            },
+            "Costs": {
+              "tag": "String",
+              "value": "200"
+            },
+            "case:creator": {
+              "tag": "String",
+              "value": "Fluxicon Nitro"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "attributes": {
+        "case:concept:name": {
+          "tag": "String",
+          "value": "6"
+        }
+      },
+      "events": [
+        {
+          "attributes": {
+            "activity": {
+              "tag": "String",
+              "value": "register request"
+            },
+            "org:resource": {
+              "tag": "String",
+              "value": "Mike"
+            },
+            "timestamp": {
+              "tag": "Date",
+              "value": "2011-01-06T15:02:00+00:00"
+            },
+            "Activity": {
+              "tag": "String",
+              "value": "register request"
+            },
+            "Resource": {
+              "tag": "String",
+              "value": "Mike"
+            },
+            "Costs": {
+              "tag": "String",
+              "value": "50"
+            },
+            "case:creator": {
+              "tag": "String",
+              "value": "Fluxicon Nitro"
+            }
+          }
+        },
+        {
+          "attributes": {
+            "activity": {
+              "tag": "String",
+              "value": "examine casually"
+            },
+            "org:resource": {
+              "tag": "String",
+              "value": "Ellen"
+            },
+            "timestamp": {
+              "tag": "Date",
+              "value": "2011-01-06T16:06:00+00:00"
+            },
+            "Activity": {
+              "tag": "String",
+              "value": "examine casually"
+            },
+            "Resource": {
+              "tag": "String",
+              "value": "Ellen"
+            },
+            "Costs": {
+              "tag": "String",
+              "value": "400"
+            },
+            "case:creator": {
+              "tag": "String",
+              "value": "Fluxicon Nitro"
+            }
+          }
+        },
+        {
+          "attributes": {
+            "activity": {
+              "tag": "String",
+              "value": "check ticket"
+            },
+            "org:resource": {
+              "tag": "String",
+              "value": "Mike"
+            },
+            "timestamp": {
+              "tag": "Date",
+              "value": "2011-01-07T16:22:00+00:00"
+            },
+            "Activity": {
+              "tag": "String",
+              "value": "check ticket"
+            },
+            "Resource": {
+              "tag": "String",
+              "value": "Mike"
+            },
+            "Costs": {
+              "tag": "String",
+              "value": "100"
+            },
+            "case:creator": {
+              "tag": "String",
+              "value": "Fluxicon Nitro"
+            }
+          }
+        },
+        {
+          "attributes": {
+            "activity": {
+              "tag": "String",
+              "value": "decide"
+            },
+            "org:resource": {
+              "tag": "String",
+              "value": "Sara"
+            },
+            "timestamp": {
+              "tag": "Date",
+              "value": "2011-01-07T16:52:00+00:00"
+            },
+            "Activity": {
+              "tag": "String",
+              "value": "decide"
+            },
+            "Resource": {
+              "tag": "String",
+              "value": "Sara"
+            },
+            "Costs": {
+              "tag": "String",
+              "value": "200"
+            },
+            "case:creator": {
+              "tag": "String",
+              "value": "Fluxicon Nitro"
+            }
+          }
+        },
+        {
+          "attributes": {
+            "activity": {
+              "tag": "String",
+              "value": "pay compensation"
+            },
+            "org:resource": {
+              "tag": "String",
+              "value": "Mike"
+            },
+            "timestamp": {
+              "tag": "Date",
+              "value": "2011-01-16T11:47:00+00:00"
+            },
+            "Activity": {
+              "tag": "String",
+              "value": "pay compensation"
+            },
+            "Resource": {
+              "tag": "String",
+              "value": "Mike"
+            },
+            "Costs": {
+              "tag": "String",
+              "value": "200"
+            },
+            "case:creator": {
+              "tag": "String",
+              "value": "Fluxicon Nitro"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "attributes": {
+        "case:concept:name": {
+          "tag": "String",
+          "value": "5"
+        }
+      },
+      "events": [
+        {
+          "attributes": {
+            "activity": {
+              "tag": "String",
+              "value": "register request"
+            },
+            "org:resource": {
+              "tag": "String",
+              "value": "Ellen"
+            },
+            "timestamp": {
+              "tag": "Date",
+              "value": "2011-01-06T09:02:00+00:00"
+            },
+            "Activity": {
+              "tag": "String",
+              "value": "register request"
+            },
+            "Resource": {
+              "tag": "String",
+              "value": "Ellen"
+            },
+            "Costs": {
+              "tag": "String",
+              "value": "50"
+            },
+            "case:creator": {
+              "tag": "String",
+              "value": "Fluxicon Nitro"
+            }
+          }
+        },
+        {
+          "attributes": {
+            "activity": {
+              "tag": "String",
+              "value": "examine casually"
+            },
+            "org:resource": {
+              "tag": "String",
+              "value": "Mike"
+            },
+            "timestamp": {
+              "tag": "Date",
+              "value": "2011-01-07T10:16:00+00:00"
+            },
+            "Activity": {
+              "tag": "String",
+              "value": "examine casually"
+            },
+            "Resource": {
+              "tag": "String",
+              "value": "Mike"
+            },
+            "Costs": {
+              "tag": "String",
+              "value": "400"
+            },
+            "case:creator": {
+              "tag": "String",
+              "value": "Fluxicon Nitro"
+            }
+          }
+        },
+        {
+          "attributes": {
+            "activity": {
+              "tag": "String",
+              "value": "check ticket"
+            },
+            "org:resource": {
+              "tag": "String",
+              "value": "Pete"
+            },
+            "timestamp": {
+              "tag": "Date",
+              "value": "2011-01-08T11:22:00+00:00"
+            },
+            "Activity": {
+              "tag": "String",
+              "value": "check ticket"
+            },
+            "Resource": {
+              "tag": "String",
+              "value": "Pete"
+            },
+            "Costs": {
+              "tag": "String",
+              "value": "100"
+            },
+            "case:creator": {
+              "tag": "String",
+              "value": "Fluxicon Nitro"
+            }
+          }
+        },
+        {
+          "attributes": {
+            "activity": {
+              "tag": "String",
+              "value": "decide"
+            },
+            "org:resource": {
+              "tag": "String",
+              "value": "Sara"
+            },
+            "timestamp": {
+              "tag": "Date",
+              "value": "2011-01-10T13:28:00+00:00"
+            },
+            "Activity": {
+              "tag": "String",
+              "value": "decide"
+            },
+            "Resource": {
+              "tag": "String",
+              "value": "Sara"
+            },
+            "Costs": {
+              "tag": "String",
+              "value": "200"
+            },
+            "case:creator": {
+              "tag": "String",
+              "value": "Fluxicon Nitro"
+            }
+          }
+        },
+        {
+          "attributes": {
+            "activity": {
+              "tag": "String",
+              "value": "reinitiate request"
+            },
+            "org:resource": {
+              "tag": "String",
+              "value": "Sara"
+            },
+            "timestamp": {
+              "tag": "Date",
+              "value": "2011-01-11T16:18:00+00:00"
+            },
+            "Activity": {
+              "tag": "String",
+              "value": "reinitiate request"
+            },
+            "Resource": {
+              "tag": "String",
+              "value": "Sara"
+            },
+            "Costs": {
+              "tag": "String",
+              "value": "200"
+            },
+            "case:creator": {
+              "tag": "String",
+              "value": "Fluxicon Nitro"
+            }
+          }
+        },
+        {
+          "attributes": {
+            "activity": {
+              "tag": "String",
+              "value": "check ticket"
+            },
+            "org:resource": {
+              "tag": "String",
+              "value": "Ellen"
+            },
+            "timestamp": {
+              "tag": "Date",
+              "value": "2011-01-14T14:33:00+00:00"
+            },
+            "Activity": {
+              "tag": "String",
+              "value": "check ticket"
+            },
+            "Resource": {
+              "tag": "String",
+              "value": "Ellen"
+            },
+            "Costs": {
+              "tag": "String",
+              "value": "100"
+            },
+            "case:creator": {
+              "tag": "String",
+              "value": "Fluxicon Nitro"
+            }
+          }
+        },
+        {
+          "attributes": {
+            "activity": {
+              "tag": "String",
+              "value": "examine casually"
+            },
+            "org:resource": {
+              "tag": "String",
+              "value": "Mike"
+            },
+            "timestamp": {
+              "tag": "Date",
+              "value": "2011-01-16T15:50:00+00:00"
+            },
+            "Activity": {
+              "tag": "String",
+              "value": "examine casually"
+            },
+            "Resource": {
+              "tag": "String",
+              "value": "Mike"
+            },
+            "Costs": {
+              "tag": "String",
+              "value": "400"
+            },
+            "case:creator": {
+              "tag": "String",
+              "value": "Fluxicon Nitro"
+            }
+          }
+        },
+        {
+          "attributes": {
+            "activity": {
+              "tag": "String",
+              "value": "decide"
+            },
+            "org:resource": {
+              "tag": "String",
+              "value": "Sara"
+            },
+            "timestamp": {
+              "tag": "Date",
+              "value": "2011-01-19T11:18:00+00:00"
+            },
+            "Activity": {
+              "tag": "String",
+              "value": "decide"
+            },
+            "Resource": {
+              "tag": "String",
+              "value": "Sara"
+            },
+            "Costs": {
+              "tag": "String",
+              "value": "200"
+            },
+            "case:creator": {
+              "tag": "String",
+              "value": "Fluxicon Nitro"
+            }
+          }
+        },
+        {
+          "attributes": {
+            "activity": {
+              "tag": "String",
+              "value": "reinitiate request"
+            },
+            "org:resource": {
+              "tag": "String",
+              "value": "Sara"
+            },
+            "timestamp": {
+              "tag": "Date",
+              "value": "2011-01-20T12:48:00+00:00"
+            },
+            "Activity": {
+              "tag": "String",
+              "value": "reinitiate request"
+            },
+            "Resource": {
+              "tag": "String",
+              "value": "Sara"
+            },
+            "Costs": {
+              "tag": "String",
+              "value": "200"
+            },
+            "case:creator": {
+              "tag": "String",
+              "value": "Fluxicon Nitro"
+            }
+          }
+        },
+        {
+          "attributes": {
+            "activity": {
+              "tag": "String",
+              "value": "examine casually"
+            },
+            "org:resource": {
+              "tag": "String",
+              "value": "Sue"
+            },
+            "timestamp": {
+              "tag": "Date",
+              "value": "2011-01-21T09:06:00+00:00"
+            },
+            "Activity": {
+              "tag": "String",
+              "value": "examine casually"
+            },
+            "Resource": {
+              "tag": "String",
+              "value": "Sue"
+            },
+            "Costs": {
+              "tag": "String",
+              "value": "400"
+            },
+            "case:creator": {
+              "tag": "String",
+              "value": "Fluxicon Nitro"
+            }
+          }
+        },
+        {
+          "attributes": {
+            "activity": {
+              "tag": "String",
+              "value": "check ticket"
+            },
+            "org:resource": {
+              "tag": "String",
+              "value": "Pete"
+            },
+            "timestamp": {
+              "tag": "Date",
+              "value": "2011-01-21T11:34:00+00:00"
+            },
+            "Activity": {
+              "tag": "String",
+              "value": "check ticket"
+            },
+            "Resource": {
+              "tag": "String",
+              "value": "Pete"
+            },
+            "Costs": {
+              "tag": "String",
+              "value": "100"
+            },
+            "case:creator": {
+              "tag": "String",
+              "value": "Fluxicon Nitro"
+            }
+          }
+        },
+        {
+          "attributes": {
+            "activity": {
+              "tag": "String",
+              "value": "decide"
+            },
+            "org:resource": {
+              "tag": "String",
+              "value": "Sara"
+            },
+            "timestamp": {
+              "tag": "Date",
+              "value": "2011-01-23T13:12:00+00:00"
+            },
+            "Activity": {
+              "tag": "String",
+              "value": "decide"
+            },
+            "Resource": {
+              "tag": "String",
+              "value": "Sara"
+            },
+            "Costs": {
+              "tag": "String",
+              "value": "200"
+            },
+            "case:creator": {
+              "tag": "String",
+              "value": "Fluxicon Nitro"
+            }
+          }
+        },
+        {
+          "attributes": {
+            "activity": {
+              "tag": "String",
+              "value": "reject request"
+            },
+            "org:resource": {
+              "tag": "String",
+              "value": "Mike"
+            },
+            "timestamp": {
+              "tag": "Date",
+              "value": "2011-01-24T14:56:00+00:00"
+            },
+            "Activity": {
+              "tag": "String",
+              "value": "reject request"
+            },
+            "Resource": {
+              "tag": "String",
+              "value": "Mike"
+            },
+            "Costs": {
+              "tag": "String",
+              "value": "200"
+            },
+            "case:creator": {
+              "tag": "String",
+              "value": "Fluxicon Nitro"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "attributes": {
+        "case:concept:name": {
+          "tag": "String",
+          "value": "4"
+        }
+      },
+      "events": [
+        {
+          "attributes": {
+            "activity": {
+              "tag": "String",
+              "value": "register request"
+            },
+            "org:resource": {
+              "tag": "String",
+              "value": "Pete"
+            },
+            "timestamp": {
+              "tag": "Date",
+              "value": "2011-01-06T15:02:00+00:00"
+            },
+            "Activity": {
+              "tag": "String",
+              "value": "register request"
+            },
+            "Resource": {
+              "tag": "String",
+              "value": "Pete"
+            },
+            "Costs": {
+              "tag": "String",
+              "value": "50"
+            },
+            "case:creator": {
+              "tag": "String",
+              "value": "Fluxicon Nitro"
+            }
+          }
+        },
+        {
+          "attributes": {
+            "activity": {
+              "tag": "String",
+              "value": "check ticket"
+            },
+            "org:resource": {
+              "tag": "String",
+              "value": "Mike"
+            },
+            "timestamp": {
+              "tag": "Date",
+              "value": "2011-01-07T12:06:00+00:00"
+            },
+            "Activity": {
+              "tag": "String",
+              "value": "check ticket"
+            },
+            "Resource": {
+              "tag": "String",
+              "value": "Mike"
+            },
+            "Costs": {
+              "tag": "String",
+              "value": "100"
+            },
+            "case:creator": {
+              "tag": "String",
+              "value": "Fluxicon Nitro"
+            }
+          }
+        },
+        {
+          "attributes": {
+            "activity": {
+              "tag": "String",
+              "value": "examine thoroughly"
+            },
+            "org:resource": {
+              "tag": "String",
+              "value": "Sean"
+            },
+            "timestamp": {
+              "tag": "Date",
+              "value": "2011-01-08T14:43:00+00:00"
+            },
+            "Activity": {
+              "tag": "String",
+              "value": "examine thoroughly"
+            },
+            "Resource": {
+              "tag": "String",
+              "value": "Sean"
+            },
+            "Costs": {
+              "tag": "String",
+              "value": "400"
+            },
+            "case:creator": {
+              "tag": "String",
+              "value": "Fluxicon Nitro"
+            }
+          }
+        },
+        {
+          "attributes": {
+            "activity": {
+              "tag": "String",
+              "value": "decide"
+            },
+            "org:resource": {
+              "tag": "String",
+              "value": "Sara"
+            },
+            "timestamp": {
+              "tag": "Date",
+              "value": "2011-01-09T12:02:00+00:00"
+            },
+            "Activity": {
+              "tag": "String",
+              "value": "decide"
+            },
+            "Resource": {
+              "tag": "String",
+              "value": "Sara"
+            },
+            "Costs": {
+              "tag": "String",
+              "value": "200"
+            },
+            "case:creator": {
+              "tag": "String",
+              "value": "Fluxicon Nitro"
+            }
+          }
+        },
+        {
+          "attributes": {
+            "activity": {
+              "tag": "String",
+              "value": "reject request"
+            },
+            "org:resource": {
+              "tag": "String",
+              "value": "Ellen"
+            },
+            "timestamp": {
+              "tag": "Date",
+              "value": "2011-01-12T15:44:00+00:00"
+            },
+            "Activity": {
+              "tag": "String",
+              "value": "reject request"
+            },
+            "Resource": {
+              "tag": "String",
+              "value": "Ellen"
+            },
+            "Costs": {
+              "tag": "String",
+              "value": "200"
+            },
+            "case:creator": {
+              "tag": "String",
+              "value": "Fluxicon Nitro"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

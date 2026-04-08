@@ -8,18 +8,10 @@
 
 // Kernel API facade
 export { Kernel } from './api.js';
-export type {
-  KernelResult,
-  PartialResult,
-  KernelStats,
-  KernelWasmModule,
-} from './api.js';
+export type { KernelResult, PartialResult, KernelStats, KernelWasmModule } from './api.js';
 
 // Registry exports
-export {
-  AlgorithmRegistry,
-  getRegistry,
-} from './registry.js';
+export { AlgorithmRegistry, getRegistry } from './registry.js';
 export type {
   AlgorithmMetadata,
   AlgorithmParameter,
@@ -30,15 +22,8 @@ export type {
 } from './registry.js';
 
 // Handler exports
-export {
-  implementAlgorithmStep,
-  listAlgorithms,
-  validateAlgorithmParameters,
-} from './handlers.js';
-export type {
-  WasmModule,
-  AlgorithmStepOutput,
-} from './handlers.js';
+export { implementAlgorithmStep, listAlgorithms, validateAlgorithmParameters } from './handlers.js';
+export type { WasmModule, AlgorithmStepOutput } from './handlers.js';
 
 // Versioning exports
 export {
@@ -51,10 +36,7 @@ export {
   satisfiesMinimum,
   isMajorCompatible,
 } from './versioning.js';
-export type {
-  SemVer,
-  CompatibilityResult,
-} from './versioning.js';
+export type { SemVer, CompatibilityResult } from './versioning.js';
 
 // Hashing exports
 export {
@@ -74,3 +56,6 @@ export {
   wrapKernelCall,
 } from './errors.js';
 export type { KernelErrorCode } from './errors.js';
+
+// Step dispatcher bridge
+export { buildKernelStepHandlers } from './step-dispatcher.js';

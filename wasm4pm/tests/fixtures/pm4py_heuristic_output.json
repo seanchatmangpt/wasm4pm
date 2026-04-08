@@ -1,0 +1,316 @@
+{
+  "places": [
+    {
+      "name": "pre_examine thoroughly",
+      "label": ""
+    },
+    {
+      "name": "splace_in_decide_examine casually",
+      "label": ""
+    },
+    {
+      "name": "intplace_decide",
+      "label": ""
+    },
+    {
+      "name": "intplace_reinitiate request",
+      "label": ""
+    },
+    {
+      "name": "sink0",
+      "label": ""
+    },
+    {
+      "name": "pre_check ticket",
+      "label": ""
+    },
+    {
+      "name": "splace_in_decide_check ticket",
+      "label": ""
+    },
+    {
+      "name": "pre_examine casually",
+      "label": ""
+    },
+    {
+      "name": "source0",
+      "label": ""
+    },
+    {
+      "name": "splace_in_check ticket_reinitiate request",
+      "label": ""
+    },
+    {
+      "name": "intplace_register request",
+      "label": ""
+    },
+    {
+      "name": "splace_in_check ticket_register request",
+      "label": ""
+    },
+    {
+      "name": "pre_decide",
+      "label": ""
+    }
+  ],
+  "transitions": [
+    {
+      "name": "pay compensation",
+      "label": "pay compensation",
+      "silent": false
+    },
+    {
+      "name": "hid_1",
+      "label": null,
+      "silent": true
+    },
+    {
+      "name": "hid_15",
+      "label": null,
+      "silent": true
+    },
+    {
+      "name": "hid_2",
+      "label": null,
+      "silent": true
+    },
+    {
+      "name": "examine thoroughly",
+      "label": "examine thoroughly",
+      "silent": false
+    },
+    {
+      "name": "hid_12",
+      "label": null,
+      "silent": true
+    },
+    {
+      "name": "check ticket",
+      "label": "check ticket",
+      "silent": false
+    },
+    {
+      "name": "decide",
+      "label": "decide",
+      "silent": false
+    },
+    {
+      "name": "reinitiate request",
+      "label": "reinitiate request",
+      "silent": false
+    },
+    {
+      "name": "register request",
+      "label": "register request",
+      "silent": false
+    },
+    {
+      "name": "hid_13",
+      "label": null,
+      "silent": true
+    },
+    {
+      "name": "reject request",
+      "label": "reject request",
+      "silent": false
+    },
+    {
+      "name": "examine casually",
+      "label": "examine casually",
+      "silent": false
+    },
+    {
+      "name": "hid_3",
+      "label": null,
+      "silent": true
+    },
+    {
+      "name": "hid_14",
+      "label": null,
+      "silent": true
+    }
+  ],
+  "arcs": [
+    {
+      "source": "splace_in_check ticket_reinitiate request",
+      "target": "hid_2",
+      "weight": 1
+    },
+    {
+      "source": "source0",
+      "target": "register request",
+      "weight": 1
+    },
+    {
+      "source": "intplace_reinitiate request",
+      "target": "hid_13",
+      "weight": 1
+    },
+    {
+      "source": "intplace_register request",
+      "target": "hid_14",
+      "weight": 1
+    },
+    {
+      "source": "hid_14",
+      "target": "pre_examine casually",
+      "weight": 1
+    },
+    {
+      "source": "pre_check ticket",
+      "target": "check ticket",
+      "weight": 1
+    },
+    {
+      "source": "hid_1",
+      "target": "pre_check ticket",
+      "weight": 1
+    },
+    {
+      "source": "check ticket",
+      "target": "splace_in_decide_check ticket",
+      "weight": 1
+    },
+    {
+      "source": "hid_13",
+      "target": "splace_in_check ticket_reinitiate request",
+      "weight": 1
+    },
+    {
+      "source": "hid_14",
+      "target": "splace_in_check ticket_register request",
+      "weight": 1
+    },
+    {
+      "source": "hid_13",
+      "target": "pre_examine thoroughly",
+      "weight": 1
+    },
+    {
+      "source": "pre_decide",
+      "target": "decide",
+      "weight": 1
+    },
+    {
+      "source": "pre_examine thoroughly",
+      "target": "examine thoroughly",
+      "weight": 1
+    },
+    {
+      "source": "pay compensation",
+      "target": "sink0",
+      "weight": 1
+    },
+    {
+      "source": "hid_12",
+      "target": "pre_examine casually",
+      "weight": 1
+    },
+    {
+      "source": "splace_in_check ticket_register request",
+      "target": "hid_1",
+      "weight": 1
+    },
+    {
+      "source": "hid_3",
+      "target": "pre_decide",
+      "weight": 1
+    },
+    {
+      "source": "pre_examine casually",
+      "target": "examine casually",
+      "weight": 1
+    },
+    {
+      "source": "decide",
+      "target": "intplace_decide",
+      "weight": 1
+    },
+    {
+      "source": "reject request",
+      "target": "sink0",
+      "weight": 1
+    },
+    {
+      "source": "intplace_register request",
+      "target": "hid_15",
+      "weight": 1
+    },
+    {
+      "source": "intplace_decide",
+      "target": "reject request",
+      "weight": 1
+    },
+    {
+      "source": "splace_in_decide_examine casually",
+      "target": "hid_3",
+      "weight": 1
+    },
+    {
+      "source": "intplace_decide",
+      "target": "pay compensation",
+      "weight": 1
+    },
+    {
+      "source": "reinitiate request",
+      "target": "intplace_reinitiate request",
+      "weight": 1
+    },
+    {
+      "source": "examine casually",
+      "target": "splace_in_decide_examine casually",
+      "weight": 1
+    },
+    {
+      "source": "hid_15",
+      "target": "splace_in_check ticket_register request",
+      "weight": 1
+    },
+    {
+      "source": "splace_in_decide_check ticket",
+      "target": "hid_3",
+      "weight": 1
+    },
+    {
+      "source": "intplace_reinitiate request",
+      "target": "hid_12",
+      "weight": 1
+    },
+    {
+      "source": "intplace_decide",
+      "target": "reinitiate request",
+      "weight": 1
+    },
+    {
+      "source": "examine thoroughly",
+      "target": "pre_decide",
+      "weight": 1
+    },
+    {
+      "source": "hid_12",
+      "target": "splace_in_check ticket_reinitiate request",
+      "weight": 1
+    },
+    {
+      "source": "hid_2",
+      "target": "pre_check ticket",
+      "weight": 1
+    },
+    {
+      "source": "hid_15",
+      "target": "pre_examine thoroughly",
+      "weight": 1
+    },
+    {
+      "source": "register request",
+      "target": "intplace_register request",
+      "weight": 1
+    }
+  ],
+  "initial_marking": {
+    "source0": 1
+  },
+  "final_marking": {
+    "sink0": 1
+  }
+}

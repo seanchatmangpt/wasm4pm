@@ -10,11 +10,26 @@ import { v4 as uuidv4 } from 'uuid';
 import { hash as blake3Hash } from 'blake3';
 import type { ErrorInfo } from '@wasm4pm/contracts';
 import { createError } from '@wasm4pm/contracts';
-import { ALGORITHM_ID_TO_STEP_TYPE, getProfileAlgorithms, ALGORITHM_DISPLAY_NAMES } from '@wasm4pm/contracts';
+import {
+  ALGORITHM_ID_TO_STEP_TYPE,
+  getProfileAlgorithms,
+  ALGORITHM_DISPLAY_NAMES,
+} from '@wasm4pm/contracts';
 import type { DAG } from './dag';
 import { topologicalSort, validateDAG } from './dag';
 import type { PlanStep } from './steps';
-import { PlanStepType, createBootstrapStep, createInitWasmStep, createLoadSourceStep, createValidateSourceStep, createAlgorithmStep, createAnalysisStep, createGenerateReportsStep, createSinkStep, createCleanupStep } from './steps';
+import {
+  PlanStepType,
+  createBootstrapStep,
+  createInitWasmStep,
+  createLoadSourceStep,
+  createValidateSourceStep,
+  createAlgorithmStep,
+  createAnalysisStep,
+  createGenerateReportsStep,
+  createSinkStep,
+  createCleanupStep,
+} from './steps';
 
 /**
  * Typed error for planner failures.
@@ -69,6 +84,16 @@ export interface Config {
     dependsOn?: string[];
     parallelizable?: boolean;
   }>;
+  ml?: {
+    enabled?: boolean;
+    tasks?: string[];
+    method?: string;
+    k?: number;
+    targetKey?: string;
+    forecastPeriods?: number;
+    nComponents?: number;
+    eps?: number;
+  };
   metadata?: {
     name?: string;
     description?: string;
@@ -129,27 +154,33 @@ function getDefaultPipeline(profile: string): PlanStepType[] {
   // Analysis steps per profile
   const analysisSteps: PlanStepType[] = (() => {
     switch (profile.toLowerCase()) {
-      case 'fast':   return [PlanStepType.ANALYZE_STATISTICS];
-      case 'stream': return [PlanStepType.ANALYZE_STATISTICS];
-      case 'balanced': return [
-        PlanStepType.ANALYZE_STATISTICS,
-        PlanStepType.ANALYZE_CONFORMANCE,
-        PlanStepType.ANALYZE_VARIANTS,
-      ];
-      case 'quality': return [
-        PlanStepType.ANALYZE_STATISTICS,
-        PlanStepType.ANALYZE_CONFORMANCE,
-        PlanStepType.ANALYZE_VARIANTS,
-        PlanStepType.ANALYZE_PERFORMANCE,
-      ];
-      case 'research': return [
-        PlanStepType.ANALYZE_STATISTICS,
-        PlanStepType.ANALYZE_CONFORMANCE,
-        PlanStepType.ANALYZE_VARIANTS,
-        PlanStepType.ANALYZE_PERFORMANCE,
-        PlanStepType.ANALYZE_CLUSTERING,
-      ];
-      default: return [PlanStepType.ANALYZE_STATISTICS];
+      case 'fast':
+        return [PlanStepType.ANALYZE_STATISTICS];
+      case 'stream':
+        return [PlanStepType.ANALYZE_STATISTICS];
+      case 'balanced':
+        return [
+          PlanStepType.ANALYZE_STATISTICS,
+          PlanStepType.ANALYZE_CONFORMANCE,
+          PlanStepType.ANALYZE_VARIANTS,
+        ];
+      case 'quality':
+        return [
+          PlanStepType.ANALYZE_STATISTICS,
+          PlanStepType.ANALYZE_CONFORMANCE,
+          PlanStepType.ANALYZE_VARIANTS,
+          PlanStepType.ANALYZE_PERFORMANCE,
+        ];
+      case 'research':
+        return [
+          PlanStepType.ANALYZE_STATISTICS,
+          PlanStepType.ANALYZE_CONFORMANCE,
+          PlanStepType.ANALYZE_VARIANTS,
+          PlanStepType.ANALYZE_PERFORMANCE,
+          PlanStepType.ANALYZE_CLUSTERING,
+        ];
+      default:
+        return [PlanStepType.ANALYZE_STATISTICS];
     }
   })();
 
@@ -182,6 +213,13 @@ function algorithmNameFromStepType(stepType: PlanStepType): string {
     [PlanStepType.GENERATE_REPORTS]: 'Generate Reports',
     [PlanStepType.WRITE_SINK]: 'Write Sink',
     [PlanStepType.CLEANUP]: 'Cleanup',
+    // ML Analysis
+    [PlanStepType.ML_CLASSIFY]: 'ML Classification',
+    [PlanStepType.ML_CLUSTER]: 'ML Clustering',
+    [PlanStepType.ML_FORECAST]: 'ML Forecasting',
+    [PlanStepType.ML_ANOMALY]: 'ML Anomaly Detection',
+    [PlanStepType.ML_REGRESS]: 'ML Regression',
+    [PlanStepType.ML_PCA]: 'ML PCA',
   };
   return lifecycle[stepType] ?? stepType;
 }
@@ -204,25 +242,35 @@ export function plan(config: Config): ExecutionPlan {
   // Validate configuration with typed errors
   if (!config || typeof config !== 'object') {
     throw new PlannerError(
-      createError('CONFIG_INVALID', 'Configuration must be a non-null object', { received: typeof config })
+      createError('CONFIG_INVALID', 'Configuration must be a non-null object', {
+        received: typeof config,
+      })
     );
   }
 
   if (config.version !== '1.0') {
     throw new PlannerError(
-      createError('CONFIG_INVALID', `Invalid config version: expected "1.0", got "${config.version}"`, { version: config.version })
+      createError(
+        'CONFIG_INVALID',
+        `Invalid config version: expected "1.0", got "${config.version}"`,
+        { version: config.version }
+      )
     );
   }
 
   if (!config.source || !config.source.format) {
     throw new PlannerError(
-      createError('CONFIG_INVALID', 'Configuration must include source.format', { source: config.source })
+      createError('CONFIG_INVALID', 'Configuration must include source.format', {
+        source: config.source,
+      })
     );
   }
 
   if (!config.execution || !config.execution.profile) {
     throw new PlannerError(
-      createError('CONFIG_INVALID', 'Configuration must include execution.profile', { execution: config.execution })
+      createError('CONFIG_INVALID', 'Configuration must include execution.profile', {
+        execution: config.execution,
+      })
     );
   }
 
@@ -256,13 +304,15 @@ export function plan(config: Config): ExecutionPlan {
     const overrideStepType = ALGORITHM_ID_TO_STEP_TYPE[algorithmOverride];
     if (!overrideStepType) {
       throw new PlannerError(
-        createError('CONFIG_INVALID', `Unknown algorithm: "${algorithmOverride}". See ALGORITHM_ID_TO_STEP_TYPE for valid IDs.`, { algorithmName: algorithmOverride })
+        createError(
+          'CONFIG_INVALID',
+          `Unknown algorithm: "${algorithmOverride}". See ALGORITHM_ID_TO_STEP_TYPE for valid IDs.`,
+          { algorithmName: algorithmOverride }
+        )
       );
     }
     // Keep analysis steps, replace discovery steps with the override
-    const analysisOnly = pipelineSteps.filter(
-      (s) => !s.toString().includes('discover')
-    );
+    const analysisOnly = pipelineSteps.filter((s) => !s.toString().includes('discover'));
     pipelineSteps = [overrideStepType as PlanStepType, ...analysisOnly];
   }
 
@@ -272,7 +322,7 @@ export function plan(config: Config): ExecutionPlan {
     let planStep: PlanStep;
     const algoParams = algorithmOverride
       ? { ...(config.execution.parameters || {}), ...(config.algorithm?.parameters || {}) }
-      : (config.execution.parameters || {});
+      : config.execution.parameters || {};
 
     if (algoType.toString().includes('discover')) {
       // It's a discovery algorithm
@@ -299,9 +349,52 @@ export function plan(config: Config): ExecutionPlan {
     stepIds.add(planStep.id);
   }
 
+  // 3b. Add ML analysis steps if configured
+  if (config.ml?.enabled && config.ml.tasks && config.ml.tasks.length > 0) {
+    const mlStepMap: Record<string, PlanStepType> = {
+      classify: PlanStepType.ML_CLASSIFY,
+      cluster: PlanStepType.ML_CLUSTER,
+      forecast: PlanStepType.ML_FORECAST,
+      anomaly: PlanStepType.ML_ANOMALY,
+      regress: PlanStepType.ML_REGRESS,
+      pca: PlanStepType.ML_PCA,
+    };
+
+    for (const mlTask of config.ml.tasks) {
+      const mlType = mlStepMap[mlTask];
+      if (!mlType) continue;
+
+      const mlParams: Record<string, unknown> = {
+        ...config.execution.parameters,
+        method: config.ml.method,
+        k: config.ml.k,
+        target_key: config.ml.targetKey,
+        forecast_periods: config.ml.forecastPeriods,
+        n_components: config.ml.nComponents,
+        eps: config.ml.eps,
+      };
+
+      const mlStep = createAnalysisStep(
+        algorithmNameFromStepType(mlType),
+        mlType,
+        mlParams,
+        ['validate_source'],
+        true
+      );
+      steps.push(mlStep);
+      stepIds.add(mlStep.id);
+    }
+  }
+
   // Collect IDs of discovery/analysis steps for later dependencies
   const analysisStepIds = steps
-    .filter((s) => s.type !== PlanStepType.BOOTSTRAP && s.type !== PlanStepType.INIT_WASM && s.type !== PlanStepType.LOAD_SOURCE && s.type !== PlanStepType.VALIDATE_SOURCE)
+    .filter(
+      (s) =>
+        s.type !== PlanStepType.BOOTSTRAP &&
+        s.type !== PlanStepType.INIT_WASM &&
+        s.type !== PlanStepType.LOAD_SOURCE &&
+        s.type !== PlanStepType.VALIDATE_SOURCE
+    )
     .map((s) => s.id);
 
   // 4. Optionally add report generation
@@ -335,7 +428,9 @@ export function plan(config: Config): ExecutionPlan {
   const dagErrors = validateDAG(graph);
   if (dagErrors.length > 0) {
     throw new PlannerError(
-      createError('CONFIG_INVALID', `Invalid execution plan DAG: ${dagErrors.join('; ')}`, { dagErrors })
+      createError('CONFIG_INVALID', `Invalid execution plan DAG: ${dagErrors.join('; ')}`, {
+        dagErrors,
+      })
     );
   }
 
@@ -344,7 +439,10 @@ export function plan(config: Config): ExecutionPlan {
     topologicalSort(graph);
   } catch (err) {
     throw new PlannerError(
-      createError('CONFIG_INVALID', `Execution plan contains cycles: ${err instanceof Error ? err.message : String(err)}`)
+      createError(
+        'CONFIG_INVALID',
+        `Execution plan contains cycles: ${err instanceof Error ? err.message : String(err)}`
+      )
     );
   }
 
@@ -376,12 +474,7 @@ export function plan(config: Config): ExecutionPlan {
  * @param config - The configuration
  * @returns 64-character hex-encoded BLAKE3 hash
  */
-function computePlanHash(
-  _planId: string,
-  steps: PlanStep[],
-  graph: DAG,
-  config: Config
-): string {
+function computePlanHash(_planId: string, steps: PlanStep[], graph: DAG, config: Config): string {
   // Normalize and sort for deterministic hashing
   const normalized = {
     version: '1.0',
@@ -419,7 +512,13 @@ export function toContractsPlan(executionPlan: ExecutionPlan): {
   schema_version: '1.0';
   plan_id: string;
   created_at: string;
-  nodes: Array<{ id: string; kind: 'source' | 'algorithm' | 'sink'; label: string; config: Record<string, unknown>; version: string }>;
+  nodes: Array<{
+    id: string;
+    kind: 'source' | 'algorithm' | 'sink';
+    label: string;
+    config: Record<string, unknown>;
+    version: string;
+  }>;
   edges: Array<{ from: string; to: string; label?: string }>;
   metadata: { planner: string; planner_version: string; estimated_duration_ms?: number };
 } {

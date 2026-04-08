@@ -10,103 +10,148 @@ export const SCHEMA_VERSION = 1;
 export { ALGORITHM_IDS } from '@wasm4pm/contracts';
 export type { AlgorithmId } from '@wasm4pm/contracts';
 
-export const algorithmIdSchema = z.enum(ALGORITHM_IDS)
+export const algorithmIdSchema = z
+  .enum(ALGORITHM_IDS)
   .describe('Algorithm ID: one of the registered wasm4pm kernel algorithms');
 
 // --- Enum Schemas ---
 
-export const sourceKindSchema = z.enum(['file', 'stream', 'http'] as const)
+export const sourceKindSchema = z
+  .enum(['file', 'stream', 'http'] as const)
   .describe('Source kind: file, stream, or http');
 
-export const sinkKindSchema = z.enum(['stdout', 'file', 'http'] as const)
+export const sinkKindSchema = z
+  .enum(['stdout', 'file', 'http'] as const)
   .describe('Sink kind: stdout, file, or http');
 
-export const executionProfileSchema = z.enum(['fast', 'balanced', 'quality', 'stream'] as const)
+export const executionProfileSchema = z
+  .enum(['fast', 'balanced', 'quality', 'stream'] as const)
   .describe('Execution profile: fast, balanced, quality, or stream');
 
-export const outputFormatSchema = z.enum(['human', 'json'] as const)
+export const outputFormatSchema = z
+  .enum(['human', 'json'] as const)
   .describe('Output format: human or json');
 
-export const logLevelSchema = z.enum(['debug', 'info', 'warn', 'error'] as const)
+export const logLevelSchema = z
+  .enum(['debug', 'info', 'warn', 'error'] as const)
   .describe('Log level: debug, info, warn, or error');
 
-export const otelExporterSchema = z.enum(['otlp', 'console', 'none'] as const)
+export const otelExporterSchema = z
+  .enum(['otlp', 'console', 'none'] as const)
   .describe('OpenTelemetry exporter type');
 
 // --- Sub-Schemas ---
 
-export const sourceConfigSchema = z.object({
-  kind: sourceKindSchema,
-  path: z.string().optional(),
-  url: z.string().url().optional(),
-}).describe('Source configuration');
+export const sourceConfigSchema = z
+  .object({
+    kind: sourceKindSchema,
+    path: z.string().optional(),
+    url: z.string().url().optional(),
+  })
+  .describe('Source configuration');
 
-export const sinkConfigSchema = z.object({
-  kind: sinkKindSchema,
-  path: z.string().optional(),
-  url: z.string().url().optional(),
-}).describe('Sink configuration');
+export const sinkConfigSchema = z
+  .object({
+    kind: sinkKindSchema,
+    path: z.string().optional(),
+    url: z.string().url().optional(),
+  })
+  .describe('Sink configuration');
 
-export const algorithmConfigSchema = z.object({
-  name: algorithmIdSchema.default('dfg'),
-  parameters: z.record(z.unknown()).default({}),
-}).describe('Algorithm configuration');
+export const algorithmConfigSchema = z
+  .object({
+    name: algorithmIdSchema.default('dfg'),
+    parameters: z.record(z.unknown()).default({}),
+  })
+  .describe('Algorithm configuration');
 
-export const otelConfigSchema = z.object({
-  enabled: z.boolean().default(false),
-  exporter: otelExporterSchema.default('otlp'),
-  endpoint: z.string().url().optional(),
-  required: z.boolean().default(false),
-  headers: z.record(z.string()).optional(),
-}).describe('OpenTelemetry configuration');
+export const otelConfigSchema = z
+  .object({
+    enabled: z.boolean().default(false),
+    exporter: otelExporterSchema.default('otlp'),
+    endpoint: z.string().url().optional(),
+    required: z.boolean().default(false),
+    headers: z.record(z.string()).optional(),
+  })
+  .describe('OpenTelemetry configuration');
 
-export const observabilityConfigSchema = z.object({
-  otel: otelConfigSchema.optional(),
-  logLevel: logLevelSchema.default('info'),
-  metricsEnabled: z.boolean().default(false),
-}).describe('Observability configuration');
+export const observabilityConfigSchema = z
+  .object({
+    otel: otelConfigSchema.optional(),
+    logLevel: logLevelSchema.default('info'),
+    metricsEnabled: z.boolean().default(false),
+  })
+  .describe('Observability configuration');
 
-export const watchConfigSchema = z.object({
-  enabled: z.boolean().default(false),
-  poll_interval: z.number().int().positive().default(1000),
-  checkpoint_dir: z.string().optional(),
-}).describe('Watch mode configuration');
+export const watchConfigSchema = z
+  .object({
+    enabled: z.boolean().default(false),
+    poll_interval: z.number().int().positive().default(1000),
+    checkpoint_dir: z.string().optional(),
+  })
+  .describe('Watch mode configuration');
 
-export const outputConfigSchema = z.object({
-  format: outputFormatSchema.default('human'),
-  destination: z.string().default('stdout'),
-  pretty: z.boolean().default(true),
-  colorize: z.boolean().default(true),
-}).describe('Output configuration');
+export const outputConfigSchema = z
+  .object({
+    format: outputFormatSchema.default('human'),
+    destination: z.string().default('stdout'),
+    pretty: z.boolean().default(true),
+    colorize: z.boolean().default(true),
+  })
+  .describe('Output configuration');
 
-export const executionConfigSchema = z.object({
-  profile: executionProfileSchema.default('balanced'),
-  timeout: z.number().int().positive().optional(),
-  maxMemory: z.number().int().positive().optional(),
-}).describe('Execution configuration');
+export const executionConfigSchema = z
+  .object({
+    profile: executionProfileSchema.default('balanced'),
+    timeout: z.number().int().positive().optional(),
+    maxMemory: z.number().int().positive().optional(),
+  })
+  .describe('Execution configuration');
 
-export const predictionConfigSchema = z.object({
-  enabled: z.boolean().default(false),
-  activityKey: z.string().default('concept:name'),
-  ngramOrder: z.number().int().min(2).max(5).default(2),
-  driftWindowSize: z.number().int().positive().default(10),
-  tasks: z.array(z.enum(PREDICTION_TASKS)).default([]),
-}).describe('Prediction configuration — which prediction tasks to run');
+export const predictionConfigSchema = z
+  .object({
+    enabled: z.boolean().default(false),
+    activityKey: z.string().default('concept:name'),
+    ngramOrder: z.number().int().min(2).max(5).default(2),
+    driftWindowSize: z.number().int().positive().default(10),
+    tasks: z.array(z.enum(PREDICTION_TASKS)).default([]),
+  })
+  .describe('Prediction configuration — which prediction tasks to run');
+
+const ML_TASKS = ['classify', 'cluster', 'forecast', 'anomaly', 'regress', 'pca'] as const;
+
+export const mlConfigSchema = z
+  .object({
+    enabled: z.boolean().default(false),
+    tasks: z.array(z.enum(ML_TASKS)).default([]),
+    method: z.string().optional(),
+    k: z.number().int().positive().optional(),
+    targetKey: z.string().default('outcome'),
+    forecastPeriods: z.number().int().positive().default(5),
+    nComponents: z.number().int().positive().default(2),
+    eps: z.number().positive().default(1.0),
+  })
+  .describe(
+    'ML analysis configuration — classification, clustering, forecasting, anomaly, regression, PCA'
+  );
 
 // --- Root Schema ---
 
-export const configSchema = z.object({
-  schemaVersion: z.number().int().positive().default(SCHEMA_VERSION),
-  version: z.string().regex(/^\d+\.\d+\.\d+$/),
-  source: sourceConfigSchema,
-  sink: sinkConfigSchema.default({ kind: 'stdout' }),
-  algorithm: algorithmConfigSchema.default({ name: 'dfg', parameters: {} }),
-  execution: executionConfigSchema.default({}),
-  observability: observabilityConfigSchema.default({}),
-  watch: watchConfigSchema.optional(),
-  output: outputConfigSchema.default({}),
-  prediction: predictionConfigSchema.optional(),
-}).describe('wasm4pm configuration');
+export const configSchema = z
+  .object({
+    schemaVersion: z.number().int().positive().default(SCHEMA_VERSION),
+    version: z.string().regex(/^\d+\.\d+\.\d+$/),
+    source: sourceConfigSchema,
+    sink: sinkConfigSchema.default({ kind: 'stdout' }),
+    algorithm: algorithmConfigSchema.default({ name: 'dfg', parameters: {} }),
+    execution: executionConfigSchema.default({}),
+    observability: observabilityConfigSchema.default({}),
+    watch: watchConfigSchema.optional(),
+    output: outputConfigSchema.default({}),
+    prediction: predictionConfigSchema.optional(),
+    ml: mlConfigSchema.optional(),
+  })
+  .describe('wasm4pm configuration');
 
 /**
  * Validate a config object against the full schema. Returns the validated config
@@ -117,10 +162,12 @@ export function validate(config: unknown): z.infer<typeof configSchema> {
     return configSchema.parse(config);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      const messages = error.errors.map(err => {
-        const path = err.path.join('.');
-        return `${path}: ${err.message}`;
-      }).join('\n  ');
+      const messages = error.errors
+        .map((err) => {
+          const path = err.path.join('.');
+          return `${path}: ${err.message}`;
+        })
+        .join('\n  ');
       throw new Error(`Configuration validation failed:\n  ${messages}`);
     }
     throw error;
@@ -135,10 +182,12 @@ export function validatePartial(config: unknown): Partial<z.infer<typeof configS
     return configSchema.partial().parse(config) as Partial<z.infer<typeof configSchema>>;
   } catch (error) {
     if (error instanceof z.ZodError) {
-      const messages = error.errors.map(err => {
-        const path = err.path.join('.');
-        return `${path}: ${err.message}`;
-      }).join('\n  ');
+      const messages = error.errors
+        .map((err) => {
+          const path = err.path.join('.');
+          return `${path}: ${err.message}`;
+        })
+        .join('\n  ');
       throw new Error(`Configuration validation failed:\n  ${messages}`);
     }
     throw error;
