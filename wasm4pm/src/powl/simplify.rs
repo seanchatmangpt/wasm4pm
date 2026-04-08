@@ -14,13 +14,12 @@ use crate::powl_arena::{Operator, PowlArena, PowlNode};
 pub fn simplify(arena: &mut PowlArena, idx: u32) -> u32 {
     match arena.nodes.get(idx as usize).cloned() {
         None => idx,
-        Some(PowlNode::Transition(_)) | Some(PowlNode::FrequentTransition(_)) | Some(PowlNode::DecisionGraph(_)) => idx,
+        Some(PowlNode::Transition(_))
+        | Some(PowlNode::FrequentTransition(_))
+        | Some(PowlNode::DecisionGraph(_)) => idx,
         Some(PowlNode::OperatorPowl(op)) => {
-            let simplified_children: Vec<u32> = op
-                .children
-                .iter()
-                .map(|&c| simplify(arena, c))
-                .collect();
+            let simplified_children: Vec<u32> =
+                op.children.iter().map(|&c| simplify(arena, c)).collect();
 
             if op.operator == Operator::Xor && simplified_children.len() == 2 {
                 let c0 = simplified_children[0];
@@ -37,9 +36,7 @@ pub fn simplify(arena: &mut PowlArena, idx: u32) -> u32 {
                 // Flatten nested XORs
                 let mut flat: Vec<u32> = Vec::new();
                 for &c in &simplified_children {
-                    if let Some(PowlNode::OperatorPowl(inner)) =
-                        arena.nodes.get(c as usize)
-                    {
+                    if let Some(PowlNode::OperatorPowl(inner)) = arena.nodes.get(c as usize) {
                         if inner.operator == Operator::Xor {
                             let inner_children = inner.children.clone();
                             for ic in inner_children {
@@ -77,8 +74,7 @@ pub fn simplify(arena: &mut PowlArena, idx: u32) -> u32 {
                     if other == node_local {
                         continue;
                     }
-                    if old_order.is_edge(node_local, other)
-                        || old_order.is_edge(other, node_local)
+                    if old_order.is_edge(node_local, other) || old_order.is_edge(other, node_local)
                     {
                         return true;
                     }
@@ -230,7 +226,10 @@ fn try_merge_xor_loop(arena: &mut PowlArena, child0: u32, child1: u32) -> Option
 /// Transform `XOR(A, tau)` and `LOOP(A, tau)` into `FrequentTransition` nodes.
 pub fn simplify_using_frequent_transitions(arena: &mut PowlArena, idx: u32) -> u32 {
     match arena.nodes.get(idx as usize).cloned() {
-        None | Some(PowlNode::Transition(_)) | Some(PowlNode::FrequentTransition(_)) | Some(PowlNode::DecisionGraph(_)) => idx,
+        None
+        | Some(PowlNode::Transition(_))
+        | Some(PowlNode::FrequentTransition(_))
+        | Some(PowlNode::DecisionGraph(_)) => idx,
         Some(PowlNode::StrictPartialOrder(spo)) => {
             let children = spo.children.clone();
             let old_order = spo.order.clone();

@@ -74,14 +74,8 @@ impl PartialDfg {
                     .or_insert(0) += 1;
             }
             // Start / end activities
-            *partial
-                .start_counts
-                .entry(col.events[start])
-                .or_insert(0) += 1;
-            *partial
-                .end_counts
-                .entry(col.events[end - 1])
-                .or_insert(0) += 1;
+            *partial.start_counts.entry(col.events[start]).or_insert(0) += 1;
+            *partial.end_counts.entry(col.events[end - 1]).or_insert(0) += 1;
         }
 
         partial
@@ -209,7 +203,9 @@ pub fn compute_dfg_parallel(col: &ColumnarLog) -> DirectlyFollowsGraph {
             // Process all traces in this batch sequentially within the task
             let mut merged = PartialDfg::new();
             for &t in chunk {
-                if t >= num_traces { break; }
+                if t >= num_traces {
+                    break;
+                }
                 let partial = PartialDfg::from_trace_range(col, t..t + 1);
                 // Merge into batch result
                 for (id, cnt) in partial.node_counts {
@@ -292,10 +288,12 @@ pub fn run_algorithms_parallel(
         // Convert chunks to Vec for parallel iteration
         let chunks: Vec<_> = algorithm_names.chunks(BATCH_SIZE).collect();
 
-        chunks.into_par_iter()
+        chunks
+            .into_par_iter()
             .flat_map(|chunk| {
                 // Process algorithms in this chunk sequentially within the task
-                chunk.iter()
+                chunk
+                    .iter()
                     .map(|name| {
                         let result = run_single_algorithm(log, activity_key, name);
                         (name.to_string(), result)
@@ -375,37 +373,36 @@ fn compute_dfg(log: &EventLog, activity_key: &str) -> DirectlyFollowsGraph {
 #[wasm_bindgen]
 pub fn parallel_discover_dfg(log_handle: &str, activity_key: &str) -> String {
     let state = crate::state::get_or_init_state();
-    let result = state.with_object(log_handle, |obj| {
-        match obj {
-            Some(crate::state::StoredObject::EventLog(log)) => {
-                let col_owned =
-                    crate::cache::columnar_cache_get(log_handle, activity_key)
-                        .unwrap_or_else(|| {
-                            let owned = log.to_columnar_owned(activity_key);
-                            crate::cache::columnar_cache_insert(
-                                log_handle.to_string(),
-                                activity_key.to_string(),
-                                owned.clone(),
-                            );
-                            owned
-                        });
-                let col = ColumnarLog::from_owned(&col_owned);
-                let dfg = compute_dfg_parallel(&col);
-                Ok(serde_json::to_string(&dfg).unwrap_or_else(|_| "{}".to_string()))
-            }
-            Some(_) => Err(JsValue::from_str(&format!(
-                r#"{{"error":"Object '{}' is not an EventLog"}}"#,
-                log_handle
-            ))),
-            None => Err(JsValue::from_str(&format!(
-                r#"{{"error":"EventLog '{}' not found"}}"#,
-                log_handle
-            ))),
+    let result = state.with_object(log_handle, |obj| match obj {
+        Some(crate::state::StoredObject::EventLog(log)) => {
+            let col_owned = crate::cache::columnar_cache_get(log_handle, activity_key)
+                .unwrap_or_else(|| {
+                    let owned = log.to_columnar_owned(activity_key);
+                    crate::cache::columnar_cache_insert(
+                        log_handle.to_string(),
+                        activity_key.to_string(),
+                        owned.clone(),
+                    );
+                    owned
+                });
+            let col = ColumnarLog::from_owned(&col_owned);
+            let dfg = compute_dfg_parallel(&col);
+            Ok(serde_json::to_string(&dfg).unwrap_or_else(|_| "{}".to_string()))
         }
+        Some(_) => Err(JsValue::from_str(&format!(
+            r#"{{"error":"Object '{}' is not an EventLog"}}"#,
+            log_handle
+        ))),
+        None => Err(JsValue::from_str(&format!(
+            r#"{{"error":"EventLog '{}' not found"}}"#,
+            log_handle
+        ))),
     });
     match result {
         Ok(json) => json,
-        Err(js) => js.as_string().unwrap_or_else(|| r#"{"error":"unknown"}"#.to_string()),
+        Err(js) => js
+            .as_string()
+            .unwrap_or_else(|| r#"{"error":"unknown"}"#.to_string()),
     }
 }
 
@@ -431,8 +428,9 @@ pub fn parallel_run_algorithms(log_handle: &str, activity_key: &str, algo_json: 
             let json_results: Vec<serde_json::Value> = results
                 .into_iter()
                 .map(|(name, json_str)| {
-                    serde_json::from_str::<serde_json::Value>(&json_str)
-                        .unwrap_or_else(|_| serde_json::json!({"algorithm": name, "error": "serialization failed"}))
+                    serde_json::from_str::<serde_json::Value>(&json_str).unwrap_or_else(
+                        |_| serde_json::json!({"algorithm": name, "error": "serialization failed"}),
+                    )
                 })
                 .collect();
             Ok(serde_json::to_string(&json_results).unwrap_or_else(|_| "[]".to_string()))
@@ -448,7 +446,9 @@ pub fn parallel_run_algorithms(log_handle: &str, activity_key: &str, algo_json: 
     });
     match result {
         Ok(json) => json,
-        Err(js) => js.as_string().unwrap_or_else(|| r#"{"error":"unknown"}"#.to_string()),
+        Err(js) => js
+            .as_string()
+            .unwrap_or_else(|| r#"{"error":"unknown"}"#.to_string()),
     }
 }
 
@@ -542,7 +542,11 @@ mod tests {
         seq_nodes.sort_by_key(|n| &n.id);
         for (p, s) in par_nodes.iter().zip(seq_nodes.iter()) {
             assert_eq!(p.id, s.id, "node id mismatch");
-            assert_eq!(p.frequency, s.frequency, "node frequency mismatch for {}", p.id);
+            assert_eq!(
+                p.frequency, s.frequency,
+                "node frequency mismatch for {}",
+                p.id
+            );
         }
 
         // Same edges
@@ -554,7 +558,11 @@ mod tests {
         for (p, s) in par_edges.iter().zip(seq_edges.iter()) {
             assert_eq!(p.from, s.from, "edge from mismatch");
             assert_eq!(p.to, s.to, "edge to mismatch");
-            assert_eq!(p.frequency, s.frequency, "edge frequency mismatch for {} -> {}", p.from, p.to);
+            assert_eq!(
+                p.frequency, s.frequency,
+                "edge frequency mismatch for {} -> {}",
+                p.from, p.to
+            );
         }
 
         // Same start/end activities
@@ -602,11 +610,17 @@ mod tests {
 
         #[cfg(not(target_arch = "wasm32"))]
         {
-            assert!(parallel_available(), "parallel should be available on native");
+            assert!(
+                parallel_available(),
+                "parallel should be available on native"
+            );
         }
         #[cfg(target_arch = "wasm32")]
         {
-            assert!(!parallel_available(), "parallel should not be available on WASM");
+            assert!(
+                !parallel_available(),
+                "parallel should not be available on WASM"
+            );
         }
     }
 
@@ -615,7 +629,11 @@ mod tests {
         let _key = unique_key("par-multi");
         let traces: Vec<Vec<&str>> = (0..5)
             .map(|i| {
-                vec!["start", if i % 2 == 0 { "process_a" } else { "process_b" }, "end"]
+                vec![
+                    "start",
+                    if i % 2 == 0 { "process_a" } else { "process_b" },
+                    "end",
+                ]
             })
             .collect();
         let trace_refs: Vec<&[&str]> = traces.iter().map(|v| v.as_slice()).collect();
@@ -628,9 +646,14 @@ mod tests {
 
         // Each result should be non-empty and parseable JSON
         for (name, json_str) in &results {
-            assert!(!json_str.is_empty(), "result for {} should not be empty", name);
-            let parsed: serde_json::Value = serde_json::from_str(json_str)
-                .unwrap_or_else(|_| panic!("result for {} should be valid JSON: {}", name, json_str));
+            assert!(
+                !json_str.is_empty(),
+                "result for {} should not be empty",
+                name
+            );
+            let parsed: serde_json::Value = serde_json::from_str(json_str).unwrap_or_else(|_| {
+                panic!("result for {} should be valid JSON: {}", name, json_str)
+            });
             // Should not contain an error
             assert!(
                 parsed.get("error").is_none(),
@@ -679,8 +702,20 @@ mod tests {
         let mut start_counts: FxHashMap<u32, usize> = FxHashMap::default();
         let mut end_counts: FxHashMap<u32, usize> = FxHashMap::default();
 
-        merge_partial(&mut node_counts, &mut edge_counts, &mut start_counts, &mut end_counts, p1);
-        merge_partial(&mut node_counts, &mut edge_counts, &mut start_counts, &mut end_counts, p2);
+        merge_partial(
+            &mut node_counts,
+            &mut edge_counts,
+            &mut start_counts,
+            &mut end_counts,
+            p1,
+        );
+        merge_partial(
+            &mut node_counts,
+            &mut edge_counts,
+            &mut start_counts,
+            &mut end_counts,
+            p2,
+        );
 
         // A appears in traces 0, 1 → 2 times, trace 2 doesn't have A as event
         assert_eq!(*node_counts.get(&0).unwrap(), 2); // A in traces 0, 1

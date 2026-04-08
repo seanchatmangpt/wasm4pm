@@ -14,9 +14,9 @@
 use std::collections::VecDeque;
 use wasm_bindgen::prelude::*;
 
+use crate::models::{DFGNode, DirectlyFollowsGraph, DirectlyFollowsRelation};
+use crate::streaming::{ActivityInterner, Interner};
 use rustc_hash::FxHashMap;
-use crate::models::{DirectlyFollowsGraph, DFGNode, DirectlyFollowsRelation};
-use crate::streaming::{Interner, ActivityInterner};
 
 // ============================================================================
 // 1. LRU Cache
@@ -75,7 +75,8 @@ impl<V: Clone> LruCache<V> {
 
         // Evict LRU entry if at capacity and key is new
         if self.map.len() >= self.capacity && !self.map.contains_key(&key) {
-            let lru_key = self.map
+            let lru_key = self
+                .map
                 .iter()
                 .min_by_key(|(_, (_, order))| *order)
                 .map(|(k, _)| k.clone());
@@ -133,7 +134,7 @@ impl ConvergenceMonitor {
         ConvergenceMonitor {
             window: VecDeque::with_capacity(5),
             window_size: 5,
-            threshold: 0.01,  // 1%
+            threshold: 0.01, // 1%
             max_iterations: 100,
             iteration: 0,
         }
@@ -242,8 +243,8 @@ impl FusedMultiPass {
     /// Compute a simple hash fingerprint for a set of traces.
     /// Uses rustc_hash FxHasher for speed.
     fn hash_traces(traces: &[Vec<String>]) -> u64 {
-        use std::hash::{Hash, Hasher};
         use rustc_hash::FxHasher;
+        use std::hash::{Hash, Hasher};
         let mut hasher = FxHasher::default();
         traces.hash(&mut hasher);
         hasher.finish()
@@ -273,10 +274,7 @@ impl FusedMultiPass {
             }
 
             // Encode activities to integer IDs
-            let encoded: Vec<u32> = trace
-                .iter()
-                .map(|a| self.interner.intern(a))
-                .collect();
+            let encoded: Vec<u32> = trace.iter().map(|a| self.interner.intern(a)).collect();
 
             // Node frequencies
             for &id in &encoded {
@@ -313,14 +311,16 @@ impl FusedMultiPass {
             });
         }
 
-        let mut start_activities: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+        let mut start_activities: std::collections::HashMap<String, usize> =
+            std::collections::HashMap::new();
         for (&id, &cnt) in &start_counts {
             if let Some(name) = self.interner.lookup(id) {
                 start_activities.insert(name.to_string(), cnt);
             }
         }
 
-        let mut end_activities: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+        let mut end_activities: std::collections::HashMap<String, usize> =
+            std::collections::HashMap::new();
         for (&id, &cnt) in &end_counts {
             if let Some(name) = self.interner.lookup(id) {
                 end_activities.insert(name.to_string(), cnt);
@@ -347,30 +347,27 @@ impl FusedMultiPass {
     /// to apply on top of the shared DFG.
     ///
     /// Returns a JSON string with the algorithm result.
-    fn run_with_dfg(
-        &mut self,
-        algorithm: &str,
-        traces: &[Vec<String>],
-    ) -> Result<String, String> {
+    fn run_with_dfg(&mut self, algorithm: &str, traces: &[Vec<String>]) -> Result<String, String> {
         let dfg = self.compute_dfg(traces);
 
         match algorithm {
             "dfg" | "optimized_dfg" => {
                 // DFG is already the result — serialise it
-                serde_json::to_string(dfg)
-                    .map_err(|e| format!("Failed to serialise DFG: {}", e))
+                serde_json::to_string(dfg).map_err(|e| format!("Failed to serialise DFG: {}", e))
             }
             "process_skeleton" => {
                 // Skeleton is a filtered DFG: remove edges below a frequency threshold.
                 // Use a simple heuristic: remove edges with frequency < 10% of max.
                 let max_freq = dfg.edges.iter().map(|e| e.frequency).max().unwrap_or(1);
                 let threshold = max_freq / 10;
-                let filtered_edges: Vec<DirectlyFollowsRelation> = dfg.edges
+                let filtered_edges: Vec<DirectlyFollowsRelation> = dfg
+                    .edges
                     .iter()
                     .filter(|e| e.frequency > threshold)
                     .cloned()
                     .collect();
-                let filtered_nodes: Vec<DFGNode> = dfg.nodes
+                let filtered_nodes: Vec<DFGNode> = dfg
+                    .nodes
                     .iter()
                     .filter(|n| n.frequency > threshold / 2)
                     .cloned()
@@ -388,12 +385,15 @@ impl FusedMultiPass {
             "heuristic_miner" => {
                 // Heuristic miner adds dependency measures on top of DFG.
                 // Compute a simple all-connect / dependency score per edge.
-                let heuristic_edges: Vec<serde_json::Value> = dfg.edges
+                let heuristic_edges: Vec<serde_json::Value> = dfg
+                    .edges
                     .iter()
                     .map(|e| {
                         // Dependency measure: (a->b - b->a) / (a->b + b->a + 1)
                         let ab = e.frequency as f64;
-                        let ba = dfg.edges.iter()
+                        let ba = dfg
+                            .edges
+                            .iter()
                             .find(|r| r.from == e.to && r.to == e.from)
                             .map(|r| r.frequency as f64)
                             .unwrap_or(0.0);
@@ -486,11 +486,7 @@ impl SmartEngine {
     /// If the same `(log_hash, algorithm)` pair was run before, the cached
     /// result is returned.  Otherwise, the DFG is computed (or reused from
     /// the fused cache if the log is unchanged) and the algorithm runs on top.
-    pub fn run(
-        &mut self,
-        algorithm: &str,
-        traces: &[Vec<String>],
-    ) -> Result<String, String> {
+    pub fn run(&mut self, algorithm: &str, traces: &[Vec<String>]) -> Result<String, String> {
         let log_hash = FusedMultiPass::hash_traces(traces);
         let cache_key = format!("{}:{}", log_hash, algorithm);
 
@@ -604,10 +600,12 @@ pub fn smart_engine_run(
         .map_err(|e| JsValue::from_str(&format!("Invalid traces JSON: {}", e)))?;
 
     let mut engines = SMART_ENGINES.lock().unwrap();
-    let engine = engines.get_mut(handle)
+    let engine = engines
+        .get_mut(handle)
         .ok_or_else(|| JsValue::from_str(&format!("SmartEngine '{}' not found", handle)))?;
 
-    engine.run(algorithm, &traces)
+    engine
+        .run(algorithm, &traces)
         .map_err(|e| JsValue::from_str(&e))
 }
 
@@ -615,7 +613,8 @@ pub fn smart_engine_run(
 #[wasm_bindgen]
 pub fn smart_engine_converged(handle: &str) -> Result<bool, JsValue> {
     let engines = SMART_ENGINES.lock().unwrap();
-    let engine = engines.get(handle)
+    let engine = engines
+        .get(handle)
         .ok_or_else(|| JsValue::from_str(&format!("SmartEngine '{}' not found", handle)))?;
     Ok(engine.is_converged())
 }
@@ -624,17 +623,22 @@ pub fn smart_engine_converged(handle: &str) -> Result<bool, JsValue> {
 #[wasm_bindgen]
 pub fn smart_engine_cache_stats(handle: &str) -> Result<String, JsValue> {
     let engines = SMART_ENGINES.lock().unwrap();
-    let engine = engines.get(handle)
+    let engine = engines
+        .get(handle)
         .ok_or_else(|| JsValue::from_str(&format!("SmartEngine '{}' not found", handle)))?;
     let (hits, misses, evictions) = engine.cache_stats();
-    Ok(format!(r#"{{"hits":{},"misses":{},"evictions":{}}}"#, hits, misses, evictions))
+    Ok(format!(
+        r#"{{"hits":{},"misses":{},"evictions":{}}}"#,
+        hits, misses, evictions
+    ))
 }
 
 /// Feed a metric value to the convergence monitor and check if should stop.
 #[wasm_bindgen]
 pub fn smart_engine_check_convergence(handle: &str, metric: f64) -> Result<bool, JsValue> {
     let mut engines = SMART_ENGINES.lock().unwrap();
-    let engine = engines.get_mut(handle)
+    let engine = engines
+        .get_mut(handle)
         .ok_or_else(|| JsValue::from_str(&format!("SmartEngine '{}' not found", handle)))?;
     Ok(engine.check_convergence(metric))
 }
@@ -643,7 +647,8 @@ pub fn smart_engine_check_convergence(handle: &str, metric: f64) -> Result<bool,
 #[wasm_bindgen]
 pub fn smart_engine_reset(handle: &str) -> Result<(), JsValue> {
     let mut engines = SMART_ENGINES.lock().unwrap();
-    let engine = engines.get_mut(handle)
+    let engine = engines
+        .get_mut(handle)
         .ok_or_else(|| JsValue::from_str(&format!("SmartEngine '{}' not found", handle)))?;
     engine.reset();
     Ok(())
@@ -715,7 +720,7 @@ mod tests {
         assert_eq!(cache.get("key1"), Some("value2".to_string()));
 
         let (hits, misses, _evictions) = cache.stats();
-        assert_eq!(hits, 2);  // 2 hits on "key1"
+        assert_eq!(hits, 2); // 2 hits on "key1"
         assert_eq!(misses, 1); // 1 miss on "nonexistent"
     }
 
@@ -728,7 +733,7 @@ mod tests {
         // Feed stable values — should converge after window_size iterations
         assert!(!monitor.update(0.500)); // iteration 1, window not full
         assert!(!monitor.update(0.501)); // iteration 2, window not full
-        assert!(monitor.update(0.502));  // iteration 3, window full, improvement < 5%
+        assert!(monitor.update(0.502)); // iteration 3, window full, improvement < 5%
     }
 
     #[test]
@@ -738,7 +743,11 @@ mod tests {
         // Feed steadily improving values
         for i in 0..5u32 {
             let metric = 0.1 * (i + 1) as f64; // 0.1, 0.2, 0.3, 0.4, 0.5
-            assert!(!monitor.update(metric), "Should not converge at iteration {}", i + 1);
+            assert!(
+                !monitor.update(metric),
+                "Should not converge at iteration {}",
+                i + 1
+            );
         }
     }
 
@@ -798,9 +807,7 @@ mod tests {
         assert_eq!(dfg1.start_activities.get("a"), Some(&3));
 
         // Third call with different traces — should recompute
-        let different_traces = vec![
-            vec!["x".to_string(), "y".to_string()],
-        ];
+        let different_traces = vec![vec!["x".to_string(), "y".to_string()]];
         let dfg3 = fused.compute_dfg(&different_traces).clone();
         assert_eq!(fused.dfg_compute_calls(), 3);
         assert_eq!(dfg3.start_activities.get("x"), Some(&1));
@@ -849,7 +856,7 @@ mod tests {
 
         let (hits, misses, _evictions) = engine.cache_stats();
         assert_eq!(misses, 1); // still 1 miss
-        assert_eq!(hits, 1);   // now 1 hit
+        assert_eq!(hits, 1); // now 1 hit
 
         // Different algorithm — miss
         let _ = engine.run("process_skeleton", &traces);

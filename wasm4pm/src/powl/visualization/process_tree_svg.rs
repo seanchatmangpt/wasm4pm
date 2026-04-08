@@ -1,7 +1,6 @@
 /// Process Tree SVG Visualization
 ///
 /// Renders POWL models as SVG with colored operator nodes and activity labels.
-
 use crate::powl_arena::PowlArena;
 use std::fmt::Write;
 
@@ -38,13 +37,13 @@ fn get_node_info(arena: &PowlArena, idx: u32) -> (String, String, bool) {
         Some(crate::powl_arena::PowlNode::OperatorPowl(op)) => {
             let op_name = op.operator.as_str();
             let (label, color_idx) = match op_name {
-                "X" | "×" => ("×", 0), // XOR (both Latin X and multiplication sign)
-                "→" => ("→", 3), // SEQUENCE
-                "*" => ("*", 1),  // LOOP
-                "+" | "PO" => ("+", 2),  // PARALLEL
-                "⇧" => ("⇧", 4), // MOVE_MERGE
-                "⇩" => ("⇩", 5), // SILENT_MOVE_MERGE
-                "↔" => ("↔", 6), // TRANSITIVE
+                "X" | "×" => ("×", 0),  // XOR (both Latin X and multiplication sign)
+                "→" => ("→", 3),        // SEQUENCE
+                "*" => ("*", 1),        // LOOP
+                "+" | "PO" => ("+", 2), // PARALLEL
+                "⇧" => ("⇧", 4),        // MOVE_MERGE
+                "⇩" => ("⇩", 5),        // SILENT_MOVE_MERGE
+                "↔" => ("↔", 6),        // TRANSITIVE
                 _ => ("?", 0),
             };
             (label.to_string(), COLORS[color_idx].to_string(), true)
@@ -101,18 +100,27 @@ fn render_tree_recursive(
 
     // Write node
     let fill = if is_operator { &color } else { "#ffffff" };
-    let escaped_label = label.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;");
+    let escaped_label = label
+        .replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;");
 
-    write!(buffer,
+    write!(
+        buffer,
         r#"<rect id="{}" x="{}" y="{}" width="{}" height="{}" fill="{}" class="node" rx="5"/>"#,
         id, x, y, NODE_WIDTH, NODE_HEIGHT, fill
-    ).unwrap();
+    )
+    .unwrap();
 
     let text_y = y + NODE_HEIGHT / 2 + 4;
-    write!(buffer,
+    write!(
+        buffer,
         r#"<text x="{}" y="{}" class="label">{}</text>"#,
-        x + NODE_WIDTH / 2, text_y, escaped_label
-    ).unwrap();
+        x + NODE_WIDTH / 2,
+        text_y,
+        escaped_label
+    )
+    .unwrap();
 
     // Render children
     let children = get_children(arena, root);
@@ -163,13 +171,22 @@ pub fn render_process_tree_svg(arena: &PowlArena, root: u32) -> String {
     let (width, height) = compute_layout(arena, root);
 
     // Write header
-    write!(buffer,
+    write!(
+        buffer,
         r#"<svg xmlns="http://www.w3.org/2000/svg" width="{}" height="{}" viewBox="0 0 {} {}">"#,
-        width + 40, height + 40, width + 40, height + 40
-    ).unwrap();
+        width + 40,
+        height + 40,
+        width + 40,
+        height + 40
+    )
+    .unwrap();
     write!(buffer, "<style>").unwrap();
     write!(buffer, ".node {{ stroke: #333; stroke-width: 2px; }}").unwrap();
-    write!(buffer, ".label {{ font-family: Arial, sans-serif; font-size: 12px; text-anchor: middle; }}").unwrap();
+    write!(
+        buffer,
+        ".label {{ font-family: Arial, sans-serif; font-size: 12px; text-anchor: middle; }}"
+    )
+    .unwrap();
     write!(buffer, "</style>").unwrap();
 
     // Render tree

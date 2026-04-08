@@ -8,7 +8,9 @@
 //! - Process summarization (focus on the "happy path")
 
 use crate::models::DirectlyFollowsGraph;
-use crate::streaming::{StreamingAlgorithm, StreamStats, ActivityInterner, impl_activity_interner, Interner};
+use crate::streaming::{
+    impl_activity_interner, ActivityInterner, Interner, StreamStats, StreamingAlgorithm,
+};
 use rustc_hash::FxHashMap;
 use std::collections::HashMap;
 
@@ -90,18 +92,24 @@ impl StreamingSkeletonBuilder {
         let mut dfg = DirectlyFollowsGraph::new();
 
         // Filter nodes by frequency
-        dfg.nodes = self.interner.vocab().iter().enumerate().filter_map(|(i, name)| {
-            let freq = self.activity_counts.get(i).copied().unwrap_or(0);
-            if freq >= min_freq {
-                Some(crate::models::DFGNode {
-                    id: name.clone(),
-                    label: name.clone(),
-                    frequency: freq,
-                })
-            } else {
-                None
-            }
-        }).collect();
+        dfg.nodes = self
+            .interner
+            .vocab()
+            .iter()
+            .enumerate()
+            .filter_map(|(i, name)| {
+                let freq = self.activity_counts.get(i).copied().unwrap_or(0);
+                if freq >= min_freq {
+                    Some(crate::models::DFGNode {
+                        id: name.clone(),
+                        label: name.clone(),
+                        frequency: freq,
+                    })
+                } else {
+                    None
+                }
+            })
+            .collect();
 
         // Build edge counts from all traces (including open ones)
         let mut edge_counts: FxHashMap<(u32, u32), usize> = FxHashMap::default();
@@ -114,17 +122,20 @@ impl StreamingSkeletonBuilder {
         }
 
         // Filter edges by min frequency
-        dfg.edges = edge_counts.into_iter().filter_map(|((f, t), freq)| {
-            if freq >= min_freq {
-                Some(crate::models::DirectlyFollowsRelation {
-                    from: self.interner.get(f).unwrap_or("").to_string(),
-                    to: self.interner.get(t).unwrap_or("").to_string(),
-                    frequency: freq,
-                })
-            } else {
-                None
-            }
-        }).collect();
+        dfg.edges = edge_counts
+            .into_iter()
+            .filter_map(|((f, t), freq)| {
+                if freq >= min_freq {
+                    Some(crate::models::DirectlyFollowsRelation {
+                        from: self.interner.get(f).unwrap_or("").to_string(),
+                        to: self.interner.get(t).unwrap_or("").to_string(),
+                        frequency: freq,
+                    })
+                } else {
+                    None
+                }
+            })
+            .collect();
 
         dfg
     }
@@ -153,8 +164,12 @@ impl StreamingAlgorithm for StreamingSkeletonBuilder {
     }
 
     fn close_trace(&mut self, case_id: &str) -> bool {
-        let Some(events) = self.open_traces.remove(case_id) else { return false; };
-        if events.is_empty() { return true; }
+        let Some(events) = self.open_traces.remove(case_id) else {
+            return false;
+        };
+        if events.is_empty() {
+            return true;
+        }
 
         // Count activity frequencies
         for &id in &events {

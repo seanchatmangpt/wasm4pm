@@ -44,9 +44,7 @@ fn bench_token_replay(c: &mut Criterion) {
         group.bench_with_input(
             BenchmarkId::new("cases", shape.num_cases),
             &(log_handle, pn_handle),
-            |b, (lh, pnh)| {
-                b.iter(|| check_token_based_replay(lh, pnh, ACTIVITY_KEY).unwrap())
-            },
+            |b, (lh, pnh)| b.iter(|| check_token_based_replay(lh, pnh, ACTIVITY_KEY).unwrap()),
         );
     }
     group.finish();
@@ -78,5 +76,9 @@ fn bench_discover_and_replay(c: &mut Criterion) {
     group.finish();
 }
 
-criterion_group!(conformance_benches, bench_token_replay, bench_discover_and_replay);
+criterion_group!(
+    conformance_benches,
+    bench_token_replay,
+    bench_discover_and_replay
+);
 criterion_main!(conformance_benches);

@@ -1,96 +1,175 @@
+//! # wasm4pm — High-Performance Process Mining in WebAssembly
+//!
+//! `wasm4pm` provides production-ready process mining algorithms compiled to WebAssembly,
+//! enabling efficient **process discovery**, **conformance checking**, and **predictive analytics**
+//! in JavaScript/TypeScript environments.
+//!
+//! ## Features
+//!
+//! - **Process Discovery** — DFG, Alpha++, Heuristic Miner, Inductive Miner, Genetic Algorithm, ILP, ACO, PSO
+//! - **Conformance Checking** — Token-based replay, streaming conformance
+//! - **Machine Learning** — Remaining-time prediction, outcome prediction, anomaly detection, drift detection
+//! - **Streaming** — Real-time process mining for IoT and event streaming with SIMD acceleration
+//! - **OCEL Support** — Object-Centric Event Logs with flattened analysis and DECLARE conformance
+//! - **POWL** — Process-Oriented Workflow Language support
+//!
+//! ## Quick Start
+//!
+//! ```javascript
+//! import initWasm, {
+//!   load_eventlog_from_xes,
+//!   discover_dfg,
+//!   delete_object,
+//! } from "wasm4pm";
+//!
+//! // Initialize WASM module
+//! await initWasm();
+//!
+//! // Load event log from XES string
+//! const logHandle = load_eventlog_from_xes(xesString);
+//!
+//! // Discover Directly-Follows Graph
+//! const dfg = discover_dfg(logHandle, "concept:name");
+//!
+//! // Clean up
+//! delete_object(logHandle);
+//! ```
+//!
+//! ## Feature Flags
+//!
+//! ### Deployment Profiles (Binary Size Optimization)
+//!
+//! | Profile  | Size    | Reduction | Use Case            |
+//! |----------|---------|-----------|---------------------|
+//! | `cloud`  | ~2.78MB | —         | Cloud servers (default) |
+//! | `browser`| ~500KB  | 82%       | Web browsers, mobile |
+//! | `edge`   | ~1.5MB  | 46%       | Edge servers, CDN    |
+//! | `fog`    | ~2.0MB  | 28%       | Fog computing, IoT   |
+//! | `iot`    | ~1.0MB  | 64%       | IoT devices, embedded |
+//!
+//! ### Algorithm Selection
+//!
+//! - `basic` — Fast discovery algorithms (DFG, skeleton)
+//! - `advanced` — Full algorithm suite (ILP, genetic, ACO, PSO)
+//! - `ml` — Machine learning features (prediction, anomaly, clustering)
+//! - `streaming` — Streaming algorithms for real-time processing
+//!
+//! ## Architecture
+//!
+//! The crate uses a **handle-based state management system** where all objects
+//! (event logs, process models, results) are stored internally and referenced by
+//! string handles. This design enables:
+//!
+//! - Efficient serialization across the WASM boundary
+//! - Automatic memory management via object pooling
+//! - Simplified JavaScript interop (no manual lifetime management)
+//!
+//! ## Performance
+//!
+//! - **Throughput:** 100K+ events/second for DFG discovery
+//! - **Memory:** Columnar data layouts, object pooling, incremental computation
+//! - **Binary Size:** Deployment profiles reduce WASM by up to 82%
+//! - **SIMD:** Vectorized streaming DFG via WASM SIMD instructions
+//!
+//! ## Links
+//!
+//! - [GitHub Repository](https://github.com/seanchatmangpt/wasm4pm)
+//! - [npm Package](https://www.npmjs.com/package/@pictl/process-mining)
+//! - [Documentation](https://docs.rs/wasm4pm)
+
+pub mod error;
+pub mod io;
 pub mod models;
 pub mod state;
 pub mod types;
-pub mod error;
-pub mod io;
 
 // Hand-rolled statistics (when hand_rolled_stats feature is enabled)
+pub mod algorithms;
+pub mod analysis;
+pub mod binary_format;
+pub mod cache;
+pub mod capability_registry;
+pub mod conformance;
+pub mod data_quality;
+pub mod discovery;
+pub mod fast_discovery;
+pub mod feature_extraction;
+pub mod filters;
+pub mod final_analytics;
 #[cfg(feature = "hand_rolled_stats")]
 pub mod hand_stats;
-pub mod discovery;
-pub mod analysis;
-pub mod conformance;
-pub mod algorithms;
+pub mod hierarchical;
+pub mod incremental_dfg;
+pub mod more_discovery;
+pub mod parallel_executor;
+pub mod probabilistic;
+pub mod process_tree;
+pub mod smart_engine;
+pub mod social_network;
+pub mod text_encoding;
 pub mod utilities;
 pub mod xes_format;
-pub mod fast_discovery;
-pub mod more_discovery;
-pub mod final_analytics;
-pub mod filters;
-pub mod social_network;
-pub mod process_tree;
-pub mod text_encoding;
-pub mod feature_extraction;
-pub mod data_quality;
-pub mod capability_registry;
-pub mod hierarchical;
-pub mod probabilistic;
-pub mod incremental_dfg;
-pub mod smart_engine;
-pub mod cache;
-pub mod binary_format;
-pub mod parallel_executor;
 
 // OCEL support (gated by ocel feature)
-#[cfg(feature = "ocel")]
-pub mod ocel_io;
-#[cfg(feature = "ocel")]
-pub mod ocel_flatten;
-#[cfg(feature = "ocel")]
-pub mod oc_petri_net;
 #[cfg(feature = "ocel")]
 pub mod oc_conformance;
 #[cfg(feature = "ocel")]
 pub mod oc_performance;
+#[cfg(feature = "ocel")]
+pub mod oc_petri_net;
+#[cfg(feature = "ocel")]
+pub mod ocel_flatten;
+#[cfg(feature = "ocel")]
+pub mod ocel_io;
 
 // Advanced discovery algorithms (gated by discovery_advanced feature)
 #[cfg(feature = "discovery_advanced")]
-pub mod ilp_discovery;
+pub mod advanced_algorithms;
 #[cfg(feature = "discovery_advanced")]
 pub mod genetic_discovery;
 #[cfg(feature = "discovery_advanced")]
-pub mod advanced_algorithms;  // ACO, PSO, simulated annealing
+pub mod ilp_discovery; // ACO, PSO, simulated annealing
 
 // ML/Prediction (gated by ml feature)
+#[cfg(feature = "ml")]
+pub mod anomaly;
 #[cfg(feature = "ml")]
 pub mod prediction;
 #[cfg(feature = "ml")]
 pub mod prediction_additions;
 #[cfg(feature = "ml")]
-pub mod prediction_features;
-#[cfg(feature = "ml")]
 pub mod prediction_drift;
+#[cfg(feature = "ml")]
+pub mod prediction_features;
 #[cfg(feature = "ml")]
 pub mod prediction_next_activity;
 #[cfg(feature = "ml")]
-pub mod anomaly;
-#[cfg(feature = "ml")]
 pub mod prediction_outcome;
 #[cfg(feature = "ml")]
-pub mod prediction_resource;
-#[cfg(feature = "ml")]
 pub mod prediction_remaining_time;
+#[cfg(feature = "ml")]
+pub mod prediction_resource;
 
 // Streaming algorithms (gated by streaming_basic or streaming_full features)
 #[cfg(feature = "streaming_basic")]
-pub mod streaming;
-#[cfg(feature = "streaming_basic")]
 pub mod simd_streaming_dfg;
+#[cfg(feature = "streaming_basic")]
+pub mod streaming;
 
 #[cfg(feature = "streaming_full")]
 pub mod streaming_conformance;
 #[cfg(feature = "streaming_full")]
-pub mod streaming_wasm;
-#[cfg(feature = "streaming_full")]
 pub mod streaming_pipeline;
+#[cfg(feature = "streaming_full")]
+pub mod streaming_wasm;
 
 // Conformance (gated by conformance_basic or conformance_full features)
 #[cfg(feature = "conformance_basic")]
 pub mod declare_conformance;
 #[cfg(feature = "conformance_basic")]
-pub mod temporal_profile;
-#[cfg(feature = "conformance_basic")]
 pub mod simd_token_replay;
+#[cfg(feature = "conformance_basic")]
+pub mod temporal_profile;
 
 #[cfg(feature = "conformance_full")]
 pub mod alignments;
@@ -105,15 +184,15 @@ pub mod resource_analysis;
 #[cfg(feature = "powl")]
 pub mod powl;
 #[cfg(feature = "powl")]
+pub mod powl_api;
+#[cfg(feature = "powl")]
 pub mod powl_arena;
 #[cfg(feature = "powl")]
-pub mod powl_parser;
-#[cfg(feature = "powl")]
-pub mod powl_api;
+pub mod powl_event_log;
 #[cfg(feature = "powl")]
 pub mod powl_models;
 #[cfg(feature = "powl")]
-pub mod powl_event_log;
+pub mod powl_parser;
 #[cfg(feature = "powl")]
 pub mod powl_petri_net;
 #[cfg(feature = "powl")]
@@ -121,7 +200,10 @@ pub mod powl_process_tree;
 
 // Re-export streaming types for convenience (conditional)
 #[cfg(feature = "streaming_basic")]
-pub use streaming::{StreamingAlgorithm, StreamStats, StreamingDfgBuilder, StreamingSkeletonBuilder, StreamingHeuristicBuilder};
+pub use streaming::{
+    StreamStats, StreamingAlgorithm, StreamingDfgBuilder, StreamingHeuristicBuilder,
+    StreamingSkeletonBuilder,
+};
 
 // Recommendations module (always available)
 pub mod recommendations;
@@ -170,8 +252,10 @@ pub fn clear_all_caches() {
 #[wasm_bindgen]
 pub fn get_cache_stats() -> String {
     let stats = crate::cache::cache_stats();
-    format!(r#"{{"parse_hits":{},"parse_misses":{},"columnar_entries":{},"interner_entries":{}}}"#,
-        stats.parse_hits, stats.parse_misses, stats.columnar_entries, stats.interner_entries)
+    format!(
+        r#"{{"parse_hits":{},"parse_misses":{},"columnar_entries":{},"interner_entries":{}}}"#,
+        stats.parse_hits, stats.parse_misses, stats.columnar_entries, stats.interner_entries
+    )
 }
 
 /// SIMD-accelerated token replay for conformance checking.
@@ -191,4 +275,4 @@ pub use statrs::statistics::{Data, Median};
 
 // When hand_rolled_stats feature is enabled and statrs is not, re-export hand-rolled types
 #[cfg(all(feature = "hand_rolled_stats", not(feature = "statrs")))]
-pub use hand_stats::{Data};
+pub use hand_stats::Data;

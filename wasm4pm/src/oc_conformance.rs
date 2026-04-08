@@ -1,18 +1,17 @@
+use crate::algorithms::discover_alpha_plus_plus;
+use crate::error::{codes, wasm_err};
+use crate::models::OCEL;
+use crate::oc_petri_net::flatten_ocel_to_eventlog_for_type;
+use crate::state::{get_or_init_state, StoredObject};
+use crate::utilities::to_js;
+use serde_json::json;
+use std::collections::HashSet;
 /// Object-Centric Conformance Checking (Phase 2B)
 ///
 /// Checks conformance of an Object-Centric Event Log against an Object-Centric
 /// Petri Net. For each object type, flattens the OCEL, replays the traces on
 /// the per-type net, and computes fitness / precision metrics.
-
 use wasm_bindgen::prelude::*;
-use crate::state::{get_or_init_state, StoredObject};
-use crate::models::OCEL;
-use crate::oc_petri_net::flatten_ocel_to_eventlog_for_type;
-use crate::algorithms::discover_alpha_plus_plus;
-use crate::utilities::to_js;
-use crate::error::{wasm_err, codes};
-use serde_json::json;
-use std::collections::HashSet;
 
 /// Check conformance of OCEL against an OC Petri Net.
 ///
@@ -65,12 +64,10 @@ pub fn oc_conformance_check(ocel_handle: &str) -> Result<JsValue, JsValue> {
                 .events
                 .iter()
                 .filter_map(|e| {
-                    e.attributes
-                        .get("concept:name")
-                        .and_then(|v| match v {
-                            crate::models::AttributeValue::String(s) => Some(s.clone()),
-                            _ => None,
-                        })
+                    e.attributes.get("concept:name").and_then(|v| match v {
+                        crate::models::AttributeValue::String(s) => Some(s.clone()),
+                        _ => None,
+                    })
                 })
                 .collect();
 
@@ -99,13 +96,16 @@ pub fn oc_conformance_check(ocel_handle: &str) -> Result<JsValue, JsValue> {
         total_traces += trace_count;
         total_fitting += fitting;
 
-        per_type.insert(obj_type.clone(), json!({
-            "fitness": fitness,
-            "traces": trace_count,
-            "fitting_traces": fitting,
-            "deviations": deviations.len(),
-            "sample_deviations": &deviations[..deviations.len().min(5)],
-        }));
+        per_type.insert(
+            obj_type.clone(),
+            json!({
+                "fitness": fitness,
+                "traces": trace_count,
+                "fitting_traces": fitting,
+                "deviations": deviations.len(),
+                "sample_deviations": &deviations[..deviations.len().min(5)],
+            }),
+        );
     }
 
     let overall_fitness = if total_traces > 0 {
@@ -116,11 +116,14 @@ pub fn oc_conformance_check(ocel_handle: &str) -> Result<JsValue, JsValue> {
 
     let mut result = serde_json::Map::new();
     result.extend(per_type);
-    result.insert("overall".into(), json!({
-        "fitness": overall_fitness,
-        "total_traces": total_traces,
-        "fitting_traces": total_fitting,
-    }));
+    result.insert(
+        "overall".into(),
+        json!({
+            "fitness": overall_fitness,
+            "total_traces": total_traces,
+            "fitting_traces": total_fitting,
+        }),
+    );
 
     to_js(&result)
 }
@@ -158,6 +161,9 @@ fn get_ocel(handle: &str) -> Result<OCEL, JsValue> {
     get_or_init_state().with_object(handle, |obj| match obj {
         Some(StoredObject::OCEL(ocel)) => Ok(ocel.clone()),
         Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an OCEL")),
-        None => Err(wasm_err(codes::INVALID_HANDLE, format!("OCEL '{}' not found", handle))),
+        None => Err(wasm_err(
+            codes::INVALID_HANDLE,
+            format!("OCEL '{}' not found", handle),
+        )),
     })
 }

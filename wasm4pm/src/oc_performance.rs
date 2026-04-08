@@ -1,18 +1,17 @@
+use crate::error::{codes, wasm_err};
+use crate::models::{parse_timestamp_ms, OCEL};
+use crate::state::{get_or_init_state, StoredObject};
+use crate::utilities::to_js;
+use crate::{Data, Median};
+use rustc_hash::FxHashMap;
+use serde::Serialize;
+use serde_json::json;
 /// Object-Centric Performance Analysis (Phase 2C).
 ///
 /// For each object type in an OCEL log, builds a performance-annotated
 /// directly-follows graph with per-edge timing statistics (mean, median, p95)
 /// computed from event timestamps.
-
-use wasm_bindgen::prelude::*;
-use crate::state::{get_or_init_state, StoredObject};
-use crate::models::{parse_timestamp_ms, OCEL};
-use crate::utilities::to_js;
-use crate::error::{wasm_err, codes};
-use rustc_hash::FxHashMap;
-use serde::Serialize;
-use serde_json::json;
-use crate::{Data, Median};  // Conditional import: statrs or hand_rolled_stats
+use wasm_bindgen::prelude::*; // Conditional import: statrs or hand_rolled_stats
 
 // -------------------------------------------------------------------------
 // Types
@@ -83,7 +82,8 @@ fn build_performance_dfgs(ocel: &OCEL) -> FxHashMap<String, PerformanceDFG> {
     let mut result: FxHashMap<String, PerformanceDFG> = FxHashMap::default();
 
     // Pre-compute object_id → object_type lookup for O(1) access
-    let obj_to_type: FxHashMap<String, &str> = ocel.objects
+    let obj_to_type: FxHashMap<String, &str> = ocel
+        .objects
         .iter()
         .map(|obj| (obj.id.clone(), obj.object_type.as_str()))
         .collect();
@@ -111,7 +111,8 @@ fn build_performance_dfgs(ocel: &OCEL) -> FxHashMap<String, PerformanceDFG> {
     // Process each object type using the pre-built index
     for obj_type in &ocel.object_types {
         // Get the events for this type, removing from the index to allow mutation
-        let mut events_by_object = type_events.remove(obj_type.as_str())
+        let mut events_by_object = type_events
+            .remove(obj_type.as_str())
             .unwrap_or(FxHashMap::default());
 
         // Sort by timestamp (ISO 8601 lexicographic sort)
@@ -145,9 +146,7 @@ fn build_performance_dfgs(ocel: &OCEL) -> FxHashMap<String, PerformanceDFG> {
             if events.is_empty() {
                 continue;
             }
-            *start_acts
-                .entry(events[0].1.to_string())
-                .or_insert(0) += 1;
+            *start_acts.entry(events[0].1.to_string()).or_insert(0) += 1;
             *end_acts
                 .entry(events[events.len() - 1].1.to_string())
                 .or_insert(0) += 1;
@@ -221,10 +220,7 @@ fn build_performance_dfgs(ocel: &OCEL) -> FxHashMap<String, PerformanceDFG> {
 /// }
 /// ```
 #[wasm_bindgen]
-pub fn analyze_oc_performance(
-    ocel_handle: &str,
-    _timestamp_key: &str,
-) -> Result<JsValue, JsValue> {
+pub fn analyze_oc_performance(ocel_handle: &str, _timestamp_key: &str) -> Result<JsValue, JsValue> {
     let ocel = get_ocel(ocel_handle)?;
     let result = build_performance_dfgs(&ocel);
     to_js(&result)
@@ -243,7 +239,8 @@ pub fn oc_performance_analysis(ocel_handle: &str) -> Result<JsValue, JsValue> {
     let mut result = serde_json::Map::new();
 
     // Pre-compute object_id → object_type lookup for O(1) access
-    let obj_to_type: FxHashMap<String, &str> = ocel.objects
+    let obj_to_type: FxHashMap<String, &str> = ocel
+        .objects
         .iter()
         .map(|obj| (obj.id.clone(), obj.object_type.as_str()))
         .collect();
@@ -268,7 +265,8 @@ pub fn oc_performance_analysis(ocel_handle: &str) -> Result<JsValue, JsValue> {
 
     // Process each object type using the pre-built index
     for obj_type in &ocel.object_types {
-        let events_by_object = type_timestamps.remove(obj_type.as_str())
+        let events_by_object = type_timestamps
+            .remove(obj_type.as_str())
             .unwrap_or(FxHashMap::default());
 
         let mut durations: Vec<f64> = Vec::new();

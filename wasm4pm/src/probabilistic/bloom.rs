@@ -151,11 +151,7 @@ mod tests {
         }
         // Every inserted key must be found
         for i in 0..5000u64 {
-            assert!(
-                bloom.contains(i),
-                "False negative for key {}",
-                i
-            );
+            assert!(bloom.contains(i), "False negative for key {}", i);
         }
     }
 

@@ -9,8 +9,10 @@
 //! This streaming implementation stores closed trace sequences so that the
 //! `to_dfg()` snapshot can compute per-edge removal costs accurately.
 
-use crate::models::{DirectlyFollowsGraph, DFGNode, DirectlyFollowsRelation};
-use crate::streaming::{StreamingAlgorithm, StreamStats, ActivityInterner, impl_activity_interner, Interner};
+use crate::models::{DFGNode, DirectlyFollowsGraph, DirectlyFollowsRelation};
+use crate::streaming::{
+    impl_activity_interner, ActivityInterner, Interner, StreamStats, StreamingAlgorithm,
+};
 use rustc_hash::{FxHashMap, FxHashSet};
 use std::collections::HashMap;
 
@@ -126,7 +128,9 @@ impl StreamingHillClimbingBuilder {
             let mut removal_cost: FxHashMap<(u32, u32), usize> = FxHashMap::default();
 
             for trace in &self.closed_traces {
-                if trace.len() < 2 { continue; }
+                if trace.len() < 2 {
+                    continue;
+                }
 
                 // Count occurrences of each edge pair in this trace
                 let mut pair_counts: FxHashMap<(u32, u32), usize> = FxHashMap::default();
@@ -160,22 +164,29 @@ impl StreamingHillClimbingBuilder {
         // Materialise DFG from the optimized edge set
         let mut dfg = DirectlyFollowsGraph::new();
 
-        dfg.nodes = self.interner.vocab().iter().enumerate().map(|(i, name)| {
-            DFGNode {
+        dfg.nodes = self
+            .interner
+            .vocab()
+            .iter()
+            .enumerate()
+            .map(|(i, name)| DFGNode {
                 id: name.clone(),
                 label: name.clone(),
                 frequency: self.activity_counts.get(i).copied().unwrap_or(0),
-            }
-        }).collect();
-
-        dfg.edges = current_edges.iter().filter_map(|&edge| {
-            let freq = self.edge_counts.get(&edge)?;
-            Some(DirectlyFollowsRelation {
-                from: self.interner.get(edge.0).unwrap_or("").to_string(),
-                to: self.interner.get(edge.1).unwrap_or("").to_string(),
-                frequency: *freq,
             })
-        }).collect();
+            .collect();
+
+        dfg.edges = current_edges
+            .iter()
+            .filter_map(|&edge| {
+                let freq = self.edge_counts.get(&edge)?;
+                Some(DirectlyFollowsRelation {
+                    from: self.interner.get(edge.0).unwrap_or("").to_string(),
+                    to: self.interner.get(edge.1).unwrap_or("").to_string(),
+                    frequency: *freq,
+                })
+            })
+            .collect();
 
         for (&id, &cnt) in &self.start_counts {
             if let Some(name) = self.interner.get(id) {
@@ -214,8 +225,12 @@ impl StreamingAlgorithm for StreamingHillClimbingBuilder {
     }
 
     fn close_trace(&mut self, case_id: &str) -> bool {
-        let Some(events) = self.open_traces.remove(case_id) else { return false; };
-        if events.is_empty() { return true; }
+        let Some(events) = self.open_traces.remove(case_id) else {
+            return false;
+        };
+        if events.is_empty() {
+            return true;
+        }
 
         for &id in &events {
             self.activity_counts[id as usize] += 1;
@@ -244,13 +259,14 @@ impl StreamingAlgorithm for StreamingHillClimbingBuilder {
     fn stats(&self) -> StreamStats {
         let open_trace_events: usize = self.open_traces.values().map(|v| v.len()).sum();
         let closed_trace_events: usize = self.closed_traces.iter().map(|v| v.len()).sum();
-        let memory_bytes =
-            self.open_traces.capacity() * (std::mem::size_of::<String>() + std::mem::size_of::<Vec<u32>>()) +
-            open_trace_events * std::mem::size_of::<u32>() +
-            self.closed_traces.capacity() * std::mem::size_of::<Vec<u32>>() +
-            closed_trace_events * std::mem::size_of::<u32>() +
-            self.activity_counts.capacity() * std::mem::size_of::<usize>() +
-            self.edge_counts.capacity() * (std::mem::size_of::<(u32,u32)>() + std::mem::size_of::<usize>());
+        let memory_bytes = self.open_traces.capacity()
+            * (std::mem::size_of::<String>() + std::mem::size_of::<Vec<u32>>())
+            + open_trace_events * std::mem::size_of::<u32>()
+            + self.closed_traces.capacity() * std::mem::size_of::<Vec<u32>>()
+            + closed_trace_events * std::mem::size_of::<u32>()
+            + self.activity_counts.capacity() * std::mem::size_of::<usize>()
+            + self.edge_counts.capacity()
+                * (std::mem::size_of::<(u32, u32)>() + std::mem::size_of::<usize>());
 
         StreamStats {
             event_count: self.event_count,
@@ -334,7 +350,11 @@ mod tests {
         stream.close_trace("c1");
 
         let dfg = stream.snapshot();
-        assert_eq!(dfg.edges.len(), 1, "should keep all edges with zero threshold");
+        assert_eq!(
+            dfg.edges.len(),
+            1,
+            "should keep all edges with zero threshold"
+        );
     }
 
     #[test]
@@ -354,7 +374,11 @@ mod tests {
         stream.close_trace("c2");
 
         let dfg = stream.snapshot();
-        assert_eq!(dfg.edges.len(), 4, "should discover all 4 edges across both traces");
+        assert_eq!(
+            dfg.edges.len(),
+            4,
+            "should discover all 4 edges across both traces"
+        );
     }
 
     #[test]

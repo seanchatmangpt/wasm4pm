@@ -4,8 +4,8 @@
 //!   - Decision graph fall-through: Build a decision graph from DFG
 //!   - Flower model fall-through: All activities in a loop
 
-use crate::powl_arena::{Operator, PowlArena};
 use super::DiscoveryConfig;
+use crate::powl_arena::{Operator, PowlArena};
 
 /// Decision graph fall-through
 ///
@@ -34,7 +34,8 @@ pub fn decision_graph_fall_through(
     }
 
     // Build DFG to determine start/end nodes and ordering
-    let mut activity_to_idx: std::collections::HashMap<&str, usize> = std::collections::HashMap::new();
+    let mut activity_to_idx: std::collections::HashMap<&str, usize> =
+        std::collections::HashMap::new();
     for (i, act) in activities.iter().enumerate() {
         activity_to_idx.insert(act, i);
     }
@@ -63,14 +64,10 @@ pub fn decision_graph_fall_through(
     }
 
     // Start nodes: no incoming edges
-    let start_nodes: Vec<usize> = (0..n)
-        .filter(|&i| incoming_count[i] == 0)
-        .collect();
+    let start_nodes: Vec<usize> = (0..n).filter(|&i| incoming_count[i] == 0).collect();
 
     // End nodes: no outgoing edges
-    let end_nodes: Vec<usize> = (0..n)
-        .filter(|&i| outgoing_count[i] == 0)
-        .collect();
+    let end_nodes: Vec<usize> = (0..n).filter(|&i| outgoing_count[i] == 0).collect();
 
     // Empty path: true if start can reach end directly (single activity or no edges)
     let empty_path: bool = n == 1 || start_nodes.is_empty() && end_nodes.is_empty();
@@ -84,13 +81,7 @@ pub fn decision_graph_fall_through(
 
     // Create DecisionGraph node
     // Note: start_nodes and end_nodes are local indices (0..n)
-    Ok(arena.add_decision_graph(
-        child_indices,
-        order,
-        start_nodes,
-        end_nodes,
-        empty_path,
-    ))
+    Ok(arena.add_decision_graph(child_indices, order, start_nodes, end_nodes, empty_path))
 }
 
 /// Flower model fall-through
@@ -160,9 +151,7 @@ mod tests {
 
     #[test]
     fn test_decision_graph_fall_through_single_activity() {
-        let traces = vec![
-            vec!["A".to_string()],
-        ];
+        let traces = vec![vec!["A".to_string()]];
 
         let mut arena = PowlArena::new();
         let config = DiscoveryConfig::default();

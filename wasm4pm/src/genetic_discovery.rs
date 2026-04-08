@@ -1,10 +1,10 @@
-use wasm_bindgen::prelude::*;
-use crate::state::{get_or_init_state, StoredObject};
 use crate::models::*;
+use crate::state::{get_or_init_state, StoredObject};
+use crate::utilities::{evaluate_edges_fitness, to_js};
+use rustc_hash::FxHashMap;
 use serde_json::json;
 use std::collections::HashSet;
-use rustc_hash::FxHashMap;
-use crate::utilities::{to_js, evaluate_edges_fitness};
+use wasm_bindgen::prelude::*;
 
 type EdgeSet = HashSet<(u32, u32)>;
 
@@ -42,13 +42,10 @@ pub fn discover_genetic_algorithm(
                     let end = col.trace_offsets[t + 1];
                     for i in start..end.saturating_sub(1) {
                         let edge = (col.events[i], col.events[i + 1]);
-                        edge_map
-                            .entry(edge)
-                            .and_modify(|_| {})
-                            .or_insert_with(|| {
-                                edge_vocab.push(edge);
-                                edge_vocab.len() - 1
-                            });
+                        edge_map.entry(edge).and_modify(|_| {}).or_insert_with(|| {
+                            edge_vocab.push(edge);
+                            edge_vocab.len() - 1
+                        });
                     }
                 }
 
@@ -67,7 +64,8 @@ pub fn discover_genetic_algorithm(
                 // Evolution loop
                 for _generation in 0..generations {
                     // Sort by fitness (descending)
-                    population.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+                    population
+                        .sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
 
                     // Keep top performers (elitism)
                     let elite_size = (population_size / 4).max(1);
@@ -91,7 +89,8 @@ pub fn discover_genetic_algorithm(
                 }
 
                 // Get best solution
-                population.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+                population
+                    .sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
                 let best_fitness = population[0].1;
                 let best_edges = population.remove(0).0;
                 Ok((best_edges, best_fitness, vocab))
@@ -153,13 +152,10 @@ pub fn discover_pso_algorithm(
                     let end = col.trace_offsets[t + 1];
                     for i in start..end.saturating_sub(1) {
                         let edge = (col.events[i], col.events[i + 1]);
-                        edge_map
-                            .entry(edge)
-                            .and_modify(|_| {})
-                            .or_insert_with(|| {
-                                edge_vocab.push(edge);
-                                edge_vocab.len() - 1
-                            });
+                        edge_map.entry(edge).and_modify(|_| {}).or_insert_with(|| {
+                            edge_vocab.push(edge);
+                            edge_vocab.len() - 1
+                        });
                     }
                 }
 
@@ -193,11 +189,8 @@ pub fn discover_pso_algorithm(
                         let move_probability = improvement_rate.min(0.9);
 
                         if fastrand::f64() < move_probability {
-                            particles[i].0 = blend_edges(
-                                &particles[i].0,
-                                &best_global.as_ref().unwrap().0,
-                                0.3,
-                            );
+                            particles[i].0 =
+                                blend_edges(&particles[i].0, &best_global.as_ref().unwrap().0, 0.3);
 
                             // Add small mutation for exploration
                             mutate_edges(&mut particles[i].0, 0.05);
@@ -381,7 +374,6 @@ fn rand_select<T>(items: &[(T, f64)]) -> usize {
     }
     (fastrand::f64() * n as f64) as usize % n
 }
-
 
 #[wasm_bindgen]
 pub fn genetic_discovery_info() -> String {

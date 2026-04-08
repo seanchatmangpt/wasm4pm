@@ -91,9 +91,7 @@ pub fn median_timestamp(data: &mut [Timestamp]) -> Option<Timestamp> {
     if data.is_empty() {
         return None;
     }
-    let mut ms: Vec<i64> = data.iter()
-        .map(|ts| ts.timestamp_millis())
-        .collect();
+    let mut ms: Vec<i64> = data.iter().map(|ts| ts.timestamp_millis()).collect();
     ms.sort();
     let len = ms.len();
     let median_ms = if len % 2 == 0 {

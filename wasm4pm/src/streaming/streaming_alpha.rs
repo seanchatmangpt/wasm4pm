@@ -5,8 +5,10 @@
 //! reverse-follows counts, then derives alpha relations at snapshot time
 //! to construct a Petri net with places and transitions.
 
-use crate::models::{PetriNet, PetriNetPlace, PetriNetTransition, PetriNetArc};
-use crate::streaming::{StreamingAlgorithm, StreamStats, ActivityInterner, impl_activity_interner, Interner};
+use crate::models::{PetriNet, PetriNetArc, PetriNetPlace, PetriNetTransition};
+use crate::streaming::{
+    impl_activity_interner, ActivityInterner, Interner, StreamStats, StreamingAlgorithm,
+};
 use rustc_hash::FxHashMap;
 use std::collections::HashMap;
 
@@ -72,8 +74,10 @@ impl StreamingAlphaPlusBuilder {
 
         // Build pre-set and post-set for each activity
         // Causal: a > b iff edge_counts[(a,b)] > 0 and reverse_edge_counts[(b,a)] == 0
-        let mut pre_sets: Vec<std::collections::HashSet<u32>> = vec![std::collections::HashSet::new(); n];
-        let mut post_sets: Vec<std::collections::HashSet<u32>> = vec![std::collections::HashSet::new(); n];
+        let mut pre_sets: Vec<std::collections::HashSet<u32>> =
+            vec![std::collections::HashSet::new(); n];
+        let mut post_sets: Vec<std::collections::HashSet<u32>> =
+            vec![std::collections::HashSet::new(); n];
 
         for (&(from, to), _) in &self.edge_counts {
             // from > to (causal) if no reverse edge
@@ -166,8 +170,10 @@ impl StreamingAlphaPlusBuilder {
         // Deduplicate transitions and arcs
         let mut seen_t: std::collections::HashSet<String> = std::collections::HashSet::new();
         net.transitions.retain(|t| seen_t.insert(t.id.clone()));
-        let mut seen_a: std::collections::HashSet<(String, String)> = std::collections::HashSet::new();
-        net.arcs.retain(|a| seen_a.insert((a.from.clone(), a.to.clone())));
+        let mut seen_a: std::collections::HashSet<(String, String)> =
+            std::collections::HashSet::new();
+        net.arcs
+            .retain(|a| seen_a.insert((a.from.clone(), a.to.clone())));
 
         net
     }
@@ -195,8 +201,12 @@ impl StreamingAlgorithm for StreamingAlphaPlusBuilder {
     }
 
     fn close_trace(&mut self, case_id: &str) -> bool {
-        let Some(events) = self.open_traces.remove(case_id) else { return false; };
-        if events.is_empty() { return true; }
+        let Some(events) = self.open_traces.remove(case_id) else {
+            return false;
+        };
+        if events.is_empty() {
+            return true;
+        }
 
         for &id in &events {
             self.activity_counts[id as usize] += 1;
@@ -204,7 +214,10 @@ impl StreamingAlgorithm for StreamingAlphaPlusBuilder {
 
         for pair in events.windows(2) {
             *self.edge_counts.entry((pair[0], pair[1])).or_insert(0) += 1;
-            *self.reverse_edge_counts.entry((pair[1], pair[0])).or_insert(0) += 1;
+            *self
+                .reverse_edge_counts
+                .entry((pair[1], pair[0]))
+                .or_insert(0) += 1;
         }
 
         *self.start_counts.entry(events[0]).or_insert(0) += 1;
@@ -222,12 +235,14 @@ impl StreamingAlgorithm for StreamingAlphaPlusBuilder {
 
     fn stats(&self) -> StreamStats {
         let open_trace_events: usize = self.open_traces.values().map(|v| v.len()).sum();
-        let memory_bytes =
-            self.open_traces.capacity() * (std::mem::size_of::<String>() + std::mem::size_of::<Vec<u32>>()) +
-            open_trace_events * std::mem::size_of::<u32>() +
-            self.activity_counts.capacity() * std::mem::size_of::<usize>() +
-            self.edge_counts.capacity() * (std::mem::size_of::<(u32,u32)>() + std::mem::size_of::<usize>()) +
-            self.reverse_edge_counts.capacity() * (std::mem::size_of::<(u32,u32)>() + std::mem::size_of::<usize>());
+        let memory_bytes = self.open_traces.capacity()
+            * (std::mem::size_of::<String>() + std::mem::size_of::<Vec<u32>>())
+            + open_trace_events * std::mem::size_of::<u32>()
+            + self.activity_counts.capacity() * std::mem::size_of::<usize>()
+            + self.edge_counts.capacity()
+                * (std::mem::size_of::<(u32, u32)>() + std::mem::size_of::<usize>())
+            + self.reverse_edge_counts.capacity()
+                * (std::mem::size_of::<(u32, u32)>() + std::mem::size_of::<usize>());
 
         StreamStats {
             event_count: self.event_count,

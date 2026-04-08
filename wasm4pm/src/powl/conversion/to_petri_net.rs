@@ -1,6 +1,9 @@
 /// Convert a POWL model to a Petri net.
 use crate::powl_arena::{Operator, PowlArena, PowlNode};
-use crate::powl_models::{PowlCounts as Counts, PowlMarking as Marking, PowlPetriNet as PetriNet, PowlPetriNetResult as PetriNetResult};
+use crate::powl_models::{
+    PowlCounts as Counts, PowlMarking as Marking, PowlPetriNet as PetriNet,
+    PowlPetriNetResult as PetriNetResult,
+};
 use std::collections::HashMap;
 
 fn new_place(net: &mut PetriNet, counts: &mut Counts) -> String {
@@ -24,7 +27,10 @@ fn new_visible_trans(
     let n = counts.inc_visible();
     let name = format!("vis_{}", n);
     let mut props = HashMap::new();
-    props.insert("activity".to_string(), serde_json::Value::String(activity.to_string()));
+    props.insert(
+        "activity".to_string(),
+        serde_json::Value::String(activity.to_string()),
+    );
     props.insert("skippable".to_string(), serde_json::Value::Bool(skippable));
     props.insert("selfloop".to_string(), serde_json::Value::Bool(selfloop));
     net.add_transition_with_props(&name, Some(label.to_string()), props)
@@ -77,7 +83,15 @@ fn recursively_add_tree(
             match operator {
                 Operator::Xor => {
                     for &child in &children {
-                        recursively_add_tree(arena, child, net, initial_place, Some(&final_place_name), counts, false);
+                        recursively_add_tree(
+                            arena,
+                            child,
+                            net,
+                            initial_place,
+                            Some(&final_place_name),
+                            counts,
+                            false,
+                        );
                     }
                 }
                 Operator::Loop => {
@@ -87,9 +101,18 @@ fn recursively_add_tree(
                     net.add_arc(&init_loop_trans, &new_init_place);
                     let loop_trans = new_hidden_trans(net, counts, "loop");
                     let do_idx = children[0];
-                    let int1 = recursively_add_tree(arena, do_idx, net, &new_init_place, None, counts, false);
+                    let int1 = recursively_add_tree(
+                        arena,
+                        do_idx,
+                        net,
+                        &new_init_place,
+                        None,
+                        counts,
+                        false,
+                    );
                     let redo_idx = children[1];
-                    let int2 = recursively_add_tree(arena, redo_idx, net, &int1, None, counts, false);
+                    let int2 =
+                        recursively_add_tree(arena, redo_idx, net, &int1, None, counts, false);
                     let exit_trans = new_hidden_trans(net, counts, "skip");
                     net.add_arc(&int1, &exit_trans);
                     net.add_arc(&exit_trans, &final_place_name);
@@ -124,7 +147,15 @@ fn recursively_add_tree(
                 if end_locals.contains(&local) {
                     net.add_arc(&f_place, &tau_join);
                 }
-                recursively_add_tree(arena, child_idx, net, &i_place, Some(&f_place), counts, false);
+                recursively_add_tree(
+                    arena,
+                    child_idx,
+                    net,
+                    &i_place,
+                    Some(&f_place),
+                    counts,
+                    false,
+                );
                 init_places.push(i_place);
                 final_places.push(f_place);
             }
@@ -164,7 +195,15 @@ fn recursively_add_tree(
                 if dg.end_nodes.contains(&local) {
                     net.add_arc(&f_place, &tau_join);
                 }
-                recursively_add_tree(arena, child_idx, net, &i_place, Some(&f_place), counts, false);
+                recursively_add_tree(
+                    arena,
+                    child_idx,
+                    net,
+                    &i_place,
+                    Some(&f_place),
+                    counts,
+                    false,
+                );
                 init_places.push(i_place);
                 final_places.push(f_place);
             }
@@ -184,8 +223,10 @@ fn recursively_add_tree(
 }
 
 fn remove_dead_places(net: &mut PetriNet, initial_marking: &Marking, final_marking: &Marking) {
-    let im_places: std::collections::HashSet<&str> = initial_marking.keys().map(|s| s.as_str()).collect();
-    let fm_places: std::collections::HashSet<&str> = final_marking.keys().map(|s| s.as_str()).collect();
+    let im_places: std::collections::HashSet<&str> =
+        initial_marking.keys().map(|s| s.as_str()).collect();
+    let fm_places: std::collections::HashSet<&str> =
+        final_marking.keys().map(|s| s.as_str()).collect();
     let place_names: Vec<String> = net.places.iter().map(|p| p.name.clone()).collect();
     for p in &place_names {
         if fm_places.contains(p.as_str()) || im_places.contains(p.as_str()) {
@@ -216,10 +257,22 @@ pub fn apply(arena: &PowlArena, root: u32) -> PetriNetResult {
     let tau_final = new_hidden_trans(&mut net, &mut counts, "tau");
     net.add_arc(&final_place, &tau_final);
     net.add_arc(&tau_final, "sink");
-    recursively_add_tree(arena, root, &mut net, &initial_place, Some(&final_place), &mut counts, false);
+    recursively_add_tree(
+        arena,
+        root,
+        &mut net,
+        &initial_place,
+        Some(&final_place),
+        &mut counts,
+        false,
+    );
     net.apply_simple_reduction();
     remove_dead_places(&mut net, &initial_marking, &final_marking);
-    PetriNetResult { net, initial_marking, final_marking }
+    PetriNetResult {
+        net,
+        initial_marking,
+        final_marking,
+    }
 }
 
 #[cfg(test)]
@@ -239,14 +292,23 @@ mod tests {
         let result = apply(&arena, root);
         assert!(result.net.places.iter().any(|p| p.name == "source"));
         assert!(result.net.places.iter().any(|p| p.name == "sink"));
-        assert!(result.net.transitions.iter().any(|t| t.label.as_deref() == Some("A")));
+        assert!(result
+            .net
+            .transitions
+            .iter()
+            .any(|t| t.label.as_deref() == Some("A")));
     }
 
     #[test]
     fn xor_produces_choice() {
         let (arena, root) = build("X ( A, B )");
         let result = apply(&arena, root);
-        let labels: Vec<Option<&str>> = result.net.transitions.iter().map(|t| t.label.as_deref()).collect();
+        let labels: Vec<Option<&str>> = result
+            .net
+            .transitions
+            .iter()
+            .map(|t| t.label.as_deref())
+            .collect();
         assert!(labels.contains(&Some("A")));
         assert!(labels.contains(&Some("B")));
     }
@@ -255,7 +317,12 @@ mod tests {
     fn partial_order_produces_parallel() {
         let (arena, root) = build("PO=(nodes={A, B}, order={})");
         let result = apply(&arena, root);
-        let labels: Vec<Option<&str>> = result.net.transitions.iter().map(|t| t.label.as_deref()).collect();
+        let labels: Vec<Option<&str>> = result
+            .net
+            .transitions
+            .iter()
+            .map(|t| t.label.as_deref())
+            .collect();
         assert!(labels.contains(&Some("A")));
         assert!(labels.contains(&Some("B")));
     }
@@ -264,15 +331,28 @@ mod tests {
     fn sequence_order_preserves_structure() {
         let (arena, root) = build("PO=(nodes={A, B}, order={A-->B})");
         let result = apply(&arena, root);
-        assert!(result.net.transitions.iter().any(|t| t.label.as_deref() == Some("A")));
-        assert!(result.net.transitions.iter().any(|t| t.label.as_deref() == Some("B")));
+        assert!(result
+            .net
+            .transitions
+            .iter()
+            .any(|t| t.label.as_deref() == Some("A")));
+        assert!(result
+            .net
+            .transitions
+            .iter()
+            .any(|t| t.label.as_deref() == Some("B")));
     }
 
     #[test]
     fn loop_produces_cycle() {
         let (arena, root) = build("* ( A, B )");
         let result = apply(&arena, root);
-        let labels: Vec<Option<&str>> = result.net.transitions.iter().map(|t| t.label.as_deref()).collect();
+        let labels: Vec<Option<&str>> = result
+            .net
+            .transitions
+            .iter()
+            .map(|t| t.label.as_deref())
+            .collect();
         assert!(labels.contains(&Some("A")));
         assert!(labels.contains(&Some("B")));
     }
@@ -294,7 +374,12 @@ mod tests {
         let result = apply(&arena, dg);
         assert!(result.net.places.iter().any(|p| p.name == "source"));
         assert!(result.net.places.iter().any(|p| p.name == "sink"));
-        let labels: Vec<Option<&str>> = result.net.transitions.iter().map(|t| t.label.as_deref()).collect();
+        let labels: Vec<Option<&str>> = result
+            .net
+            .transitions
+            .iter()
+            .map(|t| t.label.as_deref())
+            .collect();
         assert!(labels.contains(&Some("A")));
         assert!(labels.contains(&Some("B")));
     }

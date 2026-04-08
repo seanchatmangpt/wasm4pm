@@ -1,3 +1,5 @@
+use crate::state::{get_or_init_state, StoredObject};
+use serde_json::json;
 /// Priority 7 — Trace anomaly scoring.
 ///
 /// Scores each trace against a reference DFG.  Unusual traces (those that
@@ -6,8 +8,6 @@
 /// trace; a step whose pair is absent from the DFG is penalised with a fixed
 /// cost of 10.
 use wasm_bindgen::prelude::*;
-use crate::state::{get_or_init_state, StoredObject};
-use serde_json::json;
 
 const MISSING_EDGE_COST: f64 = 10.0;
 
@@ -37,7 +37,9 @@ pub fn score_trace_anomaly(dfg_handle: &str, activities_json: &str) -> Result<Js
             let mut cost_sum = 0.0_f64;
             let steps = activities.len() - 1;
             for i in 0..steps {
-                let edge_freq = dfg.edges.iter()
+                let edge_freq = dfg
+                    .edges
+                    .iter()
                     .find(|e| e.from == activities[i] && e.to == activities[i + 1])
                     .map(|e| e.frequency)
                     .unwrap_or(0);
@@ -71,15 +73,20 @@ pub fn score_log_anomalies(
     // Collect DFG edge frequencies
     let edge_data: Vec<(String, String, usize)> =
         get_or_init_state().with_object(dfg_handle, |obj| match obj {
-            Some(StoredObject::DirectlyFollowsGraph(dfg)) => {
-                Ok(dfg.edges.iter().map(|e| (e.from.clone(), e.to.clone(), e.frequency)).collect())
-            }
-            Some(_) => Err(JsValue::from_str("dfg_handle is not a DirectlyFollowsGraph")),
+            Some(StoredObject::DirectlyFollowsGraph(dfg)) => Ok(dfg
+                .edges
+                .iter()
+                .map(|e| (e.from.clone(), e.to.clone(), e.frequency))
+                .collect()),
+            Some(_) => Err(JsValue::from_str(
+                "dfg_handle is not a DirectlyFollowsGraph",
+            )),
             None => Err(JsValue::from_str("DFG handle not found")),
         })?;
 
     let total_f: f64 = edge_data.iter().map(|(_, _, f)| *f).sum::<usize>().max(1) as f64;
-    let freq_map: std::collections::HashMap<(&str, &str), usize> = edge_data.iter()
+    let freq_map: std::collections::HashMap<(&str, &str), usize> = edge_data
+        .iter()
         .map(|(f, t, c)| ((f.as_str(), t.as_str()), *c))
         .collect();
 
@@ -87,11 +94,15 @@ pub fn score_log_anomalies(
         Some(StoredObject::EventLog(log)) => {
             let mut results: Vec<serde_json::Value> = Vec::new();
             for trace in &log.traces {
-                let case_id = trace.attributes.get("concept:name")
+                let case_id = trace
+                    .attributes
+                    .get("concept:name")
                     .and_then(|v| v.as_string())
                     .unwrap_or("unknown")
                     .to_string();
-                let acts: Vec<&str> = trace.events.iter()
+                let acts: Vec<&str> = trace
+                    .events
+                    .iter()
                     .filter_map(|e| e.attributes.get(activity_key).and_then(|v| v.as_string()))
                     .collect();
                 if acts.len() < 2 {
@@ -108,10 +119,14 @@ pub fn score_log_anomalies(
                         -(freq as f64 / total_f).log2()
                     };
                 }
-                results.push(json!({"case_id": case_id, "score": cost / steps as f64, "steps": steps}));
+                results.push(
+                    json!({"case_id": case_id, "score": cost / steps as f64, "steps": steps}),
+                );
             }
             results.sort_by(|a, b| {
-                b["score"].as_f64().unwrap_or(0.0)
+                b["score"]
+                    .as_f64()
+                    .unwrap_or(0.0)
                     .partial_cmp(&a["score"].as_f64().unwrap_or(0.0))
                     .unwrap_or(std::cmp::Ordering::Equal)
             });

@@ -44,19 +44,54 @@ pub struct LogShape {
 /// Standard benchmark sizes: small → xlarge.
 pub fn bench_sizes() -> Vec<LogShape> {
     vec![
-        LogShape { num_cases: 100,    avg_events_per_case: 10, num_activities: 8,  noise_factor: 0.05 },
-        LogShape { num_cases: 1_000,  avg_events_per_case: 15, num_activities: 12, noise_factor: 0.10 },
-        LogShape { num_cases: 10_000, avg_events_per_case: 15, num_activities: 15, noise_factor: 0.10 },
-        LogShape { num_cases: 50_000, avg_events_per_case: 20, num_activities: 20, noise_factor: 0.15 },
+        LogShape {
+            num_cases: 100,
+            avg_events_per_case: 10,
+            num_activities: 8,
+            noise_factor: 0.05,
+        },
+        LogShape {
+            num_cases: 1_000,
+            avg_events_per_case: 15,
+            num_activities: 12,
+            noise_factor: 0.10,
+        },
+        LogShape {
+            num_cases: 10_000,
+            avg_events_per_case: 15,
+            num_activities: 15,
+            noise_factor: 0.10,
+        },
+        LogShape {
+            num_cases: 50_000,
+            avg_events_per_case: 20,
+            num_activities: 20,
+            noise_factor: 0.15,
+        },
     ]
 }
 
 /// Sizes capped for slow (>200ms) algorithms.
 pub fn bench_sizes_slow() -> Vec<LogShape> {
     vec![
-        LogShape { num_cases: 100,   avg_events_per_case: 10, num_activities: 8,  noise_factor: 0.05 },
-        LogShape { num_cases: 500,   avg_events_per_case: 12, num_activities: 10, noise_factor: 0.10 },
-        LogShape { num_cases: 1_000, avg_events_per_case: 15, num_activities: 12, noise_factor: 0.10 },
+        LogShape {
+            num_cases: 100,
+            avg_events_per_case: 10,
+            num_activities: 8,
+            noise_factor: 0.05,
+        },
+        LogShape {
+            num_cases: 500,
+            avg_events_per_case: 12,
+            num_activities: 10,
+            noise_factor: 0.10,
+        },
+        LogShape {
+            num_cases: 1_000,
+            avg_events_per_case: 15,
+            num_activities: 12,
+            noise_factor: 0.10,
+        },
     ]
 }
 
@@ -64,9 +99,12 @@ pub fn bench_sizes_slow() -> Vec<LogShape> {
 struct Lcg(u64);
 
 impl Lcg {
-    const fn new(seed: u64) -> Self { Self(seed) }
+    const fn new(seed: u64) -> Self {
+        Self(seed)
+    }
     fn next(&mut self) -> u64 {
-        self.0 = self.0
+        self.0 = self
+            .0
             .wrapping_mul(6_364_136_223_846_793_005)
             .wrapping_add(1_442_695_040_888_963_407);
         self.0
@@ -83,12 +121,19 @@ impl Lcg {
 ///
 /// Deterministic: same `LogShape` always produces the same log.
 pub fn generate_event_log(shape: &LogShape) -> EventLog {
-    let activities: Vec<&str> = ACTIVITIES.iter().copied().take(shape.num_activities).collect();
+    let activities: Vec<&str> = ACTIVITIES
+        .iter()
+        .copied()
+        .take(shape.num_activities)
+        .collect();
     let mut rng = Lcg::new(0xDEAD_BEEF_CAFE_BABE);
     let mut log = EventLog::new();
 
     for case_idx in 0..shape.num_cases {
-        let mut trace = Trace { attributes: HashMap::new(), events: Vec::new() };
+        let mut trace = Trace {
+            attributes: HashMap::new(),
+            events: Vec::new(),
+        };
         trace.attributes.insert(
             "case:concept:name".to_string(),
             AttributeValue::String(format!("case_{}", case_idx)),
@@ -148,12 +193,12 @@ pub fn parse_model_stats(json: &str) -> (usize, usize) {
     use simd_json::prelude::{ValueAsContainer, ValueAsScalar};
     let mut bytes = json.as_bytes().to_vec();
     if let Ok(val) = simd_json::to_owned_value(&mut bytes) {
-        let nodes = val["node_count"].as_usize().unwrap_or_else(|| {
-            val["nodes"].as_array().map(|a| a.len()).unwrap_or(0)
-        });
-        let edges = val["edge_count"].as_usize().unwrap_or_else(|| {
-            val["edges"].as_array().map(|a| a.len()).unwrap_or(0)
-        });
+        let nodes = val["node_count"]
+            .as_usize()
+            .unwrap_or_else(|| val["nodes"].as_array().map(|a| a.len()).unwrap_or(0));
+        let edges = val["edge_count"]
+            .as_usize()
+            .unwrap_or_else(|| val["edges"].as_array().map(|a| a.len()).unwrap_or(0));
         (nodes, edges)
     } else {
         (0, 0)

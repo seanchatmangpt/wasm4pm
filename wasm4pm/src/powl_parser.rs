@@ -51,14 +51,8 @@ fn tokenize(s: &str) -> Vec<String> {
 // ─── Parser ───────────────────────────────────────────────────────────────────
 
 /// Parse a POWL model string and return the root index in the arena.
-pub fn parse_powl_model_string(
-    s: &str,
-    arena: &mut PowlArena,
-) -> Result<u32, String> {
-    let s = s
-        .replace(['\n', '\r', '\t'], "")
-        .trim()
-        .to_string();
+pub fn parse_powl_model_string(s: &str, arena: &mut PowlArena) -> Result<u32, String> {
+    let s = s.replace(['\n', '\r', '\t'], "").trim().to_string();
 
     if s.is_empty() {
         return Err("empty POWL string".to_string());
@@ -271,8 +265,7 @@ fn extract_bool_value<'a>(s: &'a str, key: &str) -> Result<&'a str, String> {
 }
 
 fn node_label_matches(token: &str, label: &str) -> bool {
-    token.trim() == label.trim()
-        || token.trim().trim_matches('\'') == label.trim()
+    token.trim() == label.trim() || token.trim().trim_matches('\'') == label.trim()
 }
 
 fn extract_braced_content<'a>(s: &'a str, key: &str) -> Result<&'a str, String> {

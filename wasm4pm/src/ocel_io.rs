@@ -1,8 +1,8 @@
-use wasm_bindgen::prelude::*;
-use crate::state::{get_or_init_state, StoredObject};
 use crate::models::OCEL;
+use crate::state::{get_or_init_state, StoredObject};
 use serde_json::json;
 use std::collections::HashSet;
+use wasm_bindgen::prelude::*;
 
 /// Load an OCEL 2.0 from JSON string
 /// Parses JSON into OCEL struct, stores in AppState, returns handle
@@ -23,10 +23,8 @@ pub fn load_ocel2_from_json(content: &str) -> Result<String, JsValue> {
 #[wasm_bindgen]
 pub fn export_ocel2_to_json(handle: &str) -> Result<String, JsValue> {
     get_or_init_state().with_object(handle, |obj| match obj {
-        Some(StoredObject::OCEL(ocel)) => {
-            serde_json::to_string_pretty(ocel)
-                .map_err(|e| JsValue::from_str(&format!("Failed to serialize OCEL 2.0: {}", e)))
-        }
+        Some(StoredObject::OCEL(ocel)) => serde_json::to_string_pretty(ocel)
+            .map_err(|e| JsValue::from_str(&format!("Failed to serialize OCEL 2.0: {}", e))),
         Some(_) => Err(JsValue::from_str("Object is not an OCEL")),
         None => Err(JsValue::from_str("OCEL not found")),
     })
@@ -45,11 +43,8 @@ pub fn validate_ocel(handle: &str) -> Result<JsValue, JsValue> {
             let mut errors = Vec::new();
 
             // Build a set of valid object IDs for quick lookup
-            let valid_object_ids: HashSet<String> = ocel
-                .objects
-                .iter()
-                .map(|o| o.id.clone())
-                .collect();
+            let valid_object_ids: HashSet<String> =
+                ocel.objects.iter().map(|o| o.id.clone()).collect();
 
             // Check event-object references
             for event in &ocel.events {
@@ -92,9 +87,12 @@ pub fn validate_ocel(handle: &str) -> Result<JsValue, JsValue> {
             }
 
             // Check event type consistency
-            let declared_event_types: HashSet<String> = ocel.event_types.clone().into_iter().collect();
+            let declared_event_types: HashSet<String> =
+                ocel.event_types.clone().into_iter().collect();
             for event in &ocel.events {
-                if !declared_event_types.is_empty() && !declared_event_types.contains(&event.event_type) {
+                if !declared_event_types.is_empty()
+                    && !declared_event_types.contains(&event.event_type)
+                {
                     errors.push(format!(
                         "Event '{}' has undeclared type: '{}'",
                         event.id, event.event_type
@@ -103,9 +101,12 @@ pub fn validate_ocel(handle: &str) -> Result<JsValue, JsValue> {
             }
 
             // Check object type consistency
-            let declared_object_types: HashSet<String> = ocel.object_types.clone().into_iter().collect();
+            let declared_object_types: HashSet<String> =
+                ocel.object_types.clone().into_iter().collect();
             for object in &ocel.objects {
-                if !declared_object_types.is_empty() && !declared_object_types.contains(&object.object_type) {
+                if !declared_object_types.is_empty()
+                    && !declared_object_types.contains(&object.object_type)
+                {
                     errors.push(format!(
                         "Object '{}' has undeclared type: '{}'",
                         object.id, object.object_type
@@ -123,8 +124,9 @@ pub fn validate_ocel(handle: &str) -> Result<JsValue, JsValue> {
             });
 
             // Serialize to string and return as JsValue
-            let report_json = serde_json::to_string(&report)
-                .map_err(|e| JsValue::from_str(&format!("Failed to serialize validation report: {}", e)))?;
+            let report_json = serde_json::to_string(&report).map_err(|e| {
+                JsValue::from_str(&format!("Failed to serialize validation report: {}", e))
+            })?;
             Ok(JsValue::from_str(&report_json))
         }
         Some(_) => Err(JsValue::from_str("Object is not an OCEL")),

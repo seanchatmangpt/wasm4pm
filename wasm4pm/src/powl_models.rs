@@ -103,7 +103,9 @@ impl PowlPetriNet {
     }
 
     pub fn add_place(&mut self, name: &str) -> String {
-        self.places.push(PowlPlace { name: name.to_string() });
+        self.places.push(PowlPlace {
+            name: name.to_string(),
+        });
         name.to_string()
     }
 
@@ -152,8 +154,7 @@ impl PowlPetriNet {
     pub fn apply_simple_reduction(&mut self) {
         loop {
             let mut reduced = false;
-            let place_names: Vec<String> =
-                self.places.iter().map(|p| p.name.clone()).collect();
+            let place_names: Vec<String> = self.places.iter().map(|p| p.name.clone()).collect();
             for p_name in &place_names {
                 let in_trans: Vec<String> = self
                     .arcs
@@ -269,8 +270,7 @@ impl PowlProcessTree {
             (None, None) => "tau".to_string(),
             (None, Some(l)) => l.clone(),
             (Some(op), _) => {
-                let children: Vec<String> =
-                    self.children.iter().map(|c| c.to_repr()).collect();
+                let children: Vec<String> = self.children.iter().map(|c| c.to_repr()).collect();
                 format!("{} ( {} )", op.as_str(), children.join(", "))
             }
         }

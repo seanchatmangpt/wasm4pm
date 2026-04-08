@@ -1,10 +1,10 @@
-use wasm_bindgen::prelude::*;
-use crate::state::{get_or_init_state, StoredObject};
+use crate::error::{codes, wasm_err};
 use crate::models::*;
+use crate::state::{get_or_init_state, StoredObject};
+use crate::utilities::to_js;
 use serde_json::json;
 use std::collections::{HashMap, HashSet};
-use crate::utilities::to_js;
-use crate::error::{wasm_err, codes};
+use wasm_bindgen::prelude::*;
 
 /// List all unique object types in an OCEL
 #[wasm_bindgen]
@@ -24,7 +24,10 @@ pub fn list_ocel_object_types(ocel_handle: &str) -> Result<JsValue, JsValue> {
             to_js(&object_types)
         }
         Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an OCEL")),
-        None => Err(wasm_err(codes::INVALID_HANDLE, format!("OCEL '{}' not found", ocel_handle))),
+        None => Err(wasm_err(
+            codes::INVALID_HANDLE,
+            format!("OCEL '{}' not found", ocel_handle),
+        )),
     })
 }
 
@@ -92,7 +95,10 @@ pub fn get_ocel_type_statistics(ocel_handle: &str) -> Result<JsValue, JsValue> {
             to_js(&stats)
         }
         Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an OCEL")),
-        None => Err(wasm_err(codes::INVALID_HANDLE, format!("OCEL '{}' not found", ocel_handle))),
+        None => Err(wasm_err(
+            codes::INVALID_HANDLE,
+            format!("OCEL '{}' not found", ocel_handle),
+        )),
     })
 }
 
@@ -109,7 +115,10 @@ pub fn flatten_ocel_to_eventlog(ocel_handle: &str, object_type: &str) -> Result<
     let ocel_clone = get_or_init_state().with_object(ocel_handle, |obj| match obj {
         Some(StoredObject::OCEL(ocel)) => Ok(ocel.clone()),
         Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an OCEL")),
-        None => Err(wasm_err(codes::INVALID_HANDLE, format!("OCEL '{}' not found", ocel_handle))),
+        None => Err(wasm_err(
+            codes::INVALID_HANDLE,
+            format!("OCEL '{}' not found", ocel_handle),
+        )),
     })?;
 
     // Now process outside the lock to avoid deadlock

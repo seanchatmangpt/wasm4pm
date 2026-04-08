@@ -1,11 +1,10 @@
+use crate::state::{get_or_init_state, StoredObject};
+use serde_json::json;
 /// Outcome Prediction — answers "Will this case complete normally?"
 ///
 /// Consolidates anomaly scoring, trace likelihood, and boundary coverage
 /// into WASM-exported functions for outcome prediction use cases.
-
 use wasm_bindgen::prelude::*;
-use crate::state::{get_or_init_state, StoredObject};
-use serde_json::json;
 
 /// Score a trace for anomaly against a reference DFG model.
 ///
@@ -27,7 +26,8 @@ pub fn score_anomaly(model_handle: &str, trace_json: &str) -> Result<JsValue, Js
                     "threshold": 0.7
                 });
                 return Ok(JsValue::from_str(
-                    &serde_json::to_string(&result).map_err(|e| JsValue::from_str(&e.to_string()))?,
+                    &serde_json::to_string(&result)
+                        .map_err(|e| JsValue::from_str(&e.to_string()))?,
                 ));
             }
 
@@ -101,8 +101,7 @@ pub fn compute_boundary_coverage(
                 })
                 .collect();
 
-            let coverage =
-                crate::prediction_additions::boundary_coverage(&prefix, &all_traces);
+            let coverage = crate::prediction_additions::boundary_coverage(&prefix, &all_traces);
 
             // Count matching traces and normal completions for reporting
             let matching: Vec<&Vec<String>> = all_traces
@@ -152,10 +151,7 @@ pub fn compute_boundary_coverage(
 /// Unlike `score_trace_likelihood` in the base prediction module (which returns a plain float),
 /// this returns a structured object with both raw and normalised values.
 #[wasm_bindgen]
-pub fn compute_trace_likelihood(
-    model_handle: &str,
-    trace_json: &str,
-) -> Result<JsValue, JsValue> {
+pub fn compute_trace_likelihood(model_handle: &str, trace_json: &str) -> Result<JsValue, JsValue> {
     let acts: Vec<String> = serde_json::from_str(trace_json)
         .map_err(|e| JsValue::from_str(&format!("Invalid trace JSON: {}", e)))?;
 

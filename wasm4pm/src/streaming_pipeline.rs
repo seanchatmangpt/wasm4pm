@@ -22,12 +22,11 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use wasm_bindgen::prelude::*;
 
+use crate::models::DirectlyFollowsGraph;
 use crate::state::{get_or_init_state, StoredObject};
 use crate::streaming::{
-    StreamingAlgorithm, StreamingDfgBuilder, StreamingSkeletonBuilder,
-    StreamingHeuristicBuilder,
+    StreamingAlgorithm, StreamingDfgBuilder, StreamingHeuristicBuilder, StreamingSkeletonBuilder,
 };
-use crate::models::DirectlyFollowsGraph;
 
 // ---------------------------------------------------------------------------
 // Pipeline configuration
@@ -68,9 +67,7 @@ impl PipelineConfig {
 
     /// Number of active algorithms.
     pub fn algorithm_count(&self) -> usize {
-        self.include_dfg as usize
-            + self.include_skeleton as usize
-            + self.include_heuristic as usize
+        self.include_dfg as usize + self.include_skeleton as usize + self.include_heuristic as usize
     }
 }
 
@@ -268,7 +265,7 @@ impl StreamingPipeline {
         if let Some(ref dfg) = self.dfg {
             bytes += std::mem::size_of::<StreamingDfgBuilder>();
             bytes += dfg.open_traces.len() * 200; // ~200 bytes per open trace
-            bytes += dfg.interner.len() * 50;      // ~50 bytes per activity
+            bytes += dfg.interner.len() * 50; // ~50 bytes per activity
         }
         bytes
     }
@@ -319,8 +316,7 @@ pub fn pipeline_begin(config_json: &str) -> Result<String, JsValue> {
     };
 
     let pipeline = StreamingPipeline::new(config);
-    let handle = get_or_init_state()
-        .store_object(StoredObject::StreamingPipeline(pipeline))?;
+    let handle = get_or_init_state().store_object(StoredObject::StreamingPipeline(pipeline))?;
 
     let info = serde_json::to_string(&json!({
         "handle": handle,
@@ -328,7 +324,8 @@ pub fn pipeline_begin(config_json: &str) -> Result<String, JsValue> {
         "include_dfg": config.include_dfg,
         "include_skeleton": config.include_skeleton,
         "include_heuristic": config.include_heuristic,
-    })).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    }))
+    .map_err(|e| JsValue::from_str(&e.to_string()))?;
 
     Ok(info)
 }
@@ -343,10 +340,14 @@ pub fn pipeline_add_event(handle: &str, case_id: &str, activity: &str) -> Result
                 "ok": true,
                 "total_events": pipeline.total_events,
                 "open_traces": pipeline.open_traces,
-            })).map_err(|e| JsValue::from_str(&e.to_string()))
+            }))
+            .map_err(|e| JsValue::from_str(&e.to_string()))
         }
         Some(_) => Err(JsValue::from_str("Object is not a StreamingPipeline")),
-        None => Err(JsValue::from_str(&format!("Pipeline '{}' not found", handle))),
+        None => Err(JsValue::from_str(&format!(
+            "Pipeline '{}' not found",
+            handle
+        ))),
     })
 }
 
@@ -360,10 +361,14 @@ pub fn pipeline_close_trace(handle: &str, case_id: &str) -> Result<JsValue, JsVa
                 "ok": true,
                 "total_traces": pipeline.total_traces,
                 "open_traces": pipeline.open_traces,
-            })).map_err(|e| JsValue::from_str(&e.to_string()))
+            }))
+            .map_err(|e| JsValue::from_str(&e.to_string()))
         }
         Some(_) => Err(JsValue::from_str("Object is not a StreamingPipeline")),
-        None => Err(JsValue::from_str(&format!("Pipeline '{}' not found", handle))),
+        None => Err(JsValue::from_str(&format!(
+            "Pipeline '{}' not found",
+            handle
+        ))),
     })
 }
 
@@ -373,11 +378,13 @@ pub fn pipeline_stats(handle: &str) -> Result<JsValue, JsValue> {
     get_or_init_state().with_object(handle, |obj| match obj {
         Some(StoredObject::StreamingPipeline(pipeline)) => {
             let stats = pipeline.stats();
-            serde_wasm_bindgen::to_value(&stats)
-                .map_err(|e| JsValue::from_str(&e.to_string()))
+            serde_wasm_bindgen::to_value(&stats).map_err(|e| JsValue::from_str(&e.to_string()))
         }
         Some(_) => Err(JsValue::from_str("Object is not a StreamingPipeline")),
-        None => Err(JsValue::from_str(&format!("Pipeline '{}' not found", handle))),
+        None => Err(JsValue::from_str(&format!(
+            "Pipeline '{}' not found",
+            handle
+        ))),
     })
 }
 
@@ -387,11 +394,13 @@ pub fn pipeline_snapshot(handle: &str) -> Result<JsValue, JsValue> {
     get_or_init_state().with_object(handle, |obj| match obj {
         Some(StoredObject::StreamingPipeline(pipeline)) => {
             let snapshot = pipeline.snapshot_json();
-            serde_wasm_bindgen::to_value(&snapshot)
-                .map_err(|e| JsValue::from_str(&e.to_string()))
+            serde_wasm_bindgen::to_value(&snapshot).map_err(|e| JsValue::from_str(&e.to_string()))
         }
         Some(_) => Err(JsValue::from_str("Object is not a StreamingPipeline")),
-        None => Err(JsValue::from_str(&format!("Pipeline '{}' not found", handle))),
+        None => Err(JsValue::from_str(&format!(
+            "Pipeline '{}' not found",
+            handle
+        ))),
     })
 }
 
@@ -408,10 +417,14 @@ pub fn pipeline_finalize(handle: &str) -> Result<JsValue, JsValue> {
                 "dfg": result.dfg.is_some(),
                 "skeleton": result.skeleton.is_some(),
                 "heuristic": result.heuristic.is_some(),
-            })).map_err(|e| JsValue::from_str(&e.to_string()))
+            }))
+            .map_err(|e| JsValue::from_str(&e.to_string()))
         }
         Some(_) => Err(JsValue::from_str("Object is not a StreamingPipeline")),
-        None => Err(JsValue::from_str(&format!("Pipeline '{}' not found", handle))),
+        None => Err(JsValue::from_str(&format!(
+            "Pipeline '{}' not found",
+            handle
+        ))),
     })
 }
 

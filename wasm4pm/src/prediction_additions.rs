@@ -11,14 +11,14 @@
 /// 8. Prefix feature extraction
 /// 9. Boundary coverage (start/end probability)
 /// 10. Greedy intervention ranking
-
-use crate::models::{EventLog, AttributeValue};
-use serde::{Serialize, Deserialize};
+use crate::models::{AttributeValue, EventLog};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 /// Shannon entropy of a probability distribution
 fn entropy(probs: &[f64]) -> f64 {
-    probs.iter()
+    probs
+        .iter()
         .filter(|&&p| p > 0.0)
         .map(|&p| -p * p.ln())
         .sum()
@@ -30,7 +30,7 @@ pub struct NextActivityPrediction {
     pub activities: Vec<String>,
     pub probabilities: Vec<f64>,
     pub confidence: f64, // max probability
-    pub entropy: f64,     // distribution uncertainty [0, 1]
+    pub entropy: f64,    // distribution uncertainty [0, 1]
 }
 
 /// Get top-k next activities from n-gram model
@@ -64,12 +64,25 @@ pub fn predict_top_k_activities(
     candidates.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
 
     let top_k = std::cmp::min(k, candidates.len());
-    let activities: Vec<String> = candidates.iter().take(top_k).map(|(a, _)| a.clone()).collect();
-    let probabilities: Vec<f64> = candidates.iter().take(top_k).map(|(_, p)| p).copied().collect();
+    let activities: Vec<String> = candidates
+        .iter()
+        .take(top_k)
+        .map(|(a, _)| a.clone())
+        .collect();
+    let probabilities: Vec<f64> = candidates
+        .iter()
+        .take(top_k)
+        .map(|(_, p)| p)
+        .copied()
+        .collect();
 
     let confidence = probabilities.first().copied().unwrap_or(0.0);
     let ent = entropy(&probabilities);
-    let max_ent = if probabilities.len() > 0 { (probabilities.len() as f64).ln() } else { 0.0 };
+    let max_ent = if probabilities.len() > 0 {
+        (probabilities.len() as f64).ln()
+    } else {
+        0.0
+    };
     let entropy_norm = if max_ent > 0.0 { ent / max_ent } else { 0.0 };
 
     NextActivityPrediction {
@@ -103,7 +116,9 @@ pub fn beam_search_paths(
         for (current_seq, current_prob) in beams.iter() {
             if let Some(next_acts) = ngram_counts.get(current_seq) {
                 let total: usize = next_acts.values().sum();
-                if total == 0 { continue; }
+                if total == 0 {
+                    continue;
+                }
 
                 for (act_id, count) in next_acts.iter() {
                     let trans_prob = *count as f64 / total as f64;
@@ -119,17 +134,21 @@ pub fn beam_search_paths(
         beams = next_beams.into_iter().take(beam_width).collect();
     }
 
-    beams.iter().map(|(seq, prob)| {
-        let activities: Vec<String> = seq.iter()
-            .skip(prefix.len())
-            .filter_map(|id| activity_vocab.get(*id as usize).cloned())
-            .collect();
-        BeamPath {
-            sequence: activities,
-            probability: *prob,
-            length: seq.len() - prefix.len(),
-        }
-    }).collect()
+    beams
+        .iter()
+        .map(|(seq, prob)| {
+            let activities: Vec<String> = seq
+                .iter()
+                .skip(prefix.len())
+                .filter_map(|id| activity_vocab.get(*id as usize).cloned())
+                .collect();
+            BeamPath {
+                sequence: activities,
+                probability: *prob,
+                length: seq.len() - prefix.len(),
+            }
+        })
+        .collect()
 }
 
 /// Log-likelihood of a trace (sum of log-probabilities of observed transitions)
@@ -138,11 +157,13 @@ pub fn trace_log_likelihood(
     trace: &[u32],
     ngram_size: usize,
 ) -> f64 {
-    if trace.len() < ngram_size { return 0.0; }
+    if trace.len() < ngram_size {
+        return 0.0;
+    }
 
     let mut ll = 0.0;
-    for i in ngram_size-1..trace.len() {
-        let prefix = &trace[i-ngram_size+1..i];
+    for i in ngram_size - 1..trace.len() {
+        let prefix = &trace[i - ngram_size + 1..i];
         let next_act = trace[i];
 
         if let Some(next_acts) = ngram_counts.get(&prefix.to_vec()) {
@@ -167,10 +188,7 @@ pub struct TransitionGraph {
     pub activities: Vec<String>,
 }
 
-pub fn build_transition_graph(
-    log: &EventLog,
-    activity_key: &str,
-) -> TransitionGraph {
+pub fn build_transition_graph(log: &EventLog, activity_key: &str) -> TransitionGraph {
     let mut edge_counts: HashMap<(String, String), usize> = HashMap::new();
     let mut activity_totals: HashMap<String, usize> = HashMap::new();
     let mut activities_set: std::collections::HashSet<String> = std::collections::HashSet::new();
@@ -189,7 +207,8 @@ pub fn build_transition_graph(
         }
     }
 
-    let mut edges: Vec<(String, String, f64)> = edge_counts.into_iter()
+    let mut edges: Vec<(String, String, f64)> = edge_counts
+        .into_iter()
         .map(|((from, to), count)| {
             let total = activity_totals.get(&from).copied().unwrap_or(1);
             let prob = count as f64 / total as f64;
@@ -206,13 +225,15 @@ pub fn build_transition_graph(
 
 /// Exponential moving average for trend detection
 pub fn ewma(values: &[f64], alpha: f64) -> Vec<f64> {
-    if values.is_empty() { return vec![]; }
+    if values.is_empty() {
+        return vec![];
+    }
 
     let mut result = Vec::with_capacity(values.len());
     result.push(values[0]);
 
     for i in 1..values.len() {
-        let ema = alpha * values[i] + (1.0 - alpha) * result[i-1];
+        let ema = alpha * values[i] + (1.0 - alpha) * result[i - 1];
         result.push(ema);
     }
     result
@@ -220,10 +241,12 @@ pub fn ewma(values: &[f64], alpha: f64) -> Vec<f64> {
 
 /// Simple M/M/1 queue delay estimator
 pub fn estimate_queue_delay(
-    arrival_rate: f64,  // events per time unit
-    service_rate: f64,  // events per time unit
+    arrival_rate: f64, // events per time unit
+    service_rate: f64, // events per time unit
 ) -> f64 {
-    if service_rate <= 0.0 || arrival_rate >= service_rate { return f64::INFINITY; }
+    if service_rate <= 0.0 || arrival_rate >= service_rate {
+        return f64::INFINITY;
+    }
     let utilization = arrival_rate / service_rate;
     let mean_service_time = 1.0 / service_rate;
     // W = mean_service_time / (1 - utilization)
@@ -234,7 +257,7 @@ pub fn estimate_queue_delay(
 pub fn calculate_rework_score(trace: &[String]) -> usize {
     let mut rework_count = 0;
     for i in 1..trace.len() {
-        if trace[i] == trace[i-1] {
+        if trace[i] == trace[i - 1] {
             rework_count += 1;
         }
     }
@@ -251,9 +274,7 @@ pub struct PrefixFeatures {
     pub activity_frequency_entropy: f64,
 }
 
-pub fn extract_prefix_features(
-    prefix: &[String],
-) -> PrefixFeatures {
+pub fn extract_prefix_features(prefix: &[String]) -> PrefixFeatures {
     let length = prefix.len();
     let last_activity = prefix.last().cloned().unwrap_or_default();
 
@@ -269,8 +290,16 @@ pub fn extract_prefix_features(
     let total: f64 = freqs.iter().sum();
     let probs: Vec<f64> = freqs.iter().map(|f| f / total).collect();
     let activity_frequency_entropy = entropy(&probs);
-    let max_ent = if unique_activities > 0 { (unique_activities as f64).ln() } else { 0.0 };
-    let norm_ent = if max_ent > 0.0 { activity_frequency_entropy / max_ent } else { 0.0 };
+    let max_ent = if unique_activities > 0 {
+        (unique_activities as f64).ln()
+    } else {
+        0.0
+    };
+    let norm_ent = if max_ent > 0.0 {
+        activity_frequency_entropy / max_ent
+    } else {
+        0.0
+    };
 
     PrefixFeatures {
         length,
@@ -282,18 +311,15 @@ pub fn extract_prefix_features(
 }
 
 /// Boundary coverage: probability of reaching a normal end from current state
-pub fn boundary_coverage(
-    prefix: &[String],
-    all_complete_traces: &[Vec<String>],
-) -> f64 {
-    let matching_traces: Vec<&Vec<String>> = all_complete_traces.iter()
-        .filter(|trace| {
-            trace.len() >= prefix.len() &&
-            &trace[..prefix.len()] == prefix
-        })
+pub fn boundary_coverage(prefix: &[String], all_complete_traces: &[Vec<String>]) -> f64 {
+    let matching_traces: Vec<&Vec<String>> = all_complete_traces
+        .iter()
+        .filter(|trace| trace.len() >= prefix.len() && &trace[..prefix.len()] == prefix)
         .collect();
 
-    if matching_traces.is_empty() { return 0.0; }
+    if matching_traces.is_empty() {
+        return 0.0;
+    }
 
     // Fraction of completions that were "normal" (heuristic: within 2σ of median length)
     let lengths: Vec<usize> = matching_traces.iter().map(|t| t.len()).collect();
@@ -304,27 +330,33 @@ pub fn boundary_coverage(
     };
 
     let median = sorted_lengths[sorted_lengths.len() / 2];
-    let variance: f64 = sorted_lengths.iter()
+    let variance: f64 = sorted_lengths
+        .iter()
         .map(|&len| ((len as i64 - median as i64).pow(2)) as f64)
-        .sum::<f64>() / sorted_lengths.len() as f64;
+        .sum::<f64>()
+        / sorted_lengths.len() as f64;
     let sigma = variance.sqrt();
     let threshold = median as f64 + 2.0 * sigma;
 
-    let normal_count = lengths.iter().filter(|&&len| (len as f64) <= threshold).count();
+    let normal_count = lengths
+        .iter()
+        .filter(|&&len| (len as f64) <= threshold)
+        .count();
     normal_count as f64 / lengths.len() as f64
 }
 
 /// Greedy intervention selection (UCB-like heuristic without full bandits)
 pub fn greedy_intervention_ranking(
     interventions: &[(&str, f64)], // (name, utility_estimate)
-    exploitation_weight: f64,       // 0-1: how much to favor highest utility
+    exploitation_weight: f64,      // 0-1: how much to favor highest utility
 ) -> Vec<String> {
     let mut ranked = interventions
         .iter()
         .enumerate()
         .map(|(i, (name, utility))| {
             let exploration_bonus = (1.0 / (i as f64 + 1.0).sqrt()).min(1.0);
-            let score = exploitation_weight * utility + (1.0 - exploitation_weight) * exploration_bonus;
+            let score =
+                exploitation_weight * utility + (1.0 - exploitation_weight) * exploration_bonus;
             (name.to_string(), score)
         })
         .collect::<Vec<_>>();
@@ -345,7 +377,10 @@ mod tests {
         next.insert(2, 2);
         counts.insert(vec![0], next);
 
-        let vocab = vec!["A", "B", "C"].iter().map(|s| s.to_string()).collect::<Vec<_>>();
+        let vocab = vec!["A", "B", "C"]
+            .iter()
+            .map(|s| s.to_string())
+            .collect::<Vec<_>>();
         let pred = predict_top_k_activities(&counts, &vocab, &[0], 2);
 
         assert_eq!(pred.activities.len(), 2);
@@ -354,7 +389,10 @@ mod tests {
 
     #[test]
     fn test_rework_score() {
-        let trace = vec!["A", "B", "A", "B", "B", "C"].iter().map(|s| s.to_string()).collect::<Vec<_>>();
+        let trace = vec!["A", "B", "A", "B", "B", "C"]
+            .iter()
+            .map(|s| s.to_string())
+            .collect::<Vec<_>>();
         let rework = calculate_rework_score(&trace);
         assert_eq!(rework, 1); // only B→B is a repeat
     }
@@ -375,7 +413,10 @@ mod tests {
 
     #[test]
     fn test_prefix_features() {
-        let prefix = vec!["A", "B", "A", "C"].iter().map(|s| s.to_string()).collect::<Vec<_>>();
+        let prefix = vec!["A", "B", "A", "C"]
+            .iter()
+            .map(|s| s.to_string())
+            .collect::<Vec<_>>();
         let features = extract_prefix_features(&prefix);
         assert_eq!(features.length, 4);
         assert_eq!(features.unique_activities, 3);
