@@ -4,13 +4,13 @@ wasm4pm supports 5 deployment profiles to optimize WASM binary size for differen
 
 ## Overview
 
-| Profile | Target Size | Use Case | Key Features |
-|---------|-------------|----------|--------------|
-| **browser** | ~500KB | Web browsers, mobile web | Basic discovery, SIMD acceleration |
-| **edge** | ~1.5MB | Edge servers, CDN workers | Advanced algorithms, ML, streaming |
-| **fog** | ~2.0MB | Fog computing, IoT gateways | Swarm algorithms, full streaming, OCEL |
-| **iot** | ~1.0MB | IoT devices, embedded systems | Minimal discovery, streaming DFG |
-| **cloud** | ~2.78MB | Cloud servers, data centers | Full feature set (default for npm) |
+| Profile     | Target Size | Use Case                      | Key Features                           |
+| ----------- | ----------- | ----------------------------- | -------------------------------------- |
+| **browser** | ~500KB      | Web browsers, mobile web      | Basic discovery, SIMD acceleration     |
+| **edge**    | ~1.5MB      | Edge servers, CDN workers     | Advanced algorithms, ML, streaming     |
+| **fog**     | ~2.0MB      | Fog computing, IoT gateways   | Swarm algorithms, full streaming, OCEL |
+| **iot**     | ~1.0MB      | IoT devices, embedded systems | Minimal discovery, streaming DFG       |
+| **cloud**   | ~2.78MB     | Cloud servers, data centers   | Full feature set (default for npm)     |
 
 ## Profile Details
 
@@ -19,26 +19,30 @@ wasm4pm supports 5 deployment profiles to optimize WASM binary size for differen
 **Use case:** Web browsers, desktop apps (Electron), mobile web
 
 **Constraints:**
+
 - Limited bandwidth (3G/4G)
 - Memory constrained (mobile devices)
 - Fast initial load required
 - Interactive latency sensitive
 
 **Includes:**
+
 - Basic discovery: dfg, process_skeleton, alpha_plus_plus, heuristic_miner
 - Basic conformance: token replay
 - Essential utilities: XES I/O, filtering, validation
 - SIMD acceleration
 
 **Excludes:**
+
 - statrs → Replaced with hand-rolled median (saves ~200KB)
 - POWL modules (~400KB)
-- Advanced algorithms (genetic, ILP, A*, ACO, PSO, simulated_annealing)
+- Advanced algorithms (genetic, ILP, A\*, ACO, PSO, simulated_annealing)
 - ML/prediction algorithms
 - Full streaming suite
 - OCEL support
 
 **Build command:**
+
 ```bash
 cd wasm4pm
 npm run build:browser
@@ -49,25 +53,29 @@ npm run build:browser
 **Use case:** Edge servers, CDN workers, Cloudflare Workers
 
 **Constraints:**
+
 - More memory than browser
 - Moderate bandwidth
 - Need for conformance and analytics
 - Some ML capability useful
 
 **Includes:**
+
 - All browser features
-- Advanced algorithms: inductive_miner, genetic, ILP, A*, hill_climbing
+- Advanced algorithms: inductive_miner, genetic, ILP, A\*, hill_climbing
 - ML/prediction: All 6 ML algorithms
 - Streaming: Basic streaming DFG
 - Conformance: Full token replay + alignments
 
 **Excludes:**
+
 - statrs → Hand-rolled statistics (saves ~200KB)
 - POWL modules (~400KB)
 - Swarm algorithms (ACO, PSO, simulated_annealing)
 - OCEL support
 
 **Build command:**
+
 ```bash
 cd wasm4pm
 npm run build:edge
@@ -78,22 +86,26 @@ npm run build:edge
 **Use case:** Fog computing, regional aggregation, IoT gateways
 
 **Constraints:**
+
 - Near-cloud capabilities
 - Good memory availability
 - Need for comprehensive analysis
 - Batch processing acceptable
 
 **Includes:**
+
 - All edge features
 - Swarm algorithms: ACO, PSO, simulated_anealing
-- Full streaming suite (DFG, skeleton, heuristic, inductive, A*)
+- Full streaming suite (DFG, skeleton, heuristic, inductive, A\*)
 - statrs: Full statistics library
 - OCEL support: Object-centric event logs
 
 **Excludes:**
+
 - POWL modules (~400KB)
 
 **Build command:**
+
 ```bash
 cd wasm4pm
 npm run build:fog
@@ -104,18 +116,21 @@ npm run build:fog
 **Use case:** IoT devices, embedded systems, resource-constrained edge
 
 **Constraints:**
+
 - Very limited memory (RAM < 64MB)
 - Limited storage
 - Battery-powered
 - Network-constrained
 
 **Includes:**
+
 - Basic discovery: dfg, process_skeleton
 - Streaming: Streaming DFG only (for real-time processing)
 - Essential utilities: XES I/O, basic filtering
 - SIMD acceleration
 
 **Excludes:**
+
 - statrs → Hand-rolled statistics (saves ~200KB)
 - POWL modules (~400KB)
 - Advanced algorithms
@@ -125,6 +140,7 @@ npm run build:fog
 - Heavy analytics
 
 **Build command:**
+
 ```bash
 cd wasm4pm
 npm run build:iot
@@ -135,12 +151,14 @@ npm run build:iot
 **Use case:** Cloud servers, data centers, unlimited resources
 
 **Constraints:**
+
 - No memory constraints
 - High bandwidth
 - Need for maximum capability
 - Batch processing acceptable
 
 **Includes:**
+
 - Everything
 - All 21 discovery algorithms
 - All 6 ML/prediction features
@@ -152,6 +170,7 @@ npm run build:iot
 **Note:** This is the default profile for the published npm package. Developers get all capabilities immediately and can opt into smaller profiles for production use if needed.
 
 **Build command:**
+
 ```bash
 cd wasm4pm
 npm run build:cloud
@@ -162,6 +181,7 @@ npm run build
 ## Usage Examples
 
 ### Development (Default)
+
 ```bash
 # Build with all features (cloud profile)
 cd wasm4pm
@@ -172,6 +192,7 @@ npm run size:check
 ```
 
 ### Production Browser Deployment
+
 ```bash
 # Build minimal profile for web browsers
 cd wasm4pm
@@ -182,6 +203,7 @@ ls -lh pkg/wasm4pm_bg.wasm
 ```
 
 ### Production Edge Deployment
+
 ```bash
 # Build with ML and advanced algorithms for edge servers
 cd wasm4pm
@@ -192,6 +214,7 @@ ls -lh pkg/wasm4pm_bg.wasm
 ```
 
 ### All Profiles (CI/CD)
+
 ```bash
 # Build all profiles for testing
 cd wasm4pm
@@ -201,6 +224,7 @@ npm run build:all-profiles
 ## Size Verification
 
 Check the actual binary size after building:
+
 ```bash
 # Build for specific profile
 npm run build:browser
@@ -213,6 +237,7 @@ gzip -c pkg/wasm4pm_bg.wasm | wc -c
 ```
 
 Expected sizes (uncompressed):
+
 - browser: ~500KB (82% reduction from 2.78MB)
 - iot: ~1.0MB (64% reduction)
 - edge: ~1.5MB (46% reduction)
@@ -235,29 +260,30 @@ cloud = ["basic", "advanced", "ml", "streaming_full", "swarm", "statrs", "powl",
 
 ## Algorithm Availability by Profile
 
-| Algorithm | browser | edge | fog | iot | cloud |
-|-----------|---------|------|-----|-----|-------|
-| dfg | ✅ | ✅ | ✅ | ✅ | ✅ |
-| process_skeleton | ✅ | ✅ | ✅ | ✅ | ✅ |
-| alpha_plus_plus | ✅ | ✅ | ✅ | ❌ | ✅ |
-| heuristic_miner | ✅ | ✅ | ✅ | ❌ | ✅ |
-| inductive_miner | ❌ | ✅ | ✅ | ❌ | ✅ |
-| genetic_algorithm | ❌ | ❌ | ✅ | ❌ | ✅ |
-| ilp | ❌ | ❌ | ✅ | ❌ | ✅ |
-| a_star | ❌ | ✅ | ✅ | ❌ | ✅ |
-| aco | ❌ | ❌ | ✅ | ❌ | ✅ |
-| pso | ❌ | ❌ | ✅ | ❌ | ✅ |
-| simulated_annealing | ❌ | ❌ | ✅ | ❌ | ✅ |
-| ml_classify | ❌ | ✅ | ✅ | ❌ | ✅ |
-| ml_cluster | ❌ | ✅ | ✅ | ❌ | ✅ |
-| ml_forecast | ❌ | ✅ | ✅ | ❌ | ✅ |
-| ml_anomaly | ❌ | ✅ | ✅ | ❌ | ✅ |
-| ml_regress | ❌ | ✅ | ✅ | ❌ | ✅ |
-| ml_pca | ❌ | ✅ | ✅ | ❌ | ✅ |
+| Algorithm           | browser | edge | fog | iot | cloud |
+| ------------------- | ------- | ---- | --- | --- | ----- |
+| dfg                 | ✅      | ✅   | ✅  | ✅  | ✅    |
+| process_skeleton    | ✅      | ✅   | ✅  | ✅  | ✅    |
+| alpha_plus_plus     | ✅      | ✅   | ✅  | ❌  | ✅    |
+| heuristic_miner     | ✅      | ✅   | ✅  | ❌  | ✅    |
+| inductive_miner     | ❌      | ✅   | ✅  | ❌  | ✅    |
+| genetic_algorithm   | ❌      | ❌   | ✅  | ❌  | ✅    |
+| ilp                 | ❌      | ❌   | ✅  | ❌  | ✅    |
+| a_star              | ❌      | ✅   | ✅  | ❌  | ✅    |
+| aco                 | ❌      | ❌   | ✅  | ❌  | ✅    |
+| pso                 | ❌      | ❌   | ✅  | ❌  | ✅    |
+| simulated_annealing | ❌      | ❌   | ✅  | ❌  | ✅    |
+| ml_classify         | ❌      | ✅   | ✅  | ❌  | ✅    |
+| ml_cluster          | ❌      | ✅   | ✅  | ❌  | ✅    |
+| ml_forecast         | ❌      | ✅   | ✅  | ❌  | ✅    |
+| ml_anomaly          | ❌      | ✅   | ✅  | ❌  | ✅    |
+| ml_regress          | ❌      | ✅   | ✅  | ❌  | ✅    |
+| ml_pca              | ❌      | ✅   | ✅  | ❌  | ✅    |
 
 ## Migration Guide
 
 ### Before (Current)
+
 ```bash
 # All users build the same binary
 npm run build
@@ -265,6 +291,7 @@ npm run build
 ```
 
 ### After (New)
+
 ```bash
 # Default build (unchanged for existing users)
 npm run build
@@ -288,6 +315,7 @@ npm run build:cloud  # ~2.78MB (same as default, explicit)
 **No breaking change:** `default` feature is now `["cloud"]`, so existing users get the same full-featured binary.
 
 **Migration path:**
+
 1. Existing users: No change needed, `npm run build` still works
 2. New users: Get full capabilities by default, can opt into smaller profiles
 3. Production users: Can switch to profile builds for size optimization
@@ -297,26 +325,32 @@ npm run build:cloud  # ~2.78MB (same as default, explicit)
 ## Technical Details
 
 ### statrs Replacement
+
 For browser, edge, and iot profiles, the `statrs` dependency (with nalgebra) is replaced with a hand-rolled statistics module (`hand_stats.rs`) that provides:
+
 - median(), mean(), percentile_95(), std_deviation(), min(), max()
 - Compatible API with statrs::statistics::Data trait
 - ~200KB binary size savings
 
 ### POWL Modules
+
 The POWL (Process Orchestrations and Workflows Language) modules (~400KB) are only included in the cloud profile. Other profiles exclude them to save space.
 
 ### Conditional Compilation
+
 All modules use `#[cfg(feature)]` gates to conditionally compile based on the active features. This ensures that unused code is not included in the final binary.
 
 ## Testing
 
 Run the deployment profile tests:
+
 ```bash
 cd wasm4pm
 npm test -- deployment-profiles.test.ts
 ```
 
 These tests verify:
+
 - Algorithms are correctly filtered by deployment profile
 - Browser profile has fewer algorithms than edge
 - Edge profile includes ML algorithms
@@ -327,17 +361,21 @@ These tests verify:
 ## Performance Considerations
 
 ### SIMD Acceleration
+
 All profiles include SIMD acceleration via `RUSTFLAGS="-C target-feature=+simd128"`. This provides approximately 500x speedup for streaming DFG operations.
 
 ### Link-Time Optimization (LTO)
+
 All builds use LTO (`lto = true`) and size optimization (`opt-level = "z"`) to minimize binary size while maintaining performance.
 
 ### Panic = Abort
+
 All builds use `panic = "abort"` to remove panic unwinding code, reducing binary size.
 
 ## Future Enhancements
 
 Potential future improvements:
+
 - Add wasm-opt post-processing for additional size reduction
 - Create profile-specific test suites
 - Add benchmark comparisons between profiles

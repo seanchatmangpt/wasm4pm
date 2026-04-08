@@ -2,11 +2,8 @@
 /target
 **/*.rs.bk
 
-# WASM
-*.wasm
-wasm4pm/pkg/
-wasm4pm/pkg-nodejs/
-wasm4pm/pkg-web/
+# WASM build artifacts (tracked in wasm4pm/.gitignore)
+# *.wasm and pkg/ patterns removed from root to allow npm publish
 
 # Node
 node_modules/

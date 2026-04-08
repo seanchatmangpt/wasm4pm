@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import * as wasm from '../../pkg/wasm4pm.js';
+import * as wasm from '../../pkg/pictl.js';
 import { OCEL_MINIMAL } from '../helpers/fixtures';
 
 describe('Type Wrapper - WasmOCEL', () => {

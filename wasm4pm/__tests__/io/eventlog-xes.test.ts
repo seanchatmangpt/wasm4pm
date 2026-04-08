@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import * as wasm from '../../pkg/wasm4pm.js';
+import * as wasm from '../../pkg/pictl.js';
 import { XES_MINIMAL, XES_SEQUENTIAL } from '../helpers/fixtures';
 
 describe('I/O Operations - EventLog XES', () => {

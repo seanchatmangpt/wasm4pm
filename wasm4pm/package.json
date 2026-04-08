@@ -1,5 +1,5 @@
 {
-  "name": "pictl",
+  "name": "@seanchatmangpt/pictl",
   "version": "26.4.9",
   "description": "Process Mining in WebAssembly - High-Speed Algorithms for Browser and Node.js",
   "main": "pkg/pictl.js",

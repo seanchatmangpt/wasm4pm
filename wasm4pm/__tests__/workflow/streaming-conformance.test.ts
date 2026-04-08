@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import * as pm from '../../pkg/wasm4pm.js';
+import * as pm from '../../pkg/pictl.js';
 import { XES_WORKFLOW } from '../helpers/fixtures';
 
 describe('Streaming Conformance', () => {

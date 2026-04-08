@@ -9,7 +9,7 @@ import { beforeEach, afterEach } from 'vitest';
 beforeEach(async () => {
   try {
     // Import WASM module
-    const wasm = await import('../pkg/wasm4pm.js');
+    const wasm = await import('../pkg/pictl.js');
     // Clear any prior state (tests initialize WASM separately)
     if (typeof wasm.clear_all_objects === 'function') {
       wasm.clear_all_objects();
@@ -22,7 +22,7 @@ beforeEach(async () => {
 // Clean up handles after each test
 afterEach(async () => {
   try {
-    const wasm = await import('../pkg/wasm4pm.js');
+    const wasm = await import('../pkg/pictl.js');
     if (typeof wasm.clear_all_objects === 'function') {
       wasm.clear_all_objects();
     }
