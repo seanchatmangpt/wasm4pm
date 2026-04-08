@@ -1,6 +1,6 @@
 # @pictl/validators
 
-Comprehensive validation suite for @pictl/wasm4pm v26.4.5.
+Comprehensive validation suite for @seanchatmangpt/pictl v26.4.5.
 
 ## Overview
 
@@ -208,7 +208,7 @@ These validators are called by the `/lab/` post-publication validation system to
 ## Requirements
 
 - **Node.js**: 18+ (16+ minimum)
-- **wasm4pm**: Published npm package or local build
+- **@seanchatmangpt/pictl**: Published npm package or local build
 - **HTTP Service** (optional): For HTTP/WebSocket tests
 - **pictl CLI** (optional): For CLI tests
 
@@ -233,7 +233,7 @@ A: Start the HTTP service: `npm run start:service` in another terminal
 A: Ensure the HTTP service is running with WebSocket support enabled
 
 **Q: CLI tests fail with "command not found"**  
-A: Install pictl or link the local version: `npm link @pictl/wasm4pm`
+A: Install pictl or link the local version: `npm link @seanchatmangpt/pictl`
 
 **Q: How do I generate a conformance report?**  
 A: Run `node validators/index.mjs --output report.json`

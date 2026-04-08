@@ -1,6 +1,6 @@
-# @wasm4pm/config
+# @pictl/config
 
-Configuration management system for wasm4pm with Zod-based validation, provenance tracking, and support for multiple config sources.
+Configuration management system for pictl with Zod-based validation, provenance tracking, and support for multiple config sources.
 
 ## Features
 
@@ -14,13 +14,13 @@ Configuration management system for wasm4pm with Zod-based validation, provenanc
 ## Installation
 
 ```bash
-npm install @wasm4pm/config
+npm install @pictl/config
 ```
 
 ## Quick Start
 
 ```typescript
-import { loadConfig } from '@wasm4pm/config';
+import { loadConfig } from '@pictl/config';
 
 // Load configuration from multiple sources
 const config = await loadConfig({
@@ -38,16 +38,16 @@ console.log(config.metadata.provenance);      // provenance tracking
 Config is loaded in this priority order (highest first):
 
 1. **CLI arguments** - Passed to `loadConfig({ cliOverrides })`
-2. **TOML files** - `./wasm4pm.toml` or `~/.wasm4pm/config.toml`
-3. **JSON files** - `./wasm4pm.json` or `~/.wasm4pm/config.json`
-4. **Environment variables** - `WASM4PM_*` prefix
+2. **TOML files** - `./pictl.toml` or `~/.pictl/config.toml`
+3. **JSON files** - `./pictl.json` or `~/.pictl/config.json`
+4. **Environment variables** - `PICTL_*` prefix
 5. **Defaults** - Built-in defaults
 
 ## Configuration Files
 
 ### TOML Format
 
-Create `./wasm4pm.toml` or `~/.wasm4pm/config.toml`:
+Create `./pictl.toml` or `~/.pictl/config.toml`:
 
 ```toml
 version = "26.4.5"
@@ -79,7 +79,7 @@ endpoint = "http://localhost:4318"
 
 ### JSON Format
 
-Create `./wasm4pm.json` or `~/.wasm4pm/config.json`:
+Create `./pictl.json` or `~/.pictl/config.json`:
 
 ```json
 {
@@ -113,14 +113,14 @@ Create `./wasm4pm.json` or `~/.wasm4pm/config.json`:
 
 ## Environment Variables
 
-Override config via environment variables with `WASM4PM_` prefix:
+Override config via environment variables with `PICTL_` prefix:
 
 ```bash
-WASM4PM_PROFILE=quality          # execution.profile
-WASM4PM_LOG_LEVEL=debug          # observability.logLevel
-WASM4PM_WATCH=true               # watch.enabled
-WASM4PM_OUTPUT_FORMAT=json        # output.format
-WASM4PM_OUTPUT_DESTINATION=/tmp/out.json
+PICTL_PROFILE=quality          # execution.profile
+PICTL_LOG_LEVEL=debug          # observability.logLevel
+PICTL_WATCH=true               # watch.enabled
+PICTL_OUTPUT_FORMAT=json        # output.format
+PICTL_OUTPUT_DESTINATION=/tmp/out.json
 ```
 
 ## CLI Overrides
@@ -147,7 +147,7 @@ console.log(config.metadata.provenance);
 // Output:
 // {
 //   version: { value: '26.4.5', source: 'default' },
-//   execution: { value: {...}, source: 'config', path: './wasm4pm.toml' },
+//   execution: { value: {...}, source: 'config', path: './pictl.toml' },
 //   observability: { value: {...}, source: 'env' }
 // }
 ```
@@ -163,7 +163,7 @@ Sources can be:
 Get a deterministic hash for caching/verification:
 
 ```typescript
-import { hashConfig, fingerprintConfig, verifyConfigHash } from '@wasm4pm/config';
+import { hashConfig, fingerprintConfig, verifyConfigHash } from '@pictl/config';
 
 const config = await loadConfig();
 
@@ -182,7 +182,7 @@ const isValid = verifyConfigHash(config, storedHash);
 All configs are validated with Zod. Validation errors include helpful hints:
 
 ```typescript
-import { validate } from '@wasm4pm/config';
+import { validate } from '@pictl/config';
 
 try {
   validate(config);
@@ -198,7 +198,7 @@ try {
 Detect what changed between two configs:
 
 ```typescript
-import { diffConfigs } from '@wasm4pm/config';
+import { diffConfigs } from '@pictl/config';
 
 const diff = diffConfigs(config1, config2);
 if (diff.changed) {
@@ -276,7 +276,7 @@ function loadConfig(options?: LoadConfigOptions): Promise<Config>
 
 **Options:**
 - `cliOverrides?: CliOverrides` - CLI-provided overrides (highest priority)
-- `configSearchPaths?: string[]` - Paths to search for config files (default: `[cwd, ~/.wasm4pm]`)
+- `configSearchPaths?: string[]` - Paths to search for config files (default: `[cwd, ~/.pictl]`)
 - `env?: NodeJS.ProcessEnv` - Environment variables (default: `process.env`)
 
 **Returns:** Complete configuration with metadata

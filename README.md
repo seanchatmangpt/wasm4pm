@@ -1,26 +1,26 @@
 <div align="center">
-<h1><strong>wasm4pm</strong> - Process Mining for WebAssembly</h1>
+<h1><strong>pictl</strong> - Process Mining for WebAssembly</h1>
 <p><strong>High-Performance Process Mining Algorithms in JavaScript/TypeScript</strong></p>
 <p>
-  <a href="https://www.npmjs.com/package/wasm4pm">
-    <img src="https://img.shields.io/npm/v/wasm4pm" alt="npm version"/></a>
-  <a href="https://www.npmjs.com/package/wasm4pm">
-    <img src="https://img.shields.io/npm/dm/wasm4pm" alt="npm downloads"/></a>
-  <a href="https://github.com/seanchatmangpt/wasm4pm">
-    <img src="https://img.shields.io/github/stars/seanchatmangpt/wasm4pm" alt="GitHub stars"/></a>
+  <a href="https://www.npmjs.com/package/@seanchatmangpt/pictl">
+    <img src="https://img.shields.io/npm/v/@seanchatmangpt/pictl" alt="npm version"/></a>
+  <a href="https://www.npmjs.com/package/@seanchatmangpt/pictl">
+    <img src="https://img.shields.io/npm/dm/@seanchatmangpt/pictl" alt="npm downloads"/></a>
+  <a href="https://github.com/seanchatmangpt/pictl">
+    <img src="https://img.shields.io/github/stars/seanchatmangpt/pictl" alt="GitHub stars"/></a>
 </p>
-<img src="Ferris emerges from the black hole.png" width="300" alt="wasm4pm logo: Ferris emerges from the black hole"/>
+<img src="Ferris emerges from the black hole.png" width="300" alt="pictl logo: Ferris emerges from the black hole"/>
 </div>
 
 ---
 
-## What is wasm4pm?
+## What is pictl?
 
-**wasm4pm** is a comprehensive, enterprise-grade process mining platform compiled to WebAssembly. It brings production-grade process discovery, conformance checking, analysis, and automation capabilities to browsers, Node.js, and containers.
+**pictl** is a comprehensive, enterprise-grade process mining platform compiled to WebAssembly. It brings production-grade process discovery, conformance checking, analysis, and automation capabilities to browsers, Node.js, and containers.
 
-Process mining extracts actionable insights from event logs by discovering process models, detecting deviations, and analyzing performance bottlenecks. **wasm4pm** makes this accessible to JavaScript developers with near-native performance, plus professional CLI tools, HTTP APIs, and observability for enterprise deployments.
+Process mining extracts actionable insights from event logs by discovering process models, detecting deviations, and analyzing performance bottlenecks. **pictl** makes this accessible to JavaScript developers with near-native performance, plus professional CLI tools, HTTP APIs, and observability for enterprise deployments.
 
-### Version 26.4.8 (April 2026)
+### Version 26.4.9 (April 2026)
 **Deployment Profiles:** Optimized WASM builds for different target environments. Choose from 5 profiles (browser ~500KB, edge ~1.5MB, fog ~2.0MB, iot ~1.0MB, cloud ~2.78MB) to reduce binary size by up to 82% for production use. Zero breaking changes — default build unchanged.
 
 ### Version 26.4.5 (April 2026)
@@ -114,7 +114,7 @@ Verify event logs against discovered models:
 - Trace classification (conforming/deviating)
 
 ### Claude Integration via MCP
-Use wasm4pm directly with Claude through the Model Context Protocol:
+Use pictl directly with Claude through the Model Context Protocol:
 - Discover models with natural language requests
 - Analyze processes conversationally
 - Generate visualizations on demand
@@ -123,7 +123,7 @@ Use wasm4pm directly with Claude through the Model Context Protocol:
 ## 📦 Installation
 
 ```bash
-npm install wasm4pm
+npm install @seanchatmangpt/pictl
 ```
 
 ### Requirements
@@ -215,9 +215,9 @@ npm run size:check
 
 ### Browser
 ```html
-<script src="node_modules/wasm4pm/pkg/wasm4pm.js"></script>
+<script src="node_modules/@seanchatmangpt/pictl/pkg/pictl.js"></script>
 <script>
-  const pm = wasm4pm;
+  const pm = pictl;
   await pm.init();
   
   // Load and discover
@@ -236,7 +236,7 @@ npm run size:check
 
 ### Node.js
 ```javascript
-const pm = require('wasm4pm');
+const pm = require('@seanchatmangpt/pictl');
 
 await pm.init();
 
@@ -281,7 +281,7 @@ pmctl explain --algorithm genetic --level detailed
 ### HTTP Service (NEW)
 ```bash
 # Start HTTP service
-wasm4pm-service --port 3000 --workers 4
+pictl-service --port 3000 --workers 4
 
 # Send discovery request
 curl -X POST http://localhost:3000/api/v1/discover \
@@ -514,29 +514,29 @@ Choose whichever license works best for your use case.
 
 ## 🔗 Links
 
-- **NPM Package**: https://www.npmjs.com/package/wasm4pm
-- **GitHub**: https://github.com/seanchatmangpt/wasm4pm
+- **NPM Package**: https://www.npmjs.com/package/@seanchatmangpt/pictl
+- **GitHub**: https://github.com/seanchatmangpt/pictl
 - **Documentation**: See docs/ directory
 - **Research Paper**: See [REAL-BENCHMARK-RESULTS.md](./docs/REAL-BENCHMARK-RESULTS.md) for benchmarks and performance data
 
 ## 📚 Citation
 
-If you use wasm4pm in your research, please cite:
+If you use pictl in your research, please cite:
 
 ```bibtex
-@software{wasm4pm2026,
-  title={wasm4pm: Process Mining for WebAssembly},
+@software{pictl2026,
+  title={pictl: Process Mining for WebAssembly},
   author={Sean Chat Man GPT},
   year={2026},
-  url={https://github.com/seanchatmangpt/wasm4pm}
+  url={https://github.com/seanchatmangpt/pictl}
 }
 ```
 
 ## 🙋 Support
 
 - **Documentation**: See [TUTORIAL.md](./docs/TUTORIAL.md) and [FAQ.md](./docs/FAQ.md)
-- **Issues**: Report bugs on [GitHub](https://github.com/seanchatmangpt/wasm4pm/issues)
-- **Discussions**: Join [GitHub Discussions](https://github.com/seanchatmangpt/wasm4pm/discussions)
+- **Issues**: Report bugs on [GitHub](https://github.com/seanchatmangpt/pictl/issues)
+- **Discussions**: Join [GitHub Discussions](https://github.com/seanchatmangpt/pictl/discussions)
 
 ---
 
