@@ -3,7 +3,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import { resolveConfig as loadConfig } from '@wasm4pm/config';
 import { WasmLoader } from '@wasm4pm/engine';
-import { ALGORITHM_CLI_ALIASES } from '@wasm4pm/templates';
+import { ALGORITHM_CLI_ALIASES } from '@wasm4pm/contracts';
 import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { savePredictionResult } from './results.js';

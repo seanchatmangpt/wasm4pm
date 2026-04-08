@@ -10,8 +10,8 @@ import {
   ExecutionReceipt,
   EngineStatus,
   StatusUpdate,
-  ErrorInfo,
-} from '@wasm4pm/types';
+  EngineError,
+} from '@wasm4pm/contracts';
 import { StateMachine, TransitionValidator, LifecycleEvent } from './lifecycle.js';
 import { StatusTracker, formatStatus } from './status.js';
 import { WasmLoader, WasmLoaderConfig, WasmModule } from './wasm-loader.js';
@@ -332,7 +332,7 @@ export class Engine {
 
       return plan;
     } catch (err) {
-      const error: ErrorInfo = {
+      const error: EngineError = {
         code: 'PLANNING_FAILED',
         message: err instanceof Error ? err.message : String(err),
         severity: 'error',
@@ -450,7 +450,7 @@ export class Engine {
     } catch (err) {
       this.statusTracker.finish();
 
-      const error: ErrorInfo = {
+      const error: EngineError = {
         code: 'EXECUTION_FAILED',
         message: err instanceof Error ? err.message : String(err),
         severity: 'error',
@@ -565,7 +565,7 @@ export class Engine {
 
         // Check watch session health
         if (!this.watchSession.isHealthy()) {
-          const degradeError: ErrorInfo = {
+          const degradeError: EngineError = {
             code: 'HEARTBEAT_FAILURE',
             message: `Missed ${this.watchSession.getMissedHeartbeats()} consecutive heartbeats`,
             severity: 'warning',
@@ -601,7 +601,7 @@ export class Engine {
 
       this.statusTracker.finish();
 
-      const error: ErrorInfo = {
+      const error: EngineError = {
         code: 'WATCH_FAILED',
         message: err instanceof Error ? err.message : String(err),
         severity: 'error',
@@ -638,7 +638,7 @@ export class Engine {
    * Transitions engine to degraded state on non-fatal error
    * Allows recovery attempts
    */
-  async degrade(error: ErrorInfo, reason?: string): Promise<void> {
+  async degrade(error: EngineError, reason?: string): Promise<void> {
     if (this.stateMachine.canTransition('degraded')) {
       this.statusTracker.addError(error);
       this.stateMachine.transition('degraded', reason || error.message);
@@ -669,7 +669,7 @@ export class Engine {
       this.stateMachine.transition('ready', 'Recovery completed');
       this.statusTracker.setState('ready');
     } catch (err) {
-      const error: ErrorInfo = {
+      const error: EngineError = {
         code: 'RECOVERY_FAILED',
         message: err instanceof Error ? err.message : String(err),
         severity: 'error',
@@ -701,7 +701,7 @@ export class Engine {
         this.transitionUnsubscribe();
       }
     } catch (err) {
-      const error: ErrorInfo = {
+      const error: EngineError = {
         code: 'SHUTDOWN_FAILED',
         message: err instanceof Error ? err.message : String(err),
         severity: 'warning',
@@ -764,7 +764,7 @@ export class Engine {
     return `run_${timestamp}_${random}`;
   }
 
-  private createStatusUpdate(error?: ErrorInfo): StatusUpdate {
+  private createStatusUpdate(error?: EngineError): StatusUpdate {
     const status = this.status();
     return {
       timestamp: new Date(),

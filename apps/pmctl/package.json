@@ -30,7 +30,7 @@
     "@wasm4pm/config": "workspace:*",
     "@wasm4pm/engine": "workspace:*",
     "@wasm4pm/ml": "workspace:^",
-    "@wasm4pm/templates": "workspace:*",
+    "@wasm4pm/contracts": "workspace:*",
     "citty": "^0.1.6",
     "consola": "^3.2.3"
   },

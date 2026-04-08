@@ -4,7 +4,7 @@
  * Loads WASM, initializes kernel, validates readiness
  */
 
-import { ErrorInfo } from '@wasm4pm/types';
+import { EngineError } from '@wasm4pm/contracts';
 import { WasmLoader, WasmModule } from './wasm-loader.js';
 
 /**
@@ -54,7 +54,7 @@ export async function bootstrapEngine(
 /**
  * Creates a structured error for bootstrap failures
  */
-export function createBootstrapError(err: unknown): ErrorInfo {
+export function createBootstrapError(err: unknown): EngineError {
   return {
     code: 'BOOTSTRAP_FAILED',
     message: err instanceof Error ? err.message : String(err),

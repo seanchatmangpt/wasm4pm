@@ -6,11 +6,11 @@
 
 import {
   EngineState,
-  ErrorInfo,
+  EngineError,
   EngineStatus,
   ExecutionReceipt,
   ExecutionPlan,
-} from '@wasm4pm/types';
+} from '@wasm4pm/contracts';
 
 /**
  * Tracks engine execution progress and status
@@ -20,7 +20,7 @@ export class StatusTracker {
   private runId?: string;
   private planId?: string;
   private progress: number = 0;
-  private errors: ErrorInfo[] = [];
+  private errors: EngineError[] = [];
   private startedAt?: Date;
   private finishedAt?: Date;
   private stepsCompleted: number = 0;
@@ -78,7 +78,7 @@ export class StatusTracker {
   /**
    * Adds an error to the error list
    */
-  addError(error: ErrorInfo): void {
+  addError(error: EngineError): void {
     this.errors.push(error);
     // Keep only the last 100 errors to avoid memory issues
     if (this.errors.length > 100) {
@@ -238,7 +238,7 @@ export class StatusTracker {
 /**
  * Formats error information for display
  */
-export function formatError(error: ErrorInfo): string {
+export function formatError(error: EngineError): string {
   const parts = [`[${error.code}]`, error.message];
 
   if (error.severity !== 'error') {
@@ -269,7 +269,7 @@ export function formatStatus(status: EngineStatus): string {
 
   if (status.errors.length > 0) {
     lines.push(`Errors: ${status.errors.length}`);
-    status.errors.slice(0, 3).forEach((err: ErrorInfo) => {
+    status.errors.slice(0, 3).forEach((err: EngineError) => {
       lines.push(`  - ${formatError(err)}`);
     });
     if (status.errors.length > 3) {

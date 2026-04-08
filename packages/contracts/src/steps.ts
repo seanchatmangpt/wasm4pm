@@ -31,12 +31,28 @@ export const PLAN_STEP_TYPE_VALUES = [
   'discover_aco',
   'discover_simulated_annealing',
   'discover_optimized_dfg',
+  // POWL Discovery
+  'discover_powl',
+  'discover_powl_tree',
+  'discover_powl_maximal',
+  'discover_powl_dynamic_clustering',
+  'discover_powl_decision_graph_max',
+  'discover_powl_decision_graph_clustering',
+  'discover_powl_decision_graph_cyclic',
+  'discover_powl_decision_graph_cyclic_strict',
   // Analysis
   'analyze_statistics',
   'analyze_conformance',
   'analyze_variants',
   'analyze_performance',
   'analyze_clustering',
+  // ML Analysis
+  'ml_classify',
+  'ml_cluster',
+  'ml_forecast',
+  'ml_anomaly',
+  'ml_regress',
+  'ml_pca',
   // Utilities
   'filter_log',
   'transform_log',

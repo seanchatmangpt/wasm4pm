@@ -4,16 +4,16 @@
  * Provides state management, error handling, and execution orchestration
  */
 
-// Re-export types from @wasm4pm/types
+// Re-export types from @wasm4pm/contracts
 export type {
   EngineState,
   EngineStatus,
   ExecutionPlan,
   ExecutionReceipt,
-  ErrorInfo,
+  EngineError,
   StatusUpdate,
   PlanStep,
-} from '@wasm4pm/types';
+} from '@wasm4pm/contracts';
 
 // Engine lifecycle and state machine
 export { Engine, createSimpleEngine, createFullEngine } from './engine.js';

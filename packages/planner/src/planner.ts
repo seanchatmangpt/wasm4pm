@@ -10,7 +10,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { hash as blake3Hash } from 'blake3';
 import type { ErrorInfo } from '@wasm4pm/contracts';
 import { createError } from '@wasm4pm/contracts';
-import { ALGORITHM_ID_TO_STEP_TYPE, getProfileAlgorithms, ALGORITHM_DISPLAY_NAMES } from '@wasm4pm/templates';
+import { ALGORITHM_ID_TO_STEP_TYPE, getProfileAlgorithms, ALGORITHM_DISPLAY_NAMES } from '@wasm4pm/contracts';
 import type { DAG } from './dag';
 import { topologicalSort, validateDAG } from './dag';
 import type { PlanStep } from './steps';

@@ -7,10 +7,10 @@
 import {
   ExecutionPlan,
   ExecutionReceipt,
-  ErrorInfo,
+  EngineError,
   StatusUpdate,
   PlanStep,
-} from '@wasm4pm/types';
+} from '@wasm4pm/contracts';
 
 /**
  * Step handler function type
@@ -25,7 +25,7 @@ export interface StepResult {
   stepId: string;
   success: boolean;
   output?: Record<string, unknown>;
-  error?: ErrorInfo;
+  error?: EngineError;
   durationMs?: number;
   metadata?: Record<string, unknown>;
 }
@@ -220,7 +220,7 @@ export async function executePlan(
   onProgress?: (update: Partial<StatusUpdate>) => void
 ): Promise<ExecutionReceipt> {
   const startedAt = new Date();
-  const errors: ErrorInfo[] = [];
+  const errors: EngineError[] = [];
   const previousResults = new Map<string, StepResult>();
   let stepsCompleted = 0;
   let hasFatalError = false;
@@ -263,7 +263,7 @@ export async function executePlan(
 
         // Check if step failed
         if (!result.success) {
-          const error: ErrorInfo = result.error || {
+          const error: EngineError = result.error || {
             code: 'STEP_FAILED',
             message: `Step ${stepId} failed`,
             severity: 'error',
@@ -285,7 +285,7 @@ export async function executePlan(
       } catch (err) {
         // Only handle errors from dispatch itself, not from result failures
         if (!hasFatalError) {
-          const error: ErrorInfo = {
+          const error: EngineError = {
             code: 'STEP_EXECUTION_FAILED',
             message: `Step ${stepId} failed: ${err instanceof Error ? err.message : String(err)}`,
             severity: step.optional ? 'warning' : 'error',
@@ -394,7 +394,7 @@ export async function executePlan(
     };
   } catch (err) {
     const finishedAt = new Date();
-    const fatalError: ErrorInfo = {
+    const fatalError: EngineError = {
       code: 'PLAN_EXECUTION_FAILED',
       message: err instanceof Error ? err.message : String(err),
       severity: 'error',

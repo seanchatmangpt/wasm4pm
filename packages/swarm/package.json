@@ -23,7 +23,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.10.2",
     "@wasm4pm/observability": "workspace:*",
-    "@wasm4pm/types": "workspace:*",
+    "@wasm4pm/contracts": "workspace:*",
     "smol-toml": "^1.3.4",
     "uuid": "^11.1.0",
     "zod": "^3.25.0"

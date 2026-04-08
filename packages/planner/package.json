@@ -24,7 +24,6 @@
   },
   "dependencies": {
     "@wasm4pm/contracts": "workspace:*",
-    "@wasm4pm/templates": "workspace:*",
     "blake3": "^2.1.4",
     "uuid": "^9.0.1"
   },

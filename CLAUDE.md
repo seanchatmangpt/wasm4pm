@@ -6,7 +6,7 @@
 
 1. **Rust/WASM core** (`wasm4pm/` — Cargo workspace member) — 14 discovery algorithms compiled to WebAssembly via wasm-pack. This is the algorithm backend. Users rarely touch it directly.
 
-2. **TypeScript monorepo** (`packages/` + `apps/`) — 14 packages that wrap, orchestrate, and expose the WASM core via a professional CLI (`pmctl`), configuration system, observability, contracts, and testing harnesses.
+2. **TypeScript monorepo** (`packages/` + `apps/`) — 9 packages that wrap, orchestrate, and expose the WASM core via a professional CLI (`pmctl`), configuration system, observability, contracts, and testing harnesses.
 
 The primary entry point for users is **`pmctl`** (`apps/pmctl/`). The primary entry point for developers extending the system is the **`packages/`** monorepo.
 
@@ -21,7 +21,7 @@ wasm4pm/
 │   ├── src/                # Rust sources (discovery.rs, conformance.rs, etc.)
 │   ├── Cargo.toml
 │   └── package.json        # npm package for the compiled WASM
-├── packages/               # TypeScript monorepo (14 packages)
+├── packages/               # TypeScript monorepo (9 packages)
 ├── apps/
 │   └── pmctl/              # CLI tool (@wasm4pm/pmctl v26.4.6)
 ├── lab/                    # Post-publish artifact validation (tests published npm package)
@@ -34,20 +34,15 @@ wasm4pm/
 
 | Package | Role |
 |---|---|
+| `@wasm4pm/contracts` | Shared types + receipts + errors + plans + hashing + algorithm registry + prediction tasks (leaf package, no deps) |
 | `@wasm4pm/engine` | Engine lifecycle state machine (uninitialized → bootstrapping → ready → planning → running → watching / degraded / failed) |
 | `@wasm4pm/kernel` | WASM facade — 15 registered algorithms, `run(algorithmName, handle, params)`, streaming via `stream()` |
 | `@wasm4pm/config` | Zod-validated config, `resolveConfig()`, 5-layer precedence (CLI > TOML > JSON > ENV > defaults), provenance tracking |
-| `@wasm4pm/contracts` | Shared types: Receipt (BLAKE3 hashes), Plan (DAG), ErrorInfo (typed codes 200–799), Result<T> discriminated union |
-| `@wasm4pm/testing` | Parity harness, determinism harness, CLI harness, OtelCapture, certification gates, fixtures, mocks |
-| `@wasm4pm/observability` | 3-layer: CLI human output, JSONL machine output, OTEL spans. `Instrumentation.create*Event()` |
-| `@wasm4pm/types` | Shared TypeScript types: `EngineState`, `ExecutionPlan`, `PlanStep`, `EngineStatus`, `ErrorInfo` |
 | `@wasm4pm/planner` | `plan(config)` → `ExecutionPlan`, `explain(config)` → string. 4 profiles: fast/balanced/quality/stream |
-| `@wasm4pm/connectors` | Source connectors (file, stream, HTTP) |
-| `@wasm4pm/sinks` | Output sinks (stdout, file, HTTP) |
-| `@wasm4pm/ocel` | Object-Centric Event Log support |
-| `@wasm4pm/service` | HTTP service layer (Express + WebSocket) |
-| `@wasm4pm/templates` | Process templates and patterns |
-| `@wasm4pm/wasm4pm` | Core WASM library wrapper |
+| `@wasm4pm/observability` | 3-layer: CLI human output, JSONL machine output, OTEL spans. `Instrumentation.create*Event()` |
+| `@wasm4pm/testing` | Parity harness, determinism harness, CLI harness, OtelCapture, certification gates, fixtures, mocks |
+| `@wasm4pm/ml` | Micro-ML analysis: classify, cluster, forecast, anomaly, regress, PCA |
+| `@wasm4pm/swarm` | Multi-worker coordinator with convergence detection |
 
 ---
 

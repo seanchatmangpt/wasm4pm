@@ -4,7 +4,7 @@
  * Validates state transitions, enforces invariants, and emits lifecycle events
  */
 
-import { EngineState, ErrorInfo } from '@wasm4pm/types';
+import { EngineState, EngineError } from '@wasm4pm/contracts';
 import {
   VALID_TRANSITIONS,
   canTransition,

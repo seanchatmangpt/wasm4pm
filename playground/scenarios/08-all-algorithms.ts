@@ -10,7 +10,7 @@
  *   3. CLI     — pmctl run --algorithm X exits 0 or 3 (never 1=config or 2=source)
  *   4. CLI     — pmctl compare with all 14 IDs comma-joined exits 0 or 3
  *
- * Driven by ALGORITHM_IDS from @wasm4pm/templates — if a new algorithm is added
+ * Driven by ALGORITHM_IDS from @wasm4pm/contracts — if a new algorithm is added
  * to the ontology and regenerated, this scenario covers it automatically.
  */
 
@@ -19,7 +19,7 @@ import * as path from 'path';
 import * as url from 'url';
 import * as fs from 'fs/promises';
 import { resolveConfig } from '@wasm4pm/config';
-import { ALGORITHM_IDS } from '@wasm4pm/templates';
+import { ALGORITHM_IDS } from '@wasm4pm/contracts';
 import { runCli, createCliTestEnv, EXIT_CODES } from '@wasm4pm/testing';
 import type { CliTestEnv } from '@wasm4pm/testing';
 

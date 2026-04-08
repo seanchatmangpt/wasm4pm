@@ -24,7 +24,7 @@ class MockWasmModule implements WasmModule {
   constructor(versionString?: string) {
     // Create a small memory buffer for testing
     try {
-      this.memory = new WebAssembly.Memory({ initial: 256, maximum: 512 } as any);
+      this.memory = new (globalThis as any).WebAssembly.Memory({ initial: 256, maximum: 512 } as any);
     } catch {
       // Fallback for environments without WebAssembly
       this.memory = { buffer: new ArrayBuffer(256 * 64 * 1024) };

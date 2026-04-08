@@ -23,8 +23,6 @@
     "@wasm4pm/kernel": "file:../packages/kernel",
     "@wasm4pm/observability": "file:../packages/observability",
     "@wasm4pm/planner": "file:../packages/planner",
-    "@wasm4pm/templates": "file:../packages/templates",
-    "@wasm4pm/testing": "file:../packages/testing",
-    "@wasm4pm/types": "file:../packages/types"
+    "@wasm4pm/testing": "file:../packages/testing"
   }
 }

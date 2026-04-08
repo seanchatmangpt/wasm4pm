@@ -12,7 +12,7 @@ import {
   StatusTracker,
 } from './index.js';
 import type { Kernel, Planner, Executor } from './engine.js';
-import type { ExecutionPlan, ExecutionReceipt } from '@wasm4pm/types';
+import type { ExecutionPlan, ExecutionReceipt } from '@wasm4pm/contracts';
 
 // Mock implementations
 
