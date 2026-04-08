@@ -16,4 +16,8 @@ export default defineConfig({
       '@wasm4pm/testing': path.resolve(__dirname, './src'),
     },
   },
+  // Use happy-dom for tests that need DOM (XML parsing)
+  environmentOptions: {
+    // Note: To enable DOM for specific tests, use vi.stubEnv('browser', true)
+  },
 });

@@ -112,14 +112,24 @@ function buildWorkerSpecs(config: SwarmConfig): WorkerSpec[] {
 }
 
 async function runWorker(spec: WorkerSpec, config: SwarmConfig): Promise<WorkerResult> {
+  const isMl = spec.algorithmId.startsWith('ml_')
+
   // Structural skeleton — real implementation calls generateText() with wasm4pm__ tools
   // The result hash is computed from algorithm + logId for deterministic convergence testing
-  const resultData = {
-    algorithm: spec.algorithmId,
-    logId: spec.logId,
-    nodes: [],
-    edges: [],
-  }
+  const resultData = isMl
+    ? {
+        algorithm: spec.algorithmId,
+        logId: spec.logId,
+        mlTask: spec.algorithmId.replace('ml_', ''),
+        method: 'ensemble',
+        ensembleSize: 1,
+      }
+    : {
+        algorithm: spec.algorithmId,
+        logId: spec.logId,
+        nodes: [],
+        edges: [],
+      }
   const resultHash = hashOutput(resultData)
 
   return {
@@ -129,6 +139,7 @@ async function runWorker(spec: WorkerSpec, config: SwarmConfig): Promise<WorkerR
     result: resultData,
     runAt: new Date().toISOString(),
     durationMs: 0,
+    resultType: isMl ? 'ml' : 'discovery',
   }
 }
 

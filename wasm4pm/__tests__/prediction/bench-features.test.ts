@@ -4,12 +4,25 @@
  */
 
 import { describe, it, expect, afterAll } from 'vitest';
-import { readXes, countTraces, printTable, BenchRow, SAMPLE_XES, BPI_XES } from './bench-helpers.js';
+import {
+  readXes,
+  countTraces,
+  printTable,
+  BenchRow,
+  SAMPLE_XES,
+  BPI_XES,
+} from './bench-helpers.js';
 
 const SAMPLE = readXes(SAMPLE_XES);
 const SAMPLE_TRACES = countTraces(SAMPLE);
 let BPI: string, BPI_TRACES: number;
-try { BPI = readXes(BPI_XES); BPI_TRACES = countTraces(BPI); } catch { BPI = ''; BPI_TRACES = 0; }
+try {
+  BPI = readXes(BPI_XES);
+  BPI_TRACES = countTraces(BPI);
+} catch {
+  BPI = '';
+  BPI_TRACES = 0;
+}
 
 const rows: BenchRow[] = [];
 afterAll(() => printTable(rows));
@@ -32,7 +45,13 @@ describe('extract_prefix_features_wasm', () => {
     expect(result.rework_count).toBe(0); // no consecutive repeats
     expect(result.last_activity).toBe('Approve');
     expect(result.activity_frequency_entropy).toBeGreaterThan(0);
-    rows.push({ algorithm: 'extract_prefix_features', dataset: 'sample', traces: SAMPLE_TRACES, durationMs: dur, note: `unique=${result.unique_activities}` });
+    rows.push({
+      algorithm: 'extract_prefix_features',
+      dataset: 'sample',
+      traces: SAMPLE_TRACES,
+      durationMs: dur,
+      note: `unique=${result.unique_activities}`,
+    });
   });
 
   it('10 000 calls latency', async () => {
@@ -41,7 +60,13 @@ describe('extract_prefix_features_wasm', () => {
     const t = performance.now();
     for (let i = 0; i < 10_000; i++) wasm.extract_prefix_features_wasm(prefix);
     const perCall = Number(((performance.now() - t) / 10_000).toFixed(5));
-    rows.push({ algorithm: 'extract_prefix_features(10k)', dataset: 'synthetic', traces: 0, durationMs: perCall, note: 'ms/call' });
+    rows.push({
+      algorithm: 'extract_prefix_features(10k)',
+      dataset: 'synthetic',
+      traces: 0,
+      durationMs: perCall,
+      note: 'ms/call',
+    });
     expect(perCall).toBeLessThan(1);
   });
 });
@@ -55,7 +80,13 @@ describe('compute_rework_score', () => {
     const dur = Number((performance.now() - t).toFixed(3));
     expect(result.rework_count).toBe(3);
     expect(result.rework_ratio).toBeGreaterThan(0);
-    rows.push({ algorithm: 'compute_rework_score', dataset: 'synthetic', traces: 0, durationMs: dur, note: `rework=${result.rework_count}` });
+    rows.push({
+      algorithm: 'compute_rework_score',
+      dataset: 'synthetic',
+      traces: 0,
+      durationMs: dur,
+      note: `rework=${result.rework_count}`,
+    });
   });
 
   it('no rework — score=0', async () => {
@@ -78,8 +109,15 @@ describe('build_transition_probabilities', () => {
     // Each source's outgoing probabilities sum to ~1
     const bySource = new Map<string, number>();
     for (const e of result.edges) bySource.set(e.from, (bySource.get(e.from) ?? 0) + e.probability);
-    for (const [src, total] of bySource) expect(total).toBeCloseTo(1.0, 1, `from '${src}': sum=${total}`);
-    rows.push({ algorithm: 'build_transition_probabilities', dataset: 'sample', traces: SAMPLE_TRACES, durationMs: dur, note: `${result.edges.length} edges` });
+    for (const [src, total] of bySource)
+      expect(total, `from '${src}': sum=${total}`).toBeCloseTo(1.0, 1);
+    rows.push({
+      algorithm: 'build_transition_probabilities',
+      dataset: 'sample',
+      traces: SAMPLE_TRACES,
+      durationMs: dur,
+      note: `${result.edges.length} edges`,
+    });
   });
 
   it('BPI 2020 — large graph', async () => {
@@ -90,6 +128,12 @@ describe('build_transition_probabilities', () => {
     const result = JSON.parse(wasm.build_transition_probabilities(log, 'concept:name'));
     const dur = Number((performance.now() - t).toFixed(3));
     expect(result.edges.length).toBeGreaterThan(10);
-    rows.push({ algorithm: 'build_transition_probabilities', dataset: 'BPI2020', traces: BPI_TRACES, durationMs: dur, note: `${result.edges.length} edges, ${result.activities.length} activities` });
+    rows.push({
+      algorithm: 'build_transition_probabilities',
+      dataset: 'BPI2020',
+      traces: BPI_TRACES,
+      durationMs: dur,
+      note: `${result.edges.length} edges, ${result.activities.length} activities`,
+    });
   });
 });
