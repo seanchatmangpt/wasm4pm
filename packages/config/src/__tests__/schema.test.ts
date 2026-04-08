@@ -19,7 +19,7 @@ describe('Schema', () => {
       expect(result.schemaVersion).toBe(SCHEMA_VERSION);
       expect(result.execution.profile).toBe('balanced');
       expect(result.sink.kind).toBe('stdout');
-      expect(result.algorithm.name).toBe('alpha');
+      expect(result.algorithm.name).toBe('dfg');
       expect(result.output.format).toBe('human');
       expect(result.observability.logLevel).toBe('info');
     });
@@ -30,7 +30,7 @@ describe('Schema', () => {
         version: '1.0.0',
         source: { kind: 'http', url: 'http://localhost:8080/events' },
         sink: { kind: 'file', path: './output.pnml' },
-        algorithm: { name: 'heuristic', parameters: { threshold: 0.8 } },
+        algorithm: { name: 'heuristic_miner', parameters: { threshold: 0.8 } },
         execution: { profile: 'quality', timeout: 600000, maxMemory: 2147483648 },
         observability: {
           logLevel: 'debug',
@@ -167,7 +167,7 @@ describe('Schema', () => {
 
     it('validates individual sections', () => {
       expect(() => validatePartial({ execution: { profile: 'fast' } })).not.toThrow();
-      expect(() => validatePartial({ algorithm: { name: 'alpha' } })).not.toThrow();
+      expect(() => validatePartial({ algorithm: { name: 'alpha_plus_plus' } })).not.toThrow();
       expect(() => validatePartial({ sink: { kind: 'http' } })).not.toThrow();
     });
 
@@ -222,6 +222,163 @@ describe('Schema', () => {
     it('returns serializable JSON', () => {
       const schema = toJsonSchema();
       expect(() => JSON.stringify(schema)).not.toThrow();
+    });
+  });
+
+  describe('ML configuration', () => {
+    it('accepts valid ML config with classify and cluster tasks', () => {
+      const config = {
+        ...minimal,
+        ml: { enabled: true, tasks: ['classify', 'cluster'], method: 'knn', k: 5 },
+      };
+      const result = validate(config);
+      expect(result.ml.enabled).toBe(true);
+      expect(result.ml.tasks).toEqual(['classify', 'cluster']);
+      expect(result.ml.method).toBe('knn');
+      expect(result.ml.k).toBe(5);
+    });
+
+    it('accepts all 6 ML tasks', () => {
+      const config = {
+        ...minimal,
+        ml: { enabled: true, tasks: ['classify', 'cluster', 'forecast', 'anomaly', 'regress', 'pca'] },
+      };
+      const result = validate(config);
+      expect(result.ml.tasks).toHaveLength(6);
+    });
+
+    it('accepts ML config with all parameters', () => {
+      const config = {
+        ...minimal,
+        ml: {
+          enabled: true,
+          tasks: ['classify'],
+          method: 'knn',
+          k: 10,
+          targetKey: 'result',
+          forecastPeriods: 12,
+          nComponents: 5,
+          eps: 2.5,
+        },
+      };
+      const result = validate(config);
+      expect(result.ml.enabled).toBe(true);
+      expect(result.ml.method).toBe('knn');
+      expect(result.ml.k).toBe(10);
+      expect(result.ml.targetKey).toBe('result');
+      expect(result.ml.forecastPeriods).toBe(12);
+      expect(result.ml.nComponents).toBe(5);
+      expect(result.ml.eps).toBe(2.5);
+    });
+
+    it('accepts ML config with only enabled flag', () => {
+      const config = { ...minimal, ml: { enabled: true } };
+      const result = validate(config);
+      expect(result.ml.enabled).toBe(true);
+      expect(result.ml.tasks).toEqual([]);
+      expect(result.ml.targetKey).toBe('outcome');
+      expect(result.ml.forecastPeriods).toBe(5);
+      expect(result.ml.nComponents).toBe(2);
+      expect(result.ml.eps).toBe(1.0);
+    });
+
+    it('defaults ml to disabled with empty tasks', () => {
+      const result = validate(minimal);
+      expect(result.ml).toBeUndefined();
+    });
+
+    it('defaults ml.enabled to false when ml section present but enabled omitted', () => {
+      const config = { ...minimal, ml: { tasks: ['classify'] } };
+      const result = validate(config);
+      expect(result.ml.enabled).toBe(false);
+      expect(result.ml.tasks).toEqual(['classify']);
+    });
+
+    it('rejects invalid ML task names', () => {
+      expect(() =>
+        validate({ ...minimal, ml: { enabled: true, tasks: ['unknown_task'] } }),
+      ).toThrow();
+      expect(() =>
+        validate({ ...minimal, ml: { enabled: true, tasks: ['CLASSIFY'] } }),
+      ).toThrow();
+      expect(() =>
+        validate({ ...minimal, ml: { enabled: true, tasks: ['classify', 'bogus'] } }),
+      ).toThrow();
+    });
+
+    it('rejects non-positive k', () => {
+      expect(() =>
+        validate({ ...minimal, ml: { enabled: true, k: 0 } }),
+      ).toThrow();
+      expect(() =>
+        validate({ ...minimal, ml: { enabled: true, k: -1 } }),
+      ).toThrow();
+    });
+
+    it('rejects non-positive forecastPeriods', () => {
+      expect(() =>
+        validate({ ...minimal, ml: { enabled: true, forecastPeriods: 0 } }),
+      ).toThrow();
+      expect(() =>
+        validate({ ...minimal, ml: { enabled: true, forecastPeriods: -3 } }),
+      ).toThrow();
+    });
+
+    it('rejects non-positive nComponents', () => {
+      expect(() =>
+        validate({ ...minimal, ml: { enabled: true, nComponents: 0 } }),
+      ).toThrow();
+      expect(() =>
+        validate({ ...minimal, ml: { enabled: true, nComponents: -1 } }),
+      ).toThrow();
+    });
+
+    it('rejects non-positive eps', () => {
+      expect(() =>
+        validate({ ...minimal, ml: { enabled: true, eps: 0 } }),
+      ).toThrow();
+      expect(() =>
+        validate({ ...minimal, ml: { enabled: true, eps: -1.5 } }),
+      ).toThrow();
+    });
+
+    it('rejects non-boolean enabled', () => {
+      expect(() =>
+        validate({ ...minimal, ml: { enabled: 'yes' } }),
+      ).toThrow();
+      expect(() =>
+        validate({ ...minimal, ml: { enabled: 1 } }),
+      ).toThrow();
+    });
+
+    it('rejects non-array tasks', () => {
+      expect(() =>
+        validate({ ...minimal, ml: { enabled: true, tasks: 'classify' } }),
+      ).toThrow();
+      expect(() =>
+        validate({ ...minimal, ml: { enabled: true, tasks: 42 } }),
+      ).toThrow();
+    });
+
+    it('includes ml in JSON schema', () => {
+      const schema = toJsonSchema();
+      const props = schema.properties as Record<string, any>;
+      expect(props.ml).toBeDefined();
+      expect(props.ml.type).toBe('object');
+      expect(props.ml.properties.enabled).toBeDefined();
+      expect(props.ml.properties.tasks).toBeDefined();
+      expect(props.ml.properties.method).toBeDefined();
+      expect(props.ml.properties.k).toBeDefined();
+      expect(props.ml.properties.targetKey).toBeDefined();
+      expect(props.ml.properties.forecastPeriods).toBeDefined();
+      expect(props.ml.properties.nComponents).toBeDefined();
+      expect(props.ml.properties.eps).toBeDefined();
+    });
+
+    it('ml is optional in JSON schema', () => {
+      const schema = toJsonSchema();
+      const required = schema.required as string[];
+      expect(required).not.toContain('ml');
     });
   });
 });

@@ -72,12 +72,14 @@ const ML_ALGORITHM_TO_STEP_TYPE: Record<string, PlanStepType> = {
  */
 export function buildKernelStepHandlers(
   wasmModule: WasmModule,
-  eventLogHandle: string
+  eventLogHandle: string,
+  stepImpl?: typeof implementAlgorithmStep
 ): Map<string, EngineStepHandler> {
   const handlers = new Map<string, EngineStepHandler>();
+  const impl = stepImpl ?? implementAlgorithmStep;
 
   for (const algorithmId of Object.keys(ML_ALGORITHM_TO_STEP_TYPE)) {
-    handlers.set(algorithmId, createMlStepHandler(wasmModule, eventLogHandle, algorithmId));
+    handlers.set(algorithmId, createMlStepHandler(wasmModule, eventLogHandle, algorithmId, impl));
   }
 
   return handlers;
@@ -92,7 +94,8 @@ export function buildKernelStepHandlers(
 function createMlStepHandler(
   wasmModule: WasmModule,
   eventLogHandle: string,
-  algorithmId: string
+  algorithmId: string,
+  impl: typeof implementAlgorithmStep
 ): EngineStepHandler {
   return async (step: EngineStep): Promise<EngineStepResult> => {
     const startTime = Date.now();
@@ -124,7 +127,7 @@ function createMlStepHandler(
         parallelizable: false,
       };
 
-      const result = await implementAlgorithmStep(plannerStep as any, wasmModule, eventLogHandle);
+      const result = await impl(plannerStep as any, wasmModule, eventLogHandle);
 
       return {
         stepId: step.id,
