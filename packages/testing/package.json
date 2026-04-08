@@ -1,6 +1,6 @@
 {
   "name": "@pictl/testing",
-  "version": "26.4.8",
+  "version": "26.4.9",
   "description": "Testing utilities and fixtures",
   "type": "module",
   "main": "./dist/index.js",
