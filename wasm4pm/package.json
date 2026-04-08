@@ -19,6 +19,7 @@
     "build:nodejs": "RUSTFLAGS=\"-C target-feature=+simd128\" wasm-pack build --target nodejs",
     "build:web": "RUSTFLAGS=\"-C target-feature=+simd128\" wasm-pack build --target web",
     "build:all": "npm run build && npm run build:nodejs && npm run build:web",
+    "build:optimized": "npm run build && wasm-opt pkg/wasm4pm_bg.wasm -O4 -o pkg/wasm4pm_bg.wasm || echo 'wasm-opt not available, skipping post-processing'",
     "build:mcp": "tsc src/mcp_server.ts --outDir dist --module commonjs --target es2020 --skipLibCheck --esModuleInterop",
     "start:mcp": "npm run build:mcp && node dist/mcp_server.js",
     "test": "npm run build:nodejs && npm run test:unit && npm run build:web && npm run test:browser",

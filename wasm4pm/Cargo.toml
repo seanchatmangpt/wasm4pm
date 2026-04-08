@@ -7,6 +7,9 @@ description = "High-performance process mining algorithms in WebAssembly for Jav
 repository = "https://github.com/seanchatmangpt/wasm4pm"
 documentation = "https://github.com/seanchatmangpt/wasm4pm/blob/main/README.md"
 
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = false
+
 [lib]
 crate-type = ["cdylib", "rlib"]
 
@@ -62,9 +65,15 @@ default = []
 console_error_panic_hook = []
 
 [profile.release]
-opt-level = 3
+# Optimize for binary size ("z" instead of "3")
+opt-level = "z"
+# Link-time optimization (already enabled)
 lto = true
+# Single codegen unit for better optimization
 codegen-units = 1
+# Remove panic unwinding code to reduce binary size
+panic = "abort"
+# Strip symbols
 strip = "debuginfo"
 
 [profile.bench]
