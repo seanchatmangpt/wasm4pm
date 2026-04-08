@@ -48,7 +48,8 @@ function trendArrow(trend: string): string {
 export const driftWatch = defineCommand({
   meta: {
     name: 'drift-watch',
-    description: 'Stream EWMA drift monitoring — watches an XES file for concept drift in real-time',
+    description:
+      'Stream EWMA drift monitoring — watches an XES file for concept drift in real-time',
   },
   args: {
     input: {
@@ -84,16 +85,26 @@ export const driftWatch = defineCommand({
       type: 'boolean',
       description: 'Emit newline-delimited JSON instead of human-readable output',
     },
+    enhanced: {
+      type: 'boolean',
+      description: 'Enable ML-enhanced anomaly detection alongside EWMA drift monitoring',
+    },
   },
 
   async run(ctx) {
     const inputPath: string = ctx.args.input as string;
     const activityKey: string = (ctx.args['activity-key'] as string) || DEFAULT_ACTIVITY_KEY;
-    const windowSize: number = parseInt((ctx.args.window as string) || String(DEFAULT_WINDOW), 10) || DEFAULT_WINDOW;
-    const intervalMs: number = parseInt((ctx.args.interval as string) || String(DEFAULT_INTERVAL_MS), 10) || DEFAULT_INTERVAL_MS;
-    const ewmaAlpha: number = parseFloat((ctx.args.alpha as string) || String(EWMA_ALPHA)) || EWMA_ALPHA;
-    const driftThreshold: number = parseFloat((ctx.args.threshold as string) || String(DRIFT_THRESHOLD)) || DRIFT_THRESHOLD;
+    const windowSize: number =
+      parseInt((ctx.args.window as string) || String(DEFAULT_WINDOW), 10) || DEFAULT_WINDOW;
+    const intervalMs: number =
+      parseInt((ctx.args.interval as string) || String(DEFAULT_INTERVAL_MS), 10) ||
+      DEFAULT_INTERVAL_MS;
+    const ewmaAlpha: number =
+      parseFloat((ctx.args.alpha as string) || String(EWMA_ALPHA)) || EWMA_ALPHA;
+    const driftThreshold: number =
+      parseFloat((ctx.args.threshold as string) || String(DRIFT_THRESHOLD)) || DRIFT_THRESHOLD;
     const jsonMode: boolean = ctx.args.json === true;
+    const enhancedMode: boolean = ctx.args.enhanced === true;
 
     // ── Step 1: Validate input file ──────────────────────────────────────────
     try {
@@ -108,7 +119,9 @@ export const driftWatch = defineCommand({
     try {
       await loader.init();
     } catch (err) {
-      console.error(`[drift-watch] Failed to initialise WASM: ${err instanceof Error ? err.message : String(err)}`);
+      console.error(
+        `[drift-watch] Failed to initialise WASM: ${err instanceof Error ? err.message : String(err)}`
+      );
       process.exit(EXIT_CODES.execution_error);
     }
     const wasm = loader.get();
@@ -119,11 +132,9 @@ export const driftWatch = defineCommand({
     const distanceHistory: number[] = [];
 
     if (!jsonMode) {
+      console.log(`${BOLD}[drift-watch]${RESET} Streaming EWMA drift monitor started`);
       console.log(
-        `${BOLD}[drift-watch]${RESET} Streaming EWMA drift monitor started`,
-      );
-      console.log(
-        `  file=${inputPath}  activity-key=${activityKey}  window=${windowSize}  interval=${intervalMs}ms  α=${ewmaAlpha}  threshold=${driftThreshold}`,
+        `  file=${inputPath}  activity-key=${activityKey}  window=${windowSize}  interval=${intervalMs}ms  α=${ewmaAlpha}  threshold=${driftThreshold}`
       );
       console.log('  Press Ctrl+C to stop.\n');
     }
@@ -151,7 +162,9 @@ export const driftWatch = defineCommand({
       try {
         xesContent = await fs.readFile(inputPath, 'utf-8');
       } catch (err) {
-        console.error(`[drift-watch] Could not read file: ${err instanceof Error ? err.message : String(err)}`);
+        console.error(
+          `[drift-watch] Could not read file: ${err instanceof Error ? err.message : String(err)}`
+        );
         return;
       }
 
@@ -159,7 +172,9 @@ export const driftWatch = defineCommand({
       try {
         logHandle = wasm.load_eventlog_from_xes(xesContent) as string;
       } catch (err) {
-        console.error(`[drift-watch] XES parse error: ${err instanceof Error ? err.message : String(err)}`);
+        console.error(
+          `[drift-watch] XES parse error: ${err instanceof Error ? err.message : String(err)}`
+        );
         return;
       }
 
@@ -169,8 +184,14 @@ export const driftWatch = defineCommand({
         const raw: string = wasm.detect_drift(logHandle, activityKey, windowSize) as string;
         driftResult = JSON.parse(raw) as DriftResult;
       } catch (err) {
-        console.error(`[drift-watch] detect_drift failed: ${err instanceof Error ? err.message : String(err)}`);
-        try { wasm.delete_object(logHandle); } catch { /* best-effort */ }
+        console.error(
+          `[drift-watch] detect_drift failed: ${err instanceof Error ? err.message : String(err)}`
+        );
+        try {
+          wasm.delete_object(logHandle);
+        } catch {
+          /* best-effort */
+        }
         return;
       }
 
@@ -198,13 +219,23 @@ export const driftWatch = defineCommand({
         const raw: string = wasm.compute_ewma(JSON.stringify(distanceHistory), ewmaAlpha) as string;
         ewmaResult = JSON.parse(raw) as EwmaResult;
       } catch (err) {
-        console.error(`[drift-watch] compute_ewma failed: ${err instanceof Error ? err.message : String(err)}`);
-        try { wasm.delete_object(logHandle); } catch { /* best-effort */ }
+        console.error(
+          `[drift-watch] compute_ewma failed: ${err instanceof Error ? err.message : String(err)}`
+        );
+        try {
+          wasm.delete_object(logHandle);
+        } catch {
+          /* best-effort */
+        }
         return;
       }
 
       // ── Free WASM handle ──────────────────────────────────────────────────
-      try { wasm.delete_object(logHandle); } catch { /* best-effort */ }
+      try {
+        wasm.delete_object(logHandle);
+      } catch {
+        /* best-effort */
+      }
 
       const ewma = ewmaResult.last_value ?? 0;
       const trend = ewmaResult.trend;
@@ -243,6 +274,34 @@ export const driftWatch = defineCommand({
       }
 
       previousDriftCount = detected;
+
+      // ── Enhanced ML anomaly detection (if --enhanced) ─────────────────────
+      if (enhancedMode && distanceHistory.length >= 10) {
+        try {
+          const { detectEnhancedAnomalies } = await import('@wasm4pm/ml');
+          const anomalyResult = await detectEnhancedAnomalies(distanceHistory);
+          const peakIndices = (anomalyResult as any).peakIndices as number[] | undefined;
+          const peakCount = peakIndices?.length ?? 0;
+
+          if (jsonMode) {
+            const anomalyLine = {
+              timestamp: new Date().toISOString(),
+              anomaly_detection: true,
+              peaks_detected: peakCount,
+              original_length: (anomalyResult as any).originalLength,
+            };
+            process.stdout.write(JSON.stringify(anomalyLine) + '\n');
+          } else if (peakCount > 0) {
+            console.log(
+              `${BOLD}${YELLOW}  ML Anomaly${RESET} — ${peakCount} peak${peakCount !== 1 ? 's' : ''} detected in drift signal`
+            );
+          }
+        } catch (err) {
+          console.error(
+            `[drift-watch] Enhanced anomaly detection failed: ${err instanceof Error ? err.message : String(err)}`
+          );
+        }
+      }
     };
 
     // Run immediately, then on interval
@@ -250,7 +309,9 @@ export const driftWatch = defineCommand({
 
     const timer = setInterval(() => {
       tick().catch((err) => {
-        console.error(`[drift-watch] tick error: ${err instanceof Error ? err.message : String(err)}`);
+        console.error(
+          `[drift-watch] tick error: ${err instanceof Error ? err.message : String(err)}`
+        );
       });
     }, intervalMs);
 

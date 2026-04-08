@@ -1,0 +1,8 @@
+{
+  "fitness": {
+    "value": 1.0,
+    "percentage": 100
+  },
+  "precision": 1.0,
+  "error": "apply() missing 2 required positional arguments: 'initial_marking' and 'final_marking'"
+}

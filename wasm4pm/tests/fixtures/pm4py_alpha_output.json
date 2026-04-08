@@ -1,0 +1,177 @@
+{
+  "places": [
+    {
+      "name": "start",
+      "label": ""
+    },
+    {
+      "name": "({'decide'}, {'reject request', 'pay compensation', 'reinitiate request'})",
+      "label": ""
+    },
+    {
+      "name": "({'register request', 'reinitiate request'}, {'examine casually', 'examine thoroughly'})",
+      "label": ""
+    },
+    {
+      "name": "end",
+      "label": ""
+    },
+    {
+      "name": "({'examine casually', 'examine thoroughly'}, {'decide'})",
+      "label": ""
+    },
+    {
+      "name": "({'check ticket'}, {'decide'})",
+      "label": ""
+    },
+    {
+      "name": "({'register request', 'reinitiate request'}, {'check ticket'})",
+      "label": ""
+    }
+  ],
+  "transitions": [
+    {
+      "name": "examine casually",
+      "label": "examine casually",
+      "silent": false
+    },
+    {
+      "name": "check ticket",
+      "label": "check ticket",
+      "silent": false
+    },
+    {
+      "name": "pay compensation",
+      "label": "pay compensation",
+      "silent": false
+    },
+    {
+      "name": "reinitiate request",
+      "label": "reinitiate request",
+      "silent": false
+    },
+    {
+      "name": "register request",
+      "label": "register request",
+      "silent": false
+    },
+    {
+      "name": "examine thoroughly",
+      "label": "examine thoroughly",
+      "silent": false
+    },
+    {
+      "name": "reject request",
+      "label": "reject request",
+      "silent": false
+    },
+    {
+      "name": "decide",
+      "label": "decide",
+      "silent": false
+    }
+  ],
+  "arcs": [
+    {
+      "source": "register request",
+      "target": "({'register request', 'reinitiate request'}, {'examine casually', 'examine thoroughly'})",
+      "weight": 1
+    },
+    {
+      "source": "reinitiate request",
+      "target": "({'register request', 'reinitiate request'}, {'check ticket'})",
+      "weight": 1
+    },
+    {
+      "source": "check ticket",
+      "target": "({'check ticket'}, {'decide'})",
+      "weight": 1
+    },
+    {
+      "source": "({'register request', 'reinitiate request'}, {'examine casually', 'examine thoroughly'})",
+      "target": "examine thoroughly",
+      "weight": 1
+    },
+    {
+      "source": "({'examine casually', 'examine thoroughly'}, {'decide'})",
+      "target": "decide",
+      "weight": 1
+    },
+    {
+      "source": "register request",
+      "target": "({'register request', 'reinitiate request'}, {'check ticket'})",
+      "weight": 1
+    },
+    {
+      "source": "({'register request', 'reinitiate request'}, {'check ticket'})",
+      "target": "check ticket",
+      "weight": 1
+    },
+    {
+      "source": "examine thoroughly",
+      "target": "({'examine casually', 'examine thoroughly'}, {'decide'})",
+      "weight": 1
+    },
+    {
+      "source": "({'register request', 'reinitiate request'}, {'examine casually', 'examine thoroughly'})",
+      "target": "examine casually",
+      "weight": 1
+    },
+    {
+      "source": "reinitiate request",
+      "target": "({'register request', 'reinitiate request'}, {'examine casually', 'examine thoroughly'})",
+      "weight": 1
+    },
+    {
+      "source": "reject request",
+      "target": "end",
+      "weight": 1
+    },
+    {
+      "source": "pay compensation",
+      "target": "end",
+      "weight": 1
+    },
+    {
+      "source": "decide",
+      "target": "({'decide'}, {'reject request', 'pay compensation', 'reinitiate request'})",
+      "weight": 1
+    },
+    {
+      "source": "({'decide'}, {'reject request', 'pay compensation', 'reinitiate request'})",
+      "target": "reinitiate request",
+      "weight": 1
+    },
+    {
+      "source": "examine casually",
+      "target": "({'examine casually', 'examine thoroughly'}, {'decide'})",
+      "weight": 1
+    },
+    {
+      "source": "({'check ticket'}, {'decide'})",
+      "target": "decide",
+      "weight": 1
+    },
+    {
+      "source": "({'decide'}, {'reject request', 'pay compensation', 'reinitiate request'})",
+      "target": "pay compensation",
+      "weight": 1
+    },
+    {
+      "source": "start",
+      "target": "register request",
+      "weight": 1
+    },
+    {
+      "source": "({'decide'}, {'reject request', 'pay compensation', 'reinitiate request'})",
+      "target": "reject request",
+      "weight": 1
+    }
+  ],
+  "initial_marking": {
+    "start": 1
+  },
+  "final_marking": {
+    "end": 1
+  }
+}

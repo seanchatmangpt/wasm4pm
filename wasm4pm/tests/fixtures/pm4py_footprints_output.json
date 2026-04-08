@@ -1,0 +1,24 @@
+{
+  "footprints": {
+    "start_activities": ["register request"],
+    "end_activities": ["pay compensation", "reject request"],
+    "dfg_edges": [
+      ["check ticket", "decide"],
+      ["check ticket", "examine casually"],
+      ["check ticket", "examine thoroughly"],
+      ["decide", "pay compensation"],
+      ["decide", "reinitiate request"],
+      ["decide", "reject request"],
+      ["examine casually", "check ticket"],
+      ["examine casually", "decide"],
+      ["examine thoroughly", "check ticket"],
+      ["examine thoroughly", "decide"],
+      ["register request", "check ticket"],
+      ["register request", "examine casually"],
+      ["register request", "examine thoroughly"],
+      ["reinitiate request", "check ticket"],
+      ["reinitiate request", "examine casually"],
+      ["reinitiate request", "examine thoroughly"]
+    ]
+  }
+}

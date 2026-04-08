@@ -1,0 +1,110 @@
+{
+  "activities": [
+    "check ticket",
+    "decide",
+    "examine casually",
+    "examine thoroughly",
+    "pay compensation",
+    "register request",
+    "reinitiate request",
+    "reject request"
+  ],
+  "edges": [
+    {
+      "from": "check ticket",
+      "to": "decide",
+      "frequency": 6
+    },
+    {
+      "from": "check ticket",
+      "to": "examine casually",
+      "frequency": 2
+    },
+    {
+      "from": "check ticket",
+      "to": "examine thoroughly",
+      "frequency": 1
+    },
+    {
+      "from": "decide",
+      "to": "pay compensation",
+      "frequency": 3
+    },
+    {
+      "from": "decide",
+      "to": "reinitiate request",
+      "frequency": 3
+    },
+    {
+      "from": "decide",
+      "to": "reject request",
+      "frequency": 3
+    },
+    {
+      "from": "examine casually",
+      "to": "check ticket",
+      "frequency": 4
+    },
+    {
+      "from": "examine casually",
+      "to": "decide",
+      "frequency": 2
+    },
+    {
+      "from": "examine thoroughly",
+      "to": "check ticket",
+      "frequency": 2
+    },
+    {
+      "from": "examine thoroughly",
+      "to": "decide",
+      "frequency": 1
+    },
+    {
+      "from": "register request",
+      "to": "check ticket",
+      "frequency": 2
+    },
+    {
+      "from": "register request",
+      "to": "examine casually",
+      "frequency": 3
+    },
+    {
+      "from": "register request",
+      "to": "examine thoroughly",
+      "frequency": 1
+    },
+    {
+      "from": "reinitiate request",
+      "to": "check ticket",
+      "frequency": 1
+    },
+    {
+      "from": "reinitiate request",
+      "to": "examine casually",
+      "frequency": 1
+    },
+    {
+      "from": "reinitiate request",
+      "to": "examine thoroughly",
+      "frequency": 1
+    }
+  ],
+  "start_activities": [
+    {
+      "activity": "register request",
+      "count": 6
+    }
+  ],
+  "end_activities": [
+    {
+      "activity": "pay compensation",
+      "count": 3
+    },
+    {
+      "activity": "reject request",
+      "count": 3
+    }
+  ]
+}

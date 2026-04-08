@@ -19,7 +19,12 @@ export type EventType =
   | 'SinkStarted'
   | 'SinkCompleted'
   | 'Progress'
-  | 'Error';
+  | 'Error'
+  // ML events
+  | 'MlModelTraining'
+  | 'MlPredictionMade'
+  | 'MlFeatureExtraction'
+  | 'MlAnomalyDetected';
 
 /**
  * State change event
@@ -117,6 +122,31 @@ export interface ErrorEventData {
   errorMessage: string;
   severity: 'info' | 'warning' | 'error' | 'fatal';
   context?: Record<string, any>;
+  requiredAttrs: RequiredOtelAttributes;
+}
+
+/**
+ * ML analysis event
+ */
+export interface MlAnalysisEvent {
+  type: 'MlModelTraining' | 'MlPredictionMade' | 'MlFeatureExtraction' | 'MlAnomalyDetected';
+  traceId: string;
+  spanId: string;
+  parentSpanId?: string;
+  runId: string;
+  mlTask: string;
+  method?: string;
+  durationMs?: number;
+  status: 'OK' | 'ERROR' | 'UNSET';
+  mlAttributes?: {
+    modelType?: string;
+    confidence?: number;
+    featureCount?: number;
+    clusterCount?: number;
+    anomalyCount?: number;
+    rSquared?: number;
+    explainedVariance?: number[];
+  };
   requiredAttrs: RequiredOtelAttributes;
 }
 
@@ -283,7 +313,7 @@ export class Instrumentation {
       span_id: spanId,
       name: `algorithm.${algorithmName}`,
       kind: 'INTERNAL',
-      start_time: now - ((options?.durationMs || 0) * 1000000),
+      start_time: now - (options?.durationMs || 0) * 1000000,
       end_time: now,
       status: {
         code: status,
@@ -348,7 +378,12 @@ export class Instrumentation {
     spanId: string,
     sourceKind: string,
     requiredAttrs: RequiredOtelAttributes,
-    options?: { recordCount?: number; status?: 'OK' | 'ERROR'; errorMessage?: string; durationMs?: number }
+    options?: {
+      recordCount?: number;
+      status?: 'OK' | 'ERROR';
+      errorMessage?: string;
+      durationMs?: number;
+    }
   ): OtelEvent {
     const now = Date.now() * 1000000;
     const status = options?.status || 'OK';
@@ -358,7 +393,7 @@ export class Instrumentation {
       span_id: spanId,
       name: `source.${sourceKind}`,
       kind: 'CLIENT',
-      start_time: now - ((options?.durationMs || 0) * 1000000),
+      start_time: now - (options?.durationMs || 0) * 1000000,
       end_time: now,
       status: { code: status, message: options?.errorMessage },
       attributes: {
@@ -419,7 +454,12 @@ export class Instrumentation {
     spanId: string,
     sinkKind: string,
     requiredAttrs: RequiredOtelAttributes,
-    options?: { recordCount?: number; status?: 'OK' | 'ERROR'; errorMessage?: string; durationMs?: number }
+    options?: {
+      recordCount?: number;
+      status?: 'OK' | 'ERROR';
+      errorMessage?: string;
+      durationMs?: number;
+    }
   ): OtelEvent {
     const now = Date.now() * 1000000;
     const status = options?.status || 'OK';
@@ -429,7 +469,7 @@ export class Instrumentation {
       span_id: spanId,
       name: `sink.${sinkKind}`,
       kind: 'PRODUCER',
-      start_time: now - ((options?.durationMs || 0) * 1000000),
+      start_time: now - (options?.durationMs || 0) * 1000000,
       end_time: now,
       status: { code: status, message: options?.errorMessage },
       attributes: {
@@ -486,7 +526,11 @@ export class Instrumentation {
     errorCode: string,
     errorMessage: string,
     requiredAttrs: RequiredOtelAttributes,
-    options?: { severity?: 'info' | 'warning' | 'error' | 'fatal'; context?: Record<string, any>; parentSpanId?: string }
+    options?: {
+      severity?: 'info' | 'warning' | 'error' | 'fatal';
+      context?: Record<string, any>;
+      parentSpanId?: string;
+    }
   ): { event: ErrorEventData; otelEvent: OtelEvent; jsonEvent: JsonEvent } {
     const spanId = this.generateSpanId();
     const now = Date.now() * 1000000;
@@ -550,6 +594,99 @@ export class Instrumentation {
   }
 
   /**
+   * Create ML analysis started event with OTEL span
+   */
+  static createMlAnalysisStartedEvent(
+    traceId: string,
+    mlTask: string,
+    method: string,
+    requiredAttrs: RequiredOtelAttributes,
+    options?: { parentSpanId?: string }
+  ): { event: MlAnalysisEvent; otelEvent: OtelEvent } {
+    const spanId = this.generateSpanId();
+    const now = Date.now() * 1000000;
+
+    const event: MlAnalysisEvent = {
+      type: 'MlModelTraining',
+      traceId,
+      spanId,
+      parentSpanId: options?.parentSpanId,
+      runId: requiredAttrs['run.id'],
+      mlTask,
+      method,
+      status: 'UNSET',
+      requiredAttrs,
+    };
+
+    const otelEvent: OtelEvent = {
+      trace_id: traceId,
+      span_id: spanId,
+      parent_span_id: options?.parentSpanId,
+      name: `ml.${mlTask}`,
+      kind: 'INTERNAL',
+      start_time: now,
+      status: { code: 'UNSET' },
+      attributes: {
+        ...requiredAttrs,
+        'ml.task': mlTask,
+        'ml.method': method,
+      },
+    };
+
+    return { event, otelEvent };
+  }
+
+  /**
+   * Create ML analysis completed event
+   */
+  static createMlAnalysisCompletedEvent(
+    traceId: string,
+    spanId: string,
+    mlTask: string,
+    method: string,
+    requiredAttrs: RequiredOtelAttributes,
+    options?: {
+      status?: 'OK' | 'ERROR';
+      durationMs?: number;
+      mlAttributes?: MlAnalysisEvent['mlAttributes'];
+    }
+  ): OtelEvent {
+    const now = Date.now() * 1000000;
+    const status = options?.status || 'OK';
+
+    return {
+      trace_id: traceId,
+      span_id: spanId,
+      name: `ml.${mlTask}`,
+      kind: 'INTERNAL',
+      start_time: now - (options?.durationMs || 0) * 1000000,
+      end_time: now,
+      status: { code: status },
+      attributes: {
+        ...requiredAttrs,
+        'ml.task': mlTask,
+        'ml.method': method,
+        'ml.duration_ms': options?.durationMs || 0,
+        ...(options?.mlAttributes?.confidence !== undefined && {
+          'ml.confidence': options.mlAttributes.confidence,
+        }),
+        ...(options?.mlAttributes?.featureCount !== undefined && {
+          'ml.feature_count': options.mlAttributes.featureCount,
+        }),
+        ...(options?.mlAttributes?.clusterCount !== undefined && {
+          'ml.cluster_count': options.mlAttributes.clusterCount,
+        }),
+        ...(options?.mlAttributes?.anomalyCount !== undefined && {
+          'ml.anomaly_count': options.mlAttributes.anomalyCount,
+        }),
+        ...(options?.mlAttributes?.rSquared !== undefined && {
+          'ml.r_squared': options.mlAttributes.rSquared,
+        }),
+      },
+    };
+  }
+
+  /**
    * Generate a W3C-compliant span ID (16 hex chars)
    */
   static generateSpanId(): string {
@@ -567,9 +704,11 @@ export class Instrumentation {
    * Extract trace ID from W3C Trace Context header
    * Format: traceparent: 00-{trace-id}-{span-id}-{trace-flags}
    */
-  static extractTraceContext(
-    traceparentHeader?: string
-  ): { traceId?: string; spanId?: string; traceFlags?: string } {
+  static extractTraceContext(traceparentHeader?: string): {
+    traceId?: string;
+    spanId?: string;
+    traceFlags?: string;
+  } {
     if (!traceparentHeader) {
       return {};
     }

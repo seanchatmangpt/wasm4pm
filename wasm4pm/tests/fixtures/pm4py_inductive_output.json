@@ -1,0 +1,89 @@
+{
+  "tree": {
+    "label": null,
+    "operator": "->",
+    "children": [
+      {
+        "label": "register request",
+        "operator": "None",
+        "children": []
+      },
+      {
+        "label": null,
+        "operator": "*",
+        "children": [
+          {
+            "label": null,
+            "operator": "->",
+            "children": [
+              {
+                "label": null,
+                "operator": "+",
+                "children": [
+                  {
+                    "label": "check ticket",
+                    "operator": "None",
+                    "children": []
+                  },
+                  {
+                    "label": null,
+                    "operator": "X",
+                    "children": [
+                      {
+                        "label": "examine thoroughly",
+                        "operator": "None",
+                        "children": []
+                      },
+                      {
+                        "label": "examine casually",
+                        "operator": "None",
+                        "children": []
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "label": "decide",
+                "operator": "None",
+                "children": []
+              }
+            ]
+          },
+          {
+            "label": "reinitiate request",
+            "operator": "None",
+            "children": []
+          }
+        ]
+      },
+      {
+        "label": null,
+        "operator": "X",
+        "children": [
+          {
+            "label": "reject request",
+            "operator": "None",
+            "children": []
+          },
+          {
+            "label": "pay compensation",
+            "operator": "None",
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "activities": [
+    "Activity",
+    "Costs",
+    "Resource",
+    "case:concept:name",
+    "case:creator",
+    "concept:name",
+    "org:resource",
+    "start_timestamp",
+    "time:timestamp"
+  ]
+}

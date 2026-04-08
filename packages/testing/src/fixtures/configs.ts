@@ -107,8 +107,20 @@ export const PIPELINE_DAG_CONFIG: TestConfig = {
   pipeline: [
     { id: 'load', type: 'load_source', required: true },
     { id: 'validate', type: 'validate_source', required: true, dependsOn: ['load'] },
-    { id: 'dfg', type: 'discover_dfg', required: true, dependsOn: ['validate'], parallelizable: true },
-    { id: 'heuristic', type: 'discover_heuristic', required: false, dependsOn: ['validate'], parallelizable: true },
+    {
+      id: 'dfg',
+      type: 'discover_dfg',
+      required: true,
+      dependsOn: ['validate'],
+      parallelizable: true,
+    },
+    {
+      id: 'heuristic',
+      type: 'discover_heuristic',
+      required: false,
+      dependsOn: ['validate'],
+      parallelizable: true,
+    },
     { id: 'report', type: 'generate_reports', required: true, dependsOn: ['dfg', 'heuristic'] },
     { id: 'sink', type: 'write_sink', required: true, dependsOn: ['report'] },
   ],
@@ -183,16 +195,54 @@ export const MAX_RESOURCES_CONFIG: TestConfig = {
   },
 };
 
+/** ML-enabled config with classification and clustering */
+export const ML_CLASSIFY_CONFIG: TestConfig = {
+  version: '1.0',
+  source: { kind: 'file', path: '/data/events.xes', format: 'xes' },
+  execution: { profile: 'balanced' },
+  ml: {
+    enabled: true,
+    tasks: ['classify', 'cluster'],
+    method: 'knn',
+    k: 5,
+    targetKey: 'outcome',
+  },
+} as TestConfig;
+
+/** ML config with all tasks enabled */
+export const ML_ALL_TASKS_CONFIG: TestConfig = {
+  version: '1.0',
+  source: { kind: 'file', path: '/data/events.xes', format: 'xes' },
+  execution: { profile: 'quality' },
+  ml: {
+    enabled: true,
+    tasks: ['classify', 'cluster', 'forecast', 'anomaly', 'regress', 'pca'],
+  },
+} as TestConfig;
+
 /** Invalid configs for negative testing */
 export const INVALID_CONFIGS = {
   missingVersion: { source: { kind: 'file' }, execution: { profile: 'fast' } },
   missingSource: { version: '1.0', execution: { profile: 'fast' } },
   missingExecution: { version: '1.0', source: { kind: 'file' } },
   invalidProfile: { version: '1.0', source: { kind: 'file' }, execution: { profile: 'invalid' } },
-  negativeTimeout: { version: '1.0', source: { kind: 'file' }, execution: { profile: 'fast', timeout: -1 } },
-  zeroTimeout: { version: '1.0', source: { kind: 'file' }, execution: { profile: 'fast', timeout: 0 } },
+  negativeTimeout: {
+    version: '1.0',
+    source: { kind: 'file' },
+    execution: { profile: 'fast', timeout: -1 },
+  },
+  zeroTimeout: {
+    version: '1.0',
+    source: { kind: 'file' },
+    execution: { profile: 'fast', timeout: 0 },
+  },
   nullSource: { version: '1.0', source: null, execution: { profile: 'fast' } },
-  emptyPipeline: { version: '1.0', source: { kind: 'file' }, execution: { profile: 'balanced' }, pipeline: [] },
+  emptyPipeline: {
+    version: '1.0',
+    source: { kind: 'file' },
+    execution: { profile: 'balanced' },
+    pipeline: [],
+  },
   cyclicPipeline: {
     version: '1.0',
     source: { kind: 'file' },
@@ -217,4 +267,6 @@ export const ALL_VALID_CONFIGS: TestConfig[] = [
   INLINE_CONTENT_CONFIG,
   BARE_MINIMUM_CONFIG,
   MAX_RESOURCES_CONFIG,
+  ML_CLASSIFY_CONFIG,
+  ML_ALL_TASKS_CONFIG,
 ];
