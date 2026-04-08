@@ -4,7 +4,7 @@
  * Saves and restores execution state for resumability
  */
 
-import { EngineState } from '@wasm4pm/types';
+import { EngineState } from '@wasm4pm/contracts';
 
 /**
  * A checkpoint capturing execution state at a point in time

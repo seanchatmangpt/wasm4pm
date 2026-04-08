@@ -30,12 +30,30 @@ export enum PlanStepType {
   DISCOVER_SIMULATED_ANNEALING = 'discover_simulated_annealing',
   DISCOVER_OPTIMIZED_DFG = 'discover_optimized_dfg',
 
+  // POWL Discovery
+  DISCOVER_POWL = 'discover_powl',
+  DISCOVER_POWL_TREE = 'discover_powl_tree',
+  DISCOVER_POWL_MAXIMAL = 'discover_powl_maximal',
+  DISCOVER_POWL_DYNAMIC_CLUSTERING = 'discover_powl_dynamic_clustering',
+  DISCOVER_POWL_DECISION_GRAPH_MAX = 'discover_powl_decision_graph_max',
+  DISCOVER_POWL_DECISION_GRAPH_CLUSTERING = 'discover_powl_decision_graph_clustering',
+  DISCOVER_POWL_DECISION_GRAPH_CYCLIC = 'discover_powl_decision_graph_cyclic',
+  DISCOVER_POWL_DECISION_GRAPH_CYCLIC_STRICT = 'discover_powl_decision_graph_cyclic_strict',
+
   // Analysis
   ANALYZE_STATISTICS = 'analyze_statistics',
   ANALYZE_CONFORMANCE = 'analyze_conformance',
   ANALYZE_VARIANTS = 'analyze_variants',
   ANALYZE_PERFORMANCE = 'analyze_performance',
   ANALYZE_CLUSTERING = 'analyze_clustering',
+
+  // ML Analysis
+  ML_CLASSIFY = 'ml_classify',
+  ML_CLUSTER = 'ml_cluster',
+  ML_FORECAST = 'ml_forecast',
+  ML_ANOMALY = 'ml_anomaly',
+  ML_REGRESS = 'ml_regress',
+  ML_PCA = 'ml_pca',
 
   // Utilities
   FILTER_LOG = 'filter_log',

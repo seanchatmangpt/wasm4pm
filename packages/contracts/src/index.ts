@@ -8,6 +8,12 @@
  * All schemas are versioned and export both TypeScript types and JSON schemas.
  */
 
+// Engine types (merged from @wasm4pm/types)
+export * from './types.js';
+
+// Template static data (merged from @wasm4pm/templates)
+export * from './templates/index.js';
+
 // Import schemas for the ALL_JSON_SCHEMAS constant
 import { TYPED_ERROR_JSON_SCHEMA } from './errors.js';
 import { RECEIPT_JSON_SCHEMA } from './receipt.js';

@@ -46,7 +46,7 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
-    "@wasm4pm/templates": "workspace:*",
+    "@wasm4pm/contracts": "workspace:*",
     "blake3": "^2.1.1",
     "toml": "^3.0.0",
     "zod": "^3.22.4"

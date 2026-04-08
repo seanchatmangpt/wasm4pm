@@ -6,7 +6,7 @@ import type { OutputOptions } from '../output.js';
 import { WasmLoader } from '@wasm4pm/engine';
 import { loadPmctlConfig, buildCliOverrides } from '../config-loader.js';
 import { savePredictionResult } from './results.js';
-import { VALID_PREDICT_CLI_TASKS } from '@wasm4pm/templates';
+import { VALID_PREDICT_CLI_TASKS } from '@wasm4pm/contracts';
 
 const VALID_TASKS = VALID_PREDICT_CLI_TASKS;
 type PredictTask = (typeof VALID_TASKS)[number];

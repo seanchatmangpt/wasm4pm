@@ -4,7 +4,7 @@
  * Enforces the engine state machine invariants
  */
 
-import { EngineState, ErrorInfo } from '@wasm4pm/types';
+import { EngineState, EngineError } from '@wasm4pm/contracts';
 
 /**
  * Map of valid transitions from each state
@@ -51,7 +51,7 @@ export class TransitionValidator {
   static validateTransition(
     currentState: EngineState,
     targetState: EngineState,
-    errors?: ErrorInfo[]
+    errors?: EngineError[]
   ): { valid: boolean; suggestion?: string } {
     if (!canTransition(currentState, targetState)) {
       return {
@@ -82,7 +82,7 @@ export class TransitionValidator {
    */
   static suggestRecoveryState(
     currentState: EngineState,
-    errors?: ErrorInfo[]
+    errors?: EngineError[]
   ): EngineState | null {
     if (!errors || errors.length === 0) {
       if (currentState !== 'ready') {

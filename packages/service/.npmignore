@@ -1,9 +1,0 @@
-# npm publish: include dist/, exclude dev files
-__tests__/
-src/
-*.test.ts
-*.spec.ts
-*.tsbuildinfo
-coverage/
-node_modules/
-.DS_Store
