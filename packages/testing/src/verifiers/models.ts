@@ -20,7 +20,7 @@ export interface ProcessTreeNode {
   children?: ProcessTreeNode[];
 }
 
-export interface DFG {
+export interface VerifierDFG {
   nodes: string[]; // Activity names
   edges: Array<{ source: string; target: string; count: number }>;
   startActivities: string[];
@@ -290,7 +290,7 @@ function isPlaceReachable(
  * Compute quality metrics for a process model against an event log.
  */
 export function computeQualityMetrics(
-  model: PetriNet | DFG,
+  model: PetriNet | VerifierDFG,
   eventLog: Array<{ activities: string[] }>,
   options: { type: 'petrinet' | 'dfg' } = { type: 'petrinet' },
 ): QualityMetrics {
@@ -313,12 +313,12 @@ export function computeQualityMetrics(
  * Compute fitness metric based on token replay.
  */
 function computeFitness(
-  model: PetriNet | DFG,
+  model: PetriNet | VerifierDFG,
   eventLog: Array<{ activities: string[] }>,
   options: { type: 'petrinet' | 'dfg' },
 ): number {
   if (options.type === 'dfg') {
-    return computeDFGFitness(model as DFG, eventLog);
+    return computeDFGFitness(model as VerifierDFG, eventLog);
   }
 
   // Token replay fitness for Petri nets
@@ -329,7 +329,7 @@ function computeFitness(
 /**
  * Compute fitness for DFG model.
  */
-function computeDFGFitness(dfg: DFG, eventLog: Array<{ activities: string[] }>): number {
+function computeDFGFitness(dfg: VerifierDFG, eventLog: Array<{ activities: string[] }>): number {
   let totalEdges = 0;
   let matchingEdges = 0;
 
@@ -422,12 +422,12 @@ function computeTokenReplayConformance(
  * Compute precision metric.
  */
 function computePrecision(
-  model: PetriNet | DFG,
+  model: PetriNet | VerifierDFG,
   eventLog: Array<{ activities: string[] }>,
   options: { type: 'petrinet' | 'dfg' },
 ): number {
   if (options.type === 'dfg') {
-    return computeDFGPrecision(model as DFG, eventLog);
+    return computeDFGPrecision(model as VerifierDFG, eventLog);
   }
 
   // Precision for Petri nets: escaped edges metric
@@ -469,7 +469,7 @@ function computePrecision(
 /**
  * Compute precision for DFG model.
  */
-function computeDFGPrecision(dfg: DFG, eventLog: Array<{ activities: string[] }>): number {
+function computeDFGPrecision(dfg: VerifierDFG, eventLog: Array<{ activities: string[] }>): number {
   const logEdges = extractLogEdges(eventLog);
   const modelEdges = new Set(dfg.edges.map(e => `${e.source}->${e.target}`));
 
@@ -503,7 +503,7 @@ function extractLogEdges(eventLog: Array<{ activities: string[] }>): Set<string>
  * Compute generalization metric.
  */
 function computeGeneralization(
-  model: PetriNet | DFG,
+  model: PetriNet | VerifierDFG,
   eventLog: Array<{ activities: string[] }>,
   options: { type: 'petrinet' | 'dfg' },
 ): number {
@@ -511,7 +511,7 @@ function computeGeneralization(
   // Simplified: based on edge frequency distribution
 
   if (options.type === 'dfg') {
-    const dfg = model as DFG;
+    const dfg = model as VerifierDFG;
     if (dfg.edges.length === 0) return 1;
 
     // Compute entropy of edge frequency distribution
@@ -539,11 +539,11 @@ function computeGeneralization(
  * Compute simplicity metric.
  */
 function computeSimplicity(
-  model: PetriNet | DFG,
+  model: PetriNet | VerifierDFG,
   options: { type: 'petrinet' | 'dfg' },
 ): number {
   if (options.type === 'dfg') {
-    const dfg = model as DFG;
+    const dfg = model as VerifierDFG;
     // Simplicity: inverse of number of edges and nodes
     const size = dfg.nodes.length + dfg.edges.length;
     return size > 0 ? 1 / (1 + Math.log10(size)) : 1;
@@ -560,7 +560,7 @@ function computeSimplicity(
 /**
  * Validate DFG structure.
  */
-export function validateDFG(dfg: DFG): { valid: boolean; errors: string[] } {
+export function validateVerifierDFG(dfg: VerifierDFG): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
 
   // Check nodes

@@ -502,7 +502,7 @@ export function createChoiceTestDFG(): DFG {
 /**
  * Create test event log for DFG testing.
  */
-export function createTestEventLog(): Array<{ activities: string[] }> {
+export function createTestEventLogForDFG(): Array<{ activities: string[] }> {
   return [
     { activities: ['A', 'B', 'C', 'D'] },
     { activities: ['A', 'B', 'C', 'D'] },

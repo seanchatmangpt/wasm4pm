@@ -319,7 +319,7 @@ export function formatFootprints(fp: FootprintMatrix): string {
   for (const a of fp.activities) {
     let row = `${a.padEnd(6)}`;
     for (const b of fp.activities) {
-      const relation = fp.matrix.get(a)?.get(b) || '?';
+      const relation = fp.matrix.get(a)?.get(b);
       const symbol = relationToSymbol(relation);
       row += `${symbol.padEnd(10)}`;
     }
@@ -332,7 +332,7 @@ export function formatFootprints(fp: FootprintMatrix): string {
 /**
  * Convert footprint relation to display symbol.
  */
-function relationToSymbol(relation: FootprintRelation): string {
+function relationToSymbol(relation: FootprintRelation | undefined): string {
   switch (relation) {
     case 'sequence':
       return '->';

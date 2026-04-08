@@ -16,7 +16,7 @@ import {
   createSequentialTestDFG,
   createParallelTestDFG,
   createChoiceTestDFG,
-  createTestEventLog,
+  createTestEventLogForDFG,
   formatDFG,
   formatDFGComparison,
   serializeDFG,
@@ -166,15 +166,15 @@ describe('DFG Utilities', () => {
 
   describe('validateDFGConsistency', () => {
     it('should validate consistent DFG', () => {
-      const eventLog = createTestEventLog();
+      const eventLog = createTestEventLogForDFG();
       const dfg = createDFG(eventLog);
       const result = validateDFGConsistency(dfg, eventLog);
       expect(result.consistent).toBe(true);
     });
 
     it('should detect inconsistent totalEvents', () => {
-      const eventLog = createTestEventLog();
-      const dfg = createDFG(eventLog);
+      const eventLog = createTestEventLogForDFG();
+      const dfg = createDFG(createTestEventLogForDFG());
       dfg.totalEvents = 999;
       const result = validateDFGConsistency(dfg, eventLog);
       expect(result.consistent).toBe(false);
@@ -259,7 +259,7 @@ describe('DFG Utilities', () => {
     });
 
     it('should create valid test event log', () => {
-      const log = createTestEventLog();
+      const log = createTestEventLogForDFG();
       expect(log.length).toBe(10);
       expect(log[0].activities).toEqual(['A', 'B', 'C', 'D']);
     });
