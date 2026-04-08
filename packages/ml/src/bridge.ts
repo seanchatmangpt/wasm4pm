@@ -1,6 +1,6 @@
 /**
  * Feature matrix bridge — converts wasm4pm feature extraction JSON
- * into numeric matrices consumable by micro-ml.
+ * into numeric matrices for native ML algorithms.
  */
 
 import type { FeatureMatrix, LabelEncoding } from './types.js';

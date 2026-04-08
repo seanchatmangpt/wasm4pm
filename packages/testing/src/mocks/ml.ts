@@ -1,6 +1,6 @@
 /**
  * ML mock adapter — deterministic mock results for all 6 ML functions.
- * Use in tests to avoid importing micro-ml or requiring WASM.
+ * Use in tests to avoid requiring WASM.
  */
 
 export interface MockMlAdapter {

@@ -8,7 +8,7 @@ use wasm_bindgen::prelude::*;
 use crate::state::{get_or_init_state, StoredObject};
 use crate::models::{AttributeValue, parse_timestamp_ms};
 use std::collections::HashMap;
-use statrs::statistics::{Data, Median};
+use crate::{Data, Median};  // Conditional import: statrs or hand_rolled_stats
 
 /// Discover a time-annotated DFG from an EventLog.
 ///

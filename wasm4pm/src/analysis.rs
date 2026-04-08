@@ -2,7 +2,7 @@ use wasm_bindgen::prelude::*;
 use crate::state::{get_or_init_state, StoredObject};
 use serde_json::json;
 use crate::utilities::to_js;
-use statrs::statistics::{Data, Median};
+use crate::{Data, Median};  // Conditional import: statrs or hand_rolled_stats
 use crate::error::{wasm_err, codes};
 
 /// Perform dotted chart analysis on an EventLog

@@ -7,8 +7,55 @@ Core kernel for algorithm registration and step execution in the wasm4pm process
 The kernel package provides:
 
 1. **Algorithm Registry** (`registry.ts`) - Metadata for all 15+ discovery algorithms
-2. **Step Handlers** (`handlers.ts`) - Execution bridge between planner and WASM module
-3. **Type Definitions** - Interfaces for algorithm metadata, profiles, and parameters
+2. **Deployment Profile Filtering** (NEW in v26.4.8) - Filter algorithms by deployment target (browser, edge, fog, iot, cloud)
+3. **Step Handlers** (`handlers.ts`) - Execution bridge between planner and WASM module
+4. **Type Definitions** - Interfaces for algorithm metadata, profiles, and parameters
+
+## Deployment Profiles (NEW in v26.4.8)
+
+The `AlgorithmRegistry` now supports deployment profile filtering:
+
+```typescript
+import { getRegistry } from '@wasm4pm/kernel';
+
+const registry = getRegistry();
+
+// Get algorithms for a deployment profile
+const browserAlgorithms = registry.getForDeploymentProfile('browser');
+const edgeAlgorithms = registry.getForDeploymentProfile('edge');
+const cloudAlgorithms = registry.getForDeploymentProfile('cloud');
+
+// Deployment profiles filter algorithms by target environment
+// browser: ~500KB, edge: ~1.5MB, fog: ~2.0MB, iot: ~1.0MB, cloud: ~2.78MB
+```
+
+### Deployment Profile Types
+
+```typescript
+type DeploymentProfile = 'browser' | 'edge' | 'fog' | 'iot' | 'cloud';
+```
+
+### Algorithm Metadata Updates
+
+Each algorithm now includes `deploymentProfiles` field:
+
+```typescript
+interface AlgorithmMetadata {
+  // ... existing fields ...
+  deploymentProfiles: DeploymentProfile[];  // NEW in v26.4.8
+}
+```
+
+### Auto-Inference
+
+Deployment profiles are automatically inferred from execution profiles:
+
+- **fast** → browser, iot
+- **balanced** → browser, edge, fog, cloud
+- **quality** → edge, fog, cloud
+- **stream** → browser, edge, fog, iot, cloud
+
+Use `registerWithInferredProfiles()` to automatically calculate deployment profiles from execution profiles.
 
 ## Architecture
 

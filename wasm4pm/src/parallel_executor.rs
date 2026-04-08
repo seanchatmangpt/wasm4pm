@@ -200,10 +200,8 @@ pub fn compute_dfg_parallel(col: &ColumnarLog) -> DirectlyFollowsGraph {
     const BATCH_SIZE: usize = 4;
 
     // Convert chunks to Vec for parallel iteration
-    let trace_chunks: Vec<_> = (0..num_traces)
-        .collect::<Vec<_>>()
-        .chunks(BATCH_SIZE)
-        .collect();
+    let trace_indices: Vec<_> = (0..num_traces).collect();
+    let trace_chunks: Vec<_> = trace_indices.chunks(BATCH_SIZE).collect();
 
     let partials: Vec<PartialDfg> = trace_chunks
         .into_par_iter()

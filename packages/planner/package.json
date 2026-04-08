@@ -1,6 +1,6 @@
 {
   "name": "@pictl/planner",
-  "version": "26.4.7",
+  "version": "26.4.8",
   "description": "Process mining planning and optimization",
   "type": "module",
   "main": "./dist/index.js",
@@ -39,5 +39,5 @@
     "optimization"
   ],
   "author": "Sean Chatman",
-  "license": "MIT"
+  "license": "SEE LICENSE IN LICENSE"
 }

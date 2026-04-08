@@ -1,14 +1,12 @@
-# wasm4pm v26.4.7 Documentation Index
+# pictl Documentation Index
 
-Welcome to wasm4pm — a high-performance process mining system compiled to WebAssembly.
+Welcome to pictl — a high-performance process mining platform with a Rust/WASM core and TypeScript orchestration layer.
 
-This documentation uses the **Diataxis framework**, which organizes content into four quadrants based on how you prefer to learn and work. Use the navigation below to find what you need.
+This documentation uses the **Diataxis framework**, organizing content into four quadrants: Tutorials, How-To Guides, Explanations, and Reference.
 
 ---
 
 ## Quick Navigation
-
-### I want to...
 
 | Goal | Start Here |
 |------|-----------|
@@ -155,7 +153,7 @@ This documentation uses the **Diataxis framework**, which organizes content into
 ## Reference (Technical Details)
 
 ### APIs
-- [CLI Commands](reference/cli-commands.md) — All 13 pmctl commands
+- [CLI Commands](reference/cli-commands.md) — All 13 pictl commands
 - [HTTP API Endpoints](reference/http-api.md)
 
 ### Configuration
@@ -171,58 +169,39 @@ This documentation uses the **Diataxis framework**, which organizes content into
 - [Exit Codes](reference/exit-codes.md)
 
 ### Algorithms
-- [Algorithm Matrix](reference/algorithms.md) — 18 tools + 6 ML tasks
+- [Algorithm Matrix](reference/algorithms.md) — 14 discovery algorithms + 6 ML tasks
 - [Performance Benchmarks](reference/benchmarks.md)
+
+### Deployment
+- [Deployment Profiles](../wasm4pm/DEPLOYMENT_PROFILES.md) — 5 WASM build profiles
+- [Docker](reference/docker.md)
+- [Kubernetes](reference/kubernetes.md)
+- [GitHub Actions](reference/github-actions.md)
 
 ### MCP
 - [MCP Predictive Tools](reference/mcp-predictive-tools.md)
 - [POWL API](reference/powl-api.md)
 
-### Deployment
-- [Docker](reference/docker.md)
-- [Kubernetes](reference/kubernetes.md)
-- [GitHub Actions](reference/github-actions.md)
+---
+
+## Cross-Package Reference
+
+- [Package Implementation History](PACKAGE_IMPLEMENTATION_HISTORY.md) — Historical record of all 9 packages
+- [Academic Thesis (v2)](THESIS-V2.md) — PhD thesis on WASM-based process mining
+- [API Reference](API.md) — Complete API documentation
+- [Deployment Architecture](DEPLOYMENT-ARCHITECTURE.md) — System architecture overview
 
 ---
 
-## Search by Topic
+## Archive
 
-### ML & Predictive
-- [How-To: Predictive Mining](how-to/predictive-mining.md)
-- [Tutorial: Predictive Analytics](tutorials/predictive-analytics.md)
-- [Reference: Prediction Config](reference/prediction-config.md)
-- [Explanation: Predictive Process Mining](explanation/predictive-process-mining.md)
-- [Explanation: Concept Drift Detection](explanation/concept-drift-detection.md)
+Historical content (implementation summaries, performance reports, validation snapshots) is preserved in [docs/archive/](archive/):
 
-### Algorithms
-- [How-To: Choose Right Algorithm](how-to/choose-algorithm.md)
-- [Reference: Algorithm Matrix](reference/algorithms.md)
-- [Explanation: Profile Trade-Offs](explanation/profiles.md)
-
-### Configuration
-- [Tutorial: Custom Configs](tutorials/custom-configs.md)
-- [Reference: Config Schema](reference/config-schema.md)
-- [Explanation: Config Resolution](explanation/config-resolution.md)
-
-### Observability
-- [Tutorial: Observability Setup](tutorials/observability-setup.md)
-- [Reference: Environment Variables](reference/environment-variables.md)
-- [Explanation: OTEL Design](explanation/observability-design.md)
-
-### Integration
-- [Tutorial: Service Mode](tutorials/service-mode.md)
-- [How-To: Node.js Integration](how-to/nodejs-integration.md)
-- [Reference: HTTP API](reference/http-api.md)
-
-### Compliance
-- [Tutorial: Audit Trail](tutorials/compliance-audit.md)
-- [Explanation: Receipts](explanation/receipts.md)
-- [Reference: Error Codes](reference/error-codes.md)
-
-### Performance
-- [How-To: Choose Algorithm](how-to/choose-algorithm.md)
-- [Reference: Benchmarks](reference/benchmarks.md)
-- [Explanation: Profiles](explanation/profiles.md)
+- [archive/academic/](archive/academic/) — Deprecated theses and papers
+- [archive/implementation/](archive/implementation/) — Implementation summaries and reports
+- [archive/performance/](archive/performance/) — Optimization reports
+- [archive/reports/](archive/reports/) — Validation and audit reports
+- [archive/packages/](archive/packages/) — Per-package implementation details
 
 ---
 
@@ -235,30 +214,28 @@ A: Start with [Tutorial: Your First Model](tutorials/first-model.md) (5 min), th
 A: Use [How-To: Choose Algorithm](how-to/choose-algorithm.md) for a quick decision tree.
 
 **Q: How do I run ML analysis?**
-A: Enable the `[ml]` config section or use `pmctl ml <task>`. See [How-To: Predictive Mining](how-to/predictive-mining.md).
+A: Enable the `[ml]` config section or use `pictl ml <task>`. See [How-To: Predictive Mining](how-to/predictive-mining.md).
 
 **Q: How do I deploy to production?**
-A: Follow [How-To: Docker Deployment](how-to/docker-deploy.md) (15 min) or [How-To: Kubernetes](how-to/kubernetes-deploy.md).
+A: Follow [How-To: Docker Deployment](how-to/docker-deploy.md) or see [Deployment Profiles](../wasm4pm/DEPLOYMENT_PROFILES.md) for WASM binary optimization.
 
 **Q: What does exit code 2 mean?**
 A: It's a source/input error. See [Reference: Exit Codes](reference/exit-codes.md).
 
 **Q: Can I use this in a browser?**
-A: Yes! See [How-To: Browser Integration](how-to/browser-integration.md).
+A: Yes! Use the `browser` deployment profile (~500KB). See [How-To: Browser Integration](how-to/browser-integration.md) and [Deployment Profiles](../wasm4pm/DEPLOYMENT_PROFILES.md).
 
 **Q: How do I verify results are correct?**
 A: Receipts provide cryptographic proof. See [Explanation: Receipts](explanation/receipts.md).
-
-**Q: What's a profile?**
-A: Profiles (fast/balanced/quality/stream/ml/research) select different algorithms.
 
 ---
 
 ## Version
 
-**wasm4pm v26.4.7**
-- Released: April 7, 2026
+**pictl v26.4.8**
+- Released: April 8, 2026
 - 9 packages, 14 discovery algorithms, 6 ML tasks, 13 CLI commands
+- 5 deployment profiles (browser/edge/fog/iot/cloud)
 - 100% backward compatible
 
-**Docs Last Updated**: April 7, 2026
+**Docs Last Updated**: April 8, 2026
