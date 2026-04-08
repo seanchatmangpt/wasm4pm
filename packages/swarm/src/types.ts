@@ -25,6 +25,7 @@ export interface WorkerResult {
   result: unknown
   runAt: string
   durationMs: number
+  resultType?: 'discovery' | 'ml'
 }
 
 export interface DirectiveType {

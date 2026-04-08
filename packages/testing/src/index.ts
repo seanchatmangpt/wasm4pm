@@ -14,3 +14,9 @@ export * from './redaction.js';
 
 // Certification
 export * from './certification.js';
+
+// Process Mining Testing Utilities
+export * from './validators/index.js';
+export * from './verifiers/index.js';
+export * from './conformance/index.js';
+export * from './utils/index.js';
