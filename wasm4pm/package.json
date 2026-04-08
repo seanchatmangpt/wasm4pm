@@ -1,6 +1,6 @@
 {
   "name": "wasm4pm",
-  "version": "26.4.5",
+  "version": "26.4.7",
   "description": "Process Mining in WebAssembly - High-Speed Algorithms for Browser and Node.js",
   "main": "pkg/wasm4pm.js",
   "types": "pkg/wasm4pm.d.ts",
