@@ -17,7 +17,7 @@ import type {
   StepHandler,
   StepResult,
 } from '../src/execution';
-import type { ExecutionPlan, PlanStep, StatusUpdate } from '@wasm4pm/types';
+import type { ExecutionPlan, PlanStep, StatusUpdate } from '@wasm4pm/contracts';
 
 /**
  * Helper to create a test plan
