@@ -1,6 +1,6 @@
 {
   "name": "@pictl/config",
-  "version": "26.4.8",
+  "version": "26.4.9",
   "description": "Configuration management system for wasm4pm with Zod schemas and provenance tracking",
   "type": "module",
   "main": "./dist/index.js",

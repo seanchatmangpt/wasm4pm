@@ -1,6 +1,6 @@
 {
   "name": "@pictl/engine",
-  "version": "26.4.8",
+  "version": "26.4.9",
   "description": "Engine lifecycle and state machine for wasm4pm",
   "type": "module",
   "main": "dist/index.js",
