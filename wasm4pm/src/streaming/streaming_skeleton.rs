@@ -27,8 +27,8 @@ use std::collections::HashMap;
 /// # Example
 ///
 /// ```rust
-/// use wasm4pm::streaming::StreamingSkeletonBuilder;
-/// use wasm4pm::streaming::StreamingAlgorithm;
+/// use pictl::streaming::StreamingSkeletonBuilder;
+/// use pictl::streaming::StreamingAlgorithm;
 ///
 /// let mut stream = StreamingSkeletonBuilder::new();
 ///

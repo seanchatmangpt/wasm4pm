@@ -7,7 +7,7 @@
 
 use std::collections::{HashMap, HashSet};
 use std::fs;
-use wasm4pm::models::{AttributeValue, EventLog};
+use pictl::models::{AttributeValue, EventLog};
 
 // ── Test Fixtures ───────────────────────────────────────────────────────
 

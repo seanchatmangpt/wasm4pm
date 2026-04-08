@@ -2,8 +2,8 @@
 // Shared helpers for all wasm4pm Criterion benchmarks.
 // Included via `#[path = "helpers.rs"] mod helpers;` in each bench file.
 use std::collections::HashMap;
-use wasm4pm::models::{AttributeValue, Event, EventLog, Trace};
-use wasm4pm::state::{get_or_init_state, StoredObject};
+use pictl::models::{AttributeValue, Event, EventLog, Trace};
+use pictl::state::{get_or_init_state, StoredObject};
 
 pub const ACTIVITY_KEY: &str = "concept:name";
 pub const TIMESTAMP_KEY: &str = "time:timestamp";

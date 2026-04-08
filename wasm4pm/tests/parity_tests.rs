@@ -13,7 +13,7 @@
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
-use wasm4pm::models::{AttributeValue, Event, EventLog, Trace};
+use pictl::models::{AttributeValue, Event, EventLog, Trace};
 
 // ── Test Fixtures ───────────────────────────────────────────────────────
 

@@ -2,12 +2,12 @@
 /// Sweeps all four standard dataset sizes.
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use std::time::Duration;
-use wasm4pm::advanced_algorithms::discover_heuristic_miner;
-use wasm4pm::algorithms::discover_alpha_plus_plus;
-use wasm4pm::analysis::{analyze_case_duration, analyze_event_statistics};
-use wasm4pm::discovery::{discover_declare, discover_dfg};
-use wasm4pm::fast_discovery::discover_hill_climbing;
-use wasm4pm::more_discovery::{discover_inductive_miner, extract_process_skeleton};
+use pictl::advanced_algorithms::discover_heuristic_miner;
+use pictl::algorithms::discover_alpha_plus_plus;
+use pictl::analysis::{analyze_case_duration, analyze_event_statistics};
+use pictl::discovery::{discover_declare, discover_dfg};
+use pictl::fast_discovery::discover_hill_climbing;
+use pictl::more_discovery::{discover_inductive_miner, extract_process_skeleton};
 
 #[path = "helpers.rs"]
 mod helpers;
