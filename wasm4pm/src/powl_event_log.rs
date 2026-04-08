@@ -52,22 +52,22 @@ mod tests {
     fn make_trace(case_id: &str, acts: &[&str]) -> Trace {
         Trace {
             case_id: case_id.to_string(),
-            events: acts.iter().map(|&a| Event {
-                name: a.to_string(),
-                timestamp: None,
-                lifecycle: None,
-                attributes: HashMap::new(),
-            }).collect(),
+            events: acts
+                .iter()
+                .map(|&a| Event {
+                    name: a.to_string(),
+                    timestamp: None,
+                    lifecycle: None,
+                    attributes: HashMap::new(),
+                })
+                .collect(),
         }
     }
 
     #[test]
     fn activities_extraction() {
         let log = EventLog {
-            traces: vec![
-                make_trace("c1", &["A", "B"]),
-                make_trace("c2", &["A", "C"]),
-            ],
+            traces: vec![make_trace("c1", &["A", "B"]), make_trace("c2", &["A", "C"])],
         };
         assert_eq!(log.activities(), vec!["A", "B", "C"]);
     }

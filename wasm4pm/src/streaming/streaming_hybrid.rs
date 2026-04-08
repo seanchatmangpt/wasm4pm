@@ -12,7 +12,7 @@
 //! periodic full-model updates.
 
 use crate::models::DirectlyFollowsGraph;
-use crate::streaming::{StreamingAlgorithm, StreamStats, StreamingDfgBuilder};
+use crate::streaming::{StreamStats, StreamingAlgorithm, StreamingDfgBuilder};
 use std::marker::PhantomData;
 
 /// Batch algorithm trait for hybrid streaming.

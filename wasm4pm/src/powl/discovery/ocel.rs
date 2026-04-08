@@ -1,12 +1,11 @@
+use crate::models::EventLog;
+use crate::powl::discovery::DiscoveryConfig;
 /**
  * OCEL POWL Discovery
  *
  * Object-Centric Event Log (OCEL) discovery with FLATTENING and OC_POWL variants.
  */
-
 use crate::powl_arena::PowlArena;
-use crate::powl::discovery::DiscoveryConfig;
-use crate::models::EventLog;
 
 /// OCEL POWL discovery variant
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -78,10 +77,7 @@ mod tests {
             OcelVariant::from_str("flattening"),
             Some(OcelVariant::Flattening)
         );
-        assert_eq!(
-            OcelVariant::from_str("oc_powl"),
-            Some(OcelVariant::OcPowl)
-        );
+        assert_eq!(OcelVariant::from_str("oc_powl"), Some(OcelVariant::OcPowl));
         assert_eq!(OcelVariant::from_str("invalid"), None);
     }
 
@@ -90,13 +86,18 @@ mod tests {
         use crate::models::Attributes;
 
         let mut attr = Attributes::new();
-        attr.insert("concept:name".to_string(), crate::models::AttributeValue::String("A".to_string()));
+        attr.insert(
+            "concept:name".to_string(),
+            crate::models::AttributeValue::String("A".to_string()),
+        );
 
         let log = EventLog {
             attributes: Attributes::new(),
             traces: vec![crate::models::Trace {
                 attributes: Attributes::new(),
-                events: vec![Event { attributes: attr.clone() }],
+                events: vec![Event {
+                    attributes: attr.clone(),
+                }],
             }],
         };
 

@@ -36,7 +36,9 @@ fn bench_declare(c: &mut Criterion) {
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(30);
     for shape in bench_sizes() {
-        if shape.num_cases > 10_000 { continue; } // O(activities² × cases)
+        if shape.num_cases > 10_000 {
+            continue;
+        } // O(activities² × cases)
         let (handle, events) = make_handle(&shape);
         group.throughput(Throughput::Elements(events as u64));
         group.bench_with_input(
@@ -59,7 +61,10 @@ fn bench_heuristic_miner(c: &mut Criterion) {
         // Benchmark three dependency thresholds
         for threshold in [0.3_f64, 0.5, 0.8] {
             group.bench_with_input(
-                BenchmarkId::new(format!("cases{}_t{}", shape.num_cases, threshold), shape.num_cases),
+                BenchmarkId::new(
+                    format!("cases{}_t{}", shape.num_cases, threshold),
+                    shape.num_cases,
+                ),
                 &handle,
                 |b, h| b.iter(|| discover_heuristic_miner(h, ACTIVITY_KEY, threshold).unwrap()),
             );

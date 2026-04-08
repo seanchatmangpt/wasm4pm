@@ -12,9 +12,9 @@
 //!
 //! After conversion, `simplify()` is called to normalize the model.
 
+use crate::powl::simplify;
 use crate::powl_arena::{Operator, PowlArena};
 use crate::powl_process_tree::ProcessTree;
-use crate::powl::simplify;
 
 /// Convert a ProcessTree (parsed from JSON) into a POWL arena + root index.
 pub fn apply(tree: &ProcessTree) -> (PowlArena, u32) {
@@ -46,7 +46,10 @@ fn convert_node(arena: &mut PowlArena, tree: &ProcessTree) -> u32 {
                 crate::powl_process_tree::PtOperator::Xor => {
                     if children.len() < 2 {
                         // Single child XOR is just the child itself
-                        children.into_iter().next().unwrap_or(arena.add_silent_transition())
+                        children
+                            .into_iter()
+                            .next()
+                            .unwrap_or(arena.add_silent_transition())
                     } else {
                         arena.add_operator(Operator::Xor, children)
                     }
@@ -86,8 +89,8 @@ fn convert_node(arena: &mut PowlArena, tree: &ProcessTree) -> u32 {
 /// {"operator": "Xor", "children": [{"label": "A"}, {"label": "B"}]}
 /// ```
 pub fn process_tree_to_powl(tree_json: &str) -> Result<(PowlArena, u32), String> {
-    let tree: ProcessTree = serde_json::from_str(tree_json)
-        .map_err(|e| format!("invalid process tree JSON: {}", e))?;
+    let tree: ProcessTree =
+        serde_json::from_str(tree_json).map_err(|e| format!("invalid process tree JSON: {}", e))?;
     Ok(apply(&tree))
 }
 
@@ -150,7 +153,11 @@ mod tests {
         let repr = arena.to_repr(root);
         // Parallel = SPO with no edges
         assert!(repr.contains("A") && repr.contains("B"), "got: {}", repr);
-        assert!(!repr.contains("-->"), "parallel should have no edges, got: {}", repr);
+        assert!(
+            !repr.contains("-->"),
+            "parallel should have no edges, got: {}",
+            repr
+        );
     }
 
     #[test]
@@ -165,9 +172,21 @@ mod tests {
         );
         let (arena, root) = apply(&tree);
         let repr = arena.to_repr(root);
-        assert!(repr.contains("A-->B"), "sequence should have A-->B, got: {}", repr);
-        assert!(repr.contains("A-->C"), "sequence should have A-->C, got: {}", repr);
-        assert!(repr.contains("B-->C"), "sequence should have B-->C, got: {}", repr);
+        assert!(
+            repr.contains("A-->B"),
+            "sequence should have A-->B, got: {}",
+            repr
+        );
+        assert!(
+            repr.contains("A-->C"),
+            "sequence should have A-->C, got: {}",
+            repr
+        );
+        assert!(
+            repr.contains("B-->C"),
+            "sequence should have B-->C, got: {}",
+            repr
+        );
     }
 
     #[test]
@@ -188,13 +207,17 @@ mod tests {
         let (arena, root) = apply(&tree);
         // Simplification should flatten nested XOR
         let repr = arena.to_repr(root);
-        assert!(repr.contains("A") && repr.contains("B") && repr.contains("C"), "got: {}", repr);
+        assert!(
+            repr.contains("A") && repr.contains("B") && repr.contains("C"),
+            "got: {}",
+            repr
+        );
     }
 
     #[test]
     fn roundtrip_xor() {
-        use crate::powl_parser::parse_powl_model_string;
         use crate::powl::conversion::to_process_tree;
+        use crate::powl_parser::parse_powl_model_string;
 
         // POWL → Process Tree → POWL should preserve XOR structure
         let mut arena1 = PowlArena::new();
@@ -204,6 +227,10 @@ mod tests {
 
         let (arena2, root2) = process_tree_to_powl(&pt_json).unwrap();
         let repr = arena2.to_repr(root2);
-        assert!(repr.contains("A") && repr.contains("B"), "roundtrip lost activities: {}", repr);
+        assert!(
+            repr.contains("A") && repr.contains("B"),
+            "roundtrip lost activities: {}",
+            repr
+        );
     }
 }

@@ -1,16 +1,15 @@
+use crate::error::{codes, wasm_err};
+use crate::models::EventLog;
+use crate::state::{get_or_init_state, StoredObject};
+use crate::utilities::to_js;
+use serde_json::json;
+use std::collections::HashSet;
 /// Process Mining Recommendations Engine (Phase 2B)
 ///
 /// Analyses an event log and produces algorithm recommendations, parameter
 /// tuning suggestions, next-step guidance, and data preprocessing advice
 /// based on log characteristics (size, variant count, activity count, etc.).
-
 use wasm_bindgen::prelude::*;
-use crate::state::{get_or_init_state, StoredObject};
-use crate::models::EventLog;
-use crate::utilities::to_js;
-use crate::error::{wasm_err, codes};
-use serde_json::json;
-use std::collections::HashSet;
 
 /// Generate recommendations for a given event log.
 ///
@@ -193,10 +192,7 @@ fn recommend_parameters(
     recs
 }
 
-fn recommend_next_steps(
-    trace_count: usize,
-    variant_count: usize,
-) -> Vec<serde_json::Value> {
+fn recommend_next_steps(trace_count: usize, variant_count: usize) -> Vec<serde_json::Value> {
     let mut steps = Vec::new();
 
     steps.push(json!({
@@ -278,6 +274,9 @@ fn get_log(handle: &str) -> Result<EventLog, JsValue> {
     get_or_init_state().with_object(handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => Ok(log.clone()),
         Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
-        None => Err(wasm_err(codes::INVALID_HANDLE, format!("EventLog '{}' not found", handle))),
+        None => Err(wasm_err(
+            codes::INVALID_HANDLE,
+            format!("EventLog '{}' not found", handle),
+        )),
     })
 }

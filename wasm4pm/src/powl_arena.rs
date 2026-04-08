@@ -115,7 +115,10 @@ impl BinaryRelation {
 
     /// O(n³) — return a new relation with redundant edges removed.
     pub fn get_transitive_reduction(&self) -> Self {
-        debug_assert!(self.is_irreflexive(), "transitive reduction requires irreflexivity");
+        debug_assert!(
+            self.is_irreflexive(),
+            "transitive reduction requires irreflexivity"
+        );
         let mut res = self.clone();
         for i in 0..self.n {
             for j in 0..self.n {
@@ -377,7 +380,8 @@ impl PowlArena {
     pub fn add_transition(&mut self, label: Option<String>) -> u32 {
         let id = self.alloc_id();
         let idx = self.nodes.len() as u32;
-        self.nodes.push(PowlNode::Transition(TransitionNode { label, id }));
+        self.nodes
+            .push(PowlNode::Transition(TransitionNode { label, id }));
         idx
     }
 
@@ -403,13 +407,14 @@ impl PowlArena {
         } else {
             activity.clone()
         };
-        self.nodes.push(PowlNode::FrequentTransition(FrequentTransitionNode {
-            label,
-            activity,
-            skippable,
-            selfloop,
-            id,
-        }));
+        self.nodes
+            .push(PowlNode::FrequentTransition(FrequentTransitionNode {
+                label,
+                activity,
+                skippable,
+                selfloop,
+                id,
+            }));
         idx
     }
 
@@ -417,10 +422,11 @@ impl PowlArena {
     pub fn add_strict_partial_order(&mut self, children: Vec<u32>) -> u32 {
         let n = children.len();
         let idx = self.nodes.len() as u32;
-        self.nodes.push(PowlNode::StrictPartialOrder(StrictPartialOrderNode {
-            children,
-            order: BinaryRelation::new(n),
-        }));
+        self.nodes
+            .push(PowlNode::StrictPartialOrder(StrictPartialOrderNode {
+                children,
+                order: BinaryRelation::new(n),
+            }));
         idx
     }
 
@@ -434,18 +440,21 @@ impl PowlArena {
                 order.add_edge(i, j);
             }
         }
-        self.nodes.push(PowlNode::StrictPartialOrder(StrictPartialOrderNode {
-            children,
-            order,
-        }));
+        self.nodes
+            .push(PowlNode::StrictPartialOrder(StrictPartialOrderNode {
+                children,
+                order,
+            }));
         idx
     }
 
     /// Add an OperatorPOWL node (XOR or LOOP).
     pub fn add_operator(&mut self, operator: Operator, children: Vec<u32>) -> u32 {
         let idx = self.nodes.len() as u32;
-        self.nodes
-            .push(PowlNode::OperatorPowl(OperatorPowlNode { operator, children }));
+        self.nodes.push(PowlNode::OperatorPowl(OperatorPowlNode {
+            operator,
+            children,
+        }));
         idx
     }
 
@@ -591,8 +600,16 @@ impl PowlArena {
                     "DG=(nodes={{{}}}, order={{{}}}, starts=[{}], ends=[{}], empty={})",
                     children_str.join(", "),
                     edges_str.join(", "),
-                    dg.start_nodes.iter().map(|&i| self.node_label_or_id(dg.children[i])).collect::<Vec<_>>().join(", "),
-                    dg.end_nodes.iter().map(|&i| self.node_label_or_id(dg.children[i])).collect::<Vec<_>>().join(", "),
+                    dg.start_nodes
+                        .iter()
+                        .map(|&i| self.node_label_or_id(dg.children[i]))
+                        .collect::<Vec<_>>()
+                        .join(", "),
+                    dg.end_nodes
+                        .iter()
+                        .map(|&i| self.node_label_or_id(dg.children[i]))
+                        .collect::<Vec<_>>()
+                        .join(", "),
                     dg.empty_path,
                 )
             }
@@ -871,8 +888,8 @@ mod tests {
         let dg = arena.add_decision_graph(
             vec![a, b],
             order,
-            vec![0],    // A is start node
-            vec![1],    // B is end node
+            vec![0], // A is start node
+            vec![1], // B is end node
             false,
         );
         let repr = arena.to_repr(dg);
@@ -892,13 +909,7 @@ mod tests {
         order.add_edge(1, 0); // start → A
         order.add_edge(0, 2); // A → end
         order.add_edge(1, 2); // start → end (empty path)
-        let dg = arena.add_decision_graph(
-            vec![a],
-            order,
-            vec![0],
-            vec![0],
-            true,
-        );
+        let dg = arena.add_decision_graph(vec![a], order, vec![0], vec![0], true);
         let repr = arena.to_repr(dg);
         assert!(repr.contains("empty=true"));
     }

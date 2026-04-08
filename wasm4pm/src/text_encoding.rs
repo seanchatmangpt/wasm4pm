@@ -376,7 +376,11 @@ pub fn encode_petri_net_as_text(petri_net_handle: &str) -> Result<String, JsValu
                         }
                     })
                     .collect();
-                text.push_str(&format!("- Arcs ({}): {}\n", pn.arcs.len(), arc_strs.join(", ")));
+                text.push_str(&format!(
+                    "- Arcs ({}): {}\n",
+                    pn.arcs.len(),
+                    arc_strs.join(", ")
+                ));
             }
 
             // Initial marking
@@ -440,10 +444,7 @@ pub fn encode_ocel_as_text(ocel_handle: &str) -> Result<String, JsValue> {
             let total_events = ocel.event_count();
             let total_objects = ocel.object_count();
 
-            let mut text = format!(
-                "OCEL: {} events, {} objects",
-                total_events, total_objects
-            );
+            let mut text = format!("OCEL: {} events, {} objects", total_events, total_objects);
 
             // Event types
             if !ocel.event_types.is_empty() {
@@ -505,12 +506,13 @@ pub fn encode_ocel_as_text(ocel_handle: &str) -> Result<String, JsValue> {
 pub fn encode_oc_petri_net_as_text(oc_petri_net_handle: &str) -> Result<String, JsValue> {
     get_or_init_state().with_object(oc_petri_net_handle, |obj| match obj {
         Some(StoredObject::JsonString(json_str)) => {
-            let ocpn: Value = serde_json::from_str(json_str)
-                .map_err(|e| JsValue::from_str(&format!("Failed to parse OC Petri Net JSON: {}", e)))?;
-
-            let obj_map = ocpn.as_object().ok_or_else(|| {
-                JsValue::from_str("OC Petri Net JSON is not an object")
+            let ocpn: Value = serde_json::from_str(json_str).map_err(|e| {
+                JsValue::from_str(&format!("Failed to parse OC Petri Net JSON: {}", e))
             })?;
+
+            let obj_map = ocpn
+                .as_object()
+                .ok_or_else(|| JsValue::from_str("OC Petri Net JSON is not an object"))?;
 
             if obj_map.is_empty() {
                 return Ok("Empty OC Petri Net (no object types).".to_string());
@@ -558,7 +560,9 @@ pub fn encode_oc_petri_net_as_text(oc_petri_net_handle: &str) -> Result<String, 
 
             Ok(text.trim_end().to_string())
         }
-        Some(_) => Err(JsValue::from_str("Object is not an OC Petri Net (expected JsonString)")),
+        Some(_) => Err(JsValue::from_str(
+            "Object is not an OC Petri Net (expected JsonString)",
+        )),
         None => Err(JsValue::from_str(&format!(
             "OC Petri Net '{}' not found",
             oc_petri_net_handle
@@ -620,7 +624,8 @@ pub fn encode_model_comparison_as_text(
         .map(|(f, t, freq)| ((f.as_str(), t.as_str()), *freq))
         .collect();
 
-    let all_edge_keys: HashSet<(&str, &str)> = edges1.keys().chain(edges2.keys()).copied().collect();
+    let all_edge_keys: HashSet<(&str, &str)> =
+        edges1.keys().chain(edges2.keys()).copied().collect();
 
     let mut diffs = Vec::new();
     for key in &all_edge_keys {
@@ -640,13 +645,13 @@ pub fn encode_model_comparison_as_text(
         });
         text.push_str("- Edge differences:\n");
         for (edge, f1, f2) in diffs.iter().take(10) {
-            text.push_str(&format!(
-                "    {}→{}: {} vs {}\n",
-                edge.0, edge.1, f1, f2
-            ));
+            text.push_str(&format!("    {}→{}: {} vs {}\n", edge.0, edge.1, f1, f2));
         }
         if diffs.len() > 10 {
-            text.push_str(&format!("    ... and {} more differences\n", diffs.len() - 10));
+            text.push_str(&format!(
+                "    ... and {} more differences\n",
+                diffs.len() - 10
+            ));
         }
     } else {
         text.push_str("- No edge differences found.\n");
@@ -700,10 +705,7 @@ fn extract_model_summary(
             "Object '{}' is not a DFG or PetriNet",
             handle
         ))),
-        None => Err(JsValue::from_str(&format!(
-            "Model '{}' not found",
-            handle
-        ))),
+        None => Err(JsValue::from_str(&format!("Model '{}' not found", handle))),
     })
 }
 

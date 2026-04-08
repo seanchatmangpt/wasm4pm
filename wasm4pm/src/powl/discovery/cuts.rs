@@ -6,9 +6,9 @@
 //!   - Loop cut
 //!   - XOR cut
 
-use std::collections::HashMap;
-use crate::powl_arena::{Operator, PowlArena};
 use crate::powl::discovery::DiscoveryConfig;
+use crate::powl_arena::{Operator, PowlArena};
+use std::collections::HashMap;
 
 /// Detect concurrency cut (partial order)
 ///
@@ -43,7 +43,10 @@ pub fn detect_concurrency_cut(
     }
 
     // Build partial order from all orderings
-    let activity_set: Vec<String> = unique_activities.into_iter().map(|s| s.to_string()).collect();
+    let activity_set: Vec<String> = unique_activities
+        .into_iter()
+        .map(|s| s.to_string())
+        .collect();
     let _n = activity_set.len();
     let mut activity_to_idx: HashMap<String, usize> = HashMap::new();
     for (i, act) in activity_set.iter().enumerate() {
@@ -255,10 +258,7 @@ mod tests {
 
     #[test]
     fn test_xor_cut_with_alternative_traces() {
-        let traces = vec![
-            vec!["A".to_string()],
-            vec!["B".to_string()],
-        ];
+        let traces = vec![vec!["A".to_string()], vec!["B".to_string()]];
 
         let mut arena = PowlArena::new();
         let config = DiscoveryConfig::default();

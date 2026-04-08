@@ -11,8 +11,10 @@
 //! The A* score combines actual cost (edges removed) with estimated cost
 //! to reach an optimal model.
 
-use crate::models::{DirectlyFollowsGraph, DFGNode, DirectlyFollowsRelation};
-use crate::streaming::{StreamingAlgorithm, StreamStats, ActivityInterner, impl_activity_interner, Interner};
+use crate::models::{DFGNode, DirectlyFollowsGraph, DirectlyFollowsRelation};
+use crate::streaming::{
+    impl_activity_interner, ActivityInterner, Interner, StreamStats, StreamingAlgorithm,
+};
 use rustc_hash::FxHashMap;
 use std::collections::HashMap;
 
@@ -96,14 +98,20 @@ impl StreamingAStarBuilder {
         }
 
         // Compute A* score for each edge
-        let mut scored_edges: Vec<((u32, u32), usize, f64)> = self.edge_counts.iter()
+        let mut scored_edges: Vec<((u32, u32), usize, f64)> = self
+            .edge_counts
+            .iter()
             .map(|(&(from, to), &count)| {
                 // Fitness contribution: how much of the log this edge explains
                 let fitness = count as f64 / total_possible as f64;
 
                 // Precision: how specific is this edge
                 // Low reverse count relative to forward count = high precision
-                let reverse = self.reverse_edge_counts.get(&(to, from)).copied().unwrap_or(0);
+                let reverse = self
+                    .reverse_edge_counts
+                    .get(&(to, from))
+                    .copied()
+                    .unwrap_or(0);
                 let precision = if count > 0 {
                     1.0 - (reverse as f64 / (count + reverse) as f64)
                 } else {
@@ -137,21 +145,26 @@ impl StreamingAStarBuilder {
         // Build DFG from pruned edges
         let mut dfg = DirectlyFollowsGraph::new();
 
-        dfg.nodes = self.interner.vocab().iter().enumerate().map(|(i, name)| {
-            DFGNode {
+        dfg.nodes = self
+            .interner
+            .vocab()
+            .iter()
+            .enumerate()
+            .map(|(i, name)| DFGNode {
                 id: name.clone(),
                 label: name.clone(),
                 frequency: self.activity_counts.get(i).copied().unwrap_or(0),
-            }
-        }).collect();
+            })
+            .collect();
 
-        dfg.edges = pruned_edges.iter().map(|&((f, t), freq)| {
-            DirectlyFollowsRelation {
+        dfg.edges = pruned_edges
+            .iter()
+            .map(|&((f, t), freq)| DirectlyFollowsRelation {
                 from: self.interner.get(f).unwrap_or("").to_string(),
                 to: self.interner.get(t).unwrap_or("").to_string(),
                 frequency: freq,
-            }
-        }).collect();
+            })
+            .collect();
 
         for (&id, &cnt) in &self.start_counts {
             if let Some(name) = self.interner.get(id) {
@@ -190,8 +203,12 @@ impl StreamingAlgorithm for StreamingAStarBuilder {
     }
 
     fn close_trace(&mut self, case_id: &str) -> bool {
-        let Some(events) = self.open_traces.remove(case_id) else { return false; };
-        if events.is_empty() { return true; }
+        let Some(events) = self.open_traces.remove(case_id) else {
+            return false;
+        };
+        if events.is_empty() {
+            return true;
+        }
 
         for &id in &events {
             self.activity_counts[id as usize] += 1;
@@ -199,7 +216,10 @@ impl StreamingAlgorithm for StreamingAStarBuilder {
 
         for pair in events.windows(2) {
             *self.edge_counts.entry((pair[0], pair[1])).or_insert(0) += 1;
-            *self.reverse_edge_counts.entry((pair[1], pair[0])).or_insert(0) += 1;
+            *self
+                .reverse_edge_counts
+                .entry((pair[1], pair[0]))
+                .or_insert(0) += 1;
         }
 
         *self.start_counts.entry(events[0]).or_insert(0) += 1;
@@ -217,12 +237,14 @@ impl StreamingAlgorithm for StreamingAStarBuilder {
 
     fn stats(&self) -> StreamStats {
         let open_trace_events: usize = self.open_traces.values().map(|v| v.len()).sum();
-        let memory_bytes =
-            self.open_traces.capacity() * (std::mem::size_of::<String>() + std::mem::size_of::<Vec<u32>>()) +
-            open_trace_events * std::mem::size_of::<u32>() +
-            self.activity_counts.capacity() * std::mem::size_of::<usize>() +
-            self.edge_counts.capacity() * (std::mem::size_of::<(u32,u32)>() + std::mem::size_of::<usize>()) +
-            self.reverse_edge_counts.capacity() * (std::mem::size_of::<(u32,u32)>() + std::mem::size_of::<usize>());
+        let memory_bytes = self.open_traces.capacity()
+            * (std::mem::size_of::<String>() + std::mem::size_of::<Vec<u32>>())
+            + open_trace_events * std::mem::size_of::<u32>()
+            + self.activity_counts.capacity() * std::mem::size_of::<usize>()
+            + self.edge_counts.capacity()
+                * (std::mem::size_of::<(u32, u32)>() + std::mem::size_of::<usize>())
+            + self.reverse_edge_counts.capacity()
+                * (std::mem::size_of::<(u32, u32)>() + std::mem::size_of::<usize>());
 
         StreamStats {
             event_count: self.event_count,
@@ -304,6 +326,10 @@ mod tests {
 
         let dfg = stream.snapshot();
         // With weight 0.0, fitness-only = keep all edges
-        assert_eq!(dfg.edges.len(), 1, "should keep all edges with zero heuristic weight");
+        assert_eq!(
+            dfg.edges.len(),
+            1,
+            "should keep all edges with zero heuristic weight"
+        );
     }
 }

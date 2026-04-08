@@ -5,8 +5,8 @@
 //!
 //! Ported from pm4wasm/src/conformance/footprints_conf.rs
 
-use crate::powl_event_log::EventLog;
 use crate::powl::footprints::Footprints;
+use crate::powl_event_log::EventLog;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -37,8 +37,7 @@ fn log_footprints(log: &EventLog) -> HashMap<(String, String), usize> {
 pub fn check(log: &EventLog, model_fp: &Footprints) -> FootprintsConformanceResult {
     let log_fp_map = log_footprints(log);
 
-    let model_sequence: std::collections::HashSet<(String, String)> =
-        model_fp.sequence.clone();
+    let model_sequence: std::collections::HashSet<(String, String)> = model_fp.sequence.clone();
     let log_sequence: std::collections::HashSet<(String, String)> =
         log_fp_map.keys().cloned().collect();
 

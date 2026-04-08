@@ -3,29 +3,28 @@
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsValue;
 
-use crate::powl_arena::PowlArena;
-use crate::powl_parser::parse_powl_model_string;
-use crate::powl::simplify::{simplify, simplify_using_frequent_transitions};
+use crate::models::EventLog as ModelsEventLog;
 use crate::powl::analysis::complexity::measure;
 use crate::powl::analysis::diff::diff as model_diff;
-use crate::powl::conversion::to_petri_net;
-use crate::powl::conversion::to_bpmn;
-use crate::powl::conversion::to_process_tree;
-use crate::powl::conversion::from_process_tree;
-use crate::powl::conversion::from_petri_net;
-use crate::powl::conformance::token_replay::compute_fitness;
-use crate::powl::conformance::soundness::check_soundness;
 use crate::powl::conformance::footprints_conf::check as footprints_conformance_check;
-use crate::powl::footprints::apply as footprints_apply;
+use crate::powl::conformance::soundness::check_soundness;
+use crate::powl::conformance::token_replay::compute_fitness;
+use crate::powl::conversion::from_petri_net;
+use crate::powl::conversion::from_process_tree;
+use crate::powl::conversion::to_bpmn;
+use crate::powl::conversion::to_petri_net;
+use crate::powl::conversion::to_process_tree;
 use crate::powl::discovery::{discover_powl, DiscoveryConfig, DiscoveryVariant};
+use crate::powl::footprints::apply as footprints_apply;
+use crate::powl::simplify::{simplify, simplify_using_frequent_transitions};
 use crate::powl::visualization::process_tree_svg::render_process_tree_svg;
-use crate::models::EventLog as ModelsEventLog;
+use crate::powl_arena::PowlArena;
 use crate::powl_event_log::EventLog;
 use crate::powl_models::PowlPetriNetResult;
+use crate::powl_parser::parse_powl_model_string;
 
 fn to_js(val: &impl serde::Serialize) -> Result<JsValue, JsValue> {
-    serde_wasm_bindgen::to_value(val)
-        .map_err(|e| JsValue::from_str(&format!("serde error: {}", e)))
+    serde_wasm_bindgen::to_value(val).map_err(|e| JsValue::from_str(&format!("serde error: {}", e)))
 }
 
 fn wasm_err(msg: &str) -> JsValue {
@@ -64,7 +63,9 @@ pub fn parse_powl(s: &str) -> Result<JsValue, JsValue> {
 #[wasm_bindgen]
 pub fn validate_partial_orders(s: &str) -> Result<JsValue, JsValue> {
     let (arena, root) = parse_model(s)?;
-    arena.validate_partial_orders(root).map_err(|e| wasm_err(&e))?;
+    arena
+        .validate_partial_orders(root)
+        .map_err(|e| wasm_err(&e))?;
     to_js(&serde_json::json!({ "valid": true }))
 }
 
@@ -146,7 +147,9 @@ pub fn node_info_json(s: &str, arena_idx: u32) -> Result<String, JsValue> {
             "id": t.id,
         }),
         Some(crate::powl_arena::PowlNode::StrictPartialOrder(spo)) => {
-            let edges: Vec<Vec<usize>> = spo.order.edge_list()
+            let edges: Vec<Vec<usize>> = spo
+                .order
+                .edge_list()
                 .into_iter()
                 .map(|(a, b)| vec![a, b])
                 .collect();
@@ -163,7 +166,9 @@ pub fn node_info_json(s: &str, arena_idx: u32) -> Result<String, JsValue> {
             "children": op.children,
         }),
         Some(crate::powl_arena::PowlNode::DecisionGraph(dg)) => {
-            let edges: Vec<Vec<usize>> = dg.order.edge_list()
+            let edges: Vec<Vec<usize>> = dg
+                .order
+                .edge_list()
                 .into_iter()
                 .map(|(a, b)| vec![a, b])
                 .collect();
@@ -189,8 +194,7 @@ pub fn node_info_json(s: &str, arena_idx: u32) -> Result<String, JsValue> {
 pub fn powl_to_petri_net(s: &str) -> Result<String, JsValue> {
     let (arena, root) = parse_model(s)?;
     let result: PowlPetriNetResult = to_petri_net::apply(&arena, root);
-    serde_json::to_string_pretty(&result)
-        .map_err(|e| wasm_err(&format!("json error: {}", e)))
+    serde_json::to_string_pretty(&result).map_err(|e| wasm_err(&format!("json error: {}", e)))
 }
 
 /// Convert a POWL model to a Process Tree (JSON).
@@ -198,8 +202,7 @@ pub fn powl_to_petri_net(s: &str) -> Result<String, JsValue> {
 pub fn powl_to_process_tree(s: &str) -> Result<String, JsValue> {
     let (arena, root) = parse_model(s)?;
     let tree = to_process_tree::apply(&arena, root);
-    serde_json::to_string_pretty(&tree)
-        .map_err(|e| wasm_err(&format!("json error: {}", e)))
+    serde_json::to_string_pretty(&tree).map_err(|e| wasm_err(&format!("json error: {}", e)))
 }
 
 /// Convert a Process Tree (JSON) to a POWL model.
@@ -212,8 +215,8 @@ pub fn powl_to_process_tree(s: &str) -> Result<String, JsValue> {
 /// Returns: `{ "root": u32, "node_count": usize, "repr": "..." }`
 #[wasm_bindgen]
 pub fn process_tree_to_powl(tree_json: &str) -> Result<JsValue, JsValue> {
-    let (arena, root) = from_process_tree::process_tree_to_powl(tree_json)
-        .map_err(|e| wasm_err(&e))?;
+    let (arena, root) =
+        from_process_tree::process_tree_to_powl(tree_json).map_err(|e| wasm_err(&e))?;
     let repr = arena.to_repr(root);
     to_js(&serde_json::json!({
         "root": root,
@@ -232,8 +235,7 @@ pub fn process_tree_to_powl(tree_json: &str) -> Result<JsValue, JsValue> {
 /// Returns: `{ "root": u32, "node_count": usize, "repr": "..." }`
 #[wasm_bindgen]
 pub fn petri_net_to_powl(pn_json: &str) -> Result<JsValue, JsValue> {
-    let (arena, root) = from_petri_net::petri_net_to_powl(pn_json)
-        .map_err(|e| wasm_err(&e))?;
+    let (arena, root) = from_petri_net::petri_net_to_powl(pn_json).map_err(|e| wasm_err(&e))?;
     let repr = arena.to_repr(root);
     to_js(&serde_json::json!({
         "root": root,
@@ -265,8 +267,8 @@ pub fn token_replay_fitness(powl_str: &str, log_json: &str) -> Result<String, Js
     let (arena, root) = parse_model(powl_str)?;
     let pn_result: PowlPetriNetResult = to_petri_net::apply(&arena, root);
 
-    let log: EventLog = serde_json::from_str(log_json)
-        .map_err(|e| wasm_err(&format!("log parse error: {}", e)))?;
+    let log: EventLog =
+        serde_json::from_str(log_json).map_err(|e| wasm_err(&format!("log parse error: {}", e)))?;
 
     let fitness_result = compute_fitness(
         &pn_result.net,
@@ -310,13 +312,12 @@ pub fn footprints_conformance(powl_str: &str, log_json: &str) -> Result<String, 
     let (arena, root) = parse_model(powl_str)?;
     let model_fp = footprints_apply(&arena, root);
 
-    let log: EventLog = serde_json::from_str(log_json)
-        .map_err(|e| wasm_err(&format!("log parse error: {}", e)))?;
+    let log: EventLog =
+        serde_json::from_str(log_json).map_err(|e| wasm_err(&format!("log parse error: {}", e)))?;
 
     let result = footprints_conformance_check(&log, &model_fp);
 
-    serde_json::to_string_pretty(&result)
-        .map_err(|e| wasm_err(&format!("json error: {}", e)))
+    serde_json::to_string_pretty(&result).map_err(|e| wasm_err(&format!("json error: {}", e)))
 }
 
 // ─── Analysis ─────────────────────────────────────────────────────────────
@@ -328,8 +329,7 @@ pub fn footprints_conformance(powl_str: &str, log_json: &str) -> Result<String, 
 pub fn measure_complexity(s: &str) -> Result<String, JsValue> {
     let (arena, root) = parse_model(s)?;
     let report = measure(&arena, root);
-    serde_json::to_string_pretty(&report)
-        .map_err(|e| wasm_err(&format!("json error: {}", e)))
+    serde_json::to_string_pretty(&report).map_err(|e| wasm_err(&format!("json error: {}", e)))
 }
 
 /// Diff two POWL models (structural + behavioral comparison).
@@ -341,8 +341,7 @@ pub fn diff_models(model_a_str: &str, model_b_str: &str) -> Result<String, JsVal
     let (arena_b, root_b) = parse_model(model_b_str)?;
 
     let result = model_diff(&arena_a, root_a, &arena_b, root_b);
-    serde_json::to_string_pretty(&result)
-        .map_err(|e| wasm_err(&format!("json error: {}", e)))
+    serde_json::to_string_pretty(&result).map_err(|e| wasm_err(&format!("json error: {}", e)))
 }
 
 // ─── Footprints ───────────────────────────────────────────────────────────
@@ -354,8 +353,7 @@ pub fn diff_models(model_a_str: &str, model_b_str: &str) -> Result<String, JsVal
 pub fn powl_footprints(s: &str) -> Result<String, JsValue> {
     let (arena, root) = parse_model(s)?;
     let fp = crate::powl::footprints::apply(&arena, root);
-    serde_json::to_string_pretty(&fp)
-        .map_err(|e| wasm_err(&format!("json error: {}", e)))
+    serde_json::to_string_pretty(&fp).map_err(|e| wasm_err(&format!("json error: {}", e)))
 }
 
 // ─── Discovery ─────────────────────────────────────────────────────────────
@@ -372,11 +370,11 @@ pub fn powl_footprints(s: &str) -> Result<String, JsValue> {
 /// JSON object with `{ "root": u32, "node_count": usize, "repr": string }`
 #[wasm_bindgen]
 pub fn discover_powl_from_log(log_json: &str, variant: &str) -> Result<JsValue, JsValue> {
-    let log: ModelsEventLog = serde_json::from_str(log_json)
-        .map_err(|e| wasm_err(&format!("log parse error: {}", e)))?;
+    let log: ModelsEventLog =
+        serde_json::from_str(log_json).map_err(|e| wasm_err(&format!("log parse error: {}", e)))?;
 
-    let discovery_variant = DiscoveryVariant::from_str(variant)
-        .unwrap_or(DiscoveryVariant::DecisionGraphCyclic);
+    let discovery_variant =
+        DiscoveryVariant::from_str(variant).unwrap_or(DiscoveryVariant::DecisionGraphCyclic);
 
     let config = DiscoveryConfig {
         activity_key: "concept:name".to_string(),
@@ -386,8 +384,8 @@ pub fn discover_powl_from_log(log_json: &str, variant: &str) -> Result<JsValue, 
         from_dfg: false,
     };
 
-    let (arena, root) = discover_powl(&log, &config)
-        .map_err(|e| wasm_err(&format!("discovery error: {}", e)))?;
+    let (arena, root) =
+        discover_powl(&log, &config).map_err(|e| wasm_err(&format!("discovery error: {}", e)))?;
 
     let repr = arena.to_repr(root);
     to_js(&serde_json::json!({
@@ -417,11 +415,11 @@ pub fn discover_powl_from_log_config(
     min_trace_count: usize,
     noise_threshold: f64,
 ) -> Result<JsValue, JsValue> {
-    let log: ModelsEventLog = serde_json::from_str(log_json)
-        .map_err(|e| wasm_err(&format!("log parse error: {}", e)))?;
+    let log: ModelsEventLog =
+        serde_json::from_str(log_json).map_err(|e| wasm_err(&format!("log parse error: {}", e)))?;
 
-    let discovery_variant = DiscoveryVariant::from_str(variant)
-        .unwrap_or(DiscoveryVariant::DecisionGraphCyclic);
+    let discovery_variant =
+        DiscoveryVariant::from_str(variant).unwrap_or(DiscoveryVariant::DecisionGraphCyclic);
 
     let config = DiscoveryConfig {
         activity_key: activity_key.to_string(),
@@ -431,8 +429,8 @@ pub fn discover_powl_from_log_config(
         from_dfg: false,
     };
 
-    let (arena, root) = discover_powl(&log, &config)
-        .map_err(|e| wasm_err(&format!("discovery error: {}", e)))?;
+    let (arena, root) =
+        discover_powl(&log, &config).map_err(|e| wasm_err(&format!("discovery error: {}", e)))?;
 
     let repr = arena.to_repr(root);
     to_js(&serde_json::json!({
@@ -461,11 +459,11 @@ pub fn discover_powl_from_partial_orders(
     log_json: &str,
     variant: &str,
 ) -> Result<JsValue, JsValue> {
-    let log: ModelsEventLog = serde_json::from_str(log_json)
-        .map_err(|e| wasm_err(&format!("log parse error: {}", e)))?;
+    let log: ModelsEventLog =
+        serde_json::from_str(log_json).map_err(|e| wasm_err(&format!("log parse error: {}", e)))?;
 
-    let discovery_variant = DiscoveryVariant::from_str(variant)
-        .unwrap_or(DiscoveryVariant::DecisionGraphCyclic);
+    let discovery_variant =
+        DiscoveryVariant::from_str(variant).unwrap_or(DiscoveryVariant::DecisionGraphCyclic);
 
     let config = DiscoveryConfig {
         activity_key: "concept:name".to_string(),
@@ -477,9 +475,7 @@ pub fn discover_powl_from_partial_orders(
 
     let mut arena = PowlArena::new();
     let root = crate::powl::discovery::from_partial_orders::discover_from_partial_orders(
-        &log,
-        &config,
-        &mut arena,
+        &log, &config, &mut arena,
     )
     .map_err(|e| wasm_err(&format!("partial order discovery error: {}", e)))?;
 
@@ -502,10 +498,7 @@ pub fn discover_powl_from_partial_orders(
 /// # Returns
 /// JSON object with `{ "root": u32, "node_count": usize, "repr": string, "ocel_variant": string }`
 #[wasm_bindgen]
-pub fn discover_ocel_powl(
-    ocel_json: &str,
-    variant: &str,
-) -> Result<JsValue, JsValue> {
+pub fn discover_ocel_powl(ocel_json: &str, variant: &str) -> Result<JsValue, JsValue> {
     let log: ModelsEventLog = serde_json::from_str(ocel_json)
         .map_err(|e| wasm_err(&format!("ocel log parse error: {}", e)))?;
 
@@ -521,8 +514,9 @@ pub fn discover_ocel_powl(
     };
 
     let mut arena = PowlArena::new();
-    let root = crate::powl::discovery::ocel::discover_ocel_powl(&log, &config, &mut arena, ocel_variant)
-        .map_err(|e| wasm_err(&format!("ocel discovery error: {}", e)))?;
+    let root =
+        crate::powl::discovery::ocel::discover_ocel_powl(&log, &config, &mut arena, ocel_variant)
+            .map_err(|e| wasm_err(&format!("ocel discovery error: {}", e)))?;
 
     let repr = arena.to_repr(root);
     to_js(&serde_json::json!({
@@ -590,7 +584,10 @@ mod tests {
         let result: PowlPetriNetResult = to_petri_net::apply(&arena, root);
         assert!(result.net.places.len() > 3);
         assert!(result.net.transitions.len() > 3);
-        let labels: Vec<&str> = result.net.transitions.iter()
+        let labels: Vec<&str> = result
+            .net
+            .transitions
+            .iter()
             .filter_map(|t| t.label.as_deref())
             .collect();
         assert!(labels.contains(&"create_process"));
@@ -655,7 +652,10 @@ mod tests {
     fn paper_online_shop_to_petri_net() {
         let (arena, root) = parse_test(online_shop_powl()).unwrap();
         let result: PowlPetriNetResult = to_petri_net::apply(&arena, root);
-        let labels: Vec<&str> = result.net.transitions.iter()
+        let labels: Vec<&str> = result
+            .net
+            .transitions
+            .iter()
             .filter_map(|t| t.label.as_deref())
             .collect();
         assert!(labels.contains(&"select_items"));
@@ -673,16 +673,51 @@ mod tests {
             traces: vec![Trace {
                 case_id: "c1".to_string(),
                 events: vec![
-                    crate::powl_event_log::Event { name: "login".into(), timestamp: None, lifecycle: None, attributes: std::collections::HashMap::new() },
-                    crate::powl_event_log::Event { name: "select_items".into(), timestamp: None, lifecycle: None, attributes: std::collections::HashMap::new() },
-                    crate::powl_event_log::Event { name: "set_payment_method".into(), timestamp: None, lifecycle: None, attributes: std::collections::HashMap::new() },
-                    crate::powl_event_log::Event { name: "reward_selection".into(), timestamp: None, lifecycle: None, attributes: std::collections::HashMap::new() },
-                    crate::powl_event_log::Event { name: "pay".into(), timestamp: None, lifecycle: None, attributes: std::collections::HashMap::new() },
-                    crate::powl_event_log::Event { name: "delivery".into(), timestamp: None, lifecycle: None, attributes: std::collections::HashMap::new() },
+                    crate::powl_event_log::Event {
+                        name: "login".into(),
+                        timestamp: None,
+                        lifecycle: None,
+                        attributes: std::collections::HashMap::new(),
+                    },
+                    crate::powl_event_log::Event {
+                        name: "select_items".into(),
+                        timestamp: None,
+                        lifecycle: None,
+                        attributes: std::collections::HashMap::new(),
+                    },
+                    crate::powl_event_log::Event {
+                        name: "set_payment_method".into(),
+                        timestamp: None,
+                        lifecycle: None,
+                        attributes: std::collections::HashMap::new(),
+                    },
+                    crate::powl_event_log::Event {
+                        name: "reward_selection".into(),
+                        timestamp: None,
+                        lifecycle: None,
+                        attributes: std::collections::HashMap::new(),
+                    },
+                    crate::powl_event_log::Event {
+                        name: "pay".into(),
+                        timestamp: None,
+                        lifecycle: None,
+                        attributes: std::collections::HashMap::new(),
+                    },
+                    crate::powl_event_log::Event {
+                        name: "delivery".into(),
+                        timestamp: None,
+                        lifecycle: None,
+                        attributes: std::collections::HashMap::new(),
+                    },
                 ],
             }],
         };
-        let fitness = compute_fitness(&pn_result.net, &pn_result.initial_marking, &pn_result.final_marking, &log);
+        let fitness = compute_fitness(
+            &pn_result.net,
+            &pn_result.initial_marking,
+            &pn_result.final_marking,
+            &log,
+        );
         assert!(fitness.percentage > 0.0);
     }
 
@@ -730,16 +765,51 @@ mod tests {
             traces: vec![Trace {
                 case_id: "h1".to_string(),
                 events: vec![
-                    crate::powl_event_log::Event { name: "take_order".into(), timestamp: None, lifecycle: None, attributes: std::collections::HashMap::new() },
-                    crate::powl_event_log::Event { name: "submit_kitchen".into(), timestamp: None, lifecycle: None, attributes: std::collections::HashMap::new() },
-                    crate::powl_event_log::Event { name: "fetch_wine".into(), timestamp: None, lifecycle: None, attributes: std::collections::HashMap::new() },
-                    crate::powl_event_log::Event { name: "assign_waiter".into(), timestamp: None, lifecycle: None, attributes: std::collections::HashMap::new() },
-                    crate::powl_event_log::Event { name: "deliver".into(), timestamp: None, lifecycle: None, attributes: std::collections::HashMap::new() },
-                    crate::powl_event_log::Event { name: "debit_account".into(), timestamp: None, lifecycle: None, attributes: std::collections::HashMap::new() },
+                    crate::powl_event_log::Event {
+                        name: "take_order".into(),
+                        timestamp: None,
+                        lifecycle: None,
+                        attributes: std::collections::HashMap::new(),
+                    },
+                    crate::powl_event_log::Event {
+                        name: "submit_kitchen".into(),
+                        timestamp: None,
+                        lifecycle: None,
+                        attributes: std::collections::HashMap::new(),
+                    },
+                    crate::powl_event_log::Event {
+                        name: "fetch_wine".into(),
+                        timestamp: None,
+                        lifecycle: None,
+                        attributes: std::collections::HashMap::new(),
+                    },
+                    crate::powl_event_log::Event {
+                        name: "assign_waiter".into(),
+                        timestamp: None,
+                        lifecycle: None,
+                        attributes: std::collections::HashMap::new(),
+                    },
+                    crate::powl_event_log::Event {
+                        name: "deliver".into(),
+                        timestamp: None,
+                        lifecycle: None,
+                        attributes: std::collections::HashMap::new(),
+                    },
+                    crate::powl_event_log::Event {
+                        name: "debit_account".into(),
+                        timestamp: None,
+                        lifecycle: None,
+                        attributes: std::collections::HashMap::new(),
+                    },
                 ],
             }],
         };
-        let fitness = compute_fitness(&pn_result.net, &pn_result.initial_marking, &pn_result.final_marking, &log);
+        let fitness = compute_fitness(
+            &pn_result.net,
+            &pn_result.initial_marking,
+            &pn_result.final_marking,
+            &log,
+        );
         assert!(fitness.percentage > 0.0);
         assert!(fitness.total_traces == 1);
     }
@@ -806,16 +876,41 @@ mod tests {
                 Trace {
                     case_id: "c1".into(),
                     events: vec![
-                        crate::powl_event_log::Event { name: "A".into(), timestamp: None, lifecycle: None, attributes: std::collections::HashMap::new() },
-                        crate::powl_event_log::Event { name: "B".into(), timestamp: None, lifecycle: None, attributes: std::collections::HashMap::new() },
-                        crate::powl_event_log::Event { name: "C".into(), timestamp: None, lifecycle: None, attributes: std::collections::HashMap::new() },
+                        crate::powl_event_log::Event {
+                            name: "A".into(),
+                            timestamp: None,
+                            lifecycle: None,
+                            attributes: std::collections::HashMap::new(),
+                        },
+                        crate::powl_event_log::Event {
+                            name: "B".into(),
+                            timestamp: None,
+                            lifecycle: None,
+                            attributes: std::collections::HashMap::new(),
+                        },
+                        crate::powl_event_log::Event {
+                            name: "C".into(),
+                            timestamp: None,
+                            lifecycle: None,
+                            attributes: std::collections::HashMap::new(),
+                        },
                     ],
                 },
                 Trace {
                     case_id: "c2".into(),
                     events: vec![
-                        crate::powl_event_log::Event { name: "A".into(), timestamp: None, lifecycle: None, attributes: std::collections::HashMap::new() },
-                        crate::powl_event_log::Event { name: "C".into(), timestamp: None, lifecycle: None, attributes: std::collections::HashMap::new() },
+                        crate::powl_event_log::Event {
+                            name: "A".into(),
+                            timestamp: None,
+                            lifecycle: None,
+                            attributes: std::collections::HashMap::new(),
+                        },
+                        crate::powl_event_log::Event {
+                            name: "C".into(),
+                            timestamp: None,
+                            lifecycle: None,
+                            attributes: std::collections::HashMap::new(),
+                        },
                     ],
                 },
             ],

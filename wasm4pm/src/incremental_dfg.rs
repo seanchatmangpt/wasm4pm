@@ -23,7 +23,7 @@ use serde_json::json;
 use wasm_bindgen::prelude::*;
 
 use crate::error::{self, codes};
-use crate::models::{DirectlyFollowsGraph, DFGNode, DirectlyFollowsRelation};
+use crate::models::{DFGNode, DirectlyFollowsGraph, DirectlyFollowsRelation};
 use crate::state;
 
 // ---------------------------------------------------------------------------
@@ -132,8 +132,7 @@ impl IncrementalDFG {
 
         // Start / end activities
         for &id in &self.start_activities {
-            dfg.start_activities
-                .insert(format!("activity_{}", id), 0);
+            dfg.start_activities.insert(format!("activity_{}", id), 0);
         }
         for &id in &self.end_activities {
             dfg.end_activities.insert(format!("activity_{}", id), 0);
@@ -331,22 +330,20 @@ pub fn streaming_dfg_process_event(handle: &str, activity_id: u32) -> Result<(),
     let app_state = state::get_or_init_state();
     let aid = activity_id;
 
-    app_state.with_object_mut(handle, |opt| {
-        match opt {
-            Some(state::StoredObject::IncrementalDFG(idfg)) => {
-                let is_trace_start = idfg.last_activity.is_none();
-                idfg.process_event(aid, is_trace_start);
-                Ok(())
-            }
-            Some(_) => Err(error::wasm_err(
-                codes::INVALID_HANDLE,
-                format!("Object {} is not an IncrementalDFG", handle),
-            )),
-            None => Err(error::wasm_err(
-                codes::INVALID_HANDLE,
-                format!("No object found for handle: {}", handle),
-            )),
+    app_state.with_object_mut(handle, |opt| match opt {
+        Some(state::StoredObject::IncrementalDFG(idfg)) => {
+            let is_trace_start = idfg.last_activity.is_none();
+            idfg.process_event(aid, is_trace_start);
+            Ok(())
         }
+        Some(_) => Err(error::wasm_err(
+            codes::INVALID_HANDLE,
+            format!("Object {} is not an IncrementalDFG", handle),
+        )),
+        None => Err(error::wasm_err(
+            codes::INVALID_HANDLE,
+            format!("No object found for handle: {}", handle),
+        )),
     })
 }
 
@@ -354,21 +351,19 @@ pub fn streaming_dfg_process_event(handle: &str, activity_id: u32) -> Result<(),
 #[wasm_bindgen]
 pub fn streaming_dfg_end_trace(handle: &str) -> Result<(), JsValue> {
     let app_state = state::get_or_init_state();
-    app_state.with_object_mut(handle, |opt| {
-        match opt {
-            Some(state::StoredObject::IncrementalDFG(idfg)) => {
-                idfg.end_trace();
-                Ok(())
-            }
-            Some(_) => Err(error::wasm_err(
-                codes::INVALID_HANDLE,
-                format!("Object {} is not an IncrementalDFG", handle),
-            )),
-            None => Err(error::wasm_err(
-                codes::INVALID_HANDLE,
-                format!("No object found for handle: {}", handle),
-            )),
+    app_state.with_object_mut(handle, |opt| match opt {
+        Some(state::StoredObject::IncrementalDFG(idfg)) => {
+            idfg.end_trace();
+            Ok(())
         }
+        Some(_) => Err(error::wasm_err(
+            codes::INVALID_HANDLE,
+            format!("Object {} is not an IncrementalDFG", handle),
+        )),
+        None => Err(error::wasm_err(
+            codes::INVALID_HANDLE,
+            format!("No object found for handle: {}", handle),
+        )),
     })
 }
 
@@ -376,23 +371,24 @@ pub fn streaming_dfg_end_trace(handle: &str) -> Result<(), JsValue> {
 #[wasm_bindgen]
 pub fn incremental_dfg_snapshot(handle: &str) -> Result<String, JsValue> {
     let app_state = state::get_or_init_state();
-    app_state.with_object(handle, |opt| {
-        match opt {
-            Some(state::StoredObject::IncrementalDFG(idfg)) => {
-                let dfg = idfg.snapshot();
-                serde_json::to_string(&dfg).map_err(|e| {
-                    error::wasm_err(codes::INTERNAL_ERROR, format!("JSON serialization failed: {}", e))
-                })
-            }
-            Some(_) => Err(error::wasm_err(
-                codes::INVALID_HANDLE,
-                format!("Object {} is not an IncrementalDFG", handle),
-            )),
-            None => Err(error::wasm_err(
-                codes::INVALID_HANDLE,
-                format!("No object found for handle: {}", handle),
-            )),
+    app_state.with_object(handle, |opt| match opt {
+        Some(state::StoredObject::IncrementalDFG(idfg)) => {
+            let dfg = idfg.snapshot();
+            serde_json::to_string(&dfg).map_err(|e| {
+                error::wasm_err(
+                    codes::INTERNAL_ERROR,
+                    format!("JSON serialization failed: {}", e),
+                )
+            })
         }
+        Some(_) => Err(error::wasm_err(
+            codes::INVALID_HANDLE,
+            format!("Object {} is not an IncrementalDFG", handle),
+        )),
+        None => Err(error::wasm_err(
+            codes::INVALID_HANDLE,
+            format!("No object found for handle: {}", handle),
+        )),
     })
 }
 
@@ -400,28 +396,29 @@ pub fn incremental_dfg_snapshot(handle: &str) -> Result<String, JsValue> {
 #[wasm_bindgen]
 pub fn incremental_dfg_stats(handle: &str) -> Result<String, JsValue> {
     let app_state = state::get_or_init_state();
-    app_state.with_object(handle, |opt| {
-        match opt {
-            Some(state::StoredObject::IncrementalDFG(idfg)) => {
-                let (total, activities, edges) = idfg.stats();
-                let stats = StreamingDfgStats {
-                    total_events: total,
-                    unique_activities: activities,
-                    unique_edges: edges,
-                };
-                serde_json::to_string(&stats).map_err(|e| {
-                    error::wasm_err(codes::INTERNAL_ERROR, format!("JSON serialization failed: {}", e))
-                })
-            }
-            Some(_) => Err(error::wasm_err(
-                codes::INVALID_HANDLE,
-                format!("Object {} is not an IncrementalDFG", handle),
-            )),
-            None => Err(error::wasm_err(
-                codes::INVALID_HANDLE,
-                format!("No object found for handle: {}", handle),
-            )),
+    app_state.with_object(handle, |opt| match opt {
+        Some(state::StoredObject::IncrementalDFG(idfg)) => {
+            let (total, activities, edges) = idfg.stats();
+            let stats = StreamingDfgStats {
+                total_events: total,
+                unique_activities: activities,
+                unique_edges: edges,
+            };
+            serde_json::to_string(&stats).map_err(|e| {
+                error::wasm_err(
+                    codes::INTERNAL_ERROR,
+                    format!("JSON serialization failed: {}", e),
+                )
+            })
         }
+        Some(_) => Err(error::wasm_err(
+            codes::INVALID_HANDLE,
+            format!("Object {} is not an IncrementalDFG", handle),
+        )),
+        None => Err(error::wasm_err(
+            codes::INVALID_HANDLE,
+            format!("No object found for handle: {}", handle),
+        )),
     })
 }
 
@@ -446,10 +443,14 @@ pub fn streaming_dfg_string_event(handle: &str, activity: &str) -> Result<JsValu
             serde_wasm_bindgen::to_value(&json!({
                 "ok": true,
                 "event_count": sdfg.event_count(),
-            })).map_err(|e| JsValue::from_str(&e.to_string()))
+            }))
+            .map_err(|e| JsValue::from_str(&e.to_string()))
         }
         Some(_) => Err(JsValue::from_str("Object is not a StreamingDFG")),
-        None => Err(JsValue::from_str(&format!("StreamingDFG '{}' not found", handle))),
+        None => Err(JsValue::from_str(&format!(
+            "StreamingDFG '{}' not found",
+            handle
+        ))),
     })
 }
 
@@ -463,7 +464,10 @@ pub fn streaming_dfg_string_end_trace(handle: &str) -> Result<JsValue, JsValue> 
                 .map_err(|e| JsValue::from_str(&e.to_string()))
         }
         Some(_) => Err(JsValue::from_str("Object is not a StreamingDFG")),
-        None => Err(JsValue::from_str(&format!("StreamingDFG '{}' not found", handle))),
+        None => Err(JsValue::from_str(&format!(
+            "StreamingDFG '{}' not found",
+            handle
+        ))),
     })
 }
 
@@ -471,23 +475,24 @@ pub fn streaming_dfg_string_end_trace(handle: &str) -> Result<JsValue, JsValue> 
 #[wasm_bindgen]
 pub fn streaming_dfg_string_snapshot(handle: &str) -> Result<String, JsValue> {
     let app_state = state::get_or_init_state();
-    app_state.with_object(handle, |opt| {
-        match opt {
-            Some(state::StoredObject::StreamingDFG(sdfg)) => {
-                let dfg = sdfg.snapshot();
-                serde_json::to_string(&dfg).map_err(|e| {
-                    error::wasm_err(codes::INTERNAL_ERROR, format!("JSON serialization failed: {}", e))
-                })
-            }
-            Some(_) => Err(error::wasm_err(
-                codes::INVALID_HANDLE,
-                format!("Object {} is not a StreamingDFG", handle),
-            )),
-            None => Err(error::wasm_err(
-                codes::INVALID_HANDLE,
-                format!("No object found for handle: {}", handle),
-            )),
+    app_state.with_object(handle, |opt| match opt {
+        Some(state::StoredObject::StreamingDFG(sdfg)) => {
+            let dfg = sdfg.snapshot();
+            serde_json::to_string(&dfg).map_err(|e| {
+                error::wasm_err(
+                    codes::INTERNAL_ERROR,
+                    format!("JSON serialization failed: {}", e),
+                )
+            })
         }
+        Some(_) => Err(error::wasm_err(
+            codes::INVALID_HANDLE,
+            format!("Object {} is not a StreamingDFG", handle),
+        )),
+        None => Err(error::wasm_err(
+            codes::INVALID_HANDLE,
+            format!("No object found for handle: {}", handle),
+        )),
     })
 }
 
@@ -562,7 +567,11 @@ mod tests {
         assert_eq!(idfg.edges.get(&(3, 4)), Some(&1));
 
         // No cross-trace edges
-        assert_eq!(idfg.edges.get(&(2, 3)), None, "B->C should not exist (different traces)");
+        assert_eq!(
+            idfg.edges.get(&(2, 3)),
+            None,
+            "B->C should not exist (different traces)"
+        );
         assert_eq!(idfg.edges.get(&(2, 4)), None);
 
         // Start/end activities
@@ -589,7 +598,10 @@ mod tests {
 
         let (events, activities, edges) = a.stats();
         assert_eq!(events, 4, "merged should have 4 total events");
-        assert_eq!(activities, 3, "merged should have 3 unique activities (1, 2, 3)");
+        assert_eq!(
+            activities, 3,
+            "merged should have 3 unique activities (1, 2, 3)"
+        );
         assert_eq!(edges, 2, "merged should have 2 unique edges (1->2, 1->3)");
         assert_eq!(a.edges.get(&(1, 2)), Some(&1));
         assert_eq!(a.edges.get(&(1, 3)), Some(&1));
@@ -617,7 +629,10 @@ mod tests {
 
         // A is always start, never end
         assert!(idfg.start_activities.contains(&1));
-        assert!(!idfg.end_activities.contains(&1), "A is never the last activity");
+        assert!(
+            !idfg.end_activities.contains(&1),
+            "A is never the last activity"
+        );
 
         // B and C are both start and end across traces
         assert!(!idfg.start_activities.contains(&2), "B is never first");
@@ -733,7 +748,11 @@ mod tests {
         assert_eq!(events, 6, "3 traces * 2 events = 6");
         assert_eq!(activities, 1, "only activity 1");
         assert_eq!(edges, 1, "only one unique edge: 1->1");
-        assert_eq!(idfg.edges.get(&(1, 1)), Some(&3), "edge 1->1 should have count 3");
+        assert_eq!(
+            idfg.edges.get(&(1, 1)),
+            Some(&3),
+            "edge 1->1 should have count 3"
+        );
         assert_eq!(idfg.node_counts.get(&1), Some(&6));
     }
 }

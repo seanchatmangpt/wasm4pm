@@ -12,10 +12,7 @@ pub fn handle_empty_log(arena: &mut PowlArena) -> Result<u32, String> {
 }
 
 /// Handle log with only one unique activity
-pub fn handle_single_activity(
-    arena: &mut PowlArena,
-    activity: &str,
-) -> Result<u32, String> {
+pub fn handle_single_activity(arena: &mut PowlArena, activity: &str) -> Result<u32, String> {
     // Single activity → Transition with that label
     let idx = arena.add_transition(Some(activity.to_string()));
     Ok(idx)

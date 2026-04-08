@@ -10,15 +10,15 @@
 //! - [`BloomFilter`] — set membership for trace deduplication
 //! - [`StreamingLog`] — combines all three into a single streaming DFG builder
 
+pub mod bloom;
 pub mod count_min;
 pub mod hyperloglog;
-pub mod bloom;
 pub mod streaming_log;
 
 #[cfg(target_arch = "wasm32")]
 pub mod wasm_bindings;
 
+pub use bloom::BloomFilter;
 pub use count_min::CountMinSketch;
 pub use hyperloglog::HyperLogLog;
-pub use bloom::BloomFilter;
 pub use streaming_log::StreamingLog;

@@ -7,12 +7,12 @@
 //! Memory usage is proportional to `chunk_size`, not `total_log_size`, enabling
 //! logs that far exceed available RAM.
 
-use wasm_bindgen::prelude::*;
-use rustc_hash::FxHashMap;
+use crate::error::{codes, wasm_err};
 use crate::models::*;
 use crate::state::{get_or_init_state, StoredObject};
-use crate::error::{wasm_err, codes};
 use crate::utilities::to_js;
+use rustc_hash::FxHashMap;
+use wasm_bindgen::prelude::*;
 
 // ---------------------------------------------------------------------------
 // Core trait
@@ -106,7 +106,10 @@ impl Chunkable for DfgChunker {
 
             // Directly-follows edges
             for window in ids.windows(2) {
-                *result.edge_counts.entry((window[0], window[1])).or_insert(0) += 1;
+                *result
+                    .edge_counts
+                    .entry((window[0], window[1]))
+                    .or_insert(0) += 1;
             }
 
             // Start / end
@@ -185,8 +188,16 @@ impl DfgChunkResult {
             .edge_counts
             .iter()
             .map(|(&(f, t), &freq)| {
-                let from = if (f as usize) < vocab.len() { vocab[f as usize] } else { "?" };
-                let to = if (t as usize) < vocab.len() { vocab[t as usize] } else { "?" };
+                let from = if (f as usize) < vocab.len() {
+                    vocab[f as usize]
+                } else {
+                    "?"
+                };
+                let to = if (t as usize) < vocab.len() {
+                    vocab[t as usize]
+                } else {
+                    "?"
+                };
                 DirectlyFollowsRelation {
                     from: from.to_owned(),
                     to: to.to_owned(),
@@ -197,11 +208,19 @@ impl DfgChunkResult {
 
         // Start / end activities
         for (&id, &cnt) in &self.start_counts {
-            let name = if (id as usize) < vocab.len() { vocab[id as usize] } else { "?" };
+            let name = if (id as usize) < vocab.len() {
+                vocab[id as usize]
+            } else {
+                "?"
+            };
             dfg.start_activities.insert(name.to_owned(), cnt as usize);
         }
         for (&id, &cnt) in &self.end_counts {
-            let name = if (id as usize) < vocab.len() { vocab[id as usize] } else { "?" };
+            let name = if (id as usize) < vocab.len() {
+                vocab[id as usize]
+            } else {
+                "?"
+            };
             dfg.end_activities.insert(name.to_owned(), cnt as usize);
         }
 
@@ -358,7 +377,10 @@ pub fn discover_dfg_hierarchical_by_events(
     get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
             if max_chunk_events == 0 {
-                return Err(wasm_err(codes::INVALID_INPUT, "max_chunk_events must be >= 1"));
+                return Err(wasm_err(
+                    codes::INVALID_INPUT,
+                    "max_chunk_events must be >= 1",
+                ));
             }
 
             let config = HierarchicalConfig {
@@ -427,9 +449,7 @@ mod tests {
     /// Build a monolithic DFG for comparison.
     fn monolithic_dfg(log: &EventLog) -> DirectlyFollowsGraph {
         let col = log.to_columnar("concept:name");
-        let result = DfgChunker::discover_local(
-            &build_traces(&col),
-        );
+        let result = DfgChunker::discover_local(&build_traces(&col));
         result.to_dfg(&col.vocab)
     }
 
@@ -458,7 +478,10 @@ mod tests {
 
         let mono = monolithic_dfg(&log);
 
-        let config = HierarchicalConfig { num_chunks: 2, max_chunk_events: None };
+        let config = HierarchicalConfig {
+            num_chunks: 2,
+            max_chunk_events: None,
+        };
         let col = log.to_columnar("concept:name");
         let chunked = discover_hierarchical::<DfgChunker>(&log, "concept:name", &config);
         let chunked_dfg = chunked.to_dfg(&col.vocab);
@@ -482,7 +505,11 @@ mod tests {
         for (m, c) in mono_edges.iter().zip(chunked_edges.iter()) {
             assert_eq!(m.from, c.from, "edge from mismatch");
             assert_eq!(m.to, c.to, "edge to mismatch");
-            assert_eq!(m.frequency, c.frequency, "edge frequency mismatch for {} -> {}", m.from, m.to);
+            assert_eq!(
+                m.frequency, c.frequency,
+                "edge frequency mismatch for {} -> {}",
+                m.from, m.to
+            );
         }
 
         // Same start/end counts
@@ -507,7 +534,10 @@ mod tests {
 
         let mono = monolithic_dfg(&log);
 
-        let config = HierarchicalConfig { num_chunks: 10, max_chunk_events: None };
+        let config = HierarchicalConfig {
+            num_chunks: 10,
+            max_chunk_events: None,
+        };
         let col = log.to_columnar("concept:name");
         let chunked = discover_hierarchical::<DfgChunker>(&log, "concept:name", &config);
         let chunked_dfg = chunked.to_dfg(&col.vocab);
@@ -539,7 +569,10 @@ mod tests {
         let log = make_log(&[&["A", "B", "C"]]);
         let mono = monolithic_dfg(&log);
 
-        let config = HierarchicalConfig { num_chunks: 1, max_chunk_events: None };
+        let config = HierarchicalConfig {
+            num_chunks: 1,
+            max_chunk_events: None,
+        };
         let col = log.to_columnar("concept:name");
         let chunked = discover_hierarchical::<DfgChunker>(&log, "concept:name", &config);
         let chunked_dfg = chunked.to_dfg(&col.vocab);
@@ -574,7 +607,10 @@ mod tests {
 
         let mono = monolithic_dfg(&log);
 
-        let config = HierarchicalConfig { num_chunks: 1, max_chunk_events: None };
+        let config = HierarchicalConfig {
+            num_chunks: 1,
+            max_chunk_events: None,
+        };
         let col = log.to_columnar("concept:name");
         let chunked = discover_hierarchical::<DfgChunker>(&log, "concept:name", &config);
         let chunked_dfg = chunked.to_dfg(&col.vocab);
@@ -595,15 +631,9 @@ mod tests {
     #[test]
     fn test_merge_associativity() {
         // Build three separate chunk results and merge them in different orders
-        let chunk1 = DfgChunker::discover_local(&[
-            TraceInfo::from_ids(&[0, 1, 2]).unwrap(),
-        ]);
-        let chunk2 = DfgChunker::discover_local(&[
-            TraceInfo::from_ids(&[1, 2, 3]).unwrap(),
-        ]);
-        let chunk3 = DfgChunker::discover_local(&[
-            TraceInfo::from_ids(&[0, 3]).unwrap(),
-        ]);
+        let chunk1 = DfgChunker::discover_local(&[TraceInfo::from_ids(&[0, 1, 2]).unwrap()]);
+        let chunk2 = DfgChunker::discover_local(&[TraceInfo::from_ids(&[1, 2, 3]).unwrap()]);
+        let chunk3 = DfgChunker::discover_local(&[TraceInfo::from_ids(&[0, 3]).unwrap()]);
 
         let merged_abc = DfgChunker::merge(vec![
             DfgChunker::merge(vec![chunk1.clone(), chunk2.clone()]),
@@ -661,12 +691,7 @@ mod tests {
 
     #[test]
     fn test_hierarchical_config_max_events() {
-        let log = make_log(&[
-            &["A", "B"],
-            &["C", "D"],
-            &["E", "F"],
-            &["G", "H"],
-        ]);
+        let log = make_log(&[&["A", "B"], &["C", "D"], &["E", "F"], &["G", "H"]]);
 
         // 2 events per chunk, 4 traces * 2 events = 8 total -> 4 chunks
         let config = HierarchicalConfig {

@@ -1,7 +1,7 @@
-use wasm_bindgen::prelude::*;
 use crate::state::{get_or_init_state, StoredObject};
-use serde_json::json;
 use crate::utilities::to_js;
+use serde_json::json;
+use wasm_bindgen::prelude::*;
 
 /// Wrapper for EventLog - stores handle in WASM state
 #[wasm_bindgen]

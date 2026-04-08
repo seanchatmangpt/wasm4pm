@@ -3,7 +3,6 @@
  * All errors returned to JavaScript should follow this format:
  * { code: string, message: string, handle?: string }
  */
-
 use wasm_bindgen::prelude::*;
 
 /// Creates a structured error object for JavaScript

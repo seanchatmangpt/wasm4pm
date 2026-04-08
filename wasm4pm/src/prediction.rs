@@ -1,3 +1,6 @@
+use crate::models::NGramPredictor;
+use crate::state::{get_or_init_state, StoredObject};
+use serde_json::json;
 /// Priority 6 — N-gram next-activity predictor.
 ///
 /// Builds a predictive model from the traces in an event log.  Given a
@@ -7,9 +10,6 @@
 /// Model: n-gram Markov chain where n=2 means "bigram" (predict from the
 /// last 1 activity), n=3 means "trigram" (predict from the last 2), etc.
 use wasm_bindgen::prelude::*;
-use crate::state::{get_or_init_state, StoredObject};
-use crate::models::NGramPredictor;
-use serde_json::json;
 
 /// Build an n-gram predictor from an event log.
 ///
@@ -31,17 +31,26 @@ pub fn build_ngram_predictor(
     let n = n.max(2); // minimum bigram
     let predictor = get_or_init_state().with_object(log_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
-            let mut counts: std::collections::HashMap<Vec<String>, std::collections::HashMap<String, usize>> =
-                std::collections::HashMap::new();
+            let mut counts: std::collections::HashMap<
+                Vec<String>,
+                std::collections::HashMap<String, usize>,
+            > = std::collections::HashMap::new();
 
             for trace in &log.traces {
-                let acts: Vec<String> = trace.events.iter()
-                    .filter_map(|e| e.attributes.get(activity_key)
-                        .and_then(|v| v.as_string())
-                        .map(str::to_owned))
+                let acts: Vec<String> = trace
+                    .events
+                    .iter()
+                    .filter_map(|e| {
+                        e.attributes
+                            .get(activity_key)
+                            .and_then(|v| v.as_string())
+                            .map(str::to_owned)
+                    })
                     .collect();
 
-                if acts.len() < 2 { continue; }
+                if acts.len() < 2 {
+                    continue;
+                }
 
                 // For each position, record prefix → next_activity
                 for i in 0..acts.len() - 1 {
@@ -86,7 +95,8 @@ pub fn predict_next_activity(
     let result_json = get_or_init_state().with_object(predictor_handle, |obj| match obj {
         Some(StoredObject::NGramPredictor(predictor)) => {
             let predictions = predictor.predict(&prefix);
-            let arr: Vec<serde_json::Value> = predictions.iter()
+            let arr: Vec<serde_json::Value> = predictions
+                .iter()
                 .map(|(act, prob)| json!({"activity": act, "probability": prob}))
                 .collect();
             serde_json::to_string(&arr).map_err(|e| JsValue::from_str(&e.to_string()))
@@ -120,7 +130,8 @@ pub fn score_trace_likelihood(
                 let context_len = (predictor.n - 1).min(i + 1);
                 let prefix = acts[i + 1 - context_len..=i].to_vec();
                 let preds = predictor.predict(&prefix);
-                let prob = preds.iter()
+                let prob = preds
+                    .iter()
                     .find(|(a, _)| a == &acts[i + 1])
                     .map(|(_, p)| *p)
                     .unwrap_or(1e-10);

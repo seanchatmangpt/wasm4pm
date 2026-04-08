@@ -15,10 +15,10 @@
 pub mod base_case;
 pub mod cuts;
 pub mod fall_through;
-pub mod variants;
 pub mod from_dfg;
 pub mod from_partial_orders;
 pub mod ocel;
+pub mod variants;
 
 use crate::models::EventLog;
 use crate::powl_arena::PowlArena;
@@ -91,10 +91,7 @@ impl Default for DiscoveryConfig {
 }
 
 /// Discover a POWL model from an event log
-pub fn discover_powl(
-    log: &EventLog,
-    config: &DiscoveryConfig,
-) -> Result<(PowlArena, u32), String> {
+pub fn discover_powl(log: &EventLog, config: &DiscoveryConfig) -> Result<(PowlArena, u32), String> {
     let mut arena = PowlArena::new();
 
     let root = if config.from_dfg {
@@ -189,9 +186,7 @@ fn inductive_miner(
         | DiscoveryVariant::DecisionGraphClustering => {
             fall_through::decision_graph_fall_through(traces, arena, config)
         }
-        _ => {
-            fall_through::flower_model_fall_through(traces, arena, config)
-        }
+        _ => fall_through::flower_model_fall_through(traces, arena, config),
     }
 }
 
@@ -224,10 +219,7 @@ fn discover_tree_only(
 }
 
 /// Group traces by their activity sequence for cut detection
-fn group_traces_by_activity_sequence(
-    log: &EventLog,
-    activity_key: &str,
-) -> Vec<Vec<String>> {
+fn group_traces_by_activity_sequence(log: &EventLog, activity_key: &str) -> Vec<Vec<String>> {
     // For each trace, get the sequence of activities
     let mut unique_traces = std::collections::HashMap::new();
 
@@ -279,10 +271,7 @@ mod tests {
             DiscoveryVariant::Maximal,
             DiscoveryVariant::Tree,
         ] {
-            assert_eq!(
-                DiscoveryVariant::from_str(variant.as_str()),
-                Some(variant)
-            );
+            assert_eq!(DiscoveryVariant::from_str(variant.as_str()), Some(variant));
         }
     }
 }

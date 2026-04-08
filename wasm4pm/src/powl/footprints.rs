@@ -44,7 +44,10 @@ impl Footprints {
     }
 }
 
-fn fix_fp(mut sequence: ActivityPairs, mut parallel: ActivityPairs) -> (ActivityPairs, ActivityPairs) {
+fn fix_fp(
+    mut sequence: ActivityPairs,
+    mut parallel: ActivityPairs,
+) -> (ActivityPairs, ActivityPairs) {
     sequence = sequence.difference(&parallel).cloned().collect();
     let bidirectional: ActivityPairs = sequence
         .iter()
@@ -140,16 +143,8 @@ fn footprints_of_loop(do_fp: &Footprints, redo_fp: &Footprints) -> Footprints {
         .union(&redo_fp.activities)
         .cloned()
         .collect();
-    let mut sequence: ActivityPairs = do_fp
-        .sequence
-        .union(&redo_fp.sequence)
-        .cloned()
-        .collect();
-    let parallel: ActivityPairs = do_fp
-        .parallel
-        .union(&redo_fp.parallel)
-        .cloned()
-        .collect();
+    let mut sequence: ActivityPairs = do_fp.sequence.union(&redo_fp.sequence).cloned().collect();
+    let parallel: ActivityPairs = do_fp.parallel.union(&redo_fp.parallel).cloned().collect();
     let skippable = do_fp.skippable;
     let aah: ActivitySet = if !do_fp.skippable {
         do_fp.activities_always_happening.clone()
@@ -250,9 +245,7 @@ fn footprints_of_partial_order(
         .map(|i| {
             adj[i]
                 .iter()
-                .filter(|&&j| {
-                    !adj[i].iter().any(|&k| k != j && closure[k].contains(&j))
-                })
+                .filter(|&&j| !adj[i].iter().any(|&k| k != j && closure[k].contains(&j)))
                 .cloned()
                 .collect()
         })
@@ -264,9 +257,10 @@ fn footprints_of_partial_order(
 
     let mut start_activities: ActivitySet = Default::default();
     for (i, fp_c) in children_fps.iter().enumerate() {
-        let is_start = children_fps.iter().enumerate().all(|(pi, fp_p)| {
-            pi == i || fp_p.skippable || !closure[pi].contains(&i)
-        });
+        let is_start = children_fps
+            .iter()
+            .enumerate()
+            .all(|(pi, fp_p)| pi == i || fp_p.skippable || !closure[pi].contains(&i));
         if is_start {
             start_activities = start_activities
                 .union(&fp_c.start_activities)
@@ -277,9 +271,10 @@ fn footprints_of_partial_order(
 
     let mut end_activities: ActivitySet = Default::default();
     for (i, fp_c) in children_fps.iter().enumerate() {
-        let is_end = children_fps.iter().enumerate().all(|(qi, fp_q)| {
-            qi == i || fp_q.skippable || !closure[i].contains(&qi)
-        });
+        let is_end = children_fps
+            .iter()
+            .enumerate()
+            .all(|(qi, fp_q)| qi == i || fp_q.skippable || !closure[i].contains(&qi));
         if is_end {
             end_activities = end_activities
                 .union(&fp_c.end_activities)
@@ -304,7 +299,9 @@ fn footprints_of_partial_order(
                 continue;
             }
             let all_skippable_intermediates = children_fps.iter().enumerate().all(|(k, fp_k)| {
-                k == i || k == j || fp_k.skippable
+                k == i
+                    || k == j
+                    || fp_k.skippable
                     || !(closure[i].contains(&k) && closure[k].contains(&j))
             });
             if all_skippable_intermediates {
@@ -375,10 +372,8 @@ pub fn compute(
         Some(PowlNode::OperatorPowl(op)) => {
             let children = op.children.clone();
             let operator = op.operator;
-            let child_fps: Vec<Footprints> = children
-                .iter()
-                .map(|&c| compute(arena, c, cache))
-                .collect();
+            let child_fps: Vec<Footprints> =
+                children.iter().map(|&c| compute(arena, c, cache)).collect();
             match operator {
                 Operator::Xor => footprints_of_xor(&child_fps),
                 Operator::Loop if child_fps.len() == 2 => {
@@ -392,10 +387,8 @@ pub fn compute(
             let children = spo.children.clone();
             let order = spo.order.clone();
             let n = children.len();
-            let child_fps: Vec<Footprints> = children
-                .iter()
-                .map(|&c| compute(arena, c, cache))
-                .collect();
+            let child_fps: Vec<Footprints> =
+                children.iter().map(|&c| compute(arena, c, cache)).collect();
             footprints_of_partial_order(&child_fps, n, &|i, j| order.is_edge(i, j))
         }
 
@@ -404,10 +397,8 @@ pub fn compute(
             let children = dg.children.clone();
             let order = dg.order.clone();
             let n = children.len();
-            let child_fps: Vec<Footprints> = children
-                .iter()
-                .map(|&c| compute(arena, c, cache))
-                .collect();
+            let child_fps: Vec<Footprints> =
+                children.iter().map(|&c| compute(arena, c, cache)).collect();
             footprints_of_partial_order(&child_fps, n, &|i, j| order.is_edge(i, j))
         }
     };

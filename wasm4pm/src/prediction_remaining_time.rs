@@ -14,13 +14,13 @@
 //! | `predict_case_duration` | Point estimate for a running case prefix |
 //! | `predict_hazard_rate` | Instantaneous hazard at elapsed time *t* |
 
-use wasm_bindgen::prelude::*;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use wasm_bindgen::prelude::*;
 
-use crate::models::{AttributeValue, parse_timestamp_ms};
+use crate::error::{codes, wasm_err};
+use crate::models::{parse_timestamp_ms, AttributeValue};
 use crate::state::{get_or_init_state, StoredObject};
-use crate::error::{wasm_err, codes};
 
 // ---------------------------------------------------------------------------
 // Internal model types (serialized to JSON for handle storage)
@@ -78,7 +78,11 @@ fn weibull_shape_from_cv(cv: f64) -> f64 {
 /// Uses Stirling-like approximation for Γ since `std` has no gamma fn.
 fn weibull_scale(mean: f64, k: f64) -> f64 {
     let g = gamma_approx(1.0 + 1.0 / k);
-    if g > 0.0 { mean / g } else { mean }
+    if g > 0.0 {
+        mean / g
+    } else {
+        mean
+    }
 }
 
 /// Lanczos approximation of Γ(x) for x > 0.
@@ -141,24 +145,31 @@ pub fn build_remaining_time_model(
 
                 for trace in &log.traces {
                     // Extract (activity, timestamp_ms) pairs
-                    let events: Vec<(&str, i64)> = trace.events.iter().filter_map(|e| {
-                        let act = e.attributes.get(activity_key)
-                            .and_then(|v| v.as_string())?;
-                        let ts = match e.attributes.get(timestamp_key) {
-                            Some(AttributeValue::Date(d)) => parse_timestamp_ms(d),
-                            Some(AttributeValue::String(s)) => parse_timestamp_ms(s),
-                            Some(AttributeValue::Int(ms)) => Some(*ms),
-                            _ => None,
-                        }?;
-                        Some((act, ts))
-                    }).collect();
+                    let events: Vec<(&str, i64)> = trace
+                        .events
+                        .iter()
+                        .filter_map(|e| {
+                            let act = e.attributes.get(activity_key).and_then(|v| v.as_string())?;
+                            let ts = match e.attributes.get(timestamp_key) {
+                                Some(AttributeValue::Date(d)) => parse_timestamp_ms(d),
+                                Some(AttributeValue::String(s)) => parse_timestamp_ms(s),
+                                Some(AttributeValue::Int(ms)) => Some(*ms),
+                                _ => None,
+                            }?;
+                            Some((act, ts))
+                        })
+                        .collect();
 
-                    if events.len() < 2 { continue; }
+                    if events.len() < 2 {
+                        continue;
+                    }
 
                     let trace_start = events.first().unwrap().1;
                     let trace_end = events.last().unwrap().1;
                     let duration = (trace_end - trace_start) as f64;
-                    if duration <= 0.0 { continue; }
+                    if duration <= 0.0 {
+                        continue;
+                    }
                     case_durations.push(duration);
 
                     // For each prefix position, record remaining time
@@ -173,18 +184,23 @@ pub fn build_remaining_time_model(
                 Ok((bucket_samples, case_durations))
             }
             Some(_) => Err(wasm_err(codes::INVALID_HANDLE, "Handle is not an EventLog")),
-            None => Err(wasm_err(codes::INVALID_HANDLE,
-                format!("EventLog handle not found: {}", log_handle))),
+            None => Err(wasm_err(
+                codes::INVALID_HANDLE,
+                format!("EventLog handle not found: {}", log_handle),
+            )),
         }
     })?;
 
     if case_durations.is_empty() {
-        return Err(wasm_err(codes::INVALID_INPUT,
-            "No valid completed traces with timestamps found"));
+        return Err(wasm_err(
+            codes::INVALID_INPUT,
+            "No valid completed traces with timestamps found",
+        ));
     }
 
     // Compute bucket statistics
-    let buckets: HashMap<String, BucketStats> = bucket_samples.into_iter()
+    let buckets: HashMap<String, BucketStats> = bucket_samples
+        .into_iter()
         .map(|(key, samples)| {
             let stats = compute_stats(&samples);
             (key, stats)
@@ -192,7 +208,8 @@ pub fn build_remaining_time_model(
         .collect();
 
     // Global remaining-time stats (all samples flattened)
-    let all_remaining: Vec<f64> = buckets.values()
+    let all_remaining: Vec<f64> = buckets
+        .values()
         .flat_map(|b| std::iter::repeat_n(b.mean_ms, b.count))
         .collect();
     let global = if all_remaining.is_empty() {
@@ -200,12 +217,17 @@ pub fn build_remaining_time_model(
     } else {
         // Weighted average from bucket means
         let total_count: usize = buckets.values().map(|b| b.count).sum();
-        let weighted_mean: f64 = buckets.values()
+        let weighted_mean: f64 = buckets
+            .values()
             .map(|b| b.mean_ms * b.count as f64)
-            .sum::<f64>() / total_count as f64;
-        let weighted_var: f64 = buckets.values()
+            .sum::<f64>()
+            / total_count as f64;
+        let weighted_var: f64 = buckets
+            .values()
             .map(|b| (b.std_ms.powi(2) + b.mean_ms.powi(2)) * b.count as f64)
-            .sum::<f64>() / total_count as f64 - weighted_mean.powi(2);
+            .sum::<f64>()
+            / total_count as f64
+            - weighted_mean.powi(2);
         BucketStats {
             mean_ms: weighted_mean,
             std_ms: weighted_var.max(0.0).sqrt(),
@@ -215,7 +237,11 @@ pub fn build_remaining_time_model(
 
     // Fit Weibull to case durations
     let dur_stats = compute_stats(&case_durations);
-    let cv = if dur_stats.mean_ms > 0.0 { dur_stats.std_ms / dur_stats.mean_ms } else { 1.0 };
+    let cv = if dur_stats.mean_ms > 0.0 {
+        dur_stats.std_ms / dur_stats.mean_ms
+    } else {
+        1.0
+    };
     let shape = weibull_shape_from_cv(cv);
     let scale = weibull_scale(dur_stats.mean_ms, shape);
 
@@ -233,8 +259,12 @@ pub fn build_remaining_time_model(
         median_duration_ms,
     };
 
-    let json = serde_json::to_string(&model)
-        .map_err(|e| wasm_err(codes::INTERNAL_ERROR, format!("Serialization failed: {}", e)))?;
+    let json = serde_json::to_string(&model).map_err(|e| {
+        wasm_err(
+            codes::INTERNAL_ERROR,
+            format!("Serialization failed: {}", e),
+        )
+    })?;
     let handle = state.store_object(StoredObject::JsonString(json))?;
     Ok(JsValue::from_str(&handle))
 }
@@ -265,13 +295,9 @@ pub fn build_remaining_time_model(
 /// 3. Same `prefix_length`, any activity
 /// 4. Global fallback
 #[wasm_bindgen]
-pub fn predict_case_duration(
-    model_handle: &str,
-    prefix_json: &str,
-) -> Result<JsValue, JsValue> {
+pub fn predict_case_duration(model_handle: &str, prefix_json: &str) -> Result<JsValue, JsValue> {
     let prefix: Vec<String> = serde_json::from_str(prefix_json)
-        .map_err(|e| wasm_err(codes::INVALID_INPUT,
-            format!("Invalid prefix JSON: {}", e)))?;
+        .map_err(|e| wasm_err(codes::INVALID_INPUT, format!("Invalid prefix JSON: {}", e)))?;
 
     if prefix.is_empty() {
         return Err(wasm_err(codes::INVALID_INPUT, "Prefix must be non-empty"));
@@ -282,15 +308,26 @@ pub fn predict_case_duration(
     state.with_object(model_handle, |obj| {
         let json_str = match obj {
             Some(StoredObject::JsonString(s)) => s,
-            Some(_) => return Err(wasm_err(codes::INVALID_HANDLE,
-                "Handle is not a RemainingTimeModel")),
-            None => return Err(wasm_err(codes::INVALID_HANDLE,
-                format!("Model handle not found: {}", model_handle))),
+            Some(_) => {
+                return Err(wasm_err(
+                    codes::INVALID_HANDLE,
+                    "Handle is not a RemainingTimeModel",
+                ))
+            }
+            None => {
+                return Err(wasm_err(
+                    codes::INVALID_HANDLE,
+                    format!("Model handle not found: {}", model_handle),
+                ))
+            }
         };
 
-        let model: RemainingTimeModel = serde_json::from_str(json_str)
-            .map_err(|e| wasm_err(codes::INTERNAL_ERROR,
-                format!("Model deserialization failed: {}", e)))?;
+        let model: RemainingTimeModel = serde_json::from_str(json_str).map_err(|e| {
+            wasm_err(
+                codes::INTERNAL_ERROR,
+                format!("Model deserialization failed: {}", e),
+            )
+        })?;
 
         let last_activity = prefix.last().unwrap();
         let prefix_len = prefix.len();
@@ -308,16 +345,20 @@ pub fn predict_case_duration(
         }
 
         // Strategy 2: same activity, any prefix length
-        let activity_buckets: Vec<&BucketStats> = model.buckets.iter()
+        let activity_buckets: Vec<&BucketStats> = model
+            .buckets
+            .iter()
             .filter(|(k, _)| k.starts_with(&format!("{}|", last_activity)))
             .map(|(_, v)| v)
             .collect();
 
         if !activity_buckets.is_empty() {
             let total_count: usize = activity_buckets.iter().map(|b| b.count).sum();
-            let weighted_mean: f64 = activity_buckets.iter()
+            let weighted_mean: f64 = activity_buckets
+                .iter()
                 .map(|b| b.mean_ms * b.count as f64)
-                .sum::<f64>() / total_count as f64;
+                .sum::<f64>()
+                / total_count as f64;
             let bucket_avg = BucketStats {
                 mean_ms: weighted_mean,
                 std_ms: 0.0,
@@ -334,16 +375,20 @@ pub fn predict_case_duration(
 
         // Strategy 3: same prefix length, any activity
         let suffix = format!("|{}", prefix_len);
-        let length_buckets: Vec<&BucketStats> = model.buckets.iter()
+        let length_buckets: Vec<&BucketStats> = model
+            .buckets
+            .iter()
             .filter(|(k, _)| k.ends_with(&suffix))
             .map(|(_, v)| v)
             .collect();
 
         if !length_buckets.is_empty() {
             let total_count: usize = length_buckets.iter().map(|b| b.count).sum();
-            let weighted_mean: f64 = length_buckets.iter()
+            let weighted_mean: f64 = length_buckets
+                .iter()
                 .map(|b| b.mean_ms * b.count as f64)
-                .sum::<f64>() / total_count as f64;
+                .sum::<f64>()
+                / total_count as f64;
             let confidence = (total_count as f64 / (total_count as f64 + 10.0)) * 0.6;
             let result = serde_json::json!({
                 "remaining_ms": weighted_mean,
@@ -392,12 +437,12 @@ pub fn predict_case_duration(
 /// - `cumulative_hazard` H(t) = (t/λ)^k
 /// - `median_remaining_ms` — estimated time until 50 % completion probability
 #[wasm_bindgen]
-pub fn predict_hazard_rate(
-    model_handle: &str,
-    elapsed_ms: f64,
-) -> Result<JsValue, JsValue> {
+pub fn predict_hazard_rate(model_handle: &str, elapsed_ms: f64) -> Result<JsValue, JsValue> {
     if elapsed_ms < 0.0 {
-        return Err(wasm_err(codes::INVALID_INPUT, "elapsed_ms must be non-negative"));
+        return Err(wasm_err(
+            codes::INVALID_INPUT,
+            "elapsed_ms must be non-negative",
+        ));
     }
 
     let state = get_or_init_state();
@@ -405,22 +450,35 @@ pub fn predict_hazard_rate(
     state.with_object(model_handle, |obj| {
         let json_str = match obj {
             Some(StoredObject::JsonString(s)) => s,
-            Some(_) => return Err(wasm_err(codes::INVALID_HANDLE,
-                "Handle is not a RemainingTimeModel")),
-            None => return Err(wasm_err(codes::INVALID_HANDLE,
-                format!("Model handle not found: {}", model_handle))),
+            Some(_) => {
+                return Err(wasm_err(
+                    codes::INVALID_HANDLE,
+                    "Handle is not a RemainingTimeModel",
+                ))
+            }
+            None => {
+                return Err(wasm_err(
+                    codes::INVALID_HANDLE,
+                    format!("Model handle not found: {}", model_handle),
+                ))
+            }
         };
 
-        let model: RemainingTimeModel = serde_json::from_str(json_str)
-            .map_err(|e| wasm_err(codes::INTERNAL_ERROR,
-                format!("Model deserialization failed: {}", e)))?;
+        let model: RemainingTimeModel = serde_json::from_str(json_str).map_err(|e| {
+            wasm_err(
+                codes::INTERNAL_ERROR,
+                format!("Model deserialization failed: {}", e),
+            )
+        })?;
 
         let k = model.weibull.shape;
         let lambda = model.weibull.scale;
 
         if lambda <= 0.0 {
-            return Err(wasm_err(codes::INTERNAL_ERROR,
-                "Invalid Weibull scale (λ ≤ 0)"));
+            return Err(wasm_err(
+                codes::INTERNAL_ERROR,
+                "Invalid Weibull scale (λ ≤ 0)",
+            ));
         }
 
         let t = elapsed_ms.max(1.0); // avoid t=0 singularity when k < 1
@@ -441,7 +499,8 @@ pub fn predict_hazard_rate(
         // exp(-((t+r)/λ)^k + (t/λ)^k) = 0.5
         // ((t+r)/λ)^k = (t/λ)^k + ln(2)
         // t+r = λ * ((t/λ)^k + ln(2))^{1/k}
-        let median_remaining = lambda * (cumulative_hazard + std::f64::consts::LN_2).powf(1.0 / k) - t;
+        let median_remaining =
+            lambda * (cumulative_hazard + std::f64::consts::LN_2).powf(1.0 / k) - t;
         let median_remaining = median_remaining.max(0.0);
 
         let result = serde_json::json!({
@@ -464,7 +523,11 @@ pub fn predict_hazard_rate(
 fn compute_stats(samples: &[f64]) -> BucketStats {
     let n = samples.len();
     if n == 0 {
-        return BucketStats { mean_ms: 0.0, std_ms: 0.0, count: 0 };
+        return BucketStats {
+            mean_ms: 0.0,
+            std_ms: 0.0,
+            count: 0,
+        };
     }
     let mean = samples.iter().sum::<f64>() / n as f64;
     let variance = if n > 1 {
@@ -472,7 +535,11 @@ fn compute_stats(samples: &[f64]) -> BucketStats {
     } else {
         0.0
     };
-    BucketStats { mean_ms: mean, std_ms: variance.sqrt(), count: n }
+    BucketStats {
+        mean_ms: mean,
+        std_ms: variance.sqrt(),
+        count: n,
+    }
 }
 
 /// Confidence heuristic: higher when bucket has many samples and low variance
@@ -482,8 +549,16 @@ fn confidence_from_bucket(bucket: &BucketStats, global: &BucketStats) -> f64 {
     let size_factor = bucket.count as f64 / (bucket.count as f64 + 10.0);
 
     // Precision component: 1 - (bucket_cv / global_cv), clamped [0, 1]
-    let bucket_cv = if bucket.mean_ms > 0.0 { bucket.std_ms / bucket.mean_ms } else { 0.0 };
-    let global_cv = if global.mean_ms > 0.0 { global.std_ms / global.mean_ms } else { 1.0 };
+    let bucket_cv = if bucket.mean_ms > 0.0 {
+        bucket.std_ms / bucket.mean_ms
+    } else {
+        0.0
+    };
+    let global_cv = if global.mean_ms > 0.0 {
+        global.std_ms / global.mean_ms
+    } else {
+        1.0
+    };
     let precision_factor = if global_cv > 0.0 {
         (1.0 - bucket_cv / global_cv).max(0.0).min(1.0)
     } else {
@@ -537,8 +612,16 @@ mod tests {
 
     #[test]
     fn test_confidence_high_sample() {
-        let bucket = BucketStats { mean_ms: 100.0, std_ms: 10.0, count: 100 };
-        let global = BucketStats { mean_ms: 200.0, std_ms: 100.0, count: 1000 };
+        let bucket = BucketStats {
+            mean_ms: 100.0,
+            std_ms: 10.0,
+            count: 100,
+        };
+        let global = BucketStats {
+            mean_ms: 200.0,
+            std_ms: 100.0,
+            count: 1000,
+        };
         let conf = confidence_from_bucket(&bucket, &global);
         assert!(conf > 0.5);
     }

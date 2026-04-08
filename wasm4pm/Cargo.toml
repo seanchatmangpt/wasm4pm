@@ -5,7 +5,30 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 description = "High-performance process mining algorithms in WebAssembly for JavaScript/TypeScript"
 repository = "https://github.com/seanchatmangpt/wasm4pm"
-documentation = "https://github.com/seanchatmangpt/wasm4pm/blob/main/README.md"
+documentation = "https://docs.rs/wasm4pm"
+homepage = "https://github.com/seanchatmangpt/wasm4pm"
+readme = "README.md"
+keywords = [
+    "process-mining",
+    "wasm",
+    "webassembly",
+    "data-mining",
+    "event-log",
+    "process-discovery",
+    "conformance",
+    "petri-net",
+    "bpm",
+    "business-process-management",
+    "analytics",
+    "prediction",
+]
+categories = [
+    "wasm",
+    "algorithms",
+    "data-structures",
+    "science",
+]
+authors = ["Sean Chatman <info@chatmangpt.com>"]
 
 [package.metadata.wasm-pack.profile.release]
 wasm-opt = false
@@ -27,7 +50,7 @@ itertools = "0.14.0"
 rustc-hash = "2"
 smallvec = { version = "1.13", features = ["serde"] }
 roxmltree = "0.19"
-fastrand = "2"
+fastrand = "2.1.0"
 statrs = { version = "0.17", default-features = false, optional = true }
 rayon = "1.10"
 

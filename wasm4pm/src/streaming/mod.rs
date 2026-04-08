@@ -34,21 +34,21 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-pub mod streaming_dfg;
-pub mod streaming_skeleton;
-pub mod streaming_heuristic;
 pub mod streaming_alpha;
-pub mod streaming_declare;
-pub mod streaming_inductive;
-pub mod streaming_hill_climbing;
-pub mod streaming_noise_filtered_dfg;
 pub mod streaming_astar;
+pub mod streaming_declare;
+pub mod streaming_dfg;
+pub mod streaming_heuristic;
+pub mod streaming_hill_climbing;
 pub mod streaming_hybrid;
+pub mod streaming_inductive;
+pub mod streaming_noise_filtered_dfg;
+pub mod streaming_skeleton;
 
 // Re-export main streaming builders
 pub use streaming_dfg::StreamingDfgBuilder;
-pub use streaming_skeleton::StreamingSkeletonBuilder;
 pub use streaming_heuristic::StreamingHeuristicBuilder;
+pub use streaming_skeleton::StreamingSkeletonBuilder;
 
 /// Memory and progress statistics for a streaming session.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -105,7 +105,10 @@ pub trait StreamingAlgorithm {
     /// Finalize the stream: close all traces and return the final model.
     ///
     /// After this call, the streaming instance is consumed and cannot be used further.
-    fn finalize(mut self) -> Self::Model where Self: Sized {
+    fn finalize(mut self) -> Self::Model
+    where
+        Self: Sized,
+    {
         // Flush any remaining open traces
         let case_ids: Vec<String> = self.open_trace_ids();
         for case_id in case_ids {

@@ -8,7 +8,9 @@
 //! - Noise filtering (threshold-based edge pruning)
 
 use crate::models::DirectlyFollowsGraph;
-use crate::streaming::{StreamingAlgorithm, StreamStats, ActivityInterner, impl_activity_interner, Interner};
+use crate::streaming::{
+    impl_activity_interner, ActivityInterner, Interner, StreamStats, StreamingAlgorithm,
+};
 use rustc_hash::FxHashMap;
 use std::collections::HashMap;
 
@@ -127,27 +129,35 @@ impl StreamingHeuristicBuilder {
         let mut dfg = DirectlyFollowsGraph::new();
 
         // Nodes
-        dfg.nodes = self.interner.vocab().iter().enumerate().map(|(i, name)| {
-            crate::models::DFGNode {
+        dfg.nodes = self
+            .interner
+            .vocab()
+            .iter()
+            .enumerate()
+            .map(|(i, name)| crate::models::DFGNode {
                 id: name.clone(),
                 label: name.clone(),
                 frequency: self.activity_counts.get(i).copied().unwrap_or(0),
-            }
-        }).collect();
+            })
+            .collect();
 
         // Edges filtered by dependency score
-        dfg.edges = self.edge_counts.iter().filter_map(|(&(from, to), &freq)| {
-            let dep_score = self.dependency_score(from, to);
-            if dep_score.abs() >= threshold {
-                Some(crate::models::DirectlyFollowsRelation {
-                    from: self.interner.get(from).unwrap_or("").to_string(),
-                    to: self.interner.get(to).unwrap_or("").to_string(),
-                    frequency: freq,
-                })
-            } else {
-                None
-            }
-        }).collect();
+        dfg.edges = self
+            .edge_counts
+            .iter()
+            .filter_map(|(&(from, to), &freq)| {
+                let dep_score = self.dependency_score(from, to);
+                if dep_score.abs() >= threshold {
+                    Some(crate::models::DirectlyFollowsRelation {
+                        from: self.interner.get(from).unwrap_or("").to_string(),
+                        to: self.interner.get(to).unwrap_or("").to_string(),
+                        frequency: freq,
+                    })
+                } else {
+                    None
+                }
+            })
+            .collect();
 
         // Start/end activities
         for (&id, &cnt) in &self.start_counts {
@@ -170,11 +180,10 @@ impl StreamingHeuristicBuilder {
 
         for (&(from, to), _) in &self.edge_counts {
             let score = self.dependency_score(from, to);
-            if let (Some(from_name), Some(to_name)) = (self.interner.get(from), self.interner.get(to)) {
-                matrix.insert(
-                    (from_name.to_string(), to_name.to_string()),
-                    score
-                );
+            if let (Some(from_name), Some(to_name)) =
+                (self.interner.get(from), self.interner.get(to))
+            {
+                matrix.insert((from_name.to_string(), to_name.to_string()), score);
             }
         }
 
@@ -205,8 +214,12 @@ impl StreamingAlgorithm for StreamingHeuristicBuilder {
     }
 
     fn close_trace(&mut self, case_id: &str) -> bool {
-        let Some(events) = self.open_traces.remove(case_id) else { return false; };
-        if events.is_empty() { return true; }
+        let Some(events) = self.open_traces.remove(case_id) else {
+            return false;
+        };
+        if events.is_empty() {
+            return true;
+        }
 
         // Activity frequencies
         for &id in &events {

@@ -1,3 +1,7 @@
+use crate::models::parse_timestamp_ms;
+use crate::state::{get_or_init_state, StoredObject};
+use serde_json::json;
+use std::collections::HashMap;
 /// Priority 5C — Resource-centric analysis.
 ///
 /// Analyzes which resources (people, machines) are performing which activities,
@@ -10,12 +14,7 @@
 ///   specialization scores (Herfindahl index).
 /// - identify_resource_bottlenecks: Compute waiting times, processing times,
 ///   queue sizes for each resource.
-
 use wasm_bindgen::prelude::*;
-use crate::state::{get_or_init_state, StoredObject};
-use crate::models::parse_timestamp_ms;
-use serde_json::json;
-use std::collections::HashMap;
 
 /// Analyze resource utilization: total events, time periods, concurrent cases, top activities.
 ///

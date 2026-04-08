@@ -1,8 +1,8 @@
-use wasm_bindgen::prelude::*;
-use crate::state::{get_or_init_state, StoredObject};
 use crate::models::*;
-use serde_json::json;
+use crate::state::{get_or_init_state, StoredObject};
 use crate::utilities::to_js;
+use serde_json::json;
+use wasm_bindgen::prelude::*;
 
 /// Check conformance using token-based replay
 #[wasm_bindgen]
@@ -36,11 +36,14 @@ pub fn check_token_based_replay(
                     .iter()
                     .enumerate()
                     .filter(|(_, e)| !e.attributes.contains_key(activity_key))
-                    .map(#[inline] |(event_idx, _)| TokenReplayDeviation {
-                        event_index: event_idx,
-                        activity: "unknown".to_string(),
-                        deviation_type: "missing_activity".to_string(),
-                    })
+                    .map(
+                        #[inline]
+                        |(event_idx, _)| TokenReplayDeviation {
+                            event_index: event_idx,
+                            activity: "unknown".to_string(),
+                            deviation_type: "missing_activity".to_string(),
+                        },
+                    )
                     .collect();
 
                 let matched = trace.events.len() - deviations.len();

@@ -1,11 +1,11 @@
+use crate::state::{get_or_init_state, StoredObject};
+use serde_json::json;
 /// Priority 3 — DECLARE conformance checking.
 ///
 /// Checks every trace in an event log against a stored DECLARE model.
 /// Currently supports the "Response(A,B)" template (if A occurs, B must
 /// follow it).  Returns per-constraint and overall fitness metrics.
 use wasm_bindgen::prelude::*;
-use crate::state::{get_or_init_state, StoredObject};
-use serde_json::json;
 
 /// Check an EventLog against a DECLARE model.
 ///
@@ -43,7 +43,9 @@ pub fn check_declare_conformance(
             let mut violations: Vec<usize> = vec![0; constraints.len()];
 
             for trace in &log.traces {
-                let acts: Vec<&str> = trace.events.iter()
+                let acts: Vec<&str> = trace
+                    .events
+                    .iter()
                     .filter_map(|e| e.attributes.get(activity_key).and_then(|v| v.as_string()))
                     .collect();
 
@@ -84,21 +86,33 @@ pub fn check_declare_conformance(
                             let mut a_seen = false;
                             let mut violates = false;
                             for &act in &acts {
-                                if act == a { a_seen = true; }
-                                if act == b && !a_seen { violates = true; break; }
+                                if act == a {
+                                    a_seen = true;
+                                }
+                                if act == b && !a_seen {
+                                    violates = true;
+                                    break;
+                                }
                             }
                             violates
                         }
                         _ => false, // Unknown template: no violation
                     };
-                    if violated { violations[ci] += 1; }
+                    if violated {
+                        violations[ci] += 1;
+                    }
                 }
             }
 
-            let constraint_results: Vec<serde_json::Value> = constraints.iter()
+            let constraint_results: Vec<serde_json::Value> = constraints
+                .iter()
                 .zip(violations.iter())
                 .map(|(c, &v)| {
-                    let fitness = if total == 0 { 1.0 } else { 1.0 - v as f64 / total as f64 };
+                    let fitness = if total == 0 {
+                        1.0
+                    } else {
+                        1.0 - v as f64 / total as f64
+                    };
                     json!({
                         "template": c.template,
                         "activities": c.activities,
@@ -112,16 +126,19 @@ pub fn check_declare_conformance(
             let avg_fitness = if constraint_results.is_empty() {
                 1.0_f64
             } else {
-                constraint_results.iter()
+                constraint_results
+                    .iter()
                     .map(|r| r["fitness"].as_f64().unwrap_or(1.0))
-                    .sum::<f64>() / constraint_results.len() as f64
+                    .sum::<f64>()
+                    / constraint_results.len() as f64
             };
 
             serde_json::to_string(&json!({
                 "total_traces": total,
                 "avg_fitness": avg_fitness,
                 "constraints": constraint_results,
-            })).map_err(|e| JsValue::from_str(&e.to_string()))
+            }))
+            .map_err(|e| JsValue::from_str(&e.to_string()))
         }
         Some(_) => Err(JsValue::from_str("Handle is not an EventLog")),
         None => Err(JsValue::from_str("EventLog handle not found")),
@@ -141,7 +158,6 @@ pub fn check_declare_conformance(
 pub fn store_declare_from_json(declare_json: &str) -> Result<JsValue, JsValue> {
     let model: crate::models::DeclareModel = serde_json::from_str(declare_json)
         .map_err(|e| JsValue::from_str(&format!("Invalid DECLARE JSON: {}", e)))?;
-    let handle = get_or_init_state()
-        .store_object(StoredObject::DeclareModel(model))?;
+    let handle = get_or_init_state().store_object(StoredObject::DeclareModel(model))?;
     Ok(JsValue::from_str(&handle))
 }

@@ -3,9 +3,9 @@
 //! Discovery from pre-computed Directly Follows Graph (DFG).
 //! Supports 4 variants: tree, maximal, dynamic_clustering, decision_graph_cyclic.
 
+use super::{DiscoveryConfig, DiscoveryVariant};
 use crate::models::EventLog;
 use crate::powl_arena::PowlArena;
-use super::{DiscoveryConfig, DiscoveryVariant};
 use std::collections::{HashMap, HashSet};
 
 /// Discover POWL from pre-computed DFG
@@ -31,12 +31,8 @@ pub fn discover_from_dfg(
     let traces = build_traces_from_dfg(&dfg_edges, log, &config.activity_key);
 
     match config.variant {
-        DiscoveryVariant::Tree => {
-            super::discover_tree_only(&traces, arena, config)
-        }
-        _ => {
-            super::inductive_miner(&traces, arena, config)
-        }
+        DiscoveryVariant::Tree => super::discover_tree_only(&traces, arena, config),
+        _ => super::inductive_miner(&traces, arena, config),
     }
 }
 
@@ -53,7 +49,10 @@ fn build_traces_from_dfg(
     let mut all_activities: HashSet<&str> = HashSet::new();
 
     for (src, tgt, _count) in dfg_edges {
-        adjacency.entry(src.as_str()).or_default().push(tgt.as_str());
+        adjacency
+            .entry(src.as_str())
+            .or_default()
+            .push(tgt.as_str());
         all_activities.insert(src.as_str());
         all_activities.insert(tgt.as_str());
     }

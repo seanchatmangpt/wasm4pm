@@ -6,7 +6,9 @@
 //! at snapshot time based on configurable thresholds.
 
 use crate::models::DeclareConstraint;
-use crate::streaming::{StreamingAlgorithm, StreamStats, ActivityInterner, impl_activity_interner, Interner};
+use crate::streaming::{
+    impl_activity_interner, ActivityInterner, Interner, StreamStats, StreamingAlgorithm,
+};
 use rustc_hash::FxHashMap;
 use std::collections::{HashMap, HashSet};
 
@@ -169,8 +171,12 @@ impl StreamingAlgorithm for StreamingDeclareBuilder {
     }
 
     fn close_trace(&mut self, case_id: &str) -> bool {
-        let Some(events) = self.open_traces.remove(case_id) else { return false; };
-        if events.is_empty() { return true; }
+        let Some(events) = self.open_traces.remove(case_id) else {
+            return false;
+        };
+        if events.is_empty() {
+            return true;
+        }
 
         for &id in &events {
             self.activity_counts[id as usize] += 1;
@@ -204,14 +210,17 @@ impl StreamingAlgorithm for StreamingDeclareBuilder {
 
     fn stats(&self) -> StreamStats {
         let open_trace_events: usize = self.open_traces.values().map(|v| v.len()).sum();
-        let memory_bytes =
-            self.open_traces.capacity() * (std::mem::size_of::<String>() + std::mem::size_of::<Vec<u32>>()) +
-            open_trace_events * std::mem::size_of::<u32>() +
-            self.activity_counts.capacity() * std::mem::size_of::<usize>() +
-            self.response_counts.capacity() * (std::mem::size_of::<(u32,u32)>() + std::mem::size_of::<usize>()) +
-            self.precedence_counts.capacity() * (std::mem::size_of::<(u32,u32)>() + std::mem::size_of::<usize>()) +
-            self.coexistence_counts.capacity() * (std::mem::size_of::<(u32,u32)>() + std::mem::size_of::<usize>()) +
-            self.trace_activity_sets.capacity() * std::mem::size_of::<HashSet<u32>>();
+        let memory_bytes = self.open_traces.capacity()
+            * (std::mem::size_of::<String>() + std::mem::size_of::<Vec<u32>>())
+            + open_trace_events * std::mem::size_of::<u32>()
+            + self.activity_counts.capacity() * std::mem::size_of::<usize>()
+            + self.response_counts.capacity()
+                * (std::mem::size_of::<(u32, u32)>() + std::mem::size_of::<usize>())
+            + self.precedence_counts.capacity()
+                * (std::mem::size_of::<(u32, u32)>() + std::mem::size_of::<usize>())
+            + self.coexistence_counts.capacity()
+                * (std::mem::size_of::<(u32, u32)>() + std::mem::size_of::<usize>())
+            + self.trace_activity_sets.capacity() * std::mem::size_of::<HashSet<u32>>();
 
         StreamStats {
             event_count: self.event_count,
@@ -266,8 +275,14 @@ mod tests {
         assert!(!model.constraints.is_empty());
 
         // Should have at least a response(A, B) constraint
-        let has_response = model.constraints.iter().any(|c| c.template.starts_with("response"));
-        assert!(has_response, "Should emit response constraint for A always before B");
+        let has_response = model
+            .constraints
+            .iter()
+            .any(|c| c.template.starts_with("response"));
+        assert!(
+            has_response,
+            "Should emit response constraint for A always before B"
+        );
     }
 
     #[test]

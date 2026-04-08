@@ -1,3 +1,5 @@
+use crate::utilities::to_js;
+use serde_json::json;
 /// Capability Registry — LLM-discoverable tool catalog
 ///
 /// Provides a complete inventory of wasm4pm functions for Claude and other LLMs
@@ -5,10 +7,7 @@
 ///
 /// Part of Van der Aalst's 5 Connections framework:
 /// Connection 4: Generative AI (LLM-based process improvement)
-
 use wasm_bindgen::prelude::*;
-use serde_json::json;
-use crate::utilities::to_js;
 
 /// Get the complete capability registry of all wasm4pm functions
 #[wasm_bindgen]

@@ -2,9 +2,9 @@
 //!
 //! Implements 8 discovery variants with different cut detection strategies.
 
+use super::{DiscoveryConfig, DiscoveryVariant};
 use crate::models::EventLog;
 use crate::powl_arena::PowlArena;
-use super::{DiscoveryConfig, DiscoveryVariant};
 
 /// Apply a specific discovery variant
 pub fn apply_variant(
