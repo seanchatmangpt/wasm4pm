@@ -440,7 +440,6 @@ export async function implementAlgorithmStep(
       // ── ML Analysis (dynamic import from @wasm4pm/ml) ──────
 
       case 'ml_classify': {
-        // @ts-expect-error — runtime-only dynamic import (not a build dependency)
         const { classifyTraces } = await import('@wasm4pm/ml');
         const configJson = JSON.stringify({
           features: ['trace_length', 'elapsed_time', 'activity_counts', 'rework_count', 'unique_activities', 'avg_inter_event_time'],
@@ -457,7 +456,6 @@ export async function implementAlgorithmStep(
       }
 
       case 'ml_cluster': {
-        // @ts-expect-error — runtime-only dynamic import
         const { clusterTraces } = await import('@wasm4pm/ml');
         const configJson = JSON.stringify({
           features: ['trace_length', 'elapsed_time', 'activity_counts', 'rework_count', 'unique_activities'],
@@ -474,20 +472,19 @@ export async function implementAlgorithmStep(
       }
 
       case 'ml_forecast': {
-        // @ts-expect-error — runtime-only dynamic import
-        const { forecastThroughput } = await import('@wasm4pm/ml');
+        const { forecastSeries } = await import('@wasm4pm/ml');
         const driftRaw = (wasmModule as any).detect_drift(eventLogHandle, activityKey, 5);
         const driftResult = typeof driftRaw === 'string' ? JSON.parse(driftRaw) : driftRaw;
         const distances = (driftResult?.drifts ?? []).map((d: any) => d.distance ?? 0);
-        const result = await forecastThroughput(distances, {
+        const result = await forecastSeries(distances, {
           forecastPeriods: (params.forecast_periods as number) ?? 5,
+          useExponential: params.use_exponential as boolean,
         });
         modelHandle = JSON.stringify(result);
         break;
       }
 
       case 'ml_anomaly': {
-        // @ts-expect-error — runtime-only dynamic import
         const { detectEnhancedAnomalies } = await import('@wasm4pm/ml');
         const driftRaw = (wasmModule as any).detect_drift(eventLogHandle, activityKey, 10);
         const driftResult = typeof driftRaw === 'string' ? JSON.parse(driftRaw) : driftRaw;
@@ -500,7 +497,6 @@ export async function implementAlgorithmStep(
       }
 
       case 'ml_regress': {
-        // @ts-expect-error — runtime-only dynamic import
         const { regressRemainingTime } = await import('@wasm4pm/ml');
         const configJson = JSON.stringify({
           features: ['trace_length', 'elapsed_time', 'rework_count', 'unique_activities', 'avg_inter_event_time'],
@@ -516,7 +512,6 @@ export async function implementAlgorithmStep(
       }
 
       case 'ml_pca': {
-        // @ts-expect-error — runtime-only dynamic import
         const { reduceFeaturesPCA } = await import('@wasm4pm/ml');
         const configJson = JSON.stringify({
           features: ['trace_length', 'elapsed_time', 'activity_counts', 'rework_count', 'unique_activities', 'avg_inter_event_time'],

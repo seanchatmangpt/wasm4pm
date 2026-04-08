@@ -15,7 +15,7 @@ export { classifyTraces, regressRemainingTime } from './classifiers.js';
 export { clusterTraces } from './clustering.js';
 
 // Forecasting
-export { forecastThroughput, buildThroughputSeries } from './forecasting.js';
+export { forecastThroughput, forecastSeries, buildThroughputSeries } from './forecasting.js';
 
 // Anomaly detection
 export { detectEnhancedAnomalies } from './anomaly.js';
@@ -34,6 +34,7 @@ export type {
   ClusteringMethod,
   ClusteringResult,
   ThroughputForecastResult,
+  SeriesForecastResult,
   EnhancedAnomalyResult,
   PCAResult,
 } from './types.js';
