@@ -437,6 +437,99 @@ export async function implementAlgorithmStep(
         break;
       }
 
+      // ── ML Analysis (dynamic import from @wasm4pm/ml) ──────
+
+      case 'ml_classify': {
+        // @ts-expect-error — runtime-only dynamic import (not a build dependency)
+        const { classifyTraces } = await import('@wasm4pm/ml');
+        const configJson = JSON.stringify({
+          features: ['trace_length', 'elapsed_time', 'activity_counts', 'rework_count', 'unique_activities', 'avg_inter_event_time'],
+          target: (params.target_key as string) || 'outcome',
+        });
+        const rawFeatures = (wasmModule as any).extract_case_features(eventLogHandle, activityKey, 'time:timestamp', configJson);
+        const features = typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
+        const result = await classifyTraces(features, {
+          method: params.method as any,
+          k: params.k as number,
+        });
+        modelHandle = JSON.stringify(result);
+        break;
+      }
+
+      case 'ml_cluster': {
+        // @ts-expect-error — runtime-only dynamic import
+        const { clusterTraces } = await import('@wasm4pm/ml');
+        const configJson = JSON.stringify({
+          features: ['trace_length', 'elapsed_time', 'activity_counts', 'rework_count', 'unique_activities'],
+        });
+        const rawFeatures = (wasmModule as any).extract_case_features(eventLogHandle, activityKey, 'time:timestamp', configJson);
+        const features = typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
+        const result = await clusterTraces(features, {
+          method: params.method as any,
+          k: (params.k as number) ?? 3,
+          eps: (params.eps as number) ?? 1.0,
+        });
+        modelHandle = JSON.stringify(result);
+        break;
+      }
+
+      case 'ml_forecast': {
+        // @ts-expect-error — runtime-only dynamic import
+        const { forecastThroughput } = await import('@wasm4pm/ml');
+        const driftRaw = (wasmModule as any).detect_drift(eventLogHandle, activityKey, 5);
+        const driftResult = typeof driftRaw === 'string' ? JSON.parse(driftRaw) : driftRaw;
+        const distances = (driftResult?.drifts ?? []).map((d: any) => d.distance ?? 0);
+        const result = await forecastThroughput(distances, {
+          forecastPeriods: (params.forecast_periods as number) ?? 5,
+        });
+        modelHandle = JSON.stringify(result);
+        break;
+      }
+
+      case 'ml_anomaly': {
+        // @ts-expect-error — runtime-only dynamic import
+        const { detectEnhancedAnomalies } = await import('@wasm4pm/ml');
+        const driftRaw = (wasmModule as any).detect_drift(eventLogHandle, activityKey, 10);
+        const driftResult = typeof driftRaw === 'string' ? JSON.parse(driftRaw) : driftRaw;
+        const distances = (driftResult?.drifts ?? []).map((d: any) => d.distance ?? 0);
+        const result = await detectEnhancedAnomalies(distances, {
+          smoothingMethod: params.smoothing_method as 'sma' | 'ema',
+        });
+        modelHandle = JSON.stringify(result);
+        break;
+      }
+
+      case 'ml_regress': {
+        // @ts-expect-error — runtime-only dynamic import
+        const { regressRemainingTime } = await import('@wasm4pm/ml');
+        const configJson = JSON.stringify({
+          features: ['trace_length', 'elapsed_time', 'rework_count', 'unique_activities', 'avg_inter_event_time'],
+          target: (params.target_key as string) || 'remaining_time',
+        });
+        const rawFeatures = (wasmModule as any).extract_case_features(eventLogHandle, activityKey, 'time:timestamp', configJson);
+        const features = typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
+        const result = await regressRemainingTime(features, {
+          method: params.method as any,
+        });
+        modelHandle = JSON.stringify(result);
+        break;
+      }
+
+      case 'ml_pca': {
+        // @ts-expect-error — runtime-only dynamic import
+        const { reduceFeaturesPCA } = await import('@wasm4pm/ml');
+        const configJson = JSON.stringify({
+          features: ['trace_length', 'elapsed_time', 'activity_counts', 'rework_count', 'unique_activities', 'avg_inter_event_time'],
+        });
+        const rawFeatures = (wasmModule as any).extract_case_features(eventLogHandle, activityKey, 'time:timestamp', configJson);
+        const features = typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
+        const result = await reduceFeaturesPCA(features, {
+          nComponents: (params.n_components as number) ?? 2,
+        });
+        modelHandle = JSON.stringify(result);
+        break;
+      }
+
       default:
         throw new Error(
           `Unsupported algorithm: ${algorithmId}. ` +
