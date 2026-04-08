@@ -1,6 +1,6 @@
 {
   "name": "@pictl/config",
-  "version": "26.4.7",
+  "version": "26.4.8",
   "description": "Configuration management system for wasm4pm with Zod schemas and provenance tracking",
   "type": "module",
   "main": "./dist/index.js",
@@ -68,5 +68,5 @@
     "wasm4pm"
   ],
   "author": "Sean Chatman",
-  "license": "MIT OR Apache-2.0"
+  "license": "SEE LICENSE IN LICENSE"
 }

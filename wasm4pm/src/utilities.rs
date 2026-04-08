@@ -3,7 +3,7 @@ use crate::state::{get_or_init_state, StoredObject};
 use crate::models::*;
 use serde_json::json;
 use std::collections::{HashMap, HashSet};
-use statrs::statistics::{Data, Median};
+use crate::{Data, Median};  // Conditional import: statrs or hand_rolled_stats
 
 /// Serialize `val` across the WASM boundary.
 ///

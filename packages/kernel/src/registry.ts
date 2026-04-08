@@ -31,6 +31,16 @@ export type QualityTier = number; // 0-100
 export type ExecutionProfile = 'fast' | 'balanced' | 'quality' | 'stream';
 
 /**
+ * Deployment profile: WASM build configuration
+ * - browser: Minimal features for web browsers (~500KB)
+ * - edge: Advanced algorithms for edge servers (~1.5MB)
+ * - fog: Full features except POWL for fog computing (~2.0MB)
+ * - iot: Minimal features for IoT devices (~1.0MB)
+ * - cloud: Full feature set for cloud servers (~2.78MB)
+ */
+export type DeploymentProfile = 'browser' | 'edge' | 'fog' | 'iot' | 'cloud';
+
+/**
  * Algorithm metadata
  */
 export interface AlgorithmMetadata {
@@ -58,8 +68,11 @@ export interface AlgorithmMetadata {
   /** Parameters this algorithm accepts */
   parameters: AlgorithmParameter[];
 
-  /** Which profiles include this algorithm */
+  /** Which execution profiles include this algorithm */
   supportedProfiles: ExecutionProfile[];
+
+  /** Which deployment profiles include this algorithm */
+  deploymentProfiles: DeploymentProfile[];
 
   /** Estimated duration per 100 events in milliseconds */
   estimatedDurationMs: number;
@@ -97,10 +110,12 @@ export interface AlgorithmParameter {
 export class AlgorithmRegistry {
   private algorithms: Map<string, AlgorithmMetadata> = new Map();
   private profileMap: Map<ExecutionProfile, string[]> = new Map();
+  private deploymentProfileMap: Map<DeploymentProfile, string[]> = new Map();
 
   constructor() {
     this.registerAllAlgorithms();
     this.buildProfileMap();
+    this.buildDeploymentProfileMap();
   }
 
   /**
@@ -108,7 +123,7 @@ export class AlgorithmRegistry {
    */
   private registerAllAlgorithms(): void {
     // Basic discovery - Directly Follows Graph
-    this.register({
+    this.registerWithInferredProfiles({
       id: 'dfg',
       name: 'DFG (Directly Follows Graph)',
       description:
@@ -134,7 +149,7 @@ export class AlgorithmRegistry {
     });
 
     // Process Skeleton
-    this.register({
+    this.registerWithInferredProfiles({
       id: 'process_skeleton',
       name: 'Process Skeleton',
       description: 'Discovers a minimal process skeleton with start and end activities. Very fast.',
@@ -159,7 +174,7 @@ export class AlgorithmRegistry {
     });
 
     // Alpha++ (improved Alpha algorithm)
-    this.register({
+    this.registerWithInferredProfiles({
       id: 'alpha_plus_plus',
       name: 'Alpha++ (Improved Alpha)',
       description:
@@ -185,7 +200,7 @@ export class AlgorithmRegistry {
     });
 
     // Heuristic Miner
-    this.register({
+    this.registerWithInferredProfiles({
       id: 'heuristic_miner',
       name: 'Heuristic Miner',
       description:
@@ -220,7 +235,7 @@ export class AlgorithmRegistry {
     });
 
     // Inductive Miner
-    this.register({
+    this.registerWithInferredProfiles({
       id: 'inductive_miner',
       name: 'Inductive Miner',
       description: 'Recursively partitions event log to discover process trees. Handles noise well.',
@@ -254,7 +269,7 @@ export class AlgorithmRegistry {
     });
 
     // Genetic Algorithm
-    this.register({
+    this.registerWithInferredProfiles({
       id: 'genetic_algorithm',
       name: 'Genetic Algorithm',
       description: 'Uses evolutionary computation to discover high-quality models. Best quality for complex processes.',
@@ -297,7 +312,7 @@ export class AlgorithmRegistry {
     });
 
     // PSO (Particle Swarm Optimization)
-    this.register({
+    this.registerWithInferredProfiles({
       id: 'pso',
       name: 'Particle Swarm Optimization (PSO)',
       description: 'Swarm-based algorithm for discovering Petri nets. Balances exploration and exploitation.',
@@ -340,7 +355,7 @@ export class AlgorithmRegistry {
     });
 
     // A* Search
-    this.register({
+    this.registerWithInferredProfiles({
       id: 'a_star',
       name: 'A* Search',
       description: 'Heuristic search algorithm for discovering optimal or near-optimal Petri nets.',
@@ -374,7 +389,7 @@ export class AlgorithmRegistry {
     });
 
     // Hill Climbing
-    this.register({
+    this.registerWithInferredProfiles({
       id: 'hill_climbing',
       name: 'Hill Climbing',
       description: 'Greedy local search for Petri net discovery. Fast with reasonable quality.',
@@ -408,7 +423,7 @@ export class AlgorithmRegistry {
     });
 
     // ILP (Integer Linear Programming)
-    this.register({
+    this.registerWithInferredProfiles({
       id: 'ilp',
       name: 'ILP (Integer Linear Programming)',
       description: 'Optimal model discovery using integer programming. Best theoretical quality, slower.',
@@ -442,7 +457,7 @@ export class AlgorithmRegistry {
     });
 
     // Ant Colony Optimization (ACO)
-    this.register({
+    this.registerWithInferredProfiles({
       id: 'aco',
       name: 'Ant Colony Optimization (ACO)',
       description: 'Swarm intelligence algorithm inspired by ant pheromones. Discovers high-quality Petri nets.',
@@ -485,7 +500,7 @@ export class AlgorithmRegistry {
     });
 
     // Simulated Annealing
-    this.register({
+    this.registerWithInferredProfiles({
       id: 'simulated_annealing',
       name: 'Simulated Annealing',
       description: 'Probabilistic technique for finding near-optimal Petri net models.',
@@ -528,7 +543,7 @@ export class AlgorithmRegistry {
     });
 
     // Declare (constraint-based)
-    this.register({
+    this.registerWithInferredProfiles({
       id: 'declare',
       name: 'Declare (Constraints)',
       description: 'Discovers declarative (constraint-based) process models. Good for flexible processes.',
@@ -562,7 +577,7 @@ export class AlgorithmRegistry {
     });
 
     // Optimized DFG (ILP variant)
-    this.register({
+    this.registerWithInferredProfiles({
       id: 'optimized_dfg',
       name: 'Optimized DFG (ILP)',
       description: 'ILP-based DFG optimization. Minimal model with best fitness.',
@@ -596,7 +611,7 @@ export class AlgorithmRegistry {
     });
 
     // SIMD Streaming DFG
-    this.register({
+    this.registerWithInferredProfiles({
       id: 'simd_streaming_dfg',
       name: 'SIMD Streaming DFG',
       description:
@@ -622,7 +637,7 @@ export class AlgorithmRegistry {
     });
 
     // Hierarchical DFG
-    this.register({
+    this.registerWithInferredProfiles({
       id: 'hierarchical_dfg',
       name: 'Hierarchical DFG',
       description:
@@ -657,7 +672,7 @@ export class AlgorithmRegistry {
     });
 
     // Streaming Log (probabilistic)
-    this.register({
+    this.registerWithInferredProfiles({
       id: 'streaming_log',
       name: 'Streaming Log (Probabilistic)',
       description:
@@ -692,7 +707,7 @@ export class AlgorithmRegistry {
     });
 
     // Smart Engine (caching + early termination)
-    this.register({
+    this.registerWithInferredProfiles({
       id: 'smart_engine',
       name: 'Smart Engine',
       description:
@@ -733,7 +748,7 @@ export class AlgorithmRegistry {
 
     // ── ML Analysis ──────────────────────────────────────────
 
-    this.register({
+    this.registerWithInferredProfiles({
       id: 'ml_classify',
       name: 'ML Trace Classification',
       description: 'Classify traces by outcome using k-NN, logistic regression, decision tree, or naive Bayes.',
@@ -754,7 +769,7 @@ export class AlgorithmRegistry {
       scalesWell: true,
     });
 
-    this.register({
+    this.registerWithInferredProfiles({
       id: 'ml_cluster',
       name: 'ML Trace Clustering',
       description: 'Cluster traces by similarity using k-means or DBSCAN.',
@@ -775,7 +790,7 @@ export class AlgorithmRegistry {
       scalesWell: true,
     });
 
-    this.register({
+    this.registerWithInferredProfiles({
       id: 'ml_forecast',
       name: 'ML Throughput Forecasting',
       description: 'Forecast future process throughput with trend analysis and seasonal decomposition.',
@@ -794,7 +809,7 @@ export class AlgorithmRegistry {
       scalesWell: true,
     });
 
-    this.register({
+    this.registerWithInferredProfiles({
       id: 'ml_anomaly',
       name: 'ML Anomaly Detection',
       description: 'Detect anomalous process windows using peak finding and seasonal decomposition on drift distances.',
@@ -813,7 +828,7 @@ export class AlgorithmRegistry {
       scalesWell: true,
     });
 
-    this.register({
+    this.registerWithInferredProfiles({
       id: 'ml_regress',
       name: 'ML Remaining Time Regression',
       description: 'Predict remaining case time using linear, polynomial, or exponential regression.',
@@ -833,7 +848,7 @@ export class AlgorithmRegistry {
       scalesWell: true,
     });
 
-    this.register({
+    this.registerWithInferredProfiles({
       id: 'ml_pca',
       name: 'ML PCA Feature Reduction',
       description: 'Reduce high-dimensional trace features using Principal Component Analysis.',
@@ -854,10 +869,61 @@ export class AlgorithmRegistry {
   }
 
   /**
-   * Register a single algorithm
+   * Register a single algorithm (with manual deployment profiles)
    */
   register(metadata: AlgorithmMetadata): void {
     this.algorithms.set(metadata.id, metadata);
+  }
+
+  /**
+   * Register algorithm with auto-calculated deployment profiles
+   */
+  registerWithInferredProfiles(metadata: Omit<AlgorithmMetadata, 'deploymentProfiles'>): void {
+    const deploymentProfiles = this.inferDeploymentProfiles(metadata.supportedProfiles);
+    this.register({
+      ...metadata,
+      deploymentProfiles,
+    });
+  }
+
+  /**
+   * Infer deployment profiles from supported execution profiles
+   * - fast profile → browser, iot
+   * - balanced profile → browser, edge, fog, cloud
+   * - quality profile → edge, fog, cloud
+   * - stream profile → browser, edge, fog, iot, cloud
+   */
+  private inferDeploymentProfiles(profiles: ExecutionProfile[]): DeploymentProfile[] {
+    const result = new Set<DeploymentProfile>();
+
+    for (const profile of profiles) {
+      switch (profile) {
+        case 'fast':
+          result.add('browser');
+          result.add('iot');
+          break;
+        case 'balanced':
+          result.add('browser');
+          result.add('edge');
+          result.add('fog');
+          result.add('cloud');
+          break;
+        case 'quality':
+          result.add('edge');
+          result.add('fog');
+          result.add('cloud');
+          break;
+        case 'stream':
+          result.add('browser');
+          result.add('edge');
+          result.add('fog');
+          result.add('iot');
+          result.add('cloud');
+          break;
+      }
+    }
+
+    return Array.from(result);
   }
 
   /**
@@ -905,6 +971,40 @@ export class AlgorithmRegistry {
     // Convert sets to arrays
     for (const [profile, set] of profileMap) {
       this.profileMap.set(profile, Array.from(set));
+    }
+  }
+
+  /**
+   * Get algorithms for a deployment profile
+   */
+  getForDeploymentProfile(profile: DeploymentProfile): AlgorithmMetadata[] {
+    const ids = this.deploymentProfileMap.get(profile) || [];
+    return ids.map((id) => this.algorithms.get(id)!).filter((a) => a !== undefined);
+  }
+
+  /**
+   * Build deployment profile map from algorithm registrations
+   */
+  private buildDeploymentProfileMap(): void {
+    const profileMap = new Map<DeploymentProfile, Set<string>>();
+    const profiles: DeploymentProfile[] = ['browser', 'edge', 'fog', 'iot', 'cloud'];
+
+    for (const profile of profiles) {
+      profileMap.set(profile, new Set());
+    }
+
+    for (const [id, metadata] of this.algorithms) {
+      for (const profile of metadata.deploymentProfiles) {
+        const set = profileMap.get(profile);
+        if (set) {
+          set.add(id);
+        }
+      }
+    }
+
+    // Convert sets to arrays
+    for (const [profile, set] of profileMap) {
+      this.deploymentProfileMap.set(profile, Array.from(set));
     }
   }
 

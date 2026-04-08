@@ -11,7 +11,7 @@ import type { MlTask } from '../ml-runner.js';
 export const ml = defineCommand({
   meta: {
     name: 'ml',
-    description: 'Run ML-powered process mining analysis using micro-ml',
+    description: 'Run ML-powered process mining analysis',
   },
   args: {
     task: {

@@ -481,7 +481,7 @@ export class PictlMCPServer {
           required: ['xes_content'],
         },
       },
-      // ML Tools (micro-ml powered)
+      // ML Tools (native process intelligence)
       {
         name: 'ml_classify_traces',
         description:
@@ -1066,7 +1066,7 @@ export class PictlMCPServer {
           break;
         }
 
-        // ML Tools (micro-ml powered — dynamic import for lazy loading)
+        // ML Tools (native process intelligence — dynamic import for lazy loading)
         case 'ml_classify_traces': {
           const { classifyTraces } = await import('@pictl/ml');
           const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);

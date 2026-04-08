@@ -1,8 +1,9 @@
 /**
  * @pictl/ml
  *
- * ML-powered process mining analysis using micro-ml.
+ * Native ML-powered process mining analysis.
  * Classification, clustering, forecasting, anomaly detection, PCA.
+ * Zero external ML dependencies — purpose-built for process intelligence.
  */
 
 // Bridge utilities

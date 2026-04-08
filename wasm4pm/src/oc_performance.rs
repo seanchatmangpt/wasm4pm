@@ -12,7 +12,7 @@ use crate::error::{wasm_err, codes};
 use rustc_hash::FxHashMap;
 use serde::Serialize;
 use serde_json::json;
-use statrs::statistics::{Data, Median};
+use crate::{Data, Median};  // Conditional import: statrs or hand_rolled_stats
 
 // -------------------------------------------------------------------------
 // Types

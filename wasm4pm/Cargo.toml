@@ -1,6 +1,6 @@
 [package]
 name = "wasm4pm"
-version = "26.4.5"
+version = "26.4.8"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 description = "High-performance process mining algorithms in WebAssembly for JavaScript/TypeScript"
@@ -28,7 +28,7 @@ rustc-hash = "2"
 smallvec = { version = "1.13", features = ["serde"] }
 roxmltree = "0.19"
 fastrand = "2"
-statrs = { version = "0.17", default-features = false }
+statrs = { version = "0.17", default-features = false, optional = true }
 rayon = "1.10"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
@@ -61,8 +61,74 @@ name = "conformance"
 harness = false
 
 [features]
-default = []
-console_error_panic_hook = []
+# Deployment profiles - default to cloud (full feature set) for npm package
+default = ["cloud"]
+browser = ["basic", "simd", "hand_rolled_stats"]
+edge = ["basic", "advanced", "ml", "streaming_basic", "hand_rolled_stats"]
+fog = ["edge", "swarm", "streaming_full", "statrs", "ocel"]
+iot = ["minimal", "streaming_basic", "hand_rolled_stats"]
+cloud = ["basic", "advanced", "ml", "streaming_full", "swarm", "statrs", "powl", "ocel"]
+# Backward compatibility alias
+compat = ["cloud"]
+
+# Algorithm categories
+basic = ["discovery_basic", "conformance_basic"]
+advanced = ["discovery_advanced", "conformance_full"]
+minimal = ["discovery_minimal"]
+swarm = ["discovery_swarm"]
+
+# Discovery algorithms
+discovery_minimal = []  # dfg only (always included)
+discovery_basic = ["discovery_minimal"]
+discovery_advanced = ["discovery_basic"]
+discovery_swarm = ["discovery_advanced"]
+
+# Individual discovery algorithms (empty features for module-level cfg gating)
+alpha_plus_plus = []
+heuristic_miner = []
+inductive_miner = []
+genetic = []
+ilp = []
+a_star = []
+aco = []
+pso = []
+simulated_annealing = []
+
+# Conformance
+conformance_basic = []  # Basic conformance (token replay, temporal profiles)
+conformance_full = ["conformance_basic"]  # Full conformance (+ alignments)
+
+# ML/Prediction
+ml = []
+ml_classify = []
+ml_cluster = []
+ml_forecast = []
+ml_anomaly = []
+ml_regress = []
+ml_pca = []
+
+# Streaming
+streaming_basic = []
+streaming_full = ["streaming_basic"]
+streaming_dfg = []
+streaming_skeleton = []
+streaming_heuristic = []
+streaming_inductive = []
+
+# Conformance (empty features for module-level cfg gating)
+token_replay = []
+alignments = []
+diagnostics = []
+
+# Dependencies
+statrs = ["dep:statrs"]  # Optional dependency
+powl = []  # POWL modules (always compiled if feature enabled, just controls lib.rs exports)
+ocel = []  # OCEL support
+
+# Utility features
+hand_rolled_stats = []  # Use internal median instead of statrs
+simd = []  # SIMD acceleration (always available on WASM)
+console_error_panic_hook = []  # Existing feature
 
 [profile.release]
 # Optimize for binary size ("z" instead of "3")
