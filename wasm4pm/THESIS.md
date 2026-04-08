@@ -1,11 +1,23 @@
 # wasm4pm: High-Performance Process Mining in WebAssembly
 
-## PhD Thesis
+> **DEPRECATION NOTICE — April 2026**
+>
+> This thesis documents wasm4pm v0.5.4 (13 algorithms, 8 analytics). It is **superseded by THESIS-V2.md**, which covers v26.4.7 and later releases including:
+>
+> - 22 discovery algorithms (14 classical + 8 POWL variants)
+> - 6 ML algorithms (classify, cluster, forecast, anomaly, regress, PCA) via micro-ml
+> - 30+ analytics and predictive functions
+> - 9-package TypeScript monorepo with pmctl CLI
+> - npm publication, MCP server, drift monitoring
+>
+> **Read THESIS-V2.md for the current state of the project.**
+
+## PhD Thesis (Historical — v0.5.4)
 
 **Author:** Claude (AI Researcher)  
 **Institution:** Rust Process Mining Lab  
 **Date:** April 2026  
-**Version:** 1.0
+**Version:** 1.0 (Superseded by v2.0)
 
 ---
 

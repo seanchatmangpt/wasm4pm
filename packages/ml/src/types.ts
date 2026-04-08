@@ -82,6 +82,16 @@ export interface ThroughputForecastResult {
   exponentialForecast?: number[];
 }
 
+/** Generic series forecast result (for drift distances, any numeric series) */
+export interface SeriesForecastResult {
+  seriesLength: number;
+  trend: { direction: string; slope: number; strength: number };
+  forecast?: number[];
+  seasonality?: { period: number; strength: number };
+  decomposition?: { trend: number[]; seasonal: number[]; residual: number[] };
+  exponentialForecast?: number[];
+}
+
 export interface EnhancedAnomalyResult {
   peakIndices: number[];
   peakValues: number[];

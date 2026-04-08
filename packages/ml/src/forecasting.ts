@@ -9,7 +9,7 @@ import {
   seasonalDecompose,
   exponentialRegression,
 } from 'micro-ml';
-import type { ThroughputForecastResult } from './types.js';
+import type { ThroughputForecastResult, SeriesForecastResult } from './types.js';
 
 /**
  * Build event count time series from timestamps.
@@ -140,6 +140,96 @@ export async function forecastThroughput(
     seasonality,
     decomposition,
     windowSizeMs,
+    exponentialForecast,
+  };
+}
+
+/**
+ * Forecast future values from any numeric series (drift distances, metrics, etc.).
+ *
+ * Unlike `forecastThroughput()` which requires event timestamps and builds
+ * time-windowed counts, this function operates directly on a numeric series.
+ *
+ * @param series - Array of numeric values (e.g., drift distances, throughput counts)
+ * @param options - Forecasting configuration
+ */
+export async function forecastSeries(
+  series: number[],
+  options: {
+    forecastPeriods?: number;
+    useExponential?: boolean;
+  } = {},
+): Promise<SeriesForecastResult> {
+  if (series.length < 3) {
+    return {
+      seriesLength: series.length,
+      trend: { direction: 'unknown', slope: 0, strength: 0 },
+    };
+  }
+
+  const forecastPeriods = options.forecastPeriods ?? 5;
+  const trendModel = await trendForecast(series, forecastPeriods);
+
+  let seasonality: { period: number; strength: number } | undefined;
+  let decomposition:
+    | { trend: number[]; seasonal: number[]; residual: number[] }
+    | undefined;
+
+  try {
+    if (series.length >= 4) {
+      const seasonResult = await detectSeasonality(series);
+      seasonality = {
+        period: seasonResult.period,
+        strength: seasonResult.strength,
+      };
+
+      if (
+        seasonResult.period > 1 &&
+        seasonResult.period < series.length
+      ) {
+        const decomp = await seasonalDecompose(
+          series,
+          seasonResult.period,
+        );
+        decomposition = {
+          trend: decomp.getTrend(),
+          seasonal: decomp.getSeasonal(),
+          residual: decomp.getResidual(),
+        };
+      }
+    }
+  } catch {
+    // Seasonality detection can fail on short series — non-fatal
+  }
+
+  let exponentialForecast: number[] | undefined;
+  if (options.useExponential && series.length >= 3) {
+    try {
+      const x = series.map((_, i) => i);
+      const expModel = await exponentialRegression(x, series);
+      if (expModel.rSquared > 0.5) {
+        exponentialForecast = expModel.predict(
+          Array.from(
+            { length: forecastPeriods },
+            (_, i) => series.length + i,
+          ),
+        );
+      }
+    } catch {
+      // Non-fatal
+    }
+  }
+
+  return {
+    seriesLength: series.length,
+    trend: {
+      direction: trendModel.direction,
+      slope: trendModel.slope,
+      strength: trendModel.strength,
+    },
+    forecast: trendModel.getForecast(),
+    seasonality,
+    decomposition,
     exponentialForecast,
   };
 }

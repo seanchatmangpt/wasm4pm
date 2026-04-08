@@ -25,7 +25,8 @@
   },
   "dependencies": {
     "@wasm4pm/contracts": "workspace:*",
-    "@wasm4pm/planner": "workspace:*"
+    "@wasm4pm/planner": "workspace:*",
+    "@wasm4pm/ml": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.3.3",
