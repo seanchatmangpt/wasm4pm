@@ -1256,9 +1256,9 @@ export class PictlMCPServer {
           try {
             const minFreq = (input.min_frequency as number) ?? 0;
             if (minFreq > 0) {
-              result = wasm.discover_dfg_simd(logHandle, 'concept:name', minFreq);
+              result = wasm.discover_dfg_filtered(logHandle, 'concept:name', minFreq);
             } else {
-              result = wasm.discover_dfg_simd(logHandle, 'concept:name', 0.0);
+              result = wasm.discover_dfg_simd(logHandle, 'concept:name');
             }
           } finally {
             try {
@@ -1288,8 +1288,7 @@ export class PictlMCPServer {
         case 'streaming_log_estimate': {
           const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
           try {
-            const sampleRate = (input.sample_rate as number) ?? 1.0;
-            result = wasm.streaming_log_estimate(logHandle, 'concept:name', sampleRate);
+            result = wasm.streaming_log_estimate_dfg(parseInt(logHandle, 10));
           } finally {
             try {
               wasm.delete_object(logHandle);
@@ -1304,8 +1303,7 @@ export class PictlMCPServer {
           const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
           try {
             const algorithm = (input.algorithm as string) || 'auto';
-            const cacheKey = (input.cache_key as string) || undefined;
-            result = wasm.smart_engine_run(logHandle, 'concept:name', algorithm, cacheKey ?? '');
+            result = wasm.smart_engine_run(logHandle, algorithm, input.traces_json as string);
           } finally {
             try {
               wasm.delete_object(logHandle);
