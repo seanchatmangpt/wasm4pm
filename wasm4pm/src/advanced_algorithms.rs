@@ -247,7 +247,7 @@ pub fn detect_bottlenecks(
                         if duration > duration_threshold_seconds {
                             activity_durations
                                 .entry(activity.clone())
-                                .or_insert_with(Vec::new)
+                                .or_default()
                                 .push(duration);
                         }
                     }

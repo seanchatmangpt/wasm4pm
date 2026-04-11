@@ -1,4 +1,4 @@
-# API Reference — wasm4pm v26.4.5
+# API Reference — wasm4pm v26.4.10
 
 Complete reference for all 153 exported functions in the wasm4pm JavaScript API, organized by category.
 

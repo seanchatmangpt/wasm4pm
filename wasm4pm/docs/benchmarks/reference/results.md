@@ -1,6 +1,6 @@
 # Benchmark Results
 
-**Version:** pictl v26.4.7
+**Version:** pictl v26.4.9
 **Date:** 2026-04-08
 **Platform:** Apple M3 Max (16P/4E, 36GB unified memory)
 **Methodology:** Median of 7 runs, synthetic logs (6 activities, 20 events/case)
