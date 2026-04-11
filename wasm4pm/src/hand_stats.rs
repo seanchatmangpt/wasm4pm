@@ -4,6 +4,70 @@
 //! pulling in nalgebra and the full statrs library (~200KB savings).
 
 use chrono::{DateTime, TimeZone, Utc};
+use std::ops::Deref;
+
+/// Data struct matching statrs::statistics::Data interface
+///
+/// This provides a compatible API with statrs::statistics::Data
+/// for code that uses `Data::new(vec).median()` pattern.
+#[derive(Clone, Debug)]
+pub struct DataContainer {
+    data: Vec<f64>,
+}
+
+impl DataContainer {
+    /// Create a new DataContainer from a Vec<f64>
+    pub fn new(data: Vec<f64>) -> Self {
+        Self { data }
+    }
+
+    /// Calculate median of the data
+    pub fn median(&self) -> f64 {
+        median(&mut self.data.clone()).unwrap_or(0.0)
+    }
+
+    /// Calculate mean of the data
+    pub fn mean(&self) -> f64 {
+        mean(&self.data).unwrap_or(0.0)
+    }
+
+    /// Calculate arbitrary percentile
+    pub fn percentile(&self, p: f64) -> f64 {
+        percentile(&mut self.data.clone(), p).unwrap_or(0.0)
+    }
+
+    /// Calculate standard deviation
+    pub fn std_deviation(&self) -> f64 {
+        std_deviation(&self.data).unwrap_or(0.0)
+    }
+
+    /// Get the underlying data
+    pub fn as_slice(&self) -> &[f64] {
+        &self.data
+    }
+}
+
+// Implement Data trait for DataContainer
+impl Data for DataContainer {
+    fn median(&self) -> Option<f64> {
+        Some(median(&mut self.data.clone()).unwrap_or(0.0))
+    }
+
+    fn mean(&self) -> Option<f64> {
+        mean(&self.data)
+    }
+
+    fn percentile(&self, p: f64) -> Option<f64> {
+        Some(percentile(&mut self.data.clone(), p).unwrap_or(0.0))
+    }
+
+    fn std_deviation(&self) -> Option<f64> {
+        std_deviation(&self.data)
+    }
+}
+
+// Type alias for compatibility
+pub use DataContainer as Data_new;
 
 /// Calculate median of a slice of f64 values
 ///
@@ -121,6 +185,27 @@ pub trait Data {
 
     /// Calculate standard deviation
     fn std_deviation(&self) -> Option<f64>;
+}
+
+/// Median trait matching statrs::statistics::Median interface
+///
+/// This trait provides a compatible API with statrs::statistics::Median
+/// for computing median values on mutable data references.
+pub trait Median<T> {
+    /// Compute the median value of the data
+    fn median(&mut self) -> Option<T>;
+}
+
+impl Median<f64> for Vec<f64> {
+    fn median(&mut self) -> Option<f64> {
+        median(self)
+    }
+}
+
+impl Median<f64> for &mut [f64] {
+    fn median(&mut self) -> Option<f64> {
+        median(self)
+    }
 }
 
 impl Data for Vec<f64> {

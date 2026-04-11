@@ -1,11 +1,34 @@
+//! OCEL I/O Module
+//!
+//! Provides functions for loading, exporting, and validating Object-Centric Event Logs (OCEL 2.0).
+//!
+//! ## Functions
+//!
+//! - [`load_ocel2_from_json`] - Load OCEL from JSON string
+//! - [`export_ocel2_to_json`] - Export OCEL to JSON string
+//! - [`validate_ocel`] - Validate OCEL structure and referential integrity
+//!
+//! ## Example
+//!
+//! ```javascript
+//! import { load_ocel2_from_json, validate_ocel } from "@seanchatmangpt/pictl";
+//!
+//! const handle = load_ocel2_from_json(jsonString);
+//! const validation = validate_ocel(handle);
+//! ```
+
+#[cfg(feature = "ocel")]
 use crate::models::OCEL;
+#[cfg(feature = "ocel")]
 use crate::state::{get_or_init_state, StoredObject};
 use serde_json::json;
 use std::collections::HashSet;
+#[cfg(feature = "ocel")]
 use wasm_bindgen::prelude::*;
 
 /// Load an OCEL 2.0 from JSON string
 /// Parses JSON into OCEL struct, stores in AppState, returns handle
+#[cfg(feature = "ocel")]
 #[wasm_bindgen]
 pub fn load_ocel2_from_json(content: &str) -> Result<String, JsValue> {
     let ocel: OCEL = serde_json::from_str(content)
@@ -20,6 +43,7 @@ pub fn load_ocel2_from_json(content: &str) -> Result<String, JsValue> {
 
 /// Export OCEL 2.0 to JSON string (pretty-printed)
 /// Retrieves OCEL from state by handle, serializes to JSON string
+#[cfg(feature = "ocel")]
 #[wasm_bindgen]
 pub fn export_ocel2_to_json(handle: &str) -> Result<String, JsValue> {
     get_or_init_state().with_object(handle, |obj| match obj {
@@ -36,6 +60,7 @@ pub fn export_ocel2_to_json(handle: &str) -> Result<String, JsValue> {
 /// - All timestamps are valid ISO 8601
 /// - Object relations: source_id and target_id reference existing objects (if present)
 /// Returns a validation report as JSON: { valid: bool, errors: Vec<String> }
+#[cfg(feature = "ocel")]
 #[wasm_bindgen]
 pub fn validate_ocel(handle: &str) -> Result<JsValue, JsValue> {
     get_or_init_state().with_object(handle, |obj| match obj {
