@@ -1,6 +1,6 @@
 {
   "name": "@seanchatmangpt/pictl",
-  "version": "26.4.9",
+  "version": "26.4.10",
   "description": "Process Mining in WebAssembly - High-Speed Algorithms for Browser and Node.js",
   "main": "pkg/pictl.js",
   "types": "pkg/pictl.d.ts",
@@ -76,6 +76,8 @@
     "node": ">=14.0.0"
   },
   "devDependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@pictl/ml": "workspace:*",
     "@testing-library/dom": "^9.3.3",
     "@testing-library/jest-dom": "^6.1.5",
     "@types/node": "^20.10.6",
@@ -88,8 +90,5 @@
     "vite-plugin-wasm": "^3.6.0",
     "vitest": "^1.1.0"
   },
-  "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.29.0",
-    "@pictl/ml": "workspace:*"
-  }
+  "dependencies": {}
 }

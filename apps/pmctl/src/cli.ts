@@ -12,6 +12,12 @@ import { results } from './commands/results.js';
 import { compare } from './commands/compare.js';
 import { ml } from './commands/ml.js';
 import { powl } from './commands/powl.js';
+import { conformance } from './commands/conformance.js';
+import { simulate } from './commands/simulate.js';
+import { temporal } from './commands/temporal.js';
+import { social } from './commands/social.js';
+import { quality } from './commands/quality.js';
+import { validate } from './commands/validate.js';
 
 export const main = defineCommand({
   meta: {
@@ -52,6 +58,16 @@ ${BOLD}PREDICTION${RESET}  ${DIM}(van der Aalst's six perspectives)${RESET}
   ${GREEN}pictl predict${RESET} drift          -i <log>
   ${GREEN}pictl predict${RESET} features       -i <log>
   ${GREEN}pictl predict${RESET} resource       -i <log>
+
+${BOLD}CONFORMANCE & QUALITY${RESET}
+  ${GREEN}pictl conformance${RESET} -i <log>              Measure log-to-model fitness and precision
+  ${GREEN}pictl quality${RESET} -i <log>                  Assess multi-dimensional quality (fitness, precision, generalization)
+  ${GREEN}pictl validate${RESET} <log.xes>                Validate event log schema, required attributes, and data quality
+
+${BOLD}ANALYSIS & SIMULATION${RESET}
+  ${GREEN}pictl temporal${RESET} -i <log>                 Analyze temporal profiles and performance patterns
+  ${GREEN}pictl social${RESET} -i <log>                   Mine social networks (handover, working together)
+  ${GREEN}pictl simulate${RESET} -i <log>                 Monte Carlo simulation and process tree playout
 
 ${BOLD}MONITORING${RESET}
   ${GREEN}pictl drift-watch${RESET} --input <log.xes>   Live EWMA concept drift monitor (Ctrl+C to stop)
@@ -98,6 +114,12 @@ Activity key defaults to "concept:name" (XES standard). Pass --activity-key to o
     compare,
     ml,
     powl,
+    conformance,
+    simulate,
+    temporal,
+    social,
+    quality,
+    validate,
   },
 });
 
@@ -118,4 +140,10 @@ export {
   compare,
   ml,
   powl,
+  conformance,
+  simulate,
+  temporal,
+  social,
+  quality,
+  validate,
 };

@@ -56,7 +56,7 @@ npm install @pictl/cli
 
 ```typescript
 // mcp_server.ts (already provided)
-import PictlMCPServer from 'wasm4pm/src/mcp_server';
+import PictlMCPServer from './mcp_server';
 
 const server = new PictlMCPServer();
 await server.start();
@@ -72,7 +72,7 @@ Add to your Claude configuration (e.g., in `.claude.json` or Claude desktop conf
     "pictl": {
       "command": "node",
       "args": ["dist/mcp_server.js"],
-      "cwd": "./path/to/wasm4pm"
+      "cwd": "./path/to/pictl"
     }
   }
 }
@@ -268,7 +268,7 @@ Edit `~/.config/Claude/claude_desktop_config.json`:
   "mcpServers": {
     "pictl": {
       "command": "/usr/local/bin/node",
-      "args": ["/path/to/wasm4pm/dist/mcp_server.js"]
+      "args": ["/path/to/pictl/dist/mcp_server.js"]
     }
   }
 }
@@ -285,7 +285,7 @@ Edit `%APPDATA%\Claude\claude_desktop_config.json`:
   "mcpServers": {
     "pictl": {
       "command": "node",
-      "args": ["C:\\path\\to\\wasm4pm\\dist\\mcp_server.js"]
+      "args": ["C:\\path\\to\\pictl\\dist\\mcp_server.js"]
     }
   }
 }
@@ -294,7 +294,7 @@ Edit `%APPDATA%\Claude\claude_desktop_config.json`:
 ## Building the MCP Server
 
 ```bash
-cd wasm4pm
+cd pictl
 
 # Install MCP SDK
 npm install @modelcontextprotocol/sdk

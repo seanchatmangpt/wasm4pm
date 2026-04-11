@@ -46,12 +46,12 @@ This generates three distribution types:
 
 ```
 pkg/
-├── wasm4pm.d.ts           # TypeScript type definitions
-├── wasm4pm.js             # JavaScript wrapper
-├── wasm4pm_bg.js          # WASM module loader
-├── wasm4pm_bg.wasm        # Compiled WASM binary
-├── package.json           # Package metadata
-└── README.md              # Package documentation
+├── pictl.d.ts           # TypeScript type definitions
+├── pictl.js             # JavaScript wrapper
+├── pictl_bg.js          # WASM module loader
+├── pictl_bg.wasm        # Compiled WASM binary
+├── package.json         # Package metadata
+└── README.md            # Package documentation
 ```
 
 ## Running Tests
@@ -180,10 +180,10 @@ mkdir test-pictl
 cd test-pictl
 
 # Install from local tarball
-npm install ../process_mining_wasm
+npm install ../pictl
 
 # Test it works
-node -e "const w = require('wasm4pm'); console.log('Loaded:', w)"
+node -e "const w = require('@seanchatmangpt/pictl'); console.log('Loaded:', w)"
 ```
 
 ### Test in Browser
@@ -308,7 +308,7 @@ For build issues:
 
 - Check wasm-pack documentation: https://rustwasm.github.io/docs/wasm-pack/
 - Check npm documentation: https://docs.npmjs.com/
-- File issues on GitHub: https://github.com/seanchatmangpt/wasm4pm/issues
+- File issues on GitHub: https://github.com/seanchatmangpt/pictl/issues
 
 ---
 

@@ -3,8 +3,8 @@
 All functions are exported from the WASM module. Import the module before calling any function.
 
 ```javascript
-const pm = require('wasm4pm'); // Node.js (CommonJS) — npm package name stays (internal WASM)
-import * as pm from 'wasm4pm'; // ES modules
+const pm = require('@seanchatmangpt/pictl'); // Node.js (CommonJS)
+import * as pm from '@seanchatmangpt/pictl'; // ES modules
 ```
 
 **Return value convention.** Functions that return complex objects return a JSON-encoded `string`. Callers must parse the result with `JSON.parse()`. Functions that return a handle return a plain `string` (do not parse). Primitive return types (`number`, `boolean`) are returned directly. Every function that can fail throws a JavaScript `Error`.
@@ -46,7 +46,7 @@ pm.init(): string
 **Example**
 
 ```javascript
-const pm = require('wasm4pm'); // npm package name stays (internal WASM)
+const pm = require('@seanchatmangpt/pictl');
 pm.init();
 ```
 

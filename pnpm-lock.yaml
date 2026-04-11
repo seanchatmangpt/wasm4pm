@@ -48,9 +48,9 @@ importers:
 
   lab:
     dependencies:
-      wasm4pm:
-        specifier: ^26.4.5
-        version: 26.4.8(zod@3.25.76)
+      '@seanchatmangpt/pictl':
+        specifier: ^26.4.9
+        version: 26.4.9(zod@3.25.76)
     devDependencies:
       '@types/node':
         specifier: ^20.10.0
@@ -148,10 +148,6 @@ importers:
         version: 1.6.1(@types/node@20.19.39)(@vitest/browser@1.6.1)
 
   packages/ml:
-    dependencies:
-      micro-ml:
-        specifier: ^1.0.0
-        version: 1.0.0
     devDependencies:
       '@types/node':
         specifier: ^20.10.0
@@ -285,14 +281,13 @@ importers:
         version: 1.6.1(@types/node@20.19.39)(@vitest/browser@1.6.1)
 
   wasm4pm:
-    dependencies:
+    devDependencies:
       '@modelcontextprotocol/sdk':
         specifier: ^1.29.0
         version: 1.29.0(zod@3.25.76)
       '@pictl/ml':
         specifier: workspace:*
         version: link:../packages/ml
-    devDependencies:
       '@testing-library/dom':
         specifier: ^9.3.3
         version: 9.3.4
@@ -681,6 +676,10 @@ packages:
     resolution: {integrity: sha512-lWMnixq/QzxyhTV6NjQJ4SFo1J6PvOX8vUx5Wb4bBPsEb+8xZ89Bz6kOXpfXj9ak9AHTQVQzlgzBEc1SyM27xQ==}
     cpu: [x64]
     os: [win32]
+
+  '@seanchatmangpt/pictl@26.4.9':
+    resolution: {integrity: sha512-zneGpOxFyH9BaNOE96NJ2oXl/WuBFWRdyG0v1ysQer9o8vXVzTH7INQoJnzOFPsM/50/ERN+yeguR2+FYRh6rA==}
+    engines: {node: '>=14.0.0'}
 
   '@sinclair/typebox@0.27.10':
     resolution: {integrity: sha512-MTBk/3jGLNB2tVxv6uLlFh1iu64iYOQ2PbdOSK3NW8JZsmlaOh2q6sdtKowBhfw8QFLmYNzTW4/oK4uATIi6ZA==}
@@ -1276,9 +1275,6 @@ packages:
   merge-stream@2.0.0:
     resolution: {integrity: sha512-abv/qOcuPfk3URPfDzmZU1LKmuw8kT+0nIHvKrKgFrwifol/doWcdA4ZqsWQ8ENrFKkd67Mfpo/LovbIUsbt3w==}
 
-  micro-ml@1.0.0:
-    resolution: {integrity: sha512-/TMSLvoOul5xcnbTqUr8ICYDosTTn5c2NSbW9Ede2Qb2KkksyI+XWWwQdnxu4Z85XTy6OytzkJie93OB3A5D4g==}
-
   mime-db@1.54.0:
     resolution: {integrity: sha512-aU5EJuIN2WDemCcAp2vFBfp/m4EAhWJnUNSSw0ixs7/kXbd6Pg64EmwJkNdFhB8aWt1sH2CTXrLxo/iAGV3oPQ==}
     engines: {node: '>= 0.6'}
@@ -1718,10 +1714,6 @@ packages:
   vscode-textmate@8.0.0:
     resolution: {integrity: sha512-AFbieoL7a5LMqcnOF04ji+rpXadgOXnZsxQr//r83kLPr7biP7am3g9zbaZIaBGwBRWeSvoMD4mgPdX3e4NWBg==}
 
-  wasm4pm@26.4.8:
-    resolution: {integrity: sha512-d7gdsftFgmBxcoNnigIxsgeDQlxhg5+w4ARnQzeT4/3Lsblj6YvN46EjmZhOwKn4HUUwBcp412xM7KownXh9Lw==}
-    engines: {node: '>=14.0.0'}
-
   which-boxed-primitive@1.1.1:
     resolution: {integrity: sha512-TbX3mj8n0odCBFVlY8AxkqcHASw3L60jIuF8jFP78az3C2YhmGvqbHBpAjTRH2/xqYunrJ9g1jSyjCjpoWzIAA==}
     engines: {node: '>= 0.4'}
@@ -2010,6 +2002,15 @@ snapshots:
 
   '@rollup/rollup-win32-x64-msvc@4.60.1':
     optional: true
+
+  '@seanchatmangpt/pictl@26.4.9(zod@3.25.76)':
+    dependencies:
+      '@modelcontextprotocol/sdk': 1.29.0(zod@3.25.76)
+      '@pictl/ml': link:packages/ml
+    transitivePeerDependencies:
+      - '@cfworker/json-schema'
+      - supports-color
+      - zod
 
   '@sinclair/typebox@0.27.10': {}
 
@@ -2690,8 +2691,6 @@ snapshots:
 
   merge-stream@2.0.0: {}
 
-  micro-ml@1.0.0: {}
-
   mime-db@1.54.0: {}
 
   mime-types@3.0.2:
@@ -3150,14 +3149,6 @@ snapshots:
   vscode-oniguruma@1.7.0: {}
 
   vscode-textmate@8.0.0: {}
-
-  wasm4pm@26.4.8(zod@3.25.76):
-    dependencies:
-      '@modelcontextprotocol/sdk': 1.29.0(zod@3.25.76)
-    transitivePeerDependencies:
-      - '@cfworker/json-schema'
-      - supports-color
-      - zod
 
   which-boxed-primitive@1.1.1:
     dependencies:

@@ -143,8 +143,9 @@ export class Engine {
    * Bootstraps the engine: loads WASM, initializes kernel
    * Transitions: uninitialized -> bootstrapping -> ready | failed
    * Emits observability events for bootstrap lifecycle
+   * @param timeoutMs Timeout in milliseconds (default: 30000ms). Falls back to degraded state on timeout.
    */
-  async bootstrap(): Promise<void> {
+  async bootstrap(timeoutMs: number = 30000): Promise<void> {
     // Initialize trace ID for this bootstrap operation
     if (!this.traceId) {
       this.traceId = Instrumentation.generateTraceId();
@@ -187,8 +188,44 @@ export class Engine {
       );
       this.observability.emitOtelSafe(stateChangeStart.otelEvent);
 
-      // Delegate to bootstrap module
-      const result = await bootstrapEngine(this.kernel, this.wasmLoader);
+      // Delegate to bootstrap module with timeout
+      const result = await Promise.race([
+        bootstrapEngine(this.kernel, this.wasmLoader),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error(`Bootstrap timeout after ${timeoutMs}ms`)), timeoutMs)
+        )
+      ]).catch(err => {
+        // On timeout or error, transition to degraded state
+        const timeoutError: EngineError = {
+          code: 'BOOTSTRAP_TIMEOUT',
+          message: err instanceof Error ? err.message : String(err),
+          severity: 'error',
+          recoverable: true,
+          suggestion: 'Check WASM module availability and system resources',
+        };
+
+        this.statusTracker.addError(timeoutError);
+
+        // Emit error event
+        if (this.requiredOtelAttrs) {
+          const errorEvent = Instrumentation.createErrorEvent(
+            this.traceId!,
+            timeoutError.code,
+            timeoutError.message,
+            this.requiredOtelAttrs,
+            { severity: timeoutError.severity, context: timeoutError.context }
+          );
+          this.observability.emitOtelSafe(errorEvent.otelEvent);
+          this.observability.emitJsonSafe(errorEvent.jsonEvent);
+        }
+
+        // Transition to degraded state
+        this.stateMachine.transition('degraded', `Bootstrap failed: ${timeoutError.message}`);
+        this.statusTracker.setState('degraded');
+
+        throw timeoutError;
+      });
+
       this.wasmModule = result.wasmModule;
 
       // Transition to ready
@@ -247,8 +284,10 @@ export class Engine {
    * Transitions: ready -> planning -> ready | running | failed
    * Requires: bootstrap() must have been called first
    * Emits observability events for plan generation
+   * @param config Configuration object
+   * @param timeoutMs Timeout in milliseconds (default: 10000ms). Falls back to degraded state on timeout.
    */
-  async plan(config: unknown): Promise<ExecutionPlan> {
+  async plan(config: unknown, timeoutMs: number = 10000): Promise<ExecutionPlan> {
     const planStart = Date.now();
 
     try {
@@ -278,8 +317,46 @@ export class Engine {
       );
       this.observability.emitOtelSafe(stateChangePlanning.otelEvent);
 
-      // Generate execution plan
-      const plan = await this.planner.plan(config);
+      // Generate execution plan with timeout
+      const plan = await Promise.race([
+        this.planner.plan(config),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error(`Plan generation timeout after ${timeoutMs}ms`)), timeoutMs)
+        )
+      ]).catch(err => {
+        const timeoutError: EngineError = {
+          code: 'PLANNING_TIMEOUT',
+          message: err instanceof Error ? err.message : String(err),
+          severity: 'error',
+          recoverable: true,
+          suggestion: 'Check configuration complexity and system resources',
+        };
+
+        this.statusTracker.addError(timeoutError);
+
+        // Emit error event
+        if (this.requiredOtelAttrs) {
+          const errorEvent = Instrumentation.createErrorEvent(
+            this.traceId!,
+            timeoutError.code,
+            timeoutError.message,
+            this.requiredOtelAttrs,
+            { severity: timeoutError.severity }
+          );
+          this.observability.emitOtelSafe(errorEvent.otelEvent);
+          this.observability.emitJsonSafe(errorEvent.jsonEvent);
+        }
+
+        // Try to recover to degraded state
+        const recoveryState = TransitionValidator.suggestRecoveryState(this.state(), [timeoutError]);
+        if (recoveryState && this.stateMachine.canTransition(recoveryState)) {
+          this.stateMachine.transition(recoveryState, `Planning timeout: ${timeoutError.message}`);
+        }
+
+        this.statusTracker.setState(this.state());
+
+        throw timeoutError;
+      });
 
       // Calculate plan hash (simple hash of plan ID + steps count)
       const planHash = Buffer.from(plan.planId + plan.totalSteps).toString('base64').substring(0, 32);
@@ -371,8 +448,10 @@ export class Engine {
    * Transitions: ready -> running -> ready | watching | degraded | failed
    * Requires: bootstrap() and plan() must have been called first
    * Emits observability events for execution lifecycle
+   * @param plan Execution plan to run
+   * @param timeoutMs Timeout in milliseconds (default: 300000ms / 5 minutes). Falls back to degraded state on timeout.
    */
-  async run(plan: ExecutionPlan): Promise<ExecutionReceipt> {
+  async run(plan: ExecutionPlan, timeoutMs: number = 300000): Promise<ExecutionReceipt> {
     const runStart = Date.now();
 
     try {
@@ -410,8 +489,51 @@ export class Engine {
       );
       this.observability.emitOtelSafe(stateChangeRunning.otelEvent);
 
-      // Execute the plan
-      const receipt = await this.executor.run(plan);
+      // Execute the plan with timeout
+      const receipt = await Promise.race([
+        this.executor.run(plan),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error(`Execution timeout after ${timeoutMs}ms`)), timeoutMs)
+        )
+      ]).catch(err => {
+        this.statusTracker.finish();
+
+        const timeoutError: EngineError = {
+          code: 'EXECUTION_TIMEOUT',
+          message: err instanceof Error ? err.message : String(err),
+          severity: 'error',
+          recoverable: true,
+          suggestion: 'Check plan complexity and algorithm performance',
+        };
+
+        this.statusTracker.addError(timeoutError);
+
+        // Emit error event
+        if (this.requiredOtelAttrs) {
+          const runDuration = Date.now() - runStart;
+          const errorEvent = Instrumentation.createErrorEvent(
+            this.traceId!,
+            timeoutError.code,
+            timeoutError.message,
+            this.requiredOtelAttrs,
+            { severity: timeoutError.severity }
+          );
+          this.observability.emitOtelSafe(errorEvent.otelEvent);
+          this.observability.emitJsonSafe(errorEvent.jsonEvent);
+        }
+
+        // Try to recover or degrade
+        const recoveryState = TransitionValidator.suggestRecoveryState(this.state(), [timeoutError]);
+        if (recoveryState && this.stateMachine.canTransition(recoveryState)) {
+          this.stateMachine.transition(recoveryState, `Execution timeout: ${timeoutError.message}`);
+        } else {
+          this.stateMachine.transition('failed', `Execution timeout: ${timeoutError.message}`);
+        }
+
+        this.statusTracker.setState(this.state());
+
+        throw timeoutError;
+      });
 
       // Return to ready after execution
       this.statusTracker.finish();

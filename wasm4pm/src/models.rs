@@ -136,11 +136,40 @@ pub struct Event {
     pub attributes: Attributes,
 }
 
+impl Default for Event {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Event {
+    pub fn new() -> Self {
+        Event {
+            attributes: HashMap::default(),
+        }
+    }
+}
+
 /// Trace (case) of events
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Trace {
     pub attributes: Attributes,
     pub events: Vec<Event>,
+}
+
+impl Default for Trace {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Trace {
+    pub fn new() -> Self {
+        Trace {
+            attributes: HashMap::default(),
+            events: Vec::default(),
+        }
+    }
 }
 
 /// Event log (case-centric)
@@ -612,139 +641,6 @@ impl DeclareModel {
     }
 }
 
-/// Streaming DFG builder for IoT / chunked event ingestion.
-///
-/// Maintains running DFG counts without storing the full event log in memory.
-/// Events are added one-by-one (or in batches) per case; once a trace is
-/// closed its per-trace buffer is freed and its counts folded into the global
-/// totals.  Memory use is proportional to open concurrent traces × average
-/// trace length, not total log size.
-///
-/// Activity strings are integer-encoded on first sight so edge counting uses
-/// `FxHashMap<(u32,u32), usize>` (fixed-width keys, O(1) hash).
-#[derive(Debug, Clone)]
-pub struct StreamingDfgBuilder {
-    /// activity name → integer id (first-seen order)
-    pub vocab_map: HashMap<String, u32>,
-    /// id → activity name (reverse of vocab_map)
-    pub vocab: Vec<String>,
-    /// per-activity occurrence counts indexed by id (grown on demand)
-    pub node_counts: Vec<usize>,
-    /// directed edge occurrence counts
-    pub edge_counts: FxHashMap<(u32, u32), usize>,
-    /// start-activity counts (first event in each closed trace)
-    pub start_counts: FxHashMap<u32, usize>,
-    /// end-activity counts (last event in each closed trace)
-    pub end_counts: FxHashMap<u32, usize>,
-    /// number of traces closed so far
-    pub trace_count: usize,
-    /// total events processed (including open traces)
-    pub event_count: usize,
-    /// open (in-progress) traces: case_id → encoded activity sequence
-    /// freed when the trace is closed via `streaming_dfg_close_trace`
-    pub open_traces: HashMap<String, Vec<u32>>,
-}
-
-impl StreamingDfgBuilder {
-    pub fn new() -> Self {
-        StreamingDfgBuilder {
-            vocab_map: HashMap::new(),
-            vocab: Vec::new(),
-            node_counts: Vec::new(),
-            edge_counts: FxHashMap::default(),
-            start_counts: FxHashMap::default(),
-            end_counts: FxHashMap::default(),
-            trace_count: 0,
-            event_count: 0,
-            open_traces: HashMap::new(),
-        }
-    }
-
-    /// Intern an activity string and return its u32 id.
-    #[inline]
-    pub fn intern(&mut self, activity: &str) -> u32 {
-        if let Some(&id) = self.vocab_map.get(activity) {
-            return id;
-        }
-        let id = self.vocab.len() as u32;
-        self.vocab.push(activity.to_owned());
-        self.vocab_map.insert(activity.to_owned(), id);
-        self.node_counts.push(0);
-        id
-    }
-
-    /// Append one event to an open trace.
-    pub fn add_event(&mut self, case_id: &str, activity: &str) {
-        let id = self.intern(activity);
-        self.open_traces
-            .entry(case_id.to_owned())
-            .or_insert_with(Vec::new)
-            .push(id);
-        self.event_count += 1;
-    }
-
-    /// Close a trace: fold its buffered events into running counts, then free the buffer.
-    /// Returns `false` if `case_id` was not open.
-    pub fn close_trace(&mut self, case_id: &str) -> bool {
-        let Some(events) = self.open_traces.remove(case_id) else {
-            return false;
-        };
-        if events.is_empty() {
-            return true;
-        }
-
-        // Node frequencies
-        for &id in &events {
-            self.node_counts[id as usize] += 1;
-        }
-        // Directly-follows edges
-        for pair in events.windows(2) {
-            *self.edge_counts.entry((pair[0], pair[1])).or_insert(0) += 1;
-        }
-        // Start / end (safe: events non-empty due to line 446 check)
-        *self.start_counts.entry(events[0]).or_insert(0) += 1;
-        if let Some(last) = events.last() {
-            *self.end_counts.entry(*last).or_insert(0) += 1;
-        }
-        self.trace_count += 1;
-        true
-    }
-
-    /// Snapshot: build a `DirectlyFollowsGraph` from current counts.
-    /// Includes counts from *closed* traces only (open traces are not yet folded in).
-    pub fn to_dfg(&self) -> DirectlyFollowsGraph {
-        let mut dfg = DirectlyFollowsGraph::new();
-        dfg.nodes = self
-            .vocab
-            .iter()
-            .enumerate()
-            .map(|(i, name)| DFGNode {
-                id: name.clone(),
-                label: name.clone(),
-                frequency: self.node_counts[i],
-            })
-            .collect();
-        dfg.edges = self
-            .edge_counts
-            .iter()
-            .map(|(&(f, t), &freq)| DirectlyFollowsRelation {
-                from: self.vocab[f as usize].clone(),
-                to: self.vocab[t as usize].clone(),
-                frequency: freq,
-            })
-            .collect();
-        for (&id, &cnt) in &self.start_counts {
-            dfg.start_activities
-                .insert(self.vocab[id as usize].clone(), cnt);
-        }
-        for (&id, &cnt) in &self.end_counts {
-            dfg.end_activities
-                .insert(self.vocab[id as usize].clone(), cnt);
-        }
-        dfg
-    }
-}
-
 /// Token replay deviation
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TokenReplayDeviation {
@@ -986,12 +882,6 @@ impl Default for DeclareModel {
 }
 
 impl Default for TemporalProfile {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl Default for StreamingDfgBuilder {
     fn default() -> Self {
         Self::new()
     }

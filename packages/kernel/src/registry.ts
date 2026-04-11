@@ -866,6 +866,331 @@ export class AlgorithmRegistry {
       robustToNoise: false,
       scalesWell: true,
     });
+
+    // ─── Wave 1 Migration: Discovery algorithms ───────────────────────────
+
+    this.registerWithInferredProfiles({
+      id: 'transition_system',
+      name: 'Transition System Discovery',
+      description: 'Build a state machine from the event log using a sliding window approach.',
+      outputType: 'dfg',
+      complexity: 'O(n²)',
+      speedTier: 70,
+      qualityTier: 50,
+      parameters: [
+        { name: 'window', type: 'number', description: 'Sliding window size', required: false, default: 1, min: 1, max: 10 },
+        { name: 'direction', type: 'select', description: 'Window direction', required: false, default: 'forward', options: ['forward', 'backward'] },
+      ],
+      supportedProfiles: ['quality', 'stream'],
+      estimatedDurationMs: 15,
+      estimatedMemoryMB: 50,
+      robustToNoise: true,
+      scalesWell: true,
+    });
+
+    this.registerWithInferredProfiles({
+      id: 'log_to_trie',
+      name: 'Prefix Tree Discovery',
+      description: 'Build a prefix tree (trie) from log variants.',
+      outputType: 'dfg',
+      complexity: 'O(n)',
+      speedTier: 75,
+      qualityTier: 50,
+      parameters: [],
+      supportedProfiles: ['balanced', 'quality', 'stream'],
+      estimatedDurationMs: 10,
+      estimatedMemoryMB: 30,
+      robustToNoise: true,
+      scalesWell: true,
+    });
+
+    this.registerWithInferredProfiles({
+      id: 'causal_graph',
+      name: 'Causal Graph Discovery',
+      description: 'Discover causal dependencies using alpha or heuristic methods.',
+      outputType: 'dfg',
+      complexity: 'O(n²)',
+      speedTier: 60,
+      qualityTier: 55,
+      parameters: [
+        { name: 'method', type: 'select', description: 'Discovery method', required: false, default: 'heuristic', options: ['alpha', 'heuristic'] },
+        { name: 'dependency_threshold', type: 'number', description: 'Minimum dependency threshold (heuristic)', required: false, default: 0.5, min: 0, max: 1 },
+      ],
+      supportedProfiles: ['quality', 'stream'],
+      estimatedDurationMs: 20,
+      estimatedMemoryMB: 50,
+      robustToNoise: false,
+      scalesWell: true,
+    });
+
+    this.registerWithInferredProfiles({
+      id: 'performance_spectrum',
+      name: 'Performance Spectrum',
+      description: 'Analyze duration statistics between activity pairs.',
+      outputType: 'dfg',
+      complexity: 'O(n²)',
+      speedTier: 55,
+      qualityTier: 60,
+      parameters: [
+        { name: 'activity_key', type: 'string', description: 'Activity attribute key', required: true, default: 'concept:name' },
+        { name: 'timestamp_key', type: 'string', description: 'Timestamp attribute key', required: false, default: 'time:timestamp' },
+      ],
+      supportedProfiles: ['quality', 'stream'],
+      estimatedDurationMs: 30,
+      estimatedMemoryMB: 80,
+      robustToNoise: false,
+      scalesWell: false,
+    });
+
+    this.registerWithInferredProfiles({
+      id: 'batches',
+      name: 'Batch Detection',
+      description: 'Detect batch patterns where cases share timestamps.',
+      outputType: 'dfg',
+      complexity: 'O(n²)',
+      speedTier: 50,
+      qualityTier: 55,
+      parameters: [
+        { name: 'activity_key', type: 'string', description: 'Activity attribute key', required: true, default: 'concept:name' },
+        { name: 'timestamp_key', type: 'string', description: 'Timestamp attribute key', required: false, default: 'time:timestamp' },
+        { name: 'batch_threshold', type: 'number', description: 'Maximum time difference within a batch (ms)', required: false, default: 86400000, min: 0 },
+      ],
+      supportedProfiles: ['quality', 'stream'],
+      estimatedDurationMs: 35,
+      estimatedMemoryMB: 60,
+      robustToNoise: false,
+      scalesWell: false,
+    });
+
+    this.registerWithInferredProfiles({
+      id: 'correlation_miner',
+      name: 'Correlation Miner',
+      description: 'Discover DFG structure without case identifiers using timestamp correlation.',
+      outputType: 'dfg',
+      complexity: 'O(n²)',
+      speedTier: 45,
+      qualityTier: 60,
+      parameters: [
+        { name: 'timestamp_key', type: 'string', description: 'Timestamp attribute key', required: false, default: 'time:timestamp' },
+        { name: 'activity_key', type: 'string', description: 'Activity attribute key', required: true, default: 'concept:name' },
+        { name: 'max_gap', type: 'number', description: 'Maximum time gap between correlated events (ms)', required: false, default: 3600000, min: 0 },
+      ],
+      supportedProfiles: ['quality', 'stream'],
+      estimatedDurationMs: 40,
+      estimatedMemoryMB: 80,
+      robustToNoise: false,
+      scalesWell: false,
+    });
+
+    // ─── Wave 1 Migration: Conformance algorithms ──────────────────────────
+
+    this.registerWithInferredProfiles({
+      id: 'generalization',
+      name: 'Generalization Metric',
+      description: 'Measure how general a Petri net model is (avoids overfitting).',
+      outputType: 'tree',
+      complexity: 'O(n²)',
+      speedTier: 65,
+      qualityTier: 65,
+      parameters: [
+        { name: 'petri_net_handle', type: 'string', description: 'Handle of the Petri net model', required: true },
+      ],
+      supportedProfiles: ['quality'],
+      estimatedDurationMs: 20,
+      estimatedMemoryMB: 40,
+      robustToNoise: true,
+      scalesWell: true,
+    });
+
+    this.registerWithInferredProfiles({
+      id: 'petri_net_reduction',
+      name: 'Petri Net Reduction',
+      description: 'Simplify a Petri net using Murata reduction rules.',
+      outputType: 'petrinet',
+      complexity: 'O(n²)',
+      speedTier: 70,
+      qualityTier: 55,
+      parameters: [
+        { name: 'petri_net_handle', type: 'string', description: 'Handle of the Petri net to reduce', required: true },
+      ],
+      supportedProfiles: ['quality'],
+      estimatedDurationMs: 10,
+      estimatedMemoryMB: 30,
+      robustToNoise: true,
+      scalesWell: true,
+    });
+
+    this.registerWithInferredProfiles({
+      id: 'etconformance_precision',
+      name: 'ETConformance Precision',
+      description: 'Measure precision via escaping-edge analysis.',
+      outputType: 'tree',
+      complexity: 'O(n²)',
+      speedTier: 55,
+      qualityTier: 70,
+      parameters: [
+        { name: 'petri_net_handle', type: 'string', description: 'Handle of the Petri net model', required: true },
+      ],
+      supportedProfiles: ['quality'],
+      estimatedDurationMs: 25,
+      estimatedMemoryMB: 50,
+      robustToNoise: true,
+      scalesWell: true,
+    });
+
+    this.registerWithInferredProfiles({
+      id: 'alignments',
+      name: 'A* Optimal Alignments',
+      description: 'Compute optimal trace-to-model alignments using A* search.',
+      outputType: 'tree',
+      complexity: 'NP-Hard',
+      speedTier: 20,
+      qualityTier: 90,
+      parameters: [
+        { name: 'sync_cost', type: 'number', description: 'Cost of synchronous move', required: false, default: 0, min: 0 },
+        { name: 'log_move_cost', type: 'number', description: 'Cost of log move', required: false, default: 1, min: 0 },
+        { name: 'model_move_cost', type: 'number', description: 'Cost of model move', required: false, default: 1, min: 0 },
+      ],
+      supportedProfiles: ['quality'],
+      estimatedDurationMs: 200,
+      estimatedMemoryMB: 200,
+      robustToNoise: true,
+      scalesWell: false,
+    });
+
+    // ─── Wave 1 Migration: Quality metrics ──────────────────────────────────
+
+    this.registerWithInferredProfiles({
+      id: 'complexity_metrics',
+      name: 'POWL Complexity Metrics',
+      description: 'Measure structural complexity of a POWL model.',
+      outputType: 'tree',
+      complexity: 'O(n)',
+      speedTier: 80,
+      qualityTier: 60,
+      parameters: [],
+      supportedProfiles: ['balanced', 'quality', 'stream'],
+      estimatedDurationMs: 5,
+      estimatedMemoryMB: 20,
+      robustToNoise: true,
+      scalesWell: true,
+    });
+
+    // ─── Wave 1 Migration: Model conversion ────────────────────────────────
+
+    this.registerWithInferredProfiles({
+      id: 'pnml_import',
+      name: 'PNML Import',
+      description: 'Import a Petri net from PNML XML format.',
+      outputType: 'petrinet',
+      complexity: 'O(n²)',
+      speedTier: 75,
+      qualityTier: 80,
+      parameters: [
+        { name: 'pnml_xml', type: 'string', description: 'PNML XML string to import', required: true },
+      ],
+      supportedProfiles: ['balanced', 'quality', 'stream'],
+      estimatedDurationMs: 15,
+      estimatedMemoryMB: 30,
+      robustToNoise: true,
+      scalesWell: true,
+    });
+
+    this.registerWithInferredProfiles({
+      id: 'bpmn_import',
+      name: 'BPMN Import',
+      description: 'Import a BPMN 2.0 XML model and convert to POWL.',
+      outputType: 'tree',
+      complexity: 'O(n²)',
+      speedTier: 70,
+      qualityTier: 70,
+      parameters: [
+        { name: 'bpmn_xml', type: 'string', description: 'BPMN 2.0 XML string to import', required: true },
+      ],
+      supportedProfiles: ['balanced', 'quality', 'stream'],
+      estimatedDurationMs: 20,
+      estimatedMemoryMB: 40,
+      robustToNoise: true,
+      scalesWell: true,
+    });
+
+    this.registerWithInferredProfiles({
+      id: 'powl_to_process_tree',
+      name: 'POWL to Process Tree',
+      description: 'Convert a POWL model to a process tree representation.',
+      outputType: 'tree',
+      complexity: 'O(n)',
+      speedTier: 75,
+      qualityTier: 70,
+      parameters: [],
+      supportedProfiles: ['balanced', 'quality', 'stream'],
+      estimatedDurationMs: 10,
+      estimatedMemoryMB: 30,
+      robustToNoise: true,
+      scalesWell: true,
+    });
+
+    this.registerWithInferredProfiles({
+      id: 'yawl_export',
+      name: 'YAWL Export',
+      description: 'Export a POWL model to YAWL v6 XML format.',
+      outputType: 'tree',
+      complexity: 'O(n)',
+      speedTier: 75,
+      qualityTier: 70,
+      parameters: [],
+      supportedProfiles: ['balanced', 'quality', 'stream'],
+      estimatedDurationMs: 10,
+      estimatedMemoryMB: 30,
+      robustToNoise: true,
+      scalesWell: true,
+    });
+
+    // ─── Wave 1 Migration: Simulation ──────────────────────────────────────
+
+    this.registerWithInferredProfiles({
+      id: 'playout',
+      name: 'Process Tree Playout',
+      description: 'Simulate event log generation from a process tree or DFG.',
+      outputType: 'dfg',
+      complexity: 'O(n²)',
+      speedTier: 60,
+      qualityTier: 50,
+      parameters: [
+        { name: 'num_traces', type: 'number', description: 'Number of traces to generate', required: false, default: 100, min: 1, max: 10000 },
+        { name: 'max_trace_length', type: 'number', description: 'Maximum trace length', required: false, default: 100, min: 1, max: 1000 },
+      ],
+      supportedProfiles: ['balanced', 'quality', 'stream'],
+      estimatedDurationMs: 50,
+      estimatedMemoryMB: 60,
+      robustToNoise: true,
+      scalesWell: true,
+    });
+
+    // Monte Carlo Simulation
+    this.registerWithInferredProfiles({
+      id: 'monte_carlo_simulation',
+      name: 'Monte Carlo Simulation',
+      description: 'Run Monte Carlo simulation with stochastic replay for probabilistic process analysis.',
+      outputType: 'dfg',
+      complexity: 'O(n²)',
+      speedTier: 70,
+      qualityTier: 60,
+      parameters: [
+        { name: 'model_handle', type: 'string', description: 'Handle to the event log or model to simulate', required: true },
+        { name: 'powl_handle', type: 'string', description: 'Handle to POWL model (optional, not used in current implementation)', required: false },
+        { name: 'root_id', type: 'string', description: 'Root ID for POWL model (optional, not used in current implementation)', required: false },
+        { name: 'num_cases', type: 'number', description: 'Number of simulation cases to generate', required: false, default: 1000, min: 100, max: 100000 },
+        { name: 'inter_arrival_mean_ms', type: 'number', description: 'Mean inter-arrival time in milliseconds', required: false, default: 1000.0 },
+        { name: 'simulation_time_ms', type: 'number', description: 'Total simulation time in milliseconds', required: false, default: 60000 },
+        { name: 'random_seed', type: 'number', description: 'Random seed for reproducibility', required: false, default: 42 },
+      ],
+      supportedProfiles: ['quality'],
+      estimatedDurationMs: 100,
+      estimatedMemoryMB: 150,
+      robustToNoise: true,
+      scalesWell: false,
+    });
   }
 
   /**

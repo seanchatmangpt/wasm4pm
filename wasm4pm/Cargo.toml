@@ -1,6 +1,6 @@
 [package]
 name = "pictl"
-version = "26.4.9"
+version = "26.4.10"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 description = "High-performance process mining algorithms in WebAssembly for JavaScript/TypeScript"
@@ -38,14 +38,16 @@ serde-wasm-bindgen = "0.6"
 once_cell = "1.19"
 uuid = { version = "1.16.0", features = ["v4"] }
 chrono = { version = "0.4.40", features = ["serde"] }
-console_error_panic_hook = "0.1"
+console_error_panic_hook = { version = "0.1", optional = true }
 itertools = "0.14.0"
 rustc-hash = "2"
 smallvec = { version = "1.13", features = ["serde"] }
 roxmltree = "0.19"
 fastrand = "2.1.0"
+rand = "0.8"
+rand_distr = "0.4"
 statrs = { version = "0.17", default-features = false, optional = true }
-rayon = "1.10"
+rayon = { version = "1.10", optional = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 web-sys = { version = "0.3", features = [] }
@@ -83,7 +85,7 @@ browser = ["basic", "simd", "hand_rolled_stats"]
 edge = ["basic", "advanced", "ml", "streaming_basic", "hand_rolled_stats"]
 fog = ["edge", "swarm", "streaming_full", "statrs", "ocel"]
 iot = ["minimal", "streaming_basic", "hand_rolled_stats"]
-cloud = ["basic", "advanced", "ml", "streaming_full", "swarm", "statrs", "powl", "ocel"]
+cloud = ["basic", "advanced", "ml", "streaming_full", "swarm", "statrs", "powl", "ocel", "alignment_fitness", "petri_net_playout", "extensive_playout", "align_etconformance", "montecarlo", "console_error_panic_hook", "rayon"]
 # Backward compatibility alias
 compat = ["cloud"]
 
@@ -136,6 +138,13 @@ token_replay = []
 alignments = []
 diagnostics = []
 
+# New 80/20 gap-filling modules
+alignment_fitness = []
+petri_net_playout = []
+extensive_playout = []
+align_etconformance = []
+montecarlo = []
+
 # Dependencies
 statrs = ["dep:statrs"]  # Optional dependency
 powl = []  # POWL modules (always compiled if feature enabled, just controls lib.rs exports)
@@ -144,7 +153,7 @@ ocel = []  # OCEL support
 # Utility features
 hand_rolled_stats = []  # Use internal median instead of statrs
 simd = []  # SIMD acceleration (always available on WASM)
-console_error_panic_hook = []  # Existing feature
+console_error_panic_hook = ["dep:console_error_panic_hook"]
 
 [profile.release]
 # Optimize for binary size ("z" instead of "3")

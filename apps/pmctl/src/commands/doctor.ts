@@ -628,7 +628,7 @@ async function checkAlgorithmRegistry(): Promise<CheckResult> {
     // Known algorithm functions
     const expected: string[] = [
       'discover_dfg',
-      'discover_process_skeleton',
+      'extract_process_skeleton',
       'discover_alpha_plus_plus',
       'discover_heuristic_miner',
       'discover_inductive_miner',
@@ -639,7 +639,6 @@ async function checkAlgorithmRegistry(): Promise<CheckResult> {
       'discover_aco',
       'discover_pso',
       'discover_genetic_algorithm',
-      'discover_optimized_dfg',
       'discover_ilp',
       'discover_powl',
     ];
