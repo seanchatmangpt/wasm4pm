@@ -64,6 +64,7 @@ $FAILS
 
 Run: pictl doctor --verbose for full report"
 
-# Block stop with JSON decision
-echo "{\"hookSpecificOutput\":{\"hookEventName\":\"Stop\",\"decision\":\"block\",\"blockReason\":\"$REASON\"}}"
+# Block stop with JSON decision (properly escape reason for JSON)
+REASON_JSON=$(echo "$REASON" | jq -Rs .)
+echo "{\"hookSpecificOutput\":{\"hookEventName\":\"Stop\",\"decision\":\"block\",\"blockReason\":$REASON_JSON}}"
 exit 0
