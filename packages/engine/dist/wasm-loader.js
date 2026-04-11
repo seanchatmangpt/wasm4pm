@@ -119,6 +119,8 @@ export class WasmLoader {
         if (!this.module) {
             return {
                 initialized: false,
+                moduleVersion: undefined,
+                expectedVersion: this.config.expectedVersion,
                 memoryPages: 0,
                 memoryUsagePercent: 0,
                 runtimeEnvironment: this.runtimeEnvironment,
