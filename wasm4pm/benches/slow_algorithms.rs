@@ -1,9 +1,9 @@
 /// Criterion benchmarks for slow metaheuristic algorithms (>200ms per call).
 /// Sizes capped at 1K cases. Parameter sweeps included.
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
-use std::time::Duration;
 use pictl::genetic_discovery::{discover_genetic_algorithm, discover_pso_algorithm};
 use pictl::ilp_discovery::discover_ilp_petri_net;
+use std::time::Duration;
 
 #[path = "helpers.rs"]
 mod helpers;

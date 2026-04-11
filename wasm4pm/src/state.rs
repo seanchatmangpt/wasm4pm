@@ -6,6 +6,7 @@ use crate::models::{
     StreamingConformanceChecker, TemporalProfile, OCEL,
 };
 use crate::streaming::{StreamingDfgBuilder, StreamingHeuristicBuilder, StreamingSkeletonBuilder};
+#[cfg(feature = "streaming_full")]
 use crate::streaming_pipeline::StreamingPipeline;
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
@@ -19,6 +20,7 @@ use wasm_bindgen::prelude::*;
 /// This enum provides type-safe access to stored objects and enables
 /// efficient serialization across the WASM boundary without requiring
 /// JavaScript to manage Rust object lifetimes.
+#[allow(clippy::large_enum_variant)]
 pub enum StoredObject {
     EventLog(EventLog),
     OCEL(OCEL),
@@ -35,10 +37,11 @@ pub enum StoredObject {
     NGramPredictor(NGramPredictor),
     IncrementalDFG(IncrementalDFG),
     StreamingDFG(StreamingDFG),
+    #[cfg(feature = "streaming_full")]
     StreamingPipeline(StreamingPipeline),
 }
 
-/// Global application state for managing objects
+/// Global application state for managing objects in WASM handle system.
 pub struct AppState {
     objects: Arc<Mutex<HashMap<String, StoredObject>>>,
     counter: Arc<Mutex<u64>>,
@@ -174,6 +177,7 @@ impl Clone for StoredObject {
             StoredObject::NGramPredictor(p) => StoredObject::NGramPredictor(p.clone()),
             StoredObject::IncrementalDFG(d) => StoredObject::IncrementalDFG(d.clone()),
             StoredObject::StreamingDFG(d) => StoredObject::StreamingDFG(d.clone()),
+            #[cfg(feature = "streaming_full")]
             StoredObject::StreamingPipeline(p) => StoredObject::StreamingPipeline(p.clone()),
         }
     }

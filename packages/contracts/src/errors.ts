@@ -23,6 +23,11 @@ export type ErrorCode =
   // Algorithm errors (4xx exit codes)
   | 'ALGORITHM_FAILED'
   | 'ALGORITHM_NOT_FOUND'
+  | 'CONFORMANCE_FAILED'
+  | 'SIMULATION_FAILED'
+  | 'PREDICTION_FAILED'
+  | 'VALIDATION_FAILED'
+  | 'IMPORT_FAILED'
 
   // WASM Runtime errors (5xx exit codes)
   | 'WASM_INIT_FAILED'
@@ -67,6 +72,11 @@ export const TYPED_ERROR_CODES: Record<ErrorCode, number> = {
   SOURCE_PERMISSION: 22,
   ALGORITHM_FAILED: 30,
   ALGORITHM_NOT_FOUND: 31,
+  CONFORMANCE_FAILED: 32,
+  SIMULATION_FAILED: 33,
+  PREDICTION_FAILED: 34,
+  VALIDATION_FAILED: 35,
+  IMPORT_FAILED: 36,
   WASM_INIT_FAILED: 40,
   WASM_MEMORY_EXCEEDED: 41,
   SINK_FAILED: 50,
@@ -190,6 +200,16 @@ const REMEDIATIONS: Record<ErrorCode, string> = {
     'The algorithm encountered an error during execution. Check the detailed error message and try with different parameters or a smaller dataset.',
   ALGORITHM_NOT_FOUND:
     'The requested algorithm is not available. Run: pictl list-algorithms to see available options.',
+  CONFORMANCE_FAILED:
+    'Conformance checking failed. Verify the process model matches the event log structure. Check activity names and case IDs match.',
+  SIMULATION_FAILED:
+    'Process simulation failed. Verify the model is valid and simulation parameters are within acceptable ranges.',
+  PREDICTION_FAILED:
+    'Predictive analysis failed. Ensure sufficient training data and valid feature configuration.',
+  VALIDATION_FAILED:
+    'Model validation failed. Check that the model structure is valid and required attributes are present.',
+  IMPORT_FAILED:
+    'Model import failed. Verify the import file is valid and the format is supported (PNML, BPMN).',
 
   // WASM runtime errors
   WASM_INIT_FAILED:
@@ -225,6 +245,11 @@ const EXIT_CODES: Record<ErrorCode, number> = {
   // Algorithm errors (400-499)
   ALGORITHM_FAILED: 400,
   ALGORITHM_NOT_FOUND: 401,
+  CONFORMANCE_FAILED: 450,
+  SIMULATION_FAILED: 455,
+  PREDICTION_FAILED: 460,
+  VALIDATION_FAILED: 465,
+  IMPORT_FAILED: 470,
 
   // WASM Runtime errors (500-599)
   WASM_INIT_FAILED: 500,
@@ -255,6 +280,11 @@ const RECOVERABLE: Record<ErrorCode, boolean> = {
   // Algorithm - potentially recoverable with retry or parameter adjustment
   ALGORITHM_FAILED: true,
   ALGORITHM_NOT_FOUND: false,
+  CONFORMANCE_FAILED: true,
+  SIMULATION_FAILED: true,
+  PREDICTION_FAILED: true,
+  VALIDATION_FAILED: false,
+  IMPORT_FAILED: false,
 
   // WASM - potentially recoverable by retrying or chunking
   WASM_INIT_FAILED: false,

@@ -22,6 +22,27 @@ export const ALGORITHM_IDS = [
   'pso',
   'genetic_algorithm',
   'ilp',
+  // Wave 1 Discovery
+  'transition_system',
+  'log_to_trie',
+  'causal_graph',
+  'performance_spectrum',
+  'batches',
+  'correlation_miner',
+  // Wave 1 Conformance & Quality
+  'generalization',
+  'petri_net_reduction',
+  'etconformance_precision',
+  'alignments',
+  'complexity_metrics',
+  // Wave 1 Import/Export
+  'pnml_import',
+  'bpmn_import',
+  'powl_to_process_tree',
+  'yawl_export',
+  // Wave 1 Simulation
+  'playout',
+  'monte_carlo_simulation',
   // ML Analysis
   'ml_classify',
   'ml_cluster',
@@ -49,6 +70,27 @@ export const ALGORITHM_ID_TO_STEP_TYPE: Record<string, string> = {
   pso: 'discover_pso',
   genetic_algorithm: 'discover_genetic',
   ilp: 'discover_ilp',
+  // Wave 1 Discovery
+  transition_system: 'discover_transition_system',
+  log_to_trie: 'discover_log_to_trie',
+  causal_graph: 'discover_causal_graph',
+  performance_spectrum: 'discover_performance_spectrum',
+  batches: 'discover_batches',
+  correlation_miner: 'discover_correlation_miner',
+  // Wave 1 Conformance & Quality
+  generalization: 'discover_generalization',
+  petri_net_reduction: 'discover_petri_net_reduction',
+  etconformance_precision: 'discover_etconformance_precision',
+  alignment_fitness: 'discover_alignment_fitness',
+  complexity_metrics: 'discover_complexity_metrics',
+  // Wave 1 Import/Export
+  pnml_import: 'import_pnml',
+  bpmn_import: 'import_bpmn',
+  powl_to_process_tree: 'convert_powl_to_process_tree',
+  yawl_export: 'export_yawl',
+  // Wave 1 Simulation
+  playout: 'simulate_playout',
+  monte_carlo_simulation: 'simulate_monte_carlo',
   // ML Analysis
   ml_classify: 'ml_classify',
   ml_cluster: 'ml_cluster',
@@ -74,6 +116,27 @@ export const ALGORITHM_OUTPUT_TYPES: Record<string, string> = {
   pso: 'petrinet',
   genetic_algorithm: 'petrinet',
   ilp: 'petrinet',
+  // Wave 1 Discovery
+  transition_system: 'transition_system',
+  log_to_trie: 'trie',
+  causal_graph: 'causal_graph',
+  performance_spectrum: 'performance_spectrum',
+  batches: 'batch_report',
+  correlation_miner: 'correlation_graph',
+  // Wave 1 Conformance & Quality
+  generalization: 'tree',
+  petri_net_reduction: 'petrinet',
+  etconformance_precision: 'conformance_report',
+  alignment_fitness: 'alignment_report',
+  complexity_metrics: 'complexity_report',
+  // Wave 1 Import/Export
+  pnml_import: 'petrinet',
+  bpmn_import: 'process_tree',
+  powl_to_process_tree: 'process_tree',
+  yawl_export: 'yawl',
+  // Wave 1 Simulation
+  playout: 'event_log',
+  monte_carlo_simulation: 'simulation_report',
   // ML Analysis
   ml_classify: 'ml_result',
   ml_cluster: 'ml_result',
@@ -99,6 +162,27 @@ export const ALGORITHM_CLI_ALIASES: Record<string, string> = {
   pso: 'pso',
   genetic_algorithm: 'genetic',
   ilp: 'ilp',
+  // Wave 1 Discovery
+  transition_system: 'transition-system',
+  log_to_trie: 'prefix-tree',
+  causal_graph: 'causal-graph',
+  performance_spectrum: 'perf-spectrum',
+  batches: 'batches',
+  correlation_miner: 'correlation',
+  // Wave 1 Conformance & Quality
+  generalization: 'generalization',
+  petri_net_reduction: 'reduce-pn',
+  etconformance_precision: 'etconformance',
+  alignment_fitness: 'alignment',
+  complexity_metrics: 'complexity',
+  // Wave 1 Import/Export
+  pnml_import: 'import-pnml',
+  bpmn_import: 'import-bpmn',
+  powl_to_process_tree: 'powl-to-tree',
+  yawl_export: 'export-yawl',
+  // Wave 1 Simulation
+  playout: 'playout',
+  monte_carlo_simulation: 'montecarlo',
   // ML Analysis
   ml_classify: 'ml-classify',
   ml_cluster: 'ml-cluster',
@@ -124,6 +208,27 @@ export const ALGORITHM_DISPLAY_NAMES: Record<string, string> = {
   pso: 'Particle Swarm Optimization',
   genetic_algorithm: 'Genetic Algorithm',
   ilp: 'ILP',
+  // Wave 1 Discovery
+  transition_system: 'Transition System',
+  log_to_trie: 'Prefix Tree',
+  causal_graph: 'Causal Graph',
+  performance_spectrum: 'Performance Spectrum',
+  batches: 'Batch Analysis',
+  correlation_miner: 'Correlation Miner',
+  // Wave 1 Conformance & Quality
+  generalization: 'Generalization Metrics',
+  petri_net_reduction: 'Petri Net Reduction',
+  etconformance_precision: 'ETConformance Precision',
+  alignment_fitness: 'Alignment Fitness',
+  complexity_metrics: 'Complexity Metrics',
+  // Wave 1 Import/Export
+  pnml_import: 'PNML Import',
+  bpmn_import: 'BPMN Import',
+  powl_to_process_tree: 'POWL to Process Tree',
+  yawl_export: 'YAWL Export',
+  // Wave 1 Simulation
+  playout: 'Petri Net Playout',
+  monte_carlo_simulation: 'Monte Carlo Simulation',
   // ML Analysis
   ml_classify: 'ML Classification',
   ml_cluster: 'ML Clustering',
@@ -139,8 +244,18 @@ export const ALGORITHM_DISPLAY_NAMES: Record<string, string> = {
  */
 export function getProfileAlgorithms(profile: string): string[] {
   const map: Record<string, string[]> = {
-    fast: ['process_skeleton', 'dfg'],
-    balanced: ['alpha_plus_plus', 'heuristic_miner', 'inductive_miner', 'declare', 'hill_climbing'],
+    fast: ['process_skeleton', 'dfg', 'transition_system', 'log_to_trie', 'causal_graph'],
+    balanced: [
+      'alpha_plus_plus',
+      'heuristic_miner',
+      'inductive_miner',
+      'declare',
+      'hill_climbing',
+      'performance_spectrum',
+      'batches',
+      'generalization',
+      'etconformance_precision',
+    ],
     quality: [
       'simulated_annealing',
       'a_star',
@@ -149,6 +264,12 @@ export function getProfileAlgorithms(profile: string): string[] {
       'pso',
       'genetic_algorithm',
       'ilp',
+      'alignments',
+      'correlation_miner',
+      'complexity_metrics',
+      'petri_net_reduction',
+      'monte_carlo_simulation',
+      'playout',
     ],
     stream: ['dfg'],
     ensemble: ['dfg', 'heuristic_miner', 'inductive_miner', 'genetic_algorithm'],

@@ -312,12 +312,18 @@ export class Kernel {
   ): Promise<{ handle: string }> {
     switch (algorithmId) {
       case 'dfg':
-      case 'process_skeleton':
       case 'simd_streaming_dfg':
       case 'hierarchical_dfg':
       case 'streaming_log':
       case 'smart_engine':
         return this.wasm.discover_dfg(eventLogHandle, activityKey);
+
+      case 'process_skeleton':
+        return this.wasm.extract_process_skeleton(
+          eventLogHandle,
+          activityKey,
+          (params.min_frequency as number) ?? 2
+        );
 
       case 'alpha_plus_plus':
         return this.wasm.discover_alpha_plus_plus(eventLogHandle, activityKey);
@@ -397,10 +403,174 @@ export class Kernel {
         );
 
       case 'optimized_dfg':
-        return this.wasm.discover_optimized_dfg(
+        return this.wasm.discover_dfg(
+          eventLogHandle,
+          activityKey
+        );
+
+      // ─── Wave 1 Migration: Discovery algorithms ───────────────────────
+
+      case 'transition_system':
+        return this.wasm.discover_transition_system(
+          eventLogHandle,
+          (params.window as number) ?? 1,
+          (params.direction as string) ?? 'forward'
+        );
+
+      case 'log_to_trie':
+        return this.wasm.discover_prefix_tree(eventLogHandle, activityKey);
+
+      case 'causal_graph':
+        return this.wasm.discover_causal_graph(
           eventLogHandle,
           activityKey,
-          (params.timeout_seconds as number) ?? 15
+          (params.method as string) ?? 'heuristic',
+          (params.dependency_threshold as number) ?? 0.5
+        );
+
+      case 'performance_spectrum':
+        return this.wasm.discover_performance_spectrum(
+          eventLogHandle,
+          activityKey,
+          (params.timestamp_key as string) ?? 'time:timestamp'
+        );
+
+      case 'batches':
+        return this.wasm.discover_batches(
+          eventLogHandle,
+          activityKey,
+          (params.timestamp_key as string) ?? 'time:timestamp',
+          (params.batch_threshold as number) ?? 86400000
+        );
+
+      case 'correlation_miner':
+        return this.wasm.discover_correlation(
+          eventLogHandle,
+          activityKey,
+          (params.timestamp_key as string) ?? 'time:timestamp'
+        );
+
+      // ─── Wave 1 Migration: Conformance algorithms ──────────────────────
+
+      case 'generalization':
+        return this.wasm.generalization(
+          eventLogHandle,
+          (params.petri_net_handle as string)!
+        );
+
+      case 'petri_net_reduction':
+        return this.wasm.reduce_petri_net(
+          (params.petri_net_handle as string)!
+        );
+
+      case 'etconformance_precision':
+        return this.wasm.precision_etconformance(
+          eventLogHandle,
+          (params.petri_net_handle as string)!,
+          activityKey
+        );
+
+      case 'alignments': {
+        const costConfig = JSON.stringify({
+          sync_cost: (params.sync_cost as number) ?? 0,
+          log_move_cost: (params.log_move_cost as number) ?? 1,
+          model_move_cost: (params.model_move_cost as number) ?? 1,
+        });
+        return this.wasm.compute_optimal_alignments(
+          eventLogHandle,
+          (params.petri_net_handle as string)!,
+          activityKey,
+          costConfig
+        );
+      }
+
+      // ─── Wave 1 Migration: Quality metrics ───────────────────────────────
+
+      case 'complexity_metrics':
+        return this.wasm.measure_complexity(
+          (params.powl_handle as string)!
+        );
+
+      // ─── Wave 1 Migration: Model conversion ────────────────────────────
+
+      case 'pnml_import':
+        return this.wasm.from_pnml(
+          (params.pnml_xml as string)!
+        );
+
+      case 'bpmn_import':
+        return this.wasm.read_bpmn(
+          (params.bpmn_xml as string)!
+        );
+
+      case 'powl_to_process_tree':
+        return this.wasm.powl_to_process_tree(
+          (params.powl_handle as string)!
+        );
+
+      case 'yawl_export': {
+        const xml = await this.wasm.powl_to_yawl_string(
+          (params.powl_string as string)!
+        );
+        return { handle: `yawl_${Date.now()}`, ...JSON.parse(xml) };
+      }
+
+      // ─── Wave 1 Migration: Simulation ──────────────────────────────────
+
+      case 'playout':
+        return this.wasm.play_out(
+          (params.model_handle as string)!,
+          (params.num_traces as number) ?? 100,
+          (params.max_trace_length as number) ?? 100
+        );
+
+      case 'monte_carlo_simulation':
+        // Monte Carlo simulation requires log_handle, powl_handle, root_id, and config_json
+        const mcConfig = {
+          num_cases: (params.num_simulations as number) ?? 1000,
+          inter_arrival_mean_ms: 1000.0,
+          activity_service_time_ms: {},
+          resource_capacity: {},
+          simulation_time_ms: 60000,
+          random_seed: 42
+        };
+        return this.wasm.monte_carlo_simulation(
+          (params.model_handle as string)!, // log_handle
+          '', // powl_handle (not used in current implementation)
+          '', // root_id (not used in current implementation)
+          JSON.stringify(mcConfig)
+        );
+
+      // ─── ML algorithms (TypeScript, not WASM) ────────────────────────────
+
+      case 'ml_classify':
+        throw new Error(
+          `ML algorithm '${algorithmId}' requires the @pictl/ml package. Run 'pictl ml classify ...' instead.`
+        );
+
+      case 'ml_cluster':
+        throw new Error(
+          `ML algorithm '${algorithmId}' requires the @pictl/ml package. Run 'pictl ml cluster ...' instead.`
+        );
+
+      case 'ml_forecast':
+        throw new Error(
+          `ML algorithm '${algorithmId}' requires the @pictl/ml package. Run 'pictl ml forecast ...' instead.`
+        );
+
+      case 'ml_anomaly':
+        throw new Error(
+          `ML algorithm '${algorithmId}' requires the @pictl/ml package. Run 'pictl ml anomaly ...' instead.`
+        );
+
+      case 'ml_regress':
+        throw new Error(
+          `ML algorithm '${algorithmId}' requires the @pictl/ml package. Run 'pictl ml regress ...' instead.`
+        );
+
+      case 'ml_pca':
+        throw new Error(
+          `ML algorithm '${algorithmId}' requires the @pictl/ml package. Run 'pictl ml pca ...' instead.`
         );
 
       default:

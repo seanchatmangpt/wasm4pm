@@ -78,6 +78,7 @@ export { ReceiptBuilder } from './receipt-builder.js';
 export type { ValidationResult } from './validation.js';
 export {
   validateReceipt,
+  verifyReceipt,
   verifyReceiptHashes,
   detectTampering,
 } from './validation.js';

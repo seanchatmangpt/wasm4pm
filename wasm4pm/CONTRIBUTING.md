@@ -30,11 +30,11 @@ Be respectful, inclusive, and professional in all interactions.
 ```bash
 # Fork the repository on GitHub
 # Clone your fork
-git clone https://github.com/your-username/wasm4pm.git
-cd wasm4pm
+git clone https://github.com/your-username/pictl.git
+cd pictl
 
 # Add upstream remote
-git remote add upstream https://github.com/seanchatmangpt/wasm4pm.git
+git remote add upstream https://github.com/seanchatmangpt/pictl.git
 ```
 
 ## Development Setup
@@ -110,7 +110,7 @@ pub fn my_new_function(handle: String, param: f64) -> String {
 #### 2. Add Type Definition
 
 ```typescript
-// pkg/process_mining_wasm.d.ts (auto-generated after build)
+// pkg/pictl.d.ts (auto-generated after build)
 export function my_new_function(handle: string, param: number): string;
 ```
 

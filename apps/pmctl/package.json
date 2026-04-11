@@ -1,6 +1,6 @@
 {
   "name": "@pictl/cli",
-  "version": "26.4.7",
+  "version": "26.4.10",
   "description": "pictl — Process Intelligence Control CLI",
   "type": "module",
   "bin": {

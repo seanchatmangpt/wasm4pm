@@ -43,7 +43,7 @@ export interface OtelEvent {
     code: 'UNSET' | 'OK' | 'ERROR';
     message?: string;
   };
-  attributes: Record<string, any>; // OTEL attributes
+  attributes: Record<string, any>; // OTEL attributes - MUST include service.name
   events?: Array<{
     name: string;
     timestamp: number;

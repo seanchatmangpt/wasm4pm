@@ -1,6 +1,6 @@
-//! # wasm4pm — High-Performance Process Mining in WebAssembly
+//! # pictl — High-Performance Process Mining in WebAssembly
 //!
-//! `wasm4pm` provides production-ready process mining algorithms compiled to WebAssembly,
+//! `pictl` provides production-ready process mining algorithms compiled to WebAssembly,
 //! enabling efficient **process discovery**, **conformance checking**, and **predictive analytics**
 //! in JavaScript/TypeScript environments.
 //!
@@ -20,7 +20,7 @@
 //!   load_eventlog_from_xes,
 //!   discover_dfg,
 //!   delete_object,
-//! } from "wasm4pm";
+//! } from "@seanchatmangpt/pictl";
 //!
 //! // Initialize WASM module
 //! await initWasm();
@@ -73,9 +73,9 @@
 //!
 //! ## Links
 //!
-//! - [GitHub Repository](https://github.com/seanchatmangpt/wasm4pm)
-//! - [npm Package](https://www.npmjs.com/package/@pictl/process-mining)
-//! - [Documentation](https://docs.rs/wasm4pm)
+//! - [GitHub Repository](https://github.com/seanchatmangpt/pictl)
+//! - [npm Package](https://www.npmjs.com/package/@seanchatmangpt/pictl)
+//! - [Documentation](https://docs.rs/pictl)
 
 pub mod error;
 pub mod io;
@@ -103,6 +103,7 @@ pub mod incremental_dfg;
 pub mod more_discovery;
 pub mod parallel_executor;
 pub mod probabilistic;
+pub mod playout;
 pub mod process_tree;
 pub mod smart_engine;
 pub mod social_network;
@@ -129,6 +130,20 @@ pub mod advanced_algorithms;
 pub mod genetic_discovery;
 #[cfg(feature = "discovery_advanced")]
 pub mod ilp_discovery; // ACO, PSO, simulated annealing
+#[cfg(feature = "discovery_advanced")]
+pub mod transition_system;
+#[cfg(feature = "discovery_advanced")]
+pub mod causal_graph;
+#[cfg(feature = "discovery_advanced")]
+pub mod log_to_trie;
+#[cfg(feature = "discovery_advanced")]
+pub mod performance_spectrum;
+#[cfg(feature = "discovery_advanced")]
+pub mod batches;
+
+// Quality metrics (gated by conformance_full feature)
+#[cfg(feature = "conformance_full")]
+pub mod generalization;
 
 // ML/Prediction (gated by ml feature)
 #[cfg(feature = "ml")]
@@ -173,6 +188,22 @@ pub mod temporal_profile;
 
 #[cfg(feature = "conformance_full")]
 pub mod alignments;
+#[cfg(feature = "conformance_full")]
+pub mod petri_net_reduction;
+#[cfg(feature = "conformance_full")]
+pub mod etconformance_precision;
+#[cfg(feature = "conformance_full")]
+pub mod marking_equation;
+
+// 80/20 gap-filling modules
+#[cfg(feature = "alignment_fitness")]
+pub mod alignment_fitness;
+#[cfg(feature = "petri_net_playout")]
+pub mod petri_net_playout;
+#[cfg(feature = "align_etconformance")]
+pub mod align_etconformance;
+#[cfg(feature = "montecarlo")]
+pub mod montecarlo;
 
 // Performance and resource analysis
 #[cfg(feature = "conformance_basic")]
@@ -197,8 +228,17 @@ pub mod powl_parser;
 pub mod powl_petri_net;
 #[cfg(feature = "powl")]
 pub mod powl_process_tree;
+#[cfg(feature = "powl")]
+pub mod complexity_metrics;
+#[cfg(feature = "powl")]
+pub mod powl_to_process_tree;
 
-// Re-export streaming types for convenience (conditional)
+// PNML import/export (always available)
+pub mod pnml_io;
+
+// BPMN import (always available, uses roxmltree)
+pub mod bpmn_import;
+
 #[cfg(feature = "streaming_basic")]
 pub use streaming::{
     StreamStats, StreamingAlgorithm, StreamingDfgBuilder, StreamingHeuristicBuilder,
@@ -211,6 +251,9 @@ pub mod recommendations;
 // Conformance cache — cached token replay results (always available)
 pub mod conformance_cache;
 
+// Correlation miner — DFG discovery without case identifiers (always available)
+pub mod correlation_miner;
+
 // Suppress unused warnings for re-exported modules
 #[allow(unused)]
 use state::*;
@@ -222,6 +265,7 @@ use wasm_bindgen::prelude::*;
 #[wasm_bindgen(start)]
 pub fn init_wasm() {
     // Initialize panic hook for better error messages in console
+    #[cfg(feature = "console_error_panic_hook")]
     console_error_panic_hook::set_once();
 }
 
@@ -240,6 +284,28 @@ fn init_state() {
 #[wasm_bindgen]
 pub fn get_version() -> String {
     env!("CARGO_PKG_VERSION").to_string()
+}
+
+/// Get WASM module capabilities as JSON string.
+///
+/// Returns version and feature flags indicating which algorithms
+/// and capabilities are available in this build.
+#[wasm_bindgen]
+pub fn get_capabilities() -> String {
+    format!(
+        r#"{{"version":"{}","features":{{"discovery":true,"conformance":{},"ml":{},"streaming":{},"powl":{},"ocel":{},"alignment_fitness":{},"petri_net_playout":{},"extensive_playout":{},"align_etconformance":{},"montecarlo":{}}}}}"#,
+        env!("CARGO_PKG_VERSION"),
+        cfg!(feature = "conformance_full"),
+        cfg!(feature = "ml"),
+        cfg!(feature = "streaming_full"),
+        cfg!(feature = "powl"),
+        cfg!(feature = "ocel"),
+        cfg!(feature = "alignment_fitness"),
+        cfg!(feature = "petri_net_playout"),
+        cfg!(feature = "extensive_playout"),
+        cfg!(feature = "align_etconformance"),
+        cfg!(feature = "montecarlo")
+    )
 }
 
 /// Clear all caches (parse, columnar, interner).

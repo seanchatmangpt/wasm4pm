@@ -93,10 +93,10 @@ function runDiscovery(
       raw = wasm.discover_declare(logHandle, activityKey);
       break;
     case 'skeleton':
-      raw = wasm.discover_process_skeleton(logHandle, activityKey);
+      raw = wasm.extract_process_skeleton(logHandle, activityKey);
       break;
     case 'dfg-optimized':
-      raw = wasm.discover_dfg_optimized(logHandle, activityKey, 0.5, 0.5);
+      raw = wasm.discover_dfg(logHandle, activityKey);
       break;
     case 'simd-dfg':
       raw = wasm.discover_dfg_simd(logHandle, activityKey, 0.0);

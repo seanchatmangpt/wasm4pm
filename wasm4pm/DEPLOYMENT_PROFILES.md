@@ -384,4 +384,4 @@ Potential future improvements:
 
 ## Implementation Notes
 
-Deployment profiles were implemented in v26.4.8 using Cargo feature flags with conditional `#[cfg(feature)]` compilation. See [docs/archive/implementation/DEPLOYMENT_PROFILES_IMPLEMENTATION_SUMMARY.md](../docs/archive/implementation/DEPLOYMENT_PROFILES_IMPLEMENTATION_SUMMARY.md) for complete technical details including the 30+ feature flag mapping and conditional compilation strategy.
+Deployment profiles were implemented in v26.4.9 using Cargo feature flags with conditional `#[cfg(feature)]` compilation. See [DEPLOYMENT_PROFILES_IMPLEMENTATION_SUMMARY.md](./DEPLOYMENT_PROFILES_IMPLEMENTATION_SUMMARY.md) for complete technical details including the 30+ feature flag mapping and conditional compilation strategy.

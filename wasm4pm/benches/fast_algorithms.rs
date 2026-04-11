@@ -1,13 +1,13 @@
 /// Criterion benchmarks for fast process discovery algorithms (<50ms per call).
 /// Sweeps all four standard dataset sizes.
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
-use std::time::Duration;
 use pictl::advanced_algorithms::discover_heuristic_miner;
 use pictl::algorithms::discover_alpha_plus_plus;
 use pictl::analysis::{analyze_case_duration, analyze_event_statistics};
 use pictl::discovery::{discover_declare, discover_dfg};
 use pictl::fast_discovery::discover_hill_climbing;
 use pictl::more_discovery::{discover_inductive_miner, extract_process_skeleton};
+use std::time::Duration;
 
 #[path = "helpers.rs"]
 mod helpers;

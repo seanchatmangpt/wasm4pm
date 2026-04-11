@@ -1,7 +1,6 @@
 /// Criterion benchmarks for medium-speed algorithms (5–200ms per call).
 /// Sizes capped at 10K cases for the slower members of this group.
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
-use std::time::Duration;
 use pictl::algorithms::discover_dfg_filtered;
 use pictl::fast_discovery::{
     analyze_trace_variants, cluster_traces, detect_concept_drift, discover_astar,
@@ -9,6 +8,7 @@ use pictl::fast_discovery::{
 };
 use pictl::ilp_discovery::discover_optimized_dfg;
 use pictl::more_discovery::{discover_ant_colony, discover_simulated_annealing};
+use std::time::Duration;
 
 #[path = "helpers.rs"]
 mod helpers;

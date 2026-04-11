@@ -12,6 +12,21 @@ The primary entry point for users is **`pictl`** (`apps/pmctl/`). The primary en
 
 ---
 
+## Versioning: CalVer (Calendar Versioning)
+
+**Format:** `vYEAR.MONTH.DAY` — PATCH is literally the day of month (1-31)
+- `v26.4.9` = April 9, 2026
+- `v26.4.10` = April 10, 2026
+- Multiple releases same day: `v26.4.10a`, `v26.4.10b`, `v26.4.10c` (letter suffixes)
+
+**Key points:**
+- Day advances when calendar date changes OR if multiple patches exhausted in one day
+- This is NOT standard CalVer — PATCH = day of month, not cumulative counter
+- Never use a PATCH value > 31 — it's the day of month, not a counter
+- When you need a second release on April 10, use `v26.4.10a`, not `v26.4.11`
+
+---
+
 ## Repository structure
 
 ```
@@ -95,7 +110,7 @@ Config file names searched: `pictl.toml`, `pictl.json`
 | `pictl drift-watch -i <log>` | 0 | Real-time EWMA drift monitoring (streaming) |
 | `pictl watch` | 0 | Config file watcher — re-runs discovery on change |
 | `pictl status` | 0 | WASM engine health + system info |
-| `pictl doctor` | 0 all ok, 1 any fail | 6-check environment diagnostic |
+| `pictl doctor` | 0 all ok, 1 any fail | 17-check environment diagnostic |
 | `pictl explain` | 0 | Human/academic algorithm explanations |
 | `pictl init` | 0 | Scaffold `pictl.toml`, `.env.example`, `.gitignore` |
 | `pictl results` | 0 | Browse/inspect saved results in `.pictl/results/` |
@@ -274,3 +289,6 @@ wasm4pm/src/mcp_server.ts      # WASM MCP server
 - OTEL span `startTime`/`endTime` are in **nanoseconds** (`Date.now() * 1_000_000`)
 - "bad algorithm" exit code is `SOURCE_ERROR` (2), not `CONFIG_ERROR` (1) — intentional
 - `@pictl/planner`'s `plan()` is **synchronous** (no async), but `PlannerLike` accepts either
+- `cargo test --lib` exits with SIGABRT (signal 6) due to wasm-bindgen thread cleanup — all tests pass but process crashes on exit. This is pre-existing. Use `cargo test --lib 2>&1 | grep -c "^test .* ok$"` to verify pass count.
+- Cargo workspace root is `pictl/` (parent of `wasm4pm/`), so `cargo clippy` from `wasm4pm/` shows a harmless "profiles for the non root package" warning
+- Crate name is `pictl`, npm package is `@seanchatmangpt/pictl`, but the source directory remains `wasm4pm/` — only published names changed, not filesystem layout

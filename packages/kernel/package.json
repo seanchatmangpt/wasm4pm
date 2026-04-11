@@ -1,6 +1,6 @@
 {
   "name": "@pictl/kernel",
-  "version": "26.4.9",
+  "version": "26.4.10",
   "description": "Core kernel and runtime utilities",
   "type": "module",
   "main": "./dist/index.js",
