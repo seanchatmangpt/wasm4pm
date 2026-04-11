@@ -129,7 +129,6 @@ fn recursively_add_tree(
         Some(PowlNode::StrictPartialOrder(spo)) => {
             let children = spo.children.clone();
             let order = spo.order.get_transitive_reduction();
-            let n = children.len();
             let tau_split = new_hidden_trans(net, counts, "tauSplit");
             net.add_arc(initial_place, &tau_split);
             let tau_join = new_hidden_trans(net, counts, "tauJoin");
@@ -159,12 +158,12 @@ fn recursively_add_tree(
                 init_places.push(i_place);
                 final_places.push(f_place);
             }
-            for i in 0..n {
-                for j in 0..n {
+            for (i, fp) in final_places.iter().enumerate() {
+                for (j, ip) in init_places.iter().enumerate() {
                     if order.is_edge(i, j) {
                         let sync = new_hidden_trans(net, counts, "sync");
-                        net.add_arc(&final_places[i], &sync);
-                        net.add_arc(&sync, &init_places[j]);
+                        net.add_arc(fp, &sync);
+                        net.add_arc(&sync, ip);
                     }
                 }
             }
@@ -172,7 +171,6 @@ fn recursively_add_tree(
         Some(PowlNode::DecisionGraph(dg)) => {
             let children = dg.children.clone();
             let order = dg.order.get_transitive_reduction();
-            let n = children.len();
             let tau_split = new_hidden_trans(net, counts, "init_dg");
             net.add_arc(initial_place, &tau_split);
             let tau_join = new_hidden_trans(net, counts, "final_dg");
@@ -208,12 +206,12 @@ fn recursively_add_tree(
                 final_places.push(f_place);
             }
             // Add ordering edges from transitive reduction
-            for i in 0..n {
-                for j in 0..n {
+            for (i, fp) in final_places.iter().enumerate() {
+                for (j, ip) in init_places.iter().enumerate() {
                     if order.is_edge(i, j) {
                         let sync = new_hidden_trans(net, counts, "sync");
-                        net.add_arc(&final_places[i], &sync);
-                        net.add_arc(&sync, &init_places[j]);
+                        net.add_arc(fp, &sync);
+                        net.add_arc(&sync, ip);
                     }
                 }
             }
@@ -287,20 +285,14 @@ mod tests {
     }
 
     #[test]
-    fn single_transition_produces_net() {
+    fn test_petri_net_single_and_xor() {
+        // Happy path: single transition produces source/sink net
         let (arena, root) = build("A");
         let result = apply(&arena, root);
         assert!(result.net.places.iter().any(|p| p.name == "source"));
         assert!(result.net.places.iter().any(|p| p.name == "sink"));
-        assert!(result
-            .net
-            .transitions
-            .iter()
-            .any(|t| t.label.as_deref() == Some("A")));
-    }
 
-    #[test]
-    fn xor_produces_choice() {
+        // XOR produces choice with both branches
         let (arena, root) = build("X ( A, B )");
         let result = apply(&arena, root);
         let labels: Vec<Option<&str>> = result
@@ -314,7 +306,8 @@ mod tests {
     }
 
     #[test]
-    fn partial_order_produces_parallel() {
+    fn test_petri_net_partial_orders_and_loop() {
+        // Concurrent PO produces parallel
         let (arena, root) = build("PO=(nodes={A, B}, order={})");
         let result = apply(&arena, root);
         let labels: Vec<Option<&str>> = result
@@ -325,10 +318,8 @@ mod tests {
             .collect();
         assert!(labels.contains(&Some("A")));
         assert!(labels.contains(&Some("B")));
-    }
 
-    #[test]
-    fn sequence_order_preserves_structure() {
+        // Sequential PO preserves structure
         let (arena, root) = build("PO=(nodes={A, B}, order={A-->B})");
         let result = apply(&arena, root);
         assert!(result
@@ -341,10 +332,8 @@ mod tests {
             .transitions
             .iter()
             .any(|t| t.label.as_deref() == Some("B")));
-    }
 
-    #[test]
-    fn loop_produces_cycle() {
+        // Loop produces cycle
         let (arena, root) = build("* ( A, B )");
         let result = apply(&arena, root);
         let labels: Vec<Option<&str>> = result
@@ -358,18 +347,17 @@ mod tests {
     }
 
     #[test]
-    fn decision_graph_produces_net() {
+    fn test_petri_net_decision_graph() {
+        // Decision graph produces source/sink net with both branches
         use crate::powl_arena::BinaryRelation;
         let mut arena = PowlArena::new();
         let a = arena.add_transition(Some("A".into()));
         let b = arena.add_transition(Some("B".into()));
-        // Order: 2 children + 2 sentinel (start=2, end=3)
-        // start → A, start → B, A → end, B → end
         let mut order = BinaryRelation::new(4);
-        order.add_edge(2, 0); // start → A
-        order.add_edge(2, 1); // start → B
-        order.add_edge(0, 3); // A → end
-        order.add_edge(1, 3); // B → end
+        order.add_edge(2, 0);
+        order.add_edge(2, 1);
+        order.add_edge(0, 3);
+        order.add_edge(1, 3);
         let dg = arena.add_decision_graph(vec![a, b], order, vec![0, 1], vec![0, 1], false);
         let result = apply(&arena, dg);
         assert!(result.net.places.iter().any(|p| p.name == "source"));

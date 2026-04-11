@@ -244,7 +244,7 @@ fn play_out_dfg_with_starts(
             loop {
                 // Check stopping conditions
                 let at_end = end_activities.contains_key(&current);
-                let no_outgoing = adj.get(&current).map_or(true, |v| v.is_empty());
+                let no_outgoing = adj.get(&current).is_none_or(|v| v.is_empty());
                 let reached_max = trace_activities.len() >= params.max_trace_length;
 
                 if no_outgoing || reached_max {
@@ -308,13 +308,13 @@ fn play_out_dfg_with_starts(
 
 /// Format a millisecond timestamp as an ISO 8601 string.
 fn format_timestamp_ms(ms: i64) -> String {
-    let secs = (ms / 1000) as i64;
+    let secs = ms / 1000;
     let millis = (ms % 1000) as u32;
     // Simple ISO 8601 format: 1970-01-12T10:46:40.000Z
     // Use chrono for proper formatting
     chrono::DateTime::from_timestamp(secs, millis * 1_000_000)
         .map(|dt| dt.to_rfc3339())
-        .unwrap_or_else(|| format!("1970-01-01T00:00:00.000Z"))
+        .unwrap_or_else(|| "1970-01-01T00:00:00.000Z".to_string())
 }
 
 // ─── WASM exports ──────────────────────────────────────────────────────────────
@@ -333,15 +333,24 @@ pub fn play_out_process_tree(
     params: &JsValue,
 ) -> Result<JsValue, JsValue> {
     // Parse the process tree from JSON
-    let tree: crate::powl_process_tree::ProcessTree = serde_json::from_str(tree_json)
-        .map_err(|e| wasm_err(codes::INVALID_JSON, format!("Invalid process tree JSON: {}", e)))?;
+    let tree: crate::powl_process_tree::ProcessTree =
+        serde_json::from_str(tree_json).map_err(|e| {
+            wasm_err(
+                codes::INVALID_JSON,
+                format!("Invalid process tree JSON: {}", e),
+            )
+        })?;
 
     // Parse parameters with defaults
     let params: PlayOutParameters = if params.is_undefined() || params.is_null() {
         PlayOutParameters::default()
     } else {
-        serde_wasm_bindgen::from_value(params.clone())
-            .map_err(|e| wasm_err(codes::INVALID_INPUT, format!("Invalid playout parameters: {}", e)))?
+        serde_wasm_bindgen::from_value(params.clone()).map_err(|e| {
+            wasm_err(
+                codes::INVALID_INPUT,
+                format!("Invalid playout parameters: {}", e),
+            )
+        })?
     };
 
     // Run playout
@@ -387,8 +396,12 @@ pub fn play_out_dfg(dfg_json: &str, params: &JsValue) -> Result<JsValue, JsValue
     let params: PlayOutParameters = if params.is_undefined() || params.is_null() {
         PlayOutParameters::default()
     } else {
-        serde_wasm_bindgen::from_value(params.clone())
-            .map_err(|e| wasm_err(codes::INVALID_INPUT, format!("Invalid playout parameters: {}", e)))?
+        serde_wasm_bindgen::from_value(params.clone()).map_err(|e| {
+            wasm_err(
+                codes::INVALID_INPUT,
+                format!("Invalid playout parameters: {}", e),
+            )
+        })?
     };
 
     // Extract edges as (from, to) pairs
@@ -491,7 +504,12 @@ mod tests {
             let names: Vec<&str> = trace
                 .events
                 .iter()
-                .map(|e| e.attributes.get("concept:name").and_then(|v| v.as_string()).unwrap())
+                .map(|e| {
+                    e.attributes
+                        .get("concept:name")
+                        .and_then(|v| v.as_string())
+                        .unwrap()
+                })
                 .collect();
             assert_eq!(names, vec!["A", "B", "C"]);
         }
@@ -534,7 +552,11 @@ mod tests {
                 seen.insert(name);
             }
         }
-        assert!(seen.len() >= 2, "XOR should pick at least 2 distinct activities across 10 traces, got {:?}", seen);
+        assert!(
+            seen.len() >= 2,
+            "XOR should pick at least 2 distinct activities across 10 traces, got {:?}",
+            seen
+        );
     }
 
     #[test]
@@ -556,7 +578,12 @@ mod tests {
             let names: Vec<&str> = trace
                 .events
                 .iter()
-                .map(|e| e.attributes.get("concept:name").and_then(|v| v.as_string()).unwrap())
+                .map(|e| {
+                    e.attributes
+                        .get("concept:name")
+                        .and_then(|v| v.as_string())
+                        .unwrap()
+                })
                 .collect();
             assert_eq!(names, vec!["A", "B"]);
         }
@@ -653,7 +680,9 @@ mod tests {
                 "Timestamp should be present when include_timestamps is true"
             );
             match ts_attr.unwrap() {
-                AttributeValue::Date(s) => assert!(!s.is_empty(), "Date string should not be empty"),
+                AttributeValue::Date(s) => {
+                    assert!(!s.is_empty(), "Date string should not be empty")
+                }
                 other => panic!("Expected AttributeValue::Date, got {:?}", other),
             }
         }
@@ -672,7 +701,13 @@ mod tests {
         end_activities.insert("C".to_string(), 8usize);
 
         let params = default_params();
-        let log = play_out_dfg_core(&activities, &edges, &start_activities, &end_activities, &params);
+        let log = play_out_dfg_core(
+            &activities,
+            &edges,
+            &start_activities,
+            &end_activities,
+            &params,
+        );
 
         assert_eq!(log.traces.len(), 10);
         for trace in &log.traces {
@@ -713,7 +748,13 @@ mod tests {
             min_trace_length: 1,
             max_trace_length: 3, // Cap at 3 events per trace
         };
-        let log = play_out_dfg_core(&activities, &edges, &start_activities, &end_activities, &params);
+        let log = play_out_dfg_core(
+            &activities,
+            &edges,
+            &start_activities,
+            &end_activities,
+            &params,
+        );
 
         assert_eq!(log.traces.len(), 10);
         for trace in &log.traces {
@@ -747,7 +788,13 @@ mod tests {
             min_trace_length: 2, // Require at least 2 events
             max_trace_length: 100,
         };
-        let log = play_out_dfg_core(&activities, &edges, &start_activities, &end_activities, &params);
+        let log = play_out_dfg_core(
+            &activities,
+            &edges,
+            &start_activities,
+            &end_activities,
+            &params,
+        );
 
         assert_eq!(log.traces.len(), 5);
         for trace in &log.traces {

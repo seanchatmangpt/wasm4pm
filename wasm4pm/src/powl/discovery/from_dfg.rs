@@ -3,7 +3,7 @@
 //! Discovery from pre-computed Directly Follows Graph (DFG).
 //! Supports 4 variants: tree, maximal, dynamic_clustering, decision_graph_cyclic.
 
-use super::{DiscoveryConfig, DiscoveryVariant};
+use super::{CutFilter, DiscoveryConfig};
 use crate::models::EventLog;
 use crate::powl_arena::PowlArena;
 use std::collections::{HashMap, HashSet};
@@ -30,10 +30,8 @@ pub fn discover_from_dfg(
     // Group activities by DFG connectivity for cut detection
     let traces = build_traces_from_dfg(&dfg_edges, log, &config.activity_key);
 
-    match config.variant {
-        DiscoveryVariant::Tree => super::discover_tree_only(&traces, arena, config),
-        _ => super::inductive_miner(&traces, arena, config),
-    }
+    let cut_filter = CutFilter::for_variant(config.variant);
+    super::inductive_miner(&traces, arena, config, &cut_filter)
 }
 
 /// Build traces from DFG by following edges
@@ -81,7 +79,7 @@ fn build_traces_from_dfg(
     for start in &start_activities {
         let mut trace = Vec::new();
         let mut visited: HashSet<&str> = HashSet::new();
-        build_trace_recursive(*start, &adjacency, &mut trace, &mut visited);
+        build_trace_recursive(start, &adjacency, &mut trace, &mut visited);
         if !trace.is_empty() {
             traces.push(trace);
         }
@@ -111,7 +109,7 @@ fn build_trace_recursive<'a>(
 
     if let Some(nexts) = adjacency.get(current) {
         for next in nexts {
-            build_trace_recursive(*next, adjacency, trace, visited);
+            build_trace_recursive(next, adjacency, trace, visited);
         }
     }
 }

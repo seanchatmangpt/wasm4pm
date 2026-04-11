@@ -100,6 +100,7 @@ fn try_emit_trace(
 /// - In a sequence (SPO), only the last child can emit (suppresses intermediate traces).
 /// - In XOR/Loop/PartialOrder, all children can emit.
 /// - At the root level, emission is always allowed.
+#[allow(clippy::too_many_arguments)]
 fn enumerate_traces(
     arena: &PowlArena,
     node_id: u32,

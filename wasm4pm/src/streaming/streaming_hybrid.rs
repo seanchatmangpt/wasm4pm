@@ -145,7 +145,7 @@ where
             self.trace_count += 1;
 
             // Trigger recompute if interval reached
-            if self.trace_count % self.recompute_interval == 0 {
+            if self.trace_count.is_multiple_of(self.recompute_interval) {
                 self.recompute();
             }
         }

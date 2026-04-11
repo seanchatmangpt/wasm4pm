@@ -182,7 +182,8 @@ pub fn run_monte_carlo_simulation(
                 });
 
             // Sample service time from log-normal distribution
-            let service_time_ms = sample_log_normal(&mut rng, service_params.mean, service_params.std_dev);
+            let service_time_ms =
+                sample_log_normal(&mut rng, service_params.mean, service_params.std_dev);
 
             // Check resource availability
             let resource_key = format!("{}_resource", activity);
@@ -287,12 +288,11 @@ pub fn monte_carlo_simulation(
 
     let report = get_or_init_state().with_object(log_handle, |obj| match obj {
         Some(crate::state::StoredObject::EventLog(log)) => {
-            run_monte_carlo_simulation(log, &config)
-                .map_err(|e| JsValue::from_str(&e))
+            run_monte_carlo_simulation(log, &config).map_err(|e| JsValue::from_str(&e))
         }
         Some(_) => Err(JsValue::from_str("Handle is not an EventLog")),
         None => Err(JsValue::from_str("EventLog handle not found")),
-    }).map_err(|e| e)?;
+    })?;
 
     serde_json::to_string(&report)
         .map_err(|e| JsValue::from_str(&e.to_string()))

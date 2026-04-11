@@ -12,7 +12,7 @@ fn store_filtered(log: EventLog) -> Result<JsValue, JsValue> {
     Ok(JsValue::from_str(&handle))
 }
 
-/// Keep only traces whose first activity is in `activities_json` (JSON array of strings).
+/// Filter traces that start with one of the specified activities.
 ///
 /// ```javascript
 /// const h2 = pm.filter_by_start_activity(h, JSON.stringify(['Register']));
@@ -50,7 +50,7 @@ pub fn filter_by_start_activity(
     })
 }
 
-/// Keep only traces whose last activity is in `activities_json`.
+/// Filter traces that end with one of the specified activities.
 #[wasm_bindgen]
 pub fn filter_by_end_activity(
     log_handle: &str,
@@ -84,7 +84,7 @@ pub fn filter_by_end_activity(
     })
 }
 
-/// Keep only traces whose length (number of events) is in `[min_events, max_events]`.
+/// Filter traces by event count range.
 /// Pass 0 for `min_events` or `usize::MAX` equivalent (999999) for no bound.
 #[wasm_bindgen]
 pub fn filter_by_case_size(
@@ -109,7 +109,7 @@ pub fn filter_by_case_size(
     })
 }
 
-/// Keep only traces that contain at least one of the directly-follows pairs in
+/// Filter traces containing specified directly-follows activity pairs.
 /// `pairs_json` (JSON array of [from, to] arrays).
 ///
 /// ```javascript
@@ -152,7 +152,7 @@ pub fn filter_by_directly_follows(
     })
 }
 
-/// Keep only the top variants by frequency until `coverage_pct` (0–100) of all
+/// Filter traces by top variants covering specified percentage of traces.
 /// traces are covered.  E.g. `coverage_pct = 80` keeps the variants that together
 /// account for ≥80 % of traces.
 #[wasm_bindgen]
@@ -230,7 +230,7 @@ pub fn filter_by_variant_coverage(
     })
 }
 
-/// Keep only the top `k` most frequent variants.
+/// Filter traces by top-k most frequent variants.
 #[wasm_bindgen]
 pub fn filter_by_variants_top_k(
     log_handle: &str,
@@ -288,7 +288,7 @@ pub fn filter_by_variants_top_k(
     })
 }
 
-/// Keep only traces that contain all specified activities.
+/// Filter traces containing all specified activities.
 #[wasm_bindgen]
 pub fn filter_traces_containing_activities(
     log_handle: &str,
@@ -323,7 +323,7 @@ pub fn filter_traces_containing_activities(
     })
 }
 
-/// Keep only traces that do NOT contain any of the specified activities.
+/// Filter traces excluding any of the specified activities.
 #[wasm_bindgen]
 pub fn filter_traces_excluding_activities(
     log_handle: &str,
@@ -358,7 +358,7 @@ pub fn filter_traces_excluding_activities(
     })
 }
 
-/// Keep only traces where all events have timestamps within [min_dt, max_dt].
+/// Filter traces by timestamp range.
 /// Timestamps are ISO 8601 strings (e.g., "2023-01-01T00:00:00Z").
 #[wasm_bindgen]
 pub fn filter_by_time_range(
@@ -393,7 +393,7 @@ pub fn filter_by_time_range(
     })
 }
 
-/// Keep only traces with case duration in [min_ms, max_ms] milliseconds.
+/// Filter traces by case duration in milliseconds.
 #[wasm_bindgen]
 pub fn filter_by_case_performance(
     log_handle: &str,
@@ -442,7 +442,7 @@ pub fn filter_by_case_performance(
     })
 }
 
-/// Keep only traces that contain at least one rework loop (activity repeated later).
+/// Filter traces containing rework (repeated activities).
 #[wasm_bindgen]
 pub fn filter_rework_traces(log_handle: &str, activity_key: &str) -> Result<JsValue, JsValue> {
     get_or_init_state().with_object(log_handle, |obj| match obj {
@@ -478,7 +478,7 @@ pub fn filter_rework_traces(log_handle: &str, activity_key: &str) -> Result<JsVa
     })
 }
 
-/// Keep only traces where the trace attribute matches the predicate.
+/// Filter traces by trace attribute value.
 #[wasm_bindgen]
 pub fn filter_by_trace_attribute(
     log_handle: &str,
@@ -509,7 +509,7 @@ pub fn filter_by_trace_attribute(
     })
 }
 
-/// Keep only traces containing at least one event with the specified attribute value.
+/// Filter traces containing an event with specified attribute value.
 #[wasm_bindgen]
 pub fn filter_by_event_attribute_value(
     log_handle: &str,
@@ -541,7 +541,7 @@ pub fn filter_by_event_attribute_value(
     })
 }
 
-/// Keep only traces where the case ID is in the provided list.
+/// Filter traces by case ID list.
 #[wasm_bindgen]
 pub fn filter_by_case_ids(
     log_handle: &str,
@@ -575,7 +575,7 @@ pub fn filter_by_case_ids(
     })
 }
 
-/// Keep only traces that start with the specified activity sequence.
+/// Filter traces starting with specified activity sequence.
 #[wasm_bindgen]
 pub fn filter_traces_starting_with_sequence(
     log_handle: &str,
@@ -618,7 +618,7 @@ pub fn filter_traces_starting_with_sequence(
     })
 }
 
-/// Keep only traces that end with the specified activity sequence.
+/// Filter traces ending with specified activity sequence.
 #[wasm_bindgen]
 pub fn filter_traces_ending_with_sequence(
     log_handle: &str,

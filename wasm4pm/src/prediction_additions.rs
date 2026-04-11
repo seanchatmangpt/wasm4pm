@@ -24,7 +24,7 @@ fn entropy(probs: &[f64]) -> f64 {
         .sum()
 }
 
-/// Top-k next activities with confidence scores
+/// Prediction of next activities with probabilities and confidence.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NextActivityPrediction {
     pub activities: Vec<String>,
@@ -33,7 +33,7 @@ pub struct NextActivityPrediction {
     pub entropy: f64,    // distribution uncertainty [0, 1]
 }
 
-/// Get top-k next activities from n-gram model
+/// Get top-k next activities from n-gram model.
 pub fn predict_top_k_activities(
     ngram_counts: &HashMap<Vec<u32>, HashMap<u32, usize>>,
     activity_vocab: &[String],
@@ -78,7 +78,7 @@ pub fn predict_top_k_activities(
 
     let confidence = probabilities.first().copied().unwrap_or(0.0);
     let ent = entropy(&probabilities);
-    let max_ent = if probabilities.len() > 0 {
+    let max_ent = if !probabilities.is_empty() {
         (probabilities.len() as f64).ln()
     } else {
         0.0
@@ -93,7 +93,7 @@ pub fn predict_top_k_activities(
     }
 }
 
-/// Beam-search future path (top-k likely future sequences)
+/// Beam-search result showing predicted future path.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BeamPath {
     pub sequence: Vec<String>,
@@ -181,7 +181,7 @@ pub fn trace_log_likelihood(
     ll
 }
 
-/// Transition probability graph (directly-follows with probabilities)
+/// Transition probability graph (directly-follows with probabilities).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TransitionGraph {
     pub edges: Vec<(String, String, f64)>, // (from, to, probability)
@@ -223,7 +223,7 @@ pub fn build_transition_graph(log: &EventLog, activity_key: &str) -> TransitionG
     TransitionGraph { edges, activities }
 }
 
-/// Exponential moving average for trend detection
+/// Exponential moving average for trend detection.
 pub fn ewma(values: &[f64], alpha: f64) -> Vec<f64> {
     if values.is_empty() {
         return vec![];
@@ -239,7 +239,7 @@ pub fn ewma(values: &[f64], alpha: f64) -> Vec<f64> {
     result
 }
 
-/// Simple M/M/1 queue delay estimator
+/// Simple M/M/1 queue delay estimator.
 pub fn estimate_queue_delay(
     arrival_rate: f64, // events per time unit
     service_rate: f64, // events per time unit
@@ -253,7 +253,7 @@ pub fn estimate_queue_delay(
     mean_service_time / (1.0 - utilization)
 }
 
-/// Rework score: count of repeated activities per trace
+/// Rework score: count of repeated activities per trace.
 pub fn calculate_rework_score(trace: &[String]) -> usize {
     let mut rework_count = 0;
     for i in 1..trace.len() {
@@ -264,7 +264,7 @@ pub fn calculate_rework_score(trace: &[String]) -> usize {
     rework_count
 }
 
-/// Extract numeric features from a trace prefix
+/// Extract numeric features from a trace prefix.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PrefixFeatures {
     pub length: usize,
@@ -310,7 +310,7 @@ pub fn extract_prefix_features(prefix: &[String]) -> PrefixFeatures {
     }
 }
 
-/// Boundary coverage: probability of reaching a normal end from current state
+/// Boundary coverage: probability of reaching a normal end from current state.
 pub fn boundary_coverage(prefix: &[String], all_complete_traces: &[Vec<String>]) -> f64 {
     let matching_traces: Vec<&Vec<String>> = all_complete_traces
         .iter()
@@ -345,7 +345,7 @@ pub fn boundary_coverage(prefix: &[String], all_complete_traces: &[Vec<String>])
     normal_count as f64 / lengths.len() as f64
 }
 
-/// Greedy intervention selection (UCB-like heuristic without full bandits)
+/// Greedy intervention selection (UCB-like heuristic without full bandits).
 pub fn greedy_intervention_ranking(
     interventions: &[(&str, f64)], // (name, utility_estimate)
     exploitation_weight: f64,      // 0-1: how much to favor highest utility
@@ -377,7 +377,7 @@ mod tests {
         next.insert(2, 2);
         counts.insert(vec![0], next);
 
-        let vocab = vec!["A", "B", "C"]
+        let vocab = ["A", "B", "C"]
             .iter()
             .map(|s| s.to_string())
             .collect::<Vec<_>>();
@@ -389,7 +389,7 @@ mod tests {
 
     #[test]
     fn test_rework_score() {
-        let trace = vec!["A", "B", "A", "B", "B", "C"]
+        let trace = ["A", "B", "A", "B", "B", "C"]
             .iter()
             .map(|s| s.to_string())
             .collect::<Vec<_>>();
@@ -413,7 +413,7 @@ mod tests {
 
     #[test]
     fn test_prefix_features() {
-        let prefix = vec!["A", "B", "A", "C"]
+        let prefix = ["A", "B", "A", "C"]
             .iter()
             .map(|s| s.to_string())
             .collect::<Vec<_>>();

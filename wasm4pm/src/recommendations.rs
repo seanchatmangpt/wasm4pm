@@ -104,7 +104,7 @@ pub fn recommendations_info() -> JsValue {
         ]
     });
 
-    to_js(&info).unwrap_or_else(|_| JsValue::NULL)
+    to_js(&info).unwrap_or(JsValue::NULL)
 }
 
 // ---------------------------------------------------------------------------

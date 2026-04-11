@@ -3,7 +3,7 @@
 //! This provides median and percentile calculations without
 //! pulling in nalgebra and the full statrs library (~200KB savings).
 
-use crate::models::Timestamp;
+use chrono::{DateTime, TimeZone, Utc};
 
 /// Calculate median of a slice of f64 values
 ///
@@ -18,7 +18,7 @@ pub fn median(data: &mut [f64]) -> Option<f64> {
     }
     data.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
     let len = data.len();
-    if len % 2 == 0 {
+    if len.is_multiple_of(2) {
         Some((data[len / 2 - 1] + data[len / 2]) / 2.0)
     } else {
         Some(data[len / 2])
@@ -50,7 +50,7 @@ pub fn percentile_95(data: &mut [f64]) -> Option<f64> {
 /// assert_eq!(percentile(&mut data, 95.0), Some(10.0));
 /// ```
 pub fn percentile(data: &mut [f64], p: f64) -> Option<f64> {
-    if data.is_empty() || p < 0.0 || p > 100.0 {
+    if data.is_empty() || !(0.0..=100.0).contains(&p) {
         return None;
     }
     data.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
@@ -73,7 +73,7 @@ pub fn min(data: &[f64]) -> Option<f64> {
     if data.is_empty() {
         return None;
     }
-    data.iter().reduce(|a, b| a.min(b)).copied()
+    data.iter().copied().reduce(|a, b| a.min(b))
 }
 
 /// Calculate maximum value in a slice
@@ -81,25 +81,28 @@ pub fn max(data: &[f64]) -> Option<f64> {
     if data.is_empty() {
         return None;
     }
-    data.iter().reduce(|a, b| a.max(b)).copied()
+    data.iter().copied().reduce(|a, b| a.max(b))
 }
 
 /// Calculate median of timestamp values
 ///
 /// Converts timestamps to milliseconds since epoch for calculation
-pub fn median_timestamp(data: &mut [Timestamp]) -> Option<Timestamp> {
+pub fn median_timestamp(data: &mut [DateTime<Utc>]) -> Option<DateTime<Utc>> {
     if data.is_empty() {
         return None;
     }
-    let mut ms: Vec<i64> = data.iter().map(|ts| ts.timestamp_millis()).collect();
+    let mut ms: Vec<i64> = data
+        .iter()
+        .map(|ts: &DateTime<Utc>| ts.timestamp_millis())
+        .collect();
     ms.sort();
     let len = ms.len();
-    let median_ms = if len % 2 == 0 {
+    let median_ms = if len.is_multiple_of(2) {
         (ms[len / 2 - 1] + ms[len / 2]) / 2
     } else {
         ms[len / 2]
     };
-    Timestamp::from_millis(median_ms)
+    Some(Utc.timestamp_millis_opt(median_ms).unwrap())
 }
 
 /// Statistics trait matching statrs::statistics::Data interface

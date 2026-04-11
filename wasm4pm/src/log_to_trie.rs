@@ -71,6 +71,12 @@ pub struct Trie {
     pub nodes: Vec<TrieNode>,
 }
 
+impl Default for Trie {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Trie {
     /// Create a new empty trie with just a root node.
     pub fn new() -> Self {
@@ -203,10 +209,7 @@ pub fn discover_prefix_tree_inner(
 ///
 /// This is a helper function that extracts unique activity sequences
 /// along with their counts. Used by prefix tree discovery.
-fn get_variants_from_log(
-    log: &EventLog,
-    activity_key: &str,
-) -> Result<Vec<Variant>, String> {
+fn get_variants_from_log(log: &EventLog, activity_key: &str) -> Result<Vec<Variant>, String> {
     let mut variant_map: HashMap<Vec<String>, usize> = HashMap::new();
 
     for trace in &log.traces {
@@ -298,7 +301,10 @@ mod tests {
                     .into_iter()
                     .map(|a| {
                         let mut attrs = HashMap::new();
-                        attrs.insert("concept:name".to_string(), AttributeValue::String(a.to_string()));
+                        attrs.insert(
+                            "concept:name".to_string(),
+                            AttributeValue::String(a.to_string()),
+                        );
                         Event { attributes: attrs }
                     })
                     .collect(),
@@ -378,10 +384,7 @@ mod tests {
 
         // Root -> A
         let a_idx = result.tree.root().children[0];
-        assert_eq!(
-            result.tree.nodes[a_idx].label.as_deref(),
-            Some("A")
-        );
+        assert_eq!(result.tree.nodes[a_idx].label.as_deref(), Some("A"));
         assert!(result.tree.nodes[a_idx].is_final);
         assert_eq!(result.variants, 1);
     }
@@ -443,11 +446,7 @@ mod tests {
 
     #[test]
     fn test_discover_prefix_tree_duplicate_variants() {
-        let log = make_test_log(vec![
-            vec!["A", "B"],
-            vec!["A", "B"],
-            vec!["A", "B"],
-        ]);
+        let log = make_test_log(vec![vec!["A", "B"], vec!["A", "B"], vec!["A", "B"]]);
         let result = discover_prefix_tree_inner(&log, "concept:name", None).unwrap();
 
         // Should have only 1 variant (all traces are identical)

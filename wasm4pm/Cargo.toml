@@ -78,6 +78,22 @@ harness = false
 name = "conformance"
 harness = false
 
+[[bench]]
+name = "ml_algorithms"
+harness = false
+
+[[bench]]
+name = "streaming_algorithms"
+harness = false
+
+[[bench]]
+name = "extended_discovery"
+harness = false
+
+[[bench]]
+name = "powl_discovery"
+harness = false
+
 [features]
 # Deployment profiles - default to cloud (full feature set) for npm package
 default = ["cloud"]

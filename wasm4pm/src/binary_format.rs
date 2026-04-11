@@ -484,7 +484,7 @@ impl<'a> BinaryLogView<'a> {
         };
 
         Ok(BinaryTrace {
-            event_ids: event_ids,
+            event_ids,
             timestamps,
         })
     }
@@ -1080,7 +1080,7 @@ mod tests {
         let activities = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"];
 
         for t in 0..1000u32 {
-            xes.push_str(&format!("  <trace>\n"));
+            xes.push_str("  <trace>\n");
             for e in 0..10u32 {
                 let activity = activities[(e as usize) % activities.len()];
                 let ts = format!("2024-01-01T{:02}:{:02}:00Z", (t / 60) % 24, e * 6);

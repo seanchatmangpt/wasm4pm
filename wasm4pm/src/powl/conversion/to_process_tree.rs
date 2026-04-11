@@ -55,10 +55,10 @@ impl Dag {
         let n = self.n;
         let reachable = {
             let mut reach = vec![vec![false; n]; n];
-            for start in 0..n {
+            for (start, adj_row) in self.adj.iter().enumerate() {
                 let mut visited = vec![false; n];
                 let mut stack = Vec::new();
-                for &succ in &self.adj[start] {
+                for &succ in adj_row {
                     stack.push(succ);
                 }
                 while let Some(cur) = stack.pop() {
@@ -105,8 +105,8 @@ impl Dag {
                         queue.push_back(j);
                     }
                 }
-                for i in 0..self.n {
-                    if !visited[i] && self.adj[i].contains(&cur) {
+                for (i, row) in self.adj.iter().enumerate() {
+                    if !visited[i] && row.contains(&cur) {
                         visited[i] = true;
                         queue.push_back(i);
                     }
@@ -181,8 +181,7 @@ pub fn apply_recursive(arena: &PowlArena, node_idx: u32) -> ProcessTree {
                 let levels_map = sub_dag.assign_levels();
                 let max_level = *levels_map.iter().max().unwrap_or(&0);
                 let mut level_groups: Vec<Vec<usize>> = vec![Vec::new(); max_level + 1];
-                for li in 0..m {
-                    let lv = levels_map[li];
+                for (li, &lv) in levels_map.iter().enumerate() {
                     if lv != usize::MAX {
                         level_groups[lv].push(li);
                     }
@@ -263,8 +262,7 @@ pub fn apply_recursive(arena: &PowlArena, node_idx: u32) -> ProcessTree {
                 let levels_map = sub_dag.assign_levels();
                 let max_level = *levels_map.iter().max().unwrap_or(&0);
                 let mut level_groups: Vec<Vec<usize>> = vec![Vec::new(); max_level + 1];
-                for li in 0..m {
-                    let lv = levels_map[li];
+                for (li, &lv) in levels_map.iter().enumerate() {
                     if lv != usize::MAX {
                         level_groups[lv].push(li);
                     }
@@ -316,7 +314,8 @@ mod tests {
     }
 
     #[test]
-    fn transition_to_leaf() {
+    fn test_process_tree_leaf() {
+        // Happy path: single transition becomes leaf node
         let (arena, root) = build("A");
         let pt = apply(&arena, root);
         assert_eq!(pt.label.as_deref(), Some("A"));
@@ -324,32 +323,30 @@ mod tests {
     }
 
     #[test]
-    fn xor_to_xor() {
+    fn test_process_tree_operators() {
+        // XOR becomes XOR operator
         let (arena, root) = build("X ( A, B )");
         let pt = apply(&arena, root);
         assert_eq!(pt.operator, Some(PtOperator::Xor));
         assert_eq!(pt.children.len(), 2);
-    }
 
-    #[test]
-    fn sequence_po_to_sequence_tree() {
-        let (arena, root) = build("PO=(nodes={A, B}, order={A-->B})");
-        let pt = apply(&arena, root);
-        let repr = pt.to_repr();
-        assert!(repr.contains("A") && repr.contains("B"), "got: {}", repr);
-    }
-
-    #[test]
-    fn concurrent_po_to_parallel() {
-        let (arena, root) = build("PO=(nodes={A, B}, order={})");
-        let pt = apply(&arena, root);
-        assert_eq!(pt.operator, Some(PtOperator::Parallel));
-    }
-
-    #[test]
-    fn loop_to_loop() {
+        // Loop becomes loop operator
         let (arena, root) = build("* ( A, B )");
         let pt = apply(&arena, root);
         assert_eq!(pt.operator, Some(PtOperator::Loop));
+    }
+
+    #[test]
+    fn test_process_tree_partial_orders() {
+        // Sequential PO becomes sequence
+        let (arena, root) = build("PO=(nodes={A, B}, order={A-->B})");
+        let pt = apply(&arena, root);
+        let repr = pt.to_repr();
+        assert!(repr.contains("A") && repr.contains("B"));
+
+        // Concurrent PO becomes parallel
+        let (arena, root) = build("PO=(nodes={A, B}, order={})");
+        let pt = apply(&arena, root);
+        assert_eq!(pt.operator, Some(PtOperator::Parallel));
     }
 }

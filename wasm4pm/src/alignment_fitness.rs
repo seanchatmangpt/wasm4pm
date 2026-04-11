@@ -6,7 +6,7 @@
 use crate::models::{EventLog, PetriNet};
 use crate::state::{get_or_init_state, StoredObject};
 use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet, BinaryHeap};
+use std::collections::{BinaryHeap, HashMap, HashSet};
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
 /// Configuration for alignment-based fitness computation.
@@ -91,7 +91,9 @@ impl Ord for AlignmentState {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         // BinaryHeap is max-heap, but we want min-heap for A*
         // Use floating point total ordering
-        other.f_cost().partial_cmp(&self.f_cost())
+        other
+            .f_cost()
+            .partial_cmp(&self.f_cost())
             .unwrap_or(std::cmp::Ordering::Equal)
     }
 }
@@ -136,18 +138,16 @@ pub fn compute_alignment_fitness(
 
     for arc in &petri_net.arcs {
         // Arc from place to transition (input)
-        if let (Some(&place_idx), Some(&trans_idx)) = (
-            place_index.get(&arc.from),
-            transition_index.get(&arc.to),
-        ) {
+        if let (Some(&place_idx), Some(&trans_idx)) =
+            (place_index.get(&arc.from), transition_index.get(&arc.to))
+        {
             _place_consumers[place_idx].push(trans_idx);
             trans_inputs[trans_idx].push(place_idx);
         }
         // Arc from transition to place (output)
-        if let (Some(&trans_idx), Some(&place_idx)) = (
-            transition_index.get(&arc.from),
-            place_index.get(&arc.to),
-        ) {
+        if let (Some(&trans_idx), Some(&place_idx)) =
+            (transition_index.get(&arc.from), place_index.get(&arc.to))
+        {
             _place_producers[place_idx].push(trans_idx);
             trans_outputs[trans_idx].push(place_idx);
         }
@@ -193,7 +193,8 @@ pub fn compute_alignment_fitness(
     }
 
     // Compute fitness: 1 - (total_cost / max_possible_cost)
-    let max_possible_cost = (total_sync_moves + total_log_moves + total_model_moves) as f64 * config.model_move_cost;
+    let max_possible_cost =
+        (total_sync_moves + total_log_moves + total_model_moves) as f64 * config.model_move_cost;
 
     let fitness = if max_possible_cost > 0.0 {
         1.0 - (total_cost / max_possible_cost)
@@ -260,7 +261,9 @@ fn compute_trace_alignment(
         }
 
         // Check if we've reached the end
-        if current.trace_pos >= activities.len() && is_final_marking(petri_net, place_index, &current.marking) {
+        if current.trace_pos >= activities.len()
+            && is_final_marking(petri_net, place_index, &current.marking)
+        {
             // Compute statistics from path
             let mut sync_moves = 0;
             let mut log_moves = 0;
@@ -333,6 +336,7 @@ fn is_final_marking(
 }
 
 /// Generate successor states for A* search.
+#[allow(clippy::too_many_arguments)]
 fn generate_successors(
     activities: &[String],
     petri_net: &PetriNet,
@@ -457,13 +461,14 @@ pub fn alignment_fitness(
         Some(StoredObject::EventLog(l)) => Ok(l.clone()),
         Some(_) => Err(JsValue::from_str("Handle is not an EventLog")),
         None => Err(JsValue::from_str("EventLog handle not found")),
-    }).map_err(|e| e)?;
+    })?;
 
-    let petri_net_cloned = get_or_init_state().with_object(petri_net_handle, |petri_net_obj| match petri_net_obj {
-        Some(StoredObject::PetriNet(pn)) => Ok(pn.clone()),
-        Some(_) => Err(JsValue::from_str("Handle is not a PetriNet")),
-        None => Err(JsValue::from_str("PetriNet handle not found")),
-    }).map_err(|e| e)?;
+    let petri_net_cloned =
+        get_or_init_state().with_object(petri_net_handle, |petri_net_obj| match petri_net_obj {
+            Some(StoredObject::PetriNet(pn)) => Ok(pn.clone()),
+            Some(_) => Err(JsValue::from_str("Handle is not a PetriNet")),
+            None => Err(JsValue::from_str("PetriNet handle not found")),
+        })?;
 
     let report = compute_alignment_fitness(&log_cloned, &petri_net_cloned, &config)
         .map_err(|e| JsValue::from_str(&e))?;

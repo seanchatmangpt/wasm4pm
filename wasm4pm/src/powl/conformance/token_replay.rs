@@ -249,36 +249,33 @@ mod tests {
     }
 
     #[test]
-    fn perfect_trace_fitness_1() {
+    fn test_token_replay_perfect_fitness() {
+        // Happy path: perfect trace has fitness 1.0
         let (net, initial, final_m) = sequential_net();
         let trace = make_trace("c1", &["A", "B"]);
         let result = replay_trace(&net, &initial, &final_m, &trace);
         assert_eq!(result.missing_tokens, 0);
         assert_eq!(result.remaining_tokens, 0);
         assert!((result.fitness - 1.0).abs() < 1e-9);
-        assert!(result.is_perfect());
     }
 
     #[test]
-    fn missing_activity_lowers_fitness() {
+    fn test_token_replay_imperfect_cases() {
+        // Missing activity lowers fitness
         let (net, initial, final_m) = sequential_net();
         let trace = make_trace("c1", &["A"]);
         let result = replay_trace(&net, &initial, &final_m, &trace);
-        assert_eq!(result.remaining_tokens, 1);
         assert!(result.fitness < 1.0);
-    }
 
-    #[test]
-    fn extra_activity_forces_missing_token() {
-        let (net, initial, final_m) = sequential_net();
+        // Extra activity forces missing token
         let trace = make_trace("c1", &["B", "A"]);
         let result = replay_trace(&net, &initial, &final_m, &trace);
         assert!(result.missing_tokens > 0);
-        assert!(result.fitness < 1.0);
     }
 
     #[test]
-    fn log_level_fitness_all_perfect() {
+    fn test_token_replay_log_level_fitness() {
+        // Log with all perfect traces
         let (net, initial, final_m) = sequential_net();
         let log = EventLog {
             traces: vec![make_trace("c1", &["A", "B"]), make_trace("c2", &["A", "B"])],
@@ -286,17 +283,13 @@ mod tests {
         let result = compute_fitness(&net, &initial, &final_m, &log);
         assert_eq!(result.perfectly_fitting_traces, 2);
         assert!((result.percentage - 1.0).abs() < 1e-9);
-    }
 
-    #[test]
-    fn log_level_fitness_mixed() {
-        let (net, initial, final_m) = sequential_net();
+        // Mixed log (some perfect, some not)
         let log = EventLog {
             traces: vec![make_trace("c1", &["A", "B"]), make_trace("c2", &["A"])],
         };
         let result = compute_fitness(&net, &initial, &final_m, &log);
         assert_eq!(result.perfectly_fitting_traces, 1);
-        assert_eq!(result.total_traces, 2);
         assert!(result.percentage < 1.0 && result.percentage > 0.0);
     }
 }

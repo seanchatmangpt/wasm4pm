@@ -171,7 +171,11 @@ pub fn validate_acyclicity(arena: &PowlArena, root: u32) -> AcyclicityResult {
             let mut found_next = false;
 
             for &neighbor in &neighbors[neighbor_idx..] {
-                let abs_idx = neighbor_idx + neighbors[neighbor_idx..].iter().position(|&x| x == neighbor).unwrap();
+                let abs_idx = neighbor_idx
+                    + neighbors[neighbor_idx..]
+                        .iter()
+                        .position(|&x| x == neighbor)
+                        .unwrap();
                 if color[neighbor] == 1 {
                     // Back edge to gray node -- cycle
                     cycle_nodes.push(neighbor);
@@ -237,10 +241,7 @@ pub fn get_soundness_report(arena: &PowlArena, root: u32) -> DgSoundnessReport {
     let connectivity = validate_connectivity(arena, root);
     let acyclicity = validate_acyclicity(arena, root);
 
-    let sound = has_start_nodes
-        && has_end_nodes
-        && connectivity.connected
-        && acyclicity.acyclic;
+    let sound = has_start_nodes && has_end_nodes && connectivity.connected && acyclicity.acyclic;
 
     DgSoundnessReport {
         sound,
@@ -318,7 +319,13 @@ mod tests {
         let result = validate_acyclicity(&arena, dg);
         assert!(!result.acyclic);
 
-        let (arena, dg) = build_dg(&["A", "B", "C"], &[(0, 1), (1, 2), (2, 0)], &[0], &[2], false);
+        let (arena, dg) = build_dg(
+            &["A", "B", "C"],
+            &[(0, 1), (1, 2), (2, 0)],
+            &[0],
+            &[2],
+            false,
+        );
         let result = validate_acyclicity(&arena, dg);
         assert!(!result.acyclic);
     }
@@ -338,7 +345,13 @@ mod tests {
         assert!(report.has_start_nodes && report.has_end_nodes);
 
         // Edge cases: unsound due to cycle, unreachable, empty starts/ends
-        let (arena, dg) = build_dg(&["A", "B", "C"], &[(0, 1), (1, 2), (2, 0)], &[0], &[2], false);
+        let (arena, dg) = build_dg(
+            &["A", "B", "C"],
+            &[(0, 1), (1, 2), (2, 0)],
+            &[0],
+            &[2],
+            false,
+        );
         let report = get_soundness_report(&arena, dg);
         assert!(!report.sound);
 

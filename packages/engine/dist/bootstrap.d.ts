@@ -3,7 +3,7 @@
  * Bootstrap logic for engine initialization
  * Loads WASM, initializes kernel, validates readiness
  */
-import { EngineError } from '@wasm4pm/contracts';
+import { EngineError } from '@pictl/contracts';
 import { WasmLoader, WasmModule } from './wasm-loader.js';
 /**
  * Kernel interface for bootstrap (subset of full Kernel)

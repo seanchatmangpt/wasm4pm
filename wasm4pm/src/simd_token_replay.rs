@@ -271,7 +271,7 @@ fn compute_fitness(consumed: u32, produced: u32, missing: u32, remaining: u32) -
 /// Processes preset/postset in chunks of 4 for loop-unrolled performance.
 /// Uses `saturating_sub` / `saturating_add` to avoid underflow/overflow.
 #[inline]
-fn fire_transition(marking: &mut Vec<u32>, preset: &[u32], postset: &[u32]) {
+fn fire_transition(marking: &mut [u32], preset: &[u32], postset: &[u32]) {
     // Process preset in chunks of 4 (loop-unrolled)
     for chunk in preset.chunks_exact(4) {
         marking[chunk[0] as usize] = marking[chunk[0] as usize].saturating_sub(1);
@@ -387,7 +387,7 @@ pub fn replay_log(log_handle: &str, activity_key: &str) -> String {
             })
             .to_string())
         }
-        Some(_) => Ok(format!(r#"{{"error":"Object is not an EventLog"}}"#)),
+        Some(_) => Ok(r#"{"error":"Object is not an EventLog"}"#.to_string()),
         None => Ok(format!(
             r#"{{"error":"EventLog '{}' not found"}}"#,
             log_handle

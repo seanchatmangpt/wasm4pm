@@ -4,6 +4,7 @@ pub mod analysis;
 pub mod conformance;
 pub mod conversion;
 pub mod discovery;
+pub mod extensive_playout;
 pub mod footprints;
 pub mod label_replacing;
 pub mod simplify;

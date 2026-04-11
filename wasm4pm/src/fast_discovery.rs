@@ -459,9 +459,7 @@ pub fn cluster_traces(
             let mut clusters: Vec<Vec<usize>> = vec![Vec::new(); num_clusters];
 
             // Initialize centers from first K traces
-            for i in 0..num_clusters {
-                cluster_centers[i] = bitsets[i];
-            }
+            cluster_centers[..num_clusters].copy_from_slice(&bitsets[..num_clusters]);
 
             // K-means: converge with bitset operations
             let max_iterations = 10;

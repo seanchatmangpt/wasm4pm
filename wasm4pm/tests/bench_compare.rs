@@ -1,8 +1,6 @@
 //! Quick batch vs streaming comparison using synthetic data.
 //! Run: cargo test --test bench_compare -- --nocapture
 
-use std::collections::HashMap;
-use std::time::Instant;
 use pictl::discovery::discover_dfg;
 use pictl::fast_discovery::{discover_astar, discover_hill_climbing};
 use pictl::incremental_dfg::{IncrementalDFG, StreamingDFG};
@@ -16,6 +14,8 @@ use pictl::streaming::streaming_hill_climbing::StreamingHillClimbingBuilder;
 use pictl::streaming::streaming_inductive::StreamingInductiveBuilder;
 use pictl::streaming::streaming_noise_filtered_dfg::StreamingNoiseFilteredDfgBuilder;
 use pictl::streaming::StreamingAlgorithm;
+use std::collections::HashMap;
+use std::time::Instant;
 
 fn make_log(cases: usize) -> String {
     let activities = ["Start", "A", "B", "C", "D", "End"];
@@ -123,7 +123,7 @@ fn compare_batch_vs_streaming() {
         let stream_dfg = ms(
             || {
                 let mut b = StreamingDFG::new();
-                for (cid, evts) in &traces {
+                for (_cid, evts) in &traces {
                     for a in evts {
                         b.process_event(a);
                     }
@@ -221,7 +221,7 @@ fn compare_batch_vs_streaming() {
         let inc_dfg = ms(
             || {
                 let mut d = IncrementalDFG::new();
-                for (cid, evts) in &traces {
+                for (_cid, evts) in &traces {
                     for (i, _a) in evts.iter().enumerate() {
                         d.process_event(i as u32, i == 0);
                     }

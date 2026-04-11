@@ -1,12 +1,12 @@
+use crate::error::{codes, wasm_err};
+use crate::state::{get_or_init_state, StoredObject};
+use crate::utilities::to_js;
+use std::collections::HashSet;
 /// Ensemble Discovery — Run multiple algorithms, rank by quality, find consensus.
 ///
 /// Pure Rust/WASM — no ML/LLM dependencies. Uses DFG-based fitness to evaluate
 /// each discovered model against the original log.
 use wasm_bindgen::prelude::*;
-use crate::state::{get_or_init_state, StoredObject};
-use crate::error::{wasm_err, codes};
-use crate::utilities::to_js;
-use std::collections::HashSet;
 
 /// Run ensemble discovery: discover DFG from log, compute self-fitness,
 /// measure complexity metrics, and return a ranked quality assessment.
@@ -20,37 +20,55 @@ use std::collections::HashSet;
 /// // { models: [{algorithm: "dfg", fitness: 0.95, ...}], consensus: {...} }
 /// ```
 #[wasm_bindgen]
-pub fn ensemble_discover(
-    log_handle: &str,
-    activity_key: &str,
-) -> Result<JsValue, JsValue> {
-    let (traces, _attributes, activity_set) = get_or_init_state().with_object(log_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
-            let activities: HashSet<String> = log.traces.iter()
-                .flat_map(|t| t.events.iter())
-                .filter_map(|e| e.attributes.get(activity_key).and_then(|v| v.as_string()).map(str::to_owned))
-                .collect();
-            Ok((log.traces.clone(), log.attributes.clone(), activities))
-        }
-        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Handle is not an EventLog")),
-        None => Err(wasm_err(codes::INVALID_HANDLE, format!("EventLog '{}' not found", log_handle))),
-    })?;
+pub fn ensemble_discover(log_handle: &str, activity_key: &str) -> Result<JsValue, JsValue> {
+    let (traces, _attributes, activity_set) =
+        get_or_init_state().with_object(log_handle, |obj| match obj {
+            Some(StoredObject::EventLog(log)) => {
+                let activities: HashSet<String> = log
+                    .traces
+                    .iter()
+                    .flat_map(|t| t.events.iter())
+                    .filter_map(|e| {
+                        e.attributes
+                            .get(activity_key)
+                            .and_then(|v| v.as_string())
+                            .map(str::to_owned)
+                    })
+                    .collect();
+                Ok((log.traces.clone(), log.attributes.clone(), activities))
+            }
+            Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Handle is not an EventLog")),
+            None => Err(wasm_err(
+                codes::INVALID_HANDLE,
+                format!("EventLog '{}' not found", log_handle),
+            )),
+        })?;
 
     if traces.is_empty() {
         return Err(wasm_err(codes::INVALID_INPUT, "Log has no traces"));
     }
 
     // Build DFG edge set for fitness evaluation
-    let dfg_edges: HashSet<(String, String)> = traces.iter().flat_map(|trace| {
-        let acts: Vec<String> = trace.events.iter()
-            .filter_map(|e| e.attributes.get(activity_key).and_then(|v| v.as_string()).map(str::to_owned))
-            .collect();
-        let mut pairs = Vec::new();
-        for window in acts.windows(2) {
-            pairs.push((window[0].clone(), window[1].clone()));
-        }
-        pairs
-    }).collect();
+    let dfg_edges: HashSet<(String, String)> = traces
+        .iter()
+        .flat_map(|trace| {
+            let acts: Vec<String> = trace
+                .events
+                .iter()
+                .filter_map(|e| {
+                    e.attributes
+                        .get(activity_key)
+                        .and_then(|v| v.as_string())
+                        .map(str::to_owned)
+                })
+                .collect();
+            let mut pairs = Vec::new();
+            for window in acts.windows(2) {
+                pairs.push((window[0].clone(), window[1].clone()));
+            }
+            pairs
+        })
+        .collect();
 
     // Compute fitness for each trace
     let total_traces = traces.len();
@@ -58,7 +76,9 @@ pub fn ensemble_discover(
     let mut total_fitness = 0.0f64;
 
     for trace in &traces {
-        let acts: Vec<&str> = trace.events.iter()
+        let acts: Vec<&str> = trace
+            .events
+            .iter()
             .filter_map(|e| e.attributes.get(activity_key).and_then(|v| v.as_string()))
             .collect();
         if acts.len() <= 1 {
@@ -109,10 +129,18 @@ pub fn ensemble_discover(
     }));
 
     // Pruned DFG (remove edges with frequency 1)
-    let edge_freq: std::collections::HashMap<(String, String), usize> = traces.iter()
+    let edge_freq: std::collections::HashMap<(String, String), usize> = traces
+        .iter()
         .flat_map(|trace| {
-            let acts: Vec<String> = trace.events.iter()
-                .filter_map(|e| e.attributes.get(activity_key).and_then(|v| v.as_string()).map(str::to_owned))
+            let acts: Vec<String> = trace
+                .events
+                .iter()
+                .filter_map(|e| {
+                    e.attributes
+                        .get(activity_key)
+                        .and_then(|v| v.as_string())
+                        .map(str::to_owned)
+                })
                 .collect();
             let mut pairs = Vec::new();
             for window in acts.windows(2) {
@@ -142,7 +170,9 @@ pub fn ensemble_discover(
     let mut pruned_total_fitness = 0.0f64;
     let mut pruned_fitting = 0usize;
     for trace in &traces {
-        let acts: Vec<&str> = trace.events.iter()
+        let acts: Vec<&str> = trace
+            .events
+            .iter()
             .filter_map(|e| e.attributes.get(activity_key).and_then(|v| v.as_string()))
             .collect();
         if acts.len() <= 1 {
@@ -158,7 +188,9 @@ pub fn ensemble_discover(
             }
         }
         let trace_fit = fit as f64 / pairs as f64;
-        if trace_fit >= 0.9 { pruned_fitting += 1; }
+        if trace_fit >= 0.9 {
+            pruned_fitting += 1;
+        }
         pruned_total_fitness += trace_fit;
     }
 
@@ -177,7 +209,9 @@ pub fn ensemble_discover(
 
     // Sort by quality score descending
     models.sort_by(|a, b| {
-        b["quality_score"].as_f64().unwrap_or(0.0)
+        b["quality_score"]
+            .as_f64()
+            .unwrap_or(0.0)
             .partial_cmp(&a["quality_score"].as_f64().unwrap_or(0.0))
             .unwrap_or(std::cmp::Ordering::Equal)
     });
@@ -209,7 +243,7 @@ pub fn ensemble_discover(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::models::{EventLog, Trace, Event, AttributeValue};
+    use crate::models::{AttributeValue, Event, EventLog, Trace};
     use std::collections::HashMap;
 
     fn make_test_log(traces: Vec<Vec<&str>>) -> EventLog {
@@ -223,7 +257,10 @@ mod tests {
                 let mut event = Event {
                     attributes: HashMap::new(),
                 };
-                event.attributes.insert("concept:name".to_string(), AttributeValue::String(act.to_string()));
+                event.attributes.insert(
+                    "concept:name".to_string(),
+                    AttributeValue::String(act.to_string()),
+                );
                 trace.events.push(event);
             }
             log.traces.push(trace);
@@ -239,10 +276,19 @@ mod tests {
             vec!["A", "B", "C"],
         ]);
         // DFG should have perfect fitness for uniform log
-        let edges: HashSet<(String, String)> = log.traces.iter()
+        let edges: HashSet<(String, String)> = log
+            .traces
+            .iter()
             .flat_map(|trace| {
-                let acts: Vec<String> = trace.events.iter()
-                    .filter_map(|e| e.attributes.get("concept:name").and_then(|v| v.as_string()).map(str::to_owned))
+                let acts: Vec<String> = trace
+                    .events
+                    .iter()
+                    .filter_map(|e| {
+                        e.attributes
+                            .get("concept:name")
+                            .and_then(|v| v.as_string())
+                            .map(str::to_owned)
+                    })
                     .collect();
                 let mut pairs = Vec::new();
                 for window in acts.windows(2) {
@@ -265,10 +311,19 @@ mod tests {
             vec!["A", "X", "C"], // rare edge A->X, B->X
         ]);
 
-        let edge_freq: std::collections::HashMap<(String, String), usize> = log.traces.iter()
+        let edge_freq: std::collections::HashMap<(String, String), usize> = log
+            .traces
+            .iter()
             .flat_map(|trace| {
-                let acts: Vec<String> = trace.events.iter()
-                    .filter_map(|e| e.attributes.get("concept:name").and_then(|v| v.as_string()).map(str::to_owned))
+                let acts: Vec<String> = trace
+                    .events
+                    .iter()
+                    .filter_map(|e| {
+                        e.attributes
+                            .get("concept:name")
+                            .and_then(|v| v.as_string())
+                            .map(str::to_owned)
+                    })
                     .collect();
                 let mut pairs = Vec::new();
                 for window in acts.windows(2) {
@@ -292,5 +347,352 @@ mod tests {
         assert!(pruned.contains(&("B".to_string(), "C".to_string())));
         assert!(!pruned.contains(&("A".to_string(), "X".to_string())));
         assert!(!pruned.contains(&("X".to_string(), "C".to_string())));
+    }
+
+    #[test]
+    fn test_ensemble_empty_log_returns_error() {
+        let _log = EventLog::new();
+        let result = ensemble_discover("test_handle", "concept:name");
+        assert!(result.is_err(), "Empty log should return error");
+    }
+
+    #[test]
+    fn test_ensemble_single_activity_trace() {
+        let _log = make_test_log(vec![vec!["A"], vec!["A"]]);
+        let result = ensemble_discover("test_handle", "concept:name");
+        assert!(result.is_ok(), "Single activity trace should succeed");
+    }
+
+    #[test]
+    fn test_ensemble_computes_complexity_ratio() {
+        let log = make_test_log(vec![vec!["A", "B", "C", "D"], vec!["A", "B", "C", "D"]]);
+
+        let dfg_edges: HashSet<(String, String)> = log
+            .traces
+            .iter()
+            .flat_map(|trace| {
+                let acts: Vec<String> = trace
+                    .events
+                    .iter()
+                    .filter_map(|e| {
+                        e.attributes
+                            .get("concept:name")
+                            .and_then(|v| v.as_string())
+                            .map(str::to_owned)
+                    })
+                    .collect();
+                let mut pairs = Vec::new();
+                for window in acts.windows(2) {
+                    pairs.push((window[0].clone(), window[1].clone()));
+                }
+                pairs
+            })
+            .collect();
+
+        let edge_count = dfg_edges.len();
+        let node_count = 4; // A, B, C, D
+        let complexity_ratio = edge_count as f64 / node_count as f64;
+
+        assert_eq!(edge_count, 3, "Should have 3 edges: A->B, B->C, C->D");
+        assert!(
+            (complexity_ratio - 0.75).abs() < 0.01,
+            "Complexity ratio should be 0.75"
+        );
+    }
+
+    #[test]
+    fn test_ensemble_handles_parallel_paths() {
+        let log = make_test_log(vec![
+            vec!["A", "B", "D"],
+            vec!["A", "C", "D"],
+            vec!["A", "B", "D"],
+        ]);
+
+        let edge_freq: std::collections::HashMap<(String, String), usize> = log
+            .traces
+            .iter()
+            .flat_map(|trace| {
+                let acts: Vec<String> = trace
+                    .events
+                    .iter()
+                    .filter_map(|e| {
+                        e.attributes
+                            .get("concept:name")
+                            .and_then(|v| v.as_string())
+                            .map(str::to_owned)
+                    })
+                    .collect();
+                let mut pairs = Vec::new();
+                for window in acts.windows(2) {
+                    pairs.push((window[0].to_owned(), window[1].to_owned()));
+                }
+                pairs
+            })
+            .fold(std::collections::HashMap::new(), |mut acc, pair| {
+                *acc.entry(pair).or_insert(0) += 1;
+                acc
+            });
+
+        // A->B: 2, A->C: 1, B->D: 2, C->D: 1
+        assert_eq!(edge_freq[&("A".to_string(), "B".to_string())], 2);
+        assert_eq!(edge_freq[&("A".to_string(), "C".to_string())], 1);
+        assert_eq!(edge_freq[&("B".to_string(), "D".to_string())], 2);
+        assert_eq!(edge_freq[&("C".to_string(), "D".to_string())], 1);
+    }
+
+    #[test]
+    fn test_ensemble_detects_self_loop() {
+        let log = make_test_log(vec![vec!["A", "A", "B"]]);
+
+        let dfg_edges: HashSet<(String, String)> = log
+            .traces
+            .iter()
+            .flat_map(|trace| {
+                let acts: Vec<String> = trace
+                    .events
+                    .iter()
+                    .filter_map(|e| {
+                        e.attributes
+                            .get("concept:name")
+                            .and_then(|v| v.as_string())
+                            .map(str::to_owned)
+                    })
+                    .collect();
+                let mut pairs = Vec::new();
+                for window in acts.windows(2) {
+                    pairs.push((window[0].clone(), window[1].clone()));
+                }
+                pairs
+            })
+            .collect();
+
+        assert!(dfg_edges.contains(&("A".to_string(), "A".to_string())));
+        assert!(dfg_edges.contains(&("A".to_string(), "B".to_string())));
+    }
+
+    #[test]
+    fn test_ensemble_fitness_perfect_for_uniform_log() {
+        let log = make_test_log(vec![
+            vec!["A", "B", "C"],
+            vec!["A", "B", "C"],
+            vec!["A", "B", "C"],
+        ]);
+
+        let dfg_edges: HashSet<(String, String)> = log
+            .traces
+            .iter()
+            .flat_map(|trace| {
+                let acts: Vec<String> = trace
+                    .events
+                    .iter()
+                    .filter_map(|e| {
+                        e.attributes
+                            .get("concept:name")
+                            .and_then(|v| v.as_string())
+                            .map(str::to_owned)
+                    })
+                    .collect();
+                let mut pairs = Vec::new();
+                for window in acts.windows(2) {
+                    pairs.push((window[0].clone(), window[1].clone()));
+                }
+                pairs
+            })
+            .collect();
+
+        let mut total_fitness = 0.0f64;
+        for trace in &log.traces {
+            let acts: Vec<&str> = trace
+                .events
+                .iter()
+                .filter_map(|e| e.attributes.get("concept:name").and_then(|v| v.as_string()))
+                .collect();
+            let pairs = acts.len() - 1;
+            let mut fit = 0usize;
+            for window in acts.windows(2) {
+                if dfg_edges.contains(&(window[0].to_owned(), window[1].to_owned())) {
+                    fit += 1;
+                }
+            }
+            total_fitness += fit as f64 / pairs as f64;
+        }
+
+        let avg_fitness = total_fitness / log.traces.len() as f64;
+        assert!(
+            (avg_fitness - 1.0).abs() < 0.001,
+            "Uniform log should have perfect fitness"
+        );
+    }
+
+    #[test]
+    fn test_ensemble_conforming_ratio_calculation() {
+        let log = make_test_log(vec![
+            vec!["A", "B", "C"],
+            vec!["A", "X", "C"], // divergent trace
+            vec!["A", "B", "C"],
+        ]);
+
+        let dfg_edges: HashSet<(String, String)> = log
+            .traces
+            .iter()
+            .flat_map(|trace| {
+                let acts: Vec<String> = trace
+                    .events
+                    .iter()
+                    .filter_map(|e| {
+                        e.attributes
+                            .get("concept:name")
+                            .and_then(|v| v.as_string())
+                            .map(str::to_owned)
+                    })
+                    .collect();
+                let mut pairs = Vec::new();
+                for window in acts.windows(2) {
+                    pairs.push((window[0].clone(), window[1].clone()));
+                }
+                pairs
+            })
+            .collect();
+
+        let mut fitting_traces = 0usize;
+        for trace in &log.traces {
+            let acts: Vec<&str> = trace
+                .events
+                .iter()
+                .filter_map(|e| e.attributes.get("concept:name").and_then(|v| v.as_string()))
+                .collect();
+            let pairs = acts.len() - 1;
+            let mut fit = 0usize;
+            for window in acts.windows(2) {
+                if dfg_edges.contains(&(window[0].to_owned(), window[1].to_owned())) {
+                    fit += 1;
+                }
+            }
+            let trace_fit = fit as f64 / pairs as f64;
+            if trace_fit >= 0.9 {
+                fitting_traces += 1;
+            }
+        }
+
+        let conforming_ratio = fitting_traces as f64 / log.traces.len() as f64;
+        assert!(conforming_ratio > 0.0, "Should have some conforming traces");
+    }
+
+    #[test]
+    fn test_ensemble_missing_activity_key() {
+        let mut log = EventLog::new();
+        let mut trace = Trace {
+            attributes: HashMap::new(),
+            events: Vec::new(),
+        };
+        let mut event = Event {
+            attributes: HashMap::new(),
+        };
+        // Missing concept:name attribute
+        event.attributes.insert(
+            "other:key".to_string(),
+            AttributeValue::String("A".to_string()),
+        );
+        trace.events.push(event);
+        log.traces.push(trace);
+
+        let dfg_edges: HashSet<(String, String)> = log
+            .traces
+            .iter()
+            .flat_map(|trace| {
+                let acts: Vec<String> = trace
+                    .events
+                    .iter()
+                    .filter_map(|e| {
+                        e.attributes
+                            .get("concept:name")
+                            .and_then(|v| v.as_string())
+                            .map(str::to_owned)
+                    })
+                    .collect();
+                let mut pairs = Vec::new();
+                for window in acts.windows(2) {
+                    pairs.push((window[0].clone(), window[1].clone()));
+                }
+                pairs
+            })
+            .collect();
+
+        assert!(
+            dfg_edges.is_empty(),
+            "Missing activity key should result in no edges"
+        );
+    }
+
+    #[test]
+    fn test_ensemble_single_event_traces() {
+        let log = make_test_log(vec![vec!["A"], vec!["B"], vec!["C"]]);
+
+        let dfg_edges: HashSet<(String, String)> = log
+            .traces
+            .iter()
+            .flat_map(|trace| {
+                let acts: Vec<String> = trace
+                    .events
+                    .iter()
+                    .filter_map(|e| {
+                        e.attributes
+                            .get("concept:name")
+                            .and_then(|v| v.as_string())
+                            .map(str::to_owned)
+                    })
+                    .collect();
+                let mut pairs = Vec::new();
+                for window in acts.windows(2) {
+                    pairs.push((window[0].clone(), window[1].clone()));
+                }
+                pairs
+            })
+            .collect();
+
+        assert!(
+            dfg_edges.is_empty(),
+            "Single event traces should have no edges"
+        );
+    }
+
+    #[test]
+    fn test_ensemble_quality_score_bounds() {
+        let log = make_test_log(vec![vec!["A", "B", "C"]]);
+
+        let dfg_edges: HashSet<(String, String)> = log
+            .traces
+            .iter()
+            .flat_map(|trace| {
+                let acts: Vec<String> = trace
+                    .events
+                    .iter()
+                    .filter_map(|e| {
+                        e.attributes
+                            .get("concept:name")
+                            .and_then(|v| v.as_string())
+                            .map(str::to_owned)
+                    })
+                    .collect();
+                let mut pairs = Vec::new();
+                for window in acts.windows(2) {
+                    pairs.push((window[0].clone(), window[1].clone()));
+                }
+                pairs
+            })
+            .collect();
+
+        let edge_count = dfg_edges.len();
+        let node_count = 3;
+        let complexity_ratio = edge_count as f64 / node_count as f64;
+
+        // Quality score formula: fitness * (1.0 - (complexity_ratio - 1.0).abs().min(1.0) * 0.2)
+        // With fitness = 1.0, complexity_ratio = 0.67:
+        // quality = 1.0 * (1.0 - 0.33 * 0.2) = 1.0 * 0.934 = 0.934
+        let quality_score = 1.0 * (1.0 - (complexity_ratio - 1.0).abs().min(1.0) * 0.2);
+        assert!(
+            quality_score > 0.0 && quality_score <= 1.0,
+            "Quality score should be in (0, 1]"
+        );
     }
 }

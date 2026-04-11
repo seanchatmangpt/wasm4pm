@@ -17,10 +17,6 @@
 //! Without real data, benchmarks generate synthetic logs (same behavior, synthetic data).
 //! License for real data: CC BY 4.0 (free to use, attribution required)
 
-use std::collections::HashMap;
-use std::fs;
-use std::path::Path;
-use std::time::Instant;
 use pictl::advanced_algorithms::{
     analyze_infrequent_paths, compute_model_metrics, detect_bottlenecks, detect_rework,
     discover_heuristic_miner,
@@ -51,7 +47,11 @@ use pictl::streaming::streaming_astar::StreamingAStarBuilder;
 use pictl::streaming::streaming_declare::StreamingDeclareBuilder;
 use pictl::streaming::streaming_hill_climbing::StreamingHillClimbingBuilder;
 use pictl::streaming::streaming_inductive::StreamingInductiveBuilder;
-use pictl::streaming::{StreamStats, StreamingAlgorithm};
+use pictl::streaming::StreamingAlgorithm;
+use std::collections::HashMap;
+use std::fs;
+use std::path::Path;
+use std::time::Instant;
 
 // ── Data Source & Tier Detection ──────────────────────────────────────────
 
@@ -64,8 +64,8 @@ fn get_benchmark_sizes() -> Vec<usize> {
 }
 
 thread_local! {
-    static DATA_SOURCE: std::cell::RefCell<String> = std::cell::RefCell::new(String::new());
-    static BENCHMARK_TIER: std::cell::RefCell<Option<u32>> = std::cell::RefCell::new(None);
+    static DATA_SOURCE: std::cell::RefCell<String> = const { std::cell::RefCell::new(String::new()) };
+    static BENCHMARK_TIER: std::cell::RefCell<Option<u32>> = const { std::cell::RefCell::new(None) };
 }
 
 fn set_data_source(source: &str) {
@@ -90,6 +90,7 @@ fn set_benchmark_tier(tier: u32) {
 
 // ── Tier Configuration ─────────────────────────────────────────────────────
 
+#[allow(dead_code)]
 struct TierConfig {
     tier: u32,
     name: &'static str,
@@ -126,6 +127,7 @@ fn get_tier_config(tier: u32) -> Option<TierConfig> {
     }
 }
 
+#[allow(dead_code)]
 fn skip_test_if_wrong_tier(tier: u32) -> bool {
     if let Some(current) = get_benchmark_tier() {
         current != tier
@@ -252,7 +254,7 @@ fn load_real_dataset(dataset: &str) -> Option<EventLog> {
 
     for path in fixture_paths.iter() {
         if Path::new(path).exists() {
-            if let Ok(content) = fs::read_to_string(&path) {
+            if let Ok(content) = fs::read_to_string(path) {
                 let log = parse_xes_file(&content);
                 set_data_source(&format!(
                     "Real {} ({} cases)",
@@ -274,12 +276,14 @@ fn load_real_dataset(dataset: &str) -> Option<EventLog> {
     None
 }
 
+#[allow(dead_code)]
 fn load_real_bpi2020() -> Option<EventLog> {
     load_real_dataset("bpi2020")
 }
 
 // ── Shared helpers ────────────────────────────────────────────────────────────
 
+#[allow(dead_code)]
 fn generate_synthetic_log(cases: usize) -> EventLog {
     let activities = ["Start", "A", "B", "C", "D", "End"];
     let mut log = EventLog::new();
@@ -1069,7 +1073,7 @@ fn bench_streaming_dfg() {
             ms(
                 || {
                     let mut dfg = StreamingDFG::new();
-                    for (case_id, events) in &traces {
+                    for (_case_id, events) in &traces {
                         for act in events {
                             dfg.process_event(act);
                         }
@@ -1212,15 +1216,15 @@ fn bench_streaming_incremental_dfg_merge() {
             n,
             ms(
                 || {
-                    let chunk_size = (traces.len() + 3) / 4;
+                    let chunk_size = traces.len().div_ceil(4);
                     let chunks: Vec<_> = traces.chunks(chunk_size).collect();
 
-                    let mut partials: Vec<IncrementalDFG> = chunks
+                    let partials: Vec<IncrementalDFG> = chunks
                         .iter()
                         .map(|chunk| {
                             let mut dfg = IncrementalDFG::new();
-                            for (case_id, events) in *chunk {
-                                for (i, act) in events.iter().enumerate() {
+                            for (_case_id, events) in *chunk {
+                                for (i, _act) in events.iter().enumerate() {
                                     dfg.process_event(i as u32, i == 0);
                                 }
                                 dfg.end_trace();

@@ -239,7 +239,10 @@ pub fn discover_batches(
             .unwrap_or_default();
 
         for event in &trace.events {
-            let activity_name = match event.attributes.get(activity_key).and_then(|v| v.as_string())
+            let activity_name = match event
+                .attributes
+                .get(activity_key)
+                .and_then(|v| v.as_string())
             {
                 Some(name) => name.to_string(),
                 None => continue,
@@ -303,10 +306,7 @@ pub fn discover_batches_wasm(
             let result = discover_batches(log, activity_key, timestamp_key);
             to_js(&result)
         }
-        Some(_) => Err(wasm_err(
-            codes::INVALID_INPUT,
-            "Object is not an EventLog",
-        )),
+        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
         None => Err(wasm_err(
             codes::INVALID_HANDLE,
             format!("EventLog '{}' not found", eventlog_handle),
@@ -381,8 +381,12 @@ mod tests {
         let log = make_log(vec![make_trace(
             "c1",
             vec![
-                Event { attributes: attrs_a },
-                Event { attributes: attrs_b },
+                Event {
+                    attributes: attrs_a,
+                },
+                Event {
+                    attributes: attrs_b,
+                },
             ],
         )]);
         assert_eq!(
@@ -394,9 +398,18 @@ mod tests {
     #[test]
     fn test_detects_batches() {
         let log = make_log(vec![
-            make_trace("case1", vec![make_event("Check", 0), make_event("Approve", 3)]),
-            make_trace("case2", vec![make_event("Check", 1), make_event("Approve", 4)]),
-            make_trace("case3", vec![make_event("Check", 2), make_event("Approve", 5)]),
+            make_trace(
+                "case1",
+                vec![make_event("Check", 0), make_event("Approve", 3)],
+            ),
+            make_trace(
+                "case2",
+                vec![make_event("Check", 1), make_event("Approve", 4)],
+            ),
+            make_trace(
+                "case3",
+                vec![make_event("Check", 2), make_event("Approve", 5)],
+            ),
         ]);
         let result = discover_batches(&log, "concept:name", "time:timestamp");
         assert!(result.total_batches >= 1);
@@ -451,13 +464,19 @@ mod tests {
     fn test_custom_attribute_keys() {
         // Use non-default attribute keys.
         let mut attrs1 = HashMap::default();
-        attrs1.insert("activity".to_string(), AttributeValue::String("Print".to_string()));
+        attrs1.insert(
+            "activity".to_string(),
+            AttributeValue::String("Print".to_string()),
+        );
         attrs1.insert(
             "ts".to_string(),
             AttributeValue::Date("2024-01-01T00:10:00+00:00".to_string()),
         );
         let mut attrs2 = HashMap::default();
-        attrs2.insert("activity".to_string(), AttributeValue::String("Print".to_string()));
+        attrs2.insert(
+            "activity".to_string(),
+            AttributeValue::String("Print".to_string()),
+        );
         attrs2.insert(
             "ts".to_string(),
             AttributeValue::Date("2024-01-01T00:10:00+00:00".to_string()),

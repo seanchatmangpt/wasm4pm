@@ -92,8 +92,10 @@ pub mod capability_registry;
 pub mod conformance;
 pub mod data_quality;
 pub mod discovery;
+pub mod ensemble;
 pub mod fast_discovery;
 pub mod feature_extraction;
+pub mod feature_importance;
 pub mod filters;
 pub mod final_analytics;
 #[cfg(feature = "hand_rolled_stats")]
@@ -102,8 +104,8 @@ pub mod hierarchical;
 pub mod incremental_dfg;
 pub mod more_discovery;
 pub mod parallel_executor;
-pub mod probabilistic;
 pub mod playout;
+pub mod probabilistic;
 pub mod process_tree;
 pub mod smart_engine;
 pub mod social_network;
@@ -122,24 +124,26 @@ pub mod oc_petri_net;
 pub mod ocel_flatten;
 #[cfg(feature = "ocel")]
 pub mod ocel_io;
+#[cfg(feature = "ocel")]
+pub mod ocel_tests;
 
 // Advanced discovery algorithms (gated by discovery_advanced feature)
 #[cfg(feature = "discovery_advanced")]
 pub mod advanced_algorithms;
 #[cfg(feature = "discovery_advanced")]
+pub mod batches;
+#[cfg(feature = "discovery_advanced")]
+pub mod causal_graph;
+#[cfg(feature = "discovery_advanced")]
 pub mod genetic_discovery;
 #[cfg(feature = "discovery_advanced")]
 pub mod ilp_discovery; // ACO, PSO, simulated annealing
-#[cfg(feature = "discovery_advanced")]
-pub mod transition_system;
-#[cfg(feature = "discovery_advanced")]
-pub mod causal_graph;
 #[cfg(feature = "discovery_advanced")]
 pub mod log_to_trie;
 #[cfg(feature = "discovery_advanced")]
 pub mod performance_spectrum;
 #[cfg(feature = "discovery_advanced")]
-pub mod batches;
+pub mod transition_system;
 
 // Quality metrics (gated by conformance_full feature)
 #[cfg(feature = "conformance_full")]
@@ -189,21 +193,21 @@ pub mod temporal_profile;
 #[cfg(feature = "conformance_full")]
 pub mod alignments;
 #[cfg(feature = "conformance_full")]
-pub mod petri_net_reduction;
-#[cfg(feature = "conformance_full")]
 pub mod etconformance_precision;
 #[cfg(feature = "conformance_full")]
 pub mod marking_equation;
+#[cfg(feature = "conformance_full")]
+pub mod petri_net_reduction;
 
 // 80/20 gap-filling modules
-#[cfg(feature = "alignment_fitness")]
-pub mod alignment_fitness;
-#[cfg(feature = "petri_net_playout")]
-pub mod petri_net_playout;
 #[cfg(feature = "align_etconformance")]
 pub mod align_etconformance;
+#[cfg(feature = "alignment_fitness")]
+pub mod alignment_fitness;
 #[cfg(feature = "montecarlo")]
 pub mod montecarlo;
+#[cfg(feature = "petri_net_playout")]
+pub mod petri_net_playout;
 
 // Performance and resource analysis
 #[cfg(feature = "conformance_basic")]
@@ -212,6 +216,8 @@ pub mod performance_dfg;
 pub mod resource_analysis;
 
 // POWL modules (gated by powl feature)
+#[cfg(feature = "powl")]
+pub mod complexity_metrics;
 #[cfg(feature = "powl")]
 pub mod powl;
 #[cfg(feature = "powl")]
@@ -228,8 +234,6 @@ pub mod powl_parser;
 pub mod powl_petri_net;
 #[cfg(feature = "powl")]
 pub mod powl_process_tree;
-#[cfg(feature = "powl")]
-pub mod complexity_metrics;
 #[cfg(feature = "powl")]
 pub mod powl_to_process_tree;
 #[cfg(feature = "powl")]
@@ -334,6 +338,139 @@ pub fn get_cache_stats() -> String {
 #[wasm_bindgen]
 pub fn simd_token_replay(log_handle: &str, activity_key: &str) -> String {
     crate::simd_token_replay::replay_log(log_handle, activity_key)
+}
+
+// -------------------------------------------------------------------------
+// OCEL Support (Object-Centric Event Logs)
+// -------------------------------------------------------------------------
+
+/// Load OCEL 2.0 from JSON string.
+///
+/// Parses JSON into OCEL struct, stores in AppState, returns handle.
+#[cfg(feature = "ocel")]
+#[wasm_bindgen]
+pub fn load_ocel2_from_json(content: &str) -> Result<String, JsValue> {
+    crate::ocel_io::load_ocel2_from_json(content)
+}
+
+/// Export OCEL 2.0 to JSON string (pretty-printed).
+///
+/// Retrieves OCEL from state by handle, serializes to JSON string.
+#[cfg(feature = "ocel")]
+#[wasm_bindgen]
+pub fn export_ocel2_to_json(handle: &str) -> Result<String, JsValue> {
+    crate::ocel_io::export_ocel2_to_json(handle)
+}
+
+/// Validate OCEL 2.0 structure.
+///
+/// Checks referential integrity, timestamps, object relations.
+/// Returns validation report as JSON: { valid: bool, errors: Vec<String> }
+#[cfg(feature = "ocel")]
+#[wasm_bindgen]
+pub fn validate_ocel(handle: &str) -> Result<JsValue, JsValue> {
+    crate::ocel_io::validate_ocel(handle)
+}
+
+/// List all unique object types in an OCEL.
+#[cfg(feature = "ocel")]
+#[wasm_bindgen]
+pub fn list_ocel_object_types(ocel_handle: &str) -> Result<JsValue, JsValue> {
+    crate::ocel_flatten::list_ocel_object_types(ocel_handle)
+}
+
+/// Get statistics about OCEL structure and content.
+#[cfg(feature = "ocel")]
+#[wasm_bindgen]
+pub fn get_ocel_type_statistics(ocel_handle: &str) -> Result<JsValue, JsValue> {
+    crate::ocel_flatten::get_ocel_type_statistics(ocel_handle)
+}
+
+/// Flatten an OCEL to an EventLog by projecting onto a single object type.
+///
+/// For the given object_type:
+/// - Each object becomes a case (trace)
+/// - Events referencing that object become the events in the trace
+/// - Events are sorted by timestamp within each trace
+#[cfg(feature = "ocel")]
+#[wasm_bindgen]
+pub fn flatten_ocel_to_eventlog(ocel_handle: &str, object_type: &str) -> Result<String, JsValue> {
+    crate::ocel_flatten::flatten_ocel_to_eventlog(ocel_handle, object_type)
+}
+
+/// Discover Object-Centric Petri Nets from OCEL.
+///
+/// For each object type, flattens the OCEL and discovers a Petri Net.
+/// Returns JSON mapping object_type -> PetriNet.
+#[cfg(feature = "ocel")]
+#[wasm_bindgen]
+pub fn discover_oc_petri_net(ocel_handle: &str, algorithm: &str) -> Result<JsValue, JsValue> {
+    crate::oc_petri_net::discover_oc_petri_net(ocel_handle, algorithm)
+}
+
+/// Check conformance of OCEL against an Object-Centric Petri Net.
+///
+/// For each object type:
+/// 1. Flatten OCEL → EventLog
+/// 2. Discover reference Petri Net
+/// 3. Token-replay each trace
+/// 4. Compute fitness / precision metrics
+#[cfg(feature = "ocel")]
+#[wasm_bindgen]
+pub fn oc_conformance_check(ocel_handle: &str) -> Result<JsValue, JsValue> {
+    crate::oc_conformance::oc_conformance_check(ocel_handle)
+}
+
+/// Analyze OCEL performance: build performance-annotated DFG for each object type.
+///
+/// Computes mean/median/p95 cycle times between activities.
+#[cfg(feature = "ocel")]
+#[wasm_bindgen]
+pub fn oc_performance_analysis(ocel_handle: &str) -> Result<JsValue, JsValue> {
+    crate::oc_performance::oc_performance_analysis(ocel_handle)
+}
+
+/// Analyze resource utilization: total events, time periods, concurrent cases, top activities.
+#[cfg(feature = "ocel")]
+#[wasm_bindgen]
+pub fn analyze_resource_utilization(
+    log_handle: &str,
+    resource_key: &str,
+    timestamp_key: &str,
+) -> Result<JsValue, JsValue> {
+    crate::resource_analysis::analyze_resource_utilization(log_handle, resource_key, timestamp_key)
+}
+
+/// Analyze resource-activity matrix: which resources perform which activities.
+#[cfg(feature = "ocel")]
+#[wasm_bindgen]
+pub fn analyze_resource_activity_matrix(
+    log_handle: &str,
+    resource_key: &str,
+    activity_key: &str,
+) -> Result<JsValue, JsValue> {
+    crate::resource_analysis::analyze_resource_activity_matrix(
+        log_handle,
+        resource_key,
+        activity_key,
+    )
+}
+
+/// Identify resource bottlenecks: waiting times, processing times, queue sizes.
+#[cfg(feature = "ocel")]
+#[wasm_bindgen]
+pub fn identify_resource_bottlenecks(
+    log_handle: &str,
+    resource_key: &str,
+    timestamp_key: &str,
+    activity_key: &str,
+) -> Result<JsValue, JsValue> {
+    crate::resource_analysis::identify_resource_bottlenecks(
+        log_handle,
+        resource_key,
+        timestamp_key,
+        activity_key,
+    )
 }
 
 // Conditional re-exports for statistics

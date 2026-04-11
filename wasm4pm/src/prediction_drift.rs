@@ -11,7 +11,7 @@ use std::collections::HashSet;
 /// * `compute_ewma` — exponential weighted moving average with trend classification.
 use wasm_bindgen::prelude::*;
 
-/// Unified drift detection over a stored event log.
+/// Detect concept drift over event log using windowed Jaccard distance.
 ///
 /// Slides a window of `window_size` traces across the log and computes the
 /// Jaccard distance between the activity sets of consecutive windows.  A drift
@@ -89,7 +89,7 @@ pub fn detect_drift(
     })
 }
 
-/// Compute an exponential weighted moving average (EWMA) over a series of
+/// Compute exponential weighted moving average (EWMA) with trend classification.
 /// values and classify the overall trend.
 ///
 /// `values_json` — JSON array of numbers, e.g. `"[1.0, 2.0, 3.5]"`.

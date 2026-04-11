@@ -71,6 +71,7 @@ const EPS: f64 = 1e-9;
 /// let (cost, _x) = pictl_wasm4pm::marking_equation::solve_marking_equation(&a, &c, &b).unwrap();
 /// assert!((cost - 2.0).abs() < 1e-6);
 /// ```
+#[allow(clippy::needless_range_loop)]
 pub fn solve_marking_equation(
     incidence_matrix: &[Vec<i32>],
     costs: &[f64],
@@ -173,9 +174,7 @@ pub fn solve_marking_equation(
     for k in 0..total_cols {
         tab[m][k] = 0.0;
     }
-    for j in 0..n {
-        tab[m][j] = costs[j];
-    }
+    tab[m][..n].copy_from_slice(&costs[..n]);
     for (i, &bv) in basis.iter().enumerate() {
         if bv < n {
             let cj = costs[bv];
@@ -227,6 +226,7 @@ enum PivotResult {
 
 /// Simplex pivoting loop.  Entering variable: most negative reduced cost.
 /// Leaving variable: minimum ratio test with Bland's tie-breaking.
+#[allow(clippy::needless_range_loop)]
 fn simplex(tab: &mut [Vec<f64>], basis: &mut [usize], m: usize, n_vars: usize) -> PivotResult {
     let ncols = tab[0].len();
     for _ in 0..MAX_PIVOTS {
@@ -263,6 +263,7 @@ fn simplex(tab: &mut [Vec<f64>], basis: &mut [usize], m: usize, n_vars: usize) -
 }
 
 /// Single pivot: scale pivot row, eliminate column from other rows.
+#[allow(clippy::needless_range_loop)]
 fn do_pivot(tab: &mut [Vec<f64>], pr: usize, col: usize) {
     let ncols = tab[0].len();
     let piv = tab[pr][col];

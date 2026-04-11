@@ -57,15 +57,13 @@ pub fn check_data_quality(
                             if let Some(ts_ms) = parse_timestamp_ms(ts_str) {
                                 // Check ordering
                                 if let Some(prev) = prev_timestamp {
-                                    if ts_ms < prev {
-                                        if !has_ordering_issues {
-                                            issues.push(json!({
-                                                "type": "timestamp_ordering",
-                                                "trace_id": trace_id,
-                                                "event_indices": [idx - 1, idx]
-                                            }));
-                                            has_ordering_issues = true;
-                                        }
+                                    if ts_ms < prev && !has_ordering_issues {
+                                        issues.push(json!({
+                                            "type": "timestamp_ordering",
+                                            "trace_id": trace_id,
+                                            "event_indices": [idx - 1, idx]
+                                        }));
+                                        has_ordering_issues = true;
                                     }
                                 }
                                 prev_timestamp = Some(ts_ms);
@@ -246,26 +244,17 @@ pub fn infer_eventlog_schema(log_handle: &str) -> Result<JsValue, JsValue> {
 
             // Process log-level attributes
             for (key, val) in &log.attributes {
-                attr_stats
-                    .entry(key.clone())
-                    .or_insert_with(AttributeStats::new)
-                    .observe(val);
+                attr_stats.entry(key.clone()).or_default().observe(val);
             }
 
             // Process trace-level and event-level attributes
             for trace in &log.traces {
                 for (key, val) in &trace.attributes {
-                    attr_stats
-                        .entry(key.clone())
-                        .or_insert_with(AttributeStats::new)
-                        .observe(val);
+                    attr_stats.entry(key.clone()).or_default().observe(val);
                 }
                 for event in &trace.events {
                     for (key, val) in &event.attributes {
-                        attr_stats
-                            .entry(key.clone())
-                            .or_insert_with(AttributeStats::new)
-                            .observe(val);
+                        attr_stats.entry(key.clone()).or_default().observe(val);
                     }
                 }
             }
@@ -388,7 +377,7 @@ pub fn infer_ocel_schema(ocel_handle: &str) -> Result<JsValue, JsValue> {
 // === Helper Structures and Functions ===
 
 /// Statistics about attribute values to support type inference
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 struct AttributeStats {
     count: usize,
     is_string: usize,
@@ -399,17 +388,6 @@ struct AttributeStats {
 }
 
 impl AttributeStats {
-    fn new() -> Self {
-        AttributeStats {
-            count: 0,
-            is_string: 0,
-            is_numeric: 0,
-            is_boolean: 0,
-            is_date: 0,
-            sample_values: Vec::new(),
-        }
-    }
-
     fn observe(&mut self, val: &AttributeValue) {
         self.count += 1;
         match val {
@@ -467,7 +445,7 @@ fn infer_activity_key(attr_stats: &HashMap<String, AttributeStats>) -> Option<St
     }
 
     // Then try case-insensitive substring matches
-    for (key, _) in attr_stats {
+    for key in attr_stats.keys() {
         for keyword in &activity_keywords {
             if key.to_lowercase().contains(keyword) {
                 return Some(key.clone());
@@ -501,7 +479,7 @@ fn infer_timestamp_key(attr_stats: &HashMap<String, AttributeStats>) -> Option<S
         }
     }
 
-    for (key, _) in attr_stats {
+    for key in attr_stats.keys() {
         for keyword in &timestamp_keywords {
             if key.to_lowercase().contains(keyword) {
                 return Some(key.clone());
@@ -531,7 +509,7 @@ fn infer_resource_key(attr_stats: &HashMap<String, AttributeStats>) -> Option<St
     }
 
     // Then try case-insensitive substring matches
-    for (key, _) in attr_stats {
+    for key in attr_stats.keys() {
         for keyword in &resource_keywords {
             if key.to_lowercase().contains(keyword) {
                 return Some(key.clone());

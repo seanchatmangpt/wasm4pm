@@ -6,6 +6,7 @@ use wasm_bindgen::JsValue;
 use crate::models::EventLog as ModelsEventLog;
 use crate::powl::analysis::complexity::measure;
 use crate::powl::analysis::diff::diff as model_diff;
+use crate::powl::conformance::dg_soundness::get_soundness_report as dg_soundness_report;
 use crate::powl::conformance::footprints_conf::check as footprints_conformance_check;
 use crate::powl::conformance::soundness::check_soundness;
 use crate::powl::conformance::token_replay::compute_fitness;
@@ -299,6 +300,20 @@ pub fn check_powl_soundness(powl_str: &str) -> Result<String, JsValue> {
         .map_err(|e| wasm_err(&format!("json error: {}", e)))
 }
 
+/// Check DecisionGraph structural soundness (connectivity, acyclicity).
+///
+/// Validates a DecisionGraph directly without Petri net conversion.
+/// Returns JSON: `{ "sound": bool, "connectivity": {...}, "acyclicity": {...},
+///               "has_start_nodes": bool, "has_end_nodes": bool }`
+///
+/// If the root node is not a DecisionGraph, returns `{ "sound": false }`.
+#[wasm_bindgen]
+pub fn check_dg_soundness(powl_string: &str) -> Result<String, JsValue> {
+    let (arena, root) = parse_model(powl_string)?;
+    let report = dg_soundness_report(&arena, root);
+    serde_json::to_string_pretty(&report).map_err(|e| wasm_err(&format!("json error: {}", e)))
+}
+
 /// Compute footprints-based conformance (fitness, precision, recall, F1).
 ///
 /// # Arguments
@@ -373,8 +388,8 @@ pub fn discover_powl_from_log(log_json: &str, variant: &str) -> Result<JsValue, 
     let log: ModelsEventLog =
         serde_json::from_str(log_json).map_err(|e| wasm_err(&format!("log parse error: {}", e)))?;
 
-    let discovery_variant =
-        DiscoveryVariant::from_str(variant).unwrap_or(DiscoveryVariant::DecisionGraphCyclic);
+    let discovery_variant = DiscoveryVariant::from_variant_str(variant)
+        .unwrap_or(DiscoveryVariant::DecisionGraphCyclic);
 
     let config = DiscoveryConfig {
         activity_key: "concept:name".to_string(),
@@ -418,8 +433,8 @@ pub fn discover_powl_from_log_config(
     let log: ModelsEventLog =
         serde_json::from_str(log_json).map_err(|e| wasm_err(&format!("log parse error: {}", e)))?;
 
-    let discovery_variant =
-        DiscoveryVariant::from_str(variant).unwrap_or(DiscoveryVariant::DecisionGraphCyclic);
+    let discovery_variant = DiscoveryVariant::from_variant_str(variant)
+        .unwrap_or(DiscoveryVariant::DecisionGraphCyclic);
 
     let config = DiscoveryConfig {
         activity_key: activity_key.to_string(),
@@ -462,8 +477,8 @@ pub fn discover_powl_from_partial_orders(
     let log: ModelsEventLog =
         serde_json::from_str(log_json).map_err(|e| wasm_err(&format!("log parse error: {}", e)))?;
 
-    let discovery_variant =
-        DiscoveryVariant::from_str(variant).unwrap_or(DiscoveryVariant::DecisionGraphCyclic);
+    let discovery_variant = DiscoveryVariant::from_variant_str(variant)
+        .unwrap_or(DiscoveryVariant::DecisionGraphCyclic);
 
     let config = DiscoveryConfig {
         activity_key: "concept:name".to_string(),
@@ -502,7 +517,7 @@ pub fn discover_ocel_powl(ocel_json: &str, variant: &str) -> Result<JsValue, JsV
     let log: ModelsEventLog = serde_json::from_str(ocel_json)
         .map_err(|e| wasm_err(&format!("ocel log parse error: {}", e)))?;
 
-    let ocel_variant = crate::powl::discovery::ocel::OcelVariant::from_str(variant)
+    let ocel_variant = crate::powl::discovery::ocel::OcelVariant::from_variant_str(variant)
         .ok_or_else(|| wasm_err("invalid OCEL variant: use 'flattening' or 'oc_powl'"))?;
 
     let config = DiscoveryConfig {
@@ -575,7 +590,7 @@ mod tests {
     fn paper_bicycle_parse_and_validate() {
         let (arena, root) = parse_test(bicycle_powl()).unwrap();
         assert!(arena.validate_partial_orders(root).is_ok());
-        assert_eq!(arena.to_repr(root).contains("create_process"), true);
+        assert!(arena.to_repr(root).contains("create_process"));
     }
 
     #[test]

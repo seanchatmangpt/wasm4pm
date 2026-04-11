@@ -83,16 +83,13 @@ pub fn discover_performance_spectrum(
                 continue;
             }
 
-            let ts_start = events[i]
-                .attributes
-                .get(timestamp_key)
-                .and_then(|v| {
-                    if let AttributeValue::Date(s) = v {
-                        parse_timestamp_ms(s)
-                    } else {
-                        None
-                    }
-                });
+            let ts_start = events[i].attributes.get(timestamp_key).and_then(|v| {
+                if let AttributeValue::Date(s) = v {
+                    parse_timestamp_ms(s)
+                } else {
+                    None
+                }
+            });
 
             let next_name = events[next_idx]
                 .attributes
@@ -130,11 +127,7 @@ pub fn discover_performance_spectrum(
             let min_d = durations.first().copied().unwrap_or(0.0);
             let max_d = durations.last().copied().unwrap_or(0.0);
             let sum: f64 = durations.iter().sum();
-            let mean_d = if count > 0 {
-                sum / count as f64
-            } else {
-                0.0
-            };
+            let mean_d = if count > 0 { sum / count as f64 } else { 0.0 };
             let median_d = if count > 0 {
                 let mid = count / 2;
                 if count % 2 == 0 && count >= 2 {
@@ -192,10 +185,7 @@ pub fn discover_performance_spectrum_wasm(
                 discover_performance_spectrum(log, target_activity, activity_key, timestamp_key);
             to_js(&result)
         }
-        Some(_) => Err(wasm_err(
-            codes::INVALID_INPUT,
-            "Object is not an EventLog",
-        )),
+        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
         None => Err(wasm_err(
             codes::INVALID_HANDLE,
             format!("EventLog '{}' not found", eventlog_handle),
@@ -213,7 +203,10 @@ mod tests {
 
     fn make_event(name: &str, timestamp: &str) -> Event {
         let mut attrs = HashMap::new();
-        attrs.insert("concept:name".to_string(), AttributeValue::String(name.to_string()));
+        attrs.insert(
+            "concept:name".to_string(),
+            AttributeValue::String(name.to_string()),
+        );
         attrs.insert(
             "time:timestamp".to_string(),
             AttributeValue::Date(timestamp.to_string()),
@@ -223,7 +216,10 @@ mod tests {
 
     fn make_event_no_ts(name: &str) -> Event {
         let mut attrs = HashMap::new();
-        attrs.insert("concept:name".to_string(), AttributeValue::String(name.to_string()));
+        attrs.insert(
+            "concept:name".to_string(),
+            AttributeValue::String(name.to_string()),
+        );
         Event { attributes: attrs }
     }
 
@@ -371,13 +367,19 @@ mod tests {
     fn test_custom_attribute_keys() {
         // Use non-default attribute keys.
         let mut attrs_a1 = HashMap::new();
-        attrs_a1.insert("activity".to_string(), AttributeValue::String("A".to_string()));
+        attrs_a1.insert(
+            "activity".to_string(),
+            AttributeValue::String("A".to_string()),
+        );
         attrs_a1.insert(
             "ts".to_string(),
             AttributeValue::Date("2020-01-01T00:00:00Z".to_string()),
         );
         let mut attrs_b = HashMap::new();
-        attrs_b.insert("activity".to_string(), AttributeValue::String("B".to_string()));
+        attrs_b.insert(
+            "activity".to_string(),
+            AttributeValue::String("B".to_string()),
+        );
         attrs_b.insert(
             "ts".to_string(),
             AttributeValue::Date("2020-01-01T00:00:02Z".to_string()),
@@ -386,8 +388,12 @@ mod tests {
         let log = make_log(vec![Trace {
             attributes: HashMap::new(),
             events: vec![
-                Event { attributes: attrs_a1 },
-                Event { attributes: attrs_b },
+                Event {
+                    attributes: attrs_a1,
+                },
+                Event {
+                    attributes: attrs_b,
+                },
             ],
         }]);
         let result = discover_performance_spectrum(&log, "A", "activity", "ts");

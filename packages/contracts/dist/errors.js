@@ -17,6 +17,11 @@ export const TYPED_ERROR_CODES = {
     SOURCE_PERMISSION: 22,
     ALGORITHM_FAILED: 30,
     ALGORITHM_NOT_FOUND: 31,
+    CONFORMANCE_FAILED: 32,
+    SIMULATION_FAILED: 33,
+    PREDICTION_FAILED: 34,
+    VALIDATION_FAILED: 35,
+    IMPORT_FAILED: 36,
     WASM_INIT_FAILED: 40,
     WASM_MEMORY_EXCEEDED: 41,
     SINK_FAILED: 50,
@@ -86,15 +91,20 @@ export const TYPED_ERROR_JSON_SCHEMA = {
  */
 const REMEDIATIONS = {
     // Configuration errors
-    CONFIG_INVALID: 'Check your wasm4pm.toml syntax. Run: pmctl init to generate a valid config.',
-    CONFIG_MISSING: 'Configuration file not found. Create wasm4pm.toml in your project root or run: pmctl init',
+    CONFIG_INVALID: 'Check your pictl.toml syntax. Run: pictl init to generate a valid config.',
+    CONFIG_MISSING: 'Configuration file not found. Create pictl.toml in your project root or run: pictl init',
     // Source errors
     SOURCE_NOT_FOUND: 'Verify the source path exists and is readable. Check the path in your config or command-line arguments.',
     SOURCE_INVALID: 'The source file format is not recognized. Ensure it is a valid XES, CSV, or JSON event log.',
     SOURCE_PERMISSION: 'Permission denied reading the source file. Check file permissions: chmod 644 <file>',
     // Algorithm errors
     ALGORITHM_FAILED: 'The algorithm encountered an error during execution. Check the detailed error message and try with different parameters or a smaller dataset.',
-    ALGORITHM_NOT_FOUND: 'The requested algorithm is not available. Run: pmctl list-algorithms to see available options.',
+    ALGORITHM_NOT_FOUND: 'The requested algorithm is not available. Run: pictl list-algorithms to see available options.',
+    CONFORMANCE_FAILED: 'Conformance checking failed. Verify the process model matches the event log structure. Check activity names and case IDs match.',
+    SIMULATION_FAILED: 'Process simulation failed. Verify the model is valid and simulation parameters are within acceptable ranges.',
+    PREDICTION_FAILED: 'Predictive analysis failed. Ensure sufficient training data and valid feature configuration.',
+    VALIDATION_FAILED: 'Model validation failed. Check that the model structure is valid and required attributes are present.',
+    IMPORT_FAILED: 'Model import failed. Verify the import file is valid and the format is supported (PNML, BPMN).',
     // WASM runtime errors
     WASM_INIT_FAILED: 'Failed to initialize the WASM module. Ensure Node.js/browser is compatible (Node 16+, modern browser). Try reinstalling the package: npm install @pictl/engine',
     WASM_MEMORY_EXCEEDED: 'Insufficient memory in WASM sandbox. Try processing your data in smaller batches or check available memory limits.',
@@ -119,6 +129,11 @@ const EXIT_CODES = {
     // Algorithm errors (400-499)
     ALGORITHM_FAILED: 400,
     ALGORITHM_NOT_FOUND: 401,
+    CONFORMANCE_FAILED: 450,
+    SIMULATION_FAILED: 455,
+    PREDICTION_FAILED: 460,
+    VALIDATION_FAILED: 465,
+    IMPORT_FAILED: 470,
     // WASM Runtime errors (500-599)
     WASM_INIT_FAILED: 500,
     WASM_MEMORY_EXCEEDED: 501,
@@ -143,6 +158,11 @@ const RECOVERABLE = {
     // Algorithm - potentially recoverable with retry or parameter adjustment
     ALGORITHM_FAILED: true,
     ALGORITHM_NOT_FOUND: false,
+    CONFORMANCE_FAILED: true,
+    SIMULATION_FAILED: true,
+    PREDICTION_FAILED: true,
+    VALIDATION_FAILED: false,
+    IMPORT_FAILED: false,
     // WASM - potentially recoverable by retrying or chunking
     WASM_INIT_FAILED: false,
     WASM_MEMORY_EXCEEDED: true,
@@ -163,7 +183,7 @@ const RECOVERABLE = {
  *
  * @example
  * ```ts
- * const error = createError('CONFIG_MISSING', 'wasm4pm.toml not found in /path/to/project');
+ * const error = createError('CONFIG_MISSING', 'pictl.toml not found in /path/to/project');
  * console.error(formatError(error)); // Human-readable output
  * process.exit(error.exit_code);    // Proper exit code
  * ```
@@ -281,7 +301,7 @@ export function formatErrorJSON(error) {
  *
  * @example
  * ```ts
- * const error = createError('CONFIG_INVALID', 'Invalid syntax in wasm4pm.toml');
+ * const error = createError('CONFIG_INVALID', 'Invalid syntax in pictl.toml');
  * logError(error, 'human');    // Colored terminal output
  * logError(error, 'json');     // JSON for structured logging
  * ```

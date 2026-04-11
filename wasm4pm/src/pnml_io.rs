@@ -84,10 +84,7 @@ pub fn from_pnml(pnml_string: &str) -> Result<PetriNet, String> {
         for node in container.children() {
             match node.tag_name().name() {
                 "place" => {
-                    let id = node
-                        .attribute("id")
-                        .unwrap_or("")
-                        .to_string();
+                    let id = node.attribute("id").unwrap_or("").to_string();
                     if id.is_empty() {
                         continue;
                     }
@@ -106,17 +103,10 @@ pub fn from_pnml(pnml_string: &str) -> Result<PetriNet, String> {
                         .and_then(|im| text_of(im))
                         .and_then(|t| parse_usize(&t));
 
-                    net.places.push(PetriNetPlace {
-                        id,
-                        label,
-                        marking,
-                    });
+                    net.places.push(PetriNetPlace { id, label, marking });
                 }
                 "transition" => {
-                    let id = node
-                        .attribute("id")
-                        .unwrap_or("")
-                        .to_string();
+                    let id = node.attribute("id").unwrap_or("").to_string();
                     if id.is_empty() {
                         continue;
                     }
@@ -131,12 +121,9 @@ pub fn from_pnml(pnml_string: &str) -> Result<PetriNet, String> {
 
                     // A transition with no label (label == id and no <name>) is
                     // considered invisible / silent.
-                    let has_name_child =
-                        node.children().any(|n| n.tag_name().name() == "name");
+                    let has_name_child = node.children().any(|n| n.tag_name().name() == "name");
                     let has_name_attr = node.attribute("name").is_some();
-                    let is_invisible = if !has_name_child && !has_name_attr {
-                        Some(true)
-                    } else if label.is_empty() {
+                    let is_invisible = if (!has_name_child && !has_name_attr) || label.is_empty() {
                         Some(true)
                     } else {
                         None
@@ -224,11 +211,15 @@ fn extract_marking(container: roxmltree::Node, marking: &mut HashMap<String, usi
 /// The output follows the PNML structure with `<net>`, `<page>`, `<place>`,
 /// `<transition>`, `<arc>`, `<initialMarking>`, and `<finalmarkings>` elements.
 pub fn to_pnml(net: &PetriNet) -> String {
-    let mut xml = String::with_capacity(net.places.len() * 120 + net.transitions.len() * 120 + net.arcs.len() * 100);
+    let mut xml = String::with_capacity(
+        net.places.len() * 120 + net.transitions.len() * 120 + net.arcs.len() * 100,
+    );
 
     xml.push_str("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
     xml.push_str("<pnml>\n");
-    xml.push_str("  <net id=\"net1\" type=\"http://www.pnml.org/version-2009/grammar/pnmlcoremodel\">\n");
+    xml.push_str(
+        "  <net id=\"net1\" type=\"http://www.pnml.org/version-2009/grammar/pnmlcoremodel\">\n",
+    );
     xml.push_str("    <page id=\"page1\">\n");
 
     // Places
@@ -405,8 +396,7 @@ mod tests {
             to: "sink".to_string(),
             weight: Some(1),
         });
-        net.initial_marking
-            .insert("source".to_string(), 1);
+        net.initial_marking.insert("source".to_string(), 1);
         net.final_markings
             .push(vec![("sink".to_string(), 1)].into_iter().collect());
         net
@@ -532,7 +522,11 @@ mod tests {
 
         // Verify final markings round-trip
         assert_eq!(restored.final_markings.len(), original.final_markings.len());
-        for (orig_m, rest_m) in original.final_markings.iter().zip(restored.final_markings.iter()) {
+        for (orig_m, rest_m) in original
+            .final_markings
+            .iter()
+            .zip(restored.final_markings.iter())
+        {
             assert_eq!(orig_m, rest_m);
         }
     }

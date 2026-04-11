@@ -3,7 +3,7 @@
  * Plan execution engine with topological sort and step dispatch
  * Handles step execution, dependency tracking, and progress updates
  */
-import { ExecutionPlan, ExecutionReceipt, EngineError, StatusUpdate, PlanStep } from '@wasm4pm/contracts';
+import { ExecutionPlan, ExecutionReceipt, EngineError, StatusUpdate, PlanStep } from '@pictl/contracts';
 /**
  * Step handler function type
  * Called to execute a specific step

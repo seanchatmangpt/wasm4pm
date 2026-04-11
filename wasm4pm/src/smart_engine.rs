@@ -98,12 +98,6 @@ impl<V: Clone> LruCache<V> {
     fn stats(&self) -> (u64, u64, u64) {
         (self.hits, self.misses, self.evictions)
     }
-
-    /// Number of entries currently in the cache.
-    #[cfg(test)]
-    fn len(&self) -> usize {
-        self.map.len()
-    }
 }
 
 // ============================================================================
@@ -258,8 +252,10 @@ impl FusedMultiPass {
         self.dfg_compute_calls += 1;
         let hash = Self::hash_traces(traces);
 
-        if self.dfg_cache.is_some() && self.dfg_log_hash == hash {
-            return self.dfg_cache.as_ref().unwrap();
+        if self.dfg_log_hash == hash {
+            if let Some(ref dfg) = self.dfg_cache {
+                return dfg;
+            }
         }
 
         // Build DFG via interner for integer-keyed edge counting

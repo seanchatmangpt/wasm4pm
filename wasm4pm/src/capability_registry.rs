@@ -2,19 +2,19 @@ use crate::utilities::to_js;
 use serde_json::json;
 /// Capability Registry — LLM-discoverable tool catalog
 ///
-/// Provides a complete inventory of wasm4pm functions for Claude and other LLMs
+/// Provides a complete inventory of pictl functions for Claude and other LLMs
 /// to discover and use via tool calling. Organized by process mining category.
 ///
 /// Part of Van der Aalst's 5 Connections framework:
 /// Connection 4: Generative AI (LLM-based process improvement)
 use wasm_bindgen::prelude::*;
 
-/// Get the complete capability registry of all wasm4pm functions
+/// Get the complete capability registry of all pictl functions
 #[wasm_bindgen]
 pub fn get_capability_registry() -> Result<JsValue, JsValue> {
     let registry = json!({
         "version": "0.5.4",
-        "title": "wasm4pm Capability Registry",
+        "title": "pictl Capability Registry",
         "description": "Complete catalog of process mining functions for LLM tool discovery",
         "categories": {
             "discovery": [
@@ -326,7 +326,7 @@ pub fn get_capability_registry() -> Result<JsValue, JsValue> {
             "state": [
                 {
                     "name": "init",
-                    "description": "Initialize the wasm4pm module",
+                    "description": "Initialize the pictl module",
                     "params": [],
                     "returns": "Promise<void>",
                     "example": "await init()"

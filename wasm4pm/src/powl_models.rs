@@ -41,11 +41,13 @@ impl PowlModel {
 
 // ─── Petri Net (POWL-specific) ──────────────────────────────────────────────
 
+/// Place node in a POWL Petri net.
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct PowlPlace {
     pub name: String,
 }
 
+/// Transition node in a POWL Petri net.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PowlTransition {
     pub name: String,
@@ -53,6 +55,7 @@ pub struct PowlTransition {
     pub properties: HashMap<String, serde_json::Value>,
 }
 
+/// Directed arc connecting places and transitions in a POWL Petri net.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PowlArc {
     pub source: String,
@@ -60,6 +63,7 @@ pub struct PowlArc {
     pub weight: u32,
 }
 
+/// Petri net representation for POWL models.
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct PowlPetriNet {
     pub name: String,
@@ -68,8 +72,10 @@ pub struct PowlPetriNet {
     pub arcs: Vec<PowlArc>,
 }
 
+/// Marking (token distribution) for a POWL Petri net.
 pub type PowlMarking = HashMap<String, u32>;
 
+/// Counts of places, hidden transitions, and visible transitions.
 #[derive(Default)]
 pub struct PowlCounts {
     pub num_places: u32,
@@ -213,6 +219,7 @@ impl PowlPetriNet {
     }
 }
 
+/// Result of POWL Petri net discovery including initial and final markings.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PowlPetriNetResult {
     pub net: PowlPetriNet,
@@ -222,6 +229,7 @@ pub struct PowlPetriNetResult {
 
 // ─── Process Tree (POWL-specific) ───────────────────────────────────────────
 
+/// Control flow operator in a POWL process tree.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum PtOperator {
     Sequence,
@@ -241,6 +249,7 @@ impl PtOperator {
     }
 }
 
+/// Process tree node for POWL representation.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PowlProcessTree {
     pub label: Option<String>,

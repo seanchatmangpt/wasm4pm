@@ -1,7 +1,7 @@
 /**
  * CLI integration test helpers.
  *
- * Provides utilities to spawn pmctl as a child process, capture stdout/stderr,
+ * Provides utilities to spawn pictl as a child process, capture stdout/stderr,
  * and assert on exit codes without depending on the actual CLI implementation.
  */
 export interface CliResult {
@@ -16,7 +16,7 @@ export interface CliTestEnv {
     outputDir: string;
     cleanup: () => Promise<void>;
 }
-/** Known exit codes — must match pmctl exit-codes.ts */
+/** Known exit codes — must match pictl exit-codes.ts */
 export declare const EXIT_CODES: {
     readonly SUCCESS: 0;
     readonly CONFIG_ERROR: 1;

@@ -121,10 +121,7 @@ fn add_transition(net: &mut PetriNet, id: &str) {
 /// Add an arc to the net (source -> target).
 fn add_arc(net: &mut PetriNet, from: &str, to: &str) {
     // Avoid duplicate arcs
-    let exists = net
-        .arcs
-        .iter()
-        .any(|a| a.from == from && a.to == to);
+    let exists = net.arcs.iter().any(|a| a.from == from && a.to == to);
     if !exists {
         net.arcs.push(PetriNetArc {
             from: from.to_string(),
@@ -429,7 +426,10 @@ pub fn wasm_reduce_petri_net(net_handle: &str) -> String {
             Ok(serde_json::to_string(&stats).unwrap_or_default())
         }
         Some(_) => Ok(r#"{"error":"Object is not a PetriNet"}"#.to_string()),
-        None => Ok(format!(r#"{{"error":"PetriNet '{}' not found"}}"#, net_handle)),
+        None => Ok(format!(
+            r#"{{"error":"PetriNet '{}' not found"}}"#,
+            net_handle
+        )),
     });
 
     result.unwrap_or_else(|e| format!(r#"{{"error":"{:?}"}}"#, e))

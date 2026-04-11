@@ -33,6 +33,7 @@ export class Instrumentation {
             start_time: now,
             status: { code: 'OK' },
             attributes: {
+                'service.name': 'pictl',
                 ...requiredAttrs,
                 'state.from': fromState,
                 'state.to': toState,
@@ -69,6 +70,7 @@ export class Instrumentation {
             start_time: now,
             status: { code: 'OK' },
             attributes: {
+                'service.name': 'pictl',
                 ...requiredAttrs,
                 'plan.id': planId,
                 'plan.hash': planHash,
@@ -104,6 +106,7 @@ export class Instrumentation {
             start_time: now,
             status: { code: 'UNSET' },
             attributes: {
+                'service.name': 'pictl',
                 ...requiredAttrs,
                 'algorithm.name': algorithmName,
                 'algorithm.step_id': options?.stepId || 'unspecified',
@@ -129,6 +132,7 @@ export class Instrumentation {
                 message: options?.errorMessage,
             },
             attributes: {
+                'service.name': 'pictl',
                 ...requiredAttrs,
                 'algorithm.name': algorithmName,
                 'algorithm.step_id': options?.stepId || 'unspecified',
@@ -163,6 +167,7 @@ export class Instrumentation {
             start_time: now,
             status: { code: 'UNSET' },
             attributes: {
+                'service.name': 'pictl',
                 ...requiredAttrs,
                 'source.kind': sourceKind,
             },
@@ -184,6 +189,7 @@ export class Instrumentation {
             end_time: now,
             status: { code: status, message: options?.errorMessage },
             attributes: {
+                'service.name': 'pictl',
                 ...requiredAttrs,
                 'source.kind': sourceKind,
                 'source.record_count': options?.recordCount || 0,
@@ -217,6 +223,7 @@ export class Instrumentation {
             start_time: now,
             status: { code: 'UNSET' },
             attributes: {
+                'service.name': 'pictl',
                 ...requiredAttrs,
                 'sink.kind': sinkKind,
             },
@@ -238,6 +245,7 @@ export class Instrumentation {
             end_time: now,
             status: { code: status, message: options?.errorMessage },
             attributes: {
+                'service.name': 'pictl',
                 ...requiredAttrs,
                 'sink.kind': sinkKind,
                 'sink.record_count': options?.recordCount || 0,
@@ -302,6 +310,7 @@ export class Instrumentation {
             end_time: now,
             status: { code: 'ERROR', message: errorMessage },
             attributes: {
+                'service.name': 'pictl',
                 ...requiredAttrs,
                 'error.code': errorCode,
                 'error.message': errorMessage,
@@ -359,6 +368,7 @@ export class Instrumentation {
             start_time: now,
             status: { code: 'UNSET' },
             attributes: {
+                'service.name': 'pictl',
                 ...requiredAttrs,
                 'ml.task': mlTask,
                 'ml.method': method,
@@ -381,6 +391,7 @@ export class Instrumentation {
             end_time: now,
             status: { code: status },
             attributes: {
+                'service.name': 'pictl',
                 ...requiredAttrs,
                 'ml.task': mlTask,
                 'ml.method': method,

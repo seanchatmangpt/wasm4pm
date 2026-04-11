@@ -101,21 +101,18 @@ mod tests {
     use super::*;
 
     #[test]
-    fn leaf_activity() {
+    fn test_process_tree_leaf_and_operators() {
+        // Happy path: leaf activity
         let tree = ProcessTree::leaf(Some("A".to_string()));
         let (arena, root) = apply(&tree);
         assert_eq!(arena.to_repr(root), "A");
-    }
 
-    #[test]
-    fn leaf_silent() {
+        // Edge case: leaf silent becomes tau
         let tree = ProcessTree::leaf(None);
         let (arena, root) = apply(&tree);
         assert_eq!(arena.to_repr(root), "tau");
-    }
 
-    #[test]
-    fn xor_to_xor() {
+        // XOR becomes XOR
         let tree = ProcessTree::internal(
             crate::powl_process_tree::PtOperator::Xor,
             vec![
@@ -125,15 +122,13 @@ mod tests {
         );
         let (arena, root) = apply(&tree);
         assert_eq!(arena.to_repr(root), "X ( A, B )");
-    }
 
-    #[test]
-    fn loop_to_loop() {
+        // Loop becomes loop
         let tree = ProcessTree::internal(
             crate::powl_process_tree::PtOperator::Loop,
             vec![
                 ProcessTree::leaf(Some("A".to_string())),
-                ProcessTree::leaf(None), // silent redo
+                ProcessTree::leaf(None),
             ],
         );
         let (arena, root) = apply(&tree);
@@ -141,7 +136,8 @@ mod tests {
     }
 
     #[test]
-    fn parallel_to_spo_no_edges() {
+    fn test_process_tree_parallel_and_sequence() {
+        // Parallel becomes SPO with no edges
         let tree = ProcessTree::internal(
             crate::powl_process_tree::PtOperator::Parallel,
             vec![
@@ -151,17 +147,10 @@ mod tests {
         );
         let (arena, root) = apply(&tree);
         let repr = arena.to_repr(root);
-        // Parallel = SPO with no edges
-        assert!(repr.contains("A") && repr.contains("B"), "got: {}", repr);
-        assert!(
-            !repr.contains("-->"),
-            "parallel should have no edges, got: {}",
-            repr
-        );
-    }
+        assert!(repr.contains("A") && repr.contains("B"));
+        assert!(!repr.contains("-->"));
 
-    #[test]
-    fn sequence_to_spo_total_order() {
+        // Sequence becomes SPO with total order
         let tree = ProcessTree::internal(
             crate::powl_process_tree::PtOperator::Sequence,
             vec![
@@ -172,25 +161,12 @@ mod tests {
         );
         let (arena, root) = apply(&tree);
         let repr = arena.to_repr(root);
-        assert!(
-            repr.contains("A-->B"),
-            "sequence should have A-->B, got: {}",
-            repr
-        );
-        assert!(
-            repr.contains("A-->C"),
-            "sequence should have A-->C, got: {}",
-            repr
-        );
-        assert!(
-            repr.contains("B-->C"),
-            "sequence should have B-->C, got: {}",
-            repr
-        );
+        assert!(repr.contains("A-->B") && repr.contains("B-->C"));
     }
 
     #[test]
-    fn nested_xor() {
+    fn test_process_tree_roundtrip() {
+        // Nested XOR should simplify
         let tree = ProcessTree::internal(
             crate::powl_process_tree::PtOperator::Xor,
             vec![
@@ -205,32 +181,18 @@ mod tests {
             ],
         );
         let (arena, root) = apply(&tree);
-        // Simplification should flatten nested XOR
         let repr = arena.to_repr(root);
-        assert!(
-            repr.contains("A") && repr.contains("B") && repr.contains("C"),
-            "got: {}",
-            repr
-        );
-    }
+        assert!(repr.contains("A") && repr.contains("B") && repr.contains("C"));
 
-    #[test]
-    fn roundtrip_xor() {
+        // Roundtrip: POWL → Process Tree → POWL preserves activities
         use crate::powl::conversion::to_process_tree;
         use crate::powl_parser::parse_powl_model_string;
-
-        // POWL → Process Tree → POWL should preserve XOR structure
         let mut arena1 = PowlArena::new();
         let root1 = parse_powl_model_string("X ( A, B )", &mut arena1).unwrap();
         let pt = to_process_tree::apply(&arena1, root1);
         let pt_json = serde_json::to_string(&pt).unwrap();
-
         let (arena2, root2) = process_tree_to_powl(&pt_json).unwrap();
         let repr = arena2.to_repr(root2);
-        assert!(
-            repr.contains("A") && repr.contains("B"),
-            "roundtrip lost activities: {}",
-            repr
-        );
+        assert!(repr.contains("A") && repr.contains("B"));
     }
 }

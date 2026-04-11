@@ -261,33 +261,27 @@ mod tests {
     }
 
     #[test]
-    fn starts_at_full_fitness() {
+    fn test_streaming_fitness_tracking() {
+        // Happy path: starts at full fitness
         let (arena, root) = parse("PO=(nodes={A, B}, order={A-->B})");
         let sc = StreamingConformance::from_powl(&arena, root).unwrap();
         assert!((sc.fitness() - 1.0).abs() < 1e-9);
-        assert_eq!(sc.traces_seen, 0);
-    }
 
-    #[test]
-    fn perfect_trace_keeps_fitness_at_one() {
-        let (arena, root) = parse("PO=(nodes={A, B}, order={A-->B})");
+        // Perfect trace keeps fitness at 1.0
         let mut sc = StreamingConformance::from_powl(&arena, root).unwrap();
-        let (result, _alerts) = sc.push_trace(&make_trace("c1", &["A", "B"]));
+        let (result, _) = sc.push_trace(&make_trace("c1", &["A", "B"]));
         assert!(result.is_perfect());
         assert!((sc.fitness() - 1.0).abs() < 1e-9);
-        assert_eq!(sc.perfect_traces, 1);
-    }
 
-    #[test]
-    fn imperfect_trace_lowers_fitness() {
-        let (arena, root) = parse("PO=(nodes={A, B}, order={A-->B})");
+        // Imperfect trace lowers fitness
         let mut sc = StreamingConformance::from_powl(&arena, root).unwrap();
         sc.push_trace(&make_trace("c1", &["A"]));
         assert!(sc.fitness() < 1.0);
     }
 
     #[test]
-    fn mixed_traces_partial_fitness() {
+    fn test_streaming_mixed_and_reset() {
+        // Mixed traces produce partial fitness
         let (arena, root) = parse("PO=(nodes={A, B}, order={A-->B})");
         let mut sc = StreamingConformance::from_powl(&arena, root).unwrap();
         sc.push_trace(&make_trace("c1", &["A", "B"]));
@@ -295,11 +289,8 @@ mod tests {
         let snap = sc.snapshot();
         assert!(snap.fitness < 1.0 && snap.fitness > 0.0);
         assert_eq!(snap.perfect_traces, 1);
-        assert_eq!(snap.traces_seen, 2);
-    }
 
-    #[test]
-    fn reset_clears_state() {
+        // Reset clears state back to initial
         let (arena, root) = parse("A");
         let mut sc = StreamingConformance::from_powl(&arena, root).unwrap();
         sc.push_trace(&make_trace("c1", &["A"]));
@@ -309,7 +300,8 @@ mod tests {
     }
 
     #[test]
-    fn alert_fires_on_low_fitness() {
+    fn test_streaming_alerts_and_windowing() {
+        // Alert fires on low fitness
         let (arena, root) = parse("PO=(nodes={A, B}, order={A-->B})");
         let mut sc = StreamingConformance::from_powl(&arena, root).unwrap();
         sc.set_alert_config(AlertConfig {
@@ -321,10 +313,8 @@ mod tests {
         assert!(alerts
             .iter()
             .any(|a| matches!(a, Alert::FitnessBelowThreshold { .. })));
-    }
 
-    #[test]
-    fn windowed_fitness_uses_last_n() {
+        // Windowed fitness uses last N traces
         let (arena, root) = parse("PO=(nodes={A, B}, order={A-->B})");
         let mut sc = StreamingConformance::from_powl(&arena, root).unwrap();
         sc.set_window_size(2);

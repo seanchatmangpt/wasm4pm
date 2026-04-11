@@ -115,7 +115,10 @@ impl ReplayNet {
 
             // Map label to transition ID for visible transitions
             if let Some(ref lbl) = label {
-                label_to_transitions.entry(lbl.clone()).or_default().push(trans_id);
+                label_to_transitions
+                    .entry(lbl.clone())
+                    .or_default()
+                    .push(trans_id);
             }
         }
 
@@ -356,25 +359,19 @@ pub fn generalization(
     petri_net_handle: &str,
     activity_key: &str,
 ) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(eventlog_handle, |log_obj| {
-        match log_obj {
-            Some(StoredObject::EventLog(log)) => {
-                get_or_init_state().with_object(petri_net_handle, |pn_obj| {
-                    match pn_obj {
-                        Some(StoredObject::PetriNet(pn)) => {
-                            let result = compute_quality(pn, log, activity_key)?;
-                            to_js(&result)
-                        }
-                        Some(_) => {
-                            Err(wasm_err(codes::INVALID_INPUT, "Object is not a PetriNet"))
-                        }
-                        None => Err(wasm_err(codes::INVALID_HANDLE, "PetriNet not found")),
-                    }
-                })
-            }
-            Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
-            None => Err(wasm_err(codes::INVALID_HANDLE, "EventLog not found")),
+    get_or_init_state().with_object(eventlog_handle, |log_obj| match log_obj {
+        Some(StoredObject::EventLog(log)) => {
+            get_or_init_state().with_object(petri_net_handle, |pn_obj| match pn_obj {
+                Some(StoredObject::PetriNet(pn)) => {
+                    let result = compute_quality(pn, log, activity_key)?;
+                    to_js(&result)
+                }
+                Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not a PetriNet")),
+                None => Err(wasm_err(codes::INVALID_HANDLE, "PetriNet not found")),
+            })
         }
+        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
+        None => Err(wasm_err(codes::INVALID_HANDLE, "EventLog not found")),
     })
 }
 
@@ -383,7 +380,9 @@ pub fn generalization(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::models::{AttributeValue, Event, PetriNetArc, PetriNetPlace, PetriNetTransition, Trace};
+    use crate::models::{
+        AttributeValue, Event, PetriNetArc, PetriNetPlace, PetriNetTransition, Trace,
+    };
     use std::collections::HashMap;
 
     /// Create a simple sequential Petri net: source -> A -> p1 -> B -> sink.
@@ -556,14 +555,20 @@ mod tests {
                     Event {
                         attributes: {
                             let mut attrs = HashMap::new();
-                            attrs.insert("concept:name".to_string(), AttributeValue::String("A".to_string()));
+                            attrs.insert(
+                                "concept:name".to_string(),
+                                AttributeValue::String("A".to_string()),
+                            );
                             attrs
                         },
                     },
                     Event {
                         attributes: {
                             let mut attrs = HashMap::new();
-                            attrs.insert("concept:name".to_string(), AttributeValue::String("B".to_string()));
+                            attrs.insert(
+                                "concept:name".to_string(),
+                                AttributeValue::String("B".to_string()),
+                            );
                             attrs
                         },
                     },
