@@ -1,6 +1,6 @@
 {
   "name": "@pictl/swarm",
-  "version": "26.4.9",
+  "version": "26.4.10",
   "description": "Autonomic swarm coordinator for wasm4pm — multi-worker process mining with convergence detection",
   "type": "module",
   "main": "./dist/index.js",

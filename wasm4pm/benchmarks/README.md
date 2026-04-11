@@ -312,8 +312,8 @@ npx playwright install --with-deps
 
 - [`BROWSER_BENCHMARKS.md`](./BROWSER_BENCHMARKS.md) — Detailed browser documentation
 - [`QUICKSTART.md`](./QUICKSTART.md) — Command reference
-- [`../docs/ALGORITHMS.md`](../docs/ALGORITHMS.md) — Algorithm descriptions
-- [`../docs/DEPLOYMENT.md`](../docs/DEPLOYMENT.md) — Build guide
+- [`../ALGORITHMS.md`](../ALGORITHMS.md) — Algorithm descriptions
+- [`../BUILD.md`](../BUILD.md) — Build guide
 
 ## Performance Baseline
 

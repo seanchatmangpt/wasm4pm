@@ -504,3 +504,78 @@ pub fn compute_alignments(
 
     Ok(JsValue::from_str(&result_json))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_count_moves() {
+        let path = vec![
+            "sync:A".to_string(),
+            "sync:B".to_string(),
+            "log:C".to_string(),
+            "model:D".to_string(),
+        ];
+
+        let (sync, log, model) = count_moves(&path);
+        assert_eq!(sync, 2);
+        assert_eq!(log, 1);
+        assert_eq!(model, 1);
+    }
+
+    #[test]
+    fn test_count_moves_empty() {
+        let path: Vec<String> = vec![];
+        let (sync, log, model) = count_moves(&path);
+        assert_eq!(sync, 0);
+        assert_eq!(log, 0);
+        assert_eq!(model, 0);
+    }
+
+    #[test]
+    fn test_count_moves_only_sync() {
+        let path = vec!["sync:A".to_string(), "sync:B".to_string()];
+        let (sync, log, model) = count_moves(&path);
+        assert_eq!(sync, 2);
+        assert_eq!(log, 0);
+        assert_eq!(model, 0);
+    }
+
+    #[test]
+    fn test_heuristic_always_zero() {
+        // The current heuristic is always 0 (admissible but uninformed)
+        let h = heuristic(100, 50);
+        assert_eq!(h, 0.0);
+    }
+
+    #[test]
+    fn test_alignment_state_equality() {
+        let state1 = AlignmentState {
+            trace_index: 5,
+            marking: HashMap::from([("p1".to_string(), 1)]),
+            cost: 2.0,
+            path: vec!["sync:A".to_string()],
+        };
+
+        let state2 = AlignmentState {
+            trace_index: 5,
+            marking: HashMap::from([("p1".to_string(), 1)]),
+            cost: 2.0, // Same cost
+            path: vec!["sync:A".to_string()],
+        };
+
+        // States with identical ALL fields are equal
+        assert_eq!(state1, state2);
+
+        let state3 = AlignmentState {
+            trace_index: 5,
+            marking: HashMap::from([("p1".to_string(), 1)]),
+            cost: 3.0, // Different cost
+            path: vec!["sync:A".to_string()],
+        };
+
+        // States with different cost are NOT equal
+        assert_ne!(state1, state3);
+    }
+}

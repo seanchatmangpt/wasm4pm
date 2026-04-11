@@ -100,6 +100,9 @@ This documentation uses the **Diataxis framework**, organizing content into four
 - [Use in a Browser](how-to/browser-integration.md)
 - [Build a Custom Sink](how-to/custom-sink.md)
 
+### Development
+- [Port Rust Algorithms](how-to/rust-algorithm-porting-guide.md) — Add new mining algorithms to WASM kernel
+
 ### DevOps
 - [Deploy with Docker](how-to/docker-deploy.md)
 - [Set Up CI/CD Pipeline](how-to/cicd-setup.md)
@@ -170,6 +173,7 @@ This documentation uses the **Diataxis framework**, organizing content into four
 
 ### Algorithms
 - [Algorithm Matrix](reference/algorithms.md) — 14 discovery algorithms + 6 ML tasks
+- [ML Parameter Tuning](reference/ml-parameter-tuning.md) — Comprehensive tuning guide for classify, cluster, forecast, anomaly, regress, PCA
 - [Performance Benchmarks](reference/benchmarks.md)
 
 ### Deployment

@@ -295,6 +295,6 @@ benchmarks/
 ## See Also
 
 - [`QUICKSTART.md`](./QUICKSTART.md) — Quick command reference
-- [`../docs/ALGORITHMS.md`](../docs/ALGORITHMS.md) — Algorithm descriptions
-- [`../docs/DEPLOYMENT.md`](../docs/DEPLOYMENT.md) — Build and publish guide
+- [`../ALGORITHMS.md`](../ALGORITHMS.md) — Algorithm descriptions
+- [`../BUILD.md`](../BUILD.md) — Build and publish guide
 - Test results: `results/` directory

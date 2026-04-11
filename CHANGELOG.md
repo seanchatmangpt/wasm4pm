@@ -5,6 +5,72 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [26.4.10] - 2026-04-10
+
+### Added
+
+**CLI Commands (6 new commands)**
+- `pictl conformance` — Measure log-to-model fitness and precision
+- `pictl quality` — Multi-dimensional quality assessment (fitness, precision, generalization, simplicity)
+- `pictl validate` — Validate event log schema, required attributes, and data quality
+- `pictl simulate` — Monte Carlo simulation and process tree playout
+- `pictl social` — Social network mining (handover, working together networks)
+- `pictl temporal` — Temporal profiles and performance pattern analysis
+
+**Conformance Checking**
+- Token-based replay fitness calculation
+- Precision metrics (ETC precision)
+- Generalization and simplicity assessment
+- Four quality dimensions with single-pass calculation
+
+**Validation**
+- XES schema validation
+- Required attribute checking (concept:name, case:concept:name, time:timestamp)
+- Data quality assessment (missing values, duplicate events, timestamp ordering)
+- Trace-level and event-level validation
+
+**Simulation**
+- Monte Carlo process tree simulation
+- Playout-based trace generation
+- Stochastic transition selection
+- Statistical analysis of simulation results
+
+**Social Network Analysis**
+- Handover network (resource → resource transitions)
+- Working together network (shared case work)
+- Connection strength calculation
+- Network visualization support
+
+**Temporal Analysis**
+- Temporal profile discovery (cycle time, waiting time)
+- Bottleneck identification
+- Performance pattern analysis
+- Time-based variant clustering
+
+### Changed
+
+- **CLI version**: 26.4.9 → 26.4.10
+- **Documentation updates**:
+  - wasm4pm/README.md — Added all 19 CLI commands to reference
+  - apps/pmctl/ARCHITECTURE.md — Complete command reference with exit codes
+  - docs/API.md — Version updated to v26.4.10
+  - All algorithm counts updated to 21 discovery + 6 ML algorithms
+
+### Fixed
+
+- Conformance checking now properly handles empty logs
+- Validation reports clearer error messages for missing attributes
+- Social network analysis handles logs without resource attributes
+- Temporal analysis validates timestamp availability
+
+### Documentation
+
+- Added comprehensive command reference for all 19 CLI commands
+- Updated algorithm registry with all 21 discovery algorithms
+- Added ML analysis algorithms (6) to registry
+- Documented exit codes for all commands
+- Added usage examples for new commands
+
 ## [26.4.8] - 2026-04-08
 
 ### Breaking

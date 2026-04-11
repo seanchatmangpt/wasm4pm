@@ -232,6 +232,8 @@ pub mod powl_process_tree;
 pub mod complexity_metrics;
 #[cfg(feature = "powl")]
 pub mod powl_to_process_tree;
+#[cfg(feature = "powl")]
+pub mod yawl_export;
 
 // PNML import/export (always available)
 pub mod pnml_io;
