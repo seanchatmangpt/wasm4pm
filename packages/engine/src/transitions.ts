@@ -37,7 +37,9 @@ export function canTransition(from: EngineState, to: EngineState): boolean {
  * Get all valid target states from a given state
  */
 export function getValidTransitions(from: EngineState): EngineState[] {
-  return Array.from(VALID_TRANSITIONS[from] || []);
+  const transitions = VALID_TRANSITIONS[from];
+  if (!transitions) throw new Error(`Invalid engine state: ${from}`);
+  return Array.from(transitions);
 }
 
 /**

@@ -94,15 +94,38 @@ export const driftWatch = defineCommand({
   async run(ctx) {
     const inputPath: string = ctx.args.input as string;
     const activityKey: string = (ctx.args['activity-key'] as string) || DEFAULT_ACTIVITY_KEY;
-    const windowSize: number =
-      parseInt((ctx.args.window as string) || String(DEFAULT_WINDOW), 10) || DEFAULT_WINDOW;
-    const intervalMs: number =
-      parseInt((ctx.args.interval as string) || String(DEFAULT_INTERVAL_MS), 10) ||
-      DEFAULT_INTERVAL_MS;
-    const ewmaAlpha: number =
-      parseFloat((ctx.args.alpha as string) || String(EWMA_ALPHA)) || EWMA_ALPHA;
-    const driftThreshold: number =
-      parseFloat((ctx.args.threshold as string) || String(DRIFT_THRESHOLD)) || DRIFT_THRESHOLD;
+
+    const rawWindow = ctx.args.window as string | undefined;
+    const parsedWindow = rawWindow != null ? parseInt(rawWindow, 10) : undefined;
+    if (parsedWindow !== undefined && Number.isNaN(parsedWindow)) {
+      console.error(`[drift-watch] Invalid --window value: must be a number`);
+      process.exit(EXIT_CODES.config_error);
+    }
+    const windowSize = parsedWindow ?? DEFAULT_WINDOW;
+
+    const rawInterval = ctx.args.interval as string | undefined;
+    const parsedInterval = rawInterval != null ? parseInt(rawInterval, 10) : undefined;
+    if (parsedInterval !== undefined && Number.isNaN(parsedInterval)) {
+      console.error(`[drift-watch] Invalid --interval value: must be a number`);
+      process.exit(EXIT_CODES.config_error);
+    }
+    const intervalMs = parsedInterval ?? DEFAULT_INTERVAL_MS;
+
+    const rawAlpha = ctx.args.alpha as string | undefined;
+    const parsedAlpha = rawAlpha != null ? parseFloat(rawAlpha) : undefined;
+    if (parsedAlpha !== undefined && Number.isNaN(parsedAlpha)) {
+      console.error(`[drift-watch] Invalid --alpha value: must be a number`);
+      process.exit(EXIT_CODES.config_error);
+    }
+    const ewmaAlpha = parsedAlpha ?? EWMA_ALPHA;
+
+    const rawThreshold = ctx.args.threshold as string | undefined;
+    const parsedThreshold = rawThreshold != null ? parseFloat(rawThreshold) : undefined;
+    if (parsedThreshold !== undefined && Number.isNaN(parsedThreshold)) {
+      console.error(`[drift-watch] Invalid --threshold value: must be a number`);
+      process.exit(EXIT_CODES.config_error);
+    }
+    const driftThreshold = parsedThreshold ?? DRIFT_THRESHOLD;
     const jsonMode: boolean = ctx.args.json === true;
     const enhancedMode: boolean = ctx.args.enhanced === true;
 
@@ -130,6 +153,7 @@ export const driftWatch = defineCommand({
     let previousDriftCount = 0;
     let previousMtimeMs = 0;
     const distanceHistory: number[] = [];
+    const MAX_DISTANCE_HISTORY = 10_000;
 
     if (!jsonMode) {
       console.log(`${BOLD}[drift-watch]${RESET} Streaming EWMA drift monitor started`);
@@ -211,6 +235,11 @@ export const driftWatch = defineCommand({
       } else {
         // Push a 0 to indicate no new drift this tick
         distanceHistory.push(0);
+      }
+
+      // Cap unbounded history to prevent memory leak in long-running monitors
+      if (distanceHistory.length > MAX_DISTANCE_HISTORY) {
+        distanceHistory.splice(0, distanceHistory.length - MAX_DISTANCE_HISTORY);
       }
 
       // ── compute_ewma ─────────────────────────────────────────────────────

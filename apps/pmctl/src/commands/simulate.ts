@@ -4,6 +4,7 @@ import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import type { OutputOptions } from '../output.js';
 import { WasmLoader } from '@pictl/engine';
+import { isWasmAvailable, handleWasmUnavailable } from './shared.js';
 
 export interface SimulateOptions extends OutputOptions {
   input?: string;
@@ -71,6 +72,13 @@ export const simulate = defineCommand({
       quiet: ctx.args.quiet,
     });
 
+    // Check WASM availability before any WASM-dependent work
+    // Pass quiet=true when in JSON mode to suppress observability logs
+    const isJson = ctx.args.format === 'json';
+    if (!(await isWasmAvailable(isJson))) {
+      handleWasmUnavailable(isJson ? 'json' : 'human');
+    }
+
     try {
       // Resolve input path (positional OR --file/-i)
       const inputPath: string | undefined =
@@ -92,8 +100,21 @@ export const simulate = defineCommand({
       }
 
       const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
-      const numCases = parseInt((ctx.args.cases as string) || '100', 10);
-      const maxTime = parseInt((ctx.args.time as string) || '60000', 10);
+      const rawCases = ctx.args.cases as string | undefined;
+      const parsedCases = rawCases != null ? parseInt(rawCases, 10) : undefined;
+      if (parsedCases !== undefined && Number.isNaN(parsedCases)) {
+        formatter.error('Invalid --cases value: must be a number');
+        process.exit(EXIT_CODES.config_error);
+      }
+      const numCases = parsedCases ?? 100;
+
+      const rawTime = ctx.args.time as string | undefined;
+      const parsedTime = rawTime != null ? parseInt(rawTime, 10) : undefined;
+      if (parsedTime !== undefined && Number.isNaN(parsedTime)) {
+        formatter.error('Invalid --time value: must be a number');
+        process.exit(EXIT_CODES.config_error);
+      }
+      const maxTime = parsedTime ?? 60000;
       const seed = ctx.args.seed ? parseInt(ctx.args.seed as string, 10) : Math.floor(Math.random() * 2_147_483_647);
 
       if (formatter instanceof HumanFormatter) {

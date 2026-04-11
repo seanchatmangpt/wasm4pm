@@ -481,38 +481,3 @@ function extractModelSummary(data: any): Record<string, string> | null {
 
   return Object.keys(summary).length > 0 ? summary : null;
 }
-
-/**
- * Maps algorithm name to execution profile
- */
-function getProfileFromAlgorithm(algorithm: string): string {
-  const profileMap: Record<string, string> = {
-    dfg: 'fast',
-    alpha: 'balanced',
-    'alpha++': 'balanced',
-    'alpha-plus-plus': 'balanced',
-    heuristic: 'balanced',
-    inductive: 'quality',
-    genetic: 'quality',
-    ilp: 'quality',
-    pso: 'quality',
-    'a-star': 'quality',
-    astar: 'quality',
-    aco: 'quality',
-    'ant-colony': 'quality',
-    'simulated-annealing': 'quality',
-    declare: 'balanced',
-    skeleton: 'fast',
-    'dfg-optimized': 'fast',
-    'simd-dfg': 'fast',
-    'simd_dfg': 'fast',
-    'hierarchical-dfg': 'balanced',
-    'hierarchical_dfg': 'balanced',
-    'smart-engine': 'balanced',
-    'smart_engine': 'balanced',
-    hill: 'balanced',
-    'hill-climbing': 'balanced',
-  };
-
-  return profileMap[algorithm.toLowerCase()] || 'balanced';
-}

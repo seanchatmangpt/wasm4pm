@@ -4,6 +4,7 @@ import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import type { OutputOptions } from '../output.js';
 import { WasmLoader } from '@pictl/engine';
+import { isWasmAvailable, handleWasmUnavailable } from './shared.js';
 
 export interface ValidateOptions extends OutputOptions {
   input?: string;
@@ -71,6 +72,12 @@ export const validate = defineCommand({
       verbose: ctx.args.verbose,
       quiet: ctx.args.quiet,
     });
+
+    // Check WASM availability before any WASM-dependent work
+    // Pass true for quiet flag since validate always uses JSON
+    if (!(await isWasmAvailable(true))) {
+      handleWasmUnavailable('json');
+    }
 
     try {
       // Resolve input path (positional OR --file/-i)

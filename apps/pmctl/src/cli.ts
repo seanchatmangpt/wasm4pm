@@ -44,7 +44,7 @@ export const main = defineCommand({
     const RESET = '\x1b[0m';
 
     process.stdout.write(`
-${BOLD}pictl${RESET} v26.4.6  —  Process Mining CLI  ${DIM}(wasm4pm)${RESET}
+${BOLD}pictl${RESET} v26.4.7  —  Process Mining CLI  ${DIM}(wasm4pm)${RESET}
 
 ${BOLD}DISCOVERY${RESET}
   ${GREEN}pictl run${RESET} <log.xes>                   Discover a process model (default: heuristic miner)

@@ -4,6 +4,7 @@ import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import type { OutputOptions } from '../output.js';
 import { WasmLoader } from '@pictl/engine';
+import { isWasmAvailable, handleWasmUnavailable } from './shared.js';
 
 export interface ConformanceOptions extends OutputOptions {
   input?: string;
@@ -94,14 +95,25 @@ export const conformance = defineCommand({
 
       const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
       const method = ctx.args.method as 'token-replay' | 'alignment';
-      const threshold = parseFloat((ctx.args.threshold as string) || '0.8');
+      const rawThreshold = ctx.args.threshold as string | undefined;
+      const parsedThreshold = rawThreshold != null ? parseFloat(rawThreshold) : undefined;
+      if (parsedThreshold !== undefined && Number.isNaN(parsedThreshold)) {
+        formatter.error('Invalid --threshold value: must be a number');
+        process.exit(EXIT_CODES.config_error);
+      }
+      const threshold = parsedThreshold ?? 0.8;
 
       if (formatter instanceof HumanFormatter) {
         formatter.info(`Conformance checking: ${inputPath}`);
         formatter.debug(`Method: ${method}, Threshold: ${threshold}`);
       }
 
-      // Load WASM module
+      // Load WASM module (check only when actually needed)
+      // Pass quiet=true when in JSON mode to suppress observability logs
+      const isJson = ctx.args.format === 'json';
+      if (!(await isWasmAvailable(isJson))) {
+        handleWasmUnavailable(isJson ? 'json' : 'human');
+      }
       const loader = WasmLoader.getInstance();
       await loader.init();
       const wasm = loader.get();

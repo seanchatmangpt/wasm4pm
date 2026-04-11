@@ -300,9 +300,15 @@ export class WasmLoader {
 
     try {
       // Import from the built pictl WASM package
-      // Path is relative to where this file runs
-      const modulePath = this.config.modulePath ||
-        '../../../wasm4pm/pkg/pictl.js';
+      let modulePath = this.config.modulePath;
+
+      if (!modulePath) {
+        // Use file:// URL for dynamic import - absolute path to wasm4pm/pkg/pictl.js
+        // This file is at packages/engine/src/wasm-loader.ts
+        // Workspace root is three levels up: packages -> engine -> src -> root
+        const workspaceRoot = new URL('../../../../', import.meta.url).pathname;
+        modulePath = workspaceRoot + 'wasm4pm/pkg/pictl.js';
+      }
 
       // Use dynamic import for flexibility
       wasmModule = await import(modulePath);
