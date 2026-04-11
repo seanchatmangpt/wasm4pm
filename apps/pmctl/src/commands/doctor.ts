@@ -114,8 +114,8 @@ async function checkWasmBinary(): Promise<CheckResult> {
     };
   }
 
-  const wasmFile = path.join(wasmPkgDir, 'wasm4pm_bg.wasm');
-  const jsFile = path.join(wasmPkgDir, 'wasm4pm.js');
+  const wasmFile = path.join(wasmPkgDir, 'pictl_bg.wasm');
+  const jsFile = path.join(wasmPkgDir, 'pictl.js');
 
   try {
     const [wasmStat, jsStat] = await Promise.all([fs.stat(wasmFile), fs.stat(jsFile)]);
@@ -131,7 +131,7 @@ async function checkWasmBinary(): Promise<CheckResult> {
 
     const sizeMb = (wasmStat.size / 1024 / 1024).toFixed(1);
     void jsStat;
-    return { name: 'WASM binary', status: 'ok', message: `wasm4pm_bg.wasm found (${sizeMb} MB)` };
+    return { name: 'WASM binary', status: 'ok', message: `pictl_bg.wasm found (${sizeMb} MB)` };
   } catch {
     return {
       name: 'WASM binary',
@@ -157,12 +157,12 @@ async function checkWasmLoads(): Promise<CheckResult> {
     };
   }
 
-  const jsFile = path.join(wasmPkgDir, 'wasm4pm.js');
+  const jsFile = path.join(wasmPkgDir, 'pictl.js');
   if (!existsSync(jsFile)) {
     return {
       name: 'WASM loads',
       status: 'fail',
-      message: 'wasm4pm.js not found — module not built',
+      message: 'pictl.js not found — module not built',
       fix: 'cd wasm4pm && pnpm run build',
     };
   }
@@ -616,7 +616,7 @@ async function checkAlgorithmRegistry(): Promise<CheckResult> {
     return { name: 'Algorithm registry', status: 'ok', message: 'Skipped — workspace not found' };
   }
 
-  const jsFile = path.join(wasmPkgDir, 'wasm4pm.js');
+  const jsFile = path.join(wasmPkgDir, 'pictl.js');
   if (!existsSync(jsFile)) {
     return { name: 'Algorithm registry', status: 'ok', message: 'Skipped — WASM not built' };
   }

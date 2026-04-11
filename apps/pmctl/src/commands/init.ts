@@ -187,10 +187,9 @@ async function validateConfigFiles(dirpath: string, formatter: HumanFormatter | 
 
     return true;
   } catch (error) {
-    if (outputFormat === 'human') {
-      (formatter as HumanFormatter).warn(`Configuration validation failed: ${error instanceof Error ? error.message : String(error)}`);
-    }
-    return false;
+    throw new Error(
+      `Configuration validation failed: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
 
@@ -305,7 +304,9 @@ export const init = defineCommand({
             humanFormatter.log(`  ${instruction}`);
           });
           if (!isValid) {
-            humanFormatter.warn(`\n⚠ Configuration validation found issues. Please review your config file.`);
+            humanFormatter.error(`\n✗ Configuration validation failed. Please review your config file.`);
+            const { EXIT_CODES } = await import('../exit-codes.js');
+            process.exit(EXIT_CODES.execution_error);
           }
         } else {
           humanFormatter.info('All files already exist (use --force to overwrite)');

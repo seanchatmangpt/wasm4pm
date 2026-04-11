@@ -74,9 +74,11 @@ export async function executeMlTask(
         configJson
       );
       const features = typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
+      const k = parseInt(String(options.k ?? '5'), 10);
+      if (Number.isNaN(k) || k <= 0) throw new Error('Classification parameter k must be a positive number');
       return (await classifyTraces(features, {
         method: (options.method as ClassificationMethod) || 'knn',
-        k: parseInt(String(options.k ?? '5'), 10) || 5,
+        k,
       })) as unknown as Record<string, unknown>;
     }
 
@@ -97,10 +99,14 @@ export async function executeMlTask(
         configJson
       );
       const features = typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
+      const k = parseInt(String(options.k ?? '3'), 10);
+      const eps = parseFloat(String(options.eps ?? '1.0'));
+      if (Number.isNaN(k) || k <= 0) throw new Error('Clustering parameter k must be a positive number');
+      if (Number.isNaN(eps) || eps <= 0) throw new Error('Clustering parameter eps must be a positive number');
       return (await clusterTraces(features, {
         method: (options.method as ClusteringMethod) || 'kmeans',
-        k: parseInt(String(options.k ?? '3'), 10) || 3,
-        eps: parseFloat(String(options.eps ?? '1.0')) || 1.0,
+        k,
+        eps,
       })) as unknown as Record<string, unknown>;
     }
 
@@ -108,8 +114,10 @@ export async function executeMlTask(
       const driftRaw = wasm.detect_drift(logHandle, activityKey, 5);
       const driftResult = typeof driftRaw === 'string' ? JSON.parse(driftRaw) : driftRaw;
       const distances = (driftResult?.drifts ?? []).map((d: any) => d.distance ?? 0);
+      const forecastPeriods = parseInt(String(options.forecastPeriods ?? '5'), 10);
+      if (Number.isNaN(forecastPeriods) || forecastPeriods <= 0) throw new Error('Forecast parameter forecastPeriods must be a positive number');
       return (await forecastSeries(distances, {
-        forecastPeriods: parseInt(String(options.forecastPeriods ?? '5'), 10) || 5,
+        forecastPeriods,
         useExponential: options.useExponential,
       })) as unknown as Record<string, unknown>;
     }
@@ -164,8 +172,10 @@ export async function executeMlTask(
         configJson
       );
       const features = typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
+      const nComponents = parseInt(String(options.nComponents ?? '2'), 10);
+      if (Number.isNaN(nComponents) || nComponents <= 0) throw new Error('PCA parameter nComponents must be a positive number');
       return (await reduceFeaturesPCA(features, {
-        nComponents: parseInt(String(options.nComponents ?? '2'), 10) || 2,
+        nComponents,
       })) as unknown as Record<string, unknown>;
     }
 
