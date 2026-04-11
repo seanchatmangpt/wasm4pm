@@ -73,6 +73,10 @@ jobs:
         working-directory: ./wasm4pm
         run: npm install
 
+      # TPS Pipeline Quality Gate (Equipment + Quality + Operation + Logistics Kaizen)
+      - name: TPS Pipeline Quality Gate
+        run: node scripts/tps-pipeline-check.mjs
+
       # Lint checks
       - name: Check formatting (Prettier)
         working-directory: ./wasm4pm
@@ -156,11 +160,12 @@ jobs:
       # Upload coverage to Codecov
       - name: Upload coverage to Codecov
         if: runner.os == 'Linux' && matrix.node-version == '20'
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
-          files: ./wasm4pm/coverage/coverage-final.json
+          files: ./packages/*/coverage/coverage-final.json,./wasm4pm/coverage/coverage-final.json
+          flags: unittests
+          name: codecov-umbrella
           fail_ci_if_error: false
-          verbose: true
 
       # Check coverage threshold
       - name: Check coverage threshold (70%)

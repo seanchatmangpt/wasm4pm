@@ -18,6 +18,7 @@ import { temporal } from './commands/temporal.js';
 import { social } from './commands/social.js';
 import { quality } from './commands/quality.js';
 import { validate } from './commands/validate.js';
+import { autoprocess } from './commands/autoprocess.js';
 
 export const main = defineCommand({
   meta: {
@@ -84,10 +85,14 @@ ${BOLD}POWL${RESET}  ${DIM}(process-oriented workflow language)${RESET}
   ${GREEN}pictl powl${RESET} construct  -i <log>          Construct POWL model from log
   ${GREEN}pictl powl${RESET} replay     -i <log>          Replay log against POWL model
 
+${BOLD}AUTOPROCESS${RESET}  ${DIM}(Perception → Decision → Protection → Optimization)${RESET}
+  ${GREEN}pictl autoprocess${RESET} <log.xes>              Run full autonomic control loop
+  ${GREEN}pictl autoprocess${RESET} <log.xes> --format json  JSON output
+
 ${BOLD}RESULTS & HEALTH${RESET}
   ${GREEN}pictl results${RESET}                         View all saved discovery & prediction results
   ${GREEN}pictl results${RESET} --last                  Print the most recent result
-  ${GREEN}pictl doctor${RESET}                          Check environment health (Node, WASM, config, XES)
+  ${GREEN}pictl doctor${RESET}                          Check environment health + pipeline integrity (24 checks)
   ${GREEN}pictl status${RESET}                          WASM module status and memory usage
 
 ${BOLD}SETUP${RESET}
@@ -120,6 +125,7 @@ Activity key defaults to "concept:name" (XES standard). Pass --activity-key to o
     social,
     quality,
     validate,
+    autoprocess,
   },
 });
 
@@ -146,4 +152,5 @@ export {
   social,
   quality,
   validate,
+  autoprocess,
 };

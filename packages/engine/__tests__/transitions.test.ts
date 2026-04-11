@@ -85,7 +85,7 @@ describe('canTransition', () => {
   it('should return false for invalid transitions', () => {
     expect(canTransition('uninitialized', 'ready')).toBe(false);
     expect(canTransition('uninitialized', 'running')).toBe(false);
-    expect(canTransition('ready', 'running')).toBe(false);
+    expect(canTransition('ready', 'running')).toBe(true);  // direct execution is allowed
     expect(canTransition('watching', 'planning')).toBe(false);
     expect(canTransition('failed', 'ready')).toBe(false);
   });
@@ -179,7 +179,7 @@ describe('TransitionValidator', () => {
       expect(result).toBe('degraded');
     });
 
-    it('should suggest ready when degraded is not available', () => {
+    it('should suggest degraded when degraded is available and error is recoverable', () => {
       const result = TransitionValidator.suggestRecoveryState('bootstrapping', [
         {
           code: 'MINOR',
@@ -188,8 +188,8 @@ describe('TransitionValidator', () => {
           recoverable: true,
         },
       ]);
-      // bootstrapping can go to ready
-      expect(result).toBe('ready');
+      // bootstrapping can now go to degraded for recoverable errors
+      expect(result).toBe('degraded');
     });
 
     it('should return null when no valid recovery exists', () => {

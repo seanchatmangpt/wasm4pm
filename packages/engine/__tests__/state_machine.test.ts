@@ -126,10 +126,10 @@ describe('StateMachine', () => {
       expect(sm.canTransition('running')).toBe(false);
     });
 
-    it('should reject ready -> running (must go through planning)', () => {
+    it('should allow ready -> running (direct execution)', () => {
       sm.transition('bootstrapping');
       sm.transition('ready');
-      expect(sm.canTransition('running')).toBe(false);
+      expect(sm.canTransition('running')).toBe(true);
     });
 
     it('should reject watching -> planning', () => {
@@ -159,12 +159,13 @@ describe('StateMachine', () => {
       expect(valid).toHaveLength(1);
     });
 
-    it('should return ready and failed from bootstrapping', () => {
+    it('should return ready, failed, and degraded from bootstrapping', () => {
       sm.transition('bootstrapping');
       const valid = sm.getValidTransitions();
       expect(valid).toContain('ready');
       expect(valid).toContain('failed');
-      expect(valid).toHaveLength(2);
+      expect(valid).toContain('degraded');
+      expect(valid).toHaveLength(3);
     });
 
     it('should return planning, degraded, failed from ready', () => {

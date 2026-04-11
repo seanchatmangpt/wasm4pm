@@ -556,7 +556,7 @@ mod tests {
         let predictor = make_ngram_predictor();
 
         // Single activity prefix: removing it leaves empty
-        let baseline = predictor
+        let _baseline = predictor
             .predict(&["A".to_string()])
             .first()
             .map(|(_, p)| *p)

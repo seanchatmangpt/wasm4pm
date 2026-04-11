@@ -146,11 +146,11 @@ function assertExitCode(result: CliResult, expected: number): void {
  * Validate JSON output schema
  */
 function assertValidJson(jsonStr: string): Record<string, unknown> {
-  let parsed: Record<string, unknown>;
+  let parsed: Record<string, unknown> = {};
   expect(() => {
     parsed = JSON.parse(jsonStr);
   }).not.toThrow();
-  return parsed as Record<string, unknown>;
+  return parsed;
 }
 
 function assertJsonHasFields(obj: Record<string, unknown>, fields: string[]): void {

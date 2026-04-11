@@ -373,6 +373,155 @@ fn rand_select<T>(items: &[(T, f64)]) -> usize {
     (fastrand::f64() * n as f64) as usize % n
 }
 
+// ---------------------------------------------------------------------------
+// Ant Colony Optimization (ACO)
+// ---------------------------------------------------------------------------
+
+/// Ant Colony Optimization for process model discovery
+/// Uses pheromone trails and heuristic information to construct process models
+#[wasm_bindgen]
+pub fn discover_aco_algorithm(
+    eventlog_handle: &str,
+    activity_key: &str,
+    ant_count: usize,
+    iterations: usize,
+) -> Result<JsValue, JsValue> {
+    let (best_edges, best_fitness, vocab) =
+        get_or_init_state().with_object(eventlog_handle, |obj| match obj {
+            Some(StoredObject::EventLog(log)) => {
+                let col_owned = crate::cache::columnar_cache_get(eventlog_handle, activity_key)
+                    .unwrap_or_else(|| {
+                        let owned = log.to_columnar_owned(activity_key);
+                        crate::cache::columnar_cache_insert(
+                            eventlog_handle.to_string(),
+                            activity_key.to_string(),
+                            owned.clone(),
+                        );
+                        owned
+                    });
+                let col = ColumnarLog::from_owned(&col_owned);
+
+                // Build edge vocabulary from columnar log
+                let mut edge_vocab: Vec<(u32, u32)> = Vec::new();
+                let mut edge_freq: FxHashMap<(u32, u32), f64> = FxHashMap::default();
+
+                for t in 0..col.trace_offsets.len().saturating_sub(1) {
+                    let start = col.trace_offsets[t];
+                    let end = col.trace_offsets[t + 1];
+                    for i in start..end.saturating_sub(1) {
+                        let edge = (col.events[i], col.events[i + 1]);
+                        *edge_freq.entry(edge).or_insert(0.0) += 1.0;
+                        if edge_freq[&edge] == 1.0 {
+                            edge_vocab.push(edge);
+                        }
+                    }
+                }
+
+                let vocab: Vec<String> = col.vocab.iter().map(|s| s.to_string()).collect();
+                let total_edges = edge_freq.values().sum::<f64>().max(1.0);
+
+                // Heuristic information: normalized edge frequency
+                let heuristic: FxHashMap<(u32, u32), f64> = edge_freq
+                    .iter()
+                    .map(|(e, &f)| (*e, f / total_edges))
+                    .collect();
+
+                // Initialize pheromone trails uniformly
+                let mut pheromone: FxHashMap<(u32, u32), f64> = FxHashMap::default();
+                let tau_0 = 1.0 / edge_vocab.len().max(1) as f64;
+                for &edge in &edge_vocab {
+                    pheromone.insert(edge, tau_0);
+                }
+
+                // ACO constants
+                let alpha = 1.0; // pheromone influence
+                let beta = 2.0; // heuristic influence
+                let evaporation_rate = 0.1;
+                let q = 100.0; // pheromone deposit factor
+
+                let mut best_solution: Option<(EdgeSet, f64)> = None;
+
+                for _iter in 0..iterations {
+                    let mut iteration_solutions: Vec<(EdgeSet, f64)> = Vec::new();
+
+                    for _ant in 0..ant_count {
+                        // Construct solution using pheromone + heuristic
+                        let mut ant_edges: EdgeSet = HashSet::new();
+
+                        for &edge in &edge_vocab {
+                            let tau = pheromone.get(&edge).copied().unwrap_or(tau_0);
+                            let eta = heuristic.get(&edge).copied().unwrap_or(0.01);
+
+                            // Probability: (tau^alpha * eta^beta)
+                            let prob = tau.powf(alpha) * eta.powf(beta);
+                            if fastrand::f64() < prob.min(0.99) {
+                                ant_edges.insert(edge);
+                            }
+                        }
+
+                        let fitness = evaluate_edges_fitness(&ant_edges, &col);
+
+                        // Track global best before moving ant_edges
+                        if best_solution.is_none() || fitness > best_solution.as_ref().unwrap().1 {
+                            best_solution = Some((ant_edges.clone(), fitness));
+                        }
+
+                        iteration_solutions.push((ant_edges, fitness));
+                    }
+
+                    // Evaporate pheromones
+                    for val in pheromone.values_mut() {
+                        *val *= 1.0 - evaporation_rate;
+                    }
+
+                    // Deposit pheromones from all ants
+                    for (edges, fitness) in &iteration_solutions {
+                        let deposit = q * fitness;
+                        for &edge in edges {
+                            *pheromone.entry(edge).or_insert(tau_0) += deposit;
+                        }
+                    }
+
+                    // Extra deposit for iteration-best ant
+                    if let Some((best_edges, best_fit)) = iteration_solutions.iter().max_by(|a, b| {
+                        a.1.partial_cmp(&b.1)
+                            .unwrap_or(std::cmp::Ordering::Equal)
+                    }) {
+                        let deposit = q * best_fit * 2.0; // elitist bonus
+                        for &edge in best_edges {
+                            *pheromone.entry(edge).or_insert(tau_0) += deposit;
+                        }
+                    }
+                }
+
+                match best_solution {
+                    Some((edges, fitness)) => Ok((edges, fitness, vocab)),
+                    None => Err(JsValue::from_str("ACO failed to find solution")),
+                }
+            }
+            Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
+            None => Err(JsValue::from_str("EventLog not found")),
+        })?;
+
+    let best_dfg = edge_set_to_dfg(&best_edges, &vocab);
+
+    let handle = get_or_init_state()
+        .store_object(StoredObject::DirectlyFollowsGraph(best_dfg.clone()))
+        .map_err(|_e| JsValue::from_str("Failed to store DFG"))?;
+
+    to_js(&json!({
+        "handle": handle,
+        "algorithm": "aco",
+        "nodes": best_dfg.nodes.len(),
+        "edges": best_dfg.edges.len(),
+        "final_fitness": best_fitness,
+        "ant_count": ant_count,
+        "iterations": iterations,
+    }))
+}
+
+// Simulated Annealing is defined in more_discovery.rs (canonical version)
+
 #[wasm_bindgen]
 pub fn genetic_discovery_info() -> String {
     json!({
@@ -391,6 +540,20 @@ pub fn genetic_discovery_info() -> String {
                 "parameters": ["activity_key", "swarm_size", "iterations"],
                 "returns": ["nodes", "edges", "final_fitness"],
                 "better_for": "Continuous optimization in complex solution spaces"
+            },
+            {
+                "name": "discover_aco_algorithm",
+                "description": "Ant Colony Optimization with pheromone trails and heuristic guidance",
+                "parameters": ["activity_key", "ant_count", "iterations"],
+                "returns": ["nodes", "edges", "final_fitness"],
+                "better_for": "Combinatorial optimization with positive feedback loops"
+            },
+            {
+                "name": "discover_simulated_annealing",
+                "description": "Temperature-based search accepting worse solutions probabilistically",
+                "parameters": ["activity_key", "initial_temp", "cooling_rate", "iterations"],
+                "returns": ["nodes", "edges", "final_fitness"],
+                "better_for": "Escaping local optima in rugged fitness landscapes"
             }
         ]
     })

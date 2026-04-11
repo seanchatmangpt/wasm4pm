@@ -8,7 +8,7 @@ RESULTS_DIR  := results
 TIMESTAMP    := $(shell date +%Y%m%d_%H%M%S)
 
 .PHONY: bench bench-rust bench-wasm bench-data bench-ci bench-quick \
-        bench-save-baseline bench-compare clean-bench help
+        bench-save-baseline bench-compare clean-bench help doctor
 
 # ── Top-level: Rust Criterion groups + Node.js workers, fully concurrent ─────
 bench: bench-data
@@ -84,6 +84,11 @@ clean-bench:
 	rm -rf $(RESULTS_DIR)/*.json $(RESULTS_DIR)/*.csv $(RESULTS_DIR)/*.log
 	rm -rf $(PKG_DIR)/target/criterion
 
+# ── Environment & Development ─────────────────────────────────────────────────
+doctor:
+	@cd apps/pmctl && npm run build > /dev/null 2>&1
+	@node apps/pmctl/dist/bin/pmctl.js doctor --format json 2>&1 | awk '/^{/,/^}/ {print}'
+
 help:
 	@echo "wasm4pm Benchmark Targets:"
 	@echo "  make bench              — Full suite (Rust + WASM, concurrent)"
@@ -95,3 +100,6 @@ help:
 	@echo "  make bench-save-baseline LABEL=main  — Save timing baseline"
 	@echo "  make bench-compare LABEL=main        — Compare against baseline"
 	@echo "  make clean-bench        — Remove result files and criterion cache"
+	@echo ""
+	@echo "Development Targets:"
+	@echo "  make doctor             — Run environment diagnostics (24 checks)"

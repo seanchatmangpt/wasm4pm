@@ -4,7 +4,6 @@
 //! pulling in nalgebra and the full statrs library (~200KB savings).
 
 use chrono::{DateTime, TimeZone, Utc};
-use std::ops::Deref;
 
 /// Data struct matching statrs::statistics::Data interface
 ///

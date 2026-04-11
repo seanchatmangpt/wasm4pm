@@ -8,15 +8,16 @@ set -e
 
 DOCTOR_OUTPUT=""
 
-# Try to run pictl doctor in priority order
-if command -v pictl &>/dev/null; then
-  DOCTOR_OUTPUT=$(pictl doctor --format json)
-elif [ -f "$CLAUDE_PROJECT_DIR/apps/pmctl/dist/cli.js" ]; then
-  DOCTOR_OUTPUT=$(node "$CLAUDE_PROJECT_DIR/apps/pmctl/dist/cli.js" doctor --format json)
-else
-  echo "ERROR: pictl doctor unavailable — cannot check environment health" >&2
-  echo "  PICTL_ERROR: Neither 'pictl' nor dist/cli.js found"
-  exit 1
+# Run pictl doctor via make target (builds CLI if needed)
+cd "$CLAUDE_PROJECT_DIR"
+DOCTOR_OUTPUT=$(make doctor 2>&1) || true
+
+# If output contains error or is empty, try direct node execution
+if [ -z "$DOCTOR_OUTPUT" ] || ! echo "$DOCTOR_OUTPUT" | jq -e '.healthy' >/dev/null 2>&1; then
+  # Try fallback: direct node execution without make
+  if [ -f "apps/pmctl/dist/bin/pmctl.js" ]; then
+    DOCTOR_OUTPUT=$(node apps/pmctl/dist/bin/pmctl.js doctor --format json 2>/dev/null) || true
+  fi
 fi
 
 if [ -z "$DOCTOR_OUTPUT" ]; then

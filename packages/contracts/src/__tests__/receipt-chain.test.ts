@@ -15,16 +15,16 @@ import * as path from 'path';
 import { tmpdir } from 'os';
 import {
   Receipt,
-  ReceiptBuilder,
   isReceipt,
-} from '../src/receipt';
+} from '../receipt';
+import { ReceiptBuilder } from '../receipt-builder';
 import {
   hashConfig,
   hashData,
   hashJsonString,
   verifyHash,
   normalizeForHashing,
-} from '../src/hash';
+} from '../hash';
 
 /**
  * Test environment helper

@@ -5,13 +5,14 @@
   "license": "MIT",
   "private": true,
   "engines": {
-    "node": ">=18.0.0",
+    "node": ">=20.0.0",
     "pnpm": ">=8.0.0"
   },
   "packageManager": "pnpm@9.15.0",
   "scripts": {
     "build": "pnpm -r build",
     "test": "pnpm -r test",
+    "test:coverage": "pnpm -r --filter './packages/*' run test:coverage && cd wasm4pm && npm run test:coverage",
     "lint": "pnpm -r lint",
     "clean": "pnpm -r clean && rm -rf node_modules",
     "release": "pnpm run build && pnpm run test && pnpm run lint",
@@ -21,13 +22,13 @@
     "release:generate-schemas": "bash .github/scripts/generate-schemas.sh",
     "release:generate-changelog": "bash .github/scripts/generate-changelog.sh",
     "release:generate-sbom": "bash .github/scripts/generate-sbom.sh",
-    "release:full": "pnpm run release:verify && pnpm run release:verify-versions && pnpm run release:generate-schemas && pnpm run release:generate-changelog && pnpm run release:generate-sbom",
+    "release:full": "pnpm run tps:check && pnpm run release:verify && pnpm run release:verify-versions && pnpm run release:generate-schemas && pnpm run release:generate-changelog && pnpm run release:generate-sbom",
     "build:wasm": "pnpm --filter wasm4pm build:all",
     "build:engine": "pnpm --filter @wasm4pm/engine build",
     "build:cli": "pnpm --filter @wasm4pm/pmctl build",
     "build:all": "pnpm run build:wasm && pnpm run build:engine && pnpm run build:cli",
     "dev": "pnpm run build:engine && pnpm run build:cli",
-    "ci:test": "pnpm run lint && pnpm run test",
+    "ci:test": "pnpm run tps:check && pnpm run lint && pnpm run test",
     "ci:build": "pnpm run build:all",
     "generate": "unrdf sync --config unrdf.toml",
     "generate:algorithms": "unrdf sync --config unrdf.toml --rule algorithm-registry && pnpm --filter @wasm4pm/templates build",
@@ -35,12 +36,15 @@
     "format": "prettier --write 'packages/*/src/**/*.ts' 'apps/*/src/**/*.ts' 'packages/*/src/**/*.json'",
     "format:check": "prettier --check 'packages/*/src/**/*.ts' 'apps/*/src/**/*.ts' 'packages/*/src/**/*.json'",
     "health": "node scripts/health.mjs",
+    "tps:check": "node scripts/tps-pipeline-check.mjs",
+    "tps:check:json": "node scripts/tps-pipeline-check.mjs --json",
     "docs:lint": "markdownlint '**/*.md' --config .markdownlint.json --ignore node_modules --ignore docs/archive",
     "docs:link-check": "find . -name '*.md' -not -path '*/node_modules/*' -not -path '*/docs/archive/*' -print0 | xargs -0 markdown-link-check --config .mlc.config.json",
     "docs:check": "npm run docs:lint && npm run docs:link-check",
     "postinstall": "node scripts/check-engines.mjs"
   },
   "devDependencies": {
+    "@vitest/coverage-v8": "^1.6.0",
     "typescript": "^5.3.3",
     "prettier": "^3.1.1"
   }

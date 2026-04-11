@@ -1,0 +1,4 @@
+[source]
+kind = "file"
+[execution]
+profile = "fast"

@@ -20,10 +20,12 @@ export class JsonWriter {
   private readonly FLUSH_INTERVAL_MS = 1000;
   private flushTimer?: NodeJS.Timeout;
 
+  private initPromise: Promise<void> | undefined;
+
   constructor(config: JsonConfig) {
     this.config = config;
     if (config.enabled && config.dest !== 'stdout') {
-      this.initializeFile();
+      this.initPromise = this.initializeFile();
     }
     this.startAutoFlush();
   }
@@ -108,8 +110,14 @@ export class JsonWriter {
     try {
       if (this.config.dest === 'stdout') {
         process.stdout.write(lines);
-      } else if (this.fileHandle) {
-        await this.fileHandle.write(lines);
+      } else {
+        // Wait for file handle initialization if still pending
+        if (this.initPromise) {
+          await this.initPromise;
+        }
+        if (this.fileHandle) {
+          await this.fileHandle.write(lines);
+        }
       }
     } catch (error) {
       // Non-blocking: log error but don't throw
@@ -139,7 +147,11 @@ export class JsonWriter {
     for (const key of Object.keys(redacted)) {
       const lowerKey = key.toLowerCase();
       if (sensitiveFields.some((field) => lowerKey.includes(field))) {
-        redacted[key] = '[REDACTED]';
+        if (typeof redacted[key] === 'object' && redacted[key] !== null) {
+          redacted[key] = JsonWriter.redactSecrets(redacted[key]);
+        } else {
+          redacted[key] = '[REDACTED]';
+        }
       } else if (typeof redacted[key] === 'object' && redacted[key] !== null) {
         redacted[key] = JsonWriter.redactSecrets(redacted[key]);
       }

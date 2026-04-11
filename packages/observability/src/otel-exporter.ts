@@ -100,7 +100,7 @@ export class OtelExporter {
       if (this.config.required) {
         console.error(`[observability] Required OTEL export failed: ${error}`);
       } else {
-        console.debug(`[observability] Optional OTEL export failed: ${error}`);
+        console.error(`[observability] Optional OTEL export failed: ${error}`);
       }
     }
   }
@@ -160,7 +160,7 @@ export class OtelExporter {
     const timeoutHandle = setTimeout(() => controller.abort(), timeoutMs);
 
     try {
-      const response = await fetch(this.getExportUrl(), {
+      const fetchPromise = fetch(this.getExportUrl(), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -168,6 +168,15 @@ export class OtelExporter {
         body: JSON.stringify(payload),
         signal: controller.signal,
       });
+
+      // Race fetch against abort signal so timeout always resolves
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        controller.signal.addEventListener('abort', () =>
+          reject(new Error('OTEL export timed out'))
+        );
+      });
+
+      const response = await Promise.race([fetchPromise, timeoutPromise]);
 
       if (!response.ok) {
         throw new Error(
