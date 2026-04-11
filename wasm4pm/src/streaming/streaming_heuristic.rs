@@ -178,7 +178,7 @@ impl StreamingHeuristicBuilder {
     pub fn dependency_matrix(&self) -> FxHashMap<(String, String), f64> {
         let mut matrix = FxHashMap::default();
 
-        for (&(from, to), _) in &self.edge_counts {
+        for &(from, to) in self.edge_counts.keys() {
             let score = self.dependency_score(from, to);
             if let (Some(from_name), Some(to_name)) =
                 (self.interner.get(from), self.interner.get(to))
@@ -202,7 +202,7 @@ impl StreamingAlgorithm for StreamingHeuristicBuilder {
         let id = self.intern(activity);
         self.open_traces
             .entry(case_id.to_owned())
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(id);
 
         // Grow activity_counts if needed

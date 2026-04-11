@@ -181,7 +181,7 @@ fn parse_decision_graph(s: &str, arena: &mut PowlArena) -> Result<u32, String> {
                     .position(|(t, _)| node_label_matches(t, tgt_str))
                     .ok_or_else(|| format!("edge target '{}' not found in nodes", tgt_str))?;
 
-                order.add_edge(src_local as usize, tgt_local as usize);
+                order.add_edge(src_local, tgt_local);
             }
         }
     }
@@ -211,7 +211,7 @@ fn parse_node_list(s: &str, token_to_local: &[(String, u32)]) -> Result<Vec<usiz
             .iter()
             .position(|(t, _)| node_label_matches(t, tok))
             .ok_or_else(|| format!("node '{}' not found in token list", tok))?;
-        indices.push(idx as usize);
+        indices.push(idx);
     }
     Ok(indices)
 }

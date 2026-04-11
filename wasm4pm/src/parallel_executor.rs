@@ -322,12 +322,12 @@ pub fn run_algorithms_parallel(
 fn run_single_algorithm(log: &EventLog, activity_key: &str, name: &str) -> String {
     match name {
         "dfg" => {
-            let dfg = compute_dfg(&log, activity_key);
+            let dfg = compute_dfg(log, activity_key);
             serde_json::to_string(&dfg).unwrap_or_else(|_| "{}".to_string())
         }
         "alpha_plus_plus" => {
             // Minimal alpha++ — produce a DFG-based approximation
-            let dfg = compute_dfg(&log, activity_key);
+            let dfg = compute_dfg(log, activity_key);
             let result = serde_json::json!({
                 "algorithm": "alpha_plus_plus",
                 "nodes": dfg.nodes.len(),
@@ -337,7 +337,7 @@ fn run_single_algorithm(log: &EventLog, activity_key: &str, name: &str) -> Strin
             result.to_string()
         }
         "heuristic_miner" => {
-            let dfg = compute_dfg(&log, activity_key);
+            let dfg = compute_dfg(log, activity_key);
             let result = serde_json::json!({
                 "algorithm": "heuristic_miner",
                 "nodes": dfg.nodes.len(),

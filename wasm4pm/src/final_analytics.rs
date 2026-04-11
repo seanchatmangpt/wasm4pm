@@ -7,7 +7,7 @@ use serde_json::json;
 use std::collections::HashSet;
 use wasm_bindgen::prelude::*;
 
-/// Variant Complexity - measure variant entropy and diversity
+/// Measure variant entropy and diversity in event log.
 #[wasm_bindgen]
 pub fn analyze_variant_complexity(
     eventlog_handle: &str,
@@ -60,7 +60,7 @@ pub fn analyze_variant_complexity(
     })
 }
 
-/// Activity Transition Matrix - co-activity flow matrix
+/// Compute activity transition matrix (Markov chain).
 #[wasm_bindgen]
 pub fn compute_activity_transition_matrix(
     eventlog_handle: &str,
@@ -113,7 +113,7 @@ pub fn compute_activity_transition_matrix(
     })
 }
 
-/// Process Speedup Analysis - identify where process accelerates/decelerates
+/// Identify where process accelerates/decelerates over time.
 #[wasm_bindgen]
 pub fn analyze_process_speedup(
     eventlog_handle: &str,
@@ -168,7 +168,7 @@ pub fn analyze_process_speedup(
     })
 }
 
-/// Trace Distance Matrix - compute pairwise trace similarity
+/// Compute pairwise trace similarity matrix.
 #[wasm_bindgen]
 pub fn compute_trace_similarity_matrix(
     eventlog_handle: &str,
@@ -222,7 +222,7 @@ pub fn compute_trace_similarity_matrix(
     })
 }
 
-/// Process Bottleneck Timeline - identify temporal bottlenecks
+/// Identify temporal bottlenecks by activity duration.
 #[wasm_bindgen]
 pub fn analyze_temporal_bottlenecks(
     eventlog_handle: &str,
@@ -257,7 +257,7 @@ pub fn analyze_temporal_bottlenecks(
                         (activities[i + 1].1.len() as f64) - (activities[i].1.len() as f64);
                     activity_durations
                         .entry(activities[i].0.clone())
-                        .or_insert_with(Vec::new)
+                        .or_default()
                         .push(duration.abs());
                 }
             }
@@ -284,7 +284,7 @@ pub fn analyze_temporal_bottlenecks(
     })
 }
 
-/// Activity Ordering - extract mandatory activity ordering from log
+/// Extract mandatory activity ordering from event log.
 #[wasm_bindgen]
 pub fn extract_activity_ordering(
     eventlog_handle: &str,
@@ -315,7 +315,7 @@ pub fn extract_activity_ordering(
                         activities.iter().take(pos).map(|&a| a.to_owned()).collect();
                     mandatory_predecessors
                         .entry(activity.to_owned())
-                        .or_insert_with(HashSet::new)
+                        .or_default()
                         .extend(predecessors);
                 }
             }

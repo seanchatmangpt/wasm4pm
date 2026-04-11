@@ -31,9 +31,9 @@ impl<const WIDTH: usize, const DEPTH: usize> CountMinSketch<WIDTH, DEPTH> {
         // and reproducible across runs (important for testing parity).
         let mut seeds = [0u64; DEPTH];
         let mut state: u64 = 0xDEAD_BEEF_CAFE_BABE;
-        for i in 0..DEPTH {
+        for seed in seeds.iter_mut() {
             state = state.wrapping_mul(6364136223846793005).wrapping_add(1);
-            seeds[i] = state;
+            *seed = state;
         }
         CountMinSketch {
             table: [[0u32; WIDTH]; DEPTH],

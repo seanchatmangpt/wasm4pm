@@ -154,14 +154,11 @@ fn simulate_trace(
 
         if enabled.is_empty() {
             // Check if we're in a final marking
-            let is_final = petri_net
-                .final_markings
-                .iter()
-                .any(|final_marking| {
-                    final_marking.iter().all(|(place, count)| {
-                        marking.get(place) == Some(count)
-                    })
-                });
+            let is_final = petri_net.final_markings.iter().any(|final_marking| {
+                final_marking
+                    .iter()
+                    .all(|(place, count)| marking.get(place) == Some(count))
+            });
 
             if is_final {
                 break;
@@ -222,19 +219,17 @@ fn simulate_trace(
 }
 
 #[wasm_bindgen]
-pub fn petri_net_playout(
-    petri_net_handle: &str,
-    config_json: &str,
-) -> Result<JsValue, JsValue> {
+pub fn petri_net_playout(petri_net_handle: &str, config_json: &str) -> Result<JsValue, JsValue> {
     let config: PlayoutConfig = serde_json::from_str(config_json).unwrap_or_default();
 
-    let result: PlayoutResult = get_or_init_state().with_object(petri_net_handle, |obj| match obj {
-        Some(StoredObject::PetriNet(petri_net)) => {
-            play_petri_net(petri_net, &config).map_err(|e| JsValue::from_str(&e))
-        }
-        Some(_) => Err(JsValue::from_str("Handle is not a PetriNet")),
-        None => Err(JsValue::from_str("PetriNet handle not found")),
-    })?;
+    let result: PlayoutResult =
+        get_or_init_state().with_object(petri_net_handle, |obj| match obj {
+            Some(StoredObject::PetriNet(petri_net)) => {
+                play_petri_net(petri_net, &config).map_err(|e| JsValue::from_str(&e))
+            }
+            Some(_) => Err(JsValue::from_str("Handle is not a PetriNet")),
+            None => Err(JsValue::from_str("PetriNet handle not found")),
+        })?;
 
     serde_json::to_string(&result)
         .map_err(|e| JsValue::from_str(&e.to_string()))

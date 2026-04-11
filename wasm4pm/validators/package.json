@@ -1,6 +1,6 @@
 {
   "name": "@pictl/validators",
-  "version": "26.4.5",
+  "version": "26.4.9",
   "description": "Validators for @pictl/wasm4pm - CLI, HTTP, WebSocket, Observability, I/O, Performance",
   "type": "module",
   "exports": {

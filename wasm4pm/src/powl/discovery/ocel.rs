@@ -22,7 +22,7 @@ impl OcelVariant {
         }
     }
 
-    pub fn from_str(s: &str) -> Option<Self> {
+    pub fn from_variant_str(s: &str) -> Option<Self> {
         match s {
             "flattening" => Some(OcelVariant::Flattening),
             "oc_powl" => Some(OcelVariant::OcPowl),
@@ -74,11 +74,14 @@ mod tests {
     #[test]
     fn test_ocel_variant_from_str() {
         assert_eq!(
-            OcelVariant::from_str("flattening"),
+            OcelVariant::from_variant_str("flattening"),
             Some(OcelVariant::Flattening)
         );
-        assert_eq!(OcelVariant::from_str("oc_powl"), Some(OcelVariant::OcPowl));
-        assert_eq!(OcelVariant::from_str("invalid"), None);
+        assert_eq!(
+            OcelVariant::from_variant_str("oc_powl"),
+            Some(OcelVariant::OcPowl)
+        );
+        assert_eq!(OcelVariant::from_variant_str("invalid"), None);
     }
 
     #[test]
@@ -105,6 +108,6 @@ mod tests {
         let config = DiscoveryConfig::default();
 
         let _root = discover_ocel_powl(&log, &config, &mut arena, OcelVariant::Flattening).unwrap();
-        assert!(arena.len() > 0);
+        assert!(!arena.is_empty());
     }
 }

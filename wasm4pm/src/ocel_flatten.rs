@@ -203,3 +203,238 @@ pub fn flatten_ocel_to_eventlog(ocel_handle: &str, object_type: &str) -> Result<
     // Store the flattened EventLog and return its handle (now outside the original lock)
     get_or_init_state().store_object(StoredObject::EventLog(event_log))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::models::{AttributeValue, OCELEvent, OCELObject, OCEL};
+    use std::collections::HashMap;
+
+    fn create_multi_object_ocel() -> OCEL {
+        OCEL {
+            event_types: vec!["Create".to_string(), "Update".to_string()],
+            object_types: vec!["Order".to_string(), "Item".to_string()],
+            events: vec![
+                OCELEvent {
+                    id: "e1".to_string(),
+                    event_type: "Create".to_string(),
+                    timestamp: "2024-01-01T10:00:00Z".to_string(),
+                    attributes: {
+                        let mut attrs = HashMap::new();
+                        attrs.insert(
+                            "action".to_string(),
+                            AttributeValue::String("create".to_string()),
+                        );
+                        attrs
+                    },
+                    object_ids: vec!["order1".to_string()],
+                    object_refs: vec![],
+                },
+                OCELEvent {
+                    id: "e2".to_string(),
+                    event_type: "Update".to_string(),
+                    timestamp: "2024-01-01T11:00:00Z".to_string(),
+                    attributes: HashMap::new(),
+                    object_ids: vec!["order1".to_string()],
+                    object_refs: vec![],
+                },
+                OCELEvent {
+                    id: "e3".to_string(),
+                    event_type: "Create".to_string(),
+                    timestamp: "2024-01-01T12:00:00Z".to_string(),
+                    attributes: HashMap::new(),
+                    object_ids: vec!["item1".to_string()],
+                    object_refs: vec![],
+                },
+            ],
+            objects: vec![
+                OCELObject {
+                    id: "order1".to_string(),
+                    object_type: "Order".to_string(),
+                    attributes: {
+                        let mut attrs = HashMap::new();
+                        attrs.insert("value".to_string(), AttributeValue::Float(100.0));
+                        attrs
+                    },
+                    changes: vec![],
+                    embedded_relations: vec![],
+                },
+                OCELObject {
+                    id: "item1".to_string(),
+                    object_type: "Item".to_string(),
+                    attributes: HashMap::new(),
+                    changes: vec![],
+                    embedded_relations: vec![],
+                },
+            ],
+            object_relations: vec![],
+        }
+    }
+
+    #[test]
+    fn test_list_object_types() {
+        let ocel = create_multi_object_ocel();
+        let handle = get_or_init_state()
+            .store_object(StoredObject::OCEL(ocel))
+            .expect("Failed to store OCEL");
+
+        let result = list_ocel_object_types(&handle).expect("Failed to list types");
+        let types: Vec<String> =
+            serde_wasm_bindgen::from_value(result).expect("Failed to parse JSON");
+        assert_eq!(types, vec!["Order", "Item"]);
+    }
+
+    #[test]
+    fn test_list_object_types_empty() {
+        let ocel = OCEL {
+            event_types: vec![],
+            object_types: vec![],
+            events: vec![],
+            objects: vec![],
+            object_relations: vec![],
+        };
+
+        let handle = get_or_init_state()
+            .store_object(StoredObject::OCEL(ocel))
+            .expect("Failed to store OCEL");
+
+        let result = list_ocel_object_types(&handle).expect("Failed to list types");
+        let types: Vec<String> =
+            serde_wasm_bindgen::from_value(result).expect("Failed to parse JSON");
+        assert!(types.is_empty());
+    }
+
+    #[test]
+    fn test_get_ocel_statistics() {
+        let ocel = create_multi_object_ocel();
+        let handle = get_or_init_state()
+            .store_object(StoredObject::OCEL(ocel))
+            .expect("Failed to store OCEL");
+
+        let result = get_ocel_type_statistics(&handle).expect("Failed to get stats");
+        let stats: serde_json::Value =
+            serde_wasm_bindgen::from_value(result).expect("Failed to parse JSON");
+
+        assert_eq!(stats["event_count"], 3);
+        assert!(stats["event_types"].is_array());
+        assert!(stats["object_type_stats"].is_object());
+    }
+
+    #[test]
+    fn test_flatten_ocel_single_type() {
+        let ocel = create_multi_object_ocel();
+        let handle = get_or_init_state()
+            .store_object(StoredObject::OCEL(ocel))
+            .expect("Failed to store OCEL");
+
+        let log_handle = flatten_ocel_to_eventlog(&handle, "Order").expect("Failed to flatten");
+
+        get_or_init_state()
+            .with_object(&log_handle, |obj| match obj {
+                Some(StoredObject::EventLog(log)) => {
+                    assert_eq!(log.traces.len(), 1);
+                    assert_eq!(log.traces[0].events.len(), 2);
+                    Ok(())
+                }
+                _ => panic!("Expected EventLog"),
+            })
+            .expect("Failed to retrieve log");
+    }
+
+    #[test]
+    fn test_flatten_ocel_preserves_timestamp_order() {
+        let ocel = create_multi_object_ocel();
+        let handle = get_or_init_state()
+            .store_object(StoredObject::OCEL(ocel))
+            .expect("Failed to store OCEL");
+
+        let log_handle = flatten_ocel_to_eventlog(&handle, "Order").expect("Failed to flatten");
+
+        get_or_init_state()
+            .with_object(&log_handle, |obj| match obj {
+                Some(StoredObject::EventLog(log)) => {
+                    let trace = &log.traces[0];
+                    assert!(matches!(
+                        trace.events[0].attributes.get("concept:name"),
+                        Some(AttributeValue::String(s)) if s == "Create"
+                    ));
+                    assert!(matches!(
+                        trace.events[1].attributes.get("concept:name"),
+                        Some(AttributeValue::String(s)) if s == "Update"
+                    ));
+                    Ok(())
+                }
+                _ => panic!("Expected EventLog"),
+            })
+            .expect("Failed to retrieve log");
+    }
+
+    #[test]
+    fn test_flatten_ocel_invalid_type() {
+        let ocel = create_multi_object_ocel();
+        let handle = get_or_init_state()
+            .store_object(StoredObject::OCEL(ocel))
+            .expect("Failed to store OCEL");
+
+        let result = flatten_ocel_to_eventlog(&handle, "NonExistent");
+        assert!(result.is_err(), "Should error on non-existent object type");
+    }
+
+    #[test]
+    fn test_flatten_ocel_preserves_attributes() {
+        let ocel = create_multi_object_ocel();
+        let handle = get_or_init_state()
+            .store_object(StoredObject::OCEL(ocel))
+            .expect("Failed to store OCEL");
+
+        let log_handle = flatten_ocel_to_eventlog(&handle, "Order").expect("Failed to flatten");
+
+        get_or_init_state()
+            .with_object(&log_handle, |obj| match obj {
+                Some(StoredObject::EventLog(log)) => {
+                    let trace = &log.traces[0];
+                    assert!(trace.attributes.contains_key("object_id"));
+                    assert!(trace.attributes.contains_key("object_type"));
+                    assert!(trace.attributes.contains_key("value"));
+                    Ok(())
+                }
+                _ => panic!("Expected EventLog"),
+            })
+            .expect("Failed to retrieve log");
+    }
+
+    #[test]
+    fn test_flatten_ocel_multiple_types() {
+        let ocel = create_multi_object_ocel();
+        let handle = get_or_init_state()
+            .store_object(StoredObject::OCEL(ocel))
+            .expect("Failed to store OCEL");
+
+        let order_handle =
+            flatten_ocel_to_eventlog(&handle, "Order").expect("Failed to flatten Order");
+        let item_handle =
+            flatten_ocel_to_eventlog(&handle, "Item").expect("Failed to flatten Item");
+
+        get_or_init_state()
+            .with_object(&order_handle, |obj| match obj {
+                Some(StoredObject::EventLog(log)) => {
+                    assert_eq!(log.traces.len(), 1);
+                    assert_eq!(log.traces[0].events.len(), 2);
+                    Ok(())
+                }
+                _ => panic!("Expected EventLog"),
+            })
+            .expect("Failed to retrieve order log");
+
+        get_or_init_state()
+            .with_object(&item_handle, |obj| match obj {
+                Some(StoredObject::EventLog(log)) => {
+                    assert_eq!(log.traces.len(), 1);
+                    assert_eq!(log.traces[0].events.len(), 1);
+                    Ok(())
+                }
+                _ => panic!("Expected EventLog"),
+            })
+            .expect("Failed to retrieve item log");
+    }
+}

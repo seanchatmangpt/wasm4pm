@@ -334,11 +334,7 @@ pub fn extract_process_skeleton(
                 .flat_map(|e| vec![e.from.clone(), e.to.clone()])
                 .collect();
 
-            dfg.nodes = dfg
-                .nodes
-                .into_iter()
-                .filter(|n| nodes_with_edges.contains(&n.id))
-                .collect();
+            dfg.nodes.retain(|n| nodes_with_edges.contains(&n.id));
 
             Ok(dfg)
         }
@@ -382,7 +378,7 @@ pub fn analyze_activity_dependencies(
                             {
                                 predecessors
                                     .entry(current.clone())
-                                    .or_insert_with(HashSet::new)
+                                    .or_default()
                                     .insert(prev.clone());
                             }
                         }
@@ -394,7 +390,7 @@ pub fn analyze_activity_dependencies(
                             {
                                 successors
                                     .entry(current.clone())
-                                    .or_insert_with(HashSet::new)
+                                    .or_default()
                                     .insert(next.clone());
                             }
                         }
@@ -451,12 +447,12 @@ pub fn analyze_case_attributes(
                     if let AttributeValue::String(v) = value {
                         attribute_values
                             .entry(key.clone())
-                            .or_insert_with(HashSet::new)
+                            .or_default()
                             .insert(v.clone());
 
                         attribute_activity_map
                             .entry((key.clone(), v.clone()))
-                            .or_insert_with(Vec::new)
+                            .or_default()
                             .extend(activities.clone());
                     }
                 }
@@ -489,7 +485,6 @@ pub fn analyze_case_attributes(
 /// Marked inline(always) so the compiler can specialise it at each call site
 // Helper: Evaluate fitness of an edge set against columnar log (zero string allocation)
 #[inline]
-
 // Helper: Materialize a DirectlyFollowsGraph from edge set and vocabulary
 fn edge_set_to_dfg(edge_set: &HashSet<(u32, u32)>, vocab: &[String]) -> DirectlyFollowsGraph {
     let mut dfg = DirectlyFollowsGraph::new();

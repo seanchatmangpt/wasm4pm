@@ -45,15 +45,20 @@ impl Builder {
     fn task(&mut self, id: &str, name: &str, join: &str, split: &str) {
         let escaped = xml_escape(name);
         self.elements.push(format!("        <task id=\"{}\">", id));
-        self.elements.push(format!("          <name>{}</name>", escaped));
-        self.elements.push(format!("          <decomposesTo id=\"dt_{}\"/>", id));
-        self.elements.push(format!("          <join code=\"{}\"/>", join));
-        self.elements.push(format!("          <split code=\"{}\"/>", split));
+        self.elements
+            .push(format!("          <name>{}</name>", escaped));
+        self.elements
+            .push(format!("          <decomposesTo id=\"dt_{}\"/>", id));
+        self.elements
+            .push(format!("          <join code=\"{}\"/>", join));
+        self.elements
+            .push(format!("          <split code=\"{}\"/>", split));
         self.elements.push("        </task>".to_string());
     }
 
     fn condition(&mut self, id: &str) {
-        self.elements.push(format!("        <condition id=\"{}\"/>", id));
+        self.elements
+            .push(format!("        <condition id=\"{}\"/>", id));
     }
 
     fn convert(&mut self, arena: &PowlArena, idx: u32, entry: &str, exit: &str) {
@@ -85,19 +90,17 @@ impl Builder {
                 self.convert_spo(arena, &spo.children, &spo.order, entry, exit);
             }
 
-            Some(PowlNode::OperatorPowl(op)) => {
-                match op.operator {
-                    Operator::Xor => {
-                        self.convert_xor(arena, &op.children, entry, exit);
-                    }
-                    Operator::Loop => {
-                        self.convert_loop(arena, &op.children, entry, exit);
-                    }
-                    Operator::PartialOrder => {
-                        self.chain(arena, &op.children, entry, exit);
-                    }
+            Some(PowlNode::OperatorPowl(op)) => match op.operator {
+                Operator::Xor => {
+                    self.convert_xor(arena, &op.children, entry, exit);
                 }
-            }
+                Operator::Loop => {
+                    self.convert_loop(arena, &op.children, entry, exit);
+                }
+                Operator::PartialOrder => {
+                    self.chain(arena, &op.children, entry, exit);
+                }
+            },
 
             Some(PowlNode::DecisionGraph(_)) => {
                 self.flow(entry, exit);
@@ -278,18 +281,22 @@ pub fn to_yawl_xml(arena: &PowlArena, root: u32) -> String {
     let ic = "IC".to_string();
     let oc = "OC".to_string();
     builder.convert(arena, root, &ic, &oc);
-    let mut lines: Vec<String> = Vec::new();
-    lines.push(r#"<?xml version="1.0" encoding="UTF-8"?>"#.to_string());
-    lines.push(r#"<specificationSet xmlns="http://www.yawlfoundation.org/yawlschema" version="6.0">"#.to_string());
-    lines.push(r#"  <specification uri="powl_workflow">"#.to_string());
-    lines.push(r#"    <meta>"#.to_string());
-    lines.push(r#"      <creator>pictl</creator>"#.to_string());
-    lines.push(r#"      <description>Generated from POWL model</description>"#.to_string());
-    lines.push(r#"    </meta>"#.to_string());
-    lines.push(r#"    <net id="mainNet">"#.to_string());
-    lines.push(r#"      <processControlElements>"#.to_string());
-    lines.push(r#"        <inputCondition id="IC"/>"#.to_string());
-    lines.push(r#"        <outputCondition id="OC"/>"#.to_string());
+    let mut lines: Vec<String> = vec![
+        r#"<?xml version="1.0" encoding="UTF-8"?>"#,
+        r#"<specificationSet xmlns="http://www.yawlfoundation.org/yawlschema" version="6.0">"#,
+        r#"  <specification uri="powl_workflow">"#,
+        r#"    <meta>"#,
+        r#"      <creator>pictl</creator>"#,
+        r#"      <description>Generated from POWL model</description>"#,
+        r#"    </meta>"#,
+        r#"    <net id="mainNet">"#,
+        r#"      <processControlElements>"#,
+        r#"        <inputCondition id="IC"/>"#,
+        r#"        <outputCondition id="OC"/>"#,
+    ]
+    .into_iter()
+    .map(String::from)
+    .collect();
     for el in &builder.elements {
         lines.push(el.clone());
     }

@@ -181,7 +181,7 @@ pub fn discover_ocel_dfg(ocel_handle: &str) -> Result<JsValue, JsValue> {
 
             // Count event type frequencies
             for event in &ocel.events {
-                if let Some(node) = dfg.nodes.iter_mut().find(|n| &n.id == &event.event_type) {
+                if let Some(node) = dfg.nodes.iter_mut().find(|n| n.id == event.event_type) {
                     node.frequency += 1;
                 }
             }
@@ -192,7 +192,7 @@ pub fn discover_ocel_dfg(ocel_handle: &str) -> Result<JsValue, JsValue> {
                 for obj_id in event.all_object_ids() {
                     events_by_object
                         .entry(obj_id.to_string())
-                        .or_insert_with(Vec::new)
+                        .or_default()
                         .push((idx, event.event_type.as_str()));
                 }
             }
@@ -429,7 +429,7 @@ pub fn discover_declare(eventlog_handle: &str, activity_key: &str) -> Result<JsV
 
             // Sort activities by name to ensure stable/reproducible ordering.
             let mut sorted_indices: Vec<usize> = (0..n).collect();
-            sorted_indices.sort_by(|&a, &b| col.vocab[a].cmp(&col.vocab[b]));
+            sorted_indices.sort_by(|&a, &b| col.vocab[a].cmp(col.vocab[b]));
 
             model.activities = col.vocab.iter().map(|s| s.to_string()).collect();
 
@@ -464,8 +464,8 @@ pub fn discover_declare(eventlog_handle: &str, activity_key: &str) -> Result<JsV
             // Time: O(T × A)
             let mut activity_counts = vec![0u32; n];
             for profile in &traces_profiles {
-                for a in 0..n {
-                    if profile.first_positions[a] != u8::MAX {
+                for (a, fp) in profile.first_positions.iter().enumerate() {
+                    if *fp != u8::MAX {
                         activity_counts[a] += 1;
                     }
                 }
@@ -554,6 +554,20 @@ pub fn available_discovery_algorithms() -> JsValue {
                 "status": "implemented"
             },
             {
+                "name": "causal_alpha",
+                "description": "Causal graph discovery using alpha miner variant (binary causality)",
+                "input": "EventLog",
+                "parameters": ["activity_key"],
+                "status": "implemented"
+            },
+            {
+                "name": "causal_heuristic",
+                "description": "Causal graph discovery using heuristic variant (threshold-based)",
+                "input": "EventLog",
+                "parameters": ["activity_key", "threshold"],
+                "status": "implemented"
+            },
+            {
                 "name": "alpha_plus_plus",
                 "description": "Alpha++ algorithm for Petri net discovery",
                 "input": "EventLog",
@@ -570,7 +584,7 @@ pub fn available_discovery_algorithms() -> JsValue {
 pub fn discovery_info() -> JsValue {
     to_js(&json!({
         "status": "discovery_module_operational",
-        "implemented_algorithms": ["dfg", "ocel_dfg", "declare"],
+        "implemented_algorithms": ["dfg", "ocel_dfg", "declare", "causal_alpha", "causal_heuristic"],
         "note": "Core discovery algorithms implemented as WASM-native code"
     }))
     .unwrap_or(JsValue::NULL)

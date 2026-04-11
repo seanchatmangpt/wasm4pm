@@ -52,7 +52,7 @@ pub fn encode_dfg_as_text(dfg_handle: &str) -> Result<String, JsValue> {
             for edge in &dfg.edges {
                 edges_by_from
                     .entry(edge.from.clone())
-                    .or_insert_with(Vec::new)
+                    .or_default()
                     .push((edge.to.clone(), edge.frequency));
             }
 
@@ -92,7 +92,7 @@ pub fn encode_dfg_as_text(dfg_handle: &str) -> Result<String, JsValue> {
                     })
                     .collect();
                 text.push_str(&ends.join("; "));
-                text.push_str(".");
+                text.push('.');
             }
 
             Ok(text)

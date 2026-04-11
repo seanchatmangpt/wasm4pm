@@ -71,7 +71,7 @@ fn weibull_shape_from_cv(cv: f64) -> f64 {
     if cv <= 0.0 || !cv.is_finite() {
         return 1.0; // degenerate → exponential
     }
-    cv.powf(-1.086).max(0.1).min(20.0)
+    cv.powf(-1.086).clamp(0.1, 20.0)
 }
 
 /// Weibull scale λ from mean and shape: λ = mean / Γ(1 + 1/k).
@@ -91,18 +91,18 @@ fn gamma_approx(x: f64) -> f64 {
     const P: [f64; 8] = [
         676.5203681218851,
         -1259.1392167224028,
-        771.32342877765313,
-        -176.61502916214059,
+        771.323_428_777_653_1,
+        -176.615_029_162_140_6,
         12.507343278686905,
         -0.13857109526572012,
-        9.9843695780195716e-6,
+        9.984_369_578_019_572e-6,
         1.5056327351493116e-7,
     ];
     if x < 0.5 {
         std::f64::consts::PI / ((std::f64::consts::PI * x).sin() * gamma_approx(1.0 - x))
     } else {
         let x = x - 1.0;
-        let mut a = 0.99999999999980993_f64;
+        let mut a = 0.999_999_999_999_809_9_f64;
         for (i, &p) in P.iter().enumerate() {
             a += p / (x + i as f64 + 1.0);
         }
@@ -560,7 +560,7 @@ fn confidence_from_bucket(bucket: &BucketStats, global: &BucketStats) -> f64 {
         1.0
     };
     let precision_factor = if global_cv > 0.0 {
-        (1.0 - bucket_cv / global_cv).max(0.0).min(1.0)
+        (1.0 - bucket_cv / global_cv).clamp(0.0, 1.0)
     } else {
         0.5
     };

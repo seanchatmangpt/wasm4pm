@@ -1,6 +1,6 @@
 # @pictl/validators
 
-Comprehensive validation suite for @seanchatmangpt/pictl v26.4.5.
+Comprehensive validation suite for @seanchatmangpt/pictl v26.4.9.
 
 ## Overview
 

@@ -16,6 +16,7 @@ use crate::error::{codes, wasm_err};
 // Shared types
 // ---------------------------------------------------------------------------
 
+/// Result of M/M/1 queue delay computation.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct QueueDelayResult {
     pub wait_time: f64,
@@ -23,12 +24,14 @@ pub struct QueueDelayResult {
     pub is_stable: bool,
 }
 
+/// Input for intervention ranking with name and utility estimate.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InterventionInput {
     pub name: String,
     pub utility: f64,
 }
 
+/// Ranked intervention with score and position.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RankedIntervention {
     pub name: String,
@@ -36,6 +39,7 @@ pub struct RankedIntervention {
     pub rank: usize,
 }
 
+/// Multi-armed bandit arm with reward tracking.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BanditArm {
     pub name: String,
@@ -43,12 +47,14 @@ pub struct BanditArm {
     pub pull_count: usize,
 }
 
+/// State of a multi-armed bandit for intervention selection.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BanditState {
     pub arms: Vec<BanditArm>,
     pub total_pulls: usize,
 }
 
+/// Result of UCB1 bandit selection with scores.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SelectionResult {
     pub selected: String,

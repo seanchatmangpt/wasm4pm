@@ -216,25 +216,6 @@ export class PictlMCPServer {
           required: ['xes_content'],
         },
       },
-      {
-        name: 'detect_concept_drift',
-        description:
-          'Detect if and where the process changes over time (concept drift) using Jaccard-window analysis. Returns drift points with positions and distances. Claude uses this to answer "Has this process changed over time?"',
-        inputSchema: {
-          type: 'object' as const,
-          properties: {
-            xes_content: {
-              type: 'string',
-              description: 'XES event log content',
-            },
-            window_size: {
-              type: 'number',
-              description: 'Number of traces per sliding window. Default: 5',
-            },
-          },
-          required: ['xes_content'],
-        },
-      },
       // Visualization
       {
         name: 'encode_dfg_as_text',

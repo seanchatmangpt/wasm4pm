@@ -107,13 +107,14 @@ pub fn align_etconformance_precision(
         Some(StoredObject::EventLog(l)) => Ok(l.clone()),
         Some(_) => Err(JsValue::from_str("Handle is not an EventLog")),
         None => Err(JsValue::from_str("EventLog handle not found")),
-    }).map_err(|e| e)?;
+    })?;
 
-    let petri_net_cloned = get_or_init_state().with_object(petri_net_handle, |petri_net_obj| match petri_net_obj {
-        Some(StoredObject::PetriNet(pn)) => Ok(pn.clone()),
-        Some(_) => Err(JsValue::from_str("Handle is not a PetriNet")),
-        None => Err(JsValue::from_str("PetriNet handle not found")),
-    }).map_err(|e| e)?;
+    let petri_net_cloned =
+        get_or_init_state().with_object(petri_net_handle, |petri_net_obj| match petri_net_obj {
+            Some(StoredObject::PetriNet(pn)) => Ok(pn.clone()),
+            Some(_) => Err(JsValue::from_str("Handle is not a PetriNet")),
+            None => Err(JsValue::from_str("PetriNet handle not found")),
+        })?;
 
     let report = compute_align_etconformance_precision(&log_cloned, &petri_net_cloned, &config)
         .map_err(|e| JsValue::from_str(&e))?;

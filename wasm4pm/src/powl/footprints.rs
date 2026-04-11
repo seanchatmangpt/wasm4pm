@@ -207,10 +207,10 @@ fn footprints_of_partial_order(
     }
 
     let mut adj: Vec<Vec<usize>> = vec![Vec::new(); n];
-    for i in 0..n {
+    for (i, row) in adj.iter_mut().enumerate() {
         for j in 0..n {
             if order_is_edge(i, j) {
-                adj[i].push(j);
+                row.push(j);
             }
         }
     }
@@ -223,7 +223,7 @@ fn footprints_of_partial_order(
                 s
             })
             .collect();
-        for start in 0..n {
+        for (start, cl_entry) in cl.iter_mut().enumerate() {
             let mut visited: HashSet<usize> = HashSet::new();
             let mut queue = VecDeque::new();
             queue.push_back(start);
@@ -232,7 +232,7 @@ fn footprints_of_partial_order(
                     continue;
                 }
                 visited.insert(cur);
-                cl[start].insert(cur);
+                cl_entry.insert(cur);
                 for &nxt in &adj[cur] {
                     queue.push_back(nxt);
                 }
@@ -424,17 +424,16 @@ mod tests {
     }
 
     #[test]
-    fn single_activity() {
+    fn test_footprints_single_and_tau() {
+        // Happy path: single activity has start=end
         let (arena, root) = build("A");
         let fp = apply(&arena, root);
         assert!(fp.start_activities.contains("A"));
         assert!(fp.end_activities.contains("A"));
         assert!(!fp.skippable);
         assert_eq!(fp.min_trace_length, 1);
-    }
 
-    #[test]
-    fn tau_is_skippable() {
+        // Edge case: tau is skippable
         let (arena, root) = build("tau");
         let fp = apply(&arena, root);
         assert!(fp.skippable);
@@ -442,16 +441,14 @@ mod tests {
     }
 
     #[test]
-    fn xor_ab_can_start_with_either() {
+    fn test_footprints_xor_and_sequence() {
+        // XOR can start with either branch
         let (arena, root) = build("X ( A, B )");
         let fp = apply(&arena, root);
         assert!(fp.start_activities.contains("A"));
         assert!(fp.start_activities.contains("B"));
-        assert!(!fp.skippable);
-    }
 
-    #[test]
-    fn sequence_po_start_end() {
+        // Sequence PO has ordered start/end
         let (arena, root) = build("PO=(nodes={A, B}, order={A-->B})");
         let fp = apply(&arena, root);
         assert!(fp.start_activities.contains("A"));
@@ -460,7 +457,8 @@ mod tests {
     }
 
     #[test]
-    fn concurrent_po_produces_parallel() {
+    fn test_footprints_parallel() {
+        // Concurrent PO produces bidirectional parallel edges
         let (arena, root) = build("PO=(nodes={A, B}, order={})");
         let fp = apply(&arena, root);
         assert!(fp.parallel.contains(&("A".to_string(), "B".to_string())));

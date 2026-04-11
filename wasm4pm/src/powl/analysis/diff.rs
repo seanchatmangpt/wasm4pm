@@ -245,7 +245,8 @@ mod tests {
     }
 
     #[test]
-    fn identical_models_no_diff() {
+    fn test_diff_identical_models() {
+        // Happy path: identical models have no diff
         let (aa, ra) = parse("X ( A, B )");
         let (ab, rb) = parse("X ( A, B )");
         let d = diff(&aa, ra, &ab, rb);
@@ -255,16 +256,15 @@ mod tests {
     }
 
     #[test]
-    fn added_activity_detected() {
+    fn test_diff_activity_changes() {
+        // Added activity detected
         let (aa, ra) = parse("A");
         let (ab, rb) = parse("X ( A, B )");
         let d = diff(&aa, ra, &ab, rb);
         assert!(d.added_activities.contains(&"B".to_string()));
         assert!(d.severity >= Severity::Moderate);
-    }
 
-    #[test]
-    fn removed_activity_is_breaking() {
+        // Removed activity is breaking change
         let (aa, ra) = parse("X ( A, B )");
         let (ab, rb) = parse("A");
         let d = diff(&aa, ra, &ab, rb);
@@ -273,7 +273,8 @@ mod tests {
     }
 
     #[test]
-    fn structure_change_at_root() {
+    fn test_diff_structure_changes() {
+        // Structure change at root detected
         let (aa, ra) = parse("X ( A, B )");
         let (ab, rb) = parse("*(A, B)");
         let d = diff(&aa, ra, &ab, rb);

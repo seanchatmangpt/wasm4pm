@@ -691,7 +691,7 @@ describe('Engine WASM Integration', () => {
             expect(enginePanic).toBeDefined();
         });
         it('should pass through observability layer', () => {
-            const obsLayer = new (require('@wasm4pm/observability').ObservabilityLayer)();
+            const obsLayer = new (require('@pictl/observability').ObservabilityLayer)();
             const engineObs = createFullEngine(kernel, planner, executor, { observability: obsLayer });
             expect(engineObs).toBeDefined();
         });

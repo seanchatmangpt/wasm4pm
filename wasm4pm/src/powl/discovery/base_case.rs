@@ -25,7 +25,7 @@ mod tests {
     #[test]
     fn test_handle_empty_log_creates_tau() {
         let mut arena = PowlArena::new();
-        let root = handle_empty_log(&mut arena).unwrap();
+        let _root = handle_empty_log(&mut arena).unwrap();
         // Should create a silent transition
         assert_eq!(arena.nodes.len(), 1);
     }

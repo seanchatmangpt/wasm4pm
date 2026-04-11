@@ -79,7 +79,7 @@ impl StreamingAlphaPlusBuilder {
         let mut post_sets: Vec<std::collections::HashSet<u32>> =
             vec![std::collections::HashSet::new(); n];
 
-        for (&(from, to), _) in &self.edge_counts {
+        for &(from, to) in self.edge_counts.keys() {
             // from > to (causal) if no reverse edge
             if !self.reverse_edge_counts.contains_key(&(to, from)) {
                 post_sets[from as usize].insert(to);
@@ -95,7 +95,7 @@ impl StreamingAlphaPlusBuilder {
             marking: None,
         });
 
-        for (&id, _) in &self.start_counts {
+        for &id in self.start_counts.keys() {
             let t_label = self.interner.get(id).unwrap_or("?");
             let t_id = format!("t_{}", t_label);
             net.transitions.push(PetriNetTransition {
@@ -118,7 +118,7 @@ impl StreamingAlphaPlusBuilder {
             marking: None,
         });
 
-        for (&id, _) in &self.end_counts {
+        for &id in self.end_counts.keys() {
             let t_label = self.interner.get(id).unwrap_or("?");
             let t_id = format!("t_{}", t_label);
             net.transitions.push(PetriNetTransition {
@@ -190,7 +190,7 @@ impl StreamingAlgorithm for StreamingAlphaPlusBuilder {
         let id = self.intern(activity);
         self.open_traces
             .entry(case_id.to_owned())
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(id);
 
         if id as usize >= self.activity_counts.len() {

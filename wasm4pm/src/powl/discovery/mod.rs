@@ -1,16 +1,18 @@
 //! POWL discovery from event logs using inductive miner algorithm.
 //!
-//! Port of `pm4py/objects/powl/discovery/total_order_based/algorithm.py`
-//! and `pm4py/objects/powl/discovery/total_order_based/cuts/`.
+//! Port of `pm4py/algo/discovery/powl/inductive/` cut factory pattern.
 //!
-//! Discovery variants:
-//!   - tree: Base inductive miner (process tree only, no partial orders)
-//!   - maximal: Maximal partial order cut
-//!   - dynamic_clustering: Dynamic clustering with frequency filtering
-//!   - decision_graph_max: Maximal decision graph cut
-//!   - decision_graph_clustering: Decision graph with clustering
-//!   - decision_graph_cyclic: Cyclic decision graphs (default)
-//!   - decision_graph_cyclic_strict: Strict variant
+//! Each discovery variant uses a different `CutFilter` that controls which
+//! cut types are attempted and in what order, mirroring pm4py's CutFactory:
+//!
+//!   - tree:                    XOR -> Sequence (no concurrency, no loop, no PO)
+//!   - maximal:                 XOR -> Sequence -> Concurrency -> Loop -> MaximalPO
+//!   - dynamic_clustering:      XOR -> Loop -> DynamicClusteringPO (no standard concurrency)
+//!   - decision_graph_max:      XOR -> Sequence -> Concurrency -> Loop -> MaximalPO + DG fall-through
+//!   - decision_graph_clustering: Sequence -> XOR -> Loop -> DynamicClusteringPO + DG fall-through
+//!   - decision_graph_cyclic:   XOR -> Sequence -> Concurrency -> Loop + DG fall-through (default)
+//!   - decision_graph_cyclic_strict: same as cyclic but with strict validation
+//!   - brute_force:             XOR -> Sequence -> Concurrency -> Loop -> BruteForcePO
 
 pub mod base_case;
 pub mod cuts;
@@ -34,6 +36,7 @@ pub enum DiscoveryVariant {
     DynamicClustering,
     Maximal,
     Tree,
+    BruteForce,
 }
 
 impl DiscoveryVariant {
@@ -46,10 +49,11 @@ impl DiscoveryVariant {
             DiscoveryVariant::DynamicClustering => "dynamic_clustering",
             DiscoveryVariant::Maximal => "maximal",
             DiscoveryVariant::Tree => "tree",
+            DiscoveryVariant::BruteForce => "brute_force",
         }
     }
 
-    pub fn from_str(s: &str) -> Option<Self> {
+    pub fn from_variant_str(s: &str) -> Option<Self> {
         match s {
             "decision_graph_cyclic" => Some(DiscoveryVariant::DecisionGraphCyclic),
             "decision_graph_cyclic_strict" => Some(DiscoveryVariant::DecisionGraphCyclicStrict),
@@ -58,23 +62,37 @@ impl DiscoveryVariant {
             "dynamic_clustering" => Some(DiscoveryVariant::DynamicClustering),
             "maximal" => Some(DiscoveryVariant::Maximal),
             "tree" => Some(DiscoveryVariant::Tree),
+            "brute_force" => Some(DiscoveryVariant::BruteForce),
             _ => None,
         }
     }
+
+    /// 80/20: Simple flag-based variant differentiation
+    pub fn uses_decision_graph_directly(&self) -> bool {
+        matches!(
+            self,
+            DiscoveryVariant::DecisionGraphCyclic
+                | DiscoveryVariant::DecisionGraphCyclicStrict
+                | DiscoveryVariant::DecisionGraphMax
+                | DiscoveryVariant::DecisionGraphClustering
+        )
+    }
+
+    pub fn allows_concurrency(&self) -> bool {
+        !matches!(self, DiscoveryVariant::Tree)
+    }
+
+    pub fn allows_loops(&self) -> bool {
+        !matches!(self, DiscoveryVariant::Tree | DiscoveryVariant::Maximal)
+    }
 }
 
-/// Discovery configuration
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct DiscoveryConfig {
-    /// Activity key to use in the event log
     pub activity_key: String,
-    /// Discovery variant
     pub variant: DiscoveryVariant,
-    /// Minimum number of traces for a cut to be considered (default: 1)
     pub min_trace_count: usize,
-    /// Noise threshold for fall-through (default: 0.0)
     pub noise_threshold: f64,
-    /// Use DFG-based discovery (default: false, uses total order)
     pub from_dfg: bool,
 }
 
@@ -90,22 +108,120 @@ impl Default for DiscoveryConfig {
     }
 }
 
-/// Discover a POWL model from an event log
+/// Individual cut types that can be attempted by the inductive miner.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum CutType {
+    Concurrency,
+    Sequence,
+    Loop,
+    Xor,
+    MaximalPartialOrder,
+    DynamicClusteringPartialOrder,
+    BruteForcePartialOrder,
+}
+
+/// Controls which cut types the inductive miner attempts and in what order.
+#[derive(Clone, Debug)]
+pub struct CutFilter {
+    pub cut_order: Vec<CutType>,
+    pub decision_graph_fall_through: bool,
+    pub strict_mode: bool,
+}
+
+impl CutFilter {
+    pub fn for_variant(variant: DiscoveryVariant) -> Self {
+        match variant {
+            DiscoveryVariant::Tree => Self {
+                cut_order: vec![CutType::Xor, CutType::Sequence],
+                decision_graph_fall_through: false,
+                strict_mode: false,
+            },
+            DiscoveryVariant::Maximal => Self {
+                cut_order: vec![
+                    CutType::Xor,
+                    CutType::Sequence,
+                    CutType::Concurrency,
+                    CutType::Loop,
+                    CutType::MaximalPartialOrder,
+                ],
+                decision_graph_fall_through: false,
+                strict_mode: false,
+            },
+            DiscoveryVariant::DynamicClustering => Self {
+                cut_order: vec![
+                    CutType::Xor,
+                    CutType::Loop,
+                    CutType::DynamicClusteringPartialOrder,
+                ],
+                decision_graph_fall_through: false,
+                strict_mode: false,
+            },
+            DiscoveryVariant::BruteForce => Self {
+                cut_order: vec![
+                    CutType::Xor,
+                    CutType::Sequence,
+                    CutType::Concurrency,
+                    CutType::Loop,
+                    CutType::BruteForcePartialOrder,
+                ],
+                decision_graph_fall_through: false,
+                strict_mode: false,
+            },
+            DiscoveryVariant::DecisionGraphMax => Self {
+                cut_order: vec![
+                    CutType::Xor,
+                    CutType::Sequence,
+                    CutType::Concurrency,
+                    CutType::Loop,
+                    CutType::MaximalPartialOrder,
+                ],
+                decision_graph_fall_through: true,
+                strict_mode: false,
+            },
+            DiscoveryVariant::DecisionGraphClustering => Self {
+                cut_order: vec![
+                    CutType::Sequence,
+                    CutType::Xor,
+                    CutType::Loop,
+                    CutType::DynamicClusteringPartialOrder,
+                ],
+                decision_graph_fall_through: true,
+                strict_mode: false,
+            },
+            DiscoveryVariant::DecisionGraphCyclic => Self {
+                cut_order: vec![
+                    CutType::Xor,
+                    CutType::Sequence,
+                    CutType::Concurrency,
+                    CutType::Loop,
+                ],
+                decision_graph_fall_through: true,
+                strict_mode: false,
+            },
+            DiscoveryVariant::DecisionGraphCyclicStrict => Self {
+                cut_order: vec![
+                    CutType::Xor,
+                    CutType::Sequence,
+                    CutType::Concurrency,
+                    CutType::Loop,
+                ],
+                decision_graph_fall_through: true,
+                strict_mode: true,
+            },
+        }
+    }
+}
+
 pub fn discover_powl(log: &EventLog, config: &DiscoveryConfig) -> Result<(PowlArena, u32), String> {
     let mut arena = PowlArena::new();
-
     let root = if config.from_dfg {
-        // DFG-based discovery (simpler, faster)
         discover_from_dfg(log, config, &mut arena)?
     } else {
-        // Total-order based discovery (full inductive miner)
         discover_from_traces(log, config, &mut arena)?
     };
-
     Ok((arena, root))
 }
 
-/// Discover POWL from trace-based (total order) representation
 fn discover_from_traces(
     log: &EventLog,
     config: &DiscoveryConfig,
@@ -115,114 +231,67 @@ fn discover_from_traces(
     if activities.is_empty() {
         return base_case::handle_empty_log(arena);
     }
-
     if activities.len() == 1 {
         return base_case::handle_single_activity(arena, &activities[0]);
     }
-
-    // Group traces by activity sequence for cut detection
     let traces = group_traces_by_activity_sequence(log, &config.activity_key);
-
-    match config.variant {
-        DiscoveryVariant::Tree => {
-            // Process tree only (no partial orders)
-            discover_tree_only(&traces, arena, &config)
-        }
-        _ => {
-            // Inductive miner with partial orders
-            inductive_miner(&traces, arena, &config)
-        }
-    }
+    let cut_filter = CutFilter::for_variant(config.variant);
+    inductive_miner(&traces, arena, config, &cut_filter)
 }
 
-/// Discover POWL from pre-computed DFG
 fn discover_from_dfg(
     log: &EventLog,
     config: &DiscoveryConfig,
     arena: &mut PowlArena,
 ) -> Result<u32, String> {
-    // Build DFG and apply inductive miner on DFG groups
     let _dfg_edges = log.get_directly_follows(&config.activity_key);
-
-    // Group activities by their directly-follows relationships
-    // For now, fall back to trace-based discovery
     discover_from_traces(log, config, arena)
 }
 
-/// Main inductive miner algorithm with cut detection
-fn inductive_miner(
+/// Inductive miner with CutFilter-based cut detection.
+///
+/// Following pm4py's CutFactory pattern, attempts cut types in the order
+/// specified by the CutFilter, with decision graph or flower model fall-through.
+pub(crate) fn inductive_miner(
     traces: &[Vec<String>],
     arena: &mut PowlArena,
     config: &DiscoveryConfig,
+    cut_filter: &CutFilter,
 ) -> Result<u32, String> {
-    // Try cuts in order: concurrency → sequence → loop → xor
-    // Apply fall-throughs if no cut found
-
-    // Check for concurrency cut (partial order)
-    if let Ok(root) = cuts::detect_concurrency_cut(traces, arena, config) {
-        return Ok(root);
-    }
-
-    // Check for sequence cut
-    if let Ok(root) = cuts::detect_sequence_cut(traces, arena, config) {
-        return Ok(root);
-    }
-
-    // Check for loop cut
-    if let Ok(root) = cuts::detect_loop_cut(traces, arena, config) {
-        return Ok(root);
-    }
-
-    // Check for XOR cut
-    if let Ok(root) = cuts::detect_xor_cut(traces, arena, config) {
-        return Ok(root);
-    }
-
-    // Fall through to decision graph or flower model
-    match config.variant {
-        DiscoveryVariant::DecisionGraphCyclic
-        | DiscoveryVariant::DecisionGraphCyclicStrict
-        | DiscoveryVariant::DecisionGraphMax
-        | DiscoveryVariant::DecisionGraphClustering => {
-            fall_through::decision_graph_fall_through(traces, arena, config)
+    for cut_type in &cut_filter.cut_order {
+        let result = match cut_type {
+            CutType::Concurrency => cuts::detect_concurrency_cut(traces, arena, config),
+            CutType::Sequence => cuts::detect_sequence_cut(traces, arena, config),
+            CutType::Loop => cuts::detect_loop_cut(traces, arena, config),
+            CutType::Xor => cuts::detect_xor_cut(traces, arena, config),
+            CutType::MaximalPartialOrder => {
+                cuts::detect_maximal_partial_order_cut(traces, arena, config)
+            }
+            CutType::DynamicClusteringPartialOrder => {
+                cuts::detect_dynamic_clustering_cut(traces, arena, config)
+            }
+            CutType::BruteForcePartialOrder => {
+                cuts::detect_brute_force_partial_order_cut(traces, arena, config)
+            }
+        };
+        if result.is_ok() {
+            return result;
         }
-        _ => fall_through::flower_model_fall_through(traces, arena, config),
+    }
+
+    // Fall-through: decision graph or flower model based on variant
+    if cut_filter.decision_graph_fall_through {
+        fall_through::decision_graph_fall_through(traces, arena, config)
+    } else {
+        fall_through::flower_model_fall_through(traces, arena, config)
     }
 }
 
-/// Discover process tree without partial orders
-fn discover_tree_only(
-    traces: &[Vec<String>],
-    arena: &mut PowlArena,
-    config: &DiscoveryConfig,
-) -> Result<u32, String> {
-    // Simplified inductive miner that only produces process trees
-    // (no StrictPartialOrder nodes)
-
-    // Check for XOR cut
-    if let Ok(root) = cuts::detect_xor_cut(traces, arena, config) {
-        return Ok(root);
-    }
-
-    // Check for sequence cut
-    if let Ok(root) = cuts::detect_sequence_cut(traces, arena, config) {
-        return Ok(root);
-    }
-
-    // Check for loop cut
-    if let Ok(root) = cuts::detect_loop_cut(traces, arena, config) {
-        return Ok(root);
-    }
-
-    // Fall through to flower model
-    fall_through::flower_model_fall_through(traces, arena, config)
-}
-
-/// Group traces by their activity sequence for cut detection
-fn group_traces_by_activity_sequence(log: &EventLog, activity_key: &str) -> Vec<Vec<String>> {
-    // For each trace, get the sequence of activities
+pub(crate) fn group_traces_by_activity_sequence(
+    log: &EventLog,
+    activity_key: &str,
+) -> Vec<Vec<String>> {
     let mut unique_traces = std::collections::HashMap::new();
-
     for trace in &log.traces {
         let activities: Vec<String> = trace
             .events
@@ -231,16 +300,10 @@ fn group_traces_by_activity_sequence(log: &EventLog, activity_key: &str) -> Vec<
             .filter_map(|v| v.as_string())
             .map(|s| s.to_string())
             .collect();
-
         let count = unique_traces.entry(activities.clone()).or_insert(0);
         *count += 1;
     }
-
-    // Return traces with their frequency
-    unique_traces
-        .into_iter()
-        .map(|(trace, _count)| trace)
-        .collect()
+    unique_traces.into_keys().collect()
 }
 
 #[cfg(test)]
@@ -248,21 +311,9 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_discovery_variant_from_str() {
-        assert_eq!(
-            DiscoveryVariant::from_str("decision_graph_cyclic"),
-            Some(DiscoveryVariant::DecisionGraphCyclic)
-        );
-        assert_eq!(
-            DiscoveryVariant::from_str("tree"),
-            Some(DiscoveryVariant::Tree)
-        );
-        assert_eq!(DiscoveryVariant::from_str("invalid"), None);
-    }
-
-    #[test]
-    fn test_discovery_variant_roundtrip() {
-        for variant in [
+    fn test_variant_serialization_roundtrip() {
+        // Happy path: all 8 variants serialize/deserialize correctly
+        let variants = [
             DiscoveryVariant::DecisionGraphCyclic,
             DiscoveryVariant::DecisionGraphCyclicStrict,
             DiscoveryVariant::DecisionGraphMax,
@@ -270,8 +321,44 @@ mod tests {
             DiscoveryVariant::DynamicClustering,
             DiscoveryVariant::Maximal,
             DiscoveryVariant::Tree,
-        ] {
-            assert_eq!(DiscoveryVariant::from_str(variant.as_str()), Some(variant));
+            DiscoveryVariant::BruteForce,
+        ];
+        for variant in variants {
+            let s = variant.as_str();
+            assert_eq!(DiscoveryVariant::from_variant_str(s), Some(variant));
         }
+        // Edge case: invalid string returns None
+        assert_eq!(DiscoveryVariant::from_variant_str("invalid"), None);
+    }
+
+    #[test]
+    fn test_cut_filter_variant_configurations() {
+        // Verify each variant has correct CutFilter configuration
+        assert!(!CutFilter::for_variant(DiscoveryVariant::Tree)
+            .cut_order
+            .contains(&CutType::Concurrency)); // Tree: no concurrency
+        assert!(CutFilter::for_variant(DiscoveryVariant::Maximal)
+            .cut_order
+            .contains(&CutType::MaximalPartialOrder)); // Maximal: has PO
+        assert!(CutFilter::for_variant(DiscoveryVariant::BruteForce)
+            .cut_order
+            .contains(&CutType::BruteForcePartialOrder)); // BruteForce: has PO
+        assert!(
+            CutFilter::for_variant(DiscoveryVariant::DecisionGraphCyclic)
+                .decision_graph_fall_through
+        ); // DG: has fall-through
+        assert!(CutFilter::for_variant(DiscoveryVariant::DecisionGraphCyclicStrict).strict_mode);
+        // DGStrict: strict mode
+    }
+
+    #[test]
+    fn test_variants_produce_different_configurations() {
+        // Verify variants produce different CutFilter configurations
+        let cf_tree = CutFilter::for_variant(DiscoveryVariant::Tree);
+        let cf_max = CutFilter::for_variant(DiscoveryVariant::Maximal);
+        let cf_dg = CutFilter::for_variant(DiscoveryVariant::DecisionGraphCyclic);
+        assert_ne!(cf_tree.cut_order, cf_max.cut_order);
+        assert_ne!(cf_tree.cut_order, cf_dg.cut_order);
+        assert_ne!(cf_max.cut_order, cf_dg.cut_order);
     }
 }

@@ -13,7 +13,7 @@
 //! 4. Derives start/end activities from in-degree/out-degree.
 
 use crate::error::{codes, wasm_err};
-use crate::models::{AttributeValue, EventLog, parse_timestamp_ms};
+use crate::models::{parse_timestamp_ms, AttributeValue, EventLog};
 use crate::state::{get_or_init_state, StoredObject};
 use crate::utilities::to_js;
 use rustc_hash::FxHashMap;
@@ -85,11 +85,7 @@ pub fn discover_correlation(
     threshold: f64,
 ) -> Result<JsValue, JsValue> {
     let cfg = CorrelationConfig {
-        correlation_threshold: if threshold > 0.0 {
-            threshold
-        } else {
-            86400.0
-        },
+        correlation_threshold: if threshold > 0.0 { threshold } else { 86400.0 },
         min_edge_frequency: 1,
     };
 
@@ -98,14 +94,8 @@ pub fn discover_correlation(
             let result = mine_correlation(log, activity_key, timestamp_key, &cfg);
             to_js(&result)
         }
-        Some(_) => Err(wasm_err(
-            codes::INVALID_HANDLE,
-            "Object is not an EventLog",
-        )),
-        None => Err(wasm_err(
-            codes::INVALID_HANDLE,
-            "EventLog not found",
-        )),
+        Some(_) => Err(wasm_err(codes::INVALID_HANDLE, "Object is not an EventLog")),
+        None => Err(wasm_err(codes::INVALID_HANDLE, "EventLog not found")),
     })?;
 
     Ok(result)
@@ -222,16 +212,16 @@ struct IndexedEvent {
 }
 
 /// Parse activity names and timestamps from an EventLog, sort chronologically.
-fn parse_and_sort(
-    log: &EventLog,
-    activity_key: &str,
-    timestamp_key: &str,
-) -> Vec<IndexedEvent> {
+fn parse_and_sort(log: &EventLog, activity_key: &str, timestamp_key: &str) -> Vec<IndexedEvent> {
     let mut parsed = Vec::new();
     let mut idx = 0usize;
     for trace in &log.traces {
         for event in &trace.events {
-            let activity = match event.attributes.get(activity_key).and_then(|v| v.as_string()) {
+            let activity = match event
+                .attributes
+                .get(activity_key)
+                .and_then(|v| v.as_string())
+            {
                 Some(a) => a.to_owned(),
                 None => continue,
             };
@@ -517,12 +507,13 @@ mod tests {
         };
         let result = mine_correlation(&log, "concept:name", "time:timestamp", &cfg);
 
-        assert!(
-            !result.edges.is_empty(),
-            "Expected non-empty DFG edges"
-        );
+        assert!(!result.edges.is_empty(), "Expected non-empty DFG edges");
         let ab = result.edges.iter().find(|(s, t, _)| s == "A" && t == "B");
-        assert!(ab.is_some(), "Expected A -> B edge, got: {:?}", result.edges);
+        assert!(
+            ab.is_some(),
+            "Expected A -> B edge, got: {:?}",
+            result.edges
+        );
         assert!(ab.unwrap().2 >= 2);
         let bc = result.edges.iter().find(|(s, t, _)| s == "B" && t == "C");
         assert!(bc.is_some(), "Expected B -> C edge");
@@ -546,18 +537,25 @@ mod tests {
                 events: Vec::new(),
             }],
         };
-        let result = mine_correlation(&log, "concept:name", "time:timestamp", &CorrelationConfig::default());
+        let result = mine_correlation(
+            &log,
+            "concept:name",
+            "time:timestamp",
+            &CorrelationConfig::default(),
+        );
         assert!(result.edges.is_empty() && result.start_activities.is_empty());
         assert_eq!(result.num_traces, 0);
     }
 
     #[test]
     fn correlation_single_activity_no_edges() {
-        let log = make_log(&[
-            ("A", "2024-01-01T00:00:00Z"),
-            ("A", "2024-01-01T00:00:01Z"),
-        ]);
-        let result = mine_correlation(&log, "concept:name", "time:timestamp", &CorrelationConfig::default());
+        let log = make_log(&[("A", "2024-01-01T00:00:00Z"), ("A", "2024-01-01T00:00:01Z")]);
+        let result = mine_correlation(
+            &log,
+            "concept:name",
+            "time:timestamp",
+            &CorrelationConfig::default(),
+        );
         assert!(result.edges.is_empty());
         assert_eq!(result.num_traces, 1);
     }
@@ -571,34 +569,44 @@ mod tests {
                 events: vec![
                     {
                         let mut attrs = HashMap::new();
-                        attrs.insert("concept:name".to_owned(), AttributeValue::String("A".to_owned()));
+                        attrs.insert(
+                            "concept:name".to_owned(),
+                            AttributeValue::String("A".to_owned()),
+                        );
                         Event { attributes: attrs }
                     },
                     {
                         let mut attrs = HashMap::new();
-                        attrs.insert("concept:name".to_owned(), AttributeValue::String("B".to_owned()));
+                        attrs.insert(
+                            "concept:name".to_owned(),
+                            AttributeValue::String("B".to_owned()),
+                        );
                         Event { attributes: attrs }
                     },
                 ],
             }],
         };
-        let result = mine_correlation(&log, "concept:name", "time:timestamp", &CorrelationConfig::default());
+        let result = mine_correlation(
+            &log,
+            "concept:name",
+            "time:timestamp",
+            &CorrelationConfig::default(),
+        );
         assert!(result.edges.is_empty() && result.num_traces == 0);
     }
 
     #[test]
     fn correlation_from_log_ignores_case_ids() {
         let log = make_multi_trace_log(&[
-            vec![
-                ("A", "2024-01-01T00:00:00Z"),
-                ("B", "2024-01-01T00:00:05Z"),
-            ],
-            vec![
-                ("A", "2024-01-01T00:01:00Z"),
-                ("B", "2024-01-01T00:01:05Z"),
-            ],
+            vec![("A", "2024-01-01T00:00:00Z"), ("B", "2024-01-01T00:00:05Z")],
+            vec![("A", "2024-01-01T00:01:00Z"), ("B", "2024-01-01T00:01:05Z")],
         ]);
-        let result = mine_correlation(&log, "concept:name", "time:timestamp", &CorrelationConfig::default());
+        let result = mine_correlation(
+            &log,
+            "concept:name",
+            "time:timestamp",
+            &CorrelationConfig::default(),
+        );
         assert!(result.edges.iter().any(|(s, t, _)| s == "A" && t == "B"));
     }
 
@@ -636,7 +644,10 @@ mod tests {
             min_edge_frequency: 1,
         };
         let result = mine_correlation(&log, "concept:name", "time:timestamp", &cfg);
-        assert_eq!(result.num_traces, 2, "2-hour gap should split into 2 traces");
+        assert_eq!(
+            result.num_traces, 2,
+            "2-hour gap should split into 2 traces"
+        );
     }
 
     #[test]
@@ -645,16 +656,22 @@ mod tests {
             attributes: HashMap::new(),
             traces: vec![Trace {
                 attributes: HashMap::new(),
-                events: vec![
-                    {
-                        let mut attrs = HashMap::new();
-                        attrs.insert("time:timestamp".to_owned(), AttributeValue::Date("2024-01-01T00:00:00Z".to_owned()));
-                        Event { attributes: attrs }
-                    },
-                ],
+                events: vec![{
+                    let mut attrs = HashMap::new();
+                    attrs.insert(
+                        "time:timestamp".to_owned(),
+                        AttributeValue::Date("2024-01-01T00:00:00Z".to_owned()),
+                    );
+                    Event { attributes: attrs }
+                }],
             }],
         };
-        let result = mine_correlation(&log, "concept:name", "time:timestamp", &CorrelationConfig::default());
+        let result = mine_correlation(
+            &log,
+            "concept:name",
+            "time:timestamp",
+            &CorrelationConfig::default(),
+        );
         assert!(result.edges.is_empty());
         assert_eq!(result.num_traces, 0);
     }

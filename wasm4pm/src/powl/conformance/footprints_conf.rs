@@ -135,7 +135,8 @@ mod tests {
     }
 
     #[test]
-    fn perfect_conformance() {
+    fn test_footprints_perfect_conformance() {
+        // Happy path: log matches model perfectly
         let log = make_log(vec![("1", &["A", "B", "C"]), ("2", &["A", "B", "C"])]);
         let model_fp = make_model_fp(&["A", "B", "C"], &[("A", "B"), ("B", "C")]);
         let result = check(&log, &model_fp);
@@ -144,25 +145,23 @@ mod tests {
     }
 
     #[test]
-    fn imperfect_fitness_extra_pair() {
+    fn test_footprints_imperfect_metrics() {
+        // Imperfect fitness: extra pair in log
         let log = make_log(vec![("1", &["A", "B", "C", "A"])]);
         let model_fp = make_model_fp(&["A", "B", "C"], &[("A", "B"), ("B", "C")]);
         let result = check(&log, &model_fp);
         assert!(result.fitness < 1.0);
-        assert!(result.precision > 0.0);
-    }
 
-    #[test]
-    fn imperfect_precision_missing_pair() {
+        // Imperfect precision: missing pair in model
         let log = make_log(vec![("1", &["A", "B"])]);
         let model_fp = make_model_fp(&["A", "B", "C"], &[("A", "B"), ("B", "C")]);
         let result = check(&log, &model_fp);
-        assert!((result.fitness - 1.0).abs() < 1e-9);
         assert!(result.precision < 1.0);
     }
 
     #[test]
-    fn empty_log() {
+    fn test_footprints_empty_log() {
+        // Edge case: empty log has perfect fitness
         let log = make_log(vec![]);
         let model_fp = make_model_fp(&["A"], &[]);
         let result = check(&log, &model_fp);

@@ -4,7 +4,7 @@
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { WasmLoader, WasmErrorCode, createWasmLoader, getWasmLoader, } from './wasm-loader.js';
-import { ObservabilityLayer } from '@wasm4pm/observability';
+import { ObservabilityLayer } from '@pictl/observability';
 /**
  * Mock WASM module for testing
  */

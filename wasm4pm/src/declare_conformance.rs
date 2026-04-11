@@ -59,7 +59,7 @@ pub fn check_declare_conformance(
                             for (i, &act) in acts.iter().enumerate() {
                                 if act == a {
                                     // Check if B appears anywhere after position i
-                                    if !acts[i + 1..].iter().any(|&x| x == b) {
+                                    if !acts[i + 1..].contains(&b) {
                                         violates = true;
                                         break;
                                     }
@@ -69,11 +69,11 @@ pub fn check_declare_conformance(
                         }
                         "Existence" if constraint.activities.len() == 1 => {
                             let a = constraint.activities[0].as_str();
-                            !acts.iter().any(|&x| x == a)
+                            !acts.contains(&a)
                         }
                         "Absence" if constraint.activities.len() == 1 => {
                             let a = constraint.activities[0].as_str();
-                            acts.iter().any(|&x| x == a)
+                            acts.contains(&a)
                         }
                         "Init" if constraint.activities.len() == 1 => {
                             let a = constraint.activities[0].as_str();

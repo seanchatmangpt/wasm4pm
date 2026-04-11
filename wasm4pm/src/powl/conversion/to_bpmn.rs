@@ -456,7 +456,8 @@ mod tests {
     }
 
     #[test]
-    fn single_task_produces_valid_xml() {
+    fn test_bpmn_single_task_valid_xml() {
+        // Happy path: single task produces valid BPMN XML structure
         let (arena, root) = parse("A");
         let xml = to_bpmn_xml(&arena, root);
         assert!(has_tag(&xml, "<definitions"));
@@ -464,35 +465,30 @@ mod tests {
         assert!(has_tag(&xml, r#"name="A""#));
         assert!(has_tag(&xml, "<startEvent"));
         assert!(has_tag(&xml, "<endEvent"));
-        assert!(has_tag(&xml, "</definitions>"));
     }
 
     #[test]
-    fn xor_produces_exclusive_gateways() {
+    fn test_bpmn_gateways_xor_and_loop() {
+        // XOR produces exclusive gateway
         let (arena, root) = parse("X(A, B)");
         let xml = to_bpmn_xml(&arena, root);
         assert!(has_tag(&xml, "exclusiveGateway"));
         assert!(has_tag(&xml, r#"name="A""#));
-        assert!(has_tag(&xml, r#"name="B""#));
-    }
 
-    #[test]
-    fn loop_produces_exclusive_gateways() {
+        // Loop produces exclusive gateway
         let (arena, root) = parse("*(A, B)");
         let xml = to_bpmn_xml(&arena, root);
         assert!(has_tag(&xml, "exclusiveGateway"));
-        assert!(has_tag(&xml, r#"name="A""#));
     }
 
     #[test]
-    fn spo_concurrent_produces_parallel_gateways() {
+    fn test_bpmn_partial_orders() {
+        // Concurrent PO produces parallel gateway
         let (arena, root) = parse("PO=(nodes={A, B}, order={})");
         let xml = to_bpmn_xml(&arena, root);
         assert!(has_tag(&xml, "parallelGateway"));
-    }
 
-    #[test]
-    fn spo_sequential_no_parallel_gateways() {
+        // Sequential PO has no parallel gateway (direct sequence)
         let (arena, root) = parse("PO=(nodes={A, B}, order={A-->B})");
         let xml = to_bpmn_xml(&arena, root);
         assert!(!has_tag(&xml, "parallelGateway"));

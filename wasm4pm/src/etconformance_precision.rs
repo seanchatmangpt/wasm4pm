@@ -100,8 +100,7 @@ fn postset(net: &PetriNet, trans_id: &str) -> Vec<String> {
 
 /// Test whether a transition is enabled (all preset places have tokens).
 fn is_enabled(marking: &Marking, pre: &[String]) -> bool {
-    pre.iter()
-        .all(|p| marking.get(p).copied().unwrap_or(0) > 0)
+    pre.iter().all(|p| marking.get(p).copied().unwrap_or(0) > 0)
 }
 
 /// Fire a transition: consume tokens from preset, produce tokens into postset.
@@ -326,11 +325,7 @@ pub fn wasm_compute_precision(
         .filter_map(|p| p.marking.map(|m| (p.id.clone(), m)))
         .collect();
 
-    let final_marking: Marking = net
-        .final_markings
-        .first()
-        .cloned()
-        .unwrap_or_default();
+    let final_marking: Marking = net.final_markings.first().cloned().unwrap_or_default();
 
     let result = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
@@ -427,7 +422,10 @@ mod tests {
                         .iter()
                         .map(|&a| {
                             let mut attrs = HashMap::default();
-                            attrs.insert(activity_key.to_string(), AttributeValue::String(a.to_string()));
+                            attrs.insert(
+                                activity_key.to_string(),
+                                AttributeValue::String(a.to_string()),
+                            );
                             crate::models::Event { attributes: attrs }
                         })
                         .collect(),
@@ -587,11 +585,7 @@ mod tests {
         let mut marking = Marking::default();
         marking.insert("p1".into(), 1);
         marking.insert("p2".into(), 0);
-        fire(
-            &mut marking,
-            &["p1".to_string()],
-            &["p2".to_string()],
-        );
+        fire(&mut marking, &["p1".to_string()], &["p2".to_string()]);
         assert_eq!(marking.get("p1").copied().unwrap_or(0), 0);
         assert_eq!(marking.get("p2").copied().unwrap_or(0), 1);
     }

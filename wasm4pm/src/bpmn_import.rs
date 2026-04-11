@@ -44,13 +44,16 @@ struct BpmnNode {
 // ─── XML parsing helpers ────────────────────────────────────────────────────
 
 /// Classify a BPMN element by its local tag name and attributes.
-fn classify_element<'a, 'input>(local_name: &str, node: roxmltree::Node<'a, 'input>) -> BpmnNodeType {
+fn classify_element<'a, 'input>(
+    local_name: &str,
+    node: roxmltree::Node<'a, 'input>,
+) -> BpmnNodeType {
     match local_name {
         "startEvent" => BpmnNodeType::StartEvent,
         "endEvent" => BpmnNodeType::EndEvent,
         "task" => BpmnNodeType::Task,
-        "userTask" | "serviceTask" | "sendTask" | "receiveTask" | "callActivity"
-        | "scriptTask" | "businessRuleTask" => {
+        "userTask" | "serviceTask" | "sendTask" | "receiveTask" | "callActivity" | "scriptTask"
+        | "businessRuleTask" => {
             let is_connector = attr_val(node, "pm4py:connector").as_deref() == Some("true");
             let is_silent = attr_val(node, "pm4py:silent").as_deref() == Some("true");
             if is_connector {
@@ -75,10 +78,11 @@ fn attr_val<'a, 'input>(node: roxmltree::Node<'a, 'input>, key: &str) -> Option<
     node.attribute(key).map(|s| s.to_string())
 }
 
+/// Type alias for the BPMN graph extraction result.
+type BpmnGraphResult = Result<(HashMap<String, BpmnNode>, Vec<(String, String)>), String>;
+
 /// Extract all BPMN elements and sequence flows from the XML.
-fn extract_bpmn_graph(
-    xml: &str,
-) -> Result<(HashMap<String, BpmnNode>, Vec<(String, String)>), String> {
+fn extract_bpmn_graph(xml: &str) -> BpmnGraphResult {
     let mut nodes: HashMap<String, BpmnNode> = HashMap::new();
     let mut flows: Vec<(String, String)> = Vec::new();
 

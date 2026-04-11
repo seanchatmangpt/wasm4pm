@@ -136,6 +136,7 @@ impl BinaryRelation {
     }
 
     /// O(n²) — nodes with no incoming edges (in-degree == 0).
+    #[allow(clippy::needless_range_loop)]
     pub fn get_start_nodes(&self) -> Vec<usize> {
         let mut has_incoming = vec![false; self.n];
         for i in 0..self.n {
@@ -149,6 +150,7 @@ impl BinaryRelation {
     }
 
     /// O(n²) — nodes with no outgoing edges (out-degree == 0).
+    #[allow(clippy::needless_range_loop)]
     pub fn get_end_nodes(&self) -> Vec<usize> {
         let mut has_outgoing = vec![false; self.n];
         for i in 0..self.n {
@@ -679,14 +681,14 @@ impl PowlArena {
                     .iter()
                     .map(|&c| self.copy_node_into(dest, c))
                     .collect();
-                let dg_idx = dest.add_decision_graph(
+
+                dest.add_decision_graph(
                     new_children,
                     dg.order.clone(),
                     dg.start_nodes.clone(),
                     dg.end_nodes.clone(),
                     dg.empty_path,
-                );
-                dg_idx
+                )
             }
         }
     }

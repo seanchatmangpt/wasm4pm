@@ -74,7 +74,7 @@ pub fn extract_case_features(
                             );
                         }
                         "elapsed_time" => {
-                            if let Some(elapsed) = compute_elapsed_time(&trace, timestamp_key) {
+                            if let Some(elapsed) = compute_elapsed_time(trace, timestamp_key) {
                                 feature_vec.insert(
                                     "elapsed_time".to_string(),
                                     Value::Number(elapsed.into()),
@@ -82,19 +82,19 @@ pub fn extract_case_features(
                             }
                         }
                         "activity_counts" => {
-                            let counts = count_activities(&trace, activity_key);
+                            let counts = count_activities(trace, activity_key);
                             for (act, count) in counts {
                                 let key = format!("activity_{}", act);
                                 feature_vec.insert(key, Value::Number(count.into()));
                             }
                         }
                         "rework_count" => {
-                            let rework = count_rework(&trace, activity_key);
+                            let rework = count_rework(trace, activity_key);
                             feature_vec
                                 .insert("rework_count".to_string(), Value::Number(rework.into()));
                         }
                         "unique_activities" => {
-                            let unique = count_unique_activities(&trace, activity_key);
+                            let unique = count_unique_activities(trace, activity_key);
                             feature_vec.insert(
                                 "unique_activities".to_string(),
                                 Value::Number(unique.into()),
@@ -102,7 +102,7 @@ pub fn extract_case_features(
                         }
                         "avg_inter_event_time" => {
                             if let Some(avg_time) =
-                                compute_avg_inter_event_time(&trace, timestamp_key)
+                                compute_avg_inter_event_time(trace, timestamp_key)
                             {
                                 feature_vec.insert(
                                     "avg_inter_event_time".to_string(),
@@ -225,7 +225,7 @@ pub fn extract_prefix_features(
 
                     // Remaining time: total duration - elapsed in prefix
                     if let (Some(total_duration), Some(prefix_elapsed)) = (
-                        compute_elapsed_time(&trace, timestamp_key),
+                        compute_elapsed_time(trace, timestamp_key),
                         compute_elapsed_time_in_events(prefix_events, timestamp_key),
                     ) {
                         let remaining = (total_duration - prefix_elapsed).max(0);
@@ -318,7 +318,7 @@ pub fn export_features_csv(features_json: &str) -> Result<String, JsValue> {
                         Value::Bool(b) => b.to_string(),
                         _ => String::new(),
                     })
-                    .unwrap_or_else(|| String::new());
+                    .unwrap_or_default();
                 csv_escape(&value_str)
             })
             .collect();
@@ -382,7 +382,7 @@ pub fn export_features_json(
                             );
                         }
                         "elapsed_time" => {
-                            if let Some(elapsed) = compute_elapsed_time(&trace, timestamp_key) {
+                            if let Some(elapsed) = compute_elapsed_time(trace, timestamp_key) {
                                 feature_vec.insert(
                                     "elapsed_time".to_string(),
                                     Value::Number(elapsed.into()),
@@ -390,19 +390,19 @@ pub fn export_features_json(
                             }
                         }
                         "activity_counts" => {
-                            let counts = count_activities(&trace, activity_key);
+                            let counts = count_activities(trace, activity_key);
                             for (act, count) in counts {
                                 let key = format!("activity_{}", act);
                                 feature_vec.insert(key, Value::Number(count.into()));
                             }
                         }
                         "rework_count" => {
-                            let rework = count_rework(&trace, activity_key);
+                            let rework = count_rework(trace, activity_key);
                             feature_vec
                                 .insert("rework_count".to_string(), Value::Number(rework.into()));
                         }
                         "unique_activities" => {
-                            let unique = count_unique_activities(&trace, activity_key);
+                            let unique = count_unique_activities(trace, activity_key);
                             feature_vec.insert(
                                 "unique_activities".to_string(),
                                 Value::Number(unique.into()),
@@ -410,7 +410,7 @@ pub fn export_features_json(
                         }
                         "avg_inter_event_time" => {
                             if let Some(avg_time) =
-                                compute_avg_inter_event_time(&trace, timestamp_key)
+                                compute_avg_inter_event_time(trace, timestamp_key)
                             {
                                 feature_vec.insert(
                                     "avg_inter_event_time".to_string(),
@@ -428,7 +428,7 @@ pub fn export_features_json(
                 // Add target variable
                 match target.as_str() {
                     "remaining_time" => {
-                        if let Some(elapsed) = compute_elapsed_time(&trace, timestamp_key) {
+                        if let Some(elapsed) = compute_elapsed_time(trace, timestamp_key) {
                             let remaining = elapsed / 2;
                             feature_vec.insert(
                                 "remaining_time".to_string(),
@@ -553,7 +553,7 @@ fn compute_elapsed_time(trace: &Trace, timestamp_key: &str) -> Option<i64> {
 
 /// Compute elapsed time for a slice of events
 fn compute_elapsed_time_in_events(events: &[Event], timestamp_key: &str) -> Option<i64> {
-    if events.len() < 1 {
+    if events.is_empty() {
         return Some(0);
     }
 

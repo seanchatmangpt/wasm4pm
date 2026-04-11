@@ -152,7 +152,7 @@ impl StreamingAlgorithm for StreamingSkeletonBuilder {
         let id = self.intern(activity);
         self.open_traces
             .entry(case_id.to_owned())
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(id);
 
         // Grow activity_counts if needed

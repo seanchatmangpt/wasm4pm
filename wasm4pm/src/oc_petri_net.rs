@@ -208,5 +208,104 @@ pub fn oc_petri_net_info() -> JsValue {
         ]
     });
 
-    to_js(&info).unwrap_or_else(|_| JsValue::NULL)
+    to_js(&info).unwrap_or(JsValue::NULL)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::models::{AttributeValue, OCELEvent, OCELObject, OCEL};
+
+    fn create_test_ocel() -> OCEL {
+        OCEL {
+            event_types: vec!["A".to_string(), "B".to_string()],
+            object_types: vec!["Order".to_string()],
+            events: vec![
+                OCELEvent {
+                    id: "e1".to_string(),
+                    event_type: "A".to_string(),
+                    timestamp: "2024-01-01T10:00:00Z".to_string(),
+                    attributes: std::collections::HashMap::new(),
+                    object_ids: vec!["order1".to_string()],
+                    object_refs: vec![],
+                },
+                OCELEvent {
+                    id: "e2".to_string(),
+                    event_type: "B".to_string(),
+                    timestamp: "2024-01-01T11:00:00Z".to_string(),
+                    attributes: std::collections::HashMap::new(),
+                    object_ids: vec!["order1".to_string()],
+                    object_refs: vec![],
+                },
+            ],
+            objects: vec![OCELObject {
+                id: "order1".to_string(),
+                object_type: "Order".to_string(),
+                attributes: std::collections::HashMap::new(),
+                changes: vec![],
+                embedded_relations: vec![],
+            }],
+            object_relations: vec![],
+        }
+    }
+
+    #[test]
+    fn test_oc_petri_net_discovery() {
+        let ocel = create_test_ocel();
+        let handle = get_or_init_state()
+            .store_object(StoredObject::OCEL(ocel))
+            .expect("Failed to store OCEL");
+
+        let result = discover_oc_petri_net(&handle, "alpha++");
+        assert!(result.is_ok(), "Petri net discovery should succeed");
+    }
+
+    #[test]
+    fn test_oc_petri_net_invalid_handle() {
+        let result = discover_oc_petri_net("invalid", "alpha++");
+        assert!(result.is_err(), "Should fail on invalid handle");
+    }
+
+    #[test]
+    fn test_oc_petri_net_returns_json() {
+        let ocel = create_test_ocel();
+        let handle = get_or_init_state()
+            .store_object(StoredObject::OCEL(ocel))
+            .expect("Failed to store OCEL");
+
+        let result = discover_oc_petri_net(&handle, "alpha++").expect("Discovery failed");
+        let json = serde_wasm_bindgen::from_value::<serde_json::Value>(result)
+            .expect("Should return valid JSON");
+        assert!(json.is_object());
+    }
+
+    #[test]
+    fn test_oc_petri_net_empty_ocel() {
+        let ocel = OCEL {
+            event_types: vec![],
+            object_types: vec![],
+            events: vec![],
+            objects: vec![],
+            object_relations: vec![],
+        };
+
+        let handle = get_or_init_state()
+            .store_object(StoredObject::OCEL(ocel))
+            .expect("Failed to store OCEL");
+
+        let result = discover_oc_petri_net(&handle, "alpha++");
+        // Should handle empty OCEL gracefully
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_oc_petri_net_heuristic_algorithm() {
+        let ocel = create_test_ocel();
+        let handle = get_or_init_state()
+            .store_object(StoredObject::OCEL(ocel))
+            .expect("Failed to store OCEL");
+
+        let result = discover_oc_petri_net(&handle, "heuristic");
+        assert!(result.is_ok(), "Heuristic discovery should succeed");
+    }
 }

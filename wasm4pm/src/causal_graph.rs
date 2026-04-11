@@ -20,7 +20,6 @@
 /// A causal graph identifies which activities have a causal relationship:
 /// - A → B is causal if A always precedes B (B never precedes A)
 /// - This is the alpha miner's definition of causality
-
 use crate::error::{codes, wasm_err};
 use crate::models::EventLog;
 use crate::state::{get_or_init_state, StoredObject};

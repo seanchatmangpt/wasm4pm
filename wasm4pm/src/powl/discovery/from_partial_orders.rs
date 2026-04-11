@@ -61,6 +61,6 @@ mod tests {
         let config = DiscoveryConfig::default();
 
         let _root = discover_from_partial_orders(&log, &config, &mut arena).unwrap();
-        assert!(arena.len() > 0);
+        assert!(!arena.is_empty());
     }
 }

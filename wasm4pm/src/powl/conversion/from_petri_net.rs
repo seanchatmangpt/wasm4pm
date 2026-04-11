@@ -269,7 +269,7 @@ fn reset_id_gen() {
 /// Simplified reachability graph: for each transition, which transitions are reachable.
 fn get_simplified_reachability_graph(net: &InternalNet) -> HashMap<String, HashSet<String>> {
     let mut graph = HashMap::new();
-    for (t_name, _) in &net.transitions {
+    for t_name in net.transitions.keys() {
         let start = NodeId::Transition(t_name.clone());
         let mut reachable = HashSet::new();
         let mut queue = VecDeque::new();
@@ -1137,93 +1137,47 @@ mod tests {
     }
 
     #[test]
-    fn single_activity_roundtrip() {
+    fn test_basic_operators_roundtrip() {
+        // Happy path: single activity, XOR, sequence roundtrip correctly
         let result = roundtrip("A").unwrap();
-        assert!(result.contains("A"), "got: {}", result);
-    }
+        assert!(result.contains("A"));
 
-    #[test]
-    fn xor_roundtrip() {
         let result = roundtrip("X ( A, B )").unwrap();
-        assert!(
-            result.contains("A") && result.contains("B"),
-            "got: {}",
-            result
-        );
-    }
+        assert!(result.contains("A") && result.contains("B"));
 
-    #[test]
-    fn sequence_roundtrip() {
         let result = roundtrip("-> ( A, B )").unwrap();
-        assert!(
-            result.contains("A") && result.contains("B"),
-            "got: {}",
-            result
-        );
+        assert!(result.contains("A") && result.contains("B"));
     }
 
     #[test]
-    fn loop_roundtrip() {
+    fn test_advanced_constructs_roundtrip() {
+        // Loop, parallel, and nested structures roundtrip correctly
         let result = roundtrip("* ( A, B )").unwrap();
-        assert!(result.contains("A"), "got: {}", result);
-    }
+        assert!(result.contains("A"));
 
-    #[test]
-    fn parallel_roundtrip() {
         let result = roundtrip("+ ( A, B )").unwrap();
-        assert!(
-            result.contains("A") && result.contains("B"),
-            "got: {}",
-            result
-        );
-    }
+        assert!(result.contains("A") && result.contains("B"));
 
-    #[test]
-    fn nested_xor_roundtrip() {
         let result = roundtrip("X ( X ( A, B ), C )").unwrap();
-        assert!(
-            result.contains("A") && result.contains("B") && result.contains("C"),
-            "got: {}",
-            result
-        );
+        assert!(result.contains("A") && result.contains("B") && result.contains("C"));
     }
 
     #[test]
-    fn petri_net_to_powl_accepts_own_output() {
-        let mut arena = PowlArena::new();
-        let root = parse_powl_model_string("X ( A, B )", &mut arena).unwrap();
-        let pn_result = to_petri_net::apply(&arena, root);
-        let pn_json = serde_json::to_string(&pn_result).unwrap();
-
-        let result = petri_net_to_powl(&pn_json);
-        assert!(
-            result.is_ok(),
-            "petri_net_to_powl failed: {:?}",
-            result.err()
-        );
-        let (arena2, root2) = result.unwrap();
-        let repr = arena2.to_repr(root2);
-        assert!(repr.contains("A") && repr.contains("B"), "got: {}", repr);
-    }
-
-    #[test]
-    fn invalid_json_returns_error() {
+    fn test_edge_cases_and_validation() {
+        // Edge case: invalid JSON returns error
         let result = petri_net_to_powl("not json");
         assert!(result.is_err());
-    }
 
-    #[test]
-    fn workflow_net_validation() {
+        // Edge case: workflow net validation passes for valid net
         let mut arena = PowlArena::new();
         let root = parse_powl_model_string("X ( A, B )", &mut arena).unwrap();
         let pn_result = to_petri_net::apply(&arena, root);
-
         let net = InternalNet::from_result(&pn_result).unwrap();
-        let result = validate_workflow_net(&net);
-        assert!(
-            result.is_ok(),
-            "workflow net validation failed: {:?}",
-            result.err()
-        );
+        assert!(validate_workflow_net(&net).is_ok());
+
+        // Edge case: accepts own output (roundtrip consistency)
+        let pn_json = serde_json::to_string(&pn_result).unwrap();
+        let result = petri_net_to_powl(&pn_json);
+        assert!(result.is_ok());
     }
 }

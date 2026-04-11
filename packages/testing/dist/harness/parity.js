@@ -5,7 +5,7 @@
  * that `run(config)` executes. This harness captures both outputs and compares them
  * structurally.
  */
-import { PLAN_STEP_TYPE_VALUES } from '@wasm4pm/contracts';
+import { PLAN_STEP_TYPE_VALUES } from '@pictl/contracts';
 /**
  * Compare explain output with actual plan steps.
  * Returns a detailed parity result.

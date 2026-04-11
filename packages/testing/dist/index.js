@@ -1,4 +1,4 @@
-// @wasm4pm/testing — Testing utilities, fixtures, mocks, and harnesses
+// @pictl/testing — Testing utilities, fixtures, mocks, and harnesses
 // Fixtures
 export * from './fixtures/index.js';
 // Mocks

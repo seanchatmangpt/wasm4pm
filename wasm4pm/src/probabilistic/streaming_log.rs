@@ -352,24 +352,24 @@ mod tests {
         let mut missing = Vec::new();
         for (key, &true_freq) in &exact_edges {
             let est = dfg.edges.iter().find(|e| e.from == key.0 && e.to == key.1);
-            if est.is_none() {
-                missing.push(key.clone());
-            } else {
-                let diff = (est.unwrap().frequency as i32 - true_freq as i32).abs();
+            if let Some(edge) = est {
+                let diff = (edge.frequency as i32 - true_freq as i32).abs();
                 assert!(
                     diff <= true_freq as i32,
                     "Edge {:?}: estimate {} differs from true {} by more than 100%",
                     key,
-                    est.unwrap().frequency,
+                    edge.frequency,
                     true_freq
                 );
-                let ratio = est.unwrap().frequency as f64 / true_freq as f64;
+                let ratio = edge.frequency as f64 / true_freq as f64;
                 assert!(
                     ratio < 2.0,
                     "Edge {:?}: estimate is {}x true frequency, too much overestimation",
                     key,
                     ratio
                 );
+            } else {
+                missing.push(key.clone());
             }
         }
         // Allow a few missing edges due to hash collisions on small datasets

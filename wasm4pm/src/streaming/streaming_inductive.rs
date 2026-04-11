@@ -89,7 +89,7 @@ impl StreamingInductiveBuilder {
         let mut successors: HashMap<u32, HashSet<u32>> = HashMap::new();
         let mut predecessors: HashMap<u32, HashSet<u32>> = HashMap::new();
 
-        for (&(from, to), _) in &self.edge_counts {
+        for &(from, to) in self.edge_counts.keys() {
             successors.entry(from).or_default().insert(to);
             predecessors.entry(to).or_default().insert(from);
         }
@@ -275,7 +275,7 @@ impl StreamingInductiveBuilder {
 
         // Find parallel pairs: both (a,b) and (b,a) exist in edge_counts
         let mut parallel_pairs: HashSet<(u32, u32)> = HashSet::new();
-        for (&(from, to), _) in &self.edge_counts {
+        for &(from, to) in self.edge_counts.keys() {
             if self.edge_counts.contains_key(&(to, from)) {
                 parallel_pairs.insert((from.min(to), from.max(to)));
             }
@@ -730,7 +730,7 @@ impl StreamingAlgorithm for StreamingInductiveBuilder {
         let id = self.intern(activity);
         self.open_traces
             .entry(case_id.to_owned())
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(id);
 
         if id as usize >= self.activity_counts.len() {

@@ -63,8 +63,7 @@ pub fn discover_ilp_petri_net(
                 petri_net.initial_marking.insert(source_place.clone(), 1);
 
                 // Create intermediate places for directly-follows relations
-                let mut place_counter = 0;
-                for (from_act, to_act) in &directly_follows {
+                for (place_counter, (from_act, to_act)) in directly_follows.iter().enumerate() {
                     let from_trans = activity_to_transition.get(from_act).unwrap();
                     let to_trans = activity_to_transition.get(to_act).unwrap();
 
@@ -88,8 +87,6 @@ pub fn discover_ilp_petri_net(
                         to: to_trans.clone(),
                         weight: Some(1),
                     });
-
-                    place_counter += 1;
                 }
 
                 // Connect source place to start activities
@@ -152,7 +149,7 @@ pub fn discover_ilp_petri_net(
                 }
 
                 let fitness = fitting_traces as f64 / log.traces.len().max(1) as f64;
-                let precision = calculate_precision(&petri_net, &log, activity_key);
+                let precision = calculate_precision(&petri_net, log, activity_key);
                 Ok((petri_net, fitness, precision))
             }
             Some(_) => Err(JsValue::from_str("Object is not an EventLog")),

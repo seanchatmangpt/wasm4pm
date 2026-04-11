@@ -27,7 +27,7 @@ pub struct BloomFilter<const BITS: usize> {
 
 impl<const BITS: usize> BloomFilter<BITS> {
     /// Number of u64 words needed to store BITS bits.
-    const WORDS: usize = (BITS + 63) / 64;
+    const WORDS: usize = BITS.div_ceil(64);
 
     /// Create a new Bloom filter with the given number of hash functions.
     ///
