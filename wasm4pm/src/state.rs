@@ -5,6 +5,7 @@ use crate::models::{
     DeclareModel, DirectlyFollowsGraph, EventLog, NGramPredictor, PetriNet,
     StreamingConformanceChecker, TemporalProfile, OCEL,
 };
+#[cfg(feature = "streaming_basic")]
 use crate::streaming::{StreamingDfgBuilder, StreamingHeuristicBuilder, StreamingSkeletonBuilder};
 #[cfg(feature = "streaming_full")]
 use crate::streaming_pipeline::StreamingPipeline;
@@ -29,8 +30,11 @@ pub enum StoredObject {
     DeclareModel(DeclareModel),
     #[allow(dead_code)]
     JsonString(String),
+    #[cfg(feature = "streaming_basic")]
     StreamingDfgBuilder(StreamingDfgBuilder),
+    #[cfg(feature = "streaming_basic")]
     StreamingSkeletonBuilder(StreamingSkeletonBuilder),
+    #[cfg(feature = "streaming_basic")]
     StreamingHeuristicBuilder(StreamingHeuristicBuilder),
     StreamingConformanceChecker(StreamingConformanceChecker),
     TemporalProfile(TemporalProfile),
@@ -163,10 +167,13 @@ impl Clone for StoredObject {
             }
             StoredObject::DeclareModel(dm) => StoredObject::DeclareModel(dm.clone()),
             StoredObject::JsonString(s) => StoredObject::JsonString(s.clone()),
+            #[cfg(feature = "streaming_basic")]
             StoredObject::StreamingDfgBuilder(b) => StoredObject::StreamingDfgBuilder(b.clone()),
+            #[cfg(feature = "streaming_basic")]
             StoredObject::StreamingSkeletonBuilder(b) => {
                 StoredObject::StreamingSkeletonBuilder(b.clone())
             }
+            #[cfg(feature = "streaming_basic")]
             StoredObject::StreamingHeuristicBuilder(b) => {
                 StoredObject::StreamingHeuristicBuilder(b.clone())
             }

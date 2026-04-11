@@ -100,6 +100,7 @@ pub mod filters;
 pub mod final_analytics;
 #[cfg(feature = "hand_rolled_stats")]
 pub mod hand_stats;
+pub mod hot_kernels;
 pub mod hierarchical;
 pub mod incremental_dfg;
 pub mod more_discovery;
@@ -260,6 +261,21 @@ pub mod conformance_cache;
 // Correlation miner — DFG discovery without case identifiers (always available)
 pub mod correlation_miner;
 
+// Self-healing — circuit breaker, retry policy, health check (ported from knhk)
+pub mod self_healing;
+
+// SPC — Western Electric rules + process capability (always available)
+pub mod spc;
+
+// Guard evaluation engine — predicate/resource/state/counter/time-window guards (ported from knhk)
+pub mod guards;
+
+// 43-pattern dispatch — van der Aalst workflow pattern execution (ported from knhk)
+pub mod pattern_dispatch;
+
+// Reinforcement learning — Q-Learning and SARSA agents (ported from knhk)
+pub mod reinforcement;
+
 // Suppress unused warnings for re-exported modules
 #[allow(unused)]
 use state::*;
@@ -344,134 +360,13 @@ pub fn simd_token_replay(log_handle: &str, activity_key: &str) -> String {
 // OCEL Support (Object-Centric Event Logs)
 // -------------------------------------------------------------------------
 
-/// Load OCEL 2.0 from JSON string.
-///
-/// Parses JSON into OCEL struct, stores in AppState, returns handle.
-#[cfg(feature = "ocel")]
-#[wasm_bindgen]
-pub fn load_ocel2_from_json(content: &str) -> Result<String, JsValue> {
-    crate::ocel_io::load_ocel2_from_json(content)
-}
-
-/// Export OCEL 2.0 to JSON string (pretty-printed).
-///
-/// Retrieves OCEL from state by handle, serializes to JSON string.
-#[cfg(feature = "ocel")]
-#[wasm_bindgen]
-pub fn export_ocel2_to_json(handle: &str) -> Result<String, JsValue> {
-    crate::ocel_io::export_ocel2_to_json(handle)
-}
-
-/// Validate OCEL 2.0 structure.
-///
-/// Checks referential integrity, timestamps, object relations.
-/// Returns validation report as JSON: { valid: bool, errors: Vec<String> }
-#[cfg(feature = "ocel")]
-#[wasm_bindgen]
-pub fn validate_ocel(handle: &str) -> Result<JsValue, JsValue> {
-    crate::ocel_io::validate_ocel(handle)
-}
-
-/// List all unique object types in an OCEL.
-#[cfg(feature = "ocel")]
-#[wasm_bindgen]
-pub fn list_ocel_object_types(ocel_handle: &str) -> Result<JsValue, JsValue> {
-    crate::ocel_flatten::list_ocel_object_types(ocel_handle)
-}
-
-/// Get statistics about OCEL structure and content.
-#[cfg(feature = "ocel")]
-#[wasm_bindgen]
-pub fn get_ocel_type_statistics(ocel_handle: &str) -> Result<JsValue, JsValue> {
-    crate::ocel_flatten::get_ocel_type_statistics(ocel_handle)
-}
-
-/// Flatten an OCEL to an EventLog by projecting onto a single object type.
-///
-/// For the given object_type:
-/// - Each object becomes a case (trace)
-/// - Events referencing that object become the events in the trace
-/// - Events are sorted by timestamp within each trace
-#[cfg(feature = "ocel")]
-#[wasm_bindgen]
-pub fn flatten_ocel_to_eventlog(ocel_handle: &str, object_type: &str) -> Result<String, JsValue> {
-    crate::ocel_flatten::flatten_ocel_to_eventlog(ocel_handle, object_type)
-}
-
-/// Discover Object-Centric Petri Nets from OCEL.
-///
-/// For each object type, flattens the OCEL and discovers a Petri Net.
-/// Returns JSON mapping object_type -> PetriNet.
-#[cfg(feature = "ocel")]
-#[wasm_bindgen]
-pub fn discover_oc_petri_net(ocel_handle: &str, algorithm: &str) -> Result<JsValue, JsValue> {
-    crate::oc_petri_net::discover_oc_petri_net(ocel_handle, algorithm)
-}
-
-/// Check conformance of OCEL against an Object-Centric Petri Net.
-///
-/// For each object type:
-/// 1. Flatten OCEL → EventLog
-/// 2. Discover reference Petri Net
-/// 3. Token-replay each trace
-/// 4. Compute fitness / precision metrics
-#[cfg(feature = "ocel")]
-#[wasm_bindgen]
-pub fn oc_conformance_check(ocel_handle: &str) -> Result<JsValue, JsValue> {
-    crate::oc_conformance::oc_conformance_check(ocel_handle)
-}
-
-/// Analyze OCEL performance: build performance-annotated DFG for each object type.
-///
-/// Computes mean/median/p95 cycle times between activities.
-#[cfg(feature = "ocel")]
-#[wasm_bindgen]
-pub fn oc_performance_analysis(ocel_handle: &str) -> Result<JsValue, JsValue> {
-    crate::oc_performance::oc_performance_analysis(ocel_handle)
-}
-
-/// Analyze resource utilization: total events, time periods, concurrent cases, top activities.
-#[cfg(feature = "ocel")]
-#[wasm_bindgen]
-pub fn analyze_resource_utilization(
-    log_handle: &str,
-    resource_key: &str,
-    timestamp_key: &str,
-) -> Result<JsValue, JsValue> {
-    crate::resource_analysis::analyze_resource_utilization(log_handle, resource_key, timestamp_key)
-}
-
-/// Analyze resource-activity matrix: which resources perform which activities.
-#[cfg(feature = "ocel")]
-#[wasm_bindgen]
-pub fn analyze_resource_activity_matrix(
-    log_handle: &str,
-    resource_key: &str,
-    activity_key: &str,
-) -> Result<JsValue, JsValue> {
-    crate::resource_analysis::analyze_resource_activity_matrix(
-        log_handle,
-        resource_key,
-        activity_key,
-    )
-}
-
-/// Identify resource bottlenecks: waiting times, processing times, queue sizes.
-#[cfg(feature = "ocel")]
-#[wasm_bindgen]
-pub fn identify_resource_bottlenecks(
-    log_handle: &str,
-    resource_key: &str,
-    timestamp_key: &str,
-    activity_key: &str,
-) -> Result<JsValue, JsValue> {
-    crate::resource_analysis::identify_resource_bottlenecks(
-        log_handle,
-        resource_key,
-        timestamp_key,
-        activity_key,
-    )
-}
+// OCEL functions are exported directly from their modules with cfg gates:
+// - ocel_io.rs: load_ocel2_from_json, export_ocel2_to_json, validate_ocel
+// - ocel_flatten.rs: list_ocel_object_types, get_ocel_type_statistics, flatten_ocel_to_eventlog
+// - oc_petri_net.rs: discover_oc_petri_net
+// - oc_conformance.rs: oc_conformance_check
+// - oc_performance.rs: oc_performance_analysis
+// - resource_analysis.rs: analyze_resource_utilization, analyze_resource_activity_matrix, identify_resource_bottlenecks
 
 // Conditional re-exports for statistics
 // When statrs feature is enabled, re-export statrs types
@@ -480,4 +375,38 @@ pub use statrs::statistics::{Data, Median};
 
 // When hand_rolled_stats feature is enabled and statrs is not, re-export hand-rolled types
 #[cfg(all(feature = "hand_rolled_stats", not(feature = "statrs")))]
-pub use hand_stats::Data;
+pub use hand_stats::{Median};
+
+// Provide Data::new() compatible API for hand_rolled stats
+#[cfg(all(feature = "hand_rolled_stats", not(feature = "statrs")))]
+pub struct Data {
+    inner: Vec<f64>,
+}
+
+#[cfg(all(feature = "hand_rolled_stats", not(feature = "statrs")))]
+impl Data {
+    /// Create a new Data container (statrs-compatible API)
+    pub fn new(data: Vec<f64>) -> Self {
+        Self { inner: data }
+    }
+
+    /// Calculate median
+    pub fn median(&self) -> f64 {
+        hand_stats::median(&mut self.inner.clone()).unwrap_or(0.0)
+    }
+
+    /// Calculate mean
+    pub fn mean(&self) -> f64 {
+        hand_stats::mean(&self.inner).unwrap_or(0.0)
+    }
+
+    /// Calculate percentile
+    pub fn percentile(&self, p: f64) -> f64 {
+        hand_stats::percentile(&mut self.inner.clone(), p).unwrap_or(0.0)
+    }
+
+    /// Calculate standard deviation
+    pub fn std_deviation(&self) -> f64 {
+        hand_stats::std_deviation(&self.inner).unwrap_or(0.0)
+    }
+}

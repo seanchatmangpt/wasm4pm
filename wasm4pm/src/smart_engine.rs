@@ -11,12 +11,12 @@
 //! 3. **FusedMultiPass** — single DFG construction shared across DFG-based algorithms
 //!    (heuristic, skeleton, optimized_dfg). The DFG is computed once and reused.
 
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
 use wasm_bindgen::prelude::*;
 
 use crate::models::{DFGNode, DirectlyFollowsGraph, DirectlyFollowsRelation};
+#[cfg(feature = "streaming_basic")]
 use crate::streaming::{ActivityInterner, Interner};
-use rustc_hash::FxHashMap;
 
 // ============================================================================
 // 1. LRU Cache
@@ -29,7 +29,7 @@ use rustc_hash::FxHashMap;
 /// the cache is agnostic to result types.
 struct LruCache<V> {
     /// key -> (value, access_order)
-    map: FxHashMap<String, (V, u64)>,
+    map: HashMap<String, (V, u64)>,
     /// Maximum number of entries before eviction
     capacity: usize,
     /// Monotonically increasing access counter for LRU ordering
@@ -44,7 +44,7 @@ impl<V: Clone> LruCache<V> {
     /// Create a new LRU cache with the given capacity.
     fn new(capacity: usize) -> Self {
         LruCache {
-            map: FxHashMap::default(),
+            map: HashMap::default(),
             capacity,
             access_counter: 0,
             hits: 0,
@@ -217,8 +217,6 @@ struct FusedMultiPass {
     dfg_cache: Option<DirectlyFollowsGraph>,
     /// Fingerprint of the log that produced the cached DFG
     dfg_log_hash: u64,
-    /// Activity string interner
-    interner: Interner,
     /// Number of times `compute_dfg` was called (first call does real work)
     dfg_compute_calls: usize,
 }
@@ -229,7 +227,6 @@ impl FusedMultiPass {
         FusedMultiPass {
             dfg_cache: None,
             dfg_log_hash: 0,
-            interner: Interner::new(),
             dfg_compute_calls: 0,
         }
     }
@@ -258,76 +255,55 @@ impl FusedMultiPass {
             }
         }
 
-        // Build DFG via interner for integer-keyed edge counting
-        let mut node_counts: FxHashMap<u32, usize> = FxHashMap::default();
-        let mut edge_counts: FxHashMap<(u32, u32), usize> = FxHashMap::default();
-        let mut start_counts: FxHashMap<u32, usize> = FxHashMap::default();
-        let mut end_counts: FxHashMap<u32, usize> = FxHashMap::default();
+        // Build DFG (without interner for non-streaming profiles)
+        let mut node_counts: HashMap<String, usize> = HashMap::new();
+        let mut edge_counts: HashMap<(String, String), usize> = HashMap::new();
+        let mut start_counts: HashMap<String, usize> = HashMap::new();
+        let mut end_counts: HashMap<String, usize> = HashMap::new();
 
         for trace in traces {
             if trace.is_empty() {
                 continue;
             }
 
-            // Encode activities to integer IDs
-            let encoded: Vec<u32> = trace.iter().map(|a| self.interner.intern(a)).collect();
-
             // Node frequencies
-            for &id in &encoded {
-                *node_counts.entry(id).or_insert(0) += 1;
+            for activity in trace {
+                *node_counts.entry(activity.clone()).or_insert(0) += 1;
             }
 
             // Directly-follows edges
-            for window in encoded.windows(2) {
-                *edge_counts.entry((window[0], window[1])).or_insert(0) += 1;
+            for window in trace.windows(2) {
+                *edge_counts.entry((window[0].clone(), window[1].clone())).or_insert(0) += 1;
             }
 
             // Start/end activities
-            *start_counts.entry(encoded[0]).or_insert(0) += 1;
-            *end_counts.entry(*encoded.last().unwrap()).or_insert(0) += 1;
+            *start_counts.entry(trace[0].clone()).or_insert(0) += 1;
+            *end_counts.entry(trace.last().unwrap().clone()).or_insert(0) += 1;
         }
 
-        // Materialise DFG
-        let vocab = self.interner.vocab();
-        let mut nodes = Vec::with_capacity(vocab.len());
-        for (i, name) in vocab.iter().enumerate() {
+        let mut nodes = Vec::with_capacity(node_counts.len());
+        for (id, freq) in &node_counts {
             nodes.push(DFGNode {
-                id: name.clone(),
-                label: name.clone(),
-                frequency: node_counts.get(&(i as u32)).copied().unwrap_or(0),
+                id: id.clone(),
+                label: id.clone(),
+                frequency: *freq,
             });
         }
 
         let mut edges = Vec::with_capacity(edge_counts.len());
-        for ((f, t), &freq) in &edge_counts {
+        for ((from, to), freq) in &edge_counts {
             edges.push(DirectlyFollowsRelation {
-                from: self.interner.lookup(*f).unwrap_or("").to_string(),
-                to: self.interner.lookup(*t).unwrap_or("").to_string(),
-                frequency: freq,
+                from: from.clone(),
+                to: to.clone(),
+                frequency: *freq,
             });
-        }
-
-        let mut start_activities: std::collections::HashMap<String, usize> =
-            std::collections::HashMap::new();
-        for (&id, &cnt) in &start_counts {
-            if let Some(name) = self.interner.lookup(id) {
-                start_activities.insert(name.to_string(), cnt);
-            }
-        }
-
-        let mut end_activities: std::collections::HashMap<String, usize> =
-            std::collections::HashMap::new();
-        for (&id, &cnt) in &end_counts {
-            if let Some(name) = self.interner.lookup(id) {
-                end_activities.insert(name.to_string(), cnt);
-            }
         }
 
         let dfg = DirectlyFollowsGraph {
             nodes,
             edges,
-            start_activities,
-            end_activities,
+            start_activities: start_counts,
+            end_activities: end_counts,
         };
 
         self.dfg_log_hash = hash;
@@ -423,8 +399,186 @@ impl FusedMultiPass {
     fn reset(&mut self) {
         self.dfg_cache = None;
         self.dfg_log_hash = 0;
-        self.interner = Interner::new();
         self.dfg_compute_calls = 0;
+    }
+}
+
+// Streaming-optimized version with interner (when streaming_basic is available)
+#[cfg(feature = "streaming_basic")]
+struct FusedMultiPassStreaming {
+    inner: FusedMultiPass,
+    interner: Interner,
+}
+
+#[cfg(feature = "streaming_basic")]
+impl FusedMultiPassStreaming {
+    fn new() -> Self {
+        Self {
+            inner: FusedMultiPass::new(),
+            interner: Interner::new(),
+        }
+    }
+
+    fn hash_traces(traces: &[Vec<String>]) -> u64 {
+        FusedMultiPass::hash_traces(traces)
+    }
+
+    fn compute_dfg(&mut self, traces: &[Vec<String>]) -> &DirectlyFollowsGraph {
+        self.inner.dfg_compute_calls += 1;
+        let hash = Self::hash_traces(traces);
+
+        if self.inner.dfg_log_hash == hash {
+            if let Some(ref dfg) = self.inner.dfg_cache {
+                return dfg;
+            }
+        }
+
+        // Build DFG via interner for integer-keyed edge counting
+        let mut node_counts: HashMap<u32, usize> = HashMap::default();
+        let mut edge_counts: HashMap<(u32, u32), usize> = HashMap::default();
+        let mut start_counts: HashMap<u32, usize> = HashMap::default();
+        let mut end_counts: HashMap<u32, usize> = HashMap::default();
+
+        for trace in traces {
+            if trace.is_empty() {
+                continue;
+            }
+
+            // Encode activities to integer IDs
+            let encoded: Vec<u32> = trace.iter().map(|a| self.interner.intern(a)).collect();
+
+            // Node frequencies
+            for &id in &encoded {
+                *node_counts.entry(id).or_insert(0) += 1;
+            }
+
+            // Directly-follows edges
+            for window in encoded.windows(2) {
+                *edge_counts.entry((window[0], window[1])).or_insert(0) += 1;
+            }
+
+            // Start/end activities
+            *start_counts.entry(encoded[0]).or_insert(0) += 1;
+            *end_counts.entry(*encoded.last().unwrap()).or_insert(0) += 1;
+        }
+
+        // Materialise DFG
+        let vocab = self.interner.vocab();
+        let mut nodes = Vec::with_capacity(vocab.len());
+        for (i, name) in vocab.iter().enumerate() {
+            nodes.push(DFGNode {
+                id: name.clone(),
+                label: name.clone(),
+                frequency: node_counts.get(&(i as u32)).copied().unwrap_or(0),
+            });
+        }
+
+        let mut edges = Vec::with_capacity(edge_counts.len());
+        for ((f, t), &freq) in &edge_counts {
+            edges.push(DirectlyFollowsRelation {
+                from: self.interner.lookup(*f).unwrap_or("").to_string(),
+                to: self.interner.lookup(*t).unwrap_or("").to_string(),
+                frequency: freq,
+            });
+        }
+
+        let mut start_activities: std::collections::HashMap<String, usize> =
+            std::collections::HashMap::new();
+        for (&id, &cnt) in &start_counts {
+            if let Some(name) = self.interner.lookup(id) {
+                start_activities.insert(name.to_string(), cnt);
+            }
+        }
+
+        let mut end_activities: std::collections::HashMap<String, usize> =
+            std::collections::HashMap::new();
+        for (&id, &cnt) in &end_counts {
+            if let Some(name) = self.interner.lookup(id) {
+                end_activities.insert(name.to_string(), cnt);
+            }
+        }
+
+        let dfg = DirectlyFollowsGraph {
+            nodes,
+            edges,
+            start_activities,
+            end_activities,
+        };
+
+        self.inner.dfg_log_hash = hash;
+        self.inner.dfg_cache = Some(dfg);
+
+        self.inner.dfg_cache.as_ref().unwrap()
+    }
+
+    fn run_with_dfg(&mut self, algorithm: &str, traces: &[Vec<String>]) -> Result<String, String> {
+        // Delegate to the base implementation after computing DFG
+        let dfg = self.compute_dfg(traces);
+
+        match algorithm {
+            "dfg" | "optimized_dfg" => {
+                serde_json::to_string(dfg).map_err(|e| format!("Failed to serialise DFG: {}", e))
+            }
+            "process_skeleton" => {
+                let max_freq = dfg.edges.iter().map(|e| e.frequency).max().unwrap_or(1);
+                let threshold = max_freq / 10;
+                let filtered_edges: Vec<DirectlyFollowsRelation> = dfg
+                    .edges
+                    .iter()
+                    .filter(|e| e.frequency > threshold)
+                    .cloned()
+                    .collect();
+                let filtered_nodes: Vec<DFGNode> = dfg
+                    .nodes
+                    .iter()
+                    .filter(|n| n.frequency > threshold / 2)
+                    .cloned()
+                    .collect();
+
+                let skeleton = DirectlyFollowsGraph {
+                    nodes: filtered_nodes,
+                    edges: filtered_edges,
+                    start_activities: dfg.start_activities.clone(),
+                    end_activities: dfg.end_activities.clone(),
+                };
+                serde_json::to_string(&skeleton)
+                    .map_err(|e| format!("Failed to serialise skeleton: {}", e))
+            }
+            "heuristic_miner" => {
+                let heuristic_edges: Vec<serde_json::Value> = dfg
+                    .edges
+                    .iter()
+                    .map(|e| {
+                        let ab = e.frequency as f64;
+                        let ba = dfg
+                            .edges
+                            .iter()
+                            .find(|r| r.from == e.to && r.to == e.from)
+                            .map(|r| r.frequency as f64)
+                            .unwrap_or(0.0);
+                        let dep = (ab - ba) / (ab + ba + 1.0);
+                        serde_json::json!({
+                            "from": e.from,
+                            "to": e.to,
+                            "frequency": e.frequency,
+                            "dependency": dep,
+                        })
+                    })
+                    .collect();
+                serde_json::to_string(&serde_json::json!({
+                    "algorithm": "heuristic_miner",
+                    "nodes": dfg.nodes,
+                    "edges": heuristic_edges,
+                }))
+                .map_err(|e| format!("Failed to serialise heuristic result: {}", e))
+            }
+            _ => Err(format!("Unknown DFG-based algorithm: {}", algorithm)),
+        }
+    }
+
+    fn reset(&mut self) {
+        self.inner.reset();
+        self.interner = Interner::new();
     }
 }
 
@@ -540,8 +694,8 @@ impl Default for SmartEngine {
 // ============================================================================
 
 /// Opaque handle storage for smart engine instances.
-static SMART_ENGINES: once_cell::sync::Lazy<std::sync::Mutex<FxHashMap<String, SmartEngine>>> =
-    once_cell::sync::Lazy::new(|| std::sync::Mutex::new(FxHashMap::default()));
+static SMART_ENGINES: once_cell::sync::Lazy<std::sync::Mutex<HashMap<String, SmartEngine>>> =
+    once_cell::sync::Lazy::new(|| std::sync::Mutex::new(HashMap::default()));
 
 /// Global counter for generating unique engine handles.
 static ENGINE_COUNTER: once_cell::sync::Lazy<std::sync::Mutex<u64>> =

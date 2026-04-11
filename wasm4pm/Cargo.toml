@@ -57,6 +57,7 @@ getrandom = { version = "0.2", features = ["js"] }
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
 simd-json = "0.13"
+blake3 = "1"
 
 [[bench]]
 name = "fast_algorithms"
@@ -79,6 +80,10 @@ name = "conformance"
 harness = false
 
 [[bench]]
+name = "conformance_bench"
+harness = false
+
+[[bench]]
 name = "ml_algorithms"
 harness = false
 
@@ -93,6 +98,35 @@ harness = false
 [[bench]]
 name = "powl_discovery"
 harness = false
+
+[[bench]]
+name = "tier2_metaheuristic"
+harness = false
+
+[[bench]]
+name = "tier1_discovery"
+harness = false
+
+[[bench]]
+name = "ml_streaming_sim_bench"
+harness = false
+
+[[bench]]
+name = "hot_kernels"
+harness = false
+
+[[bench]]
+name = "closed_claw"
+path = "benches/closed_claw/mod.rs"
+harness = false
+
+[[bench]]
+name = "jtbd_benchmark"
+harness = false
+
+[[bench]]
+name = "autonomy_jtbd_validation"
+harness = true
 
 [features]
 # Deployment profiles - default to cloud (full feature set) for npm package

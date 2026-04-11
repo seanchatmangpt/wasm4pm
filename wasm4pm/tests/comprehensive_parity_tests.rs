@@ -897,3 +897,762 @@ fn test_activity_coverage() {
         );
     }
 }
+
+// ── Additional Comprehensive Tests ───────────────────────────────────────
+
+#[test]
+fn test_empty_event_log() {
+    let log = EventLog::new();
+
+    assert_eq!(log.traces.len(), 0, "Empty log should have no traces");
+
+    let dfg = build_dfg_from_log(&log, "activity");
+    assert_eq!(dfg.activities.len(), 0, "Empty log should have no activities");
+    assert_eq!(dfg.edges.len(), 0, "Empty log should have no edges");
+}
+
+#[test]
+fn test_empty_trace() {
+    let mut log = EventLog::new();
+
+    let mut trace = pictl::models::Trace::new();
+    trace.attributes.insert(
+        "case:concept:name".to_string(),
+        AttributeValue::String("case1".to_string()),
+    );
+    // No events added
+
+    log.traces.push(trace);
+
+    assert_eq!(log.traces.len(), 1, "Should have 1 trace");
+    assert_eq!(log.traces[0].events.len(), 0, "Trace should have no events");
+
+    let dfg = build_dfg_from_log(&log, "activity");
+    assert_eq!(dfg.activities.len(), 0, "Empty trace should produce no activities");
+    assert_eq!(dfg.edges.len(), 0, "Empty trace should produce no edges");
+}
+
+#[test]
+fn test_single_event_trace() {
+    let mut log = EventLog::new();
+
+    let mut trace = pictl::models::Trace::new();
+    trace.attributes.insert(
+        "case:concept:name".to_string(),
+        AttributeValue::String("case1".to_string()),
+    );
+
+    let mut event = pictl::models::Event::new();
+    event.attributes.insert(
+        "activity".to_string(),
+        AttributeValue::String("A".to_string()),
+    );
+
+    trace.events.push(event);
+    log.traces.push(trace);
+
+    let dfg = build_dfg_from_log(&log, "activity");
+
+    assert_eq!(dfg.activities.len(), 1, "Should have 1 activity");
+    assert_eq!(dfg.activities[0], "A", "Activity should be A");
+    assert_eq!(dfg.edges.len(), 0, "Single event should have no edges");
+    assert_eq!(dfg.start_activities.len(), 1, "Should have 1 start activity");
+    assert_eq!(dfg.start_activities[0].activity, "A", "Start should be A");
+    assert_eq!(dfg.end_activities.len(), 1, "Should have 1 end activity");
+    assert_eq!(dfg.end_activities[0].activity, "A", "End should be A");
+}
+
+#[test]
+fn test_trace_with_duplicate_activities() {
+    let mut log = EventLog::new();
+
+    let mut trace = pictl::models::Trace::new();
+    trace.attributes.insert(
+        "case:concept:name".to_string(),
+        AttributeValue::String("case1".to_string()),
+    );
+
+    // A -> B -> A (repeated activity)
+    for activity in ["A", "B", "A"] {
+        let mut event = pictl::models::Event::new();
+        event.attributes.insert(
+            "activity".to_string(),
+            AttributeValue::String(activity.to_string()),
+        );
+        trace.events.push(event);
+    }
+
+    log.traces.push(trace);
+
+    let dfg = build_dfg_from_log(&log, "activity");
+
+    assert_eq!(dfg.activities.len(), 2, "Should have 2 unique activities");
+    assert_eq!(dfg.edges.len(), 2, "Should have 2 edges: A->B and B->A");
+
+    // Verify both edges exist
+    let edge_ab = dfg.edges.iter().find(|e| e.from == "A" && e.to == "B");
+    let edge_ba = dfg.edges.iter().find(|e| e.from == "B" && e.to == "A");
+
+    assert!(edge_ab.is_some(), "Should have A->B edge");
+    assert!(edge_ba.is_some(), "Should have B->A edge");
+}
+
+#[test]
+fn test_multiple_traces_same_variant() {
+    let mut log = EventLog::new();
+
+    // Two traces with same variant: A -> B -> C
+    for i in 1..=2 {
+        let mut trace = pictl::models::Trace::new();
+        trace.attributes.insert(
+            "case:concept:name".to_string(),
+            AttributeValue::String(format!("case{}", i)),
+        );
+
+        for activity in ["A", "B", "C"] {
+            let mut event = pictl::models::Event::new();
+            event.attributes.insert(
+                "activity".to_string(),
+                AttributeValue::String(activity.to_string()),
+            );
+            trace.events.push(event);
+        }
+
+        log.traces.push(trace);
+    }
+
+    let dfg = build_dfg_from_log(&log, "activity");
+
+    assert_eq!(dfg.edges.len(), 2, "Should have 2 edges: A->B and B->C");
+
+    // Verify edge frequencies
+    let edge_ab = dfg.edges.iter().find(|e| e.from == "A" && e.to == "B");
+    let edge_bc = dfg.edges.iter().find(|e| e.from == "B" && e.to == "C");
+
+    assert_eq!(edge_ab.unwrap().frequency, 2, "A->B should appear twice");
+    assert_eq!(edge_bc.unwrap().frequency, 2, "B->C should appear twice");
+}
+
+#[test]
+fn test_activities_with_different_lengths() {
+    let mut log = EventLog::new();
+
+    // Trace 1: A -> B
+    let mut trace1 = pictl::models::Trace::new();
+    trace1.attributes.insert(
+        "case:concept:name".to_string(),
+        AttributeValue::String("case1".to_string()),
+    );
+
+    for activity in ["A", "B"] {
+        let mut event = pictl::models::Event::new();
+        event.attributes.insert(
+            "activity".to_string(),
+            AttributeValue::String(activity.to_string()),
+        );
+        trace1.events.push(event);
+    }
+
+    // Trace 2: A -> B -> C -> D
+    let mut trace2 = pictl::models::Trace::new();
+    trace2.attributes.insert(
+        "case:concept:name".to_string(),
+        AttributeValue::String("case2".to_string()),
+    );
+
+    for activity in ["A", "B", "C", "D"] {
+        let mut event = pictl::models::Event::new();
+        event.attributes.insert(
+            "activity".to_string(),
+            AttributeValue::String(activity.to_string()),
+        );
+        trace2.events.push(event);
+    }
+
+    log.traces.push(trace1);
+    log.traces.push(trace2);
+
+    let dfg = build_dfg_from_log(&log, "activity");
+
+    assert_eq!(dfg.activities.len(), 4, "Should have 4 activities");
+    assert!(dfg.edges.len() >= 2, "Should have at least 2 edges");
+}
+
+#[test]
+fn test_dfg_from_single_trace() {
+    let mut log = EventLog::new();
+
+    let mut trace = pictl::models::Trace::new();
+    trace.attributes.insert(
+        "case:concept:name".to_string(),
+        AttributeValue::String("case1".to_string()),
+    );
+
+    for activity in ["A", "B", "C", "D"] {
+        let mut event = pictl::models::Event::new();
+        event.attributes.insert(
+            "activity".to_string(),
+            AttributeValue::String(activity.to_string()),
+        );
+        trace.events.push(event);
+    }
+
+    log.traces.push(trace);
+
+    let dfg = build_dfg_from_log(&log, "activity");
+
+    assert_eq!(dfg.activities.len(), 4, "Should have 4 activities");
+    assert_eq!(dfg.edges.len(), 3, "Should have 3 edges: A->B, B->C, C->D");
+    assert_eq!(dfg.start_activities.len(), 1, "Should have 1 start activity");
+    assert_eq!(dfg.end_activities.len(), 1, "Should have 1 end activity");
+}
+
+#[test]
+fn test_start_and_end_activities_consistency() {
+    let mut log = EventLog::new();
+
+    // Trace 1: A -> B -> C
+    let mut trace1 = pictl::models::Trace::new();
+    trace1.attributes.insert(
+        "case:concept:name".to_string(),
+        AttributeValue::String("case1".to_string()),
+    );
+
+    for activity in ["A", "B", "C"] {
+        let mut event = pictl::models::Event::new();
+        event.attributes.insert(
+            "activity".to_string(),
+            AttributeValue::String(activity.to_string()),
+        );
+        trace1.events.push(event);
+    }
+
+    // Trace 2: X -> Y -> Z
+    let mut trace2 = pictl::models::Trace::new();
+    trace2.attributes.insert(
+        "case:concept:name".to_string(),
+        AttributeValue::String("case2".to_string()),
+    );
+
+    for activity in ["X", "Y", "Z"] {
+        let mut event = pictl::models::Event::new();
+        event.attributes.insert(
+            "activity".to_string(),
+            AttributeValue::String(activity.to_string()),
+        );
+        trace2.events.push(event);
+    }
+
+    log.traces.push(trace1);
+    log.traces.push(trace2);
+
+    let dfg = build_dfg_from_log(&log, "activity");
+
+    assert_eq!(dfg.start_activities.len(), 2, "Should have 2 start activities");
+    assert_eq!(dfg.end_activities.len(), 2, "Should have 2 end activities");
+
+    // Verify start activities
+    let start_names: Vec<&str> = dfg.start_activities.iter().map(|a| a.activity.as_str()).collect();
+    assert!(start_names.contains(&"A"), "A should be a start activity");
+    assert!(start_names.contains(&"X"), "X should be a start activity");
+
+    // Verify end activities
+    let end_names: Vec<&str> = dfg.end_activities.iter().map(|a| a.activity.as_str()).collect();
+    assert!(end_names.contains(&"C"), "C should be an end activity");
+    assert!(end_names.contains(&"Z"), "Z should be an end activity");
+}
+
+#[test]
+fn test_activity_frequency_distribution() {
+    let mut log = EventLog::new();
+
+    // Trace 1: A -> B -> C
+    let mut trace1 = pictl::models::Trace::new();
+    trace1.attributes.insert(
+        "case:concept:name".to_string(),
+        AttributeValue::String("case1".to_string()),
+    );
+
+    for activity in ["A", "B", "C"] {
+        let mut event = pictl::models::Event::new();
+        event.attributes.insert(
+            "activity".to_string(),
+            AttributeValue::String(activity.to_string()),
+        );
+        trace1.events.push(event);
+    }
+
+    // Trace 2: A -> B -> D
+    let mut trace2 = pictl::models::Trace::new();
+    trace2.attributes.insert(
+        "case:concept:name".to_string(),
+        AttributeValue::String("case2".to_string()),
+    );
+
+    for activity in ["A", "B", "D"] {
+        let mut event = pictl::models::Event::new();
+        event.attributes.insert(
+            "activity".to_string(),
+            AttributeValue::String(activity.to_string()),
+        );
+        trace2.events.push(event);
+    }
+
+    log.traces.push(trace1);
+    log.traces.push(trace2);
+
+    // Calculate activity frequencies
+    let mut activity_counts: std::collections::HashMap<String, usize> =
+        std::collections::HashMap::new();
+
+    for trace in &log.traces {
+        for event in &trace.events {
+            if let Some(AttributeValue::String(activity)) = event.attributes.get("activity") {
+                *activity_counts.entry(activity.clone()).or_insert(0) += 1;
+            }
+        }
+    }
+
+    assert_eq!(activity_counts.get("A"), Some(&2), "A should appear twice");
+    assert_eq!(activity_counts.get("B"), Some(&2), "B should appear twice");
+    assert_eq!(activity_counts.get("C"), Some(&1), "C should appear once");
+    assert_eq!(activity_counts.get("D"), Some(&1), "D should appear once");
+}
+
+#[test]
+fn test_event_ordering_within_trace() {
+    let mut log = EventLog::new();
+
+    let mut trace = pictl::models::Trace::new();
+    trace.attributes.insert(
+        "case:concept:name".to_string(),
+        AttributeValue::String("case1".to_string()),
+    );
+
+    // Add events with timestamps
+    let timestamps = [
+        "2023-01-01T10:00:00Z",
+        "2023-01-01T11:00:00Z",
+        "2023-01-01T12:00:00Z",
+    ];
+
+    for (i, ts) in timestamps.iter().enumerate() {
+        let mut event = pictl::models::Event::new();
+        event.attributes.insert(
+            "activity".to_string(),
+            AttributeValue::String(format!("Act{}", i)),
+        );
+        event.attributes.insert(
+            "time:timestamp".to_string(),
+            AttributeValue::String(ts.to_string()),
+        );
+        trace.events.push(event);
+    }
+
+    log.traces.push(trace);
+
+    // Verify events are ordered by timestamp
+    for i in 0..log.traces[0].events.len().saturating_sub(1) {
+        let ts1 = log.traces[0].events[i]
+            .attributes
+            .get("time:timestamp")
+            .and_then(|v| v.as_string())
+            .unwrap_or("");
+        let ts2 = log.traces[0].events[i + 1]
+            .attributes
+            .get("time:timestamp")
+            .and_then(|v| v.as_string())
+            .unwrap_or("");
+
+        assert!(ts1 < ts2, "Timestamps should be in ascending order");
+    }
+}
+
+#[test]
+fn test_log_with_no_traces() {
+    let log = EventLog::new();
+
+    assert_eq!(log.traces.len(), 0, "Log should have no traces");
+
+    let dfg = build_dfg_from_log(&log, "activity");
+
+    assert_eq!(dfg.activities.len(), 0, "Should have no activities");
+    assert_eq!(dfg.edges.len(), 0, "Should have no edges");
+    assert_eq!(dfg.start_activities.len(), 0, "Should have no start activities");
+    assert_eq!(dfg.end_activities.len(), 0, "Should have no end activities");
+}
+
+#[test]
+fn test_variant_detection() {
+    let mut log = EventLog::new();
+
+    // Variant 1: A -> B -> C (appears twice)
+    for i in 1..=2 {
+        let mut trace = pictl::models::Trace::new();
+        trace.attributes.insert(
+            "case:concept:name".to_string(),
+            AttributeValue::String(format!("case{}", i)),
+        );
+
+        for activity in ["A", "B", "C"] {
+            let mut event = pictl::models::Event::new();
+            event.attributes.insert(
+                "activity".to_string(),
+                AttributeValue::String(activity.to_string()),
+            );
+            trace.events.push(event);
+        }
+
+        log.traces.push(trace);
+    }
+
+    // Variant 2: A -> B -> D (appears once)
+    let mut trace3 = pictl::models::Trace::new();
+    trace3.attributes.insert(
+        "case:concept:name".to_string(),
+        AttributeValue::String("case3".to_string()),
+    );
+
+    for activity in ["A", "B", "D"] {
+        let mut event = pictl::models::Event::new();
+        event.attributes.insert(
+            "activity".to_string(),
+            AttributeValue::String(activity.to_string()),
+        );
+        trace3.events.push(event);
+    }
+
+    log.traces.push(trace3);
+
+    // Group by variant
+    let mut variants: std::collections::HashMap<Vec<String>, usize> =
+        std::collections::HashMap::new();
+
+    for trace in &log.traces {
+        let activities: Vec<String> = trace
+            .events
+            .iter()
+            .filter_map(|e| {
+                e.attributes
+                    .get("activity")
+                    .and_then(|v| v.as_string())
+                    .map(|s| s.to_string())
+            })
+            .collect();
+
+        *variants.entry(activities).or_insert(0) += 1;
+    }
+
+    assert_eq!(variants.len(), 2, "Should have 2 variants");
+
+    // Verify variant counts
+    let variant_abc: Vec<String> = vec!["A", "B", "C"].iter().map(|s| s.to_string()).collect();
+    let variant_abd: Vec<String> = vec!["A", "B", "D"].iter().map(|s| s.to_string()).collect();
+
+    assert_eq!(variants.get(&variant_abc), Some(&2), "A->B->C should appear twice");
+    assert_eq!(variants.get(&variant_abd), Some(&1), "A->B->D should appear once");
+}
+
+#[test]
+fn test_edge_uniqueness_in_dfg() {
+    let mut log = EventLog::new();
+
+    // Multiple traces with same edges
+    for i in 1..=3 {
+        let mut trace = pictl::models::Trace::new();
+        trace.attributes.insert(
+            "case:concept:name".to_string(),
+            AttributeValue::String(format!("case{}", i)),
+        );
+
+        for activity in ["A", "B", "C"] {
+            let mut event = pictl::models::Event::new();
+            event.attributes.insert(
+                "activity".to_string(),
+                AttributeValue::String(activity.to_string()),
+            );
+            trace.events.push(event);
+        }
+
+        log.traces.push(trace);
+    }
+
+    let dfg = build_dfg_from_log(&log, "activity");
+
+    // Check that each edge appears only once (with aggregated frequency)
+    let mut edge_set = std::collections::HashSet::new();
+    for edge in &dfg.edges {
+        let key = (edge.from.clone(), edge.to.clone());
+        assert!(
+            edge_set.insert(key),
+            "Edge {} -> {} should appear only once",
+            edge.from,
+            edge.to
+        );
+    }
+
+    // Verify frequencies are aggregated
+    let edge_ab = dfg.edges.iter().find(|e| e.from == "A" && e.to == "B");
+    assert_eq!(edge_ab.unwrap().frequency, 3, "A->B frequency should be 3");
+}
+
+#[test]
+fn test_trace_with_loop() {
+    let mut log = EventLog::new();
+
+    let mut trace = pictl::models::Trace::new();
+    trace.attributes.insert(
+        "case:concept:name".to_string(),
+        AttributeValue::String("case1".to_string()),
+    );
+
+    // A -> B -> C -> B (loop back to B)
+    for activity in ["A", "B", "C", "B"] {
+        let mut event = pictl::models::Event::new();
+        event.attributes.insert(
+            "activity".to_string(),
+            AttributeValue::String(activity.to_string()),
+        );
+        trace.events.push(event);
+    }
+
+    log.traces.push(trace);
+
+    let dfg = build_dfg_from_log(&log, "activity");
+
+    // Should have edges: A->B, B->C, C->B
+    assert_eq!(dfg.edges.len(), 3, "Should have 3 edges");
+
+    // Verify loop edge exists
+    let edge_cb = dfg.edges.iter().find(|e| e.from == "C" && e.to == "B");
+    assert!(edge_cb.is_some(), "Should have C->B edge (loop)");
+
+    // Verify B has both outgoing edges
+    let b_outgoing: Vec<&CanonicalEdge> = dfg.edges.iter().filter(|e| e.from == "B").collect();
+    assert_eq!(b_outgoing.len(), 1, "B should have 1 outgoing edge (B->C)");
+}
+
+#[test]
+fn test_parallel_activities() {
+    let mut log = EventLog::new();
+
+    // Two traces representing parallel behavior
+    // Trace 1: A -> B -> D
+    let mut trace1 = pictl::models::Trace::new();
+    trace1.attributes.insert(
+        "case:concept:name".to_string(),
+        AttributeValue::String("case1".to_string()),
+    );
+
+    for activity in ["A", "B", "D"] {
+        let mut event = pictl::models::Event::new();
+        event.attributes.insert(
+            "activity".to_string(),
+            AttributeValue::String(activity.to_string()),
+        );
+        trace1.events.push(event);
+    }
+
+    // Trace 2: A -> C -> D
+    let mut trace2 = pictl::models::Trace::new();
+    trace2.attributes.insert(
+        "case:concept:name".to_string(),
+        AttributeValue::String("case2".to_string()),
+    );
+
+    for activity in ["A", "C", "D"] {
+        let mut event = pictl::models::Event::new();
+        event.attributes.insert(
+            "activity".to_string(),
+            AttributeValue::String(activity.to_string()),
+        );
+        trace2.events.push(event);
+    }
+
+    log.traces.push(trace1);
+    log.traces.push(trace2);
+
+    let dfg = build_dfg_from_log(&log, "activity");
+
+    // B and C are parallel (both follow A, both precede D)
+    let edges_from_a: Vec<&CanonicalEdge> = dfg.edges.iter().filter(|e| e.from == "A").collect();
+    let edges_to_d: Vec<&CanonicalEdge> = dfg.edges.iter().filter(|e| e.to == "D").collect();
+
+    assert!(edges_from_a.iter().any(|e| e.to == "B"), "A->B should exist");
+    assert!(edges_from_a.iter().any(|e| e.to == "C"), "A->C should exist");
+    assert!(edges_to_d.iter().any(|e| e.from == "B"), "B->D should exist");
+    assert!(edges_to_d.iter().any(|e| e.from == "C"), "C->D should exist");
+}
+
+#[test]
+fn test_event_log_with_attributes() {
+    let mut log = EventLog::new();
+
+    let mut trace = pictl::models::Trace::new();
+    trace.attributes.insert(
+        "case:concept:name".to_string(),
+        AttributeValue::String("case1".to_string()),
+    );
+    trace.attributes.insert(
+        "custom:attribute".to_string(),
+        AttributeValue::String("custom_value".to_string()),
+    );
+
+    let mut event = pictl::models::Event::new();
+    event.attributes.insert(
+        "activity".to_string(),
+        AttributeValue::String("A".to_string()),
+    );
+    event.attributes.insert(
+        "custom:event_attr".to_string(),
+        AttributeValue::String("event_value".to_string()),
+    );
+    event.attributes.insert(
+        "cost".to_string(),
+        AttributeValue::Float(100.0),
+    );
+
+    trace.events.push(event);
+    log.traces.push(trace);
+
+    // Verify trace attributes
+    assert!(
+        log.traces[0].attributes.contains_key("case:concept:name"),
+        "Trace should have case ID"
+    );
+    assert!(
+        log.traces[0].attributes.contains_key("custom:attribute"),
+        "Trace should have custom attribute"
+    );
+
+    // Verify event attributes
+    assert!(
+        log.traces[0].events[0].attributes.contains_key("activity"),
+        "Event should have activity"
+    );
+    assert!(
+        log.traces[0].events[0].attributes.contains_key("custom:event_attr"),
+        "Event should have custom attribute"
+    );
+    assert!(
+        log.traces[0].events[0].attributes.contains_key("cost"),
+        "Event should have cost attribute"
+    );
+}
+
+#[test]
+fn test_diamond_pattern() {
+    let mut log = EventLog::new();
+
+    // Diamond pattern: A splits to B/C, both converge to D
+    // Trace 1: A -> B -> D
+    let mut trace1 = pictl::models::Trace::new();
+    trace1.attributes.insert(
+        "case:concept:name".to_string(),
+        AttributeValue::String("case1".to_string()),
+    );
+
+    for activity in ["A", "B", "D"] {
+        let mut event = pictl::models::Event::new();
+        event.attributes.insert(
+            "activity".to_string(),
+            AttributeValue::String(activity.to_string()),
+        );
+        trace1.events.push(event);
+    }
+
+    // Trace 2: A -> C -> D
+    let mut trace2 = pictl::models::Trace::new();
+    trace2.attributes.insert(
+        "case:concept:name".to_string(),
+        AttributeValue::String("case2".to_string()),
+    );
+
+    for activity in ["A", "C", "D"] {
+        let mut event = pictl::models::Event::new();
+        event.attributes.insert(
+            "activity".to_string(),
+            AttributeValue::String(activity.to_string()),
+        );
+        trace2.events.push(event);
+    }
+
+    log.traces.push(trace1);
+    log.traces.push(trace2);
+
+    let dfg = build_dfg_from_log(&log, "activity");
+
+    // Verify diamond structure
+    assert!(dfg.activities.contains(&"A".to_string()), "Should contain A");
+    assert!(dfg.activities.contains(&"B".to_string()), "Should contain B");
+    assert!(dfg.activities.contains(&"C".to_string()), "Should contain C");
+    assert!(dfg.activities.contains(&"D".to_string()), "Should contain D");
+
+    // A has 2 outgoing edges (to B and C)
+    let a_outgoing: Vec<&CanonicalEdge> = dfg.edges.iter().filter(|e| e.from == "A").collect();
+    assert_eq!(a_outgoing.len(), 2, "A should have 2 outgoing edges");
+
+    // D has 2 incoming edges (from B and C)
+    let d_incoming: Vec<&CanonicalEdge> = dfg.edges.iter().filter(|e| e.to == "D").collect();
+    assert_eq!(d_incoming.len(), 2, "D should have 2 incoming edges");
+}
+
+#[test]
+fn test_self_loop_activity() {
+    let mut log = EventLog::new();
+
+    let mut trace = pictl::models::Trace::new();
+    trace.attributes.insert(
+        "case:concept:name".to_string(),
+        AttributeValue::String("case1".to_string()),
+    );
+
+    // A -> A (self-loop)
+    for _ in 0..2 {
+        let mut event = pictl::models::Event::new();
+        event.attributes.insert(
+            "activity".to_string(),
+            AttributeValue::String("A".to_string()),
+        );
+        trace.events.push(event);
+    }
+
+    log.traces.push(trace);
+
+    let dfg = build_dfg_from_log(&log, "activity");
+
+    // Should have self-loop edge A->A
+    let self_loop = dfg.edges.iter().find(|e| e.from == "A" && e.to == "A");
+    assert!(self_loop.is_some(), "Should have A->A self-loop edge");
+    assert_eq!(self_loop.unwrap().frequency, 1, "Self-loop frequency should be 1");
+}
+
+#[test]
+fn test_trace_with_only_start_activity() {
+    let mut log = EventLog::new();
+
+    let mut trace = pictl::models::Trace::new();
+    trace.attributes.insert(
+        "case:concept:name".to_string(),
+        AttributeValue::String("case1".to_string()),
+    );
+
+    // Only start activity, no transitions
+    let mut event = pictl::models::Event::new();
+    event.attributes.insert(
+        "activity".to_string(),
+        AttributeValue::String("A".to_string()),
+    );
+    trace.events.push(event);
+
+    log.traces.push(trace);
+
+    let dfg = build_dfg_from_log(&log, "activity");
+
+    assert_eq!(dfg.activities.len(), 1, "Should have 1 activity");
+    assert_eq!(dfg.edges.len(), 0, "Should have no edges");
+    assert_eq!(dfg.start_activities.len(), 1, "Should have 1 start activity");
+    assert_eq!(dfg.end_activities.len(), 1, "Should have 1 end activity");
+    assert_eq!(dfg.start_activities[0].activity, "A", "Start should be A");
+    assert_eq!(dfg.end_activities[0].activity, "A", "End should be A");
+}
