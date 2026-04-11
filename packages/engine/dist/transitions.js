@@ -14,8 +14,8 @@
  */
 export const VALID_TRANSITIONS = {
     uninitialized: new Set(['bootstrapping']),
-    bootstrapping: new Set(['ready', 'failed']),
-    ready: new Set(['planning', 'degraded', 'failed']),
+    bootstrapping: new Set(['ready', 'failed', 'degraded']),
+    ready: new Set(['planning', 'running', 'watching', 'degraded', 'failed']),
     planning: new Set(['running', 'ready', 'degraded', 'failed']),
     running: new Set(['watching', 'ready', 'degraded', 'failed']),
     watching: new Set(['ready', 'degraded', 'failed']),

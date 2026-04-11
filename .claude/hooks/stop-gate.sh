@@ -14,13 +14,26 @@ if [ "$HOOK_ACTIVE" = "true" ]; then
   exit 0  # Allow stop
 fi
 
-# Run pictl doctor (must succeed)
+# Run pictl doctor via make target (must succeed)
 DOCTOR_OUTPUT=""
-if command -v pictl &>/dev/null; then
-  DOCTOR_OUTPUT=$(pictl doctor --format json)
-elif [ -f "$CLAUDE_PROJECT_DIR/apps/pmctl/dist/cli.js" ]; then
-  DOCTOR_OUTPUT=$(node "$CLAUDE_PROJECT_DIR/apps/pmctl/dist/cli.js" doctor --format json)
-else
+cd "$CLAUDE_PROJECT_DIR" 2>/dev/null || {
+  echo "ERROR: Cannot change to project directory" >&2
+  exit 2
+}
+
+# Try make doctor first (most reliable)
+if command -v make &>/dev/null && [ -f "Makefile" ]; then
+  DOCTOR_OUTPUT=$(make doctor 2>&1) || true
+fi
+
+# Fallback to direct node execution if make fails
+if [ -z "$DOCTOR_OUTPUT" ] || ! echo "$DOCTOR_OUTPUT" | jq -e '.healthy' >/dev/null 2>&1; then
+  if [ -f "apps/pmctl/dist/bin/pmctl.js" ]; then
+    DOCTOR_OUTPUT=$(node apps/pmctl/dist/bin/pmctl.js doctor --format json 2>&1 | awk '/^{/,/^}/ {print}') || true
+  fi
+fi
+
+if [ -z "$DOCTOR_OUTPUT" ]; then
   echo "ERROR: pictl doctor unavailable" >&2
   exit 2  # Block stop
 fi

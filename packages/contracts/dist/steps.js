@@ -30,6 +30,26 @@ export const PLAN_STEP_TYPE_VALUES = [
     'discover_aco',
     'discover_simulated_annealing',
     'discover_optimized_dfg',
+    // Wave 1 Discovery
+    'discover_transition_system',
+    'discover_log_to_trie',
+    'discover_causal_graph',
+    'discover_performance_spectrum',
+    'discover_batches',
+    'discover_generalization',
+    'discover_etconformance_precision',
+    'discover_correlation_miner',
+    'discover_complexity_metrics',
+    'discover_petri_net_reduction',
+    'discover_alignment_fitness',
+    // Wave 1 Import/Export
+    'import_pnml',
+    'import_bpmn',
+    'convert_powl_to_process_tree',
+    'export_yawl',
+    // Wave 1 Simulation
+    'simulate_playout',
+    'simulate_monte_carlo',
     // POWL Discovery
     'discover_powl',
     'discover_powl_tree',
