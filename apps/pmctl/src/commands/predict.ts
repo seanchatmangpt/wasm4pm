@@ -107,9 +107,29 @@ export const predict = defineCommand({
 
       // Resolve parameters: CLI flag > config > hardcoded default
       const activityKey = (ctx.args['activity-key'] as string) || pred?.activityKey || 'concept:name';
-      const topK = parseInt(ctx.args['top-k'] as string ?? '3', 10) || 3;
-      const ngramOrder = parseInt(ctx.args['ngram-order'] as string ?? '0', 10) || pred?.ngramOrder || 2;
-      const driftWindow = parseInt(ctx.args['drift-window'] as string ?? '0', 10) || pred?.driftWindowSize || 10;
+      const rawTopK = ctx.args['top-k'] as string | undefined;
+      const parsedTopK = rawTopK != null ? parseInt(rawTopK, 10) : undefined;
+      if (parsedTopK !== undefined && Number.isNaN(parsedTopK)) {
+        formatter.error('Invalid --top-k value: must be a number');
+        process.exit(EXIT_CODES.config_error);
+      }
+      const topK = parsedTopK ?? 3;
+
+      const rawNgram = ctx.args['ngram-order'] as string | undefined;
+      const parsedNgram = rawNgram != null ? parseInt(rawNgram, 10) : undefined;
+      if (parsedNgram !== undefined && Number.isNaN(parsedNgram)) {
+        formatter.error('Invalid --ngram-order value: must be a number');
+        process.exit(EXIT_CODES.config_error);
+      }
+      const ngramOrder = parsedNgram ?? pred?.ngramOrder ?? 2;
+
+      const rawDrift = ctx.args['drift-window'] as string | undefined;
+      const parsedDrift = rawDrift != null ? parseInt(rawDrift, 10) : undefined;
+      if (parsedDrift !== undefined && Number.isNaN(parsedDrift)) {
+        formatter.error('Invalid --drift-window value: must be a number');
+        process.exit(EXIT_CODES.config_error);
+      }
+      const driftWindow = parsedDrift ?? pred?.driftWindowSize ?? 10;
       const prefixActivities = ctx.args.prefix
         ? (ctx.args.prefix as string).split(',').map((s) => s.trim())
         : undefined;

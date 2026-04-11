@@ -88,8 +88,8 @@ export class Engine {
   private watchSession?: WatchSession;
   private watchConfig?: WatchConfig;
   private observability: ObservabilityWrapper;
-  private traceId?: string;
-  private requiredOtelAttrs?: RequiredOtelAttributes;
+  private traceId: string;
+  private requiredOtelAttrs: RequiredOtelAttributes;
   private observabilityErrors: Array<{ timestamp: Date; layer: string; message: string }> = [];
 
   /**
@@ -117,6 +117,16 @@ export class Engine {
     this.statusTracker = new StatusTracker();
     this.wasmLoader = WasmLoader.getInstance(wasmLoaderConfig);
     this.observability = new ObservabilityWrapper(observabilityConfig);
+    this.traceId = '';
+    this.requiredOtelAttrs = {
+      'run.id': 'bootstrap',
+      'config.hash': '',
+      'input.hash': '',
+      'plan.hash': '',
+      'execution.profile': 'default',
+      'source.kind': 'unknown',
+      'sink.kind': 'unknown',
+    };
 
     // Subscribe to lifecycle events for logging and observability
     this.transitionUnsubscribe = this.stateMachine.onTransition((event) => {
@@ -151,16 +161,8 @@ export class Engine {
       this.traceId = Instrumentation.generateTraceId();
     }
 
-    // Initialize required OTEL attributes (placeholder values for bootstrap)
-    this.requiredOtelAttrs = this.requiredOtelAttrs || {
-      'run.id': this.currentRunId || 'bootstrap',
-      'config.hash': '',
-      'input.hash': '',
-      'plan.hash': '',
-      'execution.profile': 'default',
-      'source.kind': 'unknown',
-      'sink.kind': 'unknown',
-    };
+    // Update required OTEL attributes with current run ID
+    this.requiredOtelAttrs['run.id'] = this.currentRunId || 'bootstrap';
 
     const bootstrapStart = Date.now();
 
@@ -209,7 +211,7 @@ export class Engine {
         // Emit error event
         if (this.requiredOtelAttrs) {
           const errorEvent = Instrumentation.createErrorEvent(
-            this.traceId!,
+            this.traceId,
             timeoutError.code,
             timeoutError.message,
             this.requiredOtelAttrs,
@@ -262,7 +264,7 @@ export class Engine {
       // Emit error event
       if (this.requiredOtelAttrs) {
         const errorEvent = Instrumentation.createErrorEvent(
-          this.traceId!,
+          this.traceId,
           error.code,
           error.message,
           this.requiredOtelAttrs,
@@ -309,10 +311,10 @@ export class Engine {
 
       // Emit state change to planning
       const stateChangePlanning = Instrumentation.createStateChangeEvent(
-        this.traceId!,
+        this.traceId,
         'ready',
         'planning',
-        this.requiredOtelAttrs!,
+        this.requiredOtelAttrs,
         { reason: 'Starting plan generation' }
       );
       this.observability.emitOtelSafe(stateChangePlanning.otelEvent);
@@ -337,7 +339,7 @@ export class Engine {
         // Emit error event
         if (this.requiredOtelAttrs) {
           const errorEvent = Instrumentation.createErrorEvent(
-            this.traceId!,
+            this.traceId,
             timeoutError.code,
             timeoutError.message,
             this.requiredOtelAttrs,
@@ -360,7 +362,7 @@ export class Engine {
 
       // Calculate plan hash (simple hash of plan ID + steps count)
       const planHash = Buffer.from(plan.planId + plan.totalSteps).toString('base64').substring(0, 32);
-      this.requiredOtelAttrs!['plan.hash'] = planHash;
+      this.requiredOtelAttrs['plan.hash'] = planHash;
 
       // Return to ready state after planning (can then run or plan again)
       this.stateMachine.transition('ready', 'Plan generated successfully');
@@ -370,11 +372,11 @@ export class Engine {
       // Emit plan generated event
       const planDuration = Date.now() - planStart;
       const planGenerated = Instrumentation.createPlanGeneratedEvent(
-        this.traceId!,
+        this.traceId,
         plan.planId,
         planHash,
         plan.totalSteps,
-        this.requiredOtelAttrs!,
+        this.requiredOtelAttrs,
         { estimatedDurationMs: plan.estimatedDurationMs }
       );
       planGenerated.event.durationMs = planDuration;
@@ -382,10 +384,10 @@ export class Engine {
 
       // Emit state change back to ready
       const stateChangeReady = Instrumentation.createStateChangeEvent(
-        this.traceId!,
+        this.traceId,
         'planning',
         'ready',
-        this.requiredOtelAttrs!,
+        this.requiredOtelAttrs,
         { reason: 'Plan generated successfully' }
       );
       stateChangeReady.event.durationMs = planDuration;
@@ -396,7 +398,7 @@ export class Engine {
         timestamp: new Date().toISOString(),
         component: 'engine',
         event_type: 'plan_generated',
-        run_id: this.requiredOtelAttrs!['run.id'],
+        run_id: this.requiredOtelAttrs['run.id'],
         data: {
           plan_id: plan.planId,
           plan_hash: planHash,
@@ -422,7 +424,7 @@ export class Engine {
       // Emit error event
       if (this.requiredOtelAttrs) {
         const errorEvent = Instrumentation.createErrorEvent(
-          this.traceId!,
+          this.traceId,
           error.code,
           error.message,
           this.requiredOtelAttrs,
@@ -473,7 +475,7 @@ export class Engine {
       this.statusTracker.start();
 
       // Update required OTEL attributes with run ID
-      this.requiredOtelAttrs!['run.id'] = this.currentRunId;
+      this.requiredOtelAttrs['run.id'] = this.currentRunId;
 
       // Transition to running
       this.stateMachine.transition('running', `Starting execution: ${this.currentRunId}`);
@@ -481,10 +483,10 @@ export class Engine {
 
       // Emit state change to running
       const stateChangeRunning = Instrumentation.createStateChangeEvent(
-        this.traceId!,
+        this.traceId,
         'ready',
         'running',
-        this.requiredOtelAttrs!,
+        this.requiredOtelAttrs,
         { reason: `Starting execution: ${this.currentRunId}` }
       );
       this.observability.emitOtelSafe(stateChangeRunning.otelEvent);
@@ -512,7 +514,7 @@ export class Engine {
         if (this.requiredOtelAttrs) {
           const runDuration = Date.now() - runStart;
           const errorEvent = Instrumentation.createErrorEvent(
-            this.traceId!,
+            this.traceId,
             timeoutError.code,
             timeoutError.message,
             this.requiredOtelAttrs,
@@ -543,10 +545,10 @@ export class Engine {
       // Emit state change back to ready
       const runDuration = Date.now() - runStart;
       const stateChangeReady = Instrumentation.createStateChangeEvent(
-        this.traceId!,
+        this.traceId,
         'running',
         'ready',
-        this.requiredOtelAttrs!,
+        this.requiredOtelAttrs,
         { reason: 'Execution completed successfully' }
       );
       stateChangeReady.event.durationMs = runDuration;
@@ -586,7 +588,7 @@ export class Engine {
       if (this.requiredOtelAttrs) {
         const runDuration = Date.now() - runStart;
         const errorEvent = Instrumentation.createErrorEvent(
-          this.traceId!,
+          this.traceId,
           error.code,
           error.message,
           this.requiredOtelAttrs,

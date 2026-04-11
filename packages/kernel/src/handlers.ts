@@ -228,6 +228,21 @@ export interface WasmModule {
     root_id: string,
     config_json: string
   ): Promise<{ handle: string }>;
+
+  // ── ML analysis functions ──────────────────────────────────────────
+
+  extract_case_features(
+    eventLogHandle: string,
+    activityKey: string,
+    timestampKey: string,
+    configJson: string
+  ): string;
+
+  detect_drift(
+    eventLogHandle: string,
+    activityKey: string,
+    windowSize: number
+  ): string;
 }
 
 /**
@@ -340,8 +355,8 @@ export async function implementAlgorithmStep(
   }
 
   // Extract parameters from step
-  const params = step.parameters || {};
-  const activityKey = (params.activity_key as string) || 'concept:name';
+  const params = step.parameters ?? {};
+  const activityKey = (params.activity_key as string) ?? 'concept:name';
 
   // Validate required parameters
   for (const paramDef of metadata.parameters) {
@@ -378,7 +393,7 @@ export async function implementAlgorithmStep(
       }
 
       case 'heuristic_miner': {
-        const depThreshold = (params.dependency_threshold as number) || 0.5;
+        const depThreshold = (params.dependency_threshold as number) ??0.5;
         const result = await wasmModule.discover_heuristic_miner(
           eventLogHandle,
           activityKey,
@@ -389,7 +404,7 @@ export async function implementAlgorithmStep(
       }
 
       case 'inductive_miner': {
-        const noiseThreshold = (params.noise_threshold as number) || 0.2;
+        const noiseThreshold = (params.noise_threshold as number) ??0.2;
         const result = await wasmModule.discover_inductive_miner(
           eventLogHandle,
           activityKey,
@@ -400,8 +415,8 @@ export async function implementAlgorithmStep(
       }
 
       case 'genetic_algorithm': {
-        const popSize = (params.population_size as number) || 50;
-        const generations = (params.generations as number) || 100;
+        const popSize = (params.population_size as number) ??50;
+        const generations = (params.generations as number) ??100;
         const result = await wasmModule.discover_genetic_algorithm(
           eventLogHandle,
           activityKey,
@@ -413,8 +428,8 @@ export async function implementAlgorithmStep(
       }
 
       case 'pso': {
-        const swarmSize = (params.swarm_size as number) || 30;
-        const iterations = (params.iterations as number) || 50;
+        const swarmSize = (params.swarm_size as number) ??30;
+        const iterations = (params.iterations as number) ??50;
         const result = await wasmModule.discover_pso_algorithm(
           eventLogHandle,
           activityKey,
@@ -426,7 +441,7 @@ export async function implementAlgorithmStep(
       }
 
       case 'a_star': {
-        const maxIterations = (params.max_iterations as number) || 10000;
+        const maxIterations = (params.max_iterations as number) ??10000;
         const result = await wasmModule.discover_astar(
           eventLogHandle,
           activityKey,
@@ -437,7 +452,7 @@ export async function implementAlgorithmStep(
       }
 
       case 'hill_climbing': {
-        const maxIterations = (params.max_iterations as number) || 100;
+        const maxIterations = (params.max_iterations as number) ??100;
         const result = await wasmModule.discover_hill_climbing(
           eventLogHandle,
           activityKey,
@@ -448,7 +463,7 @@ export async function implementAlgorithmStep(
       }
 
       case 'ilp': {
-        const timeout = (params.timeout_seconds as number) || 30;
+        const timeout = (params.timeout_seconds as number) ??30;
         const result = await wasmModule.discover_ilp_petri_net(
           eventLogHandle,
           activityKey,
@@ -459,8 +474,8 @@ export async function implementAlgorithmStep(
       }
 
       case 'aco': {
-        const colonySize = (params.colony_size as number) || 40;
-        const iterations = (params.iterations as number) || 100;
+        const colonySize = (params.colony_size as number) ??40;
+        const iterations = (params.iterations as number) ??100;
         const result = await wasmModule.discover_ant_colony(
           eventLogHandle,
           activityKey,
@@ -472,8 +487,8 @@ export async function implementAlgorithmStep(
       }
 
       case 'simulated_annealing': {
-        const initialTemp = (params.initial_temperature as number) || 100;
-        const coolingRate = (params.cooling_rate as number) || 0.95;
+        const initialTemp = (params.initial_temperature as number) ??100;
+        const coolingRate = (params.cooling_rate as number) ??0.95;
         const result = await wasmModule.discover_simulated_annealing(
           eventLogHandle,
           activityKey,
@@ -485,7 +500,7 @@ export async function implementAlgorithmStep(
       }
 
       case 'declare': {
-        const supportThreshold = (params.support_threshold as number) || 0.8;
+        const supportThreshold = (params.support_threshold as number) ??0.8;
         const result = await wasmModule.discover_declare(
           eventLogHandle,
           activityKey,
@@ -723,7 +738,7 @@ export async function implementAlgorithmStep(
           features: ['trace_length', 'elapsed_time', 'activity_counts', 'rework_count', 'unique_activities', 'avg_inter_event_time'],
           target: (params.target_key as string) || 'outcome',
         });
-        const rawFeatures = (wasmModule as any).extract_case_features(eventLogHandle, activityKey, 'time:timestamp', configJson);
+        const rawFeatures = wasmModule.extract_case_features(eventLogHandle, activityKey, 'time:timestamp', configJson);
         const features = typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
         const result = await classifyTraces(features, {
           method: params.method as any,
@@ -738,7 +753,7 @@ export async function implementAlgorithmStep(
         const configJson = JSON.stringify({
           features: ['trace_length', 'elapsed_time', 'activity_counts', 'rework_count', 'unique_activities'],
         });
-        const rawFeatures = (wasmModule as any).extract_case_features(eventLogHandle, activityKey, 'time:timestamp', configJson);
+        const rawFeatures = wasmModule.extract_case_features(eventLogHandle, activityKey, 'time:timestamp', configJson);
         const features = typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
         const result = await clusterTraces(features, {
           method: params.method as any,
@@ -751,7 +766,7 @@ export async function implementAlgorithmStep(
 
       case 'ml_forecast': {
         const { forecastSeries } = await import('@pictl/ml');
-        const driftRaw = (wasmModule as any).detect_drift(eventLogHandle, activityKey, 5);
+        const driftRaw = wasmModule.detect_drift(eventLogHandle, activityKey, 5);
         const driftResult = typeof driftRaw === 'string' ? JSON.parse(driftRaw) : driftRaw;
         const distances = (driftResult?.drifts ?? []).map((d: any) => d.distance ?? 0);
         const result = await forecastSeries(distances, {
@@ -764,7 +779,7 @@ export async function implementAlgorithmStep(
 
       case 'ml_anomaly': {
         const { detectEnhancedAnomalies } = await import('@pictl/ml');
-        const driftRaw = (wasmModule as any).detect_drift(eventLogHandle, activityKey, 10);
+        const driftRaw = wasmModule.detect_drift(eventLogHandle, activityKey, 10);
         const driftResult = typeof driftRaw === 'string' ? JSON.parse(driftRaw) : driftRaw;
         const distances = (driftResult?.drifts ?? []).map((d: any) => d.distance ?? 0);
         const result = await detectEnhancedAnomalies(distances, {
@@ -780,7 +795,7 @@ export async function implementAlgorithmStep(
           features: ['trace_length', 'elapsed_time', 'rework_count', 'unique_activities', 'avg_inter_event_time'],
           target: (params.target_key as string) || 'remaining_time',
         });
-        const rawFeatures = (wasmModule as any).extract_case_features(eventLogHandle, activityKey, 'time:timestamp', configJson);
+        const rawFeatures = wasmModule.extract_case_features(eventLogHandle, activityKey, 'time:timestamp', configJson);
         const features = typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
         const result = await regressRemainingTime(features, {
           method: params.method as any,
@@ -794,7 +809,7 @@ export async function implementAlgorithmStep(
         const configJson = JSON.stringify({
           features: ['trace_length', 'elapsed_time', 'activity_counts', 'rework_count', 'unique_activities', 'avg_inter_event_time'],
         });
-        const rawFeatures = (wasmModule as any).extract_case_features(eventLogHandle, activityKey, 'time:timestamp', configJson);
+        const rawFeatures = wasmModule.extract_case_features(eventLogHandle, activityKey, 'time:timestamp', configJson);
         const features = typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
         const result = await reduceFeaturesPCA(features, {
           nComponents: (params.n_components as number) ?? 2,
