@@ -38,11 +38,6 @@ if [ -z "$DOCTOR_OUTPUT" ]; then
   exit 2  # Block stop
 fi
 
-if [ -z "$DOCTOR_OUTPUT" ]; then
-  echo "ERROR: pictl doctor returned empty output" >&2
-  exit 2  # Block stop
-fi
-
 # Parse health status (strict)
 HEALTHY=$(echo "$DOCTOR_OUTPUT" | jq -r '.healthy // false' 2>/dev/null)
 if [ $? -ne 0 ] || [ -z "$HEALTHY" ]; then

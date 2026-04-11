@@ -89,7 +89,7 @@ async function resolveWasmPkgDir(): Promise<string | null> {
       try {
         const raw = await fs.readFile(pkgJson, 'utf-8');
         const pkg = JSON.parse(raw) as { name?: string; workspaces?: unknown };
-        if (pkg.name === 'wasm4pm' || pkg.name === '@pictl/root') {
+        if (pkg.name === 'wasm4pm') {
           return path.join(dir, 'wasm4pm', 'pkg');
         }
       } catch {
@@ -110,7 +110,7 @@ async function checkWasmBinary(): Promise<CheckResult> {
       name: 'WASM binary',
       status: 'fail',
       message: 'Cannot locate wasm4pm/pkg/ directory (workspace root not found)',
-      fix: 'Run this command from inside the wasm4pm workspace, then rebuild: cd wasm4pm && npm run build',
+      fix: 'Run this command from inside the wasm4pm workspace, then rebuild: cd wasm4pm && pnpm run build',
     };
   }
 
@@ -125,7 +125,7 @@ async function checkWasmBinary(): Promise<CheckResult> {
         name: 'WASM binary',
         status: 'fail',
         message: `${wasmFile} exists but is empty`,
-        fix: 'Rebuild WASM: cd wasm4pm && npm run build',
+        fix: 'Rebuild WASM: cd wasm4pm && pnpm run build',
       };
     }
 
@@ -137,7 +137,7 @@ async function checkWasmBinary(): Promise<CheckResult> {
       name: 'WASM binary',
       status: 'fail',
       message: `WASM binary not built — ${wasmFile} not found`,
-      fix: 'Build the WASM module: cd wasm4pm && npm run build',
+      fix: 'Build the WASM module: cd wasm4pm && pnpm run build',
     };
   }
 }
@@ -163,7 +163,7 @@ async function checkWasmLoads(): Promise<CheckResult> {
       name: 'WASM loads',
       status: 'fail',
       message: 'wasm4pm.js not found — module not built',
-      fix: 'cd wasm4pm && npm run build',
+      fix: 'cd wasm4pm && pnpm run build',
     };
   }
 
@@ -183,7 +183,7 @@ async function checkWasmLoads(): Promise<CheckResult> {
       name: 'WASM loads',
       status: 'fail',
       message: `Failed to import WASM module: ${msg}`,
-      fix: 'Rebuild with: cd wasm4pm && npm run build',
+      fix: 'Rebuild with: cd wasm4pm && pnpm run build',
     };
   }
 }
