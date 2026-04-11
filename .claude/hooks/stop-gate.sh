@@ -1,0 +1,56 @@
+#!/bin/bash
+# Stop Hook: pictl Doctor Gate
+#
+# Prevents Claude from stopping if pictl environment has critical failures.
+# CRITICAL: Must fail loudly if doctor check fails.
+
+set -e
+
+INPUT=$(cat)
+
+# Check if hook is already active (prevent infinite loop)
+HOOK_ACTIVE=$(echo "$INPUT" | jq -r '.stop_hook_active // false' 2>/dev/null)
+if [ "$HOOK_ACTIVE" = "true" ]; then
+  exit 0  # Allow stop
+fi
+
+# Run pictl doctor (must succeed)
+DOCTOR_OUTPUT=""
+if command -v pictl &>/dev/null; then
+  DOCTOR_OUTPUT=$(pictl doctor --format json)
+elif [ -f "$CLAUDE_PROJECT_DIR/apps/pmctl/dist/cli.js" ]; then
+  DOCTOR_OUTPUT=$(node "$CLAUDE_PROJECT_DIR/apps/pmctl/dist/cli.js" doctor --format json)
+else
+  echo "ERROR: pictl doctor unavailable" >&2
+  exit 2  # Block stop
+fi
+
+if [ -z "$DOCTOR_OUTPUT" ]; then
+  echo "ERROR: pictl doctor returned empty output" >&2
+  exit 2  # Block stop
+fi
+
+# Parse health status (strict)
+HEALTHY=$(echo "$DOCTOR_OUTPUT" | jq -r '.healthy // false' 2>/dev/null)
+if [ $? -ne 0 ] || [ -z "$HEALTHY" ]; then
+  echo "ERROR: Cannot parse pictl doctor output" >&2
+  exit 2
+fi
+
+if [ "$HEALTHY" = "true" ]; then
+  # Environment is healthy, allow stop
+  exit 0
+fi
+
+# Environment is degraded, block stop
+FAIL=$(echo "$DOCTOR_OUTPUT" | jq -r '.fail // 0')
+FAILS=$(echo "$DOCTOR_OUTPUT" | jq -r '.checks[] | select(.status == "fail") | "\(.name): \(.message) (fix: \(.fix))"' 2>/dev/null | head -3 | sed 's/^/  • /')
+
+REASON="pictl doctor: $FAIL critical failure(s) detected
+$FAILS
+
+Run: pictl doctor --verbose for full report"
+
+# Block stop with JSON decision
+echo "{\"hookSpecificOutput\":{\"hookEventName\":\"Stop\",\"decision\":\"block\",\"blockReason\":\"$REASON\"}}"
+exit 0
