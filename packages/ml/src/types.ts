@@ -2,9 +2,10 @@
  * Type definitions for @pictl/ml
  *
  * Result interfaces for all ML operations.
+ * Native process intelligence ML — no external ML library dependencies.
  */
 
-/** Numeric feature matrix ready for micro-ml consumption */
+/** Numeric feature matrix ready for ML consumption */
 export interface FeatureMatrix {
   /** Rows = traces/observations, cols = features */
   data: number[][];

@@ -19,7 +19,7 @@ From `docs/BENCHMARKS.md`:
 | **Rust**          | stable toolchain, `cargo build --release`           |
 | **WASM build**    | `wasm-pack build --target nodejs`                   |
 | **RUSTFLAGS**     | `-C target-feature=+simd128`                        |
-| **pictl version** | v26.4.7                                             |
+| **pictl version** | v26.4.9                                             |
 | **Iterations**    | Median of 7 runs                                    |
 | **Dataset**       | Synthetic event logs (6 activities, 20 events/case) |
 
@@ -233,7 +233,7 @@ Hardware: Apple M2 Pro, 16GB unified memory
 OS: macOS 14.4 (Darwin 23.4.0)
 Rust: 1.80.0 (stable)
 wasm-pack: 0.13.1
-pictl: v26.4.7
+pictl: v26.4.9
 Build: RUSTFLAGS="-C target-feature=+simd128" wasm-pack build --target nodejs
 Iterations: 7 (median reported)
 

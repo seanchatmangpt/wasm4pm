@@ -1,10 +1,10 @@
-use wasm_bindgen::prelude::*;
-use crate::state::{get_or_init_state, StoredObject};
 use crate::models::*;
+use crate::state::{get_or_init_state, StoredObject};
+use crate::utilities::to_js;
+use rustc_hash::FxHashMap;
 use serde_json::json;
 use std::collections::HashSet;
-use rustc_hash::FxHashMap;
-use crate::utilities::to_js;
+use wasm_bindgen::prelude::*;
 
 /// Heuristic Miner - discovers process models from real-world logs
 /// More lenient than Alpha++ for handling noise and incomplete data
@@ -40,13 +40,15 @@ pub fn discover_heuristic_miner(
                 frequency: 0,
             }));
 
-            let mut follows:  FxHashMap<(u32, u32), usize> = FxHashMap::default();
+            let mut follows: FxHashMap<(u32, u32), usize> = FxHashMap::default();
             let mut precedes: FxHashMap<(u32, u32), usize> = FxHashMap::default();
 
             for t in 0..col.trace_offsets.len().saturating_sub(1) {
                 let start = col.trace_offsets[t];
-                let end   = col.trace_offsets[t + 1];
-                if start >= end { continue; }
+                let end = col.trace_offsets[t + 1];
+                if start >= end {
+                    continue;
+                }
 
                 // Node frequencies + pair counts — single sequential pass
                 for &id in &col.events[start..end] {
@@ -54,7 +56,7 @@ pub fn discover_heuristic_miner(
                 }
                 for i in start..end - 1 {
                     let (a, b) = (col.events[i], col.events[i + 1]);
-                    *follows.entry((a, b)).or_insert(0)  += 1;
+                    *follows.entry((a, b)).or_insert(0) += 1;
                     *precedes.entry((b, a)).or_insert(0) += 1;
                 }
                 // Start / end
@@ -75,7 +77,7 @@ pub fn discover_heuristic_miner(
                 if (ab - ba) / (ab + ba + 1.0) >= dependency_threshold {
                     dfg.edges.push(DirectlyFollowsRelation {
                         from: col.vocab[a as usize].to_owned(),
-                        to:   col.vocab[b as usize].to_owned(),
+                        to: col.vocab[b as usize].to_owned(),
                         frequency: count,
                     });
                 }
@@ -144,7 +146,9 @@ pub fn analyze_infrequent_paths(
             infrequent_paths.sort_by(|a, b| {
                 let freq_a = a["frequency"].as_f64().unwrap_or(0.0);
                 let freq_b = b["frequency"].as_f64().unwrap_or(0.0);
-                freq_b.partial_cmp(&freq_a).unwrap_or(std::cmp::Ordering::Equal)
+                freq_b
+                    .partial_cmp(&freq_a)
+                    .unwrap_or(std::cmp::Ordering::Equal)
             });
 
             to_js(&json!({
@@ -243,7 +247,7 @@ pub fn detect_bottlenecks(
                         if duration > duration_threshold_seconds {
                             activity_durations
                                 .entry(activity.clone())
-                                .or_insert_with(Vec::new)
+                                .or_default()
                                 .push(duration);
                         }
                     }
@@ -268,7 +272,9 @@ pub fn detect_bottlenecks(
             bottlenecks.sort_by(|a, b| {
                 let avg_a = a["avg_duration"].as_f64().unwrap_or(0.0);
                 let avg_b = b["avg_duration"].as_f64().unwrap_or(0.0);
-                avg_b.partial_cmp(&avg_a).unwrap_or(std::cmp::Ordering::Equal)
+                avg_b
+                    .partial_cmp(&avg_a)
+                    .unwrap_or(std::cmp::Ordering::Equal)
             });
 
             to_js(&json!({
@@ -283,7 +289,10 @@ pub fn detect_bottlenecks(
 
 /// Get process model complexity metrics
 #[wasm_bindgen]
-pub fn compute_model_metrics(eventlog_handle: &str, activity_key: &str) -> Result<JsValue, JsValue> {
+pub fn compute_model_metrics(
+    eventlog_handle: &str,
+    activity_key: &str,
+) -> Result<JsValue, JsValue> {
     get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
             let activities = log.get_activities(activity_key);

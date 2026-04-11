@@ -1,7 +1,7 @@
 {
   "name": "@pictl/ml",
-  "version": "26.4.7",
-  "description": "ML-powered process mining analysis using micro-ml — classification, clustering, forecasting, anomaly detection, PCA",
+  "version": "26.4.10",
+  "description": "Native ML-powered process mining analysis — classification, clustering, forecasting, anomaly detection, PCA",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -24,9 +24,6 @@
     "lint": "tsc --noEmit",
     "clean": "rm -rf dist *.tsbuildinfo"
   },
-  "dependencies": {
-    "micro-ml": "^1.0.0"
-  },
   "devDependencies": {
     "@types/node": "^20.10.0",
     "typescript": "^5.3.3",
@@ -41,8 +38,8 @@
     "anomaly-detection",
     "pca",
     "wasm4pm",
-    "micro-ml"
+    "pictl"
   ],
   "author": "Sean Chatman",
-  "license": "MIT OR Apache-2.0"
+  "license": "SEE LICENSE IN LICENSE"
 }

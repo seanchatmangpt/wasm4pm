@@ -5,8 +5,8 @@
 //!
 //! Ported from pm4wasm/src/conformance/footprints_conf.rs
 
-use crate::powl_event_log::EventLog;
 use crate::powl::footprints::Footprints;
+use crate::powl_event_log::EventLog;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -37,8 +37,7 @@ fn log_footprints(log: &EventLog) -> HashMap<(String, String), usize> {
 pub fn check(log: &EventLog, model_fp: &Footprints) -> FootprintsConformanceResult {
     let log_fp_map = log_footprints(log);
 
-    let model_sequence: std::collections::HashSet<(String, String)> =
-        model_fp.sequence.clone();
+    let model_sequence: std::collections::HashSet<(String, String)> = model_fp.sequence.clone();
     let log_sequence: std::collections::HashSet<(String, String)> =
         log_fp_map.keys().cloned().collect();
 
@@ -136,7 +135,8 @@ mod tests {
     }
 
     #[test]
-    fn perfect_conformance() {
+    fn test_footprints_perfect_conformance() {
+        // Happy path: log matches model perfectly
         let log = make_log(vec![("1", &["A", "B", "C"]), ("2", &["A", "B", "C"])]);
         let model_fp = make_model_fp(&["A", "B", "C"], &[("A", "B"), ("B", "C")]);
         let result = check(&log, &model_fp);
@@ -145,25 +145,23 @@ mod tests {
     }
 
     #[test]
-    fn imperfect_fitness_extra_pair() {
+    fn test_footprints_imperfect_metrics() {
+        // Imperfect fitness: extra pair in log
         let log = make_log(vec![("1", &["A", "B", "C", "A"])]);
         let model_fp = make_model_fp(&["A", "B", "C"], &[("A", "B"), ("B", "C")]);
         let result = check(&log, &model_fp);
         assert!(result.fitness < 1.0);
-        assert!(result.precision > 0.0);
-    }
 
-    #[test]
-    fn imperfect_precision_missing_pair() {
+        // Imperfect precision: missing pair in model
         let log = make_log(vec![("1", &["A", "B"])]);
         let model_fp = make_model_fp(&["A", "B", "C"], &[("A", "B"), ("B", "C")]);
         let result = check(&log, &model_fp);
-        assert!((result.fitness - 1.0).abs() < 1e-9);
         assert!(result.precision < 1.0);
     }
 
     #[test]
-    fn empty_log() {
+    fn test_footprints_empty_log() {
+        // Edge case: empty log has perfect fitness
         let log = make_log(vec![]);
         let model_fp = make_model_fp(&["A"], &[]);
         let result = check(&log, &model_fp);

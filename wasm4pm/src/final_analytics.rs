@@ -1,13 +1,13 @@
-use wasm_bindgen::prelude::*;
-use crate::state::{get_or_init_state, StoredObject};
 use crate::models::*;
+use crate::state::{get_or_init_state, StoredObject};
+use crate::utilities::to_js;
+use itertools::Itertools;
+use rustc_hash::FxHashMap;
 use serde_json::json;
 use std::collections::HashSet;
-use rustc_hash::FxHashMap;
-use itertools::Itertools;
-use crate::utilities::to_js;
+use wasm_bindgen::prelude::*;
 
-/// Variant Complexity - measure variant entropy and diversity
+/// Measure variant entropy and diversity in event log.
 #[wasm_bindgen]
 pub fn analyze_variant_complexity(
     eventlog_handle: &str,
@@ -44,11 +44,7 @@ pub fn analyze_variant_complexity(
                 p.log2().mul_add(-p, acc)
             });
 
-            let coverage_top_10: f64 = variants
-                .values()
-                .map(|&v| v as f64 / total)
-                .take(10)
-                .sum();
+            let coverage_top_10: f64 = variants.values().map(|&v| v as f64 / total).take(10).sum();
 
             to_js(&json!({
                 "total_variants": variants.len(),
@@ -64,7 +60,7 @@ pub fn analyze_variant_complexity(
     })
 }
 
-/// Activity Transition Matrix - co-activity flow matrix
+/// Compute activity transition matrix (Markov chain).
 #[wasm_bindgen]
 pub fn compute_activity_transition_matrix(
     eventlog_handle: &str,
@@ -82,10 +78,7 @@ pub fn compute_activity_transition_matrix(
 
             for trace in &log.traces {
                 trace.events.windows(2).for_each(|w| {
-                    if let (
-                        Some(AttributeValue::String(a1)),
-                        Some(AttributeValue::String(a2)),
-                    ) = (
+                    if let (Some(AttributeValue::String(a1)), Some(AttributeValue::String(a2))) = (
                         w[0].attributes.get(activity_key),
                         w[1].attributes.get(activity_key),
                     ) {
@@ -99,7 +92,8 @@ pub fn compute_activity_transition_matrix(
             let matrix_data: Vec<_> = transitions
                 .iter()
                 .map(|((from, to), count)| {
-                    let prob = *count as f64 / activity_total.get(from).copied().unwrap_or(1) as f64;
+                    let prob =
+                        *count as f64 / activity_total.get(from).copied().unwrap_or(1) as f64;
                     json!({
                         "from": from,
                         "to": to,
@@ -119,7 +113,7 @@ pub fn compute_activity_transition_matrix(
     })
 }
 
-/// Process Speedup Analysis - identify where process accelerates/decelerates
+/// Identify where process accelerates/decelerates over time.
 #[wasm_bindgen]
 pub fn analyze_process_speedup(
     eventlog_handle: &str,
@@ -133,8 +127,7 @@ pub fn analyze_process_speedup(
             for trace in &log.traces {
                 let mut timestamps: Vec<String> = Vec::new();
                 for event in &trace.events {
-                    if let Some(AttributeValue::String(ts)) = event.attributes.get(timestamp_key)
-                    {
+                    if let Some(AttributeValue::String(ts)) = event.attributes.get(timestamp_key) {
                         timestamps.push(ts.clone());
                     }
                 }
@@ -175,7 +168,7 @@ pub fn analyze_process_speedup(
     })
 }
 
-/// Trace Distance Matrix - compute pairwise trace similarity
+/// Compute pairwise trace similarity matrix.
 #[wasm_bindgen]
 pub fn compute_trace_similarity_matrix(
     eventlog_handle: &str,
@@ -186,10 +179,12 @@ pub fn compute_trace_similarity_matrix(
             let mut similarities = Vec::new();
 
             // Pre-compute HashSet<&str> per trace — O(n log n) once, O(1) per pair lookup
-            let trace_sets: Vec<HashSet<&str>> = log.traces
+            let trace_sets: Vec<HashSet<&str>> = log
+                .traces
                 .iter()
                 .map(|trace| {
-                    trace.events
+                    trace
+                        .events
                         .iter()
                         .filter_map(|e| e.attributes.get(activity_key)?.as_string())
                         .collect()
@@ -199,9 +194,7 @@ pub fn compute_trace_similarity_matrix(
             for i in 0..log.traces.len() {
                 for j in (i + 1)..log.traces.len() {
                     // Jaccard via set intersection/union — O(min(|i|,|j|)) per pair
-                    let common = trace_sets[i]
-                        .intersection(&trace_sets[j])
-                        .count();
+                    let common = trace_sets[i].intersection(&trace_sets[j]).count();
                     let union = trace_sets[i].len() + trace_sets[j].len() - common;
                     let similarity = if union > 0 {
                         common as f64 / union as f64
@@ -229,7 +222,7 @@ pub fn compute_trace_similarity_matrix(
     })
 }
 
-/// Process Bottleneck Timeline - identify temporal bottlenecks
+/// Identify temporal bottlenecks by activity duration.
 #[wasm_bindgen]
 pub fn analyze_temporal_bottlenecks(
     eventlog_handle: &str,
@@ -245,9 +238,13 @@ pub fn analyze_temporal_bottlenecks(
                     .events
                     .iter()
                     .filter_map(|e| {
-                        if let (Some(AttributeValue::String(act)), Some(AttributeValue::String(ts))) =
-                            (e.attributes.get(activity_key), e.attributes.get(timestamp_key))
-                        {
+                        if let (
+                            Some(AttributeValue::String(act)),
+                            Some(AttributeValue::String(ts)),
+                        ) = (
+                            e.attributes.get(activity_key),
+                            e.attributes.get(timestamp_key),
+                        ) {
                             Some((act.clone(), ts.clone()))
                         } else {
                             None
@@ -256,10 +253,11 @@ pub fn analyze_temporal_bottlenecks(
                     .collect();
 
                 for i in 0..activities.len().saturating_sub(1) {
-                    let duration = (activities[i + 1].1.len() as f64) - (activities[i].1.len() as f64);
+                    let duration =
+                        (activities[i + 1].1.len() as f64) - (activities[i].1.len() as f64);
                     activity_durations
                         .entry(activities[i].0.clone())
-                        .or_insert_with(Vec::new)
+                        .or_default()
                         .push(duration.abs());
                 }
             }
@@ -268,10 +266,7 @@ pub fn analyze_temporal_bottlenecks(
                 .iter()
                 .map(|(activity, durations)| {
                     let avg: f64 = durations.iter().sum::<f64>() / durations.len() as f64;
-                    let max = durations
-                        .iter()
-                        .copied()
-                        .fold(f64::NEG_INFINITY, f64::max);
+                    let max = durations.iter().copied().fold(f64::NEG_INFINITY, f64::max);
                     json!({
                         "activity": activity,
                         "avg_duration": avg,
@@ -289,7 +284,7 @@ pub fn analyze_temporal_bottlenecks(
     })
 }
 
-/// Activity Ordering - extract mandatory activity ordering from log
+/// Extract mandatory activity ordering from event log.
 #[wasm_bindgen]
 pub fn extract_activity_ordering(
     eventlog_handle: &str,
@@ -297,7 +292,8 @@ pub fn extract_activity_ordering(
 ) -> Result<JsValue, JsValue> {
     get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
-            let mut mandatory_predecessors: FxHashMap<String, HashSet<String>> = FxHashMap::default();
+            let mut mandatory_predecessors: FxHashMap<String, HashSet<String>> =
+                FxHashMap::default();
 
             for trace in &log.traces {
                 // Collect only events that carry the activity key, preserving order
@@ -315,14 +311,11 @@ pub fn extract_activity_ordering(
 
                 for (pos, &activity) in activities.iter().enumerate() {
                     // All activities that appear before this position are predecessors
-                    let predecessors: HashSet<String> = activities
-                        .iter()
-                        .take(pos)
-                        .map(|&a| a.to_owned())
-                        .collect();
+                    let predecessors: HashSet<String> =
+                        activities.iter().take(pos).map(|&a| a.to_owned()).collect();
                     mandatory_predecessors
                         .entry(activity.to_owned())
-                        .or_insert_with(HashSet::new)
+                        .or_default()
                         .extend(predecessors);
                 }
             }

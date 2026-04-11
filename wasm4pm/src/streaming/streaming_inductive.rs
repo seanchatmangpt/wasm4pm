@@ -10,8 +10,10 @@
 //! - **Parallel cut**: Both directions have edges (symmetric)
 //! - **Loop cut**: Activities repeat (start == end for some subset)
 
-use crate::models::{PetriNet, PetriNetPlace, PetriNetTransition, PetriNetArc};
-use crate::streaming::{StreamingAlgorithm, StreamStats, ActivityInterner, impl_activity_interner, Interner};
+use crate::models::{PetriNet, PetriNetArc, PetriNetPlace, PetriNetTransition};
+use crate::streaming::{
+    impl_activity_interner, ActivityInterner, Interner, StreamStats, StreamingAlgorithm,
+};
 use rustc_hash::FxHashMap;
 use std::collections::{HashMap, HashSet};
 
@@ -87,13 +89,14 @@ impl StreamingInductiveBuilder {
         let mut successors: HashMap<u32, HashSet<u32>> = HashMap::new();
         let mut predecessors: HashMap<u32, HashSet<u32>> = HashMap::new();
 
-        for (&(from, to), _) in &self.edge_counts {
+        for &(from, to) in self.edge_counts.keys() {
             successors.entry(from).or_default().insert(to);
             predecessors.entry(to).or_default().insert(from);
         }
 
         // Check for sequential cut: activities form a topological order
-        let sequential_order = self.detect_sequential_order(&activities, &starts, &ends, &successors);
+        let sequential_order =
+            self.detect_sequential_order(&activities, &starts, &ends, &successors);
         if let Some(order) = sequential_order {
             return self.build_sequential_net(order);
         }
@@ -272,7 +275,7 @@ impl StreamingInductiveBuilder {
 
         // Find parallel pairs: both (a,b) and (b,a) exist in edge_counts
         let mut parallel_pairs: HashSet<(u32, u32)> = HashSet::new();
-        for (&(from, to), _) in &self.edge_counts {
+        for &(from, to) in self.edge_counts.keys() {
             if self.edge_counts.contains_key(&(to, from)) {
                 parallel_pairs.insert((from.min(to), from.max(to)));
             }
@@ -400,7 +403,8 @@ impl StreamingInductiveBuilder {
 
         // Deduplicate arcs
         let mut seen: HashSet<(String, String)> = HashSet::new();
-        net.arcs.retain(|a| seen.insert((a.from.clone(), a.to.clone())));
+        net.arcs
+            .retain(|a| seen.insert((a.from.clone(), a.to.clone())));
 
         net
     }
@@ -424,7 +428,13 @@ impl StreamingInductiveBuilder {
         });
 
         for group in groups {
-            let place_id = format!("p_excl_{}", group.first().map(|id| self.interner.get(*id).unwrap_or("?")).unwrap_or("?"));
+            let place_id = format!(
+                "p_excl_{}",
+                group
+                    .first()
+                    .map(|id| self.interner.get(*id).unwrap_or("?"))
+                    .unwrap_or("?")
+            );
 
             net.places.push(PetriNetPlace {
                 id: place_id.clone(),
@@ -478,7 +488,8 @@ impl StreamingInductiveBuilder {
         let mut seen_t: HashSet<String> = HashSet::new();
         net.transitions.retain(|t| seen_t.insert(t.id.clone()));
         let mut seen_a: HashSet<(String, String)> = HashSet::new();
-        net.arcs.retain(|a| seen_a.insert((a.from.clone(), a.to.clone())));
+        net.arcs
+            .retain(|a| seen_a.insert((a.from.clone(), a.to.clone())));
 
         net
     }
@@ -545,7 +556,8 @@ impl StreamingInductiveBuilder {
         let mut seen_t: HashSet<String> = HashSet::new();
         net.transitions.retain(|t| seen_t.insert(t.id.clone()));
         let mut seen_a: HashSet<(String, String)> = HashSet::new();
-        net.arcs.retain(|a| seen_a.insert((a.from.clone(), a.to.clone())));
+        net.arcs
+            .retain(|a| seen_a.insert((a.from.clone(), a.to.clone())));
 
         net
     }
@@ -718,7 +730,7 @@ impl StreamingAlgorithm for StreamingInductiveBuilder {
         let id = self.intern(activity);
         self.open_traces
             .entry(case_id.to_owned())
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(id);
 
         if id as usize >= self.activity_counts.len() {
@@ -729,8 +741,12 @@ impl StreamingAlgorithm for StreamingInductiveBuilder {
     }
 
     fn close_trace(&mut self, case_id: &str) -> bool {
-        let Some(events) = self.open_traces.remove(case_id) else { return false; };
-        if events.is_empty() { return true; }
+        let Some(events) = self.open_traces.remove(case_id) else {
+            return false;
+        };
+        if events.is_empty() {
+            return true;
+        }
 
         for &id in &events {
             self.activity_counts[id as usize] += 1;
@@ -755,11 +771,12 @@ impl StreamingAlgorithm for StreamingInductiveBuilder {
 
     fn stats(&self) -> StreamStats {
         let open_trace_events: usize = self.open_traces.values().map(|v| v.len()).sum();
-        let memory_bytes =
-            self.open_traces.capacity() * (std::mem::size_of::<String>() + std::mem::size_of::<Vec<u32>>()) +
-            open_trace_events * std::mem::size_of::<u32>() +
-            self.activity_counts.capacity() * std::mem::size_of::<usize>() +
-            self.edge_counts.capacity() * (std::mem::size_of::<(u32,u32)>() + std::mem::size_of::<usize>());
+        let memory_bytes = self.open_traces.capacity()
+            * (std::mem::size_of::<String>() + std::mem::size_of::<Vec<u32>>())
+            + open_trace_events * std::mem::size_of::<u32>()
+            + self.activity_counts.capacity() * std::mem::size_of::<usize>()
+            + self.edge_counts.capacity()
+                * (std::mem::size_of::<(u32, u32)>() + std::mem::size_of::<usize>());
 
         StreamStats {
             event_count: self.event_count,
@@ -812,7 +829,10 @@ mod tests {
         }
 
         let net = stream.snapshot();
-        assert!(!net.places.is_empty(), "should have places for sequential cut");
+        assert!(
+            !net.places.is_empty(),
+            "should have places for sequential cut"
+        );
         assert!(!net.transitions.is_empty(), "should have transitions");
         assert!(!net.arcs.is_empty(), "should have arcs");
     }
@@ -839,7 +859,10 @@ mod tests {
         stream.close_trace("c2");
 
         let net = stream.snapshot();
-        assert!(!net.transitions.is_empty(), "should detect parallel and create transitions");
+        assert!(
+            !net.transitions.is_empty(),
+            "should detect parallel and create transitions"
+        );
     }
 
     #[test]
@@ -857,6 +880,9 @@ mod tests {
         }
 
         let net = stream.snapshot();
-        assert!(!net.transitions.is_empty(), "should detect exclusive and create transitions");
+        assert!(
+            !net.transitions.is_empty(),
+            "should detect exclusive and create transitions"
+        );
     }
 }

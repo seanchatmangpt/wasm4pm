@@ -1,29 +1,60 @@
 <div align="center">
-<h1><strong>wasm4pm</strong> - Process Mining for WebAssembly</h1>
+<h1><strong>pictl</strong> - Process Mining for WebAssembly</h1>
 <p><strong>High-Performance Process Mining Algorithms in JavaScript/TypeScript</strong></p>
 <p>
-  <a href="https://www.npmjs.com/package/wasm4pm">
-    <img src="https://img.shields.io/npm/v/wasm4pm" alt="npm version"/></a>
-  <a href="https://www.npmjs.com/package/wasm4pm">
-    <img src="https://img.shields.io/npm/dm/wasm4pm" alt="npm downloads"/></a>
-  <a href="https://github.com/seanchatmangpt/wasm4pm">
-    <img src="https://img.shields.io/github/stars/seanchatmangpt/wasm4pm" alt="GitHub stars"/></a>
+  <a href="https://www.npmjs.com/package/@seanchatmangpt/pictl">
+    <img src="https://img.shields.io/npm/v/@seanchatmangpt/pictl" alt="npm version"/></a>
+  <a href="https://www.npmjs.com/package/@seanchatmangpt/pictl">
+    <img src="https://img.shields.io/npm/dm/@seanchatmangpt/pictl" alt="npm downloads"/></a>
+  <a href="https://github.com/seanchatmangpt/pictl">
+    <img src="https://img.shields.io/github/stars/seanchatmangpt/pictl" alt="GitHub stars"/></a>
 </p>
-<img src="Ferris emerges from the black hole.png" width="300" alt="wasm4pm logo: Ferris emerges from the black hole"/>
+<img src="Ferris emerges from the black hole.png" width="300" alt="pictl logo: Ferris emerges from the black hole"/>
 </div>
 
 ---
 
-## What is wasm4pm?
+## What is pictl?
 
-**wasm4pm** is a comprehensive, enterprise-grade process mining platform compiled to WebAssembly. It brings production-grade process discovery, conformance checking, analysis, and automation capabilities to browsers, Node.js, and containers.
+**pictl** is a comprehensive, enterprise-grade process mining platform compiled to WebAssembly. It brings production-grade process discovery, conformance checking, analysis, and automation capabilities to browsers, Node.js, and containers.
 
-Process mining extracts actionable insights from event logs by discovering process models, detecting deviations, and analyzing performance bottlenecks. **wasm4pm** makes this accessible to JavaScript developers with near-native performance, plus professional CLI tools, HTTP APIs, and observability for enterprise deployments.
+Process mining extracts actionable insights from event logs by discovering process models, detecting deviations, and analyzing performance bottlenecks. **pictl** makes this accessible to JavaScript developers with near-native performance, plus professional CLI tools, HTTP APIs, and observability for enterprise deployments.
+
+### Version 26.4.9 (April 2026)
+**Deployment Profiles:** Optimized WASM builds for different target environments. Choose from 5 profiles (browser ~500KB, edge ~1.5MB, fog ~2.0MB, iot ~1.0MB, cloud ~2.78MB) to reduce binary size by up to 82% for production use. Zero breaking changes — default build unchanged.
 
 ### Version 26.4.5 (April 2026)
 **Major Release:** Added 10 new packages (engine, config, service, observability, contracts, types, kernel, planner, templates, testing) while maintaining 100% backward compatibility. Introduces professional CLI tool (pmctl), configuration management, HTTP service layer, and comprehensive observability.
 
 ## 🚀 Key Capabilities
+
+### Deployment Profiles (NEW in v26.4.8)
+
+Choose the right build for your target environment:
+
+| Profile | Size | Use Case | Build Command |
+|---------|------|----------|--------------|
+| **browser** | ~500KB | Web browsers, mobile web | `npm run build:browser` |
+| **edge** | ~1.5MB | Edge servers, CDN workers | `npm run build:edge` |
+| **fog** | ~2.0MB | Fog computing, IoT gateways | `npm run build:fog` |
+| **iot** | ~1.0MB | IoT devices, embedded systems | `npm run build:iot` |
+| **cloud** | ~2.78MB | Cloud servers (default) | `npm run build` |
+
+**Key Features:**
+- **Zero Breaking Changes:** Default `npm run build` unchanged (cloud profile)
+- **Production Optimization:** Profile builds reduce size up to 82%
+- **Conditional Compilation:** 30+ modules use `#[cfg(feature)]` gates
+- **Smart Defaults:** npm package includes full features for immediate experimentation
+
+```bash
+# Development (unchanged)
+npm run build  # Full features (2.78MB)
+
+# Production (size-optimized)
+npm run build:browser  # ~500KB (82% smaller!)
+```
+
+See [DEPLOYMENT_PROFILES.md](./wasm4pm/DEPLOYMENT_PROFILES.md) for complete guide.
 
 ### Discovery Layer
 **14 Discovery Algorithms** with 4 execution profiles (Fast, Balanced, Quality, Stream):
@@ -83,7 +114,7 @@ Verify event logs against discovered models:
 - Trace classification (conforming/deviating)
 
 ### Claude Integration via MCP
-Use wasm4pm directly with Claude through the Model Context Protocol:
+Use pictl directly with Claude through the Model Context Protocol:
 - Discover models with natural language requests
 - Analyze processes conversationally
 - Generate visualizations on demand
@@ -92,26 +123,55 @@ Use wasm4pm directly with Claude through the Model Context Protocol:
 ## 📦 Installation
 
 ```bash
-npm install wasm4pm
+npm install @seanchatmangpt/pictl
 ```
 
 ### Requirements
 - Node.js 16+ or modern browser
-- ~2MB WASM binary (gzipped: ~600KB)
+- **Binary size varies by deployment profile:**
+  - browser: ~500KB (gzipped: ~150KB)
+  - iot: ~1.0MB (gzipped: ~300KB)
+  - edge: ~1.5MB (gzipped: ~450KB)
+  - fog: ~2.0MB (gzipped: ~600KB)
+  - cloud: ~2.78MB (gzipped: ~800KB, default)
+
+## 🎯 What's New in v26.4.8
+
+### Deployment Profiles
+- **5 deployment profiles** for optimized WASM binary sizes
+- **Up to 82% size reduction** for browser/iot deployments
+- **Profile-specific build scripts:** `npm run build:{browser,edge,fog,iot,cloud}`
+- **Conditional compilation:** 30+ modules use `#[cfg(feature)]` gates
+- **Hand-rolled statistics:** Replaces statrs for size-constrained profiles (~200KB savings)
+- **Zero breaking changes:** Default build produces full-featured binary
+
+### Key Features
+- **browser profile** (~500KB): Web browsers, mobile web
+- **edge profile** (~1.5MB): Edge servers, CDN workers
+- **fog profile** (~2.0MB): Fog computing, IoT gateways
+- **iot profile** (~1.0MB): IoT devices, embedded systems
+- **cloud profile** (~2.78MB): Full feature set (default)
+
+### Technical Implementation
+- **Cargo.toml:** 30+ feature flags for modular compilation
+- **lib.rs:** Conditional module compilation for POWL, advanced discovery, ML, OCEL, streaming, conformance
+- **hand_stats.rs:** Hand-rolled statistics replacing statrs for minimal builds
+- **TypeScript registry:** Deployment profile filtering with auto-inference
+
+See [DEPLOYMENT_PROFILES.md](./wasm4pm/DEPLOYMENT_PROFILES.md) for complete guide.
 
 ## 🎯 What's New in v26.4.5
 
-### 10 New Packages
-1. **@wasm4pm/pmctl** - Professional CLI tool
-2. **@wasm4pm/config** - Configuration management
-3. **@wasm4pm/engine** - Execution engine lifecycle
-4. **@wasm4pm/service** - HTTP service layer
-5. **@wasm4pm/observability** - Non-blocking logging
-6. **@wasm4pm/contracts** - Type-safe contracts (Zod)
-7. **@wasm4pm/types** - Shared TypeScript definitions
-8. **@wasm4pm/kernel** - WASM kernel operations
-9. **@wasm4pm/planner** - Algorithm recommendation
-10. Plus: connectors, sinks, templates, testing, ocel
+### 9 Consolidated Packages
+1. **@pictl/contracts** - Type-safe contracts, receipts, errors, algorithm registry
+2. **@pictl/config** - Configuration management with Zod validation
+3. **@pictl/engine** - Execution engine lifecycle state machine
+4. **@pictl/observability** - Non-blocking logging and OTEL spans
+5. **@pictl/kernel** - WASM kernel operations (21 algorithms)
+6. **@pictl/planner** - Algorithm recommendation and execution plans
+7. **@pictl/testing** - Parity, determinism, CLI, and OTEL test harnesses
+8. **@pictl/ml** - Micro-ML analysis (classify, cluster, forecast, anomaly, regress, PCA)
+9. **@pictl/swarm** - Multi-worker coordinator with convergence detection
 
 ### Highlights
 - **Streaming Conformance:** Real-time trace validation (177× faster)
@@ -125,11 +185,39 @@ See [RELEASE_NOTES.md](./RELEASE_NOTES.md) for complete details.
 
 ## ⚡ Quick Start
 
+### Building with Deployment Profiles (NEW in v26.4.8)
+
+Choose the right build for your target environment:
+
+```bash
+# Default: Full features (2.78MB) - Development & cloud servers
+npm run build
+
+# Production optimization: Size-constrained builds
+npm run build:browser  # ~500KB for web browsers
+npm run build:edge     # ~1.5MB for edge servers
+npm run build:fog      # ~2.0MB for fog computing
+npm run build:iot      # ~1.0MB for IoT devices
+
+# Build all profiles for testing
+npm run build:all-profiles
+
+# Check binary size
+npm run size:check
+```
+
+**Which profile should you use?**
+- **browser** — Web apps, mobile web, progressive web apps
+- **edge** — CDN workers, Cloudflare Workers, edge servers
+- **fog** — Regional aggregation, IoT gateways, on-premise servers
+- **iot** — Embedded devices, resource-constrained environments
+- **cloud** — Cloud servers, data centers, unlimited resources (default)
+
 ### Browser
 ```html
-<script src="node_modules/wasm4pm/pkg/wasm4pm.js"></script>
+<script src="node_modules/@seanchatmangpt/pictl/pkg/pictl.js"></script>
 <script>
-  const pm = wasm4pm;
+  const pm = pictl;
   await pm.init();
   
   // Load and discover
@@ -148,7 +236,7 @@ See [RELEASE_NOTES.md](./RELEASE_NOTES.md) for complete details.
 
 ### Node.js
 ```javascript
-const pm = require('wasm4pm');
+const pm = require('@seanchatmangpt/pictl');
 
 await pm.init();
 
@@ -193,7 +281,7 @@ pmctl explain --algorithm genetic --level detailed
 ### HTTP Service (NEW)
 ```bash
 # Start HTTP service
-wasm4pm-service --port 3000 --workers 4
+pictl-service --port 3000 --workers 4
 
 # Send discovery request
 curl -X POST http://localhost:3000/api/v1/discover \
@@ -213,7 +301,9 @@ wscat -c ws://localhost:3000/api/v1/stream
 ### Core Documentation
 | Document | Purpose |
 |----------|---------|
-| [**RELEASE_NOTES.md**](./RELEASE_NOTES.md) | v26.4.5 release overview |
+| [**RELEASE_NOTES.md**](./RELEASE_NOTES.md) | v26.4.8 and v26.4.5 release notes |
+| [**DEPLOYMENT_PROFILES.md**](./wasm4pm/DEPLOYMENT_PROFILES.md) | Deployment profile guide (v26.4.8) |
+| [**CHANGELOG.md**](./CHANGELOG.md) | Complete version history |
 | [**MIGRATION_GUIDE.md**](./MIGRATION_GUIDE.md) | Upgrading from v26.4.4 |
 | [**QUICKSTART.md**](./docs/QUICKSTART.md) | 5-minute setup guide |
 | [**TUTORIAL.md**](./docs/TUTORIAL.md) | Real-world examples |
@@ -229,12 +319,16 @@ wscat -c ws://localhost:3000/api/v1/stream
 ### Package Documentation
 | Package | Purpose |
 |---------|---------|
-| [**pmctl**](./apps/pmctl/README.md) | CLI tool reference |
-| [**@wasm4pm/config**](./packages/config/README.md) | Configuration system |
-| [**@wasm4pm/engine**](./packages/engine/README.md) | Engine lifecycle |
-| [**@wasm4pm/service**](./packages/service/README.md) | HTTP API service |
-| [**@wasm4pm/observability**](./packages/observability/README.md) | Logging and telemetry |
-| [**@wasm4pm/contracts**](./packages/contracts/README.md) | Type-safe contracts |
+| [**pictl CLI**](./apps/pmctl/README.md) | CLI tool reference |
+| [**@pictl/kernel**](./packages/kernel/README.md) | WASM kernel, 21 algorithms |
+| [**@pictl/config**](./packages/config/README.md) | Configuration system |
+| [**@pictl/engine**](./packages/engine/README.md) | Engine lifecycle |
+| [**@pictl/observability**](./packages/observability/README.md) | Logging and telemetry |
+| [**@pictl/contracts**](./packages/contracts/README.md) | Type-safe contracts |
+| [**@pictl/planner**](./packages/planner/README.md) | Algorithm planner |
+| [**@pictl/testing**](./packages/testing/README.md) | Test harnesses |
+| [**@pictl/ml**](./packages/ml/README.md) | Micro-ML analysis |
+| [**@pictl/swarm**](./packages/swarm/README.md) | Multi-worker coordinator |
 
 ### Advanced Documentation
 | Document | Purpose |
@@ -278,8 +372,13 @@ wscat -c ws://localhost:3000/api/v1/stream
 # Install dependencies (pnpm workspace)
 pnpm install
 
-# Build all packages
+# Build all packages (default: cloud profile, full features)
 pnpm build
+
+# Build with deployment profile
+cd wasm4pm
+npm run build:browser  # Size-optimized for web browsers
+npm run build:cloud    # Full features (same as default)
 
 # Run all tests
 pnpm test
@@ -296,56 +395,42 @@ pnpm dev
 
 ### Project Structure
 ```
-wasm4pm/                           # Monorepo root
+pictl/                             # Monorepo root
 ├── apps/
-│   └── pmctl/                      # CLI tool (@wasm4pm/pmctl)
-│       ├── src/commands/           # init, run, watch, status, explain
-│       ├── tests/                  # Integration tests
+│   └── pmctl/                      # CLI tool (pictl)
+│       ├── src/commands/           # run, compare, diff, predict, ml, powl, etc.
 │       └── package.json
 ├── packages/
-│   ├── config/                     # Configuration system (@wasm4pm/config)
-│   ├── contracts/                  # Type contracts (@wasm4pm/contracts)
-│   ├── engine/                     # Engine lifecycle (@wasm4pm/engine)
-│   ├── observability/              # Logging layer (@wasm4pm/observability)
-│   ├── service/                    # HTTP service (@wasm4pm/service)
-│   ├── types/                      # Shared types (@wasm4pm/types)
-│   ├── kernel/                     # WASM kernel (@wasm4pm/kernel)
-│   ├── planner/                    # Algorithm planner (@wasm4pm/planner)
-│   ├── connectors/                 # Data connectors
-│   ├── sinks/                      # Output sinks
-│   ├── templates/                  # Configuration templates
-│   ├── testing/                    # Test utilities
-│   ├── ocel/                       # Object-centric support
-│   └── wasm4pm/                    # Core WASM library
-│       ├── src/
-│       │   ├── lib.rs              # WASM entry point
-│       │   ├── discovery.rs        # Discovery algorithms
-│       │   ├── advanced_algorithms.rs
-│       │   ├── fast_discovery.rs   # A*, Hill Climbing
-│       │   ├── genetic_discovery.rs
-│       │   ├── more_discovery.rs   # ACO, Annealing
-│       │   ├── models.rs           # Core types
-│       │   ├── analysis.rs         # Analytics
-│       │   └── client.ts           # TypeScript bindings
-│       ├── benchmarks/             # Performance tests
-│       └── __tests__/              # Integration tests
+│   ├── contracts/                  # Type-safe contracts, receipts, errors (@pictl/contracts)
+│   ├── config/                     # Configuration with Zod validation (@pictl/config)
+│   ├── engine/                     # Engine lifecycle state machine (@pictl/engine)
+│   ├── observability/              # Non-blocking logging + OTEL (@pictl/observability)
+│   ├── kernel/                     # WASM kernel, 21 algorithms (@pictl/kernel)
+│   ├── planner/                    # Algorithm planner + explain (@pictl/planner)
+│   ├── testing/                    # Test harnesses (@pictl/testing)
+│   ├── ml/                         # Micro-ML analysis (@pictl/ml)
+│   └── swarm/                      # Multi-worker coordinator (@pictl/swarm)
+├── wasm4pm/                        # Rust/WASM core (21 algorithms)
+│   ├── src/
+│   │   ├── lib.rs                  # WASM entry point + conditional compilation
+│   │   ├── discovery.rs            # Discovery algorithms
+│   │   ├── hand_stats.rs           # Hand-rolled statistics (size-constrained profiles)
+│   │   └── ...                     # 30+ modules with #[cfg(feature)] gates
+│   ├── Cargo.toml                  # 30+ feature flags for deployment profiles
+│   ├── DEPLOYMENT_PROFILES.md      # Deployment profile guide
+│   └── package.json                # npm package for compiled WASM
 ├── docs/                           # Documentation (Diataxis)
-│   ├── INDEX.md                    # Full doc index
-│   ├── QUICKSTART.md
-│   ├── TUTORIAL.md
-│   ├── DEPLOYMENT.md
-│   ├── API.md
-│   ├── FAQ.md
-│   ├── tutorials/                  # 7 hands-on guides
-│   ├── how-to/                     # 20 task-focused guides
-│   ├── explanation/                # 12 conceptual deep-dives
-│   ├── reference/                  # 16 technical specs
-│   └── BROWSER-BENCHMARKS.md
-├── examples/                       # Example scripts
-├── RELEASE_NOTES.md                # This version's highlights
-├── MIGRATION_GUIDE.md              # Upgrade guide
-├── README.md                       # This file
-└── package.json                    # Workspace manifest
+│   ├── INDEX.md                    # Documentation hub
+│   ├── THESIS-V2.md                # Academic thesis (v2)
+│   ├── PACKAGE_IMPLEMENTATION_HISTORY.md
+│   ├── archive/                    # Historical content
+│   ├── tutorials/                  # Hands-on guides
+│   ├── how-to/                     # Task-focused guides
+│   ├── explanation/                # Conceptual deep-dives
+│   └── reference/                  # Technical specs
+├── CHANGELOG.md                    # Complete version history
+├── RELEASE_NOTES.md                # Release notes
+└── README.md                       # This file
 ```
 
 ### Running Tests
@@ -429,29 +514,29 @@ Choose whichever license works best for your use case.
 
 ## 🔗 Links
 
-- **NPM Package**: https://www.npmjs.com/package/wasm4pm
-- **GitHub**: https://github.com/seanchatmangpt/wasm4pm
+- **NPM Package**: https://www.npmjs.com/package/@seanchatmangpt/pictl
+- **GitHub**: https://github.com/seanchatmangpt/pictl
 - **Documentation**: See docs/ directory
 - **Research Paper**: See [REAL-BENCHMARK-RESULTS.md](./docs/REAL-BENCHMARK-RESULTS.md) for benchmarks and performance data
 
 ## 📚 Citation
 
-If you use wasm4pm in your research, please cite:
+If you use pictl in your research, please cite:
 
 ```bibtex
-@software{wasm4pm2026,
-  title={wasm4pm: Process Mining for WebAssembly},
+@software{pictl2026,
+  title={pictl: Process Mining for WebAssembly},
   author={Sean Chat Man GPT},
   year={2026},
-  url={https://github.com/seanchatmangpt/wasm4pm}
+  url={https://github.com/seanchatmangpt/pictl}
 }
 ```
 
 ## 🙋 Support
 
 - **Documentation**: See [TUTORIAL.md](./docs/TUTORIAL.md) and [FAQ.md](./docs/FAQ.md)
-- **Issues**: Report bugs on [GitHub](https://github.com/seanchatmangpt/wasm4pm/issues)
-- **Discussions**: Join [GitHub Discussions](https://github.com/seanchatmangpt/wasm4pm/discussions)
+- **Issues**: Report bugs on [GitHub](https://github.com/seanchatmangpt/pictl/issues)
+- **Discussions**: Join [GitHub Discussions](https://github.com/seanchatmangpt/pictl/discussions)
 
 ---
 

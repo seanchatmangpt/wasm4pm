@@ -1,3 +1,4 @@
+use serde::{Deserialize, Serialize};
 /// Resource & Intervention Prediction — answers "What action should be taken?"
 ///
 /// Consolidates queueing theory (M/M/1 delay estimation) and intervention
@@ -7,16 +8,15 @@
 /// Core algorithms adapted from `prediction_additions` (queue delay, greedy
 /// ranking) with a new UCB1 multi-armed bandit for stateful intervention
 /// selection.
-
 use wasm_bindgen::prelude::*;
-use serde::{Serialize, Deserialize};
 
-use crate::error::{wasm_err, codes};
+use crate::error::{codes, wasm_err};
 
 // ---------------------------------------------------------------------------
 // Shared types
 // ---------------------------------------------------------------------------
 
+/// Result of M/M/1 queue delay computation.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct QueueDelayResult {
     pub wait_time: f64,
@@ -24,12 +24,14 @@ pub struct QueueDelayResult {
     pub is_stable: bool,
 }
 
+/// Input for intervention ranking with name and utility estimate.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InterventionInput {
     pub name: String,
     pub utility: f64,
 }
 
+/// Ranked intervention with score and position.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RankedIntervention {
     pub name: String,
@@ -37,6 +39,7 @@ pub struct RankedIntervention {
     pub rank: usize,
 }
 
+/// Multi-armed bandit arm with reward tracking.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BanditArm {
     pub name: String,
@@ -44,12 +47,14 @@ pub struct BanditArm {
     pub pull_count: usize,
 }
 
+/// State of a multi-armed bandit for intervention selection.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BanditState {
     pub arms: Vec<BanditArm>,
     pub total_pulls: usize,
 }
 
+/// Result of UCB1 bandit selection with scores.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SelectionResult {
     pub selected: String,
@@ -64,7 +69,10 @@ pub struct SelectionResult {
 // ---------------------------------------------------------------------------
 
 /// Compute M/M/1 queue delay.  Returns `Err` for invalid inputs.
-pub fn compute_queue_delay(arrival_rate: f64, service_rate: f64) -> Result<QueueDelayResult, String> {
+pub fn compute_queue_delay(
+    arrival_rate: f64,
+    service_rate: f64,
+) -> Result<QueueDelayResult, String> {
     if service_rate <= 0.0 {
         return Err("service_rate must be > 0".into());
     }
@@ -81,7 +89,11 @@ pub fn compute_queue_delay(arrival_rate: f64, service_rate: f64) -> Result<Queue
         f64::INFINITY
     };
 
-    Ok(QueueDelayResult { wait_time, utilization, is_stable })
+    Ok(QueueDelayResult {
+        wait_time,
+        utilization,
+        is_stable,
+    })
 }
 
 // ---------------------------------------------------------------------------
@@ -114,7 +126,11 @@ pub fn compute_ranked_interventions(
     scored
         .into_iter()
         .enumerate()
-        .map(|(i, (name, score))| RankedIntervention { name, score, rank: i + 1 })
+        .map(|(i, (name, score))| RankedIntervention {
+            name,
+            score,
+            rank: i + 1,
+        })
         .collect()
 }
 
@@ -146,7 +162,11 @@ pub fn compute_ucb1_selection(
 
     // UCB1: argmax( mean_reward + c * sqrt(ln(total_pulls) / pull_count) )
     let ln_total = (state.total_pulls as f64).ln();
-    let c = if exploration_factor >= 0.0 { exploration_factor } else { std::f64::consts::SQRT_2 };
+    let c = if exploration_factor >= 0.0 {
+        exploration_factor
+    } else {
+        std::f64::consts::SQRT_2
+    };
 
     let mut best_idx = 0;
     let mut best_ucb = f64::NEG_INFINITY;
@@ -202,8 +222,13 @@ pub fn rank_interventions(
     interventions_json: &str,
     exploitation_weight: f64,
 ) -> Result<JsValue, JsValue> {
-    let interventions: Vec<InterventionInput> = serde_json::from_str(interventions_json)
-        .map_err(|e| wasm_err(codes::INVALID_JSON, format!("Invalid interventions JSON: {}", e)))?;
+    let interventions: Vec<InterventionInput> =
+        serde_json::from_str(interventions_json).map_err(|e| {
+            wasm_err(
+                codes::INVALID_JSON,
+                format!("Invalid interventions JSON: {}", e),
+            )
+        })?;
 
     let ranked = compute_ranked_interventions(&interventions, exploitation_weight);
 
@@ -219,10 +244,7 @@ pub fn rank_interventions(
 ///
 /// Returns JSON: `{ selected, arm_index, ucb_score, mean_reward, exploration_bonus }`
 #[wasm_bindgen]
-pub fn select_intervention(
-    bandit_json: &str,
-    exploration_factor: f64,
-) -> Result<JsValue, JsValue> {
+pub fn select_intervention(bandit_json: &str, exploration_factor: f64) -> Result<JsValue, JsValue> {
     let state: BanditState = serde_json::from_str(bandit_json)
         .map_err(|e| wasm_err(codes::INVALID_JSON, format!("Invalid bandit JSON: {}", e)))?;
 
@@ -267,9 +289,18 @@ mod tests {
     #[test]
     fn test_rank_interventions_high_exploitation() {
         let ivs = vec![
-            InterventionInput { name: "Reassign".into(), utility: 0.9 },
-            InterventionInput { name: "Escalate".into(), utility: 0.5 },
-            InterventionInput { name: "Notify".into(),   utility: 0.7 },
+            InterventionInput {
+                name: "Reassign".into(),
+                utility: 0.9,
+            },
+            InterventionInput {
+                name: "Escalate".into(),
+                utility: 0.5,
+            },
+            InterventionInput {
+                name: "Notify".into(),
+                utility: 0.7,
+            },
         ];
         let ranked = compute_ranked_interventions(&ivs, 0.8);
         assert_eq!(ranked.len(), 3);
@@ -287,8 +318,16 @@ mod tests {
     fn test_ucb1_forced_exploration() {
         let state = BanditState {
             arms: vec![
-                BanditArm { name: "A".into(), total_reward: 5.0, pull_count: 10 },
-                BanditArm { name: "B".into(), total_reward: 0.0, pull_count: 0 },
+                BanditArm {
+                    name: "A".into(),
+                    total_reward: 5.0,
+                    pull_count: 10,
+                },
+                BanditArm {
+                    name: "B".into(),
+                    total_reward: 0.0,
+                    pull_count: 0,
+                },
             ],
             total_pulls: 10,
         };
@@ -301,8 +340,16 @@ mod tests {
     fn test_ucb1_higher_mean_wins() {
         let state = BanditState {
             arms: vec![
-                BanditArm { name: "A".into(), total_reward: 5.0, pull_count: 10 },
-                BanditArm { name: "B".into(), total_reward: 8.0, pull_count: 10 },
+                BanditArm {
+                    name: "A".into(),
+                    total_reward: 5.0,
+                    pull_count: 10,
+                },
+                BanditArm {
+                    name: "B".into(),
+                    total_reward: 8.0,
+                    pull_count: 10,
+                },
             ],
             total_pulls: 20,
         };
@@ -313,7 +360,10 @@ mod tests {
 
     #[test]
     fn test_ucb1_empty_arms() {
-        let state = BanditState { arms: vec![], total_pulls: 0 };
+        let state = BanditState {
+            arms: vec![],
+            total_pulls: 0,
+        };
         assert!(compute_ucb1_selection(&state, 1.0).is_err());
     }
 }

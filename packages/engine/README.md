@@ -1,6 +1,6 @@
-# @wasm4pm/engine
+# @pictl/engine
 
-High-level engine lifecycle and state machine for wasm4pm. Manages bootstrap, planning, execution, and error recovery with a well-defined state machine and comprehensive error handling.
+High-level engine lifecycle and state machine for pictl. Manages bootstrap, planning, execution, and error recovery with a well-defined state machine and comprehensive error handling.
 
 ## Features
 
@@ -49,7 +49,7 @@ planning  running watching         degraded
 #### Basic Bootstrap
 
 ```typescript
-import { createSimpleEngine } from '@wasm4pm/engine';
+import { createSimpleEngine } from '@pictl/engine';
 
 const engine = createSimpleEngine(kernel);
 await engine.bootstrap();
@@ -61,7 +61,7 @@ console.log(status.state); // 'ready'
 #### Full Pipeline
 
 ```typescript
-import { createFullEngine } from '@wasm4pm/engine';
+import { createFullEngine } from '@pictl/engine';
 
 const engine = createFullEngine(kernel, planner, executor);
 await engine.bootstrap();

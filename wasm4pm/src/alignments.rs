@@ -1,3 +1,8 @@
+use crate::models::PetriNet;
+use crate::state::{get_or_init_state, StoredObject};
+use serde_json::json;
+use std::cmp::Ordering;
+use std::collections::{BinaryHeap, HashMap, HashSet};
 /// Priority 5 — A* Search-based optimal alignment conformance checking.
 ///
 /// Computes per-trace alignments against a Petri Net using A* search.
@@ -8,11 +13,6 @@
 ///
 /// Uses A* search with heuristic to find optimal cost alignment.
 use wasm_bindgen::prelude::*;
-use crate::state::{get_or_init_state, StoredObject};
-use crate::models::PetriNet;
-use serde_json::json;
-use std::collections::{BinaryHeap, HashMap, HashSet};
-use std::cmp::Ordering;
 
 /// Represents a state in the A* alignment search.
 #[derive(Clone, Debug, PartialEq)]
@@ -39,7 +39,9 @@ impl Eq for PriorityAlignmentState {}
 impl Ord for PriorityAlignmentState {
     fn cmp(&self, other: &Self) -> Ordering {
         // Reverse for min-heap (BinaryHeap is max-heap by default)
-        other.f_score.partial_cmp(&self.f_score)
+        other
+            .f_score
+            .partial_cmp(&self.f_score)
             .unwrap_or(Ordering::Equal)
     }
 }
@@ -53,18 +55,16 @@ impl PartialOrd for PriorityAlignmentState {
 /// For simplicity, transition label is treated as the activity name.
 #[allow(dead_code)]
 fn get_transition_activities(petri_net: &PetriNet, transition_id: &str) -> Vec<String> {
-    petri_net.transitions.iter()
+    petri_net
+        .transitions
+        .iter()
         .find(|t| t.id == transition_id)
         .map(|t| vec![t.label.clone()])
         .unwrap_or_default()
 }
 
 /// Check if a transition can fire with current marking.
-fn can_fire(
-    petri_net: &PetriNet,
-    marking: &HashMap<String, usize>,
-    transition_id: &str,
-) -> bool {
+fn can_fire(petri_net: &PetriNet, marking: &HashMap<String, usize>, transition_id: &str) -> bool {
     // For each arc from a place to this transition, check if place has sufficient tokens
     for arc in &petri_net.arcs {
         if arc.to == transition_id {
@@ -164,10 +164,19 @@ fn compute_trace_alignment(
         // Check if goal reached (all trace consumed and marking is a final marking)
         if state.trace_index == trace_len
             && (petri_net.final_markings.is_empty()
-                || petri_net.final_markings.iter().any(|fm| fm == &state.marking))
+                || petri_net
+                    .final_markings
+                    .iter()
+                    .any(|fm| fm == &state.marking))
         {
             let (sync_count, log_count, model_count) = count_moves(&state.path);
-            best_solution = Some((state.cost, state.path.clone(), sync_count, log_count, model_count));
+            best_solution = Some((
+                state.cost,
+                state.path.clone(),
+                sync_count,
+                log_count,
+                model_count,
+            ));
             break;
         }
 
@@ -195,7 +204,9 @@ fn compute_trace_alignment(
             let next_activity = &trace_activities[state.trace_index];
             for transition in &petri_net.transitions {
                 if transition.label == *next_activity {
-                    if let Some(new_marking) = fire_transition(petri_net, &state.marking, &transition.id) {
+                    if let Some(new_marking) =
+                        fire_transition(petri_net, &state.marking, &transition.id)
+                    {
                         let mut new_path = state.path.clone();
                         new_path.push(format!("sync:{}", next_activity));
                         successors.push((
@@ -216,11 +227,12 @@ fn compute_trace_alignment(
         for transition in &petri_net.transitions {
             if let Some(new_marking) = fire_transition(petri_net, &state.marking, &transition.id) {
                 // Invisible transitions (empty label) or marked as invisible have cost 0
-                let move_cost = if transition.is_invisible.unwrap_or(false) || transition.label.is_empty() {
-                    0.0
-                } else {
-                    model_move_cost
-                };
+                let move_cost =
+                    if transition.is_invisible.unwrap_or(false) || transition.label.is_empty() {
+                        0.0
+                    } else {
+                        model_move_cost
+                    };
                 let mut new_path = state.path.clone();
                 new_path.push(format!("model:{}", transition.label));
                 successors.push((
@@ -311,15 +323,22 @@ pub fn compute_optimal_alignments(
             let mut total_cost = 0.0;
 
             for trace in &log.traces {
-                let case_id = trace.attributes.get("concept:name")
+                let case_id = trace
+                    .attributes
+                    .get("concept:name")
                     .and_then(|v| v.as_string())
                     .unwrap_or("unknown")
                     .to_string();
 
-                let acts: Vec<String> = trace.events.iter()
-                    .filter_map(|e| e.attributes.get(activity_key)
-                        .and_then(|v| v.as_string())
-                        .map(str::to_owned))
+                let acts: Vec<String> = trace
+                    .events
+                    .iter()
+                    .filter_map(|e| {
+                        e.attributes
+                            .get(activity_key)
+                            .and_then(|v| v.as_string())
+                            .map(str::to_owned)
+                    })
                     .collect();
 
                 let (cost, path, sync_count, log_count, model_count) = compute_trace_alignment(
@@ -346,7 +365,9 @@ pub fn compute_optimal_alignments(
                 }));
             }
 
-            let avg_cost = if alignments.is_empty() { 0.0 } else {
+            let avg_cost = if alignments.is_empty() {
+                0.0
+            } else {
                 total_cost / alignments.len() as f64
             };
 
@@ -354,7 +375,8 @@ pub fn compute_optimal_alignments(
                 "total_traces": log.traces.len(),
                 "avg_cost": avg_cost,
                 "alignments": alignments,
-            })).map_err(|e| JsValue::from_str(&e.to_string()))
+            }))
+            .map_err(|e| JsValue::from_str(&e.to_string()))
         }
         Some(_) => Err(JsValue::from_str("Handle is not an EventLog")),
         None => Err(JsValue::from_str("EventLog handle not found")),
@@ -370,11 +392,13 @@ pub fn compute_alignments(
     dfg_handle: &str,
     activity_key: &str,
 ) -> Result<JsValue, JsValue> {
-    let edge_map: std::collections::HashMap<(String, String), usize> =
-        get_or_init_state().with_object(dfg_handle, |obj| match obj {
-            Some(StoredObject::DirectlyFollowsGraph(dfg)) => {
-                Ok(dfg.edges.iter().map(|e| ((e.from.clone(), e.to.clone()), e.frequency)).collect())
-            }
+    let edge_map: std::collections::HashMap<(String, String), usize> = get_or_init_state()
+        .with_object(dfg_handle, |obj| match obj {
+            Some(StoredObject::DirectlyFollowsGraph(dfg)) => Ok(dfg
+                .edges
+                .iter()
+                .map(|e| ((e.from.clone(), e.to.clone()), e.frequency))
+                .collect()),
             Some(_) => Err(JsValue::from_str("Handle is not a DirectlyFollowsGraph")),
             None => Err(JsValue::from_str("DFG handle not found")),
         })?;
@@ -393,15 +417,22 @@ pub fn compute_alignments(
             let mut alignments: Vec<serde_json::Value> = Vec::new();
 
             for trace in &log.traces {
-                let case_id = trace.attributes.get("concept:name")
+                let case_id = trace
+                    .attributes
+                    .get("concept:name")
                     .and_then(|v| v.as_string())
                     .unwrap_or("unknown")
                     .to_string();
 
-                let acts: Vec<String> = trace.events.iter()
-                    .filter_map(|e| e.attributes.get(activity_key)
-                        .and_then(|v| v.as_string())
-                        .map(str::to_owned))
+                let acts: Vec<String> = trace
+                    .events
+                    .iter()
+                    .filter_map(|e| {
+                        e.attributes
+                            .get(activity_key)
+                            .and_then(|v| v.as_string())
+                            .map(str::to_owned)
+                    })
                     .collect();
 
                 let mut moves: Vec<serde_json::Value> = Vec::new();
@@ -437,7 +468,9 @@ pub fn compute_alignments(
                 }
 
                 let total_moves = sync_count + log_move_count;
-                let fitness = if total_moves == 0 { 1.0 } else {
+                let fitness = if total_moves == 0 {
+                    1.0
+                } else {
                     sync_count as f64 / total_moves as f64
                 };
 
@@ -448,8 +481,13 @@ pub fn compute_alignments(
                 }));
             }
 
-            let avg_fitness = if alignments.is_empty() { 1.0 } else {
-                alignments.iter().map(|a| a["fitness"].as_f64().unwrap_or(1.0)).sum::<f64>()
+            let avg_fitness = if alignments.is_empty() {
+                1.0
+            } else {
+                alignments
+                    .iter()
+                    .map(|a| a["fitness"].as_f64().unwrap_or(1.0))
+                    .sum::<f64>()
                     / alignments.len() as f64
             };
 
@@ -457,11 +495,87 @@ pub fn compute_alignments(
                 "total_traces": log.traces.len(),
                 "avg_fitness": avg_fitness,
                 "alignments": alignments,
-            })).map_err(|e| JsValue::from_str(&e.to_string()))
+            }))
+            .map_err(|e| JsValue::from_str(&e.to_string()))
         }
         Some(_) => Err(JsValue::from_str("Handle is not an EventLog")),
         None => Err(JsValue::from_str("EventLog handle not found")),
     })?;
 
     Ok(JsValue::from_str(&result_json))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_count_moves() {
+        let path = vec![
+            "sync:A".to_string(),
+            "sync:B".to_string(),
+            "log:C".to_string(),
+            "model:D".to_string(),
+        ];
+
+        let (sync, log, model) = count_moves(&path);
+        assert_eq!(sync, 2);
+        assert_eq!(log, 1);
+        assert_eq!(model, 1);
+    }
+
+    #[test]
+    fn test_count_moves_empty() {
+        let path: Vec<String> = vec![];
+        let (sync, log, model) = count_moves(&path);
+        assert_eq!(sync, 0);
+        assert_eq!(log, 0);
+        assert_eq!(model, 0);
+    }
+
+    #[test]
+    fn test_count_moves_only_sync() {
+        let path = vec!["sync:A".to_string(), "sync:B".to_string()];
+        let (sync, log, model) = count_moves(&path);
+        assert_eq!(sync, 2);
+        assert_eq!(log, 0);
+        assert_eq!(model, 0);
+    }
+
+    #[test]
+    fn test_heuristic_always_zero() {
+        // The current heuristic is always 0 (admissible but uninformed)
+        let h = heuristic(100, 50);
+        assert_eq!(h, 0.0);
+    }
+
+    #[test]
+    fn test_alignment_state_equality() {
+        let state1 = AlignmentState {
+            trace_index: 5,
+            marking: HashMap::from([("p1".to_string(), 1)]),
+            cost: 2.0,
+            path: vec!["sync:A".to_string()],
+        };
+
+        let state2 = AlignmentState {
+            trace_index: 5,
+            marking: HashMap::from([("p1".to_string(), 1)]),
+            cost: 2.0, // Same cost
+            path: vec!["sync:A".to_string()],
+        };
+
+        // States with identical ALL fields are equal
+        assert_eq!(state1, state2);
+
+        let state3 = AlignmentState {
+            trace_index: 5,
+            marking: HashMap::from([("p1".to_string(), 1)]),
+            cost: 3.0, // Different cost
+            path: vec!["sync:A".to_string()],
+        };
+
+        // States with different cost are NOT equal
+        assert_ne!(state1, state3);
+    }
 }

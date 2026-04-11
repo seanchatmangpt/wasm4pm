@@ -1,10 +1,10 @@
-use wasm_bindgen::prelude::*;
-use crate::state::{get_or_init_state, StoredObject};
 use crate::models::*;
+use crate::state::{get_or_init_state, StoredObject};
+use crate::utilities::{evaluate_edges_fitness, to_js};
+use rustc_hash::FxHashMap;
 use serde_json::json;
 use std::collections::HashSet;
-use rustc_hash::FxHashMap;
-use crate::utilities::{to_js, evaluate_edges_fitness};
+use wasm_bindgen::prelude::*;
 
 /// Simplified Inductive Miner - recursive structure discovery
 #[wasm_bindgen]
@@ -81,94 +81,92 @@ pub fn discover_ant_colony(
     num_ants: usize,
     iterations: usize,
 ) -> Result<JsValue, JsValue> {
-    let (best_edges, best_fitness, vocab) = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
-            let col_owned = crate::cache::columnar_cache_get(eventlog_handle, activity_key)
-                .unwrap_or_else(|| {
-                    let owned = log.to_columnar_owned(activity_key);
-                    crate::cache::columnar_cache_insert(
-                        eventlog_handle.to_string(),
-                        activity_key.to_string(),
-                        owned.clone(),
-                    );
-                    owned
-                });
-            let col = ColumnarLog::from_owned(&col_owned);
+    let (best_edges, best_fitness, vocab) =
+        get_or_init_state().with_object(eventlog_handle, |obj| match obj {
+            Some(StoredObject::EventLog(log)) => {
+                let col_owned = crate::cache::columnar_cache_get(eventlog_handle, activity_key)
+                    .unwrap_or_else(|| {
+                        let owned = log.to_columnar_owned(activity_key);
+                        crate::cache::columnar_cache_insert(
+                            eventlog_handle.to_string(),
+                            activity_key.to_string(),
+                            owned.clone(),
+                        );
+                        owned
+                    });
+                let col = ColumnarLog::from_owned(&col_owned);
 
-            // Build edge vocabulary from columnar log
-            let mut edge_vocab: Vec<(u32, u32)> = Vec::new();
-            let mut edge_map: FxHashMap<(u32, u32), usize> = FxHashMap::default();
+                // Build edge vocabulary from columnar log
+                let mut edge_vocab: Vec<(u32, u32)> = Vec::new();
+                let mut edge_map: FxHashMap<(u32, u32), usize> = FxHashMap::default();
 
-            for t in 0..col.trace_offsets.len().saturating_sub(1) {
-                let start = col.trace_offsets[t];
-                let end = col.trace_offsets[t + 1];
-                for i in start..end.saturating_sub(1) {
-                    let edge = (col.events[i], col.events[i + 1]);
-                    edge_map
-                        .entry(edge)
-                        .and_modify(|_| {})
-                        .or_insert_with(|| {
+                for t in 0..col.trace_offsets.len().saturating_sub(1) {
+                    let start = col.trace_offsets[t];
+                    let end = col.trace_offsets[t + 1];
+                    for i in start..end.saturating_sub(1) {
+                        let edge = (col.events[i], col.events[i + 1]);
+                        edge_map.entry(edge).and_modify(|_| {}).or_insert_with(|| {
                             edge_vocab.push(edge);
                             edge_vocab.len() - 1
                         });
+                    }
                 }
-            }
 
-            // Collect vocab before closure ends
-            let vocab: Vec<String> = col.vocab.iter().map(|s| s.to_string()).collect();
+                // Collect vocab before closure ends
+                let vocab: Vec<String> = col.vocab.iter().map(|s| s.to_string()).collect();
 
-            // Initialize pheromone trails on integer edges
-            let mut pheromones: FxHashMap<(u32, u32), f64> = FxHashMap::default();
-            for &edge in &edge_vocab {
-                pheromones.insert(edge, 1.0);
-            }
+                // Initialize pheromone trails on integer edges
+                let mut pheromones: FxHashMap<(u32, u32), f64> = FxHashMap::default();
+                for &edge in &edge_vocab {
+                    pheromones.insert(edge, 1.0);
+                }
 
-            let mut best_edges: Option<HashSet<(u32, u32)>> = None;
-            let mut best_fitness = 0.0;
+                let mut best_edges: Option<HashSet<(u32, u32)>> = None;
+                let mut best_fitness = 0.0;
 
-            for _iter in 0..iterations {
-                for _ant in 0..num_ants {
-                    let mut current_edges: HashSet<(u32, u32)> = HashSet::new();
+                for _iter in 0..iterations {
+                    for _ant in 0..num_ants {
+                        let mut current_edges: HashSet<(u32, u32)> = HashSet::new();
 
-                    // Build path using pheromone.
-                    // Pre-compute total pheromone once per ant; each edge is
-                    // selected when its share exceeds a uniform sample.
-                    // Rewriting p/total > rand() as p > rand() * total avoids
-                    // the per-edge division in the hot loop.
-                    let total_pheromone: f64 =
-                        pheromones.values().sum::<f64>().max(f64::MIN_POSITIVE);
-                    for (&edge, pheromone_level) in &pheromones {
-                        if *pheromone_level > fastrand::f64() * total_pheromone {
-                            current_edges.insert(edge);
+                        // Build path using pheromone.
+                        // Pre-compute total pheromone once per ant; each edge is
+                        // selected when its share exceeds a uniform sample.
+                        // Rewriting p/total > rand() as p > rand() * total avoids
+                        // the per-edge division in the hot loop.
+                        let total_pheromone: f64 =
+                            pheromones.values().sum::<f64>().max(f64::MIN_POSITIVE);
+                        for (&edge, pheromone_level) in &pheromones {
+                            if *pheromone_level > fastrand::f64() * total_pheromone {
+                                current_edges.insert(edge);
+                            }
+                        }
+
+                        let fitness = evaluate_edges_fitness(&current_edges, &col);
+
+                        if fitness > best_fitness {
+                            best_fitness = fitness;
+                            best_edges = Some(current_edges);
                         }
                     }
 
-                    let fitness = evaluate_edges_fitness(&current_edges, &col);
+                    // Evaporate: use for_each to help the compiler vectorise the loop.
+                    pheromones.values_mut().for_each(|p| *p *= 0.9);
 
-                    if fitness > best_fitness {
-                        best_fitness = fitness;
-                        best_edges = Some(current_edges);
+                    if let Some(ref edges) = best_edges {
+                        for &edge in edges {
+                            pheromones
+                                .entry(edge)
+                                .and_modify(|p| *p += best_fitness * 10.0);
+                        }
                     }
                 }
 
-                // Evaporate: use for_each to help the compiler vectorise the loop.
-                pheromones.values_mut().for_each(|p| *p *= 0.9);
-
-                if let Some(ref edges) = best_edges {
-                    for &edge in edges {
-                        pheromones
-                            .entry(edge)
-                            .and_modify(|p| *p += best_fitness * 10.0);
-                    }
-                }
+                let best_edges = best_edges.unwrap_or_default();
+                Ok((best_edges, best_fitness, vocab))
             }
-
-            let best_edges = best_edges.unwrap_or_default();
-            Ok((best_edges, best_fitness, vocab))
-        }
-        Some(_) => Err(JsValue::from_str("Not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
-    })?;
+            Some(_) => Err(JsValue::from_str("Not an EventLog")),
+            None => Err(JsValue::from_str("EventLog not found")),
+        })?;
 
     // Materialize DFG from best edges
     let best_dfg = edge_set_to_dfg(&best_edges, &vocab);
@@ -195,92 +193,90 @@ pub fn discover_simulated_annealing(
     temperature: f64,
     cooling_rate: f64,
 ) -> Result<JsValue, JsValue> {
-    let (best_edges, best_fitness, vocab) = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
-            let col_owned = crate::cache::columnar_cache_get(eventlog_handle, activity_key)
-                .unwrap_or_else(|| {
-                    let owned = log.to_columnar_owned(activity_key);
-                    crate::cache::columnar_cache_insert(
-                        eventlog_handle.to_string(),
-                        activity_key.to_string(),
-                        owned.clone(),
-                    );
-                    owned
-                });
-            let col = ColumnarLog::from_owned(&col_owned);
+    let (best_edges, best_fitness, vocab) =
+        get_or_init_state().with_object(eventlog_handle, |obj| match obj {
+            Some(StoredObject::EventLog(log)) => {
+                let col_owned = crate::cache::columnar_cache_get(eventlog_handle, activity_key)
+                    .unwrap_or_else(|| {
+                        let owned = log.to_columnar_owned(activity_key);
+                        crate::cache::columnar_cache_insert(
+                            eventlog_handle.to_string(),
+                            activity_key.to_string(),
+                            owned.clone(),
+                        );
+                        owned
+                    });
+                let col = ColumnarLog::from_owned(&col_owned);
 
-            // Build edge vocabulary from columnar log
-            let mut edge_vocab: Vec<(u32, u32)> = Vec::new();
-            let mut edge_map: FxHashMap<(u32, u32), usize> = FxHashMap::default();
+                // Build edge vocabulary from columnar log
+                let mut edge_vocab: Vec<(u32, u32)> = Vec::new();
+                let mut edge_map: FxHashMap<(u32, u32), usize> = FxHashMap::default();
 
-            for t in 0..col.trace_offsets.len().saturating_sub(1) {
-                let start = col.trace_offsets[t];
-                let end = col.trace_offsets[t + 1];
-                for i in start..end.saturating_sub(1) {
-                    let edge = (col.events[i], col.events[i + 1]);
-                    edge_map
-                        .entry(edge)
-                        .and_modify(|_| {})
-                        .or_insert_with(|| {
+                for t in 0..col.trace_offsets.len().saturating_sub(1) {
+                    let start = col.trace_offsets[t];
+                    let end = col.trace_offsets[t + 1];
+                    for i in start..end.saturating_sub(1) {
+                        let edge = (col.events[i], col.events[i + 1]);
+                        edge_map.entry(edge).and_modify(|_| {}).or_insert_with(|| {
                             edge_vocab.push(edge);
                             edge_vocab.len() - 1
                         });
+                    }
                 }
+
+                // Collect vocab before closure ends
+                let vocab: Vec<String> = col.vocab.iter().map(|s| s.to_string()).collect();
+
+                // Start with empty edge set
+                let mut current_edges: HashSet<(u32, u32)> = HashSet::new();
+                let mut current_fitness = evaluate_edges_fitness(&current_edges, &col);
+                let mut best_edges = current_edges.clone();
+                let mut best_fitness = current_fitness;
+                let mut temp = temperature;
+
+                while temp > 0.01 {
+                    // Random neighbor move: add or remove one edge
+                    let mut neighbor = current_edges.clone();
+
+                    if fastrand::f64() < 0.5 && !current_edges.is_empty() {
+                        // Remove random edge
+                        if let Some(&edge) = neighbor.iter().next() {
+                            neighbor.remove(&edge);
+                        }
+                    } else {
+                        // Add random edge from vocabulary
+                        if !edge_vocab.is_empty() {
+                            let idx = (fastrand::f64() * edge_vocab.len() as f64) as usize;
+                            neighbor.insert(edge_vocab[idx]);
+                        }
+                    }
+
+                    let neighbor_fitness = evaluate_edges_fitness(&neighbor, &col);
+                    let delta = neighbor_fitness - current_fitness;
+
+                    // Branchless acceptance criterion: improvements (delta >= 0) are
+                    // always accepted; worse solutions are accepted with the Boltzmann
+                    // probability exp(-delta/T).  Short-circuit evaluation means
+                    // exp() is only called when delta < 0, so no change in semantics.
+                    let accept = delta >= 0.0 || fastrand::f64() < (-delta / temp).exp();
+                    if accept {
+                        current_edges = neighbor;
+                        current_fitness = neighbor_fitness;
+
+                        if current_fitness > best_fitness {
+                            best_fitness = current_fitness;
+                            best_edges = current_edges.clone();
+                        }
+                    }
+
+                    temp *= cooling_rate;
+                }
+
+                Ok((best_edges, best_fitness, vocab))
             }
-
-            // Collect vocab before closure ends
-            let vocab: Vec<String> = col.vocab.iter().map(|s| s.to_string()).collect();
-
-            // Start with empty edge set
-            let mut current_edges: HashSet<(u32, u32)> = HashSet::new();
-            let mut current_fitness = evaluate_edges_fitness(&current_edges, &col);
-            let mut best_edges = current_edges.clone();
-            let mut best_fitness = current_fitness;
-            let mut temp = temperature;
-
-            while temp > 0.01 {
-                // Random neighbor move: add or remove one edge
-                let mut neighbor = current_edges.clone();
-
-                if fastrand::f64() < 0.5 && !current_edges.is_empty() {
-                    // Remove random edge
-                    if let Some(&edge) = neighbor.iter().next() {
-                        neighbor.remove(&edge);
-                    }
-                } else {
-                    // Add random edge from vocabulary
-                    if !edge_vocab.is_empty() {
-                        let idx = (fastrand::f64() * edge_vocab.len() as f64) as usize;
-                        neighbor.insert(edge_vocab[idx]);
-                    }
-                }
-
-                let neighbor_fitness = evaluate_edges_fitness(&neighbor, &col);
-                let delta = neighbor_fitness - current_fitness;
-
-                // Branchless acceptance criterion: improvements (delta >= 0) are
-                // always accepted; worse solutions are accepted with the Boltzmann
-                // probability exp(-delta/T).  Short-circuit evaluation means
-                // exp() is only called when delta < 0, so no change in semantics.
-                let accept = delta >= 0.0 || fastrand::f64() < (-delta / temp).exp();
-                if accept {
-                    current_edges = neighbor;
-                    current_fitness = neighbor_fitness;
-
-                    if current_fitness > best_fitness {
-                        best_fitness = current_fitness;
-                        best_edges = current_edges.clone();
-                    }
-                }
-
-                temp *= cooling_rate;
-            }
-
-            Ok((best_edges, best_fitness, vocab))
-        }
-        Some(_) => Err(JsValue::from_str("Not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
-    })?;
+            Some(_) => Err(JsValue::from_str("Not an EventLog")),
+            None => Err(JsValue::from_str("EventLog not found")),
+        })?;
 
     // Materialize DFG from best edges
     let best_dfg = edge_set_to_dfg(&best_edges, &vocab);
@@ -338,11 +334,7 @@ pub fn extract_process_skeleton(
                 .flat_map(|e| vec![e.from.clone(), e.to.clone()])
                 .collect();
 
-            dfg.nodes = dfg
-                .nodes
-                .into_iter()
-                .filter(|n| nodes_with_edges.contains(&n.id))
-                .collect();
+            dfg.nodes.retain(|n| nodes_with_edges.contains(&n.id));
 
             Ok(dfg)
         }
@@ -386,7 +378,7 @@ pub fn analyze_activity_dependencies(
                             {
                                 predecessors
                                     .entry(current.clone())
-                                    .or_insert_with(HashSet::new)
+                                    .or_default()
                                     .insert(prev.clone());
                             }
                         }
@@ -398,7 +390,7 @@ pub fn analyze_activity_dependencies(
                             {
                                 successors
                                     .entry(current.clone())
-                                    .or_insert_with(HashSet::new)
+                                    .or_default()
                                     .insert(next.clone());
                             }
                         }
@@ -455,12 +447,12 @@ pub fn analyze_case_attributes(
                     if let AttributeValue::String(v) = value {
                         attribute_values
                             .entry(key.clone())
-                            .or_insert_with(HashSet::new)
+                            .or_default()
                             .insert(v.clone());
 
                         attribute_activity_map
                             .entry((key.clone(), v.clone()))
-                            .or_insert_with(Vec::new)
+                            .or_default()
                             .extend(activities.clone());
                     }
                 }
@@ -493,7 +485,6 @@ pub fn analyze_case_attributes(
 /// Marked inline(always) so the compiler can specialise it at each call site
 // Helper: Evaluate fitness of an edge set against columnar log (zero string allocation)
 #[inline]
-
 // Helper: Materialize a DirectlyFollowsGraph from edge set and vocabulary
 fn edge_set_to_dfg(edge_set: &HashSet<(u32, u32)>, vocab: &[String]) -> DirectlyFollowsGraph {
     let mut dfg = DirectlyFollowsGraph::new();

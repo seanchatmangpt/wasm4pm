@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import * as wasm from '../../pkg/wasm4pm.js';
+import * as wasm from '../../pkg/pictl.js';
 
 describe('Discovery - Module Initialization', () => {
   it('should initialize WASM module', async () => {

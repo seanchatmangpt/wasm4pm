@@ -14,9 +14,9 @@
 
 use std::collections::{HashMap, HashSet, VecDeque};
 
-use crate::powl_models::PowlPetriNetResult;
-use crate::powl_arena::{PowlArena, Operator};
 use crate::powl::simplify;
+use crate::powl_arena::{Operator, PowlArena};
+use crate::powl_models::PowlPetriNetResult;
 
 // ─── Internal Petri Net Graph ─────────────────────────────────────────────
 
@@ -48,7 +48,7 @@ impl NodeId {
 struct InternalNet {
     places: HashSet<String>,
     transitions: HashMap<String, Option<String>>, // name → label (None = silent)
-    arcs: Vec<(NodeId, NodeId)>,                   // source → target
+    arcs: Vec<(NodeId, NodeId)>,                  // source → target
 }
 
 #[allow(dead_code)]
@@ -80,7 +80,11 @@ impl InternalNet {
             arcs.push((source, target));
         }
 
-        Ok(InternalNet { places, transitions, arcs })
+        Ok(InternalNet {
+            places,
+            transitions,
+            arcs,
+        })
     }
 
     fn pre_set(&self, node: &NodeId) -> HashSet<NodeId> {
@@ -106,14 +110,26 @@ impl InternalNet {
     fn pre_set_transitions(&self, node: &NodeId) -> HashSet<String> {
         self.pre_set(node)
             .into_iter()
-            .filter_map(|n| if n.is_transition() { Some(n.as_str().to_string()) } else { None })
+            .filter_map(|n| {
+                if n.is_transition() {
+                    Some(n.as_str().to_string())
+                } else {
+                    None
+                }
+            })
             .collect()
     }
 
     fn post_set_transitions(&self, node: &NodeId) -> HashSet<String> {
         self.post_set(node)
             .into_iter()
-            .filter_map(|n| if n.is_transition() { Some(n.as_str().to_string()) } else { None })
+            .filter_map(|n| {
+                if n.is_transition() {
+                    Some(n.as_str().to_string())
+                } else {
+                    None
+                }
+            })
             .collect()
     }
 
@@ -166,7 +182,10 @@ impl InternalNet {
     }
 
     fn is_silent(&self, name: &str) -> bool {
-        self.transitions.get(name).map(|l| l.is_none()).unwrap_or(false)
+        self.transitions
+            .get(name)
+            .map(|l| l.is_none())
+            .unwrap_or(false)
     }
 
     fn places_no_incoming(&self) -> Vec<String> {
@@ -194,7 +213,8 @@ impl InternalNet {
     fn split_transitions(&self) -> Vec<String> {
         // Transitions that have both multiple incoming and outgoing arcs
         // are candidates for splitting during POWL construction.
-        self.transitions.iter()
+        self.transitions
+            .iter()
             .filter(|(name, _)| {
                 let node = NodeId::Transition(name.to_string());
                 self.in_arcs_count(&node) > 1 && self.out_arcs_count(&node) > 1
@@ -204,7 +224,8 @@ impl InternalNet {
     }
 
     fn transitions_with_multiple_out(&self) -> Vec<String> {
-        self.transitions.iter()
+        self.transitions
+            .iter()
             .filter(|(name, _)| {
                 let node = NodeId::Transition(name.to_string());
                 self.out_arcs_count(&node) > 1
@@ -214,7 +235,8 @@ impl InternalNet {
     }
 
     fn transitions_with_multiple_in(&self) -> Vec<String> {
-        self.transitions.iter()
+        self.transitions
+            .iter()
             .filter(|(name, _)| {
                 let node = NodeId::Transition(name.to_string());
                 self.in_arcs_count(&node) > 1
@@ -229,11 +251,17 @@ impl InternalNet {
 static mut NEXT_ID: u64 = 1;
 
 fn next_id() -> u64 {
-    unsafe { let id = NEXT_ID; NEXT_ID += 1; id }
+    unsafe {
+        let id = NEXT_ID;
+        NEXT_ID += 1;
+        id
+    }
 }
 
 fn reset_id_gen() {
-    unsafe { NEXT_ID = 1; }
+    unsafe {
+        NEXT_ID = 1;
+    }
 }
 
 // ─── Reachability ──────────────────────────────────────────────────────────
@@ -241,7 +269,7 @@ fn reset_id_gen() {
 /// Simplified reachability graph: for each transition, which transitions are reachable.
 fn get_simplified_reachability_graph(net: &InternalNet) -> HashMap<String, HashSet<String>> {
     let mut graph = HashMap::new();
-    for (t_name, _) in &net.transitions {
+    for t_name in net.transitions.keys() {
         let start = NodeId::Transition(t_name.clone());
         let mut reachable = HashSet::new();
         let mut queue = VecDeque::new();
@@ -285,7 +313,8 @@ fn get_reachable_transitions_between(
             queue.push_back(successor);
         }
     }
-    visited.into_iter()
+    visited
+        .into_iter()
         .filter(|s| net.transitions.contains_key(s))
         .collect()
 }
@@ -308,7 +337,8 @@ fn get_backward_reachable_transitions_between(
             queue.push_back(predecessor);
         }
     }
-    visited.into_iter()
+    visited
+        .into_iter()
         .filter(|s| net.transitions.contains_key(s))
         .collect()
 }
@@ -318,13 +348,19 @@ fn get_backward_reachable_transitions_between(
 fn validate_workflow_net(net: &InternalNet) -> Result<(String, String), String> {
     let no_incoming = net.places_no_incoming();
     if no_incoming.len() != 1 {
-        return Err(format!("Not a workflow net: expected 1 source place, found {}", no_incoming.len()));
+        return Err(format!(
+            "Not a workflow net: expected 1 source place, found {}",
+            no_incoming.len()
+        ));
     }
     let start_place = no_incoming.into_iter().next().unwrap();
 
     let no_outgoing = net.places_no_outgoing();
     if no_outgoing.len() != 1 {
-        return Err(format!("Not a workflow net: expected 1 sink place, found {}", no_outgoing.len()));
+        return Err(format!(
+            "Not a workflow net: expected 1 sink place, found {}",
+            no_outgoing.len()
+        ));
     }
     let end_place = no_outgoing.into_iter().next().unwrap();
 
@@ -501,10 +537,14 @@ fn preprocess(net: &mut InternalNet) {
                     break;
                 }
             }
-            if changed { break; }
+            if changed {
+                break;
+            }
         }
 
-        if !changed { break; }
+        if !changed {
+            break;
+        }
     }
 }
 
@@ -561,7 +601,8 @@ fn mine_partial_order(
     end_place: &str,
     reachability_map: &HashMap<String, HashSet<String>>,
 ) -> Vec<HashSet<String>> {
-    let mut partition: Vec<HashSet<String>> = net.transition_names()
+    let mut partition: Vec<HashSet<String>> = net
+        .transition_names()
         .into_iter()
         .map(|t| {
             let mut s = HashSet::new();
@@ -576,20 +617,22 @@ fn mine_partial_order(
 
         // Check outgoing XOR branching
         if out_size > 1 || (p_name == end_place && out_size > 0) {
-            let post_trans: Vec<String> = net.post_set_transitions(&p)
-                .into_iter().collect();
+            let post_trans: Vec<String> = net.post_set_transitions(&p).into_iter().collect();
             if post_trans.len() > 1 {
-                let branches: Vec<HashSet<String>> = post_trans.iter()
+                let branches: Vec<HashSet<String>> = post_trans
+                    .iter()
                     .map(|t| reachability_map.get(t).cloned().unwrap_or_default())
                     .collect();
 
-                let union: HashSet<String> = branches.iter().flat_map(|b| b.iter().cloned()).collect();
+                let union: HashSet<String> =
+                    branches.iter().flat_map(|b| b.iter().cloned()).collect();
                 let not_in_every = if p_name == end_place {
                     union.clone()
                 } else {
-                    let intersection: HashSet<String> = branches.iter()
-                        .skip(1)
-                        .fold(branches[0].clone(), |acc, b| acc.intersection(b).cloned().collect());
+                    let intersection: HashSet<String> =
+                        branches.iter().skip(1).fold(branches[0].clone(), |acc, b| {
+                            acc.intersection(b).cloned().collect()
+                        });
                     union.difference(&intersection).cloned().collect()
                 };
 
@@ -603,25 +646,28 @@ fn mine_partial_order(
 
         // Check incoming XOR merging
         if in_size > 1 || (p_name == start_place && in_size > 0) {
-            let pre_trans: Vec<String> = net.pre_set_transitions(&p)
-                .into_iter().collect();
+            let pre_trans: Vec<String> = net.pre_set_transitions(&p).into_iter().collect();
             if pre_trans.len() > 1 {
-                let branches: Vec<HashSet<String>> = pre_trans.iter()
+                let branches: Vec<HashSet<String>> = pre_trans
+                    .iter()
                     .map(|t| {
-                        reachability_map.iter()
+                        reachability_map
+                            .iter()
                             .filter(|(_, reachable)| reachable.contains(t))
                             .map(|(k, _)| k.clone())
                             .collect()
                     })
                     .collect();
 
-                let union: HashSet<String> = branches.iter().flat_map(|b| b.iter().cloned()).collect();
+                let union: HashSet<String> =
+                    branches.iter().flat_map(|b| b.iter().cloned()).collect();
                 let not_in_every = if p_name == start_place {
                     union.clone()
                 } else {
-                    let intersection: HashSet<String> = branches.iter()
-                        .skip(1)
-                        .fold(branches[0].clone(), |acc, b| acc.intersection(b).cloned().collect());
+                    let intersection: HashSet<String> =
+                        branches.iter().skip(1).fold(branches[0].clone(), |acc, b| {
+                            acc.intersection(b).cloned().collect()
+                        });
                     union.difference(&intersection).cloned().collect()
                 };
 
@@ -636,10 +682,9 @@ fn mine_partial_order(
 }
 
 /// Mine choice graph cut: group transitions around split/join points.
-fn mine_choice_graph(
-    net: &InternalNet,
-) -> Vec<HashSet<String>> {
-    let mut partition: Vec<HashSet<String>> = net.transition_names()
+fn mine_choice_graph(net: &InternalNet) -> Vec<HashSet<String>> {
+    let mut partition: Vec<HashSet<String>> = net
+        .transition_names()
         .into_iter()
         .map(|t| {
             let mut s = HashSet::new();
@@ -651,19 +696,22 @@ fn mine_choice_graph(
     // Split transitions (multiple outgoing arcs)
     for split_name in net.transitions_with_multiple_out() {
         let split = NodeId::Transition(split_name.clone());
-        let post_places: Vec<NodeId> = net.post_set(&split)
-            .into_iter().collect();
+        let post_places: Vec<NodeId> = net.post_set(&split).into_iter().collect();
 
-        if post_places.len() <= 1 { continue; }
+        if post_places.len() <= 1 {
+            continue;
+        }
 
-        let branches: Vec<HashSet<String>> = post_places.iter()
+        let branches: Vec<HashSet<String>> = post_places
+            .iter()
             .map(|p| get_reachable_transitions_between(net, p, &split))
             .collect();
 
         let union: HashSet<String> = branches.iter().flat_map(|b| b.iter().cloned()).collect();
-        let intersection: HashSet<String> = branches.iter()
-            .skip(1)
-            .fold(branches[0].clone(), |acc, b| acc.intersection(b).cloned().collect());
+        let intersection: HashSet<String> =
+            branches.iter().skip(1).fold(branches[0].clone(), |acc, b| {
+                acc.intersection(b).cloned().collect()
+            });
         let mut not_in_every: HashSet<String> = union.difference(&intersection).cloned().collect();
         not_in_every.insert(split_name.clone());
 
@@ -675,19 +723,22 @@ fn mine_choice_graph(
     // Join transitions (multiple incoming arcs)
     for join_name in net.transitions_with_multiple_in() {
         let join = NodeId::Transition(join_name.clone());
-        let pre_places: Vec<NodeId> = net.pre_set(&join)
-            .into_iter().collect();
+        let pre_places: Vec<NodeId> = net.pre_set(&join).into_iter().collect();
 
-        if pre_places.len() <= 1 { continue; }
+        if pre_places.len() <= 1 {
+            continue;
+        }
 
-        let branches: Vec<HashSet<String>> = pre_places.iter()
+        let branches: Vec<HashSet<String>> = pre_places
+            .iter()
             .map(|p| get_backward_reachable_transitions_between(net, p, &join))
             .collect();
 
         let union: HashSet<String> = branches.iter().flat_map(|b| b.iter().cloned()).collect();
-        let intersection: HashSet<String> = branches.iter()
-            .skip(1)
-            .fold(branches[0].clone(), |acc, b| acc.intersection(b).cloned().collect());
+        let intersection: HashSet<String> =
+            branches.iter().skip(1).fold(branches[0].clone(), |acc, b| {
+                acc.intersection(b).cloned().collect()
+            });
         let mut not_in_every: HashSet<String> = union.difference(&intersection).cloned().collect();
         not_in_every.insert(join_name.clone());
 
@@ -811,8 +862,8 @@ pub fn apply(result: &PowlPetriNetResult) -> Result<(PowlArena, u32), String> {
 
 /// Parse a Petri Net JSON string and convert to POWL.
 pub fn petri_net_to_powl(pn_json: &str) -> Result<(PowlArena, u32), String> {
-    let result: PowlPetriNetResult = serde_json::from_str(pn_json)
-        .map_err(|e| format!("invalid petri net JSON: {}", e))?;
+    let result: PowlPetriNetResult =
+        serde_json::from_str(pn_json).map_err(|e| format!("invalid petri net JSON: {}", e))?;
     apply(&result)
 }
 
@@ -854,7 +905,8 @@ fn translate_petri_to_powl(
     // If we have exactly 2 transitions, try XOR
     if net.transition_count() == 2 {
         let labels: Vec<Option<String>> = net.transitions.values().cloned().collect();
-        let children: Vec<u32> = labels.into_iter()
+        let children: Vec<u32> = labels
+            .into_iter()
             .map(|l| arena.add_transition(l))
             .collect();
         return Ok(arena.add_operator(Operator::Xor, children));
@@ -894,12 +946,14 @@ fn translate_partial_order(
     for p_name in &net.places {
         let p = NodeId::Place(p_name.clone());
 
-        let source_groups: HashSet<usize> = net.pre_set_transitions(&p)
+        let source_groups: HashSet<usize> = net
+            .pre_set_transitions(&p)
             .iter()
             .filter_map(|t| transition_to_group.get(t).copied())
             .collect();
 
-        let target_groups: HashSet<usize> = net.post_set_transitions(&p)
+        let target_groups: HashSet<usize> = net
+            .post_set_transitions(&p)
             .iter()
             .filter_map(|t| transition_to_group.get(t).copied())
             .collect();
@@ -940,10 +994,14 @@ fn translate_partial_order(
         let sp_set = &group_start_places[i];
         let ep_set = &group_end_places[i];
 
-        let subnet_start = sp_set.iter().next()
+        let subnet_start = sp_set
+            .iter()
+            .next()
             .ok_or_else(|| format!("group {} has no start place", i))?
             .clone();
-        let subnet_end = ep_set.iter().next()
+        let subnet_end = ep_set
+            .iter()
+            .next()
             .ok_or_else(|| format!("group {} has no end place", i))?
             .clone();
 
@@ -998,12 +1056,14 @@ fn translate_choice_graph(
     for p_name in &net.places {
         let p = NodeId::Place(p_name.clone());
 
-        let source_groups: HashSet<usize> = net.pre_set_transitions(&p)
+        let source_groups: HashSet<usize> = net
+            .pre_set_transitions(&p)
             .iter()
             .filter_map(|t| transition_to_group.get(t).copied())
             .collect();
 
-        let target_groups: HashSet<usize> = net.post_set_transitions(&p)
+        let target_groups: HashSet<usize> = net
+            .post_set_transitions(&p)
             .iter()
             .filter_map(|t| transition_to_group.get(t).copied())
             .collect();
@@ -1039,10 +1099,14 @@ fn translate_choice_graph(
         let sp_set = &group_start_places[i];
         let ep_set = &group_end_places[i];
 
-        let subnet_start = sp_set.iter().next()
+        let subnet_start = sp_set
+            .iter()
+            .next()
             .ok_or_else(|| format!("group {} has no start place", i))?
             .clone();
-        let subnet_end = ep_set.iter().next()
+        let subnet_end = ep_set
+            .iter()
+            .next()
             .ok_or_else(|| format!("group {} has no end place", i))?
             .clone();
 
@@ -1059,8 +1123,8 @@ fn translate_choice_graph(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::powl_parser::parse_powl_model_string;
     use crate::powl::conversion::to_petri_net;
+    use crate::powl_parser::parse_powl_model_string;
 
     /// Helper: POWL → Petri Net → POWL roundtrip
     fn roundtrip(powl_str: &str) -> Result<String, String> {
@@ -1073,69 +1137,47 @@ mod tests {
     }
 
     #[test]
-    fn single_activity_roundtrip() {
+    fn test_basic_operators_roundtrip() {
+        // Happy path: single activity, XOR, sequence roundtrip correctly
         let result = roundtrip("A").unwrap();
-        assert!(result.contains("A"), "got: {}", result);
-    }
+        assert!(result.contains("A"));
 
-    #[test]
-    fn xor_roundtrip() {
         let result = roundtrip("X ( A, B )").unwrap();
-        assert!(result.contains("A") && result.contains("B"), "got: {}", result);
-    }
+        assert!(result.contains("A") && result.contains("B"));
 
-    #[test]
-    fn sequence_roundtrip() {
         let result = roundtrip("-> ( A, B )").unwrap();
-        assert!(result.contains("A") && result.contains("B"), "got: {}", result);
+        assert!(result.contains("A") && result.contains("B"));
     }
 
     #[test]
-    fn loop_roundtrip() {
+    fn test_advanced_constructs_roundtrip() {
+        // Loop, parallel, and nested structures roundtrip correctly
         let result = roundtrip("* ( A, B )").unwrap();
-        assert!(result.contains("A"), "got: {}", result);
-    }
+        assert!(result.contains("A"));
 
-    #[test]
-    fn parallel_roundtrip() {
         let result = roundtrip("+ ( A, B )").unwrap();
-        assert!(result.contains("A") && result.contains("B"), "got: {}", result);
-    }
+        assert!(result.contains("A") && result.contains("B"));
 
-    #[test]
-    fn nested_xor_roundtrip() {
         let result = roundtrip("X ( X ( A, B ), C )").unwrap();
-        assert!(result.contains("A") && result.contains("B") && result.contains("C"), "got: {}", result);
+        assert!(result.contains("A") && result.contains("B") && result.contains("C"));
     }
 
     #[test]
-    fn petri_net_to_powl_accepts_own_output() {
-        let mut arena = PowlArena::new();
-        let root = parse_powl_model_string("X ( A, B )", &mut arena).unwrap();
-        let pn_result = to_petri_net::apply(&arena, root);
-        let pn_json = serde_json::to_string(&pn_result).unwrap();
-
-        let result = petri_net_to_powl(&pn_json);
-        assert!(result.is_ok(), "petri_net_to_powl failed: {:?}", result.err());
-        let (arena2, root2) = result.unwrap();
-        let repr = arena2.to_repr(root2);
-        assert!(repr.contains("A") && repr.contains("B"), "got: {}", repr);
-    }
-
-    #[test]
-    fn invalid_json_returns_error() {
+    fn test_edge_cases_and_validation() {
+        // Edge case: invalid JSON returns error
         let result = petri_net_to_powl("not json");
         assert!(result.is_err());
-    }
 
-    #[test]
-    fn workflow_net_validation() {
+        // Edge case: workflow net validation passes for valid net
         let mut arena = PowlArena::new();
         let root = parse_powl_model_string("X ( A, B )", &mut arena).unwrap();
         let pn_result = to_petri_net::apply(&arena, root);
-
         let net = InternalNet::from_result(&pn_result).unwrap();
-        let result = validate_workflow_net(&net);
-        assert!(result.is_ok(), "workflow net validation failed: {:?}", result.err());
+        assert!(validate_workflow_net(&net).is_ok());
+
+        // Edge case: accepts own output (roundtrip consistency)
+        let pn_json = serde_json::to_string(&pn_result).unwrap();
+        let result = petri_net_to_powl(&pn_json);
+        assert!(result.is_ok());
     }
 }

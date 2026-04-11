@@ -1,6 +1,6 @@
+use rustc_hash::FxHashMap;
 use serde::{Deserialize, Deserializer, Serialize};
 use std::collections::HashMap;
-use rustc_hash::FxHashMap;
 
 /// Parse an ISO 8601 / RFC 3339 timestamp string into milliseconds since Unix epoch.
 /// Handles formats: "2024-01-01T10:00:00+00:00", "2024-01-01T10:00:00Z",
@@ -136,11 +136,40 @@ pub struct Event {
     pub attributes: Attributes,
 }
 
+impl Default for Event {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Event {
+    pub fn new() -> Self {
+        Event {
+            attributes: HashMap::default(),
+        }
+    }
+}
+
 /// Trace (case) of events
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Trace {
     pub attributes: Attributes,
     pub events: Vec<Event>,
+}
+
+impl Default for Trace {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Trace {
+    pub fn new() -> Self {
+        Trace {
+            attributes: HashMap::default(),
+            events: Vec::default(),
+        }
+    }
 }
 
 /// Event log (case-centric)
@@ -179,7 +208,7 @@ impl<'a> ColumnarLog<'a> {
         // This is safe because `owned` is guaranteed to outlive the returned
         // ColumnarLog (the lifetime 'a is tied to the &owned parameter).
         // The events/trace_offsets data is immutable once created.
-        
+
         ColumnarLog {
             events: owned.events.clone(),
             trace_offsets: owned.trace_offsets.clone(),
@@ -222,7 +251,11 @@ impl EventLog {
         for trace in &self.traces {
             trace_offsets.push(events.len());
             for event in &trace.events {
-                if let Some(act) = event.attributes.get(activity_key).and_then(|v| v.as_string()) {
+                if let Some(act) = event
+                    .attributes
+                    .get(activity_key)
+                    .and_then(|v| v.as_string())
+                {
                     let next_id = vocab.len() as u32;
                     let id = *vocab_map.entry(act).or_insert_with(|| {
                         vocab.push(act);
@@ -234,7 +267,11 @@ impl EventLog {
         }
         trace_offsets.push(events.len()); // sentinel
 
-        ColumnarLog { events, trace_offsets, vocab }
+        ColumnarLog {
+            events,
+            trace_offsets,
+            vocab,
+        }
     }
 
     /// Build an owned columnar representation suitable for caching.
@@ -252,7 +289,11 @@ impl EventLog {
         for trace in &self.traces {
             trace_offsets.push(events.len());
             for event in &trace.events {
-                if let Some(act) = event.attributes.get(activity_key).and_then(|v| v.as_string()) {
+                if let Some(act) = event
+                    .attributes
+                    .get(activity_key)
+                    .and_then(|v| v.as_string())
+                {
                     let next_id = vocab.len() as u32;
                     let id = *vocab_map.entry(act).or_insert_with(|| {
                         vocab.push(act.to_owned());
@@ -264,7 +305,11 @@ impl EventLog {
         }
         trace_offsets.push(events.len()); // sentinel
 
-        crate::cache::OwnedColumnarLog { events, trace_offsets, vocab }
+        crate::cache::OwnedColumnarLog {
+            events,
+            trace_offsets,
+            vocab,
+        }
     }
 
     /// Get unique activity names. Uses `to_columnar` internally so dedup is O(n).
@@ -291,14 +336,20 @@ impl EventLog {
             let end = col.trace_offsets[t + 1];
             // Sequential read over flat integer array — maximally cache-friendly
             for i in start..end.saturating_sub(1) {
-                *counts.entry((col.events[i], col.events[i + 1])).or_insert(0) += 1;
+                *counts
+                    .entry((col.events[i], col.events[i + 1]))
+                    .or_insert(0) += 1;
             }
         }
 
         counts
             .into_iter()
             .map(|((f, t), freq)| {
-                (col.vocab[f as usize].to_owned(), col.vocab[t as usize].to_owned(), freq)
+                (
+                    col.vocab[f as usize].to_owned(),
+                    col.vocab[t as usize].to_owned(),
+                    freq,
+                )
             })
             .collect()
     }
@@ -370,7 +421,10 @@ impl OCELEvent {
     /// Extract object IDs from object_refs only (deprecated, use all_object_ids)
     #[deprecated(since = "0.6.0", note = "use all_object_ids() instead")]
     pub fn get_object_ids(&self) -> Vec<String> {
-        self.object_refs.iter().map(|r| r.object_id.clone()).collect()
+        self.object_refs
+            .iter()
+            .map(|r| r.object_id.clone())
+            .collect()
     }
 }
 
@@ -471,7 +525,19 @@ pub struct PetriNetArc {
     pub weight: Option<usize>,
 }
 
-/// Petri Net
+/// A Petri Net process model with places, transitions, and arcs.
+///
+/// Petri Nets provide a formal and precise representation of process workflows,
+/// supporting concurrency, synchronization, and conflict resolution.
+/// Discovered by algorithms such as Alpha++, Inductive Miner, ILP, and Genetic Algorithm.
+///
+/// # Fields
+///
+/// - `places` — State positions (conditions) in the net
+/// - `transitions` — Actions/events that change state
+/// - `arcs` — Connections between places and transitions
+/// - `initial_marking` — Initial token distribution (place → token count)
+/// - `final_markings` — Accepting final markings (list of place → token count maps)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PetriNet {
     pub places: Vec<PetriNetPlace>,
@@ -501,7 +567,19 @@ pub struct DirectlyFollowsRelation {
     pub frequency: usize,
 }
 
-/// Directly-Follows Graph
+/// A Directly-Follows Graph (DFG) representing process flow.
+///
+/// The DFG is the fundamental process model showing which activities
+/// directly follow each other in the event log, along with frequencies.
+/// It is the fastest discovery algorithm and serves as the foundation
+/// for more advanced process models.
+///
+/// # Fields
+///
+/// - `nodes` — Activities with occurrence frequencies
+/// - `edges` — Directly-follows relations with frequencies
+/// - `start_activities` — Activities that start traces (name → count)
+/// - `end_activities` — Activities that end traces (name → count)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DirectlyFollowsGraph {
     pub nodes: Vec<DFGNode>,
@@ -537,7 +615,17 @@ pub struct DeclareConstraint {
     pub confidence: f64,
 }
 
-/// DECLARE model
+/// A DECLARE model containing constraint-based process rules.
+///
+/// Unlike procedural models (Petri Nets, DFGs), DECLARE uses declarative
+/// constraints (e.g., "activity B must eventually follow activity A")
+/// to specify allowed behavior. This is particularly useful for flexible
+/// processes where not all execution paths can be enumerated.
+///
+/// # Fields
+///
+/// - `constraints` — List of DECLARE constraints with support/confidence metrics
+/// - `activities` — All activities referenced in the model
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DeclareModel {
     pub constraints: Vec<DeclareConstraint>,
@@ -550,124 +638,6 @@ impl DeclareModel {
             constraints: Vec::new(),
             activities: Vec::new(),
         }
-    }
-}
-
-/// Streaming DFG builder for IoT / chunked event ingestion.
-///
-/// Maintains running DFG counts without storing the full event log in memory.
-/// Events are added one-by-one (or in batches) per case; once a trace is
-/// closed its per-trace buffer is freed and its counts folded into the global
-/// totals.  Memory use is proportional to open concurrent traces × average
-/// trace length, not total log size.
-///
-/// Activity strings are integer-encoded on first sight so edge counting uses
-/// `FxHashMap<(u32,u32), usize>` (fixed-width keys, O(1) hash).
-#[derive(Debug, Clone)]
-pub struct StreamingDfgBuilder {
-    /// activity name → integer id (first-seen order)
-    pub vocab_map: HashMap<String, u32>,
-    /// id → activity name (reverse of vocab_map)
-    pub vocab: Vec<String>,
-    /// per-activity occurrence counts indexed by id (grown on demand)
-    pub node_counts: Vec<usize>,
-    /// directed edge occurrence counts
-    pub edge_counts: FxHashMap<(u32, u32), usize>,
-    /// start-activity counts (first event in each closed trace)
-    pub start_counts: FxHashMap<u32, usize>,
-    /// end-activity counts (last event in each closed trace)
-    pub end_counts: FxHashMap<u32, usize>,
-    /// number of traces closed so far
-    pub trace_count: usize,
-    /// total events processed (including open traces)
-    pub event_count: usize,
-    /// open (in-progress) traces: case_id → encoded activity sequence
-    /// freed when the trace is closed via `streaming_dfg_close_trace`
-    pub open_traces: HashMap<String, Vec<u32>>,
-}
-
-impl StreamingDfgBuilder {
-    pub fn new() -> Self {
-        StreamingDfgBuilder {
-            vocab_map: HashMap::new(),
-            vocab: Vec::new(),
-            node_counts: Vec::new(),
-            edge_counts: FxHashMap::default(),
-            start_counts: FxHashMap::default(),
-            end_counts: FxHashMap::default(),
-            trace_count: 0,
-            event_count: 0,
-            open_traces: HashMap::new(),
-        }
-    }
-
-    /// Intern an activity string and return its u32 id.
-    #[inline]
-    pub fn intern(&mut self, activity: &str) -> u32 {
-        if let Some(&id) = self.vocab_map.get(activity) {
-            return id;
-        }
-        let id = self.vocab.len() as u32;
-        self.vocab.push(activity.to_owned());
-        self.vocab_map.insert(activity.to_owned(), id);
-        self.node_counts.push(0);
-        id
-    }
-
-    /// Append one event to an open trace.
-    pub fn add_event(&mut self, case_id: &str, activity: &str) {
-        let id = self.intern(activity);
-        self.open_traces
-            .entry(case_id.to_owned())
-            .or_insert_with(Vec::new)
-            .push(id);
-        self.event_count += 1;
-    }
-
-    /// Close a trace: fold its buffered events into running counts, then free the buffer.
-    /// Returns `false` if `case_id` was not open.
-    pub fn close_trace(&mut self, case_id: &str) -> bool {
-        let Some(events) = self.open_traces.remove(case_id) else { return false; };
-        if events.is_empty() { return true; }
-
-        // Node frequencies
-        for &id in &events {
-            self.node_counts[id as usize] += 1;
-        }
-        // Directly-follows edges
-        for pair in events.windows(2) {
-            *self.edge_counts.entry((pair[0], pair[1])).or_insert(0) += 1;
-        }
-        // Start / end (safe: events non-empty due to line 446 check)
-        *self.start_counts.entry(events[0]).or_insert(0) += 1;
-        if let Some(last) = events.last() {
-            *self.end_counts.entry(*last).or_insert(0) += 1;
-        }
-        self.trace_count += 1;
-        true
-    }
-
-    /// Snapshot: build a `DirectlyFollowsGraph` from current counts.
-    /// Includes counts from *closed* traces only (open traces are not yet folded in).
-    pub fn to_dfg(&self) -> DirectlyFollowsGraph {
-        let mut dfg = DirectlyFollowsGraph::new();
-        dfg.nodes = self.vocab.iter().enumerate().map(|(i, name)| DFGNode {
-            id: name.clone(),
-            label: name.clone(),
-            frequency: self.node_counts[i],
-        }).collect();
-        dfg.edges = self.edge_counts.iter().map(|(&(f, t), &freq)| DirectlyFollowsRelation {
-            from: self.vocab[f as usize].clone(),
-            to: self.vocab[t as usize].clone(),
-            frequency: freq,
-        }).collect();
-        for (&id, &cnt) in &self.start_counts {
-            dfg.start_activities.insert(self.vocab[id as usize].clone(), cnt);
-        }
-        for (&id, &cnt) in &self.end_counts {
-            dfg.end_activities.insert(self.vocab[id as usize].clone(), cnt);
-        }
-        dfg
     }
 }
 
@@ -742,7 +712,8 @@ pub struct StreamingConformanceChecker {
 impl StreamingConformanceChecker {
     /// Create a new checker from a `DirectlyFollowsGraph`.
     pub fn from_dfg(dfg: &DirectlyFollowsGraph) -> Self {
-        let dfg_edges: std::collections::HashSet<(String, String)> = dfg.edges
+        let dfg_edges: std::collections::HashSet<(String, String)> = dfg
+            .edges
             .iter()
             .map(|e| (e.from.clone(), e.to.clone()))
             .collect();
@@ -791,7 +762,11 @@ impl StreamingConformanceChecker {
         }
 
         let mut valid_steps = 0usize;
-        let total_steps = if activities.len() > 1 { activities.len() - 1 } else { 0 };
+        let total_steps = if activities.len() > 1 {
+            activities.len() - 1
+        } else {
+            0
+        };
 
         for i in 0..total_steps {
             let pair = (activities[i].clone(), activities[i + 1].clone());
@@ -829,7 +804,11 @@ pub struct TemporalProfile {
 }
 
 impl TemporalProfile {
-    pub fn new() -> Self { TemporalProfile { pairs: HashMap::new() } }
+    pub fn new() -> Self {
+        TemporalProfile {
+            pairs: HashMap::new(),
+        }
+    }
 }
 
 /// N-gram predictor: maps activity prefixes of length n to next-activity distributions.
@@ -842,17 +821,25 @@ pub struct NGramPredictor {
 
 impl NGramPredictor {
     pub fn new(n: usize) -> Self {
-        NGramPredictor { n, counts: HashMap::new() }
+        NGramPredictor {
+            n,
+            counts: HashMap::new(),
+        }
     }
 
     /// Return ranked next-activity predictions for a given prefix.
     pub fn predict(&self, prefix: &[String]) -> Vec<(String, f64)> {
         let key_len = self.n.min(prefix.len());
         let key = prefix[prefix.len() - key_len..].to_vec();
-        let Some(dist) = self.counts.get(&key) else { return vec![] };
+        let Some(dist) = self.counts.get(&key) else {
+            return vec![];
+        };
         let total: usize = dist.values().sum();
-        if total == 0 { return vec![]; }
-        let mut result: Vec<(String, f64)> = dist.iter()
+        if total == 0 {
+            return vec![];
+        }
+        let mut result: Vec<(String, f64)> = dist
+            .iter()
             .map(|(act, &cnt)| (act.clone(), cnt as f64 / total as f64))
             .collect();
         result.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
@@ -865,29 +852,37 @@ impl NGramPredictor {
 // ---------------------------------------------------------------------------
 
 impl Default for EventLog {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Default for OCEL {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Default for PetriNet {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Default for DirectlyFollowsGraph {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Default for DeclareModel {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Default for TemporalProfile {
-    fn default() -> Self { Self::new() }
-}
-
-impl Default for StreamingDfgBuilder {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }

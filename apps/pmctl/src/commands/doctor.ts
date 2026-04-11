@@ -513,7 +513,7 @@ async function checkTypeScriptCompilation(): Promise<CheckResult> {
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// Check 13: @pictl/ml (micro-ml) available
+// Check 13: @pictl/ml available
 // ────────────────────────────────────────────────────────────────────────────
 
 async function checkMicroMl(): Promise<CheckResult> {
@@ -522,7 +522,7 @@ async function checkMicroMl(): Promise<CheckResult> {
     const mlPath = await import('@pictl/ml');
     const hasClassify = typeof mlPath.classifyTraces === 'function';
     if (hasClassify) {
-      return { name: '@pictl/ml', status: 'ok', message: 'micro-ml ML package available (classify, cluster, forecast, anomaly, regress, pca)' };
+      return { name: '@pictl/ml', status: 'ok', message: 'Native ML package available (classify, cluster, forecast, anomaly, regress, pca)' };
     }
     return { name: '@pictl/ml', status: 'warn', message: 'Package found but classifyTraces not exported' };
   } catch {
@@ -628,7 +628,7 @@ async function checkAlgorithmRegistry(): Promise<CheckResult> {
     // Known algorithm functions
     const expected: string[] = [
       'discover_dfg',
-      'discover_process_skeleton',
+      'extract_process_skeleton',
       'discover_alpha_plus_plus',
       'discover_heuristic_miner',
       'discover_inductive_miner',
@@ -639,7 +639,6 @@ async function checkAlgorithmRegistry(): Promise<CheckResult> {
       'discover_aco',
       'discover_pso',
       'discover_genetic_algorithm',
-      'discover_optimized_dfg',
       'discover_ilp',
       'discover_powl',
     ];

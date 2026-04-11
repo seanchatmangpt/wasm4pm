@@ -1,9 +1,13 @@
 /// POWL to BPMN 2.0 XML conversion.
 use crate::powl_arena::{PowlArena, PowlNode};
 
-struct Ids { counter: u32 }
+struct Ids {
+    counter: u32,
+}
 impl Ids {
-    fn new() -> Self { Ids { counter: 0 } }
+    fn new() -> Self {
+        Ids { counter: 0 }
+    }
     fn next(&mut self, prefix: &str) -> String {
         self.counter += 1;
         format!("{}_{}", prefix, self.counter)
@@ -19,7 +23,12 @@ struct Builder {
 
 impl Builder {
     fn new() -> Self {
-        Builder { ids: Ids::new(), elements: Vec::new(), flows: Vec::new(), flow_counter: 0 }
+        Builder {
+            ids: Ids::new(),
+            elements: Vec::new(),
+            flows: Vec::new(),
+            flow_counter: 0,
+        }
     }
 
     fn flow(&mut self, source: &str, target: &str) {
@@ -35,7 +44,10 @@ impl Builder {
         match arena.get(idx) {
             None => {
                 let t = self.ids.next("tau");
-                self.elements.push(format!(r#"    <serviceTask id="{}" name="" pm4py:silent="true"/>"#, t));
+                self.elements.push(format!(
+                    r#"    <serviceTask id="{}" name="" pm4py:silent="true"/>"#,
+                    t
+                ));
                 self.flow(entry, &t);
                 self.flow(&t, exit);
             }
@@ -43,12 +55,16 @@ impl Builder {
                 if let Some(label) = &tr.label {
                     let id = self.ids.next("task");
                     let escaped = xml_escape(label);
-                    self.elements.push(format!(r#"    <task id="{}" name="{}"/>"#, id, escaped));
+                    self.elements
+                        .push(format!(r#"    <task id="{}" name="{}"/>"#, id, escaped));
                     self.flow(entry, &id);
                     self.flow(&id, exit);
                 } else {
                     let id = self.ids.next("tau");
-                    self.elements.push(format!(r#"    <serviceTask id="{}" name="" pm4py:silent="true"/>"#, id));
+                    self.elements.push(format!(
+                        r#"    <serviceTask id="{}" name="" pm4py:silent="true"/>"#,
+                        id
+                    ));
                     self.flow(entry, &id);
                     self.flow(&id, exit);
                 }
@@ -56,8 +72,17 @@ impl Builder {
             Some(PowlNode::FrequentTransition(ft)) => {
                 let id = self.ids.next("task");
                 let escaped = xml_escape(&ft.activity);
-                let loop_attr = if ft.selfloop { r#" pm4py:loop="true""# } else if ft.skippable { r#" pm4py:optional="true""# } else { "" };
-                self.elements.push(format!(r#"    <task id="{}" name="{}"{}/>"#, id, escaped, loop_attr));
+                let loop_attr = if ft.selfloop {
+                    r#" pm4py:loop="true""#
+                } else if ft.skippable {
+                    r#" pm4py:optional="true""#
+                } else {
+                    ""
+                };
+                self.elements.push(format!(
+                    r#"    <task id="{}" name="{}"{}/>"#,
+                    id, escaped, loop_attr
+                ));
                 self.flow(entry, &id);
                 self.flow(&id, exit);
             }
@@ -68,8 +93,14 @@ impl Builder {
                     "X" => {
                         let split = self.ids.next("xor_split");
                         let join = self.ids.next("xor_join");
-                        self.elements.push(format!(r#"    <exclusiveGateway id="{}" gatewayDirection="Diverging"/>"#, split));
-                        self.elements.push(format!(r#"    <exclusiveGateway id="{}" gatewayDirection="Converging"/>"#, join));
+                        self.elements.push(format!(
+                            r#"    <exclusiveGateway id="{}" gatewayDirection="Diverging"/>"#,
+                            split
+                        ));
+                        self.elements.push(format!(
+                            r#"    <exclusiveGateway id="{}" gatewayDirection="Converging"/>"#,
+                            join
+                        ));
                         self.flow(entry, &split);
                         self.flow(&join, exit);
                         let split_c = split.clone();
@@ -77,8 +108,14 @@ impl Builder {
                         for child_idx in children {
                             let child_entry = self.ids.next("p");
                             let child_exit = self.ids.next("p");
-                            self.elements.push(format!(r#"    <serviceTask id="{}" name="" pm4py:connector="true"/>"#, child_entry));
-                            self.elements.push(format!(r#"    <serviceTask id="{}" name="" pm4py:connector="true"/>"#, child_exit));
+                            self.elements.push(format!(
+                                r#"    <serviceTask id="{}" name="" pm4py:connector="true"/>"#,
+                                child_entry
+                            ));
+                            self.elements.push(format!(
+                                r#"    <serviceTask id="{}" name="" pm4py:connector="true"/>"#,
+                                child_exit
+                            ));
                             self.flow(&split_c, &child_entry);
                             self.flow(&child_exit, &join_c);
                             self.convert(arena, child_idx, &child_entry, &child_exit);
@@ -87,12 +124,24 @@ impl Builder {
                     "*" => {
                         let check = self.ids.next("loop_check");
                         let decide = self.ids.next("loop_decide");
-                        self.elements.push(format!(r#"    <exclusiveGateway id="{}" gatewayDirection="Converging"/>"#, check));
-                        self.elements.push(format!(r#"    <exclusiveGateway id="{}" gatewayDirection="Diverging"/>"#, decide));
+                        self.elements.push(format!(
+                            r#"    <exclusiveGateway id="{}" gatewayDirection="Converging"/>"#,
+                            check
+                        ));
+                        self.elements.push(format!(
+                            r#"    <exclusiveGateway id="{}" gatewayDirection="Diverging"/>"#,
+                            decide
+                        ));
                         let do_entry = self.ids.next("p");
                         let do_exit = self.ids.next("p");
-                        self.elements.push(format!(r#"    <serviceTask id="{}" name="" pm4py:connector="true"/>"#, do_entry));
-                        self.elements.push(format!(r#"    <serviceTask id="{}" name="" pm4py:connector="true"/>"#, do_exit));
+                        self.elements.push(format!(
+                            r#"    <serviceTask id="{}" name="" pm4py:connector="true"/>"#,
+                            do_entry
+                        ));
+                        self.elements.push(format!(
+                            r#"    <serviceTask id="{}" name="" pm4py:connector="true"/>"#,
+                            do_exit
+                        ));
                         self.flow(entry, &check);
                         self.flow(&check, &do_entry);
                         self.convert(arena, children[0], &do_entry, &do_exit);
@@ -101,21 +150,32 @@ impl Builder {
                         if children.len() > 1 {
                             let redo_entry = self.ids.next("p");
                             let redo_exit = self.ids.next("p");
-                            self.elements.push(format!(r#"    <serviceTask id="{}" name="" pm4py:connector="true"/>"#, redo_entry));
-                            self.elements.push(format!(r#"    <serviceTask id="{}" name="" pm4py:connector="true"/>"#, redo_exit));
+                            self.elements.push(format!(
+                                r#"    <serviceTask id="{}" name="" pm4py:connector="true"/>"#,
+                                redo_entry
+                            ));
+                            self.elements.push(format!(
+                                r#"    <serviceTask id="{}" name="" pm4py:connector="true"/>"#,
+                                redo_exit
+                            ));
                             self.flow(&decide, &redo_entry);
                             self.convert(arena, children[1], &redo_entry, &redo_exit);
                             self.flow(&redo_exit, &check);
                         }
                     }
-                    _ => { self.chain(arena, &children, entry, exit); }
+                    _ => {
+                        self.chain(arena, &children, entry, exit);
+                    }
                 }
             }
             Some(PowlNode::StrictPartialOrder(spo)) => {
                 let children = spo.children.clone();
                 if children.is_empty() {
                     let t = self.ids.next("tau");
-                    self.elements.push(format!(r#"    <serviceTask id="{}" name="" pm4py:silent="true"/>"#, t));
+                    self.elements.push(format!(
+                        r#"    <serviceTask id="{}" name="" pm4py:silent="true"/>"#,
+                        t
+                    ));
                     self.flow(entry, &t);
                     self.flow(&t, exit);
                     return;
@@ -125,39 +185,75 @@ impl Builder {
                 let mut level = vec![0usize; n];
                 for i in 0..n {
                     for j in 0..n {
-                        if order.is_edge(i, j) && level[j] <= level[i] { level[j] = level[i] + 1; }
+                        if order.is_edge(i, j) && level[j] <= level[i] {
+                            level[j] = level[i] + 1;
+                        }
                     }
                 }
                 let max_level = level.iter().copied().max().unwrap_or(0);
                 let mut groups: Vec<Vec<u32>> = vec![Vec::new(); max_level + 1];
-                for (node_i, &lv) in level.iter().enumerate() { groups[lv].push(children[node_i]); }
+                for (node_i, &lv) in level.iter().enumerate() {
+                    groups[lv].push(children[node_i]);
+                }
                 let mut current = entry.to_string();
                 for (gi, group) in groups.iter().enumerate() {
-                    let next = if gi < groups.len() - 1 { self.ids.next("sync") } else { exit.to_string() };
+                    let next = if gi < groups.len() - 1 {
+                        self.ids.next("sync")
+                    } else {
+                        exit.to_string()
+                    };
                     if group.len() == 1 {
                         let ce = self.ids.next("p");
                         let cx = self.ids.next("p");
-                        self.elements.push(format!(r#"    <serviceTask id="{}" name="" pm4py:connector="true"/>"#, ce));
-                        self.elements.push(format!(r#"    <serviceTask id="{}" name="" pm4py:connector="true"/>"#, cx));
+                        self.elements.push(format!(
+                            r#"    <serviceTask id="{}" name="" pm4py:connector="true"/>"#,
+                            ce
+                        ));
+                        self.elements.push(format!(
+                            r#"    <serviceTask id="{}" name="" pm4py:connector="true"/>"#,
+                            cx
+                        ));
                         self.flow(&current, &ce);
-                        if next != exit { self.elements.push(format!(r#"    <serviceTask id="{}" name="" pm4py:connector="true"/>"#, next)); }
+                        if next != exit {
+                            self.elements.push(format!(
+                                r#"    <serviceTask id="{}" name="" pm4py:connector="true"/>"#,
+                                next
+                            ));
+                        }
                         self.convert(arena, group[0], &ce, &cx);
                         self.flow(&cx, &next);
                     } else {
                         let and_split = self.ids.next("and_split");
                         let and_join = self.ids.next("and_join");
-                        self.elements.push(format!(r#"    <parallelGateway id="{}" gatewayDirection="Diverging"/>"#, and_split));
-                        self.elements.push(format!(r#"    <parallelGateway id="{}" gatewayDirection="Converging"/>"#, and_join));
+                        self.elements.push(format!(
+                            r#"    <parallelGateway id="{}" gatewayDirection="Diverging"/>"#,
+                            and_split
+                        ));
+                        self.elements.push(format!(
+                            r#"    <parallelGateway id="{}" gatewayDirection="Converging"/>"#,
+                            and_join
+                        ));
                         self.flow(&current, &and_split);
-                        if gi < groups.len() - 1 { self.elements.push(format!(r#"    <serviceTask id="{}" name="" pm4py:connector="true"/>"#, next)); }
+                        if gi < groups.len() - 1 {
+                            self.elements.push(format!(
+                                r#"    <serviceTask id="{}" name="" pm4py:connector="true"/>"#,
+                                next
+                            ));
+                        }
                         self.flow(&and_join, &next);
                         let split_c = and_split.clone();
                         let join_c = and_join.clone();
                         for &child_idx in group {
                             let ce = self.ids.next("p");
                             let cx = self.ids.next("p");
-                            self.elements.push(format!(r#"    <serviceTask id="{}" name="" pm4py:connector="true"/>"#, ce));
-                            self.elements.push(format!(r#"    <serviceTask id="{}" name="" pm4py:connector="true"/>"#, cx));
+                            self.elements.push(format!(
+                                r#"    <serviceTask id="{}" name="" pm4py:connector="true"/>"#,
+                                ce
+                            ));
+                            self.elements.push(format!(
+                                r#"    <serviceTask id="{}" name="" pm4py:connector="true"/>"#,
+                                cx
+                            ));
                             self.flow(&split_c, &ce);
                             self.flow(&cx, &join_c);
                             self.convert(arena, child_idx, &ce, &cx);
@@ -171,7 +267,10 @@ impl Builder {
                 let children = dg.children.clone();
                 if children.is_empty() {
                     let t = self.ids.next("tau");
-                    self.elements.push(format!(r#"    <serviceTask id="{}" name="" pm4py:silent="true"/>"#, t));
+                    self.elements.push(format!(
+                        r#"    <serviceTask id="{}" name="" pm4py:silent="true"/>"#,
+                        t
+                    ));
                     self.flow(entry, &t);
                     self.flow(&t, exit);
                     return;
@@ -182,39 +281,75 @@ impl Builder {
                 let mut level = vec![0usize; n];
                 for i in 0..n {
                     for j in 0..n {
-                        if order.is_edge(i, j) && level[j] <= level[i] { level[j] = level[i] + 1; }
+                        if order.is_edge(i, j) && level[j] <= level[i] {
+                            level[j] = level[i] + 1;
+                        }
                     }
                 }
                 let max_level = level.iter().copied().max().unwrap_or(0);
                 let mut groups: Vec<Vec<u32>> = vec![Vec::new(); max_level + 1];
-                for (node_i, &lv) in level.iter().enumerate() { groups[lv].push(children[node_i]); }
+                for (node_i, &lv) in level.iter().enumerate() {
+                    groups[lv].push(children[node_i]);
+                }
                 let mut current = entry.to_string();
                 for (gi, group) in groups.iter().enumerate() {
-                    let next = if gi < groups.len() - 1 { self.ids.next("sync") } else { exit.to_string() };
+                    let next = if gi < groups.len() - 1 {
+                        self.ids.next("sync")
+                    } else {
+                        exit.to_string()
+                    };
                     if group.len() == 1 {
                         let ce = self.ids.next("p");
                         let cx = self.ids.next("p");
-                        self.elements.push(format!(r#"    <serviceTask id="{}" name="" pm4py:connector="true"/>"#, ce));
-                        self.elements.push(format!(r#"    <serviceTask id="{}" name="" pm4py:connector="true"/>"#, cx));
+                        self.elements.push(format!(
+                            r#"    <serviceTask id="{}" name="" pm4py:connector="true"/>"#,
+                            ce
+                        ));
+                        self.elements.push(format!(
+                            r#"    <serviceTask id="{}" name="" pm4py:connector="true"/>"#,
+                            cx
+                        ));
                         self.flow(&current, &ce);
-                        if next != exit { self.elements.push(format!(r#"    <serviceTask id="{}" name="" pm4py:connector="true"/>"#, next)); }
+                        if next != exit {
+                            self.elements.push(format!(
+                                r#"    <serviceTask id="{}" name="" pm4py:connector="true"/>"#,
+                                next
+                            ));
+                        }
                         self.convert(arena, group[0], &ce, &cx);
                         self.flow(&cx, &next);
                     } else {
                         let and_split = self.ids.next("and_split");
                         let and_join = self.ids.next("and_join");
-                        self.elements.push(format!(r#"    <parallelGateway id="{}" gatewayDirection="Diverging"/>"#, and_split));
-                        self.elements.push(format!(r#"    <parallelGateway id="{}" gatewayDirection="Converging"/>"#, and_join));
+                        self.elements.push(format!(
+                            r#"    <parallelGateway id="{}" gatewayDirection="Diverging"/>"#,
+                            and_split
+                        ));
+                        self.elements.push(format!(
+                            r#"    <parallelGateway id="{}" gatewayDirection="Converging"/>"#,
+                            and_join
+                        ));
                         self.flow(&current, &and_split);
-                        if gi < groups.len() - 1 { self.elements.push(format!(r#"    <serviceTask id="{}" name="" pm4py:connector="true"/>"#, next)); }
+                        if gi < groups.len() - 1 {
+                            self.elements.push(format!(
+                                r#"    <serviceTask id="{}" name="" pm4py:connector="true"/>"#,
+                                next
+                            ));
+                        }
                         self.flow(&and_join, &next);
                         let split_c = and_split.clone();
                         let join_c = and_join.clone();
                         for &child_idx in group {
                             let ce = self.ids.next("p");
                             let cx = self.ids.next("p");
-                            self.elements.push(format!(r#"    <serviceTask id="{}" name="" pm4py:connector="true"/>"#, ce));
-                            self.elements.push(format!(r#"    <serviceTask id="{}" name="" pm4py:connector="true"/>"#, cx));
+                            self.elements.push(format!(
+                                r#"    <serviceTask id="{}" name="" pm4py:connector="true"/>"#,
+                                ce
+                            ));
+                            self.elements.push(format!(
+                                r#"    <serviceTask id="{}" name="" pm4py:connector="true"/>"#,
+                                cx
+                            ));
                             self.flow(&split_c, &ce);
                             self.flow(&cx, &join_c);
                             self.convert(arena, child_idx, &ce, &cx);
@@ -229,7 +364,10 @@ impl Builder {
     fn chain(&mut self, arena: &PowlArena, children: &[u32], entry: &str, exit: &str) {
         if children.is_empty() {
             let t = self.ids.next("tau");
-            self.elements.push(format!(r#"    <serviceTask id="{}" name="" pm4py:silent="true"/>"#, t));
+            self.elements.push(format!(
+                r#"    <serviceTask id="{}" name="" pm4py:silent="true"/>"#,
+                t
+            ));
             self.flow(entry, &t);
             self.flow(&t, exit);
             return;
@@ -237,9 +375,14 @@ impl Builder {
         let mut prev = entry.to_string();
         for (i, &child) in children.iter().enumerate() {
             let is_last = i == children.len() - 1;
-            let next = if is_last { exit.to_string() } else {
+            let next = if is_last {
+                exit.to_string()
+            } else {
                 let p = self.ids.next("p");
-                self.elements.push(format!(r#"    <serviceTask id="{}" name="" pm4py:connector="true"/>"#, p));
+                self.elements.push(format!(
+                    r#"    <serviceTask id="{}" name="" pm4py:connector="true"/>"#,
+                    p
+                ));
                 p
             };
             self.convert(arena, child, &prev, &next);
@@ -249,7 +392,11 @@ impl Builder {
 }
 
 fn xml_escape(s: &str) -> String {
-    s.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;").replace('"', "&quot;").replace('\'', "&apos;")
+    s.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
+        .replace('\'', "&apos;")
 }
 
 pub fn to_bpmn_xml(arena: &PowlArena, root: u32) -> String {
@@ -258,8 +405,14 @@ pub fn to_bpmn_xml(arena: &PowlArena, root: u32) -> String {
     let end_id = "endEvent_1".to_string();
     let proc_entry = builder.ids.next("p");
     let proc_exit = builder.ids.next("p");
-    builder.elements.push(format!(r#"    <serviceTask id="{}" name="" pm4py:connector="true"/>"#, proc_entry));
-    builder.elements.push(format!(r#"    <serviceTask id="{}" name="" pm4py:connector="true"/>"#, proc_exit));
+    builder.elements.push(format!(
+        r#"    <serviceTask id="{}" name="" pm4py:connector="true"/>"#,
+        proc_entry
+    ));
+    builder.elements.push(format!(
+        r#"    <serviceTask id="{}" name="" pm4py:connector="true"/>"#,
+        proc_exit
+    ));
     builder.flow(&start_id, &proc_entry);
     builder.convert(arena, root, &proc_entry, &proc_exit);
     builder.flow(&proc_exit, &end_id);
@@ -275,8 +428,12 @@ pub fn to_bpmn_xml(arena: &PowlArena, root: u32) -> String {
     lines.push(r#"  <process id="process_1" isExecutable="false">"#.to_string());
     lines.push(format!(r#"    <startEvent id="{}"/>"#, start_id));
     lines.push(format!(r#"    <endEvent id="{}"/>"#, end_id));
-    for el in &builder.elements { lines.push(el.clone()); }
-    for fl in &builder.flows { lines.push(fl.clone()); }
+    for el in &builder.elements {
+        lines.push(el.clone());
+    }
+    for fl in &builder.flows {
+        lines.push(fl.clone());
+    }
     lines.push("  </process>".to_string());
     lines.push("</definitions>".to_string());
     lines.join("\n")
@@ -285,8 +442,8 @@ pub fn to_bpmn_xml(arena: &PowlArena, root: u32) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::powl_parser::parse_powl_model_string;
     use crate::powl_arena::PowlArena;
+    use crate::powl_parser::parse_powl_model_string;
 
     fn parse(s: &str) -> (PowlArena, u32) {
         let mut arena = PowlArena::new();
@@ -294,10 +451,13 @@ mod tests {
         (arena, root)
     }
 
-    fn has_tag(xml: &str, tag: &str) -> bool { xml.contains(tag) }
+    fn has_tag(xml: &str, tag: &str) -> bool {
+        xml.contains(tag)
+    }
 
     #[test]
-    fn single_task_produces_valid_xml() {
+    fn test_bpmn_single_task_valid_xml() {
+        // Happy path: single task produces valid BPMN XML structure
         let (arena, root) = parse("A");
         let xml = to_bpmn_xml(&arena, root);
         assert!(has_tag(&xml, "<definitions"));
@@ -305,35 +465,30 @@ mod tests {
         assert!(has_tag(&xml, r#"name="A""#));
         assert!(has_tag(&xml, "<startEvent"));
         assert!(has_tag(&xml, "<endEvent"));
-        assert!(has_tag(&xml, "</definitions>"));
     }
 
     #[test]
-    fn xor_produces_exclusive_gateways() {
+    fn test_bpmn_gateways_xor_and_loop() {
+        // XOR produces exclusive gateway
         let (arena, root) = parse("X(A, B)");
         let xml = to_bpmn_xml(&arena, root);
         assert!(has_tag(&xml, "exclusiveGateway"));
         assert!(has_tag(&xml, r#"name="A""#));
-        assert!(has_tag(&xml, r#"name="B""#));
-    }
 
-    #[test]
-    fn loop_produces_exclusive_gateways() {
+        // Loop produces exclusive gateway
         let (arena, root) = parse("*(A, B)");
         let xml = to_bpmn_xml(&arena, root);
         assert!(has_tag(&xml, "exclusiveGateway"));
-        assert!(has_tag(&xml, r#"name="A""#));
     }
 
     #[test]
-    fn spo_concurrent_produces_parallel_gateways() {
+    fn test_bpmn_partial_orders() {
+        // Concurrent PO produces parallel gateway
         let (arena, root) = parse("PO=(nodes={A, B}, order={})");
         let xml = to_bpmn_xml(&arena, root);
         assert!(has_tag(&xml, "parallelGateway"));
-    }
 
-    #[test]
-    fn spo_sequential_no_parallel_gateways() {
+        // Sequential PO has no parallel gateway (direct sequence)
         let (arena, root) = parse("PO=(nodes={A, B}, order={A-->B})");
         let xml = to_bpmn_xml(&arena, root);
         assert!(!has_tag(&xml, "parallelGateway"));

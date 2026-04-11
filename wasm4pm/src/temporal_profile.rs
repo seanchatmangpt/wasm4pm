@@ -1,3 +1,6 @@
+use crate::models::{parse_timestamp_ms, AttributeValue, TemporalProfile};
+use crate::state::{get_or_init_state, StoredObject};
+use serde_json::json;
 /// Priority 4 — Temporal profile discovery and conformance.
 ///
 /// A temporal profile records, for every directly-follows pair (A→B) in an
@@ -5,9 +8,6 @@
 /// Conformance checking flags edges whose observed duration deviates more than
 /// `zeta` standard deviations from the mean.
 use wasm_bindgen::prelude::*;
-use crate::state::{get_or_init_state, StoredObject};
-use crate::models::{AttributeValue, parse_timestamp_ms, TemporalProfile};
-use serde_json::json;
 
 /// Discover a temporal profile from an event log.
 ///
@@ -31,13 +31,21 @@ pub fn discover_temporal_profile(
                 std::collections::HashMap::new();
 
             for trace in &log.traces {
-                let pairs: Vec<(String, Option<i64>)> = trace.events.iter()
+                let pairs: Vec<(String, Option<i64>)> = trace
+                    .events
+                    .iter()
                     .filter_map(|e| {
-                        let act = e.attributes.get(activity_key)
+                        let act = e
+                            .attributes
+                            .get(activity_key)
                             .and_then(|v| v.as_string())
                             .map(str::to_owned)?;
                         let ts = e.attributes.get(timestamp_key).and_then(|v| {
-                            if let AttributeValue::Date(s) = v { parse_timestamp_ms(s) } else { None }
+                            if let AttributeValue::Date(s) = v {
+                                parse_timestamp_ms(s)
+                            } else {
+                                None
+                            }
                         });
                         Some((act, ts))
                     })
@@ -115,18 +123,28 @@ pub fn check_temporal_conformance(
             let mut details: Vec<serde_json::Value> = Vec::new();
 
             for trace in &log.traces {
-                let case_id = trace.attributes.get("concept:name")
+                let case_id = trace
+                    .attributes
+                    .get("concept:name")
                     .and_then(|v| v.as_string())
                     .unwrap_or("unknown")
                     .to_string();
 
-                let pairs: Vec<(String, Option<i64>)> = trace.events.iter()
+                let pairs: Vec<(String, Option<i64>)> = trace
+                    .events
+                    .iter()
                     .filter_map(|e| {
-                        let act = e.attributes.get(activity_key)
+                        let act = e
+                            .attributes
+                            .get(activity_key)
                             .and_then(|v| v.as_string())
                             .map(str::to_owned)?;
                         let ts = e.attributes.get(timestamp_key).and_then(|v| {
-                            if let AttributeValue::Date(s) = v { parse_timestamp_ms(s) } else { None }
+                            if let AttributeValue::Date(s) = v {
+                                parse_timestamp_ms(s)
+                            } else {
+                                None
+                            }
                         });
                         Some((act, ts))
                     })
@@ -135,12 +153,20 @@ pub fn check_temporal_conformance(
                 for i in 0..pairs.len().saturating_sub(1) {
                     total_steps += 1;
                     let key = (&pairs[i].0, &pairs[i + 1].0);
-                    if let Some(&(mean, stdev, _)) = profile_pairs.get(&(key.0.clone(), key.1.clone())) {
+                    if let Some(&(mean, stdev, _)) =
+                        profile_pairs.get(&(key.0.clone(), key.1.clone()))
+                    {
                         if let (Some(t1), Some(t2)) = (pairs[i].1, pairs[i + 1].1) {
                             let dur = (t2 - t1).max(0) as f64;
-                            let z = if stdev > 0.0 { (dur - mean).abs() / stdev } else { 0.0 };
+                            let z = if stdev > 0.0 {
+                                (dur - mean).abs() / stdev
+                            } else {
+                                0.0
+                            };
                             let is_deviation = z > zeta;
-                            if is_deviation { total_deviations += 1; }
+                            if is_deviation {
+                                total_deviations += 1;
+                            }
                             details.push(json!({
                                 "case_id": case_id,
                                 "from": pairs[i].0,
@@ -156,7 +182,9 @@ pub fn check_temporal_conformance(
                 }
             }
 
-            let fitness = if total_steps == 0 { 1.0 } else {
+            let fitness = if total_steps == 0 {
+                1.0
+            } else {
                 1.0 - total_deviations as f64 / total_steps as f64
             };
 
@@ -166,7 +194,8 @@ pub fn check_temporal_conformance(
                 "deviations": total_deviations,
                 "fitness": fitness,
                 "details": details,
-            })).map_err(|e| JsValue::from_str(&e.to_string()))
+            }))
+            .map_err(|e| JsValue::from_str(&e.to_string()))
         }
         Some(_) => Err(JsValue::from_str("Handle is not an EventLog")),
         None => Err(JsValue::from_str("EventLog handle not found")),

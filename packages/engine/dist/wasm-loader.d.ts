@@ -4,7 +4,7 @@
  * Singleton pattern for efficient module reuse across multiple engine.run() calls
  * Handles panic hooks, memory validation, and runtime environment detection
  */
-import { ObservabilityLayer } from '@wasm4pm/observability';
+import { ObservabilityLayer } from '@pictl/observability';
 /**
  * Runtime environment detection
  */

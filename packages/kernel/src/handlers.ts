@@ -96,11 +96,11 @@ export interface WasmModule {
     support_threshold: number
   ): Promise<{ handle: string }>;
 
-  // Optimized DFG (ILP variant)
-  discover_optimized_dfg(
+  // Process Skeleton (minimal abstraction)
+  extract_process_skeleton(
     eventlog_handle: string,
     activity_key: string,
-    timeout_seconds: number
+    min_frequency: number
   ): Promise<{ handle: string }>;
 
   // POWL Discovery - 8 inductive miner variants
@@ -126,6 +126,108 @@ export interface WasmModule {
       noise_threshold: number;
     };
   }>;
+
+  // ── Wave 1 Migration: Discovery algorithms ─────────────────
+
+  discover_transition_system(
+    eventlog_handle: string,
+    window: number,
+    direction: string
+  ): Promise<{ handle: string }>;
+
+  discover_prefix_tree(
+    eventlog_handle: string,
+    activity_key: string
+  ): Promise<{ handle: string }>;
+
+  discover_causal_graph(
+    eventlog_handle: string,
+    activity_key: string,
+    method: string,
+    dependency_threshold: number
+  ): Promise<{ handle: string }>;
+
+  discover_performance_spectrum(
+    eventlog_handle: string,
+    activity_key: string,
+    timestamp_key: string
+  ): Promise<{ handle: string }>;
+
+  discover_batches(
+    eventlog_handle: string,
+    activity_key: string,
+    timestamp_key: string,
+    batch_threshold: number
+  ): Promise<{ handle: string }>;
+
+  discover_correlation(
+    eventlog_handle: string,
+    activity_key: string,
+    timestamp_key: string
+  ): Promise<{ handle: string }>;
+
+  // ── Wave 1 Migration: Conformance algorithms ──────────────
+
+  generalization(
+    eventlog_handle: string,
+    petri_net_handle: string
+  ): Promise<{ handle: string }>;
+
+  reduce_petri_net(
+    petri_net_handle: string
+  ): Promise<{ handle: string }>;
+
+  precision_etconformance(
+    eventlog_handle: string,
+    petri_net_handle: string,
+    activity_key: string
+  ): Promise<{ handle: string }>;
+
+  compute_optimal_alignments(
+    eventlog_handle: string,
+    petri_net_handle: string,
+    activity_key: string,
+    cost_config: string
+  ): Promise<{ handle: string }>;
+
+  // ── Wave 1 Migration: Quality metrics ─────────────────────
+
+  measure_complexity(
+    powl_handle: string
+  ): Promise<{ handle: string }>;
+
+  // ── Wave 1 Migration: Model conversion ────────────────────
+
+  from_pnml(
+    pnml_xml: string
+  ): Promise<{ handle: string }>;
+
+  read_bpmn(
+    bpmn_xml: string
+  ): Promise<{ handle: string }>;
+
+  powl_to_process_tree(
+    powl_handle: string
+  ): Promise<{ handle: string }>;
+
+  powl_to_yawl_string(
+    powl_string: string
+  ): Promise<string>;
+
+  // ── Wave 1 Migration: Simulation ──────────────────────────
+
+  play_out(
+    model_handle: string,
+    num_traces: number,
+    max_trace_length: number
+  ): Promise<{ handle: string }>;
+
+  monte_carlo_simulation(
+    log_handle: string,
+    powl_handle: string,
+    root_id: string,
+    config_json: string
+  ): Promise<{ handle: string }>;
 }
 
 /**
@@ -394,11 +496,10 @@ export async function implementAlgorithmStep(
       }
 
       case 'optimized_dfg': {
-        const timeout = (params.timeout_seconds as number) || 15;
-        const result = await wasmModule.discover_optimized_dfg(
+        // optimized_dfg is now an alias for standard discover_dfg
+        const result = await wasmModule.discover_dfg(
           eventLogHandle,
-          activityKey,
-          timeout
+          activityKey
         );
         modelHandle = result.handle;
         break;
@@ -434,6 +535,183 @@ export async function implementAlgorithmStep(
         // Store the POWL result as a handle
         // POWL results include: root, node_count, repr, variant
         modelHandle = JSON.stringify(powlResult);
+        break;
+      }
+
+      // ── Wave 1 Migration: Discovery algorithms ─────────────
+
+      case 'transition_system': {
+        const result = await wasmModule.discover_transition_system(
+          eventLogHandle,
+          (params.window as number) ?? 1,
+          (params.direction as string) ?? 'forward'
+        );
+        modelHandle = result.handle;
+        break;
+      }
+
+      case 'log_to_trie': {
+        const result = await wasmModule.discover_prefix_tree(eventLogHandle, activityKey);
+        modelHandle = result.handle;
+        break;
+      }
+
+      case 'causal_graph': {
+        const result = await wasmModule.discover_causal_graph(
+          eventLogHandle,
+          activityKey,
+          (params.method as string) ?? 'heuristic',
+          (params.dependency_threshold as number) ?? 0.5
+        );
+        modelHandle = result.handle;
+        break;
+      }
+
+      case 'performance_spectrum': {
+        const result = await wasmModule.discover_performance_spectrum(
+          eventLogHandle,
+          activityKey,
+          (params.timestamp_key as string) ?? 'time:timestamp'
+        );
+        modelHandle = result.handle;
+        break;
+      }
+
+      case 'batches': {
+        const result = await wasmModule.discover_batches(
+          eventLogHandle,
+          activityKey,
+          (params.timestamp_key as string) ?? 'time:timestamp',
+          (params.batch_threshold as number) ?? 86400000
+        );
+        modelHandle = result.handle;
+        break;
+      }
+
+      case 'correlation_miner': {
+        const result = await wasmModule.discover_correlation(
+          eventLogHandle,
+          activityKey,
+          (params.timestamp_key as string) ?? 'time:timestamp'
+        );
+        modelHandle = result.handle;
+        break;
+      }
+
+      // ── Wave 1 Migration: Conformance algorithms ────────────
+
+      case 'generalization': {
+        const result = await wasmModule.generalization(
+          eventLogHandle,
+          (params.petri_net_handle as string)!
+        );
+        modelHandle = result.handle;
+        break;
+      }
+
+      case 'petri_net_reduction': {
+        const result = await wasmModule.reduce_petri_net(
+          (params.petri_net_handle as string)!
+        );
+        modelHandle = result.handle;
+        break;
+      }
+
+      case 'etconformance_precision': {
+        const result = await wasmModule.precision_etconformance(
+          eventLogHandle,
+          (params.petri_net_handle as string)!,
+          activityKey
+        );
+        modelHandle = result.handle;
+        break;
+      }
+
+      case 'alignments': {
+        const costConfig = JSON.stringify({
+          sync_cost: (params.sync_cost as number) ?? 0,
+          log_move_cost: (params.log_move_cost as number) ?? 1,
+          model_move_cost: (params.model_move_cost as number) ?? 1,
+        });
+        const result = await wasmModule.compute_optimal_alignments(
+          eventLogHandle,
+          (params.petri_net_handle as string)!,
+          activityKey,
+          costConfig
+        );
+        modelHandle = result.handle;
+        break;
+      }
+
+      // ── Wave 1 Migration: Quality metrics ───────────────────
+
+      case 'complexity_metrics': {
+        const result = await wasmModule.measure_complexity(
+          (params.powl_handle as string)!
+        );
+        modelHandle = result.handle;
+        break;
+      }
+
+      // ── Wave 1 Migration: Model conversion ──────────────────
+
+      case 'pnml_import': {
+        const result = await wasmModule.from_pnml((params.pnml_xml as string)!);
+        modelHandle = result.handle;
+        break;
+      }
+
+      case 'bpmn_import': {
+        const result = await wasmModule.read_bpmn((params.bpmn_xml as string)!);
+        modelHandle = result.handle;
+        break;
+      }
+
+      case 'powl_to_process_tree': {
+        const result = await wasmModule.powl_to_process_tree(
+          (params.powl_handle as string)!
+        );
+        modelHandle = result.handle;
+        break;
+      }
+
+      case 'yawl_export': {
+        const result = await wasmModule.powl_to_yawl_string(
+          (params.powl_string as string)!
+        );
+        modelHandle = result;
+        break;
+      }
+
+      // ── Wave 1 Migration: Simulation ────────────────────────
+
+      case 'playout': {
+        const result = await wasmModule.play_out(
+          (params.model_handle as string)!,
+          (params.num_traces as number) ?? 100,
+          (params.max_trace_length as number) ?? 100
+        );
+        modelHandle = result.handle;
+        break;
+      }
+
+      case 'monte_carlo_simulation': {
+        // Monte Carlo simulation requires log_handle, powl_handle, root_id, and config_json
+        const mcConfig = {
+          num_cases: (params.num_simulations as number) ?? 1000,
+          inter_arrival_mean_ms: 1000.0,
+          activity_service_time_ms: {},
+          resource_capacity: {},
+          simulation_time_ms: 60000,
+          random_seed: 42
+        };
+        const result = await wasmModule.monte_carlo_simulation(
+          (params.model_handle as string)!, // log_handle
+          '', // powl_handle (not used in current implementation)
+          '', // root_id (not used in current implementation)
+          JSON.stringify(mcConfig)
+        );
+        modelHandle = result.handle;
         break;
       }
 

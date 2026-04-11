@@ -1,7 +1,7 @@
-use wasm_bindgen::prelude::*;
-use crate::state::{get_or_init_state, StoredObject};
 use crate::models::*;
+use crate::state::{get_or_init_state, StoredObject};
 use std::collections::HashMap;
+use wasm_bindgen::prelude::*;
 
 // ---------------------------------------------------------------------------
 // Fast attribute extraction helpers
@@ -23,7 +23,10 @@ fn extract_attr<'a>(src: &'a str, name: &[u8]) -> Option<&'a str> {
     let limit = bytes.len() - name_len - 2;
     let mut i = 0;
     while i <= limit {
-        if bytes[i..i + name_len] == *name && bytes[i + name_len] == b'=' && bytes[i + name_len + 1] == b'"' {
+        if bytes[i..i + name_len] == *name
+            && bytes[i + name_len] == b'='
+            && bytes[i + name_len + 1] == b'"'
+        {
             let value_start = i + name_len + 2;
             // Scan forward for closing quote
             let rest = &bytes[value_start..];
@@ -44,7 +47,7 @@ fn extract_attr<'a>(src: &'a str, name: &[u8]) -> Option<&'a str> {
 }
 
 // Pre-computed indent strings to avoid per-call allocation in write_attribute.
-const INDENT_2: &str = "    ";   // 4 spaces  (indent level 2 → 2*2)
+const INDENT_2: &str = "    "; // 4 spaces  (indent level 2 → 2*2)
 const INDENT_3: &str = "      "; // 6 spaces  (indent level 3 → 3*2)
 
 // ---------------------------------------------------------------------------
@@ -128,10 +131,12 @@ pub fn load_eventlog_from_xes(content: &str) -> Result<String, JsValue> {
             }
             b's' => {
                 // <string key="…" value="…"/>
-                if trimmed.len() > 8 && &bytes[..8] == b"<string " && bytes[bytes.len() - 1] == b'>' {
-                    if let (Some(key), Some(value)) =
-                        (extract_attr(trimmed, b"key"), extract_attr(trimmed, b"value"))
-                    {
+                if trimmed.len() > 8 && &bytes[..8] == b"<string " && bytes[bytes.len() - 1] == b'>'
+                {
+                    if let (Some(key), Some(value)) = (
+                        extract_attr(trimmed, b"key"),
+                        extract_attr(trimmed, b"value"),
+                    ) {
                         insert_attr(
                             &mut current_event,
                             &mut current_trace,
@@ -144,9 +149,10 @@ pub fn load_eventlog_from_xes(content: &str) -> Result<String, JsValue> {
             b'd' => {
                 // <date key="…" value="…"/>
                 if trimmed.len() > 6 && &bytes[..6] == b"<date " {
-                    if let (Some(key), Some(value)) =
-                        (extract_attr(trimmed, b"key"), extract_attr(trimmed, b"value"))
-                    {
+                    if let (Some(key), Some(value)) = (
+                        extract_attr(trimmed, b"key"),
+                        extract_attr(trimmed, b"value"),
+                    ) {
                         insert_attr(
                             &mut current_event,
                             &mut current_trace,
@@ -159,9 +165,10 @@ pub fn load_eventlog_from_xes(content: &str) -> Result<String, JsValue> {
             b'i' => {
                 // <int key="…" value="…"/>
                 if trimmed.len() > 5 && &bytes[..5] == b"<int " {
-                    if let (Some(key), Some(value_str)) =
-                        (extract_attr(trimmed, b"key"), extract_attr(trimmed, b"value"))
-                    {
+                    if let (Some(key), Some(value_str)) = (
+                        extract_attr(trimmed, b"key"),
+                        extract_attr(trimmed, b"value"),
+                    ) {
                         if let Ok(value) = value_str.parse::<i64>() {
                             insert_attr(
                                 &mut current_event,

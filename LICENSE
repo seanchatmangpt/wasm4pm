@@ -1,0 +1,25 @@
+Business Source License 1.1
+
+Parameters
+
+Licensor:             Sean Chatman
+Licensed Work:        pictl (Process Mining Intelligence)
+                     All source code, documentation, and configuration files
+                     in this repository.
+
+Change Date:          The date that is two (2) years after the date
+                     this repository was first published.
+                     For non-source-form code, the Change Date
+                     is two (2) years after the date the specific
+                     binary was first distributed.
+
+Change License:       GNU Affero General Public License v3.0 (AGPL-3.0-only)
+
+Notice
+
+The Licensed Work is provided under the Business Source License 1.1
+(BSL-1.1). You may use the Licensed Work only as permitted by the
+BSL-1.1. As of the Change Date, the Licensed Work becomes available
+under the Change License specified above.
+
+See https://spdx.org/licenses/BSL-1.1 for the full license text.

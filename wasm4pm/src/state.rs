@@ -1,15 +1,26 @@
+use crate::error::{codes, wasm_err};
+use crate::incremental_dfg::IncrementalDFG;
+use crate::incremental_dfg::StreamingDFG;
+use crate::models::{
+    DeclareModel, DirectlyFollowsGraph, EventLog, NGramPredictor, PetriNet,
+    StreamingConformanceChecker, TemporalProfile, OCEL,
+};
+use crate::streaming::{StreamingDfgBuilder, StreamingHeuristicBuilder, StreamingSkeletonBuilder};
+#[cfg(feature = "streaming_full")]
+use crate::streaming_pipeline::StreamingPipeline;
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use wasm_bindgen::prelude::*;
-use crate::models::{EventLog, OCEL, PetriNet, DirectlyFollowsGraph, DeclareModel, StreamingConformanceChecker, TemporalProfile, NGramPredictor};
-use crate::streaming::{StreamingDfgBuilder, StreamingSkeletonBuilder, StreamingHeuristicBuilder};
-use crate::incremental_dfg::IncrementalDFG;
-use crate::incremental_dfg::StreamingDFG;
-use crate::streaming_pipeline::StreamingPipeline;
-use crate::error::{wasm_err, codes};
 
-/// A wrapper around different types of objects that can be stored in the WASM state
+/// Typed object storage for the WASM handle-based state system.
+///
+/// All objects created by the library (event logs, process models, streaming
+/// builders, etc.) are stored internally and referenced by string handles.
+/// This enum provides type-safe access to stored objects and enables
+/// efficient serialization across the WASM boundary without requiring
+/// JavaScript to manage Rust object lifetimes.
+#[allow(clippy::large_enum_variant)]
 pub enum StoredObject {
     EventLog(EventLog),
     OCEL(OCEL),
@@ -26,10 +37,11 @@ pub enum StoredObject {
     NGramPredictor(NGramPredictor),
     IncrementalDFG(IncrementalDFG),
     StreamingDFG(StreamingDFG),
+    #[cfg(feature = "streaming_full")]
     StreamingPipeline(StreamingPipeline),
 }
 
-/// Global application state for managing objects
+/// Global application state for managing objects in WASM handle system.
 pub struct AppState {
     objects: Arc<Mutex<HashMap<String, StoredObject>>>,
     counter: Arc<Mutex<u64>>,
@@ -45,27 +57,33 @@ impl AppState {
 
     /// Store an object and return a handle (string ID)
     pub fn store_object(&self, obj: StoredObject) -> Result<String, JsValue> {
-        let mut counter = self
-            .counter
-            .lock()
-            .map_err(|e| wasm_err(codes::INTERNAL_ERROR, format!("Failed to lock counter: {}", e)))?;
+        let mut counter = self.counter.lock().map_err(|e| {
+            wasm_err(
+                codes::INTERNAL_ERROR,
+                format!("Failed to lock counter: {}", e),
+            )
+        })?;
         let id = format!("obj_{}", counter);
         *counter += 1;
 
-        let mut objects = self
-            .objects
-            .lock()
-            .map_err(|e| wasm_err(codes::INTERNAL_ERROR, format!("Failed to lock objects: {}", e)))?;
+        let mut objects = self.objects.lock().map_err(|e| {
+            wasm_err(
+                codes::INTERNAL_ERROR,
+                format!("Failed to lock objects: {}", e),
+            )
+        })?;
         objects.insert(id.clone(), obj);
         Ok(id)
     }
 
     /// Retrieve an object by handle (clones — prefer with_object for performance)
     pub fn get_object(&self, id: &str) -> Result<Option<StoredObject>, JsValue> {
-        let objects = self
-            .objects
-            .lock()
-            .map_err(|e| wasm_err(codes::INTERNAL_ERROR, format!("Failed to lock objects: {}", e)))?;
+        let objects = self.objects.lock().map_err(|e| {
+            wasm_err(
+                codes::INTERNAL_ERROR,
+                format!("Failed to lock objects: {}", e),
+            )
+        })?;
         Ok(objects.get(id).cloned())
     }
 
@@ -75,10 +93,12 @@ impl AppState {
     where
         F: FnOnce(Option<&StoredObject>) -> Result<R, JsValue>,
     {
-        let objects = self
-            .objects
-            .lock()
-            .map_err(|e| wasm_err(codes::INTERNAL_ERROR, format!("Failed to lock objects: {}", e)))?;
+        let objects = self.objects.lock().map_err(|e| {
+            wasm_err(
+                codes::INTERNAL_ERROR,
+                format!("Failed to lock objects: {}", e),
+            )
+        })?;
         f(objects.get(id))
     }
 
@@ -88,37 +108,45 @@ impl AppState {
     where
         F: FnOnce(Option<&mut StoredObject>) -> Result<R, JsValue>,
     {
-        let mut objects = self
-            .objects
-            .lock()
-            .map_err(|e| wasm_err(codes::INTERNAL_ERROR, format!("Failed to lock objects: {}", e)))?;
+        let mut objects = self.objects.lock().map_err(|e| {
+            wasm_err(
+                codes::INTERNAL_ERROR,
+                format!("Failed to lock objects: {}", e),
+            )
+        })?;
         f(objects.get_mut(id))
     }
 
     /// Delete an object by handle
     pub fn delete_object(&self, id: &str) -> Result<bool, JsValue> {
-        let mut objects = self
-            .objects
-            .lock()
-            .map_err(|e| wasm_err(codes::INTERNAL_ERROR, format!("Failed to lock objects: {}", e)))?;
+        let mut objects = self.objects.lock().map_err(|e| {
+            wasm_err(
+                codes::INTERNAL_ERROR,
+                format!("Failed to lock objects: {}", e),
+            )
+        })?;
         Ok(objects.remove(id).is_some())
     }
 
     /// Get the number of stored objects
     pub fn object_count(&self) -> Result<usize, JsValue> {
-        let objects = self
-            .objects
-            .lock()
-            .map_err(|e| wasm_err(codes::INTERNAL_ERROR, format!("Failed to lock objects: {}", e)))?;
+        let objects = self.objects.lock().map_err(|e| {
+            wasm_err(
+                codes::INTERNAL_ERROR,
+                format!("Failed to lock objects: {}", e),
+            )
+        })?;
         Ok(objects.len())
     }
 
     /// Clear all stored objects
     pub fn clear_all(&self) -> Result<(), JsValue> {
-        let mut objects = self
-            .objects
-            .lock()
-            .map_err(|e| wasm_err(codes::INTERNAL_ERROR, format!("Failed to lock objects: {}", e)))?;
+        let mut objects = self.objects.lock().map_err(|e| {
+            wasm_err(
+                codes::INTERNAL_ERROR,
+                format!("Failed to lock objects: {}", e),
+            )
+        })?;
         objects.clear();
         Ok(())
     }
@@ -130,17 +158,26 @@ impl Clone for StoredObject {
             StoredObject::EventLog(el) => StoredObject::EventLog(el.clone()),
             StoredObject::OCEL(o) => StoredObject::OCEL(o.clone()),
             StoredObject::PetriNet(pn) => StoredObject::PetriNet(pn.clone()),
-            StoredObject::DirectlyFollowsGraph(dfg) => StoredObject::DirectlyFollowsGraph(dfg.clone()),
+            StoredObject::DirectlyFollowsGraph(dfg) => {
+                StoredObject::DirectlyFollowsGraph(dfg.clone())
+            }
             StoredObject::DeclareModel(dm) => StoredObject::DeclareModel(dm.clone()),
             StoredObject::JsonString(s) => StoredObject::JsonString(s.clone()),
             StoredObject::StreamingDfgBuilder(b) => StoredObject::StreamingDfgBuilder(b.clone()),
-            StoredObject::StreamingSkeletonBuilder(b) => StoredObject::StreamingSkeletonBuilder(b.clone()),
-            StoredObject::StreamingHeuristicBuilder(b) => StoredObject::StreamingHeuristicBuilder(b.clone()),
-            StoredObject::StreamingConformanceChecker(c) => StoredObject::StreamingConformanceChecker(c.clone()),
+            StoredObject::StreamingSkeletonBuilder(b) => {
+                StoredObject::StreamingSkeletonBuilder(b.clone())
+            }
+            StoredObject::StreamingHeuristicBuilder(b) => {
+                StoredObject::StreamingHeuristicBuilder(b.clone())
+            }
+            StoredObject::StreamingConformanceChecker(c) => {
+                StoredObject::StreamingConformanceChecker(c.clone())
+            }
             StoredObject::TemporalProfile(p) => StoredObject::TemporalProfile(p.clone()),
             StoredObject::NGramPredictor(p) => StoredObject::NGramPredictor(p.clone()),
             StoredObject::IncrementalDFG(d) => StoredObject::IncrementalDFG(d.clone()),
             StoredObject::StreamingDFG(d) => StoredObject::StreamingDFG(d.clone()),
+            #[cfg(feature = "streaming_full")]
             StoredObject::StreamingPipeline(p) => StoredObject::StreamingPipeline(p.clone()),
         }
     }

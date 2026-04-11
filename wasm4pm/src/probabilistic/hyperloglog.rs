@@ -165,7 +165,7 @@ mod tests {
         hll.add(42);
         let est = hll.estimate();
         // Should be approximately 1 (within a factor of 2 for HLL)
-        assert!(est >= 1 && est <= 3);
+        assert!((1..=3).contains(&est));
     }
 
     /// Helper: SplitMix64 hash for u64 values (good distribution for sequential integers).

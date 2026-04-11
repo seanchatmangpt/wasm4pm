@@ -20,7 +20,6 @@
 //! The header checksum covers all data sections (vocab through end). Uses the
 //! same 64-bit FNV-1a parameters as `crate::cache::hash_xes_content`.
 
-use wasm_bindgen::prelude::*;
 use crate::cache::OwnedColumnarLog;
 use crate::models::{AttributeValue, Event, EventLog, Trace};
 use crate::state::{get_or_init_state, StoredObject};
@@ -28,6 +27,7 @@ use rustc_hash::FxHashMap;
 use serde_json::json;
 use std::collections::HashMap;
 use std::mem::size_of;
+use wasm_bindgen::prelude::*;
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -131,7 +131,8 @@ impl BinaryHeader {
 
         for i in 0..6 {
             let start = 40 + i * 8;
-            header.section_offsets[i] = u64::from_le_bytes(bytes[start..start + 8].try_into().unwrap());
+            header.section_offsets[i] =
+                u64::from_le_bytes(bytes[start..start + 8].try_into().unwrap());
         }
 
         header.checksum = u64::from_le_bytes(bytes[88..96].try_into().unwrap());
@@ -403,7 +404,10 @@ impl<'a> BinaryLogView<'a> {
             ));
         }
 
-        Ok(BinaryLogView { header, data: bytes })
+        Ok(BinaryLogView {
+            header,
+            data: bytes,
+        })
     }
 
     /// Access the validated header.
@@ -426,7 +430,6 @@ impl<'a> BinaryLogView<'a> {
         self.header.vocab_count
     }
 
-
     /// Read the entire vocabulary into a Vec.
     fn read_all_vocab(&self) -> Result<Vec<String>, String> {
         let mut vocab = Vec::with_capacity(self.header.vocab_count as usize);
@@ -438,9 +441,8 @@ impl<'a> BinaryLogView<'a> {
             if offset + 4 > self.data.len() {
                 return Err("Vocab section truncated".to_string());
             }
-            let len = u32::from_le_bytes(
-                self.data[offset..offset + 4].try_into().unwrap(),
-            ) as usize;
+            let len =
+                u32::from_le_bytes(self.data[offset..offset + 4].try_into().unwrap()) as usize;
             offset += 4;
 
             if offset + len > self.data.len() {
@@ -462,8 +464,7 @@ impl<'a> BinaryLogView<'a> {
         if index >= self.header.num_traces as usize {
             return Err(format!(
                 "Trace index out of bounds: {} >= {}",
-                index,
-                self.header.num_traces
+                index, self.header.num_traces
             ));
         }
 
@@ -483,7 +484,7 @@ impl<'a> BinaryLogView<'a> {
         };
 
         Ok(BinaryTrace {
-            event_ids: event_ids,
+            event_ids,
             timestamps,
         })
     }
@@ -503,9 +504,7 @@ impl<'a> BinaryLogView<'a> {
         let mut events = Vec::with_capacity(num_events);
         let mut offset = events_start;
         for _ in 0..num_events {
-            let id = u32::from_le_bytes(
-                self.data[offset..offset + 4].try_into().unwrap(),
-            );
+            let id = u32::from_le_bytes(self.data[offset..offset + 4].try_into().unwrap());
             events.push(id);
             offset += 4;
         }
@@ -516,9 +515,8 @@ impl<'a> BinaryLogView<'a> {
         let mut trace_offsets = Vec::with_capacity(num_traces + 1);
         offset = offsets_start;
         for _ in 0..=num_traces {
-            let off = u64::from_le_bytes(
-                self.data[offset..offset + 8].try_into().unwrap(),
-            ) as usize;
+            let off =
+                u64::from_le_bytes(self.data[offset..offset + 8].try_into().unwrap()) as usize;
             trace_offsets.push(off);
             offset += 8;
         }
@@ -532,7 +530,11 @@ impl<'a> BinaryLogView<'a> {
 
     /// Convert back to an `EventLog`, using the given `activity_key` for the
     /// activity attribute name and `timestamp_key` for timestamp attributes.
-    pub fn to_event_log(&self, activity_key: &str, timestamp_key: &str) -> Result<EventLog, String> {
+    pub fn to_event_log(
+        &self,
+        activity_key: &str,
+        timestamp_key: &str,
+    ) -> Result<EventLog, String> {
         let vocab = self.read_all_vocab()?;
         let has_timestamps = (self.header.flags & FLAG_HAS_TIMESTAMPS) != 0;
         let num_traces = self.header.num_traces as usize;
@@ -549,16 +551,10 @@ impl<'a> BinaryLogView<'a> {
 
             for e in 0..binary_trace.len() {
                 let activity_id = binary_trace.event_id(e);
-                let activity = vocab
-                    .get(activity_id as usize)
-                    .cloned()
-                    .unwrap_or_default();
+                let activity = vocab.get(activity_id as usize).cloned().unwrap_or_default();
 
                 let mut attributes = HashMap::new();
-                attributes.insert(
-                    activity_key.to_string(),
-                    AttributeValue::String(activity),
-                );
+                attributes.insert(activity_key.to_string(), AttributeValue::String(activity));
 
                 if has_timestamps {
                     if let Some(ts_ms) = binary_trace.timestamp(e) {
@@ -646,8 +642,7 @@ fn fnv1a_hash(data: &[u8]) -> u64 {
 #[wasm_bindgen]
 pub fn write_pm4bin(xes_content: &str) -> Result<Vec<u8>, JsValue> {
     // Parse XES using the existing parser to get an EventLog
-    let log = parse_xes_to_event_log(xes_content)
-        .map_err(|e| JsValue::from_str(&e))?;
+    let log = parse_xes_to_event_log(xes_content).map_err(|e| JsValue::from_str(&e))?;
 
     let builder = BinaryLogBuilder::from_event_log(&log, "concept:name", "time:timestamp");
     Ok(builder.finish())
@@ -660,8 +655,7 @@ pub fn write_pm4bin(xes_content: &str) -> Result<Vec<u8>, JsValue> {
 /// default timestamp key.
 #[wasm_bindgen]
 pub fn read_pm4bin(bytes: &[u8]) -> Result<String, JsValue> {
-    let view = BinaryLogView::from_bytes(bytes)
-        .map_err(|e| JsValue::from_str(&e))?;
+    let view = BinaryLogView::from_bytes(bytes).map_err(|e| JsValue::from_str(&e))?;
 
     let log = view
         .to_event_log("concept:name", "time:timestamp")
@@ -698,8 +692,7 @@ pub fn pm4bin_info(bytes: &[u8]) -> Result<String, JsValue> {
         )));
     }
 
-    let header = BinaryHeader::from_bytes(bytes)
-        .map_err(|e| JsValue::from_str(&e))?;
+    let header = BinaryHeader::from_bytes(bytes).map_err(|e| JsValue::from_str(&e))?;
 
     let info = json!({
         "version": header.version,
@@ -759,7 +752,8 @@ fn parse_xes_to_event_log(content: &str) -> Result<EventLog, String> {
                 }
             }
             b's' => {
-                if trimmed.len() > 8 && &bytes[..8] == b"<string " && bytes[bytes.len() - 1] == b'>' {
+                if trimmed.len() > 8 && &bytes[..8] == b"<string " && bytes[bytes.len() - 1] == b'>'
+                {
                     if let (Some(key), Some(value)) = (
                         extract_attr_simple(trimmed, b"key"),
                         extract_attr_simple(trimmed, b"value"),
@@ -919,7 +913,7 @@ mod tests {
     </event>
   </trace>
 </log>"#
-        .to_string()
+            .to_string()
     }
 
     #[test]
@@ -959,7 +953,11 @@ mod tests {
             .expect("to_event_log");
 
         // Compare trace/event counts
-        assert_eq!(log.traces.len(), restored.traces.len(), "trace count mismatch");
+        assert_eq!(
+            log.traces.len(),
+            restored.traces.len(),
+            "trace count mismatch"
+        );
         for (orig, rest) in log.traces.iter().zip(restored.traces.iter()) {
             assert_eq!(
                 orig.events.len(),
@@ -1040,7 +1038,11 @@ mod tests {
         let view = BinaryLogView::from_bytes(&binary).expect("from_bytes");
 
         // Vocab should have exactly 2 entries (A and B)
-        assert_eq!(view.vocab_count(), 2, "vocab should have 2 unique activities");
+        assert_eq!(
+            view.vocab_count(),
+            2,
+            "vocab should have 2 unique activities"
+        );
 
         // All event IDs should be 0 or 1
         let t0 = view.trace(0).expect("trace 0");
@@ -1062,7 +1064,11 @@ mod tests {
         let result = BinaryLogView::from_bytes(&bad_bytes);
         assert!(result.is_err(), "should reject invalid magic bytes");
         let err = result.unwrap_err();
-        assert!(err.contains("Invalid magic bytes"), "error should mention magic: {}", err);
+        assert!(
+            err.contains("Invalid magic bytes"),
+            "error should mention magic: {}",
+            err
+        );
     }
 
     #[test]
@@ -1074,7 +1080,7 @@ mod tests {
         let activities = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"];
 
         for t in 0..1000u32 {
-            xes.push_str(&format!("  <trace>\n"));
+            xes.push_str("  <trace>\n");
             for e in 0..10u32 {
                 let activity = activities[(e as usize) % activities.len()];
                 let ts = format!("2024-01-01T{:02}:{:02}:00Z", (t / 60) % 24, e * 6);
@@ -1189,7 +1195,11 @@ mod tests {
         let result = BinaryLogView::from_bytes(&binary);
         assert!(result.is_err(), "should detect checksum mismatch");
         let err = result.unwrap_err();
-        assert!(err.contains("Checksum mismatch"), "error should mention checksum: {}", err);
+        assert!(
+            err.contains("Checksum mismatch"),
+            "error should mention checksum: {}",
+            err
+        );
     }
 
     #[test]
@@ -1201,7 +1211,11 @@ mod tests {
         let result = BinaryLogView::from_bytes(&bytes);
         assert!(result.is_err(), "should reject unsupported version");
         let err = result.unwrap_err();
-        assert!(err.contains("Unsupported version"), "error should mention version: {}", err);
+        assert!(
+            err.contains("Unsupported version"),
+            "error should mention version: {}",
+            err
+        );
     }
 
     #[test]
@@ -1232,7 +1246,10 @@ mod tests {
 
         let t0 = view.trace(0).expect("trace 0");
         assert_eq!(t0.len(), 2);
-        assert!(t0.timestamp(0).is_none(), "should return None for timestamps when flag not set");
+        assert!(
+            t0.timestamp(0).is_none(),
+            "should return None for timestamps when flag not set"
+        );
     }
 
     #[test]

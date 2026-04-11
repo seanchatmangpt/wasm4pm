@@ -7,7 +7,7 @@
 
 // Import types from the API definition
 import * as api from './api.js';
-import type * as WasmModule from '../pkg/wasm4pm.js';
+import type * as WasmModule from '../pkg/pictl.js';
 import {
   EventLogHandleId,
   OCELHandleId,

@@ -122,6 +122,40 @@ export function verifyReceiptHashes(receipt, config, input, plan) {
     };
 }
 /**
+ * Verify a complete receipt against expected hashes for all 5 hash fields
+ * Per task requirement: verify receipt with known inputs produces expected BLAKE3 output
+ * @param receipt Receipt to verify
+ * @param expectedHashes Expected BLAKE3 hashes for all fields
+ * @returns Validation result with complete hash verification
+ */
+export function verifyReceipt(receipt, expectedHashes) {
+    const structureResult = validateReceipt(receipt);
+    if (!structureResult.valid) {
+        return structureResult;
+    }
+    const r = receipt;
+    const errors = [...structureResult.errors];
+    const warnings = [...structureResult.warnings];
+    // Verify all 5 hashes match expected values
+    if (r.config_hash !== expectedHashes.config_hash) {
+        errors.push(`config_hash mismatch: expected ${expectedHashes.config_hash}, got ${r.config_hash}`);
+    }
+    if (r.input_hash !== expectedHashes.input_hash) {
+        errors.push(`input_hash mismatch: expected ${expectedHashes.input_hash}, got ${r.input_hash}`);
+    }
+    if (r.plan_hash !== expectedHashes.plan_hash) {
+        errors.push(`plan_hash mismatch: expected ${expectedHashes.plan_hash}, got ${r.plan_hash}`);
+    }
+    if (r.output_hash !== expectedHashes.output_hash) {
+        errors.push(`output_hash mismatch: expected ${expectedHashes.output_hash}, got ${r.output_hash}`);
+    }
+    return {
+        valid: errors.length === 0,
+        errors,
+        warnings,
+    };
+}
+/**
  * Detect if receipt has been tampered with by comparing hashes
  * @param receipt Receipt to check
  * @param config Configuration object

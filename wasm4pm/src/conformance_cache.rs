@@ -48,12 +48,7 @@ impl ConformanceCache {
     }
 
     /// Insert a conformance result into the cache.
-    pub fn insert(
-        &mut self,
-        log_handle: String,
-        model_hash: u64,
-        result: CachedConformanceResult,
-    ) {
+    pub fn insert(&mut self, log_handle: String, model_hash: u64, result: CachedConformanceResult) {
         self.cache.insert((log_handle, model_hash), result);
     }
 
@@ -62,8 +57,8 @@ impl ConformanceCache {
     /// Edges are sorted before hashing to ensure determinism regardless of
     /// insertion order.
     pub fn hash_model(dfg: &crate::models::DirectlyFollowsGraph) -> u64 {
-        use std::hash::{Hash, Hasher};
         use rustc_hash::FxHasher;
+        use std::hash::{Hash, Hasher};
 
         let mut h = FxHasher::default();
 
@@ -124,16 +119,20 @@ pub fn conformance_cache_new() -> String {
 /// Returns JSON `{ fitness, precision, generalization, trace_count }` on hit,
 /// or `null` on miss.
 #[wasm_bindgen]
-pub fn conformance_cache_get(handle: &str, log_handle: &str, model_hash: u64) -> Result<JsValue, JsValue> {
+pub fn conformance_cache_get(
+    handle: &str,
+    log_handle: &str,
+    model_hash: u64,
+) -> Result<JsValue, JsValue> {
     crate::state::get_or_init_state().with_object_mut(handle, |obj| match obj {
         Some(crate::state::StoredObject::JsonString(s)) => {
-            let mut cache: ConformanceCache = serde_json::from_str(s)
-                .unwrap_or_default();
+            let mut cache: ConformanceCache = serde_json::from_str(s).unwrap_or_default();
             let result = cache.get(log_handle, model_hash).cloned();
             *s = serde_json::to_string(&cache).unwrap_or_default();
             match result {
-                Some(r) => serde_wasm_bindgen::to_value(&r)
-                    .map_err(|e| JsValue::from_str(&e.to_string())),
+                Some(r) => {
+                    serde_wasm_bindgen::to_value(&r).map_err(|e| JsValue::from_str(&e.to_string()))
+                }
                 None => Ok(JsValue::NULL),
             }
         }
@@ -155,12 +154,16 @@ pub fn conformance_cache_insert(
 ) -> Result<JsValue, JsValue> {
     crate::state::get_or_init_state().with_object_mut(handle, |obj| match obj {
         Some(crate::state::StoredObject::JsonString(s)) => {
-            let mut cache: ConformanceCache = serde_json::from_str(s)
-                .unwrap_or_default();
+            let mut cache: ConformanceCache = serde_json::from_str(s).unwrap_or_default();
             cache.insert(
                 log_handle.to_string(),
                 model_hash,
-                CachedConformanceResult { fitness, precision, generalization, trace_count },
+                CachedConformanceResult {
+                    fitness,
+                    precision,
+                    generalization,
+                    trace_count,
+                },
             );
             *s = serde_json::to_string(&cache).unwrap_or_default();
             serde_wasm_bindgen::to_value(&json!({ "ok": true }))
@@ -182,7 +185,8 @@ pub fn conformance_cache_stats(handle: &str) -> Result<JsValue, JsValue> {
                 "hits": hits,
                 "misses": misses,
                 "entries": entries,
-            })).map_err(|e| JsValue::from_str(&e.to_string()))
+            }))
+            .map_err(|e| JsValue::from_str(&e.to_string()))
         }
         Some(_) => Err(JsValue::from_str("Object is not a ConformanceCache")),
         None => Err(JsValue::from_str(&format!("Cache '{}' not found", handle))),
@@ -194,8 +198,7 @@ pub fn conformance_cache_stats(handle: &str) -> Result<JsValue, JsValue> {
 pub fn conformance_cache_clear(handle: &str) -> Result<JsValue, JsValue> {
     crate::state::get_or_init_state().with_object_mut(handle, |obj| match obj {
         Some(crate::state::StoredObject::JsonString(s)) => {
-            let mut cache: ConformanceCache = serde_json::from_str(s)
-                .unwrap_or_default();
+            let mut cache: ConformanceCache = serde_json::from_str(s).unwrap_or_default();
             cache.clear();
             *s = serde_json::to_string(&cache).unwrap_or_default();
             serde_wasm_bindgen::to_value(&json!({ "ok": true }))

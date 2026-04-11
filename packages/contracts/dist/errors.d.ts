@@ -9,7 +9,7 @@
 /**
  * Standardized error codes covering all failure modes
  */
-export type ErrorCode = 'CONFIG_INVALID' | 'CONFIG_MISSING' | 'SOURCE_NOT_FOUND' | 'SOURCE_INVALID' | 'SOURCE_PERMISSION' | 'ALGORITHM_FAILED' | 'ALGORITHM_NOT_FOUND' | 'WASM_INIT_FAILED' | 'WASM_MEMORY_EXCEEDED' | 'SINK_FAILED' | 'SINK_PERMISSION' | 'OTEL_FAILED';
+export type ErrorCode = 'CONFIG_INVALID' | 'CONFIG_MISSING' | 'SOURCE_NOT_FOUND' | 'SOURCE_INVALID' | 'SOURCE_PERMISSION' | 'ALGORITHM_FAILED' | 'ALGORITHM_NOT_FOUND' | 'CONFORMANCE_FAILED' | 'SIMULATION_FAILED' | 'PREDICTION_FAILED' | 'VALIDATION_FAILED' | 'IMPORT_FAILED' | 'WASM_INIT_FAILED' | 'WASM_MEMORY_EXCEEDED' | 'SINK_FAILED' | 'SINK_PERMISSION' | 'OTEL_FAILED';
 /**
  * TypedError — compact error type with numeric code (0-255)
  * for wire format, hashing, and cross-language interop.
@@ -106,7 +106,7 @@ export interface ErrorInfo {
  *
  * @example
  * ```ts
- * const error = createError('CONFIG_MISSING', 'wasm4pm.toml not found in /path/to/project');
+ * const error = createError('CONFIG_MISSING', 'pictl.toml not found in /path/to/project');
  * console.error(formatError(error)); // Human-readable output
  * process.exit(error.exit_code);    // Proper exit code
  * ```
@@ -160,7 +160,7 @@ export declare function formatErrorJSON(error: ErrorInfo): Record<string, any>;
  *
  * @example
  * ```ts
- * const error = createError('CONFIG_INVALID', 'Invalid syntax in wasm4pm.toml');
+ * const error = createError('CONFIG_INVALID', 'Invalid syntax in pictl.toml');
  * logError(error, 'human');    // Colored terminal output
  * logError(error, 'json');     // JSON for structured logging
  * ```

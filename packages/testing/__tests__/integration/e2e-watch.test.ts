@@ -498,11 +498,12 @@ describe('e2e-watch: Reconnection', () => {
     };
 
     // Act: Validate checkpoint
-    const isValid =
+    const isValid = !!(
       validCheckpoint.runId &&
       validCheckpoint.stepId &&
       validCheckpoint.state &&
-      validCheckpoint.timestamp;
+      validCheckpoint.timestamp
+    );
 
     // Assert
     expect(isValid).toBe(true);

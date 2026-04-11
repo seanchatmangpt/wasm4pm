@@ -1,8 +1,8 @@
-use wasm_bindgen::prelude::*;
+use crate::models::{AttributeValue, EventLog, OCELEvent, OCELObject, OCEL};
 use crate::state::{get_or_init_state, StoredObject};
-use crate::models::{EventLog, OCEL, OCELEvent, OCELObject, AttributeValue};
 use serde_json::json;
 use std::collections::HashMap;
+use wasm_bindgen::prelude::*;
 
 /// Load an EventLog from JSON string
 #[wasm_bindgen]
@@ -37,10 +37,8 @@ pub fn load_ocel_from_json(content: &str) -> Result<String, JsValue> {
 #[wasm_bindgen]
 pub fn export_eventlog_to_json(handle: &str) -> Result<String, JsValue> {
     get_or_init_state().with_object(handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
-            serde_json::to_string(log)
-                .map_err(|e| JsValue::from_str(&format!("Failed to serialize EventLog: {}", e)))
-        }
+        Some(StoredObject::EventLog(log)) => serde_json::to_string(log)
+            .map_err(|e| JsValue::from_str(&format!("Failed to serialize EventLog: {}", e))),
         Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
         None => Err(JsValue::from_str("EventLog not found")),
     })
@@ -50,10 +48,8 @@ pub fn export_eventlog_to_json(handle: &str) -> Result<String, JsValue> {
 #[wasm_bindgen]
 pub fn export_ocel_to_json(handle: &str) -> Result<String, JsValue> {
     get_or_init_state().with_object(handle, |obj| match obj {
-        Some(StoredObject::OCEL(ocel)) => {
-            serde_json::to_string(ocel)
-                .map_err(|e| JsValue::from_str(&format!("Failed to serialize OCEL: {}", e)))
-        }
+        Some(StoredObject::OCEL(ocel)) => serde_json::to_string(ocel)
+            .map_err(|e| JsValue::from_str(&format!("Failed to serialize OCEL: {}", e))),
         Some(_) => Err(JsValue::from_str("Object is not an OCEL")),
         None => Err(JsValue::from_str("OCEL not found")),
     })
@@ -106,26 +102,38 @@ pub fn load_ocel_from_xml(content: &str) -> Result<String, JsValue> {
                 for child in node.children() {
                     match child.tag_name().name() {
                         "string" => {
-                            if let (Some(key), Some(value)) = (child.attribute("key"), child.attribute("value")) {
-                                attributes.insert(key.to_string(), AttributeValue::String(value.to_string()));
+                            if let (Some(key), Some(value)) =
+                                (child.attribute("key"), child.attribute("value"))
+                            {
+                                attributes.insert(
+                                    key.to_string(),
+                                    AttributeValue::String(value.to_string()),
+                                );
                             }
                         }
                         "int" => {
-                            if let (Some(key), Some(value_str)) = (child.attribute("key"), child.attribute("value")) {
+                            if let (Some(key), Some(value_str)) =
+                                (child.attribute("key"), child.attribute("value"))
+                            {
                                 if let Ok(value) = value_str.parse::<i64>() {
                                     attributes.insert(key.to_string(), AttributeValue::Int(value));
                                 }
                             }
                         }
                         "float" => {
-                            if let (Some(key), Some(value_str)) = (child.attribute("key"), child.attribute("value")) {
+                            if let (Some(key), Some(value_str)) =
+                                (child.attribute("key"), child.attribute("value"))
+                            {
                                 if let Ok(value) = value_str.parse::<f64>() {
-                                    attributes.insert(key.to_string(), AttributeValue::Float(value));
+                                    attributes
+                                        .insert(key.to_string(), AttributeValue::Float(value));
                                 }
                             }
                         }
                         "boolean" => {
-                            if let (Some(key), Some(value_str)) = (child.attribute("key"), child.attribute("value")) {
+                            if let (Some(key), Some(value_str)) =
+                                (child.attribute("key"), child.attribute("value"))
+                            {
                                 let value = value_str == "true" || value_str == "1";
                                 attributes.insert(key.to_string(), AttributeValue::Boolean(value));
                             }
@@ -164,26 +172,38 @@ pub fn load_ocel_from_xml(content: &str) -> Result<String, JsValue> {
                 for child in node.children() {
                     match child.tag_name().name() {
                         "string" => {
-                            if let (Some(key), Some(value)) = (child.attribute("key"), child.attribute("value")) {
-                                attributes.insert(key.to_string(), AttributeValue::String(value.to_string()));
+                            if let (Some(key), Some(value)) =
+                                (child.attribute("key"), child.attribute("value"))
+                            {
+                                attributes.insert(
+                                    key.to_string(),
+                                    AttributeValue::String(value.to_string()),
+                                );
                             }
                         }
                         "int" => {
-                            if let (Some(key), Some(value_str)) = (child.attribute("key"), child.attribute("value")) {
+                            if let (Some(key), Some(value_str)) =
+                                (child.attribute("key"), child.attribute("value"))
+                            {
                                 if let Ok(value) = value_str.parse::<i64>() {
                                     attributes.insert(key.to_string(), AttributeValue::Int(value));
                                 }
                             }
                         }
                         "float" => {
-                            if let (Some(key), Some(value_str)) = (child.attribute("key"), child.attribute("value")) {
+                            if let (Some(key), Some(value_str)) =
+                                (child.attribute("key"), child.attribute("value"))
+                            {
                                 if let Ok(value) = value_str.parse::<f64>() {
-                                    attributes.insert(key.to_string(), AttributeValue::Float(value));
+                                    attributes
+                                        .insert(key.to_string(), AttributeValue::Float(value));
                                 }
                             }
                         }
                         "boolean" => {
-                            if let (Some(key), Some(value_str)) = (child.attribute("key"), child.attribute("value")) {
+                            if let (Some(key), Some(value_str)) =
+                                (child.attribute("key"), child.attribute("value"))
+                            {
                                 let value = value_str == "true" || value_str == "1";
                                 attributes.insert(key.to_string(), AttributeValue::Boolean(value));
                             }

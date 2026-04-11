@@ -15,7 +15,7 @@ let wasm: any;
 const rows: BenchRow[] = [];
 
 beforeAll(async () => {
-  wasm = await import('../../pkg/wasm4pm.js');
+  wasm = await import('../../pkg/pictl.js');
   wasm.init();
 });
 

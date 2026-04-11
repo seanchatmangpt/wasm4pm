@@ -1,14 +1,61 @@
-# @wasm4pm/kernel
+# @pictl/kernel
 
-Core kernel for algorithm registration and step execution in the wasm4pm process mining pipeline.
+Core kernel for algorithm registration and step execution in the pictl process mining pipeline.
 
 ## Overview
 
 The kernel package provides:
 
 1. **Algorithm Registry** (`registry.ts`) - Metadata for all 15+ discovery algorithms
-2. **Step Handlers** (`handlers.ts`) - Execution bridge between planner and WASM module
-3. **Type Definitions** - Interfaces for algorithm metadata, profiles, and parameters
+2. **Deployment Profile Filtering** (NEW in v26.4.8) - Filter algorithms by deployment target (browser, edge, fog, iot, cloud)
+3. **Step Handlers** (`handlers.ts`) - Execution bridge between planner and WASM module
+4. **Type Definitions** - Interfaces for algorithm metadata, profiles, and parameters
+
+## Deployment Profiles (NEW in v26.4.8)
+
+The `AlgorithmRegistry` now supports deployment profile filtering:
+
+```typescript
+import { getRegistry } from '@pictl/kernel';
+
+const registry = getRegistry();
+
+// Get algorithms for a deployment profile
+const browserAlgorithms = registry.getForDeploymentProfile('browser');
+const edgeAlgorithms = registry.getForDeploymentProfile('edge');
+const cloudAlgorithms = registry.getForDeploymentProfile('cloud');
+
+// Deployment profiles filter algorithms by target environment
+// browser: ~500KB, edge: ~1.5MB, fog: ~2.0MB, iot: ~1.0MB, cloud: ~2.78MB
+```
+
+### Deployment Profile Types
+
+```typescript
+type DeploymentProfile = 'browser' | 'edge' | 'fog' | 'iot' | 'cloud';
+```
+
+### Algorithm Metadata Updates
+
+Each algorithm now includes `deploymentProfiles` field:
+
+```typescript
+interface AlgorithmMetadata {
+  // ... existing fields ...
+  deploymentProfiles: DeploymentProfile[];  // NEW in v26.4.8
+}
+```
+
+### Auto-Inference
+
+Deployment profiles are automatically inferred from execution profiles:
+
+- **fast** → browser, iot
+- **balanced** → browser, edge, fog, cloud
+- **quality** → edge, fog, cloud
+- **stream** → browser, edge, fog, iot, cloud
+
+Use `registerWithInferredProfiles()` to automatically calculate deployment profiles from execution profiles.
 
 ## Architecture
 
@@ -21,7 +68,7 @@ Kernel Layer
     ├─ Registry: Algorithm metadata lookup
     └─ Handlers: WASM function invocation
     ↓ (algorithm ID, parameters)
-WASM Layer (wasm4pm)
+WASM Layer (pictl)
     └─ discover_* functions (Rust compiled to WASM)
 ```
 
@@ -32,7 +79,7 @@ WASM Layer (wasm4pm)
 The `AlgorithmRegistry` maintains metadata for all discovery algorithms:
 
 ```typescript
-import { getRegistry } from '@wasm4pm/kernel';
+import { getRegistry } from '@pictl/kernel';
 
 const registry = getRegistry();
 
@@ -83,8 +130,8 @@ Four execution profiles balance speed vs quality:
 The handler executes algorithm steps:
 
 ```typescript
-import { implementAlgorithmStep } from '@wasm4pm/kernel';
-import { PlanStepType, type PlanStep } from '@wasm4pm/planner';
+import { implementAlgorithmStep } from '@pictl/kernel';
+import { PlanStepType, type PlanStep } from '@pictl/planner';
 
 const step: PlanStep = {
   id: 'discover_dfg',
@@ -130,7 +177,7 @@ const output = await implementAlgorithmStep(step, wasmModule, eventLogHandle);
 Validate parameters before execution:
 
 ```typescript
-import { validateAlgorithmParameters } from '@wasm4pm/kernel';
+import { validateAlgorithmParameters } from '@pictl/kernel';
 
 const result = validateAlgorithmParameters('genetic_algorithm', {
   activity_key: 'concept:name',
@@ -150,13 +197,13 @@ if (result.valid) {
 ### Install
 
 ```bash
-pnpm install @wasm4pm/kernel
+pnpm install @pictl/kernel
 ```
 
 ### Registry Usage
 
 ```typescript
-import { getRegistry } from '@wasm4pm/kernel';
+import { getRegistry } from '@pictl/kernel';
 
 const registry = getRegistry();
 
@@ -177,10 +224,10 @@ for (const algo of registry.list()) {
 ### Handler Usage
 
 ```typescript
-import { implementAlgorithmStep } from '@wasm4pm/kernel';
-import { PlanStepType, type PlanStep } from '@wasm4pm/planner';
+import { implementAlgorithmStep } from '@pictl/kernel';
+import { PlanStepType, type PlanStep } from '@pictl/planner';
 
-// Initialize WASM module (from wasm4pm)
+// Initialize WASM module (from pictl)
 const wasmModule = await initWasm4pm();
 
 // Load event log (returns handle string)
@@ -212,7 +259,7 @@ try {
 ### Profile-Based Selection
 
 ```typescript
-import { getRegistry } from '@wasm4pm/kernel';
+import { getRegistry } from '@pictl/kernel';
 
 const registry = getRegistry();
 
@@ -427,7 +474,7 @@ try {
 
 ## References
 
-- [wasm4pm Documentation](https://github.com/seanchatmangpt/wasm4pm)
+- [pictl Documentation](https://github.com/seanchatmangpt/pictl)
 - [Algorithm Papers](./docs/algorithms.md)
 - [Performance Benchmarks](./docs/benchmarks.md)
 

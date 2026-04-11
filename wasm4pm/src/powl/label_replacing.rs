@@ -14,9 +14,10 @@ pub fn apply(
         None => node_idx,
 
         Some(PowlNode::Transition(t)) => {
-            let new_label = t.label.as_ref().and_then(|l| {
-                label_map.get(l).cloned().or_else(|| Some(l.clone()))
-            });
+            let new_label = t
+                .label
+                .as_ref()
+                .and_then(|l| label_map.get(l).cloned().or_else(|| Some(l.clone())));
             dest_arena.add_transition(new_label)
         }
 

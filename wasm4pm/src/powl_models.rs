@@ -41,11 +41,13 @@ impl PowlModel {
 
 // ─── Petri Net (POWL-specific) ──────────────────────────────────────────────
 
+/// Place node in a POWL Petri net.
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct PowlPlace {
     pub name: String,
 }
 
+/// Transition node in a POWL Petri net.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PowlTransition {
     pub name: String,
@@ -53,6 +55,7 @@ pub struct PowlTransition {
     pub properties: HashMap<String, serde_json::Value>,
 }
 
+/// Directed arc connecting places and transitions in a POWL Petri net.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PowlArc {
     pub source: String,
@@ -60,6 +63,7 @@ pub struct PowlArc {
     pub weight: u32,
 }
 
+/// Petri net representation for POWL models.
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct PowlPetriNet {
     pub name: String,
@@ -68,8 +72,10 @@ pub struct PowlPetriNet {
     pub arcs: Vec<PowlArc>,
 }
 
+/// Marking (token distribution) for a POWL Petri net.
 pub type PowlMarking = HashMap<String, u32>;
 
+/// Counts of places, hidden transitions, and visible transitions.
 #[derive(Default)]
 pub struct PowlCounts {
     pub num_places: u32,
@@ -103,7 +109,9 @@ impl PowlPetriNet {
     }
 
     pub fn add_place(&mut self, name: &str) -> String {
-        self.places.push(PowlPlace { name: name.to_string() });
+        self.places.push(PowlPlace {
+            name: name.to_string(),
+        });
         name.to_string()
     }
 
@@ -152,8 +160,7 @@ impl PowlPetriNet {
     pub fn apply_simple_reduction(&mut self) {
         loop {
             let mut reduced = false;
-            let place_names: Vec<String> =
-                self.places.iter().map(|p| p.name.clone()).collect();
+            let place_names: Vec<String> = self.places.iter().map(|p| p.name.clone()).collect();
             for p_name in &place_names {
                 let in_trans: Vec<String> = self
                     .arcs
@@ -212,6 +219,7 @@ impl PowlPetriNet {
     }
 }
 
+/// Result of POWL Petri net discovery including initial and final markings.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PowlPetriNetResult {
     pub net: PowlPetriNet,
@@ -221,6 +229,7 @@ pub struct PowlPetriNetResult {
 
 // ─── Process Tree (POWL-specific) ───────────────────────────────────────────
 
+/// Control flow operator in a POWL process tree.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum PtOperator {
     Sequence,
@@ -240,6 +249,7 @@ impl PtOperator {
     }
 }
 
+/// Process tree node for POWL representation.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PowlProcessTree {
     pub label: Option<String>,
@@ -269,8 +279,7 @@ impl PowlProcessTree {
             (None, None) => "tau".to_string(),
             (None, Some(l)) => l.clone(),
             (Some(op), _) => {
-                let children: Vec<String> =
-                    self.children.iter().map(|c| c.to_repr()).collect();
+                let children: Vec<String> = self.children.iter().map(|c| c.to_repr()).collect();
                 format!("{} ( {} )", op.as_str(), children.join(", "))
             }
         }

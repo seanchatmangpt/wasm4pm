@@ -1,5 +1,4 @@
 # Build artifacts
-/pkg
 /pkg-nodejs
 /pkg-web
 /target
@@ -11,9 +10,7 @@ node_modules/
 package-lock.json
 yarn.lock
 
-# Generated files
-*.wasm
-*.d.ts
+# Generated files (keep pkg/ for npm publish)
 
 # IDE
 .vscode/

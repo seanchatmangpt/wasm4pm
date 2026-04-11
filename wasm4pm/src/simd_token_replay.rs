@@ -23,8 +23,8 @@
 //! - Start activities get an implicit source place with 1 initial token
 //! - End activities get an implicit sink place checked at final marking
 
+use crate::models::{ColumnarLog, DFGNode, DirectlyFollowsGraph};
 use rustc_hash::FxHashMap;
-use crate::models::{DirectlyFollowsGraph, DFGNode, ColumnarLog};
 
 /// Integer-encoded Petri net for SIMD token replay.
 ///
@@ -222,8 +222,12 @@ impl SimdPetriNet {
         let total_missing: u32 = trace_results.iter().map(|r| r.missing).sum();
         let total_remaining: u32 = trace_results.iter().map(|r| r.remaining).sum();
 
-        let overall_fitness =
-            compute_fitness(total_consumed, total_produced, total_missing, total_remaining);
+        let overall_fitness = compute_fitness(
+            total_consumed,
+            total_produced,
+            total_missing,
+            total_remaining,
+        );
 
         LogReplayResult {
             trace_results,
@@ -267,7 +271,7 @@ fn compute_fitness(consumed: u32, produced: u32, missing: u32, remaining: u32) -
 /// Processes preset/postset in chunks of 4 for loop-unrolled performance.
 /// Uses `saturating_sub` / `saturating_add` to avoid underflow/overflow.
 #[inline]
-fn fire_transition(marking: &mut Vec<u32>, preset: &[u32], postset: &[u32]) {
+fn fire_transition(marking: &mut [u32], preset: &[u32], postset: &[u32]) {
     // Process preset in chunks of 4 (loop-unrolled)
     for chunk in preset.chunks_exact(4) {
         marking[chunk[0] as usize] = marking[chunk[0] as usize].saturating_sub(1);
@@ -383,8 +387,11 @@ pub fn replay_log(log_handle: &str, activity_key: &str) -> String {
             })
             .to_string())
         }
-        Some(_) => Ok(format!(r#"{{"error":"Object is not an EventLog"}}"#)),
-        None => Ok(format!(r#"{{"error":"EventLog '{}' not found"}}"#, log_handle)),
+        Some(_) => Ok(r#"{"error":"Object is not an EventLog"}"#.to_string()),
+        None => Ok(format!(
+            r#"{{"error":"EventLog '{}' not found"}}"#,
+            log_handle
+        )),
     });
 
     result.unwrap_or_else(|e| format!(r#"{{"error":"{:?}"}}"#, e))
@@ -424,11 +431,13 @@ fn make_dfg(edges: &[(&str, &str)]) -> DirectlyFollowsGraph {
             .collect(),
         edges: edge_counts
             .into_iter()
-            .map(|((from, to), freq)| crate::models::DirectlyFollowsRelation {
-                from: from.to_owned(),
-                to: to.to_owned(),
-                frequency: freq,
-            })
+            .map(
+                |((from, to), freq)| crate::models::DirectlyFollowsRelation {
+                    from: from.to_owned(),
+                    to: to.to_owned(),
+                    frequency: freq,
+                },
+            )
             .collect(),
         start_activities: std::collections::HashMap::new(),
         end_activities: std::collections::HashMap::new(),
@@ -515,11 +524,7 @@ mod tests {
         let dfg = make_dfg(&[("A", "B")]);
         let net = SimdPetriNet::from_dfg(&dfg);
 
-        let traces: Vec<Vec<&str>> = vec![
-            vec!["A", "B"],
-            vec!["A", "B"],
-            vec!["A", "B"],
-        ];
+        let traces: Vec<Vec<&str>> = vec![vec!["A", "B"], vec!["A", "B"], vec!["A", "B"]];
         let result = net.replay_log(&traces);
         assert_eq!(result.trace_results.len(), 3);
         assert!(result.total_consumed > 0);

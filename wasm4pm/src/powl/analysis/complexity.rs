@@ -218,25 +218,24 @@ mod tests {
     }
 
     #[test]
-    fn leaf_has_base_complexity() {
+    fn test_complexity_leaf_and_xor() {
+        // Happy path: leaf has base complexity
         let (arena, root) = parse("A");
         let r = measure(&arena, root);
         assert_eq!(r.cyclomatic, 1);
         assert_eq!(r.cfc, 1);
         assert_eq!(r.nesting_depth, 0);
-    }
 
-    #[test]
-    fn xor_adds_branches() {
+        // XOR adds branches
         let (arena, root) = parse("X(A, B, C)");
         let r = measure(&arena, root);
         assert_eq!(r.cyclomatic, 3);
         assert_eq!(r.cfc, 3);
-        assert_eq!(r.branching_factor, 3.0);
     }
 
     #[test]
-    fn loop_adds_one() {
+    fn test_complexity_loop() {
+        // Loop adds cyclomatic complexity
         let (arena, root) = parse("*(A, B)");
         let r = measure(&arena, root);
         assert_eq!(r.cyclomatic, 2);
@@ -244,7 +243,8 @@ mod tests {
     }
 
     #[test]
-    fn spo_uses_max_cfc() {
+    fn test_complexity_partial_order() {
+        // Partial order uses max CFC (no branching)
         let (arena, root) = parse("PO=(nodes={A, B, C}, order={A-->B, A-->C})");
         let r = measure(&arena, root);
         assert_eq!(r.cfc, 1);

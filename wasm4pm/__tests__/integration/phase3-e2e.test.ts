@@ -25,7 +25,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
-import * as pm from '../../pkg/wasm4pm.js';
+import * as pm from '../../pkg/pictl.js';
 import { XES_MINIMAL, XES_SEQUENTIAL, XES_PARALLEL, XES_WORKFLOW } from '../helpers/fixtures.js';
 import { Wasm4pmConfig, ExecutionProfile, SourceFormat, ExecutionMode } from '../../src/config.js';
 

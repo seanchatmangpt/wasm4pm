@@ -12,10 +12,7 @@ pub fn handle_empty_log(arena: &mut PowlArena) -> Result<u32, String> {
 }
 
 /// Handle log with only one unique activity
-pub fn handle_single_activity(
-    arena: &mut PowlArena,
-    activity: &str,
-) -> Result<u32, String> {
+pub fn handle_single_activity(arena: &mut PowlArena, activity: &str) -> Result<u32, String> {
     // Single activity → Transition with that label
     let idx = arena.add_transition(Some(activity.to_string()));
     Ok(idx)
@@ -28,7 +25,7 @@ mod tests {
     #[test]
     fn test_handle_empty_log_creates_tau() {
         let mut arena = PowlArena::new();
-        let root = handle_empty_log(&mut arena).unwrap();
+        let _root = handle_empty_log(&mut arena).unwrap();
         // Should create a silent transition
         assert_eq!(arena.nodes.len(), 1);
     }

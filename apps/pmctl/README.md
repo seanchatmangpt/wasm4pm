@@ -648,7 +648,7 @@ console.log(status.engine.status);
 
 ## Resources
 
-- **Main Repository:** https://github.com/seanchatmangpt/wasm4pm
+- **Main Repository:** https://github.com/seanchatmangpt/pictl
 - **Main Documentation:** [../docs/](../../docs/)
 - **Configuration Guide:** [../../packages/config/README.md](../../packages/config/README.md)
 - **API Reference:** [../../docs/API.md](../../docs/API.md)
@@ -664,8 +664,8 @@ MIT OR Apache-2.0
 
 ## Support
 
-- **Issues:** https://github.com/seanchatmangpt/wasm4pm/issues
-- **Discussions:** https://github.com/seanchatmangpt/wasm4pm/discussions
+- **Issues:** https://github.com/seanchatmangpt/pictl/issues
+- **Discussions:** https://github.com/seanchatmangpt/pictl/discussions
 - **Documentation:** [../../docs/FAQ.md](../../docs/FAQ.md)
 
 ---

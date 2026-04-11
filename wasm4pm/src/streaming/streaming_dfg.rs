@@ -5,7 +5,7 @@
 //! build on this pattern.
 
 use crate::models::DirectlyFollowsGraph;
-use crate::streaming::{StreamingAlgorithm, StreamStats, ActivityInterner, Interner};
+use crate::streaming::{ActivityInterner, Interner, StreamStats, StreamingAlgorithm};
 use rustc_hash::FxHashMap;
 use std::collections::HashMap;
 
@@ -26,8 +26,8 @@ use std::collections::HashMap;
 /// # Example
 ///
 /// ```rust
-/// use wasm4pm::streaming::StreamingDfgBuilder;
-/// use wasm4pm::streaming::StreamingAlgorithm;
+/// use pictl::streaming::StreamingDfgBuilder;
+/// use pictl::streaming::StreamingAlgorithm;
 ///
 /// let mut stream = StreamingDfgBuilder::new();
 ///
@@ -126,7 +126,7 @@ impl StreamingAlgorithm for StreamingDfgBuilder {
         let id = self.intern(activity);
         self.open_traces
             .entry(case_id.to_owned())
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(id);
 
         // Grow node_counts if needed
@@ -138,8 +138,12 @@ impl StreamingAlgorithm for StreamingDfgBuilder {
     }
 
     fn close_trace(&mut self, case_id: &str) -> bool {
-        let Some(events) = self.open_traces.remove(case_id) else { return false; };
-        if events.is_empty() { return true; }
+        let Some(events) = self.open_traces.remove(case_id) else {
+            return false;
+        };
+        if events.is_empty() {
+            return true;
+        }
 
         // Node frequencies
         for &id in &events {
@@ -165,22 +169,28 @@ impl StreamingAlgorithm for StreamingDfgBuilder {
         let mut dfg = DirectlyFollowsGraph::new();
 
         // Nodes
-        dfg.nodes = self.interner.vocab().iter().enumerate().map(|(i, name)| {
-            crate::models::DFGNode {
+        dfg.nodes = self
+            .interner
+            .vocab()
+            .iter()
+            .enumerate()
+            .map(|(i, name)| crate::models::DFGNode {
                 id: name.clone(),
                 label: name.clone(),
                 frequency: self.node_counts.get(i).copied().unwrap_or(0),
-            }
-        }).collect();
+            })
+            .collect();
 
         // Edges
-        dfg.edges = self.edge_counts.iter().map(|(&(f, t), &freq)| {
-            crate::models::DirectlyFollowsRelation {
+        dfg.edges = self
+            .edge_counts
+            .iter()
+            .map(|(&(f, t), &freq)| crate::models::DirectlyFollowsRelation {
                 from: self.interner.get(f).unwrap_or("").to_string(),
                 to: self.interner.get(t).unwrap_or("").to_string(),
                 frequency: freq,
-            }
-        }).collect();
+            })
+            .collect();
 
         // Start activities
         for (&id, &cnt) in &self.start_counts {
@@ -290,13 +300,25 @@ mod tests {
         assert_eq!(dfg.nodes.len(), 4);
 
         // A→B appears twice, others once
-        let ab_edge = dfg.edges.iter().find(|e| e.from == "A" && e.to == "B").unwrap();
+        let ab_edge = dfg
+            .edges
+            .iter()
+            .find(|e| e.from == "A" && e.to == "B")
+            .unwrap();
         assert_eq!(ab_edge.frequency, 2);
 
-        let bc_edge = dfg.edges.iter().find(|e| e.from == "B" && e.to == "C").unwrap();
+        let bc_edge = dfg
+            .edges
+            .iter()
+            .find(|e| e.from == "B" && e.to == "C")
+            .unwrap();
         assert_eq!(bc_edge.frequency, 1);
 
-        let bd_edge = dfg.edges.iter().find(|e| e.from == "B" && e.to == "D").unwrap();
+        let bd_edge = dfg
+            .edges
+            .iter()
+            .find(|e| e.from == "B" && e.to == "D")
+            .unwrap();
         assert_eq!(bd_edge.frequency, 1);
 
         // Start/end counts

@@ -1,6 +1,6 @@
 {
   "name": "@pictl/contracts",
-  "version": "26.4.7",
+  "version": "26.4.10",
   "description": "Runtime contracts, receipts, and hash verification",
   "type": "module",
   "main": "./dist/index.js",
@@ -72,5 +72,5 @@
     "verification"
   ],
   "author": "Sean Chatman",
-  "license": "MIT"
+  "license": "SEE LICENSE IN LICENSE"
 }

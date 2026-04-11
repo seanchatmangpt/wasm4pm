@@ -33,7 +33,7 @@ export { isReceipt, RECEIPT_JSON_SCHEMA } from './receipt.js';
 export { hashConfig, hashData, hashJsonString, verifyHash, normalizeForHashing, } from './hash.js';
 // Receipt builder
 export { ReceiptBuilder } from './receipt-builder.js';
-export { validateReceipt, verifyReceiptHashes, detectTampering, } from './validation.js';
+export { validateReceipt, verifyReceipt, verifyReceiptHashes, detectTampering, } from './validation.js';
 export { isPlan, validatePlanDAG, normalizePlan, sortNodes, sortEdges, PLAN_JSON_SCHEMA, } from './plan.js';
 export { isStatus, isLifecycleState, isValidTransition, LIFECYCLE_STATES, STATE_TRANSITIONS, STATUS_JSON_SCHEMA, } from './status.js';
 export { isExplainSnapshot, EXPLAIN_JSON_SCHEMA } from './explain.js';

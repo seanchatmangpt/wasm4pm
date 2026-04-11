@@ -1,13 +1,13 @@
 /// Criterion benchmarks for fast process discovery algorithms (<50ms per call).
 /// Sweeps all four standard dataset sizes.
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+use pictl::advanced_algorithms::discover_heuristic_miner;
+use pictl::algorithms::discover_alpha_plus_plus;
+use pictl::analysis::{analyze_case_duration, analyze_event_statistics};
+use pictl::discovery::{discover_declare, discover_dfg};
+use pictl::fast_discovery::discover_hill_climbing;
+use pictl::more_discovery::{discover_inductive_miner, extract_process_skeleton};
 use std::time::Duration;
-use wasm4pm::advanced_algorithms::discover_heuristic_miner;
-use wasm4pm::algorithms::discover_alpha_plus_plus;
-use wasm4pm::analysis::{analyze_case_duration, analyze_event_statistics};
-use wasm4pm::discovery::{discover_declare, discover_dfg};
-use wasm4pm::fast_discovery::discover_hill_climbing;
-use wasm4pm::more_discovery::{discover_inductive_miner, extract_process_skeleton};
 
 #[path = "helpers.rs"]
 mod helpers;
@@ -36,7 +36,9 @@ fn bench_declare(c: &mut Criterion) {
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(30);
     for shape in bench_sizes() {
-        if shape.num_cases > 10_000 { continue; } // O(activities² × cases)
+        if shape.num_cases > 10_000 {
+            continue;
+        } // O(activities² × cases)
         let (handle, events) = make_handle(&shape);
         group.throughput(Throughput::Elements(events as u64));
         group.bench_with_input(
@@ -59,7 +61,10 @@ fn bench_heuristic_miner(c: &mut Criterion) {
         // Benchmark three dependency thresholds
         for threshold in [0.3_f64, 0.5, 0.8] {
             group.bench_with_input(
-                BenchmarkId::new(format!("cases{}_t{}", shape.num_cases, threshold), shape.num_cases),
+                BenchmarkId::new(
+                    format!("cases{}_t{}", shape.num_cases, threshold),
+                    shape.num_cases,
+                ),
                 &handle,
                 |b, h| b.iter(|| discover_heuristic_miner(h, ACTIVITY_KEY, threshold).unwrap()),
             );

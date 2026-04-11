@@ -8,9 +8,9 @@
 //! This enables processing arbitrarily large event logs with constant
 //! memory usage (approximately 135KB regardless of log size).
 
-use rustc_hash::FxHashMap;
+use super::{BloomFilter, CountMinSketch, HyperLogLog};
 use crate::models::{DFGNode, DirectlyFollowsGraph, DirectlyFollowsRelation};
-use super::{CountMinSketch, HyperLogLog, BloomFilter};
+use rustc_hash::FxHashMap;
 
 /// Simple hash function for trace and activity strings.
 /// Uses FNV-1a for speed and distribution quality.
@@ -258,7 +258,8 @@ impl StreamingLog {
             + self.cardinality.memory_bytes()
             + self.seen_traces.memory_bytes()
             + self.vocab.capacity() * std::mem::size_of::<String>()
-            + self.vocab_map.capacity() * (std::mem::size_of::<String>() + std::mem::size_of::<u32>())
+            + self.vocab_map.capacity()
+                * (std::mem::size_of::<String>() + std::mem::size_of::<u32>())
             + self.node_freqs.capacity() * std::mem::size_of::<u32>()
             + self.start_counts.capacity() * std::mem::size_of::<u32>()
             + self.end_counts.capacity() * std::mem::size_of::<u32>()
@@ -277,7 +278,9 @@ mod tests {
     use std::collections::HashMap;
 
     /// Build an exact DFG from traces for comparison.
-    fn exact_dfg(traces: &[Vec<&str>]) -> (HashMap<(String, String), usize>, HashMap<String, usize>) {
+    fn exact_dfg(
+        traces: &[Vec<&str>],
+    ) -> (HashMap<(String, String), usize>, HashMap<String, usize>) {
         let mut edge_counts: HashMap<(String, String), usize> = HashMap::new();
         let mut node_counts: HashMap<String, usize> = HashMap::new();
         for trace in traces {
@@ -349,24 +352,24 @@ mod tests {
         let mut missing = Vec::new();
         for (key, &true_freq) in &exact_edges {
             let est = dfg.edges.iter().find(|e| e.from == key.0 && e.to == key.1);
-            if est.is_none() {
-                missing.push(key.clone());
-            } else {
-                let diff = (est.unwrap().frequency as i32 - true_freq as i32).abs();
+            if let Some(edge) = est {
+                let diff = (edge.frequency as i32 - true_freq as i32).abs();
                 assert!(
                     diff <= true_freq as i32,
                     "Edge {:?}: estimate {} differs from true {} by more than 100%",
                     key,
-                    est.unwrap().frequency,
+                    edge.frequency,
                     true_freq
                 );
-                let ratio = est.unwrap().frequency as f64 / true_freq as f64;
+                let ratio = edge.frequency as f64 / true_freq as f64;
                 assert!(
                     ratio < 2.0,
                     "Edge {:?}: estimate is {}x true frequency, too much overestimation",
                     key,
                     ratio
                 );
+            } else {
+                missing.push(key.clone());
             }
         }
         // Allow a few missing edges due to hash collisions on small datasets
@@ -398,10 +401,7 @@ mod tests {
         for i in 0..100 {
             let a = format!("A{}", i);
             let b = format!("B{}", i);
-            slog.add_trace(&[
-                Box::leak(a.into_boxed_str()),
-                Box::leak(b.into_boxed_str()),
-            ]);
+            slog.add_trace(&[Box::leak(a.into_boxed_str()), Box::leak(b.into_boxed_str())]);
         }
         let est = slog.estimate_cardinality();
         let error = (est as f64 - 100.0).abs() / 100.0;
@@ -422,11 +422,7 @@ mod tests {
 
         // Cardinality should be ~1 (maybe 2 due to bloom filter FP on trace hash)
         let est = slog.estimate_cardinality();
-        assert!(
-            est <= 3,
-            "Expected ~1 unique trace, got {}",
-            est
-        );
+        assert!(est <= 3, "Expected ~1 unique trace, got {}", est);
     }
 
     #[test]
@@ -446,11 +442,7 @@ mod tests {
         // Core structures should be bounded at ~350KB
         // (vocab grows with unique activities but that's bounded by 100+100+50=250)
         let mem = slog.memory_bytes();
-        assert!(
-            mem < 400_000,
-            "Memory {} bytes exceeds 400KB bound",
-            mem
-        );
+        assert!(mem < 400_000, "Memory {} bytes exceeds 400KB bound", mem);
     }
 
     #[test]

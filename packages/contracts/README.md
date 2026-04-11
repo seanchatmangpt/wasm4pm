@@ -1,4 +1,4 @@
-# @wasm4pm/contracts
+# @pictl/contracts
 
 Runtime contracts, receipts, and cryptographic verification for process mining.
 
@@ -17,7 +17,7 @@ import {
   ReceiptBuilder,
   validateReceipt,
   detectTampering,
-} from '@wasm4pm/contracts';
+} from '@pictl/contracts';
 
 // Create receipt
 const receipt = new ReceiptBuilder()

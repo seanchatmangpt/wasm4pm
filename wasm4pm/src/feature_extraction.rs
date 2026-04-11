@@ -1,9 +1,9 @@
-use wasm_bindgen::prelude::*;
-use crate::state::{get_or_init_state, StoredObject};
 use crate::models::*;
+use crate::state::{get_or_init_state, StoredObject};
 use crate::utilities::to_js;
 use serde_json::{Map, Value};
 use std::collections::HashMap;
+use wasm_bindgen::prelude::*;
 
 /// Extract feature vectors from event log traces for ML training.
 ///
@@ -56,7 +56,9 @@ pub fn extract_case_features(
                 let mut feature_vec = Map::new();
 
                 // Add case ID if available
-                if let Some(case_id) = trace.attributes.get("concept:name")
+                if let Some(case_id) = trace
+                    .attributes
+                    .get("concept:name")
                     .and_then(|v| v.as_string())
                 {
                     feature_vec.insert("case_id".to_string(), Value::String(case_id.to_string()));
@@ -66,14 +68,13 @@ pub fn extract_case_features(
                 for feature in &features_list {
                     match feature.as_str() {
                         "trace_length" => {
-                            feature_vec.insert("trace_length".to_string(), Value::Number(
-                                trace.events.len().into(),
-                            ));
+                            feature_vec.insert(
+                                "trace_length".to_string(),
+                                Value::Number(trace.events.len().into()),
+                            );
                         }
                         "elapsed_time" => {
-                            if let Some(elapsed) =
-                                compute_elapsed_time(&trace, timestamp_key)
-                            {
+                            if let Some(elapsed) = compute_elapsed_time(trace, timestamp_key) {
                                 feature_vec.insert(
                                     "elapsed_time".to_string(),
                                     Value::Number(elapsed.into()),
@@ -81,24 +82,19 @@ pub fn extract_case_features(
                             }
                         }
                         "activity_counts" => {
-                            let counts = count_activities(&trace, activity_key);
+                            let counts = count_activities(trace, activity_key);
                             for (act, count) in counts {
                                 let key = format!("activity_{}", act);
-                                feature_vec.insert(
-                                    key,
-                                    Value::Number(count.into()),
-                                );
+                                feature_vec.insert(key, Value::Number(count.into()));
                             }
                         }
                         "rework_count" => {
-                            let rework = count_rework(&trace, activity_key);
-                            feature_vec.insert(
-                                "rework_count".to_string(),
-                                Value::Number(rework.into()),
-                            );
+                            let rework = count_rework(trace, activity_key);
+                            feature_vec
+                                .insert("rework_count".to_string(), Value::Number(rework.into()));
                         }
                         "unique_activities" => {
-                            let unique = count_unique_activities(&trace, activity_key);
+                            let unique = count_unique_activities(trace, activity_key);
                             feature_vec.insert(
                                 "unique_activities".to_string(),
                                 Value::Number(unique.into()),
@@ -106,7 +102,7 @@ pub fn extract_case_features(
                         }
                         "avg_inter_event_time" => {
                             if let Some(avg_time) =
-                                compute_avg_inter_event_time(&trace, timestamp_key)
+                                compute_avg_inter_event_time(trace, timestamp_key)
                             {
                                 feature_vec.insert(
                                     "avg_inter_event_time".to_string(),
@@ -125,9 +121,7 @@ pub fn extract_case_features(
                 match target.as_str() {
                     "remaining_time" => {
                         // For complete traces, remaining time is 0 (case is finished)
-                        feature_vec.insert("remaining_time".to_string(), Value::Number(
-                            0.into(),
-                        ));
+                        feature_vec.insert("remaining_time".to_string(), Value::Number(0.into()));
                     }
                     "outcome" => {
                         // Get last activity as outcome
@@ -201,12 +195,14 @@ pub fn extract_prefix_features(
                     let mut feature_vec = Map::new();
 
                     // Basic features
-                    feature_vec.insert("prefix_length".to_string(), Value::Number(
-                        prefix_idx.into(),
-                    ));
-                    feature_vec.insert("trace_length".to_string(), Value::Number(
-                        trace.events.len().into(),
-                    ));
+                    feature_vec.insert(
+                        "prefix_length".to_string(),
+                        Value::Number(prefix_idx.into()),
+                    );
+                    feature_vec.insert(
+                        "trace_length".to_string(),
+                        Value::Number(trace.events.len().into()),
+                    );
 
                     // Activity counts in prefix
                     let counts = count_activities_in_events(prefix_events, activity_key);
@@ -217,35 +213,36 @@ pub fn extract_prefix_features(
 
                     // Rework in prefix
                     let rework = count_rework_in_events(prefix_events, activity_key);
-                    feature_vec.insert("rework_count".to_string(), Value::Number(
-                        rework.into(),
-                    ));
+                    feature_vec.insert("rework_count".to_string(), Value::Number(rework.into()));
 
                     // Elapsed time in prefix
                     if let Some(elapsed) =
                         compute_elapsed_time_in_events(prefix_events, timestamp_key)
                     {
-                        feature_vec.insert("elapsed_time".to_string(), Value::Number(
-                            elapsed.into(),
-                        ));
+                        feature_vec
+                            .insert("elapsed_time".to_string(), Value::Number(elapsed.into()));
                     }
 
                     // Remaining time: total duration - elapsed in prefix
                     if let (Some(total_duration), Some(prefix_elapsed)) = (
-                        compute_elapsed_time(&trace, timestamp_key),
+                        compute_elapsed_time(trace, timestamp_key),
                         compute_elapsed_time_in_events(prefix_events, timestamp_key),
                     ) {
                         let remaining = (total_duration - prefix_elapsed).max(0);
-                        feature_vec.insert("remaining_time".to_string(), Value::Number(
-                            remaining.into(),
-                        ));
+                        feature_vec.insert(
+                            "remaining_time".to_string(),
+                            Value::Number(remaining.into()),
+                        );
                     }
 
                     // Add case ID if available
-                    if let Some(case_id) = trace.attributes.get("concept:name")
+                    if let Some(case_id) = trace
+                        .attributes
+                        .get("concept:name")
                         .and_then(|v| v.as_string())
                     {
-                        feature_vec.insert("case_id".to_string(), Value::String(case_id.to_string()));
+                        feature_vec
+                            .insert("case_id".to_string(), Value::String(case_id.to_string()));
                     }
 
                     // Target: next activity (what comes after the prefix)
@@ -284,9 +281,8 @@ fn csv_escape(s: &str) -> String {
 /// Output: CSV string with headers and one row per feature vector
 #[wasm_bindgen]
 pub fn export_features_csv(features_json: &str) -> Result<String, JsValue> {
-    let features: Vec<serde_json::Map<String, Value>> =
-        serde_json::from_str(features_json)
-            .map_err(|e| JsValue::from_str(&format!("Invalid features JSON: {}", e)))?;
+    let features: Vec<serde_json::Map<String, Value>> = serde_json::from_str(features_json)
+        .map_err(|e| JsValue::from_str(&format!("Invalid features JSON: {}", e)))?;
 
     if features.is_empty() {
         return Ok(String::new());
@@ -322,7 +318,7 @@ pub fn export_features_csv(features_json: &str) -> Result<String, JsValue> {
                         Value::Bool(b) => b.to_string(),
                         _ => String::new(),
                     })
-                    .unwrap_or_else(|| String::new());
+                    .unwrap_or_default();
                 csv_escape(&value_str)
             })
             .collect();
@@ -380,14 +376,13 @@ pub fn export_features_json(
                 for feature in &features_list {
                     match feature.as_str() {
                         "trace_length" => {
-                            feature_vec.insert("trace_length".to_string(), Value::Number(
-                                trace.events.len().into(),
-                            ));
+                            feature_vec.insert(
+                                "trace_length".to_string(),
+                                Value::Number(trace.events.len().into()),
+                            );
                         }
                         "elapsed_time" => {
-                            if let Some(elapsed) =
-                                compute_elapsed_time(&trace, timestamp_key)
-                            {
+                            if let Some(elapsed) = compute_elapsed_time(trace, timestamp_key) {
                                 feature_vec.insert(
                                     "elapsed_time".to_string(),
                                     Value::Number(elapsed.into()),
@@ -395,24 +390,19 @@ pub fn export_features_json(
                             }
                         }
                         "activity_counts" => {
-                            let counts = count_activities(&trace, activity_key);
+                            let counts = count_activities(trace, activity_key);
                             for (act, count) in counts {
                                 let key = format!("activity_{}", act);
-                                feature_vec.insert(
-                                    key,
-                                    Value::Number(count.into()),
-                                );
+                                feature_vec.insert(key, Value::Number(count.into()));
                             }
                         }
                         "rework_count" => {
-                            let rework = count_rework(&trace, activity_key);
-                            feature_vec.insert(
-                                "rework_count".to_string(),
-                                Value::Number(rework.into()),
-                            );
+                            let rework = count_rework(trace, activity_key);
+                            feature_vec
+                                .insert("rework_count".to_string(), Value::Number(rework.into()));
                         }
                         "unique_activities" => {
-                            let unique = count_unique_activities(&trace, activity_key);
+                            let unique = count_unique_activities(trace, activity_key);
                             feature_vec.insert(
                                 "unique_activities".to_string(),
                                 Value::Number(unique.into()),
@@ -420,7 +410,7 @@ pub fn export_features_json(
                         }
                         "avg_inter_event_time" => {
                             if let Some(avg_time) =
-                                compute_avg_inter_event_time(&trace, timestamp_key)
+                                compute_avg_inter_event_time(trace, timestamp_key)
                             {
                                 feature_vec.insert(
                                     "avg_inter_event_time".to_string(),
@@ -438,13 +428,12 @@ pub fn export_features_json(
                 // Add target variable
                 match target.as_str() {
                     "remaining_time" => {
-                        if let Some(elapsed) =
-                            compute_elapsed_time(&trace, timestamp_key)
-                        {
+                        if let Some(elapsed) = compute_elapsed_time(trace, timestamp_key) {
                             let remaining = elapsed / 2;
-                            feature_vec.insert("remaining_time".to_string(), Value::Number(
-                                remaining.into(),
-                            ));
+                            feature_vec.insert(
+                                "remaining_time".to_string(),
+                                Value::Number(remaining.into()),
+                            );
                         }
                     }
                     "outcome" => {
@@ -509,10 +498,7 @@ fn count_activities(trace: &Trace, activity_key: &str) -> HashMap<String, usize>
 }
 
 /// Count activity occurrences in a slice of events
-fn count_activities_in_events(
-    events: &[Event],
-    activity_key: &str,
-) -> HashMap<String, usize> {
+fn count_activities_in_events(events: &[Event], activity_key: &str) -> HashMap<String, usize> {
     let mut counts = HashMap::new();
     for event in events {
         if let Some(activity) = event
@@ -530,19 +516,13 @@ fn count_activities_in_events(
 /// E.g., if A appears 3 times: (3-1) = 2 extra executions
 fn count_rework(trace: &Trace, activity_key: &str) -> usize {
     let counts = count_activities(trace, activity_key);
-    counts.values()
-        .filter(|&&c| c > 1)
-        .map(|&c| c - 1)
-        .sum()
+    counts.values().filter(|&&c| c > 1).map(|&c| c - 1).sum()
 }
 
 /// Count total rework in a slice of events
 fn count_rework_in_events(events: &[Event], activity_key: &str) -> usize {
     let counts = count_activities_in_events(events, activity_key);
-    counts.values()
-        .filter(|&&c| c > 1)
-        .map(|&c| c - 1)
-        .sum()
+    counts.values().filter(|&&c| c > 1).map(|&c| c - 1).sum()
 }
 
 /// Count unique activities in a trace
@@ -573,7 +553,7 @@ fn compute_elapsed_time(trace: &Trace, timestamp_key: &str) -> Option<i64> {
 
 /// Compute elapsed time for a slice of events
 fn compute_elapsed_time_in_events(events: &[Event], timestamp_key: &str) -> Option<i64> {
-    if events.len() < 1 {
+    if events.is_empty() {
         return Some(0);
     }
 

@@ -1,4 +1,4 @@
-# @wasm4pm/observability
+# @pictl/observability
 
 Non-blocking three-layer observability system with optional OpenTelemetry support.
 
@@ -107,7 +107,7 @@ interface ObservabilityConfig {
 ### Basic Usage
 
 ```typescript
-import { ObservabilityLayer } from '@wasm4pm/observability';
+import { ObservabilityLayer } from '@pictl/observability';
 
 const obs = new ObservabilityLayer({
   json: { enabled: true, dest: './events.jsonl' },
@@ -262,7 +262,7 @@ export OBSERVABILITY_OTEL_ENABLED=false
 ### Staging/Production
 ```bash
 # Log to file for archival
-export OBSERVABILITY_JSON_DEST=/var/log/wasm4pm/events.jsonl
+export OBSERVABILITY_JSON_DEST=/var/log/pictl/events.jsonl
 
 # Send to OTEL collector
 export OBSERVABILITY_OTEL_ENDPOINT=http://otel-collector:4317

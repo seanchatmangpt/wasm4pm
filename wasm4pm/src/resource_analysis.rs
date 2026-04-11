@@ -1,3 +1,7 @@
+use crate::models::parse_timestamp_ms;
+use crate::state::{get_or_init_state, StoredObject};
+use serde_json::json;
+use std::collections::HashMap;
 /// Priority 5C — Resource-centric analysis.
 ///
 /// Analyzes which resources (people, machines) are performing which activities,
@@ -10,12 +14,7 @@
 ///   specialization scores (Herfindahl index).
 /// - identify_resource_bottlenecks: Compute waiting times, processing times,
 ///   queue sizes for each resource.
-
 use wasm_bindgen::prelude::*;
-use crate::state::{get_or_init_state, StoredObject};
-use crate::models::parse_timestamp_ms;
-use serde_json::json;
-use std::collections::HashMap;
 
 /// Analyze resource utilization: total events, time periods, concurrent cases, top activities.
 ///
@@ -67,7 +66,7 @@ pub fn analyze_resource_utilization(
                             if let Some(ts_ms) = parse_timestamp_ms(timestamp_str) {
                                 resource_events
                                     .entry(resource.to_string())
-                                    .or_insert_with(Vec::new)
+                                    .or_default()
                                     .push((event_idx, ts_ms, String::new()));
 
                                 // Track case duration
@@ -84,7 +83,7 @@ pub fn analyze_resource_utilization(
                                 {
                                     *resource_activities
                                         .entry(resource.to_string())
-                                        .or_insert_with(HashMap::new)
+                                        .or_default()
                                         .entry(activity.to_string())
                                         .or_insert(0) += 1;
                                 }
@@ -204,9 +203,7 @@ pub fn analyze_resource_activity_matrix(
                             .get(activity_key)
                             .and_then(|v| v.as_string())
                         {
-                            let res_entry = matrix
-                                .entry(resource.to_string())
-                                .or_insert_with(HashMap::new);
+                            let res_entry = matrix.entry(resource.to_string()).or_default();
                             *res_entry.entry(activity.to_string()).or_insert(0) += 1;
                             *resource_totals.entry(resource.to_string()).or_insert(0) += 1;
                         }
@@ -277,6 +274,7 @@ pub fn identify_resource_bottlenecks(
     let json = get_or_init_state().with_object(log_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
             // Per-resource, per-case: (case_id, first_activity_time, resource_start_time, resource_end_time, activity)
+            #[allow(clippy::type_complexity)]
             let mut resource_case_intervals: HashMap<String, Vec<(String, i64, i64, i64, String)>> =
                 HashMap::new();
             let mut case_start_times: HashMap<String, i64> = HashMap::new();
@@ -350,7 +348,7 @@ pub fn identify_resource_bottlenecks(
                     let activity = resource_activity.get(&resource).cloned().unwrap_or_default();
                     resource_case_intervals
                         .entry(resource)
-                        .or_insert_with(Vec::new)
+                        .or_default()
                         .push((case_id.clone(), case_start, start_ts, end_ts, activity));
                 }
             }
@@ -439,5 +437,92 @@ fn format_timestamp(ms: i64) -> String {
     match DateTime::<Utc>::from_timestamp(secs, nanos) {
         Some(dt) => dt.to_rfc3339(),
         None => "1970-01-01T00:00:00Z".to_string(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::models::{AttributeValue, Event, EventLog, Trace};
+    use std::collections::HashMap;
+
+    fn create_test_log() -> EventLog {
+        EventLog {
+            attributes: HashMap::new(),
+            traces: vec![
+                Trace {
+                    attributes: {
+                        let mut attrs = HashMap::new();
+                        attrs.insert("concept:name".to_string(), AttributeValue::String("case1".to_string()));
+                        attrs
+                    },
+                    events: vec![
+                        Event {
+                            attributes: {
+                                let mut attrs = HashMap::new();
+                                attrs.insert("concept:name".to_string(), AttributeValue::String("A".to_string()));
+                                attrs.insert("org:resource".to_string(), AttributeValue::String("Alice".to_string()));
+                                attrs.insert("time:timestamp".to_string(), AttributeValue::String("2024-01-01T10:00:00Z".to_string()));
+                                attrs
+                            },
+                        },
+                        Event {
+                            attributes: {
+                                let mut attrs = HashMap::new();
+                                attrs.insert("concept:name".to_string(), AttributeValue::String("B".to_string()));
+                                attrs.insert("org:resource".to_string(), AttributeValue::String("Bob".to_string()));
+                                attrs.insert("time:timestamp".to_string(), AttributeValue::String("2024-01-01T11:00:00Z".to_string()));
+                                attrs
+                            },
+                        },
+                    ],
+                },
+            ],
+        }
+    }
+
+    #[test]
+    fn test_resource_utilization_basic() {
+        let log = create_test_log();
+        let handle = get_or_init_state()
+            .store_object(StoredObject::EventLog(log))
+            .expect("Failed to store log");
+
+        let result = analyze_resource_utilization(&handle, "org:resource", "time:timestamp");
+        assert!(result.is_ok(), "Resource utilization should succeed");
+    }
+
+    #[test]
+    fn test_resource_utilization_invalid_handle() {
+        let result = analyze_resource_utilization("invalid", "org:resource", "time:timestamp");
+        assert!(result.is_err(), "Should fail on invalid handle");
+    }
+
+    #[test]
+    fn test_resource_activity_matrix() {
+        let log = create_test_log();
+        let handle = get_or_init_state()
+            .store_object(StoredObject::EventLog(log))
+            .expect("Failed to store log");
+
+        let result = analyze_resource_activity_matrix(&handle, "org:resource", "concept:name");
+        assert!(result.is_ok(), "Activity matrix should succeed");
+    }
+
+    #[test]
+    fn test_resource_bottlenecks() {
+        let log = create_test_log();
+        let handle = get_or_init_state()
+            .store_object(StoredObject::EventLog(log))
+            .expect("Failed to store log");
+
+        let result = identify_resource_bottlenecks(&handle, "org:resource", "time:timestamp", "concept:name");
+        assert!(result.is_ok(), "Bottleneck detection should succeed");
+    }
+
+    #[test]
+    fn test_timestamp_formatting() {
+        let formatted = format_timestamp(0);
+        assert!(formatted.contains("1970-01-01"));
     }
 }

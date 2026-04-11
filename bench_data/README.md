@@ -1,6 +1,6 @@
 # Benchmark Datasets
 
-Real-world process mining datasets for wasm4pm benchmarks.
+Real-world process mining datasets for pictl benchmarks.
 All datasets are freely available under CC BY 4.0 from [4TU.ResearchData](https://data.4tu.nl).
 
 Run `make bench-data` (or `bash scripts/download_datasets.sh`) to download them.
@@ -33,7 +33,7 @@ size with realistic process variance. Synthetic results are clearly labeled in r
 ## Citation
 
 When citing benchmark results produced with real datasets, please cite both
-the wasm4pm paper and the relevant BPI Challenge paper:
+the pictl paper and the relevant BPI Challenge paper:
 
 > van der Aalst, W.M.P. et al. (2011–2020). BPI Challenge [year].
 > 4TU.ResearchData. https://doi.org/[dataset DOI]

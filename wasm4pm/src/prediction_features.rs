@@ -1,15 +1,16 @@
+use crate::models::AttributeValue;
+use crate::prediction_additions::{
+    build_transition_graph, calculate_rework_score, extract_prefix_features,
+};
+use crate::state::{get_or_init_state, StoredObject};
+use serde_json::json;
+use std::collections::HashMap;
 /// Case Feature Extraction — inputs for ML models and remaining-time prediction
 ///
 /// WASM-exported wrappers around the core feature extraction functions in
 /// `prediction_additions`.  Each function accepts JSON from JavaScript and
 /// returns a JSON result via `JsValue`.
-
 use wasm_bindgen::prelude::*;
-use crate::models::AttributeValue;
-use crate::prediction_additions::{extract_prefix_features, calculate_rework_score, build_transition_graph};
-use crate::state::{get_or_init_state, StoredObject};
-use serde_json::json;
-use std::collections::HashMap;
 
 /// Extract numeric features from a trace prefix (JSON string array).
 ///
@@ -117,7 +118,8 @@ pub fn build_transition_probabilities(
             // Also call build_transition_graph for the sorted activity list
             let tg = build_transition_graph(log, &activity_key);
 
-            let edges: Vec<serde_json::Value> = edge_counts.iter()
+            let edges: Vec<serde_json::Value> = edge_counts
+                .iter()
                 .map(|((from, to), &count)| {
                     let total = activity_totals.get(from).copied().unwrap_or(1);
                     let probability = count as f64 / total as f64;

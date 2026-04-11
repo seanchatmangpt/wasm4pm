@@ -1,10 +1,10 @@
 [package]
-name = "wasm4pm"
+name = "pictl"
 version = "0.1.0"
 description = "Process Mining in WebAssembly - High-Speed Algorithms for Browser and Node.js"
-repository = "https://github.com/seanchatmangpt/wasm4pm"
+repository = "https://github.com/seanchatmangpt/pictl"
 license = "MIT OR Apache-2.0"
-authors = "wasm4pm contributors"
+authors = "pictl contributors"
 keywords = ["process-mining", "wasm", "webassembly", "process-discovery", "conformance"]
 categories = ["wasm", "algorithms", "data-analysis"]
 

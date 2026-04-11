@@ -1,6 +1,8 @@
 # Algorithm Reference
 
-Complete reference for all 15+ algorithms in the wasm4pm kernel registry.
+Complete reference for all 27 algorithms in the pictl kernel registry (21 discovery + 6 ML analysis).
+
+**Version:** v26.4.10
 
 ## Quick Reference Table
 
@@ -20,6 +22,17 @@ Complete reference for all 15+ algorithms in the wasm4pm kernel registry.
 | Sim. Ann. | `simulated_annealing` | Exp | 55 | 65 | Petri | ✓ | ✗ |
 | Declare | `declare` | O(n²) | 35 | 50 | Declare | ✓ | ✓ |
 | Opt. DFG | `optimized_dfg` | NP-Hard | 70 | 85 | DFG | ✗ | ✗ |
+
+### ML Analysis Algorithms
+
+| Algorithm | ID | Type | Output | Use Case |
+|-----------|----|------|--------|----------|
+| ML Classify | `ml_classify` | Supervised | ClassificationResult | Outcome prediction, routing |
+| ML Cluster | `ml_cluster` | Unsupervised | ClusteringResult | Variant discovery, segmentation |
+| ML Forecast | `ml_forecast` | Time series | ForecastResult | Drift prediction, forecasting |
+| ML Anomaly | `ml_anomaly` | Detection | AnomalyResult | Deviation detection, QC |
+| ML Regress | `ml_regress` | Regression | RegressionResult | Remaining time, cost estimation |
+| ML PCA | `ml_pca` | Dimensionality | PCAResult | Visualization, noise reduction |
 
 \* Speed (0-100, lower=faster) | Quality (0-100, higher=better)
 
@@ -907,6 +920,238 @@ Speed (ms per 100 events) vs Quality (0-100)
   0 └────────────────────────┤
     0   10   20   30   40  50   60
              Speed (ms/100 events)
+```
+
+---
+
+## ML Analysis Algorithms
+
+### 15. ML Classify
+
+**ID**: `ml_classify`
+
+**Type**: Supervised classification
+
+**Algorithms**: k-nearest neighbors (kNN), logistic regression
+
+**Complexity**: O(n × k) for kNN, O(n × iterations) for logistic regression
+
+**Output**: Classification result with class labels and probabilities
+
+**Parameters**:
+- `algorithm` (string, required): "knn" or "logistic_regression"
+- `k` (number, 3-50, default: 5): Number of neighbors (kNN only)
+- `target_attribute` (string, required): Attribute to classify
+
+**Use Cases**:
+- Trace outcome prediction
+- Case routing classification
+- Activity recommendation
+
+**Example**:
+```typescript
+const output = await kernel.implementAlgorithmStep(
+  {
+    type: PlanStepType.ML_CLASSIFY,
+    parameters: {
+      algorithm: 'knn',
+      k: 5,
+      target_attribute: 'outcome'
+    }
+  },
+  wasm,
+  logHandle
+);
+```
+
+---
+
+### 16. ML Cluster
+
+**ID**: `ml_cluster`
+
+**Type**: Unsupervised clustering
+
+**Algorithms**: k-means, DBSCAN
+
+**Complexity**: O(n × k × iterations) for k-means, O(n × log n) for DBSCAN
+
+**Output**: Cluster assignment for each trace
+
+**Parameters**:
+- `algorithm` (string, required): "kmeans" or "dbscan"
+- `k` (number, 2-20, default: 3): Number of clusters (k-means only)
+- `epsilon` (number, default: 0.5): Neighborhood radius (DBSCAN only)
+- `min_points` (number, default: 3): Minimum points for cluster (DBSCAN only)
+
+**Use Cases**:
+- Trace variant discovery
+- Process segmentation
+- Anomaly detection (outlier clusters)
+
+**Example**:
+```typescript
+const output = await kernel.implementAlgorithmStep(
+  {
+    type: PlanStepType.ML_CLUSTER,
+    parameters: {
+      algorithm: 'kmeans',
+      k: 3
+    }
+  },
+  wasm,
+  logHandle
+);
+```
+
+---
+
+### 17. ML Forecast
+
+**ID**: `ml_forecast`
+
+**Type**: Time series forecasting
+
+**Algorithm**: Linear regression with trend analysis
+
+**Complexity**: O(n)
+
+**Output**: Forecast result with predicted values and confidence intervals
+
+**Parameters**:
+- `horizon` (number, 1-100, default: 10): Forecast horizon
+- `confidence_level` (number, 0-1, default: 0.95): Confidence interval level
+
+**Use Cases**:
+- Concept drift prediction
+- Activity frequency forecasting
+- Case completion rate projection
+
+**Example**:
+```typescript
+const output = await kernel.implementAlgorithmStep(
+  {
+    type: PlanStepType.ML_FORECAST,
+    parameters: {
+      horizon: 10,
+      confidence_level: 0.95
+    }
+  },
+  wasm,
+  logHandle
+);
+```
+
+---
+
+### 18. ML Anomaly
+
+**ID**: `ml_anomaly`
+
+**Type**: Anomaly detection
+
+**Algorithm**: Statistical outlier detection (z-score, IQR)
+
+**Complexity**: O(n)
+
+**Output**: Anomaly scores and flagged traces
+
+**Parameters**:
+- `method` (string, required): "zscore" or "iqr"
+- `threshold` (number, default: 3.0): Anomaly threshold (z-score) or 1.5 (IQR multiplier)
+
+**Use Cases**:
+- Deviation detection
+- Quality control
+- Security audit
+
+**Example**:
+```typescript
+const output = await kernel.implementAlgorithmStep(
+  {
+    type: PlanStepType.ML_ANOMALY,
+    parameters: {
+      method: 'zscore',
+      threshold: 3.0
+    }
+  },
+  wasm,
+  logHandle
+);
+```
+
+---
+
+### 19. ML Regress
+
+**ID**: `ml_regress`
+
+**Type**: Regression analysis
+
+**Algorithm**: Linear regression
+
+**Complexity**: O(n × features)
+
+**Output**: Regression model with coefficients and predictions
+
+**Parameters**:
+- `target_variable` (string, required): Variable to predict
+- `feature_variables` (string[], required): Predictor variables
+
+**Use Cases**:
+- Remaining time prediction
+- Cost estimation
+- Resource allocation
+
+**Example**:
+```typescript
+const output = await kernel.implementAlgorithmStep(
+  {
+    type: PlanStepType.ML_REGRESS,
+    parameters: {
+      target_variable: 'remaining_time',
+      feature_variables: ['activity_count', 'trace_length']
+    }
+  },
+  wasm,
+  logHandle
+);
+```
+
+---
+
+### 20. ML PCA
+
+**ID**: `ml_pca`
+
+**Type**: Dimensionality reduction
+
+**Algorithm**: Principal Component Analysis (eigendecomposition)
+
+**Complexity**: O(n × features²)
+
+**Output**: Principal components and reduced feature space
+
+**Parameters**:
+- `n_components` (number, 2-50, default: 2): Number of principal components
+
+**Use Cases**:
+- Feature space visualization
+- Noise reduction
+- Preprocessing for other ML algorithms
+
+**Example**:
+```typescript
+const output = await kernel.implementAlgorithmStep(
+  {
+    type: PlanStepType.ML_PCA,
+    parameters: {
+      n_components: 2
+    }
+  },
+  wasm,
+  logHandle
+);
 ```
 
 ---
