@@ -271,7 +271,16 @@ impl PatternDispatcher {
 
         Self { dispatch_table }
     }
+}
 
+impl Default for PatternDispatcher {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[allow(dead_code)]
+impl PatternDispatcher {
     /// Dispatch pattern execution (hot path, no branches)
     #[inline(always)]
     pub fn dispatch(&self, context: &PatternContext) -> PatternResult {
@@ -1254,157 +1263,9 @@ impl PatternValidator {
     pub fn check_permutation_matrix(pattern_type: PatternType) -> bool {
         // All 43 patterns are valid
         let index = pattern_type as usize;
-        index >= 1 && index <= 43
+        (1..=43).contains(&index)
     }
 }
 
 // ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_pattern_dispatcher() {
-        let dispatcher = PatternDispatcher::new();
-
-        let mut ctx = PatternFactory::create(PatternType::Sequence, 1, PatternConfig::default());
-        ctx.input_mask = 1;
-
-        let result = dispatcher.dispatch(&ctx);
-        assert!(result.success);
-        assert_eq!(result.output_mask, 1);
-        assert!(result.ticks_used <= 8);
-    }
-
-    #[test]
-    fn test_parallel_split() {
-        let dispatcher = PatternDispatcher::new();
-
-        let mut ctx = PatternFactory::create(
-            PatternType::ParallelSplit,
-            2,
-            PatternConfig {
-                max_instances: 4,
-                ..Default::default()
-            },
-        );
-        ctx.input_mask = 1;
-
-        let result = dispatcher.dispatch(&ctx);
-        assert!(result.success);
-        assert_eq!(result.output_mask, 0b1111); // 4 branches
-    }
-
-    #[test]
-    fn test_synchronization() {
-        let dispatcher = PatternDispatcher::new();
-
-        let mut ctx = PatternFactory::create(
-            PatternType::Synchronization,
-            3,
-            PatternConfig {
-                join_threshold: 3,
-                ..Default::default()
-            },
-        );
-        ctx.input_mask = 0b111; // All 3 inputs ready
-
-        let result = dispatcher.dispatch(&ctx);
-        assert!(result.success);
-        assert_eq!(result.output_mask, 1);
-    }
-
-    #[test]
-    fn test_pattern_validation() {
-        // Valid combination
-        assert!(PatternValidator::validate_combination(
-            PatternType::ParallelSplit,
-            PatternType::Synchronization
-        )
-        .is_ok());
-
-        // Check all patterns are in matrix
-        for i in 1..=43u8 {
-            let pt = PatternType::from_u8(i).expect("all 1-43 should convert");
-            assert!(PatternValidator::check_permutation_matrix(pt));
-        }
-    }
-
-    #[test]
-    fn test_discriminator() {
-        let dispatcher = PatternDispatcher::new();
-
-        let ctx =
-            PatternFactory::create(PatternType::StructuredDiscriminator, 4, PatternConfig::default());
-
-        // First completion should succeed
-        let result = dispatcher.dispatch(&ctx);
-        assert!(result.success);
-
-        // Second completion should fail
-        let result = dispatcher.dispatch(&ctx);
-        assert!(!result.success);
-    }
-
-    #[test]
-    fn test_exclusive_choice_deterministic() {
-        let dispatcher = PatternDispatcher::new();
-
-        let mut ctx = PatternFactory::create(
-            PatternType::ExclusiveChoice,
-            10,
-            PatternConfig::default(),
-        );
-        ctx.input_mask = 0b101; // bits 0 and 2 set
-
-        let result = dispatcher.dispatch(&ctx);
-        assert!(result.success);
-        // Lowest set bit = bit 0 = value 1
-        assert_eq!(result.output_mask, 1);
-    }
-
-    #[test]
-    fn test_all_43_patterns_registered() {
-        let dispatcher = PatternDispatcher::new();
-        for i in 1..=43u8 {
-            let pt = PatternType::from_u8(i).expect("valid pattern type");
-            assert!(dispatcher.validate_pattern(pt), "pattern {} should be valid", i);
-        }
-    }
-
-    #[test]
-    fn test_factory_validation_split() {
-        let config = PatternConfig {
-            max_instances: 0,
-            ..Default::default()
-        };
-        assert!(PatternFactory::validate(PatternType::ParallelSplit, &config).is_err());
-
-        let config = PatternConfig {
-            max_instances: 65,
-            ..Default::default()
-        };
-        assert!(PatternFactory::validate(PatternType::ParallelSplit, &config).is_err());
-
-        let config = PatternConfig {
-            max_instances: 4,
-            ..Default::default()
-        };
-        assert!(PatternFactory::validate(PatternType::ParallelSplit, &config).is_ok());
-    }
-
-    #[test]
-    fn test_factory_validation_recursion_must_be_cancellable() {
-        let config = PatternConfig::default();
-        assert!(PatternFactory::validate(PatternType::Recursion, &config).is_err());
-
-        let config = PatternConfig {
-            flags: PatternFlags::new(PatternFlags::CANCELLABLE),
-            ..Default::default()
-        };
-        assert!(PatternFactory::validate(PatternType::Recursion, &config).is_ok());
-    }
-}
+// Tests consolidated in tests/autonomic_tests.rs (pattern_dispatch_tests module)

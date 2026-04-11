@@ -38,7 +38,7 @@ jobs:
           workspaces: wasm4pm
 
       - name: Install wasm-pack
-        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+        run: npm install -g wasm-pack@1.3.4
         shell: bash
 
       - name: Setup Node.js
@@ -121,7 +121,7 @@ jobs:
           workspaces: wasm4pm
 
       - name: Install wasm-pack
-        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+        run: npm install -g wasm-pack@1.3.4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4

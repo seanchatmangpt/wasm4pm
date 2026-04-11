@@ -600,7 +600,7 @@ export class Engine {
       const recoveryState = TransitionValidator.suggestRecoveryState(this.state(), [error]);
       if (recoveryState && this.stateMachine.canTransition(recoveryState)) {
         this.stateMachine.transition(recoveryState, `Recovered from execution error`);
-      } else {
+      } else if (this.state() !== 'failed') {
         this.stateMachine.transition('failed', `Execution failed: ${error.message}`);
       }
 
@@ -736,7 +736,7 @@ export class Engine {
       const recoveryState = TransitionValidator.suggestRecoveryState(this.state(), [error]);
       if (recoveryState && this.stateMachine.canTransition(recoveryState)) {
         this.stateMachine.transition(recoveryState, `Recovered from watch error`);
-      } else {
+      } else if (this.state() !== 'failed') {
         this.stateMachine.transition('failed', `Watch failed: ${error.message}`);
       }
 
@@ -799,7 +799,9 @@ export class Engine {
       };
 
       this.statusTracker.addError(error);
-      this.stateMachine.transition('failed', 'Recovery failed');
+      if (this.state() !== 'failed') {
+        this.stateMachine.transition('failed', 'Recovery failed');
+      }
       this.statusTracker.setState('failed');
 
       throw err;
@@ -831,6 +833,15 @@ export class Engine {
       };
 
       this.statusTracker.addError(error);
+
+      // Still transition to failed even on shutdown error
+      try {
+        this.stateMachine.transition('failed', 'Engine shutdown with error');
+        this.statusTracker.setState('failed');
+      } catch {
+        // Already in terminal state
+      }
+
       console.error('Error during shutdown:', error);
     }
   }

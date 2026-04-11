@@ -405,12 +405,14 @@ impl FusedMultiPass {
 
 // Streaming-optimized version with interner (when streaming_basic is available)
 #[cfg(feature = "streaming_basic")]
+#[allow(dead_code)]
 struct FusedMultiPassStreaming {
     inner: FusedMultiPass,
     interner: Interner,
 }
 
 #[cfg(feature = "streaming_basic")]
+#[allow(dead_code)]
 impl FusedMultiPassStreaming {
     fn new() -> Self {
         Self {

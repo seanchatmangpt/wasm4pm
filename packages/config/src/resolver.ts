@@ -295,7 +295,7 @@ kind = "stdout"
 # path = "./output.pnml"
 
 [algorithm]
-name = "alpha"
+name = "dfg"
 
 [algorithm.parameters]
 

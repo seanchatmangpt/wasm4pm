@@ -5,7 +5,9 @@
 #[path = "../helpers.rs"]
 mod helpers;
 
+mod autonomic_loop;
 mod golden;
+mod rl_algorithms;
 mod gates;
 pub mod metrics;
 mod pipeline_a_discovery;
@@ -38,4 +40,22 @@ criterion_group! {
     targets = closed_claw_benchmarks
 }
 
-criterion_main!(closed_claw);
+criterion_group! {
+    name = autonomic_loop;
+    config = Criterion::default()
+        .measurement_time(Duration::from_secs(10))
+        .warm_up_time(Duration::from_secs(2))
+        .sample_size(50);
+    targets = autonomic_loop::bench_autonomic_loop
+}
+
+criterion_group! {
+    name = rl_algorithms;
+    config = Criterion::default()
+        .measurement_time(Duration::from_secs(10))
+        .warm_up_time(Duration::from_secs(2))
+        .sample_size(20);
+    targets = rl_algorithms::bench_rl_algorithms
+}
+
+criterion_main!(closed_claw, autonomic_loop, rl_algorithms);

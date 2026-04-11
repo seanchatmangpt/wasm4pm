@@ -127,20 +127,11 @@ pub struct ResourceState {
 
 /// Observation buffer (fixed-size for hot path).
 #[repr(C)]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 #[allow(dead_code)]
 pub struct ObservationBuffer {
     pub count: u32,
     pub observations: [u64; 16],
-}
-
-impl Default for ObservationBuffer {
-    fn default() -> Self {
-        Self {
-            count: 0,
-            observations: [0; 16],
-        }
-    }
 }
 
 /// Execution context for guard evaluation.
@@ -261,6 +252,7 @@ impl Guard {
     /// Create a NOT guard (negates the single child).
     #[inline]
     #[allow(dead_code)]
+    #[allow(clippy::should_implement_trait)]
     pub fn not(guard: Guard) -> Self {
         Self {
             guard_type: GuardType::Not,
@@ -527,199 +519,4 @@ impl GuardCompiler {
     }
 }
 
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn create_test_context() -> ExecutionContext {
-        ExecutionContext {
-            task_id: 42,
-            timestamp: 1000,
-            resources: ResourceState {
-                cpu_available: 80,
-                memory_available: 1024,
-                io_capacity: 100,
-                queue_depth: 10,
-            },
-            observations: ObservationBuffer {
-                count: 5,
-                observations: [0; 16],
-            },
-            state_flags: StateFlags::INITIALIZED.bits() | StateFlags::RUNNING.bits(),
-        }
-    }
-
-    #[test]
-    fn test_predicate_guard() {
-        let context = create_test_context();
-
-        let guard = Guard::predicate(Predicate::Equal, 0, 42); // task_id == 42
-        assert!(guard.evaluate(&context));
-
-        let guard = Guard::predicate(Predicate::GreaterThan, 1, 500); // timestamp > 500
-        assert!(guard.evaluate(&context));
-
-        let guard = Guard::predicate(Predicate::LessThan, 1, 500); // timestamp < 500
-        assert!(!guard.evaluate(&context));
-    }
-
-    #[test]
-    fn test_resource_guard() {
-        let context = create_test_context();
-
-        let guard = Guard::resource(ResourceType::Cpu, 50);
-        assert!(guard.evaluate(&context)); // CPU available (80) >= 50
-
-        let guard = Guard::resource(ResourceType::Memory, 2048);
-        assert!(!guard.evaluate(&context)); // Memory (1024) < 2048
-    }
-
-    #[test]
-    fn test_compound_guards() {
-        let context = create_test_context();
-
-        let g1 = Guard::predicate(Predicate::Equal, 0, 42);
-        let g2 = Guard::resource(ResourceType::Cpu, 50);
-
-        let and_guard = Guard::and(vec![g1.clone(), g2.clone()]);
-        assert!(and_guard.evaluate(&context));
-
-        let g3 = Guard::resource(ResourceType::Memory, 2048);
-        let or_guard = Guard::or(vec![g2, g3]);
-        assert!(or_guard.evaluate(&context)); // CPU check passes
-
-        let not_guard = Guard::not(g1);
-        assert!(!not_guard.evaluate(&context));
-    }
-
-    #[test]
-    fn test_state_guard() {
-        let context = create_test_context();
-
-        let guard = Guard::state(StateFlags::INITIALIZED | StateFlags::RUNNING);
-        assert!(guard.evaluate(&context));
-
-        let guard = Guard::state(StateFlags::COMPLETED);
-        assert!(!guard.evaluate(&context));
-    }
-
-    #[test]
-    fn test_state_flags_contains() {
-        let flags = StateFlags::INITIALIZED | StateFlags::RUNNING;
-        assert!(flags.contains(StateFlags::INITIALIZED));
-        assert!(flags.contains(StateFlags::RUNNING));
-        assert!(!flags.contains(StateFlags::COMPLETED));
-    }
-
-    #[test]
-    fn test_guard_evaluator_caching() {
-        let mut evaluator = GuardEvaluator::new(100);
-        let context = create_test_context();
-        let guard = Guard::predicate(Predicate::Equal, 0, 42);
-
-        // First evaluation
-        let result = evaluator.evaluate_cached(1, &guard, &context);
-        assert!(result);
-
-        // Should use cache
-        let result = evaluator.evaluate_cached(1, &guard, &context);
-        assert!(result);
-
-        // Clear expired entries (none should be expired yet)
-        evaluator.clear_expired(context.timestamp + 50);
-        assert_eq!(evaluator.len(), 1);
-
-        // Clear expired entries (should be expired now)
-        evaluator.clear_expired(context.timestamp + 200);
-        assert_eq!(evaluator.len(), 0);
-    }
-
-    #[test]
-    fn test_counter_guard() {
-        let context = create_test_context(); // observations.count = 5
-
-        let guard = Guard::predicate(Predicate::GreaterThanOrEqual, 3, 3);
-        assert!(guard.evaluate(&context)); // 5 >= 3
-
-        let guard = Guard::predicate(Predicate::LessThanOrEqual, 3, 5);
-        assert!(guard.evaluate(&context)); // 5 <= 5
-
-        let guard = Guard::predicate(Predicate::Equal, 3, 10);
-        assert!(!guard.evaluate(&context)); // 5 != 10
-    }
-
-    #[test]
-    fn test_time_window_guard() {
-        let context = create_test_context(); // timestamp = 1000
-
-        // [500, 1500]
-        let _guard = Guard::predicate(Predicate::InRange, 1, 1500);
-        // InRange uses operand_a as start, but predicate guard reads operand_a as field selector
-        // For time window semantics use evaluate directly on a TimeWindow-type guard.
-        // Instead, build the guard manually to test the TimeWindow path:
-        let guard = Guard {
-            guard_type: GuardType::TimeWindow,
-            predicate: Predicate::Equal,
-            operand_a: 500,
-            operand_b: 1500,
-            children: Vec::new(),
-        };
-        assert!(guard.evaluate(&context)); // 1000 in [500, 1500]
-
-        let guard = Guard {
-            guard_type: GuardType::TimeWindow,
-            predicate: Predicate::Equal,
-            operand_a: 2000,
-            operand_b: 3000,
-            children: Vec::new(),
-        };
-        assert!(!guard.evaluate(&context)); // 1000 not in [2000, 3000]
-    }
-
-    #[test]
-    fn test_bit_set_clear_predicates() {
-        let context = ExecutionContext {
-            task_id: 0,
-            timestamp: 0,
-            resources: ResourceState {
-                cpu_available: 0,
-                memory_available: 0,
-                io_capacity: 0,
-                queue_depth: 0,
-            },
-            observations: ObservationBuffer::default(),
-            state_flags: 0b1010, // bits 1 and 3 set
-        };
-
-        // BitSet: check that bit 1 (0b0010) is set
-        let guard = Guard::predicate(Predicate::BitSet, 2, 0b0010);
-        assert!(guard.evaluate(&context));
-
-        // BitSet: check bit 2 (0b0100) — not set
-        let guard = Guard::predicate(Predicate::BitSet, 2, 0b0100);
-        assert!(!guard.evaluate(&context));
-
-        // BitClear: check that bit 2 (0b0100) is clear
-        let guard = Guard::predicate(Predicate::BitClear, 2, 0b0100);
-        assert!(guard.evaluate(&context));
-    }
-
-    #[test]
-    fn test_guard_compiler() {
-        let context = create_test_context();
-
-        // Compiled predicate
-        let guard = Guard::predicate(Predicate::Equal, 0, 42);
-        let compiled = GuardCompiler::compile(&guard);
-        assert!(compiled(&context));
-
-        // Compiled non-predicate falls back to evaluate
-        let guard = Guard::resource(ResourceType::Cpu, 50);
-        let compiled = GuardCompiler::compile(&guard);
-        assert!(compiled(&context));
-    }
-}
+// Tests consolidated in tests/autonomic_tests.rs (guards_tests module)

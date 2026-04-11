@@ -190,7 +190,7 @@ export class ObservabilityLayer {
    * Helper: Generate a W3C-compliant trace ID (32 hex chars)
    */
   public static generateTraceId(): string {
-    return Array.from({ length: 16 }, () =>
+    return Array.from({ length: 32 }, () =>
       Math.floor(Math.random() * 16).toString(16)
     ).join('');
   }
@@ -199,7 +199,7 @@ export class ObservabilityLayer {
    * Helper: Generate a W3C-compliant span ID (16 hex chars)
    */
   private generateSpanId(): string {
-    return Array.from({ length: 8 }, () =>
+    return Array.from({ length: 16 }, () =>
       Math.floor(Math.random() * 16).toString(16)
     ).join('');
   }

@@ -246,14 +246,16 @@ impl ProcessCapability {
 // Statistics helpers (ported from knhk statistics.rs)
 // ---------------------------------------------------------------------------
 
-fn spc_mean(data: &[f64]) -> f64 {
+#[allow(dead_code)]
+pub fn spc_mean(data: &[f64]) -> f64 {
     if data.is_empty() {
         return 0.0;
     }
     data.iter().sum::<f64>() / data.len() as f64
 }
 
-fn spc_std_dev(data: &[f64]) -> f64 {
+#[allow(dead_code)]
+pub fn spc_std_dev(data: &[f64]) -> f64 {
     if data.len() < 2 {
         return 0.0;
     }
@@ -268,7 +270,8 @@ fn spc_std_dev(data: &[f64]) -> f64 {
 // ---------------------------------------------------------------------------
 
 /// Abramowitz & Stegun approximation of the standard normal CDF.
-fn normal_cdf(z: f64) -> f64 {
+#[allow(dead_code)]
+pub fn normal_cdf(z: f64) -> f64 {
     let t = 1.0 / (1.0 + 0.2316419 * z.abs());
     let d = 0.39894228 * (-z * z / 2.0).exp();
     let prob = 1.0
@@ -286,7 +289,8 @@ fn normal_cdf(z: f64) -> f64 {
 /// Rational approximation of the standard normal inverse CDF (Peter Acklam's
 /// algorithm).  Handles all three regions: low tail, central, high tail.
 /// Maximum absolute error ≈ 1.15 × 10⁻⁹.
-fn inverse_normal_cdf(p: f64) -> f64 {
+#[allow(dead_code)]
+pub fn inverse_normal_cdf(p: f64) -> f64 {
     if p <= 0.0 {
         return f64::NEG_INFINITY;
     }
@@ -299,7 +303,7 @@ fn inverse_normal_cdf(p: f64) -> f64 {
         -3.969_683_028_665_376e+01,
         2.209_460_984_245_205e+02,
         -2.759_285_104_469_687e+02,
-        1.383_577_518_672_690e+02,
+        1.383_577_518_672_69e2,
         -3.066_479_806_614_716e+01,
         2.506_628_277_459_239e+00,
     ];
@@ -360,7 +364,8 @@ pub fn inverse_normal_cdf_public(p: f64) -> f64 {
 }
 
 /// Convert DPMO to Six-Sigma level (includes 1.5-sigma long-term shift).
-fn dpmo_to_sigma(dpmo: f64) -> f64 {
+#[allow(dead_code)]
+pub fn dpmo_to_sigma(dpmo: f64) -> f64 {
     if dpmo <= 0.0 {
         return 6.0;
     }
@@ -373,258 +378,4 @@ fn dpmo_to_sigma(dpmo: f64) -> f64 {
     z_score + 1.5 // Add 1.5 sigma shift for short-term vs long-term
 }
 
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    // ---- helpers ----------------------------------------------------------
-
-    fn chart(value: f64, ucl: f64, cl: f64, lcl: f64) -> ChartData {
-        ChartData {
-            timestamp: String::new(),
-            value,
-            ucl,
-            cl,
-            lcl,
-            subgroup_data: None,
-        }
-    }
-
-    // ---- Western Electric Rules -------------------------------------------
-
-    #[test]
-    fn test_rule_1_out_of_control() {
-        let mut data = vec![];
-        for i in 0..8 {
-            data.push(chart(5.0 + i as f64, 10.0, 5.0, 0.0));
-        }
-        data.push(chart(11.0, 10.0, 5.0, 0.0)); // beyond UCL
-
-        let alerts = check_western_electric_rules(&data);
-        assert_eq!(alerts.len(), 1);
-        assert!(matches!(alerts[0], SpecialCause::OutOfControl { .. }));
-    }
-
-    #[test]
-    fn test_rule_1_below_lcl() {
-        let mut data = vec![];
-        for _ in 0..8 {
-            data.push(chart(5.0, 10.0, 5.0, 0.0));
-        }
-        data.push(chart(-1.0, 10.0, 5.0, 0.0)); // below LCL
-
-        let alerts = check_western_electric_rules(&data);
-        assert_eq!(alerts.len(), 1);
-        assert!(matches!(alerts[0], SpecialCause::OutOfControl { .. }));
-    }
-
-    #[test]
-    fn test_rule_2_shift_above() {
-        let data: Vec<ChartData> = (0..9).map(|_| chart(6.0, 10.0, 5.0, 0.0)).collect();
-
-        let alerts = check_western_electric_rules(&data);
-        assert_eq!(alerts.len(), 1);
-        assert!(matches!(
-            alerts[0],
-            SpecialCause::Shift {
-                direction: ShiftDirection::Above,
-                ..
-            }
-        ));
-    }
-
-    #[test]
-    fn test_rule_2_shift_below() {
-        let data: Vec<ChartData> = (0..9).map(|_| chart(4.0, 10.0, 5.0, 0.0)).collect();
-
-        let alerts = check_western_electric_rules(&data);
-        assert_eq!(alerts.len(), 1);
-        assert!(matches!(
-            alerts[0],
-            SpecialCause::Shift {
-                direction: ShiftDirection::Below,
-                ..
-            }
-        ));
-    }
-
-    #[test]
-    fn test_rule_3_trend_increasing() {
-        let mut data = vec![];
-        for _i in 0..5 {
-            data.push(chart(0.0, 10.0, 5.0, 0.0));
-        }
-        for i in 5..11 {
-            data.push(chart(i as f64, 10.0, 5.0, 0.0));
-        }
-
-        let alerts = check_western_electric_rules(&data);
-        assert!(alerts.iter().any(|a| matches!(
-            a,
-            SpecialCause::Trend {
-                direction: TrendDirection::Increasing,
-                ..
-            }
-        )));
-    }
-
-    #[test]
-    fn test_rule_3_trend_decreasing() {
-        let mut data = vec![];
-        for _ in 0..5 {
-            data.push(chart(10.0, 20.0, 10.0, 0.0));
-        }
-        for i in (0..6).rev() {
-            data.push(chart(i as f64, 20.0, 10.0, 0.0));
-        }
-
-        let alerts = check_western_electric_rules(&data);
-        assert!(alerts.iter().any(|a| matches!(
-            a,
-            SpecialCause::Trend {
-                direction: TrendDirection::Decreasing,
-                ..
-            }
-        )));
-    }
-
-    #[test]
-    fn test_no_alerts_stable_process() {
-        // Oscillating values centered on CL -- no monotonic trend, no shift,
-        // no out-of-control points.
-        let values = [5.1, 4.9, 5.2, 4.8, 5.0, 4.9, 5.1, 4.8, 5.2];
-        let data: Vec<ChartData> = values
-            .iter()
-            .map(|&v| chart(v, 10.0, 5.0, 0.0))
-            .collect();
-
-        let alerts = check_western_electric_rules(&data);
-        assert!(alerts.is_empty());
-    }
-
-    #[test]
-    fn test_too_few_points() {
-        let data: Vec<ChartData> = (0..5).map(|i| chart(i as f64, 10.0, 5.0, 0.0)).collect();
-        let alerts = check_western_electric_rules(&data);
-        assert!(alerts.is_empty());
-    }
-
-    // ---- Process Capability -----------------------------------------------
-
-    #[test]
-    fn test_capability_calculation() {
-        let data = vec![5.0, 5.5, 6.0, 6.5, 7.0];
-        let cap = ProcessCapability::calculate(&data, 8.0, 0.0).unwrap();
-
-        assert!(cap.cp > 0.0, "cp should be positive, got {}", cap.cp);
-        assert!(cap.cpk > 0.0, "cpk should be positive, got {}", cap.cpk);
-        assert!(
-            cap.sigma_level > 0.0,
-            "sigma_level should be positive, got {} (dpmo={})",
-            cap.sigma_level,
-            cap.dpmo
-        );
-        assert_eq!(cap.usl, 8.0);
-        assert_eq!(cap.lsl, 0.0);
-    }
-
-    #[test]
-    fn test_empty_data() {
-        let result = ProcessCapability::calculate(&[], 8.0, 0.0);
-        assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), CapabilityError::EmptyData);
-    }
-
-    #[test]
-    fn test_invalid_limits() {
-        let data = vec![5.0, 6.0];
-        let result = ProcessCapability::calculate(&data, 2.0, 8.0);
-        assert_eq!(result.unwrap_err(), CapabilityError::InvalidLimits);
-    }
-
-    #[test]
-    fn test_zero_std_dev_within_limits() {
-        let data = vec![5.0, 5.0, 5.0, 5.0, 5.0];
-        let cap = ProcessCapability::calculate(&data, 10.0, 0.0).unwrap();
-
-        assert_eq!(cap.cp, f64::INFINITY);
-        assert_eq!(cap.cpk, f64::INFINITY);
-        assert_eq!(cap.sigma_level, 6.0);
-        assert_eq!(cap.dpmo, 0.0);
-    }
-
-    #[test]
-    fn test_zero_std_dev_outside_limits() {
-        let data = vec![15.0, 15.0, 15.0, 15.0, 15.0];
-        let cap = ProcessCapability::calculate(&data, 10.0, 0.0).unwrap();
-
-        assert_eq!(cap.cp, 0.0);
-        assert_eq!(cap.cpk, 0.0);
-        assert_eq!(cap.sigma_level, 0.0);
-        assert_eq!(cap.dpmo, 1_000_000.0);
-    }
-
-    // ---- Statistics helpers -----------------------------------------------
-
-    #[test]
-    fn test_spc_mean() {
-        assert_eq!(spc_mean(&[1.0, 2.0, 3.0, 4.0, 5.0]), 3.0);
-        assert_eq!(spc_mean(&[]), 0.0);
-    }
-
-    #[test]
-    fn test_spc_std_dev() {
-        let data = vec![1.0, 2.0, 3.0, 4.0, 5.0];
-        let sd = spc_std_dev(&data);
-        assert!((sd - 1.5811388300841898).abs() < 1e-10);
-        assert_eq!(spc_std_dev(&[42.0]), 0.0);
-    }
-
-    // ---- Normal CDF / inverse --------------------------------------------
-
-    #[test]
-    fn test_normal_cdf_symmetry() {
-        let p_pos = normal_cdf(1.96);
-        let p_neg = normal_cdf(-1.96);
-        assert!((p_pos + p_neg - 1.0).abs() < 1e-10);
-    }
-
-    #[test]
-    fn test_inverse_normal_cdf_roundtrip() {
-        // The Acklam rational approximation has ~1e-9 accuracy near the
-        // center but degrades in the tails.  Use 1e-4 tolerance to cover
-        // moderate quantiles where the rational approximation drifts.
-        for p in [0.1, 0.5, 0.9] {
-            let z = inverse_normal_cdf(p);
-            let p_back = normal_cdf(z);
-            assert!(
-                (p - p_back).abs() < 1e-4,
-                "roundtrip failed at p={}: got {} back (z={})",
-                p,
-                p_back,
-                z
-            );
-        }
-    }
-
-    #[test]
-    fn test_dpmo_to_sigma_boundaries() {
-        assert_eq!(dpmo_to_sigma(0.0), 6.0);
-        assert_eq!(dpmo_to_sigma(-1.0), 6.0);
-        assert_eq!(dpmo_to_sigma(1_000_000.0), 0.0);
-        assert_eq!(dpmo_to_sigma(2_000_000.0), 0.0);
-    }
-
-    #[test]
-    fn test_capability_error_display() {
-        let err = CapabilityError::EmptyData;
-        assert!(!err.to_string().is_empty());
-
-        let err2 = CapabilityError::InvalidLimits;
-        assert!(!err2.to_string().is_empty());
-    }
-}
+// Tests consolidated in tests/autonomic_tests.rs (spc_tests module)

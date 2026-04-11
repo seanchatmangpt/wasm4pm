@@ -23,7 +23,7 @@ describe('Resolution', () => {
     it('uses defaults when no other source present', async () => {
       const cfg = await resolveConfig({ configSearchPaths: [tmpDir] });
       expect(cfg.execution.profile).toBe('balanced');
-      expect(cfg.algorithm.name).toBe('alpha');
+      expect(cfg.algorithm.name).toBe('dfg');
       expect(cfg.sink.kind).toBe('stdout');
       expect(cfg.metadata.provenance['execution.profile']?.source).toBe('default');
     });
@@ -100,19 +100,19 @@ describe('Resolution', () => {
     it('loads algorithm config from TOML', async () => {
       await fs.writeFile(
         path.join(tmpDir, 'pictl.toml'),
-        `version = "1.0.0"\n[source]\nkind = "file"\n[algorithm]\nname = "heuristic"\n[algorithm.parameters]\nthreshold = 0.8`,
+        `version = "1.0.0"\n[source]\nkind = "file"\n[algorithm]\nname = "heuristic_miner"\n[algorithm.parameters]\nthreshold = 0.8`,
       );
       const cfg = await resolveConfig({ configSearchPaths: [tmpDir] });
-      expect(cfg.algorithm.name).toBe('heuristic');
+      expect(cfg.algorithm.name).toBe('heuristic_miner');
       expect(cfg.algorithm.parameters).toEqual({ threshold: 0.8 });
     });
 
     it('overrides algorithm via CLI', async () => {
       const cfg = await resolveConfig({
-        cliOverrides: { algorithm: 'genetic', algorithmParams: { generations: 100 } },
+        cliOverrides: { algorithm: 'genetic_algorithm', algorithmParams: { generations: 100 } },
         configSearchPaths: [tmpDir],
       });
-      expect(cfg.algorithm.name).toBe('genetic');
+      expect(cfg.algorithm.name).toBe('genetic_algorithm');
       expect(cfg.algorithm.parameters).toEqual({ generations: 100 });
     });
 
