@@ -40,7 +40,7 @@ bench-rust:
 # ── Node.js WASM benchmarks ────────────────────────────────────────────────────
 bench-wasm:
 	@echo "Building WASM Node.js target..."
-	@cd $(PKG_DIR) && npm run build:nodejs --silent
+	@cd $(PKG_DIR) && pnpm run build:nodejs --silent
 	@echo "Running WASM worker pool..."
 	@cd $(PKG_DIR) && node benchmarks/wasm_bench_runner.js
 
@@ -86,7 +86,7 @@ clean-bench:
 
 # ── Environment & Development ─────────────────────────────────────────────────
 doctor:
-	@cd apps/pmctl && npm run build > /dev/null 2>&1
+	@cd apps/pmctl && pnpm run build > /dev/null 2>&1
 	@node apps/pmctl/dist/bin/pmctl.js doctor --format json 2>&1 | awk '/^{/,/^}/ {print}'
 
 help:
