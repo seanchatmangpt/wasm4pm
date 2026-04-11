@@ -1,6 +1,6 @@
-# Examples for process_mining_wasm
+# Examples for pictl
 
-This directory contains working examples demonstrating how to use process_mining_wasm in different environments.
+This directory contains working examples demonstrating how to use pictl in different environments.
 
 ## Quick Start
 
@@ -146,7 +146,7 @@ npm run example:webpack
 Requirements:
 
 - Node.js 14+
-- process_mining_wasm package built for Node.js
+- @seanchatmangpt/pictl package built for Node.js
 
 Build for Node.js:
 
@@ -157,7 +157,7 @@ npm run build:nodejs
 Usage:
 
 ```javascript
-const pm = require('../pkg/process_mining_wasm');
+const pm = require('@seanchatmangpt/pictl');
 pm.init();
 const handle = pm.load_eventlog_from_xes(xesContent);
 ```
@@ -178,7 +178,7 @@ npm run build:web
 Usage:
 
 ```javascript
-import init, * as pm from './pkg/process_mining_wasm.js';
+import init, * as pm from '@seanchatmangpt/pictl';
 
 async function setup() {
   await init();
@@ -402,9 +402,9 @@ To add new examples:
 
 ## Further Reading
 
-- [process_mining_wasm README](../README.md)
+- [pictl README](../README.md)
 - [Integration Tests](../__tests__/integration/README.md)
-- [Test Fixtures](../__tests__/fixtures/README.md)
+- [Test Fixtures](../__tests__/data/fixtures/README.md)
 - [XES Standard](http://xes-standard.org/)
 - [OCEL Standard](https://www.ocelpetrisolver.org/)
 

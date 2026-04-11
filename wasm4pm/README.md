@@ -2,6 +2,8 @@
 
 21 process mining algorithms compiled to WebAssembly. Discover process models from event logs in browsers and Node.js — no Python, no services, just `npm install`.
 
+**Version:** v26.4.10 (CalVer: 2026-04-10)
+
 ## Quick Start
 
 ### CLI (60 seconds)
@@ -73,26 +75,61 @@ console.log(`${result.nodes} nodes, ${result.edges} edges`);
 ## CLI Reference
 
 ```bash
+# DISCOVERY
 pictl run <log.xes>              # Process discovery
 pictl compare <algos> -i <log>   # Side-by-side algorithm comparison
 pictl diff <log1> <log2>         # Compare two event logs
-pictl predict <task> -i <log>    # Predictive mining (next-activity, remaining-time, outcome)
-pictl drift-watch -i <log>       # Real-time EWMA drift monitoring
-pictl ml <task> -i <log>         # ML-powered analysis (classify, cluster, forecast, anomaly)
-pictl watch                      # Config file watcher — re-run on change
+
+# PREDICTION (van der Aalst's six perspectives)
+pictl predict next-activity -i <log> --prefix "A,B"
+pictl predict remaining-time -i <log> --prefix "A"
+pictl predict outcome -i <log>
+pictl predict drift -i <log>
+pictl predict features -i <log>
+pictl predict resource -i <log>
+
+# CONFORMANCE & QUALITY
+pictl conformance -i <log>       # Measure log-to-model fitness and precision
+pictl quality -i <log>           # Multi-dimensional quality assessment
+pictl validate <log.xes>         # Validate log schema and data quality
+
+# ANALYSIS & SIMULATION
+pictl temporal -i <log>          # Temporal profiles and performance patterns
+pictl social -i <log>            # Social network mining (handover, working together)
+pictl simulate -i <log>          # Monte Carlo simulation and process tree playout
+
+# MONITORING
+pictl drift-watch -i <log>       # Live EWMA concept drift monitor (Ctrl+C to stop)
+
+# ML ANALYSIS
+pictl ml classify -i <log>       # Classify traces (knn, logistic_regression)
+pictl ml cluster -i <log>        # Cluster traces (kmeans, dbscan)
+pictl ml forecast -i <log>       # Forecast drift trends
+pictl ml anomaly -i <log>        # Detect anomalies in drift signal
+pictl ml regress -i <log>        # Regress remaining time
+pictl ml pca -i <log>            # PCA dimensionality reduction
+
+# POWL (Process-Oriented Workflow Language)
+pictl powl construct -i <log>    # Construct POWL model from log
+pictl powl replay -i <log>       # Replay log against POWL model
+
+# RESULTS & HEALTH
+pictl results                    # View all saved discovery & prediction results
+pictl results --last             # Print the most recent result
+pictl doctor                     # 17-check environment diagnostic
 pictl status                     # WASM engine health + system info
-pictl doctor                     # 6-check environment diagnostic
+
+# SETUP
+pictl init                       # Scaffold pictl.toml + .env.example in current dir
+pictl watch                      # Config file watcher — re-run on change
 pictl explain                    # Human/academic algorithm explanations
-pictl init                       # Scaffold pictl.toml + .env.example
-pictl results                    # Browse saved results in .pictl/results/
-pictl powl <subcommand>          # POWL model analysis
 ```
 
 **Output formats:** `--format human` (colored terminal) or `--format json` (structured output)
 
 ## Performance Benchmarks
 
-**Version:** v26.4.7 | **Hardware:** Apple M3 Max (16P/4E, 36GB unified memory) | **Methodology:** Median of 7 runs
+**Version:** v26.4.10 | **Hardware:** Apple M3 Max (16P/4E, 36GB unified memory) | **Methodology:** Median of 7 runs
 
 ### At a Glance (10K cases)
 
@@ -111,7 +148,7 @@ pictl powl <subcommand>          # POWL model analysis
 - Streaming: 1.4–23x overhead for bounded memory on infinite event streams
 - Browser benchmarks: ~40–60% slower than Node.js (expected WASM sandbox overhead)
 
-📖 **Full benchmark report:** [docs/BENCHMARKS.md](docs/BENCHMARKS.md)
+📖 **Full benchmark report:** [docs/benchmarks/reference/results.md](docs/benchmarks/reference/results.md)
 📖 **Benchmark documentation:** [docs/benchmarks/](docs/benchmarks/) — tutorials, methodology, reference
 
 ## Documentation
@@ -124,7 +161,7 @@ pictl powl <subcommand>          # POWL model analysis
 
 ### Performance & Benchmarks
 
-- [Benchmark Results](docs/BENCHMARKS.md) — Full performance tables, all algorithms, all sizes
+- [Benchmark Results](docs/benchmarks/reference/results.md) — Full performance tables, all algorithms, all sizes
 - [Benchmark Docs](docs/benchmarks/) — Tutorials, how-to guides, methodology, reference
   - [Your First Benchmark](docs/benchmarks/tutorials/first-benchmark.md)
   - [Understanding Results](docs/benchmarks/tutorials/interpreting-results.md)
@@ -181,9 +218,11 @@ npm install && npm run build
 
 ## Status
 
-**Production Ready** — v26.4.7
+**Production Ready** — v26.4.10
 
 - All 21 algorithms tested and operational
+- 18 CLI commands for discovery, prediction, conformance, simulation, and analysis
+- 6 ML analysis algorithms (classify, cluster, forecast, anomaly, regress, PCA)
 - All algorithms benchmarked with real Criterion results
 - Validated on BPI 2020 (10,500 traces, 141K events)
 - Linear scaling from 100 to 50,000+ cases

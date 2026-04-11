@@ -67,10 +67,7 @@ fn markings_equal(a: &Marking, b: &Marking) -> bool {
         .filter(|(_, &v)| v > 0)
         .map(|(k, v)| (k, *v))
         .collect();
-    a_nonzero.len() == b_nonzero.len()
-        && a_nonzero
-            .iter()
-            .all(|(k, v)| b_nonzero.get(k) == Some(v))
+    a_nonzero.len() == b_nonzero.len() && a_nonzero.iter().all(|(k, v)| b_nonzero.get(k) == Some(v))
 }
 
 /// Check boundedness: no place can exceed a reasonable token count.

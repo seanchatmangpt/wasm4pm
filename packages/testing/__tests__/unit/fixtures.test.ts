@@ -33,8 +33,8 @@ import {
 } from '../../src/fixtures/expected-outputs.js';
 
 describe('Config Fixtures', () => {
-  it('should have 11 valid configs', () => {
-    expect(ALL_VALID_CONFIGS).toHaveLength(11);
+  it('should have 13 valid configs', () => {
+    expect(ALL_VALID_CONFIGS).toHaveLength(13);
   });
 
   it('all valid configs have required fields', () => {

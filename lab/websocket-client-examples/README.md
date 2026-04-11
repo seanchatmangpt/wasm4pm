@@ -4,7 +4,7 @@ This directory contains reference implementations for consuming the `/watch` end
 
 ## Overview
 
-The wasm4pm watch mode provides real-time event streaming via WebSocket:
+The pictl watch mode provides real-time event streaming via WebSocket:
 
 - **Heartbeat events** - Periodic signals for connection health
 - **Progress events** - Updates on processing completion percentage

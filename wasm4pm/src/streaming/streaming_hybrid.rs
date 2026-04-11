@@ -12,7 +12,7 @@
 //! periodic full-model updates.
 
 use crate::models::DirectlyFollowsGraph;
-use crate::streaming::{StreamingAlgorithm, StreamStats, StreamingDfgBuilder};
+use crate::streaming::{StreamStats, StreamingAlgorithm, StreamingDfgBuilder};
 use std::marker::PhantomData;
 
 /// Batch algorithm trait for hybrid streaming.
@@ -39,8 +39,8 @@ pub trait BatchAlgorithm {
 /// # Example
 ///
 /// ```rust
-/// use wasm4pm::streaming::streaming_hybrid::{StreamingHybrid, BatchAlgorithm};
-/// use wasm4pm::streaming::StreamingAlgorithm;
+/// use pictl::streaming::streaming_hybrid::{StreamingHybrid, BatchAlgorithm};
+/// use pictl::streaming::StreamingAlgorithm;
 ///
 /// struct GeneticAlgorithm;
 ///
@@ -145,7 +145,7 @@ where
             self.trace_count += 1;
 
             // Trigger recompute if interval reached
-            if self.trace_count % self.recompute_interval == 0 {
+            if self.trace_count.is_multiple_of(self.recompute_interval) {
                 self.recompute();
             }
         }

@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import * as wasm from '../../pkg/wasm4pm.js';
+import * as wasm from '../../pkg/pictl.js';
 
 describe('Analysis - Available Functions List', () => {
   it('should list available analysis functions', () => {

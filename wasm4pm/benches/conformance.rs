@@ -1,12 +1,12 @@
 /// Criterion benchmarks for conformance checking pipeline.
 /// Discovers a model first, then replays the log against it.
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+use pictl::conformance::check_token_based_replay;
+use pictl::discovery::discover_dfg;
+use pictl::ilp_discovery::discover_ilp_petri_net;
+use pictl::models::PetriNet;
+use pictl::state::{get_or_init_state, StoredObject};
 use std::time::Duration;
-use wasm4pm::conformance::check_token_based_replay;
-use wasm4pm::discovery::discover_dfg;
-use wasm4pm::ilp_discovery::discover_ilp_petri_net;
-use wasm4pm::models::PetriNet;
-use wasm4pm::state::{get_or_init_state, StoredObject};
 
 #[path = "helpers.rs"]
 mod helpers;
@@ -44,9 +44,7 @@ fn bench_token_replay(c: &mut Criterion) {
         group.bench_with_input(
             BenchmarkId::new("cases", shape.num_cases),
             &(log_handle, pn_handle),
-            |b, (lh, pnh)| {
-                b.iter(|| check_token_based_replay(lh, pnh, ACTIVITY_KEY).unwrap())
-            },
+            |b, (lh, pnh)| b.iter(|| check_token_based_replay(lh, pnh, ACTIVITY_KEY).unwrap()),
         );
     }
     group.finish();
@@ -78,5 +76,9 @@ fn bench_discover_and_replay(c: &mut Criterion) {
     group.finish();
 }
 
-criterion_group!(conformance_benches, bench_token_replay, bench_discover_and_replay);
+criterion_group!(
+    conformance_benches,
+    bench_token_replay,
+    bench_discover_and_replay
+);
 criterion_main!(conformance_benches);

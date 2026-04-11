@@ -1,14 +1,14 @@
 /// Criterion benchmarks for medium-speed algorithms (5–200ms per call).
 /// Sizes capped at 10K cases for the slower members of this group.
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
-use std::time::Duration;
-use wasm4pm::algorithms::discover_dfg_filtered;
-use wasm4pm::fast_discovery::{
+use pictl::algorithms::discover_dfg_filtered;
+use pictl::fast_discovery::{
     analyze_trace_variants, cluster_traces, detect_concept_drift, discover_astar,
     mine_sequential_patterns,
 };
-use wasm4pm::ilp_discovery::discover_optimized_dfg;
-use wasm4pm::more_discovery::{discover_ant_colony, discover_simulated_annealing};
+use pictl::ilp_discovery::discover_optimized_dfg;
+use pictl::more_discovery::{discover_ant_colony, discover_simulated_annealing};
+use std::time::Duration;
 
 #[path = "helpers.rs"]
 mod helpers;
@@ -20,7 +20,9 @@ fn bench_astar(c: &mut Criterion) {
     group.warm_up_time(Duration::from_secs(3));
     group.sample_size(20);
     for shape in bench_sizes() {
-        if shape.num_cases > 10_000 { continue; }
+        if shape.num_cases > 10_000 {
+            continue;
+        }
         let (handle, events) = make_handle(&shape);
         group.throughput(Throughput::Elements(events as u64));
         group.bench_with_input(
@@ -38,7 +40,9 @@ fn bench_simulated_annealing(c: &mut Criterion) {
     group.warm_up_time(Duration::from_secs(3));
     group.sample_size(15);
     for shape in bench_sizes() {
-        if shape.num_cases > 5_000 { continue; }
+        if shape.num_cases > 5_000 {
+            continue;
+        }
         let (handle, events) = make_handle(&shape);
         group.throughput(Throughput::Elements(events as u64));
         for (temp, cooling) in [(100.0_f64, 0.95_f64), (100.0, 0.99)] {
@@ -48,7 +52,9 @@ fn bench_simulated_annealing(c: &mut Criterion) {
                     shape.num_cases,
                 ),
                 &handle,
-                |b, h| b.iter(|| discover_simulated_annealing(h, ACTIVITY_KEY, temp, cooling).unwrap()),
+                |b, h| {
+                    b.iter(|| discover_simulated_annealing(h, ACTIVITY_KEY, temp, cooling).unwrap())
+                },
             );
         }
     }
@@ -61,7 +67,9 @@ fn bench_ant_colony(c: &mut Criterion) {
     group.warm_up_time(Duration::from_secs(3));
     group.sample_size(15);
     for shape in bench_sizes() {
-        if shape.num_cases > 5_000 { continue; }
+        if shape.num_cases > 5_000 {
+            continue;
+        }
         let (handle, events) = make_handle(&shape);
         group.throughput(Throughput::Elements(events as u64));
         group.bench_with_input(
@@ -135,7 +143,9 @@ fn bench_sequential_patterns(c: &mut Criterion) {
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(20);
     for shape in bench_sizes() {
-        if shape.num_cases > 10_000 { continue; }
+        if shape.num_cases > 10_000 {
+            continue;
+        }
         let (handle, events) = make_handle(&shape);
         group.throughput(Throughput::Elements(events as u64));
         group.bench_with_input(
@@ -153,7 +163,9 @@ fn bench_concept_drift(c: &mut Criterion) {
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(20);
     for shape in bench_sizes() {
-        if shape.num_cases > 10_000 { continue; }
+        if shape.num_cases > 10_000 {
+            continue;
+        }
         let (handle, events) = make_handle(&shape);
         group.throughput(Throughput::Elements(events as u64));
         group.bench_with_input(
@@ -171,7 +183,9 @@ fn bench_cluster_traces(c: &mut Criterion) {
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(20);
     for shape in bench_sizes() {
-        if shape.num_cases > 10_000 { continue; }
+        if shape.num_cases > 10_000 {
+            continue;
+        }
         let (handle, events) = make_handle(&shape);
         group.throughput(Throughput::Elements(events as u64));
         group.bench_with_input(

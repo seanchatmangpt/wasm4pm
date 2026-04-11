@@ -16,7 +16,7 @@ import {
   type CallToolResult,
 } from '@modelcontextprotocol/sdk/types.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import * as wasm from '../pkg/wasm4pm.js';
+import * as wasm from '../pkg/pictl.js';
 
 interface ToolInput {
   [key: string]: unknown;
@@ -211,25 +211,6 @@ export class PictlMCPServer {
             threshold: {
               type: 'number',
               description: 'Threshold in seconds. Default: 3600 (1 hour)',
-            },
-          },
-          required: ['xes_content'],
-        },
-      },
-      {
-        name: 'detect_concept_drift',
-        description:
-          'Detect if and where the process changes over time (concept drift) using Jaccard-window analysis. Returns drift points with positions and distances. Claude uses this to answer "Has this process changed over time?"',
-        inputSchema: {
-          type: 'object' as const,
-          properties: {
-            xes_content: {
-              type: 'string',
-              description: 'XES event log content',
-            },
-            window_size: {
-              type: 'number',
-              description: 'Number of traces per sliding window. Default: 5',
             },
           },
           required: ['xes_content'],
@@ -481,7 +462,7 @@ export class PictlMCPServer {
           required: ['xes_content'],
         },
       },
-      // ML Tools (micro-ml powered)
+      // ML Tools (native process intelligence)
       {
         name: 'ml_classify_traces',
         description:
@@ -1066,7 +1047,7 @@ export class PictlMCPServer {
           break;
         }
 
-        // ML Tools (micro-ml powered — dynamic import for lazy loading)
+        // ML Tools (native process intelligence — dynamic import for lazy loading)
         case 'ml_classify_traces': {
           const { classifyTraces } = await import('@pictl/ml');
           const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);

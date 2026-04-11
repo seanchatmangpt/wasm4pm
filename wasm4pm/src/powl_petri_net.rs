@@ -65,7 +65,9 @@ impl PetriNet {
     }
 
     pub fn add_place(&mut self, name: &str) -> String {
-        self.places.push(Place { name: name.to_string() });
+        self.places.push(Place {
+            name: name.to_string(),
+        });
         name.to_string()
     }
 
@@ -115,11 +117,15 @@ impl PetriNet {
             let mut reduced = false;
             let place_names: Vec<String> = self.places.iter().map(|p| p.name.clone()).collect();
             for p_name in &place_names {
-                let in_trans: Vec<String> = self.arcs.iter()
+                let in_trans: Vec<String> = self
+                    .arcs
+                    .iter()
                     .filter(|a| &a.target == p_name)
                     .map(|a| a.source.clone())
                     .collect();
-                let out_trans: Vec<String> = self.arcs.iter()
+                let out_trans: Vec<String> = self
+                    .arcs
+                    .iter()
                     .filter(|a| &a.source == p_name)
                     .map(|a| a.target.clone())
                     .collect();
@@ -127,11 +133,15 @@ impl PetriNet {
                 if in_trans.len() == 1 && out_trans.len() == 1 {
                     let in_t = &in_trans[0];
                     let out_t = &out_trans[0];
-                    let in_silent = self.transitions.iter()
+                    let in_silent = self
+                        .transitions
+                        .iter()
                         .find(|t| &t.name == in_t)
                         .map(|t| t.label.is_none())
                         .unwrap_or(false);
-                    let out_silent = self.transitions.iter()
+                    let out_silent = self
+                        .transitions
+                        .iter()
                         .find(|t| &t.name == out_t)
                         .map(|t| t.label.is_none())
                         .unwrap_or(false);
@@ -139,7 +149,9 @@ impl PetriNet {
                     if in_silent && out_silent && in_t != out_t {
                         let old_out_t = out_t.clone();
                         let old_in_t = in_t.clone();
-                        let targets_of_out_t: Vec<String> = self.arcs.iter()
+                        let targets_of_out_t: Vec<String> = self
+                            .arcs
+                            .iter()
                             .filter(|a| a.source == old_out_t)
                             .map(|a| a.target.clone())
                             .collect();
@@ -155,7 +167,9 @@ impl PetriNet {
                     }
                 }
             }
-            if !reduced { break; }
+            if !reduced {
+                break;
+            }
         }
     }
 }

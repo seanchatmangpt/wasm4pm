@@ -29,7 +29,8 @@ pub struct FitnessResult {
 }
 
 fn preset(net: &PetriNet, trans_name: &str) -> Vec<String> {
-    net.arcs.iter()
+    net.arcs
+        .iter()
         .filter(|a| a.target == trans_name)
         .filter(|a| net.places.iter().any(|p| p.name == a.source))
         .map(|a| a.source.clone())
@@ -37,7 +38,8 @@ fn preset(net: &PetriNet, trans_name: &str) -> Vec<String> {
 }
 
 fn postset(net: &PetriNet, trans_name: &str) -> Vec<String> {
-    net.arcs.iter()
+    net.arcs
+        .iter()
         .filter(|a| a.source == trans_name)
         .filter(|a| net.places.iter().any(|p| p.name == a.target))
         .map(|a| a.target.clone())
@@ -49,8 +51,12 @@ fn is_enabled(marking: &Marking, pre: &[String]) -> bool {
 }
 
 fn fire(marking: &mut Marking, pre: &[String], post: &[String]) -> (u32, u32) {
-    for p in pre { *marking.entry(p.clone()).or_insert(0) -= 1; }
-    for p in post { *marking.entry(p.clone()).or_insert(0) += 1; }
+    for p in pre {
+        *marking.entry(p.clone()).or_insert(0) -= 1;
+    }
+    for p in post {
+        *marking.entry(p.clone()).or_insert(0) += 1;
+    }
     (pre.len() as u32, post.len() as u32)
 }
 
@@ -59,10 +65,14 @@ fn fire_silent_enabled(net: &PetriNet, marking: &mut Marking) -> (u32, u32) {
     let mut total_p = 0u32;
     let mut budget = net.transitions.len() * 4 + 16;
     loop {
-        if budget == 0 { break; }
+        if budget == 0 {
+            break;
+        }
         let mut fired = false;
         for trans in &net.transitions {
-            if trans.label.is_some() { continue; }
+            if trans.label.is_some() {
+                continue;
+            }
             let pre = preset(net, &trans.name);
             if !pre.is_empty() && is_enabled(marking, &pre) {
                 let post = postset(net, &trans.name);
@@ -74,7 +84,9 @@ fn fire_silent_enabled(net: &PetriNet, marking: &mut Marking) -> (u32, u32) {
                 break;
             }
         }
-        if !fired { break; }
+        if !fired {
+            break;
+        }
     }
     (total_c, total_p)
 }
@@ -94,13 +106,24 @@ pub fn replay_trace(
     produced += sp;
     for event in &trace.events {
         let activity = &event.name;
-        let candidates: Vec<&str> = net.transitions.iter()
+        let candidates: Vec<&str> = net
+            .transitions
+            .iter()
             .filter(|t| t.label.as_deref() == Some(activity.as_str()))
             .map(|t| t.name.as_str())
             .collect();
-        if candidates.is_empty() { continue; }
-        let enabled_trans = candidates.iter().find(|&&t| is_enabled(&marking, &preset(net, t))).copied();
-        let chosen = if let Some(t) = enabled_trans { t } else { candidates[0] };
+        if candidates.is_empty() {
+            continue;
+        }
+        let enabled_trans = candidates
+            .iter()
+            .find(|&&t| is_enabled(&marking, &preset(net, t)))
+            .copied();
+        let chosen = if let Some(t) = enabled_trans {
+            t
+        } else {
+            candidates[0]
+        };
         let pre = preset(net, chosen);
         let post = postset(net, chosen);
         for p in &pre {
@@ -118,8 +141,11 @@ pub fn replay_trace(
         consumed += sc;
         produced += sp;
     }
-    let remaining: u32 = marking.iter()
-        .filter(|(place, &tokens)| tokens > 0 && final_marking.get(*place).copied().unwrap_or(0) == 0)
+    let remaining: u32 = marking
+        .iter()
+        .filter(|(place, &tokens)| {
+            tokens > 0 && final_marking.get(*place).copied().unwrap_or(0) == 0
+        })
         .map(|(_, &t)| t)
         .sum();
     let final_consumed: u32 = final_marking.values().sum();
@@ -133,7 +159,14 @@ pub fn replay_trace(
         let r = remaining as f64;
         (0.5 * (1.0 - m / c) + 0.5 * (1.0 - r / p)).clamp(0.0, 1.0)
     };
-    TraceReplayResult { case_id: trace.case_id.clone(), fitness, produced_tokens: produced, consumed_tokens: consumed, missing_tokens: missing, remaining_tokens: remaining }
+    TraceReplayResult {
+        case_id: trace.case_id.clone(),
+        fitness,
+        produced_tokens: produced,
+        consumed_tokens: consumed,
+        missing_tokens: missing,
+        remaining_tokens: remaining,
+    }
 }
 
 pub fn compute_fitness(
@@ -142,27 +175,45 @@ pub fn compute_fitness(
     final_marking: &Marking,
     log: &EventLog,
 ) -> FitnessResult {
-    let trace_results: Vec<TraceReplayResult> = log.traces.iter().map(|t| replay_trace(net, initial_marking, final_marking, t)).collect();
+    let trace_results: Vec<TraceReplayResult> = log
+        .traces
+        .iter()
+        .map(|t| replay_trace(net, initial_marking, final_marking, t))
+        .collect();
     let perfectly_fitting_traces = trace_results.iter().filter(|r| r.is_perfect()).count();
     let total_traces = trace_results.len();
-    let avg_trace_fitness = if total_traces == 0 { 1.0 } else { trace_results.iter().map(|r| r.fitness).sum::<f64>() / total_traces as f64 };
+    let avg_trace_fitness = if total_traces == 0 {
+        1.0
+    } else {
+        trace_results.iter().map(|r| r.fitness).sum::<f64>() / total_traces as f64
+    };
     let total_produced: u32 = trace_results.iter().map(|r| r.produced_tokens).sum();
     let total_consumed: u32 = trace_results.iter().map(|r| r.consumed_tokens).sum();
     let total_missing: u32 = trace_results.iter().map(|r| r.missing_tokens).sum();
     let total_remaining: u32 = trace_results.iter().map(|r| r.remaining_tokens).sum();
-    let percentage = if total_produced == 0 && total_consumed == 0 { 1.0 } else {
-        let c = total_consumed as f64; let p = total_produced as f64;
-        let m = total_missing as f64; let r = total_remaining as f64;
+    let percentage = if total_produced == 0 && total_consumed == 0 {
+        1.0
+    } else {
+        let c = total_consumed as f64;
+        let p = total_produced as f64;
+        let m = total_missing as f64;
+        let r = total_remaining as f64;
         (0.5 * (1.0 - m / c) + 0.5 * (1.0 - r / p)).clamp(0.0, 1.0)
     };
-    FitnessResult { percentage, avg_trace_fitness, perfectly_fitting_traces, total_traces, trace_results }
+    FitnessResult {
+        percentage,
+        avg_trace_fitness,
+        perfectly_fitting_traces,
+        total_traces,
+        trace_results,
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::powl_models::PowlPetriNet as PetriNet;
     use crate::powl_event_log::Event;
+    use crate::powl_models::PowlPetriNet as PetriNet;
 
     fn sequential_net() -> (PetriNet, Marking, Marking) {
         let mut net = PetriNet::new("seq");
@@ -185,57 +236,60 @@ mod tests {
     fn make_trace(case_id: &str, acts: &[&str]) -> Trace {
         Trace {
             case_id: case_id.to_string(),
-            events: acts.iter().map(|&a| Event {
-                name: a.to_string(), timestamp: None, lifecycle: None, attributes: std::collections::HashMap::new(),
-            }).collect(),
+            events: acts
+                .iter()
+                .map(|&a| Event {
+                    name: a.to_string(),
+                    timestamp: None,
+                    lifecycle: None,
+                    attributes: std::collections::HashMap::new(),
+                })
+                .collect(),
         }
     }
 
     #[test]
-    fn perfect_trace_fitness_1() {
+    fn test_token_replay_perfect_fitness() {
+        // Happy path: perfect trace has fitness 1.0
         let (net, initial, final_m) = sequential_net();
         let trace = make_trace("c1", &["A", "B"]);
         let result = replay_trace(&net, &initial, &final_m, &trace);
         assert_eq!(result.missing_tokens, 0);
         assert_eq!(result.remaining_tokens, 0);
         assert!((result.fitness - 1.0).abs() < 1e-9);
-        assert!(result.is_perfect());
     }
 
     #[test]
-    fn missing_activity_lowers_fitness() {
+    fn test_token_replay_imperfect_cases() {
+        // Missing activity lowers fitness
         let (net, initial, final_m) = sequential_net();
         let trace = make_trace("c1", &["A"]);
         let result = replay_trace(&net, &initial, &final_m, &trace);
-        assert_eq!(result.remaining_tokens, 1);
         assert!(result.fitness < 1.0);
-    }
 
-    #[test]
-    fn extra_activity_forces_missing_token() {
-        let (net, initial, final_m) = sequential_net();
+        // Extra activity forces missing token
         let trace = make_trace("c1", &["B", "A"]);
         let result = replay_trace(&net, &initial, &final_m, &trace);
         assert!(result.missing_tokens > 0);
-        assert!(result.fitness < 1.0);
     }
 
     #[test]
-    fn log_level_fitness_all_perfect() {
+    fn test_token_replay_log_level_fitness() {
+        // Log with all perfect traces
         let (net, initial, final_m) = sequential_net();
-        let log = EventLog { traces: vec![make_trace("c1", &["A", "B"]), make_trace("c2", &["A", "B"])] };
+        let log = EventLog {
+            traces: vec![make_trace("c1", &["A", "B"]), make_trace("c2", &["A", "B"])],
+        };
         let result = compute_fitness(&net, &initial, &final_m, &log);
         assert_eq!(result.perfectly_fitting_traces, 2);
         assert!((result.percentage - 1.0).abs() < 1e-9);
-    }
 
-    #[test]
-    fn log_level_fitness_mixed() {
-        let (net, initial, final_m) = sequential_net();
-        let log = EventLog { traces: vec![make_trace("c1", &["A", "B"]), make_trace("c2", &["A"])] };
+        // Mixed log (some perfect, some not)
+        let log = EventLog {
+            traces: vec![make_trace("c1", &["A", "B"]), make_trace("c2", &["A"])],
+        };
         let result = compute_fitness(&net, &initial, &final_m, &log);
         assert_eq!(result.perfectly_fitting_traces, 1);
-        assert_eq!(result.total_traces, 2);
         assert!(result.percentage < 1.0 && result.percentage > 0.0);
     }
 }

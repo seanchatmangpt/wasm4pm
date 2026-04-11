@@ -1,3 +1,4 @@
+use serde_json::json;
 /// Next-Activity Prediction — Van der Aalst perspective
 ///
 /// In process mining, "next activity prediction" answers the question:
@@ -18,9 +19,7 @@
 /// chain learned from completed traces — a lightweight but effective baseline
 /// that Van der Aalst and colleagues use as a reference in predictive process
 /// monitoring research.
-
 use wasm_bindgen::prelude::*;
-use serde_json::json;
 
 use crate::state::{get_or_init_state, StoredObject};
 
@@ -43,11 +42,7 @@ use crate::state::{get_or_init_state, StoredObject};
 /// `entropy` is the normalised Shannon entropy of the distribution (0 = certain,
 /// 1 = uniform).
 #[wasm_bindgen]
-pub fn predict_next_k(
-    model_handle: &str,
-    prefix_json: &str,
-    k: usize,
-) -> Result<JsValue, JsValue> {
+pub fn predict_next_k(model_handle: &str, prefix_json: &str, k: usize) -> Result<JsValue, JsValue> {
     let prefix: Vec<String> = serde_json::from_str(prefix_json)
         .map_err(|e| JsValue::from_str(&format!("Invalid prefix JSON: {}", e)))?;
 
@@ -130,7 +125,11 @@ fn normalised_entropy(probs: &[f64]) -> f64 {
         .map(|&p| -p * p.ln())
         .sum();
     let max_ent = (probs.len() as f64).ln();
-    if max_ent > 0.0 { ent / max_ent } else { 0.0 }
+    if max_ent > 0.0 {
+        ent / max_ent
+    } else {
+        0.0
+    }
 }
 
 /// Beam search over a string-keyed `NGramPredictor`.

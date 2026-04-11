@@ -297,10 +297,10 @@ export class WasmLoader {
     let wasmModule: any;
 
     try {
-      // Import from the built wasm4pm package
+      // Import from the built pictl WASM package
       // Path is relative to where this file runs
       const modulePath = this.config.modulePath ||
-        '../../../wasm4pm/pkg/wasm4pm.js';
+        '../../../wasm4pm/pkg/pictl.js';
 
       // Use dynamic import for flexibility
       wasmModule = await import(modulePath);

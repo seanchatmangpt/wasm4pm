@@ -1,17 +1,14 @@
-use wasm_bindgen::prelude::*;
-use crate::state::{get_or_init_state, StoredObject};
+use crate::error::{codes, wasm_err};
 use crate::models::*;
-use serde_json::json;
-use rustc_hash::FxHashMap;
+use crate::state::{get_or_init_state, StoredObject};
 use crate::utilities::to_js;
-use crate::error::{wasm_err, codes};
+use rustc_hash::FxHashMap;
+use serde_json::json;
+use wasm_bindgen::prelude::*;
 
 /// Discover a Directly-Follows Graph (DFG) from an EventLog
 #[wasm_bindgen]
-pub fn discover_dfg(
-    eventlog_handle: &str,
-    activity_key: &str,
-) -> Result<JsValue, JsValue> {
+pub fn discover_dfg(eventlog_handle: &str, activity_key: &str) -> Result<JsValue, JsValue> {
     get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
             let mut dfg = DirectlyFollowsGraph::new();
@@ -44,8 +41,10 @@ pub fn discover_dfg(
             // Single sequential pass over flat integer array
             for t in 0..col.trace_offsets.len().saturating_sub(1) {
                 let start = col.trace_offsets[t];
-                let end   = col.trace_offsets[t + 1];
-                if start >= end { continue; }
+                let end = col.trace_offsets[t + 1];
+                if start >= end {
+                    continue;
+                }
 
                 // Node frequencies
                 for &id in &col.events[start..end] {
@@ -53,7 +52,9 @@ pub fn discover_dfg(
                 }
                 // Directly-follows edges
                 for i in start..end - 1 {
-                    *edge_counts.entry((col.events[i], col.events[i + 1])).or_insert(0) += 1;
+                    *edge_counts
+                        .entry((col.events[i], col.events[i + 1]))
+                        .or_insert(0) += 1;
                 }
                 // Start / end activities
                 *dfg.start_activities
@@ -65,18 +66,24 @@ pub fn discover_dfg(
             }
 
             // Materialise edges (integer IDs → string names)
-            dfg.edges.extend(edge_counts.into_iter().map(|((f, t), freq)| {
-                DirectlyFollowsRelation {
-                    from: col.vocab[f as usize].to_owned(),
-                    to:   col.vocab[t as usize].to_owned(),
-                    frequency: freq,
-                }
-            }));
+            dfg.edges
+                .extend(
+                    edge_counts
+                        .into_iter()
+                        .map(|((f, t), freq)| DirectlyFollowsRelation {
+                            from: col.vocab[f as usize].to_owned(),
+                            to: col.vocab[t as usize].to_owned(),
+                            frequency: freq,
+                        }),
+                );
 
             to_js(&dfg)
         }
         Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
-        None => Err(wasm_err(codes::INVALID_HANDLE, format!("EventLog '{}' not found", eventlog_handle))),
+        None => Err(wasm_err(
+            codes::INVALID_HANDLE,
+            format!("EventLog '{}' not found", eventlog_handle),
+        )),
     })
 }
 
@@ -85,66 +92,72 @@ pub fn discover_dfg(
 /// Identical to `discover_dfg` but stores the result internally so that
 /// handle-based functions (e.g. `score_anomaly`) can reference it.
 #[wasm_bindgen]
-pub fn discover_dfg_handle(
-    eventlog_handle: &str,
-    activity_key: &str,
-) -> Result<JsValue, JsValue> {
-    let dfg = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
-            let mut dfg = DirectlyFollowsGraph::new();
+pub fn discover_dfg_handle(eventlog_handle: &str, activity_key: &str) -> Result<JsValue, JsValue> {
+    let dfg =
+        get_or_init_state().with_object(eventlog_handle, |obj| match obj {
+            Some(StoredObject::EventLog(log)) => {
+                let mut dfg = DirectlyFollowsGraph::new();
 
-            let col_owned = crate::cache::columnar_cache_get(eventlog_handle, activity_key)
-                .unwrap_or_else(|| {
-                    let owned = log.to_columnar_owned(activity_key);
-                    crate::cache::columnar_cache_insert(
-                        eventlog_handle.to_string(),
-                        activity_key.to_string(),
-                        owned.clone(),
-                    );
-                    owned
-                });
-            let col = ColumnarLog::from_owned(&col_owned);
+                let col_owned = crate::cache::columnar_cache_get(eventlog_handle, activity_key)
+                    .unwrap_or_else(|| {
+                        let owned = log.to_columnar_owned(activity_key);
+                        crate::cache::columnar_cache_insert(
+                            eventlog_handle.to_string(),
+                            activity_key.to_string(),
+                            owned.clone(),
+                        );
+                        owned
+                    });
+                let col = ColumnarLog::from_owned(&col_owned);
 
-            dfg.nodes.extend(col.vocab.iter().map(|&act| DFGNode {
-                id: act.to_owned(),
-                label: act.to_owned(),
-                frequency: 0,
-            }));
+                dfg.nodes.extend(col.vocab.iter().map(|&act| DFGNode {
+                    id: act.to_owned(),
+                    label: act.to_owned(),
+                    frequency: 0,
+                }));
 
-            let mut edge_counts: FxHashMap<(u32, u32), usize> = FxHashMap::default();
+                let mut edge_counts: FxHashMap<(u32, u32), usize> = FxHashMap::default();
 
-            for t in 0..col.trace_offsets.len().saturating_sub(1) {
-                let start = col.trace_offsets[t];
-                let end   = col.trace_offsets[t + 1];
-                if start >= end { continue; }
+                for t in 0..col.trace_offsets.len().saturating_sub(1) {
+                    let start = col.trace_offsets[t];
+                    let end = col.trace_offsets[t + 1];
+                    if start >= end {
+                        continue;
+                    }
 
-                for &id in &col.events[start..end] {
-                    dfg.nodes[id as usize].frequency += 1;
+                    for &id in &col.events[start..end] {
+                        dfg.nodes[id as usize].frequency += 1;
+                    }
+                    for i in start..end - 1 {
+                        *edge_counts
+                            .entry((col.events[i], col.events[i + 1]))
+                            .or_insert(0) += 1;
+                    }
+                    *dfg.start_activities
+                        .entry(col.vocab[col.events[start] as usize].to_owned())
+                        .or_insert(0) += 1;
+                    *dfg.end_activities
+                        .entry(col.vocab[col.events[end - 1] as usize].to_owned())
+                        .or_insert(0) += 1;
                 }
-                for i in start..end - 1 {
-                    *edge_counts.entry((col.events[i], col.events[i + 1])).or_insert(0) += 1;
-                }
-                *dfg.start_activities
-                    .entry(col.vocab[col.events[start] as usize].to_owned())
-                    .or_insert(0) += 1;
-                *dfg.end_activities
-                    .entry(col.vocab[col.events[end - 1] as usize].to_owned())
-                    .or_insert(0) += 1;
+
+                dfg.edges
+                    .extend(edge_counts.into_iter().map(|((f, t), freq)| {
+                        DirectlyFollowsRelation {
+                            from: col.vocab[f as usize].to_owned(),
+                            to: col.vocab[t as usize].to_owned(),
+                            frequency: freq,
+                        }
+                    }));
+
+                Ok(dfg)
             }
-
-            dfg.edges.extend(edge_counts.into_iter().map(|((f, t), freq)| {
-                DirectlyFollowsRelation {
-                    from: col.vocab[f as usize].to_owned(),
-                    to:   col.vocab[t as usize].to_owned(),
-                    frequency: freq,
-                }
-            }));
-
-            Ok(dfg)
-        }
-        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
-        None => Err(wasm_err(codes::INVALID_HANDLE, format!("EventLog '{}' not found", eventlog_handle))),
-    })?;
+            Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
+            None => Err(wasm_err(
+                codes::INVALID_HANDLE,
+                format!("EventLog '{}' not found", eventlog_handle),
+            )),
+        })?;
 
     let handle = get_or_init_state().store_object(StoredObject::DirectlyFollowsGraph(dfg))?;
     Ok(JsValue::from_str(&handle))
@@ -168,11 +181,7 @@ pub fn discover_ocel_dfg(ocel_handle: &str) -> Result<JsValue, JsValue> {
 
             // Count event type frequencies
             for event in &ocel.events {
-                if let Some(node) = dfg
-                    .nodes
-                    .iter_mut()
-                    .find(|n| &n.id == &event.event_type)
-                {
+                if let Some(node) = dfg.nodes.iter_mut().find(|n| n.id == event.event_type) {
                     node.frequency += 1;
                 }
             }
@@ -183,7 +192,7 @@ pub fn discover_ocel_dfg(ocel_handle: &str) -> Result<JsValue, JsValue> {
                 for obj_id in event.all_object_ids() {
                     events_by_object
                         .entry(obj_id.to_string())
-                        .or_insert_with(Vec::new)
+                        .or_default()
                         .push((idx, event.event_type.as_str()));
                 }
             }
@@ -206,7 +215,11 @@ pub fn discover_ocel_dfg(ocel_handle: &str) -> Result<JsValue, JsValue> {
                 }
             }
             for ((from, to), freq) in edge_map {
-                dfg.edges.push(DirectlyFollowsRelation { from, to, frequency: freq });
+                dfg.edges.push(DirectlyFollowsRelation {
+                    from,
+                    to,
+                    frequency: freq,
+                });
             }
 
             // Collect start/end event types using .first()/.last() to eliminate
@@ -225,7 +238,10 @@ pub fn discover_ocel_dfg(ocel_handle: &str) -> Result<JsValue, JsValue> {
             to_js(&dfg)
         }
         Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an OCEL")),
-        None => Err(wasm_err(codes::INVALID_HANDLE, format!("OCEL '{}' not found", ocel_handle))),
+        None => Err(wasm_err(
+            codes::INVALID_HANDLE,
+            format!("OCEL '{}' not found", ocel_handle),
+        )),
     })
 }
 
@@ -254,7 +270,8 @@ pub fn discover_ocel_dfg_per_type(ocel_handle: &str) -> Result<JsValue, JsValue>
                 }
 
                 // Get all events for objects of this type
-                let mut events_by_object: FxHashMap<String, Vec<(usize, &str)>> = FxHashMap::default();
+                let mut events_by_object: FxHashMap<String, Vec<(usize, &str)>> =
+                    FxHashMap::default();
                 for obj in &ocel.objects {
                     if &obj.object_type == obj_type {
                         events_by_object.insert(obj.id.clone(), Vec::new());
@@ -293,11 +310,17 @@ pub fn discover_ocel_dfg_per_type(ocel_handle: &str) -> Result<JsValue, JsValue>
                     for pair in events.windows(2) {
                         let from = pair[0].1;
                         let to = pair[1].1;
-                        *edge_map.entry((from.to_string(), to.to_string())).or_insert(0) += 1;
+                        *edge_map
+                            .entry((from.to_string(), to.to_string()))
+                            .or_insert(0) += 1;
                     }
                 }
                 for ((from, to), freq) in edge_map {
-                    dfg.edges.push(DirectlyFollowsRelation { from, to, frequency: freq });
+                    dfg.edges.push(DirectlyFollowsRelation {
+                        from,
+                        to,
+                        frequency: freq,
+                    });
                 }
 
                 // Collect start/end activities (now correctly using events_by_object.keys())
@@ -319,7 +342,10 @@ pub fn discover_ocel_dfg_per_type(ocel_handle: &str) -> Result<JsValue, JsValue>
             to_js(&result)
         }
         Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an OCEL")),
-        None => Err(wasm_err(codes::INVALID_HANDLE, format!("OCEL '{}' not found", ocel_handle))),
+        None => Err(wasm_err(
+            codes::INVALID_HANDLE,
+            format!("OCEL '{}' not found", ocel_handle),
+        )),
     })
 }
 
@@ -403,7 +429,7 @@ pub fn discover_declare(eventlog_handle: &str, activity_key: &str) -> Result<JsV
 
             // Sort activities by name to ensure stable/reproducible ordering.
             let mut sorted_indices: Vec<usize> = (0..n).collect();
-            sorted_indices.sort_by(|&a, &b| col.vocab[a].cmp(&col.vocab[b]));
+            sorted_indices.sort_by(|&a, &b| col.vocab[a].cmp(col.vocab[b]));
 
             model.activities = col.vocab.iter().map(|s| s.to_string()).collect();
 
@@ -417,7 +443,7 @@ pub fn discover_declare(eventlog_handle: &str, activity_key: &str) -> Result<JsV
 
             for t in 0..total_cases {
                 let start = col.trace_offsets[t];
-                let end   = col.trace_offsets[t + 1];
+                let end = col.trace_offsets[t + 1];
                 if start >= end {
                     traces_profiles.push(TraceProfile::new(n));
                     continue;
@@ -438,8 +464,8 @@ pub fn discover_declare(eventlog_handle: &str, activity_key: &str) -> Result<JsV
             // Time: O(T × A)
             let mut activity_counts = vec![0u32; n];
             for profile in &traces_profiles {
-                for a in 0..n {
-                    if profile.first_positions[a] != u8::MAX {
+                for (a, fp) in profile.first_positions.iter().enumerate() {
+                    if *fp != u8::MAX {
                         activity_counts[a] += 1;
                     }
                 }
@@ -452,7 +478,9 @@ pub fn discover_declare(eventlog_handle: &str, activity_key: &str) -> Result<JsV
             // For each activity pair (a, b)
             for a in 0..n {
                 for b in 0..n {
-                    if a == b { continue; }
+                    if a == b {
+                        continue;
+                    }
 
                     // Count traces where a appears before b
                     for profile in &traces_profiles {
@@ -466,19 +494,22 @@ pub fn discover_declare(eventlog_handle: &str, activity_key: &str) -> Result<JsV
             // Emit constraints — O(A²).
             let total_f64 = total_cases as f64;
             for a in 0..n {
-                if activity_counts[a] == 0 { continue; }
+                if activity_counts[a] == 0 {
+                    continue;
+                }
                 for b in 0..n {
-                    if a == b { continue; }
+                    if a == b {
+                        continue;
+                    }
                     let count = response_counts[a * n + b];
-                    if count == 0 { continue; }
+                    if count == 0 {
+                        continue;
+                    }
                     let support = count as f64 / total_f64;
                     if support >= 0.1 {
                         model.constraints.push(DeclareConstraint {
                             template: "Response".to_string(),
-                            activities: vec![
-                                col.vocab[a].to_string(),
-                                col.vocab[b].to_string(),
-                            ],
+                            activities: vec![col.vocab[a].to_string(), col.vocab[b].to_string()],
                             support,
                             confidence: 1.0,
                         });
@@ -489,7 +520,10 @@ pub fn discover_declare(eventlog_handle: &str, activity_key: &str) -> Result<JsV
             to_js(&model)
         }
         Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
-        None => Err(wasm_err(codes::INVALID_HANDLE, format!("EventLog '{}' not found", eventlog_handle))),
+        None => Err(wasm_err(
+            codes::INVALID_HANDLE,
+            format!("EventLog '{}' not found", eventlog_handle),
+        )),
     })
 }
 
@@ -520,6 +554,20 @@ pub fn available_discovery_algorithms() -> JsValue {
                 "status": "implemented"
             },
             {
+                "name": "causal_alpha",
+                "description": "Causal graph discovery using alpha miner variant (binary causality)",
+                "input": "EventLog",
+                "parameters": ["activity_key"],
+                "status": "implemented"
+            },
+            {
+                "name": "causal_heuristic",
+                "description": "Causal graph discovery using heuristic variant (threshold-based)",
+                "input": "EventLog",
+                "parameters": ["activity_key", "threshold"],
+                "status": "implemented"
+            },
+            {
                 "name": "alpha_plus_plus",
                 "description": "Alpha++ algorithm for Petri net discovery",
                 "input": "EventLog",
@@ -527,7 +575,8 @@ pub fn available_discovery_algorithms() -> JsValue {
                 "status": "planned"
             }
         ]
-    })).unwrap_or(JsValue::NULL)
+    }))
+    .unwrap_or(JsValue::NULL)
 }
 
 /// Get discovery module info
@@ -535,7 +584,8 @@ pub fn available_discovery_algorithms() -> JsValue {
 pub fn discovery_info() -> JsValue {
     to_js(&json!({
         "status": "discovery_module_operational",
-        "implemented_algorithms": ["dfg", "ocel_dfg", "declare"],
+        "implemented_algorithms": ["dfg", "ocel_dfg", "declare", "causal_alpha", "causal_heuristic"],
         "note": "Core discovery algorithms implemented as WASM-native code"
-    })).unwrap_or(JsValue::NULL)
+    }))
+    .unwrap_or(JsValue::NULL)
 }

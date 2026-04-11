@@ -1,9 +1,9 @@
-use wasm_bindgen::prelude::*;
+use crate::models::{parse_timestamp_ms, *};
+use crate::state::{get_or_init_state, StoredObject};
+use crate::utilities::to_js;
 use serde_json::{json, Value};
 use std::collections::{HashMap, HashSet};
-use crate::state::{get_or_init_state, StoredObject};
-use crate::models::{*, parse_timestamp_ms};
-use crate::utilities::to_js;
+use wasm_bindgen::prelude::*;
 
 /// Check data quality of an EventLog for common issues
 #[wasm_bindgen]
@@ -21,7 +21,8 @@ pub fn check_data_quality(
 
             // Scan all traces
             for trace in &log.traces {
-                let trace_id = trace.attributes
+                let trace_id = trace
+                    .attributes
                     .get("case_id")
                     .or_else(|| trace.attributes.get("id"))
                     .and_then(|v| v.as_string())
@@ -56,15 +57,13 @@ pub fn check_data_quality(
                             if let Some(ts_ms) = parse_timestamp_ms(ts_str) {
                                 // Check ordering
                                 if let Some(prev) = prev_timestamp {
-                                    if ts_ms < prev {
-                                        if !has_ordering_issues {
-                                            issues.push(json!({
-                                                "type": "timestamp_ordering",
-                                                "trace_id": trace_id,
-                                                "event_indices": [idx - 1, idx]
-                                            }));
-                                            has_ordering_issues = true;
-                                        }
+                                    if ts_ms < prev && !has_ordering_issues {
+                                        issues.push(json!({
+                                            "type": "timestamp_ordering",
+                                            "trace_id": trace_id,
+                                            "event_indices": [idx - 1, idx]
+                                        }));
+                                        has_ordering_issues = true;
                                     }
                                 }
                                 prev_timestamp = Some(ts_ms);
@@ -80,18 +79,24 @@ pub fn check_data_quality(
                     }
 
                     // Build signature for duplicate detection (activity + timestamp + key attributes)
-                    let activity = event.attributes
+                    let activity = event
+                        .attributes
                         .get(activity_key)
                         .and_then(|v| v.as_string())
                         .unwrap_or("unknown");
-                    let timestamp = event.attributes
+                    let timestamp = event
+                        .attributes
                         .get(timestamp_key)
                         .and_then(|v| v.as_string())
                         .unwrap_or("unknown");
                     // Sort attributes by key to ensure deterministic hashing
                     let mut sorted_attrs: Vec<_> = event.attributes.iter().collect();
                     sorted_attrs.sort_by_key(|(k, _)| k.as_str());
-                    let sig = (activity.to_string(), timestamp.to_string(), format!("{:?}", sorted_attrs));
+                    let sig = (
+                        activity.to_string(),
+                        timestamp.to_string(),
+                        format!("{:?}", sorted_attrs),
+                    );
 
                     *event_signatures.entry(sig).or_insert(0) += 1;
                 }
@@ -140,10 +145,8 @@ pub fn check_ocel_data_quality(ocel_handle: &str) -> Result<JsValue, JsValue> {
             let mut issues = Vec::new();
 
             // Build set of valid object IDs
-            let valid_object_ids: HashSet<String> = ocel.objects
-                .iter()
-                .map(|o| o.id.clone())
-                .collect();
+            let valid_object_ids: HashSet<String> =
+                ocel.objects.iter().map(|o| o.id.clone()).collect();
 
             // Check referential integrity: events reference existing objects
             for event in &ocel.events {
@@ -241,23 +244,17 @@ pub fn infer_eventlog_schema(log_handle: &str) -> Result<JsValue, JsValue> {
 
             // Process log-level attributes
             for (key, val) in &log.attributes {
-                attr_stats.entry(key.clone())
-                    .or_insert_with(AttributeStats::new)
-                    .observe(val);
+                attr_stats.entry(key.clone()).or_default().observe(val);
             }
 
             // Process trace-level and event-level attributes
             for trace in &log.traces {
                 for (key, val) in &trace.attributes {
-                    attr_stats.entry(key.clone())
-                        .or_insert_with(AttributeStats::new)
-                        .observe(val);
+                    attr_stats.entry(key.clone()).or_default().observe(val);
                 }
                 for event in &trace.events {
                     for (key, val) in &event.attributes {
-                        attr_stats.entry(key.clone())
-                            .or_insert_with(AttributeStats::new)
-                            .observe(val);
+                        attr_stats.entry(key.clone()).or_default().observe(val);
                     }
                 }
             }
@@ -322,10 +319,14 @@ pub fn infer_ocel_schema(ocel_handle: &str) -> Result<JsValue, JsValue> {
             let mut relationships: HashMap<(String, String), usize> = HashMap::new();
             for relation in &ocel.object_relations {
                 // Find types of source and target objects
-                let source_type = ocel.objects.iter()
+                let source_type = ocel
+                    .objects
+                    .iter()
                     .find(|o| o.id == relation.source_id)
                     .map(|o| o.object_type.clone());
-                let target_type = ocel.objects.iter()
+                let target_type = ocel
+                    .objects
+                    .iter()
                     .find(|o| o.id == relation.target_id)
                     .map(|o| o.object_type.clone());
 
@@ -337,12 +338,15 @@ pub fn infer_ocel_schema(ocel_handle: &str) -> Result<JsValue, JsValue> {
             // Build common_relationships list sorted by frequency
             let mut common_rels: Vec<_> = relationships.into_iter().collect();
             common_rels.sort_by(|a, b| b.1.cmp(&a.1));
-            let common_relationships: Vec<Value> = common_rels.into_iter()
-                .map(|((src, tgt), cnt)| json!({
-                    "source_type": src,
-                    "target_type": tgt,
-                    "count": cnt
-                }))
+            let common_relationships: Vec<Value> = common_rels
+                .into_iter()
+                .map(|((src, tgt), cnt)| {
+                    json!({
+                        "source_type": src,
+                        "target_type": tgt,
+                        "count": cnt
+                    })
+                })
                 .collect();
 
             // Analyze event-object qualifiers (co-occurrence patterns)
@@ -373,7 +377,7 @@ pub fn infer_ocel_schema(ocel_handle: &str) -> Result<JsValue, JsValue> {
 // === Helper Structures and Functions ===
 
 /// Statistics about attribute values to support type inference
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 struct AttributeStats {
     count: usize,
     is_string: usize,
@@ -384,17 +388,6 @@ struct AttributeStats {
 }
 
 impl AttributeStats {
-    fn new() -> Self {
-        AttributeStats {
-            count: 0,
-            is_string: 0,
-            is_numeric: 0,
-            is_boolean: 0,
-            is_date: 0,
-            sample_values: Vec::new(),
-        }
-    }
-
     fn observe(&mut self, val: &AttributeValue) {
         self.count += 1;
         match val {
@@ -452,7 +445,7 @@ fn infer_activity_key(attr_stats: &HashMap<String, AttributeStats>) -> Option<St
     }
 
     // Then try case-insensitive substring matches
-    for (key, _) in attr_stats {
+    for key in attr_stats.keys() {
         for keyword in &activity_keywords {
             if key.to_lowercase().contains(keyword) {
                 return Some(key.clone());
@@ -468,7 +461,8 @@ fn infer_timestamp_key(attr_stats: &HashMap<String, AttributeStats>) -> Option<S
     let timestamp_keywords = ["timestamp", "time", "date", "start_time", "end_time", "ts"];
 
     // First pass: look for attributes with high date type density
-    let mut date_candidates: Vec<(String, usize)> = attr_stats.iter()
+    let mut date_candidates: Vec<(String, usize)> = attr_stats
+        .iter()
         .filter(|(_, stats)| stats.is_date > 0)
         .map(|(k, stats)| (k.clone(), stats.is_date))
         .collect();
@@ -485,7 +479,7 @@ fn infer_timestamp_key(attr_stats: &HashMap<String, AttributeStats>) -> Option<S
         }
     }
 
-    for (key, _) in attr_stats {
+    for key in attr_stats.keys() {
         for keyword in &timestamp_keywords {
             if key.to_lowercase().contains(keyword) {
                 return Some(key.clone());
@@ -498,7 +492,14 @@ fn infer_timestamp_key(attr_stats: &HashMap<String, AttributeStats>) -> Option<S
 
 /// Infer resource key by looking for high-cardinality string attributes
 fn infer_resource_key(attr_stats: &HashMap<String, AttributeStats>) -> Option<String> {
-    let resource_keywords = ["resource", "performer", "user", "agent", "executor", "responsible"];
+    let resource_keywords = [
+        "resource",
+        "performer",
+        "user",
+        "agent",
+        "executor",
+        "responsible",
+    ];
 
     // First try exact keyword matches
     for keyword in &resource_keywords {
@@ -508,7 +509,7 @@ fn infer_resource_key(attr_stats: &HashMap<String, AttributeStats>) -> Option<St
     }
 
     // Then try case-insensitive substring matches
-    for (key, _) in attr_stats {
+    for key in attr_stats.keys() {
         for keyword in &resource_keywords {
             if key.to_lowercase().contains(keyword) {
                 return Some(key.clone());
@@ -517,7 +518,8 @@ fn infer_resource_key(attr_stats: &HashMap<String, AttributeStats>) -> Option<St
     }
 
     // Fallback: find string attribute with moderate cardinality (not too few, not too many)
-    let mut candidates: Vec<(String, usize)> = attr_stats.iter()
+    let mut candidates: Vec<(String, usize)> = attr_stats
+        .iter()
         .filter(|(_, stats)| stats.is_string > stats.count / 2)
         .map(|(k, stats)| (k.clone(), stats.is_string))
         .collect();
@@ -527,8 +529,18 @@ fn infer_resource_key(attr_stats: &HashMap<String, AttributeStats>) -> Option<St
 }
 
 /// Infer case ID key by matching trace attributes to log structure
-fn infer_case_id_key(log: &EventLog, attr_stats: &HashMap<String, AttributeStats>) -> Option<String> {
-    let case_keywords = ["case_id", "case", "trace_id", "id", "process_id", "instance"];
+fn infer_case_id_key(
+    log: &EventLog,
+    attr_stats: &HashMap<String, AttributeStats>,
+) -> Option<String> {
+    let case_keywords = [
+        "case_id",
+        "case",
+        "trace_id",
+        "id",
+        "process_id",
+        "instance",
+    ];
 
     // First try exact keyword matches
     for keyword in &case_keywords {

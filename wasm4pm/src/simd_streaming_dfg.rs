@@ -31,7 +31,7 @@
 //! # Example
 //!
 //! ```rust,ignore
-//! use wasm4pm::simd_streaming_dfg::SimdStreamingDfg;
+//! use pictl::simd_streaming_dfg::SimdStreamingDfg;
 //!
 //! let mut dfg = SimdStreamingDfg::new();
 //!
@@ -51,12 +51,12 @@
 //! assert_eq!(result.edges.len(), 3);
 //! ```
 
-use wasm_bindgen::prelude::*;
-use crate::state::{get_or_init_state, StoredObject};
+use crate::error::{codes, wasm_err};
 use crate::models::*;
+use crate::state::{get_or_init_state, StoredObject};
 use crate::utilities::to_js;
-use crate::error::{wasm_err, codes};
 use rustc_hash::FxHashMap;
+use wasm_bindgen::prelude::*;
 
 /// SIMD-accelerated streaming DFG builder.
 ///
@@ -142,19 +142,31 @@ impl SimdStreamingDfg {
                 let new_val = match lane {
                     0 => {
                         let lane_val = std::arch::wasm32::i32x4_extract_lane::<0>(vec_val);
-                        std::arch::wasm32::i32x4_replace_lane::<0>(vec_val, lane_val.wrapping_add(1))
+                        std::arch::wasm32::i32x4_replace_lane::<0>(
+                            vec_val,
+                            lane_val.wrapping_add(1),
+                        )
                     }
                     1 => {
                         let lane_val = std::arch::wasm32::i32x4_extract_lane::<1>(vec_val);
-                        std::arch::wasm32::i32x4_replace_lane::<1>(vec_val, lane_val.wrapping_add(1))
+                        std::arch::wasm32::i32x4_replace_lane::<1>(
+                            vec_val,
+                            lane_val.wrapping_add(1),
+                        )
                     }
                     2 => {
                         let lane_val = std::arch::wasm32::i32x4_extract_lane::<2>(vec_val);
-                        std::arch::wasm32::i32x4_replace_lane::<2>(vec_val, lane_val.wrapping_add(1))
+                        std::arch::wasm32::i32x4_replace_lane::<2>(
+                            vec_val,
+                            lane_val.wrapping_add(1),
+                        )
                     }
                     3 => {
                         let lane_val = std::arch::wasm32::i32x4_extract_lane::<3>(vec_val);
-                        std::arch::wasm32::i32x4_replace_lane::<3>(vec_val, lane_val.wrapping_add(1))
+                        std::arch::wasm32::i32x4_replace_lane::<3>(
+                            vec_val,
+                            lane_val.wrapping_add(1),
+                        )
                     }
                     _ => unreachable!(),
                 };
@@ -267,14 +279,29 @@ impl SimdStreamingDfg {
         let mut i = 0usize;
         let end = trace.len() - 1;
         while i + 4 <= end {
-            *self.edge_counts.entry((trace[i], trace[i + 1])).or_insert(0) += 1;
-            *self.edge_counts.entry((trace[i + 1], trace[i + 2])).or_insert(0) += 1;
-            *self.edge_counts.entry((trace[i + 2], trace[i + 3])).or_insert(0) += 1;
-            *self.edge_counts.entry((trace[i + 3], trace[i + 4])).or_insert(0) += 1;
+            *self
+                .edge_counts
+                .entry((trace[i], trace[i + 1]))
+                .or_insert(0) += 1;
+            *self
+                .edge_counts
+                .entry((trace[i + 1], trace[i + 2]))
+                .or_insert(0) += 1;
+            *self
+                .edge_counts
+                .entry((trace[i + 2], trace[i + 3]))
+                .or_insert(0) += 1;
+            *self
+                .edge_counts
+                .entry((trace[i + 3], trace[i + 4]))
+                .or_insert(0) += 1;
             i += 4;
         }
         while i < end {
-            *self.edge_counts.entry((trace[i], trace[i + 1])).or_insert(0) += 1;
+            *self
+                .edge_counts
+                .entry((trace[i], trace[i + 1]))
+                .or_insert(0) += 1;
             i += 1;
         }
 
@@ -306,22 +333,26 @@ impl SimdStreamingDfg {
         let mut dfg = DirectlyFollowsGraph::new();
 
         // Nodes
-        dfg.nodes = vocab.iter().enumerate().map(|(i, &name)| {
-            DFGNode {
+        dfg.nodes = vocab
+            .iter()
+            .enumerate()
+            .map(|(i, &name)| DFGNode {
                 id: name.to_owned(),
                 label: name.to_owned(),
                 frequency: self.node_counts.get(i).copied().unwrap_or(0) as usize,
-            }
-        }).collect();
+            })
+            .collect();
 
         // Edges
-        dfg.edges = self.edge_counts.iter().map(|(&(f, t), &freq)| {
-            DirectlyFollowsRelation {
+        dfg.edges = self
+            .edge_counts
+            .iter()
+            .map(|(&(f, t), &freq)| DirectlyFollowsRelation {
                 from: vocab.get(f as usize).copied().unwrap_or("").to_owned(),
                 to: vocab.get(t as usize).copied().unwrap_or("").to_owned(),
                 frequency: freq,
-            }
-        }).collect();
+            })
+            .collect();
 
         // Start activities
         for (&id, &cnt) in &self.start_counts {
@@ -348,7 +379,11 @@ impl SimdStreamingDfg {
     /// Get the number of unique activities seen (based on node_counts length).
     pub fn activity_count(&self) -> usize {
         // node_counts may be padded, find actual max used index
-        self.node_counts.iter().rposition(|&c| c > 0).map(|i| i + 1).unwrap_or(0)
+        self.node_counts
+            .iter()
+            .rposition(|&c| c > 0)
+            .map(|i| i + 1)
+            .unwrap_or(0)
     }
 
     /// Get the number of traces processed.
@@ -431,10 +466,7 @@ impl Default for SimdStreamingDfg {
 ///
 /// JSON `DirectlyFollowsGraph` with nodes, edges, start_activities, end_activities.
 #[wasm_bindgen]
-pub fn discover_dfg_simd(
-    eventlog_handle: &str,
-    activity_key: &str,
-) -> Result<JsValue, JsValue> {
+pub fn discover_dfg_simd(eventlog_handle: &str, activity_key: &str) -> Result<JsValue, JsValue> {
     get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
             let col_owned = crate::cache::columnar_cache_get(eventlog_handle, activity_key)
@@ -454,7 +486,10 @@ pub fn discover_dfg_simd(
             to_js(&dfg)
         }
         Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
-        None => Err(wasm_err(codes::INVALID_HANDLE, format!("EventLog '{}' not found", eventlog_handle))),
+        None => Err(wasm_err(
+            codes::INVALID_HANDLE,
+            format!("EventLog '{}' not found", eventlog_handle),
+        )),
     })
 }
 
@@ -484,7 +519,10 @@ pub fn discover_dfg_simd_handle(
             Ok(builder.finish(&col.vocab))
         }
         Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
-        None => Err(wasm_err(codes::INVALID_HANDLE, format!("EventLog '{}' not found", eventlog_handle))),
+        None => Err(wasm_err(
+            codes::INVALID_HANDLE,
+            format!("EventLog '{}' not found", eventlog_handle),
+        )),
     })?;
 
     let handle = get_or_init_state().store_object(StoredObject::DirectlyFollowsGraph(dfg))?;
@@ -565,13 +603,25 @@ mod tests {
         assert_eq!(dfg.edges.len(), 3); // A->B (x2), B->C, B->D
 
         // A->B should have frequency 2
-        let ab = dfg.edges.iter().find(|e| e.from == "A" && e.to == "B").unwrap();
+        let ab = dfg
+            .edges
+            .iter()
+            .find(|e| e.from == "A" && e.to == "B")
+            .unwrap();
         assert_eq!(ab.frequency, 2);
 
-        let bc = dfg.edges.iter().find(|e| e.from == "B" && e.to == "C").unwrap();
+        let bc = dfg
+            .edges
+            .iter()
+            .find(|e| e.from == "B" && e.to == "C")
+            .unwrap();
         assert_eq!(bc.frequency, 1);
 
-        let bd = dfg.edges.iter().find(|e| e.from == "B" && e.to == "D").unwrap();
+        let bd = dfg
+            .edges
+            .iter()
+            .find(|e| e.from == "B" && e.to == "D")
+            .unwrap();
         assert_eq!(bd.frequency, 1);
 
         // Start/end counts
@@ -600,10 +650,7 @@ mod tests {
 
     /// Hand-rolled scalar DFG builder for parity testing.
     /// Mirrors the logic in `discovery.rs::discover_dfg` exactly.
-    fn scalar_build_dfg(
-        traces: &[&[u32]],
-        vocab: &[&str],
-    ) -> DirectlyFollowsGraph {
+    fn scalar_build_dfg(traces: &[&[u32]], vocab: &[&str]) -> DirectlyFollowsGraph {
         let mut dfg = DirectlyFollowsGraph::new();
 
         dfg.nodes.extend(vocab.iter().map(|&act| DFGNode {
@@ -615,7 +662,9 @@ mod tests {
         let mut edge_counts: FxHashMap<(u32, u32), usize> = FxHashMap::default();
 
         for trace in traces {
-            if trace.is_empty() { continue; }
+            if trace.is_empty() {
+                continue;
+            }
 
             for &id in *trace {
                 dfg.nodes[id as usize].frequency += 1;
@@ -631,13 +680,15 @@ mod tests {
                 .or_insert(0) += 1;
         }
 
-        dfg.edges.extend(edge_counts.into_iter().map(|((f, t), freq)| {
-            DirectlyFollowsRelation {
-                from: vocab[f as usize].to_owned(),
-                to: vocab[t as usize].to_owned(),
-                frequency: freq,
-            }
-        }));
+        dfg.edges.extend(
+            edge_counts
+                .into_iter()
+                .map(|((f, t), freq)| DirectlyFollowsRelation {
+                    from: vocab[f as usize].to_owned(),
+                    to: vocab[t as usize].to_owned(),
+                    frequency: freq,
+                }),
+        );
 
         dfg
     }
@@ -654,31 +705,46 @@ mod tests {
         let simd_dfg = simd.finish(&vocab);
 
         // Build equivalent DFG using hand-rolled scalar logic (mirrors discovery.rs)
-        let traces: Vec<&[u32]> = vec![
-            &[0, 1, 2],
-            &[1, 0, 2],
-            &[0, 1, 3, 2],
-        ];
+        let traces: Vec<&[u32]> = vec![&[0, 1, 2], &[1, 0, 2], &[0, 1, 3, 2]];
         let scalar_dfg = scalar_build_dfg(&traces, &vocab);
 
         // Compare nodes (same set, same frequencies)
         assert_eq!(simd_dfg.nodes.len(), scalar_dfg.nodes.len());
         for simd_node in &simd_dfg.nodes {
             let scalar_node = scalar_dfg.nodes.iter().find(|n| n.id == simd_node.id);
-            assert!(scalar_node.is_some(), "Node {} missing from scalar DFG", simd_node.id);
-            assert_eq!(simd_node.frequency, scalar_node.unwrap().frequency,
-                "Frequency mismatch for node {}", simd_node.id);
+            assert!(
+                scalar_node.is_some(),
+                "Node {} missing from scalar DFG",
+                simd_node.id
+            );
+            assert_eq!(
+                simd_node.frequency,
+                scalar_node.unwrap().frequency,
+                "Frequency mismatch for node {}",
+                simd_node.id
+            );
         }
 
         // Compare edges (same set, same frequencies)
         assert_eq!(simd_dfg.edges.len(), scalar_dfg.edges.len());
         for simd_edge in &simd_dfg.edges {
-            let scalar_edge = scalar_dfg.edges.iter()
+            let scalar_edge = scalar_dfg
+                .edges
+                .iter()
                 .find(|e| e.from == simd_edge.from && e.to == simd_edge.to);
-            assert!(scalar_edge.is_some(),
-                "Edge {}->{} missing from scalar DFG", simd_edge.from, simd_edge.to);
-            assert_eq!(simd_edge.frequency, scalar_edge.unwrap().frequency,
-                "Frequency mismatch for edge {}->{}", simd_edge.from, simd_edge.to);
+            assert!(
+                scalar_edge.is_some(),
+                "Edge {}->{} missing from scalar DFG",
+                simd_edge.from,
+                simd_edge.to
+            );
+            assert_eq!(
+                simd_edge.frequency,
+                scalar_edge.unwrap().frequency,
+                "Frequency mismatch for edge {}->{}",
+                simd_edge.from,
+                simd_edge.to
+            );
         }
 
         // Compare start/end activities
@@ -722,14 +788,22 @@ mod tests {
         assert_eq!(builder.event_count(), 8);
         assert_eq!(builder.edge_count(), 7);
 
-        let vocab: Vec<&str> = (0..8).map(|i| {
-            // Use static strings to avoid lifetime issues
-            match i {
-                0 => "A", 1 => "B", 2 => "C", 3 => "D",
-                4 => "E", 5 => "F", 6 => "G", 7 => "H",
-                _ => "?"
-            }
-        }).collect();
+        let vocab: Vec<&str> = (0..8)
+            .map(|i| {
+                // Use static strings to avoid lifetime issues
+                match i {
+                    0 => "A",
+                    1 => "B",
+                    2 => "C",
+                    3 => "D",
+                    4 => "E",
+                    5 => "F",
+                    6 => "G",
+                    7 => "H",
+                    _ => "?",
+                }
+            })
+            .collect();
         let dfg = builder.finish(&vocab);
 
         assert_eq!(dfg.nodes.len(), 8);
@@ -753,7 +827,11 @@ mod tests {
         assert_eq!(a.event_count(), 6);
         assert_eq!(dfg.edges.len(), 3);
 
-        let ab = dfg.edges.iter().find(|e| e.from == "A" && e.to == "B").unwrap();
+        let ab = dfg
+            .edges
+            .iter()
+            .find(|e| e.from == "A" && e.to == "B")
+            .unwrap();
         assert_eq!(ab.frequency, 2);
     }
 
@@ -789,17 +867,25 @@ mod tests {
 
         // Same edge appears in multiple traces
         builder.add_trace(&[0, 1, 0, 1]); // A->B, B->A, A->B
-        builder.add_trace(&[0, 1]);        // A->B
+        builder.add_trace(&[0, 1]); // A->B
 
         let vocab = vec!["A", "B"];
         let dfg = builder.finish(&vocab);
 
         // A->B should have frequency 3
-        let ab = dfg.edges.iter().find(|e| e.from == "A" && e.to == "B").unwrap();
+        let ab = dfg
+            .edges
+            .iter()
+            .find(|e| e.from == "A" && e.to == "B")
+            .unwrap();
         assert_eq!(ab.frequency, 3);
 
         // B->A should have frequency 1
-        let ba = dfg.edges.iter().find(|e| e.from == "B" && e.to == "A").unwrap();
+        let ba = dfg
+            .edges
+            .iter()
+            .find(|e| e.from == "B" && e.to == "A")
+            .unwrap();
         assert_eq!(ba.frequency, 1);
 
         // Node A appears 3 times (positions 0, 2 in trace1, position 0 in trace2)

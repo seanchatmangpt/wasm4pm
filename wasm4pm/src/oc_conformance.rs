@@ -1,18 +1,17 @@
+use crate::algorithms::discover_alpha_plus_plus;
+use crate::error::{codes, wasm_err};
+use crate::models::OCEL;
+use crate::oc_petri_net::flatten_ocel_to_eventlog_for_type;
+use crate::state::{get_or_init_state, StoredObject};
+use crate::utilities::to_js;
+use serde_json::json;
+use std::collections::HashSet;
 /// Object-Centric Conformance Checking (Phase 2B)
 ///
 /// Checks conformance of an Object-Centric Event Log against an Object-Centric
 /// Petri Net. For each object type, flattens the OCEL, replays the traces on
 /// the per-type net, and computes fitness / precision metrics.
-
 use wasm_bindgen::prelude::*;
-use crate::state::{get_or_init_state, StoredObject};
-use crate::models::OCEL;
-use crate::oc_petri_net::flatten_ocel_to_eventlog_for_type;
-use crate::algorithms::discover_alpha_plus_plus;
-use crate::utilities::to_js;
-use crate::error::{wasm_err, codes};
-use serde_json::json;
-use std::collections::HashSet;
 
 /// Check conformance of OCEL against an OC Petri Net.
 ///
@@ -65,12 +64,10 @@ pub fn oc_conformance_check(ocel_handle: &str) -> Result<JsValue, JsValue> {
                 .events
                 .iter()
                 .filter_map(|e| {
-                    e.attributes
-                        .get("concept:name")
-                        .and_then(|v| match v {
-                            crate::models::AttributeValue::String(s) => Some(s.clone()),
-                            _ => None,
-                        })
+                    e.attributes.get("concept:name").and_then(|v| match v {
+                        crate::models::AttributeValue::String(s) => Some(s.clone()),
+                        _ => None,
+                    })
                 })
                 .collect();
 
@@ -99,13 +96,16 @@ pub fn oc_conformance_check(ocel_handle: &str) -> Result<JsValue, JsValue> {
         total_traces += trace_count;
         total_fitting += fitting;
 
-        per_type.insert(obj_type.clone(), json!({
-            "fitness": fitness,
-            "traces": trace_count,
-            "fitting_traces": fitting,
-            "deviations": deviations.len(),
-            "sample_deviations": &deviations[..deviations.len().min(5)],
-        }));
+        per_type.insert(
+            obj_type.clone(),
+            json!({
+                "fitness": fitness,
+                "traces": trace_count,
+                "fitting_traces": fitting,
+                "deviations": deviations.len(),
+                "sample_deviations": &deviations[..deviations.len().min(5)],
+            }),
+        );
     }
 
     let overall_fitness = if total_traces > 0 {
@@ -116,11 +116,14 @@ pub fn oc_conformance_check(ocel_handle: &str) -> Result<JsValue, JsValue> {
 
     let mut result = serde_json::Map::new();
     result.extend(per_type);
-    result.insert("overall".into(), json!({
-        "fitness": overall_fitness,
-        "total_traces": total_traces,
-        "fitting_traces": total_fitting,
-    }));
+    result.insert(
+        "overall".into(),
+        json!({
+            "fitness": overall_fitness,
+            "total_traces": total_traces,
+            "fitting_traces": total_fitting,
+        }),
+    );
 
     to_js(&result)
 }
@@ -147,7 +150,7 @@ pub fn oc_conformance_info() -> JsValue {
         ]
     });
 
-    to_js(&info).unwrap_or_else(|_| JsValue::NULL)
+    to_js(&info).unwrap_or(JsValue::NULL)
 }
 
 // ---------------------------------------------------------------------------
@@ -158,6 +161,97 @@ fn get_ocel(handle: &str) -> Result<OCEL, JsValue> {
     get_or_init_state().with_object(handle, |obj| match obj {
         Some(StoredObject::OCEL(ocel)) => Ok(ocel.clone()),
         Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an OCEL")),
-        None => Err(wasm_err(codes::INVALID_HANDLE, format!("OCEL '{}' not found", handle))),
+        None => Err(wasm_err(
+            codes::INVALID_HANDLE,
+            format!("OCEL '{}' not found", handle),
+        )),
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::models::{AttributeValue, OCELEvent, OCELObject, OCEL};
+
+    fn create_test_ocel() -> OCEL {
+        OCEL {
+            event_types: vec!["A".to_string(), "B".to_string()],
+            object_types: vec!["Order".to_string()],
+            events: vec![
+                OCELEvent {
+                    id: "e1".to_string(),
+                    event_type: "A".to_string(),
+                    timestamp: "2024-01-01T10:00:00Z".to_string(),
+                    attributes: std::collections::HashMap::new(),
+                    object_ids: vec!["order1".to_string()],
+                    object_refs: vec![],
+                },
+                OCELEvent {
+                    id: "e2".to_string(),
+                    event_type: "B".to_string(),
+                    timestamp: "2024-01-01T11:00:00Z".to_string(),
+                    attributes: std::collections::HashMap::new(),
+                    object_ids: vec!["order1".to_string()],
+                    object_refs: vec![],
+                },
+            ],
+            objects: vec![OCELObject {
+                id: "order1".to_string(),
+                object_type: "Order".to_string(),
+                attributes: std::collections::HashMap::new(),
+                changes: vec![],
+                embedded_relations: vec![],
+            }],
+            object_relations: vec![],
+        }
+    }
+
+    #[test]
+    fn test_oc_conformance_basic() {
+        let ocel = create_test_ocel();
+        let handle = get_or_init_state()
+            .store_object(StoredObject::OCEL(ocel))
+            .expect("Failed to store OCEL");
+
+        let result = oc_conformance_check(&handle);
+        assert!(result.is_ok(), "Conformance check should succeed");
+    }
+
+    #[test]
+    fn test_oc_conformance_invalid_handle() {
+        let result = oc_conformance_check("invalid_handle");
+        assert!(result.is_err(), "Should fail on invalid handle");
+    }
+
+    #[test]
+    fn test_oc_conformance_returns_json() {
+        let ocel = create_test_ocel();
+        let handle = get_or_init_state()
+            .store_object(StoredObject::OCEL(ocel))
+            .expect("Failed to store OCEL");
+
+        let result = oc_conformance_check(&handle).expect("Conformance check failed");
+        // Should be valid JSON (JsValue)
+        let _ = serde_wasm_bindgen::from_value::<serde_json::Value>(result)
+            .expect("Should return valid JSON");
+    }
+
+    #[test]
+    fn test_oc_conformance_empty_ocel() {
+        let ocel = OCEL {
+            event_types: vec![],
+            object_types: vec![],
+            events: vec![],
+            objects: vec![],
+            object_relations: vec![],
+        };
+
+        let handle = get_or_init_state()
+            .store_object(StoredObject::OCEL(ocel))
+            .expect("Failed to store OCEL");
+
+        let result = oc_conformance_check(&handle);
+        // Should handle empty OCEL gracefully
+        assert!(result.is_ok());
+    }
 }

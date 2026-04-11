@@ -1,3 +1,7 @@
+use crate::models::AttributeValue;
+use crate::state::{get_or_init_state, StoredObject};
+use serde_json::json;
+use std::collections::HashSet;
 /// Drift Detection — answers "Has the process behavior changed?"
 ///
 /// Consolidates all drift-detection logic with proper `#[wasm_bindgen]` exports.
@@ -5,14 +9,9 @@
 /// * `detect_drift` — unified, windowed Jaccard-distance drift detection over an
 ///   event log stored in WASM state.
 /// * `compute_ewma` — exponential weighted moving average with trend classification.
-
 use wasm_bindgen::prelude::*;
-use crate::state::{get_or_init_state, StoredObject};
-use crate::models::AttributeValue;
-use serde_json::json;
-use std::collections::HashSet;
 
-/// Unified drift detection over a stored event log.
+/// Detect concept drift over event log using windowed Jaccard distance.
 ///
 /// Slides a window of `window_size` traces across the log and computes the
 /// Jaccard distance between the activity sets of consecutive windows.  A drift
@@ -55,9 +54,13 @@ pub fn detect_drift(
 
                 if !previous_activities.is_empty() {
                     let jaccard_distance = 1.0
-                        - (current_activities.intersection(&previous_activities).count() as f64
-                            / current_activities.union(&previous_activities).count().max(1)
-                                as f64);
+                        - (current_activities
+                            .intersection(&previous_activities)
+                            .count() as f64
+                            / current_activities
+                                .union(&previous_activities)
+                                .count()
+                                .max(1) as f64);
 
                     if jaccard_distance > 0.3 {
                         drifts.push(json!({
@@ -86,7 +89,7 @@ pub fn detect_drift(
     })
 }
 
-/// Compute an exponential weighted moving average (EWMA) over a series of
+/// Compute exponential weighted moving average (EWMA) with trend classification.
 /// values and classify the overall trend.
 ///
 /// `values_json` — JSON array of numbers, e.g. `"[1.0, 2.0, 3.5]"`.

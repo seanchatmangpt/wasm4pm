@@ -1,18 +1,18 @@
+use crate::models::{AttributeValue, EventLog};
+use crate::state::{get_or_init_state, StoredObject};
+use std::collections::HashMap;
 /// Priority 2 — Log filtering suite.
 ///
 /// All filter functions create a new EventLog (subset of traces) and store it,
 /// returning a fresh handle.  The original log is unchanged.
 use wasm_bindgen::prelude::*;
-use crate::state::{get_or_init_state, StoredObject};
-use crate::models::{EventLog, AttributeValue};
-use std::collections::HashMap;
 
 fn store_filtered(log: EventLog) -> Result<JsValue, JsValue> {
     let handle = get_or_init_state().store_object(StoredObject::EventLog(log))?;
     Ok(JsValue::from_str(&handle))
 }
 
-/// Keep only traces whose first activity is in `activities_json` (JSON array of strings).
+/// Filter traces that start with one of the specified activities.
 ///
 /// ```javascript
 /// const h2 = pm.filter_by_start_activity(h, JSON.stringify(['Register']));
@@ -30,13 +30,19 @@ pub fn filter_by_start_activity(
         Some(StoredObject::EventLog(log)) => {
             let mut out = EventLog::new();
             out.attributes = log.attributes.clone();
-            out.traces = log.traces.iter().filter(|t| {
-                t.events.first()
-                    .and_then(|e| e.attributes.get(activity_key))
-                    .and_then(|v| v.as_string())
-                    .map(|a| keep.contains(a))
-                    .unwrap_or(false)
-            }).cloned().collect();
+            out.traces = log
+                .traces
+                .iter()
+                .filter(|t| {
+                    t.events
+                        .first()
+                        .and_then(|e| e.attributes.get(activity_key))
+                        .and_then(|v| v.as_string())
+                        .map(|a| keep.contains(a))
+                        .unwrap_or(false)
+                })
+                .cloned()
+                .collect();
             store_filtered(out)
         }
         Some(_) => Err(JsValue::from_str("Handle is not an EventLog")),
@@ -44,7 +50,7 @@ pub fn filter_by_start_activity(
     })
 }
 
-/// Keep only traces whose last activity is in `activities_json`.
+/// Filter traces that end with one of the specified activities.
 #[wasm_bindgen]
 pub fn filter_by_end_activity(
     log_handle: &str,
@@ -58,13 +64,19 @@ pub fn filter_by_end_activity(
         Some(StoredObject::EventLog(log)) => {
             let mut out = EventLog::new();
             out.attributes = log.attributes.clone();
-            out.traces = log.traces.iter().filter(|t| {
-                t.events.last()
-                    .and_then(|e| e.attributes.get(activity_key))
-                    .and_then(|v| v.as_string())
-                    .map(|a| keep.contains(a))
-                    .unwrap_or(false)
-            }).cloned().collect();
+            out.traces = log
+                .traces
+                .iter()
+                .filter(|t| {
+                    t.events
+                        .last()
+                        .and_then(|e| e.attributes.get(activity_key))
+                        .and_then(|v| v.as_string())
+                        .map(|a| keep.contains(a))
+                        .unwrap_or(false)
+                })
+                .cloned()
+                .collect();
             store_filtered(out)
         }
         Some(_) => Err(JsValue::from_str("Handle is not an EventLog")),
@@ -72,7 +84,7 @@ pub fn filter_by_end_activity(
     })
 }
 
-/// Keep only traces whose length (number of events) is in `[min_events, max_events]`.
+/// Filter traces by event count range.
 /// Pass 0 for `min_events` or `usize::MAX` equivalent (999999) for no bound.
 #[wasm_bindgen]
 pub fn filter_by_case_size(
@@ -84,7 +96,9 @@ pub fn filter_by_case_size(
         Some(StoredObject::EventLog(log)) => {
             let mut out = EventLog::new();
             out.attributes = log.attributes.clone();
-            out.traces = log.traces.iter()
+            out.traces = log
+                .traces
+                .iter()
                 .filter(|t| t.events.len() >= min_events && t.events.len() <= max_events)
                 .cloned()
                 .collect();
@@ -95,7 +109,7 @@ pub fn filter_by_case_size(
     })
 }
 
-/// Keep only traces that contain at least one of the directly-follows pairs in
+/// Filter traces containing specified directly-follows activity pairs.
 /// `pairs_json` (JSON array of [from, to] arrays).
 ///
 /// ```javascript
@@ -110,20 +124,27 @@ pub fn filter_by_directly_follows(
 ) -> Result<JsValue, JsValue> {
     let pairs: Vec<[String; 2]> = serde_json::from_str(pairs_json)
         .map_err(|e| JsValue::from_str(&format!("Invalid pairs JSON: {}", e)))?;
-    let pair_set: std::collections::HashSet<(String, String)> = pairs.into_iter()
-        .map(|[f, t]| (f, t))
-        .collect();
+    let pair_set: std::collections::HashSet<(String, String)> =
+        pairs.into_iter().map(|[f, t]| (f, t)).collect();
 
     get_or_init_state().with_object(log_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
             let mut out = EventLog::new();
             out.attributes = log.attributes.clone();
-            out.traces = log.traces.iter().filter(|trace| {
-                let acts: Vec<&str> = trace.events.iter()
-                    .filter_map(|e| e.attributes.get(activity_key).and_then(|v| v.as_string()))
-                    .collect();
-                acts.windows(2).any(|w| pair_set.contains(&(w[0].to_owned(), w[1].to_owned())))
-            }).cloned().collect();
+            out.traces = log
+                .traces
+                .iter()
+                .filter(|trace| {
+                    let acts: Vec<&str> = trace
+                        .events
+                        .iter()
+                        .filter_map(|e| e.attributes.get(activity_key).and_then(|v| v.as_string()))
+                        .collect();
+                    acts.windows(2)
+                        .any(|w| pair_set.contains(&(w[0].to_owned(), w[1].to_owned())))
+                })
+                .cloned()
+                .collect();
             store_filtered(out)
         }
         Some(_) => Err(JsValue::from_str("Handle is not an EventLog")),
@@ -131,7 +152,7 @@ pub fn filter_by_directly_follows(
     })
 }
 
-/// Keep only the top variants by frequency until `coverage_pct` (0–100) of all
+/// Filter traces by top variants covering specified percentage of traces.
 /// traces are covered.  E.g. `coverage_pct = 80` keeps the variants that together
 /// account for ≥80 % of traces.
 #[wasm_bindgen]
@@ -152,7 +173,9 @@ pub fn filter_by_variant_coverage(
             // Build variant → count map
             let mut variant_counts: HashMap<Vec<String>, usize> = HashMap::new();
             for trace in &log.traces {
-                let variant: Vec<String> = trace.events.iter()
+                let variant: Vec<String> = trace
+                    .events
+                    .iter()
                     .filter_map(|e| e.attributes.get(activity_key).and_then(|v| v.as_string()))
                     .map(str::to_owned)
                     .collect();
@@ -171,21 +194,35 @@ pub fn filter_by_variant_coverage(
             for (variant, cnt) in sorted {
                 keep_variants.insert(variant);
                 covered += cnt;
-                if covered >= target { break; }
+                if covered >= target {
+                    break;
+                }
             }
 
             let mut out = EventLog::new();
             out.attributes = log.attributes.clone();
-            out.traces = log.traces.iter().filter(|trace| {
-                let variant: Vec<String> = trace.events.iter()
-                    .filter_map(|e| e.attributes.get(activity_key)
-                        .and_then(|v| {
-                            if let AttributeValue::String(s) = v { Some(s.as_str()) } else { v.as_string() }
-                        }))
-                    .map(str::to_owned)
-                    .collect();
-                keep_variants.contains(&variant)
-            }).cloned().collect();
+            out.traces = log
+                .traces
+                .iter()
+                .filter(|trace| {
+                    let variant: Vec<String> = trace
+                        .events
+                        .iter()
+                        .filter_map(|e| {
+                            e.attributes.get(activity_key).and_then(|v| {
+                                if let AttributeValue::String(s) = v {
+                                    Some(s.as_str())
+                                } else {
+                                    v.as_string()
+                                }
+                            })
+                        })
+                        .map(str::to_owned)
+                        .collect();
+                    keep_variants.contains(&variant)
+                })
+                .cloned()
+                .collect();
             store_filtered(out)
         }
         Some(_) => Err(JsValue::from_str("Handle is not an EventLog")),
@@ -193,7 +230,7 @@ pub fn filter_by_variant_coverage(
     })
 }
 
-/// Keep only the top `k` most frequent variants.
+/// Filter traces by top-k most frequent variants.
 #[wasm_bindgen]
 pub fn filter_by_variants_top_k(
     log_handle: &str,
@@ -205,7 +242,9 @@ pub fn filter_by_variants_top_k(
             // Build variant → count map
             let mut variant_counts: HashMap<Vec<String>, usize> = HashMap::new();
             for trace in &log.traces {
-                let variant: Vec<String> = trace.events.iter()
+                let variant: Vec<String> = trace
+                    .events
+                    .iter()
                     .filter_map(|e| e.attributes.get(activity_key).and_then(|v| v.as_string()))
                     .map(str::to_owned)
                     .collect();
@@ -220,16 +259,28 @@ pub fn filter_by_variants_top_k(
 
             let mut out = EventLog::new();
             out.attributes = log.attributes.clone();
-            out.traces = log.traces.iter().filter(|trace| {
-                let variant: Vec<String> = trace.events.iter()
-                    .filter_map(|e| e.attributes.get(activity_key)
-                        .and_then(|v| {
-                            if let AttributeValue::String(s) = v { Some(s.as_str()) } else { v.as_string() }
-                        }))
-                    .map(str::to_owned)
-                    .collect();
-                keep_variants.contains(&variant)
-            }).cloned().collect();
+            out.traces = log
+                .traces
+                .iter()
+                .filter(|trace| {
+                    let variant: Vec<String> = trace
+                        .events
+                        .iter()
+                        .filter_map(|e| {
+                            e.attributes.get(activity_key).and_then(|v| {
+                                if let AttributeValue::String(s) = v {
+                                    Some(s.as_str())
+                                } else {
+                                    v.as_string()
+                                }
+                            })
+                        })
+                        .map(str::to_owned)
+                        .collect();
+                    keep_variants.contains(&variant)
+                })
+                .cloned()
+                .collect();
             store_filtered(out)
         }
         Some(_) => Err(JsValue::from_str("Handle is not an EventLog")),
@@ -237,7 +288,7 @@ pub fn filter_by_variants_top_k(
     })
 }
 
-/// Keep only traces that contain all specified activities.
+/// Filter traces containing all specified activities.
 #[wasm_bindgen]
 pub fn filter_traces_containing_activities(
     log_handle: &str,
@@ -251,13 +302,20 @@ pub fn filter_traces_containing_activities(
         Some(StoredObject::EventLog(log)) => {
             let mut out = EventLog::new();
             out.attributes = log.attributes.clone();
-            out.traces = log.traces.iter().filter(|trace| {
-                let activities: std::collections::HashSet<String> = trace.events.iter()
-                    .filter_map(|e| e.attributes.get(activity_key).and_then(|v| v.as_string()))
-                    .map(str::to_owned)
-                    .collect();
-                required.is_subset(&activities)
-            }).cloned().collect();
+            out.traces = log
+                .traces
+                .iter()
+                .filter(|trace| {
+                    let activities: std::collections::HashSet<String> = trace
+                        .events
+                        .iter()
+                        .filter_map(|e| e.attributes.get(activity_key).and_then(|v| v.as_string()))
+                        .map(str::to_owned)
+                        .collect();
+                    required.is_subset(&activities)
+                })
+                .cloned()
+                .collect();
             store_filtered(out)
         }
         Some(_) => Err(JsValue::from_str("Handle is not an EventLog")),
@@ -265,7 +323,7 @@ pub fn filter_traces_containing_activities(
     })
 }
 
-/// Keep only traces that do NOT contain any of the specified activities.
+/// Filter traces excluding any of the specified activities.
 #[wasm_bindgen]
 pub fn filter_traces_excluding_activities(
     log_handle: &str,
@@ -279,14 +337,20 @@ pub fn filter_traces_excluding_activities(
         Some(StoredObject::EventLog(log)) => {
             let mut out = EventLog::new();
             out.attributes = log.attributes.clone();
-            out.traces = log.traces.iter().filter(|trace| {
-                !trace.events.iter().any(|e| {
-                    e.attributes.get(activity_key)
-                        .and_then(|v| v.as_string())
-                        .map(|a| excluded.contains(a))
-                        .unwrap_or(false)
+            out.traces = log
+                .traces
+                .iter()
+                .filter(|trace| {
+                    !trace.events.iter().any(|e| {
+                        e.attributes
+                            .get(activity_key)
+                            .and_then(|v| v.as_string())
+                            .map(|a| excluded.contains(a))
+                            .unwrap_or(false)
+                    })
                 })
-            }).cloned().collect();
+                .cloned()
+                .collect();
             store_filtered(out)
         }
         Some(_) => Err(JsValue::from_str("Handle is not an EventLog")),
@@ -294,7 +358,7 @@ pub fn filter_traces_excluding_activities(
     })
 }
 
-/// Keep only traces where all events have timestamps within [min_dt, max_dt].
+/// Filter traces by timestamp range.
 /// Timestamps are ISO 8601 strings (e.g., "2023-01-01T00:00:00Z").
 #[wasm_bindgen]
 pub fn filter_by_time_range(
@@ -307,16 +371,21 @@ pub fn filter_by_time_range(
         Some(StoredObject::EventLog(log)) => {
             let mut out = EventLog::new();
             out.attributes = log.attributes.clone();
-            out.traces = log.traces.iter().filter(|trace| {
-                trace.events.iter().all(|e| {
-                    if let Some(AttributeValue::String(ts)) = e.attributes.get(timestamp_key) {
-                        // Simple string comparison for ISO timestamps (lexicographic works for ISO8601)
-                        ts.as_str() >= min_dt && ts.as_str() <= max_dt
-                    } else {
-                        false
-                    }
+            out.traces = log
+                .traces
+                .iter()
+                .filter(|trace| {
+                    trace.events.iter().all(|e| {
+                        if let Some(AttributeValue::String(ts)) = e.attributes.get(timestamp_key) {
+                            // Simple string comparison for ISO timestamps (lexicographic works for ISO8601)
+                            ts.as_str() >= min_dt && ts.as_str() <= max_dt
+                        } else {
+                            false
+                        }
+                    })
                 })
-            }).cloned().collect();
+                .cloned()
+                .collect();
             store_filtered(out)
         }
         Some(_) => Err(JsValue::from_str("Handle is not an EventLog")),
@@ -324,7 +393,7 @@ pub fn filter_by_time_range(
     })
 }
 
-/// Keep only traces with case duration in [min_ms, max_ms] milliseconds.
+/// Filter traces by case duration in milliseconds.
 #[wasm_bindgen]
 pub fn filter_by_case_performance(
     log_handle: &str,
@@ -336,24 +405,36 @@ pub fn filter_by_case_performance(
         Some(StoredObject::EventLog(log)) => {
             let mut out = EventLog::new();
             out.attributes = log.attributes.clone();
-            out.traces = log.traces.iter().filter(|trace| {
-                if let (Some(first), Some(last)) = (
-                    trace.events.first().and_then(|e| e.attributes.get(timestamp_key)),
-                    trace.events.last().and_then(|e| e.attributes.get(timestamp_key))
-                ) {
-                    if let (Some(start), Some(end)) = (first.as_string(), last.as_string()) {
-                        // Parse ISO timestamps and compute duration
-                        if let (Ok(start_dt), Ok(end_dt)) = (
-                            chrono::DateTime::parse_from_rfc3339(start),
-                            chrono::DateTime::parse_from_rfc3339(end)
-                        ) {
-                            let duration_ms = end_dt.timestamp_millis() - start_dt.timestamp_millis();
-                            return duration_ms >= min_ms && duration_ms <= max_ms;
+            out.traces = log
+                .traces
+                .iter()
+                .filter(|trace| {
+                    if let (Some(first), Some(last)) = (
+                        trace
+                            .events
+                            .first()
+                            .and_then(|e| e.attributes.get(timestamp_key)),
+                        trace
+                            .events
+                            .last()
+                            .and_then(|e| e.attributes.get(timestamp_key)),
+                    ) {
+                        if let (Some(start), Some(end)) = (first.as_string(), last.as_string()) {
+                            // Parse ISO timestamps and compute duration
+                            if let (Ok(start_dt), Ok(end_dt)) = (
+                                chrono::DateTime::parse_from_rfc3339(start),
+                                chrono::DateTime::parse_from_rfc3339(end),
+                            ) {
+                                let duration_ms =
+                                    end_dt.timestamp_millis() - start_dt.timestamp_millis();
+                                return duration_ms >= min_ms && duration_ms <= max_ms;
+                            }
                         }
                     }
-                }
-                false
-            }).cloned().collect();
+                    false
+                })
+                .cloned()
+                .collect();
             store_filtered(out)
         }
         Some(_) => Err(JsValue::from_str("Handle is not an EventLog")),
@@ -361,31 +442,35 @@ pub fn filter_by_case_performance(
     })
 }
 
-/// Keep only traces that contain at least one rework loop (activity repeated later).
+/// Filter traces containing rework (repeated activities).
 #[wasm_bindgen]
-pub fn filter_rework_traces(
-    log_handle: &str,
-    activity_key: &str,
-) -> Result<JsValue, JsValue> {
+pub fn filter_rework_traces(log_handle: &str, activity_key: &str) -> Result<JsValue, JsValue> {
     get_or_init_state().with_object(log_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
             let mut out = EventLog::new();
             out.attributes = log.attributes.clone();
-            out.traces = log.traces.iter().filter(|trace| {
-                let activities: Vec<String> = trace.events.iter()
-                    .filter_map(|e| e.attributes.get(activity_key).and_then(|v| v.as_string()))
-                    .map(str::to_owned)
-                    .collect();
+            out.traces = log
+                .traces
+                .iter()
+                .filter(|trace| {
+                    let activities: Vec<String> = trace
+                        .events
+                        .iter()
+                        .filter_map(|e| e.attributes.get(activity_key).and_then(|v| v.as_string()))
+                        .map(str::to_owned)
+                        .collect();
 
-                // Check if any activity appears more than once
-                let mut seen = std::collections::HashSet::new();
-                for act in &activities {
-                    if !seen.insert(act) {
-                        return true; // Duplicate found
+                    // Check if any activity appears more than once
+                    let mut seen = std::collections::HashSet::new();
+                    for act in &activities {
+                        if !seen.insert(act) {
+                            return true; // Duplicate found
+                        }
                     }
-                }
-                false
-            }).cloned().collect();
+                    false
+                })
+                .cloned()
+                .collect();
             store_filtered(out)
         }
         Some(_) => Err(JsValue::from_str("Handle is not an EventLog")),
@@ -393,7 +478,7 @@ pub fn filter_rework_traces(
     })
 }
 
-/// Keep only traces where the trace attribute matches the predicate.
+/// Filter traces by trace attribute value.
 #[wasm_bindgen]
 pub fn filter_by_trace_attribute(
     log_handle: &str,
@@ -404,12 +489,19 @@ pub fn filter_by_trace_attribute(
         Some(StoredObject::EventLog(log)) => {
             let mut out = EventLog::new();
             out.attributes = log.attributes.clone();
-            out.traces = log.traces.iter().filter(|trace| {
-                trace.attributes.get(attribute_key)
-                    .and_then(|v| v.as_string())
-                    .map(|val| val == attribute_value)
-                    .unwrap_or(false)
-            }).cloned().collect();
+            out.traces = log
+                .traces
+                .iter()
+                .filter(|trace| {
+                    trace
+                        .attributes
+                        .get(attribute_key)
+                        .and_then(|v| v.as_string())
+                        .map(|val| val == attribute_value)
+                        .unwrap_or(false)
+                })
+                .cloned()
+                .collect();
             store_filtered(out)
         }
         Some(_) => Err(JsValue::from_str("Handle is not an EventLog")),
@@ -417,7 +509,7 @@ pub fn filter_by_trace_attribute(
     })
 }
 
-/// Keep only traces containing at least one event with the specified attribute value.
+/// Filter traces containing an event with specified attribute value.
 #[wasm_bindgen]
 pub fn filter_by_event_attribute_value(
     log_handle: &str,
@@ -428,14 +520,20 @@ pub fn filter_by_event_attribute_value(
         Some(StoredObject::EventLog(log)) => {
             let mut out = EventLog::new();
             out.attributes = log.attributes.clone();
-            out.traces = log.traces.iter().filter(|trace| {
-                trace.events.iter().any(|e| {
-                    e.attributes.get(attribute_key)
-                        .and_then(|v| v.as_string())
-                        .map(|val| val == attribute_value)
-                        .unwrap_or(false)
+            out.traces = log
+                .traces
+                .iter()
+                .filter(|trace| {
+                    trace.events.iter().any(|e| {
+                        e.attributes
+                            .get(attribute_key)
+                            .and_then(|v| v.as_string())
+                            .map(|val| val == attribute_value)
+                            .unwrap_or(false)
+                    })
                 })
-            }).cloned().collect();
+                .cloned()
+                .collect();
             store_filtered(out)
         }
         Some(_) => Err(JsValue::from_str("Handle is not an EventLog")),
@@ -443,7 +541,7 @@ pub fn filter_by_event_attribute_value(
     })
 }
 
-/// Keep only traces where the case ID is in the provided list.
+/// Filter traces by case ID list.
 #[wasm_bindgen]
 pub fn filter_by_case_ids(
     log_handle: &str,
@@ -457,12 +555,19 @@ pub fn filter_by_case_ids(
         Some(StoredObject::EventLog(log)) => {
             let mut out = EventLog::new();
             out.attributes = log.attributes.clone();
-            out.traces = log.traces.iter().filter(|trace| {
-                trace.attributes.get(case_id_key)
-                    .and_then(|v| v.as_string())
-                    .map(|id| keep_ids.contains(id))
-                    .unwrap_or(false)
-            }).cloned().collect();
+            out.traces = log
+                .traces
+                .iter()
+                .filter(|trace| {
+                    trace
+                        .attributes
+                        .get(case_id_key)
+                        .and_then(|v| v.as_string())
+                        .map(|id| keep_ids.contains(id))
+                        .unwrap_or(false)
+                })
+                .cloned()
+                .collect();
             store_filtered(out)
         }
         Some(_) => Err(JsValue::from_str("Handle is not an EventLog")),
@@ -470,7 +575,7 @@ pub fn filter_by_case_ids(
     })
 }
 
-/// Keep only traces that start with the specified activity sequence.
+/// Filter traces starting with specified activity sequence.
 #[wasm_bindgen]
 pub fn filter_traces_starting_with_sequence(
     log_handle: &str,
@@ -484,17 +589,28 @@ pub fn filter_traces_starting_with_sequence(
         Some(StoredObject::EventLog(log)) => {
             let mut out = EventLog::new();
             out.attributes = log.attributes.clone();
-            out.traces = log.traces.iter().filter(|trace| {
-                if trace.events.len() < sequence.len() {
-                    return false;
-                }
-                trace.events.iter().take(sequence.len()).enumerate().all(|(i, e)| {
-                    e.attributes.get(activity_key)
-                        .and_then(|v| v.as_string())
-                        .map(|act| act == sequence[i])
-                        .unwrap_or(false)
+            out.traces = log
+                .traces
+                .iter()
+                .filter(|trace| {
+                    if trace.events.len() < sequence.len() {
+                        return false;
+                    }
+                    trace
+                        .events
+                        .iter()
+                        .take(sequence.len())
+                        .enumerate()
+                        .all(|(i, e)| {
+                            e.attributes
+                                .get(activity_key)
+                                .and_then(|v| v.as_string())
+                                .map(|act| act == sequence[i])
+                                .unwrap_or(false)
+                        })
                 })
-            }).cloned().collect();
+                .cloned()
+                .collect();
             store_filtered(out)
         }
         Some(_) => Err(JsValue::from_str("Handle is not an EventLog")),
@@ -502,7 +618,7 @@ pub fn filter_traces_starting_with_sequence(
     })
 }
 
-/// Keep only traces that end with the specified activity sequence.
+/// Filter traces ending with specified activity sequence.
 #[wasm_bindgen]
 pub fn filter_traces_ending_with_sequence(
     log_handle: &str,
@@ -516,18 +632,24 @@ pub fn filter_traces_ending_with_sequence(
         Some(StoredObject::EventLog(log)) => {
             let mut out = EventLog::new();
             out.attributes = log.attributes.clone();
-            out.traces = log.traces.iter().filter(|trace| {
-                if trace.events.len() < sequence.len() {
-                    return false;
-                }
-                let offset = trace.events.len() - sequence.len();
-                trace.events.iter().skip(offset).enumerate().all(|(i, e)| {
-                    e.attributes.get(activity_key)
-                        .and_then(|v| v.as_string())
-                        .map(|act| act == sequence[i])
-                        .unwrap_or(false)
+            out.traces = log
+                .traces
+                .iter()
+                .filter(|trace| {
+                    if trace.events.len() < sequence.len() {
+                        return false;
+                    }
+                    let offset = trace.events.len() - sequence.len();
+                    trace.events.iter().skip(offset).enumerate().all(|(i, e)| {
+                        e.attributes
+                            .get(activity_key)
+                            .and_then(|v| v.as_string())
+                            .map(|act| act == sequence[i])
+                            .unwrap_or(false)
+                    })
                 })
-            }).cloned().collect();
+                .cloned()
+                .collect();
             store_filtered(out)
         }
         Some(_) => Err(JsValue::from_str("Handle is not an EventLog")),

@@ -1,12 +1,13 @@
 //! POWL algorithms: simplification, transitive utilities, label replacing, footprints.
 
-pub mod simplify;
-pub mod transitive;
-pub mod label_replacing;
-pub mod footprints;
 pub mod analysis;
-pub mod conversion;
 pub mod conformance;
-pub mod streaming;
+pub mod conversion;
 pub mod discovery;
+pub mod extensive_playout;
+pub mod footprints;
+pub mod label_replacing;
+pub mod simplify;
+pub mod streaming;
+pub mod transitive;
 pub mod visualization;

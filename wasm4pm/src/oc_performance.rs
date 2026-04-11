@@ -1,18 +1,17 @@
+use crate::error::{codes, wasm_err};
+use crate::models::{parse_timestamp_ms, OCEL};
+use crate::state::{get_or_init_state, StoredObject};
+use crate::utilities::to_js;
+use crate::{Data, Median};
+use rustc_hash::FxHashMap;
+use serde::Serialize;
+use serde_json::json;
 /// Object-Centric Performance Analysis (Phase 2C).
 ///
 /// For each object type in an OCEL log, builds a performance-annotated
 /// directly-follows graph with per-edge timing statistics (mean, median, p95)
 /// computed from event timestamps.
-
-use wasm_bindgen::prelude::*;
-use crate::state::{get_or_init_state, StoredObject};
-use crate::models::{parse_timestamp_ms, OCEL};
-use crate::utilities::to_js;
-use crate::error::{wasm_err, codes};
-use rustc_hash::FxHashMap;
-use serde::Serialize;
-use serde_json::json;
-use statrs::statistics::{Data, Median};
+use wasm_bindgen::prelude::*; // Conditional import: statrs or hand_rolled_stats
 
 // -------------------------------------------------------------------------
 // Types
@@ -76,27 +75,44 @@ fn compute_edge_stats(durs: &[f64]) -> (f64, f64, f64) {
 }
 
 /// Build per-type performance DFGs directly from the OCEL, without flattening.
+///
+/// Optimized to use single-pass aggregation: builds type → events index
+/// in one pass instead of N+1 pattern (initialization + separate population).
 fn build_performance_dfgs(ocel: &OCEL) -> FxHashMap<String, PerformanceDFG> {
     let mut result: FxHashMap<String, PerformanceDFG> = FxHashMap::default();
 
-    for obj_type in &ocel.object_types {
-        // Map object-id → vec of (event-index, event-type, timestamp-ms)
-        let mut events_by_object: FxHashMap<String, Vec<(usize, &str, Option<i64>)>> =
-            FxHashMap::default();
-        for obj in &ocel.objects {
-            if &obj.object_type == obj_type {
-                events_by_object.insert(obj.id.clone(), Vec::new());
-            }
-        }
+    // Pre-compute object_id → object_type lookup for O(1) access
+    let obj_to_type: FxHashMap<String, &str> = ocel
+        .objects
+        .iter()
+        .map(|obj| (obj.id.clone(), obj.object_type.as_str()))
+        .collect();
 
-        for (idx, event) in ocel.events.iter().enumerate() {
-            let ts_ms = parse_timestamp_ms(&event.timestamp);
-            for obj_id in event.all_object_ids() {
-                if let Some(events) = events_by_object.get_mut(obj_id) {
-                    events.push((idx, event.event_type.as_str(), ts_ms));
-                }
+    // Single-pass aggregation: build (obj_type, obj_id) → events index
+    // This eliminates the N+1 pattern of initializing then populating separately
+    #[allow(clippy::type_complexity)]
+    let mut type_events: FxHashMap<&str, FxHashMap<String, Vec<(usize, &str, Option<i64>)>>> =
+        FxHashMap::default();
+
+    for (idx, event) in ocel.events.iter().enumerate() {
+        let ts_ms = parse_timestamp_ms(&event.timestamp);
+        for obj_id in event.all_object_ids() {
+            // Get object type from pre-computed map
+            if let Some(&obj_type) = obj_to_type.get(obj_id) {
+                type_events
+                    .entry(obj_type)
+                    .or_default()
+                    .entry(obj_id.to_string())
+                    .or_default()
+                    .push((idx, event.event_type.as_str(), ts_ms));
             }
         }
+    }
+
+    // Process each object type using the pre-built index
+    for obj_type in &ocel.object_types {
+        // Get the events for this type, removing from the index to allow mutation
+        let mut events_by_object = type_events.remove(obj_type.as_str()).unwrap_or_default();
 
         // Sort by timestamp (ISO 8601 lexicographic sort)
         for events in events_by_object.values_mut() {
@@ -129,9 +145,7 @@ fn build_performance_dfgs(ocel: &OCEL) -> FxHashMap<String, PerformanceDFG> {
             if events.is_empty() {
                 continue;
             }
-            *start_acts
-                .entry(events[0].1.to_string())
-                .or_insert(0) += 1;
+            *start_acts.entry(events[0].1.to_string()).or_insert(0) += 1;
             *end_acts
                 .entry(events[events.len() - 1].1.to_string())
                 .or_insert(0) += 1;
@@ -205,10 +219,7 @@ fn build_performance_dfgs(ocel: &OCEL) -> FxHashMap<String, PerformanceDFG> {
 /// }
 /// ```
 #[wasm_bindgen]
-pub fn analyze_oc_performance(
-    ocel_handle: &str,
-    _timestamp_key: &str,
-) -> Result<JsValue, JsValue> {
+pub fn analyze_oc_performance(ocel_handle: &str, _timestamp_key: &str) -> Result<JsValue, JsValue> {
     let ocel = get_ocel(ocel_handle)?;
     let result = build_performance_dfgs(&ocel);
     to_js(&result)
@@ -226,23 +237,36 @@ pub fn oc_performance_analysis(ocel_handle: &str) -> Result<JsValue, JsValue> {
 
     let mut result = serde_json::Map::new();
 
-    for obj_type in &ocel.object_types {
-        // Collect all inter-event durations for objects of this type
-        let mut events_by_object: FxHashMap<String, Vec<Option<i64>>> = FxHashMap::default();
-        for obj in &ocel.objects {
-            if &obj.object_type == obj_type {
-                events_by_object.insert(obj.id.clone(), Vec::new());
-            }
-        }
+    // Pre-compute object_id → object_type lookup for O(1) access
+    let obj_to_type: FxHashMap<String, &str> = ocel
+        .objects
+        .iter()
+        .map(|obj| (obj.id.clone(), obj.object_type.as_str()))
+        .collect();
 
-        for event in &ocel.events {
-            let ts_ms = parse_timestamp_ms(&event.timestamp);
-            for obj_id in event.all_object_ids() {
-                if let Some(timestamps) = events_by_object.get_mut(obj_id) {
-                    timestamps.push(ts_ms);
-                }
+    // Single-pass aggregation: build (obj_type, obj_id) → timestamps index
+    let mut type_timestamps: FxHashMap<&str, FxHashMap<String, Vec<Option<i64>>>> =
+        FxHashMap::default();
+
+    for event in &ocel.events {
+        let ts_ms = parse_timestamp_ms(&event.timestamp);
+        for obj_id in event.all_object_ids() {
+            if let Some(&obj_type) = obj_to_type.get(obj_id) {
+                type_timestamps
+                    .entry(obj_type)
+                    .or_default()
+                    .entry(obj_id.to_string())
+                    .or_default()
+                    .push(ts_ms);
             }
         }
+    }
+
+    // Process each object type using the pre-built index
+    for obj_type in &ocel.object_types {
+        let events_by_object = type_timestamps
+            .remove(obj_type.as_str())
+            .unwrap_or_default();
 
         let mut durations: Vec<f64> = Vec::new();
         for timestamps in events_by_object.values() {
@@ -282,7 +306,7 @@ pub fn oc_performance_info() -> JsValue {
         ]
     });
 
-    to_js(&info).unwrap_or_else(|_| JsValue::NULL)
+    to_js(&info).unwrap_or(JsValue::NULL)
 }
 
 // -------------------------------------------------------------------------
@@ -306,7 +330,7 @@ fn compute_duration_stats(durations: &[f64]) -> serde_json::Value {
     let min = sorted.first().copied().unwrap_or(0.0);
     let max = sorted.last().copied().unwrap_or(0.0);
     let mean = sorted.iter().sum::<f64>() / sorted.len() as f64;
-    let median = if sorted.len() % 2 == 0 {
+    let median = if sorted.len().is_multiple_of(2) {
         (sorted[sorted.len() / 2 - 1] + sorted[sorted.len() / 2]) / 2.0
     } else {
         sorted[sorted.len() / 2]
@@ -319,4 +343,92 @@ fn compute_duration_stats(durations: &[f64]) -> serde_json::Value {
         "median_ms": median,
         "count": sorted.len()
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::models::{AttributeValue, OCELEvent, OCELObject, OCEL};
+
+    fn create_test_ocel() -> OCEL {
+        OCEL {
+            event_types: vec!["A".to_string(), "B".to_string()],
+            object_types: vec!["Order".to_string()],
+            events: vec![
+                OCELEvent {
+                    id: "e1".to_string(),
+                    event_type: "A".to_string(),
+                    timestamp: "2024-01-01T10:00:00Z".to_string(),
+                    attributes: std::collections::HashMap::new(),
+                    object_ids: vec!["order1".to_string()],
+                    object_refs: vec![],
+                },
+                OCELEvent {
+                    id: "e2".to_string(),
+                    event_type: "B".to_string(),
+                    timestamp: "2024-01-01T11:00:00Z".to_string(),
+                    attributes: std::collections::HashMap::new(),
+                    object_ids: vec!["order1".to_string()],
+                    object_refs: vec![],
+                },
+            ],
+            objects: vec![OCELObject {
+                id: "order1".to_string(),
+                object_type: "Order".to_string(),
+                attributes: std::collections::HashMap::new(),
+                changes: vec![],
+                embedded_relations: vec![],
+            }],
+            object_relations: vec![],
+        }
+    }
+
+    #[test]
+    fn test_oc_performance_basic() {
+        let ocel = create_test_ocel();
+        let handle = get_or_init_state()
+            .store_object(StoredObject::OCEL(ocel))
+            .expect("Failed to store OCEL");
+
+        let result = oc_performance_analysis(&handle);
+        assert!(result.is_ok(), "Performance analysis should succeed");
+    }
+
+    #[test]
+    fn test_oc_performance_invalid_handle() {
+        let result = oc_performance_analysis("invalid_handle");
+        assert!(result.is_err(), "Should fail on invalid handle");
+    }
+
+    #[test]
+    fn test_oc_performance_returns_json() {
+        let ocel = create_test_ocel();
+        let handle = get_or_init_state()
+            .store_object(StoredObject::OCEL(ocel))
+            .expect("Failed to store OCEL");
+
+        let result = oc_performance_analysis(&handle).expect("Performance analysis failed");
+        let json = serde_wasm_bindgen::from_value::<serde_json::Value>(result)
+            .expect("Should return valid JSON");
+        assert!(json.is_object());
+    }
+
+    #[test]
+    fn test_oc_performance_empty_ocel() {
+        let ocel = OCEL {
+            event_types: vec![],
+            object_types: vec![],
+            events: vec![],
+            objects: vec![],
+            object_relations: vec![],
+        };
+
+        let handle = get_or_init_state()
+            .store_object(StoredObject::OCEL(ocel))
+            .expect("Failed to store OCEL");
+
+        let result = oc_performance_analysis(&handle);
+        // Should handle empty OCEL gracefully
+        assert!(result.is_ok());
+    }
 }

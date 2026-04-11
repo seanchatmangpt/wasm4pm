@@ -3,11 +3,11 @@
  * Main Engine class implementing the lifecycle and state machine
  * Orchestrates bootstrap, planning, execution, and monitoring
  */
-import { EngineState, ExecutionPlan, ExecutionReceipt, EngineStatus, StatusUpdate, EngineError } from '@wasm4pm/contracts';
+import { EngineState, ExecutionPlan, ExecutionReceipt, EngineStatus, StatusUpdate, EngineError } from '@pictl/contracts';
 import { LifecycleEvent } from './lifecycle.js';
 import { WasmLoaderConfig, WasmModule } from './wasm-loader.js';
 import { WatchSession, WatchConfig } from './watch.js';
-import { ObservabilityConfig } from '@wasm4pm/observability';
+import { ObservabilityConfig } from '@pictl/observability';
 /**
  * Result returned from Kernel.run()
  */
@@ -92,22 +92,27 @@ export declare class Engine {
      * Bootstraps the engine: loads WASM, initializes kernel
      * Transitions: uninitialized -> bootstrapping -> ready | failed
      * Emits observability events for bootstrap lifecycle
+     * @param timeoutMs Timeout in milliseconds (default: 30000ms). Falls back to degraded state on timeout.
      */
-    bootstrap(): Promise<void>;
+    bootstrap(timeoutMs?: number): Promise<void>;
     /**
      * Plans execution based on configuration
      * Transitions: ready -> planning -> ready | running | failed
      * Requires: bootstrap() must have been called first
      * Emits observability events for plan generation
+     * @param config Configuration object
+     * @param timeoutMs Timeout in milliseconds (default: 10000ms). Falls back to degraded state on timeout.
      */
-    plan(config: unknown): Promise<ExecutionPlan>;
+    plan(config: unknown, timeoutMs?: number): Promise<ExecutionPlan>;
     /**
      * Runs an execution plan
      * Transitions: ready -> running -> ready | watching | degraded | failed
      * Requires: bootstrap() and plan() must have been called first
      * Emits observability events for execution lifecycle
+     * @param plan Execution plan to run
+     * @param timeoutMs Timeout in milliseconds (default: 300000ms / 5 minutes). Falls back to degraded state on timeout.
      */
-    run(plan: ExecutionPlan): Promise<ExecutionReceipt>;
+    run(plan: ExecutionPlan, timeoutMs?: number): Promise<ExecutionReceipt>;
     /**
      * Watches execution progress with streaming status updates
      * Transitions: ready -> watching -> ready | degraded | failed

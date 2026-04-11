@@ -1,10 +1,10 @@
-use wasm_bindgen::prelude::*;
-use crate::state::{get_or_init_state, StoredObject};
 use crate::models::*;
+use crate::state::{get_or_init_state, StoredObject};
+use crate::utilities::{evaluate_edges_fitness, to_js};
+use rustc_hash::FxHashMap;
 use serde_json::json;
 use std::collections::HashSet;
-use rustc_hash::FxHashMap;
-use crate::utilities::{to_js, evaluate_edges_fitness};
+use wasm_bindgen::prelude::*;
 
 type EdgeSet = HashSet<(u32, u32)>;
 
@@ -42,13 +42,10 @@ pub fn discover_genetic_algorithm(
                     let end = col.trace_offsets[t + 1];
                     for i in start..end.saturating_sub(1) {
                         let edge = (col.events[i], col.events[i + 1]);
-                        edge_map
-                            .entry(edge)
-                            .and_modify(|_| {})
-                            .or_insert_with(|| {
-                                edge_vocab.push(edge);
-                                edge_vocab.len() - 1
-                            });
+                        edge_map.entry(edge).and_modify(|_| {}).or_insert_with(|| {
+                            edge_vocab.push(edge);
+                            edge_vocab.len() - 1
+                        });
                     }
                 }
 
@@ -67,7 +64,8 @@ pub fn discover_genetic_algorithm(
                 // Evolution loop
                 for _generation in 0..generations {
                     // Sort by fitness (descending)
-                    population.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+                    population
+                        .sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
 
                     // Keep top performers (elitism)
                     let elite_size = (population_size / 4).max(1);
@@ -91,7 +89,8 @@ pub fn discover_genetic_algorithm(
                 }
 
                 // Get best solution
-                population.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+                population
+                    .sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
                 let best_fitness = population[0].1;
                 let best_edges = population.remove(0).0;
                 Ok((best_edges, best_fitness, vocab))
@@ -153,13 +152,10 @@ pub fn discover_pso_algorithm(
                     let end = col.trace_offsets[t + 1];
                     for i in start..end.saturating_sub(1) {
                         let edge = (col.events[i], col.events[i + 1]);
-                        edge_map
-                            .entry(edge)
-                            .and_modify(|_| {})
-                            .or_insert_with(|| {
-                                edge_vocab.push(edge);
-                                edge_vocab.len() - 1
-                            });
+                        edge_map.entry(edge).and_modify(|_| {}).or_insert_with(|| {
+                            edge_vocab.push(edge);
+                            edge_vocab.len() - 1
+                        });
                     }
                 }
 
@@ -183,32 +179,28 @@ pub fn discover_pso_algorithm(
 
                 // PSO iterations
                 for _iter in 0..iterations {
-                    for i in 0..particles.len() {
-                        let current_fitness = particles[i].1;
+                    for (edge_set, current_fitness) in particles.iter_mut() {
                         let best_global_fitness = best_global.as_ref().unwrap().1;
 
                         // Move toward best solution with some randomness
                         let improvement_rate =
-                            0.5 + (best_global_fitness - current_fitness).max(0.0) / 10.0;
+                            0.5 + (best_global_fitness - *current_fitness).max(0.0) / 10.0;
                         let move_probability = improvement_rate.min(0.9);
 
                         if fastrand::f64() < move_probability {
-                            particles[i].0 = blend_edges(
-                                &particles[i].0,
-                                &best_global.as_ref().unwrap().0,
-                                0.3,
-                            );
+                            *edge_set =
+                                blend_edges(edge_set, &best_global.as_ref().unwrap().0, 0.3);
 
                             // Add small mutation for exploration
-                            mutate_edges(&mut particles[i].0, 0.05);
+                            mutate_edges(edge_set, 0.05);
                         }
 
-                        let new_fitness = evaluate_edges_fitness(&particles[i].0, &col);
-                        particles[i].1 = new_fitness;
+                        let new_fitness = evaluate_edges_fitness(edge_set, &col);
+                        *current_fitness = new_fitness;
 
                         // Update global best
                         if new_fitness > best_global.as_ref().unwrap().1 {
-                            best_global = Some((particles[i].0.clone(), new_fitness));
+                            best_global = Some((edge_set.clone(), new_fitness));
                         }
                     }
                 }
@@ -254,7 +246,6 @@ fn create_random_edge_set(edge_vocab: &[(u32, u32)], inclusion_probability: f64)
 
 // Helper: Evaluate fitness of an edge set against columnar log (zero string allocation)
 #[inline]
-
 // Helper: Crossover operation on edge sets
 fn crossover_edges(parent1: &EdgeSet, parent2: &EdgeSet) -> EdgeSet {
     let mut child: EdgeSet = HashSet::new();
@@ -381,7 +372,6 @@ fn rand_select<T>(items: &[(T, f64)]) -> usize {
     }
     (fastrand::f64() * n as f64) as usize % n
 }
-
 
 #[wasm_bindgen]
 pub fn genetic_discovery_info() -> String {

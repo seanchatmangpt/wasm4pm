@@ -1,10 +1,10 @@
-use wasm_bindgen::prelude::*;
-use crate::state::{get_or_init_state, StoredObject};
 use crate::models::*;
+use crate::state::{get_or_init_state, StoredObject};
+use crate::utilities::to_js;
+use rustc_hash::FxHashMap;
 use serde_json::json;
 use std::collections::HashSet;
-use rustc_hash::FxHashMap;
-use crate::utilities::to_js;
+use wasm_bindgen::prelude::*;
 
 type DirectlyFollowsSet = HashSet<(String, String)>;
 
@@ -16,146 +16,145 @@ pub fn discover_ilp_petri_net(
     activity_key: &str,
 ) -> Result<JsValue, JsValue> {
     // Compute inside closure (borrowed), store outside (after lock released).
-    let (petri_net, fitness, precision) = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
-            let activities = log.get_activities(activity_key);
-            let directly_follows_vec = log.get_directly_follows(activity_key);
+    let (petri_net, fitness, precision) =
+        get_or_init_state().with_object(eventlog_handle, |obj| match obj {
+            Some(StoredObject::EventLog(log)) => {
+                let activities = log.get_activities(activity_key);
+                let directly_follows_vec = log.get_directly_follows(activity_key);
 
-            // Convert to set for fast lookup
-            let mut directly_follows: DirectlyFollowsSet = HashSet::new();
-            for (from, to, _freq) in &directly_follows_vec {
-                directly_follows.insert((from.clone(), to.clone()));
-            }
+                // Convert to set for fast lookup
+                let mut directly_follows: DirectlyFollowsSet = HashSet::new();
+                for (from, to, _freq) in &directly_follows_vec {
+                    directly_follows.insert((from.clone(), to.clone()));
+                }
 
-            // Initialize Petri net with places for each activity
-            let mut petri_net = PetriNet::new();
+                // Initialize Petri net with places for each activity
+                let mut petri_net = PetriNet::new();
 
-            // Create transition for each activity
-            let mut activity_to_transition: FxHashMap<String, String> = FxHashMap::default();
-            for (idx, activity) in activities.iter().enumerate() {
-                let trans_id = format!("t{}", idx);
-                activity_to_transition.insert(activity.clone(), trans_id.clone());
-                petri_net.transitions.push(PetriNetTransition {
-                    id: trans_id,
-                    label: activity.clone(),
-                    is_invisible: Some(false),
-                });
-            }
+                // Create transition for each activity
+                let mut activity_to_transition: FxHashMap<String, String> = FxHashMap::default();
+                for (idx, activity) in activities.iter().enumerate() {
+                    let trans_id = format!("t{}", idx);
+                    activity_to_transition.insert(activity.clone(), trans_id.clone());
+                    petri_net.transitions.push(PetriNetTransition {
+                        id: trans_id,
+                        label: activity.clone(),
+                        is_invisible: Some(false),
+                    });
+                }
 
-            // Create implicit places (source, sink, and between transitions)
-            let source_place = "p_source".to_string();
-            let sink_place = "p_sink".to_string();
+                // Create implicit places (source, sink, and between transitions)
+                let source_place = "p_source".to_string();
+                let sink_place = "p_sink".to_string();
 
-            petri_net.places.push(PetriNetPlace {
-                id: source_place.clone(),
-                label: "source".to_string(),
-                marking: Some(1), // Initially marked
-            });
-
-            petri_net.places.push(PetriNetPlace {
-                id: sink_place.clone(),
-                label: "sink".to_string(),
-                marking: Some(0),
-            });
-
-            // Set initial marking
-            petri_net.initial_marking.insert(source_place.clone(), 1);
-
-            // Create intermediate places for directly-follows relations
-            let mut place_counter = 0;
-            for (from_act, to_act) in &directly_follows {
-                let from_trans = activity_to_transition.get(from_act).unwrap();
-                let to_trans = activity_to_transition.get(to_act).unwrap();
-
-                let place_id = format!("p{}", place_counter);
                 petri_net.places.push(PetriNetPlace {
-                    id: place_id.clone(),
-                    label: format!("{}→{}", from_act, to_act),
+                    id: source_place.clone(),
+                    label: "source".to_string(),
+                    marking: Some(1), // Initially marked
+                });
+
+                petri_net.places.push(PetriNetPlace {
+                    id: sink_place.clone(),
+                    label: "sink".to_string(),
                     marking: Some(0),
                 });
 
-                // Arc from from_trans to new place
-                petri_net.arcs.push(PetriNetArc {
-                    from: from_trans.clone(),
-                    to: place_id.clone(),
-                    weight: Some(1),
-                });
+                // Set initial marking
+                petri_net.initial_marking.insert(source_place.clone(), 1);
 
-                // Arc from new place to to_trans
-                petri_net.arcs.push(PetriNetArc {
-                    from: place_id,
-                    to: to_trans.clone(),
-                    weight: Some(1),
-                });
+                // Create intermediate places for directly-follows relations
+                for (place_counter, (from_act, to_act)) in directly_follows.iter().enumerate() {
+                    let from_trans = activity_to_transition.get(from_act).unwrap();
+                    let to_trans = activity_to_transition.get(to_act).unwrap();
 
-                place_counter += 1;
-            }
+                    let place_id = format!("p{}", place_counter);
+                    petri_net.places.push(PetriNetPlace {
+                        id: place_id.clone(),
+                        label: format!("{}→{}", from_act, to_act),
+                        marking: Some(0),
+                    });
 
-            // Connect source place to start activities
-            let mut start_activities = HashSet::new();
-            for trace in &log.traces {
-                if !trace.events.is_empty() {
-                    if let Some(AttributeValue::String(first_act)) =
-                        trace.events[0].attributes.get(activity_key)
-                    {
-                        start_activities.insert(first_act.clone());
-                    }
-                }
-            }
-
-            for start_activity in start_activities {
-                if let Some(start_trans) = activity_to_transition.get(&start_activity) {
+                    // Arc from from_trans to new place
                     petri_net.arcs.push(PetriNetArc {
-                        from: source_place.clone(),
-                        to: start_trans.clone(),
+                        from: from_trans.clone(),
+                        to: place_id.clone(),
+                        weight: Some(1),
+                    });
+
+                    // Arc from new place to to_trans
+                    petri_net.arcs.push(PetriNetArc {
+                        from: place_id,
+                        to: to_trans.clone(),
                         weight: Some(1),
                     });
                 }
-            }
 
-            // Connect end activities to sink place
-            let mut end_activities = HashSet::new();
-            for trace in &log.traces {
-                if !trace.events.is_empty() {
-                    if let Some(AttributeValue::String(last_act)) = trace.events[trace.events.len() - 1]
-                        .attributes
-                        .get(activity_key)
-                    {
-                        end_activities.insert(last_act.clone());
+                // Connect source place to start activities
+                let mut start_activities = HashSet::new();
+                for trace in &log.traces {
+                    if !trace.events.is_empty() {
+                        if let Some(AttributeValue::String(first_act)) =
+                            trace.events[0].attributes.get(activity_key)
+                        {
+                            start_activities.insert(first_act.clone());
+                        }
                     }
                 }
-            }
 
-            for end_activity in end_activities {
-                if let Some(end_trans) = activity_to_transition.get(&end_activity) {
-                    petri_net.arcs.push(PetriNetArc {
-                        from: end_trans.clone(),
-                        to: sink_place.clone(),
-                        weight: Some(1),
-                    });
+                for start_activity in start_activities {
+                    if let Some(start_trans) = activity_to_transition.get(&start_activity) {
+                        petri_net.arcs.push(PetriNetArc {
+                            from: source_place.clone(),
+                            to: start_trans.clone(),
+                            weight: Some(1),
+                        });
+                    }
                 }
-            }
 
-            // Set final marking
-            let mut final_marking = std::collections::HashMap::new();
-            final_marking.insert(sink_place, 1);
-            petri_net.final_markings.push(final_marking);
-
-            // Calculate fitness metrics
-            let mut fitting_traces = 0;
-            for trace in &log.traces {
-                if is_trace_fitting(trace, activity_key, &directly_follows) {
-                    fitting_traces += 1;
+                // Connect end activities to sink place
+                let mut end_activities = HashSet::new();
+                for trace in &log.traces {
+                    if !trace.events.is_empty() {
+                        if let Some(AttributeValue::String(last_act)) = trace.events
+                            [trace.events.len() - 1]
+                            .attributes
+                            .get(activity_key)
+                        {
+                            end_activities.insert(last_act.clone());
+                        }
+                    }
                 }
-            }
 
-            let fitness = fitting_traces as f64 / log.traces.len().max(1) as f64;
-            let precision = calculate_precision(&petri_net, &log, activity_key);
-            Ok((petri_net, fitness, precision))
-        }
-        Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
-    })?;
+                for end_activity in end_activities {
+                    if let Some(end_trans) = activity_to_transition.get(&end_activity) {
+                        petri_net.arcs.push(PetriNetArc {
+                            from: end_trans.clone(),
+                            to: sink_place.clone(),
+                            weight: Some(1),
+                        });
+                    }
+                }
+
+                // Set final marking
+                let mut final_marking = std::collections::HashMap::new();
+                final_marking.insert(sink_place, 1);
+                petri_net.final_markings.push(final_marking);
+
+                // Calculate fitness metrics
+                let mut fitting_traces = 0;
+                for trace in &log.traces {
+                    if is_trace_fitting(trace, activity_key, &directly_follows) {
+                        fitting_traces += 1;
+                    }
+                }
+
+                let fitness = fitting_traces as f64 / log.traces.len().max(1) as f64;
+                let precision = calculate_precision(&petri_net, log, activity_key);
+                Ok((petri_net, fitness, precision))
+            }
+            Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
+            None => Err(JsValue::from_str("EventLog not found")),
+        })?;
     // Lock released here — safe to store.
     let simplicity = 1.0 / (1.0 + petri_net.arcs.len() as f64 / 10.0);
     let handle = get_or_init_state()
@@ -256,7 +255,8 @@ pub fn discover_optimized_dfg(
                     {
                         *dfg.start_activities.entry(first_act.clone()).or_insert(0) += 1;
                     }
-                    if let Some(AttributeValue::String(last_act)) = trace.events[trace.events.len() - 1]
+                    if let Some(AttributeValue::String(last_act)) = trace.events
+                        [trace.events.len() - 1]
                         .attributes
                         .get(activity_key)
                     {
@@ -310,11 +310,7 @@ fn is_trace_fitting(
 
 // Calculate precision: ratio of fitting behavior to model behavior
 #[inline]
-fn calculate_precision(
-    _petri_net: &PetriNet,
-    log: &EventLog,
-    activity_key: &str,
-) -> f64 {
+fn calculate_precision(_petri_net: &PetriNet, log: &EventLog, activity_key: &str) -> f64 {
     // Collect unique directly-follows pairs via iterator chain — no manual counter
     let unique_edges: HashSet<(String, String)> = log
         .traces
@@ -325,10 +321,9 @@ fn calculate_precision(
                     w[0].attributes.get(activity_key),
                     w[1].attributes.get(activity_key),
                 ) {
-                    (
-                        Some(AttributeValue::String(a1)),
-                        Some(AttributeValue::String(a2)),
-                    ) => Some((a1.clone(), a2.clone())),
+                    (Some(AttributeValue::String(a1)), Some(AttributeValue::String(a2))) => {
+                        Some((a1.clone(), a2.clone()))
+                    }
                     _ => None,
                 }
             })

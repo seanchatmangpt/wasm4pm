@@ -1,11 +1,11 @@
-use wasm_bindgen::prelude::*;
-use crate::state::{get_or_init_state, StoredObject};
+use crate::error::{codes, wasm_err};
 use crate::models::*;
+use crate::state::{get_or_init_state, StoredObject};
+use crate::utilities::to_js;
+use rustc_hash::FxHashMap;
 use serde_json::json;
 use std::collections::HashMap;
-use rustc_hash::FxHashMap;
-use crate::utilities::to_js;
-use crate::error::{wasm_err, codes};
+use wasm_bindgen::prelude::*;
 
 /// Discover Petri Net using Alpha++ algorithm
 #[wasm_bindgen]
@@ -94,7 +94,8 @@ pub fn discover_alpha_plus_plus(
             // Add end arcs
             for trace in &log.traces {
                 if !trace.events.is_empty() {
-                    if let Some(AttributeValue::String(last_act)) = trace.events[trace.events.len() - 1]
+                    if let Some(AttributeValue::String(last_act)) = trace.events
+                        [trace.events.len() - 1]
                         .attributes
                         .get(activity_key)
                     {
@@ -111,7 +112,10 @@ pub fn discover_alpha_plus_plus(
             Ok(pn)
         }
         Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
-        None => Err(wasm_err(codes::INVALID_HANDLE, format!("EventLog '{}' not found", eventlog_handle))),
+        None => Err(wasm_err(
+            codes::INVALID_HANDLE,
+            format!("EventLog '{}' not found", eventlog_handle),
+        )),
     })?;
 
     let n_places = pn.places.len();
@@ -185,13 +189,17 @@ pub fn discover_dfg_filtered(
 
             // Get start and end activities using .first()/.last() — no index arithmetic
             for trace in &log.traces {
-                if let Some(act) = trace.events.first()
+                if let Some(act) = trace
+                    .events
+                    .first()
                     .and_then(|e| e.attributes.get(activity_key))
                     .and_then(|v| v.as_string())
                 {
                     *dfg.start_activities.entry(act.to_owned()).or_insert(0) += 1;
                 }
-                if let Some(act) = trace.events.last()
+                if let Some(act) = trace
+                    .events
+                    .last()
                     .and_then(|e| e.attributes.get(activity_key))
                     .and_then(|v| v.as_string())
                 {
@@ -202,7 +210,10 @@ pub fn discover_dfg_filtered(
             Ok(dfg)
         }
         Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
-        None => Err(wasm_err(codes::INVALID_HANDLE, format!("EventLog '{}' not found", eventlog_handle))),
+        None => Err(wasm_err(
+            codes::INVALID_HANDLE,
+            format!("EventLog '{}' not found", eventlog_handle),
+        )),
     })?;
 
     let n_nodes = dfg.nodes.len();
@@ -223,12 +234,13 @@ pub fn discover_dfg_filtered(
 #[wasm_bindgen]
 pub fn export_dfg_to_json(handle: &str) -> Result<String, JsValue> {
     get_or_init_state().with_object(handle, |obj| match obj {
-        Some(StoredObject::DirectlyFollowsGraph(dfg)) => {
-            serde_json::to_string(dfg)
-                .map_err(|e| JsValue::from_str(&format!("Serialization failed: {}", e)))
-        }
+        Some(StoredObject::DirectlyFollowsGraph(dfg)) => serde_json::to_string(dfg)
+            .map_err(|e| JsValue::from_str(&format!("Serialization failed: {}", e))),
         Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not a DFG")),
-        None => Err(wasm_err(codes::INVALID_HANDLE, format!("DFG '{}' not found", handle))),
+        None => Err(wasm_err(
+            codes::INVALID_HANDLE,
+            format!("DFG '{}' not found", handle),
+        )),
     })
 }
 
@@ -236,11 +248,12 @@ pub fn export_dfg_to_json(handle: &str) -> Result<String, JsValue> {
 #[wasm_bindgen]
 pub fn export_petri_net_to_json(handle: &str) -> Result<String, JsValue> {
     get_or_init_state().with_object(handle, |obj| match obj {
-        Some(StoredObject::PetriNet(pn)) => {
-            serde_json::to_string(pn)
-                .map_err(|_e| wasm_err(codes::INTERNAL_ERROR, "Serialization failed"))
-        }
+        Some(StoredObject::PetriNet(pn)) => serde_json::to_string(pn)
+            .map_err(|_e| wasm_err(codes::INTERNAL_ERROR, "Serialization failed")),
         Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not a PetriNet")),
-        None => Err(wasm_err(codes::INVALID_HANDLE, format!("PetriNet '{}' not found", handle))),
+        None => Err(wasm_err(
+            codes::INVALID_HANDLE,
+            format!("PetriNet '{}' not found", handle),
+        )),
     })
 }

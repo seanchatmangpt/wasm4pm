@@ -1,9 +1,9 @@
-use wasm_bindgen::prelude::*;
-use crate::state::{get_or_init_state, StoredObject};
 use crate::models::*;
+use crate::state::{get_or_init_state, StoredObject};
+use crate::{Data, Median};
 use serde_json::json;
 use std::collections::{HashMap, HashSet};
-use statrs::statistics::{Data, Median};
+use wasm_bindgen::prelude::*; // Conditional import: statrs or hand_rolled_stats
 
 /// Serialize `val` across the WASM boundary.
 ///
@@ -16,8 +16,7 @@ use statrs::statistics::{Data, Median};
 pub fn to_js<T: serde::Serialize>(val: &T) -> Result<JsValue, JsValue> {
     #[cfg(target_arch = "wasm32")]
     {
-        serde_wasm_bindgen::to_value(val)
-            .map_err(|e| JsValue::from_str(&e.to_string()))
+        serde_wasm_bindgen::to_value(val).map_err(|e| JsValue::from_str(&e.to_string()))
     }
     #[cfg(not(target_arch = "wasm32"))]
     {
@@ -195,10 +194,14 @@ pub fn filter_log_by_activity(
     // Compute filtered log inside closure (borrowed), store outside (avoids mutex re-entry).
     let filtered = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
-            let traces: Vec<Trace> = log.traces.iter()
+            let traces: Vec<Trace> = log
+                .traces
+                .iter()
                 .filter(|trace| {
                     trace.events.iter().any(|event| {
-                        if let Some(AttributeValue::String(act)) = event.attributes.get(activity_key) {
+                        if let Some(AttributeValue::String(act)) =
+                            event.attributes.get(activity_key)
+                        {
                             act == activity_name
                         } else {
                             false
@@ -207,7 +210,10 @@ pub fn filter_log_by_activity(
                 })
                 .cloned()
                 .collect();
-            Ok(EventLog { attributes: log.attributes.clone(), traces })
+            Ok(EventLog {
+                attributes: log.attributes.clone(),
+                traces,
+            })
         }
         Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
         None => Err(JsValue::from_str("EventLog not found")),
@@ -235,14 +241,19 @@ pub fn filter_log_by_trace_length(
 ) -> Result<JsValue, JsValue> {
     let filtered = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
-            let traces: Vec<Trace> = log.traces.iter()
+            let traces: Vec<Trace> = log
+                .traces
+                .iter()
                 .filter(|trace| {
                     let len = trace.events.len();
                     len >= min_length && len <= max_length
                 })
                 .cloned()
                 .collect();
-            Ok(EventLog { attributes: log.attributes.clone(), traces })
+            Ok(EventLog {
+                attributes: log.attributes.clone(),
+                traces,
+            })
         }
         Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
         None => Err(JsValue::from_str("EventLog not found")),
@@ -278,7 +289,9 @@ pub fn calculate_trace_durations(
                         Some(AttributeValue::Date(end_time)),
                     ) = (
                         trace.events[0].attributes.get(timestamp_key),
-                        trace.events[trace.events.len() - 1].attributes.get(timestamp_key),
+                        trace.events[trace.events.len() - 1]
+                            .attributes
+                            .get(timestamp_key),
                     ) {
                         durations.push(json!({
                             "start": start_time,
@@ -298,7 +311,10 @@ pub fn calculate_trace_durations(
 
 /// Validate that EventLog has timestamp attribute
 #[wasm_bindgen]
-pub fn validate_has_timestamps(eventlog_handle: &str, timestamp_key: &str) -> Result<bool, JsValue> {
+pub fn validate_has_timestamps(
+    eventlog_handle: &str,
+    timestamp_key: &str,
+) -> Result<bool, JsValue> {
     get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
             let has_timestamps = log.traces.iter().all(|trace| {

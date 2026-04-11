@@ -3,14 +3,17 @@
 //! Exposes [`StreamingLog`] to JavaScript via `wasm-bindgen`, following the
 //! handle pattern used in `crate::state`.
 
-use wasm_bindgen::prelude::*;
 use crate::probabilistic::streaming_log::StreamingLog;
+use wasm_bindgen::prelude::*;
 
 /// Global store for StreamingLog instances, keyed by handle.
 static mut STREAMING_LOGS: Option<std::collections::HashMap<usize, StreamingLog>> = None;
 
 /// Initialize the global store (called lazily).
 fn ensure_store() {
+    // SAFETY: WASM is single-threaded (no true concurrency in wasm32 target),
+    // so there is no data race on this static. The store is only accessed
+    // through `with_store()` which always calls `ensure_store()` first.
     unsafe {
         if STREAMING_LOGS.is_none() {
             STREAMING_LOGS = Some(std::collections::HashMap::new());
@@ -32,6 +35,8 @@ where
 static mut NEXT_HANDLE: usize = 1;
 
 fn next_handle() -> usize {
+    // SAFETY: WASM is single-threaded, so there is no data race on this
+    // static counter. Handle values are monotonic and unique within a session.
     let handle = unsafe { NEXT_HANDLE };
     unsafe { NEXT_HANDLE += 1 };
     handle

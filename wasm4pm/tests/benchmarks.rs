@@ -17,57 +17,55 @@
 //! Without real data, benchmarks generate synthetic logs (same behavior, synthetic data).
 //! License for real data: CC BY 4.0 (free to use, attribution required)
 
-use std::fs;
-use wasm4pm::models::{AttributeValue, Event, EventLog, Trace};
-use wasm4pm::state::{get_or_init_state, StoredObject};
-use wasm4pm::discovery::{discover_dfg, discover_declare};
-use wasm4pm::advanced_algorithms::{
-    discover_heuristic_miner, analyze_infrequent_paths, detect_rework, detect_bottlenecks,
-    compute_model_metrics,
+use pictl::advanced_algorithms::{
+    analyze_infrequent_paths, compute_model_metrics, detect_bottlenecks, detect_rework,
+    discover_heuristic_miner,
 };
-use wasm4pm::ilp_discovery::{discover_ilp_petri_net, discover_optimized_dfg};
-use wasm4pm::genetic_discovery::{discover_genetic_algorithm, discover_pso_algorithm};
-use wasm4pm::fast_discovery::{
-    discover_astar, discover_hill_climbing, analyze_trace_variants, mine_sequential_patterns,
-    detect_concept_drift, cluster_traces, analyze_start_end_activities,
-    analyze_activity_cooccurrence,
+use pictl::analysis::{analyze_case_duration, analyze_dotted_chart, analyze_event_statistics};
+use pictl::conformance::check_token_based_replay;
+use pictl::discovery::{discover_declare, discover_dfg};
+use pictl::fast_discovery::{
+    analyze_activity_cooccurrence, analyze_start_end_activities, analyze_trace_variants,
+    cluster_traces, detect_concept_drift, discover_astar, discover_hill_climbing,
+    mine_sequential_patterns,
 };
-use wasm4pm::more_discovery::{
-    discover_inductive_miner, discover_ant_colony, discover_simulated_annealing,
-    extract_process_skeleton, analyze_activity_dependencies, analyze_case_attributes,
+use pictl::final_analytics::{
+    analyze_process_speedup, analyze_temporal_bottlenecks, analyze_variant_complexity,
+    compute_activity_transition_matrix, compute_trace_similarity_matrix, extract_activity_ordering,
 };
-use wasm4pm::final_analytics::{
-    analyze_variant_complexity, compute_activity_transition_matrix, analyze_process_speedup,
-    compute_trace_similarity_matrix, analyze_temporal_bottlenecks, extract_activity_ordering,
+use pictl::genetic_discovery::{discover_genetic_algorithm, discover_pso_algorithm};
+use pictl::ilp_discovery::{discover_ilp_petri_net, discover_optimized_dfg};
+use pictl::incremental_dfg::{IncrementalDFG, StreamingDFG};
+use pictl::models::{AttributeValue, Event, EventLog, Trace};
+use pictl::more_discovery::{
+    analyze_activity_dependencies, analyze_case_attributes, discover_ant_colony,
+    discover_inductive_miner, discover_simulated_annealing, extract_process_skeleton,
 };
-use wasm4pm::analysis::{analyze_event_statistics, analyze_case_duration, analyze_dotted_chart};
-use wasm4pm::conformance::check_token_based_replay;
-use wasm4pm::streaming::{
-    StreamingAlgorithm, StreamStats,
-};
-use wasm4pm::streaming::streaming_alpha::StreamingAlphaPlusBuilder;
-use wasm4pm::streaming::streaming_declare::StreamingDeclareBuilder;
-use wasm4pm::streaming::streaming_inductive::StreamingInductiveBuilder;
-use wasm4pm::streaming::streaming_hill_climbing::StreamingHillClimbingBuilder;
-use wasm4pm::streaming::streaming_astar::StreamingAStarBuilder;
-use wasm4pm::incremental_dfg::{IncrementalDFG, StreamingDFG};
+use pictl::state::{get_or_init_state, StoredObject};
+use pictl::streaming::streaming_alpha::StreamingAlphaPlusBuilder;
+use pictl::streaming::streaming_astar::StreamingAStarBuilder;
+use pictl::streaming::streaming_declare::StreamingDeclareBuilder;
+use pictl::streaming::streaming_hill_climbing::StreamingHillClimbingBuilder;
+use pictl::streaming::streaming_inductive::StreamingInductiveBuilder;
+use pictl::streaming::StreamingAlgorithm;
 use std::collections::HashMap;
-use std::time::Instant;
+use std::fs;
 use std::path::Path;
+use std::time::Instant;
 
 // ── Data Source & Tier Detection ──────────────────────────────────────────
 
 fn get_benchmark_sizes() -> Vec<usize> {
     if get_data_source().contains("Real") {
-        vec![7_065]  // Real BPI 2020 size
+        vec![7_065] // Real BPI 2020 size
     } else {
-        vec![100, 1_000, 5_000, 10_000]  // Synthetic sizes
+        vec![100, 1_000, 5_000, 10_000] // Synthetic sizes
     }
 }
 
 thread_local! {
-    static DATA_SOURCE: std::cell::RefCell<String> = std::cell::RefCell::new(String::new());
-    static BENCHMARK_TIER: std::cell::RefCell<Option<u32>> = std::cell::RefCell::new(None);
+    static DATA_SOURCE: std::cell::RefCell<String> = const { std::cell::RefCell::new(String::new()) };
+    static BENCHMARK_TIER: std::cell::RefCell<Option<u32>> = const { std::cell::RefCell::new(None) };
 }
 
 fn set_data_source(source: &str) {
@@ -79,12 +77,11 @@ fn get_data_source() -> String {
 }
 
 fn get_benchmark_tier() -> Option<u32> {
-    BENCHMARK_TIER.with(|t| *t.borrow())
-        .or_else(|| {
-            std::env::var("BENCHMARK_TIER")
-                .ok()
-                .and_then(|v| v.parse::<u32>().ok())
-        })
+    BENCHMARK_TIER.with(|t| *t.borrow()).or_else(|| {
+        std::env::var("BENCHMARK_TIER")
+            .ok()
+            .and_then(|v| v.parse::<u32>().ok())
+    })
 }
 
 fn set_benchmark_tier(tier: u32) {
@@ -93,6 +90,7 @@ fn set_benchmark_tier(tier: u32) {
 
 // ── Tier Configuration ─────────────────────────────────────────────────────
 
+#[allow(dead_code)]
 struct TierConfig {
     tier: u32,
     name: &'static str,
@@ -105,17 +103,17 @@ fn get_tier_config(tier: u32) -> Option<TierConfig> {
             tier: 1,
             name: "ESSENTIAL (Quick Validation)",
             datasets: vec![
-                ("bpi2020", 7_065),   // BPI 2020 Travel Permits
-                ("bpi2013", 7_500),   // BPI 2013 Incidents
-                ("sepsis", 1_000),    // Sepsis Cases
+                ("bpi2020", 7_065), // BPI 2020 Travel Permits
+                ("bpi2013", 7_500), // BPI 2013 Incidents
+                ("sepsis", 1_000),  // Sepsis Cases
             ],
         }),
         2 => Some(TierConfig {
             tier: 2,
             name: "COMPREHENSIVE (Medium Testing)",
             datasets: vec![
-                ("bpi2019", 200_000),  // BPI 2019 Invoice
-                ("bpi2015", 150_000),  // BPI 2015 Building Permits
+                ("bpi2019", 200_000), // BPI 2019 Invoice
+                ("bpi2015", 150_000), // BPI 2015 Building Permits
             ],
         }),
         3 => Some(TierConfig {
@@ -129,6 +127,7 @@ fn get_tier_config(tier: u32) -> Option<TierConfig> {
     }
 }
 
+#[allow(dead_code)]
 fn skip_test_if_wrong_tier(tier: u32) -> bool {
     if let Some(current) = get_benchmark_tier() {
         current != tier
@@ -186,15 +185,9 @@ fn parse_xes_file(content: &str) -> EventLog {
                             let value = trimmed[val_start..val_start + val_end].to_string();
 
                             if let Some(ref mut event) = current_event {
-                                event.attributes.insert(
-                                    key,
-                                    AttributeValue::String(value),
-                                );
+                                event.attributes.insert(key, AttributeValue::String(value));
                             } else if let Some(ref mut trace) = current_trace {
-                                trace.attributes.insert(
-                                    key,
-                                    AttributeValue::String(value),
-                                );
+                                trace.attributes.insert(key, AttributeValue::String(value));
                             }
                         }
                     }
@@ -214,10 +207,7 @@ fn parse_xes_file(content: &str) -> EventLog {
                             let value = trimmed[val_start..val_start + val_end].to_string();
 
                             if let Some(ref mut event) = current_event {
-                                event.attributes.insert(
-                                    key,
-                                    AttributeValue::String(value),
-                                );
+                                event.attributes.insert(key, AttributeValue::String(value));
                             }
                         }
                     }
@@ -264,9 +254,11 @@ fn load_real_dataset(dataset: &str) -> Option<EventLog> {
 
     for path in fixture_paths.iter() {
         if Path::new(path).exists() {
-            if let Ok(content) = fs::read_to_string(&path) {
+            if let Ok(content) = fs::read_to_string(path) {
                 let log = parse_xes_file(&content);
-                set_data_source(&format!("Real {} ({} cases)", dataset.to_uppercase(),
+                set_data_source(&format!(
+                    "Real {} ({} cases)",
+                    dataset.to_uppercase(),
                     match dataset {
                         "bpi2020" => "7,065",
                         "bpi2013" => "7,500",
@@ -284,17 +276,22 @@ fn load_real_dataset(dataset: &str) -> Option<EventLog> {
     None
 }
 
+#[allow(dead_code)]
 fn load_real_bpi2020() -> Option<EventLog> {
     load_real_dataset("bpi2020")
 }
 
 // ── Shared helpers ────────────────────────────────────────────────────────────
 
+#[allow(dead_code)]
 fn generate_synthetic_log(cases: usize) -> EventLog {
     let activities = ["Start", "A", "B", "C", "D", "End"];
     let mut log = EventLog::new();
     for case_id in 0..cases {
-        let mut trace = Trace { attributes: HashMap::new(), events: Vec::new() };
+        let mut trace = Trace {
+            attributes: HashMap::new(),
+            events: Vec::new(),
+        };
         trace.attributes.insert(
             "case_id".to_string(),
             AttributeValue::String(format!("{}", case_id)),
@@ -302,7 +299,10 @@ fn generate_synthetic_log(cases: usize) -> EventLog {
         for evt in 0..20usize {
             let act = activities[evt % activities.len()];
             let mut attrs = HashMap::new();
-            attrs.insert("concept:name".to_string(), AttributeValue::String(act.to_string()));
+            attrs.insert(
+                "concept:name".to_string(),
+                AttributeValue::String(act.to_string()),
+            );
             attrs.insert(
                 "time:timestamp".to_string(),
                 AttributeValue::String(format!("2024-01-01T{:02}:{:02}:00Z", evt / 60, evt % 60)),
@@ -377,7 +377,11 @@ fn print_benchmark_header() {
 
 fn ms<F: Fn()>(f: F, runs: usize) -> f64 {
     let mut t: Vec<f64> = (0..runs)
-        .map(|_| { let s = Instant::now(); f(); s.elapsed().as_secs_f64() * 1000.0 })
+        .map(|_| {
+            let s = Instant::now();
+            f();
+            s.elapsed().as_secs_f64() * 1000.0
+        })
         .collect();
     t.sort_by(|a, b| a.partial_cmp(b).unwrap());
     t[t.len() / 2]
@@ -410,7 +414,15 @@ fn bench_dfg() {
 
     for n in sizes {
         let h = make_log(n);
-        print_row(n, ms(|| { let _ = discover_dfg(&h, ak); }, 5));
+        print_row(
+            n,
+            ms(
+                || {
+                    let _ = discover_dfg(&h, ak);
+                },
+                5,
+            ),
+        );
     }
 }
 
@@ -420,7 +432,15 @@ fn bench_declare() {
     print_header("DECLARE");
     for n in get_benchmark_sizes() {
         let h = make_log(n);
-        print_row(n, ms(|| { let _ = discover_declare(&h, ak); }, 5));
+        print_row(
+            n,
+            ms(
+                || {
+                    let _ = discover_declare(&h, ak);
+                },
+                5,
+            ),
+        );
     }
 }
 
@@ -430,7 +450,15 @@ fn bench_heuristic_miner() {
     print_header("Heuristic Miner (θ=0.5)");
     for n in get_benchmark_sizes() {
         let h = make_log(n);
-        print_row(n, ms(|| { let _ = discover_heuristic_miner(&h, ak, 0.5); }, 5));
+        print_row(
+            n,
+            ms(
+                || {
+                    let _ = discover_heuristic_miner(&h, ak, 0.5);
+                },
+                5,
+            ),
+        );
     }
 }
 
@@ -440,7 +468,15 @@ fn bench_optimized_dfg() {
     print_header("Optimized DFG (fitness=0.8, simplicity=0.2)");
     for n in get_benchmark_sizes() {
         let h = make_log(n);
-        print_row(n, ms(|| { let _ = discover_optimized_dfg(&h, ak, 0.8, 0.2); }, 5));
+        print_row(
+            n,
+            ms(
+                || {
+                    let _ = discover_optimized_dfg(&h, ak, 0.8, 0.2);
+                },
+                5,
+            ),
+        );
     }
 }
 
@@ -450,7 +486,15 @@ fn bench_ilp_petri_net() {
     print_header("ILP Petri Net");
     for n in get_benchmark_sizes() {
         let h = make_log(n);
-        print_row(n, ms(|| { let _ = discover_ilp_petri_net(&h, ak); }, 5));
+        print_row(
+            n,
+            ms(
+                || {
+                    let _ = discover_ilp_petri_net(&h, ak);
+                },
+                5,
+            ),
+        );
     }
 }
 
@@ -460,7 +504,15 @@ fn bench_inductive_miner() {
     print_header("Inductive Miner");
     for n in get_benchmark_sizes() {
         let h = make_log(n);
-        print_row(n, ms(|| { let _ = discover_inductive_miner(&h, ak); }, 5));
+        print_row(
+            n,
+            ms(
+                || {
+                    let _ = discover_inductive_miner(&h, ak);
+                },
+                5,
+            ),
+        );
     }
 }
 
@@ -470,7 +522,15 @@ fn bench_astar() {
     print_header("A* Search (iter=1000)");
     for n in get_benchmark_sizes() {
         let h = make_log(n);
-        print_row(n, ms(|| { let _ = discover_astar(&h, ak, 1000); }, 5));
+        print_row(
+            n,
+            ms(
+                || {
+                    let _ = discover_astar(&h, ak, 1000);
+                },
+                5,
+            ),
+        );
     }
 }
 
@@ -480,7 +540,15 @@ fn bench_hill_climbing() {
     print_header("Hill Climbing");
     for n in get_benchmark_sizes() {
         let h = make_log(n);
-        print_row(n, ms(|| { let _ = discover_hill_climbing(&h, ak); }, 5));
+        print_row(
+            n,
+            ms(
+                || {
+                    let _ = discover_hill_climbing(&h, ak);
+                },
+                5,
+            ),
+        );
     }
 }
 
@@ -490,7 +558,15 @@ fn bench_ant_colony() {
     print_header("Ant Colony Optimization (ants=20, iter=10)");
     for n in get_benchmark_sizes() {
         let h = make_log(n);
-        print_row(n, ms(|| { let _ = discover_ant_colony(&h, ak, 20, 10); }, 3));
+        print_row(
+            n,
+            ms(
+                || {
+                    let _ = discover_ant_colony(&h, ak, 20, 10);
+                },
+                3,
+            ),
+        );
     }
 }
 
@@ -500,7 +576,15 @@ fn bench_simulated_annealing() {
     print_header("Simulated Annealing (T=1.0, cool=0.95)");
     for n in get_benchmark_sizes() {
         let h = make_log(n);
-        print_row(n, ms(|| { let _ = discover_simulated_annealing(&h, ak, 1.0, 0.95); }, 5));
+        print_row(
+            n,
+            ms(
+                || {
+                    let _ = discover_simulated_annealing(&h, ak, 1.0, 0.95);
+                },
+                5,
+            ),
+        );
     }
 }
 
@@ -510,7 +594,15 @@ fn bench_process_skeleton() {
     print_header("Process Skeleton (min_freq=2)");
     for n in get_benchmark_sizes() {
         let h = make_log(n);
-        print_row(n, ms(|| { let _ = extract_process_skeleton(&h, ak, 2); }, 5));
+        print_row(
+            n,
+            ms(
+                || {
+                    let _ = extract_process_skeleton(&h, ak, 2);
+                },
+                5,
+            ),
+        );
     }
 }
 
@@ -520,7 +612,15 @@ fn bench_genetic_algorithm() {
     print_header("Genetic Algorithm (pop=50, gen=20)");
     for n in get_benchmark_sizes() {
         let h = make_log(n);
-        print_row(n, ms(|| { let _ = discover_genetic_algorithm(&h, ak, 50, 20); }, 3));
+        print_row(
+            n,
+            ms(
+                || {
+                    let _ = discover_genetic_algorithm(&h, ak, 50, 20);
+                },
+                3,
+            ),
+        );
     }
 }
 
@@ -530,7 +630,15 @@ fn bench_pso() {
     print_header("Particle Swarm Optimization (swarm=30, iter=20)");
     for n in get_benchmark_sizes() {
         let h = make_log(n);
-        print_row(n, ms(|| { let _ = discover_pso_algorithm(&h, ak, 30, 20); }, 3));
+        print_row(
+            n,
+            ms(
+                || {
+                    let _ = discover_pso_algorithm(&h, ak, 30, 20);
+                },
+                3,
+            ),
+        );
     }
 }
 
@@ -541,7 +649,15 @@ fn bench_event_statistics() {
     print_header("Event Statistics");
     for n in get_benchmark_sizes() {
         let h = make_log(n);
-        print_row(n, ms(|| { let _ = analyze_event_statistics(&h); }, 5));
+        print_row(
+            n,
+            ms(
+                || {
+                    let _ = analyze_event_statistics(&h);
+                },
+                5,
+            ),
+        );
     }
 }
 
@@ -550,7 +666,15 @@ fn bench_case_duration() {
     print_header("Case Duration");
     for n in get_benchmark_sizes() {
         let h = make_log(n);
-        print_row(n, ms(|| { let _ = analyze_case_duration(&h); }, 5));
+        print_row(
+            n,
+            ms(
+                || {
+                    let _ = analyze_case_duration(&h);
+                },
+                5,
+            ),
+        );
     }
 }
 
@@ -559,7 +683,15 @@ fn bench_dotted_chart() {
     print_header("Dotted Chart");
     for n in get_benchmark_sizes() {
         let h = make_log(n);
-        print_row(n, ms(|| { let _ = analyze_dotted_chart(&h); }, 5));
+        print_row(
+            n,
+            ms(
+                || {
+                    let _ = analyze_dotted_chart(&h);
+                },
+                5,
+            ),
+        );
     }
 }
 
@@ -569,7 +701,15 @@ fn bench_trace_variants() {
     print_header("Trace Variants");
     for n in get_benchmark_sizes() {
         let h = make_log(n);
-        print_row(n, ms(|| { let _ = analyze_trace_variants(&h, ak); }, 5));
+        print_row(
+            n,
+            ms(
+                || {
+                    let _ = analyze_trace_variants(&h, ak);
+                },
+                5,
+            ),
+        );
     }
 }
 
@@ -579,7 +719,15 @@ fn bench_sequential_patterns() {
     print_header("Sequential Patterns (min_sup=0.1, len=3)");
     for n in get_benchmark_sizes() {
         let h = make_log(n);
-        print_row(n, ms(|| { let _ = mine_sequential_patterns(&h, ak, 0.1, 3); }, 5));
+        print_row(
+            n,
+            ms(
+                || {
+                    let _ = mine_sequential_patterns(&h, ak, 0.1, 3);
+                },
+                5,
+            ),
+        );
     }
 }
 
@@ -589,7 +737,15 @@ fn bench_concept_drift() {
     print_header("Concept Drift (window=50)");
     for n in get_benchmark_sizes() {
         let h = make_log(n);
-        print_row(n, ms(|| { let _ = detect_concept_drift(&h, ak, 50); }, 5));
+        print_row(
+            n,
+            ms(
+                || {
+                    let _ = detect_concept_drift(&h, ak, 50);
+                },
+                5,
+            ),
+        );
     }
 }
 
@@ -599,7 +755,15 @@ fn bench_cluster_traces() {
     print_header("Cluster Traces (k=5)");
     for n in get_benchmark_sizes() {
         let h = make_log(n);
-        print_row(n, ms(|| { let _ = cluster_traces(&h, ak, 5); }, 5));
+        print_row(
+            n,
+            ms(
+                || {
+                    let _ = cluster_traces(&h, ak, 5);
+                },
+                5,
+            ),
+        );
     }
 }
 
@@ -609,7 +773,15 @@ fn bench_start_end_activities() {
     print_header("Start/End Activities");
     for n in get_benchmark_sizes() {
         let h = make_log(n);
-        print_row(n, ms(|| { let _ = analyze_start_end_activities(&h, ak); }, 5));
+        print_row(
+            n,
+            ms(
+                || {
+                    let _ = analyze_start_end_activities(&h, ak);
+                },
+                5,
+            ),
+        );
     }
 }
 
@@ -619,7 +791,15 @@ fn bench_activity_cooccurrence() {
     print_header("Activity Co-occurrence");
     for n in get_benchmark_sizes() {
         let h = make_log(n);
-        print_row(n, ms(|| { let _ = analyze_activity_cooccurrence(&h, ak); }, 5));
+        print_row(
+            n,
+            ms(
+                || {
+                    let _ = analyze_activity_cooccurrence(&h, ak);
+                },
+                5,
+            ),
+        );
     }
 }
 
@@ -629,7 +809,15 @@ fn bench_infrequent_paths() {
     print_header("Infrequent Paths (θ=0.1)");
     for n in get_benchmark_sizes() {
         let h = make_log(n);
-        print_row(n, ms(|| { let _ = analyze_infrequent_paths(&h, ak, 0.1); }, 5));
+        print_row(
+            n,
+            ms(
+                || {
+                    let _ = analyze_infrequent_paths(&h, ak, 0.1);
+                },
+                5,
+            ),
+        );
     }
 }
 
@@ -639,7 +827,15 @@ fn bench_detect_rework() {
     print_header("Detect Rework");
     for n in get_benchmark_sizes() {
         let h = make_log(n);
-        print_row(n, ms(|| { let _ = detect_rework(&h, ak); }, 5));
+        print_row(
+            n,
+            ms(
+                || {
+                    let _ = detect_rework(&h, ak);
+                },
+                5,
+            ),
+        );
     }
 }
 
@@ -650,7 +846,15 @@ fn bench_bottleneck_detection() {
     print_header("Bottleneck Detection (threshold=60s)");
     for n in get_benchmark_sizes() {
         let h = make_log(n);
-        print_row(n, ms(|| { let _ = detect_bottlenecks(&h, ak, tk, 60); }, 5));
+        print_row(
+            n,
+            ms(
+                || {
+                    let _ = detect_bottlenecks(&h, ak, tk, 60);
+                },
+                5,
+            ),
+        );
     }
 }
 
@@ -660,7 +864,15 @@ fn bench_model_metrics() {
     print_header("Model Metrics");
     for n in get_benchmark_sizes() {
         let h = make_log(n);
-        print_row(n, ms(|| { let _ = compute_model_metrics(&h, ak); }, 5));
+        print_row(
+            n,
+            ms(
+                || {
+                    let _ = compute_model_metrics(&h, ak);
+                },
+                5,
+            ),
+        );
     }
 }
 
@@ -670,7 +882,15 @@ fn bench_activity_dependencies() {
     print_header("Activity Dependencies");
     for n in get_benchmark_sizes() {
         let h = make_log(n);
-        print_row(n, ms(|| { let _ = analyze_activity_dependencies(&h, ak); }, 5));
+        print_row(
+            n,
+            ms(
+                || {
+                    let _ = analyze_activity_dependencies(&h, ak);
+                },
+                5,
+            ),
+        );
     }
 }
 
@@ -680,7 +900,15 @@ fn bench_case_attributes() {
     print_header("Case Attributes");
     for n in get_benchmark_sizes() {
         let h = make_log(n);
-        print_row(n, ms(|| { let _ = analyze_case_attributes(&h, ak); }, 5));
+        print_row(
+            n,
+            ms(
+                || {
+                    let _ = analyze_case_attributes(&h, ak);
+                },
+                5,
+            ),
+        );
     }
 }
 
@@ -690,7 +918,15 @@ fn bench_variant_complexity() {
     print_header("Variant Complexity");
     for n in get_benchmark_sizes() {
         let h = make_log(n);
-        print_row(n, ms(|| { let _ = analyze_variant_complexity(&h, ak); }, 5));
+        print_row(
+            n,
+            ms(
+                || {
+                    let _ = analyze_variant_complexity(&h, ak);
+                },
+                5,
+            ),
+        );
     }
 }
 
@@ -700,7 +936,15 @@ fn bench_activity_transition_matrix() {
     print_header("Activity Transition Matrix");
     for n in get_benchmark_sizes() {
         let h = make_log(n);
-        print_row(n, ms(|| { let _ = compute_activity_transition_matrix(&h, ak); }, 5));
+        print_row(
+            n,
+            ms(
+                || {
+                    let _ = compute_activity_transition_matrix(&h, ak);
+                },
+                5,
+            ),
+        );
     }
 }
 
@@ -710,7 +954,15 @@ fn bench_process_speedup() {
     print_header("Process Speedup (window=50)");
     for n in get_benchmark_sizes() {
         let h = make_log(n);
-        print_row(n, ms(|| { let _ = analyze_process_speedup(&h, tk, 50); }, 5));
+        print_row(
+            n,
+            ms(
+                || {
+                    let _ = analyze_process_speedup(&h, tk, 50);
+                },
+                5,
+            ),
+        );
     }
 }
 
@@ -720,7 +972,15 @@ fn bench_trace_similarity_matrix() {
     print_header("Trace Similarity Matrix (O(n²) — small logs only)");
     for n in get_benchmark_sizes() {
         let h = make_log(n);
-        print_row(n, ms(|| { let _ = compute_trace_similarity_matrix(&h, ak); }, 3));
+        print_row(
+            n,
+            ms(
+                || {
+                    let _ = compute_trace_similarity_matrix(&h, ak);
+                },
+                3,
+            ),
+        );
     }
 }
 
@@ -731,7 +991,15 @@ fn bench_temporal_bottlenecks() {
     print_header("Temporal Bottlenecks");
     for n in get_benchmark_sizes() {
         let h = make_log(n);
-        print_row(n, ms(|| { let _ = analyze_temporal_bottlenecks(&h, ak, tk); }, 5));
+        print_row(
+            n,
+            ms(
+                || {
+                    let _ = analyze_temporal_bottlenecks(&h, ak, tk);
+                },
+                5,
+            ),
+        );
     }
 }
 
@@ -741,7 +1009,15 @@ fn bench_activity_ordering() {
     print_header("Activity Ordering");
     for n in get_benchmark_sizes() {
         let h = make_log(n);
-        print_row(n, ms(|| { let _ = extract_activity_ordering(&h, ak); }, 5));
+        print_row(
+            n,
+            ms(
+                || {
+                    let _ = extract_activity_ordering(&h, ak);
+                },
+                5,
+            ),
+        );
     }
 }
 
@@ -760,7 +1036,15 @@ fn bench_token_based_replay() {
         let pn_h = pn_data["handle"].as_str().unwrap().to_string();
         let lh = log_h.clone();
         let ph = pn_h.clone();
-        print_row(n, ms(|| { let _ = check_token_based_replay(&lh, &ph, ak); }, 5));
+        print_row(
+            n,
+            ms(
+                || {
+                    let _ = check_token_based_replay(&lh, &ph, ak);
+                },
+                5,
+            ),
+        );
     }
 }
 
@@ -784,16 +1068,22 @@ fn bench_streaming_dfg() {
     print_header("Streaming DFG");
     for &n in &[100usize, 1_000, 5_000, 10_000] {
         let traces = make_synthetic_traces(n);
-        print_row(n, ms(|| {
-            let mut dfg = StreamingDFG::new();
-            for (case_id, events) in &traces {
-                for act in events {
-                    dfg.process_event(act);
-                }
-                dfg.end_trace();
-            }
-            let _ = dfg.snapshot();
-        }, 5));
+        print_row(
+            n,
+            ms(
+                || {
+                    let mut dfg = StreamingDFG::new();
+                    for (_case_id, events) in &traces {
+                        for act in events {
+                            dfg.process_event(act);
+                        }
+                        dfg.end_trace();
+                    }
+                    let _ = dfg.snapshot();
+                },
+                5,
+            ),
+        );
     }
 }
 
@@ -802,16 +1092,22 @@ fn bench_streaming_alpha_plus() {
     print_header("Streaming Alpha++");
     for &n in &[100usize, 1_000, 5_000, 10_000] {
         let traces = make_synthetic_traces(n);
-        print_row(n, ms(|| {
-            let mut builder = StreamingAlphaPlusBuilder::new();
-            for (case_id, events) in &traces {
-                for act in events {
-                    builder.add_event(case_id, act);
-                }
-                builder.close_trace(case_id);
-            }
-            let _ = builder.snapshot();
-        }, 5));
+        print_row(
+            n,
+            ms(
+                || {
+                    let mut builder = StreamingAlphaPlusBuilder::new();
+                    for (case_id, events) in &traces {
+                        for act in events {
+                            builder.add_event(case_id, act);
+                        }
+                        builder.close_trace(case_id);
+                    }
+                    let _ = builder.snapshot();
+                },
+                5,
+            ),
+        );
     }
 }
 
@@ -820,16 +1116,22 @@ fn bench_streaming_declare() {
     print_header("Streaming DECLARE (threshold=0.6)");
     for &n in &[100usize, 1_000, 5_000, 10_000] {
         let traces = make_synthetic_traces(n);
-        print_row(n, ms(|| {
-            let mut builder = StreamingDeclareBuilder::new().with_threshold(0.6);
-            for (case_id, events) in &traces {
-                for act in events {
-                    builder.add_event(case_id, act);
-                }
-                builder.close_trace(case_id);
-            }
-            let _ = builder.snapshot();
-        }, 5));
+        print_row(
+            n,
+            ms(
+                || {
+                    let mut builder = StreamingDeclareBuilder::new().with_threshold(0.6);
+                    for (case_id, events) in &traces {
+                        for act in events {
+                            builder.add_event(case_id, act);
+                        }
+                        builder.close_trace(case_id);
+                    }
+                    let _ = builder.snapshot();
+                },
+                5,
+            ),
+        );
     }
 }
 
@@ -838,16 +1140,22 @@ fn bench_streaming_inductive() {
     print_header("Streaming Inductive Miner");
     for &n in &[100usize, 1_000, 5_000, 10_000] {
         let traces = make_synthetic_traces(n);
-        print_row(n, ms(|| {
-            let mut builder = StreamingInductiveBuilder::new();
-            for (case_id, events) in &traces {
-                for act in events {
-                    builder.add_event(case_id, act);
-                }
-                builder.close_trace(case_id);
-            }
-            let _ = builder.snapshot();
-        }, 5));
+        print_row(
+            n,
+            ms(
+                || {
+                    let mut builder = StreamingInductiveBuilder::new();
+                    for (case_id, events) in &traces {
+                        for act in events {
+                            builder.add_event(case_id, act);
+                        }
+                        builder.close_trace(case_id);
+                    }
+                    let _ = builder.snapshot();
+                },
+                5,
+            ),
+        );
     }
 }
 
@@ -856,16 +1164,22 @@ fn bench_streaming_hill_climbing() {
     print_header("Streaming Hill Climbing (noise=0.2)");
     for &n in &[100usize, 1_000, 5_000, 10_000] {
         let traces = make_synthetic_traces(n);
-        print_row(n, ms(|| {
-            let mut builder = StreamingHillClimbingBuilder::new().with_noise_threshold(0.2);
-            for (case_id, events) in &traces {
-                for act in events {
-                    builder.add_event(case_id, act);
-                }
-                builder.close_trace(case_id);
-            }
-            let _ = builder.snapshot();
-        }, 5));
+        print_row(
+            n,
+            ms(
+                || {
+                    let mut builder = StreamingHillClimbingBuilder::new().with_noise_threshold(0.2);
+                    for (case_id, events) in &traces {
+                        for act in events {
+                            builder.add_event(case_id, act);
+                        }
+                        builder.close_trace(case_id);
+                    }
+                    let _ = builder.snapshot();
+                },
+                5,
+            ),
+        );
     }
 }
 
@@ -874,16 +1188,22 @@ fn bench_streaming_astar() {
     print_header("Streaming A* (weight=0.5)");
     for &n in &[100usize, 1_000, 5_000, 10_000] {
         let traces = make_synthetic_traces(n);
-        print_row(n, ms(|| {
-            let mut builder = StreamingAStarBuilder::new().with_heuristic_weight(0.5);
-            for (case_id, events) in &traces {
-                for act in events {
-                    builder.add_event(case_id, act);
-                }
-                builder.close_trace(case_id);
-            }
-            let _ = builder.snapshot();
-        }, 5));
+        print_row(
+            n,
+            ms(
+                || {
+                    let mut builder = StreamingAStarBuilder::new().with_heuristic_weight(0.5);
+                    for (case_id, events) in &traces {
+                        for act in events {
+                            builder.add_event(case_id, act);
+                        }
+                        builder.close_trace(case_id);
+                    }
+                    let _ = builder.snapshot();
+                },
+                5,
+            ),
+        );
     }
 }
 
@@ -892,29 +1212,36 @@ fn bench_streaming_incremental_dfg_merge() {
     print_header("Incremental DFG Merge (4 threads)");
     for &n in &[100usize, 1_000, 5_000, 10_000] {
         let traces = make_synthetic_traces(n);
-        print_row(n, ms(|| {
-            let chunk_size = (traces.len() + 3) / 4;
-            let chunks: Vec<_> = traces.chunks(chunk_size).collect();
+        print_row(
+            n,
+            ms(
+                || {
+                    let chunk_size = traces.len().div_ceil(4);
+                    let chunks: Vec<_> = traces.chunks(chunk_size).collect();
 
-            let mut partials: Vec<IncrementalDFG> = chunks.iter()
-                .map(|chunk| {
-                    let mut dfg = IncrementalDFG::new();
-                    for (case_id, events) in *chunk {
-                        for (i, act) in events.iter().enumerate() {
-                            dfg.process_event(i as u32, i == 0);
-                        }
-                        dfg.end_trace();
+                    let partials: Vec<IncrementalDFG> = chunks
+                        .iter()
+                        .map(|chunk| {
+                            let mut dfg = IncrementalDFG::new();
+                            for (_case_id, events) in *chunk {
+                                for (i, _act) in events.iter().enumerate() {
+                                    dfg.process_event(i as u32, i == 0);
+                                }
+                                dfg.end_trace();
+                            }
+                            dfg
+                        })
+                        .collect();
+
+                    let mut merged = IncrementalDFG::new();
+                    for partial in partials {
+                        merged.merge(&partial);
                     }
-                    dfg
-                })
-                .collect();
-
-            let mut merged = IncrementalDFG::new();
-            for partial in partials {
-                merged.merge(&partial);
-            }
-            let _ = merged.snapshot();
-        }, 5));
+                    let _ = merged.snapshot();
+                },
+                5,
+            ),
+        );
     }
 }
 

@@ -1,6 +1,6 @@
-# @wasm4pm/planner
+# @pictl/planner
 
-Execution plan generation for the wasm4pm process mining engine.
+Execution plan generation for the pictl process mining engine.
 
 Generates deterministic, reproducible execution plans from process mining configurations. Plans are used by both the `explain()` and `run()` functions (per PRD §11: explain() == run()).
 
@@ -17,13 +17,13 @@ Generates deterministic, reproducible execution plans from process mining config
 ## Installation
 
 ```bash
-npm install @wasm4pm/planner
+npm install @pictl/planner
 ```
 
 ## Quick Start
 
 ```typescript
-import { plan, explain } from '@wasm4pm/planner';
+import { plan, explain } from '@pictl/planner';
 
 // Create a configuration
 const config = {
@@ -277,7 +277,7 @@ This ensures consistency: the explanation shows exactly what will be executed.
 ### Generate a Plan for XES File
 
 ```typescript
-import { plan, explain } from '@wasm4pm/planner';
+import { plan, explain } from '@pictl/planner';
 
 const config = {
   version: '1.0',
@@ -296,7 +296,7 @@ console.log(`\nPlan explanation:\n${markdown}`);
 ### Validate a Plan
 
 ```typescript
-import { validatePlan, assertPlanValid } from '@wasm4pm/planner';
+import { validatePlan, assertPlanValid } from '@pictl/planner';
 
 const errors = validatePlan(executionPlan);
 if (errors.length > 0) {
@@ -320,7 +320,7 @@ try {
 ### Analyze Plan Dependencies
 
 ```typescript
-import { getDependencies, getDependents, topologicalSort } from '@wasm4pm/planner';
+import { getDependencies, getDependents, topologicalSort } from '@pictl/planner';
 
 // Get all prerequisites for a step
 const deps = getDependencies(executionPlan.graph, 'analyze_statistics');
@@ -383,7 +383,7 @@ console.log(`Balanced plan hash: ${balancedPlan.hash}`);
 
 ## Contributing
 
-See the main wasm4pm repository for contribution guidelines.
+See the main pictl repository for contribution guidelines.
 
 ## License
 

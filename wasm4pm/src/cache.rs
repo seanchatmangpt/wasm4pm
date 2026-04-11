@@ -149,8 +149,7 @@ pub struct CacheStats {
 
 /// LRU cache of parsed log handles, keyed by XES content hash.
 /// Capacity: 10 entries.
-static PARSE_CACHE: Lazy<Mutex<LruCache<String>>> =
-    Lazy::new(|| Mutex::new(LruCache::new(10)));
+static PARSE_CACHE: Lazy<Mutex<LruCache<String>>> = Lazy::new(|| Mutex::new(LruCache::new(10)));
 
 // ---------------------------------------------------------------------------
 // Layer 2: COLUMNAR_CACHE
@@ -217,15 +216,13 @@ pub fn parse_cache_insert(content_hash: String, handle: String) {
 /// Look up a cached columnar log by `(log_handle, activity_key)`.
 pub fn columnar_cache_get(log_handle: &str, activity_key: &str) -> Option<OwnedColumnarLog> {
     let outer = COLUMNAR_CACHE.lock().unwrap();
-    outer.get(log_handle).and_then(|inner| inner.get(activity_key).cloned())
+    outer
+        .get(log_handle)
+        .and_then(|inner| inner.get(activity_key).cloned())
 }
 
 /// Insert an owned columnar log into the columnar cache.
-pub fn columnar_cache_insert(
-    log_handle: String,
-    activity_key: String,
-    col: OwnedColumnarLog,
-) {
+pub fn columnar_cache_insert(log_handle: String, activity_key: String, col: OwnedColumnarLog) {
     COLUMNAR_CACHE
         .lock()
         .unwrap()
@@ -324,7 +321,8 @@ mod tests {
 
     #[test]
     fn test_hash_deterministic() {
-        let content = "<log><trace><event><string key=\"concept:name\" value=\"A\"/></event></trace></log>";
+        let content =
+            "<log><trace><event><string key=\"concept:name\" value=\"A\"/></event></trace></log>";
         let h1 = hash_xes_content(content);
         let h2 = hash_xes_content(content);
         assert_eq!(h1, h2);
@@ -381,11 +379,15 @@ mod tests {
             vocab: vec!["A".to_string(), "B".to_string(), "C".to_string()],
         };
 
-        columnar_cache_insert(k.clone(), "activity".to_string(), OwnedColumnarLog {
-            events: col.events.clone(),
-            trace_offsets: col.trace_offsets.clone(),
-            vocab: col.vocab.clone(),
-        });
+        columnar_cache_insert(
+            k.clone(),
+            "activity".to_string(),
+            OwnedColumnarLog {
+                events: col.events.clone(),
+                trace_offsets: col.trace_offsets.clone(),
+                vocab: col.vocab.clone(),
+            },
+        );
 
         let retrieved = columnar_cache_get(&k, "activity").expect("should be cached");
         assert_eq!(retrieved.events, col.events);
@@ -409,6 +411,13 @@ mod tests {
         assert_eq!(cached.get(0), Some("login"));
         assert_eq!(cached.get(1), Some("logout"));
         assert_eq!(cached.get(2), Some("submit"));
-        assert_eq!(cached.vocab(), &["login".to_string(), "logout".to_string(), "submit".to_string()]);
+        assert_eq!(
+            cached.vocab(),
+            &[
+                "login".to_string(),
+                "logout".to_string(),
+                "submit".to_string()
+            ]
+        );
     }
 }

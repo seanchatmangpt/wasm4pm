@@ -9,7 +9,10 @@ struct Dag {
 
 impl Dag {
     fn new(n: usize) -> Self {
-        Dag { n, adj: vec![Vec::new(); n] }
+        Dag {
+            n,
+            adj: vec![Vec::new(); n],
+        }
     }
 
     fn add_edge(&mut self, from: usize, to: usize) {
@@ -52,14 +55,16 @@ impl Dag {
         let n = self.n;
         let reachable = {
             let mut reach = vec![vec![false; n]; n];
-            for start in 0..n {
+            for (start, adj_row) in self.adj.iter().enumerate() {
                 let mut visited = vec![false; n];
                 let mut stack = Vec::new();
-                for &succ in &self.adj[start] {
+                for &succ in adj_row {
                     stack.push(succ);
                 }
                 while let Some(cur) = stack.pop() {
-                    if visited[cur] { continue; }
+                    if visited[cur] {
+                        continue;
+                    }
                     visited[cur] = true;
                     reach[start][cur] = true;
                     for &succ in &self.adj[cur] {
@@ -85,7 +90,9 @@ impl Dag {
         let mut visited = vec![false; self.n];
         let mut components: Vec<Vec<usize>> = Vec::new();
         for start in 0..self.n {
-            if visited[start] { continue; }
+            if visited[start] {
+                continue;
+            }
             let mut comp = Vec::new();
             let mut queue = std::collections::VecDeque::new();
             queue.push_back(start);
@@ -98,8 +105,8 @@ impl Dag {
                         queue.push_back(j);
                     }
                 }
-                for i in 0..self.n {
-                    if !visited[i] && self.adj[i].contains(&cur) {
+                for (i, row) in self.adj.iter().enumerate() {
+                    if !visited[i] && row.contains(&cur) {
                         visited[i] = true;
                         queue.push_back(i);
                     }
@@ -122,17 +129,27 @@ pub fn apply_recursive(arena: &PowlArena, node_idx: u32) -> ProcessTree {
                 Operator::Loop => PtOperator::Loop,
                 Operator::PartialOrder => PtOperator::Sequence,
             };
-            let children: Vec<ProcessTree> = op.children.iter().map(|&c| apply_recursive(arena, c)).collect();
+            let children: Vec<ProcessTree> = op
+                .children
+                .iter()
+                .map(|&c| apply_recursive(arena, c))
+                .collect();
             ProcessTree::internal(pt_op, children)
         }
         Some(PowlNode::StrictPartialOrder(spo)) => {
             let n = spo.children.len();
-            if n == 0 { return ProcessTree::leaf(None); }
-            if n == 1 { return apply_recursive(arena, spo.children[0]); }
+            if n == 0 {
+                return ProcessTree::leaf(None);
+            }
+            if n == 1 {
+                return apply_recursive(arena, spo.children[0]);
+            }
             let mut dag = Dag::new(n);
             for i in 0..n {
                 for j in 0..n {
-                    if spo.order.is_edge(i, j) { dag.add_edge(i, j); }
+                    if spo.order.is_edge(i, j) {
+                        dag.add_edge(i, j);
+                    }
                 }
             }
             let dag = dag.transitive_reduction();
@@ -147,7 +164,9 @@ pub fn apply_recursive(arena: &PowlArena, node_idx: u32) -> ProcessTree {
                 let local_to_global: Vec<usize> = comp.clone();
                 let global_to_local: Vec<Option<usize>> = {
                     let mut g2l = vec![None; n];
-                    for (li, &gi) in local_to_global.iter().enumerate() { g2l[gi] = Some(li); }
+                    for (li, &gi) in local_to_global.iter().enumerate() {
+                        g2l[gi] = Some(li);
+                    }
                     g2l
                 };
                 let m = comp.len();
@@ -162,14 +181,18 @@ pub fn apply_recursive(arena: &PowlArena, node_idx: u32) -> ProcessTree {
                 let levels_map = sub_dag.assign_levels();
                 let max_level = *levels_map.iter().max().unwrap_or(&0);
                 let mut level_groups: Vec<Vec<usize>> = vec![Vec::new(); max_level + 1];
-                for li in 0..m {
-                    let lv = levels_map[li];
-                    if lv != usize::MAX { level_groups[lv].push(li); }
+                for (li, &lv) in levels_map.iter().enumerate() {
+                    if lv != usize::MAX {
+                        level_groups[lv].push(li);
+                    }
                 }
                 let mut level_trees: Vec<ProcessTree> = Vec::new();
                 for group in &level_groups {
-                    if group.is_empty() { continue; }
-                    let sub_trees: Vec<ProcessTree> = group.iter()
+                    if group.is_empty() {
+                        continue;
+                    }
+                    let sub_trees: Vec<ProcessTree> = group
+                        .iter()
                         .map(|&li| apply_recursive(arena, spo.children[local_to_global[li]]))
                         .collect();
                     if sub_trees.len() == 1 {
@@ -196,12 +219,18 @@ pub fn apply_recursive(arena: &PowlArena, node_idx: u32) -> ProcessTree {
             // Treat as StrictPartialOrder for process tree conversion
             // DecisionGraph has the same children+order structure
             let n = dg.children.len();
-            if n == 0 { return ProcessTree::leaf(None); }
-            if n == 1 { return apply_recursive(arena, dg.children[0]); }
+            if n == 0 {
+                return ProcessTree::leaf(None);
+            }
+            if n == 1 {
+                return apply_recursive(arena, dg.children[0]);
+            }
             let mut dag = Dag::new(n);
             for i in 0..n {
                 for j in 0..n {
-                    if dg.order.is_edge(i, j) { dag.add_edge(i, j); }
+                    if dg.order.is_edge(i, j) {
+                        dag.add_edge(i, j);
+                    }
                 }
             }
             let dag = dag.transitive_reduction();
@@ -216,7 +245,9 @@ pub fn apply_recursive(arena: &PowlArena, node_idx: u32) -> ProcessTree {
                 let local_to_global: Vec<usize> = comp.clone();
                 let global_to_local: Vec<Option<usize>> = {
                     let mut g2l = vec![None; n];
-                    for (li, &gi) in local_to_global.iter().enumerate() { g2l[gi] = Some(li); }
+                    for (li, &gi) in local_to_global.iter().enumerate() {
+                        g2l[gi] = Some(li);
+                    }
                     g2l
                 };
                 let m = comp.len();
@@ -231,14 +262,18 @@ pub fn apply_recursive(arena: &PowlArena, node_idx: u32) -> ProcessTree {
                 let levels_map = sub_dag.assign_levels();
                 let max_level = *levels_map.iter().max().unwrap_or(&0);
                 let mut level_groups: Vec<Vec<usize>> = vec![Vec::new(); max_level + 1];
-                for li in 0..m {
-                    let lv = levels_map[li];
-                    if lv != usize::MAX { level_groups[lv].push(li); }
+                for (li, &lv) in levels_map.iter().enumerate() {
+                    if lv != usize::MAX {
+                        level_groups[lv].push(li);
+                    }
                 }
                 let mut level_trees: Vec<ProcessTree> = Vec::new();
                 for group in &level_groups {
-                    if group.is_empty() { continue; }
-                    let sub_trees: Vec<ProcessTree> = group.iter()
+                    if group.is_empty() {
+                        continue;
+                    }
+                    let sub_trees: Vec<ProcessTree> = group
+                        .iter()
                         .map(|&li| apply_recursive(arena, dg.children[local_to_global[li]]))
                         .collect();
                     if sub_trees.len() == 1 {
@@ -279,7 +314,8 @@ mod tests {
     }
 
     #[test]
-    fn transition_to_leaf() {
+    fn test_process_tree_leaf() {
+        // Happy path: single transition becomes leaf node
         let (arena, root) = build("A");
         let pt = apply(&arena, root);
         assert_eq!(pt.label.as_deref(), Some("A"));
@@ -287,32 +323,30 @@ mod tests {
     }
 
     #[test]
-    fn xor_to_xor() {
+    fn test_process_tree_operators() {
+        // XOR becomes XOR operator
         let (arena, root) = build("X ( A, B )");
         let pt = apply(&arena, root);
         assert_eq!(pt.operator, Some(PtOperator::Xor));
         assert_eq!(pt.children.len(), 2);
-    }
 
-    #[test]
-    fn sequence_po_to_sequence_tree() {
-        let (arena, root) = build("PO=(nodes={A, B}, order={A-->B})");
-        let pt = apply(&arena, root);
-        let repr = pt.to_repr();
-        assert!(repr.contains("A") && repr.contains("B"), "got: {}", repr);
-    }
-
-    #[test]
-    fn concurrent_po_to_parallel() {
-        let (arena, root) = build("PO=(nodes={A, B}, order={})");
-        let pt = apply(&arena, root);
-        assert_eq!(pt.operator, Some(PtOperator::Parallel));
-    }
-
-    #[test]
-    fn loop_to_loop() {
+        // Loop becomes loop operator
         let (arena, root) = build("* ( A, B )");
         let pt = apply(&arena, root);
         assert_eq!(pt.operator, Some(PtOperator::Loop));
+    }
+
+    #[test]
+    fn test_process_tree_partial_orders() {
+        // Sequential PO becomes sequence
+        let (arena, root) = build("PO=(nodes={A, B}, order={A-->B})");
+        let pt = apply(&arena, root);
+        let repr = pt.to_repr();
+        assert!(repr.contains("A") && repr.contains("B"));
+
+        // Concurrent PO becomes parallel
+        let (arena, root) = build("PO=(nodes={A, B}, order={})");
+        let pt = apply(&arena, root);
+        assert_eq!(pt.operator, Some(PtOperator::Parallel));
     }
 }

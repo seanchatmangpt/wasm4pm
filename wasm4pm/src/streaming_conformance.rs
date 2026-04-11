@@ -1,7 +1,7 @@
-use wasm_bindgen::prelude::*;
+use crate::models::{DirectlyFollowsGraph, StreamingConformanceChecker};
 use crate::state::{get_or_init_state, StoredObject};
-use crate::models::{StreamingConformanceChecker, DirectlyFollowsGraph};
 use serde_json::json;
+use wasm_bindgen::prelude::*;
 
 /// Store a DFG from its JSON representation and return a handle.
 ///
@@ -18,8 +18,7 @@ use serde_json::json;
 pub fn store_dfg_from_json(dfg_json: &str) -> Result<JsValue, JsValue> {
     let dfg: DirectlyFollowsGraph = serde_json::from_str(dfg_json)
         .map_err(|e| JsValue::from_str(&format!("Invalid DFG JSON: {}", e)))?;
-    let handle = get_or_init_state()
-        .store_object(StoredObject::DirectlyFollowsGraph(dfg))?;
+    let handle = get_or_init_state().store_object(StoredObject::DirectlyFollowsGraph(dfg))?;
     Ok(JsValue::from_str(&handle))
 }
 
@@ -39,8 +38,8 @@ pub fn streaming_conformance_begin(dfg_handle: &str) -> Result<JsValue, JsValue>
         None => Err(JsValue::from_str("DFG handle not found")),
     })?;
 
-    let handle = get_or_init_state()
-        .store_object(StoredObject::StreamingConformanceChecker(checker))?;
+    let handle =
+        get_or_init_state().store_object(StoredObject::StreamingConformanceChecker(checker))?;
     Ok(JsValue::from_str(&handle))
 }
 
@@ -60,11 +59,16 @@ pub fn streaming_conformance_add_event(
                 "ok": true,
                 "event_count": c.event_count,
                 "open_traces": c.open_traces.len(),
-            })).map_err(|e| JsValue::from_str(&e.to_string()))?;
+            }))
+            .map_err(|e| JsValue::from_str(&e.to_string()))?;
             Ok(JsValue::from_str(&json))
         }
-        Some(_) => Err(JsValue::from_str("Handle is not a StreamingConformanceChecker")),
-        None => Err(JsValue::from_str("StreamingConformanceChecker handle not found")),
+        Some(_) => Err(JsValue::from_str(
+            "Handle is not a StreamingConformanceChecker",
+        )),
+        None => Err(JsValue::from_str(
+            "StreamingConformanceChecker handle not found",
+        )),
     })
 }
 
@@ -73,10 +77,7 @@ pub fn streaming_conformance_add_event(
 /// Returns a JSON string with fields: `ok`, `case_id`, `is_conforming`,
 /// `fitness`, `deviations`.
 #[wasm_bindgen]
-pub fn streaming_conformance_close_trace(
-    handle: &str,
-    case_id: &str,
-) -> Result<JsValue, JsValue> {
+pub fn streaming_conformance_close_trace(handle: &str, case_id: &str) -> Result<JsValue, JsValue> {
     get_or_init_state().with_object_mut(handle, |obj| match obj {
         Some(StoredObject::StreamingConformanceChecker(c)) => {
             let val = match c.close_trace(case_id) {
@@ -89,12 +90,16 @@ pub fn streaming_conformance_close_trace(
                 }),
                 None => json!({ "ok": false, "reason": "case_id not open" }),
             };
-            let json = serde_json::to_string(&val)
-                .map_err(|e| JsValue::from_str(&e.to_string()))?;
+            let json =
+                serde_json::to_string(&val).map_err(|e| JsValue::from_str(&e.to_string()))?;
             Ok(JsValue::from_str(&json))
         }
-        Some(_) => Err(JsValue::from_str("Handle is not a StreamingConformanceChecker")),
-        None => Err(JsValue::from_str("StreamingConformanceChecker handle not found")),
+        Some(_) => Err(JsValue::from_str(
+            "Handle is not a StreamingConformanceChecker",
+        )),
+        None => Err(JsValue::from_str(
+            "StreamingConformanceChecker handle not found",
+        )),
     })
 }
 
@@ -119,11 +124,16 @@ pub fn streaming_conformance_stats(handle: &str) -> Result<JsValue, JsValue> {
                 "conforming_traces": conforming,
                 "deviating_traces": c.results.len() - conforming,
                 "avg_fitness": avg_fitness,
-            })).map_err(|e| JsValue::from_str(&e.to_string()))?;
+            }))
+            .map_err(|e| JsValue::from_str(&e.to_string()))?;
             Ok(JsValue::from_str(&json))
         }
-        Some(_) => Err(JsValue::from_str("Handle is not a StreamingConformanceChecker")),
-        None => Err(JsValue::from_str("StreamingConformanceChecker handle not found")),
+        Some(_) => Err(JsValue::from_str(
+            "Handle is not a StreamingConformanceChecker",
+        )),
+        None => Err(JsValue::from_str(
+            "StreamingConformanceChecker handle not found",
+        )),
     })
 }
 
@@ -151,11 +161,16 @@ pub fn streaming_conformance_finalize(handle: &str) -> Result<JsValue, JsValue> 
                 "deviating_traces": c.results.len() - conforming,
                 "avg_fitness": avg_fitness,
                 "results": c.results,
-            })).map_err(|e| JsValue::from_str(&e.to_string()))?;
+            }))
+            .map_err(|e| JsValue::from_str(&e.to_string()))?;
             Ok(json)
         }
-        Some(_) => Err(JsValue::from_str("Handle is not a StreamingConformanceChecker")),
-        None => Err(JsValue::from_str("StreamingConformanceChecker handle not found")),
+        Some(_) => Err(JsValue::from_str(
+            "Handle is not a StreamingConformanceChecker",
+        )),
+        None => Err(JsValue::from_str(
+            "StreamingConformanceChecker handle not found",
+        )),
     })?;
 
     get_or_init_state().delete_object(handle)?;

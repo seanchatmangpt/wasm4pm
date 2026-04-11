@@ -1,6 +1,6 @@
 {
   "name": "@pictl/observability",
-  "version": "26.4.7",
+  "version": "26.4.10",
   "description": "Optional non-blocking OTEL observability layer for wasm4pm",
   "type": "module",
   "main": "./dist/index.js",
@@ -35,5 +35,5 @@
     "process-mining"
   ],
   "author": "Sean Chatman",
-  "license": "MIT"
+  "license": "SEE LICENSE IN LICENSE"
 }

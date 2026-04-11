@@ -4,7 +4,7 @@
  * Singleton pattern for efficient module reuse across multiple engine.run() calls
  * Handles panic hooks, memory validation, and runtime environment detection
  */
-import { ObservabilityLayer } from '@wasm4pm/observability';
+import { ObservabilityLayer } from '@pictl/observability';
 /**
  * WASM initialization error codes
  */
@@ -219,10 +219,10 @@ export class WasmLoader {
         // Dynamically import based on runtime environment
         let wasmModule;
         try {
-            // Import from the built wasm4pm package
+            // Import from the built pictl WASM package
             // Path is relative to where this file runs
             const modulePath = this.config.modulePath ||
-                '../../../wasm4pm/pkg/wasm4pm.js';
+                '../../../wasm4pm/pkg/pictl.js';
             // Use dynamic import for flexibility
             wasmModule = await import(modulePath);
         }

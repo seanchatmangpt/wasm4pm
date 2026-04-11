@@ -1,92 +1,264 @@
+//! # pictl — High-Performance Process Mining in WebAssembly
+//!
+//! `pictl` provides production-ready process mining algorithms compiled to WebAssembly,
+//! enabling efficient **process discovery**, **conformance checking**, and **predictive analytics**
+//! in JavaScript/TypeScript environments.
+//!
+//! ## Features
+//!
+//! - **Process Discovery** — DFG, Alpha++, Heuristic Miner, Inductive Miner, Genetic Algorithm, ILP, ACO, PSO
+//! - **Conformance Checking** — Token-based replay, streaming conformance
+//! - **Machine Learning** — Remaining-time prediction, outcome prediction, anomaly detection, drift detection
+//! - **Streaming** — Real-time process mining for IoT and event streaming with SIMD acceleration
+//! - **OCEL Support** — Object-Centric Event Logs with flattened analysis and DECLARE conformance
+//! - **POWL** — Process-Oriented Workflow Language support
+//!
+//! ## Quick Start
+//!
+//! ```javascript
+//! import initWasm, {
+//!   load_eventlog_from_xes,
+//!   discover_dfg,
+//!   delete_object,
+//! } from "@seanchatmangpt/pictl";
+//!
+//! // Initialize WASM module
+//! await initWasm();
+//!
+//! // Load event log from XES string
+//! const logHandle = load_eventlog_from_xes(xesString);
+//!
+//! // Discover Directly-Follows Graph
+//! const dfg = discover_dfg(logHandle, "concept:name");
+//!
+//! // Clean up
+//! delete_object(logHandle);
+//! ```
+//!
+//! ## Feature Flags
+//!
+//! ### Deployment Profiles (Binary Size Optimization)
+//!
+//! | Profile  | Size    | Reduction | Use Case            |
+//! |----------|---------|-----------|---------------------|
+//! | `cloud`  | ~2.78MB | —         | Cloud servers (default) |
+//! | `browser`| ~500KB  | 82%       | Web browsers, mobile |
+//! | `edge`   | ~1.5MB  | 46%       | Edge servers, CDN    |
+//! | `fog`    | ~2.0MB  | 28%       | Fog computing, IoT   |
+//! | `iot`    | ~1.0MB  | 64%       | IoT devices, embedded |
+//!
+//! ### Algorithm Selection
+//!
+//! - `basic` — Fast discovery algorithms (DFG, skeleton)
+//! - `advanced` — Full algorithm suite (ILP, genetic, ACO, PSO)
+//! - `ml` — Machine learning features (prediction, anomaly, clustering)
+//! - `streaming` — Streaming algorithms for real-time processing
+//!
+//! ## Architecture
+//!
+//! The crate uses a **handle-based state management system** where all objects
+//! (event logs, process models, results) are stored internally and referenced by
+//! string handles. This design enables:
+//!
+//! - Efficient serialization across the WASM boundary
+//! - Automatic memory management via object pooling
+//! - Simplified JavaScript interop (no manual lifetime management)
+//!
+//! ## Performance
+//!
+//! - **Throughput:** 100K+ events/second for DFG discovery
+//! - **Memory:** Columnar data layouts, object pooling, incremental computation
+//! - **Binary Size:** Deployment profiles reduce WASM by up to 82%
+//! - **SIMD:** Vectorized streaming DFG via WASM SIMD instructions
+//!
+//! ## Links
+//!
+//! - [GitHub Repository](https://github.com/seanchatmangpt/pictl)
+//! - [npm Package](https://www.npmjs.com/package/@seanchatmangpt/pictl)
+//! - [Documentation](https://docs.rs/pictl)
+
+pub mod error;
+pub mod io;
 pub mod models;
 pub mod state;
 pub mod types;
-pub mod error;
-pub mod io;
-pub mod ocel_io;
-pub mod ocel_flatten;
-pub mod discovery;
-pub mod analysis;
-pub mod conformance;
+
+// Hand-rolled statistics (when hand_rolled_stats feature is enabled)
 pub mod algorithms;
+pub mod analysis;
+pub mod binary_format;
+pub mod cache;
+pub mod capability_registry;
+pub mod conformance;
+pub mod data_quality;
+pub mod discovery;
+pub mod ensemble;
+pub mod fast_discovery;
+pub mod feature_extraction;
+pub mod feature_importance;
+pub mod filters;
+pub mod final_analytics;
+#[cfg(feature = "hand_rolled_stats")]
+pub mod hand_stats;
+pub mod hierarchical;
+pub mod incremental_dfg;
+pub mod more_discovery;
+pub mod parallel_executor;
+pub mod playout;
+pub mod probabilistic;
+pub mod process_tree;
+pub mod smart_engine;
+pub mod social_network;
+pub mod text_encoding;
 pub mod utilities;
 pub mod xes_format;
-pub mod advanced_algorithms;
-pub mod ilp_discovery;
-pub mod genetic_discovery;
-pub mod fast_discovery;
-pub mod more_discovery;
-pub mod final_analytics;
-pub mod streaming;
-pub mod streaming_conformance;
-pub mod streaming_wasm;
-pub mod simd_streaming_dfg;
 
-// Re-export streaming types for convenience
-pub use streaming::{StreamingAlgorithm, StreamStats, StreamingDfgBuilder, StreamingSkeletonBuilder, StreamingHeuristicBuilder};
-pub mod performance_dfg;
-pub mod filters;
-pub mod declare_conformance;
-pub mod temporal_profile;
-pub mod alignments;
-pub mod prediction;
-pub mod prediction_additions;
-pub mod prediction_features;
-pub mod prediction_drift;
-pub mod prediction_next_activity;
-pub mod anomaly;
-pub mod social_network;
-pub mod process_tree;
-pub mod text_encoding;
-pub mod feature_extraction;
-pub mod resource_analysis;
-pub mod data_quality;
-pub mod capability_registry;
-pub mod oc_petri_net;
+// OCEL support (gated by ocel feature)
+#[cfg(feature = "ocel")]
 pub mod oc_conformance;
+#[cfg(feature = "ocel")]
 pub mod oc_performance;
-pub mod recommendations;
+#[cfg(feature = "ocel")]
+pub mod oc_petri_net;
+#[cfg(feature = "ocel")]
+pub mod ocel_flatten;
+#[cfg(feature = "ocel")]
+pub mod ocel_io;
+#[cfg(feature = "ocel")]
+pub mod ocel_tests;
+
+// Advanced discovery algorithms (gated by discovery_advanced feature)
+#[cfg(feature = "discovery_advanced")]
+pub mod advanced_algorithms;
+#[cfg(feature = "discovery_advanced")]
+pub mod batches;
+#[cfg(feature = "discovery_advanced")]
+pub mod causal_graph;
+#[cfg(feature = "discovery_advanced")]
+pub mod genetic_discovery;
+#[cfg(feature = "discovery_advanced")]
+pub mod ilp_discovery; // ACO, PSO, simulated annealing
+#[cfg(feature = "discovery_advanced")]
+pub mod log_to_trie;
+#[cfg(feature = "discovery_advanced")]
+pub mod performance_spectrum;
+#[cfg(feature = "discovery_advanced")]
+pub mod transition_system;
+
+// Quality metrics (gated by conformance_full feature)
+#[cfg(feature = "conformance_full")]
+pub mod generalization;
+
+// ML/Prediction (gated by ml feature)
+#[cfg(feature = "ml")]
+pub mod anomaly;
+#[cfg(feature = "ml")]
+pub mod prediction;
+#[cfg(feature = "ml")]
+pub mod prediction_additions;
+#[cfg(feature = "ml")]
+pub mod prediction_drift;
+#[cfg(feature = "ml")]
+pub mod prediction_features;
+#[cfg(feature = "ml")]
+pub mod prediction_next_activity;
+#[cfg(feature = "ml")]
 pub mod prediction_outcome;
-pub mod prediction_resource;
+#[cfg(feature = "ml")]
 pub mod prediction_remaining_time;
-pub mod hierarchical;
+#[cfg(feature = "ml")]
+pub mod prediction_resource;
 
-// POWL modules
-pub mod powl;
-pub mod powl_arena;
-pub mod powl_parser;
-pub mod powl_api;
-pub mod powl_models;
-pub mod powl_event_log;
-pub mod powl_petri_net;
-pub mod powl_process_tree;
+// Streaming algorithms (gated by streaming_basic or streaming_full features)
+#[cfg(feature = "streaming_basic")]
+pub mod simd_streaming_dfg;
+#[cfg(feature = "streaming_basic")]
+pub mod streaming;
 
-// Probabilistic data structures for memory-ephemeral process mining
-pub mod probabilistic;
-
-// Incremental O(1) per-event DFG for infinite streams
-pub mod incremental_dfg;
-
-// Smart Execution Engine — fused computation, caching, early termination
-pub mod smart_engine;
-
-// Caching layer — three-level parse/columnar/interner cache
-pub mod cache;
-
-// Binary process mining log format (.pm4bin)
-pub mod binary_format;
-
-// Rayon-based parallel algorithm execution for multi-core CPUs
-pub mod parallel_executor;
-
-// Streaming pipeline — multi-algorithm event processing pipeline
+#[cfg(feature = "streaming_full")]
+pub mod streaming_conformance;
+#[cfg(feature = "streaming_full")]
 pub mod streaming_pipeline;
+#[cfg(feature = "streaming_full")]
+pub mod streaming_wasm;
 
-// Conformance cache — cached token replay results
+// Conformance (gated by conformance_basic or conformance_full features)
+#[cfg(feature = "conformance_basic")]
+pub mod declare_conformance;
+#[cfg(feature = "conformance_basic")]
+pub mod simd_token_replay;
+#[cfg(feature = "conformance_basic")]
+pub mod temporal_profile;
+
+#[cfg(feature = "conformance_full")]
+pub mod alignments;
+#[cfg(feature = "conformance_full")]
+pub mod etconformance_precision;
+#[cfg(feature = "conformance_full")]
+pub mod marking_equation;
+#[cfg(feature = "conformance_full")]
+pub mod petri_net_reduction;
+
+// 80/20 gap-filling modules
+#[cfg(feature = "align_etconformance")]
+pub mod align_etconformance;
+#[cfg(feature = "alignment_fitness")]
+pub mod alignment_fitness;
+#[cfg(feature = "montecarlo")]
+pub mod montecarlo;
+#[cfg(feature = "petri_net_playout")]
+pub mod petri_net_playout;
+
+// Performance and resource analysis
+#[cfg(feature = "conformance_basic")]
+pub mod performance_dfg;
+#[cfg(feature = "ocel")]
+pub mod resource_analysis;
+
+// POWL modules (gated by powl feature)
+#[cfg(feature = "powl")]
+pub mod complexity_metrics;
+#[cfg(feature = "powl")]
+pub mod powl;
+#[cfg(feature = "powl")]
+pub mod powl_api;
+#[cfg(feature = "powl")]
+pub mod powl_arena;
+#[cfg(feature = "powl")]
+pub mod powl_event_log;
+#[cfg(feature = "powl")]
+pub mod powl_models;
+#[cfg(feature = "powl")]
+pub mod powl_parser;
+#[cfg(feature = "powl")]
+pub mod powl_petri_net;
+#[cfg(feature = "powl")]
+pub mod powl_process_tree;
+#[cfg(feature = "powl")]
+pub mod powl_to_process_tree;
+#[cfg(feature = "powl")]
+pub mod yawl_export;
+
+// PNML import/export (always available)
+pub mod pnml_io;
+
+// BPMN import (always available, uses roxmltree)
+pub mod bpmn_import;
+
+#[cfg(feature = "streaming_basic")]
+pub use streaming::{
+    StreamStats, StreamingAlgorithm, StreamingDfgBuilder, StreamingHeuristicBuilder,
+    StreamingSkeletonBuilder,
+};
+
+// Recommendations module (always available)
+pub mod recommendations;
+
+// Conformance cache — cached token replay results (always available)
 pub mod conformance_cache;
 
-// SIMD-accelerated token replay for conformance checking
-pub mod simd_token_replay;
+// Correlation miner — DFG discovery without case identifiers (always available)
+pub mod correlation_miner;
 
 // Suppress unused warnings for re-exported modules
 #[allow(unused)]
@@ -99,6 +271,7 @@ use wasm_bindgen::prelude::*;
 #[wasm_bindgen(start)]
 pub fn init_wasm() {
     // Initialize panic hook for better error messages in console
+    #[cfg(feature = "console_error_panic_hook")]
     console_error_panic_hook::set_once();
 }
 
@@ -119,6 +292,28 @@ pub fn get_version() -> String {
     env!("CARGO_PKG_VERSION").to_string()
 }
 
+/// Get WASM module capabilities as JSON string.
+///
+/// Returns version and feature flags indicating which algorithms
+/// and capabilities are available in this build.
+#[wasm_bindgen]
+pub fn get_capabilities() -> String {
+    format!(
+        r#"{{"version":"{}","features":{{"discovery":true,"conformance":{},"ml":{},"streaming":{},"powl":{},"ocel":{},"alignment_fitness":{},"petri_net_playout":{},"extensive_playout":{},"align_etconformance":{},"montecarlo":{}}}}}"#,
+        env!("CARGO_PKG_VERSION"),
+        cfg!(feature = "conformance_full"),
+        cfg!(feature = "ml"),
+        cfg!(feature = "streaming_full"),
+        cfg!(feature = "powl"),
+        cfg!(feature = "ocel"),
+        cfg!(feature = "alignment_fitness"),
+        cfg!(feature = "petri_net_playout"),
+        cfg!(feature = "extensive_playout"),
+        cfg!(feature = "align_etconformance"),
+        cfg!(feature = "montecarlo")
+    )
+}
+
 /// Clear all caches (parse, columnar, interner).
 #[wasm_bindgen]
 pub fn clear_all_caches() {
@@ -129,15 +324,160 @@ pub fn clear_all_caches() {
 #[wasm_bindgen]
 pub fn get_cache_stats() -> String {
     let stats = crate::cache::cache_stats();
-    format!(r#"{{"parse_hits":{},"parse_misses":{},"columnar_entries":{},"interner_entries":{}}}"#,
-        stats.parse_hits, stats.parse_misses, stats.columnar_entries, stats.interner_entries)
+    format!(
+        r#"{{"parse_hits":{},"parse_misses":{},"columnar_entries":{},"interner_entries":{}}}"#,
+        stats.parse_hits, stats.parse_misses, stats.columnar_entries, stats.interner_entries
+    )
 }
 
 /// SIMD-accelerated token replay for conformance checking.
 ///
 /// Discovers a DFG from the log, builds a SimdPetriNet, then replays
 /// every trace and returns fitness / precision / per-case diagnostics.
+#[cfg(feature = "conformance_basic")]
 #[wasm_bindgen]
 pub fn simd_token_replay(log_handle: &str, activity_key: &str) -> String {
     crate::simd_token_replay::replay_log(log_handle, activity_key)
 }
+
+// -------------------------------------------------------------------------
+// OCEL Support (Object-Centric Event Logs)
+// -------------------------------------------------------------------------
+
+/// Load OCEL 2.0 from JSON string.
+///
+/// Parses JSON into OCEL struct, stores in AppState, returns handle.
+#[cfg(feature = "ocel")]
+#[wasm_bindgen]
+pub fn load_ocel2_from_json(content: &str) -> Result<String, JsValue> {
+    crate::ocel_io::load_ocel2_from_json(content)
+}
+
+/// Export OCEL 2.0 to JSON string (pretty-printed).
+///
+/// Retrieves OCEL from state by handle, serializes to JSON string.
+#[cfg(feature = "ocel")]
+#[wasm_bindgen]
+pub fn export_ocel2_to_json(handle: &str) -> Result<String, JsValue> {
+    crate::ocel_io::export_ocel2_to_json(handle)
+}
+
+/// Validate OCEL 2.0 structure.
+///
+/// Checks referential integrity, timestamps, object relations.
+/// Returns validation report as JSON: { valid: bool, errors: Vec<String> }
+#[cfg(feature = "ocel")]
+#[wasm_bindgen]
+pub fn validate_ocel(handle: &str) -> Result<JsValue, JsValue> {
+    crate::ocel_io::validate_ocel(handle)
+}
+
+/// List all unique object types in an OCEL.
+#[cfg(feature = "ocel")]
+#[wasm_bindgen]
+pub fn list_ocel_object_types(ocel_handle: &str) -> Result<JsValue, JsValue> {
+    crate::ocel_flatten::list_ocel_object_types(ocel_handle)
+}
+
+/// Get statistics about OCEL structure and content.
+#[cfg(feature = "ocel")]
+#[wasm_bindgen]
+pub fn get_ocel_type_statistics(ocel_handle: &str) -> Result<JsValue, JsValue> {
+    crate::ocel_flatten::get_ocel_type_statistics(ocel_handle)
+}
+
+/// Flatten an OCEL to an EventLog by projecting onto a single object type.
+///
+/// For the given object_type:
+/// - Each object becomes a case (trace)
+/// - Events referencing that object become the events in the trace
+/// - Events are sorted by timestamp within each trace
+#[cfg(feature = "ocel")]
+#[wasm_bindgen]
+pub fn flatten_ocel_to_eventlog(ocel_handle: &str, object_type: &str) -> Result<String, JsValue> {
+    crate::ocel_flatten::flatten_ocel_to_eventlog(ocel_handle, object_type)
+}
+
+/// Discover Object-Centric Petri Nets from OCEL.
+///
+/// For each object type, flattens the OCEL and discovers a Petri Net.
+/// Returns JSON mapping object_type -> PetriNet.
+#[cfg(feature = "ocel")]
+#[wasm_bindgen]
+pub fn discover_oc_petri_net(ocel_handle: &str, algorithm: &str) -> Result<JsValue, JsValue> {
+    crate::oc_petri_net::discover_oc_petri_net(ocel_handle, algorithm)
+}
+
+/// Check conformance of OCEL against an Object-Centric Petri Net.
+///
+/// For each object type:
+/// 1. Flatten OCEL → EventLog
+/// 2. Discover reference Petri Net
+/// 3. Token-replay each trace
+/// 4. Compute fitness / precision metrics
+#[cfg(feature = "ocel")]
+#[wasm_bindgen]
+pub fn oc_conformance_check(ocel_handle: &str) -> Result<JsValue, JsValue> {
+    crate::oc_conformance::oc_conformance_check(ocel_handle)
+}
+
+/// Analyze OCEL performance: build performance-annotated DFG for each object type.
+///
+/// Computes mean/median/p95 cycle times between activities.
+#[cfg(feature = "ocel")]
+#[wasm_bindgen]
+pub fn oc_performance_analysis(ocel_handle: &str) -> Result<JsValue, JsValue> {
+    crate::oc_performance::oc_performance_analysis(ocel_handle)
+}
+
+/// Analyze resource utilization: total events, time periods, concurrent cases, top activities.
+#[cfg(feature = "ocel")]
+#[wasm_bindgen]
+pub fn analyze_resource_utilization(
+    log_handle: &str,
+    resource_key: &str,
+    timestamp_key: &str,
+) -> Result<JsValue, JsValue> {
+    crate::resource_analysis::analyze_resource_utilization(log_handle, resource_key, timestamp_key)
+}
+
+/// Analyze resource-activity matrix: which resources perform which activities.
+#[cfg(feature = "ocel")]
+#[wasm_bindgen]
+pub fn analyze_resource_activity_matrix(
+    log_handle: &str,
+    resource_key: &str,
+    activity_key: &str,
+) -> Result<JsValue, JsValue> {
+    crate::resource_analysis::analyze_resource_activity_matrix(
+        log_handle,
+        resource_key,
+        activity_key,
+    )
+}
+
+/// Identify resource bottlenecks: waiting times, processing times, queue sizes.
+#[cfg(feature = "ocel")]
+#[wasm_bindgen]
+pub fn identify_resource_bottlenecks(
+    log_handle: &str,
+    resource_key: &str,
+    timestamp_key: &str,
+    activity_key: &str,
+) -> Result<JsValue, JsValue> {
+    crate::resource_analysis::identify_resource_bottlenecks(
+        log_handle,
+        resource_key,
+        timestamp_key,
+        activity_key,
+    )
+}
+
+// Conditional re-exports for statistics
+// When statrs feature is enabled, re-export statrs types
+#[cfg(feature = "statrs")]
+pub use statrs::statistics::{Data, Median};
+
+// When hand_rolled_stats feature is enabled and statrs is not, re-export hand-rolled types
+#[cfg(all(feature = "hand_rolled_stats", not(feature = "statrs")))]
+pub use hand_stats::Data;

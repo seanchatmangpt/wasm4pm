@@ -1,7 +1,7 @@
 //! Structural and behavioral diff between two POWL models.
 
-use crate::powl_arena::{PowlArena, PowlNode};
 use crate::powl::footprints::{self};
+use crate::powl_arena::{PowlArena, PowlNode};
 use serde::{Deserialize, Serialize};
 
 pub type Pair = (String, String);
@@ -65,7 +65,11 @@ impl ModelDiff {
 fn node_type_str(arena: &PowlArena, idx: u32) -> String {
     match arena.get(idx) {
         Some(PowlNode::Transition(t)) => {
-            if t.label.is_some() { "Transition".into() } else { "tau".into() }
+            if t.label.is_some() {
+                "Transition".into()
+            } else {
+                "tau".into()
+            }
         }
         Some(PowlNode::FrequentTransition(_)) => "FrequentTransition".into(),
         Some(PowlNode::StrictPartialOrder(_)) => "StrictPartialOrder".into(),
@@ -120,25 +124,32 @@ fn structural_diff(
     }
 }
 
-pub fn diff(
-    arena_a: &PowlArena,
-    root_a: u32,
-    arena_b: &PowlArena,
-    root_b: u32,
-) -> ModelDiff {
+pub fn diff(arena_a: &PowlArena, root_a: u32, arena_b: &PowlArena, root_b: u32) -> ModelDiff {
     let fp_a = footprints::apply(arena_a, root_a);
     let fp_b = footprints::apply(arena_b, root_b);
 
-    let added_activities: Vec<String> = fp_b.activities.difference(&fp_a.activities)
-        .cloned().collect();
-    let removed_activities: Vec<String> = fp_a.activities.difference(&fp_b.activities)
-        .cloned().collect();
+    let added_activities: Vec<String> = fp_b
+        .activities
+        .difference(&fp_a.activities)
+        .cloned()
+        .collect();
+    let removed_activities: Vec<String> = fp_a
+        .activities
+        .difference(&fp_b.activities)
+        .cloned()
+        .collect();
 
     let mut always_changes = Vec::new();
-    for act in fp_b.activities_always_happening.difference(&fp_a.activities_always_happening) {
+    for act in fp_b
+        .activities_always_happening
+        .difference(&fp_a.activities_always_happening)
+    {
         always_changes.push(AlwaysChange::BecameMandatory(act.clone()));
     }
-    for act in fp_a.activities_always_happening.difference(&fp_b.activities_always_happening) {
+    for act in fp_a
+        .activities_always_happening
+        .difference(&fp_b.activities_always_happening)
+    {
         always_changes.push(AlwaysChange::BecameOptional(act.clone()));
     }
 
@@ -175,7 +186,14 @@ pub fn diff(
     }
 
     let mut structure_changes = Vec::new();
-    structural_diff(arena_a, root_a, arena_b, root_b, "root", &mut structure_changes);
+    structural_diff(
+        arena_a,
+        root_a,
+        arena_b,
+        root_b,
+        "root",
+        &mut structure_changes,
+    );
 
     let min_trace_length_delta = fp_b.min_trace_length as i64 - fp_a.min_trace_length as i64;
 
@@ -227,7 +245,8 @@ mod tests {
     }
 
     #[test]
-    fn identical_models_no_diff() {
+    fn test_diff_identical_models() {
+        // Happy path: identical models have no diff
         let (aa, ra) = parse("X ( A, B )");
         let (ab, rb) = parse("X ( A, B )");
         let d = diff(&aa, ra, &ab, rb);
@@ -237,16 +256,15 @@ mod tests {
     }
 
     #[test]
-    fn added_activity_detected() {
+    fn test_diff_activity_changes() {
+        // Added activity detected
         let (aa, ra) = parse("A");
         let (ab, rb) = parse("X ( A, B )");
         let d = diff(&aa, ra, &ab, rb);
         assert!(d.added_activities.contains(&"B".to_string()));
         assert!(d.severity >= Severity::Moderate);
-    }
 
-    #[test]
-    fn removed_activity_is_breaking() {
+        // Removed activity is breaking change
         let (aa, ra) = parse("X ( A, B )");
         let (ab, rb) = parse("A");
         let d = diff(&aa, ra, &ab, rb);
@@ -255,7 +273,8 @@ mod tests {
     }
 
     #[test]
-    fn structure_change_at_root() {
+    fn test_diff_structure_changes() {
+        // Structure change at root detected
         let (aa, ra) = parse("X ( A, B )");
         let (ab, rb) = parse("*(A, B)");
         let d = diff(&aa, ra, &ab, rb);

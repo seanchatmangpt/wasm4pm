@@ -3,7 +3,7 @@
  * Valid state transitions and transition validation
  * Enforces the engine state machine invariants
  */
-import { EngineState, EngineError } from '@wasm4pm/contracts';
+import { EngineState, EngineError } from '@pictl/contracts';
 /**
  * Map of valid transitions from each state
  *
