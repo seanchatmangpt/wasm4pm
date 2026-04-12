@@ -216,12 +216,13 @@ describe('StateMachine', () => {
       expect(count).toBe(1); // No additional call
     });
 
-    it('should not throw if listener throws', () => {
+    it('should propagate listener errors to prevent state machine corruption', () => {
       sm.onTransition(() => {
         throw new Error('Listener error');
       });
 
-      expect(() => sm.transition('bootstrapping')).not.toThrow();
+      // Listener errors MUST be propagated — they indicate corruption risk
+      expect(() => sm.transition('bootstrapping')).toThrow('1 lifecycle listener error(s): Listener error');
     });
   });
 

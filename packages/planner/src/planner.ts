@@ -417,6 +417,16 @@ export function plan(config: Config): ExecutionPlan {
   const edges: [string, string][] = [];
 
   for (const step of steps) {
+    // Validate required field: dependsOn must always be an array
+    if (!Array.isArray(step.dependsOn)) {
+      throw new PlannerError(
+        createError(
+          'CONFIG_INVALID',
+          `Step "${step.id}" is missing required field: dependsOn must be an array`,
+          { stepId: step.id, dependsOn: step.dependsOn }
+        )
+      );
+    }
     for (const dep of step.dependsOn) {
       edges.push([dep, step.id]);
     }

@@ -159,38 +159,48 @@ async function ensureDirectory(dirpath: string): Promise<void> {
 
 /**
  * Validate configuration files by attempting to load them
+ * CRITICAL: Config errors are not recoverable — must propagate to fail fast
  */
 async function validateConfigFiles(dirpath: string, formatter: HumanFormatter | JSONFormatter, outputFormat: 'human' | 'json'): Promise<boolean> {
   const tomlPath = path.join(dirpath, 'pictl.toml');
   const jsonPath = path.join(dirpath, 'wasm4pm.json');
 
-  try {
-    // Try to load TOML if it exists
-    if (existsSync(tomlPath)) {
+  // Try to load TOML if it exists
+  if (existsSync(tomlPath)) {
+    try {
       const { resolveConfig } = await import('@pictl/config');
       await resolveConfig({ configSearchPaths: [dirpath] });
       if (outputFormat === 'human') {
         (formatter as HumanFormatter).debug(`✓ TOML config is valid: ${tomlPath}`);
       }
       return true;
+    } catch (error) {
+      // Config validation error is FATAL — user must fix it
+      throw new Error(
+        `Configuration validation failed for ${tomlPath}: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
+  }
 
-    // Try to load JSON if it exists
-    if (existsSync(jsonPath)) {
+  // Try to load JSON if it exists
+  if (existsSync(jsonPath)) {
+    try {
       const { resolveConfig } = await import('@pictl/config');
       await resolveConfig({ configSearchPaths: [dirpath] });
       if (outputFormat === 'human') {
         (formatter as HumanFormatter).debug(`✓ JSON config is valid: ${jsonPath}`);
       }
       return true;
+    } catch (error) {
+      // Config validation error is FATAL — user must fix it
+      throw new Error(
+        `Configuration validation failed for ${jsonPath}: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
-
-    return true;
-  } catch (error) {
-    throw new Error(
-      `Configuration validation failed: ${error instanceof Error ? error.message : String(error)}`
-    );
   }
+
+  // No config files found yet, which is ok during init
+  return true;
 }
 
 export const init = defineCommand({
