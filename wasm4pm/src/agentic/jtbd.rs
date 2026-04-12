@@ -11,7 +11,7 @@ impl DefaultJtbdRunner {
     ) -> JtbdAssertion {
         use crate::agentic::prelude::*;
 
-        let selector = DefaultRoleSelector::default();
+        let selector = DefaultRoleSelector;
         let result = selector.select_role(&case.task);
 
         let passed = result
@@ -34,7 +34,7 @@ impl DefaultJtbdRunner {
     ) -> JtbdAssertion {
         use crate::agentic::prelude::*;
 
-        let decomposer = DefaultTaskDecomposer::default();
+        let decomposer = DefaultTaskDecomposer;
         let result = decomposer.choose_topology(&case.task);
 
         let passed = result
@@ -70,7 +70,7 @@ impl DefaultJtbdRunner {
             metadata: Default::default(),
         };
 
-        let validator = DefaultHandoffValidator::default();
+        let validator = DefaultHandoffValidator;
         let result = validator.validate_handoff(&handoff_req);
 
         let passed = result
@@ -100,7 +100,7 @@ impl DefaultJtbdRunner {
             selected_topology: case.expected_topology.clone(),
         };
 
-        let dispatcher = DefaultArtifactDispatcher::default();
+        let dispatcher = DefaultArtifactDispatcher;
         let result = dispatcher.plan_artifacts(&request);
 
         // Check: all expected artifacts are in the result

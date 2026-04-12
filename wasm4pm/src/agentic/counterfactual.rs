@@ -55,7 +55,7 @@ impl CounterfactualEvaluator for DefaultCounterfactualEvaluator {
             .iter()
             .map(|action| {
                 let (delta, guard_pass, circuit_allowed) = Self::action_to_delta(action);
-                let next_health = ((curr_health as i32 + delta).max(0).min(4)) as u8;
+                let next_health = ((curr_health as i32 + delta).clamp(0, 4)) as u8;
 
                 // Use rl_orchestrator::compute_reward to estimate value
                 let estimated_reward =

@@ -9,13 +9,11 @@ impl PromptBindingCompiler for DefaultPromptBindingCompiler {
         use crate::agentic::prelude::*;
 
         // Internally run RoleSelector to get selected role
-        let role_selector = DefaultRoleSelector::default();
-        let role_decision = role_selector.select_role(task)?;
+        let role_decision = DefaultRoleSelector.select_role(task)?;
         let selected_role = Some(role_decision.selected_role);
 
         // Internally run TaskDecomposer to get topology
-        let task_decomposer = DefaultTaskDecomposer::default();
-        let topology_decision = task_decomposer.choose_topology(task)?;
+        let topology_decision = DefaultTaskDecomposer.choose_topology(task)?;
         let topology = Some(topology_decision.topology);
 
         // Build bindings map
