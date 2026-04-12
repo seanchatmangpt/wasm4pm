@@ -212,9 +212,39 @@ export class ObservabilityLayer {
   }
 
   /**
+   * Get recent observability listener errors from all layers
+   * Allows callers to check if observability layers are failing
+   */
+  public getListenerErrors(): Array<{ timestamp: Date; message: string }> {
+    const errors: Array<{ timestamp: Date; message: string }> = [];
+
+    if (this.jsonWriter) {
+      const jsonErrors = this.jsonWriter.getFlushErrors();
+      errors.push(
+        ...jsonErrors.map((e) => ({
+          timestamp: e.timestamp,
+          message: `JSON flush: ${e.error instanceof Error ? e.error.message : String(e.error)}`,
+        }))
+      );
+    }
+
+    if (this.otelExporter) {
+      const otelErrors = this.otelExporter.getFlushErrors();
+      errors.push(
+        ...otelErrors.map((e) => ({
+          timestamp: e.timestamp,
+          message: `OTEL flush: ${e.error instanceof Error ? e.error.message : String(e.error)}`,
+        }))
+      );
+    }
+
+    return errors.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+  }
+
+  /**
    * Gracefully shutdown observability layer
    * Flushes all pending events
-   * Should be called before process exit
+   * Reports critical failures when required: true
    */
   public async shutdown(): Promise<ObservabilityResult> {
     const results: ObservabilityResult[] = [];
@@ -228,6 +258,15 @@ export class ObservabilityLayer {
     }
 
     const hasErrors = results.some((r) => !r.success);
+    const failedOtel = results.find((r) => !r.success && this.config.otel?.required);
+
+    if (failedOtel && this.config.otel?.required) {
+      return {
+        success: false,
+        error: `Required OTEL exporter failed: ${failedOtel.error}`,
+        timestamp: new Date(),
+      };
+    }
 
     return {
       success: !hasErrors,

@@ -128,41 +128,44 @@ export class ObservabilityWrapper {
 
   /**
    * Execute a callback with observability error handling
-   * Returns callback result; observability errors don't break execution
+   * Returns discriminated union: { result, error } where only one is set
+   * Forces caller to explicitly handle error case
    */
   public async executeWithObservability<T>(
     callback: () => Promise<T>,
     context?: { operationName?: string; traceId?: string }
-  ): Promise<{ result: T; observabilityError?: string }> {
+  ): Promise<{ result: T; error: undefined } | { result: undefined; error: string }> {
     try {
       const result = await callback();
-      return { result };
+      return { result, error: undefined };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       this.recordError('execution', message);
 
       return {
-        result: undefined as unknown as T,
-        observabilityError: `Failed during ${context?.operationName || 'operation'}: ${message}`,
+        result: undefined,
+        error: `Failed during ${context?.operationName || 'operation'}: ${message}`,
       };
     }
   }
 
   /**
    * Wrap a synchronous function with error handling
+   * Returns discriminated union: { result, error } where only one is set
    */
   public wrapSync<T>(
     callback: () => T,
     context?: { operationName?: string }
-  ): { result?: T; error?: string } {
+  ): { result: T; error: undefined } | { result: undefined; error: string } {
     try {
       const result = callback();
-      return { result };
+      return { result, error: undefined };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       this.recordError('sync', message);
 
       return {
+        result: undefined,
         error: `Failed during ${context?.operationName || 'operation'}: ${message}`,
       };
     }
