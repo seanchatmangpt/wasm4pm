@@ -14,12 +14,7 @@ pub mod wgpu_binding;
 
 // Re-export the primary public API surface
 pub use wgpu_binding::{
-    cpu_infer,
-    select_algorithm,
-    LinUcbResult,
-    LinUcbState,
-    LogFeatures,
-    ALGORITHM_IDS,
+    cpu_infer, select_algorithm, LinUcbResult, LinUcbState, LogFeatures, ALGORITHM_IDS,
 };
 
 #[cfg(feature = "gpu")]
