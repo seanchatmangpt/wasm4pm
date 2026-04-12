@@ -198,11 +198,35 @@ function parseEnvConfig(env: NodeJS.ProcessEnv): Record<string, unknown> {
   }
   if (env.WASM4PM_PREDICTION_NGRAM_ORDER) {
     const n = parseInt(env.WASM4PM_PREDICTION_NGRAM_ORDER, 10);
-    if (!isNaN(n)) config.prediction = { ...(config.prediction as Record<string, unknown>), ngramOrder: n };
+    // CRITICAL: Only accept valid integers, reject NaN silently
+    if (Number.isNaN(n)) {
+      throw new Error(
+        `Invalid WASM4PM_PREDICTION_NGRAM_ORDER: "${env.WASM4PM_PREDICTION_NGRAM_ORDER}" is not a valid integer`
+      );
+    }
+    // Validate range: ngramOrder must be 2-5
+    if (n < 2 || n > 5) {
+      throw new Error(
+        `Invalid WASM4PM_PREDICTION_NGRAM_ORDER: ${n} is out of range [2, 5]`
+      );
+    }
+    config.prediction = { ...(config.prediction as Record<string, unknown>), ngramOrder: n };
   }
   if (env.WASM4PM_PREDICTION_DRIFT_WINDOW) {
     const w = parseInt(env.WASM4PM_PREDICTION_DRIFT_WINDOW, 10);
-    if (!isNaN(w)) config.prediction = { ...(config.prediction as Record<string, unknown>), driftWindowSize: w };
+    // CRITICAL: Only accept valid integers, reject NaN
+    if (Number.isNaN(w)) {
+      throw new Error(
+        `Invalid WASM4PM_PREDICTION_DRIFT_WINDOW: "${env.WASM4PM_PREDICTION_DRIFT_WINDOW}" is not a valid integer`
+      );
+    }
+    // Validate range: driftWindowSize must be > 0
+    if (w <= 0) {
+      throw new Error(
+        `Invalid WASM4PM_PREDICTION_DRIFT_WINDOW: ${w} must be greater than 0`
+      );
+    }
+    config.prediction = { ...(config.prediction as Record<string, unknown>), driftWindowSize: w };
   }
 
   return config;

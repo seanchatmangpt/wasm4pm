@@ -143,15 +143,25 @@ function createMlStepHandler(
         durationMs: Date.now() - startTime,
       };
     } catch (err) {
+      // Classify error as fatal or recoverable based on error type
+      // Out-of-memory, timeout, configuration errors are fatal (not recoverable)
+      // Transient network/resource errors are recoverable
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      const isFatal = /memory|timeout|invalid|config|critical/i.test(errorMsg);
+      const recoverable = !isFatal;
+
       return {
         stepId: step.id,
         success: false,
         error: {
           code: 'ML_STEP_FAILED',
-          message: err instanceof Error ? err.message : String(err),
-          severity: 'error',
-          recoverable: true,
-          context: { algorithmId },
+          message: errorMsg,
+          severity: isFatal ? 'critical' : 'error',
+          recoverable,
+          context: {
+            algorithmId,
+            errorType: isFatal ? 'fatal' : 'transient',
+          },
         },
         durationMs: Date.now() - startTime,
       };
