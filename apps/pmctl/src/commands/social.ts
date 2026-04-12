@@ -149,11 +149,7 @@ export const social = defineCommand({
       }
 
       // Free log handle
-      try {
-        wasm.delete_object(logHandle);
-      } catch {
-        /* best-effort */
-      }
+      wasm.delete_object(logHandle);
 
       // Build result
       const result = {

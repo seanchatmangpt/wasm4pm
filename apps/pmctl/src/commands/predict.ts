@@ -194,7 +194,7 @@ export const predict = defineCommand({
       }
 
       // Step 9: Free handles
-      try { wasm.delete_object(logHandle); } catch { /* best-effort */ }
+      wasm.delete_object(logHandle);
 
       process.exit(EXIT_CODES.success);
     } catch (error) {
@@ -230,7 +230,7 @@ async function executePredictionTask(
       const raw: string = wasm.predict_next_activity(predictorHandle, JSON.stringify(prefix));
       const predictions: Array<{ activity: string; probability: number }> = JSON.parse(raw);
       const topPredictions = predictions.slice(0, topK);
-      try { wasm.delete_object(predictorHandle); } catch { /* best-effort */ }
+      wasm.delete_object(predictorHandle);
       return { predictions: topPredictions };
     }
 
@@ -239,10 +239,10 @@ async function executePredictionTask(
       if (prefixActivities && prefixActivities.length > 0) {
         const raw: string = wasm.predict_case_duration(modelHandle, JSON.stringify(prefixActivities));
         const prediction = JSON.parse(raw);
-        try { wasm.delete_object(modelHandle); } catch { /* best-effort */ }
+        wasm.delete_object(modelHandle);
         return { prediction };
       } else {
-        try { wasm.delete_object(modelHandle); } catch { /* best-effort */ }
+        wasm.delete_object(modelHandle);
         return { message: 'Remaining-time model built. Use --prefix "Activity1,Activity2" to predict case duration.' };
       }
     }
@@ -258,14 +258,14 @@ async function executePredictionTask(
         // Also score log-likelihood with n-gram
         const ngramHandle: string = wasm.build_ngram_predictor(logHandle, activityKey, ngramOrder);
         const logLikelihood: number = wasm.score_trace_likelihood(ngramHandle, JSON.stringify(prefixActivities));
-        try { wasm.delete_object(ngramHandle); } catch { /* best-effort */ }
-        try { wasm.delete_object(dfgHandle); } catch { /* best-effort */ }
+        wasm.delete_object(ngramHandle);
+        wasm.delete_object(dfgHandle);
         return { anomaly, logLikelihood };
       } else {
         // Score all traces in the log
         const raw: string = wasm.score_log_anomalies(logHandle, dfgHandle, activityKey);
         const anomalies: Array<Record<string, unknown>> = JSON.parse(raw);
-        try { wasm.delete_object(dfgHandle); } catch { /* best-effort */ }
+        wasm.delete_object(dfgHandle);
         return { anomalies: anomalies.slice(0, topK) };
       }
     }

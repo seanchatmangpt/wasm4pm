@@ -283,11 +283,13 @@ export const run = defineCommand({
 
       // Step 4b: Handle --no-cache flag
       if (ctx.args['no-cache']) {
-        if (typeof wasm.clear_all_caches === 'function') {
-          wasm.clear_all_caches();
-          if (formatter instanceof HumanFormatter) {
-            formatter.debug('Caches cleared (--no-cache)');
-          }
+        if (typeof wasm.clear_all_caches !== 'function') {
+          formatter.error('Cache clearing requested (--no-cache) but not available in WASM module');
+          process.exit(EXIT_CODES.execution_error);
+        }
+        wasm.clear_all_caches();
+        if (formatter instanceof HumanFormatter) {
+          formatter.debug('Caches cleared (--no-cache)');
         }
       }
 
@@ -316,21 +318,15 @@ export const run = defineCommand({
         }
 
         for (const task of mlConfig.tasks) {
-          try {
-            const mlResult = await executeMlTask(wasm, task as MlTask, logHandle, activityKey, {
-              method: mlConfig.method,
-              k: mlConfig.k,
-              targetKey: mlConfig.targetKey,
-              forecastPeriods: mlConfig.forecastPeriods,
-              nComponents: mlConfig.nComponents,
-              eps: mlConfig.eps,
-            });
-            mlResults[task] = mlResult;
-          } catch (err) {
-            formatter.warn(
-              `ML task '${task}' failed: ${err instanceof Error ? err.message : String(err)}`
-            );
-          }
+          const mlResult = await executeMlTask(wasm, task as MlTask, logHandle, activityKey, {
+            method: mlConfig.method,
+            k: mlConfig.k,
+            targetKey: mlConfig.targetKey,
+            forecastPeriods: mlConfig.forecastPeriods,
+            nComponents: mlConfig.nComponents,
+            eps: mlConfig.eps,
+          });
+          mlResults[task] = mlResult;
         }
 
         if (Object.keys(mlResults).length > 0 && formatter instanceof HumanFormatter) {
@@ -339,11 +335,7 @@ export const run = defineCommand({
       }
 
       // Step 7: Free handle
-      try {
-        wasm.delete_object(logHandle);
-      } catch {
-        /* best-effort */
-      }
+      wasm.delete_object(logHandle);
 
       // Normalise result (WASM may return string or object)
       const resultData = typeof raw === 'string' ? JSON.parse(raw) : raw;
@@ -416,26 +408,26 @@ export const run = defineCommand({
       }
 
       // Step 12: Print cache statistics if requested
-      if (ctx.args['cache-stats'] && typeof wasm.get_cache_stats === 'function') {
-        try {
-          const statsRaw = wasm.get_cache_stats();
-          const stats = typeof statsRaw === 'string' ? JSON.parse(statsRaw) : statsRaw;
-          if (formatter instanceof JSONFormatter) {
-            formatter.success('Cache statistics', { cache: stats });
-          } else if (formatter instanceof HumanFormatter) {
-            const hitRate =
-              stats.parse_hits + stats.parse_misses > 0
-                ? ((stats.parse_hits / (stats.parse_hits + stats.parse_misses)) * 100).toFixed(1)
-                : 'N/A';
-            formatter.info('Cache statistics:');
-            formatter.info(`  Parse hits: ${stats.parse_hits}`);
-            formatter.info(`  Parse misses: ${stats.parse_misses}`);
-            formatter.info(`  Hit rate: ${hitRate}%`);
-            formatter.info(`  Columnar entries: ${stats.columnar_entries}`);
-            formatter.info(`  Interner entries: ${stats.interner_entries}`);
-          }
-        } catch {
-          // best-effort — cache stats not available
+      if (ctx.args['cache-stats']) {
+        if (typeof wasm.get_cache_stats !== 'function') {
+          formatter.error('Cache statistics requested (--cache-stats) but not available in WASM module');
+          process.exit(EXIT_CODES.execution_error);
+        }
+        const statsRaw = wasm.get_cache_stats();
+        const stats = typeof statsRaw === 'string' ? JSON.parse(statsRaw) : statsRaw;
+        if (formatter instanceof JSONFormatter) {
+          formatter.success('Cache statistics', { cache: stats });
+        } else if (formatter instanceof HumanFormatter) {
+          const hitRate =
+            stats.parse_hits + stats.parse_misses > 0
+              ? ((stats.parse_hits / (stats.parse_hits + stats.parse_misses)) * 100).toFixed(1)
+              : 'N/A';
+          formatter.info('Cache statistics:');
+          formatter.info(`  Parse hits: ${stats.parse_hits}`);
+          formatter.info(`  Parse misses: ${stats.parse_misses}`);
+          formatter.info(`  Hit rate: ${hitRate}%`);
+          formatter.info(`  Columnar entries: ${stats.columnar_entries}`);
+          formatter.info(`  Interner entries: ${stats.interner_entries}`);
         }
       }
 

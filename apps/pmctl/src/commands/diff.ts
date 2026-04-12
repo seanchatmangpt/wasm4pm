@@ -170,8 +170,8 @@ export const diff = defineCommand({
       const result = computeDiff(dfg1, dfg2, variants1, variants2);
 
       // Free handles
-      try { wasm.delete_object(handle1); } catch { /* best-effort */ }
-      try { wasm.delete_object(handle2); } catch { /* best-effort */ }
+      wasm.delete_object(handle1);
+      wasm.delete_object(handle2);
 
       // Output results
       if (formatter instanceof JSONFormatter) {
