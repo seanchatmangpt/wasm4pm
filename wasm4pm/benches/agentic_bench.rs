@@ -58,7 +58,7 @@ fn bench_role_selector(c: &mut Criterion) {
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(1000);
 
-    let selector = DefaultRoleSelector::default();
+    let selector = DefaultRoleSelector;
     let task = make_task_context(
         WorkflowPhase::Intake,
         RiskLevel::Medium,
@@ -78,7 +78,7 @@ fn bench_task_decomposer(c: &mut Criterion) {
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(1000);
 
-    let decomposer = DefaultTaskDecomposer::default();
+    let decomposer = DefaultTaskDecomposer;
     let task = make_task_context(
         WorkflowPhase::Plan,
         RiskLevel::High,
@@ -98,7 +98,7 @@ fn bench_evidence_sufficiency(c: &mut Criterion) {
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(1000);
 
-    let checker = DefaultEvidenceSufficiencyChecker::default();
+    let checker = DefaultEvidenceSufficiencyChecker;
     let task = make_task_context(
         WorkflowPhase::Execute,
         RiskLevel::Low,
@@ -122,7 +122,7 @@ fn bench_escalation_engine(c: &mut Criterion) {
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(1000);
 
-    let engine = DefaultEscalationEngine::default();
+    let engine = DefaultEscalationEngine;
     let task = make_task_context(
         WorkflowPhase::Execute,
         RiskLevel::Critical,
@@ -142,7 +142,7 @@ fn bench_artifact_dispatcher(c: &mut Criterion) {
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(1000);
 
-    let dispatcher = DefaultArtifactDispatcher::default();
+    let dispatcher = DefaultArtifactDispatcher;
     let request = ArtifactRequest {
         artifact_families: vec![],
         task: make_task_context(
@@ -167,7 +167,7 @@ fn bench_handoff_validator(c: &mut Criterion) {
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(1000);
 
-    let validator = DefaultHandoffValidator::default();
+    let validator = DefaultHandoffValidator;
     let req = HandoffRequest {
         from_agent: "agent-1".to_string(),
         to_role: AgentRole::Executor,
@@ -200,7 +200,7 @@ fn bench_prompt_binding_compiler(c: &mut Criterion) {
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(500); // Slightly higher cost due to internal selector/decomposer calls
 
-    let compiler = DefaultPromptBindingCompiler::default();
+    let compiler = DefaultPromptBindingCompiler;
     let task = make_task_context(
         WorkflowPhase::Plan,
         RiskLevel::Medium,
@@ -220,7 +220,7 @@ fn bench_counterfactual_evaluator(c: &mut Criterion) {
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(500);
 
-    let evaluator = DefaultCounterfactualEvaluator::default();
+    let evaluator = DefaultCounterfactualEvaluator;
     let task = make_task_context(
         WorkflowPhase::Execute,
         RiskLevel::Medium,
@@ -240,7 +240,7 @@ fn bench_jtbd_runner(c: &mut Criterion) {
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(100); // Lower sample size due to multiple trait calls per case
 
-    let runner = DefaultJtbdRunner::default();
+    let runner = DefaultJtbdRunner;
     let case = JtbdCase {
         case_id: "bench-case-001".to_string(),
         job_statement: "Benchmark JTBD case".to_string(),

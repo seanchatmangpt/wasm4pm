@@ -40,7 +40,7 @@ fn make_task_context(
 
 #[test]
 fn role_selector_intake_maps_to_explorer() {
-    let role_selector = DefaultRoleSelector::default();
+    let role_selector = DefaultRoleSelector;
     let task = make_task_context("Intake", WorkflowPhase::Intake, RiskLevel::Low, ConfidenceBand::High, DriftStatus::Stable);
 
     let result = role_selector.select_role(&task).unwrap();
@@ -49,7 +49,7 @@ fn role_selector_intake_maps_to_explorer() {
 
 #[test]
 fn role_selector_triage_maps_to_reviewer() {
-    let role_selector = DefaultRoleSelector::default();
+    let role_selector = DefaultRoleSelector;
     let task = make_task_context("Triage", WorkflowPhase::Triage, RiskLevel::Low, ConfidenceBand::High, DriftStatus::Stable);
 
     let result = role_selector.select_role(&task).unwrap();
@@ -58,7 +58,7 @@ fn role_selector_triage_maps_to_reviewer() {
 
 #[test]
 fn role_selector_critical_risk_overrides_to_escalator() {
-    let role_selector = DefaultRoleSelector::default();
+    let role_selector = DefaultRoleSelector;
     let task = make_task_context("Triage", WorkflowPhase::Triage, RiskLevel::Critical, ConfidenceBand::High, DriftStatus::Stable);
 
     let result = role_selector.select_role(&task).unwrap();
@@ -67,7 +67,7 @@ fn role_selector_critical_risk_overrides_to_escalator() {
 
 #[test]
 fn task_decomposer_low_risk_maps_to_single() {
-    let decomposer = DefaultTaskDecomposer::default();
+    let decomposer = DefaultTaskDecomposer;
     let task = make_task_context("Execute", WorkflowPhase::Execute, RiskLevel::Low, ConfidenceBand::High, DriftStatus::Stable);
 
     let result = decomposer.choose_topology(&task).unwrap();
@@ -76,7 +76,7 @@ fn task_decomposer_low_risk_maps_to_single() {
 
 #[test]
 fn task_decomposer_validate_phase_maps_to_reviewloop() {
-    let decomposer = DefaultTaskDecomposer::default();
+    let decomposer = DefaultTaskDecomposer;
     let task = make_task_context("Validate", WorkflowPhase::Validate, RiskLevel::Low, ConfidenceBand::High, DriftStatus::Stable);
 
     let result = decomposer.choose_topology(&task).unwrap();
@@ -85,7 +85,7 @@ fn task_decomposer_validate_phase_maps_to_reviewloop() {
 
 #[test]
 fn evidence_sufficiency_all_present_is_sufficient() {
-    let checker = DefaultEvidenceSufficiencyChecker::default();
+    let checker = DefaultEvidenceSufficiencyChecker;
     let mut task = make_task_context("Test", WorkflowPhase::Intake, RiskLevel::Low, ConfidenceBand::High, DriftStatus::Stable);
     task.evidence.required_evidence_classes.insert("log".to_string());
     task.evidence.available_evidence_classes.insert("log".to_string());
@@ -96,7 +96,7 @@ fn evidence_sufficiency_all_present_is_sufficient() {
 
 #[test]
 fn evidence_sufficiency_low_confidence_is_insufficient() {
-    let checker = DefaultEvidenceSufficiencyChecker::default();
+    let checker = DefaultEvidenceSufficiencyChecker;
     let task = make_task_context("Test", WorkflowPhase::Intake, RiskLevel::Low, ConfidenceBand::Low, DriftStatus::Stable);
 
     let result = checker.is_sufficient(&task).unwrap();
@@ -105,7 +105,7 @@ fn evidence_sufficiency_low_confidence_is_insufficient() {
 
 #[test]
 fn escalation_engine_critical_risk_escalates() {
-    let engine = DefaultEscalationEngine::default();
+    let engine = DefaultEscalationEngine;
     let task = make_task_context("Test", WorkflowPhase::Intake, RiskLevel::Critical, ConfidenceBand::High, DriftStatus::Stable);
 
     let result = engine.evaluate_escalation(&task).unwrap();
@@ -115,7 +115,7 @@ fn escalation_engine_critical_risk_escalates() {
 
 #[test]
 fn escalation_engine_out_of_control_drift_escalates() {
-    let engine = DefaultEscalationEngine::default();
+    let engine = DefaultEscalationEngine;
     let task = make_task_context("Test", WorkflowPhase::Intake, RiskLevel::Low, ConfidenceBand::High, DriftStatus::OutOfControl);
 
     let result = engine.evaluate_escalation(&task).unwrap();
@@ -124,7 +124,7 @@ fn escalation_engine_out_of_control_drift_escalates() {
 
 #[test]
 fn artifact_dispatcher_explorer_artifacts() {
-    let dispatcher = DefaultArtifactDispatcher::default();
+    let dispatcher = DefaultArtifactDispatcher;
     let request = ArtifactRequest {
         artifact_families: vec![],
         task: make_task_context("Test", WorkflowPhase::Intake, RiskLevel::Low, ConfidenceBand::High, DriftStatus::Stable),
@@ -139,7 +139,7 @@ fn artifact_dispatcher_explorer_artifacts() {
 
 #[test]
 fn handoff_validator_allows_delegatable_to_allowed_role() {
-    let validator = DefaultHandoffValidator::default();
+    let validator = DefaultHandoffValidator;
     let req = HandoffRequest {
         from_agent: "agent-1".to_string(),
         to_role: AgentRole::Explorer,
@@ -162,7 +162,7 @@ fn handoff_validator_allows_delegatable_to_allowed_role() {
 
 #[test]
 fn prompt_binding_compiler_includes_role_and_topology() {
-    let compiler = DefaultPromptBindingCompiler::default();
+    let compiler = DefaultPromptBindingCompiler;
     let task = make_task_context("Test", WorkflowPhase::Plan, RiskLevel::Medium, ConfidenceBand::High, DriftStatus::Stable);
 
     let result = compiler.compile_bindings(&task).unwrap();
@@ -174,7 +174,7 @@ fn prompt_binding_compiler_includes_role_and_topology() {
 
 #[test]
 fn counterfactual_evaluator_selects_highest_reward_option() {
-    let evaluator = DefaultCounterfactualEvaluator::default();
+    let evaluator = DefaultCounterfactualEvaluator;
     let task = make_task_context("Test", WorkflowPhase::Intake, RiskLevel::Low, ConfidenceBand::High, DriftStatus::Stable);
 
     let result = evaluator.evaluate_options(&task).unwrap();
@@ -184,7 +184,7 @@ fn counterfactual_evaluator_selects_highest_reward_option() {
 
 #[test]
 fn jtbd_runner_checks_role_assertion() {
-    let runner = DefaultJtbdRunner::default();
+    let runner = DefaultJtbdRunner;
     let case = JtbdCase {
         case_id: "jtbd-role-001".to_string(),
         job_statement: "When intake arrives, route to explorer".to_string(),
@@ -203,7 +203,7 @@ fn jtbd_runner_checks_role_assertion() {
 
 #[test]
 fn jtbd_runner_full_case_with_all_assertions() {
-    let runner = DefaultJtbdRunner::default();
+    let runner = DefaultJtbdRunner;
     let case = JtbdCase {
         case_id: "jtbd-full-001".to_string(),
         job_statement: "Full job card for planning phase".to_string(),
