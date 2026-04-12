@@ -211,11 +211,7 @@ export const driftWatch = defineCommand({
         console.error(
           `[drift-watch] detect_drift failed: ${err instanceof Error ? err.message : String(err)}`
         );
-        try {
-          wasm.delete_object(logHandle);
-        } catch {
-          /* best-effort */
-        }
+        wasm.delete_object(logHandle);
         return;
       }
 
@@ -251,20 +247,12 @@ export const driftWatch = defineCommand({
         console.error(
           `[drift-watch] compute_ewma failed: ${err instanceof Error ? err.message : String(err)}`
         );
-        try {
-          wasm.delete_object(logHandle);
-        } catch {
-          /* best-effort */
-        }
+        wasm.delete_object(logHandle);
         return;
       }
 
       // ── Free WASM handle ──────────────────────────────────────────────────
-      try {
-        wasm.delete_object(logHandle);
-      } catch {
-        /* best-effort */
-      }
+      wasm.delete_object(logHandle);
 
       const ewma = ewmaResult.last_value ?? 0;
       const trend = ewmaResult.trend;

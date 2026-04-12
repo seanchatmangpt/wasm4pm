@@ -274,11 +274,7 @@ export const validate = defineCommand({
       }
 
       // Free log handle
-      try {
-        wasm.delete_object(logHandle);
-      } catch {
-        /* best-effort */
-      }
+      wasm.delete_object(logHandle);
 
       // Determine overall status
       const hasErrors = errors.length > 0;

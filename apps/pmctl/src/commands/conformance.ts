@@ -155,17 +155,8 @@ export const conformance = defineCommand({
         if (formatter instanceof HumanFormatter) {
           formatter.debug('Running alignment-based conformance...');
         }
-        try {
-          const raw = wasm.conformance_alignment_fitness(logHandle, activityKey, JSON.stringify(modelData));
-          conformanceResult = typeof raw === 'string' ? JSON.parse(raw) : raw;
-        } catch {
-          // Fallback to token replay if alignment not available
-          if (formatter instanceof HumanFormatter) {
-            formatter.warn('Alignment-based conformance not available, falling back to token replay');
-          }
-          const raw = wasm.conformance_token_replay(logHandle, activityKey, JSON.stringify(modelData));
-          conformanceResult = typeof raw === 'string' ? JSON.parse(raw) : raw;
-        }
+        const raw = wasm.conformance_alignment_fitness(logHandle, activityKey, JSON.stringify(modelData));
+        conformanceResult = typeof raw === 'string' ? JSON.parse(raw) : raw;
       } else {
         if (formatter instanceof HumanFormatter) {
           formatter.debug('Running token-based replay conformance...');
@@ -185,11 +176,7 @@ export const conformance = defineCommand({
       }
 
       // Free log handle
-      try {
-        wasm.delete_object(logHandle);
-      } catch {
-        /* best-effort */
-      }
+      wasm.delete_object(logHandle);
 
       // Build result
       const result = {
