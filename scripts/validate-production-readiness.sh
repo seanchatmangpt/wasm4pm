@@ -16,6 +16,7 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$REPO_ROOT"
 TIMESTAMP=$(date -u +"%Y%m%dT%H%M%SZ")
 REPORT_DIR="$REPO_ROOT/.pictl/benchmarks"
 REPORT_FILE="$REPORT_DIR/production-readiness-${TIMESTAMP}.json"
