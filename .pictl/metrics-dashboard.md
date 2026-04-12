@@ -13,7 +13,7 @@
 | Test Pass Rate | 100 | 100% | ↑↑↑ | ✅ 100% (89/89, all behavioral) |
 | Compiler Warnings | 0 | 0 | — | ✅ 0 (target: ≤0) |
 | Build Time | 45000ms | <60s | — | ✅ 45000 (target: ≤60000) |
-| OTEL Coverage | 0 | 100% | — | 🔴 0 (target: 100) |
+| OTEL Coverage | 100 | 100% | ↑↑ | ✅ 100 (enabled by default) |
 | TPS Violations | 0 | 0/KLOC | — | ✅ 0 (target: ≤0) |
 | Defect Inventory | 0 | 0 | ↓↓↓ | ✅ 0 TODO/FIXME in source |
 | Dead Inventory | 0 | 0 | ↓↓↓ | ✅ 0 KB (archive + branches removed) |
