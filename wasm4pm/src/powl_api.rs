@@ -185,7 +185,8 @@ pub fn node_info_json(s: &str, arena_idx: u32) -> Result<String, JsValue> {
         }
         None => serde_json::json!({ "error": "invalid index" }),
     };
-    Ok(serde_json::to_string(&info).unwrap_or_default())
+    serde_json::to_string(&info)
+        .map_err(|e| JsValue::from_str(&format!("Failed to serialize model info: {}", e)))
 }
 
 // ─── Conversions ──────────────────────────────────────────────────────────

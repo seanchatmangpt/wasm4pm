@@ -110,8 +110,16 @@ pub fn analyze_resource_utilization(
                 let event_count = events.len();
 
                 // Get first and last event timestamps
-                let min_ts = events.iter().map(|e| e.1).min().unwrap_or(0);
-                let max_ts = events.iter().map(|e| e.1).max().unwrap_or(0);
+                let min_ts = events
+                    .iter()
+                    .map(|e| e.1)
+                    .min()
+                    .ok_or_else(|| JsValue::from_str(&format!("No events found for resource {}", resource)))?;
+                let max_ts = events
+                    .iter()
+                    .map(|e| e.1)
+                    .max()
+                    .ok_or_else(|| JsValue::from_str(&format!("No events found for resource {}", resource)))?;
 
                 // Format timestamps
                 let first_event = format_timestamp(min_ts);

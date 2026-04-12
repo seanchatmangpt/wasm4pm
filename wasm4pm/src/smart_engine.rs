@@ -60,8 +60,10 @@ impl<V: Clone> LruCache<V> {
         if let Some((value, _order)) = self.map.get_mut(key) {
             self.hits += 1;
             let v = value.clone();
-            // Refresh access order
-            self.map.get_mut(key).unwrap().1 = self.access_counter;
+            // Refresh access order — key guaranteed to exist because we just checked above
+            if let Some((_, order)) = self.map.get_mut(key) {
+                *order = self.access_counter;
+            }
             return Some(v);
         }
         self.misses += 1;
@@ -276,9 +278,11 @@ impl FusedMultiPass {
                 *edge_counts.entry((window[0].clone(), window[1].clone())).or_insert(0) += 1;
             }
 
-            // Start/end activities
+            // Start/end activities — trace non-empty guaranteed by check above
             *start_counts.entry(trace[0].clone()).or_insert(0) += 1;
-            *end_counts.entry(trace.last().unwrap().clone()).or_insert(0) += 1;
+            if let Some(last_activity) = trace.last() {
+                *end_counts.entry(last_activity.clone()).or_insert(0) += 1;
+            }
         }
 
         let mut nodes = Vec::with_capacity(node_counts.len());
@@ -309,7 +313,8 @@ impl FusedMultiPass {
         self.dfg_log_hash = hash;
         self.dfg_cache = Some(dfg);
 
-        self.dfg_cache.as_ref().unwrap()
+        // Safe unwrap: we just inserted dfg into the cache above
+        self.dfg_cache.as_ref().expect("DFG cache just set above")
     }
 
     /// Run a DFG-based algorithm using a pre-computed DFG.
@@ -459,9 +464,11 @@ impl FusedMultiPassStreaming {
                 *edge_counts.entry((window[0], window[1])).or_insert(0) += 1;
             }
 
-            // Start/end activities
+            // Start/end activities — encoded non-empty guaranteed by check above
             *start_counts.entry(encoded[0]).or_insert(0) += 1;
-            *end_counts.entry(*encoded.last().unwrap()).or_insert(0) += 1;
+            if let Some(last_id) = encoded.last() {
+                *end_counts.entry(*last_id).or_insert(0) += 1;
+            }
         }
 
         // Materialise DFG
@@ -510,7 +517,8 @@ impl FusedMultiPassStreaming {
         self.inner.dfg_log_hash = hash;
         self.inner.dfg_cache = Some(dfg);
 
-        self.inner.dfg_cache.as_ref().unwrap()
+        // Safe unwrap: we just inserted dfg into the cache above
+        self.inner.dfg_cache.as_ref().expect("DFG cache just set above")
     }
 
     fn run_with_dfg(&mut self, algorithm: &str, traces: &[Vec<String>]) -> Result<String, String> {

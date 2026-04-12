@@ -19,6 +19,8 @@ pub enum YawlExportError {
     CircularReference,
     /// Invalid node reference.
     InvalidNodeRef(u32),
+    /// Missing label for task node.
+    MissingLabel { node_id: String },
 }
 
 impl std::fmt::Display for YawlExportError {
@@ -28,6 +30,7 @@ impl std::fmt::Display for YawlExportError {
             Self::MaxDepthExceeded => write!(f, "maximum traversal depth exceeded"),
             Self::CircularReference => write!(f, "circular reference detected in POWL tree"),
             Self::InvalidNodeRef(id) => write!(f, "invalid node reference: {}", id),
+            Self::MissingLabel { node_id } => write!(f, "missing label for task node: {}", node_id),
         }
     }
 }
