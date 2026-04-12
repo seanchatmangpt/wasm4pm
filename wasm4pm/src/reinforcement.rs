@@ -183,8 +183,12 @@ pub struct SARSAAgent<S: WorkflowState, A: WorkflowAction> {
     q_table: RefCell<HashMap<S, Vec<f32>>>,
     learning_rate: f32,
     discount_factor: f32,
-    #[allow(dead_code)]
     exploration_rate: f32,
+    exploration_decay: f32,
+    /// Stores the action selected by the most recent select_action call,
+    /// bridging the Agent trait's (s,a,r,s',done) signature with SARSA's
+    /// on-policy (s,a,r,s',a') signature.
+    last_action: RefCell<Option<A>>,
     _phantom: std::marker::PhantomData<A>,
 }
 
@@ -196,6 +200,8 @@ impl<S: WorkflowState, A: WorkflowAction> SARSAAgent<S, A> {
             learning_rate: 0.1,
             discount_factor: 0.99,
             exploration_rate: 1.0,
+            exploration_decay: 0.995,
+            last_action: RefCell::new(None),
             _phantom: std::marker::PhantomData,
         }
     }
@@ -248,6 +254,16 @@ impl<S: WorkflowState, A: WorkflowAction> SARSAAgent<S, A> {
             .0;
 
         A::from_index(best_idx).unwrap()
+    }
+
+    #[allow(dead_code)]
+    pub fn decay_exploration(&mut self) {
+        self.exploration_rate *= self.exploration_decay;
+    }
+
+    #[allow(dead_code)]
+    pub fn get_exploration_rate(&self) -> f32 {
+        self.exploration_rate
     }
 }
 
@@ -677,10 +693,149 @@ impl<S: WorkflowState, A: WorkflowAction> Default for ReinforceAgent<S, A> {
 }
 
 /// Trait for any learning agent
-#[allow(dead_code)]
 pub trait Agent<S: WorkflowState, A: WorkflowAction> {
     fn select_action(&self, state: &S) -> A;
     fn update(&self, state: &S, action: &A, reward: f32, next_state: &S, done: bool);
+}
+
+/// Metadata trait for agent introspection
+pub trait AgentMeta {
+    fn name(&self) -> &'static str;
+    fn exploration_rate(&self) -> f32;
+    fn decay_exploration(&mut self);
+}
+
+// ---------------------------------------------------------------------------
+// Agent trait implementations
+// ---------------------------------------------------------------------------
+
+impl<S: WorkflowState, A: WorkflowAction> Agent<S, A> for QLearning<S, A> {
+    fn select_action(&self, state: &S) -> A {
+        QLearning::select_action(self, state)
+    }
+    fn update(&self, state: &S, action: &A, reward: f32, next_state: &S, done: bool) {
+        QLearning::update(self, state, action, reward, next_state, done)
+    }
+}
+
+impl<S: WorkflowState, A: WorkflowAction> AgentMeta for QLearning<S, A> {
+    fn name(&self) -> &'static str {
+        "QLearning"
+    }
+    fn exploration_rate(&self) -> f32 {
+        self.exploration_rate
+    }
+    fn decay_exploration(&mut self) {
+        self.exploration_rate *= self.exploration_decay;
+    }
+}
+
+impl<S: WorkflowState, A: WorkflowAction> Agent<S, A> for SARSAAgent<S, A> {
+    fn select_action(&self, state: &S) -> A {
+        let action = self.epsilon_greedy_action(state, self.exploration_rate);
+        *self.last_action.borrow_mut() = Some(action.clone());
+        action
+    }
+    fn update(&self, state: &S, action: &A, reward: f32, next_state: &S, done: bool) {
+        if done {
+            // Terminal: use standard Q-update with zero future value
+            // (on-policy cannot observe next action at terminal state)
+            let mut q_table = self.q_table.borrow_mut();
+            q_table
+                .entry(state.clone())
+                .or_insert_with(|| vec![0.0; A::ACTION_COUNT]);
+            let action_idx = action.to_index();
+            let current_q = q_table[state][action_idx];
+            let target = reward; // no future value at terminal
+            q_table.get_mut(state).unwrap()[action_idx] +=
+                self.learning_rate * (target - current_q);
+        } else {
+            // On-policy: use the stored next action from the last select_action call
+            let next_action = self
+                .last_action
+                .borrow()
+                .clone()
+                .unwrap_or_else(|| self.greedy_action(next_state));
+            SARSAAgent::update(self, state, action, reward, next_state, &next_action);
+        }
+    }
+}
+
+impl<S: WorkflowState, A: WorkflowAction> AgentMeta for SARSAAgent<S, A> {
+    fn name(&self) -> &'static str {
+        "SARSA"
+    }
+    fn exploration_rate(&self) -> f32 {
+        self.exploration_rate
+    }
+    fn decay_exploration(&mut self) {
+        self.exploration_rate *= self.exploration_decay;
+    }
+}
+
+impl<S: WorkflowState, A: WorkflowAction> Agent<S, A> for DoubleQLearning<S, A> {
+    fn select_action(&self, state: &S) -> A {
+        DoubleQLearning::select_action(self, state)
+    }
+    fn update(&self, state: &S, action: &A, reward: f32, next_state: &S, done: bool) {
+        DoubleQLearning::update(self, state, action, reward, next_state, done)
+    }
+}
+
+impl<S: WorkflowState, A: WorkflowAction> AgentMeta for DoubleQLearning<S, A> {
+    fn name(&self) -> &'static str {
+        "DoubleQLearning"
+    }
+    fn exploration_rate(&self) -> f32 {
+        self.exploration_rate
+    }
+    fn decay_exploration(&mut self) {
+        self.exploration_rate *= self.exploration_decay;
+    }
+}
+
+impl<S: WorkflowState, A: WorkflowAction> Agent<S, A> for ExpectedSARSAAgent<S, A> {
+    fn select_action(&self, state: &S) -> A {
+        ExpectedSARSAAgent::select_action(self, state)
+    }
+    fn update(&self, state: &S, action: &A, reward: f32, next_state: &S, done: bool) {
+        ExpectedSARSAAgent::update(self, state, action, reward, next_state, done)
+    }
+}
+
+impl<S: WorkflowState, A: WorkflowAction> AgentMeta for ExpectedSARSAAgent<S, A> {
+    fn name(&self) -> &'static str {
+        "ExpectedSARSA"
+    }
+    fn exploration_rate(&self) -> f32 {
+        self.exploration_rate
+    }
+    fn decay_exploration(&mut self) {
+        self.exploration_rate *= self.exploration_decay;
+    }
+}
+
+impl<S: WorkflowState, A: WorkflowAction> Agent<S, A> for ReinforceAgent<S, A> {
+    fn select_action(&self, state: &S) -> A {
+        ReinforceAgent::select_action(self, state)
+    }
+    fn update(&self, state: &S, action: &A, reward: f32, _next_state: &S, _done: bool) {
+        // REINFORCE ignores next_state and done in online mode.
+        // Uses the immediate reward as the 1-step return.
+        self.update_step(state, action, reward);
+    }
+}
+
+impl<S: WorkflowState, A: WorkflowAction> AgentMeta for ReinforceAgent<S, A> {
+    fn name(&self) -> &'static str {
+        "REINFORCE"
+    }
+    fn exploration_rate(&self) -> f32 {
+        0.0 // Softmax has inherent exploration
+    }
+    fn decay_exploration(&mut self) {
+        // No-op for policy gradient
+    }
 }
 
 // Tests consolidated in tests/reinforcement_tests.rs

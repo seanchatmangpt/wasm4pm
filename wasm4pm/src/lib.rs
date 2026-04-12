@@ -276,6 +276,19 @@ pub mod pattern_dispatch;
 // Reinforcement learning — Q-Learning and SARSA agents (ported from knhk)
 pub mod reinforcement;
 
+// RL Orchestrator — persistent state hub for all RL agents
+pub mod rl_orchestrator;
+
+thread_local! {
+    /// Persistent RL orchestrator — survives across autonomic cycles.
+    pub static RL_ORCHESTRATOR: RefCell<rl_orchestrator::RlOrchestrator> =
+        RefCell::new(rl_orchestrator::RlOrchestrator::new());
+
+    /// Persistent circuit breaker for the autonomic loop.
+    pub static CIRCUIT_BREAKER: RefCell<self_healing::CircuitBreaker> =
+        RefCell::new(self_healing::CircuitBreaker::new());
+}
+
 // ML contextual bandits — LinUCB CPU baseline (ground truth for GPU parity)
 pub mod ml;
 
@@ -292,6 +305,7 @@ use state::*;
 #[allow(unused)]
 use types::*;
 
+use std::cell::RefCell;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen(start)]
@@ -580,14 +594,17 @@ pub fn autonomic_execute_cycle(
     let pattern_ticks = pattern_result.ticks_used;
 
     // -----------------------------------------------------------------------
-    // Layer 3: Protection — Circuit Breaker + SPC
+    // Layer 3: Protection — Circuit Breaker + SPC (persistent)
     // -----------------------------------------------------------------------
-    let mut circuit_breaker = self_healing::CircuitBreaker::new();
-    let circuit_allowed = circuit_breaker.allow_request();
-    let circuit_state = format!("{:?}", circuit_breaker.state());
-    if circuit_allowed {
-        circuit_breaker.record_success();
-    }
+    let (circuit_allowed, circuit_state) = CIRCUIT_BREAKER.with(|cb| {
+        let mut cb = cb.borrow_mut();
+        let allowed = cb.allow_request();
+        let state = format!("{:?}", cb.state());
+        if allowed {
+            cb.record_success();
+        }
+        (allowed, state)
+    });
 
     // SPC: multi-dimensional (event rate, trace duration, activity frequency)
     let mut all_special_causes: Vec<String> = Vec::new();
@@ -715,15 +732,43 @@ pub fn autonomic_execute_cycle(
     }
 
     // -----------------------------------------------------------------------
-    // Layer 4: Optimization — Reinforcement Learning
+    // Layer 4: Optimization — Reinforcement Learning (persistent)
     // -----------------------------------------------------------------------
     let health_level = health_state_val as u8;
 
-    // Use a simple u8 state representation for RL
-    let rl_state = RlState(health_level);
-    let agent = reinforcement::QLearning::<RlState, RlAction>::with_hyperparams(0.1, 0.99, 0.1);
-    let selected_action = agent.select_action(&rl_state);
-    let action_label = format!("{:?}", selected_action);
+    let (action_label, reward_val, agent_name, cycle_count, cumulative_reward) = RL_ORCHESTRATOR
+        .with(|orch_cell| {
+            let mut orch = orch_cell.borrow_mut();
+
+            // Build 8-dim feature vector for LinUCB (normalized to [0,1])
+            let features: [f32; 8] = [
+                (event_count_val as f32 / 10_000.0).min(1.0),
+                (trace_count_val as f32 / 1_000.0).min(1.0),
+                (unique_activities_val as f32 / 100.0).min(1.0),
+                (health_level as f32 / 4.0).min(1.0),
+                (all_special_causes.len() as f32 / 10.0).min(1.0),
+                if guard_pass { 1.0 } else { 0.0 },
+                if circuit_allowed { 1.0 } else { 0.0 },
+                (orch.telemetry().cycle_count as f32 / 1_000.0).min(1.0),
+            ];
+
+            let rl_state = RlState(health_level);
+            let (label, _reward) = orch.run_cycle(
+                &features,
+                &rl_state,
+                all_special_causes.len(),
+                guard_pass,
+                circuit_allowed,
+            );
+
+            (
+                label,
+                orch.telemetry().last_reward,
+                orch.telemetry().active_agent_name.clone(),
+                orch.telemetry().cycle_count,
+                orch.telemetry().cumulative_reward,
+            )
+        });
 
     // -----------------------------------------------------------------------
     // Build result JSON
@@ -752,6 +797,10 @@ pub fn autonomic_execute_cycle(
             },
             "optimization": {
                 "rl_action": action_label,
+                "rl_agent": agent_name,
+                "reward": reward_val,
+                "cycle_count": cycle_count,
+                "cumulative_reward": cumulative_reward,
                 "health_score": health_state_val,
             },
         },
@@ -770,7 +819,7 @@ pub fn autonomic_execute_cycle(
 
 // Simple RL state: health level (0-4)
 #[derive(Clone, PartialEq, Eq, std::hash::Hash)]
-struct RlState(u8);
+pub struct RlState(pub u8);
 
 impl reinforcement::WorkflowState for RlState {
     fn features(&self) -> Vec<f32> {
@@ -783,7 +832,7 @@ impl reinforcement::WorkflowState for RlState {
 
 // Simple RL actions: 5 levels
 #[derive(Clone, Copy, PartialEq, Eq, std::hash::Hash, std::fmt::Debug)]
-enum RlAction {
+pub enum RlAction {
     Continue = 0,
     Scale = 1,
     Retry = 2,
@@ -806,6 +855,71 @@ impl reinforcement::WorkflowAction for RlAction {
             _ => None,
         }
     }
+}
+
+// -------------------------------------------------------------------------
+// RL Orchestrator WASM Exports
+// -------------------------------------------------------------------------
+
+/// Reset the RL orchestrator to fresh state.
+#[wasm_bindgen]
+pub fn rl_orchestrator_reset() -> Result<String, JsValue> {
+    RL_ORCHESTRATOR.with(|orch| {
+        *orch.borrow_mut() = rl_orchestrator::RlOrchestrator::new();
+        Ok("RL orchestrator reset".to_string())
+    })
+}
+
+/// Get the currently active RL agent type (0=QLearning, 1=SARSA, 2=DoubleQ, 3=ExpectedSARSA, 4=REINFORCE).
+#[wasm_bindgen]
+pub fn rl_orchestrator_active_agent() -> Result<u8, JsValue> {
+    RL_ORCHESTRATOR.with(|orch| Ok(orch.borrow().active_agent() as u8))
+}
+
+/// Switch the active RL agent by type index.
+#[wasm_bindgen]
+pub fn rl_orchestrator_switch_agent(agent_type: u8) -> Result<String, JsValue> {
+    RL_ORCHESTRATOR.with(|orch| {
+        let mut orch = orch.borrow_mut();
+        match rl_orchestrator::AgentType::from_u8(agent_type) {
+            Some(at) => {
+                orch.switch_agent(at);
+                Ok(format!("Switched to {}", at.name()))
+            }
+            None => Err(JsValue::from_str(&format!(
+                "Invalid agent type: {} (must be 0-4)",
+                agent_type
+            ))),
+        }
+    })
+}
+
+/// Enable or disable LinUCB-based agent selection.
+#[wasm_bindgen]
+pub fn rl_orchestrator_set_linucb(enabled: bool) -> Result<String, JsValue> {
+    RL_ORCHESTRATOR.with(|orch| {
+        orch.borrow_mut().set_linucb_selection(enabled);
+        Ok(format!("LinUCB selection: {}", enabled))
+    })
+}
+
+/// Get RL orchestrator telemetry as JSON.
+#[wasm_bindgen]
+pub fn rl_orchestrator_telemetry() -> Result<String, JsValue> {
+    RL_ORCHESTRATOR.with(|orch| {
+        let orch = orch.borrow();
+        let t = orch.telemetry();
+        Ok(serde_json::to_string(t).unwrap_or_else(|_| "{}".to_string()))
+    })
+}
+
+/// Reset the persistent circuit breaker.
+#[wasm_bindgen]
+pub fn circuit_breaker_reset() -> Result<String, JsValue> {
+    CIRCUIT_BREAKER.with(|cb| {
+        *cb.borrow_mut() = self_healing::CircuitBreaker::new();
+        Ok("Circuit breaker reset".to_string())
+    })
 }
 
 // -------------------------------------------------------------------------

@@ -216,6 +216,8 @@ export class WasmLoader {
     }
     /**
      * Load WASM module from wasm4pm/pkg directory
+     * Validates that the module exports required discovery functions (load_eventlog_from_xes)
+     * Ignore: memory field is bundler-specific and may not be present on all targets
      */
     async loadWasmModule() {
         // Dynamically import based on runtime environment
@@ -245,6 +247,8 @@ export class WasmLoader {
             const message = err instanceof Error ? err.message : String(err);
             throw new Error(`Failed to load WASM module: ${message}`);
         }
+        // Validate that the module exports required functions
+        // memory field may not be present depending on bundler target (nodejs vs bundler vs browser)
         if (!wasmModule || typeof wasmModule.load_eventlog_from_xes !== 'function') {
             throw new Error('Invalid WASM module: missing required exports (load_eventlog_from_xes)');
         }

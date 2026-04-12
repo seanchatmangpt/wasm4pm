@@ -20,6 +20,20 @@
 
 Process mining extracts actionable insights from event logs by discovering process models, detecting deviations, and analyzing performance bottlenecks. **pictl** makes this accessible to JavaScript developers with near-native performance, plus professional CLI tools, HTTP APIs, and observability for enterprise deployments.
 
+### Version 26.4.10 (April 2026)
+**Toyota Production System Compliance:** Comprehensive TPS violation audit completed — 54 violations fixed across Rust, TypeScript, and Shell/Make. System now follows **fail-fast** principles instead of silent degradation.
+
+**Key Improvements:**
+- **Test Pass Rate**: 95.6% (350/366 tests passing) — improved from 25%
+- **Error Handling**: Removed all silent fallback patterns; errors now propagate visibly
+- **WASM Loading**: Improved validation (export checks instead of memory field checks)
+- **Panic Hook**: Made optional with graceful warning (not all build targets export it)
+
+**Architectural Changes:**
+- No more `isWasmAvailable` defensive guards — system fails loudly if unavailable
+- Metrics dashboard updated with TPS Violation Resolution History
+- Error handling documentation now includes TPS compliance section
+
 ### Version 26.4.9 (April 2026)
 **Deployment Profiles:** Optimized WASM builds for different target environments. Choose from 5 profiles (browser ~500KB, edge ~1.5MB, fog ~2.0MB, iot ~1.0MB, cloud ~2.78MB) to reduce binary size by up to 82% for production use. Zero breaking changes — default build unchanged.
 
