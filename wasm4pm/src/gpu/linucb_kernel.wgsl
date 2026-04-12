@@ -61,9 +61,9 @@ var<workgroup> shmem_features: array<f32, 256>;  // 32 states × 8 features
 //   workgroup_id.x ∈ [0, 8)         — workgroup index (8 workgroups for 2048 states)
 //
 // Within each workgroup (256 threads, 32 states):
-//   thread_local = local_id.x
-//   state_within_wg = thread_local / 8   ∈ [0, 32)
-//   feature_idx     = thread_local % 8   ∈ [0, 8)
+//   tid             = local_id.x
+//   state_within_wg = tid / 8   ∈ [0, 32)
+//   feature_idx     = tid % 8   ∈ [0, 8)
 
 @compute @workgroup_size(256)
 fn linucb_select(
@@ -71,9 +71,11 @@ fn linucb_select(
     @builtin(local_invocation_id)    local_id     : vec3<u32>,
     @builtin(workgroup_id)           workgroup_id : vec3<u32>,
 ) {
-    let thread_local: u32 = local_id.x;
-    let state_within_wg: u32 = thread_local / N_FEATURES;
-    let feature_idx: u32    = thread_local % N_FEATURES;
+    // tid = thread index within workgroup (0..255)
+    // Note: 'thread_local' is a WGSL reserved keyword — use 'tid' instead.
+    let tid: u32 = local_id.x;
+    let state_within_wg: u32 = tid / N_FEATURES;
+    let feature_idx: u32    = tid % N_FEATURES;
 
     // Global state index = workgroup base + state within workgroup
     let wg_state_base: u32 = workgroup_id.x * 32u;
@@ -87,7 +89,7 @@ fn linucb_select(
     // ── Phase 1: Load features into shared memory ────────────────────────────
     // Each thread loads exactly one feature for one state.
     let global_feat_idx: u32 = state_idx * N_FEATURES + feature_idx;
-    shmem_features[thread_local] = features_in[global_feat_idx];
+    shmem_features[tid] = features_in[global_feat_idx];
 
     // Synchronise: all 256 threads in workgroup must finish loading
     workgroupBarrier();
