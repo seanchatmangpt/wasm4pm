@@ -152,13 +152,12 @@ impl OcelBuilder {
                 .min(lifecycle.len());
 
             for (evt_idx, &activity) in lifecycle.iter().take(num_events).enumerate() {
-                let actual_activity = if activity == "Approve Order"
-                    && rng.next_f64_unit() < self.noise_factor
-                {
-                    "Reject Order"
-                } else {
-                    activity
-                };
+                let actual_activity =
+                    if activity == "Approve Order" && rng.next_f64_unit() < self.noise_factor {
+                        "Reject Order"
+                    } else {
+                        activity
+                    };
 
                 let mut object_ids = vec![order_id.clone()];
                 if actual_activity == "Create Invoice" {
@@ -328,16 +327,12 @@ fn bench_ocel_validation(c: &mut Criterion) {
         let total_events = ocel.events.len();
 
         group.throughput(Throughput::Elements(total_events as u64));
-        group.bench_with_input(
-            BenchmarkId::new("orders", num_orders),
-            &ocel,
-            |b, ocel| {
-                b.iter(|| {
-                    let (valid, error_count) = validate_ocel_native(black_box(ocel));
-                    black_box((valid, error_count))
-                })
-            },
-        );
+        group.bench_with_input(BenchmarkId::new("orders", num_orders), &ocel, |b, ocel| {
+            b.iter(|| {
+                let (valid, error_count) = validate_ocel_native(black_box(ocel));
+                black_box((valid, error_count))
+            })
+        });
     }
     group.finish();
 }
@@ -358,16 +353,12 @@ fn bench_ocel_flatten(c: &mut Criterion) {
         let total_events = ocel.events.len();
 
         group.throughput(Throughput::Elements(total_events as u64));
-        group.bench_with_input(
-            BenchmarkId::new("orders", num_orders),
-            &ocel,
-            |b, ocel| {
-                b.iter(|| {
-                    let order_log = flatten_ocel_native(black_box(ocel), "Order");
-                    black_box(order_log)
-                })
-            },
-        );
+        group.bench_with_input(BenchmarkId::new("orders", num_orders), &ocel, |b, ocel| {
+            b.iter(|| {
+                let order_log = flatten_ocel_native(black_box(ocel), "Order");
+                black_box(order_log)
+            })
+        });
     }
     group.finish();
 }
@@ -386,17 +377,13 @@ fn bench_ocel_serialization(c: &mut Criterion) {
         let builder = OcelBuilder::new(num_orders, num_items, 5);
         let ocel = builder.build();
 
-        group.bench_with_input(
-            BenchmarkId::new("orders", num_orders),
-            &ocel,
-            |b, ocel| {
-                b.iter(|| {
-                    let json = serde_json::to_string(black_box(ocel)).unwrap_or_default();
-                    let hash = blake3::hash(json.as_bytes());
-                    black_box(hash)
-                })
-            },
-        );
+        group.bench_with_input(BenchmarkId::new("orders", num_orders), &ocel, |b, ocel| {
+            b.iter(|| {
+                let json = serde_json::to_string(black_box(ocel)).unwrap_or_default();
+                let hash = blake3::hash(json.as_bytes());
+                black_box(hash)
+            })
+        });
     }
     group.finish();
 }
@@ -417,36 +404,32 @@ fn bench_ocel_pipeline_e2e(c: &mut Criterion) {
         let total_events = ocel.events.len();
 
         group.throughput(Throughput::Elements(total_events as u64));
-        group.bench_with_input(
-            BenchmarkId::new("orders", num_orders),
-            &ocel,
-            |b, ocel| {
-                b.iter(|| {
-                    let input_json = serde_json::to_string(black_box(ocel)).unwrap_or_default();
-                    let input_hash = blake3::hash(input_json.as_bytes());
+        group.bench_with_input(BenchmarkId::new("orders", num_orders), &ocel, |b, ocel| {
+            b.iter(|| {
+                let input_json = serde_json::to_string(black_box(ocel)).unwrap_or_default();
+                let input_hash = blake3::hash(input_json.as_bytes());
 
-                    let (valid, error_count) = validate_ocel_native(ocel);
+                let (valid, error_count) = validate_ocel_native(ocel);
 
-                    let order_log = flatten_ocel_native(ocel, "Order");
-                    let item_log = flatten_ocel_native(ocel, "Item");
+                let order_log = flatten_ocel_native(ocel, "Order");
+                let item_log = flatten_ocel_native(ocel, "Item");
 
-                    let order_json = serde_json::to_string(&order_log).unwrap_or_default();
-                    let order_hash = blake3::hash(order_json.as_bytes());
-                    let item_json = serde_json::to_string(&item_log).unwrap_or_default();
-                    let item_hash = blake3::hash(item_json.as_bytes());
+                let order_json = serde_json::to_string(&order_log).unwrap_or_default();
+                let order_hash = blake3::hash(order_json.as_bytes());
+                let item_json = serde_json::to_string(&item_log).unwrap_or_default();
+                let item_hash = blake3::hash(item_json.as_bytes());
 
-                    let state = get_or_init_state();
-                    let _order_handle = state
-                        .store_object(StoredObject::EventLog(order_log))
-                        .expect("store failed");
-                    let _item_handle = state
-                        .store_object(StoredObject::EventLog(item_log))
-                        .expect("store failed");
+                let state = get_or_init_state();
+                let _order_handle = state
+                    .store_object(StoredObject::EventLog(order_log))
+                    .expect("store failed");
+                let _item_handle = state
+                    .store_object(StoredObject::EventLog(item_log))
+                    .expect("store failed");
 
-                    black_box((input_hash, valid, error_count, order_hash, item_hash))
-                })
-            },
-        );
+                black_box((input_hash, valid, error_count, order_hash, item_hash))
+            })
+        });
     }
     group.finish();
 }

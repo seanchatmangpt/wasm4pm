@@ -33,7 +33,10 @@ impl Construct8 {
     #[inline(always)]
     pub const fn empty() -> Self {
         const Z: Triple = Triple { s: 0, p: 0, o: 0 };
-        Self { len: 0, triples: [Z; MAX_TRIPLES] }
+        Self {
+            len: 0,
+            triples: [Z; MAX_TRIPLES],
+        }
     }
 
     #[inline(always)]
@@ -276,13 +279,12 @@ pub const fn receipt_seed_mix(
     epoch: Id,
     flags: Flags,
 ) -> Seed {
-    let x =
-        prev ^
-        ((case_id as u64) << 1) ^
-        ((current as u64) << 17) ^
-        ((next as u64) << 33) ^
-        ((epoch as u64) << 49) ^
-        (flags as u64);
+    let x = prev
+        ^ ((case_id as u64) << 1)
+        ^ ((current as u64) << 17)
+        ^ ((next as u64) << 33)
+        ^ ((epoch as u64) << 49)
+        ^ (flags as u64);
 
     fmix64(x)
 }
@@ -349,7 +351,11 @@ pub struct bitxor3 {
 pub const fn bitxor_fingerprint32(x: u32, seed: u64) -> u32 {
     let h = fmix64((x as u64) ^ seed);
     let fp = (h as u32) ^ ((h >> 32) as u32);
-    if fp == 0 { 1 } else { fp }
+    if fp == 0 {
+        1
+    } else {
+        fp
+    }
 }
 
 #[inline(always)]
@@ -368,11 +374,7 @@ pub const fn bitxor_idx2(cfg: &bitxor3, key: u32) -> u32 {
 }
 
 #[inline(always)]
-pub fn bitxor_contains_u32(
-    cfg: &bitxor3,
-    table: &[u32],
-    key: u32,
-) -> u8 {
+pub fn bitxor_contains_u32(cfg: &bitxor3, table: &[u32], key: u32) -> u8 {
     let i0 = bitxor_idx0(cfg, key) as usize;
     let i1 = bitxor_idx1(cfg, key) as usize;
     let i2 = bitxor_idx2(cfg, key) as usize;
@@ -528,12 +530,20 @@ pub fn bituf_union_by_min_2(parent: &mut [u32], a: u32, b: u32) {
 #[inline(always)]
 pub fn bitfenwick_add_8(tree: &mut [u32; 8], idx1: u32, delta: u32) {
     let mut i = idx1 as usize;
-    if i == 0 { return; }
-    if i <= 8 { tree[i - 1] = tree[i - 1].wrapping_add(delta); }
+    if i == 0 {
+        return;
+    }
+    if i <= 8 {
+        tree[i - 1] = tree[i - 1].wrapping_add(delta);
+    }
     i = i.wrapping_add(i & (!i).wrapping_add(1));
-    if i <= 8 { tree[i - 1] = tree[i - 1].wrapping_add(delta); }
+    if i <= 8 {
+        tree[i - 1] = tree[i - 1].wrapping_add(delta);
+    }
     i = i.wrapping_add(i & (!i).wrapping_add(1));
-    if i <= 8 { tree[i - 1] = tree[i - 1].wrapping_add(delta); }
+    if i <= 8 {
+        tree[i - 1] = tree[i - 1].wrapping_add(delta);
+    }
 }
 
 #[inline(always)]
@@ -541,7 +551,9 @@ pub fn bitfenwick_sum_8(tree: &[u32; 8], idx1: u32) -> u32 {
     let mut i = idx1 as usize;
     let mut acc = 0u32;
 
-    if i == 0 { return 0; }
+    if i == 0 {
+        return 0;
+    }
 
     if i <= 8 {
         acc = acc.wrapping_add(tree[i - 1]);
@@ -571,13 +583,7 @@ pub const fn floor_log2_u32(x: u32) -> u32 {
 }
 
 #[inline(always)]
-pub fn bitrmq_min_u32(
-    sparse: &[u32],
-    levels: u32,
-    n: u32,
-    l: u32,
-    r: u32,
-) -> u32 {
+pub fn bitrmq_min_u32(sparse: &[u32], levels: u32, n: u32, l: u32, r: u32) -> u32 {
     let len = r - l + 1;
     let k = floor_log2_u32(len);
     let base0 = (k * n + l) as usize;
@@ -603,20 +609,29 @@ pub struct bitgraph4 {
 }
 
 #[inline(always)]
-pub const fn bitgraph_hop0(g: bitgraph4) -> u32 { g.n0 }
+pub const fn bitgraph_hop0(g: bitgraph4) -> u32 {
+    g.n0
+}
 #[inline(always)]
-pub const fn bitgraph_hop1(g: bitgraph4) -> u32 { g.n1 }
+pub const fn bitgraph_hop1(g: bitgraph4) -> u32 {
+    g.n1
+}
 #[inline(always)]
-pub const fn bitgraph_hop2(g: bitgraph4) -> u32 { g.n2 }
+pub const fn bitgraph_hop2(g: bitgraph4) -> u32 {
+    g.n2
+}
 #[inline(always)]
-pub const fn bitgraph_hop3(g: bitgraph4) -> u32 { g.n3 }
+pub const fn bitgraph_hop3(g: bitgraph4) -> u32 {
+    g.n3
+}
 
 #[inline(always)]
 pub const fn bitgraph_contains4(g: bitgraph4, target: u32) -> u8 {
-    (((g.n0 == target) as u8) |
-     ((g.n1 == target) as u8) |
-     ((g.n2 == target) as u8) |
-     ((g.n3 == target) as u8)) & 1
+    (((g.n0 == target) as u8)
+        | ((g.n1 == target) as u8)
+        | ((g.n2 == target) as u8)
+        | ((g.n3 == target) as u8))
+        & 1
 }
 
 // ============================================================
@@ -982,7 +997,11 @@ pub const fn counter_add(x: u32, delta: u32) -> u32 {
 
 #[inline(always)]
 pub const fn saturating_counter_inc_u8(x: u8) -> u8 {
-    if x == u8::MAX { u8::MAX } else { x + 1 }
+    if x == u8::MAX {
+        u8::MAX
+    } else {
+        x + 1
+    }
 }
 
 #[inline(always)]
@@ -1016,7 +1035,10 @@ mod tests {
 
     #[test]
     fn test_bitxor_contains() {
-        let cfg = bitxor3 { seed: 12345, block_mask: 7 };
+        let cfg = bitxor3 {
+            seed: 12345,
+            block_mask: 7,
+        };
         let key = 42u32;
         let fp = bitxor_fingerprint32(key, cfg.seed);
         let i0 = bitxor_idx0(&cfg, key) as usize;
@@ -1051,10 +1073,21 @@ mod tests {
 
     #[test]
     fn test_marking() {
-        let m = Marking4 { p0: 1, p1: 1, p2: 0, p3: 0 };
+        let m = Marking4 {
+            p0: 1,
+            p1: 1,
+            p2: 0,
+            p3: 0,
+        };
         let t = Transition4 {
-            in0: 1, in1: 1, in2: 0, in3: 0,
-            out0: 0, out1: 0, out2: 1, out3: 0,
+            in0: 1,
+            in1: 1,
+            in2: 0,
+            in3: 0,
+            out0: 0,
+            out1: 0,
+            out2: 1,
+            out3: 0,
         };
         let en = marking_enabled4(m, t);
         assert_eq!(en, 1);
@@ -1082,10 +1115,30 @@ mod tests {
         };
 
         let rules = [
-            TransitionRule { from: 100, to: 101, require_mask: 0, forbid_mask: 0 },
-            TransitionRule { from: 101, to: 102, require_mask: 0, forbid_mask: 0 },
-            TransitionRule { from: 102, to: 103, require_mask: 0, forbid_mask: 0 },
-            TransitionRule { from: 103, to: 104, require_mask: 0, forbid_mask: 0 },
+            TransitionRule {
+                from: 100,
+                to: 101,
+                require_mask: 0,
+                forbid_mask: 0,
+            },
+            TransitionRule {
+                from: 101,
+                to: 102,
+                require_mask: 0,
+                forbid_mask: 0,
+            },
+            TransitionRule {
+                from: 102,
+                to: 103,
+                require_mask: 0,
+                forbid_mask: 0,
+            },
+            TransitionRule {
+                from: 103,
+                to: 104,
+                require_mask: 0,
+                forbid_mask: 0,
+            },
         ];
 
         let state = HotState {
@@ -1111,9 +1164,30 @@ mod tests {
         assert_eq!(ingress.next_state.previous, 100);
         assert_eq!(ingress.next_state.epoch, 8);
         assert_eq!(c8.len, 8);
-        assert_eq!(c8.triples[0], Triple { s: 5000, p: 10, o: 101 });
-        assert_eq!(c8.triples[1], Triple { s: 5000, p: 11, o: 100 });
-        assert_eq!(c8.triples[2], Triple { s: 5000, p: 12, o: 8 });
+        assert_eq!(
+            c8.triples[0],
+            Triple {
+                s: 5000,
+                p: 10,
+                o: 101
+            }
+        );
+        assert_eq!(
+            c8.triples[1],
+            Triple {
+                s: 5000,
+                p: 11,
+                o: 100
+            }
+        );
+        assert_eq!(
+            c8.triples[2],
+            Triple {
+                s: 5000,
+                p: 12,
+                o: 8
+            }
+        );
     }
 
     #[test]
@@ -1135,10 +1209,30 @@ mod tests {
         };
 
         let rules = [
-            TransitionRule { from: 100, to: 101, require_mask: 0, forbid_mask: 0 },
-            TransitionRule { from: 101, to: 102, require_mask: 0, forbid_mask: 0 },
-            TransitionRule { from: 102, to: 103, require_mask: 0, forbid_mask: 0 },
-            TransitionRule { from: 103, to: 104, require_mask: 0, forbid_mask: 0 },
+            TransitionRule {
+                from: 100,
+                to: 101,
+                require_mask: 0,
+                forbid_mask: 0,
+            },
+            TransitionRule {
+                from: 101,
+                to: 102,
+                require_mask: 0,
+                forbid_mask: 0,
+            },
+            TransitionRule {
+                from: 102,
+                to: 103,
+                require_mask: 0,
+                forbid_mask: 0,
+            },
+            TransitionRule {
+                from: 103,
+                to: 104,
+                require_mask: 0,
+                forbid_mask: 0,
+            },
         ];
 
         let state = HotState {
@@ -1148,19 +1242,18 @@ mod tests {
             flags: 0,
         };
 
-        let (ingress, c8) = hot_conformance_step_4(
-            5000,
-            state,
-            104,
-            &rules,
-            predicates,
-            ids,
-            0,
-        );
+        let (ingress, c8) = hot_conformance_step_4(5000, state, 104, &rules, predicates, ids, 0);
 
         assert_eq!(ingress.lawful, 0);
         assert_eq!(ingress.next_state.current, 100);
         assert_eq!(ingress.next_state.epoch, 7);
-        assert_eq!(c8.triples[6], Triple { s: 5000, p: 16, o: 0 });
+        assert_eq!(
+            c8.triples[6],
+            Triple {
+                s: 5000,
+                p: 16,
+                o: 0
+            }
+        );
     }
 }

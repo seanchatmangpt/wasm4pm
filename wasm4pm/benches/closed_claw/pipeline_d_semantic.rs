@@ -25,24 +25,37 @@ use std::time::Duration;
 
 #[path = "../helpers.rs"]
 mod helpers;
-use helpers::{generate_event_log, store_log, ACTIVITY_KEY, bench_sizes_slow};
+use helpers::{bench_sizes_slow, generate_event_log, store_log, ACTIVITY_KEY};
 
 /// Build a simple sequential Petri net matching the synthetic log structure.
 fn build_synthetic_net() -> PetriNet {
     let mut net = PetriNet::new();
-    let activities = ["Register", "Validate", "Check_Docs", "Assess_Risk",
-        "Calculate_Fee", "Send_Invoice", "Confirm_Payment"];
+    let activities = [
+        "Register",
+        "Validate",
+        "Check_Docs",
+        "Assess_Risk",
+        "Calculate_Fee",
+        "Send_Invoice",
+        "Confirm_Payment",
+    ];
 
     net.places.push(PetriNetPlace {
-        id: "p_start".into(), label: "p_start".into(), marking: Some(1),
+        id: "p_start".into(),
+        label: "p_start".into(),
+        marking: Some(1),
     });
     for i in 0..activities.len() {
         net.places.push(PetriNetPlace {
-            id: format!("p{}", i), label: format!("p{}", i), marking: None,
+            id: format!("p{}", i),
+            label: format!("p{}", i),
+            marking: None,
         });
     }
     net.places.push(PetriNetPlace {
-        id: "p_end".into(), label: "p_end".into(), marking: None,
+        id: "p_end".into(),
+        label: "p_end".into(),
+        marking: None,
     });
 
     for &label in &activities {
@@ -56,16 +69,22 @@ fn build_synthetic_net() -> PetriNet {
     let mut prev = "p_start".to_string();
     for (i, trans) in net.transitions.iter().enumerate() {
         net.arcs.push(PetriNetArc {
-            from: prev.clone(), to: trans.id.clone(), weight: Some(1),
+            from: prev.clone(),
+            to: trans.id.clone(),
+            weight: Some(1),
         });
         let next_place = format!("p{}", i);
         net.arcs.push(PetriNetArc {
-            from: trans.id.clone(), to: next_place.clone(), weight: Some(1),
+            from: trans.id.clone(),
+            to: next_place.clone(),
+            weight: Some(1),
         });
         prev = next_place;
     }
     net.arcs.push(PetriNetArc {
-        from: prev, to: "p_end".to_string(), weight: Some(1),
+        from: prev,
+        to: "p_end".to_string(),
+        weight: Some(1),
     });
 
     net.initial_marking.insert("p_start".to_string(), 1);
@@ -84,15 +103,21 @@ fn bench_pnml_roundtrip(c: &mut Criterion) {
     for &num_transitions in sizes {
         let mut net = PetriNet::new();
         net.places.push(PetriNetPlace {
-            id: "p_start".into(), label: "p_start".into(), marking: Some(1),
+            id: "p_start".into(),
+            label: "p_start".into(),
+            marking: Some(1),
         });
         for i in 0..num_transitions {
             net.places.push(PetriNetPlace {
-                id: format!("p{}", i), label: format!("p{}", i), marking: None,
+                id: format!("p{}", i),
+                label: format!("p{}", i),
+                marking: None,
             });
         }
         net.places.push(PetriNetPlace {
-            id: "p_end".into(), label: "p_end".into(), marking: None,
+            id: "p_end".into(),
+            label: "p_end".into(),
+            marking: None,
         });
         for i in 0..num_transitions {
             net.transitions.push(PetriNetTransition {
@@ -103,12 +128,24 @@ fn bench_pnml_roundtrip(c: &mut Criterion) {
         }
         let mut prev = "p_start".to_string();
         for (i, trans) in net.transitions.iter().enumerate() {
-            net.arcs.push(PetriNetArc { from: prev.clone(), to: trans.id.clone(), weight: Some(1) });
+            net.arcs.push(PetriNetArc {
+                from: prev.clone(),
+                to: trans.id.clone(),
+                weight: Some(1),
+            });
             let next_place = format!("p{}", i);
-            net.arcs.push(PetriNetArc { from: trans.id.clone(), to: next_place.clone(), weight: Some(1) });
+            net.arcs.push(PetriNetArc {
+                from: trans.id.clone(),
+                to: next_place.clone(),
+                weight: Some(1),
+            });
             prev = next_place;
         }
-        net.arcs.push(PetriNetArc { from: prev, to: "p_end".to_string(), weight: Some(1) });
+        net.arcs.push(PetriNetArc {
+            from: prev,
+            to: "p_end".to_string(),
+            weight: Some(1),
+        });
         net.initial_marking.insert("p_start".to_string(), 1);
         let mut fm = HashMap::new();
         fm.insert("p_end".to_string(), 1);
@@ -124,10 +161,14 @@ fn bench_pnml_roundtrip(c: &mut Criterion) {
                     let pnml_xml = to_pnml(black_box(net));
                     let restored = from_pnml(&pnml_xml).expect("PNML parse failed");
                     let orig_hash = blake3::hash(
-                        serde_json::to_string(black_box(net)).unwrap_or_default().as_bytes(),
+                        serde_json::to_string(black_box(net))
+                            .unwrap_or_default()
+                            .as_bytes(),
                     );
                     let restored_hash = blake3::hash(
-                        serde_json::to_string(&restored).unwrap_or_default().as_bytes(),
+                        serde_json::to_string(&restored)
+                            .unwrap_or_default()
+                            .as_bytes(),
                     );
                     black_box((orig_hash, restored_hash, pnml_xml.len()))
                 })
@@ -181,30 +222,32 @@ fn bench_semantic_proof_e2e(c: &mut Criterion) {
             |b, shape| {
                 b.iter(|| {
                     let log = generate_event_log(black_box(shape));
-                    let input_hash = blake3::hash(
-                        serde_json::to_string(&log).unwrap_or_default().as_bytes(),
-                    );
+                    let input_hash =
+                        blake3::hash(serde_json::to_string(&log).unwrap_or_default().as_bytes());
 
                     let handle = get_or_init_state()
                         .store_object(StoredObject::EventLog(log))
                         .expect("store failed");
-                    let discovery_result = discover_alpha_plus_plus(&handle, ACTIVITY_KEY, 0.5).unwrap();
-                    let plan_hash = blake3::hash(
-                        discovery_result.as_string().unwrap_or_default().as_bytes(),
-                    );
+                    let discovery_result =
+                        discover_alpha_plus_plus(&handle, ACTIVITY_KEY, 0.5).unwrap();
+                    let plan_hash =
+                        blake3::hash(discovery_result.as_string().unwrap_or_default().as_bytes());
 
                     let net = build_synthetic_net();
                     let net_handle = get_or_init_state()
                         .store_object(StoredObject::PetriNet(net))
                         .expect("store net failed");
 
-                    let pnml_xml = to_pnml(&get_or_init_state()
-                        .get_object(&net_handle).unwrap()
-                        .and_then(|o| match o {
-                            StoredObject::PetriNet(n) => Some(n),
-                            _ => None,
-                        })
-                        .unwrap());
+                    let pnml_xml = to_pnml(
+                        &get_or_init_state()
+                            .get_object(&net_handle)
+                            .unwrap()
+                            .and_then(|o| match o {
+                                StoredObject::PetriNet(n) => Some(n),
+                                _ => None,
+                            })
+                            .unwrap(),
+                    );
                     let _restored = from_pnml(&pnml_xml).expect("PNML roundtrip failed");
 
                     let output_hash = blake3::hash(pnml_xml.as_bytes());

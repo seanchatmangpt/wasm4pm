@@ -40,10 +40,16 @@ fn test_jtbd_cpu_resource_guard() {
     // JTBD: "Execute when CPU ≥ 50"
     let ctx = test_context();
     let guard_pass = Guard::resource(pictl::guards::ResourceType::Cpu, 50);
-    assert!(guard_pass.evaluate(&ctx), "CPU=80 should pass guard with threshold=50");
+    assert!(
+        guard_pass.evaluate(&ctx),
+        "CPU=80 should pass guard with threshold=50"
+    );
 
     let guard_fail = Guard::resource(pictl::guards::ResourceType::Cpu, 100);
-    assert!(!guard_fail.evaluate(&ctx), "CPU=80 should fail guard with threshold=100");
+    assert!(
+        !guard_fail.evaluate(&ctx),
+        "CPU=80 should fail guard with threshold=100"
+    );
 }
 
 #[test]
@@ -60,20 +66,22 @@ fn test_jtbd_compound_and_guard() {
     ); // passes (count=5 < 20)
 
     let guard_all_pass = Guard::and(vec![g1, g2, g3]);
-    assert!(guard_all_pass.evaluate(&ctx), "All 3 conditions pass, AND should pass");
+    assert!(
+        guard_all_pass.evaluate(&ctx),
+        "All 3 conditions pass, AND should pass"
+    );
 
     // Change g3 to fail: count=5, threshold=3 → 5 >= 3, so use GreaterThanOrEqual
-    let g3_fail = Guard::predicate(
-        pictl::guards::Predicate::GreaterThanOrEqual,
-        3,
-        10,
-    ); // 5 < 10, fails
+    let g3_fail = Guard::predicate(pictl::guards::Predicate::GreaterThanOrEqual, 3, 10); // 5 < 10, fails
     let guard_one_fail = Guard::and(vec![
         Guard::resource(pictl::guards::ResourceType::Cpu, 50),
         Guard::state(StateFlags::INITIALIZED | StateFlags::RUNNING),
         g3_fail,
     ]);
-    assert!(!guard_one_fail.evaluate(&ctx), "One condition fails, AND should fail");
+    assert!(
+        !guard_one_fail.evaluate(&ctx),
+        "One condition fails, AND should fail"
+    );
 }
 
 #[test]
@@ -82,13 +90,22 @@ fn test_jtbd_state_flag_check() {
     let ctx = test_context();
 
     let guard_match = Guard::state(StateFlags::INITIALIZED | StateFlags::RUNNING);
-    assert!(guard_match.evaluate(&ctx), "State flags match, guard should pass");
+    assert!(
+        guard_match.evaluate(&ctx),
+        "State flags match, guard should pass"
+    );
 
     let guard_partial = Guard::state(StateFlags::INITIALIZED | StateFlags::COMPLETED);
-    assert!(!guard_partial.evaluate(&ctx), "COMPLETED not set, guard should fail");
+    assert!(
+        !guard_partial.evaluate(&ctx),
+        "COMPLETED not set, guard should fail"
+    );
 
     let guard_single = Guard::state(StateFlags::RUNNING);
-    assert!(guard_single.evaluate(&ctx), "RUNNING is set, guard should pass");
+    assert!(
+        guard_single.evaluate(&ctx),
+        "RUNNING is set, guard should pass"
+    );
 }
 
 #[test]
@@ -104,7 +121,11 @@ fn test_jtbd_ttl_cache_benefit() {
 
     // Second call: cache hit (same timestamp, within TTL)
     let _ = evaluator.evaluate_cached(1, &guard, &ctx);
-    assert_eq!(evaluator.len(), 1, "Cache should still have 1 entry (hit, no new entry)");
+    assert_eq!(
+        evaluator.len(),
+        1,
+        "Cache should still have 1 entry (hit, no new entry)"
+    );
 
     // Different pattern_id: cache miss
     let _ = evaluator.evaluate_cached(2, &guard, &ctx);
@@ -116,7 +137,11 @@ fn test_jtbd_ttl_cache_benefit() {
         ..test_context()
     };
     let _ = evaluator.evaluate_cached(1, &guard, &ctx_expired);
-    assert_eq!(evaluator.len(), 2, "Expired entry replaced, still 2 entries");
+    assert_eq!(
+        evaluator.len(),
+        2,
+        "Expired entry replaced, still 2 entries"
+    );
 
     // Clear expired (timestamp > all entries' timestamps)
     evaluator.clear_expired(2500);
@@ -211,7 +236,11 @@ fn test_jtbd_all_patterns_registered() {
 
     for pt_val in 1u8..=43 {
         let result = PatternType::from_u8(pt_val);
-        assert!(result.is_some(), "PatternType::from_u8({}) should return Some", pt_val);
+        assert!(
+            result.is_some(),
+            "PatternType::from_u8({}) should return Some",
+            pt_val
+        );
         let pt = result.unwrap();
         assert!(
             dispatcher.validate_pattern(pt),
@@ -299,7 +328,7 @@ fn test_jtbd_sarsa_on_policy() {
     agent.update(&s1, &a1, 1.0, &s2, &a2);
     // Verify the update happened by checking Q(s1, a1) changed
     let q_val = agent.epsilon_greedy_action(&s1, 0.0); // epsilon=0 → greedy
-    // With epsilon=0, it picks the best action — should be Left (the one we updated)
+                                                       // With epsilon=0, it picks the best action — should be Left (the one we updated)
     assert_eq!(q_val, RlAction::Left);
 }
 
@@ -372,9 +401,15 @@ fn test_jtbd_retry_backoff_doubles() {
     };
 
     let mut state = RetryState::new(100);
-    let b1 = state.next_attempt(&policy).expect("attempt 1 should succeed");
-    let b2 = state.next_attempt(&policy).expect("attempt 2 should succeed");
-    let b3 = state.next_attempt(&policy).expect("attempt 3 should succeed");
+    let b1 = state
+        .next_attempt(&policy)
+        .expect("attempt 1 should succeed");
+    let b2 = state
+        .next_attempt(&policy)
+        .expect("attempt 2 should succeed");
+    let b3 = state
+        .next_attempt(&policy)
+        .expect("attempt 3 should succeed");
     let b4 = state.next_attempt(&policy); // should be None (exhausted)
 
     assert_eq!(b1, 100, "First backoff should be initial=100ms");
@@ -393,12 +428,20 @@ fn test_jtbd_health_check_recovery() {
     hc.record_result(false);
     hc.record_result(false);
     hc.record_result(false);
-    assert_eq!(hc.status(), HealthStatus::Unhealthy, "Should be unhealthy after 3 failures");
+    assert_eq!(
+        hc.status(),
+        HealthStatus::Unhealthy,
+        "Should be unhealthy after 3 failures"
+    );
 
     // Drive back to healthy (2 consecutive successes)
     hc.record_result(true);
     hc.record_result(true);
-    assert_eq!(hc.status(), HealthStatus::Healthy, "Should be healthy after 2 successes");
+    assert_eq!(
+        hc.status(),
+        HealthStatus::Healthy,
+        "Should be healthy after 2 successes"
+    );
 }
 
 #[test]
@@ -444,16 +487,22 @@ fn chart(value: f64, ucl: f64, cl: f64, lcl: f64) -> ChartData {
 fn test_jtbd_rule1_alerts() {
     // JTBD: "Rule 1: Point beyond UCL triggers alert"
     // Build 9 points where points straddle CL to avoid Rule 2 shift detection
-    let mut data: Vec<ChartData> = (0..8).map(|i| {
-        let v = if i % 2 == 0 { 4.0 } else { 6.0 }; // alternate above/below CL
-        chart(v, 10.0, 5.0, 0.0)
-    }).collect();
+    let mut data: Vec<ChartData> = (0..8)
+        .map(|i| {
+            let v = if i % 2 == 0 { 4.0 } else { 6.0 }; // alternate above/below CL
+            chart(v, 10.0, 5.0, 0.0)
+        })
+        .collect();
     data.push(chart(11.0, 10.0, 5.0, 0.0)); // beyond UCL
 
     let alerts = check_western_electric_rules(&data);
     assert!(alerts.len() >= 1, "Should detect at least 1 alert");
-    assert!(alerts.iter().any(|a| matches!(a, SpecialCause::OutOfControl { value: 11.0, .. })),
-        "Should detect OutOfControl for value 11.0");
+    assert!(
+        alerts
+            .iter()
+            .any(|a| matches!(a, SpecialCause::OutOfControl { value: 11.0, .. })),
+        "Should detect OutOfControl for value 11.0"
+    );
 }
 
 #[test]
@@ -462,7 +511,13 @@ fn test_jtbd_rule2_shift_above() {
     let data: Vec<ChartData> = (0..9).map(|_| chart(6.0, 10.0, 5.0, 0.0)).collect();
 
     let alerts = check_western_electric_rules(&data);
-    assert!(alerts.iter().any(|a| matches!(a, SpecialCause::Shift { direction: pictl::spc::ShiftDirection::Above, count: 9 })));
+    assert!(alerts.iter().any(|a| matches!(
+        a,
+        SpecialCause::Shift {
+            direction: pictl::spc::ShiftDirection::Above,
+            count: 9
+        }
+    )));
 }
 
 #[test]
@@ -474,16 +529,22 @@ fn test_jtbd_rule3_trend_increasing() {
     }
 
     let alerts = check_western_electric_rules(&data);
-    assert!(alerts.iter().any(|a| matches!(a, SpecialCause::Trend { direction: pictl::spc::TrendDirection::Increasing, .. })));
+    assert!(alerts.iter().any(|a| matches!(
+        a,
+        SpecialCause::Trend {
+            direction: pictl::spc::TrendDirection::Increasing,
+            ..
+        }
+    )));
 }
 
 #[test]
 fn test_jtbd_capability_within_threshold() {
     // JTBD: "Cp ≥ 1.0, Cpk ≥ 1.0 for capable process"
     // Generate data with mean≈5.0, std≈0.5 — well within USL=10, LSL=0
-    let data: Vec<f64> = (0..100).map(|i| {
-        5.0 + ((i % 7) as f64 - 3.0) * 0.15
-    }).collect();
+    let data: Vec<f64> = (0..100)
+        .map(|i| 5.0 + ((i % 7) as f64 - 3.0) * 0.15)
+        .collect();
 
     let cap = ProcessCapability::calculate(&data, 10.0, 0.0).unwrap();
     assert!(
@@ -502,10 +563,8 @@ fn test_jtbd_capability_within_threshold() {
 fn test_jtbd_dpmo_to_sigma_boundaries() {
     // JTBD: "DPMO → sigma conversion at known boundaries"
     // 3.4 DPMO ≈ 6 sigma (Six Sigma)
-    let cap_6sigma = ProcessCapability::calculate(
-        &[5.0, 5.001, 4.999, 5.000, 5.002],
-        6.0, 4.0,
-    ).unwrap();
+    let cap_6sigma =
+        ProcessCapability::calculate(&[5.0, 5.001, 4.999, 5.000, 5.002], 6.0, 4.0).unwrap();
     assert!(
         cap_6sigma.sigma_level >= 5.0,
         "Near-zero DPMO should give sigma ≥ 5.0, got {} (dpmo={})",
@@ -527,11 +586,7 @@ fn test_jtbd_dpmo_to_sigma_boundaries() {
 fn test_jtbd_normal_cdf_accuracy() {
     // JTBD: "Normal CDF accuracy — Φ(0)=0.5, Φ(1.96)≈0.975"
     let p0 = pictl::spc::normal_cdf_public(0.0);
-    assert!(
-        (p0 - 0.5).abs() < 1e-6,
-        "Φ(0) should be 0.5, got {}",
-        p0
-    );
+    assert!((p0 - 0.5).abs() < 1e-6, "Φ(0) should be 0.5, got {}", p0);
 
     let p196 = pictl::spc::normal_cdf_public(1.96);
     assert!(
@@ -566,11 +621,7 @@ fn test_jtbd_inverse_cdf_accuracy() {
     );
 
     let z5 = pictl::spc::inverse_normal_cdf_public(0.5);
-    assert!(
-        z5.abs() < 0.01,
-        "Φ⁻¹(0.5) should be ≈0, got {}",
-        z5
-    );
+    assert!(z5.abs() < 0.01, "Φ⁻¹(0.5) should be ≈0, got {}", z5);
 }
 
 // ============================================================================
@@ -590,7 +641,10 @@ fn test_jtbd_guard_dispatch_pipeline() {
         let dispatcher = PatternDispatcher::new();
         let pctx = test_pattern_context(PatternType::Sequence);
         let result = dispatcher.dispatch(&pctx);
-        assert!(result.success, "Pattern dispatch should succeed when guard passes");
+        assert!(
+            result.success,
+            "Pattern dispatch should succeed when guard passes"
+        );
     }
 }
 
@@ -607,7 +661,13 @@ fn test_jtbd_rl_self_healing_loop() {
         let action = agent.select_action(&state);
         let reward = if action == RlAction::Left { 1.0 } else { -0.5 };
         let next_state = RlState((state.0 + 1) % 3); // cycle through 0→1→2→0
-        agent.update(&state, &action, reward, &next_state, next_state.is_terminal());
+        agent.update(
+            &state,
+            &action,
+            reward,
+            &next_state,
+            next_state.is_terminal(),
+        );
 
         // Simulate operation: 80% success rate
         if fastrand::u32(..) % 10 < 8 {

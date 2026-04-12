@@ -134,14 +134,20 @@ fn bench_guard_cache(c: &mut Criterion) {
 
     let mut group = c.benchmark_group("guards/ttl_cache");
     group.bench_function("cache_hit", |b| {
-        b.iter(|| black_box(evaluator.evaluate_cached(black_box(1), black_box(&guard), black_box(&ctx))));
+        b.iter(|| {
+            black_box(evaluator.evaluate_cached(black_box(1), black_box(&guard), black_box(&ctx)))
+        });
     });
     // Cache miss: use a new pattern_id each time
     let mut counter: u32 = 100;
     group.bench_function("cache_miss", |b| {
         b.iter(|| {
             counter += 1;
-            black_box(evaluator.evaluate_cached(black_box(counter), black_box(&guard), black_box(&ctx)));
+            black_box(evaluator.evaluate_cached(
+                black_box(counter),
+                black_box(&guard),
+                black_box(&ctx),
+            ));
         });
     });
     group.finish();
@@ -180,7 +186,10 @@ fn bench_pattern_dispatch_hot_path(c: &mut Criterion) {
         (PatternType::MultiChoice, "multi_choice"),
         (PatternType::StructuredSyncMerge, "structured_sync_merge"),
         (PatternType::MultiMerge, "multi_merge"),
-        (PatternType::StructuredDiscriminator, "structured_discriminator"),
+        (
+            PatternType::StructuredDiscriminator,
+            "structured_discriminator",
+        ),
     ];
 
     let mut group = c.benchmark_group("pattern_dispatch/dispatch");
@@ -278,7 +287,15 @@ fn bench_rl_q_learning(c: &mut Criterion) {
 
     let mut group = c.benchmark_group("reinforcement/q_learning");
     group.bench_function("update", |b| {
-        b.iter(|| black_box(agent.update(black_box(&s1), black_box(&action), 1.0, black_box(&s2), false)));
+        b.iter(|| {
+            black_box(agent.update(
+                black_box(&s1),
+                black_box(&action),
+                1.0,
+                black_box(&s2),
+                false,
+            ))
+        });
     });
     group.bench_function("select_action", |b| {
         b.iter(|| black_box(agent.select_action(black_box(&s1))));
@@ -298,7 +315,15 @@ fn bench_rl_sarsa(c: &mut Criterion) {
 
     let mut group = c.benchmark_group("reinforcement/sarsa");
     group.bench_function("update", |b| {
-        b.iter(|| black_box(agent.update(black_box(&s1), black_box(&a1), 1.0, black_box(&s2), black_box(&a2))));
+        b.iter(|| {
+            black_box(agent.update(
+                black_box(&s1),
+                black_box(&a1),
+                1.0,
+                black_box(&s2),
+                black_box(&a2),
+            ))
+        });
     });
     group.bench_function("epsilon_greedy", |b| {
         b.iter(|| black_box(agent.epsilon_greedy_action(black_box(&s1), 0.1)));
@@ -559,10 +584,22 @@ fn bench_spc_capability(c: &mut Criterion) {
 
     let mut group = c.benchmark_group("spc/capability");
     group.bench_function("capable_100pts", |b| {
-        b.iter(|| black_box(ProcessCapability::calculate(black_box(&capable_data), 10.0, 0.0)));
+        b.iter(|| {
+            black_box(ProcessCapability::calculate(
+                black_box(&capable_data),
+                10.0,
+                0.0,
+            ))
+        });
     });
     group.bench_function("borderline_100pts", |b| {
-        b.iter(|| black_box(ProcessCapability::calculate(black_box(&borderline_data), 5.0, 0.0)));
+        b.iter(|| {
+            black_box(ProcessCapability::calculate(
+                black_box(&borderline_data),
+                5.0,
+                0.0,
+            ))
+        });
     });
     group.finish();
 }
@@ -579,7 +616,9 @@ fn bench_spc_cdf(c: &mut Criterion) {
 
     group.bench_function("inverse_normal_cdf", |b| {
         b.iter(|| {
-            for p in [0.001, 0.01, 0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95, 0.99, 0.999] {
+            for p in [
+                0.001, 0.01, 0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95, 0.99, 0.999,
+            ] {
                 black_box(pictl::spc::inverse_normal_cdf_public(p));
             }
         });
@@ -646,4 +685,10 @@ criterion_group! {
     targets = bench_spc_western_electric, bench_spc_capability, bench_spc_cdf
 }
 
-criterion_main!(jtbd_guards, jtbd_patterns, jtbd_reinforcement, jtbd_self_healing, jtbd_spc);
+criterion_main!(
+    jtbd_guards,
+    jtbd_patterns,
+    jtbd_reinforcement,
+    jtbd_self_healing,
+    jtbd_spc
+);

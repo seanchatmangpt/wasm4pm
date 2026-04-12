@@ -448,8 +448,9 @@ impl GuardEvaluator {
     /// Clear expired cache entries.
     #[allow(dead_code)]
     pub fn clear_expired(&mut self, current_timestamp: u64) {
-        self.cache
-            .retain(|_, &mut (_, timestamp)| current_timestamp.saturating_sub(timestamp) < self.cache_ttl);
+        self.cache.retain(|_, &mut (_, timestamp)| {
+            current_timestamp.saturating_sub(timestamp) < self.cache_ttl
+        });
     }
 
     /// Clear the entire cache.

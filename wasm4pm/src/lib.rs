@@ -100,8 +100,8 @@ pub mod filters;
 pub mod final_analytics;
 #[cfg(feature = "hand_rolled_stats")]
 pub mod hand_stats;
-pub mod hot_kernels;
 pub mod hierarchical;
+pub mod hot_kernels;
 pub mod incremental_dfg;
 pub mod more_discovery;
 pub mod parallel_executor;
@@ -276,6 +276,16 @@ pub mod pattern_dispatch;
 // Reinforcement learning — Q-Learning and SARSA agents (ported from knhk)
 pub mod reinforcement;
 
+// ML contextual bandits — LinUCB CPU baseline (ground truth for GPU parity)
+pub mod ml;
+
+// GPU-accelerated LinUCB contextual bandit for algorithm selection
+// (van der Aalst: resource/intervention prediction perspective)
+// CPU fallback always available; GPU path activated by `gpu` feature flag.
+// Not compiled for wasm32 — wgpu targets native GPU (Vulkan/Metal/DX12).
+#[cfg(not(target_arch = "wasm32"))]
+pub mod gpu;
+
 // Suppress unused warnings for re-exported modules
 #[allow(unused)]
 use state::*;
@@ -410,7 +420,10 @@ pub fn autonomic_execute_cycle(
         let mut trace_durations: Vec<f64> = Vec::new();
         let mut has_timestamps = false;
         for trace in &log.traces {
-            let first_ts = trace.events.first().and_then(|e| e.attributes.get(time_key));
+            let first_ts = trace
+                .events
+                .first()
+                .and_then(|e| e.attributes.get(time_key));
             let last_ts = trace.events.last().and_then(|e| e.attributes.get(time_key));
             if let (Some(first), Some(last)) = (first_ts, last_ts) {
                 has_timestamps = true;
@@ -495,7 +508,18 @@ pub fn autonomic_execute_cycle(
                 trace_count_val,
                 unique_activities_val,
                 health_state_val,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
             ],
         },
         state_flags: guards::StateFlags::INITIALIZED.bits() | guards::StateFlags::RUNNING.bits(),
@@ -548,7 +572,11 @@ pub fn autonomic_execute_cycle(
     let pattern_result = dispatcher.dispatch(&pattern_ctx);
 
     let guard_pass = guard_result;
-    let pattern_name = if pattern_result.success { "Sequence" } else { "Failed" };
+    let pattern_name = if pattern_result.success {
+        "Sequence"
+    } else {
+        "Failed"
+    };
     let pattern_ticks = pattern_result.ticks_used;
 
     // -----------------------------------------------------------------------
@@ -572,9 +600,10 @@ pub fn autonomic_execute_cycle(
         .unwrap_or_default();
 
     if event_counts_per_trace.len() >= 9 {
-        let mean_er = event_counts_per_trace.iter().sum::<f64>()
-            / event_counts_per_trace.len() as f64;
-        let std_er = (event_counts_per_trace.iter()
+        let mean_er =
+            event_counts_per_trace.iter().sum::<f64>() / event_counts_per_trace.len() as f64;
+        let std_er = (event_counts_per_trace
+            .iter()
             .map(|x| (x - mean_er).powi(2))
             .sum::<f64>()
             / event_counts_per_trace.len() as f64)
@@ -591,12 +620,18 @@ pub fn autonomic_execute_cycle(
             })
             .collect();
         let causes = spc::check_western_electric_rules(&chart_data);
-        spc_results.insert("event_rate".to_string(), serde_json::json!(if causes.is_empty() { "OK" } else { "ALERT" }));
+        spc_results.insert(
+            "event_rate".to_string(),
+            serde_json::json!(if causes.is_empty() { "OK" } else { "ALERT" }),
+        );
         for c in &causes {
             all_special_causes.push(format!("event_rate: {:?}", c));
         }
     } else {
-        spc_results.insert("event_rate".to_string(), serde_json::json!("INSUFFICIENT_DATA"));
+        spc_results.insert(
+            "event_rate".to_string(),
+            serde_json::json!("INSUFFICIENT_DATA"),
+        );
     }
 
     // SPC on trace durations
@@ -607,7 +642,8 @@ pub fn autonomic_execute_cycle(
 
     if trace_durations.len() >= 9 {
         let mean_td = trace_durations.iter().sum::<f64>() / trace_durations.len() as f64;
-        let std_td = (trace_durations.iter()
+        let std_td = (trace_durations
+            .iter()
             .map(|x| (x - mean_td).powi(2))
             .sum::<f64>()
             / trace_durations.len() as f64)
@@ -624,12 +660,18 @@ pub fn autonomic_execute_cycle(
             })
             .collect();
         let causes = spc::check_western_electric_rules(&chart_data);
-        spc_results.insert("trace_duration".to_string(), serde_json::json!(if causes.is_empty() { "OK" } else { "ALERT" }));
+        spc_results.insert(
+            "trace_duration".to_string(),
+            serde_json::json!(if causes.is_empty() { "OK" } else { "ALERT" }),
+        );
         for c in &causes {
             all_special_causes.push(format!("trace_duration: {:?}", c));
         }
     } else {
-        spc_results.insert("trace_duration".to_string(), serde_json::json!("INSUFFICIENT_DATA"));
+        spc_results.insert(
+            "trace_duration".to_string(),
+            serde_json::json!("INSUFFICIENT_DATA"),
+        );
     }
 
     // SPC on activity frequency distribution
@@ -640,7 +682,8 @@ pub fn autonomic_execute_cycle(
 
     if freq_values.len() >= 9 {
         let mean_af = freq_values.iter().sum::<f64>() / freq_values.len() as f64;
-        let std_af = (freq_values.iter()
+        let std_af = (freq_values
+            .iter()
             .map(|x| (x - mean_af).powi(2))
             .sum::<f64>()
             / freq_values.len() as f64)
@@ -657,12 +700,18 @@ pub fn autonomic_execute_cycle(
             })
             .collect();
         let causes = spc::check_western_electric_rules(&chart_data);
-        spc_results.insert("activity_frequency".to_string(), serde_json::json!(if causes.is_empty() { "OK" } else { "ALERT" }));
+        spc_results.insert(
+            "activity_frequency".to_string(),
+            serde_json::json!(if causes.is_empty() { "OK" } else { "ALERT" }),
+        );
         for c in &causes {
             all_special_causes.push(format!("activity_frequency: {:?}", c));
         }
     } else {
-        spc_results.insert("activity_frequency".to_string(), serde_json::json!("INSUFFICIENT_DATA"));
+        spc_results.insert(
+            "activity_frequency".to_string(),
+            serde_json::json!("INSUFFICIENT_DATA"),
+        );
     }
 
     // -----------------------------------------------------------------------
@@ -778,7 +827,7 @@ pub use statrs::statistics::{Data, Median};
 
 // When hand_rolled_stats feature is enabled and statrs is not, re-export hand-rolled types
 #[cfg(all(feature = "hand_rolled_stats", not(feature = "statrs")))]
-pub use hand_stats::{Median};
+pub use hand_stats::Median;
 
 // Provide Data::new() compatible API for hand_rolled stats
 #[cfg(all(feature = "hand_rolled_stats", not(feature = "statrs")))]

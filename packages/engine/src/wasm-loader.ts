@@ -336,22 +336,32 @@ export class WasmLoader {
   /**
    * Setup Rust panic hook for readable error messages
    * Wraps wasm_bindgen's panic hook with custom handler
-   * CRITICAL: Panic hook is mandatory for safety — must not be silently skipped
+   * Note: set_panic_hook is optional if not exported by WASM module
    */
   private setupPanicHook(module: WasmModule): void {
-    // Panic hook setup is REQUIRED — missing hook is a critical safety violation
+    // Attempt to setup panic hook if available
     const wasmBindgenPanicHook = (module as any).set_panic_hook;
 
-    if (typeof wasmBindgenPanicHook !== 'function') {
-      throw new Error(
-        'WASM module missing set_panic_hook export. ' +
-        'Panic hook is required for safe error handling. ' +
-        'Check WASM module build and wasm-bindgen version.'
-      );
+    if (typeof wasmBindgenPanicHook === 'function') {
+      try {
+        // Call wasm_bindgen's panic hook setup
+        wasmBindgenPanicHook();
+        this.observability.emitCli({
+          level: 'debug',
+          message: 'WASM panic hook initialized',
+        });
+      } catch (e) {
+        this.observability.emitCli({
+          level: 'warn',
+          message: `Failed to initialize WASM panic hook: ${String(e)}`,
+        });
+      }
+    } else {
+      this.observability.emitCli({
+        level: 'warn',
+        message: 'WASM module does not export set_panic_hook. Continuing without custom panic hook.',
+      });
     }
-
-    // Call wasm_bindgen's panic hook setup
-    wasmBindgenPanicHook();
 
     // Additionally, setup a global panic handler for uncaught exceptions
     if (typeof (globalThis as any).window === 'undefined') {

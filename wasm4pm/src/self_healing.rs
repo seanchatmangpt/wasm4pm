@@ -27,8 +27,7 @@ use std::collections::HashMap;
 /// Global monotonic step counter. In a real WASM runtime this would be
 /// `performance.now()` or a JS `Date.now()` bridge. For pure-Rust / test
 /// usage we expose a simple atomic counter that the caller increments.
-static STEP_COUNTER: std::sync::atomic::AtomicU64 =
-    std::sync::atomic::AtomicU64::new(0);
+static STEP_COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
 
 /// Return the current monotonic "instant" (step count).
 #[allow(dead_code)]
@@ -485,9 +484,7 @@ impl HealthCheck {
     #[allow(dead_code)]
     pub fn is_due(&self) -> bool {
         match self.last_check_ms {
-            Some(last) => {
-                now_ms().saturating_sub(last) >= self.config.interval_ms
-            }
+            Some(last) => now_ms().saturating_sub(last) >= self.config.interval_ms,
             None => true,
         }
     }

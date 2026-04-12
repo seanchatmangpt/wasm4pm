@@ -425,11 +425,15 @@ pub fn wasm_reduce_petri_net(net_handle: &str) -> Result<String, JsValue> {
     let result = get_or_init_state().with_object_mut(net_handle, |obj| match obj {
         Some(StoredObject::PetriNet(net)) => {
             let stats = reduce_petri_net(net);
-            serde_json::to_string(&stats)
-                .map_err(|e| JsValue::from_str(&format!("Failed to serialize reduction stats: {}", e)))
+            serde_json::to_string(&stats).map_err(|e| {
+                JsValue::from_str(&format!("Failed to serialize reduction stats: {}", e))
+            })
         }
         Some(_) => Err(JsValue::from_str("Object is not a PetriNet")),
-        None => Err(JsValue::from_str(&format!("PetriNet '{}' not found", net_handle))),
+        None => Err(JsValue::from_str(&format!(
+            "PetriNet '{}' not found",
+            net_handle
+        ))),
     })?;
 
     Ok(result)

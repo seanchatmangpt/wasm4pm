@@ -275,7 +275,9 @@ impl FusedMultiPass {
 
             // Directly-follows edges
             for window in trace.windows(2) {
-                *edge_counts.entry((window[0].clone(), window[1].clone())).or_insert(0) += 1;
+                *edge_counts
+                    .entry((window[0].clone(), window[1].clone()))
+                    .or_insert(0) += 1;
             }
 
             // Start/end activities — trace non-empty guaranteed by check above
@@ -518,7 +520,10 @@ impl FusedMultiPassStreaming {
         self.inner.dfg_cache = Some(dfg);
 
         // Safe unwrap: we just inserted dfg into the cache above
-        self.inner.dfg_cache.as_ref().expect("DFG cache just set above")
+        self.inner
+            .dfg_cache
+            .as_ref()
+            .expect("DFG cache just set above")
     }
 
     fn run_with_dfg(&mut self, algorithm: &str, traces: &[Vec<String>]) -> Result<String, String> {

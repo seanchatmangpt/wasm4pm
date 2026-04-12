@@ -9,16 +9,17 @@ use pictl::guards::{
     ExecutionContext, Guard, GuardCompiler, GuardEvaluator, GuardType, ObservationBuffer,
     Predicate, ResourceState, ResourceType, StateFlags,
 };
-use pictl::pattern_dispatch::{PatternConfig, PatternDispatcher, PatternFactory, PatternFlags, PatternType, PatternValidator};
+use pictl::pattern_dispatch::{
+    PatternConfig, PatternDispatcher, PatternFactory, PatternFlags, PatternType, PatternValidator,
+};
 use pictl::self_healing::{
-    advance_clock, reset_clock, CircuitBreaker, CircuitState,
-    HealthCheck, HealthCheckConfig, HealthStatus, RetryPolicy, RetryState, SelfHealingError,
-    SelfHealingManager,
+    advance_clock, reset_clock, CircuitBreaker, CircuitState, HealthCheck, HealthCheckConfig,
+    HealthStatus, RetryPolicy, RetryState, SelfHealingError, SelfHealingManager,
 };
 use pictl::spc::{
-    CapabilityError, ChartData, ProcessCapability, ShiftDirection, SpecialCause, TrendDirection,
     check_western_electric_rules, dpmo_to_sigma, inverse_normal_cdf, normal_cdf, spc_mean,
-    spc_std_dev,
+    spc_std_dev, CapabilityError, ChartData, ProcessCapability, ShiftDirection, SpecialCause,
+    TrendDirection,
 };
 
 // ===========================================================================
@@ -320,10 +321,7 @@ mod spc_tests {
     #[test]
     fn test_no_alerts_stable_process() {
         let values = [5.1, 4.9, 5.2, 4.8, 5.0, 4.9, 5.1, 4.8, 5.2];
-        let data: Vec<ChartData> = values
-            .iter()
-            .map(|&v| chart(v, 10.0, 5.0, 0.0))
-            .collect();
+        let data: Vec<ChartData> = values.iter().map(|&v| chart(v, 10.0, 5.0, 0.0)).collect();
 
         let alerts = check_western_electric_rules(&data);
         assert!(alerts.is_empty());
@@ -343,7 +341,12 @@ mod spc_tests {
 
         assert!(cap.cp > 0.0, "cp should be positive, got {}", cap.cp);
         assert!(cap.cpk > 0.0, "cpk should be positive, got {}", cap.cpk);
-        assert!(cap.sigma_level > 0.0, "sigma_level should be positive, got {} (dpmo={})", cap.sigma_level, cap.dpmo);
+        assert!(
+            cap.sigma_level > 0.0,
+            "sigma_level should be positive, got {} (dpmo={})",
+            cap.sigma_level,
+            cap.dpmo
+        );
         assert_eq!(cap.usl, 8.0);
         assert_eq!(cap.lsl, 0.0);
     }
@@ -413,7 +416,9 @@ mod spc_tests {
             assert!(
                 (p - p_back).abs() < 1e-4,
                 "roundtrip failed at p={}: got {} back (z={})",
-                p, p_back, z
+                p,
+                p_back,
+                z
             );
         }
     }
@@ -582,7 +587,11 @@ mod self_healing_tests {
 
         for _ in 0..5 {
             let backoff = state.next_attempt(&policy).unwrap();
-            assert!(backoff >= 750 && backoff <= 1250, "jittered backoff {} outside [750, 1250]", backoff);
+            assert!(
+                backoff >= 750 && backoff <= 1250,
+                "jittered backoff {} outside [750, 1250]",
+                backoff
+            );
         }
     }
 
@@ -711,8 +720,8 @@ mod self_healing_tests {
         let mut manager = SelfHealingManager::new();
         manager.add_circuit_breaker("test_dep".to_string(), CircuitBreaker::new());
 
-        let result: Result<i32, SelfHealingError> =
-            manager.execute_with_circuit_breaker("test_dep", || {
+        let result: Result<i32, SelfHealingError> = manager
+            .execute_with_circuit_breaker("test_dep", || {
                 Err::<i32, SelfHealingError>(SelfHealingError::OperationFailed("boom".into()))
             });
         assert!(result.is_err());
@@ -726,8 +735,8 @@ mod self_healing_tests {
         manager.add_circuit_breaker("test_dep".to_string(), CircuitBreaker::new());
 
         for _ in 0..5 {
-            let _: Result<i32, SelfHealingError> =
-                manager.execute_with_circuit_breaker("test_dep", || {
+            let _: Result<i32, SelfHealingError> = manager
+                .execute_with_circuit_breaker("test_dep", || {
                     Err::<i32, SelfHealingError>(SelfHealingError::OperationFailed("fail".into()))
                 });
         }
@@ -884,7 +893,8 @@ mod pattern_dispatch_tests {
         assert!(PatternValidator::validate_combination(
             PatternType::ParallelSplit,
             PatternType::Synchronization
-        ).is_ok());
+        )
+        .is_ok());
 
         for i in 1..=43u8 {
             let pt = PatternType::from_u8(i).expect("all 1-43 should convert");
@@ -896,8 +906,11 @@ mod pattern_dispatch_tests {
     fn test_discriminator() {
         let dispatcher = PatternDispatcher::new();
 
-        let ctx =
-            PatternFactory::create(PatternType::StructuredDiscriminator, 4, PatternConfig::default());
+        let ctx = PatternFactory::create(
+            PatternType::StructuredDiscriminator,
+            4,
+            PatternConfig::default(),
+        );
 
         let result = dispatcher.dispatch(&ctx);
         assert!(result.success);
@@ -910,11 +923,8 @@ mod pattern_dispatch_tests {
     fn test_exclusive_choice_deterministic() {
         let dispatcher = PatternDispatcher::new();
 
-        let mut ctx = PatternFactory::create(
-            PatternType::ExclusiveChoice,
-            10,
-            PatternConfig::default(),
-        );
+        let mut ctx =
+            PatternFactory::create(PatternType::ExclusiveChoice, 10, PatternConfig::default());
         ctx.input_mask = 0b101;
 
         let result = dispatcher.dispatch(&ctx);
@@ -927,7 +937,11 @@ mod pattern_dispatch_tests {
         let dispatcher = PatternDispatcher::new();
         for i in 1..=43u8 {
             let pt = PatternType::from_u8(i).expect("valid pattern type");
-            assert!(dispatcher.validate_pattern(pt), "pattern {} should be valid", i);
+            assert!(
+                dispatcher.validate_pattern(pt),
+                "pattern {} should be valid",
+                i
+            );
         }
     }
 

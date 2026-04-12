@@ -483,10 +483,10 @@ pub fn discover_aco_algorithm(
                     }
 
                     // Extra deposit for iteration-best ant
-                    if let Some((best_edges, best_fit)) = iteration_solutions.iter().max_by(|a, b| {
-                        a.1.partial_cmp(&b.1)
-                            .unwrap_or(std::cmp::Ordering::Equal)
-                    }) {
+                    if let Some((best_edges, best_fit)) = iteration_solutions
+                        .iter()
+                        .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal))
+                    {
                         let deposit = q * best_fit * 2.0; // elitist bonus
                         for &edge in best_edges {
                             *pheromone.entry(edge).or_insert(tau_0) += deposit;

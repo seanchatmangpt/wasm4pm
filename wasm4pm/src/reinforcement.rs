@@ -108,14 +108,7 @@ impl<S: WorkflowState, A: WorkflowAction> QLearning<S, A> {
 
     /// Q-Learning update: Q(s,a) <- Q(s,a) + alpha[r + gamma max Q(s',a') - Q(s,a)]
     #[allow(dead_code)]
-    pub fn update(
-        &self,
-        state: &S,
-        action: &A,
-        reward: f32,
-        next_state: &S,
-        done: bool,
-    ) {
+    pub fn update(&self, state: &S, action: &A, reward: f32, next_state: &S, done: bool) {
         let mut q_table = self.q_table.borrow_mut();
 
         // Initialize Q(s) if needed
@@ -210,14 +203,7 @@ impl<S: WorkflowState, A: WorkflowAction> SARSAAgent<S, A> {
     /// SARSA update: Q(s,a) <- Q(s,a) + alpha[r + gamma Q(s',a') - Q(s,a)]
     /// Note: Uses next_action instead of max_next_action (on-policy)
     #[allow(dead_code)]
-    pub fn update(
-        &self,
-        state: &S,
-        action: &A,
-        reward: f32,
-        next_state: &S,
-        next_action: &A,
-    ) {
+    pub fn update(&self, state: &S, action: &A, reward: f32, next_state: &S, next_action: &A) {
         let mut q_table = self.q_table.borrow_mut();
 
         q_table
@@ -360,14 +346,7 @@ impl<S: WorkflowState, A: WorkflowAction> DoubleQLearning<S, A> {
     /// Otherwise:
     ///   Use Q_b to select best next action, Q_a to evaluate it
     #[allow(dead_code)]
-    pub fn update(
-        &self,
-        state: &S,
-        action: &A,
-        reward: f32,
-        next_state: &S,
-        done: bool,
-    ) {
+    pub fn update(&self, state: &S, action: &A, reward: f32, next_state: &S, done: bool) {
         let mut qa = self.q_a.borrow_mut();
         let mut qb = self.q_b.borrow_mut();
 
@@ -398,8 +377,7 @@ impl<S: WorkflowState, A: WorkflowAction> DoubleQLearning<S, A> {
 
             let target = reward + self.discount_factor * if done { 0.0 } else { next_q };
             let current = qa[state][action_idx];
-            qa.get_mut(state).unwrap()[action_idx] +=
-                self.learning_rate * (target - current);
+            qa.get_mut(state).unwrap()[action_idx] += self.learning_rate * (target - current);
         } else {
             // Update Q_b: use Q_b to select action, Q_a to evaluate
             let best_next_idx = qb
@@ -420,8 +398,7 @@ impl<S: WorkflowState, A: WorkflowAction> DoubleQLearning<S, A> {
 
             let target = reward + self.discount_factor * if done { 0.0 } else { next_q };
             let current = qb[state][action_idx];
-            qb.get_mut(state).unwrap()[action_idx] +=
-                self.learning_rate * (target - current);
+            qb.get_mut(state).unwrap()[action_idx] += self.learning_rate * (target - current);
         }
     }
 
@@ -512,14 +489,7 @@ impl<S: WorkflowState, A: WorkflowAction> ExpectedSARSAAgent<S, A> {
 
     /// Expected SARSA update: Q(s,a) <- Q(s,a) + alpha[r + gamma * E[Q(s',.)] - Q(s,a)]
     #[allow(dead_code)]
-    pub fn update(
-        &self,
-        state: &S,
-        action: &A,
-        reward: f32,
-        next_state: &S,
-        done: bool,
-    ) {
+    pub fn update(&self, state: &S, action: &A, reward: f32, next_state: &S, done: bool) {
         // Compute expected Q-value BEFORE taking mutable borrow
         let expected_next = if done {
             0.0
@@ -533,10 +503,7 @@ impl<S: WorkflowState, A: WorkflowAction> ExpectedSARSAAgent<S, A> {
             // Drop immutable borrow before computing
             drop(q_table);
 
-            let max_q = q_vals
-                .iter()
-                .cloned()
-                .fold(f32::NEG_INFINITY, f32::max);
+            let max_q = q_vals.iter().cloned().fold(f32::NEG_INFINITY, f32::max);
             let sum_q: f32 = q_vals.iter().cloned().sum();
             let n = A::ACTION_COUNT as f32;
             let eps = self.exploration_rate;
@@ -552,8 +519,7 @@ impl<S: WorkflowState, A: WorkflowAction> ExpectedSARSAAgent<S, A> {
         let action_idx = action.to_index();
         let current_q = q_table[state][action_idx];
         let target = reward + self.discount_factor * expected_next;
-        q_table.get_mut(state).unwrap()[action_idx] +=
-            self.learning_rate * (target - current_q);
+        q_table.get_mut(state).unwrap()[action_idx] += self.learning_rate * (target - current_q);
     }
 
     #[allow(dead_code)]
@@ -642,10 +608,7 @@ impl<S: WorkflowState, A: WorkflowAction> ReinforceAgent<S, A> {
     /// trajectory: [(state, action, reward), ...]
     /// Uses discounted returns G_t = sum_{k=0}^{T-t} gamma^k * r_{t+k}
     #[allow(dead_code)]
-    pub fn update_from_trajectory(
-        &self,
-        trajectory: &[(S, A, f32)],
-    ) {
+    pub fn update_from_trajectory(&self, trajectory: &[(S, A, f32)]) {
         let n = trajectory.len();
         if n == 0 {
             return;
@@ -673,16 +636,8 @@ impl<S: WorkflowState, A: WorkflowAction> ReinforceAgent<S, A> {
 
             // Compute log softmax and gradient
             // log pi(a|s) = theta[a] - log(sum exp(theta[*]))
-            let max_w = weights
-                .iter()
-                .cloned()
-                .fold(f32::NEG_INFINITY, f32::max);
-            let log_z: f32 = max_w
-                + weights
-                    .iter()
-                    .map(|&w| (w - max_w).exp())
-                    .sum::<f32>()
-                    .ln();
+            let max_w = weights.iter().cloned().fold(f32::NEG_INFINITY, f32::max);
+            let log_z: f32 = max_w + weights.iter().map(|&w| (w - max_w).exp()).sum::<f32>().ln();
 
             // Gradient: d/d(theta[a]) log pi(a|s) = 1 - softmax(theta[a])
             // For other actions j != a: d/d(theta[j]) = -softmax(theta[j])

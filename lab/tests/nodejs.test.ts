@@ -120,9 +120,9 @@ describe('Node.js Artifact Validation - @wasm4pm/wasm4pm', () => {
       expect(fs.existsSync(pkgDir)).toBe(true);
 
       // Check for essential files
-      const mainJs = path.join(pkgDir, 'wasm4pm.js');
-      const mainDts = path.join(pkgDir, 'wasm4pm.d.ts');
-      const wasmBinary = path.join(pkgDir, 'wasm4pm_bg.wasm');
+      const mainJs = path.join(pkgDir, 'pictl.js');
+      const mainDts = path.join(pkgDir, 'pictl.d.ts');
+      const wasmBinary = path.join(pkgDir, 'pictl_bg.wasm');
 
       expect(fs.existsSync(mainJs)).toBe(true);
       expect(fs.existsSync(mainDts)).toBe(true);
@@ -148,7 +148,7 @@ describe('Node.js Artifact Validation - @wasm4pm/wasm4pm', () => {
     it('1.3 Should have valid TypeScript declarations', () => {
       const dtsPath = path.join(
         __dirname,
-        '../node_modules/wasm4pm/pkg/wasm4pm.d.ts'
+        '../node_modules/wasm4pm/pkg/pictl.d.ts'
       );
       const dtsContent = fs.readFileSync(dtsPath, 'utf8');
 

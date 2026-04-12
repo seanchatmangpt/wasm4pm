@@ -233,23 +233,31 @@ impl PatternDispatcher {
         dispatch_table[PatternType::MultiChoice as usize] = pattern_multi_choice;
         dispatch_table[PatternType::StructuredSyncMerge as usize] = pattern_structured_sync_merge;
         dispatch_table[PatternType::MultiMerge as usize] = pattern_multi_merge;
-        dispatch_table[PatternType::StructuredDiscriminator as usize] = pattern_structured_discriminator;
+        dispatch_table[PatternType::StructuredDiscriminator as usize] =
+            pattern_structured_discriminator;
         dispatch_table[PatternType::MultiInstanceNoSync as usize] = pattern_multi_instance_no_sync;
-        dispatch_table[PatternType::MultiInstanceKnownDesignTime as usize] = pattern_multi_instance_known_design_time;
-        dispatch_table[PatternType::MultiInstanceKnownRuntime as usize] = pattern_multi_instance_known_runtime;
-        dispatch_table[PatternType::MultiInstanceUnknownRuntime as usize] = pattern_multi_instance_unknown_runtime;
+        dispatch_table[PatternType::MultiInstanceKnownDesignTime as usize] =
+            pattern_multi_instance_known_design_time;
+        dispatch_table[PatternType::MultiInstanceKnownRuntime as usize] =
+            pattern_multi_instance_known_runtime;
+        dispatch_table[PatternType::MultiInstanceUnknownRuntime as usize] =
+            pattern_multi_instance_unknown_runtime;
         dispatch_table[PatternType::StaticPartialJoin as usize] = pattern_static_partial_join;
-        dispatch_table[PatternType::CancellationPartialJoin as usize] = pattern_cancellation_partial_join;
+        dispatch_table[PatternType::CancellationPartialJoin as usize] =
+            pattern_cancellation_partial_join;
         dispatch_table[PatternType::DeferredChoice as usize] = pattern_deferred_choice;
-        dispatch_table[PatternType::InterleavedParallelRouting as usize] = pattern_interleaved_parallel_routing;
+        dispatch_table[PatternType::InterleavedParallelRouting as usize] =
+            pattern_interleaved_parallel_routing;
         dispatch_table[PatternType::Milestone as usize] = pattern_milestone;
         dispatch_table[PatternType::CriticalSection as usize] = pattern_critical_section;
         dispatch_table[PatternType::InterleavedRouting as usize] = pattern_interleaved_routing;
         dispatch_table[PatternType::CancelTask as usize] = pattern_cancel_task;
         dispatch_table[PatternType::CancelCase as usize] = pattern_cancel_case;
         dispatch_table[PatternType::CancelRegion as usize] = pattern_cancel_region;
-        dispatch_table[PatternType::CancelMultipleInstance as usize] = pattern_cancel_multiple_instance;
-        dispatch_table[PatternType::CompleteMultipleInstance as usize] = pattern_complete_multiple_instance;
+        dispatch_table[PatternType::CancelMultipleInstance as usize] =
+            pattern_cancel_multiple_instance;
+        dispatch_table[PatternType::CompleteMultipleInstance as usize] =
+            pattern_complete_multiple_instance;
         dispatch_table[PatternType::ArbitraryLoop as usize] = pattern_arbitrary_loop;
         dispatch_table[PatternType::StructuredLoop as usize] = pattern_structured_loop;
         dispatch_table[PatternType::Recursion as usize] = pattern_recursion;
@@ -263,7 +271,8 @@ impl PatternDispatcher {
         dispatch_table[PatternType::ThreadMerge as usize] = pattern_thread_merge;
         dispatch_table[PatternType::ThreadSplit as usize] = pattern_thread_split;
         dispatch_table[PatternType::BlockingPartialJoin as usize] = pattern_blocking_partial_join;
-        dispatch_table[PatternType::BlockingDiscriminator as usize] = pattern_blocking_discriminator;
+        dispatch_table[PatternType::BlockingDiscriminator as usize] =
+            pattern_blocking_discriminator;
         dispatch_table[PatternType::GeneralizedAndJoin as usize] = pattern_generalized_and_join;
         dispatch_table[PatternType::LocalSyncMerge as usize] = pattern_local_sync_merge;
         dispatch_table[PatternType::GeneralizedOrJoin as usize] = pattern_generalized_or_join;
@@ -1243,10 +1252,7 @@ pub struct PatternValidator;
 #[allow(dead_code)]
 impl PatternValidator {
     /// Check if pattern combination is valid
-    pub fn validate_combination(
-        source: PatternType,
-        target: PatternType,
-    ) -> Result<(), String> {
+    pub fn validate_combination(source: PatternType, target: PatternType) -> Result<(), String> {
         // Check against permutation matrix
         match (source, target) {
             (PatternType::ParallelSplit, PatternType::Synchronization) => Ok(()),

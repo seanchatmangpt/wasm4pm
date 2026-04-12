@@ -180,7 +180,14 @@ fn execute_autonomic_cycle(
     let spc_alerts = check_western_electric_rules(chart_data);
     let spc_stable = spc_alerts.is_empty();
 
-    (guard_pass, dispatch_ok, action, cb_allowed, spc_stable, spc_alerts.len())
+    (
+        guard_pass,
+        dispatch_ok,
+        action,
+        cb_allowed,
+        spc_stable,
+        spc_alerts.len(),
+    )
 }
 
 // ---------------------------------------------------------------------------
@@ -369,7 +376,11 @@ fn bench_phase_transition_n4(c: &mut Criterion) {
             agent.update(black_box(&RlState(0)), &action, reward, &next, false);
             let allowed = cb.allow_request();
             if allowed {
-                if d { cb.record_success(); } else { cb.record_failure(); }
+                if d {
+                    cb.record_success();
+                } else {
+                    cb.record_failure();
+                }
             }
             black_box((g, d, action, allowed));
         });
@@ -421,7 +432,8 @@ fn bench_convergence_rate(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(15));
     group.bench_function("rl_epsilon_decay_plus_spc_stability", |b| {
         b.iter(|| {
-            let mut agent: QLearning<RlState, RlAction> = QLearning::with_hyperparams(0.1, 0.99, 1.0);
+            let mut agent: QLearning<RlState, RlAction> =
+                QLearning::with_hyperparams(0.1, 0.99, 1.0);
             let mut cb = CircuitBreaker::new();
             let mut hc = HealthCheck::new();
             let mut epsilon_samples: [f32; 100] = [0.0; 100];
@@ -497,12 +509,22 @@ mod tests {
 
         let (guard_pass, dispatch_ok, action, cb_allowed, spc_stable, alert_count) =
             execute_autonomic_cycle(
-                &ctx, &guard, &dispatcher, &pattern_ctx, &agent, &mut cb, &mut hc,
-                &chart_data, &RlState(0),
+                &ctx,
+                &guard,
+                &dispatcher,
+                &pattern_ctx,
+                &agent,
+                &mut cb,
+                &mut hc,
+                &chart_data,
+                &RlState(0),
             );
 
         assert!(guard_pass, "compound guard should pass on test context");
-        assert!(dispatch_ok, "sequence dispatch should succeed with input_mask set");
+        assert!(
+            dispatch_ok,
+            "sequence dispatch should succeed with input_mask set"
+        );
         assert!(cb_allowed, "circuit breaker should allow in closed state");
         assert!(spc_stable, "stable chart data should produce no alerts");
         assert_eq!(alert_count, 0);
@@ -522,14 +544,24 @@ mod tests {
         let mut hc = HealthCheck::new();
 
         let initial_epsilon = agent.get_exploration_rate();
-        assert!((initial_epsilon - 1.0).abs() < 1e-6, "initial epsilon should be 1.0");
+        assert!(
+            (initial_epsilon - 1.0).abs() < 1e-6,
+            "initial epsilon should be 1.0"
+        );
 
         for cycle in 0..50u64 {
             let ctx = test_context(cycle);
             let state = RlState((cycle % 50) as i32);
             execute_autonomic_cycle(
-                &ctx, &guard, &dispatcher, &pattern_ctx, &agent, &mut cb, &mut hc,
-                &chart_data, &state,
+                &ctx,
+                &guard,
+                &dispatcher,
+                &pattern_ctx,
+                &agent,
+                &mut cb,
+                &mut hc,
+                &chart_data,
+                &state,
             );
             agent.decay_exploration();
         }
@@ -591,8 +623,15 @@ mod tests {
         for cycle in 0..5u64 {
             let ctx = test_context(cycle);
             execute_autonomic_cycle(
-                &ctx, &guard, &dispatcher, &pattern_ctx, &agent, &mut cb, &mut hc,
-                &chart_data, &RlState(cycle as i32),
+                &ctx,
+                &guard,
+                &dispatcher,
+                &pattern_ctx,
+                &agent,
+                &mut cb,
+                &mut hc,
+                &chart_data,
+                &RlState(cycle as i32),
             );
         }
 

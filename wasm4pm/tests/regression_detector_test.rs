@@ -283,10 +283,16 @@ fn write_report(reports: &[VectorReport]) -> io::Result<()> {
         json.push_str(&format!("      \"category\": \"{}\",\n", r.category));
         json.push_str(&format!("      \"runs\": {},\n", r.runs));
         json.push_str(&format!("      \"deterministic\": {},\n", r.deterministic));
-        json.push_str(&format!("      \"variance_count\": {},\n", r.variance_count));
+        json.push_str(&format!(
+            "      \"variance_count\": {},\n",
+            r.variance_count
+        ));
         json.push_str(&format!("      \"rl_q_valid\": {rl_str},\n"));
         json.push_str(&format!("      \"spc_accuracy\": {spc_str},\n"));
-        json.push_str(&format!("      \"cpu_gpu_parity\": {},\n", r.cpu_gpu_parity));
+        json.push_str(&format!(
+            "      \"cpu_gpu_parity\": {},\n",
+            r.cpu_gpu_parity
+        ));
         json.push_str(&format!("      \"pass\": {},\n", r.pass));
         json.push_str(&format!("      \"notes\": \"{notes_escaped}\"\n"));
         json.push_str(&format!("    }}{comma}\n"));
@@ -307,8 +313,7 @@ fn vec_guard_01_predicate_equal() {
     let mut rep = VectorReport::new("guard-01", "guards");
 
     let (det, var) = check_determinism(|| {
-        Guard::predicate(Predicate::Equal, 0, 42)
-            .evaluate(&ctx(42, 0, 100, 100, 100, 0, 0))
+        Guard::predicate(Predicate::Equal, 0, 42).evaluate(&ctx(42, 0, 100, 100, 100, 0, 0))
     });
     rep.deterministic = det;
     rep.variance_count = var;
@@ -319,8 +324,12 @@ fn vec_guard_01_predicate_equal() {
     let cpu = ref_guard_predicate(Predicate::Equal, c.task_id, 0, 42);
     rep.cpu_gpu_parity = gpu == cpu;
 
-    if !det { rep.fail("non-deterministic"); }
-    if !rep.cpu_gpu_parity { rep.fail("CPU/GPU parity mismatch"); }
+    if !det {
+        rep.fail("non-deterministic");
+    }
+    if !rep.cpu_gpu_parity {
+        rep.fail("CPU/GPU parity mismatch");
+    }
 
     assert!(gpu, "task_id=42 == operand_b=42 should be true");
     assert!(rep.pass, "vec_guard_01: {}", rep.notes);
@@ -331,8 +340,7 @@ fn vec_guard_02_resource_threshold() {
     let mut rep = VectorReport::new("guard-02", "guards");
 
     let (det, var) = check_determinism(|| {
-        Guard::resource(ResourceType::Cpu, 50)
-            .evaluate(&ctx(1, 0, 80, 100, 100, 0, 0))
+        Guard::resource(ResourceType::Cpu, 50).evaluate(&ctx(1, 0, 80, 100, 100, 0, 0))
     });
     rep.deterministic = det;
     rep.variance_count = var;
@@ -343,8 +351,12 @@ fn vec_guard_02_resource_threshold() {
     let cpu = 80u64 >= 50u64;
     rep.cpu_gpu_parity = gpu == cpu;
 
-    if !det { rep.fail("non-deterministic"); }
-    if !rep.cpu_gpu_parity { rep.fail("CPU/GPU parity mismatch"); }
+    if !det {
+        rep.fail("non-deterministic");
+    }
+    if !rep.cpu_gpu_parity {
+        rep.fail("CPU/GPU parity mismatch");
+    }
 
     assert!(gpu, "cpu_available=80 >= threshold=50 should be true");
     assert!(rep.pass, "vec_guard_02: {}", rep.notes);
@@ -374,10 +386,17 @@ fn vec_guard_03_and_compound() {
     let cpu = (5u64 >= 1u64) && ((rf & StateFlags::RUNNING.bits()) == StateFlags::RUNNING.bits());
     rep.cpu_gpu_parity = gpu == cpu;
 
-    if !det { rep.fail("non-deterministic"); }
-    if !rep.cpu_gpu_parity { rep.fail("CPU/GPU parity mismatch"); }
+    if !det {
+        rep.fail("non-deterministic");
+    }
+    if !rep.cpu_gpu_parity {
+        rep.fail("CPU/GPU parity mismatch");
+    }
 
-    assert!(gpu, "AND(task_id>=1, RUNNING) with task_id=5 and RUNNING set");
+    assert!(
+        gpu,
+        "AND(task_id>=1, RUNNING) with task_id=5 and RUNNING set"
+    );
     assert!(rep.pass, "vec_guard_03: {}", rep.notes);
 }
 
@@ -394,8 +413,12 @@ fn vec_dispatch_01_sequence_roundtrip() {
     rep.variance_count = var;
     rep.cpu_gpu_parity = PatternType::from_u8(1) == Some(PatternType::Sequence);
 
-    if !det { rep.fail("non-deterministic"); }
-    if !rep.cpu_gpu_parity { rep.fail("Sequence parity mismatch"); }
+    if !det {
+        rep.fail("non-deterministic");
+    }
+    if !rep.cpu_gpu_parity {
+        rep.fail("Sequence parity mismatch");
+    }
 
     assert_eq!(PatternType::from_u8(1), Some(PatternType::Sequence));
     assert!(rep.pass, "vec_dispatch_01: {}", rep.notes);
@@ -410,8 +433,12 @@ fn vec_dispatch_02_parallel_split() {
     rep.variance_count = var;
     rep.cpu_gpu_parity = PatternType::from_u8(2) == Some(PatternType::ParallelSplit);
 
-    if !det { rep.fail("non-deterministic"); }
-    if !rep.cpu_gpu_parity { rep.fail("ParallelSplit parity mismatch"); }
+    if !det {
+        rep.fail("non-deterministic");
+    }
+    if !rep.cpu_gpu_parity {
+        rep.fail("ParallelSplit parity mismatch");
+    }
 
     assert_eq!(PatternType::from_u8(2), Some(PatternType::ParallelSplit));
     assert!(rep.pass, "vec_dispatch_02: {}", rep.notes);
@@ -426,10 +453,17 @@ fn vec_dispatch_03_boundary_zero() {
     rep.variance_count = var;
     rep.cpu_gpu_parity = PatternType::from_u8(0).is_none();
 
-    if !det { rep.fail("non-deterministic"); }
-    if !rep.cpu_gpu_parity { rep.fail("from_u8(0) should be None"); }
+    if !det {
+        rep.fail("non-deterministic");
+    }
+    if !rep.cpu_gpu_parity {
+        rep.fail("from_u8(0) should be None");
+    }
 
-    assert!(PatternType::from_u8(0).is_none(), "0 is not a valid pattern");
+    assert!(
+        PatternType::from_u8(0).is_none(),
+        "0 is not a valid pattern"
+    );
     assert!(rep.pass, "vec_dispatch_03: {}", rep.notes);
 }
 
@@ -442,8 +476,12 @@ fn vec_dispatch_04_boundary_overflow() {
     rep.variance_count = var;
     rep.cpu_gpu_parity = PatternType::from_u8(44).is_none();
 
-    if !det { rep.fail("non-deterministic"); }
-    if !rep.cpu_gpu_parity { rep.fail("from_u8(44) should be None"); }
+    if !det {
+        rep.fail("non-deterministic");
+    }
+    if !rep.cpu_gpu_parity {
+        rep.fail("from_u8(44) should be None");
+    }
 
     assert!(PatternType::from_u8(44).is_none(), "44 > 43 max pattern");
     assert!(rep.pass, "vec_dispatch_04: {}", rep.notes);
@@ -459,8 +497,7 @@ fn vec_marking_01_identity() {
 
     // A=[[1]], c=[1.0], b=[1] → cost=1.0
     let (det, var) = check_determinism(|| {
-        solve_marking_equation(&[vec![1]], &[1.0], &[1])
-            .map(|(c, _)| (c * 1_000_000.0) as i64)
+        solve_marking_equation(&[vec![1]], &[1.0], &[1]).map(|(c, _)| (c * 1_000_000.0) as i64)
     });
     rep.deterministic = det;
     rep.variance_count = var;
@@ -468,8 +505,12 @@ fn vec_marking_01_identity() {
     let res = solve_marking_equation(&[vec![1]], &[1.0], &[1]).unwrap();
     rep.cpu_gpu_parity = (res.0 - 1.0).abs() < 1e-6;
 
-    if !det { rep.fail("non-deterministic"); }
-    if !rep.cpu_gpu_parity { rep.fail(&format!("cost={} expected=1.0", res.0)); }
+    if !det {
+        rep.fail("non-deterministic");
+    }
+    if !rep.cpu_gpu_parity {
+        rep.fail(&format!("cost={} expected=1.0", res.0));
+    }
 
     assert!((res.0 - 1.0).abs() < 1e-6, "identity LP: cost must be 1.0");
     assert!(rep.pass, "vec_marking_01: {}", rep.notes);
@@ -485,8 +526,7 @@ fn vec_marking_02_two_place_chain() {
     let b = vec![0, 1];
 
     let (det, var) = check_determinism(|| {
-        solve_marking_equation(&a, &c, &b)
-            .map(|(cost, _)| (cost * 1_000_000.0) as i64)
+        solve_marking_equation(&a, &c, &b).map(|(cost, _)| (cost * 1_000_000.0) as i64)
     });
     rep.deterministic = det;
     rep.variance_count = var;
@@ -494,10 +534,17 @@ fn vec_marking_02_two_place_chain() {
     let res = solve_marking_equation(&a, &c, &b).unwrap();
     rep.cpu_gpu_parity = (res.0 - 2.0).abs() < 1e-6;
 
-    if !det { rep.fail("non-deterministic"); }
-    if !rep.cpu_gpu_parity { rep.fail(&format!("cost={} expected=2.0", res.0)); }
+    if !det {
+        rep.fail("non-deterministic");
+    }
+    if !rep.cpu_gpu_parity {
+        rep.fail(&format!("cost={} expected=2.0", res.0));
+    }
 
-    assert!((res.0 - 2.0).abs() < 1e-6, "two-place chain LP: cost must be 2.0");
+    assert!(
+        (res.0 - 2.0).abs() < 1e-6,
+        "two-place chain LP: cost must be 2.0"
+    );
     assert!(rep.pass, "vec_marking_02: {}", rep.notes);
 }
 
@@ -507,8 +554,7 @@ fn vec_marking_03_zero_rhs() {
 
     // b=[0] → trivial feasible, cost=0.0
     let (det, var) = check_determinism(|| {
-        solve_marking_equation(&[vec![1]], &[1.0], &[0])
-            .map(|(c, _)| (c * 1_000_000.0) as i64)
+        solve_marking_equation(&[vec![1]], &[1.0], &[0]).map(|(c, _)| (c * 1_000_000.0) as i64)
     });
     rep.deterministic = det;
     rep.variance_count = var;
@@ -516,8 +562,12 @@ fn vec_marking_03_zero_rhs() {
     let res = solve_marking_equation(&[vec![1]], &[1.0], &[0]).unwrap();
     rep.cpu_gpu_parity = (res.0 - 0.0).abs() < 1e-6;
 
-    if !det { rep.fail("non-deterministic"); }
-    if !rep.cpu_gpu_parity { rep.fail(&format!("cost={} expected=0.0", res.0)); }
+    if !det {
+        rep.fail("non-deterministic");
+    }
+    if !rep.cpu_gpu_parity {
+        rep.fail(&format!("cost={} expected=0.0", res.0));
+    }
 
     assert!((res.0 - 0.0).abs() < 1e-6, "zero-rhs LP: cost must be 0.0");
     assert!(rep.pass, "vec_marking_03: {}", rep.notes);
@@ -561,11 +611,20 @@ fn vec_rl_01_q_learning_single_update() {
     let cpu_q: f32 = 0.1 * 0.8;
     rep.cpu_gpu_parity = (first - cpu_q).abs() < 1e-5;
 
-    if !rep.deterministic { rep.fail("Q-learning single update is non-deterministic"); }
-    if !valid { rep.fail(&format!("Q={first} not in [0,1] or non-finite")); }
-    if !rep.cpu_gpu_parity { rep.fail(&format!("Q={first} expected {cpu_q}")); }
+    if !rep.deterministic {
+        rep.fail("Q-learning single update is non-deterministic");
+    }
+    if !valid {
+        rep.fail(&format!("Q={first} not in [0,1] or non-finite"));
+    }
+    if !rep.cpu_gpu_parity {
+        rep.fail(&format!("Q={first} expected {cpu_q}"));
+    }
 
-    assert!((first - 0.08).abs() < 1e-5, "Q(s,Inc) = lr*reward = 0.1*0.8 = 0.08");
+    assert!(
+        (first - 0.08).abs() < 1e-5,
+        "Q(s,Inc) = lr*reward = 0.1*0.8 = 0.08"
+    );
     assert!(rep.pass, "vec_rl_01: {}", rep.notes);
 }
 
@@ -595,7 +654,10 @@ fn vec_rl_02_q_learning_multi_step_bounds() {
     let mut diverge = 0usize;
     for _ in 1..100 {
         let v = run();
-        if v.iter().zip(first.iter()).any(|(a, b)| (a - b).abs() > f32::EPSILON) {
+        if v.iter()
+            .zip(first.iter())
+            .any(|(a, b)| (a - b).abs() > f32::EPSILON)
+        {
             diverge += 1;
         }
     }
@@ -609,11 +671,20 @@ fn vec_rl_02_q_learning_multi_step_bounds() {
     let cpu_q0: f32 = 0.1 * 0.5;
     rep.cpu_gpu_parity = (first[0] - cpu_q0).abs() < 1e-5;
 
-    if !rep.deterministic { rep.fail("multi-step Q-learning is non-deterministic"); }
-    if !all_valid { rep.fail(&format!("Q-values out of [0,1]: {first:?}")); }
-    if !rep.cpu_gpu_parity { rep.fail(&format!("Q[0]={} expected {cpu_q0}", first[0])); }
+    if !rep.deterministic {
+        rep.fail("multi-step Q-learning is non-deterministic");
+    }
+    if !all_valid {
+        rep.fail(&format!("Q-values out of [0,1]: {first:?}"));
+    }
+    if !rep.cpu_gpu_parity {
+        rep.fail(&format!("Q[0]={} expected {cpu_q0}", first[0]));
+    }
 
-    assert!(first.iter().all(|&q| q_valid(q)), "all Q-values must be in [0,1]");
+    assert!(
+        first.iter().all(|&q| q_valid(q)),
+        "all Q-values must be in [0,1]"
+    );
     assert!(rep.pass, "vec_rl_02: {}", rep.notes);
 }
 
@@ -626,7 +697,9 @@ fn vec_spc_01_no_alert_in_control() {
     let mut rep = VectorReport::new("spc-01", "spc");
 
     // 12 alternating points, all within UCL/LCL — no rules should fire
-    let values = [50.1, 49.9, 50.2, 49.8, 50.1, 49.9, 50.0, 50.1, 49.9, 50.1, 49.8, 50.2];
+    let values = [
+        50.1, 49.9, 50.2, 49.8, 50.1, 49.9, 50.0, 50.1, 49.9, 50.1, 49.8, 50.2,
+    ];
 
     let (det, var) = check_determinism(|| {
         check_western_electric_rules(&chart_series(&values, 50.0, 53.0, 47.0)).len()
@@ -636,17 +709,28 @@ fn vec_spc_01_no_alert_in_control() {
 
     let data = chart_series(&values, 50.0, 53.0, 47.0);
     let alerts = check_western_electric_rules(&data);
-    let ref_count = [ref_we_rule1(&data), ref_we_rule2(&data), ref_we_rule3(&data)]
-        .iter()
-        .filter(|&&v| v)
-        .count();
+    let ref_count = [
+        ref_we_rule1(&data),
+        ref_we_rule2(&data),
+        ref_we_rule3(&data),
+    ]
+    .iter()
+    .filter(|&&v| v)
+    .count();
     rep.spc_accuracy = Some(alerts.len() == ref_count);
     rep.cpu_gpu_parity = alerts.len() == ref_count;
 
-    if !det { rep.fail("non-deterministic"); }
-    if !rep.cpu_gpu_parity { rep.fail(&format!("alerts={} ref={ref_count}", alerts.len())); }
+    if !det {
+        rep.fail("non-deterministic");
+    }
+    if !rep.cpu_gpu_parity {
+        rep.fail(&format!("alerts={} ref={ref_count}", alerts.len()));
+    }
 
-    assert!(alerts.is_empty(), "in-control alternating series: no alerts expected");
+    assert!(
+        alerts.is_empty(),
+        "in-control alternating series: no alerts expected"
+    );
     assert!(rep.pass, "vec_spc_01: {}", rep.notes);
 }
 
@@ -667,15 +751,24 @@ fn vec_spc_02_rule1_out_of_control() {
 
     let data = chart_series(&values, 50.0, 53.0, 47.0);
     let ref_r1 = ref_we_rule1(&data); // 55.0 > 53.0 → true
-    assert!(ref_r1, "reference: 55.0 > UCL=53.0 must satisfy Rule 1 condition");
+    assert!(
+        ref_r1,
+        "reference: 55.0 > UCL=53.0 must satisfy Rule 1 condition"
+    );
 
     let alerts = check_western_electric_rules(&data);
-    let has_ooc = alerts.iter().any(|a| matches!(a, SpecialCause::OutOfControl { .. }));
+    let has_ooc = alerts
+        .iter()
+        .any(|a| matches!(a, SpecialCause::OutOfControl { .. }));
     rep.spc_accuracy = Some(has_ooc == ref_r1);
     rep.cpu_gpu_parity = has_ooc == ref_r1;
 
-    if !det { rep.fail("non-deterministic"); }
-    if !rep.cpu_gpu_parity { rep.fail("Rule 1 detection mismatch vs. reference"); }
+    if !det {
+        rep.fail("non-deterministic");
+    }
+    if !rep.cpu_gpu_parity {
+        rep.fail("Rule 1 detection mismatch vs. reference");
+    }
 
     assert!(has_ooc, "55.0 > UCL=53.0 must trigger OutOfControl alert");
     assert!(rep.pass, "vec_spc_02: {}", rep.notes);
@@ -691,25 +784,50 @@ fn vec_spc_03_rule2_shift_above() {
     let (det, var) = check_determinism(|| {
         check_western_electric_rules(&chart_series(&values, 50.0, 55.0, 45.0))
             .iter()
-            .any(|a| matches!(a, SpecialCause::Shift { direction: ShiftDirection::Above, .. }))
+            .any(|a| {
+                matches!(
+                    a,
+                    SpecialCause::Shift {
+                        direction: ShiftDirection::Above,
+                        ..
+                    }
+                )
+            })
     });
     rep.deterministic = det;
     rep.variance_count = var;
 
     let data = chart_series(&values, 50.0, 55.0, 45.0);
     let ref_r2 = ref_we_rule2(&data); // all 9 > 50.0 → true
-    assert!(ref_r2, "reference: 9 points all > CL=50 must satisfy Rule 2");
+    assert!(
+        ref_r2,
+        "reference: 9 points all > CL=50 must satisfy Rule 2"
+    );
 
     let alerts = check_western_electric_rules(&data);
-    let has_shift = alerts.iter()
-        .any(|a| matches!(a, SpecialCause::Shift { direction: ShiftDirection::Above, .. }));
+    let has_shift = alerts.iter().any(|a| {
+        matches!(
+            a,
+            SpecialCause::Shift {
+                direction: ShiftDirection::Above,
+                ..
+            }
+        )
+    });
     rep.spc_accuracy = Some(has_shift == ref_r2);
     rep.cpu_gpu_parity = has_shift == ref_r2;
 
-    if !det { rep.fail("non-deterministic"); }
-    if !rep.cpu_gpu_parity { rep.fail("Rule 2 shift-above detection mismatch"); }
+    if !det {
+        rep.fail("non-deterministic");
+    }
+    if !rep.cpu_gpu_parity {
+        rep.fail("Rule 2 shift-above detection mismatch");
+    }
 
-    assert!(has_shift, "9 consecutive above-CL must trigger Shift::Above");
+    assert!(
+        has_shift,
+        "9 consecutive above-CL must trigger Shift::Above"
+    );
     assert!(rep.pass, "vec_spc_03: {}", rep.notes);
 }
 
@@ -730,17 +848,29 @@ fn vec_spc_04_rule3_trend_increasing() {
 
     let data = chart_series(&values, 50.0, 55.0, 45.0);
     let ref_r3 = ref_we_rule3(&data); // last 6 strictly increasing → true
-    assert!(ref_r3, "reference: 6 strictly increasing points must satisfy Rule 3");
+    assert!(
+        ref_r3,
+        "reference: 6 strictly increasing points must satisfy Rule 3"
+    );
 
     let alerts = check_western_electric_rules(&data);
-    let has_trend = alerts.iter().any(|a| matches!(a, SpecialCause::Trend { .. }));
+    let has_trend = alerts
+        .iter()
+        .any(|a| matches!(a, SpecialCause::Trend { .. }));
     rep.spc_accuracy = Some(has_trend == ref_r3);
     rep.cpu_gpu_parity = has_trend == ref_r3;
 
-    if !det { rep.fail("non-deterministic"); }
-    if !rep.cpu_gpu_parity { rep.fail("Rule 3 trend detection mismatch"); }
+    if !det {
+        rep.fail("non-deterministic");
+    }
+    if !rep.cpu_gpu_parity {
+        rep.fail("Rule 3 trend detection mismatch");
+    }
 
-    assert!(has_trend, "6 strictly increasing points must trigger Trend alert");
+    assert!(
+        has_trend,
+        "6 strictly increasing points must trigger Trend alert"
+    );
     assert!(rep.pass, "vec_spc_04: {}", rep.notes);
 }
 
@@ -771,11 +901,9 @@ fn vec_construct_01_full_pipeline() {
 
         // SPC
         let shift_values = [51.0, 51.5, 51.2, 51.8, 51.3, 51.4, 51.1, 51.6, 51.2];
-        let spc_ok = check_western_electric_rules(
-            &chart_series(&shift_values, 50.0, 55.0, 45.0),
-        )
-        .iter()
-        .any(|a| matches!(a, SpecialCause::Shift { .. }));
+        let spc_ok = check_western_electric_rules(&chart_series(&shift_values, 50.0, 55.0, 45.0))
+            .iter()
+            .any(|a| matches!(a, SpecialCause::Shift { .. }));
 
         (g_ok, lp_ok, spc_ok)
     });
@@ -799,8 +927,12 @@ fn vec_construct_01_full_pipeline() {
 
     rep.cpu_gpu_parity = guard_ok && lp_ok && spc_ok;
 
-    if !det { rep.fail("pipeline non-deterministic"); }
-    if !rep.cpu_gpu_parity { rep.fail("pipeline component mismatch"); }
+    if !det {
+        rep.fail("pipeline non-deterministic");
+    }
+    if !rep.cpu_gpu_parity {
+        rep.fail("pipeline component mismatch");
+    }
 
     assert!(guard_ok, "construct pipeline: guard should pass");
     assert!(lp_ok, "construct pipeline: LP cost should be 1.0");
@@ -828,8 +960,12 @@ fn vec_misc_01_guard_not_negation() {
     let cpu = !(42u64 == 99u64);
     rep.cpu_gpu_parity = gpu == cpu;
 
-    if !det { rep.fail("non-deterministic"); }
-    if !rep.cpu_gpu_parity { rep.fail("NOT guard parity mismatch"); }
+    if !det {
+        rep.fail("non-deterministic");
+    }
+    if !rep.cpu_gpu_parity {
+        rep.fail("NOT guard parity mismatch");
+    }
 
     assert!(gpu, "NOT(task_id==99) with task_id=42 should be true");
     assert!(rep.pass, "vec_misc_01: {}", rep.notes);
@@ -857,8 +993,12 @@ fn vec_misc_02_guard_or_two_branches() {
     let cpu = (99u64 == 42u64) || (99u64 == 99u64);
     rep.cpu_gpu_parity = gpu == cpu;
 
-    if !det { rep.fail("non-deterministic"); }
-    if !rep.cpu_gpu_parity { rep.fail("OR guard parity mismatch"); }
+    if !det {
+        rep.fail("non-deterministic");
+    }
+    if !rep.cpu_gpu_parity {
+        rep.fail("OR guard parity mismatch");
+    }
 
     assert!(gpu, "OR(==42, ==99) with task_id=99 should be true");
     assert!(rep.pass, "vec_misc_02: {}", rep.notes);
@@ -868,17 +1008,19 @@ fn vec_misc_02_guard_or_two_branches() {
 fn vec_misc_03_all_43_patterns_valid() {
     let mut rep = VectorReport::new("misc-03", "misc");
 
-    let (det, var) = check_determinism(|| {
-        (1u8..=43).filter_map(PatternType::from_u8).count()
-    });
+    let (det, var) = check_determinism(|| (1u8..=43).filter_map(PatternType::from_u8).count());
     rep.deterministic = det;
     rep.variance_count = var;
 
     let count = (1u8..=43).filter_map(PatternType::from_u8).count();
     rep.cpu_gpu_parity = count == 43;
 
-    if !det { rep.fail("non-deterministic"); }
-    if !rep.cpu_gpu_parity { rep.fail(&format!("{count}/43 patterns valid")); }
+    if !det {
+        rep.fail("non-deterministic");
+    }
+    if !rep.cpu_gpu_parity {
+        rep.fail(&format!("{count}/43 patterns valid"));
+    }
 
     assert_eq!(count, 43, "all 43 W3C workflow patterns must deserialise");
     assert!(rep.pass, "vec_misc_03: {}", rep.notes);
@@ -894,8 +1036,7 @@ fn vec_misc_04_marking_diagonal_3x3() {
     let b = vec![1, 1, 1];
 
     let (det, var) = check_determinism(|| {
-        solve_marking_equation(&a, &c, &b)
-            .map(|(cost, _)| (cost * 1_000_000.0) as i64)
+        solve_marking_equation(&a, &c, &b).map(|(cost, _)| (cost * 1_000_000.0) as i64)
     });
     rep.deterministic = det;
     rep.variance_count = var;
@@ -903,10 +1044,17 @@ fn vec_misc_04_marking_diagonal_3x3() {
     let res = solve_marking_equation(&a, &c, &b).unwrap();
     rep.cpu_gpu_parity = (res.0 - 3.0).abs() < 1e-6;
 
-    if !det { rep.fail("non-deterministic"); }
-    if !rep.cpu_gpu_parity { rep.fail(&format!("cost={} expected=3.0", res.0)); }
+    if !det {
+        rep.fail("non-deterministic");
+    }
+    if !rep.cpu_gpu_parity {
+        rep.fail(&format!("cost={} expected=3.0", res.0));
+    }
 
-    assert!((res.0 - 3.0).abs() < 1e-6, "3 independent unit transitions → cost=3");
+    assert!(
+        (res.0 - 3.0).abs() < 1e-6,
+        "3 independent unit transitions → cost=3"
+    );
     assert!(rep.pass, "vec_misc_04: {}", rep.notes);
 }
 
@@ -928,8 +1076,12 @@ fn vec_misc_05_spc_insufficient_data() {
     rep.spc_accuracy = Some(alerts.is_empty());
     rep.cpu_gpu_parity = alerts.is_empty();
 
-    if !det { rep.fail("non-deterministic"); }
-    if !alerts.is_empty() { rep.fail("false positive on < 9 data points"); }
+    if !det {
+        rep.fail("non-deterministic");
+    }
+    if !alerts.is_empty() {
+        rep.fail("false positive on < 9 data points");
+    }
 
     assert!(alerts.is_empty(), "< 9 points must produce no WE alerts");
     assert!(rep.pass, "vec_misc_05: {}", rep.notes);
@@ -940,8 +1092,15 @@ fn vec_misc_06_guard_failed_state() {
     let mut rep = VectorReport::new("misc-06", "misc");
 
     let (det, var) = check_determinism(|| {
-        Guard::state(StateFlags::FAILED)
-            .evaluate(&ctx(1, 0, 100, 100, 100, 0, StateFlags::FAILED.bits()))
+        Guard::state(StateFlags::FAILED).evaluate(&ctx(
+            1,
+            0,
+            100,
+            100,
+            100,
+            0,
+            StateFlags::FAILED.bits(),
+        ))
     });
     rep.deterministic = det;
     rep.variance_count = var;
@@ -952,8 +1111,12 @@ fn vec_misc_06_guard_failed_state() {
     let cpu = (StateFlags::FAILED.bits() & StateFlags::FAILED.bits()) == StateFlags::FAILED.bits();
     rep.cpu_gpu_parity = gpu == cpu;
 
-    if !det { rep.fail("non-deterministic"); }
-    if !rep.cpu_gpu_parity { rep.fail("FAILED state guard parity mismatch"); }
+    if !det {
+        rep.fail("non-deterministic");
+    }
+    if !rep.cpu_gpu_parity {
+        rep.fail("FAILED state guard parity mismatch");
+    }
 
     assert!(gpu, "FAILED flag in context must pass FAILED state guard");
     assert!(rep.pass, "vec_misc_06: {}", rep.notes);
@@ -987,9 +1150,15 @@ fn vec_misc_07_q_learning_zero_reward() {
     rep.rl_q_valid = Some(valid);
     rep.cpu_gpu_parity = first.abs() < f32::EPSILON;
 
-    if !rep.deterministic { rep.fail("non-deterministic"); }
-    if !valid { rep.fail(&format!("Q={first} invalid")); }
-    if !rep.cpu_gpu_parity { rep.fail(&format!("zero-reward Q={first} != 0")); }
+    if !rep.deterministic {
+        rep.fail("non-deterministic");
+    }
+    if !valid {
+        rep.fail(&format!("Q={first} invalid"));
+    }
+    if !rep.cpu_gpu_parity {
+        rep.fail(&format!("zero-reward Q={first} != 0"));
+    }
 
     assert!(first.abs() < f32::EPSILON, "zero reward → Q must be 0.0");
     assert!(rep.pass, "vec_misc_07: {}", rep.notes);
@@ -1001,8 +1170,15 @@ fn vec_misc_08_guard_bit_clear_predicate() {
 
     // BitClear: state_flags has no CANCELLED bit
     let (det, var) = check_determinism(|| {
-        Guard::predicate(Predicate::BitClear, 2, StateFlags::CANCELLED.bits())
-            .evaluate(&ctx(1, 0, 100, 100, 100, 0, StateFlags::RUNNING.bits()))
+        Guard::predicate(Predicate::BitClear, 2, StateFlags::CANCELLED.bits()).evaluate(&ctx(
+            1,
+            0,
+            100,
+            100,
+            100,
+            0,
+            StateFlags::RUNNING.bits(),
+        ))
     });
     rep.deterministic = det;
     rep.variance_count = var;
@@ -1015,8 +1191,12 @@ fn vec_misc_08_guard_bit_clear_predicate() {
     let cpu = (StateFlags::RUNNING.bits() & StateFlags::CANCELLED.bits()) == 0;
     rep.cpu_gpu_parity = gpu == cpu;
 
-    if !det { rep.fail("non-deterministic"); }
-    if !rep.cpu_gpu_parity { rep.fail("BitClear guard parity mismatch"); }
+    if !det {
+        rep.fail("non-deterministic");
+    }
+    if !rep.cpu_gpu_parity {
+        rep.fail("BitClear guard parity mismatch");
+    }
 
     assert!(gpu, "RUNNING context should have CANCELLED bit clear");
     assert!(rep.pass, "vec_misc_08: {}", rep.notes);
@@ -1036,12 +1216,17 @@ fn regression_aggregate_report() {
         let (det, var) = check_determinism(|| {
             Guard::predicate(Predicate::Equal, 0, 42).evaluate(&ctx(42, 0, 100, 100, 100, 0, 0))
         });
-        r.deterministic = det; r.variance_count = var;
+        r.deterministic = det;
+        r.variance_count = var;
         let g = Guard::predicate(Predicate::Equal, 0, 42);
         let c = ctx(42, 0, 100, 100, 100, 0, 0);
         r.cpu_gpu_parity = g.evaluate(&c) == ref_guard_predicate(Predicate::Equal, 42, 0, 42);
-        if !det { r.fail("non-deterministic"); }
-        if !r.cpu_gpu_parity { r.fail("parity"); }
+        if !det {
+            r.fail("non-deterministic");
+        }
+        if !r.cpu_gpu_parity {
+            r.fail("parity");
+        }
         reports.push(r);
     }
     {
@@ -1049,11 +1234,16 @@ fn regression_aggregate_report() {
         let (det, var) = check_determinism(|| {
             Guard::resource(ResourceType::Cpu, 50).evaluate(&ctx(1, 0, 80, 100, 100, 0, 0))
         });
-        r.deterministic = det; r.variance_count = var;
+        r.deterministic = det;
+        r.variance_count = var;
         let out = Guard::resource(ResourceType::Cpu, 50).evaluate(&ctx(1, 0, 80, 100, 100, 0, 0));
         r.cpu_gpu_parity = out == (80u64 >= 50u64);
-        if !det { r.fail("non-deterministic"); }
-        if !r.cpu_gpu_parity { r.fail("parity"); }
+        if !det {
+            r.fail("non-deterministic");
+        }
+        if !r.cpu_gpu_parity {
+            r.fail("parity");
+        }
         reports.push(r);
     }
     {
@@ -1066,15 +1256,20 @@ fn regression_aggregate_report() {
             ])
             .evaluate(&ctx(5, 0, 100, 100, 100, 0, rf))
         });
-        r.deterministic = det; r.variance_count = var;
+        r.deterministic = det;
+        r.variance_count = var;
         let out = Guard::and(vec![
             Guard::predicate(Predicate::GreaterThanOrEqual, 0, 1),
             Guard::state(StateFlags::RUNNING),
         ])
         .evaluate(&ctx(5, 0, 100, 100, 100, 0, rf));
         r.cpu_gpu_parity = out;
-        if !det { r.fail("non-deterministic"); }
-        if !out { r.fail("parity: AND should be true"); }
+        if !det {
+            r.fail("non-deterministic");
+        }
+        if !out {
+            r.fail("parity: AND should be true");
+        }
         reports.push(r);
     }
 
@@ -1087,10 +1282,15 @@ fn regression_aggregate_report() {
     ] {
         let mut r = VectorReport::new(id, "dispatch");
         let (det, var) = check_determinism(|| PatternType::from_u8(byte).is_some());
-        r.deterministic = det; r.variance_count = var;
+        r.deterministic = det;
+        r.variance_count = var;
         r.cpu_gpu_parity = PatternType::from_u8(byte).is_some() == want_some;
-        if !det { r.fail("non-deterministic"); }
-        if !r.cpu_gpu_parity { r.fail("parity"); }
+        if !det {
+            r.fail("non-deterministic");
+        }
+        if !r.cpu_gpu_parity {
+            r.fail("parity");
+        }
         reports.push(r);
     }
 
@@ -1098,41 +1298,55 @@ fn regression_aggregate_report() {
     {
         let mut r = VectorReport::new("marking-01", "marking");
         let (det, var) = check_determinism(|| {
-            solve_marking_equation(&[vec![1]], &[1.0], &[1])
-                .map(|(c, _)| (c * 1e6) as i64)
+            solve_marking_equation(&[vec![1]], &[1.0], &[1]).map(|(c, _)| (c * 1e6) as i64)
         });
-        r.deterministic = det; r.variance_count = var;
+        r.deterministic = det;
+        r.variance_count = var;
         let res = solve_marking_equation(&[vec![1]], &[1.0], &[1]).unwrap();
         r.cpu_gpu_parity = (res.0 - 1.0).abs() < 1e-6;
-        if !det { r.fail("non-deterministic"); }
-        if !r.cpu_gpu_parity { r.fail(&format!("cost={} ≠ 1.0", res.0)); }
+        if !det {
+            r.fail("non-deterministic");
+        }
+        if !r.cpu_gpu_parity {
+            r.fail(&format!("cost={} ≠ 1.0", res.0));
+        }
         reports.push(r);
     }
     {
         let mut r = VectorReport::new("marking-02", "marking");
         let a = vec![vec![1, -1, 0], vec![0, 1, -1]];
-        let c = vec![1.0, 1.0, 1.0]; let b = vec![0, 1];
+        let c = vec![1.0, 1.0, 1.0];
+        let b = vec![0, 1];
         let (det, var) = check_determinism(|| {
             solve_marking_equation(&a, &c, &b).map(|(cost, _)| (cost * 1e6) as i64)
         });
-        r.deterministic = det; r.variance_count = var;
+        r.deterministic = det;
+        r.variance_count = var;
         let res = solve_marking_equation(&a, &c, &b).unwrap();
         r.cpu_gpu_parity = (res.0 - 2.0).abs() < 1e-6;
-        if !det { r.fail("non-deterministic"); }
-        if !r.cpu_gpu_parity { r.fail(&format!("cost={} ≠ 2.0", res.0)); }
+        if !det {
+            r.fail("non-deterministic");
+        }
+        if !r.cpu_gpu_parity {
+            r.fail(&format!("cost={} ≠ 2.0", res.0));
+        }
         reports.push(r);
     }
     {
         let mut r = VectorReport::new("marking-03", "marking");
         let (det, var) = check_determinism(|| {
-            solve_marking_equation(&[vec![1]], &[1.0], &[0])
-                .map(|(c, _)| (c * 1e6) as i64)
+            solve_marking_equation(&[vec![1]], &[1.0], &[0]).map(|(c, _)| (c * 1e6) as i64)
         });
-        r.deterministic = det; r.variance_count = var;
+        r.deterministic = det;
+        r.variance_count = var;
         let res = solve_marking_equation(&[vec![1]], &[1.0], &[0]).unwrap();
         r.cpu_gpu_parity = (res.0 - 0.0).abs() < 1e-6;
-        if !det { r.fail("non-deterministic"); }
-        if !r.cpu_gpu_parity { r.fail(&format!("cost={} ≠ 0.0", res.0)); }
+        if !det {
+            r.fail("non-deterministic");
+        }
+        if !r.cpu_gpu_parity {
+            r.fail(&format!("cost={} ≠ 0.0", res.0));
+        }
         reports.push(r);
     }
 
@@ -1141,18 +1355,28 @@ fn regression_aggregate_report() {
         let mut r = VectorReport::new("rl-01", "rl");
         let run = || {
             let agent: QLearning<RlState, RlAction> = QLearning::with_hyperparams(0.1, 0.99, 0.0);
-            let s = RlState(0); let s2 = RlState(1);
+            let s = RlState(0);
+            let s2 = RlState(1);
             agent.update(&s, &RlAction::Inc, 0.8, &s2, false);
             agent.get_q_value(&s, &RlAction::Inc)
         };
         let first = run();
-        let diverge = (1..100).filter(|_| (run() - first).abs() > f32::EPSILON).count();
-        r.deterministic = diverge == 0; r.variance_count = diverge;
+        let diverge = (1..100)
+            .filter(|_| (run() - first).abs() > f32::EPSILON)
+            .count();
+        r.deterministic = diverge == 0;
+        r.variance_count = diverge;
         r.rl_q_valid = Some(q_valid(first));
         r.cpu_gpu_parity = (first - 0.08_f32).abs() < 1e-5;
-        if !r.deterministic { r.fail("non-deterministic"); }
-        if !r.rl_q_valid.unwrap() { r.fail(&format!("Q={first} invalid")); }
-        if !r.cpu_gpu_parity { r.fail(&format!("Q={first} ≠ 0.08")); }
+        if !r.deterministic {
+            r.fail("non-deterministic");
+        }
+        if !r.rl_q_valid.unwrap() {
+            r.fail(&format!("Q={first} invalid"));
+        }
+        if !r.cpu_gpu_parity {
+            r.fail(&format!("Q={first} ≠ 0.08"));
+        }
         reports.push(r);
     }
     {
@@ -1163,7 +1387,9 @@ fn regression_aggregate_report() {
                 (RlState(0), RlAction::Inc, 0.5_f32, RlState(1)),
                 (RlState(1), RlAction::Inc, 0.3_f32, RlState(2)),
                 (RlState(2), RlAction::Dbl, 0.9_f32, RlState(4)),
-            ] { agent.update(&s, &a, rw, &s2, false); }
+            ] {
+                agent.update(&s, &a, rw, &s2, false);
+            }
             [
                 agent.get_q_value(&RlState(0), &RlAction::Inc),
                 agent.get_q_value(&RlState(1), &RlAction::Inc),
@@ -1173,28 +1399,42 @@ fn regression_aggregate_report() {
         let first = run();
         let diverge = (1..100)
             .filter(|_| {
-                run().iter().zip(first.iter()).any(|(a, b)| (a - b).abs() > f32::EPSILON)
+                run()
+                    .iter()
+                    .zip(first.iter())
+                    .any(|(a, b)| (a - b).abs() > f32::EPSILON)
             })
             .count();
-        r.deterministic = diverge == 0; r.variance_count = diverge;
+        r.deterministic = diverge == 0;
+        r.variance_count = diverge;
         r.rl_q_valid = Some(first.iter().all(|&q| q_valid(q)));
         let cpu_q0: f32 = 0.1 * 0.5;
         r.cpu_gpu_parity = (first[0] - cpu_q0).abs() < 1e-5;
-        if !r.deterministic { r.fail("non-deterministic"); }
-        if !r.rl_q_valid.unwrap() { r.fail("Q-values out of [0,1]"); }
-        if !r.cpu_gpu_parity { r.fail(&format!("Q[0]={} ≠ {cpu_q0}", first[0])); }
+        if !r.deterministic {
+            r.fail("non-deterministic");
+        }
+        if !r.rl_q_valid.unwrap() {
+            r.fail("Q-values out of [0,1]");
+        }
+        if !r.cpu_gpu_parity {
+            r.fail(&format!("Q[0]={} ≠ {cpu_q0}", first[0]));
+        }
         reports.push(r);
     }
 
     // ── spc ───────────────────────────────────────────────────────────────
     {
         let mut r = VectorReport::new("spc-01", "spc");
-        let values = [50.1, 49.9, 50.2, 49.8, 50.1, 49.9, 50.0, 50.1, 49.9, 50.1, 49.8, 50.2];
+        let values = [
+            50.1, 49.9, 50.2, 49.8, 50.1, 49.9, 50.0, 50.1, 49.9, 50.1, 49.8, 50.2,
+        ];
         let data = chart_series(&values, 50.0, 53.0, 47.0);
         let alerts = check_western_electric_rules(&data);
         r.spc_accuracy = Some(alerts.is_empty());
         r.cpu_gpu_parity = alerts.is_empty();
-        if !alerts.is_empty() { r.fail("false positive"); }
+        if !alerts.is_empty() {
+            r.fail("false positive");
+        }
         reports.push(r);
     }
     {
@@ -1202,10 +1442,14 @@ fn regression_aggregate_report() {
         let values = [50.0, 50.1, 49.9, 50.0, 50.1, 49.8, 50.0, 50.1, 50.0, 55.0];
         let data = chart_series(&values, 50.0, 53.0, 47.0);
         let alerts = check_western_electric_rules(&data);
-        let has_ooc = alerts.iter().any(|a| matches!(a, SpecialCause::OutOfControl { .. }));
+        let has_ooc = alerts
+            .iter()
+            .any(|a| matches!(a, SpecialCause::OutOfControl { .. }));
         r.spc_accuracy = Some(has_ooc);
         r.cpu_gpu_parity = has_ooc;
-        if !has_ooc { r.fail("Rule 1 not detected"); }
+        if !has_ooc {
+            r.fail("Rule 1 not detected");
+        }
         reports.push(r);
     }
     {
@@ -1213,11 +1457,20 @@ fn regression_aggregate_report() {
         let values = [51.0, 51.5, 51.2, 51.8, 51.3, 51.4, 51.1, 51.6, 51.2];
         let data = chart_series(&values, 50.0, 55.0, 45.0);
         let alerts = check_western_electric_rules(&data);
-        let has_shift = alerts.iter()
-            .any(|a| matches!(a, SpecialCause::Shift { direction: ShiftDirection::Above, .. }));
+        let has_shift = alerts.iter().any(|a| {
+            matches!(
+                a,
+                SpecialCause::Shift {
+                    direction: ShiftDirection::Above,
+                    ..
+                }
+            )
+        });
         r.spc_accuracy = Some(has_shift);
         r.cpu_gpu_parity = has_shift;
-        if !has_shift { r.fail("Rule 2 not detected"); }
+        if !has_shift {
+            r.fail("Rule 2 not detected");
+        }
         reports.push(r);
     }
     {
@@ -1225,10 +1478,14 @@ fn regression_aggregate_report() {
         let values = [50.0, 50.1, 50.0, 50.2, 50.4, 50.6, 50.8, 51.0, 51.2];
         let data = chart_series(&values, 50.0, 55.0, 45.0);
         let alerts = check_western_electric_rules(&data);
-        let has_trend = alerts.iter().any(|a| matches!(a, SpecialCause::Trend { .. }));
+        let has_trend = alerts
+            .iter()
+            .any(|a| matches!(a, SpecialCause::Trend { .. }));
         r.spc_accuracy = Some(has_trend);
         r.cpu_gpu_parity = has_trend;
-        if !has_trend { r.fail("Rule 3 not detected"); }
+        if !has_trend {
+            r.fail("Rule 3 not detected");
+        }
         reports.push(r);
     }
 
@@ -1243,14 +1500,19 @@ fn regression_aggregate_report() {
             ])
             .evaluate(&ctx(5, 100, 90, 200, 50, 2, rf))
         });
-        r.deterministic = det; r.variance_count = var;
+        r.deterministic = det;
+        r.variance_count = var;
         r.cpu_gpu_parity = Guard::and(vec![
             Guard::state(StateFlags::INITIALIZED | StateFlags::RUNNING),
             Guard::predicate(Predicate::LessThan, 0, 1000),
         ])
         .evaluate(&ctx(5, 100, 90, 200, 50, 2, rf));
-        if !det { r.fail("non-deterministic"); }
-        if !r.cpu_gpu_parity { r.fail("pipeline gate should be true"); }
+        if !det {
+            r.fail("non-deterministic");
+        }
+        if !r.cpu_gpu_parity {
+            r.fail("pipeline gate should be true");
+        }
         reports.push(r);
     }
 
@@ -1261,12 +1523,17 @@ fn regression_aggregate_report() {
             Guard::not(Guard::predicate(Predicate::Equal, 0, 99))
                 .evaluate(&ctx(42, 0, 100, 100, 100, 0, 0))
         });
-        r.deterministic = det; r.variance_count = var;
+        r.deterministic = det;
+        r.variance_count = var;
         let out = Guard::not(Guard::predicate(Predicate::Equal, 0, 99))
             .evaluate(&ctx(42, 0, 100, 100, 100, 0, 0));
         r.cpu_gpu_parity = out == !(42u64 == 99u64);
-        if !det { r.fail("non-deterministic"); }
-        if !r.cpu_gpu_parity { r.fail("parity"); }
+        if !det {
+            r.fail("non-deterministic");
+        }
+        if !r.cpu_gpu_parity {
+            r.fail("parity");
+        }
         reports.push(r);
     }
     {
@@ -1278,30 +1545,40 @@ fn regression_aggregate_report() {
             ])
             .evaluate(&ctx(99, 0, 100, 100, 100, 0, 0))
         });
-        r.deterministic = det; r.variance_count = var;
+        r.deterministic = det;
+        r.variance_count = var;
         r.cpu_gpu_parity = Guard::or(vec![
             Guard::predicate(Predicate::Equal, 0, 42),
             Guard::predicate(Predicate::Equal, 0, 99),
         ])
         .evaluate(&ctx(99, 0, 100, 100, 100, 0, 0));
-        if !det { r.fail("non-deterministic"); }
-        if !r.cpu_gpu_parity { r.fail("OR parity"); }
+        if !det {
+            r.fail("non-deterministic");
+        }
+        if !r.cpu_gpu_parity {
+            r.fail("OR parity");
+        }
         reports.push(r);
     }
     {
         let mut r = VectorReport::new("misc-03", "misc");
         let count = (1u8..=43).filter_map(PatternType::from_u8).count();
         r.cpu_gpu_parity = count == 43;
-        if count != 43 { r.fail(&format!("{count}/43 patterns")); }
+        if count != 43 {
+            r.fail(&format!("{count}/43 patterns"));
+        }
         reports.push(r);
     }
     {
         let mut r = VectorReport::new("misc-04", "misc");
         let a = vec![vec![1, 0, 0], vec![0, 1, 0], vec![0, 0, 1]];
-        let c = vec![1.0, 1.0, 1.0]; let b = vec![1, 1, 1];
+        let c = vec![1.0, 1.0, 1.0];
+        let b = vec![1, 1, 1];
         let res = solve_marking_equation(&a, &c, &b).unwrap();
         r.cpu_gpu_parity = (res.0 - 3.0).abs() < 1e-6;
-        if !r.cpu_gpu_parity { r.fail(&format!("cost={} ≠ 3.0", res.0)); }
+        if !r.cpu_gpu_parity {
+            r.fail(&format!("cost={} ≠ 3.0", res.0));
+        }
         reports.push(r);
     }
     {
@@ -1310,7 +1587,9 @@ fn regression_aggregate_report() {
         let alerts = check_western_electric_rules(&chart_series(&values, 50.0, 60.0, 40.0));
         r.spc_accuracy = Some(alerts.is_empty());
         r.cpu_gpu_parity = alerts.is_empty();
-        if !alerts.is_empty() { r.fail("false positive < 9 pts"); }
+        if !alerts.is_empty() {
+            r.fail("false positive < 9 pts");
+        }
         reports.push(r);
     }
     {
@@ -1319,41 +1598,59 @@ fn regression_aggregate_report() {
         let c = ctx(1, 0, 100, 100, 100, 0, StateFlags::FAILED.bits());
         let out = g.evaluate(&c);
         r.cpu_gpu_parity = out;
-        if !out { r.fail("FAILED guard should pass"); }
+        if !out {
+            r.fail("FAILED guard should pass");
+        }
         reports.push(r);
     }
     {
         let mut r = VectorReport::new("misc-07", "misc");
         let run = || {
             let agent: QLearning<RlState, RlAction> = QLearning::with_hyperparams(0.1, 0.99, 0.0);
-            let s = RlState(0); let s2 = RlState(1);
+            let s = RlState(0);
+            let s2 = RlState(1);
             agent.update(&s, &RlAction::Inc, 0.0, &s2, false);
             agent.get_q_value(&s, &RlAction::Inc)
         };
         let first = run();
-        let diverge = (1..100).filter(|_| (run() - first).abs() > f32::EPSILON).count();
-        r.deterministic = diverge == 0; r.variance_count = diverge;
+        let diverge = (1..100)
+            .filter(|_| (run() - first).abs() > f32::EPSILON)
+            .count();
+        r.deterministic = diverge == 0;
+        r.variance_count = diverge;
         r.rl_q_valid = Some(q_valid(first));
         r.cpu_gpu_parity = first.abs() < f32::EPSILON;
-        if !r.deterministic { r.fail("non-deterministic"); }
-        if !r.rl_q_valid.unwrap() { r.fail("invalid Q"); }
-        if !r.cpu_gpu_parity { r.fail(&format!("Q={first} ≠ 0")); }
+        if !r.deterministic {
+            r.fail("non-deterministic");
+        }
+        if !r.rl_q_valid.unwrap() {
+            r.fail("invalid Q");
+        }
+        if !r.cpu_gpu_parity {
+            r.fail(&format!("Q={first} ≠ 0"));
+        }
         reports.push(r);
     }
     {
         let mut r = VectorReport::new("misc-08", "misc");
         let g = Guard::predicate(Predicate::BitClear, 2, StateFlags::CANCELLED.bits());
         let c = ctx(1, 0, 100, 100, 100, 0, StateFlags::RUNNING.bits());
-        let (det, var) = check_determinism(|| {
-            Guard::predicate(Predicate::BitClear, 2, StateFlags::CANCELLED.bits())
-                .evaluate(&ctx(1, 0, 100, 100, 100, 0, StateFlags::RUNNING.bits()))
-        });
-        r.deterministic = det; r.variance_count = var;
+        let (det, var) =
+            check_determinism(|| {
+                Guard::predicate(Predicate::BitClear, 2, StateFlags::CANCELLED.bits())
+                    .evaluate(&ctx(1, 0, 100, 100, 100, 0, StateFlags::RUNNING.bits()))
+            });
+        r.deterministic = det;
+        r.variance_count = var;
         let out = g.evaluate(&c);
         let cpu = (StateFlags::RUNNING.bits() & StateFlags::CANCELLED.bits()) == 0;
         r.cpu_gpu_parity = out == cpu;
-        if !det { r.fail("non-deterministic"); }
-        if !r.cpu_gpu_parity { r.fail("BitClear parity"); }
+        if !det {
+            r.fail("non-deterministic");
+        }
+        if !r.cpu_gpu_parity {
+            r.fail("BitClear parity");
+        }
         reports.push(r);
     }
 
@@ -1368,26 +1665,60 @@ fn regression_aggregate_report() {
     eprintln!("║          REGRESSION DETECTOR — 25-VECTOR REPORT              ║");
     eprintln!("╠══════════════════════════════════════════════════════════════╣");
     eprintln!("║  Vectors: 25 | Runs per vector: 100 | Total runs: 2500       ║");
-    eprintln!("║  Pass: {:3} | Fail: {:3}                                      ║",
-              passed, failed);
+    eprintln!(
+        "║  Pass: {:3} | Fail: {:3}                                      ║",
+        passed, failed
+    );
     let var_status = if reports.iter().all(|r| r.variance_count == 0) {
         "0 (perfect) "
-    } else { "DRIFT FOUND " };
+    } else {
+        "DRIFT FOUND "
+    };
     let rl_status = if reports.iter().filter_map(|r| r.rl_q_valid).all(|v| v) {
-        "PASS" } else { "FAIL" };
+        "PASS"
+    } else {
+        "FAIL"
+    };
     let spc_status = if reports.iter().filter_map(|r| r.spc_accuracy).all(|v| v) {
-        "PASS" } else { "FAIL" };
+        "PASS"
+    } else {
+        "FAIL"
+    };
     let par_status = if reports.iter().all(|r| r.cpu_gpu_parity) {
-        "PERFECT" } else { "MISMATCH" };
-    eprintln!("║  Variance: {} | RL Q-bounds: {} | SPC: {} | CPU/GPU: {:8} ║",
-              var_status, rl_status, spc_status, par_status);
+        "PERFECT"
+    } else {
+        "MISMATCH"
+    };
+    eprintln!(
+        "║  Variance: {} | RL Q-bounds: {} | SPC: {} | CPU/GPU: {:8} ║",
+        var_status, rl_status, spc_status, par_status
+    );
     eprintln!("╠══════════════════════════════════════════════════════════════╣");
     for r in &reports {
         eprintln!(
             "║  [{:<12}] [{:<10}] det={} var={:3} rl={:5} spc={:5} par={} {}",
-            r.id, r.category, r.deterministic as u8, r.variance_count,
-            match r.rl_q_valid { Some(v) => if v {"ok"} else {"FAIL"}, None => "n/a" },
-            match r.spc_accuracy { Some(v) => if v {"ok"} else {"FAIL"}, None => "n/a" },
+            r.id,
+            r.category,
+            r.deterministic as u8,
+            r.variance_count,
+            match r.rl_q_valid {
+                Some(v) =>
+                    if v {
+                        "ok"
+                    } else {
+                        "FAIL"
+                    },
+                None => "n/a",
+            },
+            match r.spc_accuracy {
+                Some(v) =>
+                    if v {
+                        "ok"
+                    } else {
+                        "FAIL"
+                    },
+                None => "n/a",
+            },
             if r.cpu_gpu_parity { "ok  " } else { "FAIL" },
             if r.pass { "" } else { &r.notes }
         );
@@ -1397,8 +1728,5 @@ fn regression_aggregate_report() {
     // Write JSON
     let _ = write_report(&reports);
 
-    assert_eq!(
-        failed, 0,
-        "{failed}/25 vectors failed — see report above"
-    );
+    assert_eq!(failed, 0, "{failed}/25 vectors failed — see report above");
 }

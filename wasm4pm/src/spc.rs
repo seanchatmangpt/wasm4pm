@@ -48,11 +48,7 @@ pub enum TrendDirection {
 #[allow(dead_code)]
 pub enum SpecialCause {
     /// Rule 1: Point beyond UCL or LCL.
-    OutOfControl {
-        value: f64,
-        ucl: f64,
-        lcl: f64,
-    },
+    OutOfControl { value: f64, ucl: f64, lcl: f64 },
     /// Rule 2: N consecutive points on same side of CL.
     Shift {
         direction: ShiftDirection,
@@ -171,7 +167,10 @@ impl std::fmt::Display for CapabilityError {
         match self {
             CapabilityError::EmptyData => write!(f, "Cannot calculate capability with empty data"),
             CapabilityError::InvalidLimits => {
-                write!(f, "Invalid specification limits: USL must be greater than LSL")
+                write!(
+                    f,
+                    "Invalid specification limits: USL must be greater than LSL"
+                )
             }
         }
     }
@@ -260,8 +259,7 @@ pub fn spc_std_dev(data: &[f64]) -> f64 {
         return 0.0;
     }
     let m = spc_mean(data);
-    let variance =
-        data.iter().map(|&x| (x - m).powi(2)).sum::<f64>() / (data.len() - 1) as f64;
+    let variance = data.iter().map(|&x| (x - m).powi(2)).sum::<f64>() / (data.len() - 1) as f64;
     variance.sqrt()
 }
 
@@ -277,8 +275,7 @@ pub fn normal_cdf(z: f64) -> f64 {
     let prob = 1.0
         - d * t
             * (0.319381530
-                + t * (-0.356563782
-                    + t * (1.781477937 + t * (-1.821255978 + t * 1.330274429))));
+                + t * (-0.356563782 + t * (1.781477937 + t * (-1.821255978 + t * 1.330274429))));
     if z > 0.0 {
         prob
     } else {
@@ -335,19 +332,19 @@ pub fn inverse_normal_cdf(p: f64) -> f64 {
     if p < P_LOW {
         // Lower region.
         let q = (-2.0 * p.ln()).sqrt();
-        (((((C[0]*q + C[1])*q + C[2])*q + C[3])*q + C[4])*q + C[5])
-            / ((((D[0]*q + D[1])*q + D[2])*q + D[3])*q + 1.0)
+        (((((C[0] * q + C[1]) * q + C[2]) * q + C[3]) * q + C[4]) * q + C[5])
+            / ((((D[0] * q + D[1]) * q + D[2]) * q + D[3]) * q + 1.0)
     } else if p <= P_HIGH {
         // Central region.
         let q = p - 0.5;
         let r = q * q;
-        q * (((((A[0]*r + A[1])*r + A[2])*r + A[3])*r + A[4])*r + A[5])
-            / (((((B[0]*r + B[1])*r + B[2])*r + B[3])*r + B[4])*r + 1.0)
+        q * (((((A[0] * r + A[1]) * r + A[2]) * r + A[3]) * r + A[4]) * r + A[5])
+            / (((((B[0] * r + B[1]) * r + B[2]) * r + B[3]) * r + B[4]) * r + 1.0)
     } else {
         // Upper region.
         let q = (-2.0 * (1.0 - p).ln()).sqrt();
-        -(((((C[0]*q + C[1])*q + C[2])*q + C[3])*q + C[4])*q + C[5])
-            / ((((D[0]*q + D[1])*q + D[2])*q + D[3])*q + 1.0)
+        -(((((C[0] * q + C[1]) * q + C[2]) * q + C[3]) * q + C[4]) * q + C[5])
+            / ((((D[0] * q + D[1]) * q + D[2]) * q + D[3]) * q + 1.0)
     }
 }
 
