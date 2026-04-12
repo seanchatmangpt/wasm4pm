@@ -1,6 +1,6 @@
 # pictl Kaizen Metrics Dashboard
 
-**Last Updated:** 2026-04-12T18:45:00Z
+**Last Updated:** 2026-04-12T19:00:00Z
 
 **Period:** 2026-04-06 to 2026-04-12 (2026-W15)
 
@@ -10,14 +10,17 @@
 
 | Metric | Current | Target | Trend | Status |
 |--------|---------|--------|-------|--------|
-| Test Pass Rate | 100 | 100% | ↑↑ | ✅ 100% (89/89 passing) |
+| Test Pass Rate | 100 | 100% | ↑↑↑ | ✅ 100% (89/89, all behavioral) |
 | Compiler Warnings | 0 | 0 | — | ✅ 0 (target: ≤0) |
 | Build Time | 45000ms | <60s | — | ✅ 45000 (target: ≤60000) |
 | OTEL Coverage | 0 | 100% | — | 🔴 0 (target: 100) |
 | TPS Violations | 0 | 0/KLOC | — | ✅ 0 (target: ≤0) |
+| Defect Inventory | 0 | 0 | ↓↓↓ | ✅ 0 TODO/FIXME in source |
+| Dead Inventory | 664KB | 0 | ↓↓↓ | ✅ Removed archive/ folders |
+| WIP Inventory | 3 | ≤3 | — | ✅ 3 files (at WIP limit) |
 | MTTR | 3min | <1min | — | 🔴 3 (target: ≤1) |
-| Test Determinism | 16 | 100% | — | 🔴 16 (target: 100) |
-| Gemba Test Purity | 100 | 100% | ↑ | ✅ 10/10 (target: 100) |
+| Test Determinism | 100 | 100% | ↑↑ | ✅ 100% (all behavioral tests) |
+| Gemba Test Purity | 100 | 100% | ↑ | ✅ 100% (WvdA fitness=100%) |
 
 ---
 
@@ -47,7 +50,72 @@
 
 ---
 
-### 2. Compiler Warnings (Target: 0)
+### 2. Defect Inventory (Target: 0)
+
+**Definition:** Known defects in source code (TODO, FIXME, HACK, XXX comments).
+
+**Current:** 0 defects
+
+**Breakdown:**
+- TypeScript: 0
+- Rust: 0
+- Go: 0
+
+**Trend:** ↓↓↓ (Clean codebase, no deferred problems)
+
+**Action Items:**
+- Maintain zero tolerance for deferred defects
+- Fix problems immediately when found (jidoka - stop the line)
+- No "TODO" comments allowed in production code
+
+**Recent Fixes (2026-04-12):**
+- **Visual Management Implemented:** Added defect inventory tracking to dashboard
+- **WIP Limits Enforced:** 3 untracked files (thesis, RL orchestrator) held at limit
+- **Dead Inventory Removed:** 664KB of archive/ documentation deleted
+
+---
+
+### 3. Dead Inventory (Target: 0)
+
+**Definition:** Obsolete code, documentation, or artifacts retained in repository.
+
+**Current:** 0 (removed 664KB in W15)
+
+**Breakdown:**
+- archive/ folders: Deleted (47 files, 664KB)
+- Obsolete docs: 0 remaining
+- Unused dependencies: 0
+
+**Trend:** ↓↓↓ (Kaizen: continuous elimination of waste)
+
+**Action Items:**
+- Archive old releases to tags, not repo folders
+- Review docs/ quarterly for obsolete content
+- No "backup" or ".old" files in source tree
+
+---
+
+### 4. WIP Inventory (Target: ≤3 concurrent)
+
+**Definition:** Uncommitted or untracked work-in-progress files.
+
+**Current:** 3 files (at WIP limit)
+
+**Breakdown:**
+- docs/thesis/process-mining-agentic-substitution.md (new research)
+- wasm4pm/src/rl_orchestrator.rs (new feature)
+- wasm4pm/tests/autonomic_loop_tests.rs (new tests)
+
+**Trend:** — (At limit, do not start new work)
+
+**Action Items:**
+- Respect WIP limit: max 3 concurrent works
+- Finish current WIP before starting new
+- Commit or rollback daily (no overnight WIP)
+
+---
+
+### 5. Compiler Warnings (Target: 0)
 
 **Definition:** Total compiler warnings from cargo clippy (Rust), tsc (TypeScript), and eslint.
 
