@@ -374,7 +374,7 @@ export function getExampleJsonConfig(): string {
       observability: {
         logLevel: 'info',
         metricsEnabled: false,
-        otel: { enabled: false, exporter: 'otlp', required: false },
+        otel: { enabled: true, exporter: 'otlp', required: false },
       },
       watch: { enabled: false, poll_interval: 1000 },
       output: { format: 'human', destination: 'stdout', pretty: true, colorize: true },
