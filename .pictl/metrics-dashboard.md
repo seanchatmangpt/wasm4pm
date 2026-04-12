@@ -1,6 +1,6 @@
 # pictl Kaizen Metrics Dashboard
 
-**Last Updated:** 2026-04-12T19:15:00Z
+**Last Updated:** 2026-04-12T20:30:00Z
 
 **Period:** 2026-04-06 to 2026-04-12 (2026-W15)
 
@@ -48,6 +48,7 @@
 - **Silent Fallbacks Removed:** Eliminated from 12 commands (no more isWasmAvailable guards)
 - **Panic Hook:** Made optional with graceful warning (not required for all build targets)
 - **Test Quality Improvement:** From 335 tests (73% zero-fitness) → 89 tests (100% behavioral)
+- **Export Muda Eliminated (2026-04-12):** Removed 31 unused exports (compatibility.ts deleted, 8 from result.ts, 8 from certification.ts, 8 from redaction.ts)
 
 ---
 
