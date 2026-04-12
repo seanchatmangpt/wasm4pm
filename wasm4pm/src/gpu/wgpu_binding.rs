@@ -394,9 +394,9 @@ impl GpuLinUcb {
         });
 
         let pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
-            label:       Some("linucb_pipeline"),
-            layout:      Some(&pipeline_layout),
-            module:      &shader,
+            label: Some("linucb_pipeline"),
+            layout: Some(&pipeline_layout),
+            module: &shader,
             entry_point: "linucb_select",
         });
 
@@ -672,12 +672,10 @@ pub fn select_algorithm(features: &LogFeatures, state: &LinUcbState) -> LinUcbRe
         }
 
         match block_on(GpuLinUcb::new()) {
-            Ok(Some(gpu)) => {
-                match block_on(gpu.infer_single(features, state)) {
-                    Ok(result) => return result,
-                    Err(e) => eprintln!("[LinUCB] GPU inference error — CPU fallback: {e}"),
-                }
-            }
+            Ok(Some(gpu)) => match block_on(gpu.infer_single(features, state)) {
+                Ok(result) => return result,
+                Err(e) => eprintln!("[LinUCB] GPU inference error — CPU fallback: {e}"),
+            },
             Ok(None) => { /* no GPU adapter — CPU fallback below */ }
             Err(e) => eprintln!("[LinUCB] GPU init error — CPU fallback: {e}"),
         }
@@ -1002,46 +1000,65 @@ mod tests {
     //      (not ml::LinUCBAgent) — GPU/CPU parity is validated in gpu_cpu_parity()
     #[test]
     fn cross_module_dimension_and_output_validity() {
-        use crate::ml::linucb::{LinUCBAgent, N_ACTIONS as ML_N_ACTIONS, N_FEATURES as ML_N_FEATURES};
+        use crate::ml::linucb::{
+            LinUCBAgent, N_ACTIONS as ML_N_ACTIONS, N_FEATURES as ML_N_FEATURES,
+        };
 
         // Dimension compatibility — required for any future algorithmic unification
         assert_eq!(N_FEATURES, ML_N_FEATURES,
             "Feature dimension mismatch: gpu::N_FEATURES={N_FEATURES} ml::N_FEATURES={ML_N_FEATURES}");
-        assert_eq!(N_ACTIONS, ML_N_ACTIONS,
-            "Action count mismatch: gpu::N_ACTIONS={N_ACTIONS} ml::N_ACTIONS={ML_N_ACTIONS}");
+        assert_eq!(
+            N_ACTIONS, ML_N_ACTIONS,
+            "Action count mismatch: gpu::N_ACTIONS={N_ACTIONS} ml::N_ACTIONS={ML_N_ACTIONS}"
+        );
 
         // Both must return valid outputs for the same query
         let raw: [f32; 8] = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8];
         let gpu_features = LogFeatures {
-            trace_length:         raw[0], elapsed_time:         raw[1],
-            rework_count:         raw[2], unique_activities:    raw[3],
-            avg_inter_event_time: raw[4], log_size_bin:         raw[5],
-            activity_entropy:     raw[6], variant_ratio:        raw[7],
+            trace_length: raw[0],
+            elapsed_time: raw[1],
+            rework_count: raw[2],
+            unique_activities: raw[3],
+            avg_inter_event_time: raw[4],
+            log_size_bin: raw[5],
+            activity_entropy: raw[6],
+            variant_ratio: raw[7],
         };
 
         let gpu_state = LinUcbState::default();
-        let ml_agent  = LinUCBAgent::new();
+        let ml_agent = LinUCBAgent::new();
 
         let (gpu_action, gpu_ucb, _) = gpu_state.infer_cpu(&gpu_features);
-        let (ml_action, ml_ucb)      = ml_agent.select(&raw);
+        let (ml_action, ml_ucb) = ml_agent.select(&raw);
 
         // Both must produce in-bounds action indices
-        assert!((gpu_action as usize) < N_ACTIONS,
-            "gpu action {gpu_action} out of bounds");
-        assert!((ml_action as usize) < ML_N_ACTIONS,
-            "ml action {ml_action} out of bounds");
+        assert!(
+            (gpu_action as usize) < N_ACTIONS,
+            "gpu action {gpu_action} out of bounds"
+        );
+        assert!(
+            (ml_action as usize) < ML_N_ACTIONS,
+            "ml action {ml_action} out of bounds"
+        );
 
         // Both must produce finite UCB values
-        assert!(gpu_ucb.is_finite(), "gpu UCB value is not finite: {gpu_ucb}");
-        assert!(ml_ucb.is_finite(),  "ml UCB value is not finite: {ml_ucb}");
+        assert!(
+            gpu_ucb.is_finite(),
+            "gpu UCB value is not finite: {gpu_ucb}"
+        );
+        assert!(ml_ucb.is_finite(), "ml UCB value is not finite: {ml_ucb}");
 
         // On a fresh agent (W=0, b=0), gpu Q̂_a = α√(x^T A^{-1} x) for all actions
         // (same UCB bonus, no bias) → all actions tied → argmax = 0
         // ml also has W=0, b=0 → all tied → argmax = 0
         // Note: both implementations break ties by returning the lowest-index action.
-        assert_eq!(gpu_action, 0,
-            "Fresh gpu agent should return action 0 (all tied), got {gpu_action}");
-        assert_eq!(ml_action, 0,
-            "Fresh ml agent should return action 0 (all tied), got {ml_action}");
+        assert_eq!(
+            gpu_action, 0,
+            "Fresh gpu agent should return action 0 (all tied), got {gpu_action}"
+        );
+        assert_eq!(
+            ml_action, 0,
+            "Fresh ml agent should return action 0 (all tied), got {ml_action}"
+        );
     }
 }
