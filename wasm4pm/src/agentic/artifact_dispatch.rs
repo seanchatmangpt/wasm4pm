@@ -7,19 +7,17 @@ pub struct DefaultArtifactDispatcher;
 impl ArtifactDispatcher for DefaultArtifactDispatcher {
     fn plan_artifacts(&self, req: &ArtifactRequest) -> Result<ArtifactPlan, AgenticError> {
         // Determine role: use selected_role if present, else derive from phase
-        let role = req.selected_role.clone().unwrap_or_else(|| {
-            match &req.task.phase {
-                WorkflowPhase::Intake => AgentRole::Explorer,
-                WorkflowPhase::Triage => AgentRole::Reviewer,
-                WorkflowPhase::Analyze => AgentRole::Explorer,
-                WorkflowPhase::Plan => AgentRole::Planner,
-                WorkflowPhase::Execute => AgentRole::Executor,
-                WorkflowPhase::Validate => AgentRole::Validator,
-                WorkflowPhase::Escalate => AgentRole::Escalator,
-                WorkflowPhase::Complete => AgentRole::Auditor,
-                WorkflowPhase::Failed => AgentRole::Escalator,
-                WorkflowPhase::Custom(_) => AgentRole::Explorer,
-            }
+        let role = req.selected_role.clone().unwrap_or(match &req.task.phase {
+            WorkflowPhase::Intake => AgentRole::Explorer,
+            WorkflowPhase::Triage => AgentRole::Reviewer,
+            WorkflowPhase::Analyze => AgentRole::Explorer,
+            WorkflowPhase::Plan => AgentRole::Planner,
+            WorkflowPhase::Execute => AgentRole::Executor,
+            WorkflowPhase::Validate => AgentRole::Validator,
+            WorkflowPhase::Escalate => AgentRole::Escalator,
+            WorkflowPhase::Complete => AgentRole::Auditor,
+            WorkflowPhase::Failed => AgentRole::Escalator,
+            WorkflowPhase::Custom(_) => AgentRole::Explorer,
         });
 
         // Role → artifacts mapping
