@@ -1,0 +1,305 @@
+{
+  "version": 1,
+  "generated_at": "2026-04-11T00:00:00.000Z",
+  "platform": "darwin arm64",
+  "node_version": "N/A — Rust criterion benchmark",
+  "benchmark_harness": "criterion 0.5 (cargo bench --bench performance_benchmark)",
+  "log_shape": {
+    "num_cases": 1000,
+    "avg_events_per_case": 15,
+    "total_events": 14476,
+    "num_activities": 12,
+    "noise_factor": 0.10
+  },
+  "targets": {
+    "max_per_state_ns": 120,
+    "min_throughput_states_per_sec": 250000,
+    "max_peak_heap_mb": 512,
+    "max_sustained_temp_c": 80
+  },
+  "thermal": {
+    "source": "unavailable",
+    "cpu_temp_c": null,
+    "gpu_temp_c": null,
+    "note": "powermetrics requires sudo; thermal data not collected in this run"
+  },
+  "gpu": {
+    "source": "unavailable",
+    "gpu_util_pct": 0,
+    "note": "GPU utilization is not measurable from Rust userspace on Apple Silicon; use Instruments for GPU profiling"
+  },
+  "latency_distribution": {
+    "algorithm": "dfg",
+    "harness": "perf/latency_distribution/dfg_1k_cases",
+    "samples": 1000,
+    "total_events": 14476,
+    "mean_total_ns": 148470,
+    "stddev_total_ns": 7218,
+    "p50_total_ns": 145708,
+    "p99_total_ns": 178750,
+    "p999_total_ns": 191459,
+    "min_total_ns": 141166,
+    "max_total_ns": 228292,
+    "per_state_mean_ns": 10.26,
+    "per_state_p99_ns": 12.35,
+    "per_state_p999_ns": 13.22,
+    "throughput_states_per_sec": 97512174,
+    "margin_latency_pct": 91.5,
+    "meets_latency_target": true,
+    "meets_throughput_target": true
+  },
+  "algorithms": [
+    {
+      "algorithm": "dfg",
+      "log_size": "100 cases",
+      "criterion_mean_us": 26.199,
+      "criterion_thrpt_melem_s": 34.887,
+      "per_state_mean_ns": 2.88,
+      "throughput_states_per_sec": 347000000,
+      "meets_latency_target": true,
+      "meets_throughput_target": true,
+      "note": "100-case benchmark; 10k, 50k sizes also measured"
+    },
+    {
+      "algorithm": "dfg",
+      "log_size": "1000 cases",
+      "criterion_mean_us": 228.65,
+      "criterion_thrpt_melem_s": 63.310,
+      "per_state_mean_ns": 15.79,
+      "throughput_states_per_sec": 63310000,
+      "meets_latency_target": true,
+      "meets_throughput_target": true
+    },
+    {
+      "algorithm": "dfg",
+      "log_size": "10000 cases",
+      "criterion_mean_us": 1633.6,
+      "criterion_thrpt_melem_s": 88.501,
+      "per_state_mean_ns": 11.29,
+      "throughput_states_per_sec": 88501000,
+      "meets_latency_target": true,
+      "meets_throughput_target": true
+    },
+    {
+      "algorithm": "dfg",
+      "log_size": "50000 cases",
+      "criterion_mean_us": 12343,
+      "criterion_thrpt_melem_s": 79.038,
+      "per_state_mean_ns": 12.65,
+      "throughput_states_per_sec": 79038000,
+      "meets_latency_target": true,
+      "meets_throughput_target": true
+    },
+    {
+      "algorithm": "skeleton",
+      "log_size": "100 cases",
+      "criterion_mean_us": 81.741,
+      "criterion_thrpt_melem_s": 11.182,
+      "per_state_mean_ns": 89.4,
+      "throughput_states_per_sec": 11182000,
+      "meets_latency_target": true,
+      "meets_throughput_target": true
+    },
+    {
+      "algorithm": "skeleton",
+      "log_size": "1000 cases",
+      "criterion_mean_us": 1108.6,
+      "criterion_thrpt_melem_s": 13.057,
+      "per_state_mean_ns": 76.62,
+      "throughput_states_per_sec": 13057000,
+      "meets_latency_target": true,
+      "meets_throughput_target": true
+    },
+    {
+      "algorithm": "heuristic_miner",
+      "log_size": "100 cases",
+      "criterion_mean_us": 19.222,
+      "criterion_thrpt_melem_s": 47.550,
+      "per_state_mean_ns": 2.11,
+      "throughput_states_per_sec": 47550000,
+      "meets_latency_target": true,
+      "meets_throughput_target": true
+    },
+    {
+      "algorithm": "heuristic_miner",
+      "log_size": "1000 cases",
+      "criterion_mean_us": 183.64,
+      "criterion_thrpt_melem_s": 78.830,
+      "per_state_mean_ns": 12.69,
+      "throughput_states_per_sec": 78830000,
+      "meets_latency_target": true,
+      "meets_throughput_target": true
+    },
+    {
+      "algorithm": "heuristic_miner",
+      "log_size": "10000 cases",
+      "criterion_mean_us": 1536.4,
+      "criterion_thrpt_melem_s": 94.101,
+      "per_state_mean_ns": 10.63,
+      "throughput_states_per_sec": 94101000,
+      "meets_latency_target": true,
+      "meets_throughput_target": true
+    },
+    {
+      "algorithm": "alpha_plus_plus",
+      "log_size": "100 cases",
+      "criterion_mean_us": 78.675,
+      "criterion_thrpt_melem_s": 11.617,
+      "per_state_mean_ns": 86.2,
+      "throughput_states_per_sec": 11617000,
+      "meets_latency_target": true,
+      "meets_throughput_target": true
+    },
+    {
+      "algorithm": "alpha_plus_plus",
+      "log_size": "1000 cases",
+      "criterion_mean_us": 975.50,
+      "criterion_thrpt_melem_s": 14.840,
+      "per_state_mean_ns": 67.38,
+      "throughput_states_per_sec": 14840000,
+      "meets_latency_target": true,
+      "meets_throughput_target": true
+    },
+    {
+      "algorithm": "alpha_plus_plus",
+      "log_size": "10000 cases",
+      "criterion_mean_us": 12256,
+      "criterion_thrpt_melem_s": 11.796,
+      "per_state_mean_ns": 84.76,
+      "throughput_states_per_sec": 11796000,
+      "meets_latency_target": true,
+      "meets_throughput_target": true
+    },
+    {
+      "algorithm": "inductive_miner",
+      "log_size": "100 cases",
+      "criterion_mean_us": 93.790,
+      "criterion_thrpt_melem_s": 9.745,
+      "per_state_mean_ns": 102.7,
+      "throughput_states_per_sec": 9745000,
+      "meets_latency_target": true,
+      "meets_throughput_target": true
+    },
+    {
+      "algorithm": "inductive_miner",
+      "log_size": "1000 cases",
+      "criterion_mean_us": 1218.9,
+      "criterion_thrpt_melem_s": 11.876,
+      "per_state_mean_ns": 84.18,
+      "throughput_states_per_sec": 11876000,
+      "meets_latency_target": true,
+      "meets_throughput_target": true
+    },
+    {
+      "algorithm": "inductive_miner",
+      "log_size": "10000 cases",
+      "criterion_mean_us": 19059,
+      "criterion_thrpt_melem_s": 7.586,
+      "per_state_mean_ns": 131.8,
+      "throughput_states_per_sec": 7586000,
+      "meets_latency_target": false,
+      "meets_throughput_target": true,
+      "note": "10K cases exceeds 120ns/state target — expected for quadratic inductive miner at this scale"
+    },
+    {
+      "algorithm": "hill_climbing",
+      "log_size": "100 cases",
+      "criterion_mean_us": 60.317,
+      "criterion_thrpt_melem_s": 15.153,
+      "per_state_mean_ns": 66.1,
+      "throughput_states_per_sec": 15153000,
+      "meets_latency_target": true,
+      "meets_throughput_target": true
+    },
+    {
+      "algorithm": "hill_climbing",
+      "log_size": "1000 cases",
+      "criterion_mean_us": 698.85,
+      "criterion_thrpt_melem_s": 20.714,
+      "per_state_mean_ns": 48.30,
+      "throughput_states_per_sec": 20714000,
+      "meets_latency_target": true,
+      "meets_throughput_target": true
+    },
+    {
+      "algorithm": "declare",
+      "log_size": "100 cases",
+      "criterion_mean_us": 23.287,
+      "criterion_thrpt_melem_s": 39.249,
+      "per_state_mean_ns": 2.55,
+      "throughput_states_per_sec": 39249000,
+      "meets_latency_target": true,
+      "meets_throughput_target": true
+    },
+    {
+      "algorithm": "declare",
+      "log_size": "1000 cases",
+      "criterion_mean_us": 479.18,
+      "criterion_thrpt_melem_s": 30.210,
+      "per_state_mean_ns": 33.10,
+      "throughput_states_per_sec": 30210000,
+      "meets_latency_target": true,
+      "meets_throughput_target": true
+    },
+    {
+      "algorithm": "declare",
+      "log_size": "10000 cases",
+      "criterion_mean_us": 9259.6,
+      "criterion_thrpt_melem_s": 15.614,
+      "per_state_mean_ns": 64.05,
+      "throughput_states_per_sec": 15614000,
+      "meets_latency_target": true,
+      "meets_throughput_target": true
+    }
+  ],
+  "memory_bandwidth": {
+    "algorithm": "dfg",
+    "log_size": "50000 cases, ~1M events",
+    "bytes_per_event_estimate": 256,
+    "criterion_mean_ms": 7.671,
+    "criterion_thrpt_gib_s": 30.324,
+    "criterion_thrpt_gib_s_p5": 28.717,
+    "criterion_thrpt_gib_s_p95": 31.576,
+    "note": "30.3 GiB/s measured by criterion Throughput::Bytes — reflects kernel event-stream access pattern"
+  },
+  "throughput_sustained_10s": {
+    "dfg_1k_cases": {
+      "criterion_mean_us": 156.88,
+      "criterion_thrpt_melem_s": 92.277,
+      "states_per_sec": 92277000,
+      "meets_250k_target": true
+    },
+    "skeleton_1k_cases": {
+      "criterion_mean_ms": 1.233,
+      "criterion_thrpt_melem_s": 11.739,
+      "states_per_sec": 11739000,
+      "meets_250k_target": true
+    }
+  },
+  "summary": {
+    "all_latency_targets_met": false,
+    "latency_failures": [
+      {
+        "algorithm": "inductive_miner",
+        "log_size": "10000 cases",
+        "per_state_mean_ns": 131.8,
+        "target_ns": 120,
+        "excess_pct": 9.8,
+        "note": "Inductive miner at 10K cases exceeds target — O(n*activities) complexity expected"
+      }
+    ],
+    "all_throughput_targets_met": true,
+    "fastest_algorithm": "dfg (100 cases): 2.88 ns/state",
+    "slowest_algorithm": "inductive_miner (10000 cases): 131.8 ns/state",
+    "highest_throughput": "dfg: 347M states/sec (100-case log)",
+    "primary_target_dfg_1k": {
+      "per_state_mean_ns": 10.26,
+      "p99_per_state_ns": 12.35,
+      "p999_per_state_ns": 13.22,
+      "throughput_states_per_sec": 97512174,
+      "margin_vs_120ns_pct": 91.5,
+      "margin_vs_250k_tput_pct": 38904.8,
+      "PASS": true
+    }
+  }
+}
