@@ -36,6 +36,8 @@ export class StateMachine {
   private transitionHistory: LifecycleEvent[] = [];
   private lastTransitionTime: Date | null = null;
   private stateEnteredAt: Date = new Date();
+  private recoveryHistory: number[] = [];
+  private recoverySinceStart = 0;
 
   /**
    * Gets the current state
@@ -173,5 +175,38 @@ export class StateMachine {
    */
   isDegraded(): boolean {
     return this.currentState === 'degraded';
+  }
+
+  /**
+   * Record a recovery operation duration for MTTR tracking
+   * @param durationMs - Recovery duration in milliseconds
+   */
+  recordRecovery(durationMs: number): void {
+    this.recoveryHistory.push(durationMs);
+    this.recoverySinceStart++;
+
+    // Keep only last 100 recovery times to prevent unbounded growth
+    if (this.recoveryHistory.length > 100) {
+      this.recoveryHistory.shift();
+    }
+  }
+
+  /**
+   * Get Mean Time To Recovery (MTTR) in milliseconds
+   * Returns the average of all recorded recovery durations
+   * @returns MTTR in milliseconds, or 0 if no recoveries recorded
+   */
+  getMTTR(): number {
+    if (this.recoveryHistory.length === 0) return 0;
+    const sum = this.recoveryHistory.reduce((a, b) => a + b, 0);
+    return sum / this.recoveryHistory.length;
+  }
+
+  /**
+   * Get number of recoveries since engine start
+   * @returns Recovery count
+   */
+  getRecoveryCount(): number {
+    return this.recoverySinceStart;
   }
 }
