@@ -8,7 +8,7 @@ RESULTS_DIR  := results
 TIMESTAMP    := $(shell date +%Y%m%d_%H%M%S)
 
 .PHONY: bench bench-rust bench-wasm bench-data bench-ci bench-quick \
-        bench-save-baseline bench-compare clean-bench help doctor
+        bench-save-baseline bench-compare bench-regression bench-trends clean-bench help doctor
 
 # ── Top-level: Rust Criterion groups + Node.js workers, fully concurrent ─────
 bench: bench-data
@@ -79,6 +79,25 @@ bench-compare:
 	cargo bench --release --bench fast_algorithms -- --baseline $$LABEL; \
 	cargo bench --release --bench analytics       -- --baseline $$LABEL
 
+# ── Regression Detection: Compare PR to main baseline ────────────────────────
+bench-regression:
+	@bash .pictl/benchmarks/detect-regression.sh .pictl/benchmarks/baselines/main-latest.json
+
+# ── Update Main Baseline: Runs after merge to main ──────────────────────────
+bench-baseline-update:
+	@bash .pictl/benchmarks/update-baseline.sh
+
+bench-baseline-update-ci:
+	@bash .pictl/benchmarks/update-baseline.sh --ci
+
+# ── Benchmark Trends: Generate trend graphs ──────────────────────────────────
+bench-trends:
+	@echo "=== Benchmark Trends Report ==="
+	@python3 .pictl/benchmarks/plot-trends.py --format summary --days 30
+	@echo ""
+	@echo "Fast algorithms (last 7 days):"
+	@python3 .pictl/benchmarks/plot-trends.py --algorithm dfg --profile fast --days 7 --format ascii || true
+
 # ── Cleanup ───────────────────────────────────────────────────────────────────
 clean-bench:
 	rm -rf $(RESULTS_DIR)/*.json $(RESULTS_DIR)/*.csv $(RESULTS_DIR)/*.log
@@ -97,9 +116,14 @@ help:
 	@echo "  make bench-data         — Download BPI Challenge datasets"
 	@echo "  make bench-ci           — CI mode (fast, no stats)"
 	@echo "  make bench-quick        — Smoke-test (compile check only)"
-	@echo "  make bench-save-baseline LABEL=main  — Save timing baseline"
-	@echo "  make bench-compare LABEL=main        — Compare against baseline"
-	@echo "  make clean-bench        — Remove result files and criterion cache"
 	@echo ""
-	@echo "Development Targets:"
+	@echo "Regression Detection & Baselines:"
+	@echo "  make bench-baseline-update      — Save new baseline (run on main)"
+	@echo "  make bench-baseline-update-ci   — Save baseline CI mode"
+	@echo "  make bench-regression           — Detect regressions (run on PR)"
+	@echo "  make bench-trends               — Show trend analysis (last 30 days)"
+	@echo "  make bench-compare LABEL=main   — Compare Criterion against baseline"
+	@echo ""
+	@echo "Cleanup & Diagnostics:"
+	@echo "  make clean-bench        — Remove result files and criterion cache"
 	@echo "  make doctor             — Run environment diagnostics (24 checks)"
