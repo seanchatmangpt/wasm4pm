@@ -48,7 +48,8 @@ rand = "0.8"
 rand_distr = "0.4"
 statrs = { version = "0.17", default-features = false, optional = true }
 rayon = { version = "1.10", optional = true }
-wgpu  = { version = "0.19", optional = true }
+wgpu     = { version = "0.19", optional = true }
+pollster = { version = "0.3",  optional = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 web-sys = { version = "0.3", features = [] }
@@ -218,7 +219,7 @@ simd = []  # SIMD acceleration (always available on WASM)
 console_error_panic_hook = ["dep:console_error_panic_hook"]
 
 # GPU acceleration — RTX 4090 target, falls back to CPU when no GPU present
-gpu = ["dep:wgpu"]
+gpu = ["dep:wgpu", "dep:pollster"]
 
 [profile.release]
 # Optimize for binary size ("z" instead of "3")
