@@ -4,7 +4,7 @@ import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import type { OutputOptions } from '../output.js';
 import { WasmLoader } from '@pictl/engine';
-import { isWasmAvailable, handleWasmUnavailable } from './shared.js';
+import { createQuietObservabilityLayer } from '../observability-util.js';
 
 export interface TemporalOptions extends OutputOptions {
   input?: string;
@@ -67,14 +67,11 @@ export const temporal = defineCommand({
       quiet: ctx.args.quiet,
     });
 
-    // Check WASM availability before any WASM-dependent work
-    // Pass quiet=true when in JSON mode to suppress observability logs
-    const isJson = ctx.args.format === 'json';
-    if (!(await isWasmAvailable(isJson))) {
-      handleWasmUnavailable(isJson ? 'json' : 'human');
-    }
-
     try {
+      // In JSON mode, suppress observability logs to keep output clean
+      if (ctx.args.format === 'json') {
+        WasmLoader.reset();
+      }
       // Resolve input path (positional OR --file/-i)
       const inputPath: string | undefined =
         (ctx.args.input as string | undefined) || (ctx.args.file as string | undefined);
@@ -103,8 +100,11 @@ export const temporal = defineCommand({
         formatter.debug(`Threshold: ${threshold}, Timestamp key: ${timestampKey}`);
       }
 
-      // Load WASM module
-      const loader = WasmLoader.getInstance();
+      // Load WASM module with quiet observability in JSON mode
+      const loaderConfig = ctx.args.format === 'json'
+        ? { observability: createQuietObservabilityLayer() }
+        : {};
+      const loader = WasmLoader.getInstance(loaderConfig);
       await loader.init();
       const wasm = loader.get();
 
