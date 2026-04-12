@@ -4,6 +4,7 @@ import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import type { OutputOptions } from '../output.js';
 import { WasmLoader } from '@pictl/engine';
+import { createQuietObservabilityLayer } from '../observability-util.js';
 
 export interface ConformanceOptions extends OutputOptions {
   input?: string;
@@ -94,7 +95,13 @@ export const conformance = defineCommand({
 
       const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
       const method = ctx.args.method as 'token-replay' | 'alignment';
-      const threshold = parseFloat((ctx.args.threshold as string) || '0.8');
+      const rawThreshold = ctx.args.threshold as string | undefined;
+      const parsedThreshold = rawThreshold != null ? parseFloat(rawThreshold) : undefined;
+      if (parsedThreshold !== undefined && Number.isNaN(parsedThreshold)) {
+        formatter.error('Invalid --threshold value: must be a number');
+        process.exit(EXIT_CODES.config_error);
+      }
+      const threshold = parsedThreshold ?? 0.8;
 
       if (formatter instanceof HumanFormatter) {
         formatter.info(`Conformance checking: ${inputPath}`);
@@ -102,7 +109,8 @@ export const conformance = defineCommand({
       }
 
       // Load WASM module
-      const loader = WasmLoader.getInstance();
+      const loaderConfig = ctx.args.format === 'json' ? { observability: createQuietObservabilityLayer() } : {};
+      const loader = WasmLoader.getInstance(loaderConfig);
       await loader.init();
       const wasm = loader.get();
 
@@ -147,17 +155,8 @@ export const conformance = defineCommand({
         if (formatter instanceof HumanFormatter) {
           formatter.debug('Running alignment-based conformance...');
         }
-        try {
-          const raw = wasm.conformance_alignment_fitness(logHandle, activityKey, JSON.stringify(modelData));
-          conformanceResult = typeof raw === 'string' ? JSON.parse(raw) : raw;
-        } catch {
-          // Fallback to token replay if alignment not available
-          if (formatter instanceof HumanFormatter) {
-            formatter.warn('Alignment-based conformance not available, falling back to token replay');
-          }
-          const raw = wasm.conformance_token_replay(logHandle, activityKey, JSON.stringify(modelData));
-          conformanceResult = typeof raw === 'string' ? JSON.parse(raw) : raw;
-        }
+        const raw = wasm.conformance_alignment_fitness(logHandle, activityKey, JSON.stringify(modelData));
+        conformanceResult = typeof raw === 'string' ? JSON.parse(raw) : raw;
       } else {
         if (formatter instanceof HumanFormatter) {
           formatter.debug('Running token-based replay conformance...');
@@ -177,11 +176,7 @@ export const conformance = defineCommand({
       }
 
       // Free log handle
-      try {
-        wasm.delete_object(logHandle);
-      } catch {
-        /* best-effort */
-      }
+      wasm.delete_object(logHandle);
 
       // Build result
       const result = {

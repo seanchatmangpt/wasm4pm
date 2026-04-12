@@ -1,0 +1,33 @@
+# ESLint Ignore Patterns — pictl monorepo
+# Fixtures and mock helpers are exempt from Gemba enforcement
+
+# Dependencies
+node_modules/
+dist/
+build/
+coverage/
+
+# Generated code
+*.generated.ts
+*.d.ts
+
+# Fixtures and test helpers (mocks/stubs allowed here)
+packages/testing/src/fixtures/
+packages/testing/src/mocks/
+packages/*/src/__tests__/fixtures/
+packages/*/src/__tests__/mocks/
+wasm4pm/__tests__/fixtures/
+wasm4pm/__tests__/helpers/
+
+# Temporary and build artifacts
+.next/
+.nuxt/
+out/
+.turbo/
+*.tmp.*
+
+# Config and tooling (no linting needed)
+scripts/
+.github/
+unrdf.toml
+vitest.config.ts

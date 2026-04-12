@@ -30,6 +30,29 @@ export enum PlanStepType {
   DISCOVER_SIMULATED_ANNEALING = 'discover_simulated_annealing',
   DISCOVER_OPTIMIZED_DFG = 'discover_optimized_dfg',
 
+  // Wave 1 Discovery
+  DISCOVER_TRANSITION_SYSTEM = 'discover_transition_system',
+  DISCOVER_LOG_TO_TRIE = 'discover_log_to_trie',
+  DISCOVER_CAUSAL_GRAPH = 'discover_causal_graph',
+  DISCOVER_PERFORMANCE_SPECTRUM = 'discover_performance_spectrum',
+  DISCOVER_BATCHES = 'discover_batches',
+  DISCOVER_GENERALIZATION = 'discover_generalization',
+  DISCOVER_ETCONFORMANCE_PRECISION = 'discover_etconformance_precision',
+  DISCOVER_CORRELATION_MINER = 'discover_correlation_miner',
+  DISCOVER_COMPLEXITY_METRICS = 'discover_complexity_metrics',
+  DISCOVER_PETRI_NET_REDUCTION = 'discover_petri_net_reduction',
+  DISCOVER_ALIGNMENT_FITNESS = 'discover_alignment_fitness',
+
+  // Wave 1 Import/Export
+  IMPORT_PNML = 'import_pnml',
+  IMPORT_BPMN = 'import_bpmn',
+  CONVERT_POWL_TO_PROCESS_TREE = 'convert_powl_to_process_tree',
+  EXPORT_YAWL = 'export_yawl',
+
+  // Wave 1 Simulation
+  SIMULATE_PLAYOUT = 'simulate_playout',
+  SIMULATE_MONTE_CARLO = 'simulate_monte_carlo',
+
   // POWL Discovery
   DISCOVER_POWL = 'discover_powl',
   DISCOVER_POWL_TREE = 'discover_powl_tree',

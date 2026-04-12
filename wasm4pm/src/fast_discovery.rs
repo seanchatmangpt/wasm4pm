@@ -35,7 +35,10 @@ pub fn discover_astar(
                 while !open_set.is_empty() && iterations < max_iterations {
                     open_set
                         .sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
-                    let (current_dfg, _score) = open_set.pop().unwrap();
+                    let (current_dfg, _score) = match open_set.pop() {
+                        Some(item) => item,
+                        None => break, // Should not happen due to is_empty() check
+                    };
 
                     // Build candidate DFGs via iterator chain; heuristic is inlined,
                     // no separate complexity_penalty binding needed

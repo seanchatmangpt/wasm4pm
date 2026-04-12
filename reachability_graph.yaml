@@ -1,0 +1,326 @@
+reachability_graph:
+  net_id: lawful_dispatch_system
+  total_reachable_markings: 8
+  search_method: BFS
+
+  markings:
+    M0:
+      name: "Initial state"
+      tokens:
+        admissible_mask: 1
+        features_vector: 1
+        guard_results: 0
+        constraint_satisfied: 0
+        spc_alerts: 0
+        marking_current: 1
+        transition_legal: 0
+        rl_q_state: 0
+      total_tokens: 3
+      enabled_transitions:
+        - guard_check
+        - constraint_eval
+        - spc_rule_check
+      outgoing_edges:
+        - target: M1
+          via_transitions: [guard_check, constraint_eval, spc_rule_check]
+          sync: parallel_or
+          description: "Phase 1 parallel evaluation (any subset fires)"
+
+    M1:
+      name: "Phase 1 results collected"
+      tokens:
+        admissible_mask: 0
+        features_vector: 1
+        guard_results: 3
+        constraint_satisfied: 4
+        spc_alerts: 3
+        marking_current: 1
+        transition_legal: 0
+        rl_q_state: 0
+      total_tokens: 12
+      enabled_transitions:
+        - lawful_dispatch
+      outgoing_edges:
+        - target: M2
+          via_transition: lawful_dispatch
+          sync: join_sequential
+          description: "Join phase 1 results. Synchronization: AND(guards) AND(constraints) OR(spc_alerts)"
+
+    M2:
+      name: "Lawful dispatch complete"
+      tokens:
+        admissible_mask: 0
+        features_vector: 1
+        guard_results: 0
+        constraint_satisfied: 0
+        spc_alerts: 0
+        marking_current: 1
+        transition_legal: 1
+        rl_q_state: 0
+      total_tokens: 3
+      enabled_transitions:
+        - marking_check
+        - marking_fire
+        - transition_construct
+      outgoing_edges:
+        - target: M3a
+          via_transition: marking_check
+          description: "Phase 3 subset: checking marking validity"
+        - target: M3b
+          via_transition: marking_fire
+          description: "Phase 3 subset: firing transition"
+        - target: M3c
+          via_transition: transition_construct
+          description: "Phase 3 subset: constructing metadata"
+        - target: M3_all
+          via_transitions: [marking_check, marking_fire, transition_construct]
+          sync: parallel_or
+          description: "Phase 3 full parallel execution (all or subset)"
+
+    M3a:
+      name: "Phase 3 marking_check complete"
+      tokens:
+        admissible_mask: 0
+        features_vector: 1
+        guard_results: 0
+        constraint_satisfied: 0
+        spc_alerts: 0
+        marking_current: 1
+        transition_legal: 1
+        rl_q_state: 0
+      total_tokens: 3
+      enabled_transitions:
+        - marking_fire
+        - transition_construct
+        - rl_update
+      outgoing_edges:
+        - target: M4
+          via_transition: rl_update
+          async: true
+          description: "Async RL update (non-blocking)"
+        - target: M3_rest
+          via_transitions: [marking_fire, transition_construct]
+          description: "Continue phase 3 (fire and construct)"
+
+    M3b:
+      name: "Phase 3 marking_fire complete"
+      tokens:
+        admissible_mask: 0
+        features_vector: 1
+        guard_results: 0
+        constraint_satisfied: 0
+        spc_alerts: 0
+        marking_current: 1
+        transition_legal: 0
+        rl_q_state: 0
+      total_tokens: 2
+      enabled_transitions:
+        - marking_check
+        - transition_construct
+        - rl_update
+      outgoing_edges:
+        - target: M4
+          via_transition: rl_update
+          async: true
+          description: "Async RL update (non-blocking)"
+        - target: M3_rest
+          via_transitions: [marking_check, transition_construct]
+          description: "Continue phase 3 (check and construct)"
+
+    M3c:
+      name: "Phase 3 transition_construct complete"
+      tokens:
+        admissible_mask: 0
+        features_vector: 1
+        guard_results: 0
+        constraint_satisfied: 0
+        spc_alerts: 0
+        marking_current: 1
+        transition_legal: 1
+        rl_q_state: 0
+      total_tokens: 3
+      enabled_transitions:
+        - marking_check
+        - marking_fire
+        - rl_update
+      outgoing_edges:
+        - target: M4
+          via_transition: rl_update
+          async: true
+          description: "Async RL update (non-blocking)"
+        - target: M3_rest
+          via_transitions: [marking_check, marking_fire]
+          description: "Continue phase 3 (check and fire)"
+
+    M3_all:
+      name: "Phase 3 all parallel complete (canonical path)"
+      tokens:
+        admissible_mask: 0
+        features_vector: 1
+        guard_results: 0
+        constraint_satisfied: 0
+        spc_alerts: 0
+        marking_current: 1
+        transition_legal: 0
+        rl_q_state: 0
+      total_tokens: 2
+      enabled_transitions:
+        - rl_update
+      outgoing_edges:
+        - target: M4
+          via_transition: rl_update
+          async: true
+          description: "Phase 4: Async RL Q-state update"
+
+    M4:
+      name: "RL state update complete (ready for next cycle)"
+      tokens:
+        admissible_mask: 0
+        features_vector: 1
+        guard_results: 0
+        constraint_satisfied: 0
+        spc_alerts: 0
+        marking_current: 1
+        transition_legal: 0
+        rl_q_state: 1
+      total_tokens: 3
+      enabled_transitions: []
+      note: "System is quiescent. Next cycle requires external input (reset admissible_mask or new features_vector)."
+      implicit_sink: true
+
+  transition_details:
+    guard_check:
+      timing_ns: 3.93
+      phase: phase_1
+      type: parallel_capable
+      prerequisite_places:
+        - admissible_mask (1)
+        - features_vector (1, read-only)
+      output_places:
+        - guard_results (3)
+      enabled_in_markings: [M0]
+
+    constraint_eval:
+      timing_ns: 2.0
+      phase: phase_1
+      type: parallel_capable
+      prerequisite_places:
+        - admissible_mask (1)
+        - features_vector (1, read-only)
+      output_places:
+        - constraint_satisfied (4)
+      enabled_in_markings: [M0]
+
+    spc_rule_check:
+      timing_ns: 4.85
+      phase: phase_1
+      type: parallel_capable
+      prerequisite_places:
+        - admissible_mask (1)
+        - features_vector (1, read-only)
+      output_places:
+        - spc_alerts (3)
+      enabled_in_markings: [M0]
+
+    lawful_dispatch:
+      timing_ns: 11.73
+      phase: phase_2
+      type: join
+      synchronization: AND(guards) AND(constraints) OR(spc_alerts)
+      prerequisite_places:
+        - marking_current (1)
+        - guard_results (3)
+        - constraint_satisfied (4)
+        - spc_alerts (3)
+      output_places:
+        - transition_legal (1)
+        - marking_current (1, updated)
+      enabled_in_markings: [M1]
+
+    marking_check:
+      timing_ns: 1.62
+      phase: phase_3
+      type: parallel_capable
+      prerequisite_places:
+        - marking_current (1, read-only)
+        - transition_legal (1, read-only)
+      output_places:
+        - marking_current (1, pass-through)
+      enabled_in_markings: [M2, M3b, M3c]
+
+    marking_fire:
+      timing_ns: 2.09
+      phase: phase_3
+      type: parallel_capable
+      prerequisite_places:
+        - marking_current (1)
+        - transition_legal (1)
+      output_places:
+        - marking_current (1, updated)
+      enabled_in_markings: [M2, M3a, M3c]
+
+    transition_construct:
+      timing_ns: 5.32
+      phase: phase_3
+      type: parallel_capable
+      prerequisite_places:
+        - transition_legal (1, read-only)
+        - marking_current (1, read-only)
+      output_places:
+        - marking_current (1, with metadata)
+      enabled_in_markings: [M2, M3a, M3b]
+
+    rl_update:
+      timing_ns: 17.78
+      phase: phase_4
+      type: async_nonblocking
+      prerequisite_places:
+        - transition_legal (1, read-only)
+        - marking_current (1, read-only)
+        - spc_alerts (1, optional)
+      output_places:
+        - rl_q_state (1)
+      enabled_in_markings: [M3a, M3b, M3c, M3_all]
+
+  paths:
+    critical_path:
+      description: "Fastest canonical execution through all phases"
+      path: "M0 → M1 → M2 → M3_all → M4"
+      transitions: [guard_check|constraint_eval|spc_rule_check, lawful_dispatch, marking_check|marking_fire|transition_construct, rl_update]
+      total_time_ns: "3.93 + 11.73 + max(1.62, 2.09, 5.32) + 17.78 = 38.82 ns (approx, parallel phase 3)"
+      actual_sequential_time_ns: "3.93 + 2.0 + 4.85 + 11.73 + 5.32 + 17.78 = 45.61 ns (all phases serialized)"
+
+    fastest_phase1_path:
+      description: "Fastest phase 1 (constraint_eval is fastest: 2.0 ns)"
+      transitions: [constraint_eval]
+      time_ns: 2.0
+
+    slowest_transition:
+      name: rl_update
+      time_ns: 17.78
+      type: async (non-blocking on critical path)
+
+  deadlock_analysis:
+    deadlock_free: true
+    reason: "Every reachable marking has at least one enabled transition OR is a terminal sink (M4)"
+    terminal_states: [M4]
+    cyclic_paths: []
+
+  liveness_analysis:
+    liveness: true
+    reason: "All transitions are reachable and fireable in the reachability graph (M0 → M1 → M2 → M3_all → M4)"
+    unreachable_transitions: []
+
+  boundedness_analysis:
+    boundedness: true
+    reason: "All places have explicit capacity constraints; total tokens never exceeds 14"
+    place_bounds:
+      admissible_mask: [0, 1]
+      features_vector: [0, 1]
+      guard_results: [0, 3]
+      constraint_satisfied: [0, 4]
+      spc_alerts: [0, 3]
+      marking_current: [0, 1]
+      transition_legal: [0, 1]
+      rl_q_state: [0, 1]
+    total_bound: 14

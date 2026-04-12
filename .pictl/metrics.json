@@ -1,0 +1,118 @@
+{
+  "version": "1.0",
+  "project": "pictl",
+  "description": "Kaizen metrics tracking for continuous improvement",
+  "schema": {
+    "timestamp": "ISO8601 UTC timestamp",
+    "git_commit_hash": "short commit hash (7 chars)",
+    "metrics": {
+      "test_pass_rate": {
+        "type": "percentage",
+        "target": 100,
+        "description": "Percentage of tests passing (vitest + cargo test)",
+        "value": null
+      },
+      "compiler_warnings": {
+        "type": "count",
+        "target": 0,
+        "description": "Total compiler warnings (cargo clippy + tsc + eslint)",
+        "breakdown": {
+          "rust_clippy": 0,
+          "typescript_tsc": 0,
+          "eslint": 0
+        },
+        "value": null
+      },
+      "build_time_ms": {
+        "type": "milliseconds",
+        "target": 60000,
+        "description": "Full clean build time (milliseconds)",
+        "value": null
+      },
+      "otel_span_coverage": {
+        "type": "percentage",
+        "target": 100,
+        "description": "Percentage of public APIs with OTEL span instrumentation",
+        "breakdown": {
+          "packages_with_coverage": [],
+          "packages_without_coverage": [],
+          "total_public_functions": 0,
+          "instrumented_functions": 0
+        },
+        "value": null
+      },
+      "tps_violation_density": {
+        "type": "violations_per_kloc",
+        "target": 0,
+        "description": "TPS violations per 1000 lines of code",
+        "breakdown": {
+          "silent_fallbacks": 0,
+          "missing_error_handling": 0,
+          "speculative_features": 0,
+          "undocumented_timeouts": 0,
+          "total_violations": 0
+        },
+        "value": null
+      },
+      "mttr": {
+        "type": "minutes",
+        "target": 1,
+        "description": "Mean Time To Recovery from failure",
+        "recent_incidents": [],
+        "value": null
+      },
+      "test_determinism": {
+        "type": "percentage",
+        "target": 100,
+        "description": "Percentage of tests that pass consistently (3 consecutive runs)",
+        "flaky_tests": [],
+        "value": null
+      },
+      "locs": {
+        "type": "count",
+        "description": "Lines of code (excluding tests and node_modules)",
+        "breakdown": {
+          "rust": 0,
+          "typescript": 0,
+          "total": 0
+        },
+        "value": null
+      }
+    }
+  },
+  "historical_data": [
+    {
+      "timestamp": null,
+      "git_commit_hash": null,
+      "test_pass_rate": null,
+      "compiler_warnings": null,
+      "build_time_ms": null,
+      "otel_span_coverage": null,
+      "tps_violation_density": null,
+      "mttr": null,
+      "test_determinism": null
+    },
+    {
+      "timestamp": "2026-04-12T00:46:05Z",
+      "git_commit_hash": "5e82275",
+      "test_pass_rate": 25,
+      "compiler_warnings": 0,
+      "build_time_ms": 45000,
+      "otel_span_coverage": 0,
+      "tps_violation_density": 0,
+      "mttr": 3,
+      "test_determinism": 16,
+      "locs": 13200
+    }
+  ],
+  "trends": {
+    "weekly": [
+      {
+        "week": "2026-W15",
+        "start_date": "2026-04-13",
+        "end_date": "2026-04-19",
+        "metrics_snapshots": []
+      }
+    ]
+  }
+}

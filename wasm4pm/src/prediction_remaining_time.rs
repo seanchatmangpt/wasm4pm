@@ -164,8 +164,14 @@ pub fn build_remaining_time_model(
                         continue;
                     }
 
-                    let trace_start = events.first().unwrap().1;
-                    let trace_end = events.last().unwrap().1;
+                    let trace_start = match events.first() {
+                        Some((_, ts)) => *ts,
+                        None => continue, // Should not happen due to check above, but be defensive
+                    };
+                    let trace_end = match events.last() {
+                        Some((_, ts)) => *ts,
+                        None => continue, // Should not happen due to check above
+                    };
                     let duration = (trace_end - trace_start) as f64;
                     if duration <= 0.0 {
                         continue;
@@ -329,7 +335,12 @@ pub fn predict_case_duration(model_handle: &str, prefix_json: &str) -> Result<Js
             )
         })?;
 
-        let last_activity = prefix.last().unwrap();
+        let last_activity = match prefix.last() {
+            Some(act) => act,
+            None => {
+                return Err(JsValue::from_str("Cannot predict on empty prefix"));
+            }
+        };
         let prefix_len = prefix.len();
 
         // Strategy 1: exact bucket

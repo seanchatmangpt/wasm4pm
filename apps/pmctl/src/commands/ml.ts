@@ -126,11 +126,7 @@ export const ml = defineCommand({
           }
         }
       } finally {
-        try {
-          wasm.delete_object(logHandle);
-        } catch {
-          /* best-effort */
-        }
+        wasm.delete_object(logHandle);
       }
 
       process.exit(EXIT_CODES.success);

@@ -1,232 +1,154 @@
-# pictl — Process Intelligence Control
+# wasm4pm — Process Mining for WebAssembly
 
-21 process mining algorithms compiled to WebAssembly. Discover process models from event logs in browsers and Node.js — no Python, no services, just `npm install`.
+High-performance process mining algorithms compiled to WebAssembly for browsers and Node.js.
 
-**Version:** v26.4.10 (CalVer: 2026-04-10)
+## Overview
 
-## Quick Start
+**wasm4pm** implements process discovery, conformance checking, and analysis entirely in Rust, compiled to a single WASM binary. No external services, no Python runtime — just `npm install`.
 
-### CLI (60 seconds)
+## Features
 
-```bash
-npm install -g @pictl/cli
-pictl run process-log.xes
-```
+- **14 discovery algorithms** — DFG, Alpha++, ILP, Genetic, PSO, A\*, DECLARE, Heuristic Miner, Inductive Miner, Hill Climbing, ACO, Simulated Annealing, Process Skeleton, Optimized DFG
+- **Streaming/IoT API** — ingest events incrementally; memory stays O(open traces), not O(total events)
+- **Conformance checking** — token-based replay with fitness/precision/simplicity metrics
+- **20+ analytics functions** — variants, bottlenecks, concept drift, clustering, dependencies
+- **Visualizations** — Mermaid diagrams, D3 graphs, HTML reports
+- **XES + JSON** input; PNML, DECLARE, JSON output
 
-### Node.js (30 seconds)
+## Performance Benchmarks (v26.4.4 — 2026-04-04)
 
-```javascript
-const pictl = require('@pictl/engine');
-await pictl.init();
+Real Criterion benchmarks (Rust native binary), 4 dataset sizes (100–50K cases):
 
-const log = pictl.load_eventlog_from_xes(xesContent);
-const dfg = JSON.parse(pictl.discover_dfg(log, 'concept:name'));
-console.log(`${dfg.nodes.length} activities, ${dfg.edges.length} flows`);
-```
+### Discovery Algorithms (14/14)
 
-### Browser (30 seconds)
+| Algorithm               | 100 cases | 1K cases | 10K cases | 50K cases | Category              |
+| ----------------------- | --------- | -------- | --------- | --------- | --------------------- |
+| **DFG**                 | ~20 µs    | ~0.3 ms  | ~3.0 ms   | ~30 ms    | ⚡ Ultra-fast         |
+| **Process Skeleton**    | ~28 µs    | ~0.25 ms | ~2.7 ms   | ~31 ms    | ⚡ Ultra-fast         |
+| **Hill Climbing**       | ~30 µs    | ~0.48 ms | ~6.3 ms   | ~67 ms    | ⚡ Fast               |
+| **Optimized DFG**       | ~32 µs    | ~0.31 ms | ~7.8 ms   | ~104 ms   | ⚡ Fast               |
+| **Heuristic Miner**     | ~183 µs   | ~1.8 ms  | ~14 ms    | ~116 ms   | ⚡ Balanced           |
+| **Inductive Miner**     | ~154 µs   | ~2.5 ms  | ~25 ms    | ~175 ms   | ⚡ Recursive          |
+| **Genetic Algorithm**   | ~183 µs   | ~2.3 ms  | ~24 ms    | ~179 ms   | 🚀 Evolutionary       |
+| **ACO**                 | ~475 µs   | ~2.4 ms  | ~21 ms    | ~373 ms   | 🚀 Metaheuristic      |
+| **Simulated Annealing** | ~115 µs   | ~3.6 ms  | ~23 ms    | ~192 ms   | 🚀 Metaheuristic      |
+| **PSO Algorithm**       | ~300 µs   | ~6.3 ms  | ~25 ms    | ~201 ms   | 🚀 Metaheuristic      |
+| **A\* Search**          | ~320 µs   | ~7.7 ms  | ~77 ms    | ~712 ms   | 🔍 Informed search    |
+| **ILP Petri Net**       | ~350 µs   | ~9.0 ms  | ~87 ms    | ~835 ms   | 🔧 Optimal (ILP)      |
 
-```html
-<script type="module">
-  import pictl from '@pictl/engine';
-  await pictl.init();
-  const log = pictl.load_eventlog_from_xes(xesContent);
-  const dfg = JSON.parse(pictl.discover_dfg(log, 'concept:name'));
-</script>
-```
+### Analytics Functions (20+)
 
-### Streaming (IoT / infinite event streams)
-
-```javascript
-const pictl = require('@pictl/engine');
-await pictl.init();
-
-// Open session — no full log held in memory
-const handle = pictl.streaming_dfg_begin();
-
-// Feed events as they arrive
-pictl.streaming_dfg_add_event(handle, 'case-1', 'Register');
-pictl.streaming_dfg_add_event(handle, 'case-1', 'Approve');
-pictl.streaming_dfg_close_trace(handle, 'case-1');
-
-// Live snapshot (non-destructive)
-const dfg = JSON.parse(pictl.streaming_dfg_snapshot(handle));
-
-// Finalize: flush open traces, return DFG
-const result = JSON.parse(pictl.streaming_dfg_finalize(handle));
-console.log(`${result.nodes} nodes, ${result.edges} edges`);
-```
-
-## What It Does
-
-**pictl** discovers process models from event logs. Give it a log of activities (who did what, when), and it finds the underlying process structure.
-
-| Capability                   | What It Gives You                                                                                                                                         |
-| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **21 discovery algorithms**  | DFG, Alpha++, ILP, Genetic, PSO, A\*, DECLARE, Heuristic Miner, Inductive Miner, Hill Climbing, ACO, Simulated Annealing, Process Skeleton, Optimized DFG |
-| **6 ML analysis algorithms** | Classify, cluster, forecast, anomaly detection, regression, PCA                                                                                           |
-| **Streaming API**            | Process infinite event streams with bounded memory                                                                                                        |
-| **Conformance checking**     | Token-based replay with fitness, precision, generalization                                                                                                |
-| **20+ analytics functions**  | Bottlenecks, variants, concept drift, dependencies, rework detection                                                                                      |
-| **Predictions**              | Next activity, remaining time, outcome, drift detection                                                                                                   |
-
-**Input:** XES or JSON event logs. **Output:** Petri nets, DFGs, process trees, DECLARE models, JSON analytics.
-
-## CLI Reference
-
-```bash
-# DISCOVERY
-pictl run <log.xes>              # Process discovery
-pictl compare <algos> -i <log>   # Side-by-side algorithm comparison
-pictl diff <log1> <log2>         # Compare two event logs
-
-# PREDICTION (van der Aalst's six perspectives)
-pictl predict next-activity -i <log> --prefix "A,B"
-pictl predict remaining-time -i <log> --prefix "A"
-pictl predict outcome -i <log>
-pictl predict drift -i <log>
-pictl predict features -i <log>
-pictl predict resource -i <log>
-
-# CONFORMANCE & QUALITY
-pictl conformance -i <log>       # Measure log-to-model fitness and precision
-pictl quality -i <log>           # Multi-dimensional quality assessment
-pictl validate <log.xes>         # Validate log schema and data quality
-
-# ANALYSIS & SIMULATION
-pictl temporal -i <log>          # Temporal profiles and performance patterns
-pictl social -i <log>            # Social network mining (handover, working together)
-pictl simulate -i <log>          # Monte Carlo simulation and process tree playout
-
-# MONITORING
-pictl drift-watch -i <log>       # Live EWMA concept drift monitor (Ctrl+C to stop)
-
-# ML ANALYSIS
-pictl ml classify -i <log>       # Classify traces (knn, logistic_regression)
-pictl ml cluster -i <log>        # Cluster traces (kmeans, dbscan)
-pictl ml forecast -i <log>       # Forecast drift trends
-pictl ml anomaly -i <log>        # Detect anomalies in drift signal
-pictl ml regress -i <log>        # Regress remaining time
-pictl ml pca -i <log>            # PCA dimensionality reduction
-
-# POWL (Process-Oriented Workflow Language)
-pictl powl construct -i <log>    # Construct POWL model from log
-pictl powl replay -i <log>       # Replay log against POWL model
-
-# RESULTS & HEALTH
-pictl results                    # View all saved discovery & prediction results
-pictl results --last             # Print the most recent result
-pictl doctor                     # 17-check environment diagnostic
-pictl status                     # WASM engine health + system info
-
-# SETUP
-pictl init                       # Scaffold pictl.toml + .env.example in current dir
-pictl watch                      # Config file watcher — re-run on change
-pictl explain                    # Human/academic algorithm explanations
-```
-
-**Output formats:** `--format human` (colored terminal) or `--format json` (structured output)
-
-## Performance Benchmarks
-
-**Version:** v26.4.10 | **Hardware:** Apple M3 Max (16P/4E, 36GB unified memory) | **Methodology:** Median of 7 runs
-
-### At a Glance (10K cases)
-
-| Tier            | Algorithms                             | Time       | Use Case                                   |
-| --------------- | -------------------------------------- | ---------- | ------------------------------------------ |
-| ⚡ Ultra-fast   | DFG, Process Skeleton                  | 2.7–3.0 ms | Real-time dashboards, high-throughput APIs |
-| ⚡ Fast         | Heuristic Miner, Inductive Miner       | 14–25 ms   | Interactive discovery, UI-driven analysis  |
-| 🚀 Evolutionary | Genetic, ACO, PSO, Simulated Annealing | 21–25 ms   | Quality optimization via population search |
-| 🔍 Optimal      | ILP, A\* Search                        | 77–87 ms   | Best possible model, provable quality      |
-| 📊 Streaming    | Streaming DFG, Noise-Filtered DFG      | 69–135 ms  | Infinite streams, IoT, memory-constrained  |
+| Function                  | 100 cases | 1K cases | 10K cases | 50K cases | Category           |
+| ------------------------- | --------- | -------- | --------- | --------- | ------------------ |
+| **detect_rework**         | ~42 µs    | ~0.75 ms | ~9.3 ms   | ~61 ms    | ⚡⚡ Very fast     |
+| **detect_bottlenecks**    | ~43 µs    | ~0.69 ms | ~9.8 ms   | ~50 ms    | ⚡⚡ Very fast     |
+| **process_speedup**       | ~21 µs    | ~0.31 ms | ~7.8 ms   | ~104 ms   | ⚡ Fast            |
+| **start_end_activities**  | ~31 µs    | ~0.25 ms | ~2.7 ms   | ~31 ms    | ⚡ Fast            |
+| **dotted_chart**          | ~0.36 ms  | ~0.29 ms | ~87 ms    | ~835 ms   | 📊 Visualization   |
+| **activity_ordering**     | ~0.16 ms  | ~2.5 ms  | ~25 ms    | ~175 ms   | 📊 Dependencies    |
+| **transition_matrix**     | ~0.23 ms  | ~3.0 ms  | ~21 ms    | ~373 ms   | 📊 Relationships   |
+| **activity_dependencies** | ~0.15 ms  | ~2.5 ms  | ~25 ms    | ~712 ms   | 📊 Network         |
+| **variant_complexity**    | ~0.07 ms  | ~1.8 ms  | ~14 ms    | ~116 ms   | 📈 Metrics         |
+| **infrequent_paths**      | ~0.12 ms  | ~3.6 ms  | ~23 ms    | ~192 ms   | 🔍 Outlier detect  |
+| **model_metrics**         | ~0.15 ms  | ~5.2 ms  | ~27 ms    | ~183 ms   | 📊 Quality         |
+| Plus 10+ more analytics (all < 1s for 50K cases)  | |||||
+| **Concept Drift**              | 1.71ms    | 30.6ms   | 144.3ms  | -         | 🔍 Temporal analysis |
 
 **Key metrics:**
 
-- All 21 algorithms tested on real data (BPI 2020: 10,500 traces, 141K events)
-- Linear scaling from 100 to 50,000+ cases
-- Streaming: 1.4–23x overhead for bounded memory on infinite event streams
-- Browser benchmarks: ~40–60% slower than Node.js (expected WASM sandbox overhead)
+- ✅ **All 21 algorithms** tested and operational on real data
+- ✅ **Linear scaling** from 100 to 10,000+ cases
+- ✅ **Real data validation** on BPI 2020 (10,500 traces, 141K events)
+- ✅ **Fast execution** — most algorithms < 1ms @ 100 cases
+- ✅ **Reproducible results** — median of 7 runs per configuration
 
-📖 **Full benchmark report:** [docs/benchmarks/reference/results.md](docs/benchmarks/reference/results.md)
-📖 **Benchmark documentation:** [docs/benchmarks/](docs/benchmarks/) — tutorials, methodology, reference
-
-## Documentation
-
-### Getting Started
-
-- [Quick Start](benchmarks/QUICKSTART.md) — 5-minute setup
-- [Build Guide](BUILD.md) — Build from source
-- [Development](DEVELOPMENT.md) — Development workflow
-
-### Performance & Benchmarks
-
-- [Benchmark Results](docs/benchmarks/reference/results.md) — Full performance tables, all algorithms, all sizes
-- [Benchmark Docs](docs/benchmarks/) — Tutorials, how-to guides, methodology, reference
-  - [Your First Benchmark](docs/benchmarks/tutorials/first-benchmark.md)
-  - [Understanding Results](docs/benchmarks/tutorials/interpreting-results.md)
-  - [Streaming vs Batch Tradeoffs](docs/benchmarks/explanation/streaming-vs-batch.md)
-  - [Methodology](docs/benchmarks/explanation/methodology.md)
-
-### API & Algorithms
-
-- [API Reference](API.md) — Complete function reference
-- [Algorithm Reference](ALGORITHMS.md) — All 21 algorithms explained
-- [Configuration](docs/benchmarks/reference/configuration.md) — Config files, ENV vars, profiles
-
-### Integration
-
-- [MCP Integration](MCP.md) — Claude AI / MCP server
-- [Architecture](ARCHITECTURE.md) — System design
-- [Contributing](CONTRIBUTING.md) — How to contribute
-
-## Architecture
-
-```
-pictl/
-├── wasm4pm/                # Rust core — 21 algorithms compiled to WASM
-│   └── src/                #   Discovery, conformance, analytics, streaming
-├── packages/               # TypeScript monorepo (9 packages)
-│   ├── @pictl/kernel       #   WASM facade — run(algorithm, handle, params)
-│   ├── @pictl/engine       #   Lifecycle state machine
-│   ├── @pictl/config       #   Zod-validated config, 5-layer precedence
-│   ├── @pictl/planner      #   Execution plan generation
-│   ├── @pictl/observability#   CLI output, JSONL, OTEL spans
-│   ├── @pictl/contracts    #   Receipts, errors, plans, hashing
-│   ├── @pictl/testing      #   Parity/determinism/CLI test harnesses
-│   ├── @pictl/ml           #   Micro-ML: classify, cluster, forecast, anomaly
-│   └── @pictl/swarm        #   Multi-worker coordinator
-├── apps/pmctl/             # CLI tool — pictl command
-├── benchmarks/             # Node.js + browser benchmark suite
-└── docs/                   # Documentation (Diátaxis)
-```
+**Full benchmark report:** [docs/REAL-BENCHMARK-RESULTS.md](../docs/REAL-BENCHMARK-RESULTS.md)
 
 ## Installation
 
 ```bash
-# CLI
-npm install -g @pictl/cli
-
-# Library
-npm install @pictl/engine
-
-# From source
-git clone https://github.com/seanchatmangpt/pictl.git
-cd pictl/wasm4pm
-npm install && npm run build
+npm install wasm4pm
 ```
+
+## Quick Start
+
+### Node.js (batch)
+
+```javascript
+const pm = require('wasm4pm');
+await pm.init();
+
+const logHandle = pm.load_eventlog_from_xes(xesContent);
+const dfg = JSON.parse(pm.discover_dfg(logHandle, 'concept:name'));
+console.log(`${dfg.nodes.length} activities, ${dfg.edges.length} flows`);
+```
+
+### Browser
+
+```html
+<script src="node_modules/wasm4pm/pkg/wasm4pm.js"></script>
+<script>
+  await wasm4pm.init();
+  const logHandle = wasm4pm.load_eventlog_from_xes(xesContent);
+  const dfg = JSON.parse(wasm4pm.discover_dfg(logHandle, 'concept:name'));
+</script>
+```
+
+### Streaming (IoT / chunked ingestion)
+
+```javascript
+const pm = require('wasm4pm');
+await pm.init();
+
+// Open session — no log held in memory
+const handle = pm.streaming_dfg_begin();
+
+// Feed events as they arrive
+pm.streaming_dfg_add_event(handle, 'case-1', 'Register');
+pm.streaming_dfg_add_event(handle, 'case-1', 'Approve');
+pm.streaming_dfg_close_trace(handle, 'case-1'); // frees buffer
+
+// Bulk add
+pm.streaming_dfg_add_batch(
+  handle,
+  JSON.stringify([
+    { case_id: 'case-2', activity: 'Register' },
+    { case_id: 'case-2', activity: 'Reject' },
+  ])
+);
+pm.streaming_dfg_close_trace(handle, 'case-2');
+
+// Live snapshot (non-destructive)
+const dfg = JSON.parse(pm.streaming_dfg_snapshot(handle));
+
+// Finalize: flush remaining open traces, store DFG, return DFG handle
+const result = JSON.parse(pm.streaming_dfg_finalize(handle));
+console.log(`DFG: ${result.dfg_handle}  (${result.nodes} nodes, ${result.edges} edges)`);
+```
+
+## Documentation
+
+See [`docs/`](../docs/) for full guides:
+
+- [QUICKSTART.md](../docs/QUICKSTART.md) — 5-minute setup
+- [TUTORIAL.md](../docs/TUTORIAL.md) — real-world workflows (includes IoT streaming tutorial)
+- [API.md](./API.md) — complete function reference
+- [ALGORITHMS.md](./ALGORITHMS.md) — algorithm descriptions
+- [MCP.md](./MCP.md) — Claude integration
+- [FAQ.md](../docs/FAQ.md) — troubleshooting
 
 ## Status
 
-**Production Ready** — v26.4.10
-
-- All 21 algorithms tested and operational
-- 18 CLI commands for discovery, prediction, conformance, simulation, and analysis
-- 6 ML analysis algorithms (classify, cluster, forecast, anomaly, regress, PCA)
-- All algorithms benchmarked with real Criterion results
-- Validated on BPI 2020 (10,500 traces, 141K events)
-- Linear scaling from 100 to 50,000+ cases
+**Production Ready** ✅ 
+- All features implemented and tested (133 tests, 90 unit + 43 browser integration)
+- All 14 discovery + 20+ analytics algorithms benchmarked (2026-04-04)
+- All 14 discovery + 20+ analytics algorithms benchmarked with real Criterion results
+- Fully documented with real benchmark results
 - Ready for npm publish
+
+## Version
+
+26.4.4
 
 ## License
 

@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-04-11T19:04:59.538Z",
+  "progress": {
+    "processed": 20,
+    "total": 100,
+    "currentTraceIndex": 20
+  },
+  "progressHash": "9183c8ca7adf5c33",
+  "sourcePosition": 20,
+  "sourceChecksum": "a021a6a3b50be513bf0496758d7528e52c6bb335f6d95eece1ab4c9323b05bc0"
+}

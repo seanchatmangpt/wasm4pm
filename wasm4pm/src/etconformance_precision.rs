@@ -20,6 +20,7 @@ use crate::models::EventLog;
 use crate::models::PetriNet;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use wasm_bindgen::JsValue;
 
 // ---------------------------------------------------------------------------
 // Marking type for pictl models::PetriNet
@@ -301,8 +302,9 @@ pub fn wasm_compute_precision(
     eventlog_handle: &str,
     petri_net_handle: &str,
     activity_key: &str,
-) -> String {
+) -> Result<String, JsValue> {
     use crate::state::{get_or_init_state, StoredObject};
+    use wasm_bindgen::prelude::*;
 
     // First clone the PetriNet out of state (needed for borrow checker).
     let petri_net: Result<Option<PetriNet>, _> =
@@ -313,10 +315,10 @@ pub fn wasm_compute_precision(
         });
 
     let Ok(Some(net)) = petri_net else {
-        return format!(
+        return Err(JsValue::from_str(&format!(
             r#"{{"error":"PetriNet '{}' not found or wrong type"}}"#,
             petri_net_handle
-        );
+        )));
     };
 
     let initial_marking: Marking = net
@@ -325,22 +327,28 @@ pub fn wasm_compute_precision(
         .filter_map(|p| p.marking.map(|m| (p.id.clone(), m)))
         .collect();
 
-    let final_marking: Marking = net.final_markings.first().cloned().unwrap_or_default();
+    let final_marking: Marking = net
+        .final_markings
+        .first()
+        .cloned()
+        .ok_or_else(|| JsValue::from_str("No final marking defined in Petri net"))?;
 
     let result = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
             let precision =
                 compute_precision(&net, &initial_marking, &final_marking, log, activity_key);
-            Ok(serde_json::to_string(&precision).unwrap_or_default())
+            serde_json::to_string(&precision).map_err(|e| {
+                JsValue::from_str(&format!("Failed to serialize precision result: {}", e))
+            })
         }
-        Some(_) => Ok(r#"{"error":"Object is not an EventLog"}"#.to_string()),
-        None => Ok(format!(
-            r#"{{"error":"EventLog '{}' not found"}}"#,
+        Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
+        None => Err(JsValue::from_str(&format!(
+            "EventLog '{}' not found",
             eventlog_handle
-        )),
-    });
+        ))),
+    })?;
 
-    result.unwrap_or_else(|e| format!(r#"{{"error":"{:?}"}}"#, e))
+    Ok(result)
 }
 
 // ---------------------------------------------------------------------------
