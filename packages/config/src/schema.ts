@@ -135,6 +135,37 @@ export const mlConfigSchema = z
     'ML analysis configuration — classification, clustering, forecasting, anomaly, regression, PCA'
   );
 
+/**
+ * RL / GPU execution configuration — LinUCB contextual bandit parameters.
+ *
+ * Van der Aalst prediction perspective: Resource and Intervention.
+ * Question: "Which algorithm should handle the next process mining task?"
+ *
+ * These parameters control the GPU-accelerated LinUCB kernel defined in
+ * wasm4pm/src/gpu/linucb_kernel.wgsl and its CPU reference in
+ * wasm4pm/src/ml/linucb.rs.
+ */
+export const rlConfigSchema = z
+  .object({
+    /** Enable GPU dispatch via the LinUCB WGSL kernel (requires gpu feature). */
+    gpu_enabled: z.boolean().default(false),
+    /**
+     * LinUCB regularization coefficient λ.
+     * A is initialised to λI; larger values produce more conservative exploration.
+     * Default: 1.0
+     */
+    linucb_lambda: z.number().positive().default(1.0),
+    /**
+     * UCB exploration bonus α.
+     * Q̂_a(x) = w_a·x + b_a + α√(x^T A^{-1} x).
+     * Default: √2 ≈ 1.4142 (standard LinUCB recommendation from Li et al. 2010).
+     */
+    ucb1_exploration: z.number().nonnegative().default(Math.SQRT2),
+  })
+  .describe(
+    'RL / GPU execution configuration — LinUCB contextual bandit for algorithm selection'
+  );
+
 // --- Root Schema ---
 
 export const configSchema = z
@@ -150,6 +181,7 @@ export const configSchema = z
     output: outputConfigSchema.default({}),
     prediction: predictionConfigSchema.optional(),
     ml: mlConfigSchema.optional(),
+    rl: rlConfigSchema.optional(),
   })
   .describe('wasm4pm configuration');
 

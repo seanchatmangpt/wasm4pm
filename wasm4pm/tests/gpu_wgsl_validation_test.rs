@@ -26,10 +26,7 @@ use pictl::ml::linucb::{LinUCBAgent, N_ACTIONS, N_FEATURES};
 use std::time::Instant;
 
 // Path to the WGSL kernel source
-const WGSL_PATH: &str = concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/src/gpu/linucb_kernel.wgsl"
-);
+const WGSL_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/src/gpu/linucb_kernel.wgsl");
 
 const BATCH_SIZE: usize = 2048;
 
@@ -40,17 +37,12 @@ fn wgsl_kernel_parses_without_error() {
     let source = std::fs::read_to_string(WGSL_PATH)
         .expect("WGSL kernel file must exist at src/gpu/linucb_kernel.wgsl");
     let result = wgsl::parse_str(&source);
-    assert!(
-        result.is_ok(),
-        "WGSL parse failed: {}",
-        result.unwrap_err()
-    );
+    assert!(result.is_ok(), "WGSL parse failed: {}", result.unwrap_err());
 }
 
 #[test]
 fn wgsl_kernel_validates_without_error() {
-    let source = std::fs::read_to_string(WGSL_PATH)
-        .expect("WGSL kernel file must exist");
+    let source = std::fs::read_to_string(WGSL_PATH).expect("WGSL kernel file must exist");
     let module = wgsl::parse_str(&source).expect("WGSL must parse before validation");
     let mut validator = Validator::new(ValidationFlags::all(), Capabilities::empty());
     let result = validator.validate(&module);
