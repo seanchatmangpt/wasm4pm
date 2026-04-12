@@ -64,8 +64,10 @@ pub fn discover_ilp_petri_net(
 
                 // Create intermediate places for directly-follows relations
                 for (place_counter, (from_act, to_act)) in directly_follows.iter().enumerate() {
-                    let from_trans = activity_to_transition.get(from_act).unwrap();
-                    let to_trans = activity_to_transition.get(to_act).unwrap();
+                    let from_trans = activity_to_transition.get(from_act)
+                        .ok_or_else(|| format!("Activity {} not found in transition map", from_act))?;
+                    let to_trans = activity_to_transition.get(to_act)
+                        .ok_or_else(|| format!("Activity {} not found in transition map", to_act))?;
 
                     let place_id = format!("p{}", place_counter);
                     petri_net.places.push(PetriNetPlace {

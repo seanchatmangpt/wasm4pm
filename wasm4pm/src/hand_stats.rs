@@ -165,7 +165,11 @@ pub fn median_timestamp(data: &mut [DateTime<Utc>]) -> Option<DateTime<Utc>> {
     } else {
         ms[len / 2]
     };
-    Some(Utc.timestamp_millis_opt(median_ms).unwrap())
+    match Utc.timestamp_millis_opt(median_ms) {
+        chrono::LocalResult::Single(dt) => Some(dt),
+        chrono::LocalResult::Ambiguous(dt, _) => Some(dt),
+        chrono::LocalResult::None => None,
+    }
 }
 
 /// Statistics trait matching statrs::statistics::Data interface
