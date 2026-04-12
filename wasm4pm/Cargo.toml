@@ -135,6 +135,10 @@ harness = true
 name = "scalability_benchmark"
 harness = false
 
+[[bench]]
+name = "agentic_bench"
+harness = false
+
 [[example]]
 name = "scalability_report"
 
