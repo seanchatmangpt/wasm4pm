@@ -99,23 +99,23 @@ describe('1. Package Integrity After Install', () => {
     console.info('[release] installed version:', pkg['version']);
   });
 
-  it('1.2 pkg/wasm4pm.js glue file exists and size > 1 KB', () => {
-    const jsPath = path.join(pkgDir, 'pkg', 'wasm4pm.js');
-    expect(fs.existsSync(jsPath), `wasm4pm.js not found at ${jsPath}`).toBe(true);
+  it('1.2 pkg/pictl.js glue file exists and size > 1 KB', () => {
+    const jsPath = path.join(pkgDir, 'pkg', 'pictl.js');
+    expect(fs.existsSync(jsPath), `pictl.js not found at ${jsPath}`).toBe(true);
     expect(fs.statSync(jsPath).size).toBeGreaterThan(1000);
   });
 
-  it('1.3 pkg/wasm4pm_bg.wasm binary exists and size > 100 KB', () => {
-    const wasmPath = path.join(pkgDir, 'pkg', 'wasm4pm_bg.wasm');
-    expect(fs.existsSync(wasmPath), `wasm4pm_bg.wasm not found at ${wasmPath}`).toBe(true);
+  it('1.3 pkg/pictl_bg.wasm binary exists and size > 100 KB', () => {
+    const wasmPath = path.join(pkgDir, 'pkg', 'pictl_bg.wasm');
+    expect(fs.existsSync(wasmPath), `pictl_bg.wasm not found at ${wasmPath}`).toBe(true);
     const size = fs.statSync(wasmPath).size;
     expect(size).toBeGreaterThan(100_000);
     console.info('[release] wasm binary size:', (size / 1024).toFixed(0), 'KB');
   });
 
-  it('1.4 pkg/wasm4pm.d.ts exports init() and get_version()', () => {
-    const dtsPath = path.join(pkgDir, 'pkg', 'wasm4pm.d.ts');
-    expect(fs.existsSync(dtsPath), `wasm4pm.d.ts not found at ${dtsPath}`).toBe(true);
+  it('1.4 pkg/pictl.d.ts exports init() and get_version()', () => {
+    const dtsPath = path.join(pkgDir, 'pkg', 'pictl.d.ts');
+    expect(fs.existsSync(dtsPath), `pictl.d.ts not found at ${dtsPath}`).toBe(true);
     const content = fs.readFileSync(dtsPath, 'utf8');
     expect(content).toMatch(/export.*init|init.*export/);
     expect(content).toMatch(/export.*get_version|get_version.*export/);
