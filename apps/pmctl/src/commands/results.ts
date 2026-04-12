@@ -65,7 +65,8 @@ export async function savePredictionResult(
 
     await fs.writeFile(filepath, JSON.stringify(payload, null, 2), 'utf-8');
     return filepath;
-  } catch {
+  } catch (error) {
+    console.error(`Failed to save prediction result: ${error instanceof Error ? error.message : String(error)}`);
     return null;
   }
 }
@@ -137,7 +138,13 @@ export const results = defineCommand({
     try {
       const dir = path.resolve(process.cwd(), RESULTS_DIR);
       const files = await listResultFiles(dir);
-      const limit = parseInt(ctx.args.limit as string ?? '20', 10) || 20;
+      const rawLimit = ctx.args.limit as string | undefined;
+      const parsedLimit = rawLimit != null ? parseInt(rawLimit, 10) : undefined;
+      if (parsedLimit !== undefined && Number.isNaN(parsedLimit)) {
+        console.error('Invalid --limit value: must be a number');
+        process.exit(EXIT_CODES.config_error);
+      }
+      const limit = parsedLimit ?? 20;
 
       // --last: cat the newest result
       if (ctx.args.last) {

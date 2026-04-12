@@ -253,13 +253,13 @@ impl StreamingDFG {
             .inner
             .node_counts
             .iter()
-            .map(|(&id, &count)| {
-                let label = self.vocab.get(id as usize).cloned().unwrap_or_default();
-                DFGNode {
+            .filter_map(|(&id, &count)| {
+                let label = self.vocab.get(id as usize).cloned()?;
+                Some(DFGNode {
                     id: label.clone(),
                     label,
                     frequency: count as usize,
-                }
+                })
             })
             .collect();
 
@@ -268,10 +268,14 @@ impl StreamingDFG {
             .inner
             .edges
             .iter()
-            .map(|(&(from, to), &freq)| DirectlyFollowsRelation {
-                from: self.vocab.get(from as usize).cloned().unwrap_or_default(),
-                to: self.vocab.get(to as usize).cloned().unwrap_or_default(),
-                frequency: freq as usize,
+            .filter_map(|(&(from, to), &freq)| {
+                let from_label = self.vocab.get(from as usize).cloned()?;
+                let to_label = self.vocab.get(to as usize).cloned()?;
+                Some(DirectlyFollowsRelation {
+                    from: from_label,
+                    to: to_label,
+                    frequency: freq as usize,
+                })
             })
             .collect();
 

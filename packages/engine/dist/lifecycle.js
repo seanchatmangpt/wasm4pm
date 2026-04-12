@@ -78,15 +78,24 @@ export class StateMachine {
         this.stateEnteredAt = event.timestamp;
         this.lastTransitionTime = event.timestamp;
         this.transitionHistory.push(event);
-        // Emit event to all listeners
+        // Emit event to all listeners — listener errors must not be hidden
+        const listenerErrors = [];
         this.listeners.forEach((listener) => {
             try {
                 listener(event);
+                // Note: We don't check return value — listeners may be arrow functions
+                // that implicitly return from expressions like array.push().
+                // If a listener needs to report an error, it should throw.
             }
             catch (err) {
-                console.error('Error in lifecycle listener:', err);
+                listenerErrors.push(err instanceof Error ? err : new Error(String(err)));
             }
         });
+        // Propagate listener errors to prevent silent state machine corruption
+        if (listenerErrors.length > 0) {
+            const aggregated = new Error(`${listenerErrors.length} lifecycle listener error(s): ${listenerErrors.map(e => e.message).join('; ')}`);
+            throw aggregated;
+        }
         return event;
     }
     /**

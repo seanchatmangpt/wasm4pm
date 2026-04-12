@@ -41,6 +41,8 @@ export {
   outputConfigSchema,
   executionConfigSchema,
   predictionConfigSchema,
+  rlConfigSchema,
+  mlConfigSchema,
 } from './schema.js';
 export type { AlgorithmId } from './schema.js';
 
@@ -70,6 +72,7 @@ export type {
   OutputConfig,
   ExecutionConfig,
   PredictionConfig,
+  RlConfig,
   SourceKind,
   SinkKind,
   ExecutionProfile,

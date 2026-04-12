@@ -30,7 +30,8 @@
   },
   "devDependencies": {
     "typescript": "^5.3.3",
-    "vitest": "^1.1.0"
+    "vitest": "^1.1.0",
+    "@vitest/coverage-v8": "^1.6.0"
   },
   "keywords": [
     "kernel",

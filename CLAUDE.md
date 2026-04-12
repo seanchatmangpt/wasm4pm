@@ -1,4 +1,7 @@
-# CLAUDE.md — pictl Project Guidelines
+# pictl — Claude Code Configuration
+
+**REQUIRED READING:**
+- **Root instructions**: See `../CLAUDE.md` (Constitutional Law, Evidence Standards, Git Safety, Dependencies)
 
 ## What this project is
 
@@ -292,3 +295,5 @@ wasm4pm/src/mcp_server.ts      # WASM MCP server
 - `cargo test --lib` exits with SIGABRT (signal 6) due to wasm-bindgen thread cleanup — all tests pass but process crashes on exit. This is pre-existing. Use `cargo test --lib 2>&1 | grep -c "^test .* ok$"` to verify pass count.
 - Cargo workspace root is `pictl/` (parent of `wasm4pm/`), so `cargo clippy` from `wasm4pm/` shows a harmless "profiles for the non root package" warning
 - Crate name is `pictl`, npm package is `@seanchatmangpt/pictl`, but the source directory remains `wasm4pm/` — only published names changed, not filesystem layout
+- `tests/*.rs` are integration tests (separate crates) — `pub(crate)` is NOT enough for external test access, items must be `pub`
+- Cargo auto-discovers `tests/*.rs` but NOT `tests/subdir/*.rs` — use top-level `tests/*_tests.rs` files or add `tests/subdir/mod.rs`

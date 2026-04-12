@@ -312,7 +312,7 @@ export function plan(config: Config): ExecutionPlan {
       );
     }
     // Keep analysis steps, replace discovery steps with the override
-    const analysisOnly = pipelineSteps.filter((s) => !s.toString().includes('discover'));
+    const analysisOnly = pipelineSteps.filter((s) => !s.toString().includes('discover') && !s.toString().includes('import') && !s.toString().includes('convert') && !s.toString().includes('export') && !s.toString().includes('simulate'));
     pipelineSteps = [overrideStepType as PlanStepType, ...analysisOnly];
   }
 
@@ -324,7 +324,7 @@ export function plan(config: Config): ExecutionPlan {
       ? { ...(config.execution.parameters || {}), ...(config.algorithm?.parameters || {}) }
       : config.execution.parameters || {};
 
-    if (algoType.toString().includes('discover')) {
+    if (algoType.toString().includes('discover') || algoType.toString().includes('import') || algoType.toString().includes('convert') || algoType.toString().includes('export') || algoType.toString().includes('simulate')) {
       // It's a discovery algorithm
       planStep = createAlgorithmStep(
         algoName,
@@ -417,6 +417,16 @@ export function plan(config: Config): ExecutionPlan {
   const edges: [string, string][] = [];
 
   for (const step of steps) {
+    // Validate required field: dependsOn must always be an array
+    if (!Array.isArray(step.dependsOn)) {
+      throw new PlannerError(
+        createError(
+          'CONFIG_INVALID',
+          `Step "${step.id}" is missing required field: dependsOn must be an array`,
+          { stepId: step.id, dependsOn: step.dependsOn }
+        )
+      );
+    }
     for (const dep of step.dependsOn) {
       edges.push([dep, step.id]);
     }

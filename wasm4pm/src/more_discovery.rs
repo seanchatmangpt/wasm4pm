@@ -161,7 +161,8 @@ pub fn discover_ant_colony(
                     }
                 }
 
-                let best_edges = best_edges.unwrap_or_default();
+                let best_edges = best_edges
+                    .ok_or_else(|| JsValue::from_str("No edges found in discovery process"))?;
                 Ok((best_edges, best_fitness, vocab))
             }
             Some(_) => Err(JsValue::from_str("Not an EventLog")),

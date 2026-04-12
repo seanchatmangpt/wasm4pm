@@ -82,6 +82,7 @@ export const ALGORITHM_ID_TO_STEP_TYPE: Record<string, string> = {
   petri_net_reduction: 'discover_petri_net_reduction',
   etconformance_precision: 'discover_etconformance_precision',
   alignment_fitness: 'discover_alignment_fitness',
+  alignments: 'discover_alignment_fitness',
   complexity_metrics: 'discover_complexity_metrics',
   // Wave 1 Import/Export
   pnml_import: 'import_pnml',
@@ -128,6 +129,7 @@ export const ALGORITHM_OUTPUT_TYPES: Record<string, string> = {
   petri_net_reduction: 'petrinet',
   etconformance_precision: 'conformance_report',
   alignment_fitness: 'alignment_report',
+  alignments: 'alignment_report',
   complexity_metrics: 'complexity_report',
   // Wave 1 Import/Export
   pnml_import: 'petrinet',
@@ -174,6 +176,7 @@ export const ALGORITHM_CLI_ALIASES: Record<string, string> = {
   petri_net_reduction: 'reduce-pn',
   etconformance_precision: 'etconformance',
   alignment_fitness: 'alignment',
+  alignments: 'alignment',
   complexity_metrics: 'complexity',
   // Wave 1 Import/Export
   pnml_import: 'import-pnml',
@@ -220,6 +223,7 @@ export const ALGORITHM_DISPLAY_NAMES: Record<string, string> = {
   petri_net_reduction: 'Petri Net Reduction',
   etconformance_precision: 'ETConformance Precision',
   alignment_fitness: 'Alignment Fitness',
+  alignments: 'Alignment Fitness',
   complexity_metrics: 'Complexity Metrics',
   // Wave 1 Import/Export
   pnml_import: 'PNML Import',

@@ -1,0 +1,469 @@
+groups:
+  - id: pm.discovery
+    prefix: pm.discovery
+    brief: Process discovery operations
+    attributes:
+      - id: algorithm
+        type: string
+        brief: Discovery algorithm name (dfg, alpha_plus_plus, ilp_optimization, genetic, variants, etc.)
+        requirement_level: required
+      - id: input_format
+        type: string
+        brief: Input event log format (xes, ocel, csv)
+        requirement_level: required
+      - id: model_type
+        type: string
+        brief: Output model type (dfg, petri_net, process_tree, bpmn)
+        requirement_level: required
+      - id: trace_count
+        type: int
+        brief: Number of traces in input log
+        requirement_level: optional
+      - id: event_count
+        type: int
+        brief: Total number of events in input log
+        requirement_level: optional
+      - id: activity_count
+        type: int
+        brief: Unique number of activities discovered
+        requirement_level: optional
+      - id: model_fitness
+        type: double
+        unit: '1'
+        brief: Model fitness score (0-1) if applicable
+        requirement_level: optional
+      - id: model_precision
+        type: double
+        unit: '1'
+        brief: Model precision score (0-1) if applicable
+        requirement_level: optional
+      - id: execution_time_ms
+        type: int
+        unit: ms
+        brief: Discovery algorithm execution time
+        requirement_level: recommended
+      - id: timeout_exceeded
+        type: boolean
+        brief: Whether operation hit timeout limit
+        requirement_level: optional
+
+  - id: pm.conformance
+    prefix: pm.conformance
+    brief: Process conformance checking operations
+    attributes:
+      - id: fitness
+        type: double
+        unit: '1'
+        brief: Conformance fitness score (0-1)
+        requirement_level: required
+      - id: precision
+        type: double
+        unit: '1'
+        brief: Model precision score (0-1)
+        requirement_level: required
+      - id: generalization
+        type: double
+        unit: '1'
+        brief: Model generalization score (0-1)
+        requirement_level: optional
+      - id: simplicity
+        type: double
+        unit: '1'
+        brief: Model simplicity score (0-1)
+        requirement_level: optional
+      - id: deviation_count
+        type: int
+        brief: Number of deviating traces
+        requirement_level: optional
+      - id: conforms
+        type: boolean
+        brief: Whether log conforms to model
+        requirement_level: recommended
+
+  - id: pm.analysis
+    prefix: pm.analysis
+    brief: Process analysis and statistics operations
+    attributes:
+      - id: analysis_type
+        type: string
+        brief: Type of analysis (statistics, bottleneck, drift, variant)
+        requirement_level: required
+      - id: metric_name
+        type: string
+        brief: Name of analyzed metric
+        requirement_level: optional
+      - id: metric_value
+        type: double
+        brief: Numeric value of metric
+        requirement_level: optional
+      - id: threshold_applied
+        type: double
+        brief: Analysis threshold if applicable
+        requirement_level: optional
+      - id: anomaly_detected
+        type: boolean
+        brief: Whether anomaly or drift was detected
+        requirement_level: optional
+      - id: affected_count
+        type: int
+        brief: Number of traces/objects affected
+        requirement_level: optional
+
+  - id: pm.ocel
+    prefix: pm.ocel
+    brief: Object-Centric Event Log operations
+    attributes:
+      - id: ocel_version
+        type: string
+        brief: OCEL format version (1.0, 2.0)
+        requirement_level: required
+      - id: object_type_count
+        type: int
+        brief: Number of unique object types in log
+        requirement_level: optional
+      - id: event_type_count
+        type: int
+        brief: Number of unique event types in log
+        requirement_level: optional
+      - id: object_count
+        type: int
+        brief: Total number of objects
+        requirement_level: optional
+      - id: projected_object_type
+        type: string
+        brief: Object type used for projection
+        requirement_level: optional
+
+  - id: pm.prediction
+    prefix: pm.prediction
+    brief: Predictive process mining operations
+    attributes:
+      - id: prediction_type
+        type: string
+        brief: Prediction target (next_activity, case_duration, outcome, anomaly)
+        requirement_level: required
+      - id: model_type
+        type: string
+        brief: Model type used (ngram, markov, ml, statistical)
+        requirement_level: optional
+      - id: context_length
+        type: int
+        brief: Number of preceding activities in context
+        requirement_level: optional
+      - id: prediction_confidence
+        type: double
+        unit: '1'
+        brief: Confidence score of prediction (0-1)
+        requirement_level: recommended
+      - id: top_k_candidates
+        type: int
+        brief: Number of top-k predictions returned
+        requirement_level: optional
+      - id: anomaly_score
+        type: double
+        unit: '1'
+        brief: Anomaly score for trace (0-1 normalized)
+        requirement_level: optional
+
+  - id: pm.drift
+    prefix: pm.drift
+    brief: Concept drift detection operations
+    attributes:
+      - id: drift_detected
+        type: boolean
+        brief: Whether concept drift was detected
+        requirement_level: required
+      - id: drift_point_count
+        type: int
+        brief: Number of drift points identified
+        requirement_level: optional
+      - id: drift_direction
+        type: string
+        brief: Trend direction (rising, stable, falling)
+        requirement_level: optional
+      - id: window_size
+        type: int
+        brief: Number of traces per sliding window
+        requirement_level: optional
+      - id: smoothing_alpha
+        type: double
+        unit: '1'
+        brief: EWMA smoothing factor (0-1)
+        requirement_level: optional
+      - id: max_distance
+        type: double
+        unit: '1'
+        brief: Maximum drift distance observed
+        requirement_level: optional
+
+  - id: pm.ml
+    prefix: pm.ml
+    brief: Machine learning operations for process mining
+    attributes:
+      - id: ml_task
+        type: string
+        brief: ML task type (classification, regression, clustering, dimensionality_reduction)
+        requirement_level: required
+      - id: algorithm
+        type: string
+        brief: ML algorithm (knn, logistic_regression, kmeans, pca)
+        requirement_level: optional
+      - id: feature_count
+        type: int
+        brief: Number of features used
+        requirement_level: optional
+      - id: model_accuracy
+        type: double
+        unit: '1'
+        brief: Model accuracy or quality metric (0-1)
+        requirement_level: optional
+      - id: prediction_count
+        type: int
+        brief: Number of predictions made
+        requirement_level: optional
+
+spans:
+  - id: pm.discover.dfg
+    name: pm.discover.dfg
+    kind: internal
+    brief: Discover a Directly-Follows Graph from event log
+    attributes:
+      - ref: pm.discovery.algorithm
+        requirement_level: required
+      - ref: pm.discovery.input_format
+        requirement_level: required
+      - ref: pm.discovery.model_type
+        requirement_level: required
+      - ref: pm.discovery.trace_count
+      - ref: pm.discovery.event_count
+      - ref: pm.discovery.activity_count
+      - ref: pm.discovery.execution_time_ms
+        requirement_level: required
+
+  - id: pm.discover.alpha_plus_plus
+    name: pm.discover.alpha_plus_plus
+    kind: internal
+    brief: Discover Petri Net using Alpha++ algorithm
+    attributes:
+      - ref: pm.discovery.algorithm
+        requirement_level: required
+      - ref: pm.discovery.input_format
+      - ref: pm.discovery.model_type
+      - ref: pm.discovery.execution_time_ms
+        requirement_level: required
+
+  - id: pm.discover.ilp_optimization
+    name: pm.discover.ilp_optimization
+    kind: internal
+    brief: Discover optimal process model using Integer Linear Programming
+    attributes:
+      - ref: pm.discovery.algorithm
+      - ref: pm.discovery.execution_time_ms
+        requirement_level: required
+      - ref: pm.discovery.timeout_exceeded
+
+  - id: pm.discover.genetic_algorithm
+    name: pm.discover.genetic_algorithm
+    kind: internal
+    brief: Discover process model using evolutionary algorithm
+    attributes:
+      - ref: pm.discovery.algorithm
+      - ref: pm.discovery.execution_time_ms
+        requirement_level: required
+      - id: population_size
+        type: int
+        brief: Genetic algorithm population size
+        requirement_level: optional
+      - id: generation_count
+        type: int
+        brief: Number of generations evolved
+        requirement_level: optional
+
+  - id: pm.discover.variants
+    name: pm.discover.variants
+    kind: internal
+    brief: Discover unique trace variants and their frequencies
+    attributes:
+      - ref: pm.discovery.algorithm
+      - id: variant_count
+        type: int
+        brief: Number of unique trace variants
+        requirement_level: required
+      - id: most_frequent_variant_support
+        type: double
+        unit: '1'
+        brief: Support of most frequent variant (0-1)
+        requirement_level: optional
+
+  - id: pm.check.conformance
+    name: pm.check.conformance
+    kind: internal
+    brief: Check conformance of event log to process model
+    attributes:
+      - ref: pm.conformance.fitness
+        requirement_level: required
+      - ref: pm.conformance.precision
+        requirement_level: required
+      - ref: pm.conformance.generalization
+      - ref: pm.conformance.simplicity
+      - ref: pm.conformance.deviation_count
+      - ref: pm.conformance.conforms
+        requirement_level: recommended
+
+  - id: pm.analyze.statistics
+    name: pm.analyze.statistics
+    kind: internal
+    brief: Analyze event log statistics
+    attributes:
+      - ref: pm.analysis.analysis_type
+        requirement_level: required
+      - ref: pm.analysis.metric_name
+      - ref: pm.discovery.trace_count
+      - ref: pm.discovery.event_count
+      - ref: pm.discovery.activity_count
+
+  - id: pm.analyze.bottleneck
+    name: pm.analyze.bottleneck
+    kind: internal
+    brief: Identify process bottlenecks
+    attributes:
+      - ref: pm.analysis.analysis_type
+      - ref: pm.analysis.affected_count
+      - id: bottleneck_activity
+        type: string
+        brief: Activity identified as bottleneck
+        requirement_level: optional
+      - id: avg_duration_ms
+        type: int
+        unit: ms
+        brief: Average duration of bottleneck activity
+        requirement_level: optional
+
+  - id: pm.analyze.drift
+    name: pm.analyze.drift
+    kind: internal
+    brief: Detect concept drift in event log
+    attributes:
+      - ref: pm.drift.drift_detected
+        requirement_level: required
+      - ref: pm.drift.drift_point_count
+      - ref: pm.drift.drift_direction
+      - ref: pm.drift.max_distance
+
+  - id: pm.predict.next_activity
+    name: pm.predict.next_activity
+    kind: internal
+    brief: Predict next activity in running case
+    attributes:
+      - ref: pm.prediction.prediction_type
+        requirement_level: required
+      - ref: pm.prediction.model_type
+      - ref: pm.prediction.context_length
+      - ref: pm.prediction.top_k_candidates
+      - ref: pm.prediction.prediction_confidence
+
+  - id: pm.predict.case_duration
+    name: pm.predict.case_duration
+    kind: internal
+    brief: Predict remaining time for running case
+    attributes:
+      - ref: pm.prediction.prediction_type
+      - ref: pm.prediction.model_type
+      - id: predicted_remaining_time_ms
+        type: int
+        unit: ms
+        brief: Predicted remaining time in milliseconds
+        requirement_level: recommended
+      - ref: pm.prediction.prediction_confidence
+
+  - id: pm.score.anomaly
+    name: pm.score.anomaly
+    kind: internal
+    brief: Score trace for anomaly
+    attributes:
+      - ref: pm.prediction.prediction_type
+      - ref: pm.prediction.anomaly_score
+        requirement_level: required
+      - id: is_anomalous
+        type: boolean
+        brief: Whether trace is flagged as anomalous
+        requirement_level: recommended
+
+  - id: pm.ocel.load
+    name: pm.ocel.load
+    kind: internal
+    brief: Load Object-Centric Event Log
+    attributes:
+      - ref: pm.ocel.ocel_version
+        requirement_level: required
+      - ref: pm.ocel.object_type_count
+      - ref: pm.ocel.event_type_count
+      - ref: pm.ocel.object_count
+
+  - id: pm.ocel.project
+    name: pm.ocel.project
+    kind: internal
+    brief: Project OCEL onto object type
+    attributes:
+      - ref: pm.ocel.projected_object_type
+        requirement_level: required
+      - id: projected_trace_count
+        type: int
+        brief: Number of traces in projected log
+        requirement_level: optional
+
+  - id: pm.ml.classify_traces
+    name: pm.ml.classify_traces
+    kind: internal
+    brief: Classify traces using machine learning
+    attributes:
+      - ref: pm.ml.ml_task
+        requirement_level: required
+      - ref: pm.ml.algorithm
+      - ref: pm.ml.feature_count
+      - ref: pm.ml.model_accuracy
+      - ref: pm.ml.prediction_count
+
+  - id: pm.ml.cluster_traces
+    name: pm.ml.cluster_traces
+    kind: internal
+    brief: Cluster traces using machine learning
+    attributes:
+      - ref: pm.ml.ml_task
+      - ref: pm.ml.algorithm
+      - id: cluster_count
+        type: int
+        brief: Number of clusters identified
+        requirement_level: optional
+
+metrics:
+  - id: pm.discovery.execution.time
+    type: histogram
+    unit: ms
+    brief: Time to execute process discovery algorithm
+    attributes:
+      - ref: pm.discovery.algorithm
+        requirement_level: required
+      - ref: pm.discovery.input_format
+
+  - id: pm.conformance.fitness
+    type: gauge
+    unit: '1'
+    brief: Model fitness score over time
+    attributes:
+      - ref: pm.conformance.fitness
+        requirement_level: required
+
+  - id: pm.drift.distance
+    type: histogram
+    unit: '1'
+    brief: Distribution of drift distances
+    attributes:
+      - ref: pm.drift.drift_detected
+
+  - id: pm.prediction.confidence
+    type: gauge
+    unit: '1'
+    brief: Prediction confidence scores
+    attributes:
+      - ref: pm.prediction.prediction_confidence

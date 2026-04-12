@@ -353,7 +353,10 @@ fn validate_workflow_net(net: &InternalNet) -> Result<(String, String), String> 
             no_incoming.len()
         ));
     }
-    let start_place = no_incoming.into_iter().next().unwrap();
+    let start_place = no_incoming
+        .into_iter()
+        .next()
+        .expect("Length check guarantees one element");
 
     let no_outgoing = net.places_no_outgoing();
     if no_outgoing.len() != 1 {
@@ -362,7 +365,10 @@ fn validate_workflow_net(net: &InternalNet) -> Result<(String, String), String> 
             no_outgoing.len()
         ));
     }
-    let end_place = no_outgoing.into_iter().next().unwrap();
+    let end_place = no_outgoing
+        .into_iter()
+        .next()
+        .expect("Length check guarantees one element");
 
     // Basic connectivity check: every place and transition should be reachable
     // from the source. For a proper check we'd need WF-net evaluation, but

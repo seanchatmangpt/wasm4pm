@@ -1,6 +1,6 @@
 {
-  "name": "@seanchatmangpt/pictl",
-  "version": "26.4.10",
+  "name": "wasm4pm",
+  "version": "26.4.6",
   "description": "Process Mining in WebAssembly - High-Speed Algorithms for Browser and Node.js",
   "main": "pkg/pictl.js",
   "types": "pkg/pictl.d.ts",
@@ -19,46 +19,34 @@
     "build:nodejs": "RUSTFLAGS=\"-C target-feature=+simd128\" wasm-pack build --target nodejs",
     "build:web": "RUSTFLAGS=\"-C target-feature=+simd128\" wasm-pack build --target web",
     "build:all": "npm run build && npm run build:nodejs && npm run build:web",
-    "build:optimized": "npm run build && wasm-opt pkg/pictl_bg.wasm -O4 -o pkg/pictl_bg.wasm || echo 'wasm-opt not available, skipping post-processing'",
-    "build:mcp": "tsc src/mcp_server.ts --outDir dist --module commonjs --target es2020 --skipLibCheck --esModuleInterop",
+    "build:mcp": "tsc src/mcp_server.ts --outDir dist --module commonjs --target es2020",
     "start:mcp": "npm run build:mcp && node dist/mcp_server.js",
-    "build:browser": "RUSTFLAGS=\"-C target-feature=+simd128\" wasm-pack build --target bundler --features browser",
-    "build:edge": "RUSTFLAGS=\"-C target-feature=+simd128\" wasm-pack build --target bundler --features edge",
-    "build:fog": "RUSTFLAGS=\"-C target-feature=+simd128\" wasm-pack build --target bundler --features fog",
-    "build:iot": "RUSTFLAGS=\"-C target-feature=+simd128\" wasm-pack build --target bundler --features iot",
-    "build:cloud": "RUSTFLAGS=\"-C target-feature=+simd128\" wasm-pack build --target bundler --features cloud",
-    "build:all-profiles": "npm run build:browser && npm run build:edge && npm run build:fog && npm run build:iot && npm run build:cloud",
-    "size:check": "ls -lh pkg/pictl_bg.wasm && gzip -c pkg/pictl_bg.wasm | wc -c",
     "test": "npm run build:nodejs && npm run test:unit && npm run build:web && npm run test:browser",
     "test:unit": "vitest run --exclude '__tests__/integration/browser.test.ts'",
     "test:unit:watch": "vitest",
     "test:integration": "vitest run __tests__/integration/",
     "test:browser": "vitest run --browser chromium __tests__/integration/browser.test.ts",
     "lint": "npm run format:check && npm run type:check",
-    "lint:fix": "prettier --write src __tests__ && npm run type:check",
     "format": "prettier --write \"**/*.{js,ts,json,md}\"",
     "format:check": "prettier --check \"**/*.{js,ts,json,md}\"",
     "type:check": "tsc --noEmit",
-    "clean": "rm -rf pkg dist target/wasm*",
-    "dev": "cargo watch -s 'cargo check --target wasm32-unknown-unknown && RUSTFLAGS=\"-C target-feature=+simd128\" wasm-pack build --target bundler --dev' -w src",
-    "dev:check": "cargo watch -s 'cargo check --target wasm32-unknown-unknown' -w src",
-    "test:coverage": "vitest run --coverage",
-    "docs": "typedoc --out docs pkg/pictl.d.ts",
+    "docs": "typedoc --out docs pkg/wasm4pm.d.ts",
     "bench": "node benchmarks/wasm_bench_runner.js",
     "bench:ci": "node benchmarks/wasm_bench_runner.js --ci",
     "bench:build": "npm run build:nodejs && npm run bench",
     "bench:browser": "npm run build:web && vitest run --browser chromium __tests__/benchmarks/browser.test.ts",
     "bench:browser:ci": "npm run build:web && CI_MODE=true vitest run --browser chromium __tests__/benchmarks/browser.test.ts",
-    "prepublishOnly": "npm run build:all && npm run lint && npm run test"
+    "prepublishOnly": "npm run build:all && npm run lint && npm run test",
+    "prepare": "npm run build:all"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/seanchatmangpt/pictl.git",
+    "url": "https://github.com/seanchatmangpt/wasm4pm.git",
     "directory": "wasm4pm"
   },
-  "homepage": "https://github.com/seanchatmangpt/pictl/tree/main/wasm4pm",
+  "homepage": "https://github.com/seanchatmangpt/wasm4pm/tree/main/wasm4pm",
   "bugs": {
-    "url": "https://github.com/seanchatmangpt/pictl/issues"
+    "url": "https://github.com/seanchatmangpt/wasm4pm/issues"
   },
   "keywords": [
     "process-mining",
@@ -70,25 +58,21 @@
     "data-mining",
     "event-log"
   ],
-  "author": "Sean Chatman <info@chatmangpt.com>",
+  "author": "wasm4pm contributors",
   "license": "MIT OR Apache-2.0",
   "engines": {
     "node": ">=14.0.0"
   },
   "devDependencies": {
-    "@modelcontextprotocol/sdk": "^1.29.0",
-    "@pictl/ml": "workspace:*",
     "@testing-library/dom": "^9.3.3",
     "@testing-library/jest-dom": "^6.1.5",
     "@types/node": "^20.10.6",
     "@vitest/browser": "^1.1.0",
-    "@vitest/coverage-v8": "^1.6.1",
     "playwright": "^1.40.0",
     "prettier": "^3.1.1",
     "typedoc": "^0.25.4",
     "typescript": "^5.3.3",
     "vite-plugin-wasm": "^3.6.0",
     "vitest": "^1.1.0"
-  },
-  "dependencies": {}
+  }
 }

@@ -1,0 +1,5 @@
+# pictl Build Times Log (CSV format)
+# Columns: timestamp,git_commit_hash,duration_ms
+# Used for: trend analysis, build time regression detection
+# Updated: after every build via metrics-track.sh
+

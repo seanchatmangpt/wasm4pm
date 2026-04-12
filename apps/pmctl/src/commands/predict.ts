@@ -107,9 +107,29 @@ export const predict = defineCommand({
 
       // Resolve parameters: CLI flag > config > hardcoded default
       const activityKey = (ctx.args['activity-key'] as string) || pred?.activityKey || 'concept:name';
-      const topK = parseInt(ctx.args['top-k'] as string ?? '3', 10) || 3;
-      const ngramOrder = parseInt(ctx.args['ngram-order'] as string ?? '0', 10) || pred?.ngramOrder || 2;
-      const driftWindow = parseInt(ctx.args['drift-window'] as string ?? '0', 10) || pred?.driftWindowSize || 10;
+      const rawTopK = ctx.args['top-k'] as string | undefined;
+      const parsedTopK = rawTopK != null ? parseInt(rawTopK, 10) : undefined;
+      if (parsedTopK !== undefined && Number.isNaN(parsedTopK)) {
+        formatter.error('Invalid --top-k value: must be a number');
+        process.exit(EXIT_CODES.config_error);
+      }
+      const topK = parsedTopK ?? 3;
+
+      const rawNgram = ctx.args['ngram-order'] as string | undefined;
+      const parsedNgram = rawNgram != null ? parseInt(rawNgram, 10) : undefined;
+      if (parsedNgram !== undefined && Number.isNaN(parsedNgram)) {
+        formatter.error('Invalid --ngram-order value: must be a number');
+        process.exit(EXIT_CODES.config_error);
+      }
+      const ngramOrder = parsedNgram ?? pred?.ngramOrder ?? 2;
+
+      const rawDrift = ctx.args['drift-window'] as string | undefined;
+      const parsedDrift = rawDrift != null ? parseInt(rawDrift, 10) : undefined;
+      if (parsedDrift !== undefined && Number.isNaN(parsedDrift)) {
+        formatter.error('Invalid --drift-window value: must be a number');
+        process.exit(EXIT_CODES.config_error);
+      }
+      const driftWindow = parsedDrift ?? pred?.driftWindowSize ?? 10;
       const prefixActivities = ctx.args.prefix
         ? (ctx.args.prefix as string).split(',').map((s) => s.trim())
         : undefined;
@@ -174,7 +194,7 @@ export const predict = defineCommand({
       }
 
       // Step 9: Free handles
-      try { wasm.delete_object(logHandle); } catch { /* best-effort */ }
+      wasm.delete_object(logHandle);
 
       process.exit(EXIT_CODES.success);
     } catch (error) {
@@ -210,7 +230,7 @@ async function executePredictionTask(
       const raw: string = wasm.predict_next_activity(predictorHandle, JSON.stringify(prefix));
       const predictions: Array<{ activity: string; probability: number }> = JSON.parse(raw);
       const topPredictions = predictions.slice(0, topK);
-      try { wasm.delete_object(predictorHandle); } catch { /* best-effort */ }
+      wasm.delete_object(predictorHandle);
       return { predictions: topPredictions };
     }
 
@@ -219,10 +239,10 @@ async function executePredictionTask(
       if (prefixActivities && prefixActivities.length > 0) {
         const raw: string = wasm.predict_case_duration(modelHandle, JSON.stringify(prefixActivities));
         const prediction = JSON.parse(raw);
-        try { wasm.delete_object(modelHandle); } catch { /* best-effort */ }
+        wasm.delete_object(modelHandle);
         return { prediction };
       } else {
-        try { wasm.delete_object(modelHandle); } catch { /* best-effort */ }
+        wasm.delete_object(modelHandle);
         return { message: 'Remaining-time model built. Use --prefix "Activity1,Activity2" to predict case duration.' };
       }
     }
@@ -238,14 +258,14 @@ async function executePredictionTask(
         // Also score log-likelihood with n-gram
         const ngramHandle: string = wasm.build_ngram_predictor(logHandle, activityKey, ngramOrder);
         const logLikelihood: number = wasm.score_trace_likelihood(ngramHandle, JSON.stringify(prefixActivities));
-        try { wasm.delete_object(ngramHandle); } catch { /* best-effort */ }
-        try { wasm.delete_object(dfgHandle); } catch { /* best-effort */ }
+        wasm.delete_object(ngramHandle);
+        wasm.delete_object(dfgHandle);
         return { anomaly, logLikelihood };
       } else {
         // Score all traces in the log
         const raw: string = wasm.score_log_anomalies(logHandle, dfgHandle, activityKey);
         const anomalies: Array<Record<string, unknown>> = JSON.parse(raw);
-        try { wasm.delete_object(dfgHandle); } catch { /* best-effort */ }
+        wasm.delete_object(dfgHandle);
         return { anomalies: anomalies.slice(0, topK) };
       }
     }

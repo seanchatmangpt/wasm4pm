@@ -1,0 +1,314 @@
+{
+  "algorithm": "dfg",
+  "algorithm_complexity": "O(N) single-pass",
+  "batch_size_max": 8192,
+  "batch_size_min": 256,
+  "batch_sizes_swept": 32,
+  "bottleneck": {
+    "detail": "Latency scales linearly (36.9x). DFG is O(N) — expected behaviour. SIMD/parallel dispatch would produce sub-linear latency growth.",
+    "kind": "linear_scaling_expected"
+  },
+  "distribution": "adversarial",
+  "inflection_point": {
+    "batch_size": 768,
+    "interpretation": "first batch_size where marginal throughput growth dropped below 10%",
+    "throughput_events_per_ms": 164744.0456394382
+  },
+  "latency_curve": [
+    {
+      "batch_size": 256,
+      "latency_max_us": 137.084,
+      "latency_mean_us": 127.82353333333334,
+      "latency_min_us": 126.083,
+      "latency_stddev_us": 2.0486101749451726,
+      "throughput_events_per_ms": 207410.9462368171,
+      "total_events": 26512
+    },
+    {
+      "batch_size": 512,
+      "latency_max_us": 309.25,
+      "latency_mean_us": 255.25823333333335,
+      "latency_min_us": 237.5,
+      "latency_stddev_us": 20.47128410999716,
+      "throughput_events_per_ms": 207570.19003108877,
+      "total_events": 52984
+    },
+    {
+      "batch_size": 768,
+      "latency_max_us": 939.792,
+      "latency_mean_us": 488.61249999999995,
+      "latency_min_us": 363.75,
+      "latency_stddev_us": 149.3538831343754,
+      "throughput_events_per_ms": 164744.0456394382,
+      "total_events": 80496
+    },
+    {
+      "batch_size": 1024,
+      "latency_max_us": 3842.541,
+      "latency_mean_us": 764.8472666666668,
+      "latency_min_us": 480.75,
+      "latency_stddev_us": 681.7329754162761,
+      "throughput_events_per_ms": 141152.36427595257,
+      "total_events": 107960
+    },
+    {
+      "batch_size": 1280,
+      "latency_max_us": 747.125,
+      "latency_mean_us": 707.2484666666666,
+      "latency_min_us": 700.833,
+      "latency_stddev_us": 9.284834314563126,
+      "throughput_events_per_ms": 190473.37159302903,
+      "total_events": 134712
+    },
+    {
+      "batch_size": 1536,
+      "latency_max_us": 898.708,
+      "latency_mean_us": 781.1902666666665,
+      "latency_min_us": 729.667,
+      "latency_stddev_us": 45.504951542979235,
+      "throughput_events_per_ms": 204989.75324321334,
+      "total_events": 160136
+    },
+    {
+      "batch_size": 1792,
+      "latency_max_us": 1120.417,
+      "latency_mean_us": 908.4014999999999,
+      "latency_min_us": 857.917,
+      "latency_stddev_us": 67.3741838282043,
+      "throughput_events_per_ms": 205028.28319856364,
+      "total_events": 186248
+    },
+    {
+      "batch_size": 2048,
+      "latency_max_us": 1138.209,
+      "latency_mean_us": 1056.8794333333333,
+      "latency_min_us": 988.375,
+      "latency_stddev_us": 48.71931387015717,
+      "throughput_events_per_ms": 201324.76164184354,
+      "total_events": 212776
+    },
+    {
+      "batch_size": 2304,
+      "latency_max_us": 1393.625,
+      "latency_mean_us": 1217.6943666666666,
+      "latency_min_us": 1124.333,
+      "latency_stddev_us": 71.66562105476766,
+      "throughput_events_per_ms": 195792.97279057244,
+      "total_events": 238416
+    },
+    {
+      "batch_size": 2560,
+      "latency_max_us": 1553.208,
+      "latency_mean_us": 1356.8915666666664,
+      "latency_min_us": 1269.417,
+      "latency_stddev_us": 62.32853263457185,
+      "throughput_events_per_ms": 194521.07042599106,
+      "total_events": 263944
+    },
+    {
+      "batch_size": 2816,
+      "latency_max_us": 2137.375,
+      "latency_mean_us": 1522.2039999999995,
+      "latency_min_us": 1382.917,
+      "latency_stddev_us": 152.97398762295066,
+      "throughput_events_per_ms": 190345.0523057357,
+      "total_events": 289744
+    },
+    {
+      "batch_size": 3072,
+      "latency_max_us": 1733.333,
+      "latency_mean_us": 1632.0013666666666,
+      "latency_min_us": 1536.333,
+      "latency_stddev_us": 50.52140388619682,
+      "throughput_events_per_ms": 193004.74033508266,
+      "total_events": 314984
+    },
+    {
+      "batch_size": 3328,
+      "latency_max_us": 2190.958,
+      "latency_mean_us": 1817.8223333333333,
+      "latency_min_us": 1639.083,
+      "latency_stddev_us": 130.1226420021597,
+      "throughput_events_per_ms": 187336.23949681918,
+      "total_events": 340544
+    },
+    {
+      "batch_size": 3584,
+      "latency_max_us": 2588.75,
+      "latency_mean_us": 2123.3876,
+      "latency_min_us": 1933.084,
+      "latency_stddev_us": 149.39801736560406,
+      "throughput_events_per_ms": 172641.11366196166,
+      "total_events": 366584
+    },
+    {
+      "batch_size": 3840,
+      "latency_max_us": 2502.459,
+      "latency_mean_us": 2165.5389,
+      "latency_min_us": 1980.875,
+      "latency_stddev_us": 131.08973769403156,
+      "throughput_events_per_ms": 181519.7131762445,
+      "total_events": 393088
+    },
+    {
+      "batch_size": 4096,
+      "latency_max_us": 2672.25,
+      "latency_mean_us": 2409.7348333333334,
+      "latency_min_us": 2225.667,
+      "latency_stddev_us": 120.98604027685269,
+      "throughput_events_per_ms": 174216.6790274089,
+      "total_events": 419816
+    },
+    {
+      "batch_size": 4352,
+      "latency_max_us": 3363.333,
+      "latency_mean_us": 2665.8487,
+      "latency_min_us": 2359.542,
+      "latency_stddev_us": 219.14955028992574,
+      "throughput_events_per_ms": 167502.37926105858,
+      "total_events": 446536
+    },
+    {
+      "batch_size": 4608,
+      "latency_max_us": 3232.542,
+      "latency_mean_us": 2612.6265000000003,
+      "latency_min_us": 2345.416,
+      "latency_stddev_us": 172.51674740011958,
+      "throughput_events_per_ms": 180765.2184497095,
+      "total_events": 472272
+    },
+    {
+      "batch_size": 4864,
+      "latency_max_us": 4973.875,
+      "latency_mean_us": 3092.3971333333334,
+      "latency_min_us": 2723.166,
+      "latency_stddev_us": 397.6016277691976,
+      "throughput_events_per_ms": 160931.4646672052,
+      "total_events": 497664
+    },
+    {
+      "batch_size": 5120,
+      "latency_max_us": 4060.375,
+      "latency_mean_us": 2946.3736,
+      "latency_min_us": 2758.375,
+      "latency_stddev_us": 228.4504747295863,
+      "throughput_events_per_ms": 178459.3779960559,
+      "total_events": 525808
+    },
+    {
+      "batch_size": 5376,
+      "latency_max_us": 3847.333,
+      "latency_mean_us": 3077.6027,
+      "latency_min_us": 2804.125,
+      "latency_stddev_us": 178.31984090974473,
+      "throughput_events_per_ms": 179235.61088635644,
+      "total_events": 551616
+    },
+    {
+      "batch_size": 5632,
+      "latency_max_us": 7077.833,
+      "latency_mean_us": 3275.2833,
+      "latency_min_us": 2891.584,
+      "latency_stddev_us": 741.7929098216091,
+      "throughput_events_per_ms": 176527.0198153546,
+      "total_events": 578176
+    },
+    {
+      "batch_size": 5888,
+      "latency_max_us": 4330.209,
+      "latency_mean_us": 3436.7736333333332,
+      "latency_min_us": 3192.875,
+      "latency_stddev_us": 231.0772459579239,
+      "throughput_events_per_ms": 175667.0832621708,
+      "total_events": 603728
+    },
+    {
+      "batch_size": 6144,
+      "latency_max_us": 4749.167,
+      "latency_mean_us": 3583.157066666667,
+      "latency_min_us": 3147.375,
+      "latency_stddev_us": 350.79640316465935,
+      "throughput_events_per_ms": 175592.6375243463,
+      "total_events": 629176
+    },
+    {
+      "batch_size": 6400,
+      "latency_max_us": 3953.625,
+      "latency_mean_us": 3535.2140000000004,
+      "latency_min_us": 3269.208,
+      "latency_stddev_us": 145.0784548366848,
+      "throughput_events_per_ms": 185188.22340033727,
+      "total_events": 654680
+    },
+    {
+      "batch_size": 6656,
+      "latency_max_us": 3789.958,
+      "latency_mean_us": 3553.9693333333335,
+      "latency_min_us": 3396.125,
+      "latency_stddev_us": 77.38503129216197,
+      "throughput_events_per_ms": 191013.46588246681,
+      "total_events": 678856
+    },
+    {
+      "batch_size": 6912,
+      "latency_max_us": 4368.125,
+      "latency_mean_us": 3716.9262999999996,
+      "latency_min_us": 3541.625,
+      "latency_stddev_us": 157.56094738590312,
+      "throughput_events_per_ms": 189595.36539640298,
+      "total_events": 704712
+    },
+    {
+      "batch_size": 7168,
+      "latency_max_us": 5607.083,
+      "latency_mean_us": 4251.943,
+      "latency_min_us": 3668.542,
+      "latency_stddev_us": 467.0186357221733,
+      "throughput_events_per_ms": 172286.41117719593,
+      "total_events": 732552
+    },
+    {
+      "batch_size": 7424,
+      "latency_max_us": 4348.167,
+      "latency_mean_us": 3963.7013666666667,
+      "latency_min_us": 3829.291,
+      "latency_stddev_us": 97.31464990140091,
+      "throughput_events_per_ms": 191445.3006933141,
+      "total_events": 758832
+    },
+    {
+      "batch_size": 7680,
+      "latency_max_us": 4512.375,
+      "latency_mean_us": 4144.7888,
+      "latency_min_us": 4014.041,
+      "latency_stddev_us": 112.61217589360992,
+      "throughput_events_per_ms": 189292.15404172102,
+      "total_events": 784576
+    },
+    {
+      "batch_size": 7936,
+      "latency_max_us": 52209.0,
+      "latency_mean_us": 7303.6723,
+      "latency_min_us": 4160.584,
+      "latency_stddev_us": 8809.649976740831,
+      "throughput_events_per_ms": 111006.07566963266,
+      "total_events": 810752
+    },
+    {
+      "batch_size": 8192,
+      "latency_max_us": 5297.75,
+      "latency_mean_us": 4717.1153,
+      "latency_min_us": 4497.5,
+      "latency_stddev_us": 141.3305600652008,
+      "throughput_events_per_ms": 177657.73077456895,
+      "total_events": 838032
+    }
+  ],
+  "recommendation": {
+    "max_practical_batch_size": 768,
+    "peak_throughput_events_per_ms": 207570.19003108877,
+    "rationale": "Use batch_size=768 for adversarial distribution: throughput saturates here. Beyond this point additional traces yield <10% throughput gain while memory allocation overhead increases."
+  },
+  "reps_per_batch": 30,
+  "schema_version": "1.0.0"
+}

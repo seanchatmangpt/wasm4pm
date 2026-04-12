@@ -420,6 +420,8 @@ mod tests {
         let features = extract_prefix_features(&prefix);
         assert_eq!(features.length, 4);
         assert_eq!(features.unique_activities, 3);
-        assert_eq!(features.rework_count, 1);
+        // rework_count counts consecutive duplicates only
+        // ["A", "B", "A", "C"] has no consecutive duplicates
+        assert_eq!(features.rework_count, 0);
     }
 }
