@@ -1,0 +1,325 @@
+{
+  "schema": "production-readiness-v1",
+  "timestamp": "2026-04-12T00:44:34.531206+00:00",
+  "repository": "/Users/sac/chatmangpt/pictl",
+  "validator_version": "1.0.0",
+  "summary": {
+    "total_items": 50,
+    "pass": 35,
+    "fail": 13,
+    "warn": 2,
+    "overall_status": "FAIL",
+    "merge_approved": false,
+    "note": "WARN items are non-blocking. FAIL items block merge."
+  },
+  "category_summaries": {
+    "kernel_correctness": {
+      "pass": 5,
+      "fail": 4,
+      "warn": 1,
+      "total": 10,
+      "status": "FAIL"
+    },
+    "gpu_integration": {
+      "pass": 3,
+      "fail": 5,
+      "warn": 0,
+      "total": 8,
+      "status": "FAIL"
+    },
+    "otel_observability": {
+      "pass": 11,
+      "fail": 0,
+      "warn": 1,
+      "total": 12,
+      "status": "PASS"
+    },
+    "test_coverage": {
+      "pass": 7,
+      "fail": 3,
+      "warn": 0,
+      "total": 10,
+      "status": "FAIL"
+    },
+    "code_quality": {
+      "pass": 9,
+      "fail": 1,
+      "warn": 0,
+      "total": 10,
+      "status": "FAIL"
+    }
+  },
+  "categories": {
+    "kernel_correctness": {
+      "KC-1": {
+        "status": "FAIL",
+        "detail": "cargo check --lib: compile errors: error: failed to parse manifest at `/Users/sac/chatmangpt/pictl/wasm4pm/Cargo.toml`"
+      },
+      "KC-2": {
+        "status": "PASS",
+        "detail": "clippy: zero lint warnings on lib target"
+      },
+      "KC-3": {
+        "status": "FAIL",
+        "detail": "rustfmt: 326 file(s) need formatting \u2014 run cargo fmt"
+      },
+      "KC-4": {
+        "status": "PASS",
+        "detail": "lib.rs declares 96 modules (all compile via KC-1)"
+      },
+      "KC-5": {
+        "status": "PASS",
+        "detail": "hot-path discovery files: no unsafe blocks"
+      },
+      "KC-6": {
+        "status": "PASS",
+        "detail": "SIMD modules present: 2 (simd_streaming_dfg + simd_token_replay)"
+      },
+      "KC-7": {
+        "status": "PASS",
+        "detail": "reinforcement.rs: present with 11 struct/impl declarations"
+      },
+      "KC-8": {
+        "status": "FAIL",
+        "detail": "GPU kernel not implemented: no .cu/.wgsl files and no wgpu/GpuLinUCB references. GPU_KERNEL_CONFORMANCE_SPEC.yaml is an aspirational spec for a future implementation."
+      },
+      "KC-9": {
+        "status": "FAIL",
+        "detail": "LinUCB not implemented \u2014 required as CPU reference by merge gate (wasm4pm/src/ml/linucb.rs missing)"
+      },
+      "KC-10": {
+        "status": "WARN",
+        "detail": "cargo audit: 0 vulnerabilities, 2 unsound advisory (rand 0.8.5 RUSTSEC-2026-0097)"
+      }
+    },
+    "gpu_integration": {
+      "GI-1": {
+        "status": "FAIL",
+        "detail": "GPU_KERNEL_CONFORMANCE_SPEC.yaml missing"
+      },
+      "GI-2": {
+        "status": "FAIL",
+        "detail": "GPU_KERNEL_INTEGRATION_GUIDE.md missing"
+      },
+      "GI-3": {
+        "status": "FAIL",
+        "detail": "GPU kernel not found: 0 .cu, 0 .wgsl. Expected wasm4pm/src/gpu/linucb_kernel.cu per merge gate checklist."
+      },
+      "GI-4": {
+        "status": "PASS",
+        "detail": "Batch size 2048 referenced: 3 location(s) in src/"
+      },
+      "GI-5": {
+        "status": "PASS",
+        "detail": "Thread/workgroup config referenced: 11 occurrences"
+      },
+      "GI-6": {
+        "status": "PASS",
+        "detail": "CPU fallback references: 19 occurrence(s) in src/"
+      },
+      "GI-7": {
+        "status": "FAIL",
+        "detail": "No RL execution profile found \u2014 pictl.toml needs linucb_lambda, ucb1_exploration, gpu_enabled"
+      },
+      "GI-8": {
+        "status": "FAIL",
+        "detail": "GPU conformance tests missing: 0 of 25 required test vectors implemented"
+      }
+    },
+    "otel_observability": {
+      "OT-1": {
+        "status": "PASS",
+        "detail": "pictl-process-mining.yaml semconv schema present"
+      },
+      "OT-2": {
+        "status": "PASS",
+        "detail": "All 5 required span groups present (pm.discovery/conformance/prediction/drift/ml)"
+      },
+      "OT-3": {
+        "status": "PASS",
+        "detail": "pm.discovery: 3 required attributes (algorithm, input_format, model_type)"
+      },
+      "OT-4": {
+        "status": "PASS",
+        "detail": "pm.conformance: fitness + precision attributes defined"
+      },
+      "OT-5": {
+        "status": "PASS",
+        "detail": "pm.prediction attributes present: 11 references"
+      },
+      "OT-6": {
+        "status": "PASS",
+        "detail": "pm.drift attributes present: 22 references"
+      },
+      "OT-7": {
+        "status": "PASS",
+        "detail": "semconv metrics section present: 27 metric definitions"
+      },
+      "OT-8": {
+        "status": "PASS",
+        "detail": "Observability package: 16 TypeScript source files"
+      },
+      "OT-9": {
+        "status": "PASS",
+        "detail": "OTEL span timing references: 31 (nanoseconds pattern verified)"
+      },
+      "OT-10": {
+        "status": "PASS",
+        "detail": "weaver available: weaver 0.22.1"
+      },
+      "OT-11": {
+        "status": "WARN",
+        "detail": "semconv/ is a flat YAML schema (1 files), not a weaver registry directory. Convert to weaver registry format (groups/ structure) to enable 'weaver registry check'."
+      },
+      "OT-12": {
+        "status": "PASS",
+        "detail": "pm.ml span groups present: 11 references (classify_traces, cluster_traces)"
+      }
+    },
+    "test_coverage": {
+      "TC-1": {
+        "status": "PASS",
+        "detail": "9 integration test files in wasm4pm/tests/"
+      },
+      "TC-2": {
+        "status": "PASS",
+        "detail": "reinforcement_tests.rs: 10 test functions"
+      },
+      "TC-3": {
+        "status": "PASS",
+        "detail": "parity_tests.rs: 4 test functions (pm4py reference parity)"
+      },
+      "TC-4": {
+        "status": "PASS",
+        "detail": "Test fixtures: 19 files in tests/fixtures/"
+      },
+      "TC-5": {
+        "status": "PASS",
+        "detail": "XES fixture file(s) present: 2 (conformance vector testing)"
+      },
+      "TC-6": {
+        "status": "FAIL",
+        "detail": "cargo check --lib compile error: error: failed to parse manifest at `/Users/sac/chatmangpt/pictl/wasm4pm/Cargo.toml`"
+      },
+      "TC-7": {
+        "status": "FAIL",
+        "detail": "Cargo.toml manifest defect: 2 [[bench]] entries reference non-existent .rs files (performance_benchmark, scalability_benchmark). This breaks 'cargo test'. Remove the entries or create the bench files."
+      },
+      "TC-8": {
+        "status": "FAIL",
+        "detail": "GPU conformance test vectors: 0 of 25 required (test_input_* + test_output_* + 13 edge cases)"
+      },
+      "TC-9": {
+        "status": "PASS",
+        "detail": "autonomic_tests.rs: 116 test declarations"
+      },
+      "TC-10": {
+        "status": "PASS",
+        "detail": "TypeScript tests: 75 test files across packages/"
+      }
+    },
+    "code_quality": {
+      "CQ-1": {
+        "status": "FAIL",
+        "detail": "rustfmt: 326 file(s) need formatting: Diff in /Users/sac/chatmangpt/pictl/wasm4pm/benches/autonomy_jtbd_validation.rs:40:;Diff in /Users/sac/chatmangpt/pictl/wasm4pm/benches/autonomy_jtbd_validation.rs:60:;Diff in /Users/sac/chatmangpt/pictl/wasm4pm/benches/autonomy_jtbd_validation.rs:74:; \u2014 run 'cargo fmt'"
+      },
+      "CQ-2": {
+        "status": "PASS",
+        "detail": "Documentation: 2887 doc lines / 695 public items (415.4%)"
+      },
+      "CQ-3": {
+        "status": "PASS",
+        "detail": "No .unwrap() in hot-path discovery files"
+      },
+      "CQ-4": {
+        "status": "PASS",
+        "detail": "Production dependencies: 4 (<= 30 limit)"
+      },
+      "CQ-5": {
+        "status": "PASS",
+        "detail": "No TODO/FIXME/HACK in source"
+      },
+      "CQ-6": {
+        "status": "PASS",
+        "detail": "CalVer format: v26.4.10"
+      },
+      "CQ-7": {
+        "status": "PASS",
+        "detail": "Dual license: LICENSE-MIT + LICENSE-APACHE present"
+      },
+      "CQ-8": {
+        "status": "PASS",
+        "detail": "CHANGELOG.md present with 47 section headers"
+      },
+      "CQ-9": {
+        "status": "PASS",
+        "detail": "No large data files in src/"
+      },
+      "CQ-10": {
+        "status": "PASS",
+        "detail": "No git conflict markers in src/"
+      }
+    }
+  },
+  "remediation_required": [
+    {
+      "id": "KC-1",
+      "action": "cargo check --lib: compile errors: error: failed to parse manifest at `/Users/sac/chatmangpt/pictl/wasm4pm/Cargo.toml`"
+    },
+    {
+      "id": "KC-3",
+      "action": "rustfmt: 326 file(s) need formatting \u2014 run cargo fmt"
+    },
+    {
+      "id": "KC-8",
+      "action": "GPU kernel not implemented: no .cu/.wgsl files and no wgpu/GpuLinUCB references. GPU_KERNEL_CONFORMANCE_SPEC.yaml is an aspirational spec for a future implementation."
+    },
+    {
+      "id": "KC-9",
+      "action": "LinUCB not implemented \u2014 required as CPU reference by merge gate (wasm4pm/src/ml/linucb.rs missing)"
+    },
+    {
+      "id": "GI-1",
+      "action": "GPU_KERNEL_CONFORMANCE_SPEC.yaml missing"
+    },
+    {
+      "id": "GI-2",
+      "action": "GPU_KERNEL_INTEGRATION_GUIDE.md missing"
+    },
+    {
+      "id": "GI-3",
+      "action": "GPU kernel not found: 0 .cu, 0 .wgsl. Expected wasm4pm/src/gpu/linucb_kernel.cu per merge gate checklist."
+    },
+    {
+      "id": "GI-7",
+      "action": "No RL execution profile found \u2014 pictl.toml needs linucb_lambda, ucb1_exploration, gpu_enabled"
+    },
+    {
+      "id": "GI-8",
+      "action": "GPU conformance tests missing: 0 of 25 required test vectors implemented"
+    },
+    {
+      "id": "TC-6",
+      "action": "cargo check --lib compile error: error: failed to parse manifest at `/Users/sac/chatmangpt/pictl/wasm4pm/Cargo.toml`"
+    },
+    {
+      "id": "TC-7",
+      "action": "Cargo.toml manifest defect: 2 [[bench]] entries reference non-existent .rs files (performance_benchmark, scalability_benchmark). This breaks 'cargo test'. Remove the entries or create the bench files."
+    },
+    {
+      "id": "TC-8",
+      "action": "GPU conformance test vectors: 0 of 25 required (test_input_* + test_output_* + 13 edge cases)"
+    },
+    {
+      "id": "CQ-1",
+      "action": "rustfmt: 326 file(s) need formatting: Diff in /Users/sac/chatmangpt/pictl/wasm4pm/benches/autonomy_jtbd_validation.rs:40:;Diff in /Users/sac/chatmangpt/pictl/wasm4pm/benches/autonomy_jtbd_validation.rs:60:;Diff in /Users/sac/chatmangpt/pictl/wasm4pm/benches/autonomy_jtbd_validation.rs:74:; \u2014 run 'cargo fmt'"
+    }
+  ],
+  "merge_gate_conditions": {
+    "all_items_pass_or_warn": false,
+    "kernel_correctness_clean": false,
+    "gpu_kernel_implemented": false,
+    "conformance_tests_complete": false,
+    "otel_schema_valid": true
+  }
+}
