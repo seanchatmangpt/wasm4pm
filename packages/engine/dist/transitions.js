@@ -14,8 +14,8 @@
  */
 export const VALID_TRANSITIONS = {
     uninitialized: new Set(['bootstrapping']),
-    bootstrapping: new Set(['ready', 'failed']),
-    ready: new Set(['planning', 'degraded', 'failed']),
+    bootstrapping: new Set(['ready', 'failed', 'degraded']),
+    ready: new Set(['planning', 'running', 'watching', 'degraded', 'failed']),
     planning: new Set(['running', 'ready', 'degraded', 'failed']),
     running: new Set(['watching', 'ready', 'degraded', 'failed']),
     watching: new Set(['ready', 'degraded', 'failed']),
@@ -32,7 +32,10 @@ export function canTransition(from, to) {
  * Get all valid target states from a given state
  */
 export function getValidTransitions(from) {
-    return Array.from(VALID_TRANSITIONS[from] || []);
+    const transitions = VALID_TRANSITIONS[from];
+    if (!transitions)
+        throw new Error(`Invalid engine state: ${from}`);
+    return Array.from(transitions);
 }
 /**
  * Transition validator with recovery context

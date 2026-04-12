@@ -78,14 +78,9 @@ export const watch = defineCommand({
         timestamp: new Date().toISOString(),
       });
 
-      // Step 3: Watch for file changes
+      // Step 3: Watch for file changes — fail fast if path is invalid
       const watchPath = path.resolve(configPath);
-      let isFile = false;
-      try {
-        isFile = await isPathFile(watchPath);
-      } catch {
-        isFile = false;
-      }
+      const isFile = await isPathFile(watchPath);
       const dirToWatch = isFile ? path.dirname(watchPath) : watchPath;
 
       streaming.emitEvent('watching', {
@@ -115,24 +110,15 @@ export const watch = defineCommand({
               timestamp: new Date().toISOString(),
             });
 
-            // Step 5: Reload configuration
-            try {
-              config = await loadConfig({
-                configSearchPaths: [configPath],
-              });
+            // Step 5: Reload configuration — fail fast if config reload fails
+            config = await loadConfig({
+              configSearchPaths: [configPath],
+            });
 
-              streaming.emitEvent('config_reloaded', {
-                timestamp: new Date().toISOString(),
-                configHash: config.metadata.hash,
-              });
-            } catch (error) {
-              streaming.emitEvent('error', {
-                message: `Failed to reload configuration: ${error instanceof Error ? error.message : String(error)}`,
-                code: 'CONFIG_RELOAD_ERROR',
-                timestamp: new Date().toISOString(),
-              });
-              return;
-            }
+            streaming.emitEvent('config_reloaded', {
+              timestamp: new Date().toISOString(),
+              configHash: config.metadata.hash,
+            });
 
             // Step 6: Trigger execution (placeholder - would call engine.watch())
             streaming.emitEvent('processing_started', {

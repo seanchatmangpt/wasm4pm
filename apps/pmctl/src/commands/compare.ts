@@ -109,6 +109,7 @@ function runDiscovery(
 /**
  * Extract node/edge counts from a discovery result.
  * Results may be a parsed object already (JsValue) or a JSON string.
+ * Throws if result format is invalid (failing fast, not silently).
  */
 function extractStats(raw: unknown): { nodes: number; edges: number } {
   let obj: Record<string, unknown>;
@@ -116,13 +117,13 @@ function extractStats(raw: unknown): { nodes: number; edges: number } {
   if (typeof raw === 'string') {
     try {
       obj = JSON.parse(raw) as Record<string, unknown>;
-    } catch {
-      return { nodes: 0, edges: 0 };
+    } catch (err) {
+      throw new Error(`Failed to parse discovery result JSON: ${err instanceof Error ? err.message : String(err)}`);
     }
   } else if (raw !== null && typeof raw === 'object') {
     obj = raw as Record<string, unknown>;
   } else {
-    return { nodes: 0, edges: 0 };
+    throw new Error(`Invalid discovery result: expected object or JSON string, got ${typeof raw}`);
   }
 
   // DFG / social-network shape: { nodes: [...], edges: [...] }
@@ -143,28 +144,30 @@ function extractStats(raw: unknown): { nodes: number; edges: number } {
     return { nodes: 0, edges: (obj['edges'] as unknown[]).length };
   }
 
-  return { nodes: 0, edges: 0 };
+  throw new Error(`Unknown discovery result format: expected nodes/edges or places/transitions or edges array, got ${Object.keys(obj).join(', ')}`);
 }
 
 /**
  * Run the model metrics WASM function to get variants, density, complexity.
+ * Throws if metrics computation fails (failing fast, not silently).
  */
 function extractModelMetrics(
   wasm: Record<string, CallableFunction>,
   logHandle: string,
   activityKey: string,
 ): { variants: number; density: number; complexity: number } {
-  try {
-    const raw = wasm['compute_model_metrics'](logHandle, activityKey);
-    const obj = (typeof raw === 'string' ? JSON.parse(raw) : raw) as Record<string, unknown>;
-    return {
-      variants: (obj['num_variants'] as number) ?? 0,
-      density: (obj['density'] as number) ?? 0,
-      complexity: (obj['complexity_score'] as number) ?? 0,
-    };
-  } catch {
-    return { variants: 0, density: 0, complexity: 0 };
+  const raw = wasm['compute_model_metrics'](logHandle, activityKey);
+  const obj = (typeof raw === 'string' ? JSON.parse(raw) : raw) as Record<string, unknown>;
+
+  const variants = (obj['num_variants'] as number | null) ?? null;
+  const density = (obj['density'] as number | null) ?? null;
+  const complexity = (obj['complexity_score'] as number | null) ?? null;
+
+  if (variants === null || density === null || complexity === null) {
+    throw new Error(`Incomplete model metrics: variants=${variants}, density=${density}, complexity=${complexity}`);
   }
+
+  return { variants, density, complexity };
 }
 
 /**
@@ -267,8 +270,9 @@ export const compare = defineCommand({
       const inputPath = ctx.args.input as string;
       try {
         await fs.access(inputPath);
-      } catch {
-        formatter.error(`Input file not found: ${inputPath}`);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        formatter.error(`Input file not found: ${inputPath} — ${message}`);
         process.exit(EXIT_CODES.source_error);
       }
 
@@ -296,38 +300,21 @@ export const compare = defineCommand({
         if (formatter instanceof HumanFormatter) {
           formatter.debug(`Running ${algo}...`);
         }
-        try {
-          const { raw, elapsedMs } = runDiscovery(wasm, algo, logHandle, activityKey);
-          const { nodes, edges } = extractStats(raw);
-          stats.push({
-            algorithm: algo,
-            nodes,
-            edges,
-            variants: sharedMetrics.variants,
-            density: sharedMetrics.density,
-            complexity: sharedMetrics.complexity,
-            elapsedMs,
-          });
-        } catch (err) {
-          if (formatter instanceof HumanFormatter) {
-            formatter.warn(
-              `Algorithm "${algo}" failed: ${err instanceof Error ? err.message : String(err)}`,
-            );
-          }
-          stats.push({
-            algorithm: algo,
-            nodes: -1,
-            edges: -1,
-            variants: sharedMetrics.variants,
-            density: sharedMetrics.density,
-            complexity: sharedMetrics.complexity,
-            elapsedMs: 0,
-          });
-        }
+        const { raw, elapsedMs } = runDiscovery(wasm, algo, logHandle, activityKey);
+        const { nodes, edges } = extractStats(raw);
+        stats.push({
+          algorithm: algo,
+          nodes,
+          edges,
+          variants: sharedMetrics.variants,
+          density: sharedMetrics.density,
+          complexity: sharedMetrics.complexity,
+          elapsedMs,
+        });
       }
 
-      // Free log handle
-      try { wasm['delete_object'](logHandle); } catch { /* best-effort */ }
+      // Free log handle — fail if cleanup fails (resource leak is critical)
+      wasm['delete_object'](logHandle);
 
       // Output
       if (formatter instanceof JSONFormatter) {
@@ -386,24 +373,24 @@ export const compare = defineCommand({
       );
       humanFormatter.log('');
 
-      // Print cache statistics if requested
-      if (ctx.args['cache-stats'] && typeof wasm.get_cache_stats === 'function') {
-        try {
-          const statsRaw = wasm.get_cache_stats();
-          const stats = typeof statsRaw === 'string' ? JSON.parse(statsRaw) : statsRaw;
-          const hitRate =
-            stats.parse_hits + stats.parse_misses > 0
-              ? ((stats.parse_hits / (stats.parse_hits + stats.parse_misses)) * 100).toFixed(1)
-              : 'N/A';
-          humanFormatter.info('Cache statistics:');
-          humanFormatter.info(`  Parse hits: ${stats.parse_hits}`);
-          humanFormatter.info(`  Parse misses: ${stats.parse_misses}`);
-          humanFormatter.info(`  Hit rate: ${hitRate}%`);
-          humanFormatter.info(`  Columnar entries: ${stats.columnar_entries}`);
-          humanFormatter.info(`  Interner entries: ${stats.interner_entries}`);
-        } catch {
-          // best-effort — cache stats not available
+      // Print cache statistics if requested — fail if requested but unavailable
+      if (ctx.args['cache-stats']) {
+        if (typeof wasm.get_cache_stats !== 'function') {
+          formatter.error('Cache statistics requested but not available in WASM module');
+          process.exit(EXIT_CODES.execution_error);
         }
+        const statsRaw = wasm.get_cache_stats();
+        const stats = typeof statsRaw === 'string' ? JSON.parse(statsRaw) : statsRaw;
+        const hitRate =
+          stats.parse_hits + stats.parse_misses > 0
+            ? ((stats.parse_hits / (stats.parse_hits + stats.parse_misses)) * 100).toFixed(1)
+            : 'N/A';
+        humanFormatter.info('Cache statistics:');
+        humanFormatter.info(`  Parse hits: ${stats.parse_hits}`);
+        humanFormatter.info(`  Parse misses: ${stats.parse_misses}`);
+        humanFormatter.info(`  Hit rate: ${hitRate}%`);
+        humanFormatter.info(`  Columnar entries: ${stats.columnar_entries}`);
+        humanFormatter.info(`  Interner entries: ${stats.interner_entries}`);
       }
 
       process.exit(EXIT_CODES.success);

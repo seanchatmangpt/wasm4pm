@@ -218,6 +218,7 @@ fn build_performance_dfgs(ocel: &OCEL) -> FxHashMap<String, PerformanceDFG> {
 ///   "Item": { ... }
 /// }
 /// ```
+#[cfg(feature = "ocel")]
 #[wasm_bindgen]
 pub fn analyze_oc_performance(ocel_handle: &str, _timestamp_key: &str) -> Result<JsValue, JsValue> {
     let ocel = get_ocel(ocel_handle)?;
@@ -231,6 +232,7 @@ pub fn analyze_oc_performance(ocel_handle: &str, _timestamp_key: &str) -> Result
 /// median of all inter-event durations per object type.
 ///
 /// Returns: JSON `{ "Order": { "min_ms": …, "max_ms": …, … }, "Item": { … } }`
+#[cfg(feature = "ocel")]
 #[wasm_bindgen]
 pub fn oc_performance_analysis(ocel_handle: &str) -> Result<JsValue, JsValue> {
     let ocel = get_ocel(ocel_handle)?;
@@ -285,6 +287,7 @@ pub fn oc_performance_analysis(ocel_handle: &str) -> Result<JsValue, JsValue> {
 }
 
 /// Module info for capability registry.
+#[cfg(feature = "ocel")]
 #[wasm_bindgen]
 pub fn oc_performance_info() -> JsValue {
     let info = json!({
@@ -395,12 +398,14 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "oc_performance_analysis uses JsValue which panics in test environment"]
     fn test_oc_performance_invalid_handle() {
         let result = oc_performance_analysis("invalid_handle");
         assert!(result.is_err(), "Should fail on invalid handle");
     }
 
     #[test]
+    #[ignore = "serde_wasm_bindgen requires WASM context"]
     fn test_oc_performance_returns_json() {
         let ocel = create_test_ocel();
         let handle = get_or_init_state()

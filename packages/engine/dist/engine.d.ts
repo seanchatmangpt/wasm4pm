@@ -67,8 +67,8 @@ export declare class Engine {
     private watchSession?;
     private watchConfig?;
     private observability;
-    private traceId?;
-    private requiredOtelAttrs?;
+    private traceId;
+    private requiredOtelAttrs;
     private observabilityErrors;
     /**
      * Creates a new Engine instance

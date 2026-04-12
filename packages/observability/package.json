@@ -20,12 +20,14 @@
     "lint": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:coverage": "vitest --coverage",
     "clean": "rm -rf dist"
   },
   "devDependencies": {
     "typescript": "^5.3.3",
     "vitest": "^1.0.0",
-    "@types/node": "^20.0.0"
+    "@types/node": "^20.0.0",
+    "@vitest/coverage-v8": "^1.6.0"
   },
   "keywords": [
     "observability",

@@ -108,11 +108,15 @@ interface CliResult {
 function runCli(args: string[], timeoutMs: number = 30000): Promise<CliResult> {
   return new Promise((resolve) => {
     const start = Date.now();
-    const child = execFile('npx', ['pictl', ...args], {
+    // Use direct path to built CLI binary instead of npx pictl
+    // npx can't resolve pictl in vitest child_process (no symlink in node_modules/.bin)
+    const cliPath = path.resolve(__dirname, '../../dist/bin/pmctl.js');
+    const cwd = path.resolve(__dirname, '../..');  // Set working directory to apps/pmctl
+    const child = execFile(process.execPath, [cliPath, ...args], {
       timeout: timeoutMs,
       maxBuffer: 10 * 1024 * 1024,
+      cwd,  // Required for proper module resolution
     }, (error, stdout, stderr) => {
-      const durationMs = Date.now() - start;
       const exitCode = error && 'code' in error && typeof error.code === 'number'
         ? error.code
         : (error ? 1 : 0);
@@ -146,11 +150,11 @@ function assertExitCode(result: CliResult, expected: number): void {
  * Validate JSON output schema
  */
 function assertValidJson(jsonStr: string): Record<string, unknown> {
-  let parsed: Record<string, unknown>;
+  let parsed: Record<string, unknown> = {};
   expect(() => {
     parsed = JSON.parse(jsonStr);
   }).not.toThrow();
-  return parsed as Record<string, unknown>;
+  return parsed;
 }
 
 function assertJsonHasFields(obj: Record<string, unknown>, fields: string[]): void {

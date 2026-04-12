@@ -42,35 +42,26 @@ export const status = defineCommand({
       const memoryUsage = process.memoryUsage();
       const uptime = process.uptime();
 
-      // Step 2: Check WASM module status
-      let wasmLoaded = false;
+      // Step 2: Check WASM module status — fail fast if WASM unavailable
+      const loader = WasmLoader.getInstance();
+      await loader.init();
+      const wasm = loader.get();
+      const wasmLoaded = true;
       let wasmVersion: string | null = null;
-      let kernelReady = false;
-      let wasmError: string | null = null;
+      const kernelReady = true;
 
-      try {
-        const loader = WasmLoader.getInstance();
-        await loader.init();
-        const wasm = loader.get();
-        wasmLoaded = true;
-
-        // Try to get the version from the WASM module
-        if (typeof wasm.get_version === 'function') {
-          wasmVersion = String(wasm.get_version());
-        }
-        kernelReady = wasmLoaded; // kernel is ready if WASM loaded successfully
-      } catch (err) {
-        wasmError = err instanceof Error ? err.message : String(err);
+      // Try to get the version from the WASM module
+      if (typeof wasm.get_version === 'function') {
+        wasmVersion = String(wasm.get_version());
       }
 
       // Step 3: Build status report
       const statusReport = {
         engine: {
-          state: wasmLoaded ? 'ready' : 'unavailable',
+          state: 'ready',
           wasmLoaded,
           kernelReady,
           version: wasmVersion,
-          error: wasmError,
         },
         system: {
           platform: process.platform,
@@ -96,14 +87,11 @@ export const status = defineCommand({
         // Engine status section
         formatter.log('Engine Status:');
         formatter.log(`  State: ${statusReport.engine.state}`);
-        formatter.log(`  WASM Loaded: ${wasmLoaded ? 'Yes' : 'No'}`);
+        formatter.log(`  WASM Loaded: Yes`);
         if (wasmVersion) {
           formatter.log(`  WASM Version: ${wasmVersion}`);
         }
-        if (wasmError && ctx.args.verbose) {
-          formatter.log(`  WASM Error: ${wasmError}`);
-        }
-        formatter.log(`  Kernel Ready: ${kernelReady ? 'Yes' : 'No'}`);
+        formatter.log(`  Kernel Ready: Yes`);
 
         // System section
         formatter.log('');

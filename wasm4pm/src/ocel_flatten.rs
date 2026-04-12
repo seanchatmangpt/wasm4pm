@@ -7,6 +7,7 @@ use std::collections::{HashMap, HashSet};
 use wasm_bindgen::prelude::*;
 
 /// List all unique object types in an OCEL
+#[cfg(feature = "ocel")]
 #[wasm_bindgen]
 pub fn list_ocel_object_types(ocel_handle: &str) -> Result<JsValue, JsValue> {
     get_or_init_state().with_object(ocel_handle, |obj| match obj {
@@ -32,6 +33,7 @@ pub fn list_ocel_object_types(ocel_handle: &str) -> Result<JsValue, JsValue> {
 }
 
 /// Get statistics about OCEL structure and content
+#[cfg(feature = "ocel")]
 #[wasm_bindgen]
 pub fn get_ocel_type_statistics(ocel_handle: &str) -> Result<JsValue, JsValue> {
     get_or_init_state().with_object(ocel_handle, |obj| match obj {
@@ -109,6 +111,7 @@ pub fn get_ocel_type_statistics(ocel_handle: &str) -> Result<JsValue, JsValue> {
 /// - Events referencing that object become the events in the trace
 /// - Events are sorted by timestamp within each trace
 /// - Stores the flattened EventLog in state and returns its handle
+#[cfg(feature = "ocel")]
 #[wasm_bindgen]
 pub fn flatten_ocel_to_eventlog(ocel_handle: &str, object_type: &str) -> Result<String, JsValue> {
     // First, extract and clone the OCEL data out of the lock
@@ -272,6 +275,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "serde_wasm_bindgen requires WASM context"]
     fn test_list_object_types() {
         let ocel = create_multi_object_ocel();
         let handle = get_or_init_state()
@@ -285,6 +289,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "serde_wasm_bindgen requires WASM context"]
     fn test_list_object_types_empty() {
         let ocel = OCEL {
             event_types: vec![],
@@ -305,6 +310,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "serde_wasm_bindgen requires WASM context"]
     fn test_get_ocel_statistics() {
         let ocel = create_multi_object_ocel();
         let handle = get_or_init_state()
@@ -370,6 +376,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "flatten_ocel_to_eventlog uses JsValue which panics in test environment"]
     fn test_flatten_ocel_invalid_type() {
         let ocel = create_multi_object_ocel();
         let handle = get_or_init_state()

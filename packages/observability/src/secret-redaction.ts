@@ -95,7 +95,15 @@ export class SecretRedaction {
 
     for (const [key, value] of Object.entries(obj)) {
       if (this.isSensitiveField(key)) {
-        redacted[key] = REDACTED_PLACEHOLDER;
+        if (value === null || value === undefined) {
+          redacted[key] = value;
+        } else if (typeof value === 'object' && !(value instanceof Date)) {
+          redacted[key] = this.redactObject(value, maxDepth - 1);
+        } else if (typeof value === 'string' && value.length < 4) {
+          redacted[key] = value;
+        } else {
+          redacted[key] = REDACTED_PLACEHOLDER;
+        }
       } else if (typeof value === 'object' && value !== null) {
         redacted[key] = this.redactObject(value, maxDepth - 1);
       } else if (typeof value === 'string' && this.isSensitiveContent(value)) {
@@ -171,8 +179,8 @@ export class SecretRedaction {
       return true;
     }
 
-    // Detect JWT pattern (three base64 parts separated by dots)
-    if (/^eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]*$/.test(value)) {
+    // Detect JWT pattern (two or three base64url parts separated by dots)
+    if (/^eyJ[A-Za-z0-9_-]+(\.[A-Za-z0-9_-]+){1,2}$/.test(value)) {
       return true;
     }
 
@@ -199,15 +207,15 @@ export class SecretRedaction {
     for (const [key, value] of Object.entries(original)) {
       const currentPath = path ? `${path}.${key}` : key;
 
-      if (this.isSensitiveField(key)) {
-        report.push({
-          path: currentPath,
-          reason: 'Sensitive field name',
-        });
-      } else if (typeof value === 'string' && this.isSensitiveContent(value)) {
+      if (typeof value === 'string' && this.isSensitiveContent(value)) {
         report.push({
           path: currentPath,
           reason: 'Sensitive content pattern',
+        });
+      } else if (this.isSensitiveField(key)) {
+        report.push({
+          path: currentPath,
+          reason: 'Sensitive field name',
         });
       } else if (typeof value === 'object' && value !== null && !Array.isArray(value) && !(value instanceof Date)) {
         report.push(...this.createRedactionReport(value, redacted[key], currentPath));

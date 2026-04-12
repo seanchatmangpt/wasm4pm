@@ -4,6 +4,7 @@ import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import type { OutputOptions } from '../output.js';
 import { WasmLoader } from '@pictl/engine';
+import { createQuietObservabilityLayer } from '../observability-util.js';
 
 export interface QualityOptions extends OutputOptions {
   input?: string;
@@ -75,8 +76,9 @@ export const quality = defineCommand({
       // Validate input file exists
       try {
         await fs.access(inputPath);
-      } catch {
-        formatter.error(`Input file not found: ${inputPath}`);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        formatter.error(`Input file not found: ${inputPath} — ${message}`);
         process.exit(EXIT_CODES.source_error);
       }
 
@@ -99,7 +101,8 @@ export const quality = defineCommand({
       }
 
       // Load WASM module
-      const loader = WasmLoader.getInstance();
+      const loaderConfig = ctx.args.format === 'json' ? { observability: createQuietObservabilityLayer() } : {};
+      const loader = WasmLoader.getInstance(loaderConfig);
       await loader.init();
       const wasm = loader.get();
 
@@ -119,7 +122,7 @@ export const quality = defineCommand({
       const rawModel = wasm.discover_heuristic_miner(logHandle, activityKey, 0.5);
       const model = typeof rawModel === 'string' ? JSON.parse(rawModel) : rawModel;
 
-      // Compute quality metrics
+      // Compute quality metrics — fail fast if any metric computation fails
       const qualityScores: Record<string, number> = {};
 
       if (formatter instanceof HumanFormatter) {
@@ -128,58 +131,38 @@ export const quality = defineCommand({
 
       // Fitness
       if (requestedMetrics.includes('fitness')) {
-        try {
-          const rawFitness = wasm.compute_quality_fitness(logHandle, activityKey, JSON.stringify(model));
-          const fitnessResult = typeof rawFitness === 'string' ? JSON.parse(rawFitness) : rawFitness;
-          qualityScores.fitness = (fitnessResult as Record<string, unknown>).fitness as number;
-        } catch {
-          qualityScores.fitness = 0.0;
-        }
+        const rawFitness = wasm.compute_quality_fitness(logHandle, activityKey, JSON.stringify(model));
+        const fitnessResult = typeof rawFitness === 'string' ? JSON.parse(rawFitness) : rawFitness;
+        qualityScores.fitness = (fitnessResult as Record<string, unknown>).fitness as number;
       }
 
       // Precision
       if (requestedMetrics.includes('precision')) {
-        try {
-          const rawPrecision = wasm.compute_quality_precision(logHandle, activityKey, JSON.stringify(model));
-          const precisionResult = typeof rawPrecision === 'string' ? JSON.parse(rawPrecision) : rawPrecision;
-          qualityScores.precision = (precisionResult as Record<string, unknown>).precision as number;
-        } catch {
-          qualityScores.precision = 0.0;
-        }
+        const rawPrecision = wasm.compute_quality_precision(logHandle, activityKey, JSON.stringify(model));
+        const precisionResult = typeof rawPrecision === 'string' ? JSON.parse(rawPrecision) : rawPrecision;
+        qualityScores.precision = (precisionResult as Record<string, unknown>).precision as number;
       }
 
       // Generalization
       if (requestedMetrics.includes('generalization')) {
-        try {
-          const rawGen = wasm.compute_quality_generalization(logHandle, activityKey, JSON.stringify(model));
-          const genResult = typeof rawGen === 'string' ? JSON.parse(rawGen) : rawGen;
-          qualityScores.generalization = (genResult as Record<string, unknown>).generalization as number;
-        } catch {
-          qualityScores.generalization = 0.0;
-        }
+        const rawGen = wasm.compute_quality_generalization(logHandle, activityKey, JSON.stringify(model));
+        const genResult = typeof rawGen === 'string' ? JSON.parse(rawGen) : rawGen;
+        qualityScores.generalization = (genResult as Record<string, unknown>).generalization as number;
       }
 
       // Simplicity
       if (requestedMetrics.includes('simplicity')) {
-        try {
-          const rawSimplicity = wasm.compute_quality_simplicity(logHandle, activityKey, JSON.stringify(model));
-          const simplicityResult = typeof rawSimplicity === 'string' ? JSON.parse(rawSimplicity) : rawSimplicity;
-          qualityScores.simplicity = (simplicityResult as Record<string, unknown>).simplicity as number;
-        } catch {
-          qualityScores.simplicity = 0.0;
-        }
+        const rawSimplicity = wasm.compute_quality_simplicity(logHandle, activityKey, JSON.stringify(model));
+        const simplicityResult = typeof rawSimplicity === 'string' ? JSON.parse(rawSimplicity) : rawSimplicity;
+        qualityScores.simplicity = (simplicityResult as Record<string, unknown>).simplicity as number;
       }
 
       // Compute aggregate quality score
       const scores = Object.values(qualityScores);
       const aggregate = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0.0;
 
-      // Free log handle
-      try {
-        wasm.delete_object(logHandle);
-      } catch {
-        /* best-effort */
-      }
+      // Free log handle — fail if cleanup fails (resource leak is critical)
+      wasm.delete_object(logHandle);
 
       // Build result
       const result = {

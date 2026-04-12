@@ -4,6 +4,7 @@ import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import type { OutputOptions } from '../output.js';
 import { WasmLoader } from '@pictl/engine';
+import { createQuietObservabilityLayer } from '../observability-util.js';
 
 export interface ValidateOptions extends OutputOptions {
   input?: string;
@@ -117,7 +118,8 @@ export const validate = defineCommand({
       }
 
       // Load WASM module
-      const loader = WasmLoader.getInstance();
+      const loaderConfig = ctx.args.format === 'json' ? { observability: createQuietObservabilityLayer() } : {};
+      const loader = WasmLoader.getInstance(loaderConfig);
       await loader.init();
       const wasm = loader.get();
 
@@ -272,11 +274,7 @@ export const validate = defineCommand({
       }
 
       // Free log handle
-      try {
-        wasm.delete_object(logHandle);
-      } catch {
-        /* best-effort */
-      }
+      wasm.delete_object(logHandle);
 
       // Determine overall status
       const hasErrors = errors.length > 0;

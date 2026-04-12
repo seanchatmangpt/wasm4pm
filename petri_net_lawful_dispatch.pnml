@@ -1,0 +1,310 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pnml xmlns="http://www.pnml.org/version-1-0/pnml">
+  <net id="lawful_dispatch_system" type="http://www.pnml.org/version-1-0/pnmlcoremodel">
+    <name>
+      <text>Lawful Dispatch Petri Net (pictl AutoProcess)</text>
+    </name>
+
+    <!-- PLACES -->
+    <place id="admissible_mask">
+      <name><text>admissible_mask</text></name>
+      <capacity><value>1</value></capacity>
+      <initialMarking><value>1</value></initialMarking>
+      <type><text>u64</text></type>
+    </place>
+
+    <place id="features_vector">
+      <name><text>features_vector</text></name>
+      <capacity><value>1</value></capacity>
+      <initialMarking><value>1</value></initialMarking>
+      <type><text>struct</text></type>
+    </place>
+
+    <place id="guard_results">
+      <name><text>guard_results</text></name>
+      <capacity><value>3</value></capacity>
+      <initialMarking><value>0</value></initialMarking>
+      <type><text>u32</text></type>
+    </place>
+
+    <place id="constraint_satisfied">
+      <name><text>constraint_satisfied</text></name>
+      <capacity><value>4</value></capacity>
+      <initialMarking><value>0</value></initialMarking>
+      <type><text>u32</text></type>
+    </place>
+
+    <place id="spc_alerts">
+      <name><text>spc_alerts</text></name>
+      <capacity><value>3</value></capacity>
+      <initialMarking><value>0</value></initialMarking>
+      <type><text>struct</text></type>
+    </place>
+
+    <place id="marking_current">
+      <name><text>marking_current</text></name>
+      <capacity><value>1</value></capacity>
+      <initialMarking><value>1</value></initialMarking>
+      <type><text>Marking4</text></type>
+    </place>
+
+    <place id="transition_legal">
+      <name><text>transition_legal</text></name>
+      <capacity><value>1</value></capacity>
+      <initialMarking><value>0</value></initialMarking>
+      <type><text>u32</text></type>
+    </place>
+
+    <place id="rl_q_state">
+      <name><text>rl_q_state</text></name>
+      <capacity><value>1</value></capacity>
+      <initialMarking><value>0</value></initialMarking>
+      <type><text>f32</text></type>
+    </place>
+
+    <!-- TRANSITIONS -->
+
+    <!-- Phase 1: Parallel evaluation (guard_check, constraint_eval, spc_rule_check) -->
+    <transition id="guard_check">
+      <name><text>guard_check</text></name>
+      <timing><value>3.93</value></timing>
+      <comment>Evaluate guards in admissible mask. Consumes mask, features (ro). Produces 3 guard results.</comment>
+    </transition>
+
+    <arc source="admissible_mask" target="guard_check">
+      <inscription><value>1</value></inscription>
+      <type>input</type>
+    </arc>
+
+    <arc source="features_vector" target="guard_check">
+      <inscription><value>1</value></inscription>
+      <type>readOnly</type>
+      <comment>Read-only: not consumed</comment>
+    </arc>
+
+    <arc source="guard_check" target="guard_results">
+      <inscription><value>3</value></inscription>
+      <type>output</type>
+    </arc>
+
+    <!-- Constraint evaluation -->
+    <transition id="constraint_eval">
+      <name><text>constraint_eval</text></name>
+      <timing><value>2.0</value></timing>
+      <comment>Evaluate constraints. Consumes mask, features (ro). Produces 4 constraint satisfaction tokens.</comment>
+    </transition>
+
+    <arc source="admissible_mask" target="constraint_eval">
+      <inscription><value>1</value></inscription>
+      <type>input</type>
+    </arc>
+
+    <arc source="features_vector" target="constraint_eval">
+      <inscription><value>1</value></inscription>
+      <type>readOnly</type>
+    </arc>
+
+    <arc source="constraint_eval" target="constraint_satisfied">
+      <inscription><value>4</value></inscription>
+      <type>output</type>
+    </arc>
+
+    <!-- SPC rule check -->
+    <transition id="spc_rule_check">
+      <name><text>spc_rule_check</text></name>
+      <timing><value>4.85</value></timing>
+      <comment>Check SPC rules. Consumes mask, features (ro). Produces up to 3 alerts.</comment>
+    </transition>
+
+    <arc source="admissible_mask" target="spc_rule_check">
+      <inscription><value>1</value></inscription>
+      <type>input</type>
+    </arc>
+
+    <arc source="features_vector" target="spc_rule_check">
+      <inscription><value>1</value></inscription>
+      <type>readOnly</type>
+    </arc>
+
+    <arc source="spc_rule_check" target="spc_alerts">
+      <inscription><value>3</value></inscription>
+      <type>output</type>
+    </arc>
+
+    <!-- Phase 2: Join + synchronization (lawful_dispatch) -->
+    <transition id="lawful_dispatch">
+      <name><text>lawful_dispatch</text></name>
+      <timing><value>11.73</value></timing>
+      <comment>Join phase 1 results. Synchronization: AND(guards) AND(constraints) OR(spc_alerts). Produces transition_legal and updated marking.</comment>
+      <synchronization>AND_guards AND_constraints OR_spc_alerts</synchronization>
+    </transition>
+
+    <arc source="marking_current" target="lawful_dispatch">
+      <inscription><value>1</value></inscription>
+      <type>input</type>
+    </arc>
+
+    <arc source="guard_results" target="lawful_dispatch">
+      <inscription><value>3</value></inscription>
+      <type>input</type>
+    </arc>
+
+    <arc source="constraint_satisfied" target="lawful_dispatch">
+      <inscription><value>4</value></inscription>
+      <type>input</type>
+    </arc>
+
+    <arc source="spc_alerts" target="lawful_dispatch">
+      <inscription><value>3</value></inscription>
+      <type>input</type>
+    </arc>
+
+    <arc source="lawful_dispatch" target="transition_legal">
+      <inscription><value>1</value></inscription>
+      <type>output</type>
+    </arc>
+
+    <arc source="lawful_dispatch" target="marking_current">
+      <inscription><value>1</value></inscription>
+      <type>output</type>
+      <comment>Updated marking for phase 3</comment>
+    </arc>
+
+    <!-- Phase 3: Parallel execution (marking_check, marking_fire, transition_construct) -->
+    <transition id="marking_check">
+      <name><text>marking_check</text></name>
+      <timing><value>1.62</value></timing>
+      <comment>Validate marking. Read-only inputs, pass-through output.</comment>
+    </transition>
+
+    <arc source="marking_current" target="marking_check">
+      <inscription><value>1</value></inscription>
+      <type>readOnly</type>
+    </arc>
+
+    <arc source="transition_legal" target="marking_check">
+      <inscription><value>1</value></inscription>
+      <type>readOnly</type>
+    </arc>
+
+    <arc source="marking_check" target="marking_current">
+      <inscription><value>1</value></inscription>
+      <type>output</type>
+      <comment>Pass-through (no modification)</comment>
+    </arc>
+
+    <!-- Marking fire -->
+    <transition id="marking_fire">
+      <name><text>marking_fire</text></name>
+      <timing><value>2.09</value></timing>
+      <comment>Fire transition. Consumes marking and legal flag. Produces updated marking.</comment>
+    </transition>
+
+    <arc source="marking_current" target="marking_fire">
+      <inscription><value>1</value></inscription>
+      <type>input</type>
+    </arc>
+
+    <arc source="transition_legal" target="marking_fire">
+      <inscription><value>1</value></inscription>
+      <type>input</type>
+    </arc>
+
+    <arc source="marking_fire" target="marking_current">
+      <inscription><value>1</value></inscription>
+      <type>output</type>
+      <comment>Updated marking after transition fire</comment>
+    </arc>
+
+    <!-- Transition construct -->
+    <transition id="transition_construct">
+      <name><text>transition_construct</text></name>
+      <timing><value>5.32</value></timing>
+      <comment>Construct transition metadata. Read-only inputs, produce marking with metadata.</comment>
+    </transition>
+
+    <arc source="transition_legal" target="transition_construct">
+      <inscription><value>1</value></inscription>
+      <type>readOnly</type>
+    </arc>
+
+    <arc source="marking_current" target="transition_construct">
+      <inscription><value>1</value></inscription>
+      <type>readOnly</type>
+    </arc>
+
+    <arc source="transition_construct" target="marking_current">
+      <inscription><value>1</value></inscription>
+      <type>output</type>
+      <comment>Marking with metadata annotation</comment>
+    </arc>
+
+    <!-- Phase 4: Async feedback (rl_update) -->
+    <transition id="rl_update">
+      <name><text>rl_update</text></name>
+      <timing><value>17.78</value></timing>
+      <async>true</async>
+      <comment>Async RL Q-state update. Read-only inputs (transition_legal, marking_current, optional spc_alerts). Produces RL state.</comment>
+    </transition>
+
+    <arc source="transition_legal" target="rl_update">
+      <inscription><value>1</value></inscription>
+      <type>readOnly</type>
+    </arc>
+
+    <arc source="marking_current" target="rl_update">
+      <inscription><value>1</value></inscription>
+      <type>readOnly</type>
+    </arc>
+
+    <arc source="spc_alerts" target="rl_update">
+      <inscription><value>1</value></inscription>
+      <type>optional</type>
+      <comment>Optional: present if alerts exist</comment>
+    </arc>
+
+    <arc source="rl_update" target="rl_q_state">
+      <inscription><value>1</value></inscription>
+      <type>output</type>
+    </arc>
+
+    <!-- CONTROL FLOW ANNOTATIONS -->
+    <controlFlow>
+      <phase id="phase_1" type="parallel">
+        <transitions>guard_check, constraint_eval, spc_rule_check</transitions>
+        <synchronization>OR (any subset fires)</synchronization>
+      </phase>
+      <phase id="phase_2" type="sequential">
+        <transitions>lawful_dispatch</transitions>
+        <trigger>phase_1 complete (all inputs available OR timeout)</trigger>
+      </phase>
+      <phase id="phase_3" type="parallel">
+        <transitions>marking_check, marking_fire, transition_construct</transitions>
+        <synchronization>OR (any subset fires)</synchronization>
+      </phase>
+      <phase id="phase_4" type="async">
+        <transitions>rl_update</transitions>
+        <nonBlocking>true</nonBlocking>
+      </phase>
+    </controlFlow>
+
+    <!-- SOUNDNESS PROPERTIES -->
+    <soundness>
+      <deadlockFree>true</deadlockFree>
+      <liveness>true</liveness>
+      <boundedness>true</boundedness>
+      <maxTokensPerPlace>
+        <place id="admissible_mask">1</place>
+        <place id="features_vector">1</place>
+        <place id="guard_results">3</place>
+        <place id="constraint_satisfied">4</place>
+        <place id="spc_alerts">3</place>
+        <place id="marking_current">1</place>
+        <place id="transition_legal">1</place>
+        <place id="rl_q_state">1</place>
+      </maxTokensPerPlace>
+      <totalTokensBound>14</totalTokensBound>
+    </soundness>
+
+  </net>
+</pnml>

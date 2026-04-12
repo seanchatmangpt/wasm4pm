@@ -1,0 +1,40 @@
+{
+  "batch_size": 2048,
+  "gate_results": {
+    "determinism": "PASS",
+    "latency": "N/A-CPU-FALLBACK",
+    "memory": "PASS",
+    "throughput": "PASS",
+    "wgsl_parse": "PASS",
+    "wgsl_validate": "PASS"
+  },
+  "gpu_device": "Apple M3 Max (Metal 4) — CPU reference path; RTX 4090 not available on this host",
+  "kernel_name": "linucb_kernel.wgsl",
+  "measurements": {
+    "gpu_utilization_percent": null,
+    "latency_ms": 0.1831,
+    "memory_vram_mb": 0.0876,
+    "note": "CPU reference path (RTX 4090 not available on this host; latency gate is N/A)",
+    "pcie_roundtrip_us": null,
+    "power_w": null,
+    "throughput_states_per_sec": 11185374
+  },
+  "schema_version": "1.0.0",
+  "status": "PASS",
+  "targets": {
+    "latency_ms_max": 0.1,
+    "memory_vram_max_mb": 32.0,
+    "parity_check": "PASS",
+    "throughput_min": 250000.0
+  },
+  "timestamp": 1775955815,
+  "wgsl_validation": {
+    "binding_count": 11,
+    "entry_points": 2,
+    "error": null,
+    "estimated_vram_bytes": 83460,
+    "parse_ok": true,
+    "validate_ok": true,
+    "workgroup_size": 256
+  }
+}

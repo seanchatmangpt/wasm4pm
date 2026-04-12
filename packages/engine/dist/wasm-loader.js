@@ -119,6 +119,8 @@ export class WasmLoader {
         if (!this.module) {
             return {
                 initialized: false,
+                moduleVersion: undefined,
+                expectedVersion: this.config.expectedVersion,
                 memoryPages: 0,
                 memoryUsagePercent: 0,
                 runtimeEnvironment: this.runtimeEnvironment,
@@ -220,9 +222,22 @@ export class WasmLoader {
         let wasmModule;
         try {
             // Import from the built pictl WASM package
-            // Path is relative to where this file runs
-            const modulePath = this.config.modulePath ||
-                '../../../wasm4pm/pkg/pictl.js';
+            let modulePath = this.config.modulePath;
+            if (!modulePath) {
+                // Compute workspace root from import.meta.url
+                // In src: wasm-loader.ts at packages/engine/src/
+                // In dist: wasm-loader.js at packages/engine/dist/
+                // Both are 3 levels up from workspace root
+                const currentUrl = new URL(import.meta.url);
+                const currentPath = currentUrl.pathname;
+                // Find 'packages/engine' and go up to workspace root
+                const engineIndex = currentPath.lastIndexOf('packages/engine');
+                if (engineIndex === -1) {
+                    throw new Error('Cannot determine workspace root: "packages/engine" not found in path');
+                }
+                const workspaceRoot = currentPath.substring(0, engineIndex);
+                modulePath = workspaceRoot + 'wasm4pm/pkg/pictl.js';
+            }
             // Use dynamic import for flexibility
             wasmModule = await import(modulePath);
         }
@@ -230,21 +245,40 @@ export class WasmLoader {
             const message = err instanceof Error ? err.message : String(err);
             throw new Error(`Failed to load WASM module: ${message}`);
         }
-        if (!wasmModule || !wasmModule.memory) {
-            throw new Error('Invalid WASM module: missing memory or exports');
+        if (!wasmModule || typeof wasmModule.load_eventlog_from_xes !== 'function') {
+            throw new Error('Invalid WASM module: missing required exports (load_eventlog_from_xes)');
         }
         return wasmModule;
     }
     /**
      * Setup Rust panic hook for readable error messages
      * Wraps wasm_bindgen's panic hook with custom handler
+     * Note: set_panic_hook is optional if not exported by WASM module
      */
     setupPanicHook(module) {
-        // Check if wasm_bindgen panic hook is available
+        // Attempt to setup panic hook if available
         const wasmBindgenPanicHook = module.set_panic_hook;
         if (typeof wasmBindgenPanicHook === 'function') {
-            // Call wasm_bindgen's panic hook setup
-            wasmBindgenPanicHook();
+            try {
+                // Call wasm_bindgen's panic hook setup
+                wasmBindgenPanicHook();
+                this.observability.emitCli({
+                    level: 'debug',
+                    message: 'WASM panic hook initialized',
+                });
+            }
+            catch (e) {
+                this.observability.emitCli({
+                    level: 'warn',
+                    message: `Failed to initialize WASM panic hook: ${String(e)}`,
+                });
+            }
+        }
+        else {
+            this.observability.emitCli({
+                level: 'warn',
+                message: 'WASM module does not export set_panic_hook. Continuing without custom panic hook.',
+            });
         }
         // Additionally, setup a global panic handler for uncaught exceptions
         if (typeof globalThis.window === 'undefined') {

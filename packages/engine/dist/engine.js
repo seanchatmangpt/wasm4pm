@@ -48,6 +48,16 @@ export class Engine {
         this.statusTracker = new StatusTracker();
         this.wasmLoader = WasmLoader.getInstance(wasmLoaderConfig);
         this.observability = new ObservabilityWrapper(observabilityConfig);
+        this.traceId = '';
+        this.requiredOtelAttrs = {
+            'run.id': 'bootstrap',
+            'config.hash': '',
+            'input.hash': '',
+            'plan.hash': '',
+            'execution.profile': 'default',
+            'source.kind': 'unknown',
+            'sink.kind': 'unknown',
+        };
         // Subscribe to lifecycle events for logging and observability
         this.transitionUnsubscribe = this.stateMachine.onTransition((event) => {
             this.onStateTransition(event);
@@ -77,16 +87,8 @@ export class Engine {
         if (!this.traceId) {
             this.traceId = Instrumentation.generateTraceId();
         }
-        // Initialize required OTEL attributes (placeholder values for bootstrap)
-        this.requiredOtelAttrs = this.requiredOtelAttrs || {
-            'run.id': this.currentRunId || 'bootstrap',
-            'config.hash': '',
-            'input.hash': '',
-            'plan.hash': '',
-            'execution.profile': 'default',
-            'source.kind': 'unknown',
-            'sink.kind': 'unknown',
-        };
+        // Update required OTEL attributes with current run ID
+        this.requiredOtelAttrs['run.id'] = this.currentRunId || 'bootstrap';
         const bootstrapStart = Date.now();
         try {
             // Validate transition
@@ -380,7 +382,7 @@ export class Engine {
             if (recoveryState && this.stateMachine.canTransition(recoveryState)) {
                 this.stateMachine.transition(recoveryState, `Recovered from execution error`);
             }
-            else {
+            else if (this.state() !== 'failed') {
                 this.stateMachine.transition('failed', `Execution failed: ${error.message}`);
             }
             this.statusTracker.setState(this.state());
@@ -494,7 +496,7 @@ export class Engine {
             if (recoveryState && this.stateMachine.canTransition(recoveryState)) {
                 this.stateMachine.transition(recoveryState, `Recovered from watch error`);
             }
-            else {
+            else if (this.state() !== 'failed') {
                 this.stateMachine.transition('failed', `Watch failed: ${error.message}`);
             }
             this.statusTracker.setState(this.state());
@@ -547,7 +549,9 @@ export class Engine {
                 recoverable: false,
             };
             this.statusTracker.addError(error);
-            this.stateMachine.transition('failed', 'Recovery failed');
+            if (this.state() !== 'failed') {
+                this.stateMachine.transition('failed', 'Recovery failed');
+            }
             this.statusTracker.setState('failed');
             throw err;
         }
@@ -575,6 +579,14 @@ export class Engine {
                 recoverable: false,
             };
             this.statusTracker.addError(error);
+            // Still transition to failed even on shutdown error
+            try {
+                this.stateMachine.transition('failed', 'Engine shutdown with error');
+                this.statusTracker.setState('failed');
+            }
+            catch {
+                // Already in terminal state
+            }
             console.error('Error during shutdown:', error);
         }
     }

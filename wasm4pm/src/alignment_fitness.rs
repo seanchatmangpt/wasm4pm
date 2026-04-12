@@ -454,7 +454,9 @@ pub fn alignment_fitness(
     petri_net_handle: &str,
     config_json: &str,
 ) -> Result<JsValue, JsValue> {
-    let config: AlignmentFitnessConfig = serde_json::from_str(config_json).unwrap_or_default();
+    let config: AlignmentFitnessConfig = serde_json::from_str(config_json).map_err(|e| {
+        JsValue::from_str(&format!("Failed to parse alignment fitness config: {}", e))
+    })?;
 
     // Clone the data we need from state
     let log_cloned = get_or_init_state().with_object(log_handle, |log_obj| match log_obj {

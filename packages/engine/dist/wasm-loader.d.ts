@@ -113,6 +113,7 @@ export declare class WasmLoader {
     /**
      * Setup Rust panic hook for readable error messages
      * Wraps wasm_bindgen's panic hook with custom handler
+     * Note: set_panic_hook is optional if not exported by WASM module
      */
     private setupPanicHook;
     /**

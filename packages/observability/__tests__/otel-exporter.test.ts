@@ -139,7 +139,7 @@ describe('OtelExporter', () => {
       timeout_ms: 100,
     });
 
-    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
     exporter.emit({
       trace_id: '12345678901234567890123456789012',
@@ -152,13 +152,13 @@ describe('OtelExporter', () => {
     // Trigger flush
     await (exporter as any).flush();
 
-    // Should log error but not throw
-    expect(consoleErrorSpy).toHaveBeenCalled();
+    // Optional failures should log warn but not throw
+    expect(consoleWarnSpy).toHaveBeenCalled();
 
     const result = await exporter.shutdown();
     expect(result).toBeDefined();
 
-    consoleErrorSpy.mockRestore();
+    consoleWarnSpy.mockRestore();
   });
 
   it('should export with required attributes', async () => {
@@ -233,7 +233,7 @@ describe('OtelExporter', () => {
       timeout_ms: 100,
     });
 
-    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
     exporter.emit({
       trace_id: '12345678901234567890123456789012',
@@ -246,12 +246,12 @@ describe('OtelExporter', () => {
     // Trigger flush (should timeout)
     await (exporter as any).flush();
 
-    // Should log error but not throw
-    expect(consoleErrorSpy).toHaveBeenCalled();
+    // Optional timeout should log warn but not throw
+    expect(consoleWarnSpy).toHaveBeenCalled();
 
     const result = await exporter.shutdown();
     expect(result).toBeDefined();
 
-    consoleErrorSpy.mockRestore();
+    consoleWarnSpy.mockRestore();
   });
 });

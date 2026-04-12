@@ -16,6 +16,7 @@ export declare class JsonWriter {
     private readonly BUFFER_SIZE;
     private readonly FLUSH_INTERVAL_MS;
     private flushTimer?;
+    private initPromise;
     constructor(config: JsonConfig);
     /**
      * Initialize file handle (async, non-blocking)

@@ -1,0 +1,177 @@
+name: PR Staleness Detection
+
+on:
+  schedule:
+    - cron: '0 * * * *'  # Hourly
+  workflow_dispatch:
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  detect-staleness:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Load WIP config
+        id: config
+        run: |
+          MAX_REVIEW_HOURS=$(jq -r '.max_review_hours' .pictl/wip-config.json)
+          ESCALATION_HOURS=$(jq -r '.escalation_hours' .pictl/wip-config.json)
+          MERGE_BLOCK_HOURS=$(jq -r '.merge_block_hours' .pictl/wip-config.json)
+          AUTO_LABEL=$(jq -r '.auto_label_stale' .pictl/wip-config.json)
+          AUTO_COMMENT=$(jq -r '.auto_comment_escalation' .pictl/wip-config.json)
+
+          echo "max_review_hours=$MAX_REVIEW_HOURS" >> $GITHUB_OUTPUT
+          echo "escalation_hours=$ESCALATION_HOURS" >> $GITHUB_OUTPUT
+          echo "merge_block_hours=$MERGE_BLOCK_HOURS" >> $GITHUB_OUTPUT
+          echo "auto_label=$AUTO_LABEL" >> $GITHUB_OUTPUT
+          echo "auto_comment=$AUTO_COMMENT" >> $GITHUB_OUTPUT
+
+      - name: Fetch all open PRs with timestamps
+        id: fetch_prs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr list \
+            --state open \
+            --repo "${{ github.repository }}" \
+            --limit 100 \
+            --json number,title,createdAt,updatedAt,author,isDraft \
+            --jq '.[]' > /tmp/prs.json
+
+          echo "PR data saved to /tmp/prs.json"
+          jq '.' /tmp/prs.json | head -50
+
+      - name: Process stale PRs
+        id: process
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MAX_REVIEW_HOURS: ${{ steps.config.outputs.max_review_hours }}
+          ESCALATION_HOURS: ${{ steps.config.outputs.escalation_hours }}
+          MERGE_BLOCK_HOURS: ${{ steps.config.outputs.merge_block_hours }}
+          AUTO_LABEL: ${{ steps.config.outputs.auto_label }}
+          AUTO_COMMENT: ${{ steps.config.outputs.auto_comment }}
+        run: |
+          NOW=$(date +%s)
+          STALE_COUNT=0
+          ESCALATION_COUNT=0
+          BLOCK_COUNT=0
+
+          # Parse each PR
+          jq -c '.[]' /tmp/prs.json | while read pr; do
+            PR_NUM=$(echo "$pr" | jq -r '.number')
+            PR_TITLE=$(echo "$pr" | jq -r '.title')
+            CREATED=$(echo "$pr" | jq -r '.createdAt')
+            UPDATED=$(echo "$pr" | jq -r '.updatedAt')
+            AUTHOR=$(echo "$pr" | jq -r '.author.login')
+            IS_DRAFT=$(echo "$pr" | jq -r '.isDraft')
+
+            # Skip drafts
+            if [ "$IS_DRAFT" = "true" ]; then
+              continue
+            fi
+
+            # Use updated time as "last activity"
+            CREATED_SEC=$(date -d "$CREATED" +%s 2>/dev/null || date -jf "%Y-%m-%dT%H:%M:%SZ" "$CREATED" +%s)
+            UPDATED_SEC=$(date -d "$UPDATED" +%s 2>/dev/null || date -jf "%Y-%m-%dT%H:%M:%SZ" "$UPDATED" +%s)
+
+            HOURS_IN_REVIEW=$(( ($NOW - $CREATED_SEC) / 3600 ))
+            HOURS_SINCE_UPDATE=$(( ($NOW - $UPDATED_SEC) / 3600 ))
+
+            echo "PR #$PR_NUM: $HOURS_IN_REVIEW hours in review, $HOURS_SINCE_UPDATE hours since update"
+
+            # Check for merge block (>72 hours in review)
+            if [ "$HOURS_IN_REVIEW" -gt "$MERGE_BLOCK_HOURS" ]; then
+              BLOCK_COUNT=$((BLOCK_COUNT + 1))
+              echo "🚫 PR #$PR_NUM: MERGE BLOCKED (${HOURS_IN_REVIEW}h > ${MERGE_BLOCK_HOURS}h)"
+
+              if [ "$AUTO_COMMENT" = "true" ]; then
+                gh pr comment "$PR_NUM" \
+                  --body "🚫 **MERGE BLOCKED**
+
+This PR has been in review for **${HOURS_IN_REVIEW} hours** (limit: ${MERGE_BLOCK_HOURS}h).
+
+**Required action:**
+- Obtain explicit decision (approve/request changes) from reviewer(s)
+- Or close this PR if no longer needed
+
+See [\`.pictl/wip-config.json\`](/.pictl/wip-config.json) for staleness policy." \
+                  --repo "${{ github.repository }}" 2>/dev/null || true
+              fi
+            fi
+
+            # Check for escalation (>48 hours in review)
+            if [ "$HOURS_IN_REVIEW" -gt "$ESCALATION_HOURS" ] && [ "$HOURS_IN_REVIEW" -le "$MERGE_BLOCK_HOURS" ]; then
+              ESCALATION_COUNT=$((ESCALATION_COUNT + 1))
+              echo "⏱️ PR #$PR_NUM: ESCALATION (${HOURS_IN_REVIEW}h > ${ESCALATION_HOURS}h)"
+
+              if [ "$AUTO_COMMENT" = "true" ]; then
+                gh pr comment "$PR_NUM" \
+                  --body "⏱️ **ESCALATION: PR in review >48h**
+
+This PR has been waiting for **${HOURS_IN_REVIEW} hours** without a decision.
+
+**Action required:**
+- Request review from specific person (@mention)
+- Or provide update on blockers
+- Or close if no longer needed
+
+Target: Merge or close within 24 more hours (by hour ${MERGE_BLOCK_HOURS})." \
+                  --repo "${{ github.repository }}" 2>/dev/null || true
+              fi
+            fi
+
+            # Check for stale label (>24 hours in review)
+            if [ "$HOURS_IN_REVIEW" -gt "$MAX_REVIEW_HOURS" ] && [ "$HOURS_IN_REVIEW" -le "$ESCALATION_HOURS" ]; then
+              STALE_COUNT=$((STALE_COUNT + 1))
+              echo "⏳ PR #$PR_NUM: STALE (${HOURS_IN_REVIEW}h > ${MAX_REVIEW_HOURS}h)"
+
+              if [ "$AUTO_LABEL" = "true" ]; then
+                gh pr edit "$PR_NUM" \
+                  --add-label "⏳-stale" \
+                  --repo "${{ github.repository }}" 2>/dev/null || true
+              fi
+
+              if [ "$AUTO_COMMENT" = "true" ]; then
+                # Check if escalation comment already exists
+                COMMENT_EXISTS=$(gh pr view "$PR_NUM" \
+                  --json comments \
+                  --jq '.comments[] | select(.body | contains("⏳")) | .id' \
+                  --repo "${{ github.repository }}" 2>/dev/null | wc -l)
+
+                if [ "$COMMENT_EXISTS" -eq 0 ]; then
+                  gh pr comment "$PR_NUM" \
+                    --body "⏳ **This PR has been in review for ${HOURS_IN_REVIEW} hours.**
+
+Per WIP policy, PRs should merge within 24 hours of review.
+
+**Next steps:**
+- Request specific review: \`@mention\`
+- Add missing info: push commit with updates
+- If blocked: comment with blocker and next steps
+- If obsolete: close the PR
+
+Target: Merge or escalate within 24 more hours." \
+                    --repo "${{ github.repository }}" 2>/dev/null || true
+                fi
+              fi
+            fi
+          done
+
+          echo "Processed: stale=$STALE_COUNT, escalation=$ESCALATION_COUNT, blocked=$BLOCK_COUNT"
+          echo "stale_count=$STALE_COUNT" >> $GITHUB_OUTPUT
+          echo "escalation_count=$ESCALATION_COUNT" >> $GITHUB_OUTPUT
+          echo "block_count=$BLOCK_COUNT" >> $GITHUB_OUTPUT
+
+      - name: Report staleness summary
+        run: |
+          echo "## Staleness Report"
+          echo ""
+          echo "✳️ Stale PRs (24-48h): ${{ steps.process.outputs.stale_count }}"
+          echo "⏱️ Escalated (48-72h): ${{ steps.process.outputs.escalation_count }}"
+          echo "🚫 Blocked from merge (>72h): ${{ steps.process.outputs.block_count }}"
