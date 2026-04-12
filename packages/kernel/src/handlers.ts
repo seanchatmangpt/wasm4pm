@@ -287,6 +287,26 @@ function stepTypeToAlgorithmId(stepType: PlanStepType): string {
     [PlanStepType.DISCOVER_ACO]: 'aco',
     [PlanStepType.DISCOVER_SIMULATED_ANNEALING]: 'simulated_annealing',
     [PlanStepType.DISCOVER_OPTIMIZED_DFG]: 'optimized_dfg',
+    // Wave 1 Discovery
+    [PlanStepType.DISCOVER_TRANSITION_SYSTEM]: 'transition_system',
+    [PlanStepType.DISCOVER_LOG_TO_TRIE]: 'log_to_trie',
+    [PlanStepType.DISCOVER_CAUSAL_GRAPH]: 'causal_graph',
+    [PlanStepType.DISCOVER_PERFORMANCE_SPECTRUM]: 'performance_spectrum',
+    [PlanStepType.DISCOVER_BATCHES]: 'batches',
+    [PlanStepType.DISCOVER_GENERALIZATION]: 'generalization',
+    [PlanStepType.DISCOVER_ETCONFORMANCE_PRECISION]: 'etconformance_precision',
+    [PlanStepType.DISCOVER_CORRELATION_MINER]: 'correlation_miner',
+    [PlanStepType.DISCOVER_COMPLEXITY_METRICS]: 'complexity_metrics',
+    [PlanStepType.DISCOVER_PETRI_NET_REDUCTION]: 'petri_net_reduction',
+    [PlanStepType.DISCOVER_ALIGNMENT_FITNESS]: 'alignment_fitness',
+    // Wave 1 Import/Export
+    [PlanStepType.IMPORT_PNML]: 'import_pnml',
+    [PlanStepType.IMPORT_BPMN]: 'import_bpmn',
+    [PlanStepType.CONVERT_POWL_TO_PROCESS_TREE]: 'convert_powl_to_process_tree',
+    [PlanStepType.EXPORT_YAWL]: 'export_yawl',
+    // Wave 1 Simulation
+    [PlanStepType.SIMULATE_PLAYOUT]: 'simulate_playout',
+    [PlanStepType.SIMULATE_MONTE_CARLO]: 'simulate_monte_carlo',
     // POWL Discovery
     [PlanStepType.DISCOVER_POWL]: 'powl',
     [PlanStepType.DISCOVER_POWL_TREE]: 'powl_tree',
@@ -296,21 +316,17 @@ function stepTypeToAlgorithmId(stepType: PlanStepType): string {
     [PlanStepType.DISCOVER_POWL_DECISION_GRAPH_CLUSTERING]: 'powl_decision_graph_clustering',
     [PlanStepType.DISCOVER_POWL_DECISION_GRAPH_CYCLIC]: 'powl_decision_graph_cyclic',
     [PlanStepType.DISCOVER_POWL_DECISION_GRAPH_CYCLIC_STRICT]: 'powl_decision_graph_cyclic_strict',
-    // Map these to non-discovery types (won't be found)
-    [PlanStepType.BOOTSTRAP]: 'unknown',
-    [PlanStepType.INIT_WASM]: 'unknown',
-    [PlanStepType.LOAD_SOURCE]: 'unknown',
-    [PlanStepType.VALIDATE_SOURCE]: 'unknown',
+    // Analysis (not discovery algorithms)
     [PlanStepType.ANALYZE_STATISTICS]: 'unknown',
     [PlanStepType.ANALYZE_CONFORMANCE]: 'unknown',
     [PlanStepType.ANALYZE_VARIANTS]: 'unknown',
     [PlanStepType.ANALYZE_PERFORMANCE]: 'unknown',
     [PlanStepType.ANALYZE_CLUSTERING]: 'unknown',
-    [PlanStepType.FILTER_LOG]: 'unknown',
-    [PlanStepType.TRANSFORM_LOG]: 'unknown',
-    [PlanStepType.GENERATE_REPORTS]: 'unknown',
-    [PlanStepType.WRITE_SINK]: 'unknown',
-    [PlanStepType.CLEANUP]: 'unknown',
+    // Setup/Initialization (not discovery algorithms)
+    [PlanStepType.BOOTSTRAP]: 'unknown',
+    [PlanStepType.INIT_WASM]: 'unknown',
+    [PlanStepType.LOAD_SOURCE]: 'unknown',
+    [PlanStepType.VALIDATE_SOURCE]: 'unknown',
     // ML Analysis
     [PlanStepType.ML_CLASSIFY]: 'ml_classify',
     [PlanStepType.ML_CLUSTER]: 'ml_cluster',
@@ -318,6 +334,12 @@ function stepTypeToAlgorithmId(stepType: PlanStepType): string {
     [PlanStepType.ML_ANOMALY]: 'ml_anomaly',
     [PlanStepType.ML_REGRESS]: 'ml_regress',
     [PlanStepType.ML_PCA]: 'ml_pca',
+    // Sink/Output
+    [PlanStepType.FILTER_LOG]: 'unknown',
+    [PlanStepType.TRANSFORM_LOG]: 'unknown',
+    [PlanStepType.GENERATE_REPORTS]: 'unknown',
+    [PlanStepType.WRITE_SINK]: 'unknown',
+    [PlanStepType.CLEANUP]: 'unknown',
   };
 
   return mapping[stepType] || 'unknown';
