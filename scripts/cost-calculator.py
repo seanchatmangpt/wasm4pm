@@ -304,10 +304,24 @@ def build_report(
             rt_us, pe_j = pcie_roundtrip(batch_size, gpu.pcie_gen)
 
         entry = gpu_cost_entry(gpu, batch_size, stages, kernel_time_ms, rt_us, pe_j, thermal)
+        # Store CPU kernel time reference in entry for traceability
+        entry["kernel"]["cpu_wasm_time_ms"] = kernel_time_ms
         gpu_entries[slug] = entry
 
-    # CPU baseline
+    # CPU baseline — use measured WASM time on CPU if available
     cpu_base = cpu_baseline_cost(batch_size, stages)
+    if kernel_time_ms is not None:
+        # Measured WASM time on CPU provides a precise CPU reference
+        cpu = CPU_BASELINE
+        cpu_base["time_ms"] = round(kernel_time_ms, 6)
+        cpu_base["energy_j"] = cpu.tdp_w * (kernel_time_ms / 1000.0)
+        cpu_base["energy_per_op_pj"] = round((cpu_base["energy_j"] / (batch_size * stages)) * 1e12, 6)
+        cpu_time_for_cost = kernel_time_ms / 1000.0
+        cpu_base["cost_usd"] = cpu_time_for_cost * (cpu.price_per_hour / 3600.0)
+        cpu_base["cost_per_million_ops_usd"] = round((cpu_base["cost_usd"] / (batch_size * stages)) * 1e6, 10)
+        cpu_base["time_source"] = "measured_wasm_cpu"
+    else:
+        cpu_base["time_source"] = "estimated_ops_per_sec"
     cpu_cost = cpu_base["cost_usd"]
 
     # Fill in cost ratio vs CPU
@@ -326,7 +340,7 @@ def build_report(
 
     pcie_overheads = [e["energy"]["pcie_overhead_pct"] for e in gpu_entries.values()]
 
-    throttle_str = "YES" if thermal.get("throttling_detected") else "NO"
+    throttle_str = "THROTTLING DETECTED" if thermal.get("throttling_detected") else "STABLE (no throttling)"
     drop_pct = thermal.get("freq_reduction_pct")
     peak_t = thermal.get("peak_temp_c")
     if thermal.get("throttling_detected"):
@@ -435,43 +449,67 @@ def print_report(report: dict) -> None:
     header = f"  {'GPU':<26} {'Power(W)':<10} {'Kern(ms)':<12} {'E/op(pJ)':<14} {'PCIe%'}"
     print(header)
     print("  " + "-" * 68)
+    def fmt_cost(v: float) -> str:
+        """Format cost: scientific notation when < 1e-6, else fixed with 8 decimals."""
+        if v < 1e-7:
+            return f"${v:.4e}"
+        elif v < 1e-3:
+            return f"${v:.8f}"
+        else:
+            return f"${v:.6f}"
+
+    def fmt_speedup(v: float) -> str:
+        if v >= 1000:
+            return f"{v:,.0f}x"
+        elif v >= 10:
+            return f"{v:,.2f}x"
+        else:
+            return f"{v:.4f}x"
+
     for e in report["gpu_cost_breakdown"].values():
+        kt = e["kernel"]["time_ms"]
+        kt_str = f"{kt:.4e}" if kt < 0.001 else f"{kt:.6f}"
         print(
             f"  {e['gpu']:<26} "
             f"{e['hardware']['sustained_w']:<10.1f} "
-            f"{e['kernel']['time_ms']:<12.6f} "
-            f"{e['energy']['energy_per_op_pj']:<14.6f} "
-            f"{e['energy']['pcie_overhead_pct']:.6f}%"
+            f"{kt_str:<12} "
+            f"{e['energy']['energy_per_op_pj']:<14.3f} "
+            f"{e['energy']['pcie_overhead_pct']:.4f}%"
         )
     print()
 
     print("  COST PER MILLION OPERATIONS")
     print("  " + "-" * 68)
-    print(f"  {'GPU':<26} {'$/M ops':<22} {'GPU speedup':<14} {'Cost vs CPU'}")
+    print(f"  {'GPU':<26} {'$/M ops':<20} {'GPU speedup':<18} {'Cost vs CPU'}")
     print("  " + "-" * 68)
     for e in report["gpu_cost_breakdown"].values():
         ratio = e["vs_cpu"]["cost_ratio_gpu_to_cpu"]
-        ratio_str = f"{ratio:.4f}x" if ratio is not None else "N/A"
+        ratio_str = f"{ratio:.6f}x" if ratio is not None else "N/A"
+        cost_mops = e["cost"]["cost_per_million_ops_usd"]
+        spd = e["vs_cpu"]["gpu_speedup_x"]
         print(
             f"  {e['gpu']:<26} "
-            f"${e['cost']['cost_per_million_ops_usd']:<21.8f} "
-            f"{e['vs_cpu']['gpu_speedup_x']:<14.4f}x "
+            f"{fmt_cost(cost_mops):<20} "
+            f"{fmt_speedup(spd):<18} "
             f"{ratio_str}"
         )
     cpu = report["cpu_baseline"]
+    cpu_mops = cpu["cost_per_million_ops_usd"]
     print(
         f"  {'CPU (96-core baseline)':<26} "
-        f"${cpu['cost_per_million_ops_usd']:<21.8f} "
-        f"{'1.0000':<14}x "
-        f"{'1.0000x (baseline)'}"
+        f"{fmt_cost(cpu_mops):<20} "
+        f"{'1x (baseline)':<18} "
+        f"{'1.000000x (baseline)'}"
     )
     print()
 
     print("  THERMAL PROFILE")
     print("  " + "-" * 68)
+    temp_str = f"{th.get('peak_temp_c')}°C" if th.get('peak_temp_c') is not None else "N/A (no GPU)"
+    freq_str = f"{th.get('freq_reduction_pct')}%" if th.get('freq_reduction_pct') is not None else "N/A"
     print(f"  Throttling detected  : {th.get('throttling_detected', False)}")
-    print(f"  Peak temperature     : {th.get('peak_temp_c')}°C")
-    print(f"  Frequency reduction  : {th.get('freq_reduction_pct')}%")
+    print(f"  Peak temperature     : {temp_str}")
+    print(f"  Frequency reduction  : {freq_str}")
     print(f"  Interpretation       : {th.get('interpretation', 'N/A')}")
     print()
 
@@ -481,10 +519,10 @@ def print_report(report: dict) -> None:
     bee = s["best_energy_efficiency"]
     bsp = s["highest_throughput"]
     pcie = s["pcie_overhead_range"]
-    print(f"  Best cost/M ops      : {bce['gpu'].upper()} @ ${bce['cost_per_million_ops_usd']:.8f}")
-    print(f"  Best energy/op       : {bee['gpu'].upper()} @ {bee['energy_per_op_pj']:.6f} pJ/op")
-    print(f"  Fastest GPU          : {bsp['gpu'].upper()} @ {bsp['speedup_vs_cpu']:.4f}x CPU speed")
-    print(f"  PCIe overhead range  : {pcie['min_pct']:.6f}% – {pcie['max_pct']:.6f}%")
+    print(f"  Best cost/M ops      : {bce['gpu'].upper()} @ {fmt_cost(bce['cost_per_million_ops_usd'])}/M ops")
+    print(f"  Best energy/op       : {bee['gpu'].upper()} @ {bee['energy_per_op_pj']:.3f} pJ/op")
+    print(f"  Fastest GPU          : {bsp['gpu'].upper()} @ {fmt_speedup(bsp['speedup_vs_cpu'])} CPU speed")
+    print(f"  PCIe overhead range  : {pcie['min_pct']:.4f}% – {pcie['max_pct']:.4f}%")
     print(f"  Thermal stability    : {s['thermal_stability']}")
     print()
     print(f"  {s['cost_benefit_vs_cpu']['recommendation']}")
