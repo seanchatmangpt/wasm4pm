@@ -279,6 +279,9 @@ pub mod reinforcement;
 // RL Orchestrator — persistent state hub for all RL agents
 pub mod rl_orchestrator;
 
+// Agentic control primitives — role selection, task decomposition, handoffs, escalation
+pub mod agentic;
+
 thread_local! {
     /// Persistent RL orchestrator — survives across autonomic cycles.
     pub static RL_ORCHESTRATOR: RefCell<rl_orchestrator::RlOrchestrator> =
