@@ -71,11 +71,7 @@ fn bench_genetic_algorithm(c: &mut Criterion) {
         group.bench_with_input(
             BenchmarkId::new(format!("params_pop{}_gen{}", pop, gen), 50),
             &fixed_handle,
-            |b, h| {
-                b.iter(|| {
-                    discover_genetic_algorithm(h, ACTIVITY_KEY, pop, gen).unwrap()
-                })
-            },
+            |b, h| b.iter(|| discover_genetic_algorithm(h, ACTIVITY_KEY, pop, gen).unwrap()),
         );
     }
 
@@ -219,13 +215,15 @@ fn bench_simulated_annealing(c: &mut Criterion) {
     for (temp, cooling) in [(10.0_f64, 0.90_f64), (50.0, 0.95), (100.0, 0.99)] {
         group.bench_with_input(
             BenchmarkId::new(
-                format!("params_temp{}_cool{}", temp as u32, (cooling * 100.0) as u32),
+                format!(
+                    "params_temp{}_cool{}",
+                    temp as u32,
+                    (cooling * 100.0) as u32
+                ),
                 50,
             ),
             &fixed_handle,
-            |b, h| {
-                b.iter(|| discover_simulated_annealing(h, ACTIVITY_KEY, temp, cooling).unwrap())
-            },
+            |b, h| b.iter(|| discover_simulated_annealing(h, ACTIVITY_KEY, temp, cooling).unwrap()),
         );
     }
 

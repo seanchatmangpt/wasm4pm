@@ -6,9 +6,8 @@
 mod helpers;
 
 mod autonomic_loop;
-mod golden;
-mod rl_algorithms;
 mod gates;
+mod golden;
 pub mod metrics;
 mod pipeline_a_discovery;
 mod pipeline_b_conformance;
@@ -18,6 +17,7 @@ mod pipeline_e_manufacturing;
 mod pipeline_f_ml;
 mod receipt;
 mod registry;
+mod rl_algorithms;
 
 use criterion::{criterion_group, criterion_main, Criterion};
 use std::time::Duration;

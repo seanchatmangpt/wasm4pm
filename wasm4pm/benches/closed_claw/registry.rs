@@ -3,12 +3,12 @@
 /// 6 canonical pipeline classes from the constitution.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum PipelineClass {
-    DiscoveryCore,       // A
-    ConformanceCore,     // B
-    ObjectCentricCore,   // C
-    SemanticProofLoop,   // D
-    ManufacturingTruth,  // E
-    MlAugmentedRuntime,  // F
+    DiscoveryCore,      // A
+    ConformanceCore,    // B
+    ObjectCentricCore,  // C
+    SemanticProofLoop,  // D
+    ManufacturingTruth, // E
+    MlAugmentedRuntime, // F
 }
 
 impl PipelineClass {

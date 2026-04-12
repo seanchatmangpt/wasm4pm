@@ -16,13 +16,13 @@
 
 use criterion::{black_box, BenchmarkId, Criterion, Throughput};
 use pictl::models::*;
-use pictl::montecarlo::{MonteCarloConfig, run_monte_carlo_simulation};
+use pictl::montecarlo::{run_monte_carlo_simulation, MonteCarloConfig};
 use std::collections::HashMap;
 use std::time::Duration;
 
 #[path = "../helpers.rs"]
 mod helpers;
-use helpers::{generate_event_log, ACTIVITY_KEY, TIMESTAMP_KEY, bench_sizes_slow};
+use helpers::{bench_sizes_slow, generate_event_log, ACTIVITY_KEY, TIMESTAMP_KEY};
 
 // ---------------------------------------------------------------------------
 // Temporal Profile (inline, mirrors temporal_profile.rs logic)
@@ -166,11 +166,8 @@ fn bench_temporal_profile_discovery(c: &mut Criterion) {
             &log,
             |b, log| {
                 b.iter(|| {
-                    let profile = build_temporal_profile(
-                        black_box(log),
-                        ACTIVITY_KEY,
-                        TIMESTAMP_KEY,
-                    );
+                    let profile =
+                        build_temporal_profile(black_box(log), ACTIVITY_KEY, TIMESTAMP_KEY);
                     black_box(profile)
                 })
             },
@@ -242,9 +239,8 @@ fn bench_monte_carlo(c: &mut Criterion) {
             &(&log, &config),
             |b, (log, config)| {
                 b.iter(|| {
-                    let result =
-                        run_monte_carlo_simulation(black_box(log), black_box(config))
-                            .expect("simulation failed");
+                    let result = run_monte_carlo_simulation(black_box(log), black_box(config))
+                        .expect("simulation failed");
                     black_box(result)
                 })
             },
@@ -297,15 +293,19 @@ fn bench_manufacturing_truth_e2e(c: &mut Criterion) {
                         simulation_time_ms: 60000,
                         random_seed: 42,
                     };
-                    let mc_result = run_monte_carlo_simulation(&log, &mc_config)
-                        .expect("MC simulation failed");
+                    let mc_result =
+                        run_monte_carlo_simulation(&log, &mc_config).expect("MC simulation failed");
 
                     let output_json = serde_json::to_string(&mc_result).unwrap_or_default();
                     let output_hash = blake3::hash(output_json.as_bytes());
 
                     black_box((
-                        input_hash, plan_hash, output_hash,
-                        deviations, fitness, mc_result.completed_cases,
+                        input_hash,
+                        plan_hash,
+                        output_hash,
+                        deviations,
+                        fitness,
+                        mc_result.completed_cases,
                     ))
                 })
             },

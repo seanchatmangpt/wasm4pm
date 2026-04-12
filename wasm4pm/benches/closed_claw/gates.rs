@@ -25,15 +25,30 @@ pub struct GateResult {
 
 impl GateResult {
     pub fn pass(gate_id: &'static str, gate_name: &'static str) -> Self {
-        Self { gate_id, gate_name, passed: true, reason: String::new() }
+        Self {
+            gate_id,
+            gate_name,
+            passed: true,
+            reason: String::new(),
+        }
     }
 
     pub fn fail(gate_id: &'static str, gate_name: &'static str, reason: impl Into<String>) -> Self {
-        Self { gate_id, gate_name, passed: false, reason: reason.into() }
+        Self {
+            gate_id,
+            gate_name,
+            passed: false,
+            reason: reason.into(),
+        }
     }
 
     pub fn skip(gate_id: &'static str, gate_name: &'static str, reason: impl Into<String>) -> Self {
-        Self { gate_id, gate_name, passed: true, reason: format!("SKIPPED: {}", reason.into()) }
+        Self {
+            gate_id,
+            gate_name,
+            passed: true,
+            reason: format!("SKIPPED: {}", reason.into()),
+        }
     }
 }
 
@@ -82,15 +97,27 @@ impl ReceiptBundle {
         let valid_hex = |h: &str| h.len() == 64 && h.chars().all(|c| c.is_ascii_hexdigit());
 
         let mut invalid = Vec::new();
-        if !valid_hex(&self.config_hash) { invalid.push("config_hash"); }
-        if !valid_hex(&self.input_hash) { invalid.push("input_hash"); }
-        if !valid_hex(&self.plan_hash) { invalid.push("plan_hash"); }
-        if !valid_hex(&self.output_hash) { invalid.push("output_hash"); }
+        if !valid_hex(&self.config_hash) {
+            invalid.push("config_hash");
+        }
+        if !valid_hex(&self.input_hash) {
+            invalid.push("input_hash");
+        }
+        if !valid_hex(&self.plan_hash) {
+            invalid.push("plan_hash");
+        }
+        if !valid_hex(&self.output_hash) {
+            invalid.push("output_hash");
+        }
 
         if invalid.is_empty() && self.status == ReceiptStatus::Success {
             GateResult::pass("G2", "Receipt")
         } else if !invalid.is_empty() {
-            GateResult::fail("G2", "Receipt", format!("invalid hashes: {}", invalid.join(", ")))
+            GateResult::fail(
+                "G2",
+                "Receipt",
+                format!("invalid hashes: {}", invalid.join(", ")),
+            )
         } else {
             GateResult::fail("G2", "Receipt", format!("status: {:?}", self.status))
         }
@@ -179,7 +206,10 @@ pub fn check_truth_gate(
 
     if let Some(p) = precision {
         if p < thresholds.min_precision {
-            failures.push(format!("precision {:.4} < {:.4}", p, thresholds.min_precision));
+            failures.push(format!(
+                "precision {:.4} < {:.4}",
+                p, thresholds.min_precision
+            ));
         }
     }
 
@@ -263,7 +293,11 @@ pub fn check_report_gate(report: &BTreeMap<String, String>) -> GateResult {
     if missing.is_empty() {
         GateResult::pass("G5", "Report")
     } else {
-        GateResult::fail("G5", "Report", format!("missing sections: {}", missing.join(", ")))
+        GateResult::fail(
+            "G5",
+            "Report",
+            format!("missing sections: {}", missing.join(", ")),
+        )
     }
 }
 
@@ -295,7 +329,12 @@ pub fn run_all_gates(
         }
     }
     if gate_requirements.truth {
-        results.push(check_truth_gate(fitness, precision, temporal, &Default::default()));
+        results.push(check_truth_gate(
+            fitness,
+            precision,
+            temporal,
+            &Default::default(),
+        ));
     }
     if gate_requirements.synchrony {
         if let Some(ph) = profile_hashes {
@@ -354,10 +393,7 @@ mod tests {
     #[test]
     fn test_g1_determinism_pass() {
         let hash = blake3_hash_str("deterministic output");
-        let result = check_determinism_gate(
-            &[hash.as_str(), hash.as_str(), hash.as_str()],
-            "dfg",
-        );
+        let result = check_determinism_gate(&[hash.as_str(), hash.as_str(), hash.as_str()], "dfg");
         assert!(result.passed);
         assert!(result.reason.is_empty());
     }
@@ -442,10 +478,7 @@ mod tests {
 
     #[test]
     fn test_g3_truth_all_pass() {
-        let result = check_truth_gate(
-            Some(0.97), Some(0.85), Some((100, 5)),
-            &Default::default(),
-        );
+        let result = check_truth_gate(Some(0.97), Some(0.85), Some((100, 5)), &Default::default());
         assert!(result.passed);
     }
 
@@ -465,10 +498,7 @@ mod tests {
 
     #[test]
     fn test_g3_truth_temporal_fail() {
-        let result = check_truth_gate(
-            Some(0.97), Some(0.85), Some((50, 200)),
-            &Default::default(),
-        );
+        let result = check_truth_gate(Some(0.97), Some(0.85), Some((50, 200)), &Default::default());
         assert!(!result.passed);
         assert!(result.reason.contains("temporal"));
     }
@@ -604,7 +634,11 @@ mod tests {
         let results = run_all_gates(
             &reqs,
             &[hash.as_str(), hash.as_str()],
-            None, None, None, None, None,
+            None,
+            None,
+            None,
+            None,
+            None,
             &report,
         );
         assert_eq!(results.len(), 2);

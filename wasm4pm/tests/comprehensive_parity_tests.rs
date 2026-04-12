@@ -907,7 +907,11 @@ fn test_empty_event_log() {
     assert_eq!(log.traces.len(), 0, "Empty log should have no traces");
 
     let dfg = build_dfg_from_log(&log, "activity");
-    assert_eq!(dfg.activities.len(), 0, "Empty log should have no activities");
+    assert_eq!(
+        dfg.activities.len(),
+        0,
+        "Empty log should have no activities"
+    );
     assert_eq!(dfg.edges.len(), 0, "Empty log should have no edges");
 }
 
@@ -928,7 +932,11 @@ fn test_empty_trace() {
     assert_eq!(log.traces[0].events.len(), 0, "Trace should have no events");
 
     let dfg = build_dfg_from_log(&log, "activity");
-    assert_eq!(dfg.activities.len(), 0, "Empty trace should produce no activities");
+    assert_eq!(
+        dfg.activities.len(),
+        0,
+        "Empty trace should produce no activities"
+    );
     assert_eq!(dfg.edges.len(), 0, "Empty trace should produce no edges");
 }
 
@@ -956,7 +964,11 @@ fn test_single_event_trace() {
     assert_eq!(dfg.activities.len(), 1, "Should have 1 activity");
     assert_eq!(dfg.activities[0], "A", "Activity should be A");
     assert_eq!(dfg.edges.len(), 0, "Single event should have no edges");
-    assert_eq!(dfg.start_activities.len(), 1, "Should have 1 start activity");
+    assert_eq!(
+        dfg.start_activities.len(),
+        1,
+        "Should have 1 start activity"
+    );
     assert_eq!(dfg.start_activities[0].activity, "A", "Start should be A");
     assert_eq!(dfg.end_activities.len(), 1, "Should have 1 end activity");
     assert_eq!(dfg.end_activities[0].activity, "A", "End should be A");
@@ -1103,7 +1115,11 @@ fn test_dfg_from_single_trace() {
 
     assert_eq!(dfg.activities.len(), 4, "Should have 4 activities");
     assert_eq!(dfg.edges.len(), 3, "Should have 3 edges: A->B, B->C, C->D");
-    assert_eq!(dfg.start_activities.len(), 1, "Should have 1 start activity");
+    assert_eq!(
+        dfg.start_activities.len(),
+        1,
+        "Should have 1 start activity"
+    );
     assert_eq!(dfg.end_activities.len(), 1, "Should have 1 end activity");
 }
 
@@ -1148,16 +1164,28 @@ fn test_start_and_end_activities_consistency() {
 
     let dfg = build_dfg_from_log(&log, "activity");
 
-    assert_eq!(dfg.start_activities.len(), 2, "Should have 2 start activities");
+    assert_eq!(
+        dfg.start_activities.len(),
+        2,
+        "Should have 2 start activities"
+    );
     assert_eq!(dfg.end_activities.len(), 2, "Should have 2 end activities");
 
     // Verify start activities
-    let start_names: Vec<&str> = dfg.start_activities.iter().map(|a| a.activity.as_str()).collect();
+    let start_names: Vec<&str> = dfg
+        .start_activities
+        .iter()
+        .map(|a| a.activity.as_str())
+        .collect();
     assert!(start_names.contains(&"A"), "A should be a start activity");
     assert!(start_names.contains(&"X"), "X should be a start activity");
 
     // Verify end activities
-    let end_names: Vec<&str> = dfg.end_activities.iter().map(|a| a.activity.as_str()).collect();
+    let end_names: Vec<&str> = dfg
+        .end_activities
+        .iter()
+        .map(|a| a.activity.as_str())
+        .collect();
     assert!(end_names.contains(&"C"), "C should be an end activity");
     assert!(end_names.contains(&"Z"), "Z should be an end activity");
 }
@@ -1278,7 +1306,11 @@ fn test_log_with_no_traces() {
 
     assert_eq!(dfg.activities.len(), 0, "Should have no activities");
     assert_eq!(dfg.edges.len(), 0, "Should have no edges");
-    assert_eq!(dfg.start_activities.len(), 0, "Should have no start activities");
+    assert_eq!(
+        dfg.start_activities.len(),
+        0,
+        "Should have no start activities"
+    );
     assert_eq!(dfg.end_activities.len(), 0, "Should have no end activities");
 }
 
@@ -1349,8 +1381,16 @@ fn test_variant_detection() {
     let variant_abc: Vec<String> = vec!["A", "B", "C"].iter().map(|s| s.to_string()).collect();
     let variant_abd: Vec<String> = vec!["A", "B", "D"].iter().map(|s| s.to_string()).collect();
 
-    assert_eq!(variants.get(&variant_abc), Some(&2), "A->B->C should appear twice");
-    assert_eq!(variants.get(&variant_abd), Some(&1), "A->B->D should appear once");
+    assert_eq!(
+        variants.get(&variant_abc),
+        Some(&2),
+        "A->B->C should appear twice"
+    );
+    assert_eq!(
+        variants.get(&variant_abd),
+        Some(&1),
+        "A->B->D should appear once"
+    );
 }
 
 #[test]
@@ -1478,10 +1518,22 @@ fn test_parallel_activities() {
     let edges_from_a: Vec<&CanonicalEdge> = dfg.edges.iter().filter(|e| e.from == "A").collect();
     let edges_to_d: Vec<&CanonicalEdge> = dfg.edges.iter().filter(|e| e.to == "D").collect();
 
-    assert!(edges_from_a.iter().any(|e| e.to == "B"), "A->B should exist");
-    assert!(edges_from_a.iter().any(|e| e.to == "C"), "A->C should exist");
-    assert!(edges_to_d.iter().any(|e| e.from == "B"), "B->D should exist");
-    assert!(edges_to_d.iter().any(|e| e.from == "C"), "C->D should exist");
+    assert!(
+        edges_from_a.iter().any(|e| e.to == "B"),
+        "A->B should exist"
+    );
+    assert!(
+        edges_from_a.iter().any(|e| e.to == "C"),
+        "A->C should exist"
+    );
+    assert!(
+        edges_to_d.iter().any(|e| e.from == "B"),
+        "B->D should exist"
+    );
+    assert!(
+        edges_to_d.iter().any(|e| e.from == "C"),
+        "C->D should exist"
+    );
 }
 
 #[test]
@@ -1507,10 +1559,9 @@ fn test_event_log_with_attributes() {
         "custom:event_attr".to_string(),
         AttributeValue::String("event_value".to_string()),
     );
-    event.attributes.insert(
-        "cost".to_string(),
-        AttributeValue::Float(100.0),
-    );
+    event
+        .attributes
+        .insert("cost".to_string(), AttributeValue::Float(100.0));
 
     trace.events.push(event);
     log.traces.push(trace);
@@ -1531,7 +1582,9 @@ fn test_event_log_with_attributes() {
         "Event should have activity"
     );
     assert!(
-        log.traces[0].events[0].attributes.contains_key("custom:event_attr"),
+        log.traces[0].events[0]
+            .attributes
+            .contains_key("custom:event_attr"),
         "Event should have custom attribute"
     );
     assert!(
@@ -1583,10 +1636,22 @@ fn test_diamond_pattern() {
     let dfg = build_dfg_from_log(&log, "activity");
 
     // Verify diamond structure
-    assert!(dfg.activities.contains(&"A".to_string()), "Should contain A");
-    assert!(dfg.activities.contains(&"B".to_string()), "Should contain B");
-    assert!(dfg.activities.contains(&"C".to_string()), "Should contain C");
-    assert!(dfg.activities.contains(&"D".to_string()), "Should contain D");
+    assert!(
+        dfg.activities.contains(&"A".to_string()),
+        "Should contain A"
+    );
+    assert!(
+        dfg.activities.contains(&"B".to_string()),
+        "Should contain B"
+    );
+    assert!(
+        dfg.activities.contains(&"C".to_string()),
+        "Should contain C"
+    );
+    assert!(
+        dfg.activities.contains(&"D".to_string()),
+        "Should contain D"
+    );
 
     // A has 2 outgoing edges (to B and C)
     let a_outgoing: Vec<&CanonicalEdge> = dfg.edges.iter().filter(|e| e.from == "A").collect();
@@ -1624,7 +1689,11 @@ fn test_self_loop_activity() {
     // Should have self-loop edge A->A
     let self_loop = dfg.edges.iter().find(|e| e.from == "A" && e.to == "A");
     assert!(self_loop.is_some(), "Should have A->A self-loop edge");
-    assert_eq!(self_loop.unwrap().frequency, 1, "Self-loop frequency should be 1");
+    assert_eq!(
+        self_loop.unwrap().frequency,
+        1,
+        "Self-loop frequency should be 1"
+    );
 }
 
 #[test]
@@ -1651,7 +1720,11 @@ fn test_trace_with_only_start_activity() {
 
     assert_eq!(dfg.activities.len(), 1, "Should have 1 activity");
     assert_eq!(dfg.edges.len(), 0, "Should have no edges");
-    assert_eq!(dfg.start_activities.len(), 1, "Should have 1 start activity");
+    assert_eq!(
+        dfg.start_activities.len(),
+        1,
+        "Should have 1 start activity"
+    );
     assert_eq!(dfg.end_activities.len(), 1, "Should have 1 end activity");
     assert_eq!(dfg.start_activities[0].activity, "A", "Start should be A");
     assert_eq!(dfg.end_activities[0].activity, "A", "End should be A");

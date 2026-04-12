@@ -69,10 +69,7 @@ fn test_q_learning_basic() {
     agent.update(&s1, &action, 1.0, &s2, false);
 
     let q_val = agent.get_q_value(&s1, &action);
-    assert!(
-        q_val > 0.0,
-        "Q-value should increase after positive reward"
-    );
+    assert!(q_val > 0.0, "Q-value should increase after positive reward");
 }
 
 // ---------------------------------------------------------------------------
@@ -114,7 +111,11 @@ fn test_double_q_learning_convergence() {
     for _ in 0..200 {
         let state = SimpleState(0);
         let action = agent.select_action(&state);
-        let reward = if matches!(action, SimpleAction::Increment) { 1.0 } else { 0.0 };
+        let reward = if matches!(action, SimpleAction::Increment) {
+            1.0
+        } else {
+            0.0
+        };
         agent.update(&state, &action, reward, &SimpleState(1), false);
         agent.decay_exploration();
     }
@@ -204,7 +205,11 @@ fn test_reinforce_convergence() {
     for _ in 0..500 {
         let s = SimpleState(0);
         let a = agent.select_action(&s);
-        let reward = if matches!(a, SimpleAction::Increment) { 1.0 } else { -1.0 };
+        let reward = if matches!(a, SimpleAction::Increment) {
+            1.0
+        } else {
+            -1.0
+        };
         agent.update_step(&s, &a, reward);
     }
 

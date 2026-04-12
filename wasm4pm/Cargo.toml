@@ -48,6 +48,7 @@ rand = "0.8"
 rand_distr = "0.4"
 statrs = { version = "0.17", default-features = false, optional = true }
 rayon = { version = "1.10", optional = true }
+wgpu  = { version = "0.19", optional = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 web-sys = { version = "0.3", features = [] }
@@ -58,6 +59,7 @@ getrandom = { version = "0.2", features = ["js"] }
 criterion = { version = "0.5", features = ["html_reports"] }
 simd-json = "0.13"
 blake3 = "1"
+naga = { version = "29", features = ["wgsl-in", "spv-out"] }
 
 [[bench]]
 name = "fast_algorithms"
@@ -135,6 +137,9 @@ harness = false
 [[example]]
 name = "scalability_report"
 
+[[example]]
+name = "gpu_wgsl_benchmark"
+
 [features]
 # Deployment profiles - default to cloud (full feature set) for npm package
 default = ["cloud"]
@@ -211,6 +216,9 @@ ocel = []  # OCEL support
 hand_rolled_stats = []  # Use internal median instead of statrs
 simd = []  # SIMD acceleration (always available on WASM)
 console_error_panic_hook = ["dep:console_error_panic_hook"]
+
+# GPU acceleration — RTX 4090 target, falls back to CPU when no GPU present
+gpu = ["dep:wgpu"]
 
 [profile.release]
 # Optimize for binary size ("z" instead of "3")

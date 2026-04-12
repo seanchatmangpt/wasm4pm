@@ -337,11 +337,15 @@ pub fn wasm_compute_precision(
         Some(StoredObject::EventLog(log)) => {
             let precision =
                 compute_precision(&net, &initial_marking, &final_marking, log, activity_key);
-            serde_json::to_string(&precision)
-                .map_err(|e| JsValue::from_str(&format!("Failed to serialize precision result: {}", e)))
+            serde_json::to_string(&precision).map_err(|e| {
+                JsValue::from_str(&format!("Failed to serialize precision result: {}", e))
+            })
         }
         Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
-        None => Err(JsValue::from_str(&format!("EventLog '{}' not found", eventlog_handle))),
+        None => Err(JsValue::from_str(&format!(
+            "EventLog '{}' not found",
+            eventlog_handle
+        ))),
     })?;
 
     Ok(result)

@@ -22,10 +22,30 @@ fn bench_ingress_decide_4(c: &mut Criterion) {
             });
 
             let rules = black_box([
-                TransitionRule { from: 100, to: 101, require_mask: 0, forbid_mask: 0 },
-                TransitionRule { from: 101, to: 102, require_mask: 0, forbid_mask: 0 },
-                TransitionRule { from: 102, to: 103, require_mask: 0, forbid_mask: 0 },
-                TransitionRule { from: 103, to: 104, require_mask: 0, forbid_mask: 0 },
+                TransitionRule {
+                    from: 100,
+                    to: 101,
+                    require_mask: 0,
+                    forbid_mask: 0,
+                },
+                TransitionRule {
+                    from: 101,
+                    to: 102,
+                    require_mask: 0,
+                    forbid_mask: 0,
+                },
+                TransitionRule {
+                    from: 102,
+                    to: 103,
+                    require_mask: 0,
+                    forbid_mask: 0,
+                },
+                TransitionRule {
+                    from: 103,
+                    to: 104,
+                    require_mask: 0,
+                    forbid_mask: 0,
+                },
             ]);
 
             let result = ingress_decide_4(
@@ -49,10 +69,30 @@ fn bench_ingress_decide_4(c: &mut Criterion) {
             });
 
             let rules = black_box([
-                TransitionRule { from: 100, to: 101, require_mask: 0, forbid_mask: 0 },
-                TransitionRule { from: 101, to: 102, require_mask: 0, forbid_mask: 0 },
-                TransitionRule { from: 102, to: 103, require_mask: 0, forbid_mask: 0 },
-                TransitionRule { from: 103, to: 104, require_mask: 0, forbid_mask: 0 },
+                TransitionRule {
+                    from: 100,
+                    to: 101,
+                    require_mask: 0,
+                    forbid_mask: 0,
+                },
+                TransitionRule {
+                    from: 101,
+                    to: 102,
+                    require_mask: 0,
+                    forbid_mask: 0,
+                },
+                TransitionRule {
+                    from: 102,
+                    to: 103,
+                    require_mask: 0,
+                    forbid_mask: 0,
+                },
+                TransitionRule {
+                    from: 103,
+                    to: 104,
+                    require_mask: 0,
+                    forbid_mask: 0,
+                },
             ]);
 
             let result = ingress_decide_4(
@@ -78,14 +118,54 @@ fn bench_ingress_decide_8(c: &mut Criterion) {
             });
 
             let rules = black_box([
-                TransitionRule { from: 200, to: 201, require_mask: 0, forbid_mask: 0 },
-                TransitionRule { from: 201, to: 202, require_mask: 0, forbid_mask: 0 },
-                TransitionRule { from: 202, to: 203, require_mask: 0, forbid_mask: 0 },
-                TransitionRule { from: 203, to: 204, require_mask: 0, forbid_mask: 0 },
-                TransitionRule { from: 204, to: 205, require_mask: 0, forbid_mask: 0 },
-                TransitionRule { from: 205, to: 206, require_mask: 0, forbid_mask: 0 },
-                TransitionRule { from: 206, to: 207, require_mask: 0, forbid_mask: 0 },
-                TransitionRule { from: 207, to: 208, require_mask: 0, forbid_mask: 0 },
+                TransitionRule {
+                    from: 200,
+                    to: 201,
+                    require_mask: 0,
+                    forbid_mask: 0,
+                },
+                TransitionRule {
+                    from: 201,
+                    to: 202,
+                    require_mask: 0,
+                    forbid_mask: 0,
+                },
+                TransitionRule {
+                    from: 202,
+                    to: 203,
+                    require_mask: 0,
+                    forbid_mask: 0,
+                },
+                TransitionRule {
+                    from: 203,
+                    to: 204,
+                    require_mask: 0,
+                    forbid_mask: 0,
+                },
+                TransitionRule {
+                    from: 204,
+                    to: 205,
+                    require_mask: 0,
+                    forbid_mask: 0,
+                },
+                TransitionRule {
+                    from: 205,
+                    to: 206,
+                    require_mask: 0,
+                    forbid_mask: 0,
+                },
+                TransitionRule {
+                    from: 206,
+                    to: 207,
+                    require_mask: 0,
+                    forbid_mask: 0,
+                },
+                TransitionRule {
+                    from: 207,
+                    to: 208,
+                    require_mask: 0,
+                    forbid_mask: 0,
+                },
             ]);
 
             let result = ingress_decide_8(
@@ -109,14 +189,54 @@ fn bench_ingress_decide_8(c: &mut Criterion) {
             });
 
             let rules = black_box([
-                TransitionRule { from: 200, to: 201, require_mask: 0, forbid_mask: 0 },
-                TransitionRule { from: 201, to: 202, require_mask: 0, forbid_mask: 0 },
-                TransitionRule { from: 202, to: 203, require_mask: 0, forbid_mask: 0 },
-                TransitionRule { from: 203, to: 204, require_mask: 0, forbid_mask: 0 },
-                TransitionRule { from: 204, to: 205, require_mask: 0, forbid_mask: 0 },
-                TransitionRule { from: 205, to: 206, require_mask: 0, forbid_mask: 0 },
-                TransitionRule { from: 206, to: 207, require_mask: 0, forbid_mask: 0 },
-                TransitionRule { from: 207, to: 208, require_mask: 0, forbid_mask: 0 },
+                TransitionRule {
+                    from: 200,
+                    to: 201,
+                    require_mask: 0,
+                    forbid_mask: 0,
+                },
+                TransitionRule {
+                    from: 201,
+                    to: 202,
+                    require_mask: 0,
+                    forbid_mask: 0,
+                },
+                TransitionRule {
+                    from: 202,
+                    to: 203,
+                    require_mask: 0,
+                    forbid_mask: 0,
+                },
+                TransitionRule {
+                    from: 203,
+                    to: 204,
+                    require_mask: 0,
+                    forbid_mask: 0,
+                },
+                TransitionRule {
+                    from: 204,
+                    to: 205,
+                    require_mask: 0,
+                    forbid_mask: 0,
+                },
+                TransitionRule {
+                    from: 205,
+                    to: 206,
+                    require_mask: 0,
+                    forbid_mask: 0,
+                },
+                TransitionRule {
+                    from: 206,
+                    to: 207,
+                    require_mask: 0,
+                    forbid_mask: 0,
+                },
+                TransitionRule {
+                    from: 207,
+                    to: 208,
+                    require_mask: 0,
+                    forbid_mask: 0,
+                },
             ]);
 
             let result = ingress_decide_8(
@@ -182,7 +302,12 @@ fn bench_construct8(c: &mut Criterion) {
 fn bench_marking_ops(c: &mut Criterion) {
     c.bench_function("marking_enabled4", |b| {
         b.iter(|| {
-            let m = black_box(Marking4 { p0: 1, p1: 1, p2: 0, p3: 0 });
+            let m = black_box(Marking4 {
+                p0: 1,
+                p1: 1,
+                p2: 0,
+                p3: 0,
+            });
             let t = black_box(Transition4 {
                 in0: 1,
                 in1: 1,
@@ -200,7 +325,12 @@ fn bench_marking_ops(c: &mut Criterion) {
 
     c.bench_function("marking_fire4", |b| {
         b.iter(|| {
-            let m = black_box(Marking4 { p0: 1, p1: 1, p2: 0, p3: 0 });
+            let m = black_box(Marking4 {
+                p0: 1,
+                p1: 1,
+                p2: 0,
+                p3: 0,
+            });
             let t = black_box(Transition4 {
                 in0: 1,
                 in1: 1,
@@ -218,7 +348,12 @@ fn bench_marking_ops(c: &mut Criterion) {
 
     c.bench_function("marking_fire4_disabled", |b| {
         b.iter(|| {
-            let m = black_box(Marking4 { p0: 1, p1: 1, p2: 0, p3: 0 });
+            let m = black_box(Marking4 {
+                p0: 1,
+                p1: 1,
+                p2: 0,
+                p3: 0,
+            });
             let t = black_box(Transition4 {
                 in0: 1,
                 in1: 1,
@@ -382,13 +517,9 @@ fn bench_spatial(c: &mut Criterion) {
     let p1 = black_box(Point2 { x: 100, y: 200 });
     let p2 = black_box(Point2 { x: 110, y: 205 });
 
-    c.bench_function("manhattan2", |b| {
-        b.iter(|| manhattan2(p1, p2))
-    });
+    c.bench_function("manhattan2", |b| b.iter(|| manhattan2(p1, p2)));
 
-    c.bench_function("dist2_sq", |b| {
-        b.iter(|| dist2_sq(p1, p2))
-    });
+    c.bench_function("dist2_sq", |b| b.iter(|| dist2_sq(p1, p2)));
 
     let pts = black_box([
         Point2 { x: 100, y: 200 },
@@ -398,9 +529,7 @@ fn bench_spatial(c: &mut Criterion) {
     ]);
     let target = black_box(Point2 { x: 105, y: 210 });
 
-    c.bench_function("nearest_of4", |b| {
-        b.iter(|| nearest_of4(target, pts))
-    });
+    c.bench_function("nearest_of4", |b| b.iter(|| nearest_of4(target, pts)));
 }
 
 // ============================================================

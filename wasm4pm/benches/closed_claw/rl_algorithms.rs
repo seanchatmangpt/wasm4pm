@@ -10,8 +10,7 @@ use criterion::{black_box, BenchmarkId, Criterion, Throughput};
 use std::time::Duration;
 
 use pictl::reinforcement::{
-    DoubleQLearning, ExpectedSARSAAgent, QLearning, ReinforceAgent,
-    WorkflowAction, WorkflowState,
+    DoubleQLearning, ExpectedSARSAAgent, QLearning, ReinforceAgent, WorkflowAction, WorkflowState,
 };
 
 // ---------------------------------------------------------------------------
@@ -179,11 +178,7 @@ fn bench_update_single(c: &mut Criterion) {
     let rf: ReinforceAgent<RlState, RlAction> = ReinforceAgent::new();
     group.bench_function("reinforce_step", |b| {
         b.iter(|| {
-            black_box(rf.update_step(
-                black_box(&RlState(0)),
-                black_box(&RlAction::Left),
-                1.0,
-            ));
+            black_box(rf.update_step(black_box(&RlState(0)), black_box(&RlAction::Left), 1.0));
         });
     });
 
@@ -202,21 +197,21 @@ fn bench_reinforce_trajectory(c: &mut Criterion) {
             .map(|i| {
                 (
                     RlState(i as i32),
-                    if i % 2 == 0 { RlAction::Left } else { RlAction::Right },
+                    if i % 2 == 0 {
+                        RlAction::Left
+                    } else {
+                        RlAction::Right
+                    },
                     if i == *len - 1 { 1.0 } else { 0.0 },
                 )
             })
             .collect();
 
         group.throughput(Throughput::Elements(*len as u64));
-        group.bench_with_input(
-            BenchmarkId::new("trajectory_update", len),
-            len,
-            |b, _| {
-                let rf: ReinforceAgent<RlState, RlAction> = ReinforceAgent::new();
-                b.iter(|| black_box(rf.update_from_trajectory(black_box(&trajectory))));
-            },
-        );
+        group.bench_with_input(BenchmarkId::new("trajectory_update", len), len, |b, _| {
+            let rf: ReinforceAgent<RlState, RlAction> = ReinforceAgent::new();
+            b.iter(|| black_box(rf.update_from_trajectory(black_box(&trajectory))));
+        });
     }
 
     group.finish();
@@ -238,7 +233,11 @@ fn bench_convergence_100_episodes(c: &mut Criterion) {
                 let state = RlState((cycle % 50) as i32);
                 let action = agent.select_action(&state);
                 let next = RlState((cycle % 50 + 1) as i32);
-                let reward = if matches!(action, RlAction::Left) { 1.0 } else { -0.5 };
+                let reward = if matches!(action, RlAction::Left) {
+                    1.0
+                } else {
+                    -0.5
+                };
                 agent.update(&state, &action, reward, &next, false);
                 agent.decay_exploration();
             }
@@ -253,7 +252,11 @@ fn bench_convergence_100_episodes(c: &mut Criterion) {
                 let state = RlState((cycle % 50) as i32);
                 let action = agent.select_action(&state);
                 let next = RlState((cycle % 50 + 1) as i32);
-                let reward = if matches!(action, RlAction::Left) { 1.0 } else { -0.5 };
+                let reward = if matches!(action, RlAction::Left) {
+                    1.0
+                } else {
+                    -0.5
+                };
                 agent.update(&state, &action, reward, &next, false);
                 agent.decay_exploration();
             }
@@ -268,7 +271,11 @@ fn bench_convergence_100_episodes(c: &mut Criterion) {
                 let state = RlState((cycle % 50) as i32);
                 let action = agent.select_action(&state);
                 let next = RlState((cycle % 50 + 1) as i32);
-                let reward = if matches!(action, RlAction::Left) { 1.0 } else { -0.5 };
+                let reward = if matches!(action, RlAction::Left) {
+                    1.0
+                } else {
+                    -0.5
+                };
                 agent.update(&state, &action, reward, &next, false);
                 agent.decay_exploration();
             }
@@ -282,7 +289,11 @@ fn bench_convergence_100_episodes(c: &mut Criterion) {
             for cycle in 0..100u64 {
                 let state = RlState((cycle % 10) as i32);
                 let action = agent.select_action(&state);
-                let reward = if matches!(action, RlAction::Left) { 1.0 } else { -0.5 };
+                let reward = if matches!(action, RlAction::Left) {
+                    1.0
+                } else {
+                    -0.5
+                };
                 agent.update_step(&state, &action, reward);
             }
             black_box(agent.get_policy_weights(&RlState(5)));
@@ -340,7 +351,11 @@ mod tests {
         for _ in 0..1000 {
             let state = RlState(0);
             let action = agent.select_action(&state);
-            let reward = if matches!(action, RlAction::Left) { 1.0 } else { -1.0 };
+            let reward = if matches!(action, RlAction::Left) {
+                1.0
+            } else {
+                -1.0
+            };
             agent.update_step(&state, &action, reward);
         }
 

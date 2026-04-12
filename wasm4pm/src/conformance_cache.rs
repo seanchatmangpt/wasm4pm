@@ -107,11 +107,10 @@ impl Default for ConformanceCache {
 #[wasm_bindgen]
 pub fn conformance_cache_new() -> String {
     let cache = ConformanceCache::new();
-    let json_str = serde_json::to_string(&cache)
-        .unwrap_or_else(|e| {
-            eprintln!("Failed to serialize cache: {}", e);
-            "{}".to_string()
-        });
+    let json_str = serde_json::to_string(&cache).unwrap_or_else(|e| {
+        eprintln!("Failed to serialize cache: {}", e);
+        "{}".to_string()
+    });
 
     crate::state::get_or_init_state()
         .store_object(crate::state::StoredObject::JsonString(json_str))

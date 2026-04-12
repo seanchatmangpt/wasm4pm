@@ -11,10 +11,12 @@
 ///
 /// Note: Uses internal Rust APIs directly, not WASM bindings.
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
-use pictl::models::{AttributeValue, Event, EventLog, NGramPredictor, OCEL, OCELEvent, OCELObject, Trace};
-use pictl::streaming::{StreamingAlgorithm, StreamingDfgBuilder, StreamingSkeletonBuilder};
+use pictl::models::{
+    AttributeValue, Event, EventLog, NGramPredictor, OCELEvent, OCELObject, Trace, OCEL,
+};
 use pictl::montecarlo::{run_monte_carlo_simulation, MonteCarloConfig};
 use pictl::state::{get_or_init_state, StoredObject};
+use pictl::streaming::{StreamingAlgorithm, StreamingDfgBuilder, StreamingSkeletonBuilder};
 use std::collections::HashMap;
 use std::time::Duration;
 
@@ -101,10 +103,21 @@ fn streaming_bench_sizes() -> Vec<LogShape> {
 // ---------------------------------------------------------------------------
 
 const ACTIVITIES: &[&str; 15] = &[
-    "Register", "Validate", "Check_Docs", "Assess_Risk", "Calculate_Fee",
-    "Send_Invoice", "Wait_Payment", "Confirm_Payment", "Approve_Basic",
-    "Approve_Senior", "Notify_Applicant", "Create_Record", "Archive",
-    "Close", "Reject",
+    "Register",
+    "Validate",
+    "Check_Docs",
+    "Assess_Risk",
+    "Calculate_Fee",
+    "Send_Invoice",
+    "Wait_Payment",
+    "Confirm_Payment",
+    "Approve_Basic",
+    "Approve_Senior",
+    "Notify_Applicant",
+    "Create_Record",
+    "Archive",
+    "Close",
+    "Reject",
 ];
 
 fn generate_event_log_with_timestamps(shape: &LogShape) -> EventLog {
@@ -244,7 +257,9 @@ fn build_dfg_internal(log: &EventLog, activity_key: &str) -> pictl::models::Dire
         for i in 0..acts.len().saturating_sub(1) {
             let from = acts[i];
             let to = acts[i + 1];
-            *edge_counts.entry((from.to_string(), to.to_string())).or_insert(0) += 1;
+            *edge_counts
+                .entry((from.to_string(), to.to_string()))
+                .or_insert(0) += 1;
         }
 
         // Start/end activities
@@ -351,7 +366,11 @@ fn bench_anomaly_scoring(c: &mut Criterion) {
             BenchmarkId::new("trace_score", shape.num_cases),
             &dfg,
             |b, dfg| {
-                let trace = vec!["Register".to_string(), "Validate".to_string(), "Approve_Basic".to_string()];
+                let trace = vec![
+                    "Register".to_string(),
+                    "Validate".to_string(),
+                    "Approve_Basic".to_string(),
+                ];
                 b.iter(|| {
                     // Simulate anomaly scoring
                     let total_edges: usize = dfg.edges.iter().map(|e| e.frequency).sum();
@@ -396,7 +415,11 @@ fn bench_outcome_prediction(c: &mut Criterion) {
     let dfg = build_dfg_internal(&log, ACTIVITY_KEY);
 
     group.bench_with_input("score_anomaly", &dfg, |b, dfg| {
-        let trace = vec!["Register".to_string(), "Validate".to_string(), "Approve_Basic".to_string()];
+        let trace = vec![
+            "Register".to_string(),
+            "Validate".to_string(),
+            "Approve_Basic".to_string(),
+        ];
         b.iter(|| {
             let total_edges: usize = dfg.edges.iter().map(|e| e.frequency).sum();
             let total_f = total_edges.max(1) as f64;
@@ -522,30 +545,26 @@ fn bench_streaming_dfg_throughput(c: &mut Criterion) {
         let log = generate_event_log_with_timestamps(&shape);
         let total_events = log.event_count();
 
-        group.bench_with_input(
-            BenchmarkId::new("events", total_events),
-            &log,
-            |b, log| {
-                let case_ids: Vec<String> = (0..log.traces.len())
-                    .map(|i| format!("case_{}", i))
-                    .collect();
+        group.bench_with_input(BenchmarkId::new("events", total_events), &log, |b, log| {
+            let case_ids: Vec<String> = (0..log.traces.len())
+                .map(|i| format!("case_{}", i))
+                .collect();
 
-                b.iter(|| {
-                    let mut local_stream = StreamingDfgBuilder::new();
-                    for (trace_idx, trace) in log.traces.iter().enumerate() {
-                        for event in &trace.events {
-                            if let Some(AttributeValue::String(activity)) =
-                                event.attributes.get(ACTIVITY_KEY)
-                            {
-                                local_stream.add_event(&case_ids[trace_idx], activity);
-                            }
+            b.iter(|| {
+                let mut local_stream = StreamingDfgBuilder::new();
+                for (trace_idx, trace) in log.traces.iter().enumerate() {
+                    for event in &trace.events {
+                        if let Some(AttributeValue::String(activity)) =
+                            event.attributes.get(ACTIVITY_KEY)
+                        {
+                            local_stream.add_event(&case_ids[trace_idx], activity);
                         }
-                        local_stream.close_trace(&case_ids[trace_idx]);
                     }
-                    local_stream.snapshot()
-                });
-            },
-        );
+                    local_stream.close_trace(&case_ids[trace_idx]);
+                }
+                local_stream.snapshot()
+            });
+        });
     }
     group.finish();
 }
@@ -569,22 +588,18 @@ fn bench_monte_carlo_simulation(c: &mut Criterion) {
         };
         let log = generate_event_log_with_timestamps(&shape);
 
-        group.bench_with_input(
-            BenchmarkId::new("cases", num_cases),
-            &log,
-            |b, log| {
-                let config = MonteCarloConfig {
-                    num_cases,
-                    inter_arrival_mean_ms: 1000.0,
-                    activity_service_time_ms: HashMap::new(),
-                    resource_capacity: HashMap::new(),
-                    simulation_time_ms: 60000,
-                    random_seed: 42,
-                };
+        group.bench_with_input(BenchmarkId::new("cases", num_cases), &log, |b, log| {
+            let config = MonteCarloConfig {
+                num_cases,
+                inter_arrival_mean_ms: 1000.0,
+                activity_service_time_ms: HashMap::new(),
+                resource_capacity: HashMap::new(),
+                simulation_time_ms: 60000,
+                random_seed: 42,
+            };
 
-                b.iter(|| run_monte_carlo_simulation(log, &config).unwrap());
-            },
-        );
+            b.iter(|| run_monte_carlo_simulation(log, &config).unwrap());
+        });
     }
     group.finish();
 }
@@ -605,7 +620,10 @@ fn create_synthetic_ocel(num_objects: usize, events_per_object: usize) -> OCEL {
             object_type: "Order".to_string(),
             attributes: {
                 let mut attrs = HashMap::new();
-                attrs.insert("value".to_string(), AttributeValue::Float((obj_idx * 100) as f64));
+                attrs.insert(
+                    "value".to_string(),
+                    AttributeValue::Float((obj_idx * 100) as f64),
+                );
                 attrs
             },
             changes: vec![],
@@ -615,7 +633,11 @@ fn create_synthetic_ocel(num_objects: usize, events_per_object: usize) -> OCEL {
         for evt_idx in 0..events_per_object {
             events.push(OCELEvent {
                 id: format!("e_{}", event_idx),
-                event_type: if evt_idx == 0 { "Create".to_string() } else { "Update".to_string() },
+                event_type: if evt_idx == 0 {
+                    "Create".to_string()
+                } else {
+                    "Update".to_string()
+                },
                 timestamp: format!("2024-01-{:02}T{:02}:00:00Z", (obj_idx % 28) + 1, evt_idx),
                 attributes: HashMap::new(),
                 object_ids: vec![obj_id.clone()],
@@ -675,7 +697,9 @@ fn bench_ocel_flatten(c: &mut Criterion) {
                                     "time:timestamp".to_string(),
                                     AttributeValue::String(ocel_event.timestamp.clone()),
                                 );
-                                trace.events.push(Event { attributes: event_attrs });
+                                trace.events.push(Event {
+                                    attributes: event_attrs,
+                                });
                             }
                         }
                         event_log.traces.push(trace);

@@ -179,7 +179,12 @@ fn build_declare_model() -> DeclareModel {
                 confidence: 1.0,
             },
         ],
-        activities: vec!["A".to_string(), "B".to_string(), "C".to_string(), "D".to_string()],
+        activities: vec![
+            "A".to_string(),
+            "B".to_string(),
+            "C".to_string(),
+            "D".to_string(),
+        ],
     }
 }
 
@@ -213,19 +218,15 @@ fn bench_token_replay(c: &mut Criterion) {
         group.throughput(Throughput::Elements(
             (num_cases * shape.avg_events_per_case) as u64,
         ));
-        group.bench_with_input(
-            BenchmarkId::new("cases", num_cases),
-            &log_handle,
-            |b, h| {
-                b.iter(|| {
-                    black_box(conformance::check_token_based_replay(
-                        h,
-                        &net_handle,
-                        ACTIVITY_KEY,
-                    ))
-                })
-            },
-        );
+        group.bench_with_input(BenchmarkId::new("cases", num_cases), &log_handle, |b, h| {
+            b.iter(|| {
+                black_box(conformance::check_token_based_replay(
+                    h,
+                    &net_handle,
+                    ACTIVITY_KEY,
+                ))
+            })
+        });
     }
     group.finish();
 }
@@ -276,7 +277,11 @@ fn bench_simd_token_replay(c: &mut Criterion) {
 
         for trace in &log.traces {
             for event in &trace.events {
-                if let Some(activity) = event.attributes.get(ACTIVITY_KEY).and_then(|v| v.as_string()) {
+                if let Some(activity) = event
+                    .attributes
+                    .get(ACTIVITY_KEY)
+                    .and_then(|v| v.as_string())
+                {
                     all_activities.push(activity.to_owned());
                 }
             }
@@ -294,10 +299,8 @@ fn bench_simd_token_replay(c: &mut Criterion) {
                 for i in 0..offsets.len() - 1 {
                     let start = offsets[i];
                     let end = offsets[i + 1];
-                    let trace_activities: Vec<&str> = acts[start..end]
-                        .iter()
-                        .map(|s| s.as_ref())
-                        .collect();
+                    let trace_activities: Vec<&str> =
+                        acts[start..end].iter().map(|s| s.as_ref()).collect();
                     traces.push(trace_activities);
                 }
                 b.iter(|| black_box(net.replay_log(black_box(&traces))));
@@ -338,21 +341,17 @@ fn bench_etconformance_precision(c: &mut Criterion) {
         group.throughput(Throughput::Elements(
             (num_cases * shape.avg_events_per_case) as u64,
         ));
-        group.bench_with_input(
-            BenchmarkId::new("cases", num_cases),
-            &log,
-            |b, log| {
-                b.iter(|| {
-                    black_box(etconformance_precision::compute_precision(
-                        &net,
-                        &initial_marking,
-                        &final_marking,
-                        log,
-                        ACTIVITY_KEY,
-                    ))
-                })
-            },
-        );
+        group.bench_with_input(BenchmarkId::new("cases", num_cases), &log, |b, log| {
+            b.iter(|| {
+                black_box(etconformance_precision::compute_precision(
+                    &net,
+                    &initial_marking,
+                    &final_marking,
+                    log,
+                    ACTIVITY_KEY,
+                ))
+            })
+        });
     }
     group.finish();
 }

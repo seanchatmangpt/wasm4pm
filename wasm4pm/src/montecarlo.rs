@@ -182,8 +182,15 @@ pub fn run_monte_carlo_simulation(
                 });
 
             // Sample service time from log-normal distribution
-            let service_time_ms = sample_log_normal(&mut rng, service_params.mean, service_params.std_dev)
-                .map_err(|e| format!("Failed to sample service time for activity {}: {}", activity, e))?;
+            let service_time_ms =
+                sample_log_normal(&mut rng, service_params.mean, service_params.std_dev).map_err(
+                    |e| {
+                        format!(
+                            "Failed to sample service time for activity {}: {}",
+                            activity, e
+                        )
+                    },
+                )?;
 
             // Check resource availability
             let resource_key = format!("{}_resource", activity);

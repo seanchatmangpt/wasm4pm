@@ -283,8 +283,10 @@ fn bench_simd_token_replay(c: &mut Criterion) {
 
         for trace in &log.traces {
             for event in &trace.events {
-                if let Some(activity) =
-                    event.attributes.get(ACTIVITY_KEY).and_then(|v| v.as_string())
+                if let Some(activity) = event
+                    .attributes
+                    .get(ACTIVITY_KEY)
+                    .and_then(|v| v.as_string())
                 {
                     all_activities.push(activity.to_owned());
                 }

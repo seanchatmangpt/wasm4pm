@@ -25,7 +25,7 @@ use helpers::{bench_sizes, bench_sizes_slow, make_handle, ACTIVITY_KEY};
 
 use pictl::advanced_algorithms::discover_heuristic_miner;
 use pictl::algorithms::discover_alpha_plus_plus;
-use pictl::discovery::{discover_dfg, discover_declare};
+use pictl::discovery::{discover_declare, discover_dfg};
 use pictl::genetic_discovery::discover_genetic_algorithm;
 use pictl::more_discovery::{discover_inductive_miner, extract_process_skeleton};
 
