@@ -1,0 +1,208 @@
+name: Benchmark Regression Detection
+
+on:
+  pull_request:
+    branches: [main, develop]
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: "-C target-feature=+simd128"
+
+jobs:
+  check-baseline-exists:
+    name: Verify baseline exists
+    runs-on: ubuntu-latest
+    outputs:
+      baseline-exists: ${{ steps.check.outputs.exists }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check if baseline exists
+        id: check
+        run: |
+          if [ -f ".pictl/benchmarks/baselines/main-latest.json" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "✅ Baseline found"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "⚠️ No baseline established yet"
+          fi
+
+  benchmark-regression:
+    name: Run Regression Detection
+    runs-on: ubuntu-latest
+    needs: check-baseline-exists
+    if: needs.check-baseline-exists.outputs.baseline-exists == 'true'
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
+
+      # Setup Rust
+      - name: Setup Rust (stable)
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+          targets: wasm32-unknown-unknown
+
+      # Cache Rust builds
+      - name: Cache Rust builds
+        uses: Swatinem/rust-cache@v2
+
+      # Install wasm-pack
+      - name: Install wasm-pack
+        run: npm install -g wasm-pack@1.3.4
+
+      # Install root dependencies
+      - name: Install root dependencies
+        run: npm install
+
+      # Install wasm4pm dependencies
+      - name: Install wasm4pm dependencies
+        working-directory: ./wasm4pm
+        run: npm install
+
+      # Build WASM for benchmarking
+      - name: Build WASM
+        working-directory: ./wasm4pm
+        run: npm run build:nodejs
+
+      # Run fast benchmarks (all groups in fast/ci mode)
+      - name: Run fast benchmarks
+        working-directory: ./wasm4pm
+        timeout-minutes: 20
+        run: |
+          echo "Building Criterion benchmark binaries..."
+          cargo build --release --benches --quiet
+
+          echo "Running Criterion fast_algorithms benchmark..."
+          cargo bench --release --bench fast_algorithms -- --profile-time 3 --output-format bencher 2>&1 | tee /tmp/fast_bench.txt
+
+          echo "Running Criterion analytics benchmark..."
+          cargo bench --release --bench analytics -- --profile-time 3 --output-format bencher 2>&1 | tee /tmp/analytics_bench.txt
+
+          echo "Benchmark runs completed"
+
+      # Run regression detection
+      - name: Detect regressions
+        id: regression
+        working-directory: ./pictl
+        continue-on-error: true
+        run: |
+          echo "=== Regression Detection ==="
+          bash .pictl/benchmarks/detect-regression.sh .pictl/benchmarks/baselines/main-latest.json
+
+      # Upload regression report as artifact
+      - name: Upload regression report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: regression-report
+          path: |
+            .pictl/benchmarks/regression-report-*.md
+            /tmp/fast_bench.txt
+            /tmp/analytics_bench.txt
+          retention-days: 30
+
+      # Comment on PR with regression results
+      - name: Comment regression results on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            // Find latest regression report
+            const reportsDir = '.pictl/benchmarks';
+            const files = fs.readdirSync(reportsDir).filter(f => f.startsWith('regression-report-') && f.endsWith('.md'));
+            files.sort();
+
+            if (files.length === 0) {
+              console.log("No regression report found");
+              return;
+            }
+
+            const latestReport = files[files.length - 1];
+            const reportPath = path.join(reportsDir, latestReport);
+            const reportContent = fs.readFileSync(reportPath, 'utf8');
+
+            // Extract summary from report
+            const lines = reportContent.split('\n');
+            let summary = "## Benchmark Regression Report\n\n";
+
+            const regressionMatch = reportContent.match(/Regressions.*:\s*(\d+)/);
+            const warningMatch = reportContent.match(/Warnings.*:\s*(\d+)/);
+            const improvementMatch = reportContent.match(/Improvements.*:\s*(\d+)/);
+
+            if (regressionMatch && regressionMatch[1] !== '0') {
+              summary += `⚠️ **REGRESSIONS DETECTED: ${regressionMatch[1]}**\n\n`;
+            } else if (warningMatch && warningMatch[1] !== '0') {
+              summary += `⚠️ **Warnings: ${warningMatch[1]}** (within tolerance)\n\n`;
+            } else {
+              summary += "✅ **No regressions detected**\n\n";
+            }
+
+            summary += "### Summary\n\n";
+            summary += reportContent.split("## Regression Summary")[1]?.split("---")[0] || "";
+
+            // Comment on PR
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: summary + "\n\n[Full report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+            });
+
+      # Fail job if regressions detected
+      - name: Check regression status
+        if: steps.regression.outcome == 'failure'
+        run: |
+          echo "❌ Performance regressions detected!"
+          echo ""
+          echo "Regression threshold: >5%"
+          echo ""
+          echo "If regression is intentional (e.g., new feature, correctness fix):"
+          echo "1. Add [PERF-JUSTIFIED] to commit message"
+          echo "2. Provide justification in PR description"
+          echo "3. Maintainer reviews and approves regression"
+          echo ""
+          exit 1
+
+  baseline-check-reminder:
+    name: Baseline Not Established
+    runs-on: ubuntu-latest
+    needs: check-baseline-exists
+    if: needs.check-baseline-exists.outputs.baseline-exists == 'false'
+    steps:
+      - name: Inform user about baseline
+        run: |
+          echo "⚠️ Benchmark regression detection is not yet enabled."
+          echo ""
+          echo "To enable regression checks:"
+          echo ""
+          echo "1. On main branch, run:"
+          echo "   git checkout main"
+          echo "   make bench"
+          echo "   bash .pictl/benchmarks/update-baseline.sh"
+          echo ""
+          echo "2. Commit and push:"
+          echo "   git add .pictl/benchmarks/baselines/"
+          echo "   git commit -m 'chore: establish benchmark baselines'"
+          echo "   git push origin main"
+          echo ""
+          echo "3. Regression checks will activate on next PR"

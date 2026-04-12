@@ -104,6 +104,32 @@ Claude receives these messages and knows how to recover.
 
 ---
 
+## Setup: Enable Metrics Tracking
+
+Metrics tracking requires a git post-commit hook. To enable:
+
+```bash
+# 1. Copy hook to git hooks directory
+cp .claude/hooks/metrics-track.sh .git/hooks/post-commit
+chmod +x .git/hooks/post-commit
+
+# 2. Test immediately (runs on next commit)
+git commit --allow-empty -m "test: metrics collection"
+
+# 3. Verify metrics were collected
+cat .pictl/metrics.json | jq '.historical_data[-1]'
+
+# 4. Generate weekly dashboard
+bash scripts/weekly-metrics-report.sh
+
+# 5. Check pre-push metrics gate (optional, for blocking commits)
+# This requires manual setup in .git/hooks/pre-push:
+# cp .claude/hooks/pre-push-metrics.sh .git/hooks/pre-push
+# chmod +x .git/hooks/pre-push
+```
+
+---
+
 ## Testing the Hooks
 
 ### SessionStart (with valid pictl)
@@ -177,15 +203,56 @@ All hooks use `"type": "command"` with bash scripts.
 
 ---
 
+## Hook 4: Metrics Tracking — Post-Commit Kaizen
+**File:** `.claude/hooks/metrics-track.sh`
+
+Runs after every commit (manual setup required — see "Setup" section).
+
+**Behavior:**
+- Collects 8 metrics: test pass rate, compiler warnings, build time, OTEL coverage, TPS violations, MTTR, test determinism, LOCs
+- Persists to `.pictl/metrics.json` with timestamp and git commit hash
+- Logs build times to `.pictl/build-times.log` for trend analysis
+- All metrics collected even if individual collection fails (non-blocking)
+
+**Metrics Collected:**
+1. Test Pass Rate: vitest + cargo test combined percentage
+2. Compiler Warnings: cargo clippy + tsc + eslint total count
+3. Build Time: Full clean build duration in milliseconds
+4. OTEL Span Coverage: % of public APIs with Instrumentation.create*() calls
+5. TPS Violation Density: violations per 1000 LOC (silent fallbacks, missing error handling, etc.)
+6. MTTR: Mean Time To Recovery approximated from recent fixes
+7. Test Determinism: Pass rate consistency across 3 runs (detects flaky tests)
+8. Lines of Code: Total LOC (Rust + TypeScript, excluding tests)
+
+**Example Output:**
+```json
+{
+  "timestamp": "2026-04-11T18:30:45Z",
+  "git_commit_hash": "a1b2c3d",
+  "test_pass_rate": 100,
+  "compiler_warnings": 0,
+  "build_time_ms": 45000,
+  "otel_span_coverage": 95,
+  "tps_violation_density": 0.5,
+  "mttr": 3,
+  "test_determinism": 100,
+  "locs": 15240
+}
+```
+
+---
+
 ## Why Claude Cannot Fail
 
 1. **SessionStart:** Immediate health check — Claude knows environment state before doing any work
 2. **PostToolUseFailure:** Guided recovery — Claude gets specific action steps when tools fail
 3. **Stop Gate:** Forced healing — Claude cannot leave with a broken environment
+4. **Metrics Tracking:** Continuous improvement — Every commit adds data for Kaizen analysis
 
 Together, these ensure:
 - ✓ Every session starts with known health
 - ✓ Every tool failure triggers recovery guidance
 - ✓ No session ends with a broken environment
+- ✓ Every commit advances continuous improvement metrics
 
 **Claude Code cannot fail in the pictl project.**

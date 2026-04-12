@@ -1,0 +1,95 @@
+name: WIP Limit Check
+
+on:
+  pull_request:
+    types: [opened, ready_for_review, synchronize]
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  check-wip-limit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Load WIP config
+        id: config
+        run: |
+          MAX_PRS=$(jq -r '.max_concurrent_prs' .pictl/wip-config.json)
+          echo "max_prs=$MAX_PRS" >> $GITHUB_OUTPUT
+          echo "Loaded WIP config: max_concurrent_prs=$MAX_PRS"
+
+      - name: Check PR author concurrent PRs
+        id: check_prs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          AUTHOR="${{ github.event.pull_request.user.login }}"
+          CURRENT_PR="${{ github.event.pull_request.number }}"
+
+          # Query open PRs by author (exclude current PR, exclude drafts)
+          OPEN_PRS=$(gh pr list \
+            --author "$AUTHOR" \
+            --state open \
+            --search "is:pr -draft" \
+            --repo "${{ github.repository }}" \
+            --limit 100 \
+            --json number \
+            --jq 'length')
+
+          echo "open_prs=$OPEN_PRS" >> $GITHUB_OUTPUT
+          echo "author=$AUTHOR" >> $GITHUB_OUTPUT
+
+          # Count including current PR (not yet merged)
+          TOTAL_PRS=$OPEN_PRS
+          echo "total_prs=$TOTAL_PRS" >> $GITHUB_OUTPUT
+
+          echo "User '$AUTHOR' has $OPEN_PRS open PRs (including current PR #$CURRENT_PR)"
+
+      - name: Comment on excessive WIP
+        if: steps.check_prs.outputs.total_prs > steps.config.outputs.max_prs
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const maxPrs = parseInt('${{ steps.config.outputs.max_prs }}');
+            const openPrs = parseInt('${{ steps.check_prs.outputs.total_prs }}');
+            const author = '${{ steps.check_prs.outputs.author }}';
+
+            const comment = `⚠️ **WIP Limit Exceeded**
+
+You currently have **${openPrs} open PRs** (limit: **${maxPrs}**).
+
+Per Toyota Production System principles, we enforce WIP (work-in-progress) limits to prevent context thrashing and ensure serial task completion.
+
+**Action Required:**
+1. Merge or close an existing PR to bring open count down to ${maxPrs}
+2. Then you can proceed with this PR
+
+**Open PRs:**
+${openPrs > maxPrs ? '⚠️ Exceeds limit by ' + (openPrs - maxPrs) : '✅ Within limit'}
+
+See [\`.pictl/wip-config.json\`](.pictl/wip-config.json) for configuration.`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+      - name: Fail if WIP limit exceeded
+        if: steps.check_prs.outputs.total_prs > steps.config.outputs.max_prs
+        run: |
+          echo "❌ WIP limit exceeded: ${{ steps.check_prs.outputs.total_prs }} open PRs (max: ${{ steps.config.outputs.max_prs }})"
+          echo ""
+          echo "See: https://github.com/${{ github.repository }}/pull/${{ github.event.pull_request.number }}"
+          exit 1
+
+      - name: Success - WIP limit OK
+        if: steps.check_prs.outputs.total_prs <= steps.config.outputs.max_prs
+        run: |
+          echo "✅ WIP limit check passed: ${{ steps.check_prs.outputs.total_prs }}/${{ steps.config.outputs.max_prs }} PRs"

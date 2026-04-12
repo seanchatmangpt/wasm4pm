@@ -1,0 +1,14 @@
+{
+  "max_concurrent_prs": 3,
+  "max_review_hours": 24,
+  "escalation_hours": 48,
+  "merge_block_hours": 72,
+  "enabled": true,
+  "check_interval_minutes": 60,
+  "wip_prefix": "WIP:",
+  "auto_label_stale": true,
+  "auto_comment_escalation": true,
+  "notify_on_limit": true,
+  "exclude_drafts": true,
+  "exclude_labels": ["blocked", "dependencies", "waiting-on-external"]
+}

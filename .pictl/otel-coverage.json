@@ -1,0 +1,3543 @@
+{
+  "timestamp": "2026-04-12T00:50:58.776Z",
+  "coverage": 0,
+  "total": 596,
+  "instrumented": 0,
+  "missing_count": 596,
+  "by_package": {
+    "config": {
+      "total": 37,
+      "instrumented": 0,
+      "missing": [
+        {
+          "file": "hash.ts",
+          "function": "hashConfig",
+          "line": 39
+        },
+        {
+          "file": "hash.ts",
+          "function": "verifyConfigHash",
+          "line": 48
+        },
+        {
+          "file": "hash.ts",
+          "function": "fingerprintConfig",
+          "line": 55
+        },
+        {
+          "file": "hash.ts",
+          "function": "hashConfigSection",
+          "line": 62
+        },
+        {
+          "file": "hash.ts",
+          "function": "diffConfigs",
+          "line": 78
+        },
+        {
+          "file": "hash.ts",
+          "function": "ConfigDiff",
+          "line": 71
+        },
+        {
+          "file": "provenance.ts",
+          "function": "trackProvenance",
+          "line": 24
+        },
+        {
+          "file": "provenance.ts",
+          "function": "mergeProvenance",
+          "line": 49
+        },
+        {
+          "file": "provenance.ts",
+          "function": "Provenance",
+          "line": 8
+        },
+        {
+          "file": "resolver.ts",
+          "function": "resolveConfig",
+          "line": 18
+        },
+        {
+          "file": "resolver.ts",
+          "function": "getExampleTomlConfig",
+          "line": 306
+        },
+        {
+          "file": "resolver.ts",
+          "function": "getExampleJsonConfig",
+          "line": 365
+        },
+        {
+          "file": "schema.ts",
+          "function": "validate",
+          "line": 160
+        },
+        {
+          "file": "schema.ts",
+          "function": "validatePartial",
+          "line": 180
+        },
+        {
+          "file": "schema.ts",
+          "function": "toJsonSchema",
+          "line": 200
+        },
+        {
+          "file": "schema.ts",
+          "function": "SCHEMA_VERSION",
+          "line": 7
+        },
+        {
+          "file": "schema.ts",
+          "function": "algorithmIdSchema",
+          "line": 13
+        },
+        {
+          "file": "schema.ts",
+          "function": "sourceKindSchema",
+          "line": 19
+        },
+        {
+          "file": "schema.ts",
+          "function": "sinkKindSchema",
+          "line": 23
+        },
+        {
+          "file": "schema.ts",
+          "function": "executionProfileSchema",
+          "line": 27
+        },
+        {
+          "file": "schema.ts",
+          "function": "outputFormatSchema",
+          "line": 31
+        },
+        {
+          "file": "schema.ts",
+          "function": "logLevelSchema",
+          "line": 35
+        },
+        {
+          "file": "schema.ts",
+          "function": "otelExporterSchema",
+          "line": 39
+        },
+        {
+          "file": "schema.ts",
+          "function": "sourceConfigSchema",
+          "line": 45
+        },
+        {
+          "file": "schema.ts",
+          "function": "sinkConfigSchema",
+          "line": 53
+        },
+        {
+          "file": "schema.ts",
+          "function": "algorithmConfigSchema",
+          "line": 61
+        },
+        {
+          "file": "schema.ts",
+          "function": "otelConfigSchema",
+          "line": 68
+        },
+        {
+          "file": "schema.ts",
+          "function": "observabilityConfigSchema",
+          "line": 78
+        },
+        {
+          "file": "schema.ts",
+          "function": "watchConfigSchema",
+          "line": 86
+        },
+        {
+          "file": "schema.ts",
+          "function": "outputConfigSchema",
+          "line": 94
+        },
+        {
+          "file": "schema.ts",
+          "function": "executionConfigSchema",
+          "line": 103
+        },
+        {
+          "file": "schema.ts",
+          "function": "predictionConfigSchema",
+          "line": 111
+        },
+        {
+          "file": "schema.ts",
+          "function": "mlConfigSchema",
+          "line": 123
+        },
+        {
+          "file": "schema.ts",
+          "function": "configSchema",
+          "line": 140
+        },
+        {
+          "file": "types.ts",
+          "function": "Config",
+          "line": 38
+        },
+        {
+          "file": "types.ts",
+          "function": "CliOverrides",
+          "line": 48
+        },
+        {
+          "file": "types.ts",
+          "function": "LoadConfigOptions",
+          "line": 68
+        }
+      ],
+      "files": {
+        "hash.ts": {
+          "total": 6,
+          "instrumented": 0
+        },
+        "index.ts": {
+          "total": 0,
+          "instrumented": 0
+        },
+        "provenance.ts": {
+          "total": 3,
+          "instrumented": 0
+        },
+        "resolver.ts": {
+          "total": 3,
+          "instrumented": 0
+        },
+        "schema.ts": {
+          "total": 22,
+          "instrumented": 0
+        },
+        "types.ts": {
+          "total": 3,
+          "instrumented": 0
+        }
+      }
+    },
+    "contracts": {
+      "total": 102,
+      "instrumented": 0,
+      "missing": [
+        {
+          "file": "compatibility.ts",
+          "function": "getCompatibility",
+          "line": 63
+        },
+        {
+          "file": "compatibility.ts",
+          "function": "isFeatureSupported",
+          "line": 101
+        },
+        {
+          "file": "compatibility.ts",
+          "function": "getSupportedPlatforms",
+          "line": 114
+        },
+        {
+          "file": "compatibility.ts",
+          "function": "getCurrentPlatform",
+          "line": 123
+        },
+        {
+          "file": "compatibility.ts",
+          "function": "PlatformFeatures",
+          "line": 16
+        },
+        {
+          "file": "compatibility.ts",
+          "function": "CompatibilityMatrix",
+          "line": 45
+        },
+        {
+          "file": "connectors.ts",
+          "function": "sourceRegistry",
+          "line": 261
+        },
+        {
+          "file": "connectors.ts",
+          "function": "AuthConfig",
+          "line": 28
+        },
+        {
+          "file": "connectors.ts",
+          "function": "Capabilities",
+          "line": 36
+        },
+        {
+          "file": "connectors.ts",
+          "function": "RetryStrategy",
+          "line": 45
+        },
+        {
+          "file": "connectors.ts",
+          "function": "EventStream",
+          "line": 54
+        },
+        {
+          "file": "connectors.ts",
+          "function": "SourceAdapter",
+          "line": 74
+        },
+        {
+          "file": "connectors.ts",
+          "function": "SourceRegistry",
+          "line": 193
+        },
+        {
+          "file": "errors.ts",
+          "function": "createTypedError",
+          "line": 97
+        },
+        {
+          "file": "errors.ts",
+          "function": "resolveErrorCode",
+          "line": 114
+        },
+        {
+          "file": "errors.ts",
+          "function": "isTypedError",
+          "line": 121
+        },
+        {
+          "file": "errors.ts",
+          "function": "createError",
+          "line": 317
+        },
+        {
+          "file": "errors.ts",
+          "function": "formatError",
+          "line": 365
+        },
+        {
+          "file": "errors.ts",
+          "function": "formatErrorJSON",
+          "line": 424
+        },
+        {
+          "file": "errors.ts",
+          "function": "logError",
+          "line": 449
+        },
+        {
+          "file": "errors.ts",
+          "function": "validateErrorSystem",
+          "line": 476
+        },
+        {
+          "file": "errors.ts",
+          "function": "TYPED_ERROR_CODES",
+          "line": 67
+        },
+        {
+          "file": "errors.ts",
+          "function": "TYPED_ERROR_NAMES",
+          "line": 90
+        },
+        {
+          "file": "errors.ts",
+          "function": "TYPED_ERROR_JSON_SCHEMA",
+          "line": 139
+        },
+        {
+          "file": "errors.ts",
+          "function": "TypedError",
+          "line": 47
+        },
+        {
+          "file": "errors.ts",
+          "function": "ErrorInfo",
+          "line": 159
+        },
+        {
+          "file": "explain.ts",
+          "function": "isExplainSnapshot",
+          "line": 99
+        },
+        {
+          "file": "explain.ts",
+          "function": "EXPLAIN_JSON_SCHEMA",
+          "line": 122
+        },
+        {
+          "file": "explain.ts",
+          "function": "PhaseTiming",
+          "line": 17
+        },
+        {
+          "file": "explain.ts",
+          "function": "ResourceUsage",
+          "line": 34
+        },
+        {
+          "file": "explain.ts",
+          "function": "ExecutionProfile",
+          "line": 48
+        },
+        {
+          "file": "explain.ts",
+          "function": "ExplainSnapshot",
+          "line": 63
+        },
+        {
+          "file": "hash.ts",
+          "function": "normalizeForHashing",
+          "line": 39
+        },
+        {
+          "file": "hash.ts",
+          "function": "hashConfig",
+          "line": 50
+        },
+        {
+          "file": "hash.ts",
+          "function": "hashData",
+          "line": 62
+        },
+        {
+          "file": "hash.ts",
+          "function": "hashJsonString",
+          "line": 74
+        },
+        {
+          "file": "hash.ts",
+          "function": "verifyHash",
+          "line": 85
+        },
+        {
+          "file": "index.ts",
+          "function": "ALL_JSON_SCHEMAS",
+          "line": 122
+        },
+        {
+          "file": "plan.ts",
+          "function": "sortNodes",
+          "line": 82
+        },
+        {
+          "file": "plan.ts",
+          "function": "sortEdges",
+          "line": 89
+        },
+        {
+          "file": "plan.ts",
+          "function": "normalizePlan",
+          "line": 100
+        },
+        {
+          "file": "plan.ts",
+          "function": "validatePlanDAG",
+          "line": 131
+        },
+        {
+          "file": "plan.ts",
+          "function": "isPlan",
+          "line": 202
+        },
+        {
+          "file": "plan.ts",
+          "function": "PLAN_JSON_SCHEMA",
+          "line": 219
+        },
+        {
+          "file": "plan.ts",
+          "function": "PlanNode",
+          "line": 18
+        },
+        {
+          "file": "plan.ts",
+          "function": "PlanEdge",
+          "line": 38
+        },
+        {
+          "file": "plan.ts",
+          "function": "Plan",
+          "line": 52
+        },
+        {
+          "file": "receipt-builder.ts",
+          "function": "ReceiptBuilder",
+          "line": 14
+        },
+        {
+          "file": "receipt.ts",
+          "function": "isReceipt",
+          "line": 99
+        },
+        {
+          "file": "receipt.ts",
+          "function": "RECEIPT_JSON_SCHEMA",
+          "line": 124
+        },
+        {
+          "file": "receipt.ts",
+          "function": "ErrorInfo",
+          "line": 12
+        },
+        {
+          "file": "receipt.ts",
+          "function": "ExecutionSummary",
+          "line": 22
+        },
+        {
+          "file": "receipt.ts",
+          "function": "AlgorithmInfo",
+          "line": 31
+        },
+        {
+          "file": "receipt.ts",
+          "function": "ModelInfo",
+          "line": 40
+        },
+        {
+          "file": "receipt.ts",
+          "function": "ExecutionProfile",
+          "line": 49
+        },
+        {
+          "file": "receipt.ts",
+          "function": "Receipt",
+          "line": 67
+        },
+        {
+          "file": "result.ts",
+          "function": "ok",
+          "line": 50
+        },
+        {
+          "file": "result.ts",
+          "function": "err",
+          "line": 60
+        },
+        {
+          "file": "result.ts",
+          "function": "isOk",
+          "line": 70
+        },
+        {
+          "file": "result.ts",
+          "function": "isErr",
+          "line": 80
+        },
+        {
+          "file": "result.ts",
+          "function": "unwrap",
+          "line": 91
+        },
+        {
+          "file": "result.ts",
+          "function": "unwrapOr",
+          "line": 105
+        },
+        {
+          "file": "result.ts",
+          "function": "error",
+          "line": 123
+        },
+        {
+          "file": "result.ts",
+          "function": "isError",
+          "line": 133
+        },
+        {
+          "file": "result.ts",
+          "function": "isStringError",
+          "line": 143
+        },
+        {
+          "file": "result.ts",
+          "function": "getExitCode",
+          "line": 153
+        },
+        {
+          "file": "result.ts",
+          "function": "Ok",
+          "line": 14
+        },
+        {
+          "file": "result.ts",
+          "function": "Err",
+          "line": 22
+        },
+        {
+          "file": "result.ts",
+          "function": "ErrorResult",
+          "line": 30
+        },
+        {
+          "file": "sinks.ts",
+          "function": "supportsArtifact",
+          "line": 256
+        },
+        {
+          "file": "sinks.ts",
+          "function": "sinkRegistry",
+          "line": 247
+        },
+        {
+          "file": "sinks.ts",
+          "function": "SinkAdapter",
+          "line": 41
+        },
+        {
+          "file": "sinks.ts",
+          "function": "SinkRegistry",
+          "line": 167
+        },
+        {
+          "file": "status.ts",
+          "function": "isValidTransition",
+          "line": 96
+        },
+        {
+          "file": "status.ts",
+          "function": "isLifecycleState",
+          "line": 103
+        },
+        {
+          "file": "status.ts",
+          "function": "isStatus",
+          "line": 110
+        },
+        {
+          "file": "status.ts",
+          "function": "LIFECYCLE_STATES",
+          "line": 25
+        },
+        {
+          "file": "status.ts",
+          "function": "STATE_TRANSITIONS",
+          "line": 39
+        },
+        {
+          "file": "status.ts",
+          "function": "STATUS_JSON_SCHEMA",
+          "line": 127
+        },
+        {
+          "file": "status.ts",
+          "function": "Status",
+          "line": 53
+        },
+        {
+          "file": "steps.ts",
+          "function": "PLAN_STEP_TYPE_VALUES",
+          "line": 12
+        },
+        {
+          "file": "templates/algorithm-registry.ts",
+          "function": "getProfileAlgorithms",
+          "line": 249
+        },
+        {
+          "file": "templates/algorithm-registry.ts",
+          "function": "ALGORITHM_IDS",
+          "line": 10
+        },
+        {
+          "file": "templates/algorithm-registry.ts",
+          "function": "ALGORITHM_ID_TO_STEP_TYPE",
+          "line": 58
+        },
+        {
+          "file": "templates/algorithm-registry.ts",
+          "function": "ALGORITHM_OUTPUT_TYPES",
+          "line": 105
+        },
+        {
+          "file": "templates/algorithm-registry.ts",
+          "function": "ALGORITHM_CLI_ALIASES",
+          "line": 152
+        },
+        {
+          "file": "templates/algorithm-registry.ts",
+          "function": "ALGORITHM_DISPLAY_NAMES",
+          "line": 199
+        },
+        {
+          "file": "templates/prediction-tasks.ts",
+          "function": "PREDICTION_TASKS",
+          "line": 15
+        },
+        {
+          "file": "templates/prediction-tasks.ts",
+          "function": "VALID_PREDICT_CLI_TASKS",
+          "line": 27
+        },
+        {
+          "file": "templates/prediction-tasks.ts",
+          "function": "CLI_SLUG_TO_TASK_ID",
+          "line": 39
+        },
+        {
+          "file": "templates/prediction-tasks.ts",
+          "function": "TASK_ID_TO_CLI_SLUG",
+          "line": 49
+        },
+        {
+          "file": "types.ts",
+          "function": "ExecutionPlan",
+          "line": 9
+        },
+        {
+          "file": "types.ts",
+          "function": "PlanStep",
+          "line": 26
+        },
+        {
+          "file": "types.ts",
+          "function": "StatusUpdate",
+          "line": 40
+        },
+        {
+          "file": "types.ts",
+          "function": "EngineError",
+          "line": 51
+        },
+        {
+          "file": "types.ts",
+          "function": "EngineStatus",
+          "line": 76
+        },
+        {
+          "file": "types.ts",
+          "function": "ExecutionReceipt",
+          "line": 91
+        },
+        {
+          "file": "validation.ts",
+          "function": "validateReceipt",
+          "line": 23
+        },
+        {
+          "file": "validation.ts",
+          "function": "verifyReceiptHashes",
+          "line": 134
+        },
+        {
+          "file": "validation.ts",
+          "function": "verifyReceipt",
+          "line": 176
+        },
+        {
+          "file": "validation.ts",
+          "function": "detectTampering",
+          "line": 226
+        },
+        {
+          "file": "validation.ts",
+          "function": "ValidationResult",
+          "line": 12
+        }
+      ],
+      "files": {
+        "compatibility.ts": {
+          "total": 6,
+          "instrumented": 0
+        },
+        "connectors.ts": {
+          "total": 7,
+          "instrumented": 0
+        },
+        "errors.ts": {
+          "total": 13,
+          "instrumented": 0
+        },
+        "explain.ts": {
+          "total": 6,
+          "instrumented": 0
+        },
+        "hash.ts": {
+          "total": 5,
+          "instrumented": 0
+        },
+        "index.ts": {
+          "total": 1,
+          "instrumented": 0
+        },
+        "plan.ts": {
+          "total": 9,
+          "instrumented": 0
+        },
+        "receipt-builder.ts": {
+          "total": 1,
+          "instrumented": 0
+        },
+        "receipt.ts": {
+          "total": 8,
+          "instrumented": 0
+        },
+        "result.ts": {
+          "total": 13,
+          "instrumented": 0
+        },
+        "sinks.ts": {
+          "total": 4,
+          "instrumented": 0
+        },
+        "status.ts": {
+          "total": 7,
+          "instrumented": 0
+        },
+        "steps.ts": {
+          "total": 1,
+          "instrumented": 0
+        },
+        "templates/algorithm-registry.ts": {
+          "total": 6,
+          "instrumented": 0
+        },
+        "templates/index.ts": {
+          "total": 0,
+          "instrumented": 0
+        },
+        "templates/prediction-tasks.ts": {
+          "total": 4,
+          "instrumented": 0
+        },
+        "types.ts": {
+          "total": 6,
+          "instrumented": 0
+        },
+        "validation.ts": {
+          "total": 5,
+          "instrumented": 0
+        }
+      }
+    },
+    "engine": {
+      "total": 81,
+      "instrumented": 0,
+      "missing": [
+        {
+          "file": "bootstrap.ts",
+          "function": "bootstrapEngine",
+          "line": 30
+        },
+        {
+          "file": "bootstrap.ts",
+          "function": "createBootstrapError",
+          "line": 57
+        },
+        {
+          "file": "bootstrap.ts",
+          "function": "BootstrapKernel",
+          "line": 13
+        },
+        {
+          "file": "bootstrap.ts",
+          "function": "BootstrapResult",
+          "line": 21
+        },
+        {
+          "file": "checkpointing.ts",
+          "function": "Checkpoint",
+          "line": 12
+        },
+        {
+          "file": "checkpointing.ts",
+          "function": "CheckpointManager",
+          "line": 25
+        },
+        {
+          "file": "connectors/file-source.ts",
+          "function": "FileSourceConfig",
+          "line": 26
+        },
+        {
+          "file": "connectors/file-source.ts",
+          "function": "FileSourceAdapter",
+          "line": 132
+        },
+        {
+          "file": "connectors/http-source.ts",
+          "function": "HttpSourceConfig",
+          "line": 25
+        },
+        {
+          "file": "connectors/http-source.ts",
+          "function": "HttpSourceAdapter",
+          "line": 161
+        },
+        {
+          "file": "connectors/registry.ts",
+          "function": "createSourceRegistry",
+          "line": 63
+        },
+        {
+          "file": "connectors/registry.ts",
+          "function": "ExtendedSourceRegistry",
+          "line": 16
+        },
+        {
+          "file": "connectors/schemas.ts",
+          "function": "FileSourceConfigSchema",
+          "line": 10
+        },
+        {
+          "file": "connectors/schemas.ts",
+          "function": "HttpSourceConfigSchema",
+          "line": 34
+        },
+        {
+          "file": "connectors/schemas.ts",
+          "function": "StreamSourceConfigSchema",
+          "line": 98
+        },
+        {
+          "file": "connectors/schemas.ts",
+          "function": "SourceConfigSchema",
+          "line": 115
+        },
+        {
+          "file": "connectors/stream-source.ts",
+          "function": "StreamSourceConfig",
+          "line": 23
+        },
+        {
+          "file": "connectors/stream-source.ts",
+          "function": "StreamSourceAdapter",
+          "line": 104
+        },
+        {
+          "file": "connectors/ws-source.ts",
+          "function": "WebSocketSourceConfig",
+          "line": 22
+        },
+        {
+          "file": "connectors/ws-source.ts",
+          "function": "WebSocketSourceAdapter",
+          "line": 151
+        },
+        {
+          "file": "engine.ts",
+          "function": "createSimpleEngine",
+          "line": 955
+        },
+        {
+          "file": "engine.ts",
+          "function": "createFullEngine",
+          "line": 966
+        },
+        {
+          "file": "engine.ts",
+          "function": "KernelRunResult",
+          "line": 31
+        },
+        {
+          "file": "engine.ts",
+          "function": "Kernel",
+          "line": 44
+        },
+        {
+          "file": "engine.ts",
+          "function": "Planner",
+          "line": 61
+        },
+        {
+          "file": "engine.ts",
+          "function": "Executor",
+          "line": 68
+        },
+        {
+          "file": "engine.ts",
+          "function": "Engine",
+          "line": 78
+        },
+        {
+          "file": "execution.ts",
+          "function": "validatePlan",
+          "line": 74
+        },
+        {
+          "file": "execution.ts",
+          "function": "topologicalSortPlan",
+          "line": 147
+        },
+        {
+          "file": "execution.ts",
+          "function": "executePlan",
+          "line": 216
+        },
+        {
+          "file": "execution.ts",
+          "function": "createStepDispatcher",
+          "line": 444
+        },
+        {
+          "file": "execution.ts",
+          "function": "StepResult",
+          "line": 24
+        },
+        {
+          "file": "execution.ts",
+          "function": "ExecutionContext",
+          "line": 36
+        },
+        {
+          "file": "execution.ts",
+          "function": "StepDispatcher",
+          "line": 48
+        },
+        {
+          "file": "lifecycle.ts",
+          "function": "LifecycleEvent",
+          "line": 21
+        },
+        {
+          "file": "lifecycle.ts",
+          "function": "StateMachine",
+          "line": 33
+        },
+        {
+          "file": "sinks/artifacts.ts",
+          "function": "isReceiptArtifact",
+          "line": 100
+        },
+        {
+          "file": "sinks/artifacts.ts",
+          "function": "isModelArtifact",
+          "line": 115
+        },
+        {
+          "file": "sinks/artifacts.ts",
+          "function": "isReportArtifact",
+          "line": 123
+        },
+        {
+          "file": "sinks/artifacts.ts",
+          "function": "ReceiptArtifact",
+          "line": 13
+        },
+        {
+          "file": "sinks/artifacts.ts",
+          "function": "ModelArtifact",
+          "line": 34
+        },
+        {
+          "file": "sinks/artifacts.ts",
+          "function": "ReportArtifact",
+          "line": 48
+        },
+        {
+          "file": "sinks/artifacts.ts",
+          "function": "ExplainSnapshotArtifact",
+          "line": 58
+        },
+        {
+          "file": "sinks/artifacts.ts",
+          "function": "StatusSnapshotArtifact",
+          "line": 68
+        },
+        {
+          "file": "sinks/artifacts.ts",
+          "function": "ArtifactTypeMap",
+          "line": 89
+        },
+        {
+          "file": "sinks/file-log-sink.ts",
+          "function": "FileLogSinkConfig",
+          "line": 30
+        },
+        {
+          "file": "sinks/file-log-sink.ts",
+          "function": "Receipt",
+          "line": 39
+        },
+        {
+          "file": "sinks/file-log-sink.ts",
+          "function": "FileLogSinkAdapter",
+          "line": 65
+        },
+        {
+          "file": "sinks/http-sink.ts",
+          "function": "HttpSinkConfig",
+          "line": 23
+        },
+        {
+          "file": "sinks/http-sink.ts",
+          "function": "HttpSinkAdapter",
+          "line": 48
+        },
+        {
+          "file": "sinks/registry.ts",
+          "function": "createSinkRegistry",
+          "line": 62
+        },
+        {
+          "file": "sinks/registry.ts",
+          "function": "ExtendedSinkRegistry",
+          "line": 15
+        },
+        {
+          "file": "sinks/schemas.ts",
+          "function": "FileLogSinkConfigSchema",
+          "line": 10
+        },
+        {
+          "file": "sinks/schemas.ts",
+          "function": "StdoutSinkConfigSchema",
+          "line": 40
+        },
+        {
+          "file": "sinks/schemas.ts",
+          "function": "HttpSinkConfigSchema",
+          "line": 63
+        },
+        {
+          "file": "sinks/schemas.ts",
+          "function": "SinkConfigSchema",
+          "line": 135
+        },
+        {
+          "file": "sinks/stdout-sink.ts",
+          "function": "StdoutSinkConfig",
+          "line": 23
+        },
+        {
+          "file": "sinks/stdout-sink.ts",
+          "function": "StdoutSinkAdapter",
+          "line": 41
+        },
+        {
+          "file": "state.ts",
+          "function": "isOperationalState",
+          "line": 93
+        },
+        {
+          "file": "state.ts",
+          "function": "isTerminalState",
+          "line": 100
+        },
+        {
+          "file": "state.ts",
+          "function": "isProcessingState",
+          "line": 107
+        },
+        {
+          "file": "state.ts",
+          "function": "STATE_METADATA",
+          "line": 26
+        },
+        {
+          "file": "state.ts",
+          "function": "ALL_STATES",
+          "line": 88
+        },
+        {
+          "file": "state.ts",
+          "function": "StateMetadata",
+          "line": 15
+        },
+        {
+          "file": "status.ts",
+          "function": "formatError",
+          "line": 241
+        },
+        {
+          "file": "status.ts",
+          "function": "formatStatus",
+          "line": 258
+        },
+        {
+          "file": "status.ts",
+          "function": "StatusTracker",
+          "line": 18
+        },
+        {
+          "file": "transitions.ts",
+          "function": "canTransition",
+          "line": 32
+        },
+        {
+          "file": "transitions.ts",
+          "function": "getValidTransitions",
+          "line": 39
+        },
+        {
+          "file": "transitions.ts",
+          "function": "VALID_TRANSITIONS",
+          "line": 18
+        },
+        {
+          "file": "transitions.ts",
+          "function": "TransitionValidator",
+          "line": 49
+        },
+        {
+          "file": "wasm-loader.ts",
+          "function": "createWasmLoader",
+          "line": 464
+        },
+        {
+          "file": "wasm-loader.ts",
+          "function": "getWasmLoader",
+          "line": 471
+        },
+        {
+          "file": "wasm-loader.ts",
+          "function": "WasmModule",
+          "line": 18
+        },
+        {
+          "file": "wasm-loader.ts",
+          "function": "WasmLoaderStatus",
+          "line": 37
+        },
+        {
+          "file": "wasm-loader.ts",
+          "function": "WasmLoaderConfig",
+          "line": 50
+        },
+        {
+          "file": "wasm-loader.ts",
+          "function": "WasmLoader",
+          "line": 63
+        },
+        {
+          "file": "watch.ts",
+          "function": "heartbeatToStatusUpdate",
+          "line": 233
+        },
+        {
+          "file": "watch.ts",
+          "function": "WatchConfig",
+          "line": 13
+        },
+        {
+          "file": "watch.ts",
+          "function": "HeartbeatEvent",
+          "line": 34
+        },
+        {
+          "file": "watch.ts",
+          "function": "WatchSession",
+          "line": 46
+        }
+      ],
+      "files": {
+        "bootstrap.ts": {
+          "total": 4,
+          "instrumented": 0
+        },
+        "checkpointing.ts": {
+          "total": 2,
+          "instrumented": 0
+        },
+        "connectors/file-source.ts": {
+          "total": 2,
+          "instrumented": 0
+        },
+        "connectors/http-source.ts": {
+          "total": 2,
+          "instrumented": 0
+        },
+        "connectors/index.ts": {
+          "total": 0,
+          "instrumented": 0
+        },
+        "connectors/registry.ts": {
+          "total": 2,
+          "instrumented": 0
+        },
+        "connectors/schemas.ts": {
+          "total": 4,
+          "instrumented": 0
+        },
+        "connectors/stream-source.ts": {
+          "total": 2,
+          "instrumented": 0
+        },
+        "connectors/ws-source.ts": {
+          "total": 2,
+          "instrumented": 0
+        },
+        "engine.ts": {
+          "total": 7,
+          "instrumented": 0
+        },
+        "execution.ts": {
+          "total": 7,
+          "instrumented": 0
+        },
+        "index.ts": {
+          "total": 0,
+          "instrumented": 0
+        },
+        "lifecycle.ts": {
+          "total": 2,
+          "instrumented": 0
+        },
+        "sinks/artifacts.ts": {
+          "total": 9,
+          "instrumented": 0
+        },
+        "sinks/file-log-sink.ts": {
+          "total": 3,
+          "instrumented": 0
+        },
+        "sinks/http-sink.ts": {
+          "total": 2,
+          "instrumented": 0
+        },
+        "sinks/index.ts": {
+          "total": 0,
+          "instrumented": 0
+        },
+        "sinks/registry.ts": {
+          "total": 2,
+          "instrumented": 0
+        },
+        "sinks/schemas.ts": {
+          "total": 4,
+          "instrumented": 0
+        },
+        "sinks/stdout-sink.ts": {
+          "total": 2,
+          "instrumented": 0
+        },
+        "state.ts": {
+          "total": 6,
+          "instrumented": 0
+        },
+        "status.ts": {
+          "total": 3,
+          "instrumented": 0
+        },
+        "transitions.ts": {
+          "total": 4,
+          "instrumented": 0
+        },
+        "wasm-loader.ts": {
+          "total": 6,
+          "instrumented": 0
+        },
+        "watch.ts": {
+          "total": 4,
+          "instrumented": 0
+        }
+      }
+    },
+    "kernel": {
+      "total": 37,
+      "instrumented": 0,
+      "missing": [
+        {
+          "file": "api.ts",
+          "function": "KernelResult",
+          "line": 17
+        },
+        {
+          "file": "api.ts",
+          "function": "PartialResult",
+          "line": 38
+        },
+        {
+          "file": "api.ts",
+          "function": "KernelStats",
+          "line": 53
+        },
+        {
+          "file": "api.ts",
+          "function": "KernelWasmModule",
+          "line": 73
+        },
+        {
+          "file": "api.ts",
+          "function": "Kernel",
+          "line": 101
+        },
+        {
+          "file": "errors.ts",
+          "function": "isKernelError",
+          "line": 60
+        },
+        {
+          "file": "errors.ts",
+          "function": "classifyRustError",
+          "line": 71
+        },
+        {
+          "file": "errors.ts",
+          "function": "toTypedError",
+          "line": 112
+        },
+        {
+          "file": "errors.ts",
+          "function": "wrapKernelCall",
+          "line": 134
+        },
+        {
+          "file": "errors.ts",
+          "function": "KernelError",
+          "line": 18
+        },
+        {
+          "file": "handlers.ts",
+          "function": "implementAlgorithmStep",
+          "line": 358
+        },
+        {
+          "file": "handlers.ts",
+          "function": "listAlgorithms",
+          "line": 904
+        },
+        {
+          "file": "handlers.ts",
+          "function": "validateAlgorithmParameters",
+          "line": 922
+        },
+        {
+          "file": "handlers.ts",
+          "function": "WasmModule",
+          "line": 14
+        },
+        {
+          "file": "handlers.ts",
+          "function": "AlgorithmStepOutput",
+          "line": 251
+        },
+        {
+          "file": "hashing.ts",
+          "function": "canonicalize",
+          "line": 36
+        },
+        {
+          "file": "hashing.ts",
+          "function": "hashOutput",
+          "line": 47
+        },
+        {
+          "file": "hashing.ts",
+          "function": "hashRaw",
+          "line": 59
+        },
+        {
+          "file": "hashing.ts",
+          "function": "verifyOutputHash",
+          "line": 70
+        },
+        {
+          "file": "hashing.ts",
+          "function": "hashAlgorithmResult",
+          "line": 82
+        },
+        {
+          "file": "registry.ts",
+          "function": "getRegistry",
+          "line": 1382
+        },
+        {
+          "file": "registry.ts",
+          "function": "AlgorithmMetadata",
+          "line": 46
+        },
+        {
+          "file": "registry.ts",
+          "function": "AlgorithmParameter",
+          "line": 96
+        },
+        {
+          "file": "registry.ts",
+          "function": "AlgorithmRegistry",
+          "line": 110
+        },
+        {
+          "file": "step-dispatcher.ts",
+          "function": "buildKernelStepHandlers",
+          "line": 73
+        },
+        {
+          "file": "step-dispatcher.ts",
+          "function": "EngineStep",
+          "line": 21
+        },
+        {
+          "file": "step-dispatcher.ts",
+          "function": "EngineStepResult",
+          "line": 32
+        },
+        {
+          "file": "versioning.ts",
+          "function": "parseSemVer",
+          "line": 33
+        },
+        {
+          "file": "versioning.ts",
+          "function": "compareSemVer",
+          "line": 49
+        },
+        {
+          "file": "versioning.ts",
+          "function": "satisfiesMinimum",
+          "line": 65
+        },
+        {
+          "file": "versioning.ts",
+          "function": "isMajorCompatible",
+          "line": 77
+        },
+        {
+          "file": "versioning.ts",
+          "function": "checkCompatibility",
+          "line": 95
+        },
+        {
+          "file": "versioning.ts",
+          "function": "assertCompatibility",
+          "line": 148
+        },
+        {
+          "file": "versioning.ts",
+          "function": "KERNEL_VERSION",
+          "line": 24
+        },
+        {
+          "file": "versioning.ts",
+          "function": "MIN_WASM4PM_VERSION",
+          "line": 27
+        },
+        {
+          "file": "versioning.ts",
+          "function": "SemVer",
+          "line": 8
+        },
+        {
+          "file": "versioning.ts",
+          "function": "CompatibilityResult",
+          "line": 16
+        }
+      ],
+      "files": {
+        "api.ts": {
+          "total": 5,
+          "instrumented": 0
+        },
+        "errors.ts": {
+          "total": 5,
+          "instrumented": 0
+        },
+        "handlers.ts": {
+          "total": 5,
+          "instrumented": 0
+        },
+        "hashing.ts": {
+          "total": 5,
+          "instrumented": 0
+        },
+        "index.ts": {
+          "total": 0,
+          "instrumented": 0
+        },
+        "registry.ts": {
+          "total": 4,
+          "instrumented": 0
+        },
+        "step-dispatcher.ts": {
+          "total": 3,
+          "instrumented": 0
+        },
+        "versioning.ts": {
+          "total": 10,
+          "instrumented": 0
+        }
+      }
+    },
+    "ml": {
+      "total": 19,
+      "instrumented": 0,
+      "missing": [
+        {
+          "file": "anomaly.ts",
+          "function": "detectEnhancedAnomalies",
+          "line": 191
+        },
+        {
+          "file": "bridge.ts",
+          "function": "buildFeatureMatrix",
+          "line": 18
+        },
+        {
+          "file": "bridge.ts",
+          "function": "encodeLabels",
+          "line": 108
+        },
+        {
+          "file": "classifiers.ts",
+          "function": "classifyTraces",
+          "line": 643
+        },
+        {
+          "file": "classifiers.ts",
+          "function": "regressRemainingTime",
+          "line": 727
+        },
+        {
+          "file": "clustering.ts",
+          "function": "clusterTraces",
+          "line": 240
+        },
+        {
+          "file": "forecasting.ts",
+          "function": "buildThroughputSeries",
+          "line": 220
+        },
+        {
+          "file": "forecasting.ts",
+          "function": "forecastThroughput",
+          "line": 255
+        },
+        {
+          "file": "forecasting.ts",
+          "function": "forecastSeries",
+          "line": 323
+        },
+        {
+          "file": "reduction.ts",
+          "function": "reduceFeaturesPCA",
+          "line": 202
+        },
+        {
+          "file": "types.ts",
+          "function": "FeatureMatrix",
+          "line": 9
+        },
+        {
+          "file": "types.ts",
+          "function": "LabelEncoding",
+          "line": 23
+        },
+        {
+          "file": "types.ts",
+          "function": "ClassificationResult",
+          "line": 43
+        },
+        {
+          "file": "types.ts",
+          "function": "RegressionResult",
+          "line": 49
+        },
+        {
+          "file": "types.ts",
+          "function": "ClusteringResult",
+          "line": 66
+        },
+        {
+          "file": "types.ts",
+          "function": "ThroughputForecastResult",
+          "line": 75
+        },
+        {
+          "file": "types.ts",
+          "function": "SeriesForecastResult",
+          "line": 87
+        },
+        {
+          "file": "types.ts",
+          "function": "EnhancedAnomalyResult",
+          "line": 96
+        },
+        {
+          "file": "types.ts",
+          "function": "PCAResult",
+          "line": 105
+        }
+      ],
+      "files": {
+        "anomaly.ts": {
+          "total": 1,
+          "instrumented": 0
+        },
+        "bridge.ts": {
+          "total": 2,
+          "instrumented": 0
+        },
+        "classifiers.ts": {
+          "total": 2,
+          "instrumented": 0
+        },
+        "clustering.ts": {
+          "total": 1,
+          "instrumented": 0
+        },
+        "forecasting.ts": {
+          "total": 3,
+          "instrumented": 0
+        },
+        "index.ts": {
+          "total": 0,
+          "instrumented": 0
+        },
+        "reduction.ts": {
+          "total": 1,
+          "instrumented": 0
+        },
+        "types.ts": {
+          "total": 9,
+          "instrumented": 0
+        }
+      }
+    },
+    "observability": {
+      "total": 48,
+      "instrumented": 0,
+      "missing": [
+        {
+          "file": "context.ts",
+          "function": "generateTraceId",
+          "line": 31
+        },
+        {
+          "file": "context.ts",
+          "function": "generateSpanId",
+          "line": 46
+        },
+        {
+          "file": "context.ts",
+          "function": "parseTraceparent",
+          "line": 63
+        },
+        {
+          "file": "context.ts",
+          "function": "createTraceparent",
+          "line": 77
+        },
+        {
+          "file": "context.ts",
+          "function": "createRootContext",
+          "line": 88
+        },
+        {
+          "file": "context.ts",
+          "function": "createChildContext",
+          "line": 99
+        },
+        {
+          "file": "context.ts",
+          "function": "TraceContext",
+          "line": 12
+        },
+        {
+          "file": "context.ts",
+          "function": "SpanContext",
+          "line": 21
+        },
+        {
+          "file": "fields.ts",
+          "function": "validateRequiredFields",
+          "line": 42
+        },
+        {
+          "file": "fields.ts",
+          "function": "createRequiredFields",
+          "line": 59
+        },
+        {
+          "file": "fields.ts",
+          "function": "REQUIRED_FIELD_NAMES",
+          "line": 28
+        },
+        {
+          "file": "fields.ts",
+          "function": "RequiredFields",
+          "line": 10
+        },
+        {
+          "file": "instrumentation.ts",
+          "function": "StateChangeEvent",
+          "line": 32
+        },
+        {
+          "file": "instrumentation.ts",
+          "function": "PlanGeneratedEvent",
+          "line": 47
+        },
+        {
+          "file": "instrumentation.ts",
+          "function": "AlgorithmEvent",
+          "line": 64
+        },
+        {
+          "file": "instrumentation.ts",
+          "function": "IOEvent",
+          "line": 82
+        },
+        {
+          "file": "instrumentation.ts",
+          "function": "ProgressEvent",
+          "line": 101
+        },
+        {
+          "file": "instrumentation.ts",
+          "function": "ErrorEventData",
+          "line": 115
+        },
+        {
+          "file": "instrumentation.ts",
+          "function": "MlAnalysisEvent",
+          "line": 131
+        },
+        {
+          "file": "instrumentation.ts",
+          "function": "Instrumentation",
+          "line": 156
+        },
+        {
+          "file": "json-writer.ts",
+          "function": "JsonWriter",
+          "line": 14
+        },
+        {
+          "file": "noop.ts",
+          "function": "NoopTracer",
+          "line": 28
+        },
+        {
+          "file": "observability-wrapper.ts",
+          "function": "SafeEmitResult",
+          "line": 20
+        },
+        {
+          "file": "observability-wrapper.ts",
+          "function": "ObservabilityWrapper",
+          "line": 32
+        },
+        {
+          "file": "observability.ts",
+          "function": "getObservabilityLayer",
+          "line": 290
+        },
+        {
+          "file": "observability.ts",
+          "function": "ObservabilityLayer",
+          "line": 27
+        },
+        {
+          "file": "otel-exporter.ts",
+          "function": "OtelExporter",
+          "line": 15
+        },
+        {
+          "file": "otel.ts",
+          "function": "createTracer",
+          "line": 188
+        },
+        {
+          "file": "otel.ts",
+          "function": "OtelConfig",
+          "line": 15
+        },
+        {
+          "file": "otel.ts",
+          "function": "OtelTracer",
+          "line": 34
+        },
+        {
+          "file": "secret-redaction.ts",
+          "function": "SecretRedaction",
+          "line": 54
+        },
+        {
+          "file": "spans.ts",
+          "function": "BootstrapSpans",
+          "line": 133
+        },
+        {
+          "file": "spans.ts",
+          "function": "PlanningSpans",
+          "line": 139
+        },
+        {
+          "file": "spans.ts",
+          "function": "RunningSpans",
+          "line": 145
+        },
+        {
+          "file": "spans.ts",
+          "function": "WatchingSpans",
+          "line": 155
+        },
+        {
+          "file": "spans.ts",
+          "function": "SpanStatus",
+          "line": 15
+        },
+        {
+          "file": "spans.ts",
+          "function": "SpanEvent",
+          "line": 20
+        },
+        {
+          "file": "spans.ts",
+          "function": "Span",
+          "line": 29
+        },
+        {
+          "file": "spans.ts",
+          "function": "Tracer",
+          "line": 54
+        },
+        {
+          "file": "spans.ts",
+          "function": "LiveSpan",
+          "line": 69
+        },
+        {
+          "file": "types.ts",
+          "function": "CliEvent",
+          "line": 12
+        },
+        {
+          "file": "types.ts",
+          "function": "JsonEvent",
+          "line": 22
+        },
+        {
+          "file": "types.ts",
+          "function": "OtelEvent",
+          "line": 34
+        },
+        {
+          "file": "types.ts",
+          "function": "OtelConfig",
+          "line": 57
+        },
+        {
+          "file": "types.ts",
+          "function": "JsonConfig",
+          "line": 70
+        },
+        {
+          "file": "types.ts",
+          "function": "ObservabilityConfig",
+          "line": 82
+        },
+        {
+          "file": "types.ts",
+          "function": "RequiredOtelAttributes",
+          "line": 91
+        },
+        {
+          "file": "types.ts",
+          "function": "ObservabilityResult",
+          "line": 104
+        }
+      ],
+      "files": {
+        "context.ts": {
+          "total": 8,
+          "instrumented": 0
+        },
+        "fields.ts": {
+          "total": 4,
+          "instrumented": 0
+        },
+        "index.ts": {
+          "total": 0,
+          "instrumented": 0
+        },
+        "instrumentation.ts": {
+          "total": 8,
+          "instrumented": 0
+        },
+        "json-writer.ts": {
+          "total": 1,
+          "instrumented": 0
+        },
+        "noop.ts": {
+          "total": 1,
+          "instrumented": 0
+        },
+        "observability-wrapper.ts": {
+          "total": 2,
+          "instrumented": 0
+        },
+        "observability.ts": {
+          "total": 2,
+          "instrumented": 0
+        },
+        "otel-exporter.ts": {
+          "total": 1,
+          "instrumented": 0
+        },
+        "otel.ts": {
+          "total": 3,
+          "instrumented": 0
+        },
+        "secret-redaction.ts": {
+          "total": 1,
+          "instrumented": 0
+        },
+        "spans.ts": {
+          "total": 9,
+          "instrumented": 0
+        },
+        "types.ts": {
+          "total": 8,
+          "instrumented": 0
+        }
+      }
+    },
+    "planner": {
+      "total": 27,
+      "instrumented": 0,
+      "missing": [
+        {
+          "file": "dag.ts",
+          "function": "hasCycle",
+          "line": 22
+        },
+        {
+          "file": "dag.ts",
+          "function": "topologicalSort",
+          "line": 85
+        },
+        {
+          "file": "dag.ts",
+          "function": "getDependencies",
+          "line": 137
+        },
+        {
+          "file": "dag.ts",
+          "function": "getDependents",
+          "line": 170
+        },
+        {
+          "file": "dag.ts",
+          "function": "validateDAG",
+          "line": 202
+        },
+        {
+          "file": "dag.ts",
+          "function": "DAG",
+          "line": 8
+        },
+        {
+          "file": "explain.ts",
+          "function": "explain",
+          "line": 25
+        },
+        {
+          "file": "explain.ts",
+          "function": "explainBrief",
+          "line": 188
+        },
+        {
+          "file": "planner.ts",
+          "function": "plan",
+          "line": 241
+        },
+        {
+          "file": "planner.ts",
+          "function": "toContractsPlan",
+          "line": 521
+        },
+        {
+          "file": "planner.ts",
+          "function": "PlannerError",
+          "line": 38
+        },
+        {
+          "file": "planner.ts",
+          "function": "Config",
+          "line": 52
+        },
+        {
+          "file": "planner.ts",
+          "function": "ExecutionPlan",
+          "line": 107
+        },
+        {
+          "file": "steps.ts",
+          "function": "createBootstrapStep",
+          "line": 126
+        },
+        {
+          "file": "steps.ts",
+          "function": "createInitWasmStep",
+          "line": 143
+        },
+        {
+          "file": "steps.ts",
+          "function": "createLoadSourceStep",
+          "line": 160
+        },
+        {
+          "file": "steps.ts",
+          "function": "createValidateSourceStep",
+          "line": 177
+        },
+        {
+          "file": "steps.ts",
+          "function": "createAlgorithmStep",
+          "line": 194
+        },
+        {
+          "file": "steps.ts",
+          "function": "createAnalysisStep",
+          "line": 220
+        },
+        {
+          "file": "steps.ts",
+          "function": "createGenerateReportsStep",
+          "line": 245
+        },
+        {
+          "file": "steps.ts",
+          "function": "createSinkStep",
+          "line": 266
+        },
+        {
+          "file": "steps.ts",
+          "function": "createCleanupStep",
+          "line": 283
+        },
+        {
+          "file": "steps.ts",
+          "function": "PlanStep",
+          "line": 94
+        },
+        {
+          "file": "validation.ts",
+          "function": "validatePlan",
+          "line": 48
+        },
+        {
+          "file": "validation.ts",
+          "function": "assertPlanValid",
+          "line": 390
+        },
+        {
+          "file": "validation.ts",
+          "function": "validateSourceSinkCompatibility",
+          "line": 409
+        },
+        {
+          "file": "validation.ts",
+          "function": "ValidationError",
+          "line": 18
+        }
+      ],
+      "files": {
+        "dag.ts": {
+          "total": 6,
+          "instrumented": 0
+        },
+        "explain.ts": {
+          "total": 2,
+          "instrumented": 0
+        },
+        "index.ts": {
+          "total": 0,
+          "instrumented": 0
+        },
+        "planner.ts": {
+          "total": 5,
+          "instrumented": 0
+        },
+        "steps.ts": {
+          "total": 10,
+          "instrumented": 0
+        },
+        "validation.ts": {
+          "total": 4,
+          "instrumented": 0
+        }
+      }
+    },
+    "swarm": {
+      "total": 29,
+      "instrumented": 0,
+      "missing": [
+        {
+          "file": "aggregation.ts",
+          "function": "aggregate",
+          "line": 22
+        },
+        {
+          "file": "aggregation.ts",
+          "function": "AggregateResult",
+          "line": 13
+        },
+        {
+          "file": "convergence.ts",
+          "function": "hashOutput",
+          "line": 15
+        },
+        {
+          "file": "convergence.ts",
+          "function": "checkConvergence",
+          "line": 38
+        },
+        {
+          "file": "convergence.ts",
+          "function": "checkSwarmConvergence",
+          "line": 100
+        },
+        {
+          "file": "convergence.ts",
+          "function": "checkMlConvergence",
+          "line": 138
+        },
+        {
+          "file": "directive-bus.ts",
+          "function": "sendDirective",
+          "line": 11
+        },
+        {
+          "file": "loop.ts",
+          "function": "runSwarm",
+          "line": 27
+        },
+        {
+          "file": "types.ts",
+          "function": "WorkerState",
+          "line": 7
+        },
+        {
+          "file": "types.ts",
+          "function": "WorkerResult",
+          "line": 21
+        },
+        {
+          "file": "types.ts",
+          "function": "DirectiveType",
+          "line": 31
+        },
+        {
+          "file": "types.ts",
+          "function": "Directive",
+          "line": 37
+        },
+        {
+          "file": "types.ts",
+          "function": "SwarmConvergenceReport",
+          "line": 42
+        },
+        {
+          "file": "types.ts",
+          "function": "SwarmConfig",
+          "line": 51
+        },
+        {
+          "file": "types.ts",
+          "function": "SwarmEpisode",
+          "line": 64
+        },
+        {
+          "file": "types.ts",
+          "function": "SwarmArtifact",
+          "line": 72
+        },
+        {
+          "file": "types.ts",
+          "function": "WorkerSpec",
+          "line": 79
+        },
+        {
+          "file": "worker-registry.ts",
+          "function": "getSwarmId",
+          "line": 18
+        },
+        {
+          "file": "worker-registry.ts",
+          "function": "incrementEpisodeCount",
+          "line": 22
+        },
+        {
+          "file": "worker-registry.ts",
+          "function": "getEpisodeCount",
+          "line": 26
+        },
+        {
+          "file": "worker-registry.ts",
+          "function": "resetSwarm",
+          "line": 30
+        },
+        {
+          "file": "worker-registry.ts",
+          "function": "spawnWorker",
+          "line": 36
+        },
+        {
+          "file": "worker-registry.ts",
+          "function": "getWorker",
+          "line": 57
+        },
+        {
+          "file": "worker-registry.ts",
+          "function": "listWorkers",
+          "line": 61
+        },
+        {
+          "file": "worker-registry.ts",
+          "function": "setWorkerStatus",
+          "line": 66
+        },
+        {
+          "file": "worker-registry.ts",
+          "function": "storeResult",
+          "line": 71
+        },
+        {
+          "file": "worker-registry.ts",
+          "function": "getResult",
+          "line": 80
+        },
+        {
+          "file": "worker-registry.ts",
+          "function": "enqueueDirective",
+          "line": 87
+        },
+        {
+          "file": "worker-registry.ts",
+          "function": "dissolveWorkers",
+          "line": 101
+        }
+      ],
+      "files": {
+        "aggregation.ts": {
+          "total": 2,
+          "instrumented": 0
+        },
+        "convergence.ts": {
+          "total": 4,
+          "instrumented": 0
+        },
+        "directive-bus.ts": {
+          "total": 1,
+          "instrumented": 0
+        },
+        "index.ts": {
+          "total": 0,
+          "instrumented": 0
+        },
+        "loop.ts": {
+          "total": 1,
+          "instrumented": 0
+        },
+        "mcp-server.ts": {
+          "total": 0,
+          "instrumented": 0
+        },
+        "types.ts": {
+          "total": 9,
+          "instrumented": 0
+        },
+        "worker-registry.ts": {
+          "total": 12,
+          "instrumented": 0
+        }
+      }
+    },
+    "testing": {
+      "total": 216,
+      "instrumented": 0,
+      "missing": [
+        {
+          "file": "certification.ts",
+          "function": "registerGate",
+          "line": 30
+        },
+        {
+          "file": "certification.ts",
+          "function": "runCertification",
+          "line": 37
+        },
+        {
+          "file": "certification.ts",
+          "function": "clearGates",
+          "line": 72
+        },
+        {
+          "file": "certification.ts",
+          "function": "getRegisteredGates",
+          "line": 79
+        },
+        {
+          "file": "certification.ts",
+          "function": "createGate",
+          "line": 144
+        },
+        {
+          "file": "certification.ts",
+          "function": "formatReport",
+          "line": 159
+        },
+        {
+          "file": "certification.ts",
+          "function": "GateResult",
+          "line": 8
+        },
+        {
+          "file": "certification.ts",
+          "function": "CertificationReport",
+          "line": 15
+        },
+        {
+          "file": "conformance/token-replay.ts",
+          "function": "tokenReplayConformance",
+          "line": 59
+        },
+        {
+          "file": "conformance/token-replay.ts",
+          "function": "createTestPetriNet",
+          "line": 250
+        },
+        {
+          "file": "conformance/token-replay.ts",
+          "function": "createTestEventLog",
+          "line": 279
+        },
+        {
+          "file": "conformance/token-replay.ts",
+          "function": "getExpectedTestResult",
+          "line": 294
+        },
+        {
+          "file": "conformance/token-replay.ts",
+          "function": "expectCloseTo",
+          "line": 305
+        },
+        {
+          "file": "conformance/token-replay.ts",
+          "function": "assertTokenReplayResult",
+          "line": 312
+        },
+        {
+          "file": "conformance/token-replay.ts",
+          "function": "computeAlignment",
+          "line": 366
+        },
+        {
+          "file": "conformance/token-replay.ts",
+          "function": "formatTokenReplayResult",
+          "line": 478
+        },
+        {
+          "file": "conformance/token-replay.ts",
+          "function": "formatAlignment",
+          "line": 508
+        },
+        {
+          "file": "conformance/token-replay.ts",
+          "function": "TokenReplayConfig",
+          "line": 10
+        },
+        {
+          "file": "conformance/token-replay.ts",
+          "function": "TokenReplayTrace",
+          "line": 17
+        },
+        {
+          "file": "conformance/token-replay.ts",
+          "function": "ConformanceDeviation",
+          "line": 28
+        },
+        {
+          "file": "conformance/token-replay.ts",
+          "function": "TokenReplayResult",
+          "line": 35
+        },
+        {
+          "file": "conformance/token-replay.ts",
+          "function": "PetriNetForReplay",
+          "line": 46
+        },
+        {
+          "file": "conformance/token-replay.ts",
+          "function": "Alignment",
+          "line": 344
+        },
+        {
+          "file": "conformance/token-replay.ts",
+          "function": "AlignmentConfig",
+          "line": 351
+        },
+        {
+          "file": "fixtures/configs.ts",
+          "function": "MINIMAL_CONFIG",
+          "line": 47
+        },
+        {
+          "file": "fixtures/configs.ts",
+          "function": "BALANCED_ALPHA_CONFIG",
+          "line": 54
+        },
+        {
+          "file": "fixtures/configs.ts",
+          "function": "QUALITY_GENETIC_CONFIG",
+          "line": 63
+        },
+        {
+          "file": "fixtures/configs.ts",
+          "function": "STREAM_WATCH_CONFIG",
+          "line": 82
+        },
+        {
+          "file": "fixtures/configs.ts",
+          "function": "HTTP_OTEL_CONFIG",
+          "line": 91
+        },
+        {
+          "file": "fixtures/configs.ts",
+          "function": "PIPELINE_DAG_CONFIG",
+          "line": 103
+        },
+        {
+          "file": "fixtures/configs.ts",
+          "function": "ILP_CONFIG",
+          "line": 130
+        },
+        {
+          "file": "fixtures/configs.ts",
+          "function": "OCEL_CONFIG",
+          "line": 142
+        },
+        {
+          "file": "fixtures/configs.ts",
+          "function": "INLINE_CONTENT_CONFIG",
+          "line": 150
+        },
+        {
+          "file": "fixtures/configs.ts",
+          "function": "BARE_MINIMUM_CONFIG",
+          "line": 167
+        },
+        {
+          "file": "fixtures/configs.ts",
+          "function": "MAX_RESOURCES_CONFIG",
+          "line": 174
+        },
+        {
+          "file": "fixtures/configs.ts",
+          "function": "ML_CLASSIFY_CONFIG",
+          "line": 199
+        },
+        {
+          "file": "fixtures/configs.ts",
+          "function": "ML_ALL_TASKS_CONFIG",
+          "line": 213
+        },
+        {
+          "file": "fixtures/configs.ts",
+          "function": "INVALID_CONFIGS",
+          "line": 224
+        },
+        {
+          "file": "fixtures/configs.ts",
+          "function": "ALL_VALID_CONFIGS",
+          "line": 258
+        },
+        {
+          "file": "fixtures/configs.ts",
+          "function": "TestConfig",
+          "line": 6
+        },
+        {
+          "file": "fixtures/events.ts",
+          "function": "generateSyntheticLog",
+          "line": 112
+        },
+        {
+          "file": "fixtures/events.ts",
+          "function": "SIMPLE_SEQUENTIAL",
+          "line": 23
+        },
+        {
+          "file": "fixtures/events.ts",
+          "function": "PARALLEL_SPLIT",
+          "line": 39
+        },
+        {
+          "file": "fixtures/events.ts",
+          "function": "EXCLUSIVE_CHOICE",
+          "line": 57
+        },
+        {
+          "file": "fixtures/events.ts",
+          "function": "LOOP_PROCESS",
+          "line": 73
+        },
+        {
+          "file": "fixtures/events.ts",
+          "function": "EMPTY_LOG",
+          "line": 100
+        },
+        {
+          "file": "fixtures/events.ts",
+          "function": "SINGLE_EVENT",
+          "line": 103
+        },
+        {
+          "file": "fixtures/events.ts",
+          "function": "SAMPLE_XES",
+          "line": 134
+        },
+        {
+          "file": "fixtures/events.ts",
+          "function": "TestEvent",
+          "line": 5
+        },
+        {
+          "file": "fixtures/events.ts",
+          "function": "TestTrace",
+          "line": 13
+        },
+        {
+          "file": "fixtures/events.ts",
+          "function": "TestEventLog",
+          "line": 18
+        },
+        {
+          "file": "fixtures/expected-outputs.ts",
+          "function": "validateReceiptShape",
+          "line": 53
+        },
+        {
+          "file": "fixtures/expected-outputs.ts",
+          "function": "validateExplainOutput",
+          "line": 81
+        },
+        {
+          "file": "fixtures/expected-outputs.ts",
+          "function": "SUCCESS_RECEIPT",
+          "line": 23
+        },
+        {
+          "file": "fixtures/expected-outputs.ts",
+          "function": "PARTIAL_RECEIPT",
+          "line": 33
+        },
+        {
+          "file": "fixtures/expected-outputs.ts",
+          "function": "FAILED_RECEIPT",
+          "line": 43
+        },
+        {
+          "file": "fixtures/expected-outputs.ts",
+          "function": "ExpectedReceipt",
+          "line": 5
+        },
+        {
+          "file": "fixtures/expected-outputs.ts",
+          "function": "ExpectedExplainOutput",
+          "line": 14
+        },
+        {
+          "file": "harness/cli.ts",
+          "function": "createCliTestEnv",
+          "line": 42
+        },
+        {
+          "file": "harness/cli.ts",
+          "function": "runCli",
+          "line": 69
+        },
+        {
+          "file": "harness/cli.ts",
+          "function": "assertExitCode",
+          "line": 112
+        },
+        {
+          "file": "harness/cli.ts",
+          "function": "assertJsonOutput",
+          "line": 125
+        },
+        {
+          "file": "harness/cli.ts",
+          "function": "assertErrorCode",
+          "line": 136
+        },
+        {
+          "file": "harness/cli.ts",
+          "function": "writeTestConfig",
+          "line": 149
+        },
+        {
+          "file": "harness/cli.ts",
+          "function": "readReceipt",
+          "line": 162
+        },
+        {
+          "file": "harness/cli.ts",
+          "function": "EXIT_CODES",
+          "line": 28
+        },
+        {
+          "file": "harness/cli.ts",
+          "function": "CliResult",
+          "line": 13
+        },
+        {
+          "file": "harness/cli.ts",
+          "function": "CliTestEnv",
+          "line": 20
+        },
+        {
+          "file": "harness/determinism.ts",
+          "function": "stableReceiptHash",
+          "line": 39
+        },
+        {
+          "file": "harness/determinism.ts",
+          "function": "checkDeterminism",
+          "line": 48
+        },
+        {
+          "file": "harness/determinism.ts",
+          "function": "receiptsMatch",
+          "line": 98
+        },
+        {
+          "file": "harness/determinism.ts",
+          "function": "checkMlDeterminism",
+          "line": 155
+        },
+        {
+          "file": "harness/determinism.ts",
+          "function": "DeterminismResult",
+          "line": 9
+        },
+        {
+          "file": "harness/otel-capture.ts",
+          "function": "createOtelCapture",
+          "line": 178
+        },
+        {
+          "file": "harness/otel-capture.ts",
+          "function": "CapturedOtelSpan",
+          "line": 8
+        },
+        {
+          "file": "harness/otel-capture.ts",
+          "function": "CapturedJsonEvent",
+          "line": 21
+        },
+        {
+          "file": "harness/otel-capture.ts",
+          "function": "CapturedCliEvent",
+          "line": 29
+        },
+        {
+          "file": "harness/otel-capture.ts",
+          "function": "OtelCaptureStats",
+          "line": 35
+        },
+        {
+          "file": "harness/otel-capture.ts",
+          "function": "OtelCapture",
+          "line": 47
+        },
+        {
+          "file": "harness/parity.ts",
+          "function": "checkParity",
+          "line": 46
+        },
+        {
+          "file": "harness/parity.ts",
+          "function": "checkParityBatch",
+          "line": 100
+        },
+        {
+          "file": "harness/parity.ts",
+          "function": "PlanStep",
+          "line": 11
+        },
+        {
+          "file": "harness/parity.ts",
+          "function": "ExecutionPlan",
+          "line": 20
+        },
+        {
+          "file": "harness/parity.ts",
+          "function": "ParityResult",
+          "line": 26
+        },
+        {
+          "file": "harness/parity.ts",
+          "function": "PlannerLike",
+          "line": 37
+        },
+        {
+          "file": "mocks/engine.ts",
+          "function": "createMockEngine",
+          "line": 190
+        },
+        {
+          "file": "mocks/engine.ts",
+          "function": "LifecycleEvent",
+          "line": 15
+        },
+        {
+          "file": "mocks/engine.ts",
+          "function": "ExecutionPlan",
+          "line": 22
+        },
+        {
+          "file": "mocks/engine.ts",
+          "function": "ExecutionReceipt",
+          "line": 28
+        },
+        {
+          "file": "mocks/engine.ts",
+          "function": "StatusUpdate",
+          "line": 39
+        },
+        {
+          "file": "mocks/engine.ts",
+          "function": "MockEngineOptions",
+          "line": 46
+        },
+        {
+          "file": "mocks/engine.ts",
+          "function": "MockEngine",
+          "line": 56
+        },
+        {
+          "file": "mocks/ml.ts",
+          "function": "createMockMlAdapter",
+          "line": 20
+        },
+        {
+          "file": "mocks/ml.ts",
+          "function": "MockMlAdapter",
+          "line": 6
+        },
+        {
+          "file": "mocks/sink.ts",
+          "function": "createMockSink",
+          "line": 142
+        },
+        {
+          "file": "mocks/sink.ts",
+          "function": "Result",
+          "line": 10
+        },
+        {
+          "file": "mocks/sink.ts",
+          "function": "MockSinkOptions",
+          "line": 24
+        },
+        {
+          "file": "mocks/sink.ts",
+          "function": "WrittenArtifact",
+          "line": 36
+        },
+        {
+          "file": "mocks/sink.ts",
+          "function": "MockSinkAdapter",
+          "line": 43
+        },
+        {
+          "file": "mocks/source.ts",
+          "function": "createMockSource",
+          "line": 138
+        },
+        {
+          "file": "mocks/source.ts",
+          "function": "Capabilities",
+          "line": 7
+        },
+        {
+          "file": "mocks/source.ts",
+          "function": "Result",
+          "line": 14
+        },
+        {
+          "file": "mocks/source.ts",
+          "function": "MockSourceOptions",
+          "line": 28
+        },
+        {
+          "file": "mocks/source.ts",
+          "function": "MockSourceAdapter",
+          "line": 39
+        },
+        {
+          "file": "redaction.ts",
+          "function": "scanForSecrets",
+          "line": 50
+        },
+        {
+          "file": "redaction.ts",
+          "function": "scanObjectForSecrets",
+          "line": 70
+        },
+        {
+          "file": "redaction.ts",
+          "function": "verifyRedaction",
+          "line": 113
+        },
+        {
+          "file": "redaction.ts",
+          "function": "verifyEnvRedaction",
+          "line": 140
+        },
+        {
+          "file": "redaction.ts",
+          "function": "TEST_SECRETS",
+          "line": 158
+        },
+        {
+          "file": "redaction.ts",
+          "function": "REDACTED_VALUES",
+          "line": 169
+        },
+        {
+          "file": "redaction.ts",
+          "function": "RedactionViolation",
+          "line": 34
+        },
+        {
+          "file": "redaction.ts",
+          "function": "RedactionResult",
+          "line": 40
+        },
+        {
+          "file": "utils/bpmn.ts",
+          "function": "parseBPMN",
+          "line": 51
+        },
+        {
+          "file": "utils/bpmn.ts",
+          "function": "serializeBPMN",
+          "line": 132
+        },
+        {
+          "file": "utils/bpmn.ts",
+          "function": "validateBPMN",
+          "line": 172
+        },
+        {
+          "file": "utils/bpmn.ts",
+          "function": "validateBPMNForProcessMining",
+          "line": 255
+        },
+        {
+          "file": "utils/bpmn.ts",
+          "function": "createMinimalBPMN",
+          "line": 311
+        },
+        {
+          "file": "utils/bpmn.ts",
+          "function": "createParallelGatewayBPMN",
+          "line": 329
+        },
+        {
+          "file": "utils/bpmn.ts",
+          "function": "createExclusiveGatewayBPMN",
+          "line": 356
+        },
+        {
+          "file": "utils/bpmn.ts",
+          "function": "createInvalidBPMN",
+          "line": 379
+        },
+        {
+          "file": "utils/bpmn.ts",
+          "function": "roundTripBPMN",
+          "line": 397
+        },
+        {
+          "file": "utils/bpmn.ts",
+          "function": "formatBPMNValidationResult",
+          "line": 421
+        },
+        {
+          "file": "utils/bpmn.ts",
+          "function": "countBPMNElementsByType",
+          "line": 448
+        },
+        {
+          "file": "utils/bpmn.ts",
+          "function": "extractActivityNames",
+          "line": 470
+        },
+        {
+          "file": "utils/bpmn.ts",
+          "function": "BPMNElement",
+          "line": 10
+        },
+        {
+          "file": "utils/bpmn.ts",
+          "function": "BPMNProcess",
+          "line": 19
+        },
+        {
+          "file": "utils/bpmn.ts",
+          "function": "BPMNDefinition",
+          "line": 26
+        },
+        {
+          "file": "utils/bpmn.ts",
+          "function": "BPMNValidationResult",
+          "line": 33
+        },
+        {
+          "file": "utils/bpmn.ts",
+          "function": "BPMNValidationError",
+          "line": 39
+        },
+        {
+          "file": "utils/dfg.ts",
+          "function": "createDFG",
+          "line": 44
+        },
+        {
+          "file": "utils/dfg.ts",
+          "function": "createDFGFromEdges",
+          "line": 105
+        },
+        {
+          "file": "utils/dfg.ts",
+          "function": "compareDFGs",
+          "line": 156
+        },
+        {
+          "file": "utils/dfg.ts",
+          "function": "areDFGsEquivalent",
+          "line": 223
+        },
+        {
+          "file": "utils/dfg.ts",
+          "function": "validateDFG",
+          "line": 241
+        },
+        {
+          "file": "utils/dfg.ts",
+          "function": "validateDFGConsistency",
+          "line": 313
+        },
+        {
+          "file": "utils/dfg.ts",
+          "function": "computeDFGDensity",
+          "line": 364
+        },
+        {
+          "file": "utils/dfg.ts",
+          "function": "computeAverageNodeDegree",
+          "line": 377
+        },
+        {
+          "file": "utils/dfg.ts",
+          "function": "findLongestPath",
+          "line": 407
+        },
+        {
+          "file": "utils/dfg.ts",
+          "function": "createSequentialTestDFG",
+          "line": 459
+        },
+        {
+          "file": "utils/dfg.ts",
+          "function": "createParallelTestDFG",
+          "line": 473
+        },
+        {
+          "file": "utils/dfg.ts",
+          "function": "createChoiceTestDFG",
+          "line": 489
+        },
+        {
+          "file": "utils/dfg.ts",
+          "function": "createTestEventLogForDFG",
+          "line": 505
+        },
+        {
+          "file": "utils/dfg.ts",
+          "function": "formatDFG",
+          "line": 525
+        },
+        {
+          "file": "utils/dfg.ts",
+          "function": "formatDFGComparison",
+          "line": 557
+        },
+        {
+          "file": "utils/dfg.ts",
+          "function": "serializeDFG",
+          "line": 596
+        },
+        {
+          "file": "utils/dfg.ts",
+          "function": "deserializeDFG",
+          "line": 610
+        },
+        {
+          "file": "utils/dfg.ts",
+          "function": "DFGEdge",
+          "line": 10
+        },
+        {
+          "file": "utils/dfg.ts",
+          "function": "DFG",
+          "line": 16
+        },
+        {
+          "file": "utils/dfg.ts",
+          "function": "DFGComparison",
+          "line": 25
+        },
+        {
+          "file": "utils/footprints.ts",
+          "function": "extractFootprintsFromLog",
+          "line": 36
+        },
+        {
+          "file": "utils/footprints.ts",
+          "function": "extractFootprintsFromDFG",
+          "line": 136
+        },
+        {
+          "file": "utils/footprints.ts",
+          "function": "compareFootprints",
+          "line": 242
+        },
+        {
+          "file": "utils/footprints.ts",
+          "function": "areFootprintsEquivalent",
+          "line": 293
+        },
+        {
+          "file": "utils/footprints.ts",
+          "function": "formatFootprints",
+          "line": 303
+        },
+        {
+          "file": "utils/footprints.ts",
+          "function": "formatFootprintComparison",
+          "line": 353
+        },
+        {
+          "file": "utils/footprints.ts",
+          "function": "createSequentialFootprint",
+          "line": 384
+        },
+        {
+          "file": "utils/footprints.ts",
+          "function": "createParallelFootprint",
+          "line": 411
+        },
+        {
+          "file": "utils/footprints.ts",
+          "function": "createChoiceFootprint",
+          "line": 446
+        },
+        {
+          "file": "utils/footprints.ts",
+          "function": "serializeFootprints",
+          "line": 483
+        },
+        {
+          "file": "utils/footprints.ts",
+          "function": "deserializeFootprints",
+          "line": 507
+        },
+        {
+          "file": "utils/footprints.ts",
+          "function": "computeFootprintEntropy",
+          "line": 530
+        },
+        {
+          "file": "utils/footprints.ts",
+          "function": "FootprintMatrix",
+          "line": 10
+        },
+        {
+          "file": "utils/footprints.ts",
+          "function": "FootprintComparison",
+          "line": 21
+        },
+        {
+          "file": "utils/traces.ts",
+          "function": "compareTraces",
+          "line": 38
+        },
+        {
+          "file": "utils/traces.ts",
+          "function": "areTracesIdentical",
+          "line": 102
+        },
+        {
+          "file": "utils/traces.ts",
+          "function": "areTracesPermutation",
+          "line": 110
+        },
+        {
+          "file": "utils/traces.ts",
+          "function": "findTracePermutation",
+          "line": 120
+        },
+        {
+          "file": "utils/traces.ts",
+          "function": "generateAllPermutations",
+          "line": 185
+        },
+        {
+          "file": "utils/traces.ts",
+          "function": "isTraceComplete",
+          "line": 219
+        },
+        {
+          "file": "utils/traces.ts",
+          "function": "validateTraceTimestamps",
+          "line": 240
+        },
+        {
+          "file": "utils/traces.ts",
+          "function": "hasDuplicateConsecutiveActivities",
+          "line": 275
+        },
+        {
+          "file": "utils/traces.ts",
+          "function": "hasSelfLoops",
+          "line": 293
+        },
+        {
+          "file": "utils/traces.ts",
+          "function": "computeTraceStatistics",
+          "line": 335
+        },
+        {
+          "file": "utils/traces.ts",
+          "function": "getUniqueActivities",
+          "line": 374
+        },
+        {
+          "file": "utils/traces.ts",
+          "function": "computeActivityFrequency",
+          "line": 389
+        },
+        {
+          "file": "utils/traces.ts",
+          "function": "findMostCommonVariant",
+          "line": 404
+        },
+        {
+          "file": "utils/traces.ts",
+          "function": "createTestTrace",
+          "line": 436
+        },
+        {
+          "file": "utils/traces.ts",
+          "function": "createTestTraces",
+          "line": 450
+        },
+        {
+          "file": "utils/traces.ts",
+          "function": "formatTrace",
+          "line": 482
+        },
+        {
+          "file": "utils/traces.ts",
+          "function": "formatTraceComparison",
+          "line": 502
+        },
+        {
+          "file": "utils/traces.ts",
+          "function": "serializeTrace",
+          "line": 521
+        },
+        {
+          "file": "utils/traces.ts",
+          "function": "deserializeTrace",
+          "line": 528
+        },
+        {
+          "file": "utils/traces.ts",
+          "function": "traceToArray",
+          "line": 535
+        },
+        {
+          "file": "utils/traces.ts",
+          "function": "arrayToTrace",
+          "line": 542
+        },
+        {
+          "file": "utils/traces.ts",
+          "function": "isSubsequence",
+          "line": 552
+        },
+        {
+          "file": "utils/traces.ts",
+          "function": "longestCommonSubsequence",
+          "line": 567
+        },
+        {
+          "file": "utils/traces.ts",
+          "function": "traceSimilarity",
+          "line": 606
+        },
+        {
+          "file": "utils/traces.ts",
+          "function": "Trace",
+          "line": 10
+        },
+        {
+          "file": "utils/traces.ts",
+          "function": "TraceComparison",
+          "line": 17
+        },
+        {
+          "file": "utils/traces.ts",
+          "function": "TracePermutationResult",
+          "line": 23
+        },
+        {
+          "file": "validators/event-logs.ts",
+          "function": "validateXES",
+          "line": 56
+        },
+        {
+          "file": "validators/event-logs.ts",
+          "function": "validateXESStructure",
+          "line": 153
+        },
+        {
+          "file": "validators/event-logs.ts",
+          "function": "validateCSV",
+          "line": 198
+        },
+        {
+          "file": "validators/event-logs.ts",
+          "function": "validateEventLog",
+          "line": 315
+        },
+        {
+          "file": "validators/event-logs.ts",
+          "function": "validateTimestampOrdering",
+          "line": 365
+        },
+        {
+          "file": "validators/event-logs.ts",
+          "function": "validateTraceCompleteness",
+          "line": 414
+        },
+        {
+          "file": "validators/event-logs.ts",
+          "function": "validateNoDuplicates",
+          "line": 459
+        },
+        {
+          "file": "validators/event-logs.ts",
+          "function": "formatValidationResult",
+          "line": 543
+        },
+        {
+          "file": "validators/event-logs.ts",
+          "function": "isValid",
+          "line": 570
+        },
+        {
+          "file": "validators/event-logs.ts",
+          "function": "ValidationError",
+          "line": 10
+        },
+        {
+          "file": "validators/event-logs.ts",
+          "function": "ValidationResult",
+          "line": 16
+        },
+        {
+          "file": "validators/event-logs.ts",
+          "function": "XESSchema",
+          "line": 22
+        },
+        {
+          "file": "validators/event-logs.ts",
+          "function": "XESTrace",
+          "line": 29
+        },
+        {
+          "file": "validators/event-logs.ts",
+          "function": "XESEvent",
+          "line": 34
+        },
+        {
+          "file": "validators/event-logs.ts",
+          "function": "EventLogSchema",
+          "line": 38
+        },
+        {
+          "file": "verifiers/models.ts",
+          "function": "verifySoundness",
+          "line": 64
+        },
+        {
+          "file": "verifiers/models.ts",
+          "function": "computeQualityMetrics",
+          "line": 292
+        },
+        {
+          "file": "verifiers/models.ts",
+          "function": "validateVerifierDFG",
+          "line": 563
+        },
+        {
+          "file": "verifiers/models.ts",
+          "function": "formatSoundnessResult",
+          "line": 610
+        },
+        {
+          "file": "verifiers/models.ts",
+          "function": "formatQualityMetrics",
+          "line": 629
+        },
+        {
+          "file": "verifiers/models.ts",
+          "function": "PetriNet",
+          "line": 10
+        },
+        {
+          "file": "verifiers/models.ts",
+          "function": "ProcessTreeNode",
+          "line": 16
+        },
+        {
+          "file": "verifiers/models.ts",
+          "function": "VerifierDFG",
+          "line": 23
+        },
+        {
+          "file": "verifiers/models.ts",
+          "function": "SoundnessResult",
+          "line": 30
+        },
+        {
+          "file": "verifiers/models.ts",
+          "function": "QualityMetrics",
+          "line": 38
+        },
+        {
+          "file": "verifiers/models.ts",
+          "function": "ConformanceResult",
+          "line": 45
+        }
+      ],
+      "files": {
+        "certification.ts": {
+          "total": 8,
+          "instrumented": 0
+        },
+        "conformance/index.ts": {
+          "total": 0,
+          "instrumented": 0
+        },
+        "conformance/token-replay.ts": {
+          "total": 16,
+          "instrumented": 0
+        },
+        "fixtures/configs.ts": {
+          "total": 16,
+          "instrumented": 0
+        },
+        "fixtures/events.ts": {
+          "total": 11,
+          "instrumented": 0
+        },
+        "fixtures/expected-outputs.ts": {
+          "total": 7,
+          "instrumented": 0
+        },
+        "fixtures/index.ts": {
+          "total": 0,
+          "instrumented": 0
+        },
+        "harness/cli.ts": {
+          "total": 10,
+          "instrumented": 0
+        },
+        "harness/determinism.ts": {
+          "total": 5,
+          "instrumented": 0
+        },
+        "harness/index.ts": {
+          "total": 0,
+          "instrumented": 0
+        },
+        "harness/otel-capture.ts": {
+          "total": 6,
+          "instrumented": 0
+        },
+        "harness/parity.ts": {
+          "total": 6,
+          "instrumented": 0
+        },
+        "index.ts": {
+          "total": 0,
+          "instrumented": 0
+        },
+        "mocks/engine.ts": {
+          "total": 7,
+          "instrumented": 0
+        },
+        "mocks/index.ts": {
+          "total": 0,
+          "instrumented": 0
+        },
+        "mocks/ml.ts": {
+          "total": 2,
+          "instrumented": 0
+        },
+        "mocks/sink.ts": {
+          "total": 5,
+          "instrumented": 0
+        },
+        "mocks/source.ts": {
+          "total": 5,
+          "instrumented": 0
+        },
+        "redaction.ts": {
+          "total": 8,
+          "instrumented": 0
+        },
+        "utils/bpmn.ts": {
+          "total": 17,
+          "instrumented": 0
+        },
+        "utils/dfg.ts": {
+          "total": 20,
+          "instrumented": 0
+        },
+        "utils/footprints.ts": {
+          "total": 14,
+          "instrumented": 0
+        },
+        "utils/index.ts": {
+          "total": 0,
+          "instrumented": 0
+        },
+        "utils/traces.ts": {
+          "total": 27,
+          "instrumented": 0
+        },
+        "validators/event-logs.ts": {
+          "total": 15,
+          "instrumented": 0
+        },
+        "validators/index.ts": {
+          "total": 0,
+          "instrumented": 0
+        },
+        "verifiers/index.ts": {
+          "total": 0,
+          "instrumented": 0
+        },
+        "verifiers/models.ts": {
+          "total": 11,
+          "instrumented": 0
+        }
+      }
+    }
+  },
+  "threshold": 80,
+  "meets_threshold": false
+}
