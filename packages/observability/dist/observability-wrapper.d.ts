@@ -47,23 +47,31 @@ export declare class ObservabilityWrapper {
     }): SafeEmitResult[];
     /**
      * Execute a callback with observability error handling
-     * Returns callback result; observability errors don't break execution
+     * Returns discriminated union: { result, error } where only one is set
+     * Forces caller to explicitly handle error case
      */
     executeWithObservability<T>(callback: () => Promise<T>, context?: {
         operationName?: string;
         traceId?: string;
     }): Promise<{
         result: T;
-        observabilityError?: string;
+        error: undefined;
+    } | {
+        result: undefined;
+        error: string;
     }>;
     /**
      * Wrap a synchronous function with error handling
+     * Returns discriminated union: { result, error } where only one is set
      */
     wrapSync<T>(callback: () => T, context?: {
         operationName?: string;
     }): {
-        result?: T;
-        error?: string;
+        result: T;
+        error: undefined;
+    } | {
+        result: undefined;
+        error: string;
     };
     /**
      * Record an observability error

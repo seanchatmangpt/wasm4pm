@@ -4,12 +4,19 @@
  * Tests that secrets, tokens, passwords, and PII are never leaked
  * in logs, receipts, error messages, OTEL spans, or CLI output.
  */
-export interface RedactionViolation {
+/** Patterns that should NEVER appear in output */
+declare const SECRET_PATTERNS: Array<{
+    name: string;
+    pattern: RegExp;
+}>;
+/** Well-known env var names that contain secrets */
+declare const SECRET_ENV_VARS: Set<string>;
+interface RedactionViolation {
     pattern: string;
     location: string;
     snippet: string;
 }
-export interface RedactionResult {
+interface RedactionResult {
     passed: boolean;
     violations: RedactionViolation[];
     scannedFields: number;
@@ -17,24 +24,29 @@ export interface RedactionResult {
 }
 /**
  * Scan a string for secret patterns.
+ * @internal
  */
-export declare function scanForSecrets(text: string, location?: string): RedactionViolation[];
+declare function scanForSecrets(text: string, location?: string): RedactionViolation[];
 /**
  * Deep-scan an object for secret patterns in all string values.
+ * @internal
  */
-export declare function scanObjectForSecrets(obj: unknown, path?: string): RedactionViolation[];
+declare function scanObjectForSecrets(obj: unknown, path?: string): RedactionViolation[];
 /**
  * Verify that all secret-related fields in an object are properly redacted.
+ * @internal
  */
-export declare function verifyRedaction(obj: unknown, location?: string): RedactionResult;
+declare function verifyRedaction(obj: unknown, location?: string): RedactionResult;
 /**
  * Verify that env vars with secret names are not present in output.
+ * @internal
  */
-export declare function verifyEnvRedaction(output: string, env?: Record<string, string | undefined>): RedactionViolation[];
+declare function verifyEnvRedaction(output: string, env?: Record<string, string | undefined>): RedactionViolation[];
 /**
  * Test data with known secrets for negative testing.
+ * @internal
  */
-export declare const TEST_SECRETS: {
+declare const TEST_SECRETS: {
     awsKey: string;
     awsSecret: string;
     bearer: string;
@@ -43,12 +55,15 @@ export declare const TEST_SECRETS: {
     connectionString: string;
     privateKey: string;
 };
-/** Properly redacted values for positive testing */
-export declare const REDACTED_VALUES: {
+/** Properly redacted values for positive testing
+ * @internal
+ */
+declare const REDACTED_VALUES: {
     star: string;
     bracket: string;
     hash: string;
     empty: string;
     partial: string;
 };
+declare function isRedacted(value: string): boolean;
 //# sourceMappingURL=redaction.d.ts.map

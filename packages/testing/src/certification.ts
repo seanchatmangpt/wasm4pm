@@ -5,14 +5,14 @@
  * Run all gates before publishing a release.
  */
 
-export interface GateResult {
+interface GateResult {
   gate: string;
   passed: boolean;
   details: string;
   duration_ms: number;
 }
 
-export interface CertificationReport {
+interface CertificationReport {
   timestamp: string;
   version: string;
   gates: GateResult[];
@@ -20,14 +20,15 @@ export interface CertificationReport {
   summary: string;
 }
 
-export type GateFunction = () => Promise<GateResult> | GateResult;
+type GateFunction = () => Promise<GateResult> | GateResult;
 
 const registeredGates: Map<string, GateFunction> = new Map();
 
 /**
  * Register a certification gate.
+ * @internal
  */
-export function registerGate(name: string, fn: GateFunction): void {
+function registerGate(name: string, fn: GateFunction): void {
   registeredGates.set(name, fn);
 }
 
@@ -68,15 +69,17 @@ export async function runCertification(version: string): Promise<CertificationRe
 
 /**
  * Clear all registered gates (for testing the certification system itself).
+ * @internal
  */
-export function clearGates(): void {
+function clearGates(): void {
   registeredGates.clear();
 }
 
 /**
  * Get list of registered gate names.
+ * @internal
  */
-export function getRegisteredGates(): string[] {
+function getRegisteredGates(): string[] {
   return [...registeredGates.keys()];
 }
 
@@ -140,8 +143,9 @@ registerGate('performance:benchmarks', () => ({
 
 /**
  * Create a gate that checks a condition.
+ * @internal
  */
-export function createGate(name: string, check: () => Promise<boolean> | boolean, details?: string): void {
+function createGate(name: string, check: () => Promise<boolean> | boolean, details?: string): void {
   registerGate(name, async () => {
     const passed = await check();
     return {
@@ -155,8 +159,9 @@ export function createGate(name: string, check: () => Promise<boolean> | boolean
 
 /**
  * Print certification report to console.
+ * @internal
  */
-export function formatReport(report: CertificationReport): string {
+function formatReport(report: CertificationReport): string {
   const lines: string[] = [
     `Certification Report — v${report.version}`,
     `Timestamp: ${report.timestamp}`,

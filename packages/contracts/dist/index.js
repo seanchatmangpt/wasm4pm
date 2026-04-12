@@ -26,8 +26,6 @@ export * from './result.js';
 export * from './connectors.js';
 // Sink contracts
 export * from './sinks.js';
-// Compatibility matrix
-export * from './compatibility.js';
 export { isReceipt, RECEIPT_JSON_SCHEMA } from './receipt.js';
 // Hash functions for deterministic content hashing
 export { hashConfig, hashData, hashJsonString, verifyHash, normalizeForHashing, } from './hash.js';
