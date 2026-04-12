@@ -394,12 +394,10 @@ impl GpuLinUcb {
         });
 
         let pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
-            label: Some("linucb_pipeline"),
-            layout: Some(&pipeline_layout),
-            module: &shader,
-            entry_point: Some("linucb_select"),
-            compilation_options: wgpu::PipelineCompilationOptions::default(),
-            cache: None,
+            label:       Some("linucb_pipeline"),
+            layout:      Some(&pipeline_layout),
+            module:      &shader,
+            entry_point: "linucb_select",
         });
 
         // Allocate persistent GPU buffers
@@ -509,7 +507,8 @@ impl GpuLinUcb {
         let a_inv_bytes = bytemuck_cast_slice_f32(&state.a_inv);
         self.queue.write_buffer(&self.buf_a_inv, 0, a_inv_bytes);
 
-        let alpha_bytes = bytemuck_cast_slice_f32(&[state.alpha]);
+        let alpha_arr = [state.alpha];
+        let alpha_bytes = bytemuck_cast_slice_f32(&alpha_arr);
         self.queue.write_buffer(&self.buf_alpha, 0, alpha_bytes);
 
         // ── Build bind group ──────────────────────────────────────────────────
@@ -660,15 +659,27 @@ impl GpuLinUcb {
 pub fn select_algorithm(features: &LogFeatures, state: &LinUcbState) -> LinUcbResult {
     #[cfg(feature = "gpu")]
     {
-        // Attempt GPU inference; fall through to CPU on any error
-        let rt = tokio_or_futures_executor();
-        match rt.and_then(|ex| ex.block_on_result(|| async { GpuLinUcb::new().await })) {
+        // Attempt GPU inference using pollster (wgpu's own sync executor).
+        // Falls through to CPU on any error: adapter not found, shader compile
+        // failure, buffer map error, etc.
+        use std::future::Future;
+
+        /// Blocking async executor compatible with wgpu's async API surface.
+        /// We use a simple spin-poll here — wgpu::Device::poll(Wait) handles
+        /// the actual synchronisation; this is not a busy-wait in practice.
+        fn block_on<F: Future<Output = T>, T>(f: F) -> T {
+            pollster::block_on(f)
+        }
+
+        match block_on(GpuLinUcb::new()) {
             Ok(Some(gpu)) => {
-                if let Ok(result) = futures::executor::block_on(gpu.infer_single(features, state)) {
-                    return result;
+                match block_on(gpu.infer_single(features, state)) {
+                    Ok(result) => return result,
+                    Err(e) => eprintln!("[LinUCB] GPU inference error — CPU fallback: {e}"),
                 }
             }
-            _ => {}
+            Ok(None) => { /* no GPU adapter — CPU fallback below */ }
+            Err(e) => eprintln!("[LinUCB] GPU init error — CPU fallback: {e}"),
         }
     }
 
