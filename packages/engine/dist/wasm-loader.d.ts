@@ -108,6 +108,8 @@ export declare class WasmLoader {
     private validateMemory;
     /**
      * Load WASM module from wasm4pm/pkg directory
+     * Validates that the module exports required discovery functions (load_eventlog_from_xes)
+     * Ignore: memory field is bundler-specific and may not be present on all targets
      */
     private loadWasmModule;
     /**

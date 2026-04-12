@@ -242,3 +242,57 @@ fn test_all_agents_interface_consistency() {
     let _ = esarsa_agent.select_action(&s);
     let _ = reinforce_agent.select_action(&s);
 }
+
+// ---------------------------------------------------------------------------
+// Agent trait unification tests — all 5 agents implement Agent<S,A>
+// ---------------------------------------------------------------------------
+
+#[test]
+fn test_all_agents_implement_agent_trait() {
+    let s = SimpleState(0);
+    let s2 = SimpleState(1);
+
+    // QLearning via Agent trait
+    let q: QLearning<SimpleState, SimpleAction> = QLearning::new();
+    let a = Agent::select_action(&q, &s);
+    Agent::update(&q, &s, &a, 1.0, &s2, false);
+
+    // SARSA via Agent trait
+    let sa: SARSAAgent<SimpleState, SimpleAction> = SARSAAgent::new();
+    let a = Agent::select_action(&sa, &s);
+    Agent::update(&sa, &s, &a, 1.0, &s2, false);
+
+    // DoubleQLearning via Agent trait
+    let dq: DoubleQLearning<SimpleState, SimpleAction> = DoubleQLearning::new();
+    let a = Agent::select_action(&dq, &s);
+    Agent::update(&dq, &s, &a, 1.0, &s2, false);
+
+    // ExpectedSARSA via Agent trait
+    let es: ExpectedSARSAAgent<SimpleState, SimpleAction> = ExpectedSARSAAgent::new();
+    let a = Agent::select_action(&es, &s);
+    Agent::update(&es, &s, &a, 1.0, &s2, false);
+
+    // REINFORCE via Agent trait
+    let rf: ReinforceAgent<SimpleState, SimpleAction> = ReinforceAgent::new();
+    let a = Agent::select_action(&rf, &s);
+    Agent::update(&rf, &s, &a, 1.0, &s2, false);
+}
+
+#[test]
+fn test_sarsa_terminal_update_via_trait() {
+    let sa: SARSAAgent<SimpleState, SimpleAction> = SARSAAgent::new();
+    let s = SimpleState(99);
+    let a = SimpleAction::Increment;
+    // done=true should not panic, should use terminal update
+    Agent::update(&sa, &s, &a, 1.0, &SimpleState(100), true);
+}
+
+#[test]
+fn test_reinforce_agent_trait_ignores_next_state() {
+    let rf: ReinforceAgent<SimpleState, SimpleAction> = ReinforceAgent::new();
+    let s = SimpleState(0);
+    let a = SimpleAction::Increment;
+    // REINFORCE should not panic when given next_state and done
+    Agent::update(&rf, &s, &a, 1.0, &SimpleState(99), false);
+    Agent::update(&rf, &s, &a, -1.0, &SimpleState(100), true);
+}
