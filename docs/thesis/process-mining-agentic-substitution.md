@@ -2,8 +2,8 @@
 
 **Author:** Sean Chatman  
 **Date:** April 2026  
-**Platform:** pictl (wasm4pm) v26.4.10  
-**Commit:** 4ba97c3 (merged to main, 2026-04-12)  
+**Platform:** pictl (wasm4pm) v26.4.11  
+**Commit:** main (2026-04-11) — 693/693 tests, 41-test E2E suite added  
 
 ---
 
@@ -20,7 +20,7 @@ We show that:
 
 The remaining two components — **natural language generation** and **external tool use** — are outside the scope of process mining and remain the province of LLM-based agents.
 
-We formalize this substitution as the **Closed Claw Autonomic Loop**, measure its total execution cost at 33.39 ns per cycle on Apple Silicon, demonstrate GPU acceleration potential of 134,000x on discrete GPUs, and validate production readiness via 50/50 merge gates with 585/585 tests passing.
+We formalize this substitution as the **Closed Claw Autonomic Loop**, measure its total execution cost at 33.39 ns per cycle on Apple Silicon, demonstrate GPU acceleration potential of 134,000x on discrete GPUs, and validate production readiness via 50/50 merge gates with 693/693 tests passing — including a 41-test E2E suite that directly verifies all 14 architectural diagrams of the system.
 
 **Keywords:** process mining, agentic AI, WebAssembly, LinUCB, GPU acceleration, Petri net semantics, van der Aalst, closed-loop control, concept drift detection
 
@@ -67,7 +67,8 @@ The question this thesis answers: **Which agentic loop components can be replace
 2. **LinUCB contextual bandit for algorithm selection**: We implement a GPU-accelerated LinUCB bandit that selects among 40 process mining algorithms based on 8 log-characteristic features, replacing LLM-based decision-making with a formally grounded, 0.09 µs inference.
 3. **Closed Claw Autonomic Loop**: We formalize a 34 ns closed-loop execution model where process discovery, Petri net marking semantics, RL-based action selection, and SPC-based adaptation form a self-correcting cycle.
 4. **GPU acceleration**: We demonstrate WGSL compute shader implementation achieving 119,136 states/sec CPU baseline with 134,000x speedup potential on discrete GPUs.
-5. **Production validation**: 50/50 merge gates, 585/585 tests, bit-exact determinism verified across 2,500 runs.
+5. **Production validation**: 50/50 merge gates, 693/693 tests, bit-exact determinism verified across 2,500 runs.
+6. **E2E architectural verification**: A 41-test end-to-end suite (`e2e_agentic_pipeline.rs`) independently validates each of the 14 architectural diagrams of the Closed Claw system, from raw Petri net token flow through the complete agentic decision pipeline.
 
 ---
 
@@ -397,7 +398,7 @@ Closed Claw + Agentic Layer:
 
 #### 3.5.6 Test Coverage
 
-15 integration tests (agentic_jtbd_tests.rs) cover:
+**Tier 1 — JTBD Integration Tests** (`agentic_jtbd_tests.rs`): 15 tests
 
 - Role selection for 10 workflow phases × 4 risk levels
 - Topology decomposition with phase overrides
@@ -410,6 +411,38 @@ Closed Claw + Agentic Layer:
 - Full JTBD: end-to-end case execution with multi-assertion verification
 
 **Result:** 15/15 tests passing. Zero flakes. Deterministic.
+
+**Tier 2 — E2E Architectural Verification** (`e2e_agentic_pipeline.rs`): 41 tests
+
+Each of the 14 architectural diagrams of the Closed Claw system is independently validated by one or more tests:
+
+| Diagram | Coverage | Tests |
+|---------|----------|-------|
+| 1. Full pipeline | Event stream → feature extraction → state → LinUCB → marking → SPC → reward → bindings | 1 |
+| 2. CPU hot path | Guards → dispatch → RL select → circuit breaker → SPC → marking enabled → marking fire | 2 |
+| 3. Autonomic state machine | Observe → discover → decide → validate → execute/escalate → monitor → learn | 2 |
+| 4. ML challenges | SPC Rules 1–3, entropy features, bandit weighting | 4 |
+| 5. RL controls | UCB bonus, bounded reward, persistent state, lawful action clipping, 8-feature state | 5 |
+| 6. GPU/CPU fallback | CPU reference path always produces valid action | 2 |
+| 7. Agentic control pipeline | Task → RoleSelector → … → JtbdRunner (all 9 stages in sequence) | 1 |
+| 8. Decision gate | Evidence gate → lawful gate → compile → marking → receipt | 4 |
+| 9. Prompt foundry | Ontology + state + receipts + policy → complete bindings | 1 |
+| 10. Closed Claw vs baseline | Deterministic decision vs simulated LLM latency proxy | 1 |
+| 11. Health state machine | Healthy → Watch → Adaptive → Escalated/Blocked → Recovery | 5 |
+| 12. Petri net token flow | P0 → T0 → P1 → … four-place 4-transition token lifecycle | 3 |
+| 13. Counterfactual bandwidth | Multiple candidates → parallel scoring → top action | 3 |
+| 14. Benchmark challenges | Challenge-response pairs from all benchmark targets | 6 |
+
+**Result:** 41/41 tests passing. All 14 architectural diagrams verified by executable tests.
+
+Behavioral invariants established by the E2E suite:
+- Closed Claw full pipeline completes in a single synchronous call with bounded output
+- CPU LinUCB produces valid agent indices for all feature vector magnitudes (sparse, dense, mixed)
+- SPC Rule 3 triggers on ≥6 monotone-increasing points within a 9-point window
+- Petri net marking semantics enforce no-op semantics for disabled transitions (deadlock prevention)
+- All 5 RL agent types (Q-Learning/SARSA/Double Q-Learning/Expected SARSA/REINFORCE) handle 1,000 rapid cycles without panic, NaN reward, or empty action labels
+- Health state machine escalates on Critical risk × TrendDetected drift (reason code: "risk:Critical")
+- Counterfactual evaluator selects highest-reward action from ≥3 candidates
 
 #### 3.5.7 Production Readiness
 
@@ -633,7 +666,7 @@ We have demonstrated that a WebAssembly-based process mining engine can replace 
 3. **Action validation** replaced by Petri net marking semantics (1.62–2.09 ns, soundness-guaranteed)
 4. **Adaptation** replaced by SPC + Sherman-Morrison (4.85 ns, statistically grounded)
 
-The Closed Claw Autonomic Loop integrates these primitives into a 34 ns self-correcting cycle, validated by 585/585 tests and 50/50 production gates.
+The Closed Claw Autonomic Loop integrates these primitives into a 34 ns self-correcting cycle, validated by 693/693 tests and 50/50 production gates — including a 41-test E2E suite that provides executable verification of all 14 architectural diagrams.
 
 The remaining 2 components — natural language generation and external tool use — are complementary, not competing. Process mining provides the evidence layer; LLMs provide the explanation layer. Together, they form a more rigorous foundation for autonomous AI systems than either could provide alone.
 
@@ -683,6 +716,7 @@ The practical implication: any agentic AI system that makes decisions about proc
 | **wasm4pm/src/agentic/topology.rs** | **~60** | **TopologyPolicy: permitted topology selection** |
 | **wasm4pm/src/agentic/types.rs** | **~300** | **Agentic types: enums, structs, traits** |
 | **wasm4pm/tests/agentic_jtbd_tests.rs** | **~220** | **JTBD integration tests (15 passing)** |
+| **wasm4pm/tests/e2e_agentic_pipeline.rs** | **~1220** | **E2E architectural verification (41 tests, 14 diagrams)** |
 | **wasm4pm/benches/agentic_bench.rs** | **~300** | **Criterion benchmarks (9 traits measured)** |
 
 ## Appendix B: Benchmark Data

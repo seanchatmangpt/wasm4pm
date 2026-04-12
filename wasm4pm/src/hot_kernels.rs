@@ -940,7 +940,7 @@ pub const fn temporal_within(start: u32, end: u32, min_d: u32, max_d: u32) -> u8
 // ============================================================
 
 #[repr(C)]
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct Marking4 {
     pub p0: u32,
     pub p1: u32,
