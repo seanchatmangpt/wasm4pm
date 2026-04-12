@@ -16,7 +16,13 @@ export declare class OtelExporter {
     private flushTimer?;
     private flushPromise;
     private isShuttingDown;
+    private flushErrors;
     constructor(config: OtelConfig);
+    private recordFlushError;
+    getFlushErrors(): Array<{
+        timestamp: Date;
+        error: any;
+    }>;
     /**
      * Start automatic flush timer
      */
@@ -32,6 +38,7 @@ export declare class OtelExporter {
     private flush;
     /**
      * Internal flush implementation
+     * When required=true, throws error so it propagates; when false, logs and continues
      */
     private doFlush;
     /**
@@ -59,6 +66,7 @@ export declare class OtelExporter {
     /**
      * Gracefully shutdown exporter
      * Flushes any remaining events
+     * Throws if required=true and flush errors occurred
      */
     shutdown(): Promise<ObservabilityResult>;
 }

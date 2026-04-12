@@ -48,9 +48,6 @@ export * from './connectors.js';
 // Sink contracts
 export * from './sinks.js';
 
-// Compatibility matrix
-export * from './compatibility.js';
-
 // Receipt types and cryptographic verification
 export type {
   Receipt,

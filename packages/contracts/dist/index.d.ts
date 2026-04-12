@@ -16,7 +16,6 @@ export type { TypedError } from './errors.js';
 export * from './result.js';
 export * from './connectors.js';
 export * from './sinks.js';
-export * from './compatibility.js';
 export type { Receipt, ErrorInfo, ExecutionSummary, AlgorithmInfo, ModelInfo, ExecutionProfile, } from './receipt.js';
 export { isReceipt, RECEIPT_JSON_SCHEMA } from './receipt.js';
 export { hashConfig, hashData, hashJsonString, verifyHash, normalizeForHashing, } from './hash.js';

@@ -14,10 +14,19 @@ export class OtelExporter {
         this.queue = [];
         this.flushPromise = Promise.resolve();
         this.isShuttingDown = false;
+        this.flushErrors = [];
         this.config = config;
         if (config.enabled) {
             this.startAutoFlush();
         }
+    }
+    recordFlushError(error) {
+        this.flushErrors.push({ timestamp: new Date(), error });
+        if (this.flushErrors.length > 50)
+            this.flushErrors.shift();
+    }
+    getFlushErrors() {
+        return [...this.flushErrors];
     }
     /**
      * Start automatic flush timer
@@ -26,8 +35,13 @@ export class OtelExporter {
         const timeout = this.config.timeout_ms ?? 5000;
         this.flushTimer = setInterval(() => {
             this.flush().catch((error) => {
-                // Non-blocking: log error but don't break execution
-                console.error(`[observability] OTEL flush failed: ${error}`);
+                if (this.config.required) {
+                    console.error(`[observability] CRITICAL: Required OTEL flush failed: ${error}`);
+                    this.recordFlushError(error);
+                }
+                else {
+                    console.warn(`[observability] Optional OTEL flush failed: ${error}`);
+                }
             });
         }, timeout);
         // Allow process to exit even if timer is pending
@@ -52,9 +66,14 @@ export class OtelExporter {
         // Auto-flush if batch size reached
         const batchSize = this.config.batch_size ?? 100;
         if (this.queue.length >= batchSize && !this.isShuttingDown) {
-            // Non-blocking: fire and forget
             this.flush().catch((error) => {
-                console.error(`[observability] OTEL export failed: ${error}`);
+                if (this.config.required) {
+                    console.error(`[observability] CRITICAL: Required OTEL export failed: ${error}`);
+                    this.recordFlushError(error);
+                }
+                else {
+                    console.warn(`[observability] Optional OTEL export failed: ${error}`);
+                }
             });
         }
     }
@@ -70,6 +89,7 @@ export class OtelExporter {
     }
     /**
      * Internal flush implementation
+     * When required=true, throws error so it propagates; when false, logs and continues
      */
     async doFlush() {
         const events = this.queue.splice(0, this.config.batch_size ?? 100);
@@ -79,13 +99,15 @@ export class OtelExporter {
             await this.exportEvents(events);
         }
         catch (error) {
-            // Non-blocking: log but don't throw
-            // If required=true, we could escalate, but PRD §18.5 says errors shouldn't break execution
             if (this.config.required) {
-                console.error(`[observability] Required OTEL export failed: ${error}`);
+                const message = error instanceof Error ? error.message : String(error);
+                console.error(`[observability] CRITICAL: Required OTEL export failed: ${message}`);
+                this.recordFlushError(error);
+                this.queue.unshift(...events);
+                throw new Error(`OTEL export required but failed: ${message}`);
             }
             else {
-                console.error(`[observability] Optional OTEL export failed: ${error}`);
+                console.warn(`[observability] Optional OTEL export failed: ${error}`);
             }
         }
     }
@@ -209,6 +231,7 @@ export class OtelExporter {
     /**
      * Gracefully shutdown exporter
      * Flushes any remaining events
+     * Throws if required=true and flush errors occurred
      */
     async shutdown() {
         this.isShuttingDown = true;
@@ -218,8 +241,24 @@ export class OtelExporter {
                 clearInterval(this.flushTimer);
             }
             // Flush remaining events
+            let lastError;
             while (this.queue.length > 0) {
-                await this.flush();
+                try {
+                    await this.flush();
+                }
+                catch (error) {
+                    lastError = error instanceof Error ? error : new Error(String(error));
+                    if (!this.config.required) {
+                        console.warn(`[observability] Continuing shutdown despite optional OTEL error: ${error}`);
+                    }
+                }
+            }
+            if (this.config.required && lastError) {
+                return {
+                    success: false,
+                    error: `Required OTEL shutdown failed: ${lastError.message}`,
+                    timestamp: new Date(),
+                };
             }
             return {
                 success: true,

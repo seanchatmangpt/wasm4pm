@@ -14,6 +14,7 @@ export class JsonWriter {
         this.flushPromise = Promise.resolve();
         this.BUFFER_SIZE = 100;
         this.FLUSH_INTERVAL_MS = 1000;
+        this.flushErrors = [];
         this.config = config;
         if (config.enabled && config.dest !== 'stdout') {
             this.initPromise = this.initializeFile();
@@ -36,12 +37,14 @@ export class JsonWriter {
     }
     /**
      * Start auto-flush timer
+     * Errors are logged and recorded; caller should monitor via getFlushErrors()
      */
     startAutoFlush() {
         this.flushTimer = setInterval(() => {
             this.flush().catch((error) => {
-                // Non-blocking: log error but don't throw
-                console.error(`[observability] Failed to auto-flush JSON events: ${error}`);
+                const message = error instanceof Error ? error.message : String(error);
+                console.warn(`[observability] Failed to auto-flush JSON events: ${message}`);
+                this.recordFlushError(error);
             });
         }, this.FLUSH_INTERVAL_MS);
         // Allow process to exit even if timer is pending
@@ -63,9 +66,10 @@ export class JsonWriter {
         this.buffer.push(event);
         // Flush if buffer is full
         if (this.buffer.length >= this.BUFFER_SIZE) {
-            // Non-blocking: fire and forget
             this.flush().catch((error) => {
-                console.error(`[observability] Failed to flush JSON buffer: ${error}`);
+                const message = error instanceof Error ? error.message : String(error);
+                console.warn(`[observability] Failed to flush JSON buffer: ${message}`);
+                this.recordFlushError(error);
             });
         }
     }
@@ -81,6 +85,7 @@ export class JsonWriter {
     }
     /**
      * Internal flush implementation
+     * Throws on error so caller can handle; failed events are re-enqueued
      */
     async doFlush() {
         const events = this.buffer.splice(0, this.BUFFER_SIZE);
@@ -92,19 +97,30 @@ export class JsonWriter {
                 process.stdout.write(lines);
             }
             else {
-                // Wait for file handle initialization if still pending
                 if (this.initPromise) {
                     await this.initPromise;
                 }
                 if (this.fileHandle) {
                     await this.fileHandle.write(lines);
                 }
+                else {
+                    throw new Error('JSON writer file handle not initialized');
+                }
             }
         }
         catch (error) {
-            // Non-blocking: log error but don't throw
-            console.error(`[observability] Failed to write JSON events: ${error}`);
+            this.buffer.unshift(...events);
+            const message = error instanceof Error ? error.message : String(error);
+            throw new Error(`JSON flush failed: ${message}`);
         }
+    }
+    recordFlushError(error) {
+        this.flushErrors.push({ timestamp: new Date(), error });
+        if (this.flushErrors.length > 50)
+            this.flushErrors.shift();
+    }
+    getFlushErrors() {
+        return [...this.flushErrors];
     }
     /**
      * Redact secrets from event data
@@ -141,24 +157,34 @@ export class JsonWriter {
     }
     /**
      * Gracefully shutdown the writer
-     * Flushes any remaining events
+     * Flushes any remaining events; reports errors without breaking shutdown
      */
     async shutdown() {
         try {
-            // Stop auto-flush timer
             if (this.flushTimer) {
                 clearInterval(this.flushTimer);
             }
-            // Flush remaining events
+            let lastError;
             while (this.buffer.length > 0) {
-                await this.flush();
+                try {
+                    await this.flush();
+                }
+                catch (error) {
+                    lastError = error instanceof Error ? error : new Error(String(error));
+                    console.warn(`[observability] Flush error during shutdown: ${lastError.message}`);
+                }
             }
-            // Close file handle
             if (this.fileHandle) {
-                await this.fileHandle.close();
+                try {
+                    await this.fileHandle.close();
+                }
+                catch (closeError) {
+                    lastError = closeError instanceof Error ? closeError : new Error(String(closeError));
+                }
             }
             return {
-                success: true,
+                success: !lastError,
+                error: lastError ? lastError.message : undefined,
                 timestamp: new Date(),
             };
         }

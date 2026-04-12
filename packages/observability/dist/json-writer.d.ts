@@ -16,6 +16,7 @@ export declare class JsonWriter {
     private readonly BUFFER_SIZE;
     private readonly FLUSH_INTERVAL_MS;
     private flushTimer?;
+    private flushErrors;
     private initPromise;
     constructor(config: JsonConfig);
     /**
@@ -24,6 +25,7 @@ export declare class JsonWriter {
     private initializeFile;
     /**
      * Start auto-flush timer
+     * Errors are logged and recorded; caller should monitor via getFlushErrors()
      */
     private startAutoFlush;
     /**
@@ -37,8 +39,14 @@ export declare class JsonWriter {
     private flush;
     /**
      * Internal flush implementation
+     * Throws on error so caller can handle; failed events are re-enqueued
      */
     private doFlush;
+    private recordFlushError;
+    getFlushErrors(): Array<{
+        timestamp: Date;
+        error: any;
+    }>;
     /**
      * Redact secrets from event data
      * Removes sensitive fields like passwords, tokens, keys
@@ -46,7 +54,7 @@ export declare class JsonWriter {
     static redactSecrets(data: Record<string, any>): Record<string, any>;
     /**
      * Gracefully shutdown the writer
-     * Flushes any remaining events
+     * Flushes any remaining events; reports errors without breaking shutdown
      */
     shutdown(): Promise<ObservabilityResult>;
 }

@@ -122,6 +122,7 @@ export interface PlanStep {
 
 /**
  * Creates a bootstrap step
+ * @internal
  */
 export function createBootstrapStep(): PlanStep {
   return {
@@ -139,6 +140,7 @@ export function createBootstrapStep(): PlanStep {
 
 /**
  * Creates a WASM initialization step
+ * @internal
  */
 export function createInitWasmStep(): PlanStep {
   return {
@@ -156,6 +158,7 @@ export function createInitWasmStep(): PlanStep {
 
 /**
  * Creates a source loading step
+ * @internal
  */
 export function createLoadSourceStep(sourceFormat: string): PlanStep {
   return {
@@ -173,6 +176,7 @@ export function createLoadSourceStep(sourceFormat: string): PlanStep {
 
 /**
  * Creates a source validation step
+ * @internal
  */
 export function createValidateSourceStep(): PlanStep {
   return {
@@ -190,6 +194,7 @@ export function createValidateSourceStep(): PlanStep {
 
 /**
  * Creates an algorithm discovery step
+ * @internal
  */
 export function createAlgorithmStep(
   algorithmName: string,
@@ -216,6 +221,7 @@ export function createAlgorithmStep(
 
 /**
  * Creates an analysis step
+ * @internal
  */
 export function createAnalysisStep(
   analysisName: string,
@@ -241,6 +247,7 @@ export function createAnalysisStep(
 
 /**
  * Creates a report generation step
+ * @internal
  */
 export function createGenerateReportsStep(
   resultDependencies: string[]
@@ -262,6 +269,7 @@ export function createGenerateReportsStep(
 
 /**
  * Creates a sink write step
+ * @internal
  */
 export function createSinkStep(sinkFormat: string, resultDependencies: string[]): PlanStep {
   return {
@@ -279,6 +287,7 @@ export function createSinkStep(sinkFormat: string, resultDependencies: string[])
 
 /**
  * Creates a cleanup step
+ * @internal
  */
 export function createCleanupStep(allPreviousSteps: string[]): PlanStep {
   return {
@@ -293,3 +302,4 @@ export function createCleanupStep(allPreviousSteps: string[]): PlanStep {
     estimatedMemoryMB: 0,
   };
 }
+

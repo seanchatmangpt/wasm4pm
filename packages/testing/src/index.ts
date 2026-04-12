@@ -9,9 +9,6 @@ export * from './mocks/index.js';
 // Harnesses
 export * from './harness/index.js';
 
-// Redaction verification
-export * from './redaction.js';
-
 // Certification
 export * from './certification.js';
 
