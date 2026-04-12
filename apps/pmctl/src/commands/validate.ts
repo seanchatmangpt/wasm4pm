@@ -4,7 +4,7 @@ import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import type { OutputOptions } from '../output.js';
 import { WasmLoader } from '@pictl/engine';
-import { isWasmAvailable, handleWasmUnavailable } from './shared.js';
+import { createQuietObservabilityLayer } from '../observability-util.js';
 
 export interface ValidateOptions extends OutputOptions {
   input?: string;
@@ -73,12 +73,6 @@ export const validate = defineCommand({
       quiet: ctx.args.quiet,
     });
 
-    // Check WASM availability before any WASM-dependent work
-    // Pass true for quiet flag since validate always uses JSON
-    if (!(await isWasmAvailable(true))) {
-      handleWasmUnavailable('json');
-    }
-
     try {
       // Resolve input path (positional OR --file/-i)
       const inputPath: string | undefined =
@@ -124,7 +118,8 @@ export const validate = defineCommand({
       }
 
       // Load WASM module
-      const loader = WasmLoader.getInstance();
+      const loaderConfig = ctx.args.format === 'json' ? { observability: createQuietObservabilityLayer() } : {};
+      const loader = WasmLoader.getInstance(loaderConfig);
       await loader.init();
       const wasm = loader.get();
 

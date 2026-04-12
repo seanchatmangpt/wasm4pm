@@ -48,6 +48,16 @@ export class Engine {
         this.statusTracker = new StatusTracker();
         this.wasmLoader = WasmLoader.getInstance(wasmLoaderConfig);
         this.observability = new ObservabilityWrapper(observabilityConfig);
+        this.traceId = '';
+        this.requiredOtelAttrs = {
+            'run.id': 'bootstrap',
+            'config.hash': '',
+            'input.hash': '',
+            'plan.hash': '',
+            'execution.profile': 'default',
+            'source.kind': 'unknown',
+            'sink.kind': 'unknown',
+        };
         // Subscribe to lifecycle events for logging and observability
         this.transitionUnsubscribe = this.stateMachine.onTransition((event) => {
             this.onStateTransition(event);
@@ -77,16 +87,8 @@ export class Engine {
         if (!this.traceId) {
             this.traceId = Instrumentation.generateTraceId();
         }
-        // Initialize required OTEL attributes (placeholder values for bootstrap)
-        this.requiredOtelAttrs = this.requiredOtelAttrs || {
-            'run.id': this.currentRunId || 'bootstrap',
-            'config.hash': '',
-            'input.hash': '',
-            'plan.hash': '',
-            'execution.profile': 'default',
-            'source.kind': 'unknown',
-            'sink.kind': 'unknown',
-        };
+        // Update required OTEL attributes with current run ID
+        this.requiredOtelAttrs['run.id'] = this.currentRunId || 'bootstrap';
         const bootstrapStart = Date.now();
         try {
             // Validate transition

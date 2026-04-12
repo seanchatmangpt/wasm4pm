@@ -2,16 +2,16 @@
   "name": "wasm4pm",
   "version": "26.4.6",
   "description": "Process Mining in WebAssembly - High-Speed Algorithms for Browser and Node.js",
-  "main": "pkg/wasm4pm.js",
-  "types": "pkg/wasm4pm.d.ts",
+  "main": "pkg/pictl.js",
+  "types": "pkg/pictl.d.ts",
   "files": [
     "pkg/"
   ],
   "exports": {
     ".": {
-      "types": "./pkg/wasm4pm.d.ts",
-      "import": "./pkg/wasm4pm.js",
-      "require": "./pkg/wasm4pm.js"
+      "types": "./pkg/pictl.d.ts",
+      "import": "./pkg/pictl.js",
+      "require": "./pkg/pictl.js"
     }
   },
   "scripts": {
