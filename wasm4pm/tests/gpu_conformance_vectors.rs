@@ -137,7 +137,10 @@ fn test_iv_normalize_01() {
     );
 
     // Tie-breaking: action 0 must be selected (lowest index)
-    assert_eq!(action, 0, "[{label}] fresh agent tie must resolve to action 0");
+    assert_eq!(
+        action, 0,
+        "[{label}] fresh agent tie must resolve to action 0"
+    );
 }
 
 /// iv-normalize-02: Uniform features [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5]
@@ -172,7 +175,10 @@ fn test_iv_normalize_02() {
     );
 
     // Fresh agent uniform features → action 0
-    assert_eq!(action, 0, "[{label}] uniform features: fresh agent selects action 0");
+    assert_eq!(
+        action, 0,
+        "[{label}] uniform features: fresh agent selects action 0"
+    );
 }
 
 /// iv-normalize-03: Mixed zero/one [0, 1, 0, 1, 0, 1, 0, 1]
@@ -202,7 +208,10 @@ fn test_iv_normalize_03() {
 
     let qs = agent.get_q_values(&features);
     assert_q_values_finite(&qs, label);
-    assert_eq!(action, 0, "[{label}] mixed 0/1 features: fresh agent selects action 0");
+    assert_eq!(
+        action, 0,
+        "[{label}] mixed 0/1 features: fresh agent selects action 0"
+    );
 }
 
 /// iv-normalize-04: Extreme contrast [1e-6, 1.0, 1e-6, 1.0, 1e-6, 1.0, 1e-6, 1.0]
@@ -259,7 +268,10 @@ fn test_iv_normalize_05() {
         );
     }
 
-    assert_eq!(action, 0, "[{label}] all-identical features: fresh agent selects action 0");
+    assert_eq!(
+        action, 0,
+        "[{label}] all-identical features: fresh agent selects action 0"
+    );
 }
 
 // ===========================================================================
@@ -346,10 +358,7 @@ fn test_oi_action_range_02() {
             (selected as usize) < N_ACTIONS,
             "[{label}] case {i}: action {selected} out of [0, {N_ACTIONS})"
         );
-        assert!(
-            q.is_finite(),
-            "[{label}] case {i}: Q = {q} is not finite"
-        );
+        assert!(q.is_finite(), "[{label}] case {i}: Q = {q} is not finite");
     }
 }
 
@@ -601,8 +610,14 @@ fn test_ec_zero_features_01() {
     let (action, q) = agent.select(&features);
 
     assert_action_in_range(action, label);
-    assert!(q.is_finite(), "[{label}] Q must be finite for zero features");
-    assert!(q.abs() < 1e-6, "[{label}] Q = {q} for zero features (expected 0.0)");
+    assert!(
+        q.is_finite(),
+        "[{label}] Q must be finite for zero features"
+    );
+    assert!(
+        q.abs() < 1e-6,
+        "[{label}] Q = {q} for zero features (expected 0.0)"
+    );
 
     // All Q values must be exactly zero
     let qs = agent.get_q_values(&features);
@@ -611,11 +626,17 @@ fn test_ec_zero_features_01() {
     }
 
     // Tie-breaking: action 0 must be selected
-    assert_eq!(action, 0, "[{label}] all Q=0 → action 0 via lowest-index tie-break");
+    assert_eq!(
+        action, 0,
+        "[{label}] all Q=0 → action 0 via lowest-index tie-break"
+    );
 
     // Determinism: 100 runs all return action 0
     let det_action = assert_deterministic_100_runs(&features, label);
-    assert_eq!(det_action, 0, "[{label}] determinism: must always select action 0");
+    assert_eq!(
+        det_action, 0,
+        "[{label}] determinism: must always select action 0"
+    );
 }
 
 /// ec-zero-features-02: Select on zero features, then update on non-zero features
@@ -646,7 +667,8 @@ fn test_ec_zero_features_02() {
     for i in 0..N_FEATURES {
         assert!(
             a_inv[i][i] > 0.0,
-            "[{label}] A_inv[{i}][{i}] = {} must be positive after update", a_inv[i][i]
+            "[{label}] A_inv[{i}][{i}] = {} must be positive after update",
+            a_inv[i][i]
         );
     }
 }
@@ -672,7 +694,10 @@ fn test_ec_action_0_01() {
 
     // Fresh agent must select action 0
     let (initial, _) = agent_fresh.select(&features);
-    assert_eq!(initial, 0, "[{label}] fresh agent must select action 0 (tie at Q=uniform)");
+    assert_eq!(
+        initial, 0,
+        "[{label}] fresh agent must select action 0 (tie at Q=uniform)"
+    );
 
     // After 100 positive updates for action 0, W[0] must be non-trivial
     let mut agent = LinUCBAgent::new();
@@ -682,16 +707,25 @@ fn test_ec_action_0_01() {
 
     let w0 = agent.weight_vector(0);
     let w0_sum: f32 = w0.iter().sum();
-    assert!(w0_sum > 0.0, "[{label}] W[0] sum must be > 0 after 100 positive updates, got {w0_sum}");
+    assert!(
+        w0_sum > 0.0,
+        "[{label}] W[0] sum must be > 0 after 100 positive updates, got {w0_sum}"
+    );
 
     // W[0] must be strictly positive component-wise (uniform features, positive gradient)
     for (j, &wj) in w0.iter().enumerate() {
-        assert!(wj > 0.0, "[{label}] W[0][{j}] = {wj} must be > 0 after 100 positive updates");
+        assert!(
+            wj > 0.0,
+            "[{label}] W[0][{j}] = {wj} must be > 0 after 100 positive updates"
+        );
     }
 
     // After 100 positive updates for action 0, it must remain the argmax
     let (argmax, _) = agent.select(&features);
-    assert_eq!(argmax, 0, "[{label}] action 0 must be argmax after 100 positive updates, got {argmax}");
+    assert_eq!(
+        argmax, 0,
+        "[{label}] action 0 must be argmax after 100 positive updates, got {argmax}"
+    );
 
     // Q values must be finite
     let qs = agent.get_q_values(&features);
@@ -717,10 +751,17 @@ fn test_ec_action_39_01() {
     let (action, q) = agent.select(&features);
     assert_action_in_range(action, label);
     assert!(q.is_finite(), "[{label}] Q must be finite");
-    assert_eq!(action, 39, "[{label}] after 500 positive rewards, action 39 must be argmax, got {action}");
+    assert_eq!(
+        action, 39,
+        "[{label}] after 500 positive rewards, action 39 must be argmax, got {action}"
+    );
 
     // W[39] must have positive components
-    let w39_max = agent.weight_vector(39).iter().cloned().fold(f32::NEG_INFINITY, f32::max);
+    let w39_max = agent
+        .weight_vector(39)
+        .iter()
+        .cloned()
+        .fold(f32::NEG_INFINITY, f32::max);
     assert!(w39_max > 0.0, "[{label}] W[39] max component must be > 0");
 }
 
@@ -753,7 +794,10 @@ fn test_ec_reward_negative_01() {
 
     let (selected, best_q) = agent.select(&features);
     assert_action_in_range(selected, label);
-    assert!(best_q.is_finite(), "[{label}] best Q = {best_q} must be finite");
+    assert!(
+        best_q.is_finite(),
+        "[{label}] best Q = {best_q} must be finite"
+    );
 
     // Negatively-reinforced action must not win
     assert_ne!(
@@ -826,13 +870,25 @@ fn test_ec_reward_large_01() {
 
     let (selected, best_q) = agent.select(&features);
     assert_action_in_range(selected, label);
-    assert!(best_q.is_finite(), "[{label}] best Q = {best_q} must be finite after reward=1e6");
-    assert_eq!(selected, action, "[{label}] action {action} should be argmax after reward=1e6, got {selected}");
+    assert!(
+        best_q.is_finite(),
+        "[{label}] best Q = {best_q} must be finite after reward=1e6"
+    );
+    assert_eq!(
+        selected, action,
+        "[{label}] action {action} should be argmax after reward=1e6, got {selected}"
+    );
 
     // W[20] must be finite and positive
     for (j, &wj) in agent.weight_vector(action as usize).iter().enumerate() {
-        assert!(wj.is_finite(), "[{label}] W[{action}][{j}] = {wj} is not finite");
-        assert!(wj > 0.0, "[{label}] W[{action}][{j}] = {wj} must be > 0 after large positive reward");
+        assert!(
+            wj.is_finite(),
+            "[{label}] W[{action}][{j}] = {wj} is not finite"
+        );
+        assert!(
+            wj > 0.0,
+            "[{label}] W[{action}][{j}] = {wj} must be > 0 after large positive reward"
+        );
     }
 }
 
@@ -848,7 +904,10 @@ fn test_ec_sequential_01() {
 
     let agent = LinUCBAgent::new();
     let (first_action, first_q) = agent.select(&features);
-    assert_eq!(first_action, 0, "[{label}] first select: expected action 0 on fresh agent");
+    assert_eq!(
+        first_action, 0,
+        "[{label}] first select: expected action 0 on fresh agent"
+    );
 
     for i in 1..10 {
         let (action, q) = agent.select(&features);
@@ -931,9 +990,18 @@ fn test_ec_feature_switch_01() {
 
     assert_action_in_range(action1, label);
     assert_action_in_range(action2, label);
-    assert_eq!(action1, 3, "[{label}] f1 → expected action 3, got {action1}");
-    assert_eq!(action2, 15, "[{label}] f2 → expected action 15, got {action2}");
-    assert_ne!(action1, action2, "[{label}] different features must yield different actions");
+    assert_eq!(
+        action1, 3,
+        "[{label}] f1 → expected action 3, got {action1}"
+    );
+    assert_eq!(
+        action2, 15,
+        "[{label}] f2 → expected action 15, got {action2}"
+    );
+    assert_ne!(
+        action1, action2,
+        "[{label}] different features must yield different actions"
+    );
 }
 
 /// ec-matrix-inversion-01: A_inv remains valid after 100 updates
@@ -1011,10 +1079,10 @@ fn test_ec_float_precision_01() {
     let cases: &[([f32; N_FEATURES], f32)] = &[
         ([1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], 1.0),
         ([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0], 1.0),
-        ([0.5; N_FEATURES], 2.0),                                // 8 × 0.25 = 2.0
-        ([1.0; N_FEATURES], 8.0),                                // 8 × 1.0 = 8.0
-        ([0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0], 4.0),       // 4 × 1.0 = 4.0
-        ([0.5, 0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], 0.5),        // 2 × 0.25 = 0.5
+        ([0.5; N_FEATURES], 2.0),                        // 8 × 0.25 = 2.0
+        ([1.0; N_FEATURES], 8.0),                        // 8 × 1.0 = 8.0
+        ([0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0], 4.0), // 4 × 1.0 = 4.0
+        ([0.5, 0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], 0.5), // 2 × 0.25 = 0.5
     ];
 
     let agent = LinUCBAgent::new();
@@ -1064,7 +1132,10 @@ fn test_ec_batch_homogeneous_01() {
     assert_q_values_finite(&agent_post.get_q_values(&features), label);
     let (action_post, q_post) = agent_post.select(&features);
     assert_action_in_range(action_post, label);
-    assert!(q_post.is_finite(), "[{label}] Q after post-batch update must be finite");
+    assert!(
+        q_post.is_finite(),
+        "[{label}] Q after post-batch update must be finite"
+    );
 }
 
 // ===========================================================================
@@ -1093,28 +1164,64 @@ mod gpu_parity {
     /// optional_update = Some((action_index, reward)) applies one update
     /// before the parity check.
     const VECTORS: &[(&str, [f32; N_FEATURES], Option<(u32, f32)>)] = &[
-        ("iv-normalize-01", [0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0], None),
+        (
+            "iv-normalize-01",
+            [0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0],
+            None,
+        ),
         ("iv-normalize-02", [0.5; N_FEATURES], None),
-        ("iv-normalize-03", [0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0], None),
-        ("iv-normalize-04", [1e-6, 1.0, 1e-6, 1.0, 1e-6, 1.0, 1e-6, 1.0], None),
+        (
+            "iv-normalize-03",
+            [0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0],
+            None,
+        ),
+        (
+            "iv-normalize-04",
+            [1e-6, 1.0, 1e-6, 1.0, 1e-6, 1.0, 1e-6, 1.0],
+            None,
+        ),
         ("iv-normalize-05", [0.5; N_FEATURES], None),
         ("oi-action-range-01", [0.5; N_FEATURES], Some((5, 1.0))),
-        ("oi-action-range-02", [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8], Some((3, 0.5))),
-        ("oi-determinism-01", [0.1, 0.9, 0.3, 0.7, 0.5, 0.5, 0.2, 0.8], Some((7, 0.5))),
-        ("oi-determinism-02", [0.3, 0.6, 0.1, 0.9, 0.4, 0.7, 0.2, 0.8], Some((5, 1.0))),
+        (
+            "oi-action-range-02",
+            [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8],
+            Some((3, 0.5)),
+        ),
+        (
+            "oi-determinism-01",
+            [0.1, 0.9, 0.3, 0.7, 0.5, 0.5, 0.2, 0.8],
+            Some((7, 0.5)),
+        ),
+        (
+            "oi-determinism-02",
+            [0.3, 0.6, 0.1, 0.9, 0.4, 0.7, 0.2, 0.8],
+            Some((5, 1.0)),
+        ),
         ("oi-q-bounds-01", [0.5; N_FEATURES], Some((0, 1000.0))),
         ("oi-exploration-01", [0.5; N_FEATURES], None),
         ("oi-learning-01", [0.5; N_FEATURES], Some((7, 1.0))),
         ("ec-zero-features-01", [0.0; N_FEATURES], None),
         ("ec-zero-features-02", [0.5; N_FEATURES], Some((0, 1.0))),
         ("ec-action-0-01", [0.5; N_FEATURES], Some((0, 1.0))),
-        ("ec-action-39-01", [0.9, 0.1, 0.8, 0.2, 0.7, 0.3, 0.6, 0.4], Some((39, 1.0))),
+        (
+            "ec-action-39-01",
+            [0.9, 0.1, 0.8, 0.2, 0.7, 0.3, 0.6, 0.4],
+            Some((39, 1.0)),
+        ),
         ("ec-reward-negative-01", [0.5; N_FEATURES], Some((10, -1.0))),
         ("ec-reward-zero-01", [0.5; N_FEATURES], Some((5, 0.0))),
         ("ec-reward-large-01", [0.5; N_FEATURES], Some((20, 1e6))),
         ("ec-sequential-01", [0.5; N_FEATURES], None),
-        ("ec-sequential-02", [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], Some((0, 1.0))),
-        ("ec-feature-switch-01", [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], Some((3, 1.0))),
+        (
+            "ec-sequential-02",
+            [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            Some((0, 1.0)),
+        ),
+        (
+            "ec-feature-switch-01",
+            [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            Some((3, 1.0)),
+        ),
         ("ec-matrix-inversion-01", [0.5; N_FEATURES], Some((0, 1.0))),
         ("ec-float-precision-01", [0.5; N_FEATURES], None),
         ("ec-batch-homogeneous-01", [0.5; N_FEATURES], None),
@@ -1122,7 +1229,11 @@ mod gpu_parity {
 
     #[test]
     fn test_gpu_parity_all_25_vectors() {
-        assert_eq!(VECTORS.len(), 25, "Must have exactly 25 conformance vectors");
+        assert_eq!(
+            VECTORS.len(),
+            25,
+            "Must have exactly 25 conformance vectors"
+        );
 
         for (id, features, update) in VECTORS {
             // Build CPU agent
@@ -1163,7 +1274,10 @@ mod gpu_parity {
                 "[GPU stub] {id}: CPU action {cpu_action} out of range"
             );
             for (a, &q) in cpu_qs.iter().enumerate() {
-                assert!(q.is_finite(), "[GPU stub] {id}: CPU Q[{a}] = {q} not finite");
+                assert!(
+                    q.is_finite(),
+                    "[GPU stub] {id}: CPU Q[{a}] = {q} not finite"
+                );
             }
         }
     }
