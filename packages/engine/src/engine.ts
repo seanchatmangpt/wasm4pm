@@ -775,6 +775,9 @@ export class Engine {
    * Transitions: degraded -> bootstrapping -> ready
    */
   async recover(): Promise<void> {
+    const recoveryStart = Date.now();
+    const previousState = this.state();
+
     try {
       if (this.state() !== 'degraded') {
         throw new Error(`Cannot recover from state: ${this.state()}`);
@@ -784,6 +787,19 @@ export class Engine {
       this.stateMachine.transition('bootstrapping', 'Starting recovery');
       this.statusTracker.setState('bootstrapping');
 
+      // Emit recovery start event
+      const recoveryStartEvent = Instrumentation.createStateChangeEvent(
+        this.traceId,
+        previousState,
+        'bootstrapping',
+        this.requiredOtelAttrs,
+        { reason: 'Recovery started' }
+      );
+      this.observability.emitOtelSafe(recoveryStartEvent.otelEvent);
+
+      // Soft reset WASM loader to preserve compiled module
+      this.wasmLoader.softReset();
+
       await this.kernel.init();
 
       if (!this.kernel.isReady()) {
@@ -792,6 +808,22 @@ export class Engine {
 
       this.stateMachine.transition('ready', 'Recovery completed');
       this.statusTracker.setState('ready');
+
+      // Emit recovery completed event with duration
+      const recoveryDuration = Date.now() - recoveryStart;
+      const recoveryCompleteEvent = Instrumentation.createStateChangeEvent(
+        this.traceId,
+        'bootstrapping',
+        'ready',
+        this.requiredOtelAttrs,
+        { reason: 'Recovery completed' }
+      );
+      recoveryCompleteEvent.event.durationMs = recoveryDuration;
+      this.observability.emitOtelSafe(recoveryCompleteEvent.otelEvent);
+
+      // Track MTTR in state machine
+      this.stateMachine.recordRecovery(recoveryDuration);
+
     } catch (err) {
       const error: EngineError = {
         code: 'RECOVERY_FAILED',

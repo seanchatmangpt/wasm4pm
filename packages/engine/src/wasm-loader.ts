@@ -87,9 +87,21 @@ export class WasmLoader {
 
   /**
    * Reset singleton (mainly for testing)
+   * Destroys entire singleton - next init() will reload WASM from scratch
    */
   public static reset(): void {
     WasmLoader.instance = undefined;
+  }
+
+  /**
+   * Soft reset - clears initialized flag but keeps compiled WASM module
+   * Allows fast recovery without re-importing and re-compiling WASM
+   * Use this for recovery when WASM module is still valid
+   */
+  public softReset(): void {
+    this.initialized = false;
+    // Keep this.module and this.observability intact
+    // Next init() call will skip the expensive import() and reuse existing module
   }
 
   /**

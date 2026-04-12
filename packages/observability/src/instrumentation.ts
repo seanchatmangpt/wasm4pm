@@ -20,6 +20,8 @@ export type EventType =
   | 'SinkCompleted'
   | 'Progress'
   | 'Error'
+  | 'RecoveryStarted'
+  | 'RecoveryCompleted'
   // ML events
   | 'MlModelTraining'
   | 'MlPredictionMade'
