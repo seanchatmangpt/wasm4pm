@@ -78,15 +78,17 @@ export interface Plan {
 
 /**
  * Sort nodes by id for deterministic serialization
+ * @internal
  */
-export function sortNodes(nodes: PlanNode[]): PlanNode[] {
+function sortNodes(nodes: PlanNode[]): PlanNode[] {
   return [...nodes].sort((a, b) => a.id.localeCompare(b.id));
 }
 
 /**
  * Sort edges by (from, to) for deterministic serialization
+ * @internal
  */
-export function sortEdges(edges: PlanEdge[]): PlanEdge[] {
+function sortEdges(edges: PlanEdge[]): PlanEdge[] {
   return [...edges].sort((a, b) => {
     const fromCmp = a.from.localeCompare(b.from);
     return fromCmp !== 0 ? fromCmp : a.to.localeCompare(b.to);
@@ -96,8 +98,9 @@ export function sortEdges(edges: PlanEdge[]): PlanEdge[] {
 /**
  * Normalize a plan for deterministic hashing:
  * sorts nodes by id, edges by (from, to), and config keys recursively
+ * @internal
  */
-export function normalizePlan(plan: Plan): Plan {
+function normalizePlan(plan: Plan): Plan {
   return {
     ...plan,
     nodes: sortNodes(plan.nodes).map((node) => ({
@@ -127,8 +130,9 @@ function sortObjectKeys(obj: Record<string, unknown>): Record<string, unknown> {
 
 /**
  * Validate that a plan forms a valid DAG (no cycles, all edge refs valid)
+ * @internal
  */
-export function validatePlanDAG(plan: Plan): string[] {
+function validatePlanDAG(plan: Plan): string[] {
   const errors: string[] = [];
   const nodeIds = new Set(plan.nodes.map((n) => n.id));
 
@@ -198,8 +202,9 @@ export function validatePlanDAG(plan: Plan): string[] {
 
 /**
  * Type guard for Plan objects
+ * @internal
  */
-export function isPlan(value: unknown): value is Plan {
+function isPlan(value: unknown): value is Plan {
   if (!value || typeof value !== 'object') return false;
   const p = value as Record<string, unknown>;
   return (

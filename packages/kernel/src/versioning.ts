@@ -23,14 +23,17 @@ export interface CompatibilityResult {
 /** The kernel's own version — kept in sync with package.json */
 export const KERNEL_VERSION = '26.4.5';
 
-/** Minimum wasm4pm version the kernel requires */
-export const MIN_WASM4PM_VERSION = '26.0.0';
+/** Minimum wasm4pm version the kernel requires
+ * @internal
+ */
+const MIN_WASM4PM_VERSION = '26.0.0';
 
 /**
  * Parse a semver string into components
  * Supports: "1.2.3", "1.2.3-beta.1", "26.4.5"
+ * @internal
  */
-export function parseSemVer(version: string): SemVer | null {
+function parseSemVer(version: string): SemVer | null {
   const match = version.match(/^(\d+)\.(\d+)\.(\d+)(?:-(.+))?$/);
   if (!match) return null;
 
@@ -45,8 +48,9 @@ export function parseSemVer(version: string): SemVer | null {
 /**
  * Compare two semver versions
  * Returns: -1 if a < b, 0 if a == b, 1 if a > b
+ * @internal
  */
-export function compareSemVer(a: SemVer, b: SemVer): -1 | 0 | 1 {
+function compareSemVer(a: SemVer, b: SemVer): -1 | 0 | 1 {
   if (a.major !== b.major) return a.major < b.major ? -1 : 1;
   if (a.minor !== b.minor) return a.minor < b.minor ? -1 : 1;
   if (a.patch !== b.patch) return a.patch < b.patch ? -1 : 1;
@@ -61,8 +65,9 @@ export function compareSemVer(a: SemVer, b: SemVer): -1 | 0 | 1 {
 /**
  * Check if a version satisfies a minimum version requirement
  * Uses major version for breaking change boundary
+ * @internal
  */
-export function satisfiesMinimum(version: string, minimum: string): boolean {
+function satisfiesMinimum(version: string, minimum: string): boolean {
   const v = parseSemVer(version);
   const m = parseSemVer(minimum);
   if (!v || !m) return false;
@@ -73,8 +78,9 @@ export function satisfiesMinimum(version: string, minimum: string): boolean {
 /**
  * Check if two versions are compatible (same major version)
  * Following semver: same major = backward compatible
+ * @internal
  */
-export function isMajorCompatible(version: string, target: string): boolean {
+function isMajorCompatible(version: string, target: string): boolean {
   const v = parseSemVer(version);
   const t = parseSemVer(target);
   if (!v || !t) return false;
@@ -144,8 +150,9 @@ export function checkCompatibility(requiredVersion: string): CompatibilityResult
 /**
  * Assert compatibility — throws if incompatible
  * Use at startup to fail fast on version mismatches
+ * @internal
  */
-export function assertCompatibility(requiredVersion: string): void {
+function assertCompatibility(requiredVersion: string): void {
   const result = checkCompatibility(requiredVersion);
   if (!result.compatible) {
     throw new Error(

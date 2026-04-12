@@ -92,22 +92,25 @@ export interface Status {
 
 /**
  * Check if a state transition is valid
+ * @internal
  */
-export function isValidTransition(from: LifecycleState, to: LifecycleState): boolean {
+function isValidTransition(from: LifecycleState, to: LifecycleState): boolean {
   return STATE_TRANSITIONS[from].includes(to);
 }
 
 /**
  * Check if a string is a valid lifecycle state
+ * @internal
  */
-export function isLifecycleState(value: string): value is LifecycleState {
+function isLifecycleState(value: string): value is LifecycleState {
   return LIFECYCLE_STATES.includes(value as LifecycleState);
 }
 
 /**
  * Type guard for Status objects
+ * @internal
  */
-export function isStatus(value: unknown): value is Status {
+function isStatus(value: unknown): value is Status {
   if (!value || typeof value !== 'object') return false;
   const s = value as Record<string, unknown>;
   return (

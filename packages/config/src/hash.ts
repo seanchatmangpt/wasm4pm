@@ -44,22 +44,25 @@ export function hashConfig(config: BaseConfig): string {
 
 /**
  * Verify configuration hash for determinism checking.
+ * @internal
  */
-export function verifyConfigHash(config: BaseConfig, expectedHash: string): boolean {
+function verifyConfigHash(config: BaseConfig, expectedHash: string): boolean {
   return hashConfig(config) === expectedHash;
 }
 
 /**
  * Short 8-char fingerprint suitable for logging/UI.
+ * @internal
  */
-export function fingerprintConfig(config: BaseConfig): string {
+function fingerprintConfig(config: BaseConfig): string {
   return hashConfig(config).slice(0, 8);
 }
 
 /**
  * Hash an arbitrary config section.
+ * @internal
  */
-export function hashConfigSection(section: unknown): string {
+function hashConfigSection(section: unknown): string {
   const normalized = stableStringify(section);
   const digest = blake3(normalized);
   return digest.toString('hex');
@@ -67,15 +70,16 @@ export function hashConfigSection(section: unknown): string {
 
 /**
  * Diff two configs and report changes.
+ * @internal
  */
-export interface ConfigDiff {
+interface ConfigDiff {
   changed: boolean;
   hash1: string;
   hash2: string;
   differences: Array<{ path: string; before: unknown; after: unknown }>;
 }
 
-export function diffConfigs(config1: BaseConfig, config2: BaseConfig): ConfigDiff {
+function diffConfigs(config1: BaseConfig, config2: BaseConfig): ConfigDiff {
   const hash1 = hashConfig(config1);
   const hash2 = hashConfig(config2);
   const differences: ConfigDiff['differences'] = [];
