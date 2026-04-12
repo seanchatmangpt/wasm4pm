@@ -1,0 +1,51 @@
+{
+  "schema_version": "1.0",
+  "tool": "pictl profile-energy-cost",
+  "timestamp": "2026-04-12T00:38:53.243805+00:00",
+  "gpu_info": {
+    "vendor": "none",
+    "name": "unknown",
+    "power_draw_w": null,
+    "power_source": "estimated",
+    "power_limit_w": null,
+    "core_freq_mhz": null,
+    "mem_freq_mhz": null,
+    "utilization_pct": null,
+    "mem_util_pct": null
+  },
+  "kernel_timing": {
+    "batch_size": 2048,
+    "stages": 8,
+    "total_ops": 16384,
+    "kernel_time_ms": 3.057,
+    "kernel_time_source": "measured_wasm"
+  },
+  "pcie": {
+    "generation": 3,
+    "bandwidth_gbs": 16.0,
+    "effective_bandwidth_gbs": 10.4,
+    "marking4_transfer_bytes": 327680,
+    "one_way_latency_us": 6.792,
+    "roundtrip_latency_us": 13.584,
+    "transfer_power_w": 0.1,
+    "roundtrip_energy_j": 1.3584e-06
+  },
+  "energy": {
+    "kernel_energy_j": 0.6199595999999999,
+    "pcie_energy_j": 1.3584e-06,
+    "total_energy_j": 0.6199609584,
+    "energy_per_op_pj": 37839413.96484375,
+    "pcie_overhead_pct": 0.00021911057165692647
+  },
+  "thermal": {
+    "test_duration_s": 10,
+    "peak_temp_c": null,
+    "baseline_freq_mhz": null,
+    "min_freq_mhz": null,
+    "freq_reduction_pct": null,
+    "throttling_detected": false,
+    "perf_degradation_pct": null
+  },
+  "_partial": true,
+  "_next_step": "python3 scripts/cost-calculator.py --input .pictl/benchmarks/energy-cost-20260411T173852.json"
+}
