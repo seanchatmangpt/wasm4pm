@@ -1,6 +1,6 @@
 # pictl Kaizen Metrics Dashboard
 
-**Last Updated:** 2026-04-12T19:00:00Z
+**Last Updated:** 2026-04-12T19:15:00Z
 
 **Period:** 2026-04-06 to 2026-04-12 (2026-W15)
 
@@ -16,7 +16,8 @@
 | OTEL Coverage | 0 | 100% | — | 🔴 0 (target: 100) |
 | TPS Violations | 0 | 0/KLOC | — | ✅ 0 (target: ≤0) |
 | Defect Inventory | 0 | 0 | ↓↓↓ | ✅ 0 TODO/FIXME in source |
-| Dead Inventory | 664KB | 0 | ↓↓↓ | ✅ Removed archive/ folders |
+| Dead Inventory | 0 | 0 | ↓↓↓ | ✅ 0 KB (archive + branches removed) |
+| Dead Branches | 0 | 0 | ↓↓↓ | ✅ 0 (deleted 9 abandoned branches) |
 | WIP Inventory | 3 | ≤3 | — | ✅ 3 files (at WIP limit) |
 | MTTR | 3min | <1min | — | 🔴 3 (target: ≤1) |
 | Test Determinism | 100 | 100% | ↑↑ | ✅ 100% (all behavioral tests) |
@@ -71,18 +72,19 @@
 **Recent Fixes (2026-04-12):**
 - **Visual Management Implemented:** Added defect inventory tracking to dashboard
 - **WIP Limits Enforced:** 3 untracked files (thesis, RL orchestrator) held at limit
-- **Dead Inventory Removed:** 664KB of archive/ documentation deleted
+- **Dead Inventory Removed:** 664KB archive/ + 9 dead branches deleted
 
 ---
 
 ### 3. Dead Inventory (Target: 0)
 
-**Definition:** Obsolete code, documentation, or artifacts retained in repository.
+**Definition:** Obsolete code, documentation, branches, or artifacts retained in repository.
 
-**Current:** 0 (removed 664KB in W15)
+**Current:** 0 (removed 664KB docs + 9 dead branches in W15)
 
 **Breakdown:**
 - archive/ folders: Deleted (47 files, 664KB)
+- Dead branches: Deleted (9 abandoned branches)
 - Obsolete docs: 0 remaining
 - Unused dependencies: 0
 
@@ -92,6 +94,7 @@
 - Archive old releases to tags, not repo folders
 - Review docs/ quarterly for obsolete content
 - No "backup" or ".old" files in source tree
+- Delete merged/abandoned branches immediately (don't keep for "just in case")
 
 ---
 
