@@ -1,0 +1,62 @@
+{
+  "baseline_info": {
+    "timestamp": "2026-04-11T12:34:56Z",
+    "git_hash": "8cbbde3",
+    "git_branch": "main",
+    "generated_at": "2026-04-11T12:34:56Z",
+    "note": "SAMPLE BASELINE - For documentation purposes only"
+  },
+  "benchmarks": [
+    {
+      "group": "discovery/dfg",
+      "results": [
+        {
+          "benchmark_id": "discovery/dfg/cases_1000",
+          "name": "cases_1000",
+          "throughput_ops_per_sec": 1235.8,
+          "latency_ns_per_op": 809200,
+          "latency_p50_ms": 0.809,
+          "latency_p95_ms": 1.245,
+          "latency_p99_ms": 2.103
+        },
+        {
+          "benchmark_id": "discovery/dfg/cases_5000",
+          "name": "cases_5000",
+          "throughput_ops_per_sec": 856.4,
+          "latency_ns_per_op": 1167600,
+          "latency_p50_ms": 1.168,
+          "latency_p95_ms": 1.823,
+          "latency_p99_ms": 3.142
+        }
+      ]
+    },
+    {
+      "group": "discovery/heuristic_miner",
+      "results": [
+        {
+          "benchmark_id": "discovery/heuristic_miner/cases_1000",
+          "name": "cases_1000_t0.3",
+          "throughput_ops_per_sec": 562.1,
+          "latency_ns_per_op": 1778900,
+          "latency_p50_ms": 1.779,
+          "latency_p95_ms": 2.845,
+          "latency_p99_ms": 5.234
+        }
+      ]
+    },
+    {
+      "group": "analysis/event_statistics",
+      "results": [
+        {
+          "benchmark_id": "analysis/event_statistics/cases_1000",
+          "name": "cases_1000",
+          "throughput_ops_per_sec": 3841.2,
+          "latency_ns_per_op": 260300,
+          "latency_p50_ms": 0.260,
+          "latency_p95_ms": 0.412,
+          "latency_p99_ms": 0.743
+        }
+      ]
+    }
+  ]
+}

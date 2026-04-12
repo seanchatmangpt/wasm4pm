@@ -55,7 +55,10 @@ pub fn predict_next_k(model_handle: &str, prefix_json: &str, k: usize) -> Result
             let activities: Vec<&str> = top_k.iter().map(|(a, _)| a.as_str()).collect();
             let probabilities: Vec<f64> = top_k.iter().map(|(_, p)| *p).collect();
 
-            let confidence = probabilities.first().copied().unwrap_or(0.0);
+            let confidence = probabilities
+                .first()
+                .copied()
+                .ok_or_else(|| JsValue::from_str("No activities predicted"))?;
             let entropy_val = normalised_entropy(&probabilities);
 
             let result = json!({

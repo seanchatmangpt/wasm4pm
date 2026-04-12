@@ -20,6 +20,7 @@ use once_cell::sync::Lazy;
 use rustc_hash::FxHashMap;
 use std::sync::Mutex;
 
+#[cfg(feature = "streaming_basic")]
 use crate::streaming::Interner;
 
 // ---------------------------------------------------------------------------
@@ -163,6 +164,7 @@ static COLUMNAR_CACHE: Lazy<Mutex<FxHashMap<String, FxHashMap<String, OwnedColum
 // Layer 3: INTERNER_CACHE
 // ---------------------------------------------------------------------------
 
+#[cfg(feature = "streaming_basic")]
 /// Cache of string interners, keyed by log handle.
 static INTERNER_CACHE: Lazy<Mutex<FxHashMap<String, Interner>>> =
     Lazy::new(|| Mutex::new(FxHashMap::default()));
@@ -175,7 +177,10 @@ static INTERNER_CACHE: Lazy<Mutex<FxHashMap<String, Interner>>> =
 pub fn cache_clear() {
     PARSE_CACHE.lock().unwrap().clear();
     COLUMNAR_CACHE.lock().unwrap().clear();
-    INTERNER_CACHE.lock().unwrap().clear();
+    #[cfg(feature = "streaming_basic")]
+    {
+        INTERNER_CACHE.lock().unwrap().clear();
+    }
 }
 
 /// Return aggregate statistics from all three cache layers.
@@ -191,7 +196,10 @@ pub fn cache_stats() -> CacheStats {
         .map(|inner| inner.len())
         .sum();
 
+    #[cfg(feature = "streaming_basic")]
     let interner_entries = INTERNER_CACHE.lock().unwrap().len();
+    #[cfg(not(feature = "streaming_basic"))]
+    let interner_entries = 0;
 
     CacheStats {
         parse_hits,
@@ -232,11 +240,13 @@ pub fn columnar_cache_insert(log_handle: String, activity_key: String, col: Owne
 }
 
 /// Look up a cached interner by log handle.  Returns a clone.
+#[cfg(feature = "streaming_basic")]
 pub fn interner_cache_get(log_handle: &str) -> Option<Interner> {
     INTERNER_CACHE.lock().unwrap().get(log_handle).cloned()
 }
 
 /// Insert an interner into the interner cache.
+#[cfg(feature = "streaming_basic")]
 pub fn interner_cache_insert(log_handle: String, interner: Interner) {
     INTERNER_CACHE.lock().unwrap().insert(log_handle, interner);
 }
@@ -270,6 +280,7 @@ pub fn hash_xes_content(content: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[cfg(feature = "streaming_basic")]
     use crate::streaming::ActivityInterner;
 
     #[test]
@@ -356,16 +367,19 @@ mod tests {
                 vocab: vec!["A".to_string(), "B".to_string()],
             },
         );
+        #[cfg(feature = "streaming_basic")]
         interner_cache_insert(lk.clone(), Interner::new());
 
         assert!(parse_cache_get(&k).is_some());
         assert!(columnar_cache_get(&lk, "concept:name").is_some());
+        #[cfg(feature = "streaming_basic")]
         assert!(interner_cache_get(&lk).is_some());
 
         cache_clear();
 
         assert!(parse_cache_get(&k).is_none());
         assert!(columnar_cache_get(&lk, "concept:name").is_none());
+        #[cfg(feature = "streaming_basic")]
         assert!(interner_cache_get(&lk).is_none());
     }
 
@@ -395,6 +409,7 @@ mod tests {
         assert_eq!(retrieved.vocab, col.vocab);
     }
 
+    #[cfg(feature = "streaming_basic")]
     #[test]
     fn test_interner_cache_shared() {
         let k = unique_key("ics");

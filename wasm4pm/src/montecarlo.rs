@@ -183,7 +183,14 @@ pub fn run_monte_carlo_simulation(
 
             // Sample service time from log-normal distribution
             let service_time_ms =
-                sample_log_normal(&mut rng, service_params.mean, service_params.std_dev);
+                sample_log_normal(&mut rng, service_params.mean, service_params.std_dev).map_err(
+                    |e| {
+                        format!(
+                            "Failed to sample service time for activity {}: {}",
+                            activity, e
+                        )
+                    },
+                )?;
 
             // Check resource availability
             let resource_key = format!("{}_resource", activity);
@@ -267,14 +274,26 @@ pub fn run_monte_carlo_simulation(
 /// not the lognormal mean/std. We convert using:
 /// - sigma^2 = ln(1 + (std_dev^2 / mean^2))
 /// - mu = ln(mean) - sigma^2 / 2
-fn sample_log_normal(rng: &mut StdRng, mean: f64, std_dev: f64) -> f64 {
+///
+/// Returns error if sigma <= 0 (which would make LogNormal::new fail).
+fn sample_log_normal(rng: &mut StdRng, mean: f64, std_dev: f64) -> Result<f64, String> {
     // Convert from desired lognormal mean/std to underlying normal params
     let variance = std_dev * std_dev;
     let sigma2 = (variance / (mean * mean) + 1.0).ln();
     let sigma = sigma2.sqrt();
     let mu = mean.ln() - sigma2 / 2.0;
-    let log_normal = LogNormal::new(mu, sigma).unwrap();
-    log_normal.sample(rng)
+
+    // Validate that sigma is positive (required by LogNormal)
+    if sigma <= 0.0 {
+        return Err(format!(
+            "Invalid lognormal parameters: sigma={} (from mean={}, std_dev={})",
+            sigma, mean, std_dev
+        ));
+    }
+
+    let log_normal = LogNormal::new(mu, sigma)
+        .map_err(|e| format!("Failed to create LogNormal distribution: {}", e))?;
+    Ok(log_normal.sample(rng))
 }
 
 #[wasm_bindgen]
@@ -284,7 +303,8 @@ pub fn monte_carlo_simulation(
     _root_id: &str,
     config_json: &str,
 ) -> Result<JsValue, JsValue> {
-    let config: MonteCarloConfig = serde_json::from_str(config_json).unwrap_or_default();
+    let config: MonteCarloConfig = serde_json::from_str(config_json)
+        .map_err(|e| JsValue::from_str(&format!("Failed to parse config JSON: {}", e)))?;
 
     let report = get_or_init_state().with_object(log_handle, |obj| match obj {
         Some(crate::state::StoredObject::EventLog(log)) => {
@@ -309,7 +329,8 @@ mod tests {
         let mut rng = StdRng::seed_from_u64(42);
         let samples: Vec<f64> = (0..100)
             .map(|_| sample_log_normal(&mut rng, 2.0, 0.5))
-            .collect();
+            .collect::<Result<_, _>>()
+            .expect("Failed to generate samples");
 
         // All samples should be positive
         assert!(samples.iter().all(|&x| x > 0.0));

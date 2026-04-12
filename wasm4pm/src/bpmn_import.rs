@@ -14,6 +14,7 @@
 /// | `<exclusiveGateway>` with back-arc           | OperatorPowl(Loop)     |
 /// | `<parallelGateway>` (split/join pair)        | StrictPartialOrder     |
 /// | Sequential chain of tasks                    | StrictPartialOrder(seq)|
+#[cfg(feature = "powl")]
 use crate::powl_arena::{Operator, PowlArena};
 use roxmltree::Document;
 use std::collections::{HashMap, HashSet};
@@ -196,6 +197,7 @@ fn resolve_through_connectors(
 
 // ─── POWL construction ─────────────────────────────────────────────────────
 
+#[cfg(feature = "powl")]
 /// Convert a BPMN graph to POWL, starting from the start event and tracing
 /// through the model.
 fn bpmn_graph_to_powl(
@@ -260,6 +262,7 @@ fn find_start_nodes(
     }
 }
 
+#[cfg(feature = "powl")]
 /// Recursively build a POWL subtree from a BPMN node.
 fn build_subtree(
     arena: &mut PowlArena,
@@ -462,6 +465,7 @@ fn build_subtree(
 ///
 /// # Errors
 /// Returns a descriptive error string on parse failure or invalid BPMN structure.
+#[cfg(feature = "powl")]
 pub fn bpmn_to_powl_string(bpmn_xml: &str) -> Result<String, String> {
     if bpmn_xml.trim().is_empty() {
         return Err("Empty BPMN XML".to_string());
@@ -491,10 +495,10 @@ pub fn bpmn_to_powl_string(bpmn_xml: &str) -> Result<String, String> {
 
 // ─── WASM export ────────────────────────────────────────────────────────────
 
-#[cfg(target_arch = "wasm32")]
+#[cfg(all(target_arch = "wasm32", feature = "powl"))]
 use wasm_bindgen::prelude::*;
 
-#[cfg(target_arch = "wasm32")]
+#[cfg(all(target_arch = "wasm32", feature = "powl"))]
 #[wasm_bindgen]
 /// WASM entry point: parse BPMN 2.0 XML and return a POWL model string.
 ///
@@ -509,10 +513,12 @@ pub fn read_bpmn(bpmn_xml: &str) -> Result<String, JsValue> {
 
 // ─── Tests ──────────────────────────────────────────────────────────────────
 
-#[cfg(test)]
+#[cfg(all(test, feature = "powl"))]
 mod tests {
     use super::*;
+    #[cfg(feature = "powl")]
     use crate::powl_arena::PowlArena;
+    #[cfg(feature = "powl")]
     use crate::powl_parser::parse_powl_model_string;
 
     /// Helper: parse a POWL string and return (arena, root).

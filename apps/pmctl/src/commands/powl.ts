@@ -365,7 +365,7 @@ async function executePowlCommand(
       // (token_replay_fitness expects flat {name, case_id} not nested attributes)
       const logHandle: string = wasm.load_eventlog_from_xes(logContent);
       const modelsLogJson: string = wasm.export_eventlog_to_json(logHandle);
-      try { wasm.delete_object(logHandle); } catch { /* best-effort */ }
+      wasm.delete_object(logHandle);
       const logJson: string = convertModelsLogToPowlLog(modelsLogJson, confActivityKey);
 
       const raw: string = wasm.token_replay_fitness(modelStr, logJson);
@@ -431,7 +431,7 @@ async function executePowlCommand(
         const xesContent = await fs.readFile(input, 'utf-8');
         const logHandle: string = wasm.load_eventlog_from_xes(xesContent);
         logJson = wasm.export_eventlog_to_json(logHandle);
-        try { wasm.delete_object(logHandle); } catch { /* best-effort */ }
+        wasm.delete_object(logHandle);
       } else {
         // JSON format: use directly
         logJson = await fs.readFile(input, 'utf-8');

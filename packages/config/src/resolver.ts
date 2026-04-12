@@ -147,62 +147,86 @@ function parseEnvConfig(env: NodeJS.ProcessEnv): Record<string, unknown> {
     config.execution = { profile: env.WASM4PM_PROFILE };
   }
   if (env.WASM4PM_LOG_LEVEL) {
-    config.observability = { ...(config.observability as any), logLevel: env.WASM4PM_LOG_LEVEL };
+    config.observability = { ...(config.observability as Record<string, unknown>), logLevel: env.WASM4PM_LOG_LEVEL };
   }
   if (env.WASM4PM_WATCH) {
     config.watch = { enabled: env.WASM4PM_WATCH === 'true' || env.WASM4PM_WATCH === '1' };
   }
   if (env.WASM4PM_OUTPUT_FORMAT) {
-    config.output = { ...(config.output as any), format: env.WASM4PM_OUTPUT_FORMAT };
+    config.output = { ...(config.output as Record<string, unknown>), format: env.WASM4PM_OUTPUT_FORMAT };
   }
   if (env.WASM4PM_OUTPUT_DESTINATION) {
-    config.output = { ...(config.output as any), destination: env.WASM4PM_OUTPUT_DESTINATION };
+    config.output = { ...(config.output as Record<string, unknown>), destination: env.WASM4PM_OUTPUT_DESTINATION };
   }
   if (env.WASM4PM_ALGORITHM) {
-    config.algorithm = { ...(config.algorithm as any), name: env.WASM4PM_ALGORITHM };
+    config.algorithm = { ...(config.algorithm as Record<string, unknown>), name: env.WASM4PM_ALGORITHM };
   }
   if (env.WASM4PM_SINK_KIND) {
-    config.sink = { ...(config.sink as any), kind: env.WASM4PM_SINK_KIND };
+    config.sink = { ...(config.sink as Record<string, unknown>), kind: env.WASM4PM_SINK_KIND };
   }
   if (env.WASM4PM_SOURCE_KIND) {
-    config.source = { ...(config.source as any), kind: env.WASM4PM_SOURCE_KIND };
+    config.source = { ...(config.source as Record<string, unknown>), kind: env.WASM4PM_SOURCE_KIND };
   }
   if (env.WASM4PM_OTEL_ENABLED) {
     const otel = { enabled: env.WASM4PM_OTEL_ENABLED === 'true' || env.WASM4PM_OTEL_ENABLED === '1' };
-    config.observability = { ...(config.observability as any), otel };
+    config.observability = { ...(config.observability as Record<string, unknown>), otel };
   }
   if (env.WASM4PM_OTEL_ENDPOINT) {
-    const existingOtel = (config.observability as any)?.otel ?? {};
+    const existingOtel = (config.observability as Record<string, unknown>)?.otel ?? {};
     config.observability = {
-      ...(config.observability as any),
-      otel: { ...existingOtel, endpoint: env.WASM4PM_OTEL_ENDPOINT },
+      ...(config.observability as Record<string, unknown>),
+      otel: { ...(existingOtel as Record<string, unknown>), endpoint: env.WASM4PM_OTEL_ENDPOINT },
     };
   }
   if (env.WASM4PM_PREDICTION_ENABLED) {
     config.prediction = {
-      ...(config.prediction as any),
+      ...(config.prediction as Record<string, unknown>),
       enabled: env.WASM4PM_PREDICTION_ENABLED === 'true' || env.WASM4PM_PREDICTION_ENABLED === '1',
     };
   }
   if (env.WASM4PM_PREDICTION_TASKS) {
     config.prediction = {
-      ...(config.prediction as any),
+      ...(config.prediction as Record<string, unknown>),
       tasks: env.WASM4PM_PREDICTION_TASKS.split(',').map(t => t.trim()).filter(Boolean),
     };
   }
   if (env.WASM4PM_PREDICTION_ACTIVITY_KEY) {
     config.prediction = {
-      ...(config.prediction as any),
+      ...(config.prediction as Record<string, unknown>),
       activityKey: env.WASM4PM_PREDICTION_ACTIVITY_KEY,
     };
   }
   if (env.WASM4PM_PREDICTION_NGRAM_ORDER) {
     const n = parseInt(env.WASM4PM_PREDICTION_NGRAM_ORDER, 10);
-    if (!isNaN(n)) config.prediction = { ...(config.prediction as any), ngramOrder: n };
+    // CRITICAL: Only accept valid integers, reject NaN silently
+    if (Number.isNaN(n)) {
+      throw new Error(
+        `Invalid WASM4PM_PREDICTION_NGRAM_ORDER: "${env.WASM4PM_PREDICTION_NGRAM_ORDER}" is not a valid integer`
+      );
+    }
+    // Validate range: ngramOrder must be 2-5
+    if (n < 2 || n > 5) {
+      throw new Error(
+        `Invalid WASM4PM_PREDICTION_NGRAM_ORDER: ${n} is out of range [2, 5]`
+      );
+    }
+    config.prediction = { ...(config.prediction as Record<string, unknown>), ngramOrder: n };
   }
   if (env.WASM4PM_PREDICTION_DRIFT_WINDOW) {
     const w = parseInt(env.WASM4PM_PREDICTION_DRIFT_WINDOW, 10);
-    if (!isNaN(w)) config.prediction = { ...(config.prediction as any), driftWindowSize: w };
+    // CRITICAL: Only accept valid integers, reject NaN
+    if (Number.isNaN(w)) {
+      throw new Error(
+        `Invalid WASM4PM_PREDICTION_DRIFT_WINDOW: "${env.WASM4PM_PREDICTION_DRIFT_WINDOW}" is not a valid integer`
+      );
+    }
+    // Validate range: driftWindowSize must be > 0
+    if (w <= 0) {
+      throw new Error(
+        `Invalid WASM4PM_PREDICTION_DRIFT_WINDOW: ${w} must be greater than 0`
+      );
+    }
+    config.prediction = { ...(config.prediction as Record<string, unknown>), driftWindowSize: w };
   }
 
   return config;
@@ -295,7 +319,7 @@ kind = "stdout"
 # path = "./output.pnml"
 
 [algorithm]
-name = "alpha"
+name = "dfg"
 
 [algorithm.parameters]
 

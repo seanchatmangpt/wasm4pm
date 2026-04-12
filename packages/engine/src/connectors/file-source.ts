@@ -35,6 +35,7 @@ class FileEventStream implements EventStream {
   private lines: string[] = [];
   private currentLine = 0;
   private closed = false;
+  private skippedLines = 0;
 
   constructor(fileContent: string, private format: 'xes' | 'json' | 'ocel') {
     // For XES, keep as single block; for JSON/OCEL, split into objects
@@ -69,12 +70,19 @@ class FileEventStream implements EventStream {
         }
       } catch (e) {
         // Skip invalid JSON lines, log warning
+        this.skippedLines++;
         console.warn(`Skipping invalid JSON in line ${i + 1}:`, e);
       }
     }
 
     this.currentLine = endLine;
     const hasMore = this.currentLine < this.lines.length;
+
+    if (this.skippedLines > 0) {
+      console.warn(
+        `[FileSource] ${this.skippedLines} invalid JSON line(s) skipped so far (partial data — check your input file)`
+      );
+    }
 
     return ok({ events, hasMore });
   }
@@ -99,6 +107,11 @@ class FileEventStream implements EventStream {
   async close(): Promise<void> {
     this.closed = true;
     this.lines = [];
+  }
+
+  /** Returns the total number of JSON lines skipped due to parse errors. */
+  getSkippedLines(): number {
+    return this.skippedLines;
   }
 }
 

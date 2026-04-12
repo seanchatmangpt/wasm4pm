@@ -15,12 +15,14 @@
 
 use crate::error::{codes, wasm_err};
 use crate::models::{AttributeValue, Event, EventLog, Trace};
-use crate::powl_process_tree::PtOperator;
 use crate::state::{get_or_init_state, StoredObject};
 use crate::utilities::to_js;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use wasm_bindgen::prelude::*;
+
+#[cfg(feature = "powl")]
+use crate::powl_process_tree::PtOperator;
 
 // ─── Public parameter types ─────────────────────────────────────────────────────
 
@@ -53,6 +55,7 @@ impl Default for PlayOutParameters {
 
 // ─── Process tree playout ───────────────────────────────────────────────────────
 
+#[cfg(feature = "powl")]
 /// Recursively play out a `ProcessTree` node and return the sequence of activity
 /// labels produced by this subtree.
 fn playout_process_tree_node(
@@ -137,6 +140,7 @@ fn playout_process_tree_node(
     }
 }
 
+#[cfg(feature = "powl")]
 /// Play out a process tree and produce an event log.
 ///
 /// # Arguments
@@ -326,6 +330,7 @@ fn format_timestamp_ms(ms: i64) -> String {
 /// const result = JSON.parse(pm.play_out_process_tree(treeJson, 0, JSON.stringify(params)));
 /// // { handle: "obj_42", trace_count: 50, event_count: 230 }
 /// ```
+#[cfg(feature = "powl")]
 #[wasm_bindgen]
 pub fn play_out_process_tree(
     tree_json: &str,

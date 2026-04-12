@@ -1,0 +1,12 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "last_updated": null,
+    "baseline_established": null,
+    "retention_days": 365,
+    "description": "Historical benchmark performance trends"
+  },
+  "data_points": [],
+  "regressions": [],
+  "improvements": []
+}

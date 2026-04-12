@@ -1,0 +1,236 @@
+{
+  "registry_version": "1.0",
+  "registry_date": "2026-04-10T22:30:00Z",
+  "description": "SPARQL CONSTRUCT query registry mapping pictl MCP tool outputs to RDF triples",
+  "ontology_namespace": "http://purl.org/pm/ontology#",
+  "ontology_prefix": "pm",
+  "queries": {
+    "discover-dfg": {
+      "file": "discover-dfg.rq",
+      "mcp_tool": "discover_dfg",
+      "output_type": "pm:DirectlyFollowsGraph",
+      "input_format": "JSON",
+      "input_schema": {
+        "nodes": "array of activity names",
+        "edges": "array of {source, target, frequency} objects",
+        "metrics": {
+          "node_count": "integer",
+          "edge_count": "integer",
+          "graph_density": "float 0-1",
+          "average_frequency": "float"
+        },
+        "executionTime": "ISO 8601 duration",
+        "fitness": "float 0-1",
+        "precision": "float 0-1",
+        "generalization": "float 0-1",
+        "simplicity": "float 0-1"
+      },
+      "output_classes": [
+        "pm:DirectlyFollowsGraph",
+        "pm:Activity",
+        "prov:Report"
+      ],
+      "properties_produced": [
+        "pm:discoversWith",
+        "pm:hasFitness",
+        "pm:hasPrecision",
+        "pm:executionTime"
+      ],
+      "use_case": "Transform process discovery (DFG algorithm) results into RDF for further reasoning",
+      "example_output_size": "~150 triples for typical log (50-100 activities)"
+    },
+    "conformance-check": {
+      "file": "conformance-check.rq",
+      "mcp_tool": "check_conformance",
+      "output_type": "pm:ConformanceReport",
+      "input_format": "JSON",
+      "input_schema": {
+        "fitness": "float 0-1",
+        "precision": "float 0-1",
+        "generalization": "float 0-1",
+        "simplicity": "float 0-1",
+        "deviations": "array of deviation objects",
+        "deviation_details": {
+          "case_id": "string",
+          "trace_variant": "array of activities",
+          "deviation_type": "string (missing_activity|extra_activity|wrong_order)",
+          "position": "integer"
+        }
+      },
+      "output_classes": [
+        "pm:ConformanceReport",
+        "pm:Deviation",
+        "prov:Report"
+      ],
+      "properties_produced": [
+        "pm:hasFitness",
+        "pm:hasPrecision",
+        "pm:conformsTo"
+      ],
+      "use_case": "Document conformance analysis results; enable querying about log-to-model alignment",
+      "example_output_size": "~200-500 triples (includes deviation details)"
+    },
+    "detect-drift": {
+      "file": "detect-drift.rq",
+      "mcp_tool": "detect_concept_drift",
+      "output_type": "pm:ConceptDrift",
+      "input_format": "JSON",
+      "input_schema": {
+        "driftDetected": "boolean",
+        "changePoint": "integer (event index)",
+        "beforeMetrics": {
+          "trace_count": "integer",
+          "event_count": "integer",
+          "average_duration": "ISO 8601 duration"
+        },
+        "afterMetrics": {
+          "trace_count": "integer",
+          "event_count": "integer",
+          "average_duration": "ISO 8601 duration"
+        },
+        "confidence": "float 0-1",
+        "driftType": "string (gradual|abrupt|recurring|cyclical)",
+        "driftDistance": "float (statistical distance)"
+      },
+      "output_classes": [
+        "pm:ConceptDrift",
+        "prov:Entity",
+        "prov:Report"
+      ],
+      "properties_produced": [
+        "pm:driftDetected",
+        "pm:changePoint",
+        "pm:predictionConfidence"
+      ],
+      "use_case": "Capture process change detection; enable temporal analysis of process behavior shifts",
+      "example_output_size": "~300 triples (before/after metrics + analysis)"
+    },
+    "predict-activity": {
+      "file": "predict-activity.rq",
+      "mcp_tool": "predict_activity_next",
+      "output_type": "pm:ActivityPrediction",
+      "input_format": "JSON",
+      "input_schema": {
+        "case_id": "string",
+        "confidence": "float 0-1",
+        "next_activities": "array of {activity, probability, rank}",
+        "top_k": "integer",
+        "model_name": "string",
+        "model_accuracy": "float 0-1",
+        "case_context": {
+          "current_activity_count": "integer",
+          "case_status": "string"
+        }
+      },
+      "output_classes": [
+        "pm:ActivityPrediction",
+        "pm:Activity",
+        "pm:PredictiveModel"
+      ],
+      "properties_produced": [
+        "pm:predictionConfidence",
+        "pm:predictionRank",
+        "pm:predictionProbability"
+      ],
+      "use_case": "Enable activity prediction queries; support case routing and predictive interventions",
+      "example_output_size": "~250 triples (prediction + top-k candidates + model metadata)"
+    },
+    "ocel-load": {
+      "file": "ocel-load.rq",
+      "mcp_tool": "load_ocel",
+      "output_type": "pm:ObjectCentricEventLog",
+      "input_format": "JSON",
+      "input_schema": {
+        "object_types": "array of {type_name, count, event_participation}",
+        "event_types": "array of {type_name, count, average_duration}",
+        "counts": {
+          "event_count": "integer",
+          "trace_count": "integer",
+          "object_count": "integer"
+        },
+        "timestamp_range": {
+          "start": "ISO 8601 datetime",
+          "end": "ISO 8601 datetime"
+        }
+      },
+      "output_classes": [
+        "pm:ObjectCentricEventLog",
+        "pm:ObjectType",
+        "pm:Activity",
+        "prov:Report"
+      ],
+      "properties_produced": [
+        "pm:eventCount",
+        "pm:traceCount",
+        "pm:objectCount"
+      ],
+      "use_case": "Document OCEL structure; enable object-centric process mining queries and reasoning",
+      "example_output_size": "~400-600 triples (object types + event types + relationships)"
+    },
+    "ml-classify": {
+      "file": "ml-classify.rq",
+      "mcp_tool": "classify_case",
+      "output_type": "pm:OutcomePrediction",
+      "input_format": "JSON",
+      "input_schema": {
+        "case_id": "string",
+        "prediction": "string (class label)",
+        "confidence": "float 0-1",
+        "probability": "float 0-1",
+        "features": "array of {name, value, importance, impact_direction}",
+        "model_accuracy": "float 0-1",
+        "model_name": "string",
+        "explanation": "string"
+      },
+      "output_classes": [
+        "pm:OutcomePrediction",
+        "pm:AnomalyDetection",
+        "pm:PredictiveModel",
+        "prov:Report"
+      ],
+      "properties_produced": [
+        "pm:predictionConfidence",
+        "pm:anomalyScore",
+        "pm:modelAccuracy"
+      ],
+      "use_case": "Document ML predictions for case outcome/anomaly; enable explainability queries",
+      "example_output_size": "~350-500 triples (prediction + feature importance + model metadata)"
+    }
+  },
+  "shared_patterns": {
+    "timestamp": {
+      "pattern": "prov:wasGeneratedAtTime ?timestamp",
+      "format": "xsd:dateTime (ISO 8601)",
+      "use": "Timestamp all proof artifacts"
+    },
+    "execution_time": {
+      "pattern": "pm:executionTime ?duration",
+      "format": "xsd:duration (ISO 8601)",
+      "use": "Record computational latency of all operations"
+    },
+    "confidence": {
+      "pattern": "pm:predictionConfidence ?score",
+      "format": "xsd:double 0-1",
+      "use": "Quantify uncertainty in all predictions"
+    },
+    "provenance": {
+      "pattern": "prov:wasGeneratedBy [ a prov:Activity ; ... ]",
+      "format": "Blank node with prov:Activity",
+      "use": "Link all outputs to operation that created them"
+    }
+  },
+  "usage_instructions": {
+    "step_1": "Call pictl MCP tool (e.g., discover_dfg with XES content)",
+    "step_2": "Tool returns JSON result (e.g., {nodes: [...], edges: [...], metrics: {...}})",
+    "step_3": "Application layer parses JSON, binds to SPARQL CONSTRUCT WHERE clause",
+    "step_4": "Execute SPARQL CONSTRUCT query to generate RDF triples",
+    "step_5": "Load RDF into triplestore (Oxigraph, Jena, etc.)",
+    "step_6": "Query RDF using semantic patterns (see sparql-examples.md)"
+  },
+  "integration_notes": {
+    "json_to_sparql": "Application must translate JSON → SPARQL BIND() statements. SPARQL cannot directly parse JSON; use SPARQL 1.1 BIND with IRI/literal constructors.",
+    "blank_nodes": "Complex structures (metrics, relationships) use blank nodes [...] for readability. Generator should mint IRIs for persistence.",
+    "namespace": "All classes/properties use pm: prefix. Map pm = http://purl.org/pm/ontology# in application.",
+    "example_iri_pattern": "http://pictl.org/{resource_type}/{id} — customize domain as needed"
+  }
+}

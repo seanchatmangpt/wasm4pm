@@ -1,0 +1,161 @@
+schema_version: "1.0.0"
+generated_by: "Agent 15 — Merge Gate Validator"
+phase: 4
+
+kernel_name: "LinUCB Contextual Bandit"
+implementation_language: "WGSL (WebGPU Shading Language)"
+gpu_target: "wgpu (Metal / Vulkan / D3D12 backends)"
+source_file: "wasm4pm/src/gpu/linucb_kernel.wgsl"
+cpu_reference: "wasm4pm/src/ml/linucb.rs"
+
+# Van der Aalst prediction perspective: Resource and Intervention
+# Practitioner question: "Which process mining algorithm should handle this task?"
+prediction_perspective: "resource_and_intervention"
+
+# ── Input specification ──────────────────────────────────────────────────────
+input_spec:
+  feature_vector:
+    dimensions: 8
+    dtype: f32
+    normalization: "caller-normalized to [0.0, 1.0]"
+    features:
+      - index: 0
+        name: trace_length
+        description: "Average trace length in log (normalised)"
+      - index: 1
+        name: elapsed_time
+        description: "Normalised elapsed time ratio"
+      - index: 2
+        name: rework_count
+        description: "Average rework loop count (normalised)"
+      - index: 3
+        name: unique_activities
+        description: "Number of distinct activities, normalised /100"
+      - index: 4
+        name: avg_inter_event_time
+        description: "Average time between events (normalised)"
+      - index: 5
+        name: log_size_bin
+        description: "log(trace_count) / log(10000)"
+      - index: 6
+        name: activity_entropy
+        description: "Shannon entropy of activity distribution"
+      - index: 7
+        name: variant_ratio
+        description: "distinct variants / trace_count"
+  batch_size: 2048
+  dtype: f32
+
+# ── Output specification ─────────────────────────────────────────────────────
+output_spec:
+  action_index:
+    range: "[0, 39]"
+    dtype: u32
+    description: "Index into the 40-slot algorithm registry"
+  ucb_score:
+    dtype: f32
+    description: "Q̂_a(x) = w_a·x + b_a + α√(x^T A^{-1} x)"
+  actions_per_batch: 40  # one action per state, 40 algorithm slots
+
+# ── GPU kernel parameters ────────────────────────────────────────────────────
+kernel_parameters:
+  workgroup_size: 256
+  workgroups_per_dispatch: 8  # 2048 / 256 = 8
+  shared_memory_bytes: 1024   # 256 × f32 = 256 × 4 = 1024 bytes
+
+# ── Buffer bindings ──────────────────────────────────────────────────────────
+buffer_bindings:
+  - binding: 0
+    name: features_in
+    size_bytes: 65536   # 2048 × 8 × 4
+    access: read_only
+  - binding: 1
+    name: w_matrix
+    size_bytes: 1280    # 40 × 8 × 4
+    access: read_only
+  - binding: 2
+    name: a_inv
+    size_bytes: 256     # 8 × 8 × 4
+    access: read_only
+  - binding: 3
+    name: alpha_buf
+    size_bytes: 4       # 1 × f32
+    access: read_only
+  - binding: 4
+    name: actions_out
+    size_bytes: 8192    # 2048 × 4
+    access: read_write
+  - binding: 5
+    name: ucb_out
+    size_bytes: 8192    # 2048 × 4
+    access: read_write
+
+total_vram_bytes: 83460    # sum of all bindings
+total_vram_mb: 0.0796      # well under 32 MB limit
+
+# ── Acceptance criteria ──────────────────────────────────────────────────────
+acceptance_criteria:
+  latency_ms: "≤0.1 per batch of 2048 states"
+  throughput_states_per_sec: "≥250000"
+  gpu_cpu_parity: "bitwise_identical action_index; |score_delta| < 1e-4"
+  determinism: "100 percent — no RNG, pure function of stored state + input"
+  vram_budget_mb: "≤32"
+
+# ── Conformance test vectors ─────────────────────────────────────────────────
+conformance_vectors:
+  count: 25
+  test_file: "wasm4pm/tests/gpu_conformance_vectors.rs"
+  coverage:
+    - boundary_lower: "cv01 — all-zero context"
+    - boundary_upper: "cv02 — all-one context"
+    - midpoint: "cv03 — uniform 0.5"
+    - realistic_simple: "cv04 — short trace, low elapsed"
+    - realistic_complex_low: "cv05 — long trace, high elapsed"
+    - high_rework: "cv06 — rework-heavy log"
+    - high_entropy: "cv07 — diverse activity mix"
+    - high_variant: "cv08 — many distinct paths"
+    - large_log: "cv09 — many traces"
+    - tiny_log: "cv10 — few traces"
+    - one_hot_f0: "cv11 — trace_length dominant"
+    - one_hot_f1: "cv12 — elapsed_time dominant"
+    - one_hot_f2: "cv13 — rework dominant"
+    - one_hot_f3: "cv14 — unique_activities dominant"
+    - one_hot_f4: "cv15 — inter_event_time dominant"
+    - one_hot_f5: "cv16 — log_size dominant"
+    - one_hot_f6: "cv17 — activity_entropy dominant"
+    - one_hot_f7: "cv18 — variant_ratio dominant"
+    - gradient_asc: "cv19 — increasing slope 0.1→0.8"
+    - gradient_desc: "cv20 — decreasing slope 0.9→0.2"
+    - checkerboard: "cv21 — alternating high-low"
+    - near_zero: "cv22 — numerical stability (1e-6)"
+    - near_one: "cv23 — numerical stability (1 - 1e-6)"
+    - realistic_moderate: "cv24 — mid-complexity BPIC-like"
+    - realistic_complex: "cv25 — high-complexity conformance scenario"
+
+# ── GPU parity test ──────────────────────────────────────────────────────────
+gpu_parity_test:
+  module: "gpu_parity"
+  test_name: "gpu_cpu_parity_all_25_vectors"
+  feature_gate: "gpu"
+  enabled_when: "cargo test --features gpu"
+  note: >
+    Gated behind #[cfg(feature = \"gpu\")] so CI on non-GPU hosts passes
+    the 25 CPU-baseline conformance vectors without skipping.
+
+# ── Security advisories ──────────────────────────────────────────────────────
+known_issues:
+  - id: RUSTSEC-2026-0097
+    crate: rand
+    severity: unsound
+    exploitability: not_exploitable
+    reason: >
+      Our code does not invoke rand::rng() alongside a custom global logger.
+      Advisory applies only to that specific interleaving pattern.
+      Mitigated by: deny.toml allow list + audit output shows 'allowed warnings'.
+  - id: RUSTSEC-2024-0436
+    crate: rand
+    severity: unsound
+    exploitability: not_exploitable
+    reason: >
+      Same crate, same rationale as RUSTSEC-2026-0097.
+      Both advisories produce 'warning' not 'error' from cargo audit.

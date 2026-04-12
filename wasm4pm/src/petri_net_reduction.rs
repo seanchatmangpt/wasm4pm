@@ -19,6 +19,7 @@
 
 use crate::models::{PetriNet, PetriNetArc, PetriNetPlace, PetriNetTransition};
 use std::collections::HashMap;
+use wasm_bindgen::JsValue;
 
 // ---------------------------------------------------------------------------
 // Helper methods for models::PetriNet
@@ -417,22 +418,25 @@ fn count_identical_place_groups(net: &PetriNet) -> usize {
 ///
 /// Takes a PetriNet handle, applies all reduction rules, and returns
 /// a JSON `ReductionResult` with before/after statistics.
-pub fn wasm_reduce_petri_net(net_handle: &str) -> String {
+pub fn wasm_reduce_petri_net(net_handle: &str) -> Result<String, JsValue> {
     use crate::state::{get_or_init_state, StoredObject};
+    use wasm_bindgen::prelude::*;
 
     let result = get_or_init_state().with_object_mut(net_handle, |obj| match obj {
         Some(StoredObject::PetriNet(net)) => {
             let stats = reduce_petri_net(net);
-            Ok(serde_json::to_string(&stats).unwrap_or_default())
+            serde_json::to_string(&stats).map_err(|e| {
+                JsValue::from_str(&format!("Failed to serialize reduction stats: {}", e))
+            })
         }
-        Some(_) => Ok(r#"{"error":"Object is not a PetriNet"}"#.to_string()),
-        None => Ok(format!(
-            r#"{{"error":"PetriNet '{}' not found"}}"#,
+        Some(_) => Err(JsValue::from_str("Object is not a PetriNet")),
+        None => Err(JsValue::from_str(&format!(
+            "PetriNet '{}' not found",
             net_handle
-        )),
-    });
+        ))),
+    })?;
 
-    result.unwrap_or_else(|e| format!(r#"{{"error":"{:?}"}}"#, e))
+    Ok(result)
 }
 
 /// Count reducible elements in a stored PetriNet without mutating it.

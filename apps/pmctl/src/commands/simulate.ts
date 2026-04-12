@@ -4,6 +4,7 @@ import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import type { OutputOptions } from '../output.js';
 import { WasmLoader } from '@pictl/engine';
+import { createQuietObservabilityLayer } from '../observability-util.js';
 
 export interface SimulateOptions extends OutputOptions {
   input?: string;
@@ -92,8 +93,21 @@ export const simulate = defineCommand({
       }
 
       const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
-      const numCases = parseInt((ctx.args.cases as string) || '100', 10);
-      const maxTime = parseInt((ctx.args.time as string) || '60000', 10);
+      const rawCases = ctx.args.cases as string | undefined;
+      const parsedCases = rawCases != null ? parseInt(rawCases, 10) : undefined;
+      if (parsedCases !== undefined && Number.isNaN(parsedCases)) {
+        formatter.error('Invalid --cases value: must be a number');
+        process.exit(EXIT_CODES.config_error);
+      }
+      const numCases = parsedCases ?? 100;
+
+      const rawTime = ctx.args.time as string | undefined;
+      const parsedTime = rawTime != null ? parseInt(rawTime, 10) : undefined;
+      if (parsedTime !== undefined && Number.isNaN(parsedTime)) {
+        formatter.error('Invalid --time value: must be a number');
+        process.exit(EXIT_CODES.config_error);
+      }
+      const maxTime = parsedTime ?? 60000;
       const seed = ctx.args.seed ? parseInt(ctx.args.seed as string, 10) : Math.floor(Math.random() * 2_147_483_647);
 
       if (formatter instanceof HumanFormatter) {
@@ -102,7 +116,8 @@ export const simulate = defineCommand({
       }
 
       // Load WASM module
-      const loader = WasmLoader.getInstance();
+      const loaderConfig = ctx.args.format === 'json' ? { observability: createQuietObservabilityLayer() } : {};
+      const loader = WasmLoader.getInstance(loaderConfig);
       await loader.init();
       const wasm = loader.get();
 
@@ -143,11 +158,7 @@ export const simulate = defineCommand({
       }
 
       // Free log handle
-      try {
-        wasm.delete_object(logHandle);
-      } catch {
-        /* best-effort */
-      }
+      wasm.delete_object(logHandle);
 
       // Build result
       const result = {

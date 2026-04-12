@@ -192,7 +192,10 @@ pub fn discover_simple_process_tree(
                 .collect();
 
             let tree = if children.len() == 1 {
-                children.into_iter().next().unwrap()
+                children
+                    .into_iter()
+                    .next()
+                    .expect("children.len() == 1 guarantees one element")
             } else {
                 json!({
                     "type": "operator",
