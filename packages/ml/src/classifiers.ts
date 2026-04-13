@@ -106,12 +106,12 @@ function knnBatch(
       distBuf[i] = ss;
     }
 
-    // Partial sort: find top-k by squared distance
+    // Partial sort: find top-k by squared distance (exclude self-match)
     // For small k relative to n, insertion into sorted array is fine
     const sorted = new Array<number>(k);
-    sorted[0] = 0;
-    let sortedLen = 1;
-    for (let i = 1; i < n && sortedLen < k; i++) {
+    let sortedLen = 0;
+    for (let i = 0; i < n && sortedLen < k; i++) {
+      if (i === qi) continue;  // Skip self-match
       // Insert into sorted position
       let pos = sortedLen;
       while (pos > 0 && distBuf[i] < distBuf[sorted[pos - 1]]) pos--;
@@ -126,6 +126,7 @@ function knnBatch(
     } else {
       // Replace worst neighbor with better ones from remaining
       for (let i = k; i < n; i++) {
+        if (i === qi) continue;  // Skip self-match
         if (distBuf[i] < distBuf[sorted[k - 1]]) {
           // Remove worst, insert new
           let pos = k - 1;
@@ -136,14 +137,15 @@ function knnBatch(
       }
     }
 
-    // Weighted vote (inverse distance)
+    // Weighted vote (inverse distance, capped to prevent infinity)
     let bestLabel = labels[sorted[0]];
     let bestWeight = 0;
     let totalWeight = 0;
     const votes = new Map<number, number>();
     for (let ni = 0; ni < sortedLen; ni++) {
       const idx = sorted[ni];
-      const w = 1 / (Math.sqrt(distBuf[idx]) + 1e-10);
+      const dist = Math.sqrt(distBuf[idx]);
+      const w = dist < 1e-10 ? 1e10 : 1 / dist;  // Cap weight for zero-distance
       totalWeight += w;
       const vw = (votes.get(labels[idx]) ?? 0) + w;
       votes.set(labels[idx], vw);
@@ -210,7 +212,8 @@ function gaussianNBTrain(data: number[][], labels: number[]): NBModel {
     for (let j = 0; j < d; j++) {
       const m = sums[ci][j] / cnt;
       classMeans[ci][j] = m;
-      const variance = sumSq[ci][j] / cnt - m * m + 1e-9;
+      const rawVariance = sumSq[ci][j] / cnt - m * m;
+      const variance = Math.max(0, rawVariance) + 1e-9;  // Clamp to non-negative
       classInvVars[ci][j] = 1 / (2 * variance);
       logDet[ci][j] = LN2PI + Math.log(variance);
     }
@@ -262,12 +265,6 @@ function gaussianNBPredictBatch(
 // Logistic Regression (multi-class OvA, vectorized gradient)
 // ---------------------------------------------------------------------------
 
-function sigmoid(z: number): number {
-  if (z >= 0) return 1 / (1 + Math.exp(-z));
-  const ez = Math.exp(z);
-  return ez / (1 + ez);
-}
-
 function logisticRegressionTrain(
   data: number[][],
   labels: number[],
@@ -277,31 +274,57 @@ function logisticRegressionTrain(
   const classes = [...new Set(labels)].sort((a, b) => a - b);
   const n = data.length;
   const d = data[0]?.length ?? 0;
+  const k = classes.length;
+
+  // Multinomial logistic regression: softmax-based cross-entropy training.
+  // All class weights are updated jointly so training gradients match the
+  // softmax probabilities used during prediction.
   const weights: number[][] = [];
+  for (let ci = 0; ci < k; ci++) weights.push(new Float64Array(d + 1));
 
-  for (const c of classes) {
-    const w = new Float64Array(d + 1); // bias at index 0
-    const grad = new Float64Array(d + 1);
+  const probs = new Float64Array(k);
 
-    for (let iter = 0; iter < maxIter; iter++) {
-      grad.fill(0);
+  for (let iter = 0; iter < maxIter; iter++) {
+    const grads: Float64Array[] = [];
+    for (let ci = 0; ci < k; ci++) grads.push(new Float64Array(d + 1));
 
-      for (let i = 0; i < n; i++) {
+    for (let i = 0; i < n; i++) {
+      // Compute logits for all classes
+      let maxZ = -Infinity;
+      for (let ci = 0; ci < k; ci++) {
+        const w = weights[ci];
         let z = w[0];
         for (let j = 0; j < d; j++) z += data[i][j] * w[j + 1];
-        const err = sigmoid(z) - (labels[i] === c ? 1 : 0);
-        grad[0] += err;
-        for (let j = 0; j < d; j++) grad[j + 1] += err * data[i][j];
+        if (z > maxZ) maxZ = z;
+        probs[ci] = z;
       }
 
-      const invN = lr / n;
-      for (let j = 0; j <= d; j++) w[j] -= invN * grad[j];
+      // Softmax probabilities (numerically stable)
+      let sumExp = 0;
+      for (let ci = 0; ci < k; ci++) {
+        probs[ci] = Math.exp(probs[ci] - maxZ);
+        sumExp += probs[ci];
+      }
+      for (let ci = 0; ci < k; ci++) probs[ci] /= sumExp;
+
+      // Gradient: softmax probability - one-hot target
+      const target = classes.indexOf(labels[i]);
+      for (let ci = 0; ci < k; ci++) {
+        const err = probs[ci] - (ci === target ? 1 : 0);
+        grads[ci][0] += err;
+        for (let j = 0; j < d; j++) grads[ci][j + 1] += err * data[i][j];
+      }
     }
 
-    weights.push(Array.from(w));
+    const invN = lr / n;
+    for (let ci = 0; ci < k; ci++) {
+      const w = weights[ci];
+      const g = grads[ci];
+      for (let j = 0; j <= d; j++) w[j] -= invN * g[j];
+    }
   }
 
-  return { weights, nClasses: classes.length, iterations: maxIter };
+  return { weights, nClasses: k, iterations: maxIter };
 }
 
 function logisticRegressionPredictBatch(
@@ -321,9 +344,25 @@ function logisticRegressionPredictBatch(
       const w = model.weights[ci];
       let z = w[0];
       for (let j = 0; j < d; j++) z += data[i][j] * w[j + 1];
-      const s = sigmoid(z);
-      scores[ci] = s;
-      if (s > bestScore) { bestScore = s; bestClass = ci; }
+      scores[ci] = z;  // Store raw logit, not sigmoid
+    }
+
+    // Softmax across classes for proper probability normalization
+    let maxZ = scores[0];
+    for (let ci = 1; ci < model.nClasses; ci++) {
+      if (scores[ci] > maxZ) maxZ = scores[ci];
+    }
+    let sumExp = 0;
+    for (let ci = 0; ci < model.nClasses; ci++) {
+      scores[ci] = Math.exp(scores[ci] - maxZ);
+      sumExp += scores[ci];
+    }
+    for (let ci = 0; ci < model.nClasses; ci++) {
+      scores[ci] /= sumExp;
+    }
+
+    for (let ci = 0; ci < model.nClasses; ci++) {
+      if (scores[ci] > bestScore) { bestScore = scores[ci]; bestClass = ci; }
     }
 
     results[i] = { label: bestClass, confidence: bestScore };
@@ -343,6 +382,8 @@ interface TreeNode {
   right: TreeNode | null;
   label: number; // -1 if internal node
   depth: number;
+  // Class distribution at this node (used for confidence in leaf nodes)
+  classCounts: Int32Array | null;
 }
 
 function buildTree(
@@ -376,7 +417,7 @@ function buildTree(
 
   // Leaf conditions
   if (nClasses <= 1 || depth >= maxDepth || len < 2) {
-    return { feature: 0, threshold: 0, left: null, right: null, label: majorityLabel, depth };
+    return { feature: 0, threshold: 0, left: null, right: null, label: majorityLabel, depth, classCounts: freq };
   }
 
   // Parent gini (single pass with existing freq)
@@ -447,7 +488,7 @@ function buildTree(
 
   // No improvement
   if (bestGini >= parentGini) {
-    return { feature: 0, threshold: 0, left: null, right: null, label: majorityLabel, depth };
+    return { feature: 0, threshold: 0, left: null, right: null, label: majorityLabel, depth, classCounts: freq };
   }
 
   // Partition indices (pre-allocated buffers)
@@ -471,14 +512,26 @@ function buildTree(
     right: buildTree(data, labels, rightIndices.subarray(0, rightLen), depth + 1, maxDepth, d, classCount),
     label: -1,
     depth,
+    classCounts: null,
   };
 }
 
-function predictTree(node: TreeNode, query: number[]): number {
+function predictTree(node: TreeNode, query: number[]): { label: number; confidence: number } {
   while (node.label === -1) {
     node = query[node.feature] <= node.threshold ? node.left! : node.right!;
   }
-  return node.label;
+  // Compute confidence from class distribution at leaf node
+  if (node.classCounts) {
+    const cc = node.classCounts;
+    let total = 0;
+    let maxCount = 0;
+    for (let i = 0; i < cc.length; i++) {
+      total += cc[i];
+      if (cc[i] > maxCount) maxCount = cc[i];
+    }
+    return { label: node.label, confidence: total > 0 ? maxCount / total : 1 };
+  }
+  return { label: node.label, confidence: 1 };
 }
 
 function treeDepth(node: TreeNode): number {
@@ -698,11 +751,14 @@ export async function classifyTraces(
     const tree = buildTree(matrix.data, encoded, indices, 0, maxDepth, d, classCount);
     return {
       method: 'decision_tree',
-      predictions: matrix.caseIds.map((caseId, i) => ({
-        caseId,
-        predicted: reverseMap.get(predictTree(tree, matrix.data[i])) ?? 'unknown',
-        confidence: 1,
-      })),
+      predictions: matrix.caseIds.map((caseId, i) => {
+        const { label, confidence } = predictTree(tree, matrix.data[i]);
+        return {
+          caseId,
+          predicted: reverseMap.get(label) ?? 'unknown',
+          confidence,
+        };
+      }),
       modelInfo: { depth: treeDepth(tree), nNodes: treeNodes(tree), featureCount: d, traceCount: n, classCount: reverseMap.size },
     };
   }

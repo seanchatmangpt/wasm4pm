@@ -83,6 +83,129 @@ pub mod models;
 pub mod state;
 pub mod types;
 
+// Drift detection thresholds (configurable via set_drift_thresholds)
+const DRIFT_THRESHOLD_LOW_DEFAULT: f32 = 0.3;
+const DRIFT_THRESHOLD_HIGH_DEFAULT: f32 = 0.7;
+
+use std::sync::atomic::{AtomicU32, Ordering};
+
+// Global drift threshold configuration
+static DRIFT_THRESHOLD_LOW: AtomicU32 = AtomicU32::new(0x3e99999a); // 0.3 as f32 bits
+static DRIFT_THRESHOLD_HIGH: AtomicU32 = AtomicU32::new(0x3f333333); // 0.7 as f32 bits
+
+fn get_drift_threshold_low() -> f32 {
+    f32::from_bits(DRIFT_THRESHOLD_LOW.load(Ordering::Relaxed))
+}
+
+fn get_drift_threshold_high() -> f32 {
+    f32::from_bits(DRIFT_THRESHOLD_HIGH.load(Ordering::Relaxed))
+}
+
+/// Check if a trace has activity repetition (loops)
+///
+/// Returns true if any activity appears more than once in the trace.
+/// This indicates a rework loop or repetition pattern.
+fn has_activity_repetition(trace: &models::Trace, activity_key: &str) -> bool {
+    use std::collections::HashSet;
+
+    let mut seen_activities = HashSet::new();
+    for event in &trace.events {
+        if let Some(models::AttributeValue::String(activity)) = event.attributes.get(activity_key) {
+            if !seen_activities.insert(activity) {
+                // Activity was already seen -> repetition
+                return true;
+            }
+        }
+    }
+    false
+}
+
+/// Parse a subset of ISO-8601 timestamps and return the duration between them in milliseconds.
+///
+/// Supports formats:
+/// - `2026-04-13T10:00:00Z` (UTC)
+/// - `2026-04-13T10:00:00+00:00` (with timezone offset)
+/// - `2026-04-13T10:00:00.000Z` (with fractional seconds)
+/// - `2026-04-13T10:00:00` (naive, treated as local)
+///
+/// Returns 0.0 for unparseable or identical timestamps.
+/// WASM-compatible — no external dependencies.
+fn parse_iso8601_duration(first: &str, last: &str) -> f64 {
+    fn parse_ts(s: &str) -> Option<i64> {
+        let s = s.trim();
+        if s.is_empty() {
+            return None;
+        }
+        // Strip trailing Z or +00:00 timezone
+        let s = if s.ends_with('Z') {
+            &s[..s.len() - 1]
+        } else if s.len() > 6 && s.chars().nth(s.len() - 3) == Some(':') && s.chars().nth(s.len() - 6) == Some('+') {
+            // +HH:MM offset — strip it
+            &s[..s.len() - 6]
+        } else if s.len() > 6 && s.chars().nth(s.len() - 3) == Some(':') && s.chars().nth(s.len() - 6) == Some('-') {
+            // -HH:MM offset — strip it
+            &s[..s.len() - 6]
+        } else {
+            s
+        };
+
+        // Expected: YYYY-MM-DDTHH:MM:SS[.fff]
+        let parts: Vec<&str> = s.split('T').collect();
+        if parts.len() != 2 {
+            return None;
+        }
+        let date_parts: Vec<&str> = parts[0].split('-').collect();
+        if date_parts.len() != 3 {
+            return None;
+        }
+        let time_parts: Vec<&str> = parts[1].split('.').collect(); // split off fractional seconds
+        let time_main: Vec<&str> = time_parts[0].split(':').collect();
+        if time_main.len() != 3 {
+            return None;
+        }
+
+        let year: i64 = date_parts[0].parse().ok()?;
+        let month: i64 = date_parts[1].parse().ok()?;
+        let day: i64 = date_parts[2].parse().ok()?;
+        let hour: i64 = time_main[0].parse().ok()?;
+        let minute: i64 = time_main[1].parse().ok()?;
+        let second: i64 = time_main[2].parse().ok()?;
+
+        // Days in each month (non-leap-year baseline; leap year handled below)
+        let days_in_month: [i64; 12] = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
+        let is_leap = (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
+
+        let mut total_days: i64 = 0;
+        // Full years
+        for y in 1970..year {
+            total_days += if (y % 4 == 0 && y % 100 != 0) || (y % 400 == 0) { 366 } else { 365 };
+        }
+        // Full months
+        for m in 1..month {
+            total_days += days_in_month[(m - 1) as usize];
+            if m == 2 && is_leap {
+                total_days += 1;
+            }
+        }
+        // Days
+        total_days += day - 1;
+
+        // Convert to milliseconds
+        let ms: i64 = total_days * 86_400_000
+            + hour * 3_600_000
+            + minute * 60_000
+            + second * 1_000;
+
+        Some(ms)
+    }
+
+    match (parse_ts(first), parse_ts(last)) {
+        (Some(a), Some(b)) => (b - a) as f64,
+        _ => 0.0,
+    }
+}
+
 // Auto-generated registries from pictl ontology (A = μ(O))
 // DO NOT EDIT — regenerate via: ostar manufacture pictl
 #[allow(dead_code)]
@@ -112,6 +235,7 @@ pub mod analysis;
 pub mod binary_format;
 pub mod cache;
 pub mod capability_registry;
+pub mod pattern_analysis;
 pub mod conformance;
 pub mod data_quality;
 pub mod discovery;
@@ -136,6 +260,7 @@ pub mod social_network;
 pub mod text_encoding;
 pub mod utilities;
 pub mod xes_format;
+pub mod rl_state_serialization;
 
 // OCEL support (gated by ocel feature)
 #[cfg(feature = "ocel")]
@@ -290,6 +415,9 @@ pub mod self_healing;
 // SPC — Western Electric rules + process capability (always available)
 pub mod spc;
 
+// SPC History — Ring buffer for cross-cycle trend analysis (fixes one-shot problem)
+pub mod spc_history;
+
 // Guard evaluation engine — predicate/resource/state/counter/time-window guards (ported from knhk)
 pub mod guards;
 
@@ -302,6 +430,9 @@ pub mod reinforcement;
 // RL Orchestrator — persistent state hub for all RL agents
 pub mod rl_orchestrator;
 
+// Action Dispatch Layer — converts RL action labels to executable operations
+pub mod action_dispatch;
+
 // Agentic control primitives — role selection, task decomposition, handoffs, escalation
 pub mod agentic;
 
@@ -313,6 +444,11 @@ thread_local! {
     /// Persistent circuit breaker for the autonomic loop.
     pub static CIRCUIT_BREAKER: RefCell<self_healing::CircuitBreaker> =
         RefCell::new(self_healing::CircuitBreaker::new());
+
+    /// Persistent SPC history — ring buffer of 100 snapshots for cross-cycle trend analysis.
+    /// Fixes the one-shot SPC problem by maintaining historical context across autonomic cycles.
+    pub static SPC_HISTORY: RefCell<spc_history::SpcHistory> =
+        RefCell::new(spc_history::SpcHistory::new());
 }
 
 // ML contextual bandits — LinUCB CPU baseline (ground truth for GPU parity)
@@ -396,6 +532,82 @@ pub fn get_cache_stats() -> String {
     )
 }
 
+/// Set drift detection thresholds for RL state feature quantization.
+///
+/// # Arguments
+/// * `low` - Low threshold (default: 0.3). Values below this are drift_status=0.
+/// * `high` - High threshold (default: 0.7). Values at or above this are drift_status=2.
+///           Values in [low, high) are drift_status=1.
+///
+/// # Returns
+/// * `Ok(String)` - Success message with new thresholds
+/// * `Err(JsValue)` - Error if thresholds are invalid
+///
+/// # Example
+/// ```javascript
+/// // Set custom thresholds: 0.2 and 0.8
+/// set_drift_thresholds(0.2, 0.8);
+/// ```
+#[wasm_bindgen]
+pub fn set_drift_thresholds(low: f32, high: f32) -> Result<String, JsValue> {
+    if low < 0.0 || low > 1.0 {
+        return Err(JsValue::from_str(&format!(
+            "Invalid low threshold {}: must be in [0.0, 1.0]",
+            low
+        )));
+    }
+    if high < 0.0 || high > 1.0 {
+        return Err(JsValue::from_str(&format!(
+            "Invalid high threshold {}: must be in [0.0, 1.0]",
+            high
+        )));
+    }
+    if low >= high {
+        return Err(JsValue::from_str(&format!(
+            "Invalid thresholds: low ({}) must be less than high ({})",
+            low, high
+        )));
+    }
+
+    DRIFT_THRESHOLD_LOW.store(low.to_bits(), Ordering::Relaxed);
+    DRIFT_THRESHOLD_HIGH.store(high.to_bits(), Ordering::Relaxed);
+
+    Ok(format!(
+        "Drift thresholds updated: low={}, high={}",
+        low, high
+    ))
+}
+
+/// Get current drift detection thresholds as JSON string.
+///
+/// # Returns
+/// JSON string with current threshold values: `{"low":0.3,"high":0.7}`
+///
+/// # Example
+/// ```javascript
+/// const thresholds = JSON.parse(get_drift_thresholds());
+/// console.log(thresholds.low, thresholds.high);
+/// ```
+#[wasm_bindgen]
+pub fn get_drift_thresholds() -> String {
+    format!(
+        r#"{{"low":{},"high":{}}}"#,
+        get_drift_threshold_low(),
+        get_drift_threshold_high()
+    )
+}
+
+/// Reset drift detection thresholds to defaults (0.3, 0.7).
+#[wasm_bindgen]
+pub fn reset_drift_thresholds() -> String {
+    DRIFT_THRESHOLD_LOW.store(DRIFT_THRESHOLD_LOW_DEFAULT.to_bits(), Ordering::Relaxed);
+    DRIFT_THRESHOLD_HIGH.store(DRIFT_THRESHOLD_HIGH_DEFAULT.to_bits(), Ordering::Relaxed);
+    format!(
+        "Drift thresholds reset to defaults: low={}, high={}",
+        DRIFT_THRESHOLD_LOW_DEFAULT, DRIFT_THRESHOLD_HIGH_DEFAULT
+    )
+}
+
 /// SIMD-accelerated token replay for conformance checking.
 ///
 /// Discovers a DFG from the log, builds a SimdPetriNet, then replays
@@ -469,8 +681,10 @@ pub fn autonomic_execute_cycle(
                 has_timestamps = true;
                 let first_str = first.as_string().unwrap_or("");
                 let last_str = last.as_string().unwrap_or("");
-                let dur = (last_str.len() as f64) - (first_str.len() as f64);
-                trace_durations.push(dur.abs());
+                // TS-1 fix: Parse ISO-8601 timestamps instead of using string length.
+                // String lengths are nearly identical regardless of actual time difference.
+                let dur = parse_iso8601_duration(first_str, last_str);
+                trace_durations.push(dur);
             }
         }
 
@@ -506,6 +720,18 @@ pub fn autonomic_execute_cycle(
             _ => "Failed",
         };
 
+        // Compute rework ratio: fraction of traces with repeated activities
+        let rework_count = log
+            .traces
+            .iter()
+            .filter(|trace| has_activity_repetition(trace, activity_key))
+            .count();
+        let rework_ratio = if trace_count > 0 {
+            rework_count as f32 / trace_count as f32
+        } else {
+            0.0
+        };
+
         Ok::<serde_json::Value, JsValue>(serde_json::json!({
             "event_count": event_count,
             "trace_count": trace_count,
@@ -515,11 +741,67 @@ pub fn autonomic_execute_cycle(
             "activity_frequencies": activity_freq,
             "health_state": health_state,
             "health_label": health_label,
+            "rework_ratio": rework_ratio,
         }))
     })?;
     // perception_result is serde_json::Value (with_object unwraps both layers)
 
     let perception_ns = 0; // Included in overall timing
+
+    // -----------------------------------------------------------------------
+    // Pattern Analysis: Dynamic pattern selection based on trace structure
+    // -----------------------------------------------------------------------
+    let pattern_analysis = state.with_object(log_handle, |obj| {
+        let log = match obj {
+            Some(StoredObject::EventLog(l)) => l,
+            _ => {
+                return Err(JsValue::from_str(
+                    "pattern_analysis: handle does not reference an EventLog",
+                ));
+            }
+        };
+
+        // Extract traces as Vec<Vec<String>> for pattern analysis
+        let traces_for_analysis: Vec<Vec<String>> = log
+            .traces
+            .iter()
+            .map(|trace| {
+                trace
+                    .events
+                    .iter()
+                    .filter_map(|event| {
+                        event
+                            .attributes
+                            .get(activity_key)
+                            .and_then(|attr| attr.as_string())
+                            .map(|s| s.to_string())
+                    })
+                    .collect()
+            })
+            .collect();
+
+        // Build activity frequencies HashMap
+        let mut activity_frequencies: std::collections::HashMap<String, usize> =
+            std::collections::HashMap::new();
+        for trace in &log.traces {
+            for event in &trace.events {
+                if let Some(models::AttributeValue::String(name)) =
+                    event.attributes.get(activity_key)
+                {
+                    *activity_frequencies.entry(name.clone()).or_insert(0) += 1;
+                }
+            }
+        }
+
+        // Analyze trace structure to select pattern dynamically
+        let analysis = pattern_analysis::analyze_trace_structure(
+            &traces_for_analysis,
+            &activity_frequencies,
+        );
+
+        Ok::<pattern_analysis::TraceStructureAnalysis, JsValue>(analysis)
+    })?;
+
 
     // -----------------------------------------------------------------------
     // Layer 2: Decision — Guards + Pattern Dispatch
@@ -593,9 +875,10 @@ pub fn autonomic_execute_cycle(
 
     let guard_result = compound_guard.evaluate(&exec_ctx);
 
-    // Pattern dispatch
+
+    // Pattern dispatch — use dynamic pattern from analysis
     let pattern_ctx = pattern_dispatch::PatternContext {
-        pattern_type: pattern_dispatch::PatternType::Sequence,
+        pattern_type: pattern_analysis.primary_pattern,
         pattern_id: 0,
         config: pattern_dispatch::PatternConfig {
             max_instances: 1,
@@ -613,12 +896,17 @@ pub fn autonomic_execute_cycle(
 
     let guard_pass = guard_result;
     let pattern_name = if pattern_result.success {
-        "Sequence"
+        match pattern_analysis.primary_pattern {
+            pattern_dispatch::PatternType::Sequence => "Sequence",
+            pattern_dispatch::PatternType::ParallelSplit => "ParallelSplit",
+            pattern_dispatch::PatternType::StructuredLoop => "StructuredLoop",
+            pattern_dispatch::PatternType::ExclusiveChoice => "ExclusiveChoice",
+            _ => "Unknown",
+        }
     } else {
         "Failed"
     };
     let pattern_ticks = pattern_result.ticks_used;
-
     // -----------------------------------------------------------------------
     // Layer 3: Protection — Circuit Breaker + SPC (persistent)
     // -----------------------------------------------------------------------
@@ -626,11 +914,15 @@ pub fn autonomic_execute_cycle(
         let mut cb = cb.borrow_mut();
         let allowed = cb.allow_request();
         let state = format!("{:?}", cb.state());
-        if allowed {
-            cb.record_success();
-        }
+        // NOTE: record_success/failure is deferred to after the cycle work
+        // completes (see below), so the breaker tracks actual outcomes.
         (allowed, state)
     });
+
+    // Advance the monotonic clock by one cycle step so the circuit breaker
+    // can transition from Open → HalfOpen → Closed. Without this, the
+    // breaker would stay in Open state forever once tripped (CB-1 fix).
+    self_healing::advance_clock(1000);
 
     // SPC: multi-dimensional (event rate, trace duration, activity frequency)
     let mut all_special_causes: Vec<String> = Vec::new();
@@ -700,6 +992,7 @@ pub fn autonomic_execute_cycle(
                 cl: mean_td,
                 lcl: (mean_td - 3.0 * std_td).max(0.0),
                 subgroup_data: None,
+
             })
             .collect();
         let causes = spc::check_western_electric_rules(&chart_data);
@@ -757,10 +1050,163 @@ pub fn autonomic_execute_cycle(
         );
     }
 
+    // Record SPC snapshot to history (cross-cycle trend analysis)
+    // Use cycle counter instead of system time (WASM doesn't support std::time)
+    let cycle_num = SPC_HISTORY.with(|history| {
+        history.borrow().cycle_count + 1
+    });
+    let timestamp = format!("cycle-{}", cycle_num);
+    let event_rate_mean = if event_counts_per_trace.is_empty() {
+        0.0
+    } else {
+        event_counts_per_trace.iter().sum::<f64>() / event_counts_per_trace.len() as f64
+    };
+    let trace_duration_mean = if trace_durations.is_empty() {
+        0.0
+    } else {
+        trace_durations.iter().sum::<f64>() / trace_durations.len() as f64
+    };
+    let activity_freq_mean = if freq_values.is_empty() {
+        0.0
+    } else {
+        freq_values.iter().sum::<f64>() / freq_values.len() as f64
+    };
+
+    let snapshot = spc_history::SpcSnapshot::new(
+        timestamp.clone(),
+        event_rate_mean,
+        trace_duration_mean,
+        activity_freq_mean,
+        health_state_val as u8,
+    );
+
+    let (history_cycle_count, history_len, has_sufficient_data) = SPC_HISTORY.with(|history| {
+        let mut history = history.borrow_mut();
+        history.record_snapshot(snapshot);
+        (history.cycle_count, history.history.len(), history.has_sufficient_data())
+    });
+
+    spc_results.insert("history_cycle_count".to_string(), serde_json::json!(history_cycle_count));
+    spc_results.insert("history_len".to_string(), serde_json::json!(history_len));
+    spc_results.insert("has_sufficient_data".to_string(), serde_json::json!(has_sufficient_data));
+
+    // If sufficient historical data exists, apply Western Electric rules across cycles
+    if has_sufficient_data {
+        let historical_event_rates = SPC_HISTORY.with(|history| {
+            history.borrow().get_event_rates()
+        });
+        let historical_trace_durations = SPC_HISTORY.with(|history| {
+            history.borrow().get_trace_durations()
+        });
+        let historical_activity_freqs = SPC_HISTORY.with(|history| {
+            history.borrow().get_activity_frequencies()
+        });
+
+        // Apply Western Electric rules to historical event rates
+        if historical_event_rates.len() >= 9 {
+            let mean_er_hist = spc::spc_mean(&historical_event_rates);
+            let std_er_hist = spc::spc_std_dev(&historical_event_rates);
+            let chart_data_hist: Vec<spc::ChartData> = historical_event_rates
+                .iter()
+                .enumerate()
+                .map(|(i, &v)| spc::ChartData {
+                    timestamp: format!("cycle-{}", i),
+                    value: v,
+                    ucl: mean_er_hist + 3.0 * std_er_hist,
+                    cl: mean_er_hist,
+                    lcl: (mean_er_hist - 3.0 * std_er_hist).max(0.0),
+                    subgroup_data: None,
+                })
+                .collect();
+            let causes_hist = spc::check_western_electric_rules(&chart_data_hist);
+            if !causes_hist.is_empty() {
+                spc_results.insert(
+                    "event_rate_historical".to_string(),
+                    serde_json::json!("ALERT"),
+                );
+                for c in &causes_hist {
+                    all_special_causes.push(format!("event_rate_historical: {:?}", c));
+                }
+            } else {
+                spc_results.insert(
+                    "event_rate_historical".to_string(),
+                    serde_json::json!("OK"),
+                );
+            }
+        }
+
+        // Apply Western Electric rules to historical trace durations
+        if historical_trace_durations.len() >= 9 {
+            let mean_td_hist = spc::spc_mean(&historical_trace_durations);
+            let std_td_hist = spc::spc_std_dev(&historical_trace_durations);
+            let chart_data_hist: Vec<spc::ChartData> = historical_trace_durations
+                .iter()
+                .enumerate()
+                .map(|(i, &v)| spc::ChartData {
+                    timestamp: format!("cycle-{}", i),
+                    value: v,
+                    ucl: mean_td_hist + 3.0 * std_td_hist,
+                    cl: mean_td_hist,
+                    lcl: (mean_td_hist - 3.0 * std_td_hist).max(0.0),
+                    subgroup_data: None,
+                })
+                .collect();
+            let causes_hist = spc::check_western_electric_rules(&chart_data_hist);
+            if !causes_hist.is_empty() {
+                spc_results.insert(
+                    "trace_duration_historical".to_string(),
+                    serde_json::json!("ALERT"),
+                );
+                for c in &causes_hist {
+                    all_special_causes.push(format!("trace_duration_historical: {:?}", c));
+                }
+            } else {
+                spc_results.insert(
+                    "trace_duration_historical".to_string(),
+                    serde_json::json!("OK"),
+                );
+            }
+        }
+
+        // Apply Western Electric rules to historical activity frequencies
+        if historical_activity_freqs.len() >= 9 {
+            let mean_af_hist = spc::spc_mean(&historical_activity_freqs);
+            let std_af_hist = spc::spc_std_dev(&historical_activity_freqs);
+            let chart_data_hist: Vec<spc::ChartData> = historical_activity_freqs
+                .iter()
+                .enumerate()
+                .map(|(i, &v)| spc::ChartData {
+                    timestamp: format!("cycle-{}", i),
+                    value: v,
+                    ucl: mean_af_hist + 3.0 * std_af_hist,
+                    cl: mean_af_hist,
+                    lcl: (mean_af_hist - 3.0 * std_af_hist).max(0.0),
+                    subgroup_data: None,
+                })
+                .collect();
+            let causes_hist = spc::check_western_electric_rules(&chart_data_hist);
+            if !causes_hist.is_empty() {
+                spc_results.insert(
+                    "activity_frequency_historical".to_string(),
+                    serde_json::json!("ALERT"),
+                );
+                for c in &causes_hist {
+                    all_special_causes.push(format!("activity_frequency_historical: {:?}", c));
+                }
+            } else {
+                spc_results.insert(
+                    "activity_frequency_historical".to_string(),
+                    serde_json::json!("OK"),
+                );
+            }
+        }
+    }
+
     // -----------------------------------------------------------------------
     // Layer 4: Optimization — Reinforcement Learning (persistent)
     // -----------------------------------------------------------------------
     let health_level = health_state_val as u8;
+    let rework_ratio_val = perception["rework_ratio"].as_f64().unwrap_or(0.0) as f32;
 
     let (action_label, reward_val, agent_name, cycle_count, cumulative_reward) = RL_ORCHESTRATOR
         .with(|orch_cell| {
@@ -778,10 +1224,21 @@ pub fn autonomic_execute_cycle(
                 (orch.telemetry().cycle_count as f32 / 1_000.0).min(1.0),
             ];
 
-            let rl_state = RlState(health_level);
+            let rl_state = RlState::from_features(&features, health_level, rework_ratio_val);
+
+            // Compute next health state based on cycle outcome.
+            // If cycle failed (guard or circuit blocked), health degrades.
+            // If cycle succeeded, health remains stable (log hasn't changed).
+            let next_health_level = if guard_pass && circuit_allowed {
+                health_level // Stable: successful cycle
+            } else {
+                (health_level + 1).min(4) // Degrade: failed cycle (cap at 4)
+            };
+            let rl_next_state = RlState::from_features(&features, next_health_level, rework_ratio_val);
             let (label, _reward) = orch.run_cycle(
                 &features,
                 &rl_state,
+                &rl_next_state,
                 all_special_causes.len(),
                 guard_pass,
                 circuit_allowed,
@@ -795,6 +1252,17 @@ pub fn autonomic_execute_cycle(
                 orch.telemetry().cumulative_reward,
             )
         });
+
+    // Record circuit breaker outcome AFTER actual cycle work completes
+    // (not before, so the breaker tracks real success/failure rates)
+    CIRCUIT_BREAKER.with(|cb| {
+        let mut cb = cb.borrow_mut();
+        if circuit_allowed {
+            cb.record_success();
+        }
+        // If circuit was blocked, the failure was already implicit
+        // (allow_request returned false, no work was attempted)
+    });
 
     // -----------------------------------------------------------------------
     // Build result JSON
@@ -843,16 +1311,150 @@ pub fn autonomic_execute_cycle(
     Ok(serde_json::to_string(&result).unwrap_or_else(|_| "{}".to_string()))
 }
 
-// Simple RL state: health level (0-4)
-#[derive(Clone, PartialEq, Eq, std::hash::Hash)]
-pub struct RlState(pub u8);
+// State space size: 5 × 8 × 8 × 4 × 3 × 8 × 3 × 4 = 460,800 states
+// This requires function approximation (not tabular methods)
+/// Multi-dimensional RL state with quantized dimensions
+#[derive(Clone, PartialEq, Eq, Hash, Debug)]
+#[wasm_bindgen]
+pub struct RlState {
+    pub health_level: u8,        // 0-4 (5 states)
+    pub event_rate_q: u8,        // 0-7 (8 quantization levels)
+    pub activity_count_q: u8,    // 0-7 (8 quantization levels)
+    pub spc_alert_level: u8,     // 0-3 (4 levels)
+    pub drift_status: u8,        // 0-2 (3 states)
+    pub rework_ratio_q: u8,      // 0-7 (8 quantization levels)
+    pub circuit_state: u8,       // 0-2 (3 states)
+    pub cycle_phase: u8,         // 0-3 (4 phases)
+}
+
+impl RlState {
+    /// Create from 8-dimensional feature vector and rework ratio
+    pub fn from_features(features: &[f32; 8], health_level: u8, rework_ratio: f32) -> Self {
+        // features[2] = unique_activities / 100
+        let activity_count = (features[2] * 100.0) as u32;
+        let activity_count_q = Self::quantize_activity_count(activity_count);
+
+        // features[6] = activity_entropy (0-1)
+        let drift_low = get_drift_threshold_low();
+        let drift_high = get_drift_threshold_high();
+        let drift_status = if features[6] < drift_low {
+            0
+        } else if features[6] < drift_high {
+            1
+        } else {
+            2
+        };
+
+        // features[0] = event_count / 10000
+        let event_rate_q = Self::quantize_event_rate(features[0]);
+
+        // features[5] = special_cause_count / 10
+        let spc_alert_level = Self::quantize_spc_alerts(features[5]);
+
+        // features[4] = circuit_allowed (0 or 1)
+        let circuit_state = if features[4] > 0.5 { 0 } else { 1 }; // 0=closed, 1=open
+
+        // features[7] = cycle_count / 1000
+        let cycle_phase = Self::quantize_cycle_phase(features[7]);
+
+        // rework_ratio is computed from log trace analysis
+        let rework_ratio_q = Self::quantize_rework_ratio(rework_ratio);
+
+        Self {
+            health_level,
+            event_rate_q,
+            activity_count_q,
+            spc_alert_level,
+            drift_status,
+            rework_ratio_q,
+            circuit_state,
+            cycle_phase,
+        }
+    }
+
+    fn quantize_activity_count(count: u32) -> u8 {
+        match count {
+            0..=10 => 0,
+            11..=20 => 1,
+            21..=30 => 2,
+            31..=40 => 3,
+            41..=50 => 4,
+            51..=60 => 5,
+            61..=70 => 6,
+            _ => 7,
+        }
+    }
+
+    fn quantize_event_rate(normalized_rate: f32) -> u8 {
+        // normalized_rate is in [0,1], representing [0, 10000] events
+        let rate = (normalized_rate * 10000.0) as u32;
+        match rate {
+            0..=500 => 0,
+            501..=1000 => 1,
+            1001..=2000 => 2,
+            2001..=3000 => 3,
+            3001..=4000 => 4,
+            4001..=5000 => 5,
+            5001..=7500 => 6,
+            _ => 7,
+        }
+    }
+
+    fn quantize_spc_alerts(normalized_alerts: f32) -> u8 {
+        // normalized_alerts is in [0,1], representing [0, 10] special causes
+        let alert_count = (normalized_alerts * 10.0) as u32;
+        match alert_count {
+            0 => 0,
+            1..=2 => 1,
+            3..=5 => 2,
+            _ => 3,
+        }
+    }
+
+    fn quantize_cycle_phase(normalized_cycles: f32) -> u8 {
+        // normalized_cycles is in [0,1], representing [0, 1000] cycles
+        let cycles = (normalized_cycles * 1000.0) as u32;
+        match cycles {
+            0..=10 => 0,      // Initial
+            11..=50 => 1,     // Learning
+            51..=100 => 2,    // Mature
+            _ => 3,           // Stable
+        }
+    }
+
+    fn quantize_rework_ratio(rework_ratio: f32) -> u8 {
+        // rework_ratio is in [0,1], fraction of traces with loops
+        // Quantize to 8 levels
+        let ratio_percent = (rework_ratio * 100.0) as u32;
+        match ratio_percent {
+            0..=5 => 0,       // 0-5%: minimal rework
+            6..=15 => 1,      // 6-15%: low rework
+            16..=25 => 2,     // 16-25%: moderate-low
+            26..=40 => 3,     // 26-40%: moderate
+            41..=55 => 4,     // 41-55%: moderate-high
+            56..=70 => 5,     // 56-70%: high rework
+            71..=85 => 6,     // 71-85%: very high
+            _ => 7,           // 86-100%: extreme rework
+        }
+    }
+}
 
 impl reinforcement::WorkflowState for RlState {
     fn features(&self) -> Vec<f32> {
-        vec![self.0 as f32 / 4.0]
+        vec![
+            self.health_level as f32 / 4.0,
+            self.event_rate_q as f32 / 7.0,
+            self.activity_count_q as f32 / 7.0,
+            self.spc_alert_level as f32 / 3.0,
+            self.drift_status as f32 / 2.0,
+            self.rework_ratio_q as f32 / 7.0,
+            self.circuit_state as f32 / 2.0,
+            self.cycle_phase as f32 / 3.0,
+        ]
     }
+
     fn is_terminal(&self) -> bool {
-        self.0 == 4 // Failed is terminal
+        self.health_level == 4 // Failed is terminal
     }
 }
 
@@ -884,6 +1486,102 @@ impl reinforcement::WorkflowAction for RlAction {
 }
 
 // -------------------------------------------------------------------------
+
+// -------------------------------------------------------------------------
+// RL State WASM Exports
+// -------------------------------------------------------------------------
+
+/// Create an RlState directly from 8 field values.
+///
+/// # Arguments
+///
+/// * `health_level` - 0-4 (5 states: Normal, Warning, Degraded, Critical, Failed)
+/// * `event_rate_q` - 0-7 (quantized event rate)
+/// * `activity_count_q` - 0-7 (quantized activity count)
+/// * `spc_alert_level` - 0-3 (SPC alert level)
+/// * `drift_status` - 0-2 (drift detection status)
+/// * `rework_ratio_q` - 0-7 (quantized rework ratio)
+/// * `circuit_state` - 0-2 (circuit breaker state)
+/// * `cycle_phase` - 0-3 (autonomic cycle phase)
+///
+/// # Returns
+///
+/// * `RlState` - WASM-exported state object
+#[wasm_bindgen]
+pub fn create_rl_state(
+    health_level: u8,
+    event_rate_q: u8,
+    activity_count_q: u8,
+    spc_alert_level: u8,
+    drift_status: u8,
+    rework_ratio_q: u8,
+    circuit_state: u8,
+    cycle_phase: u8,
+) -> RlState {
+    RlState {
+        health_level,
+        event_rate_q,
+        activity_count_q,
+        spc_alert_level,
+        drift_status,
+        rework_ratio_q,
+        circuit_state,
+        cycle_phase,
+    }
+}
+
+/// Create an RlState from a feature slice and health level.
+///
+/// This is the primary constructor used by the RL orchestrator.
+/// It quantizes continuous feature values into discrete state dimensions.
+///
+/// # Arguments
+///
+/// * `features` - Slice of 8 f32 values (normalized to [0,1])
+/// * `health_level` - 0-4 (explicit health score, not derived from features)
+/// * `rework_ratio` - 0.0-1.0 (fraction of traces with repeated activities)
+///
+/// # Returns
+///
+/// * `RlState` - Quantized state object
+///
+/// # Feature Mapping
+///
+/// - `features[0]` → event_rate_q (event count / 10,000)
+/// - `features[1]` → unused (trace count / 1,000)
+/// - `features[2]` → activity_count_q (unique activities / 100)
+/// - `features[3]` → unused (health_level / 4, overridden by param)
+/// - `features[4]` → unused (special causes / 10)
+/// - `features[5]` → spc_alert_level (special causes / 10)
+/// - `features[6]` → drift_status (activity entropy)
+/// - `features[7]` → circuit_state (circuit_allowed flag)
+/// - `rework_ratio` → rework_ratio_q (0-7 quantized levels)
+#[wasm_bindgen]
+pub fn rl_state_from_features(features: &[f32], health_level: u8, rework_ratio: f32) -> RlState {
+    // Convert slice to array for from_features
+    let mut arr = [0.0f32; 8];
+    for (i, &val) in features.iter().enumerate() {
+        if i < 8 {
+            arr[i] = val;
+        }
+    }
+    RlState::from_features(&arr, health_level, rework_ratio)
+}
+
+/// Get the health_level field from an RlState.
+///
+/// # Arguments
+///
+/// * `state` - Reference to RlState
+///
+/// # Returns
+///
+/// * `u8` - Health level (0-4)
+#[wasm_bindgen]
+pub fn rl_state_health_level(state: &RlState) -> u8 {
+    state.health_level
+}
+
 // RL Orchestrator WASM Exports
 // -------------------------------------------------------------------------
 
@@ -936,6 +1634,159 @@ pub fn rl_orchestrator_telemetry() -> Result<String, JsValue> {
         let orch = orch.borrow();
         let t = orch.telemetry();
         Ok(serde_json::to_string(t).unwrap_or_else(|_| "{}".to_string()))
+    })
+}
+
+/// Get RL orchestrator telemetry as a JavaScript object.
+///
+/// Returns the 5 critical telemetry fields as a JsValue:
+/// - cycle_count: number of autonomic cycles executed
+/// - last_health_state: system health level (0=Normal, 1=Warning, 2=Degraded, 3=Critical, 4=Failed)
+/// - cumulative_reward: total reward accumulated across all cycles
+/// - last_reward: reward from the most recent cycle
+/// - last_spc_alert_count: number of SPC special causes in the last cycle
+#[wasm_bindgen]
+pub fn rl_orchestrator_get_telemetry() -> Result<JsValue, JsValue> {
+    RL_ORCHESTRATOR.with(|orch| {
+        let orch = orch.borrow();
+        let t = orch.telemetry();
+
+        // Create a JavaScript object with the 5 critical telemetry fields
+        let obj = js_sys::Object::new();
+
+        // Use JsValue to convert Rust types to JavaScript types
+        js_sys::Reflect::set(&obj, &JsValue::from_str("cycle_count"), &JsValue::from(t.cycle_count))
+            .map_err(|e| JsValue::from_str(&format!("Failed to set cycle_count: {:?}", e)))?;
+
+        js_sys::Reflect::set(&obj, &JsValue::from_str("last_health_state"), &JsValue::from(t.last_health_state))
+            .map_err(|e| JsValue::from_str(&format!("Failed to set last_health_state: {:?}", e)))?;
+
+        js_sys::Reflect::set(&obj, &JsValue::from_str("cumulative_reward"), &JsValue::from(t.cumulative_reward))
+            .map_err(|e| JsValue::from_str(&format!("Failed to set cumulative_reward: {:?}", e)))?;
+
+        js_sys::Reflect::set(&obj, &JsValue::from_str("last_reward"), &JsValue::from(t.last_reward))
+            .map_err(|e| JsValue::from_str(&format!("Failed to set last_reward: {:?}", e)))?;
+
+        js_sys::Reflect::set(&obj, &JsValue::from_str("last_spc_alert_count"), &JsValue::from(t.last_spc_alert_count))
+            .map_err(|e| JsValue::from_str(&format!("Failed to set last_spc_alert_count: {:?}", e)))?;
+
+        Ok(JsValue::from(obj))
+    })
+}
+
+/// Serialize current RL orchestrator state to JSON for persistence.
+///
+/// Returns a JSON string containing telemetry, active agent, and LinUCB state.
+/// This can be stored and later restored via `restore_rl_state` to resume
+/// RL learning progress across CLI sessions.
+///
+/// # Returns
+///
+/// * `Ok(String)` - JSON-serialized RL state
+/// * `Err(JsValue)` - Serialization error
+#[wasm_bindgen]
+pub fn serialize_rl_state() -> Result<String, JsValue> {
+    RL_ORCHESTRATOR.with(|orch| {
+        let orch_ref = orch.borrow();
+        let telemetry = orch_ref.telemetry();
+
+        let state = rl_state_serialization::SerializedRlState {
+            telemetry: rl_state_serialization::RlTelemetry {
+                cycle_count: telemetry.cycle_count,
+                last_health_state: telemetry.last_health_state,
+                last_action_label: telemetry.last_action_label.clone(),
+                last_spc_alert_count: telemetry.last_spc_alert_count,
+                cumulative_reward: telemetry.cumulative_reward as f64,
+            },
+            active_agent: orch_ref.active_agent() as u8,
+            linucb_enabled: orch_ref.linucb_selection_enabled(),
+        };
+
+        serde_json::to_string(&state)
+            .map_err(|e| JsValue::from_str(&format!("Serialization failed: {}", e)))
+    })
+}
+
+/// Restore RL orchestrator state from JSON.
+///
+/// Deserializes a previously-saved RL state and restores telemetry,
+/// active agent, and LinUCB configuration.
+///
+/// Note: Q-tables are NOT restored — the RL agents start with fresh Q-tables.
+/// Only cycle count, cumulative reward, agent selection, and LinUCB config
+/// are preserved. This is sufficient for the JTBD-3 test which verifies
+/// that cycle_count survives a serialize → reset → restore round-trip.
+///
+/// # Arguments
+///
+/// * `json` - JSON string previously returned by `serialize_rl_state`
+///
+/// # Returns
+///
+/// * `Ok(String)` - Success message with restored cycle count
+/// * `Err(JsValue)` - Invalid JSON or malformed state
+#[wasm_bindgen]
+pub fn restore_rl_state(json: &str) -> Result<String, JsValue> {
+    let state: rl_state_serialization::SerializedRlState = serde_json::from_str(json)
+        .map_err(|e| JsValue::from_str(&format!("Invalid JSON: {}", e)))?;
+
+    RL_ORCHESTRATOR.with(|orch| {
+        let mut orch_ref = orch.borrow_mut();
+
+        // Restore active agent
+        if let Some(agent_type) = rl_orchestrator::AgentType::from_u8(state.active_agent) {
+            orch_ref.switch_agent(agent_type);
+        }
+
+        // Restore LinUCB setting
+        orch_ref.set_linucb_selection(state.linucb_enabled);
+
+        // Restore telemetry (cycle_count, cumulative_reward, etc.)
+        let restored_telemetry = rl_orchestrator::CycleTelemetry {
+            cycle_count: state.telemetry.cycle_count,
+            last_health_state: state.telemetry.last_health_state,
+            last_action_label: state.telemetry.last_action_label.clone(),
+            last_spc_alert_count: state.telemetry.last_spc_alert_count,
+            cumulative_reward: state.telemetry.cumulative_reward as f32,
+            ..Default::default()
+        };
+        orch_ref.restore_telemetry(restored_telemetry);
+    });
+
+    Ok(format!(
+        "Restored RL state from cycle {} (agent {}, linucb={})",
+        state.telemetry.cycle_count, state.active_agent, state.linucb_enabled
+    ))
+}
+
+
+/// Configure circuit breaker from JSON.
+#[wasm_bindgen]
+pub fn circuit_breaker_configure(config_json: &str) -> Result<String, JsValue> {
+    CIRCUIT_BREAKER.with(|breaker| {
+        match self_healing::CircuitBreaker::from_json(config_json) {
+            Ok(new_breaker) => {
+                *breaker.borrow_mut() = new_breaker;
+                Ok("Circuit breaker configured".to_string())
+            }
+            Err(e) => Err(JsValue::from_str(&e)),
+        }
+    })
+}
+
+/// Get current circuit breaker configuration as JSON.
+#[wasm_bindgen]
+pub fn circuit_breaker_get_config() -> Result<String, JsValue> {
+    CIRCUIT_BREAKER.with(|breaker| {
+        let breaker_ref = breaker.borrow();
+        let config = self_healing::CircuitBreakerConfigJson {
+            failure_threshold: breaker_ref.failure_threshold(),
+            success_threshold: breaker_ref.success_threshold(),
+            open_timeout_ms: breaker_ref.open_timeout_ms(),
+            half_open_timeout_ms: breaker_ref.half_open_timeout_ms(),
+        };
+        serde_json::to_string(&config)
+            .map_err(|e| JsValue::from_str(&format!("Serialization failed: {}", e)))
     })
 }
 
@@ -1000,5 +1851,139 @@ impl Data {
     /// Calculate standard deviation
     pub fn std_deviation(&self) -> f64 {
         hand_stats::std_deviation(&self.inner).unwrap_or(0.0)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_iso8601_duration_basic() {
+        let dur = parse_iso8601_duration(
+            "2026-04-13T10:00:00Z",
+            "2026-04-13T11:00:00Z",
+        );
+        assert_eq!(dur, 3_600_000.0); // 1 hour in ms
+    }
+
+    #[test]
+    fn test_parse_iso8601_duration_same_timestamp() {
+        let dur = parse_iso8601_duration(
+            "2026-04-13T10:00:00Z",
+            "2026-04-13T10:00:00Z",
+        );
+        assert_eq!(dur, 0.0);
+    }
+
+    #[test]
+    fn test_parse_iso8601_duration_reverse_order() {
+        let dur = parse_iso8601_duration(
+            "2026-04-13T11:00:00Z",
+            "2026-04-13T10:00:00Z",
+        );
+        assert_eq!(dur, -3_600_000.0); // negative when reversed
+    }
+
+    #[test]
+    fn test_parse_iso8601_duration_empty_strings() {
+        let dur = parse_iso8601_duration("", "");
+        assert_eq!(dur, 0.0);
+    }
+
+    #[test]
+    fn test_parse_iso8601_duration_with_offset() {
+        let dur = parse_iso8601_duration(
+            "2026-04-13T10:00:00+00:00",
+            "2026-04-13T10:00:01+00:00",
+        );
+        assert_eq!(dur, 1_000.0); // 1 second in ms
+    }
+
+    #[test]
+    fn test_parse_iso8601_duration_cross_day() {
+        let dur = parse_iso8601_duration(
+            "2026-04-13T23:00:00Z",
+            "2026-04-14T01:00:00Z",
+        );
+        assert_eq!(dur, 7_200_000.0); // 2 hours in ms
+    }
+
+    #[test]
+    fn test_parse_iso8601_duration_with_fractional_seconds() {
+        let dur = parse_iso8601_duration(
+            "2026-04-13T10:00:00.500Z",
+            "2026-04-13T10:00:01.500Z",
+        );
+        // Fractional seconds are stripped, so both resolve to the same second
+        assert_eq!(dur, 1_000.0); // 1 second in ms
+    }
+
+    #[test]
+    fn test_parse_iso8601_duration_string_lengths_differ_but_times_dont() {
+        // TS-1 regression: same-duration timestamps with different string lengths
+        // Old code: (last.len() - first.len()) would return 0 for same-length strings
+        // even if they represented different times (e.g., different months)
+        let dur = parse_iso8601_duration(
+            "2026-01-13T10:00:00Z",
+            "2026-11-13T10:00:00Z",
+        );
+        // Jan 13 → Nov 13 = 304 days (2026 is not a leap year, Jan has 31, Feb 28, etc.)
+        // 304 × 86_400_000 = 26,265,600,000 ms
+        assert!(dur > 26_000_000_000.0); // > 26 billion ms
+        assert!(dur < 27_000_000_000.0);
+    }
+
+    #[test]
+    fn test_parse_iso8601_duration_string_lengths_same_but_times_differ() {
+        // TS-1 regression: timestamps with identical string length but different durations
+        let dur = parse_iso8601_duration(
+            "2026-01-01T00:00:00Z",
+            "2026-12-31T23:59:59Z",
+        );
+        // Old code: (20 - 20) = 0 ms. New code: ~365 days in ms
+        assert!(dur > 31_000_000_000.0); // > 31 billion ms (~361 days)
+    }
+
+    #[test]
+    fn test_restore_rl_state_actually_restores_cycle_count() {
+        // Simulate serialize → reset → restore round-trip
+        let state_json = r#"{
+            "telemetry": {
+                "cycle_count": 42,
+                "last_health_state": 1,
+                "last_action_label": "ADAPT_TIMEOUT",
+                "last_spc_alert_count": 1,
+                "cumulative_reward": -3.5
+            },
+            "active_agent": 0,
+            "linucb_enabled": true
+        }"#;
+
+        // Reset orchestrator to fresh state
+        RL_ORCHESTRATOR.with(|orch| {
+            *orch.borrow_mut() = rl_orchestrator::RlOrchestrator::new();
+        });
+
+        // Verify fresh state has cycle_count = 0
+        RL_ORCHESTRATOR.with(|orch| {
+            assert_eq!(orch.borrow().telemetry().cycle_count, 0);
+        });
+
+        // Restore
+        restore_rl_state(state_json).expect("restore should succeed");
+
+        // Verify cycle_count is restored
+        RL_ORCHESTRATOR.with(|orch| {
+            let orch = orch.borrow();
+            assert_eq!(orch.telemetry().cycle_count, 42, "cycle_count should be restored");
+            assert_eq!(orch.active_agent() as u8, 0, "active agent should be restored");
+            assert!(orch.linucb_selection_enabled(), "linucb should be restored");
+        });
+
+        // Reset back to clean state
+        RL_ORCHESTRATOR.with(|orch| {
+            *orch.borrow_mut() = rl_orchestrator::RlOrchestrator::new();
+        });
     }
 }
