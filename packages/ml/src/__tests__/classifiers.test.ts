@@ -138,3 +138,83 @@ describe('regressRemainingTime', () => {
     ).rejects.toThrow('Not enough traces');
   });
 });
+
+// ---------------------------------------------------------------------------
+// Edge Cases
+// ---------------------------------------------------------------------------
+
+describe('classifyTraces edge cases', () => {
+  it('handles k > n (more neighbors than samples)', async () => {
+    const features = [
+      { case_id: 'c1', trace_length: 10, elapsed_time: 5000, rework_count: 3, outcome: 'Reject' },
+      { case_id: 'c2', trace_length: 3, elapsed_time: 1000, rework_count: 0, outcome: 'Approve' },
+    ];
+    // k=5 but only 2 samples — should handle gracefully
+    const result = await classifyTraces(features, { method: 'knn', k: 5 });
+    expect(result.predictions).toHaveLength(2);
+    for (const p of result.predictions) {
+      expect(['Approve', 'Reject']).toContain(p.predicted);
+      expect(Number.isFinite(p.confidence)).toBe(true);
+    }
+  });
+
+  it('handles all identical samples (zero variance)', async () => {
+    const features = [
+      { case_id: 'c1', trace_length: 5, elapsed_time: 3000, rework_count: 1, outcome: 'Same' },
+      { case_id: 'c2', trace_length: 5, elapsed_time: 3000, rework_count: 1, outcome: 'Same' },
+      { case_id: 'c3', trace_length: 5, elapsed_time: 3000, rework_count: 1, outcome: 'Same' },
+    ];
+    // All features identical — distance = 0 for all
+    const result = await classifyTraces(features, { method: 'knn', k: 2 });
+    expect(result.predictions).toHaveLength(3);
+    for (const p of result.predictions) {
+      expect(p.predicted).toBe('Same');
+      expect(Number.isFinite(p.confidence)).toBe(true);
+    }
+  });
+
+  it('handles mixed scale features', async () => {
+    const features = [
+      { case_id: 'c1', trace_length: 0.001, elapsed_time: 0.001, rework_count: 0, outcome: 'A' },
+      { case_id: 'c2', trace_length: 100000, elapsed_time: 1000000, rework_count: 100, outcome: 'B' },
+      { case_id: 'c3', trace_length: 50, elapsed_time: 5000, rework_count: 5, outcome: 'A' },
+    ];
+    // Features span many orders of magnitude — should not produce NaN/Inf
+    const result = await classifyTraces(features, { method: 'knn', k: 2 });
+    expect(result.predictions).toHaveLength(3);
+    for (const p of result.predictions) {
+      expect(Number.isFinite(p.confidence)).toBe(true);
+    }
+  });
+
+  it('handles single class in training data with logistic regression', async () => {
+    const features = [
+      { case_id: 'c1', trace_length: 5, elapsed_time: 3000, rework_count: 0, outcome: 'Only' },
+      { case_id: 'c2', trace_length: 3, elapsed_time: 2000, rework_count: 0, outcome: 'Only' },
+      { case_id: 'c3', trace_length: 4, elapsed_time: 2500, rework_count: 0, outcome: 'Only' },
+    ];
+    const result = await classifyTraces(features, { method: 'logistic_regression' });
+    expect(result.predictions).toHaveLength(3);
+    // With a single class, all predictions should be that class
+    for (const p of result.predictions) {
+      expect(p.predicted).toBe('Only');
+      expect(p.confidence).toBeGreaterThan(0);
+    }
+  });
+
+  it('logistic regression confidence is bounded [0, 1]', async () => {
+    const features = [
+      { case_id: 'c1', trace_length: 10, elapsed_time: 5000, rework_count: 3, outcome: 'Reject' },
+      { case_id: 'c2', trace_length: 3, elapsed_time: 1000, rework_count: 0, outcome: 'Approve' },
+      { case_id: 'c3', trace_length: 4, elapsed_time: 1500, rework_count: 0, outcome: 'Approve' },
+      { case_id: 'c4', trace_length: 9, elapsed_time: 4500, rework_count: 2, outcome: 'Reject' },
+      { case_id: 'c5', trace_length: 11, elapsed_time: 6000, rework_count: 4, outcome: 'Reject' },
+      { case_id: 'c6', trace_length: 2, elapsed_time: 800, rework_count: 0, outcome: 'Approve' },
+    ];
+    const result = await classifyTraces(features, { method: 'logistic_regression' });
+    for (const p of result.predictions) {
+      expect(p.confidence).toBeGreaterThanOrEqual(0);
+      expect(p.confidence).toBeLessThanOrEqual(1);
+    }
+  });
+});
