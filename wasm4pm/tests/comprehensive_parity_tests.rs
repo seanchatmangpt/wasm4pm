@@ -11,7 +11,7 @@ use std::fs;
 
 // ── Test Fixtures ───────────────────────────────────────────────────────
 
-const FIXTURES_DIR: &str = "tests/fixtures";
+const FIXTURES_DIR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures");
 
 fn get_fixture_path(name: &str) -> String {
     format!("{FIXTURES_DIR}/{name}")

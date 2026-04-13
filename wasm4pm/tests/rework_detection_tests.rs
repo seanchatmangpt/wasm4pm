@@ -8,12 +8,12 @@
 //! Oracle: Rank 2 (Domain Contract) — rework should degrade health and reward.
 
 use pictl::models::EventLog;
-use pictl::rl_orchestrator::{compute_health_state, RlOrchestrator};
+use pictl::rl_orchestrator::compute_health_state;
 use pictl::RlState;
 use std::collections::HashSet;
 use std::fs;
 
-const FIXTURES_DIR: &str = "tests/fixtures";
+const FIXTURES_DIR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures");
 
 fn load_event_log_json(name: &str) -> EventLog {
     let path = format!("{FIXTURES_DIR}/{name}");
@@ -72,26 +72,24 @@ fn test_real_log_detects_rework_traces() {
 
     let total_traces = log.traces.len();
     let rework_traces = count_rework_traces(&log, "activity");
-    let rework_ratio = compute_rework_ratio(&log, "activity");
 
     // The running-example log has traces with repeated activities
     // (e.g., "examine thoroughly" appearing multiple times in some traces).
-    // We verify the detection runs without error and produces valid output.
+    // Verify detection actually finds rework in at least one trace.
     assert!(
-        rework_traces <= total_traces,
-        "Rework traces ({}) should not exceed total traces ({})",
-        rework_traces,
+        rework_traces > 0,
+        "running-example.json should have at least 1 trace with rework (activity repetition), \
+         but found 0 out of {} traces",
         total_traces,
     );
 
+    // Verify the loop trace also detects correctly (positive control)
+    let rework_ratio = compute_rework_ratio(&log, "activity");
     assert!(
-        rework_ratio >= 0.0 && rework_ratio <= 1.0,
-        "Rework ratio should be in [0, 1], got {}",
+        rework_ratio > 0.0,
+        "Rework ratio should be positive for running-example.json, got {}",
         rework_ratio,
     );
-
-    // Log that the detection found something (or didn't — both are valid)
-    // This test just verifies the computation doesn't panic and produces valid output.
 }
 
 // ---------------------------------------------------------------------------
@@ -233,10 +231,10 @@ fn test_health_failed_for_empty_log() {
 // ---------------------------------------------------------------------------
 
 #[test]
-fn test_real_log_rework_ratio_affects_reward() {
-    // Two identical health transitions, but one has high rework_ratio.
-    // The reward should differ because rework_ratio is part of the state
-    // (encoded in RlState), which changes Q-table lookups.
+fn test_real_log_rework_ratio_produces_distinct_rl_states() {
+    // Rework ratio is encoded into RlState, which determines Q-table lookups.
+    // Different rework_ratio values should produce different quantized states,
+    // which means the RL system treats them as different situations.
 
     let log = load_event_log_json("running-example.json");
     let (event_count, trace_count, unique_activities, rework_ratio) =
@@ -254,47 +252,36 @@ fn test_real_log_rework_ratio_affects_reward() {
          },
          compute_rework_ratio(&log, "activity"));
 
-    let mut orch = RlOrchestrator::new_with_seed(42);
+    let features = [
+        (event_count as f32 / 10_000.0).min(1.0),
+        (trace_count as f32 / 1_000.0).min(1.0),
+        (unique_activities as f32 / 100.0).min(1.0),
+        0.0, 0.0, 1.0, 1.0, 0.0,
+    ];
     let health_level = 0u8;
 
-    // Cycle 1: low rework (0.0)
-    let features_low = [
-        (event_count as f32 / 10_000.0).min(1.0),
-        (trace_count as f32 / 1_000.0).min(1.0),
-        (unique_activities as f32 / 100.0).min(1.0),
-        0.0, 0.0, 1.0, 1.0, 0.0,
-    ];
-    let state_low = RlState::from_features(&features_low, health_level, 0.0);
-    let next_low = RlState::from_features(&features_low, health_level, 0.0);
-    let (_, reward_low) = orch.run_cycle(&features_low, &state_low, &next_low, 0, true, true);
+    // State with zero rework
+    let state_zero = RlState::from_features(&features, health_level, 0.0);
+    // State with real rework ratio from log
+    let state_real = RlState::from_features(&features, health_level, rework_ratio);
 
-    // Cycle 2: high rework (use real rework_ratio from log)
-    let features_high = [
-        (event_count as f32 / 10_000.0).min(1.0),
-        (trace_count as f32 / 1_000.0).min(1.0),
-        (unique_activities as f32 / 100.0).min(1.0),
-        0.0, 0.0, 1.0, 1.0, 0.0,
-    ];
-    let state_high = RlState::from_features(&features_high, health_level, rework_ratio);
-    let next_high = RlState::from_features(&features_high, health_level, rework_ratio);
-    let (_, reward_high) = orch.run_cycle(&features_high, &state_high, &next_high, 0, true, true);
-
-    // Both rewards should be finite and non-NaN
-    assert!(
-        reward_low.is_finite(),
-        "Reward with low rework should be finite, got {}",
-        reward_low,
-    );
-    assert!(
-        reward_high.is_finite(),
-        "Reward with high rework should be finite, got {}",
-        reward_high,
-    );
-
-    // Note: We don't assert reward_low > reward_high because the reward
-    // is computed from health transition + SPC + guard/circuit, not directly
-    // from rework_ratio. Rework_ratio affects the RL STATE (via RlState),
-    // which influences action selection, but the reward is computed from
-    // the health transition. This test verifies the computation doesn't
-    // panic with real rework values.
+    // If rework_ratio > 0, the two states should differ in the rework_ratio_q dimension.
+    // This proves rework detection output actually feeds into the RL state encoding.
+    if rework_ratio > 0.0 {
+        assert_ne!(
+            state_zero.rework_ratio_q, state_real.rework_ratio_q,
+            "RlState.rework_ratio_q should differ when rework_ratio changes \
+             (0.0 vs {} from real log)",
+            rework_ratio,
+        );
+    } else {
+        // If running-example has no rework, verify a non-zero rework value produces
+        // a different quantized state.
+        let state_with_rework = RlState::from_features(&features, health_level, 0.5);
+        assert_ne!(
+            state_zero.rework_ratio_q,
+            state_with_rework.rework_ratio_q,
+            "RlState.rework_ratio_q with 0.0 should differ from 0.5",
+        );
+    }
 }

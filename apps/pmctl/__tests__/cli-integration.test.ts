@@ -7,7 +7,7 @@
  * internal implementation.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   PictlError,
   ConfigError,
@@ -183,33 +183,57 @@ describe('Error message propagation', () => {
 // ---------------------------------------------------------------------------
 
 describe('handleError exit code mapping', () => {
-  // handleError calls process.exit — we test the mapping by verifying
-  // the error class → exit code relationship (tested above) and that
-  // handleError uses the error's exitCode property.
+  let exitSpy: ReturnType<typeof vi.spyOn>;
+  let consoleSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => {}) as any);
+    consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    exitSpy.mockRestore();
+    consoleSpy.mockRestore();
+  });
 
   it('maps ConfigError → exit code 1', () => {
-    const err = new ConfigError('bad config');
-    expect(err.exitCode).toBe(EXIT_CODES.config_error);
+    handleError(new ConfigError('bad config'));
+    expect(exitSpy).toHaveBeenCalledWith(EXIT_CODES.config_error);
   });
 
   it('maps SourceError → exit code 2', () => {
-    const err = new SourceError('file missing');
-    expect(err.exitCode).toBe(EXIT_CODES.source_error);
+    handleError(new SourceError('file missing'));
+    expect(exitSpy).toHaveBeenCalledWith(EXIT_CODES.source_error);
   });
 
   it('maps ExecutionError → exit code 3', () => {
-    const err = new ExecutionError('algorithm timeout');
-    expect(err.exitCode).toBe(EXIT_CODES.execution_error);
+    handleError(new ExecutionError('algorithm timeout'));
+    expect(exitSpy).toHaveBeenCalledWith(EXIT_CODES.execution_error);
   });
 
   it('maps PartialFailureError → exit code 4', () => {
-    const err = new PartialFailureError('partial', ['a'], ['b']);
-    expect(err.exitCode).toBe(EXIT_CODES.partial_failure);
+    handleError(new PartialFailureError('partial', ['a'], ['b']));
+    expect(exitSpy).toHaveBeenCalledWith(EXIT_CODES.partial_failure);
   });
 
   it('maps SystemError → exit code 5', () => {
-    const err = new SystemError('disk full');
-    expect(err.exitCode).toBe(EXIT_CODES.system_error);
+    handleError(new SystemError('disk full'));
+    expect(exitSpy).toHaveBeenCalledWith(EXIT_CODES.system_error);
+  });
+
+  it('maps unknown Error → exit code 5', () => {
+    handleError(new Error('generic error'));
+    expect(exitSpy).toHaveBeenCalledWith(EXIT_CODES.system_error);
+  });
+
+  it('logs error name and message for PictlError', () => {
+    handleError(new ConfigError('bad config'));
+    expect(consoleSpy).toHaveBeenCalledWith('[ConfigError] bad config');
+  });
+
+  it('logs as SystemError for unknown errors', () => {
+    handleError(new Error('generic'));
+    expect(consoleSpy).toHaveBeenCalledWith('[SystemError] generic');
   });
 });
 
