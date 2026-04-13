@@ -46,3 +46,6 @@ export type {
   RemainingTimePrediction,
   OutcomeRiskPrediction,
 } from './predictive-agent.js';
+
+export { AgentOrchestrator } from './agent-orchestrator.js';
+export type { OrchestratorResult, AgentFederationConfig } from './agent-orchestrator.js';
