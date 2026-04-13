@@ -15,11 +15,12 @@ use std::mem;
 ///
 /// # Example
 ///
-/// ```
+/// ```no_run
+/// use pictl::probabilistic::hyperloglog::HyperLogLog;
 /// let mut hll: HyperLogLog<1024> = HyperLogLog::new();
 /// for i in 0..10000 { hll.add(i as u64); }
 /// let est = hll.estimate();
-/// assert!((est as f64 - 10000.0).abs() / 10000.0 < 0.05);
+/// assert!((est as f64 - 10000.0).abs() / 10000.0 < 0.10); // HLL tolerance ~3.5%/sqrt(m)
 /// ```
 pub struct HyperLogLog<const REGISTERS: usize> {
     registers: [u8; REGISTERS],

@@ -12,3 +12,12 @@ export type { CliResult, CliTestEnv, ExitCodeName } from './cli.js';
 
 export { OtelCapture, createOtelCapture } from './otel-capture.js';
 export type { CapturedOtelSpan, CapturedJsonEvent, CapturedCliEvent, OtelCaptureStats } from './otel-capture.js';
+
+export { OcelHarvester } from './ocel-harvester.js';
+export type { OcelObject, OcelEvent, OcelEventLog } from './ocel-harvester.js';
+
+export { AlgorithmDiscovery } from './algorithm-discovery.js';
+export type { AlgorithmResult, DiscoveryResults } from './algorithm-discovery.js';
+
+export { SoundnessVerifier } from './soundness-verifier.js';
+export type { SoundnessResult } from './soundness-verifier.js';

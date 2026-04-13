@@ -5,6 +5,198 @@ use serde_json::json;
 use std::collections::HashMap;
 use wasm_bindgen::prelude::*;
 
+/// Pure-Rust token-based replay: returns ConformanceResult without wasm-bindgen.
+///
+/// This is the testable core of `check_token_based_replay`. Integration tests
+/// on native targets cannot call `#[wasm_bindgen]` functions, so they use
+/// this instead and then store the result in state manually if needed.
+pub fn token_replay_pure(
+    log: &EventLog,
+    petri_net: &PetriNet,
+    activity_key: &str,
+) -> ConformanceResult {
+    let mut result = ConformanceResult {
+        case_fitness: Vec::new(),
+        avg_fitness: 0.0,
+        conforming_cases: 0,
+        total_cases: log.traces.len(),
+    };
+
+    let mut total_fitness = 0.0;
+
+    // Build lookup: activity label -> transition index
+    let mut activity_to_transition: HashMap<String, usize> = HashMap::new();
+    for (idx, trans) in petri_net.transitions.iter().enumerate() {
+        if !trans.is_invisible.unwrap_or(false) {
+            activity_to_transition.insert(trans.label.clone(), idx);
+        }
+    }
+
+    // Build adjacency maps for faster replay
+    let mut transition_inputs: HashMap<String, Vec<(String, usize)>> = HashMap::new();
+    let mut transition_outputs: HashMap<String, Vec<(String, usize)>> = HashMap::new();
+
+    for arc in &petri_net.arcs {
+        let weight = arc.weight.unwrap_or(1);
+        if petri_net.transitions.iter().any(|t| t.id == arc.from) {
+            transition_outputs
+                .entry(arc.from.clone())
+                .or_default()
+                .push((arc.to.clone(), weight));
+        } else {
+            transition_inputs
+                .entry(arc.to.clone())
+                .or_default()
+                .push((arc.from.clone(), weight));
+        }
+    }
+
+    for (case_id, trace) in log.traces.iter().enumerate() {
+        let mut current_marking: HashMap<String, usize> = petri_net.initial_marking.clone();
+
+        let mut deviations: Vec<TokenReplayDeviation> = Vec::new();
+        let mut consumed_tokens = 0usize;
+        let mut produced_tokens = 0usize;
+        let mut missing_tokens = 0usize;
+
+        for (event_idx, event) in trace.events.iter().enumerate() {
+            let activity = event
+                .attributes
+                .get(activity_key)
+                .and_then(|v| v.as_string());
+
+            let activity_label = match activity {
+                Some(a) => a,
+                None => {
+                    deviations.push(TokenReplayDeviation {
+                        event_index: event_idx,
+                        activity: "unknown".to_string(),
+                        deviation_type: "missing_activity".to_string(),
+                    });
+                    continue;
+                }
+            };
+
+            let trans_idx = match activity_to_transition.get(activity_label) {
+                Some(&idx) => idx,
+                None => {
+                    deviations.push(TokenReplayDeviation {
+                        event_index: event_idx,
+                        activity: activity_label.to_string(),
+                        deviation_type: "transition_not_found".to_string(),
+                    });
+                    missing_tokens += 1;
+                    continue;
+                }
+            };
+
+            let transition = &petri_net.transitions[trans_idx];
+
+            let inputs = transition_inputs.get(&transition.id);
+            let mut enabled = true;
+
+            if let Some(input_places) = inputs {
+                for (place_id, weight) in input_places {
+                    let available = current_marking.get(place_id).copied().unwrap_or(0);
+                    if available < *weight {
+                        enabled = false;
+                        missing_tokens += weight.saturating_sub(available);
+                    }
+                }
+            }
+
+            if !enabled {
+                deviations.push(TokenReplayDeviation {
+                    event_index: event_idx,
+                    activity: activity_label.to_string(),
+                    deviation_type: "missing_tokens".to_string(),
+                });
+            }
+
+            if let Some(input_places) = inputs {
+                for (place_id, weight) in input_places {
+                    let available = current_marking.get(place_id).copied().unwrap_or(0);
+                    let consumed = available.min(*weight);
+                    if consumed > 0 {
+                        *current_marking.entry(place_id.clone()).or_insert(0) -= consumed;
+                        consumed_tokens += consumed;
+                    }
+                }
+            }
+
+            if let Some(output_places) = transition_outputs.get(&transition.id) {
+                for (place_id, weight) in output_places {
+                    *current_marking.entry(place_id.clone()).or_insert(0) += weight;
+                    produced_tokens += weight;
+                }
+            }
+        }
+
+        let mut tokens_remaining = 0usize;
+        let mut is_final_marking_reached = false;
+
+        for tokens in current_marking.values() {
+            if *tokens > 0 {
+                tokens_remaining += *tokens;
+            }
+        }
+
+        for final_marking in &petri_net.final_markings {
+            let mut matches = true;
+            for (place, expected_tokens) in final_marking {
+                let actual = current_marking.get(place).copied().unwrap_or(0);
+                if actual != *expected_tokens {
+                    matches = false;
+                    break;
+                }
+            }
+            for (place, actual) in &current_marking {
+                if !final_marking.contains_key(place) && *actual > 0 {
+                    matches = false;
+                    break;
+                }
+            }
+            if matches {
+                is_final_marking_reached = true;
+                break;
+            }
+        }
+
+        let total_tokens = consumed_tokens + produced_tokens + missing_tokens;
+        let trace_fitness = if total_tokens > 0 {
+            (consumed_tokens + produced_tokens) as f64 / total_tokens as f64
+        } else if trace.events.is_empty() {
+            1.0
+        } else {
+            0.0
+        };
+
+        let is_conforming = is_final_marking_reached && deviations.is_empty();
+        if is_conforming {
+            result.conforming_cases += 1;
+        }
+
+        total_fitness += trace_fitness;
+
+        result.case_fitness.push(TokenReplayResult {
+            case_id: case_id.to_string(),
+            is_conforming,
+            trace_fitness,
+            tokens_missing: missing_tokens,
+            tokens_remaining,
+            deviations,
+        });
+    }
+
+    result.avg_fitness = if result.total_cases > 0 {
+        total_fitness / result.total_cases as f64
+    } else {
+        0.0
+    };
+
+    result
+}
+
 /// Check conformance using token-based replay.
 ///
 /// Performs actual token replay on the Petri net:

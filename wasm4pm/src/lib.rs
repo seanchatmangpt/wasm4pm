@@ -83,6 +83,29 @@ pub mod models;
 pub mod state;
 pub mod types;
 
+// Auto-generated registries from pictl ontology (A = μ(O))
+// DO NOT EDIT — regenerate via: ostar manufacture pictl
+#[allow(dead_code)]
+pub mod algorithm_registry;
+#[allow(dead_code)]
+pub mod wasm_export_registry;
+#[allow(dead_code)]
+pub mod tps_metrics_registry;
+#[allow(dead_code)]
+pub mod feature_flag_registry;
+#[allow(dead_code)]
+pub mod proof_gate_registry;
+#[allow(dead_code)]
+pub mod operator_registry;
+#[allow(dead_code)]
+pub mod deployment_profile_constants;
+#[allow(dead_code)]
+pub mod module_category_constants;
+#[allow(dead_code)]
+pub mod capability_registry_generated;
+#[allow(dead_code)]
+pub mod benchmark_registry;
+
 // Hand-rolled statistics (when hand_rolled_stats feature is enabled)
 pub mod algorithms;
 pub mod analysis;

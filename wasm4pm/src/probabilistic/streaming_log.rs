@@ -42,6 +42,7 @@ fn fnv1a_hash(data: &[u8]) -> u64 {
 /// # Example
 ///
 /// ```
+/// use pictl::probabilistic::streaming_log::StreamingLog;
 /// let mut slog = StreamingLog::new();
 /// slog.add_trace(&["A", "B", "C"]);
 /// slog.add_trace(&["A", "B", "D"]);

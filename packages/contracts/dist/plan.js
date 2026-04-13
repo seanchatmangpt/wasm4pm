@@ -8,14 +8,16 @@
  */
 /**
  * Sort nodes by id for deterministic serialization
+ * @internal
  */
-export function sortNodes(nodes) {
+function sortNodes(nodes) {
     return [...nodes].sort((a, b) => a.id.localeCompare(b.id));
 }
 /**
  * Sort edges by (from, to) for deterministic serialization
+ * @internal
  */
-export function sortEdges(edges) {
+function sortEdges(edges) {
     return [...edges].sort((a, b) => {
         const fromCmp = a.from.localeCompare(b.from);
         return fromCmp !== 0 ? fromCmp : a.to.localeCompare(b.to);
@@ -24,8 +26,9 @@ export function sortEdges(edges) {
 /**
  * Normalize a plan for deterministic hashing:
  * sorts nodes by id, edges by (from, to), and config keys recursively
+ * @internal
  */
-export function normalizePlan(plan) {
+function normalizePlan(plan) {
     return {
         ...plan,
         nodes: sortNodes(plan.nodes).map((node) => ({
@@ -54,8 +57,9 @@ function sortObjectKeys(obj) {
 }
 /**
  * Validate that a plan forms a valid DAG (no cycles, all edge refs valid)
+ * @internal
  */
-export function validatePlanDAG(plan) {
+function validatePlanDAG(plan) {
     const errors = [];
     const nodeIds = new Set(plan.nodes.map((n) => n.id));
     // Check for duplicate node ids
@@ -118,8 +122,9 @@ export function validatePlanDAG(plan) {
 }
 /**
  * Type guard for Plan objects
+ * @internal
  */
-export function isPlan(value) {
+function isPlan(value) {
     if (!value || typeof value !== 'object')
         return false;
     const p = value;

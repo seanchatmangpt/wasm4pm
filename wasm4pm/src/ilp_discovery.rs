@@ -8,6 +8,174 @@ use wasm_bindgen::prelude::*;
 
 type DirectlyFollowsSet = HashSet<(String, String)>;
 
+/// Compute simplicity score for a Petri net based on structural complexity.
+///
+/// Based on process mining literature (García & Caballero, Buijs et al.):
+/// compares actual model elements against the theoretical minimum for a linear
+/// workflow — the simplest possible Petri net structure.
+///
+/// The theoretical minimum for N visible activities:
+/// - N+1 places (source, one per gap, sink)
+/// - N transitions (one per activity)
+/// - 2N arcs (one in, one out per transition)
+///
+/// Returns the geometric mean of the three element ratios, clamped to [0.0, 1.0].
+/// A value of 1.0 means the model is as simple as a linear sequence.
+pub fn compute_simplicity(places: usize, transitions: usize, arcs: usize) -> f64 {
+    if places == 0 || transitions == 0 || arcs == 0 {
+        return 1.0; // Empty model is trivially simple
+    }
+
+    let n = transitions.saturating_sub(1).max(1); // visible activities
+    let min_places = n + 1;
+    let min_transitions = n;
+    let min_arcs = 2 * n;
+
+    let place_ratio = (min_places as f64 / places as f64).min(1.0);
+    let transition_ratio = (min_transitions as f64 / transitions as f64).min(1.0);
+    let arc_ratio = (min_arcs as f64 / arcs as f64).min(1.0);
+
+    // Geometric mean of the three ratios
+    (place_ratio * transition_ratio * arc_ratio).cbrt()
+}
+
+#[wasm_bindgen]
+pub fn wasm_compute_simplicity(places: usize, transitions: usize, arcs: usize) -> f64 {
+    compute_simplicity(places, transitions, arcs)
+}
+
+/// Pure-Rust ILP discovery: returns (PetriNet, fitness, precision) without wasm-bindgen.
+///
+/// This is the testable core of `discover_ilp_petri_net`. Integration tests
+/// on native targets cannot call `#[wasm_bindgen]` functions, so they use
+/// this instead and then store the PetriNet in state manually.
+pub fn discover_ilp_petri_net_from_log(
+    log: &EventLog,
+    activity_key: &str,
+) -> (PetriNet, f64, f64) {
+    let activities = log.get_activities(activity_key);
+    let directly_follows_vec = log.get_directly_follows(activity_key);
+
+    let mut directly_follows: DirectlyFollowsSet = HashSet::new();
+    for (from, to, _freq) in &directly_follows_vec {
+        directly_follows.insert((from.clone(), to.clone()));
+    }
+
+    let mut petri_net = PetriNet::new();
+
+    let mut activity_to_transition: FxHashMap<String, String> = FxHashMap::default();
+    for (idx, activity) in activities.iter().enumerate() {
+        let trans_id = format!("t{}", idx);
+        activity_to_transition.insert(activity.clone(), trans_id.clone());
+        petri_net.transitions.push(PetriNetTransition {
+            id: trans_id,
+            label: activity.clone(),
+            is_invisible: Some(false),
+        });
+    }
+
+    let source_place = "p_source".to_string();
+    let sink_place = "p_sink".to_string();
+
+    petri_net.places.push(PetriNetPlace {
+        id: source_place.clone(),
+        label: "source".to_string(),
+        marking: Some(1),
+    });
+    petri_net.places.push(PetriNetPlace {
+        id: sink_place.clone(),
+        label: "sink".to_string(),
+        marking: Some(0),
+    });
+    petri_net.initial_marking.insert(source_place.clone(), 1);
+
+    for (place_counter, (from_act, to_act)) in directly_follows.iter().enumerate() {
+        let from_trans = match activity_to_transition.get(from_act) {
+            Some(t) => t.clone(),
+            None => continue,
+        };
+        let to_trans = match activity_to_transition.get(to_act) {
+            Some(t) => t.clone(),
+            None => continue,
+        };
+
+        let place_id = format!("p{}", place_counter);
+        petri_net.places.push(PetriNetPlace {
+            id: place_id.clone(),
+            label: format!("{}->{}", from_act, to_act),
+            marking: Some(0),
+        });
+        petri_net.arcs.push(PetriNetArc {
+            from: from_trans.clone(),
+            to: place_id.clone(),
+            weight: Some(1),
+        });
+        petri_net.arcs.push(PetriNetArc {
+            from: place_id,
+            to: to_trans.clone(),
+            weight: Some(1),
+        });
+    }
+
+    let mut start_activities = HashSet::new();
+    for trace in &log.traces {
+        if !trace.events.is_empty() {
+            if let Some(AttributeValue::String(first_act)) =
+                trace.events[0].attributes.get(activity_key)
+            {
+                start_activities.insert(first_act.clone());
+            }
+        }
+    }
+    for start_activity in start_activities {
+        if let Some(start_trans) = activity_to_transition.get(&start_activity) {
+            petri_net.arcs.push(PetriNetArc {
+                from: source_place.clone(),
+                to: start_trans.clone(),
+                weight: Some(1),
+            });
+        }
+    }
+
+    let mut end_activities = HashSet::new();
+    for trace in &log.traces {
+        if !trace.events.is_empty() {
+            if let Some(AttributeValue::String(last_act)) = trace.events
+                [trace.events.len() - 1]
+                .attributes
+                .get(activity_key)
+            {
+                end_activities.insert(last_act.clone());
+            }
+        }
+    }
+    for end_activity in end_activities {
+        if let Some(end_trans) = activity_to_transition.get(&end_activity) {
+            petri_net.arcs.push(PetriNetArc {
+                from: end_trans.clone(),
+                to: sink_place.clone(),
+                weight: Some(1),
+            });
+        }
+    }
+
+    let mut final_marking = std::collections::HashMap::new();
+    final_marking.insert(sink_place, 1);
+    petri_net.final_markings.push(final_marking);
+
+    let mut fitting_traces = 0;
+    for trace in &log.traces {
+        if is_trace_fitting(trace, activity_key, &directly_follows) {
+            fitting_traces += 1;
+        }
+    }
+
+    let fitness = fitting_traces as f64 / log.traces.len().max(1) as f64;
+    let precision = calculate_precision(&petri_net, log, activity_key);
+
+    (petri_net, fitness, precision)
+}
+
 /// Integer Linear Programming-based process discovery
 /// Finds optimal Petri net that fits the log while minimizing complexity
 #[wasm_bindgen]
@@ -160,7 +328,7 @@ pub fn discover_ilp_petri_net(
             None => Err(JsValue::from_str("EventLog not found")),
         })?;
     // Lock released here — safe to store.
-    let simplicity = 1.0 / (1.0 + petri_net.arcs.len() as f64 / 10.0);
+    let simplicity = compute_simplicity(petri_net.places.len(), petri_net.transitions.len(), petri_net.arcs.len());
     let handle = get_or_init_state()
         .store_object(StoredObject::PetriNet(petri_net.clone()))
         .map_err(|_e| JsValue::from_str("Failed to store Petri net"))?;

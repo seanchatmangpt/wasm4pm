@@ -61,27 +61,6 @@ export interface Plan {
     };
 }
 /**
- * Sort nodes by id for deterministic serialization
- */
-export declare function sortNodes(nodes: PlanNode[]): PlanNode[];
-/**
- * Sort edges by (from, to) for deterministic serialization
- */
-export declare function sortEdges(edges: PlanEdge[]): PlanEdge[];
-/**
- * Normalize a plan for deterministic hashing:
- * sorts nodes by id, edges by (from, to), and config keys recursively
- */
-export declare function normalizePlan(plan: Plan): Plan;
-/**
- * Validate that a plan forms a valid DAG (no cycles, all edge refs valid)
- */
-export declare function validatePlanDAG(plan: Plan): string[];
-/**
- * Type guard for Plan objects
- */
-export declare function isPlan(value: unknown): value is Plan;
-/**
  * JSON Schema for Plan (for external validation)
  */
 export declare const PLAN_JSON_SCHEMA: {
