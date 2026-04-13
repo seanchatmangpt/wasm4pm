@@ -22,6 +22,12 @@ describe('classifyTraces', () => {
       expect(p.caseId).toBeTruthy();
     }
     expect(result.modelInfo.traceCount).toBe(6);
+    // Accuracy: well-separated dataset should achieve >= 80%
+    const correct = result.predictions.filter(p => {
+      const label = features.find(f => f.case_id === p.caseId)?.outcome;
+      return p.predicted === label;
+    }).length;
+    expect(correct / features.length).toBeGreaterThanOrEqual(0.8);
   });
 
   it('classifies with logistic_regression method', async () => {
@@ -62,6 +68,12 @@ describe('classifyTraces', () => {
     expect(result.modelInfo.depth).toBeGreaterThan(0);
     expect(result.modelInfo.nNodes).toBeGreaterThan(0);
     expect(result.modelInfo.traceCount).toBe(6);
+    // Accuracy: decision tree on well-separated data should be 100%
+    const correct = result.predictions.filter(p => {
+      const label = features.find(f => f.case_id === p.caseId)?.outcome;
+      return p.predicted === label;
+    }).length;
+    expect(correct).toBe(features.length);
   });
 
   it('classifies with naive_bayes method', async () => {

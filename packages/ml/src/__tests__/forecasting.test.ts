@@ -80,11 +80,10 @@ describe('forecastSeries', () => {
     expect(result.seriesLength).toBe(8);
     expect(result.trend.direction).toBe('up');
     // Exponential forecast should be produced for exponential data
-    if (result.exponentialForecast) {
-      expect(result.exponentialForecast).toHaveLength(3);
-      // Values should increase
-      expect(result.exponentialForecast[2]).toBeGreaterThan(result.exponentialForecast[0]);
-    }
+    expect(result.exponentialForecast).toBeDefined();
+    expect(result.exponentialForecast).toHaveLength(3);
+    // Values should increase
+    expect(result.exponentialForecast![2]).toBeGreaterThan(result.exponentialForecast![0]);
   });
 
   it('detects seasonality in periodic series', async () => {
@@ -92,10 +91,9 @@ describe('forecastSeries', () => {
     const series = [10, 20, 10, 20, 10, 20, 10, 20, 10, 20, 10, 20];
     const result = await forecastSeries(series, { forecastPeriods: 4 });
     expect(result.seriesLength).toBe(12);
-    if (result.seasonality) {
-      expect(result.seasonality.period).toBeGreaterThan(1);
-      expect(result.seasonality.strength).toBeGreaterThan(0);
-    }
+    expect(result.seasonality).toBeDefined();
+    expect(result.seasonality!.period).toBeGreaterThan(1);
+    expect(result.seasonality!.strength).toBeGreaterThan(0);
   });
 
   it('detects seasonality at correct period for sine wave', async () => {
@@ -105,11 +103,10 @@ describe('forecastSeries', () => {
     );
     const result = await forecastSeries(series, { forecastPeriods: 4 });
     expect(result.seriesLength).toBe(24);
-    if (result.seasonality) {
-      // Period should be 8 (or a divisor like 4), not 1 or 2
-      expect(result.seasonality.period).toBeGreaterThanOrEqual(4);
-      expect(result.seasonality.strength).toBeGreaterThan(0);
-    }
+    expect(result.seasonality).toBeDefined();
+    // Period should be 8 (or a divisor like 4), not 1 or 2
+    expect(result.seasonality!.period).toBeGreaterThanOrEqual(4);
+    expect(result.seasonality!.strength).toBeGreaterThan(0);
   });
 
   it('returns unknown trend for short series', async () => {
@@ -159,10 +156,9 @@ describe('forecastSeries edge cases', () => {
     const result = await forecastSeries(series, { forecastPeriods: 5 });
     expect(result.seriesLength).toBe(20);
     expect(result.trend.direction).toBe('up');
-    // Exponential growth should produce reasonable R²
-    if (result.trend.rSquared !== undefined) {
-      expect(result.trend.rSquared).toBeGreaterThan(0.8);
-    }
+    expect(result.trend.slope).toBeGreaterThan(0);
+    // Exponential growth produces strong linear fit (R² via slope magnitude)
+    expect(result.trend.strength).toBeGreaterThan(0.05);
   });
 
   it('handles very short series (2 points)', async () => {

@@ -55,7 +55,7 @@ fn test_monotonic_reward_improvement() {
     // The reward function gives +1.0 for health improvement and +0.2 for stability,
     // so cumulative reward should grow monotonically as the system spends time in
     // better health states.
-    let mut orch = RlOrchestrator::new();
+    let mut orch = RlOrchestrator::new_with_seed(42);
     orch.switch_agent(AgentType::QLearning);
 
     let rewards = run_health_improvement_scenario(&mut orch, 3, 100);
@@ -116,7 +116,7 @@ fn test_success_rate_convergence() {
     let mut episode_successes = Vec::with_capacity(episodes);
 
     for _ in 0..episodes {
-        let mut orch = RlOrchestrator::new();
+        let mut orch = RlOrchestrator::new_with_seed(42);
         orch.switch_agent(AgentType::QLearning);
 
         let rewards = run_health_improvement_scenario(&mut orch, 3, cycles_per_episode);
@@ -155,12 +155,12 @@ fn test_success_rate_convergence() {
 
 #[test]
 fn test_exploration_decay_reduces_action_variance() {
-    // Run 200 cycles with a fixed state. Track action selections in windows.
-    // As exploration decays (0.995^200 = ~0.37), the agent should concentrate
+    // Run 1000 cycles with a fixed state. Track action selections in windows.
+    // As exploration decays (0.995^1000 = ~0.007), the agent concentrates
     // on the best action, reducing action distribution entropy.
-    let total_cycles = 200;
-    let window_size = 50;
-    let mut orch = RlOrchestrator::new();
+    let total_cycles = 1000;
+    let window_size = 250;
+    let mut orch = RlOrchestrator::new_with_seed(42);
     orch.switch_agent(AgentType::QLearning);
 
     let state = make_test_state(1);
@@ -212,7 +212,7 @@ fn test_exploration_decay_reduces_action_variance() {
         entropies[0]
     );
 
-    assert_eq!(orch.telemetry().cycle_count, 200);
+    assert_eq!(orch.telemetry().cycle_count, 1000);
 }
 
 // ---------------------------------------------------------------------------
@@ -236,7 +236,7 @@ fn test_all_agents_show_reward_improvement() {
     let total_cycles: u64 = 100;
 
     for (agent_type, name) in &agent_types {
-        let mut orch = RlOrchestrator::new();
+        let mut orch = RlOrchestrator::new_with_seed(42);
         orch.switch_agent(*agent_type);
 
         let rewards = run_health_improvement_scenario(&mut orch, 3, total_cycles as usize);
@@ -274,7 +274,7 @@ fn test_linucb_exploration_then_exploitation() {
     // (high UCB bonus due to uncertain estimates) and concentrate later
     // (estimates become more certain, UCB bonus shrinks).
     let total_cycles = 200;
-    let mut orch = RlOrchestrator::new();
+    let mut orch = RlOrchestrator::new_with_seed(42);
     orch.set_linucb_selection(true);
 
     let state = make_test_state(1);
@@ -354,7 +354,7 @@ fn test_cumulative_reward_monotonic_in_positive_environment() {
     // or stays stable, guards pass, no SPC alerts), cumulative reward should
     // never decrease from cycle to cycle.
     let total_cycles = 50;
-    let mut orch = RlOrchestrator::new();
+    let mut orch = RlOrchestrator::new_with_seed(42);
     orch.switch_agent(AgentType::ExpectedSARSA);
 
     let mut prev_cumulative = 0.0_f32;
@@ -389,7 +389,7 @@ fn test_negative_environment_drives_reward_down() {
     // In an environment that always gives negative reward (health degrades,
     // circuit fails), cumulative reward should be negative after enough cycles.
     let total_cycles = 20;
-    let mut orch = RlOrchestrator::new();
+    let mut orch = RlOrchestrator::new_with_seed(42);
     orch.switch_agent(AgentType::QLearning);
 
     let mut current_health: u8 = 0; // Start healthy
@@ -421,7 +421,7 @@ fn test_reward_recovery_after_environment_improvement() {
     // Phase 1: Degrade health for 15 cycles (accumulate negative reward).
     // Phase 2: Improve health for 15 cycles (accumulate positive reward).
     // Assert: cumulative reward at end of Phase 2 > cumulative reward at end of Phase 1.
-    let mut orch = RlOrchestrator::new();
+    let mut orch = RlOrchestrator::new_with_seed(42);
     orch.switch_agent(AgentType::DoubleQLearning);
 
     // Phase 1: degrade

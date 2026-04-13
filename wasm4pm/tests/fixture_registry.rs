@@ -11,7 +11,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::sync::Mutex;
 
-const FIXTURES_DIR: &str = "tests/fixtures";
+const FIXTURES_DIR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures");
 
 /// Represents a fixture that can be loaded on demand
 #[derive(Clone, Debug)]
