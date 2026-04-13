@@ -76,6 +76,7 @@ impl Default for CycleTelemetry {
             cumulative_reward: 0.0,
             last_reward: 0.0,
             active_agent_name: "QLearning".to_string(),
+            consecutive_successes: 0,
         }
     }
 }
@@ -389,6 +390,13 @@ impl RlOrchestrator {
         self.telemetry.last_circuit_allowed = circuit_allowed;
         self.telemetry.cumulative_reward += reward;
         self.telemetry.last_reward = reward;
+
+        // Track consecutive successes for health improvement eligibility
+        if guard_pass && circuit_allowed {
+            self.telemetry.consecutive_successes += 1;
+        } else {
+            self.telemetry.consecutive_successes = 0; // Reset on failure
+        }
 
         (action_label, reward)
     }
