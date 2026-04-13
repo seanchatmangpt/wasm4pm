@@ -8,14 +8,14 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-interface GateResult {
+export interface GateResult {
   gate: string;
   passed: boolean;
   details: string;
   duration_ms: number;
 }
 
-interface CertificationReport {
+export interface CertificationReport {
   timestamp: string;
   version: string;
   gates: GateResult[];
@@ -23,7 +23,7 @@ interface CertificationReport {
   summary: string;
 }
 
-type GateFunction = () => Promise<GateResult> | GateResult;
+export type GateFunction = () => Promise<GateResult> | GateResult;
 
 const registeredGates: Map<string, GateFunction> = new Map();
 
@@ -31,7 +31,7 @@ const registeredGates: Map<string, GateFunction> = new Map();
  * Register a certification gate.
  * @internal
  */
-function registerGate(name: string, fn: GateFunction): void {
+export function registerGate(name: string, fn: GateFunction): void {
   registeredGates.set(name, fn);
 }
 
@@ -74,7 +74,7 @@ export async function runCertification(version: string): Promise<CertificationRe
  * Clear all registered gates (for testing the certification system itself).
  * @internal
  */
-function clearGates(): void {
+export function clearGates(): void {
   registeredGates.clear();
 }
 
@@ -82,7 +82,7 @@ function clearGates(): void {
  * Get list of registered gate names.
  * @internal
  */
-function getRegisteredGates(): string[] {
+export function getRegisteredGates(): string[] {
   return [...registeredGates.keys()];
 }
 
@@ -212,7 +212,7 @@ registerGate('performance:benchmarks', async () => {
  * Create a gate that checks a condition.
  * @internal
  */
-function createGate(name: string, check: () => Promise<boolean> | boolean, details?: string): void {
+export function createGate(name: string, check: () => Promise<boolean> | boolean, details?: string): void {
   registerGate(name, async () => {
     const passed = await check();
     return {
@@ -228,7 +228,7 @@ function createGate(name: string, check: () => Promise<boolean> | boolean, detai
  * Print certification report to console.
  * @internal
  */
-function formatReport(report: CertificationReport): string {
+export function formatReport(report: CertificationReport): string {
   const lines: string[] = [
     `Certification Report -- v${report.version}`,
     `Timestamp: ${report.timestamp}`,

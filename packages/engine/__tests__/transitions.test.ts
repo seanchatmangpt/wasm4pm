@@ -66,9 +66,10 @@ describe('Transition Map', () => {
     expect(VALID_TRANSITIONS['degraded'].has('ready')).toBe(true);
   });
 
-  it('should allow re-init from failed via bootstrapping', () => {
+  it('should allow re-init from failed via bootstrapping or fast recovery to ready', () => {
     expect(VALID_TRANSITIONS['failed'].has('bootstrapping')).toBe(true);
-    expect(VALID_TRANSITIONS['failed'].size).toBe(1);
+    expect(VALID_TRANSITIONS['failed'].has('ready')).toBe(true);
+    expect(VALID_TRANSITIONS['failed'].size).toBe(2);
   });
 });
 
@@ -87,7 +88,7 @@ describe('canTransition', () => {
     expect(canTransition('uninitialized', 'running')).toBe(false);
     expect(canTransition('ready', 'running')).toBe(true);  // direct execution is allowed
     expect(canTransition('watching', 'planning')).toBe(false);
-    expect(canTransition('failed', 'ready')).toBe(false);
+    expect(canTransition('failed', 'ready')).toBe(true);
   });
 });
 
