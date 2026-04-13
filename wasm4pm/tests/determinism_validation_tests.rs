@@ -517,6 +517,6 @@ fn test_run_cycle_output_reproducible() {
     // Part C: Verify compute_health_state reproducibility
     assert_eq!(compute_health_state(100, 10, 5), 0);
     assert_eq!(compute_health_state(0, 0, 0), 4);
-    assert_eq!(compute_health_state(50, 0, 5), 2);
-    assert_eq!(compute_health_state(50, 0, 1), 2);
+    assert_eq!(compute_health_state(50, 0, 5), 3); // trace_count=0 → Critical
+    assert_eq!(compute_health_state(50, 0, 1), 3); // trace_count=0 → Critical
 }
