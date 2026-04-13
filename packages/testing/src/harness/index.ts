@@ -24,28 +24,3 @@ export type { ConformanceResult, ConformanceViolation, DiscoveredModel } from '.
 
 export { SoundnessVerifier } from './soundness-verifier.js';
 export type { SoundnessResult } from './soundness-verifier.js';
-
-export { PerformanceAnalyzer } from './performance-analyzer.js';
-export type { PerformanceResult, ActivityMetrics, BottleneckAnalysis } from './performance-analyzer.js';
-
-export { CostProfiler } from './cost-profiler.js';
-export type { ResourceBudget, CostAnalysis, TierRecommendation } from './cost-profiler.js';
-
-export { DriftMonitor } from './drift-monitor.js';
-export type { DriftResult } from './drift-monitor.js';
-
-export { FederationVoting } from './federation-voting.js';
-export type { ConformanceVote, ConsensusResult } from './federation-voting.js';
-
-export { PrescriptiveAgent } from './prescriptive-agent.js';
-export type { OptimizationAction, ProcessOptimizationPlan } from './prescriptive-agent.js';
-
-export { PredictiveAgent } from './predictive-agent.js';
-export type {
-  NextActivityPrediction,
-  RemainingTimePrediction,
-  OutcomeRiskPrediction,
-} from './predictive-agent.js';
-
-export { AgentOrchestrator } from './agent-orchestrator.js';
-export type { OrchestratorResult, AgentFederationConfig } from './agent-orchestrator.js';

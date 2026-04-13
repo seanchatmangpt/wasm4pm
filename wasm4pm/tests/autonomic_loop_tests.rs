@@ -7,6 +7,12 @@ use pictl::reinforcement::Agent;
 use pictl::rl_orchestrator::{compute_reward, AgentType};
 use pictl::{RlAction, RlState};
 
+/// Helper to create test RlState with reasonable defaults
+fn make_test_state(health_level: u8) -> RlState {
+    let features = [0.5, 0.3, 0.2, 0.0, 0.0, 0.0, 0.5, 0.0]; // dummy feature vector
+    RlState::from_features(&features, health_level, 0.0) // rework_ratio = 0.0
+}
+
 // ---------------------------------------------------------------------------
 // Persistent state tests
 // ---------------------------------------------------------------------------
@@ -22,18 +28,19 @@ fn test_orchestrator_default() {
 fn test_orchestrator_persists_across_cycles() {
     let mut orch = pictl::rl_orchestrator::RlOrchestrator::new();
     let features = [0.1, 0.2, 0.3, 0.5, 0.0, 1.0, 1.0, 0.0];
-    let state = RlState(1);
+    let state = make_test_state(1);
+    let next_state = make_test_state(1);
 
     // Cycle 1
-    orch.run_cycle(&features, &state, 0, true, true);
+    orch.run_cycle(&features, &state, &next_state, 0, true, true);
     assert_eq!(orch.telemetry().cycle_count, 1);
 
     // Cycle 2
-    orch.run_cycle(&features, &state, 0, true, true);
+    orch.run_cycle(&features, &state, &next_state, 0, true, true);
     assert_eq!(orch.telemetry().cycle_count, 2);
 
     // Cycle 3
-    orch.run_cycle(&features, &state, 2, false, true);
+    orch.run_cycle(&features, &state, &next_state, 2, false, true);
     assert_eq!(orch.telemetry().cycle_count, 3);
     assert_eq!(orch.telemetry().last_spc_alert_count, 2);
 }
@@ -72,7 +79,8 @@ fn test_reward_terminal_is_worst() {
 #[test]
 fn test_all_five_agents_work_in_loop() {
     let features = [0.1, 0.2, 0.3, 0.25, 0.0, 1.0, 1.0, 0.0];
-    let state = RlState(1);
+    let state = make_test_state(1);
+    let next_state = make_test_state(1);
 
     for agent_type in &[
         AgentType::QLearning,
@@ -85,7 +93,7 @@ fn test_all_five_agents_work_in_loop() {
         orch.switch_agent(*agent_type);
         for i in 0..10 {
             let spc_alerts = if i % 3 == 0 { 2 } else { 0 };
-            let (action, reward) = orch.run_cycle(&features, &state, spc_alerts, true, true);
+            let (action, reward) = orch.run_cycle(&features, &state, &next_state, spc_alerts, true, true);
             assert!(
                 !action.is_empty(),
                 "Agent {:?} should produce an action",
@@ -106,11 +114,12 @@ fn test_linucb_agent_selection_changes_agent() {
     let mut orch = pictl::rl_orchestrator::RlOrchestrator::new();
     orch.set_linucb_selection(true);
     let features = [0.5, 0.5, 0.5, 0.5, 0.0, 1.0, 1.0, 0.0];
-    let state = RlState(1);
+    let state = make_test_state(1);
+    let next_state = make_test_state(1);
 
     let mut seen_agents = std::collections::HashSet::new();
     for _ in 0..50 {
-        orch.run_cycle(&features, &state, 0, true, true);
+        orch.run_cycle(&features, &state, &next_state, 0, true, true);
         seen_agents.insert(orch.active_agent() as u8);
     }
 
@@ -126,8 +135,8 @@ fn test_linucb_agent_selection_changes_agent() {
 #[test]
 fn test_agent_trait_polymorphism() {
     // Verify all agents can be used through the Agent trait
-    let state = RlState(1);
-    let next = RlState(2);
+    let state = make_test_state(1);
+    let next = make_test_state(2);
 
     let q = pictl::reinforcement::QLearning::<RlState, RlAction>::new();
     let _ = Agent::select_action(&q, &state);

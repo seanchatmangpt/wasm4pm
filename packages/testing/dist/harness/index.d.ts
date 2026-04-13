@@ -10,6 +10,8 @@ export { OcelHarvester } from './ocel-harvester.js';
 export type { OcelObject, OcelEvent, OcelEventLog } from './ocel-harvester.js';
 export { AlgorithmDiscovery } from './algorithm-discovery.js';
 export type { AlgorithmResult, DiscoveryResults } from './algorithm-discovery.js';
+export { ConformanceChecker } from './conformance-checker.js';
+export type { ConformanceResult, ConformanceViolation, DiscoveredModel } from './conformance-checker.js';
 export { SoundnessVerifier } from './soundness-verifier.js';
 export type { SoundnessResult } from './soundness-verifier.js';
 //# sourceMappingURL=index.d.ts.map

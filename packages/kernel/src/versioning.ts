@@ -2,7 +2,13 @@
  * versioning.ts
  * Semantic versioning checks for kernel ↔ wasm4pm compatibility
  * Ensures runtime version matches expected contract version
+ *
+ * Version is read from package.json at runtime — never hardcoded here.
  */
+
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 
 /** Parsed semantic version */
 export interface SemVer {
@@ -20,12 +26,25 @@ export interface CompatibilityResult {
   reason?: string;
 }
 
-/** The kernel's own version — kept in sync with package.json */
-export const KERNEL_VERSION = '26.4.5';
-
-/** Minimum wasm4pm version the kernel requires
- * @internal
+/**
+ * Read the kernel version from package.json — single source of truth.
+ * Falls back to '0.0.0' if package.json is not found (e.g. in test bundles).
  */
+function readPackageVersion(): string {
+  try {
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = dirname(__filename);
+    const pkg = JSON.parse(readFileSync(join(__dirname, '..', 'package.json'), 'utf-8'));
+    return pkg.version ?? '0.0.0';
+  } catch {
+    return '0.0.0';
+  }
+}
+
+/** The kernel's own version — derived from package.json */
+export const KERNEL_VERSION = readPackageVersion();
+
+/** Minimum wasm4pm version the kernel requires */
 const MIN_WASM4PM_VERSION = '26.0.0';
 
 /**

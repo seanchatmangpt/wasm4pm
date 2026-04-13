@@ -1480,6 +1480,7 @@ dependencies = [
  "fastrand",
  "getrandom 0.2.17",
  "itertools 0.14.0",
+ "js-sys",
  "naga 29.0.1",
  "once_cell",
  "pollster",

@@ -1,0 +1,1379 @@
+//! # pictl — High-Performance Process Mining in WebAssembly
+//!
+//! `pictl` provides production-ready process mining algorithms compiled to WebAssembly,
+//! enabling efficient **process discovery**, **conformance checking**, and **predictive analytics**
+//! in JavaScript/TypeScript environments.
+//!
+//! ## Features
+//!
+//! - **Process Discovery** — DFG, Alpha++, Heuristic Miner, Inductive Miner, Genetic Algorithm, ILP, ACO, PSO
+//! - **Conformance Checking** — Token-based replay, streaming conformance
+//! - **Machine Learning** — Remaining-time prediction, outcome prediction, anomaly detection, drift detection
+//! - **Streaming** — Real-time process mining for IoT and event streaming with SIMD acceleration
+//! - **OCEL Support** — Object-Centric Event Logs with flattened analysis and DECLARE conformance
+//! - **POWL** — Process-Oriented Workflow Language support
+//!
+//! ## Quick Start
+//!
+//! ```javascript
+//! import initWasm, {
+//!   load_eventlog_from_xes,
+//!   discover_dfg,
+//!   delete_object,
+//! } from "@seanchatmangpt/pictl";
+//!
+//! // Initialize WASM module
+//! await initWasm();
+//!
+//! // Load event log from XES string
+//! const logHandle = load_eventlog_from_xes(xesString);
+//!
+//! // Discover Directly-Follows Graph
+//! const dfg = discover_dfg(logHandle, "concept:name");
+//!
+//! // Clean up
+//! delete_object(logHandle);
+//! ```
+//!
+//! ## Feature Flags
+//!
+//! ### Deployment Profiles (Binary Size Optimization)
+//!
+//! | Profile  | Size    | Reduction | Use Case            |
+//! |----------|---------|-----------|---------------------|
+//! | `cloud`  | ~2.78MB | —         | Cloud servers (default) |
+//! | `browser`| ~500KB  | 82%       | Web browsers, mobile |
+//! | `edge`   | ~1.5MB  | 46%       | Edge servers, CDN    |
+//! | `fog`    | ~2.0MB  | 28%       | Fog computing, IoT   |
+//! | `iot`    | ~1.0MB  | 64%       | IoT devices, embedded |
+//!
+//! ### Algorithm Selection
+//!
+//! - `basic` — Fast discovery algorithms (DFG, skeleton)
+//! - `advanced` — Full algorithm suite (ILP, genetic, ACO, PSO)
+//! - `ml` — Machine learning features (prediction, anomaly, clustering)
+//! - `streaming` — Streaming algorithms for real-time processing
+//!
+//! ## Architecture
+//!
+//! The crate uses a **handle-based state management system** where all objects
+//! (event logs, process models, results) are stored internally and referenced by
+//! string handles. This design enables:
+//!
+//! - Efficient serialization across the WASM boundary
+//! - Automatic memory management via object pooling
+//! - Simplified JavaScript interop (no manual lifetime management)
+//!
+//! ## Performance
+//!
+//! - **Throughput:** 100K+ events/second for DFG discovery
+//! - **Memory:** Columnar data layouts, object pooling, incremental computation
+//! - **Binary Size:** Deployment profiles reduce WASM by up to 82%
+//! - **SIMD:** Vectorized streaming DFG via WASM SIMD instructions
+//!
+//! ## Links
+//!
+//! - [GitHub Repository](https://github.com/seanchatmangpt/pictl)
+//! - [npm Package](https://www.npmjs.com/package/@seanchatmangpt/pictl)
+//! - [Documentation](https://docs.rs/pictl)
+
+pub mod error;
+pub mod io;
+pub mod models;
+pub mod state;
+pub mod types;
+
+// Auto-generated registries from pictl ontology (A = μ(O))
+// DO NOT EDIT — regenerate via: ostar manufacture pictl
+#[allow(dead_code)]
+pub mod algorithm_registry;
+#[allow(dead_code)]
+pub mod wasm_export_registry;
+#[allow(dead_code)]
+pub mod tps_metrics_registry;
+#[allow(dead_code)]
+pub mod feature_flag_registry;
+#[allow(dead_code)]
+pub mod proof_gate_registry;
+#[allow(dead_code)]
+pub mod operator_registry;
+#[allow(dead_code)]
+pub mod deployment_profile_constants;
+#[allow(dead_code)]
+pub mod module_category_constants;
+#[allow(dead_code)]
+pub mod capability_registry_generated;
+#[allow(dead_code)]
+pub mod benchmark_registry;
+
+// Hand-rolled statistics (when hand_rolled_stats feature is enabled)
+pub mod algorithms;
+pub mod analysis;
+pub mod binary_format;
+pub mod cache;
+pub mod capability_registry;
+pub mod conformance;
+pub mod data_quality;
+pub mod discovery;
+pub mod ensemble;
+pub mod fast_discovery;
+pub mod feature_extraction;
+pub mod feature_importance;
+pub mod filters;
+pub mod final_analytics;
+#[cfg(feature = "hand_rolled_stats")]
+pub mod hand_stats;
+pub mod hierarchical;
+pub mod hot_kernels;
+pub mod incremental_dfg;
+pub mod more_discovery;
+pub mod parallel_executor;
+pub mod playout;
+pub mod probabilistic;
+pub mod process_tree;
+pub mod smart_engine;
+pub mod social_network;
+pub mod text_encoding;
+pub mod utilities;
+pub mod xes_format;
+pub mod rl_state_serialization;
+
+// OCEL support (gated by ocel feature)
+#[cfg(feature = "ocel")]
+pub mod oc_conformance;
+#[cfg(feature = "ocel")]
+pub mod oc_performance;
+#[cfg(feature = "ocel")]
+pub mod oc_petri_net;
+#[cfg(feature = "ocel")]
+pub mod ocel_flatten;
+#[cfg(feature = "ocel")]
+pub mod ocel_io;
+#[cfg(feature = "ocel")]
+pub mod ocel_tests;
+
+// Advanced discovery algorithms (gated by discovery_advanced feature)
+#[cfg(feature = "discovery_advanced")]
+pub mod advanced_algorithms;
+#[cfg(feature = "discovery_advanced")]
+pub mod batches;
+#[cfg(feature = "discovery_advanced")]
+pub mod causal_graph;
+#[cfg(feature = "discovery_advanced")]
+pub mod genetic_discovery;
+#[cfg(feature = "discovery_advanced")]
+pub mod ilp_discovery; // ACO, PSO, simulated annealing
+#[cfg(feature = "discovery_advanced")]
+pub mod log_to_trie;
+#[cfg(feature = "discovery_advanced")]
+pub mod performance_spectrum;
+#[cfg(feature = "discovery_advanced")]
+pub mod transition_system;
+
+// Quality metrics (gated by conformance_full feature)
+#[cfg(feature = "conformance_full")]
+pub mod generalization;
+
+// ML/Prediction (gated by ml feature)
+#[cfg(feature = "ml")]
+pub mod anomaly;
+#[cfg(feature = "ml")]
+pub mod prediction;
+#[cfg(feature = "ml")]
+pub mod prediction_additions;
+#[cfg(feature = "ml")]
+pub mod prediction_drift;
+#[cfg(feature = "ml")]
+pub mod prediction_features;
+#[cfg(feature = "ml")]
+pub mod prediction_next_activity;
+#[cfg(feature = "ml")]
+pub mod prediction_outcome;
+#[cfg(feature = "ml")]
+pub mod prediction_remaining_time;
+#[cfg(feature = "ml")]
+pub mod prediction_resource;
+
+// Streaming algorithms (gated by streaming_basic or streaming_full features)
+#[cfg(feature = "streaming_basic")]
+pub mod simd_streaming_dfg;
+#[cfg(feature = "streaming_basic")]
+pub mod streaming;
+
+#[cfg(feature = "streaming_full")]
+pub mod streaming_conformance;
+#[cfg(feature = "streaming_full")]
+pub mod streaming_pipeline;
+#[cfg(feature = "streaming_full")]
+pub mod streaming_wasm;
+
+// Conformance (gated by conformance_basic or conformance_full features)
+#[cfg(feature = "conformance_basic")]
+pub mod declare_conformance;
+#[cfg(feature = "conformance_basic")]
+pub mod simd_token_replay;
+#[cfg(feature = "conformance_basic")]
+pub mod temporal_profile;
+
+#[cfg(feature = "conformance_full")]
+pub mod alignments;
+#[cfg(feature = "conformance_full")]
+pub mod etconformance_precision;
+#[cfg(feature = "conformance_full")]
+pub mod marking_equation;
+#[cfg(feature = "conformance_full")]
+pub mod petri_net_reduction;
+
+// 80/20 gap-filling modules
+#[cfg(feature = "align_etconformance")]
+pub mod align_etconformance;
+#[cfg(feature = "alignment_fitness")]
+pub mod alignment_fitness;
+#[cfg(feature = "montecarlo")]
+pub mod montecarlo;
+#[cfg(feature = "petri_net_playout")]
+pub mod petri_net_playout;
+
+// Performance and resource analysis
+#[cfg(feature = "conformance_basic")]
+pub mod performance_dfg;
+#[cfg(feature = "ocel")]
+pub mod resource_analysis;
+
+// POWL modules (gated by powl feature)
+#[cfg(feature = "powl")]
+pub mod complexity_metrics;
+#[cfg(feature = "powl")]
+pub mod powl;
+#[cfg(feature = "powl")]
+pub mod powl_api;
+#[cfg(feature = "powl")]
+pub mod powl_arena;
+#[cfg(feature = "powl")]
+pub mod powl_event_log;
+#[cfg(feature = "powl")]
+pub mod powl_models;
+#[cfg(feature = "powl")]
+pub mod powl_parser;
+#[cfg(feature = "powl")]
+pub mod powl_petri_net;
+#[cfg(feature = "powl")]
+pub mod powl_process_tree;
+#[cfg(feature = "powl")]
+pub mod powl_to_process_tree;
+#[cfg(feature = "powl")]
+pub mod yawl_export;
+
+// PNML import/export (always available)
+pub mod pnml_io;
+
+// BPMN import (always available, uses roxmltree)
+pub mod bpmn_import;
+
+#[cfg(feature = "streaming_basic")]
+pub use streaming::{
+    StreamStats, StreamingAlgorithm, StreamingDfgBuilder, StreamingHeuristicBuilder,
+    StreamingSkeletonBuilder,
+};
+
+// Recommendations module (always available)
+pub mod recommendations;
+
+// Conformance cache — cached token replay results (always available)
+pub mod conformance_cache;
+
+// Correlation miner — DFG discovery without case identifiers (always available)
+pub mod correlation_miner;
+
+// Self-healing — circuit breaker, retry policy, health check (ported from knhk)
+pub mod self_healing;
+
+// SPC — Western Electric rules + process capability (always available)
+pub mod spc;
+
+// Guard evaluation engine — predicate/resource/state/counter/time-window guards (ported from knhk)
+pub mod guards;
+
+// 43-pattern dispatch — van der Aalst workflow pattern execution (ported from knhk)
+pub mod pattern_dispatch;
+
+// Reinforcement learning — Q-Learning and SARSA agents (ported from knhk)
+pub mod reinforcement;
+
+// RL Orchestrator — persistent state hub for all RL agents
+pub mod rl_orchestrator;
+
+// Agentic control primitives — role selection, task decomposition, handoffs, escalation
+pub mod agentic;
+
+thread_local! {
+    /// Persistent RL orchestrator — survives across autonomic cycles.
+    pub static RL_ORCHESTRATOR: RefCell<rl_orchestrator::RlOrchestrator> =
+        RefCell::new(rl_orchestrator::RlOrchestrator::new());
+
+    /// Persistent circuit breaker for the autonomic loop.
+    pub static CIRCUIT_BREAKER: RefCell<self_healing::CircuitBreaker> =
+        RefCell::new(self_healing::CircuitBreaker::new());
+}
+
+// ML contextual bandits — LinUCB CPU baseline (ground truth for GPU parity)
+pub mod ml;
+
+// GPU-accelerated LinUCB contextual bandit for algorithm selection
+// (van der Aalst: resource/intervention prediction perspective)
+// CPU fallback always available; GPU path activated by `gpu` feature flag.
+// Not compiled for wasm32 — wgpu targets native GPU (Vulkan/Metal/DX12).
+#[cfg(not(target_arch = "wasm32"))]
+pub mod gpu;
+
+// Suppress unused warnings for re-exported modules
+#[allow(unused)]
+use state::*;
+#[allow(unused)]
+use types::*;
+
+use std::cell::RefCell;
+use wasm_bindgen::prelude::*;
+
+#[wasm_bindgen(start)]
+pub fn init_wasm() {
+    // Initialize panic hook for better error messages in console
+    #[cfg(feature = "console_error_panic_hook")]
+    console_error_panic_hook::set_once();
+}
+
+/// Initialize the WASM module
+#[wasm_bindgen]
+pub fn init() -> Result<String, JsValue> {
+    init_state();
+    Ok("Rust4PM WASM initialized successfully".to_string())
+}
+
+/// Initialize global state
+fn init_state() {
+    let _ = state::get_or_init_state();
+}
+
+#[wasm_bindgen]
+pub fn get_version() -> String {
+    env!("CARGO_PKG_VERSION").to_string()
+}
+
+/// Get WASM module capabilities as JSON string.
+///
+/// Returns version and feature flags indicating which algorithms
+/// and capabilities are available in this build.
+#[wasm_bindgen]
+pub fn get_capabilities() -> String {
+    format!(
+        r#"{{"version":"{}","features":{{"discovery":true,"conformance":{},"ml":{},"streaming":{},"powl":{},"ocel":{},"alignment_fitness":{},"petri_net_playout":{},"extensive_playout":{},"align_etconformance":{},"montecarlo":{}}}}}"#,
+        env!("CARGO_PKG_VERSION"),
+        cfg!(feature = "conformance_full"),
+        cfg!(feature = "ml"),
+        cfg!(feature = "streaming_full"),
+        cfg!(feature = "powl"),
+        cfg!(feature = "ocel"),
+        cfg!(feature = "alignment_fitness"),
+        cfg!(feature = "petri_net_playout"),
+        cfg!(feature = "extensive_playout"),
+        cfg!(feature = "align_etconformance"),
+        cfg!(feature = "montecarlo")
+    )
+}
+
+/// Clear all caches (parse, columnar, interner).
+#[wasm_bindgen]
+pub fn clear_all_caches() {
+    crate::cache::cache_clear();
+}
+
+/// Get cache statistics as JSON string.
+#[wasm_bindgen]
+pub fn get_cache_stats() -> String {
+    let stats = crate::cache::cache_stats();
+    format!(
+        r#"{{"parse_hits":{},"parse_misses":{},"columnar_entries":{},"interner_entries":{}}}"#,
+        stats.parse_hits, stats.parse_misses, stats.columnar_entries, stats.interner_entries
+    )
+}
+
+/// SIMD-accelerated token replay for conformance checking.
+///
+/// Discovers a DFG from the log, builds a SimdPetriNet, then replays
+/// every trace and returns fitness / precision / per-case diagnostics.
+#[cfg(feature = "conformance_basic")]
+#[wasm_bindgen]
+pub fn simd_token_replay(log_handle: &str, activity_key: &str) -> String {
+    crate::simd_token_replay::replay_log(log_handle, activity_key)
+}
+
+// -------------------------------------------------------------------------
+// AutoProcess — Full Autonomic Control Loop
+// -------------------------------------------------------------------------
+
+/// AutoProcess: Run the complete 4-layer autonomic control loop.
+///
+/// Layers:
+/// 1. **Perception** — Build ExecutionContext from event log metrics
+/// 2. **Decision** — Evaluate guards + dispatch workflow pattern
+/// 3. **Protection** — Circuit breaker + Statistical Process Control (SPC)
+/// 4. **Optimization** — Reinforcement learning (Q-Learning) action selection
+///
+/// Returns JSON with cycle_result (all 4 layers) and nanosecond timing.
+#[wasm_bindgen]
+pub fn autonomic_execute_cycle(
+    log_handle: &str,
+    activity_key: &str,
+    _config_json: &str,
+) -> Result<String, JsValue> {
+    let state = get_or_init_state();
+
+    // -----------------------------------------------------------------------
+    // Helper: extract event log metrics for Perception layer
+    // -----------------------------------------------------------------------
+    let perception_result = state.with_object(log_handle, |obj| {
+        let log = match obj {
+            Some(StoredObject::EventLog(l)) => l,
+            _ => {
+                return Err(JsValue::from_str(
+                    "autonomic_execute_cycle: handle does not reference an EventLog",
+                ));
+            }
+        };
+
+        let trace_count = log.traces.len();
+        let event_count: usize = log.traces.iter().map(|t| t.events.len()).sum();
+
+        let mut activity_set = std::collections::HashSet::new();
+        for trace in &log.traces {
+            for event in &trace.events {
+                if let Some(models::AttributeValue::String(name)) =
+                    event.attributes.get(activity_key)
+                {
+                    activity_set.insert(name.clone());
+                }
+            }
+        }
+        let unique_activities = activity_set.len();
+
+        // Trace durations (if timestamps available)
+        let time_key = "time:timestamp";
+        let mut trace_durations: Vec<f64> = Vec::new();
+        let mut has_timestamps = false;
+        for trace in &log.traces {
+            let first_ts = trace
+                .events
+                .first()
+                .and_then(|e| e.attributes.get(time_key));
+            let last_ts = trace.events.last().and_then(|e| e.attributes.get(time_key));
+            if let (Some(first), Some(last)) = (first_ts, last_ts) {
+                has_timestamps = true;
+                let first_str = first.as_string().unwrap_or("");
+                let last_str = last.as_string().unwrap_or("");
+                let dur = (last_str.len() as f64) - (first_str.len() as f64);
+                trace_durations.push(dur.abs());
+            }
+        }
+
+        // Activity frequencies
+        let mut activity_freq: std::collections::HashMap<String, usize> =
+            std::collections::HashMap::new();
+        for trace in &log.traces {
+            for event in &trace.events {
+                if let Some(models::AttributeValue::String(name)) =
+                    event.attributes.get(activity_key)
+                {
+                    *activity_freq.entry(name.clone()).or_insert(0) += 1;
+                }
+            }
+        }
+
+        // Health state (5-level: 0=Normal, 1=Warning, 2=Degraded, 3=Critical, 4=Failed)
+        let health_state = if event_count == 0 || unique_activities == 0 {
+            4 // Failed: empty log or no activities
+        } else if trace_count == 0 {
+            3 // Critical: no traces
+        } else if unique_activities == 1 && event_count < 5 {
+            2 // Degraded: trivial log
+        } else {
+            0 // Normal
+        };
+
+        let health_label = match health_state {
+            0 => "Normal",
+            1 => "Warning",
+            2 => "Degraded",
+            3 => "Critical",
+            _ => "Failed",
+        };
+
+        Ok::<serde_json::Value, JsValue>(serde_json::json!({
+            "event_count": event_count,
+            "trace_count": trace_count,
+            "unique_activities": unique_activities,
+            "has_timestamps": has_timestamps,
+            "trace_durations": trace_durations,
+            "activity_frequencies": activity_freq,
+            "health_state": health_state,
+            "health_label": health_label,
+        }))
+    })?;
+    // perception_result is serde_json::Value (with_object unwraps both layers)
+
+    let perception_ns = 0; // Included in overall timing
+
+    // -----------------------------------------------------------------------
+    // Layer 2: Decision — Guards + Pattern Dispatch
+    // -----------------------------------------------------------------------
+    let perception = &perception_result;
+
+    // Build ExecutionContext for guard evaluation
+    let event_count_val = perception["event_count"].as_u64().unwrap_or(0);
+    let trace_count_val = perception["trace_count"].as_u64().unwrap_or(0);
+    let unique_activities_val = perception["unique_activities"].as_u64().unwrap_or(0);
+    let health_state_val = perception["health_state"].as_u64().unwrap_or(4);
+
+    let exec_ctx = guards::ExecutionContext {
+        task_id: 1,
+        timestamp: 0,
+        resources: guards::ResourceState {
+            cpu_available: 100,
+            memory_available: 100,
+            io_capacity: 100,
+            queue_depth: 0,
+        },
+        observations: guards::ObservationBuffer {
+            count: 4,
+            observations: [
+                event_count_val,
+                trace_count_val,
+                unique_activities_val,
+                health_state_val,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+            ],
+        },
+        state_flags: guards::StateFlags::INITIALIZED.bits() | guards::StateFlags::RUNNING.bits(),
+    };
+
+    // Sensible default guards: basic sanity checks
+    // Guard 1: State check — system must be in RUNNING state
+    let guard_state = guards::Guard {
+        guard_type: guards::GuardType::State,
+        predicate: guards::Predicate::BitSet,
+        operand_a: guards::StateFlags::RUNNING.bits(),
+        operand_b: 0,
+        children: vec![],
+    };
+    // Guard 2: Counter check — at least 1 observation (non-empty log)
+    let guard_counter = guards::Guard {
+        guard_type: guards::GuardType::Counter,
+        predicate: guards::Predicate::GreaterThanOrEqual,
+        operand_a: 0,
+        operand_b: 1, // at least 1
+        children: vec![],
+    };
+
+    let compound_guard = guards::Guard {
+        guard_type: guards::GuardType::And,
+        predicate: guards::Predicate::Equal,
+        operand_a: 0,
+        operand_b: 0,
+        children: vec![guard_state, guard_counter],
+    };
+
+    let guard_result = compound_guard.evaluate(&exec_ctx);
+
+
+    // Pattern dispatch — use dynamic pattern from analysis
+    let pattern_ctx = pattern_dispatch::PatternContext {
+        pattern_type: pattern_analysis.primary_pattern,
+        pattern_id: 0,
+        config: pattern_dispatch::PatternConfig {
+            max_instances: 1,
+            join_threshold: 1,
+            timeout_ticks: 100,
+            flags: pattern_dispatch::PatternFlags::default(),
+        },
+        input_mask: 0,
+        output_mask: 0,
+        state: std::sync::atomic::AtomicU32::new(0),
+        tick_budget: 100,
+    };
+    let dispatcher = pattern_dispatch::PatternDispatcher::new();
+    let pattern_result = dispatcher.dispatch(&pattern_ctx);
+
+    let guard_pass = guard_result;
+    let pattern_name = if pattern_result.success {
+        match pattern_analysis.primary_pattern {
+            pattern_dispatch::PatternType::Sequence => "Sequence",
+            pattern_dispatch::PatternType::ParallelSplit => "ParallelSplit",
+            pattern_dispatch::PatternType::StructuredLoop => "StructuredLoop",
+            pattern_dispatch::PatternType::ExclusiveChoice => "ExclusiveChoice",
+            _ => "Unknown",
+        }
+    } else {
+        "Failed"
+    };
+    let pattern_ticks = pattern_result.ticks_used;
+    // -----------------------------------------------------------------------
+    // Layer 3: Protection — Circuit Breaker + SPC (persistent)
+    // -----------------------------------------------------------------------
+    let (circuit_allowed, circuit_state) = CIRCUIT_BREAKER.with(|cb| {
+        let mut cb = cb.borrow_mut();
+        let allowed = cb.allow_request();
+        let state = format!("{:?}", cb.state());
+        if allowed {
+            cb.record_success();
+        }
+        (allowed, state)
+    });
+
+    // SPC: multi-dimensional (event rate, trace duration, activity frequency)
+    let mut all_special_causes: Vec<String> = Vec::new();
+    let mut spc_results = serde_json::Map::new();
+
+    // SPC on event rate (events per trace)
+    let event_counts_per_trace: Vec<f64> = perception["activity_frequencies"]
+        .as_object()
+        .map(|m| m.values().map(|v| v.as_f64().unwrap_or(0.0)).collect())
+        .unwrap_or_default();
+
+    if event_counts_per_trace.len() >= 9 {
+        let mean_er =
+            event_counts_per_trace.iter().sum::<f64>() / event_counts_per_trace.len() as f64;
+        let std_er = (event_counts_per_trace
+            .iter()
+            .map(|x| (x - mean_er).powi(2))
+            .sum::<f64>()
+            / event_counts_per_trace.len() as f64)
+            .sqrt();
+        let chart_data: Vec<spc::ChartData> = event_counts_per_trace
+            .iter()
+            .map(|&v| spc::ChartData {
+                timestamp: String::new(),
+                value: v,
+                ucl: mean_er + 3.0 * std_er,
+                cl: mean_er,
+                lcl: (mean_er - 3.0 * std_er).max(0.0),
+                subgroup_data: None,
+            })
+            .collect();
+        let causes = spc::check_western_electric_rules(&chart_data);
+        spc_results.insert(
+            "event_rate".to_string(),
+            serde_json::json!(if causes.is_empty() { "OK" } else { "ALERT" }),
+        );
+        for c in &causes {
+            all_special_causes.push(format!("event_rate: {:?}", c));
+        }
+    } else {
+        spc_results.insert(
+            "event_rate".to_string(),
+            serde_json::json!("INSUFFICIENT_DATA"),
+        );
+    }
+
+    // SPC on trace durations
+    let trace_durations: Vec<f64> = perception["trace_durations"]
+        .as_array()
+        .map(|a| a.iter().map(|v| v.as_f64().unwrap_or(0.0)).collect())
+        .unwrap_or_default();
+
+    if trace_durations.len() >= 9 {
+        let mean_td = trace_durations.iter().sum::<f64>() / trace_durations.len() as f64;
+        let std_td = (trace_durations
+            .iter()
+            .map(|x| (x - mean_td).powi(2))
+            .sum::<f64>()
+            / trace_durations.len() as f64)
+            .sqrt();
+        let chart_data: Vec<spc::ChartData> = trace_durations
+            .iter()
+            .map(|&v| spc::ChartData {
+                timestamp: String::new(),
+                value: v,
+                ucl: mean_td + 3.0 * std_td,
+                cl: mean_td,
+                lcl: (mean_td - 3.0 * std_td).max(0.0),
+                subgroup_data: None,
+            })
+            .collect();
+        let causes = spc::check_western_electric_rules(&chart_data);
+        spc_results.insert(
+            "trace_duration".to_string(),
+            serde_json::json!(if causes.is_empty() { "OK" } else { "ALERT" }),
+        );
+        for c in &causes {
+            all_special_causes.push(format!("trace_duration: {:?}", c));
+        }
+    } else {
+        spc_results.insert(
+            "trace_duration".to_string(),
+            serde_json::json!("INSUFFICIENT_DATA"),
+        );
+    }
+
+    // SPC on activity frequency distribution
+    let freq_values: Vec<f64> = perception["activity_frequencies"]
+        .as_object()
+        .map(|m| m.values().map(|v| v.as_f64().unwrap_or(0.0)).collect())
+        .unwrap_or_default();
+
+    if freq_values.len() >= 9 {
+        let mean_af = freq_values.iter().sum::<f64>() / freq_values.len() as f64;
+        let std_af = (freq_values
+            .iter()
+            .map(|x| (x - mean_af).powi(2))
+            .sum::<f64>()
+            / freq_values.len() as f64)
+            .sqrt();
+        let chart_data: Vec<spc::ChartData> = freq_values
+            .iter()
+            .map(|&v| spc::ChartData {
+                timestamp: String::new(),
+                value: v,
+                ucl: mean_af + 3.0 * std_af,
+                cl: mean_af,
+                lcl: (mean_af - 3.0 * std_af).max(0.0),
+                subgroup_data: None,
+            })
+            .collect();
+        let causes = spc::check_western_electric_rules(&chart_data);
+        spc_results.insert(
+            "activity_frequency".to_string(),
+            serde_json::json!(if causes.is_empty() { "OK" } else { "ALERT" }),
+        );
+        for c in &causes {
+            all_special_causes.push(format!("activity_frequency: {:?}", c));
+        }
+    } else {
+        spc_results.insert(
+            "activity_frequency".to_string(),
+            serde_json::json!("INSUFFICIENT_DATA"),
+        );
+    // Record SPC snapshot to history (cross-cycle trend analysis)
+    let timestamp = format!("cycle-{}", std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs());
+    let event_rate_mean = if event_counts_per_trace.is_empty() {
+        0.0
+    } else {
+        event_counts_per_trace.iter().sum::<f64>() / event_counts_per_trace.len() as f64
+    };
+    let trace_duration_mean = if trace_durations.is_empty() {
+        0.0
+    } else {
+        trace_durations.iter().sum::<f64>() / trace_durations.len() as f64
+    };
+    let activity_freq_mean = if freq_values.is_empty() {
+        0.0
+    } else {
+        freq_values.iter().sum::<f64>() / freq_values.len() as f64
+    };
+
+    let snapshot = spc_history::SpcSnapshot::new(
+        timestamp.clone(),
+        event_rate_mean,
+        trace_duration_mean,
+        activity_freq_mean,
+        health_state_val as u8,
+    );
+
+    let (history_cycle_count, history_len, has_sufficient_data) = SPC_HISTORY.with(|history| {
+        let mut history = history.borrow_mut();
+        history.record_snapshot(snapshot);
+        (history.cycle_count, history.history.len(), history.has_sufficient_data())
+    });
+
+    spc_results.insert("history_cycle_count".to_string(), serde_json::json!(history_cycle_count));
+    spc_results.insert("history_len".to_string(), serde_json::json!(history_len));
+    spc_results.insert("has_sufficient_data".to_string(), serde_json::json!(has_sufficient_data));
+
+    // If sufficient historical data exists, apply Western Electric rules across cycles
+    if has_sufficient_data {
+        let historical_event_rates = SPC_HISTORY.with(|history| {
+            history.borrow().get_event_rates()
+        });
+        let historical_trace_durations = SPC_HISTORY.with(|history| {
+            history.borrow().get_trace_durations()
+        });
+        let historical_activity_freqs = SPC_HISTORY.with(|history| {
+            history.borrow().get_activity_frequencies()
+        });
+
+        // Apply Western Electric rules to historical event rates
+        if historical_event_rates.len() >= 9 {
+            let mean_er_hist = spc::spc_mean(&historical_event_rates);
+            let std_er_hist = spc::spc_std_dev(&historical_event_rates);
+            let chart_data_hist: Vec<spc::ChartData> = historical_event_rates
+                .iter()
+                .enumerate()
+                .map(|(i, &v)| spc::ChartData {
+                    timestamp: format!("cycle-{}", i),
+                    value: v,
+                    ucl: mean_er_hist + 3.0 * std_er_hist,
+                    cl: mean_er_hist,
+                    lcl: (mean_er_hist - 3.0 * std_er_hist).max(0.0),
+                    subgroup_data: None,
+                })
+                .collect();
+            let causes_hist = spc::check_western_electric_rules(&chart_data_hist);
+            if !causes_hist.is_empty() {
+                spc_results.insert(
+                    "event_rate_historical".to_string(),
+                    serde_json::json!("ALERT"),
+                );
+                for c in &causes_hist {
+                    all_special_causes.push(format!("event_rate_historical: {:?}", c));
+                }
+            } else {
+                spc_results.insert(
+                    "event_rate_historical".to_string(),
+                    serde_json::json!("OK"),
+                );
+            }
+        }
+
+        // Apply Western Electric rules to historical trace durations
+        if historical_trace_durations.len() >= 9 {
+            let mean_td_hist = spc::spc_mean(&historical_trace_durations);
+            let std_td_hist = spc::spc_std_dev(&historical_trace_durations);
+            let chart_data_hist: Vec<spc::ChartData> = historical_trace_durations
+                .iter()
+                .enumerate()
+                .map(|(i, &v)| spc::ChartData {
+                    timestamp: format!("cycle-{}", i),
+                    value: v,
+                    ucl: mean_td_hist + 3.0 * std_td_hist,
+                    cl: mean_td_hist,
+                    lcl: (mean_td_hist - 3.0 * std_td_hist).max(0.0),
+                    subgroup_data: None,
+                })
+                .collect();
+            let causes_hist = spc::check_western_electric_rules(&chart_data_hist);
+            if !causes_hist.is_empty() {
+                spc_results.insert(
+                    "trace_duration_historical".to_string(),
+                    serde_json::json!("ALERT"),
+                );
+                for c in &causes_hist {
+                    all_special_causes.push(format!("trace_duration_historical: {:?}", c));
+                }
+            } else {
+                spc_results.insert(
+                    "trace_duration_historical".to_string(),
+                    serde_json::json!("OK"),
+                );
+            }
+        }
+
+        // Apply Western Electric rules to historical activity frequencies
+        if historical_activity_freqs.len() >= 9 {
+            let mean_af_hist = spc::spc_mean(&historical_activity_freqs);
+            let std_af_hist = spc::spc_std_dev(&historical_activity_freqs);
+            let chart_data_hist: Vec<spc::ChartData> = historical_activity_freqs
+                .iter()
+                .enumerate()
+                .map(|(i, &v)| spc::ChartData {
+                    timestamp: format!("cycle-{}", i),
+                    value: v,
+                    ucl: mean_af_hist + 3.0 * std_af_hist,
+                    cl: mean_af_hist,
+                    lcl: (mean_af_hist - 3.0 * std_af_hist).max(0.0),
+                    subgroup_data: None,
+                })
+                .collect();
+            let causes_hist = spc::check_western_electric_rules(&chart_data_hist);
+            if !causes_hist.is_empty() {
+                spc_results.insert(
+                    "activity_frequency_historical".to_string(),
+                    serde_json::json!("ALERT"),
+                );
+                for c in &causes_hist {
+                    all_special_causes.push(format!("activity_frequency_historical: {:?}", c));
+                }
+            } else {
+                spc_results.insert(
+                    "activity_frequency_historical".to_string(),
+                    serde_json::json!("OK"),
+                );
+            }
+        }
+    }
+
+    }
+
+    // -----------------------------------------------------------------------
+    // Layer 4: Optimization — Reinforcement Learning (persistent)
+    // -----------------------------------------------------------------------
+    let health_level = health_state_val as u8;
+
+    let (action_label, reward_val, agent_name, cycle_count, cumulative_reward) = RL_ORCHESTRATOR
+        .with(|orch_cell| {
+            let mut orch = orch_cell.borrow_mut();
+
+            // Build 8-dim feature vector for LinUCB (normalized to [0,1])
+            let features: [f32; 8] = [
+                (event_count_val as f32 / 10_000.0).min(1.0),
+                (trace_count_val as f32 / 1_000.0).min(1.0),
+                (unique_activities_val as f32 / 100.0).min(1.0),
+                (health_level as f32 / 4.0).min(1.0),
+                (all_special_causes.len() as f32 / 10.0).min(1.0),
+                if guard_pass { 1.0 } else { 0.0 },
+                if circuit_allowed { 1.0 } else { 0.0 },
+                (orch.telemetry().cycle_count as f32 / 1_000.0).min(1.0),
+            ];
+
+            let rl_state = RlState::from_features(&features, health_level);
+
+            // Compute next health state based on cycle outcome.
+            // If cycle failed (guard or circuit blocked), health degrades.
+            // If cycle succeeded, health remains stable (log hasn't changed).
+            let next_health_level = if guard_pass && circuit_allowed {
+                health_level // Stable: successful cycle
+            } else {
+                (health_level + 1).min(4) // Degrade: failed cycle (cap at 4)
+            };
+            let rl_next_state = RlState::from_features(&features, next_health_level);
+            let (label, _reward) = orch.run_cycle(
+                &features,
+                &rl_state,
+                &rl_next_state,
+                all_special_causes.len(),
+                guard_pass,
+                circuit_allowed,
+            );
+
+            (
+                label,
+                orch.telemetry().last_reward,
+                orch.telemetry().active_agent_name.clone(),
+                orch.telemetry().cycle_count,
+                orch.telemetry().cumulative_reward,
+            )
+        });
+
+    // -----------------------------------------------------------------------
+    // Build result JSON
+    // -----------------------------------------------------------------------
+    let result = serde_json::json!({
+        "cycle_result": {
+            "success": guard_pass && circuit_allowed,
+            "perception": {
+                "event_count": event_count_val,
+                "trace_count": trace_count_val,
+                "unique_activities": unique_activities_val,
+                "has_timestamps": perception["has_timestamps"],
+                "health_state": perception["health_label"],
+                "health_score": health_state_val,
+            },
+            "decision": {
+                "guard_result": guard_pass,
+                "pattern_result": pattern_name,
+                "pattern_ticks": pattern_ticks,
+            },
+            "protection": {
+                "circuit_state": circuit_state,
+                "circuit_allowed": circuit_allowed,
+                "special_causes": all_special_causes,
+                "spc_results": spc_results,
+            },
+            "optimization": {
+                "rl_action": action_label,
+                "rl_agent": agent_name,
+                "reward": reward_val,
+                "cycle_count": cycle_count,
+                "cumulative_reward": cumulative_reward,
+                "health_score": health_state_val,
+            },
+        },
+        "timing": {
+            "perception_ns": perception_ns,
+            "decision_ns": 0,
+            "protection_ns": 0,
+            "optimization_ns": 0,
+            "total_ns": 0,
+            "note": "WASM environment lacks high-precision timers; use benchmarks for actual nanosecond measurements",
+        },
+    });
+
+    Ok(serde_json::to_string(&result).unwrap_or_else(|_| "{}".to_string()))
+}
+
+// State space size: 5 × 8 × 8 × 4 × 3 × 8 × 3 × 4 = 460,800 states
+// This requires function approximation (not tabular methods)
+/// Multi-dimensional RL state with quantized dimensions
+#[derive(Clone, PartialEq, Eq, Hash, Debug)]
+pub struct RlState {
+    pub health_level: u8,        // 0-4 (5 states)
+    pub event_rate_q: u8,        // 0-7 (8 quantization levels)
+    pub activity_count_q: u8,    // 0-7 (8 quantization levels)
+    pub spc_alert_level: u8,     // 0-3 (4 levels)
+    pub drift_status: u8,        // 0-2 (3 states)
+    pub rework_ratio_q: u8,      // 0-7 (8 quantization levels)
+    pub circuit_state: u8,       // 0-2 (3 states)
+    pub cycle_phase: u8,         // 0-3 (4 phases)
+}
+
+impl RlState {
+    /// Create from 8-dimensional feature vector
+    pub fn from_features(features: &[f32; 8], health_level: u8) -> Self {
+        // features[2] = unique_activities / 100
+        let activity_count = (features[2] * 100.0) as u32;
+        let activity_count_q = Self::quantize_activity_count(activity_count);
+
+        // features[6] = activity_entropy (0-1)
+        let drift_status = if features[6] < 0.3 {
+            0
+        } else if features[6] < 0.7 {
+            1
+        } else {
+            2
+        };
+
+        // features[0] = event_count / 10000
+        let event_rate_q = Self::quantize_event_rate(features[0]);
+
+        // features[5] = special_cause_count / 10
+        let spc_alert_level = Self::quantize_spc_alerts(features[5]);
+
+        // features[4] = circuit_allowed (0 or 1)
+        let circuit_state = if features[4] > 0.5 { 0 } else { 1 }; // 0=closed, 1=open
+
+        // features[7] = cycle_count / 1000
+        let cycle_phase = Self::quantize_cycle_phase(features[7]);
+
+        // TODO: rework_ratio requires loop detection - placeholder for now
+        let rework_ratio_q = 0;
+
+        Self {
+            health_level,
+            event_rate_q,
+            activity_count_q,
+            spc_alert_level,
+            drift_status,
+            rework_ratio_q,
+            circuit_state,
+            cycle_phase,
+        }
+    }
+
+    fn quantize_activity_count(count: u32) -> u8 {
+        match count {
+            0..=10 => 0,
+            11..=20 => 1,
+            21..=30 => 2,
+            31..=40 => 3,
+            41..=50 => 4,
+            51..=60 => 5,
+            61..=70 => 6,
+            _ => 7,
+        }
+    }
+
+    fn quantize_event_rate(normalized_rate: f32) -> u8 {
+        // normalized_rate is in [0,1], representing [0, 10000] events
+        let rate = (normalized_rate * 10000.0) as u32;
+        match rate {
+            0..=500 => 0,
+            501..=1000 => 1,
+            1001..=2000 => 2,
+            2001..=3000 => 3,
+            3001..=4000 => 4,
+            4001..=5000 => 5,
+            5001..=7500 => 6,
+            _ => 7,
+        }
+    }
+
+    fn quantize_spc_alerts(normalized_alerts: f32) -> u8 {
+        // normalized_alerts is in [0,1], representing [0, 10] special causes
+        let alert_count = (normalized_alerts * 10.0) as u32;
+        match alert_count {
+            0 => 0,
+            1..=2 => 1,
+            3..=5 => 2,
+            _ => 3,
+        }
+    }
+
+    fn quantize_cycle_phase(normalized_cycles: f32) -> u8 {
+        // normalized_cycles is in [0,1], representing [0, 1000] cycles
+        let cycles = (normalized_cycles * 1000.0) as u32;
+        match cycles {
+            0..=50 => 0,      // Initial
+            51..=200 => 1,    // Learning
+            201..=500 => 2,   // Mature
+            _ => 3,           // Stable
+        }
+    }
+}
+
+impl reinforcement::WorkflowState for RlState {
+    fn features(&self) -> Vec<f32> {
+        vec![
+            self.health_level as f32 / 4.0,
+            self.event_rate_q as f32 / 7.0,
+            self.activity_count_q as f32 / 7.0,
+            self.spc_alert_level as f32 / 3.0,
+            self.drift_status as f32 / 2.0,
+            self.rework_ratio_q as f32 / 7.0,
+            self.circuit_state as f32 / 2.0,
+            self.cycle_phase as f32 / 3.0,
+        ]
+    }
+
+    fn is_terminal(&self) -> bool {
+        self.health_level == 4 // Failed is terminal
+    }
+}
+
+// Simple RL actions: 5 levels
+#[derive(Clone, Copy, PartialEq, Eq, std::hash::Hash, std::fmt::Debug)]
+pub enum RlAction {
+    Continue = 0,
+    Scale = 1,
+    Retry = 2,
+    Fallback = 3,
+    Restart = 4,
+}
+
+impl reinforcement::WorkflowAction for RlAction {
+    const ACTION_COUNT: usize = 5;
+    fn to_index(&self) -> usize {
+        *self as usize
+    }
+    fn from_index(idx: usize) -> Option<Self> {
+        match idx {
+            0 => Some(RlAction::Continue),
+            1 => Some(RlAction::Scale),
+            2 => Some(RlAction::Retry),
+            3 => Some(RlAction::Fallback),
+            4 => Some(RlAction::Restart),
+            _ => None,
+        }
+    }
+}
+
+// -------------------------------------------------------------------------
+// RL Orchestrator WASM Exports
+// -------------------------------------------------------------------------
+
+/// Reset the RL orchestrator to fresh state.
+#[wasm_bindgen]
+pub fn rl_orchestrator_reset() -> Result<String, JsValue> {
+    RL_ORCHESTRATOR.with(|orch| {
+        *orch.borrow_mut() = rl_orchestrator::RlOrchestrator::new();
+        Ok("RL orchestrator reset".to_string())
+    })
+}
+
+/// Get the currently active RL agent type (0=QLearning, 1=SARSA, 2=DoubleQ, 3=ExpectedSARSA, 4=REINFORCE).
+#[wasm_bindgen]
+pub fn rl_orchestrator_active_agent() -> Result<u8, JsValue> {
+    RL_ORCHESTRATOR.with(|orch| Ok(orch.borrow().active_agent() as u8))
+}
+
+/// Switch the active RL agent by type index.
+#[wasm_bindgen]
+pub fn rl_orchestrator_switch_agent(agent_type: u8) -> Result<String, JsValue> {
+    RL_ORCHESTRATOR.with(|orch| {
+        let mut orch = orch.borrow_mut();
+        match rl_orchestrator::AgentType::from_u8(agent_type) {
+            Some(at) => {
+                orch.switch_agent(at);
+                Ok(format!("Switched to {}", at.name()))
+            }
+            None => Err(JsValue::from_str(&format!(
+                "Invalid agent type: {} (must be 0-4)",
+                agent_type
+            ))),
+        }
+    })
+}
+
+/// Enable or disable LinUCB-based agent selection.
+#[wasm_bindgen]
+pub fn rl_orchestrator_set_linucb(enabled: bool) -> Result<String, JsValue> {
+    RL_ORCHESTRATOR.with(|orch| {
+        orch.borrow_mut().set_linucb_selection(enabled);
+        Ok(format!("LinUCB selection: {}", enabled))
+    })
+}
+
+/// Get RL orchestrator telemetry as JSON.
+#[wasm_bindgen]
+pub fn rl_orchestrator_telemetry() -> Result<String, JsValue> {
+    RL_ORCHESTRATOR.with(|orch| {
+        let orch = orch.borrow();
+        let t = orch.telemetry();
+        Ok(serde_json::to_string(t).unwrap_or_else(|_| "{}".to_string()))
+    })
+}
+
+/// Serialize current RL orchestrator state to JSON for persistence.
+///
+/// Returns a JSON string containing telemetry, active agent, and LinUCB state.
+/// This can be stored and later restored via `restore_rl_state` to resume
+/// RL learning progress across CLI sessions.
+///
+/// # Returns
+///
+/// * `Ok(String)` - JSON-serialized RL state
+/// * `Err(JsValue)` - Serialization error
+#[wasm_bindgen]
+pub fn serialize_rl_state() -> Result<String, JsValue> {
+    RL_ORCHESTRATOR.with(|orch| {
+        let orch_ref = orch.borrow();
+        let telemetry = orch_ref.telemetry();
+
+        let state = rl_state_serialization::SerializedRlState {
+            telemetry: rl_state_serialization::RlTelemetry {
+                cycle_count: telemetry.cycle_count,
+                last_health_state: telemetry.last_health_state,
+                last_action_label: telemetry.last_action_label.clone(),
+                last_spc_alert_count: telemetry.last_spc_alert_count,
+                cumulative_reward: telemetry.cumulative_reward,
+            },
+            active_agent: orch_ref.active_agent() as u8,
+            linucb_enabled: orch_ref.linucb_selection_enabled(),
+        };
+
+        serde_json::to_string(&state)
+            .map_err(|e| JsValue::from_str(&format!("Serialization failed: {}", e)))
+    })
+}
+
+/// Restore RL orchestrator state from JSON.
+///
+/// Deserializes a previously-saved RL state and validates its structure.
+/// Currently performs validation only; full state restoration will be
+/// implemented when the underlying RL agents support Q-table injection.
+///
+/// # Arguments
+///
+/// * `json` - JSON string previously returned by `serialize_rl_state`
+///
+/// # Returns
+///
+/// * `Ok(String)` - Success message with restored cycle count
+/// * `Err(JsValue)` - Invalid JSON or malformed state
+#[wasm_bindgen]
+pub fn restore_rl_state(json: &str) -> Result<String, JsValue> {
+    let state: rl_state_serialization::SerializedRlState = serde_json::from_str(json)
+        .map_err(|e| JsValue::from_str(&format!("Invalid JSON: {}", e)))?;
+
+    // TODO: Restore actual state when rl_orchestrator supports it
+    // For now, just validate the JSON and return success
+    Ok(format!(
+        "Restored RL state from cycle {} (agent {}, linucb={})",
+        state.telemetry.cycle_count, state.active_agent, state.linucb_enabled
+    ))
+}
+
+
+/// Configure circuit breaker from JSON.
+#[wasm_bindgen]
+pub fn circuit_breaker_configure(config_json: &str) -> Result<String, JsValue> {
+    CIRCUIT_BREAKER.with(|breaker| {
+        match self_healing::CircuitBreaker::from_json(config_json) {
+            Ok(new_breaker) => {
+                *breaker.borrow_mut() = new_breaker;
+                Ok("Circuit breaker configured".to_string())
+            }
+            Err(e) => Err(JsValue::from_str(&e)),
+        }
+    })
+}
+
+/// Get current circuit breaker configuration as JSON.
+#[wasm_bindgen]
+pub fn circuit_breaker_get_config() -> Result<String, JsValue> {
+    CIRCUIT_BREAKER.with(|breaker| {
+        let breaker_ref = breaker.borrow();
+        let config = self_healing::CircuitBreakerConfigJson {
+            failure_threshold: breaker_ref.failure_threshold(),
+            success_threshold: breaker_ref.success_threshold(),
+            open_timeout_ms: breaker_ref.open_timeout_ms(),
+            half_open_timeout_ms: breaker_ref.half_open_timeout_ms(),
+        };
+        serde_json::to_string(&config)
+            .map_err(|e| JsValue::from_str(&format!("Serialization failed: {}", e)))
+    })
+}
+
+/// Reset the persistent circuit breaker.
+#[wasm_bindgen]
+pub fn circuit_breaker_reset() -> Result<String, JsValue> {
+    CIRCUIT_BREAKER.with(|cb| {
+        *cb.borrow_mut() = self_healing::CircuitBreaker::new();
+        Ok("Circuit breaker reset".to_string())
+    })
+}
+
+// -------------------------------------------------------------------------
+// OCEL Support (Object-Centric Event Logs)
+// -------------------------------------------------------------------------
+
+// OCEL functions are exported directly from their modules with cfg gates:
+// - ocel_io.rs: load_ocel2_from_json, export_ocel2_to_json, validate_ocel
+// - ocel_flatten.rs: list_ocel_object_types, get_ocel_type_statistics, flatten_ocel_to_eventlog
+// - oc_petri_net.rs: discover_oc_petri_net
+// - oc_conformance.rs: oc_conformance_check
+// - oc_performance.rs: oc_performance_analysis
+// - resource_analysis.rs: analyze_resource_utilization, analyze_resource_activity_matrix, identify_resource_bottlenecks
+
+// Conditional re-exports for statistics
+// When statrs feature is enabled, re-export statrs types
+#[cfg(feature = "statrs")]
+pub use statrs::statistics::{Data, Median};
+
+// When hand_rolled_stats feature is enabled and statrs is not, re-export hand-rolled types
+#[cfg(all(feature = "hand_rolled_stats", not(feature = "statrs")))]
+pub use hand_stats::Median;
+
+// Provide Data::new() compatible API for hand_rolled stats
+#[cfg(all(feature = "hand_rolled_stats", not(feature = "statrs")))]
+pub struct Data {
+    inner: Vec<f64>,
+}
+
+#[cfg(all(feature = "hand_rolled_stats", not(feature = "statrs")))]
+impl Data {
+    /// Create a new Data container (statrs-compatible API)
+    pub fn new(data: Vec<f64>) -> Self {
+        Self { inner: data }
+    }
+
+    /// Calculate median
+    pub fn median(&self) -> f64 {
+        hand_stats::median(&mut self.inner.clone()).unwrap_or(0.0)
+    }
+
+    /// Calculate mean
+    pub fn mean(&self) -> f64 {
+        hand_stats::mean(&self.inner).unwrap_or(0.0)
+    }
+
+    /// Calculate percentile
+    pub fn percentile(&self, p: f64) -> f64 {
+        hand_stats::percentile(&mut self.inner.clone(), p).unwrap_or(0.0)
+    }
+
+    /// Calculate standard deviation
+    pub fn std_deviation(&self) -> f64 {
+        hand_stats::std_deviation(&self.inner).unwrap_or(0.0)
+    }
+}

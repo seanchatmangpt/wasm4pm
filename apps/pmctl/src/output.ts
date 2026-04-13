@@ -55,7 +55,13 @@ export class HumanFormatter {
 
   log(message: string, data?: Record<string, unknown>): void {
     if (!this.quiet) {
-      consola.log(message, data ?? '');
+      // Use console.log directly for synchronous output that flushes with process.exit()
+      // consola.log may buffer and not flush before process termination in test environments
+      if (data && Object.keys(data).length > 0) {
+        console.log(message, data);
+      } else {
+        console.log(message);
+      }
     }
   }
 }

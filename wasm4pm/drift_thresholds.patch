@@ -1,0 +1,84 @@
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -446,6 +446,83 @@ pub fn get_cache_stats() -> String {
+     )
+ }
+
++/// Set drift detection thresholds for RL state feature quantization.
++///
++/// # Arguments
++/// * `low` - Low threshold (default: 0.3). Values below this are drift_status=0.
++/// * `high` - High threshold (default: 0.7). Values at or above this are drift_status=2.
++///           Values in [low, high) are drift_status=1.
++///
++/// # Returns
++/// * `Ok(String)` - Success message with new thresholds
++/// * `Err(JsValue)` - Error if thresholds are invalid
++///
++/// # Example
++/// ```javascript
++/// // Set custom thresholds: 0.2 and 0.8
++/// set_drift_thresholds(0.2, 0.8);
++/// ```
++#[wasm_bindgen]
++pub fn set_drift_thresholds(low: f32, high: f32) -> Result<String, JsValue> {
++    if low < 0.0 || low > 1.0 {
++        return Err(JsValue::from_str(&format!(
++            "Invalid low threshold {}: must be in [0.0, 1.0]",
++            low
++        )));
++    }
++    if high < 0.0 || high > 1.0 {
++        return Err(JsValue::from_str(&format!(
++            "Invalid high threshold {}: must be in [0.0, 1.0]",
++            high
++        )));
++    }
++    if low >= high {
++        return Err(JsValue::from_str(&format!(
++            "Invalid thresholds: low ({}) must be less than high ({})",
++            low, high
++        )));
++    }
++
++    DRIFT_THRESHOLD_LOW.store(low.to_bits(), Ordering::Relaxed);
++    DRIFT_THRESHOLD_HIGH.store(high.to_bits(), Ordering::Relaxed);
++
++    Ok(format!(
++        "Drift thresholds updated: low={}, high={}",
++        low, high
++    ))
++}
++
++/// Get current drift detection thresholds as JSON string.
++///
++/// # Returns
++/// JSON string with current threshold values: `{"low":0.3,"high":0.7}`
++///
++/// # Example
++/// ```javascript
++/// const thresholds = JSON.parse(get_drift_thresholds());
++/// console.log(thresholds.low, thresholds.high);
++/// ```
++#[wasm_bindgen]
++pub fn get_drift_thresholds() -> String {
++    format!(
++        r#"{{"low":{},"high":{}}}"#,
++        get_drift_threshold_low(),
++        get_drift_threshold_high()
++    )
++}
++
++/// Reset drift detection thresholds to defaults (0.3, 0.7).
++#[wasm_bindgen]
++pub fn reset_drift_thresholds() -> String {
++    DRIFT_THRESHOLD_LOW.store(DRIFT_THRESHOLD_LOW_DEFAULT.to_bits(), Ordering::Relaxed);
++    DRIFT_THRESHOLD_HIGH.store(DRIFT_THRESHOLD_HIGH_DEFAULT.to_bits(), Ordering::Relaxed);
++    format!(
++        "Drift thresholds reset to defaults: low={}, high={}",
++        DRIFT_THRESHOLD_LOW_DEFAULT, DRIFT_THRESHOLD_HIGH_DEFAULT
++    )
++}
++
+ /// SIMD-accelerated token replay for conformance checking.
+ ///

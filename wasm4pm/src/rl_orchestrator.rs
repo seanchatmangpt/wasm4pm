@@ -61,6 +61,7 @@ pub struct CycleTelemetry {
     pub cumulative_reward: f32,
     pub last_reward: f32,
     pub active_agent_name: String,
+    pub consecutive_successes: u32,  // Track consecutive successes for health improvement eligibility
 }
 
 impl Default for CycleTelemetry {

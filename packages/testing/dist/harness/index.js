@@ -4,5 +4,6 @@ export { createCliTestEnv, runCli, assertExitCode, assertJsonOutput, assertError
 export { OtelCapture, createOtelCapture } from './otel-capture.js';
 export { OcelHarvester } from './ocel-harvester.js';
 export { AlgorithmDiscovery } from './algorithm-discovery.js';
+export { ConformanceChecker } from './conformance-checker.js';
 export { SoundnessVerifier } from './soundness-verifier.js';
 //# sourceMappingURL=index.js.map
