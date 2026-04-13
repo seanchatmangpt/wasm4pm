@@ -7,7 +7,7 @@ import { OtelEvent, RequiredOtelAttributes, JsonEvent } from './types.js';
 /**
  * Event types emitted by the engine
  */
-export type EventType = 'StateChange' | 'PlanGenerated' | 'AlgorithmStarted' | 'AlgorithmCompleted' | 'SourceStarted' | 'SourceCompleted' | 'SinkStarted' | 'SinkCompleted' | 'Progress' | 'Error' | 'MlModelTraining' | 'MlPredictionMade' | 'MlFeatureExtraction' | 'MlAnomalyDetected';
+export type EventType = 'StateChange' | 'PlanGenerated' | 'AlgorithmStarted' | 'AlgorithmCompleted' | 'SourceStarted' | 'SourceCompleted' | 'SinkStarted' | 'SinkCompleted' | 'Progress' | 'Error' | 'RecoveryStarted' | 'RecoveryCompleted' | 'MlModelTraining' | 'MlPredictionMade' | 'MlFeatureExtraction' | 'MlAnomalyDetected';
 /**
  * State change event
  */

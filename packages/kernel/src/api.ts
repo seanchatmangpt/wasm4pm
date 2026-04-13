@@ -24,8 +24,11 @@ export interface KernelResult {
   /** Output type: dfg, petrinet, declare, tree */
   outputType: string;
 
-  /** Execution time in milliseconds */
+  /** Execution time in milliseconds (computed via performance.now() for sub-ms accuracy) */
   durationMs: number;
+
+  /** High-precision execution time in milliseconds (same as durationMs, kept for API clarity) */
+  execution_ms: number;
 
   /** Parameters that were used */
   params: Record<string, unknown>;
@@ -195,14 +198,14 @@ export class Kernel {
     }
 
     const activityKey = (params.activity_key as string) ?? 'concept:name';
-    const startTime = Date.now();
+    const startTime = performance.now();
 
     const wasmResult = await wrapKernelCall(
       () => this.dispatchAlgorithm(algorithmName, eventLogHandle, activityKey, params),
       { algorithm: algorithmName }
     );
 
-    const durationMs = Date.now() - startTime;
+    const durationMs = performance.now() - startTime;
     this._totalRuns++;
     this._handles.add(wasmResult.handle);
 
@@ -211,6 +214,7 @@ export class Kernel {
       algorithm: algorithmName,
       outputType: metadata.outputType,
       durationMs,
+      execution_ms: durationMs,
       params: { activity_key: activityKey, ...params },
       hash: hashAlgorithmResult(algorithmName, { activity_key: activityKey, ...params }, {
         handle: wasmResult.handle,
@@ -455,7 +459,8 @@ export class Kernel {
       case 'generalization':
         return this.wasm.generalization(
           eventLogHandle,
-          (params.petri_net_handle as string)!
+          (params.petri_net_handle as string)!,
+          activityKey
         );
 
       case 'petri_net_reduction':
@@ -464,11 +469,21 @@ export class Kernel {
         );
 
       case 'etconformance_precision':
-        return this.wasm.precision_etconformance(
+      case 'precision':
+        return this.wasm.wasm_compute_precision(
           eventLogHandle,
           (params.petri_net_handle as string)!,
           activityKey
         );
+
+      case 'compute_simplicity': {
+        const result = this.wasm.wasm_compute_simplicity(
+          (params.places as number) ?? 0,
+          (params.transitions as number) ?? 0,
+          (params.arcs as number) ?? 0
+        );
+        return { handle: `simplicity_${Date.now()}` };
+      }
 
       case 'alignments': {
         const costConfig = JSON.stringify({

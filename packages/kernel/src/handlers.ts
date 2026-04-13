@@ -170,18 +170,21 @@ export interface WasmModule {
 
   generalization(
     eventlog_handle: string,
-    petri_net_handle: string
+    petri_net_handle: string,
+    activity_key: string
   ): Promise<{ handle: string }>;
 
   reduce_petri_net(
     petri_net_handle: string
   ): Promise<{ handle: string }>;
 
-  precision_etconformance(
+  wasm_compute_precision(
     eventlog_handle: string,
     petri_net_handle: string,
     activity_key: string
   ): Promise<{ handle: string }>;
+
+  wasm_compute_simplicity(places: number, transitions: number, arcs: number): number;
 
   compute_optimal_alignments(
     eventlog_handle: string,
@@ -640,7 +643,8 @@ export async function implementAlgorithmStep(
       case 'generalization': {
         const result = await wasmModule.generalization(
           eventLogHandle,
-          (params.petri_net_handle as string)!
+          (params.petri_net_handle as string)!,
+          activityKey
         );
         modelHandle = result.handle;
         break;
@@ -655,7 +659,7 @@ export async function implementAlgorithmStep(
       }
 
       case 'etconformance_precision': {
-        const result = await wasmModule.precision_etconformance(
+        const result = await wasmModule.wasm_compute_precision(
           eventLogHandle,
           (params.petri_net_handle as string)!,
           activityKey

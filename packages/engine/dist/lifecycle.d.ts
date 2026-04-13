@@ -26,6 +26,8 @@ export declare class StateMachine {
     private transitionHistory;
     private lastTransitionTime;
     private stateEnteredAt;
+    private recoveryHistory;
+    private recoverySinceStart;
     /**
      * Gets the current state
      */
@@ -79,5 +81,21 @@ export declare class StateMachine {
      * Checks if the engine is in a degraded state but recoverable
      */
     isDegraded(): boolean;
+    /**
+     * Record a recovery operation duration for MTTR tracking
+     * @param durationMs - Recovery duration in milliseconds
+     */
+    recordRecovery(durationMs: number): void;
+    /**
+     * Get Mean Time To Recovery (MTTR) in milliseconds
+     * Returns the average of all recorded recovery durations
+     * @returns MTTR in milliseconds, or 0 if no recoveries recorded
+     */
+    getMTTR(): number;
+    /**
+     * Get number of recoveries since engine start
+     * @returns Recovery count
+     */
+    getRecoveryCount(): number;
 }
 //# sourceMappingURL=lifecycle.d.ts.map

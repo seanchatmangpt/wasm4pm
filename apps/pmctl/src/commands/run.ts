@@ -193,6 +193,10 @@ export const run = defineCommand({
       type: 'boolean',
       description: 'Print cache hit/miss statistics after run',
     },
+    'with-quality': {
+      type: 'boolean',
+      description: 'Compute and display quality metrics (fitness, precision, simplicity) after discovery',
+    },
   },
   async run(ctx) {
     const formatter = getFormatter({
@@ -334,13 +338,96 @@ export const run = defineCommand({
         }
       }
 
-      // Step 7: Free handle
+      // Step 7: Quality metrics (before freeing handle)
+      let qualityMetrics: { fitness: number; precision: number; simplicity: number } | null = null;
+      if (ctx.args['with-quality']) {
+        // Normalise result first to check model type
+        const resultDataEarly = typeof raw === 'string' ? JSON.parse(raw) : raw;
+        // Petri net algorithms return places/transitions/arcs as counts (numbers)
+        // or arrays. DFG returns nodes/edges. Either form indicates a Petri net.
+        const hasPetriNetFields =
+          (typeof resultDataEarly?.places === 'number' || Array.isArray(resultDataEarly?.places)) ||
+          (typeof resultDataEarly?.transitions === 'number' || Array.isArray(resultDataEarly?.transitions)) ||
+          (typeof resultDataEarly?.arcs === 'number' || Array.isArray(resultDataEarly?.arcs));
+        const isPetriNet = hasPetriNetFields;
+
+        if (!isPetriNet) {
+          if (formatter instanceof HumanFormatter) {
+            formatter.warn(
+              `Quality metrics require a Petri net model. Algorithm '${resolvedAlgo}' does not produce one.`
+            );
+          }
+        } else {
+          if (formatter instanceof HumanFormatter) {
+            formatter.info('Computing quality metrics...');
+          }
+
+          try {
+            const modelHandle = resultDataEarly?.handle as string | undefined;
+
+            // Fitness via SIMD token replay
+            let fitness = 1.0;
+            if (typeof wasm.simd_token_replay === 'function') {
+              const replayRaw = wasm.simd_token_replay(logHandle, activityKey);
+              const replay = typeof replayRaw === 'string' ? JSON.parse(replayRaw) : replayRaw;
+              if (replay.overall_fitness !== undefined && !replay.error) {
+                fitness = replay.overall_fitness;
+              }
+            }
+
+            // Precision via ETConformance escaping-edge analysis (3-arg WASM function)
+            let precision = 1.0;
+            if (typeof wasm.wasm_compute_precision === 'function' && modelHandle) {
+              try {
+                const precRaw = wasm.wasm_compute_precision(logHandle, modelHandle, activityKey);
+                const prec = typeof precRaw === 'string' ? JSON.parse(precRaw) : precRaw;
+                if (prec.precision !== undefined) {
+                  precision = prec.precision;
+                }
+              } catch {
+                // etconformance may fail for certain model types; use default
+              }
+            }
+
+            // Simplicity via WASM compute_simplicity(places, transitions, arcs)
+            let simplicity = 1.0;
+            const numPlaces = typeof resultDataEarly?.places === 'number'
+              ? resultDataEarly.places
+              : (resultDataEarly?.places as unknown[] | undefined)?.length ?? 0;
+            const numTransitions = typeof resultDataEarly?.transitions === 'number'
+              ? resultDataEarly.transitions
+              : (resultDataEarly?.transitions as unknown[] | undefined)?.length ?? 0;
+            const numArcs = typeof resultDataEarly?.arcs === 'number'
+              ? resultDataEarly.arcs
+              : (resultDataEarly?.arcs as unknown[] | undefined)?.length ?? 0;
+            if (typeof wasm.wasm_compute_simplicity === 'function' && (numPlaces + numTransitions + numArcs) > 0) {
+              simplicity = wasm.wasm_compute_simplicity(numPlaces, numTransitions, numArcs);
+            } else {
+              // Fallback heuristic when WASM function unavailable or model lacks Petri net structure
+              const numEdges = Array.isArray(resultDataEarly?.edges)
+                ? resultDataEarly.edges.length
+                : numArcs;
+              simplicity = 1.0 / (1.0 + numEdges / 10.0);
+            }
+
+            qualityMetrics = { fitness, precision, simplicity };
+          } catch (qualityError) {
+            if (formatter instanceof HumanFormatter) {
+              formatter.warn(
+                `Quality metrics computation failed: ${qualityError instanceof Error ? qualityError.message : String(qualityError)}`
+              );
+            }
+          }
+        }
+      }
+
+      // Step 8: Free handle
       wasm.delete_object(logHandle);
 
       // Normalise result (WASM may return string or object)
       const resultData = typeof raw === 'string' ? JSON.parse(raw) : raw;
 
-      // Step 8: Build output
+      // Step 9: Build output
       const result = {
         status: 'success',
         algorithm: resolvedAlgo,
@@ -349,6 +436,7 @@ export const run = defineCommand({
         elapsedMs: Math.round(elapsedMs * 100) / 100,
         model: resultData,
         ...(Object.keys(mlResults).length > 0 && { ml: mlResults }),
+        ...(qualityMetrics && { quality: qualityMetrics }),
       };
 
       // Step 9: Auto-save result to .wasm4pm/results/ (unless --no-save)
@@ -398,6 +486,16 @@ export const run = defineCommand({
             formatter.info(`  ${key}: ${value}`);
           }
         }
+
+        // Display quality metrics if computed
+        if (qualityMetrics) {
+          formatter.log('');
+          formatter.info('Quality Metrics (van der Aalst):');
+          formatter.info(`  Fitness:    ${(qualityMetrics.fitness * 100).toFixed(1)}%`);
+          formatter.info(`  Precision:  ${(qualityMetrics.precision * 100).toFixed(1)}%`);
+          formatter.info(`  Simplicity: ${(qualityMetrics.simplicity * 100).toFixed(1)}%`);
+        }
+
         formatter.log('');
         formatter.log('  Run "pictl results" to view saved results.');
         formatter.log(

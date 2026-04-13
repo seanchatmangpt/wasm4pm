@@ -56,10 +56,16 @@ use std::time::Instant;
 // ── Data Source & Tier Detection ──────────────────────────────────────────
 
 fn get_benchmark_sizes() -> Vec<usize> {
-    if get_data_source().contains("Real") {
+    // Check if real BPI 2020 data exists (gemba: observe actual file system)
+    // Try multiple path resolutions since test working directory varies
+    let bpi2020_exists = Path::new("wasm4pm/tests/fixtures/BPI_2020_Travel_Permits_Actual.xes").exists()
+        || Path::new("tests/fixtures/BPI_2020_Travel_Permits_Actual.xes").exists()
+        || Path::new("../wasm4pm/tests/fixtures/BPI_2020_Travel_Permits_Actual.xes").exists();
+
+    if bpi2020_exists {
         vec![7_065] // Real BPI 2020 size
     } else {
-        vec![100, 1_000, 5_000, 10_000] // Synthetic sizes
+        vec![100, 1_000, 5_000, 10_000] // Synthetic validation sizes
     }
 }
 
@@ -222,6 +228,11 @@ fn parse_xes_file(content: &str) -> EventLog {
 fn load_real_dataset(dataset: &str) -> Option<EventLog> {
     // Try to load real datasets from fixtures
     let fixture_paths = match dataset {
+        "sepsis" => vec![
+            "wasm4pm/tests/fixtures/Sepsis_Cases_Event_Log.xes",
+            "tests/fixtures/Sepsis_Cases_Event_Log.xes",
+            "./Sepsis_Cases_Event_Log.xes",
+        ],
         "bpi2020" => vec![
             "wasm4pm/tests/fixtures/BPI_2020_Travel_Permits_Actual.xes",
             "wasm4pm/wasm4pm/tests/fixtures/BPI_2020_Travel_Permits_Actual.xes",
@@ -234,20 +245,30 @@ fn load_real_dataset(dataset: &str) -> Option<EventLog> {
             "tests/fixtures/BPI_2013_Incidents.xes",
             "./BPI_2013_Incidents.xes",
         ],
-        "bpi2019" => vec![
-            "wasm4pm/tests/fixtures/BPI_2019_Invoice_Purchase_to_Pay.xes",
-            "tests/fixtures/BPI_2019_Invoice_Purchase_to_Pay.xes",
-            "./BPI_2019_Invoice_Purchase_to_Pay.xes",
+        "bpi2012" => vec![
+            "wasm4pm/tests/fixtures/BPI_Challenge_2012.xes",
+            "tests/fixtures/BPI_Challenge_2012.xes",
+            "./BPI_Challenge_2012.xes",
+        ],
+        "bpi2015" => vec![
+            "wasm4pm/tests/fixtures/BPI_2015_Building_Permits.xes",
+            "tests/fixtures/BPI_2015_Building_Permits.xes",
+            "./BPI_2015_Building_Permits.xes",
+        ],
+        "bpi2017" => vec![
+            "wasm4pm/tests/fixtures/BPI_Challenge_2017.xes",
+            "tests/fixtures/BPI_Challenge_2017.xes",
+            "./BPI_Challenge_2017.xes",
         ],
         "road_traffic" => vec![
             "wasm4pm/tests/fixtures/Road_Traffic_Fine_Management.xes",
             "tests/fixtures/Road_Traffic_Fine_Management.xes",
             "./Road_Traffic_Fine_Management.xes",
         ],
-        "bpi2015" => vec![
-            "wasm4pm/tests/fixtures/BPI_2015_Building_Permits.xes",
-            "tests/fixtures/BPI_2015_Building_Permits.xes",
-            "./BPI_2015_Building_Permits.xes",
+        "bpi2019" => vec![
+            "wasm4pm/tests/fixtures/BPI_2019_Invoice_Purchase_to_Pay.xes",
+            "tests/fixtures/BPI_2019_Invoice_Purchase_to_Pay.xes",
+            "./BPI_2019_Invoice_Purchase_to_Pay.xes",
         ],
         _ => return None,
     };
@@ -257,14 +278,28 @@ fn load_real_dataset(dataset: &str) -> Option<EventLog> {
             if let Ok(content) = fs::read_to_string(path) {
                 let log = parse_xes_file(&content);
                 set_data_source(&format!(
-                    "Real {} ({} cases)",
+                    "Real {} ({} cases, {} events)",
                     dataset.to_uppercase(),
                     match dataset {
+                        "sepsis" => "1,050",
                         "bpi2020" => "7,065",
-                        "bpi2013" => "7,500",
-                        "bpi2019" => "200,000",
+                        "bpi2013" => "7,554",
+                        "bpi2012" => "13,087",
+                        "bpi2015" => "28,657",
+                        "bpi2017" => "31,509",
                         "road_traffic" => "150,370",
-                        "bpi2015" => "150,000",
+                        "bpi2019" => "251,734",
+                        _ => "unknown",
+                    },
+                    match dataset {
+                        "sepsis" => "15,214",
+                        "bpi2020" => "86,581",
+                        "bpi2013" => "65,533",
+                        "bpi2012" => "262,200",
+                        "bpi2015" => "376,467",
+                        "bpi2017" => "1,202,267",
+                        "road_traffic" => "561,470",
+                        "bpi2019" => "1,595,923",
                         _ => "unknown",
                     }
                 ));
@@ -315,14 +350,16 @@ fn generate_synthetic_log(cases: usize) -> EventLog {
 }
 
 fn make_log(cases: usize) -> String {
-    // Load real data based on requested size
+    // Load real data based on requested size (exact case counts from real datasets)
     let dataset = match cases {
-        7_065 => Some("bpi2020"),
-        7_500 => Some("bpi2013"),
-        200_000 => Some("bpi2019"),
-        150_370 => Some("road_traffic"),
-        150_000 => Some("bpi2015"),
-        1_000 => Some("sepsis"),
+        1_050 => Some("sepsis"),           // Sepsis Cases: 1,050 cases, 15,214 events
+        7_065 => Some("bpi2020"),          // BPI 2020 Travel: 7,065 cases, 86,581 events
+        7_554 => Some("bpi2013"),          // BPI 2013 Incidents: 7,554 cases, 65,533 events
+        13_087 => Some("bpi2012"),         // BPI 2012 Loans: 13,087 cases, 262,200 events
+        28_657 => Some("bpi2015"),         // BPI 2015 Building: 28,657 cases, 376,467 events
+        31_509 => Some("bpi2017"),         // BPI 2017 Loans: 31,509 cases, 1,202,267 events
+        150_370 => Some("road_traffic"),   // Road Traffic Fines: 150,370 cases, 561,470 events
+        251_734 => Some("bpi2019"),        // BPI 2019 P2P: 251,734 cases, 1,595,923 events
         _ => None,
     };
 
@@ -405,14 +442,7 @@ fn bench_dfg() {
     let ak = "concept:name";
     print_header("DFG Discovery");
 
-    // Use real data size if available, otherwise synthetic
-    let sizes: Vec<usize> = if get_data_source().contains("Real") {
-        vec![7_065] // Real BPI 2020 size
-    } else {
-        vec![100, 1_000, 5_000, 10_000] // Synthetic validation sizes
-    };
-
-    for n in sizes {
+    for n in get_benchmark_sizes() {
         let h = make_log(n);
         print_row(
             n,
@@ -1024,6 +1054,7 @@ fn bench_activity_ordering() {
 // ── CONFORMANCE CHECKING (1 test) ─────────────────────────────────────────────
 
 #[test]
+#[ignore] // Requires real BPI datasets in wasm4pm/tests/fixtures/
 fn bench_token_based_replay() {
     print_benchmark_header();
     let ak = "concept:name";

@@ -41,7 +41,14 @@
     "docs:lint": "markdownlint '**/*.md' --config .markdownlint.json --ignore node_modules --ignore docs/archive",
     "docs:link-check": "find . -name '*.md' -not -path '*/node_modules/*' -not -path '*/docs/archive/*' -print0 | xargs -0 markdown-link-check --config .mlc.config.json",
     "docs:check": "pnpm run docs:lint && pnpm run docs:link-check",
-    "postinstall": "node scripts/check-engines.mjs"
+    "postinstall": "node scripts/check-engines.mjs",
+    "build:browser": "bash scripts/build-profile.sh browser",
+    "build:edge": "bash scripts/build-profile.sh edge",
+    "build:fog": "bash scripts/build-profile.sh fog",
+    "build:iot": "bash scripts/build-profile.sh iot",
+    "build:cloud": "bash scripts/build-profile.sh cloud",
+    "build:profiles": "bash scripts/build-all-profiles.sh",
+    "verify:profiles": "node scripts/verify-profiles.js"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^1.6.0",

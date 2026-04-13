@@ -1,5 +1,8 @@
 // @pictl/testing — Testing utilities, fixtures, mocks, and harnesses
 
+// Types
+export type { OtelSpan, OtelResource, OtelInstrumentationScope } from './types.js';
+
 // Fixtures
 export * from './fixtures/index.js';
 

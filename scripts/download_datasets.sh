@@ -3,9 +3,9 @@
 # All datasets are freely available (CC BY 4.0) from 4TU.ResearchData.
 #
 # Usage:
-#   bash scripts/download_datasets.sh           # Tier 1 (required)
-#   TIER=2 bash scripts/download_datasets.sh    # Tier 1 + 2
-#   TIER=3 bash scripts/download_datasets.sh    # All tiers
+#   bash scripts/download_datasets.sh           # Tier 1 (required: 30 MB)
+#   TIER=2 bash scripts/download_datasets.sh    # Tier 1 + 2 (adds BPI 2012/2017: ~100 MB)
+#   TIER=3 bash scripts/download_datasets.sh    # All tiers (adds Road Traffic/BPI 2015/2019: ~500 MB)
 
 set -euo pipefail
 
@@ -100,8 +100,14 @@ download_if_missing \
     "${DEST}/bpi2012_loans.xes" \
     "true"
 
+# BPI 2017 — 31,509 cases, 1,202,267 events (DOI: 10.4121/uuid:5f3067df-f10b-45da-b98b-86ae4c7a310b)
+download_if_missing \
+    "https://data.4tu.nl/file/5f3067df-f10b-45da-b98b-86ae4c7a310b/BPI_Challenge_2017.xes.gz" \
+    "${DEST}/bpi2017_loans.xes" \
+    "true"
+
 if [[ "${TIER}" -lt 3 ]]; then
-    log "Tier 2 complete. Set TIER=3 to download Road Traffic Fine (561K events)."
+    log "Tier 2 complete. Set TIER=3 to download Road Traffic Fine and BPI 2019/2015."
     ls -lh "${DEST}/"
     exit 0
 fi
@@ -116,5 +122,44 @@ download_if_missing \
     "${DEST}/road_traffic_fines.xes" \
     "true"
 
+# BPI 2015 Building Permits — 28,657 cases, 376,467 events (DOI: 10.4121/uuid:31a308ef-c844-48da-948c-305d167a25ee)
+# Using municipality 1 as representative
+download_if_missing \
+    "https://data.4tu.nl/file/31a308ef-c844-48da-948c-305d167a25ee/BPI_Challenge_2015_1.xes.gz" \
+    "${DEST}/bpi2015_building_permits_1.xes" \
+    "true"
+
+# BPI 2019 Purchase-to-Pay — 251,734 cases, 1,595,923 events (DOI: 10.4121/uuid:3926db30-f712-4394-aebc-75976070e91f)
+download_if_missing \
+    "https://data.4tu.nl/file/3926db30-f712-4394-aebc-75976070e91f/BPI_Challenge_2019.xes.gz" \
+    "${DEST}/bpi2019_p2p.xes" \
+    "true"
+
 log "=== All datasets downloaded ==="
 ls -lh "${DEST}/"
+
+# ── Copy downloaded datasets to fixtures for use in tests ──────────────────────
+log "=== Linking datasets to fixtures ==="
+mkdir -p "${FIXTURES}"
+
+link_to_fixtures() {
+    local src="$1"
+    local dst_name="$2"
+    if [[ -f "${src}" ]]; then
+        cp "${src}" "${FIXTURES}/${dst_name}"
+        log "Linked: ${dst_name}"
+    fi
+}
+
+link_to_fixtures "${DEST}/sepsis.xes" "Sepsis_Cases_Event_Log.xes"
+link_to_fixtures "${DEST}/bpi2013_incidents.xes" "BPI_2013_Incidents.xes"
+link_to_fixtures "${DEST}/bpi2012_loans.xes" "BPI_Challenge_2012.xes"
+link_to_fixtures "${DEST}/bpi2017_loans.xes" "BPI_Challenge_2017.xes"
+link_to_fixtures "${DEST}/road_traffic_fines.xes" "Road_Traffic_Fine_Management.xes"
+link_to_fixtures "${DEST}/bpi2015_building_permits_1.xes" "BPI_2015_Building_Permits.xes"
+link_to_fixtures "${DEST}/bpi2019_p2p.xes" "BPI_2019_Invoice_Purchase_to_Pay.xes"
+
+log "=== Setup complete ==="
+echo ""
+echo "Fixtures ready in: ${FIXTURES}"
+ls -lh "${FIXTURES}"/*.xes 2>/dev/null | tail -10 || echo "(XES files in fixtures)"

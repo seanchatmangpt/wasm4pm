@@ -14,6 +14,7 @@
 /// # Example
 ///
 /// ```
+/// use pictl::probabilistic::bloom::BloomFilter;
 /// let mut bloom: BloomFilter<16384> = BloomFilter::with_hashes(3);
 /// bloom.insert(42);
 /// assert!(bloom.contains(42)); // true positive

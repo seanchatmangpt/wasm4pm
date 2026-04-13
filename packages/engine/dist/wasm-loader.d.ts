@@ -68,8 +68,15 @@ export declare class WasmLoader {
     static getInstance(config?: WasmLoaderConfig): WasmLoader;
     /**
      * Reset singleton (mainly for testing)
+     * Destroys entire singleton - next init() will reload WASM from scratch
      */
     static reset(): void;
+    /**
+     * Soft reset - clears initialized flag but keeps compiled WASM module
+     * Allows fast recovery without re-importing and re-compiling WASM
+     * Use this for recovery when WASM module is still valid
+     */
+    softReset(): void;
     /**
      * Initialize WASM module
      * - Loads module from ../../wasm4pm/pkg/wasm4pm.js

@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 
-members = ["wasm4pm"]
+members = ["wasm4pm", "tps-metrics"]
 
 [profile.bench]
 opt-level = 3
