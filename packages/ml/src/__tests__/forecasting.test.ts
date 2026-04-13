@@ -123,3 +123,59 @@ describe('forecastSeries', () => {
     expect(result.trend.direction).toBe('unknown');
   });
 });
+
+// ---------------------------------------------------------------------------
+// Edge Cases
+// ---------------------------------------------------------------------------
+
+describe('forecastSeries edge cases', () => {
+  it('handles no seasonality case (pure linear trend)', async () => {
+    // Strictly increasing series with no periodicity
+    const series = Array.from({ length: 20 }, (_, i) => 10 + i * 2);
+    const result = await forecastSeries(series, { forecastPeriods: 5 });
+    expect(result.seriesLength).toBe(20);
+    expect(result.trend.direction).toBe('up');
+    // Seasonality may or may not be detected for a pure trend
+  });
+
+  it('handles constant series (zero trend)', async () => {
+    const series = Array.from({ length: 20 }, () => 42);
+    const result = await forecastSeries(series, { forecastPeriods: 5 });
+    expect(result.trend.direction).toBe('flat');
+    expect(result.trend.slope).toBeCloseTo(0, 5);
+  });
+
+  it('handles decreasing series', async () => {
+    const series = Array.from({ length: 20 }, (_, i) => 100 - i * 3);
+    const result = await forecastSeries(series, { forecastPeriods: 5 });
+    expect(result.trend.direction).toBe('down');
+    expect(result.trend.slope).toBeLessThan(0);
+  });
+
+  it('handles exponential growth pattern', async () => {
+    const series = Array.from({ length: 20 }, (_, i) =>
+      Math.round(10 * Math.pow(1.15, i))
+    );
+    const result = await forecastSeries(series, { forecastPeriods: 5 });
+    expect(result.seriesLength).toBe(20);
+    expect(result.trend.direction).toBe('up');
+    // Exponential growth should produce reasonable R²
+    if (result.trend.rSquared !== undefined) {
+      expect(result.trend.rSquared).toBeGreaterThan(0.8);
+    }
+  });
+
+  it('handles very short series (2 points)', async () => {
+    const series = [5, 10];
+    const result = await forecastSeries(series, { forecastPeriods: 3 });
+    expect(result.seriesLength).toBe(2);
+    // Series < 3 points returns unknown trend
+    expect(result.trend.direction).toBe('unknown');
+  });
+
+  it('handles single point series', async () => {
+    const result = await forecastSeries([42], { forecastPeriods: 3 });
+    expect(result.seriesLength).toBe(1);
+    expect(result.trend.direction).toBe('unknown');
+  });
+});
