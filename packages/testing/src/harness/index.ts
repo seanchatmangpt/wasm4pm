@@ -21,3 +21,12 @@ export type { AlgorithmResult, DiscoveryResults } from './algorithm-discovery.js
 
 export { SoundnessVerifier } from './soundness-verifier.js';
 export type { SoundnessResult } from './soundness-verifier.js';
+
+export { CostProfiler } from './cost-profiler.js';
+export type { ResourceBudget, CostAnalysis, TierRecommendation } from './cost-profiler.js';
+
+export { DriftMonitor } from './drift-monitor.js';
+export type { DriftResult } from './drift-monitor.js';
+
+export { FederationVoting } from './federation-voting.js';
+export type { ConformanceVote, ConsensusResult } from './federation-voting.js';
