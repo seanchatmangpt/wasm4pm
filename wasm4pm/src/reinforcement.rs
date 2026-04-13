@@ -11,6 +11,8 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::hash::Hash;
 
+use fastrand::Rng;
+
 /// State for reinforcement learning (must be hashable and cloneable)
 pub trait WorkflowState: Clone + Eq + Hash {
     /// State features for function approximation
@@ -47,6 +49,9 @@ pub struct QLearning<S: WorkflowState, A: WorkflowAction> {
     episodes: RefCell<usize>,
     total_reward: RefCell<f32>,
 
+    /// Seeded RNG for deterministic behavior (RefCell for &self compatibility)
+    rng: RefCell<Rng>,
+
     _phantom: std::marker::PhantomData<A>,
 }
 
@@ -61,6 +66,23 @@ impl<S: WorkflowState, A: WorkflowAction> QLearning<S, A> {
             exploration_decay: 0.995,
             episodes: RefCell::new(0),
             total_reward: RefCell::new(0.0),
+            rng: RefCell::new(Rng::new()),
+            _phantom: std::marker::PhantomData,
+        }
+    }
+
+    /// Create agent with a seeded RNG for deterministic behavior.
+    #[allow(dead_code)]
+    pub fn new_with_seed(lr: f32, df: f32, seed: u64) -> Self {
+        Self {
+            q_table: RefCell::new(HashMap::new()),
+            learning_rate: lr,
+            discount_factor: df,
+            exploration_rate: 1.0,
+            exploration_decay: 0.995,
+            episodes: RefCell::new(0),
+            total_reward: RefCell::new(0.0),
+            rng: RefCell::new(Rng::with_seed(seed)),
             _phantom: std::marker::PhantomData,
         }
     }
@@ -78,9 +100,9 @@ impl<S: WorkflowState, A: WorkflowAction> QLearning<S, A> {
     #[allow(dead_code)]
     pub fn select_action(&self, state: &S) -> A {
         // Explore with probability epsilon
-        if rand::random::<f32>() < self.exploration_rate {
+        if self.rng.borrow_mut().f32() < self.exploration_rate {
             // Random action
-            let idx = rand::random::<usize>() % A::ACTION_COUNT;
+            let idx = self.rng.borrow_mut().usize(..A::ACTION_COUNT);
             A::from_index(idx).unwrap()
         } else {
             // Greedy: select action with max Q-value
@@ -189,6 +211,8 @@ pub struct SARSAAgent<S: WorkflowState, A: WorkflowAction> {
     /// bridging the Agent trait's (s,a,r,s',done) signature with SARSA's
     /// on-policy (s,a,r,s',a') signature.
     last_action: RefCell<Option<A>>,
+    /// Seeded RNG for deterministic behavior (RefCell for &self compatibility)
+    rng: RefCell<Rng>,
     _phantom: std::marker::PhantomData<A>,
 }
 
@@ -202,6 +226,22 @@ impl<S: WorkflowState, A: WorkflowAction> SARSAAgent<S, A> {
             exploration_rate: 1.0,
             exploration_decay: 0.995,
             last_action: RefCell::new(None),
+            rng: RefCell::new(Rng::new()),
+            _phantom: std::marker::PhantomData,
+        }
+    }
+
+    /// Create agent with a seeded RNG for deterministic behavior.
+    #[allow(dead_code)]
+    pub fn new_with_seed(lr: f32, df: f32, seed: u64) -> Self {
+        SARSAAgent {
+            q_table: RefCell::new(HashMap::new()),
+            learning_rate: lr,
+            discount_factor: df,
+            exploration_rate: 1.0,
+            exploration_decay: 0.995,
+            last_action: RefCell::new(None),
+            rng: RefCell::new(Rng::with_seed(seed)),
             _phantom: std::marker::PhantomData,
         }
     }
@@ -231,8 +271,8 @@ impl<S: WorkflowState, A: WorkflowAction> SARSAAgent<S, A> {
 
     #[allow(dead_code)]
     pub fn epsilon_greedy_action(&self, state: &S, epsilon: f32) -> A {
-        if rand::random::<f32>() < epsilon {
-            let idx = rand::random::<usize>() % A::ACTION_COUNT;
+        if self.rng.borrow_mut().f32() < epsilon {
+            let idx = self.rng.borrow_mut().usize(..A::ACTION_COUNT);
             A::from_index(idx).unwrap()
         } else {
             self.greedy_action(state)
@@ -290,6 +330,8 @@ pub struct DoubleQLearning<S: WorkflowState, A: WorkflowAction> {
     discount_factor: f32,
     exploration_rate: f32,
     exploration_decay: f32,
+    /// Seeded RNG for deterministic behavior (RefCell for &self compatibility)
+    rng: RefCell<Rng>,
     _phantom: std::marker::PhantomData<A>,
 }
 
@@ -303,6 +345,22 @@ impl<S: WorkflowState, A: WorkflowAction> DoubleQLearning<S, A> {
             discount_factor: 0.99,
             exploration_rate: 1.0,
             exploration_decay: 0.995,
+            rng: RefCell::new(Rng::new()),
+            _phantom: std::marker::PhantomData,
+        }
+    }
+
+    /// Create agent with a seeded RNG for deterministic behavior.
+    #[allow(dead_code)]
+    pub fn new_with_seed(lr: f32, df: f32, seed: u64) -> Self {
+        Self {
+            q_a: RefCell::new(HashMap::new()),
+            q_b: RefCell::new(HashMap::new()),
+            learning_rate: lr,
+            discount_factor: df,
+            exploration_rate: 1.0,
+            exploration_decay: 0.995,
+            rng: RefCell::new(Rng::with_seed(seed)),
             _phantom: std::marker::PhantomData,
         }
     }
@@ -319,8 +377,8 @@ impl<S: WorkflowState, A: WorkflowAction> DoubleQLearning<S, A> {
     /// epsilon-greedy action selection (uses combined Q-values)
     #[allow(dead_code)]
     pub fn select_action(&self, state: &S) -> A {
-        if rand::random::<f32>() < self.exploration_rate {
-            let idx = rand::random::<usize>() % A::ACTION_COUNT;
+        if self.rng.borrow_mut().f32() < self.exploration_rate {
+            let idx = self.rng.borrow_mut().usize(..A::ACTION_COUNT);
             A::from_index(idx).unwrap()
         } else {
             self.greedy_action(state)
@@ -373,7 +431,7 @@ impl<S: WorkflowState, A: WorkflowAction> DoubleQLearning<S, A> {
 
         let action_idx = action.to_index();
 
-        if rand::random::<bool>() {
+        if self.rng.borrow_mut().bool() {
             // Update Q_a: use Q_a to select action, Q_b to evaluate
             let best_next_idx = qa
                 .get(next_state)
@@ -450,6 +508,8 @@ pub struct ExpectedSARSAAgent<S: WorkflowState, A: WorkflowAction> {
     discount_factor: f32,
     exploration_rate: f32,
     exploration_decay: f32,
+    /// Seeded RNG for deterministic behavior (RefCell for &self compatibility)
+    rng: RefCell<Rng>,
     _phantom: std::marker::PhantomData<A>,
 }
 
@@ -462,6 +522,21 @@ impl<S: WorkflowState, A: WorkflowAction> ExpectedSARSAAgent<S, A> {
             discount_factor: 0.99,
             exploration_rate: 1.0,
             exploration_decay: 0.995,
+            rng: RefCell::new(Rng::new()),
+            _phantom: std::marker::PhantomData,
+        }
+    }
+
+    /// Create agent with a seeded RNG for deterministic behavior.
+    #[allow(dead_code)]
+    pub fn new_with_seed(lr: f32, df: f32, seed: u64) -> Self {
+        Self {
+            q_table: RefCell::new(HashMap::new()),
+            learning_rate: lr,
+            discount_factor: df,
+            exploration_rate: 1.0,
+            exploration_decay: 0.995,
+            rng: RefCell::new(Rng::with_seed(seed)),
             _phantom: std::marker::PhantomData,
         }
     }
@@ -478,8 +553,8 @@ impl<S: WorkflowState, A: WorkflowAction> ExpectedSARSAAgent<S, A> {
     /// epsilon-greedy action selection
     #[allow(dead_code)]
     pub fn select_action(&self, state: &S) -> A {
-        if rand::random::<f32>() < self.exploration_rate {
-            let idx = rand::random::<usize>() % A::ACTION_COUNT;
+        if self.rng.borrow_mut().f32() < self.exploration_rate {
+            let idx = self.rng.borrow_mut().usize(..A::ACTION_COUNT);
             A::from_index(idx).unwrap()
         } else {
             self.greedy_action(state)
@@ -572,6 +647,8 @@ pub struct ReinforceAgent<S: WorkflowState, A: WorkflowAction> {
     theta: RefCell<HashMap<S, Vec<f32>>>,
     learning_rate: f32,
     discount_factor: f32,
+    /// Seeded RNG for deterministic behavior (RefCell for &self compatibility)
+    rng: RefCell<Rng>,
     _phantom: std::marker::PhantomData<A>,
 }
 
@@ -582,6 +659,19 @@ impl<S: WorkflowState, A: WorkflowAction> ReinforceAgent<S, A> {
             theta: RefCell::new(HashMap::new()),
             learning_rate: 0.01,
             discount_factor: 0.99,
+            rng: RefCell::new(Rng::new()),
+            _phantom: std::marker::PhantomData,
+        }
+    }
+
+    /// Create agent with a seeded RNG for deterministic behavior.
+    #[allow(dead_code)]
+    pub fn new_with_seed(lr: f32, df: f32, seed: u64) -> Self {
+        Self {
+            theta: RefCell::new(HashMap::new()),
+            learning_rate: lr,
+            discount_factor: df,
+            rng: RefCell::new(Rng::with_seed(seed)),
             _phantom: std::marker::PhantomData,
         }
     }
@@ -608,7 +698,7 @@ impl<S: WorkflowState, A: WorkflowAction> ReinforceAgent<S, A> {
         let mut best_val = f32::NEG_INFINITY;
         for (i, &w) in weights.iter().enumerate() {
             // Gumbel noise: -ln(-ln(u))
-            let u = rand::random::<f32>().clamp(1e-6, 1.0 - 1e-6);
+            let u = self.rng.borrow_mut().f32().clamp(1e-6, 1.0 - 1e-6);
             let gumbel = -(-u.ln()).ln();
             let val = w + gumbel;
             if val > best_val {

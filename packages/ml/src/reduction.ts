@@ -225,13 +225,19 @@ export async function reduceFeaturesPCA(
   // Eigendecomposition
   const { eigenvalues, eigenvectors } = eigenSymmetric(cov);
 
-  // Explained variance
+  // Explained variance (only positive eigenvalues contribute)
   let totalVariance = 0;
-  for (let i = 0; i < eigenvalues.length; i++) totalVariance += eigenvalues[i];
+  for (let i = 0; i < eigenvalues.length; i++) {
+    if (eigenvalues[i] > 0) totalVariance += eigenvalues[i];
+  }
   const invTotal = totalVariance === 0 ? 0 : 1 / totalVariance;
 
   const explainedVariance: number[] = [];
-  for (let i = 0; i < nComponents; i++) explainedVariance.push(eigenvalues[i] * invTotal);
+  for (let i = 0; i < nComponents; i++) {
+    // Clamp to [0, 1] to handle floating-point edge cases
+    const ev = Math.max(0, Math.min(1, eigenvalues[i] * invTotal));
+    explainedVariance.push(ev);
+  }
 
   // Project: centered (already centered by covarianceMatrix) × eigenvectors^T
   // components[i] = i-th eigenvector (length d), stored as Float64Array

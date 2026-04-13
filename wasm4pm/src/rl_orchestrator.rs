@@ -50,7 +50,7 @@ impl AgentType {
 }
 
 /// Cycle telemetry — persisted across cycles for reward computation.
-#[derive(Debug, Clone, serde::Serialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct CycleTelemetry {
     pub cycle_count: u64,
     pub last_health_state: u8,
@@ -79,6 +79,33 @@ impl Default for CycleTelemetry {
     }
 }
 
+/// Compute health state from perception metrics.
+///
+/// Health state (5-level: 0=Normal, 1=Warning, 2=Degraded, 3=Critical, 4=Failed)
+///   0 (Normal)    : Healthy log with multiple activities
+///   1 (Warning)   : Reserved for future use (SPC-based warnings)
+///   2 (Degraded)  : Trivial log (single activity, < 5 events)
+///   3 (Critical)  : No traces
+///   4 (Failed)    : Empty log or no activities
+///
+/// This function extracts the health computation logic from perception
+/// so it can be reused to compute the "next state" after cycle completion.
+pub fn compute_health_state(
+    event_count: u64,
+    trace_count: u64,
+    unique_activities: u64,
+) -> u8 {
+    if event_count == 0 || unique_activities == 0 {
+        4 // Failed: empty log or no activities
+    } else if trace_count == 0 {
+        3 // Critical: no traces
+    } else if unique_activities == 1 && event_count < 5 {
+        2 // Degraded: trivial log
+    } else {
+        0 // Normal
+    }
+}
+
 /// Compute reward signal from SPC alert count and health transition.
 ///
 /// Reward semantics:
@@ -89,7 +116,7 @@ impl Default for CycleTelemetry {
 ///   -1.0  : Health degraded (higher health_state number)
 ///   -2.0  : Terminal state reached (health == 4 = Failed)
 ///
-/// Bounded range: approximately [-3.5, +1.1]
+/// Bounded range: approximately [-5.0, +1.1]
 pub fn compute_reward(
     prev_health: u8,
     curr_health: u8,
@@ -153,6 +180,23 @@ impl RlOrchestrator {
             double_q: DoubleQLearning::new(),
             expected_sarsa: ExpectedSARSAAgent::new(),
             reinforce: ReinforceAgent::new(),
+            active_agent: AgentType::QLearning,
+            linucb: LinUCBAgent::new(),
+            telemetry: CycleTelemetry::default(),
+            use_linucb_for_selection: false,
+        }
+    }
+
+    /// Create orchestrator with seeded RNG for all 5 RL agents.
+    /// Each agent gets a unique seed derived from the base seed.
+    #[allow(dead_code)]
+    pub fn new_with_seed(seed: u64) -> Self {
+        Self {
+            q_learning: QLearning::new_with_seed(0.1, 0.99, seed),
+            sarsa: SARSAAgent::new_with_seed(0.1, 0.99, seed.wrapping_add(1)),
+            double_q: DoubleQLearning::new_with_seed(0.1, 0.99, seed.wrapping_add(2)),
+            expected_sarsa: ExpectedSARSAAgent::new_with_seed(0.1, 0.99, seed.wrapping_add(3)),
+            reinforce: ReinforceAgent::new_with_seed(0.01, 0.99, seed.wrapping_add(4)),
             active_agent: AgentType::QLearning,
             linucb: LinUCBAgent::new(),
             telemetry: CycleTelemetry::default(),
@@ -233,8 +277,8 @@ impl RlOrchestrator {
     /// Maps LinUCB actions 0..4 to AgentType.
     pub fn linucb_select_agent(&mut self, features: &[f32; 8]) -> AgentType {
         let (action_idx, _score) = self.linucb.select(features);
-        let idx = (action_idx as usize) % AgentType::COUNT;
-        AgentType::from_u8(idx as u8).unwrap_or(AgentType::QLearning)
+        // action_idx is now 0..4 (directly maps to agents)
+        AgentType::from_u8(action_idx as u8).unwrap_or(AgentType::QLearning)
     }
 
     /// Update LinUCB with reward for the current agent selection.
@@ -253,13 +297,37 @@ impl RlOrchestrator {
         self.use_linucb_for_selection
     }
 
+    /// Restore telemetry from a serialized snapshot.
+    ///
+    /// Used by `restore_rl_state` to resume learning progress across sessions.
+    /// Note: Q-tables are NOT restored (agents start fresh) — only the
+    /// cycle count, cumulative reward, and metadata are preserved.
+    pub fn restore_telemetry(&mut self, telemetry: CycleTelemetry) {
+        self.telemetry = telemetry;
+    }
+
+    /// Get mutable reference to telemetry (for restoration).
+    pub fn telemetry_mut(&mut self) -> &mut CycleTelemetry {
+        &mut self.telemetry
+    }
+
     /// Run one full cycle: select agent (if LinUCB enabled), select action,
     /// compute reward, update agent, update telemetry.
+    ///
+    /// # Parameters
+    /// - `features`: Current perception feature vector
+    /// - `state`: Current health state (before cycle actions)
+    /// - `next_state`: Health state AFTER cycle actions complete
+    /// - `spc_alert_count`: Number of SPC violations detected
+    /// - `guard_pass`: Whether pre-action guard passed
+    /// - `circuit_allowed`: Whether circuit breaker allowed execution
+    ///
     /// Returns (action_label, reward).
     pub fn run_cycle(
         &mut self,
         features: &[f32; 8],
         state: &RlState,
+        next_state: &RlState,
         spc_alert_count: usize,
         guard_pass: bool,
         circuit_allowed: bool,
@@ -270,13 +338,19 @@ impl RlOrchestrator {
             self.switch_agent(recommended);
         }
 
-        // Select action
+        // Select action based on CURRENT state
         let action = self.select_action(state);
         let action_label = format!("{:?}", action);
 
-        // Compute reward
+        // On first cycle, initialize prev_health from current state
+        // to avoid reward mismatch (default last_health_state=0)
+        if self.telemetry.cycle_count == 0 {
+            self.telemetry.last_health_state = state.health_level;
+        }
+
+        // Compute reward based on health transition (prev -> next)
         let prev_health = self.telemetry.last_health_state;
-        let curr_health = state.0;
+        let curr_health = next_state.health_level; // Use NEXT state for reward computation
         let reward = compute_reward(
             prev_health,
             curr_health,
@@ -285,9 +359,19 @@ impl RlOrchestrator {
             circuit_allowed,
         );
 
-        // Update agent
+        // For SARSA: pre-select action for next_state so the update uses the
+        // correct on-policy next action a' = π(s'). This must happen BEFORE
+        // the update call because SARSA's update reads last_action to get a'.
+        // For other agents (QLearning, DoubleQ, etc.) this is a no-op since
+        // they don't use last_action.
+        // (SARSA stale action bug fix)
         let done = curr_health == 4;
-        self.update(state, &action, reward, state, done);
+        if !done {
+            self.select_action(next_state);
+        }
+
+        // Update agent with proper state transition (state -> next_state)
+        self.update(state, &action, reward, next_state, done);
 
         // Update LinUCB
         self.linucb_update(features, reward);
@@ -295,7 +379,7 @@ impl RlOrchestrator {
         // Decay exploration
         self.decay_exploration();
 
-        // Update telemetry
+        // Update telemetry with NEXT state (post-cycle)
         self.telemetry.cycle_count += 1;
         self.telemetry.last_health_state = curr_health;
         self.telemetry.last_action_label = action_label.clone();
