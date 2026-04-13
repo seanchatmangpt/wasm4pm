@@ -19,8 +19,14 @@ export type { OcelObject, OcelEvent, OcelEventLog } from './ocel-harvester.js';
 export { AlgorithmDiscovery } from './algorithm-discovery.js';
 export type { AlgorithmResult, DiscoveryResults } from './algorithm-discovery.js';
 
+export { ConformanceChecker } from './conformance-checker.js';
+export type { ConformanceResult, ConformanceViolation, DiscoveredModel } from './conformance-checker.js';
+
 export { SoundnessVerifier } from './soundness-verifier.js';
 export type { SoundnessResult } from './soundness-verifier.js';
+
+export { PerformanceAnalyzer } from './performance-analyzer.js';
+export type { PerformanceResult, ActivityMetrics, BottleneckAnalysis } from './performance-analyzer.js';
 
 export { CostProfiler } from './cost-profiler.js';
 export type { ResourceBudget, CostAnalysis, TierRecommendation } from './cost-profiler.js';
@@ -30,3 +36,13 @@ export type { DriftResult } from './drift-monitor.js';
 
 export { FederationVoting } from './federation-voting.js';
 export type { ConformanceVote, ConsensusResult } from './federation-voting.js';
+
+export { PrescriptiveAgent } from './prescriptive-agent.js';
+export type { OptimizationAction, ProcessOptimizationPlan } from './prescriptive-agent.js';
+
+export { PredictiveAgent } from './predictive-agent.js';
+export type {
+  NextActivityPrediction,
+  RemainingTimePrediction,
+  OutcomeRiskPrediction,
+} from './predictive-agent.js';
