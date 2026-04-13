@@ -1226,11 +1226,19 @@ pub fn autonomic_execute_cycle(
 
             let rl_state = RlState::from_features(&features, health_level, rework_ratio_val);
 
-            // Compute next health state based on cycle outcome.
-            // If cycle failed (guard or circuit blocked), health degrades.
-            // If cycle succeeded, health remains stable (log hasn't changed).
+            // Compute next health state based on cycle outcome and consecutive successes.
+            // After 3 consecutive successful cycles (guard_pass && circuit_allowed),
+            // health improves by 1 level (3→2→1→0). Failed cycles degrade health and reset counter.
+            const IMPROVEMENT_THRESHOLD: u32 = 3;
+            let consecutive_successes = orch.telemetry().consecutive_successes;
+
             let next_health_level = if guard_pass && circuit_allowed {
-                health_level // Stable: successful cycle
+                // Success: check if we've earned an improvement
+                if consecutive_successes >= IMPROVEMENT_THRESHOLD {
+                    health_level.saturating_sub(1) // Improve: 3→2→1→0 (min 0)
+                } else {
+                    health_level // Stable: not enough consecutive successes yet
+                }
             } else {
                 (health_level + 1).min(4) // Degrade: failed cycle (cap at 4)
             };

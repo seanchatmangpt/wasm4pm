@@ -453,3 +453,111 @@ fn test_reward_recovery_after_environment_improvement() {
         reward_after_degrade
     );
 }
+
+// ---------------------------------------------------------------------------
+// Test 9: Health Improvement After Consecutive Successes
+// ---------------------------------------------------------------------------
+
+#[test]
+fn test_health_improves_after_three_consecutive_successes() {
+    // Verify that consecutive_successes counter increments and triggers health
+    // improvement after 3 successful cycles (guard_pass=true, circuit_allowed=true).
+    // This test verifies the fix for the bug where health could never improve.
+    let mut orch = RlOrchestrator::new_with_seed(42);
+
+    // Start with health level 3 (Critical)
+    let health_level: u8 = 3;
+    let features = [0.1, 0.1, 0.1, 0.75, 0.0, 1.0, 1.0, 0.0]; // health_level=3, guard_pass=1, circuit_allowed=1
+    let state = RlState::from_features(&features, health_level, 0.0);
+
+    // Run 4 successful cycles:
+    // - Cycles 1-2: consecutive_successes increments, health stays at 3 (not enough for improvement)
+    // - Cycle 3: consecutive_successes reaches 3, health should improve to 2
+    // - Cycle 4: consecutive_successes stays at 3, health should stay at 2 (stable)
+    for i in 0..4 {
+        let next_health = match i {
+            0..=1 => 3, // First 2 cycles: no improvement yet
+            2..=3 => 2, // After 3rd cycle: improved to 2
+            _ => 2,
+        };
+        let next_state = RlState::from_features(&features, next_health, 0.0);
+
+        let (_action, reward) = orch.run_cycle(
+            &features,
+            &state,
+            &next_state,
+            0, // no SPC alerts
+            true,  // guard_pass
+            true,  // circuit_allowed
+        );
+
+        // Verify consecutive_successes tracking
+        assert_eq!(
+            orch.telemetry().consecutive_successes,
+            i + 1,
+            "consecutive_successes should increment to {} after cycle {}",
+            i + 1,
+            i
+        );
+
+        // Verify health state tracking
+        assert_eq!(
+            orch.telemetry().last_health_state,
+            next_health,
+            "last_health_state should be {} after cycle {}",
+            next_health,
+            i
+        );
+
+        // Verify reward calculation:
+        // - Health improvement: +1.0 (cycle 2)
+        // - Health stability: +0.2 (cycles 0,1,3)
+        // - Guard+circuit bonus: +0.1 (all cycles)
+        // - No SPC alerts: 0
+        // Total: 0.3 for stable cycles, 1.1 for improvement cycle
+        let expected_reward = if i == 2 { 1.1 } else { 0.3 };
+        assert!(
+            (reward - expected_reward).abs() < 0.01,
+            "reward should be {:.1} after cycle {}, got {:.2}",
+            expected_reward,
+            i,
+            reward
+        );
+    }
+
+    // Final state verification
+    assert_eq!(orch.telemetry().consecutive_successes, 4);
+    assert_eq!(orch.telemetry().last_health_state, 2); // Improved from 3 to 2!
+    assert!(orch.telemetry().cumulative_reward > 1.0, "cumulative reward should be positive");
+}
+
+// ---------------------------------------------------------------------------
+// Test 10: Consecutive Successes Reset on Failure
+// ---------------------------------------------------------------------------
+
+#[test]
+fn test_consecutive_successes_resets_on_failure() {
+    // Verify that consecutive_successes resets to 0 when guard_pass=false or circuit_allowed=false
+    let mut orch = RlOrchestrator::new_with_seed(42);
+
+    let health_level: u8 = 2;
+    let features = [0.1, 0.1, 0.1, 0.5, 0.0, 1.0, 1.0, 0.0];
+    let state = RlState::from_features(&features, health_level, 0.0);
+
+    // Run 2 successful cycles
+    for _ in 0..2 {
+        let next_state = RlState::from_features(&features, health_level, 0.0);
+        orch.run_cycle(&features, &state, &next_state, 0, true, true);
+    }
+    assert_eq!(orch.telemetry().consecutive_successes, 2);
+
+    // Run 1 failed cycle (guard_pass=false)
+    let next_state = RlState::from_features(&features, health_level + 1, 0.0); // Health degrades
+    orch.run_cycle(&features, &state, &next_state, 0, false, true);
+
+    // Verify consecutive_successes reset to 0
+    assert_eq!(
+        orch.telemetry().consecutive_successes, 0,
+        "consecutive_successes should reset to 0 after failure"
+    );
+}
