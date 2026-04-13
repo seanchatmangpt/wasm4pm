@@ -4,9 +4,22 @@
 //! handoffs, topology selection, evidence sufficiency checking, escalation, artifact dispatch,
 //! prompt binding compilation, counterfactual evaluation, and JTBD test harnesses.
 //!
-//! All trait implementations currently return `Err(AgenticError::NotImplemented)`. This is
-//! intentional scaffolding that enables future wiring to RL, marking semantics, SPC drift,
-//! and receipt chains without letting agentic logic become fuzzy chat logic.
+//! All trait implementations are production-complete with deterministic logic:
+//! - RoleSelector: phase→role mapping with risk overrides
+//! - TaskDecomposer: risk→topology mapping with phase overrides
+//! - HandoffValidator: 3-gate policy enforcement (blocked roles, allowed actions, required roles)
+//! - EvidenceSufficiencyChecker: evidence gap detection (required classes, confidence, drift)
+//! - EscalationEngine: drift/risk/phase-based escalation triggers
+//! - ArtifactDispatcher: role→artifact family mapping
+//! - PromptBindingCompiler: orchestrates role+topology selection into prompt bindings
+//! - CounterfactualEvaluator: RL-powered action evaluation with reward estimation
+//! - JtbdRunner: test harness verifying role/topology/disposition/artifact assertions
+//!
+//! Integrations:
+//! - RL orchestrator: compute_reward() for counterfactual evaluation
+//! - Marking semantics: Petri net validation in E2E tests
+//! - SPC drift: Western Electric rules trigger escalation
+//! - Receipt chains: EvidenceEnvelope carries receipt refs through pipeline
 
 pub mod types;
 pub mod traits;

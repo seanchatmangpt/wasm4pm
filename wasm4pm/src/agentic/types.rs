@@ -283,7 +283,6 @@ pub enum AgenticError {
     InvalidTransition,
     EscalationRequired,
     CounterfactualUnavailable,
-    NotImplemented,
     Other(String),
 }
 
@@ -297,7 +296,6 @@ impl fmt::Display for AgenticError {
             Self::InvalidTransition => write!(f, "invalid transition"),
             Self::EscalationRequired => write!(f, "escalation required"),
             Self::CounterfactualUnavailable => write!(f, "counterfactual unavailable"),
-            Self::NotImplemented => write!(f, "not implemented"),
             Self::Other(msg) => write!(f, "{msg}"),
         }
     }

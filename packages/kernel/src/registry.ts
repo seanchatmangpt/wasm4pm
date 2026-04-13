@@ -878,6 +878,7 @@ export class AlgorithmRegistry {
       speedTier: 70,
       qualityTier: 50,
       parameters: [
+        { name: 'activity_key', type: 'string', description: 'Event attribute key for activity names', required: true, default: 'concept:name' },
         { name: 'window', type: 'number', description: 'Sliding window size', required: false, default: 1, min: 1, max: 10 },
         { name: 'direction', type: 'select', description: 'Window direction', required: false, default: 'forward', options: ['forward', 'backward'] },
       ],
@@ -896,7 +897,9 @@ export class AlgorithmRegistry {
       complexity: 'O(n)',
       speedTier: 75,
       qualityTier: 50,
-      parameters: [],
+      parameters: [
+        { name: 'activity_key', type: 'string', description: 'Event attribute key for activity names', required: true, default: 'concept:name' },
+      ],
       supportedProfiles: ['balanced', 'quality', 'stream'],
       estimatedDurationMs: 10,
       estimatedMemoryMB: 30,
@@ -913,6 +916,7 @@ export class AlgorithmRegistry {
       speedTier: 60,
       qualityTier: 55,
       parameters: [
+        { name: 'activity_key', type: 'string', description: 'Event attribute key for activity names', required: true, default: 'concept:name' },
         { name: 'method', type: 'select', description: 'Discovery method', required: false, default: 'heuristic', options: ['alpha', 'heuristic'] },
         { name: 'dependency_threshold', type: 'number', description: 'Minimum dependency threshold (heuristic)', required: false, default: 0.5, min: 0, max: 1 },
       ],

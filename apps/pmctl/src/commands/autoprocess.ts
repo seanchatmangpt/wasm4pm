@@ -1,7 +1,7 @@
 import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
 import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
-import { EXIT_CODES } from '../exit-codes.js';
+import { EXIT_CODES, type ExitCode } from '../exit-codes.js';
 import { WasmLoader } from '@pictl/engine';
 import type { OutputOptions } from '../output.js';
 
@@ -157,8 +157,20 @@ export const autoprocess = defineCommand({
       // 5. Cleanup
       wasm.delete_object(logHandle);
 
+      // Use process.exit() to prevent citty from printing help text
+      // The formatter uses synchronous console.log for output that flushes immediately
       process.exit(EXIT_CODES.success);
     } catch (error) {
+      // Determine correct exit code based on error type
+      let exitCode: ExitCode = EXIT_CODES.execution_error;
+
+      // File not found or read errors are source errors
+      if (error instanceof Error) {
+        if ('code' in error && error.code === 'ENOENT') {
+          exitCode = EXIT_CODES.source_error;
+        }
+      }
+
       if (formatter instanceof JSONFormatter) {
         formatter.error('AutoProcess failed', error);
       } else {
@@ -166,7 +178,7 @@ export const autoprocess = defineCommand({
           `AutoProcess failed: ${error instanceof Error ? error.message : String(error)}`,
         );
       }
-      process.exit(EXIT_CODES.execution_error);
+      process.exit(exitCode);
     }
   },
 });

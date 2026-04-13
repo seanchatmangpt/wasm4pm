@@ -24,6 +24,12 @@ use pictl::spc::{check_western_electric_rules, ChartData, SpecialCause, TrendDir
 use pictl::RlState;
 use std::collections::BTreeSet;
 
+/// Helper to create test RlState with reasonable defaults
+fn make_test_state(health_level: u8) -> RlState {
+    let features = [0.5, 0.3, 0.2, 0.0, 0.0, 0.0, 0.5, 0.0]; // dummy feature vector
+    RlState::from_features(&features, health_level, 0.0) // rework_ratio = 0.0
+}
+
 // ---------------------------------------------------------------------------
 // Test fixture builders
 // ---------------------------------------------------------------------------
@@ -123,12 +129,13 @@ fn e2e_pipeline_event_stream_to_prompt_bindings() {
     ];
 
     // Step 2: State O_t — health at "Watch" (2)
-    let state = RlState(2);
+    let state = make_test_state(2);
 
     // Step 3: RL selects action
     let mut orch = RlOrchestrator::new();
     orch.set_linucb_selection(true);
-    let (action_label, reward) = orch.run_cycle(&features, &state, 0, true, true);
+    let next_state = make_test_state(1);
+    let (action_label, reward) = orch.run_cycle(&features, &state, &next_state, 0, true, true);
     assert!(!action_label.is_empty(), "RL must produce an action label");
     assert!(!reward.is_nan(), "Reward must be a real number");
     assert_eq!(orch.telemetry().cycle_count, 1);
@@ -264,8 +271,9 @@ fn e2e_autonomic_state_machine_happy_path() {
     // LEARN: orchestrator cycle recorded
     let mut orch = RlOrchestrator::new();
     let features = [0.1, 0.5, 0.0, 0.5, 0.2, 1.0, 0.9, 0.3];
-    let state = RlState(1);
-    let (_, cycle_reward) = orch.run_cycle(&features, &state, 0, true, true);
+    let state = make_test_state(1);
+    let next_state = make_test_state(1);
+    let (_, cycle_reward) = orch.run_cycle(&features, &state, &next_state, 0, true, true);
     assert_eq!(orch.telemetry().cycle_count, 1);
     assert_eq!(orch.telemetry().cumulative_reward, cycle_reward);
 }
@@ -387,10 +395,11 @@ fn e2e_ml_challenge_feature_sparsity_entropy() {
     // Bandit should select different agents based on features (contextual)
     let mut orch = RlOrchestrator::new();
     orch.set_linucb_selection(true);
-    let state = RlState(1);
+    let state = make_test_state(1);
+    let next_state = make_test_state(1);
 
-    let (action_high, _) = orch.run_cycle(&high_entropy_features, &state, 0, true, true);
-    let (action_low, _) = orch.run_cycle(&low_entropy_features, &state, 0, true, true);
+    let (action_high, _) = orch.run_cycle(&high_entropy_features, &state, &next_state, 0, true, true);
+    let (action_low, _) = orch.run_cycle(&low_entropy_features, &state, &next_state, 0, true, true);
 
     // Both must produce valid action labels (contextual bandit responds to features)
     assert!(!action_high.is_empty());
@@ -437,11 +446,12 @@ fn e2e_rl_challenge_bounded_reward_kernel() {
 fn e2e_rl_challenge_persistent_state_across_cycles() {
     let mut orch = RlOrchestrator::new();
     let features = [0.3, 0.5, 0.0, 0.6, 0.2, 1.0, 0.8, 0.4];
-    let state = RlState(1); // healthy-ish state
+    let state = make_test_state(1); // healthy-ish state
+    let next_state = make_test_state(1);
 
     let mut cumulative = 0.0f32;
     for i in 1..=10 {
-        let (_, reward) = orch.run_cycle(&features, &state, 0, true, true);
+        let (_, reward) = orch.run_cycle(&features, &state, &next_state, 0, true, true);
         cumulative += reward;
         assert_eq!(orch.telemetry().cycle_count, i, "Cycle counter must persist");
         assert!(
@@ -504,7 +514,7 @@ fn e2e_rl_challenge_8_feature_contextual_state() {
 #[test]
 fn e2e_rl_all_agents_run_without_panic() {
     let features = [0.2, 0.4, 0.1, 0.5, 0.3, 1.0, 0.7, 0.6f32];
-    let state = RlState(2);
+    let state = make_test_state(2);
 
     for agent_type in [
         AgentType::QLearning,
@@ -515,7 +525,8 @@ fn e2e_rl_all_agents_run_without_panic() {
     ] {
         let mut orch = RlOrchestrator::new();
         orch.switch_agent(agent_type);
-        let (label, reward) = orch.run_cycle(&features, &state, 0, true, true);
+        let next_state = make_test_state(2);
+        let (label, reward) = orch.run_cycle(&features, &state, &next_state, 0, true, true);
         assert!(!label.is_empty(), "Agent {agent_type:?} must produce a label");
         assert!(!reward.is_nan(), "Agent {agent_type:?} must produce a real reward");
     }
@@ -737,8 +748,9 @@ fn e2e_decision_gate_successful_execution_produces_receipt() {
     // RL records the receipt (telemetry)
     let mut orch = RlOrchestrator::new();
     let features = [0.3, 0.5, 0.0, 0.6, 0.2, 1.0, 0.8, 0.4f32];
-    let state = RlState(1);
-    let (_, reward) = orch.run_cycle(&features, &state, 0, true, true);
+    let state = make_test_state(1);
+    let next_state = make_test_state(1);
+    let (_, reward) = orch.run_cycle(&features, &state, &next_state, 0, true, true);
 
     let telem = orch.telemetry();
     assert_eq!(telem.cycle_count, 1, "One receipt recorded");
@@ -874,14 +886,15 @@ fn e2e_health_state_watch_triggered_by_spc_shift() {
 fn e2e_health_state_adaptive_after_shift() {
     let mut orch = RlOrchestrator::new();
     let features = [0.5; 8];
-    let state = RlState(2); // Watch state
+    let state = make_test_state(2); // Watch state
+    let next_state = make_test_state(2);
 
     // Run with SPC alerts (count=3) — RL records the alert
-    let (_, _) = orch.run_cycle(&features, &state, 3, true, true);
+    let (_, _) = orch.run_cycle(&features, &state, &next_state, 3, true, true);
     assert_eq!(orch.telemetry().last_spc_alert_count, 3);
 
     // Subsequent cycle with no alerts — RL adapts
-    let (_, reward) = orch.run_cycle(&features, &RlState(1), 0, true, true);
+    let (_, reward) = orch.run_cycle(&features, &make_test_state(1), 0, true, true);
     assert_eq!(orch.telemetry().last_spc_alert_count, 0);
     assert_eq!(orch.telemetry().cycle_count, 2);
     assert!(!reward.is_nan());
@@ -1200,12 +1213,13 @@ fn e2e_challenge_role_topology_all_phases_bounded() {
 fn e2e_challenge_streaming_event_pressure() {
     let mut orch = RlOrchestrator::new();
     let features = [0.3, 0.5, 0.1, 0.6, 0.2, 1.0, 0.8, 0.4f32];
-    let state = RlState(1);
+    let state = make_test_state(1);
+    let next_state = make_test_state(1);
 
     // Simulate 1000 rapid events
     let mut valid_cycles = 0u32;
     for _ in 0..1000 {
-        let (label, reward) = orch.run_cycle(&features, &state, 0, true, true);
+        let (label, reward) = orch.run_cycle(&features, &state, &next_state, 0, true, true);
         if !label.is_empty() && !reward.is_nan() {
             valid_cycles += 1;
         }

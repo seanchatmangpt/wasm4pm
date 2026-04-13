@@ -19,6 +19,7 @@
 //! - `async` methods removed (WASM is single-threaded)
 
 use std::collections::HashMap;
+use serde::{Deserialize, Serialize};
 
 // ---------------------------------------------------------------------------
 // Monotonic clock stub
@@ -128,6 +129,40 @@ impl Default for CircuitBreakerConfig {
     }
 }
 
+/// JSON-deserializable circuit breaker configuration.
+///
+/// Provides serde-compatible config with sensible defaults.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CircuitBreakerConfigJson {
+    #[serde(default = "default_failure_threshold")]
+    pub failure_threshold: u32,
+
+    #[serde(default = "default_success_threshold")]
+    pub success_threshold: u32,
+
+    #[serde(default = "default_open_timeout")]
+    pub open_timeout_ms: u64,
+
+    #[serde(default = "default_half_open_timeout")]
+    pub half_open_timeout_ms: u64,
+}
+
+fn default_failure_threshold() -> u32 { 5 }
+fn default_success_threshold() -> u32 { 2 }
+fn default_open_timeout() -> u64 { 60_000 }
+fn default_half_open_timeout() -> u64 { 30_000 }
+
+impl From<CircuitBreakerConfigJson> for CircuitBreakerConfig {
+    fn from(json: CircuitBreakerConfigJson) -> Self {
+        Self {
+            failure_threshold: json.failure_threshold,
+            success_threshold: json.success_threshold,
+            open_timeout_ms: json.open_timeout_ms,
+            half_open_timeout_ms: json.half_open_timeout_ms,
+        }
+    }
+}
+
 /// Circuit breaker for external dependency protection.
 #[derive(Debug)]
 #[allow(dead_code)]
@@ -157,6 +192,22 @@ impl CircuitBreaker {
             success_count: 0,
             last_state_change_ms: now_ms(),
         }
+    }
+
+    /// Create circuit breaker from JSON configuration string.
+    ///
+    /// # Arguments
+    /// * `json` - JSON string with circuit breaker configuration
+    ///
+    /// # Returns
+    /// * `Ok(CircuitBreaker)` - Parsed and initialized circuit breaker
+    /// * `Err(String)` - JSON parsing error message
+    #[allow(dead_code)]
+    pub fn from_json(json: &str) -> Result<Self, String> {
+        let config_json: CircuitBreakerConfigJson = serde_json::from_str(json)
+            .map_err(|e| format!("Invalid circuit breaker config: {}", e))?;
+
+        Ok(Self::with_config(config_json.into()))
     }
 
     /// Record a successful call.
@@ -248,6 +299,30 @@ impl CircuitBreaker {
     #[allow(dead_code)]
     pub fn success_count(&self) -> u32 {
         self.success_count
+    }
+
+    /// Get failure threshold from config.
+    #[allow(dead_code)]
+    pub fn failure_threshold(&self) -> u32 {
+        self.config.failure_threshold
+    }
+
+    /// Get success threshold from config.
+    #[allow(dead_code)]
+    pub fn success_threshold(&self) -> u32 {
+        self.config.success_threshold
+    }
+
+    /// Get open timeout from config.
+    #[allow(dead_code)]
+    pub fn open_timeout_ms(&self) -> u64 {
+        self.config.open_timeout_ms
+    }
+
+    /// Get half-open timeout from config.
+    #[allow(dead_code)]
+    pub fn half_open_timeout_ms(&self) -> u64 {
+        self.config.half_open_timeout_ms
     }
 
     /// Transition to new state.
@@ -653,3 +728,76 @@ impl Default for SelfHealingManager {
 
 // ---------------------------------------------------------------------------
 // Tests consolidated in tests/autonomic_tests.rs (self_healing_tests module)
+
+// ---------------------------------------------------------------------------
+// Tests for CircuitBreaker JSON configuration
+// ---------------------------------------------------------------------------
+
+#[cfg(test)]
+mod circuit_breaker_config_tests {
+    use super::CircuitBreaker;
+
+    #[test]
+    fn test_circuit_breaker_from_json() {
+        let json = r#"{
+            "failure_threshold": 10,
+            "success_threshold": 3,
+            "open_timeout_ms": 120000,
+            "half_open_timeout_ms": 60000
+        }"#;
+
+        let breaker = CircuitBreaker::from_json(json).unwrap();
+        assert_eq!(breaker.failure_threshold(), 10);
+        assert_eq!(breaker.success_threshold(), 3);
+        assert_eq!(breaker.open_timeout_ms(), 120000);
+        assert_eq!(breaker.half_open_timeout_ms(), 60000);
+    }
+
+    #[test]
+    fn test_circuit_breaker_from_json_defaults() {
+        let json = r#"{}"#;
+
+        let breaker = CircuitBreaker::from_json(json).unwrap();
+        assert_eq!(breaker.failure_threshold(), 5);
+        assert_eq!(breaker.success_threshold(), 2);
+        assert_eq!(breaker.open_timeout_ms(), 60000);
+        assert_eq!(breaker.half_open_timeout_ms(), 30000);
+    }
+
+    #[test]
+    fn test_circuit_breaker_from_json_invalid() {
+        let json = r#"{"failure_threshold": "not a number"}"#;
+
+        let result = CircuitBreaker::from_json(json);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_circuit_breaker_json_serialization() {
+        let breaker = CircuitBreaker::from_json(r#"{
+            "failure_threshold": 7,
+            "success_threshold": 4,
+            "open_timeout_ms": 90000,
+            "half_open_timeout_ms": 45000
+        }"#).unwrap();
+
+        // Verify getters return correct values
+        assert_eq!(breaker.failure_threshold(), 7);
+        assert_eq!(breaker.success_threshold(), 4);
+        assert_eq!(breaker.open_timeout_ms(), 90000);
+        assert_eq!(breaker.half_open_timeout_ms(), 45000);
+    }
+
+    #[test]
+    fn test_circuit_breaker_partial_config() {
+        let json = r#"{
+            "failure_threshold": 15
+        }"#;
+
+        let breaker = CircuitBreaker::from_json(json).unwrap();
+        assert_eq!(breaker.failure_threshold(), 15);
+        assert_eq!(breaker.success_threshold(), 2); // default
+        assert_eq!(breaker.open_timeout_ms(), 60000); // default
+        assert_eq!(breaker.half_open_timeout_ms(), 30000); // default
+    }
+}
