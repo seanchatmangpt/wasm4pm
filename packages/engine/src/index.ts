@@ -21,6 +21,13 @@ export type { Kernel, Planner, Executor } from './engine.js';
 
 // State definitions and metadata
 export type { StateMetadata } from './state.js';
+export {
+  STATE_METADATA,
+  ALL_STATES,
+  isOperationalState,
+  isTerminalState,
+  isProcessingState,
+} from './state.js';
 
 // Transition rules and validation
 export {

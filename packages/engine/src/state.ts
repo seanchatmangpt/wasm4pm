@@ -86,13 +86,13 @@ export const STATE_METADATA: Record<EngineState, StateMetadata> = {
  * All valid engine states
  * @internal
  */
-const ALL_STATES: readonly EngineState[] = Object.keys(STATE_METADATA) as EngineState[];
+export const ALL_STATES: readonly EngineState[] = Object.keys(STATE_METADATA) as EngineState[];
 
 /**
  * Check if a state is operational (can accept work)
  * @internal
  */
-function isOperationalState(state: EngineState): boolean {
+export function isOperationalState(state: EngineState): boolean {
   return STATE_METADATA[state].operational;
 }
 
@@ -100,7 +100,7 @@ function isOperationalState(state: EngineState): boolean {
  * Check if a state is terminal (cannot recover without re-bootstrap)
  * @internal
  */
-function isTerminalState(state: EngineState): boolean {
+export function isTerminalState(state: EngineState): boolean {
   return STATE_METADATA[state].terminal;
 }
 
@@ -108,6 +108,6 @@ function isTerminalState(state: EngineState): boolean {
  * Check if a state indicates active processing
  * @internal
  */
-function isProcessingState(state: EngineState): boolean {
+export function isProcessingState(state: EngineState): boolean {
   return STATE_METADATA[state].processing;
 }

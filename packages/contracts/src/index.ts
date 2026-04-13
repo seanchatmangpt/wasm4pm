@@ -38,22 +38,25 @@ export type {
   ModelInfo,
   ExecutionProfile,
 } from './receipt.js';
-export { isReceipt } from './receipt.js';
+export { isReceipt, RECEIPT_JSON_SCHEMA } from './receipt.js';
 
 // Hash functions for deterministic content hashing
-export { hashData, verifyHash } from './hash.js';
+export { hashData, hashConfig, hashJsonString, normalizeForHashing, verifyHash } from './hash.js';
 
 // Receipt builder
 export { ReceiptBuilder } from './receipt-builder.js';
 
 // Plan schema - DAG representation
 export type { Plan, PlanNode, PlanEdge, PlanNodeKind } from './plan.js';
+export { isPlan, validatePlanDAG, sortNodes, sortEdges, normalizePlan, PLAN_JSON_SCHEMA } from './plan.js';
 
 // Status schema - lifecycle states
 export type { Status, LifecycleState } from './status.js';
+export { isStatus, isLifecycleState, isValidTransition, LIFECYCLE_STATES, STATE_TRANSITIONS, STATUS_JSON_SCHEMA } from './status.js';
 
 // Explain snapshot
 export type { ExplainSnapshot } from './explain.js';
+export { isExplainSnapshot, EXPLAIN_JSON_SCHEMA } from './explain.js';
 
 // Plan step type values — shared between @pictl/planner and @pictl/testing
 export { PLAN_STEP_TYPE_VALUES } from './steps.js';

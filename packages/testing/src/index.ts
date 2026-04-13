@@ -17,6 +17,25 @@ export * from './certification.js';
 
 // Process Mining Testing Utilities
 export * from './validators/index.js';
-// export * from './verifiers/index.js';  // Disabled: conflicts with harness exports
-// export * from './conformance/index.js';  // Disabled: conflicts with harness exports
+export * from './verifiers/index.js';
+export {
+  tokenReplayConformance,
+  createTestPetriNet,
+  createTestEventLog,
+  getExpectedTestResult,
+  expectCloseTo,
+  assertTokenReplayResult,
+  computeAlignment,
+  formatTokenReplayResult,
+  formatAlignment,
+} from './conformance/token-replay.js';
+export type {
+  TokenReplayConfig,
+  TokenReplayTrace,
+  ConformanceDeviation,
+  TokenReplayResult,
+  PetriNetForReplay,
+  Alignment,
+  AlignmentConfig,
+} from './conformance/token-replay.js';
 export * from './utils/index.js';
