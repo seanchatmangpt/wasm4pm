@@ -894,7 +894,8 @@ fn e2e_health_state_adaptive_after_shift() {
     assert_eq!(orch.telemetry().last_spc_alert_count, 3);
 
     // Subsequent cycle with no alerts — RL adapts
-    let (_, reward) = orch.run_cycle(&features, &make_test_state(1), 0, true, true);
+    let next_state_2 = make_test_state(0);
+    let (_, reward) = orch.run_cycle(&features, &make_test_state(1), &next_state_2, 0, true, true);
     assert_eq!(orch.telemetry().last_spc_alert_count, 0);
     assert_eq!(orch.telemetry().cycle_count, 2);
     assert!(!reward.is_nan());

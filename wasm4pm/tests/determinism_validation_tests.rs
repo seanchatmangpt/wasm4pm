@@ -427,7 +427,7 @@ fn test_telemetry_accumulation_deterministic() {
     // We do this by showing that two independent calls to compute_reward
     // with the same parameters produce identical results — which is exactly
     // what run_cycle does internally (it calls compute_reward, which is pure).
-    let mut orch = RlOrchestrator::new();
+    let mut orch = RlOrchestrator::new_with_seed(42);
     orch.switch_agent(AgentType::QLearning);
 
     // Run 50 cycles — we can't assert exact telemetry match between two
@@ -436,9 +436,9 @@ fn test_telemetry_accumulation_deterministic() {
     let state = make_rl_state(3);
     let next_state = make_rl_state(2);
 
-    // The first run_cycle computes a reward using compute_reward(0, 2, 0, true, true).
-    // prev_health is 0 (from default telemetry), curr_health is 2 (from next_state).
-    let expected_reward = compute_reward(0, 2, 0, true, true);
+    // On cycle 0, prev_health is initialized from state.health_level (=3).
+    // So reward = compute_reward(3, 2, 0, true, true).
+    let expected_reward = compute_reward(3, 2, 0, true, true);
 
     let (_, actual_reward) = orch.run_cycle(&FEATURES, &state, &next_state, 0, true, true);
 
