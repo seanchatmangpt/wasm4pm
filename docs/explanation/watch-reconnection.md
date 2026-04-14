@@ -191,10 +191,10 @@ wasm4pm_checkpoint_load_failures_total 0
 4. **Test recovery**:
    ```bash
    # Kill watch mode
-   pkill -f "pmctl watch"
+   pkill -f "pictl watch"
    
    # Restart immediately
-   pmctl watch --config config.toml
+   pictl watch --config config.toml
    # Should resume from checkpoint, not restart
    ```
 

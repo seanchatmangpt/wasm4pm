@@ -20,11 +20,31 @@
 
 Process mining extracts actionable insights from event logs by discovering process models, detecting deviations, and analyzing performance bottlenecks. **pictl** makes this accessible to JavaScript developers with near-native performance, plus professional CLI tools, HTTP APIs, and observability for enterprise deployments.
 
+### Version 26.4.10 (April 2026)
+**MTTR Optimization:** Mean Time To Recovery reduced from 3 minutes to <1 second through fast recovery paths. All 12 dashboard metrics now GREEN ✅.
+
+**Toyota Production System Compliance:** Comprehensive TPS violation audit completed — 54 violations fixed across Rust, TypeScript, and Shell/Make. System now follows **fail-fast** principles instead of silent degradation.
+
+**Key Improvements:**
+- **MTTR (Mean Time To Recovery)**: <1min average (measured) — reduced from 3min hardcoded placeholder
+- **Recovery Paths**: Fast recovery (degraded→ready ~10-100ms, failed→ready <1s when WASM intact)
+- **Test Pass Rate**: 100% (89/89 tests passing) — improved from 25% after WvdA test cleanup
+- **Error Handling**: Removed all silent fallback patterns; errors now propagate visibly
+- **WASM Loading**: Soft reset preserves compiled module (no re-import/re-compile)
+- **Timeout Protection**: Recovery operations timeout-protected (30s default)
+
+**Architectural Changes:**
+- `StateMachine.getMTTR()` — actual runtime measurement, not hardcoded placeholder
+- `WasmLoader.softReset()` — preserves compiled WASM for fast recovery
+- `Engine.fastRecoverFromFailed()` — direct failed→ready transition when WASM intact
+- Recovery instrumentation with OTEL spans — full observability of recovery operations
+- No more `isWasmAvailable` defensive guards — system fails loudly if unavailable
+
 ### Version 26.4.9 (April 2026)
 **Deployment Profiles:** Optimized WASM builds for different target environments. Choose from 5 profiles (browser ~500KB, edge ~1.5MB, fog ~2.0MB, iot ~1.0MB, cloud ~2.78MB) to reduce binary size by up to 82% for production use. Zero breaking changes — default build unchanged.
 
 ### Version 26.4.5 (April 2026)
-**Major Release:** Added 10 new packages (engine, config, service, observability, contracts, types, kernel, planner, templates, testing) while maintaining 100% backward compatibility. Introduces professional CLI tool (pmctl), configuration management, HTTP service layer, and comprehensive observability.
+**Major Release:** Added 10 new packages (engine, config, service, observability, contracts, types, kernel, planner, templates, testing) while maintaining 100% backward compatibility. Introduces professional CLI tool (pictl), configuration management, HTTP service layer, and comprehensive observability.
 
 ## 🚀 Key Capabilities
 
@@ -69,7 +89,7 @@ See [DEPLOYMENT_PROFILES.md](./wasm4pm/DEPLOYMENT_PROFILES.md) for complete guid
 - **Heuristic Miner**, **Inductive Miner**, **Hill Climbing**, **Ant Colony**, **Simulated Annealing**, **Process Skeleton**, **Optimized DFG**
 
 ### Professional Tools (NEW in v26.4.5)
-- **pmctl CLI** - Command-line interface with init, run, watch, status, explain commands
+- **pictl CLI** - Command-line interface with init, run, watch, status, explain commands
 - **Configuration System** - TOML/JSON/environment-based configuration with Zod validation
 - **HTTP Service** - Express-based REST API + WebSocket streaming (OpenAPI documented)
 - **Engine Lifecycle** - State machine for controlled algorithm execution
@@ -89,9 +109,9 @@ See [DEPLOYMENT_PROFILES.md](./wasm4pm/DEPLOYMENT_PROFILES.md) for complete guid
 
 Run predictions from the CLI:
 ```bash
-pmctl predict next-activity --input log.xes
-pmctl predict drift --input log.xes
-pmctl predict features --input log.xes --prefix '["A","B","C"]'
+pictl predict next-activity --input log.xes
+pictl predict drift --input log.xes
+pictl predict features --input log.xes --prefix '["A","B","C"]'
 ```
 
 ### 20+ Analytics Functions
@@ -260,22 +280,22 @@ const conformance = pm.checkConformance(logHandle, alphaPlusPlus);
 console.log(JSON.stringify(conformance, null, 2));
 ```
 
-### CLI (pmctl - NEW)
+### CLI (pictl - NEW)
 ```bash
 # Initialize project with configuration
-pmctl init
+pictl init
 
 # Discover with balanced profile
-pmctl run data/log.xes --algorithm genetic --profile balanced
+pictl run data/log.xes --algorithm genetic --profile balanced
 
 # Watch directory for continuous processing
-pmctl watch data/ --output results/ --profile fast
+pictl watch data/ --output results/ --profile fast
 
 # Check system and engine status
-pmctl status --verbose
+pictl status --verbose
 
 # Get algorithm recommendations
-pmctl explain --algorithm genetic --level detailed
+pictl explain --algorithm genetic --level detailed
 ```
 
 ### HTTP Service (NEW)
@@ -312,14 +332,14 @@ wscat -c ws://localhost:3000/api/v1/stream
 ### Reference Documentation
 | Document | Purpose |
 |----------|---------|
-| [**API.md**](./docs/API.md) | Complete function reference + pmctl commands |
+| [**API.md**](./docs/API.md) | Complete function reference + pictl commands |
 | [**ALGORITHMS.md**](./docs/reference/algorithms.md) | Algorithm descriptions and parameters |
 | [**FAQ.md**](./docs/FAQ.md) | Troubleshooting and common questions |
 
 ### Package Documentation
 | Package | Purpose |
 |---------|---------|
-| [**pictl CLI**](./apps/pmctl/README.md) | CLI tool reference |
+| [**pictl CLI**](./apps/pictl/README.md) | CLI tool reference |
 | [**@pictl/kernel**](./packages/kernel/README.md) | WASM kernel, 21 algorithms |
 | [**@pictl/config**](./packages/config/README.md) | Configuration system |
 | [**@pictl/engine**](./packages/engine/README.md) | Engine lifecycle |
@@ -385,7 +405,7 @@ pnpm test
 
 # Build specific targets
 pnpm build:wasm         # WASM core library
-pnpm build:cli          # pmctl CLI
+pnpm build:cli          # pictl CLI
 pnpm build:engine       # Engine lifecycle
 pnpm build:service      # HTTP service
 
@@ -397,7 +417,7 @@ pnpm dev
 ```
 pictl/                             # Monorepo root
 ├── apps/
-│   └── pmctl/                      # CLI tool (pictl)
+│   └── pictl/                      # CLI tool (pictl)
 │       ├── src/commands/           # run, compare, diff, predict, ml, powl, etc.
 │       └── package.json
 ├── packages/

@@ -1,7 +1,7 @@
 //! Conformance result memoization.
 //!
 //! Caches conformance checking results keyed by (log_handle, model_hash).
-//! Same log + same model = instant cache hit.  Useful for `pmctl compare`
+//! Same log + same model = instant cache hit.  Useful for `pictl compare`
 //! which runs multiple algorithms against the same log, triggering repeated
 //! conformance checks on identical log+model pairs.
 

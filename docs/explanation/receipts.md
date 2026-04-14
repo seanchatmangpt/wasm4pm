@@ -48,11 +48,11 @@ Days later, someone modifies the model:
 
 ```bash
 # Run 1
-pmctl run --config config.toml
+pictl run --config config.toml
 HASH1=$(jq -r '.combined_hash' output/receipt.json)
 
 # Run 2
-pmctl run --config config.toml
+pictl run --config config.toml
 HASH2=$(jq -r '.combined_hash' output/receipt.json)
 
 # Check
@@ -114,7 +114,7 @@ Timeline:
   
 Verification:
   git show 2026-02-15:config.toml > historical.toml
-  pmctl run --config historical.toml
+  pictl run --config historical.toml
   → Same results as 2026-02-15 receipt
 ```
 

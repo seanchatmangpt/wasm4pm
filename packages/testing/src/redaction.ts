@@ -31,13 +31,13 @@ const SECRET_ENV_VARS = new Set([
   'ENCRYPTION_KEY', 'SIGNING_KEY',
 ]);
 
-export interface RedactionViolation {
+interface RedactionViolation {
   pattern: string;
   location: string;
   snippet: string;
 }
 
-export interface RedactionResult {
+interface RedactionResult {
   passed: boolean;
   violations: RedactionViolation[];
   scannedFields: number;
@@ -46,8 +46,9 @@ export interface RedactionResult {
 
 /**
  * Scan a string for secret patterns.
+ * @internal
  */
-export function scanForSecrets(text: string, location = 'unknown'): RedactionViolation[] {
+function scanForSecrets(text: string, location = 'unknown'): RedactionViolation[] {
   const violations: RedactionViolation[] = [];
   for (const { name, pattern } of SECRET_PATTERNS) {
     const match = pattern.exec(text);
@@ -66,8 +67,9 @@ export function scanForSecrets(text: string, location = 'unknown'): RedactionVio
 
 /**
  * Deep-scan an object for secret patterns in all string values.
+ * @internal
  */
-export function scanObjectForSecrets(
+function scanObjectForSecrets(
   obj: unknown,
   path = 'root',
 ): RedactionViolation[] {
@@ -109,8 +111,9 @@ export function scanObjectForSecrets(
 
 /**
  * Verify that all secret-related fields in an object are properly redacted.
+ * @internal
  */
-export function verifyRedaction(obj: unknown, location = 'output'): RedactionResult {
+function verifyRedaction(obj: unknown, location = 'output'): RedactionResult {
   const violations = scanObjectForSecrets(obj, location);
   let scannedFields = 0;
 
@@ -136,8 +139,9 @@ export function verifyRedaction(obj: unknown, location = 'output'): RedactionRes
 
 /**
  * Verify that env vars with secret names are not present in output.
+ * @internal
  */
-export function verifyEnvRedaction(output: string, env: Record<string, string | undefined> = process.env as Record<string, string | undefined>): RedactionViolation[] {
+function verifyEnvRedaction(output: string, env: Record<string, string | undefined> = process.env as Record<string, string | undefined>): RedactionViolation[] {
   const violations: RedactionViolation[] = [];
   for (const varName of SECRET_ENV_VARS) {
     const value = env[varName];
@@ -154,8 +158,9 @@ export function verifyEnvRedaction(output: string, env: Record<string, string | 
 
 /**
  * Test data with known secrets for negative testing.
+ * @internal
  */
-export const TEST_SECRETS = {
+const TEST_SECRETS = {
   awsKey: 'AKIAIOSFODNN7EXAMPLE',
   awsSecret: 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',
   bearer: 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U',
@@ -165,8 +170,10 @@ export const TEST_SECRETS = {
   privateKey: '-----BEGIN RSA PRIVATE KEY-----\nMIIEpAIBAAKCAQEA0Z3VS5JJcds3xfn/ygWyF=\n-----END RSA PRIVATE KEY-----',
 };
 
-/** Properly redacted values for positive testing */
-export const REDACTED_VALUES = {
+/** Properly redacted values for positive testing
+ * @internal
+ */
+const REDACTED_VALUES = {
   star: '***',
   bracket: '[REDACTED]',
   hash: '***REDACTED***',

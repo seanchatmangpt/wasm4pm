@@ -96,34 +96,37 @@ export class ObservabilityWrapper {
     }
     /**
      * Execute a callback with observability error handling
-     * Returns callback result; observability errors don't break execution
+     * Returns discriminated union: { result, error } where only one is set
+     * Forces caller to explicitly handle error case
      */
     async executeWithObservability(callback, context) {
         try {
             const result = await callback();
-            return { result };
+            return { result, error: undefined };
         }
         catch (error) {
             const message = error instanceof Error ? error.message : String(error);
             this.recordError('execution', message);
             return {
                 result: undefined,
-                observabilityError: `Failed during ${context?.operationName || 'operation'}: ${message}`,
+                error: `Failed during ${context?.operationName || 'operation'}: ${message}`,
             };
         }
     }
     /**
      * Wrap a synchronous function with error handling
+     * Returns discriminated union: { result, error } where only one is set
      */
     wrapSync(callback, context) {
         try {
             const result = callback();
-            return { result };
+            return { result, error: undefined };
         }
         catch (error) {
             const message = error instanceof Error ? error.message : String(error);
             this.recordError('sync', message);
             return {
+                result: undefined,
                 error: `Failed during ${context?.operationName || 'operation'}: ${message}`,
             };
         }

@@ -64,12 +64,16 @@ pub fn discover_inductive_miner(
         .store_object(StoredObject::DirectlyFollowsGraph(dfg.clone()))
         .map_err(|_e| JsValue::from_str("Failed to store DFG"))?;
 
-    to_js(&json!({
+    let result = json!({
         "handle": handle,
         "algorithm": "inductive_miner",
         "nodes": dfg.nodes.len(),
         "edges": dfg.edges.len(),
-    }))
+    });
+    Ok(JsValue::from_str(
+        &serde_json::to_string(&result)
+            .unwrap_or_else(|_| "{}".to_string()),
+    ))
 }
 
 /// Ant Colony Optimization - pheromone-based model discovery

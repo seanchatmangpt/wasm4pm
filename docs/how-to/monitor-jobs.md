@@ -29,7 +29,7 @@ Response:
 Real-time updates via watch command:
 
 ```bash
-pmctl watch --config config.toml --verbose
+pictl watch --config config.toml --verbose
 ```
 
 Shows live progress and checkpoints.
@@ -89,7 +89,7 @@ timeout_ms = 600000  # 10 minutes
 Or via CLI:
 
 ```bash
-pmctl run --config config.toml --timeout 600000
+pictl run --config config.toml --timeout 600000
 ```
 
 ## Interrupt Job
@@ -101,7 +101,7 @@ Stop running job:
 curl -X POST http://localhost:3001/stop/run-abc123
 
 # Via CLI
-pkill -f "pmctl run"
+pkill -f "pictl run"
 ```
 
 ## Monitor Memory

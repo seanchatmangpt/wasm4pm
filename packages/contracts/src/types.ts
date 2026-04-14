@@ -3,6 +3,23 @@
  */
 
 /**
+ * Quality metrics for process model assessment.
+ * Used by conformance checking and quality commands.
+ */
+export interface QualityMetrics {
+  /** How well the model can replay the observed log (0-1) */
+  fitness: number;
+  /** How much unobserved behavior the model allows (0-1) */
+  precision: number;
+  /** How simple/complex the model is (0-1) */
+  simplicity: number;
+  /** How well the model generalizes to unseen behavior (0-1) */
+  generalization?: number;
+  /** Harmonic mean of fitness and precision (0-1) */
+  f_measure?: number;
+}
+
+/**
  * Execution plan returned by the planner
  * Contains ordered list of steps to execute with dependencies and parameters
  */

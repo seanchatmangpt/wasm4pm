@@ -18,7 +18,7 @@ importers:
         specifier: ^5.3.3
         version: 5.9.3
 
-  apps/pmctl:
+  apps/pictl:
     dependencies:
       '@pictl/config':
         specifier: workspace:*
@@ -152,6 +152,9 @@ importers:
         specifier: workspace:*
         version: link:../planner
     devDependencies:
+      '@vitest/coverage-v8':
+        specifier: ^1.6.0
+        version: 1.6.1(vitest@1.6.1)
       typescript:
         specifier: ^5.3.3
         version: 5.9.3
@@ -309,12 +312,6 @@ importers:
 
   wasm4pm:
     devDependencies:
-      '@modelcontextprotocol/sdk':
-        specifier: ^1.29.0
-        version: 1.29.0(zod@3.25.76)
-      '@pictl/ml':
-        specifier: workspace:*
-        version: link:../packages/ml
       '@testing-library/dom':
         specifier: ^9.3.3
         version: 9.3.4
@@ -327,9 +324,6 @@ importers:
       '@vitest/browser':
         specifier: ^1.1.0
         version: 1.6.1(playwright@1.59.1)(vitest@1.6.1)
-      '@vitest/coverage-v8':
-        specifier: ^1.6.1
-        version: 1.6.1(vitest@1.6.1)
       playwright:
         specifier: ^1.40.0
         version: 1.59.1

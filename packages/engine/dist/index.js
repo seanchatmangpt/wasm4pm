@@ -5,8 +5,6 @@
  */
 // Engine lifecycle and state machine
 export { Engine, createSimpleEngine, createFullEngine } from './engine.js';
-// State definitions and metadata
-export { STATE_METADATA, ALL_STATES, isOperationalState, isTerminalState, isProcessingState, } from './state.js';
 // Transition rules and validation
 export { VALID_TRANSITIONS, canTransition, getValidTransitions, TransitionValidator, } from './transitions.js';
 // Lifecycle management (StateMachine)
@@ -22,4 +20,6 @@ export { WatchSession, heartbeatToStatusUpdate } from './watch.js';
 // Checkpointing
 export { CheckpointManager } from './checkpointing.js';
 // WASM loader
-export { WasmLoader, createWasmLoader, getWasmLoader, WasmErrorCode, } from './wasm-loader.js';
+export { WasmLoader, createWasmLoader, getWasmLoader } from './wasm-loader.js';
+// Re-export error code for tests
+export { WasmErrorCode } from './wasm-loader.js';

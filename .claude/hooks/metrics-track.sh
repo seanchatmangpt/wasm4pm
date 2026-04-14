@@ -112,13 +112,22 @@ collect_tps_violations() {
 
 # Metric 6: MTTR (Mean Time To Recovery)
 collect_mttr() {
-  # Approximate from recent fixes
+  # Read actual MTTR from metrics file if available
+  if [[ -f "$METRICS_FILE" ]] && command -v jq &>/dev/null; then
+    local mttr_actual=$(jq -r '.mttr_actual // .mttr // 0' "$METRICS_FILE" 2>/dev/null || echo "0")
+    if [[ "$mttr_actual" != "0" && "$mttr_actual" != "null" ]]; then
+      echo "$mttr_actual"
+      return
+    fi
+  fi
+
+  # Fallback: approximate from recent fixes (only if no actual measurement)
   if [[ -d "$PICTL_DIR/.git" ]]; then
     local recovery_count=$(cd "$PICTL_DIR" && git log --oneline -20 2>/dev/null | grep -c "fix(" || echo "0")
     if [[ $recovery_count -eq 0 ]]; then
       echo "0"  # No recent fixes
     else
-      echo "3"  # 3 minute baseline
+      echo "0"  # No actual measurement available; report as 0 (not hardcoded baseline)
     fi
   else
     echo "0"

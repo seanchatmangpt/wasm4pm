@@ -31,6 +31,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 wasm-bindgen = "0.2.92"
+js-sys = "0.3"
 wasm-bindgen-futures = "0.4.42"
 serde_json = "1.0.105"
 serde = { version = "1.0.188", features = ["derive"] }
@@ -61,6 +62,7 @@ criterion = { version = "0.5", features = ["html_reports"] }
 simd-json = "0.13"
 blake3 = "1"
 naga = { version = "29", features = ["wgsl-in", "spv-out"] }
+lazy_static = "1.4"
 
 [[bench]]
 name = "fast_algorithms"
@@ -133,6 +135,10 @@ harness = true
 
 [[bench]]
 name = "scalability_benchmark"
+harness = false
+
+[[bench]]
+name = "agentic_bench"
 harness = false
 
 [[example]]

@@ -93,19 +93,27 @@ function detectSeasonalityCore(series: number[] | Float64Array): { period: numbe
   const maxLag = Math.floor(n / 2);
   const invDen = 1 / den;
 
-  let bestLag = 1;
-  let bestAcf = 0;
-  let prevAcf = 0;
-
+  // Compute ACF for all lags first
+  const acfValues = new Float64Array(maxLag + 1);
   for (let lag = 1; lag <= maxLag; lag++) {
     let num = 0;
     for (let i = 0; i < n - lag; i++) num += centered[i] * centered[i + lag];
-    const acf = num * invDen;
-    if (acf > bestAcf && acf > 0 && acf > prevAcf) {
+    acfValues[lag] = num * invDen;
+  }
+
+  // Find local maxima (skip lag=1 as it's often trivially high)
+  let bestLag = 1;
+  let bestAcf = 0;
+
+  for (let lag = 2; lag < maxLag; lag++) {
+    const acf = acfValues[lag];
+    const isLocalMax = acf > 0
+      && acf > acfValues[lag - 1]
+      && acf > acfValues[lag + 1];
+    if (isLocalMax && acf > bestAcf) {
       bestAcf = acf;
       bestLag = lag;
     }
-    prevAcf = acf;
   }
 
   return { period: bestLag, strength: bestAcf };

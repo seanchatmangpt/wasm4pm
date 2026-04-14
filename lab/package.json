@@ -1,7 +1,7 @@
 {
   "name": "@wasm4pm/lab-cli-tests",
   "version": "26.4.5",
-  "description": "CLI validation test suite for @wasm4pm/pmctl",
+  "description": "CLI validation test suite for @pictl/cli",
   "private": true,
   "type": "module",
   "scripts": {
@@ -10,6 +10,7 @@
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
     "test:verbose": "vitest run --reporter=verbose",
+    "test:jtbd": "vitest run -t 'JTBD'",
     "test:run-cmd": "vitest run -t 'Run Command'",
     "test:watch-cmd": "vitest run -t 'Watch Command'",
     "test:status-cmd": "vitest run -t 'Status Command'",

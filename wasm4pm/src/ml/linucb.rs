@@ -8,8 +8,8 @@
 //! | Symbol | Shape | Meaning |
 //! |--------|-------|---------|
 //! | `x`    | [8]   | context feature vector (caller-normalized to [0,1]) |
-//! | `W`    | [40×8] | per-action weight vectors |
-//! | `b`    | [40]  | per-action intercepts |
+//! | `W`    | [5×8] | per-agent weight vectors |
+//! | `b`    | [5]  | per-agent intercepts |
 //! | `A`    | [8×8] | shared covariance matrix, initially λI |
 //! | `A_inv`| [8×8] | cached inverse of A (updated via Sherman-Morrison) |
 //! | α      | scalar | exploration bonus (default √2 ≈ 1.414) |
@@ -17,21 +17,21 @@
 //!
 //! # Inference (deterministic, no RNG)
 //!
-//! For each action a in 0..40:
+//! For each agent a in 0..4:
 //!   Q̂_a(x) = w_a · x + b_a + α √(x^T A^{-1} x)
 //! Select: a* = argmax_a Q̂_a(x)
 //!
 //! # Update
 //!
-//! Given reward r for taken action a*:
+//! Given reward r for taken agent a*:
 //!   δ = r - (w_{a*} · x + b_{a*})           (TD error, no exploration term)
 //!   W[a*] += α_lr · δ · x
 //!   b[a*] += α_lr · δ
 //!   A     += x ⊗ x                           (outer product)
 //!   A_inv updated via Sherman-Morrison        (O(n²), avoids LU each update)
 
-/// Number of process mining actions (activities/transitions) supported.
-pub const N_ACTIONS: usize = 40;
+/// Number of RL agents (QLearning, SARSA, DoubleQLearning, ExpectedSARSA, REINFORCE).
+pub const N_ACTIONS: usize = 5;
 
 /// Feature vector dimensionality.
 pub const N_FEATURES: usize = 8;
@@ -41,10 +41,10 @@ pub const N_FEATURES: usize = 8;
 /// All operations are deterministic and depend only on stored state.
 /// Caller is responsible for feature normalization into [0, 1].
 pub struct LinUCBAgent {
-    /// Per-action weight matrix: w[a] ∈ ℝ^8, row-major storage [40 × 8].
+    /// Per-agent weight matrix: w[a] ∈ ℝ^8, row-major storage [5 × 8].
     w: [[f32; N_FEATURES]; N_ACTIONS],
 
-    /// Per-action intercept vector: b[a] ∈ ℝ, length 40.
+    /// Per-agent intercept vector: b[a] ∈ ℝ, length 5.
     b: [f32; N_ACTIONS],
 
     /// Shared covariance matrix A ∈ ℝ^{8×8}, row-major.
@@ -143,9 +143,9 @@ impl LinUCBAgent {
         linear + self.b[action] + ucb_bonus
     }
 
-    /// Select the best action given the context `features`.
+    /// Select the best agent given the context `features`.
     ///
-    /// Returns `(action_index, ucb_score)` where action_index ∈ 0..39.
+    /// Returns `(agent_index, ucb_score)` where agent_index ∈ 0..4.
     /// Deterministic — no RNG, pure function of stored state + input.
     pub fn select(&self, features: &[f32; N_FEATURES]) -> (u32, f32) {
         // Exploration term: α √(x^T A^{-1} x) — shared across all actions
@@ -165,7 +165,7 @@ impl LinUCBAgent {
         (best_action, best_q)
     }
 
-    /// Return all 40 Q̂ values for the given features.
+    /// Return all 5 Q̂ values for the given features.
     ///
     /// Intended for testing and debugging only.
     pub fn get_q_values(&self, features: &[f32; N_FEATURES]) -> [f32; N_ACTIONS] {
@@ -436,11 +436,11 @@ mod tests {
         let mut agent = LinUCBAgent::new();
         let features = [0.3_f32; N_FEATURES];
         // Weights start at zero; update with reward=0 should not move them
-        agent.update(&features, 5, 0.0);
-        let w5 = agent.weight_vector(5);
+        agent.update(&features, 3, 0.0);  // Changed from 5 to 3 (valid for N_ACTIONS=5)
+        let w3 = agent.weight_vector(3);
         // With W=0 and reward=0, δ = 0 - 0 = 0 → no change
-        for (j, &wj) in w5.iter().enumerate() {
-            assert!(wj.abs() < 1e-7, "W[5][{j}] = {wj} after zero-reward update");
+        for (j, &wj) in w3.iter().enumerate() {
+            assert!(wj.abs() < 1e-7, "W[3][{j}] = {wj} after zero-reward update");
         }
     }
 
@@ -477,16 +477,16 @@ mod tests {
     #[test]
     fn convergence_toward_rewarded_action() {
         let mut agent = LinUCBAgent::new();
-        // Unique features so action 7 gets meaningful gradient
+        // Unique features so action 3 gets meaningful gradient
         let features = [0.1, 0.9, 0.2, 0.8, 0.3, 0.7, 0.4, 0.6];
-        // Reward only action 7 repeatedly
+        // Reward only action 3 repeatedly
         for _ in 0..500 {
-            agent.update(&features, 7, 1.0);
+            agent.update(&features, 3, 1.0);  // Changed from 7 to 3 (valid for N_ACTIONS=5)
         }
         let (best, _) = agent.select(&features);
         assert_eq!(
-            best, 7,
-            "after 500 positive rewards for action 7, argmax should be 7, got {best}"
+            best, 3,
+            "after 500 positive rewards for action 3, argmax should be 3, got {best}"
         );
     }
 
@@ -499,12 +499,12 @@ mod tests {
 
         // Context A → action 2 is rewarded
         let ctx_a = [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
-        // Context B → action 15 is rewarded
+        // Context B → action 4 is rewarded (changed from 15 to 4, valid for N_ACTIONS=5)
         let ctx_b = [0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
 
         for _ in 0..300 {
             agent.update(&ctx_a, 2, 1.0);
-            agent.update(&ctx_b, 15, 1.0);
+            agent.update(&ctx_b, 4, 1.0);  // Changed from 15 to 4
         }
 
         let (best_a, _) = agent.select(&ctx_a);
@@ -512,8 +512,8 @@ mod tests {
 
         assert_eq!(best_a, 2, "context A should select action 2, got {best_a}");
         assert_eq!(
-            best_b, 15,
-            "context B should select action 15, got {best_b}"
+            best_b, 4,  // Changed from 15 to 4
+            "context B should select action 4, got {best_b}"
         );
     }
 

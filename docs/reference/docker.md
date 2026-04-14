@@ -7,7 +7,7 @@ FROM node:20-slim
 
 WORKDIR /app
 
-RUN npm install -g @wasm4pm/pmctl
+RUN npm install -g @pictl/cli
 
 COPY config.toml /app/
 
@@ -72,7 +72,7 @@ docker-compose up -d
 # Build stage
 FROM node:20 as builder
 WORKDIR /build
-RUN npm install -g @wasm4pm/pmctl
+RUN npm install -g @pictl/cli
 
 # Runtime stage
 FROM node:20-slim

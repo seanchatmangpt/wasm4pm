@@ -774,7 +774,11 @@ export class Engine {
    * Attempts recovery from degraded state
    * Transitions: degraded -> bootstrapping -> ready
    */
-  async recover(): Promise<void> {
+  async recover(options?: { timeout?: number }): Promise<void> {
+    const timeoutMs = options?.timeout ?? 30000; // 30 second default
+    const recoveryStart = Date.now();
+    const previousState = this.state();
+
     try {
       if (this.state() !== 'degraded') {
         throw new Error(`Cannot recover from state: ${this.state()}`);
@@ -784,7 +788,26 @@ export class Engine {
       this.stateMachine.transition('bootstrapping', 'Starting recovery');
       this.statusTracker.setState('bootstrapping');
 
-      await this.kernel.init();
+      // Emit recovery start event
+      const recoveryStartEvent = Instrumentation.createStateChangeEvent(
+        this.traceId,
+        previousState,
+        'bootstrapping',
+        this.requiredOtelAttrs,
+        { reason: 'Recovery started' }
+      );
+      this.observability.emitOtelSafe(recoveryStartEvent.otelEvent);
+
+      // Soft reset WASM loader to preserve compiled module
+      this.wasmLoader.softReset();
+
+      // Timeout-protected kernel init
+      await Promise.race([
+        this.kernel.init(),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error(`Recovery timeout after ${timeoutMs}ms`)), timeoutMs)
+        )
+      ]);
 
       if (!this.kernel.isReady()) {
         throw new Error('Kernel not ready after recovery');
@@ -792,9 +815,28 @@ export class Engine {
 
       this.stateMachine.transition('ready', 'Recovery completed');
       this.statusTracker.setState('ready');
+
+      // Emit recovery completed event with duration
+      const recoveryDuration = Date.now() - recoveryStart;
+      const recoveryCompleteEvent = Instrumentation.createStateChangeEvent(
+        this.traceId,
+        'bootstrapping',
+        'ready',
+        this.requiredOtelAttrs,
+        { reason: 'Recovery completed' }
+      );
+      recoveryCompleteEvent.event.durationMs = recoveryDuration;
+      this.observability.emitOtelSafe(recoveryCompleteEvent.otelEvent);
+
+      // Track MTTR in state machine
+      this.stateMachine.recordRecovery(recoveryDuration);
+
     } catch (err) {
+      // Handle timeout specifically
+      const isTimeout = err instanceof Error && err.message.includes('timeout');
+
       const error: EngineError = {
-        code: 'RECOVERY_FAILED',
+        code: isTimeout ? 'RECOVERY_TIMEOUT' : 'RECOVERY_FAILED',
         message: err instanceof Error ? err.message : String(err),
         severity: 'error',
         recoverable: false,
@@ -802,11 +844,51 @@ export class Engine {
 
       this.statusTracker.addError(error);
       if (this.state() !== 'failed') {
-        this.stateMachine.transition('failed', 'Recovery failed');
+        this.stateMachine.transition('failed', isTimeout ? 'Recovery timeout' : 'Recovery failed');
       }
       this.statusTracker.setState('failed');
 
       throw err;
+    }
+  }
+
+  /**
+   * Fast recovery from failed state - reuses existing WASM module
+   * Only works if WASM module is still valid (not corrupted)
+   * Falls back to full bootstrap if WASM is not initialized
+   */
+  async fastRecoverFromFailed(): Promise<void> {
+    if (this.state() !== 'failed') {
+      throw new Error(`Cannot fast recover from state: ${this.state()}`);
+    }
+
+    const recoveryStart = Date.now();
+
+    try {
+      // Check if WASM module is still accessible
+      if (!this.wasmLoader.isInitialized()) {
+        // Fall back to full bootstrap
+        return this.bootstrap();
+      }
+
+      // Soft reset and re-init kernel only
+      this.wasmLoader.softReset();
+      await this.kernel.init();
+
+      if (!this.kernel.isReady()) {
+        throw new Error('Kernel not ready after fast recovery');
+      }
+
+      this.stateMachine.transition('ready', 'Fast recovery completed');
+      this.statusTracker.setState('ready');
+
+      // Track recovery time
+      const recoveryDuration = Date.now() - recoveryStart;
+      this.stateMachine.recordRecovery(recoveryDuration);
+
+    } catch (err) {
+      // Fast recovery failed, fall back to full bootstrap
+      await this.bootstrap();
     }
   }
 

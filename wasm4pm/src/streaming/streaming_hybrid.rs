@@ -41,6 +41,7 @@ pub trait BatchAlgorithm {
 /// ```rust
 /// use pictl::streaming::streaming_hybrid::{StreamingHybrid, BatchAlgorithm};
 /// use pictl::streaming::StreamingAlgorithm;
+/// use pictl::models::DirectlyFollowsGraph;
 ///
 /// struct GeneticAlgorithm;
 ///
@@ -53,7 +54,7 @@ pub trait BatchAlgorithm {
 ///     }
 /// }
 ///
-/// let mut stream = StreamingHybrid::<GeneticAlgorithm>::new();
+/// let mut stream = StreamingHybrid::<GeneticAlgorithm>::new(GeneticAlgorithm);
 /// stream.add_event("case1", "A");
 /// stream.add_event("case1", "B");
 /// stream.close_trace("case1");

@@ -1,3 +1,4 @@
+"use strict";
 /**
  * Security redaction verification.
  *
@@ -30,8 +31,9 @@ const SECRET_ENV_VARS = new Set([
 ]);
 /**
  * Scan a string for secret patterns.
+ * @internal
  */
-export function scanForSecrets(text, location = 'unknown') {
+function scanForSecrets(text, location = 'unknown') {
     const violations = [];
     for (const { name, pattern } of SECRET_PATTERNS) {
         const match = pattern.exec(text);
@@ -49,8 +51,9 @@ export function scanForSecrets(text, location = 'unknown') {
 }
 /**
  * Deep-scan an object for secret patterns in all string values.
+ * @internal
  */
-export function scanObjectForSecrets(obj, path = 'root') {
+function scanObjectForSecrets(obj, path = 'root') {
     const violations = [];
     if (typeof obj === 'string') {
         violations.push(...scanForSecrets(obj, path));
@@ -86,8 +89,9 @@ export function scanObjectForSecrets(obj, path = 'root') {
 }
 /**
  * Verify that all secret-related fields in an object are properly redacted.
+ * @internal
  */
-export function verifyRedaction(obj, location = 'output') {
+function verifyRedaction(obj, location = 'output') {
     const violations = scanObjectForSecrets(obj, location);
     let scannedFields = 0;
     function count(val) {
@@ -116,8 +120,9 @@ export function verifyRedaction(obj, location = 'output') {
 }
 /**
  * Verify that env vars with secret names are not present in output.
+ * @internal
  */
-export function verifyEnvRedaction(output, env = process.env) {
+function verifyEnvRedaction(output, env = process.env) {
     const violations = [];
     for (const varName of SECRET_ENV_VARS) {
         const value = env[varName];
@@ -133,8 +138,9 @@ export function verifyEnvRedaction(output, env = process.env) {
 }
 /**
  * Test data with known secrets for negative testing.
+ * @internal
  */
-export const TEST_SECRETS = {
+const TEST_SECRETS = {
     awsKey: 'AKIAIOSFODNN7EXAMPLE',
     awsSecret: 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',
     bearer: 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U',
@@ -143,8 +149,10 @@ export const TEST_SECRETS = {
     connectionString: 'postgresql://user:password=s3cret@localhost:5432/db',
     privateKey: '-----BEGIN RSA PRIVATE KEY-----\nMIIEpAIBAAKCAQEA0Z3VS5JJcds3xfn/ygWyF=\n-----END RSA PRIVATE KEY-----',
 };
-/** Properly redacted values for positive testing */
-export const REDACTED_VALUES = {
+/** Properly redacted values for positive testing
+ * @internal
+ */
+const REDACTED_VALUES = {
     star: '***',
     bracket: '[REDACTED]',
     hash: '***REDACTED***',
