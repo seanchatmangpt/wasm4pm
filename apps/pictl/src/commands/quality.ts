@@ -119,8 +119,18 @@ export const quality = defineCommand({
         formatter.debug('Discovering process model with inductive miner...');
       }
 
-      const modelResult = wasm.discover_inductive_miner(logHandle, activityKey);
-      const modelHandle = (typeof modelResult === 'string' ? JSON.parse(modelResult) : modelResult).handle as string;
+      let modelHandle: string;
+      try {
+        const modelResult = wasm.discover_inductive_miner(logHandle, activityKey);
+        const parsed = typeof modelResult === 'string' ? JSON.parse(modelResult) : modelResult;
+        modelHandle = (parsed as Record<string, unknown>).handle as string;
+        if (!modelHandle) {
+          throw new Error(`Inductive miner returned unexpected result: ${JSON.stringify(parsed)}`);
+        }
+      } catch (e) {
+        wasm.delete_object(logHandle);
+        throw new Error(`Failed to discover model: ${e instanceof Error ? e.message : String(e)}`);
+      }
 
       // Parse model JSON for structural info (nodes/edges)
       let modelInfo: { nodes?: unknown[]; edges?: unknown[]; places?: unknown[]; transitions?: unknown[]; arcs?: unknown[] } = {};
@@ -222,9 +232,19 @@ export const quality = defineCommand({
       const scores = Object.values(qualityScores);
       const aggregate = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0.0;
 
-      // Free handles — fail if cleanup fails (resource leak is critical)
-      wasm.delete_object(modelHandle);
-      wasm.delete_object(logHandle);
+      // Free handles
+      try {
+        if (modelHandle) {
+          wasm.delete_object(modelHandle);
+        }
+        if (logHandle) {
+          wasm.delete_object(logHandle);
+        }
+      } catch (e) {
+        if (formatter instanceof HumanFormatter) {
+          formatter.warn(`Failed to clean up WASM handles: ${e instanceof Error ? e.message : String(e)}`);
+        }
+      }
 
       // Build result
       const result = {
