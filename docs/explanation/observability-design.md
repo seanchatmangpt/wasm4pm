@@ -27,7 +27,7 @@ Each layer is **completely independent**. Failure in Layer 3 doesn't affect Laye
 Human-friendly, colored output:
 
 ```bash
-$ pmctl run --config config.toml --verbose
+$ pictl run --config config.toml --verbose
 
 [INFO] Loading configuration...
 [DEBUG] Schema validation...
@@ -71,7 +71,7 @@ format = "json"
 Usage:
 
 ```bash
-pmctl run --config config.toml 2>&1 | jq 'select(.level == "ERROR")'
+pictl run --config config.toml 2>&1 | jq 'select(.level == "ERROR")'
 ```
 
 ## Layer 3: OTEL Telemetry

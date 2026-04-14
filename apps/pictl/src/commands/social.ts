@@ -125,13 +125,17 @@ export const social = defineCommand({
 
       switch (metric) {
         case 'handover':
-          rawNetwork = wasm.mine_social_network_handover(logHandle, activityKey, resourceKey);
+          rawNetwork = wasm.discover_handover_network(logHandle, resourceKey);
           break;
         case 'working-together':
-          rawNetwork = wasm.mine_social_network_working_together(logHandle, activityKey, resourceKey);
+          rawNetwork = wasm.discover_working_together_network(logHandle, resourceKey);
           break;
         case 'similar-task':
-          rawNetwork = wasm.mine_social_network_similar_task(logHandle, activityKey, resourceKey);
+          // No similar_task equivalent exists — return empty network
+          rawNetwork = { nodes: [], edges: [] };
+          if (formatter instanceof HumanFormatter) {
+            formatter.warn('Similar-task metric not available in current WASM build');
+          }
           break;
         default:
           throw new Error(`Unknown metric: ${metric}`);

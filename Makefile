@@ -105,8 +105,8 @@ clean-bench:
 
 # ── Environment & Development ─────────────────────────────────────────────────
 doctor:
-	@cd apps/pmctl && pnpm run build > /dev/null 2>&1
-	@node apps/pmctl/dist/bin/pmctl.js doctor --format json 2>&1 | awk '/^{/,/^}/ {print}'
+	@cd apps/pictl && pnpm run build > /dev/null 2>&1
+	@node apps/pictl/dist/bin/pictl.js doctor --format json 2>&1 | awk '/^{/,/^}/ {print}'
 
 help:
 	@echo "wasm4pm Benchmark Targets:"

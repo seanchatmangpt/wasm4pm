@@ -14,7 +14,7 @@ Before diving into details, use this 5-point checklist for 80% of issues:
 - [ ] **Binary too large?** Verify profile-specific build was used, not default cloud build
 - [ ] **Out of memory?** Reduce `execution.maxMemory` or use `fast` profile
 - [ ] **Algorithm timeout?** Increase `execution.timeout` or switch to faster algorithm (DFG → Heuristic)
-- [ ] **Config won't load?** Validate TOML syntax with `pmctl init --validate pictl.toml`
+- [ ] **Config won't load?** Validate TOML syntax with `pictl init --validate pictl.toml`
 
 If none apply, continue to symptom-specific sections below.
 
@@ -120,7 +120,7 @@ Or in Kubernetes:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: pmctl-config
+  name: pictl-config
 data:
   deployment-profile: "browser"  # Matches binary
   config-profile: "balanced"      # Config setting
@@ -135,10 +135,10 @@ After redeploying:
 ls -lh wasm4pm.wasm
 
 # Verify config matches
-pmctl explain --config pictl.toml | grep -A 3 execution
+pictl explain --config pictl.toml | grep -A 3 execution
 
 # Run test
-pmctl run -i test.xes --config pictl.toml
+pictl run -i test.xes --config pictl.toml
 ```
 
 ---
@@ -262,7 +262,7 @@ Test the smaller binary works:
 
 ```bash
 # Run on target device
-pmctl run -i small-log.xes --config pictl.toml
+pictl run -i small-log.xes --config pictl.toml
 ```
 
 If it fails with "algorithm not found", the profile was too minimal for your use case. Try the next larger profile:
@@ -330,7 +330,7 @@ Or via CLI:
 
 ```bash
 # Temporary override
-pmctl run -i events.xes --config pictl.toml \
+pictl run -i events.xes --config pictl.toml \
   --override execution.maxMemory=536870912
 ```
 
@@ -369,10 +369,10 @@ Reduce event log size:
 
 ```bash
 # Filter by activity (keep only frequent activities)
-pmctl run -i events.xes --filter-activity-min-freq 2
+pictl run -i events.xes --filter-activity-min-freq 2
 
 # Filter by trace (process subset)
-pmctl run -i events.xes --max-traces 1000
+pictl run -i events.xes --max-traces 1000
 
 # Pre-process (outside pictl)
 # Filter, sample, or compress the input file
@@ -385,7 +385,7 @@ After fixes, monitor memory during execution:
 ```bash
 # Watch memory in real-time
 while true; do free -h | grep Mem; sleep 1; done &
-pmctl run -i events.xes --config pictl.toml
+pictl run -i events.xes --config pictl.toml
 ```
 
 Or check resource limits:
@@ -462,7 +462,7 @@ profile = "quality"   # Slower profile needs more time
 Or via CLI:
 
 ```bash
-pmctl run -i events.xes --config pictl.toml --timeout 600000
+pictl run -i events.xes --config pictl.toml --timeout 600000
 ```
 
 #### Step 4: Match Profile to Timeout
@@ -487,7 +487,7 @@ timeout = 60000       # 60 sec (for balanced profile)
 Process large logs in chunks:
 
 ```bash
-pmctl run -i events.xes --profile stream --timeout 600000
+pictl run -i events.xes --profile stream --timeout 600000
 ```
 
 ### Verification
@@ -499,10 +499,10 @@ Test with small input first:
 head -100 events.xes > test-small.xes
 
 # Try it
-pmctl run -i test-small.xes --timeout 30000  # 30 sec
+pictl run -i test-small.xes --timeout 30000  # 30 sec
 
 # If that works, scale up
-pmctl run -i events.xes --timeout 300000
+pictl run -i events.xes --timeout 300000
 ```
 
 ---
@@ -535,7 +535,7 @@ One of these:
 Use pictl's validator:
 
 ```bash
-pmctl init --validate pictl.toml
+pictl init --validate pictl.toml
 
 # Output on success:
 # ✓ Configuration valid
@@ -592,7 +592,7 @@ timeout = 60000
 View example config:
 
 ```bash
-pmctl init --sample > example.toml
+pictl init --sample > example.toml
 cat example.toml | head -20
 ```
 
@@ -673,10 +673,10 @@ Verify config file exists:
 ls -la pictl.toml
 
 # If not found, create it
-pmctl init > pictl.toml
+pictl init > pictl.toml
 
 # Or specify explicit path
-pmctl run -i events.xes --config /full/path/to/pictl.toml
+pictl run -i events.xes --config /full/path/to/pictl.toml
 ```
 
 ### Verification
@@ -684,11 +684,11 @@ pmctl run -i events.xes --config /full/path/to/pictl.toml
 After fixes, validate:
 
 ```bash
-pmctl init --validate pictl.toml
+pictl init --validate pictl.toml
 # Should output: ✓ Configuration valid
 
 # Then test
-pmctl run -i events.xes --config pictl.toml
+pictl run -i events.xes --config pictl.toml
 ```
 
 ---
@@ -790,7 +790,7 @@ exporter = "console"    # Outputs spans to console
 Then run and check output:
 
 ```bash
-pmctl run -i events.xes --config pictl.toml 2>&1 | grep -i span
+pictl run -i events.xes --config pictl.toml 2>&1 | grep -i span
 ```
 
 #### Step 5: Check Sink Configuration
@@ -824,7 +824,7 @@ Check if traces are being written locally:
 
 ```bash
 # If console exporter
-pmctl run -i events.xes --config pictl.toml 2>&1 | head -50
+pictl run -i events.xes --config pictl.toml 2>&1 | head -50
 
 # If file exporter
 cat .wasm4pm/otel-traces.jsonl | jq '.' | head -20
@@ -849,7 +849,7 @@ path = "events.xes"
 EOF
 
 # Run and check for span output
-pmctl run -i events.xes --config test-otel.toml 2>&1 | grep -i "span\|trace"
+pictl run -i events.xes --config test-otel.toml 2>&1 | grep -i "span\|trace"
 ```
 
 ---
@@ -861,7 +861,7 @@ pmctl run -i events.xes --config test-otel.toml 2>&1 | grep -i "span\|trace"
 Command failed with unclear exit code:
 
 ```bash
-pmctl run -i events.xes
+pictl run -i events.xes
 echo $?
 # Output: 3
 ```
@@ -875,7 +875,7 @@ Exit codes are standardized:
 | Code | Category | Cause | Fix |
 |------|----------|-------|-----|
 | 0 | Success | Completed successfully | None needed |
-| 1 | Config | Configuration invalid | Validate with `pmctl init --validate` |
+| 1 | Config | Configuration invalid | Validate with `pictl init --validate` |
 | 2 | Source | Input file not found | Check file path exists |
 | 3 | Execution | Algorithm timeout or OOM | Increase timeout or reduce memory usage |
 | 4 | Partial | Some outputs succeeded, some failed | Check receipt for failed sinks |
@@ -884,7 +884,7 @@ Exit codes are standardized:
 ### Step 1: Identify Category
 
 ```bash
-pmctl run -i events.xes
+pictl run -i events.xes
 EXIT_CODE=$?
 
 case $EXIT_CODE in
@@ -904,17 +904,17 @@ pictl outputs error details to stderr:
 
 ```bash
 # Capture both stdout and stderr
-pmctl run -i events.xes 2>&1 | tee execution.log
+pictl run -i events.xes 2>&1 | tee execution.log
 
 # Extract error message
-pmctl run -i events.xes 2>&1 | grep -i "error:"
+pictl run -i events.xes 2>&1 | grep -i "error:"
 ```
 
 ### Step 3: Fix Based on Category
 
 **Exit 1 (Config):**
 ```bash
-pmctl init --validate pictl.toml
+pictl init --validate pictl.toml
 # Fix reported errors
 ```
 
@@ -940,8 +940,8 @@ cat output/receipt.json | jq '.sink_results'
 
 **Exit 5 (System):**
 ```bash
-pmctl doctor
-pmctl status
+pictl doctor
+pictl status
 # Check Node.js version, WASM support
 ```
 
@@ -951,15 +951,15 @@ pmctl status
 
 Use this before filing an issue:
 
-- [ ] **Validate config:** `pmctl init --validate pictl.toml`
+- [ ] **Validate config:** `pictl init --validate pictl.toml`
 - [ ] **Check file exists:** `ls -la events.xes`
-- [ ] **View provenance:** `pmctl explain --show-provenance --config pictl.toml`
-- [ ] **Check environment:** `pmctl doctor`
-- [ ] **Try minimal config:** `pmctl run -i small-test.xes` (no config file)
+- [ ] **View provenance:** `pictl explain --show-provenance --config pictl.toml`
+- [ ] **Check environment:** `pictl doctor`
+- [ ] **Try minimal config:** `pictl run -i small-test.xes` (no config file)
 - [ ] **Check logs:** `cat output/execution.log | tail -50`
 - [ ] **Verify binary:** `ls -lh wasm4pm.wasm` (check size for profile)
 - [ ] **Test connectivity:** `curl http://localhost:4318/v1/traces` (for OTel)
-- [ ] **Memory usage:** `pmctl run ... --verbose 2>&1 | grep -i memory`
+- [ ] **Memory usage:** `pictl run ... --verbose 2>&1 | grep -i memory`
 - [ ] **Exit code:** `echo $?` (after running command)
 
 ---
@@ -970,12 +970,12 @@ Use this before filing an issue:
 
 ```bash
 # 1. Check exit code
-pmctl run -i events.xes
+pictl run -i events.xes
 # Output: timeout after 5 min
 # Exit code: 3 (EXECUTION_ERROR)
 
 # 2. Validate config
-pmctl init --validate pictl.toml
+pictl init --validate pictl.toml
 # Output: ✓ Configuration valid
 
 # 3. Check which algorithm
@@ -997,7 +997,7 @@ ls -lh wasm4pm.wasm
 # - Increase timeout: timeout = 60000 (1 min, enough for DFG)
 
 # 7. Verify
-pmctl run -i events.xes --config pictl.toml
+pictl run -i events.xes --config pictl.toml
 # Success!
 ```
 
@@ -1015,7 +1015,7 @@ Most deployment issues fall into 7 categories. Use this guide to quickly identif
 6. **Observability** — Enable OTel, verify endpoint connectivity
 7. **Exit Codes** — Use standard codes to identify issue category
 
-Always start with the 5-point checklist and `pmctl explain --show-provenance` for debugging.
+Always start with the 5-point checklist and `pictl explain --show-provenance` for debugging.
 
 ---
 

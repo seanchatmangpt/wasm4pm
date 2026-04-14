@@ -21,7 +21,7 @@ The docs follow the **Diataxis framework** — see [INDEX.md](./INDEX.md) for th
 ### Reference
 - **[API.md](./API.md)** - Complete API reference for all functions
 - **[reference/algorithms.md](./reference/algorithms.md)** - 18 tools + 6 ML analysis tasks
-- **[reference/cli-commands.md](./reference/cli-commands.md)** - pmctl CLI reference
+- **[reference/cli-commands.md](./reference/cli-commands.md)** - pictl CLI reference
 
 ### Advanced Topics
 - **[FAQ.md](./FAQ.md)** - Troubleshooting and common questions

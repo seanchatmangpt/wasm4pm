@@ -119,7 +119,7 @@ export const quality = defineCommand({
         formatter.debug('Discovering process model with inductive miner...');
       }
 
-      const modelResult = wasm.discover_inductive_miner(logHandle, activityKey, 0.2);
+      const modelResult = wasm.discover_inductive_miner(logHandle, activityKey);
       const modelHandle = (typeof modelResult === 'string' ? JSON.parse(modelResult) : modelResult).handle as string;
 
       // Parse model JSON for structural info (nodes/edges)

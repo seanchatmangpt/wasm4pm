@@ -24,16 +24,16 @@ jobs:
       - uses: actions/checkout@v3
       
       - name: Install wasm4pm
-        run: npm install -g @wasm4pm/pmctl
+        run: npm install -g @pictl/cli
       
       - name: Validate config
-        run: pmctl init --validate config.toml
+        run: pictl init --validate config.toml
       
       - name: Run analysis
-        run: pmctl run --config config.toml --profile balanced
+        run: pictl run --config config.toml --profile balanced
       
       - name: Generate report
-        run: pmctl explain --config config.toml > analysis.md
+        run: pictl explain --config config.toml > analysis.md
       
       - name: Upload results
         uses: actions/upload-artifact@v3
@@ -71,13 +71,13 @@ stages:
 validate_config:
   stage: validate
   script:
-    - npm install -g @wasm4pm/pmctl
-    - pmctl init --validate config.toml
+    - npm install -g @pictl/cli
+    - pictl init --validate config.toml
 
 run_analysis:
   stage: analyze
   script:
-    - pmctl run --config config.toml --profile balanced
+    - pictl run --config config.toml --profile balanced
   artifacts:
     paths:
       - output/
@@ -86,7 +86,7 @@ run_analysis:
 generate_report:
   stage: report
   script:
-    - pmctl explain --config config.toml > report.md
+    - pictl explain --config config.toml > report.md
   artifacts:
     paths:
       - report.md
@@ -103,19 +103,19 @@ pipeline {
   stages {
     stage('Install') {
       steps {
-        sh 'npm install -g @wasm4pm/pmctl'
+        sh 'npm install -g @pictl/cli'
       }
     }
     
     stage('Validate') {
       steps {
-        sh 'pmctl init --validate config.toml'
+        sh 'pictl init --validate config.toml'
       }
     }
     
     stage('Analyze') {
       steps {
-        sh 'pmctl run --config config.toml --profile balanced'
+        sh 'pictl run --config config.toml --profile balanced'
       }
     }
     
@@ -142,7 +142,7 @@ Create `.githooks/pre-commit`:
 #!/bin/bash
 
 echo "Validating wasm4pm config..."
-pmctl init --validate config.toml
+pictl init --validate config.toml
 
 if [ $? -ne 0 ]; then
   echo "Config validation failed!"

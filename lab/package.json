@@ -1,7 +1,7 @@
 {
   "name": "@wasm4pm/lab-cli-tests",
   "version": "26.4.5",
-  "description": "CLI validation test suite for @wasm4pm/pmctl",
+  "description": "CLI validation test suite for @pictl/cli",
   "private": true,
   "type": "module",
   "scripts": {

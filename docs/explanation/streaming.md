@@ -134,10 +134,10 @@ Combine both:
 
 ```bash
 # Monthly batch analysis for reporting
-pmctl run --config batch-config.toml
+pictl run --config batch-config.toml
 
 # Daily streaming for monitoring
-pmctl watch --config stream-config.toml --profile fast
+pictl watch --config stream-config.toml --profile fast
 ```
 
 ## See Also

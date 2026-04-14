@@ -6,7 +6,7 @@
 
 ## What You'll Learn
 
-- Start pmctl in watch mode for file monitoring
+- Start pictl in watch mode for file monitoring
 - Observe incremental processing as data arrives
 - Understand checkpoint creation and recovery
 - Monitor progress in real-time
@@ -58,7 +58,7 @@ Create `events.log` with initial events:
 ## Step 3: Start Watch Mode
 
 ```bash
-pmctl watch --config watch-config.toml --verbose
+pictl watch --config watch-config.toml --verbose
 ```
 
 Output:
@@ -194,7 +194,7 @@ EOF
 Restart watch mode:
 
 ```bash
-pmctl watch --config watch-config.toml --verbose
+pictl watch --config watch-config.toml --verbose
 ```
 
 Output:
@@ -264,9 +264,9 @@ Response:
 | Scenario | Recommendation |
 |----------|-----------------|
 | Live event streams | ✅ Use watch mode |
-| Static files | ❌ Use normal `pmctl run` |
+| Static files | ❌ Use normal `pictl run` |
 | Real-time dashboards | ✅ Use watch mode |
-| Batch processing | ❌ Use normal `pmctl run` |
+| Batch processing | ❌ Use normal `pictl run` |
 | Continuous monitoring | ✅ Use watch mode |
 
 ### Checkpoint Semantics

@@ -25,7 +25,7 @@
     "release:full": "pnpm run tps:check && pnpm run release:verify && pnpm run release:verify-versions && pnpm run release:generate-schemas && pnpm run release:generate-changelog && pnpm run release:generate-sbom",
     "build:wasm": "pnpm --filter wasm4pm build:all",
     "build:engine": "pnpm --filter @wasm4pm/engine build",
-    "build:cli": "pnpm --filter @wasm4pm/pmctl build",
+    "build:cli": "pnpm --filter @pictl/cli build",
     "build:all": "pnpm run build:wasm && pnpm run build:engine && pnpm run build:cli",
     "dev": "pnpm run build:engine && pnpm run build:cli",
     "ci:test": "pnpm run tps:check && pnpm run lint && pnpm run test",

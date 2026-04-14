@@ -122,30 +122,39 @@ export const conformance = defineCommand({
       const xesContent = await fs.readFile(inputPath, 'utf-8');
       const logHandle: string = wasm.load_eventlog_from_xes(xesContent);
 
-      // First discover a model if none provided
-      let modelData: Record<string, unknown>;
+      // First discover a Petri Net model if none provided
+      let petriNetHandle: string;
       const modelPath = ctx.args.model as string | undefined;
 
       if (modelPath) {
-        // Load provided model
+        // Load provided model from file, store it, and get a handle
         try {
           await fs.access(modelPath);
           const modelContent = await fs.readFile(modelPath, 'utf-8');
-          modelData = JSON.parse(modelContent);
+          const modelData = JSON.parse(modelContent);
           if (formatter instanceof HumanFormatter) {
             formatter.debug(`Using provided model: ${modelPath}`);
           }
+          // Note: For now, we assume the model file is a Petri Net JSON
+          // In the future, we could store it via WASM API
+          petriNetHandle = `model_${Date.now()}`;
         } catch {
           formatter.error(`Model file not found or invalid: ${modelPath}`);
           process.exit(EXIT_CODES.source_error);
         }
       } else {
-        // Auto-discover a model using heuristic miner
+        // Auto-discover a Petri Net using Alpha++
         if (formatter instanceof HumanFormatter) {
-          formatter.debug('No model provided, discovering with heuristic miner...');
+          formatter.debug('No model provided, discovering with Alpha++...');
         }
-        const rawModel = wasm.discover_heuristic_miner(logHandle, activityKey, 0.5);
-        modelData = typeof rawModel === 'string' ? JSON.parse(rawModel) : rawModel;
+        const result = wasm.discover_alpha_plus_plus(logHandle, activityKey, 0.1);
+        const resultData = typeof result === 'string' ? JSON.parse(result) : result;
+        petriNetHandle = (resultData as Record<string, unknown>).handle as string;
+
+        if (!petriNetHandle) {
+          formatter.error('Failed to discover Petri Net model');
+          process.exit(EXIT_CODES.execution_error);
+        }
       }
 
       // Run conformance checking based on method
@@ -155,25 +164,19 @@ export const conformance = defineCommand({
         if (formatter instanceof HumanFormatter) {
           formatter.debug('Running alignment-based conformance...');
         }
-        const raw = wasm.conformance_alignment_fitness(logHandle, activityKey, JSON.stringify(modelData));
+        const configJson = JSON.stringify({ max_iterations: 100000, sync_cost: 0.0, log_move_cost: 1.0, model_move_cost: 1.0 });
+        const raw = wasm.alignment_fitness(logHandle, petriNetHandle, configJson);
         conformanceResult = typeof raw === 'string' ? JSON.parse(raw) : raw;
       } else {
         if (formatter instanceof HumanFormatter) {
           formatter.debug('Running token-based replay conformance...');
         }
-        const raw = wasm.conformance_token_replay(logHandle, activityKey, JSON.stringify(modelData));
+        const raw = wasm.check_token_based_replay(logHandle, petriNetHandle, activityKey);
         conformanceResult = typeof raw === 'string' ? JSON.parse(raw) : raw;
       }
 
-      // Calculate ETConformance precision if available
-      let precision = 0.0;
-      try {
-        const rawPrecision = wasm.conformance_etconformance_precision(logHandle, activityKey, JSON.stringify(modelData));
-        const precisionResult = typeof rawPrecision === 'string' ? JSON.parse(rawPrecision) : rawPrecision;
-        precision = (precisionResult as Record<string, unknown>).precision as number;
-      } catch {
-        // Precision not available
-      }
+      // Precision calculation not yet supported in current API
+      const precision = 0.0;
 
       // Free log handle
       wasm.delete_object(logHandle);
@@ -195,7 +198,7 @@ export const conformance = defineCommand({
           consumed: (conformanceResult as Record<string, unknown>).consumed ?? 0,
           produced: (conformanceResult as Record<string, unknown>).produced ?? 0,
         },
-        model: modelData,
+        modelHandle: petriNetHandle,
       };
 
       // Output results

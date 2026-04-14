@@ -181,7 +181,7 @@ if (!wasmModule || typeof wasmModule.load_eventlog_from_xes !== 'function') {
 
 **Files Changed:**
 - `packages/engine/src/wasm-loader.ts` — Export validation instead of memory field check
-- `apps/pmctl/src/commands/*.ts` — Removed `isWasmAvailable` guards (12 commands)
+- `apps/pictl/src/commands/*.ts` — Removed `isWasmAvailable` guards (12 commands)
 - `wasm4pm/src/*.rs` — Removed `.unwrap()` panics, added proper error returns
 
 ---
@@ -280,7 +280,7 @@ However, **behavioral changes** due to TPS compliance:
 - `packages/testing/src/certification.ts` — TPS compliance gates
 
 ### CLI Changes
-- `apps/pmctl/src/commands/run.ts` — Removed silent fallbacks
+- `apps/pictl/src/commands/run.ts` — Removed silent fallbacks
 - `.claude/hooks/metrics-track.sh` — Actual MTTR measurement
 
 ### WASM Changes
@@ -350,7 +350,7 @@ This major release transforms wasm4pm from a pure WebAssembly library into a com
 
 ### Key Achievements
 - **10 New Packages** - Microservice-ready architecture
-- **CLI Tool (pmctl)** - Professional command-line interface
+- **CLI Tool (pictl)** - Professional command-line interface
 - **Configuration System** - TOML/JSON/environment-based configuration
 - **Receipts** - Complete audit trails and reproducibility tracking
 - **Observability** - Non-blocking logging and telemetry
@@ -361,18 +361,18 @@ This major release transforms wasm4pm from a pure WebAssembly library into a com
 
 ## Major Features
 
-### 1. Package @wasm4pm/pmctl - CLI Tool for Process Mining (NEW)
+### 1. Package @wasm4pm/pictl - CLI Tool for Process Mining (NEW)
 **Version:** 26.4.5  
 **Status:** Production Ready
 
 The professional command-line interface for all process mining operations.
 
 #### Core Commands
-- **pmctl init** - Bootstrap new projects with configuration templates
-- **pmctl run** - Execute discovery algorithms with profile-based optimization
-- **pmctl watch** - File system watcher for continuous analysis
-- **pmctl status** - Real-time system and engine status
-- **pmctl explain** - Interactive algorithm and model explanation
+- **pictl init** - Bootstrap new projects with configuration templates
+- **pictl run** - Execute discovery algorithms with profile-based optimization
+- **pictl watch** - File system watcher for continuous analysis
+- **pictl status** - Real-time system and engine status
+- **pictl explain** - Interactive algorithm and model explanation
 
 #### Features
 - Profile-based execution (fast, balanced, quality, stream)
@@ -384,16 +384,16 @@ The professional command-line interface for all process mining operations.
 #### Example Usage
 ```bash
 # Initialize a new project
-pmctl init --configFormat toml
+pictl init --configFormat toml
 
 # Run discovery with quality profile
-pmctl run data/eventlog.xes --algorithm genetic --profile quality
+pictl run data/eventlog.xes --algorithm genetic --profile quality
 
 # Watch directory for new logs
-pmctl watch data/ --output results/ --profile balanced
+pictl watch data/ --output results/ --profile balanced
 
 # Check system status
-pmctl status --verbose
+pictl status --verbose
 ```
 
 ---
@@ -898,7 +898,7 @@ const log = new wasm4pm.WasmEventLog();  // Works correctly
 - **MIGRATION_GUIDE.md** - Upgrading from v26.4.4
 - **docs/BROWSER-BENCHMARKS.md** - Browser performance guide
 - Package-level READMEs:
-  - `apps/pmctl/README.md` - CLI documentation
+  - `apps/pictl/README.md` - CLI documentation
   - `packages/config/README.md` - Configuration guide
   - `packages/engine/README.md` - Engine lifecycle
   - `packages/observability/README.md` - Logging guide
@@ -907,7 +907,7 @@ const log = new wasm4pm.WasmEventLog();  // Works correctly
 
 ### Updated Documentation
 - **README.md** - Added v26.4.5 features, CLI examples
-- **docs/API.md** - New pmctl commands, service endpoints
+- **docs/API.md** - New pictl commands, service endpoints
 - **docs/DEPLOYMENT.md** - Service mode deployment
 - **docs/FAQ.md** - Configuration and monitoring Q&A
 - **docs/QUICKSTART.md** - CLI quick start examples
@@ -998,7 +998,7 @@ pnpm build:all
 pnpm test
 
 # Optional: Install CLI
-pnpm add -g @wasm4pm/pmctl
+pnpm add -g @wasm4pm/pictl
 ```
 
 ### Installation Methods
@@ -1009,7 +1009,7 @@ pnpm add -g @wasm4pm/pmctl
 npm install wasm4pm
 
 # CLI tool
-npm install -g @wasm4pm/pmctl
+npm install -g @wasm4pm/pictl
 
 # Complete packages
 npm install @wasm4pm/engine @wasm4pm/service @wasm4pm/config
@@ -1071,7 +1071,7 @@ None in this release. All existing APIs remain supported.
 
 ### For Users
 1. **Upgrade:** Run `npm install wasm4pm@latest` or `pnpm update`
-2. **Explore CLI:** Try `pmctl init` and `pmctl --help`
+2. **Explore CLI:** Try `pictl init` and `pictl --help`
 3. **Read Migration Guide:** See MIGRATION_GUIDE.md for new features
 4. **Check Examples:** Browse `examples/` directory for common patterns
 
@@ -1084,7 +1084,7 @@ None in this release. All existing APIs remain supported.
 ### For Operators
 1. **Deploy Service:** Use `@wasm4pm/service` for HTTP API
 2. **Configure Monitoring:** Set up `@wasm4pm/observability`
-3. **Use pmctl:** Deploy CLI via container or systemd
+3. **Use pictl:** Deploy CLI via container or systemd
 4. **Read Deployment Guide:** See docs/DEPLOYMENT.md
 
 ---

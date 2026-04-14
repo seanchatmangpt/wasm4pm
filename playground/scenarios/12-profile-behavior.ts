@@ -3,7 +3,7 @@
  *
  * Dev action simulated: "I changed getProfileAlgorithms('quality') to add a
  * new algorithm. Do balanced and quality plans now differ in step count as
- * expected? Does `pmctl compare` show the right table columns? Does `pmctl
+ * expected? Does `pictl compare` show the right table columns? Does `pictl
  * explain` return content for each algorithm?"
  *
  * Key contracts verified:
@@ -13,29 +13,21 @@
  *     - quality plan includes analyze_performance step, fast does not
  *     - getProfileAlgorithms('fast') and 'quality' are disjoint sets
  *   CLI compare:
- *     - pmctl compare dfg,heuristic exits 0 or 3
+ *     - pictl compare dfg,heuristic exits 0 or 3
  *     - --format json has algorithms array, each entry has algorithm/nodes/edges/elapsedMs
  *   CLI explain:
  *     - --algorithm dfg exits 0 and stdout contains "Directly"
  *     - --format json has content and subject fields
  *
- * Binary: apps/pmctl/dist/bin/pmctl.js (must be built first)
+ * Binary: apps/pictl/dist/bin/pictl.js (must be built first)
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import * as path from 'path';
-import * as url from 'url';
 import * as fs from 'fs/promises';
-import { runCli, assertExitCode, assertJsonOutput, createCliTestEnv, EXIT_CODES } from '@wasm4pm/testing';
-import { getProfileAlgorithms } from '@wasm4pm/contracts';
-import type { CliTestEnv } from '@wasm4pm/testing';
-
-const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
-const PMCTL = path.resolve(__dirname, '../../apps/pmctl/dist/bin/pmctl.js');
-
-function pmctl(userArgs: string[]) {
-  return runCli([PMCTL, ...userArgs], { cliPath: 'node', timeout: 20_000 });
-}
+import { pictl, assertExitCode, assertJsonOutput, createCliTestEnv, EXIT_CODES } from '@pictl/testing';
+import { getProfileAlgorithms } from '@pictl/contracts';
+import type { CliTestEnv } from '@pictl/testing';
 
 const MINI_XES = `<?xml version="1.0" encoding="UTF-8"?>
 <log xes.version="1.0">
@@ -70,11 +62,11 @@ let xesPath: string;
 beforeAll(async () => {
   // Try loading planner
   try {
-    const mod = await import('@wasm4pm/planner');
+    const mod = await import('@pictl/planner');
     planFn = (cfg) => mod.plan(cfg as Parameters<typeof mod.plan>[0]) as ReturnType<typeof mod.plan>;
-    console.info('[profiles] @wasm4pm/planner loaded');
+    console.info('[profiles] @pictl/planner loaded');
   } catch {
-    console.warn('[profiles] @wasm4pm/planner not built — planner tests will skip');
+    console.warn('[profiles] @pictl/planner not built — planner tests will skip');
   }
 
   // Shared XES file for CLI tests
@@ -150,8 +142,8 @@ describe('profiles: algorithm set disjointness', () => {
 // ── CLI compare ───────────────────────────────────────────────────────────────
 
 describe('profiles: CLI compare command', () => {
-  it('pmctl compare dfg,heuristic exits 0 or 3', async () => {
-    const result = await pmctl(['compare', 'dfg,heuristic', '-i', xesPath, '--no-save']);
+  it('pictl compare dfg,heuristic exits 0 or 3', async () => {
+    const result = await pictl(['compare', 'dfg,heuristic', '-i', xesPath, '--no-save']);
     const acceptable = [EXIT_CODES.SUCCESS, EXIT_CODES.EXECUTION_ERROR];
     if (!acceptable.includes(result.exitCode)) {
       console.error('[profiles] compare unexpected exit:', result.exitCode);
@@ -165,7 +157,7 @@ describe('profiles: CLI compare command', () => {
   }, 30_000);
 
   it('compare --format json has algorithms array with expected fields', async () => {
-    const result = await pmctl(['compare', 'dfg,heuristic', '-i', xesPath, '--format', 'json', '--no-save']);
+    const result = await pictl(['compare', 'dfg,heuristic', '-i', xesPath, '--format', 'json', '--no-save']);
     if (result.exitCode !== EXIT_CODES.SUCCESS) {
       console.warn('[profiles] skipping compare JSON shape — exit', result.exitCode);
       return;
@@ -191,13 +183,13 @@ describe('profiles: CLI explain command', () => {
   it('--algorithm dfg exits 0', async () => {
     // Human output is suppressed in NODE_ENV=test (consola behavior).
     // Content is verified via --format json in the next test.
-    const result = await pmctl(['explain', '--algorithm', 'dfg']);
+    const result = await pictl(['explain', '--algorithm', 'dfg']);
     assertExitCode(result, EXIT_CODES.SUCCESS);
     console.info('[profiles] explain dfg exit:', result.exitCode, '(human output suppressed in test env)');
   });
 
   it('--algorithm dfg --format json has content and subject fields', async () => {
-    const result = await pmctl(['explain', '--algorithm', 'dfg', '--format', 'json']);
+    const result = await pictl(['explain', '--algorithm', 'dfg', '--format', 'json']);
     assertExitCode(result, EXIT_CODES.SUCCESS);
     const envelope = assertJsonOutput(result) as Record<string, unknown>;
     expect(envelope).toHaveProperty('status', 'success');

@@ -5,7 +5,7 @@
 
 ## Problem
 
-You want to enable prediction capabilities in your wasm4pm configuration so that `pmctl predict` uses your preferred settings by default, without passing flags every time on the command line.
+You want to enable prediction capabilities in your wasm4pm configuration so that `pictl predict` uses your preferred settings by default, without passing flags every time on the command line.
 
 ## Prediction Config Schema
 
@@ -58,7 +58,7 @@ tasks = ["next_activity"]
 Run a prediction -- it will pick up the config automatically:
 
 ```bash
-pmctl predict next-activity
+pictl predict next-activity
 ```
 
 What you should see:
@@ -97,9 +97,9 @@ tasks = ["next_activity", "remaining_time", "drift"]
 Run each prediction:
 
 ```bash
-pmctl predict next-activity
-pmctl predict remaining-time
-pmctl predict drift
+pictl predict next-activity
+pictl predict remaining-time
+pictl predict drift
 ```
 
 What you should see for remaining-time:
@@ -163,7 +163,7 @@ tasks = [
 Run a feature extraction to see what predictive attributes are available:
 
 ```bash
-pmctl predict features
+pictl predict features
 ```
 
 What you should see:
@@ -208,7 +208,7 @@ If you prefer JSON config (`wasm4pm.json`) instead of TOML:
 
 wasm4pm uses a 5-layer precedence system. For the prediction section, values from higher layers override lower ones:
 
-1. **CLI flags** (highest priority) -- e.g., `pmctl predict next-activity --ngram-order 5`
+1. **CLI flags** (highest priority) -- e.g., `pictl predict next-activity --ngram-order 5`
 2. **Config file** -- `wasm4pm.toml` or `wasm4pm.json`
 3. **Environment variables** -- e.g., `WASM4PM_PREDICTION_NGRAM_ORDER=5`
 4. **Defaults** -- built-in defaults from the schema
@@ -216,7 +216,7 @@ wasm4pm uses a 5-layer precedence system. For the prediction section, values fro
 Example: If your config file sets `ngramOrder = 3` but you run:
 
 ```bash
-WASM4PM_PREDICTION_NGRAM_ORDER=4 pmctl predict next-activity --ngram-order 5
+WASM4PM_PREDICTION_NGRAM_ORDER=4 pictl predict next-activity --ngram-order 5
 ```
 
 The effective value is `5` (CLI flag wins). If you omit the flag, the effective value is `4` (ENV wins over config). If you omit both, the effective value is `3` (config file).

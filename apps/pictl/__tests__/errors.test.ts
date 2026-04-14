@@ -1,5 +1,5 @@
 /**
- * Unit tests for apps/pmctl/src/errors.ts
+ * Unit tests for apps/pictl/src/errors.ts
  *
  * Tests error class hierarchy, exit code mapping, message formatting,
  * and the handleError() function.

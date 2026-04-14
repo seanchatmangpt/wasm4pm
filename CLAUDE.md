@@ -11,7 +11,7 @@
 
 2. **TypeScript monorepo** (`packages/` + `apps/`) — 10 packages that wrap, orchestrate, and expose the WASM core via a professional CLI (`pictl`), configuration system, observability, contracts, and testing harnesses.
 
-The primary entry point for users is **`pictl`** (`apps/pmctl/`). The primary entry point for developers extending the system is the **`packages/`** monorepo.
+The primary entry point for users is **`pictl`** (`apps/pictl/`). The primary entry point for developers extending the system is the **`packages/`** monorepo.
 
 **State machine source of truth:** `packages/engine/src/transitions.ts` — the VALID_TRANSITIONS map is authoritative, not the CLAUDE.md diagram.
 
@@ -47,7 +47,7 @@ wasm4pm/
 │   └── package.json        # npm package for the compiled WASM
 ├── packages/               # TypeScript monorepo (10 packages)
 ├── apps/
-│   └── pmctl/              # CLI tool (@pictl/cli)
+│   └── pictl/              # CLI tool (@pictl/cli)
 ├── lab/                    # Post-publish artifact validation (tests published npm package)
 └── playground/             # Local dev behavior testing (tests local source)
 ```
@@ -257,7 +257,7 @@ cd packages/engine && npm test # test one package
 
 ### pictl CLI
 ```bash
-cd apps/pmctl
+cd apps/pictl
 npm run build                 # tsc → dist/
 npm test                      # vitest
 ```
@@ -313,10 +313,10 @@ interface Receipt {
 ## Key file locations
 
 ```
-apps/pmctl/src/commands/     # run.ts, compare.ts, diff.ts, predict.ts, conformance.ts, simulate.ts, etc.
-apps/pmctl/src/cli.ts            # CLI entry point with command registration
-apps/pmctl/src/exit-codes.ts # EXIT_CODES constants
-apps/pmctl/src/output.ts     # Formatter (human vs json)
+apps/pictl/src/commands/     # run.ts, compare.ts, diff.ts, predict.ts, conformance.ts, simulate.ts, etc.
+apps/pictl/src/cli.ts            # CLI entry point with command registration
+apps/pictl/src/exit-codes.ts # EXIT_CODES constants
+apps/pictl/src/output.ts     # Formatter (human vs json)
 packages/engine/src/engine.ts
 packages/engine/src/transitions.ts
 packages/engine/src/lifecycle.ts # StateMachine class
@@ -340,9 +340,9 @@ packages/planner/src/planner.ts
 packages/planner/src/explain.ts
 packages/swarm/src/loop.ts        # Swarm orchestration loop
 packages/swarm/src/convergence.ts # Convergence detection
-apps/pmctl/src/ml-runner.ts    # ML task execution logic
-apps/pmctl/src/commands/ml.ts  # `pictl ml` command
-apps/pmctl/src/commands/powl.ts # `pictl powl` command
+apps/pictl/src/ml-runner.ts    # ML task execution logic
+apps/pictl/src/commands/ml.ts  # `pictl ml` command
+apps/pictl/src/commands/powl.ts # `pictl powl` command
 wasm4pm/src/                 # Rust algorithm implementations
 wasm4pm/src/mcp_server.ts      # WASM MCP server
 wasm4pm/src/rl_orchestrator.rs # RL orchestrator (5 agents, LinUCB)

@@ -12,7 +12,7 @@ pictl is a modular CLI tool built with:
 ## Directory Structure
 
 ```
-apps/pmctl/
+apps/pictl/
 ├── src/
 │   ├── bin.ts              # Entry point (#!/usr/bin/env node)
 │   ├── cli.ts              # Main command definition

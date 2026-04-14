@@ -10,7 +10,7 @@ This directory contains comprehensive end-to-end integration tests for the wasm4
 
 #### 1. `e2e-run.test.ts` - Run Command Tests (140+ cases)
 
-Tests the core `pmctl run` command flow covering:
+Tests the core `pictl run` command flow covering:
 
 **Happy Path Tests:**
 - Valid config + XES input → successful discovery

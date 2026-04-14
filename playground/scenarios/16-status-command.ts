@@ -16,25 +16,25 @@
  * NOTE: Human output tests are limited because consola filters log-level
  *       messages in child process capture. Only JSON output is fully verifiable.
  *
- * Binary: apps/pmctl/dist/bin/pmctl.js (must be built first)
+ * Binary: apps/pictl/dist/bin/pictl.js (must be built first)
  */
 
 import { describe, it, expect } from 'vitest';
-import { assertExitCode, pmctl, extractJson, EXIT_CODES } from '../helpers/cli.js';
+import { assertExitCode, pictl, extractJson, EXIT_CODES } from '../helpers/cli.js';
 
 describe('status command', () => {
   // ── JSON output ───────────────────────────────────────────────────────────
 
   describe('JSON output', () => {
     it('exits 0 and returns valid JSON', async () => {
-      const result = await pmctl(['status', '--format', 'json']);
+      const result = await pictl(['status', '--format', 'json']);
       assertExitCode(result, EXIT_CODES.SUCCESS);
       const json = extractJson(result.stdout);
       expect(json).toBeDefined();
     });
 
     it('contains engine section with wasmLoaded=true', async () => {
-      const result = await pmctl(['status', '--format', 'json']);
+      const result = await pictl(['status', '--format', 'json']);
       const json = extractJson(result.stdout);
       const engine = json.engine as Record<string, unknown>;
 
@@ -45,7 +45,7 @@ describe('status command', () => {
     });
 
     it('contains system section with platform info', async () => {
-      const result = await pmctl(['status', '--format', 'json']);
+      const result = await pictl(['status', '--format', 'json']);
       const json = extractJson(result.stdout);
       const system = json.system as Record<string, unknown>;
 
@@ -58,7 +58,7 @@ describe('status command', () => {
     });
 
     it('contains memory section with numeric fields in MB', async () => {
-      const result = await pmctl(['status', '--format', 'json']);
+      const result = await pictl(['status', '--format', 'json']);
       const json = extractJson(result.stdout);
       const memory = json.memory as Record<string, unknown>;
 
@@ -73,7 +73,7 @@ describe('status command', () => {
     });
 
     it('includes WASM version when available', async () => {
-      const result = await pmctl(['status', '--format', 'json']);
+      const result = await pictl(['status', '--format', 'json']);
       const json = extractJson(result.stdout);
       const engine = json.engine as Record<string, unknown>;
 
@@ -86,12 +86,12 @@ describe('status command', () => {
 
   describe('default behavior', () => {
     it('exits 0 without --format flag', async () => {
-      const result = await pmctl(['status']);
+      const result = await pictl(['status']);
       assertExitCode(result, EXIT_CODES.SUCCESS);
     });
 
     it('produces output (not empty) in default format', async () => {
-      const result = await pmctl(['status']);
+      const result = await pictl(['status']);
       assertExitCode(result, EXIT_CODES.SUCCESS);
       // Combined output should have WASM init messages at minimum
       const out = result.stdout + result.stderr;

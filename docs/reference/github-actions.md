@@ -26,16 +26,16 @@ jobs:
           node-version: '20'
       
       - name: Install wasm4pm
-        run: npm install -g @wasm4pm/pmctl
+        run: npm install -g @pictl/cli
       
       - name: Validate Configuration
-        run: pmctl init --validate config.toml
+        run: pictl init --validate config.toml
       
       - name: Run Process Mining
-        run: pmctl run --config config.toml --profile balanced
+        run: pictl run --config config.toml --profile balanced
       
       - name: Generate Report
-        run: pmctl explain --config config.toml > analysis.md
+        run: pictl explain --config config.toml > analysis.md
       
       - name: Upload Artifacts
         uses: actions/upload-artifact@v3
@@ -73,16 +73,16 @@ jobs:
       - uses: actions/checkout@v3
       
       - name: Install
-        run: npm install -g @wasm4pm/pmctl
+        run: npm install -g @pictl/cli
       
       - name: Run Tests
         run: npm test
       
       - name: Check Determinism
         run: |
-          pmctl run --config config.toml
+          pictl run --config config.toml
           HASH1=$(jq -r '.combined_hash' output/receipt.json)
-          pmctl run --config config.toml
+          pictl run --config config.toml
           HASH2=$(jq -r '.combined_hash' output/receipt.json)
           [[ "$HASH1" == "$HASH2" ]] || exit 1
 ```

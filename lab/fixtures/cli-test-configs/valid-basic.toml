@@ -1,4 +1,4 @@
-# Valid basic configuration for pmctl testing
+# Valid basic configuration for pictl testing
 
 [source]
 type = "xes"

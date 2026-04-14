@@ -5,7 +5,7 @@
 ## Dependency Graph
 
 ```
-Application Layer:  apps/pmctl/
+Application Layer:  apps/pictl/
     ↓
 Orchestration:    engine → planner → swarm → ml
     ↓

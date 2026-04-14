@@ -110,8 +110,8 @@ function runCli(args: string[], timeoutMs: number = 30000): Promise<CliResult> {
     const start = Date.now();
     // Use direct path to built CLI binary instead of npx pictl
     // npx can't resolve pictl in vitest child_process (no symlink in node_modules/.bin)
-    const cliPath = path.resolve(__dirname, '../../dist/bin/pmctl.js');
-    const cwd = path.resolve(__dirname, '../..');  // Set working directory to apps/pmctl
+    const cliPath = path.resolve(__dirname, '../../dist/bin/pictl.js');
+    const cwd = path.resolve(__dirname, '../..');  // Set working directory to apps/pictl
     const child = execFile(process.execPath, [cliPath, ...args], {
       timeout: timeoutMs,
       maxBuffer: 10 * 1024 * 1024,

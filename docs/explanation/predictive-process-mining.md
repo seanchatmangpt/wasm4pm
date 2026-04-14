@@ -52,7 +52,7 @@ Order 3 (trigram):   Look at the last 2 activities.
 In wasm4pm, n-gram models are built on-the-fly from the event log inside the WASM runtime. You control the order with the `ngramOrder` config field or the `--ngram-order` CLI flag.
 
 ```
-pmctl predict next-activity -i orders.xes --prefix "Register,Submit" --ngram-order 2
+pictl predict next-activity -i orders.xes --prefix "Register,Submit" --ngram-order 2
 ```
 
 The output ranks candidate activities by probability, returning the top-k most likely next steps.
@@ -86,7 +86,7 @@ Given a running case that has completed 3 activities, you look up bucket 3 and p
 This is a deliberately simple approach. More sophisticated methods (regression on prefix features, LSTM sequence models) exist, but the bucket model has two advantages: it is interpretable (you can explain *why* the prediction is what it is) and it works well with the modest data volumes common in process mining.
 
 ```
-pmctl predict remaining-time -i claims.xes --prefix "Register,Assess,Approve"
+pictl predict remaining-time -i claims.xes --prefix "Register,Assess,Approve"
 ```
 
 ---
@@ -129,7 +129,7 @@ wasm4pm detects drift using a **Jaccard-window** approach: divide the event log 
 This is a rich enough topic to warrant its own explanation. See [Concept Drift Detection](./concept-drift-detection.md) for the full treatment.
 
 ```
-pmctl predict drift -i production.xes --drift-window 20
+pictl predict drift -i production.xes --drift-window 20
 ```
 
 ---
@@ -153,7 +153,7 @@ wasm4pm extracts features from traces such as:
 These features feed into the transition probability matrix (which activities follow which, and how often). The matrix itself is a feature: the probability distribution over next activities for a given prefix is a compact numeric representation of process state.
 
 ```
-pmctl predict features -i incidents.xes --prefix "Open,Triage"
+pictl predict features -i incidents.xes --prefix "Open,Triage"
 ```
 
 Feature extraction is the bridge between process mining and data science. Once you have numeric features per trace, you can train classifiers, build regression models, or cluster cases -- all using standard ML tooling outside wasm4pm.
@@ -185,7 +185,7 @@ When utilization approaches 1.0, wait times grow exponentially. A system at 90% 
 wasm4pm's resource prediction reports queue delay, utilization, and stability status. In practice, arrival and service rates would be estimated from the event log's inter-event times and activity durations. The current implementation uses configurable demonstration defaults.
 
 ```
-pmctl predict resource -i support-tickets.xes
+pictl predict resource -i support-tickets.xes
 ```
 
 ---
@@ -237,6 +237,6 @@ All computation runs inside the WASM runtime (Rust compiled to WebAssembly). The
 ## See Also
 
 - [Explanation: Concept Drift Detection](./concept-drift-detection.md) -- deep dive on drift detection methodology
-- [Explanation: Process Model Comparison](./process-model-comparison.md) -- how `pmctl diff` compares two event logs
+- [Explanation: Process Model Comparison](./process-model-comparison.md) -- how `pictl diff` compares two event logs
 - [Explanation: OCPM](./ocpm.md) -- object-centric extensions to predictive mining
 - [Explanation: Profiles](./profiles.md) -- how execution profiles affect discovery quality

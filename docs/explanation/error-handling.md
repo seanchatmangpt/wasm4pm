@@ -23,7 +23,7 @@ wasm4pm uses 6 exit codes with mandatory remediation:
 ```
 CONFIG_INVALID
   → Schema validation failed
-  → Fix: pmctl init --validate config.toml
+  → Fix: pictl init --validate config.toml
 
 CONFIG_MISSING
   → Required field missing
@@ -97,15 +97,15 @@ OTEL_FAILED
 
 ```bash
 # Don't do this (hides error):
-pmctl run --config config.toml || echo "Done"
+pictl run --config config.toml || echo "Done"
 
 # Do this (address error):
-if ! pmctl run --config config.toml; then
+if ! pictl run --config config.toml; then
   exit_code=$?
   
   if [ $exit_code -eq 1 ]; then
     # CONFIG_ERROR: fix config
-    pmctl init --validate config.toml
+    pictl init --validate config.toml
   elif [ $exit_code -eq 2 ]; then
     # SOURCE_ERROR: fix input
     ls -la $(grep path config.toml | awk '{print $3}')
@@ -138,7 +138,7 @@ Level 3: CLI/Service error
 attempt=1
 delay=1
 while [ $attempt -le 5 ]; do
-  pmctl run --config config.toml && break
+  pictl run --config config.toml && break
   
   sleep $delay
   delay=$((delay * 2))
@@ -159,7 +159,7 @@ try_algorithm "dfg"
 ```bash
 failures=0
 while [ $failures -lt 3 ]; do
-  if pmctl run --config config.toml; then
+  if pictl run --config config.toml; then
     break
   fi
   failures=$((failures + 1))
@@ -193,7 +193,7 @@ All errors are logged:
 
 ```bash
 # View errors
-pmctl run --config config.toml 2>&1 | grep ERROR
+pictl run --config config.toml 2>&1 | grep ERROR
 
 # Check exit code
 echo $?  # 0=success, 1-5=error

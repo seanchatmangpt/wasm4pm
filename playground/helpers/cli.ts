@@ -10,14 +10,14 @@ import * as path from 'path';
 import * as url from 'url';
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
-export const PMCTL = path.resolve(__dirname, '../../apps/pmctl/dist/bin/pmctl.js');
+export const PICTL = path.resolve(__dirname, '../../apps/pictl/dist/bin/pictl.js');
 
 /** Spawn pictl CLI as a child process, capturing stdout/stderr/exitCode. */
-export function pmctl(
+export function pictl(
   userArgs: string[],
   options?: { timeout?: number; env?: Record<string, string> },
 ): Promise<CliResult> {
-  return runCli([PMCTL, ...userArgs], {
+  return runCli([PICTL, ...userArgs], {
     cliPath: 'node',
     timeout: options?.timeout ?? 30_000,
     env: options?.env,
