@@ -229,4 +229,38 @@ describe('classifyTraces edge cases', () => {
       expect(p.confidence).toBeLessThanOrEqual(1);
     }
   });
+
+  it('logistic regression predictions are stable across dataset sizes', async () => {
+    // JTBD: logistic regression should produce consistent predictions as data grows
+    const baseFeatures = [
+      { case_id: 'c1', trace_length: 10, elapsed_time: 5000, rework_count: 3, outcome: 'Reject' },
+      { case_id: 'c2', trace_length: 3, elapsed_time: 1000, rework_count: 0, outcome: 'Approve' },
+      { case_id: 'c3', trace_length: 4, elapsed_time: 1500, rework_count: 0, outcome: 'Approve' },
+    ];
+    const extendedFeatures = [
+      ...baseFeatures,
+      { case_id: 'c4', trace_length: 9, elapsed_time: 4500, rework_count: 2, outcome: 'Reject' },
+      { case_id: 'c5', trace_length: 11, elapsed_time: 6000, rework_count: 4, outcome: 'Reject' },
+      { case_id: 'c6', trace_length: 2, elapsed_time: 800, rework_count: 0, outcome: 'Approve' },
+    ];
+
+    const baseResult = await classifyTraces(baseFeatures, { method: 'logistic_regression' });
+    const extResult = await classifyTraces(extendedFeatures, { method: 'logistic_regression' });
+
+    // Both should produce valid predictions
+    expect(baseResult.predictions).toHaveLength(3);
+    expect(extResult.predictions).toHaveLength(6);
+    // Well-separated classes: accuracy should not degrade with more data
+    const baseCorrect = baseResult.predictions.filter(p => {
+      const label = baseFeatures.find(f => f.case_id === p.caseId)?.outcome;
+      return p.predicted === label;
+    }).length;
+    const extCorrect = extResult.predictions.filter(p => {
+      const label = extendedFeatures.find(f => f.case_id === p.caseId)?.outcome;
+      return p.predicted === label;
+    }).length;
+    expect(extCorrect / extendedFeatures.length).toBeGreaterThanOrEqual(
+      baseCorrect / baseFeatures.length * 0.8,
+    );
+  });
 });

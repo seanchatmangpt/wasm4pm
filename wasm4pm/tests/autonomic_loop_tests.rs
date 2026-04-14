@@ -158,3 +158,31 @@ fn test_agent_trait_polymorphism() {
     let _ = Agent::select_action(&rf, &state);
     Agent::update(&rf, &state, &RlAction::Restart, -1.0, &next, true);
 }
+
+// ---------------------------------------------------------------------------
+// Category G: Integration and Latency SLA
+// ---------------------------------------------------------------------------
+
+#[test]
+fn test_single_autonomic_cycle_completes_in_under_100ms() {
+    // JTBD: Single autonomic cycle meets <100ms latency SLA
+    // Oracle Rank 2: Domain contract — wall-clock SLA from specification
+    // Van der Aalst doctrine: Process must be responsive to real-time telemetry changes
+
+    let mut orch = pictl::rl_orchestrator::RlOrchestrator::new_with_seed(42);
+    let features = [0.5, 0.3, 0.2, 0.0, 0.0, 0.0, 0.5, 0.0];
+    let state = make_test_state(1);
+    let next_state = make_test_state(1);
+
+    // Measure wall-clock time for one cycle
+    let start = std::time::Instant::now();
+    let (_action, _reward) = orch.run_cycle(&features, &state, &next_state, 0, true, true);
+    let elapsed = start.elapsed();
+
+    // Assert: single cycle completes in <100ms
+    assert!(
+        elapsed < std::time::Duration::from_millis(100),
+        "Single autonomic cycle must complete in <100ms: took {:?}",
+        elapsed
+    );
+}
