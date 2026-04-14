@@ -152,7 +152,7 @@ Set defaults at runtime:
 export ENVIRONMENT=dev
 export EVENT_LOG_PATH="./data/sample-small.xes"
 export OUTPUT_DIR="./output/dev"
-pmctl run --config config.${ENVIRONMENT}.toml
+pictl run --config config.${ENVIRONMENT}.toml
 
 # Production
 export ENVIRONMENT=prod
@@ -160,7 +160,7 @@ export EVENT_LOG_PATH="/mnt/data/events.xes"
 export OUTPUT_DIR="/mnt/output"
 export OTEL_ENDPOINT="https://api.datadoghq.com/v1/input"
 export DD_API_KEY="your-secret-key"
-pmctl run --config config.${ENVIRONMENT}.toml
+pictl run --config config.${ENVIRONMENT}.toml
 ```
 
 ## Step 4: Profile-Aware Selection
@@ -209,10 +209,10 @@ Usage:
 
 ```bash
 # Fast discovery
-pmctl run --config config-profiles.toml --profile fast
+pictl run --config config-profiles.toml --profile fast
 
 # Quality discovery
-pmctl run --config config-profiles.toml --profile quality
+pictl run --config config-profiles.toml --profile quality
 ```
 
 ## Step 5: Size-Based Parameterization

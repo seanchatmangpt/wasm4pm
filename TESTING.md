@@ -23,7 +23,7 @@ We trust only event evidence that can be mined into a conforming object-centric 
 # TypeScript packages (run from package directory)
 cd packages/engine && npm test
 cd packages/kernel && npm test
-cd apps/pmctl && npm test
+cd apps/pictl && npm test
 
 # Rust/WASM (always use cargo make)
 cd wasm4pm

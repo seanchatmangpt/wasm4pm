@@ -40,11 +40,11 @@ If input or algorithm changes → Hash changes instantly.
 
 ```bash
 # Run 1
-pmctl run --config config.toml
+pictl run --config config.toml
 HASH1=$(jq -r '.combined_hash' output/receipt.json)
 
 # Run 2
-pmctl run --config config.toml
+pictl run --config config.toml
 HASH2=$(jq -r '.combined_hash' output/receipt.json)
 
 if [ "$HASH1" = "$HASH2" ]; then
@@ -59,10 +59,10 @@ fi
 The system guarantees:
 
 ```
-pmctl explain --config config.toml
+pictl explain --config config.toml
   → Shows the exact plan that will execute
 
-pmctl run --config config.toml
+pictl run --config config.toml
   → Executes that exact plan
   → Produces the same results every time
 ```
@@ -134,12 +134,12 @@ To verify determinism:
 #!/bin/bash
 
 # 1. Run first time
-pmctl run --config config.toml
+pictl run --config config.toml
 HASH1=$(jq -r '.combined_hash' output/receipt.json)
 cp output/receipt.json receipt-1.json
 
 # 2. Run second time (different day, different machine)
-pmctl run --config config.toml
+pictl run --config config.toml
 HASH2=$(jq -r '.combined_hash' output/receipt.json)
 cp output/receipt.json receipt-2.json
 

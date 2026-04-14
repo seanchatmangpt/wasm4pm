@@ -8,7 +8,7 @@ describe('Init Command', () => {
   let tmpDir: string;
 
   beforeEach(async () => {
-    tmpDir = path.join(process.cwd(), `.test-pmctl-${Date.now()}`);
+    tmpDir = path.join(process.cwd(), `.test-pictl-${Date.now()}`);
     await fs.mkdir(tmpDir, { recursive: true });
   });
 

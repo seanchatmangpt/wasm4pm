@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * CLI Validator Module
- * Validates pmctl command-line interface
+ * Validates pictl command-line interface
  *
  * Usage:
  *   import { validateCLI } from './cli.mjs';
@@ -30,41 +30,41 @@ export async function validateCLI() {
   const tests = [];
 
   // Test 1: Help command
-  const help = runCmd('pmctl --help');
+  const help = runCmd('pictl --help');
   tests.push({
-    name: 'pmctl --help works',
+    name: 'pictl --help works',
     pass: help.code === 0,
     code: help.code,
   });
 
   // Test 2: Version command
-  const version = runCmd('pmctl --version');
+  const version = runCmd('pictl --version');
   tests.push({
-    name: 'pmctl --version returns version',
+    name: 'pictl --version returns version',
     pass: version.code === 0 && version.output.includes('26.4.5'),
     code: version.code,
   });
 
   // Test 3: List algorithms
-  const list = runCmd('pmctl list-algorithms');
+  const list = runCmd('pictl list-algorithms');
   tests.push({
-    name: 'pmctl list-algorithms shows algorithms',
+    name: 'pictl list-algorithms shows algorithms',
     pass: list.code === 0,
     code: list.code,
   });
 
   // Test 4: Explain algorithm
-  const explain = runCmd('pmctl explain dfg');
+  const explain = runCmd('pictl explain dfg');
   tests.push({
-    name: 'pmctl explain <algorithm> works',
+    name: 'pictl explain <algorithm> works',
     pass: explain.code === 0,
     code: explain.code,
   });
 
   // Test 5: Exit codes
-  const notFound = runCmd('pmctl run /nonexistent/file.xes');
+  const notFound = runCmd('pictl run /nonexistent/file.xes');
   tests.push({
-    name: 'pmctl returns exit code 2 for missing file',
+    name: 'pictl returns exit code 2 for missing file',
     pass: notFound.code === 2,
     code: notFound.code,
   });

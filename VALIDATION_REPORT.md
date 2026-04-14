@@ -48,7 +48,7 @@ cd wasm4pm && npm run build
 ### 3. CLI Build
 
 ```bash
-cd apps/pmctl && npm run build
+cd apps/pictl && npm run build
 ```
 
 **Result:** ✅ TypeScript compiled successfully to `dist/`.
@@ -141,7 +141,7 @@ echo '{"stop_hook_active":false}' | CLAUDE_PROJECT_DIR=$(pwd) bash .claude/hooks
 
 | Issue | Severity | File | Details |
 |-------|----------|------|---------|
-| Doctor checks wrong WASM names | Low | `apps/pmctl/src/commands/doctor.ts` | Checks for `wasm4pm_bg.wasm` but package is named `pictl` (file is `pictl_bg.wasm`) |
+| Doctor checks wrong WASM names | Low | `apps/pictl/src/commands/doctor.ts` | Checks for `wasm4pm_bg.wasm` but package is named `pictl` (file is `pictl_bg.wasm`) |
 | Duplicate empty check | Low | `.claude/hooks/stop-gate.sh` L36+L41 | Two identical `[ -z "$DOCTOR_OUTPUT" ]` checks (dead code) |
 | Inconsistent build tool | Low | `Makefile` | Uses `npm run build` instead of `pnpm run build` (workspace uses pnpm) |
 | Misleading set -e | Cosmetic | `.claude/hooks/session-start.sh` | `set -e` at top but all critical execs have `\|\| true` (intentional but confusing) |

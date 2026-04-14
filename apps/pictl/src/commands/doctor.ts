@@ -687,7 +687,7 @@ async function checkWorkspaceIntegrity(): Promise<CheckResult> {
     'packages/wasm4pm',
     'packages/ml',
     'packages/swarm',
-    'apps/pmctl',
+    'apps/pictl',
   ];
 
   const missing: string[] = [];

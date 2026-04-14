@@ -2,7 +2,7 @@
 
 **Goal:** Achieve zero human intervention for `pictl run revops.xes` → complete artifact with receipts, telemetry, quality gates.
 
-**Critical structural finding:** The CLAUDE.md describes an aspirational architecture (`packages/`, `apps/pmctl/`) that does **not exist yet**. The actual codebase is a flat Rust/WASM crate (`wasm4pm/`) with TypeScript client files in `src/`. There is no `packages/kernel/`, no `packages/planner/`, no `packages/observability/`, no `apps/pmctl/`. Several gaps reference these phantom paths. This plan targets the **actual** codebase.
+**Critical structural finding:** The CLAUDE.md describes an aspirational architecture (`packages/`, `apps/pictl/`) that does **not exist yet**. The actual codebase is a flat Rust/WASM crate (`wasm4pm/`) with TypeScript client files in `src/`. There is no `packages/kernel/`, no `packages/planner/`, no `packages/observability/`, no `apps/pictl/`. Several gaps reference these phantom paths. This plan targets the **actual** codebase.
 
 **Actual file layout:**
 ```

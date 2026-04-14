@@ -40,7 +40,7 @@ npx pictl --help
 ```bash
 pnpm install
 pnpm --filter @pictl/cli build
-node apps/pmctl/dist/bin.js --help
+node apps/pictl/dist/bin/pictl.js --help
 ```
 
 ---

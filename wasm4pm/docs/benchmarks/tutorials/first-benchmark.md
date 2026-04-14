@@ -67,7 +67,7 @@ cd wasm4pm
 npm run build:nodejs
 
 # Build and link the CLI
-cd ../apps/pmctl
+cd ../apps/pictl
 npm run build
 npm link
 ```

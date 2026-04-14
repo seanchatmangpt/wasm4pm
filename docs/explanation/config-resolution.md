@@ -25,7 +25,7 @@ wasm4pm loads config from multiple sources in **precedence order**:
 # Env var: quality profile
 # CLI flag: stream profile
 
-WASM4PM_PROFILE=quality pmctl run --config config.toml --profile stream
+WASM4PM_PROFILE=quality pictl run --config config.toml --profile stream
 
 # Final result: stream (CLI wins)
 ```
@@ -35,7 +35,7 @@ WASM4PM_PROFILE=quality pmctl run --config config.toml --profile stream
 Every configuration value tracks its origin:
 
 ```bash
-pmctl explain --config config.toml --show-provenance
+pictl explain --config config.toml --show-provenance
 ```
 
 Output:
@@ -82,7 +82,7 @@ export EVENT_LOG_PATH="/mnt/data/events.xes"
 export OUTPUT_DIR="/mnt/output"
 export DD_API_KEY="sk-123..."
 
-pmctl run --config config.toml
+pictl run --config config.toml
 ```
 
 ## Schema Validation
@@ -200,7 +200,7 @@ Benefits:
 
 ```bash
 # No config provided
-pmctl run
+pictl run
 
 # Resolution:
 # 1. Check CLI flags: --config? No

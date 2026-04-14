@@ -1,5 +1,5 @@
 /**
- * Scenario: predict command — pmctl predict <task> -i <log.xes>
+ * Scenario: predict command — pictl predict <task> -i <log.xes>
  *
  * Dev action simulated: "I added a new WASM dispatch for remaining-time or
  * changed how tasks are validated. Does each task name still route correctly?
@@ -14,23 +14,15 @@
  *   - VALID_PREDICT_CLI_TASKS has exactly 6 entries, all hyphen-form (no underscores)
  *   - remaining-time without --prefix → returns message, not prediction (model-only mode)
  *
- * Binary: apps/pmctl/dist/bin/pmctl.js (must be built first)
+ * Binary: apps/pictl/dist/bin/pictl.js (must be built first)
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import * as path from 'path';
-import * as url from 'url';
 import * as fs from 'fs/promises';
-import { runCli, assertExitCode, assertJsonOutput, createCliTestEnv, EXIT_CODES } from '@wasm4pm/testing';
-import { VALID_PREDICT_CLI_TASKS } from '@wasm4pm/contracts';
-import type { CliTestEnv } from '@wasm4pm/testing';
-
-const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
-const PMCTL = path.resolve(__dirname, '../../apps/pmctl/dist/bin/pmctl.js');
-
-function pmctl(userArgs: string[]) {
-  return runCli([PMCTL, ...userArgs], { cliPath: 'node', timeout: 20_000 });
-}
+import { pictl, assertExitCode, assertJsonOutput, createCliTestEnv, EXIT_CODES } from '@pictl/testing';
+import { VALID_PREDICT_CLI_TASKS } from '@pictl/contracts';
+import type { CliTestEnv } from '@pictl/testing';
 
 // ── XES fixtures (inline, self-contained) ─────────────────────────────────────
 
@@ -94,21 +86,21 @@ describe('predict command: VALID_PREDICT_CLI_TASKS contract', () => {
 describe('predict command: error paths', () => {
   it('exits 2 (source_error) for an unknown task name', async () => {
     // Unknown task check runs BEFORE file-access check — /dev/null is safe here
-    const result = await pmctl(['predict', 'turbo-predict', '-i', '/dev/null']);
+    const result = await pictl(['predict', 'turbo-predict', '-i', '/dev/null']);
     assertExitCode(result, EXIT_CODES.SOURCE_ERROR);
     expect(result.stderr + result.stdout).toMatch(/unknown task|valid tasks|not a valid/i);
     console.info('[predict] unknown-task message:', (result.stderr + result.stdout).slice(0, 150));
   });
 
   it('unknown task exits 2 NOT 1 (config) NOT 3 (execution) — exit-code contract', async () => {
-    const result = await pmctl(['predict', 'made_up_with_underscore', '-i', '/dev/null']);
+    const result = await pictl(['predict', 'made_up_with_underscore', '-i', '/dev/null']);
     expect(result.exitCode).toBe(EXIT_CODES.SOURCE_ERROR);
     expect(result.exitCode).not.toBe(EXIT_CODES.CONFIG_ERROR);
     expect(result.exitCode).not.toBe(EXIT_CODES.EXECUTION_ERROR);
   });
 
   it('--format json unknown task has status:"error"', async () => {
-    const result = await pmctl(['predict', 'ghost-task', '-i', '/dev/null', '--format', 'json']);
+    const result = await pictl(['predict', 'ghost-task', '-i', '/dev/null', '--format', 'json']);
     assertExitCode(result, EXIT_CODES.SOURCE_ERROR);
     const envelope = assertJsonOutput(result) as Record<string, unknown>;
     expect(envelope).toHaveProperty('status', 'error');
@@ -116,7 +108,7 @@ describe('predict command: error paths', () => {
   });
 
   it('exits 2 when -i file does not exist (valid task name, missing input)', async () => {
-    const result = await pmctl(['predict', 'next-activity', '-i', '/tmp/phantom-predict-99999.xes']);
+    const result = await pictl(['predict', 'next-activity', '-i', '/tmp/phantom-predict-99999.xes']);
     assertExitCode(result, EXIT_CODES.SOURCE_ERROR);
     expect(result.stderr + result.stdout).toMatch(/not found|no such file|does not exist/i);
     console.info('[predict] missing-file message:', (result.stderr + result.stdout).slice(0, 150));
@@ -128,8 +120,8 @@ describe('predict command: error paths', () => {
 
 describe('predict command: task routing — exit codes', () => {
   for (const task of VALID_PREDICT_CLI_TASKS) {
-    it(`pmctl predict ${task} exits 0 or 3 (never 1 or 2)`, async () => {
-      const result = await pmctl(['predict', task, '-i', xesPath, '--no-save']);
+    it(`pictl predict ${task} exits 0 or 3 (never 1 or 2)`, async () => {
+      const result = await pictl(['predict', task, '-i', xesPath, '--no-save']);
       const acceptable = [EXIT_CODES.SUCCESS, EXIT_CODES.EXECUTION_ERROR];
       if (!acceptable.includes(result.exitCode)) {
         console.error(`[predict] ${task} unexpected exit ${result.exitCode}`);
@@ -150,7 +142,7 @@ describe('predict command: task routing — exit codes', () => {
 
 describe('predict command: JSON output shape', () => {
   it('next-activity JSON envelope has task and predictions fields', async () => {
-    const result = await pmctl(['predict', 'next-activity', '-i', xesPath, '--format', 'json', '--no-save']);
+    const result = await pictl(['predict', 'next-activity', '-i', xesPath, '--format', 'json', '--no-save']);
     if (result.exitCode !== EXIT_CODES.SUCCESS) {
       console.warn('[predict] skipping next-activity shape check — exit', result.exitCode);
       return;
@@ -165,7 +157,7 @@ describe('predict command: JSON output shape', () => {
 
   it('remaining-time JSON envelope has task and (prediction OR message) field', async () => {
     // Without --prefix, remaining-time runs model-only mode → message, not prediction
-    const result = await pmctl(['predict', 'remaining-time', '-i', xesPath, '--format', 'json', '--no-save']);
+    const result = await pictl(['predict', 'remaining-time', '-i', xesPath, '--format', 'json', '--no-save']);
     if (result.exitCode !== EXIT_CODES.SUCCESS) {
       console.warn('[predict] skipping remaining-time shape check — exit', result.exitCode);
       return;
@@ -179,7 +171,7 @@ describe('predict command: JSON output shape', () => {
   }, 30_000);
 
   it('features JSON envelope has task and transitions fields', async () => {
-    const result = await pmctl(['predict', 'features', '-i', xesPath, '--format', 'json', '--no-save']);
+    const result = await pictl(['predict', 'features', '-i', xesPath, '--format', 'json', '--no-save']);
     if (result.exitCode !== EXIT_CODES.SUCCESS) {
       console.warn('[predict] skipping features shape check — exit', result.exitCode);
       return;

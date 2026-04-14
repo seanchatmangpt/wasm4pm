@@ -1,24 +1,24 @@
-# How-To: Diagnose pmctl Environment Issues
+# How-To: Diagnose pictl Environment Issues
 
 **Time required**: 2 minutes
 **Difficulty**: Beginner
 
 ## Problem
 
-pmctl commands are failing and you do not know why. Maybe the WASM binary is missing, Node.js is too old, or your config file cannot be found. `pmctl doctor` runs six health checks in parallel and tells you exactly what is wrong and how to fix it.
+pictl commands are failing and you do not know why. Maybe the WASM binary is missing, Node.js is too old, or your config file cannot be found. `pictl doctor` runs six health checks in parallel and tells you exactly what is wrong and how to fix it.
 
 ---
 
 ## 1. Run the health check
 
 ```bash
-pmctl doctor
+pictl doctor
 ```
 
 This runs all six checks and prints a badge for each:
 
 ```
-pmctl doctor — system health check
+pictl doctor — system health check
 ──────────────────────────────────────────────────────────
 [  ok  ]  Node.js version
          v20.11.0 (>= 18 required)
@@ -41,7 +41,7 @@ pmctl doctor — system health check
 ──────────────────────────────────────────────────────────
 Result: 6 ok  0 warn  0 fail
 
-All required checks passed. pmctl is ready to use.
+All required checks passed. pictl is ready to use.
 ```
 
 Exit code `0` means everything is fine. Exit code `1` means at least one required check failed.
@@ -51,7 +51,7 @@ Exit code `0` means everything is fine. Exit code `1` means at least one require
 ## 2. Get machine-readable output for CI
 
 ```bash
-pmctl doctor --format json
+pictl doctor --format json
 ```
 
 What you should see:
@@ -59,7 +59,7 @@ What you should see:
 ```json
 {
   "status": "success",
-  "message": "pmctl environment is healthy",
+  "message": "pictl environment is healthy",
   "data": {
     "checks": [
       { "name": "Node.js version", "status": "ok", "message": "v20.11.0 (>= 18 required)" },
@@ -80,7 +80,7 @@ What you should see:
 Use this in CI pipelines to gate on environment readiness:
 
 ```bash
-pmctl doctor --format json | jq -e '.data.healthy == true'
+pictl doctor --format json | jq -e '.data.healthy == true'
 ```
 
 ---
@@ -96,7 +96,7 @@ pmctl doctor --format json | jq -e '.data.healthy == true'
 | 5 | **XES event logs** | `[ warn ]` if no `.xes` files found within depth 2 of cwd | No |
 | 6 | **System memory** | `[ warn ]` if free memory < 128 MB | No |
 
-Only `[ FAIL ]` items produce exit code 1. `[ warn ]` items are advisory -- pmctl works without a config file or XES logs in the current tree (you can pass paths explicitly).
+Only `[ FAIL ]` items produce exit code 1. `[ warn ]` items are advisory -- pictl works without a config file or XES logs in the current tree (you can pass paths explicitly).
 
 ---
 
@@ -105,8 +105,8 @@ Only `[ FAIL ]` items produce exit code 1. `[ warn ]` items are advisory -- pmct
 | Badge | Meaning |
 |-------|---------|
 | `[  ok  ]` | Check passed. No action needed. |
-| `[ warn ]` | Advisory. pmctl will work, but you may want to fix this for a better experience. |
-| `[ FAIL ]` | Required. pmctl will not work until this is resolved. |
+| `[ warn ]` | Advisory. pictl will work, but you may want to fix this for a better experience. |
+| `[ FAIL ]` | Required. pictl will not work until this is resolved. |
 
 Each failed or warned check includes a `Fix:` line with the exact command to resolve it.
 
@@ -128,7 +128,7 @@ Run the fix command:
 cd wasm4pm && npm run build
 ```
 
-Then re-run `pmctl doctor` to confirm.
+Then re-run `pictl doctor` to confirm.
 
 ### Node.js too old
 
@@ -151,13 +151,13 @@ nvm use 20
 ```
 [ warn ]  Config file
          No wasm4pm.toml / wasm4pm.json found in current directory or parents
-         Fix: Create a config with: pmctl init    (defaults work fine without one)
+         Fix: Create a config with: pictl init    (defaults work fine without one)
 ```
 
 This is a warning, not a failure. You can either create a config file or ignore it (defaults work):
 
 ```bash
-pmctl init
+pictl init
 ```
 
 ### Low system memory
@@ -174,6 +174,6 @@ Close memory-intensive applications before running discovery on large event logs
 
 ## See Also
 
-- [How-To: Error Recovery](./error-recovery.md) -- troubleshooting specific pmctl command failures
+- [How-To: Error Recovery](./error-recovery.md) -- troubleshooting specific pictl command failures
 - [How-To: Debug Configuration Errors](./debug-config.md) -- diagnosing config validation issues
-- [Reference: Error Codes](../reference/error-codes.md) -- full list of pmctl exit codes
+- [Reference: Error Codes](../reference/error-codes.md) -- full list of pictl exit codes

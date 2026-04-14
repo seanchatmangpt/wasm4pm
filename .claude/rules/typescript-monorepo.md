@@ -20,7 +20,7 @@ packages/
 ## Dependency Graph
 
 ```
-Application Layer:  apps/pmctl/
+Application Layer:  apps/pictl/
     ↓
 Orchestration:    engine → planner → swarm → ml
     ↓
@@ -38,7 +38,7 @@ pnpm --filter @pictl/config test  # Test one package
 cd packages/engine && npm test     # Test one package (npm)
 ```
 
-## pictl CLI (apps/pmctl/)
+## pictl CLI (apps/pictl/)
 
 **20 commands:**
 

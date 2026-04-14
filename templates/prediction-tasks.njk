@@ -8,7 +8,7 @@
  *
  * Two forms are exported:
  *   PREDICTION_TASKS     — underscore IDs used in config schema and TypeScript
- *   VALID_PREDICT_CLI_TASKS — hyphen slugs used as `pmctl predict <task>` arguments
+ *   VALID_PREDICT_CLI_TASKS — hyphen slugs used as `pictl predict <task>` arguments
  */
 
 /** Underscore form — used in config.prediction.tasks and @wasm4pm/config schema enum */
@@ -18,7 +18,7 @@ export const PREDICTION_TASKS = [
 
 export type PredictionTask = typeof PREDICTION_TASKS[number];
 
-/** Hyphen form — used as `pmctl predict <task>` CLI argument */
+/** Hyphen form — used as `pictl predict <task>` CLI argument */
 export const VALID_PREDICT_CLI_TASKS = [
 {% for row in results %}  '{{ row.cliSlug }}'{{ "," if not loop.last }}
 {% endfor %}] as const;

@@ -150,7 +150,7 @@ cargo test --test rl_correctness_validation
 Pattern: Follow scenario 19-ml-command.ts exactly
 - Real WASM (not mocked)
 - Real XES files
-- CLI invocation via `pmctl()` helper
+- CLI invocation via `pictl()` helper
 - JSON + human format validation
 - Determinism assertions
 
@@ -187,7 +187,7 @@ Before running e2e tests:
 
 - [ ] WASM compiled: `cargo make build` from `wasm4pm/`
 - [ ] TypeScript packages built: `pnpm build` from monorepo root
-- [ ] pictl CLI built: `npm run build` from `apps/pmctl/`
+- [ ] pictl CLI built: `npm run build` from `apps/pictl/`
 - [ ] All test files exist (4 files, 50+ tests)
 
 Run all tests:

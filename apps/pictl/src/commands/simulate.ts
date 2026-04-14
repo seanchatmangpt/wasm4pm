@@ -143,7 +143,15 @@ export const simulate = defineCommand({
       }
 
       const t0 = performance.now();
-      const rawSim = wasm.simulate_monte_carlo(logHandle, activityKey, numCases, maxTime, seed);
+      const config = JSON.stringify({
+        num_cases: numCases,
+        inter_arrival_mean_ms: 1000.0,
+        activity_service_time_ms: {},
+        resource_capacity: {},
+        simulation_time_ms: maxTime,
+        random_seed: seed,
+      });
+      const rawSim = wasm.monte_carlo_simulation(logHandle, '', '', config);
       const elapsedMs = performance.now() - t0;
 
       const simResult = typeof rawSim === 'string' ? JSON.parse(rawSim) : rawSim;

@@ -23,21 +23,21 @@
 ### Via npm (Node.js)
 
 ```bash
-npm install -g @wasm4pm/pmctl
-pmctl --version
+npm install -g @pictl/cli
+pictl --version
 ```
 
 ### Via pip (Python)
 
 ```bash
 pip install wasm4pm
-pmctl --version
+pictl --version
 ```
 
 ### Verify Installation
 
 ```bash
-pmctl init
+pictl init
 # Creates a sample config.toml in current directory
 ```
 
@@ -74,7 +74,7 @@ wasm4pm comes with sample event logs. Create `sample.xes` or download from the r
 
 ```bash
 # Option 1: Use built-in sample
-pmctl init --sample sample.xes
+pictl init --sample sample.xes
 
 # Option 2: Download from repo
 curl -o sample.xes https://raw.githubusercontent.com/seanchatmangpt/wasm4pm/main/examples/sample.xes
@@ -107,7 +107,7 @@ You should see XML with events like:
 Execute the first analysis:
 
 ```bash
-pmctl run --config config.toml --verbose
+pictl run --config config.toml --verbose
 ```
 
 Output should look like:
@@ -233,7 +233,7 @@ timeout_ms = 60000
 Run again:
 
 ```bash
-pmctl run --config config.toml --verbose
+pictl run --config config.toml --verbose
 ```
 
 Compare the results:
@@ -262,7 +262,7 @@ overwrite = "overwrite"    # Replace previous files
 Run again:
 
 ```bash
-pmctl run --config config.toml
+pictl run --config config.toml
 ls -la output/ | grep pnml
 ```
 
@@ -280,14 +280,14 @@ ls -la output/ | grep pnml
 
 ```bash
 # Create a sample config
-pmctl init
+pictl init
 ```
 
 ### Error: "sample.xes not found"
 
 ```bash
 # Download the sample
-pmctl init --sample sample.xes
+pictl init --sample sample.xes
 ```
 
 ### Error: "Algorithm timeout"
@@ -338,6 +338,6 @@ You've successfully:
 
 - **[How-To: Analyze an Event Log](../how-to/analyze-log.md)** — Next task-focused guide
 - **[How-To: Choose the Right Algorithm](../how-to/choose-algorithm.md)** — Algorithm selection decision tree
-- **[Reference: CLI Commands](../reference/cli-commands.md)** — All `pmctl` commands
+- **[Reference: CLI Commands](../reference/cli-commands.md)** — All `pictl` commands
 - **[Reference: Config Schema](../reference/config-schema.md)** — Complete configuration options
 - **[Explanation: Algorithm Profiles](../explanation/profiles.md)** — Deep dive into profiles

@@ -122,10 +122,10 @@ worker.onmessage = (event) => {
 
 ```bash
 # Time a run
-time pmctl run --config config.toml
+time pictl run --config config.toml
 
 # Profile execution
-WASM4PM_TRACE_LEVEL=detailed pmctl run --config config.toml > trace.log
+WASM4PM_TRACE_LEVEL=detailed pictl run --config config.toml > trace.log
 ```
 
 ## Memory Monitoring

@@ -6,7 +6,7 @@
 ## Validate Configuration
 
 ```bash
-pmctl init --validate config.toml
+pictl init --validate config.toml
 ```
 
 Output on error:
@@ -22,7 +22,7 @@ Output on error:
 Explain configuration requirements:
 
 ```bash
-pmctl explain --config config.toml --mode brief
+pictl explain --config config.toml --mode brief
 ```
 
 Output:
@@ -48,7 +48,7 @@ Configuration Schema
 ## Enable Debug Logging
 
 ```bash
-WASM4PM_DEBUG=1 pmctl run --config config.toml --verbose
+WASM4PM_DEBUG=1 pictl run --config config.toml --verbose
 ```
 
 Output:
@@ -68,7 +68,7 @@ Output:
 View resolved values:
 
 ```bash
-pmctl explain --config config.toml --expand-env
+pictl explain --config config.toml --expand-env
 ```
 
 ## Common Errors
@@ -120,7 +120,7 @@ ls -la sample.xes
 See how config is resolved from multiple sources:
 
 ```bash
-pmctl explain --config config.toml --show-provenance
+pictl explain --config config.toml --show-provenance
 ```
 
 Output:
@@ -148,7 +148,7 @@ Final Config Hash: blake3:a7f3e2c9d1b5e8f4
 Validate without executing:
 
 ```bash
-pmctl run --config config.toml --dry-run
+pictl run --config config.toml --dry-run
 ```
 
 Output:

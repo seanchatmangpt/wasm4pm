@@ -1,17 +1,17 @@
-# Predictive Analytics with pmctl
+# Predictive Analytics with pictl
 
 **Time**: 40 minutes
-**Prerequisites**: pmctl installed, an XES event log file (use any `.xes` file in the project or generate one with `pmctl init --sample`)
+**Prerequisites**: pictl installed, an XES event log file (use any `.xes` file in the project or generate one with `pictl init --sample`)
 
 ## Introduction
 
-Process discovery tells you what happened. Predictive analytics tells you what will happen. In this tutorial you'll learn how to use pmctl's predictive commands to answer three fundamental process mining questions:
+Process discovery tells you what happened. Predictive analytics tells you what will happen. In this tutorial you'll learn how to use pictl's predictive commands to answer three fundamental process mining questions:
 
 - **What happens next?** -- next-activity prediction
 - **How long will it take?** -- remaining-time estimation
 - **Is the process changing?** -- concept drift detection
 
-All three capabilities are built into pmctl's `predict` and `drift-watch` commands. Results auto-save to `.wasm4pm/results/` so you can review them later with `pmctl results`.
+All three capabilities are built into pictl's `predict` and `drift-watch` commands. Results auto-save to `.wasm4pm/results/` so you can review them later with `pictl results`.
 
 ---
 
@@ -24,7 +24,7 @@ All three capabilities are built into pmctl's `predict` and `drift-watch` comman
 Run the prediction against your event log. This builds an n-gram model from all completed traces and outputs the most likely next activity given an empty prefix (i.e., the most common first activity in the log).
 
 ```bash
-pmctl predict next-activity -i your-log.xes
+pictl predict next-activity -i your-log.xes
 ```
 
 The output shows a ranked list of predicted activities with their probabilities. The probability reflects how frequently each activity follows the given prefix across all traces in the log.
@@ -34,7 +34,7 @@ The output shows a ranked list of predicted activities with their probabilities.
 A prefix is the sequence of activities that have already occurred in a running case. Supplying a prefix gives the model context and produces more specific predictions.
 
 ```bash
-pmctl predict next-activity -i your-log.xes --prefix "activity1,activity2"
+pictl predict next-activity -i your-log.xes --prefix "activity1,activity2"
 ```
 
 Replace `activity1,activity2` with actual activity names from your log. Use activity names exactly as they appear in the XES file. The prediction now answers: given that `activity1` then `activity2` have occurred, what comes next?
@@ -47,7 +47,7 @@ Two parameters control prediction behavior:
 - `--top-k` -- how many predictions to return (default: 3). Shows only the k most likely activities.
 
 ```bash
-pmctl predict next-activity -i your-log.xes --ngram-order 3 --top-k 5
+pictl predict next-activity -i your-log.xes --ngram-order 3 --top-k 5
 ```
 
 When you increase `ngram-order`, the model considers a longer prefix. This can improve accuracy for processes with complex sequential patterns, but it also means some prefixes may never have been seen in the training data, resulting in lower confidence.
@@ -57,7 +57,7 @@ When you increase `ngram-order`, the model considers a longer prefix. This can i
 Every `predict` run auto-saves its output. View the most recent result:
 
 ```bash
-pmctl results --last
+pictl results --last
 ```
 
 This prints the full JSON result including the model parameters, predictions, and metadata (timestamp, input hash, task).
@@ -86,7 +86,7 @@ A high coverage value (close to 1.0) means the model has seen most prefix patter
 Provide a prefix of activities that have already occurred. The model looks at historical cases with similar prefixes and estimates the remaining time.
 
 ```bash
-pmctl predict remaining-time -i your-log.xes --prefix "start,process,review"
+pictl predict remaining-time -i your-log.xes --prefix "start,process,review"
 ```
 
 ### Step 2: Interpret the output
@@ -116,7 +116,7 @@ Concept drift occurs when the underlying process changes -- new activities appea
 Run a single drift analysis across the entire log. This divides the log into windows and compares activity distributions between consecutive windows.
 
 ```bash
-pmctl predict drift -i your-log.xes --drift-window 50
+pictl predict drift -i your-log.xes --drift-window 50
 ```
 
 The `--drift-window` parameter controls the window size (number of events per window). Smaller windows are more sensitive to short-term fluctuations; larger windows smooth over noise but may miss gradual drift.
@@ -131,7 +131,7 @@ The output reports:
 For continuous monitoring, use `drift-watch`. This command reads the log and runs drift detection at a configurable interval, printing results as they arrive.
 
 ```bash
-pmctl drift-watch -i your-log.xes --interval 5000
+pictl drift-watch -i your-log.xes --interval 5000
 ```
 
 The `--interval` parameter sets the polling interval in milliseconds (default: 5000). The command runs until you press Ctrl+C.
@@ -144,7 +144,7 @@ Two parameters control drift detection sensitivity:
 - `--threshold` -- the alert threshold (default: 0.2). A window pair with a drift score above this value triggers an ALERT.
 
 ```bash
-pmctl drift-watch -i your-log.xes --alpha 0.5 --threshold 0.2
+pictl drift-watch -i your-log.xes --alpha 0.5 --threshold 0.2
 ```
 
 ### Step 4: Watch for alerts
@@ -166,7 +166,7 @@ The alert tells you which window shows drift, what the score is, and which activ
 - **Next-activity prediction** uses n-gram models (a form of Markov chain). The n-gram order controls how much history the model considers. Higher orders capture more context but need more data.
 - **Remaining-time estimation** uses bucket-based estimation. Historical cases with similar activity prefixes are grouped, and the median remaining time from those cases is reported as the prediction.
 - **Drift detection** uses Jaccard-distance comparison between sliding windows, smoothed with an EWMA filter. The `--alpha` and `--threshold` parameters let you trade off sensitivity versus noise tolerance.
-- All results auto-save to `.wasm4pm/results/` and can be browsed with `pmctl results --last`.
+- All results auto-save to `.wasm4pm/results/` and can be browsed with `pictl results --last`.
 
 ---
 

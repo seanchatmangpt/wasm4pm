@@ -15,10 +15,10 @@ Fix:
 
 ```bash
 # Validate config
-pmctl init --validate config.toml
+pictl init --validate config.toml
 
 # Check specific field
-pmctl explain --config config.toml --mode verbose | grep -A5 "error"
+pictl explain --config config.toml --mode verbose | grep -A5 "error"
 ```
 
 ### SOURCE_ERROR (Exit 2)
@@ -106,7 +106,7 @@ node -e "console.log(process.versions)"
 npm test
 
 # Check OTEL configuration
-pmctl explain --config config.toml | grep otel
+pictl explain --config config.toml | grep otel
 ```
 
 ## Recovery Strategies
@@ -121,7 +121,7 @@ max_attempts=3
 delay=2
 
 while [ $attempt -le $max_attempts ]; do
-  pmctl run --config config.toml && break
+  pictl run --config config.toml && break
   
   exit_code=$?
   if [ $exit_code -ne 0 ]; then
@@ -141,7 +141,7 @@ done
 
 ```bash
 # If interrupted, resume from checkpoint
-pmctl watch --config config.toml
+pictl watch --config config.toml
 
 # Automatically resumes from last checkpoint
 # No reprocessing of previous events
@@ -155,7 +155,7 @@ pmctl watch --config config.toml
 try_algorithm() {
   local algo=$1
   sed -i "s/algorithm = .*/algorithm = \"$algo\"/" config.toml
-  pmctl run --config config.toml
+  pictl run --config config.toml
   return $?
 }
 
@@ -168,7 +168,7 @@ try_algorithm "dfg"
 ## Debug Mode
 
 ```bash
-WASM4PM_DEBUG=1 pmctl run --config config.toml
+WASM4PM_DEBUG=1 pictl run --config config.toml
 ```
 
 Shows:

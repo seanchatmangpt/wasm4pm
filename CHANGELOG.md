@@ -98,10 +98,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 However, scripts that relied on graceful degradation should now handle explicit errors:
 ```bash
 # Before (v26.4.9) — degraded mode hid errors
-pmctl run --config broken-config.toml  # Exit 0, but results degraded
+pictl run --config broken-config.toml  # Exit 0, but results degraded
 
 # After (v26.4.10) — fail fast makes errors visible
-pmctl run --config broken-config.toml  # Exit 1, clear error message
+pictl run --config broken-config.toml  # Exit 1, clear error message
 ```
 
 ## [26.4.8] - 2026-04-08
@@ -163,8 +163,8 @@ pmctl run --config broken-config.toml  # Exit 1, clear error message
 **ML Integration — All 10 Gaps Closed**
 
 Phase 1 — CLI Registration:
-- `pmctl ml` command: classify, cluster, forecast, anomaly, regress, pca subtasks
-- `pmctl powl` command: POWL process model discovery
+- `pictl ml` command: classify, cluster, forecast, anomaly, regress, pca subtasks
+- `pictl powl` command: POWL process model discovery
 
 Phase 2 — Dispatcher Wiring:
 - `packages/kernel/src/step-dispatcher.ts` bridges engine StepDispatcher to kernel ML handlers
@@ -175,9 +175,9 @@ Phase 3 — Planner / Config / Registry:
 - New `[ml]` config section
 - Planner generates ML analysis steps when `config.ml.enabled`
 
-Phase 4 — pmctl Integration:
-- `pmctl run`: ML post-discovery phase when ML config enabled
-- `pmctl drift-watch --enhanced`: ML anomaly detection overlay on EWMA drift
+Phase 4 — pictl Integration:
+- `pictl run`: ML post-discovery phase when ML config enabled
+- `pictl drift-watch --enhanced`: ML anomaly detection overlay on EWMA drift
 
 Phase 5 — ML Observability:
 - New event types: `MlModelTraining`, `MlPredictionMade`, `MlFeatureExtraction`, `MlAnomalyDetected`
@@ -199,7 +199,7 @@ Phase 7 — Swarm ML Support:
 - GitHub Actions CI: `typescript.yml` workflow
 - `scripts/health.mjs` and `scripts/check-engines.mjs`
 
-**pmctl doctor — 6 checks to 17 checks**
+**pictl doctor — 6 checks to 17 checks**
 
 ### Fixed
 - ESM runtime error (`ERR_MODULE_NOT_FOUND`) — added `.js` extensions

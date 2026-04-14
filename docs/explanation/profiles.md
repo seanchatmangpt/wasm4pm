@@ -139,10 +139,10 @@ DFG ●─────────────→ Speed
 
 ```bash
 # Real-time dashboard
-pmctl watch --config config.toml --profile fast
+pictl watch --config config.toml --profile fast
 
 # Quick exploration
-pmctl run --config config.toml --profile fast
+pictl run --config config.toml --profile fast
 ```
 
 Use when:
@@ -155,7 +155,7 @@ Use when:
 
 ```bash
 # Standard analysis
-pmctl run --config config.toml --profile balanced
+pictl run --config config.toml --profile balanced
 ```
 
 Use when:
@@ -168,7 +168,7 @@ Use when:
 
 ```bash
 # Publication quality
-pmctl run --config config.toml --profile quality
+pictl run --config config.toml --profile quality
 ```
 
 Use when:
@@ -181,7 +181,7 @@ Use when:
 
 ```bash
 # 24/7 monitoring
-pmctl watch --config config.toml --profile stream
+pictl watch --config config.toml --profile stream
 ```
 
 Use when:
@@ -194,7 +194,7 @@ Use when:
 
 ```bash
 # Experiment with multiple algorithms
-pmctl run --config config.toml --profile research \
+pictl run --config config.toml --profile research \
   --algorithm genetic --generations 200
 ```
 
@@ -240,9 +240,9 @@ Compare profiles:
 
 ```bash
 # Time each profile
-time pmctl run --config config.toml --profile fast
-time pmctl run --config config.toml --profile balanced
-time pmctl run --config config.toml --profile quality
+time pictl run --config config.toml --profile fast
+time pictl run --config config.toml --profile balanced
+time pictl run --config config.toml --profile quality
 ```
 
 Example output for 10K events:
