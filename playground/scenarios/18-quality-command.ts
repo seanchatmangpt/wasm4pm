@@ -24,7 +24,7 @@ import { assertExitCode, pictl, extractJson, combinedOutput, EXIT_CODES, resolve
 const RUNNING_EXAMPLE = resolveRepo('wasm4pm/tests/fixtures/running-example.xes');
 const BPI_DOMESTIC = resolveRepo('wasm4pm/tests/fixtures/BPI_2020_DomesticDeclarations.xes');
 
-describe('quality command', () => {
+describe.sequential('quality command', () => {
   // ── Error cases ───────────────────────────────────────────────────────────
 
   describe('error handling', () => {
@@ -68,7 +68,7 @@ describe('quality command', () => {
       assertExitCode(result, EXIT_CODES.SUCCESS);
       expect(result.exitCode).toBe(EXIT_CODES.SUCCESS);
       // Human output contains quality assessment results
-      expect(combinedOutput(result)).toContain('Quality Assessment');
+      expect(combinedOutput(result)).toContain('Quality Scores:');
     });
 
     it('quality scores include fitness metric', async () => {

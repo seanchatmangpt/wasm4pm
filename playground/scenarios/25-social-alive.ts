@@ -19,7 +19,7 @@ import { pictl, extractJson, resolveRepo } from '../helpers/cli.js';
 
 const RUNNING_EXAMPLE = resolveRepo('wasm4pm/tests/fixtures/running-example.xes');
 
-describe('Social Command Alive', () => {
+describe.sequential('Social Command Alive', () => {
   it('pictl social command exists and is callable — Rank 2: domain contract', async () => {
     // JTBD: "The social command must exist in the CLI and be callable"
     const result = await pictl(['social', '--help']);
