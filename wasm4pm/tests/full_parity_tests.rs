@@ -9,7 +9,7 @@ use pictl::models::{AttributeValue, EventLog};
 use std::collections::{HashMap, HashSet};
 use std::fs;
 
-const FIXTURES_DIR: &str = "tests/fixtures";
+const FIXTURES_DIR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures");
 
 fn load_event_log(name: &str) -> EventLog {
     let path = format!("{FIXTURES_DIR}/{name}");

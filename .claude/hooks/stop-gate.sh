@@ -28,8 +28,8 @@ fi
 
 # Fallback to direct node execution if make fails
 if [ -z "$DOCTOR_OUTPUT" ] || ! echo "$DOCTOR_OUTPUT" | jq -e '.healthy' >/dev/null 2>&1; then
-  if [ -f "apps/pmctl/dist/bin/pmctl.js" ]; then
-    DOCTOR_OUTPUT=$(node apps/pmctl/dist/bin/pmctl.js doctor --format json 2>&1 | awk '/^{/,/^}/ {print}') || true
+  if [ -f "apps/pictl/dist/bin/pictl.js" ]; then
+    DOCTOR_OUTPUT=$(node apps/pictl/dist/bin/pictl.js doctor --format json 2>&1 | awk '/^{/,/^}/ {print}') || true
   fi
 fi
 

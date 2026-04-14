@@ -83,12 +83,5 @@ export type {
   LoadConfigOptions,
 } from './types.js';
 
-// Hashing
-export {
-  hashConfig,
-  verifyConfigHash,
-  fingerprintConfig,
-  hashConfigSection,
-  diffConfigs,
-  type ConfigDiff,
-} from './hash.js';
+// Hashing (only hashConfig is used externally - by resolver.ts)
+export { hashConfig } from './hash.js';

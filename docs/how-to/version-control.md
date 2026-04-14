@@ -76,7 +76,7 @@ export OUTPUT_DIR="/mnt/output"
 export DD_API_KEY="sk-..."
 
 # Reference in config
-pmctl run --config config.prod.toml
+pictl run --config config.prod.toml
 ```
 
 ## Git Workflow
@@ -94,7 +94,7 @@ git status
 # Should NOT show config.prod.toml
 
 # 4. Run safely
-pmctl run --config config.prod.toml
+pictl run --config config.prod.toml
 ```
 
 ## Audit Trail

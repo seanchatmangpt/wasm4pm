@@ -5,14 +5,14 @@
 
 ## Problem
 
-You need to detect when a process changes behavior in real-time -- for example, a production system where the event log grows over time and you want an alert when the process starts deviating from its established pattern. `pmctl drift-watch` polls an XES file, computes structural distance between sliding windows, and applies EWMA smoothing to surface drift as it happens.
+You need to detect when a process changes behavior in real-time -- for example, a production system where the event log grows over time and you want an alert when the process starts deviating from its established pattern. `pictl drift-watch` polls an XES file, computes structural distance between sliding windows, and applies EWMA smoothing to surface drift as it happens.
 
 ---
 
 ## 1. Start a basic drift monitor
 
 ```bash
-pmctl drift-watch --input production.xes
+pictl drift-watch --input production.xes
 ```
 
 What you should see:
@@ -63,7 +63,7 @@ When a new drift point is detected, an `ALERT` line appears with the position in
 ### Faster polling (every 2 seconds)
 
 ```bash
-pmctl drift-watch -i live.xes --interval 2000
+pictl drift-watch -i live.xes --interval 2000
 ```
 
 ### More responsive smoothing (higher alpha)
@@ -71,7 +71,7 @@ pmctl drift-watch -i live.xes --interval 2000
 A higher alpha gives more weight to recent observations, making the monitor react faster to sudden changes:
 
 ```bash
-pmctl drift-watch -i live.xes --alpha 0.5
+pictl drift-watch -i live.xes --alpha 0.5
 ```
 
 With `alpha=0.5`, the EWMA responds more quickly to new drift points. With the default `alpha=0.3`, it is smoother and less noisy.
@@ -81,7 +81,7 @@ With `alpha=0.5`, the EWMA responds more quickly to new drift points. With the d
 Trigger alerts on smaller drift values:
 
 ```bash
-pmctl drift-watch -i live.xes --threshold 0.2
+pictl drift-watch -i live.xes --threshold 0.2
 ```
 
 ### Smaller sliding window
@@ -89,13 +89,13 @@ pmctl drift-watch -i live.xes --threshold 0.2
 A smaller window detects localized changes; a larger window captures gradual drift:
 
 ```bash
-pmctl drift-watch -i live.xes --window 30
+pictl drift-watch -i live.xes --window 30
 ```
 
 ### All parameters together
 
 ```bash
-pmctl drift-watch -i live.xes --interval 2000 --window 30 --alpha 0.5 --threshold 0.2
+pictl drift-watch -i live.xes --interval 2000 --window 30 --alpha 0.5 --threshold 0.2
 ```
 
 ---
@@ -103,7 +103,7 @@ pmctl drift-watch -i live.xes --interval 2000 --window 30 --alpha 0.5 --threshol
 ## 4. Get JSON output for integration
 
 ```bash
-pmctl drift-watch -i stream.xes --json
+pictl drift-watch -i stream.xes --json
 ```
 
 What you should see:
@@ -117,7 +117,7 @@ What you should see:
 Each line is a valid JSON object, one per poll interval. Pipe into a monitoring tool:
 
 ```bash
-pmctl drift-watch -i stream.xes --json | while read -r line; do
+pictl drift-watch -i stream.xes --json | while read -r line; do
   ewma=$(echo "$line" | jq -r '.ewma')
   if (( $(echo "$ewma > 0.3" | bc -l) )); then
     echo "DRIFT ALERT: ewma=$ewma" | send-alert
@@ -155,6 +155,6 @@ The file is only re-parsed when its modification timestamp changes, so idle peri
 
 ## See Also
 
-- [How-To: Compare Two Event Logs](./compare-process-models.md) -- one-time structural comparison via `pmctl diff`
-- [How-To: Predictive Mining](./predictive-mining.md) -- batch drift detection via `pmctl predict drift`
+- [How-To: Compare Two Event Logs](./compare-process-models.md) -- one-time structural comparison via `pictl diff`
+- [How-To: Predictive Mining](./predictive-mining.md) -- batch drift detection via `pictl predict drift`
 - [How-To: Monitor Jobs](./monitor-jobs.md) -- monitoring discovery job execution

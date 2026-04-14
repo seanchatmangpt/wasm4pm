@@ -236,7 +236,7 @@ The key insight: **process mining is not a subset of any existing category**. It
 4. POWL (Partially Ordered Workflow Language) — the cutting edge of process representation
 5. Predictive process mining (7 task types)
 6. Concept drift detection (EWMA-based streaming)
-7. CLI-first developer experience (`pmctl`)
+7. CLI-first developer experience (`pictl`)
 8. Cryptographic receipts (BLAKE3) for reproducibility
 
 No competitor occupies this intersection. The space is uncontested.
@@ -460,7 +460,7 @@ YAWL v6 (Java 25) ──── 8080 ──┘                                   
 | **L1: Network** | Canopy workspace protocol | Agent coordination | Process models define valid agent interactions |
 | **L2: Signal** | BusinessOS signal module | Intent encoding | Event logs as the ground truth of organizational signals |
 | **L3: Composition** | wasm4pm + YAWL v6 | Workflow execution | Discovered models drive actual process execution |
-| **L4: Interface** | pmctl CLI + MCP server | Developer access | CLI-first + AI-native access patterns |
+| **L4: Interface** | pictl CLI + MCP server | Developer access | CLI-first + AI-native access patterns |
 | **L5: Data** | PostgreSQL + Redis | Storage | XES event logs + discovered model persistence |
 | **L6: Feedback** | Drift detection + conformance | Self-correction | Real-time monitoring of model-log alignment |
 | **L7: Governance** | BusinessOS policies | Compliance | Soundness guarantees as policy enforcement |
@@ -486,7 +486,7 @@ No competitor spans all four dimensions.
 | Year | Milestone | Strategic Impact |
 |------|-----------|-----------------|
 | 2024 | wasm4pm v1.0 — 15 algorithms in WASM | Establishes WASM as viable substrate for process mining |
-| 2025 | pmctl v26.4 — full CLI + MCP integration | Developer-native access, Claude Code integration |
+| 2025 | pictl v26.4 — full CLI + MCP integration | Developer-native access, Claude Code integration |
 | 2026 | POWL complete — 8 variants, DecisionGraph, partial orders | Cutting-edge process representation, ahead of pm4py |
 | 2027 | Vision 2030 Wave 1 — BusinessOS integration | Process models drive business operations |
 | 2028 | Vision 2030 Wave 2 — Canopy agent orchestration | Agents operate within formally verified process bounds |
@@ -544,7 +544,7 @@ wasm4pm's moat generates value through:
 1. **Pricing power** — No substitute exists for WASM-native process mining with formal correctness. Customers cannot negotiate down by threatening to switch.
 2. **Retention** — Once integrated into a CI/CD pipeline or agent orchestration stack, switching costs are astronomical.
 3. **Network effects** — Each new integration (BusinessOS, Canopy, OSA) increases the value of wasm4pm for all existing users.
-4. **Learning curve asymmetry** — Users who learn `pmctl` and POWL develop expertise that doesn't transfer to competitors (because there are no competitors in this space).
+4. **Learning curve asymmetry** — Users who learn `pictl` and POWL develop expertise that doesn't transfer to competitors (because there are no competitors in this space).
 
 ---
 

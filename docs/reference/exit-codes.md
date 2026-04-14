@@ -14,7 +14,7 @@
 ## Checking Exit Code
 
 ```bash
-pmctl run --config config.toml
+pictl run --config config.toml
 EXIT_CODE=$?
 
 if [ $EXIT_CODE -eq 0 ]; then
@@ -50,7 +50,7 @@ Configuration validation failed:
 - Missing required field
 - Invalid value
 
-Next: Run `pmctl init --validate config.toml`
+Next: Run `pictl init --validate config.toml`
 
 ## Source Error (2)
 

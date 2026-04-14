@@ -131,12 +131,25 @@ describe('AlgorithmRegistry', () => {
       }
     });
 
-    it('should have activity_key parameter for all algorithms', () => {
+    it('log-discovery algorithms should have activity_key parameter', () => {
       const algorithms = registry.list();
 
+      // Algorithms that operate on event logs need activity_key
+      const logProcessingIds = [
+        'dfg', 'process_skeleton', 'alpha_plus_plus', 'heuristic_miner',
+        'inductive_miner', 'genetic_algorithm', 'pso', 'a_star',
+        'hill_climbing', 'ilp', 'aco', 'simulated_annealing', 'declare',
+        'optimized_dfg', 'simd_streaming_dfg', 'hierarchical_dfg',
+        'streaming_log', 'smart_engine', 'transition_system', 'log_to_trie',
+        'causal_graph', 'performance_spectrum', 'batches', 'correlation_miner',
+        'ml_classify', 'ml_cluster', 'ml_forecast', 'ml_anomaly',
+        'ml_regress', 'ml_pca',
+      ];
+
       for (const algo of algorithms) {
+        if (!logProcessingIds.includes(algo.id)) continue;
         const activityKeyParam = algo.parameters.find((p) => p.name === 'activity_key');
-        expect(activityKeyParam).toBeDefined();
+        expect(activityKeyParam, `${algo.id} should have activity_key`).toBeDefined();
         expect(activityKeyParam?.type).toBe('string');
         expect(activityKeyParam?.required).toBe(true);
         expect(activityKeyParam?.default).toBe('concept:name');

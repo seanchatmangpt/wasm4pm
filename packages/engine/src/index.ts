@@ -20,6 +20,7 @@ export { Engine, createSimpleEngine, createFullEngine } from './engine.js';
 export type { Kernel, Planner, Executor } from './engine.js';
 
 // State definitions and metadata
+export type { StateMetadata } from './state.js';
 export {
   STATE_METADATA,
   ALL_STATES,
@@ -27,7 +28,6 @@ export {
   isTerminalState,
   isProcessingState,
 } from './state.js';
-export type { StateMetadata } from './state.js';
 
 // Transition rules and validation
 export {
@@ -71,14 +71,12 @@ export { CheckpointManager } from './checkpointing.js';
 export type { Checkpoint } from './checkpointing.js';
 
 // WASM loader
-export {
-  WasmLoader,
-  createWasmLoader,
-  getWasmLoader,
-  WasmErrorCode,
-} from './wasm-loader.js';
+export { WasmLoader, createWasmLoader, getWasmLoader } from './wasm-loader.js';
 export type {
   WasmModule,
   WasmLoaderConfig,
   WasmLoaderStatus,
 } from './wasm-loader.js';
+
+// Re-export error code for tests
+export { WasmErrorCode } from './wasm-loader.js';

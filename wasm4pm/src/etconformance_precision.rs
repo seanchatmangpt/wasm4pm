@@ -20,7 +20,7 @@ use crate::models::EventLog;
 use crate::models::PetriNet;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use wasm_bindgen::JsValue;
+use wasm_bindgen::prelude::*;
 
 // ---------------------------------------------------------------------------
 // Marking type for pictl models::PetriNet
@@ -298,13 +298,13 @@ pub fn compute_precision(
 ///
 /// Takes two handles (event log and Petri net), plus an activity key, and
 /// returns a JSON `PrecisionResult`.
+#[wasm_bindgen]
 pub fn wasm_compute_precision(
     eventlog_handle: &str,
     petri_net_handle: &str,
     activity_key: &str,
 ) -> Result<String, JsValue> {
     use crate::state::{get_or_init_state, StoredObject};
-    use wasm_bindgen::prelude::*;
 
     // First clone the PetriNet out of state (needed for borrow checker).
     let petri_net: Result<Option<PetriNet>, _> =

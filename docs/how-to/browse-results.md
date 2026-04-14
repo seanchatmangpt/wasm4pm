@@ -5,11 +5,11 @@
 
 ## Problem
 
-You have run discovery and prediction tasks with `pmctl`, and the results were auto-saved. Now you need to find and inspect those previous results without re-running the tasks.
+You have run discovery and prediction tasks with `pictl`, and the results were auto-saved. Now you need to find and inspect those previous results without re-running the tasks.
 
 ## How Results Are Stored
 
-Every `pmctl run` and `pmctl predict` command automatically saves its output to the local results directory:
+Every `pictl run` and `pictl predict` command automatically saves its output to the local results directory:
 
 ```
 .wasm4pm/results/<timestamp>-<task>.json
@@ -28,7 +28,7 @@ To skip auto-saving, pass `--no-save`.
 ## Step 1 -- List Recent Results
 
 ```bash
-pmctl results
+pictl results
 ```
 
 What you should see:
@@ -47,7 +47,7 @@ Recent results (.wasm4pm/results/)
 By default, the listing shows the 20 most recent results. To see more:
 
 ```bash
-pmctl results --limit 50
+pictl results --limit 50
 ```
 
 ## Step 2 -- Run a Prediction to Generate a Result
@@ -55,7 +55,7 @@ pmctl results --limit 50
 If you do not have results yet, run a prediction task:
 
 ```bash
-pmctl predict next-activity -i orders.xes
+pictl predict next-activity -i orders.xes
 ```
 
 What you should see:
@@ -80,7 +80,7 @@ What you should see:
 Print the most recent result in full:
 
 ```bash
-pmctl results --last
+pictl results --last
 ```
 
 What you should see:
@@ -109,7 +109,7 @@ What you should see:
 Use the index number from the listing to print a particular result:
 
 ```bash
-pmctl results --cat 3
+pictl results --cat 3
 ```
 
 This prints the full JSON of the result at index 3 (the drift result in the example listing above).
@@ -119,7 +119,7 @@ This prints the full JSON of the result at index 3 (the drift result in the exam
 You can also look up results by task name instead of index:
 
 ```bash
-pmctl results --cat next-activity
+pictl results --cat next-activity
 ```
 
 This prints the most recent result whose task name matches `next-activity`.
@@ -129,7 +129,7 @@ This prints the most recent result whose task name matches `next-activity`.
 For scripting or pipeline integration, get the listing in JSON format:
 
 ```bash
-pmctl results --format json
+pictl results --format json
 ```
 
 What you should see:
@@ -155,15 +155,15 @@ What you should see:
 
 | Command | Description |
 |---------|-------------|
-| `pmctl results` | List recent results (default 20) |
-| `pmctl results --limit N` | List up to N results |
-| `pmctl results --last` | Print the most recent result in full |
-| `pmctl results --cat N` | Print result at index N |
-| `pmctl results --cat <task>` | Print most recent result matching task name |
-| `pmctl results --format json` | JSON output for the listing |
+| `pictl results` | List recent results (default 20) |
+| `pictl results --limit N` | List up to N results |
+| `pictl results --last` | Print the most recent result in full |
+| `pictl results --cat N` | Print result at index N |
+| `pictl results --cat <task>` | Print most recent result matching task name |
+| `pictl results --format json` | JSON output for the listing |
 
 ## Related
 
 - [How-To: Analyze an Event Log](analyze-log.md) -- running discovery that produces results
 - [How-To: Configure Predictions](configure-predictions.md) -- setting up prediction tasks
-- [How-To: Benchmark Algorithms](benchmark-algorithms.md) -- comparing algorithms with `pmctl compare`
+- [How-To: Benchmark Algorithms](benchmark-algorithms.md) -- comparing algorithms with `pictl compare`

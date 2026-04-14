@@ -35,4 +35,15 @@ describe('reduceFeaturesPCA', () => {
       reduceFeaturesPCA([{ case_id: 'c1', f1: 1 }]),
     ).rejects.toThrow('Need at least 2 traces and 2 features');
   });
+
+  it('explained variance is bounded [0, 1]', async () => {
+    const result = await reduceFeaturesPCA(features, { nComponents: 2 });
+    for (const ev of result.explainedVariance) {
+      expect(ev).toBeGreaterThanOrEqual(0);
+      expect(ev).toBeLessThanOrEqual(1);
+    }
+    // Sum of explained variance should not exceed 1.0
+    const totalExplained = result.explainedVariance.reduce((s, v) => s + v, 0);
+    expect(totalExplained).toBeLessThanOrEqual(1.01); // Allow tiny numerical tolerance
+  });
 });

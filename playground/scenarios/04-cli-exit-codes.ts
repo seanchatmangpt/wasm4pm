@@ -1,11 +1,11 @@
 /**
- * Scenario: CLI exit codes — pmctl exit code contract
+ * Scenario: CLI exit codes — pictl exit code contract
  *
  * Dev action simulated: "I changed the algorithm dispatch table. Does bad input
  * still exit with the right code? Does JSON output still parse?"
  *
- * Runs against the real pmctl binary built from local source.
- * Binary: apps/pmctl/dist/bin/pmctl.js (must be built first: cd apps/pmctl && npm run build)
+ * Runs against the real pictl binary built from local source.
+ * Binary: apps/pictl/dist/bin/pictl.js (must be built first: cd apps/pictl && npm run build)
  *
  * Exit code contract:
  *   0  success
@@ -18,20 +18,10 @@
 
 import { describe, it, expect, afterEach } from 'vitest';
 import * as path from 'path';
-import * as url from 'url';
 import * as fs from 'fs/promises';
-import { runCli, assertExitCode, assertJsonOutput, createCliTestEnv, EXIT_CODES } from '@wasm4pm/testing';
-import type { CliTestEnv } from '@wasm4pm/testing';
-
-// Resolve binary relative to this file (stable regardless of cwd)
-// playground/scenarios/ → ../../apps/pmctl/dist/bin/pmctl.js
-const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
-const PMCTL = path.resolve(__dirname, '../../apps/pmctl/dist/bin/pmctl.js');
-
-// runCli([PMCTL, ...userArgs], { cliPath: 'node' }) → execFile('node', [PMCTL, ...userArgs])
-function pmctl(userArgs: string[], env?: Record<string, string>) {
-  return runCli([PMCTL, ...userArgs], { cliPath: 'node', timeout: 20_000, env });
-}
+import { pictl, assertExitCode, assertJsonOutput, createCliTestEnv, EXIT_CODES } from '@pictl/testing';
+import type { CliTestEnv } from '@pictl/testing';
+import { PICTL } from '../helpers/cli.js';
 
 let _env: CliTestEnv | null = null;
 afterEach(async () => { await _env?.cleanup(); _env = null; });
@@ -56,13 +46,13 @@ const MINI_XES = `<?xml version="1.0" encoding="UTF-8"?>
 // ── Check binary exists ───────────────────────────────────────────────────────
 
 describe('cli exit codes: binary availability', () => {
-  it('pmctl binary exists at expected path', async () => {
+  it('pictl binary exists at expected path', async () => {
     try {
-      await fs.access(PMCTL);
-      console.info('[cli] binary found:', PMCTL);
+      await fs.access(PICTL);
+      console.info('[cli] binary found:', PICTL);
     } catch {
-      console.warn('[cli] binary not found:', PMCTL);
-      console.warn('[cli] Run: cd apps/pmctl && npm run build');
+      console.warn('[cli] binary not found:', PICTL);
+      console.warn('[cli] Run: cd apps/pictl && npm run build');
       // Skip rather than fail — missing binary is a setup issue, not a code bug
       expect(true).toBe(true); // vitest has no built-in skip in this pattern
     }
@@ -73,24 +63,24 @@ describe('cli exit codes: binary availability', () => {
 
 describe('cli exit codes: missing XES file', () => {
   it('exits 2 (source_error) when XES path does not exist', async () => {
-    const result = await pmctl(['run', '/tmp/phantom-12345.xes']);
+    const result = await pictl(['run', '/tmp/phantom-12345.xes']);
     assertExitCode(result, EXIT_CODES.SOURCE_ERROR);
     expect(result.stderr + result.stdout).toMatch(/not found|no such file|does not exist/i);
     console.info('[cli] exit:', result.exitCode, '| message:', (result.stderr + result.stdout).slice(0, 100));
   });
 
   it('still exits 2 with --no-save flag', async () => {
-    const result = await pmctl(['run', '/tmp/phantom-12345.xes', '--no-save']);
+    const result = await pictl(['run', '/tmp/phantom-12345.xes', '--no-save']);
     assertExitCode(result, EXIT_CODES.SOURCE_ERROR);
   });
 });
 
 // ── Invalid algorithm → exit 2 ────────────────────────────────────────────────
-// Note: algorithm errors use SOURCE_ERROR (2) not CONFIG_ERROR (1) — intentional pmctl design
+// Note: algorithm errors use SOURCE_ERROR (2) not CONFIG_ERROR (1) — intentional pictl design
 
 describe('cli exit codes: invalid algorithm name', () => {
   it('exits 2 (source_error) for an unknown algorithm', async () => {
-    const result = await pmctl(['run', 'placeholder.xes', '--algorithm', 'unicorn-algo']);
+    const result = await pictl(['run', 'placeholder.xes', '--algorithm', 'unicorn-algo']);
     assertExitCode(result, EXIT_CODES.SOURCE_ERROR);
     console.info('[cli] unknown-algo stdout:', result.stdout.slice(0, 150));
   });
@@ -100,7 +90,7 @@ describe('cli exit codes: invalid algorithm name', () => {
 
 describe('cli exit codes: JSON output envelope', () => {
   it('--format json emits parseable JSON on error', async () => {
-    const result = await pmctl(['run', '/nonexistent.xes', '--format', 'json']);
+    const result = await pictl(['run', '/nonexistent.xes', '--format', 'json']);
     assertExitCode(result, EXIT_CODES.SOURCE_ERROR);
     const envelope = assertJsonOutput(result) as Record<string, unknown>;
     expect(envelope).toHaveProperty('status', 'error');
@@ -117,7 +107,7 @@ describe('cli exit codes: successful discovery', () => {
     const xesPath = path.join(_env.tempDir, 'mini.xes');
     await fs.writeFile(xesPath, MINI_XES, 'utf-8');
 
-    const result = await pmctl(['run', xesPath, '--algorithm', 'dfg', '--no-save']);
+    const result = await pictl(['run', xesPath, '--algorithm', 'dfg', '--no-save']);
 
     // Accept 0 (success) or 3 (WASM not initialized in this env)
     // Either is actionable signal — 3 means the dev needs to build the WASM binary
@@ -141,7 +131,7 @@ describe('cli exit codes: successful discovery', () => {
     const xesPath = path.join(_env.tempDir, 'mini.xes');
     await fs.writeFile(xesPath, MINI_XES, 'utf-8');
 
-    const result = await pmctl(['run', xesPath, '--algorithm', 'dfg', '--format', 'json', '--no-save']);
+    const result = await pictl(['run', xesPath, '--algorithm', 'dfg', '--format', 'json', '--no-save']);
 
     if (result.exitCode !== EXIT_CODES.SUCCESS) {
       console.warn('[cli] skipping JSON shape check — exit', result.exitCode);

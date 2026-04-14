@@ -32,9 +32,6 @@ function sortKeys(obj: any): any {
 
 /**
  * Normalize a value for hashing: sort keys and serialize to JSON
- * @param data Any value to normalize
- * @returns JSON string with sorted keys
- * @throws SyntaxError if data is not JSON-serializable
  */
 export function normalizeForHashing(data: any): string {
   const sorted = sortKeys(data);
@@ -43,9 +40,6 @@ export function normalizeForHashing(data: any): string {
 
 /**
  * Compute BLAKE3 hash of a configuration object
- * Deterministic: same config -> same hash always
- * @param config Configuration object to hash
- * @returns Hex-encoded BLAKE3 hash
  */
 export function hashConfig(config: Record<string, any>): string {
   const normalized = normalizeForHashing(config);
@@ -68,8 +62,6 @@ export function hashData(data: any): string {
 /**
  * Compute BLAKE3 hash of a JSON string
  * Useful for pre-serialized data
- * @param jsonString JSON string to hash
- * @returns Hex-encoded BLAKE3 hash
  */
 export function hashJsonString(jsonString: string): string {
   const hashResult = hash(Buffer.from(jsonString, 'utf-8'));

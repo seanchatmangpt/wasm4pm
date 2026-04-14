@@ -114,13 +114,13 @@ headers = {
 
 ```bash
 # Development
-pmctl run --config config/dev.toml
+pictl run --config config/dev.toml
 
 # Staging
-pmctl run --config config/staging.toml
+pictl run --config config/staging.toml
 
 # Production
-pmctl run --config config/prod.toml
+pictl run --config config/prod.toml
 ```
 
 ## Environment Detection
@@ -138,7 +138,7 @@ if [ ! -f "$CONFIG" ]; then
   exit 1
 fi
 
-pmctl run --config "$CONFIG"
+pictl run --config "$CONFIG"
 ```
 
 Usage:

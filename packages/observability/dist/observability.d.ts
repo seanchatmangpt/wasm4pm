@@ -79,9 +79,17 @@ export declare class ObservabilityLayer {
      */
     getConfig(): ObservabilityConfig;
     /**
+     * Get recent observability listener errors from all layers
+     * Allows callers to check if observability layers are failing
+     */
+    getListenerErrors(): Array<{
+        timestamp: Date;
+        message: string;
+    }>;
+    /**
      * Gracefully shutdown observability layer
      * Flushes all pending events
-     * Should be called before process exit
+     * Reports critical failures when required: true
      */
     shutdown(): Promise<ObservabilityResult>;
 }

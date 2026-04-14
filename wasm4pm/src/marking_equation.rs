@@ -66,9 +66,9 @@ const EPS: f64 = 1e-9;
 ///
 /// ```
 /// let a = vec![vec![1, -1, 0], vec![0, 1, -1]];
-/// let c = vec![1.0, 1.0, 1.0];
-/// let b = vec![0, 1];
-/// let (cost, _x) = pictl_wasm4pm::marking_equation::solve_marking_equation(&a, &c, &b).unwrap();
+/// let c = vec![1.0_f64, 1.0_f64, 1.0_f64];
+/// let b = vec![0_i32, 1_i32];
+/// let (cost, _x) = pictl::marking_equation::solve_marking_equation(&a, &c, &b).unwrap();
 /// assert!((cost - 2.0).abs() < 1e-6);
 /// ```
 #[allow(clippy::needless_range_loop)]

@@ -1,14 +1,14 @@
-# Reference: pmctl CLI Commands
+# Reference: pictl CLI Commands
 
 **Version**: 26.4.7
 **Platform**: Linux, macOS, Windows
 
-## pmctl init
+## pictl init
 
 Initialize configuration
 
 ```bash
-pmctl init [OPTIONS]
+pictl init [OPTIONS]
 ```
 
 Options:
@@ -16,12 +16,12 @@ Options:
 - `--validate <FILE>` - Validate config file
 - `--help` - Show help
 
-## pmctl run
+## pictl run
 
 Run process discovery with optional ML post-analysis
 
 ```bash
-pmctl run -i <LOG> [OPTIONS]
+pictl run -i <LOG> [OPTIONS]
 ```
 
 Options:
@@ -44,44 +44,44 @@ Exit codes:
 - `4` - PARTIAL_SUCCESS
 - `5` - SYSTEM_ERROR
 
-## pmctl compare
+## pictl compare
 
 Side-by-side algorithm comparison with ASCII sparklines
 
 ```bash
-pmctl compare <ALGOS> -i <LOG> [OPTIONS]
+pictl compare <ALGOS> -i <LOG> [OPTIONS]
 ```
 
 Options:
 - `-i, --input <FILE>` - Input event log
 - `--format <FORMAT>` - Output format
 
-Example: `pmctl compare dfg,alpha,heuristic -i log.xes`
+Example: `pictl compare dfg,alpha,heuristic -i log.xes`
 
-## pmctl diff
+## pictl diff
 
 Compare two event logs via Jaccard similarity on DFG edges
 
 ```bash
-pmctl diff <LOG1> <LOG2>
+pictl diff <LOG1> <LOG2>
 ```
 
-## pmctl predict
+## pictl predict
 
 Predictive mining (next-activity, remaining-time, outcome, drift, features, resource)
 
 ```bash
-pmctl predict <TASK> -i <LOG> [OPTIONS]
+pictl predict <TASK> -i <LOG> [OPTIONS]
 ```
 
 Tasks: `next-activity`, `remaining-time`, `outcome`, `drift`, `features`, `resource`
 
-## pmctl ml
+## pictl ml
 
 ML analysis subtasks
 
 ```bash
-pmctl ml <TASK> [OPTIONS]
+pictl ml <TASK> [OPTIONS]
 ```
 
 Tasks:
@@ -98,22 +98,22 @@ Options:
 - `-k <N>` - Number of neighbors/clusters
 - `--format <FORMAT>` - Output format
 
-Example: `pmctl ml classify -i log.xes --method knn -k 5`
+Example: `pictl ml classify -i log.xes --method knn -k 5`
 
-## pmctl powl
+## pictl powl
 
 POWL process model discovery
 
 ```bash
-pmctl powl -i <LOG> [OPTIONS]
+pictl powl -i <LOG> [OPTIONS]
 ```
 
-## pmctl drift-watch
+## pictl drift-watch
 
 Real-time EWMA drift monitoring with optional ML anomaly detection
 
 ```bash
-pmctl drift-watch -i <LOG> [OPTIONS]
+pictl drift-watch -i <LOG> [OPTIONS]
 ```
 
 Options:
@@ -121,12 +121,12 @@ Options:
 - `--enhanced` - Enable ML anomaly detection overlay
 - `--format <FORMAT>` - Output format
 
-## pmctl watch
+## pictl watch
 
 Monitor file changes and re-run discovery
 
 ```bash
-pmctl watch --config <FILE> [OPTIONS]
+pictl watch --config <FILE> [OPTIONS]
 ```
 
 Options:
@@ -134,28 +134,28 @@ Options:
 - `--verbose` - Detailed output
 - `--format <FORMAT>` - Output format
 
-## pmctl status
+## pictl status
 
 WASM engine health and system info
 
 ```bash
-pmctl status
+pictl status
 ```
 
-## pmctl doctor
+## pictl doctor
 
 6-check environment diagnostic
 
 ```bash
-pmctl doctor
+pictl doctor
 ```
 
-## pmctl explain
+## pictl explain
 
 Show execution plan
 
 ```bash
-pmctl explain --config <FILE> [OPTIONS]
+pictl explain --config <FILE> [OPTIONS]
 ```
 
 Options:
@@ -164,18 +164,18 @@ Options:
 - `--expand-env` - Show resolved env vars
 - `--show-provenance` - Show config sources
 
-## pmctl results
+## pictl results
 
 Browse/inspect saved results in `.wasm4pm/results/`
 
 ```bash
-pmctl results [OPTIONS]
+pictl results [OPTIONS]
 ```
 
 ## Global Options
 
 ```bash
-pmctl [GLOBAL_OPTIONS] <COMMAND>
+pictl [GLOBAL_OPTIONS] <COMMAND>
 ```
 
 Global options:
@@ -194,31 +194,31 @@ Global options:
 
 ```bash
 # Simple discovery
-pmctl run -i events.xes
+pictl run -i events.xes
 
 # Discovery + ML analysis
-pmctl run -i events.xes --config config-with-ml.toml
+pictl run -i events.xes --config config-with-ml.toml
 
 # ML classification
-pmctl ml classify -i events.xes --method knn -k 5
+pictl ml classify -i events.xes --method knn -k 5
 
 # Algorithm comparison
-pmctl compare dfg,alpha,heuristic -i events.xes
+pictl compare dfg,alpha,heuristic -i events.xes
 
 # Drift monitoring with ML anomaly detection
-pmctl drift-watch -i events.xes --enhanced
+pictl drift-watch -i events.xes --enhanced
 
 # Predict remaining time
-pmctl predict remaining-time -i events.xes
+pictl predict remaining-time -i events.xes
 
 # Health check
-pmctl status
+pictl status
 
 # Environment diagnostic
-pmctl doctor
+pictl doctor
 
 # Browse saved results
-pmctl results
+pictl results
 ```
 
 ## See Also

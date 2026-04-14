@@ -7,28 +7,20 @@
  * User paths covered:
  *   1. Config  — resolveConfig({ cliOverrides: { algorithm: X } }) accepts every ID
  *   2. Planner — plan() with algorithm override produces a valid plan for every ID
- *   3. CLI     — pmctl run --algorithm X exits 0 or 3 (never 1=config or 2=source)
- *   4. CLI     — pmctl compare with all 14 IDs comma-joined exits 0 or 3
+ *   3. CLI     — pictl run --algorithm X exits 0 or 3 (never 1=config or 2=source)
+ *   4. CLI     — pictl compare with all 14 IDs comma-joined exits 0 or 3
  *
- * Driven by ALGORITHM_IDS from @wasm4pm/contracts — if a new algorithm is added
+ * Driven by ALGORITHM_IDS from @pictl/contracts — if a new algorithm is added
  * to the ontology and regenerated, this scenario covers it automatically.
  */
 
 import { describe, it, expect, beforeAll, afterEach } from 'vitest';
 import * as path from 'path';
-import * as url from 'url';
 import * as fs from 'fs/promises';
-import { resolveConfig } from '@wasm4pm/config';
-import { ALGORITHM_IDS } from '@wasm4pm/contracts';
-import { runCli, createCliTestEnv, EXIT_CODES } from '@wasm4pm/testing';
-import type { CliTestEnv } from '@wasm4pm/testing';
-
-const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
-const PMCTL = path.resolve(__dirname, '../../apps/pmctl/dist/bin/pmctl.js');
-
-function pmctl(userArgs: string[], env?: Record<string, string>) {
-  return runCli([PMCTL, ...userArgs], { cliPath: 'node', timeout: 20_000, env });
-}
+import { resolveConfig } from '@pictl/config';
+import { ALGORITHM_IDS } from '@pictl/contracts';
+import { pictl, createCliTestEnv, EXIT_CODES } from '@pictl/testing';
+import type { CliTestEnv } from '@pictl/testing';
 
 const MINI_XES = `<?xml version="1.0" encoding="UTF-8"?>
 <log xes.version="1.0">
@@ -90,9 +82,9 @@ describe('all algorithms: planner layer', () => {
 
   beforeAll(async () => {
     try {
-      const mod = await import('@wasm4pm/planner');
+      const mod = await import('@pictl/planner');
       plan = (cfg) => mod.plan(cfg as Parameters<typeof mod.plan>[0]) as ReturnType<typeof mod.plan>;
-      console.info('[all-algos] @wasm4pm/planner loaded');
+      console.info('[all-algos] @pictl/planner loaded');
     } catch {
       console.warn('[all-algos] planner not built — planner tests will skip');
     }
@@ -120,28 +112,28 @@ describe('all algorithms: planner layer', () => {
   });
 });
 
-// ── 3. CLI: pmctl run --algorithm X exits 0 or 3, never 1 or 2 ────────────────
+// ── 3. CLI: pictl run --algorithm X exits 0 or 3, never 1 or 2 ────────────────
 
 describe('all algorithms: CLI run layer', () => {
   for (const id of ALGORITHM_IDS) {
-    it(`pmctl run --algorithm ${id} exits 0 or 3 (not config/source error)`, async () => {
-      const result = await pmctl(['run', xesPath, '--algorithm', id, '--no-save']);
+    it(`pictl run --algorithm ${id} exits 0 or 3 (not config/source error)`, async () => {
+      const result = await pictl(['run', xesPath, '--algorithm', id, '--no-save']);
       const acceptable = [EXIT_CODES.SUCCESS, EXIT_CODES.EXECUTION_ERROR];
       if (!acceptable.includes(result.exitCode)) {
         console.error(`[all-algos] ${id} unexpected exit ${result.exitCode}`);
         console.error('  stdout:', result.stdout.slice(0, 200));
         console.error('  stderr:', result.stderr.slice(0, 200));
       }
-      expect(acceptable, `pmctl run --algorithm ${id} exited ${result.exitCode}`).toContain(result.exitCode);
+      expect(acceptable, `pictl run --algorithm ${id} exited ${result.exitCode}`).toContain(result.exitCode);
     }, 20_000);
   }
 });
 
-// ── 4. CLI: pmctl compare with all algorithms ────────────────────────────────
+// ── 4. CLI: pictl compare with all algorithms ────────────────────────────────
 
 describe('all algorithms: CLI compare layer', () => {
-  it('pmctl compare accepts all 14 algorithm IDs comma-joined', async () => {
-    const result = await pmctl(['compare', ALGORITHM_IDS.join(','), '-i', xesPath, '--no-save']);
+  it('pictl compare accepts all 14 algorithm IDs comma-joined', async () => {
+    const result = await pictl(['compare', ALGORITHM_IDS.join(','), '-i', xesPath, '--no-save']);
     const acceptable = [EXIT_CODES.SUCCESS, EXIT_CODES.EXECUTION_ERROR];
     if (!acceptable.includes(result.exitCode)) {
       console.error('[all-algos] compare unexpected exit:', result.exitCode);
@@ -151,8 +143,8 @@ describe('all algorithms: CLI compare layer', () => {
     expect(acceptable).toContain(result.exitCode);
   }, 30_000);
 
-  it('pmctl compare with unknown algorithm exits 2', async () => {
-    const result = await pmctl(['compare', 'dfg,ghost_algo', '-i', xesPath]);
+  it('pictl compare with unknown algorithm exits 2', async () => {
+    const result = await pictl(['compare', 'dfg,ghost_algo', '-i', xesPath]);
     expect(result.exitCode).toBe(EXIT_CODES.SOURCE_ERROR);
   }, 20_000);
 });

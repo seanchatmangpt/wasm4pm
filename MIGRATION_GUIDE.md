@@ -35,13 +35,13 @@ If you want the new CLI tool:
 
 ```bash
 # Install globally
-npm install -g @wasm4pm/pmctl
+npm install -g @pictl/cli
 
 # Or locally
-npm install @wasm4pm/pmctl
+npm install @pictl/cli
 
 # Verify installation
-pmctl --version
+pictl --version
 ```
 
 ### For Service Deployment (NEW)
@@ -82,7 +82,7 @@ wasm4pm (core library) ← UNCHANGED
 └── TypeScript bindings
 
 PLUS 10 NEW PACKAGES:
-├── @wasm4pm/pmctl ← Professional CLI
+├── @pictl/cli ← Professional CLI
 ├── @wasm4pm/config ← Config management
 ├── @wasm4pm/engine ← Execution engine
 ├── @wasm4pm/service ← HTTP service
@@ -112,7 +112,7 @@ PLUS 10 NEW PACKAGES:
 - ✅ MCP integration (Claude)
 
 ### New (Available if You Opt In)
-- 🆕 CLI tool (pmctl)
+- 🆕 CLI tool (pictl)
 - 🆕 HTTP service (@wasm4pm/service)
 - 🆕 Configuration system (@wasm4pm/config)
 - 🆕 Streaming conformance checking
@@ -183,15 +183,15 @@ program.parse();
 ```
 
 #### After (v26.4.5)
-Use the official pmctl CLI:
+Use the official pictl CLI:
 
 ```bash
 # Instead of custom tool
-pmctl run data.xes --algorithm genetic --profile balanced
+pictl run data.xes --algorithm genetic --profile balanced
 
-# Or integrate pmctl programmatically
-const { pmctl } = require('@wasm4pm/pmctl');
-await pmctl.run('data.xes', { algorithm: 'genetic' });
+# Or integrate pictl programmatically
+const { pictl } = require('@pictl/cli');
+await pictl.run('data.xes', { algorithm: 'genetic' });
 ```
 
 **Benefits:**
@@ -431,7 +431,7 @@ const result = pm.discoverAlphaPlusPlus(log, {
 profile = "quality"
 
 // Via CLI
-pmctl run data.xes --profile quality
+pictl run data.xes --profile quality
 ```
 
 ---
@@ -444,7 +444,7 @@ Understanding the configuration hierarchy:
 Priority (High → Low)
 │
 ├─ 1. CLI Arguments (highest)
-│  └─ pmctl run --algorithm genetic --profile quality
+│  └─ pictl run --algorithm genetic --profile quality
 │
 ├─ 2. TOML Files
 │  ├─ ./wasm4pm.toml
@@ -596,7 +596,7 @@ fetch('http://service:3000/api/v1/discover', {
 - Rate limiting
 - Connection pooling
 
-### 4. Use pmctl for Automation
+### 4. Use pictl for Automation
 
 Instead of custom Node.js scripts:
 
@@ -609,7 +609,7 @@ Instead of custom Node.js scripts:
 **After:**
 ```bash
 #!/bin/bash
-pmctl run data.xes --algorithm genetic --output result.json
+pictl run data.xes --algorithm genetic --output result.json
 ```
 
 **Benefits:**
@@ -653,10 +653,10 @@ fs.writeFileSync('receipt.json', JSON.stringify(receipt));
 ### Q: Is it safe to upgrade?
 **A:** Completely safe. No breaking changes. All existing APIs remain unchanged.
 
-### Q: Should I use pmctl or the library?
+### Q: Should I use pictl or the library?
 **A:** 
 - **Library** (`wasm4pm`) - If you're building an application
-- **pmctl CLI** - If you need command-line automation
+- **pictl CLI** - If you need command-line automation
 - **Both** - For maximum flexibility
 
 ### Q: Can I use the old config system?
@@ -670,7 +670,7 @@ fs.writeFileSync('receipt.json', JSON.stringify(receipt));
 
 ### Q: How do I handle the new 10 packages?
 **A:** They're optional. Install only what you need:
-- Using CLI? → Add `@wasm4pm/pmctl`
+- Using CLI? → Add `@pictl/cli`
 - Need HTTP API? → Add `@wasm4pm/service`
 - Want logging? → Add `@wasm4pm/observability`
 - Want config? → Add `@wasm4pm/config`
@@ -708,10 +708,10 @@ Nothing is slower. All optimizations are backward compatible.
 npm install @wasm4pm/config
 ```
 
-### Issue: "pmctl command not found"
+### Issue: "pictl command not found"
 **Solution:** Install globally
 ```bash
-npm install -g @wasm4pm/pmctl
+npm install -g @pictl/cli
 ```
 
 ### Issue: "Service won't start"
@@ -724,14 +724,14 @@ wasm4pm-service --port 3001
 ### Issue: "Config validation error"
 **Solution:** Check config format
 ```bash
-# Run pmctl init to generate valid config
-pmctl init
+# Run pictl init to generate valid config
+pictl init
 ```
 
 ### Issue: "Memory exceeded"
 **Solution:** Use streaming for large logs
 ```bash
-pmctl run large-log.xes --profile stream
+pictl run large-log.xes --profile stream
 ```
 
 ---
@@ -768,7 +768,7 @@ pmctl run large-log.xes --profile stream
 1. **Update:** `npm update` or `pnpm update`
 2. **Read:** [RELEASE_NOTES.md](./RELEASE_NOTES.md) for full feature list
 3. **Explore:** [docs/QUICKSTART.md](./docs/QUICKSTART.md) for examples
-4. **Integrate:** Try `pmctl init` for CLI tool
+4. **Integrate:** Try `pictl init` for CLI tool
 5. **Monitor:** Set up logging with `@wasm4pm/observability`
 
 ---

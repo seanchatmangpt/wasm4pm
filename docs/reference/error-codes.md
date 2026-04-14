@@ -22,7 +22,7 @@ Schema validation failed
 
 ```
 Remediation:
-1. pmctl init --validate config.toml
+1. pictl init --validate config.toml
 2. Review error message
 3. Fix config field
 4. Retry
@@ -139,7 +139,7 @@ Module initialization failed
 ```
 Fix:
   1. Update Node.js: node --version
-  2. Reinstall: npm install -g @wasm4pm/pmctl
+  2. Reinstall: npm install -g @pictl/cli
   3. Test WASM: node -e "require('wasm4pm')"
 ```
 
@@ -164,7 +164,7 @@ Fix:
 | No output files | permissions | `chmod 755 output/` |
 | Slow execution | algorithm | Use `fast` profile |
 | Out of memory | input size | Use `stream` mode |
-| Config error | schema | `pmctl init --validate` |
+| Config error | schema | `pictl init --validate` |
 | File not found | path | Update `source.path` |
 
 ## See Also

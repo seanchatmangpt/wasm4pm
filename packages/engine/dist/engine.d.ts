@@ -132,7 +132,15 @@ export declare class Engine {
      * Attempts recovery from degraded state
      * Transitions: degraded -> bootstrapping -> ready
      */
-    recover(): Promise<void>;
+    recover(options?: {
+        timeout?: number;
+    }): Promise<void>;
+    /**
+     * Fast recovery from failed state - reuses existing WASM module
+     * Only works if WASM module is still valid (not corrupted)
+     * Falls back to full bootstrap if WASM is not initialized
+     */
+    fastRecoverFromFailed(): Promise<void>;
     /**
      * Shuts down the engine
      * Transitions: any state -> failed (terminal)

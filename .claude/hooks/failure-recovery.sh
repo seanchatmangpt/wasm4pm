@@ -28,7 +28,7 @@ if [ "$TOOL_NAME" = "Bash" ]; then
   elif echo "$COMMAND" | grep -q "wasm\|cargo"; then
     RECOVERY="WASM build command failed: try 'cd wasm4pm && npm run build && cd ..'"
   elif echo "$COMMAND" | grep -q "tsc\|typescript"; then
-    RECOVERY="TypeScript check failed: try 'pnpm lint' or check 'apps/pmctl/tsconfig.json'"
+    RECOVERY="TypeScript check failed: try 'pnpm lint' or check 'apps/pictl/tsconfig.json'"
   elif echo "$COMMAND" | grep -q "test\|vitest"; then
     RECOVERY="Test failed: run single-shot 'pnpm test --run' instead of watch mode"
   elif echo "$COMMAND" | grep -q "git"; then

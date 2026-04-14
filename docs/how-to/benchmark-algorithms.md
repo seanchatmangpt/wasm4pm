@@ -35,7 +35,7 @@ Speed is on a 0--100 scale (higher is slower). Quality is on a 0--100 scale (hig
 The simplest benchmark compares two algorithms side by side:
 
 ```bash
-pmctl compare dfg inductive -i process.xes
+pictl compare dfg inductive -i process.xes
 ```
 
 What you should see:
@@ -62,7 +62,7 @@ The output shows nodes, edges, and execution time for each algorithm, plus relat
 You can pass any number of algorithms to compare them all at once:
 
 ```bash
-pmctl compare dfg heuristic_miner ilp genetic_algorithm -i process.xes
+pictl compare dfg heuristic_miner ilp genetic_algorithm -i process.xes
 ```
 
 What you should see:
@@ -85,7 +85,7 @@ What you should see:
 Pass `--format json` to get machine-readable output suitable for scripting, CI pipelines, or post-processing:
 
 ```bash
-pmctl compare dfg inductive_miner genetic_algorithm -i process.xes --format json
+pictl compare dfg inductive_miner genetic_algorithm -i process.xes --format json
 ```
 
 What you should see:
@@ -154,19 +154,19 @@ The ASCII sparkbars (e.g., `████████ 0.95`) give a visual compar
 
 ```bash
 # Basic syntax
-pmctl compare <algo1> <algo2> [...] --input <log.xes>
+pictl compare <algo1> <algo2> [...] --input <log.xes>
 
 # Two algorithms
-pmctl compare dfg inductive -i process.xes
+pictl compare dfg inductive -i process.xes
 
 # Multiple algorithms
-pmctl compare dfg heuristic_miner ilp genetic -i process.xes
+pictl compare dfg heuristic_miner ilp genetic -i process.xes
 
 # JSON output
-pmctl compare dfg inductive genetic -i process.xes --format json
+pictl compare dfg inductive genetic -i process.xes --format json
 
 # With config file (uses config for additional settings)
-pmctl compare dfg heuristic --config wasm4pm.toml
+pictl compare dfg heuristic --config wasm4pm.toml
 ```
 
 ## Related

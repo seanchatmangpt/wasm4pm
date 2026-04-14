@@ -6,23 +6,23 @@ POWL (Partially Ordered Workflow Language) discovery finds process models that p
 
 ```bash
 # Basic discovery (default: decision_graph_cyclic variant)
-pmctl powl discover -i my-log.xes
+pictl powl discover -i my-log.xes
 
 # Specify variant
-pmctl powl discover -i my-log.xes --variant tree
+pictl powl discover -i my-log.xes --variant tree
 
 # Custom parameters
-pmctl powl discover -i my-log.xes \
+pictl powl discover -i my-log.xes \
   --variant decision_graph_cyclic \
   --activity-key concept:name \
   --min-trace-count 2 \
   --noise-threshold 0.1
 
 # JSON output
-pmctl powl discover -i my-log.xes --format json
+pictl powl discover -i my-log.xes --format json
 
 # Quiet mode (suppress non-error output)
-pmctl powl discover -i my-log.xes --quiet
+pictl powl discover -i my-log.xes --quiet
 ```
 
 ## Discovery Variants
@@ -124,5 +124,5 @@ Output: `X(A, B)` — XOR choice between A and B
 
 - [POWL Concepts](../explanation/powl-concepts.md) — POWL theory and notation
 - [Algorithm Reference](../reference/algorithms.md) — All discovery algorithms
-- `pmctl powl parse` — Parse and analyze existing POWL models
-- `pmctl powl convert` — Convert POWL to BPMN/Petri Net/Process Tree
+- `pictl powl parse` — Parse and analyze existing POWL models
+- `pictl powl convert` — Convert POWL to BPMN/Petri Net/Process Tree

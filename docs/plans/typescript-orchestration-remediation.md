@@ -290,7 +290,7 @@ export type ErrorCode =
 
 Also update the `TypedError` numeric code mapping in the same file, assigning codes in the 400-499 range for algorithm subdomains.
 
-**File:** `/Users/sac/chatmangpt/pictl/apps/pmctl/src/exit-codes.ts`
+**File:** `/Users/sac/chatmangpt/pictl/apps/pictl/src/exit-codes.ts`
 
 **Change:** No change needed — existing `execution_error: 3` covers algorithm failures. The new typed error codes are for structured reporting within receipts, not CLI exit codes.
 
@@ -527,7 +527,7 @@ export const commandName = defineCommand({
 
 ### GAP-13: `pictl conformance` CLI command
 
-**File:** `/Users/sac/chatmangpt/pictl/apps/pmctl/src/commands/conformance.ts`
+**File:** `/Users/sac/chatmangpt/pictl/apps/pictl/src/commands/conformance.ts`
 
 **Args:**
 ```
@@ -545,7 +545,7 @@ const raw = wasm.simd_token_replay(logHandle, activityKey);
 
 ### GAP-14: `pictl simulate` CLI command
 
-**File:** `/Users/sac/chatmangpt/pictl/apps/pmctl/src/commands/simulate.ts`
+**File:** `/Users/sac/chatmangpt/pictl/apps/pictl/src/commands/simulate.ts`
 
 **Args:**
 ```
@@ -561,7 +561,7 @@ const raw = wasm.play_out(modelHandle, numTraces, maxTraceLength);
 
 ### GAP-15: `pictl temporal` CLI command
 
-**File:** `/Users/sac/chatmangpt/pictl/apps/pmctl/src/commands/temporal.ts`
+**File:** `/Users/sac/chatmangpt/pictl/apps/pictl/src/commands/temporal.ts`
 
 **Args:**
 ```
@@ -577,7 +577,7 @@ const raw = wasm.detect_bottlenecks(logHandle, activityKey, timestampKey, thresh
 
 ### GAP-16: `pictl social` CLI command
 
-**File:** `/Users/sac/chatmangpt/pictl/apps/pmctl/src/commands/social.ts`
+**File:** `/Users/sac/chatmangpt/pictl/apps/pictl/src/commands/social.ts`
 
 **Args:**
 ```
@@ -591,7 +591,7 @@ const raw = wasm.discover_correlation(logHandle, activityKey, timestampKey);
 
 ### GAP-17: `pictl quality` CLI command
 
-**File:** `/Users/sac/chatmangpt/pictl/apps/pmctl/src/commands/quality.ts`
+**File:** `/Users/sac/chatmangpt/pictl/apps/pictl/src/commands/quality.ts`
 
 **Args:**
 ```
@@ -607,7 +607,7 @@ const raw = wasm.generalization(logHandle, petriNetHandle);
 
 ### GAP-18: `pictl validate` CLI command
 
-**File:** `/Users/sac/chatmangpt/pictl/apps/pmctl/src/commands/validate.ts`
+**File:** `/Users/sac/chatmangpt/pictl/apps/pictl/src/commands/validate.ts`
 
 **Args:**
 ```
@@ -623,7 +623,7 @@ const precision = wasm.precision_etconformance(logHandle, modelHandle, activityK
 
 ### CLI Registration
 
-**File:** `/Users/sac/chatmangpt/pictl/apps/pmctl/src/cli.ts`
+**File:** `/Users/sac/chatmangpt/pictl/apps/pictl/src/cli.ts`
 
 **Change:** Import and register all new commands:
 
@@ -965,13 +965,13 @@ for (const algo of WAVE1_DETERMINISM_CASES) {
 | `packages/contracts/src/errors.ts` | 2 |
 | `packages/config/src/schema.ts` | 2 (GAP-12) |
 | `packages/planner/src/planner.ts` | 4 (minor) |
-| `apps/pmctl/src/commands/conformance.ts` (new) | 5 |
-| `apps/pmctl/src/commands/simulate.ts` (new) | 5 |
-| `apps/pmctl/src/commands/temporal.ts` (new) | 5 |
-| `apps/pmctl/src/commands/social.ts` (new) | 5 |
-| `apps/pmctl/src/commands/quality.ts` (new) | 5 |
-| `apps/pmctl/src/commands/validate.ts` (new) | 5 |
-| `apps/pmctl/src/cli.ts` | 5 |
+| `apps/pictl/src/commands/conformance.ts` (new) | 5 |
+| `apps/pictl/src/commands/simulate.ts` (new) | 5 |
+| `apps/pictl/src/commands/temporal.ts` (new) | 5 |
+| `apps/pictl/src/commands/social.ts` (new) | 5 |
+| `apps/pictl/src/commands/quality.ts` (new) | 5 |
+| `apps/pictl/src/commands/validate.ts` (new) | 5 |
+| `apps/pictl/src/cli.ts` | 5 |
 | `wasm4pm/src/mcp_server.ts` | 6 |
 | `packages/engine/src/engine.ts` | 7 |
 | `packages/testing/src/harness/parity.ts` | 8 |

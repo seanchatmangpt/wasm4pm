@@ -139,7 +139,7 @@ pub const ALGORITHM_IDS: [&str; 40] = [
 ];
 
 const N_FEATURES: usize = 8;
-const N_ACTIONS: usize = 40;
+const N_ACTIONS: usize = 5;
 #[cfg(any(feature = "gpu", test))]
 const BATCH_SIZE: usize = 2048;
 

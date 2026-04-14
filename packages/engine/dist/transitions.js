@@ -20,7 +20,7 @@ export const VALID_TRANSITIONS = {
     running: new Set(['watching', 'ready', 'degraded', 'failed']),
     watching: new Set(['ready', 'degraded', 'failed']),
     degraded: new Set(['ready', 'bootstrapping', 'failed']),
-    failed: new Set(['bootstrapping']),
+    failed: new Set(['bootstrapping', 'ready']), // Add 'ready' for fast recovery path
 };
 /**
  * Check if a transition from one state to another is valid

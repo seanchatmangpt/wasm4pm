@@ -32,7 +32,7 @@ A receipt proves:
 Run discovery with receipt enabled (default):
 
 ```bash
-pmctl run --config config.toml --verbose
+pictl run --config config.toml --verbose
 ```
 
 View the receipt:
@@ -98,11 +98,11 @@ Run the same analysis twice:
 
 ```bash
 # First run
-pmctl run --config config.toml
+pictl run --config config.toml
 RECEIPT_1=$(jq -r '.hashes.combined_hash' output/receipt.json)
 
 # Second run
-pmctl run --config config.toml
+pictl run --config config.toml
 RECEIPT_2=$(jq -r '.hashes.combined_hash' output/receipt.json)
 
 # Compare
@@ -211,7 +211,7 @@ fi
 
 # Run with config hash
 CONFIG_HASH=$(git rev-parse HEAD:config.toml)
-pmctl run --config config.toml
+pictl run --config config.toml
 
 # Compare with receipt
 RECEIPT_CONFIG_HASH=$(jq -r '.configuration.config_file_hash' output/receipt.json)
@@ -353,10 +353,10 @@ Create `test-compliance.sh`:
 test_determinism() {
   echo "Testing determinism..."
   
-  pmctl run --config config.toml
+  pictl run --config config.toml
   HASH1=$(jq -r '.hashes.combined_hash' output/receipt.json)
   
-  pmctl run --config config.toml
+  pictl run --config config.toml
   HASH2=$(jq -r '.hashes.combined_hash' output/receipt.json)
   
   if [ "$HASH1" = "$HASH2" ]; then

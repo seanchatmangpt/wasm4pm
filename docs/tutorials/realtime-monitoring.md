@@ -39,7 +39,7 @@ streaming = true
 Start streaming:
 
 ```bash
-pmctl watch --config config.toml --format json > events.jsonl
+pictl watch --config config.toml --format json > events.jsonl
 ```
 
 ## Step 2: Detect Drifts

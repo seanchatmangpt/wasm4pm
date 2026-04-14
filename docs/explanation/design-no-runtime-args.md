@@ -15,11 +15,11 @@ This means: All parameters should be in configuration, not command-line argument
 
 ```bash
 # Bad (CLI args):
-pmctl run --algorithm heuristic --noise-threshold 0.2 --population 50
+pictl run --algorithm heuristic --noise-threshold 0.2 --population 50
 # Did we remember all the flags? Are they documented?
 
 # Good (config file):
-pmctl run --config config.toml
+pictl run --config config.toml
 # Everything explicit, version-controlled
 ```
 
@@ -27,7 +27,7 @@ pmctl run --config config.toml
 
 ```bash
 # Bad: Arguments scattered across shell history
-history | grep pmctl | grep -v config
+history | grep pictl | grep -v config
 
 # Good: All parameters in single config file
 cat config.toml | grep -A10 discovery
@@ -60,7 +60,7 @@ We support **minimal** flags for convenience:
 
 ```bash
 # Flag overrides config (exception)
-pmctl run --config config.toml --profile fast
+pictl run --config config.toml --profile fast
 
 # Profile = template for algorithm selection
 # (But specific algorithm in config.toml)
@@ -115,17 +115,17 @@ Execution:
 
 ```bash
 # No arguments needed
-pmctl run --config config.toml
+pictl run --config config.toml
 
 # Optionally override profile
-pmctl run --config config.toml --profile fast
+pictl run --config config.toml --profile fast
 ```
 
 ## Example: Bad Design
 
 ```bash
 # Many arguments (hard to remember, easy to mess up)
-pmctl run \
+pictl run \
   --config config.toml \
   --algorithm genetic \
   --population 100 \

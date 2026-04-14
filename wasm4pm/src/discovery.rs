@@ -163,78 +163,88 @@ pub fn discover_dfg_handle(eventlog_handle: &str, activity_key: &str) -> Result<
     Ok(JsValue::from_str(&handle))
 }
 
+/// Pure-Rust OCEL DFG discovery: returns DirectlyFollowsGraph without wasm-bindgen.
+///
+/// This is the testable core of `discover_ocel_dfg`. Integration tests
+/// on native targets cannot call `#[wasm_bindgen]` functions, so they use
+/// this instead.
+pub fn discover_ocel_dfg_pure(ocel: &OCEL) -> DirectlyFollowsGraph {
+    let mut dfg = DirectlyFollowsGraph::new();
+
+    // Get event types
+    for event_type in &ocel.event_types {
+        dfg.nodes.push(DFGNode {
+            id: event_type.clone(),
+            label: event_type.clone(),
+            frequency: 0,
+        });
+    }
+
+    // Count event type frequencies
+    for event in &ocel.events {
+        if let Some(node) = dfg.nodes.iter_mut().find(|n| n.id == event.event_type) {
+            node.frequency += 1;
+        }
+    }
+
+    // Get directly-follows relations within same objects
+    let mut events_by_object: FxHashMap<String, Vec<(usize, &str)>> = FxHashMap::default();
+    for (idx, event) in ocel.events.iter().enumerate() {
+        for obj_id in event.all_object_ids() {
+            events_by_object
+                .entry(obj_id.to_string())
+                .or_default()
+                .push((idx, event.event_type.as_str()));
+        }
+    }
+
+    // Sort events by timestamp (ISO 8601 sort works lexicographically for ISO format)
+    for events in events_by_object.values_mut() {
+        events.sort_by_key(|(idx, _)| ocel.events[*idx].timestamp.clone());
+    }
+
+    // Build an edge map for O(1) frequency updates instead of O(n)
+    // Vec::find per pair, and use .windows(2) to eliminate bounds-check branches.
+    let mut edge_map: FxHashMap<(String, String), usize> = FxHashMap::default();
+    for events in events_by_object.values() {
+        for pair in events.windows(2) {
+            let from = pair[0].1;
+            let to = pair[1].1;
+            *edge_map
+                .entry((from.to_string(), to.to_string()))
+                .or_insert(0) += 1;
+        }
+    }
+    for ((from, to), freq) in edge_map {
+        dfg.edges.push(DirectlyFollowsRelation {
+            from,
+            to,
+            frequency: freq,
+        });
+    }
+
+    // Collect start/end event types using .first()/.last() to eliminate
+    // manual bounds checks and the len()-1 index expression.
+    for obj_id in events_by_object.keys() {
+        if let Some(events) = events_by_object.get(obj_id) {
+            if let Some(first) = events.first() {
+                *dfg.start_activities.entry(first.1.to_string()).or_insert(0) += 1;
+            }
+            if let Some(last) = events.last() {
+                *dfg.end_activities.entry(last.1.to_string()).or_insert(0) += 1;
+            }
+        }
+    }
+
+    dfg
+}
+
 /// Discover a Directly-Follows Graph (DFG) from an OCEL
 #[wasm_bindgen]
 pub fn discover_ocel_dfg(ocel_handle: &str) -> Result<JsValue, JsValue> {
     get_or_init_state().with_object(ocel_handle, |obj| match obj {
         Some(StoredObject::OCEL(ocel)) => {
-            let mut dfg = DirectlyFollowsGraph::new();
-
-            // Get event types
-            for event_type in &ocel.event_types {
-                dfg.nodes.push(DFGNode {
-                    id: event_type.clone(),
-                    label: event_type.clone(),
-                    frequency: 0,
-                });
-            }
-
-            // Count event type frequencies
-            for event in &ocel.events {
-                if let Some(node) = dfg.nodes.iter_mut().find(|n| n.id == event.event_type) {
-                    node.frequency += 1;
-                }
-            }
-
-            // Get directly-follows relations within same objects
-            let mut events_by_object: FxHashMap<String, Vec<(usize, &str)>> = FxHashMap::default();
-            for (idx, event) in ocel.events.iter().enumerate() {
-                for obj_id in event.all_object_ids() {
-                    events_by_object
-                        .entry(obj_id.to_string())
-                        .or_default()
-                        .push((idx, event.event_type.as_str()));
-                }
-            }
-
-            // Sort events by timestamp (ISO 8601 sort works lexicographically for ISO format)
-            for events in events_by_object.values_mut() {
-                events.sort_by_key(|(idx, _)| ocel.events[*idx].timestamp.clone());
-            }
-
-            // Build an edge map for O(1) frequency updates instead of O(n)
-            // Vec::find per pair, and use .windows(2) to eliminate bounds-check branches.
-            let mut edge_map: FxHashMap<(String, String), usize> = FxHashMap::default();
-            for events in events_by_object.values() {
-                for pair in events.windows(2) {
-                    let from = pair[0].1;
-                    let to = pair[1].1;
-                    *edge_map
-                        .entry((from.to_string(), to.to_string()))
-                        .or_insert(0) += 1;
-                }
-            }
-            for ((from, to), freq) in edge_map {
-                dfg.edges.push(DirectlyFollowsRelation {
-                    from,
-                    to,
-                    frequency: freq,
-                });
-            }
-
-            // Collect start/end event types using .first()/.last() to eliminate
-            // manual bounds checks and the len()-1 index expression.
-            for obj_id in events_by_object.keys() {
-                if let Some(events) = events_by_object.get(obj_id) {
-                    if let Some(first) = events.first() {
-                        *dfg.start_activities.entry(first.1.to_string()).or_insert(0) += 1;
-                    }
-                    if let Some(last) = events.last() {
-                        *dfg.end_activities.entry(last.1.to_string()).or_insert(0) += 1;
-                    }
-                }
-            }
-
+            let dfg = discover_ocel_dfg_pure(ocel);
             to_js(&dfg)
         }
         Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an OCEL")),

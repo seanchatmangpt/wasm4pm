@@ -1,0 +1,1 @@
+/Users/sac/.claude/rules/tools.md

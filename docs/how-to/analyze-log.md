@@ -8,13 +8,13 @@
 Basic analysis command:
 
 ```bash
-pmctl run --config config.toml
+pictl run --config config.toml
 ```
 
 With options:
 
 ```bash
-pmctl run \
+pictl run \
   --config config.toml \
   --profile fast \
   --format json \

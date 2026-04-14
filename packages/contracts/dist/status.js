@@ -33,20 +33,23 @@ export const STATE_TRANSITIONS = {
 };
 /**
  * Check if a state transition is valid
+ * @internal
  */
-export function isValidTransition(from, to) {
+function isValidTransition(from, to) {
     return STATE_TRANSITIONS[from].includes(to);
 }
 /**
  * Check if a string is a valid lifecycle state
+ * @internal
  */
-export function isLifecycleState(value) {
+function isLifecycleState(value) {
     return LIFECYCLE_STATES.includes(value);
 }
 /**
  * Type guard for Status objects
+ * @internal
  */
-export function isStatus(value) {
+function isStatus(value) {
     if (!value || typeof value !== 'object')
         return false;
     const s = value;

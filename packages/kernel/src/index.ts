@@ -26,16 +26,7 @@ export { implementAlgorithmStep, listAlgorithms, validateAlgorithmParameters } f
 export type { WasmModule, AlgorithmStepOutput } from './handlers.js';
 
 // Versioning exports
-export {
-  KERNEL_VERSION,
-  MIN_WASM4PM_VERSION,
-  checkCompatibility,
-  assertCompatibility,
-  parseSemVer,
-  compareSemVer,
-  satisfiesMinimum,
-  isMajorCompatible,
-} from './versioning.js';
+export { KERNEL_VERSION, checkCompatibility } from './versioning.js';
 export type { SemVer, CompatibilityResult } from './versioning.js';
 
 // Hashing exports

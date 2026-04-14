@@ -1,5 +1,8 @@
 // @pictl/testing — Testing utilities, fixtures, mocks, and harnesses
 
+// Types
+export type { OtelSpan, OtelResource, OtelInstrumentationScope } from './types.js';
+
 // Fixtures
 export * from './fixtures/index.js';
 
@@ -9,14 +12,30 @@ export * from './mocks/index.js';
 // Harnesses
 export * from './harness/index.js';
 
-// Redaction verification
-export * from './redaction.js';
-
 // Certification
 export * from './certification.js';
 
 // Process Mining Testing Utilities
 export * from './validators/index.js';
 export * from './verifiers/index.js';
-export * from './conformance/index.js';
+export {
+  tokenReplayConformance,
+  createTestPetriNet,
+  createTestEventLog,
+  getExpectedTestResult,
+  expectCloseTo,
+  assertTokenReplayResult,
+  computeAlignment,
+  formatTokenReplayResult,
+  formatAlignment,
+} from './conformance/token-replay.js';
+export type {
+  TokenReplayConfig,
+  TokenReplayTrace,
+  ConformanceDeviation,
+  TokenReplayResult,
+  PetriNetForReplay,
+  Alignment,
+  AlignmentConfig,
+} from './conformance/token-replay.js';
 export * from './utils/index.js';

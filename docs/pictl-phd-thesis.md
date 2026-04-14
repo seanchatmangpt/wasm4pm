@@ -266,7 +266,7 @@ pictl's architecture follows a three-layer design:
 ```
 ┌─────────────────────────────────────────────────────┐
 │                    LAYER 3: CLI & Apps               │
-│  @pictl/cli (18 commands) + apps/pmctl/             │
+│  @pictl/cli (18 commands) + apps/pictl/             │
 ├─────────────────────────────────────────────────────┤
 │                  LAYER 2: TypeScript Packages        │
 │  contracts engine kernel config planner             │

@@ -351,7 +351,7 @@ fn compute_duration_stats(durations: &[f64]) -> serde_json::Value {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::models::{AttributeValue, OCELEvent, OCELObject, OCEL};
+    use crate::models::{OCELEvent, OCELObject, OCEL};
 
     fn create_test_ocel() -> OCEL {
         OCEL {

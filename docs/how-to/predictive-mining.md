@@ -5,7 +5,7 @@
 
 ## Problem
 
-You want to answer predictive questions about your process: what activity happens next, how long until a case completes, is a given trace anomalous, or is the process drifting over time. `pmctl predict` provides seven task types that each answer a different predictive question using the event log as training data.
+You want to answer predictive questions about your process: what activity happens next, how long until a case completes, is a given trace anomalous, or is the process drifting over time. `pictl predict` provides seven task types that each answer a different predictive question using the event log as training data.
 
 ---
 
@@ -14,7 +14,7 @@ You want to answer predictive questions about your process: what activity happen
 Given a running case with a known prefix of completed activities, predict which activity is most likely to occur next.
 
 ```bash
-pmctl predict next-activity -i orders.xes --prefix "Create Order,Check Stock"
+pictl predict next-activity -i orders.xes --prefix "Create Order,Check Stock"
 ```
 
 What you should see:
@@ -36,7 +36,7 @@ Result saved: .wasm4pm/results/20260406-143201-next-activity.json
 Control how many predictions are returned:
 
 ```bash
-pmctl predict next-activity -i orders.xes --prefix "Create Order" --top-k 5 --ngram-order 3
+pictl predict next-activity -i orders.xes --prefix "Create Order" --top-k 5 --ngram-order 3
 ```
 
 | Flag | Default | Description |
@@ -54,7 +54,7 @@ Without `--prefix`, the model is built but no prediction is returned (it needs a
 Predict how long a case will take to complete based on the activities already performed.
 
 ```bash
-pmctl predict remaining-time -i cases.xes --prefix "Submit,Review,Approve"
+pictl predict remaining-time -i cases.xes --prefix "Submit,Review,Approve"
 ```
 
 What you should see:
@@ -80,7 +80,7 @@ Score a specific trace prefix for anomaly likelihood, or scan the entire log for
 ### Score a specific prefix
 
 ```bash
-pmctl predict outcome -i process.xes --prefix "Register,Skip Approval,Close"
+pictl predict outcome -i process.xes --prefix "Register,Skip Approval,Close"
 ```
 
 What you should see:
@@ -101,7 +101,7 @@ A score above the threshold (default 0.5) flags the trace as anomalous. The log-
 ### Scan the entire log for anomalies
 
 ```bash
-pmctl predict outcome -i process.xes
+pictl predict outcome -i process.xes
 ```
 
 What you should see:
@@ -127,7 +127,7 @@ Use `--top-k` to control how many anomalous cases are listed (default: 3).
 Identify points in the event log where the process behavior changes.
 
 ```bash
-pmctl predict drift -i timeseries.xes --drift-window 50
+pictl predict drift -i timeseries.xes --drift-window 50
 ```
 
 What you should see:
@@ -158,7 +158,7 @@ For continuous real-time monitoring, see [How-To: Monitor Drift in Real-Time](./
 Build a transition probability matrix from the event log, optionally with prefix features for a specific case.
 
 ```bash
-pmctl predict features -i training.xes --prefix "A,B,C"
+pictl predict features -i training.xes --prefix "A,B,C"
 ```
 
 What you should see:
@@ -182,7 +182,7 @@ Result saved: .wasm4pm/results/20260406-143240-features.json
 Without `--prefix`, only the transition probability matrix is returned. Use the JSON output to pipe features into an external ML pipeline:
 
 ```bash
-pmctl predict features -i training.xes --format json | jq '.data.transitions' > features.json
+pictl predict features -i training.xes --format json | jq '.data.transitions' > features.json
 ```
 
 ---
@@ -192,7 +192,7 @@ pmctl predict features -i training.xes --format json | jq '.data.transitions' > 
 Estimate queue delay and utilization for resource planning.
 
 ```bash
-pmctl predict resource -i helpdesk.xes --prefix "Open,Assign"
+pictl predict resource -i helpdesk.xes --prefix "Open,Assign"
 ```
 
 What you should see:
@@ -218,7 +218,7 @@ The resource task uses an M/M/1 queue model to estimate wait times based on the 
 All tasks support `--format json`:
 
 ```bash
-pmctl predict next-activity -i orders.xes --prefix "Create Order" --format json
+pictl predict next-activity -i orders.xes --prefix "Create Order" --format json
 ```
 
 ```json
@@ -245,13 +245,13 @@ pmctl predict next-activity -i orders.xes --prefix "Create Order" --format json
 Results are automatically saved to `.wasm4pm/results/`. Inspect the most recent result:
 
 ```bash
-pmctl results --last
+pictl results --last
 ```
 
 Skip saving entirely with `--no-save`:
 
 ```bash
-pmctl predict next-activity -i orders.xes --prefix "Create Order" --no-save
+pictl predict next-activity -i orders.xes --prefix "Create Order" --no-save
 ```
 
 ---
@@ -271,7 +271,7 @@ pmctl predict next-activity -i orders.xes --prefix "Create Order" --no-save
 
 ## See Also
 
-- [How-To: Monitor Drift in Real-Time](./monitor-drift.md) -- continuous drift monitoring via `pmctl drift-watch`
-- [How-To: Compare Two Event Logs](./compare-process-models.md) -- structural comparison via `pmctl diff`
+- [How-To: Monitor Drift in Real-Time](./monitor-drift.md) -- continuous drift monitoring via `pictl drift-watch`
+- [How-To: Compare Two Event Logs](./compare-process-models.md) -- structural comparison via `pictl diff`
 - [How-To: Choose an Algorithm](./choose-algorithm.md) -- selecting a discovery algorithm
 - [Reference: Config Schema](../reference/config-schema.md) -- prediction config options (`prediction.ngramOrder`, `prediction.driftWindowSize`)

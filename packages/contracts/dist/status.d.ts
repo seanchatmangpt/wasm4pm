@@ -51,18 +51,6 @@ export interface Status {
     uptime_ms: number;
 }
 /**
- * Check if a state transition is valid
- */
-export declare function isValidTransition(from: LifecycleState, to: LifecycleState): boolean;
-/**
- * Check if a string is a valid lifecycle state
- */
-export declare function isLifecycleState(value: string): value is LifecycleState;
-/**
- * Type guard for Status objects
- */
-export declare function isStatus(value: unknown): value is Status;
-/**
  * JSON Schema for Status (for external validation)
  */
 export declare const STATUS_JSON_SCHEMA: {
