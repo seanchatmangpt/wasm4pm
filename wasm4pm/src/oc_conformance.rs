@@ -177,7 +177,7 @@ fn get_ocel(handle: &str) -> Result<OCEL, JsValue> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::models::{AttributeValue, OCELEvent, OCELObject, OCEL};
+    use crate::models::{OCELEvent, OCELObject, OCEL};
 
     fn create_test_ocel() -> OCEL {
         OCEL {

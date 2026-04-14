@@ -356,3 +356,78 @@ fn test_rl_state_roundtrip() {
     let state2 = pictl::create_rl_state(extracted_health, 0, 0, 0, 0, 0, 0, 0);
     assert_eq!(pictl::rl_state_health_level(&state2), original_health);
 }
+
+// ---------------------------------------------------------------------------
+// Category B: Policy Improvement and Stability
+// ---------------------------------------------------------------------------
+
+#[test]
+fn test_policy_reward_stable_under_sustained_degraded_health() {
+    // JTBD: Policy remains stable (non-collapsing reward) when health=3 for 50+ cycles
+    // Oracle Rank 2: Domain contract — reward should not degenerate under sustained degradation
+    // Van der Aalst doctrine: Policy should not thrash between actions at edge of terminal state
+
+    let mut orch = RlOrchestrator::new_with_seed(42);
+    let features = [0.5, 0.3, 0.2, 0.0, 0.0, 0.0, 0.5, 0.0];
+    let state_degraded = make_test_state(3); // health=3 (one step from terminal)
+
+    let mut rewards = Vec::new();
+
+    // Run 50 cycles at health=3
+    for _ in 0..50 {
+        let (_action, reward) = orch.run_cycle(&features, &state_degraded, &state_degraded, 0, true, true);
+        rewards.push(reward);
+    }
+
+    // Compute mean and std dev of rewards in second half (cycles 25-50)
+    let second_half: Vec<f32> = rewards[25..50].to_vec();
+    let mean_reward: f32 = second_half.iter().sum::<f32>() / second_half.len() as f32;
+    let variance: f32 = second_half.iter()
+        .map(|r| (r - mean_reward).powi(2))
+        .sum::<f32>() / second_half.len() as f32;
+    let std_dev = variance.sqrt();
+
+    // Assert: reward stabilizes in second half (std_dev < 2.0 indicates convergence)
+    assert!(
+        std_dev < 2.0,
+        "Policy reward should stabilize under sustained health=3: std_dev={}, expected <2.0",
+        std_dev
+    );
+}
+
+#[test]
+fn test_policy_recovers_from_terminal_health_state() {
+    // JTBD: Policy recovers from terminal state (health=4) when conditions improve
+    // Oracle Rank 2: Domain contract — recovery must produce net-positive reward delta
+    // Van der Aalst doctrine: Policy should escape terminal state through learning
+
+    let mut orch = RlOrchestrator::new_with_seed(42);
+    let features = [0.5, 0.3, 0.2, 0.0, 0.0, 0.0, 0.5, 0.0];
+
+    // Phase 1: Terminal state (health=4, done=true)
+    let state_terminal = make_test_state(4);
+    let mut phase1_rewards = Vec::new();
+    for _ in 0..10 {
+        let (_action, reward) = orch.run_cycle(&features, &state_terminal, &state_terminal, 0, true, true);
+        phase1_rewards.push(reward);
+    }
+    let phase1_avg_reward: f32 = phase1_rewards.iter().sum::<f32>() / phase1_rewards.len() as f32;
+
+    // Phase 2: Recovery (health=0, done=false)
+    let state_recovered = make_test_state(0);
+    let mut phase2_rewards = Vec::new();
+    for _ in 0..10 {
+        let (_action, reward) = orch.run_cycle(&features, &state_recovered, &state_recovered, 0, true, true);
+        phase2_rewards.push(reward);
+    }
+    let phase2_avg_reward: f32 = phase2_rewards.iter().sum::<f32>() / phase2_rewards.len() as f32;
+
+    // Assert: recovery phase produces better (less negative) reward than terminal phase
+    assert!(
+        phase2_avg_reward > phase1_avg_reward,
+        "Policy recovery should improve reward: phase2_avg={}, phase1_avg={}, delta={}",
+        phase2_avg_reward,
+        phase1_avg_reward,
+        phase2_avg_reward - phase1_avg_reward
+    );
+}

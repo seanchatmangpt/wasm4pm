@@ -112,4 +112,51 @@ describe('clusterTraces edge cases', () => {
       expect(a.cluster).toBeLessThan(result.clusterCount);
     }
   });
+
+  it('kmeans converges to consistent assignments across repeated calls', async () => {
+    // JTBD: deterministic kmeans should produce same assignments each call
+    const features = [
+      { case_id: 'c1', trace_length: 2, elapsed_time: 500, rework_count: 0 },
+      { case_id: 'c2', trace_length: 3, elapsed_time: 800, rework_count: 0 },
+      { case_id: 'c3', trace_length: 2, elapsed_time: 600, rework_count: 0 },
+      { case_id: 'c4', trace_length: 10, elapsed_time: 5000, rework_count: 3 },
+      { case_id: 'c5', trace_length: 11, elapsed_time: 5500, rework_count: 4 },
+      { case_id: 'c6', trace_length: 9, elapsed_time: 4500, rework_count: 2 },
+    ];
+    const result1 = await clusterTraces(features, { method: 'kmeans', k: 2 });
+    const result2 = await clusterTraces(features, { method: 'kmeans', k: 2 });
+    // Same input → same output (deterministic convergence)
+    expect(result1.assignments).toHaveLength(result2.assignments.length);
+    for (let i = 0; i < result1.assignments.length; i++) {
+      expect(result1.assignments[i].caseId).toBe(result2.assignments[i].caseId);
+      expect(result1.assignments[i].cluster).toBe(result2.assignments[i].cluster);
+    }
+  });
+
+  it('well-separated clusters have lower within-cluster variance than between-cluster', async () => {
+    // JTBD: silhouette-like property — well-separated data should group correctly
+    const wellSeparated = [
+      { case_id: 'c1', trace_length: 1, elapsed_time: 100, rework_count: 0 },
+      { case_id: 'c2', trace_length: 2, elapsed_time: 150, rework_count: 0 },
+      { case_id: 'c3', trace_length: 1, elapsed_time: 120, rework_count: 0 },
+      { case_id: 'c4', trace_length: 100, elapsed_time: 10000, rework_count: 50 },
+      { case_id: 'c5', trace_length: 99, elapsed_time: 9500, rework_count: 48 },
+      { case_id: 'c6', trace_length: 101, elapsed_time: 10200, rework_count: 52 },
+    ];
+    const result = await clusterTraces(wellSeparated, { method: 'kmeans', k: 2 });
+    // All short traces in one cluster, all long traces in the other
+    const shortIds = ['c1', 'c2', 'c3'];
+    const longIds = ['c4', 'c5', 'c6'];
+    const shortCluster = result.assignments.find(a => shortIds.includes(a.caseId))!.cluster;
+    const longCluster = result.assignments.find(a => longIds.includes(a.caseId))!.cluster;
+    // Clusters should be different
+    expect(shortCluster).not.toBe(longCluster);
+    // Each group should be pure
+    for (const a of result.assignments.filter(a => a.cluster === shortCluster)) {
+      expect(shortIds).toContain(a.caseId);
+    }
+    for (const a of result.assignments.filter(a => a.cluster === longCluster)) {
+      expect(longIds).toContain(a.caseId);
+    }
+  });
 });

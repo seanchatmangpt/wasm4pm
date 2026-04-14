@@ -174,4 +174,29 @@ describe('forecastSeries edge cases', () => {
     expect(result.seriesLength).toBe(1);
     expect(result.trend.direction).toBe('unknown');
   });
+
+  it('detects strong vs weak seasonality', async () => {
+    // Strong seasonality: clear sine wave with amplitude 30 on mean 50
+    const strongSeasonal = Array.from({ length: 32 }, (_, i) =>
+      Math.round(50 + 30 * Math.sin(2 * Math.PI * i / 8))
+    );
+    const strongResult = await forecastSeries(strongSeasonal, { forecastPeriods: 4 });
+
+    // Weak seasonality: noise-dominated (small amplitude on large mean)
+    const weakSeasonal = Array.from({ length: 32 }, (_, i) =>
+      Math.round(1000 + 5 * Math.sin(2 * Math.PI * i / 8) + (Math.random() - 0.5) * 200)
+    );
+    const weakResult = await forecastSeries(weakSeasonal, { forecastPeriods: 4 });
+
+    // Strong seasonal data should have detected seasonality
+    expect(strongResult.seasonality).toBeDefined();
+    expect(strongResult.seasonality!.period).toBeGreaterThanOrEqual(4);
+    expect(strongResult.seasonality!.strength).toBeGreaterThan(0);
+
+    // Weak seasonal data should have lower or no detected seasonality strength
+    // compared to the strong seasonal signal
+    if (weakResult.seasonality) {
+      expect(weakResult.seasonality.strength).toBeLessThanOrEqual(strongResult.seasonality!.strength);
+    }
+  });
 });

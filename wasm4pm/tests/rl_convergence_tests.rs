@@ -290,3 +290,62 @@ fn test_convergence_different_environments_different_actions() {
         degraded_dist,
     );
 }
+
+// ---------------------------------------------------------------------------
+// Category G: Multi-Seed Convergence Consistency
+// ---------------------------------------------------------------------------
+
+#[test]
+fn test_multi_seed_final_reward_distributions_are_consistent() {
+    // JTBD: Final reward distributions are consistent across seeds (policy quality is reproducible)
+    // Oracle Rank 3: Metamorphic relation — different seeds should converge to same policy quality
+    // Van der Aalst doctrine: RL system's behavior should be stable across random initializations
+
+    let seeds = [42u64, 123, 456, 789, 999]; // 5 different seeds
+    let total_cycles = 200;
+
+    let per_seed_final_means: Vec<f32> = seeds
+        .iter()
+        .map(|&seed| {
+            let mut orch = RlOrchestrator::new_with_seed(seed);
+            let state = healthy_state();
+            let features = healthy_features();
+
+            // Run 200 cycles, collect rewards
+            let mut all_rewards = Vec::new();
+            for _ in 0..total_cycles {
+                let (_action, reward) = orch.run_cycle(&features, &state, &state, 0, true, true);
+                all_rewards.push(reward);
+            }
+
+            // Compute mean of last 10 cycles for this seed
+            let final_10: Vec<f32> = all_rewards[total_cycles - 10..].to_vec();
+            let final_mean: f32 = final_10.iter().sum::<f32>() / final_10.len() as f32;
+            final_mean
+        })
+        .collect();
+
+    // Compute mean and std dev of per-seed means
+    let mean_of_means: f32 = per_seed_final_means.iter().sum::<f32>() / per_seed_final_means.len() as f32;
+    let variance: f32 = per_seed_final_means.iter()
+        .map(|m| (m - mean_of_means).powi(2))
+        .sum::<f32>() / per_seed_final_means.len() as f32;
+    let std_dev = variance.sqrt();
+
+    // Coefficient of variation: std_dev / mean (< 50% indicates consistency)
+    let cv = std_dev / mean_of_means.abs();
+
+    assert!(
+        cv < 0.5,
+        "Multi-seed final reward distributions should be consistent (CV < 50%):\n\
+         Per-seed means: {:?}\n\
+         Mean of means: {}\n\
+         Std dev: {}\n\
+         Coefficient of Variation: {}\n\
+         Expected: CV < 0.5",
+        per_seed_final_means,
+        mean_of_means,
+        std_dev,
+        cv
+    );
+}
