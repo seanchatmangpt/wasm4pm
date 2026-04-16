@@ -132,9 +132,9 @@ pub fn analyze_process_speedup(
                     }
                 }
 
-                // Calculate gaps (simplified - just string length as proxy)
+                // Calculate gaps using real ISO-8601 timestamp parsing
                 for i in 0..timestamps.len().saturating_sub(1) {
-                    let gap = (timestamps[i + 1].len() as f64 - timestamps[i].len() as f64).abs();
+                    let gap = crate::parse_iso8601_duration(&timestamps[i], &timestamps[i + 1]).abs();
                     time_gaps.push(gap);
                 }
             }
@@ -253,8 +253,10 @@ pub fn analyze_temporal_bottlenecks(
                     .collect();
 
                 for i in 0..activities.len().saturating_sub(1) {
-                    let duration =
-                        (activities[i + 1].1.len() as f64) - (activities[i].1.len() as f64);
+                    let duration = crate::parse_iso8601_duration(
+                        &activities[i].1,
+                        &activities[i + 1].1,
+                    );
                     activity_durations
                         .entry(activities[i].0.clone())
                         .or_default()

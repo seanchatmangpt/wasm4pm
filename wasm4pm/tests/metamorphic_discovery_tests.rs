@@ -196,3 +196,73 @@ fn test_different_phase_sequences_produce_different_dfg_topologies() {
         three_phase_dfg.edges.len()
     );
 }
+
+// ============================================================================
+// Test E4 (Category E — Metamorphic): TS-1 regression
+// Duration proportional to actual time gap
+// ============================================================================
+
+#[test]
+fn test_e4_ts1_regression_duration_proportional_to_time_gap() {
+    // TS-1 fix: parse_iso8601_duration must return a value proportional to the
+    // actual time gap between ISO-8601 timestamps, not String::len().
+    //
+    // ISO-8601 strings are fixed length — String::len() always produces 0 for
+    // same-length timestamps. After the fix, real millisecond durations are returned.
+    //
+    // Metamorphic property:
+    //   gap(t1, t3) == gap(t1, t2) + gap(t2, t3)  (additivity)
+    //   gap(t1, t2) > 0 when t2 > t1               (positive for future timestamps)
+    //   gap(t1, t2) * 2 == gap(t1, t3) when gap(t2,t3) == gap(t1,t2) (linearity)
+
+    // Timestamps 1 hour apart
+    let t1 = "2026-04-13T10:00:00Z";
+    let t2 = "2026-04-13T11:00:00Z"; // 1 hour = 3_600_000 ms later
+    let t3 = "2026-04-13T12:00:00Z"; // 2 hours = 7_200_000 ms later
+
+    let gap_t1_t2 = pictl::parse_iso8601_duration(t1, t2);
+    let gap_t2_t3 = pictl::parse_iso8601_duration(t2, t3);
+    let gap_t1_t3 = pictl::parse_iso8601_duration(t1, t3);
+
+    // Property 1: duration must be positive for future timestamps (not 0 from len())
+    assert!(
+        gap_t1_t2 > 0.0,
+        "TS-1 REGRESSION: gap between t1 and t2 must be positive (1 hour = 3_600_000 ms). \
+         Got {:.0}. If 0.0, String::len() is still being used.",
+        gap_t1_t2
+    );
+
+    // Property 2: exact duration (1 hour = 3_600_000 ms)
+    assert!(
+        (gap_t1_t2 - 3_600_000.0).abs() < 1000.0, // within 1 second tolerance
+        "TS-1 REGRESSION: gap_t1_t2 should be ~3_600_000 ms (1 hour): got {:.0}",
+        gap_t1_t2
+    );
+
+    // Property 3: additivity — gap(t1,t3) == gap(t1,t2) + gap(t2,t3)
+    assert!(
+        (gap_t1_t3 - (gap_t1_t2 + gap_t2_t3)).abs() < 1000.0,
+        "TS-1 REGRESSION: Additive property must hold: gap(t1,t3)={:.0} should equal \
+         gap(t1,t2)+gap(t2,t3)={:.0}",
+        gap_t1_t3,
+        gap_t1_t2 + gap_t2_t3
+    );
+
+    // Property 4: linearity — equal intervals produce equal gaps
+    assert!(
+        (gap_t1_t2 - gap_t2_t3).abs() < 1000.0,
+        "TS-1 REGRESSION: Equal time intervals should produce equal gaps. \
+         gap_t1_t2={:.0}, gap_t2_t3={:.0}",
+        gap_t1_t2,
+        gap_t2_t3
+    );
+
+    // Property 5: gap(t1,t3) == 2 * gap(t1,t2) (since t3 is 2x further than t2)
+    assert!(
+        (gap_t1_t3 - 2.0 * gap_t1_t2).abs() < 1000.0,
+        "TS-1 REGRESSION: gap(t1,t3) should be 2x gap(t1,t2). \
+         gap_t1_t3={:.0}, 2*gap_t1_t2={:.0}",
+        gap_t1_t3,
+        2.0 * gap_t1_t2
+    );
+}

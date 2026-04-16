@@ -1,0 +1,116 @@
+/**
+ * step-dispatcher.ts
+ * Bridge between engine's StepDispatcher and kernel's implementAlgorithmStep()
+ *
+ * Creates a Map<string, StepHandler> that the engine's createStepDispatcher() can use.
+ * ML step handlers close over the WASM module and event log handle.
+ *
+ * The engine uses contracts' PlanStep (id, name, inputs, dependencies, optional).
+ * The kernel's implementAlgorithmStep expects planner's PlanStep (id, type, parameters, etc.).
+ * This bridge translates between them.
+ */
+import { implementAlgorithmStep } from './handlers.js';
+import { PlanStepType } from '@pictl/planner';
+/** Map of ML algorithm IDs to their PlanStepType */
+const ML_ALGORITHM_TO_STEP_TYPE = {
+    ml_classify: PlanStepType.ML_CLASSIFY,
+    ml_cluster: PlanStepType.ML_CLUSTER,
+    ml_forecast: PlanStepType.ML_FORECAST,
+    ml_anomaly: PlanStepType.ML_ANOMALY,
+    ml_regress: PlanStepType.ML_REGRESS,
+    ml_pca: PlanStepType.ML_PCA,
+};
+/**
+ * Build a handlers map suitable for engine's createStepDispatcher().
+ *
+ * ML steps are routed to implementAlgorithmStep() using the closed-over
+ * wasmModule and eventLogHandle. All other step names fall through to
+ * the caller's own handler map.
+ *
+ * @param wasmModule - Initialized WASM module (with extract_case_features, detect_drift)
+ * @param eventLogHandle - Handle returned by wasm.load_eventlog_from_xes()
+ * @returns Map<string, EngineStepHandler> keyed by step name
+ */
+export function buildKernelStepHandlers(wasmModule, eventLogHandle, stepImpl) {
+    const handlers = new Map();
+    const impl = stepImpl ?? implementAlgorithmStep;
+    for (const algorithmId of Object.keys(ML_ALGORITHM_TO_STEP_TYPE)) {
+        handlers.set(algorithmId, createMlStepHandler(wasmModule, eventLogHandle, algorithmId, impl));
+    }
+    return handlers;
+}
+/**
+ * Create a StepHandler for a specific ML step type.
+ *
+ * Translates the engine's PlanStep into the planner's PlanStep format
+ * that implementAlgorithmStep() expects.
+ */
+function createMlStepHandler(wasmModule, eventLogHandle, algorithmId, impl) {
+    return async (step) => {
+        const startTime = Date.now();
+        const stepType = ML_ALGORITHM_TO_STEP_TYPE[algorithmId];
+        if (!stepType) {
+            return {
+                stepId: step.id,
+                success: false,
+                error: {
+                    code: 'ML_STEP_UNKNOWN',
+                    message: `Unknown ML algorithm: ${algorithmId}`,
+                    severity: 'error',
+                    recoverable: false,
+                },
+                durationMs: Date.now() - startTime,
+            };
+        }
+        try {
+            // Translate engine PlanStep → planner PlanStep
+            const plannerStep = {
+                id: step.id,
+                type: stepType,
+                description: step.description ?? `ML analysis: ${algorithmId}`,
+                required: step.optional !== true,
+                parameters: (step.inputs ?? {}),
+                dependsOn: step.dependencies ?? [],
+                parallelizable: false,
+            };
+            const result = await impl(plannerStep, wasmModule, eventLogHandle);
+            return {
+                stepId: step.id,
+                success: true,
+                output: {
+                    algorithm: result.algorithm,
+                    outputType: result.outputType,
+                    modelHandle: result.modelHandle,
+                    executionTimeMs: result.executionTimeMs,
+                    parameters: result.parameters,
+                    metadata: result.metadata,
+                },
+                durationMs: Date.now() - startTime,
+            };
+        }
+        catch (err) {
+            // Classify error as fatal or recoverable based on error type
+            // Out-of-memory, timeout, configuration errors are fatal (not recoverable)
+            // Transient network/resource errors are recoverable
+            const errorMsg = err instanceof Error ? err.message : String(err);
+            const isFatal = /memory|timeout|invalid|config|critical/i.test(errorMsg);
+            const recoverable = !isFatal;
+            return {
+                stepId: step.id,
+                success: false,
+                error: {
+                    code: 'ML_STEP_FAILED',
+                    message: errorMsg,
+                    severity: isFatal ? 'critical' : 'error',
+                    recoverable,
+                    context: {
+                        algorithmId,
+                        errorType: isFatal ? 'fatal' : 'transient',
+                    },
+                },
+                durationMs: Date.now() - startTime,
+            };
+        }
+    };
+}
+//# sourceMappingURL=step-dispatcher.js.map

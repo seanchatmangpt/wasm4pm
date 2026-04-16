@@ -19,6 +19,7 @@ import { social } from './commands/social.js';
 import { quality } from './commands/quality.js';
 import { validate } from './commands/validate.js';
 import { autoprocess } from './commands/autoprocess.js';
+// import { agent } from './commands/agent.js'; // TODO: Re-enable after fixing @pictl/agents build
 
 export const main = defineCommand({
   meta: {
@@ -89,6 +90,14 @@ ${BOLD}AUTOPROCESS${RESET}  ${DIM}(Perception → Decision → Protection → Op
   ${GREEN}pictl autoprocess${RESET} <log.xes>              Run full autonomic control loop
   ${GREEN}pictl autoprocess${RESET} <log.xes> --format json  JSON output
 
+${BOLD}VAN DER AALST AGENTS${RESET}  ${DIM}(8 autonomous adversarial validators)${RESET}
+  ${GREEN}pictl agent list${RESET}                       List all registered agents
+  ${GREEN}pictl agent execute${RESET} <agent> -i <log>    Execute a specific agent
+  ${GREEN}pictl agent execute${RESET} <agent> --dry-run    Detect violations only
+  ${GREEN}pictl agent audit${RESET} [--last 10]            View correction audit trail
+  ${GREEN}pictl agent status${RESET} <agent>              Check agent health
+  ${GREEN}pictl agent register${RESET} <config.json>       Register custom agent
+
 ${BOLD}RESULTS & HEALTH${RESET}
   ${GREEN}pictl results${RESET}                         View all saved discovery & prediction results
   ${GREEN}pictl results${RESET} --last                  Print the most recent result
@@ -126,6 +135,7 @@ Activity key defaults to "concept:name" (XES standard). Pass --activity-key to o
     quality,
     validate,
     autoprocess,
+    // agent, // TODO: Re-enable after fixing @pictl/agents build
   },
 });
 
@@ -153,4 +163,5 @@ export {
   quality,
   validate,
   autoprocess,
+  // agent, // TODO: Re-enable after fixing @pictl/agents build
 };

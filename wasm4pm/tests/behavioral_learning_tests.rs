@@ -561,3 +561,43 @@ fn test_consecutive_successes_resets_on_failure() {
         "consecutive_successes should reset to 0 after failure"
     );
 }
+
+// ---------------------------------------------------------------------------
+// Test B3 (Category B — Policy): Sustained health=3 stability (std_dev < 1.0)
+// ---------------------------------------------------------------------------
+#[test]
+fn test_b3_sustained_critical_health_reward_stability() {
+    // 30 cycles with health=3 stable (same prev and curr health each cycle).
+    // Because health is constant, the reward is always:
+    //   +0.2 (stable) + 0.1 (guard+circuit pass) - 0.0 (no SPC) = 0.3
+    // The std_dev of rewards should be < 1.0 (actually near 0 for this deterministic case).
+    let mut orch = RlOrchestrator::new_with_seed(42);
+
+    let state = make_test_state(3); // Critical
+    let features = [0.1, 0.2, 0.3, 0.25, 0.0, 1.0, 1.0, 0.0];
+    let mut rewards: Vec<f32> = Vec::with_capacity(30);
+
+    for _ in 0..30 {
+        let (_, reward) = orch.run_cycle(&features, &state, &state, 0, true, true);
+        rewards.push(reward);
+    }
+
+    assert_eq!(rewards.len(), 30, "should collect exactly 30 rewards");
+
+    let mean: f32 = rewards.iter().sum::<f32>() / rewards.len() as f32;
+    let variance: f32 = rewards
+        .iter()
+        .map(|r| (r - mean).powi(2))
+        .sum::<f32>()
+        / rewards.len() as f32;
+    let std_dev = variance.sqrt();
+
+    assert!(
+        std_dev < 1.0,
+        "Reward std_dev under sustained health=3 (stable) should be < 1.0: \
+         got std_dev={:.4}, mean={:.4}. Rewards: {:?}",
+        std_dev,
+        mean,
+        rewards
+    );
+}

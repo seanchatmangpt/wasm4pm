@@ -186,3 +186,81 @@ fn test_single_autonomic_cycle_completes_in_under_100ms() {
         elapsed
     );
 }
+
+// ---------------------------------------------------------------------------
+// Test G2 (Category G — Integration): 50 consecutive cycles without panic
+// ---------------------------------------------------------------------------
+#[test]
+fn test_g2_fifty_consecutive_cycles_no_panic() {
+    // Run 50 consecutive autonomic cycles. Assert no panics and cycle count == 50.
+    // This validates end-to-end orchestrator stability without state corruption.
+    let mut orch = pictl::rl_orchestrator::RlOrchestrator::new_with_seed(42);
+    let features = [0.1, 0.2, 0.3, 0.25, 0.0, 1.0, 1.0, 0.0];
+    let state = make_test_state(1);
+    let next_state = make_test_state(1);
+
+    for i in 0..50 {
+        let (action, reward) = orch.run_cycle(&features, &state, &next_state, 0, true, true);
+        assert!(
+            !action.is_empty(),
+            "cycle {}: action should not be empty",
+            i + 1
+        );
+        assert!(
+            !reward.is_nan(),
+            "cycle {}: reward should not be NaN",
+            i + 1
+        );
+    }
+
+    assert_eq!(
+        orch.telemetry().cycle_count,
+        50,
+        "cycle_count must equal exactly 50 after 50 run_cycle calls"
+    );
+}
+
+// ---------------------------------------------------------------------------
+// Test G3 (Category G — Integration): Degraded→recovery reward increase
+// ---------------------------------------------------------------------------
+#[test]
+fn test_g3_degraded_to_recovery_reward_increases() {
+    // Phase 1: 10 cycles at health=3 (Critical) — degraded environment.
+    // Phase 2: 10 cycles transitioning health=3→2→1→0 — recovery environment.
+    // Assert: mean reward in Phase 2 > mean reward in Phase 1.
+    let mut orch = pictl::rl_orchestrator::RlOrchestrator::new_with_seed(42);
+    let features = [0.1, 0.2, 0.3, 0.25, 0.0, 1.0, 1.0, 0.0];
+
+    // Phase 1: degraded (health stays at 3)
+    let degraded = make_test_state(3);
+    let mut phase1_rewards = Vec::new();
+    for _ in 0..10 {
+        let (_, reward) = orch.run_cycle(&features, &degraded, &degraded, 0, true, true);
+        phase1_rewards.push(reward);
+    }
+
+    // Phase 2: recovery (health improves each cycle)
+    let mut phase2_rewards = Vec::new();
+    let mut current_health: u8 = 3;
+    for _ in 0..10 {
+        let state = make_test_state(current_health);
+        let next_health = if current_health > 0 { current_health - 1 } else { 0 };
+        let next_state = make_test_state(next_health);
+        let (_, reward) = orch.run_cycle(&features, &state, &next_state, 0, true, true);
+        phase2_rewards.push(reward);
+        current_health = next_health;
+    }
+
+    let mean_phase1: f32 = phase1_rewards.iter().sum::<f32>() / phase1_rewards.len() as f32;
+    let mean_phase2: f32 = phase2_rewards.iter().sum::<f32>() / phase2_rewards.len() as f32;
+
+    assert!(
+        mean_phase2 > mean_phase1,
+        "Mean reward during recovery ({:.4}) should exceed mean reward during degraded phase ({:.4}). \
+         Phase 1 rewards: {:?}\nPhase 2 rewards: {:?}",
+        mean_phase2,
+        mean_phase1,
+        phase1_rewards,
+        phase2_rewards
+    );
+}
