@@ -6,11 +6,11 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { DefaultBackendRegistry } from '../backend-registry.js';
-import { WasmBackend } from '../backends/wasm-backend.js';
-import { MlBackend } from '../backends/ml-backend.js';
-import { Pm4pyBackend } from '../backends/pm4py-backend.js';
-import type { BudgetEnvelope } from '../mining-backend.js';
+import { DefaultBackendRegistry } from '../src/backend-registry.js';
+import { WasmBackend } from '../src/backends/wasm-backend.js';
+import { MlBackend } from '../src/backends/ml-backend.js';
+import { Pm4pyBackend } from '../src/backends/pm4py-backend.js';
+import type { BudgetEnvelope } from '../src/mining-backend.js';
 
 describe('DefaultBackendRegistry', () => {
   let registry: DefaultBackendRegistry;

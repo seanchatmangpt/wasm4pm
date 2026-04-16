@@ -1,10 +1,25 @@
-[package]
-name = "pictl"
+[workspace]
+members = [
+    "crates/pictl-types",
+    "crates/pictl-algos",
+]
+resolver = "2"
+
+[workspace.package]
 version = "26.4.10"
 edition = "2021"
 license = "MIT OR Apache-2.0"
-description = "High-performance process mining algorithms in WebAssembly for JavaScript/TypeScript"
+authors = ["Sean Chatman <info@chatmangpt.com>"]
 repository = "https://github.com/seanchatmangpt/pictl"
+
+[package]
+name = "pictl"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "High-performance process mining algorithms in WebAssembly for JavaScript/TypeScript"
 documentation = "https://docs.rs/pictl"
 homepage = "https://github.com/seanchatmangpt/pictl"
 readme = "README.md"
@@ -21,7 +36,6 @@ categories = [
     "data-structures",
     "science",
 ]
-authors = ["Sean Chatman <info@chatmangpt.com>"]
 
 [package.metadata.wasm-pack.profile.release]
 wasm-opt = false
@@ -30,6 +44,7 @@ wasm-opt = false
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
+pictl-types = { path = "crates/pictl-types" }
 wasm-bindgen = "0.2.92"
 js-sys = "0.3"
 wasm-bindgen-futures = "0.4.42"
@@ -151,15 +166,64 @@ name = "gpu_wgsl_benchmark"
 [features]
 # Deployment profiles - default to cloud (full feature set) for npm package
 default = ["cloud"]
-browser = ["basic", "simd", "hand_rolled_stats"]
-edge = ["basic", "advanced", "ml", "streaming_basic", "hand_rolled_stats"]
-fog = ["edge", "swarm", "streaming_full", "statrs", "ocel"]
-iot = ["minimal", "streaming_basic", "hand_rolled_stats"]
-cloud = ["basic", "advanced", "ml", "streaming_full", "swarm", "statrs", "powl", "ocel", "alignment_fitness", "petri_net_playout", "extensive_playout", "align_etconformance", "montecarlo", "console_error_panic_hook", "rayon"]
+browser = ["basic", "simd", "hand_rolled_stats", "pm4wasm_tier1"]
+edge = ["basic", "advanced", "ml", "streaming_basic", "hand_rolled_stats", "pm4wasm_tier1"]
+fog = ["edge", "swarm", "streaming_full", "statrs", "ocel", "pm4wasm_tier2"]
+iot = ["minimal", "streaming_basic", "hand_rolled_stats", "pm4wasm_tier1"]
+cloud = ["basic", "advanced", "ml", "streaming_full", "swarm", "statrs", "powl", "ocel", "alignment_fitness", "petri_net_playout", "extensive_playout", "align_etconformance", "montecarlo", "console_error_panic_hook", "rayon", "pm4wasm_tier3"]
 # Backward compatibility alias
 compat = ["cloud"]
 
-# Algorithm categories
+# ─────────────────────────────────────────────────────────────────────────────
+# pm4wasm Feature Tiers (Tiered Algorithm Inclusion)
+# ─────────────────────────────────────────────────────────────────────────────
+# Tier 1: Discovery (fast algorithms only - ~18 algorithms, ≤4.0MB)
+pm4wasm_tier1 = ["pm4wasm_discovery_basic"]
+
+# Tier 2: Discovery + Advanced (~25 algorithms, ≤4.0MB)
+pm4wasm_tier2 = ["pm4wasm_tier1", "pm4wasm_discovery_advanced"]
+
+# Tier 3: Full Feature Set (all 41 algorithms, ≤5.0MB cloud)
+pm4wasm_tier3 = ["pm4wasm_tier2", "pm4wasm_conformance", "pm4wasm_ml"]
+
+# pm4wasm Discovery Algorithms (Feature-Gated)
+pm4wasm_discovery_basic = [
+  "alpha_plus_plus",
+  "heuristic_miner",
+  "inductive_miner"
+]
+
+pm4wasm_discovery_advanced = [
+  "pm4wasm_discovery_basic",
+  "genetic",
+  "ilp",
+  "a_star",
+  "aco",
+  "pso",
+  "simulated_annealing"
+]
+
+# pm4wasm Conformance (Fitness + Precision + Alignments)
+pm4wasm_conformance = [
+  "alignment_fitness",
+  "align_etconformance",
+  "petri_net_playout",
+  "extensive_playout"
+]
+
+# pm4wasm ML Analysis (Prediction + Analytics)
+pm4wasm_ml = [
+  "ml_classify",
+  "ml_cluster",
+  "ml_forecast",
+  "ml_anomaly",
+  "ml_regress",
+  "ml_pca"
+]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Algorithm categories (pictl legacy)
+# ─────────────────────────────────────────────────────────────────────────────
 basic = ["discovery_basic", "conformance_basic"]
 advanced = ["discovery_advanced", "conformance_full"]
 minimal = ["discovery_minimal"]

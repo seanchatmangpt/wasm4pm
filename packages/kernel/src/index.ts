@@ -76,4 +76,31 @@ export { DefaultBackendRegistry } from './backend-registry.js';
 // Concrete backend implementations
 export { WasmBackend } from './backends/wasm-backend.js';
 export { MlBackend } from './backends/ml-backend.js';
+export { Pm4wasmBackend } from './backends/pm4wasm-backend.js';
 export { Pm4pyBackend } from './backends/pm4py-backend.js';
+
+// Data model converters for pm4wasm integration
+export {
+  eventLogIrToWasmJson,
+  wasmJsonToEventLogIr,
+  isValidIso8601,
+  validateLogTimestamps,
+  hashEventLogIr,
+} from './converters/eventlog-ir-converter.js';
+export type { WasmEventLog } from './converters/eventlog-ir-converter.js';
+
+export {
+  inferStartActivities,
+  inferEndActivities,
+  modelIrToDfg,
+  modelIrToPetriNet,
+  modelIrToPowlModel,
+  dfgToModelIr,
+  petriNetToModelIr,
+  powlModelToModelIr,
+} from './converters/model-ir-converter.js';
+export type {
+  DirectlyFollowsGraph,
+  PetriNet,
+  PowlModel,
+} from './converters/model-ir-converter.js';
