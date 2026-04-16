@@ -103,6 +103,8 @@ pub fn compute_health_state(
         3 // Critical: no traces
     } else if unique_activities == 1 && event_count < 5 {
         2 // Degraded: trivial log
+    } else if unique_activities <= 2 && event_count < 20 {
+        1 // Warning: sparse log
     } else {
         0 // Normal
     }

@@ -1,0 +1,92 @@
+[
+  {
+    "id": "agent-pre-execution-validation",
+    "meta": {
+      "name": "Agent Pre-Execution Validation",
+      "description": "Validate agent is registered, enabled, and active before execution",
+      "version": "1.0.0",
+      "tags": ["agent", "governance", "pre-execution"]
+    },
+    "condition": {
+      "kind": "sparql-ask",
+      "query": "PREFIX ag: <http://pictl.ai/ontologies/agents#> ASK { ?agent a ag:Agent ; ag:enabled true ; ag:status 'active' . }"
+    },
+    "effect": {
+      "kind": "sparql-construct",
+      "query": "PREFIX ag: <http://pictl.ai/ontologies/agents#> CONSTRUCT { ?agent ag:lastExecuted ?now . ?agent ag:executionCount ?count . } WHERE { ?agent a ag:Agent ; ag:lastExecuted ?prev ; ag:executionCount ?count . BIND(NOW() as ?now) . BIND(?count + 1 as ?count) . }"
+    },
+    "enabled": true
+  },
+  {
+    "id": "agent-correction-approval",
+    "meta": {
+      "name": "Agent Correction Approval",
+      "description": "Require approval for critical autonomous corrections",
+      "version": "1.0.0",
+      "tags": ["agent", "governance", "approval"]
+    },
+    "condition": {
+      "kind": "sparql-ask",
+      "query": "PREFIX ag: <http://pictl.ai/ontologies/agents#> ASK { ?correction a ag:Correction ; ag:severity 'critical' ; ag:approved true . }"
+    },
+    "effect": {
+      "kind": "sparql-construct",
+      "query": "PREFIX ag: <http://pictl.ai/ontologies/agents#> CONSTRUCT { ?correction ag:appliedAt ?now . } WHERE { ?correction a ag:Correction ; ag:severity 'critical' ; ag:approved true . BIND(NOW() as ?now) . }"
+    },
+    "enabled": true
+  },
+  {
+    "id": "agent-process-mining-validation",
+    "meta": {
+      "name": "Agent Process Mining Validation",
+      "description": "Validate process mining claims meet fitness threshold (>= 0.95)",
+      "version": "1.0.0",
+      "tags": ["agent", "process-mining", "validation"]
+    },
+    "condition": {
+      "kind": "sparql-ask",
+      "query": "PREFIX pm: <http://pictl.ai/ontologies/process#> ASK { ?claim a pm:ProcessMiningClaim ; pm:fitness ?fitness . FILTER(?fitness >= 0.95) }"
+    },
+    "effect": {
+      "kind": "sparql-construct",
+      "query": "PREFIX pm: <http://pictl.ai/ontologies/process#> CONSTRUCT { ?claim pm:validated true ; pm:validatedAt ?now . } WHERE { ?claim a pm:ProcessMiningClaim ; pm:fitness ?fitness . FILTER(?fitness >= 0.95) . BIND(NOW() as ?now) . }"
+    },
+    "enabled": true
+  },
+  {
+    "id": "agent-multi-surface-corroboration",
+    "meta": {
+      "name": "Agent Multi-Surface Corroboration",
+      "description": "Require evidence from at least 3 of 5 surfaces (execution, telemetry, state, process, causality)",
+      "version": "1.0.0",
+      "tags": ["agent", "corroboration", "anti-cheating"]
+    },
+    "condition": {
+      "kind": "sparql-ask",
+      "query": "PREFIX ag: <http://pictl.ai/ontologies/agents#> ASK { ?validation a ag:Validation ; ag:surfacesPassed ?count . FILTER(?count >= 3) }"
+    },
+    "effect": {
+      "kind": "sparql-construct",
+      "query": "PREFIX ag: <http://pictl.ai/ontologies/agents#> CONSTRUCT { ?validation ag:corroborated true . } WHERE { ?validation a ag:Validation ; ag:surfacesPassed ?count . FILTER(?count >= 3) . }"
+    },
+    "enabled": true
+  },
+  {
+    "id": "agent-audit-trail-integrity",
+    "meta": {
+      "name": "Agent Audit Trail Integrity",
+      "description": "Verify audit trail entries are immutable and correctly chained",
+      "version": "1.0.0",
+      "tags": ["agent", "audit", "integrity"]
+    },
+    "condition": {
+      "kind": "sparql-ask",
+      "query": "PREFIX ag: <http://pictl.ai/ontologies/agents#> ASK { ?entry a ag:AuditEntry ; ag:timestamp ?ts ; ag:previousHash ?prev . FILTER NOT EXISTS { ?tampered a ag:AuditEntry ; ag:originalHash ?orig ; ag:modifiedHash ?mod . FILTER(?orig != ?mod) } }"
+    },
+    "effect": {
+      "kind": "sparql-construct",
+      "query": "PREFIX ag: <http://pictl.ai/ontologies/agents#> CONSTRUCT { ?entry ag:integrityVerified true . } WHERE { ?entry a ag:AuditEntry . }"
+    },
+    "enabled": true
+  }
+]

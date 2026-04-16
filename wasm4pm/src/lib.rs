@@ -130,7 +130,7 @@ fn has_activity_repetition(trace: &models::Trace, activity_key: &str) -> bool {
 ///
 /// Returns 0.0 for unparseable or identical timestamps.
 /// WASM-compatible — no external dependencies.
-fn parse_iso8601_duration(first: &str, last: &str) -> f64 {
+pub fn parse_iso8601_duration(first: &str, last: &str) -> f64 {
     fn parse_ts(s: &str) -> Option<i64> {
         let s = s.trim();
         if s.is_empty() {
@@ -708,6 +708,8 @@ pub fn autonomic_execute_cycle(
             3 // Critical: no traces
         } else if unique_activities == 1 && event_count < 5 {
             2 // Degraded: trivial log
+        } else if unique_activities <= 2 && event_count < 20 {
+            1 // Warning: sparse log
         } else {
             0 // Normal
         };
@@ -1266,7 +1268,13 @@ pub fn autonomic_execute_cycle(
     CIRCUIT_BREAKER.with(|cb| {
         let mut cb = cb.borrow_mut();
         if circuit_allowed {
-            cb.record_success();
+            // Cycle executed: record success if guard passed (healthy outcome),
+            // or failure if guard failed (execution degradation).
+            if guard_pass {
+                cb.record_success();
+            } else {
+                cb.record_failure();
+            }
         }
         // If circuit was blocked, the failure was already implicit
         // (allow_request returned false, no work was attempted)

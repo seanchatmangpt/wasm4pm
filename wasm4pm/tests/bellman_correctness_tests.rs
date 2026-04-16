@@ -574,3 +574,133 @@ fn test_agent_trait_bellman_correctness() {
         q_after
     );
 }
+
+// ---------------------------------------------------------------------------
+// Test A4: Q-value update magnitude differs between γ=0.99 and γ=0.5
+// ---------------------------------------------------------------------------
+#[test]
+fn test_a4_discount_factor_affects_q_update_magnitude() {
+    // Same state, same reward. Higher gamma means more bootstrapping from next_state,
+    // so the target is higher, and the resulting Q-update is larger.
+    //
+    // Setup:
+    //   - Pre-populate next_state with Q(next_state, Continue) = 1.0 (after one update)
+    //   - Update (state, Continue) with r=0.0, non-terminal
+    //   - gamma=0.99: target = 0.0 + 0.99 * 1.0 = 0.99; delta = 0.1 * (0.99 - 0) = 0.099
+    //   - gamma=0.50: target = 0.0 + 0.50 * 1.0 = 0.50; delta = 0.1 * (0.50 - 0) = 0.050
+    //   - Assert: delta_0_99 > delta_0_50
+
+    // Agent with γ=0.99
+    let agent_high_gamma = QLearning::with_hyperparams(0.1, 0.99, 0.0);
+    // Agent with γ=0.50
+    let agent_low_gamma = QLearning::with_hyperparams(0.1, 0.50, 0.0);
+
+    let state = health_state(2);
+    let next_state = health_state(1);
+    let action = RlAction::Continue;
+
+    // Seed next_state with Q(next_state, Continue) ≈ 1.0 in both agents.
+    // One update: r=1.0, terminal=true -> Q = alpha * r = 0.1 * 1.0 = 0.1
+    // Ten updates chained to accumulate: use non-terminal self-bootstrap.
+    for _ in 0..20 {
+        agent_high_gamma.update(&next_state, &action, 1.0, &next_state, false);
+        agent_low_gamma.update(&next_state, &action, 1.0, &next_state, false);
+    }
+
+    // Verify both agents have the same Q(next_state) after identical seeding.
+    let q_next_high = agent_high_gamma.get_q_value(&next_state, &action);
+    let q_next_low = agent_low_gamma.get_q_value(&next_state, &action);
+    // They differ because gamma differs in the self-bootstrap, but both are positive.
+    assert!(q_next_high > 0.0, "Q(next_state) must be positive for high gamma agent");
+    assert!(q_next_low > 0.0, "Q(next_state) must be positive for low gamma agent");
+    // High gamma agent bootstraps more aggressively, so q_next_high >= q_next_low
+    assert!(
+        q_next_high >= q_next_low,
+        "Higher gamma should yield higher Q(next_state) after self-bootstrap: \
+         high={:.4}, low={:.4}",
+        q_next_high, q_next_low
+    );
+
+    // Now update the SAME (state, action) with r=0.0 in both agents.
+    let q_before_high = agent_high_gamma.get_q_value(&state, &action);
+    let q_before_low = agent_low_gamma.get_q_value(&state, &action);
+    assert_eq!(q_before_high, 0.0, "state must be unvisited for high-gamma agent");
+    assert_eq!(q_before_low, 0.0, "state must be unvisited for low-gamma agent");
+
+    agent_high_gamma.update(&state, &action, 0.0, &next_state, false);
+    agent_low_gamma.update(&state, &action, 0.0, &next_state, false);
+
+    let q_after_high = agent_high_gamma.get_q_value(&state, &action);
+    let q_after_low = agent_low_gamma.get_q_value(&state, &action);
+
+    let delta_high = q_after_high - q_before_high;
+    let delta_low = q_after_low - q_before_low;
+
+    assert!(
+        delta_high > delta_low,
+        "Higher γ (0.99) should produce larger Q-update magnitude than lower γ (0.50) \
+         given the same next_state Q-values. delta_high={:.6}, delta_low={:.6}",
+        delta_high, delta_low
+    );
+}
+
+// ---------------------------------------------------------------------------
+// Test A5: Larger α produces larger Q-update magnitude
+// ---------------------------------------------------------------------------
+#[test]
+fn test_a5_learning_rate_scales_q_update_magnitude() {
+    // delta = alpha * (target - current_q)
+    // With identical state/reward/next_state, higher alpha => larger delta.
+    //
+    // Setup:
+    //   - Agent A: alpha=0.5, Agent B: alpha=0.01
+    //   - Both start with Q(state, Continue) = 0.0 (unvisited)
+    //   - Update with r=1.0, terminal=true -> target=1.0
+    //   - Agent A delta = 0.5 * (1.0 - 0) = 0.5
+    //   - Agent B delta = 0.01 * (1.0 - 0) = 0.01
+    //   - Assert: delta_A > delta_B
+
+    let agent_large_alpha = QLearning::with_hyperparams(0.5, 0.99, 0.0);
+    let agent_small_alpha = QLearning::with_hyperparams(0.01, 0.99, 0.0);
+
+    let state = health_state(2);
+    let next_state = health_state(1);
+    let action = RlAction::Continue;
+
+    let q_before_large = agent_large_alpha.get_q_value(&state, &action);
+    let q_before_small = agent_small_alpha.get_q_value(&state, &action);
+    assert_eq!(q_before_large, 0.0, "state must be unvisited for large-alpha agent");
+    assert_eq!(q_before_small, 0.0, "state must be unvisited for small-alpha agent");
+
+    // Terminal update with positive reward: target = r = 1.0 (no bootstrap)
+    agent_large_alpha.update(&state, &action, 1.0, &next_state, true);
+    agent_small_alpha.update(&state, &action, 1.0, &next_state, true);
+
+    let q_after_large = agent_large_alpha.get_q_value(&state, &action);
+    let q_after_small = agent_small_alpha.get_q_value(&state, &action);
+
+    let delta_large = q_after_large - q_before_large;
+    let delta_small = q_after_small - q_before_small;
+
+    assert!(
+        delta_large > delta_small,
+        "Larger α (0.5) should produce larger Q-update magnitude than smaller α (0.01). \
+         delta_large={:.4}, delta_small={:.4}",
+        delta_large, delta_small
+    );
+
+    // Verify exact magnitudes
+    let expected_large = 0.5 * 1.0; // alpha * (target - current) = 0.5 * 1.0
+    let expected_small = 0.01 * 1.0; // alpha * (target - current) = 0.01 * 1.0
+
+    assert!(
+        (delta_large - expected_large).abs() < 1e-5,
+        "Large-alpha delta should be exactly alpha*target={:.4}: got {:.6}",
+        expected_large, delta_large
+    );
+    assert!(
+        (delta_small - expected_small).abs() < 1e-5,
+        "Small-alpha delta should be exactly alpha*target={:.4}: got {:.6}",
+        expected_small, delta_small
+    );
+}

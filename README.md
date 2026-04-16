@@ -20,7 +20,9 @@
 
 Process mining extracts actionable insights from event logs by discovering process models, detecting deviations, and analyzing performance bottlenecks. **pictl** makes this accessible to JavaScript developers with near-native performance, plus professional CLI tools, HTTP APIs, and observability for enterprise deployments.
 
-### Version 26.4.10 (April 2026)
+### Version 26.4.15 (April 2026)
+**Van der Aalst Agents:** 8 autonomous adversarial agents for manufacturing integrity validation using process mining principles (soundness, conformance, multi-surface corroboration). New `pictl agent` commands: execute, list, audit, status, register.
+
 **MTTR Optimization:** Mean Time To Recovery reduced from 3 minutes to <1 second through fast recovery paths. All 12 dashboard metrics now GREEN ✅.
 
 **Toyota Production System Compliance:** Comprehensive TPS violation audit completed — 54 violations fixed across Rust, TypeScript, and Shell/Make. System now follows **fail-fast** principles instead of silent degradation.
@@ -77,16 +79,40 @@ npm run build:browser  # ~500KB (82% smaller!)
 See [DEPLOYMENT_PROFILES.md](./wasm4pm/DEPLOYMENT_PROFILES.md) for complete guide.
 
 ### Discovery Layer
-**14 Discovery Algorithms** with 4 execution profiles (Fast, Balanced, Quality, Stream):
+**41 Algorithms** across discovery, ML analysis, and utility functions with 4 execution profiles (Fast, Balanced, Quality, Stream):
+
+**Discovery (15 algorithms):**
 - **DFG** - Directly-Follows Graph (0.5ms/100 events)
 - **Alpha++** - Petri net discovery (5ms/100 events)
 - **ILP Optimization** - Constraint-based optimal models
 - **Genetic Algorithm** - Evolutionary discovery with fitness tuning
 - **Particle Swarm Optimization** - Intelligence-based model evolution
 - **A* Search** - Heuristic model discovery
+- **Ant Colony Optimization** - Nature-inspired discovery
 - **DECLARE** - Constraint pattern discovery
-- **Streaming Conformance** - Real-time trace validation (NEW)
-- **Heuristic Miner**, **Inductive Miner**, **Hill Climbing**, **Ant Colony**, **Simulated Annealing**, **Process Skeleton**, **Optimized DFG**
+- **Heuristic Miner** - Frequency-based discovery
+- **Inductive Miner** - Process tree discovery
+- **Hill Climbing** - Local search optimization
+- **Simulated Annealing** - Probabilistic optimization
+- **Process Skeleton** - Fast skeleton discovery
+- **Optimized DFG** - High-quality DFG
+- **SIMD Streaming DFG** - Parallel streaming discovery
+
+**ML Analysis (6 algorithms):**
+- **ml_classify** - Decision tree, naive Bayes classification
+- **ml_cluster** - K-means clustering
+- **ml_forecast** - Linear/polynomial/exponential regression
+- **ml_anomaly** - EMA smoothing, information-theoretic scoring
+- **ml_regress** - Linear regression
+- **ml_pca** - Principal component analysis
+
+**Analysis & Utilities (20+ algorithms):**
+- Transition systems, causal graphs, performance spectrum
+- Conformance checking (alignments, token replay)
+- Import/export (PNML, BPMN, POWL, YAWL)
+- Simulation (playout, Monte Carlo)
+- Complexity metrics, generalization
+- Streaming logs, hierarchical DFG
 
 ### Professional Tools (NEW in v26.4.5)
 - **pictl CLI** - Command-line interface with init, run, watch, status, explain commands
@@ -94,6 +120,27 @@ See [DEPLOYMENT_PROFILES.md](./wasm4pm/DEPLOYMENT_PROFILES.md) for complete guid
 - **HTTP Service** - Express-based REST API + WebSocket streaming (OpenAPI documented)
 - **Engine Lifecycle** - State machine for controlled algorithm execution
 - **Observability** - Non-blocking logging with console, file, HTTP sinks
+
+### Van der Aalst Agents (NEW in v26.4.15)
+**8 autonomous adversarial agents** for manufacturing integrity validation using process mining principles:
+
+1. **MockInterceptor** — Detects mock/stub patterns in production code
+2. **ConfigDriftGuardian** — Detects weakened enforcement and configuration drift
+3. **ReceiptChainAttacker** — Validates BLAKE3 receipt chains for provenance
+4. **GateIndependenceVerifier** — Prevents circular dependencies in validation gates
+5. **EvidenceFabricationDetector** — Detects fabricated telemetry and fake spans
+6. **ProcessMiningSkeptic** — Validates process models with pm4py conformance
+7. **TheaterDetector** — Identifies testing theater vs. production behavior
+8. **AuthorityEscalationWatcher** — Detects privilege escalation patterns
+
+**CLI Commands:**
+```bash
+pictl agent execute mock-interceptor --target ./src
+pictl agent list
+pictl agent audit --severity critical
+pictl agent status
+pictl agent register custom-agent ./path/to/agent.ts
+```
 
 ### Predictive Process Mining (NEW in Phase 4)
 18 prediction algorithms organized by Van der Aalst process mining perspectives:
@@ -180,18 +227,38 @@ npm install @seanchatmangpt/pictl
 
 See [DEPLOYMENT_PROFILES.md](./wasm4pm/DEPLOYMENT_PROFILES.md) for complete guide.
 
+## 🎯 What's New in v26.4.15
+
+### Van der Aalst Agents
+- **8 autonomous adversarial agents** for manufacturing integrity validation
+- **Agent orchestration** with MAPEK cycle (Monitor-Analyze-Plan-Execute-Knowledge)
+- **Audit trail** with severity-based filtering and corroboration
+- **MCP integration** for agent-based validation via Model Context Protocol
+- **CLI commands:** execute, list, audit, status, register
+
+### Agent Capabilities
+- **Mock detection** — Identifies mock/stub patterns in production code
+- **Config drift** — Detects weakened enforcement and configuration changes
+- **Receipt validation** — Verifies BLAKE3 provenance chains
+- **Gate independence** — Prevents circular dependencies
+- **Evidence verification** — Detects fabricated telemetry
+- **Process validation** — Uses pm4py for conformance checking
+- **Theater detection** — Distinguishes test from production behavior
+- **Privilege monitoring** — Detects escalation patterns
+
 ## 🎯 What's New in v26.4.5
 
-### 9 Consolidated Packages
+### 10 Consolidated Packages
 1. **@pictl/contracts** - Type-safe contracts, receipts, errors, algorithm registry
 2. **@pictl/config** - Configuration management with Zod validation
 3. **@pictl/engine** - Execution engine lifecycle state machine
 4. **@pictl/observability** - Non-blocking logging and OTEL spans
-5. **@pictl/kernel** - WASM kernel operations (21 algorithms)
+5. **@pictl/kernel** - WASM kernel operations (41 algorithms)
 6. **@pictl/planner** - Algorithm recommendation and execution plans
 7. **@pictl/testing** - Parity, determinism, CLI, and OTEL test harnesses
 8. **@pictl/ml** - Micro-ML analysis (classify, cluster, forecast, anomaly, regress, PCA)
 9. **@pictl/swarm** - Multi-worker coordinator with convergence detection
+10. **@pictl/agents** - Van der Aalst adversarial agents for manufacturing integrity validation
 
 ### Highlights
 - **Streaming Conformance:** Real-time trace validation (177× faster)
@@ -296,6 +363,13 @@ pictl status --verbose
 
 # Get algorithm recommendations
 pictl explain --algorithm genetic --level detailed
+
+# Van der Aalst agents (NEW)
+pictl agent execute mock-interceptor --target ./src
+pictl agent list
+pictl agent audit --severity critical
+pictl agent status
+pictl agent register custom-agent ./path/to/agent.ts
 ```
 
 ### HTTP Service (NEW)
@@ -340,7 +414,7 @@ wscat -c ws://localhost:3000/api/v1/stream
 | Package | Purpose |
 |---------|---------|
 | [**pictl CLI**](./apps/pictl/README.md) | CLI tool reference |
-| [**@pictl/kernel**](./packages/kernel/README.md) | WASM kernel, 21 algorithms |
+| [**@pictl/kernel**](./packages/kernel/README.md) | WASM kernel, 41 algorithms |
 | [**@pictl/config**](./packages/config/README.md) | Configuration system |
 | [**@pictl/engine**](./packages/engine/README.md) | Engine lifecycle |
 | [**@pictl/observability**](./packages/observability/README.md) | Logging and telemetry |
@@ -349,6 +423,7 @@ wscat -c ws://localhost:3000/api/v1/stream
 | [**@pictl/testing**](./packages/testing/README.md) | Test harnesses |
 | [**@pictl/ml**](./packages/ml/README.md) | Micro-ML analysis |
 | [**@pictl/swarm**](./packages/swarm/README.md) | Multi-worker coordinator |
+| [**@pictl/agents**](./packages/agents/README.md) | Van der Aalst adversarial agents |
 
 ### Advanced Documentation
 | Document | Purpose |
@@ -418,19 +493,20 @@ pnpm dev
 pictl/                             # Monorepo root
 ├── apps/
 │   └── pictl/                      # CLI tool (pictl)
-│       ├── src/commands/           # run, compare, diff, predict, ml, powl, etc.
+│       ├── src/commands/           # run, compare, diff, predict, ml, powl, agent, etc.
 │       └── package.json
 ├── packages/
 │   ├── contracts/                  # Type-safe contracts, receipts, errors (@pictl/contracts)
 │   ├── config/                     # Configuration with Zod validation (@pictl/config)
 │   ├── engine/                     # Engine lifecycle state machine (@pictl/engine)
 │   ├── observability/              # Non-blocking logging + OTEL (@pictl/observability)
-│   ├── kernel/                     # WASM kernel, 21 algorithms (@pictl/kernel)
+│   ├── kernel/                     # WASM kernel, 41 algorithms (@pictl/kernel)
 │   ├── planner/                    # Algorithm planner + explain (@pictl/planner)
 │   ├── testing/                    # Test harnesses (@pictl/testing)
 │   ├── ml/                         # Micro-ML analysis (@pictl/ml)
-│   └── swarm/                      # Multi-worker coordinator (@pictl/swarm)
-├── wasm4pm/                        # Rust/WASM core (21 algorithms)
+│   ├── swarm/                      # Multi-worker coordinator (@pictl/swarm)
+│   └── agents/                     # Van der Aalst adversarial agents (@pictl/agents)
+├── wasm4pm/                        # Rust/WASM core (41 algorithms)
 │   ├── src/
 │   │   ├── lib.rs                  # WASM entry point + conditional compilation
 │   │   ├── discovery.rs            # Discovery algorithms
