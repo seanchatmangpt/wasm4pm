@@ -2,7 +2,7 @@ use crate::models::*;
 use crate::state::{get_or_init_state, StoredObject};
 use crate::utilities::to_js;
 use serde_json::json;
-use std::collections::HashMap;
+use hashbrown::HashMap;
 use wasm_bindgen::prelude::*;
 
 /// Pure-Rust token-based replay: returns ConformanceResult without wasm-bindgen.
@@ -52,7 +52,8 @@ pub fn token_replay_pure(
     }
 
     for (case_id, trace) in log.traces.iter().enumerate() {
-        let mut current_marking: HashMap<String, usize> = petri_net.initial_marking.clone();
+        let mut current_marking: HashMap<String, usize> =
+            petri_net.initial_marking.iter().map(|(k, &v)| (k.clone(), v)).collect();
 
         let mut deviations: Vec<TokenReplayDeviation> = Vec::new();
         let mut consumed_tokens = 0usize;
@@ -132,14 +133,8 @@ pub fn token_replay_pure(
             }
         }
 
-        let mut tokens_remaining = 0usize;
+        let tokens_remaining: usize = current_marking.values().sum();
         let mut is_final_marking_reached = false;
-
-        for tokens in current_marking.values() {
-            if *tokens > 0 {
-                tokens_remaining += *tokens;
-            }
-        }
 
         for final_marking in &petri_net.final_markings {
             let mut matches = true;
@@ -162,14 +157,13 @@ pub fn token_replay_pure(
             }
         }
 
-        let total_tokens = consumed_tokens + produced_tokens + missing_tokens;
-        let trace_fitness = if total_tokens > 0 {
-            (consumed_tokens + produced_tokens) as f64 / total_tokens as f64
-        } else if trace.events.is_empty() {
-            1.0
-        } else {
-            0.0
-        };
+        // Branchless van der Aalst fitness: max(1,denom) prevents div-by-zero,
+        // then clamp to [0,1] handles the all-zero identity (0/1 terms → 0.5+0.5=1 → correct).
+        let c = consumed_tokens.max(1) as f64;
+        let p = produced_tokens.max(1) as f64;
+        let trace_fitness = (0.5 * (1.0 - missing_tokens as f64 / c)
+            + 0.5 * (1.0 - tokens_remaining as f64 / p))
+            .clamp(0.0, 1.0);
 
         let is_conforming = is_final_marking_reached && deviations.is_empty();
         if is_conforming {
@@ -267,7 +261,7 @@ pub fn check_token_based_replay(
             for (case_id, trace) in log.traces.iter().enumerate() {
                 // Start with initial marking
                 let mut current_marking: HashMap<String, usize> =
-                    petri_net_cloned.initial_marking.clone();
+                    petri_net_cloned.initial_marking.iter().map(|(k, &v)| (k.clone(), v)).collect();
 
                 let mut deviations: Vec<TokenReplayDeviation> = Vec::new();
                 let mut consumed_tokens = 0usize;
@@ -388,14 +382,21 @@ pub fn check_token_based_replay(
                     }
                 }
 
-                // Calculate trace fitness
-                let total_tokens = consumed_tokens + produced_tokens + missing_tokens;
-                let trace_fitness = if total_tokens > 0 {
-                    (consumed_tokens + produced_tokens) as f64 / total_tokens as f64
-                } else if trace.events.is_empty() {
-                    1.0 // Empty trace is conforming
+                // Calculate trace fitness using van der Aalst token-replay formula
+                let trace_fitness = if consumed_tokens == 0 && produced_tokens == 0 {
+                    1.0
                 } else {
-                    0.0
+                    let consumed_term = if consumed_tokens > 0 {
+                        1.0 - (missing_tokens as f64 / consumed_tokens as f64)
+                    } else {
+                        0.0
+                    };
+                    let produced_term = if produced_tokens > 0 {
+                        1.0 - (tokens_remaining as f64 / produced_tokens as f64)
+                    } else {
+                        0.0
+                    };
+                    (0.5 * consumed_term + 0.5 * produced_term).max(0.0)
                 };
 
                 let is_conforming = is_final_marking_reached && deviations.is_empty();

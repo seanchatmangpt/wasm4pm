@@ -26,7 +26,7 @@ pub fn compute_simplicity(places: usize, transitions: usize, arcs: usize) -> f64
         return 1.0; // Empty model is trivially simple
     }
 
-    let n = transitions.saturating_sub(1).max(1); // visible activities
+    let n = transitions.max(1); // visible activities
     let min_places = n + 1;
     let min_transitions = n;
     let min_arcs = 2 * n;
@@ -480,30 +480,39 @@ fn is_trace_fitting(
     })
 }
 
-// Calculate precision: ratio of fitting behavior to model behavior
+// Calculate precision: fraction of model transitions (visible activities) that are
+// covered by activities observed in the log.
 #[inline]
-fn calculate_precision(_petri_net: &PetriNet, log: &EventLog, activity_key: &str) -> f64 {
-    // Collect unique directly-follows pairs via iterator chain — no manual counter
-    let unique_edges: HashSet<(String, String)> = log
+fn calculate_precision(petri_net: &PetriNet, log: &EventLog, activity_key: &str) -> f64 {
+    // Collect unique activities observed in the log
+    let log_activities: HashSet<String> = log
         .traces
         .iter()
         .flat_map(|trace| {
-            trace.events.windows(2).filter_map(|w| {
-                match (
-                    w[0].attributes.get(activity_key),
-                    w[1].attributes.get(activity_key),
-                ) {
-                    (Some(AttributeValue::String(a1)), Some(AttributeValue::String(a2))) => {
-                        Some((a1.clone(), a2.clone()))
-                    }
-                    _ => None,
+            trace.events.iter().filter_map(|e| {
+                if let Some(AttributeValue::String(a)) = e.attributes.get(activity_key) {
+                    Some(a.clone())
+                } else {
+                    None
                 }
             })
         })
         .collect();
 
-    // Precision estimate: 1 / (1 + complexity_ratio)
-    1.0 / (1.0 + (unique_edges.len() as f64 / 10.0))
+    // Collect visible (non-silent) transition labels from the model
+    let model_activities: HashSet<String> = petri_net
+        .transitions
+        .iter()
+        .filter(|t| !t.is_invisible.unwrap_or(false))
+        .map(|t| t.label.clone())
+        .collect();
+
+    if model_activities.is_empty() {
+        return 0.0;
+    }
+
+    let covered = log_activities.intersection(&model_activities).count();
+    covered as f64 / model_activities.len() as f64
 }
 
 #[wasm_bindgen]

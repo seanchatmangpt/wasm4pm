@@ -77,7 +77,7 @@ pub fn discover_genetic_algorithm(
                         let parent2 = population[rand_select(&population)].0.clone();
 
                         let mut child = crossover_edges(&parent1, &parent2);
-                        mutate_edges(&mut child, 0.1); // 10% mutation rate
+                        mutate_edges(&mut child, 0.1, &edge_vocab);
 
                         let fitness = evaluate_edges_fitness(&child, &col);
                         new_population.push((child, fitness));
@@ -162,8 +162,8 @@ pub fn discover_pso_algorithm(
                 // Collect vocab before closure ends
                 let vocab: Vec<String> = col.vocab.iter().map(|s| s.to_string()).collect();
 
-                // Initialize swarm (particles)
-                let mut particles: Vec<(EdgeSet, f64)> = Vec::new();
+                // Initialize swarm: (position, fitness, personal_best_position, personal_best_fitness)
+                let mut particles: Vec<(EdgeSet, f64, EdgeSet, f64)> = Vec::new();
                 let mut best_global: Option<(EdgeSet, f64)> = None;
 
                 for _ in 0..swarm_size {
@@ -174,29 +174,29 @@ pub fn discover_pso_algorithm(
                         best_global = Some((edge_set.clone(), fitness));
                     }
 
-                    particles.push((edge_set, fitness));
+                    particles.push((edge_set.clone(), fitness, edge_set, fitness));
                 }
 
                 // PSO iterations
                 for _iter in 0..iterations {
-                    for (edge_set, current_fitness) in particles.iter_mut() {
-                        let best_global_fitness = best_global.as_ref().unwrap().1;
+                    for (edge_set, current_fitness, pbest, pbest_fitness) in particles.iter_mut() {
+                        // Blend toward personal best, then toward global best
+                        let toward_pbest = blend_edges(edge_set, pbest, 0.2);
+                        let toward_global =
+                            blend_edges(&toward_pbest, &best_global.as_ref().unwrap().0, 0.3);
+                        *edge_set = toward_global;
 
-                        // Move toward best solution with some randomness
-                        let improvement_rate =
-                            0.5 + (best_global_fitness - *current_fitness).max(0.0) / 10.0;
-                        let move_probability = improvement_rate.min(0.9);
-
-                        if fastrand::f64() < move_probability {
-                            *edge_set =
-                                blend_edges(edge_set, &best_global.as_ref().unwrap().0, 0.3);
-
-                            // Add small mutation for exploration
-                            mutate_edges(edge_set, 0.05);
-                        }
+                        // Small mutation for exploration
+                        mutate_edges(edge_set, 0.05, &edge_vocab);
 
                         let new_fitness = evaluate_edges_fitness(edge_set, &col);
                         *current_fitness = new_fitness;
+
+                        // Update personal best
+                        if new_fitness > *pbest_fitness {
+                            *pbest_fitness = new_fitness;
+                            *pbest = edge_set.clone();
+                        }
 
                         // Update global best
                         if new_fitness > best_global.as_ref().unwrap().1 {
@@ -284,21 +284,18 @@ fn blend_edges(set1: &EdgeSet, set2: &EdgeSet, ratio: f64) -> EdgeSet {
     result
 }
 
-// Helper: Mutation operation on edge sets
-fn mutate_edges(edge_set: &mut EdgeSet, mutation_rate: f64) {
+// Helper: Mutation operation on edge sets — uses vocab indices so edges stay valid
+fn mutate_edges(edge_set: &mut EdgeSet, mutation_rate: f64, edge_vocab: &[(u32, u32)]) {
     if fastrand::f64() < mutation_rate {
         if !edge_set.is_empty() && fastrand::f64() < 0.5 {
             // Remove random edge
             if let Some(&edge) = edge_set.iter().next() {
                 edge_set.remove(&edge);
             }
-        } else {
-            // Add random edge (simple mutation: add a random u32 pair)
-            let from = (fastrand::f64() * u32::MAX as f64) as u32;
-            let to = (fastrand::f64() * u32::MAX as f64) as u32;
-            if from != to {
-                edge_set.insert((from, to));
-            }
+        } else if !edge_vocab.is_empty() {
+            // Add a random edge from the observed vocabulary (guaranteed valid indices)
+            let idx = (fastrand::f64() * edge_vocab.len() as f64) as usize;
+            edge_set.insert(edge_vocab[idx]);
         }
     }
 }

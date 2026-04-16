@@ -232,6 +232,8 @@ pub fn discover_simulated_annealing(
                 // Collect vocab before closure ends
                 let vocab: Vec<String> = col.vocab.iter().map(|s| s.to_string()).collect();
 
+                let cooling_rate = cooling_rate.clamp(0.001_f64, 0.9999_f64);
+
                 // Start with empty edge set
                 let mut current_edges: HashSet<(u32, u32)> = HashSet::new();
                 let mut current_fitness = evaluate_edges_fitness(&current_edges, &col);
@@ -259,11 +261,10 @@ pub fn discover_simulated_annealing(
                     let neighbor_fitness = evaluate_edges_fitness(&neighbor, &col);
                     let delta = neighbor_fitness - current_fitness;
 
-                    // Branchless acceptance criterion: improvements (delta >= 0) are
-                    // always accepted; worse solutions are accepted with the Boltzmann
-                    // probability exp(-delta/T).  Short-circuit evaluation means
-                    // exp() is only called when delta < 0, so no change in semantics.
-                    let accept = delta >= 0.0 || fastrand::f64() < (-delta / temp).exp();
+                    // Standard SA acceptance: improvements always accepted; worse
+                    // solutions accepted with Boltzmann probability exp(delta/T).
+                    // delta < 0 here, so exp(delta/T) ∈ (0,1) — correctly decays with T.
+                    let accept = delta >= 0.0 || fastrand::f64() < (delta / temp).exp();
                     if accept {
                         current_edges = neighbor;
                         current_fitness = neighbor_fitness;

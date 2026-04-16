@@ -139,16 +139,15 @@ pub(crate) fn evaluate_edges_fitness(edge_set: &HashSet<(u32, u32)>, col: &Colum
             true // Empty or single-event traces are considered fitting
         };
 
-        if trace_fits {
-            fitting_traces += 1;
-        }
+        fitting_traces += trace_fits as usize;
     }
 
     // Fitness = balance of fit and simplicity
     let fit_ratio = fitting_traces as f64 / total_traces.max(1) as f64;
     let complexity_penalty = 1.0 / (1.0 + (edge_set.len() as f64 / 20.0));
 
-    fit_ratio * 0.8 + complexity_penalty * 0.2
+    // FMA: complexity_penalty * 0.2 + fit_ratio * 0.8 (fewer rounding steps)
+    complexity_penalty.mul_add(0.2, fit_ratio * 0.8)
 }
 
 /// Get all attribute names used in the log

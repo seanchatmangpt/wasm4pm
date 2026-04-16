@@ -55,19 +55,22 @@ pub fn discover_alpha_plus_plus(
                 });
             }
 
-            // Add start arcs
+            // Add start arcs — collect all unique start activities (no break)
             if !activities.is_empty() {
+                let mut seen_starts: std::collections::HashSet<String> =
+                    std::collections::HashSet::new();
                 for trace in &log.traces {
                     if !trace.events.is_empty() {
                         if let Some(AttributeValue::String(first_act)) =
                             trace.events[0].attributes.get(activity_key)
                         {
-                            pn.arcs.push(PetriNetArc {
-                                from: "start".to_string(),
-                                to: format!("t_{}", first_act),
-                                weight: Some(1),
-                            });
-                            break;
+                            if seen_starts.insert(first_act.clone()) {
+                                pn.arcs.push(PetriNetArc {
+                                    from: "start".to_string(),
+                                    to: format!("t_{}", first_act),
+                                    weight: Some(1),
+                                });
+                            }
                         }
                     }
                 }
@@ -76,8 +79,18 @@ pub fn discover_alpha_plus_plus(
             // Add directly-follows arcs
             let relations = log.get_directly_follows(activity_key);
             let threshold = (log.traces.len() as f64 * min_support) as usize;
+            let mut seen_output_arcs: std::collections::HashSet<String> =
+                std::collections::HashSet::new();
             for (from, to, freq) in relations {
                 if freq >= threshold {
+                    // t_{from} → p_{from}: source transition produces a token (deduplicated)
+                    if seen_output_arcs.insert(from.clone()) {
+                        pn.arcs.push(PetriNetArc {
+                            from: format!("t_{}", from),
+                            to: format!("p_{}", from),
+                            weight: Some(1),
+                        });
+                    }
                     pn.arcs.push(PetriNetArc {
                         from: format!("p_{}", from),
                         to: format!("t_{}", to),
@@ -91,20 +104,25 @@ pub fn discover_alpha_plus_plus(
                 }
             }
 
-            // Add end arcs
-            for trace in &log.traces {
-                if !trace.events.is_empty() {
-                    if let Some(AttributeValue::String(last_act)) = trace.events
-                        [trace.events.len() - 1]
-                        .attributes
-                        .get(activity_key)
-                    {
-                        pn.arcs.push(PetriNetArc {
-                            from: format!("p_{}", last_act),
-                            to: "end".to_string(),
-                            weight: Some(1),
-                        });
-                        break;
+            // Add end arcs — collect all unique end activities (no break)
+            {
+                let mut seen_ends: std::collections::HashSet<String> =
+                    std::collections::HashSet::new();
+                for trace in &log.traces {
+                    if !trace.events.is_empty() {
+                        if let Some(AttributeValue::String(last_act)) = trace.events
+                            [trace.events.len() - 1]
+                            .attributes
+                            .get(activity_key)
+                        {
+                            if seen_ends.insert(last_act.clone()) {
+                                pn.arcs.push(PetriNetArc {
+                                    from: format!("p_{}", last_act),
+                                    to: "end".to_string(),
+                                    weight: Some(1),
+                                });
+                            }
+                        }
                     }
                 }
             }
