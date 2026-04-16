@@ -389,17 +389,12 @@ impl TraceProfile {
     }
 
     /// Check if activity a appeared before activity b in this trace.
+    #[inline(always)]
     fn appears_before(&self, a: usize, b: usize) -> bool {
-        // Quick rejection: if a is not present, return false
-        if self.first_positions[a] == u8::MAX {
-            return false;
-        }
-        // Quick rejection: if b is not present, return false
-        if self.first_positions[b] == u8::MAX {
-            return false;
-        }
-        // Both present: check positional relationship
-        self.first_positions[a] < self.first_positions[b]
+        let fa = self.first_positions[a];
+        let fb = self.first_positions[b];
+        // Non-short-circuit `&` keeps all three comparisons in one predicate (no branches)
+        (fa != u8::MAX) & (fb != u8::MAX) & (fa < fb)
     }
 }
 
@@ -475,9 +470,7 @@ pub fn discover_declare(eventlog_handle: &str, activity_key: &str) -> Result<JsV
             let mut activity_counts = vec![0u32; n];
             for profile in &traces_profiles {
                 for (a, fp) in profile.first_positions.iter().enumerate() {
-                    if *fp != u8::MAX {
-                        activity_counts[a] += 1;
-                    }
+                    activity_counts[a] += (*fp != u8::MAX) as u32;
                 }
             }
 
@@ -492,11 +485,9 @@ pub fn discover_declare(eventlog_handle: &str, activity_key: &str) -> Result<JsV
                         continue;
                     }
 
-                    // Count traces where a appears before b
+                    // Count traces where a appears before b (predicated add — no branch)
                     for profile in &traces_profiles {
-                        if profile.appears_before(a, b) {
-                            response_counts[a * n + b] += 1;
-                        }
+                        response_counts[a * n + b] += profile.appears_before(a, b) as u32;
                     }
                 }
             }

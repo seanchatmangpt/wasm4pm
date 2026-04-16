@@ -5,6 +5,7 @@
 
 use crate::models::Trace;
 use crate::powl_arena::{Operator, PowlArena, PowlNode};
+use crate::powl_parser::parse_powl_model_string;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
@@ -277,18 +278,18 @@ fn enumerate_traces(
 
 #[wasm_bindgen]
 pub fn powl_extensive_playout(
-    _powl_handle: &str,
+    powl_model_str: &str,
     _root_id: &str,
     config_json: &str,
 ) -> Result<JsValue, JsValue> {
-    let _config: ExtensivePlayoutConfig = serde_json::from_str(config_json).unwrap_or_default();
+    let config: ExtensivePlayoutConfig = serde_json::from_str(config_json).unwrap_or_default();
 
-    // Return placeholder result since PowlArena is not stored in state
-    let result = ExtensivePlayoutResult {
-        traces: Vec::new(),
-        count: 0,
-        limit_reached: false,
-    };
+    // Parse the POWL model string into an arena (same pattern as all other POWL WASM functions)
+    let mut arena = PowlArena::new();
+    let root = parse_powl_model_string(powl_model_str.trim(), &mut arena)
+        .map_err(|e| JsValue::from_str(&format!("parse error: {}", e)))?;
+
+    let result = extensive_playout(&arena, root, &config);
 
     serde_json::to_string(&result)
         .map_err(|e| JsValue::from_str(&e.to_string()))

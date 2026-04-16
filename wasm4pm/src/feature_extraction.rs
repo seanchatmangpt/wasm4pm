@@ -428,13 +428,11 @@ pub fn export_features_json(
                 // Add target variable
                 match target.as_str() {
                     "remaining_time" => {
-                        if let Some(elapsed) = compute_elapsed_time(trace, timestamp_key) {
-                            let remaining = elapsed / 2;
-                            feature_vec.insert(
-                                "remaining_time".to_string(),
-                                Value::Number(remaining.into()),
-                            );
-                        }
+                        // For a completed trace remaining time is 0
+                        feature_vec.insert(
+                            "remaining_time".to_string(),
+                            Value::Number(0.into()),
+                        );
                     }
                     "outcome" => {
                         if let Some(last_event) = trace.events.last() {

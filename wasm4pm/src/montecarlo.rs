@@ -198,10 +198,9 @@ pub fn run_monte_carlo_simulation(
             let mut waiting = 0.0;
             if let Some(pool) = resource_pools.get_mut(&resource_key) {
                 if !pool.acquire() {
-                    // Resource busy - wait
-                    waiting = 50.0; // Simplified waiting time
+                    // Resource busy — use the activity's mean service time as a wait proxy
+                    waiting = service_params.mean;
                     trace_wait_time += waiting;
-                    pool.acquire();
                 }
             }
 

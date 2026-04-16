@@ -30,14 +30,16 @@ pub fn discover_astar(
                 }
 
                 let mut open_set = vec![(best_dfg.clone(), 0f64)];
+                let mut best_score = 0f64;
                 let mut iterations = 0;
 
                 while !open_set.is_empty() && iterations < max_iterations {
+                    // Ascending sort so pop() extracts the highest-scored candidate
                     open_set
-                        .sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
-                    let (current_dfg, _score) = match open_set.pop() {
+                        .sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal));
+                    let (current_dfg, score) = match open_set.pop() {
                         Some(item) => item,
-                        None => break, // Should not happen due to is_empty() check
+                        None => break,
                     };
 
                     // Build candidate DFGs via iterator chain; heuristic is inlined,
@@ -64,7 +66,10 @@ pub fn discover_astar(
                         .collect();
                     open_set.extend(new_candidates);
 
-                    best_dfg = current_dfg;
+                    if score > best_score {
+                        best_score = score;
+                        best_dfg = current_dfg;
+                    }
                     iterations += 1;
                 }
 

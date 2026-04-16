@@ -31,12 +31,19 @@ pub fn score_trace_anomaly(dfg_handle: &str, activities_json: &str) -> Result<Js
             if activities.len() < 2 {
                 return Ok(JsValue::from_f64(0.0));
             }
-            let total_edges: usize = dfg.edges.iter().map(|e| e.frequency).sum();
-            let total_f = total_edges.max(1) as f64;
 
             let mut cost_sum = 0.0_f64;
             let steps = activities.len() - 1;
             for i in 0..steps {
+                let from_act = &activities[i];
+                // Use per-source total for correct transition probability
+                let from_total: usize = dfg
+                    .edges
+                    .iter()
+                    .filter(|e| &e.from == from_act)
+                    .map(|e| e.frequency)
+                    .sum::<usize>()
+                    .max(1);
                 let edge_freq = dfg
                     .edges
                     .iter()
@@ -46,7 +53,7 @@ pub fn score_trace_anomaly(dfg_handle: &str, activities_json: &str) -> Result<Js
                 cost_sum += if edge_freq == 0 {
                     MISSING_EDGE_COST
                 } else {
-                    -(edge_freq as f64 / total_f).log2()
+                    -(edge_freq as f64 / from_total as f64).log2()
                 };
             }
             Ok(JsValue::from_f64(cost_sum / steps as f64))
@@ -84,11 +91,16 @@ pub fn score_log_anomalies(
             None => Err(JsValue::from_str("DFG handle not found")),
         })?;
 
-    let total_f: f64 = edge_data.iter().map(|(_, _, f)| *f).sum::<usize>().max(1) as f64;
     let freq_map: std::collections::HashMap<(&str, &str), usize> = edge_data
         .iter()
         .map(|(f, t, c)| ((f.as_str(), t.as_str()), *c))
         .collect();
+    // Build per-source totals for correct transition probability
+    let mut source_totals: std::collections::HashMap<&str, usize> =
+        std::collections::HashMap::new();
+    for (f, _, c) in &edge_data {
+        *source_totals.entry(f.as_str()).or_insert(0) += c;
+    }
 
     let results_json = get_or_init_state().with_object(log_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
@@ -112,11 +124,13 @@ pub fn score_log_anomalies(
                 let steps = acts.len() - 1;
                 let mut cost = 0.0_f64;
                 for i in 0..steps {
+                    let from_total =
+                        source_totals.get(acts[i]).copied().unwrap_or(1).max(1);
                     let freq = freq_map.get(&(acts[i], acts[i + 1])).copied().unwrap_or(0);
                     cost += if freq == 0 {
                         MISSING_EDGE_COST
                     } else {
-                        -(freq as f64 / total_f).log2()
+                        -(freq as f64 / from_total as f64).log2()
                     };
                 }
                 results.push(

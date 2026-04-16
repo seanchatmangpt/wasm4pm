@@ -6,6 +6,10 @@ SHELL        := /bin/bash
 PKG_DIR      := wasm4pm
 RESULTS_DIR  := results
 TIMESTAMP    := $(shell date +%Y%m%d_%H%M%S)
+JOBS         ?= 8
+BENCH_TIMEOUT ?= 60
+export CARGO_BUILD_JOBS := $(JOBS)
+export RAYON_NUM_THREADS := $(JOBS)
 
 .PHONY: bench bench-rust bench-wasm bench-data bench-ci bench-quick \
         bench-save-baseline bench-compare bench-regression bench-trends clean-bench help doctor
@@ -14,27 +18,49 @@ TIMESTAMP    := $(shell date +%Y%m%d_%H%M%S)
 bench: bench-data
 	@echo "=== wasm4pm Benchmark Suite — $(TIMESTAMP) ==="
 	@mkdir -p $(RESULTS_DIR)
-	@( $(MAKE) bench-rust 2>&1 | tee $(RESULTS_DIR)/rust_$(TIMESTAMP).log ) & RUST_PID=$$!; \
-	 ( $(MAKE) bench-wasm 2>&1 | tee $(RESULTS_DIR)/wasm_$(TIMESTAMP).log ) & WASM_PID=$$!; \
+	@( timeout $(BENCH_TIMEOUT) $(MAKE) bench-rust 2>&1 | tee $(RESULTS_DIR)/rust_$(TIMESTAMP).log ) & RUST_PID=$$!; \
+	 ( timeout $(BENCH_TIMEOUT) $(MAKE) bench-wasm 2>&1 | tee $(RESULTS_DIR)/wasm_$(TIMESTAMP).log ) & WASM_PID=$$!; \
 	 wait $$RUST_PID; RUST_EXIT=$$?; \
 	 wait $$WASM_PID; WASM_EXIT=$$?; \
+	 if [ $$RUST_EXIT -eq 124 ] || [ $$WASM_EXIT -eq 124 ]; then \
+	   echo "FAIL: benchmark suite exceeded $(BENCH_TIMEOUT)s hard limit" >&2; exit 1; \
+	 fi; \
 	 echo ""; \
 	 echo "Rust exit: $$RUST_EXIT  WASM exit: $$WASM_EXIT"; \
 	 echo "Results in: $(RESULTS_DIR)/"; \
 	 exit $$((RUST_EXIT + WASM_EXIT))
 
-# ── Rust Criterion: 5 groups in parallel ──────────────────────────────────────
+BENCH_NS_LIMIT ?= 1000000000  # 1 second in nanoseconds — any bench over this is a hard fail
+
+# ── Rust Criterion: 8 groups in parallel ──────────────────────────────────────
 bench-rust:
 	@echo "Building Criterion bench binaries..."
-	@cd $(PKG_DIR) && cargo build --release --benches --quiet
-	@echo "Running Criterion groups in parallel..."
-	@cd $(PKG_DIR) && \
-	 cargo bench --release --bench fast_algorithms   -- --output-format bencher & PID1=$$!; \
-	 cargo bench --release --bench medium_algorithms -- --output-format bencher & PID2=$$!; \
-	 cargo bench --release --bench slow_algorithms   -- --output-format bencher & PID3=$$!; \
-	 cargo bench --release --bench analytics         -- --output-format bencher & PID4=$$!; \
-	 cargo bench --release --bench conformance       -- --output-format bencher & PID5=$$!; \
-	 wait $$PID1 $$PID2 $$PID3 $$PID4 $$PID5
+	@cd $(PKG_DIR) && cargo build --release --benches --jobs $(JOBS) --quiet
+	@echo "Running $(JOBS) Criterion groups in parallel..."
+	@BENCH_OUT=$$(mktemp); \
+	 cd $(PKG_DIR) && \
+	 cargo bench --bench fast_algorithms     -- --output-format bencher --warm-up-time 1 --measurement-time 3 & PID1=$$!; \
+	 cargo bench --bench medium_algorithms   -- --output-format bencher --warm-up-time 1 --measurement-time 3 & PID2=$$!; \
+	 cargo bench --bench slow_algorithms     -- --output-format bencher --warm-up-time 1 --measurement-time 3 & PID3=$$!; \
+	 cargo bench --bench analytics           -- --output-format bencher --warm-up-time 1 --measurement-time 3 & PID4=$$!; \
+	 cargo bench --bench conformance         -- --output-format bencher --warm-up-time 1 --measurement-time 3 & PID5=$$!; \
+	 cargo bench --bench hot_kernels         -- --output-format bencher --warm-up-time 1 --measurement-time 3 & PID6=$$!; \
+	 cargo bench --bench tier1_discovery     -- --output-format bencher --warm-up-time 1 --measurement-time 3 & PID7=$$!; \
+	 cargo bench --bench tier2_metaheuristic -- --output-format bencher --warm-up-time 1 --measurement-time 3 & PID8=$$!; \
+	 wait $$PID1 $$PID2 $$PID3 $$PID4 $$PID5 $$PID6 $$PID7 $$PID8 | tee $$BENCH_OUT; \
+	 echo "--- Checking hot-path 1s limit ($(BENCH_NS_LIMIT) ns) ---"; \
+	 awk -v limit=$(BENCH_NS_LIMIT) ' \
+	   /^test .* bench:/ { \
+	     gsub(/,/, "", $$0); \
+	     for (i=1; i<=NF; i++) if ($$i == "bench:") { ns = $$(i+1); break } \
+	     if (ns+0 >= limit) { \
+	       printf "FAIL: [%s] hot-path %s ns >= %d ns (1s limit)\n", $$2, ns, limit > "/dev/stderr"; \
+	       fail = 1 \
+	     } \
+	   } \
+	   END { exit fail+0 } \
+	 ' $$BENCH_OUT || exit 1; \
+	 rm -f $$BENCH_OUT
 	@echo "Criterion HTML report: $(PKG_DIR)/target/criterion/report/index.html"
 
 # ── Node.js WASM benchmarks ────────────────────────────────────────────────────
@@ -52,32 +78,32 @@ bench-data:
 bench-ci:
 	@echo "=== CI Benchmark Mode ==="
 	@mkdir -p $(RESULTS_DIR)
-	@cd $(PKG_DIR) && cargo build --release --benches --quiet
+	@cd $(PKG_DIR) && cargo build --release --benches --jobs $(JOBS) --quiet
 	@cd $(PKG_DIR) && \
-	 cargo bench --release --bench fast_algorithms   -- --profile-time 5 & \
-	 cargo bench --release --bench medium_algorithms -- --profile-time 8 & \
-	 cargo bench --release --bench analytics         -- --profile-time 5 & \
+	 cargo bench --bench fast_algorithms   -- --profile-time 3 & \
+	 cargo bench --bench medium_algorithms -- --profile-time 3 & \
+	 cargo bench --bench analytics         -- --profile-time 3 & \
 	 wait
 	@cd $(PKG_DIR) && node benchmarks/wasm_bench_runner.js --ci
 
 # ── Quick smoke-test (no stats, just verify compilation + basic run) ──────────
 bench-quick:
-	@cd $(PKG_DIR) && cargo bench --release --bench fast_algorithms -- --test
+	@cd $(PKG_DIR) && cargo bench --bench analytics -- --test
 
 # ── Baseline management ───────────────────────────────────────────────────────
 bench-save-baseline:
 	@LABEL=$${LABEL:-main}; \
 	cd $(PKG_DIR) && \
 	for b in fast_algorithms medium_algorithms slow_algorithms analytics conformance; do \
-	    cargo bench --release --bench $$b -- --save-baseline $$LABEL --profile-time 5; \
+	    cargo bench --bench $$b -- --save-baseline $$LABEL --profile-time 5; \
 	done
 	@echo "Baseline '$$LABEL' saved"
 
 bench-compare:
 	@LABEL=$${LABEL:-main}; \
 	cd $(PKG_DIR) && \
-	cargo bench --release --bench fast_algorithms -- --baseline $$LABEL; \
-	cargo bench --release --bench analytics       -- --baseline $$LABEL
+	cargo bench --bench fast_algorithms -- --baseline $$LABEL; \
+	cargo bench --bench analytics       -- --baseline $$LABEL
 
 # ── Regression Detection: Compare PR to main baseline ────────────────────────
 bench-regression:

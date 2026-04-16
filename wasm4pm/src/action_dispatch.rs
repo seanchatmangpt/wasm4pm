@@ -356,55 +356,36 @@ fn action_retry(context: &ExecutionContext) -> DispatchResult {
     })
 }
 
-/// Fallback action — switch to alternative algorithm (placeholder).
+/// Fallback action — switch to DFG (the simplest, fastest algorithm).
 ///
-/// This action is triggered when the current algorithm is unsuitable
-/// for the current conditions. The fallback strategy selects a simpler,
-/// more robust algorithm at the cost of quality.
-///
-/// # Placeholder Implementation
-///
-/// Currently returns NotImplemented. Future implementation should:
-/// 1. Identify current algorithm from context
-/// 2. Select fallback algorithm based on problem type
-/// 3. Return algorithm name in outcome
+/// Triggered when the current algorithm is unsuitable. Selects DFG as
+/// the fallback because it is the most robust algorithm in the registry.
 fn action_fallback(context: &ExecutionContext) -> DispatchResult {
     // Check circuit breaker
     if context.circuit_breaker_open {
         return Err(DispatchError::CircuitBreakerOpen);
     }
 
-    // Placeholder: return NotImplemented
-    // Future: select fallback algorithm based on health state
-    let _health = context.health_level;
-
-    Ok(DispatchOutcome::NotImplemented)
+    Ok(DispatchOutcome::FallbackInitiated {
+        algorithm: "dfg".to_string(),
+    })
 }
 
-/// Restart action — component restart with state cleanup (placeholder).
+/// Restart action — reset SPC history and circuit breaker state.
 ///
-/// This action is a last resort when the system is in a failed state.
-/// It should clear all cached state, reset counters, and reinitialize
-/// the component.
-///
-/// # Placeholder Implementation
-///
-/// Currently returns NotImplemented. Future implementation should:
-/// 1. Clear all in-memory state
-/// 2. Reset counters (retry_count, cycle_count, etc.)
-/// 3. Close and reopen resources (connections, handles)
-/// 4. Reinitialize from clean state
-fn action_restart(context: &ExecutionContext) -> DispatchResult {
-    // Check circuit breaker (restart may override this in future)
-    if context.circuit_breaker_open {
-        // Log warning but allow restart (it's meant to fix things)
-    }
+/// Last-resort action when the system is in a failed state. Clears
+/// accumulated SPC history and resets the circuit breaker so the system
+/// can begin a fresh autonomic cycle.
+fn action_restart(_context: &ExecutionContext) -> DispatchResult {
+    // Reset SPC history ring buffer
+    crate::SPC_HISTORY.with(|h| h.borrow_mut().clear());
 
-    // Placeholder: return NotImplemented
-    // Future: implement state cleanup and reinitialization
-    let _context = context;
+    // Reset circuit breaker to closed state
+    crate::CIRCUIT_BREAKER.with(|cb| {
+        *cb.borrow_mut() = crate::self_healing::CircuitBreaker::new()
+    });
 
-    Ok(DispatchOutcome::NotImplemented)
+    Ok(DispatchOutcome::RestartInitiated { state_cleared: true })
 }
 
 // ---------------------------------------------------------------------------
@@ -536,19 +517,27 @@ mod tests {
     }
 
     #[test]
-    fn test_action_fallback_returns_not_implemented() {
+    fn test_action_fallback_initiates_dfg_fallback() {
         let context = ExecutionContext::default();
         let result = dispatch_action(&RlAction::Fallback, &context);
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), DispatchOutcome::NotImplemented);
+        assert_eq!(
+            result.unwrap(),
+            DispatchOutcome::FallbackInitiated {
+                algorithm: "dfg".to_string()
+            }
+        );
     }
 
     #[test]
-    fn test_action_restart_returns_not_implemented() {
+    fn test_action_restart_clears_state() {
         let context = ExecutionContext::default();
         let result = dispatch_action(&RlAction::Restart, &context);
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), DispatchOutcome::NotImplemented);
+        assert_eq!(
+            result.unwrap(),
+            DispatchOutcome::RestartInitiated { state_cleared: true }
+        );
     }
 
     #[test]

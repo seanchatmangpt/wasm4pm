@@ -234,15 +234,15 @@ pub fn detect_bottlenecks(
                 for i in 0..trace.events.len() - 1 {
                     if let (
                         Some(AttributeValue::String(activity)),
-                        Some(AttributeValue::Date(_start_time)),
+                        Some(AttributeValue::Date(start_time)),
                         Some(AttributeValue::Date(end_time)),
                     ) = (
                         trace.events[i].attributes.get(activity_key),
                         trace.events[i].attributes.get(timestamp_key),
                         trace.events[i + 1].attributes.get(timestamp_key),
                     ) {
-                        // Simplified duration calculation (in real implementation, parse ISO 8601)
-                        let duration = end_time.len() as u64; // Placeholder
+                        let duration =
+                            crate::parse_iso8601_duration(start_time, end_time).abs() as u64;
 
                         if duration > duration_threshold_seconds {
                             activity_durations
