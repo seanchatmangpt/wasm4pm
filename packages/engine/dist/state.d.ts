@@ -19,4 +19,24 @@ export interface StateMetadata {
  * Complete state metadata map
  */
 export declare const STATE_METADATA: Record<EngineState, StateMetadata>;
+/**
+ * All valid engine states
+ * @internal
+ */
+export declare const ALL_STATES: readonly EngineState[];
+/**
+ * Check if a state is operational (can accept work)
+ * @internal
+ */
+export declare function isOperationalState(state: EngineState): boolean;
+/**
+ * Check if a state is terminal (cannot recover without re-bootstrap)
+ * @internal
+ */
+export declare function isTerminalState(state: EngineState): boolean;
+/**
+ * Check if a state indicates active processing
+ * @internal
+ */
+export declare function isProcessingState(state: EngineState): boolean;
 //# sourceMappingURL=state.d.ts.map

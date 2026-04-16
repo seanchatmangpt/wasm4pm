@@ -20,7 +20,19 @@ export type { ErrorInfo as ErrorDetails, ErrorCode } from './errors.js';
 export { createError, createTypedError, TYPED_ERROR_CODES } from './errors.js';
 export type { TypedError } from './errors.js';
 
-// Result type and utilities
+// Section 2.1: EventLogIR - Canonical event log representation
+export type { EventLogIR, LogEvent, LogTrace, LogMetadata } from './eventlog.js';
+export { isEventLogIR } from './eventlog.js';
+
+// Section 2.2: ModelIR - Canonical process model representation
+export type { ModelIR, ModelCapabilities, QualityMetrics, ModelNode, ModelEdge } from './model.js';
+export { isModelIR } from './model.js';
+
+// Section 2.3 & 2.4: Result envelope and provenance (Canonical IR)
+export type { ResultEnvelope, ProvenanceChain, LatencyClass } from './result.js';
+export { isResultEnvelope, isProvenanceChain, deriveLatencyClass } from './result.js';
+
+// Result type and utilities (legacy Result<T> type for error handling)
 export * from './result.js';
 
 // Connector contracts
@@ -61,3 +73,19 @@ export { isExplainSnapshot, EXPLAIN_JSON_SCHEMA } from './explain.js';
 // Plan step type values — shared between @pictl/planner and @pictl/testing
 export { PLAN_STEP_TYPE_VALUES } from './steps.js';
 export type { PlanStepTypeValue } from './steps.js';
+
+// Budget envelope (Section 4 of Three-Layer Architecture Specification)
+// Defines execution constraints: latency, memory, quality floor, and execution mode
+export type {
+  BudgetEnvelope,
+  LatencyClass as BudgetLatencyClass,
+  QualityTier,
+  ExecutionMode,
+} from './budget.js';
+export {
+  latencyTierLte,
+  qualityTierLte,
+  latencyExceedsBudget,
+  qualityDeficientForFloor,
+  createDefaultBudgetEnvelope,
+} from './budget.js';

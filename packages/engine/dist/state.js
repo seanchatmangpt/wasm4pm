@@ -68,25 +68,25 @@ export const STATE_METADATA = {
  * All valid engine states
  * @internal
  */
-const ALL_STATES = Object.keys(STATE_METADATA);
+export const ALL_STATES = Object.keys(STATE_METADATA);
 /**
  * Check if a state is operational (can accept work)
  * @internal
  */
-function isOperationalState(state) {
+export function isOperationalState(state) {
     return STATE_METADATA[state].operational;
 }
 /**
  * Check if a state is terminal (cannot recover without re-bootstrap)
  * @internal
  */
-function isTerminalState(state) {
+export function isTerminalState(state) {
     return STATE_METADATA[state].terminal;
 }
 /**
  * Check if a state indicates active processing
  * @internal
  */
-function isProcessingState(state) {
+export function isProcessingState(state) {
     return STATE_METADATA[state].processing;
 }
