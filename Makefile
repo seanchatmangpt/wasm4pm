@@ -12,7 +12,9 @@ export CARGO_BUILD_JOBS := $(JOBS)
 export RAYON_NUM_THREADS := $(JOBS)
 
 .PHONY: bench bench-rust bench-wasm bench-data bench-ci bench-quick \
-        bench-save-baseline bench-compare bench-regression bench-trends clean-bench help doctor
+        bench-save-baseline bench-compare bench-regression bench-trends clean-bench \
+        build-profile build-browser build-edge build-fog build-iot build-cloud \
+        verify-profiles help doctor
 
 # ── Top-level: Rust Criterion groups + Node.js workers, fully concurrent ─────
 bench: bench-data
@@ -116,6 +118,41 @@ bench-baseline-update:
 bench-baseline-update-ci:
 	@bash .pictl/benchmarks/update-baseline.sh --ci
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Build Profile Targets: pm4wasm Feature Tiers (Tier 1/2/3)
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Build all profiles (browser, edge, fog, iot, cloud)
+build-profile:
+	@echo "=== Building all WASM profiles ==="
+	@bash scripts/build-profile.sh browser
+	@bash scripts/build-profile.sh edge
+	@bash scripts/build-profile.sh fog
+	@bash scripts/build-profile.sh iot
+	@bash scripts/build-profile.sh cloud
+	@echo ""
+	@echo "✓ All profiles built successfully"
+
+# Build individual profiles
+build-browser:
+	@bash scripts/build-profile.sh browser
+
+build-edge:
+	@bash scripts/build-profile.sh edge
+
+build-fog:
+	@bash scripts/build-profile.sh fog
+
+build-iot:
+	@bash scripts/build-profile.sh iot
+
+build-cloud:
+	@bash scripts/build-profile.sh cloud
+
+# Verify binary sizes against targets
+verify-profiles:
+	@node scripts/verify-profiles.js
+
 # ── Benchmark Trends: Generate trend graphs ──────────────────────────────────
 bench-trends:
 	@echo "=== Benchmark Trends Report ==="
@@ -135,9 +172,22 @@ doctor:
 	@node apps/pictl/dist/bin/pictl.js doctor --format json 2>&1 | awk '/^{/,/^}/ {print}'
 
 help:
-	@echo "wasm4pm Benchmark Targets:"
+	@echo "╔═══════════════════════════════════════════════════════════════════════════╗"
+	@echo "║  pictl Build & Benchmark Targets"
+	@echo "╚═══════════════════════════════════════════════════════════════════════════╝"
+	@echo ""
+	@echo "WASM Profile Building (5 deployment profiles, pm4wasm tiers):"
+	@echo "  make build-profile      — Build all profiles (browser, edge, fog, iot, cloud)"
+	@echo "  make build-browser      — Tier 1: ~18 algorithms, size-optimized"
+	@echo "  make build-edge         — Tier 1 + ML: ~25 algorithms, balanced"
+	@echo "  make build-fog          — Tier 2: ~30 algorithms, speed-optimized"
+	@echo "  make build-iot          — Tier 1 (minimal): ~5 algorithms, extreme size"
+	@echo "  make build-cloud        — Tier 3: All 41 algorithms, no optimization"
+	@echo "  make verify-profiles    — Verify binary sizes against targets"
+	@echo ""
+	@echo "Benchmark Suite (Full Integration):"
 	@echo "  make bench              — Full suite (Rust + WASM, concurrent)"
-	@echo "  make bench-rust         — Criterion-only (5 groups in parallel)"
+	@echo "  make bench-rust         — Criterion-only (8 groups in parallel)"
 	@echo "  make bench-wasm         — Node.js WASM workers only"
 	@echo "  make bench-data         — Download BPI Challenge datasets"
 	@echo "  make bench-ci           — CI mode (fast, no stats)"
@@ -152,4 +202,4 @@ help:
 	@echo ""
 	@echo "Cleanup & Diagnostics:"
 	@echo "  make clean-bench        — Remove result files and criterion cache"
-	@echo "  make doctor             — Run environment diagnostics (24 checks)"
+	@echo "  make doctor             — Run environment diagnostics"
