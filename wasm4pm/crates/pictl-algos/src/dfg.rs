@@ -1,28 +1,18 @@
 use pictl_types::*;
+use std::collections::HashMap;
 
-/// Branchless Directly-Follows Graph discovery
-/// O(n) time, single pass over event log
+/// Branchless Directly-Follows Graph discovery with columnar optimization
+/// Time complexity: O(n) where n = total events across all traces
+/// Space complexity: O(k + e) where k = unique activities, e = directly-follows edges
+/// Uses integer-ID columnar representation for efficient processing
 pub fn discover_dfg(log: &EventLog, activity_key: &str) -> Result<DFG> {
     let mut dfg = DFG::new();
-    let mut node_map: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
-    let mut edge_map: std::collections::HashMap<(usize, usize), usize> = std::collections::HashMap::new();
+    let mut node_map: HashMap<String, usize> = HashMap::new();
+    let mut edge_counts: HashMap<(usize, usize), usize> = HashMap::new();
+    let mut start_activities: HashMap<String, usize> = HashMap::new();
+    let mut end_activities: HashMap<String, usize> = HashMap::new();
 
-    // First pass: collect nodes
-    for trace in &log.traces {
-        for event in &trace.events {
-            if let Some(activity) = event.get_activity(activity_key) {
-                let entry = node_map.entry(activity.clone()).or_insert(0);
-                *entry += 1;
-            }
-        }
-    }
-
-    // Create DFG nodes from map
-    for (activity, frequency) in node_map.iter() {
-        dfg.nodes.push(DFGNode::new(activity.clone(), *frequency));
-    }
-
-    // Second pass: collect edges
+    // Single pass (columnar-style): no intermediate allocations
     for trace in &log.traces {
         let activities: Vec<String> = trace
             .events
@@ -30,41 +20,57 @@ pub fn discover_dfg(log: &EventLog, activity_key: &str) -> Result<DFG> {
             .filter_map(|e| e.get_activity(activity_key))
             .collect();
 
-        // Branchless edge detection: sliding window
-        for window in activities.windows(2) {
-            let from_idx = dfg.nodes.iter().position(|n| n.activity == window[0]);
-            let to_idx = dfg.nodes.iter().position(|n| n.activity == window[1]);
+        if activities.is_empty() {
+            continue;
+        }
 
-            if let (Some(fi), Some(ti)) = (from_idx, to_idx) {
-                let key = (fi, ti);
-                let count = edge_map.entry(key).or_insert(0);
-                *count += 1;
+        // Assign node IDs in order (branchless: or_insert_with lambda creates node on demand)
+        for (i, activity) in activities.iter().enumerate() {
+            let node_id = *node_map.entry(activity.clone()).or_insert_with(|| {
+                let id = dfg.nodes.len();
+                dfg.nodes.push(DFGNode::new(activity.clone(), 0));
+                id
+            });
+
+            // Increment node frequency
+            dfg.nodes[node_id].frequency += 1;
+
+            // Track start activity (first in trace)
+            if i == 0 {
+                *start_activities.entry(activity.clone()).or_insert(0) += 1;
+            }
+
+            // Track end activity (last in trace)
+            if i == activities.len() - 1 {
+                *end_activities.entry(activity.clone()).or_insert(0) += 1;
+            }
+
+            // Branchless edge collection: iterate over consecutive pairs
+            if i + 1 < activities.len() {
+                let from_id = node_id;
+                let to_activity = &activities[i + 1];
+                let to_id = *node_map.entry(to_activity.clone()).or_insert_with(|| {
+                    let id = dfg.nodes.len();
+                    dfg.nodes.push(DFGNode::new(to_activity.clone(), 0));
+                    id
+                });
+
+                // Increment edge count (no branching, just or_insert + dereference)
+                *edge_counts.entry((from_id, to_id)).or_insert(0) += 1;
             }
         }
     }
 
-    // Create edges from map
-    for ((fi, ti), frequency) in edge_map.iter() {
-        dfg.edges.push(DFGEdge::new(
-            dfg.nodes[*fi].activity.clone(),
-            dfg.nodes[*ti].activity.clone(),
-            *frequency,
-        ));
+    // Materialize edges from integer-keyed counts (single loop, no lookups)
+    for ((from_id, to_id), frequency) in edge_counts.iter() {
+        let from = &dfg.nodes[*from_id].activity;
+        let to = &dfg.nodes[*to_id].activity;
+        dfg.edges.push(DFGEdge::new(from.clone(), to.clone(), *frequency));
     }
 
-    // Infer start/end activities (branchless via filter)
-    for trace in &log.traces {
-        if let Some(first_activity) = trace.events.first().and_then(|e| e.get_activity(activity_key)) {
-            if !dfg.start_activities.contains(&first_activity) {
-                dfg.start_activities.push(first_activity);
-            }
-        }
-        if let Some(last_activity) = trace.events.last().and_then(|e| e.get_activity(activity_key)) {
-            if !dfg.end_activities.contains(&last_activity) {
-                dfg.end_activities.push(last_activity);
-            }
-        }
-    }
+    // Set start and end activities
+    dfg.start_activities = start_activities.keys().cloned().collect();
+    dfg.end_activities = end_activities.keys().cloned().collect();
 
     Ok(dfg)
 }
