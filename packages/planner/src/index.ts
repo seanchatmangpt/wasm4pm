@@ -44,3 +44,17 @@ export {
 
 // Validation utilities
 export { validatePlan, assertPlanValid, validateSourceSinkCompatibility, type ValidationError } from './validation';
+
+// Policy and budget enforcement (Section 4 — Planner Policy and Budget Enforcement)
+export {
+  selectEngineByPriority,
+  selectAlgorithmByBudget,
+  shouldPromoteJob,
+  shouldDegradeAlgorithm,
+  profileToExecutionMode,
+  profileToLatencyBudget,
+  profileToQualityFloor,
+  type BackendId,
+  type AlgorithmFamily,
+  type AlgorithmId,
+} from './policy';

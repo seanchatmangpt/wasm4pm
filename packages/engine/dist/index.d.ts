@@ -7,6 +7,7 @@ export type { EngineState, EngineStatus, ExecutionPlan, ExecutionReceipt, Engine
 export { Engine, createSimpleEngine, createFullEngine } from './engine.js';
 export type { Kernel, Planner, Executor } from './engine.js';
 export type { StateMetadata } from './state.js';
+export { STATE_METADATA, ALL_STATES, isOperationalState, isTerminalState, isProcessingState, } from './state.js';
 export { VALID_TRANSITIONS, canTransition, getValidTransitions, TransitionValidator, } from './transitions.js';
 export { StateMachine } from './lifecycle.js';
 export type { LifecycleEvent } from './lifecycle.js';
@@ -22,4 +23,7 @@ export type { Checkpoint } from './checkpointing.js';
 export { WasmLoader, createWasmLoader, getWasmLoader } from './wasm-loader.js';
 export type { WasmModule, WasmLoaderConfig, WasmLoaderStatus, } from './wasm-loader.js';
 export { WasmErrorCode } from './wasm-loader.js';
+export { FederationController, FederationCircuitBreaker, initializeFederationStack, planFederationIntegration, } from './federation.js';
+export type { BackendState, CircuitBreakerState, DecisionTraceEntry, } from './federation.js';
+export { NullBackend } from './null-backend.js';
 //# sourceMappingURL=index.d.ts.map

@@ -149,6 +149,9 @@ importers:
         specifier: workspace:*
         version: link:../observability
     devDependencies:
+      '@pictl/kernel':
+        specifier: workspace:^
+        version: link:../kernel
       '@vitest/coverage-v8':
         specifier: ^1.6.0
         version: 1.6.1(vitest@1.6.1)
