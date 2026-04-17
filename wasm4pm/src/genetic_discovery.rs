@@ -1,6 +1,6 @@
 use crate::models::*;
 use crate::state::{get_or_init_state, StoredObject};
-use crate::utilities::{evaluate_edges_fitness, to_js, to_js_str};
+use crate::utilities::{evaluate_edges_fitness, to_js_str};
 use rustc_hash::FxHashMap;
 use serde_json::json;
 use std::collections::HashSet;
@@ -49,6 +49,11 @@ pub fn discover_genetic_algorithm(
                             edge_vocab.len() - 1
                         });
                     }
+                }
+
+                // Guard: empty vocabulary means log has no directly-follows edges
+                if edge_vocab.is_empty() {
+                    return Err(JsValue::from_str("no_edges"));
                 }
 
                 // Collect vocab before closure ends
@@ -246,77 +251,6 @@ pub fn discover_pso_algorithm(
     }))
 }
 
-// Helper: Create random edge set from vocabulary
-fn create_random_edge_set(edge_vocab: &[(u32, u32)], inclusion_probability: f64) -> EdgeSet {
-    let mut edge_set: EdgeSet = HashSet::new();
-    for &edge in edge_vocab {
-        if fastrand::f64() < inclusion_probability {
-            edge_set.insert(edge);
-        }
-    }
-    edge_set
-}
-
-// Helper: Evaluate fitness of an edge set against columnar log (zero string allocation)
-#[inline]
-// Helper: Crossover operation on edge sets
-fn crossover_edges(parent1: &EdgeSet, parent2: &EdgeSet) -> EdgeSet {
-    let mut child: EdgeSet = HashSet::new();
-
-    // Each edge from parent1 included with 50% probability
-    for &edge in parent1 {
-        if fastrand::f64() < 0.5 {
-            child.insert(edge);
-        }
-    }
-
-    // Each edge from parent2 included with 50% probability
-    for &edge in parent2 {
-        if fastrand::f64() < 0.5 {
-            child.insert(edge);
-        }
-    }
-
-    child
-}
-
-// Helper: Blend two edge sets
-fn blend_edges(set1: &EdgeSet, set2: &EdgeSet, ratio: f64) -> EdgeSet {
-    let mut result: EdgeSet = HashSet::new();
-
-    // Keep edges from set1 with probability (1 - ratio)
-    for &edge in set1 {
-        if fastrand::f64() > ratio {
-            result.insert(edge);
-        }
-    }
-
-    // Add edges from set2 with probability ratio
-    for &edge in set2 {
-        if fastrand::f64() < ratio {
-            result.insert(edge);
-        }
-    }
-
-    result
-}
-
-// Helper: Mutation operation on edge sets — uses vocab indices so edges stay valid
-fn mutate_edges(edge_set: &mut EdgeSet, mutation_rate: f64, edge_vocab: &[(u32, u32)]) {
-    if fastrand::f64() < mutation_rate {
-        if !edge_set.is_empty() && fastrand::f64() < 0.5 {
-            // Remove random edge
-            if let Some(&edge) = edge_set.iter().next() {
-                edge_set.remove(&edge);
-            }
-        } else if !edge_vocab.is_empty() {
-            // Add a random edge from the observed vocabulary (guaranteed valid indices)
-            let idx = (fastrand::f64() * edge_vocab.len() as f64) as usize;
-            edge_set.insert(edge_vocab[idx]);
-        }
-    }
-}
-
 // Helper: Materialize a DirectlyFollowsGraph from edge set and vocabulary
 fn edge_set_to_dfg(edge_set: &EdgeSet, vocab: &[String]) -> DirectlyFollowsGraph {
     let mut dfg = DirectlyFollowsGraph::new();
@@ -346,45 +280,6 @@ fn edge_set_to_dfg(edge_set: &EdgeSet, vocab: &[String]) -> DirectlyFollowsGraph
     }
 
     dfg
-}
-
-// Helper: Random selection from population.
-// For small populations (≤ 50, the typical benchmark size) we use a direct
-// fitness-proportionate computation instead of building and scanning a
-// cumulative-weight array, keeping the hot path branch-free.
-fn rand_select<T>(items: &[(T, f64)]) -> usize {
-    let n = items.len();
-    debug_assert!(n > 0, "rand_select called with empty slice");
-
-    // Fast path: for small populations compute the selection directly.
-    if n <= 50 {
-        let total: f64 = items.iter().map(|(_, f)| f.max(0.0)).sum();
-        if total > 0.0 {
-            let mut threshold = fastrand::f64() * total;
-            for (i, (_, fitness)) in items.iter().enumerate() {
-                threshold -= fitness.max(0.0);
-                if threshold <= 0.0 {
-                    return i;
-                }
-            }
-        }
-        // Fallback (e.g. all fitnesses are zero): uniform random index.
-        return (fastrand::f64() * n as f64) as usize % n;
-    }
-
-    // General path for larger populations: same algorithm, same cost, but
-    // kept separate so the fast path compiles without a branch on `n`.
-    let total: f64 = items.iter().map(|(_, f)| f.max(0.0)).sum();
-    if total > 0.0 {
-        let mut threshold = fastrand::f64() * total;
-        for (i, (_, fitness)) in items.iter().enumerate() {
-            threshold -= fitness.max(0.0);
-            if threshold <= 0.0 {
-                return i;
-            }
-        }
-    }
-    (fastrand::f64() * n as f64) as usize % n
 }
 
 // Seeded variants for determinism

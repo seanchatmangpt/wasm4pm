@@ -176,10 +176,10 @@ export class AlgorithmRegistry {
     // Alpha++ (improved Alpha algorithm)
     this.registerWithInferredProfiles({
       id: 'alpha_plus_plus',
-      name: 'Alpha++ (Improved Alpha)',
+      name: 'Alpha++ (Improved Alpha) — STUB',
       description:
-        'Enhanced version of classic Alpha algorithm. Discovers place-transition Petri nets with better noise handling.',
-      outputType: 'petrinet',
+        'INCOMPLETE STUB: Frequency-filtered DFG wrapped as Petri net. True Alpha++ place discovery not implemented. For production use, prefer Genetic Algorithm or ILP.',
+      outputType: 'dfg',
       complexity: 'O(n²)',
       speedTier: 20,
       qualityTier: 45,
@@ -237,9 +237,9 @@ export class AlgorithmRegistry {
     // Inductive Miner
     this.registerWithInferredProfiles({
       id: 'inductive_miner',
-      name: 'Inductive Miner (STUB)',
-      description: 'STUB: Claims to discover process trees but actually just calls discover_dfg. Do not use (Phase 4 audit).',
-      outputType: 'dfg',
+      name: 'Inductive Miner',
+      description: 'Recursive cut-based process tree discovery (XOR/Sequence/Parallel/Loop cuts). IM-basic: no noise filtering, all directly-follows preserved.',
+      outputType: 'tree',
       complexity: 'O(n log n)',
       speedTier: 30,
       qualityTier: 55,
@@ -572,6 +572,32 @@ export class AlgorithmRegistry {
       supportedProfiles: ['quality'],
       estimatedDurationMs: 15,
       estimatedMemoryMB: 250,
+      robustToNoise: false,
+      scalesWell: false,
+    });
+
+    // ILP Discovery (STUB)
+    this.registerWithInferredProfiles({
+      id: 'ilp',
+      name: 'Integer Linear Programming (ILP) — STUB',
+      description:
+        'INCOMPLETE STUB: DFG projected as Petri net. True ILP solver with place minimization not implemented. Use Optimized DFG or Genetic Algorithm for similar quality.',
+      outputType: 'dfg',
+      complexity: 'NP-Hard',
+      speedTier: 80,
+      qualityTier: 90,
+      parameters: [
+        {
+          name: 'activity_key',
+          type: 'string',
+          description: 'Event attribute key for activity names',
+          required: true,
+          default: 'concept:name',
+        },
+      ],
+      supportedProfiles: ['quality'],
+      estimatedDurationMs: 20,
+      estimatedMemoryMB: 300,
       robustToNoise: false,
       scalesWell: false,
     });
