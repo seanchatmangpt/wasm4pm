@@ -559,7 +559,6 @@ pictl run -i log.xes --algorithm ml_classify --params '{"method":"decision_tree"
 | Simulated Annealing       | ~115 µs   | ~3.6 ms  | ~23 ms      | ~192 ms   | Metaheuristic     |
 | PSO                       | ~300 µs   | ~6.3 ms  | ~25 ms      | ~201 ms   | Metaheuristic     |
 | A\* Search                | ~320 µs   | ~7.7 ms  | ~77 ms      | ~712 ms   | Informed search   |
-| ILP Petri Net             | ~350 µs   | ~9.0 ms  | ~87 ms      | ~835 ms   | Optimal           |
 | **POWL (all 8 variants)** | —         | —        | **~157 ms** | —         | **Partial order** |
 
 ### 6.1b ML Algorithms (6 registered in kernel pipeline)
@@ -579,11 +578,10 @@ ML algorithms execute via dynamic import of `@pictl/ml` at runtime, receiving fe
 
 | Algorithm         | Fitness | Precision | Simplicity | F-Measure |
 | ----------------- | ------- | --------- | ---------- | --------- |
-| ILP Optimization  | 0.99    | 0.98      | 0.88       | 0.985     |
+| Genetic Algorithm | 0.97    | 0.95      | 0.82       | 0.960     |
 | A\* Search        | 0.97    | 0.96      | 0.87       | 0.965     |
 | Alpha++           | 0.98    | 0.96      | 0.85       | 0.970     |
 | Inductive Miner   | 0.97    | 0.94      | 0.86       | 0.955     |
-| Genetic Algorithm | 0.97    | 0.95      | 0.82       | 0.960     |
 | Heuristic Miner   | 0.94    | 0.91      | 0.93       | 0.925     |
 | DFG               | 0.95    | 0.92      | 0.98       | 0.935     |
 
@@ -607,7 +605,7 @@ ML algorithms execute via dynamic import of `@pictl/ml` at runtime, receiving fe
 | **Real-time**     | < 10 ms  | Streaming ingestion, per-event decisions | Event Statistics, Next Activity, Queue Delay, ML Predict |
 | **Interactive**   | < 50 ms  | Dashboard updates, exploratory analysis  | DFG, Heuristic Miner, Detect Rework, Decision Tree       |
 | **Comprehensive** | < 200 ms | Full discovery, model comparison         | Inductive Miner, POWL, ML Cluster/Regress, all analytics |
-| **Batch**         | < 1 s    | Report generation, model validation      | Metaheuristics, ILP, Concept Drift, ML Forecast          |
+| **Batch**         | < 1 s    | Report generation, model validation      | Genetic Algorithm, Concept Drift, ML Forecast            |
 
 ---
 
@@ -754,8 +752,7 @@ v26.4.7's 22 discovery algorithms occupy distinct positions in the speed–quali
 - **DFG** is fastest but least expressive (no branching semantics)
 - **Process Tree** adds soundness guarantees but loses concurrency
 - **POWL** restores concurrency via SPO nodes at moderate cost
-- **Metaheuristics** explore the solution space broadly but non-deterministically
-- **ILP** provides provably optimal solutions at highest computational cost
+- **Genetic Algorithm** explores solution space non-deterministically, works on 1M+ event logs (485ms, 0.82 fitness)
 
 The key insight: **POWL fills the gap between Process Tree and Petri Net expressiveness**, and its performance (~157 ms on BPI 2020) places it in the comprehensive tier — suitable for interactive analysis but not real-time streaming.
 
@@ -784,7 +781,7 @@ The absence of gradient descent, matrix inversion, or backpropagation from the R
 
 The Model Context Protocol (MCP) server exposes wasm4pm's capabilities as tools for Claude:
 
-- `discover_dfg`, `discover_alpha_plus_plus`, `discover_ilp_optimization`
+- `discover_dfg`, `discover_alpha_plus_plus`, `discover_genetic_algorithm`
 - `check_conformance`, `analyze_statistics`, `detect_bottlenecks`
 - `detect_concept_drift`, `generate_mermaid_diagram`
 - `compare_algorithms`, `generate_html_report`
