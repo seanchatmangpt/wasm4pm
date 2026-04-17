@@ -422,40 +422,6 @@ export class AlgorithmRegistry {
       scalesWell: true,
     });
 
-    // ILP (Integer Linear Programming)
-    this.registerWithInferredProfiles({
-      id: 'ilp',
-      name: 'ILP (Integer Linear Programming)',
-      description: 'Optimal model discovery using integer programming. Best theoretical quality, slower.',
-      outputType: 'petrinet',
-      complexity: 'NP-Hard',
-      speedTier: 80,
-      qualityTier: 90,
-      parameters: [
-        {
-          name: 'activity_key',
-          type: 'string',
-          description: 'Event attribute key for activity names',
-          required: true,
-          default: 'concept:name',
-        },
-        {
-          name: 'timeout_seconds',
-          type: 'number',
-          description: 'Timeout for solver in seconds',
-          required: false,
-          default: 30,
-          min: 1,
-          max: 300,
-        },
-      ],
-      supportedProfiles: ['quality'],
-      estimatedDurationMs: 20,
-      estimatedMemoryMB: 300,
-      robustToNoise: false,
-      scalesWell: false,
-    });
-
     // Ant Colony Optimization (ACO)
     this.registerWithInferredProfiles({
       id: 'aco',
@@ -672,12 +638,14 @@ export class AlgorithmRegistry {
     });
 
     // Streaming Log (probabilistic)
+    // NOTE: streaming_log is a stateful handle-based API, not a single-call algorithm.
+    // Use streaming_log_* functions directly: create → add_trace → estimate_dfg → free
     this.registerWithInferredProfiles({
       id: 'streaming_log',
       name: 'Streaming Log (Probabilistic)',
       description:
-        'Probabilistic streaming event log processor. Maintains a DFG with only 230KB memory using count-min sketch and reservoir sampling.',
-      outputType: 'dfg',
+        'Probabilistic streaming event log processor. Stateful handle-based API. Use streaming_log_create(), streaming_log_add_trace(), streaming_log_estimate_dfg(), streaming_log_free().',
+      outputType: 'analytics',
       complexity: 'O(n)',
       speedTier: 10,
       qualityTier: 25,
@@ -860,7 +828,7 @@ export class AlgorithmRegistry {
       id: 'performance_spectrum',
       name: 'Performance Spectrum',
       description: 'Analyze duration statistics between activity pairs.',
-      outputType: 'dfg',
+      outputType: 'analytics',
       complexity: 'O(n²)',
       speedTier: 55,
       qualityTier: 60,
@@ -879,7 +847,7 @@ export class AlgorithmRegistry {
       id: 'batches',
       name: 'Batch Detection',
       description: 'Detect batch patterns where cases share timestamps.',
-      outputType: 'dfg',
+      outputType: 'analytics',
       complexity: 'O(n²)',
       speedTier: 50,
       qualityTier: 55,
@@ -921,7 +889,7 @@ export class AlgorithmRegistry {
       id: 'generalization',
       name: 'Generalization Metric',
       description: 'Measure how general a Petri net model is (avoids overfitting).',
-      outputType: 'tree',
+      outputType: 'analytics',
       complexity: 'O(n²)',
       speedTier: 65,
       qualityTier: 65,
@@ -941,7 +909,7 @@ export class AlgorithmRegistry {
       id: 'etconformance_precision',
       name: 'ETConformance Precision',
       description: 'Measure precision via escaping-edge analysis.',
-      outputType: 'tree',
+      outputType: 'analytics',
       complexity: 'O(n²)',
       speedTier: 55,
       qualityTier: 70,
@@ -959,7 +927,7 @@ export class AlgorithmRegistry {
       id: 'alignments',
       name: 'A* Optimal Alignments',
       description: 'Compute optimal trace-to-model alignments using A* search.',
-      outputType: 'tree',
+      outputType: 'analytics',
       complexity: 'NP-Hard',
       speedTier: 20,
       qualityTier: 90,
@@ -981,7 +949,7 @@ export class AlgorithmRegistry {
       id: 'complexity_metrics',
       name: 'POWL Complexity Metrics',
       description: 'Measure structural complexity of a POWL model.',
-      outputType: 'tree',
+      outputType: 'analytics',
       complexity: 'O(n)',
       speedTier: 80,
       qualityTier: 60,
@@ -1069,7 +1037,7 @@ export class AlgorithmRegistry {
       id: 'playout',
       name: 'Process Tree Playout',
       description: 'Simulate event log generation from a process tree or DFG.',
-      outputType: 'dfg',
+      outputType: 'analytics',
       complexity: 'O(n²)',
       speedTier: 60,
       qualityTier: 50,
