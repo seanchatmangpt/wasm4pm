@@ -383,21 +383,12 @@ pub fn check_token_based_replay(
                 }
 
                 // Calculate trace fitness using van der Aalst token-replay formula
-                let trace_fitness = if consumed_tokens == 0 && produced_tokens == 0 {
-                    1.0
-                } else {
-                    let consumed_term = if consumed_tokens > 0 {
-                        1.0 - (missing_tokens as f64 / consumed_tokens as f64)
-                    } else {
-                        0.0
-                    };
-                    let produced_term = if produced_tokens > 0 {
-                        1.0 - (tokens_remaining as f64 / produced_tokens as f64)
-                    } else {
-                        0.0
-                    };
-                    (0.5 * consumed_term + 0.5 * produced_term).max(0.0)
-                };
+                // Branchless: max(1,denom) prevents div-by-zero, clamp ensures [0,1]
+                let c = consumed_tokens.max(1) as f64;
+                let p = produced_tokens.max(1) as f64;
+                let trace_fitness = (0.5 * (1.0 - missing_tokens as f64 / c)
+                    + 0.5 * (1.0 - tokens_remaining as f64 / p))
+                    .clamp(0.0, 1.0);
 
                 let is_conforming = is_final_marking_reached && deviations.is_empty();
                 if is_conforming {

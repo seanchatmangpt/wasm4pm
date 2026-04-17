@@ -380,7 +380,7 @@ impl Default for CircuitBreaker {
 pub struct CircuitBreakerStateJson {
     /// Circuit breaker configuration
     pub config: CircuitBreakerConfigJson,
-    /// Current state: 0=Closed, 1=Open, 2=HalfOpen
+    /// Current state: 0=Closed, 1=HalfOpen, 2=Open (matches as_rl_circuit_state)
     pub state: u8,
     /// Current failure count
     pub failure_count: u32,
@@ -402,8 +402,8 @@ impl CircuitBreaker {
             },
             state: match self.state {
                 CircuitState::Closed => 0,
-                CircuitState::Open => 1,
-                CircuitState::HalfOpen => 2,
+                CircuitState::HalfOpen => 1,
+                CircuitState::Open => 2,
             },
             failure_count: self.failure_count,
             success_count: self.success_count,
@@ -417,8 +417,8 @@ impl CircuitBreaker {
             config: json_state.config.into(),
             state: match json_state.state {
                 0 => CircuitState::Closed,
-                1 => CircuitState::Open,
-                2 => CircuitState::HalfOpen,
+                1 => CircuitState::HalfOpen,
+                2 => CircuitState::Open,
                 _ => CircuitState::Closed, // Default to safe state
             },
             failure_count: json_state.failure_count,
