@@ -259,36 +259,50 @@ pub mod benchmark_registry;
 
 // Hand-rolled statistics (when hand_rolled_stats feature is enabled)
 pub mod algorithms;
+#[cfg(feature = "conformance_basic")]
 pub mod analysis;
 pub mod binary_format;
 pub mod branchless;
 pub mod cache;
 pub mod capability_registry;
+#[cfg(feature = "conformance_basic")]
 pub mod pattern_analysis;
+#[cfg(feature = "conformance_basic")]
 pub mod conformance;
+#[cfg(feature = "conformance_basic")]
 pub mod data_quality;
 pub mod discovery;
+#[cfg(feature = "discovery_advanced")]
 pub mod ensemble;
 pub mod fast_discovery;
+#[cfg(feature = "ml")]
 pub mod feature_extraction;
+#[cfg(feature = "ml")]
 pub mod feature_importance;
 pub mod filters;
+#[cfg(feature = "ml")]
 pub mod final_analytics;
 #[cfg(feature = "hand_rolled_stats")]
 pub mod hand_stats;
+#[cfg(feature = "discovery_advanced")]
 pub mod hierarchical;
 pub mod hot_kernels;
+#[cfg(feature = "streaming_basic")]
 pub mod incremental_dfg;
+#[cfg(feature = "discovery_advanced")]
 pub mod more_discovery;
 pub mod parallel_executor;
+#[cfg(feature = "petri_net_playout")]
 pub mod playout;
 pub mod probabilistic;
 pub mod process_tree;
+#[cfg(feature = "discovery_advanced")]
 pub mod smart_engine;
 pub mod social_network;
 pub mod text_encoding;
 pub mod utilities;
 pub mod xes_format;
+#[cfg(feature = "cloud")]
 pub mod rl_state_serialization;
 
 // OCEL support (gated by ocel feature)
@@ -435,57 +449,72 @@ pub use streaming::{
 // Recommendations module (always available)
 pub mod recommendations;
 
-// Conformance cache — cached token replay results (always available)
+// Conformance cache — cached token replay results (gated by conformance_basic)
+#[cfg(feature = "conformance_basic")]
 pub mod conformance_cache;
 
 // Correlation miner — DFG discovery without case identifiers (always available)
 pub mod correlation_miner;
 
 // Self-healing — circuit breaker, retry policy, health check (ported from knhk)
+#[cfg(feature = "cloud")]
 pub mod self_healing;
 
 // SPC — Western Electric rules + process capability (always available)
+#[cfg(feature = "cloud")]
 pub mod spc;
 
 // SPC History — Ring buffer for cross-cycle trend analysis (fixes one-shot problem)
+#[cfg(feature = "cloud")]
 pub mod spc_history;
 
 // Guard evaluation engine — predicate/resource/state/counter/time-window guards (ported from knhk)
+#[cfg(feature = "cloud")]
 pub mod guards;
 
 // 43-pattern dispatch — van der Aalst workflow pattern execution (ported from knhk)
+#[cfg(feature = "discovery_advanced")]
 pub mod pattern_dispatch;
 
 // Reinforcement learning — Q-Learning and SARSA agents (ported from knhk)
+#[cfg(feature = "cloud")]
 pub mod reinforcement;
 
 // RL Orchestrator — persistent state hub for all RL agents
+#[cfg(feature = "cloud")]
 pub mod rl_orchestrator;
 
 // Action Dispatch Layer — converts RL action labels to executable operations
+#[cfg(feature = "cloud")]
 pub mod action_dispatch;
 
 // Agentic control primitives — role selection, task decomposition, handoffs, escalation
+#[cfg(feature = "cloud")]
 pub mod agentic;
 
 thread_local! {
     /// Persistent RL orchestrator — survives across autonomic cycles.
+    #[cfg(feature = "cloud")]
     pub static RL_ORCHESTRATOR: RefCell<rl_orchestrator::RlOrchestrator> =
         RefCell::new(rl_orchestrator::RlOrchestrator::new());
 
     /// Persistent circuit breaker for the autonomic loop.
+    #[cfg(feature = "cloud")]
     pub static CIRCUIT_BREAKER: RefCell<self_healing::CircuitBreaker> =
         RefCell::new(self_healing::CircuitBreaker::new());
 
     /// Persistent SPC history — ring buffer of 100 snapshots for cross-cycle trend analysis.
     /// Fixes the one-shot SPC problem by maintaining historical context across autonomic cycles.
+    #[cfg(feature = "cloud")]
     pub static SPC_HISTORY: RefCell<spc_history::SpcHistory> =
         RefCell::new(spc_history::SpcHistory::new());
 
     /// MAPE-K action dispatch: remaining Scale boost calls for current action
+    #[cfg(feature = "cloud")]
     pub static SCALE_BOOST_REMAINING: std::cell::Cell<u32> = const { std::cell::Cell::new(0) };
 
     /// MAPE-K action dispatch: last selected algorithm (for Fallback and comparison)
+    #[cfg(feature = "cloud")]
     pub static LAST_ALGORITHM: RefCell<String> = RefCell::new("dfg".to_string());
 
     /// AutoProcessAgent — branchless 34-nanosecond autonomic loop (Domain 2 wiring)
@@ -496,6 +525,7 @@ thread_local! {
 }
 
 // ML contextual bandits — LinUCB CPU baseline (ground truth for GPU parity)
+#[cfg(feature = "ml")]
 pub mod ml;
 
 // GPU-accelerated LinUCB contextual bandit for algorithm selection
@@ -506,6 +536,7 @@ pub mod ml;
 pub mod gpu;
 
 // AutoProcessAgent — Vision 2030 autonomic loop (Perception → Decision → Protection → Optimization)
+#[cfg(feature = "cloud")]
 pub mod autoprocess;
 
 // Suppress unused warnings for re-exported modules
@@ -678,6 +709,7 @@ pub fn simd_token_replay(log_handle: &str, activity_key: &str) -> String {
 /// 4. **Optimization** — Reinforcement learning (Q-Learning) action selection
 ///
 /// Returns JSON with cycle_result (all 4 layers) and nanosecond timing.
+#[cfg(feature = "cloud")]
 #[wasm_bindgen]
 pub fn autonomic_execute_cycle(
     log_handle: &str,
@@ -1839,6 +1871,7 @@ pub fn rl_state_health_level(state: &RlState) -> u8 {
 // -------------------------------------------------------------------------
 
 /// Reset the RL orchestrator to fresh state.
+#[cfg(feature = "cloud")]
 #[wasm_bindgen]
 pub fn rl_orchestrator_reset() -> Result<String, JsValue> {
     RL_ORCHESTRATOR.with(|orch| {
@@ -1848,12 +1881,14 @@ pub fn rl_orchestrator_reset() -> Result<String, JsValue> {
 }
 
 /// Get the currently active RL agent type (0=QLearning, 1=SARSA, 2=DoubleQ, 3=ExpectedSARSA, 4=REINFORCE).
+#[cfg(feature = "cloud")]
 #[wasm_bindgen]
 pub fn rl_orchestrator_active_agent() -> Result<u8, JsValue> {
     RL_ORCHESTRATOR.with(|orch| Ok(orch.borrow().active_agent() as u8))
 }
 
 /// Switch the active RL agent by type index.
+#[cfg(feature = "cloud")]
 #[wasm_bindgen]
 pub fn rl_orchestrator_switch_agent(agent_type: u8) -> Result<String, JsValue> {
     RL_ORCHESTRATOR.with(|orch| {
@@ -1872,6 +1907,7 @@ pub fn rl_orchestrator_switch_agent(agent_type: u8) -> Result<String, JsValue> {
 }
 
 /// Enable or disable LinUCB-based agent selection.
+#[cfg(feature = "cloud")]
 #[wasm_bindgen]
 pub fn rl_orchestrator_set_linucb(enabled: bool) -> Result<String, JsValue> {
     RL_ORCHESTRATOR.with(|orch| {
@@ -1881,6 +1917,7 @@ pub fn rl_orchestrator_set_linucb(enabled: bool) -> Result<String, JsValue> {
 }
 
 /// Get RL orchestrator telemetry as JSON.
+#[cfg(feature = "cloud")]
 #[wasm_bindgen]
 pub fn rl_orchestrator_telemetry() -> Result<String, JsValue> {
     RL_ORCHESTRATOR.with(|orch| {
@@ -1898,6 +1935,7 @@ pub fn rl_orchestrator_telemetry() -> Result<String, JsValue> {
 /// - cumulative_reward: total reward accumulated across all cycles
 /// - last_reward: reward from the most recent cycle
 /// - last_spc_alert_count: number of SPC special causes in the last cycle
+#[cfg(feature = "cloud")]
 #[wasm_bindgen]
 pub fn rl_orchestrator_get_telemetry() -> Result<JsValue, JsValue> {
     RL_ORCHESTRATOR.with(|orch| {
@@ -1937,6 +1975,7 @@ pub fn rl_orchestrator_get_telemetry() -> Result<JsValue, JsValue> {
 ///
 /// * `Ok(String)` - JSON-serialized RL state
 /// * `Err(JsValue)` - Serialization error
+#[cfg(feature = "cloud")]
 #[wasm_bindgen]
 pub fn serialize_rl_state() -> Result<String, JsValue> {
     RL_ORCHESTRATOR.with(|orch| {
@@ -1977,6 +2016,7 @@ pub fn serialize_rl_state() -> Result<String, JsValue> {
 ///
 /// * `Ok(String)` - Success message with restored cycle count
 /// * `Err(JsValue)` - Invalid JSON or malformed state
+#[cfg(feature = "cloud")]
 #[wasm_bindgen]
 pub fn restore_rl_state(json: &str) -> Result<String, JsValue> {
     let state: rl_state_serialization::SerializedRlState = serde_json::from_str(json)
@@ -2020,6 +2060,7 @@ pub fn restore_rl_state(json: &str) -> Result<String, JsValue> {
 }
 
 /// Get SPC history as JSON.
+#[cfg(feature = "cloud")]
 #[wasm_bindgen]
 pub fn get_spc_history() -> Result<String, JsValue> {
     SPC_HISTORY.with(|history| {
@@ -2035,6 +2076,7 @@ pub fn get_spc_history() -> Result<String, JsValue> {
 }
 
 /// Set SPC history from JSON.
+#[cfg(feature = "cloud")]
 #[wasm_bindgen]
 pub fn set_spc_history(json: &str) -> Result<String, JsValue> {
     #[derive(serde::Deserialize)]
@@ -2061,6 +2103,7 @@ pub fn set_spc_history(json: &str) -> Result<String, JsValue> {
 }
 
 /// Get circuit breaker state as JSON.
+#[cfg(feature = "cloud")]
 #[wasm_bindgen]
 pub fn circuit_breaker_get_state() -> Result<String, JsValue> {
     CIRCUIT_BREAKER.with(|cb| {
@@ -2072,6 +2115,7 @@ pub fn circuit_breaker_get_state() -> Result<String, JsValue> {
 }
 
 /// Set circuit breaker state from JSON.
+#[cfg(feature = "cloud")]
 #[wasm_bindgen]
 pub fn circuit_breaker_set_state(json: &str) -> Result<String, JsValue> {
     let state_json: self_healing::CircuitBreakerStateJson = serde_json::from_str(json)
@@ -2084,6 +2128,8 @@ pub fn circuit_breaker_set_state(json: &str) -> Result<String, JsValue> {
 
     Ok("Circuit breaker state restored".to_string())
 }
+#[cfg(feature = "cloud")]
+#[wasm_bindgen]
 pub fn circuit_breaker_configure(config_json: &str) -> Result<String, JsValue> {
     CIRCUIT_BREAKER.with(|breaker| {
         match self_healing::CircuitBreaker::from_json(config_json) {
@@ -2097,6 +2143,7 @@ pub fn circuit_breaker_configure(config_json: &str) -> Result<String, JsValue> {
 }
 
 /// Get current circuit breaker configuration as JSON.
+#[cfg(feature = "cloud")]
 #[wasm_bindgen]
 pub fn circuit_breaker_get_config() -> Result<String, JsValue> {
     CIRCUIT_BREAKER.with(|breaker| {
@@ -2113,6 +2160,7 @@ pub fn circuit_breaker_get_config() -> Result<String, JsValue> {
 }
 
 /// Reset the persistent circuit breaker.
+#[cfg(feature = "cloud")]
 #[wasm_bindgen]
 pub fn circuit_breaker_reset() -> Result<String, JsValue> {
     CIRCUIT_BREAKER.with(|cb| {

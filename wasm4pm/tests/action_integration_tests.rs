@@ -180,13 +180,13 @@ fn test_reward_structure_penalizes_bad_decisions() {
     // The difference comes from guard/circuit status.
 
     // Good state, everything healthy
-    let reward_good_state = compute_reward(0, 0, 0, true, true);
+    let reward_good_state = compute_reward(0, 0, 0, true, true, false);
 
     // Bad state: same action (Continue = no health change), but guards fail
-    let reward_bad_state_guards_fail = compute_reward(3, 3, 0, false, true);
+    let reward_bad_state_guards_fail = compute_reward(3, 3, 0, false, true, false);
 
     // Bad state: circuit breaker blocked
-    let reward_bad_state_circuit_fail = compute_reward(3, 3, 0, true, false);
+    let reward_bad_state_circuit_fail = compute_reward(3, 3, 0, true, false, false);
 
     // Good state should have higher reward than bad state with guard failure
     assert!(
@@ -205,7 +205,7 @@ fn test_reward_structure_penalizes_bad_decisions() {
     );
 
     // Now test degradation in bad state: health 3->4 is terminal, should be worst
-    let reward_terminal = compute_reward(3, 4, 0, true, true);
+    let reward_terminal = compute_reward(3, 4, 0, true, true, false);
     assert!(
         reward_terminal < reward_good_state,
         "Terminal degradation (reward={}) should be worse than stable good state (reward={})",
@@ -221,13 +221,13 @@ fn test_reward_structure_penalizes_bad_decisions() {
 #[test]
 fn test_reward_rewards_recovery_actions() {
     // Recovery: health improves from 3 (Critical) to 1 (Warning)
-    let reward_recovery = compute_reward(3, 1, 0, true, true);
+    let reward_recovery = compute_reward(3, 1, 0, true, true, false);
 
     // Stable: health stays at 1 (Warning)
-    let reward_stable = compute_reward(1, 1, 0, true, true);
+    let reward_stable = compute_reward(1, 1, 0, true, true, false);
 
     // Small improvement: health improves from 1 to 0
-    let reward_small_improvement = compute_reward(1, 0, 0, true, true);
+    let reward_small_improvement = compute_reward(1, 0, 0, true, true, false);
 
     // Recovery from Critical to Warning should have higher reward than
     // just staying stable at Warning
@@ -261,8 +261,8 @@ fn test_reward_rewards_recovery_actions() {
 #[test]
 fn test_circuit_breaker_open_reduces_reward() {
     // Same health transition (stable at 2), but circuit breaker differs
-    let reward_circuit_ok = compute_reward(2, 2, 0, true, true);
-    let reward_circuit_blocked = compute_reward(2, 2, 0, true, false);
+    let reward_circuit_ok = compute_reward(2, 2, 0, true, true, false);
+    let reward_circuit_blocked = compute_reward(2, 2, 0, true, false, false);
 
     assert!(
         reward_circuit_ok > reward_circuit_blocked,
@@ -280,7 +280,7 @@ fn test_circuit_breaker_open_reduces_reward() {
     );
 
     // Same for guard failure
-    let reward_guard_fail = compute_reward(2, 2, 0, false, true);
+    let reward_guard_fail = compute_reward(2, 2, 0, false, true, false);
     assert!(
         reward_circuit_ok > reward_guard_fail,
         "Circuit OK (reward={}) should beat guard failure (reward={})",
@@ -300,7 +300,7 @@ fn test_spc_alert_count_proportionally_reduces_reward() {
     let mut rewards: Vec<f32> = Vec::new();
 
     for &count in &alert_counts {
-        let reward = compute_reward(1, 1, count, true, true);
+        let reward = compute_reward(1, 1, count, true, true, false);
         rewards.push(reward);
     }
 
@@ -326,8 +326,8 @@ fn test_spc_alert_count_proportionally_reduces_reward() {
 
     // Verify the penalty caps at 1.5 (SPC component bounded)
     // 10 alerts * 0.3 = 3.0, but capped at 1.5
-    let reward_10 = compute_reward(1, 1, 10, true, true);
-    let reward_100 = compute_reward(1, 1, 100, true, true);
+    let reward_10 = compute_reward(1, 1, 10, true, true, false);
+    let reward_100 = compute_reward(1, 1, 100, true, true, false);
     assert!(
         (reward_10 - reward_100).abs() < 0.001,
         "10 alerts and 100 alerts should have same reward (SPC penalty capped at 1.5), got {} vs {}",
@@ -367,7 +367,7 @@ fn test_dispatch_and_reward_end_to_end() {
         assert!(batch_size <= 1000, "Scaled batch should not increase in degraded state");
 
         // Compute reward for stable degraded state (action was taken, health unchanged)
-        let reward = compute_reward(2, 2, 0, true, true);
+        let reward = compute_reward(2, 2, 0, true, true, false);
         // Stable with guards passing: +0.2 (stable) - 0 (SPC) + 0.1 (guard+circuit) = 0.3
         assert!(
             (reward - 0.3).abs() < 0.001,
@@ -388,7 +388,7 @@ fn test_orchestrator_run_cycle_produces_valid_action_and_reward() {
     let next_state = make_test_state(1);
 
     let (action_label, reward) =
-        orch.run_cycle(&features, &state, &next_state, 0, true, true);
+        orch.run_cycle(&features, &state, &next_state, 0, true, true, false);
 
     // Action label should match one of the 5 RlAction variants
     let valid_actions = [
@@ -429,7 +429,7 @@ fn test_orchestrator_cycle_accumulates_reward() {
 
     for _ in 0..5 {
         let (_, reward) =
-            orch.run_cycle(&features, &state, &next_state, 0, true, true);
+            orch.run_cycle(&features, &state, &next_state, 0, true, true, false);
         expected_cumulative += reward;
         assert_eq!(
             orch.telemetry().cumulative_reward,

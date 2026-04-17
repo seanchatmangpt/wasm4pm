@@ -152,7 +152,7 @@ fn jtbd_rl_orchestrator_handles_bpi_scale_features() {
             cycle_phase: (i as u8) % 4,
         };
 
-        let (action, reward) = orch.run_cycle(&features, &state, &next_state, 0, true, true);
+        let (action, reward) = orch.run_cycle(&features, &state, &next_state, 0, true, true, false);
 
         // Validate reward is finite
         assert!(
@@ -283,7 +283,7 @@ fn jtbd_reward_computation_on_real_features() {
     };
 
     let (_, reward_stable) =
-        orch.run_cycle(&features, &state_stable, &state_stable, 0, true, true);
+        orch.run_cycle(&features, &state_stable, &state_stable, 0, true, true, false);
 
     // Scenario B: Degradation (health 0→2)
     let state_degraded = RlState {
@@ -298,11 +298,15 @@ fn jtbd_reward_computation_on_real_features() {
     };
 
     let (_, reward_degraded) =
-        orch.run_cycle(&features, &state_stable, &state_degraded, 2, false, true);
+        orch.run_cycle(
+            &features, &state_stable, &state_degraded, 2, false,
+            true,
+            false,
+        );
 
     // Scenario C: Improvement (health 2→0)
     let (_, reward_improved) =
-        orch.run_cycle(&features, &state_degraded, &state_stable, 0, true, true);
+        orch.run_cycle(&features, &state_degraded, &state_stable, 0, true, true, false);
 
     // Validate reward monotonicity
     assert!(
@@ -368,7 +372,7 @@ fn jtbd_linucb_agent_selection_on_real_features() {
             cycle_phase: (i as u8) % 4,
         };
 
-        let (action, reward) = orch.run_cycle(&features, &state, &next_state, 1, true, true);
+        let (action, reward) = orch.run_cycle(&features, &state, &next_state, 1, true, true, false);
 
         // Validate reward is finite
         assert!(

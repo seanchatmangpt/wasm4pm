@@ -38,7 +38,7 @@ fn test_switching_agent_changes_behavior() {
     let mut q_actions: HashSet<String> = HashSet::new();
     for _ in 0..50 {
         let (action_label, _) =
-            orch_q.run_cycle(&features, &state, &next_state, 0, true, true);
+            orch_q.run_cycle(&features, &state, &next_state, 0, true, true, false);
         q_actions.insert(action_label);
     }
 
@@ -49,7 +49,7 @@ fn test_switching_agent_changes_behavior() {
     let mut sarsa_actions: HashSet<String> = HashSet::new();
     for _ in 0..50 {
         let (action_label, _) =
-            orch_sarsa.run_cycle(&features, &state, &next_state, 0, true, true);
+            orch_sarsa.run_cycle(&features, &state, &next_state, 0, true, true, false);
         sarsa_actions.insert(action_label);
     }
 
@@ -111,7 +111,7 @@ fn test_linucb_toggle_changes_agent_selection() {
 
     let mut fixed_agents: HashSet<String> = HashSet::new();
     for _ in 0..20 {
-        orch_fixed.run_cycle(&features, &state, &next_state, 0, true, true);
+        orch_fixed.run_cycle(&features, &state, &next_state, 0, true, true, false);
         fixed_agents.insert(orch_fixed.telemetry().active_agent_name.clone());
     }
 
@@ -134,7 +134,7 @@ fn test_linucb_toggle_changes_agent_selection() {
 
     let mut linucb_agents: HashSet<String> = HashSet::new();
     for _ in 0..20 {
-        orch_linucb.run_cycle(&features, &state, &next_state, 0, true, true);
+        orch_linucb.run_cycle(&features, &state, &next_state, 0, true, true, false);
         linucb_agents.insert(orch_linucb.telemetry().active_agent_name.clone());
     }
 
@@ -182,14 +182,14 @@ fn test_exploration_decay_increases_action_stability() {
     // Early window: cycles 0-49
     for _ in 0..50 {
         let (action_label, _) =
-            orch.run_cycle(&features, &state, &next_state, 0, true, true);
+            orch.run_cycle(&features, &state, &next_state, 0, true, true, false);
         early_actions.insert(action_label);
     }
 
     // Late window: cycles 50-99
     for _ in 0..50 {
         let (action_label, _) =
-            orch.run_cycle(&features, &state, &next_state, 0, true, true);
+            orch.run_cycle(&features, &state, &next_state, 0, true, true, false);
         late_actions.insert(action_label);
     }
 
@@ -242,6 +242,7 @@ fn test_reward_remains_bounded_under_extreme_inputs() {
                             alerts,
                             guard,
                             circuit,
+                            false,
                         );
 
                         // Must be finite
@@ -294,14 +295,14 @@ fn test_reward_remains_bounded_under_extreme_inputs() {
 fn test_reward_is_deterministic() {
     // compute_reward is a pure function -- same inputs must give same outputs
     for _ in 0..10 {
-        let r1 = compute_reward(2, 1, 3, true, false);
-        let r2 = compute_reward(2, 1, 3, true, false);
+        let r1 = compute_reward(2, 1, 3, true, false, false);
+        let r2 = compute_reward(2, 1, 3, true, false, false);
         assert_eq!(r1, r2, "compute_reward must be deterministic");
     }
 
     // Different inputs must give different outputs (or at least not crash)
-    let r_a = compute_reward(0, 0, 0, true, true);
-    let r_b = compute_reward(4, 4, 100, false, false);
+    let r_a = compute_reward(0, 0, 0, true, true, false);
+    let r_b = compute_reward(4, 4, 100, false, false, false);
     assert_ne!(r_a, r_b, "Different inputs should produce different rewards");
 }
 
@@ -332,7 +333,7 @@ fn test_all_agents_have_distinct_decay_behavior() {
         let next_state = make_test_state(0);
 
         for _ in 0..100 {
-            let _ = orch.run_cycle(&features, &state, &next_state, 0, true, true);
+            let _ = orch.run_cycle(&features, &state, &next_state, 0, true, true, false);
         }
 
         // All 100 cycles should complete
@@ -352,7 +353,7 @@ fn test_all_agents_have_distinct_decay_behavior() {
     let next_state = make_test_state(0);
 
     for _ in 0..100 {
-        let _ = orch_reinforce.run_cycle(&features, &state, &next_state, 0, true, true);
+        let _ = orch_reinforce.run_cycle(&features, &state, &next_state, 0, true, true, false);
     }
 
     assert_eq!(
@@ -373,28 +374,28 @@ fn test_reward_component_breakdown() {
     // Verify each reward component independently
 
     // 1. Health improvement component
-    let r_improve = compute_reward(2, 1, 0, true, true);
-    let r_stable = compute_reward(1, 1, 0, true, true);
-    let r_degrade = compute_reward(1, 2, 0, true, true);
+    let r_improve = compute_reward(2, 1, 0, true, true, false);
+    let r_stable = compute_reward(1, 1, 0, true, true, false);
+    let r_degrade = compute_reward(1, 2, 0, true, true, false);
     assert!(r_improve > r_stable, "Improvement should beat stable");
     assert!(r_stable > r_degrade, "Stable should beat degradation");
 
     // 2. SPC penalty component (on top of stable health)
-    let r_0_alerts = compute_reward(1, 1, 0, true, true);
-    let r_1_alert = compute_reward(1, 1, 1, true, true);
-    let r_3_alerts = compute_reward(1, 1, 3, true, true);
+    let r_0_alerts = compute_reward(1, 1, 0, true, true, false);
+    let r_1_alert = compute_reward(1, 1, 1, true, true, false);
+    let r_3_alerts = compute_reward(1, 1, 3, true, true, false);
     assert!(r_0_alerts > r_1_alert, "0 alerts should beat 1 alert");
     assert!(r_1_alert > r_3_alerts, "1 alert should beat 3 alerts");
 
     // 3. Guard/circuit component
-    let r_both_ok = compute_reward(1, 1, 0, true, true);
-    let r_guard_fail = compute_reward(1, 1, 0, false, true);
-    let r_circuit_fail = compute_reward(1, 1, 0, true, false);
+    let r_both_ok = compute_reward(1, 1, 0, true, true, false);
+    let r_guard_fail = compute_reward(1, 1, 0, false, true, false);
+    let r_circuit_fail = compute_reward(1, 1, 0, true, false, false);
     assert!(r_both_ok > r_guard_fail, "Both OK should beat guard fail");
     assert!(r_both_ok > r_circuit_fail, "Both OK should beat circuit fail");
 
     // 4. Terminal penalty
-    let r_terminal = compute_reward(3, 4, 0, true, true);
-    let r_non_terminal = compute_reward(3, 3, 0, true, true);
+    let r_terminal = compute_reward(3, 4, 0, true, true, false);
+    let r_non_terminal = compute_reward(3, 3, 0, true, true, false);
     assert!(r_terminal < r_non_terminal, "Terminal should be worse than non-terminal");
 }

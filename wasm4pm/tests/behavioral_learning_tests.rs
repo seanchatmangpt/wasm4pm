@@ -38,7 +38,7 @@ fn run_health_improvement_scenario(
         let next_health = if current_health == 0 { 0 } else { current_health - 1 };
         let next_state = make_test_state(next_health);
 
-        let (_, reward) = orch.run_cycle(&FEATURES, &state, &next_state, 0, true, true);
+        let (_, reward) = orch.run_cycle(&FEATURES, &state, &next_state, 0, true, true, false);
         rewards.push(reward);
         current_health = next_health;
     }
@@ -169,7 +169,7 @@ fn test_exploration_decay_reduces_action_variance() {
     let mut action_counts: Vec<HashMap<String, usize>> = Vec::new();
 
     for cycle in 0..total_cycles {
-        let (action_label, _) = orch.run_cycle(&FEATURES, &state, &next_state, 0, true, true);
+        let (action_label, _) = orch.run_cycle(&FEATURES, &state, &next_state, 0, true, true, false);
 
         let window_idx = cycle / window_size;
         if window_idx >= action_counts.len() {
@@ -283,7 +283,7 @@ fn test_linucb_exploration_then_exploitation() {
     let mut agent_selections: Vec<AgentType> = Vec::with_capacity(total_cycles);
 
     for _ in 0..total_cycles {
-        orch.run_cycle(&FEATURES, &state, &next_state, 0, true, true);
+        orch.run_cycle(&FEATURES, &state, &next_state, 0, true, true, false);
         agent_selections.push(orch.active_agent());
     }
 
@@ -365,7 +365,7 @@ fn test_cumulative_reward_monotonic_in_positive_environment() {
         let next_health = if current_health == 0 { 0 } else { current_health - 1 };
         let next_state = make_test_state(next_health);
 
-        orch.run_cycle(&FEATURES, &state, &next_state, 0, true, true);
+        orch.run_cycle(&FEATURES, &state, &next_state, 0, true, true, false);
 
         let current_cumulative = orch.telemetry().cumulative_reward;
         assert!(
@@ -401,7 +401,7 @@ fn test_negative_environment_drives_reward_down() {
         let next_state = make_test_state(next_health);
 
         // SPC alerts + circuit failure = additional penalty
-        orch.run_cycle(&FEATURES, &state, &next_state, 3, true, false);
+        orch.run_cycle(&FEATURES, &state, &next_state, 3, true, false, false);
         current_health = next_health;
     }
 
@@ -430,7 +430,7 @@ fn test_reward_recovery_after_environment_improvement() {
         let state = make_test_state(current_health);
         let next_health = if current_health >= 4 { 4 } else { current_health + 1 };
         let next_state = make_test_state(next_health);
-        orch.run_cycle(&FEATURES, &state, &next_state, 2, true, false);
+        orch.run_cycle(&FEATURES, &state, &next_state, 2, true, false, false);
         current_health = next_health;
     }
     let reward_after_degrade = orch.telemetry().cumulative_reward;
@@ -441,7 +441,7 @@ fn test_reward_recovery_after_environment_improvement() {
         let state = make_test_state(current_health);
         let next_health = if current_health == 0 { 0 } else { current_health - 1 };
         let next_state = make_test_state(next_health);
-        orch.run_cycle(&FEATURES, &state, &next_state, 0, true, true);
+        orch.run_cycle(&FEATURES, &state, &next_state, 0, true, true, false);
         current_health = next_health;
     }
     let reward_after_improve = orch.telemetry().cumulative_reward;
@@ -489,6 +489,7 @@ fn test_health_improves_after_three_consecutive_successes() {
             0, // no SPC alerts
             true,  // guard_pass
             true,  // circuit_allowed
+            false,  // latency_budget_exceeded
         );
 
         // Verify consecutive_successes tracking
@@ -547,13 +548,13 @@ fn test_consecutive_successes_resets_on_failure() {
     // Run 2 successful cycles
     for _ in 0..2 {
         let next_state = RlState::from_features(&features, health_level, 0.0);
-        orch.run_cycle(&features, &state, &next_state, 0, true, true);
+        orch.run_cycle(&features, &state, &next_state, 0, true, true, false);
     }
     assert_eq!(orch.telemetry().consecutive_successes, 2);
 
     // Run 1 failed cycle (guard_pass=false)
     let next_state = RlState::from_features(&features, health_level + 1, 0.0); // Health degrades
-    orch.run_cycle(&features, &state, &next_state, 0, false, true);
+    orch.run_cycle(&features, &state, &next_state, 0, false, true, false);
 
     // Verify consecutive_successes reset to 0
     assert_eq!(
@@ -578,7 +579,7 @@ fn test_b3_sustained_critical_health_reward_stability() {
     let mut rewards: Vec<f32> = Vec::with_capacity(30);
 
     for _ in 0..30 {
-        let (_, reward) = orch.run_cycle(&features, &state, &state, 0, true, true);
+        let (_, reward) = orch.run_cycle(&features, &state, &state, 0, true, true, false);
         rewards.push(reward);
     }
 

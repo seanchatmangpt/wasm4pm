@@ -135,7 +135,7 @@ fn e2e_pipeline_event_stream_to_prompt_bindings() {
     let mut orch = RlOrchestrator::new();
     orch.set_linucb_selection(true);
     let next_state = make_test_state(1);
-    let (action_label, reward) = orch.run_cycle(&features, &state, &next_state, 0, true, true);
+    let (action_label, reward) = orch.run_cycle(&features, &state, &next_state, 0, true, true, false);
     assert!(!action_label.is_empty(), "RL must produce an action label");
     assert!(!reward.is_nan(), "Reward must be a real number");
     assert_eq!(orch.telemetry().cycle_count, 1);
@@ -198,7 +198,7 @@ fn e2e_cpu_hot_path_marking_sequence() {
     assert_eq!(m2.p1, 1, "Output token produced");
 
     // RL reward for health improvement (3 → 1 = large gain)
-    let reward = compute_reward(3, 1, 0, true, true);
+    let reward = compute_reward(3, 1, 0, true, true, false);
     assert!(reward > 0.0, "Positive reward for health improvement");
 
     // Blocked marking produces no state change
@@ -265,7 +265,7 @@ fn e2e_autonomic_state_machine_happy_path() {
     assert_eq!(m2.p1, 1);
 
     // MONITOR: RL reward is positive (health improved from 1 to 0)
-    let reward = compute_reward(1, 0, 0, true, true);
+    let reward = compute_reward(1, 0, 0, true, true, false);
     assert!(reward > 0.0);
 
     // LEARN: orchestrator cycle recorded
@@ -273,7 +273,7 @@ fn e2e_autonomic_state_machine_happy_path() {
     let features = [0.1, 0.5, 0.0, 0.5, 0.2, 1.0, 0.9, 0.3];
     let state = make_test_state(1);
     let next_state = make_test_state(1);
-    let (_, cycle_reward) = orch.run_cycle(&features, &state, &next_state, 0, true, true);
+    let (_, cycle_reward) = orch.run_cycle(&features, &state, &next_state, 0, true, true, false);
     assert_eq!(orch.telemetry().cycle_count, 1);
     assert_eq!(orch.telemetry().cumulative_reward, cycle_reward);
 }
@@ -309,7 +309,7 @@ fn e2e_autonomic_state_machine_escalation_path() {
     assert_eq!(m_unchanged.p1, 0);
 
     // LEARN: negative reward for drift
-    let reward = compute_reward(1, 3, 3, false, false);
+    let reward = compute_reward(1, 3, 3, false, false, false);
     assert!(reward < 0.0, "Penalty for escalation scenario");
 }
 
@@ -398,8 +398,8 @@ fn e2e_ml_challenge_feature_sparsity_entropy() {
     let state = make_test_state(1);
     let next_state = make_test_state(1);
 
-    let (action_high, _) = orch.run_cycle(&high_entropy_features, &state, &next_state, 0, true, true);
-    let (action_low, _) = orch.run_cycle(&low_entropy_features, &state, &next_state, 0, true, true);
+    let (action_high, _) = orch.run_cycle(&high_entropy_features, &state, &next_state, 0, true, true, false);
+    let (action_low, _) = orch.run_cycle(&low_entropy_features, &state, &next_state, 0, true, true, false);
 
     // Both must produce valid action labels (contextual bandit responds to features)
     assert!(!action_high.is_empty());
@@ -431,9 +431,9 @@ fn e2e_rl_challenge_ucb_exploration_bonus() {
 #[test]
 fn e2e_rl_challenge_bounded_reward_kernel() {
     // Worst case: severe degradation, many SPC alerts, both guards failed
-    let min_reward = compute_reward(0, 4, 100, false, false);
+    let min_reward = compute_reward(0, 4, 100, false, false, false);
     // Best case: maximum improvement, clean process, all guards pass
-    let max_reward = compute_reward(4, 0, 0, true, true);
+    let max_reward = compute_reward(4, 0, 0, true, true, false);
 
     assert!(min_reward > -20.0, "Reward floor must be bounded");
     assert!(max_reward < 5.0, "Reward ceiling must be bounded");
@@ -451,7 +451,7 @@ fn e2e_rl_challenge_persistent_state_across_cycles() {
 
     let mut cumulative = 0.0f32;
     for i in 1..=10 {
-        let (_, reward) = orch.run_cycle(&features, &state, &next_state, 0, true, true);
+        let (_, reward) = orch.run_cycle(&features, &state, &next_state, 0, true, true, false);
         cumulative += reward;
         assert_eq!(orch.telemetry().cycle_count, i, "Cycle counter must persist");
         assert!(
@@ -526,7 +526,7 @@ fn e2e_rl_all_agents_run_without_panic() {
         let mut orch = RlOrchestrator::new();
         orch.switch_agent(agent_type);
         let next_state = make_test_state(2);
-        let (label, reward) = orch.run_cycle(&features, &state, &next_state, 0, true, true);
+        let (label, reward) = orch.run_cycle(&features, &state, &next_state, 0, true, true, false);
         assert!(!label.is_empty(), "Agent {agent_type:?} must produce a label");
         assert!(!reward.is_nan(), "Agent {agent_type:?} must produce a real reward");
     }
@@ -750,7 +750,7 @@ fn e2e_decision_gate_successful_execution_produces_receipt() {
     let features = [0.3, 0.5, 0.0, 0.6, 0.2, 1.0, 0.8, 0.4f32];
     let state = make_test_state(1);
     let next_state = make_test_state(1);
-    let (_, reward) = orch.run_cycle(&features, &state, &next_state, 0, true, true);
+    let (_, reward) = orch.run_cycle(&features, &state, &next_state, 0, true, true, false);
 
     let telem = orch.telemetry();
     assert_eq!(telem.cycle_count, 1, "One receipt recorded");
@@ -890,12 +890,12 @@ fn e2e_health_state_adaptive_after_shift() {
     let next_state = make_test_state(2);
 
     // Run with SPC alerts (count=3) — RL records the alert
-    let (_, _) = orch.run_cycle(&features, &state, &next_state, 3, true, true);
+    let (_, _) = orch.run_cycle(&features, &state, &next_state, 3, true, true, false);
     assert_eq!(orch.telemetry().last_spc_alert_count, 3);
 
     // Subsequent cycle with no alerts — RL adapts
     let next_state_2 = make_test_state(0);
-    let (_, reward) = orch.run_cycle(&features, &make_test_state(1), &next_state_2, 0, true, true);
+    let (_, reward) = orch.run_cycle(&features, &make_test_state(1), &next_state_2, 0, true, true, false);
     assert_eq!(orch.telemetry().last_spc_alert_count, 0);
     assert_eq!(orch.telemetry().cycle_count, 2);
     assert!(!reward.is_nan());
@@ -930,7 +930,7 @@ fn e2e_health_state_blocked_on_disabled_marking() {
     assert_eq!(en, 0, "No tokens = Blocked state");
 
     // RL records a penalty for the blocked state
-    let reward = compute_reward(2, 2, 0, false, false); // guard failed = circuit open
+    let reward = compute_reward(2, 2, 0, false, false, false); // guard failed = circuit open
     assert!(reward < 0.0, "Circuit breaker failure must penalise reward");
 }
 
@@ -949,7 +949,7 @@ fn e2e_health_state_recovery_from_blocked() {
     let m2 = marking_fire4(m_recovered, t, en);
     assert_eq!(m2.p1, 1, "Lawful path restored");
 
-    let reward = compute_reward(2, 1, 0, true, true);
+    let reward = compute_reward(2, 1, 0, true, true, false);
     assert!(reward > 0.0, "Recovery produces positive reward");
 }
 
@@ -1220,7 +1220,7 @@ fn e2e_challenge_streaming_event_pressure() {
     // Simulate 1000 rapid events
     let mut valid_cycles = 0u32;
     for _ in 0..1000 {
-        let (label, reward) = orch.run_cycle(&features, &state, &next_state, 0, true, true);
+        let (label, reward) = orch.run_cycle(&features, &state, &next_state, 0, true, true, false);
         if !label.is_empty() && !reward.is_nan() {
             valid_cycles += 1;
         }
@@ -1282,7 +1282,7 @@ fn e2e_challenge_llm_replacement_bounded_decision_budget() {
 fn e2e_challenge_adversarial_reward_distribution() {
     // Adversarial: maximum degradation + maximum SPC alerts + all guards failed
     let rewards: Vec<f32> = (0..=4)
-        .flat_map(|from| (0..=4).map(move |to| compute_reward(from, to, 100, false, false)))
+        .flat_map(|from| (0..=4).map(move |to| compute_reward(from, to, 100, false, false, false)))
         .collect();
 
     for r in &rewards {
