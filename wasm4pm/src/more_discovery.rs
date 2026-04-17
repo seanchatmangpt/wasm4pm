@@ -5,6 +5,8 @@ use rustc_hash::FxHashMap;
 use serde_json::json;
 use std::collections::HashSet;
 use wasm_bindgen::prelude::*;
+use rand::{Rng, SeedableRng};
+use rand::rngs::StdRng;
 
 /// Inductive Miner - recursive structure discovery via cuts
 /// Implements IM-basic (no noise filtering, all directly-follows preserved)
@@ -290,6 +292,9 @@ pub fn discover_simulated_annealing(
 
                 let cooling_rate = cooling_rate.clamp(0.001_f64, 0.9999_f64);
 
+                // Deterministic RNG: seeded for reproducibility
+                let mut rng = StdRng::seed_from_u64(42);
+
                 // Start with empty edge set
                 let mut current_edges: HashSet<(u32, u32)> = HashSet::new();
                 let mut current_fitness = evaluate_edges_fitness(&current_edges, &col);
@@ -301,7 +306,7 @@ pub fn discover_simulated_annealing(
                     // Random neighbor move: add or remove one edge
                     let mut neighbor = current_edges.clone();
 
-                    if fastrand::f64() < 0.5 && !current_edges.is_empty() {
+                    if rng.gen::<f64>() < 0.5 && !current_edges.is_empty() {
                         // Remove random edge
                         if let Some(&edge) = neighbor.iter().next() {
                             neighbor.remove(&edge);
@@ -309,7 +314,7 @@ pub fn discover_simulated_annealing(
                     } else {
                         // Add random edge from vocabulary
                         if !edge_vocab.is_empty() {
-                            let idx = (fastrand::f64() * edge_vocab.len() as f64) as usize;
+                            let idx = (rng.gen::<f64>() * edge_vocab.len() as f64) as usize;
                             neighbor.insert(edge_vocab[idx]);
                         }
                     }
@@ -320,7 +325,7 @@ pub fn discover_simulated_annealing(
                     // Standard SA acceptance: improvements always accepted; worse
                     // solutions accepted with Boltzmann probability exp(delta/T).
                     // delta < 0 here, so exp(delta/T) ∈ (0,1) — correctly decays with T.
-                    let accept = delta >= 0.0 || fastrand::f64() < (delta / temp).exp();
+                    let accept = delta >= 0.0 || rng.gen::<f64>() < (delta / temp).exp();
                     if accept {
                         current_edges = neighbor;
                         current_fitness = neighbor_fitness;
