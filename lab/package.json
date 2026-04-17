@@ -1,6 +1,6 @@
 {
   "name": "@wasm4pm/lab-cli-tests",
-  "version": "26.4.5",
+  "version": "26.4.16",
   "description": "CLI validation test suite for @pictl/cli",
   "private": true,
   "type": "module",
@@ -26,7 +26,7 @@
     "vitest": "^1.1.0"
   },
   "dependencies": {
-    "@seanchatmangpt/pictl": "^26.4.9"
+    "@seanchatmangpt/pictl": "^26.4.16"
   },
   "keywords": [
     "cli",
