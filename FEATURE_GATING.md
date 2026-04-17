@@ -149,7 +149,7 @@ feature-gpu
 
 Each profile combines canonical features into a preset configuration for a specific deployment target.
 
-### Mobile Profile (~500KB, 82% reduction)
+### Mobile Profile (~1.8MB target, 33% reduction from browser)
 
 **Target:** Mobile apps, web browsers with size constraints, CDN edge endpoints
 
@@ -175,7 +175,7 @@ const dfg = discover_dfg(log, "concept:name");
 cargo build --release --target wasm32-unknown-unknown --features mobile
 ```
 
-### IoT Profile (~1MB, 64% reduction)
+### IoT Profile (~1.9MB, 30% reduction)
 
 **Target:** IoT devices, embedded systems, resource-constrained environments
 
@@ -196,7 +196,7 @@ cargo build --release --target wasm32-unknown-unknown --features mobile
 cargo build --release --target wasm32-unknown-unknown --features iot
 ```
 
-### Edge Profile (~1.5MB, 46% reduction)
+### Edge Profile (~2.1MB, 22% reduction)
 
 **Target:** Edge servers, CDN workers, fog gateways
 
@@ -229,7 +229,7 @@ setInterval(async () => {
 cargo build --release --target wasm32-unknown-unknown --features edge
 ```
 
-### Fog Profile (~2MB, 28% reduction)
+### Fog Profile (~2.4MB, 13% reduction)
 
 **Target:** Fog computing, IoT gateways, on-premises servers
 
@@ -267,7 +267,7 @@ const prediction = await kernel.run('ml_forecast', logHandle, {
 cargo build --release --target wasm32-unknown-unknown --features fog
 ```
 
-### Browser Profile (~2.78MB, baseline — DEFAULT)
+### Browser Profile (~2.7MB measured, baseline — DEFAULT)
 
 **Target:** Cloud servers, large deployments, development/testing, full-featured web apps
 

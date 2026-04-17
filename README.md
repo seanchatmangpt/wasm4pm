@@ -56,11 +56,13 @@ Choose the right build for your target environment:
 
 | Profile | Size | Use Case | Build Command |
 |---------|------|----------|--------------|
-| **mobile** | ~500KB | Mobile apps, minimal web | `npm run build:mobile` |
-| **edge** | ~1.5MB | Edge servers, CDN workers | `npm run build:edge` |
-| **fog** | ~2.0MB | Fog computing, IoT gateways | `npm run build:fog` |
-| **iot** | ~1.0MB | IoT devices, embedded systems | `npm run build:iot` |
-| **browser** | ~2.78MB | Cloud servers, web apps (default) | `npm run build` |
+| **mobile** | ~1.8MB* | Mobile apps, minimal web | `npm run build:mobile` |
+| **edge** | ~2.1MB* | Edge servers, CDN workers | `npm run build:edge` |
+| **fog** | ~2.4MB* | Fog computing, IoT gateways | `npm run build:fog` |
+| **iot** | ~1.9MB* | IoT devices, embedded systems | `npm run build:iot` |
+| **browser** | **2.7MB** | Cloud servers, web apps (default) | `npm run build` |
+
+*Sizes are feature-gate targets; actual sizes depend on feature flag implementation status. Browser profile (measured): **2697 KB**
 
 **Key Features:**
 - **Browser Profile Default:** `npm run build` now builds the full-featured browser profile (all 41 algorithms, 2.78MB)
@@ -197,12 +199,12 @@ npm install @seanchatmangpt/pictl
 
 ### Requirements
 - Node.js 16+ or modern browser
-- **Binary size varies by deployment profile:**
-  - mobile: ~500KB (gzipped: ~150KB)
-  - iot: ~1.0MB (gzipped: ~300KB)
-  - edge: ~1.5MB (gzipped: ~450KB)
-  - fog: ~2.0MB (gzipped: ~600KB)
-  - browser: ~2.78MB (gzipped: ~800KB, default)
+- **Binary size by deployment profile (feature gates in progress):**
+  - mobile: ~1.8MB target (gzipped: ~540KB estimate)
+  - iot: ~1.9MB target (gzipped: ~570KB estimate)
+  - edge: ~2.1MB target (gzipped: ~630KB estimate)
+  - fog: ~2.4MB target (gzipped: ~720KB estimate)
+  - browser: **2.7MB measured** (gzipped: ~810KB, default)
 
 ## 🎯 What's New in v26.4.8
 
