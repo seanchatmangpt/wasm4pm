@@ -77,6 +77,7 @@
 //! - [npm Package](https://www.npmjs.com/package/@seanchatmangpt/pictl)
 //! - [Documentation](https://docs.rs/pictl)
 
+pub mod cache_resident;
 pub mod error;
 pub mod io;
 pub mod models;
@@ -233,6 +234,7 @@ pub mod benchmark_registry;
 pub mod algorithms;
 pub mod analysis;
 pub mod binary_format;
+pub mod branchless;
 pub mod cache;
 pub mod capability_registry;
 pub mod pattern_analysis;
@@ -338,6 +340,9 @@ pub mod declare_conformance;
 pub mod simd_token_replay;
 #[cfg(feature = "conformance_basic")]
 pub mod temporal_profile;
+
+// SIMD inner loop optimizations (always compiled, feature-gated at runtime)
+pub mod simd_inner_loops;
 
 #[cfg(feature = "conformance_full")]
 pub mod alignments;
@@ -460,6 +465,9 @@ pub mod ml;
 // Not compiled for wasm32 — wgpu targets native GPU (Vulkan/Metal/DX12).
 #[cfg(not(target_arch = "wasm32"))]
 pub mod gpu;
+
+// AutoProcessAgent — Vision 2030 autonomic loop (Perception → Decision → Protection → Optimization)
+pub mod autoprocess;
 
 // Suppress unused warnings for re-exported modules
 #[allow(unused)]

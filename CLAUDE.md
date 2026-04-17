@@ -269,6 +269,8 @@ npm run build                 # wasm-pack bundler target
 npm run build:nodejs          # Node.js target
 npm run build:all             # all targets
 npm test                      # vitest unit + integration
+npm run build:profiles        # build all 5 deployment profiles
+npm run measure-sizes         # measure WASM binary sizes
 ```
 
 ### Rust
@@ -276,6 +278,7 @@ npm test                      # vitest unit + integration
 cargo check                   # fast type check
 cargo build --release         # build WASM library
 cargo test                    # Rust unit tests
+cargo test --test feature_gating_tests --features browser  # test feature gating
 ```
 
 ### MCP Server (wasm4pm/)
@@ -283,6 +286,101 @@ cargo test                    # Rust unit tests
 cd wasm4pm
 npm run build:mcp            # compile MCP server
 npm run start:mcp            # build + run MCP server
+```
+
+---
+
+## Feature Flags & Deployment Profiles
+
+pictl uses **12 canonical feature flags** that map to **5 deployment profiles**. Feature gates in `Cargo.toml` control which modules compile for each profile.
+
+### Canonical Feature Flags (WASM Feature API)
+
+| Feature | Purpose | Profiles |
+|---------|---------|----------|
+| `feature-conformance-basic` | Token-based replay fitness | All |
+| `feature-conformance-full` | Alignments + full conformance | fog, cloud |
+| `feature-discovery-advanced` | Genetic, ILP, ACO, PSO | edge, fog, cloud |
+| `feature-ml` | ML algorithms (6 total) | fog, cloud |
+| `feature-ocel` | Object-centric event logs | fog, cloud |
+| `feature-powl` | Partial-order workflows | cloud only |
+| `feature-streaming-basic` | DFG streaming | edge, fog, cloud |
+| `feature-streaming-full` | SIMD-accelerated streaming | fog, cloud |
+| `feature-gpu` | GPU acceleration (non-WASM) | N/A for WASM |
+| `feature-hand-rolled-stats` | Size optimization | browser, iot, edge |
+| `feature-statrs` | Full-precision statistics | fog, cloud |
+| `feature-rayon` | Parallel processing (non-WASM) | N/A for WASM |
+
+### Deployment Profiles (5 Size Tiers)
+
+| Profile | Target | Size | Features | Algorithms |
+|---------|--------|------|----------|-----------|
+| `browser` | Web browsers, mobile | ~500KB | basic discovery, conformance | ~10-15 |
+| `iot` | IoT devices, embedded | ~1MB | basic discovery, conformance | ~12-18 |
+| `edge` | CDN workers, edge servers | ~1.5MB | adv. discovery, basic streaming | ~18-25 |
+| `fog` | Fog computing, gateways | ~2MB | all except POWL, full streaming, ML | ~35-40 |
+| `cloud` | Cloud servers (DEFAULT) | ~2.78MB | all 41 algorithms, all features | ~41 |
+
+### Build Commands by Profile
+
+```bash
+cd wasm4pm
+
+# Browser profile (~500KB, 82% reduction)
+cargo build --release --target wasm32-unknown-unknown --features browser
+npm run build:browser
+
+# IoT profile (~1MB, 64% reduction)
+cargo build --release --target wasm32-unknown-unknown --features iot
+npm run build:iot
+
+# Edge profile (~1.5MB, 46% reduction)
+cargo build --release --target wasm32-unknown-unknown --features edge
+npm run build:edge
+
+# Fog profile (~2MB, 28% reduction)
+cargo build --release --target wasm32-unknown-unknown --features fog
+npm run build:fog
+
+# Cloud profile (~2.78MB, baseline)
+cargo build --release --target wasm32-unknown-unknown --all-features
+npm run build:cloud
+
+# Measure all sizes
+npm run measure-sizes
+```
+
+### Feature Mapping to Internal Flags
+
+Canonical features map to internal Rust `#[cfg]` flags:
+- `feature-conformance-basic` → `conformance_basic`
+- `feature-conformance-full` → `conformance_full`, `alignment_fitness`, `align_etconformance`
+- `feature-discovery-advanced` → `discovery_advanced`, `genetic`, `ilp`, `a_star`, `aco`, `pso`, `simulated_annealing`
+- `feature-ml` → `ml`, `ml_classify`, `ml_cluster`, `ml_forecast`, `ml_anomaly`, `ml_regress`, `ml_pca`
+- `feature-ocel` → `ocel`
+- `feature-powl` → `powl`
+- `feature-streaming-basic` → `streaming_basic`, `streaming_dfg`
+- `feature-streaming-full` → `streaming_full`, `streaming_basic`, `simd`
+- `feature-gpu` → `gpu`, `dep:wgpu`, `dep:pollster`
+- `feature-hand-rolled-stats` → `hand_rolled_stats`
+- `feature-statrs` → `statrs`, `dep:statrs`
+- `feature-rayon` → `rayon`, `dep:rayon`
+
+### TypeScript Registry Integration
+
+The `@pictl/kernel` registry automatically detects available algorithms based on the WASM build profile. Each algorithm metadata includes `deploymentProfiles: DeploymentProfile[]`, which allows the registry to:
+
+1. Report algorithm availability per profile
+2. Suggest best algorithms for each profile
+3. Enforce profile constraints in execution planning
+
+Query registry for a profile:
+```typescript
+import { getRegistry } from '@pictl/kernel';
+
+const registry = getRegistry();
+const browserAlgos = registry.getForDeploymentProfile('browser');
+console.log(`Browser profile: ${browserAlgos.length} algorithms`);
 ```
 
 ---

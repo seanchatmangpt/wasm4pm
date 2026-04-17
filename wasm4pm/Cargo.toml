@@ -67,6 +67,7 @@ statrs = { version = "0.17", default-features = false, optional = true }
 rayon = { version = "1.10", optional = true }
 wgpu     = { version = "0.19", optional = true }
 pollster = { version = "0.3",  optional = true }
+bcinr-core = { path = "../../bcinr/bcinr-core", optional = true, default-features = false }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 web-sys = { version = "0.3", features = [] }
@@ -147,7 +148,11 @@ harness = false
 
 [[bench]]
 name = "autonomy_jtbd_validation"
-harness = true
+harness = false
+
+[[bench]]
+name = "simd_inner_loops"
+harness = false
 
 [[bench]]
 name = "scalability_benchmark"
@@ -157,6 +162,10 @@ harness = false
 name = "agentic_bench"
 harness = false
 
+[[bench]]
+name = "autoprocess_latency"
+harness = false
+
 [[example]]
 name = "scalability_report"
 
@@ -164,75 +173,148 @@ name = "scalability_report"
 name = "gpu_wgsl_benchmark"
 
 [features]
-# Deployment profiles - default to cloud (full feature set) for npm package
+# ─────────────────────────────────────────────────────────────────────────────
+# CANONICAL FEATURE FLAGS (NEW)
+# These are the authoritative semantic features for API stability.
+# Internal features (below) map to these canonical names.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Conformance checking (fitness, precision, generalization)
+feature-conformance-basic = ["conformance_basic"]
+feature-conformance-full = ["conformance_full", "alignment_fitness", "align_etconformance"]
+
+# Discovery algorithms (advanced = genetic, ILP, ACO, PSO)
+feature-discovery-advanced = ["discovery_advanced", "genetic", "ilp", "a_star", "aco", "pso", "simulated_annealing"]
+
+# Machine learning (classification, clustering, forecasting, anomaly, regression, PCA)
+feature-ml = ["ml", "ml_classify", "ml_cluster", "ml_forecast", "ml_anomaly", "ml_regress", "ml_pca"]
+
+# Object-centric event logs
+feature-ocel = ["ocel"]
+
+# Partial-order workflows
+feature-powl = ["powl"]
+
+# Streaming algorithms (basic = DFG streaming)
+feature-streaming-basic = ["streaming_basic", "streaming_dfg"]
+
+# Streaming algorithms (full = SIMD-accelerated)
+feature-streaming-full = ["streaming_full", "streaming_basic", "simd"]
+
+# GPU acceleration (for non-WASM targets)
+feature-gpu = ["gpu", "dep:wgpu", "dep:pollster"]
+
+# Hand-rolled statistics (size optimization)
+feature-hand-rolled-stats = ["hand_rolled_stats"]
+
+# Full-precision statistics (full statrs library)
+feature-statrs = ["statrs", "dep:statrs"]
+
+# Parallel processing (rayon for non-WASM)
+feature-rayon = ["rayon", "dep:rayon"]
+
+# Branchless algorithms (bcinr integration)
+bcinr = ["dep:bcinr-core"]
+
+# Default: no canonical features (backward compatibility with cloud profile below)
 default = ["cloud"]
-browser = ["basic", "simd", "hand_rolled_stats", "pm4wasm_tier1"]
-edge = ["basic", "advanced", "ml", "streaming_basic", "hand_rolled_stats", "pm4wasm_tier1"]
-fog = ["edge", "swarm", "streaming_full", "statrs", "ocel", "pm4wasm_tier2"]
-iot = ["minimal", "streaming_basic", "hand_rolled_stats", "pm4wasm_tier1"]
-cloud = ["basic", "advanced", "ml", "streaming_full", "swarm", "statrs", "powl", "ocel", "alignment_fitness", "petri_net_playout", "extensive_playout", "align_etconformance", "montecarlo", "console_error_panic_hook", "rayon", "pm4wasm_tier3"]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# DEPLOYMENT PROFILES
+# These combine canonical features into preset configurations.
+# Each profile targets a specific deployment target with size constraints.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Browser profile (~500KB): Minimal features for web browsers
+# Includes: basic discovery (DFG, skeleton, heuristic), basic conformance, branchless
+browser = [
+  "feature-conformance-basic",
+  "feature-hand-rolled-stats",
+  "conformance_basic",
+  "bcinr"
+]
+
+# IoT profile (~1MB): Minimal features for IoT devices
+# Includes: basic discovery, basic conformance, branchless
+iot = [
+  "feature-conformance-basic",
+  "feature-hand-rolled-stats",
+  "discovery_basic",
+  "conformance_basic",
+  "bcinr"
+]
+
+# Edge profile (~1.5MB): Advanced algorithms for edge servers (CDN workers)
+# Includes: basic + advanced discovery, basic conformance, basic streaming, bcinr
+edge = [
+  "feature-conformance-basic",
+  "feature-discovery-advanced",
+  "feature-streaming-basic",
+  "feature-hand-rolled-stats",
+  "discovery_advanced",
+  "conformance_basic",
+  "bcinr"
+]
+
+# Fog profile (~2MB): Full features except POWL for fog computing
+# Includes: all discovery, full conformance, ML, full streaming, OCEL, bcinr
+fog = [
+  "feature-conformance-full",
+  "feature-discovery-advanced",
+  "feature-ml",
+  "feature-streaming-full",
+  "feature-ocel",
+  "feature-statrs",
+  "discovery_advanced",
+  "conformance_full",
+  "ml",
+  "streaming_full",
+  "statrs",
+  "ocel",
+  "bcinr"
+]
+
+# Cloud profile (~2.78MB): Full feature set for cloud servers (DEFAULT)
+# Includes: all discovery, full conformance, ML, full streaming, OCEL, POWL, GPU, bcinr
+cloud = [
+  "feature-conformance-full",
+  "feature-discovery-advanced",
+  "feature-ml",
+  "feature-streaming-full",
+  "feature-ocel",
+  "feature-powl",
+  "feature-statrs",
+  "discovery_advanced",
+  "conformance_full",
+  "ml",
+  "streaming_full",
+  "petri_net_playout",
+  "extensive_playout",
+  "montecarlo",
+  "statrs",
+  "ocel",
+  "powl",
+  "console_error_panic_hook",
+  "bcinr"
+]
+
 # Backward compatibility alias
 compat = ["cloud"]
 
 # ─────────────────────────────────────────────────────────────────────────────
-# pm4wasm Feature Tiers (Tiered Algorithm Inclusion)
+# INTERNAL FEATURE FLAGS (legacy, kept for compatibility)
+# These are used for #[cfg(feature = "...")] module gating in src/*.rs
 # ─────────────────────────────────────────────────────────────────────────────
-# Tier 1: Discovery (fast algorithms only - ~18 algorithms, ≤4.0MB)
-pm4wasm_tier1 = ["pm4wasm_discovery_basic"]
 
-# Tier 2: Discovery + Advanced (~25 algorithms, ≤4.0MB)
-pm4wasm_tier2 = ["pm4wasm_tier1", "pm4wasm_discovery_advanced"]
-
-# Tier 3: Full Feature Set (all 41 algorithms, ≤5.0MB cloud)
-pm4wasm_tier3 = ["pm4wasm_tier2", "pm4wasm_conformance", "pm4wasm_ml"]
-
-# pm4wasm Discovery Algorithms (Feature-Gated)
-pm4wasm_discovery_basic = [
-  "alpha_plus_plus",
-  "heuristic_miner",
-  "inductive_miner"
-]
-
-pm4wasm_discovery_advanced = [
-  "pm4wasm_discovery_basic",
-  "genetic",
-  "ilp",
-  "a_star",
-  "aco",
-  "pso",
-  "simulated_annealing"
-]
-
-# pm4wasm Conformance (Fitness + Precision + Alignments)
-pm4wasm_conformance = [
-  "alignment_fitness",
-  "align_etconformance",
-  "petri_net_playout",
-  "extensive_playout"
-]
-
-# pm4wasm ML Analysis (Prediction + Analytics)
-pm4wasm_ml = [
-  "ml_classify",
-  "ml_cluster",
-  "ml_forecast",
-  "ml_anomaly",
-  "ml_regress",
-  "ml_pca"
-]
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Algorithm categories (pictl legacy)
-# ─────────────────────────────────────────────────────────────────────────────
-basic = ["discovery_basic", "conformance_basic"]
-advanced = ["discovery_advanced", "conformance_full"]
-minimal = ["discovery_minimal"]
-swarm = ["discovery_swarm"]
+# pm4wasm Feature Tiers
+pm4wasm_tier1 = ["discovery_basic", "conformance_basic"]
+pm4wasm_tier2 = ["discovery_advanced", "conformance_full"]
+pm4wasm_tier3 = ["discovery_advanced", "conformance_full", "ml", "streaming_full", "ocel", "powl"]
 
 # Discovery algorithms
-discovery_minimal = []  # dfg only (always included)
-discovery_basic = ["discovery_minimal"]
-discovery_advanced = ["discovery_basic"]
+discovery_minimal = []  # DFG only (always included)
+discovery_basic = ["alpha_plus_plus", "heuristic_miner", "inductive_miner"]
+discovery_advanced = ["discovery_basic", "genetic", "ilp", "a_star", "aco", "pso", "simulated_annealing"]
 discovery_swarm = ["discovery_advanced"]
 
 # Individual discovery algorithms (empty features for module-level cfg gating)
@@ -247,8 +329,8 @@ pso = []
 simulated_annealing = []
 
 # Conformance
-conformance_basic = []  # Basic conformance (token replay, temporal profiles)
-conformance_full = ["conformance_basic"]  # Full conformance (+ alignments)
+conformance_basic = []  # Token replay, temporal profiles
+conformance_full = ["conformance_basic", "alignment_fitness", "align_etconformance"]
 
 # ML/Prediction
 ml = []
@@ -260,19 +342,17 @@ ml_regress = []
 ml_pca = []
 
 # Streaming
-streaming_basic = []
-streaming_full = ["streaming_basic"]
+streaming_basic = ["streaming_dfg"]
+streaming_full = ["streaming_basic", "simd"]
 streaming_dfg = []
 streaming_skeleton = []
 streaming_heuristic = []
 streaming_inductive = []
 
-# Conformance (empty features for module-level cfg gating)
+# Conformance modules
 token_replay = []
 alignments = []
 diagnostics = []
-
-# New 80/20 gap-filling modules
 alignment_fitness = []
 petri_net_playout = []
 extensive_playout = []
@@ -280,17 +360,20 @@ align_etconformance = []
 montecarlo = []
 
 # Dependencies
-statrs = ["dep:statrs"]  # Optional dependency
-powl = []  # POWL modules (always compiled if feature enabled, just controls lib.rs exports)
-ocel = []  # OCEL support
+statrs = ["dep:statrs"]
+powl = []
+ocel = []
 
 # Utility features
-hand_rolled_stats = []  # Use internal median instead of statrs
-simd = []  # SIMD acceleration (always available on WASM)
+hand_rolled_stats = []
+simd = []
 console_error_panic_hook = ["dep:console_error_panic_hook"]
 
-# GPU acceleration — RTX 4090 target, falls back to CPU when no GPU present
-gpu = ["dep:wgpu", "dep:pollster"]
+# GPU acceleration
+gpu = []
+
+# Parallel processing
+rayon = ["dep:rayon"]
 
 [profile.release]
 # Optimize for binary size ("z" instead of "3")

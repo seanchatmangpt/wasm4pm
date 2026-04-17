@@ -24,6 +24,7 @@ import type {
   ProvenanceChain,
   LatencyClass,
 } from '../mining-backend.js';
+import { hashOutput, canonicalize } from '../hashing.js';
 
 /**
  * Algorithm metadata: Maps algorithmId to pm4wasm function and budget tier.
@@ -738,7 +739,7 @@ export class Pm4wasmBackend implements MiningBackend {
 
   /**
    * Create a ProvenanceChain for auditing.
-   * Fills in all 10 required fields with appropriate hashes and metadata.
+   * Fills in all 10 required fields with deterministic hashes and metadata.
    */
   private createProvenance(
     algorithmId: string,
@@ -746,12 +747,21 @@ export class Pm4wasmBackend implements MiningBackend {
     log: EventLogIR,
     model: ModelIR | null,
   ): ProvenanceChain {
-    // Derive hashes from inputs (placeholder: would use actual hash functions in production)
-    const inputHash = this.hashData(JSON.stringify(log));
-    const outputHash = model ? this.hashData(JSON.stringify(model)) : 'hash-null-model';
-    const configHash = this.hashData(algorithmId);
-    const planHash = this.hashData(operationType);
-    const combinedHash = this.hashData(inputHash + configHash + planHash + outputHash);
+    // Derive hashes from inputs using canonical JSON serialization
+    const inputHash = hashOutput(log);
+    const outputHash = model ? hashOutput(model) : hashOutput(null);
+    const configHash = hashOutput({ algorithm: algorithmId, operation: operationType });
+    const planHash = hashOutput({ backend: this.id, operation: operationType });
+
+    // Combined hash covers all audit trail elements
+    const combinedEnvelope = {
+      input_hash: inputHash,
+      config_hash: configHash,
+      plan_hash: planHash,
+      output_hash: outputHash,
+      algorithm_id: algorithmId,
+    };
+    const combinedHash = hashOutput(combinedEnvelope);
 
     return {
       input_hash: inputHash,
@@ -774,20 +784,6 @@ export class Pm4wasmBackend implements MiningBackend {
     return crypto.randomUUID?.() || `uuid-${Date.now()}-${Math.random()}`;
   }
 
-  /**
-   * Simple hash function for provenance.
-   * Placeholder: would use BLAKE3 or SHA-256 in production.
-   */
-  private hashData(data: string): string {
-    // Placeholder: compute simple hash
-    let hash = 0;
-    for (let i = 0; i < data.length; i++) {
-      const char = data.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash = hash & hash; // Convert to 32bit integer
-    }
-    return `hash-${Math.abs(hash).toString(16)}`;
-  }
 
   /**
    * Load WASM module dynamically.
