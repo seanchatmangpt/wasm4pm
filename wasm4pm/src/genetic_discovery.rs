@@ -159,6 +159,11 @@ pub fn discover_pso_algorithm(
                     }
                 }
 
+                // Guard: empty vocabulary (only 1 activity in log)
+                if edge_vocab.is_empty() {
+                    return Err(JsValue::from_str("no_edges"));
+                }
+
                 // Collect vocab before closure ends
                 let vocab: Vec<String> = col.vocab.iter().map(|s| s.to_string()).collect();
 
@@ -250,12 +255,14 @@ fn create_random_edge_set(edge_vocab: &[(u32, u32)], inclusion_probability: f64)
 fn crossover_edges(parent1: &EdgeSet, parent2: &EdgeSet) -> EdgeSet {
     let mut child: EdgeSet = HashSet::new();
 
-    // Copy all edges from parent1
+    // Each edge from parent1 included with 50% probability
     for &edge in parent1 {
-        child.insert(edge);
+        if fastrand::f64() < 0.5 {
+            child.insert(edge);
+        }
     }
 
-    // Add edges from parent2 with 50% probability
+    // Each edge from parent2 included with 50% probability
     for &edge in parent2 {
         if fastrand::f64() < 0.5 {
             child.insert(edge);
@@ -269,14 +276,16 @@ fn crossover_edges(parent1: &EdgeSet, parent2: &EdgeSet) -> EdgeSet {
 fn blend_edges(set1: &EdgeSet, set2: &EdgeSet, ratio: f64) -> EdgeSet {
     let mut result: EdgeSet = HashSet::new();
 
-    // Copy all edges from set1
+    // Keep edges from set1 with probability (1 - ratio)
     for &edge in set1 {
-        result.insert(edge);
+        if fastrand::f64() > ratio {
+            result.insert(edge);
+        }
     }
 
-    // Add edges from set2 with given probability
+    // Add edges from set2 with probability ratio
     for &edge in set2 {
-        if fastrand::f64() < ratio || set1.contains(&edge) {
+        if fastrand::f64() < ratio {
             result.insert(edge);
         }
     }
@@ -412,6 +421,11 @@ pub fn discover_aco_algorithm(
                             edge_vocab.push(edge);
                         }
                     }
+                }
+
+                // Guard: empty vocabulary (only 1 activity in log)
+                if edge_vocab.is_empty() {
+                    return Err(JsValue::from_str("no_edges"));
                 }
 
                 let vocab: Vec<String> = col.vocab.iter().map(|s| s.to_string()).collect();
