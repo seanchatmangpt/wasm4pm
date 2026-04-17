@@ -299,16 +299,16 @@ pictl uses **12 canonical feature flags** that map to **5 deployment profiles**.
 | Feature | Purpose | Profiles |
 |---------|---------|----------|
 | `feature-conformance-basic` | Token-based replay fitness | All |
-| `feature-conformance-full` | Alignments + full conformance | fog, cloud |
-| `feature-discovery-advanced` | Genetic, ILP, ACO, PSO | edge, fog, cloud |
-| `feature-ml` | ML algorithms (6 total) | fog, cloud |
-| `feature-ocel` | Object-centric event logs | fog, cloud |
-| `feature-powl` | Partial-order workflows | cloud only |
-| `feature-streaming-basic` | DFG streaming | edge, fog, cloud |
-| `feature-streaming-full` | SIMD-accelerated streaming | fog, cloud |
+| `feature-conformance-full` | Alignments + full conformance | fog, browser |
+| `feature-discovery-advanced` | Genetic, ILP, ACO, PSO | edge, fog, browser |
+| `feature-ml` | ML algorithms (6 total) | fog, browser |
+| `feature-ocel` | Object-centric event logs | fog, browser |
+| `feature-powl` | Partial-order workflows | browser only |
+| `feature-streaming-basic` | DFG streaming | edge, fog, browser |
+| `feature-streaming-full` | SIMD-accelerated streaming | fog, browser |
 | `feature-gpu` | GPU acceleration (non-WASM) | N/A for WASM |
-| `feature-hand-rolled-stats` | Size optimization | browser, iot, edge |
-| `feature-statrs` | Full-precision statistics | fog, cloud |
+| `feature-hand-rolled-stats` | Size optimization | mobile, iot, edge |
+| `feature-statrs` | Full-precision statistics | fog, browser |
 | `feature-rayon` | Parallel processing (non-WASM) | N/A for WASM |
 
 ### Deployment Profiles (5 Size Tiers)
@@ -342,9 +342,9 @@ npm run build:edge
 cargo build --release --target wasm32-unknown-unknown --features fog
 npm run build:fog
 
-# Browser profile (~2.78MB, baseline, all features)
+# Browser profile (~2.78MB, baseline, all features, DEFAULT)
 cargo build --release --target wasm32-unknown-unknown --all-features
-npm run build:browser
+npm run build  # or npm run build:browser
 
 # Measure all sizes
 npm run measure-sizes

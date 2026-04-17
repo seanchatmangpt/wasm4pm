@@ -61,16 +61,16 @@ Code paths, state machines, and API responses are **not proof**. Trust only even
 ## WASM Constraints
 
 **Binary size targets:**
-- `browser`: ~500KB (82% smaller than cloud)
+- `mobile`: ~500KB (82% smaller than browser)
 - `iot`: ~1MB
 - `edge`: ~1.5MB
 - `fog`: ~2MB
-- `cloud`: ~2.78MB (default, all features)
+- `browser`: ~2.78MB (default, all features)
 
 **Conditional compilation:**
 - 30+ modules use `#[cfg(feature)]` gates
 - 13 feature flags control algorithm inclusion
-- 5 deployment profiles (browser/edge/fog/iot/cloud)
+- 5 deployment profiles (mobile/edge/fog/iot/browser)
 - Build: `wasm-pack build --target bundler|nodejs|web`
 
 **SIMD optimization:**

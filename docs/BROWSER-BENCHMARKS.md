@@ -1,14 +1,14 @@
-# Browser-Based WASM Performance Benchmarking
+# Browser Profile WASM Performance Benchmarking
 
-Browser performance testing for WASM4PM algorithms using headless Chromium and Vitest.
+Performance testing for WASM4PM algorithms in browser and Node.js environments using Vitest.
 
 ## Overview
 
-The browser benchmark suite tests WASM4PM in real browser environments, providing insights into:
+The browser profile benchmark suite tests pictl's full-featured build (2.78MB, all 41 algorithms) in real browser and Node.js environments, providing insights into:
 
 - **Real-world browser performance** — Actual JavaScript engine optimization patterns
 - **Environment differences** — Node.js vs browser WASM execution
-- **Web target validation** — Ensures browser-optimized builds perform correctly
+- **Full-capability validation** — Ensures browser profile with all algorithms performs correctly
 - **Scalability analysis** — Algorithm performance across various log sizes
 - **Regression detection** — Identify performance drops between versions
 

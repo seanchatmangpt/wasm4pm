@@ -8,7 +8,7 @@ Complete guide to WASM feature flags, deployment profiles, and size optimization
 
 ## Overview
 
-pictl implements **size-optimized WASM deployment** through conditional feature compilation. A single Rust codebase compiles to 5 different binary profiles (browser, iot, edge, fog, cloud), ranging from 500KB to 2.78MB, with algorithm availability scaled to each target.
+pictl implements **size-optimized WASM deployment** through conditional feature compilation. A single Rust codebase compiles to 5 different binary profiles (mobile, iot, edge, fog, browser), ranging from 500KB to 2.78MB, with algorithm availability scaled to each target.
 
 **Key principles:**
 - One canonical source tree
@@ -29,7 +29,7 @@ pictl implements **size-optimized WASM deployment** through conditional feature 
                               │
 ┌─────────────────────────────┴───────────────────────────────────┐
 │ Layer 2: Deployment Profiles (binary size targets)              │
-│ browser (~500KB), iot (~1MB), edge (~1.5MB), fog (~2MB), ...   │
+│ mobile (~500KB), iot (~1MB), edge (~1.5MB), fog (~2MB), ...    │
 └─────────────────────────────┬───────────────────────────────────┘
                               │
 ┌─────────────────────────────┴───────────────────────────────────┐
@@ -126,7 +126,7 @@ feature-streaming-full
 feature-hand-rolled-stats
 ├─ Minimal statistics (median, percentiles only)
 ├─ Size optimization (~50KB reduction)
-└─ Used by: browser, iot, edge
+└─ Used by: mobile, iot, edge
 
 feature-statrs
 ├─ Full-precision statistics (statrs library)
@@ -149,9 +149,9 @@ feature-gpu
 
 Each profile combines canonical features into a preset configuration for a specific deployment target.
 
-### Browser Profile (~500KB, 82% reduction)
+### Mobile Profile (~500KB, 82% reduction)
 
-**Target:** Web browsers, mobile, CDN edge endpoints
+**Target:** Mobile apps, web browsers with size constraints, CDN edge endpoints
 
 **Features included:**
 - feature-conformance-basic
@@ -162,7 +162,7 @@ Each profile combines canonical features into a preset configuration for a speci
 
 **Use case:**
 ```typescript
-// Load and analyze an event log in a web app
+// Load and analyze an event log in a mobile app
 import initWasm, { discover_dfg, delete_object } from "@seanchatmangpt/pictl";
 
 await initWasm();
@@ -172,7 +172,7 @@ const dfg = discover_dfg(log, "concept:name");
 
 **Build:**
 ```bash
-cargo build --release --target wasm32-unknown-unknown --features browser
+cargo build --release --target wasm32-unknown-unknown --features mobile
 ```
 
 ### IoT Profile (~1MB, 64% reduction)
@@ -267,9 +267,9 @@ const prediction = await kernel.run('ml_forecast', logHandle, {
 cargo build --release --target wasm32-unknown-unknown --features fog
 ```
 
-### Cloud Profile (~2.78MB, baseline)
+### Browser Profile (~2.78MB, baseline — DEFAULT)
 
-**Target:** Cloud servers, large deployments, development/testing
+**Target:** Cloud servers, large deployments, development/testing, full-featured web apps
 
 **Features included:**
 - All canonical features
@@ -287,6 +287,7 @@ cargo build --release --target wasm32-unknown-unknown --features fog
 - Partial-order workflows (POWL)
 - GPU acceleration (WGPU, with CPU fallback)
 - Full development/debugging
+- All 41 discovery, ML, and analysis algorithms
 
 **Build:**
 ```bash
