@@ -166,6 +166,10 @@ harness = false
 name = "autoprocess_latency"
 harness = false
 
+[[bench]]
+name = "constant_latency_loops"
+harness = false
+
 [[example]]
 name = "scalability_report"
 
