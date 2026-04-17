@@ -24,6 +24,27 @@ import { measure4DQuality, summarizeQuality, AlgorithmResult } from './quality-p
 import { classifyAll, summarizeTiers, printTierSummary } from './tier-classifier';
 import { verifyFitnessFormula } from './oracle';
 
+// Minimal valid test inputs for I/O algorithms
+const MINIMAL_PNML_XML = `<?xml version="1.0" encoding="UTF-8"?>
+<pnml><net id="n" type="http://www.pnml.org/version-2009/grammar/pnmlcoremodel">
+  <place id="source"><initialMarking><text>1</text></initialMarking></place>
+  <place id="sink"/>
+  <transition id="t1"><name><text>A</text></name></transition>
+  <arc id="a1" source="source" target="t1"/>
+  <arc id="a2" source="t1" target="sink"/>
+</net></pnml>`;
+
+const MINIMAL_BPMN_XML = `<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" id="d1">
+  <process id="p1" isExecutable="true">
+    <startEvent id="start"/>
+    <task id="t1" name="Task A"/>
+    <endEvent id="end"/>
+    <sequenceFlow id="f1" sourceRef="start" targetRef="t1"/>
+    <sequenceFlow id="f2" sourceRef="t1" targetRef="end"/>
+  </process>
+</definitions>`;
+
 export interface AuditConfig {
   logPath: string;                    // XES file to test
   activityKey: string;                // 'concept:name' standard
@@ -134,6 +155,59 @@ export async function runAdversarialAudit(
       } else if (meta.id === 'causal_graph') {
         // causal_alpha takes no extra params beyond handle + activity_key
         result = wasmFn(logHandle, config.activityKey);
+      } else if (meta.id === 'performance_spectrum') {
+        // timestamp_key, target_activity
+        result = wasmFn(logHandle, config.activityKey, 'time:timestamp', '');
+      } else if (meta.id === 'batches') {
+        // timestamp_key
+        result = wasmFn(logHandle, config.activityKey, 'time:timestamp');
+      } else if (meta.id === 'correlation_miner') {
+        // timestamp_key, threshold
+        result = wasmFn(logHandle, config.activityKey, 'time:timestamp', 0.5);
+      } else if (meta.id === 'transition_system') {
+        // window, direction
+        result = wasmFn(logHandle, config.activityKey, 2, 'forward');
+      } else if (meta.id === 'hierarchical_dfg') {
+        // num_chunks
+        result = wasmFn(logHandle, config.activityKey, 4);
+      } else if (meta.id === 'optimized_dfg') {
+        // fitness_weight, simplicity_weight
+        result = wasmFn(logHandle, config.activityKey, 0.7, 0.3);
+      } else if (meta.id === 'smart_engine') {
+        // algorithm, traces_json (raw activity sequences)
+        result = wasmFn(logHandle, 'dfg', '[["A","B"]]');
+      } else if (meta.id === 'pnml_import') {
+        // pnml_string
+        result = wasmFn(MINIMAL_PNML_XML);
+      } else if (meta.id === 'bpmn_import') {
+        // bpmn_xml
+        result = wasmFn(MINIMAL_BPMN_XML);
+      } else if (meta.id === 'playout') {
+        // dfg_json, params
+        const dfgResult = wasmFn === wasm.play_out_dfg ?
+          parse(wasm.discover_dfg(logHandle, config.activityKey)) :
+          parse(result);
+        const dfgJson = typeof dfgResult === 'string' ? dfgResult : JSON.stringify(dfgResult);
+        result = wasm.play_out_dfg(dfgJson, null);
+      } else if (meta.id === 'monte_carlo_simulation') {
+        // log_handle, powl_handle (unused), root_id (unused), config_json
+        result = wasmFn(logHandle, '', '', '{}');
+      } else if (meta.id === 'ml_anomaly') {
+        // log_handle, dfg_handle, activity_key — first discover DFG
+        const dfgResult = parse(wasm.discover_dfg(logHandle, config.activityKey));
+        result = wasmFn(logHandle, dfgResult.handle, config.activityKey);
+      } else if (meta.id === 'etconformance_precision') {
+        // log_handle, petri_net_handle, activity_key — first discover alpha++
+        const pnResult = parse(wasm.discover_alpha_plus_plus(logHandle, config.activityKey));
+        result = wasmFn(logHandle, pnResult.handle, config.activityKey);
+      } else if (meta.id === 'generalization') {
+        // log_handle, petri_net_handle, activity_key — same as etconformance
+        const pnResult = parse(wasm.discover_alpha_plus_plus(logHandle, config.activityKey));
+        result = wasmFn(logHandle, pnResult.handle, config.activityKey);
+      } else if (meta.id === 'alignments') {
+        // log_handle, petri_net_handle, activity_key, cost_config_json — same pattern
+        const pnResult = parse(wasm.discover_alpha_plus_plus(logHandle, config.activityKey));
+        result = wasmFn(logHandle, pnResult.handle, config.activityKey, '{}');
       } else {
         result = wasmFn(logHandle, config.activityKey);
       }
