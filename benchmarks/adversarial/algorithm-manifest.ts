@@ -161,11 +161,11 @@ export const ALGORITHM_MANIFEST: AlgorithmMetadata[] = [
 
   {
     id: 'ml_classify',
-    wasmFn: 'NOT_EXPORTED',
+    wasmFn: 'discover_ml_classify',
     outputType: 'analytics',
     fitnessCapable: false,
     expectedLatencyBudgetMs: 5000,
-    description: 'MISSING: No WASM export found'
+    description: 'k-NN classifier on trace features (short/medium/long)'
   },
 
   {
@@ -179,11 +179,11 @@ export const ALGORITHM_MANIFEST: AlgorithmMetadata[] = [
 
   {
     id: 'ml_forecast',
-    wasmFn: 'NOT_EXPORTED',
+    wasmFn: 'discover_ml_forecast',
     outputType: 'analytics',
     fitnessCapable: false,
     expectedLatencyBudgetMs: 5000,
-    description: 'MISSING: No WASM export found'
+    description: 'Time-series forecasting with sliding windows'
   },
 
   {
@@ -197,20 +197,20 @@ export const ALGORITHM_MANIFEST: AlgorithmMetadata[] = [
 
   {
     id: 'ml_regress',
-    wasmFn: 'NOT_EXPORTED',
+    wasmFn: 'discover_ml_regress',
     outputType: 'analytics',
     fitnessCapable: false,
     expectedLatencyBudgetMs: 5000,
-    description: 'MISSING: No WASM export found'
+    description: 'Linear regression on trace length vs duration'
   },
 
   {
     id: 'ml_pca',
-    wasmFn: 'NOT_EXPORTED',
+    wasmFn: 'discover_ml_pca',
     outputType: 'analytics',
     fitnessCapable: false,
     expectedLatencyBudgetMs: 5000,
-    description: 'MISSING: No WASM export found'
+    description: '2-component PCA on trace features'
   },
 
   // ==================== ANALYSIS & UTILITIES (20) ====================
@@ -280,11 +280,11 @@ export const ALGORITHM_MANIFEST: AlgorithmMetadata[] = [
 
   {
     id: 'petri_net_reduction',
-    wasmFn: 'NOT_EXPORTED',
+    wasmFn: 'wasm_reduce_petri_net',
     outputType: 'petrinet',
     fitnessCapable: false,
     expectedLatencyBudgetMs: 5000,
-    description: 'MISSING: Rust code exists, missing #[wasm_bindgen]'
+    description: 'Reduce Petri net via structural simplification rules'
   },
 
   {
@@ -347,7 +347,7 @@ export const ALGORITHM_MANIFEST: AlgorithmMetadata[] = [
     outputType: 'tree',
     fitnessCapable: false,
     expectedLatencyBudgetMs: 5000,
-    description: 'YAWL format export — Rust function takes internal types, not WASM-exportable'
+    description: 'POWL to YAWL v6 XML export — function takes internal types (PowlArena), not WASM-compatible'
   },
 
   {

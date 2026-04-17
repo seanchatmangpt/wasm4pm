@@ -8,7 +8,7 @@
  * - Tier 3: Lie (no WASM export, stub implementation, wrong name mapping)
  */
 
-import { AlgorithmResult } from './quality-pipeline';
+import { AlgorithmResult } from './quality-pipeline.js';
 
 export type AlgorithmTier = 0 | 1 | 2 | 3;
 

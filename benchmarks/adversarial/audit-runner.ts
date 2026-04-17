@@ -19,10 +19,10 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { ALGORITHM_MANIFEST } from './algorithm-manifest';
-import { measure4DQuality, summarizeQuality, AlgorithmResult } from './quality-pipeline';
-import { classifyAll, summarizeTiers, printTierSummary } from './tier-classifier';
-import { verifyFitnessFormula } from './oracle';
+import { ALGORITHM_MANIFEST } from './algorithm-manifest.js';
+import { measure4DQuality, summarizeQuality, AlgorithmResult } from './quality-pipeline.js';
+import { classifyAll, summarizeTiers, printTierSummary } from './tier-classifier.js';
+import { verifyFitnessFormula } from './oracle.js';
 
 // Minimal valid test inputs for I/O algorithms
 const MINIMAL_PNML_XML = `<?xml version="1.0" encoding="UTF-8"?>

@@ -1,6 +1,7 @@
 {
   "name": "pictl-adversarial-audit",
   "version": "1.0.0",
+  "type": "module",
   "description": "Adversarial van der Aalst algorithm audit system",
   "scripts": {
     "build": "tsc",

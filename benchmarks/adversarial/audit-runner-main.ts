@@ -18,12 +18,16 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import { fileURLToPath } from 'url';
 
 // Imports
-import { generateScaleSeries, DEFAULT_CONFIG as SYNTHETIC_CONFIG } from './synthetic-log-gen';
-import { runAdversarialAudit, DEFAULT_AUDIT_CONFIG } from './audit-runner';
-import { printTierSummary } from './tier-classifier';
+import { generateScaleSeries, DEFAULT_CONFIG as SYNTHETIC_CONFIG } from './synthetic-log-gen.js';
+import { runAdversarialAudit, DEFAULT_AUDIT_CONFIG } from './audit-runner.js';
+import { printTierSummary } from './tier-classifier.js';
 
+// Compute paths from import.meta.url (works in ES modules)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const REPO_ROOT = path.resolve(__dirname, '../../..');
 const BENCHMARK_DIR = path.resolve(__dirname);
 const RESULTS_DIR = path.join(BENCHMARK_DIR, 'results');
@@ -55,21 +59,18 @@ async function main() {
   console.log('\n⚙️  Step 2: Loading WASM module...');
   let wasm: any;
   try {
-    // Try to load from npm package (post-build)
-    wasm = require('pictl');
-    console.log('✅ Loaded WASM from published npm package');
-  } catch {
-    try {
-      // Try to load from local build
-      wasm = require(path.join(REPO_ROOT, 'wasm4pm/pkg/pictl.js'));
-      console.log('✅ Loaded WASM from local build (wasm4pm/pkg/)');
-    } catch (e) {
-      console.error('❌ Failed to load WASM module');
-      console.error(
-        'Please build WASM first: cd wasm4pm && npm run build'
-      );
-      process.exit(1);
-    }
+    // Import WASM module with properly computed path (use wasm4pm.js which is ES module compatible)
+    const wasmModulePath = path.join(REPO_ROOT, 'wasm4pm/pkg/wasm4pm.js');
+    const imported = await import(wasmModulePath);
+    wasm = imported;
+    console.log('✅ Loaded WASM from local build (wasm4pm/pkg/)');
+  } catch (e) {
+    console.error('❌ Failed to load WASM module');
+    console.error(
+      'Please build WASM first: cd wasm4pm && npm run build'
+    );
+    console.error(`Error: ${e instanceof Error ? e.message : String(e)}`);
+    process.exit(1);
   }
 
   // Step 3: Run audit on normal (500K) dataset

@@ -80,6 +80,7 @@
 pub mod cache_resident;
 pub mod error;
 pub mod io;
+pub mod ml_algorithms;
 pub mod models;
 pub mod state;
 pub mod types;
