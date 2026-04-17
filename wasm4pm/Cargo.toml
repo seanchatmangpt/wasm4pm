@@ -373,6 +373,3 @@ gpu = []
 # Parallel processing
 rayon = ["dep:rayon"]
 
-[profile.bench]
-opt-level = 3
-lto = false
