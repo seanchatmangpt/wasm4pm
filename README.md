@@ -42,8 +42,8 @@ Process mining extracts actionable insights from event logs by discovering proce
 - Recovery instrumentation with OTEL spans — full observability of recovery operations
 - No more `isWasmAvailable` defensive guards — system fails loudly if unavailable
 
-### Version 26.4.9 (April 2026)
-**Deployment Profiles:** Optimized WASM builds for different target environments. Choose from 5 profiles (browser ~500KB, edge ~1.5MB, fog ~2.0MB, iot ~1.0MB, cloud ~2.78MB) to reduce binary size by up to 82% for production use. Zero breaking changes — default build unchanged.
+### Version 26.4.16 (April 2026)
+**Deployment Profiles Reorganized:** Renamed "cloud" profile to "browser" (default, all 41 algorithms, 2.78MB) and "browser" profile to "mobile" (minimal, 500KB, 82% smaller). Choose from 5 optimized WASM builds: mobile ~500KB, edge ~1.5MB, fog ~2.0MB, iot ~1.0MB, browser ~2.78MB (default). Zero breaking changes — `npm run build` now builds the full browser profile.
 
 ### Version 26.4.5 (April 2026)
 **Major Release:** Added 10 new packages (engine, config, service, observability, contracts, types, kernel, planner, templates, testing) while maintaining 100% backward compatibility. Introduces professional CLI tool (pictl), configuration management, HTTP service layer, and comprehensive observability.
@@ -56,24 +56,26 @@ Choose the right build for your target environment:
 
 | Profile | Size | Use Case | Build Command |
 |---------|------|----------|--------------|
-| **browser** | ~500KB | Web browsers, mobile web | `npm run build:browser` |
+| **mobile** | ~500KB | Mobile apps, minimal web | `npm run build:mobile` |
 | **edge** | ~1.5MB | Edge servers, CDN workers | `npm run build:edge` |
 | **fog** | ~2.0MB | Fog computing, IoT gateways | `npm run build:fog` |
 | **iot** | ~1.0MB | IoT devices, embedded systems | `npm run build:iot` |
-| **cloud** | ~2.78MB | Cloud servers (default) | `npm run build` |
+| **browser** | ~2.78MB | Cloud servers, web apps (default) | `npm run build` |
 
 **Key Features:**
-- **Zero Breaking Changes:** Default `npm run build` unchanged (cloud profile)
-- **Production Optimization:** Profile builds reduce size up to 82%
+- **Browser Profile Default:** `npm run build` now builds the full-featured browser profile (all 41 algorithms, 2.78MB)
+- **Production Optimization:** Smaller profiles (mobile, edge, fog) reduce size up to 82%
 - **Conditional Compilation:** 30+ modules use `#[cfg(feature)]` gates
 - **Smart Defaults:** npm package includes full features for immediate experimentation
 
 ```bash
-# Development (unchanged)
-npm run build  # Full features (2.78MB)
+# Development (default: full features)
+npm run build  # Browser profile: all 41 algorithms (2.78MB)
 
 # Production (size-optimized)
-npm run build:browser  # ~500KB (82% smaller!)
+npm run build:mobile  # ~500KB (82% smaller!)
+npm run build:edge    # ~1.5MB
+npm run build:fog     # ~2.0MB
 ```
 
 See [DEPLOYMENT_PROFILES.md](./wasm4pm/DEPLOYMENT_PROFILES.md) for complete guide.
@@ -196,28 +198,28 @@ npm install @seanchatmangpt/pictl
 ### Requirements
 - Node.js 16+ or modern browser
 - **Binary size varies by deployment profile:**
-  - browser: ~500KB (gzipped: ~150KB)
+  - mobile: ~500KB (gzipped: ~150KB)
   - iot: ~1.0MB (gzipped: ~300KB)
   - edge: ~1.5MB (gzipped: ~450KB)
   - fog: ~2.0MB (gzipped: ~600KB)
-  - cloud: ~2.78MB (gzipped: ~800KB, default)
+  - browser: ~2.78MB (gzipped: ~800KB, default)
 
 ## 🎯 What's New in v26.4.8
 
 ### Deployment Profiles
 - **5 deployment profiles** for optimized WASM binary sizes
-- **Up to 82% size reduction** for browser/iot deployments
-- **Profile-specific build scripts:** `npm run build:{browser,edge,fog,iot,cloud}`
+- **Up to 82% size reduction** for mobile/iot deployments
+- **Profile-specific build scripts:** `npm run build:{mobile,edge,fog,iot,browser}`
 - **Conditional compilation:** 30+ modules use `#[cfg(feature)]` gates
 - **Hand-rolled statistics:** Replaces statrs for size-constrained profiles (~200KB savings)
-- **Zero breaking changes:** Default build produces full-featured binary
+- **Default build:** `npm run build` produces full-featured browser profile (2.78MB, all 41 algorithms)
 
 ### Key Features
-- **browser profile** (~500KB): Web browsers, mobile web
+- **mobile profile** (~500KB): Mobile apps, minimal web builds
 - **edge profile** (~1.5MB): Edge servers, CDN workers
 - **fog profile** (~2.0MB): Fog computing, IoT gateways
 - **iot profile** (~1.0MB): IoT devices, embedded systems
-- **cloud profile** (~2.78MB): Full feature set (default)
+- **browser profile** (~2.78MB): All algorithms, cloud servers, full-featured web apps (default)
 
 ### Technical Implementation
 - **Cargo.toml:** 30+ feature flags for modular compilation
@@ -272,19 +274,19 @@ See [RELEASE_NOTES.md](./RELEASE_NOTES.md) for complete details.
 
 ## ⚡ Quick Start
 
-### Building with Deployment Profiles (NEW in v26.4.8)
+### Building with Deployment Profiles (Updated in v26.4.16)
 
 Choose the right build for your target environment:
 
 ```bash
 # Default: Full features (2.78MB) - Development & cloud servers
-npm run build
+npm run build  # Browser profile (all 41 algorithms)
 
 # Production optimization: Size-constrained builds
-npm run build:browser  # ~500KB for web browsers
-npm run build:edge     # ~1.5MB for edge servers
-npm run build:fog      # ~2.0MB for fog computing
-npm run build:iot      # ~1.0MB for IoT devices
+npm run build:mobile  # ~500KB for mobile apps & minimal web
+npm run build:edge    # ~1.5MB for edge servers
+npm run build:fog     # ~2.0MB for fog computing
+npm run build:iot     # ~1.0MB for IoT devices
 
 # Build all profiles for testing
 npm run build:all-profiles
@@ -294,11 +296,11 @@ npm run size:check
 ```
 
 **Which profile should you use?**
-- **browser** — Web apps, mobile web, progressive web apps
+- **mobile** — Mobile apps, minimal web builds, size-critical deployments (82% smaller)
 - **edge** — CDN workers, Cloudflare Workers, edge servers
 - **fog** — Regional aggregation, IoT gateways, on-premise servers
 - **iot** — Embedded devices, resource-constrained environments
-- **cloud** — Cloud servers, data centers, unlimited resources (default)
+- **browser** — Cloud servers, data centers, full-featured web apps, unlimited resources (default, all 41 algorithms)
 
 ### Browser
 ```html
