@@ -2,9 +2,9 @@
  * Plan validation utilities
  */
 
-import type { ExecutionPlan } from './planner';
-import { validateDAG } from './dag';
-import { PlanStepType } from './steps';
+import type { ExecutionPlan } from './planner.js';
+import { validateDAG } from './dag.js';
+import { PlanStepType } from './steps.js';
 
 /** Known source formats for compatibility checks */
 const KNOWN_SOURCE_FORMATS = new Set(['xes', 'csv', 'json', 'ocel', 'parquet', 'bpmn']);

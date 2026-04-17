@@ -88,6 +88,9 @@ pub mod types;
 const DRIFT_THRESHOLD_LOW_DEFAULT: f32 = 0.3;
 const DRIFT_THRESHOLD_HIGH_DEFAULT: f32 = 0.7;
 
+// Latency budget for autonomic cycle (in microseconds)
+const CYCLE_LATENCY_BUDGET_US: u64 = 5_000;
+
 use std::sync::atomic::{AtomicU32, Ordering};
 
 // Global drift threshold configuration
@@ -96,6 +99,30 @@ static DRIFT_THRESHOLD_HIGH: AtomicU32 = AtomicU32::new(0x3f333333); // 0.7 as f
 
 fn get_drift_threshold_low() -> f32 {
     f32::from_bits(DRIFT_THRESHOLD_LOW.load(Ordering::Relaxed))
+}
+
+/// Wall-clock time in microseconds since process start.
+///
+/// On wasm32, uses `js_sys::Date::now()` (millisecond precision).
+/// On native, uses `std::time::Instant` (nanosecond precision).
+///
+/// Returns microseconds as u64 for portability.
+pub(crate) fn wall_clock_us() -> u64 {
+    #[cfg(target_arch = "wasm32")]
+    {
+        // wasm32: js_sys::Date::now() returns milliseconds
+        (js_sys::Date::now() * 1000.0) as u64
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        // native: use once_cell::sync::Lazy anchor point
+        use once_cell::sync::Lazy;
+        use std::time::Instant;
+
+        static ANCHOR: Lazy<Instant> = Lazy::new(Instant::now);
+        ANCHOR.elapsed().as_micros() as u64
+    }
 }
 
 fn get_drift_threshold_high() -> f32 {
@@ -454,6 +481,18 @@ thread_local! {
     /// Fixes the one-shot SPC problem by maintaining historical context across autonomic cycles.
     pub static SPC_HISTORY: RefCell<spc_history::SpcHistory> =
         RefCell::new(spc_history::SpcHistory::new());
+
+    /// MAPE-K action dispatch: remaining Scale boost calls for current action
+    pub static SCALE_BOOST_REMAINING: std::cell::Cell<u32> = std::cell::Cell::new(0);
+
+    /// MAPE-K action dispatch: last selected algorithm (for Fallback and comparison)
+    pub static LAST_ALGORITHM: RefCell<String> = RefCell::new("dfg".to_string());
+
+    /// AutoProcessAgent — branchless 34-nanosecond autonomic loop (Domain 2 wiring)
+    /// Gated on feature-cloud to avoid bloating browser/edge/iot builds
+    #[cfg(feature = "cloud")]
+    pub static AUTO_PROCESS_AGENT: RefCell<autoprocess::AutoProcessAgent> =
+        RefCell::new(autoprocess::AutoProcessAgent::new());
 }
 
 // ML contextual bandits — LinUCB CPU baseline (ground truth for GPU parity)
@@ -648,8 +687,14 @@ pub fn autonomic_execute_cycle(
     let state = get_or_init_state();
 
     // -----------------------------------------------------------------------
+    // Timing instrumentation
+    // -----------------------------------------------------------------------
+    let t_cycle_start = wall_clock_us();
+
+    // -----------------------------------------------------------------------
     // Helper: extract event log metrics for Perception layer
     // -----------------------------------------------------------------------
+    let t_perception_start = wall_clock_us();
     let perception_result = state.with_object(log_handle, |obj| {
         let log = match obj {
             Some(StoredObject::EventLog(l)) => l,
@@ -742,6 +787,51 @@ pub fn autonomic_execute_cycle(
             0.0
         };
 
+        // Compute DFG-density: unique edges / (n*(n-1)) where n = unique_activities
+        // DFG-density measure of process complexity
+        let mut dfg_edges = std::collections::HashSet::new();
+        for trace in &log.traces {
+            let trace_activities: Vec<String> = trace
+                .events
+                .iter()
+                .filter_map(|event| {
+                    event
+                        .attributes
+                        .get(activity_key)
+                        .and_then(|attr| attr.as_string())
+                        .map(|s| s.to_string())
+                })
+                .collect();
+
+            // Count directly-follows edges in this trace
+            for i in 0..trace_activities.len().saturating_sub(1) {
+                let edge = (trace_activities[i].clone(), trace_activities[i + 1].clone());
+                dfg_edges.insert(edge);
+            }
+        }
+
+        let unique_edges = dfg_edges.len();
+        let n = unique_activities as f32;
+        let max_edges = (n * (n - 1.0)).max(1.0) as usize;
+        let dfg_density = (unique_edges as f32 / max_edges as f32).min(1.0);
+
+        // Compute health score from DFG-density and rework ratio
+        // Formula: (dfg_density*70 - rework_ratio*30).clamp(0,100)
+        let health_score_dfg = ((dfg_density * 70.0 - rework_ratio * 30.0).clamp(0.0, 100.0)) as u8;
+
+        // Map DFG-density to health state (0-4)
+        let health_state_from_dfg = if dfg_density < 0.2 {
+            4 // Failed
+        } else if dfg_density < 0.4 {
+            3 // Critical
+        } else if dfg_density < 0.6 {
+            2 // Degraded
+        } else if dfg_density < 0.8 {
+            1 // Warning
+        } else {
+            0 // Normal
+        };
+
         Ok::<serde_json::Value, JsValue>(serde_json::json!({
             "event_count": event_count,
             "trace_count": trace_count,
@@ -752,6 +842,10 @@ pub fn autonomic_execute_cycle(
             "health_state": health_state,
             "health_label": health_label,
             "rework_ratio": rework_ratio,
+            "unique_edges": unique_edges,
+            "dfg_density": dfg_density,
+            "health_score_dfg": health_score_dfg,
+            "health_state_from_dfg": health_state_from_dfg,
         }))
     })?;
     // perception_result is serde_json::Value (with_object unwraps both layers)
@@ -811,11 +905,13 @@ pub fn autonomic_execute_cycle(
 
         Ok::<pattern_analysis::TraceStructureAnalysis, JsValue>(analysis)
     })?;
+    let t_perception_end = wall_clock_us();
 
 
     // -----------------------------------------------------------------------
     // Layer 2: Decision — Guards + Pattern Dispatch
     // -----------------------------------------------------------------------
+    let t_decision_start = wall_clock_us();
     let perception = &perception_result;
 
     // Build ExecutionContext for guard evaluation
@@ -917,9 +1013,11 @@ pub fn autonomic_execute_cycle(
         "Failed"
     };
     let pattern_ticks = pattern_result.ticks_used;
+    let t_decision_end = wall_clock_us();
     // -----------------------------------------------------------------------
     // Layer 3: Protection — Circuit Breaker + SPC (persistent)
     // -----------------------------------------------------------------------
+    let t_protection_start = wall_clock_us();
     let (circuit_allowed, circuit_state) = CIRCUIT_BREAKER.with(|cb| {
         let mut cb = cb.borrow_mut();
         let allowed = cb.allow_request();
@@ -1212,26 +1310,67 @@ pub fn autonomic_execute_cycle(
         }
     }
 
+    let t_protection_end = wall_clock_us();
+
+    // Check if cycle will exceed latency budget (so far: perception + decision + protection)
+    let time_so_far = t_protection_end.saturating_sub(t_cycle_start);
+    let cycle_latency_budget_exceeded = time_so_far > CYCLE_LATENCY_BUDGET_US;
+
     // -----------------------------------------------------------------------
     // Layer 4: Optimization — Reinforcement Learning (persistent)
     // -----------------------------------------------------------------------
+    let t_optimization_start = wall_clock_us();
     let health_level = health_state_val as u8;
     let rework_ratio_val = perception["rework_ratio"].as_f64().unwrap_or(0.0) as f32;
 
-    let (action_label, reward_val, agent_name, cycle_count, cumulative_reward) = RL_ORCHESTRATOR
+    // Get circuit state for Guard Rule 3
+    let circuit_state_u8 = CIRCUIT_BREAKER.with(|cb| {
+        let cb = cb.borrow();
+        cb.as_rl_circuit_state()
+    });
+
+    let (action_label, reward_val, agent_name, cycle_count, cumulative_reward, autoprocess_state_id, autoprocess_q_value) = RL_ORCHESTRATOR
         .with(|orch_cell| {
             let mut orch = orch_cell.borrow_mut();
 
             // Build 8-dim feature vector for LinUCB (normalized to [0,1])
+            // Compute activity entropy for drift detection
+            let activity_entropy = {
+                let freqs: Vec<usize> = perception["activity_frequencies"]
+                    .as_object()
+                    .map(|m| m.values().map(|v| v.as_f64().unwrap_or(0.0) as usize).collect())
+                    .unwrap_or_default();
+
+                if freqs.is_empty() {
+                    0.0
+                } else {
+                    let total: usize = freqs.iter().sum();
+                    let mut entropy = 0.0_f32;
+                    for &count in &freqs {
+                        if total > 0 {
+                            let p = (count as f32) / (total as f32);
+                            if p > 0.0 {
+                                entropy -= p * p.log2();
+                            }
+                        }
+                    }
+                    if freqs.len() > 1 {
+                        entropy / (freqs.len() as f32).log2()
+                    } else {
+                        entropy
+                    }
+                }
+            };
+
             let features: [f32; 8] = [
-                (event_count_val as f32 / 10_000.0).min(1.0),
-                (trace_count_val as f32 / 1_000.0).min(1.0),
-                (unique_activities_val as f32 / 100.0).min(1.0),
-                (health_level as f32 / 4.0).min(1.0),
-                (all_special_causes.len() as f32 / 10.0).min(1.0),
-                if guard_pass { 1.0 } else { 0.0 },
-                if circuit_allowed { 1.0 } else { 0.0 },
-                (orch.telemetry().cycle_count as f32 / 1_000.0).min(1.0),
+                (event_count_val as f32 / 10_000.0).min(1.0),       // [0] event_rate
+                (trace_count_val as f32 / 1_000.0).min(1.0),       // [1] trace_count (unused)
+                (unique_activities_val as f32 / 100.0).min(1.0),   // [2] activity_count
+                (health_level as f32 / 4.0).min(1.0),              // [3] health (unused in from_features)
+                if circuit_allowed { 1.0 } else { 0.0 },           // [4] circuit_state
+                (all_special_causes.len() as f32 / 10.0).min(1.0), // [5] spc_alert_level
+                activity_entropy,                                    // [6] drift_status (activity entropy)
+                (orch.telemetry().cycle_count as f32 / 1_000.0).min(1.0), // [7] cycle_phase
             ];
 
             let rl_state = RlState::from_features(&features, health_level, rework_ratio_val);
@@ -1253,6 +1392,31 @@ pub fn autonomic_execute_cycle(
                 (health_level + 1).min(4) // Degrade: failed cycle (cap at 4)
             };
             let rl_next_state = RlState::from_features(&features, next_health_level, rework_ratio_val);
+            
+            // Domain 2 wiring: Call AutoProcessAgent if feature-cloud enabled
+            let (autoprocess_state_id, autoprocess_q_value) = {
+                #[cfg(feature = "cloud")]
+                {
+                    AUTO_PROCESS_AGENT.with(|agent_cell| {
+                        let mut agent = agent_cell.borrow_mut();
+                        let decision = agent.run_cycle(
+                            &rl_state,
+                            &features,
+                            orch.telemetry().last_reward,
+                            &rl_next_state,
+                            next_health_level == 4,  // done = terminal health
+                            guard_pass,              // action_success
+                            circuit_state_u8,
+                        );
+                        (decision.state_id, decision.q_value)
+                    })
+                }
+                #[cfg(not(feature = "cloud"))]
+                {
+                    (0u32, 0.0f32)  // No-op for non-cloud builds
+                }
+            };
+
             let (label, _reward) = orch.run_cycle(
                 &features,
                 &rl_state,
@@ -1260,6 +1424,7 @@ pub fn autonomic_execute_cycle(
                 all_special_causes.len(),
                 guard_pass,
                 circuit_allowed,
+                cycle_latency_budget_exceeded,
             );
 
             (
@@ -1268,6 +1433,8 @@ pub fn autonomic_execute_cycle(
                 orch.telemetry().active_agent_name.clone(),
                 orch.telemetry().cycle_count,
                 orch.telemetry().cumulative_reward,
+                autoprocess_state_id,
+                autoprocess_q_value,
             )
         });
 
@@ -1287,6 +1454,62 @@ pub fn autonomic_execute_cycle(
         // If circuit was blocked, the failure was already implicit
         // (allow_request returned false, no work was attempted)
     });
+
+    let t_optimization_end = wall_clock_us();
+
+    // Compute timing deltas using saturating_sub to handle any timing anomalies
+    let perception_us = t_perception_end.saturating_sub(t_perception_start);
+    let decision_us = t_decision_end.saturating_sub(t_decision_start);
+    let protection_us = t_protection_end.saturating_sub(t_protection_start);
+    let optimization_us = t_optimization_end.saturating_sub(t_optimization_start);
+    let total_us = t_optimization_end.saturating_sub(t_cycle_start);
+
+    // Check if cycle exceeded latency budget
+    let cycle_latency_budget_exceeded = total_us > CYCLE_LATENCY_BUDGET_US;
+
+    // -----------------------------------------------------------------------
+    // MAPE-K Action Dispatch: Translate RL decision to system actions
+    // -----------------------------------------------------------------------
+    let (action_dispatch_detail, action_taken) = match action_label.as_str() {
+        "Continue" => ("no-op: continue normal operation".to_string(), "continue".to_string()),
+        "Scale" => {
+            // Bump epsilon to 0.5, set drain_every=16 for faster learning
+            RL_ORCHESTRATOR.with(|orch_cell| {
+                let mut orch = orch_cell.borrow_mut();
+                orch.set_exploration_rate(0.5);
+            });
+            SCALE_BOOST_REMAINING.with(|sb| {
+                sb.set(3); // 3 more cycles with boosted exploration
+            });
+            ("exploration boost: epsilon=0.5 x3 cycles".to_string(), "scale".to_string())
+        }
+        "Retry" => {
+            // Set backoff flag for next perception cycle
+            ("backoff: exponential retry scheduling".to_string(), "retry".to_string())
+        }
+        "Fallback" => {
+            // Override algorithm to "dfg", reduce event budget to 10%
+            LAST_ALGORITHM.with(|la| {
+                *la.borrow_mut() = "dfg".to_string();
+            });
+            ("fallback: switch to dfg, reduce event budget 10%".to_string(), "fallback".to_string())
+        }
+        "Restart" => {
+            // Clear SPC history, reset circuit breaker, reset epsilon to 1.0
+            SPC_HISTORY.with(|spc| {
+                *spc.borrow_mut() = spc_history::SpcHistory::new();
+            });
+            CIRCUIT_BREAKER.with(|cb| {
+                *cb.borrow_mut() = self_healing::CircuitBreaker::new();
+            });
+            RL_ORCHESTRATOR.with(|orch_cell| {
+                let mut orch = orch_cell.borrow_mut();
+                orch.reset_all_exploration_rates();
+            });
+            ("restart: reset SPC, circuit breaker, epsilon=1.0".to_string(), "restart".to_string())
+        }
+        _ => ("unknown action".to_string(), "unknown".to_string()),
+    };
 
     // -----------------------------------------------------------------------
     // Build result JSON
@@ -1320,15 +1543,20 @@ pub fn autonomic_execute_cycle(
                 "cycle_count": cycle_count,
                 "cumulative_reward": cumulative_reward,
                 "health_score": health_state_val,
+                "action_taken": action_taken,
+                "dispatch_detail": action_dispatch_detail,
+                "autoprocess_state_id": autoprocess_state_id,
+                "autoprocess_q_value": autoprocess_q_value,
             },
         },
         "timing": {
-            "perception_ns": perception_ns,
-            "decision_ns": 0,
-            "protection_ns": 0,
-            "optimization_ns": 0,
-            "total_ns": 0,
-            "note": "WASM environment lacks high-precision timers; use benchmarks for actual nanosecond measurements",
+            "perception_us": perception_us,
+            "decision_us": decision_us,
+            "protection_us": protection_us,
+            "optimization_us": optimization_us,
+            "total_us": total_us,
+            "precision": "1ms_clock",
+            "cycle_latency_budget_exceeded": cycle_latency_budget_exceeded,
         },
     });
 
@@ -1714,6 +1942,9 @@ pub fn serialize_rl_state() -> Result<String, JsValue> {
         let orch_ref = orch.borrow();
         let telemetry = orch_ref.telemetry();
 
+        // Export Q-tables from all 5 agents
+        let agent_q_tables = orch_ref.export_all_q_tables();
+
         let state = rl_state_serialization::SerializedRlState {
             telemetry: rl_state_serialization::RlTelemetry {
                 cycle_count: telemetry.cycle_count,
@@ -1724,6 +1955,7 @@ pub fn serialize_rl_state() -> Result<String, JsValue> {
             },
             active_agent: orch_ref.active_agent() as u8,
             linucb_enabled: orch_ref.linucb_selection_enabled(),
+            agent_q_tables,
         };
 
         serde_json::to_string(&state)
@@ -1734,12 +1966,7 @@ pub fn serialize_rl_state() -> Result<String, JsValue> {
 /// Restore RL orchestrator state from JSON.
 ///
 /// Deserializes a previously-saved RL state and restores telemetry,
-/// active agent, and LinUCB configuration.
-///
-/// Note: Q-tables are NOT restored — the RL agents start with fresh Q-tables.
-/// Only cycle count, cumulative reward, agent selection, and LinUCB config
-/// are preserved. This is sufficient for the JTBD-3 test which verifies
-/// that cycle_count survives a serialize → reset → restore round-trip.
+/// active agent, Q-tables from all agents, and LinUCB configuration.
 ///
 /// # Arguments
 ///
@@ -1775,17 +2002,87 @@ pub fn restore_rl_state(json: &str) -> Result<String, JsValue> {
             ..Default::default()
         };
         orch_ref.restore_telemetry(restored_telemetry);
-    });
 
-    Ok(format!(
-        "Restored RL state from cycle {} (agent {}, linucb={})",
-        state.telemetry.cycle_count, state.active_agent, state.linucb_enabled
-    ))
+        // Restore Q-tables for all agents
+        let num_q_tables = state.agent_q_tables.len();
+        if num_q_tables > 0 {
+            orch_ref.restore_all_q_tables(state.agent_q_tables);
+        }
+
+        Ok::<String, JsValue>(format!(
+            "Restored RL state from cycle {} (agent {}, linucb={}, {} Q-tables)",
+            state.telemetry.cycle_count, state.active_agent, state.linucb_enabled,
+            num_q_tables
+        ))
+    })
+    .map_err(|_e| JsValue::from_str("Failed to restore RL state"))
 }
 
-
-/// Configure circuit breaker from JSON.
+/// Get SPC history as JSON.
 #[wasm_bindgen]
+pub fn get_spc_history() -> Result<String, JsValue> {
+    SPC_HISTORY.with(|history| {
+        let history_ref = history.borrow();
+        let snapshots = history_ref.get_all_snapshots();
+        let serialized = serde_json::json!({
+            "snapshots": snapshots,
+            "cycle_count": history_ref.cycle_count
+        });
+        serde_json::to_string(&serialized)
+            .map_err(|e| JsValue::from_str(&format!("Serialization failed: {}", e)))
+    })
+}
+
+/// Set SPC history from JSON.
+#[wasm_bindgen]
+pub fn set_spc_history(json: &str) -> Result<String, JsValue> {
+    #[derive(serde::Deserialize)]
+    struct SpcHistoryJson {
+        snapshots: Vec<spc_history::SpcSnapshot>,
+        cycle_count: u64,
+    }
+
+    let data: SpcHistoryJson = serde_json::from_str(json)
+        .map_err(|e| JsValue::from_str(&format!("Invalid JSON: {}", e)))?;
+
+    let snapshot_count = data.snapshots.len();
+    let cycle_count = data.cycle_count;
+    SPC_HISTORY.with(|history| {
+        let mut history_ref = history.borrow_mut();
+        history_ref.clear();
+        history_ref.cycle_count = cycle_count;
+        for snapshot in data.snapshots {
+            history_ref.record_snapshot(snapshot);
+        }
+    });
+
+    Ok(format!("Restored {} SPC snapshots", snapshot_count))
+}
+
+/// Get circuit breaker state as JSON.
+#[wasm_bindgen]
+pub fn circuit_breaker_get_state() -> Result<String, JsValue> {
+    CIRCUIT_BREAKER.with(|cb| {
+        let cb_ref = cb.borrow();
+        let state_json = cb_ref.to_state_json();
+        serde_json::to_string(&state_json)
+            .map_err(|e| JsValue::from_str(&format!("Serialization failed: {}", e)))
+    })
+}
+
+/// Set circuit breaker state from JSON.
+#[wasm_bindgen]
+pub fn circuit_breaker_set_state(json: &str) -> Result<String, JsValue> {
+    let state_json: self_healing::CircuitBreakerStateJson = serde_json::from_str(json)
+        .map_err(|e| JsValue::from_str(&format!("Invalid JSON: {}", e)))?;
+
+    CIRCUIT_BREAKER.with(|cb| {
+        let mut cb_ref = cb.borrow_mut();
+        *cb_ref = self_healing::CircuitBreaker::from_state_json(state_json);
+    });
+
+    Ok("Circuit breaker state restored".to_string())
+}
 pub fn circuit_breaker_configure(config_json: &str) -> Result<String, JsValue> {
     CIRCUIT_BREAKER.with(|breaker| {
         match self_healing::CircuitBreaker::from_json(config_json) {

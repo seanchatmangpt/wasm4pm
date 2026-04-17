@@ -11,7 +11,7 @@ const registeredGates = new Map();
  * Register a certification gate.
  * @internal
  */
-function registerGate(name, fn) {
+export function registerGate(name, fn) {
     registeredGates.set(name, fn);
 }
 /**
@@ -50,14 +50,14 @@ export async function runCertification(version) {
  * Clear all registered gates (for testing the certification system itself).
  * @internal
  */
-function clearGates() {
+export function clearGates() {
     registeredGates.clear();
 }
 /**
  * Get list of registered gate names.
  * @internal
  */
-function getRegisteredGates() {
+export function getRegisteredGates() {
     return [...registeredGates.keys()];
 }
 // ─── Built-in Gates ───────────────────────────────────────────────
@@ -170,7 +170,7 @@ registerGate('performance:benchmarks', async () => {
  * Create a gate that checks a condition.
  * @internal
  */
-function createGate(name, check, details) {
+export function createGate(name, check, details) {
     registerGate(name, async () => {
         const passed = await check();
         return {
@@ -185,7 +185,7 @@ function createGate(name, check, details) {
  * Print certification report to console.
  * @internal
  */
-function formatReport(report) {
+export function formatReport(report) {
     const lines = [
         `Certification Report -- v${report.version}`,
         `Timestamp: ${report.timestamp}`,

@@ -344,11 +344,87 @@ impl CircuitBreaker {
             }
         }
     }
+
+    /// Convert circuit state to u8 (0=Closed, 1=HalfOpen, 2=Open)
+    #[allow(dead_code)]
+    pub fn as_rl_circuit_state(&self) -> u8 {
+        match self.state {
+            CircuitState::Closed => 0,
+            CircuitState::HalfOpen => 1,
+            CircuitState::Open => 2,
+        }
+    }
+
+    /// Check if circuit is allowing requests (read-only)
+    #[allow(dead_code)]
+    pub fn is_allowing(&self) -> bool {
+        match self.state {
+            CircuitState::Closed => true,
+            CircuitState::HalfOpen => true,
+            CircuitState::Open => false,
+        }
+    }
 }
 
 impl Default for CircuitBreaker {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+/// JSON-serializable circuit breaker state for persistence.
+///
+/// Includes configuration and live state counters to restore the circuit
+/// breaker to its exact state after CLI restart.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CircuitBreakerStateJson {
+    /// Circuit breaker configuration
+    pub config: CircuitBreakerConfigJson,
+    /// Current state: 0=Closed, 1=Open, 2=HalfOpen
+    pub state: u8,
+    /// Current failure count
+    pub failure_count: u32,
+    /// Current success count
+    pub success_count: u32,
+    /// Monotonic time (ms) of last state change
+    pub last_state_change_ms: u64,
+}
+
+impl CircuitBreaker {
+    /// Serialize to JSON-compatible state.
+    pub fn to_state_json(&self) -> CircuitBreakerStateJson {
+        CircuitBreakerStateJson {
+            config: CircuitBreakerConfigJson {
+                failure_threshold: self.config.failure_threshold,
+                success_threshold: self.config.success_threshold,
+                open_timeout_ms: self.config.open_timeout_ms,
+                half_open_timeout_ms: self.config.half_open_timeout_ms,
+            },
+            state: match self.state {
+                CircuitState::Closed => 0,
+                CircuitState::Open => 1,
+                CircuitState::HalfOpen => 2,
+            },
+            failure_count: self.failure_count,
+            success_count: self.success_count,
+            last_state_change_ms: self.last_state_change_ms,
+        }
+    }
+
+    /// Restore from JSON-serialized state.
+    pub fn from_state_json(json_state: CircuitBreakerStateJson) -> Self {
+        Self {
+            config: json_state.config.into(),
+            state: match json_state.state {
+                0 => CircuitState::Closed,
+                1 => CircuitState::Open,
+                2 => CircuitState::HalfOpen,
+                _ => CircuitState::Closed, // Default to safe state
+            },
+            failure_count: json_state.failure_count,
+            success_count: json_state.success_count,
+            last_state_change_ms: json_state.last_state_change_ms,
+        }
     }
 }
 

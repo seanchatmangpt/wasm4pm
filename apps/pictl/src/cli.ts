@@ -19,7 +19,7 @@ import { social } from './commands/social.js';
 import { quality } from './commands/quality.js';
 import { validate } from './commands/validate.js';
 import { autoprocess } from './commands/autoprocess.js';
-// import { agent } from './commands/agent.js'; // TODO: Re-enable after fixing @pictl/agents build
+// import { agent } from './commands/agent.js'; // Pre-existing type errors in agent commands
 
 export const main = defineCommand({
   meta: {
@@ -135,7 +135,7 @@ Activity key defaults to "concept:name" (XES standard). Pass --activity-key to o
     quality,
     validate,
     autoprocess,
-    // agent, // TODO: Re-enable after fixing @pictl/agents build
+    // agent, // Pre-existing type errors in agent commands
   },
 });
 
@@ -163,5 +163,5 @@ export {
   quality,
   validate,
   autoprocess,
-  // agent, // TODO: Re-enable after fixing @pictl/agents build
+  // agent, // Pre-existing type errors in agent commands
 };

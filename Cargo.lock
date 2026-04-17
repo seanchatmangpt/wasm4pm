@@ -143,6 +143,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ace50bade8e6234aa140d9a2f552bbee1db4d353f69b8217bc503490fc1a9f26"
 
 [[package]]
+name = "bcinr-core"
+version = "0.1.0"
+
+[[package]]
 name = "bit-set"
 version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -196,6 +200,7 @@ dependencies = [
  "cfg-if",
  "constant_time_eq",
  "cpufeatures",
+ "serde",
 ]
 
 [[package]]
@@ -1478,6 +1483,7 @@ checksum = "9b4f627cb1b25917193a259e49bdad08f671f8d9708acfd5fe0a8c1455d87220"
 name = "pictl"
 version = "26.4.10"
 dependencies = [
+ "bcinr-core",
  "blake3",
  "chrono",
  "console_error_panic_hook",
@@ -1490,6 +1496,7 @@ dependencies = [
  "lazy_static",
  "naga 29.0.1",
  "once_cell",
+ "pictl-types",
  "pollster",
  "rand",
  "rand_distr",
@@ -1507,6 +1514,33 @@ dependencies = [
  "wasm-bindgen-futures",
  "web-sys",
  "wgpu",
+]
+
+[[package]]
+name = "pictl-algos"
+version = "26.4.10"
+dependencies = [
+ "criterion",
+ "hashbrown 0.17.0",
+ "itertools 0.14.0",
+ "pictl-types",
+ "serde",
+ "serde_json",
+ "smallvec",
+]
+
+[[package]]
+name = "pictl-types"
+version = "26.4.10"
+dependencies = [
+ "blake3",
+ "chrono",
+ "hashbrown 0.17.0",
+ "rustc-hash 2.1.2",
+ "serde",
+ "serde_json",
+ "smallvec",
+ "uuid",
 ]
 
 [[package]]
@@ -2132,6 +2166,7 @@ checksum = "3cf4199d1e5d15ddd86a694e4d0dffa9c323ce759fea589f00fef9d81cc1931d"
 dependencies = [
  "getrandom 0.3.1",
  "js-sys",
+ "serde",
  "wasm-bindgen",
 ]
 

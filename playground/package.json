@@ -17,12 +17,12 @@
     "vitest": "^1.1.0"
   },
   "dependencies": {
-    "@wasm4pm/config": "file:../packages/config",
-    "@wasm4pm/contracts": "file:../packages/contracts",
-    "@wasm4pm/engine": "file:../packages/engine",
-    "@wasm4pm/kernel": "file:../packages/kernel",
-    "@wasm4pm/observability": "file:../packages/observability",
-    "@wasm4pm/planner": "file:../packages/planner",
-    "@wasm4pm/testing": "file:../packages/testing"
+    "@pictl/config": "file:../packages/config",
+    "@pictl/contracts": "file:../packages/contracts",
+    "@pictl/engine": "file:../packages/engine",
+    "@pictl/kernel": "file:../packages/kernel",
+    "@pictl/observability": "file:../packages/observability",
+    "@pictl/planner": "file:../packages/planner",
+    "@pictl/testing": "file:../packages/testing"
   }
 }

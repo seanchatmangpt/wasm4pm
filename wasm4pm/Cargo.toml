@@ -1,17 +1,3 @@
-[workspace]
-members = [
-    "crates/pictl-types",
-    "crates/pictl-algos",
-]
-resolver = "2"
-
-[workspace.package]
-version = "26.4.10"
-edition = "2021"
-license = "MIT OR Apache-2.0"
-authors = ["Sean Chatman <info@chatmangpt.com>"]
-repository = "https://github.com/seanchatmangpt/pictl"
-
 [package]
 name = "pictl"
 version.workspace = true
@@ -44,7 +30,7 @@ wasm-opt = false
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-pictl-types = { path = "crates/pictl-types" }
+pictl-types = { path = "../crates/pictl-types" }
 wasm-bindgen = "0.2.92"
 js-sys = "0.3"
 wasm-bindgen-futures = "0.4.42"
@@ -168,6 +154,14 @@ harness = false
 
 [[bench]]
 name = "constant_latency_loops"
+harness = false
+
+[[bench]]
+name = "autoprocess_criterion"
+harness = false
+
+[[bench]]
+name = "rdtsc_validation"
 harness = false
 
 [[example]]

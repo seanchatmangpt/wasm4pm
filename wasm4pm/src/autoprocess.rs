@@ -25,6 +25,19 @@ pub const ACTION_SPACE_SIZE: usize = 5;
 /// Total Q-table entries (per agent)
 pub const QTABLE_SIZE: usize = STATE_SPACE_SIZE * ACTION_SPACE_SIZE;
 
+/// Packed representation of a Bellman transition (20 bytes)
+/// Used for deferred queue to reduce hot-path overhead
+#[repr(C)]
+#[derive(Debug, Clone, Copy)]
+struct BellmanTransition {
+    state_id: u32,
+    action_idx: u8,
+    done: bool,
+    _pad: u16,  // Padding for alignment
+    reward: f32,
+    next_state_id: u32,
+}
+
 /// Precomputed lookup tables for fast perception
 mod perception_lut {
     /// Precomputed multipliers for encoding 8D state to u32 state_id (branchless)
@@ -127,6 +140,36 @@ pub struct AutoProcessAgent {
     /// Index: quantized feature magnitude (0..127)
     /// Value: sqrt of feature magnitude
     sqrt_lut: [f32; 128],
+
+    /// Deferred Bellman update queue (256 transitions max)
+    deferred_queue: [BellmanTransition; 256],
+
+    /// Head pointer for queue (write position)
+    queue_head: u8,
+
+    /// Current queue length
+    queue_len: u8,
+
+    /// Drain period (number of cycles between drains): 0 = immediate, 128 = deferred
+    drain_every: u8,
+
+    /// Cycle counter modulo drain_every
+    cycle_mod: u8,
+
+    /// RNG for epsilon-greedy exploration
+    rng: fastrand::Rng,
+
+    /// Epsilon for ε-greedy exploration (exploration probability)
+    epsilon: f32,
+
+    /// Epsilon decay rate per cycle (multiplicative)
+    epsilon_decay: f32,
+
+    /// Minimum epsilon (lower bound)
+    epsilon_min: f32,
+
+    /// Last health level (for Guard Rule 3 evaluation)
+    last_health_level: u8,
 }
 
 impl AutoProcessAgent {
@@ -153,6 +196,23 @@ impl AutoProcessAgent {
             learning_rate,
             discount_factor,
             sqrt_lut: [0.0_f32; 128],
+            deferred_queue: [BellmanTransition {
+                state_id: 0,
+                action_idx: 0,
+                done: false,
+                _pad: 0,
+                reward: 0.0,
+                next_state_id: 0,
+            }; 256],
+            queue_head: 0,
+            queue_len: 0,
+            drain_every: 128,
+            cycle_mod: 0,
+            rng: fastrand::Rng::new(),
+            epsilon: 1.0,
+            epsilon_decay: 0.9995,
+            epsilon_min: 0.01,
+            last_health_level: 0,
         };
 
         // Precompute sqrt LUT for LinUCB
@@ -165,6 +225,19 @@ impl AutoProcessAgent {
         for i in 0..128 {
             self.sqrt_lut[i] = (i as f32).sqrt();
         }
+    }
+
+    /// Set the drain cadence (drain_every parameter)
+    /// 0 = immediate updates (no queue)
+    /// n > 0 = drain every n cycles
+    pub fn set_drain_cadence(&mut self, n: u8) {
+        self.drain_every = n;
+    }
+
+    /// Decay epsilon by epsilon_decay factor (called at end of cycle)
+    #[inline(always)]
+    pub fn decay_epsilon(&mut self) {
+        self.epsilon = (self.epsilon * self.epsilon_decay).max(self.epsilon_min);
     }
 
     // =========================================================================
@@ -224,32 +297,41 @@ impl AutoProcessAgent {
         }
     }
 
-    /// Look up Q-value and return corresponding action
+    /// Look up Q-value and return corresponding action with ε-greedy exploration
     ///
-    /// Branchless: uses bit twiddling to select max Q-value and its index.
+    /// ε-greedy: with probability ε, pick random action; otherwise pick argmax Q(s,a).
+    /// Uses internal RNG and epsilon field for true exploration.
     #[inline(always)]
     pub fn select_action_epsilon_greedy(
-        &self,
+        &mut self,
         state_id: u32,
-        _epsilon: f32,
+        epsilon_override: Option<f32>,
     ) -> (RlAction, f32, u32) {
-        // Greedy selection: find argmax_a Q(s, a)
-        let mut max_q = f32::NEG_INFINITY;
-        let mut best_action_idx: usize = 0;
+        let eps = epsilon_override.unwrap_or(self.epsilon);
 
-        for a in 0..ACTION_SPACE_SIZE {
-            let q = self.q_lookup(state_id, a);
-            // Branchless max: use float comparison
-            let is_better = q > max_q;
-            max_q = if is_better { q } else { max_q };
-            best_action_idx = if is_better { a } else { best_action_idx };
-        }
+        // ε-greedy: explore with probability ε
+        let selected_idx = if self.rng.f32() < eps {
+            // Explore: pick random action
+            (self.rng.usize(0..ACTION_SPACE_SIZE)) as usize
+        } else {
+            // Exploit: find argmax_a Q(s, a)
+            let mut max_q = f32::NEG_INFINITY;
+            let mut best_action_idx: usize = 0;
 
-        // ε-greedy: explore with probability ε (simplified: always greedy for latency)
-        // Real implementation would use seeded RNG here
-        let action = RlAction::from_index(best_action_idx).unwrap_or(RlAction::Continue);
+            for a in 0..ACTION_SPACE_SIZE {
+                let q = self.q_lookup(state_id, a);
+                // Branchless max: use float comparison
+                let is_better = q > max_q;
+                max_q = if is_better { q } else { max_q };
+                best_action_idx = if is_better { a } else { best_action_idx };
+            }
+            best_action_idx
+        };
 
-        (action, max_q, best_action_idx as u32)
+        let q_val = self.q_lookup(state_id, selected_idx);
+        let action = RlAction::from_index(selected_idx).unwrap_or(RlAction::Continue);
+
+        (action, q_val, selected_idx as u32)
     }
 
     /// Estimate agent confidence using LinUCB upper confidence bound
@@ -290,10 +372,10 @@ impl AutoProcessAgent {
     ///
     /// Rules:
     /// 1. Health must be in [0, 4]
-    /// 2. Health cannot transition from non-4 to 4 in a single step (unless triggered by SPC)
-    /// 3. Action must be in [0, 4]
+    /// 2. Action must be in [0, 4]
+    /// 3. Cannot transition from health < 3 to health == 4 in a single step (death spiral check)
     #[inline(always)]
-    pub fn evaluate_guard(&self, state: &RlState, action: RlAction) -> GuardEval {
+    pub fn evaluate_guard(&self, state: &RlState, action: RlAction, prev_health: u8) -> GuardEval {
         let mut violations = 0u32;
 
         // Rule 1: Health must be in valid range
@@ -304,6 +386,10 @@ impl AutoProcessAgent {
         let action_idx = action.to_index() as u32;
         let action_valid = (action_idx < 5) as u32;
         violations += (1 - action_valid) & 1;
+
+        // Rule 3: Prevent sudden death spiral (prev_health < 3 AND current health == 4)
+        let death_spiral_check = ((prev_health < 3) as u32) & ((state.health_level == 4) as u32);
+        violations += death_spiral_check;
 
         let pass = violations == 0;
         GuardEval {
@@ -373,17 +459,13 @@ impl AutoProcessAgent {
     }
 
     // =========================================================================
-    // OPTIMIZATION: Bellman update to Q-table
+    // DEFERRED BELLMAN QUEUEING
     // =========================================================================
 
-    /// Perform Bellman Q-learning update
-    ///
-    /// Q(s,a) ← Q(s,a) + α[r + γ max_a' Q(s',a') - Q(s,a)]
-    ///
-    /// Branchless except for the max_a' operation.
-    /// Terminal state check (done flag) is branchless.
+    /// Enqueue a Bellman transition for deferred processing
+    /// Auto-drains if queue becomes full
     #[inline(always)]
-    pub fn bellman_update(
+    fn enqueue_bellman(
         &mut self,
         state_id: u32,
         action_idx: usize,
@@ -391,12 +473,100 @@ impl AutoProcessAgent {
         next_state_id: u32,
         done: bool,
     ) {
-        // Find max Q(s', a')
-        let mut max_next_q = f32::NEG_INFINITY;
-        for a in 0..ACTION_SPACE_SIZE {
-            let q = self.q_lookup(next_state_id, a);
-            max_next_q = if q > max_next_q { q } else { max_next_q };
+        if self.queue_len < 255 {
+            let idx = self.queue_head as usize;
+            self.deferred_queue[idx] = BellmanTransition {
+                state_id,
+                action_idx: action_idx as u8,
+                done,
+                _pad: 0,
+                reward,
+                next_state_id,
+            };
+            self.queue_head = self.queue_head.wrapping_add(1);
+            self.queue_len = self.queue_len.saturating_add(1);
+        } else {
+            // Queue full: drain before enqueuing new transition
+            self.drain_bellman_queue();
+            let idx = self.queue_head as usize;
+            self.deferred_queue[idx] = BellmanTransition {
+                state_id,
+                action_idx: action_idx as u8,
+                done,
+                _pad: 0,
+                reward,
+                next_state_id,
+            };
+            self.queue_head = self.queue_head.wrapping_add(1);
+            self.queue_len = 1;
         }
+    }
+
+    /// Drain all buffered Bellman transitions and apply updates
+    pub fn drain_bellman_queue(&mut self) {
+        for i in 0..self.queue_len {
+            let idx = i as usize;
+            let trans = self.deferred_queue[idx];
+
+            let mut max_next_q = f32::NEG_INFINITY;
+            // Unrolled 5-element max reduction
+            let next_base = (trans.next_state_id as usize) * ACTION_SPACE_SIZE;
+            if next_base + ACTION_SPACE_SIZE <= QTABLE_SIZE {
+                let s = &self.q_table[next_base..next_base + ACTION_SPACE_SIZE];
+                let m01 = if s[0] > s[1] { s[0] } else { s[1] };
+                let m23 = if s[2] > s[3] { s[2] } else { s[3] };
+                let m = if m01 > m23 { m01 } else { m23 };
+                max_next_q = if m > s[4] { m } else { s[4] };
+            }
+
+            // Branchless terminal check
+            let target = trans.reward + (1.0 - trans.done as u32 as f32) * self.discount_factor * max_next_q;
+
+            let q_idx = (trans.state_id as usize)
+                .wrapping_mul(ACTION_SPACE_SIZE)
+                .wrapping_add(trans.action_idx as usize);
+
+            if q_idx < QTABLE_SIZE {
+                let current_q = self.q_table[q_idx];
+                let delta = target - current_q;
+                self.q_table[q_idx] = current_q + self.learning_rate * delta;
+            }
+        }
+        self.queue_head = 0;
+        self.queue_len = 0;
+    }
+
+    // =========================================================================
+    // OPTIMIZATION: Bellman update to Q-table
+    // =========================================================================
+
+    /// Perform Bellman Q-learning update directly (non-deferred path)
+    ///
+    /// Q(s,a) ← Q(s,a) + α[r + γ max_a' Q(s',a') - Q(s,a)]
+    ///
+    /// Branchless except for the max_a' operation.
+    /// Terminal state check (done flag) is branchless.
+    /// Uses unrolled 5-element max reduction for faster Q-max computation.
+    #[inline(never)]
+    pub fn bellman_update_direct(
+        &mut self,
+        state_id: u32,
+        action_idx: usize,
+        reward: f32,
+        next_state_id: u32,
+        done: bool,
+    ) {
+        // Hoisted bounds + unrolled 5-element max reduction
+        let next_base = (next_state_id as usize) * ACTION_SPACE_SIZE;
+        let max_next_q = if next_base + ACTION_SPACE_SIZE <= QTABLE_SIZE {
+            let s = &self.q_table[next_base..next_base + ACTION_SPACE_SIZE];
+            let m01 = if s[0] > s[1] { s[0] } else { s[1] };
+            let m23 = if s[2] > s[3] { s[2] } else { s[3] };
+            let m = if m01 > m23 { m01 } else { m23 };
+            if m > s[4] { m } else { s[4] }
+        } else {
+            0.0
+        };
 
         // Branchless terminal check: if done, target = r; else r + γ Q(s', a')
         let target = reward + (1.0 - done as u32 as f32) * self.discount_factor * max_next_q;
@@ -428,17 +598,18 @@ impl AutoProcessAgent {
         next_state: &RlState,
         done: bool,
         action_success: bool,
+        _circuit_state_u8: u8,
     ) -> Decision {
         // Step 1: PERCEPTION — Encode 8D state to state_id
         let state_id = self.encode_state(state);
         let next_state_id = self.encode_state(next_state);
 
         // Step 2: DECISION — Select action via epsilon-greedy
-        let (action, q_value, _action_idx) = self.select_action_epsilon_greedy(state_id, 0.0);
+        let (action, q_value, _action_idx) = self.select_action_epsilon_greedy(state_id, None);
 
         // Step 3: PROTECTION
         // - Evaluate guard rules
-        let guard_eval = self.evaluate_guard(state, action);
+        let guard_eval = self.evaluate_guard(state, action, self.last_health_level);
 
         // - Advance circuit breaker
         self.advance_circuit_breaker();
@@ -446,17 +617,42 @@ impl AutoProcessAgent {
         // - Update circuit breaker on action result
         self.record_action_result(action_success);
 
-        // Step 4: OPTIMIZATION — Bellman update
-        self.bellman_update(
-            state_id,
-            action.to_index(),
-            reward,
-            next_state_id,
-            done,
-        );
+        // Step 4: OPTIMIZATION — Bellman update (immediate or deferred)
+        if self.drain_every == 0 {
+            // Immediate update path
+            self.bellman_update_direct(
+                state_id,
+                action.to_index(),
+                reward,
+                next_state_id,
+                done,
+            );
+        } else {
+            // Deferred queue path
+            self.enqueue_bellman(
+                state_id,
+                action.to_index(),
+                reward,
+                next_state_id,
+                done,
+            );
+
+            // Periodic drain check
+            self.cycle_mod = self.cycle_mod.wrapping_add(1);
+            if self.cycle_mod >= self.drain_every {
+                self.drain_bellman_queue();
+                self.cycle_mod = 0;
+            }
+        }
 
         // Estimate agent confidence using LinUCB
         let agent_confidence = self.linucb_ucb_estimate(q_value, features);
+
+        // Update last_health_level for next cycle's Guard Rule 3
+        self.last_health_level = state.health_level;
+
+        // Decay epsilon for exploration-exploitation tradeoff
+        self.decay_epsilon();
 
         Decision {
             action,
@@ -466,6 +662,14 @@ impl AutoProcessAgent {
             circuit_allowed: self.circuit_allows_request(),
             agent_confidence,
         }
+    }
+
+    /// Create a new AutoProcessAgent with immediate Bellman updates (for testing)
+    #[cfg(test)]
+    pub fn new_immediate() -> Self {
+        let mut agent = Self::new();
+        agent.drain_every = 0;  // Immediate mode
+        agent
     }
 
     /// Get mutable reference to Q-table for testing/inspection
@@ -570,8 +774,8 @@ mod tests {
     #[test]
     #[ignore] // Stack-intensive tests; run with RUST_MIN_STACK=8388608 cargo test -- --ignored --test-threads=1
     fn test_select_action_epsilon_greedy() {
-        let agent = AutoProcessAgent::new();
-        let (action, q, _idx) = agent.select_action_epsilon_greedy(0, 0.0);
+        let mut agent = AutoProcessAgent::new();
+        let (action, q, _idx) = agent.select_action_epsilon_greedy(0, None);
 
         // With all Q-values at 0, any action is equally good
         assert!(matches!(
@@ -600,7 +804,7 @@ mod tests {
             cycle_phase: 1,
         };
 
-        let guard = agent.evaluate_guard(&state, RlAction::Continue);
+        let guard = agent.evaluate_guard(&state, RlAction::Continue, 0);
         assert!(guard.pass, "Valid state and action should pass guard");
         assert_eq!(guard.rule_violations, 0);
     }
@@ -608,7 +812,7 @@ mod tests {
     #[test]
     #[ignore] // Skip in normal test runs; run separately with `cargo test -- --ignored`
     fn test_bellman_update() {
-        let mut agent = AutoProcessAgent::new();
+        let mut agent = AutoProcessAgent::new_immediate();
 
         // Set up initial Q-value
         let state_id = 0u32;
@@ -622,7 +826,7 @@ mod tests {
         assert_eq!(q_before, 0.0);
 
         // Perform Bellman update
-        agent.bellman_update(state_id, action_idx, reward, next_state_id, done);
+        agent.bellman_update_direct(state_id, action_idx, reward, next_state_id, done);
 
         // After update: Q[0,0] should increase
         let q_after = agent.q_lookup(state_id, action_idx);
@@ -718,7 +922,7 @@ mod tests {
         let features = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8];
         let reward = 0.5;
 
-        let decision = agent.run_cycle(&state, &features, reward, &next_state, false, true);
+        let decision = agent.run_cycle(&state, &features, reward, &next_state, false, true, 0);
 
         // Verify decision has valid action
         assert!(matches!(

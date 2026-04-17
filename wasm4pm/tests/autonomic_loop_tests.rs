@@ -32,15 +32,15 @@ fn test_orchestrator_persists_across_cycles() {
     let next_state = make_test_state(1);
 
     // Cycle 1
-    orch.run_cycle(&features, &state, &next_state, 0, true, true);
+    orch.run_cycle(&features, &state, &next_state, 0, true, true, false);
     assert_eq!(orch.telemetry().cycle_count, 1);
 
     // Cycle 2
-    orch.run_cycle(&features, &state, &next_state, 0, true, true);
+    orch.run_cycle(&features, &state, &next_state, 0, true, true, false);
     assert_eq!(orch.telemetry().cycle_count, 2);
 
     // Cycle 3
-    orch.run_cycle(&features, &state, &next_state, 2, false, true);
+    orch.run_cycle(&features, &state, &next_state, 2, false, true, false);
     assert_eq!(orch.telemetry().cycle_count, 3);
     assert_eq!(orch.telemetry().last_spc_alert_count, 2);
 }
@@ -51,24 +51,24 @@ fn test_orchestrator_persists_across_cycles() {
 
 #[test]
 fn test_reward_improves_with_health_gain() {
-    let r_good = compute_reward(3, 1, 0, true, true);
-    let r_stable = compute_reward(2, 2, 0, true, true);
-    let r_bad = compute_reward(1, 3, 0, true, true);
+    let r_good = compute_reward(3, 1, 0, true, true, false);
+    let r_stable = compute_reward(2, 2, 0, true, true, false);
+    let r_bad = compute_reward(1, 3, 0, true, true, false);
     assert!(r_good > r_stable);
     assert!(r_stable > r_bad);
 }
 
 #[test]
 fn test_reward_penalizes_spc_alerts() {
-    let r_clean = compute_reward(2, 2, 0, true, true);
-    let r_dirty = compute_reward(2, 2, 5, true, true);
+    let r_clean = compute_reward(2, 2, 0, true, true, false);
+    let r_dirty = compute_reward(2, 2, 5, true, true, false);
     assert!(r_clean > r_dirty);
 }
 
 #[test]
 fn test_reward_terminal_is_worst() {
-    let r_terminal = compute_reward(3, 4, 0, true, true);
-    let r_stable = compute_reward(4, 4, 0, true, true); // already at 4
+    let r_terminal = compute_reward(3, 4, 0, true, true, false);
+    let r_stable = compute_reward(4, 4, 0, true, true, false); // already at 4
     assert!(r_terminal <= r_stable);
 }
 
@@ -93,7 +93,7 @@ fn test_all_five_agents_work_in_loop() {
         orch.switch_agent(*agent_type);
         for i in 0..10 {
             let spc_alerts = if i % 3 == 0 { 2 } else { 0 };
-            let (action, reward) = orch.run_cycle(&features, &state, &next_state, spc_alerts, true, true);
+            let (action, reward) = orch.run_cycle(&features, &state, &next_state, spc_alerts, true, true, false);
             assert!(
                 !action.is_empty(),
                 "Agent {:?} should produce an action",
@@ -119,7 +119,7 @@ fn test_linucb_agent_selection_changes_agent() {
 
     let mut seen_agents = std::collections::HashSet::new();
     for _ in 0..50 {
-        orch.run_cycle(&features, &state, &next_state, 0, true, true);
+        orch.run_cycle(&features, &state, &next_state, 0, true, true, false);
         seen_agents.insert(orch.active_agent() as u8);
     }
 
@@ -176,7 +176,7 @@ fn test_single_autonomic_cycle_completes_in_under_100ms() {
 
     // Measure wall-clock time for one cycle
     let start = std::time::Instant::now();
-    let (_action, _reward) = orch.run_cycle(&features, &state, &next_state, 0, true, true);
+    let (_action, _reward) = orch.run_cycle(&features, &state, &next_state, 0, true, true, false);
     let elapsed = start.elapsed();
 
     // Assert: single cycle completes in <100ms
@@ -200,7 +200,7 @@ fn test_g2_fifty_consecutive_cycles_no_panic() {
     let next_state = make_test_state(1);
 
     for i in 0..50 {
-        let (action, reward) = orch.run_cycle(&features, &state, &next_state, 0, true, true);
+        let (action, reward) = orch.run_cycle(&features, &state, &next_state, 0, true, true, false);
         assert!(
             !action.is_empty(),
             "cycle {}: action should not be empty",
@@ -235,7 +235,7 @@ fn test_g3_degraded_to_recovery_reward_increases() {
     let degraded = make_test_state(3);
     let mut phase1_rewards = Vec::new();
     for _ in 0..10 {
-        let (_, reward) = orch.run_cycle(&features, &degraded, &degraded, 0, true, true);
+        let (_, reward) = orch.run_cycle(&features, &degraded, &degraded, 0, true, true, false);
         phase1_rewards.push(reward);
     }
 
@@ -246,7 +246,7 @@ fn test_g3_degraded_to_recovery_reward_increases() {
         let state = make_test_state(current_health);
         let next_health = if current_health > 0 { current_health - 1 } else { 0 };
         let next_state = make_test_state(next_health);
-        let (_, reward) = orch.run_cycle(&features, &state, &next_state, 0, true, true);
+        let (_, reward) = orch.run_cycle(&features, &state, &next_state, 0, true, true, false);
         phase2_rewards.push(reward);
         current_health = next_health;
     }
@@ -262,5 +262,41 @@ fn test_g3_degraded_to_recovery_reward_increases() {
         mean_phase1,
         phase1_rewards,
         phase2_rewards
+    );
+}
+
+// ---------------------------------------------------------------------------
+// Test: Latency budget penalty verification
+// ---------------------------------------------------------------------------
+
+#[test]
+fn test_reward_penalizes_latency_budget_exceeded() {
+    // Oracle Rank 1: Mathematical theorem — reward function penalty for latency_budget_exceeded
+    // Verify: latency_budget_exceeded=true → reward -= 0.3
+
+    // Baseline reward without latency budget exceeded
+    let r_no_latency = compute_reward(2, 1, 0, true, true, false);
+
+    // Same reward components but with latency budget exceeded
+    let r_with_latency = compute_reward(2, 1, 0, true, true, true);
+
+    // Assert: penalty is exactly -0.3
+    let penalty = r_no_latency - r_with_latency;
+    assert_eq!(
+        penalty, 0.3,
+        "Latency budget exceeded should apply -0.3 penalty: \
+         reward without latency={:.4}, with latency={:.4}, penalty={:.4}",
+        r_no_latency, r_with_latency, penalty
+    );
+
+    // Additional test: verify latency penalty stacks with other penalties
+    let r_spc_only = compute_reward(2, 2, 1, true, true, false);
+    let r_spc_and_latency = compute_reward(2, 2, 1, true, true, true);
+    let stacked_penalty = r_spc_only - r_spc_and_latency;
+    assert_eq!(
+        stacked_penalty, 0.3,
+        "Latency penalty should stack independently with SPC penalty: \
+         penalty={:.4}",
+        stacked_penalty
     );
 }
