@@ -10,7 +10,7 @@
 //! Budget: 34 nanoseconds per cycle (target: 30.6ns with 10% margin)
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use pictl::autoprocess::{AutoProcessAgent, STATE_SPACE_SIZE, ACTION_SPACE_SIZE};
+use pictl::autoprocess::AutoProcessAgent;
 use pictl::RlState;
 use std::time::Duration;
 
