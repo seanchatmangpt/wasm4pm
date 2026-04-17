@@ -106,7 +106,7 @@ console.log(version); // "v26.4.16"
 **Example:**
 ```javascript
 const caps = JSON.parse(get_capabilities());
-console.log(caps.algorithms.length); // 41 (cloud profile)
+console.log(caps.algorithms.length); // 41 (browser profile)
 console.log(caps.features); // ["ml", "streaming", "ocel", "powl"]
 ```
 

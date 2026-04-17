@@ -149,7 +149,7 @@ feature-gpu
 
 Each profile combines canonical features into a preset configuration for a specific deployment target.
 
-### Mobile Profile (~1.8MB target, 33% reduction from browser)
+### Mobile Profile (~500KB target)
 
 **Target:** Mobile apps, web browsers with size constraints, CDN edge endpoints
 
@@ -175,7 +175,7 @@ const dfg = discover_dfg(log, "concept:name");
 cargo build --release --target wasm32-unknown-unknown --features mobile
 ```
 
-### IoT Profile (~1.9MB, 30% reduction)
+### IoT Profile (~1.0MB target)
 
 **Target:** IoT devices, embedded systems, resource-constrained environments
 
@@ -196,7 +196,7 @@ cargo build --release --target wasm32-unknown-unknown --features mobile
 cargo build --release --target wasm32-unknown-unknown --features iot
 ```
 
-### Edge Profile (~2.1MB, 22% reduction)
+### Edge Profile (~1.5MB target)
 
 **Target:** Edge servers, CDN workers, fog gateways
 
@@ -229,7 +229,7 @@ setInterval(async () => {
 cargo build --release --target wasm32-unknown-unknown --features edge
 ```
 
-### Fog Profile (~2.4MB, 13% reduction)
+### Fog Profile (~2.0MB target)
 
 **Target:** Fog computing, IoT gateways, on-premises servers
 
@@ -267,7 +267,7 @@ const prediction = await kernel.run('ml_forecast', logHandle, {
 cargo build --release --target wasm32-unknown-unknown --features fog
 ```
 
-### Browser Profile (~2.7MB measured, baseline — DEFAULT)
+### Browser Profile (~2.7MB measured, baseline — DEFAULT, full features)
 
 **Target:** Cloud servers, large deployments, development/testing, full-featured web apps
 
@@ -334,7 +334,7 @@ pub mod streaming_conformance;
 ### Feature Dependency Chain
 
 ```
-cloud (all-features)
+browser (all-features)
 ├─ feature-discovery-advanced
 │  └─ genetic, ilp, a_star, aco, pso, simulated_annealing
 ├─ feature-ml
@@ -348,7 +348,7 @@ cloud (all-features)
 │  └─ streaming_basic (< dependency)
 └─ ...
 
-browser (minimal)
+mobile (minimal)
 ├─ feature-conformance-basic
 │  └─ conformance_basic
 └─ feature-hand-rolled-stats
@@ -363,15 +363,15 @@ browser (minimal)
 
 | Profile | Target (KB) | Actual (KB) | Margin | Notes |
 |---------|------------|-------------|--------|-------|
-| browser | 512 | 450-500 | ±50 | Web, mobile |
+| mobile | 512 | 450-500 | ±50 | Web, mobile |
 | iot | 1024 | 900-1000 | ±100 | Embedded |
 | edge | 1536 | 1400-1500 | ±150 | CDN, gateways |
 | fog | 2048 | 1900-2000 | ±150 | On-prem |
-| cloud | 2850 | 2700-2800 | ±150 | Cloud, dev |
+| browser | 2700 | 2697 (measured) | ±100 | Cloud, dev, all features |
 
 ### Size Breakdown
 
-Approximate contributions (cloud baseline = 2800KB):
+Approximate contributions (browser baseline = 2700KB):
 
 ```
 Base library (always included)
@@ -393,7 +393,7 @@ Optional modules:
    ├─ statrs lib      ≈ 350 KB
    └─ Other utils     ≈ 100 KB
 
-Total: ~2800 KB (cloud profile)
+Total: ~2700 KB (browser profile)
 ```
 
 ### Size Optimization Techniques
@@ -523,8 +523,8 @@ Measuring profile: iot
 # Test browser profile
 cargo test --test feature_gating_tests --features browser
 
-# Test cloud profile (all features)
-cargo test --test feature_gating_tests --features cloud
+# Test browser profile (all features)
+cargo test --test feature_gating_tests --features browser
 
 # Integration tests
 cd packages/kernel && npm test

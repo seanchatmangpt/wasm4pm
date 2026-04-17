@@ -759,7 +759,7 @@ cargo check --lib (pictl v26.4.10):
   0 errors
   2 warnings (pre-existing in smart_engine.rs, not from ported code)
   12.7s build time (incremental)
-  ~2.78MB WASM binary (cloud profile)
+  ~2.7MB WASM binary (browser profile)
 ```
 
 ### 11.3 WASM Compatibility Verification

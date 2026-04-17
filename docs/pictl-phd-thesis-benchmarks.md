@@ -85,7 +85,7 @@ The fundamental question this thesis addresses is not "how fast are these algori
 
 This thesis addresses four research questions:
 
-**RQ1:** What are the empirical performance characteristics of 28 process mining algorithms when compiled to WebAssembly and executed across five deployment profiles (IoT, browser, edge, fog, cloud)?
+**RQ1:** What are the empirical performance characteristics of 28 process mining algorithms when compiled to WebAssembly and executed across five deployment profiles (IoT, mobile, edge, fog, browser)?
 
 **RQ2:** How do the four quality dimensions of process models (fitness, precision, generalization, simplicity) manifest in benchmark results, and can benchmarks serve as proxies for model quality?
 
@@ -171,7 +171,7 @@ The Closed Claw Constitution was designed in response to observed failures in ex
 
 **Anti-Requirement 2: No results without receipts.** Every benchmark run must produce a BLAKE3 hash chain proving that the computation was deterministic and the output integrity is verifiable.
 
-**Anti-Requirement 3: No single-environment measurements.** The Constitution requires coverage across deployment profiles (IoT, browser, edge, fog, cloud) to prove that results are not artifacts of a specific hardware configuration.
+**Anti-Requirement 3: No single-environment measurements.** The Constitution requires coverage across deployment profiles (IoT, mobile, edge, fog, browser) to prove that results are not artifacts of a specific hardware configuration.
 
 **Anti-Requirement 4: No quality metrics without thresholds.** The G3 Truth gate enforces specific thresholds (fitness >= 0.95, precision >= 0.80) rather than reporting quality metrics as informational.
 
@@ -229,13 +229,13 @@ The pictl engine supports five deployment profiles, each trading algorithmic com
 
 | Profile | Binary Size | Reduction | Algorithms Available |
 |---|---|---|---|
-| Cloud | ~2.78 MB | Baseline | All 28 algorithms |
-| Fog | ~2.0 MB | 28% | Most algorithms, no ILP/Genetic |
-| Edge | ~1.5 MB | 46% | Core discovery + conformance |
-| IoT | ~1.0 MB | 64% | DFG + streaming + basic conformance |
-| Browser | ~500 KB | 82% | DFG + skeleton + token replay |
+| Browser | ~2.7 MB | Baseline | All 28 algorithms |
+| Fog | ~2.0 MB | 26% | Most algorithms, no ILP/Genetic |
+| Edge | ~1.5 MB | 44% | Core discovery + conformance |
+| IoT | ~1.0 MB | 63% | DFG + streaming + basic conformance |
+| Mobile | ~500 KB | 81% | DFG + skeleton + token replay |
 
-The 82% binary size reduction for the browser profile means that the complete process mining stack---from event log to discovered model to conformance metrics---can be embedded in a web page that loads in under 1 second on a 3G connection. This is not a theoretical possibility; it is empirically verified by the compilation targets.
+The 81% binary size reduction for the mobile profile means that the complete process mining stack---from event log to discovered model to conformance metrics---can be embedded in a web page that loads in under 1 second on a 3G connection. This is not a theoretical possibility; it is empirically verified by the compilation targets.
 
 ---
 
@@ -633,7 +633,7 @@ This five-gate framework transforms benchmark results from performance claims in
 
 4. **Streaming DFG at 100 Melem/s:** Demonstrating real-time process discovery on 100K-event logs.
 
-5. **Cross-profile binary size measurements:** 82% reduction from cloud to browser profile.
+5. **Cross-profile binary size measurements:** 82% reduction from browser to mobile profile.
 
 ### 9.2 Methodological Contributions
 

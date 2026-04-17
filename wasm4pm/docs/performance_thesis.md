@@ -163,10 +163,10 @@ pictl defines five deployment profiles with distinct feature compositions:
 | Profile | Features | Target Environment | Expected Size |
 |---------|----------|-------------------|---------------|
 | **iot** | minimal, streaming_basic, hand_rolled_stats | Microcontrollers, embedded IoT | ~1.0 MB (target) |
-| **browser** | basic, simd, hand_rolled_stats | Web browsers, mobile apps | ~500 KB (target) |
+| **mobile** | basic, simd, hand_rolled_stats | Mobile web, minimal | ~500 KB (target) |
 | **edge** | basic, advanced, ml, streaming_basic, hand_rolled_stats | Edge servers, CDN | ~1.5 MB (target) |
 | **fog** | edge + swarm, streaming_full, statrs, ocel, powl | Fog computing, IoT gateways | ~2.0 MB (target) |
-| **cloud** | All features | Cloud servers, datacenters | ~2.78 MB (target) |
+| **browser** | All features | Cloud servers, datacenters | ~2.7 MB (target) |
 
 ### 4.2 Feature Composition
 
@@ -216,7 +216,7 @@ pictl defines five deployment profiles with distinct feature compositions:
 3. **Linker Limitations**: wasm-ld may not eliminate dead code across feature boundaries effectively
 4. **Dependency Chain**: Core dependencies (serde, chrono, nalgebra) are pulled in by all profiles
 
-**Evidence**: The cloud profile adds only 3,877 bytes (0.1%) over iot despite including:
+**Evidence**: The browser profile adds only 3,877 bytes (0.1%) over iot despite including:
 - statrs instead of hand_rolled_stats
 - All Tier 2-3 metaheuristic algorithms
 - OCEL and POWL support
@@ -618,7 +618,7 @@ Automatic memory management via object pooling:
 - cloud: Overkill
 
 **Large deployments (>1000 users)**:
-- cloud profile: Economies of scale
+- browser profile: Economies of scale
 - fog: For reduced latency
 
 ---
@@ -798,7 +798,7 @@ ELSE IF fog_gateway AND aggregating_edge_nodes:
     USE fog profile
 
 ELSE IF datacenter AND resource_unlimited:
-    USE cloud profile
+    USE browser profile
 ```
 
 ### 19.2 Algorithm Selection Guide

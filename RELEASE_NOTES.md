@@ -1203,11 +1203,11 @@ wasm4pm v26.4.8 introduces **deployment profiles** — optimized WASM builds for
 
 | Profile | Size | Reduction | Use Case |
 |---------|------|-----------|----------|
-| **browser** | ~500KB | 82% | Web browsers, mobile web |
+| **mobile** | ~500KB | 82% | Mobile web, minimal |
 | **iot** | ~1.0MB | 64% | IoT devices, embedded systems |
 | **edge** | ~1.5MB | 46% | Edge servers, CDN workers |
 | **fog** | ~2.0MB | 28% | Fog computing, IoT gateways |
-| **cloud** | ~2.78MB | 0% | Cloud servers, npm default |
+| **browser** | ~2.7MB | 0% | Cloud servers, npm default |
 
 ## 🎯 Quick Start
 
@@ -1216,11 +1216,11 @@ wasm4pm v26.4.8 introduces **deployment profiles** — optimized WASM builds for
 npm run build
 
 # Production (size-optimized)
-npm run build:browser  # ~500KB for web browsers
+npm run build:mobile  # ~500KB for mobile/minimal
 npm run build:edge     # ~1.5MB for edge servers
 npm run build:fog      # ~2.0MB for fog computing
 npm run build:iot      # ~1.0MB for IoT devices
-npm run build:cloud    # ~2.78MB (same as default)
+npm run build:browser    # ~2.7MB (same as default)
 ```
 
 ## ✨ Key Features
@@ -1232,7 +1232,7 @@ npm run build:cloud    # ~2.78MB (same as default)
 
 ### What's Included Per Profile
 
-**browser profile** (~500KB):
+**mobile profile** (~500KB target):
 - ✅ Basic discovery: dfg, process_skeleton, alpha_plus_plus, heuristic_miner
 - ✅ Basic conformance: token replay
 - ✅ SIMD acceleration
@@ -1260,7 +1260,7 @@ npm run build:cloud    # ~2.78MB (same as default)
 - ❌ statrs (~200KB)
 - ❌ POWL, advanced algorithms, ML
 
-**cloud profile** (~2.78MB — DEFAULT):
+**browser profile** (~2.7MB — DEFAULT):
 - ✅ Everything
 - ✅ All 21 discovery algorithms
 - ✅ All 6 ML/prediction features
@@ -1279,12 +1279,12 @@ npm run build:cloud    # ~2.78MB (same as default)
 ### Feature Flags (Cargo.toml)
 ```toml
 [features]
-default = ["cloud"]  # Full feature set for npm
-browser = ["basic", "simd", "hand_rolled_stats"]
+default = ["browser"]  # Full feature set for npm
+mobile = ["basic", "simd", "hand_rolled_stats"]
 edge = ["basic", "advanced", "ml", "streaming_basic", "hand_rolled_stats"]
 fog = ["edge", "swarm", "streaming_full", "statrs", "ocel"]
 iot = ["minimal", "streaming_basic", "hand_rolled_stats"]
-cloud = ["basic", "advanced", "ml", "streaming_full", "swarm", "statrs", "powl", "ocel"]
+browser = ["basic", "advanced", "ml", "streaming_full", "swarm", "statrs", "powl", "ocel"]
 ```
 
 ## 📚 Documentation
@@ -1319,10 +1319,10 @@ New users: Get full capabilities by default. Opt into smaller profiles for produ
 npm run build  # 2.78MB binary
 
 # After (v26.4.8) — Development (unchanged)
-npm run build  # 2.78MB binary (cloud profile)
+npm run build  # 2.7MB binary (browser profile)
 
 # After (v26.4.8) — Production (NEW!)
-npm run build:browser  # 500KB binary (82% smaller!)
+npm run build:mobile  # ~500KB binary (82% smaller!)
 ```
 
 ## 🐛 Bug Fixes

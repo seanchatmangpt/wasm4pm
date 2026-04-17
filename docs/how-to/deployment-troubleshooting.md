@@ -62,7 +62,7 @@ ls -lh wasm4pm.wasm          # Or wherever your binary is
 ls -lh: -rw-r--r--  1 user  staff  2.8M Apr  9 15:30 wasm4pm.wasm
 ```
 
-This is the **cloud profile**, not browser/edge/iot/fog.
+This is the **browser profile**, not mobile/edge/iot/fog.
 
 #### Step 2: Verify Config Profile
 
@@ -194,9 +194,9 @@ npm run build:browser    # ~500KB
 npm run build:edge       # ~1.5MB
 npm run build:iot        # ~1.0MB
 
-# Bad: Generic build (produces cloud profile)
-npm run build            # ~2.78MB
-pnpm build:wasm         # ~2.78MB
+# Bad: Generic build (produces browser profile)
+npm run build            # ~2.7MB
+pnpm build:wasm         # ~2.7MB
 ```
 
 #### Step 3: Enable Compression

@@ -350,7 +350,7 @@ If issue persists:
 # Check WASM binary
 ls -lah node_modules/@seanchatmangpt/pictl/dist/wasm4pm.js
 
-# Should be ~2.78 MB for cloud profile
+# Should be ~2.7 MB for browser profile
 # If <100 KB, download failed
 ```
 

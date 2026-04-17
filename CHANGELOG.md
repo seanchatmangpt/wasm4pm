@@ -69,7 +69,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **WASM Binary Size**: 2.78 MB (cloud profile)
+- **WASM Binary Size**: 2.7 MB (browser profile)
 - **Full Cycle Latency**: <100 ms per autonomic decision
 - **Recovery MTTR**: <1 second (unchanged from v26.4.10, now with state persistence)
 - **RL Agent Count**: 1 (hard-coded) → 5 (with LinUCB selection)
@@ -272,14 +272,14 @@ pictl run --config broken-config.toml  # Exit 1, clear error message
 ### Added
 
 - **Deployment Profiles**: Five deployment profiles for optimized WASM binary sizes
-  - `browser` (~500KB, 82% reduction) — Web browsers, mobile web
+  - `mobile` (~500KB, 82% reduction) — Mobile web, minimal
   - `edge` (~1.5MB, 46% reduction) — Edge servers, CDN workers
   - `fog` (~2.0MB, 28% reduction) — Fog computing, IoT gateways
   - `iot` (~1.0MB, 64% reduction) — IoT devices, embedded systems
-  - `cloud` (~2.78MB, full features) — Cloud servers, npm default
+  - `browser` (~2.7MB, full features) — Cloud servers, npm default
 - **Conditional Compilation**: 30+ Rust modules now use `#[cfg(feature)]` gates
 - **Hand-Rolled Statistics**: New `hand_stats.rs` module replaces statrs for size-constrained profiles (~200KB savings)
-- **Profile-Specific Build Scripts**: `npm run build:{browser,edge,fog,iot,cloud}`
+- **Profile-Specific Build Scripts**: `npm run build:{mobile,edge,fog,iot,browser}`
 - **TypeScript Registry**: Deployment profile filtering with `getForDeploymentProfile()`
 - **Documentation**: Comprehensive `DEPLOYMENT_PROFILES.md` guide
 - **Tests**: Deployment profile test suite
@@ -295,7 +295,7 @@ pictl run --config broken-config.toml  # Exit 1, clear error message
   - `reduction.ts`: Direct covariance computation (no transpose+matmul), in-place Jacobi eigendecomposition
   - `forecasting.ts`: Single-pass linear regression, pre-computed centered series, O(n) throughput binning
   - `bridge.ts`: JSDoc updated (no external ML references)
-- **Default Feature**: `default` changed from `[]` to `["cloud"]` for full-feature npm package
+- **Default Feature**: `default` changed from `[]` to `["browser"]` for full-feature npm package
 - **statrs Dependency**: Made optional (was required, now ~200KB savings in size-constrained profiles)
 - **Algorithm Registry**: Added `deploymentProfiles` field to `AlgorithmMetadata`
 - **Build Scripts**: Added profile-specific build commands to `wasm4pm/package.json`

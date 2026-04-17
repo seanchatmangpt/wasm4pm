@@ -121,7 +121,7 @@ Dependency order (publish in this sequence):
 - [ ] Run `pnpm build` — all TypeScript packages compiled
 - [ ] Run `pnpm test` — all tests passing (89/89 tests)
 - [ ] Run `pnpm lint` — no TypeScript or formatting errors
-- [ ] WASM size targets verified (2.78 MB cloud profile)
+- [ ] WASM size targets verified (2.7 MB browser profile)
 
 ### Documentation Status
 - [x] CHANGELOG.md complete for v26.4.16

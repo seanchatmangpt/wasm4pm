@@ -4,7 +4,7 @@
 **Benchmark:** `conformance_bench`
 **Hardware:** Apple Silicon (Darwin 25.2.0)
 **Rust:** pictl v26.4.10
-**Features:** `--all-features` (cloud profile)
+**Features:** `--all-features` (browser profile)
 
 ## Executive Summary
 

@@ -688,3 +688,8 @@ fn test_jtbd_rl_self_healing_loop() {
         q_left, q_right
     );
 }
+
+fn main() {
+    // Criterion harness = false requires a main() function
+    // Tests defined in this file can be run independently via cargo test
+}

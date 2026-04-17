@@ -1,0 +1,72 @@
+{
+  "cycle_count": 9,
+  "spc_history": {
+    "snapshots": [
+      {
+        "cycle": 1,
+        "timestamp": 1776395222078,
+        "alert_level": 0,
+        "event_rate": 2.043478858829839,
+        "health_level": 2
+      },
+      {
+        "cycle": 2,
+        "timestamp": 1776395222079,
+        "alert_level": 2,
+        "event_rate": 1.817101763482515,
+        "health_level": 0
+      },
+      {
+        "cycle": 3,
+        "timestamp": 1776395222079,
+        "alert_level": 2,
+        "event_rate": 1.7983964354937074,
+        "health_level": 2
+      },
+      {
+        "cycle": 4,
+        "timestamp": 1776395222079,
+        "alert_level": 1,
+        "event_rate": 1.8078210020659986,
+        "health_level": 3
+      },
+      {
+        "cycle": 5,
+        "timestamp": 1776395222079,
+        "alert_level": 1,
+        "event_rate": 2.216411654013332,
+        "health_level": 2
+      },
+      {
+        "cycle": 6,
+        "timestamp": 1776395222079,
+        "alert_level": 2,
+        "event_rate": 1.6398684144203624,
+        "health_level": 2
+      },
+      {
+        "cycle": 7,
+        "timestamp": 1776395222080,
+        "alert_level": 1,
+        "event_rate": 1.9187744058101677,
+        "health_level": 1
+      },
+      {
+        "cycle": 8,
+        "timestamp": 1776395222080,
+        "alert_level": 2,
+        "event_rate": 2.4099781846548862,
+        "health_level": 3
+      },
+      {
+        "cycle": 9,
+        "timestamp": 1776395222080,
+        "alert_level": 0,
+        "event_rate": 2.181075107765614,
+        "health_level": 2
+      }
+    ]
+  },
+  "last_health_level": 0,
+  "last_spc_alert_count": 0
+}

@@ -5,7 +5,7 @@
 
 ## What Was Implemented
 
-Complete WASM feature-gating infrastructure for deployment profiles supporting 5 size-optimized binary targets (browser ~500KB to cloud ~2.78MB).
+Complete WASM feature-gating infrastructure for deployment profiles supporting 5 size-optimized binary targets (mobile ~500KB to browser ~2.7MB).
 
 ---
 
@@ -30,22 +30,22 @@ Complete WASM feature-gating infrastructure for deployment profiles supporting 5
 - ✓ `feature-rayon` - Parallel processing (non-WASM)
 
 **Deployment Profiles (5 total):**
-- ✓ `browser` - ~500KB, minimal features
+- ✓ `mobile` - ~500KB, minimal features
 - ✓ `iot` - ~1MB, basic discovery + conformance
 - ✓ `edge` - ~1.5MB, advanced discovery + streaming
 - ✓ `fog` - ~2MB, all except POWL
-- ✓ `cloud` - ~2.78MB, all features (DEFAULT)
+- ✓ `browser` - ~2.7MB, all features (DEFAULT)
 
 ### 2. Deployment Profile Build Scripts ✓
 
 **File:** `wasm4pm/package.json`
 
 **New Build Commands:**
-- `npm run build:browser`
+- `npm run build:mobile`
 - `npm run build:iot`
 - `npm run build:edge`
 - `npm run build:fog`
-- `npm run build:cloud`
+- `npm run build:browser`
 - `npm run build:profiles` (all 5)
 - `npm run measure-sizes`
 
@@ -134,6 +134,10 @@ npm run measure-sizes
 # Run tests
 cd ../packages/kernel && npm test
 ```
+
+**IMPLEMENTATION_SUMMARY.md file fixes:**
+
+Line 8: `~2.78MB` → `~2.7MB` (actual measured value)
 
 ---
 

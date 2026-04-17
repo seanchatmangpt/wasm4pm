@@ -1723,6 +1723,7 @@ impl RlState {
     }
 }
 
+#[cfg(feature = "cloud")]
 impl reinforcement::WorkflowState for RlState {
     fn features(&self) -> Vec<f32> {
         vec![
@@ -1752,6 +1753,7 @@ pub enum RlAction {
     Restart = 4,
 }
 
+#[cfg(feature = "cloud")]
 impl reinforcement::WorkflowAction for RlAction {
     const ACTION_COUNT: usize = 5;
     fn to_index(&self) -> usize {

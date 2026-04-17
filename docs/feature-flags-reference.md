@@ -26,8 +26,8 @@
 
 | Profile | Description |
 |---------|-------------|
-| `cloud` | Full feature set (~2.78MB binary). Default for npm package. |
-| `browser` | Minimal features for web browsers (~500KB). |
+| `browser` | Full feature set (~2.7MB binary). Default for npm package. |
+| `mobile` | Minimal features for web browsers (~500KB target). |
 | `edge` | Edge servers and CDN (~1.5MB). |
 | `fog` | Fog computing, IoT gateways (~2.0MB). |
 | `iot` | IoT devices, embedded systems (~1.0MB). |
