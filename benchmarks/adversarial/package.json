@@ -2,9 +2,9 @@
   "name": "pictl-adversarial-audit",
   "version": "1.0.0",
   "description": "Adversarial van der Aalst algorithm audit system",
-  "type": "module",
   "scripts": {
-    "audit": "node --experimental-vm-modules audit-runner.js",
+    "build": "tsc",
+    "audit": "npm run build && node dist/audit-runner-main.js",
     "test": "vitest run",
     "test:watch": "vitest watch"
   },

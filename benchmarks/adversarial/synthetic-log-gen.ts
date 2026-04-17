@@ -38,11 +38,14 @@ export interface LogStatistics {
 
 /**
  * Generate synthetic XES log with known ground truth.
- *
- * For a perfect sequential process (A→B→C→D with no noise),
- * the discovered DFG will be a linear chain with fitness = 1.0.
+ * Returns the XES XML as a string (for smaller logs).
  */
 export function generateSyntheticLog(config: SyntheticLogConfig): string {
+  // For logs > 1M events, use streaming instead (see writeSyntheticLogStreaming)
+  if (config.numCases > 10000) {
+    throw new Error('Use writeSyntheticLogStreaming for large logs (>10K cases). This function cannot handle such large string allocations.');
+  }
+
   const logs: string[] = [];
   logs.push('<?xml version="1.0" encoding="UTF-8"?>');
   logs.push('<log xes.version="1.0" xes.features="arctype" openlog.version="1.0">');
@@ -95,12 +98,17 @@ export function generateSyntheticLog(config: SyntheticLogConfig): string {
 }
 
 /**
- * Write synthetic log to file.
+ * Write synthetic log to file (streaming for large logs).
  */
 export function writeSyntheticLog(
   filePath: string,
   config: SyntheticLogConfig = DEFAULT_CONFIG
 ): LogStatistics {
+  // Use streaming for large logs
+  if (config.numCases > 10000) {
+    return writeSyntheticLogStreaming(filePath, config);
+  }
+
   const xes = generateSyntheticLog(config);
   fs.writeFileSync(filePath, xes, 'utf-8');
 
@@ -121,6 +129,88 @@ export function writeSyntheticLog(
     totalCases: config.numCases,
     activityCount,
     expectedFitness: 1.0, // Perfect sequential process
+  };
+}
+
+/**
+ * Write synthetic log using write-append (avoids string allocation limits).
+ * Used for large logs (>10K cases).
+ */
+function writeSyntheticLogStreaming(
+  filePath: string,
+  config: SyntheticLogConfig
+): LogStatistics {
+  const chunks: string[] = [];
+  const CHUNK_SIZE = 1000; // Write every 1000 events
+
+  chunks.push('<?xml version="1.0" encoding="UTF-8"?>\n');
+  chunks.push('<log xes.version="1.0" xes.features="arctype" openlog.version="1.0">\n');
+  chunks.push('  <extension name="Concept" prefix="concept" uri="http://www.xes-standard.org/concept.xesext"/>\n');
+  chunks.push('  <extension name="Organizational" prefix="org" uri="http://www.xes-standard.org/org.xesext"/>\n');
+  chunks.push('  <extension name="Time" prefix="time" uri="http://www.xes-standard.org/time.xesext"/>\n');
+  chunks.push('  <extension name="Semantic" prefix="semantic" uri="http://www.xes-standard.org/semantic.xesext"/>\n');
+  chunks.push('  <global scope="trace">\n');
+  chunks.push('    <string key="concept:name" value="unknown"/>\n');
+  chunks.push('  </global>\n');
+  chunks.push('  <global scope="event">\n');
+  chunks.push('    <string key="concept:name" value="unknown"/>\n');
+  chunks.push('    <string key="org:resource" value="unknown"/>\n');
+  chunks.push('  </global>\n');
+
+  fs.writeFileSync(filePath, chunks.join(''), { encoding: 'utf-8' });
+
+  let currentTime = config.startTime.getTime();
+  let eventCount = 0;
+
+  for (let caseIdx = 0; caseIdx < config.numCases; caseIdx++) {
+    const traceChunks: string[] = [];
+    traceChunks.push(`  <trace>\n`);
+    traceChunks.push(`    <string key="concept:name" value="case_${caseIdx}"/>\n`);
+
+    let caseTime = currentTime;
+    for (let eventIdx = 0; eventIdx < config.eventsPerCase; eventIdx++) {
+      const activityIdx = eventIdx % config.activities.length;
+      const activity = config.activities[activityIdx];
+      const isoTime = new Date(caseTime).toISOString();
+
+      traceChunks.push(`    <event>\n`);
+      traceChunks.push(`      <string key="concept:name" value="${activity}"/>\n`);
+      traceChunks.push(`      <string key="org:resource" value="resource_${eventIdx % 5}"/>\n`);
+      traceChunks.push(`      <date key="time:timestamp" value="${isoTime}"/>\n`);
+      traceChunks.push(`    </event>\n`);
+
+      caseTime += config.timeBetweenEvents;
+      eventCount++;
+
+      if (eventCount % CHUNK_SIZE === 0) {
+        fs.appendFileSync(filePath, traceChunks.join(''), { encoding: 'utf-8' });
+        traceChunks.length = 0;
+      }
+    }
+
+    traceChunks.push(`  </trace>\n`);
+    fs.appendFileSync(filePath, traceChunks.join(''), { encoding: 'utf-8' });
+    currentTime += config.timeBetweenCases;
+  }
+
+  fs.appendFileSync(filePath, '</log>', { encoding: 'utf-8' });
+
+  const activityCount = new Map<string, number>();
+  const totalEvents = config.numCases * config.eventsPerCase;
+
+  for (const activity of config.activities) {
+    const countPerCase = Math.floor(config.eventsPerCase / config.activities.length);
+    const totalCount = config.numCases * countPerCase;
+    if (totalCount > 0) {
+      activityCount.set(activity, totalCount);
+    }
+  }
+
+  return {
+    totalEvents,
+    totalCases: config.numCases,
+    activityCount,
+    expectedFitness: 1.0,
   };
 }
 
