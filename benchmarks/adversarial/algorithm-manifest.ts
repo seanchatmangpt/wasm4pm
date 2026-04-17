@@ -105,11 +105,11 @@ export const ALGORITHM_MANIFEST: AlgorithmMetadata[] = [
 
   {
     id: 'aco',
-    wasmFn: 'discover_ant_colony',
+    wasmFn: 'discover_aco_algorithm',
     outputType: 'dfg',  // Actually DFG, not petrinet
     fitnessCapable: false,
     expectedLatencyBudgetMs: 30000,
-    description: 'Ant Colony Optimization (first implementation)'
+    description: 'Ant Colony Optimization (correct implementation, discover_ant_colony is deprecated)'
   },
 
   {
