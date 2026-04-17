@@ -30,15 +30,25 @@ fn extract_attr<'a>(src: &'a str, name: &[u8]) -> Option<&'a str> {
             let value_start = i + name_len + 2;
             // Scan forward for closing quote
             let rest = &bytes[value_start..];
-            let mut j = 0;
-            while j < rest.len() {
-                if rest[j] == b'"' {
-                    // SAFETY: value_start and value_start+j are both within `src`
-                    // and on valid UTF-8 boundaries (we only skip ASCII quote chars).
-                    return Some(&src[value_start..value_start + j]);
+
+            #[cfg(feature = "bcinr")]
+            {
+                // Use branchless byte scanning via bcinr
+                if let Some(pos) = bcinr_core::api::scan::find_byte(rest, b'"') {
+                    return Some(&src[value_start..value_start + pos]);
                 }
-                j += 1;
             }
+
+            #[cfg(not(feature = "bcinr"))]
+            {
+                // Scalar fallback
+                for (j, &byte) in rest.iter().enumerate() {
+                    if byte == b'"' {
+                        return Some(&src[value_start..value_start + j]);
+                    }
+                }
+            }
+
             return None;
         }
         i += 1;

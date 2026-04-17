@@ -116,7 +116,7 @@ export declare function deriveLatencyClass(latency_ms: number): LatencyClass;
  * - `wasm_build_hash`: Content hash of the pictl.wasm binary
  *
  * **Invariants:**
- * - All hash fields must be non-empty strings (BLAKE3 hex-64, 128 characters)
+ * - All hash fields must be non-empty strings (BLAKE3 hash: 64 hex characters = 256 bits)
  * - A missing or empty `combined_hash` is a schema violation, not a warning
  */
 export interface ProvenanceChain {
