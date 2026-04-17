@@ -1,6 +1,6 @@
 {
   "name": "wasm4pm",
-  "version": "26.4.6",
+  "version": "26.4.16",
   "description": "Process Mining in WebAssembly - High-Speed Algorithms for Browser and Node.js",
   "main": "pkg/pictl.js",
   "types": "pkg/pictl.d.ts",
@@ -48,12 +48,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/seanchatmangpt/wasm4pm.git",
+    "url": "https://github.com/seanchatmangpt/pictl.git",
     "directory": "wasm4pm"
   },
-  "homepage": "https://github.com/seanchatmangpt/wasm4pm/tree/main/wasm4pm",
+  "homepage": "https://github.com/seanchatmangpt/pictl/tree/main/wasm4pm",
   "bugs": {
-    "url": "https://github.com/seanchatmangpt/wasm4pm/issues"
+    "url": "https://github.com/seanchatmangpt/pictl/issues"
   },
   "keywords": [
     "process-mining",
@@ -65,7 +65,7 @@
     "data-mining",
     "event-log"
   ],
-  "author": "wasm4pm contributors",
+  "author": "Sean Chatman <info@chatmangpt.com>",
   "license": "MIT OR Apache-2.0",
   "engines": {
     "node": ">=14.0.0"

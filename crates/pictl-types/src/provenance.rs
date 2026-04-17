@@ -35,6 +35,11 @@ pub struct ProvenanceChain {
 }
 
 impl ProvenanceChain {
+    pub fn builder() -> ProvenanceChainBuilder {
+        ProvenanceChainBuilder::default()
+    }
+
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         input_hash: String,
         config_hash: String,
@@ -116,6 +121,88 @@ impl ProvenanceChain {
             }
         }
         Ok(())
+    }
+}
+
+/// Builder for ProvenanceChain to avoid too-many-arguments clippy lint
+#[derive(Default)]
+pub struct ProvenanceChainBuilder {
+    input_hash: Option<String>,
+    config_hash: Option<String>,
+    plan_hash: Option<String>,
+    output_hash: Option<String>,
+    combined_hash: Option<String>,
+    algorithm_id: Option<String>,
+    algorithm_version: Option<String>,
+    backend_id: Option<String>,
+    kernel_version: Option<String>,
+    wasm_build_hash: Option<String>,
+}
+
+impl ProvenanceChainBuilder {
+    pub fn input_hash(mut self, hash: String) -> Self {
+        self.input_hash = Some(hash);
+        self
+    }
+
+    pub fn config_hash(mut self, hash: String) -> Self {
+        self.config_hash = Some(hash);
+        self
+    }
+
+    pub fn plan_hash(mut self, hash: String) -> Self {
+        self.plan_hash = Some(hash);
+        self
+    }
+
+    pub fn output_hash(mut self, hash: String) -> Self {
+        self.output_hash = Some(hash);
+        self
+    }
+
+    pub fn combined_hash(mut self, hash: String) -> Self {
+        self.combined_hash = Some(hash);
+        self
+    }
+
+    pub fn algorithm_id(mut self, id: String) -> Self {
+        self.algorithm_id = Some(id);
+        self
+    }
+
+    pub fn algorithm_version(mut self, version: String) -> Self {
+        self.algorithm_version = Some(version);
+        self
+    }
+
+    pub fn backend_id(mut self, id: String) -> Self {
+        self.backend_id = Some(id);
+        self
+    }
+
+    pub fn kernel_version(mut self, version: String) -> Self {
+        self.kernel_version = Some(version);
+        self
+    }
+
+    pub fn wasm_build_hash(mut self, hash: String) -> Self {
+        self.wasm_build_hash = Some(hash);
+        self
+    }
+
+    pub fn build(self) -> Result<ProvenanceChain, String> {
+        Ok(ProvenanceChain {
+            input_hash: self.input_hash.ok_or("input_hash is required")?,
+            config_hash: self.config_hash.ok_or("config_hash is required")?,
+            plan_hash: self.plan_hash.ok_or("plan_hash is required")?,
+            output_hash: self.output_hash.ok_or("output_hash is required")?,
+            combined_hash: self.combined_hash.ok_or("combined_hash is required")?,
+            algorithm_id: self.algorithm_id.ok_or("algorithm_id is required")?,
+            algorithm_version: self.algorithm_version.ok_or("algorithm_version is required")?,
+            backend_id: self.backend_id.ok_or("backend_id is required")?,
+            kernel_version: self.kernel_version.ok_or("kernel_version is required")?,
+            wasm_build_hash: self.wasm_build_hash.ok_or("wasm_build_hash is required")?,
+        })
     }
 }
 

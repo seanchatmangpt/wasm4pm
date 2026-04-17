@@ -373,18 +373,6 @@ gpu = []
 # Parallel processing
 rayon = ["dep:rayon"]
 
-[profile.release]
-# Optimize for binary size ("z" instead of "3")
-opt-level = "z"
-# Link-time optimization (already enabled)
-lto = true
-# Single codegen unit for better optimization
-codegen-units = 1
-# Remove panic unwinding code to reduce binary size
-panic = "abort"
-# Strip symbols
-strip = "debuginfo"
-
 [profile.bench]
 opt-level = 3
 lto = false

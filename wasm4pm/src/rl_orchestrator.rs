@@ -349,6 +349,7 @@ impl RlOrchestrator {
     /// - `latency_budget_exceeded`: Whether cycle latency exceeded budget
     ///
     /// Returns (action_label, reward).
+    #[allow(clippy::too_many_arguments)]
     pub fn run_cycle(
         &mut self,
         features: &[f32; 8],

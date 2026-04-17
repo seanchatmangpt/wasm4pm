@@ -11,6 +11,7 @@ use crate::models::EventLog;
 use crate::state::{get_or_init_state, StoredObject};
 use crate::utilities::to_js;
 use serde::{Deserialize, Serialize};
+#[cfg(test)]
 use std::collections::HashMap;
 use wasm_bindgen::prelude::*;
 
@@ -247,9 +248,9 @@ fn get_variants_from_log(log: &EventLog, activity_key: &str) -> Result<Vec<Varia
         for i in 0..max_activity_len {
             if i < activities.len() {
                 let activity = &activities[i];
-                let max_bytes = activity.as_bytes().len().min(64); // Bound per-activity iteration
+                let max_bytes = activity.len().min(64); // Bound per-activity iteration
                 for j in 0..max_bytes {
-                    if j < activity.as_bytes().len() {
+                    if j < activity.len() {
                         let byte = activity.as_bytes()[j];
                         fingerprint ^= byte as u64;
                         fingerprint = fingerprint.wrapping_mul(0x100000001b3);
@@ -291,7 +292,7 @@ fn get_variants_from_log(log: &EventLog, activity_key: &str) -> Result<Vec<Varia
     // Extract variants and sort by fingerprint for deterministic order
     let mut variants_with_fp: Vec<(u64, Vec<String>, usize)> = table
         .into_iter()
-        .filter_map(|opt| opt)
+        .flatten()
         .collect();
     variants_with_fp.sort_by_key(|t| t.0);
 

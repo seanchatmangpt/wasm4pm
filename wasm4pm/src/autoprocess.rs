@@ -312,7 +312,7 @@ impl AutoProcessAgent {
         // ε-greedy: explore with probability ε
         let selected_idx = if self.rng.f32() < eps {
             // Explore: pick random action
-            (self.rng.usize(0..ACTION_SPACE_SIZE)) as usize
+            self.rng.usize(0..ACTION_SPACE_SIZE)
         } else {
             // Exploit: find argmax_a Q(s, a)
             let mut max_q = f32::NEG_INFINITY;
@@ -350,7 +350,7 @@ impl AutoProcessAgent {
         // Estimate feature magnitude: L2 norm quantized to [0..127]
         let magnitude_sq: f32 = features.iter().map(|x| x * x).sum();
         let magnitude = magnitude_sq.sqrt();
-        let mag_quantized = ((magnitude * 127.0).min(127.0).max(0.0)) as usize;
+        let mag_quantized = ((magnitude * 127.0).clamp(0.0, 127.0)) as usize;
         let mag_sqrt = self.sqrt_lut[mag_quantized];
 
         // Estimate visit count from Q-value magnitude (avoid division by zero)
@@ -590,6 +590,7 @@ impl AutoProcessAgent {
     /// Run one complete autonomic cycle
     ///
     /// Returns the decision, including selected action and protection status.
+    #[allow(clippy::too_many_arguments)]
     pub fn run_cycle(
         &mut self,
         state: &RlState,

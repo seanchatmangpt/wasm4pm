@@ -1,6 +1,6 @@
 {
   "name": "@pictl/planner",
-  "version": "26.4.10",
+  "version": "26.4.16",
   "description": "Process mining planning and optimization",
   "type": "module",
   "main": "./dist/index.js",

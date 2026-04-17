@@ -225,6 +225,12 @@ pub struct SimdEdgeAggregator {
     edges: FxHashMap<(u32, u32), u64>,
 }
 
+impl Default for SimdEdgeAggregator {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SimdEdgeAggregator {
     /// Create a new edge aggregator.
     pub fn new() -> Self {
@@ -516,6 +522,12 @@ pub struct SimdVariantDeduplicator {
     scratch: Vec<u64>,
 }
 
+impl Default for SimdVariantDeduplicator {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SimdVariantDeduplicator {
     /// Create a new variant deduplicator.
     pub fn new() -> Self {
@@ -601,6 +613,12 @@ pub struct SimdTokenAccumulator {
     remaining: u64,
 }
 
+impl Default for SimdTokenAccumulator {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SimdTokenAccumulator {
     /// Create a new accumulator.
     pub fn new() -> Self {
@@ -658,7 +676,7 @@ impl SimdTokenAccumulator {
             1.0
         } else {
             let numer = self.missing as f64 + self.consumed as f64;
-            (1.0 - (numer / denom)).max(0.0).min(1.0)
+            (1.0 - (numer / denom)).clamp(0.0, 1.0)
         }
     }
 }

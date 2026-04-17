@@ -233,8 +233,8 @@ impl SimdPetriNet {
             remaining += marking[base + 3];
         }
         // Remainder
-        for i in (remaining_unroll * 4)..self.num_places {
-            remaining += marking[i];
+        for place_idx in marking.iter().skip(remaining_unroll * 4) {
+            remaining += *place_idx;
         }
 
         let fitness = compute_fitness(consumed, produced, missing, remaining);

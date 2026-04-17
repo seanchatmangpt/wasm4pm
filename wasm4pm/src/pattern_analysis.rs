@@ -223,7 +223,7 @@ fn detect_choice_points(traces: &[Vec<String>]) -> (usize, f64) {
         for i in 0..trace.len().saturating_sub(1) {
             outgoing
                 .entry(trace[i].clone())
-                .or_insert_with(HashSet::new)
+                .or_default()
                 .insert(trace[i + 1].clone());
         }
     }

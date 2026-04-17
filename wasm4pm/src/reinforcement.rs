@@ -629,7 +629,7 @@ impl DoubleQLearning<crate::RlState, crate::RlAction> {
         use crate::rl_state_serialization::{SerializedAgentQTable, encode_rl_state_key};
 
         let qa = self.q_a.borrow();
-        let qb = self.q_b.borrow();
+        let _qb = self.q_b.borrow();
         let mut state_values = HashMap::new();
 
         // Export Q_A; Q_B will be stored by RL orchestrator as separate entry

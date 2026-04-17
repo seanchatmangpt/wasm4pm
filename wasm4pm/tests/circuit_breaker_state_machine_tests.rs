@@ -449,8 +449,8 @@ fn test_d6_circuit_breaker_reward_delta_at_least_0_5() {
     let spc_alerts = 0usize;
     let guard_pass = true;
 
-    let reward_allowed = compute_reward(prev_health, curr_health, spc_alerts, guard_pass, true);
-    let reward_blocked = compute_reward(prev_health, curr_health, spc_alerts, guard_pass, false);
+    let reward_allowed = compute_reward(prev_health, curr_health, spc_alerts, guard_pass, true, false);
+    let reward_blocked = compute_reward(prev_health, curr_health, spc_alerts, guard_pass, false, false);
 
     let delta = reward_allowed - reward_blocked;
 
