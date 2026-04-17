@@ -1,6 +1,6 @@
 use crate::models::*;
 use crate::state::{get_or_init_state, StoredObject};
-use crate::utilities::{evaluate_edges_fitness, to_js};
+use crate::utilities::{evaluate_edges_fitness, to_js, to_js_str};
 use rustc_hash::FxHashMap;
 use serde_json::json;
 use std::collections::HashSet;
@@ -180,7 +180,7 @@ pub fn discover_ant_colony(
         .store_object(StoredObject::DirectlyFollowsGraph(best_dfg.clone()))
         .map_err(|_e| JsValue::from_str("Failed to store DFG"))?;
 
-    to_js(&json!({
+    to_js_str(&json!({
         "handle": handle,
         "algorithm": "ant_colony",
         "nodes": best_dfg.nodes.len(),
@@ -291,7 +291,7 @@ pub fn discover_simulated_annealing(
         .store_object(StoredObject::DirectlyFollowsGraph(best_dfg.clone()))
         .map_err(|_e| JsValue::from_str("Failed to store DFG"))?;
 
-    to_js(&json!({
+    to_js_str(&json!({
         "handle": handle,
         "algorithm": "simulated_annealing",
         "nodes": best_dfg.nodes.len(),
@@ -352,7 +352,7 @@ pub fn extract_process_skeleton(
         .store_object(StoredObject::DirectlyFollowsGraph(dfg.clone()))
         .map_err(|_e| JsValue::from_str("Failed to store DFG"))?;
 
-    to_js(&json!({
+    to_js_str(&json!({
         "handle": handle,
         "algorithm": "process_skeleton",
         "nodes": dfg.nodes.len(),
@@ -415,7 +415,7 @@ pub fn analyze_activity_dependencies(
                 })
                 .collect();
 
-            to_js(&json!({
+            to_js_str(&json!({
                 "dependencies": result,
             }))
         }
@@ -475,7 +475,7 @@ pub fn analyze_case_attributes(
                 })
                 .collect();
 
-            to_js(&json!({
+            to_js_str(&json!({
                 "case_attributes": result,
             }))
         }

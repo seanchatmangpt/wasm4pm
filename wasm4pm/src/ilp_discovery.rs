@@ -1,6 +1,6 @@
 use crate::models::*;
 use crate::state::{get_or_init_state, StoredObject};
-use crate::utilities::to_js;
+use crate::utilities::{to_js, to_js_str};
 use rustc_hash::FxHashMap;
 use serde_json::json;
 use std::collections::HashSet;
@@ -333,7 +333,7 @@ pub fn discover_ilp_petri_net(
         .store_object(StoredObject::PetriNet(petri_net.clone()))
         .map_err(|_e| JsValue::from_str("Failed to store Petri net"))?;
 
-    to_js(&json!({
+    to_js_str(&json!({
         "handle": handle,
         "algorithm": "ilp_petri_net",
         "places": petri_net.places.len(),
@@ -447,7 +447,7 @@ pub fn discover_optimized_dfg(
         .store_object(StoredObject::DirectlyFollowsGraph(dfg.clone()))
         .map_err(|_e| JsValue::from_str("Failed to store DFG"))?;
 
-    to_js(&json!({
+    to_js_str(&json!({
         "handle": handle,
         "algorithm": "optimized_dfg",
         "nodes": dfg.nodes.len(),

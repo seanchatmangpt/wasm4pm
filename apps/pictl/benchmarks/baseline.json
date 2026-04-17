@@ -1,0 +1,249 @@
+{
+  "metadata": {
+    "version": "26.4.17",
+    "date": "2026-04-17",
+    "dataset": "bpi_2020_100k.xes",
+    "description": "Golden baseline for all 41 pictl algorithms"
+  },
+  "discovery": {
+    "dfg": {
+      "latencyMs": [0.5, 5],
+      "fitness": 0.95,
+      "output": "dfg",
+      "notes": "Directly-Follows Graph, based on observed behavior"
+    },
+    "simd_streaming_dfg": {
+      "latencyMs": [0.3, 3],
+      "fitness": 0.94,
+      "output": "dfg",
+      "notes": "SIMD-accelerated streaming variant"
+    },
+    "process_skeleton": {
+      "latencyMs": [0.5, 5],
+      "fitness": 0.90,
+      "output": "dfg",
+      "notes": "Simplified skeleton structure"
+    },
+    "alpha_plus_plus": {
+      "latencyMs": [5, 50],
+      "fitness": 0.88,
+      "output": "petri_net",
+      "notes": "Alpha algorithm with enhancements"
+    },
+    "heuristic_miner": {
+      "latencyMs": [10, 100],
+      "fitness": 0.85,
+      "output": "dfg",
+      "notes": "Heuristic-based, filters noise"
+    },
+    "inductive_miner": {
+      "latencyMs": [20, 150],
+      "fitness": 0.88,
+      "output": "process_tree",
+      "notes": "Process tree discovery"
+    },
+    "hill_climbing": {
+      "latencyMs": [30, 200],
+      "fitness": 0.87,
+      "output": "petri_net",
+      "notes": "Iterative improvement optimization"
+    },
+    "declare": {
+      "latencyMs": [25, 150],
+      "fitness": 0.80,
+      "output": "declare",
+      "notes": "Constraint-based discovery"
+    },
+    "simulated_annealing": {
+      "latencyMs": [100, 1000],
+      "fitness": 0.90,
+      "output": "petri_net",
+      "notes": "Simulated annealing optimization"
+    },
+    "a_star": {
+      "latencyMs": [150, 1500],
+      "fitness": 0.92,
+      "output": "petri_net",
+      "notes": "A* heuristic search"
+    },
+    "aco": {
+      "latencyMs": [200, 2000],
+      "fitness": 0.91,
+      "output": "petri_net",
+      "notes": "Ant Colony Optimization"
+    },
+    "pso": {
+      "latencyMs": [200, 2000],
+      "fitness": 0.91,
+      "output": "petri_net",
+      "notes": "Particle Swarm Optimization"
+    },
+    "genetic_algorithm": {
+      "latencyMs": [300, 2000],
+      "fitness": 0.94,
+      "output": "petri_net",
+      "notes": "Evolutionary algorithm, high quality"
+    },
+    "optimized_dfg": {
+      "latencyMs": [100, 500],
+      "fitness": 0.93,
+      "output": "dfg",
+      "notes": "Enhanced DFG with optimizations"
+    },
+    "ilp": {
+      "latencyMs": [500, 30000],
+      "fitness": 0.96,
+      "output": "petri_net",
+      "notes": "Integer Linear Programming, may timeout"
+    }
+  },
+  "ml": {
+    "ml_classify": {
+      "latencyMs": [10, 500],
+      "accuracy": 0.75,
+      "notes": "Classification task, decision tree/naive Bayes"
+    },
+    "ml_cluster": {
+      "latencyMs": [5, 300],
+      "silhouetteScore": 0.5,
+      "notes": "K-means clustering, coherence metric"
+    },
+    "ml_forecast": {
+      "latencyMs": [5, 200],
+      "maxMAE": 15.0,
+      "maxRMSE": 25.0,
+      "notes": "Time series forecasting"
+    },
+    "ml_anomaly": {
+      "latencyMs": [10, 400],
+      "minPrecision": 0.70,
+      "minRecall": 0.60,
+      "notes": "Anomaly detection via EMA + information theory"
+    },
+    "ml_regress": {
+      "latencyMs": [5, 200],
+      "minR2Score": 0.70,
+      "notes": "Linear regression"
+    },
+    "ml_pca": {
+      "latencyMs": [5, 150],
+      "minVarianceExplained": 0.85,
+      "notes": "Principal Component Analysis, 2 components"
+    }
+  },
+  "analysis": {
+    "conformance": {
+      "latencyMs": [10, 500],
+      "output": "conformance_result",
+      "requiredFields": ["fitness", "precision"],
+      "notes": "Token-based replay conformance checking"
+    },
+    "transition_system": {
+      "latencyMs": [5, 100],
+      "output": "transition_system",
+      "requiredFields": ["states", "transitions"],
+      "notes": "Transition system extraction"
+    },
+    "causal_graph": {
+      "latencyMs": [10, 200],
+      "output": "causal_graph",
+      "requiredFields": ["nodes", "edges"],
+      "notes": "Causal dependency graph"
+    },
+    "performance_spectrum": {
+      "latencyMs": [20, 300],
+      "output": "performance_spectrum",
+      "requiredFields": ["bottlenecks"],
+      "notes": "Performance bottleneck detection"
+    },
+    "batches": {
+      "latencyMs": [5, 100],
+      "output": "batch_analysis",
+      "notes": "Batch activity detection"
+    },
+    "correlation_miner": {
+      "latencyMs": [20, 200],
+      "output": "correlation_result",
+      "notes": "Correlation analysis between activities"
+    },
+    "generalization": {
+      "latencyMs": [10, 100],
+      "output": "generalization_score",
+      "minScore": 0.5,
+      "notes": "Generalization metric (avoid overfitting)"
+    },
+    "petri_net_reduction": {
+      "latencyMs": [5, 100],
+      "output": "petri_net",
+      "notes": "Petri net simplification"
+    },
+    "etconformance_precision": {
+      "latencyMs": [50, 500],
+      "output": "precision_score",
+      "minPrecision": 0.5,
+      "notes": "Precision via alignment"
+    },
+    "alignments": {
+      "latencyMs": [100, 1000],
+      "output": "alignments",
+      "notes": "Optimal trace alignment"
+    },
+    "complexity_metrics": {
+      "latencyMs": [5, 50],
+      "output": "metrics",
+      "requiredFields": ["cyclomatic_complexity", "size"],
+      "notes": "Model complexity measurement"
+    },
+    "pnml_import": {
+      "latencyMs": [5, 50],
+      "output": "petri_net",
+      "notes": "PNML file import"
+    },
+    "bpmn_import": {
+      "latencyMs": [5, 50],
+      "output": "bpmn_model",
+      "notes": "BPMN file import"
+    },
+    "powl_to_process_tree": {
+      "latencyMs": [5, 50],
+      "output": "process_tree",
+      "notes": "POWL to process tree conversion"
+    },
+    "yawl_export": {
+      "latencyMs": [5, 50],
+      "output": "yawl_model",
+      "notes": "YAWL format export"
+    },
+    "playout": {
+      "latencyMs": [20, 200],
+      "output": "simulation_log",
+      "notes": "Process model simulation/playout"
+    },
+    "monte_carlo_simulation": {
+      "latencyMs": [50, 500],
+      "output": "simulation_statistics",
+      "notes": "Monte Carlo process simulation"
+    },
+    "hierarchical_dfg": {
+      "latencyMs": [20, 200],
+      "output": "hierarchical_dfg",
+      "notes": "Hierarchical DFG abstraction"
+    },
+    "streaming_log": {
+      "latencyMs": [1, 50],
+      "output": "streaming_result",
+      "notes": "Streaming event log processing"
+    },
+    "smart_engine": {
+      "latencyMs": [50, 500],
+      "output": "smart_engine_result",
+      "notes": "Intelligent algorithm selection"
+    }
+  },
+  "rules": {
+    "fitnessThreshold": 0.85,
+    "latencyRegression": 1.5,
+    "accuracyRegression": 0.05,
+    "silhouetteRegression": 0.1
+  }
+}
