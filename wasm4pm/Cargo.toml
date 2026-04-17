@@ -214,8 +214,8 @@ feature-rayon = ["rayon", "dep:rayon"]
 # Branchless algorithms (bcinr integration)
 bcinr = ["dep:bcinr-core"]
 
-# Default: no canonical features (backward compatibility with cloud profile below)
-default = ["cloud"]
+# Default: no canonical features (backward compatibility with browser profile below)
+default = ["browser"]
 
 # ─────────────────────────────────────────────────────────────────────────────
 # DEPLOYMENT PROFILES
@@ -223,9 +223,9 @@ default = ["cloud"]
 # Each profile targets a specific deployment target with size constraints.
 # ─────────────────────────────────────────────────────────────────────────────
 
-# Browser profile (~500KB): Minimal features for web browsers
+# Mobile profile (~500KB): Minimal features for mobile devices
 # Includes: basic discovery (DFG, skeleton, heuristic), basic conformance, branchless
-browser = [
+mobile = [
   "feature-conformance-basic",
   "feature-hand-rolled-stats",
   "conformance_basic",
@@ -272,9 +272,9 @@ fog = [
   "bcinr"
 ]
 
-# Cloud profile (~2.78MB): Full feature set for cloud servers (DEFAULT)
+# Browser profile (~2.78MB): Full feature set for web browsers (DEFAULT)
 # Includes: all discovery, full conformance, ML, full streaming, OCEL, POWL, GPU, bcinr
-cloud = [
+browser = [
   "feature-conformance-full",
   "feature-discovery-advanced",
   "feature-ml",
@@ -296,8 +296,11 @@ cloud = [
   "bcinr"
 ]
 
+# Cloud profile: Deprecated alias for browser profile
+cloud = ["browser"]
+
 # Backward compatibility alias
-compat = ["cloud"]
+compat = ["browser"]
 
 # ─────────────────────────────────────────────────────────────────────────────
 # INTERNAL FEATURE FLAGS (legacy, kept for compatibility)

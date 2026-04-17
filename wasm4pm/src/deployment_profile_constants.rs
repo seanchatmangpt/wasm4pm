@@ -8,8 +8,8 @@ use std::fmt;
 #[allow(non_camel_case_types)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum DeploymentProfile {
+    profile_mobile,
     profile_browser,
-    profile_cloud,
     profile_edge,
     profile_fog,
     profile_iot,
@@ -18,8 +18,8 @@ pub enum DeploymentProfile {
 impl DeploymentProfile {
     pub fn id(&self) -> &'static str {
         match self {
+            Self::profile_mobile => "profile-mobile",
             Self::profile_browser => "profile-browser",
-            Self::profile_cloud => "profile-cloud",
             Self::profile_edge => "profile-edge",
             Self::profile_fog => "profile-fog",
             Self::profile_iot => "profile-iot",
@@ -28,8 +28,8 @@ impl DeploymentProfile {
 
     pub fn label(&self) -> &'static str {
         match self {
+            Self::profile_mobile => "Mobile",
             Self::profile_browser => "Browser",
-            Self::profile_cloud => "Cloud",
             Self::profile_edge => "Edge",
             Self::profile_fog => "Fog",
             Self::profile_iot => "IoT",
@@ -39,18 +39,18 @@ impl DeploymentProfile {
     /// Maximum binary size target in MB for this profile.
     pub fn size_target_mb(&self) -> f64 {
         match self {
-            Self::profile_browser => 4.0,
-            Self::profile_cloud => 5.0,
-            Self::profile_edge => 4.0,
-            Self::profile_fog => 4.0,
-            Self::profile_iot => 4.0,
+            Self::profile_mobile => 0.5,
+            Self::profile_browser => 2.78,
+            Self::profile_edge => 1.5,
+            Self::profile_fog => 2.0,
+            Self::profile_iot => 1.0,
         }
     }
 
     pub fn all() -> &'static [Self] {
         &[
+            Self::profile_mobile,
             Self::profile_browser,
-            Self::profile_cloud,
             Self::profile_edge,
             Self::profile_fog,
             Self::profile_iot,
