@@ -1,6 +1,6 @@
 use crate::models::*;
 use crate::state::{get_or_init_state, StoredObject};
-use crate::utilities::{evaluate_edges_fitness, to_js, to_js_str};
+use crate::utilities::{evaluate_edges_fitness, to_js_str};
 use rustc_hash::FxHashMap;
 use serde_json::json;
 use std::collections::HashSet;
