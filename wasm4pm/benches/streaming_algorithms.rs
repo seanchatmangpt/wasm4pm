@@ -1,8 +1,8 @@
 /// Criterion benchmarks for streaming algorithms.
 /// These algorithms process logs incrementally.
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
-use pictl::discovery::discover_dfg;
-use pictl::simd_streaming_dfg::discover_dfg_simd_handle;
+use wasm4pm::discovery::discover_dfg;
+use wasm4pm::simd_streaming_dfg::discover_dfg_simd_handle;
 use std::time::Duration;
 
 #[path = "helpers.rs"]

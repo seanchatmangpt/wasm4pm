@@ -10,8 +10,8 @@
 //! Budget: 34 nanoseconds per cycle (target: 30.6ns with 10% margin)
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use pictl::autoprocess::AutoProcessAgent;
-use pictl::RlState;
+use wasm4pm::autoprocess::AutoProcessAgent;
+use wasm4pm::RlState;
 use std::time::Duration;
 
 // =========================================================================
@@ -108,7 +108,7 @@ fn bench_protection_guard_eval(c: &mut Criterion) {
         cycle_phase: 1,
     };
 
-    let action = pictl::RlAction::Continue;
+    let action = wasm4pm::RlAction::Continue;
 
     group.bench_function("evaluate_guard_branchless", |b| {
         b.iter(|| agent.evaluate_guard(black_box(&state), black_box(action), black_box(2u8)))

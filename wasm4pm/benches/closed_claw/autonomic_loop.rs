@@ -12,15 +12,15 @@ use criterion::{black_box, BenchmarkId, Criterion, Throughput};
 use std::sync::atomic::AtomicU32;
 use std::time::Duration;
 
-use pictl::guards::{
+use wasm4pm::guards::{
     ExecutionContext, Guard, GuardEvaluator, ObservationBuffer, ResourceState, StateFlags,
 };
-use pictl::pattern_dispatch::{
+use wasm4pm::pattern_dispatch::{
     PatternConfig, PatternContext, PatternDispatcher, PatternFlags, PatternType,
 };
-use pictl::reinforcement::{QLearning, WorkflowAction, WorkflowState};
-use pictl::self_healing::{CircuitBreaker, HealthCheck, HealthStatus};
-use pictl::spc::{check_western_electric_rules, ChartData, ProcessCapability};
+use wasm4pm::reinforcement::{QLearning, WorkflowAction, WorkflowState};
+use wasm4pm::self_healing::{CircuitBreaker, HealthCheck, HealthStatus};
+use wasm4pm::spc::{check_western_electric_rules, ChartData, ProcessCapability};
 
 // ---------------------------------------------------------------------------
 // RL types (same pattern as jtbd_benchmark.rs)
@@ -108,9 +108,9 @@ fn test_pattern_context(pt: PatternType) -> PatternContext {
 /// Compound guard: cpu >= 50 AND state initialized|running.
 fn compound_guard() -> Guard {
     Guard::and(vec![
-        Guard::resource(pictl::guards::ResourceType::Cpu, 50),
+        Guard::resource(wasm4pm::guards::ResourceType::Cpu, 50),
         Guard::state(StateFlags::INITIALIZED | StateFlags::RUNNING),
-        Guard::predicate(pictl::guards::Predicate::LessThan, 3, 20),
+        Guard::predicate(wasm4pm::guards::Predicate::LessThan, 3, 20),
     ])
 }
 

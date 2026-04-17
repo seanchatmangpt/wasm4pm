@@ -2,8 +2,8 @@
 // Run with: cargo bench --bench cache_efficiency_bench
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use pictl::cache_resident::{encode_rl_state, decode_rl_state, QTable, VariantMap};
-use pictl::RlState;
+use wasm4pm::cache_resident::{encode_rl_state, decode_rl_state, QTable, VariantMap};
+use wasm4pm::RlState;
 
 fn bench_encode_state(c: &mut Criterion) {
     c.bench_function("encode_rl_state", |b| {

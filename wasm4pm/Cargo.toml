@@ -1,5 +1,5 @@
 [package]
-name = "pictl"
+name = "wasm4pm"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -135,6 +135,7 @@ harness = false
 [[bench]]
 name = "autonomy_jtbd_validation"
 harness = false
+required-features = ["cloud"]
 
 [[bench]]
 name = "simd_inner_loops"
@@ -147,10 +148,12 @@ harness = false
 [[bench]]
 name = "agentic_bench"
 harness = false
+required-features = ["cloud"]
 
 [[bench]]
 name = "autoprocess_latency"
 harness = false
+required-features = ["cloud"]
 
 [[bench]]
 name = "constant_latency_loops"
@@ -159,6 +162,7 @@ harness = false
 [[bench]]
 name = "autoprocess_criterion"
 harness = false
+required-features = ["cloud"]
 
 [[bench]]
 name = "rdtsc_validation"
@@ -292,8 +296,7 @@ browser = [
   "statrs",
   "ocel",
   "powl",
-  "console_error_panic_hook",
-  "bcinr"
+  "console_error_panic_hook"
 ]
 
 # Cloud profile: Deprecated alias for browser profile
@@ -375,4 +378,3 @@ gpu = []
 
 # Parallel processing
 rayon = ["dep:rayon"]
-

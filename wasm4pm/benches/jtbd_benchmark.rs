@@ -12,18 +12,18 @@ use std::time::Duration;
 // Imports from the 5 ported modules
 // ============================================================================
 
-use pictl::guards::{
+use wasm4pm::guards::{
     ExecutionContext, Guard, GuardCompiler, GuardEvaluator, ObservationBuffer, ResourceState,
     StateFlags,
 };
-use pictl::pattern_dispatch::{
+use wasm4pm::pattern_dispatch::{
     PatternConfig, PatternContext, PatternDispatcher, PatternFlags, PatternType,
 };
-use pictl::reinforcement::{QLearning, SARSAAgent, WorkflowAction, WorkflowState};
-use pictl::self_healing::{
+use wasm4pm::reinforcement::{QLearning, SARSAAgent, WorkflowAction, WorkflowState};
+use wasm4pm::self_healing::{
     CircuitBreaker, HealthCheck, HealthStatus, RetryPolicy, RetryState, SelfHealingManager,
 };
-use pictl::spc::{check_western_electric_rules, ChartData, ProcessCapability};
+use wasm4pm::spc::{check_western_electric_rules, ChartData, ProcessCapability};
 
 // ============================================================================
 // Shared helpers
@@ -73,7 +73,7 @@ fn test_pattern_context(pt: PatternType) -> PatternContext {
 fn bench_guard_predicate(c: &mut Criterion) {
     let ctx = test_context();
     let guard = Guard::predicate(
-        pictl::guards::Predicate::Equal,
+        wasm4pm::guards::Predicate::Equal,
         0, // field selector: task_id
         42,
     );
@@ -87,8 +87,8 @@ fn bench_guard_predicate(c: &mut Criterion) {
 
 fn bench_guard_resource(c: &mut Criterion) {
     let ctx = test_context();
-    let guard_cpu = Guard::resource(pictl::guards::ResourceType::Cpu, 50);
-    let guard_mem = Guard::resource(pictl::guards::ResourceType::Memory, 2048);
+    let guard_cpu = Guard::resource(wasm4pm::guards::ResourceType::Cpu, 50);
+    let guard_mem = Guard::resource(wasm4pm::guards::ResourceType::Memory, 2048);
 
     let mut group = c.benchmark_group("guards/resource_eval");
     group.bench_function("cpu_pass", |b| {
@@ -102,13 +102,13 @@ fn bench_guard_resource(c: &mut Criterion) {
 
 fn bench_guard_compound(c: &mut Criterion) {
     let ctx = test_context();
-    let g1 = Guard::resource(pictl::guards::ResourceType::Cpu, 50);
+    let g1 = Guard::resource(wasm4pm::guards::ResourceType::Cpu, 50);
     let g2 = Guard::state(StateFlags::INITIALIZED | StateFlags::RUNNING);
-    let g3 = Guard::predicate(pictl::guards::Predicate::LessThan, 3, 20);
+    let g3 = Guard::predicate(wasm4pm::guards::Predicate::LessThan, 3, 20);
     let guard_and = Guard::and(vec![g1, g2, g3]);
     let guard_or = Guard::or(vec![
-        Guard::resource(pictl::guards::ResourceType::Memory, 2048),
-        Guard::resource(pictl::guards::ResourceType::Cpu, 50),
+        Guard::resource(wasm4pm::guards::ResourceType::Memory, 2048),
+        Guard::resource(wasm4pm::guards::ResourceType::Cpu, 50),
         Guard::state(StateFlags::COMPLETED),
     ]);
 
@@ -124,7 +124,7 @@ fn bench_guard_compound(c: &mut Criterion) {
 
 fn bench_guard_cache(c: &mut Criterion) {
     let ctx = test_context();
-    let guard = Guard::resource(pictl::guards::ResourceType::Cpu, 50);
+    let guard = Guard::resource(wasm4pm::guards::ResourceType::Cpu, 50);
     let mut evaluator = GuardEvaluator::new(100);
 
     // Warm up: fill cache
@@ -154,7 +154,7 @@ fn bench_guard_cache(c: &mut Criterion) {
 }
 
 fn bench_guard_compiler(c: &mut Criterion) {
-    let guard = Guard::predicate(pictl::guards::Predicate::Equal, 0, 42);
+    let guard = Guard::predicate(wasm4pm::guards::Predicate::Equal, 0, 42);
     let ctx = test_context();
 
     let mut group = c.benchmark_group("guards/compiler");
@@ -609,7 +609,7 @@ fn bench_spc_cdf(c: &mut Criterion) {
     group.bench_function("normal_cdf", |b| {
         b.iter(|| {
             for z in [-3.0, -1.96, -1.0, 0.0, 1.0, 1.96, 3.0] {
-                black_box(pictl::spc::normal_cdf_public(z));
+                black_box(wasm4pm::spc::normal_cdf_public(z));
             }
         });
     });
@@ -619,7 +619,7 @@ fn bench_spc_cdf(c: &mut Criterion) {
             for p in [
                 0.001, 0.01, 0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95, 0.99, 0.999,
             ] {
-                black_box(pictl::spc::inverse_normal_cdf_public(p));
+                black_box(wasm4pm::spc::inverse_normal_cdf_public(p));
             }
         });
     });
@@ -627,8 +627,8 @@ fn bench_spc_cdf(c: &mut Criterion) {
     group.bench_function("cdf_roundtrip", |b| {
         b.iter(|| {
             for p in [0.01, 0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95, 0.99] {
-                let z = pictl::spc::inverse_normal_cdf_public(p);
-                let p2 = pictl::spc::normal_cdf_public(z);
+                let z = wasm4pm::spc::inverse_normal_cdf_public(p);
+                let p2 = wasm4pm::spc::normal_cdf_public(z);
                 black_box((z, p2));
             }
         });

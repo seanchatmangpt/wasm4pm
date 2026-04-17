@@ -1,11 +1,11 @@
 /// Criterion benchmarks for conformance checking pipeline.
 /// Discovers a model first, then replays the log against it.
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
-use pictl::conformance::check_token_based_replay;
-use pictl::discovery::discover_dfg;
-use pictl::ilp_discovery::discover_ilp_petri_net;
-use pictl::models::PetriNet;
-use pictl::state::{get_or_init_state, StoredObject};
+use wasm4pm::conformance::check_token_based_replay;
+use wasm4pm::discovery::discover_dfg;
+use wasm4pm::ilp_discovery::discover_ilp_petri_net;
+use wasm4pm::models::PetriNet;
+use wasm4pm::state::{get_or_init_state, StoredObject};
 use std::time::Duration;
 
 #[path = "helpers.rs"]

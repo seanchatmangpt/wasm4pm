@@ -15,7 +15,7 @@
 /// # Example
 ///
 /// ```
-/// use pictl::probabilistic::count_min::CountMinSketch;
+/// use wasm4pm::probabilistic::count_min::CountMinSketch;
 /// let mut cms: CountMinSketch<4096, 8> = CountMinSketch::new();
 /// for i in 0..1000 { cms.add(i as u64); }
 /// assert!(cms.estimate(42) >= 1); // never underestimates

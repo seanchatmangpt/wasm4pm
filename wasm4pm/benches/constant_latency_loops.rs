@@ -2,7 +2,7 @@
 //! Measures cycle predictability via perf counters.
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use pictl::models::{AttributeValue, Event, EventLog, Trace};
+use wasm4pm::models::{AttributeValue, Event, EventLog, Trace};
 use std::collections::HashMap;
 
 fn make_log(num_traces: usize, events_per_trace: usize) -> EventLog {
@@ -31,17 +31,17 @@ fn make_log(num_traces: usize, events_per_trace: usize) -> EventLog {
 fn bench_fnv1a_hashing(c: &mut Criterion) {
     c.bench_function("fnv1a_hash_1kb", |b| {
         let content = "x".repeat(1024);
-        b.iter(|| pictl::cache::hash_xes_content(black_box(&content)))
+        b.iter(|| wasm4pm::cache::hash_xes_content(black_box(&content)))
     });
 
     c.bench_function("fnv1a_hash_10kb", |b| {
         let content = "x".repeat(10240);
-        b.iter(|| pictl::cache::hash_xes_content(black_box(&content)))
+        b.iter(|| wasm4pm::cache::hash_xes_content(black_box(&content)))
     });
 
     c.bench_function("fnv1a_hash_100kb", |b| {
         let content = "x".repeat(102400);
-        b.iter(|| pictl::cache::hash_xes_content(black_box(&content)))
+        b.iter(|| wasm4pm::cache::hash_xes_content(black_box(&content)))
     });
 }
 
@@ -50,8 +50,8 @@ fn bench_parallel_executor(c: &mut Criterion) {
         let log = make_log(256, 32);
         b.iter(|| {
             let col_owned = log.to_columnar_owned("concept:name");
-            let col = pictl::models::ColumnarLog::from_owned(&col_owned);
-            pictl::parallel_executor::compute_dfg_parallel(&col)
+            let col = wasm4pm::models::ColumnarLog::from_owned(&col_owned);
+            wasm4pm::parallel_executor::compute_dfg_parallel(&col)
         })
     });
 
@@ -59,8 +59,8 @@ fn bench_parallel_executor(c: &mut Criterion) {
         let log = make_log(1024, 64);
         b.iter(|| {
             let col_owned = log.to_columnar_owned("concept:name");
-            let col = pictl::models::ColumnarLog::from_owned(&col_owned);
-            pictl::parallel_executor::compute_dfg_parallel(&col)
+            let col = wasm4pm::models::ColumnarLog::from_owned(&col_owned);
+            wasm4pm::parallel_executor::compute_dfg_parallel(&col)
         })
     });
 }
@@ -70,9 +70,9 @@ fn bench_token_replay(c: &mut Criterion) {
         let log = make_log(100, 16);
         b.iter(|| {
             let col_owned = log.to_columnar_owned("concept:name");
-            let col = pictl::models::ColumnarLog::from_owned(&col_owned);
-            let dfg = pictl::parallel_executor::compute_dfg_parallel(&col);
-            pictl::simd_token_replay::SimdPetriNet::from_dfg(&dfg)
+            let col = wasm4pm::models::ColumnarLog::from_owned(&col_owned);
+            let dfg = wasm4pm::parallel_executor::compute_dfg_parallel(&col);
+            wasm4pm::simd_token_replay::SimdPetriNet::from_dfg(&dfg)
         })
     });
 }

@@ -4,7 +4,7 @@ resolver = "2"
 members = ["wasm4pm", "tps-metrics", "crates/pictl-types", "crates/pictl-algos"]
 
 [workspace.package]
-version = "26.4.16"
+version = "26.4.17"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 authors = ["Sean Chatman <info@chatmangpt.com>"]

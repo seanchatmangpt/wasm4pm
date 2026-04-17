@@ -9,7 +9,7 @@
 use criterion::{black_box, BenchmarkId, Criterion, Throughput};
 use std::time::Duration;
 
-use pictl::reinforcement::{
+use wasm4pm::reinforcement::{
     DoubleQLearning, ExpectedSARSAAgent, QLearning, ReinforceAgent, WorkflowAction, WorkflowState,
 };
 

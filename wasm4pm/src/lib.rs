@@ -2318,6 +2318,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "cloud")]
     fn test_restore_rl_state_actually_restores_cycle_count() {
         // Simulate serialize → reset → restore round-trip
         let state_json = r#"{

@@ -27,7 +27,7 @@
 /// # Example
 ///
 /// ```
-/// # use pictl::branchless::select_u64;
+/// # use wasm4pm::branchless::select_u64;
 /// let x = 5u64;
 /// let y = 10u64;
 /// let cond = x < y; // false (0)
@@ -58,7 +58,7 @@ pub fn select_u64(condition: u64, true_val: u64, false_val: u64) -> u64 {
 /// # Example
 ///
 /// ```
-/// # use pictl::branchless::select_u32;
+/// # use wasm4pm::branchless::select_u32;
 /// let x = 5u32;
 /// let y = 10u32;
 /// let cond = x > y; // false (0)
@@ -94,7 +94,7 @@ pub fn select_u32(condition: u32, true_val: u32, false_val: u32) -> u32 {
 /// # Example
 ///
 /// ```
-/// # use pictl::branchless::blend;
+/// # use wasm4pm::branchless::blend;
 /// let x = 0xFF00u64;
 /// let y = 0x00FFu64;
 /// let mask = 0xAAAAu64; // alternating bits
@@ -116,7 +116,7 @@ pub fn blend(x: u64, y: u64, mask: u64) -> u64 {
 /// # Example
 ///
 /// ```
-/// # use pictl::branchless::popcount;
+/// # use wasm4pm::branchless::popcount;
 /// let x = 0b1010_1010u64;
 /// assert_eq!(popcount(x), 4);
 /// ```
@@ -139,7 +139,7 @@ pub fn popcount(x: u64) -> u32 {
 /// # Example
 ///
 /// ```
-/// # use pictl::branchless::leading_zeros;
+/// # use wasm4pm::branchless::leading_zeros;
 /// let x = 0x0000_0001u64;
 /// assert_eq!(leading_zeros(x), 63);
 /// ```

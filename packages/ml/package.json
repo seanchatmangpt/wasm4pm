@@ -1,6 +1,6 @@
 {
   "name": "@pictl/ml",
-  "version": "26.4.16",
+  "version": "26.4.17",
   "description": "Native ML-powered process mining analysis — classification, clustering, forecasting, anomaly detection, PCA",
   "type": "module",
   "main": "./dist/index.js",

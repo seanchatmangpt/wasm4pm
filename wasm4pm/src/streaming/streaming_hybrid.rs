@@ -39,9 +39,9 @@ pub trait BatchAlgorithm {
 /// # Example
 ///
 /// ```rust
-/// use pictl::streaming::streaming_hybrid::{StreamingHybrid, BatchAlgorithm};
-/// use pictl::streaming::StreamingAlgorithm;
-/// use pictl::models::DirectlyFollowsGraph;
+/// use wasm4pm::streaming::streaming_hybrid::{StreamingHybrid, BatchAlgorithm};
+/// use wasm4pm::streaming::StreamingAlgorithm;
+/// use wasm4pm::models::DirectlyFollowsGraph;
 ///
 /// struct GeneticAlgorithm;
 ///

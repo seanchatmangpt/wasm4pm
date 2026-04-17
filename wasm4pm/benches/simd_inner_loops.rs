@@ -6,7 +6,7 @@
 //! Target speedups: 4-8x depending on CPU SIMD support (SSE4.2, AVX-2, AVX-512).
 
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
-use pictl::simd_inner_loops::*;
+use wasm4pm::simd_inner_loops::*;
 use rand::{Rng, SeedableRng};
 use rand::rngs::StdRng;
 
