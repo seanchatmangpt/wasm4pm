@@ -1,13 +1,69 @@
 import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
+import * as path from 'path';
 import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
 import { EXIT_CODES, type ExitCode } from '../exit-codes.js';
 import { WasmLoader } from '@pictl/engine';
 import type { OutputOptions } from '../output.js';
 
+const AUTOPROCESS_STATE_FILE = '.pictl/autoprocess-state.json';
+
 export interface AutoProcessOptions extends OutputOptions {
   'activity-key'?: string;
   config?: string;
+}
+
+async function ensureStateDir() {
+  try {
+    const dir = path.dirname(AUTOPROCESS_STATE_FILE);
+    await fs.mkdir(dir, { recursive: true });
+  } catch {
+    // Directory might already exist
+  }
+}
+
+async function loadState(wasm: any): Promise<void> {
+  try {
+    const content = await fs.readFile(AUTOPROCESS_STATE_FILE, 'utf-8');
+    const state = JSON.parse(content);
+
+    // Restore RL state
+    if (state.rl_state) {
+      wasm.restore_rl_state(JSON.stringify(state.rl_state));
+    }
+
+    // Restore SPC history
+    if (state.spc_history) {
+      wasm.set_spc_history(JSON.stringify(state.spc_history));
+    }
+
+    // Restore circuit breaker state
+    if (state.circuit_breaker_state) {
+      wasm.circuit_breaker_set_state(JSON.stringify(state.circuit_breaker_state));
+    }
+  } catch (error) {
+    // File doesn't exist or is invalid - that's okay, we'll start fresh
+  }
+}
+
+async function saveState(wasm: any): Promise<void> {
+  try {
+    const rl_state = JSON.parse(wasm.serialize_rl_state());
+    const spc_history = JSON.parse(wasm.get_spc_history());
+    const circuit_breaker_state = JSON.parse(wasm.circuit_breaker_get_state());
+
+    const fullState = {
+      rl_state,
+      spc_history,
+      circuit_breaker_state,
+      saved_at: new Date().toISOString(),
+    };
+
+    await ensureStateDir();
+    await fs.writeFile(AUTOPROCESS_STATE_FILE, JSON.stringify(fullState, null, 2));
+  } catch (error) {
+    // Silently fail on save - don't block execution
+  }
 }
 
 export const autoprocess = defineCommand({
@@ -61,12 +117,15 @@ export const autoprocess = defineCommand({
       await loader.init();
       const wasm = loader.get();
 
-      // 2. Load XES file
+      // 2. Load persisted state (RL, SPC, circuit breaker)
+      await loadState(wasm);
+
+      // 3. Load XES file
       const inputPath = ctx.args.input as string;
       const xesContent = await fs.readFile(inputPath, 'utf-8');
       const logHandle = wasm.load_eventlog_from_xes(xesContent);
 
-      // 3. Run AutoProcess cycle
+      // 4. Run AutoProcess cycle
       const cycleConfig = (ctx.args.config as string) || '{}';
       const rawResult = wasm.autonomic_execute_cycle(
         logHandle,
@@ -154,7 +213,10 @@ export const autoprocess = defineCommand({
         }
       }
 
-      // 5. Cleanup
+      // 5. Save persisted state (RL, SPC, circuit breaker)
+      await saveState(wasm);
+
+      // 6. Cleanup
       wasm.delete_object(logHandle);
 
       // Use process.exit() to prevent citty from printing help text

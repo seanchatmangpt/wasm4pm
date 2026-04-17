@@ -82,12 +82,13 @@ export class JSONFormatter {
     }
   }
 
-  success(message: string, data?: Record<string, unknown>): void {
+  success(message: string, data?: unknown): void {
     if (!this.quiet) {
+      const normalizedData = Array.isArray(data) ? { data } : (data as Record<string, unknown> ?? {});
       this.output({
         status: 'success',
         message,
-        ...(data ?? {}),
+        ...(normalizedData),
       });
     }
   }
@@ -101,12 +102,13 @@ export class JSONFormatter {
     });
   }
 
-  warn(message: string, data?: Record<string, unknown>): void {
+  warn(message: string, data?: unknown): void {
     if (!this.quiet) {
+      const normalizedData = Array.isArray(data) ? { data } : (data as Record<string, unknown> ?? {});
       this.output({
         status: 'warning',
         message,
-        ...(data ?? {}),
+        ...(normalizedData),
       });
     }
   }

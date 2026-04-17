@@ -5,9 +5,9 @@
  * The explanation is generated from the same plan used for execution
  */
 
-import type { Config, ExecutionPlan } from './planner';
-import { plan } from './planner';
-import { topologicalSort } from './dag';
+import type { Config, ExecutionPlan } from './planner.js';
+import { plan } from './planner.js';
+import { topologicalSort } from './dag.js';
 
 /**
  * Generates a human-readable markdown explanation of an execution plan

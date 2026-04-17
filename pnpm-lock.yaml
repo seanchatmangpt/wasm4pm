@@ -142,6 +142,9 @@ importers:
 
   packages/engine:
     dependencies:
+      '@pictl/config':
+        specifier: workspace:*
+        version: link:../config
       '@pictl/contracts':
         specifier: workspace:*
         version: link:../contracts
@@ -300,27 +303,27 @@ importers:
 
   playground:
     dependencies:
-      '@wasm4pm/config':
+      '@pictl/config':
         specifier: file:../packages/config
-        version: '@pictl/config@file:packages/config'
-      '@wasm4pm/contracts':
+        version: file:packages/config
+      '@pictl/contracts':
         specifier: file:../packages/contracts
         version: link:../packages/contracts
-      '@wasm4pm/engine':
+      '@pictl/engine':
         specifier: file:../packages/engine
-        version: '@pictl/engine@file:packages/engine'
-      '@wasm4pm/kernel':
+        version: file:packages/engine
+      '@pictl/kernel':
         specifier: file:../packages/kernel
-        version: '@pictl/kernel@file:packages/kernel'
-      '@wasm4pm/observability':
+        version: file:packages/kernel
+      '@pictl/observability':
         specifier: file:../packages/observability
         version: link:../packages/observability
-      '@wasm4pm/planner':
+      '@pictl/planner':
         specifier: file:../packages/planner
-        version: '@pictl/planner@file:packages/planner'
-      '@wasm4pm/testing':
+        version: file:packages/planner
+      '@pictl/testing':
         specifier: file:../packages/testing
-        version: '@pictl/testing@file:packages/testing'
+        version: file:packages/testing
     devDependencies:
       '@types/node':
         specifier: ^20.10.0
@@ -2083,6 +2086,7 @@ snapshots:
 
   '@pictl/engine@file:packages/engine':
     dependencies:
+      '@pictl/config': link:packages/config
       '@pictl/contracts': link:packages/contracts
       '@pictl/observability': link:packages/observability
 

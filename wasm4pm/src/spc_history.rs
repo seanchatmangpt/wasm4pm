@@ -5,6 +5,7 @@
 //! within a single cycle's data.
 
 use std::collections::VecDeque;
+use serde::{Serialize, Deserialize};
 
 // ---------------------------------------------------------------------------
 // Step 1: Ring Buffer Data Structure
@@ -128,7 +129,7 @@ impl<T: Clone, const N: usize> RingBuffer<T, N> {
 /// - Trace duration average
 /// - Activity frequency
 /// - Health state
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SpcSnapshot {
     /// ISO-8601 timestamp or cycle identifier.
     pub timestamp: String,

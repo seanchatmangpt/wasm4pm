@@ -1,39 +1,56 @@
-import { consola } from 'consola';
+"use strict";
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.StreamingOutput = exports.JSONFormatter = exports.HumanFormatter = void 0;
+exports.getFormatter = getFormatter;
+var consola_1 = require("consola");
 /**
  * Human-readable formatter using consola
  */
-export class HumanFormatter {
-    constructor(options = {}) {
-        this.verbose = options.verbose ?? false;
-        this.quiet = options.quiet ?? false;
+var HumanFormatter = /** @class */ (function () {
+    function HumanFormatter(options) {
+        if (options === void 0) { options = {}; }
+        var _a, _b;
+        this.verbose = (_a = options.verbose) !== null && _a !== void 0 ? _a : false;
+        this.quiet = (_b = options.quiet) !== null && _b !== void 0 ? _b : false;
     }
-    success(message) {
+    HumanFormatter.prototype.success = function (message) {
         if (!this.quiet) {
-            consola.success(message);
+            consola_1.consola.success(message);
         }
-    }
-    info(message) {
+    };
+    HumanFormatter.prototype.info = function (message) {
         if (!this.quiet) {
-            consola.info(message);
+            consola_1.consola.info(message);
         }
-    }
-    warn(message) {
-        consola.warn(message);
-    }
-    error(message) {
-        consola.error(message);
-    }
-    debug(message) {
+    };
+    HumanFormatter.prototype.warn = function (message) {
+        consola_1.consola.warn(message);
+    };
+    HumanFormatter.prototype.error = function (message) {
+        consola_1.consola.error(message);
+    };
+    HumanFormatter.prototype.debug = function (message) {
         if (this.verbose) {
-            consola.log(`[DEBUG] ${message}`);
+            consola_1.consola.log("[DEBUG] ".concat(message));
         }
-    }
-    box(message) {
+    };
+    HumanFormatter.prototype.box = function (message) {
         if (!this.quiet) {
-            consola.box(message);
+            consola_1.consola.box(message);
         }
-    }
-    log(message, data) {
+    };
+    HumanFormatter.prototype.log = function (message, data) {
         if (!this.quiet) {
             // Use console.log directly for synchronous output that flushes with process.exit()
             // consola.log may buffer and not flush before process termination in test environments
@@ -44,85 +61,83 @@ export class HumanFormatter {
                 console.log(message);
             }
         }
-    }
-}
+    };
+    return HumanFormatter;
+}());
+exports.HumanFormatter = HumanFormatter;
 /**
  * JSON formatter for machine-readable output
  */
-export class JSONFormatter {
-    constructor(options = {}) {
-        this.quiet = options.quiet ?? false;
+var JSONFormatter = /** @class */ (function () {
+    function JSONFormatter(options) {
+        if (options === void 0) { options = {}; }
+        var _a;
+        this.quiet = (_a = options.quiet) !== null && _a !== void 0 ? _a : false;
     }
-    output(data) {
+    JSONFormatter.prototype.output = function (data) {
         if (!this.quiet) {
             console.log(JSON.stringify(data, null, 2));
         }
-    }
-    success(message, data) {
+    };
+    JSONFormatter.prototype.success = function (message, data) {
         if (!this.quiet) {
-            this.output({
-                status: 'success',
-                message,
-                ...(data ?? {}),
-            });
+            this.output(__assign({ status: 'success', message: message }, (data !== null && data !== void 0 ? data : {})));
         }
-    }
-    error(message, error) {
+    };
+    JSONFormatter.prototype.error = function (message, error) {
         this.output({
             status: 'error',
-            message,
+            message: message,
             error: error instanceof Error ? { message: error.message, stack: error.stack } : error,
         });
-    }
-    warn(message, data) {
+    };
+    JSONFormatter.prototype.warn = function (message, data) {
         if (!this.quiet) {
-            this.output({
-                status: 'warning',
-                message,
-                ...(data ?? {}),
-            });
+            this.output(__assign({ status: 'warning', message: message }, (data !== null && data !== void 0 ? data : {})));
         }
-    }
-}
+    };
+    return JSONFormatter;
+}());
+exports.JSONFormatter = JSONFormatter;
 /**
  * Streaming output handler for watch mode
  */
-export class StreamingOutput {
-    constructor(options = {}) {
-        this.format = options.format ?? 'human';
+var StreamingOutput = /** @class */ (function () {
+    function StreamingOutput(options) {
+        if (options === void 0) { options = {}; }
+        var _a;
+        this.format = (_a = options.format) !== null && _a !== void 0 ? _a : 'human';
         this.humanFormatter = new HumanFormatter(options);
         this.jsonFormatter = new JSONFormatter(options);
     }
-    startStream() {
+    StreamingOutput.prototype.startStream = function () {
         if (this.format === 'human') {
             this.humanFormatter.info('Watching for changes...');
         }
-    }
-    emitEvent(eventType, data) {
+    };
+    StreamingOutput.prototype.emitEvent = function (eventType, data) {
         if (this.format === 'json') {
-            this.jsonFormatter.output({
-                type: eventType,
-                timestamp: new Date().toISOString(),
-                ...data,
-            });
+            this.jsonFormatter.output(__assign({ type: eventType, timestamp: new Date().toISOString() }, data));
         }
         else {
-            this.humanFormatter.log(`[${eventType}] ${JSON.stringify(data)}`);
+            this.humanFormatter.log("[".concat(eventType, "] ").concat(JSON.stringify(data)));
         }
-    }
-    endStream() {
+    };
+    StreamingOutput.prototype.endStream = function () {
         if (this.format === 'human') {
             this.humanFormatter.info('Watch mode ended');
         }
-    }
-}
+    };
+    return StreamingOutput;
+}());
+exports.StreamingOutput = StreamingOutput;
 /**
  * Get formatter instance based on format option
  */
-export function getFormatter(options = {}) {
+function getFormatter(options) {
+    if (options === void 0) { options = {}; }
     if (options.format === 'json') {
         return new JSONFormatter(options);
     }
     return new HumanFormatter(options);
 }
-//# sourceMappingURL=output.js.map

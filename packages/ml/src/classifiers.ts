@@ -270,7 +270,7 @@ function logisticRegressionTrain(
   labels: number[],
   maxIter = 100,
   lr = 0.01,
-): { weights: number[][]; nClasses: number; iterations: number } {
+): { weights: Float64Array[]; nClasses: number; iterations: number } {
   const classes = [...new Set(labels)].sort((a, b) => a - b);
   const n = data.length;
   const d = data[0]?.length ?? 0;
@@ -279,7 +279,7 @@ function logisticRegressionTrain(
   // Multinomial logistic regression: softmax-based cross-entropy training.
   // All class weights are updated jointly so training gradients match the
   // softmax probabilities used during prediction.
-  const weights: number[][] = [];
+  const weights: Float64Array[] = [];
   for (let ci = 0; ci < k; ci++) weights.push(new Float64Array(d + 1));
 
   const probs = new Float64Array(k);

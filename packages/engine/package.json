@@ -19,6 +19,7 @@
     "test:coverage": "vitest --coverage"
   },
   "dependencies": {
+    "@pictl/config": "workspace:*",
     "@pictl/contracts": "workspace:*",
     "@pictl/observability": "workspace:*"
   },

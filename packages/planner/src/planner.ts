@@ -15,9 +15,9 @@ import {
   getProfileAlgorithms,
   ALGORITHM_DISPLAY_NAMES,
 } from '@pictl/contracts';
-import type { DAG } from './dag';
-import { topologicalSort, validateDAG } from './dag';
-import type { PlanStep } from './steps';
+import type { DAG } from './dag.js';
+import { topologicalSort, validateDAG } from './dag.js';
+import type { PlanStep } from './steps.js';
 import {
   PlanStepType,
   createBootstrapStep,
@@ -29,7 +29,7 @@ import {
   createGenerateReportsStep,
   createSinkStep,
   createCleanupStep,
-} from './steps';
+} from './steps.js';
 
 /**
  * Typed error for planner failures.

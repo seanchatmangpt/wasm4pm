@@ -58,8 +58,14 @@ impl CounterfactualEvaluator for DefaultCounterfactualEvaluator {
                 let next_health = ((curr_health as i32 + delta).clamp(0, 4)) as u8;
 
                 // Use rl_orchestrator::compute_reward to estimate value
-                let estimated_reward =
-                    crate::rl_orchestrator::compute_reward(curr_health, next_health, 0, guard_pass, circuit_allowed);
+                let estimated_reward = crate::rl_orchestrator::compute_reward(
+                    curr_health,
+                    next_health,
+                    0,
+                    guard_pass,
+                    circuit_allowed,
+                    false,
+                );
 
                 CounterfactualOption {
                     option_id: format!("{:?}", action),
