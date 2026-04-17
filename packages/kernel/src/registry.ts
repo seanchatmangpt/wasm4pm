@@ -237,9 +237,9 @@ export class AlgorithmRegistry {
     // Inductive Miner
     this.registerWithInferredProfiles({
       id: 'inductive_miner',
-      name: 'Inductive Miner',
-      description: 'Recursively partitions event log to discover process trees. Handles noise well.',
-      outputType: 'tree',
+      name: 'Inductive Miner (STUB)',
+      description: 'STUB: Claims to discover process trees but actually just calls discover_dfg. Do not use (Phase 4 audit).',
+      outputType: 'dfg',
       complexity: 'O(n log n)',
       speedTier: 30,
       qualityTier: 55,
@@ -272,8 +272,8 @@ export class AlgorithmRegistry {
     this.registerWithInferredProfiles({
       id: 'genetic_algorithm',
       name: 'Genetic Algorithm',
-      description: 'Uses evolutionary computation to discover high-quality models. Best quality for complex processes.',
-      outputType: 'petrinet',
+      description: 'Uses evolutionary computation. Actually returns DFG, not Petri net (Phase 4 audit correction).',
+      outputType: 'dfg',
       complexity: 'Exponential',
       speedTier: 75,
       qualityTier: 80,
@@ -315,8 +315,8 @@ export class AlgorithmRegistry {
     this.registerWithInferredProfiles({
       id: 'pso',
       name: 'Particle Swarm Optimization (PSO)',
-      description: 'Swarm-based algorithm for discovering Petri nets. Balances exploration and exploitation.',
-      outputType: 'petrinet',
+      description: 'Swarm-based algorithm. Actually returns DFG, not Petri net (Phase 4 audit correction).',
+      outputType: 'dfg',
       complexity: 'Exponential',
       speedTier: 70,
       qualityTier: 75,
@@ -358,8 +358,8 @@ export class AlgorithmRegistry {
     this.registerWithInferredProfiles({
       id: 'a_star',
       name: 'A* Search',
-      description: 'Heuristic search algorithm for discovering optimal or near-optimal Petri nets.',
-      outputType: 'petrinet',
+      description: 'Heuristic search algorithm. Actually returns DFG, not Petri net (Phase 4 audit correction).',
+      outputType: 'dfg',
       complexity: 'Exponential',
       speedTier: 60,
       qualityTier: 70,
@@ -392,8 +392,8 @@ export class AlgorithmRegistry {
     this.registerWithInferredProfiles({
       id: 'hill_climbing',
       name: 'Hill Climbing',
-      description: 'Greedy local search for Petri net discovery. Fast with reasonable quality.',
-      outputType: 'petrinet',
+      description: 'Greedy local search. Actually returns DFG, not Petri net (Phase 4 audit correction).',
+      outputType: 'dfg',
       complexity: 'O(n²)',
       speedTier: 40,
       qualityTier: 55,
@@ -460,8 +460,8 @@ export class AlgorithmRegistry {
     this.registerWithInferredProfiles({
       id: 'aco',
       name: 'Ant Colony Optimization (ACO)',
-      description: 'Swarm intelligence algorithm inspired by ant pheromones. Discovers high-quality Petri nets.',
-      outputType: 'petrinet',
+      description: 'Swarm intelligence algorithm. Actually returns DFG, not Petri net (Phase 4 audit correction).',
+      outputType: 'dfg',
       complexity: 'Exponential',
       speedTier: 65,
       qualityTier: 75,
@@ -503,8 +503,8 @@ export class AlgorithmRegistry {
     this.registerWithInferredProfiles({
       id: 'simulated_annealing',
       name: 'Simulated Annealing',
-      description: 'Probabilistic technique for finding near-optimal Petri net models.',
-      outputType: 'petrinet',
+      description: 'Probabilistic technique. Actually returns DFG, not Petri net (Phase 4 audit correction).',
+      outputType: 'dfg',
       complexity: 'Exponential',
       speedTier: 55,
       qualityTier: 65,
@@ -748,26 +748,7 @@ export class AlgorithmRegistry {
 
     // ── ML Analysis ──────────────────────────────────────────
 
-    this.registerWithInferredProfiles({
-      id: 'ml_classify',
-      name: 'ML Trace Classification',
-      description: 'Classify traces by outcome using k-NN, logistic regression, decision tree, or naive Bayes.',
-      outputType: 'ml_result',
-      complexity: 'O(n²)',
-      speedTier: 40,
-      qualityTier: 60,
-      parameters: [
-        { name: 'activity_key', type: 'string', description: 'Event attribute key for activity names', required: true, default: 'concept:name' },
-        { name: 'method', type: 'select', description: 'Classification method', required: false, default: 'knn', options: ['knn', 'logistic_regression', 'decision_tree', 'naive_bayes'] },
-        { name: 'k', type: 'number', description: 'Number of neighbors for k-NN', required: false, default: 5, min: 1, max: 50 },
-        { name: 'target_key', type: 'string', description: 'Target variable key for classification', required: false, default: 'outcome' },
-      ],
-      supportedProfiles: ['balanced', 'quality'],
-      estimatedDurationMs: 25,
-      estimatedMemoryMB: 50,
-      robustToNoise: true,
-      scalesWell: true,
-    });
+    // ml_classify: REMOVED — no WASM export (Phase 4 audit)
 
     this.registerWithInferredProfiles({
       id: 'ml_cluster',
@@ -790,24 +771,7 @@ export class AlgorithmRegistry {
       scalesWell: true,
     });
 
-    this.registerWithInferredProfiles({
-      id: 'ml_forecast',
-      name: 'ML Throughput Forecasting',
-      description: 'Forecast future process throughput with trend analysis and seasonal decomposition.',
-      outputType: 'ml_result',
-      complexity: 'O(n log n)',
-      speedTier: 30,
-      qualityTier: 50,
-      parameters: [
-        { name: 'activity_key', type: 'string', description: 'Activity key', required: true, default: 'concept:name' },
-        { name: 'forecast_periods', type: 'number', description: 'Future periods to forecast', required: false, default: 5, min: 1, max: 50 },
-      ],
-      supportedProfiles: ['balanced', 'quality'],
-      estimatedDurationMs: 15,
-      estimatedMemoryMB: 30,
-      robustToNoise: false,
-      scalesWell: true,
-    });
+    // ml_forecast: REMOVED — no WASM export (Phase 4 audit)
 
     this.registerWithInferredProfiles({
       id: 'ml_anomaly',
@@ -828,44 +792,9 @@ export class AlgorithmRegistry {
       scalesWell: true,
     });
 
-    this.registerWithInferredProfiles({
-      id: 'ml_regress',
-      name: 'ML Remaining Time Regression',
-      description: 'Predict remaining case time using linear, polynomial, or exponential regression.',
-      outputType: 'ml_result',
-      complexity: 'O(n)',
-      speedTier: 25,
-      qualityTier: 50,
-      parameters: [
-        { name: 'activity_key', type: 'string', description: 'Activity key', required: true, default: 'concept:name' },
-        { name: 'method', type: 'select', description: 'Regression method', required: false, default: 'linear_regression', options: ['linear_regression', 'polynomial_regression', 'exponential_regression'] },
-        { name: 'target_key', type: 'string', description: 'Target variable', required: false, default: 'remaining_time' },
-      ],
-      supportedProfiles: ['balanced', 'quality'],
-      estimatedDurationMs: 10,
-      estimatedMemoryMB: 40,
-      robustToNoise: false,
-      scalesWell: true,
-    });
+    // ml_regress: REMOVED — no WASM export (Phase 4 audit)
 
-    this.registerWithInferredProfiles({
-      id: 'ml_pca',
-      name: 'ML PCA Feature Reduction',
-      description: 'Reduce high-dimensional trace features using Principal Component Analysis.',
-      outputType: 'ml_result',
-      complexity: 'O(n * d²)',
-      speedTier: 35,
-      qualityTier: 50,
-      parameters: [
-        { name: 'activity_key', type: 'string', description: 'Activity key', required: true, default: 'concept:name' },
-        { name: 'n_components', type: 'number', description: 'Number of PCA components', required: false, default: 2, min: 1, max: 50 },
-      ],
-      supportedProfiles: ['balanced', 'quality'],
-      estimatedDurationMs: 20,
-      estimatedMemoryMB: 50,
-      robustToNoise: false,
-      scalesWell: true,
-    });
+    // ml_pca: REMOVED — no WASM export (Phase 4 audit)
 
     // ─── Wave 1 Migration: Discovery algorithms ───────────────────────────
 
@@ -1006,23 +935,7 @@ export class AlgorithmRegistry {
       scalesWell: true,
     });
 
-    this.registerWithInferredProfiles({
-      id: 'petri_net_reduction',
-      name: 'Petri Net Reduction',
-      description: 'Simplify a Petri net using Murata reduction rules.',
-      outputType: 'petrinet',
-      complexity: 'O(n²)',
-      speedTier: 70,
-      qualityTier: 55,
-      parameters: [
-        { name: 'petri_net_handle', type: 'string', description: 'Handle of the Petri net to reduce', required: true },
-      ],
-      supportedProfiles: ['quality'],
-      estimatedDurationMs: 10,
-      estimatedMemoryMB: 30,
-      robustToNoise: true,
-      scalesWell: true,
-    });
+    // petri_net_reduction: REMOVED — no #[wasm_bindgen] decorator (Phase 4 audit)
 
     this.registerWithInferredProfiles({
       id: 'etconformance_precision',
