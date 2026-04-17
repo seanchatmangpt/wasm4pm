@@ -336,7 +336,7 @@ impl VariantMap {
     fn hash_key(fingerprint: u64, capacity: usize) -> usize {
         let mut h: u64 = 0xcbf29ce484222325;
         for i in 0..8 {
-            h ^= ((fingerprint >> (i * 8)) & 0xff) as u64;
+            h ^= (fingerprint >> (i * 8)) & 0xff;
             h = h.wrapping_mul(0x100000001b3);
         }
         (h as usize) % capacity

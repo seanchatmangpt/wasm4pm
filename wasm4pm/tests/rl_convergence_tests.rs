@@ -69,7 +69,7 @@ fn test_convergence_positive_cumulative_reward_stable() {
     let features = healthy_features();
 
     for _ in 0..500 {
-        let _ = orch.run_cycle(&features, &state, &state, 0, true, true);
+        let _ = orch.run_cycle(&features, &state, &state, 0, true, true, false);
     }
 
     assert!(
@@ -93,7 +93,7 @@ fn test_convergence_negative_cumulative_reward_degraded() {
     let features = degraded_features();
 
     for _ in 0..200 {
-        let _ = orch.run_cycle(&features, &state, &state, 2, false, true);
+        let _ = orch.run_cycle(&features, &state, &state, 2, false, true, false);
     }
 
     assert!(
@@ -115,7 +115,7 @@ fn test_convergence_cumulative_reward_monotonic() {
 
     let mut last_cumulative = 0.0_f32;
     for _ in 0..100 {
-        let _ = orch.run_cycle(&features, &state, &state, 0, true, true);
+        let _ = orch.run_cycle(&features, &state, &state, 0, true, true, false);
         assert!(
             orch.telemetry().cumulative_reward >= last_cumulative,
             "Cumulative reward should be monotonically increasing: \
@@ -145,13 +145,13 @@ fn test_convergence_reward_improves_with_health_recovery() {
 
     // Phase 1: degraded (100 cycles)
     for _ in 0..100 {
-        let (_, reward) = orch.run_cycle(&features, &bad_state, &bad_state, 2, false, true);
+        let (_, reward) = orch.run_cycle(&features, &bad_state, &bad_state, 2, false, true, false);
         degraded_rewards.push(reward);
     }
 
     // Phase 2: healthy (100 cycles)
     for _ in 0..100 {
-        let (_, reward) = orch.run_cycle(&features, &good_state, &good_state, 0, true, true);
+        let (_, reward) = orch.run_cycle(&features, &good_state, &good_state, 0, true, true, false);
         healthy_rewards.push(reward);
     }
 
@@ -181,14 +181,14 @@ fn test_convergence_exploration_decay_reduces_variance() {
     // Count actions in first 50 cycles (high exploration)
     let mut first_actions: Vec<String> = Vec::new();
     for _ in 0..50 {
-        let (action, _) = orch.run_cycle(&features, &state, &state, 0, true, true);
+        let (action, _) = orch.run_cycle(&features, &state, &state, 0, true, true, false);
         first_actions.push(action);
     }
 
     // Count actions in cycles 450-500 (low exploration)
     let mut late_actions: Vec<String> = Vec::new();
     for _ in 0..50 {
-        let (action, _) = orch.run_cycle(&features, &state, &state, 0, true, true);
+        let (action, _) = orch.run_cycle(&features, &state, &state, 0, true, true, false);
         late_actions.push(action);
     }
 
@@ -223,7 +223,7 @@ fn test_convergence_positive_reward_across_seeds() {
         let features = healthy_features();
 
         for _ in 0..200 {
-            let _ = orch.run_cycle(&features, &state, &state, 0, true, true);
+            let _ = orch.run_cycle(&features, &state, &state, 0, true, true, false);
         }
 
         assert!(
@@ -252,7 +252,7 @@ fn test_convergence_different_environments_different_actions() {
         let features = healthy_features();
         let mut counts: std::collections::HashMap<String, u32> = std::collections::HashMap::new();
         for _ in 0..total_cycles {
-            let (action, _) = orch.run_cycle(&features, &state, &state, 0, true, true);
+            let (action, _) = orch.run_cycle(&features, &state, &state, 0, true, true, false);
             *counts.entry(action).or_insert(0) += 1;
         }
         counts
@@ -264,7 +264,7 @@ fn test_convergence_different_environments_different_actions() {
         let features = degraded_features();
         let mut counts: std::collections::HashMap<String, u32> = std::collections::HashMap::new();
         for _ in 0..total_cycles {
-            let (action, _) = orch.run_cycle(&features, &state, &state, 2, false, true);
+            let (action, _) = orch.run_cycle(&features, &state, &state, 2, false, true, false);
             *counts.entry(action).or_insert(0) += 1;
         }
         counts
@@ -314,7 +314,7 @@ fn test_multi_seed_final_reward_distributions_are_consistent() {
             // Run 200 cycles, collect rewards
             let mut all_rewards = Vec::new();
             for _ in 0..total_cycles {
-                let (_action, reward) = orch.run_cycle(&features, &state, &state, 0, true, true);
+                let (_action, reward) = orch.run_cycle(&features, &state, &state, 0, true, true, false);
                 all_rewards.push(reward);
             }
 
@@ -368,7 +368,7 @@ fn test_b2_linucb_agent_selection_convergence_under_degradation() {
         std::collections::HashMap::new();
 
     for _ in 0..100 {
-        orch.run_cycle(&features, &state, &state, 1, true, true);
+        orch.run_cycle(&features, &state, &state, 1, true, true, false);
         let agent_name = orch.telemetry().active_agent_name.clone();
         *agent_selections.entry(agent_name).or_insert(0) += 1;
     }
@@ -434,7 +434,7 @@ fn test_b4_terminal_recovery_reward_trend_improves() {
             cycle_phase: 0,
         };
 
-        let (_, reward) = orch.run_cycle(&features, &state, &next_state, 0, true, true);
+        let (_, reward) = orch.run_cycle(&features, &state, &next_state, 0, true, true, false);
         rewards.push(reward);
         current_health = next_health;
     }

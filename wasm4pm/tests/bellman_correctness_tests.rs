@@ -285,14 +285,14 @@ fn test_metamorphic_health_degradation_monotonic() {
     let guard = true;
 
     // Baseline: health stays at 1 (stable)
-    let reward_stable = compute_reward(1, 1, spc, circuit, guard);
+    let reward_stable = compute_reward(1, 1, spc, circuit, guard, false);
 
     // Any non-terminal degradation (1 -> 2 or 1 -> 3): flat -1.0 penalty
-    let reward_degraded_mild = compute_reward(1, 2, spc, circuit, guard);
-    let reward_degraded_moderate = compute_reward(1, 3, spc, circuit, guard);
+    let reward_degraded_mild = compute_reward(1, 2, spc, circuit, guard, false);
+    let reward_degraded_moderate = compute_reward(1, 3, spc, circuit, guard, false);
 
     // Terminal degradation: 1 -> 4 adds a -2.0 terminal penalty on top
-    let reward_terminal = compute_reward(1, 4, spc, circuit, guard);
+    let reward_terminal = compute_reward(1, 4, spc, circuit, guard, false);
 
     // Contract 1: stable > non-terminal degradation
     assert!(
@@ -350,7 +350,7 @@ fn test_metamorphic_spc_alert_count_monotonic() {
     let pre_cap_counts = [0usize, 1, 2, 3, 4];
     let pre_cap_rewards: Vec<f32> = pre_cap_counts
         .iter()
-        .map(|&spc| compute_reward(prev, curr, spc, circuit, guard))
+        .map(|&spc| compute_reward(prev, curr, spc, circuit, guard, false))
         .collect();
 
     for i in 0..pre_cap_rewards.len() - 1 {
@@ -373,9 +373,9 @@ fn test_metamorphic_spc_alert_count_monotonic() {
     }
 
     // -- Part 2: flat region (5, 10, 50 alerts, at or above cap) --
-    let at_cap = compute_reward(prev, curr, 5, circuit, guard);
-    let above_cap_10 = compute_reward(prev, curr, 10, circuit, guard);
-    let above_cap_50 = compute_reward(prev, curr, 50, circuit, guard);
+    let at_cap = compute_reward(prev, curr, 5, circuit, guard, false);
+    let above_cap_10 = compute_reward(prev, curr, 10, circuit, guard, false);
+    let above_cap_50 = compute_reward(prev, curr, 50, circuit, guard, false);
 
     assert!(
         (at_cap - above_cap_10).abs() < 1e-6,
@@ -389,8 +389,8 @@ fn test_metamorphic_spc_alert_count_monotonic() {
     );
 
     // -- Part 3: total SPC penalty capped at exactly 1.5 --
-    let no_alert_reward = compute_reward(prev, curr, 0, circuit, guard);
-    let max_alert_reward = compute_reward(prev, curr, 50, circuit, guard);
+    let no_alert_reward = compute_reward(prev, curr, 0, circuit, guard, false);
+    let max_alert_reward = compute_reward(prev, curr, 50, circuit, guard, false);
     let total_spc_penalty = no_alert_reward - max_alert_reward;
     assert!(
         (total_spc_penalty - 1.5).abs() < 1e-5,
@@ -409,8 +409,8 @@ fn test_metamorphic_circuit_breaker_impact() {
     let spc = 0;
     let guard = true;
 
-    let reward_circuit_ok = compute_reward(prev, curr, spc, guard, true);
-    let reward_circuit_fail = compute_reward(prev, curr, spc, guard, false);
+    let reward_circuit_ok = compute_reward(prev, curr, spc, guard, true, false);
+    let reward_circuit_fail = compute_reward(prev, curr, spc, guard, false, false);
 
     assert!(
         reward_circuit_ok > reward_circuit_fail,
@@ -441,8 +441,8 @@ fn test_metamorphic_guard_failure_impact() {
     let spc = 0;
     let circuit = true;
 
-    let reward_guard_ok = compute_reward(prev, curr, spc, true, circuit);
-    let reward_guard_fail = compute_reward(prev, curr, spc, false, circuit);
+    let reward_guard_ok = compute_reward(prev, curr, spc, true, circuit, false);
+    let reward_guard_fail = compute_reward(prev, curr, spc, false, circuit, false);
 
     assert!(
         reward_guard_ok > reward_guard_fail,
@@ -466,10 +466,10 @@ fn test_metamorphic_guard_failure_impact() {
 #[test]
 fn test_metamorphic_all_penalties_compose() {
     // Best case: health improves (3->0), no alerts, circuit ok, guard ok
-    let best_reward = compute_reward(3, 0, 0, true, true);
+    let best_reward = compute_reward(3, 0, 0, true, true, false);
 
     // Worst case: health degrades to terminal (0->4), max alerts, circuit fail, guard fail
-    let worst_reward = compute_reward(0, 4, 100, false, false);
+    let worst_reward = compute_reward(0, 4, 100, false, false, false);
 
     assert!(
         best_reward > worst_reward,

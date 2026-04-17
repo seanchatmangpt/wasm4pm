@@ -254,6 +254,7 @@ fn process_batch_unrolled(
     }
 
     // Process remainder
+    #[allow(clippy::needless_range_loop)]
     for i in (full_chunks * unroll_factor)..events.len() {
         *node_counts.entry(events[i]).or_insert(0) += 1;
     }
@@ -266,8 +267,7 @@ fn process_batch_unrolled(
     }
 
     // Mark trace starts/ends
-    let mut trace_idx = 0;
-    for start_offset in trace_starts {
+    for (trace_idx, start_offset) in trace_starts.iter().enumerate() {
         let batch_start = *start_offset;
         let batch_end = if trace_idx + 1 < trace_starts.len() {
             trace_starts[trace_idx + 1]
@@ -281,8 +281,6 @@ fn process_batch_unrolled(
                 *end_counts.entry(events[batch_end - 1]).or_insert(0) += 1;
             }
         }
-
-        trace_idx += 1;
     }
 }
 

@@ -18,6 +18,7 @@ use std::collections::HashMap;
 /// - Bits 19-22: rework_ratio_q
 /// - Bits 23-25: circuit_state
 /// - Bits 26-29: cycle_phase
+#[allow(clippy::too_many_arguments)]
 pub fn encode_rl_state_key(health_level: u8, event_rate_q: u8, activity_count_q: u8,
                            spc_alert_level: u8, drift_status: u8, rework_ratio_q: u8,
                            circuit_state: u8, cycle_phase: u8) -> u64 {

@@ -1481,7 +1481,7 @@ checksum = "9b4f627cb1b25917193a259e49bdad08f671f8d9708acfd5fe0a8c1455d87220"
 
 [[package]]
 name = "pictl"
-version = "26.4.10"
+version = "26.4.16"
 dependencies = [
  "bcinr-core",
  "blake3",
@@ -1518,7 +1518,7 @@ dependencies = [
 
 [[package]]
 name = "pictl-algos"
-version = "26.4.10"
+version = "26.4.16"
 dependencies = [
  "criterion",
  "hashbrown 0.17.0",
@@ -1531,7 +1531,7 @@ dependencies = [
 
 [[package]]
 name = "pictl-types"
-version = "26.4.10"
+version = "26.4.16"
 dependencies = [
  "blake3",
  "chrono",

@@ -1,6 +1,6 @@
 [package]
 name = "pictl-algos"
-version = "26.4.10"
+version.workspace = true
 edition = "2021"
 license = "MIT OR Apache-2.0"
 description = "High-performance, branchless algorithm implementations for pictl process mining"

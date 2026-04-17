@@ -165,13 +165,13 @@ pub fn parse_iso8601_duration(first: &str, last: &str) -> f64 {
             return None;
         }
         // Strip trailing Z or +00:00 timezone
-        let s = if s.ends_with('Z') {
-            &s[..s.len() - 1]
+        let s = if let Some(stripped) = s.strip_suffix('Z') {
+            stripped
         } else if s.len() > 6 && s.chars().nth(s.len() - 3) == Some(':') && s.chars().nth(s.len() - 6) == Some('+') {
-            // +HH:MM offset — strip it
+            // +HH:MM offset — strip it (6 chars)
             &s[..s.len() - 6]
         } else if s.len() > 6 && s.chars().nth(s.len() - 3) == Some(':') && s.chars().nth(s.len() - 6) == Some('-') {
-            // -HH:MM offset — strip it
+            // -HH:MM offset — strip it (6 chars)
             &s[..s.len() - 6]
         } else {
             s
@@ -483,7 +483,7 @@ thread_local! {
         RefCell::new(spc_history::SpcHistory::new());
 
     /// MAPE-K action dispatch: remaining Scale boost calls for current action
-    pub static SCALE_BOOST_REMAINING: std::cell::Cell<u32> = std::cell::Cell::new(0);
+    pub static SCALE_BOOST_REMAINING: std::cell::Cell<u32> = const { std::cell::Cell::new(0) };
 
     /// MAPE-K action dispatch: last selected algorithm (for Fallback and comparison)
     pub static LAST_ALGORITHM: RefCell<String> = RefCell::new("dfg".to_string());
@@ -597,13 +597,13 @@ pub fn get_cache_stats() -> String {
 /// ```
 #[wasm_bindgen]
 pub fn set_drift_thresholds(low: f32, high: f32) -> Result<String, JsValue> {
-    if low < 0.0 || low > 1.0 {
+    if !(0.0..=1.0).contains(&low) {
         return Err(JsValue::from_str(&format!(
             "Invalid low threshold {}: must be in [0.0, 1.0]",
             low
         )));
     }
-    if high < 0.0 || high > 1.0 {
+    if !(0.0..=1.0).contains(&high) {
         return Err(JsValue::from_str(&format!(
             "Invalid high threshold {}: must be in [0.0, 1.0]",
             high
@@ -850,7 +850,7 @@ pub fn autonomic_execute_cycle(
     })?;
     // perception_result is serde_json::Value (with_object unwraps both layers)
 
-    let perception_ns = 0; // Included in overall timing
+    let _perception_ns = 0; // Included in overall timing
 
     // -----------------------------------------------------------------------
     // Pattern Analysis: Dynamic pattern selection based on trace structure
@@ -1760,6 +1760,7 @@ impl reinforcement::WorkflowAction for RlAction {
 ///
 /// * `RlState` - WASM-exported state object
 #[wasm_bindgen]
+#[allow(clippy::too_many_arguments)]
 pub fn create_rl_state(
     health_level: u8,
     event_rate_q: u8,

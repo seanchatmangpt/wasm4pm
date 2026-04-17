@@ -28,6 +28,12 @@ pub struct RingBuffer<T, const N: usize> {
     buffer: VecDeque<T>,
 }
 
+impl<T: Clone, const N: usize> Default for RingBuffer<T, N> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<T: Clone, const N: usize> RingBuffer<T, N> {
     /// Create a new empty ring buffer with capacity N.
     ///

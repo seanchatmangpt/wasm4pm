@@ -1,6 +1,6 @@
 {
   "name": "@pictl/agents",
-  "version": "26.4.10",
+  "version": "26.4.16",
   "description": "Van der Aalst process mining agents — autonomous adversarial validation",
   "type": "module",
   "main": "./dist/index.js",
