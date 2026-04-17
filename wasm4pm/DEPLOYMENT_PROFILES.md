@@ -6,11 +6,11 @@ wasm4pm supports 5 deployment profiles to optimize WASM binary size for differen
 
 | Profile     | Target Size | Use Case                      | Key Features                           |
 | ----------- | ----------- | ----------------------------- | -------------------------------------- |
-| **mobile** | ~500KB      | Mobile apps, minimal web      | Basic discovery, SIMD acceleration     |
-| **edge**    | ~1.5MB      | Edge servers, CDN workers     | Advanced algorithms, ML, streaming     |
-| **fog**     | ~2.0MB      | Fog computing, IoT gateways   | Swarm algorithms, full streaming, OCEL |
-| **iot**     | ~1.0MB      | IoT devices, embedded systems | Minimal discovery, streaming DFG       |
-| **browser**   | ~2.78MB     | Cloud servers, web apps       | Full feature set (default for npm)     |
+| **mobile** | ~1.8MB      | Mobile apps, minimal web      | Basic discovery, SIMD acceleration     |
+| **edge**    | ~2.1MB      | Edge servers, CDN workers     | Advanced algorithms, ML, streaming     |
+| **fog**     | ~2.4MB      | Fog computing, IoT gateways   | Swarm algorithms, full streaming, OCEL |
+| **iot**     | ~1.9MB      | IoT devices, embedded systems | Minimal discovery, streaming DFG       |
+| **browser**   | **2.7MB** (measured)   | Cloud servers, web apps       | Full feature set (default for npm)     |
 
 ## Profile Details
 
