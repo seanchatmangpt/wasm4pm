@@ -5,7 +5,7 @@
  */
 
 import { PlanStepType, type PlanStep } from '@pictl/planner';
-import { getRegistry } from './registry';
+import { getRegistry } from './registry.js';
 
 /**
  * WASM module interface - defines all discoverable WASM functions
