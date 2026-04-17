@@ -5,6 +5,8 @@ use rustc_hash::FxHashMap;
 use serde_json::json;
 use std::collections::HashSet;
 use wasm_bindgen::prelude::*;
+use rand::{Rng, SeedableRng};
+use rand::rngs::StdRng;
 
 type EdgeSet = HashSet<(u32, u32)>;
 
@@ -52,11 +54,14 @@ pub fn discover_genetic_algorithm(
                 // Collect vocab before closure ends
                 let vocab: Vec<String> = col.vocab.iter().map(|s| s.to_string()).collect();
 
+                // Deterministic RNG: seeded for reproducibility
+                let mut rng = StdRng::seed_from_u64(42);
+
                 // Initialize population with random edge sets
                 let mut population: Vec<(EdgeSet, f64)> = Vec::new();
 
                 for _ in 0..population_size {
-                    let edge_set = create_random_edge_set(&edge_vocab, 0.7);
+                    let edge_set = create_random_edge_set_seeded(&edge_vocab, 0.7, &mut rng);
                     let fitness = evaluate_edges_fitness(&edge_set, &col);
                     population.push((edge_set, fitness));
                 }
@@ -73,11 +78,11 @@ pub fn discover_genetic_algorithm(
 
                     // Generate offspring through crossover and mutation
                     while new_population.len() < population_size {
-                        let parent1 = population[rand_select(&population)].0.clone();
-                        let parent2 = population[rand_select(&population)].0.clone();
+                        let parent1 = population[rand_select_seeded(&population, &mut rng)].0.clone();
+                        let parent2 = population[rand_select_seeded(&population, &mut rng)].0.clone();
 
-                        let mut child = crossover_edges(&parent1, &parent2);
-                        mutate_edges(&mut child, 0.1, &edge_vocab);
+                        let mut child = crossover_edges_seeded(&parent1, &parent2, &mut rng);
+                        mutate_edges_seeded(&mut child, 0.1, &edge_vocab, &mut rng);
 
                         let fitness = evaluate_edges_fitness(&child, &col);
                         new_population.push((child, fitness));
@@ -377,6 +382,82 @@ fn rand_select<T>(items: &[(T, f64)]) -> usize {
         }
     }
     (fastrand::f64() * n as f64) as usize % n
+}
+
+// Seeded variants for determinism
+
+fn create_random_edge_set_seeded(edge_vocab: &[(u32, u32)], inclusion_probability: f64, rng: &mut StdRng) -> EdgeSet {
+    let mut edge_set: EdgeSet = HashSet::new();
+    for &edge in edge_vocab {
+        if rng.gen::<f64>() < inclusion_probability {
+            edge_set.insert(edge);
+        }
+    }
+    edge_set
+}
+
+fn crossover_edges_seeded(parent1: &EdgeSet, parent2: &EdgeSet, rng: &mut StdRng) -> EdgeSet {
+    let mut child: EdgeSet = HashSet::new();
+    let p1_edges: Vec<_> = parent1.iter().copied().collect();
+    let p2_edges: Vec<_> = parent2.iter().copied().collect();
+
+    for &edge in &p1_edges {
+        if rng.gen::<f64>() < 0.5 {
+            child.insert(edge);
+        }
+    }
+
+    for &edge in &p2_edges {
+        if rng.gen::<f64>() < 0.5 {
+            child.insert(edge);
+        }
+    }
+
+    child
+}
+
+fn mutate_edges_seeded(edge_set: &mut EdgeSet, mutation_rate: f64, edge_vocab: &[(u32, u32)], rng: &mut StdRng) {
+    if rng.gen::<f64>() < mutation_rate {
+        if !edge_set.is_empty() && rng.gen::<f64>() < 0.5 {
+            if let Some(&edge) = edge_set.iter().next() {
+                edge_set.remove(&edge);
+            }
+        } else if !edge_vocab.is_empty() {
+            let idx = (rng.gen::<f64>() * edge_vocab.len() as f64) as usize;
+            edge_set.insert(edge_vocab[idx]);
+        }
+    }
+}
+
+fn rand_select_seeded<T>(items: &[(T, f64)], rng: &mut StdRng) -> usize {
+    let n = items.len();
+    debug_assert!(n > 0, "rand_select_seeded called with empty slice");
+
+    if n <= 50 {
+        let total: f64 = items.iter().map(|(_, f)| f.max(0.0)).sum();
+        if total > 0.0 {
+            let mut threshold = rng.gen::<f64>() * total;
+            for (i, (_, fitness)) in items.iter().enumerate() {
+                threshold -= fitness.max(0.0);
+                if threshold <= 0.0 {
+                    return i;
+                }
+            }
+        }
+        return (rng.gen::<f64>() * n as f64) as usize % n;
+    }
+
+    let total: f64 = items.iter().map(|(_, f)| f.max(0.0)).sum();
+    if total > 0.0 {
+        let mut threshold = rng.gen::<f64>() * total;
+        for (i, (_, fitness)) in items.iter().enumerate() {
+            threshold -= fitness.max(0.0);
+            if threshold <= 0.0 {
+                return i;
+            }
+        }
+    }
+    (rng.gen::<f64>() * n as f64) as usize % n
 }
 
 // ---------------------------------------------------------------------------
