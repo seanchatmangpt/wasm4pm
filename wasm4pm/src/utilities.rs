@@ -41,6 +41,33 @@ pub fn to_js_str<T: serde::Serialize>(val: &T) -> Result<JsValue, JsValue> {
         .map_err(|e| JsValue::from_str(&e.to_string()))
 }
 
+/// Structured error: invalid handle (replaces ad-hoc JsValue::from_str("EventLog not found"))
+#[inline]
+pub fn wasm_invalid_handle(handle: &str) -> JsValue {
+    crate::error::wasm_err(
+        crate::error::codes::INVALID_HANDLE,
+        format!("No object at handle '{handle}'"),
+    )
+}
+
+/// Structured error: wrong object type (replaces ad-hoc JsValue::from_str("Object is not an EventLog"))
+#[inline]
+pub fn wasm_not_eventlog(handle: &str) -> JsValue {
+    crate::error::wasm_err(
+        crate::error::codes::INVALID_INPUT,
+        format!("Object at '{handle}' is not an EventLog"),
+    )
+}
+
+/// Structured error: object is not the expected type (generic variant)
+#[inline]
+pub fn wasm_wrong_type(handle: &str, expected: &str) -> JsValue {
+    crate::error::wasm_err(
+        crate::error::codes::INVALID_INPUT,
+        format!("Object at '{handle}' is not a {expected}"),
+    )
+}
+
 /// Get trace count from EventLog
 #[wasm_bindgen]
 pub fn get_trace_count(eventlog_handle: &str) -> Result<usize, JsValue> {

@@ -11,6 +11,7 @@ pub mod alpha;
 pub mod heuristic;
 pub mod streaming;
 pub mod conformance;
+pub mod columnar;
 
 pub use pictl_types;
 
