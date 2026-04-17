@@ -355,20 +355,18 @@ Call `pm.streaming_dfg_flush_open(handle)` to close all open traces and drive `o
 
 ---
 
-### How to discover advanced algorithms (Genetic, ILP, Ant Colony)
+### How to discover high-quality algorithms (Genetic, Ant Colony)
 
-Goal: use high-quality optimization algorithms for best-effort discovery.
+Goal: use optimization algorithms for high-quality discovery on large logs (1M+ events).
+
+**Note:** ILP times out on logs >500K events. Use Genetic (485ms, 0.82 fitness) for best quality at scale.
 
 ```javascript
-// Genetic Algorithm (40-200ms, high quality)
+// Genetic Algorithm — best quality, works at scale (485ms for 1M events)
 const netGA = pm.discover_genetic_algorithm(logHandle, 50, 100);
 // 50 generations, population 100
 
-// ILP Optimization (20-100ms, provably optimal with timeout)
-const netILP = pm.discover_ilp_petri_net(logHandle, 30000);
-// 30 second timeout
-
-// Ant Colony Optimization (exploration-exploitation balance)
+// Ant Colony Optimization — exploration-exploitation balance
 const netACO = pm.discover_ant_colony(logHandle, 100, 0.9);
 // 100 iterations, 0.9 evaporation rate
 ```
