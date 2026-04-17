@@ -6,13 +6,13 @@ A Criterion-based benchmark suite for the `pictl` process mining engine, organiz
 
 ```bash
 # From pictl/ workspace root
-cargo bench --bench closed_claw --features cloud
+cargo bench --bench closed_claw --features browser
 
 # Single pipeline
 cargo bench --bench closed_claw -- "closed_claw/A_discovery"
 
 # Full feature set
-cargo bench --bench closed_claw --features cloud,conformance_full,conformance_basic,ocel,streaming_basic,ml,discovery_advanced
+cargo bench --bench closed_claw --features browser,conformance_full,conformance_basic,ocel,streaming_basic,ml,discovery_advanced
 ```
 
 ## Pipeline Classes
@@ -100,7 +100,7 @@ All benchmarks use deterministic LCG RNG (Linear Congruential Generator) with fi
 
 | Flag | Enables |
 |------|---------|
-| `cloud` | All feature-gated modules including streaming, ML, conformance |
+| `browser` | All feature-gated modules including streaming, ML, conformance |
 | `conformance_full` | Full conformance checking suite |
 | `conformance_basic` | Basic conformance (token replay) |
 | `ocel` | Object-centric event log support |

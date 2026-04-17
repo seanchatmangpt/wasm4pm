@@ -10,11 +10,11 @@ Practical guide to optimizing pictl WASM binaries for specific deployment profil
 
 ## Quick Start
 
-### For Browsers (500KB target)
+### For Mobile (500KB target)
 
 ```bash
 cd wasm4pm
-npm run build:browser
+npm run build:mobile
 ls -lh pkg/wasm4pm_bg.wasm
 # Expected: ~500KB
 ```
@@ -28,13 +28,13 @@ ls -lh pkg/wasm4pm_bg.wasm
 # Expected: ~1.5MB
 ```
 
-### For Cloud/Development (full features)
+### For Browser/Development (full features)
 
 ```bash
 cd wasm4pm
 npm run build
-# or: npm run build:cloud
-# Expected: ~2.78MB
+# or: npm run build:browser
+# Expected: ~2.7MB
 ```
 
 ---
@@ -45,17 +45,17 @@ Each profile is a Cargo feature set that includes/excludes algorithms, dependenc
 
 | Profile | Size | Use Case | Key Constraint | Features |
 |---------|------|----------|---|---|
-| **browser** | 500KB | Web browsers, mobile web | Limited bandwidth, mobile RAM | Basic discovery, SIMD |
+| **mobile** | 500KB | Web browsers, mobile web | Limited bandwidth, mobile RAM | Basic discovery, SIMD |
 | **edge** | 1.5MB | Edge servers, CDN workers | Moderate latency budget | Advanced algorithms, ML |
 | **fog** | 2.0MB | Regional aggregation, IoT gateways | Good memory availability | Swarm algorithms, full streaming |
 | **iot** | 1.0MB | Embedded systems, battery-powered | Severe resource constraints | Minimal discovery, streaming DFG |
-| **cloud** | 2.78MB | Data centers, unlimited resources | None | Everything (default) |
+| **browser** | 2.7MB | Data centers, unlimited resources | None | Everything (default) |
 
 ---
 
 ## Profile Details & Trade-offs
 
-### Browser Profile (~500KB)
+### Mobile Profile (~500KB)
 
 **When to use:**
 - Web-based SPA (React, Vue, Angular)
@@ -94,7 +94,7 @@ Each profile is a Cargo feature set that includes/excludes algorithms, dependenc
 
 **Build command:**
 ```bash
-npm run build:browser
+npm run build:mobile
 ```
 
 **Size verification:**
@@ -108,7 +108,7 @@ gzip -c pkg/wasm4pm_bg.wasm | wc -c
 **Production example:**
 ```typescript
 // In your web app
-import init, { discover } from '@pictl/wasm4pm-browser';
+import init, { discover } from '@pictl/wasm4pm-mobile';
 
 await init();
 const result = discover({
@@ -360,7 +360,7 @@ const result = discover({
 });
 ```
 
-### Cloud Profile (~2.78MB - Default)
+### Browser Profile (~2.7MB - Default)
 
 **When to use:**
 - Development and testing
@@ -386,7 +386,7 @@ const result = discover({
 **Build command:**
 ```bash
 npm run build       # Default
-npm run build:cloud # Explicit
+npm run build:browser # Explicit
 ```
 
 ---
@@ -492,7 +492,7 @@ panic = "abort"
 
 Which algorithms are available in each profile:
 
-| Algorithm | browser | edge | fog | iot | cloud |
+| Algorithm | mobile | edge | fog | iot | browser |
 |-----------|---------|------|-----|-----|-------|
 | dfg | ✅ | ✅ | ✅ | ✅ | ✅ |
 | process_skeleton | ✅ | ✅ | ✅ | ✅ | ✅ |
@@ -519,7 +519,7 @@ Which algorithms are available in each profile:
 ### Size Benchmark
 
 ```bash
-npm run build:browser
+npm run build:mobile
 
 # Uncompressed size
 ls -lh pkg/wasm4pm_bg.wasm
@@ -530,7 +530,7 @@ gzip -c pkg/wasm4pm_bg.wasm | wc -c
 # Expected: 130-150 KB
 
 # Size comparison across profiles
-npm run build:all-profiles
+npm run build:profiles
 du -h pkg/wasm4pm_bg.wasm.* | sort -h
 ```
 
@@ -562,12 +562,12 @@ console.log(`Peak memory delta: ${(after - before) / 1024 / 1024}MB`);
 Track metrics before and after optimization:
 
 ```bash
-# Build baseline (cloud)
+# Build baseline (browser)
 npm run build
 BASELINE_SIZE=$(stat -f%z pkg/wasm4pm_bg.wasm)
 
-# Build optimized (browser)
-npm run build:browser
+# Build optimized (mobile)
+npm run build:mobile
 OPTIMIZED_SIZE=$(stat -f%z pkg/wasm4pm_bg.wasm)
 
 # Calculate reduction
@@ -577,9 +577,9 @@ echo "Size reduction: $REDUCTION%"
 
 **Expected results:**
 ```
-cloud → browser: -82% size, -20% perf
-cloud → edge: -46% size, +5% perf
-cloud → iot: -64% size, -40% perf
+browser → mobile: -82% size, -20% perf
+browser → edge: -46% size, +5% perf
+browser → iot: -64% size, -40% perf
 ```
 
 ---
@@ -588,11 +588,11 @@ cloud → iot: -64% size, -40% perf
 
 ### Binary Too Large
 
-**Problem:** Browser profile is 600KB instead of 500KB
+**Problem:** Mobile profile is 600KB instead of 500KB
 
 **Diagnosis:**
 ```bash
-npm run build:browser
+npm run build:mobile
 wasm-opt -O4 pkg/wasm4pm_bg.wasm -o pkg/wasm4pm_bg_opt.wasm
 ls -lh pkg/wasm4pm_bg*.wasm
 ```
@@ -603,18 +603,18 @@ ls -lh pkg/wasm4pm_bg*.wasm
    ```bash
    grep "features" Cargo.toml | grep -v '#'
    ```
-   Ensure `browser` feature only includes `["basic", "simd", "hand_rolled_stats"]`
+   Ensure `mobile` feature only includes `["basic", "simd", "hand_rolled_stats"]`
 
 2. **Rebuild without incremental:**
    ```bash
    cargo clean
-   npm run build:browser
+   npm run build:mobile
    ```
 
 3. **Use wasm-opt:**
    ```bash
    npm install --save-dev wasm-opt
-   npm run build:browser
+   npm run build:mobile
    wasm-opt -O4 pkg/wasm4pm_bg.wasm -o pkg/wasm4pm_bg_opt.wasm
    # Use pkg/wasm4pm_bg_opt.wasm
    ```
@@ -707,17 +707,17 @@ edge = ["basic", "advanced", "ml", "streaming_basic", "statrs"]  # Add statrs
 
 ## Deployment Examples
 
-### Web App (Browser Profile)
+### Web App (Mobile Profile)
 
 ```bash
 # Build
-npm run build:browser
+npm run build:mobile
 
 # Install in your web app
 npm install ./pkg
 
 # Use in React
-import init, { discover } from '@pictl/wasm4pm-browser';
+import init, { discover } from '@pictl/wasm4pm-mobile';
 
 useEffect(async () => {
   await init();
@@ -733,7 +733,7 @@ async function analyzeLog() {
 ```
 
 **Bundle size:**
-- WASM: 500KB → 130KB gzipped
+- WASM: ~500KB → ~130KB gzipped
 - Total bundle: +130KB to your app
 
 ### Edge Worker (Edge Profile)
@@ -781,11 +781,11 @@ Expected sizes by profile (uncompressed WASM binary):
 
 | Profile | Target | Typical | Gzipped | With deps |
 |---------|--------|---------|---------|-----------|
-| browser | 500KB | 480KB | 140KB | 180KB |
+| mobile | 500KB | 480KB | 140KB | 180KB |
 | iot | 1.0MB | 980KB | 280KB | 350KB |
 | edge | 1.5MB | 1.45MB | 420KB | 520KB |
 | fog | 2.0MB | 1.95MB | 580KB | 700KB |
-| cloud | 2.78MB | 2.75MB | 820KB | 980KB |
+| browser | 2.7MB | 2.697MB | 820KB | 980KB |
 
 *(Gzipped = single file. With deps = including @pictl module dependencies.)*
 
@@ -822,9 +822,9 @@ ml-only = ["ml", "hand_rolled_stats", "simd"]
 
 | Goal | Technique | Profile | Trade-off |
 |------|-----------|---------|-----------|
-| Smallest binary | `npm run build:browser` | browser | Limited algorithms |
+| Smallest binary | `npm run build:mobile` | mobile | Limited algorithms |
 | Balanced | `npm run build:edge` | edge | No swarm/POWL |
-| Best quality | `npm run build:cloud` | cloud | Large binary |
+| Best quality | `npm run build:browser` | browser | Large binary |
 | Real-time | `npm run build:iot` + streaming | iot | Basic algorithms only |
 | ML focus | Custom `ml-only` | edge | No discovery algorithms |
 

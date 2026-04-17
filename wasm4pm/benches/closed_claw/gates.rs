@@ -525,8 +525,8 @@ mod tests {
     fn test_g4_synchrony_pass() {
         let hash = blake3_hash_str("same output");
         let mut profiles = BTreeMap::new();
-        profiles.insert("cloud".to_string(), hash.clone());
         profiles.insert("browser".to_string(), hash.clone());
+        profiles.insert("mobile".to_string(), hash.clone());
         profiles.insert("edge".to_string(), hash.clone());
         let result = check_synchrony_gate(&profiles);
         assert!(result.passed);
@@ -535,8 +535,8 @@ mod tests {
     #[test]
     fn test_g4_synchrony_fail() {
         let mut profiles = BTreeMap::new();
-        profiles.insert("cloud".to_string(), blake3_hash_str("cloud output"));
         profiles.insert("browser".to_string(), blake3_hash_str("browser output"));
+        profiles.insert("mobile".to_string(), blake3_hash_str("mobile output"));
         let result = check_synchrony_gate(&profiles);
         assert!(!result.passed);
         assert!(result.reason.contains("mismatched"));
@@ -545,7 +545,7 @@ mod tests {
     #[test]
     fn test_g4_synchrony_single_profile_skips() {
         let mut profiles = BTreeMap::new();
-        profiles.insert("cloud".to_string(), blake3_hash_str("only one"));
+        profiles.insert("browser".to_string(), blake3_hash_str("only one"));
         let result = check_synchrony_gate(&profiles);
         assert!(result.passed);
         assert!(result.reason.contains("SKIPPED"));
@@ -592,8 +592,8 @@ mod tests {
             pipeline_class: "discovery".to_string(),
         };
         let mut profiles = BTreeMap::new();
-        profiles.insert("cloud".to_string(), hash.clone());
         profiles.insert("browser".to_string(), hash.clone());
+        profiles.insert("mobile".to_string(), hash.clone());
         let mut report = BTreeMap::new();
         for section in REQUIRED_REPORT_SECTIONS {
             report.insert(section.to_string(), "value".to_string());

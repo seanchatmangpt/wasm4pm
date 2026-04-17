@@ -315,10 +315,10 @@ pictl uses **12 canonical feature flags** that map to **5 deployment profiles**.
 
 | Profile | Target | Size Target | Features | Algorithms |
 |---------|--------|-------------|----------|-----------|
-| `mobile` | Mobile devices | ~1.8MB | basic discovery, conformance | ~10-15 |
-| `iot` | IoT devices, embedded | ~1.9MB | basic discovery, conformance | ~12-18 |
-| `edge` | CDN workers, edge servers | ~2.1MB | adv. discovery, basic streaming | ~18-25 |
-| `fog` | Fog computing, gateways | ~2.4MB | all except POWL, full streaming, ML | ~35-40 |
+| `mobile` | Mobile devices | ~500KB | basic discovery, conformance | ~10-15 |
+| `iot` | IoT devices, embedded | ~1MB | basic discovery, conformance | ~12-18 |
+| `edge` | CDN workers, edge servers | ~1.5MB | adv. discovery, basic streaming | ~18-25 |
+| `fog` | Fog computing, gateways | ~2MB | all except POWL, full streaming, ML | ~35-40 |
 | `browser` | Web browsers (DEFAULT) | **2.7MB** (measured) | all 41 algorithms, all features | 41 |
 
 ### Build Commands by Profile
@@ -342,7 +342,7 @@ npm run build:edge
 cargo build --release --target wasm32-unknown-unknown --features fog
 npm run build:fog
 
-# Browser profile (~2.78MB, baseline, all features, DEFAULT)
+# Browser profile (~2.7MB, baseline, all features, DEFAULT)
 cargo build --release --target wasm32-unknown-unknown --all-features
 npm run build  # or npm run build:browser
 

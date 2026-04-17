@@ -18,11 +18,11 @@ NC='\033[0m' # No Color
 
 # Size targets in KB (1 KB = 1024 bytes)
 declare -A SIZE_TARGETS=(
-  [browser]=512
+  [mobile]=512
   [iot]=1024
   [edge]=1536
   [fog]=2048
-  [cloud]=2850
+  [browser]=2850
 )
 
 # Array to track results
@@ -59,7 +59,7 @@ count_algorithms() {
   local count=0
 
   case "$profile" in
-    browser)
+    mobile)
       # dfg + skeleton + heuristic + alpha_plus_plus + inductive (basic discovery)
       count=10
       ;;
@@ -75,7 +75,7 @@ count_algorithms() {
       # all except powl
       count=35
       ;;
-    cloud)
+    browser)
       # all 41 algorithms
       count=41
       ;;
@@ -85,7 +85,7 @@ count_algorithms() {
 }
 
 # Measurement for each profile
-for profile in browser iot edge fog cloud; do
+for profile in mobile iot edge fog browser; do
   echo "Measuring profile: $profile"
 
   # Check if built
@@ -120,14 +120,14 @@ echo "╚═══════════════════════�
 echo ""
 
 # Calculate reduction percentages
-if [ -n "${RESULTS[cloud]:-}" ] && [ "${RESULTS[cloud]}" -gt 0 ]; then
-  cloud_size=${RESULTS[cloud]}
+if [ -n "${RESULTS[browser]:-}" ] && [ "${RESULTS[browser]}" -gt 0 ]; then
+  browser_size=${RESULTS[browser]}
 
-  for profile in browser iot edge fog; do
+  for profile in mobile iot edge fog; do
     if [ -n "${RESULTS[$profile]:-}" ]; then
       size=${RESULTS[$profile]}
-      reduction=$((100 - (size * 100 / cloud_size)))
-      printf "  %-8s: %6d KB (-%2d%% vs cloud)\n" "$profile" "$size" "$reduction"
+      reduction=$((100 - (size * 100 / browser_size)))
+      printf "  %-8s: %6d KB (-%2d%% vs browser)\n" "$profile" "$size" "$reduction"
     fi
   done
 fi
@@ -140,7 +140,7 @@ echo ""
 
 # Summary
 all_pass=true
-for profile in browser iot edge fog cloud; do
+for profile in mobile iot edge fog browser; do
   if [ "${STATUS[$profile]:-MISSING}" != "PASS" ]; then
     all_pass=false
   fi

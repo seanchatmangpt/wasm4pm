@@ -9,18 +9,18 @@
 
 ## Executive Summary
 
-This thesis presents a comprehensive empirical and theoretical analysis of process mining algorithm performance across five heterogeneous deployment architectures (browser, IoT, edge, fog, cloud). Through systematic benchmarking of 41 discovery, conformance, and machine learning algorithms, we establish latency-quality-size trade-off curves and derive deployment recommendations based on real-world constraints.
+This thesis presents a comprehensive empirical and theoretical analysis of process mining algorithm performance across five heterogeneous deployment architectures (mobile, IoT, edge, fog, browser). Through systematic benchmarking of 41 discovery, conformance, and machine learning algorithms, we establish latency-quality-size trade-off curves and derive deployment recommendations based on real-world constraints.
 
 **Key Contributions:**
 1. Comprehensive latency profiling (8 algorithm families, 41 algorithms, 3 quality tiers)
-2. Throughput analysis across deployment profiles (500KB–2.78MB WASM binaries)
+2. Throughput analysis across deployment profiles (500KB–2.7MB WASM binaries)
 3. Deterministic hashing verification for cryptographic integrity
 4. Health state machine validation for fault tolerance
 5. Feature gating architecture enabling compile-time algorithm inclusion/exclusion
 
 **Main Findings:**
 - Sub-millisecond DFG discovery (1.19ms for 118.9M events/sec) vs. 485.91ms genetic algorithms
-- 82% binary size reduction (2.78MB → 500KB) with browser profile achieves sub-ms DFG latency
+- 82% binary size reduction (2.7MB → 500KB) with mobile profile achieves sub-ms DFG latency
 - Fitness-latency Pareto frontier at inductive miner (55ms, 0.55 quality score)
 - Zero-copy ModelIR conversions enable online switching between algorithm families
 - 7-rule backend selection algorithm achieves health-aware dispatch with <1ms overhead
@@ -183,11 +183,11 @@ Our health state machine (5 levels: normal, warning, degraded, critical, failed)
 
 | Profile | Target | Size | Features | Algorithms |
 |---------|--------|------|----------|-----------|
-| **browser** | Web browsers, mobile | ~500KB | DFG, skeleton, basic conformance | 12 |
+| **mobile** | Mobile web, minimal | ~500KB | DFG, skeleton, basic conformance | 12 |
 | **iot** | IoT devices, embedded | ~1MB | + heuristic, alpha | 18 |
 | **edge** | CDN workers, edge servers | ~1.5MB | + inductive, streaming | 25 |
 | **fog** | IoT gateways, fog nodes | ~2MB | + genetic, ACO, ML | 40 |
-| **cloud** | Cloud servers (default) | ~2.78MB | All 41 algorithms, all features | 41 |
+| **browser** | Cloud servers (default) | ~2.7MB | All 41 algorithms, all features | 41 |
 
 ### 3.4 Feature Flags
 
@@ -195,16 +195,16 @@ Our health state machine (5 levels: normal, warning, degraded, critical, failed)
 
 ```
 feature-conformance-basic      ✓ all profiles
-feature-conformance-full       ✗ browser, iot; ✓ edge, fog, cloud
-feature-discovery-advanced     ✗ browser, iot; ✓ edge, fog, cloud
-feature-ml                     ✗ browser, iot; ✓ edge, fog, cloud
-feature-ocel                   ✗ browser, iot; ✓ edge, fog, cloud
-feature-powl                   ✗ browser–fog; ✓ cloud
-feature-streaming-basic        ✓ edge, fog, cloud
-feature-streaming-full         ✗ browser, iot, edge; ✓ fog, cloud
+feature-conformance-full       ✗ mobile, iot; ✓ edge, fog, browser
+feature-discovery-advanced     ✗ mobile, iot; ✓ edge, fog, browser
+feature-ml                     ✗ mobile, iot; ✓ edge, fog, browser
+feature-ocel                   ✗ mobile, iot; ✓ edge, fog, browser
+feature-powl                   ✗ mobile–fog; ✓ browser
+feature-streaming-basic        ✓ edge, fog, browser
+feature-streaming-full         ✗ mobile, iot, edge; ✓ fog, browser
 feature-gpu                    ✗ (WASM-incompatible)
-feature-hand-rolled-stats      ✓ browser, iot (size optimization)
-feature-statrs                 ✗ browser, iot; ✓ edge, fog, cloud
+feature-hand-rolled-stats      ✓ mobile, iot (size optimization)
+feature-statrs                 ✗ mobile, iot; ✓ edge, fog, browser
 feature-rayon                  ✗ (WASM-incompatible)
 ```
 
@@ -442,11 +442,11 @@ Quality (Fitness Score)
 
 | Profile | Size | DFG (M/s) | Alpha+ (M/s) | Genetic (M/s) |
 |---------|------|----------|------------|--------------|
-| browser | 500KB | 118.9 | — | — |
+| mobile | 500KB | 118.9 | — | — |
 | iot | 1MB | 118.9 | 19.1 | — |
 | edge | 1.5MB | 118.9 | 19.1 | 2.6 |
 | fog | 2MB | 118.9 | 19.1 | 2.6 |
-| cloud | 2.78MB | 118.9 | 19.1 | 2.6 |
+| browser | 2.7MB | 118.9 | 19.1 | 2.6 |
 
 **Key insight:** Feature gating (algorithm inclusion/exclusion) doesn't affect throughput of included algorithms. Compiled-out algorithms have zero runtime cost.
 
@@ -516,11 +516,11 @@ Quality (Fitness Score)
 
 | Profile | Size (KB) | Reduction | Algorithms | Discovery | Conformance | ML |
 |---------|----------|----------|-----------|-----------|------------|-----|
-| browser | 512 | 82% | 12 | 3 (DFG, skeleton, streaming) | Basic | — |
+| mobile | 512 | 82% | 12 | 3 (DFG, skeleton, streaming) | Basic | — |
 | iot | 1,024 | 64% | 18 | +Alpha+, Heuristic | Basic | — |
 | edge | 1,536 | 46% | 25 | +Inductive, Declare | Full | — |
 | fog | 2,048 | 28% | 40 | +Genetic, ACO, PSO | Full | Yes (all 6) |
-| cloud | 2,784 | 0% | 41 | All | Full | All |
+| browser | 2,697 | 0% | 41 | All | Full | All |
 
 ### 7.2 Profile Latency Comparison
 
@@ -528,33 +528,33 @@ Quality (Fitness Score)
 
 | Profile | DFG Latency | SIMD Latency | Why |
 |---------|------------|-------------|-----|
-| browser | 89ms | 71ms | DFG/SIMD vectorization included in all |
+| mobile | 89ms | 71ms | DFG/SIMD vectorization included in all |
 | iot | 89ms | 71ms | Same bytecode path |
 | edge | 89ms | 71ms | (DFG included in all profiles) |
 | fog | 89ms | 71ms | (SIMD included at edge+ tier) |
-| cloud | 89ms | 71ms | Baseline |
+| browser | 89ms | 71ms | Baseline |
 
 **Scenario 2: Genetic Algorithm (BPI 2020 standard mode)**
 
 | Profile | Supported? | Latency | Quality |
 |---------|-----------|---------|---------|
-| browser | ❌ | — | — |
+| mobile | ❌ | — | — |
 | iot | ❌ | — | — |
 | edge | ❌ | — | — |
 | fog | ✓ | 256–485ms | 0.82–0.87 |
-| cloud | ✓ | 256–485ms | 0.82–0.87 |
+| browser | ✓ | 256–485ms | 0.82–0.87 |
 
 **Key insight:** 
 - Algorithm latency **independent of profile** (same compiled bytecode path for included algorithms)
 - Profile choice **driven by algorithm availability** (which algorithms included) and **memory budget** (WASM module size), not latency
-- Browser profile (500KB) achieves same DFG latency (89ms) as cloud (2.78MB)
+- Mobile profile (500KB) achieves same DFG latency (89ms) as browser (2.7MB)
 - Trade-off: smaller binary → fewer algorithms, not faster execution
 
 ### 7.3 Memory Footprint Analysis
 
 | Operation | Memory (MB) | Notes |
 |-----------|-----------|-------|
-| WASM Module Load | 2.8 (cloud) | Varies by profile (0.5–2.8) |
+| WASM Module Load | 2.7 (browser) | Varies by profile (0.5–2.7) |
 | DFG Discovery (1M events) | 45 | Columnar state |
 | Alpha+ Discovery (1M events) | 52 | + causality matrix |
 | Genetic Algorithm (gen 100) | 65 | Population cache |
@@ -579,7 +579,7 @@ ELSE IF latency_budget < 500ms
 THEN fog profile
 
 ELSE
-  cloud profile
+  browser profile
 ```
 
 ---
@@ -726,14 +726,14 @@ ELSE
 | **CDN Edge (quality)** | <1M | <300ms | edge | Inductive | 121.9ms | 0.55 | Trade 2× latency for fitness improvement |
 | **Fog Gateway (warm cache)** | <5M | <500ms | fog | Genetic (std) | 256ms | 0.82 | Best latency/quality ratio for batch |
 | **Fog Gateway (quality)** | <5M | <1000ms | fog | Genetic (quality) | 485.91ms | 0.87 | 200ms extra for 5% fitness gain |
-| **Cloud Compliance** | Unlimited | <10s | cloud | ILP | >30s (timeout) | 0.92 | Use approximation (Genetic) for >500K |
-| **Cloud Research (small logs)** | <262K | <1min | cloud | ILP | 320ms | 0.92 | Solver practical for BPI 2012 size |
+| **Cloud Compliance** | Unlimited | <10s | browser | ILP | >30s (timeout) | 0.92 | Use approximation (Genetic) for >500K |
+| **Cloud Research (small logs)** | <262K | <1min | browser | ILP | 320ms | 0.92 | Solver practical for BPI 2012 size |
 
 **Real-world tuning parameters:**
-- **Mobile (browser):** DFG only, optimize for <10ms latency via log filtering
+- **Mobile (mobile):** DFG only, optimize for <10ms latency via log filtering
 - **IoT/Edge (iot/edge):** Heuristic for speed, Inductive for quality; both stay <150ms
 - **Fog (fog):** Genetic standard mode (256ms) optimal; saves 230ms vs. quality mode with only 5% fitness loss
-- **Cloud (cloud):** ILP solver for small logs (<262K); use Genetic (485ms) for larger logs to avoid timeout
+- **Browser (browser):** ILP solver for small logs (<262K); use Genetic (485ms) for larger logs to avoid timeout
 
 **Measured SLA achievement:**
 - 99th percentile DFG latency: <15ms (mobile-safe)
@@ -819,7 +819,7 @@ ILP (solver timeout 30s)| >30K  | >30K  | >30K  | >30K  | N/A (too large)
 ### A.2 Deployment Profile Algorithm Availability Matrix
 
 ```
-Algorithm               | browser | iot | edge | fog | cloud
+Algorithm               | mobile | iot | edge | fog | browser
 DFG                     | ✓       | ✓   | ✓    | ✓   | ✓
 Skeleton                | ✓       | ✓   | ✓    | ✓   | ✓
 SIMD DFG                | ✓       | ✓   | ✓    | ✓   | ✓

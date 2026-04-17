@@ -68,7 +68,7 @@ bench-rust:
 # ── Node.js WASM benchmarks ────────────────────────────────────────────────────
 bench-wasm:
 	@echo "Building WASM Node.js target..."
-	@cd $(PKG_DIR) && pnpm run build:nodejs --silent
+	@cd $(PKG_DIR) && pnpm run build:nodejs --quiet
 	@echo "Running WASM worker pool..."
 	@cd $(PKG_DIR) && node benchmarks/wasm_bench_runner.js
 

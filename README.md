@@ -471,7 +471,7 @@ wscat -c ws://localhost:3000/api/v1/stream
 # Install dependencies (pnpm workspace)
 pnpm install
 
-# Build all packages (default: cloud profile, full features)
+# Build all packages (default: browser profile, full features)
 pnpm build
 
 # Build with deployment profile
