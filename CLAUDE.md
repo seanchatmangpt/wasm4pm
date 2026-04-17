@@ -315,20 +315,20 @@ pictl uses **12 canonical feature flags** that map to **5 deployment profiles**.
 
 | Profile | Target | Size | Features | Algorithms |
 |---------|--------|------|----------|-----------|
-| `browser` | Web browsers, mobile | ~500KB | basic discovery, conformance | ~10-15 |
+| `mobile` | Mobile devices | ~500KB | basic discovery, conformance | ~10-15 |
 | `iot` | IoT devices, embedded | ~1MB | basic discovery, conformance | ~12-18 |
 | `edge` | CDN workers, edge servers | ~1.5MB | adv. discovery, basic streaming | ~18-25 |
 | `fog` | Fog computing, gateways | ~2MB | all except POWL, full streaming, ML | ~35-40 |
-| `cloud` | Cloud servers (DEFAULT) | ~2.78MB | all 41 algorithms, all features | ~41 |
+| `browser` | Web browsers (DEFAULT) | ~2.78MB | all 41 algorithms, all features | ~41 |
 
 ### Build Commands by Profile
 
 ```bash
 cd wasm4pm
 
-# Browser profile (~500KB, 82% reduction)
-cargo build --release --target wasm32-unknown-unknown --features browser
-npm run build:browser
+# Mobile profile (~500KB, 82% reduction)
+cargo build --release --target wasm32-unknown-unknown --features mobile
+npm run build:mobile
 
 # IoT profile (~1MB, 64% reduction)
 cargo build --release --target wasm32-unknown-unknown --features iot
@@ -342,9 +342,9 @@ npm run build:edge
 cargo build --release --target wasm32-unknown-unknown --features fog
 npm run build:fog
 
-# Cloud profile (~2.78MB, baseline)
+# Browser profile (~2.78MB, baseline, all features)
 cargo build --release --target wasm32-unknown-unknown --all-features
-npm run build:cloud
+npm run build:browser
 
 # Measure all sizes
 npm run measure-sizes

@@ -73,18 +73,18 @@ Use `serde_json::to_string()` + `JsValue::from_str()` instead. Affected files:
 
 | Profile | Size | Features | Use Case |
 |---------|------|----------|----------|
-| `browser` | ~500KB | Minimal, hand-rolled stats | Web pages, CDN |
+| `mobile` | ~500KB | Minimal, hand-rolled stats | Mobile devices |
 | `iot` | ~1MB | No GPU, basic discovery | IoT devices |
 | `edge` | ~1.5MB | CDN workers, streaming basic | Edge computing |
 | `fog` | ~2MB | IoT gateways, ML algorithms | Fog nodes |
-| `cloud` | ~2.78MB | Full features (default) | Servers, desktop |
+| `browser` | ~2.78MB | Full features (default) | Web browsers, servers |
 
 ```bash
-npm run build:browser   # ~500KB
+npm run build:mobile    # ~500KB
+npm run build:iot       # ~1MB
 npm run build:edge      # ~1.5MB
 npm run build:fog       # ~2MB
-npm run build:iot       # ~1MB
-npm run build           # ~2.78MB (default)
+npm run build:browser   # ~2.78MB (default, all features)
 ```
 
 ## Feature Flags (13 total)
