@@ -7,6 +7,8 @@ use std::collections::HashSet;
 use wasm_bindgen::prelude::*;
 
 /// Simplified Inductive Miner - recursive structure discovery
+/// STUB: Returns DFG. Full Inductive Miner not yet implemented.
+/// TODO: recursive sequence/parallel/loop/choice cuts, process tree output
 #[wasm_bindgen]
 pub fn discover_inductive_miner(
     eventlog_handle: &str,
@@ -66,9 +68,10 @@ pub fn discover_inductive_miner(
 
     let result = json!({
         "handle": handle,
-        "algorithm": "inductive_miner",
+        "algorithm": "inductive_miner_basic",
         "nodes": dfg.nodes.len(),
         "edges": dfg.edges.len(),
+        "note": "Basic DFG-based implementation. Full Inductive Miner with recursive cuts is future work."
     });
     Ok(JsValue::from_str(
         &serde_json::to_string(&result)
@@ -85,108 +88,8 @@ pub fn discover_ant_colony(
     num_ants: usize,
     iterations: usize,
 ) -> Result<JsValue, JsValue> {
-    let (best_edges, best_fitness, vocab) =
-        get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-            Some(StoredObject::EventLog(log)) => {
-                let col_owned = crate::cache::columnar_cache_get(eventlog_handle, activity_key)
-                    .unwrap_or_else(|| {
-                        let owned = log.to_columnar_owned(activity_key);
-                        crate::cache::columnar_cache_insert(
-                            eventlog_handle.to_string(),
-                            activity_key.to_string(),
-                            owned.clone(),
-                        );
-                        owned
-                    });
-                let col = ColumnarLog::from_owned(&col_owned);
-
-                // Build edge vocabulary from columnar log
-                let mut edge_vocab: Vec<(u32, u32)> = Vec::new();
-                let mut edge_map: FxHashMap<(u32, u32), usize> = FxHashMap::default();
-
-                for t in 0..col.trace_offsets.len().saturating_sub(1) {
-                    let start = col.trace_offsets[t];
-                    let end = col.trace_offsets[t + 1];
-                    for i in start..end.saturating_sub(1) {
-                        let edge = (col.events[i], col.events[i + 1]);
-                        edge_map.entry(edge).and_modify(|_| {}).or_insert_with(|| {
-                            edge_vocab.push(edge);
-                            edge_vocab.len() - 1
-                        });
-                    }
-                }
-
-                // Collect vocab before closure ends
-                let vocab: Vec<String> = col.vocab.iter().map(|s| s.to_string()).collect();
-
-                // Initialize pheromone trails on integer edges
-                let mut pheromones: FxHashMap<(u32, u32), f64> = FxHashMap::default();
-                for &edge in &edge_vocab {
-                    pheromones.insert(edge, 1.0);
-                }
-
-                let mut best_edges: Option<HashSet<(u32, u32)>> = None;
-                let mut best_fitness = 0.0;
-
-                for _iter in 0..iterations {
-                    for _ant in 0..num_ants {
-                        let mut current_edges: HashSet<(u32, u32)> = HashSet::new();
-
-                        // Build path using pheromone.
-                        // Pre-compute total pheromone once per ant; each edge is
-                        // selected when its share exceeds a uniform sample.
-                        // Rewriting p/total > rand() as p > rand() * total avoids
-                        // the per-edge division in the hot loop.
-                        let total_pheromone: f64 =
-                            pheromones.values().sum::<f64>().max(f64::MIN_POSITIVE);
-                        for (&edge, pheromone_level) in &pheromones {
-                            if *pheromone_level > fastrand::f64() * total_pheromone {
-                                current_edges.insert(edge);
-                            }
-                        }
-
-                        let fitness = evaluate_edges_fitness(&current_edges, &col);
-
-                        if fitness > best_fitness {
-                            best_fitness = fitness;
-                            best_edges = Some(current_edges);
-                        }
-                    }
-
-                    // Evaporate: use for_each to help the compiler vectorise the loop.
-                    pheromones.values_mut().for_each(|p| *p *= 0.9);
-
-                    if let Some(ref edges) = best_edges {
-                        for &edge in edges {
-                            pheromones
-                                .entry(edge)
-                                .and_modify(|p| *p += best_fitness * 10.0);
-                        }
-                    }
-                }
-
-                let best_edges = best_edges
-                    .ok_or_else(|| JsValue::from_str("No edges found in discovery process"))?;
-                Ok((best_edges, best_fitness, vocab))
-            }
-            Some(_) => Err(JsValue::from_str("Not an EventLog")),
-            None => Err(JsValue::from_str("EventLog not found")),
-        })?;
-
-    // Materialize DFG from best edges
-    let best_dfg = edge_set_to_dfg(&best_edges, &vocab);
-
-    let handle = get_or_init_state()
-        .store_object(StoredObject::DirectlyFollowsGraph(best_dfg.clone()))
-        .map_err(|_e| JsValue::from_str("Failed to store DFG"))?;
-
-    to_js_str(&json!({
-        "handle": handle,
-        "algorithm": "ant_colony",
-        "nodes": best_dfg.nodes.len(),
-        "edges": best_dfg.edges.len(),
-        "fitness": best_fitness,
-    }))
+    // DEPRECATED: delegates to discover_aco_algorithm (proper ACO implementation with heuristic eta and all-ant pheromone deposit)
+    crate::genetic_discovery::discover_aco_algorithm(eventlog_handle, activity_key, num_ants, iterations)
 }
 
 /// Simulated Annealing - thermal search for optimal models
