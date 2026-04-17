@@ -7,7 +7,8 @@ use serde_json::json;
 use std::collections::HashMap;
 use wasm_bindgen::prelude::*;
 
-/// Discover Petri Net using Alpha++ algorithm
+/// STUB: Frequency-filtered DFG wrapped as Petri net. Alpha++ not implemented.
+/// TODO: footprint matrix, causality relation, length-1/2 loop handling
 #[wasm_bindgen]
 pub fn discover_alpha_plus_plus(
     eventlog_handle: &str,

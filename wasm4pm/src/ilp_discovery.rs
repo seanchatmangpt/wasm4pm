@@ -176,8 +176,8 @@ pub fn discover_ilp_petri_net_from_log(
     (petri_net, fitness, precision)
 }
 
-/// Integer Linear Programming-based process discovery
-/// Finds optimal Petri net that fits the log while minimizing complexity
+/// STUB: DFG→Petri-net projection. ILP solver not implemented.
+/// TODO: ILP requires solving a set-cover problem over causal footprint
 #[wasm_bindgen]
 pub fn discover_ilp_petri_net(
     eventlog_handle: &str,
@@ -312,15 +312,22 @@ pub fn discover_ilp_petri_net(
                 final_marking.insert(sink_place, 1);
                 petri_net.final_markings.push(final_marking);
 
-                // Calculate fitness metrics
+                // Calculate fitness metrics using 80/20 holdout split
+                // Train on first 80% of traces, evaluate on last 20% to avoid tautological fitness
+                let split_point = (log.traces.len() as f64 * 0.8) as usize;
+                let test_traces = &log.traces[split_point..];
                 let mut fitting_traces = 0;
-                for trace in &log.traces {
+                for trace in test_traces {
                     if is_trace_fitting(trace, activity_key, &directly_follows) {
                         fitting_traces += 1;
                     }
                 }
 
-                let fitness = fitting_traces as f64 / log.traces.len().max(1) as f64;
+                let fitness = if test_traces.is_empty() {
+                    1.0
+                } else {
+                    fitting_traces as f64 / test_traces.len() as f64
+                };
                 let precision = calculate_precision(&petri_net, log, activity_key);
                 Ok((petri_net, fitness, precision))
             }
@@ -335,7 +342,7 @@ pub fn discover_ilp_petri_net(
 
     to_js_str(&json!({
         "handle": handle,
-        "algorithm": "ilp_petri_net",
+        "algorithm": "direct_petri_net_stub",
         "places": petri_net.places.len(),
         "transitions": petri_net.transitions.len(),
         "arcs": petri_net.arcs.len(),

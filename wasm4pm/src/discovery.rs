@@ -477,6 +477,7 @@ pub fn discover_declare(eventlog_handle: &str, activity_key: &str) -> Result<JsV
             // Phase 2: Iterate over activity pairs, count satisfaction using profiles
             // Time: O(A² × T)
             let mut response_counts = vec![0u32; n * n];
+            let mut coexistence_counts = vec![0u32; n * n];
 
             // For each activity pair (a, b)
             for a in 0..n {
@@ -485,15 +486,87 @@ pub fn discover_declare(eventlog_handle: &str, activity_key: &str) -> Result<JsV
                         continue;
                     }
 
-                    // Count traces where a appears before b (predicated add — no branch)
+                    // Count traces where a appears before b, and traces with both
                     for profile in &traces_profiles {
                         response_counts[a * n + b] += profile.appears_before(a, b) as u32;
+                        let has_a = profile.first_positions[a] != u8::MAX;
+                        let has_b = profile.first_positions[b] != u8::MAX;
+                        coexistence_counts[a * n + b] += (has_a && has_b) as u32;
                     }
                 }
             }
 
-            // Emit constraints — O(A²).
+            // Emit constraints — 5 DECLARE templates.
             let total_f64 = total_cases as f64;
+            let min_support = 0.1;
+
+            // Template 1: Existence — activity appears in >= min_support fraction of traces
+            for a in 0..n {
+                let support = activity_counts[a] as f64 / total_f64;
+                if support >= min_support {
+                    model.constraints.push(DeclareConstraint {
+                        template: "Existence".to_string(),
+                        activities: vec![col.vocab[a].to_string()],
+                        support,
+                        confidence: 1.0,
+                    });
+                }
+            }
+
+            // Template 2: Absence — activity appears in < (1 - min_support) fraction of traces
+            for a in 0..n {
+                let absence_support = (total_cases - activity_counts[a] as usize) as f64 / total_f64;
+                if absence_support >= min_support {
+                    model.constraints.push(DeclareConstraint {
+                        template: "Absence".to_string(),
+                        activities: vec![col.vocab[a].to_string()],
+                        support: absence_support,
+                        confidence: 1.0,
+                    });
+                }
+            }
+
+            // Template 3: Co-existence — both A and B appear together
+            for a in 0..n {
+                for b in (a + 1)..n {
+                    let coex_count = coexistence_counts[a * n + b];
+                    let support = coex_count as f64 / total_f64;
+                    if support >= min_support {
+                        model.constraints.push(DeclareConstraint {
+                            template: "CoExistence".to_string(),
+                            activities: vec![col.vocab[a].to_string(), col.vocab[b].to_string()],
+                            support,
+                            confidence: 1.0,
+                        });
+                    }
+                }
+            }
+
+            // Template 4: Precedence — A always before B when both present
+            for a in 0..n {
+                for b in 0..n {
+                    if a == b {
+                        continue;
+                    }
+                    let coex_count = coexistence_counts[a * n + b];
+                    if coex_count == 0 {
+                        continue;
+                    }
+                    let precedence_count = response_counts[a * n + b];
+                    let support = coex_count as f64 / total_f64;
+                    let confidence = precedence_count as f64 / coex_count as f64;
+                    if support >= min_support && confidence >= 0.8 {
+                        model.constraints.push(DeclareConstraint {
+                            template: "Precedence".to_string(),
+                            activities: vec![col.vocab[a].to_string(), col.vocab[b].to_string()],
+                            support,
+                            confidence,
+                        });
+                    }
+                }
+            }
+
+            // Template 5: Response — when A occurs, B eventually follows
             for a in 0..n {
                 if activity_counts[a] == 0 {
                     continue;
@@ -502,21 +575,24 @@ pub fn discover_declare(eventlog_handle: &str, activity_key: &str) -> Result<JsV
                     if a == b {
                         continue;
                     }
-                    let count = response_counts[a * n + b];
-                    if count == 0 {
+                    let response_count = response_counts[a * n + b];
+                    if response_count == 0 {
                         continue;
                     }
-                    let support = count as f64 / total_f64;
-                    if support >= 0.1 {
+                    let support = response_count as f64 / total_f64;
+                    let confidence = response_count as f64 / activity_counts[a] as f64;
+                    if support >= min_support && confidence >= 0.8 {
                         model.constraints.push(DeclareConstraint {
                             template: "Response".to_string(),
                             activities: vec![col.vocab[a].to_string(), col.vocab[b].to_string()],
                             support,
-                            confidence: 1.0,
+                            confidence,
                         });
                     }
                 }
             }
+
+            // TODO: Succession, NotCoExistence, ChainPrecedence, ChainResponse require additional LTL-style trace scanning
 
             to_js(&model)
         }

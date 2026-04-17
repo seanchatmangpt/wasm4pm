@@ -172,12 +172,15 @@ pub fn discover_pso_algorithm(
                 // Collect vocab before closure ends
                 let vocab: Vec<String> = col.vocab.iter().map(|s| s.to_string()).collect();
 
+                // Deterministic RNG: seeded for reproducibility
+                let mut rng = StdRng::seed_from_u64(42);
+
                 // Initialize swarm: (position, fitness, personal_best_position, personal_best_fitness)
                 let mut particles: Vec<(EdgeSet, f64, EdgeSet, f64)> = Vec::new();
                 let mut best_global: Option<(EdgeSet, f64)> = None;
 
                 for _ in 0..swarm_size {
-                    let edge_set = create_random_edge_set(&edge_vocab, 0.6);
+                    let edge_set = create_random_edge_set_seeded(&edge_vocab, 0.6, &mut rng);
                     let fitness = evaluate_edges_fitness(&edge_set, &col);
 
                     if best_global.is_none() || fitness > best_global.as_ref().unwrap().1 {
@@ -191,13 +194,13 @@ pub fn discover_pso_algorithm(
                 for _iter in 0..iterations {
                     for (edge_set, current_fitness, pbest, pbest_fitness) in particles.iter_mut() {
                         // Blend toward personal best, then toward global best
-                        let toward_pbest = blend_edges(edge_set, pbest, 0.2);
+                        let toward_pbest = blend_edges_seeded(edge_set, pbest, 0.2, &mut rng);
                         let toward_global =
-                            blend_edges(&toward_pbest, &best_global.as_ref().unwrap().0, 0.3);
+                            blend_edges_seeded(&toward_pbest, &best_global.as_ref().unwrap().0, 0.3, &mut rng);
                         *edge_set = toward_global;
 
                         // Small mutation for exploration
-                        mutate_edges(edge_set, 0.05, &edge_vocab);
+                        mutate_edges_seeded(edge_set, 0.05, &edge_vocab, &mut rng);
 
                         let new_fitness = evaluate_edges_fitness(edge_set, &col);
                         *current_fitness = new_fitness;
@@ -429,6 +432,26 @@ fn mutate_edges_seeded(edge_set: &mut EdgeSet, mutation_rate: f64, edge_vocab: &
     }
 }
 
+fn blend_edges_seeded(set1: &EdgeSet, set2: &EdgeSet, ratio: f64, rng: &mut StdRng) -> EdgeSet {
+    let mut result: EdgeSet = HashSet::new();
+
+    // Keep edges from set1 with probability (1 - ratio)
+    for &edge in set1 {
+        if rng.gen::<f64>() > ratio {
+            result.insert(edge);
+        }
+    }
+
+    // Add edges from set2 with probability ratio
+    for &edge in set2 {
+        if rng.gen::<f64>() < ratio {
+            result.insert(edge);
+        }
+    }
+
+    result
+}
+
 fn rand_select_seeded<T>(items: &[(T, f64)], rng: &mut StdRng) -> usize {
     let n = items.len();
     debug_assert!(n > 0, "rand_select_seeded called with empty slice");
@@ -531,6 +554,9 @@ pub fn discover_aco_algorithm(
                 let evaporation_rate = 0.1;
                 let q = 100.0; // pheromone deposit factor
 
+                // Deterministic RNG: seeded for reproducibility
+                let mut rng = StdRng::seed_from_u64(42);
+
                 let mut best_solution: Option<(EdgeSet, f64)> = None;
 
                 for _iter in 0..iterations {
@@ -546,7 +572,7 @@ pub fn discover_aco_algorithm(
 
                             // Probability: (tau^alpha * eta^beta)
                             let prob = tau.powf(alpha) * eta.powf(beta);
-                            if fastrand::f64() < prob.min(0.99) {
+                            if rng.gen::<f64>() < prob.min(0.99) {
                                 ant_edges.insert(edge);
                             }
                         }

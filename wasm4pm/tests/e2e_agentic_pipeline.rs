@@ -1172,7 +1172,7 @@ fn e2e_challenge_unsafe_handoff_blocked_role_rejected() {
     let decision = DefaultHandoffValidator.validate_handoff(&req).unwrap();
     assert!(!decision.allowed, "Blocked role must be denied");
     assert_eq!(decision.disposition, DecisionDisposition::Deny);
-    assert!(decision.reason_codes.iter().any(|r| r.contains("blocked")));
+    assert!(decision.reason_codes.iter().any(|r: &String| r.contains("blocked")));
 }
 
 /// Challenge: multi-agent decomposition. Response: role + topology microbench.

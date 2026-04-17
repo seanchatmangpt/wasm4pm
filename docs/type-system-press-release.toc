@@ -1,0 +1,43 @@
+\contentsline {section}{\numberline {1}The Chatman Equation: $A = \mu (\mathcal {O}^*)$}{3}{section.1}%
+\contentsline {section}{\numberline {2}Before Ontology Closure: Probabilistic vs.\ Deterministic Outputs}{3}{section.2}%
+\contentsline {section}{\numberline {3}Blue River Dam: Upstream Control Over Engineering Flow}{4}{section.3}%
+\contentsline {section}{\numberline {4}The Instrument Taxonomy}{4}{section.4}%
+\contentsline {subsection}{\numberline {4.1}Language-Level Semantics}{4}{subsection.4.1}%
+\contentsline {paragraph}{Rust type system.}{4}{section*.2}%
+\contentsline {paragraph}{TypeScript type system.}{4}{section*.3}%
+\contentsline {paragraph}{JSDoc-annotated JavaScript via TypeScript.}{4}{section*.4}%
+\contentsline {subsection}{\numberline {4.2}Documentation Extraction and Drift Control}{5}{subsection.4.2}%
+\contentsline {paragraph}{Rustdoc + doctests.}{5}{section*.5}%
+\contentsline {paragraph}{TSDoc + TypeDoc.}{5}{section*.6}%
+\contentsline {subsection}{\numberline {4.3}Runtime Validation / Schema Declaration}{5}{subsection.4.3}%
+\contentsline {paragraph}{Zod.}{5}{section*.7}%
+\contentsline {paragraph}{JSON Schema.}{5}{section*.8}%
+\contentsline {subsection}{\numberline {4.4}API / IDL Contract Publication}{5}{subsection.4.4}%
+\contentsline {paragraph}{OpenAPI 3.1.}{5}{section*.9}%
+\contentsline {paragraph}{Protocol Buffers + Buf.}{5}{section*.10}%
+\contentsline {subsection}{\numberline {4.5}Code Generation Bridges}{5}{subsection.4.5}%
+\contentsline {paragraph}{Serde + Schemars (Rust).}{5}{section*.11}%
+\contentsline {paragraph}{tonic (Rust gRPC).}{5}{section*.12}%
+\contentsline {section}{\numberline {5}Maturity Matrix}{5}{section.5}%
+\contentsline {section}{\numberline {6}Stack Rankings by Use Case}{6}{section.6}%
+\contentsline {subsection}{\numberline {6.1}Rust-first Core Library}{6}{subsection.6.1}%
+\contentsline {subsection}{\numberline {6.2}TypeScript Application or SDK}{7}{subsection.6.2}%
+\contentsline {subsection}{\numberline {6.3}Polyglot Microservices}{7}{subsection.6.3}%
+\contentsline {subsection}{\numberline {6.4}HTTP APIs for Broad Consumption}{7}{subsection.6.4}%
+\contentsline {subsection}{\numberline {6.5}The Universal Anti-Pattern}{7}{subsection.6.5}%
+\contentsline {section}{\numberline {7}5~Whys and Root Cause Analysis: pictl $\to $ bcinr}{8}{section.7}%
+\contentsline {subsection}{\numberline {7.1}Why This RCA Proves the Exploit Theory}{8}{subsection.7.1}%
+\contentsline {subsection}{\numberline {7.2}5~Whys Chain}{8}{subsection.7.2}%
+\contentsline {paragraph}{Why 1: Why were 0 of 41 pictl algorithms production-ready?}{8}{section*.13}%
+\contentsline {paragraph}{Why 2: Why did the RefCell borrow panics occur?}{8}{section*.14}%
+\contentsline {paragraph}{Why 3: Why was this architectural defect not detected earlier?}{8}{section*.15}%
+\contentsline {paragraph}{Why 4: Why was sequential ticket exploration chosen over parallel architectural audit?}{8}{section*.16}%
+\contentsline {paragraph}{Why 5: Why did the press release measure in registered names rather than semantic correctness?}{8}{section*.17}%
+\contentsline {subsection}{\numberline {7.3}Root Cause}{8}{subsection.7.3}%
+\contentsline {subsection}{\numberline {7.4}The Exploit: bcinr as Rational Press Release Revision}{9}{subsection.7.4}%
+\contentsline {section}{\numberline {8}The Canonical Projection Order}{9}{section.8}%
+\contentsline {section}{\numberline {9}Implications for Agent-Driven Development}{10}{section.9}%
+\contentsline {subsection}{\numberline {9.1}Plan File = Press Release = $\mathcal {O}^*$}{10}{subsection.9.1}%
+\contentsline {subsection}{\numberline {9.2}Type System as Write Gate}{10}{subsection.9.2}%
+\contentsline {subsection}{\numberline {9.3}Doctest as Convergence Signal}{10}{subsection.9.3}%
+\contentsline {section}{\numberline {10}Conclusions}{10}{section.10}%

@@ -144,14 +144,14 @@ checksum = "ace50bade8e6234aa140d9a2f552bbee1db4d353f69b8217bc503490fc1a9f26"
 
 [[package]]
 name = "bcinr-api"
-version = "0.1.0"
+version = "26.4.17"
 dependencies = [
  "bcinr-logic",
 ]
 
 [[package]]
 name = "bcinr-core"
-version = "0.1.0"
+version = "26.4.17"
 dependencies = [
  "bcinr-api",
  "bcinr-logic",
@@ -160,7 +160,7 @@ dependencies = [
 
 [[package]]
 name = "bcinr-logic"
-version = "0.1.0"
+version = "26.4.17"
 
 [[package]]
 name = "bit-set"

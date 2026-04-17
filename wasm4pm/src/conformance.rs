@@ -51,9 +51,22 @@ pub fn token_replay_pure(
         }
     }
 
+    // Build place_idx once for Vec-based marking
+    let mut place_idx: HashMap<String, usize> = HashMap::new();
+    for (i, place) in petri_net.places.iter().enumerate() {
+        place_idx.insert(place.id.clone(), i);
+    }
+
+    // Pre-build initial marking as Vec
+    let mut initial_vec = vec![0usize; petri_net.places.len()];
+    for (place_id, &count) in &petri_net.initial_marking {
+        if let Some(&idx) = place_idx.get(place_id) {
+            initial_vec[idx] = count;
+        }
+    }
+
     for (case_id, trace) in log.traces.iter().enumerate() {
-        let mut current_marking: HashMap<String, usize> =
-            petri_net.initial_marking.iter().map(|(k, &v)| (k.clone(), v)).collect();
+        let mut current_marking: Vec<usize> = initial_vec.clone();
 
         let mut deviations: Vec<TokenReplayDeviation> = Vec::new();
         let mut consumed_tokens = 0usize;
@@ -98,7 +111,10 @@ pub fn token_replay_pure(
 
             if let Some(input_places) = inputs {
                 for (place_id, weight) in input_places {
-                    let available = current_marking.get(place_id).copied().unwrap_or(0);
+                    let available = place_idx
+                        .get(place_id)
+                        .map(|&idx| current_marking[idx])
+                        .unwrap_or(0);
                     if available < *weight {
                         enabled = false;
                         missing_tokens += weight.saturating_sub(available);
@@ -116,37 +132,45 @@ pub fn token_replay_pure(
 
             if let Some(input_places) = inputs {
                 for (place_id, weight) in input_places {
-                    let available = current_marking.get(place_id).copied().unwrap_or(0);
-                    let consumed = available.min(*weight);
-                    if consumed > 0 {
-                        *current_marking.entry(place_id.clone()).or_insert(0) -= consumed;
-                        consumed_tokens += consumed;
+                    if let Some(&idx) = place_idx.get(place_id) {
+                        let available = current_marking[idx];
+                        let consumed = available.min(*weight);
+                        if consumed > 0 {
+                            current_marking[idx] -= consumed;
+                            consumed_tokens += consumed;
+                        }
                     }
                 }
             }
 
             if let Some(output_places) = transition_outputs.get(&transition.id) {
                 for (place_id, weight) in output_places {
-                    *current_marking.entry(place_id.clone()).or_insert(0) += weight;
-                    produced_tokens += weight;
+                    if let Some(&idx) = place_idx.get(place_id) {
+                        current_marking[idx] += weight;
+                        produced_tokens += weight;
+                    }
                 }
             }
         }
 
-        let tokens_remaining: usize = current_marking.values().sum();
+        let tokens_remaining: usize = current_marking.iter().sum();
         let mut is_final_marking_reached = false;
 
         for final_marking in &petri_net.final_markings {
             let mut matches = true;
             for (place, expected_tokens) in final_marking {
-                let actual = current_marking.get(place).copied().unwrap_or(0);
+                let actual = place_idx
+                    .get(place)
+                    .map(|&idx| current_marking[idx])
+                    .unwrap_or(0);
                 if actual != *expected_tokens {
                     matches = false;
                     break;
                 }
             }
-            for (place, actual) in &current_marking {
-                if !final_marking.contains_key(place) && *actual > 0 {
+            for (i, &actual) in current_marking.iter().enumerate() {
+                let place_id = petri_net.places[i].id.clone();
+                if !final_marking.contains_key(&place_id) && actual > 0 {
                     matches = false;
                     break;
                 }
@@ -258,10 +282,23 @@ pub fn check_token_based_replay(
                 }
             }
 
+            // Build place_idx once for Vec-based marking
+            let mut place_idx: HashMap<String, usize> = HashMap::new();
+            for (i, place) in petri_net_cloned.places.iter().enumerate() {
+                place_idx.insert(place.id.clone(), i);
+            }
+
+            // Pre-build initial marking as Vec
+            let mut initial_vec = vec![0usize; petri_net_cloned.places.len()];
+            for (place_id, &count) in &petri_net_cloned.initial_marking {
+                if let Some(&idx) = place_idx.get(place_id) {
+                    initial_vec[idx] = count;
+                }
+            }
+
             for (case_id, trace) in log.traces.iter().enumerate() {
                 // Start with initial marking
-                let mut current_marking: HashMap<String, usize> =
-                    petri_net_cloned.initial_marking.iter().map(|(k, &v)| (k.clone(), v)).collect();
+                let mut current_marking: Vec<usize> = initial_vec.clone();
 
                 let mut deviations: Vec<TokenReplayDeviation> = Vec::new();
                 let mut consumed_tokens = 0usize;
@@ -309,7 +346,10 @@ pub fn check_token_based_replay(
 
                     if let Some(input_places) = inputs {
                         for (place_id, weight) in input_places {
-                            let available = current_marking.get(place_id).copied().unwrap_or(0);
+                            let available = place_idx
+                                .get(place_id)
+                                .map(|&idx| current_marking[idx])
+                                .unwrap_or(0);
                             required_tokens += weight;
                             if available < *weight {
                                 enabled = false;
@@ -330,11 +370,13 @@ pub fn check_token_based_replay(
                     // Fire transition: consume from input places
                     if let Some(input_places) = inputs {
                         for (place_id, weight) in input_places {
-                            let available = current_marking.get(place_id).copied().unwrap_or(0);
-                            let consumed = available.min(*weight);
-                            if consumed > 0 {
-                                *current_marking.entry(place_id.clone()).or_insert(0) -= consumed;
-                                consumed_tokens += consumed;
+                            if let Some(&idx) = place_idx.get(place_id) {
+                                let available = current_marking[idx];
+                                let consumed = available.min(*weight);
+                                if consumed > 0 {
+                                    current_marking[idx] -= consumed;
+                                    consumed_tokens += consumed;
+                                }
                             }
                         }
                     }
@@ -342,8 +384,10 @@ pub fn check_token_based_replay(
                     // Produce to output places
                     if let Some(output_places) = transition_outputs.get(&transition.id) {
                         for (place_id, weight) in output_places {
-                            *current_marking.entry(place_id.clone()).or_insert(0) += weight;
-                            produced_tokens += weight;
+                            if let Some(&idx) = place_idx.get(place_id) {
+                                current_marking[idx] += weight;
+                                produced_tokens += weight;
+                            }
                         }
                     }
                 }
@@ -352,26 +396,25 @@ pub fn check_token_based_replay(
                 let mut tokens_remaining = 0usize;
                 let mut is_final_marking_reached = false;
 
-                for tokens in current_marking.values() {
-                    if *tokens > 0 {
-                        tokens_remaining += *tokens;
-                    }
-                }
+                tokens_remaining = current_marking.iter().sum();
 
                 // Check if current marking matches any final marking
                 for final_marking in &petri_net_cloned.final_markings {
                     let mut matches = true;
                     for (place, expected_tokens) in final_marking {
-                        let actual = current_marking.get(place).copied().unwrap_or(0);
+                        let actual = place_idx
+                            .get(place)
+                            .map(|&idx| current_marking[idx])
+                            .unwrap_or(0);
                         if actual != *expected_tokens {
                             matches = false;
                             break;
                         }
                     }
                     // Also check that we don't have extra tokens
-                    for (place, actual) in &current_marking {
-                        let actual_usize: usize = *actual;
-                        if !final_marking.contains_key(place) && actual_usize > 0 {
+                    for (i, &actual) in current_marking.iter().enumerate() {
+                        let place_id = petri_net_cloned.places[i].id.clone();
+                        if !final_marking.contains_key(&place_id) && actual > 0 {
                             matches = false;
                             break;
                         }

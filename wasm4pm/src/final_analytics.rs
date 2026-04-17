@@ -3,6 +3,7 @@ use crate::state::{get_or_init_state, StoredObject};
 use crate::utilities::to_js;
 use hashbrown::HashMap;
 use itertools::Itertools;
+use rustc_hash::FxHashMap;
 use serde_json::json;
 use std::collections::HashSet;
 use wasm_bindgen::prelude::*;
@@ -78,11 +79,18 @@ pub fn compute_activity_transition_matrix(
     get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
             let activities = log.get_activities(activity_key);
-            let mut transitions: HashMap<(String, String), usize> = HashMap::default();
-            let mut activity_total: HashMap<String, usize> = HashMap::default();
 
-            for activity in &activities {
-                activity_total.insert(activity.clone(), 0);
+            // Build activity vocabulary
+            let mut vocab: HashMap<String, u32> = HashMap::default();
+            for (idx, activity) in activities.iter().enumerate() {
+                vocab.insert(activity.clone(), idx as u32);
+            }
+
+            let mut transitions: FxHashMap<(u32, u32), usize> = FxHashMap::default();
+            let mut activity_total: FxHashMap<u32, usize> = FxHashMap::default();
+
+            for activity_id in vocab.values() {
+                activity_total.insert(*activity_id, 0);
             }
 
             for trace in &log.traces {
@@ -91,8 +99,10 @@ pub fn compute_activity_transition_matrix(
                         w[0].attributes.get(activity_key),
                         w[1].attributes.get(activity_key),
                     ) {
-                        *transitions.entry((a1.clone(), a2.clone())).or_insert(0) += 1;
-                        *activity_total.entry(a1.clone()).or_insert(0) += 1;
+                        if let (Some(&a1_id), Some(&a2_id)) = (vocab.get(a1), vocab.get(a2)) {
+                            *transitions.entry((a1_id, a2_id)).or_insert(0) += 1;
+                            *activity_total.entry(a1_id).or_insert(0) += 1;
+                        }
                     }
                 });
             }
@@ -100,14 +110,18 @@ pub fn compute_activity_transition_matrix(
             // Compute transition probabilities
             let matrix_data: Vec<_> = transitions
                 .iter()
-                .map(|((from, to), count)| {
-                    let prob =
-                        *count as f64 / activity_total.get(from).copied().unwrap_or(1) as f64;
-                    json!({
-                        "from": from,
-                        "to": to,
-                        "count": count,
-                        "probability": prob
+                .filter_map(|((from, to), count)| {
+                    activities.get(*from as usize).and_then(|from_name| {
+                        activities.get(*to as usize).map(|to_name| {
+                            let prob =
+                                *count as f64 / activity_total.get(from).copied().unwrap_or(1) as f64;
+                            json!({
+                                "from": from_name,
+                                "to": to_name,
+                                "count": count,
+                                "probability": prob
+                            })
+                        })
                     })
                 })
                 .collect();
