@@ -1,6 +1,6 @@
 use crate::models::*;
 use crate::state::{get_or_init_state, StoredObject};
-use crate::utilities::to_js;
+use crate::utilities::{to_js, to_js_str};
 use rustc_hash::FxHashMap;
 use serde_json::json;
 use std::collections::HashSet;
@@ -83,7 +83,7 @@ pub fn discover_astar(
         .store_object(StoredObject::DirectlyFollowsGraph(best_dfg.clone()))
         .map_err(|_e| JsValue::from_str("Failed to store DFG"))?;
 
-    to_js(&json!({
+    to_js_str(&json!({
         "handle": handle,
         "algorithm": "astar",
         "nodes": best_dfg.nodes.len(),
@@ -189,7 +189,7 @@ pub fn discover_hill_climbing(
         .store_object(StoredObject::DirectlyFollowsGraph(current_dfg.clone()))
         .map_err(|_e| JsValue::from_str("Failed to store DFG"))?;
 
-    to_js(&json!({
+    to_js_str(&json!({
         "handle": handle,
         "algorithm": "hill_climbing",
         "nodes": current_dfg.nodes.len(),
@@ -234,7 +234,7 @@ pub fn analyze_trace_variants(
                 })
                 .collect();
 
-            to_js(&json!({
+            to_js_str(&json!({
                 "total_variants": variant_list.len(),
                 "top_variants": top_variants,
                 "coverage": (top_variants.len() as f64 / variant_list.len().max(1) as f64 * 100.0),
@@ -294,7 +294,7 @@ pub fn mine_sequential_patterns(
                 })
                 .collect();
 
-            to_js(&json!({
+            to_js_str(&json!({
                 "pattern_length": pattern_length,
                 "patterns": result_patterns,
                 "min_support": min_support,
@@ -352,7 +352,7 @@ pub fn detect_concept_drift(
                 previous_activities = current_activities;
             }
 
-            to_js(&json!({
+            to_js_str(&json!({
                 "drifts_detected": drifts.len(),
                 "drifts": drifts,
                 "window_size": window_size,
@@ -451,7 +451,7 @@ pub fn cluster_traces(
     get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
             if log.traces.is_empty() {
-                return to_js(&json!({
+                return to_js_str(&json!({
                     "num_clusters": num_clusters,
                     "cluster_sizes": [],
                     "total_traces": 0,
@@ -522,7 +522,7 @@ pub fn cluster_traces(
                 })
                 .collect();
 
-            to_js(&json!({
+            to_js_str(&json!({
                 "num_clusters": num_clusters,
                 "cluster_sizes": cluster_sizes,
                 "total_traces": log.traces.len(),
@@ -588,7 +588,7 @@ pub fn analyze_start_end_activities(
             ends.sort_by(|a, b| b.1.cmp(&a.1));
             pairs.sort_by(|a, b| b.1.cmp(&a.1));
 
-            to_js(&json!({
+            to_js_str(&json!({
                 "start_activities": starts.iter().take(10).map(|(a, c)| json!({"activity": a, "count": c})).collect::<Vec<_>>(),
                 "end_activities": ends.iter().take(10).map(|(a, c)| json!({"activity": a, "count": c})).collect::<Vec<_>>(),
                 "start_end_pairs": pairs.iter().take(10).map(|(p, c)| json!({"start": p.0, "end": p.1, "count": c})).collect::<Vec<_>>(),
@@ -649,7 +649,7 @@ pub fn analyze_activity_cooccurrence(
                 })
                 .collect();
 
-            to_js(&json!({
+            to_js_str(&json!({
                 "cooccurrences": result,
             }))
         }

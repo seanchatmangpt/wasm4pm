@@ -466,3 +466,16 @@ wasm4pm/src/agentic/           # Agentic framework (9 traits, 14 modules)
 - Crate name is `pictl`, npm package is `@seanchatmangpt/pictl`, but the source directory remains `wasm4pm/` — only published names changed, not filesystem layout
 - `tests/*.rs` are integration tests (separate crates) — `pub(crate)` is NOT enough for external test access, items must be `pub`
 - Cargo auto-discovers `tests/*.rs` but NOT `tests/subdir/*.rs` — use top-level `tests/*_tests.rs` files or add `tests/subdir/mod.rs`
+- `to_js(&json!({...}))` silently returns `{}` on wasm32 — `serde_wasm_bindgen` cannot serialize `serde_json::Value`. Use `to_js_str(&json!({...}))` (defined in `utilities.rs`) instead; it serializes via `serde_json::to_string` + `JsValue::from_str`.
+- `to_js` returns `JsValue::NULL` on native (non-wasm32) targets — the serialization path is **never exercised by `cargo test`**. Always validate WASM output via Node.js directly.
+- Some WASM functions return a JS string (needs `JSON.parse`), others return a JS object. Pattern: `const parse = r => typeof r === 'string' ? JSON.parse(r) : r`
+- `src/streaming/` has zero `#[wasm_bindgen]` exports — algorithms there are unreachable from JS. Check before assuming a streaming variant is usable.
+- **Direct WASM testing** (bypasses CLI wrapper, which drops model data for handle-based algorithms):
+  ```js
+  const wasm = require('./wasm4pm/pkg/pictl.js');
+  const handle = wasm.load_eventlog_from_xes(fs.readFileSync('log.xes', 'utf8'));
+  const parse = r => typeof r === 'string' ? JSON.parse(r) : r;
+  const result = parse(wasm.discover_dfg(handle, 'concept:name'));
+  ```
+- Discovery function extra params (beyond `handle, activity_key`): `discover_heuristic_miner` needs `dependency_threshold: f64` (use `0.2`–`0.4` for real logs — `0.8` filters everything); `discover_causal_heuristic` needs `threshold: f64`; `discover_prefix_tree` needs `max_path_length: usize` (`0` = unlimited); `discover_simulated_annealing` needs `temperature: f64, cooling_rate: f64`; `discover_astar` needs `max_iterations: usize`; genetic/ant_colony/aco/pso need `population_size/num_ants, iterations`.
+- Two separate ACO implementations: `discover_ant_colony` (`more_discovery.rs`, param `num_ants`) and `discover_aco_algorithm` (`genetic_discovery.rs`, param `ant_count`) — different fitness key names (`"fitness"` vs `"final_fitness"`).

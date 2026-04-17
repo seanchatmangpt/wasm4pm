@@ -28,6 +28,19 @@ pub fn to_js<T: serde::Serialize>(val: &T) -> Result<JsValue, JsValue> {
     }
 }
 
+/// Serialize `val` via `serde_json` + `JsValue::from_str` on ALL targets.
+///
+/// Use this instead of `to_js` when `val` is a `serde_json::Value` (e.g. from
+/// `json!({...})`). `serde_wasm_bindgen` silently produces `{}` for those on
+/// wasm32; going through a JSON string avoids that bug entirely.
+/// JS callers receive a string and must call `JSON.parse()`.
+#[inline]
+pub fn to_js_str<T: serde::Serialize>(val: &T) -> Result<JsValue, JsValue> {
+    serde_json::to_string(val)
+        .map(|s| JsValue::from_str(&s))
+        .map_err(|e| JsValue::from_str(&e.to_string()))
+}
+
 /// Get trace count from EventLog
 #[wasm_bindgen]
 pub fn get_trace_count(eventlog_handle: &str) -> Result<usize, JsValue> {

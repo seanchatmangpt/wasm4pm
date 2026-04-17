@@ -1,6 +1,6 @@
 use crate::models::*;
 use crate::state::{get_or_init_state, StoredObject};
-use crate::utilities::to_js;
+use crate::utilities::{to_js, to_js_str};
 use rustc_hash::FxHashMap;
 use serde_json::json;
 use std::collections::HashSet;
@@ -95,7 +95,7 @@ pub fn discover_heuristic_miner(
         .store_object(StoredObject::DirectlyFollowsGraph(dfg))
         .map_err(|_e| JsValue::from_str("Failed to store DFG"))?;
 
-    to_js(&json!({
+    to_js_str(&json!({
         "handle": handle,
         "nodes": n_nodes,
         "edges": n_edges,
@@ -151,7 +151,7 @@ pub fn analyze_infrequent_paths(
                     .unwrap_or(std::cmp::Ordering::Equal)
             });
 
-            to_js(&json!({
+            to_js_str(&json!({
                 "infrequent_paths": infrequent_paths,
                 "total_distinct_paths": total_distinct_paths,
                 "frequency_threshold": frequency_threshold,
@@ -206,7 +206,7 @@ pub fn detect_rework(eventlog_handle: &str, activity_key: &str) -> Result<JsValu
             let mut rework_vec: Vec<(String, usize)> = rework_stats.into_iter().collect();
             rework_vec.sort_by(|a, b| b.1.cmp(&a.1));
 
-            to_js(&json!({
+            to_js_str(&json!({
                 "traces_with_rework": traces_with_rework,
                 "rework_percentage": (traces_with_rework as f64 / log.traces.len() as f64) * 100.0,
                 "total_rework_instances": total_rework_count,
@@ -277,7 +277,7 @@ pub fn detect_bottlenecks(
                     .unwrap_or(std::cmp::Ordering::Equal)
             });
 
-            to_js(&json!({
+            to_js_str(&json!({
                 "bottlenecks": bottlenecks,
                 "duration_threshold": duration_threshold_seconds,
             }))
@@ -327,7 +327,7 @@ pub fn compute_model_metrics(
                 variants.insert(path);
             }
 
-            to_js(&json!({
+            to_js_str(&json!({
                 "num_activities": activities.len(),
                 "num_edges": relations.len(),
                 "num_variants": variants.len(),
