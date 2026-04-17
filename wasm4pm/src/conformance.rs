@@ -115,9 +115,22 @@ pub fn token_replay_pure(
                         .get(place_id)
                         .map(|&idx| current_marking[idx])
                         .unwrap_or(0);
-                    if available < *weight {
-                        enabled = false;
-                        missing_tokens += weight.saturating_sub(available);
+                    
+                    #[cfg(feature = "bcinr")]
+                    {
+                        let is_short = (available < *weight) as u64;
+                        let mask = bcinr::mask::select_u64(is_short, 1, 0);
+                        if mask != 0 {
+                            enabled = false;
+                            missing_tokens += weight.saturating_sub(available);
+                        }
+                    }
+                    #[cfg(not(feature = "bcinr"))]
+                    {
+                        if available < *weight {
+                            enabled = false;
+                            missing_tokens += weight.saturating_sub(available);
+                        }
                     }
                 }
             }

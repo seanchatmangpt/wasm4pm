@@ -6,7 +6,7 @@
 //!
 //! Extracted from embedded #[cfg(test)] block in src/reinforcement.rs.
 
-use pictl::reinforcement::{
+use wasm4pm::reinforcement::{
     Agent, DoubleQLearning, ExpectedSARSAAgent, QLearning, ReinforceAgent, SARSAAgent,
     WorkflowAction, WorkflowState,
 };

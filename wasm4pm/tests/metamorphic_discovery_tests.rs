@@ -10,8 +10,8 @@
 //! - E3: More phases → larger DFG topology (activity diversity perturbation)
 
 use chrono::{Duration, Utc};
-use pictl::models::{OCELEvent, OCELEventObjectRef, OCELObject, OCEL};
-use pictl::discovery::discover_ocel_dfg_pure;
+use wasm4pm::models::{OCELEvent, OCELEventObjectRef, OCELObject, OCEL};
+use wasm4pm::discovery::discover_ocel_dfg_pure;
 use std::collections::HashMap;
 
 // ============================================================================
@@ -220,9 +220,9 @@ fn test_e4_ts1_regression_duration_proportional_to_time_gap() {
     let t2 = "2026-04-13T11:00:00Z"; // 1 hour = 3_600_000 ms later
     let t3 = "2026-04-13T12:00:00Z"; // 2 hours = 7_200_000 ms later
 
-    let gap_t1_t2 = pictl::parse_iso8601_duration(t1, t2);
-    let gap_t2_t3 = pictl::parse_iso8601_duration(t2, t3);
-    let gap_t1_t3 = pictl::parse_iso8601_duration(t1, t3);
+    let gap_t1_t2 = wasm4pm::parse_iso8601_duration(t1, t2);
+    let gap_t2_t3 = wasm4pm::parse_iso8601_duration(t2, t3);
+    let gap_t1_t3 = wasm4pm::parse_iso8601_duration(t1, t3);
 
     // Property 1: duration must be positive for future timestamps (not 0 from len())
     assert!(

@@ -23,12 +23,12 @@
 //! Algorithm family: Reinforcement Learning
 //! Modules tested: reinforcement, rl_orchestrator
 
-use pictl::reinforcement::{
+use wasm4pm::reinforcement::{
     Agent, DoubleQLearning, ExpectedSARSAAgent, QLearning, ReinforceAgent, SARSAAgent,
     WorkflowAction, WorkflowState,
 };
-use pictl::rl_orchestrator::{compute_reward, compute_health_state, AgentType, RlOrchestrator};
-use pictl::RlState;
+use wasm4pm::rl_orchestrator::{compute_reward, compute_health_state, AgentType, RlOrchestrator};
+use wasm4pm::RlState;
 
 // ---------------------------------------------------------------------------
 // Shared test types (mirrors RlAction/RlState but with minimal action space)

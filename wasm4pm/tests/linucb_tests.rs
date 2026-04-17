@@ -4,8 +4,8 @@
 //! They exercise the public API as an external crate consumer would
 //! (ground-truth validation surface for GPU parity checks).
 
-use pictl::ml::linucb::{N_ACTIONS, N_FEATURES};
-use pictl::ml::LinUCBAgent;
+use wasm4pm::ml::linucb::{N_ACTIONS, N_FEATURES};
+use wasm4pm::ml::LinUCBAgent;
 
 // ---------------------------------------------------------------------------
 // Structural / API surface tests

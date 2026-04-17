@@ -18,7 +18,7 @@ use rustc_hash::FxHashMap;
 fn fnv1a_hash(data: &[u8]) -> u64 {
     #[cfg(feature = "bcinr")]
     {
-        bcinr_core::api::sketch::fnv1a_64(data)
+        bcinr::sketch::fnv1a_64(data)
     }
 
     #[cfg(not(feature = "bcinr"))]

@@ -8,8 +8,8 @@
 //! Algorithm family: Reinforcement Learning
 //! Modules tested: rl_orchestrator (RlOrchestrator, AgentType, CycleTelemetry)
 
-use pictl::rl_orchestrator::{AgentType, RlOrchestrator};
-use pictl::RlState;
+use wasm4pm::rl_orchestrator::{AgentType, RlOrchestrator};
+use wasm4pm::RlState;
 use std::collections::HashMap;
 
 /// Helper to create test RlState with reasonable defaults.

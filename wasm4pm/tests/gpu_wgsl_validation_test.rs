@@ -22,7 +22,7 @@
 
 use naga::front::wgsl;
 use naga::valid::{Capabilities, ValidationFlags, Validator};
-use pictl::ml::linucb::{LinUCBAgent, N_ACTIONS, N_FEATURES};
+use wasm4pm::ml::linucb::{LinUCBAgent, N_ACTIONS, N_FEATURES};
 use std::time::Instant;
 
 // Path to the WGSL kernel source

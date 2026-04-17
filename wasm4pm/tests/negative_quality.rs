@@ -11,9 +11,9 @@
 //!
 //! Tests use both synthetic logs and (when available) real BPI 2020 data.
 
-use pictl::conformance::token_replay_pure;
-use pictl::ilp_discovery::{compute_simplicity, discover_ilp_petri_net_from_log};
-use pictl::models::{AttributeValue, Event, EventLog, Trace};
+use wasm4pm::conformance::token_replay_pure;
+use wasm4pm::ilp_discovery::{compute_simplicity, discover_ilp_petri_net_from_log};
+use wasm4pm::models::{AttributeValue, Event, EventLog, Trace};
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;

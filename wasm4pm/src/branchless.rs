@@ -7,7 +7,7 @@
 //!
 //! # Feature Gating
 //!
-//! When `bcinr` feature is enabled, functions delegate to `bcinr_core` implementations
+//! When `bcinr` feature is enabled, functions delegate to `bcinr` implementations
 //! optimized for the target architecture. Otherwise, portable fallback implementations
 //! are used, which are still constant-latency.
 
@@ -38,7 +38,7 @@
 pub fn select_u64(condition: u64, true_val: u64, false_val: u64) -> u64 {
     #[cfg(feature = "bcinr")]
     {
-        bcinr_core::api::mask::select_u64(condition, true_val, false_val)
+        bcinr::mask::select_u64(condition, true_val, false_val)
     }
 
     #[cfg(not(feature = "bcinr"))]
@@ -69,7 +69,7 @@ pub fn select_u64(condition: u64, true_val: u64, false_val: u64) -> u64 {
 pub fn select_u32(condition: u32, true_val: u32, false_val: u32) -> u32 {
     #[cfg(feature = "bcinr")]
     {
-        bcinr_core::api::mask::select_u32(condition, true_val, false_val)
+        bcinr::mask::select_u32(condition, true_val, false_val)
     }
 
     #[cfg(not(feature = "bcinr"))]
@@ -156,7 +156,7 @@ pub fn leading_zeros(x: u64) -> u32 {
 pub fn popcount_u32(x: u32) -> u32 {
     #[cfg(feature = "bcinr")]
     {
-        bcinr_core::api::int::popcount_u32(x)
+        bcinr::int::popcount_u32(x)
     }
 
     #[cfg(not(feature = "bcinr"))]

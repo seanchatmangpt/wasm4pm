@@ -18,11 +18,11 @@
 //! 3. String::len() instead of event count (feature extraction uses string length)
 //! 4. Zero step counter in circuit breaker (step counter never advances)
 
-use pictl::reinforcement::QLearning;
-use pictl::self_healing::{advance_clock, reset_clock, CircuitBreaker, CircuitBreakerConfig, CircuitState};
-use pictl::spc::{check_western_electric_rules, ChartData, SpecialCause, TrendDirection};
-use pictl::RlAction;
-use pictl::RlState;
+use wasm4pm::reinforcement::QLearning;
+use wasm4pm::self_healing::{advance_clock, reset_clock, CircuitBreaker, CircuitBreakerConfig, CircuitState};
+use wasm4pm::spc::{check_western_electric_rules, ChartData, SpecialCause, TrendDirection};
+use wasm4pm::RlAction;
+use wasm4pm::RlState;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -30,7 +30,7 @@ use pictl::RlState;
 
 /// Create an RlState with a specific health_level and all other fields zeroed.
 fn health_state(health_level: u8) -> RlState {
-    pictl::create_rl_state(health_level, 0, 0, 0, 0, 0, 0, 0)
+    wasm4pm::create_rl_state(health_level, 0, 0, 0, 0, 0, 0, 0)
 }
 
 /// Create a QLearning agent with exploration_rate=0.0 (purely greedy).
@@ -441,7 +441,7 @@ fn test_mutation_4_circuit_breaker_step_counter_detected() {
 // contribution to reward, not negative. The correct behavior is reward_improvement
 // > reward_stable > reward_degradation.
 
-use pictl::rl_orchestrator::compute_reward;
+use wasm4pm::rl_orchestrator::compute_reward;
 
 #[test]
 fn test_h1_plus_to_minus_operator_mutation_detected() {
@@ -494,7 +494,7 @@ fn test_h1_plus_to_minus_operator_mutation_detected() {
 
 #[test]
 fn test_h2_spc_rule2_fires_at_9_not_8_detected() {
-    use pictl::spc::{check_western_electric_rules, ChartData, SpecialCause};
+    use wasm4pm::spc::{check_western_electric_rules, ChartData, SpecialCause};
 
     // Helper to create a chart data point above CL (within UCL)
     let make_above = |t: &str| -> ChartData {

@@ -17,11 +17,11 @@
 //! 13. Counterfactual bandwidth: multiple candidates → parallel scoring → top action
 //! 14. Benchmark challenge map: challenge-response pairs verified
 
-use pictl::agentic::prelude::*;
-use pictl::hot_kernels::{marking_enabled4, marking_fire4, Marking4, Transition4};
-use pictl::rl_orchestrator::{compute_reward, AgentType, RlOrchestrator};
-use pictl::spc::{check_western_electric_rules, ChartData, SpecialCause, TrendDirection};
-use pictl::RlState;
+use wasm4pm::agentic::prelude::*;
+use wasm4pm::hot_kernels::{marking_enabled4, marking_fire4, Marking4, Transition4};
+use wasm4pm::rl_orchestrator::{compute_reward, AgentType, RlOrchestrator};
+use wasm4pm::spc::{check_western_electric_rules, ChartData, SpecialCause, TrendDirection};
+use wasm4pm::RlState;
 use std::collections::BTreeSet;
 
 /// Helper to create test RlState with reasonable defaults

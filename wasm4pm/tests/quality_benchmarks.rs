@@ -15,10 +15,10 @@
 //! Requires fixture: tests/fixtures/BPI_2020_Travel_Permits_Actual.xes
 //! (10,500 traces, 86,581 events). Skips gracefully if not present.
 
-use pictl::conformance::token_replay_pure;
-use pictl::etconformance_precision::compute_precision;
-use pictl::ilp_discovery::{compute_simplicity, discover_ilp_petri_net_from_log};
-use pictl::models::{AttributeValue, Event, EventLog, Trace};
+use wasm4pm::conformance::token_replay_pure;
+use wasm4pm::etconformance_precision::compute_precision;
+use wasm4pm::ilp_discovery::{compute_simplicity, discover_ilp_petri_net_from_log};
+use wasm4pm::models::{AttributeValue, Event, EventLog, Trace};
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
@@ -490,13 +490,13 @@ fn quality_etconformance_precision_above_threshold() {
     let (petri_net, _, _) = discover_ilp_petri_net_from_log(&log, ak);
 
     // Build initial and final markings for ETConformance
-    let initial_marking: pictl::etconformance_precision::Marking = petri_net
+    let initial_marking: wasm4pm::etconformance_precision::Marking = petri_net
         .places
         .iter()
         .filter_map(|p| p.marking.map(|m| (p.id.clone(), m)))
         .collect();
 
-    let final_marking: pictl::etconformance_precision::Marking = petri_net
+    let final_marking: wasm4pm::etconformance_precision::Marking = petri_net
         .final_markings
         .first()
         .cloned()

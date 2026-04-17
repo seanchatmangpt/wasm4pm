@@ -9,9 +9,9 @@
 //! different action distributions and reward trajectories compared to
 //! no-alert baselines, on real log data.
 
-use pictl::models::EventLog;
-use pictl::rl_orchestrator::{AgentType, RlOrchestrator};
-use pictl::RlState;
+use wasm4pm::models::EventLog;
+use wasm4pm::rl_orchestrator::{AgentType, RlOrchestrator};
+use wasm4pm::RlState;
 use std::fs;
 
 // ── Test Fixtures ───────────────────────────────────────────────────────
@@ -37,7 +37,7 @@ fn compute_log_metrics(log: &EventLog, activity_key: &str) -> (u64, u64, u64, f3
     for trace in &log.traces {
         let mut seen = std::collections::HashSet::new();
         for event in &trace.events {
-            if let Some(pictl::models::AttributeValue::String(name)) =
+            if let Some(wasm4pm::models::AttributeValue::String(name)) =
                 event.attributes.get(activity_key)
             {
                 activity_set.insert(name.clone());
@@ -358,7 +358,7 @@ fn test_real_log_spc_penalty_bounded() {
     // Verify that the SPC penalty (-0.3 per alert, max -1.5) is correctly bounded.
     // Even with 10 SPC alerts, the penalty should not exceed -1.5.
     // Use compute_reward directly from the orchestrator module.
-    use pictl::rl_orchestrator::compute_reward;
+    use wasm4pm::rl_orchestrator::compute_reward;
 
     let penalty_3_alerts = compute_reward(0, 0, 3, true, true, false);
     let penalty_5_alerts = compute_reward(0, 0, 5, true, true, false);

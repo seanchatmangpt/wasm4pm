@@ -11,11 +11,11 @@
 //! Algorithm family: Autonomic Control Loop (integration)
 //! Modules tested: action_dispatch, rl_orchestrator
 
-use pictl::action_dispatch::{
+use wasm4pm::action_dispatch::{
     dispatch_action, DispatchOutcome, ExecutionContext,
 };
-use pictl::rl_orchestrator::{compute_reward, RlOrchestrator};
-use pictl::{RlAction, RlState};
+use wasm4pm::rl_orchestrator::{compute_reward, RlOrchestrator};
+use wasm4pm::{RlAction, RlState};
 
 /// Helper: create an RlState with dummy features and given health level.
 fn make_test_state(health_level: u8) -> RlState {

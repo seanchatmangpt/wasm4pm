@@ -13,10 +13,10 @@ serde_json = "1.0.105"
 hashbrown = { version = "0.17", features = ["inline-more"] }
 smallvec = { version = "1.13", features = ["serde"] }
 itertools = "0.14.0"
-bcinr-core = { path = "../../../bcinr/bcinr-core", optional = true, default-features = false }
+bcinr = { version = "26.4.18", optional = true, default-features = false }
 
 [features]
-bcinr = ["dep:bcinr-core"]
+bcinr = ["dep:bcinr"]
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }

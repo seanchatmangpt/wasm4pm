@@ -10,10 +10,10 @@
 //!   HalfOpen --[success count >= threshold]--> Closed
 //!   HalfOpen --[failure]--> Open
 
-use pictl::self_healing::{
+use wasm4pm::self_healing::{
     advance_clock, reset_clock, CircuitBreaker, CircuitBreakerConfig, CircuitState,
 };
-use pictl::rl_orchestrator::compute_reward;
+use wasm4pm::rl_orchestrator::compute_reward;
 
 fn setup() {
     reset_clock();

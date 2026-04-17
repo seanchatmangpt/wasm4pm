@@ -9,8 +9,8 @@
 //! 3. Negative test: wrong phase order in OCEL produces inverted edges (proving discovery detects violations)
 
 use chrono::{Duration, Utc};
-use pictl::models::{OCELEvent, OCELEventObjectRef, OCELObject, OCEL};
-use pictl::discovery::discover_ocel_dfg_pure;
+use wasm4pm::models::{OCELEvent, OCELEventObjectRef, OCELObject, OCEL};
+use wasm4pm::discovery::discover_ocel_dfg_pure;
 use std::collections::{HashMap, HashSet};
 
 // ============================================================================

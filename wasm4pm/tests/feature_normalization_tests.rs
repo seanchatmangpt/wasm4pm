@@ -7,7 +7,7 @@
 //!
 //! These are cheap tests designed to run on every commit.
 
-use pictl::{create_rl_state, rl_state_from_features, rl_state_health_level, RlState};
+use wasm4pm::{create_rl_state, rl_state_from_features, rl_state_health_level, RlState};
 
 /// Declared upper bounds for each RlState field (verified against lib.rs).
 const HEALTH_LEVEL_MAX: u8 = 4;

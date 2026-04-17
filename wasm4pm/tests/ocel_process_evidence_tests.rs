@@ -11,7 +11,7 @@
 //! - Rank 3: Metamorphic (relationships between run count and event count)
 
 use chrono::{Duration, Utc};
-use pictl::models::{OCELEvent, OCELEventObjectRef, OCELObject, OCEL};
+use wasm4pm::models::{OCELEvent, OCELEventObjectRef, OCELObject, OCEL};
 use std::collections::{HashMap, HashSet};
 
 // ============================================================================

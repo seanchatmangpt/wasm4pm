@@ -1,11 +1,11 @@
 // Integration tests for cache-efficient data structures
 // Run with: cargo test --test cache_resident_tests
 
-use pictl::cache_resident::{
+use wasm4pm::cache_resident::{
     encode_rl_state, decode_rl_state, QTable, VariantMap, QEntry, CycleSnapshot,
     ActionRecommendation, VariantEntry,
 };
-use pictl::RlState;
+use wasm4pm::RlState;
 
 #[test]
 fn test_state_encoding_decode_roundtrip() {

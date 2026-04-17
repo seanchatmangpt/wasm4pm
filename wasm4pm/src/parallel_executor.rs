@@ -77,18 +77,46 @@ impl PartialDfg {
                 *partial.node_counts.entry(id).or_insert(0) += 1;
             }
             // Directly-follows edges (no-op if safe_end <= start + 1)
-            if safe_end > start {
-                for i in start..safe_end - 1 {
-                    *partial
-                        .edge_counts
-                        .entry((col.events[i], col.events[i + 1]))
-                        .or_insert(0) += 1;
+            #[cfg(feature = "bcinr")]
+            {
+                let pass = (safe_end > start + 1) as u64;
+                let mask = bcinr::mask::select_u64(pass, 1, 0);
+                if mask != 0 {
+                    for i in start..safe_end - 1 {
+                        *partial
+                            .edge_counts
+                            .entry((col.events[i], col.events[i + 1]))
+                            .or_insert(0) += 1;
+                    }
+                }
+            }
+            #[cfg(not(feature = "bcinr"))]
+            {
+                if safe_end > start + 1 {
+                    for i in start..safe_end - 1 {
+                        *partial
+                            .edge_counts
+                            .entry((col.events[i], col.events[i + 1]))
+                            .or_insert(0) += 1;
+                    }
                 }
             }
             // Start / end activities (no-op if range is empty)
-            if safe_end > start {
-                *partial.start_counts.entry(col.events[start]).or_insert(0) += 1;
-                *partial.end_counts.entry(col.events[safe_end - 1]).or_insert(0) += 1;
+            #[cfg(feature = "bcinr")]
+            {
+                let pass = (safe_end > start) as u64;
+                let mask = bcinr::mask::select_u64(pass, 1, 0);
+                if mask != 0 {
+                    *partial.start_counts.entry(col.events[start]).or_insert(0) += 1;
+                    *partial.end_counts.entry(col.events[safe_end - 1]).or_insert(0) += 1;
+                }
+            }
+            #[cfg(not(feature = "bcinr"))]
+            {
+                if safe_end > start {
+                    *partial.start_counts.entry(col.events[start]).or_insert(0) += 1;
+                    *partial.end_counts.entry(col.events[safe_end - 1]).or_insert(0) += 1;
+                }
             }
         }
 

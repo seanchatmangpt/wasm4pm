@@ -129,6 +129,9 @@ export async function runAdversarialAudit(
         throw new Error(`WASM function not exported: ${meta.wasmFn}`);
       }
 
+      // Parse result helper — move to before branches to avoid Temporal Dead Zone
+      const parse = (r: any) => (typeof r === 'string' ? JSON.parse(r) : r);
+
       // Call with standard params — see algorithm signatures for requirements
       let result: any;
       if (meta.id === 'heuristic_miner') {
@@ -174,8 +177,9 @@ export async function runAdversarialAudit(
         // fitness_weight, simplicity_weight
         result = wasmFn(logHandle, config.activityKey, 0.7, 0.3);
       } else if (meta.id === 'smart_engine') {
-        // algorithm, traces_json (raw activity sequences)
-        result = wasmFn(logHandle, 'dfg', '[["A","B"]]');
+        // smart_engine_run requires a SmartEngine handle, not an EventLog handle
+        const seHandle = wasm.smart_engine_create(logHandle, 'dfg', config.activityKey);
+        result = wasm.smart_engine_run(seHandle, 'dfg', '[]');
       } else if (meta.id === 'pnml_import') {
         // pnml_string
         result = wasmFn(MINIMAL_PNML_XML);
@@ -193,29 +197,31 @@ export async function runAdversarialAudit(
         // log_handle, powl_handle (unused), root_id (unused), config_json
         result = wasmFn(logHandle, '', '', '{}');
       } else if (meta.id === 'ml_anomaly') {
-        // log_handle, dfg_handle, activity_key — first discover DFG
-        const dfgResult = parse(wasm.discover_dfg(logHandle, config.activityKey));
-        result = wasmFn(logHandle, dfgResult.handle, config.activityKey);
+        // score_log_anomalies requires a stored DFG handle, not inline JSON
+        const dfgHandle = wasm.discover_dfg_handle(logHandle, config.activityKey);
+        result = wasmFn(logHandle, dfgHandle, config.activityKey);
       } else if (meta.id === 'etconformance_precision') {
-        // log_handle, petri_net_handle, activity_key — first discover alpha++
-        const pnResult = parse(wasm.discover_alpha_plus_plus(logHandle, config.activityKey));
+        // log_handle, petri_net_handle, activity_key — first discover alpha++ with min_support
+        const pnResult = parse(wasm.discover_alpha_plus_plus(logHandle, config.activityKey, 0.1));
         result = wasmFn(logHandle, pnResult.handle, config.activityKey);
       } else if (meta.id === 'generalization') {
         // log_handle, petri_net_handle, activity_key — same as etconformance
-        const pnResult = parse(wasm.discover_alpha_plus_plus(logHandle, config.activityKey));
+        const pnResult = parse(wasm.discover_alpha_plus_plus(logHandle, config.activityKey, 0.1));
         result = wasmFn(logHandle, pnResult.handle, config.activityKey);
       } else if (meta.id === 'alignments') {
         // log_handle, petri_net_handle, activity_key, cost_config_json — same pattern
-        const pnResult = parse(wasm.discover_alpha_plus_plus(logHandle, config.activityKey));
+        const pnResult = parse(wasm.discover_alpha_plus_plus(logHandle, config.activityKey, 0.1));
         result = wasmFn(logHandle, pnResult.handle, config.activityKey, '{}');
+      } else if (meta.id === 'ml_cluster') {
+        // cluster_traces requires num_clusters parameter
+        result = wasmFn(logHandle, config.activityKey, 5);
       } else {
         result = wasmFn(logHandle, config.activityKey);
       }
 
       const latencyMs = performance.now() - startTime;
 
-      // Parse result
-      const parse = (r: any) => (typeof r === 'string' ? JSON.parse(r) : r);
+      // Parse result (parse already declared above)
       model = parse(result);
 
       // Extract handle if present (for conformance checking)

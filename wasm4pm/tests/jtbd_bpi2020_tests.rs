@@ -9,8 +9,8 @@
 //! Oracle: Rank 2 (Domain Contract) — real processes have measurable health and
 //! RL agents should handle large feature spaces without panics or NaN values.
 
-use pictl::rl_orchestrator::RlOrchestrator;
-use pictl::RlState;
+use wasm4pm::rl_orchestrator::RlOrchestrator;
+use wasm4pm::RlState;
 use std::fs;
 
 const FIXTURES_DIR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures");

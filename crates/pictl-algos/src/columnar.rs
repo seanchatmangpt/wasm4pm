@@ -6,7 +6,7 @@
 //!   3. Extract start/end activities from traces       (`extract_start_end`)
 //!
 //! When the `bcinr` feature is enabled, the Jaccard similarity helper delegates
-//! to `bcinr_core::api::bitset::jaccard_u64_slices` for constant-latency execution.
+//! to `bcinr::api::bitset::jaccard_u64_slices` for constant-latency execution.
 
 use hashbrown::HashMap;
 use pictl_types::{AttributeValue, DFGEdge, EventLog};
@@ -111,7 +111,7 @@ pub fn jaccard_similarity(a: &[u64], b: &[u64]) -> f32 {
     debug_assert_eq!(a.len(), b.len(), "bitset slices must have equal length");
     #[cfg(feature = "bcinr")]
     {
-        bcinr_core::api::bitset::jaccard_u64_slices(a, b)
+        bcinr::api::bitset::jaccard_u64_slices(a, b)
     }
     #[cfg(not(feature = "bcinr"))]
     {

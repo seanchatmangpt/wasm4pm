@@ -143,8 +143,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ace50bade8e6234aa140d9a2f552bbee1db4d353f69b8217bc503490fc1a9f26"
 
 [[package]]
+name = "bcinr"
+version = "26.4.18"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "20fed0336e25ac6fd51e26d5ce0d0d75f36374ad2c1701563dbe529a40b02694"
+dependencies = [
+ "bcinr-api",
+ "bcinr-core",
+ "bcinr-logic",
+]
+
+[[package]]
 name = "bcinr-api"
 version = "26.4.17"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2201188bb54101d036e0adc819efff8dd4dc324ba5858541156765e697ab47eb"
 dependencies = [
  "bcinr-logic",
 ]
@@ -152,6 +165,8 @@ dependencies = [
 [[package]]
 name = "bcinr-core"
 version = "26.4.17"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3cf60679fd19054b7f9a5f865c55dc1b2ac02382c4b93801ed9ff3e67339816f"
 dependencies = [
  "bcinr-api",
  "bcinr-logic",
@@ -160,6 +175,8 @@ dependencies = [
 [[package]]
 name = "bcinr-logic"
 version = "26.4.17"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bf27c5561e5eacfe587768169a5e469929034a4088b3a0524ed25d0975e17bc1"
 
 [[package]]
 name = "bit-set"
@@ -1498,7 +1515,7 @@ checksum = "9b4f627cb1b25917193a259e49bdad08f671f8d9708acfd5fe0a8c1455d87220"
 name = "pictl-algos"
 version = "26.4.17"
 dependencies = [
- "bcinr-core",
+ "bcinr",
  "criterion",
  "hashbrown 0.17.0",
  "itertools 0.14.0",
@@ -2259,7 +2276,7 @@ dependencies = [
 name = "wasm4pm"
 version = "26.4.17"
 dependencies = [
- "bcinr-core",
+ "bcinr",
  "blake3",
  "chrono",
  "console_error_panic_hook",

@@ -21,7 +21,7 @@
 //!
 //! ## CPU Baseline
 //!
-//! All tests use `pictl::ml::LinUCBAgent` — the Agent 12 CPU reference.
+//! All tests use `wasm4pm::ml::LinUCBAgent` — the Agent 12 CPU reference.
 //! The GPU parity gate (`#[cfg(feature = "gpu")]`) activates when Agent 11
 //! completes the GPU kernel.
 //!
@@ -37,7 +37,7 @@
 //!   - All 25 vectors pass without `#[ignore]`
 //!   - 100-run determinism confirmed on every vector
 
-use pictl::ml::linucb::{LinUCBAgent, N_ACTIONS, N_FEATURES};
+use wasm4pm::ml::linucb::{LinUCBAgent, N_ACTIONS, N_FEATURES};
 
 // ---------------------------------------------------------------------------
 // Shared assertion helpers
@@ -1143,7 +1143,7 @@ fn test_ec_batch_homogeneous_01() {
 //
 // Activates when `--features gpu` is set (Agent 11's GPU kernel).
 // The structure is final; only the GPU import and assertion lines need
-// to be uncommented when the `pictl::gpu::LinUCBGPU` type is available.
+// to be uncommented when the `wasm4pm::gpu::LinUCBGPU` type is available.
 // ===========================================================================
 
 /// GPU parity: for every conformance vector, CPU and GPU must agree.
@@ -1156,8 +1156,8 @@ fn test_ec_batch_homogeneous_01() {
 ///   4. Asserts `|Q̂_gpu(a, x) - Q̂_cpu(a, x)| < 1e-3` for all 40 actions
 #[cfg(feature = "gpu")]
 mod gpu_parity {
-    use pictl::ml::linucb::{LinUCBAgent, N_ACTIONS, N_FEATURES};
-    // use pictl::gpu::LinUCBGPU;   // Agent 11 — uncomment when ready
+    use wasm4pm::ml::linucb::{LinUCBAgent, N_ACTIONS, N_FEATURES};
+    // use wasm4pm::gpu::LinUCBGPU;   // Agent 11 — uncomment when ready
 
     /// The 25 conformance vectors as (id, features, optional_update).
     ///
@@ -1245,7 +1245,7 @@ mod gpu_parity {
             let cpu_qs = cpu_agent.get_q_values(features);
 
             // ----------------------------------------------------------------
-            // GPU kernel (uncomment when Agent 11 delivers pictl::gpu::LinUCBGPU)
+            // GPU kernel (uncomment when Agent 11 delivers wasm4pm::gpu::LinUCBGPU)
             // ----------------------------------------------------------------
             // let mut gpu_agent = LinUCBGPU::new().expect("GPU kernel init");
             // if let Some((action, reward)) = update {

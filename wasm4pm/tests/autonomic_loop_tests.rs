@@ -3,9 +3,9 @@
 //! Tests that the RL orchestrator persists state across autonomic cycles,
 //! that SPC feedback drives reward computation, and that all WASM exports work.
 
-use pictl::reinforcement::Agent;
-use pictl::rl_orchestrator::{compute_reward, AgentType};
-use pictl::{RlAction, RlState};
+use wasm4pm::reinforcement::Agent;
+use wasm4pm::rl_orchestrator::{compute_reward, AgentType};
+use wasm4pm::{RlAction, RlState};
 
 /// Helper to create test RlState with reasonable defaults
 fn make_test_state(health_level: u8) -> RlState {
@@ -19,14 +19,14 @@ fn make_test_state(health_level: u8) -> RlState {
 
 #[test]
 fn test_orchestrator_default() {
-    let orch = pictl::rl_orchestrator::RlOrchestrator::new();
+    let orch = wasm4pm::rl_orchestrator::RlOrchestrator::new();
     assert_eq!(orch.active_agent(), AgentType::QLearning);
     assert_eq!(orch.telemetry().cycle_count, 0);
 }
 
 #[test]
 fn test_orchestrator_persists_across_cycles() {
-    let mut orch = pictl::rl_orchestrator::RlOrchestrator::new();
+    let mut orch = wasm4pm::rl_orchestrator::RlOrchestrator::new();
     let features = [0.1, 0.2, 0.3, 0.5, 0.0, 1.0, 1.0, 0.0];
     let state = make_test_state(1);
     let next_state = make_test_state(1);
@@ -89,7 +89,7 @@ fn test_all_five_agents_work_in_loop() {
         AgentType::ExpectedSARSA,
         AgentType::REINFORCE,
     ] {
-        let mut orch = pictl::rl_orchestrator::RlOrchestrator::new();
+        let mut orch = wasm4pm::rl_orchestrator::RlOrchestrator::new();
         orch.switch_agent(*agent_type);
         for i in 0..10 {
             let spc_alerts = if i % 3 == 0 { 2 } else { 0 };
@@ -111,7 +111,7 @@ fn test_all_five_agents_work_in_loop() {
 
 #[test]
 fn test_linucb_agent_selection_changes_agent() {
-    let mut orch = pictl::rl_orchestrator::RlOrchestrator::new();
+    let mut orch = wasm4pm::rl_orchestrator::RlOrchestrator::new();
     orch.set_linucb_selection(true);
     let features = [0.5, 0.5, 0.5, 0.5, 0.0, 1.0, 1.0, 0.0];
     let state = make_test_state(1);
@@ -138,23 +138,23 @@ fn test_agent_trait_polymorphism() {
     let state = make_test_state(1);
     let next = make_test_state(2);
 
-    let q = pictl::reinforcement::QLearning::<RlState, RlAction>::new();
+    let q = wasm4pm::reinforcement::QLearning::<RlState, RlAction>::new();
     let _ = Agent::select_action(&q, &state);
     Agent::update(&q, &state, &RlAction::Continue, 0.5, &next, false);
 
-    let sa = pictl::reinforcement::SARSAAgent::<RlState, RlAction>::new();
+    let sa = wasm4pm::reinforcement::SARSAAgent::<RlState, RlAction>::new();
     let _ = Agent::select_action(&sa, &state);
     Agent::update(&sa, &state, &RlAction::Scale, 0.3, &next, false);
 
-    let dq = pictl::reinforcement::DoubleQLearning::<RlState, RlAction>::new();
+    let dq = wasm4pm::reinforcement::DoubleQLearning::<RlState, RlAction>::new();
     let _ = Agent::select_action(&dq, &state);
     Agent::update(&dq, &state, &RlAction::Retry, -0.2, &next, false);
 
-    let es = pictl::reinforcement::ExpectedSARSAAgent::<RlState, RlAction>::new();
+    let es = wasm4pm::reinforcement::ExpectedSARSAAgent::<RlState, RlAction>::new();
     let _ = Agent::select_action(&es, &state);
     Agent::update(&es, &state, &RlAction::Fallback, 0.1, &next, false);
 
-    let rf = pictl::reinforcement::ReinforceAgent::<RlState, RlAction>::new();
+    let rf = wasm4pm::reinforcement::ReinforceAgent::<RlState, RlAction>::new();
     let _ = Agent::select_action(&rf, &state);
     Agent::update(&rf, &state, &RlAction::Restart, -1.0, &next, true);
 }
@@ -169,7 +169,7 @@ fn test_single_autonomic_cycle_completes_in_under_100ms() {
     // Oracle Rank 2: Domain contract — wall-clock SLA from specification
     // Van der Aalst doctrine: Process must be responsive to real-time telemetry changes
 
-    let mut orch = pictl::rl_orchestrator::RlOrchestrator::new_with_seed(42);
+    let mut orch = wasm4pm::rl_orchestrator::RlOrchestrator::new_with_seed(42);
     let features = [0.5, 0.3, 0.2, 0.0, 0.0, 0.0, 0.5, 0.0];
     let state = make_test_state(1);
     let next_state = make_test_state(1);
@@ -194,7 +194,7 @@ fn test_single_autonomic_cycle_completes_in_under_100ms() {
 fn test_g2_fifty_consecutive_cycles_no_panic() {
     // Run 50 consecutive autonomic cycles. Assert no panics and cycle count == 50.
     // This validates end-to-end orchestrator stability without state corruption.
-    let mut orch = pictl::rl_orchestrator::RlOrchestrator::new_with_seed(42);
+    let mut orch = wasm4pm::rl_orchestrator::RlOrchestrator::new_with_seed(42);
     let features = [0.1, 0.2, 0.3, 0.25, 0.0, 1.0, 1.0, 0.0];
     let state = make_test_state(1);
     let next_state = make_test_state(1);
@@ -228,7 +228,7 @@ fn test_g3_degraded_to_recovery_reward_increases() {
     // Phase 1: 10 cycles at health=3 (Critical) — degraded environment.
     // Phase 2: 10 cycles transitioning health=3→2→1→0 — recovery environment.
     // Assert: mean reward in Phase 2 > mean reward in Phase 1.
-    let mut orch = pictl::rl_orchestrator::RlOrchestrator::new_with_seed(42);
+    let mut orch = wasm4pm::rl_orchestrator::RlOrchestrator::new_with_seed(42);
     let features = [0.1, 0.2, 0.3, 0.25, 0.0, 1.0, 1.0, 0.0];
 
     // Phase 1: degraded (health stays at 3)

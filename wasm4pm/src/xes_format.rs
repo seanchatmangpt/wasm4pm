@@ -34,7 +34,7 @@ fn extract_attr<'a>(src: &'a str, name: &[u8]) -> Option<&'a str> {
             #[cfg(feature = "bcinr")]
             {
                 // Use branchless byte scanning via bcinr
-                if let Some(pos) = bcinr_core::api::scan::find_byte(rest, b'"') {
+                if let Some(pos) = bcinr::scan::find_byte(rest, b'"') {
                     return Some(&src[value_start..value_start + pos]);
                 }
             }

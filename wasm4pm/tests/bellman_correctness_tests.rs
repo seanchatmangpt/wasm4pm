@@ -16,10 +16,10 @@
 //!   - Tests 6-10 use compute_reward() which is a pure function
 //!   - All tests are deterministic (no randomness)
 
-use pictl::reinforcement::{Agent, QLearning};
-use pictl::rl_orchestrator::compute_reward;
-use pictl::RlAction;
-use pictl::RlState;
+use wasm4pm::reinforcement::{Agent, QLearning};
+use wasm4pm::rl_orchestrator::compute_reward;
+use wasm4pm::RlAction;
+use wasm4pm::RlState;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -27,7 +27,7 @@ use pictl::RlState;
 
 /// Create an RlState with a specific health_level and all other fields zeroed.
 fn health_state(health_level: u8) -> RlState {
-    pictl::create_rl_state(health_level, 0, 0, 0, 0, 0, 0, 0)
+    wasm4pm::create_rl_state(health_level, 0, 0, 0, 0, 0, 0, 0)
 }
 
 /// Create a QLearning agent with exploration_rate=0.0 (purely greedy).

@@ -7,8 +7,8 @@
 //! Algorithm family: Reinforcement Learning (config sensitivity)
 //! Modules tested: rl_orchestrator, reinforcement agents
 
-use pictl::rl_orchestrator::{compute_reward, AgentType, RlOrchestrator};
-use pictl::RlState;
+use wasm4pm::rl_orchestrator::{compute_reward, AgentType, RlOrchestrator};
+use wasm4pm::RlState;
 use std::collections::HashSet;
 
 /// Helper: create an RlState with dummy features and given health level.

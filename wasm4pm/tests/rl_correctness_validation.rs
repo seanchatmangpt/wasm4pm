@@ -8,8 +8,8 @@
 //! Oracle Rank 2 (domain contract): health improvement should increase cumulative reward
 //! Oracle Rank 3 (metamorphic): policy should improve with training
 
-use pictl::rl_orchestrator::{compute_reward, RlOrchestrator};
-use pictl::RlState;
+use wasm4pm::rl_orchestrator::{compute_reward, RlOrchestrator};
+use wasm4pm::RlState;
 
 fn make_test_state(health_level: u8) -> RlState {
     let features = [0.5, 0.3, 0.2, 0.0, 0.0, 0.0, 0.5, 0.0];

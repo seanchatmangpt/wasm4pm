@@ -155,7 +155,7 @@ pub fn analyze_infrequent_paths(
                 // Hash the u32 sequence
                 #[cfg(feature = "bcinr")]
                 let path_hash: u64 = trace_ids.iter().fold(0u64, |h, &id| {
-                    bcinr_core::api::sketch::fnv1a_64(&(h ^ (id as u64)).to_le_bytes())
+                    bcinr::sketch::fnv1a_64(&(h ^ (id as u64)).to_le_bytes())
                 });
 
                 #[cfg(not(feature = "bcinr"))]

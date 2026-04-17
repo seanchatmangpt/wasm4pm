@@ -11,9 +11,9 @@
 //!
 //! output_dir defaults to .pictl/benchmarks relative to cwd.
 
-use pictl::discovery::discover_dfg;
-use pictl::models::{AttributeValue, Event, EventLog, Trace};
-use pictl::state::{get_or_init_state, StoredObject};
+use wasm4pm::discovery::discover_dfg;
+use wasm4pm::models::{AttributeValue, Event, EventLog, Trace};
+use wasm4pm::state::{get_or_init_state, StoredObject};
 use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::time::Instant;

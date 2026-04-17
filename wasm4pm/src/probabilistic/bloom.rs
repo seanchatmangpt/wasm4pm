@@ -55,14 +55,23 @@ impl<const BITS: usize> BloomFilter<BITS> {
         Self::with_hashes(k)
     }
 
-    /// Hash a key to two independent u64 values using split-mix style.
+    /// Hash a key to two independent u64 values using `bcinr` hashing.
     #[inline]
     fn double_hash(key: u64) -> (u64, u64) {
-        let h1 = key
-            .wrapping_mul(0x517cc1b727220a95)
-            .wrapping_add(0x6c62272e07bb0142);
-        let h2 = h1.rotate_left(17).wrapping_mul(0x9e3779b97f4a7c15);
-        (h1, h2)
+        #[cfg(feature = "bcinr")]
+        {
+            let h1 = bcinr::sketch::fnv1a_64(&key.to_le_bytes());
+            let h2 = bcinr::sketch::fnv1a_64(&(h1.rotate_left(17)).to_le_bytes());
+            (h1, h2)
+        }
+        #[cfg(not(feature = "bcinr"))]
+        {
+            let h1 = key
+                .wrapping_mul(0x517cc1b727220a95)
+                .wrapping_add(0x6c62272e07bb0142);
+            let h2 = h1.rotate_left(17).wrapping_mul(0x9e3779b97f4a7c15);
+            (h1, h2)
+        }
     }
 
     /// Get the i-th hash value using double hashing: `h1 + i * h2`.
@@ -79,8 +88,17 @@ impl<const BITS: usize> BloomFilter<BITS> {
             let bit = Self::nth_hash(h1, h2, i);
             let word = bit / 64;
             let bit_in_word = bit % 64;
-            if word < Self::WORDS {
+            #[cfg(feature = "bcinr")]
+            {
+                // Ensure word bounds in a branchless way
+                let word = bcinr::mask::select_u64((word < Self::WORDS) as u64, word as u64, 0) as usize;
                 self.bits[word] |= 1u64 << bit_in_word;
+            }
+            #[cfg(not(feature = "bcinr"))]
+            {
+                if word < Self::WORDS {
+                    self.bits[word] |= 1u64 << bit_in_word;
+                }
             }
         }
     }
@@ -92,15 +110,28 @@ impl<const BITS: usize> BloomFilter<BITS> {
     #[inline]
     pub fn contains(&self, hash: u64) -> bool {
         let (h1, h2) = Self::double_hash(hash);
+        let mut possible = 1u64;
         for i in 0..self.num_hashes {
             let bit = Self::nth_hash(h1, h2, i);
             let word = bit / 64;
             let bit_in_word = bit % 64;
-            if word >= Self::WORDS || self.bits[word] & (1u64 << bit_in_word) == 0 {
-                return false;
+            let exists = (word < Self::WORDS && (self.bits[word] & (1u64 << bit_in_word)) != 0) as u64;
+
+            #[cfg(feature = "bcinr")]
+            {
+                possible &= exists;
+            }
+            #[cfg(not(feature = "bcinr"))]
+            {
+                if exists == 0 {
+                    return false;
+                }
             }
         }
-        true
+        #[cfg(feature = "bcinr")]
+        return possible != 0;
+        #[cfg(not(feature = "bcinr"))]
+        return true;
     }
 
     /// Clear all bits, resetting the filter.

@@ -46,6 +46,24 @@ impl<const REGISTERS: usize> HyperLogLog<REGISTERS> {
         }
     }
 
+    /// Add an unhashed key to the estimator, hashing it first.
+    #[inline]
+    pub fn add_key(&mut self, key: u64) {
+        #[cfg(feature = "bcinr")]
+        {
+            self.add(bcinr::sketch::fnv1a_64(&key.to_le_bytes()));
+        }
+        #[cfg(not(feature = "bcinr"))]
+        {
+            // Simple robust hash if bcinr is not available
+            let mut h = key.wrapping_mul(0xbf58476d1ce4e5b9);
+            h ^= h >> 33;
+            h = h.wrapping_mul(0x94d049bb133111eb);
+            h ^= h >> 33;
+            self.add(h);
+        }
+    }
+
     /// Add a pre-hashed value to the estimator.
     ///
     /// The hash should be well-distributed (e.g., from a good hash function).
