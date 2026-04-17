@@ -343,11 +343,11 @@ export const ALGORITHM_MANIFEST: AlgorithmMetadata[] = [
 
   {
     id: 'yawl_export',
-    wasmFn: 'powl_to_yawl',
+    wasmFn: 'NOT_EXPORTED',
     outputType: 'tree',
     fitnessCapable: false,
     expectedLatencyBudgetMs: 5000,
-    description: 'YAWL format export'
+    description: 'YAWL format export — Rust function takes internal types, not WASM-exportable'
   },
 
   {
