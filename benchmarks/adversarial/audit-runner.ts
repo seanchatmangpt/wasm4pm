@@ -33,7 +33,7 @@ export interface AuditConfig {
 }
 
 export const DEFAULT_AUDIT_CONFIG: AuditConfig = {
-  logPath: './benchmarks/adversarial/synthetic-normal-500k.xes',
+  logPath: './data/Sepsis Cases - Event Log.xes',
   activityKey: 'concept:name',
   outputDir: './benchmarks/adversarial/results',
   verbose: true,
@@ -108,15 +108,32 @@ export async function runAdversarialAudit(
         throw new Error(`WASM function not exported: ${meta.wasmFn}`);
       }
 
-      // Call with standard params (activity_key required, threshold/seed/etc optional)
+      // Call with standard params — see algorithm signatures for requirements
       let result: any;
-      if (
-        meta.id === 'heuristic_miner' ||
-        meta.id === 'inductive_miner' ||
-        meta.id === 'causal_graph'
-      ) {
-        // These need a threshold parameter
+      if (meta.id === 'heuristic_miner') {
+        // dependency_threshold: 0.2 filters ~30% of edges for typical logs
         result = wasmFn(logHandle, config.activityKey, 0.2);
+      } else if (meta.id === 'inductive_miner') {
+        // Same threshold as heuristic
+        result = wasmFn(logHandle, config.activityKey, 0.2);
+      } else if (meta.id === 'a_star') {
+        // max_iterations: 100 explores 100 states
+        result = wasmFn(logHandle, config.activityKey, 100);
+      } else if (meta.id === 'pso') {
+        // swarm_size, iterations
+        result = wasmFn(logHandle, config.activityKey, 50, 20);
+      } else if (meta.id === 'aco') {
+        // num_ants, iterations (delegates to discover_aco_algorithm internally)
+        result = wasmFn(logHandle, config.activityKey, 50, 20);
+      } else if (meta.id === 'genetic_algorithm') {
+        // population_size, generations
+        result = wasmFn(logHandle, config.activityKey, 50, 30);
+      } else if (meta.id === 'simulated_annealing') {
+        // temperature, cooling_rate
+        result = wasmFn(logHandle, config.activityKey, 100.0, 0.95);
+      } else if (meta.id === 'causal_graph') {
+        // causal_alpha takes no extra params beyond handle + activity_key
+        result = wasmFn(logHandle, config.activityKey);
       } else {
         result = wasmFn(logHandle, config.activityKey);
       }
@@ -225,19 +242,19 @@ export async function runAdversarialAudit(
 }
 
 /**
- * Run audit batch across multiple datasets (quick/normal/stress).
+ * Run audit batch across multiple real datasets.
+ * Small = quick feedback; Large = real 500K+ event stress test.
  */
 export async function runAdversarialAuditBatch(
   wasm: any,
-  datasetDir: string = './benchmarks/adversarial',
+  datasetDir: string = './data',
   outputDir: string = './benchmarks/adversarial/results'
 ): Promise<Map<string, any>> {
   const batches = new Map<string, any>();
 
   const datasets = [
-    { name: 'quick', file: 'synthetic-quick-50k.xes' },
-    { name: 'normal', file: 'synthetic-normal-500k.xes' },
-    { name: 'stress', file: 'synthetic-stress-5m.xes' },
+    { name: 'small', file: 'Sepsis Cases - Event Log.xes' },
+    { name: 'large', file: 'Road_Traffic_Fine_Management_Process.xes' },
   ];
 
   for (const { name, file } of datasets) {
