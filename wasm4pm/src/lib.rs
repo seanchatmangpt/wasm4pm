@@ -85,6 +85,18 @@ pub mod models;
 pub mod state;
 pub mod types;
 
+use tracing_subscriber::fmt::format::FmtSpan;
+
+#[wasm_bindgen(start)]
+pub fn main() {
+    #[cfg(feature = "console_error_panic_hook")]
+    console_error_panic_hook::set_once();
+    
+    tracing_subscriber::fmt()
+        .with_span_events(FmtSpan::CLOSE)
+        .init();
+}
+
 // Drift detection thresholds (configurable via set_drift_thresholds)
 const DRIFT_THRESHOLD_LOW_DEFAULT: f32 = 0.3;
 const DRIFT_THRESHOLD_HIGH_DEFAULT: f32 = 0.7;
@@ -548,13 +560,6 @@ use types::*;
 
 use std::cell::RefCell;
 use wasm_bindgen::prelude::*;
-
-#[wasm_bindgen(start)]
-pub fn init_wasm() {
-    // Initialize panic hook for better error messages in console
-    #[cfg(feature = "console_error_panic_hook")]
-    console_error_panic_hook::set_once();
-}
 
 /// Initialize the WASM module
 #[wasm_bindgen]

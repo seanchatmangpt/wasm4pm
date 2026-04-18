@@ -279,16 +279,8 @@ fn sample_log_normal(rng: &mut StdRng, mean: f64, std_dev: f64) -> Result<f64, S
     // Convert from desired lognormal mean/std to underlying normal params
     let variance = std_dev * std_dev;
     let sigma2 = (variance / (mean * mean) + 1.0).ln();
-    let sigma = sigma2.sqrt();
+    let sigma = sigma2.sqrt().max(1e-6);
     let mu = mean.ln() - sigma2 / 2.0;
-
-    // Validate that sigma is positive (required by LogNormal)
-    if sigma <= 0.0 {
-        return Err(format!(
-            "Invalid lognormal parameters: sigma={} (from mean={}, std_dev={})",
-            sigma, mean, std_dev
-        ));
-    }
 
     let log_normal = LogNormal::new(mu, sigma)
         .map_err(|e| format!("Failed to create LogNormal distribution: {}", e))?;

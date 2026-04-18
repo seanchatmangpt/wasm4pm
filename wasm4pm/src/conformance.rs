@@ -1,6 +1,6 @@
 use crate::models::*;
 use crate::state::{get_or_init_state, StoredObject};
-use crate::utilities::to_js;
+use crate::utilities::to_js_str;
 use serde_json::json;
 use hashbrown::HashMap;
 use wasm_bindgen::prelude::*;
@@ -469,7 +469,7 @@ pub fn check_token_based_replay(
                 0.0
             };
 
-            to_js(&result)
+            to_js_str(&result)
         }
         Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
         None => Err(JsValue::from_str("EventLog not found")),

@@ -1,7 +1,7 @@
 /**
  * Plan validation utilities
  */
-import type { ExecutionPlan } from './planner';
+import type { ExecutionPlan } from './planner.js';
 /**
  * Validation error
  */

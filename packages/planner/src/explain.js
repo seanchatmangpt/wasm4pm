@@ -4,7 +4,7 @@
  * Per PRD §11: explain() == run()
  * The explanation is generated from the same plan used for execution
  */
-import { plan } from './planner';
+import { plan } from './planner.js';
 /**
  * Generates a human-readable markdown explanation of an execution plan
  *

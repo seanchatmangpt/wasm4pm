@@ -38,7 +38,7 @@ export async function computeFitness(
     const result = wasm.check_token_based_replay(logHandle, modelHandle, activityKey);
     const parsed = typeof result === 'string' ? JSON.parse(result) : result;
     return {
-      fitness: parsed.fitness ?? 0,
+      fitness: parsed.avg_fitness ?? parsed.fitness ?? 0,
       missing: parsed.missing ?? 0,
       consumed: parsed.consumed ?? 0,
       produced: parsed.produced ?? 0,

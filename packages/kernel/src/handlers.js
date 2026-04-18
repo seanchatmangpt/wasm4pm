@@ -4,7 +4,7 @@
  * Bridge between planner (algorithm name) and WASM module (function calls)
  */
 import { PlanStepType } from '@pictl/planner';
-import { getRegistry } from './registry';
+import { getRegistry } from './registry.js';
 /**
  * Map PlanStepType to algorithm ID
  */

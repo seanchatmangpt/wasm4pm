@@ -28,9 +28,9 @@ export declare class JSONFormatter {
     private quiet;
     constructor(options?: OutputOptions);
     output(data: Record<string, unknown>): void;
-    success(message: string, data?: Record<string, unknown>): void;
+    success(message: string, data?: unknown): void;
     error(message: string, error?: unknown): void;
-    warn(message: string, data?: Record<string, unknown>): void;
+    warn(message: string, data?: unknown): void;
 }
 /**
  * Streaming output handler for watch mode

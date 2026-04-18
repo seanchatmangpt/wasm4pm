@@ -1,5 +1,48 @@
 import { hash as blake3 } from 'blake3';
 /**
+ * Deterministic JSON.stringify with sorted keys at all levels.
+ *
+ * Used throughout the hashing layer to ensure that the same object
+ * produces the same JSON string regardless of property insertion order.
+ *
+ * **Algorithm:**
+ * 1. Recursively traverse the object tree
+ * 2. For each object, sort keys alphabetically
+ * 3. Skip undefined values
+ * 4. Arrays preserve order (not sorted)
+ * 5. Primitives and null pass through unchanged
+ *
+ * @param obj The object to stringify
+ * @returns Canonical JSON string with sorted keys
+ */
+export function stableStringify(obj) {
+    if (obj === null || obj === undefined)
+        return 'null';
+    if (typeof obj !== 'object')
+        return JSON.stringify(obj);
+    if (Array.isArray(obj))
+        return '[' + obj.map(stableStringify).join(',') + ']';
+    const sorted = Object.keys(obj).sort();
+    const parts = sorted
+        .filter(k => obj[k] !== undefined)
+        .map(k => JSON.stringify(k) + ':' + stableStringify(obj[k]));
+    return '{' + parts.join(',') + '}';
+}
+/**
+ * Computes BLAKE3 hash of an object as a 128-character hex string.
+ *
+ * Uses stable stringification to ensure deterministic hashing.
+ * Result is always lowercase hex, exactly 128 characters (256 bits).
+ *
+ * @param obj The object to hash
+ * @returns BLAKE3 hex-64 (128 character string)
+ */
+export function blake3Hex(obj) {
+    const json = stableStringify(obj);
+    const digest = blake3(json);
+    return digest.toString('hex');
+}
+/**
  * Normalize configuration for hashing.
  * Excludes source/metadata — only hashes semantic config values.
  */
@@ -15,22 +58,6 @@ function normalizeConfig(config) {
         output: config.output,
     };
     return stableStringify(normalized);
-}
-/**
- * Deterministic JSON.stringify with sorted keys at all levels.
- */
-function stableStringify(obj) {
-    if (obj === null || obj === undefined)
-        return 'null';
-    if (typeof obj !== 'object')
-        return JSON.stringify(obj);
-    if (Array.isArray(obj))
-        return '[' + obj.map(stableStringify).join(',') + ']';
-    const sorted = Object.keys(obj).sort();
-    const parts = sorted
-        .filter(k => obj[k] !== undefined)
-        .map(k => JSON.stringify(k) + ':' + stableStringify(obj[k]));
-    return '{' + parts.join(',') + '}';
 }
 /**
  * Compute BLAKE3 hash of configuration.

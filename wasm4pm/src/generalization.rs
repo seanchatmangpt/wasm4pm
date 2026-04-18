@@ -30,7 +30,7 @@
 use crate::error::{codes, wasm_err};
 use crate::models::{EventLog, PetriNet};
 use crate::state::{get_or_init_state, StoredObject};
-use crate::utilities::to_js;
+use crate::utilities::to_js_str;
 use rustc_hash::FxHashMap;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
@@ -359,19 +359,20 @@ pub fn generalization(
     petri_net_handle: &str,
     activity_key: &str,
 ) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(eventlog_handle, |log_obj| match log_obj {
-        Some(StoredObject::EventLog(log)) => {
-            get_or_init_state().with_object(petri_net_handle, |pn_obj| match pn_obj {
-                Some(StoredObject::PetriNet(pn)) => {
-                    let result = compute_quality(pn, log, activity_key)?;
-                    to_js(&result)
-                }
-                Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not a PetriNet")),
-                None => Err(wasm_err(codes::INVALID_HANDLE, "PetriNet not found")),
-            })
-        }
+    // Clone EventLog out first (releases lock before inner call)
+    let log = get_or_init_state().with_object(eventlog_handle, |log_obj| match log_obj {
+        Some(StoredObject::EventLog(log)) => Ok(log.clone()),
         Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
         None => Err(wasm_err(codes::INVALID_HANDLE, "EventLog not found")),
+    })?;
+    // Lock released — second with_object is safe
+    get_or_init_state().with_object(petri_net_handle, |pn_obj| match pn_obj {
+        Some(StoredObject::PetriNet(pn)) => {
+            let result = compute_quality(pn, &log, activity_key)?;
+            to_js_str(&result)
+        }
+        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not a PetriNet")),
+        None => Err(wasm_err(codes::INVALID_HANDLE, "PetriNet not found")),
     })
 }
 

@@ -9,8 +9,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { hash as blake3Hash } from 'blake3';
 import { createError } from '@pictl/contracts';
 import { ALGORITHM_ID_TO_STEP_TYPE, getProfileAlgorithms, ALGORITHM_DISPLAY_NAMES, } from '@pictl/contracts';
-import { topologicalSort, validateDAG } from './dag';
-import { PlanStepType, createBootstrapStep, createInitWasmStep, createLoadSourceStep, createValidateSourceStep, createAlgorithmStep, createAnalysisStep, createGenerateReportsStep, createSinkStep, createCleanupStep, } from './steps';
+import { topologicalSort, validateDAG } from './dag.js';
+import { PlanStepType, createBootstrapStep, createInitWasmStep, createLoadSourceStep, createValidateSourceStep, createAlgorithmStep, createAnalysisStep, createGenerateReportsStep, createSinkStep, createCleanupStep, } from './steps.js';
 /**
  * Typed error for planner failures.
  * Extends Error for compatibility with try/catch while carrying ErrorInfo.
@@ -113,6 +113,74 @@ function algorithmNameFromStepType(stepType) {
     return lifecycle[stepType] ?? stepType;
 }
 /**
+ * Helper to create BudgetEnvelope from Config (Section 4.1)
+ * Maps execution profile and runtime context to budget constraints.
+ *
+ * Derives:
+ * - latencyBudget: from profile (fast→sub_ms, balanced→low_ms, quality→high_ms, stream→sub_ms)
+ * - memoryBudget: from config.execution.maxMemoryMB (0 = unlimited)
+ * - qualityFloor: from profile (fast→fast, balanced→balanced, quality→quality, stream→fast)
+ * - environment: from config or detected (browserSafe, pythonAvailable)
+ * - mode: from profile + heuristics (log size for balanced, algorithm for quality)
+ */
+function createBudgetEnvelopeFromConfig(config, sourceKind) {
+    const profile = config.execution.profile.toLowerCase();
+    // Derive latency budget from profile
+    const latencyBudgetMap = {
+        fast: 'sub_ms',
+        stream: 'sub_ms',
+        balanced: 'low_ms',
+        quality: 'high_ms',
+    };
+    const latencyBudget = latencyBudgetMap[profile] || 'high_ms';
+    // Derive quality floor from profile
+    const qualityFloorMap = {
+        fast: 'fast',
+        stream: 'fast',
+        balanced: 'balanced',
+        quality: 'quality',
+    };
+    const qualityFloor = qualityFloorMap[profile] || 'balanced';
+    // Derive execution mode from profile
+    // mode determines dispatch pattern (online vs async job queue)
+    let mode = 'online';
+    if (profile === 'quality') {
+        // quality → near-online or batch (by algorithm: ilp/genetic → batch)
+        const algorithmName = config.algorithm?.name || '';
+        const batchAlgorithms = ['ilp', 'genetic_algorithm', 'aco', 'pso'];
+        if (batchAlgorithms.some((id) => algorithmName.includes(id))) {
+            mode = 'batch';
+        }
+        else {
+            mode = 'near-online';
+        }
+    }
+    else if (profile === 'balanced') {
+        // balanced → online or near-online (by log size: >50K events → near-online)
+        // Note: event count typically not available at planning time, so default to online
+        // FederationController may upgrade to near-online at runtime if needed
+        mode = 'online';
+    }
+    else if (profile === 'fast' || profile === 'stream') {
+        mode = 'online';
+    }
+    // Memory budget from config (0 = unlimited)
+    const memoryBudget = (config.execution.maxMemoryMB || 0) * 1024 * 1024;
+    // Environment defaults
+    const environment = {
+        browserSafe: false, // Default; can be overridden
+        pythonAvailable: false, // Default; runtime detection may override
+    };
+    const budget = {
+        latencyBudget,
+        memoryBudget,
+        qualityFloor,
+        environment,
+        mode,
+    };
+    return { budget };
+}
+/**
  * Generates an execution plan from a configuration
  *
  * Plan structure:
@@ -123,7 +191,7 @@ function algorithmNameFromStepType(stepType) {
  * 5. Optional: cleanup (depends on everything)
  *
  * @param config - Configuration specifying source, profile, and options
- * @returns ExecutionPlan with deterministic structure and BLAKE3 hash
+ * @returns ExecutionPlan with deterministic structure and BLAKE3 hash, BudgetEnvelope attached
  * @throws Error if configuration is invalid
  */
 export function plan(config) {
@@ -270,7 +338,10 @@ export function plan(config) {
     }
     // Generate deterministic hash
     const planHash = computePlanHash(planId, steps, graph, config);
-    // Return the execution plan
+    // Section 4.1: Create BudgetEnvelope for backend selection (Section 3.5)
+    // Derive budget from profile and config
+    const { budget } = createBudgetEnvelopeFromConfig(config, sourceKind);
+    // Return the execution plan with BudgetEnvelope attached
     const executionPlan = {
         id: planId,
         hash: planHash,
@@ -280,6 +351,7 @@ export function plan(config) {
         sourceKind,
         sinkKind,
         profile,
+        budget,
     };
     return executionPlan;
 }

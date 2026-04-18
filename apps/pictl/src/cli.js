@@ -19,11 +19,11 @@ import { social } from './commands/social.js';
 import { quality } from './commands/quality.js';
 import { validate } from './commands/validate.js';
 import { autoprocess } from './commands/autoprocess.js';
-// import { agent } from './commands/agent.js'; // TODO: Re-enable after fixing @pictl/agents build
+// import { agent } from './commands/agent.js'; // Pre-existing type errors in agent commands
 export const main = defineCommand({
     meta: {
         name: 'pictl',
-        version: '26.4.10',
+        version: '26.4.17',
         description: 'High-performance process mining and workflow discovery CLI',
     },
     args: {
@@ -43,7 +43,7 @@ export const main = defineCommand({
         const DIM = '\x1b[2m';
         const RESET = '\x1b[0m';
         process.stdout.write(`
-${BOLD}pictl${RESET} v26.4.10  —  Process Mining CLI  ${DIM}(wasm4pm)${RESET}
+${BOLD}pictl${RESET} v26.4.17  —  Process Mining CLI  ${DIM}(wasm4pm)${RESET}
 
 ${BOLD}DISCOVERY${RESET}
   ${GREEN}pictl run${RESET} <log.xes>                   Discover a process model (default: heuristic miner)
@@ -133,13 +133,13 @@ Activity key defaults to "concept:name" (XES standard). Pass --activity-key to o
         quality,
         validate,
         autoprocess,
-        // agent, // TODO: Re-enable after fixing @pictl/agents build
+        // agent, // Pre-existing type errors in agent commands
     },
 });
 /**
  * Export all commands for testing and programmatic use
  */
 export { run, watch, status, explain, init, predict, driftWatch, doctor, diff, results, compare, ml, powl, conformance, simulate, temporal, social, quality, validate, autoprocess,
-// agent, // TODO: Re-enable after fixing @pictl/agents build
+// agent, // Pre-existing type errors in agent commands
  };
 //# sourceMappingURL=cli.js.map

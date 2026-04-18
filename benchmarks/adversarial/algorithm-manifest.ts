@@ -61,10 +61,10 @@ export const ALGORITHM_MANIFEST: AlgorithmMetadata[] = [
   {
     id: 'inductive_miner',
     wasmFn: 'discover_inductive_miner',
-    outputType: 'dfg',  // Actually returns DFG, not tree
+    outputType: 'tree',
     fitnessCapable: false,
     expectedLatencyBudgetMs: 5000,
-    description: 'STUB: Returns DFG, not tree. Claims to be inductive miner'
+    description: 'Inductive Miner: recursive divide-and-conquer via XOR/sequence/parallel cuts'
   },
 
   {
@@ -145,7 +145,7 @@ export const ALGORITHM_MANIFEST: AlgorithmMetadata[] = [
     outputType: 'petrinet',
     fitnessCapable: true,
     expectedLatencyBudgetMs: 60000,
-    description: 'STUB: Not ILP, just naive DFG→Petri net conversion'
+    description: 'Frequency-aware Petri net discovery via directly-follows with implicit place construction'
   },
 
   {

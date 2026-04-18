@@ -472,6 +472,13 @@ export declare const configSchema: z.ZodObject<{
         poll_interval: number;
         checkpoint_dir?: string | undefined;
     } | undefined;
+    prediction?: {
+        enabled: boolean;
+        activityKey: string;
+        tasks: ("features" | "outcome" | "remaining_time" | "drift" | "resource" | "next_activity")[];
+        ngramOrder: number;
+        driftWindowSize: number;
+    } | undefined;
     ml?: {
         enabled: boolean;
         eps: number;
@@ -481,13 +488,6 @@ export declare const configSchema: z.ZodObject<{
         tasks: ("classify" | "cluster" | "forecast" | "anomaly" | "regress" | "pca")[];
         k?: number | undefined;
         method?: string | undefined;
-    } | undefined;
-    prediction?: {
-        enabled: boolean;
-        activityKey: string;
-        tasks: ("features" | "outcome" | "remaining_time" | "drift" | "resource" | "next_activity")[];
-        ngramOrder: number;
-        driftWindowSize: number;
     } | undefined;
     rl?: {
         gpu_enabled: boolean;
@@ -516,6 +516,13 @@ export declare const configSchema: z.ZodObject<{
         name?: "dfg" | "heuristic_miner" | "ilp" | "pso" | "declare" | "aco" | "powl_to_process_tree" | "monte_carlo_simulation" | "playout" | "generalization" | "inductive_miner" | "alpha_plus_plus" | "hill_climbing" | "simulated_annealing" | "a_star" | "genetic_algorithm" | "ml_classify" | "ml_cluster" | "ml_forecast" | "ml_anomaly" | "ml_regress" | "ml_pca" | "process_skeleton" | "optimized_dfg" | "transition_system" | "log_to_trie" | "causal_graph" | "performance_spectrum" | "batches" | "correlation_miner" | "petri_net_reduction" | "etconformance_precision" | "alignments" | "complexity_metrics" | "pnml_import" | "bpmn_import" | "yawl_export" | undefined;
         parameters?: Record<string, unknown> | undefined;
     } | undefined;
+    prediction?: {
+        enabled?: boolean | undefined;
+        activityKey?: string | undefined;
+        tasks?: ("features" | "outcome" | "remaining_time" | "drift" | "resource" | "next_activity")[] | undefined;
+        ngramOrder?: number | undefined;
+        driftWindowSize?: number | undefined;
+    } | undefined;
     ml?: {
         enabled?: boolean | undefined;
         k?: number | undefined;
@@ -525,13 +532,6 @@ export declare const configSchema: z.ZodObject<{
         method?: string | undefined;
         targetKey?: string | undefined;
         tasks?: ("classify" | "cluster" | "forecast" | "anomaly" | "regress" | "pca")[] | undefined;
-    } | undefined;
-    prediction?: {
-        enabled?: boolean | undefined;
-        activityKey?: string | undefined;
-        tasks?: ("features" | "outcome" | "remaining_time" | "drift" | "resource" | "next_activity")[] | undefined;
-        ngramOrder?: number | undefined;
-        driftWindowSize?: number | undefined;
     } | undefined;
     observability?: {
         logLevel?: "error" | "debug" | "info" | "warn" | undefined;

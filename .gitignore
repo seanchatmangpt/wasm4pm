@@ -35,3 +35,4 @@ Thumbs.db
 .env
 .env.local
 .env.*.local
+data/Road_Traffic_Fine_Management_Process.xes

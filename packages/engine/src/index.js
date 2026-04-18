@@ -24,4 +24,8 @@ export { CheckpointManager } from './checkpointing.js';
 export { WasmLoader, createWasmLoader, getWasmLoader } from './wasm-loader.js';
 // Re-export error code for tests
 export { WasmErrorCode } from './wasm-loader.js';
+// Federation and execution modes (Section 5)
+export { FederationController, FederationCircuitBreaker, initializeFederationStack, planFederationIntegration, } from './federation.js';
+// NullBackend sentinel
+export { NullBackend } from './null-backend.js';
 //# sourceMappingURL=index.js.map

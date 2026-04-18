@@ -20,12 +20,14 @@
  * The same plan is used for both explanation and execution
  */
 // Core planning API
-export { plan, toContractsPlan, PlannerError } from './planner';
-export { explain, explainBrief } from './explain';
+export { plan, toContractsPlan, PlannerError } from './planner.js';
+export { explain, explainBrief } from './explain.js';
 // DAG utilities
-export { topologicalSort, hasCycle, getDependencies, getDependents, validateDAG } from './dag';
+export { topologicalSort, hasCycle, getDependencies, getDependents, validateDAG } from './dag.js';
 // Step types and factories
-export { PlanStepType, createBootstrapStep, createInitWasmStep, createLoadSourceStep, createValidateSourceStep, createAlgorithmStep, createAnalysisStep, createGenerateReportsStep, createSinkStep, createCleanupStep, } from './steps';
+export { PlanStepType, createBootstrapStep, createInitWasmStep, createLoadSourceStep, createValidateSourceStep, createAlgorithmStep, createAnalysisStep, createGenerateReportsStep, createSinkStep, createCleanupStep, } from './steps.js';
 // Validation utilities
-export { validatePlan, assertPlanValid, validateSourceSinkCompatibility } from './validation';
+export { validatePlan, assertPlanValid, validateSourceSinkCompatibility } from './validation.js';
+// Policy and budget enforcement (Section 4 — Planner Policy and Budget Enforcement)
+export { selectEngineByPriority, selectAlgorithmByBudget, shouldPromoteJob, shouldDegradeAlgorithm, profileToExecutionMode, profileToLatencyBudget, profileToQualityFloor, } from './policy.js';
 //# sourceMappingURL=index.js.map

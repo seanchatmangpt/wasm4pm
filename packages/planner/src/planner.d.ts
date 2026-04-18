@@ -5,9 +5,9 @@
  * Per PRD §11: explain() == run()
  * The plan is used by both explain() and run() - only difference is explanation vs execution
  */
-import type { ErrorInfo } from '@pictl/contracts';
-import type { DAG } from './dag';
-import type { PlanStep } from './steps';
+import type { ErrorInfo, BudgetEnvelope } from '@pictl/contracts';
+import type { DAG } from './dag.js';
+import type { PlanStep } from './steps.js';
 /**
  * Typed error for planner failures.
  * Extends Error for compatibility with try/catch while carrying ErrorInfo.
@@ -73,6 +73,8 @@ export interface Config {
 }
 /**
  * Execution plan with deterministic layout and reproducible hash
+ * Section 4 of the Three-Layer Architecture Specification requires BudgetEnvelope
+ * to be attached to every ExecutionPlan for budget-first dispatch.
  */
 export interface ExecutionPlan {
     /** Unique plan identifier (UUID) */
@@ -91,6 +93,11 @@ export interface ExecutionPlan {
     sinkKind: string;
     /** Execution profile used (e.g., 'fast', 'balanced', 'quality') */
     profile: string;
+    /** Budget envelope defining execution constraints (Section 4.1)
+     * Attached by plan() and used by backend selection algorithm (Section 3.5).
+     * Immutable; governs latency, memory, quality, and execution mode.
+     */
+    budget: BudgetEnvelope;
 }
 /**
  * Generates an execution plan from a configuration
@@ -103,7 +110,7 @@ export interface ExecutionPlan {
  * 5. Optional: cleanup (depends on everything)
  *
  * @param config - Configuration specifying source, profile, and options
- * @returns ExecutionPlan with deterministic structure and BLAKE3 hash
+ * @returns ExecutionPlan with deterministic structure and BLAKE3 hash, BudgetEnvelope attached
  * @throws Error if configuration is invalid
  */
 export declare function plan(config: Config): ExecutionPlan;

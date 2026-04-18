@@ -195,7 +195,15 @@ export async function runAdversarialAudit(
         result = wasm.play_out_dfg(dfgJson, null);
       } else if (meta.id === 'monte_carlo_simulation') {
         // log_handle, powl_handle (unused), root_id (unused), config_json
-        result = wasmFn(logHandle, '', '', '{}');
+        const mcConfig = JSON.stringify({
+          num_cases: 100,
+          inter_arrival_mean_ms: 100,
+          activity_service_time_ms: {},
+          resource_capacity: {},
+          simulation_time_ms: 60000,
+          random_seed: 42,
+        });
+        result = wasmFn(logHandle, '', '', mcConfig);
       } else if (meta.id === 'ml_anomaly') {
         // score_log_anomalies requires a stored DFG handle, not inline JSON
         const dfgHandle = wasm.discover_dfg_handle(logHandle, config.activityKey);
@@ -221,8 +229,13 @@ export async function runAdversarialAudit(
 
       const latencyMs = performance.now() - startTime;
 
-      // Parse result (parse already declared above)
-      model = parse(result);
+      // Parse result — skip for XML/text-based formats (bpmn_import, pnml_import)
+      if (meta.id === 'bpmn_import' || meta.id === 'pnml_import') {
+        // These return text/XML, not JSON
+        model = { text: typeof result === 'string' ? result : JSON.stringify(result) };
+      } else {
+        model = parse(result);
+      }
 
       // Extract handle if present (for conformance checking)
       if (model.handle) {

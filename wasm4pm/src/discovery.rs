@@ -1,7 +1,7 @@
 use crate::error::{codes, wasm_err};
 use crate::models::*;
 use crate::state::{get_or_init_state, StoredObject};
-use crate::utilities::to_js;
+use crate::utilities::to_js_str;
 use rustc_hash::FxHashMap;
 use serde_json::json;
 use wasm_bindgen::prelude::*;
@@ -77,7 +77,7 @@ pub fn discover_dfg(eventlog_handle: &str, activity_key: &str) -> Result<JsValue
                         }),
                 );
 
-            to_js(&dfg)
+            to_js_str(&dfg)
         }
         Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
         None => Err(wasm_err(
@@ -245,7 +245,7 @@ pub fn discover_ocel_dfg(ocel_handle: &str) -> Result<JsValue, JsValue> {
     get_or_init_state().with_object(ocel_handle, |obj| match obj {
         Some(StoredObject::OCEL(ocel)) => {
             let dfg = discover_ocel_dfg_pure(ocel);
-            to_js(&dfg)
+            to_js_str(&dfg)
         }
         Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an OCEL")),
         None => Err(wasm_err(
@@ -349,7 +349,7 @@ pub fn discover_ocel_dfg_per_type(ocel_handle: &str) -> Result<JsValue, JsValue>
             }
 
             // Return as JSON: { "Order": { ... DFG ... }, "Item": { ... } }
-            to_js(&result)
+            to_js_str(&result)
         }
         Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an OCEL")),
         None => Err(wasm_err(
@@ -439,7 +439,7 @@ pub fn discover_declare(eventlog_handle: &str, activity_key: &str) -> Result<JsV
             model.activities = col.vocab.iter().map(|s| s.to_string()).collect();
 
             if n == 0 || total_cases == 0 {
-                return to_js(&model);
+                return to_js_str(&model);
             }
 
             // Phase 1: Single pass over all traces to build TraceProfile for each
@@ -594,7 +594,7 @@ pub fn discover_declare(eventlog_handle: &str, activity_key: &str) -> Result<JsV
 
             // TODO: Succession, NotCoExistence, ChainPrecedence, ChainResponse require additional LTL-style trace scanning
 
-            to_js(&model)
+            to_js_str(&model)
         }
         Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
         None => Err(wasm_err(
@@ -607,7 +607,7 @@ pub fn discover_declare(eventlog_handle: &str, activity_key: &str) -> Result<JsV
 /// Get list of available discovery algorithms
 #[wasm_bindgen]
 pub fn available_discovery_algorithms() -> JsValue {
-    to_js(&json!({
+    to_js_str(&json!({
         "algorithms": [
             {
                 "name": "dfg",
@@ -659,7 +659,7 @@ pub fn available_discovery_algorithms() -> JsValue {
 /// Get discovery module info
 #[wasm_bindgen]
 pub fn discovery_info() -> JsValue {
-    to_js(&json!({
+    to_js_str(&json!({
         "status": "discovery_module_operational",
         "implemented_algorithms": ["dfg", "ocel_dfg", "declare", "causal_alpha", "causal_heuristic"],
         "note": "Core discovery algorithms implemented as WASM-native code"

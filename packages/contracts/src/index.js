@@ -14,7 +14,10 @@ export * from './templates/index.js';
 // Error system - PRD §14
 export * from './errors.js';
 export { createError, createTypedError, TYPED_ERROR_CODES } from './errors.js';
-// Result type and utilities
+export { isEventLogIR } from './eventlog.js';
+export { isModelIR } from './model.js';
+export { isResultEnvelope, isProvenanceChain, deriveLatencyClass } from './result.js';
+// Result type and utilities (legacy Result<T> type for error handling)
 export * from './result.js';
 // Connector contracts
 export * from './connectors.js';
@@ -30,4 +33,5 @@ export { isStatus, isLifecycleState, isValidTransition, LIFECYCLE_STATES, STATE_
 export { isExplainSnapshot, EXPLAIN_JSON_SCHEMA } from './explain.js';
 // Plan step type values — shared between @pictl/planner and @pictl/testing
 export { PLAN_STEP_TYPE_VALUES } from './steps.js';
+export { latencyTierLte, qualityTierLte, latencyExceedsBudget, qualityDeficientForFloor, createDefaultBudgetEnvelope, } from './budget.js';
 //# sourceMappingURL=index.js.map

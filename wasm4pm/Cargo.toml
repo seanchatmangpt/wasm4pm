@@ -49,6 +49,9 @@ roxmltree = "0.19"
 fastrand = "2.1.0"
 rand = "0.8"
 rand_distr = "0.4"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["fmt", "registry"] }
+ts-rs = { version = "10.0", features = ["serde-json-impl"] }
 statrs = { version = "0.17", default-features = false, optional = true }
 rayon = { version = "1.10", optional = true }
 wgpu     = { version = "0.19", optional = true }

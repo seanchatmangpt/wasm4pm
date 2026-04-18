@@ -1,7 +1,7 @@
 use crate::error::{codes, wasm_err};
 use crate::models::*;
 use crate::state::{get_or_init_state, StoredObject};
-use crate::utilities::to_js;
+use crate::utilities::to_js_str;
 use rustc_hash::FxHashMap;
 use serde_json::json;
 use std::collections::HashMap;
@@ -118,7 +118,7 @@ pub fn discover_alpha_plus_plus(
                         {
                             if seen_ends.insert(last_act.clone()) {
                                 pn.arcs.push(PetriNetArc {
-                                    from: format!("p_{}", last_act),
+                                    from: format!("t_{}", last_act),
                                     to: "end".to_string(),
                                     weight: Some(1),
                                 });
@@ -144,7 +144,7 @@ pub fn discover_alpha_plus_plus(
         .store_object(StoredObject::PetriNet(pn))
         .map_err(|_e| wasm_err(codes::INTERNAL_ERROR, "Failed to store PetriNet"))?;
 
-    to_js(&json!({
+    to_js_str(&json!({
         "handle": handle,
         "places": n_places,
         "transitions": n_transitions,
@@ -241,7 +241,7 @@ pub fn discover_dfg_filtered(
         .store_object(StoredObject::DirectlyFollowsGraph(dfg))
         .map_err(|_e| wasm_err(codes::INTERNAL_ERROR, "Failed to store DFG"))?;
 
-    to_js(&json!({
+    to_js_str(&json!({
         "handle": handle,
         "nodes": n_nodes,
         "edges": n_edges,
