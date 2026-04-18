@@ -1,7 +1,7 @@
 {
   "name": "wasm4pm",
   "type": "module",
-  "collaborators": [
+  "contributors": [
     "Sean Chatman <info@chatmangpt.com>"
   ],
   "description": "High-performance process mining algorithms in WebAssembly for JavaScript/TypeScript",
@@ -9,19 +9,17 @@
   "license": "MIT OR Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/seanchatmangpt/pictl"
+    "url": "https://github.com/seanchatmangpt/pictl",
+    "directory": "wasm4pm"
   },
   "files": [
-    "wasm4pm_bg.wasm",
-    "wasm4pm.js",
-    "wasm4pm.d.ts"
+    "*.js",
+    "*.ts",
+    "*.wasm"
   ],
   "main": "wasm4pm.js",
   "homepage": "https://github.com/seanchatmangpt/pictl",
   "types": "wasm4pm.d.ts",
-  "sideEffects": [
-    "./snippets/*"
-  ],
   "keywords": [
     "process-mining",
     "wasm",

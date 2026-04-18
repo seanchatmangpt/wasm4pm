@@ -9,7 +9,7 @@
   <a href="https://github.com/seanchatmangpt/pictl">
     <img src="https://img.shields.io/github/stars/seanchatmangpt/pictl" alt="GitHub stars"/></a>
 </p>
-<img src="Ferris emerges from the black hole.png" width="300" alt="pictl logo: Ferris emerges from the black hole"/>
+<img src="https://raw.githubusercontent.com/seanchatmangpt/pictl/main/Ferris%20emerges%20from%20the%20black%20hole.png" width="300" alt="pictl logo: Ferris emerges from the black hole"/>
 </div>
 
 ---
@@ -80,7 +80,7 @@ npm run build:edge    # ~1.5MB
 npm run build:fog     # ~2.0MB
 ```
 
-See [DEPLOYMENT_PROFILES.md](./wasm4pm/DEPLOYMENT_PROFILES.md) for complete guide.
+See [DEPLOYMENT_PROFILES.md](https://github.com/seanchatmangpt/pictl/blob/main/wasm4pm/DEPLOYMENT_PROFILES.md) for complete guide.
 
 ### Discovery Layer
 **41 Algorithms** across discovery, ML analysis, and utility functions with 4 execution profiles (Fast, Balanced, Quality, Stream):
@@ -189,7 +189,7 @@ Use pictl directly with Claude through the Model Context Protocol:
 - Discover models with natural language requests
 - Analyze processes conversationally
 - Generate visualizations on demand
-- See [MCP.md](./wasm4pm/MCP.md) for setup
+- See [MCP.md](https://github.com/seanchatmangpt/pictl/blob/main/wasm4pm/MCP.md) for setup
 
 ## 📦 Installation
 
@@ -229,7 +229,7 @@ npm install @seanchatmangpt/pictl
 - **hand_stats.rs:** Hand-rolled statistics replacing statrs for minimal builds
 - **TypeScript registry:** Deployment profile filtering with auto-inference
 
-See [DEPLOYMENT_PROFILES.md](./wasm4pm/DEPLOYMENT_PROFILES.md) for complete guide.
+See [DEPLOYMENT_PROFILES.md](https://github.com/seanchatmangpt/pictl/blob/main/wasm4pm/DEPLOYMENT_PROFILES.md) for complete guide.
 
 ## 🎯 What's New in v26.4.15
 
@@ -272,7 +272,7 @@ See [DEPLOYMENT_PROFILES.md](./wasm4pm/DEPLOYMENT_PROFILES.md) for complete guid
 - **Service Mode:** Deploy as Express HTTP server
 - **100% Compatible:** No breaking changes from v26.4.4
 
-See [RELEASE_NOTES.md](./RELEASE_NOTES.md) for complete details.
+See [RELEASE_NOTES.md](https://github.com/seanchatmangpt/pictl/blob/main/RELEASE_NOTES.md) for complete details.
 
 ## ⚡ Quick Start
 
@@ -399,45 +399,45 @@ wscat -c ws://localhost:3000/api/v1/stream
 ### Core Documentation
 | Document | Purpose |
 |----------|---------|
-| [**RELEASE_NOTES.md**](./RELEASE_NOTES.md) | v26.4.8 and v26.4.5 release notes |
-| [**DEPLOYMENT_PROFILES.md**](./wasm4pm/DEPLOYMENT_PROFILES.md) | Deployment profile guide (v26.4.8) |
-| [**CHANGELOG.md**](./CHANGELOG.md) | Complete version history |
-| [**MIGRATION_GUIDE.md**](./MIGRATION_GUIDE.md) | Upgrading from v26.4.4 |
-| [**QUICKSTART.md**](./docs/QUICKSTART.md) | 5-minute setup guide |
-| [**TUTORIAL.md**](./docs/TUTORIAL.md) | Real-world examples |
-| [**DEPLOYMENT.md**](./docs/DEPLOYMENT.md) | Build, test, and deploy |
+| [**RELEASE_NOTES.md**](https://github.com/seanchatmangpt/pictl/blob/main/RELEASE_NOTES.md) | v26.4.8 and v26.4.5 release notes |
+| [**DEPLOYMENT_PROFILES.md**](https://github.com/seanchatmangpt/pictl/blob/main/wasm4pm/DEPLOYMENT_PROFILES.md) | Deployment profile guide (v26.4.8) |
+| [**CHANGELOG.md**](https://github.com/seanchatmangpt/pictl/blob/main/CHANGELOG.md) | Complete version history |
+| [**MIGRATION_GUIDE.md**](https://github.com/seanchatmangpt/pictl/blob/main/MIGRATION_GUIDE.md) | Upgrading from v26.4.4 |
+| [**QUICKSTART.md**](https://github.com/seanchatmangpt/pictl/blob/main/docs/QUICKSTART.md) | 5-minute setup guide |
+| [**TUTORIAL.md**](https://github.com/seanchatmangpt/pictl/blob/main/docs/TUTORIAL.md) | Real-world examples |
+| [**DEPLOYMENT.md**](https://github.com/seanchatmangpt/pictl/blob/main/docs/DEPLOYMENT.md) | Build, test, and deploy |
 
 ### Reference Documentation
 | Document | Purpose |
 |----------|---------|
-| [**API.md**](./docs/API.md) | Complete function reference + pictl commands |
-| [**ALGORITHMS.md**](./docs/reference/algorithms.md) | Algorithm descriptions and parameters |
-| [**FAQ.md**](./docs/FAQ.md) | Troubleshooting and common questions |
+| [**API.md**](https://github.com/seanchatmangpt/pictl/blob/main/docs/API.md) | Complete function reference + pictl commands |
+| [**ALGORITHMS.md**](https://github.com/seanchatmangpt/pictl/blob/main/docs/reference/algorithms.md) | Algorithm descriptions and parameters |
+| [**FAQ.md**](https://github.com/seanchatmangpt/pictl/blob/main/docs/FAQ.md) | Troubleshooting and common questions |
 
 ### Package Documentation
 | Package | Purpose |
 |---------|---------|
-| [**pictl CLI**](./apps/pictl/README.md) | CLI tool reference |
-| [**@pictl/kernel**](./packages/kernel/README.md) | WASM kernel, 41 algorithms |
-| [**@pictl/config**](./packages/config/README.md) | Configuration system |
-| [**@pictl/engine**](./packages/engine/README.md) | Engine lifecycle |
-| [**@pictl/observability**](./packages/observability/README.md) | Logging and telemetry |
-| [**@pictl/contracts**](./packages/contracts/README.md) | Type-safe contracts |
-| [**@pictl/planner**](./packages/planner/README.md) | Algorithm planner |
-| [**@pictl/testing**](./packages/testing/README.md) | Test harnesses |
-| [**@pictl/ml**](./packages/ml/README.md) | Micro-ML analysis |
-| [**@pictl/swarm**](./packages/swarm/README.md) | Multi-worker coordinator |
-| [**@pictl/agents**](./packages/agents/README.md) | Van der Aalst adversarial agents |
+| [**pictl CLI**](https://github.com/seanchatmangpt/pictl/blob/main/apps/pictl/README.md) | CLI tool reference |
+| [**@pictl/kernel**](https://github.com/seanchatmangpt/pictl/blob/main/packages/kernel/README.md) | WASM kernel, 41 algorithms |
+| [**@pictl/config**](https://github.com/seanchatmangpt/pictl/blob/main/packages/config/README.md) | Configuration system |
+| [**@pictl/engine**](https://github.com/seanchatmangpt/pictl/blob/main/packages/engine/README.md) | Engine lifecycle |
+| [**@pictl/observability**](https://github.com/seanchatmangpt/pictl/blob/main/packages/observability/README.md) | Logging and telemetry |
+| [**@pictl/contracts**](https://github.com/seanchatmangpt/pictl/blob/main/packages/contracts/README.md) | Type-safe contracts |
+| [**@pictl/planner**](https://github.com/seanchatmangpt/pictl/blob/main/packages/planner/README.md) | Algorithm planner |
+| [**@pictl/testing**](https://github.com/seanchatmangpt/pictl/blob/main/packages/testing/README.md) | Test harnesses |
+| [**@pictl/ml**](https://github.com/seanchatmangpt/pictl/blob/main/packages/ml/README.md) | Micro-ML analysis |
+| [**@pictl/swarm**](https://github.com/seanchatmangpt/pictl/blob/main/packages/swarm/README.md) | Multi-worker coordinator |
+| [**@pictl/agents**](https://github.com/seanchatmangpt/pictl/blob/main/packages/agents/README.md) | Van der Aalst adversarial agents |
 
 ### Advanced Documentation
 | Document | Purpose |
 |----------|---------|
-| [**BROWSER-BENCHMARKS.md**](./docs/BROWSER-BENCHMARKS.md) | Browser performance testing |
-| [**MCP.md**](./wasm4pm/MCP.md) | Claude integration (Model Context Protocol) |
+| [**BROWSER-BENCHMARKS.md**](https://github.com/seanchatmangpt/pictl/blob/main/docs/BROWSER-BENCHMARKS.md) | Browser performance testing |
+| [**MCP.md**](https://github.com/seanchatmangpt/pictl/blob/main/wasm4pm/MCP.md) | Claude integration (Model Context Protocol) |
 
 ## 📊 Performance
 
-**Benchmarking Results** (See [BROWSER-BENCHMARKS.md](./docs/BROWSER-BENCHMARKS.md) and [reference/benchmarks.md](./docs/reference/benchmarks.md) for full details):
+**Benchmarking Results** (See [BROWSER-BENCHMARKS.md](https://github.com/seanchatmangpt/pictl/blob/main/docs/BROWSER-BENCHMARKS.md) and [reference/benchmarks.md](https://github.com/seanchatmangpt/pictl/blob/main/docs/reference/benchmarks.md) for full details):
 
 | Algorithm | 100 events | 1K events | 10K events | 100K events |
 |-----------|-----------|-----------|-----------|-----------|
@@ -607,8 +607,8 @@ Contributions welcome! Please:
 ## 📝 License
 
 This project is dual-licensed under:
-- **Apache License 2.0** - [LICENSE-APACHE](./LICENSE-APACHE)
-- **MIT License** - [LICENSE-MIT](./LICENSE-MIT)
+- **Apache License 2.0** - [LICENSE-APACHE](https://github.com/seanchatmangpt/pictl/blob/main/LICENSE-APACHE)
+- **MIT License** - [LICENSE-MIT](https://github.com/seanchatmangpt/pictl/blob/main/LICENSE-MIT)
 
 Choose whichever license works best for your use case.
 
@@ -617,7 +617,7 @@ Choose whichever license works best for your use case.
 - **NPM Package**: https://www.npmjs.com/package/@seanchatmangpt/pictl
 - **GitHub**: https://github.com/seanchatmangpt/pictl
 - **Documentation**: See docs/ directory
-- **Research Paper**: See [REAL-BENCHMARK-RESULTS.md](./docs/REAL-BENCHMARK-RESULTS.md) for benchmarks and performance data
+- **Research Paper**: See [REAL-BENCHMARK-RESULTS.md](https://github.com/seanchatmangpt/pictl/blob/main/docs/REAL-BENCHMARK-RESULTS.md) for benchmarks and performance data
 
 ## 📚 Citation
 
@@ -634,7 +634,7 @@ If you use pictl in your research, please cite:
 
 ## 🙋 Support
 
-- **Documentation**: See [TUTORIAL.md](./docs/TUTORIAL.md) and [FAQ.md](./docs/FAQ.md)
+- **Documentation**: See [TUTORIAL.md](https://github.com/seanchatmangpt/pictl/blob/main/docs/TUTORIAL.md) and [FAQ.md](https://github.com/seanchatmangpt/pictl/blob/main/docs/FAQ.md)
 - **Issues**: Report bugs on [GitHub](https://github.com/seanchatmangpt/pictl/issues)
 - **Discussions**: Join [GitHub Discussions](https://github.com/seanchatmangpt/pictl/discussions)
 
