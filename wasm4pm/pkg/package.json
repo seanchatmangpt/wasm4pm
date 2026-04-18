@@ -1,5 +1,5 @@
 {
-  "name": "wasm4pm",
+  "name": "@seanchatmangpt/pictl",
   "type": "module",
   "contributors": [
     "Sean Chatman <info@chatmangpt.com>"
