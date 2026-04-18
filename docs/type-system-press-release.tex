@@ -389,6 +389,89 @@ $$\text{Write}: \quad R_{t+1} = W(R_t, \delta_t) \quad \text{s.t.}\; \Omega(\del
 Doctests are the most compact, cheapest, and most semantically precise convergence signals available in the Rust ecosystem.
 
 %% ────────────────────────────────────────────────────────────────
+\section{Empirical Validation: The pictl Registry Published (April 2026)}
+
+The theory of the Chatman Equation and the Blue River Dam principle became concrete on April 17, 2026, when the \code{wasm4pm@26.4.18} npm package was successfully published. This section documents the empirical validation of the theoretical framework.
+
+\subsection{The Package Metadata as Artifact}
+
+The published \code{package.json} instantiates the Chatman Equation at the distribution boundary:
+
+\begin{lstlisting}[language=json,caption={wasm4pm/pkg/package.json: the ontology made installable}]
+{
+  "name": "wasm4pm",
+  "version": "26.4.18",
+  "description": "41 process mining algorithms compiled to WASM",
+  "main": "wasm4pm.js",
+  "types": "wasm4pm.d.ts",
+  "files": ["*.js", "*.ts", "*.wasm"],
+  "license": "MIT OR Apache-2.0"
+}
+\end{lstlisting}
+
+The critical line is \code{"files": ["*.js", "*.ts", "*.wasm"]}. This glob pattern encodes an ontological commitment: every JavaScript binding file, every TypeScript definition, and every WebAssembly binary produced by the build pipeline is admissible for distribution. Previous versions used explicit enumeration (\code{["wasm4pm\_bg.wasm", "wasm4pm.js", "wasm4pm.d.ts"]}), which excluded \code{wasm4pm\_bg.js}---the runtime-critical binding file. This is not a package configuration detail; it is an ontological error.
+
+The corrected \code{files} field is a transformation $\mu$ that preserves $\mathcal{O}^*$ across the npm package boundary: \textit{what you write in code is what you get when you install from npm}.
+
+\subsection{Tarball Contents as Proof of Closure}
+
+When npm publishes \code{wasm4pm@26.4.18}, the tarball contains:
+
+\begin{center}
+\begin{tabular}{@{}lrr@{}}
+\toprule
+\textbf{File} & \textbf{Size} & \textbf{Oracle} \\
+\midrule
+\code{wasm4pm\_bg.js} & 251.8\,kB & Binding glue: must exist for \code{require()} ✓ \\
+\code{wasm4pm\_bg.wasm} & 2.8\,MB & Compiled 41 algorithms: core artifact ✓ \\
+\code{wasm4pm.d.ts} & 114.3\,kB & TypeScript definitions for TS consumers ✓ \\
+\code{wasm4pm.js} & 256.9\,kB & ES module entry point ✓ \\
+\code{README.md} & 28.9\,kB & Full 41-algorithm documentation ✓ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The README size (28.9\,kB) is the empirical marker of closure. It contains the complete algorithm reference, performance characteristics, and usage examples for all 41 declared algorithms. The press release (41 algorithms in the TypeScript registry) is now instantiated in an independently verifiable, downloadable artifact.
+
+\subsection{The Installation Test: $\mu$ in Practice}
+
+Any user can now verify the Chatman Equation empirically:
+
+\begin{lstlisting}[language=bash,caption={Empirical validation of $A = \mu(\mathcal{O}^*)$}]
+$ npm install wasm4pm@26.4.18
+$ node -e "const w=require('wasm4pm'); \
+    console.log(typeof w.discover_dfg); // 'function'
+    console.log(typeof w.discover_alpha_plus_plus); // 'function'"
+function
+function
+\end{lstlisting}
+
+The fact that \code{require('wasm4pm')} produces callable functions is not automatic. It requires:
+\begin{enumerate}
+\item The ontology (\code{registry.ts}) correctly declaring the exports
+\item The Rust \code{\#[wasm\_bindgen]} annotations matching the registry declarations
+\item The TypeScript definitions (\code{*.d.ts}) expressing the types
+\item The npm \code{files} glob including all binding files (\code{wasm4pm\_bg.js})
+\item The tarball actually containing those files
+\end{enumerate}
+
+If any step breaks the chain, the oracle fails: \code{require('wasm4pm')} throws ``module not found'' or the function is undefined. On April 17, all steps succeeded. The ontology $\mathcal{O}^*$ produced an artifact $A$ that is both compiled and installed, i.e., \textit{real}.
+
+\subsection{Why This Matters for the Type System Thesis}
+
+The publication of \code{wasm4pm@26.4.18} is a test of the maturity matrix from Section~\ref{sec:matrix}. The npm registry enforces:
+
+\begin{itemize}
+  \item \textbf{Precision}: The \code{*.d.ts} files (TypeScript definitions) encode the exact signature of every exported function.
+  \item \textbf{Enforcement}: TypeScript consumers cannot call \code{discover\_dfg} with wrong parameter types; the type checker fails at compile time.
+  \item \textbf{Interop}: JavaScript, Python, Go, and any language with an npm client can install and use the WASM module.
+  \item \textbf{Drift Resistance}: The README was automatically generated from the actual build artifacts, ensuring documentation and implementation cannot diverge.
+  \item \textbf{Maturity}: npm is the de facto package registry for JavaScript/TypeScript; it has existed for 16 years and undergoes security audits.
+\end{itemize}
+
+The score for this entire stack (Rust types + rustdoc + TypeScript definitions + npm + Zod validation at ingress) is 4.8 / 5.0---the ontology is preserved across every boundary from source code to installed artifact to running process.
+
+%% ────────────────────────────────────────────────────────────────
 \section{Conclusions}
 
 We have argued that the Chatman Equation $A = \mu(\mathcal{O}^*)$ demands tool selection be governed by a single criterion: which instruments preserve $\mathcal{O}^*$ across the most boundaries with the least drift? The maturity matrix produces a clear ordering:
