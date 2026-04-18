@@ -558,7 +558,6 @@ use state::*;
 #[allow(unused)]
 use types::*;
 
-use std::cell::RefCell;
 use wasm_bindgen::prelude::*;
 
 /// Initialize the WASM module

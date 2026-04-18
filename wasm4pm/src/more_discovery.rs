@@ -180,7 +180,7 @@ fn find_parallel_cut(
 ) -> Option<Vec<Vec<String>>> {
     // All pairs must have bidirectional edges
     // For now, just check if all activities are mutually connected
-    let activity_set: HashSet<_> = activities.iter().cloned().collect();
+    let _activity_set: HashSet<_> = activities.iter().cloned().collect();
 
     let mut all_bidirectional = true;
     for a1 in activities {

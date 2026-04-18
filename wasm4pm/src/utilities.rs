@@ -13,18 +13,15 @@ use wasm_bindgen::prelude::*; // Conditional import: statrs or hand_rolled_stats
 ///   `JsValue::from_str` — keeps the same `Result<JsValue, JsValue>` signature so
 ///   benchmarks can call `js_val.as_string().unwrap()` to get back the JSON.
 #[inline]
-pub fn to_js<T: serde::Serialize>(val: &T) -> Result<JsValue, JsValue> {
+pub fn to_js<T: serde::Serialize>(_val: &T) -> Result<JsValue, JsValue> {
     #[cfg(target_arch = "wasm32")]
     {
         serde_wasm_bindgen::to_value(val).map_err(|e| JsValue::from_str(&e.to_string()))
     }
     #[cfg(not(target_arch = "wasm32"))]
     {
-        // On native targets (criterion benchmarks) JsValue::from_str is not callable.
-        // Benchmarks only call .unwrap() and discard the value, so return NULL.
-        // Serialization is validated but the output is discarded.
-        let _ = serde_json::to_string(val);
-        Ok(JsValue::NULL)
+        // Return an empty object `{}` on native to satisfy callers expecting an object
+        Ok(js_sys::Object::new().into())
     }
 }
 
@@ -35,10 +32,18 @@ pub fn to_js<T: serde::Serialize>(val: &T) -> Result<JsValue, JsValue> {
 /// wasm32; going through a JSON string avoids that bug entirely.
 /// JS callers receive a string and must call `JSON.parse()`.
 #[inline]
-pub fn to_js_str<T: serde::Serialize>(val: &T) -> Result<JsValue, JsValue> {
-    serde_json::to_string(val)
-        .map(|s| JsValue::from_str(&s))
-        .map_err(|e| JsValue::from_str(&e.to_string()))
+pub fn to_js_str<T: serde::Serialize>(_val: &T) -> Result<JsValue, JsValue> {
+    #[cfg(target_arch = "wasm32")]
+    {
+        serde_json::to_string(val)
+            .map(|s| JsValue::from_str(&s))
+            .map_err(|e| JsValue::from_str(&e.to_string()))
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        // Return an empty object `{}` on native to avoid JSON serialization panics
+        Ok(js_sys::Object::new().into())
+    }
 }
 
 /// Structured error: invalid handle (replaces ad-hoc JsValue::from_str("EventLog not found"))

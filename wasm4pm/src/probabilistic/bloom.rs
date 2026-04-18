@@ -128,10 +128,7 @@ impl<const BITS: usize> BloomFilter<BITS> {
                 }
             }
         }
-        #[cfg(feature = "bcinr")]
-        return possible != 0;
-        #[cfg(not(feature = "bcinr"))]
-        return true;
+        possible != 0
     }
 
     /// Clear all bits, resetting the filter.
