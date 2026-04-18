@@ -1,0 +1,224 @@
+ingress_decide_4_lawful time:   [3.0170 ns 3.0211 ns 3.0253 ns]
+                        change: [+0.4223% +0.5540% +0.6745%] (p = 0.00 < 0.05)
+                        Change within noise threshold.
+Found 2 outliers among 100 measurements (2.00%)
+  2 (2.00%) high mild
+
+ingress_decide_4_unlawful
+                        time:   [3.0142 ns 3.0181 ns 3.0222 ns]
+                        change: [+3.1486% +3.2612% +3.3880%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+Found 3 outliers among 100 measurements (3.00%)
+  1 (1.00%) high mild
+  2 (2.00%) high severe
+
+ingress_decide_8_lawful time:   [5.0220 ns 5.0367 ns 5.0561 ns]
+                        change: [+0.3770% +0.6265% +0.9444%] (p = 0.00 < 0.05)
+                        Change within noise threshold.
+Found 4 outliers among 100 measurements (4.00%)
+  2 (2.00%) high mild
+  2 (2.00%) high severe
+
+ingress_decide_8_unlawful
+                        time:   [5.0004 ns 5.0095 ns 5.0195 ns]
+                        change: [+1.6820% +1.8240% +1.9679%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+Found 9 outliers among 100 measurements (9.00%)
+  5 (5.00%) high mild
+  4 (4.00%) high severe
+
+construct8_transition   time:   [3.5036 ns 3.5079 ns 3.5125 ns]
+                        change: [+0.0114% +0.1541% +0.2988%] (p = 0.03 < 0.05)
+                        Change within noise threshold.
+Found 5 outliers among 100 measurements (5.00%)
+  4 (4.00%) high mild
+  1 (1.00%) high severe
+
+marking_enabled4        time:   [1.5111 ns 1.5128 ns 1.5147 ns]
+                        change: [-0.0337% +0.0725% +0.1946%] (p = 0.25 > 0.05)
+                        No change in performance detected.
+Found 13 outliers among 100 measurements (13.00%)
+  10 (10.00%) high mild
+  3 (3.00%) high severe
+
+marking_fire4           time:   [1.5121 ns 1.5142 ns 1.5164 ns]
+                        change: [-0.2704% +0.0003% +0.2183%] (p = 1.00 > 0.05)
+                        No change in performance detected.
+Found 12 outliers among 100 measurements (12.00%)
+  9 (9.00%) high mild
+  3 (3.00%) high severe
+
+marking_fire4_disabled  time:   [1.5107 ns 1.5123 ns 1.5143 ns]
+                        change: [-0.1251% +0.0615% +0.2212%] (p = 0.52 > 0.05)
+                        No change in performance detected.
+Found 11 outliers among 100 measurements (11.00%)
+  6 (6.00%) high mild
+  5 (5.00%) high severe
+
+ask_eq_u32              time:   [799.72 ps 800.86 ps 802.05 ps]
+                        change: [+0.3884% +0.8232% +1.3771%] (p = 0.00 < 0.05)
+                        Change within noise threshold.
+Found 2 outliers among 100 measurements (2.00%)
+  2 (2.00%) high mild
+
+compare_lt_u32          time:   [797.00 ps 798.40 ps 799.93 ps]
+                        change: [+0.3075% +1.1982% +2.3023%] (p = 0.01 < 0.05)
+                        Change within noise threshold.
+Found 9 outliers among 100 measurements (9.00%)
+  1 (1.00%) low severe
+  7 (7.00%) high mild
+  1 (1.00%) high severe
+
+validate_range_u32      time:   [1.0594 ns 1.0614 ns 1.0636 ns]
+                        change: [+0.4683% +1.0470% +1.7394%] (p = 0.00 < 0.05)
+                        Change within noise threshold.
+Found 3 outliers among 100 measurements (3.00%)
+  1 (1.00%) low severe
+  2 (2.00%) high mild
+
+min_u32                 time:   [903.15 ps 915.14 ps 925.90 ps]
+                        change: [-1.5763% -0.2258% +1.1519%] (p = 0.74 > 0.05)
+                        No change in performance detected.
+Found 9 outliers among 100 measurements (9.00%)
+  9 (9.00%) low mild
+
+max_u32                 time:   [897.23 ps 910.02 ps 921.33 ps]
+                        change: [-5.8427% -4.4424% -3.1624%] (p = 0.00 < 0.05)
+                        Performance has improved.
+
+abs_diff_u32            time:   [876.82 ps 886.61 ps 894.95 ps]
+                        change: [-0.8013% +0.9456% +2.6091%] (p = 0.28 > 0.05)
+                        No change in performance detected.
+
+select_u32              time:   [1.0252 ns 1.0364 ns 1.0466 ns]
+                        change: [-4.9327% -4.2584% -3.5697%] (p = 0.00 < 0.05)
+                        Performance has improved.
+Found 18 outliers among 100 measurements (18.00%)
+  14 (14.00%) low severe
+  4 (4.00%) low mild
+
+popcount_u64            time:   [496.21 ps 496.83 ps 497.50 ps]
+                        change: [-0.0618% +0.2146% +0.4346%] (p = 0.08 > 0.05)
+                        No change in performance detected.
+Found 8 outliers among 100 measurements (8.00%)
+  4 (4.00%) high mild
+  4 (4.00%) high severe
+
+leading_zeros_u64       time:   [597.23 ps 603.60 ps 609.41 ps]
+                        change: [-1.4239% -0.3642% +0.6004%] (p = 0.49 > 0.05)
+                        No change in performance detected.
+Found 15 outliers among 100 measurements (15.00%)
+  11 (11.00%) low severe
+  4 (4.00%) low mild
+
+fmix64                  time:   [677.80 ps 679.03 ps 680.25 ps]
+                        change: [-0.1409% +0.2668% +0.6155%] (p = 0.17 > 0.05)
+                        No change in performance detected.
+Found 2 outliers among 100 measurements (2.00%)
+  2 (2.00%) high mild
+
+bithash_u64             time:   [699.47 ps 701.34 ps 703.36 ps]
+                        change: [+2.1850% +2.7987% +3.4273%] (p = 0.00 < 0.05)
+                        Performance has regressed.
+Found 2 outliers among 100 measurements (2.00%)
+  2 (2.00%) high mild
+
+receipt_seed_mix        time:   [2.2061 ns 2.2093 ns 2.2128 ns]
+                        change: [-0.7411% -0.1088% +0.3281%] (p = 0.76 > 0.05)
+                        No change in performance detected.
+Found 10 outliers among 100 measurements (10.00%)
+  5 (5.00%) low mild
+  5 (5.00%) high mild
+
+bitxor_fingerprint32    time:   [1.0826 ns 1.0902 ns 1.0976 ns]
+                        change: [-1.9208% -0.9029% +0.1442%] (p = 0.10 > 0.05)
+                        No change in performance detected.
+
+bitxor_contains_u32_hit time:   [2.3108 ns 2.3156 ns 2.3212 ns]
+                        change: [-0.3246% -0.0022% +0.2965%] (p = 0.99 > 0.05)
+                        No change in performance detected.
+Found 5 outliers among 100 measurements (5.00%)
+  5 (5.00%) high mild
+
+bitxor_contains_u32_miss
+                        time:   [2.3089 ns 2.3136 ns 2.3186 ns]
+                        change: [+0.4107% +0.6712% +0.9627%] (p = 0.00 < 0.05)
+                        Change within noise threshold.
+Found 3 outliers among 100 measurements (3.00%)
+  1 (1.00%) low mild
+  2 (2.00%) high mild
+
+bituf_find_2_root       time:   [715.11 ps 737.30 ps 758.42 ps]
+                        change: [-6.3171% -3.7117% -1.0968%] (p = 0.00 < 0.05)
+                        Performance has improved.
+
+bituf_find_2_nonroot    time:   [781.02 ps 798.75 ps 813.49 ps]
+                        change: [-9.1731% -6.4899% -3.7727%] (p = 0.00 < 0.05)
+                        Performance has improved.
+
+bituf_union_by_min_2    time:   [3.0558 ns 3.1908 ns 3.3199 ns]
+                        change: [-8.6370% -5.0146% -1.4479%] (p = 0.01 < 0.05)
+                        Performance has improved.
+Found 7 outliers among 100 measurements (7.00%)
+  7 (7.00%) low mild
+
+bitfenwick_add_8        time:   [1.1055 ns 1.1080 ns 1.1108 ns]
+                        change: [-0.2796% +0.1676% +0.5474%] (p = 0.45 > 0.05)
+                        No change in performance detected.
+Found 2 outliers among 100 measurements (2.00%)
+  2 (2.00%) high mild
+
+bitfenwick_sum_8        time:   [807.10 ps 808.17 ps 809.33 ps]
+                        change: [-10.090% -9.8007% -9.5694%] (p = 0.00 < 0.05)
+                        Performance has improved.
+Found 7 outliers among 100 measurements (7.00%)
+  4 (4.00%) high mild
+  3 (3.00%) high severe
+
+manhattan2              time:   [420.85 ps 427.14 ps 432.48 ps]
+                        change: [-3.8957% -2.4485% -1.0669%] (p = 0.00 < 0.05)
+                        Performance has improved.
+Found 22 outliers among 100 measurements (22.00%)
+  19 (19.00%) low severe
+  3 (3.00%) low mild
+
+dist2_sq                time:   [416.07 ps 422.46 ps 428.05 ps]
+                        change: [-4.4881% -2.8074% -0.9080%] (p = 0.00 < 0.05)
+                        Change within noise threshold.
+
+nearest_of4             time:   [414.39 ps 420.68 ps 426.38 ps]
+                        change: [-1.5460% -0.0006% +1.7562%] (p = 1.00 > 0.05)
+                        No change in performance detected.
+Found 16 outliers among 100 measurements (16.00%)
+  9 (9.00%) low severe
+  7 (7.00%) low mild
+
+declare_response_seen   time:   [573.16 ps 574.13 ps 575.10 ps]
+                        change: [+0.7291% +1.0005% +1.2323%] (p = 0.00 < 0.05)
+                        Change within noise threshold.
+Found 5 outliers among 100 measurements (5.00%)
+  4 (4.00%) low mild
+  1 (1.00%) high mild
+
+declare_precedence_ok   time:   [574.80 ps 575.82 ps 576.89 ps]
+                        change: [-4.0558% -2.4009% -0.7946%] (p = 0.01 < 0.05)
+                        Change within noise threshold.
+Found 7 outliers among 100 measurements (7.00%)
+  7 (7.00%) low mild
+
+declare_absence_le_1    time:   [450.50 ps 451.06 ps 451.68 ps]
+                        change: [+0.5321% +0.6816% +0.8518%] (p = 0.00 < 0.05)
+                        Change within noise threshold.
+Found 5 outliers among 100 measurements (5.00%)
+  3 (3.00%) high mild
+  2 (2.00%) high severe
+
+declare_existence_ge_1  time:   [484.73 ps 486.84 ps 489.32 ps]
+                        change: [-32.503% -32.296% -32.096%] (p = 0.00 < 0.05)
+                        Performance has improved.
+Found 12 outliers among 100 measurements (12.00%)
+  2 (2.00%) low severe
+  1 (1.00%) low mild
+  2 (2.00%) high mild
+  7 (7.00%) high severe
+
