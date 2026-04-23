@@ -1,6 +1,6 @@
 {
   "name": "@seanchatmangpt/pictl",
-  "version": "26.4.17",
+  "version": "26.4.23",
   "description": "pictl — Process Intelligence Control CLI",
   "type": "module",
   "bin": {
@@ -29,9 +29,14 @@
   "dependencies": {
     "@pictl/agents": "workspace:*",
     "@pictl/config": "workspace:*",
-    "@pictl/engine": "workspace:*",
-    "@pictl/ml": "workspace:^",
     "@pictl/contracts": "workspace:*",
+    "@pictl/engine": "workspace:*",
+    "@pictl/kernel": "workspace:*",
+    "@pictl/ml": "workspace:^",
+    "@pictl/observability": "workspace:^",
+    "@pictl/planner": "workspace:*",
+    "@pictl/swarm": "workspace:*",
+    "chokidar": "^4.0.1",
     "citty": "^0.1.6",
     "consola": "^3.2.3"
   },
