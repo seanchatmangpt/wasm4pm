@@ -1,6 +1,6 @@
 {
   "name": "@pictl/kernel",
-  "version": "26.4.17",
+  "version": "26.4.23",
   "description": "Core kernel and runtime utilities",
   "type": "module",
   "main": "./dist/index.js",
@@ -27,7 +27,7 @@
     "@pictl/contracts": "workspace:*",
     "@pictl/ml": "workspace:*",
     "@pictl/planner": "workspace:*",
-    "wasm4pm": "workspace:^"
+    "wasm4pm": "workspace:*"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^1.6.0",

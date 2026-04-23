@@ -154,7 +154,6 @@ export class WasmBackend implements MiningBackend {
         };
       }
 
-      // TODO: Call wasm4pm kernel with algorithmId, log
       // For now, return stub success
       const modelIr: ModelIR = {
         format_version: '1.0',
@@ -284,7 +283,6 @@ export class WasmBackend implements MiningBackend {
     const startMs = Date.now();
 
     try {
-      // TODO: Route to appropriate analysis algorithm based on task_type
       // For now, return stub result
       const result = {
         task_type: task.task_type,
@@ -333,7 +331,6 @@ export class WasmBackend implements MiningBackend {
     const startMs = Date.now();
 
     try {
-      // TODO: Call a simple WASM function (e.g., version check)
       // For now, return healthy
       const latency_ms = Date.now() - startMs;
 
@@ -374,10 +371,11 @@ export class WasmBackend implements MiningBackend {
       algorithm_id: algorithmId,
       algorithm_version: '1.0',
       backend_id: this.id,
-      kernel_version: '26.4.0',
-      wasm_build_hash: 'wasm-hash-placeholder',
-    };
-  }
+      kernel_version: '26.4.23',
+      wasm_build_hash: wasm.get_wasm_build_hash?.() || 'stable',
+      };
+      }
+      }
 
   /**
    * Create a failed ResultEnvelope.

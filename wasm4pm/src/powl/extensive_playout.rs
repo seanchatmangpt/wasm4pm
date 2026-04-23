@@ -287,13 +287,13 @@ pub fn powl_extensive_playout(
     // Parse the POWL model string into an arena (same pattern as all other POWL WASM functions)
     let mut arena = PowlArena::new();
     let root = parse_powl_model_string(powl_model_str.trim(), &mut arena)
-        .map_err(|e| JsValue::from_str(&format!("parse error: {}", e)))?;
+        .map_err(|e| crate::error::js_val(&format!("parse error: {}", e)))?;
 
     let result = extensive_playout(&arena, root, &config);
 
     serde_json::to_string(&result)
-        .map_err(|e| JsValue::from_str(&e.to_string()))
-        .map(|s| JsValue::from_str(&s))
+        .map_err(|e| crate::error::js_val(&e.to_string()))
+        .map(|s| crate::error::js_val(&s))
 }
 
 #[cfg(test)]

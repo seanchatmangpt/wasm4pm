@@ -39,12 +39,10 @@ WASM_OPT_FILE="$OUTPUT_DIR/pictl.opt.wasm"
 WASM_BROTLI_FILE="$OUTPUT_DIR/pictl.wasm.br"
 
 # Size targets (MB)
-declare -A SIZE_TARGETS
-SIZE_TARGETS[browser]=4.0
-SIZE_TARGETS[edge]=4.0
-SIZE_TARGETS[fog]=4.0
-SIZE_TARGETS[iot]=4.0
-SIZE_TARGETS[cloud]=5.0
+case "$PROFILE" in
+  cloud)   TARGET_MB=5.0 ;;
+  *)       TARGET_MB=4.0 ;;
+esac
 
 # Code splitting threshold (MB)
 CODE_SPLIT_THRESHOLD=4.5
@@ -82,7 +80,6 @@ case "$PROFILE" in
     ;;
 esac
 
-TARGET_MB=${SIZE_TARGETS[$PROFILE]}
 
 echo "╔═══════════════════════════════════════════════════════════════════════════╗"
 echo "║  pictl WASM Build Orchestration — Profile: $PROFILE"
@@ -142,7 +139,7 @@ RUSTFLAGS="${RUSTFLAGS:-} -C target-feature=+simd128" \
     --quiet 2>&1 | grep -v "warning:" || true
 
 # Copy to output directory
-BUILT_WASM="$PROJECT_ROOT/target/wasm32-unknown-unknown/release/pictl.wasm"
+BUILT_WASM="$PROJECT_ROOT/target/wasm32-unknown-unknown/release/wasm4pm.wasm"
 if [ ! -f "$BUILT_WASM" ]; then
   echo "ERROR: Cargo build failed, WASM file not found at $BUILT_WASM"
   exit 1
@@ -197,7 +194,7 @@ echo ""
 
 if [ "$NO_COMPRESS" = false ] && [ "$BROTLI_AVAILABLE" = true ]; then
   echo "[3/5] Compressing with Brotli (quality 6)..."
-  brotli -6 -k "$WASM_FILE" -o "$WASM_BROTLI_FILE" 2>/dev/null || {
+  brotli -6 -f -k "$WASM_FILE" -o "$WASM_BROTLI_FILE" 2>/dev/null || {
     echo "ERROR: Brotli compression failed"
     exit 1
   }
@@ -252,7 +249,8 @@ echo ""
 
 echo "[5/5] Verifying binary size against target..."
 
-if [ $(python3 -c "print(1 if $(python3 -c \"print(f'{$RAW_SIZE_MB}')\") <= $TARGET_MB else 0)") -eq 1 ]; then
+IS_PASS=$(python3 -c "print(1 if $RAW_SIZE_MB <= $TARGET_MB else 0)")
+if [ "$IS_PASS" -eq 1 ]; then
   echo "[✓] PASS: ${RAW_SIZE_MB} MB ≤ ${TARGET_MB} MB target"
   EXIT_CODE=0
 else

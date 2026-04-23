@@ -18,8 +18,8 @@ import * as path from 'path';
 
 // Load WASM module once at the top level
 const loadWasm = async () => {
-  // Use require for Node.js WASM module compatibility
-  const mod = require('wasm4pm');
+  // Use dynamic import for Node.js WASM module compatibility
+  const mod = await import('wasm4pm');
   return mod;
 };
 

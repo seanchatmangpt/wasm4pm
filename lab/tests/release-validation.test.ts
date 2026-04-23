@@ -76,12 +76,12 @@ const EXPECTED_DISCOVERY_FUNCTIONS = [
 
 let wasm: Record<string, unknown> | null = null;
 
-beforeAll(() => {
+beforeAll(async () => {
   try {
-    wasm = require('wasm4pm') as Record<string, unknown>;
+    wasm = (await import('wasm4pm')) as unknown as Record<string, unknown>;
     console.info('[release] wasm4pm loaded, version:', typeof wasm['get_version'] === 'function' ? (wasm['get_version'] as () => string)() : 'unknown');
   } catch (e) {
-    console.error('[release] Failed to require("wasm4pm"):', String(e));
+    console.error('[release] Failed to import("wasm4pm"):', String(e));
   }
 });
 

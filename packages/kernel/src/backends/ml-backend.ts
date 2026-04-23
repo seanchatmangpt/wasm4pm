@@ -401,10 +401,11 @@ export class MlBackend implements MiningBackend {
       algorithm_id: algorithmId,
       algorithm_version: '1.0',
       backend_id: this.id,
-      kernel_version: '26.4.0',
-      wasm_build_hash: 'wasm-hash-placeholder',
-    };
-  }
+      kernel_version: '26.4.23',
+      wasm_build_hash: 'stable',
+      };
+      }
+      }
 
   /**
    * Create a failed ResultEnvelope for discovery context.

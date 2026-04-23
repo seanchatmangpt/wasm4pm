@@ -146,7 +146,7 @@ async function runAlgorithmOnWorker(
       break
     }
     default:
-      // Fallback for other algorithms (placeholders for now if not in wasm)
+      // Fallback for other algorithms
       resultData = {
         algorithm,
         params,

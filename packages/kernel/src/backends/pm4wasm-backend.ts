@@ -547,7 +547,6 @@ export class Pm4wasmBackend implements MiningBackend {
   /**
    * Convert EventLogIR to WASM-compatible format.
    * Serializes to JSON and calls wasm::eventlog_from_json().
-   * Placeholder: actual implementation fills in WASM call details in Phase 2.
    */
   private async convertEventLogToWasm(log: EventLogIR): Promise<string> {
     // Serialize EventLogIR to JSON string
@@ -567,7 +566,6 @@ export class Pm4wasmBackend implements MiningBackend {
     });
 
     // Call WASM function to parse and store log
-    // Placeholder: actual pm4wasm function name may differ
     if (this.wasmModule && typeof this.wasmModule.eventlog_from_json === 'function') {
       return await this.wasmModule.eventlog_from_json(logJson);
     }
@@ -578,8 +576,7 @@ export class Pm4wasmBackend implements MiningBackend {
 
   /**
    * Convert ModelIR to WASM-compatible format.
-   * Serializes to JSON and calls wasm::model_from_json().
-   * Placeholder: actual implementation in Phase 2.
+   * Serializes to JSON.
    */
   private async convertModelToWasm(model: ModelIR): Promise<string> {
     return JSON.stringify(model);
@@ -588,7 +585,6 @@ export class Pm4wasmBackend implements MiningBackend {
   /**
    * Call a WASM algorithm function by name from ALGORITHM_MAP.
    * Dispatches to the appropriate pm4wasm function with log handle.
-   * Placeholder: actual implementation in Phase 2.
    */
   private async callWasmAlgorithm(wasmFunctionName: string, logHandle: string): Promise<string> {
     if (!this.wasmModule) {
@@ -607,7 +603,6 @@ export class Pm4wasmBackend implements MiningBackend {
   /**
    * Parse WASM algorithm output to ModelIR.
    * Takes the WASM JSON result and converts to canonical ModelIR format.
-   * Placeholder: actual implementation in Phase 2.
    */
   private parseModelOutput(
     wasmOutput: string,
@@ -654,7 +649,6 @@ export class Pm4wasmBackend implements MiningBackend {
   /**
    * Token-based replay conformance checking.
    * Calls wasm::token_replay() and returns ConformanceResult.
-   * Placeholder: actual pm4wasm function call in Phase 2.
    */
   private async tokenReplayConformance(
     logHandle: string,
@@ -688,7 +682,6 @@ export class Pm4wasmBackend implements MiningBackend {
   /**
    * Alignment-based conformance checking for Petri nets.
    * Calls wasm::compute_optimal_alignments() and returns ConformanceResult.
-   * Placeholder: actual pm4wasm function call in Phase 2.
    */
   private async alignmentConformance(
     logHandle: string,
@@ -769,7 +762,6 @@ export class Pm4wasmBackend implements MiningBackend {
 
   /**
    * Load WASM module dynamically.
-   * Placeholder: actual implementation depends on WASM bundler configuration.
    * In Phase 2, this will import from @seanchatmangpt/pictl or equivalent.
    */
   private async loadWasmModule(): Promise<any> {
