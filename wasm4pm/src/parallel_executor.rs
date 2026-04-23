@@ -419,11 +419,11 @@ pub fn parallel_discover_dfg(log_handle: &str, activity_key: &str) -> String {
             let dfg = compute_dfg_parallel(&col);
             Ok(serde_json::to_string(&dfg).unwrap_or_else(|_| "{}".to_string()))
         }
-        Some(_) => Err(JsValue::from_str(&format!(
+        Some(_) => Err(crate::error::js_val(&format!(
             r#"{{"error":"Object '{}' is not an EventLog"}}"#,
             log_handle
         ))),
-        None => Err(JsValue::from_str(&format!(
+        None => Err(crate::error::js_val(&format!(
             r#"{{"error":"EventLog '{}' not found"}}"#,
             log_handle
         ))),
@@ -465,11 +465,11 @@ pub fn parallel_run_algorithms(log_handle: &str, activity_key: &str, algo_json: 
                 .collect();
             Ok(serde_json::to_string(&json_results).unwrap_or_else(|_| "[]".to_string()))
         }
-        Some(_) => Err(JsValue::from_str(&format!(
+        Some(_) => Err(crate::error::js_val(&format!(
             r#"{{"error":"Object '{}' is not an EventLog"}}"#,
             log_handle
         ))),
-        None => Err(JsValue::from_str(&format!(
+        None => Err(crate::error::js_val(&format!(
             r#"{{"error":"EventLog '{}' not found"}}"#,
             log_handle
         ))),

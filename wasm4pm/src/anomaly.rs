@@ -24,7 +24,7 @@ const MISSING_EDGE_COST: f64 = 10.0;
 #[wasm_bindgen]
 pub fn score_trace_anomaly(dfg_handle: &str, activities_json: &str) -> Result<JsValue, JsValue> {
     let activities: Vec<String> = serde_json::from_str(activities_json)
-        .map_err(|e| JsValue::from_str(&format!("Invalid activities JSON: {}", e)))?;
+        .map_err(|e| crate::error::js_val(&format!("Invalid activities JSON: {}", e)))?;
 
     get_or_init_state().with_object(dfg_handle, |obj| match obj {
         Some(StoredObject::DirectlyFollowsGraph(dfg)) => {
@@ -58,8 +58,8 @@ pub fn score_trace_anomaly(dfg_handle: &str, activities_json: &str) -> Result<Js
             }
             Ok(JsValue::from_f64(cost_sum / steps as f64))
         }
-        Some(_) => Err(JsValue::from_str("Handle is not a DirectlyFollowsGraph")),
-        None => Err(JsValue::from_str("DFG handle not found")),
+        Some(_) => Err(crate::error::js_val("Handle is not a DirectlyFollowsGraph")),
+        None => Err(crate::error::js_val("DFG handle not found")),
     })
 }
 
@@ -85,10 +85,10 @@ pub fn score_log_anomalies(
                 .iter()
                 .map(|e| (e.from.clone(), e.to.clone(), e.frequency))
                 .collect()),
-            Some(_) => Err(JsValue::from_str(
+            Some(_) => Err(crate::error::js_val(
                 "dfg_handle is not a DirectlyFollowsGraph",
             )),
-            None => Err(JsValue::from_str("DFG handle not found")),
+            None => Err(crate::error::js_val("DFG handle not found")),
         })?;
 
     let freq_map: std::collections::HashMap<(&str, &str), usize> = edge_data
@@ -144,11 +144,11 @@ pub fn score_log_anomalies(
                     .partial_cmp(&a["score"].as_f64().unwrap_or(0.0))
                     .unwrap_or(std::cmp::Ordering::Equal)
             });
-            serde_json::to_string(&results).map_err(|e| JsValue::from_str(&e.to_string()))
+            serde_json::to_string(&results).map_err(|e| crate::error::js_val(&e.to_string()))
         }
-        Some(_) => Err(JsValue::from_str("log_handle is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog handle not found")),
+        Some(_) => Err(crate::error::js_val("log_handle is not an EventLog")),
+        None => Err(crate::error::js_val("EventLog handle not found")),
     })?;
 
-    Ok(JsValue::from_str(&results_json))
+    Ok(crate::error::js_val(&results_json))
 }

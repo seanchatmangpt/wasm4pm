@@ -11,7 +11,11 @@
  *   const artifact = await runSwarm(config)
  */
 
+import { generateText } from 'ai'
+import { groq } from '@ai-sdk/groq'
 import { hashOutput, checkSwarmConvergence } from './convergence.js'
+import { swarmTools } from './tools.js'
+import { getWorker, storeResult, setWorkerStatus } from './worker-registry.js'
 import type { SwarmConfig, WorkerSpec, WorkerResult, SwarmEpisode, SwarmArtifact } from './types.js'
 
 // Re-export these so callers can build WorkerSpec arrays
@@ -20,9 +24,8 @@ export type { SwarmConfig, SwarmArtifact, SwarmEpisode, WorkerSpec }
 /**
  * Main swarm entry point.
  *
- * In a full implementation this imports @ai-sdk/groq and calls generateText().
- * The implementation here provides the structural skeleton; the actual LLM calls
- * require GROQ_API_KEY to be set and the ai/@ai-sdk/groq packages installed.
+ * Each worker: generateText({ maxSteps: 20, tools: swarmTools })
+ * The implementation uses GROQ_API_KEY from the environment.
  */
 export async function runSwarm(config: SwarmConfig): Promise<SwarmArtifact> {
   const maxEpisodes = config.maxEpisodes ?? 5
@@ -113,34 +116,47 @@ function buildWorkerSpecs(config: SwarmConfig): WorkerSpec[] {
 
 async function runWorker(spec: WorkerSpec, config: SwarmConfig): Promise<WorkerResult> {
   const isMl = spec.algorithmId.startsWith('ml_')
+  const worker = getWorker(spec.workerId)
+  
+  if (!worker) {
+    throw new Error(`Worker state not found for ID: ${spec.workerId}`)
+  }
 
-  // Structural skeleton — real implementation calls generateText() with wasm4pm__ tools
-  // The result hash is computed from algorithm + logId for deterministic convergence testing
-  const resultData = isMl
-    ? {
-        algorithm: spec.algorithmId,
-        logId: spec.logId,
-        mlTask: spec.algorithmId.replace('ml_', ''),
-        method: 'ensemble',
-        ensembleSize: 1,
-      }
-    : {
-        algorithm: spec.algorithmId,
-        logId: spec.logId,
-        nodes: [],
-        edges: [],
-      }
-  const resultHash = hashOutput(resultData)
+  setWorkerStatus(spec.workerId, 'running')
+  const startTime = Date.now()
 
-  return {
+  const modelId = spec.model || config.workerModel || 'llama-3.1-70b-versatile'
+  
+  const { text, toolResults } = await generateText({
+    model: groq(modelId),
+    tools: swarmTools,
+    prompt: spec.prompt || `You are an autonomic process mining worker for algorithm ${spec.algorithmId}.
+Use the provided tools to analyze the XES log content associated with this worker.
+XES Content Preview: ${worker.xesContent.substring(0, 500)}...
+Goal: Discover the process model or analyze statistics as requested.`,
+  })
+
+  // We take the result from the last tool call or the text if no tool was called
+  let lastToolResult: any = { text }
+  if (toolResults && toolResults.length > 0) {
+    const lastResult = toolResults[toolResults.length - 1];
+    lastToolResult = 'result' in lastResult ? lastResult.result : lastResult;
+  }
+  
+  const resultHash = hashOutput(lastToolResult)
+
+  const result: WorkerResult = {
     workerId: spec.workerId,
     algorithmId: spec.algorithmId,
     resultHash,
-    result: resultData,
+    result: lastToolResult,
     runAt: new Date().toISOString(),
-    durationMs: 0,
+    durationMs: Date.now() - startTime,
     resultType: isMl ? 'ml' : 'discovery',
   }
+
+  storeResult(spec.workerId, result)
+  return result
 }
 
 function buildArtifact(episodes: SwarmEpisode[]): unknown {
@@ -152,3 +168,4 @@ function buildArtifact(episodes: SwarmEpisode[]): unknown {
     dominant_hash: lastEpisode?.convergenceReport.dominantHash,
   }
 }
+

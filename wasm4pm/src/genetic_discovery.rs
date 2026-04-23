@@ -53,7 +53,7 @@ pub fn discover_genetic_algorithm(
 
                 // Guard: empty vocabulary means log has no directly-follows edges
                 if edge_vocab.is_empty() {
-                    return Err(JsValue::from_str("no_edges"));
+                    return Err(crate::error::js_val("no_edges"));
                 }
 
                 // Collect vocab before closure ends
@@ -105,8 +105,8 @@ pub fn discover_genetic_algorithm(
                 let best_edges = population.remove(0).0;
                 Ok((best_edges, best_fitness, vocab))
             }
-            Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
-            None => Err(JsValue::from_str("EventLog not found")),
+            Some(_) => Err(crate::error::js_val("Object is not an EventLog")),
+            None => Err(crate::error::js_val("EventLog not found")),
         })?;
     // Lock released here — safe to store.
 
@@ -115,7 +115,7 @@ pub fn discover_genetic_algorithm(
 
     let handle = get_or_init_state()
         .store_object(StoredObject::DirectlyFollowsGraph(best_dfg.clone()))
-        .map_err(|_e| JsValue::from_str("Failed to store DFG"))?;
+        .map_err(|_e| crate::error::js_val("Failed to store DFG"))?;
 
     to_js_str(&json!({
         "handle": handle,
@@ -171,7 +171,7 @@ pub fn discover_pso_algorithm(
 
                 // Guard: empty vocabulary (only 1 activity in log)
                 if edge_vocab.is_empty() {
-                    return Err(JsValue::from_str("no_edges"));
+                    return Err(crate::error::js_val("no_edges"));
                 }
 
                 // Collect vocab before closure ends
@@ -225,11 +225,11 @@ pub fn discover_pso_algorithm(
 
                 match best_global {
                     Some((edges, fitness)) => Ok((edges, fitness, vocab)),
-                    None => Err(JsValue::from_str("Failed to find best solution")),
+                    None => Err(crate::error::js_val("Failed to find best solution")),
                 }
             }
-            Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
-            None => Err(JsValue::from_str("EventLog not found")),
+            Some(_) => Err(crate::error::js_val("Object is not an EventLog")),
+            None => Err(crate::error::js_val("EventLog not found")),
         })?;
     // Lock released here — safe to store.
 
@@ -238,7 +238,7 @@ pub fn discover_pso_algorithm(
 
     let handle = get_or_init_state()
         .store_object(StoredObject::DirectlyFollowsGraph(best_dfg.clone()))
-        .map_err(|_e| JsValue::from_str("Failed to store DFG"))?;
+        .map_err(|_e| crate::error::js_val("Failed to store DFG"))?;
 
     to_js_str(&json!({
         "handle": handle,
@@ -424,7 +424,7 @@ pub fn discover_aco_algorithm(
 
                 // Guard: empty vocabulary (only 1 activity in log)
                 if edge_vocab.is_empty() {
-                    return Err(JsValue::from_str("no_edges"));
+                    return Err(crate::error::js_val("no_edges"));
                 }
 
                 let vocab: Vec<String> = col.vocab.iter().map(|s| s.to_string()).collect();
@@ -509,18 +509,18 @@ pub fn discover_aco_algorithm(
 
                 match best_solution {
                     Some((edges, fitness)) => Ok((edges, fitness, vocab)),
-                    None => Err(JsValue::from_str("ACO failed to find solution")),
+                    None => Err(crate::error::js_val("ACO failed to find solution")),
                 }
             }
-            Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
-            None => Err(JsValue::from_str("EventLog not found")),
+            Some(_) => Err(crate::error::js_val("Object is not an EventLog")),
+            None => Err(crate::error::js_val("EventLog not found")),
         })?;
 
     let best_dfg = edge_set_to_dfg(&best_edges, &vocab);
 
     let handle = get_or_init_state()
         .store_object(StoredObject::DirectlyFollowsGraph(best_dfg.clone()))
-        .map_err(|_e| JsValue::from_str("Failed to store DFG"))?;
+        .map_err(|_e| crate::error::js_val("Failed to store DFG"))?;
 
     to_js_str(&json!({
         "handle": handle,

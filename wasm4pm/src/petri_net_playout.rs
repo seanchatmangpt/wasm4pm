@@ -225,15 +225,15 @@ pub fn petri_net_playout(petri_net_handle: &str, config_json: &str) -> Result<Js
     let result: PlayoutResult =
         get_or_init_state().with_object(petri_net_handle, |obj| match obj {
             Some(StoredObject::PetriNet(petri_net)) => {
-                play_petri_net(petri_net, &config).map_err(|e| JsValue::from_str(&e))
+                play_petri_net(petri_net, &config).map_err(|e| crate::error::js_val(&e))
             }
-            Some(_) => Err(JsValue::from_str("Handle is not a PetriNet")),
-            None => Err(JsValue::from_str("PetriNet handle not found")),
+            Some(_) => Err(crate::error::js_val("Handle is not a PetriNet")),
+            None => Err(crate::error::js_val("PetriNet handle not found")),
         })?;
 
     serde_json::to_string(&result)
-        .map_err(|e| JsValue::from_str(&e.to_string()))
-        .map(|s| JsValue::from_str(&s))
+        .map_err(|e| crate::error::js_val(&e.to_string()))
+        .map(|s| crate::error::js_val(&s))
 }
 
 #[cfg(test)]

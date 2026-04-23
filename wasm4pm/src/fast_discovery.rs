@@ -75,13 +75,13 @@ pub fn discover_astar(
 
                 Ok((best_dfg, iterations))
             }
-            Some(_) => Err(JsValue::from_str("Not an EventLog")),
-            None => Err(JsValue::from_str("EventLog not found")),
+            Some(_) => Err(crate::error::js_val("Not an EventLog")),
+            None => Err(crate::error::js_val("EventLog not found")),
         })?;
 
     let handle = get_or_init_state()
         .store_object(StoredObject::DirectlyFollowsGraph(best_dfg.clone()))
-        .map_err(|_e| JsValue::from_str("Failed to store DFG"))?;
+        .map_err(|_e| crate::error::js_val("Failed to store DFG"))?;
 
     to_js_str(&json!({
         "handle": handle,
@@ -181,13 +181,13 @@ pub fn discover_hill_climbing(
 
             Ok(dfg)
         }
-        Some(_) => Err(JsValue::from_str("Not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(crate::error::js_val("Not an EventLog")),
+        None => Err(crate::error::js_val("EventLog not found")),
     })?;
 
     let handle = get_or_init_state()
         .store_object(StoredObject::DirectlyFollowsGraph(current_dfg.clone()))
-        .map_err(|_e| JsValue::from_str("Failed to store DFG"))?;
+        .map_err(|_e| crate::error::js_val("Failed to store DFG"))?;
 
     to_js_str(&json!({
         "handle": handle,
@@ -240,8 +240,8 @@ pub fn analyze_trace_variants(
                 "coverage": (top_variants.len() as f64 / variant_list.len().max(1) as f64 * 100.0),
             }))
         }
-        Some(_) => Err(JsValue::from_str("Not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(crate::error::js_val("Not an EventLog")),
+        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 
@@ -300,8 +300,8 @@ pub fn mine_sequential_patterns(
                 "min_support": min_support,
             }))
         }
-        Some(_) => Err(JsValue::from_str("Not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(crate::error::js_val("Not an EventLog")),
+        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 
@@ -358,8 +358,8 @@ pub fn detect_concept_drift(
                 "window_size": window_size,
             }))
         }
-        Some(_) => Err(JsValue::from_str("Not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(crate::error::js_val("Not an EventLog")),
+        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 
@@ -529,8 +529,8 @@ pub fn cluster_traces(
                 "iterations": iteration,
             }))
         }
-        Some(_) => Err(JsValue::from_str("Not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(crate::error::js_val("Not an EventLog")),
+        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 
@@ -594,8 +594,8 @@ pub fn analyze_start_end_activities(
                 "start_end_pairs": pairs.iter().take(10).map(|(p, c)| json!({"start": p.0, "end": p.1, "count": c})).collect::<Vec<_>>(),
             }))
         }
-        Some(_) => Err(JsValue::from_str("Not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(crate::error::js_val("Not an EventLog")),
+        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 
@@ -653,8 +653,8 @@ pub fn analyze_activity_cooccurrence(
                 "cooccurrences": result,
             }))
         }
-        Some(_) => Err(JsValue::from_str("Not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(crate::error::js_val("Not an EventLog")),
+        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 

@@ -132,8 +132,8 @@ pub fn check_data_quality(
 
             to_js(&result)
         }
-        Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(crate::error::js_val("Object is not an EventLog")),
+        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 
@@ -229,8 +229,8 @@ pub fn check_ocel_data_quality(ocel_handle: &str) -> Result<JsValue, JsValue> {
 
             to_js(&result)
         }
-        Some(_) => Err(JsValue::from_str("Object is not an OCEL")),
-        None => Err(JsValue::from_str("OCEL not found")),
+        Some(_) => Err(crate::error::js_val("Object is not an OCEL")),
+        None => Err(crate::error::js_val("OCEL not found")),
     })
 }
 
@@ -293,8 +293,8 @@ pub fn infer_eventlog_schema(log_handle: &str) -> Result<JsValue, JsValue> {
 
             to_js(&result)
         }
-        Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(crate::error::js_val("Object is not an EventLog")),
+        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 
@@ -369,8 +369,8 @@ pub fn infer_ocel_schema(ocel_handle: &str) -> Result<JsValue, JsValue> {
 
             to_js(&result)
         }
-        Some(_) => Err(JsValue::from_str("Object is not an OCEL")),
-        None => Err(JsValue::from_str("OCEL not found")),
+        Some(_) => Err(crate::error::js_val("Object is not an OCEL")),
+        None => Err(crate::error::js_val("OCEL not found")),
     })
 }
 

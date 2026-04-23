@@ -526,7 +526,7 @@ pub fn discover_dfg_simd_handle(
     })?;
 
     let handle = get_or_init_state().store_object(StoredObject::DirectlyFollowsGraph(dfg))?;
-    Ok(JsValue::from_str(&handle))
+    Ok(crate::error::js_val(&handle))
 }
 
 /// Get info about the SIMD streaming DFG implementation.

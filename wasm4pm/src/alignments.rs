@@ -305,7 +305,7 @@ pub fn compute_optimal_alignments(
 ) -> Result<JsValue, JsValue> {
     // Parse cost config
     let cost_config: HashMap<String, f64> = serde_json::from_str(cost_config_json)
-        .map_err(|_| JsValue::from_str("Invalid cost_config_json"))?;
+        .map_err(|_| crate::error::js_val("Invalid cost_config_json"))?;
 
     let sync_cost = cost_config.get("sync_cost").copied().unwrap_or(0.0);
     let log_move_cost = cost_config.get("log_move_cost").copied().unwrap_or(1.0);
@@ -313,8 +313,8 @@ pub fn compute_optimal_alignments(
 
     let petri_net = get_or_init_state().with_object(petri_net_handle, |obj| match obj {
         Some(StoredObject::PetriNet(pn)) => Ok(pn.clone()),
-        Some(_) => Err(JsValue::from_str("Handle is not a PetriNet")),
-        None => Err(JsValue::from_str("PetriNet handle not found")),
+        Some(_) => Err(crate::error::js_val("Handle is not a PetriNet")),
+        None => Err(crate::error::js_val("PetriNet handle not found")),
     })?;
 
     let result_json = get_or_init_state().with_object(log_handle, |obj| match obj {
@@ -380,13 +380,13 @@ pub fn compute_optimal_alignments(
                 "avg_cost": avg_cost,
                 "alignments": alignments,
             }))
-            .map_err(|e| JsValue::from_str(&e.to_string()))
+            .map_err(|e| crate::error::js_val(&e.to_string()))
         }
-        Some(_) => Err(JsValue::from_str("Handle is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog handle not found")),
+        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
+        None => Err(crate::error::js_val("EventLog handle not found")),
     })?;
 
-    Ok(JsValue::from_str(&result_json))
+    Ok(crate::error::js_val(&result_json))
 }
 
 /// Legacy function for backward compatibility: DFG-based alignment (greedy).
@@ -403,8 +403,8 @@ pub fn compute_alignments(
                 .iter()
                 .map(|e| ((e.from.clone(), e.to.clone()), e.frequency))
                 .collect()),
-            Some(_) => Err(JsValue::from_str("Handle is not a DirectlyFollowsGraph")),
-            None => Err(JsValue::from_str("DFG handle not found")),
+            Some(_) => Err(crate::error::js_val("Handle is not a DirectlyFollowsGraph")),
+            None => Err(crate::error::js_val("DFG handle not found")),
         })?;
 
     let start_activities: std::collections::HashSet<String> =
@@ -412,8 +412,8 @@ pub fn compute_alignments(
             Some(StoredObject::DirectlyFollowsGraph(dfg)) => {
                 Ok(dfg.start_activities.keys().cloned().collect())
             }
-            Some(_) => Err(JsValue::from_str("Handle is not a DirectlyFollowsGraph")),
-            None => Err(JsValue::from_str("DFG handle not found")),
+            Some(_) => Err(crate::error::js_val("Handle is not a DirectlyFollowsGraph")),
+            None => Err(crate::error::js_val("DFG handle not found")),
         })?;
 
     let result_json = get_or_init_state().with_object(log_handle, |obj| match obj {
@@ -500,13 +500,13 @@ pub fn compute_alignments(
                 "avg_fitness": avg_fitness,
                 "alignments": alignments,
             }))
-            .map_err(|e| JsValue::from_str(&e.to_string()))
+            .map_err(|e| crate::error::js_val(&e.to_string()))
         }
-        Some(_) => Err(JsValue::from_str("Handle is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog handle not found")),
+        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
+        None => Err(crate::error::js_val("EventLog handle not found")),
     })?;
 
-    Ok(JsValue::from_str(&result_json))
+    Ok(crate::error::js_val(&result_json))
 }
 
 #[cfg(test)]

@@ -25,13 +25,14 @@
   },
   "dependencies": {
     "@pictl/contracts": "workspace:*",
+    "@pictl/ml": "workspace:*",
     "@pictl/planner": "workspace:*",
-    "@pictl/ml": "workspace:*"
+    "wasm4pm": "workspace:^"
   },
   "devDependencies": {
+    "@vitest/coverage-v8": "^1.6.0",
     "typescript": "^5.3.3",
-    "vitest": "^1.1.0",
-    "@vitest/coverage-v8": "^1.6.0"
+    "vitest": "^1.1.0"
   },
   "keywords": [
     "kernel",

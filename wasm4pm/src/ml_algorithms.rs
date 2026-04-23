@@ -25,7 +25,7 @@ pub fn discover_ml_regress(eventlog_handle: &str, activity_key: &str) -> Result<
                     });
                 Ok(col_owned)
             }
-            _ => Err(JsValue::from_str("not_found")),
+            _ => Err(crate::error::js_val("not_found")),
         }
     })?;
 
@@ -111,7 +111,7 @@ pub fn discover_ml_forecast(eventlog_handle: &str, activity_key: &str) -> Result
                     });
                 Ok(col_owned)
             }
-            _ => Err(JsValue::from_str("not_found")),
+            _ => Err(crate::error::js_val("not_found")),
         }
     })?;
 
@@ -181,7 +181,7 @@ pub fn discover_ml_classify(eventlog_handle: &str, activity_key: &str) -> Result
                     });
                 Ok(col_owned)
             }
-            _ => Err(JsValue::from_str("not_found")),
+            _ => Err(crate::error::js_val("not_found")),
         }
     })?;
 
@@ -231,7 +231,7 @@ pub fn discover_ml_pca(eventlog_handle: &str, activity_key: &str) -> Result<JsVa
                     });
                 Ok(col_owned)
             }
-            _ => Err(JsValue::from_str("not_found")),
+            _ => Err(crate::error::js_val("not_found")),
         }
     })?;
 
@@ -297,6 +297,6 @@ pub fn discover_ml_pca(eventlog_handle: &str, activity_key: &str) -> Result<JsVa
 
 fn to_js_value(json: &serde_json::Value) -> Result<JsValue, JsValue> {
     serde_json::to_string(json)
-        .map_err(|e| JsValue::from_str(&e.to_string()))
-        .and_then(|s| Ok(JsValue::from_str(&s)))
+        .map_err(|e| crate::error::js_val(&e.to_string()))
+        .and_then(|s| Ok(crate::error::js_val(&s)))
 }

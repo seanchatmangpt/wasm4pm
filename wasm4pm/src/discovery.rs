@@ -160,7 +160,7 @@ pub fn discover_dfg_handle(eventlog_handle: &str, activity_key: &str) -> Result<
         })?;
 
     let handle = get_or_init_state().store_object(StoredObject::DirectlyFollowsGraph(dfg))?;
-    Ok(JsValue::from_str(&handle))
+    Ok(crate::error::js_val(&handle))
 }
 
 /// Pure-Rust OCEL DFG discovery: returns DirectlyFollowsGraph without wasm-bindgen.

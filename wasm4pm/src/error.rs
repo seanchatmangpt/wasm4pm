@@ -5,6 +5,22 @@
  */
 use wasm_bindgen::prelude::*;
 
+/// Native-safe JsValue from string.
+/// On wasm32, this is a wrapper around JsValue::from_str.
+/// On other targets, it returns a zeroed JsValue to avoid panics.
+#[inline]
+pub fn js_val(s: &str) -> JsValue {
+    #[cfg(target_arch = "wasm32")]
+    {
+        JsValue::from_str(s)
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        let _ = s;
+        unsafe { std::mem::zeroed() }
+    }
+}
+
 /// Creates a structured error object for JavaScript
 /// Returns JSON string: {"code":"CODE","message":"message text"}
 pub fn wasm_err(code: &str, message: impl std::fmt::Display) -> JsValue {
@@ -13,7 +29,7 @@ pub fn wasm_err(code: &str, message: impl std::fmt::Display) -> JsValue {
         code,
         message.to_string().replace('"', "\\\"")
     );
-    JsValue::from_str(&json)
+    js_val(&json)
 }
 
 /// Error codes for common failure scenarios

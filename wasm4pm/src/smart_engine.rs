@@ -762,16 +762,16 @@ pub fn smart_engine_run(
     traces_json: &str,
 ) -> Result<String, JsValue> {
     let traces: Vec<Vec<String>> = serde_json::from_str(traces_json)
-        .map_err(|e| JsValue::from_str(&format!("Invalid traces JSON: {}", e)))?;
+        .map_err(|e| crate::error::js_val(&format!("Invalid traces JSON: {}", e)))?;
 
     let mut engines = SMART_ENGINES.lock().unwrap();
     let engine = engines
         .get_mut(handle)
-        .ok_or_else(|| JsValue::from_str(&format!("SmartEngine '{}' not found", handle)))?;
+        .ok_or_else(|| crate::error::js_val(&format!("SmartEngine '{}' not found", handle)))?;
 
     engine
         .run(algorithm, &traces)
-        .map_err(|e| JsValue::from_str(&e))
+        .map_err(|e| crate::error::js_val(&e))
 }
 
 /// Check if the convergence monitor has detected convergence.
@@ -780,7 +780,7 @@ pub fn smart_engine_converged(handle: &str) -> Result<bool, JsValue> {
     let engines = SMART_ENGINES.lock().unwrap();
     let engine = engines
         .get(handle)
-        .ok_or_else(|| JsValue::from_str(&format!("SmartEngine '{}' not found", handle)))?;
+        .ok_or_else(|| crate::error::js_val(&format!("SmartEngine '{}' not found", handle)))?;
     Ok(engine.is_converged())
 }
 
@@ -790,7 +790,7 @@ pub fn smart_engine_cache_stats(handle: &str) -> Result<String, JsValue> {
     let engines = SMART_ENGINES.lock().unwrap();
     let engine = engines
         .get(handle)
-        .ok_or_else(|| JsValue::from_str(&format!("SmartEngine '{}' not found", handle)))?;
+        .ok_or_else(|| crate::error::js_val(&format!("SmartEngine '{}' not found", handle)))?;
     let (hits, misses, evictions) = engine.cache_stats();
     Ok(format!(
         r#"{{"hits":{},"misses":{},"evictions":{}}}"#,
@@ -804,7 +804,7 @@ pub fn smart_engine_check_convergence(handle: &str, metric: f64) -> Result<bool,
     let mut engines = SMART_ENGINES.lock().unwrap();
     let engine = engines
         .get_mut(handle)
-        .ok_or_else(|| JsValue::from_str(&format!("SmartEngine '{}' not found", handle)))?;
+        .ok_or_else(|| crate::error::js_val(&format!("SmartEngine '{}' not found", handle)))?;
     Ok(engine.check_convergence(metric))
 }
 
@@ -814,7 +814,7 @@ pub fn smart_engine_reset(handle: &str) -> Result<(), JsValue> {
     let mut engines = SMART_ENGINES.lock().unwrap();
     let engine = engines
         .get_mut(handle)
-        .ok_or_else(|| JsValue::from_str(&format!("SmartEngine '{}' not found", handle)))?;
+        .ok_or_else(|| crate::error::js_val(&format!("SmartEngine '{}' not found", handle)))?;
     engine.reset();
     Ok(())
 }

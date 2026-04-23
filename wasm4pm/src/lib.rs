@@ -635,19 +635,19 @@ pub fn get_cache_stats() -> String {
 #[wasm_bindgen]
 pub fn set_drift_thresholds(low: f32, high: f32) -> Result<String, JsValue> {
     if !(0.0..=1.0).contains(&low) {
-        return Err(JsValue::from_str(&format!(
+        return Err(crate::error::js_val(&format!(
             "Invalid low threshold {}: must be in [0.0, 1.0]",
             low
         )));
     }
     if !(0.0..=1.0).contains(&high) {
-        return Err(JsValue::from_str(&format!(
+        return Err(crate::error::js_val(&format!(
             "Invalid high threshold {}: must be in [0.0, 1.0]",
             high
         )));
     }
     if low >= high {
-        return Err(JsValue::from_str(&format!(
+        return Err(crate::error::js_val(&format!(
             "Invalid thresholds: low ({}) must be less than high ({})",
             low, high
         )));
@@ -737,7 +737,7 @@ pub fn autonomic_execute_cycle(
         let log = match obj {
             Some(StoredObject::EventLog(l)) => l,
             _ => {
-                return Err(JsValue::from_str(
+                return Err(crate::error::js_val(
                     "autonomic_execute_cycle: handle does not reference an EventLog",
                 ));
             }
@@ -897,7 +897,7 @@ pub fn autonomic_execute_cycle(
         let log = match obj {
             Some(StoredObject::EventLog(l)) => l,
             _ => {
-                return Err(JsValue::from_str(
+                return Err(crate::error::js_val(
                     "pattern_analysis: handle does not reference an EventLog",
                 ));
             }
@@ -1906,7 +1906,7 @@ pub fn rl_orchestrator_switch_agent(agent_type: u8) -> Result<String, JsValue> {
                 orch.switch_agent(at);
                 Ok(format!("Switched to {}", at.name()))
             }
-            None => Err(JsValue::from_str(&format!(
+            None => Err(crate::error::js_val(&format!(
                 "Invalid agent type: {} (must be 0-4)",
                 agent_type
             ))),
@@ -1954,20 +1954,20 @@ pub fn rl_orchestrator_get_telemetry() -> Result<JsValue, JsValue> {
         let obj = js_sys::Object::new();
 
         // Use JsValue to convert Rust types to JavaScript types
-        js_sys::Reflect::set(&obj, &JsValue::from_str("cycle_count"), &JsValue::from(t.cycle_count))
-            .map_err(|e| JsValue::from_str(&format!("Failed to set cycle_count: {:?}", e)))?;
+        js_sys::Reflect::set(&obj, &crate::error::js_val("cycle_count"), &JsValue::from(t.cycle_count))
+            .map_err(|e| crate::error::js_val(&format!("Failed to set cycle_count: {:?}", e)))?;
 
-        js_sys::Reflect::set(&obj, &JsValue::from_str("last_health_state"), &JsValue::from(t.last_health_state))
-            .map_err(|e| JsValue::from_str(&format!("Failed to set last_health_state: {:?}", e)))?;
+        js_sys::Reflect::set(&obj, &crate::error::js_val("last_health_state"), &JsValue::from(t.last_health_state))
+            .map_err(|e| crate::error::js_val(&format!("Failed to set last_health_state: {:?}", e)))?;
 
-        js_sys::Reflect::set(&obj, &JsValue::from_str("cumulative_reward"), &JsValue::from(t.cumulative_reward))
-            .map_err(|e| JsValue::from_str(&format!("Failed to set cumulative_reward: {:?}", e)))?;
+        js_sys::Reflect::set(&obj, &crate::error::js_val("cumulative_reward"), &JsValue::from(t.cumulative_reward))
+            .map_err(|e| crate::error::js_val(&format!("Failed to set cumulative_reward: {:?}", e)))?;
 
-        js_sys::Reflect::set(&obj, &JsValue::from_str("last_reward"), &JsValue::from(t.last_reward))
-            .map_err(|e| JsValue::from_str(&format!("Failed to set last_reward: {:?}", e)))?;
+        js_sys::Reflect::set(&obj, &crate::error::js_val("last_reward"), &JsValue::from(t.last_reward))
+            .map_err(|e| crate::error::js_val(&format!("Failed to set last_reward: {:?}", e)))?;
 
-        js_sys::Reflect::set(&obj, &JsValue::from_str("last_spc_alert_count"), &JsValue::from(t.last_spc_alert_count))
-            .map_err(|e| JsValue::from_str(&format!("Failed to set last_spc_alert_count: {:?}", e)))?;
+        js_sys::Reflect::set(&obj, &crate::error::js_val("last_spc_alert_count"), &JsValue::from(t.last_spc_alert_count))
+            .map_err(|e| crate::error::js_val(&format!("Failed to set last_spc_alert_count: {:?}", e)))?;
 
         Ok(JsValue::from(obj))
     })
@@ -2007,7 +2007,7 @@ pub fn serialize_rl_state() -> Result<String, JsValue> {
         };
 
         serde_json::to_string(&state)
-            .map_err(|e| JsValue::from_str(&format!("Serialization failed: {}", e)))
+            .map_err(|e| crate::error::js_val(&format!("Serialization failed: {}", e)))
     })
 }
 
@@ -2028,7 +2028,7 @@ pub fn serialize_rl_state() -> Result<String, JsValue> {
 #[wasm_bindgen]
 pub fn restore_rl_state(json: &str) -> Result<String, JsValue> {
     let state: rl_state_serialization::SerializedRlState = serde_json::from_str(json)
-        .map_err(|e| JsValue::from_str(&format!("Invalid JSON: {}", e)))?;
+        .map_err(|e| crate::error::js_val(&format!("Invalid JSON: {}", e)))?;
 
     RL_ORCHESTRATOR.with(|orch| {
         let mut orch_ref = orch.borrow_mut();
@@ -2064,7 +2064,7 @@ pub fn restore_rl_state(json: &str) -> Result<String, JsValue> {
             num_q_tables
         ))
     })
-    .map_err(|_e| JsValue::from_str("Failed to restore RL state"))
+    .map_err(|_e| crate::error::js_val("Failed to restore RL state"))
 }
 
 /// Get SPC history as JSON.
@@ -2079,7 +2079,7 @@ pub fn get_spc_history() -> Result<String, JsValue> {
             "cycle_count": history_ref.cycle_count
         });
         serde_json::to_string(&serialized)
-            .map_err(|e| JsValue::from_str(&format!("Serialization failed: {}", e)))
+            .map_err(|e| crate::error::js_val(&format!("Serialization failed: {}", e)))
     })
 }
 
@@ -2094,7 +2094,7 @@ pub fn set_spc_history(json: &str) -> Result<String, JsValue> {
     }
 
     let data: SpcHistoryJson = serde_json::from_str(json)
-        .map_err(|e| JsValue::from_str(&format!("Invalid JSON: {}", e)))?;
+        .map_err(|e| crate::error::js_val(&format!("Invalid JSON: {}", e)))?;
 
     let snapshot_count = data.snapshots.len();
     let cycle_count = data.cycle_count;
@@ -2118,7 +2118,7 @@ pub fn circuit_breaker_get_state() -> Result<String, JsValue> {
         let cb_ref = cb.borrow();
         let state_json = cb_ref.to_state_json();
         serde_json::to_string(&state_json)
-            .map_err(|e| JsValue::from_str(&format!("Serialization failed: {}", e)))
+            .map_err(|e| crate::error::js_val(&format!("Serialization failed: {}", e)))
     })
 }
 
@@ -2127,7 +2127,7 @@ pub fn circuit_breaker_get_state() -> Result<String, JsValue> {
 #[wasm_bindgen]
 pub fn circuit_breaker_set_state(json: &str) -> Result<String, JsValue> {
     let state_json: self_healing::CircuitBreakerStateJson = serde_json::from_str(json)
-        .map_err(|e| JsValue::from_str(&format!("Invalid JSON: {}", e)))?;
+        .map_err(|e| crate::error::js_val(&format!("Invalid JSON: {}", e)))?;
 
     CIRCUIT_BREAKER.with(|cb| {
         let mut cb_ref = cb.borrow_mut();
@@ -2145,7 +2145,7 @@ pub fn circuit_breaker_configure(config_json: &str) -> Result<String, JsValue> {
                 *breaker.borrow_mut() = new_breaker;
                 Ok("Circuit breaker configured".to_string())
             }
-            Err(e) => Err(JsValue::from_str(&e)),
+            Err(e) => Err(crate::error::js_val(&e)),
         }
     })
 }
@@ -2163,7 +2163,7 @@ pub fn circuit_breaker_get_config() -> Result<String, JsValue> {
             half_open_timeout_ms: breaker_ref.half_open_timeout_ms(),
         };
         serde_json::to_string(&config)
-            .map_err(|e| JsValue::from_str(&format!("Serialization failed: {}", e)))
+            .map_err(|e| crate::error::js_val(&format!("Serialization failed: {}", e)))
     })
 }
 

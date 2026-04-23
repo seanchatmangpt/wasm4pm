@@ -295,19 +295,19 @@ pub fn monte_carlo_simulation(
     config_json: &str,
 ) -> Result<JsValue, JsValue> {
     let config: MonteCarloConfig = serde_json::from_str(config_json)
-        .map_err(|e| JsValue::from_str(&format!("Failed to parse config JSON: {}", e)))?;
+        .map_err(|e| crate::error::js_val(&format!("Failed to parse config JSON: {}", e)))?;
 
     let report = get_or_init_state().with_object(log_handle, |obj| match obj {
         Some(crate::state::StoredObject::EventLog(log)) => {
-            run_monte_carlo_simulation(log, &config).map_err(|e| JsValue::from_str(&e))
+            run_monte_carlo_simulation(log, &config).map_err(|e| crate::error::js_val(&e))
         }
-        Some(_) => Err(JsValue::from_str("Handle is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog handle not found")),
+        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
+        None => Err(crate::error::js_val("EventLog handle not found")),
     })?;
 
     serde_json::to_string(&report)
-        .map_err(|e| JsValue::from_str(&e.to_string()))
-        .map(|s| JsValue::from_str(&s))
+        .map_err(|e| crate::error::js_val(&e.to_string()))
+        .map(|s| crate::error::js_val(&s))
 }
 
 #[cfg(test)]

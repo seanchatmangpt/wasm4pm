@@ -119,9 +119,9 @@ pub fn wrap_discovery_result(
 /// by returning a JsValue error.
 pub fn export_raw_output_to_js(output: &RawModelOutput) -> Result<JsValue, JsValue> {
     let json_str = serde_json::to_string(output)
-        .map_err(|e| JsValue::from_str(&format!("Failed to serialize RawModelOutput: {}", e)))?;
+        .map_err(|e| crate::error::js_val(&format!("Failed to serialize RawModelOutput: {}", e)))?;
 
-    let js_value = JsValue::from_str(&json_str);
+    let js_value = crate::error::js_val(&json_str);
     Ok(js_value)
 }
 

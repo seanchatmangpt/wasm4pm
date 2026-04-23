@@ -507,7 +507,7 @@ use wasm_bindgen::prelude::*;
 pub fn read_bpmn(bpmn_xml: &str) -> Result<String, JsValue> {
     match bpmn_to_powl_string(bpmn_xml) {
         Ok(powl) => Ok(powl),
-        Err(e) => Err(JsValue::from_str(&e)),
+        Err(e) => Err(crate::error::js_val(&e)),
     }
 }
 

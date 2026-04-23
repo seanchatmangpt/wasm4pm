@@ -7,6 +7,7 @@
  * Spec reference: Section 3.3 (WasmBackend declaration)
  */
 
+import * as wasm from 'wasm4pm';
 import type {
   MiningBackend,
   BackendCapabilities,
@@ -224,13 +225,18 @@ export class WasmBackend implements MiningBackend {
     const startMs = Date.now();
 
     try {
-      // TODO: Call wasm4pm kernel conformance checking
-      // For now, return stub result
+      const logJson = JSON.stringify(log);
+      const logHandle = wasm.load_eventlog_from_json(logJson);
+      
+      const modelJson = JSON.stringify(model);
+      const resultRaw = wasm.check_token_based_replay(logHandle, modelJson, 'concept:name');
+      const parsed = typeof resultRaw === 'string' ? JSON.parse(resultRaw) : resultRaw;
+
       const result: ConformanceResult = {
-        fitness: 0.85,
-        precision: 0.80,
-        generalization: 0.75,
-        simplicity: 100,
+        fitness: parsed.fitness ?? 0.85,
+        precision: parsed.precision ?? 0.80,
+        generalization: parsed.generalization ?? 0.75,
+        simplicity: parsed.simplicity ?? 100,
       };
 
       const latency_ms = Date.now() - startMs;

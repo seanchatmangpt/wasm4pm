@@ -246,8 +246,8 @@ pub fn check_token_based_replay(
     // Clone PetriNet data for replay (sequential access, no deadlock).
     let petri_net_cloned = get_or_init_state().with_object(petri_net_handle, |obj| match obj {
         Some(StoredObject::PetriNet(pn)) => Ok(pn.clone()),
-        Some(_) => Err(JsValue::from_str("Handle is not a PetriNet")),
-        None => Err(JsValue::from_str("PetriNet not found")),
+        Some(_) => Err(crate::error::js_val("Handle is not a PetriNet")),
+        None => Err(crate::error::js_val("PetriNet not found")),
     })?;
 
     // Perform conformance using borrowed EventLog — no clone.
@@ -471,8 +471,8 @@ pub fn check_token_based_replay(
 
             to_js_str(&result)
         }
-        Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(crate::error::js_val("Object is not an EventLog")),
+        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 

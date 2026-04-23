@@ -648,7 +648,7 @@ fn fnv1a_hash(data: &[u8]) -> u64 {
 #[wasm_bindgen]
 pub fn write_pm4bin(xes_content: &str) -> Result<Vec<u8>, JsValue> {
     // Parse XES using the existing parser to get an EventLog
-    let log = parse_xes_to_event_log(xes_content).map_err(|e| JsValue::from_str(&e))?;
+    let log = parse_xes_to_event_log(xes_content).map_err(|e| crate::error::js_val(&e))?;
 
     let builder = BinaryLogBuilder::from_event_log(&log, "concept:name", "time:timestamp");
     Ok(builder.finish())
@@ -661,15 +661,15 @@ pub fn write_pm4bin(xes_content: &str) -> Result<Vec<u8>, JsValue> {
 /// default timestamp key.
 #[wasm_bindgen]
 pub fn read_pm4bin(bytes: &[u8]) -> Result<String, JsValue> {
-    let view = BinaryLogView::from_bytes(bytes).map_err(|e| JsValue::from_str(&e))?;
+    let view = BinaryLogView::from_bytes(bytes).map_err(|e| crate::error::js_val(&e))?;
 
     let log = view
         .to_event_log("concept:name", "time:timestamp")
-        .map_err(|e| JsValue::from_str(&e))?;
+        .map_err(|e| crate::error::js_val(&e))?;
 
     let handle = get_or_init_state()
         .store_object(StoredObject::EventLog(log))
-        .map_err(|_| JsValue::from_str("Failed to store EventLog"))?;
+        .map_err(|_| crate::error::js_val("Failed to store EventLog"))?;
 
     Ok(handle)
 }
@@ -691,14 +691,14 @@ pub fn read_pm4bin(bytes: &[u8]) -> Result<String, JsValue> {
 #[wasm_bindgen]
 pub fn pm4bin_info(bytes: &[u8]) -> Result<String, JsValue> {
     if bytes.len() < size_of::<BinaryHeader>() {
-        return Err(JsValue::from_str(&format!(
+        return Err(crate::error::js_val(&format!(
             "Buffer too small: {} < {}",
             bytes.len(),
             size_of::<BinaryHeader>()
         )));
     }
 
-    let header = BinaryHeader::from_bytes(bytes).map_err(|e| JsValue::from_str(&e))?;
+    let header = BinaryHeader::from_bytes(bytes).map_err(|e| crate::error::js_val(&e))?;
 
     let info = json!({
         "version": header.version,
@@ -711,7 +711,7 @@ pub fn pm4bin_info(bytes: &[u8]) -> Result<String, JsValue> {
     });
 
     serde_json::to_string(&info)
-        .map_err(|e| JsValue::from_str(&format!("Failed to serialize info: {}", e)))
+        .map_err(|e| crate::error::js_val(&format!("Failed to serialize info: {}", e)))
 }
 
 // ---------------------------------------------------------------------------

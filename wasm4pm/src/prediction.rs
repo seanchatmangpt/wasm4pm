@@ -63,12 +63,12 @@ pub fn build_ngram_predictor(
 
             Ok(NGramPredictor { n, counts })
         }
-        Some(_) => Err(JsValue::from_str("Handle is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog handle not found")),
+        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
+        None => Err(crate::error::js_val("EventLog handle not found")),
     })?;
 
     let handle = get_or_init_state().store_object(StoredObject::NGramPredictor(predictor))?;
-    Ok(JsValue::from_str(&handle))
+    Ok(crate::error::js_val(&handle))
 }
 
 /// Predict the most likely next activities given a prefix sequence.
@@ -90,7 +90,7 @@ pub fn predict_next_activity(
     prefix_json: &str,
 ) -> Result<JsValue, JsValue> {
     let prefix: Vec<String> = serde_json::from_str(prefix_json)
-        .map_err(|e| JsValue::from_str(&format!("Invalid prefix JSON: {}", e)))?;
+        .map_err(|e| crate::error::js_val(&format!("Invalid prefix JSON: {}", e)))?;
 
     let result_json = get_or_init_state().with_object(predictor_handle, |obj| match obj {
         Some(StoredObject::NGramPredictor(predictor)) => {
@@ -99,13 +99,13 @@ pub fn predict_next_activity(
                 .iter()
                 .map(|(act, prob)| json!({"activity": act, "probability": prob}))
                 .collect();
-            serde_json::to_string(&arr).map_err(|e| JsValue::from_str(&e.to_string()))
+            serde_json::to_string(&arr).map_err(|e| crate::error::js_val(&e.to_string()))
         }
-        Some(_) => Err(JsValue::from_str("Handle is not an NGramPredictor")),
-        None => Err(JsValue::from_str("NGramPredictor handle not found")),
+        Some(_) => Err(crate::error::js_val("Handle is not an NGramPredictor")),
+        None => Err(crate::error::js_val("NGramPredictor handle not found")),
     })?;
 
-    Ok(JsValue::from_str(&result_json))
+    Ok(crate::error::js_val(&result_json))
 }
 
 /// Score how likely a complete trace is according to the n-gram model.
@@ -118,7 +118,7 @@ pub fn score_trace_likelihood(
     activities_json: &str,
 ) -> Result<JsValue, JsValue> {
     let acts: Vec<String> = serde_json::from_str(activities_json)
-        .map_err(|e| JsValue::from_str(&format!("Invalid activities JSON: {}", e)))?;
+        .map_err(|e| crate::error::js_val(&format!("Invalid activities JSON: {}", e)))?;
 
     get_or_init_state().with_object(predictor_handle, |obj| match obj {
         Some(StoredObject::NGramPredictor(predictor)) => {
@@ -139,7 +139,7 @@ pub fn score_trace_likelihood(
             }
             Ok(JsValue::from_f64(log_prob))
         }
-        Some(_) => Err(JsValue::from_str("Handle is not an NGramPredictor")),
-        None => Err(JsValue::from_str("NGramPredictor handle not found")),
+        Some(_) => Err(crate::error::js_val("Handle is not an NGramPredictor")),
+        None => Err(crate::error::js_val("NGramPredictor handle not found")),
     })
 }

@@ -582,25 +582,7 @@ export class Pm4wasmBackend implements MiningBackend {
    * Placeholder: actual implementation in Phase 2.
    */
   private async convertModelToWasm(model: ModelIR): Promise<string> {
-    // Serialize ModelIR to JSON string
-    const modelJson = JSON.stringify({
-      format_version: model.format_version,
-      model_type: model.model_type,
-      algorithm_id: model.algorithm_id,
-      capabilities: model.capabilities,
-      nodes: model.nodes,
-      edges: model.edges,
-      quality: model.quality,
-    });
-
-    // Call WASM function to parse and store model
-    // Placeholder: actual pm4wasm function name may differ
-    if (this.wasmModule && typeof this.wasmModule.model_from_json === 'function') {
-      return await this.wasmModule.model_from_json(modelJson);
-    }
-
-    // Fallback: return handle-like string
-    return `model_handle_${this.generateUuid().substring(0, 8)}`;
+    return JSON.stringify(model);
   }
 
   /**
@@ -791,22 +773,6 @@ export class Pm4wasmBackend implements MiningBackend {
    * In Phase 2, this will import from @seanchatmangpt/pictl or equivalent.
    */
   private async loadWasmModule(): Promise<any> {
-    // Placeholder: would dynamically import WASM module here
-    // Example (Phase 2):
-    // const wasmModule = await import('@seanchatmangpt/pictl');
-    // return wasmModule;
-
-    return {
-      discovery_info: async () => ({ version: '1.0' }),
-      discover_dfg: async (handle: string) => JSON.stringify({ nodes: [], edges: [] }),
-      discover_alpha_plus_plus: async (handle: string) => JSON.stringify({ nodes: [], edges: [] }),
-      discover_inductive_miner: async (handle: string) => JSON.stringify({ nodes: [], edges: [] }),
-      eventlog_from_json: async (json: string) => `log_handle_${Date.now()}`,
-      model_from_json: async (json: string) => `model_handle_${Date.now()}`,
-      token_replay_pure: async (logHandle: string, modelHandle: string) =>
-        JSON.stringify({ fitness: 0.85, precision: 0.80, generalization: 0.75, simplicity: 100 }),
-      compute_optimal_alignments: async (logHandle: string, modelHandle: string) =>
-        JSON.stringify({ fitness: 0.90, precision: 0.85, generalization: 0.80, simplicity: 100 }),
-    };
+    return await import('wasm4pm');
   }
 }

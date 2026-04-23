@@ -67,13 +67,13 @@ pub fn discover_handover_network(log_handle: &str, resource_key: &str) -> Result
                 .collect();
 
             serde_json::to_string(&json!({"nodes": nodes, "edges": edges}))
-                .map_err(|e| JsValue::from_str(&e.to_string()))
+                .map_err(|e| crate::error::js_val(&e.to_string()))
         }
-        Some(_) => Err(JsValue::from_str("Handle is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog handle not found")),
+        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
+        None => Err(crate::error::js_val("EventLog handle not found")),
     })?;
 
-    Ok(JsValue::from_str(&json))
+    Ok(crate::error::js_val(&json))
 }
 
 /// Discover a working-together network.
@@ -137,11 +137,11 @@ pub fn discover_working_together_network(
                 .collect();
 
             serde_json::to_string(&json!({"nodes": nodes, "edges": edges}))
-                .map_err(|e| JsValue::from_str(&e.to_string()))
+                .map_err(|e| crate::error::js_val(&e.to_string()))
         }
-        Some(_) => Err(JsValue::from_str("Handle is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog handle not found")),
+        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
+        None => Err(crate::error::js_val("EventLog handle not found")),
     })?;
 
-    Ok(JsValue::from_str(&json))
+    Ok(crate::error::js_val(&json))
 }

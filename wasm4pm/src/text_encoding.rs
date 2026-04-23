@@ -97,8 +97,8 @@ pub fn encode_dfg_as_text(dfg_handle: &str) -> Result<String, JsValue> {
 
             Ok(text)
         }
-        Some(_) => Err(JsValue::from_str("Object is not a DirectlyFollowsGraph")),
-        None => Err(JsValue::from_str("DirectlyFollowsGraph not found")),
+        Some(_) => Err(crate::error::js_val("Object is not a DirectlyFollowsGraph")),
+        None => Err(crate::error::js_val("DirectlyFollowsGraph not found")),
     })
 }
 
@@ -157,8 +157,8 @@ pub fn encode_variants_as_text(
 
             Ok(text.trim_end().to_string())
         }
-        Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(crate::error::js_val("Object is not an EventLog")),
+        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 
@@ -215,8 +215,8 @@ pub fn encode_statistics_as_text(log_handle: &str) -> Result<String, JsValue> {
 
             Ok(text)
         }
-        Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(crate::error::js_val("Object is not an EventLog")),
+        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 
@@ -231,7 +231,7 @@ pub fn encode_statistics_as_text(log_handle: &str) -> Result<String, JsValue> {
 #[wasm_bindgen]
 pub fn encode_conformance_as_text(result_json: &str) -> Result<String, JsValue> {
     let result: Value = serde_json::from_str(result_json)
-        .map_err(|e| JsValue::from_str(&format!("Failed to parse JSON: {}", e)))?;
+        .map_err(|e| crate::error::js_val(&format!("Failed to parse JSON: {}", e)))?;
 
     let conforming = result["conforming_cases"].as_u64().unwrap_or(0) as usize;
     let non_conforming = result["non_conforming_cases"].as_u64().unwrap_or(0) as usize;
@@ -272,11 +272,11 @@ pub fn encode_conformance_as_text(result_json: &str) -> Result<String, JsValue> 
 #[wasm_bindgen]
 pub fn encode_bottlenecks_as_text(result_json: &str) -> Result<String, JsValue> {
     let result: Value = serde_json::from_str(result_json)
-        .map_err(|e| JsValue::from_str(&format!("Failed to parse JSON: {}", e)))?;
+        .map_err(|e| crate::error::js_val(&format!("Failed to parse JSON: {}", e)))?;
 
     let bottlenecks = result["bottlenecks"]
         .as_array()
-        .ok_or_else(|| JsValue::from_str("Expected 'bottlenecks' array in JSON"))?;
+        .ok_or_else(|| crate::error::js_val("Expected 'bottlenecks' array in JSON"))?;
 
     if bottlenecks.is_empty() {
         return Ok("Bottleneck analysis:\n- No bottlenecks detected.".to_string());
@@ -423,8 +423,8 @@ pub fn encode_petri_net_as_text(petri_net_handle: &str) -> Result<String, JsValu
 
             Ok(text.trim_end().to_string())
         }
-        Some(_) => Err(JsValue::from_str("Object is not a PetriNet")),
-        None => Err(JsValue::from_str(&format!(
+        Some(_) => Err(crate::error::js_val("Object is not a PetriNet")),
+        None => Err(crate::error::js_val(&format!(
             "PetriNet '{}' not found",
             petri_net_handle
         ))),
@@ -492,8 +492,8 @@ pub fn encode_ocel_as_text(ocel_handle: &str) -> Result<String, JsValue> {
 
             Ok(text)
         }
-        Some(_) => Err(JsValue::from_str("Object is not an OCEL")),
-        None => Err(JsValue::from_str(&format!(
+        Some(_) => Err(crate::error::js_val("Object is not an OCEL")),
+        None => Err(crate::error::js_val(&format!(
             "OCEL '{}' not found",
             ocel_handle
         ))),
@@ -507,12 +507,12 @@ pub fn encode_oc_petri_net_as_text(oc_petri_net_handle: &str) -> Result<String, 
     get_or_init_state().with_object(oc_petri_net_handle, |obj| match obj {
         Some(StoredObject::JsonString(json_str)) => {
             let ocpn: Value = serde_json::from_str(json_str).map_err(|e| {
-                JsValue::from_str(&format!("Failed to parse OC Petri Net JSON: {}", e))
+                crate::error::js_val(&format!("Failed to parse OC Petri Net JSON: {}", e))
             })?;
 
             let obj_map = ocpn
                 .as_object()
-                .ok_or_else(|| JsValue::from_str("OC Petri Net JSON is not an object"))?;
+                .ok_or_else(|| crate::error::js_val("OC Petri Net JSON is not an object"))?;
 
             if obj_map.is_empty() {
                 return Ok("Empty OC Petri Net (no object types).".to_string());
@@ -560,10 +560,10 @@ pub fn encode_oc_petri_net_as_text(oc_petri_net_handle: &str) -> Result<String, 
 
             Ok(text.trim_end().to_string())
         }
-        Some(_) => Err(JsValue::from_str(
+        Some(_) => Err(crate::error::js_val(
             "Object is not an OC Petri Net (expected JsonString)",
         )),
-        None => Err(JsValue::from_str(&format!(
+        None => Err(crate::error::js_val(&format!(
             "OC Petri Net '{}' not found",
             oc_petri_net_handle
         ))),
@@ -701,11 +701,11 @@ fn extract_model_summary(
                     .collect(),
             })
         }
-        Some(_) => Err(JsValue::from_str(&format!(
+        Some(_) => Err(crate::error::js_val(&format!(
             "Object '{}' is not a DFG or PetriNet",
             handle
         ))),
-        None => Err(JsValue::from_str(&format!("Model '{}' not found", handle))),
+        None => Err(crate::error::js_val(&format!("Model '{}' not found", handle))),
     })
 }
 
@@ -748,7 +748,7 @@ pub fn encode_ocel_summary_as_text(ocel_handle: &str) -> Result<String, JsValue>
 
             Ok(text)
         }
-        Some(_) => Err(JsValue::from_str("Object is not an OCEL")),
-        None => Err(JsValue::from_str("OCEL not found")),
+        Some(_) => Err(crate::error::js_val("Object is not an OCEL")),
+        None => Err(crate::error::js_val("OCEL not found")),
     })
 }

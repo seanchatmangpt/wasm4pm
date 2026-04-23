@@ -254,7 +254,7 @@ pub fn discover_dfg_filtered(
 pub fn export_dfg_to_json(handle: &str) -> Result<String, JsValue> {
     get_or_init_state().with_object(handle, |obj| match obj {
         Some(StoredObject::DirectlyFollowsGraph(dfg)) => serde_json::to_string(dfg)
-            .map_err(|e| JsValue::from_str(&format!("Serialization failed: {}", e))),
+            .map_err(|e| crate::error::js_val(&format!("Serialization failed: {}", e))),
         Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not a DFG")),
         None => Err(wasm_err(
             codes::INVALID_HANDLE,

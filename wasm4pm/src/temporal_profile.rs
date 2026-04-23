@@ -76,12 +76,12 @@ pub fn discover_temporal_profile(
 
             Ok(TemporalProfile { pairs: pairs_map })
         }
-        Some(_) => Err(JsValue::from_str("Handle is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog handle not found")),
+        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
+        None => Err(crate::error::js_val("EventLog handle not found")),
     })?;
 
     let handle = get_or_init_state().store_object(StoredObject::TemporalProfile(profile))?;
-    Ok(JsValue::from_str(&handle))
+    Ok(crate::error::js_val(&handle))
 }
 
 /// Check a log against a temporal profile.
@@ -112,8 +112,8 @@ pub fn check_temporal_conformance(
 ) -> Result<JsValue, JsValue> {
     let profile_pairs = get_or_init_state().with_object(profile_handle, |obj| match obj {
         Some(StoredObject::TemporalProfile(p)) => Ok(p.pairs.clone()),
-        Some(_) => Err(JsValue::from_str("Handle is not a TemporalProfile")),
-        None => Err(JsValue::from_str("TemporalProfile handle not found")),
+        Some(_) => Err(crate::error::js_val("Handle is not a TemporalProfile")),
+        None => Err(crate::error::js_val("TemporalProfile handle not found")),
     })?;
 
     let result_json = get_or_init_state().with_object(log_handle, |obj| match obj {
@@ -195,11 +195,11 @@ pub fn check_temporal_conformance(
                 "fitness": fitness,
                 "details": details,
             }))
-            .map_err(|e| JsValue::from_str(&e.to_string()))
+            .map_err(|e| crate::error::js_val(&e.to_string()))
         }
-        Some(_) => Err(JsValue::from_str("Handle is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog handle not found")),
+        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
+        None => Err(crate::error::js_val("EventLog handle not found")),
     })?;
 
-    Ok(JsValue::from_str(&result_json))
+    Ok(crate::error::js_val(&result_json))
 }

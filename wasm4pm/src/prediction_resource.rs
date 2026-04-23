@@ -207,7 +207,7 @@ pub fn estimate_queue_delay(arrival_rate: f64, service_rate: f64) -> Result<JsVa
     let result = compute_queue_delay(arrival_rate, service_rate)
         .map_err(|e| wasm_err(codes::INVALID_INPUT, e))?;
     serde_json::to_string(&result)
-        .map(|s| JsValue::from_str(&s))
+        .map(|s| crate::error::js_val(&s))
         .map_err(|e| wasm_err(codes::INTERNAL_ERROR, e))
 }
 
@@ -233,7 +233,7 @@ pub fn rank_interventions(
     let ranked = compute_ranked_interventions(&interventions, exploitation_weight);
 
     serde_json::to_string(&ranked)
-        .map(|s| JsValue::from_str(&s))
+        .map(|s| crate::error::js_val(&s))
         .map_err(|e| wasm_err(codes::INTERNAL_ERROR, e))
 }
 
@@ -252,7 +252,7 @@ pub fn select_intervention(bandit_json: &str, exploration_factor: f64) -> Result
         .map_err(|e| wasm_err(codes::INVALID_INPUT, e))?;
 
     serde_json::to_string(&result)
-        .map(|s| JsValue::from_str(&s))
+        .map(|s| crate::error::js_val(&s))
         .map_err(|e| wasm_err(codes::INTERNAL_ERROR, e))
 }
 

@@ -32,8 +32,8 @@ pub fn check_declare_conformance(
     // Clone constraints out so we don't hold two locks
     let constraints = get_or_init_state().with_object(declare_handle, |obj| match obj {
         Some(StoredObject::DeclareModel(m)) => Ok(m.constraints.clone()),
-        Some(_) => Err(JsValue::from_str("Handle is not a DeclareModel")),
-        None => Err(JsValue::from_str("DeclareModel handle not found")),
+        Some(_) => Err(crate::error::js_val("Handle is not a DeclareModel")),
+        None => Err(crate::error::js_val("DeclareModel handle not found")),
     })?;
 
     let result_json = get_or_init_state().with_object(log_handle, |obj| match obj {
@@ -138,13 +138,13 @@ pub fn check_declare_conformance(
                 "avg_fitness": avg_fitness,
                 "constraints": constraint_results,
             }))
-            .map_err(|e| JsValue::from_str(&e.to_string()))
+            .map_err(|e| crate::error::js_val(&e.to_string()))
         }
-        Some(_) => Err(JsValue::from_str("Handle is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog handle not found")),
+        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
+        None => Err(crate::error::js_val("EventLog handle not found")),
     })?;
 
-    Ok(JsValue::from_str(&result_json))
+    Ok(crate::error::js_val(&result_json))
 }
 
 /// Store a DECLARE model from its JSON representation and return a handle.
@@ -157,7 +157,7 @@ pub fn check_declare_conformance(
 #[wasm_bindgen]
 pub fn store_declare_from_json(declare_json: &str) -> Result<JsValue, JsValue> {
     let model: crate::models::DeclareModel = serde_json::from_str(declare_json)
-        .map_err(|e| JsValue::from_str(&format!("Invalid DECLARE JSON: {}", e)))?;
+        .map_err(|e| crate::error::js_val(&format!("Invalid DECLARE JSON: {}", e)))?;
     let handle = get_or_init_state().store_object(StoredObject::DeclareModel(model))?;
-    Ok(JsValue::from_str(&handle))
+    Ok(crate::error::js_val(&handle))
 }

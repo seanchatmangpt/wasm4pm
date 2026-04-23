@@ -24,8 +24,8 @@ pub fn discover_inductive_miner(
 
             inductive_miner_recursive(log, &sorted_acts, activity_key, 0)
         }
-        Some(_) => Err(JsValue::from_str("Not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(crate::error::js_val("Not an EventLog")),
+        None => Err(crate::error::js_val("EventLog not found")),
     })?;
 
     let nodes = tree.count_nodes();
@@ -341,8 +341,8 @@ pub fn discover_simulated_annealing(
 
                 Ok((best_edges, best_fitness, vocab))
             }
-            Some(_) => Err(JsValue::from_str("Not an EventLog")),
-            None => Err(JsValue::from_str("EventLog not found")),
+            Some(_) => Err(crate::error::js_val("Not an EventLog")),
+            None => Err(crate::error::js_val("EventLog not found")),
         })?;
 
     // Materialize DFG from best edges
@@ -350,7 +350,7 @@ pub fn discover_simulated_annealing(
 
     let handle = get_or_init_state()
         .store_object(StoredObject::DirectlyFollowsGraph(best_dfg.clone()))
-        .map_err(|_e| JsValue::from_str("Failed to store DFG"))?;
+        .map_err(|_e| crate::error::js_val("Failed to store DFG"))?;
 
     to_js_str(&json!({
         "handle": handle,
@@ -405,13 +405,13 @@ pub fn extract_process_skeleton(
 
             Ok(dfg)
         }
-        Some(_) => Err(JsValue::from_str("Not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(crate::error::js_val("Not an EventLog")),
+        None => Err(crate::error::js_val("EventLog not found")),
     })?;
 
     let handle = get_or_init_state()
         .store_object(StoredObject::DirectlyFollowsGraph(dfg.clone()))
-        .map_err(|_e| JsValue::from_str("Failed to store DFG"))?;
+        .map_err(|_e| crate::error::js_val("Failed to store DFG"))?;
 
     to_js_str(&json!({
         "handle": handle,
@@ -480,8 +480,8 @@ pub fn analyze_activity_dependencies(
                 "dependencies": result,
             }))
         }
-        Some(_) => Err(JsValue::from_str("Not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(crate::error::js_val("Not an EventLog")),
+        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 
@@ -540,8 +540,8 @@ pub fn analyze_case_attributes(
                 "case_attributes": result,
             }))
         }
-        Some(_) => Err(JsValue::from_str("Not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(crate::error::js_val("Not an EventLog")),
+        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 

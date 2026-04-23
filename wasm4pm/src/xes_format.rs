@@ -221,7 +221,7 @@ pub fn load_eventlog_from_xes(content: &str) -> Result<String, JsValue> {
     // Store the log
     let handle = get_or_init_state()
         .store_object(StoredObject::EventLog(log))
-        .map_err(|_e| JsValue::from_str("Failed to store EventLog"))?;
+        .map_err(|_e| crate::error::js_val("Failed to store EventLog"))?;
 
     Ok(handle)
 }
@@ -290,8 +290,8 @@ pub fn export_eventlog_to_xes(eventlog_handle: &str) -> Result<String, JsValue> 
 
             Ok(xes)
         }
-        Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(crate::error::js_val("Object is not an EventLog")),
+        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 

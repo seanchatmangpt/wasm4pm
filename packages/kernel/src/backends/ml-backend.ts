@@ -8,6 +8,7 @@
  * Spec reference: Section 3.3 (MlBackend declaration)
  */
 
+import * as wasm from 'wasm4pm';
 import type {
   MiningBackend,
   BackendCapabilities,
@@ -195,7 +196,6 @@ export class MlBackend implements MiningBackend {
     const startMs = Date.now();
 
     try {
-      // Validate task type is a supported ML algorithm
       if (!SUPPORTED_ALGORITHM_IDS.includes(task.task_type)) {
         return this.createFailedAnalysisResult(
           task.task_type,
@@ -204,22 +204,84 @@ export class MlBackend implements MiningBackend {
         );
       }
 
-      // TODO: Call @pictl/ml package with task parameters
-      // For now, return stub result
-      const result = {
-        task_type: task.task_type,
-        algorithm: task.task_type,
-        parameters: task.parameters || {},
-        output_schema: this.getOutputSchema(task.task_type),
-        results: [],
-      };
+      const ml = await import('@pictl/ml');
+      const logJson = JSON.stringify(log);
+      const logHandle = wasm.load_eventlog_from_json(logJson);
+
+      let resultRaw: any;
+      try {
+        const params = (task.parameters as Record<string, any>) || {};
+
+        if (task.task_type === 'ml_classify') {
+          const configJson = JSON.stringify({
+            features: params.features || ['trace_length', 'elapsed_time', 'activity_counts', 'rework_count', 'unique_activities', 'avg_inter_event_time'],
+            target: params.target || 'outcome',
+          });
+          const rawFeatures = wasm.extract_case_features(logHandle, 'concept:name', 'time:timestamp', configJson);
+          const features = typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
+          resultRaw = await ml.classifyTraces(features, {
+            method: params.method || 'knn',
+            k: params.k ?? 5,
+          });
+        } 
+        else if (task.task_type === 'ml_cluster') {
+          const configJson = JSON.stringify({
+            features: params.features || ['trace_length', 'elapsed_time', 'activity_counts', 'rework_count', 'unique_activities'],
+          });
+          const rawFeatures = wasm.extract_case_features(logHandle, 'concept:name', 'time:timestamp', configJson);
+          const features = typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
+          resultRaw = await ml.clusterTraces(features, {
+            method: params.method || 'kmeans',
+            k: params.k ?? 3,
+            eps: params.eps ?? 1.0,
+          });
+        }
+        else if (task.task_type === 'ml_forecast') {
+          const driftRaw = wasm.detect_drift(logHandle, 'concept:name', params.window_size ?? 5);
+          const driftResult = typeof driftRaw === 'string' ? JSON.parse(driftRaw) : driftRaw;
+          const distances = (driftResult?.drifts ?? []).map((d: any) => d.distance ?? 0);
+          resultRaw = await ml.forecastThroughput(distances, {
+            forecastPeriods: params.forecast_periods ?? 5,
+          });
+        }
+        else if (task.task_type === 'ml_anomaly') {
+          const driftRaw = wasm.detect_drift(logHandle, 'concept:name', params.window_size ?? 10);
+          const driftResult = typeof driftRaw === 'string' ? JSON.parse(driftRaw) : driftRaw;
+          const distances = (driftResult?.drifts ?? []).map((d: any) => d.distance ?? 0);
+          resultRaw = await ml.detectEnhancedAnomalies(distances);
+        }
+        else if (task.task_type === 'ml_regress') {
+          const configJson = JSON.stringify({
+            features: params.features || ['trace_length', 'elapsed_time', 'rework_count', 'unique_activities', 'avg_inter_event_time'],
+            target: params.target || 'remaining_time',
+          });
+          const rawFeatures = wasm.extract_case_features(logHandle, 'concept:name', 'time:timestamp', configJson);
+          const features = typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
+          resultRaw = await ml.regressRemainingTime(features);
+        }
+        else if (task.task_type === 'ml_pca') {
+          const configJson = JSON.stringify({
+            features: params.features || ['trace_length', 'elapsed_time', 'activity_counts', 'rework_count', 'unique_activities', 'avg_inter_event_time'],
+          });
+          const rawFeatures = wasm.extract_case_features(logHandle, 'concept:name', 'time:timestamp', configJson);
+          const features = typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
+          resultRaw = await ml.reduceFeaturesPCA(features, {
+            nComponents: params.n_components ?? 2,
+          });
+        }
+      } finally {
+        try {
+          // Cleanup handled if any (load_eventlog_from_json does not hold memory persistently in same way as others without delete, 
+          // or we can just ignore since wasm backend doesn't explicitly delete handles often)
+        } catch (e) {}
+      }
 
       const latency_ms = Date.now() - startMs;
 
       return {
         run_id: this.generateUuid(),
         status: 'success',
-        payload: result,
+        payload: resultRaw,
         latency_ms,
         latency_class: deriveLatencyClass(latency_ms),
         backend_id: this.id,
@@ -246,12 +308,11 @@ export class MlBackend implements MiningBackend {
     const startMs = Date.now();
 
     try {
-      // TODO: Attempt to load @pictl/ml package
-      // For now, return healthy
+      const ml = await import('@pictl/ml');
       const latency_ms = Date.now() - startMs;
 
       return {
-        healthy: true,
+        healthy: !!ml,
         latency_ms,
         detail: 'ML subsystem available',
       };

@@ -25,7 +25,7 @@ pub fn extract_case_features(
 ) -> Result<JsValue, JsValue> {
     // Parse config
     let config: Map<String, Value> = serde_json::from_str(config_json)
-        .map_err(|e| JsValue::from_str(&format!("Invalid config JSON: {}", e)))?;
+        .map_err(|e| crate::error::js_val(&format!("Invalid config JSON: {}", e)))?;
 
     let features_list: Vec<String> = config
         .get("features")
@@ -161,8 +161,8 @@ pub fn extract_case_features(
 
             to_js(&results)
         }
-        Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(crate::error::js_val("Object is not an EventLog")),
+        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 
@@ -265,8 +265,8 @@ pub fn extract_prefix_features(
 
             to_js(&results)
         }
-        Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(crate::error::js_val("Object is not an EventLog")),
+        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 
@@ -282,7 +282,7 @@ fn csv_escape(s: &str) -> String {
 #[wasm_bindgen]
 pub fn export_features_csv(features_json: &str) -> Result<String, JsValue> {
     let features: Vec<serde_json::Map<String, Value>> = serde_json::from_str(features_json)
-        .map_err(|e| JsValue::from_str(&format!("Invalid features JSON: {}", e)))?;
+        .map_err(|e| crate::error::js_val(&format!("Invalid features JSON: {}", e)))?;
 
     if features.is_empty() {
         return Ok(String::new());
@@ -344,7 +344,7 @@ pub fn export_features_json(
         Some(StoredObject::EventLog(log)) => {
             // Parse config
             let config: Map<String, Value> = serde_json::from_str(config_json)
-                .map_err(|e| JsValue::from_str(&format!("Invalid config JSON: {}", e)))?;
+                .map_err(|e| crate::error::js_val(&format!("Invalid config JSON: {}", e)))?;
 
             let features_list: Vec<String> = config
                 .get("features")
@@ -469,10 +469,10 @@ pub fn export_features_json(
             }
 
             serde_json::to_string(&results)
-                .map_err(|e| JsValue::from_str(&format!("Failed to serialize features: {}", e)))
+                .map_err(|e| crate::error::js_val(&format!("Failed to serialize features: {}", e)))
         }
-        Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(crate::error::js_val("Object is not an EventLog")),
+        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 

@@ -1,3 +1,4 @@
+use crate::error::js_val;
 use crate::models::*;
 use crate::state::{get_or_init_state, StoredObject};
 use crate::{Data, Median};
@@ -10,25 +11,25 @@ use wasm_bindgen::prelude::*; // Conditional import: statrs or hand_rolled_stats
 /// - **WASM target**: `serde_wasm_bindgen::to_value` — produces a native JS object,
 ///   no JSON round-trip.
 /// - **Native target** (benchmarks / unit tests): `serde_json::to_string` wrapped in
-///   `JsValue::from_str` — keeps the same `Result<JsValue, JsValue>` signature so
+///   `js_val` — keeps the same `Result<JsValue, JsValue>` signature so
 ///   benchmarks can call `js_val.as_string().unwrap()` to get back the JSON.
 #[inline]
 pub fn to_js<T: serde::Serialize>(val: &T) -> Result<JsValue, JsValue> {
     #[cfg(target_arch = "wasm32")]
     {
-        serde_wasm_bindgen::to_value(val).map_err(|e| JsValue::from_str(&e.to_string()))
+        serde_wasm_bindgen::to_value(val).map_err(|e| js_val(&e.to_string()))
     }
     #[cfg(not(target_arch = "wasm32"))]
     {
-        // On native targets (criterion benchmarks) JsValue::from_str is not callable.
-        // Benchmarks only call .unwrap() and discard the value, so return NULL.
+        // On native targets (criterion benchmarks) js_val is not callable.
+        // Benchmarks only call .unwrap() and discard the value, so return zeroed value.
         // Serialization is validated but the output is discarded.
         let _ = serde_json::to_string(val);
-        Ok(JsValue::NULL)
+        Ok(unsafe { std::mem::zeroed() })
     }
 }
 
-/// Serialize `val` via `serde_json` + `JsValue::from_str` on ALL targets.
+/// Serialize `val` via `serde_json` + `js_val` on ALL targets.
 ///
 /// Use this instead of `to_js` when `val` is a `serde_json::Value` (e.g. from
 /// `json!({...})`). `serde_wasm_bindgen` silently produces `{}` for those on
@@ -37,11 +38,11 @@ pub fn to_js<T: serde::Serialize>(val: &T) -> Result<JsValue, JsValue> {
 #[inline]
 pub fn to_js_str<T: serde::Serialize>(val: &T) -> Result<JsValue, JsValue> {
     serde_json::to_string(val)
-        .map(|s| JsValue::from_str(&s))
-        .map_err(|e| JsValue::from_str(&e.to_string()))
+        .map(|s| js_val(&s))
+        .map_err(|e| js_val(&e.to_string()))
 }
 
-/// Structured error: invalid handle (replaces ad-hoc JsValue::from_str("EventLog not found"))
+/// Structured error: invalid handle (replaces ad-hoc js_val("EventLog not found"))
 #[inline]
 pub fn wasm_invalid_handle(handle: &str) -> JsValue {
     crate::error::wasm_err(
@@ -50,7 +51,7 @@ pub fn wasm_invalid_handle(handle: &str) -> JsValue {
     )
 }
 
-/// Structured error: wrong object type (replaces ad-hoc JsValue::from_str("Object is not an EventLog"))
+/// Structured error: wrong object type (replaces ad-hoc js_val("Object is not an EventLog"))
 #[inline]
 pub fn wasm_not_eventlog(handle: &str) -> JsValue {
     crate::error::wasm_err(
@@ -73,8 +74,8 @@ pub fn wasm_wrong_type(handle: &str, expected: &str) -> JsValue {
 pub fn get_trace_count(eventlog_handle: &str) -> Result<usize, JsValue> {
     get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => Ok(log.traces.len()),
-        Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(js_val("Object is not an EventLog")),
+        None => Err(js_val("EventLog not found")),
     })
 }
 
@@ -83,8 +84,8 @@ pub fn get_trace_count(eventlog_handle: &str) -> Result<usize, JsValue> {
 pub fn get_event_count(eventlog_handle: &str) -> Result<usize, JsValue> {
     get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => Ok(log.event_count()),
-        Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(js_val("Object is not an EventLog")),
+        None => Err(js_val("EventLog not found")),
     })
 }
 
@@ -96,8 +97,8 @@ pub fn get_activities(eventlog_handle: &str, activity_key: &str) -> Result<JsVal
             let activities = log.get_activities(activity_key);
             to_js(&activities)
         }
-        Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(js_val("Object is not an EventLog")),
+        None => Err(js_val("EventLog not found")),
     })
 }
 
@@ -109,8 +110,8 @@ pub fn get_trace_lengths(eventlog_handle: &str) -> Result<JsValue, JsValue> {
             let lengths: Vec<usize> = log.traces.iter().map(|t| t.events.len()).collect();
             to_js(&lengths)
         }
-        Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(js_val("Object is not an EventLog")),
+        None => Err(js_val("EventLog not found")),
     })
 }
 
@@ -151,8 +152,8 @@ pub fn get_trace_length_statistics(eventlog_handle: &str) -> Result<JsValue, JsV
 
             to_js(&stats)
         }
-        Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(js_val("Object is not an EventLog")),
+        None => Err(js_val("EventLog not found")),
     })
 }
 
@@ -218,8 +219,8 @@ pub fn get_attribute_names(eventlog_handle: &str) -> Result<JsValue, JsValue> {
 
             to_js(&names)
         }
-        Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(js_val("Object is not an EventLog")),
+        None => Err(js_val("EventLog not found")),
     })
 }
 
@@ -254,15 +255,15 @@ pub fn filter_log_by_activity(
                 traces,
             })
         }
-        Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(js_val("Object is not an EventLog")),
+        None => Err(js_val("EventLog not found")),
     })?;
 
     let trace_count = filtered.traces.len();
     let event_count = filtered.event_count();
     let handle = get_or_init_state()
         .store_object(StoredObject::EventLog(filtered))
-        .map_err(|_e| JsValue::from_str("Failed to store filtered log"))?;
+        .map_err(|_e| js_val("Failed to store filtered log"))?;
 
     to_js(&json!({
         "handle": handle,
@@ -294,15 +295,15 @@ pub fn filter_log_by_trace_length(
                 traces,
             })
         }
-        Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(js_val("Object is not an EventLog")),
+        None => Err(js_val("EventLog not found")),
     })?;
 
     let trace_count = filtered.traces.len();
     let event_count = filtered.event_count();
     let handle = get_or_init_state()
         .store_object(StoredObject::EventLog(filtered))
-        .map_err(|_e| JsValue::from_str("Failed to store filtered log"))?;
+        .map_err(|_e| js_val("Failed to store filtered log"))?;
 
     to_js(&json!({
         "handle": handle,
@@ -343,8 +344,8 @@ pub fn calculate_trace_durations(
 
             to_js(&durations)
         }
-        Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(js_val("Object is not an EventLog")),
+        None => Err(js_val("EventLog not found")),
     })
 }
 
@@ -366,8 +367,8 @@ pub fn validate_has_timestamps(
             });
             Ok(has_timestamps)
         }
-        Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(js_val("Object is not an EventLog")),
+        None => Err(js_val("EventLog not found")),
     })
 }
 
@@ -386,8 +387,8 @@ pub fn validate_has_activities(eventlog_handle: &str, activity_key: &str) -> Res
             });
             Ok(has_activities)
         }
-        Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(js_val("Object is not an EventLog")),
+        None => Err(js_val("EventLog not found")),
     })
 }
 
@@ -416,7 +417,7 @@ pub fn get_activity_frequencies(
 
             to_js(&freq_vec)
         }
-        Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(js_val("Object is not an EventLog")),
+        None => Err(js_val("EventLog not found")),
     })
 }

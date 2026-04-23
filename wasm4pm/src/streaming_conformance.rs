@@ -17,9 +17,9 @@ use wasm_bindgen::prelude::*;
 #[wasm_bindgen]
 pub fn store_dfg_from_json(dfg_json: &str) -> Result<JsValue, JsValue> {
     let dfg: DirectlyFollowsGraph = serde_json::from_str(dfg_json)
-        .map_err(|e| JsValue::from_str(&format!("Invalid DFG JSON: {}", e)))?;
+        .map_err(|e| crate::error::js_val(&format!("Invalid DFG JSON: {}", e)))?;
     let handle = get_or_init_state().store_object(StoredObject::DirectlyFollowsGraph(dfg))?;
-    Ok(JsValue::from_str(&handle))
+    Ok(crate::error::js_val(&handle))
 }
 
 /// Begin a new streaming conformance session against a reference DFG.
@@ -34,13 +34,13 @@ pub fn streaming_conformance_begin(dfg_handle: &str) -> Result<JsValue, JsValue>
         Some(StoredObject::DirectlyFollowsGraph(dfg)) => {
             Ok(StreamingConformanceChecker::from_dfg(dfg))
         }
-        Some(_) => Err(JsValue::from_str("Handle is not a DirectlyFollowsGraph")),
-        None => Err(JsValue::from_str("DFG handle not found")),
+        Some(_) => Err(crate::error::js_val("Handle is not a DirectlyFollowsGraph")),
+        None => Err(crate::error::js_val("DFG handle not found")),
     })?;
 
     let handle =
         get_or_init_state().store_object(StoredObject::StreamingConformanceChecker(checker))?;
-    Ok(JsValue::from_str(&handle))
+    Ok(crate::error::js_val(&handle))
 }
 
 /// Append one event to an in-progress trace.
@@ -60,13 +60,13 @@ pub fn streaming_conformance_add_event(
                 "event_count": c.event_count,
                 "open_traces": c.open_traces.len(),
             }))
-            .map_err(|e| JsValue::from_str(&e.to_string()))?;
-            Ok(JsValue::from_str(&json))
+            .map_err(|e| crate::error::js_val(&e.to_string()))?;
+            Ok(crate::error::js_val(&json))
         }
-        Some(_) => Err(JsValue::from_str(
+        Some(_) => Err(crate::error::js_val(
             "Handle is not a StreamingConformanceChecker",
         )),
-        None => Err(JsValue::from_str(
+        None => Err(crate::error::js_val(
             "StreamingConformanceChecker handle not found",
         )),
     })
@@ -91,13 +91,13 @@ pub fn streaming_conformance_close_trace(handle: &str, case_id: &str) -> Result<
                 None => json!({ "ok": false, "reason": "case_id not open" }),
             };
             let json =
-                serde_json::to_string(&val).map_err(|e| JsValue::from_str(&e.to_string()))?;
-            Ok(JsValue::from_str(&json))
+                serde_json::to_string(&val).map_err(|e| crate::error::js_val(&e.to_string()))?;
+            Ok(crate::error::js_val(&json))
         }
-        Some(_) => Err(JsValue::from_str(
+        Some(_) => Err(crate::error::js_val(
             "Handle is not a StreamingConformanceChecker",
         )),
-        None => Err(JsValue::from_str(
+        None => Err(crate::error::js_val(
             "StreamingConformanceChecker handle not found",
         )),
     })
@@ -125,13 +125,13 @@ pub fn streaming_conformance_stats(handle: &str) -> Result<JsValue, JsValue> {
                 "deviating_traces": c.results.len() - conforming,
                 "avg_fitness": avg_fitness,
             }))
-            .map_err(|e| JsValue::from_str(&e.to_string()))?;
-            Ok(JsValue::from_str(&json))
+            .map_err(|e| crate::error::js_val(&e.to_string()))?;
+            Ok(crate::error::js_val(&json))
         }
-        Some(_) => Err(JsValue::from_str(
+        Some(_) => Err(crate::error::js_val(
             "Handle is not a StreamingConformanceChecker",
         )),
-        None => Err(JsValue::from_str(
+        None => Err(crate::error::js_val(
             "StreamingConformanceChecker handle not found",
         )),
     })
@@ -162,17 +162,17 @@ pub fn streaming_conformance_finalize(handle: &str) -> Result<JsValue, JsValue> 
                 "avg_fitness": avg_fitness,
                 "results": c.results,
             }))
-            .map_err(|e| JsValue::from_str(&e.to_string()))?;
+            .map_err(|e| crate::error::js_val(&e.to_string()))?;
             Ok(json)
         }
-        Some(_) => Err(JsValue::from_str(
+        Some(_) => Err(crate::error::js_val(
             "Handle is not a StreamingConformanceChecker",
         )),
-        None => Err(JsValue::from_str(
+        None => Err(crate::error::js_val(
             "StreamingConformanceChecker handle not found",
         )),
     })?;
 
     get_or_init_state().delete_object(handle)?;
-    Ok(JsValue::from_str(&summary_json))
+    Ok(crate::error::js_val(&summary_json))
 }

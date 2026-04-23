@@ -65,8 +65,8 @@ pub fn analyze_variant_complexity(
                 "predominant_variant_size": variant_counts.first().copied().unwrap_or(0),
             }))
         }
-        Some(_) => Err(JsValue::from_str("Not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(crate::error::js_val("Not an EventLog")),
+        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 
@@ -131,8 +131,8 @@ pub fn compute_activity_transition_matrix(
                 "num_activities": activities.len(),
             }))
         }
-        Some(_) => Err(JsValue::from_str("Not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(crate::error::js_val("Not an EventLog")),
+        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 
@@ -186,8 +186,8 @@ pub fn analyze_process_speedup(
                 "speedup_range": percentile_75 - percentile_25,
             }))
         }
-        Some(_) => Err(JsValue::from_str("Not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(crate::error::js_val("Not an EventLog")),
+        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 
@@ -237,8 +237,8 @@ pub fn compute_trace_similarity_matrix(
                 "total_pairs": (log.traces.len() * (log.traces.len() - 1)) / 2,
             }))
         }
-        Some(_) => Err(JsValue::from_str("Not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(crate::error::js_val("Not an EventLog")),
+        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 
@@ -301,8 +301,8 @@ pub fn analyze_temporal_bottlenecks(
                 "bottlenecks": bottlenecks,
             }))
         }
-        Some(_) => Err(JsValue::from_str("Not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(crate::error::js_val("Not an EventLog")),
+        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 
@@ -361,8 +361,8 @@ pub fn extract_activity_ordering(
                 "activity_ordering": result,
             }))
         }
-        Some(_) => Err(JsValue::from_str("Not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(crate::error::js_val("Not an EventLog")),
+        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 

@@ -123,28 +123,28 @@ pub fn align_etconformance_precision(
     config_json: &str,
 ) -> Result<JsValue, JsValue> {
     let config: AlignETConformanceConfig = serde_json::from_str(config_json)
-        .map_err(|e| JsValue::from_str(&format!("Failed to parse ETConformance config: {}", e)))?;
+        .map_err(|e| crate::error::js_val(&format!("Failed to parse ETConformance config: {}", e)))?;
 
     // Clone the data we need from state
     let log_cloned = get_or_init_state().with_object(log_handle, |log_obj| match log_obj {
         Some(StoredObject::EventLog(l)) => Ok(l.clone()),
-        Some(_) => Err(JsValue::from_str("Handle is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog handle not found")),
+        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
+        None => Err(crate::error::js_val("EventLog handle not found")),
     })?;
 
     let petri_net_cloned =
         get_or_init_state().with_object(petri_net_handle, |petri_net_obj| match petri_net_obj {
             Some(StoredObject::PetriNet(pn)) => Ok(pn.clone()),
-            Some(_) => Err(JsValue::from_str("Handle is not a PetriNet")),
-            None => Err(JsValue::from_str("PetriNet handle not found")),
+            Some(_) => Err(crate::error::js_val("Handle is not a PetriNet")),
+            None => Err(crate::error::js_val("PetriNet handle not found")),
         })?;
 
     let report = compute_align_etconformance_precision(&log_cloned, &petri_net_cloned, &config)
-        .map_err(|e| JsValue::from_str(&e))?;
+        .map_err(|e| crate::error::js_val(&e))?;
 
     serde_json::to_string(&report)
-        .map_err(|e| JsValue::from_str(&e.to_string()))
-        .map(|s| JsValue::from_str(&s))
+        .map_err(|e| crate::error::js_val(&e.to_string()))
+        .map(|s| crate::error::js_val(&s))
 }
 
 #[cfg(test)]

@@ -137,13 +137,13 @@ pub fn conformance_cache_get(
             *s = serde_json::to_string(&cache).unwrap_or_default();
             match result {
                 Some(r) => {
-                    serde_wasm_bindgen::to_value(&r).map_err(|e| JsValue::from_str(&e.to_string()))
+                    serde_wasm_bindgen::to_value(&r).map_err(|e| crate::error::js_val(&e.to_string()))
                 }
                 None => Ok(JsValue::NULL),
             }
         }
-        Some(_) => Err(JsValue::from_str("Object is not a ConformanceCache")),
-        None => Err(JsValue::from_str(&format!("Cache '{}' not found", handle))),
+        Some(_) => Err(crate::error::js_val("Object is not a ConformanceCache")),
+        None => Err(crate::error::js_val(&format!("Cache '{}' not found", handle))),
     })
 }
 
@@ -173,10 +173,10 @@ pub fn conformance_cache_insert(
             );
             *s = serde_json::to_string(&cache).unwrap_or_default();
             serde_wasm_bindgen::to_value(&json!({ "ok": true }))
-                .map_err(|e| JsValue::from_str(&e.to_string()))
+                .map_err(|e| crate::error::js_val(&e.to_string()))
         }
-        Some(_) => Err(JsValue::from_str("Object is not a ConformanceCache")),
-        None => Err(JsValue::from_str(&format!("Cache '{}' not found", handle))),
+        Some(_) => Err(crate::error::js_val("Object is not a ConformanceCache")),
+        None => Err(crate::error::js_val(&format!("Cache '{}' not found", handle))),
     })
 }
 
@@ -192,10 +192,10 @@ pub fn conformance_cache_stats(handle: &str) -> Result<JsValue, JsValue> {
                 "misses": misses,
                 "entries": entries,
             }))
-            .map_err(|e| JsValue::from_str(&e.to_string()))
+            .map_err(|e| crate::error::js_val(&e.to_string()))
         }
-        Some(_) => Err(JsValue::from_str("Object is not a ConformanceCache")),
-        None => Err(JsValue::from_str(&format!("Cache '{}' not found", handle))),
+        Some(_) => Err(crate::error::js_val("Object is not a ConformanceCache")),
+        None => Err(crate::error::js_val(&format!("Cache '{}' not found", handle))),
     })
 }
 
@@ -208,10 +208,10 @@ pub fn conformance_cache_clear(handle: &str) -> Result<JsValue, JsValue> {
             cache.clear();
             *s = serde_json::to_string(&cache).unwrap_or_default();
             serde_wasm_bindgen::to_value(&json!({ "ok": true }))
-                .map_err(|e| JsValue::from_str(&e.to_string()))
+                .map_err(|e| crate::error::js_val(&e.to_string()))
         }
-        Some(_) => Err(JsValue::from_str("Object is not a ConformanceCache")),
-        None => Err(JsValue::from_str(&format!("Cache '{}' not found", handle))),
+        Some(_) => Err(crate::error::js_val("Object is not a ConformanceCache")),
+        None => Err(crate::error::js_val(&format!("Cache '{}' not found", handle))),
     })
 }
 
@@ -219,10 +219,10 @@ pub fn conformance_cache_clear(handle: &str) -> Result<JsValue, JsValue> {
 #[wasm_bindgen]
 pub fn conformance_cache_hash_model(dfg_json: &str) -> Result<JsValue, JsValue> {
     let dfg: crate::models::DirectlyFollowsGraph = serde_json::from_str(dfg_json)
-        .map_err(|e| JsValue::from_str(&format!("Invalid DFG JSON: {}", e)))?;
+        .map_err(|e| crate::error::js_val(&format!("Invalid DFG JSON: {}", e)))?;
     let hash = ConformanceCache::hash_model(&dfg);
     serde_wasm_bindgen::to_value(&json!({ "hash": hash }))
-        .map_err(|e| JsValue::from_str(&e.to_string()))
+        .map_err(|e| crate::error::js_val(&e.to_string()))
 }
 
 #[cfg(test)]

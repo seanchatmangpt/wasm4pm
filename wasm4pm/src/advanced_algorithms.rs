@@ -90,15 +90,15 @@ pub fn discover_heuristic_miner(
 
             Ok(dfg)
         }
-        Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(crate::error::js_val("Object is not an EventLog")),
+        None => Err(crate::error::js_val("EventLog not found")),
     })?;
 
     let n_nodes = dfg.nodes.len();
     let n_edges = dfg.edges.len();
     let handle = get_or_init_state()
         .store_object(StoredObject::DirectlyFollowsGraph(dfg))
-        .map_err(|_e| JsValue::from_str("Failed to store DFG"))?;
+        .map_err(|_e| crate::error::js_val("Failed to store DFG"))?;
 
     to_js_str(&json!({
         "handle": handle,
@@ -196,8 +196,8 @@ pub fn analyze_infrequent_paths(
                 "frequency_threshold": frequency_threshold,
             }))
         }
-        Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(crate::error::js_val("Object is not an EventLog")),
+        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 
@@ -252,8 +252,8 @@ pub fn detect_rework(eventlog_handle: &str, activity_key: &str) -> Result<JsValu
                 "rework_by_activity": rework_vec,
             }))
         }
-        Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(crate::error::js_val("Object is not an EventLog")),
+        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 
@@ -321,8 +321,8 @@ pub fn detect_bottlenecks(
                 "duration_threshold": duration_threshold_seconds,
             }))
         }
-        Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(crate::error::js_val("Object is not an EventLog")),
+        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 
@@ -375,8 +375,8 @@ pub fn compute_model_metrics(
                 "complexity_score": (activities.len() as f64 * variants.len() as f64).sqrt(),
             }))
         }
-        Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(crate::error::js_val("Object is not an EventLog")),
+        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 

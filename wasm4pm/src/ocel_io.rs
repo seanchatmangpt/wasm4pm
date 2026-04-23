@@ -32,11 +32,11 @@ use wasm_bindgen::prelude::*;
 #[wasm_bindgen]
 pub fn load_ocel2_from_json(content: &str) -> Result<String, JsValue> {
     let ocel: OCEL = serde_json::from_str(content)
-        .map_err(|e| JsValue::from_str(&format!("Failed to parse OCEL 2.0 JSON: {}", e)))?;
+        .map_err(|e| crate::error::js_val(&format!("Failed to parse OCEL 2.0 JSON: {}", e)))?;
 
     let handle = get_or_init_state()
         .store_object(StoredObject::OCEL(ocel))
-        .map_err(|_e| JsValue::from_str("Failed to store OCEL 2.0"))?;
+        .map_err(|_e| crate::error::js_val("Failed to store OCEL 2.0"))?;
 
     Ok(handle)
 }
@@ -48,9 +48,9 @@ pub fn load_ocel2_from_json(content: &str) -> Result<String, JsValue> {
 pub fn export_ocel2_to_json(handle: &str) -> Result<String, JsValue> {
     get_or_init_state().with_object(handle, |obj| match obj {
         Some(StoredObject::OCEL(ocel)) => serde_json::to_string_pretty(ocel)
-            .map_err(|e| JsValue::from_str(&format!("Failed to serialize OCEL 2.0: {}", e))),
-        Some(_) => Err(JsValue::from_str("Object is not an OCEL")),
-        None => Err(JsValue::from_str("OCEL not found")),
+            .map_err(|e| crate::error::js_val(&format!("Failed to serialize OCEL 2.0: {}", e))),
+        Some(_) => Err(crate::error::js_val("Object is not an OCEL")),
+        None => Err(crate::error::js_val("OCEL not found")),
     })
 }
 
@@ -150,12 +150,12 @@ pub fn validate_ocel(handle: &str) -> Result<JsValue, JsValue> {
 
             // Serialize to string and return as JsValue
             let report_json = serde_json::to_string(&report).map_err(|e| {
-                JsValue::from_str(&format!("Failed to serialize validation report: {}", e))
+                crate::error::js_val(&format!("Failed to serialize validation report: {}", e))
             })?;
-            Ok(JsValue::from_str(&report_json))
+            Ok(crate::error::js_val(&report_json))
         }
-        Some(_) => Err(JsValue::from_str("Object is not an OCEL")),
-        None => Err(JsValue::from_str("OCEL not found")),
+        Some(_) => Err(crate::error::js_val("Object is not an OCEL")),
+        None => Err(crate::error::js_val("OCEL not found")),
     })
 }
 
