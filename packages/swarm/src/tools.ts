@@ -1,29 +1,52 @@
 import { tool } from 'ai'
 import { z } from 'zod'
 import * as wasm from 'wasm4pm'
+import { WasmBackend } from '@pictl/kernel'
+import { Pm4pyBackend } from '@pictl/kernel'
 
 /**
- * wasm4pm__ tools for Vercel AI SDK swarm workers
+ * wasm4pm__ tools for Vercel AI SDK swarm workers.
+ * These tools leverage the core backends for execution.
  */
 
+// We instantiate backends locally for the tools
+const wasmBackend = new WasmBackend();
+const pm4pyBackend = new Pm4pyBackend();
+
 export const wasm4pm__discover_dfg = tool({
-  description: 'Discover a Directly-Follows Graph (DFG) process model from XES content.',
+  description: 'Discover a Directly-Follows Graph (DFG) process model from XES content using WASM.',
   parameters: z.object({
     xes_content: z.string().describe('XES event log content'),
-    min_frequency: z.number().optional().describe('Minimum edge frequency (0-1)'),
   }),
   // @ts-ignore
-  execute: async (args: { xes_content: string, min_frequency?: number }): Promise<string> => {
-    const logHandle = wasm.load_eventlog_from_xes(args.xes_content)
-    const result = args.min_frequency 
-      ? wasm.discover_dfg_filtered(logHandle, 'concept:name', args.min_frequency)
-      : wasm.discover_dfg(logHandle, 'concept:name')
-    return typeof result === 'string' ? result : JSON.stringify(result)
+  execute: async (args: { xes_content: string }): Promise<string> => {
+    // In a real swarm, the orchestrator might have already parsed the log
+    const logHandle = wasm.load_eventlog_from_xes(args.xes_content);
+    const result = wasm.discover_dfg(logHandle, 'concept:name');
+    return typeof result === 'string' ? result : JSON.stringify(result);
+  },
+})
+
+export const wasm4pm__pm4py_inductive = tool({
+  description: 'Discover a process tree using PM4PY (Python) Inductive Miner.',
+  parameters: z.object({
+    xes_content: z.string().describe('XES event log content'),
+  }),
+  // @ts-ignore
+  execute: async (args: { xes_content: string }): Promise<string> => {
+    // Note: This requires pm4py to be installed in the environment
+    const result = await pm4pyBackend.discover(
+        // Minimal IR for bridge
+        { format_version: '1.0', source_format: 'xes', traces: [], metadata: { xes_content: args.xes_content } } as any,
+        'inductive_miner_pm4py',
+        { max_duration_ms: 30000, quality_target: 'research' }
+    );
+    return JSON.stringify(result);
   },
 })
 
 export const wasm4pm__analyze_statistics = tool({
-  description: 'Analyze event log statistics: trace count, event count, duration, etc.',
+  description: 'Analyze event log statistics using WASM.',
   parameters: z.object({
     xes_content: z.string().describe('XES event log content'),
   }),
@@ -36,21 +59,21 @@ export const wasm4pm__analyze_statistics = tool({
 })
 
 export const wasm4pm__detect_concept_drift = tool({
-  description: 'Detect concept drift in a process log over time.',
+  description: 'Detect concept drift in a process log using WASM.',
   parameters: z.object({
     xes_content: z.string().describe('XES event log content'),
-    window_size: z.number().optional().describe('Window size for drift detection'),
   }),
   // @ts-ignore
-  execute: async (args: { xes_content: string, window_size?: number }): Promise<string> => {
+  execute: async (args: { xes_content: string }): Promise<string> => {
     const logHandle = wasm.load_eventlog_from_xes(args.xes_content)
-    const result = wasm.detect_drift(logHandle, 'concept:name', args.window_size ?? 50)
+    const result = wasm.detect_drift(logHandle, 'concept:name', 50)
     return typeof result === 'string' ? result : JSON.stringify(result)
   },
 })
 
 export const swarmTools = {
   wasm4pm__discover_dfg,
+  wasm4pm__pm4py_inductive,
   wasm4pm__analyze_statistics,
   wasm4pm__detect_concept_drift,
 }
