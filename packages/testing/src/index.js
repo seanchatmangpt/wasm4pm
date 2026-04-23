@@ -9,6 +9,7 @@ export * from './harness/index.js';
 export * from './certification.js';
 // Process Mining Testing Utilities
 export * from './validators/index.js';
+export { verifySoundness, computeQualityMetrics, validateVerifierDFG, formatSoundnessResult, formatQualityMetrics, } from './verifiers/index.js';
 export { tokenReplayConformance, createTestPetriNet, createTestEventLog, getExpectedTestResult, expectCloseTo, assertTokenReplayResult, computeAlignment, formatTokenReplayResult, formatAlignment, } from './conformance/token-replay.js';
 export * from './utils/index.js';
 //# sourceMappingURL=index.js.map

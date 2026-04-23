@@ -18,6 +18,17 @@ export * from './certification.js';
 // Process Mining Testing Utilities
 export * from './validators/index.js';
 export {
+  verifySoundness,
+  computeQualityMetrics,
+  validateVerifierDFG,
+  formatSoundnessResult,
+  formatQualityMetrics,
+  type PetriNet,
+  type ProcessTreeNode,
+  type VerifierDFG,
+  type QualityMetrics,
+} from './verifiers/index.js';
+export {
   tokenReplayConformance,
   createTestPetriNet,
   createTestEventLog,

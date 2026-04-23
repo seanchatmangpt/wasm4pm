@@ -54,7 +54,7 @@ export interface AlgorithmMetadata {
   description: string;
 
   /** Output type: 'dfg', 'petrinet', 'declare', etc. */
-  outputType: 'dfg' | 'petrinet' | 'declare' | 'tree' | 'ml_result';
+  outputType: 'dfg' | 'petrinet' | 'declare' | 'tree' | 'ml_result' | 'analytics';
 
   /** Complexity class */
   complexity: ComplexityClass;

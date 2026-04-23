@@ -26,7 +26,7 @@
     "vitest": "^1.1.0"
   },
   "dependencies": {
-    "@seanchatmangpt/pictl": "^26.4.16"
+    "wasm4pm": "^26.4.18"
   },
   "keywords": [
     "cli",

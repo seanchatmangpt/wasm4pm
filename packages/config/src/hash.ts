@@ -82,7 +82,7 @@ function verifyConfigHash(config: BaseConfig, expectedHash: string): boolean {
  * Short 8-char fingerprint suitable for logging/UI.
  * @internal
  */
-function fingerprintConfig(config: BaseConfig): string {
+export function fingerprintConfig(config: BaseConfig): string {
   return hashConfig(config).slice(0, 8);
 }
 
@@ -107,7 +107,7 @@ interface ConfigDiff {
   differences: Array<{ path: string; before: unknown; after: unknown }>;
 }
 
-function diffConfigs(config1: BaseConfig, config2: BaseConfig): ConfigDiff {
+export function diffConfigs(config1: BaseConfig, config2: BaseConfig): ConfigDiff {
   const hash1 = hashConfig(config1);
   const hash2 = hashConfig(config2);
   const differences: ConfigDiff['differences'] = [];

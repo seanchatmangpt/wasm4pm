@@ -78,7 +78,7 @@ function verifyConfigHash(config, expectedHash) {
  * Short 8-char fingerprint suitable for logging/UI.
  * @internal
  */
-function fingerprintConfig(config) {
+export function fingerprintConfig(config) {
     return hashConfig(config).slice(0, 8);
 }
 /**
@@ -90,7 +90,7 @@ function hashConfigSection(section) {
     const digest = blake3(normalized);
     return digest.toString('hex');
 }
-function diffConfigs(config1, config2) {
+export function diffConfigs(config1, config2) {
     const hash1 = hashConfig(config1);
     const hash2 = hashConfig(config2);
     const differences = [];
