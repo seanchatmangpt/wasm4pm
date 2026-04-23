@@ -1,8 +1,8 @@
 #![allow(dead_code)]
 // Shared helpers for all wasm4pm Criterion benchmarks.
 // Included via `#[path = "helpers.rs"] mod helpers;` in each bench file.
-use pictl::models::{AttributeValue, Event, EventLog, Trace};
-use pictl::state::{get_or_init_state, StoredObject};
+use wasm4pm::models::{AttributeValue, Event, EventLog, Trace};
+use wasm4pm::state::{get_or_init_state, StoredObject};
 use std::collections::HashMap;
 
 pub const ACTIVITY_KEY: &str = "concept:name";

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<log xes.version="2.0" xes.features="nested-attributes" xmlns="http://www.xes-standard.org/">
+    <string key="Description" value="Small XES nested attributes log."/>
+    <string key="g1ist1:s2" value="g1ist1:s2-value">
+        <string key="g1ist1:s2:s3" value="g1ist1:s2:s3-value"/>
+    </string>
+    <trace>
+        <event>
+            <list key="list1">
+                <string key="list1:s1" value="list1:s1-value"/>
+                <string key="list1:s2" value="list1:s2-value">
+                    <string key="list1:s2:s3" value="list1:s2:s3-value"/>
+                </string>
+                <string key="list1:s4" value="list1:s4-value"/>
+                <list key="list1:list2">
+                    <string key="list1:list2:s5" value="list1:list2:s5-value"/>
+                    <string key="list1:list2:s6" value="list1:list2:s6-value"/>
+                </list>
+            </list>
+            <container key="container1">
+                <string key="container1:s7" value="container1:s7-value"/>
+                <string key="container1:s8" value="container1:s8-value">
+                    <string key="container1:s8:s9" value="container1:s8:s9-vale"/>
+                    <list key="container1:s8:list3">
+                        <string key="container1:s8:list3:s10" value="container1:s8:list3:s10-value"/>
+                    </list>
+                </string>
+            </container>
+        </event>
+    </trace>
+</log>

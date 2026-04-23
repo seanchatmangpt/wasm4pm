@@ -1,6 +1,6 @@
 {
   "name": "@pictl/engine",
-  "version": "26.4.10",
+  "version": "26.4.17",
   "description": "Engine lifecycle and state machine for wasm4pm",
   "type": "module",
   "main": "dist/index.js",
@@ -19,12 +19,14 @@
     "test:coverage": "vitest --coverage"
   },
   "dependencies": {
+    "@pictl/config": "workspace:*",
     "@pictl/contracts": "workspace:*",
     "@pictl/observability": "workspace:*"
   },
   "devDependencies": {
+    "@pictl/kernel": "workspace:^",
+    "@vitest/coverage-v8": "^1.6.0",
     "typescript": "^5.3.3",
-    "vitest": "^1.1.0",
-    "@vitest/coverage-v8": "^1.6.0"
+    "vitest": "^1.1.0"
   }
 }

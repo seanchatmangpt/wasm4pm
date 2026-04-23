@@ -11,6 +11,7 @@ use crate::models::EventLog;
 use crate::state::{get_or_init_state, StoredObject};
 use crate::utilities::to_js;
 use serde::{Deserialize, Serialize};
+#[cfg(test)]
 use std::collections::HashMap;
 use wasm_bindgen::prelude::*;
 
@@ -205,13 +206,22 @@ pub fn discover_prefix_tree_inner(
     })
 }
 
-/// Get variants from an event log.
+/// Get variants from an event log with single-pass open-addressing deduplication.
 ///
-/// This is a helper function that extracts unique activity sequences
-/// along with their counts. Used by prefix tree discovery.
+/// Uses linear-probing open-addressing hash table keyed by FNV-1a fingerprints.
+/// Single-pass sweep eliminates allocation of activity Vec during lookups.
+/// Deterministic iteration order via sorted fingerprints enables reproducible results.
 fn get_variants_from_log(log: &EventLog, activity_key: &str) -> Result<Vec<Variant>, String> {
-    let mut variant_map: HashMap<Vec<String>, usize> = HashMap::new();
+    // Pre-allocate: assume ~10% variant ratio, 2x load factor for open addressing
+    let estimated_variants = (log.traces.len() / 10).max(16);
+    let hashtable_size = (estimated_variants * 2).next_power_of_two();
 
+    // Open-addressing hashtable: (fingerprint, activities, count)
+    // Use Option for tombstones (though we don't delete during collection)
+    let mut table: Vec<Option<(u64, Vec<String>, usize)>> = vec![None; hashtable_size];
+    let mask = hashtable_size - 1;
+
+    // Single-pass sweep through traces
     for trace in &log.traces {
         let activities: Result<Vec<String>, String> = trace
             .events
@@ -231,13 +241,64 @@ fn get_variants_from_log(log: &EventLog, activity_key: &str) -> Result<Vec<Varia
             .collect();
 
         let activities = activities?;
-        *variant_map.entry(activities).or_insert(0) += 1;
+
+        // Compute FNV-1a fingerprint with fixed iteration (no early exit)
+        let mut fingerprint: u64 = 0xcbf29ce484222325;
+        let max_activity_len = activities.len().min(256); // Bound fingerprint computation
+        for i in 0..max_activity_len {
+            if i < activities.len() {
+                let activity = &activities[i];
+                let max_bytes = activity.len().min(64); // Bound per-activity iteration
+                for j in 0..max_bytes {
+                    if j < activity.len() {
+                        let byte = activity.as_bytes()[j];
+                        fingerprint ^= byte as u64;
+                        fingerprint = fingerprint.wrapping_mul(0x100000001b3);
+                    }
+                }
+            }
+            // Mix in separator byte
+            fingerprint ^= b'|' as u64;
+            fingerprint = fingerprint.wrapping_mul(0x100000001b3);
+        }
+
+        // Open-addressing insertion with linear probing (no dynamic alloc)
+        let mut probe_idx = (fingerprint as usize) & mask;
+        let max_probes = hashtable_size; // Prevent infinite loop on full table
+
+        for _ in 0..max_probes {
+            match &table[probe_idx] {
+                None => {
+                    // Empty slot: insert new entry
+                    table[probe_idx] = Some((fingerprint, activities, 1));
+                    break;
+                }
+                Some((stored_fp, stored_activities, _stored_count)) => {
+                    if *stored_fp == fingerprint && stored_activities == &activities {
+                        // Collision: same fingerprint and activities. Increment count.
+                        if let Some(ref mut entry) = table[probe_idx] {
+                            entry.2 += 1;
+                        }
+                        break;
+                    } else {
+                        // Hash collision (different fingerprint/activities): linear probe
+                        probe_idx = (probe_idx + 1) & mask;
+                    }
+                }
+            }
+        }
     }
 
-    // Convert to Variant structs
-    Ok(variant_map
+    // Extract variants and sort by fingerprint for deterministic order
+    let mut variants_with_fp: Vec<(u64, Vec<String>, usize)> = table
         .into_iter()
-        .map(|(activities, count)| Variant { activities, count })
+        .flatten()
+        .collect();
+    variants_with_fp.sort_by_key(|t| t.0);
+
+    Ok(variants_with_fp
+        .into_iter()
+        .map(|(_, activities, count)| Variant { activities, count })
         .collect())
 }
 

@@ -16,7 +16,7 @@
 use crate::error::{codes, wasm_err};
 use crate::models::{AttributeValue, Event, EventLog, Trace};
 use crate::state::{get_or_init_state, StoredObject};
-use crate::utilities::to_js;
+use crate::utilities::to_js_str;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use wasm_bindgen::prelude::*;
@@ -368,7 +368,7 @@ pub fn play_out_process_tree(
         .store_object(StoredObject::EventLog(log))
         .map_err(|_| wasm_err(codes::INTERNAL_ERROR, "Failed to store playout result"))?;
 
-    to_js(&serde_json::json!({
+    to_js_str(&serde_json::json!({
         "handle": handle,
         "trace_count": trace_count,
         "event_count": event_count,
@@ -435,7 +435,7 @@ pub fn play_out_dfg(dfg_json: &str, params: &JsValue) -> Result<JsValue, JsValue
         .store_object(StoredObject::EventLog(log))
         .map_err(|_| wasm_err(codes::INTERNAL_ERROR, "Failed to store playout result"))?;
 
-    to_js(&serde_json::json!({
+    to_js_str(&serde_json::json!({
         "handle": handle,
         "trace_count": trace_count,
         "event_count": event_count,

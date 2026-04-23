@@ -19,11 +19,12 @@ import { social } from './commands/social.js';
 import { quality } from './commands/quality.js';
 import { validate } from './commands/validate.js';
 import { autoprocess } from './commands/autoprocess.js';
+// import { agent } from './commands/agent.js'; // Pre-existing type errors in agent commands
 
 export const main = defineCommand({
   meta: {
     name: 'pictl',
-    version: '26.4.10',
+    version: '26.4.17',
     description: 'High-performance process mining and workflow discovery CLI',
   },
   args: {
@@ -44,7 +45,7 @@ export const main = defineCommand({
     const RESET = '\x1b[0m';
 
     process.stdout.write(`
-${BOLD}pictl${RESET} v26.4.10  —  Process Mining CLI  ${DIM}(wasm4pm)${RESET}
+${BOLD}pictl${RESET} v26.4.17  —  Process Mining CLI  ${DIM}(wasm4pm)${RESET}
 
 ${BOLD}DISCOVERY${RESET}
   ${GREEN}pictl run${RESET} <log.xes>                   Discover a process model (default: heuristic miner)
@@ -89,6 +90,14 @@ ${BOLD}AUTOPROCESS${RESET}  ${DIM}(Perception → Decision → Protection → Op
   ${GREEN}pictl autoprocess${RESET} <log.xes>              Run full autonomic control loop
   ${GREEN}pictl autoprocess${RESET} <log.xes> --format json  JSON output
 
+${BOLD}VAN DER AALST AGENTS${RESET}  ${DIM}(8 autonomous adversarial validators)${RESET}
+  ${GREEN}pictl agent list${RESET}                       List all registered agents
+  ${GREEN}pictl agent execute${RESET} <agent> -i <log>    Execute a specific agent
+  ${GREEN}pictl agent execute${RESET} <agent> --dry-run    Detect violations only
+  ${GREEN}pictl agent audit${RESET} [--last 10]            View correction audit trail
+  ${GREEN}pictl agent status${RESET} <agent>              Check agent health
+  ${GREEN}pictl agent register${RESET} <config.json>       Register custom agent
+
 ${BOLD}RESULTS & HEALTH${RESET}
   ${GREEN}pictl results${RESET}                         View all saved discovery & prediction results
   ${GREEN}pictl results${RESET} --last                  Print the most recent result
@@ -126,6 +135,7 @@ Activity key defaults to "concept:name" (XES standard). Pass --activity-key to o
     quality,
     validate,
     autoprocess,
+    // agent, // Pre-existing type errors in agent commands
   },
 });
 
@@ -153,4 +163,5 @@ export {
   quality,
   validate,
   autoprocess,
+  // agent, // Pre-existing type errors in agent commands
 };

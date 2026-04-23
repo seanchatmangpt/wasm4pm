@@ -255,22 +255,71 @@ pub fn interner_cache_insert(log_handle: String, interner: Interner) {
 // FNV-1a content hashing
 // ---------------------------------------------------------------------------
 
-/// Compute a FNV-1a hash of the given XES content string, returned as a
-/// lowercase hex string.
+/// Compute a FNV-1a hash of the given XES content string with 8x loop unrolling.
 ///
-/// FNV-1a is chosen for its simplicity, speed, and acceptable distribution
-/// for cache-key purposes (not cryptographic).
+/// Fixed iteration count (8 bytes per unroll cycle) enables compile-time loop
+/// optimization and predictable branch patterns. Returns lowercase hex string.
 pub fn hash_xes_content(content: &str) -> String {
-    // FNV-1a 64-bit parameters
-    const FNV_OFFSET_BASIS: u64 = 0xcbf29ce484222325;
-    const FNV_PRIME: u64 = 0x100000001b3;
-
-    let mut hash = FNV_OFFSET_BASIS;
-    for byte in content.as_bytes() {
-        hash ^= *byte as u64;
-        hash = hash.wrapping_mul(FNV_PRIME);
+    #[cfg(feature = "bcinr")]
+    {
+        let hash = bcinr::sketch::fnv1a_64(content.as_bytes());
+        format!("{:016x}", hash)
     }
-    format!("{:016x}", hash)
+
+    #[cfg(not(feature = "bcinr"))]
+    {
+        // FNV-1a 64-bit with 8x loop unrolling for constant cycle count
+        const FNV_OFFSET_BASIS: u64 = 0xcbf29ce484222325;
+        const FNV_PRIME: u64 = 0x100000001b3;
+        const UNROLL_FACTOR: usize = 8;
+
+        let bytes = content.as_bytes();
+        let len = bytes.len();
+        let mut hash = FNV_OFFSET_BASIS;
+
+        // Process full 8-byte chunks with unrolled loop
+        let full_chunks = len / UNROLL_FACTOR;
+        for chunk_idx in 0..full_chunks {
+            let base = chunk_idx * UNROLL_FACTOR;
+
+            // Unroll 8 iterations
+            hash ^= bytes[base] as u64;
+            hash = hash.wrapping_mul(FNV_PRIME);
+
+            hash ^= bytes[base + 1] as u64;
+            hash = hash.wrapping_mul(FNV_PRIME);
+
+            hash ^= bytes[base + 2] as u64;
+            hash = hash.wrapping_mul(FNV_PRIME);
+
+            hash ^= bytes[base + 3] as u64;
+            hash = hash.wrapping_mul(FNV_PRIME);
+
+            hash ^= bytes[base + 4] as u64;
+            hash = hash.wrapping_mul(FNV_PRIME);
+
+            hash ^= bytes[base + 5] as u64;
+            hash = hash.wrapping_mul(FNV_PRIME);
+
+            hash ^= bytes[base + 6] as u64;
+            hash = hash.wrapping_mul(FNV_PRIME);
+
+            hash ^= bytes[base + 7] as u64;
+            hash = hash.wrapping_mul(FNV_PRIME);
+        }
+
+        // Process remainder (< 8 bytes) with fixed iteration
+        let remainder = len % UNROLL_FACTOR;
+        let remainder_start = full_chunks * UNROLL_FACTOR;
+        for i in 0..UNROLL_FACTOR {
+            if i < remainder {
+                hash ^= bytes[remainder_start + i] as u64;
+                hash = hash.wrapping_mul(FNV_PRIME);
+            }
+        }
+
+        format!("{:016x}", hash)
+    }
 }
 
 // ---------------------------------------------------------------------------

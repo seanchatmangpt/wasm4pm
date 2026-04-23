@@ -1,17 +1,17 @@
 {
   "name": "wasm4pm",
-  "version": "26.4.6",
+  "version": "26.4.17",
   "description": "Process Mining in WebAssembly - High-Speed Algorithms for Browser and Node.js",
-  "main": "pkg/pictl.js",
-  "types": "pkg/pictl.d.ts",
+  "main": "pkg/wasm4pm.js",
+  "types": "pkg/wasm4pm.d.ts",
   "files": [
     "pkg/"
   ],
   "exports": {
     ".": {
-      "types": "./pkg/pictl.d.ts",
-      "import": "./pkg/pictl.js",
-      "require": "./pkg/pictl.js"
+      "types": "./pkg/wasm4pm.d.ts",
+      "import": "./pkg/wasm4pm.js",
+      "require": "./pkg/wasm4pm.js"
     }
   },
   "scripts": {
@@ -19,6 +19,13 @@
     "build:nodejs": "RUSTFLAGS=\"-C target-feature=+simd128\" wasm-pack build --target nodejs",
     "build:web": "RUSTFLAGS=\"-C target-feature=+simd128\" wasm-pack build --target web",
     "build:all": "npm run build && npm run build:nodejs && npm run build:web",
+    "build:profiles": "npm run build:mobile && npm run build:iot && npm run build:edge && npm run build:fog && npm run build:browser",
+    "build:mobile": "RUSTFLAGS=\"-C target-feature=+simd128\" cargo build --release --target wasm32-unknown-unknown --features mobile && wasm-pack build --target bundler --release",
+    "build:iot": "RUSTFLAGS=\"-C target-feature=+simd128\" cargo build --release --target wasm32-unknown-unknown --features iot && wasm-pack build --target bundler --release",
+    "build:edge": "RUSTFLAGS=\"-C target-feature=+simd128\" cargo build --release --target wasm32-unknown-unknown --features edge && wasm-pack build --target bundler --release",
+    "build:fog": "RUSTFLAGS=\"-C target-feature=+simd128\" cargo build --release --target wasm32-unknown-unknown --features fog && wasm-pack build --target bundler --release",
+    "build:browser": "RUSTFLAGS=\"-C target-feature=+simd128\" wasm-pack build --target bundler --release --all-features",
+    "measure-sizes": "bash measure-size.sh",
     "build:mcp": "tsc src/mcp_server.ts --outDir dist --module commonjs --target es2020",
     "start:mcp": "npm run build:mcp && node dist/mcp_server.js",
     "test": "npm run build:nodejs && npm run test:unit && npm run build:web && npm run test:browser",
@@ -41,12 +48,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/seanchatmangpt/wasm4pm.git",
+    "url": "https://github.com/seanchatmangpt/pictl.git",
     "directory": "wasm4pm"
   },
-  "homepage": "https://github.com/seanchatmangpt/wasm4pm/tree/main/wasm4pm",
+  "homepage": "https://github.com/seanchatmangpt/pictl/tree/main/wasm4pm",
   "bugs": {
-    "url": "https://github.com/seanchatmangpt/wasm4pm/issues"
+    "url": "https://github.com/seanchatmangpt/pictl/issues"
   },
   "keywords": [
     "process-mining",
@@ -58,7 +65,7 @@
     "data-mining",
     "event-log"
   ],
-  "author": "wasm4pm contributors",
+  "author": "Sean Chatman <info@chatmangpt.com>",
   "license": "MIT OR Apache-2.0",
   "engines": {
     "node": ">=14.0.0"

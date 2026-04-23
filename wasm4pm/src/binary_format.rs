@@ -622,6 +622,12 @@ impl<'a> BinaryTrace<'a> {
 // ---------------------------------------------------------------------------
 
 /// Compute FNV-1a 64-bit hash of a byte slice.
+#[cfg(feature = "bcinr")]
+fn fnv1a_hash(data: &[u8]) -> u64 {
+    bcinr::sketch::fnv1a_64(data)
+}
+
+#[cfg(not(feature = "bcinr"))]
 fn fnv1a_hash(data: &[u8]) -> u64 {
     let mut hash = FNV_OFFSET_BASIS;
     for &byte in data {
@@ -840,14 +846,25 @@ fn extract_attr_simple<'a>(src: &'a str, name: &[u8]) -> Option<&'a str> {
         {
             let value_start = i + name_len + 2;
             let rest = &bytes[value_start..];
-            let mut j = 0;
-            while j < rest.len() {
-                if rest[j] == b'"' {
-                    return Some(&src[value_start..value_start + j]);
+            #[cfg(feature = "bcinr")]
+            let j = bcinr::scan::find_byte(rest, b'"')?;
+
+            #[cfg(not(feature = "bcinr"))]
+            let j = {
+                let mut j = 0;
+                while j < rest.len() {
+                    if rest[j] == b'"' {
+                        break;
+                    }
+                    j += 1;
                 }
-                j += 1;
-            }
-            return None;
+                if j == rest.len() {
+                    return None;
+                }
+                j
+            };
+
+            return Some(&src[value_start..value_start + j]);
         }
         i += 1;
     }

@@ -12,13 +12,13 @@
 //! 5. EWMA smoothing distinguishing sustained drift from transient noise
 //! 6. Multi-rule detection priority (each rule fires on its own drift type)
 
-use pictl::spc::{
+use wasm4pm::spc::{
     check_western_electric_rules, spc_mean, spc_std_dev, ChartData, ShiftDirection,
     SpecialCause, TrendDirection,
 };
-use pictl::spc_history::{SpcHistory, SpcSnapshot};
+use wasm4pm::spc_history::{SpcHistory, SpcSnapshot};
 #[cfg(feature = "ml")]
-use pictl::prediction_additions::ewma;
+use wasm4pm::prediction_additions::ewma;
 
 // ---------------------------------------------------------------------------
 // Helpers

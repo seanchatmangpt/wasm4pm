@@ -1,10 +1,12 @@
 use crate::models::*;
 use crate::state::{get_or_init_state, StoredObject};
-use crate::utilities::{evaluate_edges_fitness, to_js};
+use crate::utilities::{evaluate_edges_fitness, to_js_str};
 use rustc_hash::FxHashMap;
 use serde_json::json;
 use std::collections::HashSet;
 use wasm_bindgen::prelude::*;
+use rand::{Rng, SeedableRng};
+use rand::rngs::StdRng;
 
 type EdgeSet = HashSet<(u32, u32)>;
 
@@ -49,14 +51,22 @@ pub fn discover_genetic_algorithm(
                     }
                 }
 
+                // Guard: empty vocabulary means log has no directly-follows edges
+                if edge_vocab.is_empty() {
+                    return Err(JsValue::from_str("no_edges"));
+                }
+
                 // Collect vocab before closure ends
                 let vocab: Vec<String> = col.vocab.iter().map(|s| s.to_string()).collect();
+
+                // Deterministic RNG: seeded for reproducibility
+                let mut rng = StdRng::seed_from_u64(42);
 
                 // Initialize population with random edge sets
                 let mut population: Vec<(EdgeSet, f64)> = Vec::new();
 
                 for _ in 0..population_size {
-                    let edge_set = create_random_edge_set(&edge_vocab, 0.7);
+                    let edge_set = create_random_edge_set_seeded(&edge_vocab, 0.7, &mut rng);
                     let fitness = evaluate_edges_fitness(&edge_set, &col);
                     population.push((edge_set, fitness));
                 }
@@ -73,11 +83,11 @@ pub fn discover_genetic_algorithm(
 
                     // Generate offspring through crossover and mutation
                     while new_population.len() < population_size {
-                        let parent1 = population[rand_select(&population)].0.clone();
-                        let parent2 = population[rand_select(&population)].0.clone();
+                        let parent1 = population[rand_select_seeded(&population, &mut rng)].0.clone();
+                        let parent2 = population[rand_select_seeded(&population, &mut rng)].0.clone();
 
-                        let mut child = crossover_edges(&parent1, &parent2);
-                        mutate_edges(&mut child, 0.1); // 10% mutation rate
+                        let mut child = crossover_edges_seeded(&parent1, &parent2, &mut rng);
+                        mutate_edges_seeded(&mut child, 0.1, &edge_vocab, &mut rng);
 
                         let fitness = evaluate_edges_fitness(&child, &col);
                         new_population.push((child, fitness));
@@ -107,7 +117,7 @@ pub fn discover_genetic_algorithm(
         .store_object(StoredObject::DirectlyFollowsGraph(best_dfg.clone()))
         .map_err(|_e| JsValue::from_str("Failed to store DFG"))?;
 
-    to_js(&json!({
+    to_js_str(&json!({
         "handle": handle,
         "algorithm": "genetic_algorithm",
         "nodes": best_dfg.nodes.len(),
@@ -159,44 +169,52 @@ pub fn discover_pso_algorithm(
                     }
                 }
 
+                // Guard: empty vocabulary (only 1 activity in log)
+                if edge_vocab.is_empty() {
+                    return Err(JsValue::from_str("no_edges"));
+                }
+
                 // Collect vocab before closure ends
                 let vocab: Vec<String> = col.vocab.iter().map(|s| s.to_string()).collect();
 
-                // Initialize swarm (particles)
-                let mut particles: Vec<(EdgeSet, f64)> = Vec::new();
+                // Deterministic RNG: seeded for reproducibility
+                let mut rng = StdRng::seed_from_u64(42);
+
+                // Initialize swarm: (position, fitness, personal_best_position, personal_best_fitness)
+                let mut particles: Vec<(EdgeSet, f64, EdgeSet, f64)> = Vec::new();
                 let mut best_global: Option<(EdgeSet, f64)> = None;
 
                 for _ in 0..swarm_size {
-                    let edge_set = create_random_edge_set(&edge_vocab, 0.6);
+                    let edge_set = create_random_edge_set_seeded(&edge_vocab, 0.6, &mut rng);
                     let fitness = evaluate_edges_fitness(&edge_set, &col);
 
                     if best_global.is_none() || fitness > best_global.as_ref().unwrap().1 {
                         best_global = Some((edge_set.clone(), fitness));
                     }
 
-                    particles.push((edge_set, fitness));
+                    particles.push((edge_set.clone(), fitness, edge_set, fitness));
                 }
 
                 // PSO iterations
                 for _iter in 0..iterations {
-                    for (edge_set, current_fitness) in particles.iter_mut() {
-                        let best_global_fitness = best_global.as_ref().unwrap().1;
+                    for (edge_set, current_fitness, pbest, pbest_fitness) in particles.iter_mut() {
+                        // Blend toward personal best, then toward global best
+                        let toward_pbest = blend_edges_seeded(edge_set, pbest, 0.2, &mut rng);
+                        let toward_global =
+                            blend_edges_seeded(&toward_pbest, &best_global.as_ref().unwrap().0, 0.3, &mut rng);
+                        *edge_set = toward_global;
 
-                        // Move toward best solution with some randomness
-                        let improvement_rate =
-                            0.5 + (best_global_fitness - *current_fitness).max(0.0) / 10.0;
-                        let move_probability = improvement_rate.min(0.9);
-
-                        if fastrand::f64() < move_probability {
-                            *edge_set =
-                                blend_edges(edge_set, &best_global.as_ref().unwrap().0, 0.3);
-
-                            // Add small mutation for exploration
-                            mutate_edges(edge_set, 0.05);
-                        }
+                        // Small mutation for exploration
+                        mutate_edges_seeded(edge_set, 0.05, &edge_vocab, &mut rng);
 
                         let new_fitness = evaluate_edges_fitness(edge_set, &col);
                         *current_fitness = new_fitness;
+
+                        // Update personal best
+                        if new_fitness > *pbest_fitness {
+                            *pbest_fitness = new_fitness;
+                            *pbest = edge_set.clone();
+                        }
 
                         // Update global best
                         if new_fitness > best_global.as_ref().unwrap().1 {
@@ -222,7 +240,7 @@ pub fn discover_pso_algorithm(
         .store_object(StoredObject::DirectlyFollowsGraph(best_dfg.clone()))
         .map_err(|_e| JsValue::from_str("Failed to store DFG"))?;
 
-    to_js(&json!({
+    to_js_str(&json!({
         "handle": handle,
         "algorithm": "pso_algorithm",
         "nodes": best_dfg.nodes.len(),
@@ -231,76 +249,6 @@ pub fn discover_pso_algorithm(
         "swarm_size": swarm_size,
         "iterations": iterations,
     }))
-}
-
-// Helper: Create random edge set from vocabulary
-fn create_random_edge_set(edge_vocab: &[(u32, u32)], inclusion_probability: f64) -> EdgeSet {
-    let mut edge_set: EdgeSet = HashSet::new();
-    for &edge in edge_vocab {
-        if fastrand::f64() < inclusion_probability {
-            edge_set.insert(edge);
-        }
-    }
-    edge_set
-}
-
-// Helper: Evaluate fitness of an edge set against columnar log (zero string allocation)
-#[inline]
-// Helper: Crossover operation on edge sets
-fn crossover_edges(parent1: &EdgeSet, parent2: &EdgeSet) -> EdgeSet {
-    let mut child: EdgeSet = HashSet::new();
-
-    // Copy all edges from parent1
-    for &edge in parent1 {
-        child.insert(edge);
-    }
-
-    // Add edges from parent2 with 50% probability
-    for &edge in parent2 {
-        if fastrand::f64() < 0.5 {
-            child.insert(edge);
-        }
-    }
-
-    child
-}
-
-// Helper: Blend two edge sets
-fn blend_edges(set1: &EdgeSet, set2: &EdgeSet, ratio: f64) -> EdgeSet {
-    let mut result: EdgeSet = HashSet::new();
-
-    // Copy all edges from set1
-    for &edge in set1 {
-        result.insert(edge);
-    }
-
-    // Add edges from set2 with given probability
-    for &edge in set2 {
-        if fastrand::f64() < ratio || set1.contains(&edge) {
-            result.insert(edge);
-        }
-    }
-
-    result
-}
-
-// Helper: Mutation operation on edge sets
-fn mutate_edges(edge_set: &mut EdgeSet, mutation_rate: f64) {
-    if fastrand::f64() < mutation_rate {
-        if !edge_set.is_empty() && fastrand::f64() < 0.5 {
-            // Remove random edge
-            if let Some(&edge) = edge_set.iter().next() {
-                edge_set.remove(&edge);
-            }
-        } else {
-            // Add random edge (simple mutation: add a random u32 pair)
-            let from = (fastrand::f64() * u32::MAX as f64) as u32;
-            let to = (fastrand::f64() * u32::MAX as f64) as u32;
-            if from != to {
-                edge_set.insert((from, to));
-            }
-        }
-    }
 }
 
 // Helper: Materialize a DirectlyFollowsGraph from edge set and vocabulary
@@ -334,19 +282,79 @@ fn edge_set_to_dfg(edge_set: &EdgeSet, vocab: &[String]) -> DirectlyFollowsGraph
     dfg
 }
 
-// Helper: Random selection from population.
-// For small populations (≤ 50, the typical benchmark size) we use a direct
-// fitness-proportionate computation instead of building and scanning a
-// cumulative-weight array, keeping the hot path branch-free.
-fn rand_select<T>(items: &[(T, f64)]) -> usize {
-    let n = items.len();
-    debug_assert!(n > 0, "rand_select called with empty slice");
+// Seeded variants for determinism
 
-    // Fast path: for small populations compute the selection directly.
+fn create_random_edge_set_seeded(edge_vocab: &[(u32, u32)], inclusion_probability: f64, rng: &mut StdRng) -> EdgeSet {
+    let mut edge_set: EdgeSet = HashSet::new();
+    for &edge in edge_vocab {
+        if rng.gen::<f64>() < inclusion_probability {
+            edge_set.insert(edge);
+        }
+    }
+    edge_set
+}
+
+fn crossover_edges_seeded(parent1: &EdgeSet, parent2: &EdgeSet, rng: &mut StdRng) -> EdgeSet {
+    let mut child: EdgeSet = HashSet::new();
+    let p1_edges: Vec<_> = parent1.iter().copied().collect();
+    let p2_edges: Vec<_> = parent2.iter().copied().collect();
+
+    for &edge in &p1_edges {
+        if rng.gen::<f64>() < 0.5 {
+            child.insert(edge);
+        }
+    }
+
+    for &edge in &p2_edges {
+        if rng.gen::<f64>() < 0.5 {
+            child.insert(edge);
+        }
+    }
+
+    child
+}
+
+fn mutate_edges_seeded(edge_set: &mut EdgeSet, mutation_rate: f64, edge_vocab: &[(u32, u32)], rng: &mut StdRng) {
+    if rng.gen::<f64>() < mutation_rate {
+        if !edge_set.is_empty() && rng.gen::<f64>() < 0.5 {
+            if let Some(&edge) = edge_set.iter().next() {
+                edge_set.remove(&edge);
+            }
+        } else if !edge_vocab.is_empty() {
+            let idx = (rng.gen::<f64>() * edge_vocab.len() as f64) as usize;
+            edge_set.insert(edge_vocab[idx]);
+        }
+    }
+}
+
+fn blend_edges_seeded(set1: &EdgeSet, set2: &EdgeSet, ratio: f64, rng: &mut StdRng) -> EdgeSet {
+    let mut result: EdgeSet = HashSet::new();
+
+    // Keep edges from set1 with probability (1 - ratio)
+    for &edge in set1 {
+        if rng.gen::<f64>() > ratio {
+            result.insert(edge);
+        }
+    }
+
+    // Add edges from set2 with probability ratio
+    for &edge in set2 {
+        if rng.gen::<f64>() < ratio {
+            result.insert(edge);
+        }
+    }
+
+    result
+}
+
+fn rand_select_seeded<T>(items: &[(T, f64)], rng: &mut StdRng) -> usize {
+    let n = items.len();
+    debug_assert!(n > 0, "rand_select_seeded called with empty slice");
+
     if n <= 50 {
         let total: f64 = items.iter().map(|(_, f)| f.max(0.0)).sum();
         if total > 0.0 {
-            let mut threshold = fastrand::f64() * total;
+            let mut threshold = rng.gen::<f64>() * total;
             for (i, (_, fitness)) in items.iter().enumerate() {
                 threshold -= fitness.max(0.0);
                 if threshold <= 0.0 {
@@ -354,15 +362,12 @@ fn rand_select<T>(items: &[(T, f64)]) -> usize {
                 }
             }
         }
-        // Fallback (e.g. all fitnesses are zero): uniform random index.
-        return (fastrand::f64() * n as f64) as usize % n;
+        return (rng.gen::<f64>() * n as f64) as usize % n;
     }
 
-    // General path for larger populations: same algorithm, same cost, but
-    // kept separate so the fast path compiles without a branch on `n`.
     let total: f64 = items.iter().map(|(_, f)| f.max(0.0)).sum();
     if total > 0.0 {
-        let mut threshold = fastrand::f64() * total;
+        let mut threshold = rng.gen::<f64>() * total;
         for (i, (_, fitness)) in items.iter().enumerate() {
             threshold -= fitness.max(0.0);
             if threshold <= 0.0 {
@@ -370,7 +375,7 @@ fn rand_select<T>(items: &[(T, f64)]) -> usize {
             }
         }
     }
-    (fastrand::f64() * n as f64) as usize % n
+    (rng.gen::<f64>() * n as f64) as usize % n
 }
 
 // ---------------------------------------------------------------------------
@@ -417,6 +422,11 @@ pub fn discover_aco_algorithm(
                     }
                 }
 
+                // Guard: empty vocabulary (only 1 activity in log)
+                if edge_vocab.is_empty() {
+                    return Err(JsValue::from_str("no_edges"));
+                }
+
                 let vocab: Vec<String> = col.vocab.iter().map(|s| s.to_string()).collect();
                 let total_edges = edge_freq.values().sum::<f64>().max(1.0);
 
@@ -439,6 +449,9 @@ pub fn discover_aco_algorithm(
                 let evaporation_rate = 0.1;
                 let q = 100.0; // pheromone deposit factor
 
+                // Deterministic RNG: seeded for reproducibility
+                let mut rng = StdRng::seed_from_u64(42);
+
                 let mut best_solution: Option<(EdgeSet, f64)> = None;
 
                 for _iter in 0..iterations {
@@ -454,7 +467,7 @@ pub fn discover_aco_algorithm(
 
                             // Probability: (tau^alpha * eta^beta)
                             let prob = tau.powf(alpha) * eta.powf(beta);
-                            if fastrand::f64() < prob.min(0.99) {
+                            if rng.gen::<f64>() < prob.min(0.99) {
                                 ant_edges.insert(edge);
                             }
                         }
@@ -509,7 +522,7 @@ pub fn discover_aco_algorithm(
         .store_object(StoredObject::DirectlyFollowsGraph(best_dfg.clone()))
         .map_err(|_e| JsValue::from_str("Failed to store DFG"))?;
 
-    to_js(&json!({
+    to_js_str(&json!({
         "handle": handle,
         "algorithm": "aco",
         "nodes": best_dfg.nodes.len(),

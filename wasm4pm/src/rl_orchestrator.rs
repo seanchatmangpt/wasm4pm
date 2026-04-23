@@ -103,6 +103,8 @@ pub fn compute_health_state(
         3 // Critical: no traces
     } else if unique_activities == 1 && event_count < 5 {
         2 // Degraded: trivial log
+    } else if unique_activities <= 2 && event_count < 20 {
+        1 // Warning: sparse log
     } else {
         0 // Normal
     }
@@ -117,14 +119,16 @@ pub fn compute_health_state(
 ///   -0.5  : SPC alerts detected (process instability)
 ///   -1.0  : Health degraded (higher health_state number)
 ///   -2.0  : Terminal state reached (health == 4 = Failed)
+///   -0.3  : Cycle latency exceeded budget (added to total)
 ///
-/// Bounded range: approximately [-5.0, +1.1]
+/// Bounded range: approximately [-5.3, +1.1]
 pub fn compute_reward(
     prev_health: u8,
     curr_health: u8,
     spc_alert_count: usize,
     guard_pass: bool,
     circuit_allowed: bool,
+    latency_budget_exceeded: bool,
 ) -> f32 {
     let mut reward = 0.0_f32;
 
@@ -145,6 +149,11 @@ pub fn compute_reward(
         reward += 0.1;
     } else {
         reward -= 0.5;
+    }
+
+    // Latency budget penalty
+    if latency_budget_exceeded {
+        reward -= 0.3;
     }
 
     // Terminal penalty
@@ -275,6 +284,20 @@ impl RlOrchestrator {
         }
     }
 
+    /// Set exploration rate on all agents (for MAPE-K action dispatch).
+    pub fn set_exploration_rate(&mut self, rate: f32) {
+        self.q_learning.set_exploration_rate(rate);
+        self.sarsa.set_exploration_rate(rate);
+        self.double_q.set_exploration_rate(rate);
+        self.expected_sarsa.set_exploration_rate(rate);
+        self.reinforce.set_exploration_rate(rate);
+    }
+
+    /// Reset all exploration rates to default (1.0) — used by Restart action.
+    pub fn reset_all_exploration_rates(&mut self) {
+        self.set_exploration_rate(1.0);
+    }
+
     /// Use LinUCB to recommend which RL agent to use based on features.
     /// Maps LinUCB actions 0..4 to AgentType.
     pub fn linucb_select_agent(&mut self, features: &[f32; 8]) -> AgentType {
@@ -323,8 +346,10 @@ impl RlOrchestrator {
     /// - `spc_alert_count`: Number of SPC violations detected
     /// - `guard_pass`: Whether pre-action guard passed
     /// - `circuit_allowed`: Whether circuit breaker allowed execution
+    /// - `latency_budget_exceeded`: Whether cycle latency exceeded budget
     ///
     /// Returns (action_label, reward).
+    #[allow(clippy::too_many_arguments)]
     pub fn run_cycle(
         &mut self,
         features: &[f32; 8],
@@ -333,6 +358,7 @@ impl RlOrchestrator {
         spc_alert_count: usize,
         guard_pass: bool,
         circuit_allowed: bool,
+        latency_budget_exceeded: bool,
     ) -> (String, f32) {
         // LinUCB agent selection (if enabled)
         if self.use_linucb_for_selection {
@@ -359,6 +385,7 @@ impl RlOrchestrator {
             spc_alert_count,
             guard_pass,
             circuit_allowed,
+            latency_budget_exceeded,
         );
 
         // For SARSA: pre-select action for next_state so the update uses the
@@ -399,5 +426,30 @@ impl RlOrchestrator {
         }
 
         (action_label, reward)
+    }
+
+    /// Export all Q-tables from all 5 agents as serialized format.
+    pub fn export_all_q_tables(&self) -> Vec<crate::rl_state_serialization::SerializedAgentQTable> {
+        vec![
+            self.q_learning.export_as_serialized(0),
+            self.sarsa.export_as_serialized(1),
+            self.double_q.export_as_serialized(2),
+            self.expected_sarsa.export_as_serialized(3),
+            self.reinforce.export_as_serialized(4),
+        ]
+    }
+
+    /// Restore all Q-tables to all 5 agents from serialized format.
+    pub fn restore_all_q_tables(&self, tables: Vec<crate::rl_state_serialization::SerializedAgentQTable>) {
+        for table in tables {
+            match table.agent_type {
+                0 => self.q_learning.restore_from_serialized(table),
+                1 => self.sarsa.restore_from_serialized(table),
+                2 => self.double_q.restore_from_serialized(table),
+                3 => self.expected_sarsa.restore_from_serialized(table),
+                4 => self.reinforce.restore_from_serialized(table),
+                _ => {} // Unknown agent type, skip
+            }
+        }
     }
 }

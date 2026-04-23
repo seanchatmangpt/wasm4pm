@@ -9,7 +9,7 @@
 //! Fix: Use `models::parse_timestamp_ms()` to parse ISO-8601 timestamps and
 //! compute durations in milliseconds, then convert to seconds.
 
-use pictl::models::{EventLog, Event, Trace, AttributeValue};
+use wasm4pm::models::{EventLog, Event, Trace, AttributeValue};
 
 #[test]
 fn test_trace_duration_from_iso8601_timestamps() {
@@ -24,7 +24,7 @@ fn test_trace_duration_from_iso8601_timestamps() {
 
 #[test]
 fn test_trace_duration_parsing_accuracy() {
-    use pictl::models::parse_timestamp_ms;
+    use wasm4pm::models::parse_timestamp_ms;
 
     // Test various ISO-8601 formats (all represent the same instant: 2024-01-01 10:00:00 UTC)
     let test_cases = vec![
@@ -51,7 +51,7 @@ fn test_trace_duration_parsing_accuracy() {
 
 #[test]
 fn test_trace_duration_computation() {
-    use pictl::models::parse_timestamp_ms;
+    use wasm4pm::models::parse_timestamp_ms;
 
     // Create two timestamps 5 seconds apart
     let first_ts = "2024-01-01T10:00:00+00:00";
@@ -70,7 +70,7 @@ fn test_trace_duration_computation() {
 
 #[test]
 fn test_trace_duration_handles_reversed_order() {
-    use pictl::models::parse_timestamp_ms;
+    use wasm4pm::models::parse_timestamp_ms;
 
     // Create two timestamps in reverse order (last before first)
     let first_ts = "2024-01-01T10:00:10+00:00";
@@ -99,7 +99,7 @@ fn test_trace_duration_not_string_length() {
     assert_ne!(len_diff, 0.0, "String lengths differ by {}", len_diff);
 
     // But if we parse timestamps, both represent the same instant
-    use pictl::models::parse_timestamp_ms;
+    use wasm4pm::models::parse_timestamp_ms;
     let ms1 = parse_timestamp_ms(ts1).expect("Failed to parse ts1");
     let ms2 = parse_timestamp_ms(ts2).expect("Failed to parse ts2");
 

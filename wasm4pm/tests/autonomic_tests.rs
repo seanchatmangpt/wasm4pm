@@ -5,18 +5,18 @@
 //!
 //! Extracted from embedded #[cfg(test)] blocks in each src/ module.
 
-use pictl::guards::{
+use wasm4pm::guards::{
     ExecutionContext, Guard, GuardCompiler, GuardEvaluator, GuardType, ObservationBuffer,
     Predicate, ResourceState, ResourceType, StateFlags,
 };
-use pictl::pattern_dispatch::{
+use wasm4pm::pattern_dispatch::{
     PatternConfig, PatternDispatcher, PatternFactory, PatternFlags, PatternType, PatternValidator,
 };
-use pictl::self_healing::{
+use wasm4pm::self_healing::{
     advance_clock, reset_clock, CircuitBreaker, CircuitState, HealthCheck, HealthCheckConfig,
     HealthStatus, RetryPolicy, RetryState, SelfHealingError, SelfHealingManager,
 };
-use pictl::spc::{
+use wasm4pm::spc::{
     check_western_electric_rules, dpmo_to_sigma, inverse_normal_cdf, normal_cdf, spc_mean,
     spc_std_dev, CapabilityError, ChartData, ProcessCapability, ShiftDirection, SpecialCause,
     TrendDirection,

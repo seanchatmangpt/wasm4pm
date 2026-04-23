@@ -18,7 +18,7 @@ pictl's architecture introduces three novel contributions to the discipline:
 
 1. **A handle-based foreign function interface (FFI) pattern** that eliminates manual lifetime management across the WASM/JavaScript boundary while maintaining type safety through a discriminated union of stored objects (`StoredObject`), enabling zero-copy borrowed access via closures.
 
-2. **A five-tier feature gate system** (`minimal`, `browser`, `edge`, `fog`, `iot`, `cloud`) that compiles targeted subsets of the 55,352-line Rust codebase into WASM binaries ranging from ~500KB (browser) to ~2.78MB (cloud), achieving up to 82% binary size reduction while preserving algorithmic correctness.
+2. **A five-tier feature gate system** (`minimal`, `mobile`, `edge`, `fog`, `iot`, `browser`) that compiles targeted subsets of the 55,352-line Rust codebase into WASM binaries ranging from ~500KB (mobile) to ~2.7MB (browser), achieving up to 82% binary size reduction while preserving algorithmic correctness.
 
 3. **A TypeScript orchestration layer** comprising 10 npm packages (`@pictl/contracts`, `@pictl/engine`, `@pictl/kernel`, `@pictl/config`, `@pictl/planner`, `@pictl/observability`, `@pictl/testing`, `@pictl/ml`, `@pictl/swarm`, and the `@pictl/cli` binary) that provides a state machine-driven execution engine, cryptographic receipt provenance, and 18 CLI commands for end-to-end process mining workflows.
 
@@ -88,7 +88,7 @@ The decision to implement a process mining framework in Rust compiled to WebAsse
 This thesis demonstrates that a comprehensive process mining framework—encompassing 42 algorithms across discovery, conformance, prediction, simulation, and conversion—can be implemented in Rust and compiled to WebAssembly while achieving:
 
 - **Algorithmic parity** with established Python (pm4py) and Java (ProM) implementations
-- **Deployment universality** through a five-tier feature gate system producing binaries from 500KB to 2.78MB
+- **Deployment universality** through a five-tier feature gate system producing binaries from 500KB to 2.7MB
 - **Type-safe JavaScript interop** through a novel handle-based FFI pattern
 - **Production-grade orchestration** through a TypeScript monorepo with state machine execution, cryptographic provenance, and observability integration
 
@@ -1088,7 +1088,7 @@ pictl's feature gate system enables **targeted compilation** of algorithm subset
 iot (smallest)
  └── minimal + streaming_basic + hand_rolled_stats
 
-browser
+mobile
  └── basic + simd + hand_rolled_stats
 
 edge
@@ -1097,7 +1097,7 @@ edge
 fog
  └── edge + swarm + streaming_full + statrs + ocel
 
-cloud (largest)
+browser (largest)
  └── basic + advanced + ml + streaming_full + swarm + statrs
      + powl + ocel + alignment_fitness + petri_net_playout
      + extensive_playout + align_etconformance + montecarlo
@@ -1106,13 +1106,13 @@ cloud (largest)
 
 ### 15.3 Binary Size Impact
 
-| Profile | Approximate Size | Reduction from Cloud | Use Case |
+| Profile | Approximate Size | Reduction from Browser | Use Case |
 |---------|-----------------|---------------------|----------|
 | `iot` | ~1.0MB | 64% | IoT devices, embedded |
-| `browser` | ~500KB | 82% | Web browsers, mobile |
+| `mobile` | ~500KB | 82% | Mobile web, minimal |
 | `edge` | ~1.5MB | 46% | Edge servers, CDN |
 | `fog` | ~2.0MB | 28% | Fog computing, IoT gateways |
-| `cloud` | ~2.78MB | — | Cloud servers (default) |
+| `browser` | ~2.7MB | — | Cloud servers (default) |
 
 ### 15.4 Feature Gate Implementation
 
@@ -1409,7 +1409,7 @@ Four criterion benchmark files provide performance baselines:
 
 ### 20.1 Throughput
 
-- **DFG Discovery**: 100K+ events/second (cloud profile)
+- **DFG Discovery**: 100K+ events/second (browser profile)
 - **SIMD Token Replay**: ~4x standard replay throughput
 - **Streaming DFG**: O(1) per event, bounded memory
 
@@ -1421,7 +1421,7 @@ Four criterion benchmark files provide performance baselines:
 
 ### 20.3 Binary Size
 
-Binary size is controlled through feature gates, ranging from ~500KB (browser) to ~2.78MB (cloud). This represents up to 82% reduction from the full cloud build.
+Binary size is controlled through feature gates, ranging from ~500KB (mobile) to ~2.7MB (browser). This represents up to 82% reduction from the full browser build.
 
 ### 20.4 Known Limitations
 
@@ -1514,7 +1514,7 @@ Total output across 10 waves:
 
 ### 22.1 Browser-Based Process Discovery
 
-A web application loads an XES event log via file upload, discovers a DFG using pictl's WASM binary (browser profile, ~500KB), and renders an interactive process map using SVG. The entire algorithm executes in the browser with no server round-trip.
+A web application loads an XES event log via file upload, discovers a DFG using pictl's WASM binary (mobile profile, ~500KB), and renders an interactive process map using SVG. The entire algorithm executes in the browser with no server round-trip.
 
 ### 22.2 Serverless Conformance Checking
 
@@ -1526,7 +1526,7 @@ An IoT gateway runs the streaming DFG algorithm (iot profile, ~1MB) on real-time
 
 ### 22.4 Enterprise Process Intelligence
 
-An enterprise deployment (cloud profile, ~2.78MB) provides the full algorithm suite including OCEL support, POWL discovery, Monte Carlo simulation, and ML prediction. The TypeScript orchestration layer integrates with OpenTelemetry for distributed tracing.
+An enterprise deployment (browser profile, ~2.7MB) provides the full algorithm suite including OCEL support, POWL discovery, Monte Carlo simulation, and ML prediction. The TypeScript orchestration layer integrates with OpenTelemetry for distributed tracing.
 
 ---
 
@@ -1564,7 +1564,7 @@ An enterprise deployment (cloud profile, ~2.78MB) provides the full algorithm su
 
 This thesis has presented pictl, a comprehensive WebAssembly-native process mining framework that implements 42 algorithms across the full spectrum of process mining tasks: discovery, conformance checking, predictive analytics, simulation, and format conversion.
 
-The framework's three novel contributions—a handle-based FFI pattern, a five-tier feature gate system, and a TypeScript orchestration layer—address fundamental challenges in deploying process mining capabilities to heterogeneous environments. The handle-based state management eliminates manual lifetime management while maintaining type safety. The feature gate system enables binary sizes from 500KB to 2.78MB through conditional compilation of 70 feature configurations. The TypeScript orchestration layer provides production-grade execution, configuration, planning, observability, and testing infrastructure.
+The framework's three novel contributions—a handle-based FFI pattern, a five-tier feature gate system, and a TypeScript orchestration layer—address fundamental challenges in deploying process mining capabilities to heterogeneous environments. The handle-based state management eliminates manual lifetime management while maintaining type safety. The feature gate system enables binary sizes from 500KB to 2.7MB through conditional compilation of 70 feature configurations. The TypeScript orchestration layer provides production-grade execution, configuration, planning, observability, and testing infrastructure.
 
 The 10-wave autonomous agent swarm development methodology demonstrated that complex software systems can be constructed rapidly and reliably through parallel, specialized agent teams guided by theoretical frameworks (van der Aalst's process cube). In 24 hours, the swarm produced 35,374 lines of new code across 175 files, with zero compilation errors and 68 passing tests.
 

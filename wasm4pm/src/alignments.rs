@@ -365,10 +365,14 @@ pub fn compute_optimal_alignments(
                 }));
             }
 
-            let avg_cost = if alignments.is_empty() {
-                0.0
+            let finite_count = alignments
+                .iter()
+                .filter(|a| a["cost"].as_f64().unwrap_or(-1.0) >= 0.0)
+                .count();
+            let avg_cost = if finite_count > 0 {
+                total_cost / finite_count as f64
             } else {
-                total_cost / alignments.len() as f64
+                0.0
             };
 
             serde_json::to_string(&json!({

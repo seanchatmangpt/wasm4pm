@@ -1,7 +1,7 @@
 use crate::error::{codes, wasm_err};
 use crate::models::*;
 use crate::state::{get_or_init_state, StoredObject};
-use crate::utilities::to_js;
+use crate::utilities::to_js_str;
 use rustc_hash::FxHashMap;
 use serde_json::json;
 use wasm_bindgen::prelude::*;
@@ -77,7 +77,7 @@ pub fn discover_dfg(eventlog_handle: &str, activity_key: &str) -> Result<JsValue
                         }),
                 );
 
-            to_js(&dfg)
+            to_js_str(&dfg)
         }
         Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
         None => Err(wasm_err(
@@ -245,7 +245,7 @@ pub fn discover_ocel_dfg(ocel_handle: &str) -> Result<JsValue, JsValue> {
     get_or_init_state().with_object(ocel_handle, |obj| match obj {
         Some(StoredObject::OCEL(ocel)) => {
             let dfg = discover_ocel_dfg_pure(ocel);
-            to_js(&dfg)
+            to_js_str(&dfg)
         }
         Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an OCEL")),
         None => Err(wasm_err(
@@ -349,7 +349,7 @@ pub fn discover_ocel_dfg_per_type(ocel_handle: &str) -> Result<JsValue, JsValue>
             }
 
             // Return as JSON: { "Order": { ... DFG ... }, "Item": { ... } }
-            to_js(&result)
+            to_js_str(&result)
         }
         Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an OCEL")),
         None => Err(wasm_err(
@@ -389,17 +389,12 @@ impl TraceProfile {
     }
 
     /// Check if activity a appeared before activity b in this trace.
+    #[inline(always)]
     fn appears_before(&self, a: usize, b: usize) -> bool {
-        // Quick rejection: if a is not present, return false
-        if self.first_positions[a] == u8::MAX {
-            return false;
-        }
-        // Quick rejection: if b is not present, return false
-        if self.first_positions[b] == u8::MAX {
-            return false;
-        }
-        // Both present: check positional relationship
-        self.first_positions[a] < self.first_positions[b]
+        let fa = self.first_positions[a];
+        let fb = self.first_positions[b];
+        // Non-short-circuit `&` keeps all three comparisons in one predicate (no branches)
+        (fa != u8::MAX) & (fb != u8::MAX) & (fa < fb)
     }
 }
 
@@ -444,7 +439,7 @@ pub fn discover_declare(eventlog_handle: &str, activity_key: &str) -> Result<JsV
             model.activities = col.vocab.iter().map(|s| s.to_string()).collect();
 
             if n == 0 || total_cases == 0 {
-                return to_js(&model);
+                return to_js_str(&model);
             }
 
             // Phase 1: Single pass over all traces to build TraceProfile for each
@@ -475,15 +470,14 @@ pub fn discover_declare(eventlog_handle: &str, activity_key: &str) -> Result<JsV
             let mut activity_counts = vec![0u32; n];
             for profile in &traces_profiles {
                 for (a, fp) in profile.first_positions.iter().enumerate() {
-                    if *fp != u8::MAX {
-                        activity_counts[a] += 1;
-                    }
+                    activity_counts[a] += (*fp != u8::MAX) as u32;
                 }
             }
 
             // Phase 2: Iterate over activity pairs, count satisfaction using profiles
             // Time: O(A² × T)
             let mut response_counts = vec![0u32; n * n];
+            let mut coexistence_counts = vec![0u32; n * n];
 
             // For each activity pair (a, b)
             for a in 0..n {
@@ -492,33 +486,54 @@ pub fn discover_declare(eventlog_handle: &str, activity_key: &str) -> Result<JsV
                         continue;
                     }
 
-                    // Count traces where a appears before b
+                    // Count traces where a appears before b, and traces with both
                     for profile in &traces_profiles {
-                        if profile.appears_before(a, b) {
-                            response_counts[a * n + b] += 1;
-                        }
+                        response_counts[a * n + b] += profile.appears_before(a, b) as u32;
+                        let has_a = profile.first_positions[a] != u8::MAX;
+                        let has_b = profile.first_positions[b] != u8::MAX;
+                        coexistence_counts[a * n + b] += (has_a && has_b) as u32;
                     }
                 }
             }
 
-            // Emit constraints — O(A²).
+            // Emit constraints — 5 DECLARE templates.
             let total_f64 = total_cases as f64;
+            let min_support = 0.1;
+
+            // Template 1: Existence — activity appears in >= min_support fraction of traces
             for a in 0..n {
-                if activity_counts[a] == 0 {
-                    continue;
+                let support = activity_counts[a] as f64 / total_f64;
+                if support >= min_support {
+                    model.constraints.push(DeclareConstraint {
+                        template: "Existence".to_string(),
+                        activities: vec![col.vocab[a].to_string()],
+                        support,
+                        confidence: 1.0,
+                    });
                 }
-                for b in 0..n {
-                    if a == b {
-                        continue;
-                    }
-                    let count = response_counts[a * n + b];
-                    if count == 0 {
-                        continue;
-                    }
-                    let support = count as f64 / total_f64;
-                    if support >= 0.1 {
+            }
+
+            // Template 2: Absence — activity appears in < (1 - min_support) fraction of traces
+            for a in 0..n {
+                let absence_support = (total_cases - activity_counts[a] as usize) as f64 / total_f64;
+                if absence_support >= min_support {
+                    model.constraints.push(DeclareConstraint {
+                        template: "Absence".to_string(),
+                        activities: vec![col.vocab[a].to_string()],
+                        support: absence_support,
+                        confidence: 1.0,
+                    });
+                }
+            }
+
+            // Template 3: Co-existence — both A and B appear together
+            for a in 0..n {
+                for b in (a + 1)..n {
+                    let coex_count = coexistence_counts[a * n + b];
+                    let support = coex_count as f64 / total_f64;
+                    if support >= min_support {
                         model.constraints.push(DeclareConstraint {
-                            template: "Response".to_string(),
+                            template: "CoExistence".to_string(),
                             activities: vec![col.vocab[a].to_string(), col.vocab[b].to_string()],
                             support,
                             confidence: 1.0,
@@ -527,7 +542,59 @@ pub fn discover_declare(eventlog_handle: &str, activity_key: &str) -> Result<JsV
                 }
             }
 
-            to_js(&model)
+            // Template 4: Precedence — A always before B when both present
+            for a in 0..n {
+                for b in 0..n {
+                    if a == b {
+                        continue;
+                    }
+                    let coex_count = coexistence_counts[a * n + b];
+                    if coex_count == 0 {
+                        continue;
+                    }
+                    let precedence_count = response_counts[a * n + b];
+                    let support = coex_count as f64 / total_f64;
+                    let confidence = precedence_count as f64 / coex_count as f64;
+                    if support >= min_support && confidence >= 0.8 {
+                        model.constraints.push(DeclareConstraint {
+                            template: "Precedence".to_string(),
+                            activities: vec![col.vocab[a].to_string(), col.vocab[b].to_string()],
+                            support,
+                            confidence,
+                        });
+                    }
+                }
+            }
+
+            // Template 5: Response — when A occurs, B eventually follows
+            for a in 0..n {
+                if activity_counts[a] == 0 {
+                    continue;
+                }
+                for b in 0..n {
+                    if a == b {
+                        continue;
+                    }
+                    let response_count = response_counts[a * n + b];
+                    if response_count == 0 {
+                        continue;
+                    }
+                    let support = response_count as f64 / total_f64;
+                    let confidence = response_count as f64 / activity_counts[a] as f64;
+                    if support >= min_support && confidence >= 0.8 {
+                        model.constraints.push(DeclareConstraint {
+                            template: "Response".to_string(),
+                            activities: vec![col.vocab[a].to_string(), col.vocab[b].to_string()],
+                            support,
+                            confidence,
+                        });
+                    }
+                }
+            }
+
+            // TODO: Succession, NotCoExistence, ChainPrecedence, ChainResponse require additional LTL-style trace scanning
+
+            to_js_str(&model)
         }
         Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
         None => Err(wasm_err(
@@ -540,7 +607,7 @@ pub fn discover_declare(eventlog_handle: &str, activity_key: &str) -> Result<JsV
 /// Get list of available discovery algorithms
 #[wasm_bindgen]
 pub fn available_discovery_algorithms() -> JsValue {
-    to_js(&json!({
+    to_js_str(&json!({
         "algorithms": [
             {
                 "name": "dfg",
@@ -592,7 +659,7 @@ pub fn available_discovery_algorithms() -> JsValue {
 /// Get discovery module info
 #[wasm_bindgen]
 pub fn discovery_info() -> JsValue {
-    to_js(&json!({
+    to_js_str(&json!({
         "status": "discovery_module_operational",
         "implemented_algorithms": ["dfg", "ocel_dfg", "declare", "causal_alpha", "causal_heuristic"],
         "note": "Core discovery algorithms implemented as WASM-native code"

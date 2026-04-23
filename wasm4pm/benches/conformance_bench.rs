@@ -11,8 +11,8 @@
 //! expensive (O(b^d) worst case) and the internal function is private.
 
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
-use pictl::models::*;
-use pictl::state::{get_or_init_state, StoredObject};
+use wasm4pm::models::*;
+use wasm4pm::state::{get_or_init_state, StoredObject};
 use std::collections::HashMap;
 use std::time::Duration;
 
@@ -21,9 +21,9 @@ mod helpers;
 use helpers::{generate_event_log, LogShape, ACTIVITY_KEY};
 
 // Internal modules for benchmarking
-use pictl::conformance;
-use pictl::etconformance_precision;
-use pictl::simd_token_replay::SimdPetriNet;
+use wasm4pm::conformance;
+use wasm4pm::etconformance_precision;
+use wasm4pm::simd_token_replay::SimdPetriNet;
 
 // ---------------------------------------------------------------------------
 // Synthetic Petri Net Builders

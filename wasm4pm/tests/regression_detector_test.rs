@@ -11,13 +11,13 @@
 //!
 //! Report: .pictl/benchmarks/regression-<unix_seconds>.json
 
-use pictl::guards::{
+use wasm4pm::guards::{
     ExecutionContext, Guard, ObservationBuffer, Predicate, ResourceState, ResourceType, StateFlags,
 };
-use pictl::marking_equation::solve_marking_equation;
-use pictl::pattern_dispatch::PatternType;
-use pictl::reinforcement::{QLearning, WorkflowAction, WorkflowState};
-use pictl::spc::{check_western_electric_rules, ChartData, ShiftDirection, SpecialCause};
+use wasm4pm::marking_equation::solve_marking_equation;
+use wasm4pm::pattern_dispatch::PatternType;
+use wasm4pm::reinforcement::{QLearning, WorkflowAction, WorkflowState};
+use wasm4pm::spc::{check_western_electric_rules, ChartData, ShiftDirection, SpecialCause};
 
 use std::hash::Hash;
 use std::{fmt, fs, io};

@@ -3,9 +3,9 @@
 //! Algorithm family: Reinforcement Learning
 //! Modules tested: rl_orchestrator (RlOrchestrator, AgentType, CycleTelemetry, compute_reward)
 
-use pictl::rl_orchestrator::{compute_reward, AgentType, CycleTelemetry, RlOrchestrator};
-use pictl::RlAction;
-use pictl::RlState;
+use wasm4pm::rl_orchestrator::{compute_reward, AgentType, CycleTelemetry, RlOrchestrator};
+use wasm4pm::RlAction;
+use wasm4pm::RlState;
 
 /// Helper to create test RlState with reasonable defaults
 fn make_test_state(health_level: u8) -> RlState {
@@ -99,7 +99,7 @@ fn test_telemetry_default() {
 #[test]
 fn test_compute_reward_health_improvement() {
     // Health improved (2 -> 1), no SPC alerts, guards pass
-    let reward = compute_reward(2, 1, 0, true, true);
+    let reward = compute_reward(2, 1, 0, true, true, false);
     assert!(
         reward > 0.0,
         "Health improvement should yield positive reward"
@@ -109,7 +109,7 @@ fn test_compute_reward_health_improvement() {
 #[test]
 fn test_compute_reward_health_degradation() {
     // Health degraded (1 -> 3), no SPC alerts
-    let reward = compute_reward(1, 3, 0, true, true);
+    let reward = compute_reward(1, 3, 0, true, true, false);
     assert!(
         reward < 0.0,
         "Health degradation should yield negative reward"
@@ -119,8 +119,8 @@ fn test_compute_reward_health_degradation() {
 #[test]
 fn test_compute_reward_spc_penalty() {
     // Stable health, but SPC alerts
-    let reward_with_alerts = compute_reward(1, 1, 5, true, true);
-    let reward_no_alerts = compute_reward(1, 1, 0, true, true);
+    let reward_with_alerts = compute_reward(1, 1, 5, true, true, false);
+    let reward_no_alerts = compute_reward(1, 1, 0, true, true, false);
     assert!(
         reward_with_alerts < reward_no_alerts,
         "SPC alerts should decrease reward"
@@ -130,8 +130,8 @@ fn test_compute_reward_spc_penalty() {
 #[test]
 fn test_compute_reward_terminal_penalty() {
     // Terminal state (health == 4)
-    let reward_terminal = compute_reward(3, 4, 0, true, true);
-    let reward_stable = compute_reward(3, 3, 0, true, true);
+    let reward_terminal = compute_reward(3, 4, 0, true, true, false);
+    let reward_stable = compute_reward(3, 3, 0, true, true, false);
     assert!(
         reward_terminal < reward_stable,
         "Terminal state should have extra penalty"
@@ -141,16 +141,16 @@ fn test_compute_reward_terminal_penalty() {
 #[test]
 fn test_compute_reward_bounded() {
     // Test extreme inputs to verify boundedness
-    let max_reward = compute_reward(4, 0, 0, true, true); // best case
-    let min_reward = compute_reward(0, 4, 100, false, false); // worst case
+    let max_reward = compute_reward(4, 0, 0, true, true, false); // best case
+    let min_reward = compute_reward(0, 4, 100, false, false, false); // worst case
     assert!(max_reward < 2.0, "Reward should be bounded above");
     assert!(min_reward > -10.0, "Reward should be bounded below");
 }
 
 #[test]
 fn test_compute_reward_circuit_failure() {
-    let reward_ok = compute_reward(1, 1, 0, true, true);
-    let reward_fail = compute_reward(1, 1, 0, true, false);
+    let reward_ok = compute_reward(1, 1, 0, true, true, false);
+    let reward_fail = compute_reward(1, 1, 0, true, false, false);
     assert!(
         reward_fail < reward_ok,
         "Circuit breaker failure should decrease reward"
@@ -214,7 +214,7 @@ fn test_run_cycle_updates_telemetry() {
     let state = make_test_state(2);
     let next_state = make_test_state(2);
 
-    let (action_label, reward) = orch.run_cycle(&features, &state, &next_state, 0, true, true);
+    let (action_label, reward) = orch.run_cycle(&features, &state, &next_state, 0, true, true, false);
 
     assert!(!action_label.is_empty());
     assert_eq!(orch.telemetry().cycle_count, 1);
@@ -222,7 +222,7 @@ fn test_run_cycle_updates_telemetry() {
     assert_eq!(orch.telemetry().cumulative_reward, reward);
 
     // Second cycle
-    let (_, reward2) = orch.run_cycle(&features, &state, &next_state, 0, true, true);
+    let (_, reward2) = orch.run_cycle(&features, &state, &next_state, 0, true, true, false);
     assert_eq!(orch.telemetry().cycle_count, 2);
     assert_eq!(orch.telemetry().cumulative_reward, reward + reward2);
 }
@@ -242,7 +242,7 @@ fn test_run_cycle_all_agents() {
         let state = make_test_state(1);
         let next_state = make_test_state(1);
         // Should not panic for any agent
-        let (action, reward) = orch.run_cycle(&features, &state, &next_state, 0, true, true);
+        let (action, reward) = orch.run_cycle(&features, &state, &next_state, 0, true, true, false);
         assert!(!action.is_empty());
         assert!(!reward.is_nan());
     }
@@ -258,7 +258,7 @@ fn test_run_cycle_with_linucb_selection() {
 
     // Run multiple cycles — LinUCB should eventually change agent
     for _ in 0..20 {
-        let _ = orch.run_cycle(&features, &state, &next_state, 0, true, true);
+        let _ = orch.run_cycle(&features, &state, &next_state, 0, true, true, false);
     }
 
     // Telemetry should reflect multiple cycles
@@ -272,7 +272,7 @@ fn test_run_cycle_with_linucb_selection() {
 #[test]
 fn test_create_rl_state_direct() {
     // Test direct construction with all 8 fields
-    let state = pictl::create_rl_state(
+    let state = wasm4pm::create_rl_state(
         2,  // health_level: Degraded
         3,  // event_rate_q
         4,  // activity_count_q
@@ -296,10 +296,10 @@ fn test_create_rl_state_direct() {
 #[test]
 fn test_create_rl_state_bounds() {
     // Test boundary values
-    let min_state = pictl::create_rl_state(0, 0, 0, 0, 0, 0, 0, 0);
+    let min_state = wasm4pm::create_rl_state(0, 0, 0, 0, 0, 0, 0, 0);
     assert_eq!(min_state.health_level, 0);
 
-    let max_state = pictl::create_rl_state(4, 7, 7, 3, 2, 7, 2, 3);
+    let max_state = wasm4pm::create_rl_state(4, 7, 7, 3, 2, 7, 2, 3);
     assert_eq!(max_state.health_level, 4);
 }
 
@@ -307,7 +307,7 @@ fn test_create_rl_state_bounds() {
 fn test_rl_state_from_features_slice() {
     // Test construction from feature slice
     let features = vec![0.1f32, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8];
-    let state = pictl::rl_state_from_features(&features, 1, 0.0); // health_level = Warning, rework_ratio = 0.0
+    let state = wasm4pm::rl_state_from_features(&features, 1, 0.0); // health_level = Warning, rework_ratio = 0.0
 
     // Should quantize features appropriately
     assert_eq!(state.health_level, 1);
@@ -321,7 +321,7 @@ fn test_rl_state_from_features_slice() {
 fn test_rl_state_from_features_short_slice() {
     // Test with fewer than 8 features (should pad with zeros)
     let features = vec![0.5f32, 0.5]; // Only 2 features
-    let state = pictl::rl_state_from_features(&features, 0, 0.0); // health_level = Normal, rework_ratio = 0.0
+    let state = wasm4pm::rl_state_from_features(&features, 0, 0.0); // health_level = Normal, rework_ratio = 0.0
 
     assert_eq!(state.health_level, 0);
     // event_rate_q quantizes 0.5 * 10000 = 5000 events → level 5
@@ -332,12 +332,12 @@ fn test_rl_state_from_features_short_slice() {
 
 #[test]
 fn test_rl_state_health_level_getter() {
-    let state = pictl::create_rl_state(
+    let state = wasm4pm::create_rl_state(
         3,  // health_level: Critical
         0, 0, 0, 0, 0, 0, 0  // other fields irrelevant
     );
 
-    let health = pictl::rl_state_health_level(&state);
+    let health = wasm4pm::rl_state_health_level(&state);
     assert_eq!(health, 3);
 }
 
@@ -347,14 +347,14 @@ fn test_rl_state_roundtrip() {
     let features = vec![0.8f32, 0.1, 0.9, 0.2, 0.0, 0.1, 0.3, 0.05];
     let original_health = 2; // Degraded
 
-    let state1 = pictl::rl_state_from_features(&features, original_health, 0.0);
-    let extracted_health = pictl::rl_state_health_level(&state1);
+    let state1 = wasm4pm::rl_state_from_features(&features, original_health, 0.0);
+    let extracted_health = wasm4pm::rl_state_health_level(&state1);
 
     assert_eq!(extracted_health, original_health);
 
     // Create a new state with the same health_level
-    let state2 = pictl::create_rl_state(extracted_health, 0, 0, 0, 0, 0, 0, 0);
-    assert_eq!(pictl::rl_state_health_level(&state2), original_health);
+    let state2 = wasm4pm::create_rl_state(extracted_health, 0, 0, 0, 0, 0, 0, 0);
+    assert_eq!(wasm4pm::rl_state_health_level(&state2), original_health);
 }
 
 // ---------------------------------------------------------------------------
@@ -375,7 +375,7 @@ fn test_policy_reward_stable_under_sustained_degraded_health() {
 
     // Run 50 cycles at health=3
     for _ in 0..50 {
-        let (_action, reward) = orch.run_cycle(&features, &state_degraded, &state_degraded, 0, true, true);
+        let (_action, reward) = orch.run_cycle(&features, &state_degraded, &state_degraded, 0, true, true, false);
         rewards.push(reward);
     }
 
@@ -408,7 +408,7 @@ fn test_policy_recovers_from_terminal_health_state() {
     let state_terminal = make_test_state(4);
     let mut phase1_rewards = Vec::new();
     for _ in 0..10 {
-        let (_action, reward) = orch.run_cycle(&features, &state_terminal, &state_terminal, 0, true, true);
+        let (_action, reward) = orch.run_cycle(&features, &state_terminal, &state_terminal, 0, true, true, false);
         phase1_rewards.push(reward);
     }
     let phase1_avg_reward: f32 = phase1_rewards.iter().sum::<f32>() / phase1_rewards.len() as f32;
@@ -417,7 +417,7 @@ fn test_policy_recovers_from_terminal_health_state() {
     let state_recovered = make_test_state(0);
     let mut phase2_rewards = Vec::new();
     for _ in 0..10 {
-        let (_action, reward) = orch.run_cycle(&features, &state_recovered, &state_recovered, 0, true, true);
+        let (_action, reward) = orch.run_cycle(&features, &state_recovered, &state_recovered, 0, true, true, false);
         phase2_rewards.push(reward);
     }
     let phase2_avg_reward: f32 = phase2_rewards.iter().sum::<f32>() / phase2_rewards.len() as f32;

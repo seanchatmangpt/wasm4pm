@@ -19,7 +19,7 @@
 //!
 //! Output: `.pictl/benchmarks/benchmarks/gpu_wgsl_<timestamp>.json`
 
-use pictl::ml::LinUCBAgent;
+use wasm4pm::ml::LinUCBAgent;
 use std::fs;
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
 

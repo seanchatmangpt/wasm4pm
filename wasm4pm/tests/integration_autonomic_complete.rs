@@ -9,8 +9,8 @@
 //! This is an 80/20 test: one comprehensive test that covers the full pipeline
 //! without testing every edge case.
 
-use pictl::rl_orchestrator::{compute_health_state, compute_reward, RlOrchestrator};
-use pictl::RlState;
+use wasm4pm::rl_orchestrator::{compute_health_state, compute_reward, RlOrchestrator};
+use wasm4pm::RlState;
 use std::collections::HashSet;
 
 /// Helper to create test RlState with reasonable defaults
@@ -157,6 +157,7 @@ fn e2e_autonomic_loop_complete_pipeline() {
             spc_alerts,
             true,  // guard_pass
             true,  // circuit_allowed
+            false,  // latency_budget_exceeded
         );
 
         // Verify action selection
@@ -260,7 +261,7 @@ fn e2e_autonomic_loop_complete_pipeline() {
 
     // Step 6: Verify reward computation directly
     // Best case: health improves, no alerts, guards pass
-    let best_reward = compute_reward(2, 0, 0, true, true);
+    let best_reward = compute_reward(2, 0, 0, true, true, false);
     assert!(
         best_reward > 0.0,
         "Best-case reward should be positive (got {})",
@@ -268,7 +269,7 @@ fn e2e_autonomic_loop_complete_pipeline() {
     );
 
     // Worst case: health degrades, many alerts, guards fail
-    let worst_reward = compute_reward(0, 4, 100, false, false);
+    let worst_reward = compute_reward(0, 4, 100, false, false, false);
     assert!(
         worst_reward < 0.0,
         "Worst-case reward should be negative (got {})",
@@ -304,7 +305,7 @@ fn e2e_health_state_computation_edge_cases() {
 /// Test RL orchestrator with all 5 agent types
 #[test]
 fn e2e_rl_orchestrator_all_agent_types() {
-    use pictl::rl_orchestrator::AgentType;
+    use wasm4pm::rl_orchestrator::AgentType;
 
     let features = [0.5, 0.3, 0.2, 0.0, 0.0, 0.0, 0.5, 0.0];
     let state = make_test_state(1);
@@ -319,7 +320,7 @@ fn e2e_rl_orchestrator_all_agent_types() {
         let mut orch = RlOrchestrator::new();
         orch.switch_agent(*agent_type);
 
-        let (action, reward) = orch.run_cycle(&features, &state, &state, 0, true, true);
+        let (action, reward) = orch.run_cycle(&features, &state, &state, 0, true, true, false);
 
         assert!(
             !action.is_empty(),
@@ -350,7 +351,7 @@ fn e2e_linucb_agent_selection_persists() {
 
     // Run 20 cycles to allow LinUCB exploration
     for _ in 0..20 {
-        let (action, reward) = orch.run_cycle(&features, &state, &state, 0, true, true);
+        let (action, reward) = orch.run_cycle(&features, &state, &state, 0, true, true, false);
         assert!(!action.is_empty());
         assert!(!reward.is_nan());
     }
@@ -369,7 +370,7 @@ fn e2e_reward_computation_bounds() {
             for spc_alerts in &[0, 1, 5, 10, 100] {
                 for &guard_pass in &[true, false] {
                     for &circuit_allowed in &[true, false] {
-                        let reward = compute_reward(from, to, *spc_alerts, guard_pass, circuit_allowed);
+                        let reward = compute_reward(from, to, *spc_alerts, guard_pass, circuit_allowed, false);
 
                         // Reward must always be finite
                         assert!(

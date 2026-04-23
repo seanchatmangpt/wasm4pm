@@ -7,9 +7,11 @@ use crate::probabilistic::streaming_log::StreamingLog;
 use wasm_bindgen::prelude::*;
 
 /// Global store for StreamingLog instances, keyed by handle.
+#[allow(static_mut_refs)]
 static mut STREAMING_LOGS: Option<std::collections::HashMap<usize, StreamingLog>> = None;
 
 /// Initialize the global store (called lazily).
+#[allow(static_mut_refs)]
 fn ensure_store() {
     // SAFETY: WASM is single-threaded (no true concurrency in wasm32 target),
     // so there is no data race on this static. The store is only accessed

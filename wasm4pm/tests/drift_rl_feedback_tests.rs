@@ -9,9 +9,9 @@
 //! different action distributions and reward trajectories compared to
 //! no-alert baselines, on real log data.
 
-use pictl::models::EventLog;
-use pictl::rl_orchestrator::{AgentType, RlOrchestrator};
-use pictl::RlState;
+use wasm4pm::models::EventLog;
+use wasm4pm::rl_orchestrator::{AgentType, RlOrchestrator};
+use wasm4pm::RlState;
 use std::fs;
 
 // ── Test Fixtures ───────────────────────────────────────────────────────
@@ -37,7 +37,7 @@ fn compute_log_metrics(log: &EventLog, activity_key: &str) -> (u64, u64, u64, f3
     for trace in &log.traces {
         let mut seen = std::collections::HashSet::new();
         for event in &trace.events {
-            if let Some(pictl::models::AttributeValue::String(name)) =
+            if let Some(wasm4pm::models::AttributeValue::String(name)) =
                 event.attributes.get(activity_key)
             {
                 activity_set.insert(name.clone());
@@ -106,7 +106,7 @@ fn test_real_log_spc_alerts_lower_reward() {
         );
         let state = RlState::from_features(&features, health_level, rework_ratio);
         let next_state = RlState::from_features(&features, health_level, rework_ratio);
-        orch_no_alerts.run_cycle(&features, &state, &next_state, 0, true, true);
+        orch_no_alerts.run_cycle(&features, &state, &next_state, 0, true, true, false);
     }
 
     for i in 0..50 {
@@ -116,7 +116,7 @@ fn test_real_log_spc_alerts_lower_reward() {
         );
         let state = RlState::from_features(&features, health_level, rework_ratio);
         let next_state = RlState::from_features(&features, health_level, rework_ratio);
-        orch_with_alerts.run_cycle(&features, &state, &next_state, 5, true, true);
+        orch_with_alerts.run_cycle(&features, &state, &next_state, 5, true, true, false);
     }
 
     let reward_no_alerts = orch_no_alerts.telemetry().cumulative_reward;
@@ -156,7 +156,7 @@ fn test_real_log_guard_failure_degrades_reward() {
         );
         let state = RlState::from_features(&features, health_level, rework_ratio);
         let next_state = RlState::from_features(&features, health_level, rework_ratio);
-        orch_success.run_cycle(&features, &state, &next_state, 0, true, true);
+        orch_success.run_cycle(&features, &state, &next_state, 0, true, true, false);
     }
 
     for i in 0..50 {
@@ -167,7 +167,7 @@ fn test_real_log_guard_failure_degrades_reward() {
         let state = RlState::from_features(&features, health_level, rework_ratio);
         // Health degrades on failure
         let next_state = RlState::from_features(&features, health_level + 1, rework_ratio);
-        orch_failure.run_cycle(&features, &state, &next_state, 0, false, false);
+        orch_failure.run_cycle(&features, &state, &next_state, 0, false, false, false);
     }
 
     let reward_success = orch_success.telemetry().cumulative_reward;
@@ -209,7 +209,7 @@ fn test_real_log_health_improves_with_consecutive_successes() {
         let state = RlState::from_features(&features, health_level, rework_ratio);
         let next_state = RlState::from_features(&features, next_health, rework_ratio);
 
-        orch.run_cycle(&features, &state, &next_state, 0, true, true);
+        orch.run_cycle(&features, &state, &next_state, 0, true, true, false);
 
         let expected_consecutive = i + 1;
         assert_eq!(
@@ -323,7 +323,7 @@ fn test_all_agents_respond_to_real_log_spc_alerts() {
             );
             let state = RlState::from_features(&features, health_level, rework_ratio);
             let next_state = RlState::from_features(&features, health_level, rework_ratio);
-            orch_clean.run_cycle(&features, &state, &next_state, 0, true, true);
+            orch_clean.run_cycle(&features, &state, &next_state, 0, true, true, false);
         }
 
         for i in 0..30 {
@@ -333,7 +333,7 @@ fn test_all_agents_respond_to_real_log_spc_alerts() {
             );
             let state = RlState::from_features(&features, health_level, rework_ratio);
             let next_state = RlState::from_features(&features, health_level, rework_ratio);
-            orch_alerts.run_cycle(&features, &state, &next_state, 4, true, true);
+            orch_alerts.run_cycle(&features, &state, &next_state, 4, true, true, false);
         }
 
         let reward_clean = orch_clean.telemetry().cumulative_reward;
@@ -358,11 +358,11 @@ fn test_real_log_spc_penalty_bounded() {
     // Verify that the SPC penalty (-0.3 per alert, max -1.5) is correctly bounded.
     // Even with 10 SPC alerts, the penalty should not exceed -1.5.
     // Use compute_reward directly from the orchestrator module.
-    use pictl::rl_orchestrator::compute_reward;
+    use wasm4pm::rl_orchestrator::compute_reward;
 
-    let penalty_3_alerts = compute_reward(0, 0, 3, true, true);
-    let penalty_5_alerts = compute_reward(0, 0, 5, true, true);
-    let penalty_10_alerts = compute_reward(0, 0, 10, true, true);
+    let penalty_3_alerts = compute_reward(0, 0, 3, true, true, false);
+    let penalty_5_alerts = compute_reward(0, 0, 5, true, true, false);
+    let penalty_10_alerts = compute_reward(0, 0, 10, true, true, false);
 
     // 3 alerts: -0.9 penalty
     // 5 alerts: -1.5 penalty (capped)

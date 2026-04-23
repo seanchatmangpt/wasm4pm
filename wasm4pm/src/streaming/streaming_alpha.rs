@@ -92,8 +92,9 @@ impl StreamingAlphaPlusBuilder {
         net.places.push(PetriNetPlace {
             id: source_id.to_string(),
             label: source_id.to_string(),
-            marking: None,
+            marking: Some(1),
         });
+        net.initial_marking.insert(source_id.to_string(), 1);
 
         for &id in self.start_counts.keys() {
             let t_label = self.interner.get(id).unwrap_or("?");

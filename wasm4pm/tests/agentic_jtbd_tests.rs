@@ -1,4 +1,4 @@
-use pictl::agentic::prelude::*;
+use wasm4pm::agentic::prelude::*;
 use std::collections::BTreeSet;
 
 fn make_task_context(

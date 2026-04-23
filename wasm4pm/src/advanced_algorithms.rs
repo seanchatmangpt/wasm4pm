@@ -1,10 +1,15 @@
 use crate::models::*;
 use crate::state::{get_or_init_state, StoredObject};
-use crate::utilities::to_js;
+use crate::utilities::to_js_str;
 use rustc_hash::FxHashMap;
 use serde_json::json;
 use std::collections::HashSet;
 use wasm_bindgen::prelude::*;
+
+#[cfg(not(feature = "bcinr"))]
+const FNV_OFFSET_BASIS: u64 = 0xcbf29ce484222325;
+#[cfg(not(feature = "bcinr"))]
+const FNV_PRIME: u64 = 0x100000001b3;
 
 /// Heuristic Miner - discovers process models from real-world logs
 /// More lenient than Alpha++ for handling noise and incomplete data
@@ -95,7 +100,7 @@ pub fn discover_heuristic_miner(
         .store_object(StoredObject::DirectlyFollowsGraph(dfg))
         .map_err(|_e| JsValue::from_str("Failed to store DFG"))?;
 
-    to_js(&json!({
+    to_js_str(&json!({
         "handle": handle,
         "nodes": n_nodes,
         "edges": n_edges,
@@ -114,25 +119,59 @@ pub fn analyze_infrequent_paths(
     get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
             let total_traces = log.traces.len() as f64;
-            let mut path_frequencies: FxHashMap<Vec<String>, usize> = FxHashMap::default();
 
-            // Extract activity sequences (paths)
+            // Build activity vocabulary
+            let mut vocab: std::collections::HashMap<&str, u32> = std::collections::HashMap::default();
+            let mut vocab_len: u32 = 0;
             for trace in &log.traces {
-                let mut path = Vec::new();
+                for event in &trace.events {
+                    if let Some(AttributeValue::String(activity)) = event.attributes.get(activity_key) {
+                        vocab.entry(activity.as_str()).or_insert_with(|| {
+                            let id = vocab_len;
+                            vocab_len += 1;
+                            id
+                        });
+                    }
+                }
+            }
+
+            let mut path_frequencies: FxHashMap<u64, (Vec<String>, usize)> = FxHashMap::default();
+
+            // Extract activity sequences (paths) and hash them
+            for trace in &log.traces {
+                let mut trace_ids: Vec<u32> = Vec::new();
+                let mut path_str: Vec<String> = Vec::new();
                 for event in &trace.events {
                     if let Some(AttributeValue::String(activity)) =
                         event.attributes.get(activity_key)
                     {
-                        path.push(activity.clone());
+                        if let Some(&id) = vocab.get(activity.as_str()) {
+                            trace_ids.push(id);
+                            path_str.push(activity.clone());
+                        }
                     }
                 }
-                *path_frequencies.entry(path).or_insert(0) += 1;
+
+                // Hash the u32 sequence
+                #[cfg(feature = "bcinr")]
+                let path_hash: u64 = trace_ids.iter().fold(0u64, |h, &id| {
+                    bcinr::sketch::fnv1a_64(&(h ^ (id as u64)).to_le_bytes())
+                });
+
+                #[cfg(not(feature = "bcinr"))]
+                let path_hash: u64 = trace_ids.iter().fold(FNV_OFFSET_BASIS, |h, &id| {
+                    (h ^ (id as u64)).wrapping_mul(FNV_PRIME)
+                });
+
+                path_frequencies.entry(path_hash)
+                    .and_modify(|(_, count)| *count += 1)
+                    .or_insert((path_str, 1));
             }
 
             // Find infrequent paths
             let total_distinct_paths = path_frequencies.len();
             let mut infrequent_paths = Vec::new();
-            for (path, count) in path_frequencies {
+            for (_hash, (path, count)) in path_frequencies {
                 let frequency = count as f64 / total_traces;
                 if frequency < frequency_threshold {
                     infrequent_paths.push(json!({
@@ -151,7 +190,7 @@ pub fn analyze_infrequent_paths(
                     .unwrap_or(std::cmp::Ordering::Equal)
             });
 
-            to_js(&json!({
+            to_js_str(&json!({
                 "infrequent_paths": infrequent_paths,
                 "total_distinct_paths": total_distinct_paths,
                 "frequency_threshold": frequency_threshold,
@@ -206,7 +245,7 @@ pub fn detect_rework(eventlog_handle: &str, activity_key: &str) -> Result<JsValu
             let mut rework_vec: Vec<(String, usize)> = rework_stats.into_iter().collect();
             rework_vec.sort_by(|a, b| b.1.cmp(&a.1));
 
-            to_js(&json!({
+            to_js_str(&json!({
                 "traces_with_rework": traces_with_rework,
                 "rework_percentage": (traces_with_rework as f64 / log.traces.len() as f64) * 100.0,
                 "total_rework_instances": total_rework_count,
@@ -234,15 +273,15 @@ pub fn detect_bottlenecks(
                 for i in 0..trace.events.len() - 1 {
                     if let (
                         Some(AttributeValue::String(activity)),
-                        Some(AttributeValue::Date(_start_time)),
+                        Some(AttributeValue::Date(start_time)),
                         Some(AttributeValue::Date(end_time)),
                     ) = (
                         trace.events[i].attributes.get(activity_key),
                         trace.events[i].attributes.get(timestamp_key),
                         trace.events[i + 1].attributes.get(timestamp_key),
                     ) {
-                        // Simplified duration calculation (in real implementation, parse ISO 8601)
-                        let duration = end_time.len() as u64; // Placeholder
+                        let duration =
+                            crate::parse_iso8601_duration(start_time, end_time).abs() as u64;
 
                         if duration > duration_threshold_seconds {
                             activity_durations
@@ -277,7 +316,7 @@ pub fn detect_bottlenecks(
                     .unwrap_or(std::cmp::Ordering::Equal)
             });
 
-            to_js(&json!({
+            to_js_str(&json!({
                 "bottlenecks": bottlenecks,
                 "duration_threshold": duration_threshold_seconds,
             }))
@@ -327,7 +366,7 @@ pub fn compute_model_metrics(
                 variants.insert(path);
             }
 
-            to_js(&json!({
+            to_js_str(&json!({
                 "num_activities": activities.len(),
                 "num_edges": relations.len(),
                 "num_variants": variants.len(),

@@ -10,8 +10,8 @@ INPUT=$(cat)
 
 TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name // empty' 2>/dev/null)
 if [ -z "$TOOL_NAME" ]; then
-  echo "ERROR: Cannot parse tool name from hook input" >&2
-  exit 1
+  echo "WARN: Cannot parse tool name from hook input" >&2
+  exit 0
 fi
 
 TOOL_INPUT=$(echo "$INPUT" | jq -r '.tool_input // {}' 2>/dev/null)

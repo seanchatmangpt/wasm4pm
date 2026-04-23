@@ -10,7 +10,7 @@
 use crate::error::{codes, wasm_err};
 use crate::models::*;
 use crate::state::{get_or_init_state, StoredObject};
-use crate::utilities::to_js;
+use crate::utilities::to_js_str;
 use rustc_hash::FxHashMap;
 use wasm_bindgen::prelude::*;
 
@@ -354,7 +354,7 @@ pub fn discover_dfg_hierarchical(
             let result = discover_hierarchical::<DfgChunker>(log, activity_key, &config);
             let dfg = result.to_dfg(&col.vocab);
 
-            to_js(&dfg)
+            to_js_str(&dfg)
         }
         Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
         None => Err(wasm_err(
@@ -402,7 +402,7 @@ pub fn discover_dfg_hierarchical_by_events(
             let result = discover_hierarchical::<DfgChunker>(log, activity_key, &config);
             let dfg = result.to_dfg(&col.vocab);
 
-            to_js(&dfg)
+            to_js_str(&dfg)
         }
         Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
         None => Err(wasm_err(

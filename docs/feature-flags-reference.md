@@ -11,7 +11,7 @@
 | `feature-conformance-basic` | Basic conformance: SIMD token replay, DECLARE, temporal profile. |
 | `feature-conformance-full` | Full conformance: alignments, marking equation, generalization, petri net reduction. |
 | `feature-console-error-panic-hook` | Better panic messages in browser console. |
-| `feature-discovery-advanced` | Advanced discovery algorithms: genetic, ILP, ACO, PSO. |
+| `feature-discovery-advanced` | Advanced discovery algorithms: genetic, ACO, PSO. |
 | `feature-gpu` | GPU-accelerated LinUCB contextual bandit via wgpu. Not compiled for wasm32. |
 | `feature-hand-rolled-stats` | Hand-rolled statistics when statrs is not available. |
 | `feature-ml` | Machine learning: prediction, anomaly, drift detection. |
@@ -26,8 +26,8 @@
 
 | Profile | Description |
 |---------|-------------|
-| `cloud` | Full feature set (~2.78MB binary). Default for npm package. |
-| `browser` | Minimal features for web browsers (~500KB). |
+| `browser` | Full feature set (~2.7MB binary). Default for npm package. |
+| `mobile` | Minimal features for web browsers (~500KB target). |
 | `edge` | Edge servers and CDN (~1.5MB). |
 | `fog` | Fog computing, IoT gateways (~2.0MB). |
 | `iot` | IoT devices, embedded systems (~1.0MB). |

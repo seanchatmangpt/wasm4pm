@@ -78,21 +78,23 @@ pub enum SpecialCause {
 pub fn check_western_electric_rules(data: &[ChartData]) -> Vec<SpecialCause> {
     let mut alerts = Vec::new();
 
+    // Rule 1: Point beyond UCL or LCL (applies to any buffer size, any single point)
+    if let Some(latest) = data.last() {
+        if latest.value > latest.ucl || latest.value < latest.lcl {
+            alerts.push(SpecialCause::OutOfControl {
+                value: latest.value,
+                ucl: latest.ucl,
+                lcl: latest.lcl,
+            });
+        }
+    }
+
+    // Rules 2 and 3 require at least 9 points
     if data.len() < 9 {
         return alerts;
     }
 
     let recent = &data[data.len().saturating_sub(9)..];
-    let latest = recent.last().unwrap();
-
-    // Rule 1: Point beyond UCL or LCL
-    if latest.value > latest.ucl || latest.value < latest.lcl {
-        alerts.push(SpecialCause::OutOfControl {
-            value: latest.value,
-            ucl: latest.ucl,
-            lcl: latest.lcl,
-        });
-    }
 
     // Rule 2: 9 consecutive points on same side of center line
     if recent.len() >= 9 {

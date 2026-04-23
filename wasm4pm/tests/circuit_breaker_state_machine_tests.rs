@@ -10,9 +10,10 @@
 //!   HalfOpen --[success count >= threshold]--> Closed
 //!   HalfOpen --[failure]--> Open
 
-use pictl::self_healing::{
+use wasm4pm::self_healing::{
     advance_clock, reset_clock, CircuitBreaker, CircuitBreakerConfig, CircuitState,
 };
+use wasm4pm::rl_orchestrator::compute_reward;
 
 fn setup() {
     reset_clock();
@@ -429,4 +430,43 @@ fn test_full_lifecycle_closed_open_half_open_closed() {
     // The breaker survived two complete Open cycles without corrupting state
     assert_eq!(breaker.failure_count(), 4); // 3 + 3 from cycles, but transition_to resets
     // (failure_count accumulates across cycles because Open transition only resets success_count)
+}
+
+// ===========================================================================
+// Test D6 (Category D — Circuit Breaker): Reward delta for circuit state
+// ===========================================================================
+
+#[test]
+fn test_d6_circuit_breaker_reward_delta_at_least_0_5() {
+    // compute_reward with circuit_allowed=true vs false, same everything else.
+    // The reward function gives:
+    //   guard_pass=true && circuit_allowed=true: +0.1
+    //   else: -0.5
+    // Delta = 0.1 - (-0.5) = 0.6 >= 0.5.
+
+    let prev_health = 2u8;
+    let curr_health = 2u8;
+    let spc_alerts = 0usize;
+    let guard_pass = true;
+
+    let reward_allowed = compute_reward(prev_health, curr_health, spc_alerts, guard_pass, true, false);
+    let reward_blocked = compute_reward(prev_health, curr_health, spc_alerts, guard_pass, false, false);
+
+    let delta = reward_allowed - reward_blocked;
+
+    assert!(
+        delta >= 0.5,
+        "Reward delta between circuit_allowed=true ({:.4}) and circuit_allowed=false ({:.4}) \
+         should be >= 0.5: got delta={:.4}",
+        reward_allowed,
+        reward_blocked,
+        delta
+    );
+
+    // The known exact delta is 0.6 (guard+circuit bonus +0.1 vs -0.5 penalty)
+    assert!(
+        (delta - 0.6).abs() < 1e-5,
+        "Exact circuit breaker reward delta should be 0.6: got {:.6}",
+        delta
+    );
 }

@@ -168,6 +168,11 @@ impl<S: WorkflowState, A: WorkflowAction> QLearning<S, A> {
         self.exploration_rate *= self.exploration_decay;
     }
 
+    /// Set exploration rate manually (used by MAPE-K action dispatch).
+    pub fn set_exploration_rate(&mut self, rate: f32) {
+        self.exploration_rate = rate;
+    }
+
     #[allow(dead_code)]
     pub fn get_q_value(&self, state: &S, action: &A) -> f32 {
         let q_table = self.q_table.borrow();
@@ -196,6 +201,62 @@ impl<S: WorkflowState, A: WorkflowAction> QLearning<S, A> {
 impl<S: WorkflowState, A: WorkflowAction> Default for QLearning<S, A> {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+// Serialization support for QLearning (to be called only with RlState/RlAction context)
+impl QLearning<crate::RlState, crate::RlAction> {
+    /// Export Q-table as serialized format for persistence.
+    #[allow(dead_code)]
+    pub fn export_as_serialized(&self, agent_type: u8) -> crate::rl_state_serialization::SerializedAgentQTable {
+        use std::collections::HashMap;
+        use crate::rl_state_serialization::{SerializedAgentQTable, encode_rl_state_key};
+
+        let q_table = self.q_table.borrow();
+        let mut state_values = HashMap::new();
+
+        for (state, q_values) in q_table.iter() {
+            let key = encode_rl_state_key(
+                state.health_level,
+                state.event_rate_q,
+                state.activity_count_q,
+                state.spc_alert_level,
+                state.drift_status,
+                state.rework_ratio_q,
+                state.circuit_state,
+                state.cycle_phase,
+            );
+            state_values.insert(key, q_values.clone());
+        }
+
+        SerializedAgentQTable {
+            agent_type,
+            state_values,
+        }
+    }
+
+    /// Restore Q-table from serialized format.
+    #[allow(dead_code)]
+    pub fn restore_from_serialized(&self, table: crate::rl_state_serialization::SerializedAgentQTable) {
+        use crate::rl_state_serialization::decode_rl_state_key;
+
+        let mut q_table = self.q_table.borrow_mut();
+        q_table.clear();
+
+        for (key, q_values) in table.state_values.into_iter() {
+            let (h, e, a, s, d, r, c, p) = decode_rl_state_key(key);
+            let state = crate::RlState {
+                health_level: h,
+                event_rate_q: e,
+                activity_count_q: a,
+                spc_alert_level: s,
+                drift_status: d,
+                rework_ratio_q: r,
+                circuit_state: c,
+                cycle_phase: p,
+            };
+            q_table.insert(state, q_values);
+        }
     }
 }
 
@@ -301,6 +362,11 @@ impl<S: WorkflowState, A: WorkflowAction> SARSAAgent<S, A> {
         self.exploration_rate *= self.exploration_decay;
     }
 
+    /// Set exploration rate manually (used by MAPE-K action dispatch).
+    pub fn set_exploration_rate(&mut self, rate: f32) {
+        self.exploration_rate = rate;
+    }
+
     #[allow(dead_code)]
     pub fn get_exploration_rate(&self) -> f32 {
         self.exploration_rate
@@ -310,6 +376,62 @@ impl<S: WorkflowState, A: WorkflowAction> SARSAAgent<S, A> {
 impl<S: WorkflowState, A: WorkflowAction> Default for SARSAAgent<S, A> {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+// Serialization support for SARSAAgent
+impl SARSAAgent<crate::RlState, crate::RlAction> {
+    /// Export Q-table as serialized format for persistence.
+    #[allow(dead_code)]
+    pub fn export_as_serialized(&self, agent_type: u8) -> crate::rl_state_serialization::SerializedAgentQTable {
+        use std::collections::HashMap;
+        use crate::rl_state_serialization::{SerializedAgentQTable, encode_rl_state_key};
+
+        let q_table = self.q_table.borrow();
+        let mut state_values = HashMap::new();
+
+        for (state, q_values) in q_table.iter() {
+            let key = encode_rl_state_key(
+                state.health_level,
+                state.event_rate_q,
+                state.activity_count_q,
+                state.spc_alert_level,
+                state.drift_status,
+                state.rework_ratio_q,
+                state.circuit_state,
+                state.cycle_phase,
+            );
+            state_values.insert(key, q_values.clone());
+        }
+
+        SerializedAgentQTable {
+            agent_type,
+            state_values,
+        }
+    }
+
+    /// Restore Q-table from serialized format.
+    #[allow(dead_code)]
+    pub fn restore_from_serialized(&self, table: crate::rl_state_serialization::SerializedAgentQTable) {
+        use crate::rl_state_serialization::decode_rl_state_key;
+
+        let mut q_table = self.q_table.borrow_mut();
+        q_table.clear();
+
+        for (key, q_values) in table.state_values.into_iter() {
+            let (h, e, a, s, d, r, c, p) = decode_rl_state_key(key);
+            let state = crate::RlState {
+                health_level: h,
+                event_rate_q: e,
+                activity_count_q: a,
+                spc_alert_level: s,
+                drift_status: d,
+                rework_ratio_q: r,
+                circuit_state: c,
+                cycle_phase: p,
+            };
+            q_table.insert(state, q_values);
+        }
     }
 }
 
@@ -481,6 +603,11 @@ impl<S: WorkflowState, A: WorkflowAction> DoubleQLearning<S, A> {
         self.exploration_rate *= self.exploration_decay;
     }
 
+    /// Set exploration rate manually (used by MAPE-K action dispatch).
+    pub fn set_exploration_rate(&mut self, rate: f32) {
+        self.exploration_rate = rate;
+    }
+
     #[allow(dead_code)]
     pub fn get_exploration_rate(&self) -> f32 {
         self.exploration_rate
@@ -490,6 +617,64 @@ impl<S: WorkflowState, A: WorkflowAction> DoubleQLearning<S, A> {
 impl<S: WorkflowState, A: WorkflowAction> Default for DoubleQLearning<S, A> {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+// Serialization support for DoubleQLearning
+impl DoubleQLearning<crate::RlState, crate::RlAction> {
+    /// Export Q-tables as serialized format for persistence (uses merged Q_A + Q_B).
+    #[allow(dead_code)]
+    pub fn export_as_serialized(&self, agent_type: u8) -> crate::rl_state_serialization::SerializedAgentQTable {
+        use std::collections::HashMap;
+        use crate::rl_state_serialization::{SerializedAgentQTable, encode_rl_state_key};
+
+        let qa = self.q_a.borrow();
+        let _qb = self.q_b.borrow();
+        let mut state_values = HashMap::new();
+
+        // Export Q_A; Q_B will be stored by RL orchestrator as separate entry
+        for (state, q_values) in qa.iter() {
+            let key = encode_rl_state_key(
+                state.health_level,
+                state.event_rate_q,
+                state.activity_count_q,
+                state.spc_alert_level,
+                state.drift_status,
+                state.rework_ratio_q,
+                state.circuit_state,
+                state.cycle_phase,
+            );
+            state_values.insert(key, q_values.clone());
+        }
+
+        SerializedAgentQTable {
+            agent_type,
+            state_values,
+        }
+    }
+
+    /// Restore Q-table from serialized format.
+    #[allow(dead_code)]
+    pub fn restore_from_serialized(&self, table: crate::rl_state_serialization::SerializedAgentQTable) {
+        use crate::rl_state_serialization::decode_rl_state_key;
+
+        let mut qa = self.q_a.borrow_mut();
+        qa.clear();
+
+        for (key, q_values) in table.state_values.into_iter() {
+            let (h, e, a, s, d, r, c, p) = decode_rl_state_key(key);
+            let state = crate::RlState {
+                health_level: h,
+                event_rate_q: e,
+                activity_count_q: a,
+                spc_alert_level: s,
+                drift_status: d,
+                rework_ratio_q: r,
+                circuit_state: c,
+                cycle_phase: p,
+            };
+            qa.insert(state, q_values);
+        }
     }
 }
 
@@ -618,9 +803,70 @@ impl<S: WorkflowState, A: WorkflowAction> ExpectedSARSAAgent<S, A> {
         self.exploration_rate *= self.exploration_decay;
     }
 
+    /// Set exploration rate manually (used by MAPE-K action dispatch).
+    pub fn set_exploration_rate(&mut self, rate: f32) {
+        self.exploration_rate = rate;
+    }
+
     #[allow(dead_code)]
     pub fn get_exploration_rate(&self) -> f32 {
         self.exploration_rate
+    }
+}
+
+// Serialization support for ExpectedSARSAAgent
+impl ExpectedSARSAAgent<crate::RlState, crate::RlAction> {
+    /// Export Q-table as serialized format for persistence.
+    #[allow(dead_code)]
+    pub fn export_as_serialized(&self, agent_type: u8) -> crate::rl_state_serialization::SerializedAgentQTable {
+        use std::collections::HashMap;
+        use crate::rl_state_serialization::{SerializedAgentQTable, encode_rl_state_key};
+
+        let q_table = self.q_table.borrow();
+        let mut state_values = HashMap::new();
+
+        for (state, q_values) in q_table.iter() {
+            let key = encode_rl_state_key(
+                state.health_level,
+                state.event_rate_q,
+                state.activity_count_q,
+                state.spc_alert_level,
+                state.drift_status,
+                state.rework_ratio_q,
+                state.circuit_state,
+                state.cycle_phase,
+            );
+            state_values.insert(key, q_values.clone());
+        }
+
+        SerializedAgentQTable {
+            agent_type,
+            state_values,
+        }
+    }
+
+    /// Restore Q-table from serialized format.
+    #[allow(dead_code)]
+    pub fn restore_from_serialized(&self, table: crate::rl_state_serialization::SerializedAgentQTable) {
+        use crate::rl_state_serialization::decode_rl_state_key;
+
+        let mut q_table = self.q_table.borrow_mut();
+        q_table.clear();
+
+        for (key, q_values) in table.state_values.into_iter() {
+            let (h, e, a, s, d, r, c, p) = decode_rl_state_key(key);
+            let state = crate::RlState {
+                health_level: h,
+                event_rate_q: e,
+                activity_count_q: a,
+                spc_alert_level: s,
+                drift_status: d,
+                rework_ratio_q: r,
+                circuit_state: c,
+                cycle_phase: p,
+            };
+            q_table.insert(state, q_values);
+        }
     }
 }
 
@@ -773,6 +1019,67 @@ impl<S: WorkflowState, A: WorkflowAction> ReinforceAgent<S, A> {
             .get(state)
             .cloned()
             .unwrap_or_else(|| vec![0.0; A::ACTION_COUNT])
+    }
+
+    /// Set exploration rate manually (REINFORCE is on-policy, so this is a no-op).
+    pub fn set_exploration_rate(&mut self, _rate: f32) {
+        // REINFORCE doesn't use epsilon-greedy exploration
+    }
+}
+
+// Serialization support for ReinforceAgent
+impl ReinforceAgent<crate::RlState, crate::RlAction> {
+    /// Export policy weights (theta) as serialized format for persistence.
+    #[allow(dead_code)]
+    pub fn export_as_serialized(&self, agent_type: u8) -> crate::rl_state_serialization::SerializedAgentQTable {
+        use std::collections::HashMap;
+        use crate::rl_state_serialization::{SerializedAgentQTable, encode_rl_state_key};
+
+        let theta = self.theta.borrow();
+        let mut state_values = HashMap::new();
+
+        for (state, weights) in theta.iter() {
+            let key = encode_rl_state_key(
+                state.health_level,
+                state.event_rate_q,
+                state.activity_count_q,
+                state.spc_alert_level,
+                state.drift_status,
+                state.rework_ratio_q,
+                state.circuit_state,
+                state.cycle_phase,
+            );
+            state_values.insert(key, weights.clone());
+        }
+
+        SerializedAgentQTable {
+            agent_type,
+            state_values,
+        }
+    }
+
+    /// Restore policy weights (theta) from serialized format.
+    #[allow(dead_code)]
+    pub fn restore_from_serialized(&self, table: crate::rl_state_serialization::SerializedAgentQTable) {
+        use crate::rl_state_serialization::decode_rl_state_key;
+
+        let mut theta = self.theta.borrow_mut();
+        theta.clear();
+
+        for (key, weights) in table.state_values.into_iter() {
+            let (h, e, a, s, d, r, c, p) = decode_rl_state_key(key);
+            let state = crate::RlState {
+                health_level: h,
+                event_rate_q: e,
+                activity_count_q: a,
+                spc_alert_level: s,
+                drift_status: d,
+                rework_ratio_q: r,
+                circuit_state: c,
+                cycle_phase: p,
+            };
+            theta.insert(state, weights);
+        }
     }
 }
 

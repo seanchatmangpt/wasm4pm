@@ -26,8 +26,8 @@ use std::collections::HashMap;
 /// # Example
 ///
 /// ```rust
-/// use pictl::streaming::StreamingDfgBuilder;
-/// use pictl::streaming::StreamingAlgorithm;
+/// use wasm4pm::streaming::StreamingDfgBuilder;
+/// use wasm4pm::streaming::StreamingAlgorithm;
 ///
 /// let mut stream = StreamingDfgBuilder::new();
 ///

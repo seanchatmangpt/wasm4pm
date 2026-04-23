@@ -21,11 +21,11 @@
  */
 
 // Core planning API
-export { plan, toContractsPlan, PlannerError, type Config, type ExecutionPlan } from './planner';
-export { explain, explainBrief } from './explain';
+export { plan, toContractsPlan, PlannerError, type Config, type ExecutionPlan } from './planner.js';
+export { explain, explainBrief } from './explain.js';
 
 // DAG utilities
-export { topologicalSort, hasCycle, getDependencies, getDependents, validateDAG, type DAG } from './dag';
+export { topologicalSort, hasCycle, getDependencies, getDependents, validateDAG, type DAG } from './dag.js';
 
 // Step types and factories
 export {
@@ -40,7 +40,21 @@ export {
   createGenerateReportsStep,
   createSinkStep,
   createCleanupStep,
-} from './steps';
+} from './steps.js';
 
 // Validation utilities
-export { validatePlan, assertPlanValid, validateSourceSinkCompatibility, type ValidationError } from './validation';
+export { validatePlan, assertPlanValid, validateSourceSinkCompatibility, type ValidationError } from './validation.js';
+
+// Policy and budget enforcement (Section 4 — Planner Policy and Budget Enforcement)
+export {
+  selectEngineByPriority,
+  selectAlgorithmByBudget,
+  shouldPromoteJob,
+  shouldDegradeAlgorithm,
+  profileToExecutionMode,
+  profileToLatencyBudget,
+  profileToQualityFloor,
+  type BackendId,
+  type AlgorithmFamily,
+  type AlgorithmId,
+} from './policy.js';

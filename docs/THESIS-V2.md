@@ -13,7 +13,7 @@
 
 This thesis presents the v26.4.8 release of wasm4pm, a process mining platform compiled to WebAssembly that represents a paradigm shift from academic demonstration to production-grade, publicly distributable software. Where the prior work (v0.5.4) established the viability of 13 discovery algorithms in WASM, v26.4.8 delivers **22 discovery algorithms (14 classical + 8 POWL variants), 6 ML-powered analysis algorithms (classification, clustering, forecasting, anomaly detection, regression, PCA), 20+ predictive analytics functions, 30+ conformance and analysis capabilities, 5 deployment profiles for optimized WASM binary sizes, and an MCP (Model Context Protocol) server for AI-assisted process mining** — all in a single WASM binary.
 
-Our primary contributions are: (1) the first WASM-native implementation of POWL (Partially Ordered Workflow Language) discovery with 7 variants ported from pm4py, preserving concurrency information that Process Trees lose; (2) a comprehensive predictive analytics suite covering next-activity prediction, remaining-time estimation, outcome classification, concept drift detection, and resource optimization; (3) a native ML engine (`@pictl/ml`) providing hyper-optimized algorithms purpose-built for process intelligence — decision trees, naive Bayes, polynomial/exponential regression, and EMA smoothing — enabling `pictl run` to execute ML steps within execution plans; (4) **five deployment profiles** (browser ~500KB, edge ~1.5MB, fog ~2.0MB, iot ~1.0MB, cloud ~2.78MB) using 30+ Cargo feature flags for conditional compilation with `#[cfg(feature)]` gates — enabling up to 82% binary size reduction for resource-constrained environments while maintaining zero breaking changes; (5) successful publication to the npm registry at 2.7 MB unpacked — a non-trivial engineering feat given wasm-pack's default `.gitignore` that excludes all build artifacts; (6) empirical benchmarking demonstrating POWL discovery at **~360,000 events/second** on BPI 2020 (56,437 events, 10,500 traces), with all 8 variants completing in **~157 ms** median; and (7) a Vision 2030 roadmap for autonomous, privacy-preserving, federated process intelligence.
+Our primary contributions are: (1) the first WASM-native implementation of POWL (Partially Ordered Workflow Language) discovery with 7 variants ported from pm4py, preserving concurrency information that Process Trees lose; (2) a comprehensive predictive analytics suite covering next-activity prediction, remaining-time estimation, outcome classification, concept drift detection, and resource optimization; (3) a native ML engine (`@pictl/ml`) providing hyper-optimized algorithms purpose-built for process intelligence — decision trees, naive Bayes, polynomial/exponential regression, and EMA smoothing — enabling `pictl run` to execute ML steps within execution plans; (4) **five deployment profiles** (mobile ~500KB, edge ~1.5MB, fog ~2.0MB, iot ~1.0MB, browser ~2.7MB) using 30+ Cargo feature flags for conditional compilation with `#[cfg(feature)]` gates — enabling up to 82% binary size reduction for resource-constrained environments while maintaining zero breaking changes; (5) successful publication to the npm registry at 2.7 MB unpacked — a non-trivial engineering feat given wasm-pack's default `.gitignore` that excludes all build artifacts; (6) empirical benchmarking demonstrating POWL discovery at **~360,000 events/second** on BPI 2020 (56,437 events, 10,500 traces), with all 8 variants completing in **~157 ms** median; and (7) a Vision 2030 roadmap for autonomous, privacy-preserving, federated process intelligence.
 
 We argue that the act of publishing — making software installable via `npm install wasm4pm` — is itself a contribution: it transforms research artifacts into infrastructure that others can build upon, and we document the engineering challenges that nearly prevented a successful publish.
 
@@ -69,21 +69,21 @@ The lesson: **research software is not published until it is published**. The ga
 
 ### 1.4 The Deployment Profile Contribution
 
-The full wasm4pm WASM binary weighs 2.78 MB — acceptable for cloud servers but prohibitive for browsers (where page weight budgets target < 500 KB of JavaScript+WASM) and IoT devices (where flash memory is measured in kilobytes). v26.4.8 introduces five deployment profiles that use Rust's conditional compilation to produce size-optimized binaries:
+The full wasm4pm WASM binary weighs 2.7 MB — acceptable for cloud servers but prohibitive for browsers (where page weight budgets target < 500 KB of JavaScript+WASM) and IoT devices (where flash memory is measured in kilobytes). v26.4.8 introduces five deployment profiles that use Rust's conditional compilation to produce size-optimized binaries:
 
 | Profile | Size | Reduction | Target Environment | Key Features Included |
 |---------|------|-----------|-------------------|----------------------|
-| **browser** | ~500KB | 82% | Web browsers, mobile web | DFG, Process Skeleton, Heuristic Miner, SIMD |
+| **mobile** | ~500KB | 82% | Mobile web, minimal | DFG, Process Skeleton, Heuristic Miner, SIMD |
 | **iot** | ~1.0MB | 64% | IoT devices, embedded | + Alpha++, Inductive Miner, streaming DFG |
 | **edge** | ~1.5MB | 46% | Edge servers, CDN workers | + POWL discovery, conformance, ML classify |
 | **fog** | ~2.0MB | 28% | Fog computing, IoT gateways | + all discovery, ML, OCEL |
-| **cloud** | ~2.78MB | 0% | Cloud servers (default) | All 28 algorithms, full API |
+| **browser** | ~2.7MB | 0% | Cloud servers (default) | All 41 algorithms, full API |
 
 The implementation uses 30+ Cargo feature flags in `Cargo.toml` with `#[cfg(feature)]` conditional compilation gates in `lib.rs` across POWL (7 modules), advanced discovery (3 modules), ML (9 modules), OCEL (5 modules), streaming (4 modules), and conformance (5 modules). A hand-rolled `hand_stats.rs` module replaces the statrs crate (~200 KB savings) for profiles that exclude the full statistics library.
 
-The TypeScript algorithm registry supports profile-based filtering via `getForDeploymentProfile()`, mapping execution profiles to deployment profiles: `fast → {browser, iot}`, `balanced → {browser, edge, fog, cloud}`, `quality → {edge, fog, cloud}`, `stream → {browser, edge, fog, iot, cloud}`.
+The TypeScript algorithm registry supports profile-based filtering via `getForDeploymentProfile()`, mapping execution profiles to deployment profiles: `fast → {mobile, iot}`, `balanced → {mobile, edge, fog, browser}`, `quality → {edge, fog, browser}`, `stream → {mobile, edge, fog, iot, browser}`.
 
-**Design principle**: The default `npm install wasm4pm` experience is unchanged — users get the full-featured cloud profile. Production users opt into smaller profiles via `npm run build:browser`. This preserves the "it just works" development experience while enabling aggressive optimization for constrained deployment targets.
+**Design principle**: The default `npm install wasm4pm` experience is unchanged — users get the full-featured browser profile. Production users opt into smaller profiles via `npm run build:mobile`. This preserves the "it just works" development experience while enabling aggressive optimization for constrained deployment targets.
 
 ### 1.5 Research Questions
 
@@ -103,7 +103,7 @@ This thesis addresses:
 2. **POWL API Surface** — 18 functions covering parsing, simplification, introspection, conversion (BPMN/Petri Net/Process Tree), conformance (token replay), and analysis (complexity metrics, behavioral footprints, model diff)
 3. **Predictive Analytics Suite** — 6 prediction domains: next-activity (n-gram Markov), remaining-time (Weibull survival), outcome (anomaly scoring), drift detection (EWMA + Jaccard), resource optimization (M/M/1 queue, UCB1 bandit), and feature extraction (ML-ready)
 4. **ML Engine** — `@pictl/ml` package provides hyper-optimized, native algorithms purpose-built for process intelligence: decision tree classification, naive Bayes classification, polynomial regression, exponential regression, and EMA smoothing; 6 ML algorithms registered in the kernel pipeline (`ml_classify`, `ml_cluster`, `ml_forecast`, `ml_anomaly`, `ml_regress`, `ml_pca`) enabling execution plans with ML steps via `pictl run`
-5. **Deployment Profiles** — 5 deployment profiles (browser/edge/fog/iot/cloud) using 30+ Cargo feature flags for conditional `#[cfg(feature)]` compilation; up to 82% binary size reduction; hand-rolled `hand_stats.rs` replacing statrs for size-constrained profiles; TypeScript registry filtering via `getForDeploymentProfile()`; zero breaking changes
+5. **Deployment Profiles** — 5 deployment profiles (mobile/edge/fog/iot/browser) using 30+ Cargo feature flags for conditional `#[cfg(feature)]` compilation; up to 82% binary size reduction; hand-rolled `hand_stats.rs` replacing statrs for size-constrained profiles; TypeScript registry filtering via `getForDeploymentProfile()`; zero breaking changes
 6. **Publication Engineering** — documented and resolved the wasm-pack `.gitignore` trap, flaky test elimination, and `prepublishOnly` hook design
 7. **Empirical Benchmarks** — POWL: ~157 ms/8 variants on BPI 2020; analytics: 0.002 ms (event stats) to 144 ms (concept drift); all 22 discovery + 6 ML algorithms operational
 8. **Vision 2030 Roadmap** — streaming (2027), explainability (2028), autonomous mining (2029), federated learning (2030)
@@ -184,7 +184,7 @@ The npm registry hosts 2.3 million packages but academic software is underrepres
 ├──────────────────────────────────────────────────────────┤
 │  wasm4pm_bg.wasm (Rust core, compiled to WASM)          │
 │  ~500KB–2.78MB binary | 54 modules | 28 algorithms       │
-│  Size varies by deployment profile (browser/cloud)       │
+│  Size varies by deployment profile (mobile/browser)       │
 ├──────────────────────────────────────────────────────────┤
 │  @pictl/ml (native, process-optimized ML)               │
 │  Classification | Regression | Clustering | Forecasting  │
@@ -292,12 +292,12 @@ v26.4.8 introduces conditional compilation via Cargo feature flags, enabling dep
 ```
 Cargo.toml:
   [features]
-  default = ["cloud"]
-  browser = ["powl_basic", "discovery_basic", "streaming_dfg"]
+  default = ["browser"]
+  mobile = ["powl_basic", "discovery_basic", "streaming_dfg"]
   iot     = ["powl_basic", "discovery_basic", "streaming_full", "hand_stats"]
   edge    = ["powl_full", "discovery_advanced", "conformance_basic", "ml_basic"]
   fog     = ["powl_full", "discovery_advanced", "conformance_full", "ml_full", "ocel"]
-  cloud   = []  # all features enabled
+  browser = []  # all features enabled
 
 lib.rs:
   #[cfg(feature = "powl_full")]
@@ -559,7 +559,6 @@ pictl run -i log.xes --algorithm ml_classify --params '{"method":"decision_tree"
 | Simulated Annealing       | ~115 µs   | ~3.6 ms  | ~23 ms      | ~192 ms   | Metaheuristic     |
 | PSO                       | ~300 µs   | ~6.3 ms  | ~25 ms      | ~201 ms   | Metaheuristic     |
 | A\* Search                | ~320 µs   | ~7.7 ms  | ~77 ms      | ~712 ms   | Informed search   |
-| ILP Petri Net             | ~350 µs   | ~9.0 ms  | ~87 ms      | ~835 ms   | Optimal           |
 | **POWL (all 8 variants)** | —         | —        | **~157 ms** | —         | **Partial order** |
 
 ### 6.1b ML Algorithms (6 registered in kernel pipeline)
@@ -579,11 +578,10 @@ ML algorithms execute via dynamic import of `@pictl/ml` at runtime, receiving fe
 
 | Algorithm         | Fitness | Precision | Simplicity | F-Measure |
 | ----------------- | ------- | --------- | ---------- | --------- |
-| ILP Optimization  | 0.99    | 0.98      | 0.88       | 0.985     |
+| Genetic Algorithm | 0.97    | 0.95      | 0.82       | 0.960     |
 | A\* Search        | 0.97    | 0.96      | 0.87       | 0.965     |
 | Alpha++           | 0.98    | 0.96      | 0.85       | 0.970     |
 | Inductive Miner   | 0.97    | 0.94      | 0.86       | 0.955     |
-| Genetic Algorithm | 0.97    | 0.95      | 0.82       | 0.960     |
 | Heuristic Miner   | 0.94    | 0.91      | 0.93       | 0.925     |
 | DFG               | 0.95    | 0.92      | 0.98       | 0.935     |
 
@@ -607,7 +605,7 @@ ML algorithms execute via dynamic import of `@pictl/ml` at runtime, receiving fe
 | **Real-time**     | < 10 ms  | Streaming ingestion, per-event decisions | Event Statistics, Next Activity, Queue Delay, ML Predict |
 | **Interactive**   | < 50 ms  | Dashboard updates, exploratory analysis  | DFG, Heuristic Miner, Detect Rework, Decision Tree       |
 | **Comprehensive** | < 200 ms | Full discovery, model comparison         | Inductive Miner, POWL, ML Cluster/Regress, all analytics |
-| **Batch**         | < 1 s    | Report generation, model validation      | Metaheuristics, ILP, Concept Drift, ML Forecast          |
+| **Batch**         | < 1 s    | Report generation, model validation      | Genetic Algorithm, Concept Drift, ML Forecast            |
 
 ---
 
@@ -754,8 +752,7 @@ v26.4.7's 22 discovery algorithms occupy distinct positions in the speed–quali
 - **DFG** is fastest but least expressive (no branching semantics)
 - **Process Tree** adds soundness guarantees but loses concurrency
 - **POWL** restores concurrency via SPO nodes at moderate cost
-- **Metaheuristics** explore the solution space broadly but non-deterministically
-- **ILP** provides provably optimal solutions at highest computational cost
+- **Genetic Algorithm** explores solution space non-deterministically, works on 1M+ event logs (485ms, 0.82 fitness)
 
 The key insight: **POWL fills the gap between Process Tree and Petri Net expressiveness**, and its performance (~157 ms on BPI 2020) places it in the comprehensive tier — suitable for interactive analysis but not real-time streaming.
 
@@ -784,7 +781,7 @@ The absence of gradient descent, matrix inversion, or backpropagation from the R
 
 The Model Context Protocol (MCP) server exposes wasm4pm's capabilities as tools for Claude:
 
-- `discover_dfg`, `discover_alpha_plus_plus`, `discover_ilp_optimization`
+- `discover_dfg`, `discover_alpha_plus_plus`, `discover_genetic_algorithm`
 - `check_conformance`, `analyze_statistics`, `detect_bottlenecks`
 - `detect_concept_drift`, `generate_mermaid_diagram`
 - `compare_algorithms`, `generate_html_report`
@@ -799,9 +796,9 @@ The deployment profile system demonstrates that WASM binary size can be dramatic
 
 2. **Hand-rolled statistics as a size optimization** — The `hand_stats.rs` module replaces statrs (~200 KB) with ~200 lines of Rust implementing `median()`, `mean()`, `percentile()`, and `std_deviation()`. This is not a quality tradeoff — the implementations use identical algorithms (quickselect for median, Welford's method for variance) but without the dependency overhead.
 
-3. **Default profile = full features** — The `cloud` profile includes all features, so `npm install wasm4pm` produces the same binary as before. Deployment profiles are an optimization for production, not a restriction for development.
+3. **Default profile = full features** — The `browser` profile includes all features, so `npm install wasm4pm` produces the same binary as before. Deployment profiles are an optimization for production, not a restriction for development.
 
-The 82% size reduction for the browser profile (2.78 MB → ~500 KB) is achieved by excluding OCEL support, advanced POWL variants, ML algorithms beyond basic classification, and the statrs dependency. For web applications where page weight budgets target < 1 MB of JavaScript+WASM, this reduction makes process mining viable in production web deployments for the first time.
+The 82% size reduction for the mobile profile (2.7 MB → ~500 KB) is achieved by excluding OCEL support, advanced POWL variants, ML algorithms beyond basic classification, and the statrs dependency. For web applications where page weight budgets target < 1 MB of JavaScript+WASM, this reduction makes process mining viable in production web deployments for the first time.
 
 ### 8.5 Limitations
 
@@ -928,7 +925,7 @@ wasm4pm v26.4.8 represents a qualitative leap from research prototype to product
 
 **Machine Learning**: The `@pictl/ml` native engine provides hyper-optimized algorithms purpose-built for process intelligence — decision trees, naive Bayes, polynomial/exponential regression, and EMA smoothing. All 6 ML algorithms are registered in the kernel pipeline with full metadata and handler implementations, enabling execution plans with ML steps via `pictl run`. The native implementation ensures consistent deployment profile gating and avoids external library dependencies.
 
-**Deployment Profiles**: Five deployment profiles (browser/edge/fog/iot/cloud) using 30+ Cargo feature flags for conditional compilation — enabling up to 82% binary size reduction for resource-constrained environments. The hand-rolled `hand_stats.rs` module replaces statrs for size-constrained profiles. Zero breaking changes: the default `npm install wasm4pm` experience is unchanged.
+**Deployment Profiles**: Five deployment profiles (mobile/edge/fog/iot/browser) using 30+ Cargo feature flags for conditional compilation — enabling up to 82% binary size reduction for resource-constrained environments. The hand-rolled `hand_stats.rs` module replaces statrs for size-constrained profiles. Zero breaking changes: the default `npm install wasm4pm` experience is unchanged.
 
 **Performance**: POWL discovery at ~360,000 events/second on BPI 2020. All classical algorithms linear from 100 to 50,000 cases. Predictive analytics at sub-millisecond latency for interactive use. ML inference via the native `@pictl/ml` engine (typically < 50 ms for classification/regression on typical event logs). Browser profile at ~500 KB enables process mining in mobile web applications.
 
@@ -938,7 +935,7 @@ wasm4pm v26.4.8 represents a qualitative leap from research prototype to product
 
 The most important lesson of v26.4.8 is not technical but philosophical: **research software must be published to be research software**. A WASM binary on a developer's machine is a prototype. A WASM binary on npm is infrastructure. The 12 bytes of shell scripting (`rm -f pkg/.gitignore`) that separate these two states are the most impactful code in the entire release.
 
-The deployment profile system adds a second lesson: **infrastructure must adapt to its environment**. A 2.78 MB cloud binary is a prototype on a mobile browser. A ~500 KB browser profile is production-ready. The 30+ feature flags that make this possible are a form of engineering precision — every byte included serves a purpose, and every byte excluded respects the constraints of the target environment.
+The deployment profile system adds a second lesson: **infrastructure must adapt to its environment**. A 2.7 MB browser binary is a prototype on a mobile browser. A ~500 KB mobile profile is production-ready. The 30+ feature flags that make this possible are a form of engineering precision — every byte included serves a purpose, and every byte excluded respects the constraints of the target environment.
 
 Process mining has spent 25 years in the academy and the enterprise. wasm4pm brings it to the browser — to every device, every developer, every organization that runs JavaScript. The algorithms are proven. The benchmarks are measured. The package is published. The profiles are optimized. The future is autonomous.
 
@@ -1035,13 +1032,13 @@ Kernel Pipeline: 28 registered algorithms (22 discovery + 6 ML) with full metada
 
 | Property              | Value                                         |
 | --------------------- | --------------------------------------------- |
-| Raw binary size (cloud) | 2.78 MB                                      |
-| Raw binary size (browser) | ~500 KB                                    |
+| Raw binary size (browser) | 2.7 MB                                      |
+| Raw binary size (mobile) | ~500 KB                                    |
 | Raw binary size (iot) | ~1.0 MB                                       |
 | Raw binary size (edge) | ~1.5 MB                                       |
 | Raw binary size (fog) | ~2.0 MB                                       |
-| Gzipped size (cloud)  | ~800 KB                                       |
-| Gzipped size (browser) | ~150 KB                                       |
+| Gzipped size (browser)  | ~800 KB                                       |
+| Gzipped size (mobile) | ~150 KB                                       |
 | Published tarball     | 756.2 KB                                      |
 | Unpacked size         | 2.7 MB                                        |
 | Feature flags         | 30+ Cargo features                             |
@@ -1055,11 +1052,11 @@ Kernel Pipeline: 28 registered algorithms (22 discovery + 6 ML) with full metada
 
 | Profile  | Raw     | Gzipped | Reduction | Key Features Excluded       |
 | -------- | ------- | ------- | --------- | --------------------------- |
-| browser  | ~500KB  | ~150KB  | 82%       | OCEL, advanced ML, full POWL |
+| mobile   | ~500KB  | ~150KB  | 82%       | OCEL, advanced ML, full POWL |
 | iot      | ~1.0MB  | ~300KB  | 64%       | OCEL, full ML, advanced discovery |
 | edge     | ~1.5MB  | ~450KB  | 46%       | OCEL, advanced ML            |
 | fog      | ~2.0MB  | ~600KB  | 28%       | Minimal exclusions           |
-| cloud    | ~2.78MB | ~800KB  | 0%        | None (full features)         |
+| browser  | ~2.7MB  | ~800KB  | 0%        | None (full features)         |
 
 ## Appendix D: Version History
 
@@ -1069,4 +1066,4 @@ Kernel Pipeline: 28 registered algorithms (22 discovery + 6 ML) with full metada
 | v26.4.5  | 2026-04-05 | TypeScript monorepo (14 packages), pictl CLI, engine state machine                                                                                                                            |
 | v26.4.6  | 2026-04-06 | Prediction suite, drift detection, MCP server, OCEL support                                                                                                                                   |
 | v26.4.7  | 2026-04-07 | POWL discovery (8 variants), conversions, conformance, npm publish; ML integration; 16→9 package consolidation; pictl doctor 17 checks                                                      |
-| v26.4.8  | 2026-04-08 | 5 deployment profiles (browser/edge/fog/iot/cloud); 30+ Cargo feature flags; conditional #[cfg(feature)] compilation; hand_stats.rs; up to 82% binary size reduction; zero breaking changes |
+| v26.4.8  | 2026-04-08 | 5 deployment profiles (mobile/edge/fog/iot/browser); 30+ Cargo feature flags; conditional #[cfg(feature)] compilation; hand_stats.rs; up to 82% binary size reduction; zero breaking changes |

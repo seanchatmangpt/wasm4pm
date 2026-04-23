@@ -5,6 +5,7 @@
  */
 // Engine lifecycle and state machine
 export { Engine, createSimpleEngine, createFullEngine } from './engine.js';
+export { STATE_METADATA, ALL_STATES, isOperationalState, isTerminalState, isProcessingState, } from './state.js';
 // Transition rules and validation
 export { VALID_TRANSITIONS, canTransition, getValidTransitions, TransitionValidator, } from './transitions.js';
 // Lifecycle management (StateMachine)
@@ -23,3 +24,7 @@ export { CheckpointManager } from './checkpointing.js';
 export { WasmLoader, createWasmLoader, getWasmLoader } from './wasm-loader.js';
 // Re-export error code for tests
 export { WasmErrorCode } from './wasm-loader.js';
+// Federation and execution modes (Section 5)
+export { FederationController, FederationCircuitBreaker, initializeFederationStack, planFederationIntegration, } from './federation.js';
+// NullBackend sentinel
+export { NullBackend } from './null-backend.js';

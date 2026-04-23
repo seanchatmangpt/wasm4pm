@@ -256,8 +256,18 @@ fn compute_trace_alignment(
 
     while let Some(current) = open_set.pop() {
         iterations += 1;
-        if iterations > config.max_iterations {
-            return Err("Alignment search exceeded max iterations".to_string());
+        #[cfg(feature = "bcinr")]
+        {
+            let stop = bcinr::mask::select_u64((iterations > config.max_iterations) as u64, 1, 0);
+            if stop != 0 {
+                return Err("Alignment search exceeded max iterations".to_string());
+            }
+        }
+        #[cfg(not(feature = "bcinr"))]
+        {
+            if iterations > config.max_iterations {
+                return Err("Alignment search exceeded max iterations".to_string());
+            }
         }
 
         // Check if we've reached the end

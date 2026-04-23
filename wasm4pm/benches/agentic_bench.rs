@@ -12,7 +12,7 @@
 //! - JtbdRunner: full JTBD case execution
 
 use criterion::{criterion_group, criterion_main, Criterion};
-use pictl::agentic::prelude::*;
+use wasm4pm::agentic::prelude::*;
 use std::collections::BTreeSet;
 use std::time::Duration;
 

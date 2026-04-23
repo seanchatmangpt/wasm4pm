@@ -15,7 +15,7 @@
 /// # Example
 ///
 /// ```
-/// use pictl::probabilistic::count_min::CountMinSketch;
+/// use wasm4pm::probabilistic::count_min::CountMinSketch;
 /// let mut cms: CountMinSketch<4096, 8> = CountMinSketch::new();
 /// for i in 0..1000 { cms.add(i as u64); }
 /// assert!(cms.estimate(42) >= 1); // never underestimates
@@ -42,21 +42,27 @@ impl<const WIDTH: usize, const DEPTH: usize> CountMinSketch<WIDTH, DEPTH> {
         }
     }
 
-    /// Hash a key with a per-row seed using multiplicative hashing.
-    ///
-    /// Uses the split-mix style approach: multiply and shift to distribute
-    /// bits across the hash space. Returns a value in `[0, WIDTH)`.
+    /// Hash a key with a per-row seed using `bcinr` hashing.
     #[inline]
     fn hash(&self, key: u64, row: usize) -> usize {
-        let seed = self.seeds[row];
-        let mut h = key.wrapping_mul(seed).wrapping_add(seed.rotate_left(17));
-        // Additional mixing
-        h ^= h >> 33;
-        h = h.wrapping_mul(0xff51afd7ed558ccd);
-        h ^= h >> 33;
-        h = h.wrapping_mul(0xc4ceb9fe1a85ec53);
-        h ^= h >> 33;
-        (h as usize) % WIDTH
+        #[cfg(feature = "bcinr")]
+        {
+            let mut data = key.to_le_bytes().to_vec();
+            data.extend_from_slice(&self.seeds[row].to_le_bytes());
+            (bcinr::sketch::fnv1a_64(&data) as usize) % WIDTH
+        }
+        #[cfg(not(feature = "bcinr"))]
+        {
+            let seed = self.seeds[row];
+            let mut h = key.wrapping_mul(seed).wrapping_add(seed.rotate_left(17));
+            // Additional mixing
+            h ^= h >> 33;
+            h = h.wrapping_mul(0xff51afd7ed558ccd);
+            h ^= h >> 33;
+            h = h.wrapping_mul(0xc4ceb9fe1a85ec53);
+            h ^= h >> 33;
+            (h as usize) % WIDTH
+        }
     }
 
     /// Increment the count for a key by 1.
@@ -95,29 +101,43 @@ impl<const WIDTH: usize, const DEPTH: usize> CountMinSketch<WIDTH, DEPTH> {
     }
 
     /// Record a directly-follows pair `(from, to)`.
-    ///
-    /// Uses a mixing combiner to distribute small u32 activity IDs
-    /// evenly across the hash table, avoiding the sparse-value problem
-    /// of naive `(from << 32) | to` packing.
     #[inline]
     pub fn add_pair(&mut self, from: u32, to: u32) {
-        let mut key = from as u64;
-        key = key.wrapping_mul(0x9e3779b97f4a7c15);
-        key ^= key >> 30;
-        key ^= (to as u64).wrapping_mul(0xbf58476d1ce4e5b9);
-        key ^= key >> 27;
-        self.add(key);
+        #[cfg(feature = "bcinr")]
+        {
+            let mut data = from.to_le_bytes().to_vec();
+            data.extend_from_slice(&to.to_le_bytes());
+            self.add(bcinr::sketch::fnv1a_64(&data));
+        }
+        #[cfg(not(feature = "bcinr"))]
+        {
+            let mut key = from as u64;
+            key = key.wrapping_mul(0x9e3779b97f4a7c15);
+            key ^= key >> 30;
+            key ^= (to as u64).wrapping_mul(0xbf58476d1ce4e5b9);
+            key ^= key >> 27;
+            self.add(key);
+        }
     }
 
     /// Estimate the frequency of a directly-follows pair.
     #[inline]
     pub fn estimate_pair(&self, from: u32, to: u32) -> u32 {
-        let mut key = from as u64;
-        key = key.wrapping_mul(0x9e3779b97f4a7c15);
-        key ^= key >> 30;
-        key ^= (to as u64).wrapping_mul(0xbf58476d1ce4e5b9);
-        key ^= key >> 27;
-        self.estimate(key)
+        #[cfg(feature = "bcinr")]
+        {
+            let mut data = from.to_le_bytes().to_vec();
+            data.extend_from_slice(&to.to_le_bytes());
+            self.estimate(bcinr::sketch::fnv1a_64(&data))
+        }
+        #[cfg(not(feature = "bcinr"))]
+        {
+            let mut key = from as u64;
+            key = key.wrapping_mul(0x9e3779b97f4a7c15);
+            key ^= key >> 30;
+            key ^= (to as u64).wrapping_mul(0xbf58476d1ce4e5b9);
+            key ^= key >> 27;
+            self.estimate(key)
+        }
     }
 
     /// Return the total memory used by this sketch in bytes.

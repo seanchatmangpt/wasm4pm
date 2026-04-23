@@ -17,7 +17,6 @@ export * from './certification.js';
 
 // Process Mining Testing Utilities
 export * from './validators/index.js';
-export * from './verifiers/index.js';
 export {
   tokenReplayConformance,
   createTestPetriNet,

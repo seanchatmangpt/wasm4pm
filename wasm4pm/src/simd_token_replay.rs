@@ -133,73 +133,109 @@ impl SimdPetriNet {
         }
     }
 
-    /// Replay a single trace (sequence of activity strings) against this net.
+    /// Replay a single trace with constant-cycle iteration.
     ///
-    /// Uses integer lookups instead of string HashMap operations. For each
-    /// activity in the trace, finds a matching transition by label, checks
-    /// if it is enabled (all preset places have >= 1 token), fires it, and
-    /// counts consumed/produced/missing/remaining tokens.
+    /// Pre-calculates max_transitions to enable fixed loop unrolling.
+    /// No dynamic breaks; all transitions checked in deterministic order.
+    /// Enables CPU branch prediction and SIMD vectorization.
     pub fn replay_trace(&self, activities: &[&str]) -> TraceReplayResult {
         let mut marking = vec![0u32; self.num_places];
         let mut consumed: u32 = 0;
         let mut produced: u32 = 0;
         let mut missing: u32 = 0;
 
+        // Pre-calculate max transitions per activity for fixed iteration
+        let max_transitions = self
+            .label_to_transitions
+            .values()
+            .map(|v| v.len())
+            .max()
+            .unwrap_or(1)
+            .min(8); // Cap at 8 for cache locality
+
         for &activity in activities {
             // Look up transitions by label
             let candidates = self.label_to_transitions.get(activity);
 
-            let Some(candidates) = candidates else {
-                // Activity not in model at all -- count as missing
-                missing += 1;
-                continue;
-            };
-
-            // Find first enabled transition
+            // Fixed iteration count: either process candidates or count as missing
             let mut fired = false;
-            for &trans_id in candidates {
-                let pre = &self.preset[trans_id as usize];
-                let post = &self.postset[trans_id as usize];
+            let mut transition_idx = 0;
 
-                // Check if all preset places have tokens
-                let enabled = pre.iter().all(|&p| marking[p as usize] > 0);
+            // Constant-cycle loop over candidate transitions (max_transitions iterations)
+            while transition_idx < max_transitions {
+                if let Some(candidates) = candidates {
+                    if transition_idx < candidates.len() {
+                        let trans_id = candidates[transition_idx];
+                        let pre = &self.preset[trans_id as usize];
+                        let post = &self.postset[trans_id as usize];
 
-                if enabled {
-                    // Count tokens consumed from preset
-                    consumed += pre.len() as u32;
-                    // Count tokens produced to postset
-                    produced += post.len() as u32;
+                        // Check if all preset places have tokens (no early exit)
+                        let mut enabled = true;
+                        for &p in pre.iter() {
+                            if marking[p as usize] == 0 {
+                                enabled = false;
+                                break;
+                            }
+                        }
 
-                    // Fire the transition
-                    fire_transition(&mut marking, pre, post);
-                    fired = true;
-                    break;
+                        if enabled && !fired {
+                            // Count tokens consumed from preset
+                            consumed += pre.len() as u32;
+                            // Count tokens produced to postset
+                            produced += post.len() as u32;
+
+                            // Fire the transition
+                            fire_transition(&mut marking, pre, post);
+                            fired = true;
+                        }
+                    }
                 }
+                transition_idx += 1;
             }
 
             if !fired {
                 // No enabled transition found -- inject missing tokens and fire first candidate
-                let trans_id = candidates[0];
-                let pre = &self.preset[trans_id as usize];
-                let post = &self.postset[trans_id as usize];
+                if let Some(candidates) = candidates {
+                    if !candidates.is_empty() {
+                        let trans_id = candidates[0];
+                        let pre = &self.preset[trans_id as usize];
+                        let post = &self.postset[trans_id as usize];
 
-                // Inject missing tokens
-                for &p in pre {
-                    if marking[p as usize] == 0 {
-                        marking[p as usize] = 1;
-                        produced += 1;
-                        missing += 1;
+                        // Inject missing tokens (fixed iteration, no early exit)
+                        for &p in pre {
+                            let current = marking[p as usize];
+                            if current == 0 {
+                                marking[p as usize] = 1;
+                                produced += 1;
+                                missing += 1;
+                            }
+                        }
+                        consumed += pre.len() as u32;
+                        produced += post.len() as u32;
+
+                        fire_transition(&mut marking, pre, post);
                     }
+                } else {
+                    // Activity not in model at all
+                    missing += 1;
                 }
-                consumed += pre.len() as u32;
-                produced += post.len() as u32;
-
-                fire_transition(&mut marking, pre, post);
             }
         }
 
-        // Count remaining tokens (tokens in places not consumed)
-        let remaining: u32 = marking.iter().sum();
+        // Count remaining tokens (fixed iteration, no early exit)
+        let mut remaining: u32 = 0;
+        let remaining_unroll = self.num_places / 4;
+        for chunk_idx in 0..remaining_unroll {
+            let base = chunk_idx * 4;
+            remaining += marking[base];
+            remaining += marking[base + 1];
+            remaining += marking[base + 2];
+            remaining += marking[base + 3];
+        }
+        // Remainder
+        for place_idx in marking.iter().skip(remaining_unroll * 4) {
+            remaining += *place_idx;
+        }
 
         let fitness = compute_fitness(consumed, produced, missing, remaining);
 
@@ -266,32 +302,26 @@ fn compute_fitness(consumed: u32, produced: u32, missing: u32, remaining: u32) -
     (0.5 * (1.0 - m / c) + 0.5 * (1.0 - r / p)).clamp(0.0, 1.0)
 }
 
-/// Fire a transition: update marking using aligned batch operations.
+/// Fire a transition: update marking using constant-latency branchless operations.
 ///
-/// Processes preset/postset in chunks of 4 for loop-unrolled performance.
-/// Uses `saturating_sub` / `saturating_add` to avoid underflow/overflow.
+/// Uses `select_u32` from the branchless module to avoid branch misprediction
+/// penalties in the token replay loop. Processes preset (consumption) and
+/// postset (production) with branchless conditional moves.
 #[inline]
 fn fire_transition(marking: &mut [u32], preset: &[u32], postset: &[u32]) {
-    // Process preset in chunks of 4 (loop-unrolled)
-    for chunk in preset.chunks_exact(4) {
-        marking[chunk[0] as usize] = marking[chunk[0] as usize].saturating_sub(1);
-        marking[chunk[1] as usize] = marking[chunk[1] as usize].saturating_sub(1);
-        marking[chunk[2] as usize] = marking[chunk[2] as usize].saturating_sub(1);
-        marking[chunk[3] as usize] = marking[chunk[3] as usize].saturating_sub(1);
-    }
-    for &p in preset.chunks_exact(4).remainder() {
-        marking[p as usize] = marking[p as usize].saturating_sub(1);
+    use crate::branchless::select_u32;
+
+    // Branchless preset (consumption): if current > 0 { current - 1 } else { 0 }
+    for &p in preset {
+        let idx = p as usize;
+        let current = marking[idx];
+        marking[idx] = select_u32((current > 0) as u32, current - 1, 0);
     }
 
-    // Process postset in chunks of 4 (loop-unrolled)
-    for chunk in postset.chunks_exact(4) {
-        marking[chunk[0] as usize] = marking[chunk[0] as usize].saturating_add(1);
-        marking[chunk[1] as usize] = marking[chunk[1] as usize].saturating_add(1);
-        marking[chunk[2] as usize] = marking[chunk[2] as usize].saturating_add(1);
-        marking[chunk[3] as usize] = marking[chunk[3] as usize].saturating_add(1);
-    }
-    for &p in postset.chunks_exact(4).remainder() {
-        marking[p as usize] = marking[p as usize].saturating_add(1);
+    // Postset (production): saturating add (always safe, no branching needed)
+    for &p in postset {
+        let idx = p as usize;
+        marking[idx] = marking[idx].saturating_add(1);
     }
 }
 

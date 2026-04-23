@@ -16,7 +16,7 @@ use std::mem;
 /// # Example
 ///
 /// ```no_run
-/// use pictl::probabilistic::hyperloglog::HyperLogLog;
+/// use wasm4pm::probabilistic::hyperloglog::HyperLogLog;
 /// let mut hll: HyperLogLog<1024> = HyperLogLog::new();
 /// for i in 0..10000 { hll.add(i as u64); }
 /// let est = hll.estimate();
@@ -43,6 +43,24 @@ impl<const REGISTERS: usize> HyperLogLog<REGISTERS> {
     pub fn new() -> Self {
         HyperLogLog {
             registers: [0u8; REGISTERS],
+        }
+    }
+
+    /// Add an unhashed key to the estimator, hashing it first.
+    #[inline]
+    pub fn add_key(&mut self, key: u64) {
+        #[cfg(feature = "bcinr")]
+        {
+            self.add(bcinr::sketch::fnv1a_64(&key.to_le_bytes()));
+        }
+        #[cfg(not(feature = "bcinr"))]
+        {
+            // Simple robust hash if bcinr is not available
+            let mut h = key.wrapping_mul(0xbf58476d1ce4e5b9);
+            h ^= h >> 33;
+            h = h.wrapping_mul(0x94d049bb133111eb);
+            h ^= h >> 33;
+            self.add(h);
         }
     }
 

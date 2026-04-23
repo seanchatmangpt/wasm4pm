@@ -181,12 +181,8 @@ fn build_causal_heuristic(
             // Check reverse relation
             let reverse_key = (to.clone(), from.clone());
             let strength = if let Some(reverse_freq) = edge_freq.get(&reverse_key) {
-                let total = *freq + *reverse_freq;
-                if total == 0 {
-                    0.0
-                } else {
-                    (*freq as f64) / (total as f64)
-                }
+                let total = *freq as f64 + *reverse_freq as f64;
+                ((*freq as f64 - *reverse_freq as f64) / (total + 1.0)).max(0.0)
             } else {
                 1.0 // No reverse relation = full causality
             };

@@ -269,6 +269,8 @@ npm run build                 # wasm-pack bundler target
 npm run build:nodejs          # Node.js target
 npm run build:all             # all targets
 npm test                      # vitest unit + integration
+npm run build:profiles        # build all 5 deployment profiles
+npm run measure-sizes         # measure WASM binary sizes
 ```
 
 ### Rust
@@ -276,6 +278,7 @@ npm test                      # vitest unit + integration
 cargo check                   # fast type check
 cargo build --release         # build WASM library
 cargo test                    # Rust unit tests
+cargo test --test feature_gating_tests --features browser  # test feature gating
 ```
 
 ### MCP Server (wasm4pm/)
@@ -283,6 +286,101 @@ cargo test                    # Rust unit tests
 cd wasm4pm
 npm run build:mcp            # compile MCP server
 npm run start:mcp            # build + run MCP server
+```
+
+---
+
+## Feature Flags & Deployment Profiles
+
+pictl uses **12 canonical feature flags** that map to **5 deployment profiles**. Feature gates in `Cargo.toml` control which modules compile for each profile.
+
+### Canonical Feature Flags (WASM Feature API)
+
+| Feature | Purpose | Profiles |
+|---------|---------|----------|
+| `feature-conformance-basic` | Token-based replay fitness | All |
+| `feature-conformance-full` | Alignments + full conformance | fog, browser |
+| `feature-discovery-advanced` | Genetic, ILP, ACO, PSO | edge, fog, browser |
+| `feature-ml` | ML algorithms (6 total) | fog, browser |
+| `feature-ocel` | Object-centric event logs | fog, browser |
+| `feature-powl` | Partial-order workflows | browser only |
+| `feature-streaming-basic` | DFG streaming | edge, fog, browser |
+| `feature-streaming-full` | SIMD-accelerated streaming | fog, browser |
+| `feature-gpu` | GPU acceleration (non-WASM) | N/A for WASM |
+| `feature-hand-rolled-stats` | Size optimization | mobile, iot, edge |
+| `feature-statrs` | Full-precision statistics | fog, browser |
+| `feature-rayon` | Parallel processing (non-WASM) | N/A for WASM |
+
+### Deployment Profiles (5 Size Tiers)
+
+| Profile | Target | Size Target | Features | Algorithms |
+|---------|--------|-------------|----------|-----------|
+| `mobile` | Mobile devices | ~500KB | basic discovery, conformance | ~10-15 |
+| `iot` | IoT devices, embedded | ~1MB | basic discovery, conformance | ~12-18 |
+| `edge` | CDN workers, edge servers | ~1.5MB | adv. discovery, basic streaming | ~18-25 |
+| `fog` | Fog computing, gateways | ~2MB | all except POWL, full streaming, ML | ~35-40 |
+| `browser` | Web browsers (DEFAULT) | **2.7MB** (measured) | all 41 algorithms, all features | 41 |
+
+### Build Commands by Profile
+
+```bash
+cd wasm4pm
+
+# Mobile profile (~500KB, 82% reduction)
+cargo build --release --target wasm32-unknown-unknown --features mobile
+npm run build:mobile
+
+# IoT profile (~1MB, 64% reduction)
+cargo build --release --target wasm32-unknown-unknown --features iot
+npm run build:iot
+
+# Edge profile (~1.5MB, 46% reduction)
+cargo build --release --target wasm32-unknown-unknown --features edge
+npm run build:edge
+
+# Fog profile (~2MB, 28% reduction)
+cargo build --release --target wasm32-unknown-unknown --features fog
+npm run build:fog
+
+# Browser profile (~2.7MB, baseline, all features, DEFAULT)
+cargo build --release --target wasm32-unknown-unknown --all-features
+npm run build  # or npm run build:browser
+
+# Measure all sizes
+npm run measure-sizes
+```
+
+### Feature Mapping to Internal Flags
+
+Canonical features map to internal Rust `#[cfg]` flags:
+- `feature-conformance-basic` → `conformance_basic`
+- `feature-conformance-full` → `conformance_full`, `alignment_fitness`, `align_etconformance`
+- `feature-discovery-advanced` → `discovery_advanced`, `genetic`, `ilp`, `a_star`, `aco`, `pso`, `simulated_annealing`
+- `feature-ml` → `ml`, `ml_classify`, `ml_cluster`, `ml_forecast`, `ml_anomaly`, `ml_regress`, `ml_pca`
+- `feature-ocel` → `ocel`
+- `feature-powl` → `powl`
+- `feature-streaming-basic` → `streaming_basic`, `streaming_dfg`
+- `feature-streaming-full` → `streaming_full`, `streaming_basic`, `simd`
+- `feature-gpu` → `gpu`, `dep:wgpu`, `dep:pollster`
+- `feature-hand-rolled-stats` → `hand_rolled_stats`
+- `feature-statrs` → `statrs`, `dep:statrs`
+- `feature-rayon` → `rayon`, `dep:rayon`
+
+### TypeScript Registry Integration
+
+The `@pictl/kernel` registry automatically detects available algorithms based on the WASM build profile. Each algorithm metadata includes `deploymentProfiles: DeploymentProfile[]`, which allows the registry to:
+
+1. Report algorithm availability per profile
+2. Suggest best algorithms for each profile
+3. Enforce profile constraints in execution planning
+
+Query registry for a profile:
+```typescript
+import { getRegistry } from '@pictl/kernel';
+
+const registry = getRegistry();
+const browserAlgos = registry.getForDeploymentProfile('browser');
+console.log(`Browser profile: ${browserAlgos.length} algorithms`);
 ```
 
 ---
@@ -368,3 +466,16 @@ wasm4pm/src/agentic/           # Agentic framework (9 traits, 14 modules)
 - Crate name is `pictl`, npm package is `@seanchatmangpt/pictl`, but the source directory remains `wasm4pm/` — only published names changed, not filesystem layout
 - `tests/*.rs` are integration tests (separate crates) — `pub(crate)` is NOT enough for external test access, items must be `pub`
 - Cargo auto-discovers `tests/*.rs` but NOT `tests/subdir/*.rs` — use top-level `tests/*_tests.rs` files or add `tests/subdir/mod.rs`
+- `to_js(&json!({...}))` silently returns `{}` on wasm32 — `serde_wasm_bindgen` cannot serialize `serde_json::Value`. Use `to_js_str(&json!({...}))` (defined in `utilities.rs`) instead; it serializes via `serde_json::to_string` + `JsValue::from_str`.
+- `to_js` returns `JsValue::NULL` on native (non-wasm32) targets — the serialization path is **never exercised by `cargo test`**. Always validate WASM output via Node.js directly.
+- Some WASM functions return a JS string (needs `JSON.parse`), others return a JS object. Pattern: `const parse = r => typeof r === 'string' ? JSON.parse(r) : r`
+- `src/streaming/` has zero `#[wasm_bindgen]` exports — algorithms there are unreachable from JS. Check before assuming a streaming variant is usable.
+- **Direct WASM testing** (bypasses CLI wrapper, which drops model data for handle-based algorithms):
+  ```js
+  const wasm = require('./wasm4pm/pkg/pictl.js');
+  const handle = wasm.load_eventlog_from_xes(fs.readFileSync('log.xes', 'utf8'));
+  const parse = r => typeof r === 'string' ? JSON.parse(r) : r;
+  const result = parse(wasm.discover_dfg(handle, 'concept:name'));
+  ```
+- Discovery function extra params (beyond `handle, activity_key`): `discover_heuristic_miner` needs `dependency_threshold: f64` (use `0.2`–`0.4` for real logs — `0.8` filters everything); `discover_causal_heuristic` needs `threshold: f64`; `discover_prefix_tree` needs `max_path_length: usize` (`0` = unlimited); `discover_simulated_annealing` needs `temperature: f64, cooling_rate: f64`; `discover_astar` needs `max_iterations: usize`; genetic/ant_colony/aco/pso need `population_size/num_ants, iterations`.
+- Two separate ACO implementations: `discover_ant_colony` (`more_discovery.rs`, param `num_ants`) and `discover_aco_algorithm` (`genetic_discovery.rs`, param `ant_count`) — different fitness key names (`"fitness"` vs `"final_fitness"`).

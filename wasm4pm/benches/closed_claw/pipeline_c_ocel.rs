@@ -19,8 +19,8 @@
 //! oc_petri_net.rs, and oc_conformance.rs).
 
 use criterion::{black_box, BenchmarkId, Criterion, Throughput};
-use pictl::models::*;
-use pictl::state::{get_or_init_state, StoredObject};
+use wasm4pm::models::*;
+use wasm4pm::state::{get_or_init_state, StoredObject};
 use std::collections::{HashMap, HashSet};
 use std::time::Duration;
 

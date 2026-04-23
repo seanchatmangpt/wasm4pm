@@ -198,21 +198,6 @@ Discover a process tree using Inductive Miner (divide-and-conquer).
 
 ---
 
-### `discover_ilp_petri_net(logHandle: string, timeout_ms: number): object`
-Discover a Petri net using Integer Linear Programming (ILP) optimization.
-
-**Parameters:**
-- `logHandle` — Event log handle
-- `timeout_ms` — Solver timeout in milliseconds
-
-**Returns:** Petri net with optimal fitness guarantee
-
-**Performance:** ~20–100ms per 100 events (with timeout)
-
-**When to use:** Optimal solution needed, time available, small to medium logs
-
----
-
 ### `discover_genetic_algorithm(logHandle: string, generations: number, populationSize: number): object`
 Discover a Petri net using evolutionary genetic algorithm.
 

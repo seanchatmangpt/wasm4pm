@@ -1,7 +1,21 @@
 [workspace]
 resolver = "2"
 
-members = ["wasm4pm", "tps-metrics"]
+members = ["wasm4pm", "tps-metrics", "crates/pictl-types", "crates/pictl-algos"]
+
+[workspace.package]
+version = "26.4.17"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+authors = ["Sean Chatman <info@chatmangpt.com>"]
+repository = "https://github.com/seanchatmangpt/pictl"
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = "debuginfo"
 
 [profile.bench]
 opt-level = 3

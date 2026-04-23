@@ -1,0 +1,297 @@
+{
+  "version": "2.0",
+  "event_types": [
+    "Perception",
+    "Decision",
+    "Protection",
+    "Optimization"
+  ],
+  "object_types": [
+    "cycle_run"
+  ],
+  "events": [
+    {
+      "id": "run_0_perception",
+      "event_type": "Perception",
+      "timestamp": "2026-04-17T04:21:20.526Z",
+      "attributes": {
+        "perception": "{\"event_count\":42,\"has_timestamps\":true,\"health_score\":0,\"health_state\":\"Normal\",\"trace_count\":6,\"unique_activities\":8}"
+      },
+      "object_ids": [
+        "run_0"
+      ],
+      "object_refs": []
+    },
+    {
+      "id": "run_0_decision",
+      "event_type": "Decision",
+      "timestamp": "2026-04-17T04:21:20.626Z",
+      "attributes": {
+        "decision": "{\"guard_result\":true,\"pattern_result\":\"Failed\",\"pattern_ticks\":1}"
+      },
+      "object_ids": [
+        "run_0"
+      ],
+      "object_refs": []
+    },
+    {
+      "id": "run_0_protection",
+      "event_type": "Protection",
+      "timestamp": "2026-04-17T04:21:20.726Z",
+      "attributes": {
+        "protection": "{\"circuit_allowed\":true,\"circuit_state\":\"Closed\",\"spc_results\":{\"activity_frequency\":\"INSUFFICIENT_DATA\",\"event_rate\":\"INSUFFICIENT_DATA\",\"has_sufficient_data\":false,\"history_cycle_count\":1,\"history_len\":1,\"trace_duration\":\"INSUFFICIENT_DATA\"},\"special_causes\":[]}"
+      },
+      "object_ids": [
+        "run_0"
+      ],
+      "object_refs": []
+    },
+    {
+      "id": "run_0_optimization",
+      "event_type": "Optimization",
+      "timestamp": "2026-04-17T04:21:20.826Z",
+      "attributes": {
+        "optimization": "{\"action_taken\":\"fallback\",\"autoprocess_q_value\":0,\"autoprocess_state_id\":361,\"cumulative_reward\":0.30000001192092896,\"cycle_count\":1,\"dispatch_detail\":\"fallback: switch to dfg, reduce event budget 10%\",\"health_score\":0,\"reward\":0.30000001192092896,\"rl_action\":\"Fallback\",\"rl_agent\":\"QLearning\"}"
+      },
+      "object_ids": [
+        "run_0"
+      ],
+      "object_refs": []
+    },
+    {
+      "id": "run_1_perception",
+      "event_type": "Perception",
+      "timestamp": "2026-04-17T04:21:21.526Z",
+      "attributes": {
+        "perception": "{\"event_count\":42,\"has_timestamps\":true,\"health_score\":0,\"health_state\":\"Normal\",\"trace_count\":6,\"unique_activities\":8}"
+      },
+      "object_ids": [
+        "run_1"
+      ],
+      "object_refs": []
+    },
+    {
+      "id": "run_1_decision",
+      "event_type": "Decision",
+      "timestamp": "2026-04-17T04:21:21.626Z",
+      "attributes": {
+        "decision": "{\"guard_result\":true,\"pattern_result\":\"Failed\",\"pattern_ticks\":1}"
+      },
+      "object_ids": [
+        "run_1"
+      ],
+      "object_refs": []
+    },
+    {
+      "id": "run_1_protection",
+      "event_type": "Protection",
+      "timestamp": "2026-04-17T04:21:21.726Z",
+      "attributes": {
+        "protection": "{\"circuit_allowed\":true,\"circuit_state\":\"Closed\",\"spc_results\":{\"activity_frequency\":\"INSUFFICIENT_DATA\",\"event_rate\":\"INSUFFICIENT_DATA\",\"has_sufficient_data\":false,\"history_cycle_count\":1,\"history_len\":1,\"trace_duration\":\"INSUFFICIENT_DATA\"},\"special_causes\":[]}"
+      },
+      "object_ids": [
+        "run_1"
+      ],
+      "object_refs": []
+    },
+    {
+      "id": "run_1_optimization",
+      "event_type": "Optimization",
+      "timestamp": "2026-04-17T04:21:21.826Z",
+      "attributes": {
+        "optimization": "{\"action_taken\":\"fallback\",\"autoprocess_q_value\":0,\"autoprocess_state_id\":361,\"cumulative_reward\":0.30000001192092896,\"cycle_count\":1,\"dispatch_detail\":\"fallback: switch to dfg, reduce event budget 10%\",\"health_score\":0,\"reward\":0.30000001192092896,\"rl_action\":\"Fallback\",\"rl_agent\":\"QLearning\"}"
+      },
+      "object_ids": [
+        "run_1"
+      ],
+      "object_refs": []
+    },
+    {
+      "id": "run_2_perception",
+      "event_type": "Perception",
+      "timestamp": "2026-04-17T04:21:22.526Z",
+      "attributes": {
+        "perception": "{\"event_count\":42,\"has_timestamps\":true,\"health_score\":0,\"health_state\":\"Normal\",\"trace_count\":6,\"unique_activities\":8}"
+      },
+      "object_ids": [
+        "run_2"
+      ],
+      "object_refs": []
+    },
+    {
+      "id": "run_2_decision",
+      "event_type": "Decision",
+      "timestamp": "2026-04-17T04:21:22.626Z",
+      "attributes": {
+        "decision": "{\"guard_result\":true,\"pattern_result\":\"Failed\",\"pattern_ticks\":1}"
+      },
+      "object_ids": [
+        "run_2"
+      ],
+      "object_refs": []
+    },
+    {
+      "id": "run_2_protection",
+      "event_type": "Protection",
+      "timestamp": "2026-04-17T04:21:22.726Z",
+      "attributes": {
+        "protection": "{\"circuit_allowed\":true,\"circuit_state\":\"Closed\",\"spc_results\":{\"activity_frequency\":\"INSUFFICIENT_DATA\",\"event_rate\":\"INSUFFICIENT_DATA\",\"has_sufficient_data\":false,\"history_cycle_count\":3,\"history_len\":2,\"trace_duration\":\"INSUFFICIENT_DATA\"},\"special_causes\":[]}"
+      },
+      "object_ids": [
+        "run_2"
+      ],
+      "object_refs": []
+    },
+    {
+      "id": "run_2_optimization",
+      "event_type": "Optimization",
+      "timestamp": "2026-04-17T04:21:22.826Z",
+      "attributes": {
+        "optimization": "{\"action_taken\":\"fallback\",\"autoprocess_q_value\":0,\"autoprocess_state_id\":361,\"cumulative_reward\":0.6000000238418579,\"cycle_count\":2,\"dispatch_detail\":\"fallback: switch to dfg, reduce event budget 10%\",\"health_score\":0,\"reward\":0.30000001192092896,\"rl_action\":\"Fallback\",\"rl_agent\":\"QLearning\"}"
+      },
+      "object_ids": [
+        "run_2"
+      ],
+      "object_refs": []
+    },
+    {
+      "id": "run_3_perception",
+      "event_type": "Perception",
+      "timestamp": "2026-04-17T04:21:23.526Z",
+      "attributes": {
+        "perception": "{\"event_count\":42,\"has_timestamps\":true,\"health_score\":0,\"health_state\":\"Normal\",\"trace_count\":6,\"unique_activities\":8}"
+      },
+      "object_ids": [
+        "run_3"
+      ],
+      "object_refs": []
+    },
+    {
+      "id": "run_3_decision",
+      "event_type": "Decision",
+      "timestamp": "2026-04-17T04:21:23.626Z",
+      "attributes": {
+        "decision": "{\"guard_result\":true,\"pattern_result\":\"Failed\",\"pattern_ticks\":1}"
+      },
+      "object_ids": [
+        "run_3"
+      ],
+      "object_refs": []
+    },
+    {
+      "id": "run_3_protection",
+      "event_type": "Protection",
+      "timestamp": "2026-04-17T04:21:23.726Z",
+      "attributes": {
+        "protection": "{\"circuit_allowed\":true,\"circuit_state\":\"Closed\",\"spc_results\":{\"activity_frequency\":\"INSUFFICIENT_DATA\",\"event_rate\":\"INSUFFICIENT_DATA\",\"has_sufficient_data\":false,\"history_cycle_count\":1,\"history_len\":1,\"trace_duration\":\"INSUFFICIENT_DATA\"},\"special_causes\":[]}"
+      },
+      "object_ids": [
+        "run_3"
+      ],
+      "object_refs": []
+    },
+    {
+      "id": "run_3_optimization",
+      "event_type": "Optimization",
+      "timestamp": "2026-04-17T04:21:23.826Z",
+      "attributes": {
+        "optimization": "{\"action_taken\":\"fallback\",\"autoprocess_q_value\":0,\"autoprocess_state_id\":361,\"cumulative_reward\":0.30000001192092896,\"cycle_count\":1,\"dispatch_detail\":\"fallback: switch to dfg, reduce event budget 10%\",\"health_score\":0,\"reward\":0.30000001192092896,\"rl_action\":\"Fallback\",\"rl_agent\":\"QLearning\"}"
+      },
+      "object_ids": [
+        "run_3"
+      ],
+      "object_refs": []
+    },
+    {
+      "id": "run_4_perception",
+      "event_type": "Perception",
+      "timestamp": "2026-04-17T04:21:24.526Z",
+      "attributes": {
+        "perception": "{\"event_count\":42,\"has_timestamps\":true,\"health_score\":0,\"health_state\":\"Normal\",\"trace_count\":6,\"unique_activities\":8}"
+      },
+      "object_ids": [
+        "run_4"
+      ],
+      "object_refs": []
+    },
+    {
+      "id": "run_4_decision",
+      "event_type": "Decision",
+      "timestamp": "2026-04-17T04:21:24.626Z",
+      "attributes": {
+        "decision": "{\"guard_result\":true,\"pattern_result\":\"Failed\",\"pattern_ticks\":1}"
+      },
+      "object_ids": [
+        "run_4"
+      ],
+      "object_refs": []
+    },
+    {
+      "id": "run_4_protection",
+      "event_type": "Protection",
+      "timestamp": "2026-04-17T04:21:24.726Z",
+      "attributes": {
+        "protection": "{\"circuit_allowed\":true,\"circuit_state\":\"Closed\",\"spc_results\":{\"activity_frequency\":\"INSUFFICIENT_DATA\",\"event_rate\":\"INSUFFICIENT_DATA\",\"has_sufficient_data\":false,\"history_cycle_count\":3,\"history_len\":2,\"trace_duration\":\"INSUFFICIENT_DATA\"},\"special_causes\":[]}"
+      },
+      "object_ids": [
+        "run_4"
+      ],
+      "object_refs": []
+    },
+    {
+      "id": "run_4_optimization",
+      "event_type": "Optimization",
+      "timestamp": "2026-04-17T04:21:24.826Z",
+      "attributes": {
+        "optimization": "{\"action_taken\":\"fallback\",\"autoprocess_q_value\":0,\"autoprocess_state_id\":361,\"cumulative_reward\":0.30000001192092896,\"cycle_count\":2,\"dispatch_detail\":\"fallback: switch to dfg, reduce event budget 10%\",\"health_score\":0,\"reward\":0,\"rl_action\":\"Fallback\",\"rl_agent\":\"QLearning\"}"
+      },
+      "object_ids": [
+        "run_4"
+      ],
+      "object_refs": []
+    }
+  ],
+  "objects": [
+    {
+      "id": "run_0",
+      "object_type": "cycle_run",
+      "attributes": {},
+      "changes": [],
+      "embedded_relations": []
+    },
+    {
+      "id": "run_1",
+      "object_type": "cycle_run",
+      "attributes": {},
+      "changes": [],
+      "embedded_relations": []
+    },
+    {
+      "id": "run_2",
+      "object_type": "cycle_run",
+      "attributes": {},
+      "changes": [],
+      "embedded_relations": []
+    },
+    {
+      "id": "run_3",
+      "object_type": "cycle_run",
+      "attributes": {},
+      "changes": [],
+      "embedded_relations": []
+    },
+    {
+      "id": "run_4",
+      "object_type": "cycle_run",
+      "attributes": {},
+      "changes": [],
+      "embedded_relations": []
+    }
+  ],
+  "object_relations": [],
+  "metadata": {
+    "source": "playground-scenario-22-process-evidence",
+    "harvestedAt": "2026-04-17T04:21:20.526Z",
+    "spanCount": 0
+  }
+}

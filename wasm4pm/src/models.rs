@@ -1,6 +1,7 @@
 use rustc_hash::FxHashMap;
 use serde::{Deserialize, Deserializer, Serialize};
 use std::collections::HashMap;
+use ts_rs::TS;
 
 /// Parse an ISO 8601 / RFC 3339 timestamp string into milliseconds since Unix epoch.
 /// Handles formats: "2024-01-01T10:00:00+00:00", "2024-01-01T10:00:00Z",
@@ -30,8 +31,9 @@ pub fn parse_timestamp_ms(s: &str) -> Option<i64> {
 }
 
 /// Attribute value types for event data
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[serde(tag = "tag", content = "value")]
+#[ts(export)]
 pub enum AttributeValue {
     String(String),
     Int(i64),
@@ -884,5 +886,70 @@ impl Default for DeclareModel {
 impl Default for TemporalProfile {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Process Tree (Inductive Miner output)
+// ---------------------------------------------------------------------------
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ProcessTreeNode {
+    pub node_type: String,  // "sequence", "xor", "parallel", "loop", "leaf"
+    pub label: Option<String>,  // Activity name (leaf only)
+    pub children: Vec<ProcessTreeNode>,
+}
+
+impl ProcessTreeNode {
+    pub fn leaf(activity: String) -> Self {
+        Self {
+            node_type: "leaf".to_string(),
+            label: Some(activity),
+            children: vec![],
+        }
+    }
+
+    pub fn sequence(children: Vec<ProcessTreeNode>) -> Self {
+        Self {
+            node_type: "sequence".to_string(),
+            label: None,
+            children,
+        }
+    }
+
+    pub fn xor(children: Vec<ProcessTreeNode>) -> Self {
+        Self {
+            node_type: "xor".to_string(),
+            label: None,
+            children,
+        }
+    }
+
+    pub fn parallel(children: Vec<ProcessTreeNode>) -> Self {
+        Self {
+            node_type: "parallel".to_string(),
+            label: None,
+            children,
+        }
+    }
+
+    pub fn loop_node(body: ProcessTreeNode, redo: ProcessTreeNode) -> Self {
+        Self {
+            node_type: "loop".to_string(),
+            label: None,
+            children: vec![body, redo],
+        }
+    }
+
+    pub fn flower() -> Self {
+        Self {
+            node_type: "flower".to_string(),
+            label: None,
+            children: vec![],
+        }
+    }
+
+    pub fn count_nodes(&self) -> usize {
+        1 + self.children.iter().map(|c| c.count_nodes()).sum::<usize>()
     }
 }

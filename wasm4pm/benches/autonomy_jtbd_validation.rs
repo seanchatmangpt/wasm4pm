@@ -12,7 +12,7 @@ use std::sync::atomic::AtomicU32;
 // Module 1: Guards — JTBD: "Execute when conditions are met"
 // ============================================================================
 
-use pictl::guards::{
+use wasm4pm::guards::{
     ExecutionContext, Guard, GuardCompiler, GuardEvaluator, ObservationBuffer, ResourceState,
     StateFlags,
 };
@@ -39,13 +39,13 @@ fn test_context() -> ExecutionContext {
 fn test_jtbd_cpu_resource_guard() {
     // JTBD: "Execute when CPU ≥ 50"
     let ctx = test_context();
-    let guard_pass = Guard::resource(pictl::guards::ResourceType::Cpu, 50);
+    let guard_pass = Guard::resource(wasm4pm::guards::ResourceType::Cpu, 50);
     assert!(
         guard_pass.evaluate(&ctx),
         "CPU=80 should pass guard with threshold=50"
     );
 
-    let guard_fail = Guard::resource(pictl::guards::ResourceType::Cpu, 100);
+    let guard_fail = Guard::resource(wasm4pm::guards::ResourceType::Cpu, 100);
     assert!(
         !guard_fail.evaluate(&ctx),
         "CPU=80 should fail guard with threshold=100"
@@ -57,10 +57,10 @@ fn test_jtbd_compound_and_guard() {
     // JTBD: "Compound AND guard — all conditions must pass"
     let ctx = test_context();
 
-    let g1 = Guard::resource(pictl::guards::ResourceType::Cpu, 50); // passes
+    let g1 = Guard::resource(wasm4pm::guards::ResourceType::Cpu, 50); // passes
     let g2 = Guard::state(StateFlags::INITIALIZED | StateFlags::RUNNING); // passes
     let g3 = Guard::predicate(
-        pictl::guards::Predicate::LessThan,
+        wasm4pm::guards::Predicate::LessThan,
         3, // observations.count
         20,
     ); // passes (count=5 < 20)
@@ -72,9 +72,9 @@ fn test_jtbd_compound_and_guard() {
     );
 
     // Change g3 to fail: count=5, threshold=3 → 5 >= 3, so use GreaterThanOrEqual
-    let g3_fail = Guard::predicate(pictl::guards::Predicate::GreaterThanOrEqual, 3, 10); // 5 < 10, fails
+    let g3_fail = Guard::predicate(wasm4pm::guards::Predicate::GreaterThanOrEqual, 3, 10); // 5 < 10, fails
     let guard_one_fail = Guard::and(vec![
-        Guard::resource(pictl::guards::ResourceType::Cpu, 50),
+        Guard::resource(wasm4pm::guards::ResourceType::Cpu, 50),
         Guard::state(StateFlags::INITIALIZED | StateFlags::RUNNING),
         g3_fail,
     ]);
@@ -112,7 +112,7 @@ fn test_jtbd_state_flag_check() {
 fn test_jtbd_ttl_cache_benefit() {
     // JTBD: "TTL cache reduces redundant evaluation"
     let ctx = test_context();
-    let guard = Guard::resource(pictl::guards::ResourceType::Cpu, 50);
+    let guard = Guard::resource(wasm4pm::guards::ResourceType::Cpu, 50);
     let mut evaluator = GuardEvaluator::new(1000);
 
     // First call: cache miss
@@ -151,7 +151,7 @@ fn test_jtbd_ttl_cache_benefit() {
 #[test]
 fn test_jtbd_guard_compiler_produces_closure() {
     // JTBD: "Compile hot-path guard to closure"
-    let guard = Guard::predicate(pictl::guards::Predicate::Equal, 0, 42);
+    let guard = Guard::predicate(wasm4pm::guards::Predicate::Equal, 0, 42);
     let ctx = test_context();
 
     let compiled = GuardCompiler::compile(&guard);
@@ -170,7 +170,7 @@ fn test_jtbd_guard_compiler_produces_closure() {
 // Module 2: Pattern Dispatch — JTBD: "Understand control-flow semantics"
 // ============================================================================
 
-use pictl::pattern_dispatch::{
+use wasm4pm::pattern_dispatch::{
     PatternConfig, PatternContext, PatternDispatcher, PatternFlags, PatternType,
 };
 
@@ -254,7 +254,7 @@ fn test_jtbd_all_patterns_registered() {
 // Module 3: Reinforcement Learning — JTBD: "Route work to best path"
 // ============================================================================
 
-use pictl::reinforcement::{QLearning, SARSAAgent, WorkflowAction, WorkflowState};
+use wasm4pm::reinforcement::{QLearning, SARSAAgent, WorkflowAction, WorkflowState};
 
 #[derive(Clone, Eq, PartialEq, Hash)]
 struct RlState(i32);
@@ -361,7 +361,7 @@ fn test_jtbd_epsilon_decay() {
 // Module 4: Self-Healing — JTBD: "Recover from failure without intervention"
 // ============================================================================
 
-use pictl::self_healing::{
+use wasm4pm::self_healing::{
     CircuitBreaker, HealthCheck, HealthStatus, RetryPolicy, RetryState, SelfHealingManager,
 };
 
@@ -369,13 +369,13 @@ use pictl::self_healing::{
 fn test_jtbd_cb_opens_at_threshold() {
     // JTBD: "Circuit breaker opens after 5 failures"
     let mut cb = CircuitBreaker::new();
-    assert_eq!(cb.state(), pictl::self_healing::CircuitState::Closed);
+    assert_eq!(cb.state(), wasm4pm::self_healing::CircuitState::Closed);
 
     for i in 1..5 {
         cb.record_failure();
         assert_eq!(
             cb.state(),
-            pictl::self_healing::CircuitState::Closed,
+            wasm4pm::self_healing::CircuitState::Closed,
             "Should still be Closed after {} failures",
             i
         );
@@ -384,7 +384,7 @@ fn test_jtbd_cb_opens_at_threshold() {
     cb.record_failure();
     assert_eq!(
         cb.state(),
-        pictl::self_healing::CircuitState::Open,
+        wasm4pm::self_healing::CircuitState::Open,
         "Should be Open after 5th failure"
     );
 }
@@ -470,7 +470,7 @@ fn test_jtbd_manager_coordination() {
 // Module 5: SPC — JTBD: "Detect when the process is drifting"
 // ============================================================================
 
-use pictl::spc::{check_western_electric_rules, ChartData, ProcessCapability, SpecialCause};
+use wasm4pm::spc::{check_western_electric_rules, ChartData, ProcessCapability, SpecialCause};
 
 fn chart(value: f64, ucl: f64, cl: f64, lcl: f64) -> ChartData {
     ChartData {
@@ -514,7 +514,7 @@ fn test_jtbd_rule2_shift_above() {
     assert!(alerts.iter().any(|a| matches!(
         a,
         SpecialCause::Shift {
-            direction: pictl::spc::ShiftDirection::Above,
+            direction: wasm4pm::spc::ShiftDirection::Above,
             count: 9
         }
     )));
@@ -532,7 +532,7 @@ fn test_jtbd_rule3_trend_increasing() {
     assert!(alerts.iter().any(|a| matches!(
         a,
         SpecialCause::Trend {
-            direction: pictl::spc::TrendDirection::Increasing,
+            direction: wasm4pm::spc::TrendDirection::Increasing,
             ..
         }
     )));
@@ -585,17 +585,17 @@ fn test_jtbd_dpmo_to_sigma_boundaries() {
 #[test]
 fn test_jtbd_normal_cdf_accuracy() {
     // JTBD: "Normal CDF accuracy — Φ(0)=0.5, Φ(1.96)≈0.975"
-    let p0 = pictl::spc::normal_cdf_public(0.0);
+    let p0 = wasm4pm::spc::normal_cdf_public(0.0);
     assert!((p0 - 0.5).abs() < 1e-6, "Φ(0) should be 0.5, got {}", p0);
 
-    let p196 = pictl::spc::normal_cdf_public(1.96);
+    let p196 = wasm4pm::spc::normal_cdf_public(1.96);
     assert!(
         (p196 - 0.975).abs() < 0.01,
         "Φ(1.96) should be ≈0.975, got {}",
         p196
     );
 
-    let pn196 = pictl::spc::normal_cdf_public(-1.96);
+    let pn196 = wasm4pm::spc::normal_cdf_public(-1.96);
     assert!(
         (pn196 - 0.025).abs() < 0.01,
         "Φ(-1.96) should be ≈0.025, got {}",
@@ -606,21 +606,21 @@ fn test_jtbd_normal_cdf_accuracy() {
 #[test]
 fn test_jtbd_inverse_cdf_accuracy() {
     // JTBD: "Inverse normal CDF — Φ⁻¹(0.975)≈1.96, Φ⁻¹(0.025)≈-1.96"
-    let z975 = pictl::spc::inverse_normal_cdf_public(0.975);
+    let z975 = wasm4pm::spc::inverse_normal_cdf_public(0.975);
     assert!(
         (z975 - 1.96).abs() < 0.01,
         "Φ⁻¹(0.975) should be ≈1.96, got {}",
         z975
     );
 
-    let z025 = pictl::spc::inverse_normal_cdf_public(0.025);
+    let z025 = wasm4pm::spc::inverse_normal_cdf_public(0.025);
     assert!(
         (z025 - (-1.96)).abs() < 0.01,
         "Φ⁻¹(0.025) should be ≈-1.96, got {}",
         z025
     );
 
-    let z5 = pictl::spc::inverse_normal_cdf_public(0.5);
+    let z5 = wasm4pm::spc::inverse_normal_cdf_public(0.5);
     assert!(z5.abs() < 0.01, "Φ⁻¹(0.5) should be ≈0, got {}", z5);
 }
 
@@ -633,7 +633,7 @@ fn test_jtbd_guard_dispatch_pipeline() {
     // JTBD: "Guard gates pattern dispatch — conditional execution"
     let ctx = test_context();
     let guard = Guard::and(vec![
-        Guard::resource(pictl::guards::ResourceType::Cpu, 50),
+        Guard::resource(wasm4pm::guards::ResourceType::Cpu, 50),
         Guard::state(StateFlags::INITIALIZED | StateFlags::RUNNING),
     ]);
 
@@ -687,4 +687,9 @@ fn test_jtbd_rl_self_healing_loop() {
         "Agent should prefer Left (q_left={:.4}) over Right (q_right={:.4}) for state 0 after 50 episodes",
         q_left, q_right
     );
+}
+
+fn main() {
+    // Criterion harness = false requires a main() function
+    // Tests defined in this file can be run independently via cargo test
 }

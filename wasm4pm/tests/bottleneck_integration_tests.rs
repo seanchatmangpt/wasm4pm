@@ -6,7 +6,7 @@
 //! Oracle: Rank 2 (Domain Contract) — bottleneck detection should identify
 //! activities with above-threshold durations, sorted by severity.
 
-use pictl::models::EventLog;
+use wasm4pm::models::EventLog;
 use std::collections::HashMap;
 use std::fs;
 
@@ -30,7 +30,7 @@ fn compute_activity_bottleneck_scores(
 
     for trace in &log.traces {
         for event in &trace.events {
-            if let Some(pictl::models::AttributeValue::String(name)) =
+            if let Some(wasm4pm::models::AttributeValue::String(name)) =
                 event.attributes.get(activity_key)
             {
                 *activity_counts.entry(name.clone()).or_insert(0) += 1;
@@ -63,7 +63,7 @@ fn compute_activity_gap_bottleneck(
 
         for event in &trace.events {
             let activity_name = event.attributes.get(activity_key).and_then(|v| match v {
-                pictl::models::AttributeValue::String(s) => Some(s.clone()),
+                wasm4pm::models::AttributeValue::String(s) => Some(s.clone()),
                 _ => None,
             });
 
@@ -71,9 +71,9 @@ fn compute_activity_gap_bottleneck(
                 .attributes
                 .get(timestamp_key)
                 .and_then(|v| match v {
-                    pictl::models::AttributeValue::Date(s) => parse_timestamp_ms(s),
-                    pictl::models::AttributeValue::String(s) => parse_timestamp_ms(s),
-                    pictl::models::AttributeValue::Int(i) => Some(*i as u64),
+                    wasm4pm::models::AttributeValue::Date(s) => parse_timestamp_ms(s),
+                    wasm4pm::models::AttributeValue::String(s) => parse_timestamp_ms(s),
+                    wasm4pm::models::AttributeValue::Int(i) => Some(*i as u64),
                     _ => None,
                 });
 
@@ -185,7 +185,7 @@ fn test_real_log_all_activities_scored() {
     let mut activities: std::collections::HashSet<String> = std::collections::HashSet::new();
     for trace in &log.traces {
         for event in &trace.events {
-            if let Some(pictl::models::AttributeValue::String(name)) =
+            if let Some(wasm4pm::models::AttributeValue::String(name)) =
                 event.attributes.get("activity")
             {
                 activities.insert(name.clone());

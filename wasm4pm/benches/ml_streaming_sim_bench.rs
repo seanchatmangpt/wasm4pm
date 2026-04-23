@@ -11,12 +11,12 @@
 ///
 /// Note: Uses internal Rust APIs directly, not WASM bindings.
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
-use pictl::models::{
+use wasm4pm::models::{
     AttributeValue, Event, EventLog, NGramPredictor, OCELEvent, OCELObject, Trace, OCEL,
 };
-use pictl::montecarlo::{run_monte_carlo_simulation, MonteCarloConfig};
-use pictl::state::{get_or_init_state, StoredObject};
-use pictl::streaming::{StreamingAlgorithm, StreamingDfgBuilder, StreamingSkeletonBuilder};
+use wasm4pm::montecarlo::{run_monte_carlo_simulation, MonteCarloConfig};
+use wasm4pm::state::{get_or_init_state, StoredObject};
+use wasm4pm::streaming::{StreamingAlgorithm, StreamingDfgBuilder, StreamingSkeletonBuilder};
 use std::collections::HashMap;
 use std::time::Duration;
 
@@ -228,8 +228,8 @@ fn build_ngram_predictor_internal(log: &EventLog, activity_key: &str, n: usize) 
 }
 
 /// Build a DFG from an event log (internal version).
-fn build_dfg_internal(log: &EventLog, activity_key: &str) -> pictl::models::DirectlyFollowsGraph {
-    use pictl::models::{DFGNode, DirectlyFollowsRelation};
+fn build_dfg_internal(log: &EventLog, activity_key: &str) -> wasm4pm::models::DirectlyFollowsGraph {
+    use wasm4pm::models::{DFGNode, DirectlyFollowsRelation};
     use std::collections::HashMap;
 
     let mut node_counts: HashMap<String, usize> = HashMap::new();
@@ -271,7 +271,7 @@ fn build_dfg_internal(log: &EventLog, activity_key: &str) -> pictl::models::Dire
         }
     }
 
-    let mut dfg = pictl::models::DirectlyFollowsGraph::new();
+    let mut dfg = wasm4pm::models::DirectlyFollowsGraph::new();
     dfg.nodes = node_counts
         .into_iter()
         .map(|(id, freq)| DFGNode {

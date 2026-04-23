@@ -1,6 +1,6 @@
 use crate::error::{codes, wasm_err};
 use crate::state::{get_or_init_state, StoredObject};
-use crate::utilities::to_js;
+use crate::utilities::to_js_str;
 use crate::{Data, Median}; // Conditional import: statrs or hand_rolled_stats
 use serde_json::json;
 use wasm_bindgen::prelude::*;
@@ -23,7 +23,7 @@ pub fn analyze_dotted_chart(eventlog_handle: &str) -> Result<JsValue, JsValue> {
                 }));
             }
 
-            to_js(&json!({
+            to_js_str(&json!({
                 "type": "dotted_chart",
                 "case_count": log.traces.len(),
                 "total_events": total_events,
@@ -56,7 +56,7 @@ pub fn analyze_event_statistics(eventlog_handle: &str) -> Result<JsValue, JsValu
                 },
             });
 
-            to_js(&stats)
+            to_js_str(&stats)
         }
         Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
         None => Err(wasm_err(
@@ -76,7 +76,7 @@ pub fn analyze_ocel_statistics(ocel_handle: &str) -> Result<JsValue, JsValue> {
                 "total_objects": ocel.object_count(),
             });
 
-            to_js(&stats)
+            to_js_str(&stats)
         }
         Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an OCEL")),
         None => Err(wasm_err(
@@ -120,7 +120,7 @@ pub fn analyze_case_duration(eventlog_handle: &str) -> Result<JsValue, JsValue> 
                 })
             };
 
-            to_js(&stats)
+            to_js_str(&stats)
         }
         Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
         None => Err(wasm_err(

@@ -80,3 +80,19 @@ export type {
 
 // Re-export error code for tests
 export { WasmErrorCode } from './wasm-loader.js';
+
+// Federation and execution modes (Section 5)
+export {
+  FederationController,
+  FederationCircuitBreaker,
+  initializeFederationStack,
+  planFederationIntegration,
+} from './federation.js';
+export type {
+  BackendState,
+  CircuitBreakerState,
+  DecisionTraceEntry,
+} from './federation.js';
+
+// NullBackend sentinel
+export { NullBackend } from './null-backend.js';

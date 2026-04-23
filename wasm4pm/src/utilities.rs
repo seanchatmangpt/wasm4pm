@@ -28,6 +28,46 @@ pub fn to_js<T: serde::Serialize>(val: &T) -> Result<JsValue, JsValue> {
     }
 }
 
+/// Serialize `val` via `serde_json` + `JsValue::from_str` on ALL targets.
+///
+/// Use this instead of `to_js` when `val` is a `serde_json::Value` (e.g. from
+/// `json!({...})`). `serde_wasm_bindgen` silently produces `{}` for those on
+/// wasm32; going through a JSON string avoids that bug entirely.
+/// JS callers receive a string and must call `JSON.parse()`.
+#[inline]
+pub fn to_js_str<T: serde::Serialize>(val: &T) -> Result<JsValue, JsValue> {
+    serde_json::to_string(val)
+        .map(|s| JsValue::from_str(&s))
+        .map_err(|e| JsValue::from_str(&e.to_string()))
+}
+
+/// Structured error: invalid handle (replaces ad-hoc JsValue::from_str("EventLog not found"))
+#[inline]
+pub fn wasm_invalid_handle(handle: &str) -> JsValue {
+    crate::error::wasm_err(
+        crate::error::codes::INVALID_HANDLE,
+        format!("No object at handle '{handle}'"),
+    )
+}
+
+/// Structured error: wrong object type (replaces ad-hoc JsValue::from_str("Object is not an EventLog"))
+#[inline]
+pub fn wasm_not_eventlog(handle: &str) -> JsValue {
+    crate::error::wasm_err(
+        crate::error::codes::INVALID_INPUT,
+        format!("Object at '{handle}' is not an EventLog"),
+    )
+}
+
+/// Structured error: object is not the expected type (generic variant)
+#[inline]
+pub fn wasm_wrong_type(handle: &str, expected: &str) -> JsValue {
+    crate::error::wasm_err(
+        crate::error::codes::INVALID_INPUT,
+        format!("Object at '{handle}' is not a {expected}"),
+    )
+}
+
 /// Get trace count from EventLog
 #[wasm_bindgen]
 pub fn get_trace_count(eventlog_handle: &str) -> Result<usize, JsValue> {
@@ -139,16 +179,15 @@ pub(crate) fn evaluate_edges_fitness(edge_set: &HashSet<(u32, u32)>, col: &Colum
             true // Empty or single-event traces are considered fitting
         };
 
-        if trace_fits {
-            fitting_traces += 1;
-        }
+        fitting_traces += trace_fits as usize;
     }
 
     // Fitness = balance of fit and simplicity
     let fit_ratio = fitting_traces as f64 / total_traces.max(1) as f64;
     let complexity_penalty = 1.0 / (1.0 + (edge_set.len() as f64 / 20.0));
 
-    fit_ratio * 0.8 + complexity_penalty * 0.2
+    // FMA: complexity_penalty * 0.2 + fit_ratio * 0.8 (fewer rounding steps)
+    complexity_penalty.mul_add(0.2, fit_ratio * 0.8)
 }
 
 /// Get all attribute names used in the log

@@ -6,17 +6,17 @@ wasm4pm supports 5 deployment profiles to optimize WASM binary size for differen
 
 | Profile     | Target Size | Use Case                      | Key Features                           |
 | ----------- | ----------- | ----------------------------- | -------------------------------------- |
-| **browser** | ~500KB      | Web browsers, mobile web      | Basic discovery, SIMD acceleration     |
-| **edge**    | ~1.5MB      | Edge servers, CDN workers     | Advanced algorithms, ML, streaming     |
-| **fog**     | ~2.0MB      | Fog computing, IoT gateways   | Swarm algorithms, full streaming, OCEL |
-| **iot**     | ~1.0MB      | IoT devices, embedded systems | Minimal discovery, streaming DFG       |
-| **cloud**   | ~2.78MB     | Cloud servers, data centers   | Full feature set (default for npm)     |
+| **mobile** | ~1.8MB      | Mobile apps, minimal web      | Basic discovery, SIMD acceleration     |
+| **edge**    | ~2.1MB      | Edge servers, CDN workers     | Advanced algorithms, ML, streaming     |
+| **fog**     | ~2.4MB      | Fog computing, IoT gateways   | Swarm algorithms, full streaming, OCEL |
+| **iot**     | ~1.9MB      | IoT devices, embedded systems | Minimal discovery, streaming DFG       |
+| **browser**   | **2.7MB** (measured)   | Cloud servers, web apps       | Full feature set (default for npm)     |
 
 ## Profile Details
 
-### browser Profile (~500KB target)
+### mobile Profile (~500KB target)
 
-**Use case:** Web browsers, desktop apps (Electron), mobile web
+**Use case:** Mobile apps, minimal web deployments, size-critical environments
 
 **Constraints:**
 
@@ -45,7 +45,7 @@ wasm4pm supports 5 deployment profiles to optimize WASM binary size for differen
 
 ```bash
 cd wasm4pm
-npm run build:browser
+npm run build:mobile
 ```
 
 ### edge Profile (~1.5MB target)
@@ -146,9 +146,9 @@ cd wasm4pm
 npm run build:iot
 ```
 
-### cloud Profile (~2.78MB target - default)
+### browser Profile (~2.78MB target - DEFAULT)
 
-**Use case:** Cloud servers, data centers, unlimited resources
+**Use case:** Cloud servers, web apps, data centers, unlimited resources
 
 **Constraints:**
 
@@ -160,7 +160,7 @@ npm run build:iot
 **Includes:**
 
 - Everything
-- All 21 discovery algorithms
+- All 41 discovery algorithms
 - All 6 ML/prediction features
 - Full POWL suite
 - Full streaming suite
@@ -173,7 +173,7 @@ npm run build:iot
 
 ```bash
 cd wasm4pm
-npm run build:cloud
+npm run build:browser
 # Or simply:
 npm run build
 ```
@@ -183,7 +183,7 @@ npm run build
 ### Development (Default)
 
 ```bash
-# Build with all features (cloud profile)
+# Build with all features (browser profile - default)
 cd wasm4pm
 npm run build
 
@@ -191,12 +191,12 @@ npm run build
 npm run size:check
 ```
 
-### Production Browser Deployment
+### Production Mobile Deployment
 
 ```bash
-# Build minimal profile for web browsers
+# Build minimal profile for mobile apps
 cd wasm4pm
-npm run build:browser
+npm run build:mobile
 
 # Expected output: ~500KB WASM binary
 ls -lh pkg/wasm4pm_bg.wasm
@@ -227,7 +227,7 @@ Check the actual binary size after building:
 
 ```bash
 # Build for specific profile
-npm run build:browser
+npm run build:mobile
 
 # Check size
 ls -lh pkg/wasm4pm_bg.wasm
@@ -238,11 +238,11 @@ gzip -c pkg/wasm4pm_bg.wasm | wc -c
 
 Expected sizes (uncompressed):
 
-- browser: ~500KB (82% reduction from 2.78MB)
+- mobile: ~500KB (82% reduction from 2.78MB)
 - iot: ~1.0MB (64% reduction)
 - edge: ~1.5MB (46% reduction)
 - fog: ~2.0MB (28% reduction)
-- cloud: ~2.78MB (no reduction, full feature set)
+- browser: ~2.78MB (no reduction, full feature set, default)
 
 ## Feature Flags
 
@@ -250,35 +250,36 @@ The deployment profiles are implemented using Rust Cargo feature flags. See `was
 
 ```toml
 [features]
-default = ["cloud"]  # Full feature set for npm package
-browser = ["basic", "simd", "hand_rolled_stats"]
+default = ["browser"]  # Full feature set for npm package (renamed from "cloud")
+mobile = ["basic", "simd", "hand_rolled_stats"]
 edge = ["basic", "advanced", "ml", "streaming_basic", "hand_rolled_stats"]
 fog = ["edge", "swarm", "streaming_full", "statrs", "ocel"]
 iot = ["minimal", "streaming_basic", "hand_rolled_stats"]
-cloud = ["basic", "advanced", "ml", "streaming_full", "swarm", "statrs", "powl", "ocel"]
+browser = ["basic", "advanced", "ml", "streaming_full", "swarm", "statrs", "powl", "ocel"]
+cloud = ["browser"]  # Deprecated alias for backward compatibility
 ```
 
 ## Algorithm Availability by Profile
 
-| Algorithm           | browser | edge | fog | iot | cloud |
-| ------------------- | ------- | ---- | --- | --- | ----- |
-| dfg                 | ✅      | ✅   | ✅  | ✅  | ✅    |
-| process_skeleton    | ✅      | ✅   | ✅  | ✅  | ✅    |
-| alpha_plus_plus     | ✅      | ✅   | ✅  | ❌  | ✅    |
-| heuristic_miner     | ✅      | ✅   | ✅  | ❌  | ✅    |
-| inductive_miner     | ❌      | ✅   | ✅  | ❌  | ✅    |
-| genetic_algorithm   | ❌      | ❌   | ✅  | ❌  | ✅    |
-| ilp                 | ❌      | ❌   | ✅  | ❌  | ✅    |
-| a_star              | ❌      | ✅   | ✅  | ❌  | ✅    |
-| aco                 | ❌      | ❌   | ✅  | ❌  | ✅    |
-| pso                 | ❌      | ❌   | ✅  | ❌  | ✅    |
-| simulated_annealing | ❌      | ❌   | ✅  | ❌  | ✅    |
-| ml_classify         | ❌      | ✅   | ✅  | ❌  | ✅    |
-| ml_cluster          | ❌      | ✅   | ✅  | ❌  | ✅    |
-| ml_forecast         | ❌      | ✅   | ✅  | ❌  | ✅    |
-| ml_anomaly          | ❌      | ✅   | ✅  | ❌  | ✅    |
-| ml_regress          | ❌      | ✅   | ✅  | ❌  | ✅    |
-| ml_pca              | ❌      | ✅   | ✅  | ❌  | ✅    |
+| Algorithm           | mobile | edge | fog | iot | browser |
+| ------------------- | ------ | ---- | --- | --- | ------- |
+| dfg                 | ✅     | ✅   | ✅  | ✅  | ✅      |
+| process_skeleton    | ✅     | ✅   | ✅  | ✅  | ✅      |
+| alpha_plus_plus     | ✅     | ✅   | ✅  | ❌  | ✅      |
+| heuristic_miner     | ✅     | ✅   | ✅  | ❌  | ✅      |
+| inductive_miner     | ❌     | ✅   | ✅  | ❌  | ✅      |
+| genetic_algorithm   | ❌     | ❌   | ✅  | ❌  | ✅      |
+| ilp                 | ❌     | ❌   | ✅  | ❌  | ✅      |
+| a_star              | ❌     | ✅   | ✅  | ❌  | ✅      |
+| aco                 | ❌     | ❌   | ✅  | ❌  | ✅      |
+| pso                 | ❌     | ❌   | ✅  | ❌  | ✅      |
+| simulated_annealing | ❌     | ❌   | ✅  | ❌  | ✅      |
+| ml_classify         | ❌     | ✅   | ✅  | ❌  | ✅      |
+| ml_cluster          | ❌     | ✅   | ✅  | ❌  | ✅      |
+| ml_forecast         | ❌     | ✅   | ✅  | ❌  | ✅      |
+| ml_anomaly          | ❌     | ✅   | ✅  | ❌  | ✅      |
+| ml_regress          | ❌     | ✅   | ✅  | ❌  | ✅      |
+| ml_pca              | ❌     | ✅   | ✅  | ❌  | ✅      |
 
 ## Migration Guide
 
@@ -290,43 +291,43 @@ npm run build
 # Gets: 2.78MB binary with everything
 ```
 
-### After (New)
+### After (v26.4.16)
 
 ```bash
-# Default build (unchanged for existing users)
+# Default build (full-featured browser profile)
 npm run build
-# Gets: 2.78MB binary with everything (cloud profile)
+# Gets: 2.78MB binary with everything (browser profile, all 41 algorithms)
 
 # Production optimization (new capability)
-npm run build:browser
-# Gets: ~500KB binary for production browser deployments
+npm run build:mobile
+# Gets: ~500KB binary for production mobile deployments
 
 # Other profiles
 npm run build:edge   # ~1.5MB
 npm run build:fog    # ~2.0MB
 npm run build:iot    # ~1.0MB
-npm run build:cloud  # ~2.78MB (same as default, explicit)
+npm run build:browser  # ~2.78MB (same as default, explicit, all features)
 ```
 
-**Key point:** Existing `npm run build` behavior is unchanged. Developers still get full capabilities by default. The profile builds are opt-in for production optimization.
+**Key point:** Profile reorganization: "cloud" profile renamed to "browser" (default), and old "browser" profile renamed to "mobile" (minimal, 82% size reduction).
 
 ## Backward Compatibility
 
-**No breaking change:** `default` feature is now `["cloud"]`, so existing users get the same full-featured binary.
+**Alias support:** `--features cloud` maps to `--features browser` for backward compatibility.
 
 **Migration path:**
 
-1. Existing users: No change needed, `npm run build` still works
+1. Existing users: No change needed, `npm run build` still works (now builds browser profile)
 2. New users: Get full capabilities by default, can opt into smaller profiles
-3. Production users: Can switch to profile builds for size optimization
+3. Production users: Use `npm run build:mobile` for size optimization
 
-**Compat alias:** Users migrating from old versions can use `--features compat` which is an alias for `cloud`.
+**Compat alias:** Users with old build scripts can use `npm run build:cloud` which is an alias for `npm run build:browser`.
 
 ## Technical Details
 
 ### statrs Replacement
 
-For browser, edge, and iot profiles, the `statrs` dependency (with nalgebra) is replaced with a hand-rolled statistics module (`hand_stats.rs`) that provides:
+For mobile, edge, and iot profiles, the `statrs` dependency (with nalgebra) is replaced with a hand-rolled statistics module (`hand_stats.rs`) that provides:
 
 - median(), mean(), percentile_95(), std_deviation(), min(), max()
 - Compatible API with statrs::statistics::Data trait
@@ -334,7 +335,7 @@ For browser, edge, and iot profiles, the `statrs` dependency (with nalgebra) is 
 
 ### POWL Modules
 
-The POWL (Process Orchestrations and Workflows Language) modules (~400KB) are only included in the cloud profile. Other profiles exclude them to save space.
+The POWL (Process Orchestrations and Workflows Language) modules (~400KB) are only included in the browser profile (full-featured). Other profiles exclude them to save space.
 
 ### Conditional Compilation
 

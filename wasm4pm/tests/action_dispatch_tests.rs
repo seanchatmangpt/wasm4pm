@@ -3,10 +3,10 @@
 //! Tests the action dispatch layer that converts RL action labels to
 //! executable operations.
 
-use pictl::action_dispatch::{
+use wasm4pm::action_dispatch::{
     dispatch_action, DispatchError, DispatchOutcome, ExecutionContext,
 };
-use pictl::RlAction;
+use wasm4pm::RlAction;
 
 #[test]
 fn test_action_continue_integration() {

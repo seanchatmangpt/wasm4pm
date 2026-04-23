@@ -1,6 +1,7 @@
 use crate::models::*;
 use crate::state::{get_or_init_state, StoredObject};
 use crate::utilities::to_js;
+use hashbrown::HashMap;
 use itertools::Itertools;
 use rustc_hash::FxHashMap;
 use serde_json::json;
@@ -44,15 +45,24 @@ pub fn analyze_variant_complexity(
                 p.log2().mul_add(-p, acc)
             });
 
-            let coverage_top_10: f64 = variants.values().map(|&v| v as f64 / total).take(10).sum();
+            let mut variant_counts: Vec<usize> = variants.values().copied().collect();
+            variant_counts.sort_unstable_by(|a, b| b.cmp(a));
+            let coverage_top_10: f64 =
+                variant_counts.iter().take(10).map(|&v| v as f64 / total).sum();
+
+            let max_entropy = if variants.len() > 1 {
+                (variants.len() as f64).log2()
+            } else {
+                1.0
+            };
 
             to_js(&json!({
                 "total_variants": variants.len(),
                 "entropy": entropy,
-                "max_entropy": total.log2(),
-                "normalized_entropy": entropy / total.log2(),
+                "max_entropy": max_entropy,
+                "normalized_entropy": if max_entropy > 0.0 { entropy / max_entropy } else { 0.0 },
                 "top_10_coverage": coverage_top_10,
-                "predominant_variant_size": variants.values().copied().max().unwrap_or(0),
+                "predominant_variant_size": variant_counts.first().copied().unwrap_or(0),
             }))
         }
         Some(_) => Err(JsValue::from_str("Not an EventLog")),
@@ -69,11 +79,18 @@ pub fn compute_activity_transition_matrix(
     get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
             let activities = log.get_activities(activity_key);
-            let mut transitions: FxHashMap<(String, String), usize> = FxHashMap::default();
-            let mut activity_total: FxHashMap<String, usize> = FxHashMap::default();
 
-            for activity in &activities {
-                activity_total.insert(activity.clone(), 0);
+            // Build activity vocabulary
+            let mut vocab: HashMap<String, u32> = HashMap::default();
+            for (idx, activity) in activities.iter().enumerate() {
+                vocab.insert(activity.clone(), idx as u32);
+            }
+
+            let mut transitions: FxHashMap<(u32, u32), usize> = FxHashMap::default();
+            let mut activity_total: FxHashMap<u32, usize> = FxHashMap::default();
+
+            for activity_id in vocab.values() {
+                activity_total.insert(*activity_id, 0);
             }
 
             for trace in &log.traces {
@@ -82,8 +99,10 @@ pub fn compute_activity_transition_matrix(
                         w[0].attributes.get(activity_key),
                         w[1].attributes.get(activity_key),
                     ) {
-                        *transitions.entry((a1.clone(), a2.clone())).or_insert(0) += 1;
-                        *activity_total.entry(a1.clone()).or_insert(0) += 1;
+                        if let (Some(&a1_id), Some(&a2_id)) = (vocab.get(a1), vocab.get(a2)) {
+                            *transitions.entry((a1_id, a2_id)).or_insert(0) += 1;
+                            *activity_total.entry(a1_id).or_insert(0) += 1;
+                        }
                     }
                 });
             }
@@ -91,14 +110,18 @@ pub fn compute_activity_transition_matrix(
             // Compute transition probabilities
             let matrix_data: Vec<_> = transitions
                 .iter()
-                .map(|((from, to), count)| {
-                    let prob =
-                        *count as f64 / activity_total.get(from).copied().unwrap_or(1) as f64;
-                    json!({
-                        "from": from,
-                        "to": to,
-                        "count": count,
-                        "probability": prob
+                .filter_map(|((from, to), count)| {
+                    activities.get(*from as usize).and_then(|from_name| {
+                        activities.get(*to as usize).map(|to_name| {
+                            let prob =
+                                *count as f64 / activity_total.get(from).copied().unwrap_or(1) as f64;
+                            json!({
+                                "from": from_name,
+                                "to": to_name,
+                                "count": count,
+                                "probability": prob
+                            })
+                        })
                     })
                 })
                 .collect();
@@ -132,9 +155,9 @@ pub fn analyze_process_speedup(
                     }
                 }
 
-                // Calculate gaps (simplified - just string length as proxy)
+                // Calculate gaps using real ISO-8601 timestamp parsing
                 for i in 0..timestamps.len().saturating_sub(1) {
-                    let gap = (timestamps[i + 1].len() as f64 - timestamps[i].len() as f64).abs();
+                    let gap = crate::parse_iso8601_duration(&timestamps[i], &timestamps[i + 1]).abs();
                     time_gaps.push(gap);
                 }
             }
@@ -196,11 +219,8 @@ pub fn compute_trace_similarity_matrix(
                     // Jaccard via set intersection/union — O(min(|i|,|j|)) per pair
                     let common = trace_sets[i].intersection(&trace_sets[j]).count();
                     let union = trace_sets[i].len() + trace_sets[j].len() - common;
-                    let similarity = if union > 0 {
-                        common as f64 / union as f64
-                    } else {
-                        0.0
-                    };
+                    // max(1) denominator guard — branchless cmov, no divide-by-zero
+                    let similarity = common as f64 / union.max(1) as f64;
 
                     if similarity > 0.5 {
                         similarities.push(json!({
@@ -231,7 +251,7 @@ pub fn analyze_temporal_bottlenecks(
 ) -> Result<JsValue, JsValue> {
     get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
-            let mut activity_durations: FxHashMap<String, Vec<f64>> = FxHashMap::default();
+            let mut activity_durations: HashMap<String, Vec<f64>> = HashMap::default();
 
             for trace in &log.traces {
                 let activities: Vec<(String, String)> = trace
@@ -253,8 +273,10 @@ pub fn analyze_temporal_bottlenecks(
                     .collect();
 
                 for i in 0..activities.len().saturating_sub(1) {
-                    let duration =
-                        (activities[i + 1].1.len() as f64) - (activities[i].1.len() as f64);
+                    let duration = crate::parse_iso8601_duration(
+                        &activities[i].1,
+                        &activities[i + 1].1,
+                    );
                     activity_durations
                         .entry(activities[i].0.clone())
                         .or_default()
@@ -292,8 +314,8 @@ pub fn extract_activity_ordering(
 ) -> Result<JsValue, JsValue> {
     get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
-            let mut mandatory_predecessors: FxHashMap<String, HashSet<String>> =
-                FxHashMap::default();
+            let mut mandatory_predecessors: HashMap<String, HashSet<String>> =
+                HashMap::default();
 
             for trace in &log.traces {
                 // Collect only events that carry the activity key, preserving order
@@ -313,10 +335,15 @@ pub fn extract_activity_ordering(
                     // All activities that appear before this position are predecessors
                     let predecessors: HashSet<String> =
                         activities.iter().take(pos).map(|&a| a.to_owned()).collect();
+                    // Mandatory predecessor = present before this activity in EVERY trace.
+                    // Vacant: seed with full predecessor set.
+                    // Occupied: intersect to keep only those seen in all traces so far.
                     mandatory_predecessors
                         .entry(activity.to_owned())
-                        .or_default()
-                        .extend(predecessors);
+                        .and_modify(|existing: &mut HashSet<String>| {
+                            existing.retain(|p| predecessors.contains(p.as_str()));
+                        })
+                        .or_insert(predecessors);
                 }
             }
 

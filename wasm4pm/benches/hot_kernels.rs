@@ -1,5 +1,5 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use pictl::hot_kernels::*;
+use wasm4pm::hot_kernels::*;
 
 // Prevent compiler from optimizing away results
 #[inline(never)]

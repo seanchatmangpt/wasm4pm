@@ -14,8 +14,8 @@
 //! Oracle: Rank 4 (Statistical Property) — convergence trends over N trials.
 //! Strategy: Seeded RNG + multi-seed statistical assertions.
 
-use pictl::rl_orchestrator::RlOrchestrator;
-use pictl::RlState;
+use wasm4pm::rl_orchestrator::RlOrchestrator;
+use wasm4pm::RlState;
 
 /// Create a stable "healthy" state — no alerts, no drift, circuit closed.
 fn healthy_state() -> RlState {
@@ -69,7 +69,7 @@ fn test_convergence_positive_cumulative_reward_stable() {
     let features = healthy_features();
 
     for _ in 0..500 {
-        let _ = orch.run_cycle(&features, &state, &state, 0, true, true);
+        let _ = orch.run_cycle(&features, &state, &state, 0, true, true, false);
     }
 
     assert!(
@@ -93,7 +93,7 @@ fn test_convergence_negative_cumulative_reward_degraded() {
     let features = degraded_features();
 
     for _ in 0..200 {
-        let _ = orch.run_cycle(&features, &state, &state, 2, false, true);
+        let _ = orch.run_cycle(&features, &state, &state, 2, false, true, false);
     }
 
     assert!(
@@ -115,7 +115,7 @@ fn test_convergence_cumulative_reward_monotonic() {
 
     let mut last_cumulative = 0.0_f32;
     for _ in 0..100 {
-        let _ = orch.run_cycle(&features, &state, &state, 0, true, true);
+        let _ = orch.run_cycle(&features, &state, &state, 0, true, true, false);
         assert!(
             orch.telemetry().cumulative_reward >= last_cumulative,
             "Cumulative reward should be monotonically increasing: \
@@ -145,13 +145,13 @@ fn test_convergence_reward_improves_with_health_recovery() {
 
     // Phase 1: degraded (100 cycles)
     for _ in 0..100 {
-        let (_, reward) = orch.run_cycle(&features, &bad_state, &bad_state, 2, false, true);
+        let (_, reward) = orch.run_cycle(&features, &bad_state, &bad_state, 2, false, true, false);
         degraded_rewards.push(reward);
     }
 
     // Phase 2: healthy (100 cycles)
     for _ in 0..100 {
-        let (_, reward) = orch.run_cycle(&features, &good_state, &good_state, 0, true, true);
+        let (_, reward) = orch.run_cycle(&features, &good_state, &good_state, 0, true, true, false);
         healthy_rewards.push(reward);
     }
 
@@ -181,14 +181,14 @@ fn test_convergence_exploration_decay_reduces_variance() {
     // Count actions in first 50 cycles (high exploration)
     let mut first_actions: Vec<String> = Vec::new();
     for _ in 0..50 {
-        let (action, _) = orch.run_cycle(&features, &state, &state, 0, true, true);
+        let (action, _) = orch.run_cycle(&features, &state, &state, 0, true, true, false);
         first_actions.push(action);
     }
 
     // Count actions in cycles 450-500 (low exploration)
     let mut late_actions: Vec<String> = Vec::new();
     for _ in 0..50 {
-        let (action, _) = orch.run_cycle(&features, &state, &state, 0, true, true);
+        let (action, _) = orch.run_cycle(&features, &state, &state, 0, true, true, false);
         late_actions.push(action);
     }
 
@@ -223,7 +223,7 @@ fn test_convergence_positive_reward_across_seeds() {
         let features = healthy_features();
 
         for _ in 0..200 {
-            let _ = orch.run_cycle(&features, &state, &state, 0, true, true);
+            let _ = orch.run_cycle(&features, &state, &state, 0, true, true, false);
         }
 
         assert!(
@@ -252,7 +252,7 @@ fn test_convergence_different_environments_different_actions() {
         let features = healthy_features();
         let mut counts: std::collections::HashMap<String, u32> = std::collections::HashMap::new();
         for _ in 0..total_cycles {
-            let (action, _) = orch.run_cycle(&features, &state, &state, 0, true, true);
+            let (action, _) = orch.run_cycle(&features, &state, &state, 0, true, true, false);
             *counts.entry(action).or_insert(0) += 1;
         }
         counts
@@ -264,7 +264,7 @@ fn test_convergence_different_environments_different_actions() {
         let features = degraded_features();
         let mut counts: std::collections::HashMap<String, u32> = std::collections::HashMap::new();
         for _ in 0..total_cycles {
-            let (action, _) = orch.run_cycle(&features, &state, &state, 2, false, true);
+            let (action, _) = orch.run_cycle(&features, &state, &state, 2, false, true, false);
             *counts.entry(action).or_insert(0) += 1;
         }
         counts
@@ -314,7 +314,7 @@ fn test_multi_seed_final_reward_distributions_are_consistent() {
             // Run 200 cycles, collect rewards
             let mut all_rewards = Vec::new();
             for _ in 0..total_cycles {
-                let (_action, reward) = orch.run_cycle(&features, &state, &state, 0, true, true);
+                let (_action, reward) = orch.run_cycle(&features, &state, &state, 0, true, true, false);
                 all_rewards.push(reward);
             }
 
@@ -348,4 +348,119 @@ fn test_multi_seed_final_reward_distributions_are_consistent() {
         std_dev,
         cv
     );
+}
+
+// ---------------------------------------------------------------------------
+// Test B2 (Category B — Policy): LinUCB convergence under health degradation
+// ---------------------------------------------------------------------------
+#[test]
+fn test_b2_linucb_agent_selection_convergence_under_degradation() {
+    // Run 100 cycles with LinUCB-based agent selection under a health-degradation
+    // environment. LinUCB should converge on a preferred agent (one agent selected
+    // >40% of cycles) because the reward signal is consistent.
+    let mut orch = RlOrchestrator::new_with_seed(42);
+    orch.set_linucb_selection(true);
+
+    let state = degraded_state();
+    let features = [0.1, 0.2, 0.3, 0.25, 0.0, 1.0, 1.0, 0.0];
+
+    let mut agent_selections: std::collections::HashMap<String, u32> =
+        std::collections::HashMap::new();
+
+    for _ in 0..100 {
+        orch.run_cycle(&features, &state, &state, 1, true, true, false);
+        let agent_name = orch.telemetry().active_agent_name.clone();
+        *agent_selections.entry(agent_name).or_insert(0) += 1;
+    }
+
+    assert_eq!(
+        orch.telemetry().cycle_count,
+        100,
+        "should complete exactly 100 cycles"
+    );
+
+    let max_count = agent_selections.values().copied().max().unwrap_or(0);
+
+    assert!(
+        max_count > 40,
+        "LinUCB should converge: one agent should be selected >40% of 100 cycles. \
+         Got distribution: {:?}. Max selection count: {}",
+        agent_selections,
+        max_count
+    );
+}
+
+// ---------------------------------------------------------------------------
+// Test B4 (Category B — Policy): Terminal recovery — reward trend improves
+// ---------------------------------------------------------------------------
+#[test]
+fn test_b4_terminal_recovery_reward_trend_improves() {
+    // Start at health=4 (terminal/Failed), then 20 cycles with improving health.
+    // Trajectory: 4->3->2->1->0->0->0...
+    // Reward per step:
+    //   4->3: +1.0 (improvement) + 0.1 (guard/circ) = +1.1
+    //   3->2: +1.0 + 0.1 = +1.1
+    //   2->1: +1.0 + 0.1 = +1.1
+    //   1->0: +1.0 + 0.1 = +1.1
+    //   0->0 (stable): +0.2 + 0.1 = +0.3
+    //
+    // Assert: cumulative reward increases over 20 recovery cycles.
+    let mut orch = RlOrchestrator::new_with_seed(42);
+
+    let mut rewards = Vec::with_capacity(20);
+    let mut current_health: u8 = 4;
+    let features = [0.1, 0.2, 0.3, 0.25, 0.0, 1.0, 1.0, 0.0];
+
+    for _ in 0..20 {
+        let state = RlState {
+            health_level: current_health,
+            event_rate_q: 3,
+            activity_count_q: 3,
+            spc_alert_level: 0,
+            drift_status: 0,
+            rework_ratio_q: 0,
+            circuit_state: 0,
+            cycle_phase: 0,
+        };
+        let next_health = if current_health > 0 { current_health - 1 } else { 0 };
+        let next_state = RlState {
+            health_level: next_health,
+            event_rate_q: 3,
+            activity_count_q: 3,
+            spc_alert_level: 0,
+            drift_status: 0,
+            rework_ratio_q: 0,
+            circuit_state: 0,
+            cycle_phase: 0,
+        };
+
+        let (_, reward) = orch.run_cycle(&features, &state, &next_state, 0, true, true, false);
+        rewards.push(reward);
+        current_health = next_health;
+    }
+
+    // The first cycle has health=4 (terminal) as prev, curr=3.
+    // Terminal penalty only applies when curr_health==4. Here curr=3, so no terminal penalty.
+    // Improvement reward (+1.1) should dominate early cycles.
+    let cumulative_10: f32 = rewards[..10].iter().sum();
+    let cumulative_20: f32 = rewards.iter().sum();
+
+    assert!(
+        cumulative_20 > cumulative_10,
+        "Cumulative reward should increase over 20 recovery cycles: \
+         cumulative_10={:.2}, cumulative_20={:.2}",
+        cumulative_10,
+        cumulative_20
+    );
+
+    // All rewards during the improving phase (first 5 cycles)
+    // should be positive (improvement bonus + guard bonus outweigh any penalties).
+    for (i, &r) in rewards[..5].iter().enumerate() {
+        assert!(
+            r > 0.0,
+            "Reward at recovery cycle {} should be positive: got {:.4}",
+            i + 1,
+            r
+        );
+    }
 }

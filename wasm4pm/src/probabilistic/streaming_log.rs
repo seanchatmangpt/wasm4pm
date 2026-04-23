@@ -16,12 +16,20 @@ use rustc_hash::FxHashMap;
 /// Uses FNV-1a for speed and distribution quality.
 #[inline]
 fn fnv1a_hash(data: &[u8]) -> u64 {
-    let mut h: u64 = 0xcbf29ce484222325;
-    for &byte in data {
-        h ^= byte as u64;
-        h = h.wrapping_mul(0x100000001b3);
+    #[cfg(feature = "bcinr")]
+    {
+        bcinr::sketch::fnv1a_64(data)
     }
-    h
+
+    #[cfg(not(feature = "bcinr"))]
+    {
+        let mut h: u64 = 0xcbf29ce484222325;
+        for &byte in data {
+            h ^= byte as u64;
+            h = h.wrapping_mul(0x100000001b3);
+        }
+        h
+    }
 }
 
 /// Streaming log processor with bounded memory.
@@ -42,7 +50,7 @@ fn fnv1a_hash(data: &[u8]) -> u64 {
 /// # Example
 ///
 /// ```
-/// use pictl::probabilistic::streaming_log::StreamingLog;
+/// use wasm4pm::probabilistic::streaming_log::StreamingLog;
 /// let mut slog = StreamingLog::new();
 /// slog.add_trace(&["A", "B", "C"]);
 /// slog.add_trace(&["A", "B", "D"]);

@@ -91,8 +91,8 @@ pub struct YawlExportResult {
 /// # Example
 ///
 /// ```no_run
-/// use pictl::yawl_export::{powl_to_yawl, YawlExportConfig};
-/// # use pictl::powl_arena::PowlArena;
+/// use wasm4pm::yawl_export::{powl_to_yawl, YawlExportConfig};
+/// # use wasm4pm::powl_arena::PowlArena;
 ///
 /// # let arena = PowlArena::new();
 /// # let root = 0;

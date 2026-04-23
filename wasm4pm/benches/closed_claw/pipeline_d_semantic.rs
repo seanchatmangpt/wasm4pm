@@ -16,10 +16,10 @@
 //!   G5 Report    -- metrics: node_count, edge_count, fitness, precision
 
 use criterion::{black_box, BenchmarkId, Criterion, Throughput};
-use pictl::algorithms::discover_alpha_plus_plus;
-use pictl::models::*;
-use pictl::pnml_io::{from_pnml, to_pnml};
-use pictl::state::{get_or_init_state, StoredObject};
+use wasm4pm::algorithms::discover_alpha_plus_plus;
+use wasm4pm::models::*;
+use wasm4pm::pnml_io::{from_pnml, to_pnml};
+use wasm4pm::state::{get_or_init_state, StoredObject};
 use std::collections::HashMap;
 use std::time::Duration;
 

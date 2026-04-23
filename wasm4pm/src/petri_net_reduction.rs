@@ -19,7 +19,7 @@
 
 use crate::models::{PetriNet, PetriNetArc, PetriNetPlace, PetriNetTransition};
 use std::collections::HashMap;
-use wasm_bindgen::JsValue;
+use wasm_bindgen::prelude::*;
 
 // ---------------------------------------------------------------------------
 // Helper methods for models::PetriNet
@@ -418,6 +418,7 @@ fn count_identical_place_groups(net: &PetriNet) -> usize {
 ///
 /// Takes a PetriNet handle, applies all reduction rules, and returns
 /// a JSON `ReductionResult` with before/after statistics.
+#[wasm_bindgen]
 pub fn wasm_reduce_petri_net(net_handle: &str) -> Result<String, JsValue> {
     use crate::state::{get_or_init_state, StoredObject};
     use wasm_bindgen::prelude::*;

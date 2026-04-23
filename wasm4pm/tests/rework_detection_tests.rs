@@ -7,9 +7,9 @@
 //! Uses REAL event logs: running-example.json.
 //! Oracle: Rank 2 (Domain Contract) — rework should degrade health and reward.
 
-use pictl::models::EventLog;
-use pictl::rl_orchestrator::compute_health_state;
-use pictl::RlState;
+use wasm4pm::models::EventLog;
+use wasm4pm::rl_orchestrator::compute_health_state;
+use wasm4pm::RlState;
 use std::collections::HashSet;
 use std::fs;
 
@@ -25,10 +25,10 @@ fn load_event_log_json(name: &str) -> EventLog {
 
 /// Detect if a trace contains activity repetition (rework).
 /// Same logic as lib.rs::has_activity_repetition — tested here independently.
-fn has_activity_repetition(trace: &pictl::models::Trace, activity_key: &str) -> bool {
+fn has_activity_repetition(trace: &wasm4pm::models::Trace, activity_key: &str) -> bool {
     let mut seen = HashSet::new();
     for event in &trace.events {
-        if let Some(pictl::models::AttributeValue::String(name)) =
+        if let Some(wasm4pm::models::AttributeValue::String(name)) =
             event.attributes.get(activity_key)
         {
             if seen.contains(name) {
@@ -160,7 +160,7 @@ fn test_real_log_health_state_from_actual_metrics() {
     let mut activity_set = HashSet::new();
     for trace in &log.traces {
         for event in &trace.events {
-            if let Some(pictl::models::AttributeValue::String(name)) =
+            if let Some(wasm4pm::models::AttributeValue::String(name)) =
                 event.attributes.get("activity")
             {
                 activity_set.insert(name.clone());
@@ -244,7 +244,7 @@ fn test_real_log_rework_ratio_produces_distinct_rl_states() {
              let mut s = HashSet::new();
              for trace in &log.traces {
                  for event in &trace.events {
-                     if let Some(pictl::models::AttributeValue::String(n)) =
+                     if let Some(wasm4pm::models::AttributeValue::String(n)) =
                          event.attributes.get("activity") { s.insert(n.clone()); }
                  }
              }

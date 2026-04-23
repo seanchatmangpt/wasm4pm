@@ -339,8 +339,9 @@ impl StreamingInductiveBuilder {
         net.places.push(PetriNetPlace {
             id: source_id.to_string(),
             label: source_id.to_string(),
-            marking: None,
+            marking: Some(1),
         });
+        net.initial_marking.insert(source_id.to_string(), 1);
 
         for (group_idx, group) in order.iter().enumerate() {
             let place_id = format!("p_seq_{}", group_idx);
@@ -361,11 +362,15 @@ impl StreamingInductiveBuilder {
                     is_invisible: None,
                 });
 
-                net.arcs.push(PetriNetArc {
-                    from: place_id.clone(),
-                    to: t_id.clone(),
-                    weight: None,
-                });
+                // Only connect from p_seq_N to transitions for N > 0;
+                // group 0 is fed exclusively by p_source (added below).
+                if group_idx > 0 {
+                    net.arcs.push(PetriNetArc {
+                        from: place_id.clone(),
+                        to: t_id.clone(),
+                        weight: None,
+                    });
+                }
 
                 let next_place_id = if group_idx + 1 < order.len() {
                     format!("p_seq_{}", group_idx + 1)
@@ -419,8 +424,9 @@ impl StreamingInductiveBuilder {
         net.places.push(PetriNetPlace {
             id: source_id.to_string(),
             label: source_id.to_string(),
-            marking: None,
+            marking: Some(1),
         });
+        net.initial_marking.insert(source_id.to_string(), 1);
         net.places.push(PetriNetPlace {
             id: sink_id.to_string(),
             label: sink_id.to_string(),
@@ -449,7 +455,7 @@ impl StreamingInductiveBuilder {
                 weight: None,
             });
 
-            for (i, &act_id) in group.iter().enumerate() {
+            for &act_id in group.iter() {
                 let name = self.interner.get(act_id).unwrap_or("?");
                 let t_id = format!("t_{}", name);
 
@@ -470,17 +476,6 @@ impl StreamingInductiveBuilder {
                     to: sink_id.to_string(),
                     weight: None,
                 });
-
-                // Connect to next activity in group
-                if i + 1 < group.len() {
-                    let next_name = self.interner.get(group[i + 1]).unwrap_or("?");
-                    let next_t_id = format!("t_{}", next_name);
-                    net.arcs.push(PetriNetArc {
-                        from: t_id,
-                        to: next_t_id,
-                        weight: None,
-                    });
-                }
             }
         }
 
@@ -504,8 +499,9 @@ impl StreamingInductiveBuilder {
         net.places.push(PetriNetPlace {
             id: source_id.to_string(),
             label: source_id.to_string(),
-            marking: None,
+            marking: Some(1),
         });
+        net.initial_marking.insert(source_id.to_string(), 1);
         net.places.push(PetriNetPlace {
             id: sink_id.to_string(),
             label: sink_id.to_string(),
@@ -573,8 +569,9 @@ impl StreamingInductiveBuilder {
         net.places.push(PetriNetPlace {
             id: source_id.to_string(),
             label: source_id.to_string(),
-            marking: None,
+            marking: Some(1),
         });
+        net.initial_marking.insert(source_id.to_string(), 1);
         net.places.push(PetriNetPlace {
             id: sink_id.to_string(),
             label: sink_id.to_string(),
@@ -654,8 +651,9 @@ impl StreamingInductiveBuilder {
         net.places.push(PetriNetPlace {
             id: source_id.to_string(),
             label: source_id.to_string(),
-            marking: None,
+            marking: Some(1),
         });
+        net.initial_marking.insert(source_id.to_string(), 1);
         net.places.push(PetriNetPlace {
             id: sink_id.to_string(),
             label: sink_id.to_string(),

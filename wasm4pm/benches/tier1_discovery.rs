@@ -9,10 +9,10 @@
 ///
 /// These benchmarks sweep 4 standard dataset sizes (100 to 50k events).
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
-use pictl::advanced_algorithms::discover_heuristic_miner;
-use pictl::algorithms::discover_alpha_plus_plus;
-use pictl::discovery::discover_dfg;
-use pictl::more_discovery::{discover_inductive_miner, extract_process_skeleton};
+use wasm4pm::advanced_algorithms::discover_heuristic_miner;
+use wasm4pm::algorithms::discover_alpha_plus_plus;
+use wasm4pm::discovery::discover_dfg;
+use wasm4pm::more_discovery::{discover_inductive_miner, extract_process_skeleton};
 use std::time::Duration;
 
 #[path = "helpers.rs"]

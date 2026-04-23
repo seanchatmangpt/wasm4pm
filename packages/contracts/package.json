@@ -1,6 +1,6 @@
 {
   "name": "@pictl/contracts",
-  "version": "26.4.10",
+  "version": "26.4.17",
   "description": "Runtime contracts, receipts, and hash verification",
   "type": "module",
   "main": "./dist/index.js",

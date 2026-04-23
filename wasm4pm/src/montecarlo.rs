@@ -198,10 +198,9 @@ pub fn run_monte_carlo_simulation(
             let mut waiting = 0.0;
             if let Some(pool) = resource_pools.get_mut(&resource_key) {
                 if !pool.acquire() {
-                    // Resource busy - wait
-                    waiting = 50.0; // Simplified waiting time
+                    // Resource busy — use the activity's mean service time as a wait proxy
+                    waiting = service_params.mean;
                     trace_wait_time += waiting;
-                    pool.acquire();
                 }
             }
 
@@ -280,16 +279,8 @@ fn sample_log_normal(rng: &mut StdRng, mean: f64, std_dev: f64) -> Result<f64, S
     // Convert from desired lognormal mean/std to underlying normal params
     let variance = std_dev * std_dev;
     let sigma2 = (variance / (mean * mean) + 1.0).ln();
-    let sigma = sigma2.sqrt();
+    let sigma = sigma2.sqrt().max(1e-6);
     let mu = mean.ln() - sigma2 / 2.0;
-
-    // Validate that sigma is positive (required by LogNormal)
-    if sigma <= 0.0 {
-        return Err(format!(
-            "Invalid lognormal parameters: sigma={} (from mean={}, std_dev={})",
-            sigma, mean, std_dev
-        ));
-    }
 
     let log_normal = LogNormal::new(mu, sigma)
         .map_err(|e| format!("Failed to create LogNormal distribution: {}", e))?;

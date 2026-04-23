@@ -12,7 +12,7 @@
 use crate::error::{codes, wasm_err};
 use crate::models::{PetriNet, PetriNetArc, PetriNetPlace, PetriNetTransition};
 use crate::state::{get_or_init_state, StoredObject};
-use crate::utilities::to_js;
+use crate::utilities::to_js_str;
 use std::collections::HashMap;
 use wasm_bindgen::prelude::*;
 
@@ -338,7 +338,7 @@ pub fn from_pnml_wasm(pnml_string: &str) -> Result<JsValue, JsValue> {
         .store_object(StoredObject::PetriNet(net))
         .map_err(|_| wasm_err(codes::INTERNAL_ERROR, "Failed to store PetriNet"))?;
 
-    to_js(&serde_json::json!({ "handle": handle }))
+    to_js_str(&serde_json::json!({ "handle": handle }))
 }
 
 /// Serialize a stored PetriNet (identified by handle) to PNML XML.
@@ -347,7 +347,7 @@ pub fn to_pnml_wasm(petri_net_handle: &str) -> Result<JsValue, JsValue> {
     get_or_init_state().with_object(petri_net_handle, |obj| match obj {
         Some(StoredObject::PetriNet(net)) => {
             let pnml = to_pnml(net);
-            to_js(&serde_json::json!({ "pnml": pnml }))
+            to_js_str(&serde_json::json!({ "pnml": pnml }))
         }
         Some(_) => Err(wasm_err(
             codes::INVALID_HANDLE,

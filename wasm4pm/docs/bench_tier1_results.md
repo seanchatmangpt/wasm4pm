@@ -176,7 +176,7 @@ Latency (ms, log scale)
 - **Sample size:** 30-50 iterations
 - **Hardware:** macOS (Darwin 25.2.0), x86_64
 - **Compiler:** rustc 1.84 with `opt-level=3`
-- **Features:** `--all-features` (full cloud profile)
+- **Features:** `--all-features` (full browser profile)
 
 ---
 
