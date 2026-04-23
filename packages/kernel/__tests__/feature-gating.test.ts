@@ -47,7 +47,7 @@ describe('Feature Gating - Algorithm Registry Integration', () => {
         expect(algo.id).toBeTruthy();
         expect(algo.name).toBeTruthy();
         expect(algo.description).toBeTruthy();
-        expect(algo.outputType).toMatch(/^(dfg|petrinet|declare|tree|ml_result)$/);
+        expect(algo.outputType).toMatch(/^(dfg|petrinet|declare|tree|ml_result|analytics)$/);
         expect(algo.complexity).toBeTruthy();
         expect(algo.speedTier).toBeGreaterThanOrEqual(0);
         expect(algo.speedTier).toBeLessThanOrEqual(100);

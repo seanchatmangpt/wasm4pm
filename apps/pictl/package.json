@@ -27,6 +27,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@pictl/agents": "workspace:*",
     "@pictl/config": "workspace:*",
     "@pictl/engine": "workspace:*",
     "@pictl/ml": "workspace:^",

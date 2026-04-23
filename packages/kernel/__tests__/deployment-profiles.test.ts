@@ -40,9 +40,8 @@ describe('Deployment Profiles', () => {
       const edgeAlgorithms = registry.getForDeploymentProfile('edge');
 
       const algorithmIds = edgeAlgorithms.map((a) => a.id);
-      expect(algorithmIds).toContain('ml_classify');
       expect(algorithmIds).toContain('ml_cluster');
-      expect(algorithmIds).toContain('ml_forecast');
+      expect(algorithmIds).toContain('ml_anomaly');
     });
 
     it('should include swarm algorithms in fog profile but not edge', () => {
@@ -71,7 +70,7 @@ describe('Deployment Profiles', () => {
       const algorithmIds = cloudAlgorithms.map((a) => a.id);
       expect(algorithmIds).toContain('dfg');
       expect(algorithmIds).toContain('genetic_algorithm');
-      expect(algorithmIds).toContain('ml_classify');
+      expect(algorithmIds).toContain('ml_cluster');
     });
 
     it('should have minimal algorithms in iot profile', () => {

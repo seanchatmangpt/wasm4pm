@@ -20,6 +20,9 @@ importers:
 
   apps/pictl:
     dependencies:
+      '@pictl/agents':
+        specifier: workspace:*
+        version: link:../../packages/agents
       '@pictl/config':
         specifier: workspace:*
         version: link:../../packages/config
@@ -51,9 +54,9 @@ importers:
 
   lab:
     dependencies:
-      '@seanchatmangpt/pictl':
-        specifier: ^26.4.9
-        version: 26.4.9(zod@3.25.76)
+      wasm4pm:
+        specifier: ^26.4.18
+        version: 26.4.18
     devDependencies:
       '@types/node':
         specifier: ^20.10.0
@@ -722,10 +725,6 @@ packages:
     resolution: {integrity: sha512-lWMnixq/QzxyhTV6NjQJ4SFo1J6PvOX8vUx5Wb4bBPsEb+8xZ89Bz6kOXpfXj9ak9AHTQVQzlgzBEc1SyM27xQ==}
     cpu: [x64]
     os: [win32]
-
-  '@seanchatmangpt/pictl@26.4.9':
-    resolution: {integrity: sha512-zneGpOxFyH9BaNOE96NJ2oXl/WuBFWRdyG0v1ysQer9o8vXVzTH7INQoJnzOFPsM/50/ERN+yeguR2+FYRh6rA==}
-    engines: {node: '>=14.0.0'}
 
   '@sinclair/typebox@0.27.10':
     resolution: {integrity: sha512-MTBk/3jGLNB2tVxv6uLlFh1iu64iYOQ2PbdOSK3NW8JZsmlaOh2q6sdtKowBhfw8QFLmYNzTW4/oK4uATIi6ZA==}
@@ -1893,6 +1892,9 @@ packages:
   vscode-textmate@8.0.0:
     resolution: {integrity: sha512-AFbieoL7a5LMqcnOF04ji+rpXadgOXnZsxQr//r83kLPr7biP7am3g9zbaZIaBGwBRWeSvoMD4mgPdX3e4NWBg==}
 
+  wasm4pm@26.4.18:
+    resolution: {integrity: sha512-iz2wfuZZxSmyBdx1QPQOunFBXAta+tGvMe95fMZeVXs+JJSeUpEM3ANPIsFcx7Cu88oXGsheZaaboDUPAhqkaw==}
+
   which-boxed-primitive@1.1.1:
     resolution: {integrity: sha512-TbX3mj8n0odCBFVlY8AxkqcHASw3L60jIuF8jFP78az3C2YhmGvqbHBpAjTRH2/xqYunrJ9g1jSyjCjpoWzIAA==}
     engines: {node: '>= 0.4'}
@@ -2182,15 +2184,6 @@ snapshots:
 
   '@rollup/rollup-win32-x64-msvc@4.60.1':
     optional: true
-
-  '@seanchatmangpt/pictl@26.4.9(zod@3.25.76)':
-    dependencies:
-      '@modelcontextprotocol/sdk': 1.29.0(zod@3.25.76)
-      '@pictl/ml': link:packages/ml
-    transitivePeerDependencies:
-      - '@cfworker/json-schema'
-      - supports-color
-      - zod
 
   '@sinclair/typebox@0.27.10': {}
 
@@ -3498,6 +3491,8 @@ snapshots:
   vscode-oniguruma@1.7.0: {}
 
   vscode-textmate@8.0.0: {}
+
+  wasm4pm@26.4.18: {}
 
   which-boxed-primitive@1.1.1:
     dependencies:
