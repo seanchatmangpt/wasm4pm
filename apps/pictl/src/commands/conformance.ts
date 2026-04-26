@@ -176,21 +176,26 @@ export const conformance = defineCommand({
       }
 
       // Precision calculation not yet supported in current API
-      const precision = 0.0;
+      const precision = null;
+      const precision_available = false;
 
       // Free log handle
       wasm.delete_object(logHandle);
 
       // Build result
+      const fitnessValue = (conformanceResult as Record<string, unknown>).fitness ?? 0.0;
+      const isFit = (fitnessValue as number) >= threshold;
       const result = {
-        status: 'success',
+        schema: 'chatmangpt.pictl.conformance.v1',
+        status: isFit ? 'success' : 'conformance_fail',
         input: inputPath,
         activityKey,
         method,
         threshold,
-        fitness: (conformanceResult as Record<string, unknown>).fitness ?? 0.0,
+        fitness: fitnessValue,
         precision,
-        isFit: ((conformanceResult as Record<string, unknown>).fitness as number ?? 0.0) >= threshold,
+        precision_available,
+        isFit,
         diagnostics: {
           traced: (conformanceResult as Record<string, unknown>).traced ?? 0,
           remaining: (conformanceResult as Record<string, unknown>).remaining ?? 0,
@@ -208,6 +213,11 @@ export const conformance = defineCommand({
         printHumanConformance(formatter as HumanFormatter, result);
       }
 
+      // Exit non-zero when fitness is below threshold so bash -e pipelines
+      // and downstream tools can detect conformance failure.
+      if (!isFit) {
+        process.exit(EXIT_CODES.conformance_fail);
+      }
       process.exit(EXIT_CODES.success);
     } catch (error) {
       if (formatter instanceof JSONFormatter) {
@@ -227,7 +237,8 @@ function printHumanConformance(
   result: Record<string, unknown>
 ): void {
   const fitness = (result.fitness as number) ?? 0.0;
-  const precision = (result.precision as number) ?? 0.0;
+  const precisionRaw = result.precision as number | null;
+  const precisionAvailable = result.precision_available as boolean;
   const threshold = (result.threshold as number) ?? 0.8;
   const isFit = result.isFit as boolean;
   const diagnostics = result.diagnostics as Record<string, unknown>;
@@ -238,7 +249,10 @@ function printHumanConformance(
   formatter.log(`  Method: ${result.method as string}`);
   formatter.log('');
   formatter.log(`  Fitness: ${fitness.toFixed(3)} ${isFit ? '✓' : '✗'} (threshold: ${threshold.toFixed(2)})`);
-  formatter.log(`  Precision: ${precision.toFixed(3)}`);
+  const precisionDisplay = precisionAvailable && precisionRaw !== null
+    ? precisionRaw.toFixed(3)
+    : 'N/A (not computed)';
+  formatter.log(`  Precision: ${precisionDisplay}`);
   formatter.log('');
   formatter.log('  Diagnostics (token replay):');
   formatter.log(`    Traced:     ${diagnostics.traced as number}`);
