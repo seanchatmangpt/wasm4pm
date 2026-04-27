@@ -37,10 +37,10 @@ check-debt:
 
 # ── Proxy targets to root package.json ────────────────────────────────────────
 lint:
-	pnpm run lint
+	cd $(PKG_DIR) && npm run lint
 
 test:
-	pnpm run test
+	cd $(PKG_DIR) && npm run test
 
 # ── Top-level: Rust Criterion groups + Node.js workers, fully concurrent ─────
 bench: bench-data
@@ -63,17 +63,13 @@ BENCH_NS_LIMIT ?= 1000000000  # 1 second in nanoseconds — any bench over this 
 # ── Rust Criterion: 8 groups in parallel ──────────────────────────────────────
 bench-rust:
 	@echo "Building Criterion bench binaries..."
-	@cd $(PKG_DIR) && cargo build --release --benches --jobs $(JOBS) --quiet
+	@cd $(PKG_DIR) && cargo build --release --benches --jobs $(JOBS) --features cloud --quiet
 	@echo "Running Criterion groups sequentially (skipping cloud-dependent)..."
 	@BENCH_OUT=$$(mktemp); \
 	cd $(PKG_DIR) && \
-	@BENCH_OUT=$$(mktemp); \
-	cd $(PKG_DIR) && \
-	for b_file in benches/*.rs; do \
-	  b=$$(basename "$$b_file" .rs); \
-	  if [[ "$$b" == *"jtbd"* || "$$b" == *"claw"* ]]; then continue; fi; \
+	for b in fast_algorithms medium_algorithms slow_algorithms analytics conformance hot_kernels tier1_discovery tier2_metaheuristic jtbd_benchmark closed_claw; do \
 	  echo "Running bench: $$b"; \
-	  cargo bench --bench $$b -- --output-format bencher --warm-up-time 1 --measurement-time 3 | tee -a $$BENCH_OUT; \
+	  cargo bench --bench $$b --features cloud -- --output-format bencher --warm-up-time 1 --measurement-time 3 | tee -a $$BENCH_OUT; \
 	done; \
 
 

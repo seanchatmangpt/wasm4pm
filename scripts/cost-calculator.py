@@ -27,8 +27,11 @@ from __future__ import annotations
 import argparse
 import datetime
 import json
+import logging
 import os
 import sys
+
+logger = logging.getLogger(__name__)
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
@@ -193,8 +196,8 @@ def gpu_cost_entry(
     if thermal.get("throttling_detected") and thermal.get("freq_reduction_pct") is not None:
         try:
             throttle_pct = float(thermal["freq_reduction_pct"]) / 100.0
-        except (TypeError, ValueError):
-            pass
+        except (TypeError, ValueError) as e:
+            logger.debug("thermal freq_reduction_pct conversion failed: %s", e)
     kt_ms_degraded = kt_ms * (1.0 + throttle_pct)
 
     # Energy

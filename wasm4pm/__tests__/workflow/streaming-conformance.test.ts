@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import * as pm from '../../pkg/pictl.js';
+import * as pm from '../../pkg/wasm4pm.js';
 import { XES_WORKFLOW } from '../helpers/fixtures';
 
 describe('Streaming Conformance', () => {
@@ -20,7 +20,7 @@ describe('Streaming Conformance', () => {
   it('should detect conforming traces', () => {
     // Build a reference DFG from a log where A→B→C is the only path
     const logHandle = pm.load_eventlog_from_xes(XES_WORKFLOW);
-    const dfgJson = JSON.stringify(pm.discover_dfg(logHandle, 'concept:name'));
+    const dfgJson = pm.discover_dfg(logHandle, 'concept:name') as string;
     const dfgHandle = pm.store_dfg_from_json(dfgJson);
 
     const sessionHandle = pm.streaming_conformance_begin(dfgHandle);
@@ -42,9 +42,7 @@ describe('Streaming Conformance', () => {
 
   it('should detect non-conforming traces', () => {
     const logHandle = pm.load_eventlog_from_xes(XES_WORKFLOW);
-    const dfgHandle = pm.store_dfg_from_json(
-      JSON.stringify(pm.discover_dfg(logHandle, 'concept:name'))
-    );
+    const dfgHandle = pm.store_dfg_from_json(pm.discover_dfg(logHandle, 'concept:name') as string);
 
     const sessionHandle = pm.streaming_conformance_begin(dfgHandle);
 
@@ -62,9 +60,7 @@ describe('Streaming Conformance', () => {
 
   it('should report stats for open session', () => {
     const logHandle = pm.load_eventlog_from_xes(XES_WORKFLOW);
-    const dfgHandle = pm.store_dfg_from_json(
-      JSON.stringify(pm.discover_dfg(logHandle, 'concept:name'))
-    );
+    const dfgHandle = pm.store_dfg_from_json(pm.discover_dfg(logHandle, 'concept:name') as string);
     const sessionHandle = pm.streaming_conformance_begin(dfgHandle);
 
     pm.streaming_conformance_add_event(sessionHandle, 'c1', 'Activity A');
@@ -81,9 +77,7 @@ describe('Streaming Conformance', () => {
 
   it('should finalize and return summary', () => {
     const logHandle = pm.load_eventlog_from_xes(XES_WORKFLOW);
-    const dfgHandle = pm.store_dfg_from_json(
-      JSON.stringify(pm.discover_dfg(logHandle, 'concept:name'))
-    );
+    const dfgHandle = pm.store_dfg_from_json(pm.discover_dfg(logHandle, 'concept:name') as string);
     const sessionHandle = pm.streaming_conformance_begin(dfgHandle);
 
     pm.streaming_conformance_add_event(sessionHandle, 'c1', 'Activity A');
