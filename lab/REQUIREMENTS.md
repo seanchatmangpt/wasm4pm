@@ -61,7 +61,27 @@ npm test
 
 ---
 
-## 4. Known Gaps
+## 4. Runtime Dependency — `chokidar` (added spec 057 / 2026-04-27)
+
+`apps/pictl/src/commands/watch.ts` now uses `chokidar@^4.0.1` (resolved 4.0.3)
+for cross-platform file watching. This replaces the previous `fs.watch` debounce
+loop. `chokidar` is declared in `apps/pictl/package.json` and is resolved via the
+`pnpm` workspace lock file (`pnpm-lock.yaml`).
+
+Running `pnpm install` from the monorepo root is sufficient to install it. No
+additional system-level prerequisites are required — `chokidar` 4.x is a pure
+JavaScript package with no native bindings.
+
+CI note: the `Pm4pyBackend.init()` lifecycle method now calls `healthCheck()` on
+startup. In CI environments where the Python bridge is not present, `init()` will
+fail fast and set `isReady() = false` rather than failing silently at invocation
+time. This is the intended behaviour. Tests that depend on `Pm4pyBackend` being
+ready will need the Python bridge running; tests that merely call `init()` will
+receive a well-typed error instead of a silent no-op.
+
+---
+
+## 5. Known Gaps
 
 As of 2026-04-27:
 
