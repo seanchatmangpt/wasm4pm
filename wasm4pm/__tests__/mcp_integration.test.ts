@@ -90,11 +90,24 @@ describe('PictlMCPServer', () => {
     expect(toolNames).toContain('cache_stats');
   });
 
-  it('has at least 30 registered tools', async () => {
+  it('registers spec-059 gap-fill tools', async () => {
     const server = new PictlMCPServer();
     const tools = (server as any).getAvailableTools() as Array<{ name: string }>;
-    // MCP server exposes 30+ tools across all categories
-    expect(tools.length).toBeGreaterThanOrEqual(30);
+    const toolNames = tools.map((t) => t.name);
+
+    // T001 — Alpha Miner footprint matrix (Process Discovery perspective)
+    expect(toolNames).toContain('discover_alpha_footprints');
+    // T002 — DFG token-replay fitness (Conformance Checking perspective)
+    expect(toolNames).toContain('compute_conformance_fitness');
+    // T003 — WASM backend health (Resource and intervention perspective)
+    expect(toolNames).toContain('check_backend_health');
+  });
+
+  it('has at least 33 registered tools', async () => {
+    const server = new PictlMCPServer();
+    const tools = (server as any).getAvailableTools() as Array<{ name: string }>;
+    // MCP server exposes 33+ tools after spec-059 additions
+    expect(tools.length).toBeGreaterThanOrEqual(33);
   });
 
   it('all tools have valid input schemas', async () => {
@@ -112,7 +125,14 @@ describe('PictlMCPServer', () => {
         expect(Array.isArray(tool.inputSchema.required)).toBe(true);
         // Every tool should have at least one required parameter
         // (except utility tools with no required params like get_capability_registry)
-        if (!['get_capability_registry', 'clear_caches', 'cache_stats'].includes(tool.name)) {
+        if (
+          ![
+            'get_capability_registry',
+            'clear_caches',
+            'cache_stats',
+            'check_backend_health',
+          ].includes(tool.name)
+        ) {
           expect(tool.inputSchema.required.length).toBeGreaterThan(0);
         }
       }

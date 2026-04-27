@@ -695,6 +695,61 @@ export class PictlMCPServer {
           required: ['xes_content'],
         },
       },
+      // Process Discovery — Alpha Miner footprint matrix (T001)
+      {
+        name: 'discover_alpha_footprints',
+        description:
+          'Compute the Alpha Miner footprint matrix. Answers "What are the causal, parallel, and never-follow relations between activities in this process?" Returns causal pairs (A→B), parallel pairs (A||B), and never-follow pairs for every activity pair in the log.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            xes_content: {
+              type: 'string',
+              description: 'XES event log content as string',
+            },
+            activity_key: {
+              type: 'string',
+              description: 'XES activity attribute key (default: concept:name)',
+            },
+          },
+          required: ['xes_content'],
+        },
+      },
+      // Conformance Checking — DFG token-replay fitness (T002)
+      {
+        name: 'compute_conformance_fitness',
+        description:
+          'Compute DFG token-replay fitness for an event log. Answers "How well does this log conform to the process model discovered from it?" Returns a 0–1 fitness score with a quality label (good/partial/poor) and an interpretation. Uses SIMD-accelerated token replay internally.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            xes_content: {
+              type: 'string',
+              description: 'XES event log content as string',
+            },
+            activity_key: {
+              type: 'string',
+              description: 'XES activity attribute key (default: concept:name)',
+            },
+          },
+          required: ['xes_content'],
+        },
+      },
+      // Resource and intervention — WASM backend health (T003)
+      {
+        name: 'check_backend_health',
+        description:
+          'Check whether the process mining WASM backend is initialized and ready to accept discovery and conformance requests. Returns version, feature flags, cache statistics, and a readiness flag.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            force_reinit: {
+              type: 'boolean',
+              description: 'If true, call wasm.init() even if already initialized (default: false)',
+            },
+          },
+        },
+      },
     ];
   }
   /**
@@ -1259,6 +1314,136 @@ export class PictlMCPServer {
               /* best-effort */
             }
           }
+          break;
+        }
+        // Process Discovery — Alpha Miner footprint matrix (T001)
+        case 'discover_alpha_footprints': {
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
+          try {
+            const actKey = input.activity_key ?? 'concept:name';
+            const raw = wasm.discover_footprints(logHandle, actKey);
+            const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+            const matrix = parsed?.matrix ?? [];
+            const activities = parsed?.activities ?? [];
+            let causalPairs = 0;
+            let parallelPairs = 0;
+            let neverFollowPairs = 0;
+            let loopL1 = 0;
+            for (let i = 0; i < matrix.length; i++) {
+              for (let j = 0; j < (matrix[i]?.length ?? 0); j++) {
+                const rel = matrix[i]?.[j];
+                if (rel === '>' || rel === 'causal') causalPairs++;
+                else if (rel === '||' || rel === 'parallel') parallelPairs++;
+                else if (rel === '#' || rel === 'never') neverFollowPairs++;
+                if (i === j && (rel === '>' || rel === 'causal')) loopL1++;
+              }
+            }
+            const loopL2 = parsed?.loop_count_l2 ?? 0;
+            result = {
+              activities,
+              matrix,
+              causal_pairs: causalPairs,
+              parallel_pairs: parallelPairs,
+              never_follow_pairs: neverFollowPairs,
+              loop_count_l1: loopL1,
+              loop_count_l2: loopL2,
+              interpretation:
+                activities.length === 0
+                  ? 'No activities found in the log. Verify the activity_key parameter.'
+                  : `Alpha footprint computed over ${activities.length} activities. Found ${causalPairs} causal pair(s) (A→B), ${parallelPairs} parallel pair(s) (A||B), and ${neverFollowPairs} never-follow pair(s) (#). ${loopL1 > 0 ? `${loopL1} length-1 loop(s) detected.` : 'No length-1 loops.'} ${loopL2 > 0 ? `${loopL2} length-2 loop(s) detected.` : ''}`.trim(),
+            };
+          } finally {
+            try {
+              wasm.delete_object(logHandle);
+            } catch {
+              /* best-effort */
+            }
+          }
+          break;
+        }
+        // Conformance Checking — DFG token-replay fitness (T002)
+        case 'compute_conformance_fitness': {
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
+          try {
+            const actKey = input.activity_key ?? 'concept:name';
+            const rawReplay = wasm.simd_token_replay(logHandle, actKey);
+            const replayResult = typeof rawReplay === 'string' ? JSON.parse(rawReplay) : rawReplay;
+            const fitness = replayResult?.fitness ?? replayResult?.avg_fitness ?? 0;
+            const precision = replayResult?.precision ?? replayResult?.avg_precision ?? 0;
+            const testedTraces = replayResult?.trace_count ?? replayResult?.total_traces ?? 0;
+            const conformingTraces =
+              replayResult?.conforming_traces ?? Math.round(fitness * testedTraces);
+            const qualityLabel = fitness >= 0.8 ? 'good' : fitness >= 0.5 ? 'partial' : 'poor';
+            const qualityDesc =
+              qualityLabel === 'good'
+                ? 'Good fit — the log closely follows the discovered process model.'
+                : qualityLabel === 'partial'
+                  ? 'Partial fit — the log deviates from the model in some cases. Review variant analysis for deviations.'
+                  : 'Poor fit — the log diverges significantly from the discovered process model. Expect frequent deviations or noise.';
+            result = {
+              fitness: parseFloat(fitness.toFixed(4)),
+              precision: parseFloat(precision.toFixed(4)),
+              tested_traces: testedTraces,
+              conforming_traces: conformingTraces,
+              quality_label: qualityLabel,
+              interpretation: `Token-replay fitness: ${(fitness * 100).toFixed(1)}% over ${testedTraces} trace(s). ${qualityDesc}`,
+            };
+          } finally {
+            try {
+              wasm.delete_object(logHandle);
+            } catch {
+              /* best-effort */
+            }
+          }
+          break;
+        }
+        // Resource and intervention — WASM backend health (T003)
+        case 'check_backend_health': {
+          const forceReinit = input.force_reinit ?? false;
+          let ready = true;
+          let version = 'unknown';
+          let features = {};
+          let cacheStats = {};
+          try {
+            version = wasm.get_version();
+          } catch {
+            ready = false;
+          }
+          try {
+            const rawCaps = wasm.get_capabilities();
+            features = typeof rawCaps === 'string' ? JSON.parse(rawCaps) : rawCaps;
+          } catch {
+            ready = false;
+          }
+          try {
+            const rawCache = wasm.get_cache_stats();
+            cacheStats = typeof rawCache === 'string' ? JSON.parse(rawCache) : rawCache;
+          } catch {
+            ready = false;
+          }
+          if (forceReinit || !ready) {
+            try {
+              wasm.init();
+              ready = true;
+              const rawCache = wasm.get_cache_stats();
+              cacheStats = typeof rawCache === 'string' ? JSON.parse(rawCache) : rawCache;
+            } catch {
+              ready = false;
+            }
+          }
+          const caps = features;
+          const conformanceReady = caps?.conformance ?? caps?.token_replay ?? false;
+          const mlReady = caps?.ml ?? caps?.machine_learning ?? false;
+          result = {
+            ready,
+            version,
+            features,
+            cache_stats: cacheStats,
+            backend_id: 'wasm',
+            interpretation: ready
+              ? `WASM backend is initialized and ready. Version ${version}. Conformance: ${String(conformanceReady)}. ML: ${String(mlReady)}.`
+              : `WASM backend is NOT ready. Version reported as "${version}". Call with force_reinit: true to attempt reinitialization.`,
+          };
           break;
         }
         default:
