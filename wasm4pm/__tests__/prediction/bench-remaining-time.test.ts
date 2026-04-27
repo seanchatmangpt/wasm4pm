@@ -28,7 +28,7 @@ const rows: BenchRow[] = [];
 afterAll(() => printTable(rows));
 
 async function loadWasm() {
-  const w = await import('../../pkg/pictl.js');
+  const w = await import('../../pkg/wasm4pm.js');
   w.init();
   return w;
 }

@@ -38,10 +38,13 @@ export declare function dfgToD3HTML(dfg: api.DirectlyFollowsGraph, containerId?:
  * @param dfg Discovered DFG
  * @returns Complete HTML report
  */
-export declare function generateProcessMiningReport(log: {
+export declare function generateProcessMiningReport(
+  log: {
     traceCount: number;
     eventCount: number;
     activities: string[];
     stats: any;
-}, dfg: api.DirectlyFollowsGraph): string;
+  },
+  dfg: api.DirectlyFollowsGraph
+): string;
 //# sourceMappingURL=visualizations.d.ts.map

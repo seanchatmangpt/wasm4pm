@@ -4,7 +4,7 @@
  */
 declare const __brand: unique symbol;
 type Brand<T, B extends string> = T & {
-    readonly [__brand]: B;
+  readonly [__brand]: B;
 };
 export type EventLogHandleId = Brand<string, 'EventLog'>;
 export type OCELHandleId = Brand<string, 'OCEL'>;
@@ -29,7 +29,9 @@ export declare function asDeclareHandleId(handle: string): DeclareHandleId;
 export declare function asTemporalProfileHandleId(handle: string): TemporalProfileHandleId;
 export declare function asNGramPredictorHandleId(handle: string): NGramPredictorHandleId;
 export declare function asStreamingDFGHandleId(handle: string): StreamingDFGHandleId;
-export declare function asStreamingConformanceHandleId(handle: string): StreamingConformanceHandleId;
+export declare function asStreamingConformanceHandleId(
+  handle: string
+): StreamingConformanceHandleId;
 export declare function asOCPetriNetHandleId(handle: string): OCPetriNetHandleId;
 export declare function asFeatureMatrixHandleId(handle: string): FeatureMatrixHandleId;
 export {};

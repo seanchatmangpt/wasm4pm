@@ -388,7 +388,8 @@ describe('Cross-Algorithm Parity: Conformance Metrics', () => {
         'concept:name',
         JSON.stringify(model)
       );
-      const conformance = typeof conformanceRaw === 'string' ? JSON.parse(conformanceRaw) : conformanceRaw;
+      const conformance =
+        typeof conformanceRaw === 'string' ? JSON.parse(conformanceRaw) : conformanceRaw;
 
       // Fitness must be in [0, 1] (WvdA soundness)
       expect(conformance).toHaveProperty('fitness');
@@ -428,7 +429,8 @@ describe('Cross-Algorithm Parity: Conformance Metrics', () => {
           'concept:name',
           JSON.stringify(model)
         );
-        const precisionResult = typeof precisionRaw === 'string' ? JSON.parse(precisionRaw) : precisionRaw;
+        const precisionResult =
+          typeof precisionRaw === 'string' ? JSON.parse(precisionRaw) : precisionRaw;
 
         // Precision must be in [0, 1] (WvdA soundness)
         expect(precisionResult).toHaveProperty('precision');

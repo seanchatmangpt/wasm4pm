@@ -9,101 +9,101 @@
  * Provides a fluent interface for receipt construction
  */
 export class ReceiptBuilder {
-    constructor(config) {
-        this.startTimestamp = null;
-        this.stepTimings = new Map();
-        this.outputs = new Map();
-        this.executedSteps = [];
-        this.config = config;
-        this.sourceFormat = config.source.format;
+  constructor(config) {
+    this.startTimestamp = null;
+    this.stepTimings = new Map();
+    this.outputs = new Map();
+    this.executedSteps = [];
+    this.config = config;
+    this.sourceFormat = config.source.format;
+  }
+  /**
+   * Records the start time of execution
+   * Must be called once at the beginning of pipeline execution
+   */
+  start() {
+    this.startTimestamp = new Date();
+    return this;
+  }
+  /**
+   * Records timing for a single pipeline step
+   * Accumulates timing information for the final receipt
+   * Steps should be recorded in execution order
+   *
+   * @param stepId - Unique identifier of the step
+   * @param durationMs - Duration of step execution in milliseconds
+   */
+  recordStep(stepId, durationMs) {
+    this.stepTimings.set(stepId, durationMs);
+    if (!this.executedSteps.includes(stepId)) {
+      this.executedSteps.push(stepId);
     }
-    /**
-     * Records the start time of execution
-     * Must be called once at the beginning of pipeline execution
-     */
-    start() {
-        this.startTimestamp = new Date();
-        return this;
+    return this;
+  }
+  /**
+   * Sets the final outputs from pipeline execution
+   * Typically called after all steps complete
+   * Outputs are keyed by step ID or result name
+   *
+   * @param outputs - Map of step outputs keyed by step ID
+   */
+  setOutputs(outputs) {
+    this.outputs = new Map(Object.entries(outputs));
+    return this;
+  }
+  /**
+   * Records the size of input data in bytes
+   * Used for performance analysis
+   *
+   * @param sizeBytes - Size of input data in bytes
+   */
+  setInputDataSize(sizeBytes) {
+    this.inputDataSize = sizeBytes;
+    return this;
+  }
+  /**
+   * Records the size of output data in bytes
+   * Used for performance analysis
+   *
+   * @param sizeBytes - Size of output data in bytes
+   */
+  setOutputDataSize(sizeBytes) {
+    this.outputDataSize = sizeBytes;
+    return this;
+  }
+  /**
+   * Constructs the final execution receipt
+   * Must be called after start() and ideally after recordStep() calls and setOutputs()
+   *
+   * @returns Complete ExecutionReceipt
+   * @throws Error if start() was not called
+   */
+  build() {
+    if (!this.startTimestamp) {
+      throw new Error('ReceiptBuilder.start() must be called before build()');
     }
-    /**
-     * Records timing for a single pipeline step
-     * Accumulates timing information for the final receipt
-     * Steps should be recorded in execution order
-     *
-     * @param stepId - Unique identifier of the step
-     * @param durationMs - Duration of step execution in milliseconds
-     */
-    recordStep(stepId, durationMs) {
-        this.stepTimings.set(stepId, durationMs);
-        if (!this.executedSteps.includes(stepId)) {
-            this.executedSteps.push(stepId);
-        }
-        return this;
-    }
-    /**
-     * Sets the final outputs from pipeline execution
-     * Typically called after all steps complete
-     * Outputs are keyed by step ID or result name
-     *
-     * @param outputs - Map of step outputs keyed by step ID
-     */
-    setOutputs(outputs) {
-        this.outputs = new Map(Object.entries(outputs));
-        return this;
-    }
-    /**
-     * Records the size of input data in bytes
-     * Used for performance analysis
-     *
-     * @param sizeBytes - Size of input data in bytes
-     */
-    setInputDataSize(sizeBytes) {
-        this.inputDataSize = sizeBytes;
-        return this;
-    }
-    /**
-     * Records the size of output data in bytes
-     * Used for performance analysis
-     *
-     * @param sizeBytes - Size of output data in bytes
-     */
-    setOutputDataSize(sizeBytes) {
-        this.outputDataSize = sizeBytes;
-        return this;
-    }
-    /**
-     * Constructs the final execution receipt
-     * Must be called after start() and ideally after recordStep() calls and setOutputs()
-     *
-     * @returns Complete ExecutionReceipt
-     * @throws Error if start() was not called
-     */
-    build() {
-        if (!this.startTimestamp) {
-            throw new Error('ReceiptBuilder.start() must be called before build()');
-        }
-        const finishTimestamp = new Date();
-        const totalMs = finishTimestamp.getTime() - this.startTimestamp.getTime();
-        return {
-            runId: generateRunId(),
-            engineVersion: '0.5.4',
-            configHash: hashConfig(this.config),
-            profile: this.config.execution.profile,
-            pipeline: this.executedSteps,
-            timing: {
-                total_ms: totalMs,
-                steps: Object.fromEntries(this.stepTimings),
-            },
-            outputs: Object.fromEntries(this.outputs),
-            receipt: {
-                startedAt: this.startTimestamp.toISOString(),
-                finishedAt: finishTimestamp.toISOString(),
-                inputDataSize: this.inputDataSize,
-                outputDataSize: this.outputDataSize,
-                sourceFormat: this.sourceFormat,
-            },
-        };
-    }
+    const finishTimestamp = new Date();
+    const totalMs = finishTimestamp.getTime() - this.startTimestamp.getTime();
+    return {
+      runId: generateRunId(),
+      engineVersion: '0.5.4',
+      configHash: hashConfig(this.config),
+      profile: this.config.execution.profile,
+      pipeline: this.executedSteps,
+      timing: {
+        total_ms: totalMs,
+        steps: Object.fromEntries(this.stepTimings),
+      },
+      outputs: Object.fromEntries(this.outputs),
+      receipt: {
+        startedAt: this.startTimestamp.toISOString(),
+        finishedAt: finishTimestamp.toISOString(),
+        inputDataSize: this.inputDataSize,
+        outputDataSize: this.outputDataSize,
+        sourceFormat: this.sourceFormat,
+      },
+    };
+  }
 }
 /**
  * Generates a unique run identifier
@@ -113,9 +113,9 @@ export class ReceiptBuilder {
  * @returns Unique run ID string
  */
 export function generateRunId() {
-    const timestamp = new Date().toISOString();
-    const random = Math.random().toString(16).substring(2, 6);
-    return `run_${timestamp}_${random}`;
+  const timestamp = new Date().toISOString();
+  const random = Math.random().toString(16).substring(2, 6);
+  return `run_${timestamp}_${random}`;
 }
 /**
  * Computes a deterministic hash of a configuration object
@@ -126,30 +126,30 @@ export function generateRunId() {
  * @returns Hex string hash (32 chars, like MD5)
  */
 export function hashConfig(config) {
-    // Create a deterministic representation by sorting keys
-    const sortedConfig = sortObjectKeys(config);
-    const jsonStr = JSON.stringify(sortedConfig);
-    // Simple hash function (simulating MD5-like output)
-    // In production, would use crypto.subtle.digest('SHA-256', ...)
-    return simpleHash(jsonStr);
+  // Create a deterministic representation by sorting keys
+  const sortedConfig = sortObjectKeys(config);
+  const jsonStr = JSON.stringify(sortedConfig);
+  // Simple hash function (simulating MD5-like output)
+  // In production, would use crypto.subtle.digest('SHA-256', ...)
+  return simpleHash(jsonStr);
 }
 /**
  * Recursively sorts all keys in an object to ensure deterministic JSON representation
  * Handles nested objects and arrays
  */
 function sortObjectKeys(obj) {
-    if (obj === null || typeof obj !== 'object') {
-        return obj;
-    }
-    if (Array.isArray(obj)) {
-        return obj.map((item) => sortObjectKeys(item));
-    }
-    const sorted = {};
-    const keys = Object.keys(obj).sort();
-    for (const key of keys) {
-        sorted[key] = sortObjectKeys(obj[key]);
-    }
-    return sorted;
+  if (obj === null || typeof obj !== 'object') {
+    return obj;
+  }
+  if (Array.isArray(obj)) {
+    return obj.map((item) => sortObjectKeys(item));
+  }
+  const sorted = {};
+  const keys = Object.keys(obj).sort();
+  for (const key of keys) {
+    sorted[key] = sortObjectKeys(obj[key]);
+  }
+  return sorted;
 }
 /**
  * Simple hash function for deterministic string hashing
@@ -160,17 +160,17 @@ function sortObjectKeys(obj) {
  * @returns 32-character hex string
  */
 function simpleHash(str) {
-    let hash = 5381;
-    for (let i = 0; i < str.length; i++) {
-        hash = (hash << 5) + hash + str.charCodeAt(i);
-        hash = hash & hash; // Convert to 32-bit integer
-    }
-    // Convert to hex and pad to 32 chars
-    let hex = (hash >>> 0).toString(16);
-    while (hex.length < 32) {
-        hex = '0' + hex;
-    }
-    return hex.substring(0, 32);
+  let hash = 5381;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash << 5) + hash + str.charCodeAt(i);
+    hash = hash & hash; // Convert to 32-bit integer
+  }
+  // Convert to hex and pad to 32 chars
+  let hex = (hash >>> 0).toString(16);
+  while (hex.length < 32) {
+    hex = '0' + hex;
+  }
+  return hex.substring(0, 32);
 }
 /**
  * Formats an ExecutionReceipt for console logging
@@ -180,53 +180,52 @@ function simpleHash(str) {
  * @returns Formatted string representation suitable for console output
  */
 export function formatReceipt(receipt) {
-    const lines = [];
-    lines.push('=== Execution Receipt ===');
-    lines.push(`Run ID: ${receipt.runId}`);
-    lines.push(`Engine: v${receipt.engineVersion}`);
-    lines.push(`Config Hash: ${receipt.configHash}`);
-    lines.push(`Profile: ${receipt.profile}`);
-    lines.push('');
-    lines.push('Pipeline Execution:');
-    for (const step of receipt.pipeline) {
-        const timing = receipt.timing.steps[step];
-        const timingStr = timing !== undefined ? `${timing}ms` : 'N/A';
-        lines.push(`  - ${step}: ${timingStr}`);
-    }
-    lines.push('');
-    lines.push('Timing:');
-    lines.push(`  Total: ${receipt.timing.total_ms}ms`);
-    if (receipt.pipeline.length > 0) {
-        const avgStepTime = receipt.timing.total_ms / receipt.pipeline.length;
-        lines.push(`  Average per step: ${Math.round(avgStepTime)}ms`);
-    }
-    lines.push('');
-    lines.push('Metadata:');
-    if (receipt.receipt.sourceFormat) {
-        lines.push(`  Source Format: ${receipt.receipt.sourceFormat}`);
-    }
-    if (receipt.receipt.inputDataSize !== undefined) {
-        lines.push(`  Input Size: ${formatBytes(receipt.receipt.inputDataSize)}`);
-    }
-    if (receipt.receipt.outputDataSize !== undefined) {
-        lines.push(`  Output Size: ${formatBytes(receipt.receipt.outputDataSize)}`);
-    }
-    lines.push('');
-    lines.push('Timestamps:');
-    lines.push(`  Started: ${receipt.receipt.startedAt}`);
-    lines.push(`  Finished: ${receipt.receipt.finishedAt}`);
-    return lines.join('\n');
+  const lines = [];
+  lines.push('=== Execution Receipt ===');
+  lines.push(`Run ID: ${receipt.runId}`);
+  lines.push(`Engine: v${receipt.engineVersion}`);
+  lines.push(`Config Hash: ${receipt.configHash}`);
+  lines.push(`Profile: ${receipt.profile}`);
+  lines.push('');
+  lines.push('Pipeline Execution:');
+  for (const step of receipt.pipeline) {
+    const timing = receipt.timing.steps[step];
+    const timingStr = timing !== undefined ? `${timing}ms` : 'N/A';
+    lines.push(`  - ${step}: ${timingStr}`);
+  }
+  lines.push('');
+  lines.push('Timing:');
+  lines.push(`  Total: ${receipt.timing.total_ms}ms`);
+  if (receipt.pipeline.length > 0) {
+    const avgStepTime = receipt.timing.total_ms / receipt.pipeline.length;
+    lines.push(`  Average per step: ${Math.round(avgStepTime)}ms`);
+  }
+  lines.push('');
+  lines.push('Metadata:');
+  if (receipt.receipt.sourceFormat) {
+    lines.push(`  Source Format: ${receipt.receipt.sourceFormat}`);
+  }
+  if (receipt.receipt.inputDataSize !== undefined) {
+    lines.push(`  Input Size: ${formatBytes(receipt.receipt.inputDataSize)}`);
+  }
+  if (receipt.receipt.outputDataSize !== undefined) {
+    lines.push(`  Output Size: ${formatBytes(receipt.receipt.outputDataSize)}`);
+  }
+  lines.push('');
+  lines.push('Timestamps:');
+  lines.push(`  Started: ${receipt.receipt.startedAt}`);
+  lines.push(`  Finished: ${receipt.receipt.finishedAt}`);
+  return lines.join('\n');
 }
 /**
  * Formats a byte count as a human-readable string
  */
 function formatBytes(bytes) {
-    if (bytes === 0)
-        return '0 B';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return (bytes / Math.pow(k, i)).toFixed(2) + ' ' + sizes[i];
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return (bytes / Math.pow(k, i)).toFixed(2) + ' ' + sizes[i];
 }
 /**
  * Creates a compressed representation of receipt for storage
@@ -236,19 +235,19 @@ function formatBytes(bytes) {
  * @returns Compressed JSON string
  */
 export function compressReceipt(receipt) {
-    // Omit outputs if they're too large (>1MB when stringified)
-    const outputsStr = JSON.stringify(receipt.outputs);
-    if (outputsStr.length > 1000000) {
-        const compressed = {
-            ...receipt,
-            outputs: {
-                _note: 'Outputs omitted (too large)',
-                size_bytes: outputsStr.length,
-            },
-        };
-        return JSON.stringify(compressed);
-    }
-    return JSON.stringify(receipt);
+  // Omit outputs if they're too large (>1MB when stringified)
+  const outputsStr = JSON.stringify(receipt.outputs);
+  if (outputsStr.length > 1000000) {
+    const compressed = {
+      ...receipt,
+      outputs: {
+        _note: 'Outputs omitted (too large)',
+        size_bytes: outputsStr.length,
+      },
+    };
+    return JSON.stringify(compressed);
+  }
+  return JSON.stringify(receipt);
 }
 /**
  * Parses a compressed receipt from JSON string
@@ -258,6 +257,6 @@ export function compressReceipt(receipt) {
  * @returns Parsed ExecutionReceipt
  */
 export function parseReceipt(json) {
-    return JSON.parse(json);
+  return JSON.parse(json);
 }
 //# sourceMappingURL=receipt.js.map

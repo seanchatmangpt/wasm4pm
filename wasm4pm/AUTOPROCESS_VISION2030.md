@@ -11,6 +11,7 @@ AutoProcessAgent implements a closed-loop perception → decision → protection
 ### 4-Operation Pipeline
 
 #### 1. Perception: Encode 8D state to state_id (Branchless)
+
 - **Input**: RlState (8 fields: health, event_rate, activity_count, spc_alert, drift, rework, circuit, cycle)
 - **Algorithm**: Polynomial encoding with precomputed multipliers
   ```
@@ -20,6 +21,7 @@ AutoProcessAgent implements a closed-loop perception → decision → protection
 - **Space**: 460,800 unique states (5×8×8×4×3×8×3×4)
 
 #### 2. Decision: Q-table lookup + LinUCB agent selection
+
 - **Q-lookup**: Direct indexing into 460K×5 action table
   - Latency: **3.327 ns** (Benchmark: `decision/select_action_epsilon_greedy`)
 - **LinUCB UCB estimate**: Precomputed sqrt LUT (128 entries)
@@ -27,6 +29,7 @@ AutoProcessAgent implements a closed-loop perception → decision → protection
 - **Total Decision**: ~6.5 ns
 
 #### 3. Protection: Circuit breaker + guard rules (Branchless)
+
 - **Guard eval**: Bitwise operations to validate state transitions
   - Latency: **1.144 ns** (Benchmark: `protection_guard/evaluate_guard_branchless`)
 - **Circuit breaker check**: Simple state comparison
@@ -34,6 +37,7 @@ AutoProcessAgent implements a closed-loop perception → decision → protection
 - **Total Protection**: ~1.5 ns
 
 #### 4. Optimization: Bellman Q-learning update
+
 - **Operation**: Q(s,a) ← Q(s,a) + α[r + γ max_a' Q(s',a') - Q(s,a)]
 - **Max operation**: Loop over 5 actions (branchless via float comparison)
 - **Note**: Bellman iteration is deferred in the main cycle loop to avoid exceeding latency budget
@@ -53,19 +57,20 @@ Full Cycle:    102.32 ns
 
 ### Latency Breakdown
 
-| Operation | Latency | % of Cycle | Remarks |
-|-----------|---------|-----------|---------|
-| encode_state | 1.047 ns | 1.0% | Branchless, negligible |
-| select_action | 3.327 ns | 3.3% | Q-lookup + 5 comparisons |
-| linucb_estimate | 3.154 ns | 3.1% | LUT-based, sqrt cached |
-| evaluate_guard | 1.144 ns | 1.1% | Bitwise validation |
-| circuit_check | 0.365 ns | 0.4% | State comparison |
-| bellman_update | ~90 ns | 88% | 5-action max + alpha*delta |
-| **TOTAL** | **102.32 ns** | **100%** | Over budget |
+| Operation       | Latency       | % of Cycle | Remarks                     |
+| --------------- | ------------- | ---------- | --------------------------- |
+| encode_state    | 1.047 ns      | 1.0%       | Branchless, negligible      |
+| select_action   | 3.327 ns      | 3.3%       | Q-lookup + 5 comparisons    |
+| linucb_estimate | 3.154 ns      | 3.1%       | LUT-based, sqrt cached      |
+| evaluate_guard  | 1.144 ns      | 1.1%       | Bitwise validation          |
+| circuit_check   | 0.365 ns      | 0.4%       | State comparison            |
+| bellman_update  | ~90 ns        | 88%        | 5-action max + alpha\*delta |
+| **TOTAL**       | **102.32 ns** | **100%**   | Over budget                 |
 
 ### Why Bellman Update is Expensive
 
 The Bellman update loop iterates over all 5 actions to find the max Q-value:
+
 ```rust
 for a in 0..ACTION_SPACE_SIZE {
     let q = self.q_lookup(next_state_id, a);  // 5 array lookups
@@ -73,7 +78,7 @@ for a in 0..ACTION_SPACE_SIZE {
 }
 ```
 
-Each Q-lookup touches L3 cache (potentially 100+ ns) but due to data locality, the 5 consecutive lookups are ~20 ns total. The floating-point comparison and alpha*delta computation add ~70 ns.
+Each Q-lookup touches L3 cache (potentially 100+ ns) but due to data locality, the 5 consecutive lookups are ~20 ns total. The floating-point comparison and alpha\*delta computation add ~70 ns.
 
 ### Design Decisions
 
@@ -201,6 +206,7 @@ cargo test --lib autoprocess:: -- --ignored
 ## Benchmarks
 
 Run benchmarks with:
+
 ```bash
 cargo bench --bench autoprocess_latency
 ```
@@ -247,6 +253,7 @@ cargo bench --bench autoprocess_latency
 1. **Use in non-real-time context**: 100 ns is acceptable for decision-making in human workflows (millisecond timescale), not suitable for microsecond-latency trading systems
 
 2. **Batch updates**: Decouple perception from optimization
+
    ```
    Cycle 1-1000: Perception → Decision → Protection (3 ns)
    Batch: Bellman update on 1000 accumulated transitions (async)

@@ -38,6 +38,7 @@ wasm4pm/
 **Purpose:** Defines the canonical binary data structures that all functions pass around.
 
 **Key Types:**
+
 - **Event Log:** `EventLog`, `Trace`, `Event`, `AttributeValue`
 - **Alternative Formats:** `OCEL`, `OCELEvent`, `OCELObject`
 - **Process Models:** `DFG`, `PetriNet`, `DeclareModel`
@@ -47,6 +48,7 @@ wasm4pm/
 - **Error Handling:** `Error`, `Result<T>`
 
 **Dependencies:**
+
 - `serde`, `serde_json` — Serialization
 - `blake3` — BLAKE3 hashing
 - `chrono`, `uuid` — Timestamps and unique IDs
@@ -67,6 +69,7 @@ wasm4pm/
 **Depends On:** `pictl-types`
 
 **Exports:**
+
 - WASM functions via `wasm_bindgen`
 - State management (handles, storage)
 - JavaScript-friendly interfaces
@@ -79,7 +82,7 @@ wasm4pm/
 pictl-core
    ↓
 pictl-types
-   
+
 pictl (main library)
    ↓
 pictl-types
@@ -90,6 +93,7 @@ No circular dependencies. No crate depends on `pictl` (the WASM library).
 ### 2. Types as the Foundation
 
 All functions pass around types defined in `pictl-types`. This ensures:
+
 - **Determinism:** Type definitions are immutable across all callers
 - **Versionability:** Type schema changes are tracked and auditable
 - **Interoperability:** Rust ↔ TypeScript ↔ Python can serialize/deserialize identical types
@@ -98,6 +102,7 @@ All functions pass around types defined in `pictl-types`. This ensures:
 ### 3. Binary Data Structures
 
 Types in `pictl-types` are "binary" in that they:
+
 - Serialize to deterministic JSON (canonical form with sorted keys)
 - Hash to BLAKE3 for provenance tracking
 - Support round-trip serialization (T → JSON → T)
@@ -106,6 +111,7 @@ Types in `pictl-types` are "binary" in that they:
 ### 4. No Platform Dependencies in Core
 
 `pictl-types` is platform-agnostic:
+
 - No `wasm-bindgen` features
 - No JavaScript APIs
 - No web-specific dependencies
@@ -175,6 +181,7 @@ cargo test
 ## Versioning
 
 All crates use shared `workspace.package.version`:
+
 - **Format:** CalVer `vYEAR.MONTH.DAY`
 - **Current:** `26.4.10` (April 10, 2026)
 - **Multiple releases same day:** Use letter suffixes (`26.4.10a`, `26.4.10b`)

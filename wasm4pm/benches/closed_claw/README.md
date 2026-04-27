@@ -17,36 +17,36 @@ cargo bench --bench closed_claw --features browser,conformance_full,conformance_
 
 ## Pipeline Classes
 
-| ID | Name | File | Algorithms Benchmarked |
-|----|------|------|------------------------|
-| A | Discovery Core | `pipeline_a_discovery.rs` | DFG, Alpha++, Heuristic Miner, Inductive Miner, Process Skeleton, Genetic Algorithm, DECLARE |
-| B | Conformance Core | `pipeline_b_conformance.rs` | Token Replay (sequential/parallel), SIMD Token Replay, ETConformance Precision, DECLARE Conformance |
-| C | Object-Centric Core | `pipeline_c_ocel.rs` | OCEL Construction, Validation, Flattening, Serialization, Pipeline E2E |
-| D | Semantic Proof Loop | `pipeline_d_semantic.rs` | PNML Roundtrip, Discovery-to-PNML, Proof Loop E2E |
-| E | Manufacturing Truth | `pipeline_e_manufacturing.rs` | Temporal Profile Discovery, Temporal Conformance, Monte Carlo Simulation, Truth Loop E2E |
-| F | ML-Augmented Runtime | `pipeline_f_ml.rs` | SIMD Streaming DFG, Streaming DFG Builder, Anomaly Detection, Drift Detection |
+| ID  | Name                 | File                          | Algorithms Benchmarked                                                                              |
+| --- | -------------------- | ----------------------------- | --------------------------------------------------------------------------------------------------- |
+| A   | Discovery Core       | `pipeline_a_discovery.rs`     | DFG, Alpha++, Heuristic Miner, Inductive Miner, Process Skeleton, Genetic Algorithm, DECLARE        |
+| B   | Conformance Core     | `pipeline_b_conformance.rs`   | Token Replay (sequential/parallel), SIMD Token Replay, ETConformance Precision, DECLARE Conformance |
+| C   | Object-Centric Core  | `pipeline_c_ocel.rs`          | OCEL Construction, Validation, Flattening, Serialization, Pipeline E2E                              |
+| D   | Semantic Proof Loop  | `pipeline_d_semantic.rs`      | PNML Roundtrip, Discovery-to-PNML, Proof Loop E2E                                                   |
+| E   | Manufacturing Truth  | `pipeline_e_manufacturing.rs` | Temporal Profile Discovery, Temporal Conformance, Monte Carlo Simulation, Truth Loop E2E            |
+| F   | ML-Augmented Runtime | `pipeline_f_ml.rs`            | SIMD Streaming DFG, Streaming DFG Builder, Anomaly Detection, Drift Detection                       |
 
 ## Gates
 
 Every pipeline exercises a subset of the 5 gates:
 
-| Gate | Name | What It Checks |
-|------|------|---------------|
-| G1 | Determinism | BLAKE3 output hash identical across N runs |
-| G2 | Receipt | BLAKE3 hash chain integrity: config -> input -> plan -> output |
-| G3 | Truth | Quality metrics meet thresholds (fitness >= 0.95, precision >= 0.80, temporal zeta <= 2.0) |
-| G4 | Synchrony | Cross-profile output agreement (e.g., PNML roundtrip semantic equivalence) |
-| G5 | Report | All required report sections present (pipeline, algorithm, dataset_size, throughput, hash, etc.) |
+| Gate | Name        | What It Checks                                                                                   |
+| ---- | ----------- | ------------------------------------------------------------------------------------------------ |
+| G1   | Determinism | BLAKE3 output hash identical across N runs                                                       |
+| G2   | Receipt     | BLAKE3 hash chain integrity: config -> input -> plan -> output                                   |
+| G3   | Truth       | Quality metrics meet thresholds (fitness >= 0.95, precision >= 0.80, temporal zeta <= 2.0)       |
+| G4   | Synchrony   | Cross-profile output agreement (e.g., PNML roundtrip semantic equivalence)                       |
+| G5   | Report      | All required report sections present (pipeline, algorithm, dataset_size, throughput, hash, etc.) |
 
 ### Gate-to-Pipeline Mapping
 
-| | A | B | C | D | E | F |
-|---|---|---|---|---|---|---|
-| G1 Determinism | X | X | X | X | X | X |
-| G2 Receipt | | | X | X | X | |
-| G3 Truth | | X | | | X | |
-| G4 Synchrony | | | | X | | |
-| G5 Report | X | X | X | X | X | X |
+|                | A   | B   | C   | D   | E   | F   |
+| -------------- | --- | --- | --- | --- | --- | --- |
+| G1 Determinism | X   | X   | X   | X   | X   | X   |
+| G2 Receipt     |     |     | X   | X   | X   |     |
+| G3 Truth       |     | X   |     |     | X   |     |
+| G4 Synchrony   |     |     |     | X   |     |     |
+| G5 Report      | X   | X   | X   | X   | X   | X   |
 
 ## Architecture
 
@@ -89,24 +89,24 @@ All benchmarks use deterministic LCG RNG (Linear Congruential Generator) with fi
 
 ## Benchmark Sizes
 
-| Tier | Cases | Events (approx) | Use Case |
-|------|-------|-----------------|----------|
-| Standard | 100, 1k, 10k, 50k | 1.2k - 600k | DFG, Alpha++, Heuristic, Inductive, Skeleton, DECLARE, Token Replay, SIMD Replay, ETConformance, DECLARE Conf |
-| Slow | 100, 500, 1k | 1.2k - 12k | Genetic Algorithm, Alpha++ (conformance), PNML roundtrip, Discovery-to-PNML, Temporal Profile, Temporal Conformance, Monte Carlo, Truth Loop E2E |
-| OCEL | 50, 200, 1k, 5k orders | 250 - 25k events | OCEL Construction, Validation, Flattening, Serialization, Pipeline E2E |
-| Streaming | 1k, 5k, 10k, 50k | 15k - 750k | SIMD Streaming DFG, Streaming DFG Builder, Anomaly Detection, Drift Detection |
+| Tier      | Cases                  | Events (approx)  | Use Case                                                                                                                                         |
+| --------- | ---------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Standard  | 100, 1k, 10k, 50k      | 1.2k - 600k      | DFG, Alpha++, Heuristic, Inductive, Skeleton, DECLARE, Token Replay, SIMD Replay, ETConformance, DECLARE Conf                                    |
+| Slow      | 100, 500, 1k           | 1.2k - 12k       | Genetic Algorithm, Alpha++ (conformance), PNML roundtrip, Discovery-to-PNML, Temporal Profile, Temporal Conformance, Monte Carlo, Truth Loop E2E |
+| OCEL      | 50, 200, 1k, 5k orders | 250 - 25k events | OCEL Construction, Validation, Flattening, Serialization, Pipeline E2E                                                                           |
+| Streaming | 1k, 5k, 10k, 50k       | 15k - 750k       | SIMD Streaming DFG, Streaming DFG Builder, Anomaly Detection, Drift Detection                                                                    |
 
 ## Feature Flags
 
-| Flag | Enables |
-|------|---------|
-| `browser` | All feature-gated modules including streaming, ML, conformance |
-| `conformance_full` | Full conformance checking suite |
-| `conformance_basic` | Basic conformance (token replay) |
-| `ocel` | Object-centric event log support |
-| `streaming_basic` | Streaming DFG algorithms |
-| `ml` | ML analysis (anomaly, drift, classification) |
-| `discovery_advanced` | Advanced discovery (genetic, ACO, PSO, ILP) |
+| Flag                 | Enables                                                        |
+| -------------------- | -------------------------------------------------------------- |
+| `browser`            | All feature-gated modules including streaming, ML, conformance |
+| `conformance_full`   | Full conformance checking suite                                |
+| `conformance_basic`  | Basic conformance (token replay)                               |
+| `ocel`               | Object-centric event log support                               |
+| `streaming_basic`    | Streaming DFG algorithms                                       |
+| `ml`                 | ML analysis (anomaly, drift, classification)                   |
+| `discovery_advanced` | Advanced discovery (genetic, ACO, PSO, ILP)                    |
 
 ## Receipt System
 

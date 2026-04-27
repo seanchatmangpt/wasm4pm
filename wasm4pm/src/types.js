@@ -7,36 +7,36 @@
  * Use this when receiving raw handle values from WASM.
  */
 export function asEventLogHandleId(handle) {
-    return handle;
+  return handle;
 }
 export function asOCELHandleId(handle) {
-    return handle;
+  return handle;
 }
 export function asDFGHandleId(handle) {
-    return handle;
+  return handle;
 }
 export function asPetriNetHandleId(handle) {
-    return handle;
+  return handle;
 }
 export function asDeclareHandleId(handle) {
-    return handle;
+  return handle;
 }
 export function asTemporalProfileHandleId(handle) {
-    return handle;
+  return handle;
 }
 export function asNGramPredictorHandleId(handle) {
-    return handle;
+  return handle;
 }
 export function asStreamingDFGHandleId(handle) {
-    return handle;
+  return handle;
 }
 export function asStreamingConformanceHandleId(handle) {
-    return handle;
+  return handle;
 }
 export function asOCPetriNetHandleId(handle) {
-    return handle;
+  return handle;
 }
 export function asFeatureMatrixHandleId(handle) {
-    return handle;
+  return handle;
 }
 //# sourceMappingURL=types.js.map

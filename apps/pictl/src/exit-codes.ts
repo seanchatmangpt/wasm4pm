@@ -20,6 +20,9 @@ export const EXIT_CODES = {
 
   /** System error (I/O, permission, system resource issues) */
   system_error: 5,
+
+  /** Conformance failure (fitness below threshold) */
+  conformance_fail: 6,
 } as const;
 
 export type ExitCode = (typeof EXIT_CODES)[keyof typeof EXIT_CODES];

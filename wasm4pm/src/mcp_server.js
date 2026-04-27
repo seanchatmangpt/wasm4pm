@@ -9,7 +9,7 @@
  *   await server.start();
  */
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { CallToolRequestSchema, ListToolsRequestSchema, } from '@modelcontextprotocol/sdk/types.js';
+import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import * as wasm from '../pkg/pictl.js';
 /**
@@ -22,1352 +22,1378 @@ import * as wasm from '../pkg/pictl.js';
  * - Event log import/export
  */
 export class PictlMCPServer {
-    constructor() {
-        this.server = new Server({
-            name: 'pictl',
-            version: '0.5.4',
-        }, {
-            capabilities: {
-                tools: {},
+  constructor() {
+    this.server = new Server(
+      {
+        name: 'pictl',
+        version: '0.5.4',
+      },
+      {
+        capabilities: {
+          tools: {},
+        },
+      }
+    );
+    this.transport = new StdioServerTransport();
+    this.setupHandlers();
+  }
+  setupHandlers() {
+    // Handle tool listing
+    this.server.setRequestHandler(ListToolsRequestSchema, async () => {
+      return {
+        tools: this.getAvailableTools(),
+      };
+    });
+    // Handle tool execution
+    this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
+      return this.executeTool(request.params.name, request.params.arguments ?? {});
+    });
+  }
+  /**
+   * Get all available MCP tools
+   */
+  getAvailableTools() {
+    return [
+      // Discovery Algorithms
+      {
+        name: 'discover_dfg',
+        description:
+          'Discover a Directly-Follows Graph (DFG) process model. Fastest algorithm, good for quick overviews.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            xes_content: {
+              type: 'string',
+              description: 'XES event log content as string',
             },
-        });
-        this.transport = new StdioServerTransport();
-        this.setupHandlers();
-    }
-    setupHandlers() {
-        // Handle tool listing
-        this.server.setRequestHandler(ListToolsRequestSchema, async () => {
-            return {
-                tools: this.getAvailableTools(),
-            };
-        });
-        // Handle tool execution
-        this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
-            return this.executeTool(request.params.name, (request.params.arguments ?? {}));
-        });
-    }
-    /**
-     * Get all available MCP tools
-     */
-    getAvailableTools() {
-        return [
-            // Discovery Algorithms
-            {
-                name: 'discover_dfg',
-                description: 'Discover a Directly-Follows Graph (DFG) process model. Fastest algorithm, good for quick overviews.',
-                inputSchema: {
-                    type: 'object',
-                    properties: {
-                        xes_content: {
-                            type: 'string',
-                            description: 'XES event log content as string',
-                        },
-                        min_frequency: {
-                            type: 'number',
-                            description: 'Minimum edge frequency (0-1). Default: 0.0 (include all edges)',
-                        },
-                    },
-                    required: ['xes_content'],
-                },
+            min_frequency: {
+              type: 'number',
+              description: 'Minimum edge frequency (0-1). Default: 0.0 (include all edges)',
             },
-            {
-                name: 'discover_alpha_plus_plus',
-                description: 'Discover a Petri Net using Alpha++ algorithm. Balanced accuracy and performance.',
-                inputSchema: {
-                    type: 'object',
-                    properties: {
-                        xes_content: {
-                            type: 'string',
-                            description: 'XES event log content',
-                        },
-                    },
-                    required: ['xes_content'],
-                },
+          },
+          required: ['xes_content'],
+        },
+      },
+      {
+        name: 'discover_alpha_plus_plus',
+        description:
+          'Discover a Petri Net using Alpha++ algorithm. Balanced accuracy and performance.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            xes_content: {
+              type: 'string',
+              description: 'XES event log content',
             },
-            {
-                name: 'discover_ilp_optimization',
-                description: 'Discover optimal process model using Integer Linear Programming. Highest quality but slower.',
-                inputSchema: {
-                    type: 'object',
-                    properties: {
-                        xes_content: {
-                            type: 'string',
-                            description: 'XES event log content',
-                        },
-                        timeout_ms: {
-                            type: 'number',
-                            description: 'Timeout in milliseconds. Default: 30000',
-                        },
-                    },
-                    required: ['xes_content'],
-                },
+          },
+          required: ['xes_content'],
+        },
+      },
+      {
+        name: 'discover_ilp_optimization',
+        description:
+          'Discover optimal process model using Integer Linear Programming. Highest quality but slower.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            xes_content: {
+              type: 'string',
+              description: 'XES event log content',
             },
-            {
-                name: 'discover_genetic_algorithm',
-                description: 'Discover process model using evolutionary algorithm. Good for complex processes.',
-                inputSchema: {
-                    type: 'object',
-                    properties: {
-                        xes_content: {
-                            type: 'string',
-                            description: 'XES event log content',
-                        },
-                        population_size: {
-                            type: 'number',
-                            description: 'Population size. Default: 50',
-                        },
-                        generations: {
-                            type: 'number',
-                            description: 'Number of generations. Default: 100',
-                        },
-                    },
-                    required: ['xes_content'],
-                },
+            timeout_ms: {
+              type: 'number',
+              description: 'Timeout in milliseconds. Default: 30000',
             },
-            {
-                name: 'discover_variants',
-                description: 'Discover all unique trace variants in the event log and their frequencies.',
-                inputSchema: {
-                    type: 'object',
-                    properties: {
-                        xes_content: {
-                            type: 'string',
-                            description: 'XES event log content',
-                        },
-                    },
-                    required: ['xes_content'],
-                },
+          },
+          required: ['xes_content'],
+        },
+      },
+      {
+        name: 'discover_genetic_algorithm',
+        description:
+          'Discover process model using evolutionary algorithm. Good for complex processes.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            xes_content: {
+              type: 'string',
+              description: 'XES event log content',
             },
-            // Analysis
-            {
-                name: 'check_conformance',
-                description: 'Check if event log conforms to a process model. Returns fitness, precision, and deviations.',
-                inputSchema: {
-                    type: 'object',
-                    properties: {
-                        xes_content: {
-                            type: 'string',
-                            description: 'XES event log content',
-                        },
-                        model_json: {
-                            type: 'string',
-                            description: 'Process model as JSON (Petri Net handle or serialized model)',
-                        },
-                    },
-                    required: ['xes_content', 'model_json'],
-                },
+            population_size: {
+              type: 'number',
+              description: 'Population size. Default: 50',
             },
-            {
-                name: 'analyze_statistics',
-                description: 'Analyze event log statistics: trace count, event count, duration, activities, etc.',
-                inputSchema: {
-                    type: 'object',
-                    properties: {
-                        xes_content: {
-                            type: 'string',
-                            description: 'XES event log content',
-                        },
-                    },
-                    required: ['xes_content'],
-                },
+            generations: {
+              type: 'number',
+              description: 'Number of generations. Default: 100',
             },
-            {
-                name: 'detect_bottlenecks',
-                description: 'Identify activities that are process bottlenecks based on execution time.',
-                inputSchema: {
-                    type: 'object',
-                    properties: {
-                        xes_content: {
-                            type: 'string',
-                            description: 'XES event log content',
-                        },
-                        threshold: {
-                            type: 'number',
-                            description: 'Threshold in seconds. Default: 3600 (1 hour)',
-                        },
-                    },
-                    required: ['xes_content'],
-                },
+          },
+          required: ['xes_content'],
+        },
+      },
+      {
+        name: 'discover_variants',
+        description: 'Discover all unique trace variants in the event log and their frequencies.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            xes_content: {
+              type: 'string',
+              description: 'XES event log content',
             },
-            // Visualization
-            {
-                name: 'encode_dfg_as_text',
-                description: 'Discover a DFG and encode it as LLM-readable text. Describes activities, edge paths with frequencies.',
-                inputSchema: {
-                    type: 'object',
-                    properties: {
-                        xes_content: {
-                            type: 'string',
-                            description: 'XES event log content (a DFG will be discovered first)',
-                        },
-                    },
-                    required: ['xes_content'],
-                },
+          },
+          required: ['xes_content'],
+        },
+      },
+      // Analysis
+      {
+        name: 'check_conformance',
+        description:
+          'Check if event log conforms to a process model. Returns fitness, precision, and deviations.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            xes_content: {
+              type: 'string',
+              description: 'XES event log content',
             },
-            // Utilities
-            {
-                name: 'compare_algorithms',
-                description: 'Compare multiple discovery algorithms on the same event log. Returns fitness and execution time for each.',
-                inputSchema: {
-                    type: 'object',
-                    properties: {
-                        xes_content: {
-                            type: 'string',
-                            description: 'XES event log content',
-                        },
-                        algorithms: {
-                            type: 'array',
-                            items: { type: 'string' },
-                            description: 'Algorithms to compare. Options: dfg, alpha_plus_plus, genetic, ilp, pso, a_star, declare, heuristic, inductive, hill_climbing, ant_colony, simulated_annealing, process_skeleton',
-                        },
-                    },
-                    required: ['xes_content'],
-                },
+            model_json: {
+              type: 'string',
+              description: 'Process model as JSON (Petri Net handle or serialized model)',
             },
-            // OCEL / Object-Centric Process Mining
-            {
-                name: 'load_ocel',
-                description: 'Load an Object-Centric Event Log from JSON (OCEL 2.0 standard). Returns an opaque handle for subsequent OCEL operations.',
-                inputSchema: {
-                    type: 'object',
-                    properties: {
-                        ocel_json: {
-                            type: 'string',
-                            description: 'OCEL 2.0 JSON content with events, objects, objectTypes, eventTypes',
-                        },
-                    },
-                    required: ['ocel_json'],
-                },
+          },
+          required: ['xes_content', 'model_json'],
+        },
+      },
+      {
+        name: 'analyze_statistics',
+        description:
+          'Analyze event log statistics: trace count, event count, duration, activities, etc.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            xes_content: {
+              type: 'string',
+              description: 'XES event log content',
             },
-            {
-                name: 'flatten_ocel',
-                description: 'Project an OCEL onto a single object type, producing a classic EventLog handle.',
-                inputSchema: {
-                    type: 'object',
-                    properties: {
-                        ocel_handle: {
-                            type: 'string',
-                            description: 'Handle to a loaded OCEL (from load_ocel)',
-                        },
-                        object_type: {
-                            type: 'string',
-                            description: 'Object type to project onto (e.g., "Order", "Item")',
-                        },
-                    },
-                    required: ['ocel_handle', 'object_type'],
-                },
+          },
+          required: ['xes_content'],
+        },
+      },
+      {
+        name: 'detect_bottlenecks',
+        description: 'Identify activities that are process bottlenecks based on execution time.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            xes_content: {
+              type: 'string',
+              description: 'XES event log content',
             },
-            {
-                name: 'discover_ocel_dfg_per_type',
-                description: 'Discover a separate Directly-Follows Graph for each object type in an OCEL.',
-                inputSchema: {
-                    type: 'object',
-                    properties: {
-                        ocel_handle: {
-                            type: 'string',
-                            description: 'Handle to a loaded OCEL',
-                        },
-                    },
-                    required: ['ocel_handle'],
-                },
+            threshold: {
+              type: 'number',
+              description: 'Threshold in seconds. Default: 3600 (1 hour)',
             },
-            {
-                name: 'discover_oc_petri_net',
-                description: 'Discover Object-Centric Petri Nets from an OCEL. Supports alpha++ and heuristic algorithms.',
-                inputSchema: {
-                    type: 'object',
-                    properties: {
-                        ocel_handle: {
-                            type: 'string',
-                            description: 'Handle to a loaded OCEL',
-                        },
-                        algorithm: {
-                            type: 'string',
-                            description: 'Discovery algorithm: "alpha++" (default) or "heuristic"',
-                        },
-                    },
-                    required: ['ocel_handle'],
-                },
+          },
+          required: ['xes_content'],
+        },
+      },
+      // Visualization
+      {
+        name: 'encode_dfg_as_text',
+        description:
+          'Discover a DFG and encode it as LLM-readable text. Describes activities, edge paths with frequencies.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            xes_content: {
+              type: 'string',
+              description: 'XES event log content (a DFG will be discovered first)',
             },
-            {
-                name: 'encode_ocel_as_text',
-                description: 'Convert an OCEL into an LLM-readable summary with event types, object types, and statistics.',
-                inputSchema: {
-                    type: 'object',
-                    properties: {
-                        ocel_handle: {
-                            type: 'string',
-                            description: 'Handle to a loaded OCEL (from load_ocel)',
-                        },
-                    },
-                    required: ['ocel_handle'],
-                },
+          },
+          required: ['xes_content'],
+        },
+      },
+      // Utilities
+      {
+        name: 'compare_algorithms',
+        description:
+          'Compare multiple discovery algorithms on the same event log. Returns fitness and execution time for each.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            xes_content: {
+              type: 'string',
+              description: 'XES event log content',
             },
-            // Predictive Process Mining
-            {
-                name: 'predict_next_activity',
-                description: 'Given an activity prefix, predict the top-k most likely next activities with probabilities. Builds an n-gram model from the log on-the-fly. Claude uses this to answer "Given Submit→Review, what comes next?"',
-                inputSchema: {
-                    type: 'object',
-                    properties: {
-                        xes_content: {
-                            type: 'string',
-                            description: 'XES event log content used to train the predictor',
-                        },
-                        prefix: {
-                            type: 'array',
-                            items: { type: 'string' },
-                            description: 'Sequence of activity names seen so far, e.g. ["Register", "Check"]',
-                        },
-                        k: {
-                            type: 'number',
-                            description: 'Number of top candidates to return. Default: 5',
-                        },
-                        n: {
-                            type: 'number',
-                            description: 'N-gram context size (how many preceding activities to use). Default: 2',
-                        },
-                    },
-                    required: ['xes_content', 'prefix'],
-                },
+            algorithms: {
+              type: 'array',
+              items: { type: 'string' },
+              description:
+                'Algorithms to compare. Options: dfg, alpha_plus_plus, genetic, ilp, pso, a_star, declare, heuristic, inductive, hill_climbing, ant_colony, simulated_annealing, process_skeleton',
             },
-            {
-                name: 'predict_case_duration',
-                description: 'Predict the remaining time (ms) for a running case given its activity prefix. Builds a bucket-based remaining-time model from the log. Claude uses this to answer "How long until this case closes?"',
-                inputSchema: {
-                    type: 'object',
-                    properties: {
-                        xes_content: {
-                            type: 'string',
-                            description: 'XES event log content used to train the model (completed cases)',
-                        },
-                        prefix: {
-                            type: 'array',
-                            items: { type: 'string' },
-                            description: 'Activity names executed so far in the running case',
-                        },
-                    },
-                    required: ['xes_content', 'prefix'],
-                },
+          },
+          required: ['xes_content'],
+        },
+      },
+      // OCEL / Object-Centric Process Mining
+      {
+        name: 'load_ocel',
+        description:
+          'Load an Object-Centric Event Log from JSON (OCEL 2.0 standard). Returns an opaque handle for subsequent OCEL operations.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            ocel_json: {
+              type: 'string',
+              description: 'OCEL 2.0 JSON content with events, objects, objectTypes, eventTypes',
             },
-            {
-                name: 'score_trace_anomaly',
-                description: 'Score a trace (sequence of activity names) for anomaly against the reference DFG discovered from the log. Returns a normalized 0-1 score and an is_anomalous flag. Claude uses this to answer "Is this trace unusual?"',
-                inputSchema: {
-                    type: 'object',
-                    properties: {
-                        xes_content: {
-                            type: 'string',
-                            description: 'XES event log content used as reference (the "normal" process)',
-                        },
-                        trace: {
-                            type: 'array',
-                            items: { type: 'string' },
-                            description: 'The trace to evaluate, e.g. ["Register", "Skip Approval", "Close"]',
-                        },
-                    },
-                    required: ['xes_content', 'trace'],
-                },
+          },
+          required: ['ocel_json'],
+        },
+      },
+      {
+        name: 'flatten_ocel',
+        description:
+          'Project an OCEL onto a single object type, producing a classic EventLog handle.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            ocel_handle: {
+              type: 'string',
+              description: 'Handle to a loaded OCEL (from load_ocel)',
             },
-            // Concept Drift Detection (van der Aalst's 4th prediction perspective)
-            {
-                name: 'detect_concept_drift',
-                description: 'Detect concept drift in a process log using windowed Jaccard distance and EWMA smoothing (α=0.3). Returns drift points, trend direction (rising/stable/falling), and an interpretation. Claude uses this to answer "Has the process changed over time?"',
-                inputSchema: {
-                    type: 'object',
-                    properties: {
-                        xes_content: {
-                            type: 'string',
-                            description: 'XES event log content to analyze for drift',
-                        },
-                        window_size: {
-                            type: 'number',
-                            description: 'Number of traces per sliding window (default: 50)',
-                        },
-                        alpha: {
-                            type: 'number',
-                            description: 'EWMA smoothing factor α ∈ (0,1] (default: 0.3). Higher = more weight on recent windows.',
-                        },
-                        activity_key: {
-                            type: 'string',
-                            description: 'XES activity attribute key (default: concept:name)',
-                        },
-                    },
-                    required: ['xes_content'],
-                },
+            object_type: {
+              type: 'string',
+              description: 'Object type to project onto (e.g., "Order", "Item")',
             },
-            // Feature Extraction
-            {
-                name: 'extract_case_features',
-                description: 'Extract ML-ready feature vectors from an event log for predictive process mining.',
-                inputSchema: {
-                    type: 'object',
-                    properties: {
-                        xes_content: {
-                            type: 'string',
-                            description: 'XES event log content',
-                        },
-                        features: {
-                            type: 'array',
-                            items: { type: 'string' },
-                            description: 'Features to extract: trace_length, elapsed_time, activity_counts, rework_count, unique_activities, avg_inter_event_time',
-                        },
-                        target: {
-                            type: 'string',
-                            description: 'Target variable: "remaining_time", "outcome", or "next_activity". Default: "outcome"',
-                        },
-                    },
-                    required: ['xes_content'],
-                },
+          },
+          required: ['ocel_handle', 'object_type'],
+        },
+      },
+      {
+        name: 'discover_ocel_dfg_per_type',
+        description: 'Discover a separate Directly-Follows Graph for each object type in an OCEL.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            ocel_handle: {
+              type: 'string',
+              description: 'Handle to a loaded OCEL',
             },
-            // ML Tools (native process intelligence)
-            {
-                name: 'ml_classify_traces',
-                description: 'Classify traces using ML (k-NN or logistic regression). Extracts features automatically, trains a classifier, and returns per-trace predictions with confidence scores.',
-                inputSchema: {
-                    type: 'object',
-                    properties: {
-                        xes_content: {
-                            type: 'string',
-                            description: 'XES event log content as string',
-                        },
-                        method: {
-                            type: 'string',
-                            enum: ['knn', 'logistic_regression'],
-                            description: 'Classification method (default: knn)',
-                        },
-                        k: {
-                            type: 'number',
-                            description: 'Number of neighbors for k-NN (default: 5)',
-                        },
-                    },
-                    required: ['xes_content'],
-                },
+          },
+          required: ['ocel_handle'],
+        },
+      },
+      {
+        name: 'discover_oc_petri_net',
+        description:
+          'Discover Object-Centric Petri Nets from an OCEL. Supports alpha++ and heuristic algorithms.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            ocel_handle: {
+              type: 'string',
+              description: 'Handle to a loaded OCEL',
             },
-            {
-                name: 'ml_cluster_traces',
-                description: 'Cluster traces by similarity using ML (k-means or DBSCAN). Automatically extracts features and groups traces into clusters.',
-                inputSchema: {
-                    type: 'object',
-                    properties: {
-                        xes_content: {
-                            type: 'string',
-                            description: 'XES event log content as string',
-                        },
-                        method: {
-                            type: 'string',
-                            enum: ['kmeans', 'dbscan'],
-                            description: 'Clustering method (default: kmeans)',
-                        },
-                        k: {
-                            type: 'number',
-                            description: 'Number of clusters for k-means (default: 3)',
-                        },
-                        eps: {
-                            type: 'number',
-                            description: 'DBSCAN epsilon (default: 1.0)',
-                        },
-                    },
-                    required: ['xes_content'],
-                },
+            algorithm: {
+              type: 'string',
+              description: 'Discovery algorithm: "alpha++" (default) or "heuristic"',
             },
-            {
-                name: 'ml_forecast_throughput',
-                description: 'Forecast future process throughput and detect seasonal patterns using trend analysis and seasonal decomposition.',
-                inputSchema: {
-                    type: 'object',
-                    properties: {
-                        xes_content: {
-                            type: 'string',
-                            description: 'XES event log content as string',
-                        },
-                        forecast_periods: {
-                            type: 'number',
-                            description: 'Number of future periods to forecast (default: 5)',
-                        },
-                    },
-                    required: ['xes_content'],
-                },
+          },
+          required: ['ocel_handle'],
+        },
+      },
+      {
+        name: 'encode_ocel_as_text',
+        description:
+          'Convert an OCEL into an LLM-readable summary with event types, object types, and statistics.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            ocel_handle: {
+              type: 'string',
+              description: 'Handle to a loaded OCEL (from load_ocel)',
             },
-            {
-                name: 'ml_detect_anomalies',
-                description: 'Enhanced anomaly detection using peak finding and seasonal decomposition on drift distance series. Identifies anomalous process windows.',
-                inputSchema: {
-                    type: 'object',
-                    properties: {
-                        xes_content: {
-                            type: 'string',
-                            description: 'XES event log content as string',
-                        },
-                    },
-                    required: ['xes_content'],
-                },
+          },
+          required: ['ocel_handle'],
+        },
+      },
+      // Predictive Process Mining
+      {
+        name: 'predict_next_activity',
+        description:
+          'Given an activity prefix, predict the top-k most likely next activities with probabilities. Builds an n-gram model from the log on-the-fly. Claude uses this to answer "Given Submit→Review, what comes next?"',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            xes_content: {
+              type: 'string',
+              description: 'XES event log content used to train the predictor',
             },
-            {
-                name: 'ml_regress_remaining_time',
-                description: 'Predict remaining case time using linear regression on extracted trace features. Returns per-trace predictions with R-squared and error metrics.',
-                inputSchema: {
-                    type: 'object',
-                    properties: {
-                        xes_content: {
-                            type: 'string',
-                            description: 'XES event log content as string',
-                        },
-                    },
-                    required: ['xes_content'],
-                },
+            prefix: {
+              type: 'array',
+              items: { type: 'string' },
+              description: 'Sequence of activity names seen so far, e.g. ["Register", "Check"]',
             },
-            {
-                name: 'ml_pca_reduce',
-                description: 'Reduce high-dimensional trace features to fewer dimensions using PCA. Returns transformed data, explained variance, and component loadings.',
-                inputSchema: {
-                    type: 'object',
-                    properties: {
-                        xes_content: {
-                            type: 'string',
-                            description: 'XES event log content as string',
-                        },
-                        n_components: {
-                            type: 'number',
-                            description: 'Number of PCA components (default: 2)',
-                        },
-                    },
-                    required: ['xes_content'],
-                },
+            k: {
+              type: 'number',
+              description: 'Number of top candidates to return. Default: 5',
             },
-            // Advanced Discovery
-            {
-                name: 'discover_dfg_simd',
-                description: 'Discover a Directly-Follows Graph using SIMD-accelerated edge computation. Significantly faster than standard DFG for large logs (10k+ traces).',
-                inputSchema: {
-                    type: 'object',
-                    properties: {
-                        xes_content: {
-                            type: 'string',
-                            description: 'XES event log content as string',
-                        },
-                        min_frequency: {
-                            type: 'number',
-                            description: 'Minimum edge frequency (0-1). Default: 0.0 (include all edges)',
-                        },
-                    },
-                    required: ['xes_content'],
-                },
+            n: {
+              type: 'number',
+              description: 'N-gram context size (how many preceding activities to use). Default: 2',
             },
-            {
-                name: 'discover_dfg_hierarchical',
-                description: 'Discover a hierarchical Directly-Follows Graph by chunking the log into depth levels. Reveals sub-process structure within large event logs.',
-                inputSchema: {
-                    type: 'object',
-                    properties: {
-                        xes_content: {
-                            type: 'string',
-                            description: 'XES event log content as string',
-                        },
-                        max_depth: {
-                            type: 'number',
-                            description: 'Maximum hierarchy depth. Default: 3',
-                        },
-                    },
-                    required: ['xes_content'],
-                },
+          },
+          required: ['xes_content', 'prefix'],
+        },
+      },
+      {
+        name: 'predict_case_duration',
+        description:
+          'Predict the remaining time (ms) for a running case given its activity prefix. Builds a bucket-based remaining-time model from the log. Claude uses this to answer "How long until this case closes?"',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            xes_content: {
+              type: 'string',
+              description: 'XES event log content used to train the model (completed cases)',
             },
-            {
-                name: 'streaming_log_estimate',
-                description: 'Probabilistic streaming log processor that estimates DFG statistics using bounded memory. Suitable for infinite or very large streams where full materialization is impractical.',
-                inputSchema: {
-                    type: 'object',
-                    properties: {
-                        xes_content: {
-                            type: 'string',
-                            description: 'XES event log content (processed incrementally)',
-                        },
-                        sample_rate: {
-                            type: 'number',
-                            description: 'Sampling rate between 0 and 1. Default: 1.0 (process all traces)',
-                        },
-                    },
-                    required: ['xes_content'],
-                },
+            prefix: {
+              type: 'array',
+              items: { type: 'string' },
+              description: 'Activity names executed so far in the running case',
             },
-            {
-                name: 'smart_engine_run',
-                description: 'Smart execution engine with automatic algorithm selection and result caching. Analyzes the log to pick the best algorithm, caches intermediate results, and returns the discovery output with provenance.',
-                inputSchema: {
-                    type: 'object',
-                    properties: {
-                        xes_content: {
-                            type: 'string',
-                            description: 'XES event log content as string',
-                        },
-                        algorithm: {
-                            type: 'string',
-                            description: 'Override automatic algorithm selection. Options: dfg, heuristic, alpha_plus_plus, genetic, ilp, inductive. Default: auto-select based on log size and complexity.',
-                        },
-                        cache_key: {
-                            type: 'string',
-                            description: 'Optional cache key for deduplication. Default: auto-generated from log hash.',
-                        },
-                    },
-                    required: ['xes_content'],
-                },
+          },
+          required: ['xes_content', 'prefix'],
+        },
+      },
+      {
+        name: 'score_trace_anomaly',
+        description:
+          'Score a trace (sequence of activity names) for anomaly against the reference DFG discovered from the log. Returns a normalized 0-1 score and an is_anomalous flag. Claude uses this to answer "Is this trace unusual?"',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            xes_content: {
+              type: 'string',
+              description: 'XES event log content used as reference (the "normal" process)',
             },
-            // Registry
-            {
-                name: 'get_capability_registry',
-                description: 'Get the complete catalog of all pictl functions organized by category.',
-                inputSchema: {
-                    type: 'object',
-                    properties: {},
-                },
+            trace: {
+              type: 'array',
+              items: { type: 'string' },
+              description: 'The trace to evaluate, e.g. ["Register", "Skip Approval", "Close"]',
             },
-            // Cache management
-            {
-                name: 'clear_caches',
-                description: 'Clear all parsing and encoding caches (parse, columnar, interner).',
-                inputSchema: {
-                    type: 'object',
-                    properties: {},
-                },
+          },
+          required: ['xes_content', 'trace'],
+        },
+      },
+      // Concept Drift Detection (van der Aalst's 4th prediction perspective)
+      {
+        name: 'detect_concept_drift',
+        description:
+          'Detect concept drift in a process log using windowed Jaccard distance and EWMA smoothing (α=0.3). Returns drift points, trend direction (rising/stable/falling), and an interpretation. Claude uses this to answer "Has the process changed over time?"',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            xes_content: {
+              type: 'string',
+              description: 'XES event log content to analyze for drift',
             },
-            {
-                name: 'cache_stats',
-                description: 'Get cache hit/miss statistics. Returns parse hits, parse misses, columnar entries, and interner entries.',
-                inputSchema: {
-                    type: 'object',
-                    properties: {},
-                },
+            window_size: {
+              type: 'number',
+              description: 'Number of traces per sliding window (default: 50)',
             },
-            // SIMD conformance
-            {
-                name: 'simd_replay',
-                description: 'SIMD-accelerated token replay for conformance checking. Discovers a DFG from the log, builds a Petri net, then replays every trace and returns fitness/precision/per-case diagnostics.',
-                inputSchema: {
-                    type: 'object',
-                    properties: {
-                        xes_content: {
-                            type: 'string',
-                            description: 'XES event log content as string',
-                        },
-                        activity_key: {
-                            type: 'string',
-                            description: 'Activity attribute key (default: concept:name)',
-                        },
-                    },
-                    required: ['xes_content'],
-                },
+            alpha: {
+              type: 'number',
+              description:
+                'EWMA smoothing factor α ∈ (0,1] (default: 0.3). Higher = more weight on recent windows.',
             },
-        ];
-    }
-    /**
-     * Execute a tool by name
-     */
-    async executeTool(toolName, input) {
-        try {
-            let result;
-            switch (toolName) {
-                // Discovery algorithms — use WASM functions directly
-                case 'discover_dfg': {
-                    const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
-                    const minFreq = input.min_frequency ?? 0;
-                    if (minFreq > 0) {
-                        result = wasm.discover_dfg_filtered(logHandle, 'concept:name', minFreq);
-                    }
-                    else {
-                        result = wasm.discover_dfg(logHandle, 'concept:name');
-                    }
-                    break;
-                }
-                case 'discover_alpha_plus_plus': {
-                    const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
-                    result = wasm.discover_alpha_plus_plus(logHandle, 'concept:name', 0.1);
-                    break;
-                }
-                case 'discover_ilp_optimization': {
-                    const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
-                    result = wasm.discover_ilp_petri_net(logHandle, 'concept:name');
-                    break;
-                }
-                case 'discover_genetic_algorithm': {
-                    const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
-                    const popSize = input.population_size ?? 50;
-                    const generations = input.generations ?? 100;
-                    result = wasm.discover_genetic_algorithm(logHandle, 'concept:name', popSize, generations);
-                    break;
-                }
-                case 'discover_variants': {
-                    const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
-                    result = wasm.analyze_trace_variants(logHandle, 'concept:name');
-                    break;
-                }
-                // Analysis
-                case 'check_conformance': {
-                    const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
-                    const netHandle = input.model_json;
-                    result = wasm.check_token_based_replay(logHandle, netHandle, 'concept:name');
-                    break;
-                }
-                case 'analyze_statistics': {
-                    const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
-                    result = wasm.analyze_event_statistics(logHandle);
-                    break;
-                }
-                case 'detect_bottlenecks': {
-                    const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
-                    const threshold = BigInt(input.threshold ?? 3600);
-                    result = wasm.detect_bottlenecks(logHandle, 'concept:name', 'time:timestamp', threshold);
-                    break;
-                }
-                case 'detect_concept_drift': {
-                    const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
-                    const windowSize = input.window_size ?? 5;
-                    result = wasm.detect_drift(logHandle, 'concept:name', windowSize);
-                    break;
-                }
-                // Visualization / text encoding
-                case 'encode_dfg_as_text': {
-                    const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
-                    const dfgResult = wasm.discover_dfg(logHandle, 'concept:name');
-                    const dfgHandle = typeof dfgResult === 'object' && dfgResult?.handle
-                        ? dfgResult.handle
-                        : String(dfgResult);
-                    result = wasm.encode_dfg_as_text(dfgHandle);
-                    break;
-                }
-                // Utilities
-                case 'compare_algorithms': {
-                    const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
-                    const algorithms = input.algorithms || [
-                        'dfg',
-                        'alpha_plus_plus',
-                        'genetic',
-                    ];
-                    result = this.compareAlgorithms(logHandle, algorithms);
-                    break;
-                }
-                // OCEL / Object-Centric Process Mining
-                case 'load_ocel': {
-                    const handle = wasm.load_ocel_from_json(input.ocel_json);
-                    result = { ocel_handle: handle, message: 'OCEL loaded successfully' };
-                    break;
-                }
-                case 'flatten_ocel': {
-                    const logHandle = wasm.flatten_ocel_to_eventlog(input.ocel_handle, input.object_type);
-                    result = {
-                        eventlog_handle: logHandle,
-                        object_type: input.object_type,
-                        message: `OCEL flattened to EventLog for object type '${input.object_type}'`,
-                    };
-                    break;
-                }
-                case 'discover_ocel_dfg_per_type': {
-                    result = wasm.discover_ocel_dfg_per_type(input.ocel_handle);
-                    break;
-                }
-                case 'discover_oc_petri_net': {
-                    const algorithm = input.algorithm || 'alpha++';
-                    result = wasm.discover_oc_petri_net(input.ocel_handle, algorithm);
-                    break;
-                }
-                case 'encode_ocel_as_text': {
-                    result = wasm.encode_ocel_summary_as_text(input.ocel_handle);
-                    break;
-                }
-                // Predictive Process Mining — all handles freed within this tick (no memory accumulation)
-                case 'predict_next_activity': {
-                    const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
-                    try {
-                        const n = input.n ?? 2;
-                        const k = input.k ?? 5;
-                        const actKey = input.activity_key ?? 'concept:name';
-                        const predictorHandle = wasm.build_ngram_predictor(logHandle, actKey, n);
-                        try {
-                            const prefixJson = JSON.stringify(input.prefix);
-                            const raw = wasm.predict_next_k(String(predictorHandle), prefixJson, k);
-                            const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
-                            const prefix = input.prefix;
-                            const predictions = Array.isArray(parsed) ? parsed : (parsed?.predictions ?? []);
-                            const top = predictions[0];
-                            result = {
-                                predictions,
-                                interpretation: top
-                                    ? `After ${prefix.join('→')}, the most likely next activity is "${top.activity}" (probability: ${(top.probability * 100).toFixed(1)}%). ${predictions.length} candidates ranked by ${n}-gram model trained from the log.`
-                                    : `No prediction available for prefix: ${prefix.join('→')}. The prefix may not appear in the training log.`,
-                                prefix,
-                                n_gram_order: n,
-                            };
-                        }
-                        finally {
-                            try {
-                                wasm.delete_object(String(predictorHandle));
-                            }
-                            catch {
-                                /* best-effort */
-                            }
-                        }
-                    }
-                    finally {
-                        try {
-                            wasm.delete_object(logHandle);
-                        }
-                        catch {
-                            /* best-effort */
-                        }
-                    }
-                    break;
-                }
-                case 'predict_case_duration': {
-                    const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
-                    try {
-                        const actKey = input.activity_key ?? 'concept:name';
-                        const modelHandle = wasm.build_remaining_time_model(logHandle, actKey, 'time:timestamp');
-                        try {
-                            const prefixJson = JSON.stringify(input.prefix);
-                            const raw = wasm.predict_case_duration(String(modelHandle), prefixJson);
-                            const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
-                            const prefix = input.prefix;
-                            const remainingMs = typeof parsed === 'number'
-                                ? parsed
-                                : (parsed?.remaining_ms ?? parsed?.prediction ?? 0);
-                            const remainingHours = remainingMs / 1000 / 3600;
-                            result = {
-                                remaining_ms: remainingMs,
-                                remaining_hours: parseFloat(remainingHours.toFixed(2)),
-                                interpretation: remainingMs > 0
-                                    ? `Based on cases with a similar prefix (${prefix.join('→')}), the expected remaining time is approximately ${remainingHours.toFixed(1)} hours.`
-                                    : `No duration estimate available for prefix: ${prefix.join('→')}. The prefix may not appear in completed cases.`,
-                                prefix,
-                            };
-                        }
-                        finally {
-                            try {
-                                wasm.delete_object(String(modelHandle));
-                            }
-                            catch {
-                                /* best-effort */
-                            }
-                        }
-                    }
-                    finally {
-                        try {
-                            wasm.delete_object(logHandle);
-                        }
-                        catch {
-                            /* best-effort */
-                        }
-                    }
-                    break;
-                }
-                case 'score_trace_anomaly': {
-                    const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
-                    try {
-                        const actKey = input.activity_key ?? 'concept:name';
-                        const dfgHandle = wasm.discover_dfg_handle(logHandle, actKey);
-                        try {
-                            const trace = input.trace;
-                            const traceJson = JSON.stringify(trace);
-                            const raw = wasm.score_trace_anomaly(String(dfgHandle), traceJson);
-                            const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
-                            const score = typeof parsed === 'number' ? parsed : (parsed?.score ?? 0);
-                            const isAnomalous = score > 0.5;
-                            result = {
-                                score: parseFloat(score.toFixed(4)),
-                                is_anomalous: isAnomalous,
-                                interpretation: isAnomalous
-                                    ? `This trace is anomalous (score ${score.toFixed(3)} > 0.5). One or more transitions (${trace.join('→')}) are rare or absent in the reference process model. Consider reviewing this case for deviations.`
-                                    : `This trace follows normal process patterns (score ${score.toFixed(3)} ≤ 0.5). All transitions appear in the reference model at expected frequencies.`,
-                                trace,
-                            };
-                        }
-                        finally {
-                            try {
-                                wasm.delete_object(String(dfgHandle));
-                            }
-                            catch {
-                                /* best-effort */
-                            }
-                        }
-                    }
-                    finally {
-                        try {
-                            wasm.delete_object(logHandle);
-                        }
-                        catch {
-                            /* best-effort */
-                        }
-                    }
-                    break;
-                }
-                // Concept Drift Detection
-                case 'detect_concept_drift': {
-                    const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
-                    try {
-                        const actKey = input.activity_key ?? 'concept:name';
-                        const windowSize = input.window_size ?? 50;
-                        const alpha = input.alpha ?? 0.3;
-                        const driftRaw = wasm.detect_drift(logHandle, actKey, windowSize);
-                        const driftResult = typeof driftRaw === 'string' ? JSON.parse(driftRaw) : driftRaw;
-                        const drifts = driftResult?.drifts ?? [];
-                        const driftCount = driftResult?.drifts_detected ?? drifts.length;
-                        // Compute EWMA over drift distances
-                        const distances = drifts.map((d) => d.distance ?? 0);
-                        const ewmaRaw = distances.length > 0 ? wasm.compute_ewma(JSON.stringify(distances), alpha) : null;
-                        const ewmaResult = ewmaRaw
-                            ? typeof ewmaRaw === 'string'
-                                ? JSON.parse(ewmaRaw)
-                                : ewmaRaw
-                            : { trend: 'stable', last_value: 0, smoothed: [] };
-                        const trend = ewmaResult?.trend ?? 'stable';
-                        const ewmaValue = ewmaResult?.last_value ?? 0;
-                        result = {
-                            drifts_detected: driftCount,
-                            drift_points: drifts,
-                            trend,
-                            ewma: parseFloat(ewmaValue.toFixed(4)),
-                            interpretation: driftCount === 0
-                                ? 'No concept drift detected in this log. The process appears stable across the observation period.'
-                                : trend === 'rising'
-                                    ? `Concept drift detected — ${driftCount} drift point(s) found and the EWMA trend is rising (${ewmaValue.toFixed(3)}). The process is actively changing. Investigate the most recent drift points for root cause.`
-                                    : trend === 'falling'
-                                        ? `${driftCount} historical drift point(s) detected, but the process appears to be stabilizing (EWMA trend falling to ${ewmaValue.toFixed(3)}).`
-                                        : `${driftCount} drift point(s) detected. The EWMA is stable at ${ewmaValue.toFixed(3)}, suggesting historical change that has now plateaued.`,
-                            window_size: windowSize,
-                            alpha,
-                        };
-                    }
-                    finally {
-                        try {
-                            wasm.delete_object(logHandle);
-                        }
-                        catch {
-                            /* best-effort */
-                        }
-                    }
-                    break;
-                }
-                // Feature Extraction
-                case 'extract_case_features': {
-                    const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
-                    try {
-                        const features = input.features || [
-                            'trace_length',
-                            'activity_counts',
-                            'rework_count',
-                        ];
-                        const target = input.target || 'outcome';
-                        const configJson = JSON.stringify({ features, target });
-                        result = wasm.extract_case_features(logHandle, 'concept:name', 'time:timestamp', configJson);
-                    }
-                    finally {
-                        try {
-                            wasm.delete_object(logHandle);
-                        }
-                        catch {
-                            /* best-effort */
-                        }
-                    }
-                    break;
-                }
-                // ML Tools (native process intelligence — dynamic import for lazy loading)
-                case 'ml_classify_traces': {
-                    const { classifyTraces } = await import('@pictl/ml');
-                    const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
-                    try {
-                        const configJson = JSON.stringify({
-                            features: [
-                                'trace_length',
-                                'elapsed_time',
-                                'activity_counts',
-                                'rework_count',
-                                'unique_activities',
-                                'avg_inter_event_time',
-                            ],
-                            target: 'outcome',
-                        });
-                        const rawFeatures = wasm.extract_case_features(logHandle, 'concept:name', 'time:timestamp', configJson);
-                        const features = typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
-                        result = await classifyTraces(features, {
-                            method: input.method || 'knn',
-                            k: input.k ?? 5,
-                        });
-                    }
-                    finally {
-                        try {
-                            wasm.delete_object(logHandle);
-                        }
-                        catch {
-                            /* best-effort */
-                        }
-                    }
-                    break;
-                }
-                case 'ml_cluster_traces': {
-                    const { clusterTraces } = await import('@pictl/ml');
-                    const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
-                    try {
-                        const configJson = JSON.stringify({
-                            features: [
-                                'trace_length',
-                                'elapsed_time',
-                                'activity_counts',
-                                'rework_count',
-                                'unique_activities',
-                            ],
-                        });
-                        const rawFeatures = wasm.extract_case_features(logHandle, 'concept:name', 'time:timestamp', configJson);
-                        const features = typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
-                        result = await clusterTraces(features, {
-                            method: input.method || 'kmeans',
-                            k: input.k ?? 3,
-                            eps: input.eps ?? 1.0,
-                        });
-                    }
-                    finally {
-                        try {
-                            wasm.delete_object(logHandle);
-                        }
-                        catch {
-                            /* best-effort */
-                        }
-                    }
-                    break;
-                }
-                case 'ml_forecast_throughput': {
-                    const { forecastThroughput } = await import('@pictl/ml');
-                    const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
-                    try {
-                        const driftRaw = wasm.detect_drift(logHandle, 'concept:name', 5);
-                        const driftResult = typeof driftRaw === 'string' ? JSON.parse(driftRaw) : driftRaw;
-                        const distances = (driftResult?.drifts ?? []).map((d) => d.distance ?? 0);
-                        result = await forecastThroughput(distances, {
-                            forecastPeriods: input.forecast_periods ?? 5,
-                        });
-                    }
-                    finally {
-                        try {
-                            wasm.delete_object(logHandle);
-                        }
-                        catch {
-                            /* best-effort */
-                        }
-                    }
-                    break;
-                }
-                case 'ml_detect_anomalies': {
-                    const { detectEnhancedAnomalies } = await import('@pictl/ml');
-                    const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
-                    try {
-                        const driftRaw = wasm.detect_drift(logHandle, 'concept:name', 10);
-                        const driftResult = typeof driftRaw === 'string' ? JSON.parse(driftRaw) : driftRaw;
-                        const distances = (driftResult?.drifts ?? []).map((d) => d.distance ?? 0);
-                        result = await detectEnhancedAnomalies(distances);
-                    }
-                    finally {
-                        try {
-                            wasm.delete_object(logHandle);
-                        }
-                        catch {
-                            /* best-effort */
-                        }
-                    }
-                    break;
-                }
-                case 'ml_regress_remaining_time': {
-                    const { regressRemainingTime } = await import('@pictl/ml');
-                    const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
-                    try {
-                        const configJson = JSON.stringify({
-                            features: [
-                                'trace_length',
-                                'elapsed_time',
-                                'rework_count',
-                                'unique_activities',
-                                'avg_inter_event_time',
-                            ],
-                            target: 'remaining_time',
-                        });
-                        const rawFeatures = wasm.extract_case_features(logHandle, 'concept:name', 'time:timestamp', configJson);
-                        const features = typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
-                        result = await regressRemainingTime(features);
-                    }
-                    finally {
-                        try {
-                            wasm.delete_object(logHandle);
-                        }
-                        catch {
-                            /* best-effort */
-                        }
-                    }
-                    break;
-                }
-                case 'ml_pca_reduce': {
-                    const { reduceFeaturesPCA } = await import('@pictl/ml');
-                    const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
-                    try {
-                        const configJson = JSON.stringify({
-                            features: [
-                                'trace_length',
-                                'elapsed_time',
-                                'activity_counts',
-                                'rework_count',
-                                'unique_activities',
-                                'avg_inter_event_time',
-                            ],
-                        });
-                        const rawFeatures = wasm.extract_case_features(logHandle, 'concept:name', 'time:timestamp', configJson);
-                        const features = typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
-                        result = await reduceFeaturesPCA(features, {
-                            nComponents: input.n_components ?? 2,
-                        });
-                    }
-                    finally {
-                        try {
-                            wasm.delete_object(logHandle);
-                        }
-                        catch {
-                            /* best-effort */
-                        }
-                    }
-                    break;
-                }
-                // Advanced Discovery
-                case 'discover_dfg_simd': {
-                    const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
-                    try {
-                        const minFreq = input.min_frequency ?? 0;
-                        if (minFreq > 0) {
-                            result = wasm.discover_dfg_filtered(logHandle, 'concept:name', minFreq);
-                        }
-                        else {
-                            result = wasm.discover_dfg_simd(logHandle, 'concept:name');
-                        }
-                    }
-                    finally {
-                        try {
-                            wasm.delete_object(logHandle);
-                        }
-                        catch {
-                            /* best-effort */
-                        }
-                    }
-                    break;
-                }
-                case 'discover_dfg_hierarchical': {
-                    const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
-                    try {
-                        const maxDepth = input.max_depth ?? 3;
-                        result = wasm.discover_dfg_hierarchical(logHandle, 'concept:name', maxDepth);
-                    }
-                    finally {
-                        try {
-                            wasm.delete_object(logHandle);
-                        }
-                        catch {
-                            /* best-effort */
-                        }
-                    }
-                    break;
-                }
-                case 'streaming_log_estimate': {
-                    const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
-                    try {
-                        result = wasm.streaming_log_estimate_dfg(parseInt(logHandle, 10));
-                    }
-                    finally {
-                        try {
-                            wasm.delete_object(logHandle);
-                        }
-                        catch {
-                            /* best-effort */
-                        }
-                    }
-                    break;
-                }
-                case 'smart_engine_run': {
-                    const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
-                    try {
-                        const algorithm = input.algorithm || 'auto';
-                        result = wasm.smart_engine_run(logHandle, algorithm, input.traces_json);
-                    }
-                    finally {
-                        try {
-                            wasm.delete_object(logHandle);
-                        }
-                        catch {
-                            /* best-effort */
-                        }
-                    }
-                    break;
-                }
-                // Registry
-                case 'get_capability_registry': {
-                    result = wasm.get_capability_registry();
-                    break;
-                }
-                // Cache management
-                case 'clear_caches': {
-                    wasm.clear_all_caches();
-                    result = { status: 'ok', message: 'All caches cleared' };
-                    break;
-                }
-                case 'cache_stats': {
-                    const rawStats = wasm.get_cache_stats();
-                    result = typeof rawStats === 'string' ? JSON.parse(rawStats) : rawStats;
-                    break;
-                }
-                // SIMD conformance
-                case 'simd_replay': {
-                    const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
-                    try {
-                        const actKey = input.activity_key || 'concept:name';
-                        const rawReplay = wasm.simd_token_replay(logHandle, actKey);
-                        result = typeof rawReplay === 'string' ? JSON.parse(rawReplay) : rawReplay;
-                    }
-                    finally {
-                        try {
-                            wasm.delete_object(logHandle);
-                        }
-                        catch {
-                            /* best-effort */
-                        }
-                    }
-                    break;
-                }
-                default:
-                    throw new Error(`Unknown tool: ${toolName}`);
-            }
-            return {
-                content: [
-                    {
-                        type: 'text',
-                        text: typeof result === 'string' ? result : JSON.stringify(result, null, 2),
-                    },
-                ],
-            };
+            activity_key: {
+              type: 'string',
+              description: 'XES activity attribute key (default: concept:name)',
+            },
+          },
+          required: ['xes_content'],
+        },
+      },
+      // Feature Extraction
+      {
+        name: 'extract_case_features',
+        description:
+          'Extract ML-ready feature vectors from an event log for predictive process mining.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            xes_content: {
+              type: 'string',
+              description: 'XES event log content',
+            },
+            features: {
+              type: 'array',
+              items: { type: 'string' },
+              description:
+                'Features to extract: trace_length, elapsed_time, activity_counts, rework_count, unique_activities, avg_inter_event_time',
+            },
+            target: {
+              type: 'string',
+              description:
+                'Target variable: "remaining_time", "outcome", or "next_activity". Default: "outcome"',
+            },
+          },
+          required: ['xes_content'],
+        },
+      },
+      // ML Tools (native process intelligence)
+      {
+        name: 'ml_classify_traces',
+        description:
+          'Classify traces using ML (k-NN or logistic regression). Extracts features automatically, trains a classifier, and returns per-trace predictions with confidence scores.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            xes_content: {
+              type: 'string',
+              description: 'XES event log content as string',
+            },
+            method: {
+              type: 'string',
+              enum: ['knn', 'logistic_regression'],
+              description: 'Classification method (default: knn)',
+            },
+            k: {
+              type: 'number',
+              description: 'Number of neighbors for k-NN (default: 5)',
+            },
+          },
+          required: ['xes_content'],
+        },
+      },
+      {
+        name: 'ml_cluster_traces',
+        description:
+          'Cluster traces by similarity using ML (k-means or DBSCAN). Automatically extracts features and groups traces into clusters.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            xes_content: {
+              type: 'string',
+              description: 'XES event log content as string',
+            },
+            method: {
+              type: 'string',
+              enum: ['kmeans', 'dbscan'],
+              description: 'Clustering method (default: kmeans)',
+            },
+            k: {
+              type: 'number',
+              description: 'Number of clusters for k-means (default: 3)',
+            },
+            eps: {
+              type: 'number',
+              description: 'DBSCAN epsilon (default: 1.0)',
+            },
+          },
+          required: ['xes_content'],
+        },
+      },
+      {
+        name: 'ml_forecast_throughput',
+        description:
+          'Forecast future process throughput and detect seasonal patterns using trend analysis and seasonal decomposition.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            xes_content: {
+              type: 'string',
+              description: 'XES event log content as string',
+            },
+            forecast_periods: {
+              type: 'number',
+              description: 'Number of future periods to forecast (default: 5)',
+            },
+          },
+          required: ['xes_content'],
+        },
+      },
+      {
+        name: 'ml_detect_anomalies',
+        description:
+          'Enhanced anomaly detection using peak finding and seasonal decomposition on drift distance series. Identifies anomalous process windows.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            xes_content: {
+              type: 'string',
+              description: 'XES event log content as string',
+            },
+          },
+          required: ['xes_content'],
+        },
+      },
+      {
+        name: 'ml_regress_remaining_time',
+        description:
+          'Predict remaining case time using linear regression on extracted trace features. Returns per-trace predictions with R-squared and error metrics.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            xes_content: {
+              type: 'string',
+              description: 'XES event log content as string',
+            },
+          },
+          required: ['xes_content'],
+        },
+      },
+      {
+        name: 'ml_pca_reduce',
+        description:
+          'Reduce high-dimensional trace features to fewer dimensions using PCA. Returns transformed data, explained variance, and component loadings.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            xes_content: {
+              type: 'string',
+              description: 'XES event log content as string',
+            },
+            n_components: {
+              type: 'number',
+              description: 'Number of PCA components (default: 2)',
+            },
+          },
+          required: ['xes_content'],
+        },
+      },
+      // Advanced Discovery
+      {
+        name: 'discover_dfg_simd',
+        description:
+          'Discover a Directly-Follows Graph using SIMD-accelerated edge computation. Significantly faster than standard DFG for large logs (10k+ traces).',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            xes_content: {
+              type: 'string',
+              description: 'XES event log content as string',
+            },
+            min_frequency: {
+              type: 'number',
+              description: 'Minimum edge frequency (0-1). Default: 0.0 (include all edges)',
+            },
+          },
+          required: ['xes_content'],
+        },
+      },
+      {
+        name: 'discover_dfg_hierarchical',
+        description:
+          'Discover a hierarchical Directly-Follows Graph by chunking the log into depth levels. Reveals sub-process structure within large event logs.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            xes_content: {
+              type: 'string',
+              description: 'XES event log content as string',
+            },
+            max_depth: {
+              type: 'number',
+              description: 'Maximum hierarchy depth. Default: 3',
+            },
+          },
+          required: ['xes_content'],
+        },
+      },
+      {
+        name: 'streaming_log_estimate',
+        description:
+          'Probabilistic streaming log processor that estimates DFG statistics using bounded memory. Suitable for infinite or very large streams where full materialization is impractical.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            xes_content: {
+              type: 'string',
+              description: 'XES event log content (processed incrementally)',
+            },
+            sample_rate: {
+              type: 'number',
+              description: 'Sampling rate between 0 and 1. Default: 1.0 (process all traces)',
+            },
+          },
+          required: ['xes_content'],
+        },
+      },
+      {
+        name: 'smart_engine_run',
+        description:
+          'Smart execution engine with automatic algorithm selection and result caching. Analyzes the log to pick the best algorithm, caches intermediate results, and returns the discovery output with provenance.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            xes_content: {
+              type: 'string',
+              description: 'XES event log content as string',
+            },
+            algorithm: {
+              type: 'string',
+              description:
+                'Override automatic algorithm selection. Options: dfg, heuristic, alpha_plus_plus, genetic, ilp, inductive. Default: auto-select based on log size and complexity.',
+            },
+            cache_key: {
+              type: 'string',
+              description:
+                'Optional cache key for deduplication. Default: auto-generated from log hash.',
+            },
+          },
+          required: ['xes_content'],
+        },
+      },
+      // Registry
+      {
+        name: 'get_capability_registry',
+        description: 'Get the complete catalog of all pictl functions organized by category.',
+        inputSchema: {
+          type: 'object',
+          properties: {},
+        },
+      },
+      // Cache management
+      {
+        name: 'clear_caches',
+        description: 'Clear all parsing and encoding caches (parse, columnar, interner).',
+        inputSchema: {
+          type: 'object',
+          properties: {},
+        },
+      },
+      {
+        name: 'cache_stats',
+        description:
+          'Get cache hit/miss statistics. Returns parse hits, parse misses, columnar entries, and interner entries.',
+        inputSchema: {
+          type: 'object',
+          properties: {},
+        },
+      },
+      // SIMD conformance
+      {
+        name: 'simd_replay',
+        description:
+          'SIMD-accelerated token replay for conformance checking. Discovers a DFG from the log, builds a Petri net, then replays every trace and returns fitness/precision/per-case diagnostics.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            xes_content: {
+              type: 'string',
+              description: 'XES event log content as string',
+            },
+            activity_key: {
+              type: 'string',
+              description: 'Activity attribute key (default: concept:name)',
+            },
+          },
+          required: ['xes_content'],
+        },
+      },
+    ];
+  }
+  /**
+   * Execute a tool by name
+   */
+  async executeTool(toolName, input) {
+    try {
+      let result;
+      switch (toolName) {
+        // Discovery algorithms — use WASM functions directly
+        case 'discover_dfg': {
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
+          const minFreq = input.min_frequency ?? 0;
+          if (minFreq > 0) {
+            result = wasm.discover_dfg_filtered(logHandle, 'concept:name', minFreq);
+          } else {
+            result = wasm.discover_dfg(logHandle, 'concept:name');
+          }
+          break;
         }
-        catch (error) {
-            return {
-                content: [
-                    {
-                        type: 'text',
-                        text: `Error: ${error instanceof Error ? error.message : String(error)}`,
-                    },
-                ],
-                isError: true,
-            };
+        case 'discover_alpha_plus_plus': {
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
+          result = wasm.discover_alpha_plus_plus(logHandle, 'concept:name', 0.1);
+          break;
         }
-    }
-    /**
-     * Compare multiple algorithms on the same log
-     */
-    compareAlgorithms(logHandle, algorithms) {
-        const results = {};
-        for (const algo of algorithms) {
+        case 'discover_ilp_optimization': {
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
+          result = wasm.discover_ilp_petri_net(logHandle, 'concept:name');
+          break;
+        }
+        case 'discover_genetic_algorithm': {
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
+          const popSize = input.population_size ?? 50;
+          const generations = input.generations ?? 100;
+          result = wasm.discover_genetic_algorithm(logHandle, 'concept:name', popSize, generations);
+          break;
+        }
+        case 'discover_variants': {
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
+          result = wasm.analyze_trace_variants(logHandle, 'concept:name');
+          break;
+        }
+        // Analysis
+        case 'check_conformance': {
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
+          const netHandle = input.model_json;
+          result = wasm.check_token_based_replay(logHandle, netHandle, 'concept:name');
+          break;
+        }
+        case 'analyze_statistics': {
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
+          result = wasm.analyze_event_statistics(logHandle);
+          break;
+        }
+        case 'detect_bottlenecks': {
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
+          const threshold = BigInt(input.threshold ?? 3600);
+          result = wasm.detect_bottlenecks(logHandle, 'concept:name', 'time:timestamp', threshold);
+          break;
+        }
+        case 'detect_concept_drift': {
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
+          const windowSize = input.window_size ?? 5;
+          result = wasm.detect_drift(logHandle, 'concept:name', windowSize);
+          break;
+        }
+        // Visualization / text encoding
+        case 'encode_dfg_as_text': {
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
+          const dfgResult = wasm.discover_dfg(logHandle, 'concept:name');
+          const dfgHandle =
+            typeof dfgResult === 'object' && dfgResult?.handle
+              ? dfgResult.handle
+              : String(dfgResult);
+          result = wasm.encode_dfg_as_text(dfgHandle);
+          break;
+        }
+        // Utilities
+        case 'compare_algorithms': {
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
+          const algorithms = input.algorithms || ['dfg', 'alpha_plus_plus', 'genetic'];
+          result = this.compareAlgorithms(logHandle, algorithms);
+          break;
+        }
+        // OCEL / Object-Centric Process Mining
+        case 'load_ocel': {
+          const handle = wasm.load_ocel_from_json(input.ocel_json);
+          result = { ocel_handle: handle, message: 'OCEL loaded successfully' };
+          break;
+        }
+        case 'flatten_ocel': {
+          const logHandle = wasm.flatten_ocel_to_eventlog(input.ocel_handle, input.object_type);
+          result = {
+            eventlog_handle: logHandle,
+            object_type: input.object_type,
+            message: `OCEL flattened to EventLog for object type '${input.object_type}'`,
+          };
+          break;
+        }
+        case 'discover_ocel_dfg_per_type': {
+          result = wasm.discover_ocel_dfg_per_type(input.ocel_handle);
+          break;
+        }
+        case 'discover_oc_petri_net': {
+          const algorithm = input.algorithm || 'alpha++';
+          result = wasm.discover_oc_petri_net(input.ocel_handle, algorithm);
+          break;
+        }
+        case 'encode_ocel_as_text': {
+          result = wasm.encode_ocel_summary_as_text(input.ocel_handle);
+          break;
+        }
+        // Predictive Process Mining — all handles freed within this tick (no memory accumulation)
+        case 'predict_next_activity': {
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
+          try {
+            const n = input.n ?? 2;
+            const k = input.k ?? 5;
+            const actKey = input.activity_key ?? 'concept:name';
+            const predictorHandle = wasm.build_ngram_predictor(logHandle, actKey, n);
             try {
-                const start = performance.now();
-                let modelHandle;
-                switch (algo) {
-                    case 'dfg': {
-                        const r = wasm.discover_dfg(logHandle, 'concept:name');
-                        modelHandle = typeof r === 'object' && r?.handle ? r.handle : String(r);
-                        break;
-                    }
-                    case 'alpha_plus_plus': {
-                        const r = wasm.discover_alpha_plus_plus(logHandle, 'concept:name', 0.1);
-                        modelHandle = typeof r === 'object' && r?.handle ? r.handle : String(r);
-                        break;
-                    }
-                    case 'genetic': {
-                        const r = wasm.discover_genetic_algorithm(logHandle, 'concept:name', 50, 50);
-                        modelHandle = typeof r === 'object' && r?.handle ? r.handle : String(r);
-                        break;
-                    }
-                    case 'ilp': {
-                        const r = wasm.discover_ilp_petri_net(logHandle, 'concept:name');
-                        modelHandle = typeof r === 'object' && r?.handle ? r.handle : String(r);
-                        break;
-                    }
-                    case 'pso': {
-                        const r = wasm.discover_pso_algorithm(logHandle, 'concept:name', 30, 50);
-                        modelHandle = typeof r === 'object' && r?.handle ? r.handle : String(r);
-                        break;
-                    }
-                    case 'a_star': {
-                        const r = wasm.discover_astar(logHandle, 'concept:name', 1000);
-                        modelHandle = typeof r === 'object' && r?.handle ? r.handle : String(r);
-                        break;
-                    }
-                    case 'declare': {
-                        const r = wasm.discover_declare(logHandle, 'concept:name');
-                        modelHandle = typeof r === 'object' && r?.handle ? r.handle : String(r);
-                        break;
-                    }
-                    case 'heuristic': {
-                        const r = wasm.discover_heuristic_miner(logHandle, 'concept:name', 0.5);
-                        modelHandle = typeof r === 'object' && r?.handle ? r.handle : String(r);
-                        break;
-                    }
-                    case 'inductive': {
-                        const r = wasm.discover_inductive_miner(logHandle, 'concept:name');
-                        modelHandle = typeof r === 'object' && r?.handle ? r.handle : String(r);
-                        break;
-                    }
-                    case 'hill_climbing': {
-                        const r = wasm.discover_hill_climbing(logHandle, 'concept:name');
-                        modelHandle = typeof r === 'object' && r?.handle ? r.handle : String(r);
-                        break;
-                    }
-                    case 'ant_colony': {
-                        const r = wasm.discover_ant_colony(logHandle, 'concept:name', 20, 10);
-                        modelHandle = typeof r === 'object' && r?.handle ? r.handle : String(r);
-                        break;
-                    }
-                    case 'simulated_annealing': {
-                        const r = wasm.discover_simulated_annealing(logHandle, 'concept:name', 100.0, 0.95);
-                        modelHandle = typeof r === 'object' && r?.handle ? r.handle : String(r);
-                        break;
-                    }
-                    case 'process_skeleton': {
-                        const r = wasm.extract_process_skeleton(logHandle, 'concept:name', 2);
-                        modelHandle = typeof r === 'object' && r?.handle ? r.handle : String(r);
-                        break;
-                    }
-                    default:
-                        throw new Error(`Unknown algorithm: ${algo}`);
-                }
-                const time = performance.now() - start;
-                results[algo] = {
-                    time_ms: Math.round(time * 100) / 100,
-                    model_handle: modelHandle,
-                    success: true,
-                };
+              const prefixJson = JSON.stringify(input.prefix);
+              const raw = wasm.predict_next_k(String(predictorHandle), prefixJson, k);
+              const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+              const prefix = input.prefix;
+              const predictions = Array.isArray(parsed) ? parsed : (parsed?.predictions ?? []);
+              const top = predictions[0];
+              result = {
+                predictions,
+                interpretation: top
+                  ? `After ${prefix.join('→')}, the most likely next activity is "${top.activity}" (probability: ${(top.probability * 100).toFixed(1)}%). ${predictions.length} candidates ranked by ${n}-gram model trained from the log.`
+                  : `No prediction available for prefix: ${prefix.join('→')}. The prefix may not appear in the training log.`,
+                prefix,
+                n_gram_order: n,
+              };
+            } finally {
+              try {
+                wasm.delete_object(String(predictorHandle));
+              } catch {
+                /* best-effort */
+              }
             }
-            catch (e) {
-                results[algo] = {
-                    success: false,
-                    error: e instanceof Error ? e.message : String(e),
-                };
+          } finally {
+            try {
+              wasm.delete_object(logHandle);
+            } catch {
+              /* best-effort */
             }
+          }
+          break;
         }
-        return results;
+        case 'predict_case_duration': {
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
+          try {
+            const actKey = input.activity_key ?? 'concept:name';
+            const modelHandle = wasm.build_remaining_time_model(
+              logHandle,
+              actKey,
+              'time:timestamp'
+            );
+            try {
+              const prefixJson = JSON.stringify(input.prefix);
+              const raw = wasm.predict_case_duration(String(modelHandle), prefixJson);
+              const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+              const prefix = input.prefix;
+              const remainingMs =
+                typeof parsed === 'number'
+                  ? parsed
+                  : (parsed?.remaining_ms ?? parsed?.prediction ?? 0);
+              const remainingHours = remainingMs / 1000 / 3600;
+              result = {
+                remaining_ms: remainingMs,
+                remaining_hours: parseFloat(remainingHours.toFixed(2)),
+                interpretation:
+                  remainingMs > 0
+                    ? `Based on cases with a similar prefix (${prefix.join('→')}), the expected remaining time is approximately ${remainingHours.toFixed(1)} hours.`
+                    : `No duration estimate available for prefix: ${prefix.join('→')}. The prefix may not appear in completed cases.`,
+                prefix,
+              };
+            } finally {
+              try {
+                wasm.delete_object(String(modelHandle));
+              } catch {
+                /* best-effort */
+              }
+            }
+          } finally {
+            try {
+              wasm.delete_object(logHandle);
+            } catch {
+              /* best-effort */
+            }
+          }
+          break;
+        }
+        case 'score_trace_anomaly': {
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
+          try {
+            const actKey = input.activity_key ?? 'concept:name';
+            const dfgHandle = wasm.discover_dfg_handle(logHandle, actKey);
+            try {
+              const trace = input.trace;
+              const traceJson = JSON.stringify(trace);
+              const raw = wasm.score_trace_anomaly(String(dfgHandle), traceJson);
+              const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+              const score = typeof parsed === 'number' ? parsed : (parsed?.score ?? 0);
+              const isAnomalous = score > 0.5;
+              result = {
+                score: parseFloat(score.toFixed(4)),
+                is_anomalous: isAnomalous,
+                interpretation: isAnomalous
+                  ? `This trace is anomalous (score ${score.toFixed(3)} > 0.5). One or more transitions (${trace.join('→')}) are rare or absent in the reference process model. Consider reviewing this case for deviations.`
+                  : `This trace follows normal process patterns (score ${score.toFixed(3)} ≤ 0.5). All transitions appear in the reference model at expected frequencies.`,
+                trace,
+              };
+            } finally {
+              try {
+                wasm.delete_object(String(dfgHandle));
+              } catch {
+                /* best-effort */
+              }
+            }
+          } finally {
+            try {
+              wasm.delete_object(logHandle);
+            } catch {
+              /* best-effort */
+            }
+          }
+          break;
+        }
+        // Concept Drift Detection
+        case 'detect_concept_drift': {
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
+          try {
+            const actKey = input.activity_key ?? 'concept:name';
+            const windowSize = input.window_size ?? 50;
+            const alpha = input.alpha ?? 0.3;
+            const driftRaw = wasm.detect_drift(logHandle, actKey, windowSize);
+            const driftResult = typeof driftRaw === 'string' ? JSON.parse(driftRaw) : driftRaw;
+            const drifts = driftResult?.drifts ?? [];
+            const driftCount = driftResult?.drifts_detected ?? drifts.length;
+            // Compute EWMA over drift distances
+            const distances = drifts.map((d) => d.distance ?? 0);
+            const ewmaRaw =
+              distances.length > 0 ? wasm.compute_ewma(JSON.stringify(distances), alpha) : null;
+            const ewmaResult = ewmaRaw
+              ? typeof ewmaRaw === 'string'
+                ? JSON.parse(ewmaRaw)
+                : ewmaRaw
+              : { trend: 'stable', last_value: 0, smoothed: [] };
+            const trend = ewmaResult?.trend ?? 'stable';
+            const ewmaValue = ewmaResult?.last_value ?? 0;
+            result = {
+              drifts_detected: driftCount,
+              drift_points: drifts,
+              trend,
+              ewma: parseFloat(ewmaValue.toFixed(4)),
+              interpretation:
+                driftCount === 0
+                  ? 'No concept drift detected in this log. The process appears stable across the observation period.'
+                  : trend === 'rising'
+                    ? `Concept drift detected — ${driftCount} drift point(s) found and the EWMA trend is rising (${ewmaValue.toFixed(3)}). The process is actively changing. Investigate the most recent drift points for root cause.`
+                    : trend === 'falling'
+                      ? `${driftCount} historical drift point(s) detected, but the process appears to be stabilizing (EWMA trend falling to ${ewmaValue.toFixed(3)}).`
+                      : `${driftCount} drift point(s) detected. The EWMA is stable at ${ewmaValue.toFixed(3)}, suggesting historical change that has now plateaued.`,
+              window_size: windowSize,
+              alpha,
+            };
+          } finally {
+            try {
+              wasm.delete_object(logHandle);
+            } catch {
+              /* best-effort */
+            }
+          }
+          break;
+        }
+        // Feature Extraction
+        case 'extract_case_features': {
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
+          try {
+            const features = input.features || ['trace_length', 'activity_counts', 'rework_count'];
+            const target = input.target || 'outcome';
+            const configJson = JSON.stringify({ features, target });
+            result = wasm.extract_case_features(
+              logHandle,
+              'concept:name',
+              'time:timestamp',
+              configJson
+            );
+          } finally {
+            try {
+              wasm.delete_object(logHandle);
+            } catch {
+              /* best-effort */
+            }
+          }
+          break;
+        }
+        // ML Tools (native process intelligence — dynamic import for lazy loading)
+        case 'ml_classify_traces': {
+          const { classifyTraces } = await import('@pictl/ml');
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
+          try {
+            const configJson = JSON.stringify({
+              features: [
+                'trace_length',
+                'elapsed_time',
+                'activity_counts',
+                'rework_count',
+                'unique_activities',
+                'avg_inter_event_time',
+              ],
+              target: 'outcome',
+            });
+            const rawFeatures = wasm.extract_case_features(
+              logHandle,
+              'concept:name',
+              'time:timestamp',
+              configJson
+            );
+            const features =
+              typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
+            result = await classifyTraces(features, {
+              method: input.method || 'knn',
+              k: input.k ?? 5,
+            });
+          } finally {
+            try {
+              wasm.delete_object(logHandle);
+            } catch {
+              /* best-effort */
+            }
+          }
+          break;
+        }
+        case 'ml_cluster_traces': {
+          const { clusterTraces } = await import('@pictl/ml');
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
+          try {
+            const configJson = JSON.stringify({
+              features: [
+                'trace_length',
+                'elapsed_time',
+                'activity_counts',
+                'rework_count',
+                'unique_activities',
+              ],
+            });
+            const rawFeatures = wasm.extract_case_features(
+              logHandle,
+              'concept:name',
+              'time:timestamp',
+              configJson
+            );
+            const features =
+              typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
+            result = await clusterTraces(features, {
+              method: input.method || 'kmeans',
+              k: input.k ?? 3,
+              eps: input.eps ?? 1.0,
+            });
+          } finally {
+            try {
+              wasm.delete_object(logHandle);
+            } catch {
+              /* best-effort */
+            }
+          }
+          break;
+        }
+        case 'ml_forecast_throughput': {
+          const { forecastThroughput } = await import('@pictl/ml');
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
+          try {
+            const driftRaw = wasm.detect_drift(logHandle, 'concept:name', 5);
+            const driftResult = typeof driftRaw === 'string' ? JSON.parse(driftRaw) : driftRaw;
+            const distances = (driftResult?.drifts ?? []).map((d) => d.distance ?? 0);
+            result = await forecastThroughput(distances, {
+              forecastPeriods: input.forecast_periods ?? 5,
+            });
+          } finally {
+            try {
+              wasm.delete_object(logHandle);
+            } catch {
+              /* best-effort */
+            }
+          }
+          break;
+        }
+        case 'ml_detect_anomalies': {
+          const { detectEnhancedAnomalies } = await import('@pictl/ml');
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
+          try {
+            const driftRaw = wasm.detect_drift(logHandle, 'concept:name', 10);
+            const driftResult = typeof driftRaw === 'string' ? JSON.parse(driftRaw) : driftRaw;
+            const distances = (driftResult?.drifts ?? []).map((d) => d.distance ?? 0);
+            result = await detectEnhancedAnomalies(distances);
+          } finally {
+            try {
+              wasm.delete_object(logHandle);
+            } catch {
+              /* best-effort */
+            }
+          }
+          break;
+        }
+        case 'ml_regress_remaining_time': {
+          const { regressRemainingTime } = await import('@pictl/ml');
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
+          try {
+            const configJson = JSON.stringify({
+              features: [
+                'trace_length',
+                'elapsed_time',
+                'rework_count',
+                'unique_activities',
+                'avg_inter_event_time',
+              ],
+              target: 'remaining_time',
+            });
+            const rawFeatures = wasm.extract_case_features(
+              logHandle,
+              'concept:name',
+              'time:timestamp',
+              configJson
+            );
+            const features =
+              typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
+            result = await regressRemainingTime(features);
+          } finally {
+            try {
+              wasm.delete_object(logHandle);
+            } catch {
+              /* best-effort */
+            }
+          }
+          break;
+        }
+        case 'ml_pca_reduce': {
+          const { reduceFeaturesPCA } = await import('@pictl/ml');
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
+          try {
+            const configJson = JSON.stringify({
+              features: [
+                'trace_length',
+                'elapsed_time',
+                'activity_counts',
+                'rework_count',
+                'unique_activities',
+                'avg_inter_event_time',
+              ],
+            });
+            const rawFeatures = wasm.extract_case_features(
+              logHandle,
+              'concept:name',
+              'time:timestamp',
+              configJson
+            );
+            const features =
+              typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
+            result = await reduceFeaturesPCA(features, {
+              nComponents: input.n_components ?? 2,
+            });
+          } finally {
+            try {
+              wasm.delete_object(logHandle);
+            } catch {
+              /* best-effort */
+            }
+          }
+          break;
+        }
+        // Advanced Discovery
+        case 'discover_dfg_simd': {
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
+          try {
+            const minFreq = input.min_frequency ?? 0;
+            if (minFreq > 0) {
+              result = wasm.discover_dfg_filtered(logHandle, 'concept:name', minFreq);
+            } else {
+              result = wasm.discover_dfg_simd(logHandle, 'concept:name');
+            }
+          } finally {
+            try {
+              wasm.delete_object(logHandle);
+            } catch {
+              /* best-effort */
+            }
+          }
+          break;
+        }
+        case 'discover_dfg_hierarchical': {
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
+          try {
+            const maxDepth = input.max_depth ?? 3;
+            result = wasm.discover_dfg_hierarchical(logHandle, 'concept:name', maxDepth);
+          } finally {
+            try {
+              wasm.delete_object(logHandle);
+            } catch {
+              /* best-effort */
+            }
+          }
+          break;
+        }
+        case 'streaming_log_estimate': {
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
+          try {
+            result = wasm.streaming_log_estimate_dfg(parseInt(logHandle, 10));
+          } finally {
+            try {
+              wasm.delete_object(logHandle);
+            } catch {
+              /* best-effort */
+            }
+          }
+          break;
+        }
+        case 'smart_engine_run': {
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
+          try {
+            const algorithm = input.algorithm || 'auto';
+            result = wasm.smart_engine_run(logHandle, algorithm, input.traces_json);
+          } finally {
+            try {
+              wasm.delete_object(logHandle);
+            } catch {
+              /* best-effort */
+            }
+          }
+          break;
+        }
+        // Registry
+        case 'get_capability_registry': {
+          result = wasm.get_capability_registry();
+          break;
+        }
+        // Cache management
+        case 'clear_caches': {
+          wasm.clear_all_caches();
+          result = { status: 'ok', message: 'All caches cleared' };
+          break;
+        }
+        case 'cache_stats': {
+          const rawStats = wasm.get_cache_stats();
+          result = typeof rawStats === 'string' ? JSON.parse(rawStats) : rawStats;
+          break;
+        }
+        // SIMD conformance
+        case 'simd_replay': {
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
+          try {
+            const actKey = input.activity_key || 'concept:name';
+            const rawReplay = wasm.simd_token_replay(logHandle, actKey);
+            result = typeof rawReplay === 'string' ? JSON.parse(rawReplay) : rawReplay;
+          } finally {
+            try {
+              wasm.delete_object(logHandle);
+            } catch {
+              /* best-effort */
+            }
+          }
+          break;
+        }
+        default:
+          throw new Error(`Unknown tool: ${toolName}`);
+      }
+      return {
+        content: [
+          {
+            type: 'text',
+            text: typeof result === 'string' ? result : JSON.stringify(result, null, 2),
+          },
+        ],
+      };
+    } catch (error) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Error: ${error instanceof Error ? error.message : String(error)}`,
+          },
+        ],
+        isError: true,
+      };
     }
-    /**
-     * Start the MCP server
-     */
-    async start() {
-        this.server.connect(this.transport);
-        console.error('pictl MCP server started');
+  }
+  /**
+   * Compare multiple algorithms on the same log
+   */
+  compareAlgorithms(logHandle, algorithms) {
+    const results = {};
+    for (const algo of algorithms) {
+      try {
+        const start = performance.now();
+        let modelHandle;
+        switch (algo) {
+          case 'dfg': {
+            const r = wasm.discover_dfg(logHandle, 'concept:name');
+            modelHandle = typeof r === 'object' && r?.handle ? r.handle : String(r);
+            break;
+          }
+          case 'alpha_plus_plus': {
+            const r = wasm.discover_alpha_plus_plus(logHandle, 'concept:name', 0.1);
+            modelHandle = typeof r === 'object' && r?.handle ? r.handle : String(r);
+            break;
+          }
+          case 'genetic': {
+            const r = wasm.discover_genetic_algorithm(logHandle, 'concept:name', 50, 50);
+            modelHandle = typeof r === 'object' && r?.handle ? r.handle : String(r);
+            break;
+          }
+          case 'ilp': {
+            const r = wasm.discover_ilp_petri_net(logHandle, 'concept:name');
+            modelHandle = typeof r === 'object' && r?.handle ? r.handle : String(r);
+            break;
+          }
+          case 'pso': {
+            const r = wasm.discover_pso_algorithm(logHandle, 'concept:name', 30, 50);
+            modelHandle = typeof r === 'object' && r?.handle ? r.handle : String(r);
+            break;
+          }
+          case 'a_star': {
+            const r = wasm.discover_astar(logHandle, 'concept:name', 1000);
+            modelHandle = typeof r === 'object' && r?.handle ? r.handle : String(r);
+            break;
+          }
+          case 'declare': {
+            const r = wasm.discover_declare(logHandle, 'concept:name');
+            modelHandle = typeof r === 'object' && r?.handle ? r.handle : String(r);
+            break;
+          }
+          case 'heuristic': {
+            const r = wasm.discover_heuristic_miner(logHandle, 'concept:name', 0.5);
+            modelHandle = typeof r === 'object' && r?.handle ? r.handle : String(r);
+            break;
+          }
+          case 'inductive': {
+            const r = wasm.discover_inductive_miner(logHandle, 'concept:name');
+            modelHandle = typeof r === 'object' && r?.handle ? r.handle : String(r);
+            break;
+          }
+          case 'hill_climbing': {
+            const r = wasm.discover_hill_climbing(logHandle, 'concept:name');
+            modelHandle = typeof r === 'object' && r?.handle ? r.handle : String(r);
+            break;
+          }
+          case 'ant_colony': {
+            const r = wasm.discover_ant_colony(logHandle, 'concept:name', 20, 10);
+            modelHandle = typeof r === 'object' && r?.handle ? r.handle : String(r);
+            break;
+          }
+          case 'simulated_annealing': {
+            const r = wasm.discover_simulated_annealing(logHandle, 'concept:name', 100.0, 0.95);
+            modelHandle = typeof r === 'object' && r?.handle ? r.handle : String(r);
+            break;
+          }
+          case 'process_skeleton': {
+            const r = wasm.extract_process_skeleton(logHandle, 'concept:name', 2);
+            modelHandle = typeof r === 'object' && r?.handle ? r.handle : String(r);
+            break;
+          }
+          default:
+            throw new Error(`Unknown algorithm: ${algo}`);
+        }
+        const time = performance.now() - start;
+        results[algo] = {
+          time_ms: Math.round(time * 100) / 100,
+          model_handle: modelHandle,
+          success: true,
+        };
+      } catch (e) {
+        results[algo] = {
+          success: false,
+          error: e instanceof Error ? e.message : String(e),
+        };
+      }
     }
+    return results;
+  }
+  /**
+   * Start the MCP server
+   */
+  async start() {
+    this.server.connect(this.transport);
+    console.error('pictl MCP server started');
+  }
 }
 /**
  * Entry point for MCP server
  */
 async function main() {
-    const server = new PictlMCPServer();
-    await server.start();
+  const server = new PictlMCPServer();
+  await server.start();
 }
 if (require.main === module) {
-    main().catch(console.error);
+  main().catch(console.error);
 }
 export default PictlMCPServer;
 //# sourceMappingURL=mcp_server.js.map

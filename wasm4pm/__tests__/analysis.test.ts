@@ -227,7 +227,11 @@ describe('Analysis - Temporal Bottlenecks', () => {
     const logHandle = wasm.load_eventlog_from_xes(xes);
     expect(logHandle).toBeTruthy();
 
-    const bottlenecks = wasm.analyze_temporal_bottlenecks(logHandle, 'concept:name', 'time:timestamp');
+    const bottlenecks = wasm.analyze_temporal_bottlenecks(
+      logHandle,
+      'concept:name',
+      'time:timestamp'
+    );
     expect(bottlenecks).toBeTruthy();
   });
 

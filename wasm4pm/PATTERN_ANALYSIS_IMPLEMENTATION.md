@@ -7,6 +7,7 @@ Successfully implemented dynamic YAWL pattern selection to replace the hardcoded
 ## Changes Made
 
 ### 1. Created Pattern Analysis Module
+
 **File:** `wasm4pm/src/pattern_analysis.rs` (new file, 339 lines)
 
 **Key Components:**
@@ -38,14 +39,17 @@ Successfully implemented dynamic YAWL pattern selection to replace the hardcoded
   - Choice: uses choice score directly
 
 ### 2. Integrated into Autonomic Cycle
+
 **File:** `wasm4pm/src/lib.rs`
 
 **Module Declaration:**
+
 ```rust
 pub mod pattern_analysis;  // Line 115
 ```
 
 **Pattern Analysis Layer (after Perception, line 535-586):**
+
 ```rust
 // Extract traces as Vec<Vec<String>>
 let traces_for_analysis: Vec<Vec<String>> = log.traces.iter()...
@@ -62,6 +66,7 @@ let pattern_analysis = pattern_analysis::analyze_trace_structure(
 ```
 
 **Dynamic Pattern Dispatch (line 662-692):**
+
 ```rust
 // Use dynamic pattern instead of hardcoded Sequence
 let pattern_ctx = pattern_dispatch::PatternContext {
@@ -86,6 +91,7 @@ let pattern_name = if pattern_result.success {
 ## Test Results
 
 All 4 unit tests passing:
+
 ```
 test pattern_analysis::tests::test_empty_traces ... ok
 test pattern_analysis::tests::test_concurrency_detection ... ok
@@ -94,6 +100,7 @@ test pattern_analysis::tests::test_sequence_detection ... ok
 ```
 
 **Test Coverage:**
+
 - Sequence detection: Identical traces with no branching
 - Loop detection: Traces with repeated activities
 - Concurrency detection: Traces with activities in different orders
@@ -102,9 +109,11 @@ test pattern_analysis::tests::test_sequence_detection ... ok
 ## Bug Fixes
 
 ### Issue: Incorrect Choice Point Detection
+
 **Problem:** Original implementation counted all outgoing edge occurrences, not unique successors. This caused identical sequential traces (A->B->C repeated 3 times) to be classified as having choice points.
 
 **Fix:** Changed `detect_choice_points()` to use `HashSet<String>` to track unique successors per activity:
+
 ```rust
 // Before: counted occurrences
 let mut outgoing: HashMap<String, usize> = HashMap::new();

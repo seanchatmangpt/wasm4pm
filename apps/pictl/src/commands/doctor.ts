@@ -12,36 +12,60 @@ export interface DoctorOptions extends OutputOptions {
   fix?: boolean;
 }
 
-/** Result of a single health check */
-interface CheckResult {
+export type Pathology = 
+  | 'ENVIRONMENT_FAULT' 
+  | 'MODEL_TRUTH_FAULT' 
+  | 'PLAN_TRUTH_FAULT' 
+  | 'TIMING_TRUTH_FAULT' 
+  | 'DEPLOYABILITY_TRUTH_FAULT' 
+  | 'REPRODUCIBILITY_TRUTH_FAULT' 
+  | 'ANTI_LIE_TRUTH_FAULT'
+  | 'EPISTEMIC_FAULT';
+
+export type Severity = 'INFO' | 'WARNING' | 'STOP_THE_LINE';
+
+export type RepairMode = 
+  | 'MANUAL_INTERVENTION'
+  | 'REBUILD_ARTIFACTS'
+  | 'SYNC_REGISTRY'
+  | 'SCAFFOLD_CONFIG'
+  | 'REINSTALL_DEPENDENCIES'
+  | 'AUTO_REPAIR';
+
+/** Result of a single health diagnosis */
+export interface Diagnosis {
   name: string;
-  status: 'ok' | 'warn' | 'fail';
+  pathology?: Pathology;
+  severity: Severity;
   message: string;
-  fix?: string;
+  repairMode?: RepairMode;
+  repairCommand?: string; // The smallest lawful repair
+  fixGuide?: string; // For manual intervention
+  fix?: string; // Backwards compatibility for raw checks
 }
 
 /** Aggregate report */
 interface DoctorReport {
-  checks: CheckResult[];
-  ok: number;
-  warn: number;
-  fail: number;
-  healthy: boolean;
+  diagnoses: Diagnosis[];
+  info: number;
+  warnings: number;
+  stopTheLine: number;
+  epistemicHealth: boolean;
 }
 
 // ────────────────────────────────────────────────────────────────────────────
 // Check 1: Node.js version (≥ 18)
 // ────────────────────────────────────────────────────────────────────────────
 
-async function checkNodeVersion(): Promise<CheckResult> {
+async function checkNodeVersion(): Promise<Diagnosis> {
   const raw = process.version;
   const major = parseInt(raw.slice(1).split('.')[0] ?? '0', 10);
   if (major >= 18) {
-    return { name: 'Node.js version', status: 'ok', message: `${raw} (≥ 18 required)` };
+    return { name: 'Node.js version', pathology: 'ENVIRONMENT_FAULT', severity: 'INFO', message: `${raw} (≥ 18 required)` };
   }
   return {
-    name: 'Node.js version',
-    status: 'fail',
+    name: 'Node.js version', pathology: 'ENVIRONMENT_FAULT',
+    severity: 'STOP_THE_LINE',
     message: `${raw} is too old — Node.js ≥ 18 is required`,
     fix: 'Install Node.js 18+ from https://nodejs.org or use a version manager: nvm install 20',
   };
@@ -51,23 +75,23 @@ async function checkNodeVersion(): Promise<CheckResult> {
 // Check 2: pnpm version (≥ 8)
 // ────────────────────────────────────────────────────────────────────────────
 
-async function checkPnpmVersion(): Promise<CheckResult> {
+async function checkPnpmVersion(): Promise<Diagnosis> {
   try {
     const version = execSync('pnpm --version', { encoding: 'utf8', stdio: 'pipe' }).trim();
     const major = parseInt(version.split('.')[0], 10);
     if (major >= 8) {
-      return { name: 'pnpm version', status: 'ok', message: `pnpm ${version} (≥ 8 required)` };
+      return { name: 'pnpm version', pathology: 'ENVIRONMENT_FAULT', severity: 'INFO', message: `pnpm ${version} (≥ 8 required)` };
     }
     return {
-      name: 'pnpm version',
-      status: 'warn',
+      name: 'pnpm version', pathology: 'ENVIRONMENT_FAULT',
+      severity: 'WARNING',
       message: `pnpm ${version} is old — ≥ 8 recommended`,
       fix: 'Upgrade pnpm: corepack enable && corepack prepare pnpm@latest --activate',
     };
   } catch {
     return {
-      name: 'pnpm version',
-      status: 'warn',
+      name: 'pnpm version', pathology: 'ENVIRONMENT_FAULT',
+      severity: 'WARNING',
       message: 'pnpm not found in PATH',
       fix: 'Install pnpm: corepack enable && corepack prepare pnpm@latest --activate',
     };
@@ -103,12 +127,12 @@ async function resolveWasmPkgDir(): Promise<string | null> {
   return null;
 }
 
-async function checkWasmBinary(): Promise<CheckResult> {
+async function checkWasmBinary(): Promise<Diagnosis> {
   const wasmPkgDir = await resolveWasmPkgDir();
   if (!wasmPkgDir) {
     return {
-      name: 'WASM binary',
-      status: 'fail',
+      name: 'WASM binary', pathology: 'ENVIRONMENT_FAULT',
+      severity: 'STOP_THE_LINE',
       message: 'Cannot locate wasm4pm/pkg/ directory (workspace root not found)',
       fix: 'Run this command from inside the wasm4pm workspace, then rebuild: cd wasm4pm && pnpm run build',
     };
@@ -122,8 +146,8 @@ async function checkWasmBinary(): Promise<CheckResult> {
 
     if (wasmStat.size === 0) {
       return {
-        name: 'WASM binary',
-        status: 'fail',
+        name: 'WASM binary', pathology: 'ENVIRONMENT_FAULT',
+        severity: 'STOP_THE_LINE',
         message: `${wasmFile} exists but is empty`,
         fix: 'Rebuild WASM: cd wasm4pm && pnpm run build',
       };
@@ -131,11 +155,11 @@ async function checkWasmBinary(): Promise<CheckResult> {
 
     const sizeMb = (wasmStat.size / 1024 / 1024).toFixed(1);
     void jsStat;
-    return { name: 'WASM binary', status: 'ok', message: `pictl_bg.wasm found (${sizeMb} MB)` };
+    return { name: 'WASM binary', pathology: 'ENVIRONMENT_FAULT', severity: 'INFO', message: `pictl_bg.wasm found (${sizeMb} MB)` };
   } catch {
     return {
-      name: 'WASM binary',
-      status: 'fail',
+      name: 'WASM binary', pathology: 'ENVIRONMENT_FAULT',
+      severity: 'STOP_THE_LINE',
       message: `WASM binary not built — ${wasmFile} not found`,
       fix: 'Build the WASM module: cd wasm4pm && pnpm run build',
     };
@@ -146,12 +170,12 @@ async function checkWasmBinary(): Promise<CheckResult> {
 // Check 4: WASM loads and get_version() works
 // ────────────────────────────────────────────────────────────────────────────
 
-async function checkWasmLoads(): Promise<CheckResult> {
+async function checkWasmLoads(): Promise<Diagnosis> {
   const wasmPkgDir = await resolveWasmPkgDir();
   if (!wasmPkgDir) {
     return {
-      name: 'WASM loads',
-      status: 'fail',
+      name: 'WASM loads', pathology: 'ENVIRONMENT_FAULT',
+      severity: 'STOP_THE_LINE',
       message: 'Skipped — pkg/ directory not found',
       fix: 'Run from inside the wasm4pm workspace',
     };
@@ -160,8 +184,8 @@ async function checkWasmLoads(): Promise<CheckResult> {
   const jsFile = path.join(wasmPkgDir, 'pictl.js');
   if (!existsSync(jsFile)) {
     return {
-      name: 'WASM loads',
-      status: 'fail',
+      name: 'WASM loads', pathology: 'ENVIRONMENT_FAULT',
+      severity: 'STOP_THE_LINE',
       message: 'pictl.js not found — module not built',
       fix: 'cd wasm4pm && pnpm run build',
     };
@@ -173,15 +197,15 @@ async function checkWasmLoads(): Promise<CheckResult> {
 
     if (typeof mod.get_version === 'function') {
       const v: string = mod.get_version();
-      return { name: 'WASM loads', status: 'ok', message: `Loaded OK — module version ${v}` };
+      return { name: 'WASM loads', pathology: 'ENVIRONMENT_FAULT', severity: 'INFO', message: `Loaded OK — module version ${v}` };
     }
 
-    return { name: 'WASM loads', status: 'ok', message: 'Loaded OK (get_version not exported)' };
+    return { name: 'WASM loads', pathology: 'ENVIRONMENT_FAULT', severity: 'INFO', message: 'Loaded OK (get_version not exported)' };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     return {
-      name: 'WASM loads',
-      status: 'fail',
+      name: 'WASM loads', pathology: 'ENVIRONMENT_FAULT',
+      severity: 'STOP_THE_LINE',
       message: `Failed to import WASM module: ${msg}`,
       fix: 'Rebuild with: cd wasm4pm && pnpm run build',
     };
@@ -192,7 +216,7 @@ async function checkWasmLoads(): Promise<CheckResult> {
 // Check 5: SIMD support in current WASM runtime
 // ────────────────────────────────────────────────────────────────────────────
 
-async function checkSimdSupport(): Promise<CheckResult> {
+async function checkSimdSupport(): Promise<Diagnosis> {
   try {
     // WebAssembly SIMD is detected by compiling a small SIMD module
     const simdModule = new Uint8Array([
@@ -205,18 +229,18 @@ async function checkSimdSupport(): Promise<CheckResult> {
     const compile = (globalThis as any).WebAssembly?.compile as ((buf: Uint8Array) => Promise<any>) | undefined;
     if (!compile) {
       return {
-        name: 'WASM SIMD',
-        status: 'warn',
+        name: 'WASM SIMD', pathology: 'ENVIRONMENT_FAULT',
+        severity: 'WARNING',
         message: 'WebAssembly not available in this runtime',
         fix: 'Use Node.js 18+ or a Chromium-based browser',
       };
     }
     await compile(simdModule);
-    return { name: 'WASM SIMD', status: 'ok', message: 'SIMD128 supported — algorithms will use optimized paths' };
+    return { name: 'WASM SIMD', pathology: 'ENVIRONMENT_FAULT', severity: 'INFO', message: 'SIMD128 supported — algorithms will use optimized paths' };
   } catch {
     return {
-      name: 'WASM SIMD',
-      status: 'warn',
+      name: 'WASM SIMD', pathology: 'ENVIRONMENT_FAULT',
+      severity: 'WARNING',
       message: 'SIMD128 not available — algorithms will run at reduced speed',
       fix: 'Use Node.js 18+ or a Chromium-based browser with SIMD enabled',
     };
@@ -227,7 +251,7 @@ async function checkSimdSupport(): Promise<CheckResult> {
 // Check 6: Config file found
 // ────────────────────────────────────────────────────────────────────────────
 
-async function checkConfigFound(): Promise<CheckResult> {
+async function checkConfigFound(): Promise<Diagnosis> {
   const configNames = ['pictl.toml', 'pictl.json', 'wasm4pm.toml', 'wasm4pm.json'];
   const cwd = process.cwd();
   const searchDirs: string[] = [cwd];
@@ -244,14 +268,14 @@ async function checkConfigFound(): Promise<CheckResult> {
       const candidate = path.join(dir, name);
       if (existsSync(candidate)) {
         const relative = path.relative(cwd, candidate) || name;
-        return { name: 'Config file', status: 'ok', message: `Found ${relative}` };
+        return { name: 'Config file', pathology: 'REPRODUCIBILITY_TRUTH_FAULT', severity: 'INFO', message: `Found ${relative}` };
       }
     }
   }
 
   return {
-    name: 'Config file',
-    status: 'warn',
+    name: 'Config file', pathology: 'REPRODUCIBILITY_TRUTH_FAULT',
+    severity: 'WARNING',
     message: 'No pictl.toml / wasm4pm.json found in current directory or parents',
     fix: 'Create a config with: pictl init    (defaults work fine without one)',
   };
@@ -261,7 +285,7 @@ async function checkConfigFound(): Promise<CheckResult> {
 // Check 7: Config validation (if found, parse with Zod)
 // ────────────────────────────────────────────────────────────────────────────
 
-async function checkConfigValidation(): Promise<CheckResult> {
+async function checkConfigValidation(): Promise<Diagnosis> {
   const configNames = ['pictl.toml', 'pictl.json', 'wasm4pm.toml', 'wasm4pm.json'];
   const cwd = process.cwd();
   let configPath: string | null = null;
@@ -287,7 +311,7 @@ async function checkConfigValidation(): Promise<CheckResult> {
   }
 
   if (!configPath) {
-    return { name: 'Config validation', status: 'ok', message: 'Skipped — no config file found' };
+    return { name: 'Config validation', pathology: 'REPRODUCIBILITY_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — no config file found' };
   }
 
   // JSON configs can be validated directly
@@ -295,11 +319,11 @@ async function checkConfigValidation(): Promise<CheckResult> {
     try {
       const raw = await fs.readFile(configPath, 'utf-8');
       JSON.parse(raw);
-      return { name: 'Config validation', status: 'ok', message: `${path.basename(configPath)} is valid JSON` };
+      return { name: 'Config validation', pathology: 'REPRODUCIBILITY_TRUTH_FAULT', severity: 'INFO', message: `${path.basename(configPath)} is valid JSON` };
     } catch (err) {
       return {
-        name: 'Config validation',
-        status: 'fail',
+        name: 'Config validation', pathology: 'REPRODUCIBILITY_TRUTH_FAULT',
+        severity: 'STOP_THE_LINE',
         message: `Invalid JSON in ${path.basename(configPath)}: ${err instanceof Error ? err.message : String(err)}`,
         fix: 'Fix the JSON syntax in your config file',
       };
@@ -312,21 +336,21 @@ async function checkConfigValidation(): Promise<CheckResult> {
     const lines = raw.split('\n').filter((l) => l.trim() && !l.trim().startsWith('#'));
     if (lines.length === 0) {
       return {
-        name: 'Config validation',
-        status: 'warn',
+        name: 'Config validation', pathology: 'REPRODUCIBILITY_TRUTH_FAULT',
+        severity: 'WARNING',
         message: `${path.basename(configPath)} is empty`,
         fix: 'Add configuration or run: pictl init',
       };
     }
     return {
-      name: 'Config validation',
-      status: 'ok',
+      name: 'Config validation', pathology: 'REPRODUCIBILITY_TRUTH_FAULT',
+      severity: 'INFO',
       message: `${path.basename(configPath)} has ${lines.length} config lines (basic check passed)`,
     };
   } catch (err) {
     return {
-      name: 'Config validation',
-      status: 'fail',
+      name: 'Config validation', pathology: 'REPRODUCIBILITY_TRUTH_FAULT',
+      severity: 'STOP_THE_LINE',
       message: `Cannot read ${path.basename(configPath)}: ${err instanceof Error ? err.message : String(err)}`,
       fix: 'Check file permissions',
     };
@@ -337,7 +361,7 @@ async function checkConfigValidation(): Promise<CheckResult> {
 // Check 8: XES files in cwd
 // ────────────────────────────────────────────────────────────────────────────
 
-async function checkXesFiles(): Promise<CheckResult> {
+async function checkXesFiles(): Promise<Diagnosis> {
   const cwd = process.cwd();
   const found: string[] = [];
 
@@ -365,8 +389,8 @@ async function checkXesFiles(): Promise<CheckResult> {
 
   if (found.length === 0) {
     return {
-      name: 'XES event logs',
-      status: 'warn',
+      name: 'XES event logs', pathology: 'REPRODUCIBILITY_TRUTH_FAULT',
+      severity: 'WARNING',
       message: 'No .xes files found in current directory (depth ≤ 2)',
       fix: 'Place an XES event log here, or pass --input <path> to pictl run/predict',
     };
@@ -374,8 +398,8 @@ async function checkXesFiles(): Promise<CheckResult> {
 
   const preview = found.slice(0, 3).join(', ') + (found.length > 3 ? ` (+${found.length - 3} more)` : '');
   return {
-    name: 'XES event logs',
-    status: 'ok',
+    name: 'XES event logs', pathology: 'REPRODUCIBILITY_TRUTH_FAULT',
+    severity: 'INFO',
     message: `${found.length} file(s): ${preview}`,
   };
 }
@@ -384,23 +408,23 @@ async function checkXesFiles(): Promise<CheckResult> {
 // Check 9: System memory (warn < 256 MB free)
 // ────────────────────────────────────────────────────────────────────────────
 
-async function checkSystemMemory(): Promise<CheckResult> {
+async function checkSystemMemory(): Promise<Diagnosis> {
   const freeMb = os.freemem() / 1024 / 1024;
   const totalMb = os.totalmem() / 1024 / 1024;
   const pct = ((freeMb / totalMb) * 100).toFixed(0);
 
   if (freeMb < 128) {
     return {
-      name: 'System memory',
-      status: 'warn',
+      name: 'System memory', pathology: 'DEPLOYABILITY_TRUTH_FAULT',
+      severity: 'WARNING',
       message: `Low free memory: ${freeMb.toFixed(0)} MB free of ${totalMb.toFixed(0)} MB total (${pct}%)`,
       fix: 'Close other applications; process mining on large logs requires ≥ 256 MB free',
     };
   }
 
   return {
-    name: 'System memory',
-    status: 'ok',
+    name: 'System memory', pathology: 'DEPLOYABILITY_TRUTH_FAULT',
+    severity: 'INFO',
     message: `${freeMb.toFixed(0)} MB free of ${totalMb.toFixed(0)} MB total (${pct}% free)`,
   };
 }
@@ -409,7 +433,7 @@ async function checkSystemMemory(): Promise<CheckResult> {
 // Check 10: Disk space (warn < 500 MB free)
 // ────────────────────────────────────────────────────────────────────────────
 
-async function checkDiskSpace(): Promise<CheckResult> {
+async function checkDiskSpace(): Promise<Diagnosis> {
   try {
     // Use df on macOS/Linux, wmic on Windows
     let freeMb: number;
@@ -432,20 +456,20 @@ async function checkDiskSpace(): Promise<CheckResult> {
 
     if (freeMb < 500) {
       return {
-        name: 'Disk space',
-        status: 'warn',
+        name: 'Disk space', pathology: 'DEPLOYABILITY_TRUTH_FAULT',
+        severity: 'WARNING',
         message: `Low disk space: ${freeMb.toFixed(0)} MB free — WASM builds require ~100 MB`,
         fix: 'Free up disk space before building WASM modules',
       };
     }
 
     return {
-      name: 'Disk space',
-      status: 'ok',
+      name: 'Disk space', pathology: 'DEPLOYABILITY_TRUTH_FAULT',
+      severity: 'INFO',
       message: `${freeMb.toFixed(0)} MB free on current filesystem`,
     };
   } catch {
-    return { name: 'Disk space', status: 'ok', message: 'Skipped — could not determine disk space' };
+    return { name: 'Disk space', pathology: 'DEPLOYABILITY_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — could not determine disk space' };
   }
 }
 
@@ -453,13 +477,13 @@ async function checkDiskSpace(): Promise<CheckResult> {
 // Check 11: Git hooks (pre-commit, pre-push)
 // ────────────────────────────────────────────────────────────────────────────
 
-async function checkGitHooks(): Promise<CheckResult> {
+async function checkGitHooks(): Promise<Diagnosis> {
   let gitDir = process.cwd();
   for (let i = 0; i < 10; i++) {
     if (existsSync(path.join(gitDir, '.git'))) break;
     const parent = path.dirname(gitDir);
     if (parent === gitDir) {
-      return { name: 'Git hooks', status: 'ok', message: 'Skipped — not inside a git repository' };
+      return { name: 'Git hooks', pathology: 'DEPLOYABILITY_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — not inside a git repository' };
     }
     gitDir = parent;
   }
@@ -472,7 +496,7 @@ async function checkGitHooks(): Promise<CheckResult> {
   const hasPrePush = existsSync(prePush);
 
   if (hasPreCommit && hasPrePush) {
-    return { name: 'Git hooks', status: 'ok', message: 'pre-commit and pre-push hooks installed' };
+    return { name: 'Git hooks', pathology: 'DEPLOYABILITY_TRUTH_FAULT', severity: 'INFO', message: 'pre-commit and pre-push hooks installed' };
   }
 
   const missing: string[] = [];
@@ -480,8 +504,8 @@ async function checkGitHooks(): Promise<CheckResult> {
   if (!hasPrePush) missing.push('pre-push');
 
   return {
-    name: 'Git hooks',
-    status: 'warn',
+    name: 'Git hooks', pathology: 'DEPLOYABILITY_TRUTH_FAULT',
+    severity: 'WARNING',
     message: `Missing hooks: ${missing.join(', ')}`,
     fix: 'Install hooks: pnpm prepare',
   };
@@ -491,21 +515,21 @@ async function checkGitHooks(): Promise<CheckResult> {
 // Check 12: TypeScript compilation
 // ────────────────────────────────────────────────────────────────────────────
 
-async function checkTypeScriptCompilation(): Promise<CheckResult> {
+async function checkTypeScriptCompilation(): Promise<Diagnosis> {
   const rootDir = await resolveWorkspaceRoot();
   if (!rootDir) {
-    return { name: 'TypeScript compilation', status: 'ok', message: 'Skipped — workspace root not found' };
+    return { name: 'TypeScript compilation', pathology: 'EPISTEMIC_FAULT', severity: 'INFO', message: 'Skipped — workspace root not found' };
   }
 
   try {
     execSync('npx tsc --noEmit', { cwd: rootDir, encoding: 'utf8', stdio: 'pipe', timeout: 60000 });
-    return { name: 'TypeScript compilation', status: 'ok', message: 'tsc --noEmit passes' };
+    return { name: 'TypeScript compilation', pathology: 'EPISTEMIC_FAULT', severity: 'INFO', message: 'tsc --noEmit passes' };
   } catch (err) {
     const stderr = (err as { stderr?: string }).stderr ?? '';
     const lineCount = stderr.trim().split('\n').filter((l) => l.trim()).length;
     return {
-      name: 'TypeScript compilation',
-      status: 'warn',
+      name: 'TypeScript compilation', pathology: 'EPISTEMIC_FAULT',
+      severity: 'WARNING',
       message: `${lineCount} TypeScript error(s) — run: pnpm lint for details`,
       fix: 'Fix TypeScript errors: pnpm lint',
     };
@@ -516,19 +540,19 @@ async function checkTypeScriptCompilation(): Promise<CheckResult> {
 // Check 13: @pictl/ml available
 // ────────────────────────────────────────────────────────────────────────────
 
-async function checkMicroMl(): Promise<CheckResult> {
+async function checkMicroMl(): Promise<Diagnosis> {
   try {
     // Try to resolve the package
     const mlPath = await import('@pictl/ml');
     const hasClassify = typeof mlPath.classifyTraces === 'function';
     if (hasClassify) {
-      return { name: '@pictl/ml', status: 'ok', message: 'Native ML package available (classify, cluster, forecast, anomaly, regress, pca)' };
+      return { name: '@pictl/ml', pathology: 'ENVIRONMENT_FAULT', severity: 'INFO', message: 'Native ML package available (classify, cluster, forecast, anomaly, regress, pca)' };
     }
-    return { name: '@pictl/ml', status: 'warn', message: 'Package found but classifyTraces not exported' };
+    return { name: '@pictl/ml', pathology: 'ENVIRONMENT_FAULT', severity: 'WARNING', message: 'Package found but classifyTraces not exported' };
   } catch {
     return {
-      name: '@pictl/ml',
-      status: 'warn',
+      name: '@pictl/ml', pathology: 'ENVIRONMENT_FAULT',
+      severity: 'WARNING',
       message: '@pictl/ml not resolvable — ML commands will not work',
       fix: 'Install the ML package: pnpm install @pictl/ml',
     };
@@ -539,7 +563,7 @@ async function checkMicroMl(): Promise<CheckResult> {
 // Check 14: Rust toolchain (cargo + wasm-pack)
 // ────────────────────────────────────────────────────────────────────────────
 
-async function checkRustToolchain(): Promise<CheckResult> {
+async function checkRustToolchain(): Promise<Diagnosis> {
   let cargoVersion: string | null = null;
   let wasmPackVersion: string | null = null;
 
@@ -557,8 +581,8 @@ async function checkRustToolchain(): Promise<CheckResult> {
 
   if (cargoVersion && wasmPackVersion) {
     return {
-      name: 'Rust toolchain',
-      status: 'ok',
+      name: 'Rust toolchain', pathology: 'ENVIRONMENT_FAULT',
+      severity: 'INFO',
       message: `${cargoVersion}, ${wasmPackVersion}`,
     };
   }
@@ -568,8 +592,8 @@ async function checkRustToolchain(): Promise<CheckResult> {
   if (!wasmPackVersion) missing.push('wasm-pack');
 
   return {
-    name: 'Rust toolchain',
-    status: 'warn',
+    name: 'Rust toolchain', pathology: 'ENVIRONMENT_FAULT',
+    severity: 'WARNING',
     message: `Missing: ${missing.join(', ')} — only needed if modifying Rust algorithms`,
     fix: 'Install Rust: https://rustup.rs then: cargo install wasm-pack',
   };
@@ -579,26 +603,26 @@ async function checkRustToolchain(): Promise<CheckResult> {
 // Check 15: Results directory writable
 // ────────────────────────────────────────────────────────────────────────────
 
-async function checkResultsDir(): Promise<CheckResult> {
+async function checkResultsDir(): Promise<Diagnosis> {
   const rootDir = await resolveWorkspaceRoot();
   if (!rootDir) {
-    return { name: 'Results directory', status: 'ok', message: 'Skipped — workspace root not found' };
+    return { name: 'Results directory', pathology: 'DEPLOYABILITY_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — workspace root not found' };
   }
 
   const resultsDir = path.join(rootDir, '.wasm4pm', 'results');
 
   try {
     await fs.access(resultsDir, fs.constants.W_OK);
-    return { name: 'Results directory', status: 'ok', message: `.wasm4pm/results/ is writable` };
+    return { name: 'Results directory', pathology: 'DEPLOYABILITY_TRUTH_FAULT', severity: 'INFO', message: `.wasm4pm/results/ is writable` };
   } catch {
     // Try to create it
     try {
       await fs.mkdir(resultsDir, { recursive: true });
-      return { name: 'Results directory', status: 'ok', message: `.wasm4pm/results/ created and writable` };
+      return { name: 'Results directory', pathology: 'DEPLOYABILITY_TRUTH_FAULT', severity: 'INFO', message: `.wasm4pm/results/ created and writable` };
     } catch (err) {
       return {
-        name: 'Results directory',
-        status: 'warn',
+        name: 'Results directory', pathology: 'DEPLOYABILITY_TRUTH_FAULT',
+        severity: 'WARNING',
         message: `Cannot write to .wasm4pm/results/: ${err instanceof Error ? err.message : String(err)}`,
         fix: 'Check directory permissions; discovery results auto-save here',
       };
@@ -610,15 +634,15 @@ async function checkResultsDir(): Promise<CheckResult> {
 // Check 16: Algorithm registry (all 15 registered)
 // ────────────────────────────────────────────────────────────────────────────
 
-async function checkAlgorithmRegistry(): Promise<CheckResult> {
+async function checkAlgorithmRegistry(): Promise<Diagnosis> {
   const wasmPkgDir = await resolveWasmPkgDir();
   if (!wasmPkgDir) {
-    return { name: 'Algorithm registry', status: 'ok', message: 'Skipped — workspace not found' };
+    return { name: 'Algorithm registry', pathology: 'ENVIRONMENT_FAULT', severity: 'INFO', message: 'Skipped — workspace not found' };
   }
 
   const jsFile = path.join(wasmPkgDir, 'pictl.js');
   if (!existsSync(jsFile)) {
-    return { name: 'Algorithm registry', status: 'ok', message: 'Skipped — WASM not built' };
+    return { name: 'Algorithm registry', pathology: 'ENVIRONMENT_FAULT', severity: 'INFO', message: 'Skipped — WASM not built' };
   }
 
   try {
@@ -646,17 +670,17 @@ async function checkAlgorithmRegistry(): Promise<CheckResult> {
     const missing = expected.filter((name) => typeof mod[name] !== 'function');
 
     if (missing.length === 0) {
-      return { name: 'Algorithm registry', status: 'ok', message: `All ${expected.length} algorithms registered` };
+      return { name: 'Algorithm registry', pathology: 'ENVIRONMENT_FAULT', severity: 'INFO', message: `All ${expected.length} algorithms registered` };
     }
 
     return {
-      name: 'Algorithm registry',
-      status: 'warn',
+      name: 'Algorithm registry', pathology: 'ENVIRONMENT_FAULT',
+      severity: 'WARNING',
       message: `${missing.length} algorithm(s) missing: ${missing.slice(0, 3).join(', ')}${missing.length > 3 ? ` (+${missing.length - 3})` : ''}`,
       fix: 'Rebuild WASM: cd wasm4pm && npm run build',
     };
   } catch {
-    return { name: 'Algorithm registry', status: 'ok', message: 'Skipped — WASM import failed' };
+    return { name: 'Algorithm registry', pathology: 'ENVIRONMENT_FAULT', severity: 'INFO', message: 'Skipped — WASM import failed' };
   }
 }
 
@@ -664,10 +688,10 @@ async function checkAlgorithmRegistry(): Promise<CheckResult> {
 // Check 17: Package workspace integrity
 // ────────────────────────────────────────────────────────────────────────────
 
-async function checkWorkspaceIntegrity(): Promise<CheckResult> {
+async function checkWorkspaceIntegrity(): Promise<Diagnosis> {
   const rootDir = await resolveWorkspaceRoot();
   if (!rootDir) {
-    return { name: 'Workspace integrity', status: 'ok', message: 'Skipped — workspace root not found' };
+    return { name: 'Workspace integrity', pathology: 'DEPLOYABILITY_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — workspace root not found' };
   }
 
   const expectedPackages = [
@@ -699,12 +723,12 @@ async function checkWorkspaceIntegrity(): Promise<CheckResult> {
   }
 
   if (missing.length === 0) {
-    return { name: 'Workspace integrity', status: 'ok', message: `All ${expectedPackages.length} packages present` };
+    return { name: 'Workspace integrity', pathology: 'DEPLOYABILITY_TRUTH_FAULT', severity: 'INFO', message: `All ${expectedPackages.length} packages present` };
   }
 
   return {
-    name: 'Workspace integrity',
-    status: 'warn',
+    name: 'Workspace integrity', pathology: 'DEPLOYABILITY_TRUTH_FAULT',
+    severity: 'WARNING',
     message: `${missing.length} package(s) missing: ${missing.join(', ')}`,
     fix: 'Run: pnpm install to restore missing packages',
   };
@@ -761,22 +785,22 @@ function hasSourceAccess(): boolean {
 
 // ── Check 18: PlanStepType enum ↔ PLAN_STEP_TYPE_VALUES sync ──
 
-async function checkStepTypeSync(): Promise<CheckResult> {
+async function checkStepTypeSync(): Promise<Diagnosis> {
   if (!hasSourceAccess()) {
-    return { name: 'Step type sync (TPS)', status: 'ok', message: 'Skipped — source files not available (run from repo)' };
+    return { name: 'Step type sync (TPS)', pathology: 'PLAN_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — source files not available (run from repo)' };
   }
 
   const plannerSrc = readSourceFile('packages/planner/src/steps.ts');
   const contractsSrc = readSourceFile('packages/contracts/src/steps.ts');
   if (!plannerSrc || !contractsSrc) {
-    return { name: 'Step type sync (TPS)', status: 'ok', message: 'Skipped — source files not found' };
+    return { name: 'Step type sync (TPS)', pathology: 'PLAN_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — source files not found' };
   }
 
   const enumMatch = plannerSrc.match(/enum\s+PlanStepType\s*\{([\s\S]*?)\}/);
   const arrayMatch = contractsSrc.match(/export\s+const\s+PLAN_STEP_TYPE_VALUES\s*=\s*\[([\s\S]*?)\]\s*as\s+const/);
 
   if (!enumMatch || !arrayMatch) {
-    return { name: 'Step type sync (TPS)', status: 'ok', message: 'Skipped — could not parse source' };
+    return { name: 'Step type sync (TPS)', pathology: 'PLAN_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — could not parse source' };
   }
 
   const enumValues = new Set<string>();
@@ -789,7 +813,7 @@ async function checkStepTypeSync(): Promise<CheckResult> {
   const inArrayNotEnum = [...arrayValues].filter(v => !enumValues.has(v));
 
   if (inEnumNotArray.length === 0 && inArrayNotEnum.length === 0) {
-    return { name: 'Step type sync (TPS)', status: 'ok', message: `PlanStepType and PLAN_STEP_TYPE_VALUES in sync (${enumValues.size} values)` };
+    return { name: 'Step type sync (TPS)', pathology: 'PLAN_TRUTH_FAULT', severity: 'INFO', message: `PlanStepType and PLAN_STEP_TYPE_VALUES in sync (${enumValues.size} values)` };
   }
 
   const details: string[] = [];
@@ -797,8 +821,8 @@ async function checkStepTypeSync(): Promise<CheckResult> {
   if (inArrayNotEnum.length > 0) details.push(`${inArrayNotEnum.length} in array but not enum: ${inArrayNotEnum.slice(0, 3).join(', ')}`);
 
   return {
-    name: 'Step type sync (TPS)',
-    status: 'fail',
+    name: 'Step type sync (TPS)', pathology: 'PLAN_TRUTH_FAULT',
+    severity: 'STOP_THE_LINE',
     message: details.join('; '),
     fix: 'Sync PlanStepType enum (planner/steps.ts) with PLAN_STEP_TYPE_VALUES (contracts/steps.ts)',
   };
@@ -806,14 +830,14 @@ async function checkStepTypeSync(): Promise<CheckResult> {
 
 // ── Check 19: Algorithm registry key consistency ──
 
-async function checkRegistryConsistency(): Promise<CheckResult> {
+async function checkRegistryConsistency(): Promise<Diagnosis> {
   if (!hasSourceAccess()) {
-    return { name: 'Registry consistency (TPS)', status: 'ok', message: 'Skipped — source files not available' };
+    return { name: 'Registry consistency (TPS)', pathology: 'MODEL_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — source files not available' };
   }
 
   const registrySrc = readSourceFile('packages/contracts/src/templates/algorithm-registry.ts');
   if (!registrySrc) {
-    return { name: 'Registry consistency (TPS)', status: 'ok', message: 'Skipped — registry not found' };
+    return { name: 'Registry consistency (TPS)', pathology: 'MODEL_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — registry not found' };
   }
 
   const idsMatch = registrySrc.match(/export\s+const\s+ALGORITHM_IDS\s*=\s*\[([^\]]*)\]/);
@@ -822,7 +846,7 @@ async function checkRegistryConsistency(): Promise<CheckResult> {
   const outputMatch = registrySrc.match(/export\s+const\s+ALGORITHM_OUTPUT_TYPES\s*:\s*Record[^=]*=\s*\{([\s\S]*?)\}\s*;/);
 
   if (!idsMatch || !stepTypeMatch || !displayMatch || !outputMatch) {
-    return { name: 'Registry consistency (TPS)', status: 'ok', message: 'Skipped — could not parse registry' };
+    return { name: 'Registry consistency (TPS)', pathology: 'MODEL_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — could not parse registry' };
   }
 
   const ids = new Set<string>();
@@ -855,12 +879,12 @@ async function checkRegistryConsistency(): Promise<CheckResult> {
   }
 
   if (issues.length === 0) {
-    return { name: 'Registry consistency (TPS)', status: 'ok', message: `ALGORITHM_IDS, STEP_TYPE, DISPLAY_NAMES, OUTPUT_TYPES aligned (${ids.size} algorithms)` };
+    return { name: 'Registry consistency (TPS)', pathology: 'MODEL_TRUTH_FAULT', severity: 'INFO', message: `ALGORITHM_IDS, STEP_TYPE, DISPLAY_NAMES, OUTPUT_TYPES aligned (${ids.size} algorithms)` };
   }
 
   return {
-    name: 'Registry consistency (TPS)',
-    status: 'fail',
+    name: 'Registry consistency (TPS)', pathology: 'MODEL_TRUTH_FAULT',
+    severity: 'STOP_THE_LINE',
     message: `${issues.length} inconsistency(ies): ${issues.slice(0, 3).join('; ')}${issues.length > 3 ? ` (+${issues.length - 3})` : ''}`,
     fix: 'Add missing entries to algorithm-registry.ts or remove orphaned keys',
   };
@@ -868,16 +892,16 @@ async function checkRegistryConsistency(): Promise<CheckResult> {
 
 // ── Check 20: State machine integrity ──
 
-async function checkStateMachineIntegrity(): Promise<CheckResult> {
+async function checkStateMachineIntegrity(): Promise<Diagnosis> {
   if (!hasSourceAccess()) {
-    return { name: 'State machine (TPS)', status: 'ok', message: 'Skipped — source files not available' };
+    return { name: 'State machine (TPS)', pathology: 'ANTI_LIE_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — source files not available' };
   }
 
   const transitionsSrc = readSourceFile('packages/engine/src/transitions.ts');
   const engineSrc = readSourceFile('packages/engine/src/engine.ts');
   const typesSrc = readSourceFile('packages/contracts/src/types.ts');
   if (!transitionsSrc || !engineSrc || !typesSrc) {
-    return { name: 'State machine (TPS)', status: 'ok', message: 'Skipped — source files not found' };
+    return { name: 'State machine (TPS)', pathology: 'ANTI_LIE_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — source files not found' };
   }
 
   // Extract EngineState type values
@@ -923,12 +947,12 @@ async function checkStateMachineIntegrity(): Promise<CheckResult> {
   }
 
   if (issues.length === 0) {
-    return { name: 'State machine (TPS)', status: 'ok', message: `${stateValues.size} states, ${transitionKeys.size} transitions, all valid` };
+    return { name: 'State machine (TPS)', pathology: 'ANTI_LIE_TRUTH_FAULT', severity: 'INFO', message: `${stateValues.size} states, ${transitionKeys.size} transitions, all valid` };
   }
 
   return {
-    name: 'State machine (TPS)',
-    status: 'fail',
+    name: 'State machine (TPS)', pathology: 'ANTI_LIE_TRUTH_FAULT',
+    severity: 'STOP_THE_LINE',
     message: `${issues.length} issue(s): ${issues.slice(0, 3).join('; ')}${issues.length > 3 ? ` (+${issues.length - 3})` : ''}`,
     fix: 'Update VALID_TRANSITIONS in transitions.ts or fix invalid transitions in engine.ts',
   };
@@ -936,14 +960,14 @@ async function checkStateMachineIntegrity(): Promise<CheckResult> {
 
 // ── Check 21: Profile → registry coverage ──
 
-async function checkProfileCoverage(): Promise<CheckResult> {
+async function checkProfileCoverage(): Promise<Diagnosis> {
   if (!hasSourceAccess()) {
-    return { name: 'Profile coverage (TPS)', status: 'ok', message: 'Skipped — source files not available' };
+    return { name: 'Profile coverage (TPS)', pathology: 'MODEL_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — source files not available' };
   }
 
   const registrySrc = readSourceFile('packages/contracts/src/templates/algorithm-registry.ts');
   if (!registrySrc) {
-    return { name: 'Profile coverage (TPS)', status: 'ok', message: 'Skipped — registry not found' };
+    return { name: 'Profile coverage (TPS)', pathology: 'MODEL_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — registry not found' };
   }
 
   const idsMatch = registrySrc.match(/export\s+const\s+ALGORITHM_IDS\s*=\s*\[([^\]]*)\]/);
@@ -951,7 +975,7 @@ async function checkProfileCoverage(): Promise<CheckResult> {
   const profileMatch = registrySrc.match(/const\s+map\s*:\s*Record<string,\s*string\[\]>\s*=\s*\{([\s\S]*?)\}\s*;/);
 
   if (!idsMatch || !stepTypeMatch || !profileMatch) {
-    return { name: 'Profile coverage (TPS)', status: 'ok', message: 'Skipped — could not parse registry' };
+    return { name: 'Profile coverage (TPS)', pathology: 'MODEL_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — could not parse registry' };
   }
 
   const validIds = new Set<string>();
@@ -970,12 +994,12 @@ async function checkProfileCoverage(): Promise<CheckResult> {
   }
 
   if (issues.length === 0) {
-    return { name: 'Profile coverage (TPS)', status: 'ok', message: 'All profile algorithm IDs exist in registry' };
+    return { name: 'Profile coverage (TPS)', pathology: 'MODEL_TRUTH_FAULT', severity: 'INFO', message: 'All profile algorithm IDs exist in registry' };
   }
 
   return {
-    name: 'Profile coverage (TPS)',
-    status: 'fail',
+    name: 'Profile coverage (TPS)', pathology: 'MODEL_TRUTH_FAULT',
+    severity: 'STOP_THE_LINE',
     message: `${issues.length} invalid reference(s): ${issues.slice(0, 3).join('; ')}`,
     fix: 'Update getProfileAlgorithms() or add missing algorithm to registry',
   };
@@ -983,14 +1007,14 @@ async function checkProfileCoverage(): Promise<CheckResult> {
 
 // ── Check 22: Canonical algorithm naming in config/tests ──
 
-async function checkCanonicalNaming(): Promise<CheckResult> {
+async function checkCanonicalNaming(): Promise<Diagnosis> {
   if (!hasSourceAccess()) {
-    return { name: 'Canonical naming (TPS)', status: 'ok', message: 'Skipped — source files not available' };
+    return { name: 'Canonical naming (TPS)', pathology: 'MODEL_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — source files not available' };
   }
 
   const configTestSrc = readSourceFile('packages/config/src/__tests__/resolution.test.ts');
   if (!configTestSrc) {
-    return { name: 'Canonical naming (TPS)', status: 'ok', message: 'Skipped — config tests not found' };
+    return { name: 'Canonical naming (TPS)', pathology: 'MODEL_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — config tests not found' };
   }
 
   // Known short aliases that should NOT appear in config/test files
@@ -1006,12 +1030,12 @@ async function checkCanonicalNaming(): Promise<CheckResult> {
   }
 
   if (issues.length === 0) {
-    return { name: 'Canonical naming (TPS)', status: 'ok', message: 'Config tests use canonical algorithm IDs' };
+    return { name: 'Canonical naming (TPS)', pathology: 'MODEL_TRUTH_FAULT', severity: 'INFO', message: 'Config tests use canonical algorithm IDs' };
   }
 
   return {
-    name: 'Canonical naming (TPS)',
-    status: 'warn',
+    name: 'Canonical naming (TPS)', pathology: 'MODEL_TRUTH_FAULT',
+    severity: 'WARNING',
     message: `${issues.length} banned short name(s): ${issues.slice(0, 3).join('; ')}`,
     fix: 'Replace short aliases with canonical IDs (e.g., heuristic → heuristic_miner)',
   };
@@ -1019,22 +1043,22 @@ async function checkCanonicalNaming(): Promise<CheckResult> {
 
 // ── Check 23: Step type coverage (registry → PLAN_STEP_TYPE_VALUES) ──
 
-async function checkStepTypeCoverage(): Promise<CheckResult> {
+async function checkStepTypeCoverage(): Promise<Diagnosis> {
   if (!hasSourceAccess()) {
-    return { name: 'Step type coverage (TPS)', status: 'ok', message: 'Skipped — source files not available' };
+    return { name: 'Step type coverage (TPS)', pathology: 'PLAN_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — source files not available' };
   }
 
   const registrySrc = readSourceFile('packages/contracts/src/templates/algorithm-registry.ts');
   const contractsSrc = readSourceFile('packages/contracts/src/steps.ts');
   if (!registrySrc || !contractsSrc) {
-    return { name: 'Step type coverage (TPS)', status: 'ok', message: 'Skipped — source files not found' };
+    return { name: 'Step type coverage (TPS)', pathology: 'PLAN_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — source files not found' };
   }
 
   const stepTypeMatch = registrySrc.match(/export\s+const\s+ALGORITHM_ID_TO_STEP_TYPE\s*:\s*Record[^=]*=\s*\{([\s\S]*?)\}\s*;/);
   const arrayMatch = contractsSrc.match(/export\s+const\s+PLAN_STEP_TYPE_VALUES\s*=\s*\[([\s\S]*?)\]\s*as\s+const/);
 
   if (!stepTypeMatch || !arrayMatch) {
-    return { name: 'Step type coverage (TPS)', status: 'ok', message: 'Skipped — could not parse source' };
+    return { name: 'Step type coverage (TPS)', pathology: 'PLAN_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — could not parse source' };
   }
 
   const validStepTypes = new Set<string>();
@@ -1054,12 +1078,12 @@ async function checkStepTypeCoverage(): Promise<CheckResult> {
   }
 
   if (missing.length === 0) {
-    return { name: 'Step type coverage (TPS)', status: 'ok', message: 'All registry step types exist in PLAN_STEP_TYPE_VALUES' };
+    return { name: 'Step type coverage (TPS)', pathology: 'PLAN_TRUTH_FAULT', severity: 'INFO', message: 'All registry step types exist in PLAN_STEP_TYPE_VALUES' };
   }
 
   return {
-    name: 'Step type coverage (TPS)',
-    status: 'fail',
+    name: 'Step type coverage (TPS)', pathology: 'PLAN_TRUTH_FAULT',
+    severity: 'STOP_THE_LINE',
     message: `${missing.length} missing step type(s): ${missing.slice(0, 3).join('; ')}`,
     fix: 'Add missing values to PLAN_STEP_TYPE_VALUES in packages/contracts/src/steps.ts',
   };
@@ -1067,19 +1091,19 @@ async function checkStepTypeCoverage(): Promise<CheckResult> {
 
 // ── Check 24: State machine completeness (no orphans or dead-ends) ──
 
-async function checkStateMachineCompleteness(): Promise<CheckResult> {
+async function checkStateMachineCompleteness(): Promise<Diagnosis> {
   if (!hasSourceAccess()) {
-    return { name: 'State machine completeness (TPS)', status: 'ok', message: 'Skipped — source files not available' };
+    return { name: 'State machine completeness (TPS)', pathology: 'ANTI_LIE_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — source files not available' };
   }
 
   const transitionsSrc = readSourceFile('packages/engine/src/transitions.ts');
   if (!transitionsSrc) {
-    return { name: 'State machine completeness (TPS)', status: 'ok', message: 'Skipped — source files not found' };
+    return { name: 'State machine completeness (TPS)', pathology: 'ANTI_LIE_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — source files not found' };
   }
 
   const transitionsMatch = transitionsSrc.match(/VALID_TRANSITIONS\s*:\s*Record<[^,]+,\s*Set<[^>]+>>\s*=\s*\{([\s\S]*?)\}\s*;/);
   if (!transitionsMatch) {
-    return { name: 'State machine completeness (TPS)', status: 'ok', message: 'Skipped — could not parse transitions' };
+    return { name: 'State machine completeness (TPS)', pathology: 'ANTI_LIE_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — could not parse transitions' };
   }
 
   const issues: string[] = [];
@@ -1110,12 +1134,12 @@ async function checkStateMachineCompleteness(): Promise<CheckResult> {
   }
 
   if (issues.length === 0) {
-    return { name: 'State machine completeness (TPS)', status: 'ok', message: `${stateEntries.length} states — all reachable, no dead-ends` };
+    return { name: 'State machine completeness (TPS)', pathology: 'ANTI_LIE_TRUTH_FAULT', severity: 'INFO', message: `${stateEntries.length} states — all reachable, no dead-ends` };
   }
 
   return {
-    name: 'State machine completeness (TPS)',
-    status: 'warn',
+    name: 'State machine completeness (TPS)', pathology: 'ANTI_LIE_TRUTH_FAULT',
+    severity: 'WARNING',
     message: `${issues.length} issue(s): ${issues.join('; ')}`,
     fix: 'Add missing transitions in packages/engine/src/transitions.ts',
   };
@@ -1141,47 +1165,84 @@ async function resolveWorkspaceRoot(): Promise<string | null> {
 // ────────────────────────────────────────────────────────────────────────────
 
 const BADGE = {
-  ok: '  ok  ',
-  warn: ' warn ',
-  fail: ' FAIL ',
+  INFO: ' INFO ',
+  WARNING: ' WARN ',
+  STOP_THE_LINE: ' STOP ',
 } as const;
 
-function renderBadge(status: CheckResult['status']): string {
-  return `[${BADGE[status]}]`;
+function renderBadge(severity: Diagnosis['severity']): string {
+  return `[${BADGE[severity]}]`;
 }
 
 function printReport(formatter: HumanFormatter, report: DoctorReport): void {
   formatter.log('');
-  formatter.log('pictl doctor — system health check');
-  formatter.log('─'.repeat(58));
+  formatter.log('pictl doctor — epistemic diagnostician & autonomic governor');
+  formatter.log('─'.repeat(80));
 
   let lastSection = '';
-  for (const check of report.checks) {
-    const isTps = check.name.includes('(TPS)');
-    const section = isTps ? 'TPS Pipeline Integrity' : 'Environment';
+  for (const diag of report.diagnoses) {
+    const isTps = diag.name.includes('(TPS)');
+    const section = isTps ? 'TPS Pipeline & Epistemic Truth' : 'Environment & Deployment Truth';
     if (section !== lastSection) {
       if (lastSection) formatter.log('');
       formatter.log(`  ${section}:`);
       lastSection = section;
     }
 
-    const badge = renderBadge(check.status);
-    formatter.log(`    ${badge}  ${check.name}`);
-    formatter.log(`             ${check.message}`);
-    if (check.fix && check.status !== 'ok') {
-      formatter.log(`             Fix: ${check.fix}`);
+    const badge = renderBadge(diag.severity);
+    formatter.log(`    ${badge}  ${diag.name} [${diag.pathology || 'UNKNOWN'}]`);
+    formatter.log(`             Diagnosis: ${diag.message}`);
+    
+    if (diag.severity !== 'INFO') {
+      const fixText = diag.fixGuide || diag.fix;
+      
+      // Dynamically infer repair mode
+      let inferredRepairMode: RepairMode = diag.repairMode || 'MANUAL_INTERVENTION';
+      let inferredRepairCmd = diag.repairCommand;
+      
+      if (fixText) {
+          if (fixText.includes('pnpm run build') && fixText.includes('cd wasm4pm')) {
+              inferredRepairMode = 'REBUILD_ARTIFACTS';
+              inferredRepairCmd = 'cd wasm4pm && pnpm run build';
+          } else if (fixText.includes('pnpm run build')) {
+              inferredRepairMode = 'REBUILD_ARTIFACTS';
+              inferredRepairCmd = 'pnpm run build';
+          } else if (fixText.includes('pnpm install')) {
+              inferredRepairMode = 'REINSTALL_DEPENDENCIES';
+              inferredRepairCmd = 'pnpm install';
+          } else if (fixText.includes('pictl init')) {
+              inferredRepairMode = 'SCAFFOLD_CONFIG';
+              inferredRepairCmd = 'pictl init';
+          } else if (fixText.includes('corepack')) {
+              inferredRepairMode = 'REINSTALL_DEPENDENCIES';
+              inferredRepairCmd = fixText;
+          } else if (isTps) {
+              inferredRepairMode = 'SYNC_REGISTRY';
+          }
+      }
+      
+      if (inferredRepairMode !== 'MANUAL_INTERVENTION') {
+        formatter.log(`             Repair Mode: ${inferredRepairMode}`);
+        if (inferredRepairCmd) {
+            formatter.log(`             Smallest Lawful Repair: ${inferredRepairCmd}`);
+        }
+      }
+      
+      if (fixText) {
+        formatter.log(`             Manual Treatment: ${fixText}`);
+      }
     }
   }
 
   formatter.log('');
-  formatter.log('─'.repeat(58));
-  formatter.log(`Result: ${report.ok} ok  ${report.warn} warn  ${report.fail} fail`);
+  formatter.log('─'.repeat(80));
+  formatter.log(`Result: ${report.info} INFO  ${report.warnings} WARNINGS  ${report.stopTheLine} STOP_THE_LINE`);
   formatter.log('');
 
-  if (report.healthy) {
-    formatter.success('All required checks passed. pictl is ready to use.');
+  if (report.epistemicHealth) {
+    formatter.success('System is epistemically healthy and operationally ready.');
   } else {
-    formatter.error('One or more required checks failed. Fix the issues above and re-run: pictl doctor');
+    formatter.error('STOP THE LINE: System is epistemically unhealthy or missing critical deployment artifacts.');
   }
   formatter.log('');
 }
@@ -1219,7 +1280,7 @@ export const doctor = defineCommand({
       quiet: ctx.args.quiet,
     });
 
-    const checks: CheckResult[] = await Promise.all([
+    const checks: Diagnosis[] = await Promise.all([
       // ── Environment checks (1-17) ──
       checkNodeVersion(),
       checkPnpmVersion(),
@@ -1249,25 +1310,25 @@ export const doctor = defineCommand({
     ]);
 
     const report: DoctorReport = {
-      checks,
-      ok: checks.filter((c) => c.status === 'ok').length,
-      warn: checks.filter((c) => c.status === 'warn').length,
-      fail: checks.filter((c) => c.status === 'fail').length,
-      healthy: checks.every((c) => c.status !== 'fail'),
+      diagnoses: checks,
+      info: checks.filter((c) => c.severity === 'INFO').length,
+      warnings: checks.filter((c) => c.severity === 'WARNING').length,
+      stopTheLine: checks.filter((c) => c.severity === 'STOP_THE_LINE').length,
+      epistemicHealth: checks.every((c) => c.severity !== 'STOP_THE_LINE'),
     };
 
     if (formatter instanceof JSONFormatter) {
-      if (report.healthy) {
+      if (report.epistemicHealth) {
         formatter.success('pictl environment is healthy', {
           ...report,
           healthy: true,
-          checks: report.checks.map((c) => ({ ...c })),
+          diagnoses: report.diagnoses.map((c) => ({ ...c })),
         });
       } else {
         formatter.warn('pictl environment has issues', {
           ...report,
           healthy: false,
-          checks: report.checks.map((c) => ({ ...c })),
+          diagnoses: report.diagnoses.map((c) => ({ ...c })),
         });
       }
     } else {
@@ -1276,7 +1337,7 @@ export const doctor = defineCommand({
 
     // Set exit code but don't call process.exit()
     // This allows citty to handle the exit properly
-    if (!report.healthy) {
+    if (!report.epistemicHealth) {
       process.exitCode = EXIT_CODES.config_error;
     }
   },

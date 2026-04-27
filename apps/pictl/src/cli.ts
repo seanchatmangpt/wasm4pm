@@ -20,7 +20,7 @@ import { quality } from './commands/quality.js';
 import { validate } from './commands/validate.js';
 import { autoprocess } from './commands/autoprocess.js';
 import { swarm } from './commands/swarm.js';
-// import { agent } from './commands/agent.js'; // Pre-existing type errors in agent commands
+import { agent } from './commands/agent.js';
 
 export const main = defineCommand({
   meta: {
@@ -137,7 +137,7 @@ Activity key defaults to "concept:name" (XES standard). Pass --activity-key to o
     validate,
     autoprocess,
     swarm,
-    // agent, // Pre-existing type errors in agent commands
+    agent,
   },
 });
 
@@ -166,5 +166,5 @@ export {
   validate,
   autoprocess,
   swarm,
-  // agent, // Pre-existing type errors in agent commands
+  agent,
 };
