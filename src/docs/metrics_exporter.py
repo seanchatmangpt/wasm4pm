@@ -418,7 +418,11 @@ class DocumentationMetricsExporter:
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
                 return f.read()
-        except Exception:
+        except OSError as e:
+            import logging
+            logging.getLogger("wasm4pm.metrics_exporter").warning(
+                "Could not read doc file %s: %s", file_path, e
+            )
             return ""
 
     def export(self, registry: Optional['CollectorRegistry'] = None) -> Dict:
