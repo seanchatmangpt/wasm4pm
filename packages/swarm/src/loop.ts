@@ -3,7 +3,7 @@
  *
  * Two-tier generateText architecture:
  *   - TypeScript orchestrator (not LLM): fans out N parallel worker generateText calls
- *   - Each worker: generateText({ maxSteps: 20, tools: wasm4pm__+onto__ })
+ *   - Each worker: generateText({ maxSteps: 20, tools: swarmTools })
  *   - After each round: Reflection LLM synthesizes convergence
  *
  * Usage:
@@ -16,6 +16,11 @@ import { groq } from '@ai-sdk/groq'
 import { hashOutput, checkSwarmConvergence } from './convergence.js'
 import { swarmTools } from './tools.js'
 import { getWorker, storeResult, setWorkerStatus } from './worker-registry.js'
+import { 
+  getTracer, 
+  RunningSpans, 
+  LawfulDispatchSpans, 
+} from '@pictl/observability'
 import type { SwarmConfig, WorkerSpec, WorkerResult, SwarmEpisode, SwarmArtifact } from './types.js'
 
 // Re-export these so callers can build WorkerSpec arrays
@@ -28,58 +33,90 @@ export type { SwarmConfig, SwarmArtifact, SwarmEpisode, WorkerSpec }
  * The implementation uses GROQ_API_KEY from the environment.
  */
 export async function runSwarm(config: SwarmConfig): Promise<SwarmArtifact> {
-  const maxEpisodes = config.maxEpisodes ?? 5
-  const convergenceRuns = config.convergenceRuns ?? 2
+  const tracer = getTracer()
+  const swarmSpan = tracer.startSpan(RunningSpans.runStart(), {
+    attributes: {
+      'swarm.max_episodes': config.maxEpisodes ?? 5,
+      'swarm.convergence_runs': config.convergenceRuns ?? 2,
+      'swarm.worker_model': config.workerModel ?? 'default',
+    }
+  })
 
-  const hashHistory = new Map<string, string[]>()
-  const episodes: SwarmEpisode[] = []
+  try {
+    const maxEpisodes = config.maxEpisodes ?? 5
+    const convergenceRuns = config.convergenceRuns ?? 2
 
-  // Build initial worker specs from config
-  const workerSpecs: WorkerSpec[] = buildWorkerSpecs(config)
+    const hashHistory = new Map<string, string[]>()
+    const episodes: SwarmEpisode[] = []
 
-  for (let ep = 0; ep < maxEpisodes; ep++) {
-    const episodeId = `swarm-ep-${Date.now()}-${ep}`
+    // Build initial worker specs from config
+    const workerSpecs: WorkerSpec[] = buildWorkerSpecs(config)
 
-    // Fan-out: run all workers in parallel
-    const workerResults: WorkerResult[] = await Promise.all(
-      workerSpecs.map(spec => runWorker(spec, config))
-    )
+    for (let ep = 0; ep < maxEpisodes; ep++) {
+      const episodeId = `swarm-ep-${Date.now()}-${ep}`
+      
+      const epSpan = tracer.startSpan(`swarm.episode.${ep}`, {
+        attributes: { 'swarm.episode': ep }
+      })
 
-    // Update hash history ring buffer
-    for (const result of workerResults) {
-      const key = `${result.workerId}/${result.algorithmId}`
-      const hist = hashHistory.get(key) ?? []
-      hist.push(result.resultHash)
-      if (hist.length > convergenceRuns) hist.shift()
-      hashHistory.set(key, hist)
+      try {
+        // Fan-out: run all workers in parallel
+        const workerResults: WorkerResult[] = await Promise.all(
+          workerSpecs.map(spec => runWorker(spec, config))
+        )
+
+        // Update hash history ring buffer
+        for (const result of workerResults) {
+          const key = `${result.workerId}/${result.algorithmId}`
+          const hist = hashHistory.get(key) ?? []
+          hist.push(result.resultHash)
+          if (hist.length > convergenceRuns) hist.shift()
+          hashHistory.set(key, hist)
+        }
+
+        // Check swarm-level convergence
+        const { converged, stableWorkers, unstableWorkers, agreementRate } =
+          checkSwarmConvergence(workerResults, hashHistory, convergenceRuns)
+
+        const convergenceReport = {
+          algorithm: workerSpecs[0]?.algorithmId ?? 'unknown',
+          converged,
+          consensusRatio: agreementRate,
+          dominantHash: workerResults[0]?.resultHash ?? null,
+          dissentingWorkers: unstableWorkers,
+          totalChecked: workerResults.length,
+        }
+
+        episodes.push({ episodeId, ep, workerResults, convergenceReport })
+
+        epSpan.setAttribute('swarm.converged', converged)
+        epSpan.setAttribute('swarm.agreement_rate', agreementRate)
+
+        if (converged) break
+      } finally {
+        epSpan.end()
+      }
     }
 
-    // Check swarm-level convergence
-    const { converged, stableWorkers, unstableWorkers, agreementRate } =
-      checkSwarmConvergence(workerResults, hashHistory, convergenceRuns)
+    const lastEpisode = episodes[episodes.length - 1]
+    const finalWorkerResults = lastEpisode?.workerResults ?? []
 
-    const convergenceReport = {
-      algorithm: workerSpecs[0]?.algorithmId ?? 'unknown',
-      converged,
-      consensusRatio: agreementRate,
-      dominantHash: workerResults[0]?.resultHash ?? null,
-      dissentingWorkers: unstableWorkers,
-      totalChecked: workerResults.length,
+    const artifact = {
+      episodes,
+      finalWorkerResults,
+      converged: episodes.some(e => e.convergenceReport.converged),
+      artifact: buildArtifact(episodes),
     }
-
-    episodes.push({ episodeId, ep, workerResults, convergenceReport })
-
-    if (converged) break
-  }
-
-  const lastEpisode = episodes[episodes.length - 1]
-  const finalWorkerResults = lastEpisode?.workerResults ?? []
-
-  return {
-    episodes,
-    finalWorkerResults,
-    converged: episodes.some(e => e.convergenceReport.converged),
-    artifact: buildArtifact(episodes),
+    
+    swarmSpan.setAttribute('swarm.final_episodes', episodes.length)
+    swarmSpan.setAttribute('swarm.final_converged', artifact.converged)
+    
+    return artifact
+  } catch (error) {
+    swarmSpan.setStatus('ERROR', String(error))
+    throw error
+  } finally {
+    swarmSpan.end()
   }
 }
 
@@ -115,48 +152,70 @@ function buildWorkerSpecs(config: SwarmConfig): WorkerSpec[] {
 }
 
 async function runWorker(spec: WorkerSpec, config: SwarmConfig): Promise<WorkerResult> {
-  const isMl = spec.algorithmId.startsWith('ml_')
-  const worker = getWorker(spec.workerId)
-  
-  if (!worker) {
-    throw new Error(`Worker state not found for ID: ${spec.workerId}`)
-  }
+  const tracer = getTracer()
+  const workerSpan = tracer.startSpan(RunningSpans.algorithmExec(spec.algorithmId), {
+    attributes: {
+      'worker.id': spec.workerId,
+      'worker.log_id': spec.logId,
+      'agent.role': 'worker',
+      'agent.task_id': spec.workerId,
+    }
+  })
 
-  setWorkerStatus(spec.workerId, 'running')
-  const startTime = Date.now()
+  try {
+    const isMl = spec.algorithmId.startsWith('ml_')
+    const worker = getWorker(spec.workerId)
+    
+    if (!worker) {
+      throw new Error(`Worker state not found for ID: ${spec.workerId}`)
+    }
 
-  const modelId = spec.model || config.workerModel || 'llama-3.1-70b-versatile'
-  
-  const { text, toolResults } = await generateText({
-    model: groq(modelId),
-    tools: swarmTools,
-    prompt: spec.prompt || `You are an autonomic process mining worker for algorithm ${spec.algorithmId}.
+    setWorkerStatus(spec.workerId, 'running')
+    const startTime = Date.now()
+
+    const modelId = spec.model || config.workerModel || 'llama-3.1-70b-versatile'
+    
+    const { text, toolResults } = await generateText({
+      model: groq(modelId),
+      tools: swarmTools,
+      prompt: spec.prompt || `You are an autonomic process mining worker for algorithm ${spec.algorithmId}.
 Use the provided tools to analyze the XES log content associated with this worker.
 XES Content Preview: ${worker.xesContent.substring(0, 500)}...
 Goal: Discover the process model or analyze statistics as requested.`,
-  })
+    })
 
-  // We take the result from the last tool call or the text if no tool was called
-  let lastToolResult: any = { text }
-  if (toolResults && toolResults.length > 0) {
-    const lastResult = toolResults[toolResults.length - 1];
-    lastToolResult = 'result' in lastResult ? lastResult.result : lastResult;
+    // We take the result from the last tool call or the text if no tool was called
+    let lastToolResult: any = { text }
+    if (toolResults && toolResults.length > 0) {
+      const lastResult = toolResults[toolResults.length - 1];
+      lastToolResult = 'result' in lastResult ? lastResult.result : lastResult;
+    }
+    
+    const resultHash = hashOutput(lastToolResult)
+
+    const result: WorkerResult = {
+      workerId: spec.workerId,
+      algorithmId: spec.algorithmId,
+      resultHash,
+      result: lastToolResult,
+      runAt: new Date().toISOString(),
+      durationMs: Date.now() - startTime,
+      resultType: isMl ? 'ml' : 'discovery',
+    }
+
+    storeResult(spec.workerId, result)
+    
+    workerSpan.setAttribute('worker.duration_ms', result.durationMs)
+    workerSpan.setAttribute('worker.result_type', result.resultType)
+    
+    return result
+  } catch (error) {
+    workerSpan.setStatus('ERROR', String(error))
+    workerSpan.setAttribute('agent.failure_code', 'WORKER_FAILURE')
+    throw error
+  } finally {
+    workerSpan.end()
   }
-  
-  const resultHash = hashOutput(lastToolResult)
-
-  const result: WorkerResult = {
-    workerId: spec.workerId,
-    algorithmId: spec.algorithmId,
-    resultHash,
-    result: lastToolResult,
-    runAt: new Date().toISOString(),
-    durationMs: Date.now() - startTime,
-    resultType: isMl ? 'ml' : 'discovery',
-  }
-
-  storeResult(spec.workerId, result)
-  return result
 }
 
 function buildArtifact(episodes: SwarmEpisode[]): unknown {
@@ -168,4 +227,3 @@ function buildArtifact(episodes: SwarmEpisode[]): unknown {
     dominant_hash: lastEpisode?.convergenceReport.dominantHash,
   }
 }
-

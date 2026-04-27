@@ -31,6 +31,21 @@ function deriveLatencyClass(estimatedDurationMs: number): LatencyClass {
 
 export class Pm4pyBackend implements MiningBackend {
   readonly id = 'pm4py';
+  private initialized = false;
+
+  async init(): Promise<void> {
+    // Perform a quick health check to verify python bridge
+    const status = await this.healthCheck();
+    this.initialized = status.healthy;
+  }
+
+  async shutdown(): Promise<void> {
+    this.initialized = false;
+  }
+
+  isReady(): boolean {
+    return this.initialized;
+  }
 
   capabilities(): BackendCapabilities {
     return {

@@ -21,6 +21,12 @@ export interface RequiredFields {
     'source.kind': string;
     /** Sink connector kind (e.g. "petri_net", "dfg", "json") */
     'sink.kind': string;
+    /** Agent role if applicable */
+    'agent.role'?: string;
+    /** Agent task ID if applicable */
+    'agent.task_id'?: string;
+    /** Agent failure status code if applicable */
+    'agent.failure_code'?: string;
 }
 /** Names of all required fields for validation */
 export declare const REQUIRED_FIELD_NAMES: ReadonlyArray<keyof RequiredFields>;

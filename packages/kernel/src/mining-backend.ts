@@ -175,6 +175,21 @@ export interface MiningBackend {
   readonly id: string;
 
   /**
+   * Initialize the backend (e.g. load WASM).
+   */
+  init(): Promise<void>;
+
+  /**
+   * Shutdown the backend.
+   */
+  shutdown(): Promise<void>;
+
+  /**
+   * Returns true if the backend is initialized and ready.
+   */
+  isReady(): boolean;
+
+  /**
    * Get declared capabilities of this backend.
    * Pure function — same return value on every invocation.
    */

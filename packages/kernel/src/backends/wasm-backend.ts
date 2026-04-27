@@ -81,6 +81,23 @@ function deriveLatencyClass(estimatedDurationMs: number): LatencyClass {
  */
 export class WasmBackend implements MiningBackend {
   readonly id = 'wasm';
+  private initialized = false;
+
+  async init(): Promise<void> {
+    const loader = wasm as any;
+    if (loader && typeof loader.init === 'function') {
+        await loader.init();
+    }
+    this.initialized = true;
+  }
+
+  async shutdown(): Promise<void> {
+    this.initialized = false;
+  }
+
+  isReady(): boolean {
+    return this.initialized;
+  }
 
   capabilities(): BackendCapabilities {
     return {

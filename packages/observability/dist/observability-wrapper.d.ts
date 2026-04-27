@@ -5,6 +5,7 @@
  */
 import { ObservabilityLayer } from './observability.js';
 import { CliEvent, JsonEvent, OtelEvent, ObservabilityConfig, ObservabilityResult } from './types.js';
+import { Tracer } from './spans.js';
 /**
  * Result of a safe emit operation
  */
@@ -105,5 +106,9 @@ export declare class ObservabilityWrapper {
      * Get underlying observability layer
      */
     getLayer(): ObservabilityLayer;
+    /**
+     * Get a tracer for distributed tracing
+     */
+    getTracer(): Tracer;
 }
 //# sourceMappingURL=observability-wrapper.d.ts.map

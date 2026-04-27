@@ -91,4 +91,9 @@ export declare const WatchingSpans: {
     readonly checkpointSave: () => string;
     readonly checkpointLoad: () => string;
 };
+export declare const LawfulDispatchSpans: {
+    readonly perception: () => string;
+    readonly decision: () => string;
+    readonly protection: () => string;
+};
 //# sourceMappingURL=spans.d.ts.map

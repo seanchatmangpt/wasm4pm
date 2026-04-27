@@ -29,6 +29,11 @@ import type {
  */
 export class NullBackend implements MiningBackend {
   readonly id = 'null';
+  private initialized = true;
+
+  async init(): Promise<void> {}
+  async shutdown(): Promise<void> {}
+  isReady(): boolean { return this.initialized; }
 
   capabilities(): BackendCapabilities {
     return {

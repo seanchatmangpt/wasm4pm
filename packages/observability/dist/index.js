@@ -1,21 +1,41 @@
 /**
  * @pictl/observability
- *
- * Optional, non-blocking OpenTelemetry integration.
- * - Disabled by default (zero overhead via NoopTracer)
- * - Enabled: spans exported to OTLP endpoint
- * - Exporter unavailable: logs warning, continues (unless required=true)
+ * Unified observability, metrics, and telemetry for wasm4pm.
  */
-// Core factory (exported for external use)
-export { createTracer, OtelTracer } from './otel.js';
-// Observability layer
-export { ObservabilityLayer, getObservabilityLayer } from './observability.js';
-// Instrumentation utilities
-export { Instrumentation } from './instrumentation.js';
-// Observability wrapper
-export { ObservabilityWrapper } from './observability-wrapper.js';
-// Internal-only exports (not re-exported)
-// - Span, Tracer, SpanKind, etc. (used only internally)
-// - RequiredFields, TraceContext, etc. (used only internally)
-// - EventType, StateChangeEvent, etc. (used only internally)
-// - NoopTracer (used only internally)
+// Core types and interfaces
+export * from './types.js';
+// OTEL Spans and Tracers
+export * from './spans.js';
+// Context management
+export * from './context.js';
+// Required fields for all spans
+export * from './fields.js';
+// OTEL exporter
+export * from './otel-exporter.js';
+// JSON logger/writer
+export * from './json-writer.js';
+// Secret redaction
+export * from './secret-redaction.js';
+// Instrumentation helpers
+export * from './instrumentation.js';
+// Observability wrapper (facade)
+export * from './observability-wrapper.js';
+export * from './observability.js';
+// Global singleton access
+import { ObservabilityWrapper } from './observability-wrapper.js';
+let globalWrapper = null;
+/**
+ * Get the global observability wrapper instance.
+ */
+export function getObservability() {
+    if (!globalWrapper) {
+        globalWrapper = new ObservabilityWrapper();
+    }
+    return globalWrapper;
+}
+/**
+ * Get the global tracer instance.
+ */
+export function getTracer() {
+    return getObservability().getTracer();
+}

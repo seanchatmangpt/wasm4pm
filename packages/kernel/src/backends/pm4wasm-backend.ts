@@ -174,12 +174,27 @@ function deriveLatencyClass(estimatedDurationMs: number): LatencyClass {
  */
 export class Pm4wasmBackend implements MiningBackend {
   readonly id = 'pm4wasm';
+  private initialized = false;
 
   /**
    * Optional WASM module (passed at construction or lazy-loaded).
    * Type is any to avoid hard dependency on @wasm4pm/pm4wasm during testing.
    */
   private wasmModule: any;
+
+  async init(): Promise<void> {
+    this.wasmModule = await this.loadWasmModule();
+    this.initialized = true;
+  }
+
+  async shutdown(): Promise<void> {
+    this.wasmModule = null;
+    this.initialized = false;
+  }
+
+  isReady(): boolean {
+    return this.initialized;
+  }
 
   /**
    * Constructor: Accept optional pre-loaded WASM module.

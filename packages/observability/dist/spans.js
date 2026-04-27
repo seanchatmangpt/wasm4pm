@@ -69,3 +69,9 @@ export const WatchingSpans = {
     checkpointSave: () => spanName('watching', 'checkpoint_save'),
     checkpointLoad: () => spanName('watching', 'checkpoint_load'),
 };
+// Lawful Dispatch phase spans (Phase 1, 2, 3)
+export const LawfulDispatchSpans = {
+    perception: () => spanName('lawful_dispatch', 'phase_1.perception'),
+    decision: () => spanName('lawful_dispatch', 'phase_2.decision'),
+    protection: () => spanName('lawful_dispatch', 'phase_3.protection'),
+};

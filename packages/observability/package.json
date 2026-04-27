@@ -1,6 +1,6 @@
 {
   "name": "@pictl/observability",
-  "version": "26.4.17",
+  "version": "26.4.23",
   "description": "Optional non-blocking OTEL observability layer for wasm4pm",
   "type": "module",
   "main": "./dist/index.js",

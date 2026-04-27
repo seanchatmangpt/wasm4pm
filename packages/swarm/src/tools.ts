@@ -39,7 +39,13 @@ export const wasm4pm__pm4py_inductive = tool({
         // Minimal IR for bridge
         { format_version: '1.0', source_format: 'xes', traces: [], metadata: { xes_content: args.xes_content } } as any,
         'inductive_miner_pm4py',
-        { max_duration_ms: 30000, quality_target: 'research' }
+        {
+          latencyBudget: 'seconds',
+          memoryBudget: 1024,
+          qualityFloor: 'research',
+          environment: { browserSafe: false, pythonAvailable: true },
+          mode: 'research'
+        }
     );
     return JSON.stringify(result);
   },

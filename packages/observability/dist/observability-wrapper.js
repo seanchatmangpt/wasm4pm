@@ -5,6 +5,9 @@
  */
 import { ObservabilityLayer } from './observability.js';
 import { SecretRedaction } from './secret-redaction.js';
+import { createRequiredFields } from './fields.js';
+import { generateTraceId, generateSpanId } from './context.js';
+import { LiveSpan } from './spans.js';
 /**
  * Observability wrapper that ensures non-blocking behavior
  * Catches and logs errors without breaking execution
@@ -191,5 +194,33 @@ export class ObservabilityWrapper {
      */
     getLayer() {
         return this.layer;
+    }
+    /**
+     * Get a tracer for distributed tracing
+     */
+    getTracer() {
+        const wrapper = this;
+        return {
+            startSpan: (name, options) => {
+                const traceId = options?.parent?.traceId || generateTraceId();
+                const parentSpanId = options?.parent?.spanId;
+                const requiredFields = options?.parent?.requiredFields || createRequiredFields({ 'run.id': 'active' });
+                return new LiveSpan({ traceId, spanId: generateSpanId(), parentSpanId, requiredFields }, name, options?.kind || 'INTERNAL', requiredFields, options?.attributes || {}, (span) => {
+                    wrapper.emitOtelSafe({
+                        trace_id: span.traceId,
+                        span_id: span.spanId,
+                        parent_span_id: span.parentSpanId,
+                        name: span.name,
+                        kind: span.kind,
+                        start_time: span.startTimeNs,
+                        end_time: span.endTimeNs,
+                        status: span.status,
+                        attributes: span.attributes,
+                    });
+                });
+            },
+            flush: async () => { await wrapper.layer.shutdown(); },
+            shutdown: async () => { await wrapper.layer.shutdown(); }
+        };
     }
 }

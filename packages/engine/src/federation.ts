@@ -261,7 +261,7 @@ export class FederationController {
     const filteredBudget = this.applyHealthLevelBudget(budget, healthLevel);
     const candidates = this.getCandidatesForRule7(algorithmId, filteredBudget, healthLevel);
 
-    let selectedBackend: MiningBackend | null = null;
+    let selectedBackend: MiningBackend;
     let rule: 1 | 2 | 3 | 4 | 5 | 6 | 7 = 7;
 
     if (candidates.length === 0) {

@@ -40,6 +40,24 @@ function deriveLatencyClass(estimatedDurationMs: number): LatencyClass {
 
 export class MlBackend implements MiningBackend {
   readonly id = 'ml';
+  private initialized = false;
+
+  async init(): Promise<void> {
+    try {
+        await import('@pictl/ml');
+        this.initialized = true;
+    } catch (e) {
+        console.error('Failed to initialize ML backend:', e);
+    }
+  }
+
+  async shutdown(): Promise<void> {
+    this.initialized = false;
+  }
+
+  isReady(): boolean {
+    return this.initialized;
+  }
 
   capabilities(): BackendCapabilities {
     return {
@@ -53,7 +71,7 @@ export class MlBackend implements MiningBackend {
       },
       latencyClass: 'low_ms',
       deterministic: false,
-      maxQualityTier: 'advanced',
+      maxQualityTier: 'quality',
       supportedAlgorithmIds: SUPPORTED_ALGORITHM_IDS,
       maxConcurrentInvocations: 4,
     };
