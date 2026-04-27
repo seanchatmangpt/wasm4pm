@@ -58,7 +58,7 @@ pub fn predict_next_k(model_handle: &str, prefix_json: &str, k: usize) -> Result
             let confidence = probabilities
                 .first()
                 .copied()
-                .ok_or_else(|| crate::error::js_val("No activities predicted"))?;
+                .unwrap_or(0.0);
             let entropy_val = normalised_entropy(&probabilities);
 
             let result = json!({

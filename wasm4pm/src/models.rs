@@ -217,6 +217,80 @@ impl<'a> ColumnarLog<'a> {
             vocab: owned.vocab.iter().map(|s| s.as_str()).collect(),
         }
     }
+
+    /// Count length-1 loops (self-loops: A -> A) across all traces.
+    pub fn count_loops_length_1(&self) -> usize {
+        let mut count = 0;
+        for t in 0..self.trace_offsets.len().saturating_sub(1) {
+            let start = self.trace_offsets[t];
+            let end = self.trace_offsets[t + 1];
+            if end > start + 1 {
+                for i in start..end - 1 {
+                    if self.events[i] == self.events[i + 1] {
+                        count += 1;
+                    }
+                }
+            }
+        }
+        count
+    }
+
+    /// Count length-2 loops (short cycles: A -> B -> A) across all traces.
+    /// Excludes length-1 loops (A -> A -> A is counted as two L1 loops, not an L2 loop).
+    pub fn count_loops_length_2(&self) -> usize {
+        let mut count = 0;
+        for t in 0..self.trace_offsets.len().saturating_sub(1) {
+            let start = self.trace_offsets[t];
+            let end = self.trace_offsets[t + 1];
+            if end > start + 2 {
+                for i in start..end - 2 {
+                    if self.events[i] == self.events[i + 2] && self.events[i] != self.events[i + 1] {
+                        count += 1;
+                    }
+                }
+            }
+        }
+        count
+    }
+
+    /// Returns the number of traces that contain at least one loop (L1 or L2).
+    pub fn count_traces_with_rework(&self) -> usize {
+        let mut count = 0;
+        for t in 0..self.trace_offsets.len().saturating_sub(1) {
+            let start = self.trace_offsets[t];
+            let end = self.trace_offsets[t + 1];
+            let mut has_rework = false;
+            
+            // Check L1
+            if end > start + 1 {
+                for i in start..end - 1 {
+                    if self.events[i] == self.events[i + 1] {
+                        has_rework = true;
+                        break;
+                    }
+                }
+            }
+            
+            // Check L2 if no L1 found
+            if !has_rework && end > start + 2 {
+                for i in start..end - 2 {
+                    if self.events[i] == self.events[i + 2] && self.events[i] != self.events[i + 1] {
+                        has_rework = true;
+                        break;
+                    }
+                }
+            }
+
+            // General repetition check (if needed, but L1/L2 cover most "rework")
+            // The previous implementation used a HashSet for any repetition.
+            // Let's stick to the roadmap's focus on L1/L2.
+            
+            if has_rework {
+                count += 1;
+            }
+        }
+        count
+    }
 }
 
 impl EventLog {

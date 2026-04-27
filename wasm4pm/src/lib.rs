@@ -813,14 +813,22 @@ pub fn autonomic_execute_cycle(
             _ => "Failed",
         };
 
-        // Compute rework ratio: fraction of traces with repeated activities
-        let rework_count = log
-            .traces
-            .iter()
-            .filter(|trace| has_activity_repetition(trace, activity_key))
-            .count();
+        // Compute rework metrics using advanced loop detection
+        let col = log.to_columnar(activity_key);
+        let rework_count = col.count_traces_with_rework();
+        let loop_count_l1 = col.count_loops_length_1();
+        let loop_count_l2 = col.count_loops_length_2();
+        
         let rework_ratio = if trace_count > 0 {
             rework_count as f32 / trace_count as f32
+        } else {
+            0.0
+        };
+
+        // Accuracy improvement: also compute raw loop density
+        let total_loops = loop_count_l1 + loop_count_l2;
+        let loop_density = if event_count > 0 {
+            total_loops as f32 / event_count as f32
         } else {
             0.0
         };
@@ -880,6 +888,9 @@ pub fn autonomic_execute_cycle(
             "health_state": health_state,
             "health_label": health_label,
             "rework_ratio": rework_ratio,
+            "loop_count_l1": loop_count_l1,
+            "loop_count_l2": loop_count_l2,
+            "loop_density": loop_density,
             "unique_edges": unique_edges,
             "dfg_density": dfg_density,
             "health_score_dfg": health_score_dfg,
@@ -1359,7 +1370,13 @@ pub fn autonomic_execute_cycle(
     // -----------------------------------------------------------------------
     let t_optimization_start = wall_clock_us();
     let health_level = health_state_val as u8;
-    let rework_ratio_val = perception["rework_ratio"].as_f64().unwrap_or(0.0) as f32;
+    let rework_ratio_val = {
+        let trace_rework = perception["rework_ratio"].as_f64().unwrap_or(0.0) as f32;
+        let loop_density = perception["loop_density"].as_f64().unwrap_or(0.0) as f32;
+        // Blend: 70% trace-level presence, 30% loop intensity (loops per event)
+        // This provides a more accurate rework signal for RL optimization.
+        (trace_rework * 0.7 + loop_density * 0.3).min(1.0)
+    };
 
     // Get circuit state for Guard Rule 3
     let circuit_state_u8 = CIRCUIT_BREAKER.with(|cb| {
