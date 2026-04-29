@@ -1,0 +1,42 @@
+{
+  "task": "T015",
+  "title": "Token replay and alignment conformance",
+  "codebase": "/Users/sac/wasm4pm",
+  "file": "crates/pictl-algos/src/conformance.rs",
+  "status": "complete",
+  "date": "2026-04-26",
+  "implementation": {
+    "check_conformance_token_replay": {
+      "description": "Token multiset simulation on DFG model. Each DF edge (a,b) is a place p_{a,b}. Firing activity a produces tokens on all outgoing DF edges; next activity consumes from the corresponding place. Missing tokens counted when no token available. Fitness = calculate_fitness(produced, consumed, missing, remaining) via TokenReplayResult::calculate_fitness.",
+      "algorithm": "Rozinat & van der Aalst token replay on DFG"
+    },
+    "check_conformance_alignment": {
+      "description": "Synchronous product / Dijkstra alignment. State space = (trace_idx, model_idx). Sync moves cost 0, log/model moves cost 1. Optimal alignment found via priority queue. Model sequence extracted via BFS over Petri net topology.",
+      "algorithm": "Dijkstra on synchronous product net"
+    }
+  },
+  "tests": [
+    {
+      "name": "test_token_replay_conforming_trace_fitness_1",
+      "description": "Trace A->B->C conforming to model A->B->C yields fitness >= 0.99",
+      "result": "PASSED"
+    },
+    {
+      "name": "test_token_replay_nonconforming_trace_fitness_less_than_1",
+      "description": "Trace A->B->D->C against model A->B->C yields fitness < 1.0",
+      "result": "PASSED"
+    },
+    {
+      "name": "test_alignment_conforming_trace_zero_cost",
+      "description": "Trace A->B aligning to linear net A->B gives 0 alignment cost (fitting_traces=1)",
+      "result": "PASSED"
+    },
+    {
+      "name": "test_alignment_nonconforming_trace_has_cost",
+      "description": "Trace A->B->C against linear net A->B gives fitness < 1.0 and deviating_traces=1",
+      "result": "PASSED"
+    }
+  ],
+  "build": "cargo check -p pictl-algos: PASSED",
+  "test_run": "cargo test -p pictl-algos conformance: 4/4 PASSED"
+}
