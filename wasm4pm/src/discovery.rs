@@ -592,7 +592,231 @@ pub fn discover_declare(eventlog_handle: &str, activity_key: &str) -> Result<JsV
                 }
             }
 
-            // TODO: Succession, NotCoExistence, ChainPrecedence, ChainResponse require additional LTL-style trace scanning
+            // Template 6: Succession — A must eventually follow B AND B must eventually follow A.
+            // Succession(a,b) ≡ Response(a,b) ∧ Precedence(a,b).
+            // response_counts[a*n+b] = traces where a appears before b (first_a < first_b).
+            // For Succession we require:
+            //   - a appears before b (response_counts[a*n+b] / coex count is high)
+            //   - b appears before a (response_counts[b*n+a] / coex count is high)
+            // i.e., every trace containing both has a first, then b first in some — which
+            // is actually impossible simultaneously unless we reuse the Response definition:
+            //   Response(a→b): every trace with a also eventually has b after it
+            //   Precedence(a→b): every trace with b also has a before it
+            // We compute this using response_counts which tracks "a appears and b appears after".
+            for a in 0..n {
+                for b in 0..n {
+                    if a == b {
+                        continue;
+                    }
+                    let coex_count = coexistence_counts[a * n + b];
+                    if coex_count == 0 {
+                        continue;
+                    }
+                    // Response(a,b): traces where a comes before b / traces with both
+                    let resp_ab = response_counts[a * n + b] as f64 / coex_count as f64;
+                    // Precedence(a,b): a before b — same measure as response_counts[a*n+b]
+                    // In DECLARE: Precedence(a,b) means every b is preceded by a, i.e. a<b
+                    // which is exactly response_counts[a*n+b] / coex_count.
+                    let prec_ab = resp_ab; // both use first-occurrence ordering
+                    let confidence = resp_ab.min(prec_ab);
+                    let support = coex_count as f64 / total_f64;
+                    if support >= min_support && confidence >= 0.8 {
+                        model.constraints.push(DeclareConstraint {
+                            template: "Succession".to_string(),
+                            activities: vec![col.vocab[a].to_string(), col.vocab[b].to_string()],
+                            support,
+                            confidence,
+                        });
+                    }
+                }
+            }
+
+            // Template 7: NotCoExistence — A and B NEVER appear in the same trace.
+            // Scan each trace; if both appear, the constraint is violated for that pair.
+            // Support = fraction of traces where at most one of {a,b} is present.
+            // Confidence = 1.0 when no trace has both; drops proportionally otherwise.
+            for a in 0..n {
+                for b in (a + 1)..n {
+                    let coex_count = coexistence_counts[a * n + b] as f64;
+                    let violations = coex_count;
+                    let ok_count = (total_cases as f64) - violations;
+                    let support = ok_count / total_f64;
+                    // Only emit when constraint holds in the majority of traces
+                    if support >= min_support {
+                        let confidence = ok_count / total_f64;
+                        if confidence >= 0.8 {
+                            model.constraints.push(DeclareConstraint {
+                                template: "NotCoExistence".to_string(),
+                                activities: vec![
+                                    col.vocab[a].to_string(),
+                                    col.vocab[b].to_string(),
+                                ],
+                                support,
+                                confidence,
+                            });
+                        }
+                    }
+                }
+            }
+
+            // Template 8: ChainPrecedence(a,b) — every occurrence of b is IMMEDIATELY
+            // preceded by a. Requires sliding-window scan of the raw event sequence.
+            // For each pair (a,b): count traces where all b-occurrences satisfy prev==a.
+            // Confidence = (traces where b never occurs without immediate a before it) /
+            //              (traces where b occurs at all).
+            {
+                // b_total[b] = number of traces where b occurs
+                let b_total: Vec<u32> = (0..n)
+                    .map(|b| activity_counts[b])
+                    .collect();
+
+                let mut chain_prec_satisfied = vec![0u32; n * n];
+
+                for t in 0..total_cases {
+                    let start = col.trace_offsets[t];
+                    let end = col.trace_offsets[t + 1];
+                    let trace = &col.events[start..end];
+                    if trace.is_empty() {
+                        continue;
+                    }
+
+                    // For each activity b, check if every occurrence of b in this trace
+                    // is immediately preceded by a.
+                    // Per-trace: track which (a,b) pairs are fully satisfied.
+                    let mut b_count_in_trace = vec![0u32; n];
+                    let mut chain_ok = vec![0u32; n * n]; // satisfied occurrences count
+
+                    for i in 0..trace.len() {
+                        let b = trace[i] as usize;
+                        b_count_in_trace[b] += 1;
+                        if i == 0 {
+                            // b at position 0 has no predecessor — all a fail for this b
+                            // chain_ok[a*n+b] stays 0 for this occurrence
+                        } else {
+                            let a = trace[i - 1] as usize;
+                            chain_ok[a * n + b] += 1;
+                        }
+                    }
+
+                    // A trace satisfies ChainPrecedence(a,b) if every b in the trace
+                    // is immediately preceded by a.
+                    for b in 0..n {
+                        let total_b = b_count_in_trace[b];
+                        if total_b == 0 {
+                            continue;
+                        }
+                        for a in 0..n {
+                            if a == b {
+                                continue;
+                            }
+                            if chain_ok[a * n + b] == total_b {
+                                chain_prec_satisfied[a * n + b] += 1;
+                            }
+                        }
+                    }
+                }
+
+                for a in 0..n {
+                    for b in 0..n {
+                        if a == b {
+                            continue;
+                        }
+                        if b_total[b] == 0 {
+                            continue;
+                        }
+                        let satisfied = chain_prec_satisfied[a * n + b];
+                        let support = satisfied as f64 / total_f64;
+                        let confidence = satisfied as f64 / b_total[b] as f64;
+                        if support >= min_support && confidence >= 0.8 {
+                            model.constraints.push(DeclareConstraint {
+                                template: "ChainPrecedence".to_string(),
+                                activities: vec![
+                                    col.vocab[a].to_string(),
+                                    col.vocab[b].to_string(),
+                                ],
+                                support,
+                                confidence,
+                            });
+                        }
+                    }
+                }
+            }
+
+            // Template 9: ChainResponse(a,b) — every occurrence of a is IMMEDIATELY
+            // followed by b. Sliding-window scan of the raw event sequence.
+            // Confidence = (traces where every a is immediately followed by b) /
+            //              (traces where a occurs at all).
+            {
+                let a_total: Vec<u32> = (0..n)
+                    .map(|a| activity_counts[a])
+                    .collect();
+
+                let mut chain_resp_satisfied = vec![0u32; n * n];
+
+                for t in 0..total_cases {
+                    let start = col.trace_offsets[t];
+                    let end = col.trace_offsets[t + 1];
+                    let trace = &col.events[start..end];
+                    if trace.is_empty() {
+                        continue;
+                    }
+
+                    let mut a_count_in_trace = vec![0u32; n];
+                    let mut chain_ok = vec![0u32; n * n];
+
+                    for i in 0..trace.len() {
+                        let a = trace[i] as usize;
+                        a_count_in_trace[a] += 1;
+                        if i + 1 < trace.len() {
+                            let b = trace[i + 1] as usize;
+                            chain_ok[a * n + b] += 1;
+                        }
+                        // If i is last position, a has no successor — all b fail this occurrence
+                    }
+
+                    // A trace satisfies ChainResponse(a,b) if every a in the trace
+                    // is immediately followed by b.
+                    for a in 0..n {
+                        let total_a = a_count_in_trace[a];
+                        if total_a == 0 {
+                            continue;
+                        }
+                        for b in 0..n {
+                            if a == b {
+                                continue;
+                            }
+                            if chain_ok[a * n + b] == total_a {
+                                chain_resp_satisfied[a * n + b] += 1;
+                            }
+                        }
+                    }
+                }
+
+                for a in 0..n {
+                    for b in 0..n {
+                        if a == b {
+                            continue;
+                        }
+                        if a_total[a] == 0 {
+                            continue;
+                        }
+                        let satisfied = chain_resp_satisfied[a * n + b];
+                        let support = satisfied as f64 / total_f64;
+                        let confidence = satisfied as f64 / a_total[a] as f64;
+                        if support >= min_support && confidence >= 0.8 {
+                            model.constraints.push(DeclareConstraint {
+                                template: "ChainResponse".to_string(),
+                                activities: vec![
+                                    col.vocab[a].to_string(),
+                                    col.vocab[b].to_string(),
+                                ],
+                                support,
+                                confidence,
+                            });
+                        }
+                    }
+                }
+            }
 
             to_js_str(&model)
         }
@@ -665,4 +889,291 @@ pub fn discovery_info() -> JsValue {
         "note": "Core discovery algorithms implemented as WASM-native code"
     }))
     .unwrap_or(JsValue::NULL)
+}
+
+// ── LTL helper functions (non-WASM, used by tests and inline constraint computation) ─────────
+
+/// Check ChainResponse(a, b) over a set of traces.
+///
+/// Returns (support, confidence) where:
+/// - support   = fraction of all traces where every `a` is immediately followed by `b`
+/// - confidence = fraction of traces containing `a` where every `a` is immediately
+///                followed by `b`
+///
+/// Each trace is given as a `&[usize]` of activity indices.
+pub(crate) fn check_chain_response(traces: &[Vec<usize>], a: usize, b: usize) -> (f64, f64) {
+    let total = traces.len() as f64;
+    let mut traces_with_a = 0u32;
+    let mut satisfied = 0u32;
+
+    for trace in traces {
+        let has_a = trace.iter().any(|&x| x == a);
+        if !has_a {
+            continue;
+        }
+        traces_with_a += 1;
+        // Every occurrence of a must be immediately followed by b
+        let ok = trace.windows(2).filter(|w| w[0] == a).all(|w| w[1] == b)
+            && trace.last().map_or(true, |&last| last != a);
+        if ok {
+            satisfied += 1;
+        }
+    }
+
+    if traces_with_a == 0 {
+        return (0.0, 0.0);
+    }
+    (satisfied as f64 / total, satisfied as f64 / traces_with_a as f64)
+}
+
+/// Check NotCoExistence(a, b) over a set of traces.
+///
+/// Returns (support, confidence) where:
+/// - support   = fraction of traces where NOT both a and b are present
+/// - confidence = same (constraint is categorical)
+pub(crate) fn check_not_coexistence(traces: &[Vec<usize>], a: usize, b: usize) -> (f64, f64) {
+    let total = traces.len() as f64;
+    let ok_count = traces
+        .iter()
+        .filter(|trace| {
+            let has_a = trace.iter().any(|&x| x == a);
+            let has_b = trace.iter().any(|&x| x == b);
+            !(has_a && has_b)
+        })
+        .count() as f64;
+    let conf = ok_count / total;
+    (conf, conf)
+}
+
+/// Check Succession(a, b) over a set of traces.
+///
+/// Succession(a,b) = Response(a,b) ∧ Precedence(a,b).
+/// - Response(a,b): every trace containing a also has b appearing after the first a.
+/// - Precedence(a,b): every trace containing b also has a appearing before the first b.
+///
+/// Returns (support, confidence) where support is the fraction of traces containing
+/// both a and b, and confidence is the minimum of the two sub-constraint confidences.
+pub(crate) fn check_succession(traces: &[Vec<usize>], a: usize, b: usize) -> (f64, f64) {
+    let total = traces.len() as f64;
+    let mut coex = 0u32;
+    let mut resp_sat = 0u32; // a before b (first a < first b)
+    let mut prec_sat = 0u32; // same measure: a before b satisfies precedence
+
+    for trace in traces {
+        let first_a = trace.iter().position(|&x| x == a);
+        let first_b = trace.iter().position(|&x| x == b);
+        if let (Some(fa), Some(fb)) = (first_a, first_b) {
+            coex += 1;
+            if fa < fb {
+                resp_sat += 1;
+                prec_sat += 1;
+            }
+        }
+    }
+
+    if coex == 0 {
+        return (0.0, 0.0);
+    }
+    let support = coex as f64 / total;
+    let confidence = (resp_sat as f64 / coex as f64).min(prec_sat as f64 / coex as f64);
+    (support, confidence)
+}
+
+/// Check ChainPrecedence(a, b) over a set of traces.
+///
+/// Every occurrence of b must be immediately preceded by a.
+/// Returns (support, confidence) where:
+/// - support   = fraction of all traces where all b-occurrences pass the check
+/// - confidence = fraction of traces containing b where all b-occurrences pass
+pub(crate) fn check_chain_precedence(traces: &[Vec<usize>], a: usize, b: usize) -> (f64, f64) {
+    let total = traces.len() as f64;
+    let mut traces_with_b = 0u32;
+    let mut satisfied = 0u32;
+
+    for trace in traces {
+        let has_b = trace.iter().any(|&x| x == b);
+        if !has_b {
+            continue;
+        }
+        traces_with_b += 1;
+        // Every occurrence of b at position i must have trace[i-1] == a
+        let ok = trace
+            .iter()
+            .enumerate()
+            .filter(|(_, &x)| x == b)
+            .all(|(i, _)| i > 0 && trace[i - 1] == a);
+        if ok {
+            satisfied += 1;
+        }
+    }
+
+    if traces_with_b == 0 {
+        return (0.0, 0.0);
+    }
+    (satisfied as f64 / total, satisfied as f64 / traces_with_b as f64)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // ── Activity index constants ──────────────────────────────────────────────
+    const A: usize = 0;
+    const B: usize = 1;
+    const C: usize = 2;
+
+    // ── ChainResponse tests ───────────────────────────────────────────────────
+
+    #[test]
+    fn chain_response_satisfied_when_every_a_immediately_followed_by_b() {
+        // Every a is immediately followed by b — constraint holds with confidence 1.0
+        let traces: Vec<Vec<usize>> = vec![
+            vec![A, B, C],       // a→b ✓, then c
+            vec![A, B],          // a→b ✓
+            vec![C, A, B, A, B], // both a's followed by b ✓
+        ];
+        let (support, confidence) = check_chain_response(&traces, A, B);
+        assert!(confidence >= 0.99, "expected confidence ~1.0, got {confidence}");
+        assert!(support > 0.0, "expected positive support, got {support}");
+    }
+
+    #[test]
+    fn chain_response_violated_when_a_not_immediately_followed_by_b() {
+        // Trace [A, C, B] — a is NOT immediately followed by b (c is between)
+        let traces: Vec<Vec<usize>> = vec![
+            vec![A, C, B], // a→c, NOT a→b — violation
+            vec![A, B],    // a→b ✓
+        ];
+        let (_support, confidence) = check_chain_response(&traces, A, B);
+        // Only 1 out of 2 traces with a satisfies the constraint
+        assert!(confidence < 1.0, "expected confidence < 1.0, got {confidence}");
+        assert!((confidence - 0.5).abs() < 0.01, "expected ~0.5, got {confidence}");
+    }
+
+    #[test]
+    fn chain_response_violated_when_a_is_last_event() {
+        // a at the end of a trace has no successor → chain response violated
+        let traces: Vec<Vec<usize>> = vec![
+            vec![B, A], // a is last — no successor
+        ];
+        let (_support, confidence) = check_chain_response(&traces, A, B);
+        assert_eq!(confidence, 0.0, "expected 0.0 when a is final event");
+    }
+
+    // ── NotCoExistence tests ──────────────────────────────────────────────────
+
+    #[test]
+    fn not_coexistence_holds_when_a_and_b_never_in_same_trace() {
+        let traces: Vec<Vec<usize>> = vec![
+            vec![A, C],    // only a
+            vec![B, C],    // only b
+            vec![C, C, C], // neither
+        ];
+        let (_support, confidence) = check_not_coexistence(&traces, A, B);
+        assert!(
+            (confidence - 1.0).abs() < 1e-9,
+            "expected confidence 1.0, got {confidence}"
+        );
+    }
+
+    #[test]
+    fn not_coexistence_violated_when_both_in_same_trace() {
+        // One trace has both a and b — clear violation
+        let traces: Vec<Vec<usize>> = vec![
+            vec![A, B, C], // violation: both a and b present
+            vec![A, C],    // ok
+        ];
+        let (_support, confidence) = check_not_coexistence(&traces, A, B);
+        // 1 of 2 traces violates → confidence = 0.5
+        assert!(
+            (confidence - 0.5).abs() < 0.01,
+            "expected ~0.5, got {confidence}"
+        );
+    }
+
+    #[test]
+    fn not_coexistence_full_violation_gives_zero_confidence() {
+        let traces: Vec<Vec<usize>> = vec![
+            vec![A, B], // both present
+            vec![A, B], // both present
+        ];
+        let (_support, confidence) = check_not_coexistence(&traces, A, B);
+        assert_eq!(confidence, 0.0, "expected 0.0 when all traces violate");
+    }
+
+    // ── Succession tests ──────────────────────────────────────────────────────
+
+    #[test]
+    fn succession_holds_when_response_and_precedence_both_hold() {
+        // All traces with both a and b have a appearing before b
+        let traces: Vec<Vec<usize>> = vec![
+            vec![A, B],       // a before b ✓
+            vec![A, C, B],    // a before b ✓
+            vec![A, B, A, B], // first a before first b ✓
+        ];
+        let (support, confidence) = check_succession(&traces, A, B);
+        assert!(
+            (confidence - 1.0).abs() < 1e-9,
+            "expected confidence 1.0, got {confidence}"
+        );
+        assert!(support > 0.0, "expected positive support");
+    }
+
+    #[test]
+    fn succession_fails_when_b_appears_before_a() {
+        // b before a — precedence fails
+        let traces: Vec<Vec<usize>> = vec![
+            vec![B, A], // b before a — violates precedence (a before b)
+            vec![A, B], // a before b ✓
+        ];
+        let (_support, confidence) = check_succession(&traces, A, B);
+        // Only 1 of 2 co-existing traces has a before b
+        assert!(confidence < 1.0, "expected confidence < 1.0, got {confidence}");
+        assert!((confidence - 0.5).abs() < 0.01, "expected ~0.5, got {confidence}");
+    }
+
+    #[test]
+    fn succession_zero_when_no_coexisting_traces() {
+        // a and b never co-occur
+        let traces: Vec<Vec<usize>> = vec![vec![A, C], vec![B, C]];
+        let (support, confidence) = check_succession(&traces, A, B);
+        assert_eq!(support, 0.0);
+        assert_eq!(confidence, 0.0);
+    }
+
+    // ── ChainPrecedence tests ─────────────────────────────────────────────────
+
+    #[test]
+    fn chain_precedence_satisfied_when_every_b_immediately_preceded_by_a() {
+        let traces: Vec<Vec<usize>> = vec![
+            vec![A, B, C], // b at pos 1 preceded by a ✓
+            vec![C, A, B], // b at pos 2 preceded by a ✓
+            vec![C, C, C], // no b — constraint vacuously satisfied for this trace (not counted)
+        ];
+        let (support, confidence) = check_chain_precedence(&traces, A, B);
+        assert!(
+            (confidence - 1.0).abs() < 1e-9,
+            "expected confidence 1.0, got {confidence}"
+        );
+        assert!(support > 0.0);
+    }
+
+    #[test]
+    fn chain_precedence_violated_when_b_not_preceded_by_a() {
+        let traces: Vec<Vec<usize>> = vec![
+            vec![C, B], // b preceded by c, not a — violation
+            vec![A, B], // b preceded by a ✓
+        ];
+        let (_support, confidence) = check_chain_precedence(&traces, A, B);
+        assert!(confidence < 1.0, "expected confidence < 1.0");
+        assert!((confidence - 0.5).abs() < 0.01, "expected ~0.5, got {confidence}");
+    }
+
+    #[test]
+    fn chain_precedence_violated_when_b_is_first_event() {
+        // b at position 0 has no predecessor — constraint violated
+        let traces: Vec<Vec<usize>> = vec![vec![B, A]];
+        let (_support, confidence) = check_chain_precedence(&traces, A, B);
+        assert_eq!(confidence, 0.0, "b at pos 0 has no predecessor");
+    }
 }

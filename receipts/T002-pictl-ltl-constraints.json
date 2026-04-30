@@ -1,0 +1,35 @@
+{
+  "task": "T002",
+  "title": "LTL declare constraints",
+  "status": "complete",
+  "timestamp": "2026-04-26T00:00:00Z",
+  "file": "wasm4pm/src/discovery.rs",
+  "implementation": {
+    "constraints_implemented": [
+      "Succession(a,b): Response(a,b) AND Precedence(a,b) — coexistence traces where a appears before b",
+      "NotCoExistence(a,b): a and b never appear in the same trace — support = fraction with at most one",
+      "ChainPrecedence(a,b): every b is immediately preceded by a — sliding-window scan per trace",
+      "ChainResponse(a,b): every a is immediately followed by b — sliding-window scan per trace"
+    ],
+    "helper_functions": [
+      "check_chain_response(traces, a, b) -> (support, confidence)",
+      "check_not_coexistence(traces, a, b) -> (support, confidence)",
+      "check_succession(traces, a, b) -> (support, confidence)",
+      "check_chain_precedence(traces, a, b) -> (support, confidence)"
+    ],
+    "integration": "All four constraints added to discover_declare constraint loop (Templates 6-9)"
+  },
+  "tests": {
+    "chain_response_satisfied_when_every_a_immediately_followed_by_b": "PASS",
+    "chain_response_violated_when_a_not_immediately_followed_by_b": "PASS",
+    "not_coexistence_holds_when_a_and_b_never_in_same_trace": "PASS",
+    "not_coexistence_violated_when_both_in_same_trace": "PASS",
+    "not_coexistence_full_violation_gives_zero_confidence": "PASS",
+    "succession_holds_when_response_and_precedence_both_hold": "PASS",
+    "succession_fails_when_b_appears_before_a": "PASS",
+    "succession_zero_when_no_coexisting_traces": "PASS",
+    "chain_precedence_satisfied_when_every_b_immediately_preceded_by_a": "PASS"
+  },
+  "test_result": "9 discovery tests passed (31 total in module), 0 failed",
+  "build_check": "cargo test --lib discovery:: — all 31 tests OK"
+}

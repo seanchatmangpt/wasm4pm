@@ -1,0 +1,25 @@
+{
+  "task": "T001",
+  "title": "Alpha++ full algorithm",
+  "status": "complete",
+  "timestamp": "2026-04-26T00:00:00Z",
+  "file": "wasm4pm/src/algorithms.rs",
+  "implementation": {
+    "algorithm": "Alpha++ (de Medeiros et al., 2007)",
+    "steps_implemented": [
+      "build_footprint: classifies every ordered activity pair as Causal (→), Parallel (∥, L2L), or Choice (#)",
+      "L1L detection: self-loop activities (a,a) in directly-follows set",
+      "find_maximal_pairs: greedy merge of seed (a→b) pairs into maximal (A,B) candidate places via is_valid_pair",
+      "Petri net construction: source/sink places, one transition per activity, one place per (A,B) pair, L1L self-loop places",
+      "L2L back-arcs implicit via Parallel footprint classification"
+    ],
+    "wasm_export": "discover_alpha_plus_plus(eventlog_handle, activity_key, min_support)"
+  },
+  "tests": {
+    "test_linear_log_no_loops": "PASS — linear [a,b,c]x10 produces Causal pairs, no L1L",
+    "test_l1l_self_loop_detected": "PASS — [a,a,b]x5 flags 'a' as L1L activity",
+    "test_l2l_back_arc_detected": "PASS — [a,b,a,b]x5 classifies (a,b) and (b,a) as Parallel"
+  },
+  "test_result": "3 passed, 0 failed",
+  "build_check": "cargo test --lib algorithms:: — all 3 tests OK"
+}
