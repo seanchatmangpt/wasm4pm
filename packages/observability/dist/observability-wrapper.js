@@ -219,8 +219,12 @@ export class ObservabilityWrapper {
                     });
                 });
             },
-            flush: async () => { await wrapper.layer.shutdown(); },
-            shutdown: async () => { await wrapper.layer.shutdown(); }
+            flush: async () => {
+                await wrapper.layer.shutdown();
+            },
+            shutdown: async () => {
+                await wrapper.layer.shutdown();
+            },
         };
     }
 }

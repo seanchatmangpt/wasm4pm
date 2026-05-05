@@ -3,7 +3,7 @@
 =================================================================================
 
 Project:    wasm4pm
-Component:  @pictl/cli Validation Tests
+Component:  @wasm4pm/cli Validation Tests
 Version:    26.4.5
 Date:       April 4, 2026
 Location:   /Users/sac/wasm4pm/lab/
@@ -68,11 +68,11 @@ Categories:
      Total ......................... 59 tests
 
 Commands Tested: 5/5
-  ✓ pictl run     (18 tests)
-  ✓ pictl watch  (4 tests)
-  ✓ pictl status (5 tests)
-  ✓ pictl explain (3 tests)
-  ✓ pictl init   (3 tests)
+  ✓ wasm4pm run     (18 tests)
+  ✓ wasm4pm watch  (4 tests)
+  ✓ wasm4pm status (5 tests)
+  ✓ wasm4pm explain (3 tests)
+  ✓ wasm4pm init   (3 tests)
 
 Exit Codes Tested: 4/6
   ✓ Exit 0 - Success
@@ -264,15 +264,15 @@ When all tests pass:
 
 Typical Output:
   ✓ tests/cli.test.ts (59)
-    ✓ pictl CLI - Command Existence & Help (7)
-    ✓ pictl CLI - Run Command (18)
-    ✓ pictl CLI - Watch Command (4)
-    ✓ pictl CLI - Status Command (5)
-    ✓ pictl CLI - Explain Command (3)
-    ✓ pictl CLI - Init Command (3)
-    ✓ pictl CLI - Exit Codes (9)
-    ✓ pictl CLI - Configuration Resolution (3)
-    ✓ pictl CLI - Integration Scenarios (3)
+    ✓ wasm4pm CLI - Command Existence & Help (7)
+    ✓ wasm4pm CLI - Run Command (18)
+    ✓ wasm4pm CLI - Watch Command (4)
+    ✓ wasm4pm CLI - Status Command (5)
+    ✓ wasm4pm CLI - Explain Command (3)
+    ✓ wasm4pm CLI - Init Command (3)
+    ✓ wasm4pm CLI - Exit Codes (9)
+    ✓ wasm4pm CLI - Configuration Resolution (3)
+    ✓ wasm4pm CLI - Integration Scenarios (3)
 
   Test Files  1 passed (1)
   Tests  59 passed (59)
@@ -283,7 +283,7 @@ Typical Output:
 =================================================================================
 
 1. PMCTL CLI INSTALLED
-   $ npm install -g @wasm4pm/pictl
+   $ npm install -g @wasm4pm/wasm4pm
    OR
    $ npm run build:cli
 
@@ -314,7 +314,7 @@ Typical Output:
    - Configuration handling tested
 
 2. REAL PROCESS TESTING
-   - Spawns actual pictl binary
+   - Spawns actual wasm4pm binary
    - Tests real CLI behavior
    - Not mocked or stubbed
 
@@ -416,7 +416,7 @@ All of the following are met:
 
 2. Review test results and conformance report
 
-3. Fix any failing tests in pictl CLI
+3. Fix any failing tests in wasm4pm CLI
 
 4. Integrate with CI/CD pipeline
 
@@ -426,15 +426,15 @@ All of the following are met:
                          SUPPORT & TROUBLESHOOTING
 =================================================================================
 
-ISSUE: "pictl: command not found"
+ISSUE: "wasm4pm: command not found"
   FIX: Install CLI globally or build locally
-       npm install -g @wasm4pm/pictl
+       npm install -g @wasm4pm/wasm4pm
        OR npm run build:cli
 
 ISSUE: Permission denied errors
   FIX: Check /tmp permissions
        chmod 755 /tmp
-       rm -rf /tmp/pictl-*
+       rm -rf /tmp/wasm4pm-*
 
 ISSUE: Tests timeout
   FIX: Increase timeout in vitest.config.ts
@@ -469,7 +469,7 @@ Performance Expectations:
                          MAINTENANCE & UPDATES
 =================================================================================
 
-When updating pictl CLI:
+When updating wasm4pm CLI:
   1. Review any exit code changes
   2. Update test fixtures if config format changes
   3. Add tests for new commands

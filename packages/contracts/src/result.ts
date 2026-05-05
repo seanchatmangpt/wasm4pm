@@ -61,7 +61,6 @@ export function err(error: string): Err {
   return { type: 'err', error };
 }
 
-
 /**
  * Check if result is Ok
  *
@@ -108,7 +107,7 @@ import type { ModelIR } from './model.js';
  *
  * Gap closure: LC-1 — latency_class is non-optional and derived.
  */
-export type LatencyClass = "sub_ms" | "low_ms" | "high_ms" | "seconds" | "minutes";
+export type LatencyClass = 'sub_ms' | 'low_ms' | 'high_ms' | 'seconds' | 'minutes';
 
 /**
  * Derives the LatencyClass from a latency duration in milliseconds.
@@ -117,11 +116,11 @@ export type LatencyClass = "sub_ms" | "low_ms" | "high_ms" | "seconds" | "minute
  * @returns The appropriate LatencyClass
  */
 export function deriveLatencyClass(latency_ms: number): LatencyClass {
-  if (latency_ms < 1) return "sub_ms";
-  if (latency_ms < 100) return "low_ms";
-  if (latency_ms < 1000) return "high_ms";
-  if (latency_ms < 60000) return "seconds";
-  return "minutes";
+  if (latency_ms < 1) return 'sub_ms';
+  if (latency_ms < 100) return 'low_ms';
+  if (latency_ms < 1000) return 'high_ms';
+  if (latency_ms < 60000) return 'seconds';
+  return 'minutes';
 }
 
 /**
@@ -215,7 +214,7 @@ export interface ProvenanceChain {
  */
 export interface ResultEnvelope<T = unknown> {
   readonly run_id: string; // UUID v4
-  readonly status: "success" | "partial" | "failed";
+  readonly status: 'success' | 'partial' | 'failed';
   readonly payload: T;
   readonly error?: string; // Only when status != "success"
   readonly latency_ms: number;
@@ -254,7 +253,7 @@ export function isProvenanceChain(value: unknown): value is ProvenanceChain {
     'algorithm_version',
     'backend_id',
     'kernel_version',
-    'wasm_build_hash'
+    'wasm_build_hash',
   ];
 
   for (const field of requiredFields) {
@@ -292,16 +291,23 @@ export function isResultEnvelope<T = unknown>(value: unknown): value is ResultEn
 
   // Check basic fields
   if (
-    typeof envelope.run_id !== 'string' || envelope.run_id.length === 0 ||
-    typeof envelope.invocation_id !== 'string' || envelope.invocation_id.length === 0
-  ) return false;
+    typeof envelope.run_id !== 'string' ||
+    envelope.run_id.length === 0 ||
+    typeof envelope.invocation_id !== 'string' ||
+    envelope.invocation_id.length === 0
+  )
+    return false;
 
   // Check status
   const validStatuses = ['success', 'partial', 'failed'];
   if (!validStatuses.includes(envelope.status as string)) return false;
 
   // Check latency fields
-  if (typeof envelope.latency_ms !== 'number' || !Number.isFinite(envelope.latency_ms) || envelope.latency_ms < 0) {
+  if (
+    typeof envelope.latency_ms !== 'number' ||
+    !Number.isFinite(envelope.latency_ms) ||
+    envelope.latency_ms < 0
+  ) {
     return false;
   }
 
@@ -314,7 +320,11 @@ export function isResultEnvelope<T = unknown>(value: unknown): value is ResultEn
   if (typeof envelope.algorithm_id !== 'string' || envelope.algorithm_id.length === 0) return false;
 
   // Check cycle_seq
-  if (typeof envelope.cycle_seq !== 'number' || !Number.isInteger(envelope.cycle_seq) || envelope.cycle_seq < 0) {
+  if (
+    typeof envelope.cycle_seq !== 'number' ||
+    !Number.isInteger(envelope.cycle_seq) ||
+    envelope.cycle_seq < 0
+  ) {
     return false;
   }
 
@@ -329,7 +339,11 @@ export function isResultEnvelope<T = unknown>(value: unknown): value is ResultEn
 
   // Check stale/stale_age_ms co-requirement
   if (envelope.stale === true) {
-    if (typeof envelope.stale_age_ms !== 'number' || !Number.isFinite(envelope.stale_age_ms) || envelope.stale_age_ms < 0) {
+    if (
+      typeof envelope.stale_age_ms !== 'number' ||
+      !Number.isFinite(envelope.stale_age_ms) ||
+      envelope.stale_age_ms < 0
+    ) {
       return false;
     }
   } else if (envelope.stale_age_ms !== undefined) {

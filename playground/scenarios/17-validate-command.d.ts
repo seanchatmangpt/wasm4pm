@@ -1,5 +1,5 @@
 /**
- * Scenario: validate command — pictl validate <log.xes>
+ * Scenario: validate command — wasm4pm validate <log.xes>
  *
  * Tests log/schema validation against real XES files.
  * Uses real WASM — no mocks.
@@ -18,7 +18,7 @@
  *       Also note: consola filters log-level messages in test capture, so
  *       assertions target warn/success level output that IS captured.
  *
- * Binary: apps/pictl/dist/bin/pictl.js (must be built first)
+ * Binary: apps/wasm4pm/dist/bin/wasm4pm.js (must be built first)
  */
 export {};
 //# sourceMappingURL=17-validate-command.d.ts.map

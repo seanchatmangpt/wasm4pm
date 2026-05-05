@@ -19,7 +19,7 @@ import type {
 /** Default thresholds for agent detection */
 const DEFAULT_THRESHOLDS: AgentThresholds = {
   min_fitness: 0.95,
-  min_precision: 0.80,
+  min_precision: 0.8,
   max_deviations: 0,
   timeout_ms: 5000,
 };
@@ -152,9 +152,7 @@ export class AgentRegistry {
       const raw = readFileSync(path, 'utf-8');
       const data = JSON.parse(raw);
 
-      const configs: AgentConfig[] = Array.isArray(data)
-        ? data
-        : data.agents || [];
+      const configs: AgentConfig[] = Array.isArray(data) ? data : data.agents || [];
 
       for (const config of configs) {
         if (config.name && config.description) {
@@ -221,7 +219,7 @@ export class AgentRegistry {
   /** Get agents that should run on-demand at a specific gate */
   getOnDemandAgentsForGate(gateName: string): AgentRuntimeState[] {
     return this.listAgents('on_demand').filter(
-      (a) => a.status === 'active' && a.config.target_gates.includes(gateName),
+      (a) => a.status === 'active' && a.config.target_gates.includes(gateName)
     );
   }
 
@@ -233,7 +231,7 @@ export class AgentRegistry {
       corrections?: number;
       error?: string | null;
       status?: AgentStatus;
-    },
+    }
   ): void {
     const agent = this.agents.get(name);
     if (!agent) return;

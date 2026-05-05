@@ -17,7 +17,16 @@ export function validateReceipt(receipt) {
     }
     const r = receipt;
     // Check required string fields
-    const requiredStrings = ['run_id', 'schema_version', 'config_hash', 'input_hash', 'plan_hash', 'output_hash', 'start_time', 'end_time'];
+    const requiredStrings = [
+        'run_id',
+        'schema_version',
+        'config_hash',
+        'input_hash',
+        'plan_hash',
+        'output_hash',
+        'start_time',
+        'end_time',
+    ];
     for (const field of requiredStrings) {
         if (typeof r[field] !== 'string') {
             errors.push(`Missing or invalid required field: ${field}`);

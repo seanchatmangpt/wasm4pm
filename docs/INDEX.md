@@ -1,245 +1,133 @@
-# pictl Documentation Index
+# wasm4pm Documentation Index
 
-Welcome to pictl — a high-performance process mining platform with a Rust/WASM core and TypeScript orchestration layer.
-
-This documentation uses the **Diataxis framework**, organizing content into four quadrants: Tutorials, How-To Guides, Explanations, and Reference.
+**Last Updated:** 2026-05-05
 
 ---
 
-## Quick Navigation
+## Agent 9: Integration Testing & Certification
 
-| Goal | Start Here |
-|------|-----------|
-| **Learn by doing** | [Tutorials](#tutorials) |
-| **Accomplish a specific task** | [How-To Guides](#how-to-guides) |
-| **Understand how things work** | [Explanations](#explanations) |
-| **Look up technical details** | [Reference](#reference) |
+Agent 9 has created a comprehensive end-to-end testing and certification strategy for wasm4pm's ML/AI/RL system.
 
----
+### Core Documents
 
-## Learning Path by Role
+| Document | Purpose | Lines | Status |
+|----------|---------|-------|--------|
+| [AGENT_9_INTEGRATION_SUMMARY.md](./AGENT_9_INTEGRATION_SUMMARY.md) | Executive overview, status assessment, risks, roadmap | 2000 | ✅ |
+| [INTEGRATION_TESTING_PLAN.md](./INTEGRATION_TESTING_PLAN.md) | 7-week strategic plan, 15+ E2E scenarios, 5 phases | 900 | ✅ |
+| [CRITICAL_PATH_ANALYSIS.md](./CRITICAL_PATH_ANALYSIS.md) | 7 critical paths, 80+ OTEL spans, data flow | 1200 | ✅ |
+| [E2E_TEST_HARNESS_GUIDE.md](./E2E_TEST_HARNESS_GUIDE.md) | Implementation guide, templates, code examples | 800 | ✅ |
 
-### New User (Just installed)
-1. **5 min**: [Tutorial: Your First Process Model](tutorials/first-model.md)
-2. **10 min**: [Reference: CLI Commands](reference/cli-commands.md)
-3. **Next**: [How-To Guides](#how-to-guides) for your use case
+### Quick Start
 
-### DevOps Engineer
-1. **15 min**: [How-To: Docker Deployment](how-to/docker-deploy.md)
-2. **10 min**: [How-To: Set Up OTEL](how-to/otel-datadog.md)
-3. **20 min**: [Explanation: Observability Design](explanation/observability-design.md)
-4. **Reference**: [Environment Variables](reference/environment-variables.md)
-
-### Software Developer
-1. **15 min**: [How-To: Node.js Integration](how-to/nodejs-integration.md)
-2. **10 min**: [Reference: HTTP API](reference/http-api.md)
-3. **20 min**: [Explanation: Execution Substrate](explanation/execution-substrate.md)
-4. **Advanced**: [How-To: Custom Sink](how-to/custom-sink.md)
-
-### Process Analyst
-1. **10 min**: [Tutorial: Stream Processing](tutorials/watch-mode.md)
-2. **15 min**: [How-To: Choose the Right Algorithm](how-to/choose-algorithm.md)
-3. **20 min**: [Explanation: Algorithm Profiles](explanation/profiles.md)
-4. **Reference**: [Algorithm Matrix](reference/algorithms.md)
-
-### Data Scientist / ML Engineer
-1. **10 min**: [How-To: Predictive Mining](how-to/predictive-mining.md)
-2. **15 min**: [Tutorial: Predictive Analytics](tutorials/predictive-analytics.md)
-3. **10 min**: [How-To: Monitor Drift](how-to/monitor-drift.md)
-4. **Reference**: [Prediction Config](reference/prediction-config.md)
-
-### Compliance Officer
-1. **15 min**: [Tutorial: Compliance Audit Trail](tutorials/compliance-audit.md)
-2. **10 min**: [Explanation: Receipts and Proofs](explanation/receipts.md)
-3. **Reference**: [Error Codes](reference/error-codes.md)
+1. **Executive summary (15 min):** [AGENT_9_INTEGRATION_SUMMARY.md](./AGENT_9_INTEGRATION_SUMMARY.md)
+2. **Strategic plan (30 min):** [INTEGRATION_TESTING_PLAN.md](./INTEGRATION_TESTING_PLAN.md)
+3. **Technical analysis (40 min):** [CRITICAL_PATH_ANALYSIS.md](./CRITICAL_PATH_ANALYSIS.md)
+4. **Implementation (60 min):** [E2E_TEST_HARNESS_GUIDE.md](./E2E_TEST_HARNESS_GUIDE.md)
 
 ---
 
-## Tutorials (Learn by Doing)
+## Key Status
 
-### Beginner
-- [Your First Process Model](tutorials/first-model.md) — 5 min
-- [Stream Processing with Watch Mode](tutorials/watch-mode.md) — 10 min
+### Current (v26.4.17)
+- ✅ 674 Rust unit tests + 9 TypeScript packages
+- ❌ OTEL: 0/596 functions instrumented
+- ⚠️ E2E: 2 of 15 scenarios formalized
+- ⚠️ Performance: No baseline established
+- ✅ RL/Discovery: Tests comprehensive
 
-### Intermediate
-- [Running as a Service](tutorials/service-mode.md) — 15 min
-- [Setting Up Observability](tutorials/observability-setup.md) — 20 min
-- [Predictive Analytics](tutorials/predictive-analytics.md) — 20 min
-
-### Advanced
-- [Custom Configuration Workflows](tutorials/custom-configs.md) — 25 min
-- [Compliance Audit Trail](tutorials/compliance-audit.md) — 20 min
-- [Real-Time Monitoring](tutorials/realtime-monitoring.md) — 30 min
-
----
-
-## How-To Guides (Get Things Done)
-
-### CLI Usage
-- [Analyze an Event Log](how-to/analyze-log.md)
-- [Choose the Right Algorithm](how-to/choose-algorithm.md)
-- [Export Models in Different Formats](how-to/export-formats.md)
-- [Debug Configuration Errors](how-to/debug-config.md)
-- [Monitor Long-Running Jobs](how-to/monitor-jobs.md)
-- [Browse Saved Results](how-to/browse-results.md)
-- [Compare Process Models](how-to/compare-process-models.md)
-- [Health Check](how-to/health-check.md)
-
-### ML & Predictive
-- [Predictive Mining](how-to/predictive-mining.md)
-- [Configure Predictions](how-to/configure-predictions.md)
-- [Monitor Drift](how-to/monitor-drift.md)
-- [Benchmark Algorithms](how-to/benchmark-algorithms.md)
-
-### POWL
-- [POWL Discovery](how-to/discover-powl.md)
-- [POWL Conversion](how-to/powl-conversion.md)
-
-### Integration
-- [Integrate into Node.js](how-to/nodejs-integration.md)
-- [Use in a Browser](how-to/browser-integration.md)
-- [Build a Custom Sink](how-to/custom-sink.md)
-
-### Development
-- [Port Rust Algorithms](how-to/rust-algorithm-porting-guide.md) — Add new mining algorithms to WASM kernel
-
-### DevOps
-- [Deploy with Docker](how-to/docker-deploy.md)
-- [Set Up CI/CD Pipeline](how-to/cicd-setup.md)
-- [Configure OTEL for Datadog](how-to/otel-datadog.md)
-- [Kubernetes Deployment](how-to/kubernetes-deploy.md)
-
-### Configuration
-- [Version Control Config Safely](how-to/version-control.md)
-- [Set Environment Variables](how-to/environment-variables.md)
-- [Create Multi-Environment Configs](how-to/multi-env-config.md)
-- [Performance Tuning](how-to/performance-tuning.md)
-- [Error Recovery](how-to/error-recovery.md)
-- [Testing Workflows](how-to/testing-workflows.md)
+### Target (v26.5.0)
+- ✅ 15+ E2E scenarios
+- ✅ OTEL: 480+/596 functions (80%)
+- ✅ Mutation score ≥80%
+- ✅ Performance baseline + regression detection
+- ✅ Determinism validated (100 runs)
 
 ---
 
-## Explanations (Understand Why)
+## 7-Week Implementation Timeline
 
-### Architecture
-- [The Execution Substrate](explanation/execution-substrate.md)
-- [Determinism in Process Mining](explanation/determinism.md)
-- [Configuration Resolution](explanation/config-resolution.md)
-- [Engine State Machine](explanation/engine-states.md)
-
-### Observability
-- [Observability Design](explanation/observability-design.md)
-- [Why Telemetry Never Breaks Execution](explanation/observability-design.md)
-
-### Algorithms
-- [Algorithm Selection and Profiles](explanation/profiles.md)
-- [Object-Centric Process Mining](explanation/ocpm.md)
-- [Process Model Comparison](explanation/process-model-comparison.md)
-
-### ML & Predictive
-- [Predictive Process Mining](explanation/predictive-process-mining.md)
-- [Concept Drift Detection](explanation/concept-drift-detection.md)
-- [POWL Concepts](explanation/powl-concepts.md)
-
-### Processing
-- [Streaming vs Batch](explanation/streaming.md)
-- [Watch Mode Reconnection](explanation/watch-reconnection.md)
-
-### Philosophy
-- [Why No Runtime Arguments](explanation/design-no-runtime-args.md)
-- [Why Receipts Matter](explanation/receipts.md)
-- [Error Handling Philosophy](explanation/error-handling.md)
-- [Blue Ocean Strategy](explanation/blue-ocean-strategy.md)
+| Phase | Duration | Effort | Focus |
+|-------|----------|--------|-------|
+| 1: Discovery | Week 1-2 | 20 hrs | E2E-01 to E2E-06 |
+| 2: Prediction | Week 2-3 | 15 hrs | E2E-07 to E2E-09 |
+| 3: RL | Week 3 | 5 hrs | E2E-10 to E2E-12 |
+| 4: CLI | Week 3-4 | 20 hrs | E2E-13 to E2E-15 |
+| 5: Mutation | Week 4-5 | 15 hrs | Adequacy + Determinism |
+| 6: OTEL | Week 5-6 | 30 hrs | Tier 1 (10) + Tier 2 (30) |
+| 7: Cert | Week 6-7 | 10 hrs | Report + Baseline |
+| **Total** | **7 weeks** | **115 hrs** | **All paths** |
 
 ---
 
-## Reference (Technical Details)
+## Critical Gaps (Priority Order)
 
-### APIs
-- [CLI Commands](reference/cli-commands.md) — All 13 pictl commands
-- [HTTP API Endpoints](reference/http-api.md)
-
-### Configuration
-- [Config Schema](reference/config-schema.md) — TOML/JSON format with `[ml]` section
-- [Environment Variables](reference/environment-variables.md)
-- [Algorithm Parameters](reference/algorithm-parameters.md)
-- [Prediction Config](reference/prediction-config.md)
-- [Prediction CLI](reference/prediction-cli.md)
-
-### Data & Formats
-- [Data Types](reference/data-types.md)
-- [Error Codes](reference/error-codes.md)
-- [Exit Codes](reference/exit-codes.md)
-
-### Algorithms
-- [Algorithm Matrix](reference/algorithms.md) — 14 discovery algorithms + 6 ML tasks
-- [ML Parameter Tuning](reference/ml-parameter-tuning.md) — Comprehensive tuning guide for classify, cluster, forecast, anomaly, regress, PCA
-- [Performance Benchmarks](reference/benchmarks.md)
-
-### Deployment
-- [Deployment Profiles](../wasm4pm/DEPLOYMENT_PROFILES.md) — 5 WASM build profiles
-- [Docker](reference/docker.md)
-- [Kubernetes](reference/kubernetes.md)
-- [GitHub Actions](reference/github-actions.md)
-
-### MCP
-- [MCP Predictive Tools](reference/mcp-predictive-tools.md)
-- [POWL API](reference/powl-api.md)
+1. **OTEL Coverage** (HIGH): 0% → target 80% (30 hrs for Tier 1)
+2. **Performance Baseline** (HIGH): None → establish for 41 algorithms (5 hrs)
+3. **E2E Scenarios** (MEDIUM): 2 → 15+ formalized (60 hrs)
+4. **Determinism** (MEDIUM): Not validated → 100-run matrix (10 hrs)
+5. **Error Paths** (MEDIUM): Partial → full exit code contract (10 hrs)
 
 ---
 
-## Cross-Package Reference
+## Success Criteria
 
-- [Package Implementation History](PACKAGE_IMPLEMENTATION_HISTORY.md) — Historical record of all 9 packages
-- [Academic Thesis (v2)](THESIS-V2.md) — PhD thesis on WASM-based process mining
-- [API Reference](API.md) — Complete API documentation
-- [Deployment Architecture](DEPLOYMENT-ARCHITECTURE.md) — System architecture overview
+### Must Have (Before Release)
+- [ ] 15+ E2E tests passing
+- [ ] OTEL Tier 1 (10 functions) complete
+- [ ] Exit code contract validated
+- [ ] Config resolution validated
+- [ ] Performance baseline established
 
----
-
-## Archive
-
-Historical content (implementation summaries, performance reports, validation snapshots) is preserved in [docs/archive/](archive/):
-
-- [archive/academic/](archive/academic/) — Deprecated theses and papers
-- [archive/implementation/](archive/implementation/) — Implementation summaries and reports
-- [archive/performance/](archive/performance/) — Optimization reports
-- [archive/reports/](archive/reports/) — Validation and audit reports
-- [archive/packages/](archive/packages/) — Per-package implementation details
+### Should Have
+- [ ] Mutation score ≥80%
+- [ ] Determinism validated
+- [ ] OTEL Tier 2 (30 functions)
+- [ ] Certification report published
 
 ---
 
-## FAQ
+## Existing High-Value Tests
 
-**Q: What's the best way to get started?**
-A: Start with [Tutorial: Your First Model](tutorials/first-model.md) (5 min), then pick a How-To based on your role.
-
-**Q: Which algorithm should I use?**
-A: Use [How-To: Choose Algorithm](how-to/choose-algorithm.md) for a quick decision tree.
-
-**Q: How do I run ML analysis?**
-A: Enable the `[ml]` config section or use `wpm ml <task>`. See [How-To: Predictive Mining](how-to/predictive-mining.md).
-
-**Q: How do I deploy to production?**
-A: Follow [How-To: Docker Deployment](how-to/docker-deploy.md) or see [Deployment Profiles](../wasm4pm/DEPLOYMENT_PROFILES.md) for WASM binary optimization.
-
-**Q: What does exit code 2 mean?**
-A: It's a source/input error. See [Reference: Exit Codes](reference/exit-codes.md).
-
-**Q: Can I use this in a browser?**
-A: Yes! Use the `browser` deployment profile (~500KB). See [How-To: Browser Integration](how-to/browser-integration.md) and [Deployment Profiles](../wasm4pm/DEPLOYMENT_PROFILES.md).
-
-**Q: How do I verify results are correct?**
-A: Receipts provide cryptographic proof. See [Explanation: Receipts](explanation/receipts.md).
+- `wasm4pm/tests/rl_bellman_oracle_tests.rs` — FM-1 bug ✅
+- `wasm4pm/tests/spc_exact_position_tests.rs` — TS-1 bug ✅
+- `wasm4pm/tests/circuit_breaker_state_machine_tests.rs` — CB-1 bug ✅
+- `wasm4pm/tests/comprehensive_parity_tests.rs` — Parity (41 algos) ✅
+- `packages/kernel/__tests__/prediction/integration.test.ts` — 6 perspectives ✅
 
 ---
 
-## Version
+## Critical Bugs (Testable)
 
-**pictl v26.4.8**
-- Released: April 8, 2026
-- 9 packages, 14 discovery algorithms, 6 ML tasks, 13 CLI commands
-- 5 deployment profiles (browser/edge/fog/iot/cloud)
-- 100% backward compatible
+| Bug | Test | Status |
+|-----|------|--------|
+| FM-1: Same-state Bellman | rl_bellman_oracle_tests.rs | ✅ Exists |
+| TS-1: String::len() timestamp | spc_exact_position_tests.rs | ✅ Exists |
+| CB-1: Circuit breaker step counter | circuit_breaker_state_machine_tests.rs | ✅ Exists |
 
-**Docs Last Updated**: April 8, 2026
+---
+
+## Next Steps
+
+1. **For Agent 9:** Start Phase 1 (Discovery path, 20 hrs)
+2. **For maintainers:** Approve timeline, allocate resources
+3. **For release manager:** Verify E2E tests before next release
+
+---
+
+## User-Facing Documentation
+
+For end-users of the `wpm` CLI, the following documents are most relevant:
+
+| Document | What it covers |
+|----------|---------------|
+| [FAQ.md](./FAQ.md) | Algorithm selection, exit codes, deployment profiles, `wpm predict`, `wpm ml`, WASM handles, env vars, config format, conformance, drift, quality metrics, heuristic tuning |
+| [troubleshooting.md](./troubleshooting.md) | WASM init failures, algorithm not found, config file issues, exit code 2 diagnosis, DFG zero nodes, memory exceeded |
+| [DOCUMENTATION_INDEX.md](./DOCUMENTATION_INDEX.md) | Complete cross-reference to all guides, API refs, examples, and quick-starts |
+| [guides/cli-guide.md](./guides/cli-guide.md) | All 20 commands with full option listings |
+| [guides/configuration-guide.md](./guides/configuration-guide.md) | All config options, TOML format, ENV vars, precedence rules |
+| [faq/ml-rl-faq.md](./faq/ml-rl-faq.md) | ML and RL deep-dive questions |
+
+---
+
+**Status:** Planning Complete — Ready for Implementation  
+**Date:** 2026-05-05

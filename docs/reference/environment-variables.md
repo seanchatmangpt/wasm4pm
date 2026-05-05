@@ -60,7 +60,7 @@ export OUTPUT_DIR="/mnt/output"
 export OTEL_ENDPOINT="https://api.datadoghq.com/v1/input"
 export DD_API_KEY="sk-..."
 
-pictl run --config config.toml
+wpm run --config config.toml
 ```
 
 ## Precedence
@@ -76,7 +76,7 @@ pictl run --config config.toml
 
 ```bash
 export WASM4PM_PROFILE=fast
-pictl run --config config.toml
+wpm run --config config.toml
 ```
 
 ### .env File

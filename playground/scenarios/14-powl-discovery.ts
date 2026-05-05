@@ -4,14 +4,14 @@
  * Dev action simulated: "I implemented POWL discovery with 8 inductive miner variants
  * (tree, maximal, dynamic_clustering, decision_graph_max, decision_graph_clustering,
  * decision_graph_cyclic, decision_graph_cyclic_strict). Does it parse correctly? Does each variant
- * produce a valid POWL model? Do the WASM exports work correctly? Does the pictl powl discover
+ * produce a valid POWL model? Do the WASM exports work correctly? Does the wpm powl discover
  * command handle all variants?"
  *
  * Key contracts verified:
  *   - All 8 POWL discovery variants parse correctly and produce valid POWL models
  *   - discover_powl_from_log() works with all variant names
  *   - discover_powl_from_log_config() works with custom parameters
- *   - pictl powl discover --variant <variant> executes successfully
+ *   - wpm powl discover --variant <variant> executes successfully
  *   - Discovery handles empty logs, single activity, and complex logs
  *   - DecisionGraph nodes are created when appropriate
  *   - Partial order structure is preserved
@@ -22,7 +22,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import * as path from 'path';
 import * as fs from 'fs/promises';
-import { pictl, assertExitCode, assertJsonOutput, createCliTestEnv, EXIT_CODES } from '@wasm4pm/testing';
+import { wpm, assertExitCode, assertJsonOutput, createCliTestEnv, EXIT_CODES } from '@wasm4pm/testing';
 import type { CliTestEnv } from '@wasm4pm/testing';
 
 // ─── Test Data ───────────────────────────────────────────────────────────────
@@ -109,7 +109,7 @@ describe('14-powl-discovery', () => {
   });
 
   it('discovers POWL model from event log with default variant', async () => {
-    const result = await pictl([
+    const result = await wpm([
       'powl',
       'discover',
       '--input',
@@ -130,7 +130,7 @@ describe('14-powl-discovery', () => {
   });
 
   it('discovers POWL model with tree variant', async () => {
-    const result = await pictl([
+    const result = await wpm([
       'powl',
       'discover',
       '--input',
@@ -150,7 +150,7 @@ describe('14-powl-discovery', () => {
   });
 
   it('discovers POWL model with maximal variant', async () => {
-    const result = await pictl([
+    const result = await wpm([
       'powl',
       'discover',
       '--input',
@@ -170,7 +170,7 @@ describe('14-powl-discovery', () => {
   });
 
   it('discovers POWL model with custom parameters', async () => {
-    const result = await pictl([
+    const result = await wpm([
       'powl',
       'discover',
       '--input',
@@ -201,7 +201,7 @@ describe('14-powl-discovery', () => {
     const concurrentLogPath = path.join(env.tempDir, 'concurrent-log.json');
     await fs.writeFile(concurrentLogPath, JSON.stringify(CONCURRENT_LOG), 'utf-8');
 
-    const result = await pictl([
+    const result = await wpm([
       'powl',
       'discover',
       '--input',
@@ -226,7 +226,7 @@ describe('14-powl-discovery', () => {
     const sequentialLogPath = path.join(env.tempDir, 'sequential-log.json');
     await fs.writeFile(sequentialLogPath, JSON.stringify(SEQUENTIAL_LOG), 'utf-8');
 
-    const result = await pictl([
+    const result = await wpm([
       'powl',
       'discover',
       '--input',
@@ -246,7 +246,7 @@ describe('14-powl-discovery', () => {
   });
 
   it('produces human-readable output', async () => {
-    const result = await pictl([
+    const result = await wpm([
       'powl',
       'discover',
       '--input',
@@ -260,7 +260,7 @@ describe('14-powl-discovery', () => {
   });
 
   it('errors when input file not found', async () => {
-    const result = await pictl([
+    const result = await wpm([
       'powl',
       'discover',
       '--input',
@@ -273,7 +273,7 @@ describe('14-powl-discovery', () => {
   });
 
   it('errors when input argument missing', async () => {
-    const result = await pictl([
+    const result = await wpm([
       'powl',
       'discover',
       '--format',

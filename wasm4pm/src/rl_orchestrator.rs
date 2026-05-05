@@ -13,6 +13,19 @@ use crate::reinforcement::{
 // We use the concrete types directly since this module is in the same crate.
 use crate::{RlAction, RlState};
 
+/// Stable, allocation-free label for an `RlAction`. Used in telemetry to
+/// avoid `format!("{:?}", action)` per cycle.
+#[inline]
+fn action_label(action: RlAction) -> &'static str {
+    match action {
+        RlAction::Continue => "Continue",
+        RlAction::Scale => "Scale",
+        RlAction::Retry => "Retry",
+        RlAction::Fallback => "Fallback",
+        RlAction::Restart => "Restart",
+    }
+}
+
 /// Which RL algorithm is currently active.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
@@ -362,9 +375,12 @@ impl RlOrchestrator {
             self.switch_agent(recommended);
         }
 
-        // Select action based on CURRENT state
+        // Select action based on CURRENT state.
+        // Use the static `action_label()` helper to avoid `format!("{:?}", ..)`
+        // allocation per cycle. We still incur exactly one `String` allocation
+        // (for telemetry storage + return), down from two previously.
         let action = self.select_action(state);
-        let action_label = format!("{:?}", action);
+        let action_label_str: &'static str = action_label(action);
 
         // On first cycle, initialize prev_health from current state
         // to avoid reward mismatch (default last_health_state=0)
@@ -407,21 +423,25 @@ impl RlOrchestrator {
         // Update telemetry with NEXT state (post-cycle)
         self.telemetry.cycle_count += 1;
         self.telemetry.last_health_state = curr_health;
-        self.telemetry.last_action_label = action_label.clone();
+        self.telemetry.last_action_label.clear();
+        self.telemetry.last_action_label.push_str(action_label_str);
         self.telemetry.last_spc_alert_count = spc_alert_count;
         self.telemetry.last_guard_pass = guard_pass;
         self.telemetry.last_circuit_allowed = circuit_allowed;
         self.telemetry.cumulative_reward += reward;
         self.telemetry.last_reward = reward;
 
-        // Track consecutive successes for health improvement eligibility
+        // Track consecutive successes for health improvement eligibility.
+        // saturating_add prevents pathological wraparound on extremely long
+        // runs (>4 billion successful cycles).
         if guard_pass && circuit_allowed {
-            self.telemetry.consecutive_successes += 1;
+            self.telemetry.consecutive_successes =
+                self.telemetry.consecutive_successes.saturating_add(1);
         } else {
             self.telemetry.consecutive_successes = 0; // Reset on failure
         }
 
-        (action_label, reward)
+        (action_label_str.to_string(), reward)
     }
 
     /// Export all Q-tables from all 5 agents as serialized format.
@@ -450,5 +470,148 @@ impl RlOrchestrator {
                 _ => {} // Unknown agent type, skip
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    //! Pure-function unit tests (Rank-1 mathematical oracles).
+    //!
+    //! These tests cover `compute_health_state`, `compute_reward`, and the
+    //! `AgentType` enum mapping. They do not exercise the full orchestrator
+    //! (those tests live in `tests/rl_orchestrator_tests.rs`); instead they
+    //! pin down the documented contract of the pure helpers so refactors
+    //! cannot silently change reward semantics.
+    use super::*;
+
+    // --- AgentType round-trip --------------------------------------------
+
+    #[test]
+    fn agent_type_round_trip_covers_all_variants() {
+        for v in 0u8..(AgentType::COUNT as u8) {
+            let a = AgentType::from_u8(v).expect("valid variant");
+            assert_eq!(a as u8, v, "from_u8/as u8 must round-trip");
+            assert!(!a.name().is_empty(), "name() must not be empty");
+        }
+        assert!(AgentType::from_u8(AgentType::COUNT as u8).is_none());
+        assert!(AgentType::from_u8(255).is_none());
+    }
+
+    // --- compute_health_state --------------------------------------------
+
+    #[test]
+    fn health_state_failed_on_empty_log() {
+        assert_eq!(compute_health_state(0, 0, 0), 4);
+        assert_eq!(compute_health_state(10, 5, 0), 4); // no activities
+        assert_eq!(compute_health_state(0, 5, 3), 4); // no events
+    }
+
+    #[test]
+    fn health_state_critical_when_no_traces() {
+        assert_eq!(compute_health_state(10, 0, 3), 3);
+    }
+
+    #[test]
+    fn health_state_degraded_on_trivial_log() {
+        // Single activity, < 5 events → Degraded (2)
+        assert_eq!(compute_health_state(4, 1, 1), 2);
+    }
+
+    #[test]
+    fn health_state_warning_on_sparse_log() {
+        // <= 2 activities, < 20 events, but not trivial → Warning (1)
+        assert_eq!(compute_health_state(10, 3, 2), 1);
+    }
+
+    #[test]
+    fn health_state_normal_on_healthy_log() {
+        assert_eq!(compute_health_state(100, 10, 5), 0);
+    }
+
+    // --- compute_reward: documented bounds ------------------------------
+
+    /// Best case: health improves, no SPC, guard+circuit pass, in budget.
+    #[test]
+    fn reward_best_case_is_one_point_one() {
+        let r = compute_reward(2, 1, 0, true, true, false);
+        assert!((r - 1.1).abs() < 1e-6, "best case reward should be +1.1, got {}", r);
+    }
+
+    /// Worst case: health degrades to terminal, max SPC penalty, guard fail,
+    /// latency exceeded. Per docstring: -5.3.
+    #[test]
+    fn reward_worst_case_is_negative_five_point_three() {
+        // health 3 -> 4 (degrade + terminal), 5 SPC alerts (caps at -1.5),
+        // guard fail, latency exceeded.
+        let r = compute_reward(3, 4, 5, false, false, true);
+        assert!((r - (-5.3)).abs() < 1e-6, "worst case reward should be -5.3, got {}", r);
+    }
+
+    #[test]
+    fn reward_health_components_are_correct() {
+        // Improved (curr < prev): +1.0 contribution
+        let improved = compute_reward(2, 1, 0, true, true, false);
+        // Stable (curr == prev): +0.2 contribution
+        let stable = compute_reward(1, 1, 0, true, true, false);
+        // Degraded (curr > prev, non-terminal): -1.0 contribution
+        let degraded = compute_reward(1, 2, 0, true, true, false);
+
+        // Differences are exactly 0.8 (1.0 vs 0.2) and 1.2 (0.2 vs -1.0).
+        assert!((improved - stable - 0.8).abs() < 1e-6);
+        assert!((stable - degraded - 1.2).abs() < 1e-6);
+    }
+
+    #[test]
+    fn reward_spc_penalty_caps_at_one_point_five() {
+        // 1 alert: -0.3; 5 alerts: capped at -1.5; 100 alerts: still -1.5.
+        let r1 = compute_reward(1, 1, 1, true, true, false);
+        let r5 = compute_reward(1, 1, 5, true, true, false);
+        let r100 = compute_reward(1, 1, 100, true, true, false);
+        assert!((r1 - (0.2 + 0.1 - 0.3)).abs() < 1e-6);
+        assert!((r5 - (0.2 + 0.1 - 1.5)).abs() < 1e-6);
+        assert!((r100 - r5).abs() < 1e-6, "SPC penalty must cap at -1.5");
+    }
+
+    #[test]
+    fn reward_guard_circuit_penalty_only_when_either_fails() {
+        let pass = compute_reward(1, 1, 0, true, true, false); // +0.1
+        let guard_fail = compute_reward(1, 1, 0, false, true, false); // -0.5
+        let ckt_fail = compute_reward(1, 1, 0, true, false, false); // -0.5
+        let both_fail = compute_reward(1, 1, 0, false, false, false); // -0.5 (single penalty)
+        assert!((pass - 0.3).abs() < 1e-6); // 0.2 (stable) + 0.1
+        assert!((guard_fail - (-0.3)).abs() < 1e-6); // 0.2 - 0.5
+        assert!((ckt_fail - (-0.3)).abs() < 1e-6);
+        assert!((both_fail - (-0.3)).abs() < 1e-6);
+    }
+
+    #[test]
+    fn reward_terminal_state_adds_two_point_zero_penalty() {
+        // Same conditions, only difference is curr_health == 4 vs 3.
+        // Both are degradations from health=2, so health component is -1.0.
+        let non_terminal = compute_reward(2, 3, 0, true, true, false);
+        let terminal = compute_reward(2, 4, 0, true, true, false);
+        assert!((non_terminal - terminal - 2.0).abs() < 1e-6);
+    }
+
+    /// Rank-2 domain contract: monotonic SPC degradation → monotonically
+    /// non-increasing reward. (Saturates once SPC penalty caps at -1.5.)
+    #[test]
+    fn reward_monotone_in_spc_alerts() {
+        let mut prev = f32::INFINITY;
+        for n in 0..=10 {
+            let r = compute_reward(1, 1, n, true, true, false);
+            assert!(r <= prev + 1e-6, "reward must be non-increasing in SPC alerts");
+            prev = r;
+        }
+    }
+
+    // --- CycleTelemetry default ------------------------------------------
+
+    #[test]
+    fn telemetry_default_starts_at_qlearning() {
+        let t = CycleTelemetry::default();
+        assert_eq!(t.cycle_count, 0);
+        assert_eq!(t.cumulative_reward, 0.0);
+        assert_eq!(t.active_agent_name, "QLearning");
     }
 }

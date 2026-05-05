@@ -1,0 +1,145 @@
+{
+  "schema_version": "1",
+  "benchmark_date": "2026-05-05",
+  "regression_threshold_percent": 20,
+  "description": "Prediction subsystem performance baselines for @wasm4pm/kernel. All times are wall-clock milliseconds measured on a synthetic log (deterministic seed). The regression_threshold_percent field controls how much a future measurement is allowed to exceed the median_ms before a CI alert fires. Baselines were measured on Node.js 22 / Apple M-series hardware; adjust median_ms for your CI environment.",
+  "environment": {
+    "runtime": "Node.js 22",
+    "hardware_class": "Apple silicon (M-series)",
+    "log_generation": "synthetic (deterministic, no external XES files)"
+  },
+  "baselines": {
+    "next_activity_fit_n100": {
+      "description": "fit() on 100-trace log, 10 events/trace, 8 activities, ngram order 2",
+      "median_ms": 1.0,
+      "p99_ms": 10.0,
+      "upper_bound_ms": 50,
+      "metric": "fit latency"
+    },
+    "next_activity_fit_n1k": {
+      "description": "fit() on 1000-trace log, 15 events/trace, 12 activities, ngram order 2",
+      "median_ms": 5.0,
+      "p99_ms": 30.0,
+      "upper_bound_ms": 200,
+      "metric": "fit latency"
+    },
+    "next_activity_fit_predict_n100": {
+      "description": "fit_predict() on 100-trace log + 10 prefix traces, prefix length 3",
+      "median_ms": 2.0,
+      "p99_ms": 15.0,
+      "upper_bound_ms": 50,
+      "metric": "fit+predict latency",
+      "min_accuracy": 0.5
+    },
+    "remaining_time_fit_n100": {
+      "description": "fit() on 100-trace log, 10 events/trace, 60s interval, mean aggregator",
+      "median_ms": 1.0,
+      "p99_ms": 8.0,
+      "upper_bound_ms": 50,
+      "metric": "fit latency"
+    },
+    "remaining_time_fit_n1k": {
+      "description": "fit() on 1000-trace log, 15 events/trace, 60s interval, mean aggregator",
+      "median_ms": 4.0,
+      "p99_ms": 20.0,
+      "upper_bound_ms": 200,
+      "metric": "fit latency"
+    },
+    "outcome_fit_n100": {
+      "description": "fit() on 100-trace log, 8 events/trace, 6 activities",
+      "median_ms": 1.0,
+      "p99_ms": 5.0,
+      "upper_bound_ms": 50,
+      "metric": "fit latency"
+    },
+    "outcome_fit_predict_n1k": {
+      "description": "fit_predict() on 1000-trace log + prefix traces, prefix length 4",
+      "median_ms": 6.0,
+      "p99_ms": 30.0,
+      "upper_bound_ms": 100,
+      "metric": "fit+predict latency"
+    },
+    "drift_fit_n200": {
+      "description": "fit() on 200-trace log, 10 events/trace, 8 activities, window 50, threshold 0.7",
+      "median_ms": 1.0,
+      "p99_ms": 8.0,
+      "upper_bound_ms": 50,
+      "metric": "fit latency"
+    },
+    "features_fit_n100": {
+      "description": "fit() on 100-trace log, 12 events/trace, 8 activities, rework every 4, with resources",
+      "median_ms": 1.0,
+      "p99_ms": 5.0,
+      "upper_bound_ms": 50,
+      "metric": "fit latency"
+    },
+    "features_fit_predict_n1k": {
+      "description": "fit_predict() on 1000-trace log + prefix traces, prefix length 6, rework enabled",
+      "median_ms": 8.0,
+      "p99_ms": 40.0,
+      "upper_bound_ms": 200,
+      "metric": "fit+predict latency"
+    },
+    "resource_fit_n200": {
+      "description": "fit() on 200-trace log, 10 events/trace, 8 activities, with resources",
+      "median_ms": 1.0,
+      "p99_ms": 5.0,
+      "upper_bound_ms": 50,
+      "metric": "fit latency"
+    },
+    "resource_fit_predict_n200": {
+      "description": "fit_predict() on 200-trace log + 20 prefix traces, prefix length 5",
+      "median_ms": 2.0,
+      "p99_ms": 10.0,
+      "upper_bound_ms": 100,
+      "metric": "fit+predict latency"
+    },
+    "batch_all_6_perspectives_n200": {
+      "description": "executeBatch() — all 6 perspectives, 200-trace log, 200-prefix batch, prefix length 4",
+      "median_ms": 20.0,
+      "p99_ms": 100.0,
+      "upper_bound_ms": 500,
+      "metric": "total batch latency"
+    }
+  },
+  "quality_floors": {
+    "next_activity": {
+      "candidates_per_prediction_min": 1,
+      "description": "Every scored prefix must return at least one activity candidate"
+    },
+    "remaining_time": {
+      "remaining_ms_min": 0,
+      "description": "Predicted remaining time must be non-negative"
+    },
+    "outcome": {
+      "distribution_sum": 1.0,
+      "description": "Outcome probability distribution must sum to 1 within floating-point tolerance"
+    },
+    "drift": {
+      "jaccard_min": 0.0,
+      "jaccard_max": 1.0,
+      "novel_activity_detection_rate_min": 1.0,
+      "description": "Jaccard similarity in [0,1]; 100% of traces with fully novel activities must be flagged"
+    },
+    "features": {
+      "schema_fields": [
+        "prefix_length",
+        "distinct_activities",
+        "elapsed_ms",
+        "mean_interevent_ms",
+        "max_interevent_ms",
+        "rework_count",
+        "rework_ratio",
+        "distinct_resources"
+      ],
+      "all_fields_finite": true,
+      "prefix_length_matches_actual": true,
+      "description": "Feature vector contains all declared fields with finite numeric values"
+    },
+    "resource": {
+      "recommended_in_known_set": true,
+      "all_scores_non_negative": true,
+      "description": "Recommended resource is one of the resources seen during training; all UCB1 scores are non-negative"
+    }
+  }
+}

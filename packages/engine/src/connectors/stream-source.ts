@@ -128,7 +128,7 @@ export class StreamSourceAdapter implements SourceAdapter {
       return error(
         createError('SOURCE_INVALID', 'No readable stream available', {
           hasStream: !!this.config.stream,
-        }),
+        })
       );
     }
 
@@ -150,16 +150,14 @@ export class StreamSourceAdapter implements SourceAdapter {
       this.bufferedContent = content;
 
       if (content.trim().length === 0) {
-        return error(
-          createError('SOURCE_INVALID', 'Stream produced no data'),
-        );
+        return error(createError('SOURCE_INVALID', 'Stream produced no data'));
       }
 
       this.stream = new StreamEventStream(content);
       return ok(this.stream);
     } catch (e) {
       return error(
-        createError('SOURCE_NOT_FOUND', `Failed to read stream: ${(e as Error).message}`),
+        createError('SOURCE_NOT_FOUND', `Failed to read stream: ${(e as Error).message}`)
       );
     }
   }

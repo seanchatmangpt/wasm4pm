@@ -8,7 +8,7 @@ import { runCli, assertExitCode, EXIT_CODES } from '@wasm4pm/testing';
 import * as path from 'path';
 import * as url from 'url';
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
-export const PICTL = path.resolve(__dirname, '../../apps/wasm4pm/dist/bin/wpm.js');
+export const WASM4PM = path.resolve(__dirname, '../../apps/wasm4pm/dist/bin/wpm.js');
 /** Spawn the wasm4pm (wpm) CLI as a child process, capturing stdout/stderr/exitCode. */
 export function wpm(userArgs, options) {
     return runCli([WASM4PM, ...userArgs], {

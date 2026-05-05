@@ -1,7 +1,7 @@
 # Velocity as Enabler: How Nanosecond-Scale ML/RL/GPU Process Mining Unlocks New Paradigms
 
 **Sean Chatman**
-*pictl — Process Mining Intelligence Platform*
+*wasm4pm — Process Mining Intelligence Platform*
 *Version 26.4.11 — April 2026*
 
 ---
@@ -10,7 +10,7 @@
 
 Process mining has traditionally operated in batch mode: event logs are collected over hours or days, then replayed through discovery algorithms that produce process models for retrospective analysis. This thesis argues that collapsing algorithmic latency from milliseconds to nanoseconds is not merely a performance improvement but a qualitative enabler that transforms process mining from an analytical tool into an autonomic control system.
 
-We present the pictl system, which achieves 10.26 nanoseconds per state for Directly-Follows Graph discovery (97.5 million states per second), 33.39 nanoseconds for a complete five-module autonomic control loop, and a projected 134,854x speedup for GPU-accelerated contextual bandit selection. Five reinforcement learning agents (Q-Learning, SARSA, Double Q-Learning, Expected SARSA, REINFORCE) are unified under a trait-polymorphic orchestrator with persistent state, SPC-driven reward signals, and LinUCB meta-selection. A WGSL compute shader performs batch LinUCB inference over 2,048 states across 8 concurrent workgroups.
+We present the wasm4pm system, which achieves 10.26 nanoseconds per state for Directly-Follows Graph discovery (97.5 million states per second), 33.39 nanoseconds for a complete five-module autonomic control loop, and a projected 134,854x speedup for GPU-accelerated contextual bandit selection. Five reinforcement learning agents (Q-Learning, SARSA, Double Q-Learning, Expected SARSA, REINFORCE) are unified under a trait-polymorphic orchestrator with persistent state, SPC-driven reward signals, and LinUCB meta-selection. A WGSL compute shader performs batch LinUCB inference over 2,048 states across 8 concurrent workgroups.
 
 We demonstrate, through Jobs-to-Be-Done case studies with real benchmark data, that nanosecond-class latency enables six innovations previously impossible: real-time autonomic control, per-event ML analysis, intra-instance RL learning, economically viable GPU bandit optimization, closed-loop process governance, and streaming process discovery.
 
@@ -41,7 +41,7 @@ This is not a claim about incremental improvement. A 100x speedup makes an algor
 
 ### 1.4 Thesis Statement
 
-*Speed is not merely a performance metric — it is a qualitative enabler that transforms process mining from an analytical tool into an autonomic control system. The pictl system demonstrates that nanosecond-class algorithms, combined with persistent RL agents and GPU-accelerated bandit selection, enable six categories of innovation that are impossible at conventional latencies.*
+*Speed is not merely a performance metric — it is a qualitative enabler that transforms process mining from an analytical tool into an autonomic control system. The wasm4pm system demonstrates that nanosecond-class algorithms, combined with persistent RL agents and GPU-accelerated bandit selection, enable six categories of innovation that are impossible at conventional latencies.*
 
 ### 1.5 Contributions
 
@@ -58,7 +58,7 @@ This is not a claim about incremental improvement. A 100x speedup makes an algor
 
 ### 2.1 The Five-Module Autonomic Loop
 
-The pictl autonomic loop, termed the **Closed Claw**, consists of five modules arranged in a sense-decide-act-verify-adapt cycle:
+The wasm4pm autonomic loop, termed the **Closed Claw**, consists of five modules arranged in a sense-decide-act-verify-adapt cycle:
 
 ```
 ┌──────────┐    ┌───────────┐    ┌─────────┐    ┌──────────────┐    ┌─────────┐
@@ -140,14 +140,14 @@ All algorithms compile to WebAssembly via wasm-pack, targeting the `wasm32-unkno
 
 ### 3.1 Two-Layer ML Architecture
 
-The pictl system provides machine learning capabilities through two complementary layers:
+The wasm4pm system provides machine learning capabilities through two complementary layers:
 
 **Layer 1: TypeScript ML** (`packages/ml/`) — Six micro-ML algorithms exposed through the `wpm ml` command:
 
 | Algorithm | Task | Latency (100 cases) |
 |-----------|------|---------------------|
 | `ml_classify` | Activity classification | 25 ms |
-| `ml_cluster` | Trace clustering (k-means) | 20 ms |
+| `ml_cluster` | Trace clustering (k-means) | — | ⚠️ internal only — not yet exported to the JS API (no `#[wasm_bindgen]` export); `wpm ml cluster` is not callable |
 | `ml_forecast` | Time-series forecasting | 15 ms |
 | `ml_anomaly` | Anomaly detection | ~25 ms |
 | `ml_regress` | Regression analysis | ~20 ms |
@@ -228,7 +228,7 @@ The scalability benchmark suite (`scalability_benchmark.rs`) tested DFG discover
 
 ### 4.1 The Agent Unification Problem
 
-The pictl system includes five reinforcement learning algorithms, each with different strengths:
+The wasm4pm system includes five reinforcement learning algorithms, each with different strengths:
 
 | Agent | Type | Strength | Weakness |
 |-------|------|----------|----------|
@@ -629,25 +629,25 @@ We use the Jobs-to-Be-Done (JTBD) framework [2] to analyze what process mining p
 
 The ProM framework [3] and pm4py [4] provide comprehensive process mining capabilities in Java and Python respectively. Both operate in batch mode with latencies measured in seconds to minutes. Celonis [5] commercializes process mining with a focus on UI/UX and enterprise integration, but retains batch-oriented discovery.
 
-**Positioning**: pictl does not replace these systems — it addresses a different point in the design space. Where ProM/pm4py optimize for algorithmic completeness and academic extensibility, pictl optimizes for latency and autonomic integration.
+**Positioning**: wasm4pm does not replace these systems — it addresses a different point in the design space. Where ProM/pm4py optimize for algorithmic completeness and academic extensibility, wasm4pm optimizes for latency and autonomic integration.
 
 ### 8.2 ML in Process Mining
 
 Deep learning approaches to process mining include LSTM-based next-activity prediction [6], transformer-based outcome prediction [7], and variational autoencoders for anomaly detection [8]. These approaches achieve high accuracy but operate at millisecond-to-second latency per prediction.
 
-**Positioning**: pictl's ML layer uses simpler algorithms (N-gram, statistical process monitoring, k-means) that trade accuracy for latency. The 0.17 ms trace variant analysis and 1.71 ms concept drift detection are 10-100x faster than deep learning alternatives, enabling per-event analysis that deep learning cannot support.
+**Positioning**: wasm4pm's ML layer uses simpler algorithms (N-gram, statistical process monitoring, k-means) that trade accuracy for latency. The 0.17 ms trace variant analysis and 1.71 ms concept drift detection are 10-100x faster than deep learning alternatives, enabling per-event analysis that deep learning cannot support.
 
 ### 8.3 GPU Process Mining
 
 GPU acceleration for process mining is largely unexplored. Existing GPU efforts focus on data mining [9] and graph processing [10], not process discovery. The GPU discovery framework by [11] accelerates frequent pattern mining but does not address process-specific constructs (places, transitions, soundness).
 
-**Positioning**: pictl's GPU work focuses on the LinUCB bandit selection problem rather than discovery acceleration. This is because discovery (10.26 ns/state) is already fast enough for per-event use on CPU. The bottleneck is not discovery but decision-making — which algorithm to use, which action to take — and this is where GPU parallelism provides the most value.
+**Positioning**: wasm4pm's GPU work focuses on the LinUCB bandit selection problem rather than discovery acceleration. This is because discovery (10.26 ns/state) is already fast enough for per-event use on CPU. The bottleneck is not discovery but decision-making — which algorithm to use, which action to take — and this is where GPU parallelism provides the most value.
 
 ### 8.4 RL in Process Mining
 
 Reinforcement learning for process mining is an emerging field. [12] applies RL to process model discovery, treating discovery as a sequential decision problem. [13] uses RL for resource allocation in process-aware information systems. Both operate in simulation environments with episode-based training.
 
-**Positioning**: pictl's RL agents operate on the **live process**, not in simulation. The 17.78 ns decision latency enables intra-instance learning — the agent learns from the current process instance's events rather than from simulated or historical data.
+**Positioning**: wasm4pm's RL agents operate on the **live process**, not in simulation. The 17.78 ns decision latency enables intra-instance learning — the agent learns from the current process instance's events rather than from simulated or historical data.
 
 ---
 
@@ -655,7 +655,7 @@ Reinforcement learning for process mining is an emerging field. [12] applies RL 
 
 ### 9.1 Summary
 
-This thesis has argued and demonstrated that nanosecond-class process mining latency is a qualitative enabler, not merely a performance improvement. The pictl system achieves:
+This thesis has argued and demonstrated that nanosecond-class process mining latency is a qualitative enabler, not merely a performance improvement. The wasm4pm system achieves:
 
 - **10.26 ns/state** for DFG discovery (97.5M states/sec)
 - **33.39 ns** for the complete five-module autonomic loop
@@ -692,7 +692,7 @@ The evidence supports the velocity thesis across all four research questions:
 
 ### 9.5 Closing Remark
 
-The central lesson of this work is that **speed changes what is possible**. A process mining system that takes 10 seconds to analyze an event log is an analytical tool. A process mining system that takes 10 nanoseconds to analyze a single event is a control system. The difference is not incremental — it is categorical. The pictl system demonstrates that this categorical shift is achievable through careful architectural design, trait-polymorphic abstraction, and GPU-accelerated decision-making.
+The central lesson of this work is that **speed changes what is possible**. A process mining system that takes 10 seconds to analyze an event log is an analytical tool. A process mining system that takes 10 nanoseconds to analyze a single event is a control system. The difference is not incremental — it is categorical. The wasm4pm system demonstrates that this categorical shift is achievable through careful architectural design, trait-polymorphic abstraction, and GPU-accelerated decision-making.
 
 Process mining has spent two decades building better algorithms. The next decade will be about building faster ones.
 

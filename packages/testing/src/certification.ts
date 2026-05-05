@@ -57,8 +57,8 @@ export async function runCertification(version: string): Promise<CertificationRe
     }
   }
 
-  const passed = gates.every(g => g.passed);
-  const passCount = gates.filter(g => g.passed).length;
+  const passed = gates.every((g) => g.passed);
+  const passCount = gates.filter((g) => g.passed).length;
   const summary = `${passCount}/${gates.length} gates passed`;
 
   return {
@@ -145,7 +145,7 @@ registerGate('performance:benchmarks', async () => {
     path.resolve(process.cwd(), '..', 'wasm4pm/tests/fixtures/BPI_2020_Travel_Permits_Actual.xes'),
   ];
 
-  const fixturePath = fixturePaths.find(p => {
+  const fixturePath = fixturePaths.find((p) => {
     try {
       fs.accessSync(p);
       return true;
@@ -169,9 +169,11 @@ registerGate('performance:benchmarks', async () => {
     // Dynamic import is intentionally used — @wasm4pm/engine is not a declared dependency
     // so this gracefully degrades when the module is unavailable (e.g. in CI or when only
     // @wasm4pm/testing is installed without the full monorepo).
-    const engine = await import(
-      /* @vite-ignore */ '@wasm4pm/engine' as string
-    ) as { WasmLoader: { getInstance: () => { init: () => Promise<void>; get: () => Record<string, any> } } };
+    const engine = (await import(/* @vite-ignore */ '@wasm4pm/engine' as string)) as {
+      WasmLoader: {
+        getInstance: () => { init: () => Promise<void>; get: () => Record<string, any> };
+      };
+    };
     const loader = engine.WasmLoader.getInstance();
     await loader.init();
     wasm = loader.get();
@@ -212,7 +214,11 @@ registerGate('performance:benchmarks', async () => {
  * Create a gate that checks a condition.
  * @internal
  */
-export function createGate(name: string, check: () => Promise<boolean> | boolean, details?: string): void {
+export function createGate(
+  name: string,
+  check: () => Promise<boolean> | boolean,
+  details?: string
+): void {
   registerGate(name, async () => {
     const passed = await check();
     return {

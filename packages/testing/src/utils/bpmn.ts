@@ -66,7 +66,7 @@ export function parseBPMN(bpmnXml: string): BPMNDefinition {
   const processes: BPMNProcess[] = [];
   const processElements = definitions.querySelectorAll('process');
 
-  processElements.forEach(processEl => {
+  processElements.forEach((processEl) => {
     const process: BPMNProcess = {
       id: processEl.getAttribute('id') || '',
       name: processEl.getAttribute('name') || undefined,
@@ -110,7 +110,7 @@ export function parseBPMN(bpmnXml: string): BPMNDefinition {
   // Parse message flows
   const messageFlows: Array<{ id: string; sourceRef: string; targetRef: string }> = [];
   const flowElements = definitions.querySelectorAll('messageFlow');
-  flowElements.forEach(flow => {
+  flowElements.forEach((flow) => {
     messageFlows.push({
       id: flow.getAttribute('id') || '',
       sourceRef: flow.getAttribute('sourceRef') || '',
@@ -133,11 +133,15 @@ export function serializeBPMN(definition: BPMNDefinition): string {
   const lines: string[] = [];
 
   lines.push('<?xml version="1.0" encoding="UTF-8"?>');
-  lines.push(`<definitions id="${definition.id}" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="${definition.targetNamespace || 'http://bpmn.io/schema/bpmn'}">`);
+  lines.push(
+    `<definitions id="${definition.id}" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="${definition.targetNamespace || 'http://bpmn.io/schema/bpmn'}">`
+  );
 
   // Serialize processes
   for (const process of definition.processes) {
-    lines.push(`  <process id="${process.id}"${process.name ? ` name="${process.name}"` : ''}${process.isExecutable !== undefined ? ` isExecutable="${process.isExecutable}"` : ''}>`);
+    lines.push(
+      `  <process id="${process.id}"${process.name ? ` name="${process.name}"` : ''}${process.isExecutable !== undefined ? ` isExecutable="${process.isExecutable}"` : ''}>`
+    );
 
     // Serialize elements
     for (const element of process.elements) {
@@ -146,7 +150,9 @@ export function serializeBPMN(definition: BPMNDefinition): string {
         .map(([k, v]) => `${k}="${v}"`)
         .join(' ');
 
-      lines.push(`    <${element.type} ${attrs}${element.incoming ? ` incoming="${element.incoming.join(' ')}"` : ''}${element.outgoing ? ` outgoing="${element.outgoing.join(' ')}"` : ''} />`);
+      lines.push(
+        `    <${element.type} ${attrs}${element.incoming ? ` incoming="${element.incoming.join(' ')}"` : ''}${element.outgoing ? ` outgoing="${element.outgoing.join(' ')}"` : ''} />`
+      );
     }
 
     lines.push(`  </process>`);
@@ -155,7 +161,9 @@ export function serializeBPMN(definition: BPMNDefinition): string {
   // Serialize message flows
   if (definition.messageFlows) {
     for (const flow of definition.messageFlows) {
-      lines.push(`  <messageFlow id="${flow.id}" sourceRef="${flow.sourceRef}" targetRef="${flow.targetRef}" />`);
+      lines.push(
+        `  <messageFlow id="${flow.id}" sourceRef="${flow.sourceRef}" targetRef="${flow.targetRef}" />`
+      );
     }
   }
 
@@ -186,15 +194,30 @@ export function validateBPMN(bpmnXml: string): BPMNValidationResult {
 
   // Validate definition
   if (!definition.id) {
-    errors.push({ element: 'definitions', attribute: 'id', message: 'Missing id', severity: 'error' });
+    errors.push({
+      element: 'definitions',
+      attribute: 'id',
+      message: 'Missing id',
+      severity: 'error',
+    });
   }
 
   if (!definition.targetNamespace) {
-    warnings.push({ element: 'definitions', attribute: 'targetNamespace', message: 'Missing targetNamespace', severity: 'warning' });
+    warnings.push({
+      element: 'definitions',
+      attribute: 'targetNamespace',
+      message: 'Missing targetNamespace',
+      severity: 'warning',
+    });
   }
 
   if (definition.processes.length === 0) {
-    errors.push({ element: 'definitions', attribute: 'processes', message: 'No processes defined', severity: 'error' });
+    errors.push({
+      element: 'definitions',
+      attribute: 'processes',
+      message: 'No processes defined',
+      severity: 'error',
+    });
   }
 
   // Validate each process
@@ -202,11 +225,21 @@ export function validateBPMN(bpmnXml: string): BPMNValidationResult {
     const processPath = `process[${processIdx}]`;
 
     if (!process.id) {
-      errors.push({ element: processPath, attribute: 'id', message: 'Missing process id', severity: 'error' });
+      errors.push({
+        element: processPath,
+        attribute: 'id',
+        message: 'Missing process id',
+        severity: 'error',
+      });
     }
 
     if (process.elements.length === 0) {
-      warnings.push({ element: processPath, attribute: 'elements', message: 'Process has no elements', severity: 'warning' });
+      warnings.push({
+        element: processPath,
+        attribute: 'elements',
+        message: 'Process has no elements',
+        severity: 'warning',
+      });
     }
 
     // Validate element IDs are unique
@@ -215,9 +248,19 @@ export function validateBPMN(bpmnXml: string): BPMNValidationResult {
       const elementPath = `${processPath}/element[${elIdx}]`;
 
       if (!element.id) {
-        errors.push({ element: elementPath, attribute: 'id', message: 'Missing element id', severity: 'error' });
+        errors.push({
+          element: elementPath,
+          attribute: 'id',
+          message: 'Missing element id',
+          severity: 'error',
+        });
       } else if (elementIds.has(element.id)) {
-        errors.push({ element: elementPath, attribute: 'id', message: `Duplicate id: ${element.id}`, severity: 'error' });
+        errors.push({
+          element: elementPath,
+          attribute: 'id',
+          message: `Duplicate id: ${element.id}`,
+          severity: 'error',
+        });
       } else {
         elementIds.add(element.id);
       }
@@ -228,15 +271,41 @@ export function validateBPMN(bpmnXml: string): BPMNValidationResult {
         const targetRef = element.targetRef as string | undefined;
 
         if (!sourceRef) {
-          errors.push({ element: elementPath, attribute: 'sourceRef', message: 'Missing sourceRef', severity: 'error' });
-        } else if (!elementIds.has(sourceRef) && !process.elements.some(e => e.id === sourceRef)) {
-          warnings.push({ element: elementPath, attribute: 'sourceRef', message: `Invalid sourceRef: ${sourceRef}`, severity: 'warning' });
+          errors.push({
+            element: elementPath,
+            attribute: 'sourceRef',
+            message: 'Missing sourceRef',
+            severity: 'error',
+          });
+        } else if (
+          !elementIds.has(sourceRef) &&
+          !process.elements.some((e) => e.id === sourceRef)
+        ) {
+          warnings.push({
+            element: elementPath,
+            attribute: 'sourceRef',
+            message: `Invalid sourceRef: ${sourceRef}`,
+            severity: 'warning',
+          });
         }
 
         if (!targetRef) {
-          errors.push({ element: elementPath, attribute: 'targetRef', message: 'Missing targetRef', severity: 'error' });
-        } else if (!elementIds.has(targetRef) && !process.elements.some(e => e.id === targetRef)) {
-          warnings.push({ element: elementPath, attribute: 'targetRef', message: `Invalid targetRef: ${targetRef}`, severity: 'warning' });
+          errors.push({
+            element: elementPath,
+            attribute: 'targetRef',
+            message: 'Missing targetRef',
+            severity: 'error',
+          });
+        } else if (
+          !elementIds.has(targetRef) &&
+          !process.elements.some((e) => e.id === targetRef)
+        ) {
+          warnings.push({
+            element: elementPath,
+            attribute: 'targetRef',
+            message: `Invalid targetRef: ${targetRef}`,
+            severity: 'warning',
+          });
         }
       }
     });
@@ -267,32 +336,59 @@ export function validateBPMNForProcessMining(bpmnXml: string): BPMNValidationRes
   // Check for at least one start event
   definition.processes.forEach((process, processIdx) => {
     const processPath = `process[${processIdx}]`;
-    const startEvents = process.elements.filter(e => e.type === 'startEvent');
+    const startEvents = process.elements.filter((e) => e.type === 'startEvent');
 
     if (startEvents.length === 0) {
-      warnings.push({ element: processPath, attribute: 'startEvent', message: 'No start event found', severity: 'warning' });
+      warnings.push({
+        element: processPath,
+        attribute: 'startEvent',
+        message: 'No start event found',
+        severity: 'warning',
+      });
     }
 
     if (startEvents.length > 1) {
-      warnings.push({ element: processPath, attribute: 'startEvent', message: 'Multiple start events', severity: 'warning' });
+      warnings.push({
+        element: processPath,
+        attribute: 'startEvent',
+        message: 'Multiple start events',
+        severity: 'warning',
+      });
     }
 
     // Check for at least one end event
-    const endEvents = process.elements.filter(e => e.type === 'endEvent');
+    const endEvents = process.elements.filter((e) => e.type === 'endEvent');
     if (endEvents.length === 0) {
-      warnings.push({ element: processPath, attribute: 'endEvent', message: 'No end event found', severity: 'warning' });
+      warnings.push({
+        element: processPath,
+        attribute: 'endEvent',
+        message: 'No end event found',
+        severity: 'warning',
+      });
     }
 
     // Check for tasks
-    const tasks = process.elements.filter(e => e.type === 'task' || e.type === 'serviceTask' || e.type === 'userTask');
+    const tasks = process.elements.filter(
+      (e) => e.type === 'task' || e.type === 'serviceTask' || e.type === 'userTask'
+    );
     if (tasks.length === 0) {
-      warnings.push({ element: processPath, attribute: 'task', message: 'No tasks found', severity: 'warning' });
+      warnings.push({
+        element: processPath,
+        attribute: 'task',
+        message: 'No tasks found',
+        severity: 'warning',
+      });
     }
 
     // Check for sequence flows
-    const sequenceFlows = process.elements.filter(e => e.type === 'sequenceFlow');
+    const sequenceFlows = process.elements.filter((e) => e.type === 'sequenceFlow');
     if (sequenceFlows.length === 0) {
-      errors.push({ element: processPath, attribute: 'sequenceFlow', message: 'No sequence flows', severity: 'error' });
+      errors.push({
+        element: processPath,
+        attribute: 'sequenceFlow',
+        message: 'No sequence flows',
+        severity: 'error',
+      });
     }
   });
 
@@ -394,7 +490,11 @@ export function createInvalidBPMN(): string {
  *
  * Returns true if the round-trip produces equivalent XML.
  */
-export function roundTripBPMN(bpmnXml: string): { success: boolean; result?: string; error?: string } {
+export function roundTripBPMN(bpmnXml: string): {
+  success: boolean;
+  result?: string;
+  error?: string;
+} {
   try {
     const definition = parseBPMN(bpmnXml);
     const serialized = serializeBPMN(definition);
@@ -427,14 +527,14 @@ export function formatBPMNValidationResult(result: BPMNValidationResult): string
 
   if (result.errors.length > 0) {
     lines.push('\nErrors:');
-    result.errors.forEach(e => {
+    result.errors.forEach((e) => {
       lines.push(`  [ERROR] ${e.element}.${e.attribute}: ${e.message}`);
     });
   }
 
   if (result.warnings.length > 0) {
     lines.push('\nWarnings:');
-    result.warnings.forEach(w => {
+    result.warnings.forEach((w) => {
       lines.push(`  [WARN] ${w.element}.${w.attribute}: ${w.message}`);
     });
   }

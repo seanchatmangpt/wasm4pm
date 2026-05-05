@@ -61,18 +61,22 @@ export const status = defineCommand({
 
           formatter.log('');
           formatter.log('  Agent Registry Status');
-          formatter.log(`  Total: ${summary.total}  Active: ${summary.active}  Disabled: ${summary.disabled}  Error: ${summary.error}`);
+          formatter.log(
+            `  Total: ${summary.total}  Active: ${summary.active}  Disabled: ${summary.disabled}  Error: ${summary.error}`
+          );
           formatter.log('');
 
           for (const agent of agents) {
             const icon =
-              agent.status === 'active' ? '+' :
-              agent.status === 'disabled' ? '-' :
-              agent.status === 'error' ? '!!' : '?';
+              agent.status === 'active'
+                ? '+'
+                : agent.status === 'disabled'
+                  ? '-'
+                  : agent.status === 'error'
+                    ? '!!'
+                    : '?';
 
-            const lastRun = agent.last_run
-              ? new Date(agent.last_run).toLocaleString()
-              : 'never';
+            const lastRun = agent.last_run ? new Date(agent.last_run).toLocaleString() : 'never';
 
             formatter.log(`  ${icon} ${agent.config.name}  (${agent.status})  last: ${lastRun}`);
           }
@@ -84,7 +88,9 @@ export const status = defineCommand({
       if (formatter instanceof JSONFormatter) {
         formatter.error('Failed to get status', error);
       } else {
-        formatter.error(`Failed to get status: ${error instanceof Error ? error.message : String(error)}`);
+        formatter.error(
+          `Failed to get status: ${error instanceof Error ? error.message : String(error)}`
+        );
       }
       process.exit(EXIT_CODES.execution_error);
     }

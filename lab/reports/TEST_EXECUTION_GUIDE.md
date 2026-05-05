@@ -17,7 +17,7 @@ npm --prefix lab test
 ## Test Breakdown
 
 ### 1. Command Existence & Help (7 tests)
-**File**: `tests/cli.test.ts` - `describe('pictl CLI - Command Existence & Help')`
+**File**: `tests/cli.test.ts` - `describe('wasm4pm CLI - Command Existence & Help')`
 
 Tests that verify all CLI commands are discoverable:
 - Help displays for all 5 commands
@@ -27,7 +27,7 @@ Tests that verify all CLI commands are discoverable:
 **Expected Results**: All 7 tests PASS
 
 ### 2. Run Command (18 tests)
-**File**: `tests/cli.test.ts` - `describe('pictl CLI - Run Command')`
+**File**: `tests/cli.test.ts` - `describe('wasm4pm CLI - Run Command')`
 
 Comprehensive testing of the main discovery command:
 
@@ -60,7 +60,7 @@ Comprehensive testing of the main discovery command:
 **Expected Results**: All 18 tests PASS
 
 ### 3. Watch Command (4 tests)
-**File**: `tests/cli.test.ts` - `describe('pictl CLI - Watch Command')`
+**File**: `tests/cli.test.ts` - `describe('wasm4pm CLI - Watch Command')`
 
 Testing file monitoring functionality:
 - Command help display
@@ -71,7 +71,7 @@ Testing file monitoring functionality:
 **Expected Results**: All 4 tests PASS
 
 ### 4. Status Command (5 tests)
-**File**: `tests/cli.test.ts` - `describe('pictl CLI - Status Command')`
+**File**: `tests/cli.test.ts` - `describe('wasm4pm CLI - Status Command')`
 
 Testing execution status reporting:
 - Basic status display
@@ -83,7 +83,7 @@ Testing execution status reporting:
 **Expected Results**: All 5 tests PASS
 
 ### 5. Explain Command (5 tests)
-**File**: `tests/cli.test.ts` - `describe('pictl CLI - Explain Command')`
+**File**: `tests/cli.test.ts` - `describe('wasm4pm CLI - Explain Command')`
 
 Testing algorithm explanation:
 - Explain functionality
@@ -95,7 +95,7 @@ Testing algorithm explanation:
 **Expected Results**: All 5 tests PASS
 
 ### 6. Init Command (7 tests)
-**File**: `tests/cli.test.ts` - `describe('pictl CLI - Init Command')`
+**File**: `tests/cli.test.ts` - `describe('wasm4pm CLI - Init Command')`
 
 Testing project initialization:
 - Project creation
@@ -109,7 +109,7 @@ Testing project initialization:
 **Expected Results**: All 7 tests PASS
 
 ### 7. Exit Codes (9 tests)
-**File**: `tests/cli.test.ts` - `describe('pictl CLI - Exit Codes')`
+**File**: `tests/cli.test.ts` - `describe('wasm4pm CLI - Exit Codes')`
 
 Verifying correct exit code semantics:
 
@@ -133,7 +133,7 @@ Verifying correct exit code semantics:
 **Expected Results**: All 9 tests PASS
 
 ### 8. Configuration Resolution (5 tests)
-**File**: `tests/cli.test.ts` - `describe('pictl CLI - Configuration Resolution')`
+**File**: `tests/cli.test.ts` - `describe('wasm4pm CLI - Configuration Resolution')`
 
 Testing configuration loading:
 - Load from specified path
@@ -145,7 +145,7 @@ Testing configuration loading:
 **Expected Results**: All 5 tests PASS
 
 ### 9. Output Validation (4 tests)
-**File**: `tests/cli.test.ts` - `describe('pictl CLI - Output Validation')`
+**File**: `tests/cli.test.ts` - `describe('wasm4pm CLI - Output Validation')`
 
 Testing output correctness:
 - Output file creation
@@ -156,7 +156,7 @@ Testing output correctness:
 **Expected Results**: All 4 tests PASS
 
 ### 10. Integration Scenarios (3 tests)
-**File**: `tests/cli.test.ts` - `describe('pictl CLI - Integration Scenarios')`
+**File**: `tests/cli.test.ts` - `describe('wasm4pm CLI - Integration Scenarios')`
 
 End-to-end workflow testing:
 - Init → Run workflow
@@ -233,13 +233,13 @@ Generates code coverage report.
 ### Successful Test Run
 ```
 ✓ tests/cli.test.ts (63)
-  ✓ pictl CLI - Command Existence & Help (7)
+  ✓ wasm4pm CLI - Command Existence & Help (7)
     ✓ should display help with all commands (45ms)
     ✓ should display version (12ms)
     ...
-  ✓ pictl CLI - Run Command (18)
+  ✓ wasm4pm CLI - Run Command (18)
     ...
-  ✓ pictl CLI - Exit Codes (9)
+  ✓ wasm4pm CLI - Exit Codes (9)
     ...
 
 Test Files  1 passed (1)
@@ -249,7 +249,7 @@ Duration  5234ms
 
 ### Failed Test Output
 ```
-FAIL  tests/cli.test.ts > pictl CLI - Run Command > should fail when config file does not exist
+FAIL  tests/cli.test.ts > wasm4pm CLI - Run Command > should fail when config file does not exist
 AssertionError: expected 1 to be 2
 
  ❯ tests/cli.test.ts:287:7
@@ -273,7 +273,7 @@ AssertionError: expected 1 to be 2
 1. Check which test category failed
 2. Review the specific assertion
 3. Run failing test in isolation: `npm test -- -t "Test Name"`
-4. Check pictl implementation for the reported issue
+4. Check wasm4pm implementation for the reported issue
 5. Fix the issue and re-run
 
 ### Exit Code Issues
@@ -284,10 +284,10 @@ Most common failure category. Check:
 
 ## Troubleshooting
 
-### "pictl: command not found"
+### "wasm4pm: command not found"
 ```bash
 # Ensure CLI is installed globally
-npm install -g @wasm4pm/pictl
+npm install -g @wasm4pm/wasm4pm
 
 # Or rebuild locally
 npm run build:cli
@@ -304,7 +304,7 @@ test: {
 ### Permission Errors
 ```bash
 # Clear temp directories
-rm -rf /tmp/pictl-*
+rm -rf /tmp/wasm4pm-*
 
 # Ensure /tmp is writable
 chmod 755 /tmp

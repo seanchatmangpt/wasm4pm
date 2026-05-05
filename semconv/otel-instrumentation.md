@@ -1,4 +1,4 @@
-# OTel Instrumentation for pictl MCP Server
+# OTel Instrumentation for wasm4pm MCP Server
 
 **Version**: 26.4.9  
 **Date**: 2026-04-10  

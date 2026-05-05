@@ -1,14 +1,14 @@
-# Reference: pictl CLI Commands
+# Reference: wasm4pm CLI Commands
 
 **Version**: 26.4.7
 **Platform**: Linux, macOS, Windows
 
-## pictl init
+## wpm init
 
 Initialize configuration
 
 ```bash
-pictl init [OPTIONS]
+wpm init [OPTIONS]
 ```
 
 Options:
@@ -16,12 +16,12 @@ Options:
 - `--validate <FILE>` - Validate config file
 - `--help` - Show help
 
-## pictl run
+## wasm4pm run
 
 Run process discovery with optional ML post-analysis
 
 ```bash
-pictl run -i <LOG> [OPTIONS]
+wpm run -i <LOG> [OPTIONS]
 ```
 
 Options:
@@ -44,12 +44,12 @@ Exit codes:
 - `4` - PARTIAL_SUCCESS
 - `5` - SYSTEM_ERROR
 
-## pictl compare
+## wpm compare
 
 Side-by-side algorithm comparison with ASCII sparklines
 
 ```bash
-pictl compare <ALGOS> -i <LOG> [OPTIONS]
+wpm compare <ALGOS> -i <LOG> [OPTIONS]
 ```
 
 Options:
@@ -58,30 +58,30 @@ Options:
 
 Example: `wpm compare dfg,alpha,heuristic -i log.xes`
 
-## pictl diff
+## wpm diff
 
 Compare two event logs via Jaccard similarity on DFG edges
 
 ```bash
-pictl diff <LOG1> <LOG2>
+wpm diff <LOG1> <LOG2>
 ```
 
-## pictl predict
+## wpm predict
 
 Predictive mining (next-activity, remaining-time, outcome, drift, features, resource)
 
 ```bash
-pictl predict <TASK> -i <LOG> [OPTIONS]
+wpm predict <TASK> -i <LOG> [OPTIONS]
 ```
 
 Tasks: `next-activity`, `remaining-time`, `outcome`, `drift`, `features`, `resource`
 
-## pictl ml
+## wpm ml
 
 ML analysis subtasks
 
 ```bash
-pictl ml <TASK> [OPTIONS]
+wpm ml <TASK> [OPTIONS]
 ```
 
 Tasks:
@@ -100,20 +100,20 @@ Options:
 
 Example: `wpm ml classify -i log.xes --method knn -k 5`
 
-## pictl powl
+## wpm powl
 
 POWL process model discovery
 
 ```bash
-pictl powl -i <LOG> [OPTIONS]
+wpm powl -i <LOG> [OPTIONS]
 ```
 
-## pictl drift-watch
+## wpm drift-watch
 
 Real-time EWMA drift monitoring with optional ML anomaly detection
 
 ```bash
-pictl drift-watch -i <LOG> [OPTIONS]
+wpm drift-watch -i <LOG> [OPTIONS]
 ```
 
 Options:
@@ -121,12 +121,12 @@ Options:
 - `--enhanced` - Enable ML anomaly detection overlay
 - `--format <FORMAT>` - Output format
 
-## pictl watch
+## wpm watch
 
 Monitor file changes and re-run discovery
 
 ```bash
-pictl watch --config <FILE> [OPTIONS]
+wpm watch --config <FILE> [OPTIONS]
 ```
 
 Options:
@@ -134,28 +134,28 @@ Options:
 - `--verbose` - Detailed output
 - `--format <FORMAT>` - Output format
 
-## pictl status
+## wpm status
 
 WASM engine health and system info
 
 ```bash
-pictl status
+wpm status
 ```
 
-## pictl doctor
+## wpm doctor
 
 6-check environment diagnostic
 
 ```bash
-pictl doctor
+wpm doctor
 ```
 
-## pictl explain
+## wpm explain
 
 Show execution plan
 
 ```bash
-pictl explain --config <FILE> [OPTIONS]
+wpm explain --config <FILE> [OPTIONS]
 ```
 
 Options:
@@ -164,18 +164,18 @@ Options:
 - `--expand-env` - Show resolved env vars
 - `--show-provenance` - Show config sources
 
-## pictl results
+## wpm results
 
 Browse/inspect saved results in `.wasm4pm/results/`
 
 ```bash
-pictl results [OPTIONS]
+wpm results [OPTIONS]
 ```
 
 ## Global Options
 
 ```bash
-pictl [GLOBAL_OPTIONS] <COMMAND>
+wasm4pm [GLOBAL_OPTIONS] <COMMAND>
 ```
 
 Global options:
@@ -194,31 +194,31 @@ Global options:
 
 ```bash
 # Simple discovery
-pictl run -i events.xes
+wpm run -i events.xes
 
 # Discovery + ML analysis
-pictl run -i events.xes --config config-with-ml.toml
+wpm run -i events.xes --config config-with-ml.toml
 
 # ML classification
-pictl ml classify -i events.xes --method knn -k 5
+wpm ml classify -i events.xes --method knn -k 5
 
 # Algorithm comparison
-pictl compare dfg,alpha,heuristic -i events.xes
+wpm compare dfg,alpha,heuristic -i events.xes
 
 # Drift monitoring with ML anomaly detection
-pictl drift-watch -i events.xes --enhanced
+wpm drift-watch -i events.xes --enhanced
 
 # Predict remaining time
-pictl predict remaining-time -i events.xes
+wpm predict remaining-time -i events.xes
 
 # Health check
-pictl status
+wpm status
 
 # Environment diagnostic
-pictl doctor
+wpm doctor
 
 # Browse saved results
-pictl results
+wpm results
 ```
 
 ## See Also

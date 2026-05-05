@@ -4,7 +4,7 @@ import { detectEnhancedAnomalies } from '../anomaly.js';
 describe('detectEnhancedAnomalies', () => {
   it('detects peaks in series with spike', async () => {
     // Normal series with a spike at index 5
-    const distances = [0.1, 0.12, 0.11, 0.13, 0.10, 0.85, 0.11, 0.12, 0.10, 0.11];
+    const distances = [0.1, 0.12, 0.11, 0.13, 0.1, 0.85, 0.11, 0.12, 0.1, 0.11];
     const result = await detectEnhancedAnomalies(distances);
 
     expect(result.originalLength).toBe(10);
@@ -35,10 +35,7 @@ describe('detectEnhancedAnomalies', () => {
 
   it('detects peaks in multi-spike series', async () => {
     // Gradual rise to each spike (findPeaks needs neighbors lower than peak)
-    const distances = [
-      0.10, 0.11, 0.12, 0.80, 0.11, 0.10,
-      0.10, 0.12, 0.13, 0.90, 0.11, 0.10,
-    ];
+    const distances = [0.1, 0.11, 0.12, 0.8, 0.11, 0.1, 0.1, 0.12, 0.13, 0.9, 0.11, 0.1];
     const result = await detectEnhancedAnomalies(distances);
 
     expect(result.peakIndices.length).toBeGreaterThanOrEqual(1);

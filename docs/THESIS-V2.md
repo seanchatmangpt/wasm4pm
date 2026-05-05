@@ -102,7 +102,7 @@ This thesis addresses:
 1. **POWL Discovery in WASM** — 7 variants ported from pm4py to Rust, with cut detection (concurrency, sequence, loop, XOR), fall-through handling (decision graphs, flower models), and streaming support
 2. **POWL API Surface** — 18 functions covering parsing, simplification, introspection, conversion (BPMN/Petri Net/Process Tree), conformance (token replay), and analysis (complexity metrics, behavioral footprints, model diff)
 3. **Predictive Analytics Suite** — 6 prediction domains: next-activity (n-gram Markov), remaining-time (Weibull survival), outcome (anomaly scoring), drift detection (EWMA + Jaccard), resource optimization (M/M/1 queue, UCB1 bandit), and feature extraction (ML-ready)
-4. **ML Engine** — `@wasm4pm/ml` package provides hyper-optimized, native algorithms purpose-built for process intelligence: decision tree classification, naive Bayes classification, polynomial regression, exponential regression, and EMA smoothing; 6 ML algorithms registered in the kernel pipeline (`ml_classify`, `ml_cluster`, `ml_forecast`, `ml_anomaly`, `ml_regress`, `ml_pca`) enabling execution plans with ML steps via `wpm run`
+4. **ML Engine** — `@wasm4pm/ml` package provides hyper-optimized, native algorithms purpose-built for process intelligence: decision tree classification, naive Bayes classification, polynomial regression, exponential regression, and EMA smoothing; 6 ML algorithms registered in the kernel pipeline (`ml_classify`, `ml_cluster`, `ml_forecast`, `ml_anomaly`, `ml_regress`, `ml_pca`) enabling execution plans with ML steps via `wpm run`. Note: `ml_cluster` is registered in the kernel but is not yet exported to the JS API (internal only — no `#[wasm_bindgen]` export).
 5. **Deployment Profiles** — 5 deployment profiles (mobile/edge/fog/iot/browser) using 30+ Cargo feature flags for conditional `#[cfg(feature)]` compilation; up to 82% binary size reduction; hand-rolled `hand_stats.rs` replacing statrs for size-constrained profiles; TypeScript registry filtering via `getForDeploymentProfile()`; zero breaking changes
 6. **Publication Engineering** — documented and resolved the wasm-pack `.gitignore` trap, flaky test elimination, and `prepublishOnly` hook design
 7. **Empirical Benchmarks** — POWL: ~157 ms/8 variants on BPI 2020; analytics: 0.002 ms (event stats) to 144 ms (concept drift); all 22 discovery + 6 ML algorithms operational
@@ -176,7 +176,7 @@ The npm registry hosts 2.3 million packages but academic software is underrepres
 ```
 ┌──────────────────────────────────────────────────────────┐
 │  TypeScript Monorepo (9 packages + CLI)                  │
-│  pictl CLI | @wasm4pm/engine | @wasm4pm/config | ...         │
+│  wasm4pm CLI | @wasm4pm/engine | @wasm4pm/config | ...         │
 │  @wasm4pm/ml (native process ML engine) | @wasm4pm/swarm     │
 ├──────────────────────────────────────────────────────────┤
 │  wasm4pm.js / wasm4pm_bg.js (wasm-bindgen glue code)    │
@@ -533,7 +533,7 @@ WASM Event Log
 **Kernel Pipeline Integration**: All 6 ML algorithms are registered in `@wasm4pm/kernel` with full metadata (speed/quality tiers, complexity classes, memory estimates) and handler implementations. They execute via dynamic import (`await import('@wasm4pm/ml')`) with `@ts-expect-error` annotations since the kernel package has no build-time dependency on the ML package. This pattern matches the MCP server's existing dynamic import approach and enables execution plans that interleave discovery, ML, and analytics steps:
 
 ```
-pictl run -i log.xes --algorithm ml_classify --params '{"method":"decision_tree"}'
+wpm run -i log.xes --algorithm ml_classify --params '{"method":"decision_tree"}'
 ```
 
 **Design rationale**: The ML engine is implemented natively in TypeScript within `@wasm4pm/ml`, not as a bridge to an external library. This design choice is deliberate: general-purpose WASM ML libraries (such as miniml) target broad ML workloads and include algorithms and abstractions unnecessary for process intelligence. By implementing purpose-built algorithms that operate directly on process mining data structures — trace feature matrices, activity frequency vectors, DFG adjacency counts — the engine avoids conversion overhead and enables optimizations specific to process data (e.g., sparse feature handling, activity-vocabulary-aware distance metrics). The native implementation also ensures that ML algorithms respect the same deployment profile gating as the WASM core, enabling consistent size optimization across the entire stack.
@@ -566,7 +566,7 @@ pictl run -i log.xes --algorithm ml_classify --params '{"method":"decision_tree"
 | Algorithm         | Method Options                                       | Complexity     | Output    | Kernel ID     |
 | ----------------- | ---------------------------------------------------- | -------------- | --------- | ------------- |
 | Classification    | knn, logistic_regression, decision_tree, naive_bayes | O(n \* d²)     | ml_result | `ml_classify` |
-| Clustering        | kmeans, dbscan                                       | O(n \* k \* i) | ml_result | `ml_cluster`  |
+| Clustering        | kmeans, dbscan                                       | O(n \* k \* i) | ml_result | `ml_cluster` ⚠️ internal only — not yet exported to JS API |
 | Forecasting       | trend + seasonal + exponential                       | O(n \* p)      | ml_result | `ml_forecast` |
 | Anomaly Detection | peak finding + seasonal decomposition                | O(n \* w)      | ml_result | `ml_anomaly`  |
 | Regression        | linear, polynomial, exponential                      | O(n \* d²)     | ml_result | `ml_regress`  |
@@ -929,7 +929,7 @@ wasm4pm v26.4.8 represents a qualitative leap from research prototype to product
 
 **Performance**: POWL discovery at ~360,000 events/second on BPI 2020. All classical algorithms linear from 100 to 50,000 cases. Predictive analytics at sub-millisecond latency for interactive use. ML inference via the native `@wasm4pm/ml` engine (typically < 50 ms for classification/regression on typical event logs). Browser profile at ~500 KB enables process mining in mobile web applications.
 
-**Engineering**: Successful npm publication (2.7 MB, 9 files) overcoming wasm-pack's `.gitignore` trap. 319 passing tests. 16→9 package monorepo consolidation. Three build targets (bundler, nodejs, web). MCP server for AI integration. pictl doctor with 17 environment checks.
+**Engineering**: Successful npm publication (2.7 MB, 9 files) overcoming wasm-pack's `.gitignore` trap. 319 passing tests. 16→9 package monorepo consolidation. Three build targets (bundler, nodejs, web). MCP server for AI integration. wpm doctor with 17 environment checks.
 
 **Vision**: A credible roadmap to autonomous, privacy-preserving, federated process intelligence by 2030 — built on the foundation of WASM's zero-installation, cross-platform execution model.
 
@@ -1063,7 +1063,7 @@ Kernel Pipeline: 28 registered algorithms (22 discovery + 6 ML) with full metada
 | Version  | Date       | Key Addition                                                                                                                                                                                  |
 | -------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | v0.5.4   | 2026-04-04 | 13 discovery algorithms, 8 analytics (THESIS v1.0)                                                                                                                                            |
-| v26.4.5  | 2026-04-05 | TypeScript monorepo (14 packages), pictl CLI, engine state machine                                                                                                                            |
+| v26.4.5  | 2026-04-05 | TypeScript monorepo (14 packages), wasm4pm CLI, engine state machine                                                                                                                            |
 | v26.4.6  | 2026-04-06 | Prediction suite, drift detection, MCP server, OCEL support                                                                                                                                   |
-| v26.4.7  | 2026-04-07 | POWL discovery (8 variants), conversions, conformance, npm publish; ML integration; 16→9 package consolidation; pictl doctor 17 checks                                                      |
+| v26.4.7  | 2026-04-07 | POWL discovery (8 variants), conversions, conformance, npm publish; ML integration; 16→9 package consolidation; wpm doctor 17 checks                                                      |
 | v26.4.8  | 2026-04-08 | 5 deployment profiles (mobile/edge/fog/iot/browser); 30+ Cargo feature flags; conditional #[cfg(feature)] compilation; hand_stats.rs; up to 82% binary size reduction; zero breaking changes |

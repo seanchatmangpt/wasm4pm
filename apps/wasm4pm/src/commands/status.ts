@@ -98,7 +98,9 @@ export const status = defineCommand({
         formatter.log('System Information:');
         formatter.log(`  Platform: ${statusReport.system.platform}/${statusReport.system.arch}`);
         formatter.log(`  Node Version: ${statusReport.system.nodeVersion}`);
-        formatter.log(`  Uptime: ${Math.floor(statusReport.system.uptime / 60)}m ${statusReport.system.uptime % 60}s`);
+        formatter.log(
+          `  Uptime: ${Math.floor(statusReport.system.uptime / 60)}m ${statusReport.system.uptime % 60}s`
+        );
 
         // Memory section
         formatter.log('');

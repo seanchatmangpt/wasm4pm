@@ -1,4 +1,4 @@
-# pictl TypeScript Monorepo
+# wasm4pm TypeScript Monorepo
 
 **Package structure, config system, CLI contracts.**
 
@@ -38,7 +38,7 @@ pnpm --filter @wasm4pm/config test  # Test one package
 cd packages/engine && npm test     # Test one package (npm)
 ```
 
-## pictl CLI (apps/wasm4pm/)
+## wasm4pm CLI (apps/wasm4pm/)
 
 **20 commands:**
 
@@ -84,7 +84,7 @@ Results auto-save to `.wasm4pm/results/<timestamp>-<task>.json`. Pass `--no-save
 4. **Environment variables** (`WASM4PM_*` prefix)
 5. **Defaults** (lowest priority)
 
-**IMPORTANT:** ENV var prefix is `WASM4PM_`, NOT `PICTL_`.
+**IMPORTANT:** ENV var prefix is `WASM4PM_`, NOT `WASM4PM_`.
 
 ### ENV Variables
 

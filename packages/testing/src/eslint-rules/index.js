@@ -1,5 +1,5 @@
 /**
- * ESLint Custom Rules for pictl
+ * ESLint Custom Rules for wasm4pm
  * Gemba Enforcement: Quality gates to prevent happy-path testing
  */
 

@@ -8,14 +8,28 @@
  *
  * Two forms are exported:
  *   PREDICTION_TASKS     — underscore IDs used in config schema and TypeScript
- *   VALID_PREDICT_CLI_TASKS — hyphen slugs used as `pictl predict <task>` arguments
+ *   VALID_PREDICT_CLI_TASKS — hyphen slugs used as `wasm4pm predict <task>` arguments
  */
 /** Underscore form — used in config.prediction.tasks and @wasm4pm/config schema enum */
-export declare const PREDICTION_TASKS: readonly ["drift", "features", "next_activity", "outcome", "remaining_time", "resource"];
-export type PredictionTask = typeof PREDICTION_TASKS[number];
-/** Hyphen form — used as `pictl predict <task>` CLI argument */
-export declare const VALID_PREDICT_CLI_TASKS: readonly ["drift", "features", "next-activity", "outcome", "remaining-time", "resource"];
-export type PredictCliTask = typeof VALID_PREDICT_CLI_TASKS[number];
+export declare const PREDICTION_TASKS: readonly [
+  'drift',
+  'features',
+  'next_activity',
+  'outcome',
+  'remaining_time',
+  'resource',
+];
+export type PredictionTask = (typeof PREDICTION_TASKS)[number];
+/** Hyphen form — used as `wasm4pm predict <task>` CLI argument */
+export declare const VALID_PREDICT_CLI_TASKS: readonly [
+  'drift',
+  'features',
+  'next-activity',
+  'outcome',
+  'remaining-time',
+  'resource',
+];
+export type PredictCliTask = (typeof VALID_PREDICT_CLI_TASKS)[number];
 /** Maps CLI slug (hyphen) → config task ID (underscore) */
 export declare const CLI_SLUG_TO_TASK_ID: Record<string, PredictionTask>;
 /** Maps config task ID (underscore) → CLI slug (hyphen) */

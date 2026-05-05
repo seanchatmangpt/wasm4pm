@@ -1,16 +1,16 @@
-# pictl Testing Fixtures API Reference
+# wasm4pm Testing Fixtures API Reference
 
 **Version:** 1.0  
 **Package:** `@wasm4pm/testing`  
 **Last Updated:** 2026-04-10
 
-Complete API reference for the pictl testing fixtures ecosystem. Fixtures provide reusable components for algorithm validation, determinism verification, CLI testing, and observability assertion.
+Complete API reference for the wasm4pm testing fixtures ecosystem. Fixtures provide reusable components for algorithm validation, determinism verification, CLI testing, and observability assertion.
 
 ---
 
 ## Overview
 
-Testing fixtures are specialized utilities that enable consistent, reliable testing patterns across the pictl codebase. They abstract common testing tasks and enforce best practices around evidence collection, state validation, and boundary crossing.
+Testing fixtures are specialized utilities that enable consistent, reliable testing patterns across the wasm4pm codebase. They abstract common testing tasks and enforce best practices around evidence collection, state validation, and boundary crossing.
 
 ### When to Use Fixtures
 
@@ -356,7 +356,7 @@ Spawns a CLI command and captures output.
   - `cwd` — Working directory for command execution
   - `env` — Environment variables to pass
   - `timeout` — Max execution time in milliseconds (default: 30000)
-  - `cliPath` — Path to CLI binary (default: 'npx', auto-prepends 'pictl')
+  - `cliPath` — Path to CLI binary (default: 'npx', auto-prepends 'wasm4pm')
 
 **Returns:** `Promise<CliResult>`
 
@@ -497,7 +497,7 @@ import {
   EXIT_CODES,
 } from '@wasm4pm/testing';
 
-describe('pictl CLI', () => {
+describe('wasm4pm CLI', () => {
   let env;
 
   afterEach(async () => {
@@ -1113,7 +1113,7 @@ import {
   SIMPLE_SEQUENTIAL,
 } from '@wasm4pm/testing';
 
-describe('pictl Algorithm Suite', () => {
+describe('wasm4pm Algorithm Suite', () => {
   let env;
 
   beforeAll(() => {
@@ -1320,5 +1320,5 @@ expect(allPassed).toBe(true);
 ---
 
 **Last Updated:** 2026-04-10  
-**Maintained by:** pictl core team  
+**Maintained by:** wasm4pm core team  
 **License:** MIT

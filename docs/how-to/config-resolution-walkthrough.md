@@ -8,7 +8,7 @@
 
 ## Quick Summary
 
-pictl resolves configuration through 5 layers, each with a specific scope and priority. Understanding the resolution order helps you predict which setting wins when multiple layers define the same value.
+wasm4pm resolves configuration through 5 layers, each with a specific scope and priority. Understanding the resolution order helps you predict which setting wins when multiple layers define the same value.
 
 **Resolution order (highest to lowest priority):**
 
@@ -16,7 +16,7 @@ pictl resolves configuration through 5 layers, each with a specific scope and pr
 2. **TOML config file** (e.g., `./wasm4pm.toml` or `~/.wasm4pm/wasm4pm.toml`)
 3. **JSON config file** (fallback if no TOML exists)
 4. **Environment variables** (e.g., `WASM4PM_PROFILE=fast`)
-5. **Hardcoded defaults** (built into pictl)
+5. **Hardcoded defaults** (built into wasm4pm)
 
 Later layers override earlier ones. When a field is defined in multiple layers, **the higher layer wins**.
 
@@ -26,7 +26,7 @@ Later layers override earlier ones. When a field is defined in multiple layers, 
 
 ### Layer 5: Hardcoded Defaults
 
-These are the values pictl uses if you don't specify anything:
+These are the values wasm4pm uses if you don't specify anything:
 
 ```
 schema_version = 1
@@ -86,14 +86,14 @@ Set these in your shell or in CI/CD to override defaults across multiple runs wi
 **Example:**
 ```bash
 # Run with fast profile and JSON output
-WASM4PM_PROFILE=fast WASM4PM_OUTPUT_FORMAT=json pictl run -i events.xes
+WASM4PM_PROFILE=fast WASM4PM_OUTPUT_FORMAT=json wpm run -i events.xes
 ```
 
 ---
 
 ### Layer 3: JSON Config File
 
-JSON config provides granular control via a file. pictl searches for `wasm4pm.json` in:
+JSON config provides granular control via a file. wasm4pm searches for `wasm4pm.json` in:
 
 1. Current working directory (`.`)
 2. Home directory config folder (`~/.wasm4pm/`)
@@ -159,7 +159,7 @@ The first file found is used. If TOML exists, JSON is skipped.
 
 ### Layer 2: TOML Config File
 
-TOML is the preferred format for pictl. It's human-readable and supports deep nesting. pictl searches for `wasm4pm.toml` in:
+TOML is the preferred format for wasm4pm. It's human-readable and supports deep nesting. wasm4pm searches for `wasm4pm.toml` in:
 
 1. Current working directory (`.`)
 2. Home directory config folder (`~/.wasm4pm/`)
@@ -245,7 +245,7 @@ CLI flags override all other layers. These apply only to the single command invo
 
 **Example:**
 ```bash
-pictl run -i events.xes --profile fast --format json --output /tmp/results.json
+wpm run -i events.xes --profile fast --format json --output /tmp/results.json
 ```
 
 ---
@@ -257,7 +257,7 @@ pictl run -i events.xes --profile fast --format json --output /tmp/results.json
 Let's trace where the final `execution.profile` value comes from when you run:
 
 ```bash
-WASM4PM_PROFILE=fast pictl run -i events.xes --profile quality
+WASM4PM_PROFILE=fast wpm run -i events.xes --profile quality
 ```
 
 #### Step 1: Collect from each layer
@@ -310,7 +310,7 @@ The CLI argument `--profile quality` overrides the TOML, environment variable, a
 Run this command with a mixed config setup:
 
 ```bash
-WASM4PM_OUTPUT_FORMAT=json pictl run -i events.xes --config ./custom.toml
+WASM4PM_OUTPUT_FORMAT=json wpm run -i events.xes --config ./custom.toml
 ```
 
 **Setup:**
@@ -353,7 +353,7 @@ The TOML config wins because the CLI didn't override it.
 Run:
 
 ```bash
-WASM4PM_PROFILE=invalid_profile pictl run -i events.xes
+WASM4PM_PROFILE=invalid_profile wpm run -i events.xes
 ```
 
 **Resolution:**
@@ -363,11 +363,11 @@ WASM4PM_PROFILE=invalid_profile pictl run -i events.xes
 4. Env layer: `WASM4PM_PROFILE=invalid_profile`
 5. Default layer: `execution.profile = "balanced"`
 
-The environment variable wins, so pictl tries to use `profile = "invalid_profile"`.
+The environment variable wins, so wasm4pm tries to use `profile = "invalid_profile"`.
 
 #### Validation Catches It
 
-When pictl validates the resolved config using Zod schema, it rejects invalid profile:
+When wpm validates the resolved config using Zod schema, it rejects invalid profile:
 
 ```
 Zod schema requires: profile must be one of ["fast", "balanced", "quality", "stream"]
@@ -415,7 +415,7 @@ const algorithmIdSchema = z.enum(ALGORITHM_IDS);
 ```
 
 **What happens if validation fails:**
-1. pictl reports which field failed
+1. wasm4pm reports which field failed
 2. Shows expected type/values
 3. Indicates which layer the invalid value came from
 4. Exits with code 1 (CONFIG_ERROR)
@@ -424,12 +424,12 @@ const algorithmIdSchema = z.enum(ALGORITHM_IDS);
 
 ## Provenance Tracking
 
-pictl tracks which layer each config value came from. This helps debug resolution issues.
+wasm4pm tracks which layer each config value came from. This helps debug resolution issues.
 
 ### View Provenance with `wpm explain`
 
 ```bash
-pictl explain --config custom.toml --show-provenance
+wpm explain --config custom.toml --show-provenance
 ```
 
 **Output:**
@@ -441,7 +441,7 @@ execution.profile = "quality"
   Source: CLI (--profile quality)
 
 execution.timeout = 300000
-  Source: default (pictl built-in)
+  Source: default (wasm4pm built-in)
 
 observability.logLevel = "debug"
   Source: TOML file (./custom.toml)
@@ -450,7 +450,7 @@ output.format = "json"
   Source: environment (WASM4PM_OUTPUT_FORMAT)
 
 prediction.enabled = false
-  Source: default (pictl built-in)
+  Source: default (wasm4pm built-in)
 ```
 
 ### Programmatic Provenance
@@ -481,7 +481,7 @@ The resolved config includes metadata:
 
 **Step 1: View resolved config**
 ```bash
-pictl explain --config wasm4pm.toml --show-provenance
+wpm explain --config wasm4pm.toml --show-provenance
 ```
 
 This shows the final merged config and where each value came from.
@@ -490,7 +490,7 @@ This shows the final merged config and where each value came from.
 
 Defaults:
 ```bash
-pictl init --sample  # Shows default config
+wpm init --sample  # Shows default config
 ```
 
 Environment:
@@ -510,7 +510,7 @@ cat wasm4pm.json
 
 CLI:
 ```bash
-pictl run --help
+wpm run --help
 ```
 
 **Step 3: Trace resolution manually**
@@ -541,7 +541,7 @@ Reason: Expected integer, got string
 
 **Step 2: Find which layer provided it**
 ```bash
-pictl explain --show-provenance | grep "execution.timeout"
+wpm explain --show-provenance | grep "execution.timeout"
 ```
 
 Output:
@@ -563,7 +563,7 @@ export WASM4PM_TIMEOUT=600000
 
 Or remove the quotes:
 ```bash
-WASM4PM_TIMEOUT=600000 pictl run -i events.xes
+WASM4PM_TIMEOUT=600000 wpm run -i events.xes
 ```
 
 ### Symptom: Config file not found
@@ -574,13 +574,13 @@ pwd  # Current directory
 echo $HOME  # Home directory for ~/.wasm4pm/
 ```
 
-pictl searches these paths in order:
+wasm4pm searches these paths in order:
 1. Current directory (`.`)
 2. `~/.wasm4pm/`
 
 **To use a specific config file:**
 ```bash
-pictl run -i events.xes --config /path/to/custom/config.toml
+wpm run -i events.xes --config /path/to/custom/config.toml
 ```
 
 ### Symptom: "Unknown field" error
@@ -620,7 +620,7 @@ project/
 Never commit OTel endpoints or sensitive settings:
 ```bash
 # Good: In CI/CD secrets
-WASM4PM_OTEL_ENDPOINT=$SECRET_OTEL_ENDPOINT pictl run -i events.xes
+WASM4PM_OTEL_ENDPOINT=$SECRET_OTEL_ENDPOINT wpm run -i events.xes
 
 # Bad: In config file
 [observability.otel]
@@ -632,17 +632,17 @@ endpoint = "http://internal.secrets..."
 Quick experiments don't need config files:
 ```bash
 # Good: One-off test
-pictl run -i events.xes --profile fast
+wpm run -i events.xes --profile fast
 
 # OK: If you have a project config
-pictl run -i events.xes --config ./wasm4pm.toml --profile fast
+wpm run -i events.xes --config ./wasm4pm.toml --profile fast
 ```
 
 ### 4. Check Provenance When Debugging
 
 Always run `wpm explain --show-provenance` before filing an issue:
 ```bash
-pictl explain --config wasm4pm.toml --show-provenance > debug.txt
+wpm explain --config wasm4pm.toml --show-provenance > debug.txt
 ```
 
 ### 5. Document Non-Obvious Settings
@@ -681,7 +681,7 @@ logLevel = "debug"    # Temporary for performance investigation
 
 ## Summary
 
-pictl's 5-layer configuration system gives you flexibility:
+wasm4pm's 5-layer configuration system gives you flexibility:
 
 - **Defaults** for out-of-box simplicity
 - **Env vars** for CI/CD and secrets

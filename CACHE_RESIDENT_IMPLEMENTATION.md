@@ -289,7 +289,7 @@ Cache hit rate (sequential access)       >95%
 
 ## Conclusion
 
-Successfully implemented cache-efficient data structures for the pictl RL system:
+Successfully implemented cache-efficient data structures for the wasm4pm RL system:
 
 - **28.12 MB** QTable (460K states × 64 bytes, linear probing hash table)
 - **3.05 MB** VariantMap (50K fingerprints × 64 bytes, open addressing)

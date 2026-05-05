@@ -6,7 +6,7 @@
 
 ## Overview
 
-The pictl Engine is a state machine with 8 distinct states and 12 valid transitions. This document explains the complete lifecycle, what happens during each transition, error recovery behaviors, concurrency handling, and real-world scenarios.
+The wasm4pm Engine is a state machine with 8 distinct states and 12 valid transitions. This document explains the complete lifecycle, what happens during each transition, error recovery behaviors, concurrency handling, and real-world scenarios.
 
 **Core Philosophy:** The engine is either ready to do work, actively working, or has encountered a condition (degraded/failed) that requires intervention. All state changes are explicit, traceable, and verifiable.
 
@@ -1267,7 +1267,7 @@ await engine.bootstrap();
 
 ## Summary
 
-The pictl Engine state machine provides:
+The wasm4pm Engine state machine provides:
 
 1. **Clear states:** 8 distinct states, well-defined semantics
 2. **Safe transitions:** 12 valid transitions, all others rejected

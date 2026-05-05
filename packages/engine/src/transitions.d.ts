@@ -27,16 +27,23 @@ export declare function getValidTransitions(from: EngineState): EngineState[];
  * Ensures transitions are valid for the current recovery mode
  */
 export declare class TransitionValidator {
-    /**
-     * Validates a transition and returns recovery suggestions
-     */
-    static validateTransition(currentState: EngineState, targetState: EngineState, errors?: EngineError[]): {
-        valid: boolean;
-        suggestion?: string;
-    };
-    /**
-     * Suggests the best target state based on current state and error condition
-     */
-    static suggestRecoveryState(currentState: EngineState, errors?: EngineError[]): EngineState | null;
+  /**
+   * Validates a transition and returns recovery suggestions
+   */
+  static validateTransition(
+    currentState: EngineState,
+    targetState: EngineState,
+    errors?: EngineError[]
+  ): {
+    valid: boolean;
+    suggestion?: string;
+  };
+  /**
+   * Suggests the best target state based on current state and error condition
+   */
+  static suggestRecoveryState(
+    currentState: EngineState,
+    errors?: EngineError[]
+  ): EngineState | null;
 }
 //# sourceMappingURL=transitions.d.ts.map

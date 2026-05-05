@@ -97,10 +97,7 @@ export class StdoutSinkAdapter implements SinkAdapter {
 
   async close(): Promise<void> {
     // Don't close stdout/stderr — only close custom streams
-    if (
-      this.config.stream !== process.stdout &&
-      this.config.stream !== process.stderr
-    ) {
+    if (this.config.stream !== process.stdout && this.config.stream !== process.stderr) {
       this.config.stream.end();
     }
   }

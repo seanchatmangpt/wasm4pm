@@ -107,11 +107,7 @@ export class ObservabilityWrapper {
   /**
    * Safe multi-layer emit
    */
-  public emitSafe(event: {
-    cli?: CliEvent;
-    json?: JsonEvent;
-    otel?: OtelEvent;
-  }): SafeEmitResult[] {
+  public emitSafe(event: { cli?: CliEvent; json?: JsonEvent; otel?: OtelEvent }): SafeEmitResult[] {
     const results: SafeEmitResult[] = [];
 
     if (event.cli) {
@@ -253,10 +249,14 @@ export class ObservabilityWrapper {
     const wrapper = this;
 
     return {
-      startSpan: (name: string, options?: { kind?: SpanKind; parent?: any; attributes?: Record<string, unknown> }) => {
+      startSpan: (
+        name: string,
+        options?: { kind?: SpanKind; parent?: any; attributes?: Record<string, unknown> }
+      ) => {
         const traceId = options?.parent?.traceId || generateTraceId();
         const parentSpanId = options?.parent?.spanId;
-        const requiredFields = options?.parent?.requiredFields || createRequiredFields({ 'run.id': 'active' });
+        const requiredFields =
+          options?.parent?.requiredFields || createRequiredFields({ 'run.id': 'active' });
 
         return new LiveSpan(
           { traceId, spanId: generateSpanId(), parentSpanId, requiredFields },
@@ -279,8 +279,12 @@ export class ObservabilityWrapper {
           }
         );
       },
-      flush: async () => { await wrapper.layer.shutdown(); },
-      shutdown: async () => { await wrapper.layer.shutdown(); }
+      flush: async () => {
+        await wrapper.layer.shutdown();
+      },
+      shutdown: async () => {
+        await wrapper.layer.shutdown();
+      },
     };
   }
 }

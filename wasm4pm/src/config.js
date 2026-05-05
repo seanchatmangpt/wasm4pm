@@ -2,7 +2,7 @@
  * Configuration Schema for wasm4pm Engine
  * Defines all configuration structures, validation, and execution profiles
  */
-import { PictlError, ErrorCode, ErrorRecovery } from './errors.js';
+import { Wasm4pmError, ErrorCode, ErrorRecovery } from './errors.js';
 /**
  * Supported data source formats
  */
@@ -206,17 +206,17 @@ export function validateConfig(config) {
   return issues;
 }
 /**
- * Asserts that a configuration is valid, throwing a PictlError if not
- * Type guard that narrows the type to PictlConfig
+ * Asserts that a configuration is valid, throwing a Wasm4pmError if not
+ * Type guard that narrows the type to Wasm4pmConfig
  *
  * @param config - Configuration to validate
- * @throws PictlError - If validation fails
+ * @throws Wasm4pmError - If validation fails
  */
 export function assertConfigValid(config) {
   const issues = validateConfig(config);
   if (issues.length > 0) {
     const issueMessages = issues.map((issue) => `${issue.path}: ${issue.message}`).join('; ');
-    throw new PictlError(
+    throw new Wasm4pmError(
       `Configuration validation failed: ${issueMessages}`,
       ErrorCode.CONFIG_INVALID,
       {
@@ -448,7 +448,7 @@ export function resolveProfile(profile) {
       ];
     default:
       const _exhaustive = profile;
-      throw new PictlError(`Unknown execution profile: ${profile}`, ErrorCode.CONFIG_INVALID, {
+      throw new Wasm4pmError(`Unknown execution profile: ${profile}`, ErrorCode.CONFIG_INVALID, {
         nextAction: ErrorRecovery.RECONFIGURE,
       });
   }

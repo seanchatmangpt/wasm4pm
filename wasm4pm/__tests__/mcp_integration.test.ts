@@ -11,17 +11,17 @@ import { describe, it, expect, vi } from 'vitest';
 // not WASM execution, so an empty stub is sufficient.
 vi.mock('../pkg/wasm4pm.js', () => ({}));
 
-import { PictlMCPServer } from '../src/mcp_server.js';
+import { Wasm4pmMCPServer } from '../src/mcp_server.js';
 
-describe('PictlMCPServer', () => {
+describe('Wasm4pmMCPServer', () => {
   it('constructs without error', () => {
     // Server construction sets up handlers and transport
-    expect(() => new PictlMCPServer()).not.toThrow();
+    expect(() => new Wasm4pmMCPServer()).not.toThrow();
   });
 
   it('registers all expected discovery tools', async () => {
     // Access the private getAvailableTools method via reflection on the prototype
-    const server = new PictlMCPServer();
+    const server = new Wasm4pmMCPServer();
     const tools = (server as any).getAvailableTools() as Array<{ name: string }>;
     const toolNames = tools.map((t) => t.name);
 
@@ -34,7 +34,7 @@ describe('PictlMCPServer', () => {
   });
 
   it('registers all expected analysis tools', async () => {
-    const server = new PictlMCPServer();
+    const server = new Wasm4pmMCPServer();
     const tools = (server as any).getAvailableTools() as Array<{ name: string }>;
     const toolNames = tools.map((t) => t.name);
 
@@ -45,7 +45,7 @@ describe('PictlMCPServer', () => {
   });
 
   it('registers all OCEL tools', async () => {
-    const server = new PictlMCPServer();
+    const server = new Wasm4pmMCPServer();
     const tools = (server as any).getAvailableTools() as Array<{ name: string }>;
     const toolNames = tools.map((t) => t.name);
 
@@ -57,7 +57,7 @@ describe('PictlMCPServer', () => {
   });
 
   it('registers all predictive tools', async () => {
-    const server = new PictlMCPServer();
+    const server = new Wasm4pmMCPServer();
     const tools = (server as any).getAvailableTools() as Array<{ name: string }>;
     const toolNames = tools.map((t) => t.name);
 
@@ -67,7 +67,7 @@ describe('PictlMCPServer', () => {
   });
 
   it('registers all ML tools', async () => {
-    const server = new PictlMCPServer();
+    const server = new Wasm4pmMCPServer();
     const tools = (server as any).getAvailableTools() as Array<{ name: string }>;
     const toolNames = tools.map((t) => t.name);
 
@@ -80,7 +80,7 @@ describe('PictlMCPServer', () => {
   });
 
   it('registers utility tools', async () => {
-    const server = new PictlMCPServer();
+    const server = new Wasm4pmMCPServer();
     const tools = (server as any).getAvailableTools() as Array<{ name: string }>;
     const toolNames = tools.map((t) => t.name);
 
@@ -91,7 +91,7 @@ describe('PictlMCPServer', () => {
   });
 
   it('registers spec-059 gap-fill tools', async () => {
-    const server = new PictlMCPServer();
+    const server = new Wasm4pmMCPServer();
     const tools = (server as any).getAvailableTools() as Array<{ name: string }>;
     const toolNames = tools.map((t) => t.name);
 
@@ -104,14 +104,14 @@ describe('PictlMCPServer', () => {
   });
 
   it('has at least 33 registered tools', async () => {
-    const server = new PictlMCPServer();
+    const server = new Wasm4pmMCPServer();
     const tools = (server as any).getAvailableTools() as Array<{ name: string }>;
     // MCP server exposes 33+ tools after spec-059 additions
     expect(tools.length).toBeGreaterThanOrEqual(33);
   });
 
   it('all tools have valid input schemas', async () => {
-    const server = new PictlMCPServer();
+    const server = new Wasm4pmMCPServer();
     const tools = (server as any).getAvailableTools() as Array<{
       name: string;
       inputSchema: { type: string; properties: Record<string, unknown>; required?: string[] };
@@ -140,7 +140,7 @@ describe('PictlMCPServer', () => {
   });
 
   it('all required params have corresponding property definitions', async () => {
-    const server = new PictlMCPServer();
+    const server = new Wasm4pmMCPServer();
     const tools = (server as any).getAvailableTools() as Array<{
       name: string;
       inputSchema: { properties: Record<string, unknown>; required?: string[] };
@@ -154,7 +154,7 @@ describe('PictlMCPServer', () => {
   });
 
   it('all tools have non-empty descriptions', async () => {
-    const server = new PictlMCPServer();
+    const server = new Wasm4pmMCPServer();
     const tools = (server as any).getAvailableTools() as Array<{
       name: string;
       description: string;
@@ -166,7 +166,7 @@ describe('PictlMCPServer', () => {
   });
 
   it('discovery tools require xes_content parameter', async () => {
-    const server = new PictlMCPServer();
+    const server = new Wasm4pmMCPServer();
     const tools = (server as any).getAvailableTools() as Array<{
       name: string;
       inputSchema: { required: string[] };
@@ -182,7 +182,7 @@ describe('PictlMCPServer', () => {
   });
 
   it('OCEL tools require ocel_handle parameter', async () => {
-    const server = new PictlMCPServer();
+    const server = new Wasm4pmMCPServer();
     const tools = (server as any).getAvailableTools() as Array<{
       name: string;
       inputSchema: { required: string[] };

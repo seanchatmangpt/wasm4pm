@@ -28,7 +28,6 @@ const ALGORITHMS = [
 
 type Algorithm = (typeof ALGORITHMS)[number];
 
-
 interface ModelStats {
   algorithm: Algorithm;
   nodes: number;
@@ -47,7 +46,7 @@ function runDiscovery(
   wasm: Record<string, CallableFunction>,
   algo: Algorithm,
   logHandle: string,
-  activityKey: string,
+  activityKey: string
 ): { raw: unknown; elapsedMs: number } {
   const t0 = performance.now();
   let raw: unknown;
@@ -118,7 +117,9 @@ function extractStats(raw: unknown): { nodes: number; edges: number } {
     try {
       obj = JSON.parse(raw) as Record<string, unknown>;
     } catch (err) {
-      throw new Error(`Failed to parse discovery result JSON: ${err instanceof Error ? err.message : String(err)}`);
+      throw new Error(
+        `Failed to parse discovery result JSON: ${err instanceof Error ? err.message : String(err)}`
+      );
     }
   } else if (raw !== null && typeof raw === 'object') {
     obj = raw as Record<string, unknown>;
@@ -144,7 +145,9 @@ function extractStats(raw: unknown): { nodes: number; edges: number } {
     return { nodes: 0, edges: (obj['edges'] as unknown[]).length };
   }
 
-  throw new Error(`Unknown discovery result format: expected nodes/edges or places/transitions or edges array, got ${Object.keys(obj).join(', ')}`);
+  throw new Error(
+    `Unknown discovery result format: expected nodes/edges or places/transitions or edges array, got ${Object.keys(obj).join(', ')}`
+  );
 }
 
 /**
@@ -154,7 +157,7 @@ function extractStats(raw: unknown): { nodes: number; edges: number } {
 function extractModelMetrics(
   wasm: Record<string, CallableFunction>,
   logHandle: string,
-  activityKey: string,
+  activityKey: string
 ): { variants: number; density: number; complexity: number } {
   const raw = wasm['compute_model_metrics'](logHandle, activityKey);
   const obj = (typeof raw === 'string' ? JSON.parse(raw) : raw) as Record<string, unknown>;
@@ -164,7 +167,9 @@ function extractModelMetrics(
   const complexity = (obj['complexity_score'] as number | null) ?? null;
 
   if (variants === null || density === null || complexity === null) {
-    throw new Error(`Incomplete model metrics: variants=${variants}, density=${density}, complexity=${complexity}`);
+    throw new Error(
+      `Incomplete model metrics: variants=${variants}, density=${density}, complexity=${complexity}`
+    );
   }
 
   return { variants, density, complexity };
@@ -196,7 +201,8 @@ function numCol(n: number, width: number, decimals = 0): string {
 export const compare = defineCommand({
   meta: {
     name: 'compare',
-    description: 'Run two or more algorithms on the same XES log and print a side-by-side comparison table',
+    description:
+      'Run two or more algorithms on the same XES log and print a side-by-side comparison table',
   },
   args: {
     algorithms: {
@@ -254,7 +260,7 @@ export const compare = defineCommand({
       const invalid = resolved.filter((a) => !ALGORITHMS.includes(a as Algorithm));
       if (invalid.length > 0) {
         formatter.error(
-          `Unknown algorithm(s): ${invalid.join(', ')}. Available: ${Object.keys(ALGORITHM_CLI_ALIASES).join(', ')}`,
+          `Unknown algorithm(s): ${invalid.join(', ')}. Available: ${Object.keys(ALGORITHM_CLI_ALIASES).join(', ')}`
         );
         process.exit(EXIT_CODES.source_error);
       }
@@ -330,7 +336,9 @@ export const compare = defineCommand({
       const humanFormatter = formatter as HumanFormatter;
       humanFormatter.log('');
       humanFormatter.success(`Algorithm comparison — ${inputPath}`);
-      humanFormatter.log(`  Activity key: ${activityKey}  |  Log variants: ${sharedMetrics.variants}`);
+      humanFormatter.log(
+        `  Activity key: ${activityKey}  |  Log variants: ${sharedMetrics.variants}`
+      );
       humanFormatter.log('');
 
       // Compute ranges for sparklines
@@ -344,16 +352,18 @@ export const compare = defineCommand({
 
       // Table header
       humanFormatter.log(
-        `  ${'Algorithm'.padEnd(20)}  ${'Nodes'.padStart(6)}  ${'Edges'.padStart(6)}  ${'Time(ms)'.padStart(9)}  ${'Nodes'.padEnd(10)}  ${'Edges'.padEnd(10)}  ${'Time'.padEnd(10)}`,
+        `  ${'Algorithm'.padEnd(20)}  ${'Nodes'.padStart(6)}  ${'Edges'.padStart(6)}  ${'Time(ms)'.padStart(9)}  ${'Nodes'.padEnd(10)}  ${'Edges'.padEnd(10)}  ${'Time'.padEnd(10)}`
       );
       humanFormatter.log(
-        `  ${'─'.repeat(20)}  ${'─'.repeat(6)}  ${'─'.repeat(6)}  ${'─'.repeat(9)}  ${'(bar)'.padEnd(10)}  ${'(bar)'.padEnd(10)}  ${'(bar)'.padEnd(10)}`,
+        `  ${'─'.repeat(20)}  ${'─'.repeat(6)}  ${'─'.repeat(6)}  ${'─'.repeat(9)}  ${'(bar)'.padEnd(10)}  ${'(bar)'.padEnd(10)}  ${'(bar)'.padEnd(10)}`
       );
 
       for (const s of stats) {
         const algoCol = col(s.algorithm, 20);
         if (s.nodes < 0) {
-          humanFormatter.log(`  ${algoCol}  ${'ERROR'.padStart(6)}  ${'─'.padStart(6)}  ${'─'.padStart(9)}`);
+          humanFormatter.log(
+            `  ${algoCol}  ${'ERROR'.padStart(6)}  ${'─'.padStart(6)}  ${'─'.padStart(9)}`
+          );
           continue;
         }
         const nodesStr = numCol(s.nodes, 6);
@@ -363,13 +373,13 @@ export const compare = defineCommand({
         const edgesBar = sparkBar(s.edges, minEdges, maxEdges).padEnd(10);
         const timeBar = sparkBar(s.elapsedMs, minTime, maxTime).padEnd(10);
         humanFormatter.log(
-          `  ${algoCol}  ${nodesStr}  ${edgesStr}  ${timeStr}  ${nodesBar}  ${edgesBar}  ${timeBar}`,
+          `  ${algoCol}  ${nodesStr}  ${edgesStr}  ${timeStr}  ${nodesBar}  ${edgesBar}  ${timeBar}`
         );
       }
 
       humanFormatter.log('');
       humanFormatter.log(
-        '  Legend: ▓▓▓▓▓▓▓▓ = max  ░░░░░░░░ = min   bars are relative within this comparison',
+        '  Legend: ▓▓▓▓▓▓▓▓ = max  ░░░░░░░░ = min   bars are relative within this comparison'
       );
       humanFormatter.log('');
 
@@ -399,7 +409,7 @@ export const compare = defineCommand({
         (formatter as JSONFormatter).error('Comparison failed', error);
       } else {
         formatter.error(
-          `Comparison failed: ${error instanceof Error ? error.message : String(error)}`,
+          `Comparison failed: ${error instanceof Error ? error.message : String(error)}`
         );
       }
       process.exit(EXIT_CODES.execution_error);

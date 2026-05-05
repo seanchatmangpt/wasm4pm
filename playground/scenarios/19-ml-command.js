@@ -1,5 +1,5 @@
 /**
- * Scenario: ml command — pictl ml <task> -i <log.xes>
+ * Scenario: ml command — wasm4pm ml <task> -i <log.xes>
  *
  * Tests ML-powered process mining using real WASM and real XES files.
  * No mocks — real @wasm4pm/ml package with real algorithm execution.
@@ -18,7 +18,7 @@
  * Binary: apps/wasm4pm/dist/bin/wpm.js (must be built first)
  */
 import { describe, it, expect } from 'vitest';
-import { assertExitCode, pictl, extractJson, combinedOutput, EXIT_CODES, resolveRepo } from '../helpers/cli.js';
+import { assertExitCode, wasm4pm, extractJson, combinedOutput, EXIT_CODES, resolveRepo } from '../helpers/cli.js';
 // Real XES fixture files
 const RUNNING_EXAMPLE = resolveRepo('wasm4pm/tests/fixtures/running-example.xes');
 const BPI_DOMESTIC = resolveRepo('wasm4pm/tests/fixtures/BPI_2020_DomesticDeclarations.xes');
@@ -30,16 +30,16 @@ describe('ml command', () => {
     // ── Error cases ───────────────────────────────────────────────────────────
     describe('error handling', () => {
         it('exits 1 when no task provided', async () => {
-            const result = await pictl(['ml']);
+            const result = await wasm4pm(['ml']);
             assertExitCode(result, EXIT_CODES.CONFIG_ERROR);
         });
         it('exits 2 for invalid task name', async () => {
-            const result = await pictl(['ml', 'nonexistent_task', '-i', RUNNING_EXAMPLE]);
+            const result = await wasm4pm(['ml', 'nonexistent_task', '-i', RUNNING_EXAMPLE]);
             assertExitCode(result, EXIT_CODES.SOURCE_ERROR);
             expect(combinedOutput(result)).toContain('Unknown ML task');
         });
         it('exits 1 when no input provided', async () => {
-            const result = await pictl(['ml', 'classify']);
+            const result = await wasm4pm(['ml', 'classify']);
             assertExitCode(result, EXIT_CODES.CONFIG_ERROR);
             expect(combinedOutput(result)).toContain('Missing required');
         });
@@ -49,18 +49,18 @@ describe('ml command', () => {
         for (const task of WORKING_ML_TASKS) {
             describe(`${task} task`, () => {
                 it(`wpm ml ${task} exits 0 and returns valid JSON`, async () => {
-                    const result = await pictl(['ml', task, '-i', RUNNING_EXAMPLE, '--format', 'json']);
+                    const result = await wasm4pm(['ml', task, '-i', RUNNING_EXAMPLE, '--format', 'json']);
                     assertExitCode(result, EXIT_CODES.SUCCESS);
                     const json = extractJson(result.stdout);
                     expect(json).toBeDefined();
                 });
                 it(`output contains task field set to "${task}"`, async () => {
-                    const result = await pictl(['ml', task, '-i', RUNNING_EXAMPLE, '--format', 'json']);
+                    const result = await wasm4pm(['ml', task, '-i', RUNNING_EXAMPLE, '--format', 'json']);
                     const json = extractJson(result.stdout);
                     expect(json.task).toBe(task);
                 });
                 it(`output contains status field set to "success"`, async () => {
-                    const result = await pictl(['ml', task, '-i', RUNNING_EXAMPLE, '--format', 'json']);
+                    const result = await wasm4pm(['ml', task, '-i', RUNNING_EXAMPLE, '--format', 'json']);
                     const json = extractJson(result.stdout);
                     expect(json.status).toBe('success');
                 });
@@ -70,7 +70,7 @@ describe('ml command', () => {
     // ── PCA (requires sufficient features) ────────────────────────────────────
     describe('PCA task', () => {
         it('exits 3 when running-example.xes has insufficient features for PCA', async () => {
-            const result = await pictl(['ml', PCA_TASK, '-i', RUNNING_EXAMPLE, '--format', 'json']);
+            const result = await wasm4pm(['ml', PCA_TASK, '-i', RUNNING_EXAMPLE, '--format', 'json']);
             assertExitCode(result, EXIT_CODES.EXECUTION_ERROR);
             const json = extractJson(result.stdout);
             expect(json.status).toBe('error');
@@ -80,33 +80,33 @@ describe('ml command', () => {
     // ── Task-specific data fields ─────────────────────────────────────────────
     describe('task-specific data fields', () => {
         it('classify has predictions array', async () => {
-            const result = await pictl(['ml', 'classify', '-i', RUNNING_EXAMPLE, '--format', 'json']);
+            const result = await wasm4pm(['ml', 'classify', '-i', RUNNING_EXAMPLE, '--format', 'json']);
             const json = extractJson(result.stdout);
             expect(Array.isArray(json.predictions)).toBe(true);
         });
         it('cluster has assignments array', async () => {
-            const result = await pictl(['ml', 'cluster', '-i', RUNNING_EXAMPLE, '--format', 'json']);
+            const result = await wasm4pm(['ml', 'cluster', '-i', RUNNING_EXAMPLE, '--format', 'json']);
             const json = extractJson(result.stdout);
             expect(Array.isArray(json.assignments)).toBe(true);
         });
         it('cluster has modelInfo with k', async () => {
-            const result = await pictl(['ml', 'cluster', '-i', RUNNING_EXAMPLE, '--format', 'json']);
+            const result = await wasm4pm(['ml', 'cluster', '-i', RUNNING_EXAMPLE, '--format', 'json']);
             const json = extractJson(result.stdout);
             const modelInfo = json.modelInfo;
             expect(typeof modelInfo.k).toBe('number');
         });
         it('forecast has trend object', async () => {
-            const result = await pictl(['ml', 'forecast', '-i', RUNNING_EXAMPLE, '--format', 'json']);
+            const result = await wasm4pm(['ml', 'forecast', '-i', RUNNING_EXAMPLE, '--format', 'json']);
             const json = extractJson(result.stdout);
             expect(json.trend).toBeDefined();
         });
         it('anomaly has peakIndices array', async () => {
-            const result = await pictl(['ml', 'anomaly', '-i', RUNNING_EXAMPLE, '--format', 'json']);
+            const result = await wasm4pm(['ml', 'anomaly', '-i', RUNNING_EXAMPLE, '--format', 'json']);
             const json = extractJson(result.stdout);
             expect(Array.isArray(json.peakIndices)).toBe(true);
         });
         it('regress has predictions array with actual/predicted fields', async () => {
-            const result = await pictl(['ml', 'regress', '-i', RUNNING_EXAMPLE, '--format', 'json']);
+            const result = await wasm4pm(['ml', 'regress', '-i', RUNNING_EXAMPLE, '--format', 'json']);
             const json = extractJson(result.stdout);
             expect(Array.isArray(json.predictions)).toBe(true);
             const first = json.predictions[0];
@@ -114,7 +114,7 @@ describe('ml command', () => {
             expect('predicted' in first).toBe(true);
         });
         it('classify has modelInfo with k and traceCount', async () => {
-            const result = await pictl(['ml', 'classify', '-i', RUNNING_EXAMPLE, '--format', 'json']);
+            const result = await wasm4pm(['ml', 'classify', '-i', RUNNING_EXAMPLE, '--format', 'json']);
             const json = extractJson(result.stdout);
             const modelInfo = json.modelInfo;
             expect(typeof modelInfo.k).toBe('number');
@@ -124,8 +124,8 @@ describe('ml command', () => {
     // ── Determinism ───────────────────────────────────────────────────────────
     describe('determinism', () => {
         it('classify produces same JSON on two runs', async () => {
-            const result1 = await pictl(['ml', 'classify', '-i', RUNNING_EXAMPLE, '--format', 'json']);
-            const result2 = await pictl(['ml', 'classify', '-i', RUNNING_EXAMPLE, '--format', 'json']);
+            const result1 = await wasm4pm(['ml', 'classify', '-i', RUNNING_EXAMPLE, '--format', 'json']);
+            const result2 = await wasm4pm(['ml', 'classify', '-i', RUNNING_EXAMPLE, '--format', 'json']);
             assertExitCode(result1, EXIT_CODES.SUCCESS);
             assertExitCode(result2, EXIT_CODES.SUCCESS);
             const json1 = extractJson(result1.stdout);
@@ -137,19 +137,19 @@ describe('ml command', () => {
     });
     // ── Flag variants ─────────────────────────────────────────────────────────
     it('supports --activity-key flag', async () => {
-        const result = await pictl(['ml', 'classify', '-i', RUNNING_EXAMPLE, '--activity-key', 'concept:name', '--format', 'json']);
+        const result = await wasm4pm(['ml', 'classify', '-i', RUNNING_EXAMPLE, '--activity-key', 'concept:name', '--format', 'json']);
         assertExitCode(result, EXIT_CODES.SUCCESS);
         const json = extractJson(result.stdout);
         expect(json.task).toBe('classify');
     });
     it('supports --method flag', async () => {
-        const result = await pictl(['ml', 'classify', '-i', RUNNING_EXAMPLE, '--method', 'knn', '--format', 'json']);
+        const result = await wasm4pm(['ml', 'classify', '-i', RUNNING_EXAMPLE, '--method', 'knn', '--format', 'json']);
         assertExitCode(result, EXIT_CODES.SUCCESS);
         const json = extractJson(result.stdout);
         expect(json.method).toBe('knn');
     });
     it('supports --k flag', async () => {
-        const result = await pictl(['ml', 'cluster', '-i', RUNNING_EXAMPLE, '--k', '3', '--format', 'json']);
+        const result = await wasm4pm(['ml', 'cluster', '-i', RUNNING_EXAMPLE, '--k', '3', '--format', 'json']);
         assertExitCode(result, EXIT_CODES.SUCCESS);
         const json = extractJson(result.stdout);
         const modelInfo = json.modelInfo;

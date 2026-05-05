@@ -15,6 +15,7 @@ use crate::state::{get_or_init_state, StoredObject};
 use crate::streaming::{
     StreamingAlgorithm, StreamingDfgBuilder, StreamingHeuristicBuilder, StreamingSkeletonBuilder,
 };
+use crate::utilities::to_js_str;
 use serde_json::json;
 use wasm_bindgen::prelude::*;
 
@@ -40,13 +41,12 @@ pub fn streaming_dfg_add_event(
     get_or_init_state().with_object_mut(handle, |obj| match obj {
         Some(StoredObject::StreamingDfgBuilder(b)) => {
             b.add_event(case_id, activity);
-            serde_wasm_bindgen::to_value(&json!({
+            to_js_str(&json!({
                 "ok": true,
                 "event_count": b.event_count,
                 "open_traces": b.open_traces.len(),
                 "activities": b.interner.len(),
             }))
-            .map_err(|e| crate::error::js_val(&e.to_string()))
         }
         Some(_) => Err(crate::error::js_val("Handle is not a StreamingDfgBuilder")),
         None => Err(crate::error::js_val("StreamingDfgBuilder handle not found")),
@@ -72,14 +72,13 @@ pub fn streaming_dfg_add_batch(handle: &str, events_json: &str) -> Result<JsValu
                 b.add_event(case_id, activity);
                 added += 1;
             }
-            serde_wasm_bindgen::to_value(&json!({
+            to_js_str(&json!({
                 "ok": true,
                 "added": added,
                 "event_count": b.event_count,
                 "open_traces": b.open_traces.len(),
                 "activities": b.interner.len(),
             }))
-            .map_err(|e| crate::error::js_val(&e.to_string()))
         }
         Some(_) => Err(crate::error::js_val("Handle is not a StreamingDfgBuilder")),
         None => Err(crate::error::js_val("StreamingDfgBuilder handle not found")),
@@ -92,12 +91,11 @@ pub fn streaming_dfg_close_trace(handle: &str, case_id: &str) -> Result<JsValue,
     get_or_init_state().with_object_mut(handle, |obj| match obj {
         Some(StoredObject::StreamingDfgBuilder(b)) => {
             let closed = b.close_trace(case_id);
-            serde_wasm_bindgen::to_value(&json!({
+            to_js_str(&json!({
                 "ok": closed,
                 "trace_count": b.trace_count,
                 "open_traces": b.open_traces.len(),
             }))
-            .map_err(|e| crate::error::js_val(&e.to_string()))
         }
         Some(_) => Err(crate::error::js_val("Handle is not a StreamingDfgBuilder")),
         None => Err(crate::error::js_val("StreamingDfgBuilder handle not found")),
@@ -114,12 +112,11 @@ pub fn streaming_dfg_flush_open(handle: &str) -> Result<JsValue, JsValue> {
             for id in case_ids {
                 b.close_trace(&id);
             }
-            serde_wasm_bindgen::to_value(&json!({
+            to_js_str(&json!({
                 "ok": true,
                 "flushed": flushed,
                 "trace_count": b.trace_count,
             }))
-            .map_err(|e| crate::error::js_val(&e.to_string()))
         }
         Some(_) => Err(crate::error::js_val("Handle is not a StreamingDfgBuilder")),
         None => Err(crate::error::js_val("StreamingDfgBuilder handle not found")),
@@ -162,12 +159,11 @@ pub fn streaming_dfg_finalize(handle: &str) -> Result<JsValue, JsValue> {
 
     get_or_init_state().delete_object(handle)?;
 
-    serde_wasm_bindgen::to_value(&json!({
+    to_js_str(&json!({
         "dfg_handle": dfg_handle,
         "nodes": n_nodes,
         "edges": n_edges,
     }))
-    .map_err(|e| crate::error::js_val(&e.to_string()))
 }
 
 /// Report memory/progress statistics.
@@ -207,12 +203,11 @@ pub fn streaming_skeleton_add_event(
         Some(StoredObject::StreamingSkeletonBuilder(b)) => {
             b.add_event(case_id, activity);
             let stats = b.stats();
-            serde_wasm_bindgen::to_value(&json!({
+            to_js_str(&json!({
                 "ok": true,
                 "event_count": stats.event_count,
                 "open_traces": stats.open_traces,
             }))
-            .map_err(|e| crate::error::js_val(&e.to_string()))
         }
         Some(_) => Err(crate::error::js_val(
             "Handle is not a StreamingSkeletonBuilder",
@@ -229,11 +224,10 @@ pub fn streaming_skeleton_close_trace(handle: &str, case_id: &str) -> Result<JsV
     get_or_init_state().with_object_mut(handle, |obj| match obj {
         Some(StoredObject::StreamingSkeletonBuilder(b)) => {
             let closed = b.close_trace(case_id);
-            serde_wasm_bindgen::to_value(&json!({
+            to_js_str(&json!({
                 "ok": closed,
                 "trace_count": b.trace_count,
             }))
-            .map_err(|e| crate::error::js_val(&e.to_string()))
         }
         Some(_) => Err(crate::error::js_val(
             "Handle is not a StreamingSkeletonBuilder",
@@ -288,12 +282,11 @@ pub fn streaming_skeleton_finalize(handle: &str) -> Result<JsValue, JsValue> {
 
     get_or_init_state().delete_object(handle)?;
 
-    serde_wasm_bindgen::to_value(&json!({
+    to_js_str(&json!({
         "dfg_handle": dfg_handle,
         "nodes": n_nodes,
         "edges": n_edges,
     }))
-    .map_err(|e| crate::error::js_val(&e.to_string()))
 }
 
 // ============================================================================
@@ -320,12 +313,11 @@ pub fn streaming_heuristic_add_event(
         Some(StoredObject::StreamingHeuristicBuilder(b)) => {
             b.add_event(case_id, activity);
             let stats = b.stats();
-            serde_wasm_bindgen::to_value(&json!({
+            to_js_str(&json!({
                 "ok": true,
                 "event_count": stats.event_count,
                 "open_traces": stats.open_traces,
             }))
-            .map_err(|e| crate::error::js_val(&e.to_string()))
         }
         Some(_) => Err(crate::error::js_val(
             "Handle is not a StreamingHeuristicBuilder",
@@ -342,11 +334,10 @@ pub fn streaming_heuristic_close_trace(handle: &str, case_id: &str) -> Result<Js
     get_or_init_state().with_object_mut(handle, |obj| match obj {
         Some(StoredObject::StreamingHeuristicBuilder(b)) => {
             let closed = b.close_trace(case_id);
-            serde_wasm_bindgen::to_value(&json!({
+            to_js_str(&json!({
                 "ok": closed,
                 "trace_count": b.trace_count,
             }))
-            .map_err(|e| crate::error::js_val(&e.to_string()))
         }
         Some(_) => Err(crate::error::js_val(
             "Handle is not a StreamingHeuristicBuilder",
@@ -401,12 +392,11 @@ pub fn streaming_heuristic_finalize(handle: &str) -> Result<JsValue, JsValue> {
 
     get_or_init_state().delete_object(handle)?;
 
-    serde_wasm_bindgen::to_value(&json!({
+    to_js_str(&json!({
         "dfg_handle": dfg_handle,
         "nodes": n_nodes,
         "edges": n_edges,
     }))
-    .map_err(|e| crate::error::js_val(&e.to_string()))
 }
 
 /// Streaming module info.

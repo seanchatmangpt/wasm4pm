@@ -62,7 +62,7 @@ class BasicAuthConfig implements AuthConfig {
   type: AuthType = 'basic';
   constructor(
     private username: string,
-    private password: string,
+    private password: string
   ) {}
 
   async validate(): Promise<Result<void>> {
@@ -207,7 +207,7 @@ export class HttpSourceAdapter implements SourceAdapter {
       return error(
         createError('SOURCE_INVALID', `Invalid URL: ${this.config.url}`, {
           url: this.config.url,
-        }),
+        })
       );
     }
 
@@ -280,7 +280,7 @@ export class HttpSourceAdapter implements SourceAdapter {
             createError('SOURCE_INVALID', `HTTP ${response.status}: ${statusText}`, {
               url: this.config.url,
               status: response.status,
-            }),
+            })
           );
         }
 
@@ -295,7 +295,7 @@ export class HttpSourceAdapter implements SourceAdapter {
             createError('SOURCE_INVALID', `Request timed out after ${this.config.timeoutMs}ms`, {
               url: this.config.url,
               timeoutMs: this.config.timeoutMs,
-            }),
+            })
           );
         }
 
@@ -310,8 +310,8 @@ export class HttpSourceAdapter implements SourceAdapter {
       createError(
         'SOURCE_NOT_FOUND',
         `Failed to fetch after ${this.retry.maxAttempts} retries: ${lastError?.message}`,
-        { url: this.config.url, attempts: this.retry.maxAttempts },
-      ),
+        { url: this.config.url, attempts: this.retry.maxAttempts }
+      )
     );
   }
 

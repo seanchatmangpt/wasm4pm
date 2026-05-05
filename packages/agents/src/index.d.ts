@@ -14,7 +14,29 @@
  *   7. TheaterDetector         — Identifies testing theater
  *   8. AuthorityEscalationWatcher — Detects privilege escalation
  */
-export type { AgentConfig, AgentMode, AgentResult, AgentRuntimeState, AgentStatus, AgentThresholds, AuditEntry, AutonomousAgentResult, CorroborationResult, CorrectiveAction, CorrectionType, ExecuteResult, LearnResult, MAPEKCycleResult, MonitorResult, PlanResult, ProcessMiningProof, Severity, SurfaceEvidence, VanDerAalstAgentName, Violation, } from './types.js';
+export type {
+  AgentConfig,
+  AgentMode,
+  AgentResult,
+  AgentRuntimeState,
+  AgentStatus,
+  AgentThresholds,
+  AuditEntry,
+  AutonomousAgentResult,
+  CorroborationResult,
+  CorrectiveAction,
+  CorrectionType,
+  ExecuteResult,
+  LearnResult,
+  MAPEKCycleResult,
+  MonitorResult,
+  PlanResult,
+  ProcessMiningProof,
+  Severity,
+  SurfaceEvidence,
+  VanDerAalstAgentName,
+  Violation,
+} from './types.js';
 export { VAN_DERAALST_AGENTS } from './types.js';
 export { AgentRegistry } from './registry.js';
 export { AuditStore } from './audit.js';

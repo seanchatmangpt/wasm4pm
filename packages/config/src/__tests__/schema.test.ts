@@ -44,7 +44,12 @@ describe('Schema', () => {
           },
         },
         watch: { enabled: true, poll_interval: 500, checkpoint_dir: '/tmp/ckpt' },
-        output: { format: 'json', destination: '/var/log/out.json', pretty: false, colorize: false },
+        output: {
+          format: 'json',
+          destination: '/var/log/out.json',
+          pretty: false,
+          colorize: false,
+        },
       };
       expect(() => validate(full)).not.toThrow();
       const result = validate(full);
@@ -71,9 +76,7 @@ describe('Schema', () => {
 
     it('accepts all execution profiles', () => {
       for (const profile of ['fast', 'balanced', 'quality', 'stream'] as const) {
-        expect(() =>
-          validate({ ...minimal, execution: { profile } }),
-        ).not.toThrow();
+        expect(() => validate({ ...minimal, execution: { profile } })).not.toThrow();
       }
     });
 
@@ -83,7 +86,7 @@ describe('Schema', () => {
           validate({
             ...minimal,
             observability: { otel: { enabled: true, exporter } },
-          }),
+          })
         ).not.toThrow();
       }
     });
@@ -103,9 +106,7 @@ describe('Schema', () => {
     });
 
     it('rejects invalid execution profile', () => {
-      expect(() =>
-        validate({ ...minimal, execution: { profile: 'turbo' } }),
-      ).toThrow();
+      expect(() => validate({ ...minimal, execution: { profile: 'turbo' } })).toThrow();
     });
 
     it('rejects invalid otel exporter', () => {
@@ -113,41 +114,31 @@ describe('Schema', () => {
         validate({
           ...minimal,
           observability: { otel: { enabled: true, exporter: 'zipkin' } },
-        }),
+        })
       ).toThrow();
     });
 
     it('rejects negative timeout', () => {
-      expect(() =>
-        validate({ ...minimal, execution: { timeout: -1 } }),
-      ).toThrow();
+      expect(() => validate({ ...minimal, execution: { timeout: -1 } })).toThrow();
     });
 
     it('rejects zero maxMemory', () => {
-      expect(() =>
-        validate({ ...minimal, execution: { maxMemory: 0 } }),
-      ).toThrow();
+      expect(() => validate({ ...minimal, execution: { maxMemory: 0 } })).toThrow();
     });
 
     it('rejects non-positive poll_interval', () => {
+      expect(() => validate({ ...minimal, watch: { enabled: true, poll_interval: 0 } })).toThrow();
       expect(() =>
-        validate({ ...minimal, watch: { enabled: true, poll_interval: 0 } }),
-      ).toThrow();
-      expect(() =>
-        validate({ ...minimal, watch: { enabled: true, poll_interval: -10 } }),
+        validate({ ...minimal, watch: { enabled: true, poll_interval: -10 } })
       ).toThrow();
     });
 
     it('rejects invalid log level', () => {
-      expect(() =>
-        validate({ ...minimal, observability: { logLevel: 'verbose' } }),
-      ).toThrow();
+      expect(() => validate({ ...minimal, observability: { logLevel: 'verbose' } })).toThrow();
     });
 
     it('rejects empty algorithm name', () => {
-      expect(() =>
-        validate({ ...minimal, algorithm: { name: '' } }),
-      ).toThrow();
+      expect(() => validate({ ...minimal, algorithm: { name: '' } })).toThrow();
     });
 
     it('rejects non-numeric version', () => {
@@ -241,7 +232,10 @@ describe('Schema', () => {
     it('accepts all 6 ML tasks', () => {
       const config = {
         ...minimal,
-        ml: { enabled: true, tasks: ['classify', 'cluster', 'forecast', 'anomaly', 'regress', 'pca'] },
+        ml: {
+          enabled: true,
+          tasks: ['classify', 'cluster', 'forecast', 'anomaly', 'regress', 'pca'],
+        },
       };
       const result = validate(config);
       expect(result.ml.tasks).toHaveLength(6);
@@ -296,68 +290,42 @@ describe('Schema', () => {
 
     it('rejects invalid ML task names', () => {
       expect(() =>
-        validate({ ...minimal, ml: { enabled: true, tasks: ['unknown_task'] } }),
+        validate({ ...minimal, ml: { enabled: true, tasks: ['unknown_task'] } })
       ).toThrow();
+      expect(() => validate({ ...minimal, ml: { enabled: true, tasks: ['CLASSIFY'] } })).toThrow();
       expect(() =>
-        validate({ ...minimal, ml: { enabled: true, tasks: ['CLASSIFY'] } }),
-      ).toThrow();
-      expect(() =>
-        validate({ ...minimal, ml: { enabled: true, tasks: ['classify', 'bogus'] } }),
+        validate({ ...minimal, ml: { enabled: true, tasks: ['classify', 'bogus'] } })
       ).toThrow();
     });
 
     it('rejects non-positive k', () => {
-      expect(() =>
-        validate({ ...minimal, ml: { enabled: true, k: 0 } }),
-      ).toThrow();
-      expect(() =>
-        validate({ ...minimal, ml: { enabled: true, k: -1 } }),
-      ).toThrow();
+      expect(() => validate({ ...minimal, ml: { enabled: true, k: 0 } })).toThrow();
+      expect(() => validate({ ...minimal, ml: { enabled: true, k: -1 } })).toThrow();
     });
 
     it('rejects non-positive forecastPeriods', () => {
-      expect(() =>
-        validate({ ...minimal, ml: { enabled: true, forecastPeriods: 0 } }),
-      ).toThrow();
-      expect(() =>
-        validate({ ...minimal, ml: { enabled: true, forecastPeriods: -3 } }),
-      ).toThrow();
+      expect(() => validate({ ...minimal, ml: { enabled: true, forecastPeriods: 0 } })).toThrow();
+      expect(() => validate({ ...minimal, ml: { enabled: true, forecastPeriods: -3 } })).toThrow();
     });
 
     it('rejects non-positive nComponents', () => {
-      expect(() =>
-        validate({ ...minimal, ml: { enabled: true, nComponents: 0 } }),
-      ).toThrow();
-      expect(() =>
-        validate({ ...minimal, ml: { enabled: true, nComponents: -1 } }),
-      ).toThrow();
+      expect(() => validate({ ...minimal, ml: { enabled: true, nComponents: 0 } })).toThrow();
+      expect(() => validate({ ...minimal, ml: { enabled: true, nComponents: -1 } })).toThrow();
     });
 
     it('rejects non-positive eps', () => {
-      expect(() =>
-        validate({ ...minimal, ml: { enabled: true, eps: 0 } }),
-      ).toThrow();
-      expect(() =>
-        validate({ ...minimal, ml: { enabled: true, eps: -1.5 } }),
-      ).toThrow();
+      expect(() => validate({ ...minimal, ml: { enabled: true, eps: 0 } })).toThrow();
+      expect(() => validate({ ...minimal, ml: { enabled: true, eps: -1.5 } })).toThrow();
     });
 
     it('rejects non-boolean enabled', () => {
-      expect(() =>
-        validate({ ...minimal, ml: { enabled: 'yes' } }),
-      ).toThrow();
-      expect(() =>
-        validate({ ...minimal, ml: { enabled: 1 } }),
-      ).toThrow();
+      expect(() => validate({ ...minimal, ml: { enabled: 'yes' } })).toThrow();
+      expect(() => validate({ ...minimal, ml: { enabled: 1 } })).toThrow();
     });
 
     it('rejects non-array tasks', () => {
-      expect(() =>
-        validate({ ...minimal, ml: { enabled: true, tasks: 'classify' } }),
-      ).toThrow();
-      expect(() =>
-        validate({ ...minimal, ml: { enabled: true, tasks: 42 } }),
-      ).toThrow();
+      expect(() => validate({ ...minimal, ml: { enabled: true, tasks: 'classify' } })).toThrow();
+      expect(() => validate({ ...minimal, ml: { enabled: true, tasks: 42 } })).toThrow();
     });
 
     it('includes ml in JSON schema', () => {

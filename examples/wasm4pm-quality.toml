@@ -1,0 +1,57 @@
+# wasm4pm — "quality" preset (accuracy-optimised, longer runtime)
+# Best for: offline analysis, research, compliance, high-accuracy models
+# Target: highest model quality (10-30 seconds), all 41 algorithms available
+schema_version = 1
+version = "26.4.5"
+
+[source]
+kind = "file"
+
+[sink]
+kind = "stdout"
+
+[algorithm]
+name = "ilp"
+
+[execution]
+profile = "quality"
+timeout = 1800000
+
+[ml]
+enabled = true
+tasks = ["classify", "cluster", "forecast", "anomaly", "regress", "pca"]
+
+[ml.classify]
+model = "logistic_regression"
+
+[ml.cluster]
+method = "kmeans"
+k = 8
+
+[ml.forecast]
+method = "polynomial"
+polynomialDegree = 3
+periods = 12
+
+[ml.regress]
+method = "ridge"
+lambda = 0.5
+
+[ml.pca]
+nComponents = 4
+
+[rl]
+enabled = true
+agents = ["QLearning", "SARSA", "DoubleQLearning", "ExpectedSARSA"]
+learning_rate = 0.05
+discount_factor = 0.99
+epsilon = 0.05
+
+[rl.convergence]
+min_cycles = 100
+target_reward_improvement = 0.01
+window_size = 20
+
+[prediction]
+enabled = true
+tasks = ["next_activity", "remaining_time", "outcome", "drift"]

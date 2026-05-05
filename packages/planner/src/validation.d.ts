@@ -6,14 +6,14 @@ import type { ExecutionPlan } from './planner.js';
  * Validation error
  */
 export interface ValidationError {
-    /** Field or aspect that failed validation */
-    path: string;
-    /** Error message */
-    message: string;
-    /** Suggested fix if available */
-    suggestion?: string;
-    /** Severity level */
-    severity: 'error' | 'warning' | 'info';
+  /** Field or aspect that failed validation */
+  path: string;
+  /** Error message */
+  message: string;
+  /** Suggested fix if available */
+  suggestion?: string;
+  /** Severity level */
+  severity: 'error' | 'warning' | 'info';
 }
 /**
  * Validates an execution plan for structural correctness and consistency
@@ -48,5 +48,8 @@ export declare function assertPlanValid(executionPlan: ExecutionPlan): void;
  * @param sinkKind - Sink format (e.g., 'json', 'parquet')
  * @returns Array of validation errors (empty if compatible)
  */
-export declare function validateSourceSinkCompatibility(sourceKind: string, sinkKind: string): ValidationError[];
+export declare function validateSourceSinkCompatibility(
+  sourceKind: string,
+  sinkKind: string
+): ValidationError[];
 //# sourceMappingURL=validation.d.ts.map

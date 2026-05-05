@@ -203,7 +203,7 @@ export interface MiningBackend {
   discover(
     log: EventLogIR,
     algorithmId: string,
-    budget: BudgetEnvelope,
+    budget: BudgetEnvelope
   ): Promise<ResultEnvelope<ModelIR>>;
 
   /**
@@ -213,7 +213,7 @@ export interface MiningBackend {
   conformance(
     log: EventLogIR,
     model: ModelIR,
-    budget: BudgetEnvelope,
+    budget: BudgetEnvelope
   ): Promise<ResultEnvelope<ConformanceResult>>;
 
   /**
@@ -223,7 +223,7 @@ export interface MiningBackend {
   analyze(
     log: EventLogIR,
     task: AnalysisTask,
-    budget: BudgetEnvelope,
+    budget: BudgetEnvelope
   ): Promise<ResultEnvelope<unknown>>;
 
   /**

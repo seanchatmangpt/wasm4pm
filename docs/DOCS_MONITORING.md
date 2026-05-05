@@ -1,6 +1,6 @@
 # Documentation Quality Monitoring & Semantic Convergence
 
-This document describes the documentation monitoring and semantic convergence analysis system for pictl.
+This document describes the documentation monitoring and semantic convergence analysis system for wasm4pm.
 
 ## Overview
 

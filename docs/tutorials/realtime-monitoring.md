@@ -39,7 +39,7 @@ streaming = true
 Start streaming:
 
 ```bash
-pictl watch --config config.toml --format json > events.jsonl
+wpm watch --config config.toml --format json > events.jsonl
 ```
 
 ## Step 2: Detect Drifts

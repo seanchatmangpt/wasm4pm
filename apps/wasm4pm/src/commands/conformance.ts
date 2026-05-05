@@ -17,7 +17,8 @@ export interface ConformanceOptions extends OutputOptions {
 export const conformance = defineCommand({
   meta: {
     name: 'conformance',
-    description: 'Measure how well an event log conforms to a process model (fitness, precision, diagnostics)',
+    description:
+      'Measure how well an event log conforms to a process model (fitness, precision, diagnostics)',
   },
   args: {
     input: {
@@ -109,7 +110,8 @@ export const conformance = defineCommand({
       }
 
       // Load WASM module
-      const loaderConfig = ctx.args.format === 'json' ? { observability: createQuietObservabilityLayer() } : {};
+      const loaderConfig =
+        ctx.args.format === 'json' ? { observability: createQuietObservabilityLayer() } : {};
       const loader = WasmLoader.getInstance(loaderConfig);
       await loader.init();
       const wasm = loader.get();
@@ -164,7 +166,12 @@ export const conformance = defineCommand({
         if (formatter instanceof HumanFormatter) {
           formatter.debug('Running alignment-based conformance...');
         }
-        const configJson = JSON.stringify({ max_iterations: 100000, sync_cost: 0.0, log_move_cost: 1.0, model_move_cost: 1.0 });
+        const configJson = JSON.stringify({
+          max_iterations: 100000,
+          sync_cost: 0.0,
+          log_move_cost: 1.0,
+          model_move_cost: 1.0,
+        });
         const raw = wasm.alignment_fitness(logHandle, petriNetHandle, configJson);
         conformanceResult = typeof raw === 'string' ? JSON.parse(raw) : raw;
       } else {
@@ -232,10 +239,7 @@ export const conformance = defineCommand({
   },
 });
 
-function printHumanConformance(
-  formatter: HumanFormatter,
-  result: Record<string, unknown>
-): void {
+function printHumanConformance(formatter: HumanFormatter, result: Record<string, unknown>): void {
   const fitness = (result.fitness as number) ?? 0.0;
   const precisionRaw = result.precision as number | null;
   const precisionAvailable = result.precision_available as boolean;
@@ -248,10 +252,11 @@ function printHumanConformance(
   formatter.log(`  Activity key: ${result.activityKey as string}`);
   formatter.log(`  Method: ${result.method as string}`);
   formatter.log('');
-  formatter.log(`  Fitness: ${fitness.toFixed(3)} ${isFit ? '✓' : '✗'} (threshold: ${threshold.toFixed(2)})`);
-  const precisionDisplay = precisionAvailable && precisionRaw !== null
-    ? precisionRaw.toFixed(3)
-    : 'N/A (not computed)';
+  formatter.log(
+    `  Fitness: ${fitness.toFixed(3)} ${isFit ? '✓' : '✗'} (threshold: ${threshold.toFixed(2)})`
+  );
+  const precisionDisplay =
+    precisionAvailable && precisionRaw !== null ? precisionRaw.toFixed(3) : 'N/A (not computed)';
   formatter.log(`  Precision: ${precisionDisplay}`);
   formatter.log('');
   formatter.log('  Diagnostics (token replay):');

@@ -7,20 +7,20 @@
  * Required attributes on every OTEL span.
  */
 export interface RequiredFields {
-    /** Unique execution run identifier (UUID) */
-    'run.id': string;
-    /** BLAKE3 hash of the resolved configuration */
-    'config.hash': string;
-    /** BLAKE3 hash of the input data */
-    'input.hash': string;
-    /** BLAKE3 hash of the execution plan */
-    'plan.hash': string;
-    /** Execution profile name (e.g. "fast", "balanced", "quality") */
-    'execution.profile': string;
-    /** Source connector kind (e.g. "xes", "csv", "parquet") */
-    'source.kind': string;
-    /** Sink connector kind (e.g. "petri_net", "dfg", "json") */
-    'sink.kind': string;
+  /** Unique execution run identifier (UUID) */
+  'run.id': string;
+  /** BLAKE3 hash of the resolved configuration */
+  'config.hash': string;
+  /** BLAKE3 hash of the input data */
+  'input.hash': string;
+  /** BLAKE3 hash of the execution plan */
+  'plan.hash': string;
+  /** Execution profile name (e.g. "fast", "balanced", "quality") */
+  'execution.profile': string;
+  /** Source connector kind (e.g. "xes", "csv", "parquet") */
+  'source.kind': string;
+  /** Sink connector kind (e.g. "petri_net", "dfg", "json") */
+  'sink.kind': string;
 }
 /** Names of all required fields for validation */
 export declare const REQUIRED_FIELD_NAMES: ReadonlyArray<keyof RequiredFields>;

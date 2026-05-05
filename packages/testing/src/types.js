@@ -1,5 +1,5 @@
 /**
- * Shared types for pictl testing harnesses
+ * Shared types for wasm4pm testing harnesses
  */
 export {};
 //# sourceMappingURL=types.js.map

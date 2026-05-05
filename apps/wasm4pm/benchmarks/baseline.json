@@ -3,7 +3,7 @@
     "version": "26.4.17",
     "date": "2026-04-17",
     "dataset": "bpi_2020_100k.xes",
-    "description": "Golden baseline for all 41 pictl algorithms"
+    "description": "Golden baseline for all 41 wasm4pm algorithms"
   },
   "discovery": {
     "dfg": {

@@ -83,7 +83,7 @@ import type { ModelIR } from './model.js';
  *
  * Gap closure: LC-1 — latency_class is non-optional and derived.
  */
-export type LatencyClass = "sub_ms" | "low_ms" | "high_ms" | "seconds" | "minutes";
+export type LatencyClass = 'sub_ms' | 'low_ms' | 'high_ms' | 'seconds' | 'minutes';
 /**
  * Derives the LatencyClass from a latency duration in milliseconds.
  *
@@ -112,8 +112,8 @@ export declare function deriveLatencyClass(latency_ms: number): LatencyClass;
  * - `algorithm_id`: Which algorithm was executed
  * - `algorithm_version`: Semver or CalVer version of the algorithm
  * - `backend_id`: Which backend executed it (wasm, pm4py, ml, null)
- * - `kernel_version`: @seanchatmangpt/pictl npm package version
- * - `wasm_build_hash`: Content hash of the pictl.wasm binary
+ * - `kernel_version`: @wasm4pm/cli npm package version
+ * - `wasm_build_hash`: Content hash of the wasm4pm.wasm binary
  *
  * **Invariants:**
  * - All hash fields must be non-empty strings (BLAKE3 hash: 64 hex characters = 256 bits)
@@ -181,7 +181,7 @@ export interface ProvenanceChain {
  */
 export interface ResultEnvelope<T = unknown> {
     readonly run_id: string;
-    readonly status: "success" | "partial" | "failed";
+    readonly status: 'success' | 'partial' | 'failed';
     readonly payload: T;
     readonly error?: string;
     readonly latency_ms: number;

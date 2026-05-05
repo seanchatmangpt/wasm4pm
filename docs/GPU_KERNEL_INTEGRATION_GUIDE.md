@@ -9,7 +9,7 @@
 ## Overview
 
 The GPU LinUCB kernel (`wasm4pm/src/gpu/linucb_kernel.wgsl`) accelerates algorithm
-selection for the pictl process mining platform. It processes 2048 context feature
+selection for the wasm4pm process mining platform. It processes 2048 context feature
 vectors per dispatch, selecting the best algorithm from a 40-slot registry using
 the LinUCB contextual bandit formula:
 
@@ -54,9 +54,9 @@ linucb_exploration_bonus = 1.414 # Exploration parameter α (√2 default)
 Environment variable overrides:
 
 ```bash
-export PICTL_GPU_ENABLED=true
-export PICTL_LINUCB_LAMBDA=1.0
-export PICTL_LINUCB_EXPLORATION_BONUS=1.414
+export WASM4PM_GPU_ENABLED=true
+export WASM4PM_LINUCB_LAMBDA=1.0
+export WASM4PM_LINUCB_EXPLORATION_BONUS=1.414
 ```
 
 ---
@@ -66,7 +66,7 @@ export PICTL_LINUCB_EXPLORATION_BONUS=1.414
 ### CPU Reference (always available)
 
 ```rust
-use pictl::ml::LinUCBAgent;
+use wasm4pm::ml::LinUCBAgent;
 
 // Construct with defaults (λ=1.0, α=√2, lr=0.1)
 let mut agent = LinUCBAgent::new();
@@ -86,7 +86,7 @@ agent.update(&features, action, reward);
 ### GPU Kernel (requires `--features gpu`)
 
 ```rust
-use pictl::gpu::LinUCBGPU;
+use wasm4pm::gpu::LinUCBGPU;
 
 // Initialise (async GPU device acquisition)
 let mut kernel = LinUCBGPU::new()?;
@@ -129,12 +129,12 @@ All features must be caller-normalized into [0.0, 1.0] before passing to the ker
 
 ## Action Space
 
-40 algorithm slots map to the pictl algorithm registry:
+40 algorithm slots map to the wasm4pm algorithm registry:
 
 | Slots | Algorithms |
 |-------|-----------|
 | 0–13 | Discovery algorithms (dfg, heuristic_miner, inductive_miner, ...) |
-| 14–19 | ML analysis (ml_classify, ml_cluster, ml_forecast, ...) |
+| 14–19 | ML analysis (ml_classify, ml_cluster [internal only — no JS export], ml_forecast, ...) |
 | 20–36 | Extended discovery + conformance |
 | 37–39 | Reserved for future algorithms |
 

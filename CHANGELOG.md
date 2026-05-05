@@ -23,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 **MCP (Model Context Protocol) Integration**
 - New tools for AI-assisted process mining: `discover_alpha_footprints`, `compute_conformance_fitness`, `check_backend_health`
-- Schema discriminators for conformance output (`chatmangpt.pictl.conformance.v1`)
+- Schema discriminators for conformance output (`chatmangpt.wasm4pm.conformance.v1`)
 
 **Robustness & Determinism**
 - Seeded RNG implementation for Genetic, PSO, ACO, and Simulated Annealing algorithms
@@ -44,7 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Crate Renaming**: Renamed core crate from `pictl` to `wasm4pm` for workspace consistency
+- **Crate Renaming**: Renamed core crate from `wasm4pm` to `wasm4pm` for workspace consistency
 - **Version Synchronization**: Aligned all crates and packages to v26.4.28
 - **Performance**: Vectorized inner loops (SIMD) for DFG, conformance, and variant discovery
 
@@ -58,7 +58,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Protection layer: Circuit breaker + guard rules (1.509 ns, branchless bitwise operations)
 - Optimization layer: Bellman Q-learning updates (88 ns)
 - **Full cycle latency**: 102.32 ns (3x safety margin)
-- State persistence: Auto-save/restore of Q-table and SPC history to `.pictl/autoprocess-state.json`
+- State persistence: Auto-save/restore of Q-table and SPC history to `.wasm4pm/autoprocess-state.json`
 - OTEL instrumentation: `autoprocess.cycle` span with state_id, action, reward, spc_alerts
 
 **Five RL Agents with Contextual Bandit Selection**
@@ -104,9 +104,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bitwise guard evaluation (1.144 ns)
 - All operations deterministic and cycle-invariant
 
-**New Command: `pictl autoprocess`**
-- Usage: `pictl autoprocess <log.xes> [--cycles N] [--watch] [--format json|human]`
-- Auto-creates `.pictl/autoprocess-state.json`
+**New Command: `wpm autoprocess`**
+- Usage: `wpm autoprocess <log.xes> [--cycles N] [--watch] [--format json|human]`
+- Auto-creates `.wasm4pm/autoprocess-state.json`
 - Output includes: state_id, action_taken, reward, spc_alerts, next_state
 - Watch mode: Real-time metrics dashboard
 
@@ -139,7 +139,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 **Files Modified**:
 - `packages/engine/src/transitions.ts` — Added autonomic state transitions
 - `packages/observability/src/instrumentation.ts` — Added `autoprocess.cycle` span type
-- `apps/pictl/src/commands/autoprocess.ts` — New command implementation
+- `apps/wasm4pm/src/commands/autoprocess.ts` — New command implementation
 - `wasm4pm/Cargo.toml` — Feature flags for autonomic loop
 
 ### Fixed
@@ -171,9 +171,9 @@ RUST_MIN_STACK=8388608 cargo test -- --ignored --test-threads=1
 **None** — Fully backward compatible.
 
 **Behavioral Changes** (due to autonomic loop):
-- New command `pictl autoprocess` available
+- New command `wpm autoprocess` available
 - New OTEL span types: `autoprocess.cycle`, `spc_alert_detected`
-- State persistence file created automatically (`.pictl/autoprocess-state.json`)
+- State persistence file created automatically (`.wasm4pm/autoprocess-state.json`)
 - Circuit breaker now auto-engages (was manual-only in v26.4.10)
 
 ### Migration Guide
@@ -182,9 +182,9 @@ See `docs/UPGRADE_TO_VISION_2030.md` for step-by-step upgrade instructions.
 
 **Quick start**:
 ```bash
-npm install -g @seanchatmangpt/pictl@26.4.16
-pictl doctor  # Verify autonomic loop active
-pictl autoprocess sample.xes --format json
+npm install -g @seanchatmangpt/wasm4pm@26.4.16
+wpm doctor  # Verify autonomic loop active
+wpm autoprocess sample.xes --format json
 ```
 
 ### Known Limitations
@@ -193,7 +193,7 @@ pictl autoprocess sample.xes --format json
 2. **SPC history**: 100-snapshot buffer provides ~100ms to 100s window (configurable).
 3. **Manual circuit reset**: After 3 strikes, requires manual intervention or state file deletion.
 4. **No GPU acceleration**: Autonomic loop runs in WASM (single-threaded). Non-WASM targets can use `feature-gpu`.
-5. **Determinism via seed**: Set `PICTL_SEED=<value>` for reproducible exploration.
+5. **Determinism via seed**: Set `WASM4PM_SEED=<value>` for reproducible exploration.
 
 ### Contributors
 
@@ -201,7 +201,7 @@ pictl autoprocess sample.xes --format json
 - Joe Armstrong (fault tolerance patterns)
 - Sean Chatman (vision, architecture)
 - Roberto & Straughter (MIOSA integration)
-- pictl test team (8 autoprocess + 18 ML validation tests)
+- wasm4pm test team (8 autoprocess + 18 ML validation tests)
 - pm4py-mcp team (external model validation)
 
 ---
@@ -264,7 +264,7 @@ pictl autoprocess sample.xes --format json
 - **docs/explanation/error-handling.md**: Added Recovery and MTTR section
 - **RELEASE_NOTES.md**: Added v26.4.10 comprehensive release notes
 - **memory/mttr_optimization_complete.md**: Full MTTR optimization record
-- **.pictl/metrics-dashboard.md**: Updated with TPS resolution history
+- **.wasm4pm/metrics-dashboard.md**: Updated with TPS resolution history
 
 ### Technical Details
 
@@ -299,17 +299,17 @@ pictl autoprocess sample.xes --format json
 However, scripts that relied on graceful degradation should now handle explicit errors:
 ```bash
 # Before (v26.4.9) — degraded mode hid errors
-pictl run --config broken-config.toml  # Exit 0, but results degraded
+wpm run --config broken-config.toml  # Exit 0, but results degraded
 
 # After (v26.4.10) — fail fast makes errors visible
-pictl run --config broken-config.toml  # Exit 1, clear error message
+wpm run --config broken-config.toml  # Exit 1, clear error message
 ```
 
 ## [26.4.8] - 2026-04-08
 
 ### Breaking
 
-- **@pictl/ml**: Removed `micro-ml` dependency. All ML algorithms are now native TypeScript implementations with zero external ML dependencies.
+- **@wasm4pm/ml**: Removed `micro-ml` dependency. All ML algorithms are now native TypeScript implementations with zero external ML dependencies.
 - **License**: Changed from MIT/Apache-2.0 to BSL 1.1, converting to AGPL-3.0-only after 2 years.
 
 ### Added
@@ -331,7 +331,7 @@ pictl run --config broken-config.toml  # Exit 1, clear error message
 
 ### Changed
 
-- **@pictl/ml — Native ML Engine**: All 6 ML modules rewritten with hyper-optimized native implementations
+- **@wasm4pm/ml — Native ML Engine**: All 6 ML modules rewritten with hyper-optimized native implementations
   - `classifiers.ts`: Columnar `Float64Array` layout, pre-allocated distance buffers, single-pass Naive Bayes, log-sum-exp stable softmax
   - `clustering.ts`: Columnar k-means (k-means++ init, squared-distance), DBSCAN with bitset visited tracking
   - `anomaly.ts`: O(n) sliding window SMA, pre-computed autocorrelation denominator, Float64Array throughout
@@ -353,7 +353,7 @@ pictl run --config broken-config.toml  # Exit 1, clear error message
 
 ### Removed
 
-- `micro-ml` dependency from `@pictl/ml` (replaced by native implementations)
+- `micro-ml` dependency from `@wasm4pm/ml` (replaced by native implementations)
 - 40+ redundant documentation files (archived, not deleted)
 - `LICENSE-MIT` and `LICENSE-APACHE` (replaced by `LICENSE` with BSL 1.1)
 
@@ -364,8 +364,8 @@ pictl run --config broken-config.toml  # Exit 1, clear error message
 **ML Integration — All 10 Gaps Closed**
 
 Phase 1 — CLI Registration:
-- `pictl ml` command: classify, cluster, forecast, anomaly, regress, pca subtasks
-- `pictl powl` command: POWL process model discovery
+- `wpm ml` command: classify, cluster, forecast, anomaly, regress, pca subtasks
+- `wpm powl` command: POWL process model discovery
 
 Phase 2 — Dispatcher Wiring:
 - `packages/kernel/src/step-dispatcher.ts` bridges engine StepDispatcher to kernel ML handlers
@@ -376,9 +376,9 @@ Phase 3 — Planner / Config / Registry:
 - New `[ml]` config section
 - Planner generates ML analysis steps when `config.ml.enabled`
 
-Phase 4 — pictl Integration:
-- `pictl run`: ML post-discovery phase when ML config enabled
-- `pictl drift-watch --enhanced`: ML anomaly detection overlay on EWMA drift
+Phase 4 — wasm4pm Integration:
+- `wasm4pm run`: ML post-discovery phase when ML config enabled
+- `wpm drift-watch --enhanced`: ML anomaly detection overlay on EWMA drift
 
 Phase 5 — ML Observability:
 - New event types: `MlModelTraining`, `MlPredictionMade`, `MlFeatureExtraction`, `MlAnomalyDetected`
@@ -392,7 +392,7 @@ Phase 7 — Swarm ML Support:
 - `ml_ensemble` aggregation strategy
 
 **Monorepo Consolidation — 16 packages to 9**
-- Deleted 7 packages, merged into `@pictl/contracts` and `@pictl/engine`
+- Deleted 7 packages, merged into `@wasm4pm/contracts` and `@wasm4pm/engine`
 - Removed circular dependencies
 
 **DX Improvements**
@@ -400,7 +400,7 @@ Phase 7 — Swarm ML Support:
 - GitHub Actions CI: `typescript.yml` workflow
 - `scripts/health.mjs` and `scripts/check-engines.mjs`
 
-**pictl doctor — 6 checks to 17 checks**
+**wpm doctor — 6 checks to 17 checks**
 
 ### Fixed
 - ESM runtime error (`ERR_MODULE_NOT_FOUND`) — added `.js` extensions
@@ -409,7 +409,7 @@ Phase 7 — Swarm ML Support:
 - `powl.ts` type cast
 
 ### Breaking
-- All imports from `@wasm4pm/types` and `@wasm4pm/templates` → `@pictl/contracts`
+- All imports from `@wasm4pm/types` and `@wasm4pm/templates` → `@wasm4pm/contracts`
 - `ErrorInfo` type renamed to `EngineError`
 
 ## [26.4.5] - 2026-04-04

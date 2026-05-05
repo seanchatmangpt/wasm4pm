@@ -10,8 +10,8 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).parent.parent.parent
 CRITERION_DIR = REPO_ROOT / "target" / "criterion"
 WASM_RESULTS_DIR = REPO_ROOT / "results"
-TRENDS_FILE = REPO_ROOT / ".pictl" / "benchmarks" / "trends.json"
-BASELINES_DIR = REPO_ROOT / ".pictl" / "benchmarks" / "baselines"
+TRENDS_FILE = REPO_ROOT / ".wasm4pm" / "benchmarks" / "trends.json"
+BASELINES_DIR = REPO_ROOT / ".wasm4pm" / "benchmarks" / "baselines"
 
 def get_latest_wasm_results():
     files = glob.glob(str(WASM_RESULTS_DIR / "wasm_bench_*.json"))

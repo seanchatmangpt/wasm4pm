@@ -1,0 +1,126 @@
+{
+  "schema_version": "1",
+  "generated": "2026-05-05T20:46:02.000Z",
+  "algorithms": {
+    "dfg": {
+      "median_ms_per_100_events": 0.5,
+      "speed_score": 5,
+      "quality_score": 30,
+      "profile": ["browser", "cloud", "fog", "edge", "iot", "mobile"]
+    },
+    "process_skeleton": {
+      "median_ms_per_100_events": 0.3,
+      "speed_score": 3,
+      "quality_score": 25,
+      "profile": ["browser", "cloud", "fog", "edge", "iot", "mobile"]
+    },
+    "simd_streaming_dfg": {
+      "median_ms_per_100_events": 0.2,
+      "speed_score": 2,
+      "quality_score": 28,
+      "profile": ["browser", "cloud", "fog", "edge", "iot", "mobile"]
+    },
+    "alpha_plus_plus": {
+      "median_ms_per_100_events": 5.0,
+      "speed_score": 20,
+      "quality_score": 45,
+      "profile": ["browser", "cloud", "fog", "edge", "iot", "mobile"]
+    },
+    "heuristic_miner": {
+      "median_ms_per_100_events": 2.0,
+      "speed_score": 25,
+      "quality_score": 50,
+      "profile": ["browser", "cloud", "fog", "edge", "iot", "mobile"]
+    },
+    "inductive_miner": {
+      "median_ms_per_100_events": 8.0,
+      "speed_score": 30,
+      "quality_score": 55,
+      "profile": ["browser", "cloud", "fog", "edge"]
+    },
+    "hill_climbing": {
+      "median_ms_per_100_events": 15.0,
+      "speed_score": 40,
+      "quality_score": 55,
+      "profile": ["browser", "cloud", "fog", "edge"]
+    },
+    "declare": {
+      "median_ms_per_100_events": 12.0,
+      "speed_score": 35,
+      "quality_score": 50,
+      "profile": ["browser", "cloud", "fog", "edge"]
+    },
+    "simulated_annealing": {
+      "median_ms_per_100_events": 30.0,
+      "speed_score": 55,
+      "quality_score": 65,
+      "profile": ["browser", "cloud", "fog", "edge"]
+    },
+    "a_star": {
+      "median_ms_per_100_events": 45.0,
+      "speed_score": 60,
+      "quality_score": 70,
+      "profile": ["browser", "cloud", "fog", "edge"]
+    },
+    "aco": {
+      "median_ms_per_100_events": 60.0,
+      "speed_score": 65,
+      "quality_score": 75,
+      "profile": ["browser", "cloud", "fog", "edge"]
+    },
+    "pso": {
+      "median_ms_per_100_events": 70.0,
+      "speed_score": 70,
+      "quality_score": 75,
+      "profile": ["browser", "cloud", "fog", "edge"]
+    },
+    "genetic_algorithm": {
+      "median_ms_per_100_events": 400.0,
+      "speed_score": 75,
+      "quality_score": 80,
+      "profile": ["browser", "cloud", "fog", "edge"]
+    },
+    "optimized_dfg": {
+      "median_ms_per_100_events": 25.0,
+      "speed_score": 70,
+      "quality_score": 85,
+      "profile": ["browser", "cloud", "fog"]
+    },
+    "ilp": {
+      "median_ms_per_100_events": 80.0,
+      "speed_score": 80,
+      "quality_score": 90,
+      "profile": ["browser", "cloud", "fog", "edge"]
+    },
+    "ml_classify": {
+      "median_ms_per_100_events": 1.0,
+      "speed_score": 40,
+      "quality_score": 60,
+      "profile": ["browser", "cloud", "fog"]
+    },
+    "ml_regress": {
+      "median_ms_per_100_events": 0.5,
+      "speed_score": 25,
+      "quality_score": 50,
+      "profile": ["browser", "cloud", "fog"]
+    },
+    "ml_forecast": {
+      "median_ms_per_100_events": 0.5,
+      "speed_score": 30,
+      "quality_score": 50,
+      "profile": ["browser", "cloud", "fog"]
+    },
+    "ml_anomaly": {
+      "median_ms_per_100_events": 0.8,
+      "speed_score": 30,
+      "quality_score": 55,
+      "profile": ["browser", "cloud", "fog"]
+    },
+    "ml_pca": {
+      "median_ms_per_100_events": 0.5,
+      "speed_score": 35,
+      "quality_score": 50,
+      "profile": ["browser", "cloud", "fog"]
+    }
+  }
+}

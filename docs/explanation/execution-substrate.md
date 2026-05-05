@@ -171,11 +171,11 @@ Each stage produces:
 
 ```bash
 # Day 1
-pictl run --config config.toml
+wpm run --config config.toml
 # → output hash = blake3:abc123
 
 # Day 1000, same command
-pictl run --config config.toml
+wpm run --config config.toml
 # → output hash = blake3:abc123  (SAME!)
 ```
 

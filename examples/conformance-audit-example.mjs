@@ -4,7 +4,7 @@
  * Example: Process Mining Conformance Audit
  *
  * This example demonstrates how to:
- * 1. Capture OTEL spans from pictl execution
+ * 1. Capture OTEL spans from wasm4pm execution
  * 2. Run conformance audit against declared process
  * 3. Generate audit report with van der Aalst verdict
  * 4. Interpret results
@@ -12,13 +12,13 @@
  * Usage:
  *   node examples/conformance-audit-example.mjs
  *   node examples/conformance-audit-example.mjs --spans=spans.json
- *   node examples/conformance-audit-example.mjs --jaeger-url=http://localhost:16686 --service=pictl
+ *   node examples/conformance-audit-example.mjs --jaeger-url=http://localhost:16686 --service=wasm4pm
  */
 
 import {
-  auditPictlProcess,
+  auditWasm4pmProcess,
   OCELEventLog,
-  PictlAuditor,
+  Wasm4pmAuditor,
   loadSpansFromFile,
   loadSpansFromJaeger,
 } from '../semconv/conformance-audit.mjs';
@@ -30,7 +30,7 @@ const args = process.argv.slice(2);
 let spansSource = 'memory'; // memory, file, jaeger
 let spansFile = null;
 let jaegerUrl = null;
-let serviceName = 'pictl';
+let serviceName = 'wasm4pm';
 
 for (const arg of args) {
   if (arg.startsWith('--spans=')) {
@@ -62,7 +62,7 @@ async function auditMemorySpans() {
       end_time: new Date('2026-04-10T10:00:05Z').toISOString(),
       status: { code: 'OK' },
       attributes: {
-        service_name: 'pictl',
+        service_name: 'wasm4pm',
         pm_discovery_algorithm: 'dfg',
         pm_discovery_input_format: 'ocel',
         pm_discovery_model_type: 'dfg',
@@ -77,7 +77,7 @@ async function auditMemorySpans() {
       end_time: new Date('2026-04-10T10:00:10Z').toISOString(),
       status: { code: 'OK' },
       attributes: {
-        service_name: 'pictl',
+        service_name: 'wasm4pm',
         pm_conformance_fitness: 0.97,
         pm_conformance_precision: 0.95,
         pm_conformance_conforms: true,
@@ -91,14 +91,14 @@ async function auditMemorySpans() {
       end_time: new Date('2026-04-10T10:00:15Z').toISOString(),
       status: { code: 'OK' },
       attributes: {
-        service_name: 'pictl',
+        service_name: 'wasm4pm',
         pm_analysis_type: 'variant',
         pm_analysis_metric_value: 3,
       },
     },
   ];
 
-  const report = await auditPictlProcess(truthfulSpans);
+  const report = await auditWasm4pmProcess(truthfulSpans);
 
   console.log(`✓ Audit completed in ${report.duration_ms}ms\n`);
   console.log(`Verdict: ${report.verdict.status}`);
@@ -154,7 +154,7 @@ async function auditMemorySpans() {
       end_time: new Date('2026-04-10T10:00:04Z').toISOString(),
       status: { code: 'OK' },
       attributes: {
-        service_name: 'pictl',
+        service_name: 'wasm4pm',
         error_recovery: true,
         retry_attempt: 1,
       },
@@ -162,7 +162,7 @@ async function auditMemorySpans() {
     ...truthfulSpans.slice(1),
   ];
 
-  const variantReport = await auditPictlProcess(variantSpans);
+  const variantReport = await auditWasm4pmProcess(variantSpans);
 
   console.log(`Verdict: ${variantReport.verdict.status}`);
   console.log(`Confidence: ${(variantReport.verdict.confidence * 100).toFixed(1)}%\n`);
@@ -200,7 +200,7 @@ async function auditMemorySpans() {
       start_time: new Date('2026-04-10T10:00:00Z').toISOString(),
       end_time: new Date('2026-04-10T10:00:03Z').toISOString(),
       status: { code: 'OK' },
-      attributes: { service_name: 'pictl', pm_conformance_fitness: 0.8 },
+      attributes: { service_name: 'wasm4pm', pm_conformance_fitness: 0.8 },
     },
     {
       span_id: 'discovery-late',
@@ -209,11 +209,11 @@ async function auditMemorySpans() {
       start_time: new Date('2026-04-10T10:00:04Z').toISOString(),
       end_time: new Date('2026-04-10T10:00:08Z').toISOString(),
       status: { code: 'OK' },
-      attributes: { service_name: 'pictl', pm_discovery_algorithm: 'dfg' },
+      attributes: { service_name: 'wasm4pm', pm_discovery_algorithm: 'dfg' },
     },
   ];
 
-  const deceptiveReport = await auditPictlProcess(deceptiveSpans);
+  const deceptiveReport = await auditWasm4pmProcess(deceptiveSpans);
 
   console.log(`Verdict: ${deceptiveReport.verdict.status}`);
   console.log(`Confidence: ${(deceptiveReport.verdict.confidence * 100).toFixed(1)}%\n`);
@@ -262,7 +262,7 @@ async function auditFileSpans() {
 
   console.log(`✓ Loaded ${spans.length} spans\n`);
 
-  const report = await auditPictlProcess(spans);
+  const report = await auditWasm4pmProcess(spans);
   console.log(`\nVerdict: ${report.verdict.status}`);
   console.log(`Fitness: ${report.metrics.fitness.toFixed(2)}\n`);
 
@@ -289,7 +289,7 @@ async function auditJaegerSpans() {
 
   console.log(`✓ Loaded ${spans.length} spans from Jaeger\n`);
 
-  const report = await auditPictlProcess(spans);
+  const report = await auditWasm4pmProcess(spans);
   console.log(`\nVerdict: ${report.verdict.status}`);
   console.log(`Fitness: ${report.metrics.fitness.toFixed(2)}\n`);
 
@@ -308,13 +308,13 @@ function printUsage() {
   console.log('  node examples/conformance-audit-example.mjs');
   console.log('  node examples/conformance-audit-example.mjs --spans=spans.json');
   console.log(
-    '  node examples/conformance-audit-example.mjs --jaeger-url=http://localhost:16686 --service=pictl\n'
+    '  node examples/conformance-audit-example.mjs --jaeger-url=http://localhost:16686 --service=wasm4pm\n'
   );
 
   console.log('Options:');
   console.log('  --spans=<file>           Load spans from JSON file (OTEL format)');
   console.log('  --jaeger-url=<url>       Load spans from Jaeger API');
-  console.log('  --service=<name>         Service name for Jaeger query (default: pictl)\n');
+  console.log('  --service=<name>         Service name for Jaeger query (default: wasm4pm)\n');
 
   console.log('Examples:');
   console.log('  # Run with synthetic data (demonstrating all verdicts)');
@@ -323,9 +323,9 @@ function printUsage() {
   console.log('  # Audit real spans from file');
   console.log('  node examples/conformance-audit-example.mjs --spans=/tmp/spans.json\n');
 
-  console.log('  # Audit pictl service from running Jaeger');
+  console.log('  # Audit wasm4pm service from running Jaeger');
   console.log(
-    '  node examples/conformance-audit-example.mjs --jaeger-url=http://localhost:16686 --service=pictl\n'
+    '  node examples/conformance-audit-example.mjs --jaeger-url=http://localhost:16686 --service=wasm4pm\n'
   );
 }
 

@@ -74,7 +74,7 @@ export class Pm4pyBackend implements MiningBackend {
   async discover(
     log: EventLogIR,
     algorithmId: string,
-    budget: BudgetEnvelope,
+    budget: BudgetEnvelope
   ): Promise<ResultEnvelope<ModelIR>> {
     const startMs = Date.now();
     try {
@@ -91,13 +91,13 @@ export class Pm4pyBackend implements MiningBackend {
         model_type: response.payload.model_type,
         algorithm_id: algorithmId,
         capabilities: {
-            online_safe: false,
-            offline_only: true,
-            replay_ready: true,
-            alignment_ready: true,
-            streaming_compatible: false,
-            exportable_to_pnml: true,
-            exportable_to_bpmn: true,
+          online_safe: false,
+          offline_only: true,
+          replay_ready: true,
+          alignment_ready: true,
+          streaming_compatible: false,
+          exportable_to_pnml: true,
+          exportable_to_bpmn: true,
         },
         nodes: [], // Python bridge currently returns metadata, not full IR graph yet
         edges: [],
@@ -130,114 +130,118 @@ export class Pm4pyBackend implements MiningBackend {
   async conformance(
     log: EventLogIR,
     model: ModelIR,
-    budget: BudgetEnvelope,
+    budget: BudgetEnvelope
   ): Promise<ResultEnvelope<ConformanceResult>> {
     const startMs = Date.now();
     try {
-        const response = await this.runBridgeTask({
-            task: 'conformance',
-            log,
-            model,
-        });
+      const response = await this.runBridgeTask({
+        task: 'conformance',
+        log,
+        model,
+      });
 
-        if (response.status === 'error') throw new Error(response.error);
+      if (response.status === 'error') throw new Error(response.error);
 
-        return {
-            run_id: this.generateUuid(),
-            status: 'success',
-            payload: response.payload,
-            latency_ms: Date.now() - startMs,
-            latency_class: 'seconds',
-            backend_id: this.id,
-            invocation_id: this.generateUuid(),
-            cycle_seq: 0,
-            algorithm_id: 'conformance',
-            provenance: this.createProvenance('conformance'),
-            stale: false,
-        };
+      return {
+        run_id: this.generateUuid(),
+        status: 'success',
+        payload: response.payload,
+        latency_ms: Date.now() - startMs,
+        latency_class: 'seconds',
+        backend_id: this.id,
+        invocation_id: this.generateUuid(),
+        cycle_seq: 0,
+        algorithm_id: 'conformance',
+        provenance: this.createProvenance('conformance'),
+        stale: false,
+      };
     } catch (error) {
-        return this.createFailedResult('conformance', startMs, String(error)) as any;
+      return this.createFailedResult('conformance', startMs, String(error)) as any;
     }
   }
 
   async analyze(
     log: EventLogIR,
     task: AnalysisTask,
-    budget: BudgetEnvelope,
+    budget: BudgetEnvelope
   ): Promise<ResultEnvelope<unknown>> {
     const startMs = Date.now();
     try {
-        const response = await this.runBridgeTask({
-            task: 'analyze',
-            algorithm_id: task.task_type,
-            log,
-            params: task.parameters,
-        });
+      const response = await this.runBridgeTask({
+        task: 'analyze',
+        algorithm_id: task.task_type,
+        log,
+        params: task.parameters,
+      });
 
-        if (response.status === 'error') throw new Error(response.error);
+      if (response.status === 'error') throw new Error(response.error);
 
-        return {
-            run_id: this.generateUuid(),
-            status: 'success',
-            payload: response.payload,
-            latency_ms: Date.now() - startMs,
-            latency_class: 'seconds',
-            backend_id: this.id,
-            invocation_id: this.generateUuid(),
-            cycle_seq: 0,
-            algorithm_id: task.task_type,
-            provenance: this.createProvenance(task.task_type),
-            stale: false,
-        };
+      return {
+        run_id: this.generateUuid(),
+        status: 'success',
+        payload: response.payload,
+        latency_ms: Date.now() - startMs,
+        latency_class: 'seconds',
+        backend_id: this.id,
+        invocation_id: this.generateUuid(),
+        cycle_seq: 0,
+        algorithm_id: task.task_type,
+        provenance: this.createProvenance(task.task_type),
+        stale: false,
+      };
     } catch (error) {
-        return this.createFailedResult(task.task_type, startMs, String(error)) as any;
+      return this.createFailedResult(task.task_type, startMs, String(error)) as any;
     }
   }
 
   async healthCheck(): Promise<{ healthy: boolean; latency_ms: number; detail?: string }> {
     const startMs = Date.now();
     try {
-        const response = await this.runBridgeTask({ task: 'health' });
-        return {
-            healthy: response.status === 'healthy',
-            latency_ms: Date.now() - startMs,
-            detail: `pm4py version ${response.pm4py_version}`,
-        };
+      const response = await this.runBridgeTask({ task: 'health' });
+      return {
+        healthy: response.status === 'healthy',
+        latency_ms: Date.now() - startMs,
+        detail: `pm4py version ${response.pm4py_version}`,
+      };
     } catch (error) {
-        return {
-            healthy: false,
-            latency_ms: Date.now() - startMs,
-            detail: String(error),
-        };
+      return {
+        healthy: false,
+        latency_ms: Date.now() - startMs,
+        detail: String(error),
+      };
     }
   }
 
   private async runBridgeTask(input: any): Promise<any> {
-      return new Promise((resolve, reject) => {
-          const bridgePath = path.resolve(process.cwd(), 'packages/kernel/scripts/pm4py_bridge.py');
-          const py = spawn('python3', [bridgePath]);
-          
-          let stdout = '';
-          let stderr = '';
+    return new Promise((resolve, reject) => {
+      const bridgePath = path.resolve(process.cwd(), 'packages/kernel/scripts/pm4py_bridge.py');
+      const py = spawn('python3', [bridgePath]);
 
-          py.stdout.on('data', (data) => { stdout += data; });
-          py.stderr.on('data', (data) => { stderr += data; });
+      let stdout = '';
+      let stderr = '';
 
-          py.on('close', (code) => {
-              if (code !== 0) {
-                  reject(new Error(`Bridge exited with code ${code}: ${stderr}`));
-                  return;
-              }
-              try {
-                  resolve(JSON.parse(stdout));
-              } catch (e) {
-                  reject(new Error(`Failed to parse bridge output: ${stdout}`));
-              }
-          });
-
-          py.stdin.write(JSON.stringify(input));
-          py.stdin.end();
+      py.stdout.on('data', (data) => {
+        stdout += data;
       });
+      py.stderr.on('data', (data) => {
+        stderr += data;
+      });
+
+      py.on('close', (code) => {
+        if (code !== 0) {
+          reject(new Error(`Bridge exited with code ${code}: ${stderr}`));
+          return;
+        }
+        try {
+          resolve(JSON.parse(stdout));
+        } catch (e) {
+          reject(new Error(`Failed to parse bridge output: ${stdout}`));
+        }
+      });
+
+      py.stdin.write(JSON.stringify(input));
+      py.stdin.end();
+    });
   }
 
   private generateUuid(): string {
@@ -261,18 +265,18 @@ export class Pm4pyBackend implements MiningBackend {
 
   private createFailedResult(algorithmId: string, startMs: number, error: string): any {
     return {
-        run_id: this.generateUuid(),
-        status: 'failed',
-        payload: null,
-        error,
-        latency_ms: Date.now() - startMs,
-        latency_class: 'seconds',
-        backend_id: this.id,
-        invocation_id: this.generateUuid(),
-        cycle_seq: 0,
-        algorithm_id: algorithmId,
-        provenance: this.createProvenance(algorithmId),
-        stale: false,
+      run_id: this.generateUuid(),
+      status: 'failed',
+      payload: null,
+      error,
+      latency_ms: Date.now() - startMs,
+      latency_class: 'seconds',
+      backend_id: this.id,
+      invocation_id: this.generateUuid(),
+      cycle_seq: 0,
+      algorithm_id: algorithmId,
+      provenance: this.createProvenance(algorithmId),
+      stale: false,
     };
   }
 }

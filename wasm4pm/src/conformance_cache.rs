@@ -10,6 +10,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use wasm_bindgen::prelude::*;
 
+use crate::utilities::to_js_str;
+
 /// A cached conformance result (lightweight summary).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CachedConformanceResult {
@@ -174,8 +176,7 @@ pub fn conformance_cache_insert(
                 },
             );
             *s = serde_json::to_string(&cache).unwrap_or_default();
-            serde_wasm_bindgen::to_value(&json!({ "ok": true }))
-                .map_err(|e| crate::error::js_val(&e.to_string()))
+            to_js_str(&json!({ "ok": true }))
         }
         Some(_) => Err(crate::error::js_val("Object is not a ConformanceCache")),
         None => Err(crate::error::js_val(&format!(
@@ -192,12 +193,11 @@ pub fn conformance_cache_stats(handle: &str) -> Result<JsValue, JsValue> {
         Some(crate::state::StoredObject::JsonString(s)) => {
             let cache: ConformanceCache = serde_json::from_str(s).unwrap_or_default();
             let (hits, misses, entries) = cache.stats();
-            serde_wasm_bindgen::to_value(&json!({
+            to_js_str(&json!({
                 "hits": hits,
                 "misses": misses,
                 "entries": entries,
             }))
-            .map_err(|e| crate::error::js_val(&e.to_string()))
         }
         Some(_) => Err(crate::error::js_val("Object is not a ConformanceCache")),
         None => Err(crate::error::js_val(&format!(
@@ -215,8 +215,7 @@ pub fn conformance_cache_clear(handle: &str) -> Result<JsValue, JsValue> {
             let mut cache: ConformanceCache = serde_json::from_str(s).unwrap_or_default();
             cache.clear();
             *s = serde_json::to_string(&cache).unwrap_or_default();
-            serde_wasm_bindgen::to_value(&json!({ "ok": true }))
-                .map_err(|e| crate::error::js_val(&e.to_string()))
+            to_js_str(&json!({ "ok": true }))
         }
         Some(_) => Err(crate::error::js_val("Object is not a ConformanceCache")),
         None => Err(crate::error::js_val(&format!(
@@ -232,8 +231,7 @@ pub fn conformance_cache_hash_model(dfg_json: &str) -> Result<JsValue, JsValue> 
     let dfg: crate::models::DirectlyFollowsGraph = serde_json::from_str(dfg_json)
         .map_err(|e| crate::error::js_val(&format!("Invalid DFG JSON: {}", e)))?;
     let hash = ConformanceCache::hash_model(&dfg);
-    serde_wasm_bindgen::to_value(&json!({ "hash": hash }))
-        .map_err(|e| crate::error::js_val(&e.to_string()))
+    to_js_str(&json!({ "hash": hash }))
 }
 
 #[cfg(test)]

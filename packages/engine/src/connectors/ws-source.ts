@@ -65,15 +65,23 @@ class WebSocketEventStream implements EventStream {
           reject(new Error('WebSocket connection timeout'));
         }, 10000);
 
-        ws.addEventListener('open', () => {
-          clearTimeout(timeout);
-          resolve();
-        }, { once: true });
+        ws.addEventListener(
+          'open',
+          () => {
+            clearTimeout(timeout);
+            resolve();
+          },
+          { once: true }
+        );
 
-        ws.addEventListener('error', (event) => {
-          clearTimeout(timeout);
-          reject(new Error(`WebSocket error: ${event}`));
-        }, { once: true });
+        ws.addEventListener(
+          'error',
+          (event) => {
+            clearTimeout(timeout);
+            reject(new Error(`WebSocket error: ${event}`));
+          },
+          { once: true }
+        );
 
         ws.addEventListener('message', (event: MessageEvent) => {
           try {

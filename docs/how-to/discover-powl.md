@@ -6,23 +6,23 @@ POWL (Partially Ordered Workflow Language) discovery finds process models that p
 
 ```bash
 # Basic discovery (default: decision_graph_cyclic variant)
-pictl powl discover -i my-log.xes
+wpm powl discover -i my-log.xes
 
 # Specify variant
-pictl powl discover -i my-log.xes --variant tree
+wpm powl discover -i my-log.xes --variant tree
 
 # Custom parameters
-pictl powl discover -i my-log.xes \
+wpm powl discover -i my-log.xes \
   --variant decision_graph_cyclic \
   --activity-key concept:name \
   --min-trace-count 2 \
   --noise-threshold 0.1
 
 # JSON output
-pictl powl discover -i my-log.xes --format json
+wpm powl discover -i my-log.xes --format json
 
 # Quiet mode (suppress non-error output)
-pictl powl discover -i my-log.xes --quiet
+wpm powl discover -i my-log.xes --quiet
 ```
 
 ## Discovery Variants

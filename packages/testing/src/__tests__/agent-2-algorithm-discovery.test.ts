@@ -21,9 +21,27 @@ describe('Agent 2: Algorithm Discovery', () => {
       const ocel: OcelEventLog = {
         version: '2.0',
         events: [
-          { id: '1', activity: 'pm:discovery', timestamp: '2026-04-12T10:00:00Z', objects: ['inv-1'], attributes: {} },
-          { id: '2', activity: 'pm:conformance', timestamp: '2026-04-12T10:00:01Z', objects: ['inv-1'], attributes: {} },
-          { id: '3', activity: 'pm:analysis', timestamp: '2026-04-12T10:00:02Z', objects: ['inv-1'], attributes: {} },
+          {
+            id: '1',
+            activity: 'pm:discovery',
+            timestamp: '2026-04-12T10:00:00Z',
+            objects: ['inv-1'],
+            attributes: {},
+          },
+          {
+            id: '2',
+            activity: 'pm:conformance',
+            timestamp: '2026-04-12T10:00:01Z',
+            objects: ['inv-1'],
+            attributes: {},
+          },
+          {
+            id: '3',
+            activity: 'pm:analysis',
+            timestamp: '2026-04-12T10:00:02Z',
+            objects: ['inv-1'],
+            attributes: {},
+          },
         ],
         objects: [{ id: 'inv-1', type: 'tool_invocation', state: 'completed', attributes: {} }],
         metadata: {
@@ -59,11 +77,41 @@ describe('Agent 2: Algorithm Discovery', () => {
       const ocel: OcelEventLog = {
         version: '2.0',
         events: [
-          { id: '1', activity: 'a', timestamp: '2026-04-12T10:00:00Z', objects: ['t1'], attributes: {} },
-          { id: '2', activity: 'b', timestamp: '2026-04-12T10:00:01Z', objects: ['t1'], attributes: {} },
-          { id: '3', activity: 'c', timestamp: '2026-04-12T10:00:02Z', objects: ['t1'], attributes: {} },
-          { id: '4', activity: 'a', timestamp: '2026-04-12T10:00:03Z', objects: ['t2'], attributes: {} },
-          { id: '5', activity: 'c', timestamp: '2026-04-12T10:00:04Z', objects: ['t2'], attributes: {} },
+          {
+            id: '1',
+            activity: 'a',
+            timestamp: '2026-04-12T10:00:00Z',
+            objects: ['t1'],
+            attributes: {},
+          },
+          {
+            id: '2',
+            activity: 'b',
+            timestamp: '2026-04-12T10:00:01Z',
+            objects: ['t1'],
+            attributes: {},
+          },
+          {
+            id: '3',
+            activity: 'c',
+            timestamp: '2026-04-12T10:00:02Z',
+            objects: ['t1'],
+            attributes: {},
+          },
+          {
+            id: '4',
+            activity: 'a',
+            timestamp: '2026-04-12T10:00:03Z',
+            objects: ['t2'],
+            attributes: {},
+          },
+          {
+            id: '5',
+            activity: 'c',
+            timestamp: '2026-04-12T10:00:04Z',
+            objects: ['t2'],
+            attributes: {},
+          },
         ],
         objects: [
           { id: 't1', type: 'tool_invocation', state: 'completed', attributes: {} },
@@ -91,8 +139,20 @@ describe('Agent 2: Algorithm Discovery', () => {
       const ocel: OcelEventLog = {
         version: '2.0',
         events: [
-          { id: '1', activity: 'a', timestamp: '2026-04-12T10:00:00Z', objects: ['t1'], attributes: {} },
-          { id: '2', activity: 'b', timestamp: '2026-04-12T10:00:01Z', objects: ['t1'], attributes: {} },
+          {
+            id: '1',
+            activity: 'a',
+            timestamp: '2026-04-12T10:00:00Z',
+            objects: ['t1'],
+            attributes: {},
+          },
+          {
+            id: '2',
+            activity: 'b',
+            timestamp: '2026-04-12T10:00:01Z',
+            objects: ['t1'],
+            attributes: {},
+          },
         ],
         objects: [{ id: 't1', type: 'tool_invocation', state: 'completed', attributes: {} }],
         metadata: {
@@ -106,7 +166,9 @@ describe('Agent 2: Algorithm Discovery', () => {
 
       // Results should be ranked by fitness (descending)
       for (let i = 0; i < results.algorithms.length - 1; i++) {
-        expect(results.algorithms[i].fitness).toBeGreaterThanOrEqual(results.algorithms[i + 1].fitness);
+        expect(results.algorithms[i].fitness).toBeGreaterThanOrEqual(
+          results.algorithms[i + 1].fitness
+        );
       }
 
       // Top algorithm should have fitness >= 0.5
@@ -119,8 +181,20 @@ describe('Agent 2: Algorithm Discovery', () => {
       const ocel: OcelEventLog = {
         version: '2.0',
         events: [
-          { id: '1', activity: 'a', timestamp: '2026-04-12T10:00:00Z', objects: ['t1'], attributes: {} },
-          { id: '2', activity: 'b', timestamp: '2026-04-12T10:00:01Z', objects: ['t1'], attributes: {} },
+          {
+            id: '1',
+            activity: 'a',
+            timestamp: '2026-04-12T10:00:00Z',
+            objects: ['t1'],
+            attributes: {},
+          },
+          {
+            id: '2',
+            activity: 'b',
+            timestamp: '2026-04-12T10:00:01Z',
+            objects: ['t1'],
+            attributes: {},
+          },
         ],
         objects: [{ id: 't1', type: 'tool_invocation', state: 'completed', attributes: {} }],
         metadata: {
@@ -141,8 +215,20 @@ describe('Agent 2: Algorithm Discovery', () => {
       const ocel: OcelEventLog = {
         version: '2.0',
         events: [
-          { id: '1', activity: 'a', timestamp: '2026-04-12T10:00:00Z', objects: ['t1'], attributes: {} },
-          { id: '2', activity: 'b', timestamp: '2026-04-12T10:00:01Z', objects: ['t1'], attributes: {} },
+          {
+            id: '1',
+            activity: 'a',
+            timestamp: '2026-04-12T10:00:00Z',
+            objects: ['t1'],
+            attributes: {},
+          },
+          {
+            id: '2',
+            activity: 'b',
+            timestamp: '2026-04-12T10:00:01Z',
+            objects: ['t1'],
+            attributes: {},
+          },
         ],
         objects: [{ id: 't1', type: 'tool_invocation', state: 'completed', attributes: {} }],
         metadata: {

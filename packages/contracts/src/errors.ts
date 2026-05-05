@@ -182,8 +182,7 @@ export interface ErrorInfo {
  */
 const REMEDIATIONS: Record<ErrorCode, string> = {
   // Configuration errors
-  CONFIG_INVALID:
-    'Check your wasm4pm.toml syntax. Run: wpm init to generate a valid config.',
+  CONFIG_INVALID: 'Check your wasm4pm.toml syntax. Run: wpm init to generate a valid config.',
   CONFIG_MISSING:
     'Configuration file not found. Create wasm4pm.toml in your project root or run: wpm init',
 
@@ -377,7 +376,9 @@ export function formatError(error: ErrorInfo, colorize: boolean = true): string 
     lines.push(colorize ? `${ANSI.dim}Context:${ANSI.reset}` : 'Context:');
     for (const [key, value] of Object.entries(error.context)) {
       const formatted = typeof value === 'string' ? value : JSON.stringify(value);
-      lines.push(colorize ? `  ${ANSI.dim}${key}: ${formatted}${ANSI.reset}` : `  ${key}: ${formatted}`);
+      lines.push(
+        colorize ? `  ${ANSI.dim}${key}: ${formatted}${ANSI.reset}` : `  ${key}: ${formatted}`
+      );
     }
   }
 
@@ -446,10 +447,7 @@ export function formatErrorJSON(error: ErrorInfo): Record<string, any> {
  * logError(error, 'json');     // JSON for structured logging
  * ```
  */
-export function logError(
-  error: ErrorInfo,
-  format: 'human' | 'plain' | 'json' = 'human'
-): void {
+export function logError(error: ErrorInfo, format: 'human' | 'plain' | 'json' = 'human'): void {
   if (format === 'json') {
     console.error(JSON.stringify(formatErrorJSON(error)));
   } else if (format === 'human') {

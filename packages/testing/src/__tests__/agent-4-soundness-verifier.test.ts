@@ -21,9 +21,27 @@ describe('Agent 4: Soundness Verifier', () => {
       const ocel: OcelEventLog = {
         version: '2.0',
         events: [
-          { id: '1', activity: 'a', timestamp: '2026-04-12T10:00:00Z', objects: ['t1'], attributes: {} },
-          { id: '2', activity: 'b', timestamp: '2026-04-12T10:00:01Z', objects: ['t1'], attributes: {} },
-          { id: '3', activity: 'c', timestamp: '2026-04-12T10:00:02Z', objects: ['t1'], attributes: {} },
+          {
+            id: '1',
+            activity: 'a',
+            timestamp: '2026-04-12T10:00:00Z',
+            objects: ['t1'],
+            attributes: {},
+          },
+          {
+            id: '2',
+            activity: 'b',
+            timestamp: '2026-04-12T10:00:01Z',
+            objects: ['t1'],
+            attributes: {},
+          },
+          {
+            id: '3',
+            activity: 'c',
+            timestamp: '2026-04-12T10:00:02Z',
+            objects: ['t1'],
+            attributes: {},
+          },
         ],
         objects: [{ id: 't1', type: 'tool_invocation', state: 'completed', attributes: {} }],
         metadata: {
@@ -49,28 +67,28 @@ describe('Agent 4: Soundness Verifier', () => {
             activity: 'acquire_a',
             timestamp: '2026-04-12T10:00:00Z',
             objects: ['proc_1'],
-            attributes: { 'resource': 'a' },
+            attributes: { resource: 'a' },
           },
           {
             id: '2',
             activity: 'wait_b',
             timestamp: '2026-04-12T10:00:01Z',
             objects: ['proc_1'],
-            attributes: { 'waiting_for': 'b' },
+            attributes: { waiting_for: 'b' },
           },
           {
             id: '3',
             activity: 'acquire_b',
             timestamp: '2026-04-12T10:00:02Z',
             objects: ['proc_2'],
-            attributes: { 'resource': 'b' },
+            attributes: { resource: 'b' },
           },
           {
             id: '4',
             activity: 'wait_a',
             timestamp: '2026-04-12T10:00:03Z',
             objects: ['proc_2'],
-            attributes: { 'waiting_for': 'a' },
+            attributes: { waiting_for: 'a' },
           },
         ],
         objects: [
@@ -96,9 +114,27 @@ describe('Agent 4: Soundness Verifier', () => {
       const ocel: OcelEventLog = {
         version: '2.0',
         events: [
-          { id: '1', activity: 'a', timestamp: '2026-04-12T10:00:00Z', objects: ['t1'], attributes: {} },
-          { id: '2', activity: 'b', timestamp: '2026-04-12T10:00:01Z', objects: ['t1'], attributes: {} },
-          { id: '3', activity: 'c', timestamp: '2026-04-12T10:00:02Z', objects: ['t1'], attributes: {} },
+          {
+            id: '1',
+            activity: 'a',
+            timestamp: '2026-04-12T10:00:00Z',
+            objects: ['t1'],
+            attributes: {},
+          },
+          {
+            id: '2',
+            activity: 'b',
+            timestamp: '2026-04-12T10:00:01Z',
+            objects: ['t1'],
+            attributes: {},
+          },
+          {
+            id: '3',
+            activity: 'c',
+            timestamp: '2026-04-12T10:00:02Z',
+            objects: ['t1'],
+            attributes: {},
+          },
         ],
         objects: [{ id: 't1', type: 'tool_invocation', state: 'completed', attributes: {} }],
         metadata: {
@@ -119,11 +155,41 @@ describe('Agent 4: Soundness Verifier', () => {
       const ocel: OcelEventLog = {
         version: '2.0',
         events: [
-          { id: '1', activity: 'a', timestamp: '2026-04-12T10:00:00Z', objects: ['t1'], attributes: {} },
-          { id: '2', activity: 'b', timestamp: '2026-04-12T10:00:01Z', objects: ['t1'], attributes: {} },
-          { id: '3', activity: 'a', timestamp: '2026-04-12T10:00:02Z', objects: ['t1'], attributes: {} },
-          { id: '4', activity: 'b', timestamp: '2026-04-12T10:00:03Z', objects: ['t1'], attributes: {} },
-          { id: '5', activity: 'a', timestamp: '2026-04-12T10:00:04Z', objects: ['t1'], attributes: {} },
+          {
+            id: '1',
+            activity: 'a',
+            timestamp: '2026-04-12T10:00:00Z',
+            objects: ['t1'],
+            attributes: {},
+          },
+          {
+            id: '2',
+            activity: 'b',
+            timestamp: '2026-04-12T10:00:01Z',
+            objects: ['t1'],
+            attributes: {},
+          },
+          {
+            id: '3',
+            activity: 'a',
+            timestamp: '2026-04-12T10:00:02Z',
+            objects: ['t1'],
+            attributes: {},
+          },
+          {
+            id: '4',
+            activity: 'b',
+            timestamp: '2026-04-12T10:00:03Z',
+            objects: ['t1'],
+            attributes: {},
+          },
+          {
+            id: '5',
+            activity: 'a',
+            timestamp: '2026-04-12T10:00:04Z',
+            objects: ['t1'],
+            attributes: {},
+          },
         ],
         objects: [{ id: 't1', type: 'tool_invocation', state: 'in_progress', attributes: {} }],
         metadata: {
@@ -145,8 +211,20 @@ describe('Agent 4: Soundness Verifier', () => {
       const ocel: OcelEventLog = {
         version: '2.0',
         events: [
-          { id: '1', activity: 'a', timestamp: '2026-04-12T10:00:00Z', objects: ['t1'], attributes: {} },
-          { id: '2', activity: 'b', timestamp: '2026-04-12T10:00:01Z', objects: ['t1'], attributes: {} },
+          {
+            id: '1',
+            activity: 'a',
+            timestamp: '2026-04-12T10:00:00Z',
+            objects: ['t1'],
+            attributes: {},
+          },
+          {
+            id: '2',
+            activity: 'b',
+            timestamp: '2026-04-12T10:00:01Z',
+            objects: ['t1'],
+            attributes: {},
+          },
         ],
         objects: [{ id: 't1', type: 'tool_invocation', state: 'completed', attributes: {} }],
         metadata: {
@@ -172,14 +250,16 @@ describe('Agent 4: Soundness Verifier', () => {
           activity: 'produce',
           timestamp: new Date(Date.now() + i * 1000).toISOString(),
           objects: ['producer'],
-          attributes: { 'queue_depth': i },
+          attributes: { queue_depth: i },
         });
       }
 
       const ocel: OcelEventLog = {
         version: '2.0',
         events,
-        objects: [{ id: 'producer', type: 'tool_invocation', state: 'in_progress', attributes: {} }],
+        objects: [
+          { id: 'producer', type: 'tool_invocation', state: 'in_progress', attributes: {} },
+        ],
         metadata: {
           source: 'test',
           harvestedAt: new Date().toISOString(),
@@ -199,9 +279,27 @@ describe('Agent 4: Soundness Verifier', () => {
       const ocel: OcelEventLog = {
         version: '2.0',
         events: [
-          { id: '1', activity: 'a', timestamp: '2026-04-12T10:00:00Z', objects: ['t1'], attributes: {} },
-          { id: '2', activity: 'b', timestamp: '2026-04-12T10:00:01Z', objects: ['t1'], attributes: {} },
-          { id: '3', activity: 'c', timestamp: '2026-04-12T10:00:02Z', objects: ['t1'], attributes: {} },
+          {
+            id: '1',
+            activity: 'a',
+            timestamp: '2026-04-12T10:00:00Z',
+            objects: ['t1'],
+            attributes: {},
+          },
+          {
+            id: '2',
+            activity: 'b',
+            timestamp: '2026-04-12T10:00:01Z',
+            objects: ['t1'],
+            attributes: {},
+          },
+          {
+            id: '3',
+            activity: 'c',
+            timestamp: '2026-04-12T10:00:02Z',
+            objects: ['t1'],
+            attributes: {},
+          },
         ],
         objects: [{ id: 't1', type: 'tool_invocation', state: 'completed', attributes: {} }],
         metadata: {
@@ -220,7 +318,13 @@ describe('Agent 4: Soundness Verifier', () => {
       const ocel: OcelEventLog = {
         version: '2.0',
         events: [
-          { id: '1', activity: 'a', timestamp: '2026-04-12T10:00:00Z', objects: ['t1'], attributes: {} },
+          {
+            id: '1',
+            activity: 'a',
+            timestamp: '2026-04-12T10:00:00Z',
+            objects: ['t1'],
+            attributes: {},
+          },
         ],
         objects: [{ id: 't1', type: 'tool_invocation', state: 'in_progress', attributes: {} }],
         metadata: {

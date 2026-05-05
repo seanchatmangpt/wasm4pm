@@ -61,5 +61,5 @@ Run: wpm doctor --verbose for full report"
 
 # Block stop with JSON decision (properly escape reason for JSON)
 REASON_JSON=$(echo "$REASON" | jq -Rs .)
-echo "{\"hookSpecificOutput\":{\"hookEventName\":\"Stop\",\"decision\":\"block\",\"blockReason\":$REASON_JSON}}"
+echo "{\"decision\":\"block\",\"reason\":$REASON_JSON}"
 exit 0

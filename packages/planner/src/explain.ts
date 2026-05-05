@@ -146,9 +146,7 @@ export function explain(config: Config): string {
     (sum, s) => sum + (s.estimatedDurationMs || 0),
     0
   );
-  const maxMemory = Math.max(
-    ...(executionPlan.steps.map((s) => s.estimatedMemoryMB || 0) || [0])
-  );
+  const maxMemory = Math.max(...(executionPlan.steps.map((s) => s.estimatedMemoryMB || 0) || [0]));
   const parallelizableCount = executionPlan.steps.filter((s) => s.parallelizable).length;
 
   lines.push(`- **Total Sequential Duration**: ${totalDuration} ms`);

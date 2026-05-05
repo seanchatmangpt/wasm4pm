@@ -7,9 +7,28 @@
  *   - Autocorrelation with pre-computed mean (single-pass denominator)
  *   - Seasonal decomposition with single-pass accumulation per cycle position
  *   - Peak finding with no allocations in inner loop
+ *
+ * Defensive hardening:
+ *   - Parameter validation (smoothing window)
+ *   - Guard against division by zero in smoothing
+ *   - Safe empty-series handling
  */
 
 import type { EnhancedAnomalyResult } from './types.js';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Parameter validation
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Validate and clamp smoothing window.
+ * Valid range: [1, n]
+ */
+function validateSmoothingWindow(window: number | undefined, seriesLength: number): number {
+  const val = window ?? 3;
+  if (!Number.isInteger(val) || val < 1) return 1;
+  return Math.min(val, seriesLength);
+}
 
 // ---------------------------------------------------------------------------
 // Smoothing (O(n) sliding window SMA)
@@ -83,7 +102,7 @@ function findPeaks(series: number[] | Float64Array): number[] {
 
 function seasonalDecompose(
   series: number[] | Float64Array,
-  period: number,
+  period: number
 ): { trend: Float64Array; seasonal: Float64Array; residual: Float64Array } {
   const n = series.length;
   const halfPeriod = Math.floor(period / 2);
@@ -117,7 +136,8 @@ function seasonalDecompose(
   }
   const seasonalMean = countTotal > 0 ? seasonalTotal / countTotal : 0;
   for (let p = 0; p < period; p++) {
-    seasonalParts[p] = seasonalCounts[p] > 0 ? seasonalParts[p] / seasonalCounts[p] - seasonalMean : 0;
+    seasonalParts[p] =
+      seasonalCounts[p] > 0 ? seasonalParts[p] / seasonalCounts[p] - seasonalMean : 0;
   }
 
   // Build full seasonal + residual in one pass
@@ -186,14 +206,28 @@ function detectSeasonality(series: number[] | Float64Array): { period: number; s
 // ---------------------------------------------------------------------------
 
 /**
- * Detect enhanced anomalies in drift distance series.
+ * Detect peaks and residual anomalies in a numeric series (e.g., concept-drift
+ * distances over a sliding window).
+ *
+ * Pipeline:
+ *   1. Smooth the series (SMA or EMA) with the supplied window.
+ *   2. Find peaks in the *original* series (preserves exact spike positions).
+ *   3. Decompose the smoothed series into trend + seasonal + residual when
+ *      `length >= 4`, then surface peaks of the residual as `residualPeaks`.
+ *
+ * Series shorter than 3 points return empty peak lists with the original data
+ * passed through as `smoothedSeries`.
+ *
+ * @param driftDistances - Numeric series in chronological order.
+ * @param options.smoothingWindow - SMA/EMA window size (default 3, clamped to length).
+ * @param options.smoothingMethod - `'sma'` (default) or `'ema'`.
  */
 export async function detectEnhancedAnomalies(
   driftDistances: number[],
   options: {
     smoothingWindow?: number;
     smoothingMethod?: 'sma' | 'ema';
-  } = {},
+  } = {}
 ): Promise<EnhancedAnomalyResult> {
   if (driftDistances.length < 3) {
     return {
@@ -204,15 +238,16 @@ export async function detectEnhancedAnomalies(
     };
   }
 
-  const window = Math.min(options.smoothingWindow ?? 3, driftDistances.length);
+  const validatedWindow = validateSmoothingWindow(options.smoothingWindow, driftDistances.length);
   const smoothingMethod = options.smoothingMethod ?? 'sma';
-  const smoothed = smoothingMethod === 'ema'
-    ? ema(driftDistances, window)
-    : sma(driftDistances, window);
+  const smoothed =
+    smoothingMethod === 'ema'
+      ? ema(driftDistances, validatedWindow)
+      : sma(driftDistances, validatedWindow);
 
   // Find peaks in original series to preserve exact spike locations
   const peakIndices = findPeaks(driftDistances);
-  const peakValues = peakIndices.map(i => driftDistances[i]);
+  const peakValues = peakIndices.map((i) => driftDistances[i]);
 
   // Decompose smoothed for residual anomalies
   let decomposed: { trend: number[]; seasonal: number[]; residual: number[] } | undefined;
@@ -220,10 +255,7 @@ export async function detectEnhancedAnomalies(
 
   try {
     if (smoothed.length >= 4) {
-      const period = Math.min(
-        Math.max(Math.floor(smoothed.length / 3), 2),
-        smoothed.length - 1,
-      );
+      const period = Math.min(Math.max(Math.floor(smoothed.length / 3), 2), smoothed.length - 1);
       const decomp = seasonalDecompose(smoothed, period);
       decomposed = {
         trend: Array.from(decomp.trend),

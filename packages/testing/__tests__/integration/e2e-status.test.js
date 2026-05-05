@@ -1,6 +1,6 @@
 /**
  * e2e-status.test.ts
- * Status command tests for pictl
+ * Status command tests for wasm4pm
  * Tests: Status tracking, progress, resource monitoring
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';

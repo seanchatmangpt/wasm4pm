@@ -18,9 +18,9 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
-import { pictl, extractJson, resolveRepo } from '../helpers/cli.js';
+import { wasm4pm, extractJson, resolveRepo } from '../helpers/cli.js';
 const RUNNING_EXAMPLE = resolveRepo('wasm4pm/tests/fixtures/running-example.xes');
-const EVIDENCE_DIR = path.resolve(import.meta.url, '../../.pictl-evidence');
+const EVIDENCE_DIR = path.resolve(import.meta.url, '../../.wasm4pm-evidence');
 let allRuns = [];
 beforeAll(async () => {
     // Create evidence directory
@@ -29,7 +29,7 @@ beforeAll(async () => {
     }
     // Pre-run 5 autoprocess cycles and collect results
     allRuns = await Promise.all(Array.from({ length: 5 }, async () => {
-        const result = await pictl(['autoprocess', RUNNING_EXAMPLE, '--format', 'json']);
+        const result = await wasm4pm(['autoprocess', RUNNING_EXAMPLE, '--format', 'json']);
         if (result.exitCode === 0) {
             return extractJson(result.stdout);
         }

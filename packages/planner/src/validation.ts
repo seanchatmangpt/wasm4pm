@@ -85,7 +85,11 @@ export function validatePlan(executionPlan: ExecutionPlan): ValidationError[] {
     return errors;
   }
 
-  if (!executionPlan.graph || !Array.isArray(executionPlan.graph.nodes) || !Array.isArray(executionPlan.graph.edges)) {
+  if (
+    !executionPlan.graph ||
+    !Array.isArray(executionPlan.graph.nodes) ||
+    !Array.isArray(executionPlan.graph.edges)
+  ) {
     errors.push({
       path: 'graph',
       message: 'Graph must have nodes and edges arrays',

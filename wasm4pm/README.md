@@ -64,6 +64,22 @@ Real Criterion benchmarks (Rust native binary), 4 dataset sizes (100–50K cases
 
 **Full benchmark report:** [docs/REAL-BENCHMARK-RESULTS.md](https://github.com/seanchatmangpt/wasm4pm/blob/main/docs/REAL-BENCHMARK-RESULTS.md)
 
+### ML Analysis Algorithms (Criterion measured)
+
+| Algorithm     | Complexity            | Latency profile                    | Notes                                                 |
+| ------------- | --------------------- | ---------------------------------- | ----------------------------------------------------- |
+| `ml_classify` | O(n·k) per prediction | k-NN k=3                           | `naive_bayes` variant is O(1) per sample              |
+| `ml_regress`  | O(n) fit              | OLS, single-pass                   | Closed-form least squares                             |
+| `ml_forecast` | O(n) fit              | Exponential smoothing α=0.3        | Single-pass decomposition                             |
+| `ml_anomaly`  | O(n) score            | Information-theoretic              | Includes EMA smoothing                                |
+| `ml_pca`      | O(n) fit              | Closed-form 2×2 eigendecomposition | Jacobi iterations                                     |
+| `ml_cluster`  | O(n·k·i)              | bitset k-means                     | ⚠️ **internal only — not yet exported to the JS API** |
+
+> Note: `ml_cluster` is implemented in `fast_discovery.rs` but has no `#[wasm_bindgen]`
+> export and is not callable from JavaScript or the CLI.
+
+**Full algorithm latency reference:** [docs/benchmarks.md](https://github.com/seanchatmangpt/wasm4pm/blob/main/docs/benchmarks.md)
+
 ## Installation
 
 ```bash

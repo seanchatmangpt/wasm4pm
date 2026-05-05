@@ -384,7 +384,8 @@ export async function executePlan(
     return {
       runId,
       planId: plan.planId,
-      state: errors.length > 0 && !errors.every((e) => e.severity === 'warning') ? 'degraded' : 'ready',
+      state:
+        errors.length > 0 && !errors.every((e) => e.severity === 'warning') ? 'degraded' : 'ready',
       startedAt,
       finishedAt,
       durationMs: finishedAt.getTime() - startedAt.getTime(),
@@ -427,13 +428,20 @@ export async function executePlan(
  */
 function taskToKernelCall(task: string): string {
   switch (task) {
-    case 'next_activity':   return 'predict_next_activity';
-    case 'remaining_time':  return 'predict_case_duration';
-    case 'outcome':         return 'score_anomaly';
-    case 'drift':           return 'detect_drift';
-    case 'features':        return 'build_transition_probabilities';
-    case 'resource':        return 'estimate_queue_delay';
-    default: return task;
+    case 'next_activity':
+      return 'predict_next_activity';
+    case 'remaining_time':
+      return 'predict_case_duration';
+    case 'outcome':
+      return 'score_anomaly';
+    case 'drift':
+      return 'detect_drift';
+    case 'features':
+      return 'build_transition_probabilities';
+    case 'resource':
+      return 'estimate_queue_delay';
+    default:
+      return task;
   }
 }
 

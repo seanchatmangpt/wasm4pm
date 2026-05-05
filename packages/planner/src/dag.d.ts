@@ -5,10 +5,10 @@
  * Represents a directed acyclic graph for plan execution
  */
 export interface DAG {
-    /** List of node identifiers */
-    nodes: string[];
-    /** List of directed edges as [source, target] pairs */
-    edges: [string, string][];
+  /** List of node identifiers */
+  nodes: string[];
+  /** List of directed edges as [source, target] pairs */
+  edges: [string, string][];
 }
 /**
  * Detects if a graph contains a cycle using depth-first search

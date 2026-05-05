@@ -1,6 +1,6 @@
 # Benchmarks
 
-Performance data, methodology, and reproducibility guides for the pictl WASM process mining engine (21 algorithms, compiled to WebAssembly). All results are from Apple M3 Max (16P/4E, 36GB unified memory), median of 7 runs.
+Performance data, methodology, and reproducibility guides for the wasm4pm WASM process mining engine (21 algorithms, compiled to WebAssembly). All results are from Apple M3 Max (16P/4E, 36GB unified memory), median of 7 runs.
 
 ---
 

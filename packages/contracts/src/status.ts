@@ -149,17 +149,11 @@ export const STATUS_JSON_SCHEMA = {
     timestamp: { type: 'string' as const, format: 'date-time' },
     last_transition: { type: 'string' as const, format: 'date-time' },
     previous_state: {
-      oneOf: [
-        { type: 'string' as const, enum: [...LIFECYCLE_STATES] },
-        { type: 'null' as const },
-      ],
+      oneOf: [{ type: 'string' as const, enum: [...LIFECYCLE_STATES] }, { type: 'null' as const }],
     },
     transition_count: { type: 'integer' as const, minimum: 0 },
     run_id: {
-      oneOf: [
-        { type: 'string' as const, format: 'uuid' },
-        { type: 'null' as const },
-      ],
+      oneOf: [{ type: 'string' as const, format: 'uuid' }, { type: 'null' as const }],
     },
     degradation: {
       type: 'object' as const,

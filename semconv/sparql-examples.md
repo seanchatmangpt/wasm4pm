@@ -1,6 +1,6 @@
-# SPARQL Query Examples for pictl RDF Proofs
+# SPARQL Query Examples for wasm4pm RDF Proofs
 
-> **Purpose**: Demonstrate SPARQL patterns for querying pictl proof artifacts stored as RDF triples.
+> **Purpose**: Demonstrate SPARQL patterns for querying wasm4pm proof artifacts stored as RDF triples.
 > **Audience**: Process mining analysts, data engineers, semantic reasoning developers.
 > **Ontology**: `wasm4pm-ontology.ttl` (pm: = http://purl.org/pm/ontology#)
 
@@ -371,7 +371,7 @@ WHERE {
   FILTER (?model_time < ?drift_time && ?conf >= 0.85)
   
   # Create recommendation artifact
-  BIND(IRI(CONCAT("http://pictl.org/recommendation/", RAND())) AS ?retraining_recommendation)
+  BIND(IRI(CONCAT("http://wasm4pm.org/recommendation/", RAND())) AS ?retraining_recommendation)
 }
 ```
 
@@ -463,7 +463,7 @@ WHERE {
     STR(?position), ") and is bottleneck (freq=", STR(?freq), ")") 
     AS ?recommendation)
   
-  BIND(IRI(CONCAT("http://pictl.org/optimization/", RAND())) AS ?optimization_target)
+  BIND(IRI(CONCAT("http://wasm4pm.org/optimization/", RAND())) AS ?optimization_target)
   BIND(CONCAT("Optimize: ", STR(?activity)) AS ?target_label)
 }
 ORDER BY DESC(?impact)
@@ -524,7 +524,7 @@ WHERE {
   BIND(CONCAT("Quality regression detected in Heuristic Miner: ",
     "v", STR(?time1), " → v", STR(?time2)) AS ?alert_label)
   
-  BIND(IRI(CONCAT("http://pictl.org/alert/", RAND())) AS ?quality_alert)
+  BIND(IRI(CONCAT("http://wasm4pm.org/alert/", RAND())) AS ?quality_alert)
 }
 ```
 
@@ -595,7 +595,7 @@ WHERE {
               "; Performance: ", STR(?performance_quality)) 
     AS ?assessment)
   
-  BIND(IRI(CONCAT("http://pictl.org/assessment/", RAND())) AS ?process_quality_assessment)
+  BIND(IRI(CONCAT("http://wasm4pm.org/assessment/", RAND())) AS ?process_quality_assessment)
 }
 ```
 
@@ -811,7 +811,7 @@ BIND(IF(?condition, ?value_if_true, ?value_if_false) AS ?result)
 
 ## Resources
 
-- **pictl Ontology**: `wasm4pm-ontology.ttl`
+- **wasm4pm Ontology**: `wasm4pm-ontology.ttl`
 - **Query Registry**: `query-registry.json`
 - **SPARQL 1.1 Standard**: https://www.w3.org/TR/sparql11-query/
 - **W3C PROV Ontology**: https://www.w3.org/TR/prov-o/

@@ -3,18 +3,18 @@ import { EXIT_CODES, type ExitCode } from './exit-codes.js';
 /**
  * Base error class for wasm4pm with typed exit codes
  */
-export class PictlError extends Error {
+export class Wasm4pmError extends Error {
   readonly exitCode: ExitCode;
 
   constructor(message: string, exitCode: ExitCode) {
     super(message);
-    this.name = 'PictlError';
+    this.name = 'Wasm4pmError';
     this.exitCode = exitCode;
   }
 }
 
 /** Configuration file missing, invalid, or malformed */
-export class ConfigError extends PictlError {
+export class ConfigError extends Wasm4pmError {
   constructor(message: string) {
     super(message, EXIT_CODES.config_error);
     this.name = 'ConfigError';
@@ -22,7 +22,7 @@ export class ConfigError extends PictlError {
 }
 
 /** Source data invalid format, missing files, or parsing error */
-export class SourceError extends PictlError {
+export class SourceError extends Wasm4pmError {
   constructor(message: string) {
     super(message, EXIT_CODES.source_error);
     this.name = 'SourceError';
@@ -30,7 +30,7 @@ export class SourceError extends PictlError {
 }
 
 /** Algorithm failure, timeout, or resource exhaustion */
-export class ExecutionError extends PictlError {
+export class ExecutionError extends Wasm4pmError {
   constructor(message: string) {
     super(message, EXIT_CODES.execution_error);
     this.name = 'ExecutionError';
@@ -38,7 +38,7 @@ export class ExecutionError extends PictlError {
 }
 
 /** Some operations succeeded, some failed */
-export class PartialFailureError extends PictlError {
+export class PartialFailureError extends Wasm4pmError {
   readonly succeeded: string[];
   readonly failed: string[];
 
@@ -51,7 +51,7 @@ export class PartialFailureError extends PictlError {
 }
 
 /** I/O, permission, or system resource issues */
-export class SystemError extends PictlError {
+export class SystemError extends Wasm4pmError {
   constructor(message: string) {
     super(message, EXIT_CODES.system_error);
     this.name = 'SystemError';
@@ -59,16 +59,56 @@ export class SystemError extends PictlError {
 }
 
 /**
- * Handle a PictlError by exiting with its typed exit code.
+ * Handle a Wasm4pmError by exiting with its typed exit code.
+ * ValidationError from @wasm4pm/kernel exits with execution_error (3).
  * For unknown errors, exits with system_error (5).
+ * Appends diagnoseError() suggestions when available.
  */
 export function handleError(error: unknown): never {
-  if (error instanceof PictlError) {
+  if (error instanceof Wasm4pmError) {
     console.error(`[${error.name}] ${error.message}`);
+    printDiagnosticHint(error);
     process.exit(error.exitCode);
+  }
+
+  // ValidationError from @wasm4pm/kernel — model failed structural checks
+  if (isValidationError(error)) {
+    console.error(`[ValidationError] ${(error as Error).message}`);
+    const violations = (error as { violations?: Array<{ rule: string; severity: string; message: string }> }).violations ?? [];
+    const errors = violations.filter((v) => v.severity === 'error');
+    if (errors.length > 0) {
+      console.error('\nViolations:');
+      errors.forEach((v, i) => console.error(`  ${i + 1}. [${v.rule}] ${v.message}`));
+    }
+    process.exit(EXIT_CODES.execution_error);
   }
 
   const message = error instanceof Error ? error.message : String(error);
   console.error(`[SystemError] ${message}`);
+  printDiagnosticHint(error);
   process.exit(EXIT_CODES.system_error);
+}
+
+function isValidationError(error: unknown): boolean {
+  return (
+    error instanceof Error &&
+    error.name === 'ValidationError' &&
+    'violations' in error
+  );
+}
+
+function printDiagnosticHint(error: unknown): void {
+  try {
+    // Dynamic import avoids adding @wasm4pm/kernel to the startup module graph,
+    // preventing circular-dependency and load-order issues in test environments.
+    import('@wasm4pm/kernel').then(({ introspection }) => {
+      const diag = introspection.diagnoseError(error);
+      if (diag.suggestions.length > 0) {
+        console.error('\nSuggestions:');
+        diag.suggestions.slice(0, 3).forEach((s, i) => console.error(`  ${i + 1}. ${s}`));
+      }
+    }).catch(() => {/* never block the exit path */});
+  } catch {
+    // never block the exit path
+  }
 }

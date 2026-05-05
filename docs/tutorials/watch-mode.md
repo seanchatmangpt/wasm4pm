@@ -6,7 +6,7 @@
 
 ## What You'll Learn
 
-- Start pictl in watch mode for file monitoring
+- Start wasm4pm in watch mode for file monitoring
 - Observe incremental processing as data arrives
 - Understand checkpoint creation and recovery
 - Monitor progress in real-time
@@ -58,7 +58,7 @@ Create `events.log` with initial events:
 ## Step 3: Start Watch Mode
 
 ```bash
-pictl watch --config watch-config.toml --verbose
+wpm watch --config watch-config.toml --verbose
 ```
 
 Output:
@@ -194,7 +194,7 @@ EOF
 Restart watch mode:
 
 ```bash
-pictl watch --config watch-config.toml --verbose
+wpm watch --config watch-config.toml --verbose
 ```
 
 Output:

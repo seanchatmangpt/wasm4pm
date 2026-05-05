@@ -1,5 +1,5 @@
 # SPARQL CONSTRUCT: Transform Activity Prediction JSON to RDF
-# Maps pictl prediction result into pm:ActivityPrediction triples
+# Maps wasm4pm prediction result into pm:ActivityPrediction triples
 # Input: JSON with confidence, next_activities[], top_k, model_name, case_context
 # Output: RDF graph documenting prediction results with probabilities and rankings
 
@@ -73,12 +73,12 @@ WHERE {
   #                        model_name: "LSTM-Seq2Seq", case_context: {...} }
 
   # Generate prediction IRI
-  BIND(IRI(CONCAT("http://pictl.org/prediction/activity/", SUBSTR(STR(NOW()), 1, 10), "/", RAND())) AS ?prediction)
+  BIND(IRI(CONCAT("http://wasm4pm.org/prediction/activity/", SUBSTR(STR(NOW()), 1, 10), "/", RAND())) AS ?prediction)
   BIND(NOW() AS ?timestamp)
 
   # Placeholder URIs
-  BIND(IRI("http://pictl.org/case/12345") AS ?case_id)
-  BIND(IRI("http://pictl.org/model/lstm-seq2seq-v2") AS ?predictive_model)
+  BIND(IRI("http://wasm4pm.org/case/12345") AS ?case_id)
+  BIND(IRI("http://wasm4pm.org/model/lstm-seq2seq-v2") AS ?predictive_model)
 
   # Prediction metadata
   BIND("Next Activity Prediction for Case 12345" AS ?prediction_label)
@@ -92,7 +92,7 @@ WHERE {
   BIND("Based on LSTM model trained on 50k+ events" AS ?prediction_context)
 
   # Top predicted activity (rank 1)
-  BIND(IRI("http://pictl.org/activity/Review") AS ?predicted_activity)
+  BIND(IRI("http://wasm4pm.org/activity/Review") AS ?predicted_activity)
   BIND("Review Application" AS ?activity_label)
   BIND(1 AS ?rank)
   BIND(0.62 AS ?probability)
@@ -100,7 +100,7 @@ WHERE {
   BIND(0.25 AS ?alternative_prob)
 
   # Model details
-  BIND(IRI("http://pictl.org/model/lstm-seq2seq-v2") AS ?model)
+  BIND(IRI("http://wasm4pm.org/model/lstm-seq2seq-v2") AS ?model)
   BIND("LSTM Sequence-to-Sequence Activity Predictor v2.0" AS ?model_label)
   BIND(0.85 AS ?model_accuracy)
   BIND(50000 AS ?training_event_count)
@@ -108,15 +108,15 @@ WHERE {
   BIND(xsd:dateTime("2026-04-01T12:00:00Z") AS ?model_update_time)
 
   # Rankings
-  BIND(IRI(CONCAT("http://pictl.org/rankings/", RAND())) AS ?rankings)
-  BIND(IRI("http://pictl.org/activity/Review") AS ?top_activity)
+  BIND(IRI(CONCAT("http://wasm4pm.org/rankings/", RAND())) AS ?rankings)
+  BIND(IRI("http://wasm4pm.org/activity/Review") AS ?top_activity)
   BIND(0.62 AS ?top_probability)
   BIND(1.8 AS ?entropy)
   BIND(0.22 AS ?uncertainty)
   BIND(5 AS ?rank_count)
 
   # Confidence assessment
-  BIND(IRI(CONCAT("http://pictl.org/confidence/", RAND())) AS ?confidence_report)
+  BIND(IRI(CONCAT("http://wasm4pm.org/confidence/", RAND())) AS ?confidence_report)
   BIND("Model prediction with ensemble agreement" AS ?confidence_source)
   BIND("High (3/3 ensemble models agree on top candidate)" AS ?statistical_support)
   BIND("Proceed with recommendation; monitor for low-confidence cases" AS ?recommendation)

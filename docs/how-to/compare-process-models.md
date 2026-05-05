@@ -12,7 +12,7 @@ You have two event logs and need to understand how the underlying processes diff
 ## 1. Run a basic comparison
 
 ```bash
-pictl diff before-process.xes after-process.xes
+wpm diff before-process.xes after-process.xes
 ```
 
 What you should see:
@@ -88,7 +88,7 @@ The formula is `|E1 intersect E2| / |E1 union E2|` where E1 and E2 are the edge 
 ## 3. Get JSON output for programmatic use
 
 ```bash
-pictl diff log1.xes log2.xes --format json
+wpm diff log1.xes log2.xes --format json
 ```
 
 What you should see:
@@ -129,7 +129,7 @@ What you should see:
 Extract the Jaccard score in a script:
 
 ```bash
-pictl diff v1.xes v2.xes --format json | jq '.data.diff.jaccard'
+wpm diff v1.xes v2.xes --format json | jq '.data.diff.jaccard'
 ```
 
 ---
@@ -139,7 +139,7 @@ pictl diff v1.xes v2.xes --format json | jq '.data.diff.jaccard'
 If your XES log uses a non-standard attribute for activity names:
 
 ```bash
-pictl diff log1.xes log2.xes --activity-key "lifecycle:transition"
+wpm diff log1.xes log2.xes --activity-key "lifecycle:transition"
 ```
 
 The default is `concept:name`.
@@ -166,7 +166,7 @@ Edge frequency changes show the direction: `-16%` in red means the edge occurs l
 ### Compare before/after a process change
 
 ```bash
-pictl diff pre-automation.xes post-automation.xes
+wpm diff pre-automation.xes post-automation.xes
 ```
 
 Look for removed activities (steps that were eliminated) and changed edge frequencies (routing changes).
@@ -174,7 +174,7 @@ Look for removed activities (steps that were eliminated) and changed edge freque
 ### Compare two teams doing the same process
 
 ```bash
-pictl diff team-a.xes team-b.xes
+wpm diff team-a.xes team-b.xes
 ```
 
 A low Jaccard score reveals that the two teams follow different process variants.
@@ -183,8 +183,8 @@ A low Jaccard score reveals that the two teams follow different process variants
 
 ```bash
 # Split a large log into monthly chunks, then compare consecutive months
-pictl diff january.xes february.xes
-pictl diff february.xes march.xes
+wpm diff january.xes february.xes
+wpm diff february.xes march.xes
 ```
 
 Rising `Only in log2` variant counts and falling Jaccard scores indicate progressive drift.

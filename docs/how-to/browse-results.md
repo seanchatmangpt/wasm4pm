@@ -28,7 +28,7 @@ To skip auto-saving, pass `--no-save`.
 ## Step 1 -- List Recent Results
 
 ```bash
-pictl results
+wpm results
 ```
 
 What you should see:
@@ -47,7 +47,7 @@ Recent results (.wasm4pm/results/)
 By default, the listing shows the 20 most recent results. To see more:
 
 ```bash
-pictl results --limit 50
+wpm results --limit 50
 ```
 
 ## Step 2 -- Run a Prediction to Generate a Result
@@ -55,7 +55,7 @@ pictl results --limit 50
 If you do not have results yet, run a prediction task:
 
 ```bash
-pictl predict next-activity -i orders.xes
+wpm predict next-activity -i orders.xes
 ```
 
 What you should see:
@@ -80,7 +80,7 @@ What you should see:
 Print the most recent result in full:
 
 ```bash
-pictl results --last
+wpm results --last
 ```
 
 What you should see:
@@ -109,7 +109,7 @@ What you should see:
 Use the index number from the listing to print a particular result:
 
 ```bash
-pictl results --cat 3
+wpm results --cat 3
 ```
 
 This prints the full JSON of the result at index 3 (the drift result in the example listing above).
@@ -119,7 +119,7 @@ This prints the full JSON of the result at index 3 (the drift result in the exam
 You can also look up results by task name instead of index:
 
 ```bash
-pictl results --cat next-activity
+wpm results --cat next-activity
 ```
 
 This prints the most recent result whose task name matches `next-activity`.
@@ -129,7 +129,7 @@ This prints the most recent result whose task name matches `next-activity`.
 For scripting or pipeline integration, get the listing in JSON format:
 
 ```bash
-pictl results --format json
+wpm results --format json
 ```
 
 What you should see:

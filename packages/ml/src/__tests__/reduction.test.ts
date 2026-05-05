@@ -31,9 +31,9 @@ describe('reduceFeaturesPCA', () => {
   });
 
   it('throws for insufficient data', async () => {
-    await expect(
-      reduceFeaturesPCA([{ case_id: 'c1', f1: 1 }]),
-    ).rejects.toThrow('Need at least 2 traces and 2 features');
+    await expect(reduceFeaturesPCA([{ case_id: 'c1', f1: 1 }])).rejects.toThrow(
+      'Need at least 2 traces and 2 features'
+    );
   });
 
   it('explained variance is bounded [0, 1]', async () => {

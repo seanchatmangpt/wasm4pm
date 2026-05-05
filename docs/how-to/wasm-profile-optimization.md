@@ -1,10 +1,10 @@
 # WASM Profile Optimization Guide
 
 **Version:** 1.0  
-**Target:** pictl WASM builds for different deployment environments  
+**Target:** wasm4pm WASM builds for different deployment environments  
 **Last Updated:** 2026-04-10
 
-Practical guide to optimizing pictl WASM binaries for specific deployment profiles. Each profile provides a different balance of size, features, and performance.
+Practical guide to optimizing wasm4pm WASM binaries for specific deployment profiles. Each profile provides a different balance of size, features, and performance.
 
 ---
 
@@ -141,7 +141,7 @@ const result = discover({
 - `genetic_algorithm` — Genetic algorithm
 - `ilp` — Integer Linear Programming
 - `a_star` — A* search
-- `ml_classify`, `ml_forecast`, `ml_cluster`, `ml_anomaly`, `ml_regress`, `ml_pca` — All 6 ML algorithms
+- `ml_classify`, `ml_forecast`, `ml_cluster` (internal only — no JS export), `ml_anomaly`, `ml_regress`, `ml_pca` — 6 ML algorithms registered (note: `ml_cluster` has no `#[wasm_bindgen]` export and is not callable from JS)
 - `streaming_dfg` — Streaming DFG
 
 **Latency budget:**
@@ -506,11 +506,13 @@ Which algorithms are available in each profile:
 | pso | ❌ | ❌ | ✅ | ❌ | ✅ |
 | simulated_annealing | ❌ | ❌ | ✅ | ❌ | ✅ |
 | ml_classify | ❌ | ✅ | ✅ | ❌ | ✅ |
-| ml_cluster | ❌ | ✅ | ✅ | ❌ | ✅ |
+| ml_cluster ⚠️ | ❌ | ✅ | ✅ | ❌ | ✅ |
 | ml_forecast | ❌ | ✅ | ✅ | ❌ | ✅ |
 | ml_anomaly | ❌ | ✅ | ✅ | ❌ | ✅ |
 | ml_regress | ❌ | ✅ | ✅ | ❌ | ✅ |
 | ml_pca | ❌ | ✅ | ✅ | ❌ | ✅ |
+
+> ⚠️ `ml_cluster` is present in the WASM binary (feature-ml flag) but has **no `#[wasm_bindgen]` export** and is not callable from JavaScript or the CLI. It is internal only.
 
 ---
 
@@ -764,10 +766,10 @@ npm run build:iot
 cargo build --target armv7-unknown-linux-gnueabihf --release --features iot
 
 # Transfer to Raspberry Pi
-scp target/armv7-unknown-linux-gnueabihf/release/pictl pi@raspberry:/opt/pictl
+scp target/armv7-unknown-linux-gnueabihf/release/wasm4pm pi@raspberry:/opt/wasm4pm
 
 # Run on device
-ssh pi@raspberry 'nohup /opt/pictl --algorithm dfg --input /var/log/events.xes &'
+ssh pi@raspberry 'nohup /opt/wasm4pm --algorithm dfg --input /var/log/events.xes &'
 ```
 
 **Memory usage:** 30-50MB  
@@ -787,7 +789,7 @@ Expected sizes by profile (uncompressed WASM binary):
 | fog | 2.0MB | 1.95MB | 580KB | 700KB |
 | browser | 2.7MB | 2.697MB | 820KB | 980KB |
 
-*(Gzipped = single file. With deps = including @pictl module dependencies.)*
+*(Gzipped = single file. With deps = including @wasm4pm module dependencies.)*
 
 ---
 
@@ -856,5 +858,5 @@ Before deploying a profile:
 ---
 
 **Last Updated:** 2026-04-10  
-**Maintained by:** pictl core team  
+**Maintained by:** wasm4pm core team  
 **License:** MIT

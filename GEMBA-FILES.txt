@@ -13,7 +13,7 @@
   → ESLint plugin wrapper
   
 - .eslintrc.cjs (2.5 KB, MODIFIED)
-  → Root ESLint config with pictl-testing plugin integration
+  → Root ESLint config with wasm4pm-testing plugin integration
   
 - .eslintignore (1.2 KB)
   → Ignore patterns for fixtures, mocks, generated code
@@ -60,7 +60,7 @@
   → Running tests with Gemba enforcement
   → API reference for ESLint rule
   → Examples and troubleshooting
-  → Best for: Developers using @pictl/testing
+  → Best for: Developers using @wasm4pm/testing
   
 ### Developer Documentation
 - packages/testing/src/eslint-rules/README.md (2.1 KB)
@@ -94,7 +94,7 @@
 ## Directory Structure
 
 ```
-pictl/
+wasm4pm/
 ├── .eslintrc.cjs                         ← ESLint config (modified)
 ├── .eslintignore                         ← Ignore patterns
 ├── GEMBA-*.md                            ← Documentation (5 files)

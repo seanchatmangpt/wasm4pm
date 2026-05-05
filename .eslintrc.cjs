@@ -1,5 +1,5 @@
 /**
- * ESLint Configuration — pictl monorepo
+ * ESLint Configuration — wasm4pm monorepo
  * Gemba Enforcement: Test purity, quality gates, process mining standards
  */
 
@@ -17,15 +17,15 @@ module.exports = {
   },
   plugins: [
     '@typescript-eslint',
-    'pictl-testing', // Custom rule plugin for Gemba enforcement
-    'pictl-observability', // Custom rule plugin for OTEL coverage
+    'wasm4pm-testing', // Custom rule plugin for Gemba enforcement
+    'wasm4pm-observability', // Custom rule plugin for OTEL coverage
   ],
   rules: {
     // OTEL Coverage Enforcement: all public functions must emit spans
-    'pictl-observability/require-span-for-public': 'warn',
+    'wasm4pm-observability/require-span-for-public': 'warn',
 
     // Gemba Enforcement: no mocks in integration tests
-    'pictl-testing/no-mocks-in-integration': 'error',
+    'wasm4pm-testing/no-mocks-in-integration': 'error',
 
     // TypeScript strictness
     '@typescript-eslint/no-explicit-any': 'error',
@@ -51,28 +51,28 @@ module.exports = {
       files: ['**/*.test.ts', '**/*.spec.ts'],
       env: { node: true, jest: true },
       rules: {
-        'pictl-testing/no-mocks-in-integration': 'error',
+        'wasm4pm-testing/no-mocks-in-integration': 'error',
       },
     },
     {
       files: ['**/*.unit.test.ts', '**/*.spec.ts'],
       rules: {
         // Unit tests CAN use mocks (rule doesn't apply to .unit.test.ts)
-        'pictl-testing/no-mocks-in-integration': 'off',
+        'wasm4pm-testing/no-mocks-in-integration': 'off',
       },
     },
     {
       // Fixtures and mock helpers are exempt
       files: ['packages/testing/src/mocks/**/*', 'packages/testing/src/fixtures/**/*'],
       rules: {
-        'pictl-testing/no-mocks-in-integration': 'off',
+        'wasm4pm-testing/no-mocks-in-integration': 'off',
       },
     },
     {
       files: ['**/*.integration.test.ts', '**/*.e2e.test.ts', '__tests__/integration/**/*.test.ts'],
       rules: {
         // Integration tests must be pure (no mocks)
-        'pictl-testing/no-mocks-in-integration': 'error',
+        'wasm4pm-testing/no-mocks-in-integration': 'error',
       },
     },
   ],

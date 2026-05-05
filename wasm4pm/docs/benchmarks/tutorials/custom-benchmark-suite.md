@@ -21,7 +21,7 @@ This tutorial assumes you have already implemented a Rust algorithm and compiled
 - Completed [Your First Benchmark](first-benchmark.md) tutorial
 - TypeScript knowledge (interfaces, type annotations)
 - Basic Rust knowledge (function signatures, `#[wasm_bindgen]`)
-- pictl source code checked out and building (`pnpm install` succeeds)
+- wasm4pm source code checked out and building (`pnpm install` succeeds)
 - WASM core compiled (`cd wasm4pm && npm run build:nodejs` succeeds)
 
 ---

@@ -5,26 +5,26 @@
  * Reuses hashOutput from @wasm4pm/kernel for consistent hashing.
  */
 
-import { createHash } from 'node:crypto'
-import type { WorkerResult, SwarmConvergenceReport } from './types.js'
+import { createHash } from 'node:crypto';
+import type { WorkerResult, SwarmConvergenceReport } from './types.js';
 
 /**
  * Compute SHA-256 hash of any JSON-serializable value (sorted keys).
  * Mirrors hashOutput() from @wasm4pm/kernel/src/hashing.ts.
  */
 export function hashOutput(data: unknown): string {
-  const normalized = JSON.stringify(sortKeys(data))
-  return createHash('sha256').update(normalized, 'utf-8').digest('hex')
+  const normalized = JSON.stringify(sortKeys(data));
+  return createHash('sha256').update(normalized, 'utf-8').digest('hex');
 }
 
 function sortKeys(value: unknown): unknown {
-  if (value === null || typeof value !== 'object') return value
-  if (Array.isArray(value)) return value.map(sortKeys)
-  const sorted: Record<string, unknown> = {}
+  if (value === null || typeof value !== 'object') return value;
+  if (Array.isArray(value)) return value.map(sortKeys);
+  const sorted: Record<string, unknown> = {};
   for (const key of Object.keys(value as Record<string, unknown>).sort()) {
-    sorted[key] = sortKeys((value as Record<string, unknown>)[key])
+    sorted[key] = sortKeys((value as Record<string, unknown>)[key]);
   }
-  return sorted
+  return sorted;
 }
 
 /**
@@ -42,8 +42,8 @@ export function checkConvergence(
   workerIds?: string[]
 ): SwarmConvergenceReport {
   const relevant = results.filter(
-    r => r.algorithmId === algorithm && (!workerIds || workerIds.includes(r.workerId))
-  )
+    (r) => r.algorithmId === algorithm && (!workerIds || workerIds.includes(r.workerId))
+  );
 
   if (relevant.length === 0) {
     return {
@@ -53,31 +53,31 @@ export function checkConvergence(
       dominantHash: null,
       dissentingWorkers: [],
       totalChecked: 0,
-    }
+    };
   }
 
   // Count hash frequencies
-  const hashCounts = new Map<string, number>()
+  const hashCounts = new Map<string, number>();
   for (const r of relevant) {
-    hashCounts.set(r.resultHash, (hashCounts.get(r.resultHash) ?? 0) + 1)
+    hashCounts.set(r.resultHash, (hashCounts.get(r.resultHash) ?? 0) + 1);
   }
 
   // Find dominant hash
-  let dominantHash: string | null = null
-  let maxCount = 0
+  let dominantHash: string | null = null;
+  let maxCount = 0;
   for (const [h, count] of hashCounts) {
     if (count > maxCount) {
-      maxCount = count
-      dominantHash = h
+      maxCount = count;
+      dominantHash = h;
     }
   }
 
-  const consensusRatio = maxCount / relevant.length
-  const converged = consensusRatio >= threshold
+  const consensusRatio = maxCount / relevant.length;
+  const converged = consensusRatio >= threshold;
 
   const dissentingWorkers = converged
-    ? relevant.filter(r => r.resultHash !== dominantHash).map(r => r.workerId)
-    : relevant.map(r => r.workerId)
+    ? relevant.filter((r) => r.resultHash !== dominantHash).map((r) => r.workerId)
+    : relevant.map((r) => r.workerId);
 
   return {
     algorithm,
@@ -86,7 +86,7 @@ export function checkConvergence(
     dominantHash,
     dissentingWorkers,
     totalChecked: relevant.length,
-  }
+  };
 }
 
 /**
@@ -101,28 +101,33 @@ export function checkSwarmConvergence(
   results: WorkerResult[],
   hashHistory: Map<string, string[]>,
   convergenceRuns: number = 2
-): { converged: boolean; stableWorkers: string[]; unstableWorkers: string[]; agreementRate: number } {
-  const workerAlgoPairs = results.map(r => `${r.workerId}/${r.algorithmId}`)
-  const stableWorkers: string[] = []
-  const unstableWorkers: string[] = []
+): {
+  converged: boolean;
+  stableWorkers: string[];
+  unstableWorkers: string[];
+  agreementRate: number;
+} {
+  const workerAlgoPairs = results.map((r) => `${r.workerId}/${r.algorithmId}`);
+  const stableWorkers: string[] = [];
+  const unstableWorkers: string[] = [];
 
   for (const r of results) {
-    const key = `${r.workerId}/${r.algorithmId}`
-    const hist = hashHistory.get(key) ?? []
-    hist.push(r.resultHash)
-    if (hist.length > convergenceRuns) hist.shift()
-    hashHistory.set(key, hist)
+    const key = `${r.workerId}/${r.algorithmId}`;
+    const hist = hashHistory.get(key) ?? [];
+    hist.push(r.resultHash);
+    if (hist.length > convergenceRuns) hist.shift();
+    hashHistory.set(key, hist);
 
-    const isStable = hist.length >= convergenceRuns && new Set(hist).size === 1
-    if (isStable) stableWorkers.push(key)
-    else unstableWorkers.push(key)
+    const isStable = hist.length >= convergenceRuns && new Set(hist).size === 1;
+    if (isStable) stableWorkers.push(key);
+    else unstableWorkers.push(key);
   }
 
-  const total = workerAlgoPairs.length
-  const agreementRate = total > 0 ? stableWorkers.length / total : 0
-  const converged = unstableWorkers.length === 0 && stableWorkers.length === total && total > 0
+  const total = workerAlgoPairs.length;
+  const agreementRate = total > 0 ? stableWorkers.length / total : 0;
+  const converged = unstableWorkers.length === 0 && stableWorkers.length === total && total > 0;
 
-  return { converged, stableWorkers, unstableWorkers, agreementRate }
+  return { converged, stableWorkers, unstableWorkers, agreementRate };
 }
 
 /**
@@ -141,7 +146,7 @@ export function checkMlConvergence(
   epsilon: number = 0.01,
   threshold: number = 1.0
 ): SwarmConvergenceReport {
-  const relevant = results.filter(r => r.algorithmId === algorithm)
+  const relevant = results.filter((r) => r.algorithmId === algorithm);
 
   if (relevant.length === 0) {
     return {
@@ -151,43 +156,43 @@ export function checkMlConvergence(
       dominantHash: null,
       dissentingWorkers: [],
       totalChecked: 0,
-    }
+    };
   }
 
   // Group results by epsilon-equivalence class
-  const groups: number[][] = []
+  const groups: number[][] = [];
   for (let i = 0; i < relevant.length; i++) {
-    let placed = false
+    let placed = false;
     for (const group of groups) {
-      const representative = relevant[group[0]]
+      const representative = relevant[group[0]];
       if (mlResultsEquivalent(representative.result, relevant[i].result, epsilon)) {
-        group.push(i)
-        placed = true
-        break
+        group.push(i);
+        placed = true;
+        break;
       }
     }
-    if (!placed) groups.push([i])
+    if (!placed) groups.push([i]);
   }
 
   // Find dominant group
-  let maxGroupSize = 0
-  let dominantGroupIdx = 0
+  let maxGroupSize = 0;
+  let dominantGroupIdx = 0;
   for (let g = 0; g < groups.length; g++) {
     if (groups[g].length > maxGroupSize) {
-      maxGroupSize = groups[g].length
-      dominantGroupIdx = g
+      maxGroupSize = groups[g].length;
+      dominantGroupIdx = g;
     }
   }
 
-  const consensusRatio = maxGroupSize / relevant.length
-  const converged = consensusRatio >= threshold
-  const dominantHash = relevant[groups[dominantGroupIdx][0]]?.resultHash ?? null
+  const consensusRatio = maxGroupSize / relevant.length;
+  const converged = consensusRatio >= threshold;
+  const dominantHash = relevant[groups[dominantGroupIdx][0]]?.resultHash ?? null;
   const dissentingWorkers = converged
     ? groups
         .filter((_, g) => g !== dominantGroupIdx)
         .flat()
-        .map(i => relevant[i].workerId)
-    : relevant.map(r => r.workerId)
+        .map((i) => relevant[i].workerId)
+    : relevant.map((r) => r.workerId);
 
   return {
     algorithm,
@@ -196,7 +201,7 @@ export function checkMlConvergence(
     dominantHash,
     dissentingWorkers,
     totalChecked: relevant.length,
-  }
+  };
 }
 
 /**
@@ -204,25 +209,29 @@ export function checkMlConvergence(
  * Recursively compares all numeric fields; non-numeric fields must match exactly.
  */
 function mlResultsEquivalent(a: unknown, b: unknown, epsilon: number): boolean {
-  if (a === b) return true
+  if (a === b) return true;
   if (typeof a === 'number' && typeof b === 'number') {
-    return Math.abs(a - b) <= epsilon
+    return Math.abs(a - b) <= epsilon;
   }
-  if (typeof a !== typeof b) return false
-  if (a === null || b === null) return a === b
+  if (typeof a !== typeof b) return false;
+  if (a === null || b === null) return a === b;
   if (Array.isArray(a) && Array.isArray(b)) {
-    if (a.length !== b.length) return false
-    return a.every((v, i) => mlResultsEquivalent(v, b[i], epsilon))
+    if (a.length !== b.length) return false;
+    return a.every((v, i) => mlResultsEquivalent(v, b[i], epsilon));
   }
   if (typeof a === 'object' && typeof b === 'object') {
-    const keysA = Object.keys(a as Record<string, unknown>).sort()
-    const keysB = Object.keys(b as Record<string, unknown>).sort()
-    if (keysA.length !== keysB.length) return false
+    const keysA = Object.keys(a as Record<string, unknown>).sort();
+    const keysB = Object.keys(b as Record<string, unknown>).sort();
+    if (keysA.length !== keysB.length) return false;
     return keysA.every(
       (k, i) =>
         k === keysB[i] &&
-        mlResultsEquivalent((a as Record<string, unknown>)[k], (b as Record<string, unknown>)[k], epsilon)
-    )
+        mlResultsEquivalent(
+          (a as Record<string, unknown>)[k],
+          (b as Record<string, unknown>)[k],
+          epsilon
+        )
+    );
   }
-  return false
+  return false;
 }

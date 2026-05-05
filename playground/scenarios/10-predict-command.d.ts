@@ -1,5 +1,5 @@
 /**
- * Scenario: predict command — pictl predict <task> -i <log.xes>
+ * Scenario: predict command — wasm4pm predict <task> -i <log.xes>
  *
  * Dev action simulated: "I added a new WASM dispatch for remaining-time or
  * changed how tasks are validated. Does each task name still route correctly?
@@ -14,7 +14,7 @@
  *   - VALID_PREDICT_CLI_TASKS has exactly 6 entries, all hyphen-form (no underscores)
  *   - remaining-time without --prefix → returns message, not prediction (model-only mode)
  *
- * Binary: apps/pictl/dist/bin/pictl.js (must be built first)
+ * Binary: apps/wasm4pm/dist/bin/wasm4pm.js (must be built first)
  */
 export {};
 //# sourceMappingURL=10-predict-command.d.ts.map

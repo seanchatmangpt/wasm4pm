@@ -19,7 +19,12 @@ export class OtelTracer {
     }
     startSpan(name, options) {
         const ctx = options?.parent
-            ? { traceId: options.parent.traceId, spanId: generateSpanId(), parentSpanId: options.parent.spanId, requiredFields: this.requiredFields }
+            ? {
+                traceId: options.parent.traceId,
+                spanId: generateSpanId(),
+                parentSpanId: options.parent.spanId,
+                requiredFields: this.requiredFields,
+            }
             : { traceId: '', spanId: generateSpanId(), requiredFields: this.requiredFields };
         // If no parent, the span IS the root — needs its own traceId
         if (!options?.parent) {
@@ -63,7 +68,7 @@ export class OtelTracer {
                     resource: { attributes: [] },
                     scopeSpans: [
                         {
-                            scope: { name: '@pictl/observability', version: '26.4.5' },
+                            scope: { name: '@wasm4pm/observability', version: '26.4.5' },
                             spans: batch.map((s) => ({
                                 traceId: s.traceId,
                                 spanId: s.spanId,
@@ -149,9 +154,7 @@ function encodeValue(value) {
     if (typeof value === 'boolean')
         return { boolValue: value };
     if (typeof value === 'number') {
-        return Number.isInteger(value)
-            ? { intValue: String(value) }
-            : { doubleValue: value };
+        return Number.isInteger(value) ? { intValue: String(value) } : { doubleValue: value };
     }
     return { stringValue: JSON.stringify(value) };
 }

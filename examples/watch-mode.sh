@@ -24,8 +24,8 @@ echo "Watching for new .xes files..."
 echo "Press Ctrl+C to stop"
 echo ""
 
-# Use pictl watch mode
-pictl watch "$DATA_DIR" \
+# Use wpm watch mode
+wpm watch "$DATA_DIR" \
   --algorithm "$ALGORITHM" \
   --profile "$PROFILE" \
   --output "$OUTPUT_DIR" \
@@ -39,7 +39,7 @@ pictl watch "$DATA_DIR" \
 #   while read -r directory action filename; do
 #     logfile="$directory$filename"
 #     echo "Processing: $logfile"
-#     pictl run "$logfile" \
+#     wpm run "$logfile" \
 #       --algorithm "$ALGORITHM" \
 #       --profile "$PROFILE" \
 #       --output "$OUTPUT_DIR/$(basename "$logfile" .xes)-result.json"

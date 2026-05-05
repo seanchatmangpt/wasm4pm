@@ -6,31 +6,31 @@
  * structurally.
  */
 export interface PlanStep {
-    id: string;
-    type: string;
-    description: string;
-    required?: boolean;
-    parameters?: Record<string, unknown>;
-    dependsOn?: string[];
+  id: string;
+  type: string;
+  description: string;
+  required?: boolean;
+  parameters?: Record<string, unknown>;
+  dependsOn?: string[];
 }
 export interface ExecutionPlan {
-    id: string;
-    hash: string;
-    steps: PlanStep[];
+  id: string;
+  hash: string;
+  steps: PlanStep[];
 }
 export interface ParityResult {
-    passed: boolean;
-    config: unknown;
-    explainSteps: string[];
-    runSteps: string[];
-    missingFromExplain: string[];
-    missingFromRun: string[];
-    orderMismatch: boolean;
-    details: string;
+  passed: boolean;
+  config: unknown;
+  explainSteps: string[];
+  runSteps: string[];
+  missingFromExplain: string[];
+  missingFromRun: string[];
+  orderMismatch: boolean;
+  details: string;
 }
 export interface PlannerLike {
-    plan(config: unknown): Promise<ExecutionPlan> | ExecutionPlan;
-    explain(config: unknown): string;
+  plan(config: unknown): Promise<ExecutionPlan> | ExecutionPlan;
+  explain(config: unknown): string;
 }
 /**
  * Compare explain output with actual plan steps.
@@ -40,9 +40,12 @@ export declare function checkParity(planner: PlannerLike, config: unknown): Prom
 /**
  * Run parity check across multiple configs.
  */
-export declare function checkParityBatch(planner: PlannerLike, configs: unknown[]): Promise<{
-    results: ParityResult[];
-    allPassed: boolean;
-    summary: string;
+export declare function checkParityBatch(
+  planner: PlannerLike,
+  configs: unknown[]
+): Promise<{
+  results: ParityResult[];
+  allPassed: boolean;
+  summary: string;
 }>;
 //# sourceMappingURL=parity.d.ts.map

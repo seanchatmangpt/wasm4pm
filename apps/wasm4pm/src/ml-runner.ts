@@ -15,6 +15,8 @@ import {
   reduceFeaturesPCA,
 } from '@wasm4pm/ml';
 import type { ClassificationMethod, ClusteringMethod } from '@wasm4pm/ml';
+import { Instrumentation } from '@wasm4pm/observability';
+import type { OtelEvent, RequiredOtelAttributes } from '@wasm4pm/observability';
 
 export const VALID_ML_TASKS = [
   'classify',
@@ -35,6 +37,17 @@ export interface MlTaskOptions {
   eps?: number | string;
   smoothingMethod?: 'sma' | 'ema';
   useExponential?: boolean;
+  /**
+   * Optional OTEL instrumentation. When provided, every ML task execution
+   * emits a `ml.<task>` start/complete span pair via {@link Instrumentation.instrumentMlExecution}.
+   * Emission is non-blocking: exporter exceptions are swallowed.
+   */
+  instrumentation?: {
+    traceId: string;
+    requiredAttrs: RequiredOtelAttributes;
+    emit: (event: OtelEvent) => void;
+    parentSpanId?: string;
+  };
 }
 
 /**
@@ -54,6 +67,44 @@ export async function executeMlTask(
   activityKey: string,
   options: MlTaskOptions = {}
 ): Promise<Record<string, unknown>> {
+  // If instrumentation is configured, wrap the entire task dispatch in a span.
+  if (options.instrumentation) {
+    const { traceId, requiredAttrs, emit, parentSpanId } = options.instrumentation;
+    const method =
+      (options.method as string) ||
+      (
+        {
+          classify: 'knn',
+          cluster: 'kmeans',
+          forecast: 'linear',
+          anomaly: 'ewma',
+          regress: 'linear',
+          pca: 'svd',
+        } as Record<MlTask, string>
+      )[task];
+    const inputAttributes: Record<string, unknown> = {};
+    const k = options.k !== undefined ? Number(options.k) : undefined;
+    if (k !== undefined && !Number.isNaN(k)) inputAttributes.parameterK = k;
+    const eps = options.eps !== undefined ? Number(options.eps) : undefined;
+    if (eps !== undefined && !Number.isNaN(eps)) inputAttributes.parameterEps = eps;
+    const nc = options.nComponents !== undefined ? Number(options.nComponents) : undefined;
+    if (nc !== undefined && !Number.isNaN(nc)) inputAttributes.parameterNComponents = nc;
+    const fp = options.forecastPeriods !== undefined ? Number(options.forecastPeriods) : undefined;
+    if (fp !== undefined && !Number.isNaN(fp)) inputAttributes.parameterForecastPeriods = fp;
+
+    // Recurse without instrumentation to avoid infinite loop.
+    const inner: MlTaskOptions = { ...options, instrumentation: undefined };
+    return Instrumentation.instrumentMlExecution(
+      traceId,
+      task,
+      method,
+      requiredAttrs,
+      () => executeMlTask(wasm, task, logHandle, activityKey, inner),
+      emit,
+      { parentSpanId, inputAttributes: inputAttributes as any }
+    );
+  }
+
   switch (task) {
     case 'classify': {
       const configJson = JSON.stringify({
@@ -75,7 +126,8 @@ export async function executeMlTask(
       );
       const features = typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
       const k = parseInt(String(options.k ?? '5'), 10);
-      if (Number.isNaN(k) || k <= 0) throw new Error('Classification parameter k must be a positive number');
+      if (Number.isNaN(k) || k <= 0)
+        throw new Error('Classification parameter k must be a positive number');
       return (await classifyTraces(features, {
         method: (options.method as ClassificationMethod) || 'knn',
         k,
@@ -101,8 +153,10 @@ export async function executeMlTask(
       const features = typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
       const k = parseInt(String(options.k ?? '3'), 10);
       const eps = parseFloat(String(options.eps ?? '1.0'));
-      if (Number.isNaN(k) || k <= 0) throw new Error('Clustering parameter k must be a positive number');
-      if (Number.isNaN(eps) || eps <= 0) throw new Error('Clustering parameter eps must be a positive number');
+      if (Number.isNaN(k) || k <= 0)
+        throw new Error('Clustering parameter k must be a positive number');
+      if (Number.isNaN(eps) || eps <= 0)
+        throw new Error('Clustering parameter eps must be a positive number');
       return (await clusterTraces(features, {
         method: (options.method as ClusteringMethod) || 'kmeans',
         k,
@@ -115,7 +169,8 @@ export async function executeMlTask(
       const driftResult = typeof driftRaw === 'string' ? JSON.parse(driftRaw) : driftRaw;
       const distances = (driftResult?.drifts ?? []).map((d: any) => d.distance ?? 0);
       const forecastPeriods = parseInt(String(options.forecastPeriods ?? '5'), 10);
-      if (Number.isNaN(forecastPeriods) || forecastPeriods <= 0) throw new Error('Forecast parameter forecastPeriods must be a positive number');
+      if (Number.isNaN(forecastPeriods) || forecastPeriods <= 0)
+        throw new Error('Forecast parameter forecastPeriods must be a positive number');
       return (await forecastSeries(distances, {
         forecastPeriods,
         useExponential: options.useExponential,
@@ -173,7 +228,8 @@ export async function executeMlTask(
       );
       const features = typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
       const nComponents = parseInt(String(options.nComponents ?? '2'), 10);
-      if (Number.isNaN(nComponents) || nComponents <= 0) throw new Error('PCA parameter nComponents must be a positive number');
+      if (Number.isNaN(nComponents) || nComponents <= 0)
+        throw new Error('PCA parameter nComponents must be a positive number');
       return (await reduceFeaturesPCA(features, {
         nComponents,
       })) as unknown as Record<string, unknown>;

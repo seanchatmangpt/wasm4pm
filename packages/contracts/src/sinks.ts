@@ -177,8 +177,8 @@ export class SinkRegistry {
     if (this.adapters.has(adapter.kind)) {
       throw new Error(
         `Sink adapter kind '${adapter.kind}' is already registered. ` +
-        `Adapter versions: existing=${this.adapters.get(adapter.kind)?.version}, ` +
-        `new=${adapter.version}`
+          `Adapter versions: existing=${this.adapters.get(adapter.kind)?.version}, ` +
+          `new=${adapter.version}`
       );
     }
     this.adapters.set(adapter.kind, adapter);
@@ -229,7 +229,7 @@ export class SinkRegistry {
    * @returns Array of adapters that support this artifact type
    */
   findByArtifactType(type: ArtifactType): SinkAdapter[] {
-    return Array.from(this.adapters.values()).filter(adapter =>
+    return Array.from(this.adapters.values()).filter((adapter) =>
       adapter.supportedArtifacts().includes(type)
     );
   }

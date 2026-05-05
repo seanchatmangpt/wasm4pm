@@ -28,7 +28,7 @@ The auditor automatically:
 
 | File | Lines | Purpose |
 |------|-------|---------|
-| `semconv/conformance-audit.mjs` | 450+ | Core auditor (OCELEventLog, PictlAuditor, auditPictlProcess) |
+| `semconv/conformance-audit.mjs` | 450+ | Core auditor (OCELEventLog, wasm4pmAuditor, auditwasm4pmProcess) |
 | `semconv/conformance-audit-report.md` | 350+ | Audit report template with metrics and interpretation |
 
 ### Testing & Examples
@@ -167,9 +167,9 @@ node examples/conformance-audit-example.mjs --jaeger-url=http://localhost:16686 
 ### Programmatic Usage
 
 ```javascript
-import { auditPictlProcess } from './semconv/conformance-audit.mjs';
+import { auditwasm4pmProcess } from './semconv/conformance-audit.mjs';
 
-const report = await auditPictlProcess(spans, {
+const report = await auditwasm4pmProcess(spans, {
   fitnessThreshold: 0.95,
   varianceThreshold: 0.70,
   maxDeviations: 10
@@ -255,9 +255,9 @@ The auditor strictly follows three principles:
 ## Mandate Fulfillment
 
 ✓ **Create conformance-audit.mjs**
-- auditPictlProcess() async function
+- auditwasm4pmProcess() async function
 - OCELEventLog class with conversion logic
-- PictlAuditor class with comparison logic
+- wasm4pmAuditor class with comparison logic
 - Support for Jaeger and file-based span loading
 
 ✓ **OCEL conversion logic**

@@ -95,8 +95,12 @@ export class MockEngine {
     getTransitionHistory() {
         return [...this._history];
     }
-    isReady() { return this._state === 'ready'; }
-    isFailed() { return this._state === 'failed'; }
+    isReady() {
+        return this._state === 'ready';
+    }
+    isFailed() {
+        return this._state === 'failed';
+    }
     reset() {
         this._state = 'uninitialized';
         this._history.length = 0;
@@ -105,7 +109,7 @@ export class MockEngine {
     }
 }
 function delay(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
 }
 export function createMockEngine(options) {
     return new MockEngine(options);

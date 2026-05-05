@@ -7,7 +7,7 @@
  * User paths covered:
  *   1. Config  — resolveConfig({ cliOverrides: { algorithm: X } }) accepts every ID
  *   2. Planner — plan() with algorithm override produces a valid plan for every ID
- *   3. CLI     — pictl run --algorithm X exits 0 or 3 (never 1=config or 2=source)
+ *   3. CLI     — wpm run --algorithm X exits 0 or 3 (never 1=config or 2=source)
  *   4. CLI     — wpm compare with all 14 IDs comma-joined exits 0 or 3
  *
  * Driven by ALGORITHM_IDS from @wasm4pm/contracts — if a new algorithm is added
@@ -19,7 +19,7 @@ import * as path from 'path';
 import * as fs from 'fs/promises';
 import { resolveConfig } from '@wasm4pm/config';
 import { ALGORITHM_IDS } from '@wasm4pm/contracts';
-import { pictl, createCliTestEnv, EXIT_CODES } from '@wasm4pm/testing';
+import { wasm4pm, createCliTestEnv, EXIT_CODES } from '../helpers/cli.js';
 import type { CliTestEnv } from '@wasm4pm/testing';
 
 const MINI_XES = `<?xml version="1.0" encoding="UTF-8"?>
@@ -112,12 +112,12 @@ describe('all algorithms: planner layer', () => {
   });
 });
 
-// ── 3. CLI: pictl run --algorithm X exits 0 or 3, never 1 or 2 ────────────────
+// ── 3. CLI: wpm run --algorithm X exits 0 or 3, never 1 or 2 ────────────────
 
 describe('all algorithms: CLI run layer', () => {
   for (const id of ALGORITHM_IDS) {
     it(`wpm run --algorithm ${id} exits 0 or 3 (not config/source error)`, async () => {
-      const result = await pictl(['run', xesPath, '--algorithm', id, '--no-save']);
+      const result = await wasm4pm(['run', xesPath, '--algorithm', id, '--no-save']);
       const acceptable = [EXIT_CODES.SUCCESS, EXIT_CODES.EXECUTION_ERROR];
       if (!acceptable.includes(result.exitCode)) {
         console.error(`[all-algos] ${id} unexpected exit ${result.exitCode}`);
@@ -133,7 +133,7 @@ describe('all algorithms: CLI run layer', () => {
 
 describe('all algorithms: CLI compare layer', () => {
   it('wpm compare accepts all 14 algorithm IDs comma-joined', async () => {
-    const result = await pictl(['compare', ALGORITHM_IDS.join(','), '-i', xesPath, '--no-save']);
+    const result = await wasm4pm(['compare', ALGORITHM_IDS.join(','), '-i', xesPath, '--no-save']);
     const acceptable = [EXIT_CODES.SUCCESS, EXIT_CODES.EXECUTION_ERROR];
     if (!acceptable.includes(result.exitCode)) {
       console.error('[all-algos] compare unexpected exit:', result.exitCode);
@@ -144,7 +144,7 @@ describe('all algorithms: CLI compare layer', () => {
   }, 30_000);
 
   it('wpm compare with unknown algorithm exits 2', async () => {
-    const result = await pictl(['compare', 'dfg,ghost_algo', '-i', xesPath]);
+    const result = await wasm4pm(['compare', 'dfg,ghost_algo', '-i', xesPath]);
     expect(result.exitCode).toBe(EXIT_CODES.SOURCE_ERROR);
   }, 20_000);
 });

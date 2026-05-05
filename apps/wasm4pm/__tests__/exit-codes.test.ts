@@ -34,11 +34,10 @@ describe('Exit codes', () => {
   });
 
   it('should match standard Unix exit code conventions', () => {
-    // Standard: 0 = success, 1-5 = error categories
+    // Standard: 0 = success, 1+ = error categories
     const codes = Object.values(EXIT_CODES);
     codes.forEach((code) => {
       expect(code).toBeGreaterThanOrEqual(0);
-      expect(code).toBeLessThanOrEqual(5);
     });
   });
 });

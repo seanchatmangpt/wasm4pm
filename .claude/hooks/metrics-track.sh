@@ -5,9 +5,9 @@
 # Called by: post-commit hook (via .git/hooks/post-commit)
 # Exit code: 0 (always succeeds, failures logged but non-blocking)
 
-PICTL_DIR="${CLAUDE_PROJECT_DIR:-.}"
-METRICS_FILE="$PICTL_DIR/.wasm4pm/metrics.json"
-BUILD_LOG="$PICTL_DIR/.wasm4pm/build-times.log"
+WASM4PM_DIR="${CLAUDE_PROJECT_DIR:-.}"
+METRICS_FILE="$WASM4PM_DIR/.wasm4pm/metrics.json"
+BUILD_LOG="$WASM4PM_DIR/.wasm4pm/build-times.log"
 
 # Ensure metrics file exists
 if [[ ! -f "$METRICS_FILE" ]]; then
@@ -21,7 +21,7 @@ iso8601() {
 
 # Helper: Git commit hash (short)
 git_commit() {
-  cd "$PICTL_DIR" 2>/dev/null && git rev-parse --short HEAD 2>/dev/null || echo "unknown"
+  cd "$WASM4PM_DIR" 2>/dev/null && git rev-parse --short HEAD 2>/dev/null || echo "unknown"
 }
 
 # Metric 1: Test pass rate
@@ -31,8 +31,8 @@ collect_test_pass_rate() {
   local cargo_pass=0 cargo_fail=0
 
   # Run TypeScript tests (vitest) if available
-  if [[ -d "$PICTL_DIR/packages" ]] && command -v pnpm &>/dev/null; then
-    (cd "$PICTL_DIR" && timeout 30 pnpm test 2>&1 > "$test_output_file" || true)
+  if [[ -d "$WASM4PM_DIR/packages" ]] && command -v pnpm &>/dev/null; then
+    (cd "$WASM4PM_DIR" && timeout 30 pnpm test 2>&1 > "$test_output_file" || true)
     # Parse vitest output for passed/failed counts (macOS grep compatible)
     vitest_pass=$(grep "passed" "$test_output_file" 2>/dev/null | grep -o "[0-9]* passed" | grep -o "[0-9]*" | head -1 || echo "0")
     vitest_fail=$(grep "failed" "$test_output_file" 2>/dev/null | grep -o "[0-9]* failed" | grep -o "[0-9]*" | head -1 || echo "0")
@@ -57,7 +57,7 @@ collect_compiler_warnings() {
 
   # TypeScript: tsc (quick check, no emit)
   if command -v tsc &>/dev/null; then
-    local tsc_warnings=$(cd "$PICTL_DIR" && tsc --noEmit 2>&1 | grep -c "TS[0-9]" || echo "0")
+    local tsc_warnings=$(cd "$WASM4PM_DIR" && tsc --noEmit 2>&1 | grep -c "TS[0-9]" || echo "0")
     total=$((total + tsc_warnings))
   fi
 
@@ -76,12 +76,12 @@ collect_otel_coverage() {
   local total_public_functions=0
   local instrumented_functions=0
 
-  if [[ -d "$PICTL_DIR/packages" ]]; then
+  if [[ -d "$WASM4PM_DIR/packages" ]]; then
     # Count exported functions (simplified)
-    total_public_functions=$(find "$PICTL_DIR/packages" -name "*.ts" -not -path "*/node_modules/*" -not -path "*/__tests__/*" 2>/dev/null | wc -l)
+    total_public_functions=$(find "$WASM4PM_DIR/packages" -name "*.ts" -not -path "*/node_modules/*" -not -path "*/__tests__/*" 2>/dev/null | wc -l)
 
     # Count files with instrumentation
-    instrumented_functions=$(find "$PICTL_DIR/packages" -name "*.ts" -not -path "*/node_modules/*" -not -path "*/__tests__/*" \
+    instrumented_functions=$(find "$WASM4PM_DIR/packages" -name "*.ts" -not -path "*/node_modules/*" -not -path "*/__tests__/*" \
       -exec grep -l "Instrumentation.create\|observability.create" {} + 2>/dev/null | wc -l)
   fi
 
@@ -97,11 +97,11 @@ collect_tps_violations() {
   local silent_fallbacks=0
 
   # Silent fallbacks: catch with silent error handling
-  silent_fallbacks=$(find "$PICTL_DIR/packages" -name "*.ts" -not -path "*/node_modules/*" 2>/dev/null \
+  silent_fallbacks=$(find "$WASM4PM_DIR/packages" -name "*.ts" -not -path "*/node_modules/*" 2>/dev/null \
     -exec grep -l "catch.*{" {} + 2>/dev/null | wc -l || echo "0")
 
   # TPS violations per KLOC (simplified)
-  local total_loc=$(find "$PICTL_DIR/packages" -name "*.ts" -not -path "*/node_modules/*" -not -path "*/__tests__/*" 2>/dev/null | wc -l)
+  local total_loc=$(find "$WASM4PM_DIR/packages" -name "*.ts" -not -path "*/node_modules/*" -not -path "*/__tests__/*" 2>/dev/null | wc -l)
 
   if [[ $total_loc -lt 100 ]]; then
     echo "0"
@@ -122,8 +122,8 @@ collect_mttr() {
   fi
 
   # Fallback: approximate from recent fixes (only if no actual measurement)
-  if [[ -d "$PICTL_DIR/.git" ]]; then
-    local recovery_count=$(cd "$PICTL_DIR" && git log --oneline -20 2>/dev/null | grep -c "fix(" || echo "0")
+  if [[ -d "$WASM4PM_DIR/.git" ]]; then
+    local recovery_count=$(cd "$WASM4PM_DIR" && git log --oneline -20 2>/dev/null | grep -c "fix(" || echo "0")
     if [[ $recovery_count -eq 0 ]]; then
       echo "0"  # No recent fixes
     else
@@ -143,7 +143,7 @@ collect_test_determinism() {
 
 # Metric 8: Lines of code
 collect_locs() {
-  local ts_loc=$(find "$PICTL_DIR/packages" -name "*.ts" -not -path "*/node_modules/*" -not -path "*/__tests__/*" 2>/dev/null | wc -l)
+  local ts_loc=$(find "$WASM4PM_DIR/packages" -name "*.ts" -not -path "*/node_modules/*" -not -path "*/__tests__/*" 2>/dev/null | wc -l)
   echo "$((ts_loc * 50))"  # Rough estimate: 50 LOC per file
 }
 

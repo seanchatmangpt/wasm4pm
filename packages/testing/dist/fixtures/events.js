@@ -4,66 +4,92 @@
 /** Simple sequential process: A → B → C */
 export const SIMPLE_SEQUENTIAL = {
     traces: [
-        { 'concept:name': 'case-1', events: [
+        {
+            'concept:name': 'case-1',
+            events: [
                 { 'concept:name': 'A', 'time:timestamp': '2026-01-01T00:00:00Z' },
                 { 'concept:name': 'B', 'time:timestamp': '2026-01-01T00:01:00Z' },
                 { 'concept:name': 'C', 'time:timestamp': '2026-01-01T00:02:00Z' },
-            ] },
-        { 'concept:name': 'case-2', events: [
+            ],
+        },
+        {
+            'concept:name': 'case-2',
+            events: [
                 { 'concept:name': 'A', 'time:timestamp': '2026-01-01T01:00:00Z' },
                 { 'concept:name': 'B', 'time:timestamp': '2026-01-01T01:01:00Z' },
                 { 'concept:name': 'C', 'time:timestamp': '2026-01-01T01:02:00Z' },
-            ] },
+            ],
+        },
     ],
 };
 /** Parallel split: A → (B | C) → D */
 export const PARALLEL_SPLIT = {
     traces: [
-        { 'concept:name': 'case-1', events: [
+        {
+            'concept:name': 'case-1',
+            events: [
                 { 'concept:name': 'A', 'time:timestamp': '2026-01-01T00:00:00Z' },
                 { 'concept:name': 'B', 'time:timestamp': '2026-01-01T00:01:00Z' },
                 { 'concept:name': 'C', 'time:timestamp': '2026-01-01T00:01:00Z' },
                 { 'concept:name': 'D', 'time:timestamp': '2026-01-01T00:02:00Z' },
-            ] },
-        { 'concept:name': 'case-2', events: [
+            ],
+        },
+        {
+            'concept:name': 'case-2',
+            events: [
                 { 'concept:name': 'A', 'time:timestamp': '2026-01-01T01:00:00Z' },
                 { 'concept:name': 'C', 'time:timestamp': '2026-01-01T01:01:00Z' },
                 { 'concept:name': 'B', 'time:timestamp': '2026-01-01T01:01:30Z' },
                 { 'concept:name': 'D', 'time:timestamp': '2026-01-01T01:02:00Z' },
-            ] },
+            ],
+        },
     ],
 };
 /** Exclusive choice: A → (B xor C) → D */
 export const EXCLUSIVE_CHOICE = {
     traces: [
-        { 'concept:name': 'case-1', events: [
+        {
+            'concept:name': 'case-1',
+            events: [
                 { 'concept:name': 'A', 'time:timestamp': '2026-01-01T00:00:00Z' },
                 { 'concept:name': 'B', 'time:timestamp': '2026-01-01T00:01:00Z' },
                 { 'concept:name': 'D', 'time:timestamp': '2026-01-01T00:02:00Z' },
-            ] },
-        { 'concept:name': 'case-2', events: [
+            ],
+        },
+        {
+            'concept:name': 'case-2',
+            events: [
                 { 'concept:name': 'A', 'time:timestamp': '2026-01-01T01:00:00Z' },
                 { 'concept:name': 'C', 'time:timestamp': '2026-01-01T01:01:00Z' },
                 { 'concept:name': 'D', 'time:timestamp': '2026-01-01T01:02:00Z' },
-            ] },
+            ],
+        },
     ],
 };
 /** Loop: A → B → (C → B)* → D */
 export const LOOP_PROCESS = {
     traces: [
-        { 'concept:name': 'case-1', events: [
+        {
+            'concept:name': 'case-1',
+            events: [
                 { 'concept:name': 'A', 'time:timestamp': '2026-01-01T00:00:00Z' },
                 { 'concept:name': 'B', 'time:timestamp': '2026-01-01T00:01:00Z' },
                 { 'concept:name': 'D', 'time:timestamp': '2026-01-01T00:02:00Z' },
-            ] },
-        { 'concept:name': 'case-2', events: [
+            ],
+        },
+        {
+            'concept:name': 'case-2',
+            events: [
                 { 'concept:name': 'A', 'time:timestamp': '2026-01-01T01:00:00Z' },
                 { 'concept:name': 'B', 'time:timestamp': '2026-01-01T01:01:00Z' },
                 { 'concept:name': 'C', 'time:timestamp': '2026-01-01T01:02:00Z' },
                 { 'concept:name': 'B', 'time:timestamp': '2026-01-01T01:03:00Z' },
                 { 'concept:name': 'D', 'time:timestamp': '2026-01-01T01:04:00Z' },
-            ] },
-        { 'concept:name': 'case-3', events: [
+            ],
+        },
+        {
+            'concept:name': 'case-3',
+            events: [
                 { 'concept:name': 'A', 'time:timestamp': '2026-01-01T02:00:00Z' },
                 { 'concept:name': 'B', 'time:timestamp': '2026-01-01T02:01:00Z' },
                 { 'concept:name': 'C', 'time:timestamp': '2026-01-01T02:02:00Z' },
@@ -71,7 +97,8 @@ export const LOOP_PROCESS = {
                 { 'concept:name': 'C', 'time:timestamp': '2026-01-01T02:04:00Z' },
                 { 'concept:name': 'B', 'time:timestamp': '2026-01-01T02:05:00Z' },
                 { 'concept:name': 'D', 'time:timestamp': '2026-01-01T02:06:00Z' },
-            ] },
+            ],
+        },
     ],
 };
 /** Empty log — edge case */
@@ -79,9 +106,10 @@ export const EMPTY_LOG = { traces: [] };
 /** Single trace, single event */
 export const SINGLE_EVENT = {
     traces: [
-        { 'concept:name': 'case-1', events: [
-                { 'concept:name': 'A', 'time:timestamp': '2026-01-01T00:00:00Z' },
-            ] },
+        {
+            'concept:name': 'case-1',
+            events: [{ 'concept:name': 'A', 'time:timestamp': '2026-01-01T00:00:00Z' }],
+        },
     ],
 };
 /** Large synthetic log generator */

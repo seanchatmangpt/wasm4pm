@@ -25,6 +25,7 @@ use wasm_bindgen::prelude::*;
 use crate::error::{self, codes};
 use crate::models::{DFGNode, DirectlyFollowsGraph, DirectlyFollowsRelation};
 use crate::state;
+use crate::utilities::to_js_str;
 
 // ---------------------------------------------------------------------------
 // IncrementalDFG
@@ -444,11 +445,10 @@ pub fn streaming_dfg_string_event(handle: &str, activity: &str) -> Result<JsValu
     state::get_or_init_state().with_object_mut(handle, |obj| match obj {
         Some(state::StoredObject::StreamingDFG(sdfg)) => {
             sdfg.process_event(activity);
-            serde_wasm_bindgen::to_value(&json!({
+            to_js_str(&json!({
                 "ok": true,
                 "event_count": sdfg.event_count(),
             }))
-            .map_err(|e| crate::error::js_val(&e.to_string()))
         }
         Some(_) => Err(crate::error::js_val("Object is not a StreamingDFG")),
         None => Err(crate::error::js_val(&format!(
@@ -464,8 +464,7 @@ pub fn streaming_dfg_string_end_trace(handle: &str) -> Result<JsValue, JsValue> 
     state::get_or_init_state().with_object_mut(handle, |obj| match obj {
         Some(state::StoredObject::StreamingDFG(sdfg)) => {
             sdfg.end_trace();
-            serde_wasm_bindgen::to_value(&json!({ "ok": true }))
-                .map_err(|e| crate::error::js_val(&e.to_string()))
+            to_js_str(&json!({ "ok": true }))
         }
         Some(_) => Err(crate::error::js_val("Object is not a StreamingDFG")),
         None => Err(crate::error::js_val(&format!(

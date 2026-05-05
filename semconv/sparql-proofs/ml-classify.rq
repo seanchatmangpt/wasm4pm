@@ -1,5 +1,5 @@
 # SPARQL CONSTRUCT: Transform ML Classification Result to RDF
-# Maps pictl classification/inference result into pm:OutcomePrediction or pm:AnomalyDetection triples
+# Maps wasm4pm classification/inference result into pm:OutcomePrediction or pm:AnomalyDetection triples
 # Input: JSON with prediction, features[], confidence, model_accuracy, explanation
 # Output: RDF graph documenting classification result with feature importance and reasoning
 
@@ -89,23 +89,23 @@ WHERE {
   #                            confidence: 0.89, model_accuracy: 0.92 }
 
   # Generate classification IRI
-  BIND(IRI(CONCAT("http://pictl.org/classification/", SUBSTR(STR(NOW()), 1, 10), "/", RAND())) AS ?classification)
+  BIND(IRI(CONCAT("http://wasm4pm.org/classification/", SUBSTR(STR(NOW()), 1, 10), "/", RAND())) AS ?classification)
   BIND(NOW() AS ?timestamp)
 
   # Placeholder URIs
-  BIND(IRI("http://pictl.org/model/xgboost-riskpredictor-v3") AS ?ml_model)
-  BIND(IRI("http://pictl.org/case/98765") AS ?case_context)
+  BIND(IRI("http://wasm4pm.org/model/xgboost-riskpredictor-v3") AS ?ml_model)
+  BIND(IRI("http://wasm4pm.org/case/98765") AS ?case_context)
 
   # Classification metadata
   BIND("Case 98765: Risk Level Classification" AS ?prediction_label)
   BIND(0.89 AS ?prediction_confidence)
-  BIND(IRI("http://pictl.org/class/high-risk") AS ?predicted_class)
+  BIND(IRI("http://wasm4pm.org/class/high-risk") AS ?predicted_class)
   BIND(0.78 AS ?outcome_probability)
   BIND("PT0.2S"^^xsd:duration AS ?execution_time)
   BIND("High risk classification due to multiple delayed activities and cost overruns" AS ?classification_explanation)
 
   # Predicted outcome
-  BIND(IRI("http://pictl.org/class/high-risk") AS ?predicted_outcome)
+  BIND(IRI("http://wasm4pm.org/class/high-risk") AS ?predicted_outcome)
   BIND("High Risk" AS ?class_label)
   BIND(1 AS ?class_index)
   BIND(0.78 AS ?outcome_probability)
@@ -114,7 +114,7 @@ WHERE {
   BIND(185 AS ?supporting_case_count)
 
   # Feature 1: Case Duration
-  BIND(IRI("http://pictl.org/feature/case-duration") AS ?feature)
+  BIND(IRI("http://wasm4pm.org/feature/case-duration") AS ?feature)
   BIND("Case Duration (days)" AS ?feature_label)
   BIND(65 AS ?feature_value)
   BIND("numeric" AS ?feature_type)
@@ -124,7 +124,7 @@ WHERE {
   BIND("Longer cases correlate with higher risk; this case is 20% above median" AS ?feature_contribution)
 
   # Alternative predictions
-  BIND(IRI(CONCAT("http://pictl.org/alternative/", RAND())) AS ?alternative_prediction)
+  BIND(IRI(CONCAT("http://wasm4pm.org/alternative/", RAND())) AS ?alternative_prediction)
   BIND("Alternative: Medium Risk" AS ?alternative_label)
   BIND(2 AS ?alt_class_index)
   BIND(0.18 AS ?alt_probability)
@@ -143,7 +143,7 @@ WHERE {
   BIND(xsd:dateTime("2026-03-15T10:00:00Z") AS ?model_update_date)
 
   # Assessment
-  BIND(IRI(CONCAT("http://pictl.org/assessment/", RAND())) AS ?assessment)
+  BIND(IRI(CONCAT("http://wasm4pm.org/assessment/", RAND())) AS ?assessment)
   BIND("Model predicts high risk with 89% confidence. Top 3 contributing factors: case duration, cost overrun history, activity delay pattern." AS ?full_explanation)
   BIND("[R15, R23, R42]" AS ?rules_fired)
   BIND("moderate" AS ?uncertainty)

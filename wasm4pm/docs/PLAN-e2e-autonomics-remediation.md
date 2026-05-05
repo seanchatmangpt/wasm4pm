@@ -13,9 +13,9 @@ wasm4pm/
 ├── src/mcp_server.ts       # MCP server (de facto algorithm registry)
 ├── src/pipeline.ts         # Profile → WASM function resolver
 ├── src/receipt.ts          # ReceiptBuilder (unused in production)
-├── src/errors.ts           # PictlError + classifyPictlError
+├── src/errors.ts           # Wasm4pmError + classifyWasm4pmError
 ├── src/watch.ts            # WatchMode (inline receipt, no failure receipt)
-├── src/config.ts           # PictlConfig, ExecutionProfile, StepType, resolveProfile
+├── src/config.ts           # Wasm4pmConfig, ExecutionProfile, StepType, resolveProfile
 ├── cli/index.ts            # CLI (basic: load, discover, analyze, export only)
 ├── tests/fixtures/         # XES + JSON fixtures (no RevOps)
 └── __tests__/              # Vitest tests
@@ -101,7 +101,7 @@ export const EXIT_CODES = {
 export type ExitCode = (typeof EXIT_CODES)[keyof typeof EXIT_CODES];
 ```
 
-2. File: `wasm4pm/src/errors.ts` — Add `toExitCode()` method to `PictlError`:
+2. File: `wasm4pm/src/errors.ts` — Add `toExitCode()` method to `Wasm4pmError`:
 
 ```typescript
 toExitCode(): number {
@@ -131,7 +131,7 @@ toExitCode(): number {
 3. File: `wasm4pm/cli/index.ts` — Replace bare `process.exit(1)` with `process.exit(err.toExitCode())`. Add `process.exit(0)` on successful command completion.
 
 **Dependencies:** None
-**Testing:** Test that `PictlError` with `CONFIG_INVALID` maps to exit code 1, etc.
+**Testing:** Test that `Wasm4pmError` with `CONFIG_INVALID` maps to exit code 1, etc.
 **Risk:** Low — CLI only exits on init failure and unknown command currently
 
 ---
@@ -663,7 +663,7 @@ ML_PCA = 'ml_pca',
 1. File: `wasm4pm/src/receipt.ts` — Replace `simpleHash()` with BLAKE3 (or Web Crypto SHA-256):
 
 ```typescript
-async function hashConfig(config: PictlConfig): Promise<string> {
+async function hashConfig(config: Wasm4pmConfig): Promise<string> {
   const sorted = sortObjectKeys(config);
   const json = JSON.stringify(sorted);
   const encoder = new TextEncoder();
@@ -900,15 +900,15 @@ interface ExecutionReceipt {
 ```typescript
 // telemetry.ts — span name constants
 export const SPAN_NAMES = {
-  DISCOVERY: 'pictl.discovery',
-  CONFORMANCE: 'pictl.conformance',
-  PREDICTION: 'pictl.prediction',
-  DRIFT: 'pictl.drift',
-  ML_CLASSIFY: 'pictl.ml.classify',
-  ML_CLUSTER: 'pictl.ml.cluster',
-  ML_FORECAST: 'pictl.ml.forecast',
-  ML_ANOMALY: 'pictl.ml.anomaly',
-  PIPELINE: 'pictl.pipeline',
+  DISCOVERY: 'wasm4pm.discovery',
+  CONFORMANCE: 'wasm4pm.conformance',
+  PREDICTION: 'wasm4pm.prediction',
+  DRIFT: 'wasm4pm.drift',
+  ML_CLASSIFY: 'wasm4pm.ml.classify',
+  ML_CLUSTER: 'wasm4pm.ml.cluster',
+  ML_FORECAST: 'wasm4pm.ml.forecast',
+  ML_ANOMALY: 'wasm4pm.ml.anomaly',
+  PIPELINE: 'wasm4pm.pipeline',
 } as const;
 ```
 
@@ -938,7 +938,7 @@ export const SPAN_NAMES = {
 
 ### GAP-10: WASM panic/trap error classification is fragile
 
-**Finding CONFIRMED:** `classifyPictlError()` in `errors.ts` uses substring matching (`lowerRaw.includes('not found')`, etc.). This is fragile because:
+**Finding CONFIRMED:** `classifyWasm4pmError()` in `errors.ts` uses substring matching (`lowerRaw.includes('not found')`, etc.). This is fragile because:
 
 1. WASM panic messages may change between versions
 2. Overlapping patterns (e.g., "missing" maps to CONFIG_INVALID but could be a state error)
@@ -948,7 +948,7 @@ export const SPAN_NAMES = {
 1. File: `wasm4pm/src/errors.ts` — Improve pattern matching with priority ordering and regex:
 
 ```typescript
-export function classifyPictlError(raw: string, context?: { step?: string }): ErrorCode {
+export function classifyWasm4pmError(raw: string, context?: { step?: string }): ErrorCode {
   if (!raw || typeof raw !== 'string') return ErrorCode.UNKNOWN;
   const lower = raw.toLowerCase();
 
@@ -1354,13 +1354,13 @@ case ExecutionProfile.RESEARCH:
 # Build and measure
 cd wasm4pm
 wasm-pack build --target web -- --no-default-features --features basic
-ls -la pkg/pictl_bg.wasm  # Record actual size
+ls -la pkg/wasm4pm_bg.wasm  # Record actual size
 
 wasm-pack build --target web -- --no-default-features --features basic,discovery_advanced
-ls -la pkg/pictl_bg.wasm
+ls -la pkg/wasm4pm_bg.wasm
 
 wasm-pack build --target web -- --no-default-features --features basic,discovery_advanced,ml
-ls -la pkg/pictl_bg.wasm
+ls -la pkg/wasm4pm_bg.wasm
 ```
 
 **Dependencies:** None

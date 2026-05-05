@@ -5,43 +5,43 @@
  * Ensures format compliance, schema validity, and data quality.
  */
 export interface ValidationError {
-    path: string;
-    message: string;
-    severity: 'error' | 'warning';
+  path: string;
+  message: string;
+  severity: 'error' | 'warning';
 }
 export interface ValidationResult {
-    valid: boolean;
-    errors: ValidationError[];
-    warnings: ValidationError[];
+  valid: boolean;
+  errors: ValidationError[];
+  warnings: ValidationError[];
 }
 export interface XESSchema {
-    version?: string;
-    features?: string[];
-    extensions?: Array<{
-        name: string;
-        prefix: string;
-        uri: string;
-    }>;
-    traces?: XESTrace[];
+  version?: string;
+  features?: string[];
+  extensions?: Array<{
+    name: string;
+    prefix: string;
+    uri: string;
+  }>;
+  traces?: XESTrace[];
 }
 export interface XESTrace {
-    attributes?: Record<string, unknown>;
-    events?: XESEvent[];
+  attributes?: Record<string, unknown>;
+  events?: XESEvent[];
 }
 export interface XESEvent {
-    attributes?: Record<string, unknown>;
+  attributes?: Record<string, unknown>;
 }
 export interface EventLogSchema {
-    traces: Array<{
-        'concept:name'?: string;
-        events: Array<{
-            'concept:name': string;
-            'time:timestamp'?: string;
-            'org:resource'?: string;
-            'lifecycle:transition'?: string;
-            [key: string]: unknown;
-        }>;
+  traces: Array<{
+    'concept:name'?: string;
+    events: Array<{
+      'concept:name': string;
+      'time:timestamp'?: string;
+      'org:resource'?: string;
+      'lifecycle:transition'?: string;
+      [key: string]: unknown;
     }>;
+  }>;
 }
 /**
  * Validate XES format compliance.
@@ -61,10 +61,13 @@ export declare function validateXESStructure(xes: XESSchema): ValidationResult;
  * - resource (optional)
  * - lifecycle:transition (optional)
  */
-export declare function validateCSV(csvContent: string, options?: {
+export declare function validateCSV(
+  csvContent: string,
+  options?: {
     delimiter?: string;
     hasHeader?: boolean;
-}): ValidationResult;
+  }
+): ValidationResult;
 /**
  * Validate in-memory event log structure.
  */
@@ -76,7 +79,10 @@ export declare function validateTimestampOrdering(log: EventLogSchema): Validati
 /**
  * Validate trace completeness (no missing events).
  */
-export declare function validateTraceCompleteness(log: EventLogSchema, expectedActivities?: string[]): ValidationResult;
+export declare function validateTraceCompleteness(
+  log: EventLogSchema,
+  expectedActivities?: string[]
+): ValidationResult;
 /**
  * Check for duplicate events in traces.
  */

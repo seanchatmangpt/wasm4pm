@@ -109,7 +109,10 @@ export const diff = defineCommand({
       const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
 
       // Validate both input files exist
-      for (const [label, filePath] of [['log1', log1Path], ['log2', log2Path]] as const) {
+      for (const [label, filePath] of [
+        ['log1', log1Path],
+        ['log2', log2Path],
+      ] as const) {
         try {
           await fs.access(filePath);
         } catch {
@@ -190,9 +193,7 @@ export const diff = defineCommand({
       if (formatter instanceof JSONFormatter) {
         formatter.error('Diff failed', error);
       } else {
-        formatter.error(
-          `Diff failed: ${error instanceof Error ? error.message : String(error)}`
-        );
+        formatter.error(`Diff failed: ${error instanceof Error ? error.message : String(error)}`);
       }
       process.exit(EXIT_CODES.execution_error);
     }
@@ -229,7 +230,7 @@ function computeDiff(
   dfg1: Dfg,
   dfg2: Dfg,
   variants1: TraceVariant[],
-  variants2: TraceVariant[],
+  variants2: TraceVariant[]
 ): DiffResult {
   // --- Activities ---
   const acts1 = new Set<string>(dfg1.nodes.map((n) => n.id));
@@ -261,7 +262,13 @@ function computeDiff(
       const e1 = edgeMap1.get(key)!;
       if (e1.count !== e2.count) {
         const pctChange = e1.count > 0 ? ((e2.count - e1.count) / e1.count) * 100 : 100;
-        changedEdges.push({ from: e2.from, to: e2.to, count1: e1.count, count2: e2.count, pctChange });
+        changedEdges.push({
+          from: e2.from,
+          to: e2.to,
+          count1: e1.count,
+          count2: e2.count,
+          pctChange,
+        });
       }
     }
   }
@@ -322,16 +329,16 @@ function printHumanDiff(
   formatter: HumanFormatter,
   log1Path: string,
   log2Path: string,
-  result: DiffResult,
+  result: DiffResult
 ): void {
   const log1Name = log1Path.split('/').pop() ?? log1Path;
   const log2Name = log2Path.split('/').pop() ?? log2Path;
 
   // ANSI colour helpers (gracefully degraded if not a TTY)
   const green = (s: string) => `\x1b[32m${s}\x1b[0m`;
-  const red   = (s: string) => `\x1b[31m${s}\x1b[0m`;
-  const cyan  = (s: string) => `\x1b[36m${s}\x1b[0m`;
-  const bold  = (s: string) => `\x1b[1m${s}\x1b[0m`;
+  const red = (s: string) => `\x1b[31m${s}\x1b[0m`;
+  const cyan = (s: string) => `\x1b[36m${s}\x1b[0m`;
+  const bold = (s: string) => `\x1b[1m${s}\x1b[0m`;
 
   const line = (s: string) => formatter.log(s);
 
@@ -351,7 +358,9 @@ function printHumanDiff(
   const jaccardColor = result.jaccard >= 0.7 ? green : result.jaccard >= 0.4 ? cyan : red;
   const jaccardBar = sparkBar(result.jaccard, 0, 1);
   line('');
-  line(`  ${bold('Structural similarity:')} ${jaccardColor(result.jaccard.toFixed(3))}  ${jaccardBar}  ${result.summary}`);
+  line(
+    `  ${bold('Structural similarity:')} ${jaccardColor(result.jaccard.toFixed(3))}  ${jaccardBar}  ${result.summary}`
+  );
 
   // --- Activities section ---
   line('');
@@ -361,17 +370,23 @@ function printHumanDiff(
   if (actAdded.length > 0) {
     const list = actAdded.join(', ');
     line(`  ${green('+')} New:     ${list.length > 60 ? list.slice(0, 57) + '...' : list}`);
-    line(`           (appeared in log2, ${actAdded.length} activit${actAdded.length === 1 ? 'y' : 'ies'})`);
+    line(
+      `           (appeared in log2, ${actAdded.length} activit${actAdded.length === 1 ? 'y' : 'ies'})`
+    );
   }
   if (actRemoved.length > 0) {
     const list = actRemoved.join(', ');
     line(`  ${red('-')} Removed: ${list.length > 60 ? list.slice(0, 57) + '...' : list}`);
-    line(`           (gone in log2, ${actRemoved.length} activit${actRemoved.length === 1 ? 'y' : 'ies'})`);
+    line(
+      `           (gone in log2, ${actRemoved.length} activit${actRemoved.length === 1 ? 'y' : 'ies'})`
+    );
   }
   if (actAdded.length === 0 && actRemoved.length === 0) {
     line(`  ${cyan('=')} No activity changes`);
   }
-  line(`  ${cyan('=')} Shared:  ${actShared.length} activit${actShared.length === 1 ? 'y' : 'ies'}`);
+  line(
+    `  ${cyan('=')} Shared:  ${actShared.length} activit${actShared.length === 1 ? 'y' : 'ies'}`
+  );
 
   // --- Edges section ---
   line('');
@@ -410,9 +425,7 @@ function printHumanDiff(
   line(bold('Traces:'));
   const v = result.variants;
   const variantDelta = v.totalLog2 - v.totalLog1;
-  const variantDeltaStr = variantDelta >= 0
-    ? green(`+${variantDelta}`)
-    : red(String(variantDelta));
+  const variantDeltaStr = variantDelta >= 0 ? green(`+${variantDelta}`) : red(String(variantDelta));
 
   line(`  Unique variants  log1: ${v.totalLog1}  log2: ${v.totalLog2}  (${variantDeltaStr})`);
   line(`  Shared variants: ${v.shared}`);

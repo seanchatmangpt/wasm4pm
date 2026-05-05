@@ -101,9 +101,8 @@ export const temporal = defineCommand({
       }
 
       // Load WASM module with quiet observability in JSON mode
-      const loaderConfig = ctx.args.format === 'json'
-        ? { observability: createQuietObservabilityLayer() }
-        : {};
+      const loaderConfig =
+        ctx.args.format === 'json' ? { observability: createQuietObservabilityLayer() } : {};
       const loader = WasmLoader.getInstance(loaderConfig);
       await loader.init();
       const wasm = loader.get();
@@ -144,8 +143,14 @@ export const temporal = defineCommand({
 
       let violations: Array<Record<string, unknown>> = [];
       try {
-        const rawViolations = wasm.check_temporal_conformance(logHandle, activityKey, timestampKey, threshold);
-        const violationsResult = typeof rawViolations === 'string' ? JSON.parse(rawViolations) : rawViolations;
+        const rawViolations = wasm.check_temporal_conformance(
+          logHandle,
+          activityKey,
+          timestampKey,
+          threshold
+        );
+        const violationsResult =
+          typeof rawViolations === 'string' ? JSON.parse(rawViolations) : rawViolations;
         violations = (violationsResult.violations as Array<Record<string, unknown>>) ?? [];
       } catch {
         // Temporal conformance not available
@@ -168,7 +173,8 @@ export const temporal = defineCommand({
       let activityDurations: Record<string, unknown> | null = null;
       try {
         const rawDurations = wasm.compute_activity_durations(logHandle, activityKey, timestampKey);
-        activityDurations = typeof rawDurations === 'string' ? JSON.parse(rawDurations) : rawDurations;
+        activityDurations =
+          typeof rawDurations === 'string' ? JSON.parse(rawDurations) : rawDurations;
       } catch {
         // Activity durations not available
       }
@@ -239,7 +245,9 @@ function printHumanTemporal(formatter: HumanFormatter, result: Record<string, un
       const expected = v.expected as number;
       const actual = v.actual as number;
       const diff = v.diff as number;
-      formatter.log(`  - ${activity}: expected ${expected.toFixed(2)}ms, got ${actual.toFixed(2)}ms (diff: ${diff > 0 ? '+' : ''}${diff.toFixed(2)}ms)`);
+      formatter.log(
+        `  - ${activity}: expected ${expected.toFixed(2)}ms, got ${actual.toFixed(2)}ms (diff: ${diff > 0 ? '+' : ''}${diff.toFixed(2)}ms)`
+      );
     }
     if (items.length > 10) {
       formatter.log(`  ... and ${items.length - 10} more violations`);
@@ -251,22 +259,35 @@ function printHumanTemporal(formatter: HumanFormatter, result: Record<string, un
 
   if (activityDurs) {
     formatter.log('  Activity durations (ms):');
-    const durations = activityDurs.durations as Record<string, { mean: number; min: number; max: number; median: number }>;
+    const durations = activityDurs.durations as Record<
+      string,
+      { mean: number; min: number; max: number; median: number }
+    >;
     if (durations) {
       for (const [activity, stats] of Object.entries(durations).slice(0, 10)) {
-        formatter.log(`    ${activity}: mean=${stats.mean.toFixed(1)}, min=${stats.min.toFixed(1)}, max=${stats.max.toFixed(1)}, median=${stats.median.toFixed(1)}`);
+        formatter.log(
+          `    ${activity}: mean=${stats.mean.toFixed(1)}, min=${stats.min.toFixed(1)}, max=${stats.max.toFixed(1)}, median=${stats.median.toFixed(1)}`
+        );
       }
     }
     formatter.log('');
   }
 
   if (perfDfg) {
-    const edges = perfDfg.edges as Array<{ from: string; to: string; avgDuration: number; minDuration: number; maxDuration: number }>;
+    const edges = perfDfg.edges as Array<{
+      from: string;
+      to: string;
+      avgDuration: number;
+      minDuration: number;
+      maxDuration: number;
+    }>;
     if (edges && edges.length > 0) {
       formatter.log('  Performance DFG (top 10 edges by duration):');
       const sortedEdges = [...edges].sort((a, b) => b.avgDuration - a.avgDuration).slice(0, 10);
       for (const edge of sortedEdges) {
-        formatter.log(`    ${edge.from} → ${edge.to}: avg=${edge.avgDuration.toFixed(1)}ms (min: ${edge.minDuration.toFixed(1)}, max: ${edge.maxDuration.toFixed(1)})`);
+        formatter.log(
+          `    ${edge.from} → ${edge.to}: avg=${edge.avgDuration.toFixed(1)}ms (min: ${edge.minDuration.toFixed(1)}, max: ${edge.maxDuration.toFixed(1)})`
+        );
       }
     }
     formatter.log('');

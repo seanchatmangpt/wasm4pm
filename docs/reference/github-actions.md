@@ -29,13 +29,13 @@ jobs:
         run: npm install -g @wasm4pm/cli
       
       - name: Validate Configuration
-        run: pictl init --validate config.toml
+        run: wpm init --validate config.toml
       
       - name: Run Process Mining
-        run: pictl run --config config.toml --profile balanced
+        run: wpm run --config config.toml --profile balanced
       
       - name: Generate Report
-        run: pictl explain --config config.toml > analysis.md
+        run: wpm explain --config config.toml > analysis.md
       
       - name: Upload Artifacts
         uses: actions/upload-artifact@v3
@@ -80,9 +80,9 @@ jobs:
       
       - name: Check Determinism
         run: |
-          pictl run --config config.toml
+          wpm run --config config.toml
           HASH1=$(jq -r '.combined_hash' output/receipt.json)
-          pictl run --config config.toml
+          wpm run --config config.toml
           HASH2=$(jq -r '.combined_hash' output/receipt.json)
           [[ "$HASH1" == "$HASH2" ]] || exit 1
 ```

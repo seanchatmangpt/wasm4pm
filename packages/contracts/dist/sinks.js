@@ -69,7 +69,7 @@ export class SinkRegistry {
      * @returns Array of adapters that support this artifact type
      */
     findByArtifactType(type) {
-        return Array.from(this.adapters.values()).filter(adapter => adapter.supportedArtifacts().includes(type));
+        return Array.from(this.adapters.values()).filter((adapter) => adapter.supportedArtifacts().includes(type));
     }
     /**
      * Clear all registered adapters

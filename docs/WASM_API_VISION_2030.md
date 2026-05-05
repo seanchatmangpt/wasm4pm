@@ -1,4 +1,4 @@
-# pictl WASM API Reference — Vision 2030
+# wasm4pm WASM API Reference — Vision 2030
 
 **Complete catalog of WebAssembly exports for process mining and autonomic control.**
 
@@ -85,7 +85,7 @@ console.log(result); // "WASM initialized"
 
 #### `get_version() → String`
 
-**Purpose:** Return pictl version in CalVer format (e.g., `"v26.4.16"`).
+**Purpose:** Return wasm4pm version in CalVer format (e.g., `"v26.4.16"`).
 
 **Returns:** Version string.
 

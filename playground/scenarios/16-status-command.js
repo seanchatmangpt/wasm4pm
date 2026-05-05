@@ -19,18 +19,18 @@
  * Binary: apps/wasm4pm/dist/bin/wpm.js (must be built first)
  */
 import { describe, it, expect } from 'vitest';
-import { assertExitCode, pictl, extractJson, EXIT_CODES } from '../helpers/cli.js';
+import { assertExitCode, wasm4pm, extractJson, EXIT_CODES } from '../helpers/cli.js';
 describe('status command', () => {
     // ── JSON output ───────────────────────────────────────────────────────────
     describe('JSON output', () => {
         it('exits 0 and returns valid JSON', async () => {
-            const result = await pictl(['status', '--format', 'json']);
+            const result = await wasm4pm(['status', '--format', 'json']);
             assertExitCode(result, EXIT_CODES.SUCCESS);
             const json = extractJson(result.stdout);
             expect(json).toBeDefined();
         });
         it('contains engine section with wasmLoaded=true', async () => {
-            const result = await pictl(['status', '--format', 'json']);
+            const result = await wasm4pm(['status', '--format', 'json']);
             const json = extractJson(result.stdout);
             const engine = json.engine;
             expect(engine).toBeDefined();
@@ -39,7 +39,7 @@ describe('status command', () => {
             expect(engine.kernelReady).toBe(true);
         });
         it('contains system section with platform info', async () => {
-            const result = await pictl(['status', '--format', 'json']);
+            const result = await wasm4pm(['status', '--format', 'json']);
             const json = extractJson(result.stdout);
             const system = json.system;
             expect(system).toBeDefined();
@@ -50,7 +50,7 @@ describe('status command', () => {
             expect(system.uptime).toBeGreaterThanOrEqual(0);
         });
         it('contains memory section with numeric fields in MB', async () => {
-            const result = await pictl(['status', '--format', 'json']);
+            const result = await wasm4pm(['status', '--format', 'json']);
             const json = extractJson(result.stdout);
             const memory = json.memory;
             expect(memory).toBeDefined();
@@ -63,7 +63,7 @@ describe('status command', () => {
             expect(memory.heapTotal).toBeGreaterThan(0);
         });
         it('includes WASM version when available', async () => {
-            const result = await pictl(['status', '--format', 'json']);
+            const result = await wasm4pm(['status', '--format', 'json']);
             const json = extractJson(result.stdout);
             const engine = json.engine;
             // version may be null if WASM doesn't expose it, but the key should exist
@@ -73,11 +73,11 @@ describe('status command', () => {
     // ── Default behavior ──────────────────────────────────────────────────────
     describe('default behavior', () => {
         it('exits 0 without --format flag', async () => {
-            const result = await pictl(['status']);
+            const result = await wasm4pm(['status']);
             assertExitCode(result, EXIT_CODES.SUCCESS);
         });
         it('produces output (not empty) in default format', async () => {
-            const result = await pictl(['status']);
+            const result = await wasm4pm(['status']);
             assertExitCode(result, EXIT_CODES.SUCCESS);
             // Combined output should have WASM init messages at minimum
             const out = result.stdout + result.stderr;

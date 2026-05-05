@@ -23,7 +23,7 @@ wasm4pm uses 6 exit codes with mandatory remediation:
 ```
 CONFIG_INVALID
   → Schema validation failed
-  → Fix: pictl init --validate config.toml
+  → Fix: wpm init --validate config.toml
 
 CONFIG_MISSING
   → Required field missing
@@ -97,15 +97,15 @@ OTEL_FAILED
 
 ```bash
 # Don't do this (hides error):
-pictl run --config config.toml || echo "Done"
+wpm run --config config.toml || echo "Done"
 
 # Do this (address error):
-if ! pictl run --config config.toml; then
+if ! wpm run --config config.toml; then
   exit_code=$?
   
   if [ $exit_code -eq 1 ]; then
     # CONFIG_ERROR: fix config
-    pictl init --validate config.toml
+    wpm init --validate config.toml
   elif [ $exit_code -eq 2 ]; then
     # SOURCE_ERROR: fix input
     ls -la $(grep path config.toml | awk '{print $3}')
@@ -138,7 +138,7 @@ Level 3: CLI/Service error
 attempt=1
 delay=1
 while [ $attempt -le 5 ]; do
-  pictl run --config config.toml && break
+  wpm run --config config.toml && break
   
   sleep $delay
   delay=$((delay * 2))
@@ -159,7 +159,7 @@ try_algorithm "dfg"
 ```bash
 failures=0
 while [ $failures -lt 3 ]; do
-  if pictl run --config config.toml; then
+  if wpm run --config config.toml; then
     break
   fi
   failures=$((failures + 1))
@@ -193,7 +193,7 @@ All errors are logged:
 
 ```bash
 # View errors
-pictl run --config config.toml 2>&1 | grep ERROR
+wpm run --config config.toml 2>&1 | grep ERROR
 
 # Check exit code
 echo $?  # 0=success, 1-5=error
@@ -205,7 +205,7 @@ echo $?  # 0=success, 1-5=error
 
 **Architectural Principle (v26.4.10+):** Fail fast, not fail silently.
 
-pictl follows Toyota Production System (TPS) principles to ensure defects are always visible. See [`~/.claude/rules/toyota-production.md`](../../../.claude/rules/toyota-production.md) for the authoritative rule file.
+wasm4pm follows Toyota Production System (TPS) principles to ensure defects are always visible. See [`~/.claude/rules/toyota-production.md`](../../../.claude/rules/toyota-production.md) for the authoritative rule file.
 
 ### Silent Fallbacks Removed (v26.4.10)
 
@@ -283,7 +283,7 @@ Comprehensive audit completed 2026-04-12:
 
 **Quality Assessment (BEFORE):**
 ```bash
-$ pictl quality broken-log.xes --metrics fitness,precision
+$ wpm quality broken-log.xes --metrics fitness,precision
 [ERROR] Fitness computation failed: WASM crashed
 [ERROR] Precision computation failed: WASM crashed
 Quality Assessment — broken-log.xes
@@ -294,7 +294,7 @@ $ echo $?
 
 **Quality Assessment (AFTER):**
 ```bash
-$ pictl quality broken-log.xes --metrics fitness,precision
+$ wpm quality broken-log.xes --metrics fitness,precision
 Quality assessment failed: Fitness computation failed: WASM crashed
 $ echo $?
 3  # ← EXIT 3 (execution_error) — operator sees failure immediately
@@ -486,7 +486,7 @@ async bootstrap(options?: { timeout?: number }): Promise<void> {
 
 2. **Monitor MTTR metrics**
    ```bash
-   pictl status --format json | jq '.mttr'
+   wpm status --format json | jq '.mttr'
    ```
 
 3. **Set appropriate timeouts**

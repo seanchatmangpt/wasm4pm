@@ -71,9 +71,7 @@ export class OtelExporter {
     // Drop oldest if queue is full (PRD §18.5: never block)
     if (this.queue.length >= maxSize) {
       this.queue.shift();
-      console.warn(
-        `[observability] OTEL queue full (${maxSize}), dropping oldest event`
-      );
+      console.warn(`[observability] OTEL queue full (${maxSize}), dropping oldest event`);
     }
 
     this.queue.push(event);
@@ -172,10 +170,7 @@ export class OtelExporter {
   /**
    * Send payload to OTEL endpoint via HTTP POST
    */
-  private async sendToEndpoint(
-    payload: any,
-    timeoutMs: number
-  ): Promise<void> {
+  private async sendToEndpoint(payload: any, timeoutMs: number): Promise<void> {
     // Use AbortController for timeout
     const controller = new AbortController();
     const timeoutHandle = setTimeout(() => controller.abort(), timeoutMs);
@@ -230,9 +225,10 @@ export class OtelExporter {
    * Encode attributes for OTEL format
    * OTEL uses typed attributes
    */
-  private encodeAttributes(
-    attrs: Record<string, any>
-  ): Array<{ key: string; value: { stringValue?: string; intValue?: string; doubleValue?: number; boolValue?: boolean } }> {
+  private encodeAttributes(attrs: Record<string, any>): Array<{
+    key: string;
+    value: { stringValue?: string; intValue?: string; doubleValue?: number; boolValue?: boolean };
+  }> {
     return Object.entries(attrs).map(([key, value]) => ({
       key,
       value: this.encodeValue(value),
@@ -242,9 +238,12 @@ export class OtelExporter {
   /**
    * Encode a single attribute value
    */
-  private encodeValue(
-    value: any
-  ): { stringValue?: string; intValue?: string; doubleValue?: number; boolValue?: boolean } {
+  private encodeValue(value: any): {
+    stringValue?: string;
+    intValue?: string;
+    doubleValue?: number;
+    boolValue?: boolean;
+  } {
     if (typeof value === 'string') {
       return { stringValue: value };
     } else if (typeof value === 'number') {
@@ -282,7 +281,9 @@ export class OtelExporter {
         } catch (error) {
           lastError = error instanceof Error ? error : new Error(String(error));
           if (!this.config.required) {
-            console.warn(`[observability] Continuing shutdown despite optional OTEL error: ${error}`);
+            console.warn(
+              `[observability] Continuing shutdown despite optional OTEL error: ${error}`
+            );
           }
         }
       }

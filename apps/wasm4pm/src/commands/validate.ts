@@ -101,7 +101,7 @@ export const validate = defineCommand({
 
       if (!['xes', 'csv'].includes(logFormat)) {
         formatter.error(`Invalid format: ${logFormat}. Must be 'xes' or 'csv'`);
-        process.exit(EXIT_CODES.config_error);
+        process.exit(EXIT_CODES.source_error);
       }
 
       // For validate, we use a custom formatter that can show detailed validation results
@@ -118,7 +118,8 @@ export const validate = defineCommand({
       }
 
       // Load WASM module
-      const loaderConfig = ctx.args.format === 'json' ? { observability: createQuietObservabilityLayer() } : {};
+      const loaderConfig =
+        ctx.args.format === 'json' ? { observability: createQuietObservabilityLayer() } : {};
       const loader = WasmLoader.getInstance(loaderConfig);
       await loader.init();
       const wasm = loader.get();
@@ -153,12 +154,22 @@ export const validate = defineCommand({
       const validationResults: Record<string, unknown> = {
         input: inputPath,
         format: logFormat,
-        checks: [] as Array<{ name: string; status: 'pass' | 'fail' | 'warn'; message: string; details?: Record<string, unknown> }>,
+        checks: [] as Array<{
+          name: string;
+          status: 'pass' | 'fail' | 'warn';
+          message: string;
+          details?: Record<string, unknown>;
+        }>,
         errors: [] as string[],
         warnings: [] as string[],
       };
 
-      const checks = validationResults.checks as Array<{ name: string; status: 'pass' | 'fail' | 'warn'; message: string; details?: Record<string, unknown> }>;
+      const checks = validationResults.checks as Array<{
+        name: string;
+        status: 'pass' | 'fail' | 'warn';
+        message: string;
+        details?: Record<string, unknown>;
+      }>;
       const errors = validationResults.errors as string[];
       const warnings = validationResults.warnings as string[];
 
@@ -169,7 +180,9 @@ export const validate = defineCommand({
         checks.push({
           name: 'schema',
           status: (schemaResult.valid as boolean) ? 'pass' : 'fail',
-          message: (schemaResult.valid as boolean) ? 'Log schema is valid' : 'Log schema validation failed',
+          message: (schemaResult.valid as boolean)
+            ? 'Log schema is valid'
+            : 'Log schema validation failed',
           details: schemaResult,
         });
         if (!(schemaResult.valid as boolean)) {
@@ -186,13 +199,22 @@ export const validate = defineCommand({
 
       // Check 2: Required attributes
       try {
-        const rawAttrs = wasm.validate_required_attributes(logHandle, activityKey, caseIdKey, timestampKey, resourceKey);
+        const rawAttrs = wasm.validate_required_attributes(
+          logHandle,
+          activityKey,
+          caseIdKey,
+          timestampKey,
+          resourceKey
+        );
         const attrsResult = typeof rawAttrs === 'string' ? JSON.parse(rawAttrs) : rawAttrs;
         const missing = (attrsResult.missing as string[]) ?? [];
         checks.push({
           name: 'required_attributes',
           status: missing.length === 0 ? 'pass' : 'fail',
-          message: missing.length === 0 ? 'All required attributes present' : `Missing attributes: ${missing.join(', ')}`,
+          message:
+            missing.length === 0
+              ? 'All required attributes present'
+              : `Missing attributes: ${missing.join(', ')}`,
           details: attrsResult,
         });
         if (missing.length > 0) {
@@ -215,7 +237,9 @@ export const validate = defineCommand({
         checks.push({
           name: 'data_quality',
           status: hasIssues ? 'warn' : 'pass',
-          message: hasIssues ? `Found ${qualityResult.issues} data quality issue(s)` : 'No data quality issues',
+          message: hasIssues
+            ? `Found ${qualityResult.issues} data quality issue(s)`
+            : 'No data quality issues',
           details: qualityResult,
         });
         if (hasIssues) {
@@ -237,7 +261,10 @@ export const validate = defineCommand({
         checks.push({
           name: 'trace_completeness',
           status: incompleteTraces === 0 ? 'pass' : 'warn',
-          message: incompleteTraces === 0 ? 'All traces are complete' : `${incompleteTraces} incomplete trace(s) found`,
+          message:
+            incompleteTraces === 0
+              ? 'All traces are complete'
+              : `${incompleteTraces} incomplete trace(s) found`,
           details: tracesResult,
         });
         if (incompleteTraces > 0) {
@@ -254,12 +281,16 @@ export const validate = defineCommand({
       // Check 5: Timestamp ordering
       try {
         const rawOrdering = wasm.validate_timestamp_ordering(logHandle);
-        const orderingResult = typeof rawOrdering === 'string' ? JSON.parse(rawOrdering) : rawOrdering;
+        const orderingResult =
+          typeof rawOrdering === 'string' ? JSON.parse(rawOrdering) : rawOrdering;
         const outOfOrder = (orderingResult.out_of_order as number) ?? 0;
         checks.push({
           name: 'timestamp_ordering',
           status: outOfOrder === 0 ? 'pass' : 'warn',
-          message: outOfOrder === 0 ? 'All timestamps are correctly ordered' : `${outOfOrder} event(s) with out-of-order timestamps`,
+          message:
+            outOfOrder === 0
+              ? 'All timestamps are correctly ordered'
+              : `${outOfOrder} event(s) with out-of-order timestamps`,
           details: orderingResult,
         });
         if (outOfOrder > 0) {
@@ -307,7 +338,11 @@ export const validate = defineCommand({
 });
 
 function printHumanValidation(formatter: HumanFormatter, result: Record<string, unknown>): void {
-  const checks = result.checks as Array<{ name: string; status: 'pass' | 'fail' | 'warn'; message: string }>;
+  const checks = result.checks as Array<{
+    name: string;
+    status: 'pass' | 'fail' | 'warn';
+    message: string;
+  }>;
   const errors = result.errors as string[];
   const warnings = result.warnings as string[];
   const status = result.status as string;
@@ -328,7 +363,8 @@ function printHumanValidation(formatter: HumanFormatter, result: Record<string, 
   formatter.log('  Checks:');
   for (const check of checks) {
     const icon = check.status === 'pass' ? '✓' : check.status === 'fail' ? '✗' : '⚠';
-    const statusColor = check.status === 'pass' ? '\x1b[32m' : check.status === 'fail' ? '\x1b[31m' : '\x1b[33m';
+    const statusColor =
+      check.status === 'pass' ? '\x1b[32m' : check.status === 'fail' ? '\x1b[31m' : '\x1b[33m';
     const reset = '\x1b[0m';
     formatter.log(`    ${statusColor}${icon}${reset} ${check.name.padEnd(20)} ${check.message}`);
   }

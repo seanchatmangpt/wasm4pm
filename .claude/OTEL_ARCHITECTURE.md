@@ -2,7 +2,7 @@
 
 **Objective:** Prevent shipping untraceable code by enforcing OTEL span coverage on all public functions.
 
-**Scope:** pictl monorepo (packages/*/src/**/*.ts)  
+**Scope:** wasm4pm monorepo (packages/*/src/**/*.ts)  
 **Enforcement Level:** Merge-blocking at <80% coverage  
 **Current Status:** 0/596 functions (0%) — baseline scan complete
 
@@ -58,7 +58,7 @@
 
 ---
 
-## Component 1: ESLint Rule (`pictl-observability/require-span-for-public`)
+## Component 1: ESLint Rule (`wasm4pm-observability/require-span-for-public`)
 
 **Purpose:** Real-time feedback during development  
 **Trigger:** `npm run lint` or editor integration  
@@ -216,7 +216,7 @@ CHANGED_FILES=$(git diff --cached --name-only --diff-filter=A)
 **Attributes all spans must include:**
 ```typescript
 RequiredOtelAttributes {
-  'service.name': 'pictl'
+  'service.name': 'wasm4pm'
   'run.id': string                    // Unique execution ID
   'trace.id': string                  // Distributed trace ID
   [key: string]: any
@@ -316,7 +316,7 @@ OTEL Collector receives:
   "spanId": "def456",
   "name": "operation.progress",
   "attributes": {
-    "service.name": "pictl",
+    "service.name": "wasm4pm",
     "run.id": "cli-run-1",
     "trace.id": "abc123",
     "progress": 0,
@@ -469,7 +469,7 @@ expect(spans[0].name).toBe('operation.progress');
 ### Exempting functions:
 ```typescript
 // Add ESLint disable comment
-// eslint-disable-next-line pictl-observability/require-span-for-public
+// eslint-disable-next-line wasm4pm-observability/require-span-for-public
 export function simpleUtility() {
   return 42;
 }

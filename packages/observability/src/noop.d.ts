@@ -10,8 +10,8 @@ import type { Span, Tracer } from './spans.js';
  * a frozen singleton — no allocations per span.
  */
 export declare class NoopTracer implements Tracer {
-    startSpan(): Span;
-    flush(): Promise<void>;
-    shutdown(): Promise<void>;
+  startSpan(): Span;
+  flush(): Promise<void>;
+  shutdown(): Promise<void>;
 }
 //# sourceMappingURL=noop.d.ts.map

@@ -167,14 +167,14 @@ npm view wasm4pm@26.4.23 dist.unpackedSize
 ### Full Integration Test (optional)
 ```bash
 # Clean install and test
-cd /tmp && mkdir pictl-publish-test && cd pictl-publish-test
+cd /tmp && mkdir wasm4pm-publish-test && cd wasm4pm-publish-test
 npm init -y
 npm install @wasm4pm/cli@26.4.23 wasm4pm@26.4.23
 
 # Verify CLI
-npx pictl --version            # Should show: 26.4.23
-npx pictl doctor               # Should show: all systems OK
-npx pictl explain --algorithm dfg --format json | head -5
+npx wpm --version            # Should show: 26.4.23
+npx wpm doctor               # Should show: all systems OK
+npx wpm explain --algorithm dfg --format json | head -5
 ```
 
 ### Lab Artifact Tests

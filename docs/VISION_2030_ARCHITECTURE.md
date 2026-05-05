@@ -6,7 +6,7 @@
 
 ## Overview
 
-Vision 2030 implements a **MAPE-K** (Monitor-Analyze-Plan-Execute-Knowledge) autonomic loop that enables pictl to self-govern process discovery and conformance checking without human intervention. The system continuously perceives event logs, decides when and how to mine processes, protects against cascade failures, adapts its RL policy through reward signals, and executes mining operations with full observability.
+Vision 2030 implements a **MAPE-K** (Monitor-Analyze-Plan-Execute-Knowledge) autonomic loop that enables wasm4pm to self-govern process discovery and conformance checking without human intervention. The system continuously perceives event logs, decides when and how to mine processes, protects against cascade failures, adapts its RL policy through reward signals, and executes mining operations with full observability.
 
 The loop runs at **~34 nanoseconds** closed-cycle (execution + validation + adaptation + protection as one indivisible operation), making it suitable for real-time process analysis even on edge devices.
 
@@ -391,7 +391,7 @@ else:
 Every action emits an OpenTelemetry span:
 
 ```
-service = "pictl"
+service = "wasm4pm"
 span_name = "mape_k.phase_5.execute"
 attributes = {
   "action": "Continue" | "Scale" | "Retry" | "Fallback" | "Restart",
@@ -510,7 +510,7 @@ duration_us = actual elapsed time
 
 ## 5 Vision 2030 Domains
 
-### Domain 1: Process Mining (pictl Algorithms)
+### Domain 1: Process Mining (wasm4pm Algorithms)
 
 **Objectives:**
 - Discover process models from event logs without human interpretation

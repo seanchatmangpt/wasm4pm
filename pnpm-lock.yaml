@@ -18,33 +18,33 @@ importers:
         specifier: ^5.3.3
         version: 5.9.3
 
-  apps/pictl:
+  apps/wasm4pm:
     dependencies:
-      '@pictl/agents':
+      '@wasm4pm/agents':
         specifier: workspace:*
         version: link:../../packages/agents
-      '@pictl/config':
+      '@wasm4pm/config':
         specifier: workspace:*
         version: link:../../packages/config
-      '@pictl/contracts':
+      '@wasm4pm/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
-      '@pictl/engine':
+      '@wasm4pm/engine':
         specifier: workspace:*
         version: link:../../packages/engine
-      '@pictl/kernel':
+      '@wasm4pm/kernel':
         specifier: workspace:*
         version: link:../../packages/kernel
-      '@pictl/ml':
+      '@wasm4pm/ml':
         specifier: workspace:^
         version: link:../../packages/ml
-      '@pictl/observability':
+      '@wasm4pm/observability':
         specifier: workspace:^
         version: link:../../packages/observability
-      '@pictl/planner':
+      '@wasm4pm/planner':
         specifier: workspace:*
         version: link:../../packages/planner
-      '@pictl/swarm':
+      '@wasm4pm/swarm':
         specifier: workspace:*
         version: link:../../packages/swarm
       chokidar:
@@ -57,6 +57,9 @@ importers:
         specifier: ^3.2.3
         version: 3.4.2
     devDependencies:
+      '@faker-js/faker':
+        specifier: ^10.4.0
+        version: 10.4.0
       '@types/node':
         specifier: ^20.10.0
         version: 20.19.39
@@ -85,13 +88,13 @@ importers:
 
   packages/agents:
     dependencies:
-      '@pictl/contracts':
+      '@wasm4pm/contracts':
         specifier: workspace:*
         version: link:../contracts
-      '@pictl/engine':
+      '@wasm4pm/engine':
         specifier: workspace:*
         version: link:../engine
-      '@pictl/kernel':
+      '@wasm4pm/kernel':
         specifier: workspace:*
         version: link:../kernel
     devDependencies:
@@ -104,7 +107,7 @@ importers:
 
   packages/config:
     dependencies:
-      '@pictl/contracts':
+      '@wasm4pm/contracts':
         specifier: workspace:*
         version: link:../contracts
       blake3:
@@ -160,22 +163,22 @@ importers:
 
   packages/engine:
     dependencies:
-      '@pictl/config':
+      '@wasm4pm/config':
         specifier: workspace:*
         version: link:../config
-      '@pictl/contracts':
+      '@wasm4pm/contracts':
         specifier: workspace:*
         version: link:../contracts
-      '@pictl/observability':
+      '@wasm4pm/observability':
         specifier: workspace:*
         version: link:../observability
     devDependencies:
-      '@pictl/kernel':
-        specifier: workspace:^
-        version: link:../kernel
       '@vitest/coverage-v8':
         specifier: ^1.6.0
         version: 1.6.1(vitest@1.6.1)
+      '@wasm4pm/kernel':
+        specifier: workspace:^
+        version: link:../kernel
       typescript:
         specifier: ^5.3.3
         version: 5.9.3
@@ -185,13 +188,13 @@ importers:
 
   packages/kernel:
     dependencies:
-      '@pictl/contracts':
+      '@wasm4pm/contracts':
         specifier: workspace:*
         version: link:../contracts
-      '@pictl/ml':
+      '@wasm4pm/ml':
         specifier: workspace:*
         version: link:../ml
-      '@pictl/planner':
+      '@wasm4pm/planner':
         specifier: workspace:*
         version: link:../planner
       wasm4pm:
@@ -240,7 +243,7 @@ importers:
 
   packages/planner:
     dependencies:
-      '@pictl/contracts':
+      '@wasm4pm/contracts':
         specifier: workspace:*
         version: link:../contracts
       blake3:
@@ -274,13 +277,13 @@ importers:
       '@modelcontextprotocol/sdk':
         specifier: ^1.10.2
         version: 1.29.0(zod@3.25.76)
-      '@pictl/contracts':
+      '@wasm4pm/contracts':
         specifier: workspace:*
         version: link:../contracts
-      '@pictl/kernel':
-        specifier: workspace:^
+      '@wasm4pm/kernel':
+        specifier: workspace:*
         version: link:../kernel
-      '@pictl/observability':
+      '@wasm4pm/observability':
         specifier: workspace:*
         version: link:../observability
       ai:
@@ -317,7 +320,7 @@ importers:
 
   packages/testing:
     dependencies:
-      '@pictl/contracts':
+      '@wasm4pm/contracts':
         specifier: workspace:*
         version: link:../contracts
     devDependencies:
@@ -336,25 +339,25 @@ importers:
 
   playground:
     dependencies:
-      '@pictl/config':
+      '@wasm4pm/config':
         specifier: file:../packages/config
         version: file:packages/config
-      '@pictl/contracts':
+      '@wasm4pm/contracts':
         specifier: file:../packages/contracts
         version: link:../packages/contracts
-      '@pictl/engine':
+      '@wasm4pm/engine':
         specifier: file:../packages/engine
         version: file:packages/engine
-      '@pictl/kernel':
+      '@wasm4pm/kernel':
         specifier: file:../packages/kernel
         version: file:packages/kernel
-      '@pictl/observability':
+      '@wasm4pm/observability':
         specifier: file:../packages/observability
         version: link:../packages/observability
-      '@pictl/planner':
+      '@wasm4pm/planner':
         specifier: file:../packages/planner
         version: file:packages/planner
-      '@pictl/testing':
+      '@wasm4pm/testing':
         specifier: file:../packages/testing
         version: file:packages/testing
     devDependencies:
@@ -598,6 +601,10 @@ packages:
     cpu: [x64]
     os: [win32]
 
+  '@faker-js/faker@10.4.0':
+    resolution: {integrity: sha512-sDBWI3yLy8EcDzgobvJTWq1MJYzAkQdpjXuPukga9wXonhpMRvd1Izuo2Qgwey2OiEoRIBr35RMU9HJRoOHzpw==}
+    engines: {node: ^20.19.0 || ^22.13.0 || ^23.5.0 || >=24.0.0, npm: '>=10'}
+
   '@hono/node-server@1.19.12':
     resolution: {integrity: sha512-txsUW4SQ1iilgE0l9/e9VQWmELXifEFvmdA1j6WFh/aFPj99hIntrSsq/if0UWyGVkmrRPKA1wCeP+UCr1B9Uw==}
     engines: {node: '>=18.14.1'}
@@ -638,21 +645,6 @@ packages:
   '@opentelemetry/api@1.9.0':
     resolution: {integrity: sha512-3giAOQvZiH5F9bMlMiv8+GSPMeqg0dbaeo58/0SlA9sxSqZhnUtxzX9/2FzyhS9sWQf5S0GJE0AKBrFqjpeYcg==}
     engines: {node: '>=8.0.0'}
-
-  '@pictl/config@file:packages/config':
-    resolution: {directory: packages/config, type: directory}
-
-  '@pictl/engine@file:packages/engine':
-    resolution: {directory: packages/engine, type: directory}
-
-  '@pictl/kernel@file:packages/kernel':
-    resolution: {directory: packages/kernel, type: directory}
-
-  '@pictl/planner@file:packages/planner':
-    resolution: {directory: packages/planner, type: directory}
-
-  '@pictl/testing@file:packages/testing':
-    resolution: {directory: packages/testing, type: directory}
 
   '@polka/url@1.0.0-next.29':
     resolution: {integrity: sha512-wwQAWhWSuHaag8c4q/KN/vCoeOJYshAIvMQwD4GpSb3OiZklFfvAgmj0VCBBImRpuF/aFgIRzllXlVX93Jevww==}
@@ -884,6 +876,21 @@ packages:
 
   '@vitest/utils@3.2.4':
     resolution: {integrity: sha512-fB2V0JFrQSMsCo9HiSq3Ezpdv4iYaXRG1Sx8edX3MwxfyNn83mKiGzOcH+Fkxt4MHxr3y42fQi1oeAInqgX2QA==}
+
+  '@wasm4pm/config@file:packages/config':
+    resolution: {directory: packages/config, type: directory}
+
+  '@wasm4pm/engine@file:packages/engine':
+    resolution: {directory: packages/engine, type: directory}
+
+  '@wasm4pm/kernel@file:packages/kernel':
+    resolution: {directory: packages/kernel, type: directory}
+
+  '@wasm4pm/planner@file:packages/planner':
+    resolution: {directory: packages/planner, type: directory}
+
+  '@wasm4pm/testing@file:packages/testing':
+    resolution: {directory: packages/testing, type: directory}
 
   accepts@2.0.0:
     resolution: {integrity: sha512-5cvg6CtKwfgdmVqY1WIiXKc3Q1bkRqGLi+2W/6ao+6Y7gu/RCwRuAhGEzh5B4KlszSuTLgZYuqFqo5bImjNKng==}
@@ -1861,6 +1868,7 @@ packages:
 
   uuid@9.0.1:
     resolution: {integrity: sha512-b+1eJOlsR9K8HJpow9Ok3fiWOWSIcIzXodvv0rQjVoOVNpWMpxf1wZNpt4y9h10odCNrqnYp1OBzRktckBe3sA==}
+    deprecated: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
     hasBin: true
 
   vary@1.1.2:
@@ -2134,6 +2142,8 @@ snapshots:
   '@esbuild/win32-x64@0.21.5':
     optional: true
 
+  '@faker-js/faker@10.4.0': {}
+
   '@hono/node-server@1.19.12(hono@4.12.10)':
     dependencies:
       hono: 4.12.10
@@ -2181,36 +2191,6 @@ snapshots:
       - supports-color
 
   '@opentelemetry/api@1.9.0': {}
-
-  '@pictl/config@file:packages/config':
-    dependencies:
-      '@pictl/contracts': link:packages/contracts
-      blake3: 2.1.7
-      toml: 3.0.0
-      zod: 3.25.76
-
-  '@pictl/engine@file:packages/engine':
-    dependencies:
-      '@pictl/config': link:packages/config
-      '@pictl/contracts': link:packages/contracts
-      '@pictl/observability': link:packages/observability
-
-  '@pictl/kernel@file:packages/kernel':
-    dependencies:
-      '@pictl/contracts': link:packages/contracts
-      '@pictl/ml': link:packages/ml
-      '@pictl/planner': link:packages/planner
-      wasm4pm: link:wasm4pm
-
-  '@pictl/planner@file:packages/planner':
-    dependencies:
-      '@pictl/contracts': link:packages/contracts
-      blake3: 2.1.7
-      uuid: 9.0.1
-
-  '@pictl/testing@file:packages/testing':
-    dependencies:
-      '@pictl/contracts': link:packages/contracts
 
   '@polka/url@1.0.0-next.29': {}
 
@@ -2451,6 +2431,36 @@ snapshots:
       '@vitest/pretty-format': 3.2.4
       loupe: 3.2.1
       tinyrainbow: 2.0.0
+
+  '@wasm4pm/config@file:packages/config':
+    dependencies:
+      '@wasm4pm/contracts': link:packages/contracts
+      blake3: 2.1.7
+      toml: 3.0.0
+      zod: 3.25.76
+
+  '@wasm4pm/engine@file:packages/engine':
+    dependencies:
+      '@wasm4pm/config': link:packages/config
+      '@wasm4pm/contracts': link:packages/contracts
+      '@wasm4pm/observability': link:packages/observability
+
+  '@wasm4pm/kernel@file:packages/kernel':
+    dependencies:
+      '@wasm4pm/contracts': link:packages/contracts
+      '@wasm4pm/ml': link:packages/ml
+      '@wasm4pm/planner': link:packages/planner
+      wasm4pm: link:wasm4pm
+
+  '@wasm4pm/planner@file:packages/planner':
+    dependencies:
+      '@wasm4pm/contracts': link:packages/contracts
+      blake3: 2.1.7
+      uuid: 9.0.1
+
+  '@wasm4pm/testing@file:packages/testing':
+    dependencies:
+      '@wasm4pm/contracts': link:packages/contracts
 
   accepts@2.0.0:
     dependencies:

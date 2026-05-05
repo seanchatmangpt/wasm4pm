@@ -1,6 +1,6 @@
-# Building and Publishing pictl
+# Building and Publishing wasm4pm
 
-Complete guide for building, testing, and publishing the pictl npm package.
+Complete guide for building, testing, and publishing the wasm4pm npm package.
 
 ## Prerequisites
 
@@ -46,10 +46,10 @@ This generates three distribution types:
 
 ```
 pkg/
-├── pictl.d.ts           # TypeScript type definitions
-├── pictl.js             # JavaScript wrapper
-├── pictl_bg.js          # WASM module loader
-├── pictl_bg.wasm        # Compiled WASM binary
+├── wasm4pm.d.ts           # TypeScript type definitions
+├── wasm4pm.js             # JavaScript wrapper
+├── wasm4pm_bg.js          # WASM module loader
+├── wasm4pm_bg.wasm        # Compiled WASM binary
 ├── package.json         # Package metadata
 └── README.md            # Package documentation
 ```
@@ -176,11 +176,11 @@ npm publish                 # Latest (default)
 
 ```bash
 # Create a test directory
-mkdir test-pictl
-cd test-pictl
+mkdir test-wasm4pm
+cd test-wasm4pm
 
 # Install from local tarball
-npm install ../pictl
+npm install ../wasm4pm
 
 # Test it works
 node -e "const w = require('@wasm4pm/cli'); console.log('Loaded:', w)"

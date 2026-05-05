@@ -11,7 +11,13 @@ import type { OtelSpan } from '../types';
 
 export interface OcelObject {
   id: string;
-  type: 'tool_invocation' | 'discovery_result' | 'conformance_result' | 'analysis_result' | 'receipt_chain' | 'federation_vote';
+  type:
+    | 'tool_invocation'
+    | 'discovery_result'
+    | 'conformance_result'
+    | 'analysis_result'
+    | 'receipt_chain'
+    | 'federation_vote';
   state: 'created' | 'in_progress' | 'completed' | 'failed';
   attributes: Record<string, unknown>;
 }
@@ -35,7 +41,11 @@ export interface OcelEventLog {
   };
 }
 
-export const capturedHarvestSpans: Array<{ name: string; status: { code: 0 | 2 }; attributes: Record<string, unknown> }> = [];
+export const capturedHarvestSpans: Array<{
+  name: string;
+  status: { code: 0 | 2 };
+  attributes: Record<string, unknown>;
+}> = [];
 
 export class OcelHarvester {
   private objectIndex: Map<string, OcelObject> = new Map();
@@ -44,11 +54,15 @@ export class OcelHarvester {
   constructor() {}
 
   async harvestWithInstrumentation(spans: OtelSpan[]): Promise<OcelEventLog> {
-    const harvestSpan: { name: string; status: { code: 0 | 2 }; attributes: Record<string, unknown> } = {
+    const harvestSpan: {
+      name: string;
+      status: { code: 0 | 2 };
+      attributes: Record<string, unknown>;
+    } = {
       name: 'agent_1.harvest',
       status: { code: 0 },
       attributes: {
-        'agent_id': 'agent_1',
+        agent_id: 'agent_1',
         'harvest.input_span_count': spans.length,
       },
     };
@@ -57,7 +71,8 @@ export class OcelHarvester {
       for (const span of spans) {
         if (!span.name) throw new Error('span missing required field: name');
         if (!span.spanId) throw new Error('span missing required field: spanId');
-        if (!span.startTimeUnixNano) throw new Error('span missing required field: startTimeUnixNano');
+        if (!span.startTimeUnixNano)
+          throw new Error('span missing required field: startTimeUnixNano');
       }
 
       const ocel = await this.convertSpansToOcel(spans);
@@ -70,7 +85,8 @@ export class OcelHarvester {
       return ocel;
     } catch (error) {
       harvestSpan.status.code = 2;
-      harvestSpan.attributes['harvest.error'] = error instanceof Error ? error.message : String(error);
+      harvestSpan.attributes['harvest.error'] =
+        error instanceof Error ? error.message : String(error);
       harvestSpan.attributes['harvest.status'] = 'error';
       capturedHarvestSpans.push(harvestSpan);
       throw error;

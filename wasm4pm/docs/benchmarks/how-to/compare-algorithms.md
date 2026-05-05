@@ -9,7 +9,7 @@ The `wpm compare` command runs two or more discovery algorithms against the same
 ### Basic comparison
 
 ```bash
-pictl compare dfg heuristic_miner -i log.xes --format human
+wpm compare dfg heuristic_miner -i log.xes --format human
 ```
 
 This runs both DFG and Heuristic Miner on `log.xes` and prints a human-readable comparison table.
@@ -17,13 +17,13 @@ This runs both DFG and Heuristic Miner on `log.xes` and prints a human-readable 
 ### Comparing three or more algorithms
 
 ```bash
-pictl compare dfg heuristic inductive ilp -i log.xes
+wpm compare dfg heuristic inductive ilp -i log.xes
 ```
 
 Separate algorithm names with spaces. You can also use commas:
 
 ```bash
-pictl compare dfg,heuristic,inductive,ilp -i log.xes
+wpm compare dfg,heuristic,inductive,ilp -i log.xes
 ```
 
 ### Available algorithms
@@ -71,7 +71,7 @@ Each row shows:
 Pass `--format json` to get machine-readable output:
 
 ```bash
-pictl compare dfg heuristic -i log.xes --format json
+wpm compare dfg heuristic -i log.xes --format json
 ```
 
 Output:
@@ -109,7 +109,7 @@ Output:
 `wpm compare` compares algorithms on the same log. If you want to compare two different logs (for example, before and after a process change), use `wpm diff`:
 
 ```bash
-pictl diff log_v1.xes log_v2.xes
+wpm diff log_v1.xes log_v2.xes
 ```
 
 This discovers a DFG for each log and reports:

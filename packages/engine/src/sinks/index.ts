@@ -30,7 +30,13 @@ export { isReceiptArtifact, isModelArtifact, isReportArtifact } from './artifact
 // Registry
 export { createSinkRegistry, ExtendedSinkRegistry } from './registry.js';
 export { sinkRegistry, SinkRegistry } from './registry.js';
-export type { SinkAdapter, ArtifactType, AtomicityLevel, ExistsBehavior, FailureMode } from './registry.js';
+export type {
+  SinkAdapter,
+  ArtifactType,
+  AtomicityLevel,
+  ExistsBehavior,
+  FailureMode,
+} from './registry.js';
 
 // JSON Schemas
 export {

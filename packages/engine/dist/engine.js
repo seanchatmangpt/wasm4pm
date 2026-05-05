@@ -8,7 +8,7 @@ import { StatusTracker, formatStatus } from './status.js';
 import { WasmLoader } from './wasm-loader.js';
 import { bootstrapEngine, createBootstrapError } from './bootstrap.js';
 import { WatchSession } from './watch.js';
-import { ObservabilityWrapper, Instrumentation, } from '@pictl/observability';
+import { ObservabilityWrapper, Instrumentation, } from '@wasm4pm/observability';
 /**
  * Main Engine class orchestrating the complete lifecycle
  * Manages state transitions, error handling, and execution coordination
@@ -106,8 +106,8 @@ export class Engine {
             // Delegate to bootstrap module with timeout
             const result = await Promise.race([
                 bootstrapEngine(this.kernel, this.wasmLoader),
-                new Promise((_, reject) => setTimeout(() => reject(new Error(`Bootstrap timeout after ${timeoutMs}ms`)), timeoutMs))
-            ]).catch(err => {
+                new Promise((_, reject) => setTimeout(() => reject(new Error(`Bootstrap timeout after ${timeoutMs}ms`)), timeoutMs)),
+            ]).catch((err) => {
                 // On timeout or error, transition to degraded state
                 const timeoutError = {
                     code: 'BOOTSTRAP_TIMEOUT',
@@ -190,8 +190,8 @@ export class Engine {
             // Generate execution plan with timeout
             const plan = await Promise.race([
                 this.planner.plan(config),
-                new Promise((_, reject) => setTimeout(() => reject(new Error(`Plan generation timeout after ${timeoutMs}ms`)), timeoutMs))
-            ]).catch(err => {
+                new Promise((_, reject) => setTimeout(() => reject(new Error(`Plan generation timeout after ${timeoutMs}ms`)), timeoutMs)),
+            ]).catch((err) => {
                 const timeoutError = {
                     code: 'PLANNING_TIMEOUT',
                     message: err instanceof Error ? err.message : String(err),
@@ -207,7 +207,9 @@ export class Engine {
                     this.observability.emitJsonSafe(errorEvent.jsonEvent);
                 }
                 // Try to recover to degraded state
-                const recoveryState = TransitionValidator.suggestRecoveryState(this.state(), [timeoutError]);
+                const recoveryState = TransitionValidator.suggestRecoveryState(this.state(), [
+                    timeoutError,
+                ]);
                 if (recoveryState && this.stateMachine.canTransition(recoveryState)) {
                     this.stateMachine.transition(recoveryState, `Planning timeout: ${timeoutError.message}`);
                 }
@@ -215,7 +217,9 @@ export class Engine {
                 throw timeoutError;
             });
             // Calculate plan hash (simple hash of plan ID + steps count)
-            const planHash = Buffer.from(plan.planId + plan.totalSteps).toString('base64').substring(0, 32);
+            const planHash = Buffer.from(plan.planId + plan.totalSteps)
+                .toString('base64')
+                .substring(0, 32);
             this.requiredOtelAttrs['plan.hash'] = planHash;
             // Return to ready state after planning (can then run or plan again)
             this.stateMachine.transition('ready', 'Plan generated successfully');
@@ -305,8 +309,8 @@ export class Engine {
             // Execute the plan with timeout
             const receipt = await Promise.race([
                 this.executor.run(plan),
-                new Promise((_, reject) => setTimeout(() => reject(new Error(`Execution timeout after ${timeoutMs}ms`)), timeoutMs))
-            ]).catch(err => {
+                new Promise((_, reject) => setTimeout(() => reject(new Error(`Execution timeout after ${timeoutMs}ms`)), timeoutMs)),
+            ]).catch((err) => {
                 this.statusTracker.finish();
                 const timeoutError = {
                     code: 'EXECUTION_TIMEOUT',
@@ -324,7 +328,9 @@ export class Engine {
                     this.observability.emitJsonSafe(errorEvent.jsonEvent);
                 }
                 // Try to recover or degrade
-                const recoveryState = TransitionValidator.suggestRecoveryState(this.state(), [timeoutError]);
+                const recoveryState = TransitionValidator.suggestRecoveryState(this.state(), [
+                    timeoutError,
+                ]);
                 if (recoveryState && this.stateMachine.canTransition(recoveryState)) {
                     this.stateMachine.transition(recoveryState, `Execution timeout: ${timeoutError.message}`);
                 }
@@ -545,7 +551,7 @@ export class Engine {
             // Timeout-protected kernel init
             await Promise.race([
                 this.kernel.init(),
-                new Promise((_, reject) => setTimeout(() => reject(new Error(`Recovery timeout after ${timeoutMs}ms`)), timeoutMs))
+                new Promise((_, reject) => setTimeout(() => reject(new Error(`Recovery timeout after ${timeoutMs}ms`)), timeoutMs)),
             ]);
             if (!this.kernel.isReady()) {
                 throw new Error('Kernel not ready after recovery');
@@ -725,7 +731,7 @@ export class Engine {
         return {
             success: result.success,
             error: result.error,
-            timestamp: result.timestamp || new Date()
+            timestamp: result.timestamp || new Date(),
         };
     }
 }

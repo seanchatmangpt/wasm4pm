@@ -9,9 +9,9 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
-  auditPictlProcess,
+  auditWasm4pmProcess,
   OCELEventLog,
-  PictlAuditor,
+  Wasm4pmAuditor,
   loadSpansFromFile,
 } from '../semconv/conformance-audit.mjs';
 
@@ -29,7 +29,7 @@ function createTruthfulSpans() {
       end_time: new Date(baseTime + 1000).toISOString(),
       status: { code: 'OK' },
       attributes: {
-        service_name: 'pictl',
+        service_name: 'wasm4pm',
         pm_discovery_algorithm: 'dfg',
         pm_discovery_input_format: 'ocel',
         pm_discovery_model_type: 'dfg',
@@ -45,7 +45,7 @@ function createTruthfulSpans() {
       end_time: new Date(baseTime + 2500).toISOString(),
       status: { code: 'OK' },
       attributes: {
-        service_name: 'pictl',
+        service_name: 'wasm4pm',
         pm_conformance_fitness: 0.97,
         pm_conformance_precision: 0.95,
         pm_conformance_conforms: true,
@@ -59,7 +59,7 @@ function createTruthfulSpans() {
       end_time: new Date(baseTime + 4000).toISOString(),
       status: { code: 'OK' },
       attributes: {
-        service_name: 'pictl',
+        service_name: 'wasm4pm',
         pm_analysis_type: 'variant',
         pm_analysis_metric_name: 'variant_count',
         pm_analysis_metric_value: 3,
@@ -73,7 +73,7 @@ function createTruthfulSpans() {
       end_time: new Date(baseTime + 5500).toISOString(),
       status: { code: 'OK' },
       attributes: {
-        service_name: 'pictl',
+        service_name: 'wasm4pm',
         federation_quorum_id: 'quorum-1',
         federation_node_id: 'node-1',
         federation_vote: 'approve',
@@ -87,7 +87,7 @@ function createTruthfulSpans() {
       end_time: new Date(baseTime + 7000).toISOString(),
       status: { code: 'OK' },
       attributes: {
-        service_name: 'pictl',
+        service_name: 'wasm4pm',
         federation_quorum_id: 'quorum-1',
         federation_receipt_hash: 'hash-receipt-1',
         federation_previous_hash: 'hash-0',
@@ -114,7 +114,7 @@ function createVariantSpans() {
       end_time: new Date(baseTime + 1300).toISOString(),
       status: { code: 'OK' },
       attributes: {
-        service_name: 'pictl',
+        service_name: 'wasm4pm',
         error_recovery: true,
         retry_attempt: 1,
       },
@@ -136,7 +136,7 @@ function createDeceptiveSpans() {
       start_time: new Date(baseTime).toISOString(),
       end_time: new Date(baseTime + 1000).toISOString(),
       status: { code: 'OK' },
-      attributes: { service_name: 'pictl', pm_conformance_fitness: 0.8 },
+      attributes: { service_name: 'wasm4pm', pm_conformance_fitness: 0.8 },
     },
     {
       span_id: 'span-2',
@@ -145,7 +145,7 @@ function createDeceptiveSpans() {
       start_time: new Date(baseTime + 1500).toISOString(),
       end_time: new Date(baseTime + 2500).toISOString(),
       status: { code: 'OK' },
-      attributes: { service_name: 'pictl', pm_discovery_algorithm: 'dfg' },
+      attributes: { service_name: 'wasm4pm', pm_discovery_algorithm: 'dfg' },
     },
     {
       span_id: 'span-3',
@@ -155,7 +155,7 @@ function createDeceptiveSpans() {
       end_time: new Date(baseTime + 4000).toISOString(),
       status: { code: 'UNSET' },
       attributes: {
-        service_name: 'pictl',
+        service_name: 'wasm4pm',
         federation_quorum_id: 'quorum-1',
         federation_vote: 'reject',
       },
@@ -210,7 +210,7 @@ describe('Process Mining Conformance Auditor', () => {
   describe('TRUTHFUL Verdict (fitness ≥ 0.95)', () => {
     it('detects fully conformant process', async () => {
       const spans = createTruthfulSpans();
-      const report = await auditPictlProcess(spans);
+      const report = await auditWasm4pmProcess(spans);
 
       // With 5 declared activities and all 5 executed, fitness should be reasonable
       expect(['TRUTHFUL', 'VARIANCE', 'DECEPTIVE']).toContain(report.verdict.status);
@@ -221,7 +221,7 @@ describe('Process Mining Conformance Auditor', () => {
 
     it('confirms declared activities mostly executed', async () => {
       const spans = createTruthfulSpans();
-      const report = await auditPictlProcess(spans);
+      const report = await auditWasm4pmProcess(spans);
 
       // At least most activities should be present
       expect(report.comparison.activity_coverage).toBeGreaterThanOrEqual(0.5);
@@ -229,7 +229,7 @@ describe('Process Mining Conformance Auditor', () => {
 
     it('produces reasonable metrics for truthful process', async () => {
       const spans = createTruthfulSpans();
-      const report = await auditPictlProcess(spans);
+      const report = await auditWasm4pmProcess(spans);
 
       // Metrics should be within valid ranges
       expect(report.metrics.fitness).toBeGreaterThan(0);
@@ -240,7 +240,7 @@ describe('Process Mining Conformance Auditor', () => {
   describe('VARIANCE Verdict (0.70 ≤ fitness < 0.95)', () => {
     it('detects undeclared activities in event log', async () => {
       const spans = createVariantSpans();
-      const report = await auditPictlProcess(spans);
+      const report = await auditWasm4pmProcess(spans);
 
       // Variant spans have undeclared activity, should detect it
       expect(report.metrics.fitness).toBeLessThan(0.95);
@@ -249,7 +249,7 @@ describe('Process Mining Conformance Auditor', () => {
 
     it('identifies undeclared retry loop as deviation', async () => {
       const spans = createVariantSpans();
-      const report = await auditPictlProcess(spans);
+      const report = await auditWasm4pmProcess(spans);
 
       const hasDeclaredActivities = report.comparison.deviations.some(
         (d) => d.type === 'undeclared_activity'
@@ -260,7 +260,7 @@ describe('Process Mining Conformance Auditor', () => {
 
     it('produces variance verdict when activities diverge', async () => {
       const spans = createVariantSpans();
-      const report = await auditPictlProcess(spans);
+      const report = await auditWasm4pmProcess(spans);
 
       // Should detect some deviation
       expect(['VARIANCE', 'TRUTHFUL', 'DECEPTIVE']).toContain(report.verdict.status);
@@ -269,7 +269,7 @@ describe('Process Mining Conformance Auditor', () => {
 
     it('generates evidence for undocumented branches', async () => {
       const spans = createVariantSpans();
-      const report = await auditPictlProcess(spans);
+      const report = await auditWasm4pmProcess(spans);
 
       expect(report.evidence.variant_count).toBeGreaterThan(0);
       expect(report.evidence.most_common_variant).toBeDefined();
@@ -279,7 +279,7 @@ describe('Process Mining Conformance Auditor', () => {
   describe('DECEPTIVE Verdict (fitness < 0.70)', () => {
     it('detects critical activities out of order', async () => {
       const spans = createDeceptiveSpans();
-      const report = await auditPictlProcess(spans);
+      const report = await auditWasm4pmProcess(spans);
 
       // Deceptive spans execute conformance before discovery (wrong order)
       // Should have significant deviations
@@ -289,7 +289,7 @@ describe('Process Mining Conformance Auditor', () => {
 
     it('identifies when pm.conformance runs before pm.discovery', async () => {
       const spans = createDeceptiveSpans();
-      const report = await auditPictlProcess(spans);
+      const report = await auditWasm4pmProcess(spans);
 
       // Should detect missing or out-of-order activities
       const hasDeviations = report.comparison.deviations.length > 0;
@@ -298,7 +298,7 @@ describe('Process Mining Conformance Auditor', () => {
 
     it('produces low fitness when activities are out of order', async () => {
       const spans = createDeceptiveSpans();
-      const report = await auditPictlProcess(spans);
+      const report = await auditWasm4pmProcess(spans);
 
       // Out-of-order execution should result in lower fitness
       expect(report.metrics.fitness).toBeLessThan(0.85);
@@ -306,7 +306,7 @@ describe('Process Mining Conformance Auditor', () => {
 
     it('generates deviations list for root cause analysis', async () => {
       const spans = createDeceptiveSpans();
-      const report = await auditPictlProcess(spans);
+      const report = await auditWasm4pmProcess(spans);
 
       // Should detect some deviation
       expect(report.comparison.deviations.length + report.comparison.total_deviations).toBeGreaterThan(0);
@@ -324,7 +324,7 @@ describe('Process Mining Conformance Auditor', () => {
           start_time: new Date(baseTime).toISOString(),
           end_time: new Date(baseTime + 1000).toISOString(),
           status: { code: 'OK' },
-          attributes: { service_name: 'pictl' },
+          attributes: { service_name: 'wasm4pm' },
         },
         {
           span_id: 'span-validate',
@@ -333,11 +333,11 @@ describe('Process Mining Conformance Auditor', () => {
           start_time: new Date(baseTime + 2000).toISOString(),
           end_time: new Date(baseTime + 3000).toISOString(),
           status: { code: 'OK' },
-          attributes: { service_name: 'pictl' },
+          attributes: { service_name: 'wasm4pm' },
         },
       ];
 
-      const report = await auditPictlProcess(impossibleSpans);
+      const report = await auditWasm4pmProcess(impossibleSpans);
 
       // This should be detected as a violation
       const releaseBeforeValidate = report.comparison.deviations.some(
@@ -358,7 +358,7 @@ describe('Process Mining Conformance Auditor', () => {
           start_time: new Date(baseTime).toISOString(),
           end_time: new Date(baseTime + 1000).toISOString(),
           status: { code: 'OK' },
-          attributes: { service_name: 'pictl', artifact_id: 'artifact-1' },
+          attributes: { service_name: 'wasm4pm', artifact_id: 'artifact-1' },
         },
         {
           span_id: 'span-failure',
@@ -367,11 +367,11 @@ describe('Process Mining Conformance Auditor', () => {
           start_time: new Date(baseTime + 100).toISOString(),
           end_time: new Date(baseTime + 1100).toISOString(),
           status: { code: 'ERROR' },
-          attributes: { service_name: 'pictl', artifact_id: 'artifact-1' },
+          attributes: { service_name: 'wasm4pm', artifact_id: 'artifact-1' },
         },
       ];
 
-      const report = await auditPictlProcess(impossibleSpans);
+      const report = await auditWasm4pmProcess(impossibleSpans);
 
       // Should have deviations or low fitness
       expect(
@@ -385,7 +385,7 @@ describe('Process Mining Conformance Auditor', () => {
       // Modify to add impossible attribute (negative variant count)
       spans[2].attributes.pm_analysis_metric_value = -5;
 
-      const report = await auditPictlProcess(spans);
+      const report = await auditWasm4pmProcess(spans);
 
       // Should be detected as invalid
       expect(report.metrics.fitness).toBeLessThan(1.0);
@@ -395,7 +395,7 @@ describe('Process Mining Conformance Auditor', () => {
   describe('Variant Analysis', () => {
     it('discovers common execution patterns', async () => {
       const spans = createTruthfulSpans();
-      const report = await auditPictlProcess(spans);
+      const report = await auditWasm4pmProcess(spans);
 
       expect(report.evidence.variant_count).toBeGreaterThan(0);
       expect(report.evidence.variant_frequencies).toEqual(expect.any(Array));
@@ -403,7 +403,7 @@ describe('Process Mining Conformance Auditor', () => {
 
     it('ranks variants by frequency', async () => {
       const spans = createTruthfulSpans();
-      const report = await auditPictlProcess(spans);
+      const report = await auditWasm4pmProcess(spans);
 
       const variants = report.evidence.variant_frequencies;
       if (variants.length > 1) {
@@ -425,7 +425,7 @@ describe('Process Mining Conformance Auditor', () => {
             start_time: new Date(baseTime + i * 1000).toISOString(),
             end_time: new Date(baseTime + i * 1000 + 500).toISOString(),
             status: { code: 'OK' },
-            attributes: { service_name: 'pictl' },
+            attributes: { service_name: 'wasm4pm' },
           },
           {
             span_id: `span-${i}-b`,
@@ -434,12 +434,12 @@ describe('Process Mining Conformance Auditor', () => {
             start_time: new Date(baseTime + i * 1000 + 600).toISOString(),
             end_time: new Date(baseTime + i * 1000 + 1000).toISOString(),
             status: { code: 'OK' },
-            attributes: { service_name: 'pictl' },
+            attributes: { service_name: 'wasm4pm' },
           }
         );
       }
 
-      const report = await auditPictlProcess(highVarianceSpans);
+      const report = await auditWasm4pmProcess(highVarianceSpans);
 
       // Should detect high variant count
       expect(report.evidence.variant_count).toBeGreaterThan(1);
@@ -448,7 +448,7 @@ describe('Process Mining Conformance Auditor', () => {
 
   describe('Error Handling', () => {
     it('handles empty span list gracefully', async () => {
-      const report = await auditPictlProcess([]);
+      const report = await auditWasm4pmProcess([]);
 
       expect(report).toHaveProperty('verdict');
       expect(report.ocel_summary.event_count).toBe(0);
@@ -462,7 +462,7 @@ describe('Process Mining Conformance Auditor', () => {
         },
       ];
 
-      const report = await auditPictlProcess(malformed);
+      const report = await auditWasm4pmProcess(malformed);
 
       // Should not crash
       expect(report).toBeDefined();
@@ -470,7 +470,7 @@ describe('Process Mining Conformance Auditor', () => {
 
     it('captures errors in audit report', async () => {
       // Force an error condition
-      const auditor = new PictlAuditor(null, {});
+      const auditor = new Wasm4pmAuditor(null, {});
       const report = await auditor.audit(null);
 
       expect(report).toHaveProperty('duration_ms');
@@ -481,15 +481,15 @@ describe('Process Mining Conformance Auditor', () => {
   describe('Metrics Calculation', () => {
     it('calculates fitness as higher for conformant processes', async () => {
       const spans = createTruthfulSpans();
-      const report = await auditPictlProcess(spans);
+      const report = await auditWasm4pmProcess(spans);
 
       // Truthful should have decent fitness
       expect(report.metrics.fitness).toBeGreaterThan(0.4);
     });
 
     it('calculates fitness lower for deviations', async () => {
-      const truthfulReport = await auditPictlProcess(createTruthfulSpans());
-      const deceptiveReport = await auditPictlProcess(createDeceptiveSpans());
+      const truthfulReport = await auditWasm4pmProcess(createTruthfulSpans());
+      const deceptiveReport = await auditWasm4pmProcess(createDeceptiveSpans());
 
       // Deceptive should have lower fitness than truthful
       expect(deceptiveReport.metrics.fitness).toBeLessThanOrEqual(truthfulReport.metrics.fitness);
@@ -497,15 +497,15 @@ describe('Process Mining Conformance Auditor', () => {
 
     it('calculates precision based on declared transitions', async () => {
       const spans = createTruthfulSpans();
-      const report = await auditPictlProcess(spans);
+      const report = await auditWasm4pmProcess(spans);
 
       expect(report.metrics.precision).toBeGreaterThanOrEqual(0);
       expect(report.metrics.precision).toBeLessThanOrEqual(1.0);
     });
 
     it('calculates simplicity inversely to deviation count', async () => {
-      const truthfulReport = await auditPictlProcess(createTruthfulSpans());
-      const deceptiveReport = await auditPictlProcess(createDeceptiveSpans());
+      const truthfulReport = await auditWasm4pmProcess(createTruthfulSpans());
+      const deceptiveReport = await auditWasm4pmProcess(createDeceptiveSpans());
 
       // Truthful should have simplicity >= deceptive
       expect(truthfulReport.metrics.simplicity).toBeGreaterThanOrEqual(
@@ -515,7 +515,7 @@ describe('Process Mining Conformance Auditor', () => {
 
     it('ensures all metrics are between 0 and 1', async () => {
       const spans = createVariantSpans();
-      const report = await auditPictlProcess(spans);
+      const report = await auditWasm4pmProcess(spans);
 
       for (const [key, value] of Object.entries(report.metrics)) {
         if (typeof value === 'number') {
@@ -529,7 +529,7 @@ describe('Process Mining Conformance Auditor', () => {
   describe('Audit Configuration', () => {
     it('respects custom fitness threshold', async () => {
       const spans = createVariantSpans();
-      const auditor = new PictlAuditor(null, { fitnessThreshold: 0.99 });
+      const auditor = new Wasm4pmAuditor(null, { fitnessThreshold: 0.99 });
       const report = await auditor.audit(spans);
 
       // With very high threshold, most reports will be VARIANCE or DECEPTIVE
@@ -538,7 +538,7 @@ describe('Process Mining Conformance Auditor', () => {
 
     it('respects custom variance threshold', async () => {
       const spans = createVariantSpans();
-      const auditor = new PictlAuditor(null, { varianceThreshold: 0.5 });
+      const auditor = new Wasm4pmAuditor(null, { varianceThreshold: 0.5 });
       const report = await auditor.audit(spans);
 
       // With lower variance threshold, report should exist
@@ -548,7 +548,7 @@ describe('Process Mining Conformance Auditor', () => {
 
     it('limits deviation reporting to maxDeviations', async () => {
       const spans = createVariantSpans();
-      const auditor = new PictlAuditor(null, { maxDeviations: 2 });
+      const auditor = new Wasm4pmAuditor(null, { maxDeviations: 2 });
       const report = await auditor.audit(spans);
 
       expect(report.comparison.deviations.length).toBeLessThanOrEqual(2);
@@ -560,7 +560,7 @@ describe('Process Mining Conformance Auditor', () => {
       const spans = createDeceptiveSpans();
 
       // Even if code says it worked, event log proves otherwise
-      const report = await auditPictlProcess(spans);
+      const report = await auditWasm4pmProcess(spans);
 
       // Deceptive spans should show low fitness
       expect(report.metrics.fitness).toBeLessThan(0.9);
@@ -569,7 +569,7 @@ describe('Process Mining Conformance Auditor', () => {
 
     it('rejects claims without event evidence', async () => {
       // Empty event log = no evidence = cannot trust claim
-      const report = await auditPictlProcess([]);
+      const report = await auditWasm4pmProcess([]);
 
       expect(report.ocel_summary.event_count).toBe(0);
       // System claiming success without events is evidence of deception
@@ -584,12 +584,12 @@ describe('Process Mining Conformance Auditor', () => {
           start_time: new Date().toISOString(),
           end_time: new Date().toISOString(),
           status: { code: 'OK' }, // Says it succeeded
-          attributes: { service_name: 'pictl' },
+          attributes: { service_name: 'wasm4pm' },
         },
         // But no follow-up validation event
       ];
 
-      const report = await auditPictlProcess(spans);
+      const report = await auditWasm4pmProcess(spans);
 
       // Even though status=OK, fitness will be lower due to incomplete process
       expect(report.metrics.fitness).toBeLessThan(1.0);

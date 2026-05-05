@@ -120,9 +120,9 @@ describe('Node.js Artifact Validation - @wasm4pm/wasm4pm', () => {
       expect(fs.existsSync(pkgDir)).toBe(true);
 
       // Check for essential files
-      const mainJs = path.join(pkgDir, 'pictl.js');
-      const mainDts = path.join(pkgDir, 'pictl.d.ts');
-      const wasmBinary = path.join(pkgDir, 'pictl_bg.wasm');
+      const mainJs = path.join(pkgDir, 'wasm4pm.js');
+      const mainDts = path.join(pkgDir, 'wasm4pm.d.ts');
+      const wasmBinary = path.join(pkgDir, 'wasm4pm_bg.wasm');
 
       expect(fs.existsSync(mainJs)).toBe(true);
       expect(fs.existsSync(mainDts)).toBe(true);
@@ -148,7 +148,7 @@ describe('Node.js Artifact Validation - @wasm4pm/wasm4pm', () => {
     it('1.3 Should have valid TypeScript declarations', () => {
       const dtsPath = path.join(
         __dirname,
-        '../node_modules/wasm4pm/pkg/pictl.d.ts'
+        '../node_modules/wasm4pm/pkg/wasm4pm.d.ts'
       );
       const dtsContent = fs.readFileSync(dtsPath, 'utf8');
 
@@ -361,13 +361,18 @@ describe('Node.js Artifact Validation - @wasm4pm/wasm4pm', () => {
       const algosData = wasm.available_discovery_algorithms();
       expect(algosData).toBeTruthy();
 
-      // Handle Map object returned from WASM
-      let algorithms = [];
-      if (algosData instanceof Map) {
-        const algosList = algosData.get('algorithms');
+      // WASM returns a JSON string via to_js_str(); may also return Map or Array
+      const parsed = typeof algosData === 'string' ? JSON.parse(algosData) : algosData;
+      let algorithms: unknown[] = [];
+      if (parsed instanceof Map) {
+        const algosList = parsed.get('algorithms');
         if (Array.isArray(algosList)) {
           algorithms = algosList;
         }
+      } else if (parsed && typeof parsed === 'object' && Array.isArray((parsed as { algorithms?: unknown[] }).algorithms)) {
+        algorithms = (parsed as { algorithms: unknown[] }).algorithms;
+      } else if (Array.isArray(parsed)) {
+        algorithms = parsed;
       }
 
       expect(algorithms.length).toBeGreaterThanOrEqual(1);

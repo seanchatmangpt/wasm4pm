@@ -5,60 +5,60 @@
  * Checks soundness properties, computes quality metrics (fitness, precision, etc.).
  */
 export interface PetriNet {
-    places: Array<{
-        id: string;
-        name?: string;
-        initialMarking?: number;
-        finalMarking?: number;
-    }>;
-    transitions: Array<{
-        id: string;
-        name?: string;
-        label?: string;
-    }>;
-    arcs: Array<{
-        id: string;
-        source: string;
-        target: string;
-        weight?: number;
-    }>;
+  places: Array<{
+    id: string;
+    name?: string;
+    initialMarking?: number;
+    finalMarking?: number;
+  }>;
+  transitions: Array<{
+    id: string;
+    name?: string;
+    label?: string;
+  }>;
+  arcs: Array<{
+    id: string;
+    source: string;
+    target: string;
+    weight?: number;
+  }>;
 }
 export interface ProcessTreeNode {
-    id: string;
-    type: 'sequence' | 'parallel' | 'choice' | 'loop' | 'task' | 'silent';
-    label?: string;
-    children?: ProcessTreeNode[];
+  id: string;
+  type: 'sequence' | 'parallel' | 'choice' | 'loop' | 'task' | 'silent';
+  label?: string;
+  children?: ProcessTreeNode[];
 }
 export interface VerifierDFG {
-    nodes: string[];
-    edges: Array<{
-        source: string;
-        target: string;
-        count: number;
-    }>;
-    startActivities: string[];
-    endActivities: string[];
+  nodes: string[];
+  edges: Array<{
+    source: string;
+    target: string;
+    count: number;
+  }>;
+  startActivities: string[];
+  endActivities: string[];
 }
 export interface SoundnessResult {
-    sound: boolean;
-    deadlockFree: boolean;
-    live: boolean;
-    bounded: boolean;
-    details: string[];
+  sound: boolean;
+  deadlockFree: boolean;
+  live: boolean;
+  bounded: boolean;
+  details: string[];
 }
 export interface QualityMetrics {
-    fitness: number;
-    precision: number;
-    generalization: number;
-    simplicity: number;
+  fitness: number;
+  precision: number;
+  generalization: number;
+  simplicity: number;
 }
 export interface ConformanceResult {
-    fit: number;
-    traceFitness: number[];
-    missingTokens: number;
-    remainingTokens: number;
-    consumedTokens: number;
-    producedTokens: number;
+  fit: number;
+  traceFitness: number[];
+  missingTokens: number;
+  remainingTokens: number;
+  consumedTokens: number;
+  producedTokens: number;
 }
 /**
  * Verify soundness properties of a Petri net.
@@ -68,21 +68,29 @@ export interface ConformanceResult {
  * 2. Safe/Bounded: No place can contain more than one token
  * 3. Proper completion: From the initial marking, we can always reach the final marking
  */
-export declare function verifySoundness(net: PetriNet, initialMarking: string[], finalMarking: string[]): SoundnessResult;
+export declare function verifySoundness(
+  net: PetriNet,
+  initialMarking: string[],
+  finalMarking: string[]
+): SoundnessResult;
 /**
  * Compute quality metrics for a process model against an event log.
  */
-export declare function computeQualityMetrics(model: PetriNet | VerifierDFG, eventLog: Array<{
+export declare function computeQualityMetrics(
+  model: PetriNet | VerifierDFG,
+  eventLog: Array<{
     activities: string[];
-}>, options?: {
+  }>,
+  options?: {
     type: 'petrinet' | 'dfg';
-}): QualityMetrics;
+  }
+): QualityMetrics;
 /**
  * Validate DFG structure.
  */
 export declare function validateVerifierDFG(dfg: VerifierDFG): {
-    valid: boolean;
-    errors: string[];
+  valid: boolean;
+  errors: string[];
 };
 /**
  * Format soundness result as human-readable string.

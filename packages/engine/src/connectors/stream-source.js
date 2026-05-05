@@ -67,7 +67,7 @@ class StreamEventStream {
  * StreamSourceAdapter - Reads event logs from Readable streams
  *
  * Use cases:
- * - `echo '{"a":1}' | pictl run` (stdin pipe)
+ * - `echo '{"a":1}' | wasm4pm run` (stdin pipe)
  * - Programmatic stream injection in tests or libraries
  *
  * Features:

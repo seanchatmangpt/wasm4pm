@@ -23,8 +23,8 @@ describe('classifyTraces', () => {
     }
     expect(result.modelInfo.traceCount).toBe(6);
     // Accuracy: well-separated dataset should achieve >= 80%
-    const correct = result.predictions.filter(p => {
-      const label = features.find(f => f.case_id === p.caseId)?.outcome;
+    const correct = result.predictions.filter((p) => {
+      const label = features.find((f) => f.case_id === p.caseId)?.outcome;
       return p.predicted === label;
     }).length;
     expect(correct / features.length).toBeGreaterThanOrEqual(0.8);
@@ -45,7 +45,8 @@ describe('classifyTraces', () => {
     const result = await classifyTraces(features, { method: 'logistic_regression' });
     // With 2 classes and softmax, confidences should be reasonable
     // (not all 0.9+ which would indicate non-normalized independent sigmoids)
-    const avgConfidence = result.predictions.reduce((s, p) => s + p.confidence, 0) / result.predictions.length;
+    const avgConfidence =
+      result.predictions.reduce((s, p) => s + p.confidence, 0) / result.predictions.length;
     expect(avgConfidence).toBeGreaterThan(0.4);
     expect(avgConfidence).toBeLessThanOrEqual(1);
   });
@@ -69,8 +70,8 @@ describe('classifyTraces', () => {
     expect(result.modelInfo.nNodes).toBeGreaterThan(0);
     expect(result.modelInfo.traceCount).toBe(6);
     // Accuracy: decision tree on well-separated data should be 100%
-    const correct = result.predictions.filter(p => {
-      const label = features.find(f => f.case_id === p.caseId)?.outcome;
+    const correct = result.predictions.filter((p) => {
+      const label = features.find((f) => f.case_id === p.caseId)?.outcome;
       return p.predicted === label;
     }).length;
     expect(correct).toBe(features.length);
@@ -146,7 +147,7 @@ describe('regressRemainingTime', () => {
 
   it('throws for insufficient data', async () => {
     await expect(
-      regressRemainingTime([{ case_id: 'c1', trace_length: 2, remaining_time: 100 }]),
+      regressRemainingTime([{ case_id: 'c1', trace_length: 2, remaining_time: 100 }])
     ).rejects.toThrow('Not enough traces');
   });
 });
@@ -188,7 +189,13 @@ describe('classifyTraces edge cases', () => {
   it('handles mixed scale features', async () => {
     const features = [
       { case_id: 'c1', trace_length: 0.001, elapsed_time: 0.001, rework_count: 0, outcome: 'A' },
-      { case_id: 'c2', trace_length: 100000, elapsed_time: 1000000, rework_count: 100, outcome: 'B' },
+      {
+        case_id: 'c2',
+        trace_length: 100000,
+        elapsed_time: 1000000,
+        rework_count: 100,
+        outcome: 'B',
+      },
       { case_id: 'c3', trace_length: 50, elapsed_time: 5000, rework_count: 5, outcome: 'A' },
     ];
     // Features span many orders of magnitude — should not produce NaN/Inf
@@ -251,16 +258,16 @@ describe('classifyTraces edge cases', () => {
     expect(baseResult.predictions).toHaveLength(3);
     expect(extResult.predictions).toHaveLength(6);
     // Well-separated classes: accuracy should not degrade with more data
-    const baseCorrect = baseResult.predictions.filter(p => {
-      const label = baseFeatures.find(f => f.case_id === p.caseId)?.outcome;
+    const baseCorrect = baseResult.predictions.filter((p) => {
+      const label = baseFeatures.find((f) => f.case_id === p.caseId)?.outcome;
       return p.predicted === label;
     }).length;
-    const extCorrect = extResult.predictions.filter(p => {
-      const label = extendedFeatures.find(f => f.case_id === p.caseId)?.outcome;
+    const extCorrect = extResult.predictions.filter((p) => {
+      const label = extendedFeatures.find((f) => f.case_id === p.caseId)?.outcome;
       return p.predicted === label;
     }).length;
     expect(extCorrect / extendedFeatures.length).toBeGreaterThanOrEqual(
-      baseCorrect / baseFeatures.length * 0.8,
+      (baseCorrect / baseFeatures.length) * 0.8
     );
   });
 });

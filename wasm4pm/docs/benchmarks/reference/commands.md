@@ -7,11 +7,11 @@
 Run a single discovery algorithm on an event log.
 
 ```bash
-pictl run log.xes                          # default algorithm (DFG)
-pictl run log.xes --algorithm inductive    # specific algorithm
-pictl run log.xes --format json            # JSON output
-pictl run log.xes --profile quality        # execution profile
-pictl run log.xes --no-save                # skip auto-save to .wasm4pm/results/
+wpm run log.xes                          # default algorithm (DFG)
+wpm run log.xes --algorithm inductive    # specific algorithm
+wpm run log.xes --format json            # JSON output
+wpm run log.xes --profile quality        # execution profile
+wpm run log.xes --no-save                # skip auto-save to .wasm4pm/results/
 ```
 
 | Flag          | Type    | Default    | Description                                                |
@@ -30,9 +30,9 @@ Exit codes: `0` success, `1` config error, `2` source error, `3` execution error
 Run multiple algorithms on the same log, output side-by-side table.
 
 ```bash
-pictl compare dfg heuristic -i log.xes
-pictl compare dfg,heuristic,inductive -i log.xes --format json
-pictl compare dfg heuristic -i log.xes --verbose
+wpm compare dfg heuristic -i log.xes
+wpm compare dfg,heuristic,inductive -i log.xes --format json
+wpm compare dfg heuristic -i log.xes --verbose
 ```
 
 | Flag        | Type    | Default  | Description                                |
@@ -50,8 +50,8 @@ Algorithm names are space-separated or comma-separated. See [datasets.md](./data
 Compare two event logs via Jaccard similarity on DFG edges.
 
 ```bash
-pictl diff log_v1.xes log_v2.xes
-pictl diff log_v1.xes log_v2.xes --format json
+wpm diff log_v1.xes log_v2.xes
+wpm diff log_v1.xes log_v2.xes --format json
 ```
 
 | Flag       | Type   | Default | Description                      |
@@ -67,7 +67,7 @@ Output includes: structural similarity score, activities added/removed/shared, e
 WASM engine health check and system info.
 
 ```bash
-pictl status
+wpm status
 ```
 
 Reports: WASM binary loaded, algorithm registry count, memory usage, platform info.
@@ -79,7 +79,7 @@ Reports: WASM binary loaded, algorithm registry count, memory usage, platform in
 Six-check environment diagnostic.
 
 ```bash
-pictl doctor
+wpm doctor
 ```
 
 | Check # | What It Checks                     | Pass Condition           |
@@ -164,4 +164,4 @@ Outputs a table with per-algorithm timing in both environments and the ratio.
 | `quality`  | Genetic Algorithm, ILP Petri Net, all ML algorithms | High-quality models     |
 | `stream`   | Streaming DFG                                       | Infinite event streams  |
 
-Profile is set via `--profile` flag, `PICTL_PROFILE` ENV var, or `execution.profile` in config file.
+Profile is set via `--profile` flag, `WASM4PM_PROFILE` ENV var, or `execution.profile` in config file.

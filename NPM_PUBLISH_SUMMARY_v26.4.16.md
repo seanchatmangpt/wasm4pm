@@ -179,8 +179,8 @@ pnpm --filter wasm4pm publish
 cd lab
 pnpm install                             # Install published versions from npm
 pnpm test                                # Run tests against published artifacts
-pictl --version                          # Verify CLI
-pictl doctor                             # Full system check
+wpm --version                            # Verify CLI
+wpm doctor                               # Full system check
 ```
 
 **Step 4: Git tag & release**
@@ -221,12 +221,12 @@ git push origin v26.4.16
 ### Registry Target
 - **Public npm registry**: https://registry.npmjs.org/
 - **Access level**: `public` (no authentication walls)
-- **Scope**: `@seanchatmangpt` for CLI, `@pictl` for foundation packages
+- **Scope**: `@seanchatmangpt` for CLI, `@wasm4pm` for foundation packages
 
 ### Package Artifacts
 - **wasm4pm**: WASM binaries in `pkg/` (compiled by wasm-pack)
 - **@wasm4pm/** packages: TypeScript compiled to `dist/` (type-safe ESM)
-- **@wasm4pm/cli**: CLI binary in `dist/bin/pictl.js` (executable)
+- **@wasm4pm/cli**: CLI binary in `dist/bin/wasm4pm.js` (executable)
 
 ### Authentication
 - Ensure npm token is configured: `npm config get registry`

@@ -1,8 +1,8 @@
-# pictl Crates Structure
+# wasm4pm Crates Structure
 
 ## Overview
 
-The pictl WASM process mining platform is organized as a Rust workspace with multiple crates, enabling clear separation of concerns, reusability, and modularity.
+The wasm4pm WASM process mining platform is organized as a Rust workspace with multiple crates, enabling clear separation of concerns, reusability, and modularity.
 
 ```
 wasm4pm/
@@ -20,12 +20,12 @@ wasm4pm/
 │   │       ├── error.rs       # Error, Result<T>
 │   │       └── hash.rs        # BLAKE3 hashing, canonical JSON
 │   │
-│   └── pictl-core/            # 2️⃣ Algorithm implementations (placeholder)
+│   └── wasm4pm-core/            # 2️⃣ Algorithm implementations (placeholder)
 │       ├── Cargo.toml
 │       └── src/
 │           └── lib.rs
 │
-├── src/                       # Main pictl crate (WASM library)
+├── src/                       # Main wasm4pm crate (WASM library)
 │   └── lib.rs                 # WASM bindgen exports
 │
 └── README.md
@@ -56,13 +56,13 @@ wasm4pm/
 
 **No WASM Dependencies:** This crate has zero dependencies on `wasm-bindgen`, `js-sys`, or web APIs. It's a pure Rust library that can be used in any context (WASM, native, servers, etc.).
 
-### 2. pictl-core (Algorithm Implementation)
+### 2. wasm4pm-core (Algorithm Implementation)
 
 **Purpose:** Algorithm implementations that depend on wasm4pm-types.
 
 **Future:** Will contain implementations of discovery algorithms, conformance checkers, and other process mining operations.
 
-### 3. pictl (Main WASM Library)
+### 3. wasm4pm (Main WASM Library)
 
 **Purpose:** WebAssembly bindings and public API.
 
@@ -79,11 +79,11 @@ wasm4pm/
 ### 1. Unidirectional Dependencies
 
 ```
-pictl-core
+wasm4pm-core
    ↓
 wasm4pm-types
 
-pictl (main library)
+wasm4pm (main library)
    ↓
 wasm4pm-types
 ```
@@ -129,7 +129,7 @@ Implementations of discovery, conformance, and analysis algorithms depend on `wa
 
 ### Phase 3: WASM Bindings
 
-Main `wpm` (wasm4pm) crate becomes thin wrapper around `wasm4pm-types` and `pictl-core`.
+Main `wpm` (wasm4pm) crate becomes thin wrapper around `wasm4pm-types` and `wasm4pm-core`.
 
 ### Phase 4: Multi-Language Support
 
@@ -189,10 +189,10 @@ All crates use shared `workspace.package.version`:
 ## Future Enhancements
 
 1. **Feature flags per crate** — Control which algorithms compile into WASM
-2. **pictl-ml** — Machine learning algorithms
-3. **pictl-conformance** — Advanced conformance checking
-4. **pictl-streaming** — Streaming process mining operators
-5. **pictl-bindings-py** — Python bindings for cross-language use
+2. **wasm4pm-ml** — Machine learning algorithms
+3. **wasm4pm-conformance** — Advanced conformance checking
+4. **wasm4pm-streaming** — Streaming process mining operators
+5. **wasm4pm-bindings-py** — Python bindings for cross-language use
 
 ## References
 

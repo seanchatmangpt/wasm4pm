@@ -108,7 +108,9 @@ export const simulate = defineCommand({
         process.exit(EXIT_CODES.config_error);
       }
       const maxTime = parsedTime ?? 60000;
-      const seed = ctx.args.seed ? parseInt(ctx.args.seed as string, 10) : Math.floor(Math.random() * 2_147_483_647);
+      const seed = ctx.args.seed
+        ? parseInt(ctx.args.seed as string, 10)
+        : Math.floor(Math.random() * 2_147_483_647);
 
       if (formatter instanceof HumanFormatter) {
         formatter.info(`Monte Carlo simulation: ${inputPath}`);
@@ -116,7 +118,8 @@ export const simulate = defineCommand({
       }
 
       // Load WASM module
-      const loaderConfig = ctx.args.format === 'json' ? { observability: createQuietObservabilityLayer() } : {};
+      const loaderConfig =
+        ctx.args.format === 'json' ? { observability: createQuietObservabilityLayer() } : {};
       const loader = WasmLoader.getInstance(loaderConfig);
       await loader.init();
       const wasm = loader.get();
@@ -159,7 +162,12 @@ export const simulate = defineCommand({
       // Extract process tree playout results if available
       let playoutResult: Record<string, unknown> | null = null;
       try {
-        const rawPlayout = wasm.simulate_process_tree_playout(logHandle, activityKey, numCases, seed);
+        const rawPlayout = wasm.simulate_process_tree_playout(
+          logHandle,
+          activityKey,
+          numCases,
+          seed
+        );
         playoutResult = typeof rawPlayout === 'string' ? JSON.parse(rawPlayout) : rawPlayout;
       } catch {
         // Process tree playout not available
@@ -227,7 +235,9 @@ function printHumanSimulation(formatter: HumanFormatter, result: Record<string, 
   formatter.log('  Statistics:');
   formatter.log(`    Avg trace length:    ${stats.avgTraceLength as number}`);
   formatter.log(`    Avg sojourn time:    ${stats.avgSojournTime as number}`);
-  formatter.log(`    Resource utilization: ${((stats.resourceUtilization as number) * 100).toFixed(1)}%`);
+  formatter.log(
+    `    Resource utilization: ${((stats.resourceUtilization as number) * 100).toFixed(1)}%`
+  );
   formatter.log('');
 
   const traces = result.traces as Array<Record<string, unknown>>;

@@ -228,7 +228,7 @@ export class WasmLoader {
         // Dynamically import based on runtime environment
         let wasmModule;
         try {
-            // Import from the built pictl WASM package
+            // Import from the built wasm4pm WASM package
             let modulePath = this.config.modulePath;
             if (!modulePath) {
                 // Compute workspace root from import.meta.url
@@ -243,7 +243,7 @@ export class WasmLoader {
                     throw new Error('Cannot determine workspace root: "packages/engine" not found in path');
                 }
                 const workspaceRoot = currentPath.substring(0, engineIndex);
-                modulePath = workspaceRoot + 'wasm4pm/pkg/pictl.js';
+                modulePath = workspaceRoot + 'wasm4pm/pkg/wasm4pm.js';
             }
             // Use dynamic import for flexibility
             wasmModule = await import(modulePath);

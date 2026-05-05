@@ -32,7 +32,16 @@ export function validateReceipt(receipt: unknown): ValidationResult {
   const r = receipt as Record<string, any>;
 
   // Check required string fields
-  const requiredStrings = ['run_id', 'schema_version', 'config_hash', 'input_hash', 'plan_hash', 'output_hash', 'start_time', 'end_time'] as const;
+  const requiredStrings = [
+    'run_id',
+    'schema_version',
+    'config_hash',
+    'input_hash',
+    'plan_hash',
+    'output_hash',
+    'start_time',
+    'end_time',
+  ] as const;
   for (const field of requiredStrings) {
     if (typeof r[field] !== 'string') {
       errors.push(`Missing or invalid required field: ${field}`);
@@ -193,7 +202,9 @@ export function verifyReceipt(
 
   // Verify all 5 hashes match expected values
   if (r.config_hash !== expectedHashes.config_hash) {
-    errors.push(`config_hash mismatch: expected ${expectedHashes.config_hash}, got ${r.config_hash}`);
+    errors.push(
+      `config_hash mismatch: expected ${expectedHashes.config_hash}, got ${r.config_hash}`
+    );
   }
 
   if (r.input_hash !== expectedHashes.input_hash) {
@@ -205,7 +216,9 @@ export function verifyReceipt(
   }
 
   if (r.output_hash !== expectedHashes.output_hash) {
-    errors.push(`output_hash mismatch: expected ${expectedHashes.output_hash}, got ${r.output_hash}`);
+    errors.push(
+      `output_hash mismatch: expected ${expectedHashes.output_hash}, got ${r.output_hash}`
+    );
   }
 
   return {

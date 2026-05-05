@@ -8,10 +8,27 @@
  */
 export { runSwarm } from './loop.js';
 export type { SwarmConfig, SwarmArtifact, SwarmEpisode } from './loop.js';
-export { spawnWorker, getWorker, listWorkers, dissolveWorkers, getSwarmId, } from './worker-registry.js';
-export { hashOutput, checkConvergence, checkSwarmConvergence, checkMlConvergence, } from './convergence.js';
+export {
+  spawnWorker,
+  getWorker,
+  listWorkers,
+  dissolveWorkers,
+  getSwarmId,
+} from './worker-registry.js';
+export {
+  hashOutput,
+  checkConvergence,
+  checkSwarmConvergence,
+  checkMlConvergence,
+} from './convergence.js';
 export { aggregate } from './aggregation.js';
 export type { AggregationStrategy } from './aggregation.js';
 export { sendDirective } from './directive-bus.js';
-export type { WorkerState, WorkerResult, WorkerStatus, SwarmConvergenceReport, Directive, } from './types.js';
+export type {
+  WorkerState,
+  WorkerResult,
+  WorkerStatus,
+  SwarmConvergenceReport,
+  Directive,
+} from './types.js';
 //# sourceMappingURL=index.d.ts.map

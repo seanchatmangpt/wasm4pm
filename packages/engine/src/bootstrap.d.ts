@@ -9,21 +9,24 @@ import { WasmLoader, WasmModule } from './wasm-loader.js';
  * Kernel interface for bootstrap (subset of full Kernel)
  */
 export interface BootstrapKernel {
-    init(): Promise<void>;
-    isReady(): boolean;
+  init(): Promise<void>;
+  isReady(): boolean;
 }
 /**
  * Result of a bootstrap operation
  */
 export interface BootstrapResult {
-    wasmModule: WasmModule;
-    durationMs: number;
+  wasmModule: WasmModule;
+  durationMs: number;
 }
 /**
  * Bootstraps the engine by loading WASM and initializing the kernel
  * @throws Error if WASM loading or kernel initialization fails
  */
-export declare function bootstrapEngine(kernel: BootstrapKernel, wasmLoader: WasmLoader): Promise<BootstrapResult>;
+export declare function bootstrapEngine(
+  kernel: BootstrapKernel,
+  wasmLoader: WasmLoader
+): Promise<BootstrapResult>;
 /**
  * Creates a structured error for bootstrap failures
  */

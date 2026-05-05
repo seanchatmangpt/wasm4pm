@@ -38,7 +38,7 @@ describe('Federation Voting', () => {
         { agentId: 'agent_2_algo2', fitness: 0.78, verdict: 'VARIANCE' },
         { agentId: 'agent_4_sound', fitness: 0.85, verdict: 'VARIANCE' },
         { agentId: 'agent_5_conform', fitness: 0.75, verdict: 'DECEPTIVE' },
-        { agentId: 'agent_1_harvest', fitness: 0.80, verdict: 'VARIANCE' },
+        { agentId: 'agent_1_harvest', fitness: 0.8, verdict: 'VARIANCE' },
       ];
 
       const consensus = await voting.reachConsensus(votes);
@@ -51,9 +51,9 @@ describe('Federation Voting', () => {
       const votes = [
         { agentId: 'agent_2_algo1', fitness: 0.45, verdict: 'DECEPTIVE' },
         { agentId: 'agent_2_algo2', fitness: 0.38, verdict: 'DECEPTIVE' },
-        { agentId: 'agent_4_sound', fitness: 0.50, verdict: 'DECEPTIVE' },
+        { agentId: 'agent_4_sound', fitness: 0.5, verdict: 'DECEPTIVE' },
         { agentId: 'agent_5_conform', fitness: 0.42, verdict: 'DECEPTIVE' },
-        { agentId: 'agent_1_harvest', fitness: 0.40, verdict: 'DECEPTIVE' },
+        { agentId: 'agent_1_harvest', fitness: 0.4, verdict: 'DECEPTIVE' },
       ];
 
       const consensus = await voting.reachConsensus(votes);
@@ -78,7 +78,7 @@ describe('Federation Voting', () => {
     it('denies quorum if <3 agents (insufficient consensus)', async () => {
       const votes = [
         { agentId: 'agent_2_algo1', fitness: 0.97, verdict: 'TRUTHFUL' },
-        { agentId: 'agent_4_sound', fitness: 0.50, verdict: 'DECEPTIVE' },
+        { agentId: 'agent_4_sound', fitness: 0.5, verdict: 'DECEPTIVE' },
       ];
 
       const consensus = await voting.reachConsensus(votes);
@@ -93,7 +93,7 @@ describe('Federation Voting', () => {
         { agentId: 'agent_2_algo1', fitness: 0.95, verdict: 'TRUTHFUL' },
         { agentId: 'agent_2_algo2', fitness: 0.94, verdict: 'TRUTHFUL' },
         { agentId: 'agent_4_sound', fitness: 0.92, verdict: 'TRUTHFUL' },
-        { agentId: 'agent_5_conform', fitness: 0.80, verdict: 'VARIANCE' }, // Dissenter
+        { agentId: 'agent_5_conform', fitness: 0.8, verdict: 'VARIANCE' }, // Dissenter
         { agentId: 'agent_1_harvest', fitness: 0.96, verdict: 'TRUTHFUL' },
       ];
 

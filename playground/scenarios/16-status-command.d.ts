@@ -16,7 +16,7 @@
  * NOTE: Human output tests are limited because consola filters log-level
  *       messages in child process capture. Only JSON output is fully verifiable.
  *
- * Binary: apps/pictl/dist/bin/pictl.js (must be built first)
+ * Binary: apps/wasm4pm/dist/bin/wasm4pm.js (must be built first)
  */
 export {};
 //# sourceMappingURL=16-status-command.d.ts.map

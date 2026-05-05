@@ -7,10 +7,30 @@
  *   - Jacobi eigendecomposition with in-place rotation (no matrix copy per iteration)
  *   - Pre-allocated eigenvector matrix
  *   - Float64Array for centered data
+ *
+ * Defensive hardening:
+ *   - Parameter validation (nComponents)
+ *   - Guard against division by zero in variance computation
+ *   - Clamp explained variance to [0, 1]
+ *   - Error on insufficient data
  */
 
 import { buildFeatureMatrix } from './bridge.js';
 import type { PCAResult } from './types.js';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Parameter validation
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Validate and clamp number of PCA components.
+ * Valid range: [1, d] where d is number of features
+ */
+function validateNComponents(nComponents: number | undefined, d: number): number {
+  const val = nComponents ?? 2;
+  if (!Number.isInteger(val) || val < 1) return 1;
+  return Math.min(val, d);
+}
 
 // ---------------------------------------------------------------------------
 // Columnar layout
@@ -42,13 +62,17 @@ function minMaxNormalize(col: Columnar): void {
   const { cols, n, d } = col;
   for (let j = 0; j < d; j++) {
     const c = cols[j];
-    let min = c[0], max = c[0];
+    let min = c[0],
+      max = c[0];
     for (let i = 1; i < n; i++) {
       if (c[i] < min) min = c[i];
       if (c[i] > max) max = c[i];
     }
     const range = max - min;
-    if (range === 0) { c.fill(0); continue; }
+    if (range === 0) {
+      c.fill(0);
+      continue;
+    }
     const invRange = 1 / range;
     for (let i = 0; i < n; i++) c[i] = (c[i] - min) * invRange;
   }
@@ -100,7 +124,10 @@ function covarianceMatrix(col: Columnar): Float64Array[] {
 // Jacobi eigendecomposition (in-place, pre-allocated)
 // ---------------------------------------------------------------------------
 
-function eigenSymmetric(cov: Float64Array[], maxIter = 200): { eigenvalues: Float64Array; eigenvectors: Float64Array[] } {
+function eigenSymmetric(
+  cov: Float64Array[],
+  maxIter = 200
+): { eigenvalues: Float64Array; eigenvectors: Float64Array[] } {
   const n = cov.length;
 
   // Work on a copy
@@ -118,11 +145,16 @@ function eigenSymmetric(cov: Float64Array[], maxIter = 200): { eigenvalues: Floa
   for (let iter = 0; iter < maxIter; iter++) {
     // Find largest off-diagonal
     let maxVal = 0;
-    let p = 0, q = 1;
+    let p = 0,
+      q = 1;
     for (let i = 0; i < n; i++) {
       for (let j = i + 1; j < n; j++) {
         const av = a[i][j] < 0 ? -a[i][j] : a[i][j];
-        if (av > maxVal) { maxVal = av; p = i; q = j; }
+        if (av > maxVal) {
+          maxVal = av;
+          p = i;
+          q = j;
+        }
       }
     }
     if (maxVal < 1e-10) break;
@@ -143,7 +175,9 @@ function eigenSymmetric(cov: Float64Array[], maxIter = 200): { eigenvalues: Floa
     const cs = c * s;
 
     // Update matrix elements
-    const app = a[p][p], aqq = a[q][q], apq = a[p][q];
+    const app = a[p][p],
+      aqq = a[q][q],
+      apq = a[p][q];
 
     a[p][p] = c2 * app + 2 * cs * apq + s2 * aqq;
     a[q][q] = s2 * app - 2 * cs * apq + c2 * aqq;
@@ -197,14 +231,28 @@ function eigenSymmetric(cov: Float64Array[], maxIter = 200): { eigenvalues: Floa
 // ---------------------------------------------------------------------------
 
 /**
- * Reduce feature dimensionality using PCA.
+ * Reduce feature dimensionality using Principal Component Analysis.
+ *
+ * Algorithm:
+ *   1. Min-max normalise each feature column (skipped if `normalize: false`).
+ *   2. Centre columns and build the covariance matrix in a single pass.
+ *   3. Solve the symmetric eigenproblem with cyclic Jacobi rotations.
+ *   4. Sort eigenvectors by `|eigenvalue|` descending, project the centred data.
+ *
+ * `explainedVariance[i]` is the share of total positive variance carried by
+ * the i-th component, clamped to `[0, 1]` to absorb floating-point noise.
+ *
+ * @param featuresJson - Per-case feature objects (must yield >=2 numeric columns).
+ * @param options.nComponents - Number of components to keep (default 2, capped at d).
+ * @param options.normalize - Min-max normalise columns first (default true).
+ * @throws Error when fewer than 2 traces or 2 features are available.
  */
 export async function reduceFeaturesPCA(
   featuresJson: Array<Record<string, unknown>>,
   options: {
     nComponents?: number;
     normalize?: boolean;
-  } = {},
+  } = {}
 ): Promise<PCAResult> {
   const matrix = buildFeatureMatrix(featuresJson);
 
@@ -217,7 +265,7 @@ export async function reduceFeaturesPCA(
 
   if (options.normalize !== false) minMaxNormalize(col);
 
-  const nComponents = Math.min(options.nComponents ?? 2, d);
+  const validatedNComponents = validateNComponents(options.nComponents, d);
 
   // Covariance (centers data in-place)
   const cov = covarianceMatrix(col);
@@ -233,7 +281,7 @@ export async function reduceFeaturesPCA(
   const invTotal = totalVariance === 0 ? 0 : 1 / totalVariance;
 
   const explainedVariance: number[] = [];
-  for (let i = 0; i < nComponents; i++) {
+  for (let i = 0; i < validatedNComponents; i++) {
     // Clamp to [0, 1] to handle floating-point edge cases
     const ev = Math.max(0, Math.min(1, eigenvalues[i] * invTotal));
     explainedVariance.push(ev);
@@ -245,8 +293,8 @@ export async function reduceFeaturesPCA(
   const transformedData: number[][] = [];
 
   for (let i = 0; i < n; i++) {
-    const row = new Array(nComponents);
-    for (let c = 0; c < nComponents; c++) {
+    const row = new Array(validatedNComponents);
+    for (let c = 0; c < validatedNComponents; c++) {
       const vec = eigenvectors[c]; // c-th eigenvector
       let val = 0;
       for (let j = 0; j < d; j++) val += col.cols[j][i] * vec[j];
@@ -255,12 +303,12 @@ export async function reduceFeaturesPCA(
     transformedData.push(row);
   }
 
-  for (let c = 0; c < nComponents; c++) {
+  for (let c = 0; c < validatedNComponents; c++) {
     components.push(Array.from(eigenvectors[c]));
   }
 
   return {
-    nComponents,
+    nComponents: validatedNComponents,
     explainedVariance,
     transformedData,
     components,

@@ -9,16 +9,14 @@ import type { HumanFormatter, JSONFormatter } from './output.js';
  * @returns Loaded and validated configuration
  * @throws Error with appropriate exit code on failure
  */
-export async function loadPictlConfig(
+export async function loadWasm4pmConfig(
   cliOverrides: CliOverrides = {},
   formatter?: HumanFormatter | JSONFormatter
 ): Promise<Config> {
   try {
     const options: LoadConfigOptions = {
       cliOverrides,
-      configSearchPaths: cliOverrides.configPath
-        ? [cliOverrides.configPath]
-        : undefined // Use default search paths if not specified
+      configSearchPaths: cliOverrides.configPath ? [cliOverrides.configPath] : undefined, // Use default search paths if not specified
     };
 
     const config = await loadConfig(options);
@@ -26,7 +24,9 @@ export async function loadPictlConfig(
     // Log config provenance in verbose mode if formatter provided
     if (formatter && typeof formatter === 'object' && 'debug' in formatter) {
       const formatter_typed = formatter as HumanFormatter;
-      formatter_typed.debug(`Config loaded from: ${config.source.kind} (${config.source.path || 'defaults'})`);
+      formatter_typed.debug(
+        `Config loaded from: ${config.source.kind} (${config.source.path || 'defaults'})`
+      );
       formatter_typed.debug(`Config hash: ${config.metadata.hash}`);
     }
 
@@ -34,7 +34,9 @@ export async function loadPictlConfig(
   } catch (error) {
     if (formatter && typeof formatter === 'object') {
       if ('error' in formatter) {
-        formatter.error(`Configuration error: ${error instanceof Error ? error.message : String(error)}`);
+        formatter.error(
+          `Configuration error: ${error instanceof Error ? error.message : String(error)}`
+        );
       }
     }
     throw error;
@@ -75,7 +77,7 @@ export function buildCliOverrides(args: Record<string, unknown>): CliOverrides {
   if (args.predictionTasks) {
     overrides.predictionTasks = String(args.predictionTasks)
       .split(',')
-      .map(t => t.trim())
+      .map((t) => t.trim())
       .filter(Boolean);
   }
   if (args.predictionActivityKey) {

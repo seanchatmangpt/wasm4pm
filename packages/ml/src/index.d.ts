@@ -11,5 +11,18 @@ export { clusterTraces } from './clustering.js';
 export { forecastThroughput, forecastSeries, buildThroughputSeries } from './forecasting.js';
 export { detectEnhancedAnomalies } from './anomaly.js';
 export { reduceFeaturesPCA } from './reduction.js';
-export type { FeatureMatrix, LabelEncoding, ClassificationMethod, RegressionMethod, ClassificationResult, RegressionResult, ClusteringMethod, ClusteringResult, ThroughputForecastResult, SeriesForecastResult, EnhancedAnomalyResult, PCAResult, } from './types.js';
+export type {
+  FeatureMatrix,
+  LabelEncoding,
+  ClassificationMethod,
+  RegressionMethod,
+  ClassificationResult,
+  RegressionResult,
+  ClusteringMethod,
+  ClusteringResult,
+  ThroughputForecastResult,
+  SeriesForecastResult,
+  EnhancedAnomalyResult,
+  PCAResult,
+} from './types.js';
 //# sourceMappingURL=index.d.ts.map

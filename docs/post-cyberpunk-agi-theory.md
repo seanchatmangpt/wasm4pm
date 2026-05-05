@@ -8,7 +8,7 @@ ChatmanGPT Research Lab — April 2026
 
 ## Abstract
 
-We present the Closed Claw, a five-module autonomic control plane that executes in 34 nanoseconds within a WebAssembly sandbox. The Claw extends van der Aalst's Process Cube with a fifth axis (Operational Perspective) and implements a complete MAPE-K control loop using only stack-allocated state, single-bit atomics, and branchless instruction sequences. Its composition operator mu = guards . dispatch . RL . healing . SPC satisfies the Banach contraction condition with Lipschitz constant alpha < 1, guaranteeing convergence to a unique fixed point. We prove five invariants -- Bounded Time, Determinism, Convergence, Zero-Coordination, and Composability -- each grounded in Criterion.rs benchmarks on Apple Silicon. The result is a post-cyberpunk approach to artificial general intelligence: not opaque black-box scaling, but transparent, bounded, composable reasoning from simple parts, running 118 times faster than traditional observe-store-analyze-react pipelines.
+We present the Closed Claw, a five-module autonomic control plane that executes in 34 nanoseconds within a WebAssembly sandbox. The Claw extends van der Aalst's Process Cube with a fifth axis (Operational Perspective) and implements a complete MAPE-K control loop using only stack-allocated state, single-bit atomics, and hot-path optimized instruction sequences (conditional moves, loop unrolling, popcount-based similarity). Its composition operator mu = guards . dispatch . RL . healing . SPC satisfies the Banach contraction condition with Lipschitz constant alpha < 1, guaranteeing convergence to a unique fixed point. We prove five invariants -- Bounded Time, Determinism, Convergence, Zero-Coordination, and Composability -- each grounded in Criterion.rs benchmarks on Apple Silicon. The result is a post-cyberpunk approach to artificial general intelligence: not opaque black-box scaling, but transparent, bounded, composable reasoning from simple parts, running 118 times faster than traditional observe-store-analyze-react pipelines.
 
 ---
 
@@ -28,7 +28,7 @@ We formalize this thesis as the **Closed Claw** C = (M, mu, O, T, Phi), a five-t
 
 ### 1.3 Why "Post-Cyberpunk"
 
-Cyberpunk, as a literary and technical aesthetic, romanticizes the opaque: neural interfaces whose signals resist interpretation, distributed intelligences that emerge from incomprehensible complexity, black-box systems that "just work." The Closed Claw is the antithesis. Every module is visible. Every state transition is deterministic. Every bound is provable. The WebAssembly sandbox enforces memory safety. The branchless instruction sequences eliminate timing side-channels. There is no emergence -- only composition.
+Cyberpunk, as a literary and technical aesthetic, romanticizes the opaque: neural interfaces whose signals resist interpretation, distributed intelligences that emerge from incomprehensible complexity, black-box systems that "just work." The Closed Claw is the antithesis. Every module is visible. Every state transition is deterministic. Every bound is provable. The WebAssembly sandbox enforces memory safety. The hot-path optimized instruction sequences (conditional moves, loop unrolling, popcount-based similarity) minimize timing side-channels. There is no emergence -- only composition.
 
 **Post-Cyberpunk** means three things:
 
@@ -177,7 +177,7 @@ const HANDLERS: [PatternHandler; 9] = [
 ];
 ```
 
-No `dyn Trait`, no `Box<dyn Any>`, no virtual dispatch. The compiler inlines all handler functions at `-C opt-level=3`. The branchless `select_u32`/`select_u64` primitives use conditional move instructions (ARM64 `csel`, x86-64 `cmov`) instead of branch instructions, eliminating branch misprediction entirely.
+No `dyn Trait`, no `Box<dyn Any>`, no virtual dispatch. The compiler inlines all handler functions at `-C opt-level=3`. The hot-path optimized `select_u32`/`select_u64` primitives use conditional move instructions (ARM64 `csel`, x86-64 `cmov`) instead of branch instructions, eliminating branch misprediction on the critical path.
 
 ---
 
@@ -445,4 +445,4 @@ Van der Aalst's process mining algorithms [1] discover process models from event
 
 ---
 
-*This document is a theory paper. All empirical measurements are from Criterion.rs benchmarks executed on Apple Silicon (macOS Darwin 25.2.0, ARM64, 3.5 GHz nominal) with Rust 1.80+ at `-C opt-level=3`. Source code: the five modules (`guards.rs`, `pattern_dispatch.rs`, `reinforcement.rs`, `self_healing.rs`, `spc.rs`) in the pictl/wasm4pm repository, totaling 4,228 lines of pure Rust compiled to WebAssembly.*
+*This document is a theory paper. All empirical measurements are from Criterion.rs benchmarks executed on Apple Silicon (macOS Darwin 25.2.0, ARM64, 3.5 GHz nominal) with Rust 1.80+ at `-C opt-level=3`. Source code: the five modules (`guards.rs`, `pattern_dispatch.rs`, `reinforcement.rs`, `self_healing.rs`, `spc.rs`) in the wasm4pm/wasm4pm repository, totaling 4,228 lines of pure Rust compiled to WebAssembly.*

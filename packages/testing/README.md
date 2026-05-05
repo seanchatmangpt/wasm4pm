@@ -1,6 +1,6 @@
 # @wasm4pm/testing
 
-Test harnesses for the pictl monorepo. Provides parity, determinism, CLI, OTEL, and certification testing infrastructure.
+Test harnesses for the wasm4pm monorepo. Provides parity, determinism, CLI, OTEL, and certification testing infrastructure.
 
 ## Harnesses
 

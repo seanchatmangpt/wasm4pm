@@ -18,10 +18,10 @@ export const PREDICTION_TASKS = [
   'next_activity',
   'outcome',
   'remaining_time',
-  'resource'
+  'resource',
 ] as const;
 
-export type PredictionTask = typeof PREDICTION_TASKS[number];
+export type PredictionTask = (typeof PREDICTION_TASKS)[number];
 
 /** Hyphen form — used as `wpm predict <task>` CLI argument */
 export const VALID_PREDICT_CLI_TASKS = [
@@ -30,19 +30,19 @@ export const VALID_PREDICT_CLI_TASKS = [
   'next-activity',
   'outcome',
   'remaining-time',
-  'resource'
+  'resource',
 ] as const;
 
-export type PredictCliTask = typeof VALID_PREDICT_CLI_TASKS[number];
+export type PredictCliTask = (typeof VALID_PREDICT_CLI_TASKS)[number];
 
 /** Maps CLI slug (hyphen) → config task ID (underscore) */
 export const CLI_SLUG_TO_TASK_ID: Record<string, PredictionTask> = {
-  'drift': 'drift',
-  'features': 'features',
+  drift: 'drift',
+  features: 'features',
   'next-activity': 'next_activity',
-  'outcome': 'outcome',
+  outcome: 'outcome',
   'remaining-time': 'remaining_time',
-  'resource': 'resource'
+  resource: 'resource',
 };
 
 /** Maps config task ID (underscore) → CLI slug (hyphen) */
@@ -52,5 +52,5 @@ export const TASK_ID_TO_CLI_SLUG: Record<PredictionTask, string> = {
   next_activity: 'next-activity',
   outcome: 'outcome',
   remaining_time: 'remaining-time',
-  resource: 'resource'
+  resource: 'resource',
 };

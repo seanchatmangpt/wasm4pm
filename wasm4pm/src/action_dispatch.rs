@@ -6,8 +6,6 @@
 //!
 //! # Design Philosophy
 //!
-//! - **80/20 focus**: Implement 3 core actions (Continue, Scale, Retry) with
-//!   realistic logic. Fallback/Restart use placeholder implementations.
 //! - **Observable execution**: Every dispatch returns structured outcomes for
 //!   telemetry and reward computation.
 //! - **WASM-compatible**: No async, no threads, no filesystem I/O.
@@ -17,8 +15,8 @@
 //! - **Continue**: No-op, maintain current execution path.
 //! - **Scale**: Adjust resource allocation (memory, timeout, batch size).
 //! - **Retry**: Exponential backoff retry with jitter.
-//! - **Fallback**: Switch to alternative algorithm (placeholder).
-//! - **Restart**: Component restart with state cleanup (placeholder).
+//! - **Fallback**: Switch to alternative algorithm (selects DFG as the most robust fallback).
+//! - **Restart**: Component restart — resets SPC history ring buffer and circuit breaker state.
 
 use crate::RlAction;
 

@@ -1,0 +1,34 @@
+# wasm4pm — "balanced" preset
+# Best for: production monitoring, real-time insights, containerised deployments
+# Target: heuristic discovery + classification/anomaly ML + next-activity prediction
+schema_version = 1
+version = "26.4.5"
+
+[source]
+kind = "file"
+
+[sink]
+kind = "stdout"
+
+[algorithm]
+name = "heuristic_miner"
+
+[execution]
+profile = "balanced"
+
+[ml]
+enabled = true
+tasks = ["classify", "anomaly"]
+
+[ml.classify]
+model = "decision_tree"
+
+[ml.anomaly]
+method = "ema"
+
+[prediction]
+enabled = true
+tasks = ["next_activity", "drift"]
+
+[prediction.drift]
+ewma_alpha = 0.2

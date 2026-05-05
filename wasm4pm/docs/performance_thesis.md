@@ -1,4 +1,4 @@
-# pictl Performance Characteristics: Enabling Process Mining Across the Edge-to-Cloud Continuum
+# wasm4pm Performance Characteristics: Enabling Process Mining Across the Edge-to-Cloud Continuum
 
 **Author:** b5-profiles Benchmark Agent
 **Date:** 2026-04-10
@@ -9,9 +9,9 @@
 
 ## Abstract
 
-This thesis presents a comprehensive performance characterization of **pictl**, a WebAssembly-based process mining framework that enables efficient process discovery, conformance checking, and predictive analytics across the edge-to-cloud deployment continuum. We analyze binary size characteristics across five deployment profiles (iot, browser, edge, fog, cloud), algorithm throughput for 21 registered algorithms, and conformance checking performance across five distinct approaches.
+This thesis presents a comprehensive performance characterization of **wasm4pm**, a WebAssembly-based process mining framework that enables efficient process discovery, conformance checking, and predictive analytics across the edge-to-cloud deployment continuum. We analyze binary size characteristics across five deployment profiles (iot, browser, edge, fog, cloud), algorithm throughput for 21 registered algorithms, and conformance checking performance across five distinct approaches.
 
-Our key findings reveal that **SIMD-accelerated token replay achieves 40-47x speedup** over standard token replay, **DECLARE conformance** demonstrates the fastest absolute throughput at 136-153 Melem/s, and **binary size variations** across deployment profiles are minimal (3.25-3.26 MB) due to WASM runtime dominance. These characteristics enable pictl to serve diverse deployment scenarios from resource-constrained IoT devices to cloud-scale analytics platforms.
+Our key findings reveal that **SIMD-accelerated token replay achieves 40-47x speedup** over standard token replay, **DECLARE conformance** demonstrates the fastest absolute throughput at 136-153 Melem/s, and **binary size variations** across deployment profiles are minimal (3.25-3.26 MB) due to WASM runtime dominance. These characteristics enable wasm4pm to serve diverse deployment scenarios from resource-constrained IoT devices to cloud-scale analytics platforms.
 
 **Keywords:** Process Mining, WebAssembly, Performance Characterization, Edge Computing, SIMD Acceleration, Binary Size Optimization, OCEL, Conformance Checking
 
@@ -50,7 +50,7 @@ Our key findings reveal that **SIMD-accelerated token replay achieves 40-47x spe
 
 Process mining enables organizations to discover, monitor, and improve business processes based on event log data. Traditional process mining tools require native code execution, limiting deployment to server environments. The emergence of **WebAssembly (WASM)** as a portable, high-performance compilation target enables process mining algorithms to run efficiently across diverse environments from web browsers to edge devices.
 
-**pictl** (`@wasm4pm/cli`) is a Rust-based process mining framework compiled to WebAssembly, providing:
+**wasm4pm** (`@wasm4pm/cli`) is a Rust-based process mining framework compiled to WebAssembly, providing:
 
 - **21 registered algorithms** across discovery, conformance, and prediction
 - **5 deployment profiles** optimized for different resource constraints
@@ -58,7 +58,7 @@ Process mining enables organizations to discover, monitor, and improve business 
 - **OCEL 2.0 support** for object-centric event logs
 - **ML capabilities** for remaining-time prediction, outcome prediction, and anomaly detection
 
-This thesis provides a comprehensive performance characterization of pictl, addressing three fundamental questions:
+This thesis provides a comprehensive performance characterization of wasm4pm, addressing three fundamental questions:
 
 1. **Binary Size**: How do deployment profiles affect WASM binary size?
 2. **Throughput**: What is the computational performance of each algorithm class?
@@ -132,7 +132,7 @@ SIMD (Single Instruction, Multiple Data) acceleration has been applied to:
 For each deployment profile:
   1. Clean build: cargo clean
   2. Build with wasm-pack --release --features <profile_features>
-  3. Measure: wc -c pkg/pictl_bg.wasm
+  3. Measure: wc -c pkg/wasm4pm_bg.wasm
   4. Repeat: 3 times, report median
 ```
 
@@ -158,7 +158,7 @@ For each algorithm:
 
 ## 4. Deployment Profiles
 
-pictl defines five deployment profiles with distinct feature compositions:
+wasm4pm defines five deployment profiles with distinct feature compositions:
 
 ### 4.1 Profile Definitions
 
@@ -447,7 +447,7 @@ Conformance checking measures how well a process model fits an event log. We ben
 
 ### 9.1 SIMD Implementation Details
 
-pictl's SIMD token replay uses:
+wasm4pm's SIMD token replay uses:
 
 - **Integer encoding**: Places and transitions as integers (not strings)
 - **Vectorized fire_transition**: Loop-unrolled transition firing
@@ -545,7 +545,7 @@ Streaming algorithms enable real-time process mining on event streams with bound
 
 ### 11.2 Columnar Data Layout
 
-pictl uses columnar data layouts for efficient memory access:
+wasm4pm uses columnar data layouts for efficient memory access:
 
 - **Event attributes**: Stored column-wise (cache-friendly)
 - **Trace metadata**: Separate from event data
@@ -795,7 +795,7 @@ Measured by binary size difference when feature added/removed:
 
 ### 18.1 vs PM4Py (Python)
 
-| Metric         | pictl (WASM)        | PM4Py (Python)      | Ratio         |
+| Metric         | wasm4pm (WASM)      | PM4Py (Python)      | Ratio         |
 | -------------- | ------------------- | ------------------- | ------------- |
 | DFG throughput | 142.7 Melem/s       | 5-10 Melem/s        | 14-28x faster |
 | Token replay   | 4.5-5.1 Melem/s     | 1-2 Melem/s         | 2-5x faster   |
@@ -804,7 +804,7 @@ Measured by binary size difference when feature added/removed:
 
 ### 18.2 vs ProM (Java)
 
-| Metric           | pictl (WASM)           | ProM (Java)   | Ratio           |
+| Metric           | wasm4pm (WASM)         | ProM (Java)   | Ratio           |
 | ---------------- | ---------------------- | ------------- | --------------- |
 | DFG throughput   | 142.7 Melem/s          | 0.5-1 Melem/s | 140-280x faster |
 | Plugin ecosystem | 21 algorithms          | 500+ plugins  | 24x fewer       |
@@ -812,7 +812,7 @@ Measured by binary size difference when feature added/removed:
 
 ### 18.3 vs Apromore (Cloud)
 
-| Metric  | pictl (WASM)       | Apromore (Cloud) | Ratio        |
+| Metric  | wasm4pm (WASM)     | Apromore (Cloud) | Ratio        |
 | ------- | ------------------ | ---------------- | ------------ |
 | Latency | 10-100 ms          | 500-2000 ms      | 5-20x lower  |
 | Privacy | Local execution    | Cloud execution  | More private |
@@ -910,7 +910,7 @@ workers = min(cpu_cores, case_count / 100)
 
 ## 21. Conclusion
 
-This thesis presented a comprehensive performance characterization of pictl, a WebAssembly-based process mining framework. Our key findings include:
+This thesis presented a comprehensive performance characterization of wasm4pm, a WebAssembly-based process mining framework. Our key findings include:
 
 1. **Binary Size**: All five deployment profiles produce 3.25-3.26 MB WASM binaries with <1% variation, indicating WASM runtime dominance over feature-specific code size
 
@@ -931,7 +931,7 @@ This thesis presented a comprehensive performance characterization of pictl, a W
 
 ### 21.2 Practical Impact
 
-pictl enables process mining in previously infeasible scenarios:
+wasm4pm enables process mining in previously infeasible scenarios:
 
 - **Browser-based**: Client-side discovery without server round-trips
 - **Edge deployment**: Sub-100ms response for 1000-case logs
@@ -947,7 +947,7 @@ The minimal binary size variation suggests opportunities for:
 - Runtime dead code elimination
 - Profile-specific compiler optimizations
 
-As WebAssembly evolves with features like GC, threads, and component model, pictl is positioned to leverage these advances for further performance improvements.
+As WebAssembly evolves with features like GC, threads, and component model, wasm4pm is positioned to leverage these advances for further performance improvements.
 
 ---
 
@@ -975,7 +975,7 @@ As WebAssembly evolves with features like GC, threads, and component model, pict
 
 ### A.2 Software Versions
 
-- **pictl**: v26.4.10
+- **wasm4pm**: v26.4.10
 - **Criterion**: 0.5.1
 - **wasm-bindgen**: 0.2.95
 - **serde**: 1.0.228

@@ -86,7 +86,7 @@ export class WasmBackend implements MiningBackend {
   async init(): Promise<void> {
     const loader = wasm as any;
     if (loader && typeof loader.init === 'function') {
-        await loader.init();
+      await loader.init();
     }
     this.initialized = true;
   }
@@ -120,7 +120,7 @@ export class WasmBackend implements MiningBackend {
   async discover(
     log: EventLogIR,
     algorithmId: string,
-    budget: BudgetEnvelope,
+    budget: BudgetEnvelope
   ): Promise<ResultEnvelope<ModelIR>> {
     const startMs = Date.now();
 
@@ -166,7 +166,9 @@ export class WasmBackend implements MiningBackend {
           resultRaw = wasm.smart_engine_run(logHandle, 'auto', '');
           break;
         default:
-          throw new Error(`Execution for algorithm ${algorithmId} not implemented in WASM backend bridge`);
+          throw new Error(
+            `Execution for algorithm ${algorithmId} not implemented in WASM backend bridge`
+          );
       }
 
       const parsed = typeof resultRaw === 'string' ? JSON.parse(resultRaw) : resultRaw;
@@ -188,7 +190,7 @@ export class WasmBackend implements MiningBackend {
         edges: parsed.edges || [],
         quality: {
           fitness: parsed.fitness || 0.85,
-          precision: parsed.precision || 0.80,
+          precision: parsed.precision || 0.8,
           generalization: parsed.generalization || 0.75,
           simplicity: parsed.simplicity || 100,
         },
@@ -218,21 +220,21 @@ export class WasmBackend implements MiningBackend {
   async conformance(
     log: EventLogIR,
     model: ModelIR,
-    budget: BudgetEnvelope,
+    budget: BudgetEnvelope
   ): Promise<ResultEnvelope<ConformanceResult>> {
     const startMs = Date.now();
 
     try {
       const logJson = JSON.stringify(log);
       const logHandle = wasm.load_eventlog_from_json(logJson);
-      
+
       const modelJson = JSON.stringify(model);
       const resultRaw = wasm.check_token_based_replay(logHandle, modelJson, 'concept:name');
       const parsed = typeof resultRaw === 'string' ? JSON.parse(resultRaw) : resultRaw;
 
       const result: ConformanceResult = {
         fitness: parsed.fitness ?? 0.85,
-        precision: parsed.precision ?? 0.80,
+        precision: parsed.precision ?? 0.8,
         generalization: parsed.generalization ?? 0.75,
         simplicity: parsed.simplicity ?? 100,
       };
@@ -260,7 +262,7 @@ export class WasmBackend implements MiningBackend {
   async analyze(
     log: EventLogIR,
     task: AnalysisTask,
-    budget: BudgetEnvelope,
+    budget: BudgetEnvelope
   ): Promise<ResultEnvelope<unknown>> {
     const startMs = Date.now();
 
@@ -274,7 +276,12 @@ export class WasmBackend implements MiningBackend {
           resultRaw = wasm.analyze_event_statistics(logHandle);
           break;
         case 'detect_bottlenecks':
-          resultRaw = wasm.detect_bottlenecks(logHandle, 'concept:name', 'time:timestamp', BigInt(3600));
+          resultRaw = wasm.detect_bottlenecks(
+            logHandle,
+            'concept:name',
+            'time:timestamp',
+            BigInt(3600)
+          );
           break;
         case 'detect_drift':
           resultRaw = wasm.detect_drift(logHandle, 'concept:name', 50);
@@ -285,7 +292,7 @@ export class WasmBackend implements MiningBackend {
         default:
           throw new Error(`Analysis task ${task.task_type} not implemented in WASM backend bridge`);
       }
-      
+
       const parsed = typeof resultRaw === 'string' ? JSON.parse(resultRaw) : resultRaw;
       const latency_ms = Date.now() - startMs;
 
@@ -349,7 +356,7 @@ export class WasmBackend implements MiningBackend {
   private createFailedResult(
     algorithmId: string,
     startMs: number,
-    errorMessage: string,
+    errorMessage: string
   ): ResultEnvelope<any> {
     const latency_ms = Date.now() - startMs;
     return {

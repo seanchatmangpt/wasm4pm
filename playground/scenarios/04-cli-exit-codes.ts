@@ -1,11 +1,11 @@
 /**
- * Scenario: CLI exit codes — pictl exit code contract
+ * Scenario: CLI exit codes — wpm exit code contract
  *
  * Dev action simulated: "I changed the algorithm dispatch table. Does bad input
  * still exit with the right code? Does JSON output still parse?"
  *
- * Runs against the real pictl binary built from local source.
- * Binary: apps/wasm4pm/dist/bin/wpm.js (must be built first: cd apps/pictl && npm run build)
+ * Runs against the real wpm binary built from local source.
+ * Binary: apps/wasm4pm/dist/bin/wpm.js (must be built first: cd apps/wasm4pm && npm run build)
  *
  * Exit code contract:
  *   0  success
@@ -19,9 +19,10 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import * as path from 'path';
 import * as fs from 'fs/promises';
-import { pictl, assertExitCode, assertJsonOutput, createCliTestEnv, EXIT_CODES } from '@wasm4pm/testing';
+import { wasm4pm, assertExitCode, assertJsonOutput, EXIT_CODES } from '../helpers/cli.js';
+import { createCliTestEnv } from '@wasm4pm/testing';
 import type { CliTestEnv } from '@wasm4pm/testing';
-import { PICTL } from '../helpers/cli.js';
+import { WASM4PM } from '../helpers/cli.js';
 
 let _env: CliTestEnv | null = null;
 afterEach(async () => { await _env?.cleanup(); _env = null; });
@@ -46,13 +47,13 @@ const MINI_XES = `<?xml version="1.0" encoding="UTF-8"?>
 // ── Check binary exists ───────────────────────────────────────────────────────
 
 describe('cli exit codes: binary availability', () => {
-  it('pictl binary exists at expected path', async () => {
+  it('wasm4pm binary exists at expected path', async () => {
     try {
-      await fs.access(PICTL);
-      console.info('[cli] binary found:', PICTL);
+      await fs.access(WASM4PM);
+      console.info('[cli] binary found:', WASM4PM);
     } catch {
-      console.warn('[cli] binary not found:', PICTL);
-      console.warn('[cli] Run: cd apps/pictl && npm run build');
+      console.warn('[cli] binary not found:', WASM4PM);
+      console.warn('[cli] Run: cd apps/wasm4pm && npm run build');
       // Skip rather than fail — missing binary is a setup issue, not a code bug
       expect(true).toBe(true); // vitest has no built-in skip in this pattern
     }
@@ -63,24 +64,24 @@ describe('cli exit codes: binary availability', () => {
 
 describe('cli exit codes: missing XES file', () => {
   it('exits 2 (source_error) when XES path does not exist', async () => {
-    const result = await pictl(['run', '/tmp/phantom-12345.xes']);
+    const result = await wasm4pm(['run', '/tmp/phantom-12345.xes']);
     assertExitCode(result, EXIT_CODES.SOURCE_ERROR);
     expect(result.stderr + result.stdout).toMatch(/not found|no such file|does not exist/i);
     console.info('[cli] exit:', result.exitCode, '| message:', (result.stderr + result.stdout).slice(0, 100));
   });
 
   it('still exits 2 with --no-save flag', async () => {
-    const result = await pictl(['run', '/tmp/phantom-12345.xes', '--no-save']);
+    const result = await wasm4pm(['run', '/tmp/phantom-12345.xes', '--no-save']);
     assertExitCode(result, EXIT_CODES.SOURCE_ERROR);
   });
 });
 
 // ── Invalid algorithm → exit 2 ────────────────────────────────────────────────
-// Note: algorithm errors use SOURCE_ERROR (2) not CONFIG_ERROR (1) — intentional pictl design
+// Note: algorithm errors use SOURCE_ERROR (2) not CONFIG_ERROR (1) — intentional wasm4pm design
 
 describe('cli exit codes: invalid algorithm name', () => {
   it('exits 2 (source_error) for an unknown algorithm', async () => {
-    const result = await pictl(['run', 'placeholder.xes', '--algorithm', 'unicorn-algo']);
+    const result = await wasm4pm(['run', 'placeholder.xes', '--algorithm', 'unicorn-algo']);
     assertExitCode(result, EXIT_CODES.SOURCE_ERROR);
     console.info('[cli] unknown-algo stdout:', result.stdout.slice(0, 150));
   });
@@ -90,7 +91,7 @@ describe('cli exit codes: invalid algorithm name', () => {
 
 describe('cli exit codes: JSON output envelope', () => {
   it('--format json emits parseable JSON on error', async () => {
-    const result = await pictl(['run', '/nonexistent.xes', '--format', 'json']);
+    const result = await wasm4pm(['run', '/nonexistent.xes', '--format', 'json']);
     assertExitCode(result, EXIT_CODES.SOURCE_ERROR);
     const envelope = assertJsonOutput(result) as Record<string, unknown>;
     expect(envelope).toHaveProperty('status', 'error');
@@ -107,7 +108,7 @@ describe('cli exit codes: successful discovery', () => {
     const xesPath = path.join(_env.tempDir, 'mini.xes');
     await fs.writeFile(xesPath, MINI_XES, 'utf-8');
 
-    const result = await pictl(['run', xesPath, '--algorithm', 'dfg', '--no-save']);
+    const result = await wasm4pm(['run', xesPath, '--algorithm', 'dfg', '--no-save']);
 
     // Accept 0 (success) or 3 (WASM not initialized in this env)
     // Either is actionable signal — 3 means the dev needs to build the WASM binary
@@ -131,7 +132,7 @@ describe('cli exit codes: successful discovery', () => {
     const xesPath = path.join(_env.tempDir, 'mini.xes');
     await fs.writeFile(xesPath, MINI_XES, 'utf-8');
 
-    const result = await pictl(['run', xesPath, '--algorithm', 'dfg', '--format', 'json', '--no-save']);
+    const result = await wasm4pm(['run', xesPath, '--algorithm', 'dfg', '--format', 'json', '--no-save']);
 
     if (result.exitCode !== EXIT_CODES.SUCCESS) {
       console.warn('[cli] skipping JSON shape check — exit', result.exitCode);

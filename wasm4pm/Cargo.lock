@@ -1224,7 +1224,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
 
 [[package]]
-name = "pictl"
+name = "wasm4pm"
 version = "26.4.10"
 dependencies = [
  "bcinr-core",
@@ -1240,7 +1240,7 @@ dependencies = [
  "lazy_static",
  "naga 29.0.1",
  "once_cell",
- "pictl-types",
+ "wasm4pm-types",
  "pollster",
  "rand",
  "rand_distr",
@@ -1261,20 +1261,20 @@ dependencies = [
 ]
 
 [[package]]
-name = "pictl-algos"
+name = "wasm4pm-algos"
 version = "26.4.10"
 dependencies = [
  "criterion",
  "hashbrown 0.17.0",
  "itertools 0.14.0",
- "pictl-types",
+ "wasm4pm-types",
  "serde",
  "serde_json",
  "smallvec",
 ]
 
 [[package]]
-name = "pictl-types"
+name = "wasm4pm-types"
 version = "26.4.10"
 dependencies = [
  "blake3",

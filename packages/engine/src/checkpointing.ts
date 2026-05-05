@@ -31,11 +31,7 @@ export class CheckpointManager {
   /**
    * Create and store a new checkpoint
    */
-  create(
-    state: EngineState,
-    progress: number,
-    metadata?: Record<string, unknown>
-  ): Checkpoint {
+  create(state: EngineState, progress: number, metadata?: Record<string, unknown>): Checkpoint {
     this.sequenceCounter++;
 
     const checkpoint: Checkpoint = {
@@ -56,9 +52,7 @@ export class CheckpointManager {
    * Get the most recent checkpoint
    */
   getLatest(): Checkpoint | undefined {
-    return this.checkpoints.length > 0
-      ? this.checkpoints[this.checkpoints.length - 1]
-      : undefined;
+    return this.checkpoints.length > 0 ? this.checkpoints[this.checkpoints.length - 1] : undefined;
   }
 
   /**

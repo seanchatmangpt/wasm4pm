@@ -36,9 +36,9 @@ Custom ESLint rule that blocks:
 Integrated custom rule into monorepo ESLint config:
 
 ```javascript
-plugins: ['pictl-testing'],
+plugins: ['wasm4pm-testing'],
 rules: {
-  'pictl-testing/no-mocks-in-integration': 'error'
+  'wasm4pm-testing/no-mocks-in-integration': 'error'
 }
 ```
 
@@ -264,7 +264,7 @@ node scripts/validate-test-purity.mjs
 - `.eslintignore` (1.2 KB)
 
 ### Modified
-- `.eslintrc.cjs` — added `pictl-testing` plugin and rule configuration
+- `.eslintrc.cjs` — added `wasm4pm-testing` plugin and rule configuration
 
 ### Total Impact
 - **9 files created** (34 KB documentation + code)

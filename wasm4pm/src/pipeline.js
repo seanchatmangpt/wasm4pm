@@ -4,7 +4,7 @@
  * Maps StepType enums to WASM function names and orders execution dependencies
  */
 import { StepType, resolveProfile } from './config.js';
-import { PictlError, ErrorCode, ErrorRecovery } from './errors.js';
+import { Wasm4pmError, ErrorCode, ErrorRecovery } from './errors.js';
 /**
  * Maps StepType to WASM function names
  * Each step type has a corresponding WASM function that implements it
@@ -33,7 +33,7 @@ const STEP_TYPE_TO_WASM = {
   [StepType.VALIDATE]: 'validate_log',
 };
 /**
- * PipelineResolver translates PictlConfig to executable pipeline steps
+ * PipelineResolver translates Wasm4pmConfig to executable pipeline steps
  * Handles profile-based default resolution and custom pipeline compilation
  */
 export class PipelineResolver {
@@ -46,7 +46,7 @@ export class PipelineResolver {
    *
    * @param config - The pipeline configuration
    * @returns Ordered array of executable pipeline steps
-   * @throws PictlError if configuration is invalid or WASM bindings are missing
+   * @throws Wasm4pmError if configuration is invalid or WASM bindings are missing
    */
   resolve(config) {
     // Get the pipeline to execute: either custom or profile-based
@@ -63,7 +63,7 @@ export class PipelineResolver {
     for (const configStep of configSteps) {
       const wasmFunction = this.stepTypeToWasm[configStep.type];
       if (!wasmFunction) {
-        throw new PictlError(
+        throw new Wasm4pmError(
           `No WASM binding for step type: ${configStep.type}`,
           ErrorCode.CONFIG_INVALID,
           {
@@ -96,14 +96,14 @@ export class PipelineResolver {
    * Validates that all dependencies between steps exist and don't form cycles
    *
    * @param steps - Array of steps to validate
-   * @throws PictlError if dependencies are invalid
+   * @throws Wasm4pmError if dependencies are invalid
    */
   validateDependencies(steps) {
     const stepIds = new Set(steps.map((s) => s.stepId));
     for (const step of steps) {
       for (const dep of step.dependencies) {
         if (!stepIds.has(dep)) {
-          throw new PictlError(
+          throw new Wasm4pmError(
             `Step "${step.stepId}" depends on non-existent step "${dep}"`,
             ErrorCode.CONFIG_INVALID,
             {
@@ -138,7 +138,7 @@ export class PipelineResolver {
  *
  * @param steps - Array of executable steps
  * @returns Dependency-ordered array of steps
- * @throws PictlError if circular dependencies are detected
+ * @throws Wasm4pmError if circular dependencies are detected
  */
 export function topologicalSort(steps) {
   const stepMap = new Map(steps.map((s) => [s.stepId, s]));
@@ -150,7 +150,7 @@ export function topologicalSort(steps) {
       return;
     }
     if (recursionStack.has(stepId)) {
-      throw new PictlError(
+      throw new Wasm4pmError(
         `Circular dependency detected in pipeline: ${stepId}`,
         ErrorCode.EXECUTION_FAILED,
         {

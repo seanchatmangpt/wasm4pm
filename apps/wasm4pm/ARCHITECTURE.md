@@ -1,8 +1,8 @@
-# pictl CLI Architecture
+# wasm4pm CLI Architecture
 
 ## Overview
 
-pictl is a modular CLI tool built with:
+wasm4pm is a modular CLI tool built with:
 - **citty** - Command routing and argument parsing
 - **consola** - Human-friendly terminal output
 - **TypeScript** - Type-safe implementation
@@ -80,7 +80,7 @@ All commands registered in `cli.ts`:
 
 ```typescript
 export const main = defineCommand({
-  meta: { name: 'pictl', version: '26.4.10' },
+  meta: { name: 'wasm4pm', version: '26.4.10' },
   subCommands: {
     // Discovery (3)
     run,      // Discovery execution
@@ -125,7 +125,7 @@ export const main = defineCommand({
 ### Command Invocation
 
 ```
-pictl [COMMAND] [OPTIONS]
+wasm4pm [COMMAND] [OPTIONS]
 │      │         └─ Command-specific arguments
 │      └─ Routed to corresponding defineCommand()
 └─ Entry point (bin.ts) → runMain(cli.ts)
@@ -177,7 +177,7 @@ EXIT_CODES = {
 
 Exit codes propagate to shell:
 ```bash
-pictl run --config bad.json
+wpm run --config bad.json
 # Returns: exit code 1 (config_error)
 
 echo $?  # Prints: 1
@@ -380,25 +380,25 @@ const isVerbose = Boolean(ctx.args.verbose);
 
 ### Interactive Mode
 ```bash
-pictl interactive
+wasm4pm interactive
 # Guided wizard for configuration
 ```
 
 ### Plugin System
 ```bash
-pictl plugin install custom-algorithm
-pictl run --algorithm custom-algorithm
+wasm4pm plugin install custom-algorithm
+wpm run --algorithm custom-algorithm
 ```
 
 ### Streaming Results
 ```bash
-pictl run --stream results.ndjson
+wpm run --stream results.ndjson
 # Outputs NDJSON for large result sets
 ```
 
 ### Debugging
 ```bash
-pictl run --debug
+wpm run --debug
 # Verbose logging, performance metrics
 ```
 
@@ -526,7 +526,7 @@ pictl run --debug
 | ID | Name | Type | Output |
 |----|------|------|--------|
 | `ml_classify` | Classification | knn, logistic_regression | ClassificationResult |
-| `ml_cluster` | Clustering | kmeans, dbscan | ClusteringResult |
+| `ml_cluster` | Clustering | kmeans, dbscan | ClusteringResult | ⚠️ internal only — not yet exported to the JS API (no `#[wasm_bindgen]` export) |
 | `ml_forecast` | Forecasting | linear_regression | ForecastResult |
 | `ml_anomaly` | Anomaly Detection | statistical | AnomalyResult |
 | `ml_regress` | Regression | linear_regression | RegressionResult |

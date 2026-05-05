@@ -1,5 +1,5 @@
 # SPARQL CONSTRUCT: Transform DFG Discovery JSON output to RDF
-# Maps pictl discover_dfg MCP tool result into pm:DirectlyFollowsGraph triples
+# Maps wasm4pm discover_dfg MCP tool result into pm:DirectlyFollowsGraph triples
 # Input: JSON with nodes[], edges[], metrics{}
 # Output: RDF graph with activities, transitions, and quality metrics
 
@@ -58,7 +58,7 @@ WHERE {
   # or use RDF JSON-LD format as input.
 
   # Example triple patterns that would be present in the input:
-  BIND(IRI(CONCAT("http://pictl.org/discover/dfg/", NOW())) AS ?dfg)
+  BIND(IRI(CONCAT("http://wasm4pm.org/discover/dfg/", NOW())) AS ?dfg)
   BIND("Directly-Follows Graph Discovery Result" AS ?dfg_label)
   BIND(pm:DFGDiscovery AS ?discovery_algo)
   BIND(NOW() AS ?timestamp)

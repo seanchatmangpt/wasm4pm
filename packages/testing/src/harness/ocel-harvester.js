@@ -133,7 +133,7 @@ export class OcelHarvester {
             events: Array.from(this.eventIndex.values()),
             objects: Array.from(this.objectIndex.values()),
             metadata: {
-                source: 'pictl-otel-harvester',
+                source: 'wasm4pm-otel-harvester',
                 harvestedAt: new Date().toISOString(),
                 spanCount: spans.length,
             },

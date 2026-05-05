@@ -1,6 +1,6 @@
 # Upgrade Guide: Vision 2030 (v26.4.16)
 
-This guide walks you through upgrading from pictl v26.4.10 (or earlier) to v26.4.16, which introduces the **AutoProcess autonomic loop**.
+This guide walks you through upgrading from wasm4pm v26.4.10 (or earlier) to v26.4.16, which introduces the **AutoProcess autonomic loop**.
 
 ---
 
@@ -33,7 +33,7 @@ Vision 2030 adds autonomous process monitoring via a closed-loop MAPE-K cycle em
 
 ### Required
 
-- **pictl v26.4.x**: Upgrade from v26.4.10 or later
+- **wasm4pm v26.4.x**: Upgrade from v26.4.10 or later
 - **Node.js 18+**: Runtime for TypeScript/WASM
 - **Disk space**: 200 MB for WASM binaries + state files
 
@@ -55,22 +55,22 @@ Vision 2030 adds autonomous process monitoring via a closed-loop MAPE-K cycle em
 
 ### Step 1: Backup Existing State (Recommended)
 
-Create a backup of your current pictl installation and results:
+Create a backup of your current wasm4pm installation and results:
 
 ```bash
 # Backup results and configuration
-mkdir -p ~/.pictl-backup/v26.4.10
-cp -r .pictl ~/.pictl-backup/v26.4.10/
-cp wasm4pm.toml ~/.pictl-backup/v26.4.10/ 2>/dev/null || true
+mkdir -p ~/.wasm4pm-backup/v26.4.10
+cp -r .wasm4pm ~/.wasm4pm-backup/v26.4.10/
+cp wasm4pm.toml ~/.wasm4pm-backup/v26.4.10/ 2>/dev/null || true
 
 # Backup package lock (if using pnpm/npm)
-cp pnpm-lock.yaml ~/.pictl-backup/v26.4.10/ 2>/dev/null || true
-cp package-lock.json ~/.pictl-backup/v26.4.10/ 2>/dev/null || true
+cp pnpm-lock.yaml ~/.wasm4pm-backup/v26.4.10/ 2>/dev/null || true
+cp package-lock.json ~/.wasm4pm-backup/v26.4.10/ 2>/dev/null || true
 ```
 
 This allows you to rollback if needed (see [Rollback](#rollback) section).
 
-### Step 2: Update pictl Package
+### Step 2: Update wasm4pm Package
 
 #### Option A: Global Installation (npm)
 
@@ -84,8 +84,8 @@ npm install -g @wasm4pm/cli@26.4.16
 
 **Verify**:
 ```bash
-pictl --version
-# Output: pictl 26.4.16 (or similar)
+wasm4pm --version
+# Output: wasm4pm 26.4.16 (or similar)
 ```
 
 #### Option B: Project-Local Installation (pnpm/npm)
@@ -99,14 +99,14 @@ pnpm update @wasm4pm/cli --latest
 npm update @wasm4pm/cli --latest
 
 # Verify
-npx pictl --version
+npx wpm --version
 ```
 
 #### Option C: Docker Image
 
 ```bash
 docker pull @wasm4pm/cli:26.4.16
-docker run @wasm4pm/cli:26.4.16 pictl --version
+docker run @wasm4pm/cli:26.4.16 wasm4pm --version
 ```
 
 ### Step 3: Verify Installation
@@ -114,7 +114,7 @@ docker run @wasm4pm/cli:26.4.16 pictl --version
 Run the built-in health check:
 
 ```bash
-pictl doctor
+wpm doctor
 ```
 
 **Expected output**:
@@ -136,7 +136,7 @@ If any check fails, see [Troubleshooting](#troubleshooting).
 Test that the WASM core is properly loaded with Vision 2030 capabilities:
 
 ```bash
-pictl status
+wpm status
 ```
 
 **Expected output**:
@@ -165,7 +165,7 @@ Test the new autonomic loop with a sample event log:
 
 ```bash
 # Using a sample log (replace with your own)
-pictl autoprocess sample.xes --cycles 3 --format json > autoprocess-test.json
+wpm autoprocess sample.xes --cycles 3 --format json > autoprocess-test.json
 
 # View the output
 cat autoprocess-test.json | jq '.' | head -50
@@ -245,13 +245,13 @@ Verify that existing commands still work as before:
 
 ```bash
 # Process discovery (unchanged)
-pictl run sample.xes --algorithm dfg --format json
+wpm run sample.xes --algorithm dfg --format json
 
 # Algorithm comparison (unchanged)
-pictl compare "dfg,heuristic_miner,genetic_algorithm" -i sample.xes
+wpm compare "dfg,heuristic_miner,genetic_algorithm" -i sample.xes
 
 # Conformance checking (unchanged)
-pictl conformance model.pnml -i sample.xes
+wpm conformance model.pnml -i sample.xes
 ```
 
 **Expected**: All commands produce identical output to v26.4.10.
@@ -272,15 +272,15 @@ echo "=== Vision 2030 Integration Test ==="
 
 # 1. Doctor check
 echo "1. Running doctor..."
-pictl doctor || exit 1
+wpm doctor || exit 1
 
 # 2. Status check
 echo "2. Checking status..."
-pictl status | jq '.autonomic_loop' || exit 1
+wpm status | jq '.autonomic_loop' || exit 1
 
 # 3. AutoProcess test
 echo "3. Testing AutoProcess..."
-pictl autoprocess sample.xes --cycles 1 --format json > /tmp/test-autoprocess.json
+wpm autoprocess sample.xes --cycles 1 --format json > /tmp/test-autoprocess.json
 test -f /tmp/test-autoprocess.json || exit 1
 
 # 4. Verify state persistence
@@ -289,12 +289,12 @@ test -f .wasm4pm/autoprocess-state.json || exit 1
 
 # 5. Existing command test
 echo "5. Running existing discovery command..."
-pictl run sample.xes --algorithm dfg --format json > /tmp/test-discovery.json
+wpm run sample.xes --algorithm dfg --format json > /tmp/test-discovery.json
 test -f /tmp/test-discovery.json || exit 1
 
 # 6. Circuit breaker test
 echo "6. Checking circuit breaker..."
-pictl status | jq '.circuit_breaker.state' | grep -q "Closed" || exit 1
+wpm status | jq '.circuit_breaker.state' | grep -q "Closed" || exit 1
 
 echo "=== All Tests Passed ✓ ==="
 ```
@@ -312,7 +312,7 @@ Measure autonomic loop performance:
 
 ```bash
 # Measure cycle latency (should be <100ms)
-time pictl autoprocess sample.xes --cycles 100 > /dev/null
+time wpm autoprocess sample.xes --cycles 100 > /dev/null
 
 # Expected output: real 0m0.1s (100 cycles in ~0.1 seconds)
 ```
@@ -342,7 +342,7 @@ rm -rf .wasm4pm/wasm-cache/
 
 # Reinstall
 npm install @wasm4pm/cli@26.4.16 --force
-pictl doctor
+wpm doctor
 ```
 
 If issue persists:
@@ -368,16 +368,16 @@ Error: Cannot write to .wasm4pm/autoprocess-state.json
 
 ```bash
 # Check disk space
-df -h .pictl
+df -h .wasm4pm
 
 # Check permissions
 touch .wasm4pm/test-write && rm .wasm4pm/test-write
 
 # Create directory if missing
-mkdir -p .pictl
+mkdir -p .wasm4pm
 
 # Set proper permissions (user-readable)
-chmod 755 .pictl
+chmod 755 .wasm4pm
 ```
 
 ### Issue 3: "Circuit breaker stuck in Open state"
@@ -394,15 +394,15 @@ Failures: 3
 
 ```bash
 # Option 1: Manual reset via CLI
-pictl status --circuit-breaker-reset
+wpm status --circuit-breaker-reset
 
 # Option 2: Delete state file (full reset)
 rm .wasm4pm/autoprocess-state.json
-pictl doctor --bootstrap-fresh
+wpm doctor --bootstrap-fresh
 
 # Option 3: Scheduled reset (cron)
 # Reset circuit every 6 hours if open
-0 */6 * * * [ -f .wasm4pm/autoprocess-state.json ] && pictl status --circuit-breaker-reset
+0 */6 * * * [ -f .wasm4pm/autoprocess-state.json ] && wpm status --circuit-breaker-reset
 ```
 
 After reset, the circuit breaker returns to `Closed` state.
@@ -433,14 +433,14 @@ spc_sigma_threshold = 4.0  # Increase from 3.0 (less sensitive)
 
 Option 3: Temporarily disable SPC:
 ```bash
-WASM4PM_OBSERVABILITY_SPC_ENABLED=false pictl autoprocess sample.xes
+WASM4PM_OBSERVABILITY_SPC_ENABLED=false wpm autoprocess sample.xes
 ```
 
 ### Issue 5: "Autonomic loop not responding"
 
 **Symptoms**:
 ```
-$ pictl autoprocess sample.xes --cycles 5
+$ wpm autoprocess sample.xes --cycles 5
 # Hangs for >10 seconds
 ```
 
@@ -450,11 +450,11 @@ $ pictl autoprocess sample.xes --cycles 5
 
 ```bash
 # Increase stack size for Rust
-RUST_MIN_STACK=16777216 pictl autoprocess sample.xes --cycles 5
+RUST_MIN_STACK=16777216 wpm autoprocess sample.xes --cycles 5
 
 # Or run with fewer cycles first
-pictl autoprocess sample.xes --cycles 1  # Primes the Q-table
-pictl autoprocess sample.xes --cycles 10 # Should be faster
+wpm autoprocess sample.xes --cycles 1  # Primes the Q-table
+wpm autoprocess sample.xes --cycles 10 # Should be faster
 ```
 
 If hangs persist, check system resources:
@@ -490,10 +490,10 @@ If you created a backup in Step 1:
 
 ```bash
 # Restore results
-cp -r ~/.pictl-backup/v26.4.10/.pictl .pictl
+cp -r ~/.wasm4pm-backup/v26.4.10/.wasm4pm .wasm4pm
 
 # Restore configuration
-cp ~/.pictl-backup/v26.4.10/wasm4pm.toml wasm4pm.toml 2>/dev/null || true
+cp ~/.wasm4pm-backup/v26.4.10/wasm4pm.toml wasm4pm.toml 2>/dev/null || true
 ```
 
 ### Step 3: Install Previous Version
@@ -505,10 +505,10 @@ npm install -g @wasm4pm/cli@26.4.10
 ### Step 4: Verify
 
 ```bash
-pictl --version
-# Output: pictl 26.4.10
+wasm4pm --version
+# Output: wasm4pm 26.4.10
 
-pictl doctor
+wpm doctor
 ```
 
 **Note**: The `.wasm4pm/autoprocess-state.json` file created by v26.4.16 will be ignored by v26.4.10. You can safely delete it:
@@ -589,7 +589,7 @@ enabled = false  # Disable file watching in production
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: pictl-config
+  name: wasm4pm-config
 data:
   wasm4pm.toml: |
     [execution]
@@ -601,23 +601,23 @@ data:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: pictl-service
+  name: wasm4pm-service
 spec:
   template:
     spec:
       containers:
-      - name: pictl
-        image: pictl:26.4.16
+      - name: wasm4pm
+        image: wasm4pm:26.4.16
         volumeMounts:
         - name: config
           mountPath: /app/wasm4pm.toml
           subPath: wasm4pm.toml
         - name: state
-          mountPath: /app/.pictl
+          mountPath: /app/.wasm4pm
       volumes:
       - name: config
         configMap:
-          name: pictl-config
+          name: wasm4pm-config
       - name: state
         emptyDir: {}  # Or persistent volume for production
 ```
@@ -626,10 +626,10 @@ spec:
 
 ```bash
 # Kubernetes liveness probe
-pictl doctor | grep -q "Autonomic loop active" && exit 0 || exit 1
+wpm doctor | grep -q "Autonomic loop active" && exit 0 || exit 1
 
 # Circuit breaker status (readiness probe)
-pictl status | jq -e '.circuit_breaker.state == "Closed"' && exit 0 || exit 1
+wpm status | jq -e '.circuit_breaker.state == "Closed"' && exit 0 || exit 1
 ```
 
 ---

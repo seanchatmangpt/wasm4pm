@@ -25,11 +25,7 @@ export interface SavedResult {
  * Format: <timestamp>-<task>.json  e.g. 20260406T143012-next-activity.json
  */
 function buildResultFilename(task: string, now: Date): string {
-  const ts = now
-    .toISOString()
-    .replace(/[-:]/g, '')
-    .replace('T', 'T')
-    .slice(0, 15); // YYYYMMDDTHHmmss
+  const ts = now.toISOString().replace(/[-:]/g, '').replace('T', 'T').slice(0, 15); // YYYYMMDDTHHmmss
   return `${ts}-${task}.json`;
 }
 
@@ -44,7 +40,7 @@ export async function savePredictionResult(
   task: string,
   input: string,
   activityKey: string,
-  result: Record<string, unknown>,
+  result: Record<string, unknown>
 ): Promise<string | null> {
   try {
     const dir = path.resolve(process.cwd(), RESULTS_DIR);
@@ -66,7 +62,9 @@ export async function savePredictionResult(
     await fs.writeFile(filepath, JSON.stringify(payload, null, 2), 'utf-8');
     return filepath;
   } catch (error) {
-    console.error(`Failed to save prediction result: ${error instanceof Error ? error.message : String(error)}`);
+    console.error(
+      `Failed to save prediction result: ${error instanceof Error ? error.message : String(error)}`
+    );
     return null;
   }
 }
@@ -74,7 +72,9 @@ export async function savePredictionResult(
 /**
  * List all saved result files sorted by modification time (newest first).
  */
-async function listResultFiles(dir: string): Promise<Array<{ name: string; filepath: string; mtime: Date }>> {
+async function listResultFiles(
+  dir: string
+): Promise<Array<{ name: string; filepath: string; mtime: Date }>> {
   if (!existsSync(dir)) return [];
 
   const entries = await fs.readdir(dir, { withFileTypes: true });
@@ -85,7 +85,7 @@ async function listResultFiles(dir: string): Promise<Array<{ name: string; filep
       const filepath = path.join(dir, e.name);
       const stat = await fs.stat(filepath);
       return { name: e.name, filepath, mtime: stat.mtime };
-    }),
+    })
   );
 
   return withStats.sort((a, b) => b.mtime.getTime() - a.mtime.getTime());
@@ -192,7 +192,11 @@ export const results = defineCommand({
           formatter.log('    wpm run <log.xes>                       (discovery)');
           formatter.log('    wpm predict <task> --input <log.xes>    (prediction)');
         } else {
-          (formatter as JSONFormatter).success('No saved results', { directory: dir, count: 0, results: [] });
+          (formatter as JSONFormatter).success('No saved results', {
+            directory: dir,
+            count: 0,
+            results: [],
+          });
         }
         process.exit(EXIT_CODES.success);
       }
@@ -219,7 +223,9 @@ export const results = defineCommand({
       humanFormatter.log(`  Directory: ${dir}`);
       humanFormatter.log('');
       humanFormatter.log(`  #   Saved at              Task              File`);
-      humanFormatter.log(`  ──  ────────────────────  ────────────────  ────────────────────────────────────`);
+      humanFormatter.log(
+        `  ──  ────────────────────  ────────────────  ────────────────────────────────────`
+      );
 
       for (let i = 0; i < displayed.length; i++) {
         const f = displayed[i];
@@ -259,7 +265,7 @@ export const results = defineCommand({
         (formatter as JSONFormatter).error('Failed to list results', error);
       } else {
         formatter.error(
-          `Failed to list results: ${error instanceof Error ? error.message : String(error)}`,
+          `Failed to list results: ${error instanceof Error ? error.message : String(error)}`
         );
       }
       process.exit(EXIT_CODES.system_error);
@@ -272,7 +278,7 @@ export const results = defineCommand({
  */
 async function catResult(
   filepath: string,
-  formatter: HumanFormatter | JSONFormatter,
+  formatter: HumanFormatter | JSONFormatter
 ): Promise<void> {
   const raw = await fs.readFile(filepath, 'utf-8');
   const parsed: SavedResult = JSON.parse(raw);

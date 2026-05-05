@@ -69,8 +69,7 @@ async function saveState(wasm: any): Promise<void> {
 export const autoprocess = defineCommand({
   meta: {
     name: 'autoprocess',
-    description:
-      'Run AutoProcess: Perception → Decision → Protection → Optimization',
+    description: 'Run AutoProcess: Perception → Decision → Protection → Optimization',
   },
   args: {
     input: {
@@ -130,12 +129,9 @@ export const autoprocess = defineCommand({
       const rawResult = wasm.autonomic_execute_cycle(
         logHandle,
         ctx.args['activity-key'],
-        cycleConfig,
+        cycleConfig
       );
-      const result =
-        typeof rawResult === 'string'
-          ? JSON.parse(rawResult)
-          : rawResult;
+      const result = typeof rawResult === 'string' ? JSON.parse(rawResult) : rawResult;
 
       // 4. Format output
       if (formatter instanceof JSONFormatter) {
@@ -149,35 +145,25 @@ export const autoprocess = defineCommand({
 
         // Perception
         formatter.log('  Perception:');
+        formatter.log(`    Events: ${cycle.perception.event_count}`);
+        formatter.log(`    Activities: ${cycle.perception.unique_activities}`);
+        formatter.log(`    Traces: ${cycle.perception.trace_count}`);
         formatter.log(
-          `    Events: ${cycle.perception.event_count}`,
-        );
-        formatter.log(
-          `    Activities: ${cycle.perception.unique_activities}`,
-        );
-        formatter.log(
-          `    Traces: ${cycle.perception.trace_count}`,
-        );
-        formatter.log(
-          `    Health: ${cycle.perception.health_state} (score ${cycle.perception.health_score})`,
+          `    Health: ${cycle.perception.health_state} (score ${cycle.perception.health_score})`
         );
         formatter.log('');
 
         // Decision
         formatter.log('  Decision:');
+        formatter.log(`    Guard: ${cycle.decision.guard_result ? 'PASS' : 'FAIL'}`);
         formatter.log(
-          `    Guard: ${cycle.decision.guard_result ? 'PASS' : 'FAIL'}`,
-        );
-        formatter.log(
-          `    Pattern: ${cycle.decision.pattern_result} (${cycle.decision.pattern_ticks} ticks)`,
+          `    Pattern: ${cycle.decision.pattern_result} (${cycle.decision.pattern_ticks} ticks)`
         );
         formatter.log('');
 
         // Protection
         formatter.log('  Protection:');
-        formatter.log(
-          `    Circuit: ${cycle.protection.circuit_state}`,
-        );
+        formatter.log(`    Circuit: ${cycle.protection.circuit_state}`);
         const spc = cycle.protection.spc_results;
         if (spc) {
           const spcEntries = Object.entries(spc);
@@ -186,22 +172,18 @@ export const autoprocess = defineCommand({
             formatter.log(`    SPC ${metric}: ${icon} ${status}`);
           }
         }
-        formatter.log(
-          `    Special Causes: ${cycle.protection.special_causes.length}`,
-        );
+        formatter.log(`    Special Causes: ${cycle.protection.special_causes.length}`);
         formatter.log('');
 
         // Optimization
         formatter.log('  Optimization:');
-        formatter.log(
-          `    Action: ${cycle.optimization.rl_action}`,
-        );
+        formatter.log(`    Action: ${cycle.optimization.rl_action}`);
         formatter.log('');
 
         // Timing
         formatter.log('  Timing:');
         formatter.log(
-          `    Total: ${timing.total_ns} ns (see benchmarks for nanosecond measurements)`,
+          `    Total: ${timing.total_ns} ns (see benchmarks for nanosecond measurements)`
         );
         formatter.log('');
 
@@ -237,7 +219,7 @@ export const autoprocess = defineCommand({
         formatter.error('AutoProcess failed', error);
       } else {
         formatter.error(
-          `AutoProcess failed: ${error instanceof Error ? error.message : String(error)}`,
+          `AutoProcess failed: ${error instanceof Error ? error.message : String(error)}`
         );
       }
       process.exit(exitCode);

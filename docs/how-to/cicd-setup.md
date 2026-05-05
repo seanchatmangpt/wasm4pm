@@ -27,13 +27,13 @@ jobs:
         run: npm install -g @wasm4pm/cli
       
       - name: Validate config
-        run: pictl init --validate config.toml
+        run: wpm init --validate config.toml
       
       - name: Run analysis
-        run: pictl run --config config.toml --profile balanced
+        run: wpm run --config config.toml --profile balanced
       
       - name: Generate report
-        run: pictl explain --config config.toml > analysis.md
+        run: wpm explain --config config.toml > analysis.md
       
       - name: Upload results
         uses: actions/upload-artifact@v3
@@ -72,12 +72,12 @@ validate_config:
   stage: validate
   script:
     - npm install -g @wasm4pm/cli
-    - pictl init --validate config.toml
+    - wpm init --validate config.toml
 
 run_analysis:
   stage: analyze
   script:
-    - pictl run --config config.toml --profile balanced
+    - wpm run --config config.toml --profile balanced
   artifacts:
     paths:
       - output/
@@ -86,7 +86,7 @@ run_analysis:
 generate_report:
   stage: report
   script:
-    - pictl explain --config config.toml > report.md
+    - wpm explain --config config.toml > report.md
   artifacts:
     paths:
       - report.md
@@ -109,13 +109,13 @@ pipeline {
     
     stage('Validate') {
       steps {
-        sh 'pictl init --validate config.toml'
+        sh 'wpm init --validate config.toml'
       }
     }
     
     stage('Analyze') {
       steps {
-        sh 'pictl run --config config.toml --profile balanced'
+        sh 'wpm run --config config.toml --profile balanced'
       }
     }
     
@@ -142,7 +142,7 @@ Create `.githooks/pre-commit`:
 #!/bin/bash
 
 echo "Validating wasm4pm config..."
-pictl init --validate config.toml
+wpm init --validate config.toml
 
 if [ $? -ne 0 ]; then
   echo "Config validation failed!"

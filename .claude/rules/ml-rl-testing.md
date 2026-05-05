@@ -1,4 +1,4 @@
-# pictl ML/RL Testing
+# wasm4pm ML/RL Testing
 
 **Statistical oracles, Bellman correctness, behavioral verification.**
 

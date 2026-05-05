@@ -13,6 +13,42 @@ use std::hash::Hash;
 
 use fastrand::Rng;
 
+// ---------------------------------------------------------------------------
+// Internal helpers (alloc-free hot-path utilities)
+// ---------------------------------------------------------------------------
+
+/// Argmax over a slice of f32 values, NaN-safe (treats NaN as less-than).
+/// Returns 0 on empty slice (caller is expected to guarantee non-empty).
+#[inline]
+fn argmax_f32(values: &[f32]) -> usize {
+    let mut best_idx = 0;
+    let mut best_val = f32::NEG_INFINITY;
+    for (i, &v) in values.iter().enumerate() {
+        if v > best_val {
+            best_val = v;
+            best_idx = i;
+        }
+    }
+    best_idx
+}
+
+/// Max value in slice, returning 0.0 for an empty slice. Used for `max_a' Q(s',a')`
+/// when the next state has not yet been visited (Q is initialised to zero).
+#[inline]
+fn max_f32_or_zero(values: &[f32]) -> f32 {
+    let mut m = f32::NEG_INFINITY;
+    for &v in values {
+        if v > m {
+            m = v;
+        }
+    }
+    if m == f32::NEG_INFINITY {
+        0.0
+    } else {
+        m
+    }
+}
+
 /// State for reinforcement learning (must be hashable and cloneable)
 pub trait WorkflowState: Clone + Eq + Hash {
     /// State features for function approximation
@@ -110,56 +146,45 @@ impl<S: WorkflowState, A: WorkflowAction> QLearning<S, A> {
         }
     }
 
-    /// Get action with highest Q-value
+    /// Get action with highest Q-value (alloc-free).
+    /// Falls back to action 0 when the state is unvisited (all Q-values implicitly 0).
     fn best_action(&self, state: &S) -> A {
         let q_table = self.q_table.borrow();
-        let q_values = q_table
-            .get(state)
-            .cloned()
-            .unwrap_or_else(|| vec![0.0; A::ACTION_COUNT]);
-
-        let best_idx = q_values
-            .iter()
-            .enumerate()
-            .max_by(|a, b| a.1.partial_cmp(b.1).unwrap_or(std::cmp::Ordering::Equal))
-            .unwrap()
-            .0;
-
+        let best_idx = match q_table.get(state) {
+            Some(q_values) => argmax_f32(q_values),
+            None => 0, // unvisited state: all Q == 0, deterministic tie-break to first action
+        };
         A::from_index(best_idx).unwrap()
     }
 
     /// Q-Learning update: Q(s,a) <- Q(s,a) + alpha[r + gamma max Q(s',a') - Q(s,a)]
+    ///
+    /// Off-policy TD(0): bootstraps from `max_a' Q(s',a')` regardless of the
+    /// behaviour policy. Terminal transitions use a zero bootstrap so the
+    /// target reduces to `r` (Bellman equation for absorbing states).
     #[allow(dead_code)]
     pub fn update(&self, state: &S, action: &A, reward: f32, next_state: &S, done: bool) {
         let mut q_table = self.q_table.borrow_mut();
 
-        // Initialize Q(s) if needed
-        q_table
-            .entry(state.clone())
-            .or_insert_with(|| vec![0.0; A::ACTION_COUNT]);
-
-        // Get max Q(s', a')
-        let next_q_values = q_table
-            .get(next_state)
-            .cloned()
-            .unwrap_or_else(|| vec![0.0; A::ACTION_COUNT]);
+        // Compute max Q(s', a') without cloning the row.
         let max_next_q = if done {
-            0.0 // Terminal state has no future value
+            0.0
         } else {
-            next_q_values
-                .iter()
-                .cloned()
-                .fold(f32::NEG_INFINITY, f32::max)
+            q_table
+                .get(next_state)
+                .map(|v| max_f32_or_zero(v))
+                .unwrap_or(0.0)
         };
 
-        // Q-Learning update
+        // Initialize Q(s) on demand.
         let action_idx = action.to_index();
-        let current_q = q_table[state][action_idx];
+        let row = q_table
+            .entry(state.clone())
+            .or_insert_with(|| vec![0.0; A::ACTION_COUNT]);
+        let current_q = row[action_idx];
         let target = reward + self.discount_factor * max_next_q;
-        let delta = self.learning_rate * (target - current_q);
-        q_table.get_mut(state).unwrap()[action_idx] += delta;
+        row[action_idx] = current_q + self.learning_rate * (target - current_q);
 
-        // Update statistics
         *self.total_reward.borrow_mut() += reward;
     }
 
@@ -314,26 +339,26 @@ impl<S: WorkflowState, A: WorkflowAction> SARSAAgent<S, A> {
     }
 
     /// SARSA update: Q(s,a) <- Q(s,a) + alpha[r + gamma Q(s',a') - Q(s,a)]
-    /// Note: Uses next_action instead of max_next_action (on-policy)
+    ///
+    /// On-policy TD(0): bootstraps from the *actually selected* next action
+    /// `a' = pi(s')`, not the greedy one. This is what makes SARSA conservative
+    /// in the presence of exploration noise.
     #[allow(dead_code)]
     pub fn update(&self, state: &S, action: &A, reward: f32, next_state: &S, next_action: &A) {
         let mut q_table = self.q_table.borrow_mut();
 
-        q_table
-            .entry(state.clone())
-            .or_insert_with(|| vec![0.0; A::ACTION_COUNT]);
-
-        // Get Q(s', a') - the actual next action taken
         let next_q = q_table
             .get(next_state)
             .map(|q_vals| q_vals[next_action.to_index()])
             .unwrap_or(0.0);
 
-        // SARSA update
         let action_idx = action.to_index();
-        let current_q = q_table[state][action_idx];
+        let row = q_table
+            .entry(state.clone())
+            .or_insert_with(|| vec![0.0; A::ACTION_COUNT]);
+        let current_q = row[action_idx];
         let target = reward + self.discount_factor * next_q;
-        q_table.get_mut(state).unwrap()[action_idx] += self.learning_rate * (target - current_q);
+        row[action_idx] = current_q + self.learning_rate * (target - current_q);
     }
 
     #[allow(dead_code)]
@@ -348,18 +373,10 @@ impl<S: WorkflowState, A: WorkflowAction> SARSAAgent<S, A> {
 
     fn greedy_action(&self, state: &S) -> A {
         let q_table = self.q_table.borrow();
-        let q_vals = q_table
-            .get(state)
-            .cloned()
-            .unwrap_or_else(|| vec![0.0; A::ACTION_COUNT]);
-
-        let best_idx = q_vals
-            .iter()
-            .enumerate()
-            .max_by(|a, b| a.1.partial_cmp(b.1).unwrap_or(std::cmp::Ordering::Equal))
-            .unwrap()
-            .0;
-
+        let best_idx = match q_table.get(state) {
+            Some(v) => argmax_f32(v),
+            None => 0,
+        };
         A::from_index(best_idx).unwrap()
     }
 
@@ -519,31 +536,31 @@ impl<S: WorkflowState, A: WorkflowAction> DoubleQLearning<S, A> {
         }
     }
 
-    /// Greedy action using average of both Q-tables
+    /// Greedy action using the sum of both Q-tables (alloc-free).
+    /// Sum is monotone-equivalent to mean for argmax.
     fn greedy_action(&self, state: &S) -> A {
         let qa = self.q_a.borrow();
         let qb = self.q_b.borrow();
-        let va = qa
-            .get(state)
-            .cloned()
-            .unwrap_or_else(|| vec![0.0; A::ACTION_COUNT]);
-        let vb = qb
-            .get(state)
-            .cloned()
-            .unwrap_or_else(|| vec![0.0; A::ACTION_COUNT]);
+        let va = qa.get(state);
+        let vb = qb.get(state);
 
-        let best_idx = va
-            .iter()
-            .zip(vb.iter())
-            .enumerate()
-            .max_by(|a, b| {
-                (a.1 .0 + a.1 .1)
-                    .partial_cmp(&(b.1 .0 + b.1 .1))
-                    .unwrap_or(std::cmp::Ordering::Equal)
-            })
-            .unwrap()
-            .0;
-
+        let best_idx = match (va, vb) {
+            (None, None) => 0,
+            (Some(v), None) | (None, Some(v)) => argmax_f32(v),
+            (Some(a), Some(b)) => {
+                debug_assert_eq!(a.len(), b.len());
+                let mut best_idx = 0;
+                let mut best_val = f32::NEG_INFINITY;
+                for i in 0..a.len() {
+                    let s = a[i] + b[i];
+                    if s > best_val {
+                        best_val = s;
+                        best_idx = i;
+                    }
+                }
+                best_idx
+            }
+        };
         A::from_index(best_idx).unwrap()
     }
 
@@ -553,60 +570,50 @@ impl<S: WorkflowState, A: WorkflowAction> DoubleQLearning<S, A> {
     ///   Use Q_a to select best next action, Q_b to evaluate it
     /// Otherwise:
     ///   Use Q_b to select best next action, Q_a to evaluate it
+    /// Double Q-Learning update — decouples action selection from action
+    /// evaluation to remove the maximisation bias of vanilla Q-learning.
+    ///
+    /// With probability 1/2 we update Q_A using Q_A.argmax for selection and
+    /// Q_B for evaluation; otherwise the roles are swapped. The resulting
+    /// estimator is unbiased in expectation (van Hasselt 2010, Thm 1).
     #[allow(dead_code)]
     pub fn update(&self, state: &S, action: &A, reward: f32, next_state: &S, done: bool) {
+        let action_idx = action.to_index();
+        let update_a_first = self.rng.borrow_mut().bool();
+
         let mut qa = self.q_a.borrow_mut();
         let mut qb = self.q_b.borrow_mut();
 
-        qa.entry(state.clone())
-            .or_insert_with(|| vec![0.0; A::ACTION_COUNT]);
-        qb.entry(state.clone())
-            .or_insert_with(|| vec![0.0; A::ACTION_COUNT]);
-
-        let action_idx = action.to_index();
-
-        if self.rng.borrow_mut().bool() {
-            // Update Q_a: use Q_a to select action, Q_b to evaluate
-            let best_next_idx = qa
-                .get(next_state)
-                .map(|vals| {
-                    vals.iter()
-                        .enumerate()
-                        .max_by(|a, b| a.1.partial_cmp(b.1).unwrap_or(std::cmp::Ordering::Equal))
-                        .unwrap()
-                        .0
-                })
-                .unwrap_or(0);
-
-            let next_q = qb
-                .get(next_state)
-                .map(|vals| vals[best_next_idx])
-                .unwrap_or(0.0);
-
-            let target = reward + self.discount_factor * if done { 0.0 } else { next_q };
-            let current = qa[state][action_idx];
-            qa.get_mut(state).unwrap()[action_idx] += self.learning_rate * (target - current);
+        // Compute next-state bootstrap before mutably touching the row we update.
+        let bootstrap = if done {
+            0.0
+        } else if update_a_first {
+            // best_next_idx from Q_A, evaluated with Q_B.
+            let best_next_idx = qa.get(next_state).map(|v| argmax_f32(v)).unwrap_or(0);
+            qb.get(next_state)
+                .map(|v| v[best_next_idx])
+                .unwrap_or(0.0)
         } else {
-            // Update Q_b: use Q_b to select action, Q_a to evaluate
-            let best_next_idx = qb
-                .get(next_state)
-                .map(|vals| {
-                    vals.iter()
-                        .enumerate()
-                        .max_by(|a, b| a.1.partial_cmp(b.1).unwrap_or(std::cmp::Ordering::Equal))
-                        .unwrap()
-                        .0
-                })
-                .unwrap_or(0);
+            let best_next_idx = qb.get(next_state).map(|v| argmax_f32(v)).unwrap_or(0);
+            qa.get(next_state)
+                .map(|v| v[best_next_idx])
+                .unwrap_or(0.0)
+        };
 
-            let next_q = qa
-                .get(next_state)
-                .map(|vals| vals[best_next_idx])
-                .unwrap_or(0.0);
+        let target = reward + self.discount_factor * bootstrap;
 
-            let target = reward + self.discount_factor * if done { 0.0 } else { next_q };
-            let current = qb[state][action_idx];
-            qb.get_mut(state).unwrap()[action_idx] += self.learning_rate * (target - current);
+        if update_a_first {
+            let row = qa
+                .entry(state.clone())
+                .or_insert_with(|| vec![0.0; A::ACTION_COUNT]);
+            let current = row[action_idx];
+            row[action_idx] = current + self.learning_rate * (target - current);
+        } else {
+            let row = qb
+                .entry(state.clone())
+                .or_insert_with(|| vec![0.0; A::ACTION_COUNT]);
+            let current = row[action_idx];
+            row[action_idx] = current + self.learning_rate * (target - current);
         }
     }
 
@@ -766,54 +773,44 @@ impl<S: WorkflowState, A: WorkflowAction> ExpectedSARSAAgent<S, A> {
 
     fn greedy_action(&self, state: &S) -> A {
         let q_table = self.q_table.borrow();
-        let q_vals = q_table
-            .get(state)
-            .cloned()
-            .unwrap_or_else(|| vec![0.0; A::ACTION_COUNT]);
-
-        let best_idx = q_vals
-            .iter()
-            .enumerate()
-            .max_by(|a, b| a.1.partial_cmp(b.1).unwrap_or(std::cmp::Ordering::Equal))
-            .unwrap()
-            .0;
-
+        let best_idx = match q_table.get(state) {
+            Some(v) => argmax_f32(v),
+            None => 0,
+        };
         A::from_index(best_idx).unwrap()
     }
 
-    /// Expected SARSA update: Q(s,a) <- Q(s,a) + alpha[r + gamma * E[Q(s',.)] - Q(s,a)]
+    /// Expected SARSA update: Q(s,a) <- Q(s,a) + alpha[r + gamma * E_pi[Q(s',.)] - Q(s,a)]
+    ///
+    /// Under epsilon-greedy: E_pi[Q(s', .)] = (1 - eps) * max_a Q(s', a) + (eps / |A|) * sum_a Q(s', a).
+    /// This has lower variance than SARSA's sampled bootstrap because it integrates
+    /// over the policy rather than sampling a single next action.
     #[allow(dead_code)]
     pub fn update(&self, state: &S, action: &A, reward: f32, next_state: &S, done: bool) {
-        // Compute expected Q-value BEFORE taking mutable borrow
         let expected_next = if done {
             0.0
         } else {
-            // Inline computation to avoid RefCell double-borrow
             let q_table = self.q_table.borrow();
-            let q_vals = q_table
-                .get(next_state)
-                .cloned()
-                .unwrap_or_else(|| vec![0.0; A::ACTION_COUNT]);
-            // Drop immutable borrow before computing
-            drop(q_table);
-
-            let max_q = q_vals.iter().cloned().fold(f32::NEG_INFINITY, f32::max);
-            let sum_q: f32 = q_vals.iter().cloned().sum();
-            let n = A::ACTION_COUNT as f32;
-            let eps = self.exploration_rate;
-            (1.0 - eps) * max_q + (eps / n) * sum_q
+            match q_table.get(next_state) {
+                Some(v) => {
+                    let max_q = max_f32_or_zero(v);
+                    let sum_q: f32 = v.iter().sum();
+                    let n = A::ACTION_COUNT as f32;
+                    let eps = self.exploration_rate;
+                    (1.0 - eps) * max_q + (eps / n) * sum_q
+                }
+                None => 0.0, // unvisited next state -> all Q == 0
+            }
         };
 
         let mut q_table = self.q_table.borrow_mut();
-
-        q_table
+        let action_idx = action.to_index();
+        let row = q_table
             .entry(state.clone())
             .or_insert_with(|| vec![0.0; A::ACTION_COUNT]);
-
-        let action_idx = action.to_index();
-        let current_q = q_table[state][action_idx];
+        let current_q = row[action_idx];
         let target = reward + self.discount_factor * expected_next;
-        q_table.get_mut(state).unwrap()[action_idx] += self.learning_rate * (target - current_q);
+        row[action_idx] = current_q + self.learning_rate * (target - current_q);
     }
 
     #[allow(dead_code)]
@@ -954,35 +951,58 @@ impl<S: WorkflowState, A: WorkflowAction> ReinforceAgent<S, A> {
         agent
     }
 
-    /// Select action using softmax policy: pi(a|s) = exp(theta[s][a]) / Z
+    /// Select action using softmax policy: pi(a|s) = exp(theta[s][a]) / Z.
+    /// Uses the Gumbel-max trick: argmax_i (theta_i + Gumbel_i(0,1)) ~ softmax(theta).
+    /// Avoids any allocation on visited states by indexing the row in place.
     #[allow(dead_code)]
     pub fn select_action(&self, state: &S) -> A {
         let theta = self.theta.borrow();
-        let weights = theta
-            .get(state)
-            .cloned()
-            .unwrap_or_else(|| vec![0.0; A::ACTION_COUNT]);
+        let mut rng = self.rng.borrow_mut();
 
-        // Softmax sampling (Gumbel-max trick for numerical stability)
         let mut best_idx = 0;
         let mut best_val = f32::NEG_INFINITY;
-        for (i, &w) in weights.iter().enumerate() {
-            // Gumbel noise: -ln(-ln(u))
-            let u = self.rng.borrow_mut().f32().clamp(1e-6, 1.0 - 1e-6);
-            let gumbel = -(-u.ln()).ln();
-            let val = w + gumbel;
-            if val > best_val {
-                best_val = val;
-                best_idx = i;
+
+        // Closure: draw one Gumbel(0,1) sample.
+        let mut gumbel = || {
+            let u = rng.f32().clamp(1e-6, 1.0 - 1e-6);
+            -(-u.ln()).ln()
+        };
+
+        match theta.get(state) {
+            Some(weights) => {
+                for (i, &w) in weights.iter().enumerate() {
+                    let val = w + gumbel();
+                    if val > best_val {
+                        best_val = val;
+                        best_idx = i;
+                    }
+                }
+            }
+            None => {
+                // All weights are implicitly zero -> uniform softmax -> pure Gumbel.
+                for i in 0..A::ACTION_COUNT {
+                    let val = gumbel();
+                    if val > best_val {
+                        best_val = val;
+                        best_idx = i;
+                    }
+                }
             }
         }
         A::from_index(best_idx).unwrap()
     }
 
-    /// Update policy weights from a complete episode trajectory
+    /// Update policy weights from a complete episode trajectory.
     ///
     /// trajectory: [(state, action, reward), ...]
     /// Uses discounted returns G_t = sum_{k=0}^{T-t} gamma^k * r_{t+k}
+    ///
+    /// Policy gradient (REINFORCE, Williams 1992):
+    ///     theta <- theta + alpha * G_t * grad_theta log pi(a_t | s_t)
+    /// For softmax pi(a|s) = exp(theta_{s,a}) / sum_j exp(theta_{s,j}),
+    /// the gradient is:
+    ///     d/d theta_{s,a}   log pi(a|s) = 1 - pi(a|s)
+    ///     d/d theta_{s,j!=a} log pi(a|s) =   - pi(j|s)
     #[allow(dead_code)]
     pub fn update_from_trajectory(&self, trajectory: &[(S, A, f32)]) {
         let n = trajectory.len();
@@ -990,7 +1010,7 @@ impl<S: WorkflowState, A: WorkflowAction> ReinforceAgent<S, A> {
             return;
         }
 
-        // Compute discounted returns G_t for each timestep
+        // Compute discounted returns G_t for each timestep (backwards pass).
         let mut returns: Vec<f32> = vec![0.0; n];
         let mut g = 0.0;
         for i in (0..n).rev() {
@@ -999,32 +1019,30 @@ impl<S: WorkflowState, A: WorkflowAction> ReinforceAgent<S, A> {
         }
 
         let mut theta = self.theta.borrow_mut();
+        // Reuse a single softmax scratch buffer across the trajectory.
+        let mut softmax = vec![0.0f32; A::ACTION_COUNT];
 
-        // Update each state-action pair
         for (t, (state, action, _reward)) in trajectory.iter().enumerate() {
-            // Initialize weights if needed
-            theta
+            let weights = theta
                 .entry(state.clone())
                 .or_insert_with(|| vec![0.0; A::ACTION_COUNT]);
-
-            let weights = theta.get_mut(state).unwrap();
             let action_idx = action.to_index();
 
-            // Compute log softmax and gradient
-            // log pi(a|s) = theta[a] - log(sum exp(theta[*]))
-            let max_w = weights.iter().cloned().fold(f32::NEG_INFINITY, f32::max);
-            let log_z: f32 = max_w + weights.iter().map(|&w| (w - max_w).exp()).sum::<f32>().ln();
-
-            // Gradient: d/d(theta[a]) log pi(a|s) = 1 - softmax(theta[a])
-            // For other actions j != a: d/d(theta[j]) = -softmax(theta[j])
+            // Numerically-stable softmax: subtract max before exp, normalise by sum.
+            let max_w = max_f32_or_zero(weights);
+            let mut sum = 0.0f32;
+            for (j, &w) in weights.iter().enumerate() {
+                let e = (w - max_w).exp();
+                softmax[j] = e;
+                sum += e;
+            }
+            let inv_sum = 1.0 / sum;
             let g_t = returns[t];
+            let lr = self.learning_rate;
             for (j, w) in weights.iter_mut().enumerate() {
-                let softmax = (*w - max_w).exp() / (log_z - max_w).exp();
-                if j == action_idx {
-                    *w += self.learning_rate * g_t * (1.0 - softmax);
-                } else {
-                    *w -= self.learning_rate * g_t * softmax;
-                }
+                let pi_j = softmax[j] * inv_sum;
+                let indicator = if j == action_idx { 1.0 } else { 0.0 };
+                *w += lr * g_t * (indicator - pi_j);
             }
         }
     }

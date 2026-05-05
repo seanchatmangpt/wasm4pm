@@ -39,7 +39,7 @@ New public functions must have Instrumentation calls.
     → export function analyzeTrace() { ... }
 ```
 
-### 3. ESLint Custom Rule (`pictl-observability/require-span-for-public`)
+### 3. ESLint Custom Rule (`wasm4pm-observability/require-span-for-public`)
 - Real-time IDE warnings while developing
 - Detects functions without Instrumentation calls
 - Auto-fix available to insert template spans
@@ -68,7 +68,7 @@ Public function "resolveConfig" must have an Instrumentation call.
 4. `packages/observability/src/eslint-plugin.js` (30 lines, JS)
 
 ### Configuration (1 file)
-5. `.eslintrc.cjs` (updated +3 lines, added pictl-observability plugin)
+5. `.eslintrc.cjs` (updated +3 lines, added wasm4pm-observability plugin)
 
 ### Dashboards (2 files)
 6. `.wasm4pm/otel-coverage.json` (generated, updated per scan)
@@ -168,7 +168,7 @@ All spans created via `Instrumentation.*Event()` methods:
 | `createSinkStartedEvent()` | I/O write start | `sink.started` | Write results |
 
 **All spans require:**
-- `'service.name': 'pictl'`
+- `'service.name': 'wasm4pm'`
 - `'run.id'`: Unique execution ID
 - `'trace.id'`: Distributed trace ID
 
@@ -267,7 +267,7 @@ See: `.claude/OTEL_IMPLEMENTATION_GUIDE.md` (section: Step-by-Step Example)
 - Auto-fix available
 
 ### ✅ Configuration Verified
-- `.eslintrc.cjs` updated with pictl-observability plugin
+- `.eslintrc.cjs` updated with wasm4pm-observability plugin
 - Rule loads correctly
 - No conflicts with existing rules
 

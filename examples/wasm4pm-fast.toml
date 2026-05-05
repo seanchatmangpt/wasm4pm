@@ -1,0 +1,27 @@
+# wasm4pm — "fast" preset (latency-optimised)
+# Best for: CI/CD, quick exploration, mobile/embedded environments
+# Target: DFG discovery <100ms on 10K events, 512MB memory limit
+schema_version = 1
+version = "26.4.5"
+
+[source]
+kind = "file"
+
+[sink]
+kind = "stdout"
+
+[algorithm]
+name = "dfg"
+
+[execution]
+profile = "fast"
+timeout = 60000
+
+[ml]
+enabled = false
+
+[rl]
+enabled = false
+
+[prediction]
+enabled = false

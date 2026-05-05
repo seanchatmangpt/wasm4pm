@@ -345,7 +345,7 @@ pub fn discover_ilp_petri_net(
 
     to_js_str(&json!({
         "handle": handle,
-        "algorithm": "direct_petri_net_stub",
+        "algorithm": "ilp_petri_net",
         "places": petri_net.places.len(),
         "transitions": petri_net.transitions.len(),
         "arcs": petri_net.arcs.len(),

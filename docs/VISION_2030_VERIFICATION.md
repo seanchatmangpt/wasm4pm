@@ -1,4 +1,4 @@
-# pictl Vision 2030 — Verification Report
+# wasm4pm Vision 2030 — Verification Report
 
 **Date:** 2026-04-16 | **Status:** VERIFIED | **Evidence:** Rank 1-2 Oracles (Mathematical Theorems + Domain Contracts)
 
@@ -157,7 +157,7 @@ Memory: ~18MB for 5 RL agents × 460,800 states × 5 actions × 8 bytes per Q-va
 | Deadlock-free (WvdA) | ✅ | No circular wait chains; DAG state transitions |
 | Liveness-guaranteed (WvdA) | ✅ | Terminal state reachable; all loops bounded |
 | Bounded state space (WvdA) | ✅ | 460,800 states across 8 finite dimensions |
-| Schema conformance (Weaver) | ✅ | OTEL spans: service=pictl, all attributes typed |
+| Schema conformance (Weaver) | ✅ | OTEL spans: service=wasm4pm, all attributes typed |
 | Van der Aalst process mining oracle | ✅ | Rank 1 mathematical theorems (Bellman, terminal states) |
 
 ---

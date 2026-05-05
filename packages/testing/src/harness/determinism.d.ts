@@ -6,12 +6,12 @@
  * input N times and compares the stable fields.
  */
 export interface DeterminismResult {
-    passed: boolean;
-    iterations: number;
-    stableFields: string[];
-    unstableFields: string[];
-    hashes: string[];
-    details: string;
+  passed: boolean;
+  iterations: number;
+  stableFields: string[];
+  unstableFields: string[];
+  hashes: string[];
+  details: string;
 }
 /**
  * Compute a stable hash of a receipt by zeroing out non-deterministic fields.
@@ -20,11 +20,17 @@ export declare function stableReceiptHash(receipt: Record<string, unknown>): str
 /**
  * Run a producer function N times and verify deterministic output.
  */
-export declare function checkDeterminism(producer: () => Promise<Record<string, unknown>>, iterations?: number): Promise<DeterminismResult>;
+export declare function checkDeterminism(
+  producer: () => Promise<Record<string, unknown>>,
+  iterations?: number
+): Promise<DeterminismResult>;
 /**
  * Compare two receipts for determinism (ignoring unstable fields).
  */
-export declare function receiptsMatch(a: Record<string, unknown>, b: Record<string, unknown>): boolean;
+export declare function receiptsMatch(
+  a: Record<string, unknown>,
+  b: Record<string, unknown>
+): boolean;
 /**
  * Check ML determinism with epsilon-tolerance for numeric fields.
  * ML outputs (confidence, regression coefficients, etc.) may vary slightly
@@ -34,5 +40,9 @@ export declare function receiptsMatch(a: Record<string, unknown>, b: Record<stri
  * @param iterations - Number of iterations to run (default 5)
  * @param epsilon - Maximum allowed difference for numeric fields (default 0.01)
  */
-export declare function checkMlDeterminism(producer: () => Promise<Record<string, unknown>>, iterations?: number, epsilon?: number): Promise<DeterminismResult>;
+export declare function checkMlDeterminism(
+  producer: () => Promise<Record<string, unknown>>,
+  iterations?: number,
+  epsilon?: number
+): Promise<DeterminismResult>;
 //# sourceMappingURL=determinism.d.ts.map

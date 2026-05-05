@@ -10,7 +10,18 @@ import type {
   outputConfigSchema,
   executionConfigSchema,
   predictionConfigSchema,
+  driftConfigSchema,
+  mlConfigSchema,
+  classifyConfigSchema,
+  clusterConfigSchema,
+  forecastConfigSchema,
+  anomalyConfigSchema,
+  regressConfigSchema,
+  pcaConfigSchema,
   rlConfigSchema,
+  rlConvergenceSchema,
+  rlAgentSchema,
+  mlTaskSchema,
 } from './schema.js';
 import type { ProvenanceMap } from './provenance.js';
 
@@ -26,7 +37,18 @@ export type WatchConfig = z.infer<typeof watchConfigSchema>;
 export type OutputConfig = z.infer<typeof outputConfigSchema>;
 export type ExecutionConfig = z.infer<typeof executionConfigSchema>;
 export type PredictionConfig = z.infer<typeof predictionConfigSchema>;
+export type DriftConfig = z.infer<typeof driftConfigSchema>;
+export type MlConfig = z.infer<typeof mlConfigSchema>;
+export type ClassifyConfig = z.infer<typeof classifyConfigSchema>;
+export type ClusterConfig = z.infer<typeof clusterConfigSchema>;
+export type ForecastConfig = z.infer<typeof forecastConfigSchema>;
+export type AnomalyConfig = z.infer<typeof anomalyConfigSchema>;
+export type RegressConfig = z.infer<typeof regressConfigSchema>;
+export type PcaConfig = z.infer<typeof pcaConfigSchema>;
 export type RlConfig = z.infer<typeof rlConfigSchema>;
+export type RlConvergenceConfig = z.infer<typeof rlConvergenceSchema>;
+export type RlAgent = z.infer<typeof rlAgentSchema>;
+export type MlTask = z.infer<typeof mlTaskSchema>;
 
 export type SourceKind = SourceConfig['kind'];
 export type SinkKind = SinkConfig['kind'];
@@ -64,6 +86,15 @@ export interface CliOverrides {
   predictionActivityKey?: string;
   predictionNgramOrder?: number;
   predictionDriftWindow?: number;
+  // ML overrides
+  mlEnabled?: boolean;
+  mlTasks?: string[];
+  // RL overrides
+  rlEnabled?: boolean;
+  rlAgents?: string[];
+  rlLearningRate?: number;
+  rlDiscountFactor?: number;
+  rlEpsilon?: number;
   [key: string]: unknown;
 }
 

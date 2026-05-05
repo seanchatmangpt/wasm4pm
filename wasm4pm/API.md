@@ -1,4 +1,4 @@
-# pictl API Reference
+# wasm4pm API Reference
 
 All functions are exported from the WASM module. Import the module before calling any function.
 
@@ -39,7 +39,7 @@ pm.init(): string
 
 **Parameters** — none
 
-**Returns** `string` — `"pictl WASM initialized successfully"`
+**Returns** `string` — `"wasm4pm WASM initialized successfully"`
 
 **Throws** — never
 

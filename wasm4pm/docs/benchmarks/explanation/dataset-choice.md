@@ -1,6 +1,6 @@
 # Why BPI 2020 Travel Permits?
 
-The dataset behind every benchmark number in pictl, and why it was chosen over alternatives.
+The dataset behind every benchmark number in wasm4pm, and why it was chosen over alternatives.
 
 ---
 
@@ -18,7 +18,7 @@ The dataset behind every benchmark number in pictl, and why it was chosen over a
 | Source               | BPI Challenge 2020           |
 | Domain               | Government permit processing |
 
-This is the primary dataset for all pictl benchmarks. Every algorithm timing, every memory measurement, every streaming comparison uses this log as input.
+This is the primary dataset for all wasm4pm benchmarks. Every algorithm timing, every memory measurement, every streaming comparison uses this log as input.
 
 ---
 
@@ -144,17 +144,17 @@ When the BPI Challenge releases updated or corrected versions of datasets, we ev
 
 ## Accessing the Dataset
 
-The BPI 2020 dataset is publicly available from the BPI Challenge website. Our normalized version is included in the pictl repository for reproducible benchmarks. If you want to benchmark on your own data:
+The BPI 2020 dataset is publicly available from the BPI Challenge website. Our normalized version is included in the wasm4pm repository for reproducible benchmarks. If you want to benchmark on your own data:
 
 ```bash
 # Benchmark on BPI 2020 (included)
-pictl run fixtures/bpi2020/events.csv --algorithm dfg --format json
+wpm run fixtures/bpi2020/events.csv --algorithm dfg --format json
 
 # Benchmark on your own log
-pictl run my-process.xes --algorithm dfg --format json
+wpm run my-process.xes --algorithm dfg --format json
 
 # Compare performance across datasets
-pictl compare dfg heuristic_miner --format json > comparison.json
+wpm compare dfg heuristic_miner --format json > comparison.json
 ```
 
-Any XES or CSV event log with the standard columns (case:concept:name, concept:name, time:timestamp) will work with pictl's benchmarking infrastructure.
+Any XES or CSV event log with the standard columns (case:concept:name, concept:name, time:timestamp) will work with wasm4pm's benchmarking infrastructure.

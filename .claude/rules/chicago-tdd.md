@@ -1,4 +1,4 @@
-# pictl Chicago TDD — Van der Aalst Constitution
+# wasm4pm Chicago TDD — Van der Aalst Constitution
 
 **Doctrine:** If the code says it worked but the event log cannot prove a lawful process happened, then it did not work.
 
@@ -29,7 +29,7 @@ Model-vs-log mismatch is not a discrepancy. It is a defect.
 
 - **OTel traces** → Raw event evidence
 - **OCEL** → Object-centric log model
-- **pictl algorithms** → Process-truth engine (discovery, conformance, replay)
+- **wasm4pm algorithms** → Process-truth engine (discovery, conformance, replay)
 - **Conformance checking** → Proof of lawful execution
 
 ## For Every Test

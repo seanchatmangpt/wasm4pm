@@ -5,7 +5,7 @@ import { existsSync } from 'fs';
 import { getFormatter } from '../output.js';
 import type { OutputOptions } from '../output.js';
 import type { HumanFormatter, JSONFormatter } from '../output.js';
-import { getExampleTomlConfig, getExampleJsonConfig } from '@wasm4pm/config';
+import { getExampleTomlConfig, getExampleJsonConfig, getPublicPresetConfig, getExamplePresetConfig, type PublicPreset } from '@wasm4pm/config';
 
 // Template content generators
 function getEnvExampleContent(): string {
@@ -141,7 +141,9 @@ async function safeWriteFile(
 ): Promise<boolean> {
   if (existsSync(filepath) && !force) {
     if (outputFormat === 'human') {
-      (formatter as HumanFormatter).warn(`File already exists: ${filepath} (use --force to overwrite)`);
+      (formatter as HumanFormatter).warn(
+        `File already exists: ${filepath} (use --force to overwrite)`
+      );
     }
     return false;
   }
@@ -161,7 +163,11 @@ async function ensureDirectory(dirpath: string): Promise<void> {
  * Validate configuration files by attempting to load them
  * CRITICAL: Config errors are not recoverable — must propagate to fail fast
  */
-async function validateConfigFiles(dirpath: string, formatter: HumanFormatter | JSONFormatter, outputFormat: 'human' | 'json'): Promise<boolean> {
+async function validateConfigFiles(
+  dirpath: string,
+  formatter: HumanFormatter | JSONFormatter,
+  outputFormat: 'human' | 'json'
+): Promise<boolean> {
   const tomlPath = path.join(dirpath, 'wasm4pm.toml');
   const jsonPath = path.join(dirpath, 'wasm4pm.json');
 
@@ -235,6 +241,11 @@ export const init = defineCommand({
       description: 'Suppress non-error output',
       alias: 'q',
     },
+    preset: {
+      type: 'string',
+      description: 'Initialize with a preset (fast, balanced, quality)',
+      alias: 'p',
+    },
   },
   async run(ctx) {
     const outputFormat = ctx.args.format as 'human' | 'json';
@@ -246,8 +257,9 @@ export const init = defineCommand({
 
     try {
       const cwd = process.cwd();
-      const configFormat = (ctx.args.configFormat as string || 'toml').toLowerCase();
+      const configFormat = ((ctx.args.configFormat as string) || 'toml').toLowerCase();
       const force = ctx.args.force ?? false;
+      const preset = ctx.args.preset as string | undefined;
 
       if (configFormat !== 'toml' && configFormat !== 'json') {
         formatter.error(`Invalid format: ${configFormat}. Must be 'toml' or 'json'`);
@@ -255,16 +267,42 @@ export const init = defineCommand({
         process.exit(EXIT_CODES.config_error);
       }
 
+      const VALID_PRESETS = ['fast', 'balanced', 'quality'];
+      if (preset && !VALID_PRESETS.includes(preset)) {
+        formatter.error(`Invalid preset: ${preset}. Must be one of: ${VALID_PRESETS.join(', ')}`);
+        const { EXIT_CODES } = await import('../exit-codes.js');
+        process.exit(EXIT_CODES.config_error);
+      }
+
       // Create config file
       const configFilename = configFormat === 'toml' ? 'wasm4pm.toml' : 'wasm4pm.json';
       const configPath = path.join(cwd, configFilename);
-      const configContent = configFormat === 'toml' ? getExampleTomlConfig() : getExampleJsonConfig();
+      let configContent: string;
+      if (preset) {
+        configContent = configFormat === 'toml'
+          ? getExamplePresetConfig(preset as PublicPreset)
+          : JSON.stringify(getPublicPresetConfig(preset as PublicPreset), null, 2);
+      } else {
+        configContent = configFormat === 'toml' ? getExampleTomlConfig() : getExampleJsonConfig();
+      }
 
-      const configCreated = await safeWriteFile(configPath, configContent, force, formatter, outputFormat);
+      const configCreated = await safeWriteFile(
+        configPath,
+        configContent,
+        force,
+        formatter,
+        outputFormat
+      );
 
       // Create .env.example
       const envPath = path.join(cwd, '.env.example');
-      const envCreated = await safeWriteFile(envPath, getEnvExampleContent(), force, formatter, outputFormat);
+      const envCreated = await safeWriteFile(
+        envPath,
+        getEnvExampleContent(),
+        force,
+        formatter,
+        outputFormat
+      );
 
       // Create .gitignore if it doesn't exist
       const gitignorePath = path.join(cwd, '.gitignore');
@@ -304,7 +342,8 @@ export const init = defineCommand({
       } else {
         const humanFormatter = formatter as HumanFormatter;
         if (filesCreated.length > 0) {
-          humanFormatter.success('Configuration initialized successfully');
+          const presetLabel = preset ? ` with ${preset} preset` : '';
+          humanFormatter.success(`Configuration initialized successfully${presetLabel}`);
           humanFormatter.log(`\nCreated files:`);
           filesCreated.forEach((file) => {
             humanFormatter.log(`  ✓ ${file}`);
@@ -314,7 +353,9 @@ export const init = defineCommand({
             humanFormatter.log(`  ${instruction}`);
           });
           if (!isValid) {
-            humanFormatter.error(`\n✗ Configuration validation failed. Please review your config file.`);
+            humanFormatter.error(
+              `\n✗ Configuration validation failed. Please review your config file.`
+            );
             const { EXIT_CODES } = await import('../exit-codes.js');
             process.exit(EXIT_CODES.execution_error);
           }
@@ -326,7 +367,9 @@ export const init = defineCommand({
       if (outputFormat === 'json') {
         (formatter as JSONFormatter).error('Initialization failed', error);
       } else {
-        formatter.error(`Initialization failed: ${error instanceof Error ? error.message : String(error)}`);
+        formatter.error(
+          `Initialization failed: ${error instanceof Error ? error.message : String(error)}`
+        );
       }
       const { EXIT_CODES } = await import('../exit-codes.js');
       process.exit(EXIT_CODES.system_error);

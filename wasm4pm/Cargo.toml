@@ -179,6 +179,22 @@ harness = false
 name = "rdtsc_validation"
 harness = false
 
+[[bench]]
+name = "drift_bench"
+harness = false
+
+[[bench]]
+name = "rl_convergence"
+harness = false
+
+[[bench]]
+name = "prediction_accuracy"
+harness = false
+
+[[bench]]
+name = "prediction_latency"
+harness = false
+
 [[example]]
 name = "scalability_report"
 

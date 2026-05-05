@@ -1,0 +1,503 @@
+{
+  "version": "26.4.10",
+  "timestamp": "2026-05-05T00:00:00Z",
+  "description": "ML algorithm performance baseline for regression detection",
+  "environment": {
+    "node": "20+",
+    "typescript": "5.3+",
+    "testFramework": "vitest"
+  },
+  "regression_threshold_pct": 20,
+  "benchmarks": {
+    "classification": {
+      "knn_k3_n100": {
+        "median_ms": 3,
+        "p25_ms": 2,
+        "p75_ms": 5,
+        "p99_ms": 8,
+        "throughput_rows_sec": 33333,
+        "algorithm": "k-NN (k=3)",
+        "data_size": 100
+      },
+      "knn_k5_n1k": {
+        "median_ms": 20,
+        "p25_ms": 18,
+        "p75_ms": 25,
+        "p99_ms": 35,
+        "throughput_rows_sec": 50000,
+        "algorithm": "k-NN (k=5)",
+        "data_size": 1000
+      },
+      "knn_k10_n10k": {
+        "median_ms": 350,
+        "p25_ms": 300,
+        "p75_ms": 400,
+        "p99_ms": 500,
+        "throughput_rows_sec": 28571,
+        "algorithm": "k-NN (k=10)",
+        "data_size": 10000
+      },
+      "logistic_n100": {
+        "median_ms": 5,
+        "p25_ms": 3,
+        "p75_ms": 8,
+        "p99_ms": 12,
+        "throughput_rows_sec": 20000,
+        "algorithm": "Logistic Regression",
+        "data_size": 100
+      },
+      "logistic_n1k": {
+        "median_ms": 32,
+        "p25_ms": 25,
+        "p75_ms": 40,
+        "p99_ms": 55,
+        "throughput_rows_sec": 31250,
+        "algorithm": "Logistic Regression",
+        "data_size": 1000
+      },
+      "logistic_n10k": {
+        "median_ms": 280,
+        "p25_ms": 200,
+        "p75_ms": 350,
+        "p99_ms": 450,
+        "throughput_rows_sec": 35714,
+        "algorithm": "Logistic Regression",
+        "data_size": 10000
+      },
+      "tree_d5_n100": {
+        "median_ms": 7,
+        "p25_ms": 4,
+        "p75_ms": 10,
+        "p99_ms": 15,
+        "throughput_rows_sec": 14286,
+        "algorithm": "Decision Tree (depth=5)",
+        "data_size": 100
+      },
+      "tree_d10_n1k": {
+        "median_ms": 65,
+        "p25_ms": 50,
+        "p75_ms": 80,
+        "p99_ms": 120,
+        "throughput_rows_sec": 15385,
+        "algorithm": "Decision Tree (depth=10)",
+        "data_size": 1000
+      },
+      "tree_d5_n10k": {
+        "median_ms": 400,
+        "p25_ms": 300,
+        "p75_ms": 500,
+        "p99_ms": 700,
+        "throughput_rows_sec": 25000,
+        "algorithm": "Decision Tree (depth=5)",
+        "data_size": 10000
+      },
+      "bayes_n100": {
+        "median_ms": 3,
+        "p25_ms": 2,
+        "p75_ms": 5,
+        "p99_ms": 8,
+        "throughput_rows_sec": 33333,
+        "algorithm": "Naive Bayes",
+        "data_size": 100
+      },
+      "bayes_n1k": {
+        "median_ms": 22,
+        "p25_ms": 15,
+        "p75_ms": 30,
+        "p99_ms": 45,
+        "throughput_rows_sec": 45455,
+        "algorithm": "Naive Bayes",
+        "data_size": 1000
+      },
+      "bayes_n10k": {
+        "median_ms": 170,
+        "p25_ms": 120,
+        "p75_ms": 220,
+        "p99_ms": 300,
+        "throughput_rows_sec": 58824,
+        "algorithm": "Naive Bayes",
+        "data_size": 10000
+      }
+    },
+    "clustering": {
+      "kmeans_k3_n100": {
+        "median_ms": 5,
+        "p25_ms": 3,
+        "p75_ms": 8,
+        "p99_ms": 12,
+        "throughput_rows_sec": 20000,
+        "algorithm": "k-Means (k=3)",
+        "data_size": 100
+      },
+      "kmeans_k5_n1k": {
+        "median_ms": 35,
+        "p25_ms": 25,
+        "p75_ms": 50,
+        "p99_ms": 70,
+        "throughput_rows_sec": 28571,
+        "algorithm": "k-Means (k=5)",
+        "data_size": 1000
+      },
+      "kmeans_k10_n10k": {
+        "median_ms": 400,
+        "p25_ms": 300,
+        "p75_ms": 500,
+        "p99_ms": 700,
+        "throughput_rows_sec": 25000,
+        "algorithm": "k-Means (k=10)",
+        "data_size": 10000
+      },
+      "dbscan_e0_5_n100": {
+        "median_ms": 3,
+        "p25_ms": 2,
+        "p75_ms": 5,
+        "p99_ms": 8,
+        "throughput_rows_sec": 33333,
+        "algorithm": "DBSCAN (eps=0.5)",
+        "data_size": 100
+      },
+      "dbscan_e0_5_n1k": {
+        "median_ms": 80,
+        "p25_ms": 50,
+        "p75_ms": 120,
+        "p99_ms": 180,
+        "throughput_rows_sec": 12500,
+        "algorithm": "DBSCAN (eps=0.5)",
+        "data_size": 1000
+      },
+      "dbscan_e0_5_n5k": {
+        "median_ms": 1500,
+        "p25_ms": 1000,
+        "p75_ms": 2000,
+        "p99_ms": 3000,
+        "throughput_rows_sec": 3333,
+        "algorithm": "DBSCAN (eps=0.5)",
+        "data_size": 5000
+      }
+    },
+    "regression": {
+      "linear_n100": {
+        "median_ms": 3,
+        "p25_ms": 2,
+        "p75_ms": 5,
+        "p99_ms": 8,
+        "throughput_rows_sec": 33333,
+        "algorithm": "Linear Regression",
+        "data_size": 100
+      },
+      "linear_n1k": {
+        "median_ms": 20,
+        "p25_ms": 15,
+        "p75_ms": 30,
+        "p99_ms": 45,
+        "throughput_rows_sec": 50000,
+        "algorithm": "Linear Regression",
+        "data_size": 1000
+      },
+      "linear_n10k": {
+        "median_ms": 180,
+        "p25_ms": 120,
+        "p75_ms": 220,
+        "p99_ms": 300,
+        "throughput_rows_sec": 55556,
+        "algorithm": "Linear Regression",
+        "data_size": 10000
+      },
+      "poly_d2_n100": {
+        "median_ms": 4,
+        "p25_ms": 3,
+        "p75_ms": 7,
+        "p99_ms": 11,
+        "throughput_rows_sec": 25000,
+        "algorithm": "Polynomial Regression (d=2)",
+        "data_size": 100
+      },
+      "poly_d3_n1k": {
+        "median_ms": 55,
+        "p25_ms": 40,
+        "p75_ms": 70,
+        "p99_ms": 100,
+        "throughput_rows_sec": 18182,
+        "algorithm": "Polynomial Regression (d=3)",
+        "data_size": 1000
+      },
+      "poly_d2_n5k": {
+        "median_ms": 350,
+        "p25_ms": 250,
+        "p75_ms": 450,
+        "p99_ms": 600,
+        "throughput_rows_sec": 14286,
+        "algorithm": "Polynomial Regression (d=2)",
+        "data_size": 5000
+      },
+      "exponential_n100": {
+        "median_ms": 6,
+        "p25_ms": 4,
+        "p75_ms": 10,
+        "p99_ms": 15,
+        "throughput_rows_sec": 16667,
+        "algorithm": "Exponential Regression",
+        "data_size": 100
+      },
+      "exponential_n1k": {
+        "median_ms": 40,
+        "p25_ms": 30,
+        "p75_ms": 50,
+        "p99_ms": 75,
+        "throughput_rows_sec": 25000,
+        "algorithm": "Exponential Regression",
+        "data_size": 1000
+      },
+      "exponential_n10k": {
+        "median_ms": 280,
+        "p25_ms": 200,
+        "p75_ms": 350,
+        "p99_ms": 450,
+        "throughput_rows_sec": 35714,
+        "algorithm": "Exponential Regression",
+        "data_size": 10000
+      }
+    },
+    "anomaly": {
+      "anomaly_clean_n1k": {
+        "median_ms": 8,
+        "p25_ms": 5,
+        "p75_ms": 12,
+        "p99_ms": 18,
+        "throughput_rows_sec": 125000,
+        "algorithm": "Anomaly Detection (clean)",
+        "data_size": 1000
+      },
+      "anomaly_1pct_n1k": {
+        "median_ms": 8,
+        "p25_ms": 5,
+        "p75_ms": 12,
+        "p99_ms": 18,
+        "throughput_rows_sec": 125000,
+        "algorithm": "Anomaly Detection (1%)",
+        "data_size": 1000
+      },
+      "anomaly_5pct_n1k": {
+        "median_ms": 9,
+        "p25_ms": 6,
+        "p75_ms": 14,
+        "p99_ms": 20,
+        "throughput_rows_sec": 111111,
+        "algorithm": "Anomaly Detection (5%)",
+        "data_size": 1000
+      },
+      "anomaly_10pct_n1k": {
+        "median_ms": 10,
+        "p25_ms": 7,
+        "p75_ms": 15,
+        "p99_ms": 22,
+        "throughput_rows_sec": 100000,
+        "algorithm": "Anomaly Detection (10%)",
+        "data_size": 1000
+      },
+      "anomaly_n10k": {
+        "median_ms": 100,
+        "p25_ms": 75,
+        "p75_ms": 140,
+        "p99_ms": 200,
+        "throughput_rows_sec": 100000,
+        "algorithm": "Anomaly Detection",
+        "data_size": 10000
+      }
+    },
+    "forecasting": {
+      "throughput_n100": {
+        "median_ms": 2,
+        "p25_ms": 1,
+        "p75_ms": 3,
+        "p99_ms": 5,
+        "throughput_rows_sec": 50000,
+        "algorithm": "Throughput Forecasting",
+        "data_size": 100
+      },
+      "throughput_n1k": {
+        "median_ms": 22,
+        "p25_ms": 15,
+        "p75_ms": 30,
+        "p99_ms": 45,
+        "throughput_rows_sec": 45455,
+        "algorithm": "Throughput Forecasting",
+        "data_size": 1000
+      },
+      "throughput_n10k": {
+        "median_ms": 170,
+        "p25_ms": 120,
+        "p75_ms": 220,
+        "p99_ms": 300,
+        "throughput_rows_sec": 58824,
+        "algorithm": "Throughput Forecasting",
+        "data_size": 10000
+      },
+      "series_n100": {
+        "median_ms": 3,
+        "p25_ms": 2,
+        "p75_ms": 5,
+        "p99_ms": 8,
+        "throughput_rows_sec": 33333,
+        "algorithm": "Series Forecasting",
+        "data_size": 100
+      },
+      "series_n1k": {
+        "median_ms": 26,
+        "p25_ms": 18,
+        "p75_ms": 35,
+        "p99_ms": 52,
+        "throughput_rows_sec": 38462,
+        "algorithm": "Series Forecasting",
+        "data_size": 1000
+      },
+      "series_n10k": {
+        "median_ms": 210,
+        "p25_ms": 150,
+        "p75_ms": 270,
+        "p99_ms": 380,
+        "throughput_rows_sec": 47619,
+        "algorithm": "Series Forecasting",
+        "data_size": 10000
+      }
+    },
+    "pca": {
+      "pca_10f_2c_n100": {
+        "median_ms": 4,
+        "p25_ms": 3,
+        "p75_ms": 7,
+        "p99_ms": 11,
+        "throughput_rows_sec": 25000,
+        "algorithm": "PCA (10f->2c)",
+        "data_size": 100
+      },
+      "pca_10f_3c_n1k": {
+        "median_ms": 38,
+        "p25_ms": 25,
+        "p75_ms": 50,
+        "p99_ms": 75,
+        "throughput_rows_sec": 26316,
+        "algorithm": "PCA (10f->3c)",
+        "data_size": 1000
+      },
+      "pca_20f_3c_n1k": {
+        "median_ms": 120,
+        "p25_ms": 80,
+        "p75_ms": 160,
+        "p99_ms": 240,
+        "throughput_rows_sec": 8333,
+        "algorithm": "PCA (20f->3c)",
+        "data_size": 1000
+      },
+      "pca_10f_2c_n10k": {
+        "median_ms": 300,
+        "p25_ms": 200,
+        "p75_ms": 400,
+        "p99_ms": 550,
+        "throughput_rows_sec": 33333,
+        "algorithm": "PCA (10f->2c)",
+        "data_size": 10000
+      }
+    },
+    "edge_cases": {
+      "classify_empty": {
+        "median_ms": 0.5,
+        "p25_ms": 0.1,
+        "p75_ms": 1,
+        "p99_ms": 2,
+        "throughput_rows_sec": "infinite",
+        "algorithm": "Classification (empty)",
+        "data_size": 0
+      },
+      "classify_single": {
+        "median_ms": 1,
+        "p25_ms": 0.5,
+        "p75_ms": 2,
+        "p99_ms": 3,
+        "throughput_rows_sec": 1000000,
+        "algorithm": "Classification (single)",
+        "data_size": 1
+      },
+      "cluster_degenerate": {
+        "median_ms": 2,
+        "p25_ms": 1,
+        "p75_ms": 4,
+        "p99_ms": 6,
+        "throughput_rows_sec": 50000,
+        "algorithm": "Clustering (degenerate)",
+        "data_size": 100
+      },
+      "pca_high_dim": {
+        "median_ms": 200,
+        "p25_ms": 150,
+        "p75_ms": 280,
+        "p99_ms": 400,
+        "throughput_rows_sec": 500,
+        "algorithm": "PCA (100 features)",
+        "data_size": 100
+      },
+      "anomaly_single": {
+        "median_ms": 0.1,
+        "p25_ms": 0.05,
+        "p75_ms": 0.2,
+        "p99_ms": 0.5,
+        "throughput_rows_sec": 10000000,
+        "algorithm": "Anomaly (single)",
+        "data_size": 1
+      },
+      "anomaly_zeros": {
+        "median_ms": 0.5,
+        "p25_ms": 0.2,
+        "p75_ms": 1,
+        "p99_ms": 2,
+        "throughput_rows_sec": 200000,
+        "algorithm": "Anomaly (all zeros)",
+        "data_size": 100
+      }
+    },
+    "comparative": {
+      "classifiers_n1k": {
+        "knn_k3": {
+          "median_ms": 18,
+          "throughput_rows_sec": 55556
+        },
+        "logistic": {
+          "median_ms": 30,
+          "throughput_rows_sec": 33333
+        },
+        "tree_d5": {
+          "median_ms": 60,
+          "throughput_rows_sec": 16667
+        },
+        "bayes": {
+          "median_ms": 20,
+          "throughput_rows_sec": 50000
+        }
+      },
+      "clustering_n1k": {
+        "kmeans_k5": {
+          "median_ms": 32,
+          "throughput_rows_sec": 31250
+        },
+        "dbscan_e0_5": {
+          "median_ms": 75,
+          "throughput_rows_sec": 13333
+        }
+      },
+      "regression_n1k": {
+        "linear": {
+          "median_ms": 18,
+          "throughput_rows_sec": 55556
+        },
+        "poly_d2": {
+          "median_ms": 50,
+          "throughput_rows_sec": 20000
+        },
+        "exponential": {
+          "median_ms": 38,
+          "throughput_rows_sec": 26316
+        }
+      }
+    }
+  }
+}

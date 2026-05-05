@@ -23,8 +23,8 @@ export function stableStringify(obj: unknown): string {
   if (Array.isArray(obj)) return '[' + obj.map(stableStringify).join(',') + ']';
   const sorted = Object.keys(obj as Record<string, unknown>).sort();
   const parts = sorted
-    .filter(k => (obj as Record<string, unknown>)[k] !== undefined)
-    .map(k => JSON.stringify(k) + ':' + stableStringify((obj as Record<string, unknown>)[k]));
+    .filter((k) => (obj as Record<string, unknown>)[k] !== undefined)
+    .map((k) => JSON.stringify(k) + ':' + stableStringify((obj as Record<string, unknown>)[k]));
   return '{' + parts.join(',') + '}';
 }
 

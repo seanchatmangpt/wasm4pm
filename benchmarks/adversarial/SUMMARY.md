@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-The pictl algorithm registry claimed 41 algorithms. The adversarial audit reveals:
+The wasm4pm algorithm registry claimed 41 algorithms. The adversarial audit reveals:
 
 | Finding | Count |
 |---------|-------|
@@ -29,7 +29,7 @@ Deleted three broken benchmark files that assumed non-existent APIs:
 
 | File | Problem | Solution |
 |------|---------|----------|
-| `validators/fitness-validator.ts` | Called `pictl.run({ algorithm: 'conformance' })` (doesn't exist) | Deleted |
+| `validators/fitness-validator.ts` | Called `wasm4pm.run({ algorithm: 'conformance' })` (doesn't exist) | Deleted |
 | `suites/discovery-benchmarks.ts` | Referenced missing dataset `bpi_2020_100k.xes` | Deleted |
 | `validator.ts` | Required nonexistent `results.json` bridge | Deleted |
 

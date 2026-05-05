@@ -1,6 +1,6 @@
-# Contributing to pictl
+# Contributing to wasm4pm
 
-Thank you for your interest in contributing! This document provides guidelines for contributing to the WASM bindings of pictl.
+Thank you for your interest in contributing! This document provides guidelines for contributing to the WASM bindings of wasm4pm.
 
 ## Table of Contents
 
@@ -30,8 +30,8 @@ Be respectful, inclusive, and professional in all interactions.
 ```bash
 # Fork the repository on GitHub
 # Clone your fork
-git clone https://github.com/your-username/pictl.git
-cd pictl
+git clone https://github.com/your-username/wasm4pm.git
+cd wasm4pm
 
 # Add upstream remote
 git remote add upstream https://github.com/seanchatmangpt/wasm4pm.git
@@ -110,7 +110,7 @@ pub fn my_new_function(handle: String, param: f64) -> String {
 #### 2. Add Type Definition
 
 ```typescript
-// pkg/pictl.d.ts (auto-generated after build)
+// pkg/wasm4pm.d.ts (auto-generated after build)
 export function my_new_function(handle: string, param: number): string;
 ```
 
@@ -345,4 +345,4 @@ Contributors are recognized in:
 - Release notes
 - Changelog
 
-Thank you for contributing to pictl!
+Thank you for contributing to wasm4pm!

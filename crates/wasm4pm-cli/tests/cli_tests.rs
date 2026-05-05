@@ -29,7 +29,7 @@ fn test_telco_status() {
         .assert()
         .success()
         .stdout(predicate::str::contains(
-            "--- PICTL TELCO ROUTER STATUS ---",
+            "--- WASM4PM TELCO ROUTER STATUS ---",
         ))
         .stdout(predicate::str::contains("Operational State:"));
 }

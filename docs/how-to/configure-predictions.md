@@ -58,7 +58,7 @@ tasks = ["next_activity"]
 Run a prediction -- it will pick up the config automatically:
 
 ```bash
-pictl predict next-activity
+wpm predict next-activity
 ```
 
 What you should see:
@@ -97,9 +97,9 @@ tasks = ["next_activity", "remaining_time", "drift"]
 Run each prediction:
 
 ```bash
-pictl predict next-activity
-pictl predict remaining-time
-pictl predict drift
+wpm predict next-activity
+wpm predict remaining-time
+wpm predict drift
 ```
 
 What you should see for remaining-time:
@@ -163,7 +163,7 @@ tasks = [
 Run a feature extraction to see what predictive attributes are available:
 
 ```bash
-pictl predict features
+wpm predict features
 ```
 
 What you should see:
@@ -216,7 +216,7 @@ wasm4pm uses a 5-layer precedence system. For the prediction section, values fro
 Example: If your config file sets `ngramOrder = 3` but you run:
 
 ```bash
-WASM4PM_PREDICTION_NGRAM_ORDER=4 pictl predict next-activity --ngram-order 5
+WASM4PM_PREDICTION_NGRAM_ORDER=4 wpm predict next-activity --ngram-order 5
 ```
 
 The effective value is `5` (CLI flag wins). If you omit the flag, the effective value is `4` (ENV wins over config). If you omit both, the effective value is `3` (config file).

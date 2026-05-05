@@ -20,8 +20,8 @@ import type { ModelIR, ModelNode, ModelEdge, QualityMetrics } from '@wasm4pm/con
  * Suitable for fast streaming and online discovery.
  */
 export interface DirectlyFollowsGraph {
-  format: "dfg";
-  model_type: "dfg";
+  format: 'dfg';
+  model_type: 'dfg';
   algorithm_id: string;
   nodes: Array<{
     id: string;
@@ -42,8 +42,8 @@ export interface DirectlyFollowsGraph {
  * Suitable for conformance checking and replays.
  */
 export interface PetriNet {
-  format: "petri_net";
-  model_type: "petri_net";
+  format: 'petri_net';
+  model_type: 'petri_net';
   algorithm_id: string;
   places: Array<{
     id: string;
@@ -68,13 +68,13 @@ export interface PetriNet {
  * Supports complex control flow with concurrency.
  */
 export interface PowlModel {
-  format: "powl";
-  model_type: "powl";
+  format: 'powl';
+  model_type: 'powl';
   algorithm_id: string;
   arena: Array<{
     id: number; // u32 index
     label: string;
-    node_type: "activity" | "operator" | "gateway";
+    node_type: 'activity' | 'operator' | 'gateway';
   }>;
   edges: Array<{
     from: number;
@@ -103,8 +103,8 @@ export function inferStartActivities(
   }
 
   return nodes
-    .filter(node => node.type === 'transition' && !incoming.has(node.id))
-    .map(node => node.id);
+    .filter((node) => node.type === 'transition' && !incoming.has(node.id))
+    .map((node) => node.id);
 }
 
 /**
@@ -126,8 +126,8 @@ export function inferEndActivities(
   }
 
   return nodes
-    .filter(node => node.type === 'transition' && !outgoing.has(node.id))
-    .map(node => node.id);
+    .filter((node) => node.type === 'transition' && !outgoing.has(node.id))
+    .map((node) => node.id);
 }
 
 /**
@@ -170,14 +170,14 @@ export function modelIrToDfg(ir: ModelIR): DirectlyFollowsGraph {
   const endActivities = inferEndActivities(ir.nodes, ir.edges);
 
   return {
-    format: "dfg",
-    model_type: "dfg",
+    format: 'dfg',
+    model_type: 'dfg',
     algorithm_id: ir.algorithm_id,
-    nodes: ir.nodes.map(node => ({
+    nodes: ir.nodes.map((node) => ({
       id: node.id,
       label: node.label,
     })),
-    edges: ir.edges.map(edge => ({
+    edges: ir.edges.map((edge) => ({
       from: edge.from,
       to: edge.to,
       ...(edge.weight !== undefined && { weight: edge.weight }),
@@ -262,14 +262,14 @@ function inferInitialMarking(
  * ```
  */
 export function modelIrToPetriNet(ir: ModelIR): PetriNet {
-  const places = ir.nodes.filter(n => n.type === 'place').map(n => n.id);
-  const transitions = ir.nodes.filter(n => n.type === 'transition').map(n => n.id);
+  const places = ir.nodes.filter((n) => n.type === 'place').map((n) => n.id);
+  const transitions = ir.nodes.filter((n) => n.type === 'transition').map((n) => n.id);
 
   const placeIds = new Set(places);
   const transitionIds = new Set(transitions);
 
   // Build arcs (preserve weights from ModelIR edges)
-  const arcs = ir.edges.map(edge => ({
+  const arcs = ir.edges.map((edge) => ({
     source: edge.from,
     target: edge.to,
     ...(edge.weight !== undefined && { weight: edge.weight }),
@@ -296,18 +296,18 @@ export function modelIrToPetriNet(ir: ModelIR): PetriNet {
   finalMarkings.push(finalMarking);
 
   return {
-    format: "petri_net",
-    model_type: "petri_net",
+    format: 'petri_net',
+    model_type: 'petri_net',
     algorithm_id: ir.algorithm_id,
-    places: places.map(id => {
-      const node = ir.nodes.find(n => n.id === id);
+    places: places.map((id) => {
+      const node = ir.nodes.find((n) => n.id === id);
       return {
         id,
         label: node?.label,
       };
     }),
-    transitions: transitions.map(id => {
-      const node = ir.nodes.find(n => n.id === id);
+    transitions: transitions.map((id) => {
+      const node = ir.nodes.find((n) => n.id === id);
       return {
         id,
         label: node?.label || id,
@@ -339,7 +339,7 @@ function allocateArenaIndices(
     arena.push({
       id: i,
       label: node.label,
-      node_type: node.type as "activity" | "operator" | "gateway" | string,
+      node_type: node.type as 'activity' | 'operator' | 'gateway' | string,
     });
   }
 
@@ -388,13 +388,11 @@ export function modelIrToPowlModel(ir: ModelIR): PowlModel {
   const [arena, indexMap] = allocateArenaIndices(ir.nodes);
 
   // Remap edges to arena indices
-  const edges = ir.edges.map(edge => {
+  const edges = ir.edges.map((edge) => {
     const fromIndex = indexMap[edge.from];
     const toIndex = indexMap[edge.to];
     if (fromIndex === undefined || toIndex === undefined) {
-      throw new Error(
-        `Invalid edge: ${edge.from} -> ${edge.to}. Node not found in arena.`
-      );
+      throw new Error(`Invalid edge: ${edge.from} -> ${edge.to}. Node not found in arena.`);
     }
     return {
       from: fromIndex,
@@ -403,13 +401,13 @@ export function modelIrToPowlModel(ir: ModelIR): PowlModel {
   });
 
   return {
-    format: "powl",
-    model_type: "powl",
+    format: 'powl',
+    model_type: 'powl',
     algorithm_id: ir.algorithm_id,
-    arena: arena.map(node => ({
+    arena: arena.map((node) => ({
       id: node.id,
       label: node.label,
-      node_type: node.node_type as "activity" | "operator" | "gateway",
+      node_type: node.node_type as 'activity' | 'operator' | 'gateway',
     })),
     edges,
     index_map: indexMap,
@@ -426,8 +424,8 @@ export function modelIrToPowlModel(ir: ModelIR): PowlModel {
  */
 export function dfgToModelIr(dfg: DirectlyFollowsGraph): ModelIR {
   return {
-    format_version: "1.0",
-    model_type: "dfg",
+    format_version: '1.0',
+    model_type: 'dfg',
     algorithm_id: dfg.algorithm_id,
     capabilities: {
       online_safe: true,
@@ -438,12 +436,12 @@ export function dfgToModelIr(dfg: DirectlyFollowsGraph): ModelIR {
       exportable_to_pnml: false,
       exportable_to_bpmn: false,
     },
-    nodes: dfg.nodes.map(node => ({
+    nodes: dfg.nodes.map((node) => ({
       id: node.id,
       label: node.label,
-      type: "transition",
+      type: 'transition',
     })),
-    edges: dfg.edges.map(edge => ({
+    edges: dfg.edges.map((edge) => ({
       from: edge.from,
       to: edge.to,
       ...(edge.weight !== undefined && { weight: edge.weight }),
@@ -461,27 +459,27 @@ export function dfgToModelIr(dfg: DirectlyFollowsGraph): ModelIR {
  */
 export function petriNetToModelIr(net: PetriNet): ModelIR {
   const nodes: ModelNode[] = [
-    ...net.places.map(place => ({
+    ...net.places.map((place) => ({
       id: place.id,
       label: place.label || place.id,
-      type: "place" as const,
+      type: 'place' as const,
     })),
-    ...net.transitions.map(transition => ({
+    ...net.transitions.map((transition) => ({
       id: transition.id,
       label: transition.label,
-      type: "transition" as const,
+      type: 'transition' as const,
     })),
   ];
 
-  const edges: ModelEdge[] = net.arcs.map(arc => ({
+  const edges: ModelEdge[] = net.arcs.map((arc) => ({
     from: arc.source,
     to: arc.target,
     ...(arc.weight !== undefined && { weight: arc.weight }),
   }));
 
   return {
-    format_version: "1.0",
-    model_type: "petri_net",
+    format_version: '1.0',
+    model_type: 'petri_net',
     algorithm_id: net.algorithm_id,
     capabilities: {
       online_safe: true,
@@ -513,20 +511,20 @@ export function powlModelToModelIr(powl: PowlModel): ModelIR {
     reverseIndexMap[idx] = id;
   }
 
-  const nodes: ModelNode[] = powl.arena.map(arenaNode => ({
+  const nodes: ModelNode[] = powl.arena.map((arenaNode) => ({
     id: reverseIndexMap[arenaNode.id] || `node_${arenaNode.id}`,
     label: arenaNode.label,
     type: arenaNode.node_type,
   }));
 
-  const edges: ModelEdge[] = powl.edges.map(edge => ({
+  const edges: ModelEdge[] = powl.edges.map((edge) => ({
     from: reverseIndexMap[edge.from] || `node_${edge.from}`,
     to: reverseIndexMap[edge.to] || `node_${edge.to}`,
   }));
 
   return {
-    format_version: "1.0",
-    model_type: "powl",
+    format_version: '1.0',
+    model_type: 'powl',
     algorithm_id: powl.algorithm_id,
     capabilities: {
       online_safe: true,

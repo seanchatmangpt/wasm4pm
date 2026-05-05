@@ -279,7 +279,7 @@ Status: ✅ PASSED
    import { SHACLValidator } from '../src/validate-shacl.mjs';
    ```
 
-2. **Add validator field** in `PictlMCPServer` class line 40:
+2. **Add validator field** in `wasm4pmMCPServer` class line 40:
    ```typescript
    private shaclValidator: SHACLValidator | null = null;
    ```

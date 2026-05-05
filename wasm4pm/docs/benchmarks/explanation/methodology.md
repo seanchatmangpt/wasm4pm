@@ -221,7 +221,7 @@ cd wasm4pm && npm run build
 node scripts/benchmark.mjs --dataset bpi2020 --runs 7 --warmup 3
 
 # Results are written to .wasm4pm/results/ with full metadata
-pictl results --latest
+wpm results --latest
 ```
 
 Hardware: Apple M3 Max (16P/4E, 36GB unified memory), macOS Sonoma 14.x, Node.js 20 LTS, Rust 1.77 (stable), wasm-pack 0.12.1.

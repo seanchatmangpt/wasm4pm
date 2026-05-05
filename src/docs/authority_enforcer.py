@@ -619,26 +619,26 @@ class DocAuthorityEnforcer:
         try:
             import opentelemetry.trace as trace
 
-            tracer = trace.get_tracer("pictl.docs.authority")
+            tracer = trace.get_tracer("wasm4pm.docs.authority")
             if tracer is None:
                 return
 
             with tracer.start_as_current_span(
-                f"pictl.doc.review.{doc_category}",
+                f"wasm4pm.doc.review.{doc_category}",
                 attributes={
-                    "pictl.doc.title": doc_title,
-                    "pictl.doc.category": doc_category,
-                    "pictl.doc.author_role": author_role,
-                    "pictl.doc.author_authority": author_authority,
-                    "pictl.doc.category_threshold": category_threshold,
-                    "pictl.pipeline_id": f"docs-{self.pipeline_id}",
-                    "pictl.system": "doc_authority_enforcer",
-                    "pictl.doc.span_id": span_id,
-                    "pictl.doc.trace_id": trace_id,
+                    "wasm4pm.doc.title": doc_title,
+                    "wasm4pm.doc.category": doc_category,
+                    "wasm4pm.doc.author_role": author_role,
+                    "wasm4pm.doc.author_authority": author_authority,
+                    "wasm4pm.doc.category_threshold": category_threshold,
+                    "wasm4pm.pipeline_id": f"docs-{self.pipeline_id}",
+                    "wasm4pm.system": "doc_authority_enforcer",
+                    "wasm4pm.doc.span_id": span_id,
+                    "wasm4pm.doc.trace_id": trace_id,
                 },
             ) as span:
                 if span:
-                    span.set_attribute("pictl.doc.reviewed", True)
+                    span.set_attribute("wasm4pm.doc.reviewed", True)
         except Exception as err:  # noqa: BLE001
             logger.debug("Failed to emit review span: %s", err)
 

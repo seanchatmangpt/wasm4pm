@@ -1,4 +1,4 @@
-# pictl TypeScript Packages
+# wasm4pm TypeScript Packages
 
 10 packages forming the TypeScript orchestration layer around the Rust/WASM core.
 

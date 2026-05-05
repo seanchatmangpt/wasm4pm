@@ -13,16 +13,16 @@ FAIL=0
 
 # Test 1: WIP config exists and is valid JSON
 echo "Test 1: WIP config file..."
-if [ -f "$REPO_ROOT/.pictl/wip-config.json" ]; then
-  if jq . "$REPO_ROOT/.pictl/wip-config.json" > /dev/null 2>&1; then
-    echo "  ✅ PASS: .pictl/wip-config.json is valid JSON"
+if [ -f "$REPO_ROOT/.wasm4pm/wip-config.json" ]; then
+  if jq . "$REPO_ROOT/.wasm4pm/wip-config.json" > /dev/null 2>&1; then
+    echo "  ✅ PASS: .wasm4pm/wip-config.json is valid JSON"
     PASS=$((PASS + 1))
   else
-    echo "  ❌ FAIL: .pictl/wip-config.json is invalid JSON"
+    echo "  ❌ FAIL: .wasm4pm/wip-config.json is invalid JSON"
     FAIL=$((FAIL + 1))
   fi
 else
-  echo "  ❌ FAIL: .pictl/wip-config.json not found"
+  echo "  ❌ FAIL: .wasm4pm/wip-config.json not found"
   FAIL=$((FAIL + 1))
 fi
 
@@ -68,21 +68,21 @@ fi
 
 # Test 6: WIP status dashboard exists
 echo "Test 6: WIP status dashboard..."
-if [ -f "$REPO_ROOT/.pictl/wip-status.md" ]; then
-  echo "  ✅ PASS: .pictl/wip-status.md exists"
+if [ -f "$REPO_ROOT/.wasm4pm/wip-status.md" ]; then
+  echo "  ✅ PASS: .wasm4pm/wip-status.md exists"
   PASS=$((PASS + 1))
 else
-  echo "  ❌ FAIL: .pictl/wip-status.md not found"
+  echo "  ❌ FAIL: .wasm4pm/wip-status.md not found"
   FAIL=$((FAIL + 1))
 fi
 
 # Test 7: WIP implementation documentation exists
 echo "Test 7: WIP implementation documentation..."
-if [ -f "$REPO_ROOT/.pictl/WIP-IMPLEMENTATION.md" ]; then
-  echo "  ✅ PASS: .pictl/WIP-IMPLEMENTATION.md exists"
+if [ -f "$REPO_ROOT/.wasm4pm/WIP-IMPLEMENTATION.md" ]; then
+  echo "  ✅ PASS: .wasm4pm/WIP-IMPLEMENTATION.md exists"
   PASS=$((PASS + 1))
 else
-  echo "  ❌ FAIL: .pictl/WIP-IMPLEMENTATION.md not found"
+  echo "  ❌ FAIL: .wasm4pm/WIP-IMPLEMENTATION.md not found"
   FAIL=$((FAIL + 1))
 fi
 
@@ -92,7 +92,7 @@ REQUIRED_FIELDS=("max_concurrent_prs" "max_review_hours" "escalation_hours" "mer
 MISSING_FIELDS=()
 
 for field in "${REQUIRED_FIELDS[@]}"; do
-  if ! jq -e ".$field" "$REPO_ROOT/.pictl/wip-config.json" > /dev/null 2>&1; then
+  if ! jq -e ".$field" "$REPO_ROOT/.wasm4pm/wip-config.json" > /dev/null 2>&1; then
     MISSING_FIELDS+=("$field")
   fi
 done

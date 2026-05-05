@@ -1,18 +1,18 @@
-"""pictl Documentation Proof Gates — 8 independently falsifiable validation functions.
+"""wasm4pm Documentation Proof Gates — 8 independently falsifiable validation functions.
 
 Each gate enforces a specific aspect of documentation quality and discoverability:
 
 1. diataxis-correct — Doc is in correct Diataxis category (Tutorial/How-To/Explanation/Reference)
-2. examples-present — Doc has real code examples from pictl source (min 2 per 1000 words)
+2. examples-present — Doc has real code examples from wasm4pm source (min 2 per 1000 words)
 3. completeness-threshold — Doc >= 80% complete (no unsolved TODOs)
 4. clarity-score — Doc is readable (Flesch-Kincaid <= 12, jargon defined)
-5. recency-valid — Doc references current pictl version (26.4.x)
+5. recency-valid — Doc references current wasm4pm version (26.4.x)
 6. cross-reference-integrity — All internal links work, no orphaned docs
 7. consistency-check — Consistent terminology, formatting, style
 8. process-conformant — Doc is discoverable + traceable (metadata, TOC, related links)
 
 All gates raise AssertionError on failure (no returns, no soft-fails).
-Gates are independently evaluable and use real pictl data (no mocks, no fabrication).
+Gates are independently evaluable and use real wasm4pm data (no mocks, no fabrication).
 """
 
 from __future__ import annotations
@@ -24,10 +24,10 @@ from pathlib import Path
 from typing import Any, NamedTuple
 from urllib.parse import urlparse
 
-# pictl version and constants
-PICTL_VERSION = "26.4.10"
-PICTL_GLOSSARY = {
-    "pictl": "Process Mining in WebAssembly",
+# wasm4pm version and constants
+WASM4PM_VERSION = "26.4.10"
+WASM4PM_GLOSSARY = {
+    "wasm4pm": "Process Mining in WebAssembly",
     "WASM": "WebAssembly",
     "DFG": "Directly Follows Graph",
     "conformance": "process conformance checking",
@@ -47,7 +47,7 @@ PICTL_GLOSSARY = {
     "streaming": "real-time event processing",
 }
 
-PICTL_STYLE_GUIDE = {
+WASM4PM_STYLE_GUIDE = {
     "code_blocks_required": True,
     "jargon_must_be_defined": True,
     "max_sentence_length": 30,  # words
@@ -57,7 +57,7 @@ PICTL_STYLE_GUIDE = {
     "structure": "Diataxis-compliant (tutorial/how-to/explanation/reference)",
 }
 
-PICTL_DOC_PATHS = [
+WASM4PM_DOC_PATHS = [
     "wasm4pm/docs/benchmarks/tutorials/",
     "wasm4pm/docs/benchmarks/how-to/",
     "wasm4pm/docs/benchmarks/explanation/",
@@ -193,11 +193,11 @@ def _gate_examples_present(
     doc_content: str,
     doc_metadata: DocMetadata,
 ) -> None:
-    """Validate doc has real code examples from pictl source.
+    """Validate doc has real code examples from wasm4pm source.
 
     Requirements:
     1. Minimum 2 examples per 1000 words
-    2. All examples are from actual pictl source code (not synthetic)
+    2. All examples are from actual wasm4pm source code (not synthetic)
     3. Examples are directly applicable to doc topic
 
     Raises
@@ -216,22 +216,22 @@ def _gate_examples_present(
     assert example_count >= expected_examples, (
         f"Insufficient examples: {example_count} found, "
         f"minimum {expected_examples} required (for {word_count} words). "
-        f"Add code examples from pictl source."
+        f"Add code examples from wasm4pm source."
     )
 
-    # Validate examples are from real pictl code (not synthetic)
-    pictl_keywords = ["pictl", "WASM", "eventlog", "discover", "conformance", "XES"]
+    # Validate examples are from real wasm4pm code (not synthetic)
+    wasm4pm_keywords = ["wasm4pm", "WASM", "eventlog", "discover", "conformance", "XES"]
     has_real_example = False
 
     for example in code_blocks:
-        if any(kw in example for kw in pictl_keywords):
+        if any(kw in example for kw in wasm4pm_keywords):
             has_real_example = True
             break
 
     assert has_real_example, (
         f"Examples appear to be synthetic. "
-        f"Ensure examples reference pictl APIs or real usage. "
-        f"Expected keywords: {pictl_keywords}"
+        f"Ensure examples reference wasm4pm APIs or real usage. "
+        f"Expected keywords: {wasm4pm_keywords}"
     )
 
     # Verify examples match doc topic
@@ -329,7 +329,7 @@ def _gate_clarity_score(
 
     Requirements:
     1. Flesch-Kincaid grade level <= 12 (accessible to technical readers)
-    2. All pictl-specific jargon is defined
+    2. All wasm4pm-specific jargon is defined
     3. Clear structure (headings, lists, examples)
 
     Raises
@@ -338,10 +338,10 @@ def _gate_clarity_score(
         If readability is poor or jargon is undefined.
     """
     # Check for jargon without definition
-    pictl_terms = [term for term in PICTL_GLOSSARY.keys() if len(term) > 3]
+    wasm4pm_terms = [term for term in WASM4PM_GLOSSARY.keys() if len(term) > 3]
     undefined_terms = []
 
-    for term in pictl_terms:
+    for term in wasm4pm_terms:
         # If term appears but no definition near it, flag it
         if term in doc_content or term.upper() in doc_content:
             # Simple check: term should be followed by definition or in parentheses
@@ -362,7 +362,7 @@ def _gate_clarity_score(
     # Warn if too many undefined terms, but don't fail hard if only 1-2
     assert len(undefined_in_prose) <= 2, (
         f"Too many undefined jargon terms: {undefined_in_prose}. "
-        f"Add definitions for pictl-specific terms. "
+        f"Add definitions for wasm4pm-specific terms. "
         f"Use parenthetical explanation: 'term (what it means)'."
     )
 
@@ -399,7 +399,7 @@ def _gate_recency_valid(
     doc_content: str,
     doc_metadata: DocMetadata,
 ) -> None:
-    """Validate doc references current pictl version.
+    """Validate doc references current wasm4pm version.
 
     Requirements:
     1. Version referenced matches current version (26.4.x)
@@ -411,7 +411,7 @@ def _gate_recency_valid(
     AssertionError
         If version is outdated or links are broken.
     """
-    current_major_minor = PICTL_VERSION.rsplit(".", 1)[0]  # "26.4"
+    current_major_minor = WASM4PM_VERSION.rsplit(".", 1)[0]  # "26.4"
 
     # Check version references
     version_pattern = r"v?(\d+\.\d+\.\d+)"
@@ -422,7 +422,7 @@ def _gate_recency_valid(
             major_minor = version.rsplit(".", 1)[0]
             assert major_minor == current_major_minor, (
                 f"Doc references outdated version: {version}. "
-                f"Current version is {PICTL_VERSION}. "
+                f"Current version is {WASM4PM_VERSION}. "
                 f"Update all version references."
             )
 
@@ -466,7 +466,7 @@ def _gate_recency_valid(
 def _gate_cross_reference_integrity(
     doc_content: str,
     doc_metadata: DocMetadata,
-    pictl_doc_root: Path | None = None,
+    wasm4pm_doc_root: Path | None = None,
 ) -> None:
     """Validate all links work and no docs are orphaned.
 
@@ -480,8 +480,8 @@ def _gate_cross_reference_integrity(
     AssertionError
         If links are broken or docs are orphaned.
     """
-    if pictl_doc_root is None:
-        pictl_doc_root = Path("/Users/sac/chatmangpt/pictl")
+    if wasm4pm_doc_root is None:
+        wasm4pm_doc_root = Path("/Users/sac/chatmangpt/wasm4pm")
 
     # Extract all links
     markdown_links = re.findall(r"\[.*?\]\((.*?)\)", doc_content)
@@ -497,7 +497,7 @@ def _gate_cross_reference_integrity(
             )
         else:
             # File link - verify file exists
-            file_path = pictl_doc_root / link
+            file_path = wasm4pm_doc_root / link
             assert file_path.exists() or file_path.with_suffix(".md").exists(), (
                 f"Dead link: {link}. "
                 f"File not found at {file_path}."
@@ -526,9 +526,9 @@ def _gate_consistency_check(
     """Validate consistent terminology, formatting, style.
 
     Requirements:
-    1. Glossary terms used consistently (not "pictl" and "pictl" mixed)
+    1. Glossary terms used consistently (not "wasm4pm" and "wasm4pm" mixed)
     2. Formatting consistent (code blocks use same syntax highlighting)
-    3. Style consistent (tone, tense, perspective match pictl style guide)
+    3. Style consistent (tone, tense, perspective match wasm4pm style guide)
 
     Raises
     ------
@@ -536,7 +536,7 @@ def _gate_consistency_check(
         If inconsistencies are detected.
     """
     # Check glossary term usage consistency
-    glossary_terms = list(PICTL_GLOSSARY.keys())
+    glossary_terms = list(WASM4PM_GLOSSARY.keys())
 
     for term in glossary_terms:
         # Count variations
@@ -559,7 +559,7 @@ def _gate_consistency_check(
 
         # If multiple variations exist, flag inconsistency
         if len(variations) > 1:
-            # Some variation is OK (e.g., "pictl" in code vs prose), but not too much
+            # Some variation is OK (e.g., "wasm4pm" in code vs prose), but not too much
             max_var = max(v[1] for v in variations)
             min_var = min(v[1] for v in variations)
             ratio = max_var / min_var if min_var > 0 else 0
@@ -586,7 +586,7 @@ def _gate_consistency_check(
     inline_code_count = len(re.findall(r"`[^`]+`", doc_content))
     assert inline_code_count >= 2, (
         f"Insufficient inline code formatting: {inline_code_count} backtick pairs. "
-        f"Use backticks for pictl function names and concepts."
+        f"Use backticks for wasm4pm function names and concepts."
     )
 
 
@@ -605,7 +605,7 @@ def _gate_process_conformant(
     1. Doc has metadata (title, category, author, update date)
     2. Doc has table of contents (for docs > 2000 words)
     3. Doc has "See also" section linking related docs
-    4. Doc contributes to docs → API mapping (mentions real pictl functions)
+    4. Doc contributes to docs → API mapping (mentions real wasm4pm functions)
 
     Raises
     ------
@@ -620,7 +620,7 @@ def _gate_process_conformant(
 
     # Version should be specified for recency
     if doc_metadata.version is None:
-        assert PICTL_VERSION, "Doc version should match pictl version"
+        assert WASM4PM_VERSION, "Doc version should match wasm4pm version"
 
     # For longer docs, require TOC
     word_count = len(doc_content.split())
@@ -642,8 +642,8 @@ def _gate_process_conformant(
         f"Add ## See also with links to related documentation."
     )
 
-    # Check for pictl function references (ensures traceability to API)
-    pictl_api_functions = [
+    # Check for wasm4pm function references (ensures traceability to API)
+    wasm4pm_api_functions = [
         "init",
         "load_eventlog",
         "discover_dfg",
@@ -654,13 +654,13 @@ def _gate_process_conformant(
     ]
 
     function_mentions = sum(
-        1 for func in pictl_api_functions if f"`{func}" in doc_content
+        1 for func in wasm4pm_api_functions if f"`{func}" in doc_content
     )
 
     # At least some functions should be mentioned for traceability
     assert function_mentions >= 1, (
-        f"Doc has no references to pictl functions. "
-        f"Add mentions of relevant API functions for discoverability: {pictl_api_functions}"
+        f"Doc has no references to wasm4pm functions. "
+        f"Add mentions of relevant API functions for discoverability: {wasm4pm_api_functions}"
     )
 
     # Metadata completeness (author or update date should exist)
@@ -742,7 +742,7 @@ DOCUMENTATION_PROOF_GATES = [
 def run_documentation_proof_gates(
     doc_content: str,
     doc_metadata: DocMetadata,
-    pictl_doc_root: Path | None = None,
+    wasm4pm_doc_root: Path | None = None,
 ) -> dict[str, bool]:
     """Run all 8 documentation proof gates.
 
@@ -755,8 +755,8 @@ def run_documentation_proof_gates(
         Full text content of the documentation file.
     doc_metadata : DocMetadata
         Metadata about the document (title, category, etc.).
-    pictl_doc_root : Path, optional
-        Root path to pictl docs for link validation. Default is /Users/sac/chatmangpt/pictl.
+    wasm4pm_doc_root : Path, optional
+        Root path to wasm4pm docs for link validation. Default is /Users/sac/chatmangpt/wasm4pm.
 
     Returns
     -------
@@ -773,20 +773,20 @@ def run_documentation_proof_gates(
     >>> metadata = DocMetadata(
     ...     title="Your First Benchmark",
     ...     declared_category="tutorial",
-    ...     author="pictl team",
+    ...     author="wasm4pm team",
     ...     updated_date="2026-04-10",
     ... )
     >>> results = run_documentation_proof_gates(doc_content, metadata)
     >>> assert results["diataxis-correct"] is True
     """
-    if pictl_doc_root is None:
-        pictl_doc_root = Path("/Users/sac/chatmangpt/pictl")
+    if wasm4pm_doc_root is None:
+        wasm4pm_doc_root = Path("/Users/sac/chatmangpt/wasm4pm")
 
     results = {}
     for gate_name, gate_fn in DOCUMENTATION_PROOF_GATES:
-        # Special case: cross-reference-integrity needs pictl_doc_root
+        # Special case: cross-reference-integrity needs wasm4pm_doc_root
         if gate_name == "cross-reference-integrity":
-            gate_fn(doc_content, doc_metadata, pictl_doc_root)
+            gate_fn(doc_content, doc_metadata, wasm4pm_doc_root)
         else:
             gate_fn(doc_content, doc_metadata)
         results[gate_name] = True
@@ -830,7 +830,7 @@ def validate_documentation_file(
     return run_documentation_proof_gates(
         doc_content,
         doc_metadata,
-        doc_path.parent.parent.parent,  # Root of pictl project
+        doc_path.parent.parent.parent,  # Root of wasm4pm project
     )
 
 
@@ -898,7 +898,7 @@ def extract_metadata_from_doc(
         declared_category=category,
         author=author,
         updated_date=updated_date,
-        version=PICTL_VERSION,
+        version=WASM4PM_VERSION,
     )
 
 

@@ -11,7 +11,7 @@
 
 ## Abstract
 
-This thesis interrogates the empirical meaning of benchmark results obtained from pictl, a process mining engine compiled to WebAssembly (WASM) that executes entirely within web browsers. We present and analyze performance data across 28 algorithm implementations spanning process discovery, conformance checking, streaming analytics, machine learning prediction, Monte Carlo simulation, and object-centric event log processing. The benchmark suite, formalized as the *Closed Claw Benchmarking Constitution*, establishes six canonical pipeline classes and five pass/fail gates that transform raw timing measurements into operational truth claims. We demonstrate that the measured throughput of 142.7 million events per second for directly-follows graph discovery, 207 million events per second for SIMD-accelerated conformance checking, and sub-microsecond anomaly scoring are not merely performance numbers but constitute proof that the von der Aalst process mining theoretical framework can operate at web scale without server infrastructure. We further show that the 40-47x SIMD acceleration of token replay collapses the longstanding tradeoff between conformance checking accuracy and computational cost, enabling real-time conformance monitoring in resource-constrained environments including IoT devices and mobile browsers. The Closed Claw gates---determinism via BLAKE3 hashing, receipt chains, truth thresholds, cross-profile synchrony, and structured reporting---establish a new epistemological standard for process mining benchmarks that goes beyond latency measurement to provide cryptographic proof of execution correctness. This work contributes: (1) the largest published benchmark dataset for WASM-compiled process mining, (2) a formal benchmarking constitution that ensures reproducibility and correctness, (3) empirical evidence that browser-based process mining achieves parity with native Python implementations on throughput while providing 82% binary size reduction through deployment profiles, and (4) a theoretical framework connecting benchmark results to the four quality dimensions of process models (fitness, precision, generalization, simplicity) as articulated by van der Aalst.
+This thesis interrogates the empirical meaning of benchmark results obtained from wasm4pm, a process mining engine compiled to WebAssembly (WASM) that executes entirely within web browsers. We present and analyze performance data across 28 algorithm implementations spanning process discovery, conformance checking, streaming analytics, machine learning prediction, Monte Carlo simulation, and object-centric event log processing. The benchmark suite, formalized as the *Closed Claw Benchmarking Constitution*, establishes six canonical pipeline classes and five pass/fail gates that transform raw timing measurements into operational truth claims. We demonstrate that the measured throughput of 142.7 million events per second for directly-follows graph discovery, 207 million events per second for SIMD-accelerated conformance checking, and sub-microsecond anomaly scoring are not merely performance numbers but constitute proof that the von der Aalst process mining theoretical framework can operate at web scale without server infrastructure. We further show that the 40-47x SIMD acceleration of token replay collapses the longstanding tradeoff between conformance checking accuracy and computational cost, enabling real-time conformance monitoring in resource-constrained environments including IoT devices and mobile browsers. The Closed Claw gates---determinism via BLAKE3 hashing, receipt chains, truth thresholds, cross-profile synchrony, and structured reporting---establish a new epistemological standard for process mining benchmarks that goes beyond latency measurement to provide cryptographic proof of execution correctness. This work contributes: (1) the largest published benchmark dataset for WASM-compiled process mining, (2) a formal benchmarking constitution that ensures reproducibility and correctness, (3) empirical evidence that browser-based process mining achieves parity with native Python implementations on throughput while providing 82% binary size reduction through deployment profiles, and (4) a theoretical framework connecting benchmark results to the four quality dimensions of process models (fitness, precision, generalization, simplicity) as articulated by van der Aalst.
 
 **Keywords:** process mining, WebAssembly, benchmarking, conformance checking, process discovery, streaming analytics, SIMD acceleration, closed claw constitution, BLAKE3 receipts, operational truth
 
@@ -19,7 +19,7 @@ This thesis interrogates the empirical meaning of benchmark results obtained fro
 
 ## Declaration
 
-This thesis is the original work of the author. All benchmark data was collected on the author's hardware (macOS Darwin 25.2.0, Apple Silicon) using the pictl WASM engine version 26.4.10. The Closed Claw Benchmarking Constitution and all benchmark implementations are open source under the pictl repository.
+This thesis is the original work of the author. All benchmark data was collected on the author's hardware (macOS Darwin 25.2.0, Apple Silicon) using the wasm4pm WASM engine version 26.4.10. The Closed Claw Benchmarking Constitution and all benchmark implementations are open source under the wasm4pm repository.
 
 ---
 
@@ -95,11 +95,11 @@ This thesis addresses four research questions:
 
 ### 1.3 Thesis Statement
 
-*The benchmark results of the pictl WASM process mining engine prove that the complete van der Aalst process mining framework---discovery, conformance checking, streaming analytics, prediction, simulation, and object-centric analysis---can execute at production scale in web browsers without server infrastructure. The Closed Claw Benchmarking Constitution, with its BLAKE3 receipt chains and five pass/fail gates, establishes that these results constitute operational truth: cryptographically verified, deterministically reproducible evidence of algorithmic correctness and performance.*
+*The benchmark results of the wasm4pm WASM process mining engine prove that the complete van der Aalst process mining framework---discovery, conformance checking, streaming analytics, prediction, simulation, and object-centric analysis---can execute at production scale in web browsers without server infrastructure. The Closed Claw Benchmarking Constitution, with its BLAKE3 receipt chains and five pass/fail gates, establishes that these results constitute operational truth: cryptographically verified, deterministically reproducible evidence of algorithmic correctness and performance.*
 
 ### 1.4 Scope and Limitations
 
-This thesis covers the pictl engine exclusively. Comparisons with pm4py, ProM, Apromore, or other process mining tools are made where benchmark data is available, but systematic cross-tool benchmarking is outside the scope. All measurements were collected on Apple Silicon (aarch64-darwin); x86-64 and ARM server results may differ. The benchmark suite does not cover all process mining algorithms---specifically, A* alignment is excluded due to its O(b^d) worst-case complexity making it unsuitable for automated benchmarking at scale.
+This thesis covers the wasm4pm engine exclusively. Comparisons with pm4py, ProM, Apromore, or other process mining tools are made where benchmark data is available, but systematic cross-tool benchmarking is outside the scope. All measurements were collected on Apple Silicon (aarch64-darwin); x86-64 and ARM server results may differ. The benchmark suite does not cover all process mining algorithms---specifically, A* alignment is excluded due to its O(b^d) worst-case complexity making it unsuitable for automated benchmarking at scale.
 
 ---
 
@@ -225,7 +225,7 @@ The hash chain ensures that any tampering with the input, configuration, algorit
 
 ### 3.5 Deployment Profile Coverage
 
-The pictl engine supports five deployment profiles, each trading algorithmic completeness for binary size:
+The wasm4pm engine supports five deployment profiles, each trading algorithmic completeness for binary size:
 
 | Profile | Binary Size | Reduction | Algorithms Available |
 |---|---|---|---|
@@ -247,7 +247,7 @@ The 81% binary size reduction for the mobile profile means that the complete pro
 - **Operating System:** macOS Darwin 25.2.0
 - **Compiler:** rustc 1.84 with opt-level=3
 - **Benchmark Framework:** Criterion 0.5
-- **WASM Engine:** pictl v26.4.10
+- **WASM Engine:** wasm4pm v26.4.10
 - **Hash Function:** BLAKE3 (for receipt chains)
 - **Memory Measurement:** Platform-specific (RSS on Linux, estimated on macOS)
 
@@ -408,7 +408,7 @@ The PNML roundtrip benchmark tests semantic preservation across format conversio
 
 **G4 Synchrony Gate:** The PNML roundtrip (export → import → hash comparison) verifies that converting a Petri net to PNML format and back produces a behaviorally equivalent model. This gate proves that the serialization format preserves the process semantics, not just the syntax.
 
-**What this means:** The semantic proof loop establishes that pictl's PNML import/export is lossless for the behavioral properties that matter for process mining (transition firing sequences, place/transition connectivity). This is critical for interoperability: process models discovered by pictl can be exported to PNML, imported by other tools (YAWL, Signavio, Camunda), and the behavioral semantics will be preserved.
+**What this means:** The semantic proof loop establishes that wasm4pm's PNML import/export is lossless for the behavioral properties that matter for process mining (transition firing sequences, place/transition connectivity). This is critical for interoperability: process models discovered by wasm4pm can be exported to PNML, imported by other tools (YAWL, Signavio, Camunda), and the behavioral semantics will be preserved.
 
 ### 5.5 Manufacturing Truth Loop Results (Pipeline E)
 
@@ -609,7 +609,7 @@ This five-gate framework transforms benchmark results from performance claims in
 
 **Single hardware platform:** All measurements were collected on Apple Silicon. x86-64, ARM servers, and actual browser environments may show different absolute numbers.
 
-**No cross-tool comparison:** This thesis benchmarks only pictl. Comparisons with pm4py, ProM, and other tools are based on published literature, not controlled experiments.
+**No cross-tool comparison:** This thesis benchmarks only wasm4pm. Comparisons with pm4py, ProM, and other tools are based on published literature, not controlled experiments.
 
 **WASM-specific optimizations:** The SIMD acceleration is specific to the WASM SIMD instruction set. Native implementations may achieve different speedup ratios.
 
@@ -659,7 +659,7 @@ This five-gate framework transforms benchmark results from performance claims in
 
 ## Chapter 10: Conclusion
 
-This thesis has demonstrated that the pictl WebAssembly process mining engine achieves performance levels that enable a fundamental shift in how and where process mining is deployed. The key findings are:
+This thesis has demonstrated that the wasm4pm WebAssembly process mining engine achieves performance levels that enable a fundamental shift in how and where process mining is deployed. The key findings are:
 
 1. **Web-scale process discovery is real.** DFG discovery at 142.7 Melem/s means process models can be discovered interactively in browsers, not just on servers.
 

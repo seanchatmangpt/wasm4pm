@@ -30,11 +30,7 @@ describe('Error System - PRD §14', () => {
 
     it('includes context when provided', () => {
       const context = { path: '/app/config.toml', searched: ['/app', '/home'] };
-      const error = createError(
-        'SOURCE_NOT_FOUND',
-        'File missing',
-        context
-      );
+      const error = createError('SOURCE_NOT_FOUND', 'File missing', context);
 
       expect(error.context).toEqual(context);
     });
@@ -167,11 +163,10 @@ describe('Error System - PRD §14', () => {
     let testError: ErrorInfo;
 
     beforeAll(() => {
-      testError = createError(
-        'SOURCE_NOT_FOUND',
-        'Input file not found at /data/log.xes',
-        { path: '/data/log.xes', searched: ['/data', '/var/data'] }
-      );
+      testError = createError('SOURCE_NOT_FOUND', 'Input file not found at /data/log.xes', {
+        path: '/data/log.xes',
+        searched: ['/data', '/var/data'],
+      });
     });
 
     describe('formatError (human-readable)', () => {
@@ -283,25 +278,19 @@ describe('Error System - PRD §14', () => {
     it('validation detects missing remediation', () => {
       // This would only trigger if we had incomplete configuration
       const issues = validateErrorSystem();
-      const hasMissingRemediation = issues.some((i) =>
-        i.includes('missing from REMEDIATIONS')
-      );
+      const hasMissingRemediation = issues.some((i) => i.includes('missing from REMEDIATIONS'));
       expect(hasMissingRemediation).toBe(false);
     });
 
     it('validation detects missing exit codes', () => {
       const issues = validateErrorSystem();
-      const hasMissingExitCode = issues.some((i) =>
-        i.includes('missing from EXIT_CODES')
-      );
+      const hasMissingExitCode = issues.some((i) => i.includes('missing from EXIT_CODES'));
       expect(hasMissingExitCode).toBe(false);
     });
 
     it('validation detects invalid exit code ranges', () => {
       const issues = validateErrorSystem();
-      const hasInvalidRange = issues.some((i) =>
-        i.includes('invalid exit code')
-      );
+      const hasInvalidRange = issues.some((i) => i.includes('invalid exit code'));
       expect(hasInvalidRange).toBe(false);
     });
   });

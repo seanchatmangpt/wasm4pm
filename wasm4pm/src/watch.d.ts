@@ -3,7 +3,7 @@
  * Watch mode implementation with streaming, checkpointing, and reconnection
  * Provides incremental processing with progress tracking and fault tolerance
  */
-import { PictlConfig, ExecutionProfile } from './config.js';
+import { Wasm4pmConfig, ExecutionProfile } from './config.js';
 import { ExecutableStep } from './pipeline.js';
 /**
  * Information about an error in watch mode
@@ -108,7 +108,7 @@ export declare class WatchMode {
   private lastCheckpointTime;
   private eventsSinceHeartbeat;
   private currentCheckpoint;
-  constructor(plan: ExecutableStep[], config: PictlConfig, watchConfig?: WatchConfig);
+  constructor(plan: ExecutableStep[], config: Wasm4pmConfig, watchConfig?: WatchConfig);
   /**
    * Start watch mode and return an async iterable of events
    */
@@ -159,7 +159,7 @@ export declare class WatchMode {
  */
 export declare function watchWithReconnection(
   plan: ExecutableStep[],
-  config: PictlConfig,
+  config: Wasm4pmConfig,
   watchConfig?: WatchConfig
 ): AsyncIterable<WatchEvent>;
 //# sourceMappingURL=watch.d.ts.map

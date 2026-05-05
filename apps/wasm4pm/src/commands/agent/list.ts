@@ -48,18 +48,28 @@ export const list = defineCommand({
         const summary = registry.getSummary();
 
         formatter.log('');
-        formatter.log(`  Agents: ${summary.active} active, ${summary.disabled} disabled, ${summary.error} error`);
+        formatter.log(
+          `  Agents: ${summary.active} active, ${summary.disabled} disabled, ${summary.error} error`
+        );
         formatter.log('');
 
         for (const agent of agents) {
           const statusIcon =
-            agent.status === 'active' ? '+' :
-            agent.status === 'disabled' ? '-' :
-            agent.status === 'error' ? '!!' : '?';
+            agent.status === 'active'
+              ? '+'
+              : agent.status === 'disabled'
+                ? '-'
+                : agent.status === 'error'
+                  ? '!!'
+                  : '?';
 
           const modeTag = agent.config.mode === 'continuous' ? 'C' : 'D';
-          formatter.log(`  ${statusIcon} ${agent.config.name}  [${modeTag}]  ${agent.config.description}`);
-          formatter.log(`     Runs: ${agent.total_runs}  Violations: ${agent.total_violations}  Corrections: ${agent.total_corrections}`);
+          formatter.log(
+            `  ${statusIcon} ${agent.config.name}  [${modeTag}]  ${agent.config.description}`
+          );
+          formatter.log(
+            `     Runs: ${agent.total_runs}  Violations: ${agent.total_violations}  Corrections: ${agent.total_corrections}`
+          );
 
           if (ctx.args.verbose && agent.config.target_gates.length > 0) {
             formatter.log(`     Gates: ${agent.config.target_gates.join(', ')}`);
@@ -75,7 +85,9 @@ export const list = defineCommand({
       if (formatter instanceof JSONFormatter) {
         formatter.error('Failed to list agents', error);
       } else {
-        formatter.error(`Failed to list agents: ${error instanceof Error ? error.message : String(error)}`);
+        formatter.error(
+          `Failed to list agents: ${error instanceof Error ? error.message : String(error)}`
+        );
       }
       process.exit(EXIT_CODES.execution_error);
     }

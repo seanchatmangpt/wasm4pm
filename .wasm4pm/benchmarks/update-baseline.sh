@@ -1,7 +1,7 @@
 #!/bin/bash
 # Update benchmark baselines after main branch merge
-# Stores results in .pictl/benchmarks/baselines/ with timestamp and git metadata
-# Usage: bash .pictl/benchmarks/update-baseline.sh [--ci]
+# Stores results in .wasm4pm/benchmarks/baselines/ with timestamp and git metadata
+# Usage: bash .wasm4pm/benchmarks/update-baseline.sh [--ci]
 
 set -e
 
@@ -160,4 +160,4 @@ fi
 
 echo ""
 echo "Baseline update complete!"
-echo "Store baseline file in version control: git add .pictl/benchmarks/baselines/"
+echo "Store baseline file in version control: git add .wasm4pm/benchmarks/baselines/"

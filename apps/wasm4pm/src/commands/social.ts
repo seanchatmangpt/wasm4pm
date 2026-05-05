@@ -95,7 +95,7 @@ export const social = defineCommand({
         formatter.error(
           `Invalid metric: ${metric}. Must be one of: handover, working-together, similar-task`
         );
-        process.exit(EXIT_CODES.config_error);
+        process.exit(EXIT_CODES.source_error);
       }
 
       if (formatter instanceof HumanFormatter) {
@@ -104,7 +104,8 @@ export const social = defineCommand({
       }
 
       // Load WASM module
-      const loaderConfig = ctx.args.format === 'json' ? { observability: createQuietObservabilityLayer() } : {};
+      const loaderConfig =
+        ctx.args.format === 'json' ? { observability: createQuietObservabilityLayer() } : {};
       const loader = WasmLoader.getInstance(loaderConfig);
       await loader.init();
       const wasm = loader.get();

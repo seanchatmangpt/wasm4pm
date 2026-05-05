@@ -13,7 +13,7 @@ export class AuditStore {
     constructor(storePath) {
         this.entries = [];
         this.dirty = false;
-        this.storePath = storePath || join(process.cwd(), '.pictl', 'agents', 'audit.jsonl');
+        this.storePath = storePath || join(process.cwd(), '.wasm4pm', 'agents', 'audit.jsonl');
         this._load();
     }
     /** Load audit entries from disk */

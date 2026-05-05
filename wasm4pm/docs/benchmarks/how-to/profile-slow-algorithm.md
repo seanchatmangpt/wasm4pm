@@ -7,7 +7,7 @@
 The simplest starting point. `wpm run` reports wall-clock time automatically:
 
 ```bash
-pictl run log.xes --algorithm hill-climbing --format json
+wpm run log.xes --algorithm hill-climbing --format json
 ```
 
 The JSON output includes `elapsedMs`:
@@ -24,7 +24,7 @@ The JSON output includes `elapsedMs`:
 For a quick comparison across algorithms, `wpm compare` shows timing in its side-by-side table:
 
 ```bash
-pictl compare dfg hill-climbing -i log.xes
+wpm compare dfg hill-climbing -i log.xes
 ```
 
 This gives you the total execution time but does not break it down into phases (parse, discover, serialize).
@@ -114,7 +114,7 @@ If the bottleneck appears to be at the WASM/JS boundary (serializing large resul
 ### Step 1: Generate a V8 profile
 
 ```bash
-node --prof $(which pictl) run log.xes --algorithm hill-climbing
+node --prof $(which wasm4pm) run log.xes --algorithm hill-climbing
 ```
 
 This creates `isolate-*.log` in the working directory.

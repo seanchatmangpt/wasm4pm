@@ -1,6 +1,6 @@
 ================================================================================
 VERIFICATION SUMMARY — Lawful Dispatch Petri Net
-pictl AutoProcess | 34ns closed-loop cycle
+wasm4pm AutoProcess | 34ns closed-loop cycle
 ================================================================================
 
 ARTIFACTS GENERATED
@@ -167,7 +167,7 @@ NEXT STEPS (IMPLEMENTATION)
 ─────────────────────────────────────────────────────────────────────────────
 
 1. INSTRUMENTATION (OTEL Spans)
-   □ Instrument pictl execution with OTEL spans per phase
+   □ Instrument wasm4pm execution with OTEL spans per phase
    □ Capture timing (actual vs. budgeted)
    □ Verify execution trace matches M0 → M1 → M2 → M3_all → M4
 
@@ -179,7 +179,7 @@ NEXT STEPS (IMPLEMENTATION)
      • Precision: 100% (formal doesn't overfit)
 
 3. RUNTIME VERIFICATION
-   □ Deploy PNML checker to pictl runtime
+   □ Deploy PNML checker to wasm4pm runtime
    □ Validate each transition firing against PNML arc definitions
    □ Catch violations before production (type-safe)
 
@@ -196,7 +196,7 @@ NEXT STEPS (IMPLEMENTATION)
 ARTIFACT LOCATIONS
 ─────────────────────────────────────────────────────────────────────────────
 
-/Users/sac/chatmangpt/pictl/
+/Users/sac/chatmangpt/wasm4pm/
   ├── petri_net_lawful_dispatch.pnml    (XML, ISO 20481)
   ├── reachability_graph.yaml            (BFS, YAML)
   ├── soundness_proof.md                 (Formal proof, Markdown)
@@ -257,7 +257,7 @@ Confidence:    HIGH
 Recommendation: APPROVED FOR PRODUCTION
 
                The lawful dispatch Petri net is mathematically sound,
-               fault-tolerant, and ready for integration into pictl.
+               fault-tolerant, and ready for integration into wasm4pm.
 
 
 ================================================================================

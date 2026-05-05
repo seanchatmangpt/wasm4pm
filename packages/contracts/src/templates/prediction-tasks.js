@@ -8,7 +8,7 @@
  *
  * Two forms are exported:
  *   PREDICTION_TASKS     — underscore IDs used in config schema and TypeScript
- *   VALID_PREDICT_CLI_TASKS — hyphen slugs used as `pictl predict <task>` arguments
+ *   VALID_PREDICT_CLI_TASKS — hyphen slugs used as `wasm4pm predict <task>` arguments
  */
 /** Underscore form — used in config.prediction.tasks and @wasm4pm/config schema enum */
 export const PREDICTION_TASKS = [
@@ -19,7 +19,7 @@ export const PREDICTION_TASKS = [
     'remaining_time',
     'resource'
 ];
-/** Hyphen form — used as `pictl predict <task>` CLI argument */
+/** Hyphen form — used as `wasm4pm predict <task>` CLI argument */
 export const VALID_PREDICT_CLI_TASKS = [
     'drift',
     'features',

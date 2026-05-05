@@ -120,7 +120,7 @@ Or in Kubernetes:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: pictl-config
+  name: wasm4pm-config
 data:
   deployment-profile: "browser"  # Matches binary
   config-profile: "balanced"      # Config setting
@@ -135,10 +135,10 @@ After redeploying:
 ls -lh wasm4pm.wasm
 
 # Verify config matches
-pictl explain --config wasm4pm.toml | grep -A 3 execution
+wpm explain --config wasm4pm.toml | grep -A 3 execution
 
 # Run test
-pictl run -i test.xes --config wasm4pm.toml
+wpm run -i test.xes --config wasm4pm.toml
 ```
 
 ---
@@ -262,7 +262,7 @@ Test the smaller binary works:
 
 ```bash
 # Run on target device
-pictl run -i small-log.xes --config wasm4pm.toml
+wpm run -i small-log.xes --config wasm4pm.toml
 ```
 
 If it fails with "algorithm not found", the profile was too minimal for your use case. Try the next larger profile:
@@ -330,7 +330,7 @@ Or via CLI:
 
 ```bash
 # Temporary override
-pictl run -i events.xes --config wasm4pm.toml \
+wpm run -i events.xes --config wasm4pm.toml \
   --override execution.maxMemory=536870912
 ```
 
@@ -369,12 +369,12 @@ Reduce event log size:
 
 ```bash
 # Filter by activity (keep only frequent activities)
-pictl run -i events.xes --filter-activity-min-freq 2
+wpm run -i events.xes --filter-activity-min-freq 2
 
 # Filter by trace (process subset)
-pictl run -i events.xes --max-traces 1000
+wpm run -i events.xes --max-traces 1000
 
-# Pre-process (outside pictl)
+# Pre-process (outside wasm4pm)
 # Filter, sample, or compress the input file
 ```
 
@@ -385,7 +385,7 @@ After fixes, monitor memory during execution:
 ```bash
 # Watch memory in real-time
 while true; do free -h | grep Mem; sleep 1; done &
-pictl run -i events.xes --config wasm4pm.toml
+wpm run -i events.xes --config wasm4pm.toml
 ```
 
 Or check resource limits:
@@ -462,7 +462,7 @@ profile = "quality"   # Slower profile needs more time
 Or via CLI:
 
 ```bash
-pictl run -i events.xes --config wasm4pm.toml --timeout 600000
+wpm run -i events.xes --config wasm4pm.toml --timeout 600000
 ```
 
 #### Step 4: Match Profile to Timeout
@@ -487,7 +487,7 @@ timeout = 60000       # 60 sec (for balanced profile)
 Process large logs in chunks:
 
 ```bash
-pictl run -i events.xes --profile stream --timeout 600000
+wpm run -i events.xes --profile stream --timeout 600000
 ```
 
 ### Verification
@@ -499,10 +499,10 @@ Test with small input first:
 head -100 events.xes > test-small.xes
 
 # Try it
-pictl run -i test-small.xes --timeout 30000  # 30 sec
+wpm run -i test-small.xes --timeout 30000  # 30 sec
 
 # If that works, scale up
-pictl run -i events.xes --timeout 300000
+wpm run -i events.xes --timeout 300000
 ```
 
 ---
@@ -532,10 +532,10 @@ One of these:
 
 #### Step 1: Validate Config Syntax
 
-Use pictl's validator:
+Use wasm4pm's validator:
 
 ```bash
-pictl init --validate wasm4pm.toml
+wpm init --validate wasm4pm.toml
 
 # Output on success:
 # ✓ Configuration valid
@@ -592,7 +592,7 @@ timeout = 60000
 View example config:
 
 ```bash
-pictl init --sample > example.toml
+wpm init --sample > example.toml
 cat example.toml | head -20
 ```
 
@@ -673,10 +673,10 @@ Verify config file exists:
 ls -la wasm4pm.toml
 
 # If not found, create it
-pictl init > wasm4pm.toml
+wpm init > wasm4pm.toml
 
 # Or specify explicit path
-pictl run -i events.xes --config /full/path/to/wasm4pm.toml
+wpm run -i events.xes --config /full/path/to/wasm4pm.toml
 ```
 
 ### Verification
@@ -684,11 +684,11 @@ pictl run -i events.xes --config /full/path/to/wasm4pm.toml
 After fixes, validate:
 
 ```bash
-pictl init --validate wasm4pm.toml
+wpm init --validate wasm4pm.toml
 # Should output: ✓ Configuration valid
 
 # Then test
-pictl run -i events.xes --config wasm4pm.toml
+wpm run -i events.xes --config wasm4pm.toml
 ```
 
 ---
@@ -790,7 +790,7 @@ exporter = "console"    # Outputs spans to console
 Then run and check output:
 
 ```bash
-pictl run -i events.xes --config wasm4pm.toml 2>&1 | grep -i span
+wpm run -i events.xes --config wasm4pm.toml 2>&1 | grep -i span
 ```
 
 #### Step 5: Check Sink Configuration
@@ -824,7 +824,7 @@ Check if traces are being written locally:
 
 ```bash
 # If console exporter
-pictl run -i events.xes --config wasm4pm.toml 2>&1 | head -50
+wpm run -i events.xes --config wasm4pm.toml 2>&1 | head -50
 
 # If file exporter
 cat .wasm4pm/otel-traces.jsonl | jq '.' | head -20
@@ -849,7 +849,7 @@ path = "events.xes"
 EOF
 
 # Run and check for span output
-pictl run -i events.xes --config test-otel.toml 2>&1 | grep -i "span\|trace"
+wpm run -i events.xes --config test-otel.toml 2>&1 | grep -i "span\|trace"
 ```
 
 ---
@@ -861,7 +861,7 @@ pictl run -i events.xes --config test-otel.toml 2>&1 | grep -i "span\|trace"
 Command failed with unclear exit code:
 
 ```bash
-pictl run -i events.xes
+wpm run -i events.xes
 echo $?
 # Output: 3
 ```
@@ -884,7 +884,7 @@ Exit codes are standardized:
 ### Step 1: Identify Category
 
 ```bash
-pictl run -i events.xes
+wpm run -i events.xes
 EXIT_CODE=$?
 
 case $EXIT_CODE in
@@ -900,21 +900,21 @@ esac
 
 ### Step 2: Read Error Message
 
-pictl outputs error details to stderr:
+wasm4pm outputs error details to stderr:
 
 ```bash
 # Capture both stdout and stderr
-pictl run -i events.xes 2>&1 | tee execution.log
+wpm run -i events.xes 2>&1 | tee execution.log
 
 # Extract error message
-pictl run -i events.xes 2>&1 | grep -i "error:"
+wpm run -i events.xes 2>&1 | grep -i "error:"
 ```
 
 ### Step 3: Fix Based on Category
 
 **Exit 1 (Config):**
 ```bash
-pictl init --validate wasm4pm.toml
+wpm init --validate wasm4pm.toml
 # Fix reported errors
 ```
 
@@ -940,8 +940,8 @@ cat output/receipt.json | jq '.sink_results'
 
 **Exit 5 (System):**
 ```bash
-pictl doctor
-pictl status
+wpm doctor
+wpm status
 # Check Node.js version, WASM support
 ```
 
@@ -970,12 +970,12 @@ Use this before filing an issue:
 
 ```bash
 # 1. Check exit code
-pictl run -i events.xes
+wpm run -i events.xes
 # Output: timeout after 5 min
 # Exit code: 3 (EXECUTION_ERROR)
 
 # 2. Validate config
-pictl init --validate wasm4pm.toml
+wpm init --validate wasm4pm.toml
 # Output: ✓ Configuration valid
 
 # 3. Check which algorithm
@@ -997,7 +997,7 @@ ls -lh wasm4pm.wasm
 # - Increase timeout: timeout = 60000 (1 min, enough for DFG)
 
 # 7. Verify
-pictl run -i events.xes --config wasm4pm.toml
+wpm run -i events.xes --config wasm4pm.toml
 # Success!
 ```
 

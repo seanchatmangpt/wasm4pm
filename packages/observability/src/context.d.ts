@@ -8,18 +8,18 @@ import { RequiredFields } from './fields.js';
  * Parsed W3C traceparent header components.
  */
 export interface TraceContext {
-    traceId: string;
-    spanId: string;
-    traceFlags: string;
+  traceId: string;
+  spanId: string;
+  traceFlags: string;
 }
 /**
  * Active span context for parent-child relationships.
  */
 export interface SpanContext {
-    traceId: string;
-    spanId: string;
-    parentSpanId?: string;
-    requiredFields: RequiredFields;
+  traceId: string;
+  spanId: string;
+  parentSpanId?: string;
+  requiredFields: RequiredFields;
 }
 /**
  * Generate a W3C-compliant trace ID (32 hex chars = 16 bytes).
@@ -38,7 +38,11 @@ export declare function parseTraceparent(header?: string): TraceContext | undefi
 /**
  * Create a W3C traceparent header string.
  */
-export declare function createTraceparent(traceId: string, spanId: string, sampled?: boolean): string;
+export declare function createTraceparent(
+  traceId: string,
+  spanId: string,
+  sampled?: boolean
+): string;
 /**
  * Create a root SpanContext (no parent).
  */

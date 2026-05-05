@@ -49,7 +49,9 @@ export const audit = defineCommand({
         const summary = store.getSummary();
 
         formatter.log('');
-        formatter.log(`  Audit: ${summary.total_entries} entries, ${summary.success_rate.toFixed(0)}% success, ${summary.critical_count} critical`);
+        formatter.log(
+          `  Audit: ${summary.total_entries} entries, ${summary.success_rate.toFixed(0)}% success, ${summary.critical_count} critical`
+        );
         formatter.log('');
 
         if (entries.length === 0) {
@@ -71,7 +73,9 @@ export const audit = defineCommand({
       if (formatter instanceof JSONFormatter) {
         formatter.error('Failed to read audit trail', error);
       } else {
-        formatter.error(`Failed to read audit trail: ${error instanceof Error ? error.message : String(error)}`);
+        formatter.error(
+          `Failed to read audit trail: ${error instanceof Error ? error.message : String(error)}`
+        );
       }
       process.exit(EXIT_CODES.execution_error);
     }

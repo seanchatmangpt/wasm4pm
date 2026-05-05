@@ -50,7 +50,10 @@ export const FAILED_RECEIPT: ExpectedReceipt = {
 };
 
 /** Validate a receipt object matches expected shape */
-export function validateReceiptShape(receipt: Record<string, unknown>, expected: ExpectedReceipt): string[] {
+export function validateReceiptShape(
+  receipt: Record<string, unknown>,
+  expected: ExpectedReceipt
+): string[] {
   const errors: string[] = [];
 
   if (receipt.status !== expected.status) {
@@ -80,7 +83,7 @@ export function validateReceiptShape(receipt: Record<string, unknown>, expected:
 /** Validate explain output contains expected structure */
 export function validateExplainOutput(output: string, expected: ExpectedExplainOutput): string[] {
   const errors: string[] = [];
-  const lines = output.split('\n').filter(l => l.trim());
+  const lines = output.split('\n').filter((l) => l.trim());
 
   if (expected.containsSteps) {
     const stepPattern = /step|phase|stage/i;
@@ -107,7 +110,9 @@ export function validateExplainOutput(output: string, expected: ExpectedExplainO
     }
   }
   if (expected.stepCount > 0 && lines.length < expected.stepCount) {
-    errors.push(`explain output has ${lines.length} lines, expected at least ${expected.stepCount}`);
+    errors.push(
+      `explain output has ${lines.length} lines, expected at least ${expected.stepCount}`
+    );
   }
   return errors;
 }

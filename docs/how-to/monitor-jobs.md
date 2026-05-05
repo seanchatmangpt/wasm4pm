@@ -29,7 +29,7 @@ Response:
 Real-time updates via watch command:
 
 ```bash
-pictl watch --config config.toml --verbose
+wpm watch --config config.toml --verbose
 ```
 
 Shows live progress and checkpoints.
@@ -89,7 +89,7 @@ timeout_ms = 600000  # 10 minutes
 Or via CLI:
 
 ```bash
-pictl run --config config.toml --timeout 600000
+wpm run --config config.toml --timeout 600000
 ```
 
 ## Interrupt Job
@@ -101,7 +101,7 @@ Stop running job:
 curl -X POST http://localhost:3001/stop/run-abc123
 
 # Via CLI
-pkill -f "pictl run"
+pkill -f "wasm4pm run"
 ```
 
 ## Monitor Memory

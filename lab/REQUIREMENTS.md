@@ -6,9 +6,9 @@
 
 ---
 
-## 1. Build Step — produce `pkg/pictl.js`
+## 1. Build Step — produce `pkg/wasm4pm.js`
 
-The lab tests depend on the `pkg/pictl.js` build artifact. This file is produced
+The lab tests depend on the `pkg/wasm4pm.js` build artifact. This file is produced
 by building the `wasm4pm` package (the WASM/Node.js bundle) from inside the
 `wasm4pm/` subdirectory:
 
@@ -17,7 +17,7 @@ cd /Users/sac/wasm4pm/wasm4pm
 npm run build:nodejs
 ```
 
-This emits `pkg/pictl.js` (and associated `.d.ts` / `.map` files). The lab test
+This emits `pkg/wasm4pm.js` (and associated `.d.ts` / `.map` files). The lab test
 runner imports this artifact at runtime; if it is absent, all tests fail with a
 module-not-found error.
 
@@ -50,7 +50,7 @@ Run these commands from a clean checkout before executing `lab/` tests:
 cd /Users/sac/wasm4pm
 pnpm install
 
-# Step 2 — Build the pictl Node.js artifact
+# Step 2 — Build the wasm4pm Node.js artifact
 cd /Users/sac/wasm4pm/wasm4pm
 npm run build:nodejs
 

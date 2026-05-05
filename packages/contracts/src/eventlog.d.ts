@@ -40,10 +40,10 @@
  * - `attributes` captures domain-specific data; use empty object if none.
  */
 export interface LogEvent {
-    activity: string;
-    timestamp: string;
-    resource?: string;
-    attributes: Readonly<Record<string, unknown>>;
+  activity: string;
+  timestamp: string;
+  resource?: string;
+  attributes: Readonly<Record<string, unknown>>;
 }
 /**
  * Single trace (process instance) containing an ordered sequence of events.
@@ -52,8 +52,8 @@ export interface LogEvent {
  * - `events` is ordered by timestamp (control plane validates this).
  */
 export interface LogTrace {
-    case_id: string;
-    events: ReadonlyArray<LogEvent>;
+  case_id: string;
+  events: ReadonlyArray<LogEvent>;
 }
 /**
  * Metadata about the event log.
@@ -63,12 +63,12 @@ export interface LogTrace {
  * - `source_hash` is BLAKE3(raw_input_bytes) in hex-64 format (128 characters).
  */
 export interface LogMetadata {
-    trace_count: number;
-    event_count: number;
-    activity_count: number;
-    start_time: string;
-    end_time: string;
-    source_hash: string;
+  trace_count: number;
+  event_count: number;
+  activity_count: number;
+  start_time: string;
+  end_time: string;
+  source_hash: string;
 }
 /**
  * Canonical Intermediate Representation of an event log.
@@ -89,10 +89,10 @@ export interface LogMetadata {
  * 4. `source_format` matches the original input type for provenance.
  */
 export interface EventLogIR {
-    readonly format_version: "1.0";
-    readonly source_format: "xes" | "ocel" | "json" | "csv";
-    readonly traces: ReadonlyArray<LogTrace>;
-    readonly metadata: LogMetadata;
+  readonly format_version: '1.0';
+  readonly source_format: 'xes' | 'ocel' | 'json' | 'csv';
+  readonly traces: ReadonlyArray<LogTrace>;
+  readonly metadata: LogMetadata;
 }
 /**
  * Guard function to check if a value is a valid EventLogIR.

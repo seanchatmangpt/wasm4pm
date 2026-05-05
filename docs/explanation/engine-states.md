@@ -205,7 +205,7 @@ Response:
 Debug state transitions:
 
 ```bash
-WASM4PM_TRACE=1 pictl run --config config.toml
+WASM4PM_TRACE=1 wpm run --config config.toml
 ```
 
 Output:

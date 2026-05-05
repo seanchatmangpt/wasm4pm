@@ -22,10 +22,10 @@ import { SHACLValidator } from '../src/validate-shacl.mjs';
 
 ### 2. Initialize Validator in Constructor
 
-Modify the `PictlMCPServer` class to add validator initialization:
+Modify the `wasm4pmMCPServer` class to add validator initialization:
 
 ```typescript
-export class PictlMCPServer {
+export class wasm4pmMCPServer {
   private server: Server;
   private transport: StdioServerTransport;
   private shaclValidator: SHACLValidator | null = null;  // Add this field
@@ -33,7 +33,7 @@ export class PictlMCPServer {
   constructor() {
     this.server = new Server(
       {
-        name: 'pictl',
+        name: 'wasm4pm',
         version: '0.5.4',
       },
       {
@@ -163,20 +163,20 @@ Below is the actual patch in unified diff format:
 @@ -17,6 +17,7 @@ import {
  } from '@modelcontextprotocol/sdk/types.js';
  import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
- import * as wasm from '../pkg/pictl.js';
+ import * as wasm from '../pkg/wasm4pm.js';
 +import { SHACLValidator } from '../src/validate-shacl.mjs';
  
  interface ToolInput {
    [key: string]: unknown;
 @@ -36,6 +37,7 @@ interface ToolInput {
- export class PictlMCPServer {
+ export class wasm4pmMCPServer {
    private server: Server;
    private transport: StdioServerTransport;
 +  private shaclValidator: SHACLValidator | null = null;
  
    constructor() {
      this.server = new Server(
-@@ -50,6 +52,7 @@ export class PictlMCPServer {
+@@ -50,6 +52,7 @@ export class wasm4pmMCPServer {
      );
  
      this.transport = new StdioServerTransport();
@@ -184,7 +184,7 @@ Below is the actual patch in unified diff format:
  
      this.setupHandlers();
    }
-@@ -67,6 +70,23 @@ export class PictlMCPServer {
+@@ -67,6 +70,23 @@ export class wasm4pmMCPServer {
      });
    }
  
@@ -207,7 +207,7 @@ Below is the actual patch in unified diff format:
    /**
     * Get all available MCP tools
     */
-@@ -1336,11 +1356,47 @@ export class PictlMCPServer {
+@@ -1336,11 +1356,47 @@ export class wasm4pmMCPServer {
          default:
            throw new Error(`Unknown tool: ${toolName}`);
        }
@@ -260,7 +260,7 @@ Below is the actual patch in unified diff format:
            },
          ],
        };
-@@ -1400,6 +1456,32 @@ export class PictlMCPServer {
+@@ -1400,6 +1456,32 @@ export class wasm4pmMCPServer {
      }
    }
  
@@ -392,7 +392,7 @@ To test validation locally:
 
 ```bash
 # Generate an invalid result
-echo '{"hasFitness": 1.5}' | pictl discover_dfg
+echo '{"hasFitness": 1.5}' | wasm4pm discover_dfg
 
 # Expected: Validation gate rejects with error
 # {

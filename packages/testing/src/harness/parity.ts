@@ -43,27 +43,22 @@ export interface PlannerLike {
  * Compare explain output with actual plan steps.
  * Returns a detailed parity result.
  */
-export async function checkParity(
-  planner: PlannerLike,
-  config: unknown,
-): Promise<ParityResult> {
+export async function checkParity(planner: PlannerLike, config: unknown): Promise<ParityResult> {
   const explainText = planner.explain(config);
   const plan = await planner.plan(config);
 
   const explainSteps = extractStepsFromExplain(explainText);
-  const runSteps = plan.steps.map(s => s.type);
+  const runSteps = plan.steps.map((s) => s.type);
 
   const explainSet = new Set(explainSteps);
   const runSet = new Set(runSteps);
 
-  const missingFromExplain = runSteps.filter(s => !explainSet.has(s));
-  const missingFromRun = explainSteps.filter(s => !runSet.has(s));
+  const missingFromExplain = runSteps.filter((s) => !explainSet.has(s));
+  const missingFromRun = explainSteps.filter((s) => !runSet.has(s));
 
   const orderMismatch = !arraysMatchOrder(explainSteps, runSteps);
 
-  const passed = missingFromExplain.length === 0 &&
-    missingFromRun.length === 0 &&
-    !orderMismatch;
+  const passed = missingFromExplain.length === 0 && missingFromRun.length === 0 && !orderMismatch;
 
   let details = '';
   if (!passed) {
@@ -75,7 +70,9 @@ export async function checkParity(
       parts.push(`Steps in explain but not in run: [${missingFromRun.join(', ')}]`);
     }
     if (orderMismatch) {
-      parts.push(`Step order differs: explain=[${explainSteps.join(', ')}] vs run=[${runSteps.join(', ')}]`);
+      parts.push(
+        `Step order differs: explain=[${explainSteps.join(', ')}] vs run=[${runSteps.join(', ')}]`
+      );
     }
     details = parts.join('; ');
   } else {
@@ -99,7 +96,7 @@ export async function checkParity(
  */
 export async function checkParityBatch(
   planner: PlannerLike,
-  configs: unknown[],
+  configs: unknown[]
 ): Promise<{ results: ParityResult[]; allPassed: boolean; summary: string }> {
   const results: ParityResult[] = [];
 
@@ -107,8 +104,8 @@ export async function checkParityBatch(
     results.push(await checkParity(planner, config));
   }
 
-  const allPassed = results.every(r => r.passed);
-  const passCount = results.filter(r => r.passed).length;
+  const allPassed = results.every((r) => r.passed);
+  const passCount = results.filter((r) => r.passed).length;
   const summary = `Parity: ${passCount}/${results.length} configs passed`;
 
   return { results, allPassed, summary };
@@ -143,8 +140,8 @@ function extractStepsFromExplain(text: string): string[] {
  * Check if the common elements between two arrays appear in the same relative order.
  */
 function arraysMatchOrder(a: string[], b: string[]): boolean {
-  const common = a.filter(item => b.includes(item));
-  const bFiltered = b.filter(item => a.includes(item));
+  const common = a.filter((item) => b.includes(item));
+  const bFiltered = b.filter((item) => a.includes(item));
 
   if (common.length !== bFiltered.length) return false;
   for (let i = 0; i < common.length; i++) {

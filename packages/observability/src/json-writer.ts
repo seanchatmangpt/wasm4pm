@@ -95,9 +95,7 @@ export class JsonWriter {
     if (this.buffer.length === 0) return;
 
     // Chain flushes to avoid concurrent writes
-    this.flushPromise = this.flushPromise.then(() =>
-      this.doFlush()
-    );
+    this.flushPromise = this.flushPromise.then(() => this.doFlush());
 
     return this.flushPromise;
   }

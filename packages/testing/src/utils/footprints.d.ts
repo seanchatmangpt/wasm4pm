@@ -5,53 +5,61 @@
  * Used for process model comparison and conformance checking.
  */
 export interface FootprintMatrix {
-    activities: string[];
-    matrix: Map<string, Map<string, FootprintRelation>>;
+  activities: string[];
+  matrix: Map<string, Map<string, FootprintRelation>>;
 }
 export type FootprintRelation = 'sequence' | 'parallel' | 'choice' | 'no_relation';
 export interface FootprintComparison {
-    equivalent: boolean;
-    relationMatches: number;
-    relationMismatches: number;
-    missingInFirst: Array<{
-        a: string;
-        b: string;
-        relation: FootprintRelation;
-    }>;
-    missingInSecond: Array<{
-        a: string;
-        b: string;
-        relation: FootprintRelation;
-    }>;
+  equivalent: boolean;
+  relationMatches: number;
+  relationMismatches: number;
+  missingInFirst: Array<{
+    a: string;
+    b: string;
+    relation: FootprintRelation;
+  }>;
+  missingInSecond: Array<{
+    a: string;
+    b: string;
+    relation: FootprintRelation;
+  }>;
 }
 /**
  * Extract footprints from an event log.
  *
  * The footprint matrix captures the ordering relationships between activities.
  */
-export declare function extractFootprintsFromLog(eventLog: Array<{
+export declare function extractFootprintsFromLog(
+  eventLog: Array<{
     activities: string[];
-}>): FootprintMatrix;
+  }>
+): FootprintMatrix;
 /**
  * Extract footprints from a DFG.
  *
  * DFG provides sequence relations directly.
  */
 export declare function extractFootprintsFromDFG(dfg: {
-    nodes: string[];
-    edges: Array<{
-        source: string;
-        target: string;
-    }>;
+  nodes: string[];
+  edges: Array<{
+    source: string;
+    target: string;
+  }>;
 }): FootprintMatrix;
 /**
  * Compare two footprint matrices.
  */
-export declare function compareFootprints(fp1: FootprintMatrix, fp2: FootprintMatrix): FootprintComparison;
+export declare function compareFootprints(
+  fp1: FootprintMatrix,
+  fp2: FootprintMatrix
+): FootprintComparison;
 /**
  * Check if two footprint matrices are equivalent.
  */
-export declare function areFootprintsEquivalent(fp1: FootprintMatrix, fp2: FootprintMatrix): boolean;
+export declare function areFootprintsEquivalent(
+  fp1: FootprintMatrix,
+  fp2: FootprintMatrix
+): boolean;
 /**
  * Format footprint matrix as human-readable string.
  */

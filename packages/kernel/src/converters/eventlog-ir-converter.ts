@@ -20,8 +20,8 @@ import { canonicalize } from '../hashing.js';
  * Mirrors EventLogIR structure but optimized for WASM serialization.
  */
 export interface WasmEventLog {
-  format_version: "1.0";
-  source_format: "xes" | "ocel" | "json" | "csv";
+  format_version: '1.0';
+  source_format: 'xes' | 'ocel' | 'json' | 'csv';
   traces: Array<{
     case_id: string;
     events: Array<{
@@ -70,7 +70,7 @@ export function validateLogTimestamps(log: EventLogIR): void {
   const timestampsToCheck = [
     log.metadata.start_time,
     log.metadata.end_time,
-    ...log.traces.flatMap(t => t.events.map(e => e.timestamp)),
+    ...log.traces.flatMap((t) => t.events.map((e) => e.timestamp)),
   ];
 
   for (const timestamp of timestampsToCheck) {
@@ -160,7 +160,7 @@ export function eventLogIrToWasmJson(log: EventLogIR): string {
 
   // Build WasmEventLog with sorted keys
   const wasmLog: WasmEventLog = {
-    format_version: "1.0",
+    format_version: '1.0',
     source_format: log.source_format,
     traces: log.traces.map((trace: LogTrace) => ({
       case_id: trace.case_id,
@@ -233,7 +233,7 @@ export function wasmJsonToEventLogIr(json: string): EventLogIR {
   const wasmLog = parsed as Record<string, unknown>;
 
   // Validate format_version
-  if (wasmLog.format_version !== "1.0") {
+  if (wasmLog.format_version !== '1.0') {
     throw new Error(`Invalid format_version: expected "1.0", got "${wasmLog.format_version}"`);
   }
 
@@ -288,8 +288,8 @@ export function wasmJsonToEventLogIr(json: string): EventLogIR {
   });
 
   const log: EventLogIR = {
-    format_version: "1.0",
-    source_format: wasmLog.source_format as "xes" | "ocel" | "json" | "csv",
+    format_version: '1.0',
+    source_format: wasmLog.source_format as 'xes' | 'ocel' | 'json' | 'csv',
     traces: logTraces,
     metadata: logMetadata,
   };

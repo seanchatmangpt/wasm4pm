@@ -22,12 +22,17 @@ const SECRET_PATTERNS = [
 ];
 /** Well-known env var names that contain secrets */
 const SECRET_ENV_VARS = new Set([
-    'AWS_SECRET_ACCESS_KEY', 'AWS_SESSION_TOKEN',
-    'DATABASE_URL', 'DB_PASSWORD',
-    'API_KEY', 'API_SECRET',
+    'AWS_SECRET_ACCESS_KEY',
+    'AWS_SESSION_TOKEN',
+    'DATABASE_URL',
+    'DB_PASSWORD',
+    'API_KEY',
+    'API_SECRET',
     'OTEL_EXPORTER_OTLP_HEADERS',
-    'GITHUB_TOKEN', 'NPM_TOKEN',
-    'ENCRYPTION_KEY', 'SIGNING_KEY',
+    'GITHUB_TOKEN',
+    'NPM_TOKEN',
+    'ENCRYPTION_KEY',
+    'SIGNING_KEY',
 ]);
 /**
  * Scan a string for secret patterns.
@@ -115,7 +120,7 @@ function verifyRedaction(obj, location = 'output') {
         scannedFields,
         details: violations.length === 0
             ? `Redaction verified: ${scannedFields} fields scanned, no secrets found`
-            : `Found ${violations.length} violations in ${scannedFields} fields: ${violations.map(v => v.pattern).join(', ')}`,
+            : `Found ${violations.length} violations in ${scannedFields} fields: ${violations.map((v) => v.pattern).join(', ')}`,
     };
 }
 /**

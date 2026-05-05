@@ -57,7 +57,7 @@ export function validateReceiptShape(receipt, expected) {
 /** Validate explain output contains expected structure */
 export function validateExplainOutput(output, expected) {
     const errors = [];
-    const lines = output.split('\n').filter(l => l.trim());
+    const lines = output.split('\n').filter((l) => l.trim());
     if (expected.containsSteps) {
         const stepPattern = /step|phase|stage/i;
         if (!stepPattern.test(output)) {

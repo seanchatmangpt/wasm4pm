@@ -3,7 +3,7 @@
  * Defines all configuration structures, validation, and execution profiles
  */
 
-import { PictlError, ErrorCode, ErrorRecovery } from './errors.js';
+import { Wasm4pmError, ErrorCode, ErrorRecovery } from './errors.js';
 
 /**
  * Supported data source formats
@@ -171,7 +171,7 @@ export interface PipelineStep {
 /**
  * Top-level configuration for the wasm4pm engine
  */
-export interface PictlConfig {
+export interface Wasm4pmConfig {
   /** Version of the configuration schema */
   version: '1.0';
 
@@ -367,19 +367,19 @@ export function validateConfig(config: unknown): ValidationIssue[] {
 }
 
 /**
- * Asserts that a configuration is valid, throwing a PictlError if not
- * Type guard that narrows the type to PictlConfig
+ * Asserts that a configuration is valid, throwing a Wasm4pmError if not
+ * Type guard that narrows the type to Wasm4pmConfig
  *
  * @param config - Configuration to validate
- * @throws PictlError - If validation fails
+ * @throws Wasm4pmError - If validation fails
  */
-export function assertConfigValid(config: unknown): asserts config is PictlConfig {
+export function assertConfigValid(config: unknown): asserts config is Wasm4pmConfig {
   const issues = validateConfig(config);
 
   if (issues.length > 0) {
     const issueMessages = issues.map((issue) => `${issue.path}: ${issue.message}`).join('; ');
 
-    throw new PictlError(
+    throw new Wasm4pmError(
       `Configuration validation failed: ${issueMessages}`,
       ErrorCode.CONFIG_INVALID,
       {
@@ -619,7 +619,7 @@ export function resolveProfile(profile: ExecutionProfile): PipelineStep[] {
 
     default:
       const _exhaustive: never = profile;
-      throw new PictlError(
+      throw new Wasm4pmError(
         `Unknown execution profile: ${profile}`,
         ErrorCode.CONFIG_INVALID,
 
@@ -632,6 +632,6 @@ export function resolveProfile(profile: ExecutionProfile): PipelineStep[] {
 
 /**
  * Type alias for backward compatibility
- * @deprecated Use PictlConfig instead
+ * @deprecated Use Wasm4pmConfig instead
  */
-export type Wasm4pmConfig = PictlConfig;
+export type Wasm4pmConfig = Wasm4pmConfig;

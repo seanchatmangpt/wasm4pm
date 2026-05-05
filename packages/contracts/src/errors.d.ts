@@ -9,22 +9,39 @@
 /**
  * Standardized error codes covering all failure modes
  */
-export type ErrorCode = 'CONFIG_INVALID' | 'CONFIG_MISSING' | 'SOURCE_NOT_FOUND' | 'SOURCE_INVALID' | 'SOURCE_PERMISSION' | 'ALGORITHM_FAILED' | 'ALGORITHM_NOT_FOUND' | 'CONFORMANCE_FAILED' | 'SIMULATION_FAILED' | 'PREDICTION_FAILED' | 'VALIDATION_FAILED' | 'IMPORT_FAILED' | 'WASM_INIT_FAILED' | 'WASM_MEMORY_EXCEEDED' | 'SINK_FAILED' | 'SINK_PERMISSION' | 'OTEL_FAILED';
+export type ErrorCode =
+  | 'CONFIG_INVALID'
+  | 'CONFIG_MISSING'
+  | 'SOURCE_NOT_FOUND'
+  | 'SOURCE_INVALID'
+  | 'SOURCE_PERMISSION'
+  | 'ALGORITHM_FAILED'
+  | 'ALGORITHM_NOT_FOUND'
+  | 'CONFORMANCE_FAILED'
+  | 'SIMULATION_FAILED'
+  | 'PREDICTION_FAILED'
+  | 'VALIDATION_FAILED'
+  | 'IMPORT_FAILED'
+  | 'WASM_INIT_FAILED'
+  | 'WASM_MEMORY_EXCEEDED'
+  | 'SINK_FAILED'
+  | 'SINK_PERMISSION'
+  | 'OTEL_FAILED';
 /**
  * TypedError — compact error type with numeric code (0-255)
  * for wire format, hashing, and cross-language interop.
  */
 export interface TypedError {
-    /** Schema version */
-    schema_version: '1.0';
-    /** Numeric error code (0-255) */
-    code: number;
-    /** Human-readable error message */
-    message: string;
-    /** Actionable remediation hint */
-    remediation: string;
-    /** Additional structured context */
-    context: Record<string, unknown>;
+  /** Schema version */
+  schema_version: '1.0';
+  /** Numeric error code (0-255) */
+  code: number;
+  /** Human-readable error message */
+  message: string;
+  /** Actionable remediation hint */
+  remediation: string;
+  /** Additional structured context */
+  context: Record<string, unknown>;
 }
 /**
  * Numeric code mapping (0-255 range) for TypedError
@@ -37,7 +54,11 @@ export declare const TYPED_ERROR_NAMES: Record<number, ErrorCode>;
 /**
  * Create a TypedError from an ErrorCode string
  */
-export declare function createTypedError(code: ErrorCode, message: string, context?: Record<string, unknown>): TypedError;
+export declare function createTypedError(
+  code: ErrorCode,
+  message: string,
+  context?: Record<string, unknown>
+): TypedError;
 /**
  * Resolve a TypedError's numeric code back to its ErrorCode string
  */
@@ -50,50 +71,50 @@ export declare function isTypedError(value: unknown): value is TypedError;
  * JSON Schema for TypedError (for external validation)
  */
 export declare const TYPED_ERROR_JSON_SCHEMA: {
-    readonly $schema: "https://json-schema.org/draft/2020-12/schema";
-    readonly $id: "https://wasm4pm.dev/schemas/typed-error/1.0";
-    readonly title: "TypedError";
-    readonly description: "Compact typed error with numeric code (0-255)";
-    readonly type: "object";
-    readonly required: readonly ["schema_version", "code", "message", "remediation", "context"];
-    readonly properties: {
-        readonly schema_version: {
-            readonly type: "string";
-            readonly const: "1.0";
-        };
-        readonly code: {
-            readonly type: "integer";
-            readonly minimum: 0;
-            readonly maximum: 255;
-        };
-        readonly message: {
-            readonly type: "string";
-        };
-        readonly remediation: {
-            readonly type: "string";
-        };
-        readonly context: {
-            readonly type: "object";
-        };
+  readonly $schema: 'https://json-schema.org/draft/2020-12/schema';
+  readonly $id: 'https://wasm4pm.dev/schemas/typed-error/1.0';
+  readonly title: 'TypedError';
+  readonly description: 'Compact typed error with numeric code (0-255)';
+  readonly type: 'object';
+  readonly required: readonly ['schema_version', 'code', 'message', 'remediation', 'context'];
+  readonly properties: {
+    readonly schema_version: {
+      readonly type: 'string';
+      readonly const: '1.0';
     };
-    readonly additionalProperties: false;
+    readonly code: {
+      readonly type: 'integer';
+      readonly minimum: 0;
+      readonly maximum: 255;
+    };
+    readonly message: {
+      readonly type: 'string';
+    };
+    readonly remediation: {
+      readonly type: 'string';
+    };
+    readonly context: {
+      readonly type: 'object';
+    };
+  };
+  readonly additionalProperties: false;
 };
 /**
  * Structured error information with context and remediation
  */
 export interface ErrorInfo {
-    /** Standardized error code */
-    code: ErrorCode;
-    /** Human-readable error message */
-    message: string;
-    /** Additional context about the error */
-    context?: Record<string, any>;
-    /** How to fix this error */
-    remediation: string;
-    /** Process exit code (per PRD §8) */
-    exit_code: number;
-    /** Whether the error is recoverable */
-    recoverable: boolean;
+  /** Standardized error code */
+  code: ErrorCode;
+  /** Human-readable error message */
+  message: string;
+  /** Additional context about the error */
+  context?: Record<string, any>;
+  /** How to fix this error */
+  remediation: string;
+  /** Process exit code (per PRD §8) */
+  exit_code: number;
+  /** Whether the error is recoverable */
+  recoverable: boolean;
 }
 /**
  * Factory function to create structured errors
@@ -106,12 +127,16 @@ export interface ErrorInfo {
  *
  * @example
  * ```ts
- * const error = createError('CONFIG_MISSING', 'pictl.toml not found in /path/to/project');
+ * const error = createError('CONFIG_MISSING', 'wasm4pm.toml not found in /path/to/project');
  * console.error(formatError(error)); // Human-readable output
  * process.exit(error.exit_code);    // Proper exit code
  * ```
  */
-export declare function createError(code: ErrorCode, message: string, context?: Record<string, any>): ErrorInfo;
+export declare function createError(
+  code: ErrorCode,
+  message: string,
+  context?: Record<string, any>
+): ErrorInfo;
 /**
  * Format error for human-readable console output with colors
  * Includes error code, message, context (if present), and remediation
@@ -160,7 +185,7 @@ export declare function formatErrorJSON(error: ErrorInfo): Record<string, any>;
  *
  * @example
  * ```ts
- * const error = createError('CONFIG_INVALID', 'Invalid syntax in pictl.toml');
+ * const error = createError('CONFIG_INVALID', 'Invalid syntax in wasm4pm.toml');
  * logError(error, 'human');    // Colored terminal output
  * logError(error, 'json');     // JSON for structured logging
  * ```

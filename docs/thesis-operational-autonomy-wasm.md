@@ -5,7 +5,7 @@
 **Candidate:** Sean Chatman
 **Institution:** ChatmanGPT Research
 **Date:** April 2026
-**Program:** pictl v26.4.10 — Process Mining in WebAssembly
+**Program:** wasm4pm v26.4.10 — Process Mining in WebAssembly
 
 ---
 
@@ -13,7 +13,7 @@
 
 Process mining has historically operated in two modes: offline batch analysis and server-side streaming. Both assume an environment with abundant resources, unrestricted threading, and native time facilities. This assumption excludes the fastest-growing execution substrate for analytics — the browser, embedded devices, and edge nodes — where algorithms must operate under severe constraints: single-threaded execution, no filesystem access, bounded memory, and no `std::time` or `tokio`.
 
-This thesis presents five algorithm families ported from the knhk knowledge-graph engine (a Rust+C+Erlang polyglot system) into the pictl process-mining WASM core, demonstrating that **operational autonomy** — the capacity for a system to reason about, protect, and heal itself — can be achieved in the most constrained runtime environment. The five families are:
+This thesis presents five algorithm families ported from the knhk knowledge-graph engine (a Rust+C+Erlang polyglot system) into the wasm4pm process-mining WASM core, demonstrating that **operational autonomy** — the capacity for a system to reason about, protect, and heal itself — can be achieved in the most constrained runtime environment. The five families are:
 
 1. **Guard Evaluation Engine** — A zero-overhead predicate system enabling conditional workflow execution without branching
 2. **43-Pattern Dispatch Table** — Complete van der Aalst workflow pattern coverage via register-based dispatch
@@ -55,7 +55,7 @@ Process mining, as formalized by van der Aalst [1], transforms event logs into p
 
 However, a critical gap exists: **the runtime substrate for process mining algorithms is narrowing**. The browser, via WebAssembly (WASM), is becoming the dominant analytics platform for embedded, edge, and mobile deployments. Simultaneously, IoT devices, point-of-sale terminals, and embedded controllers generate event logs that need real-time process mining — but cannot run server-side Java or Python stacks.
 
-The pictl project addresses this gap by compiling 21 process mining algorithms to WebAssembly. But algorithm correctness is insufficient. A WASM module running in a browser tab, on an IoT gateway, or in a serverless function faces hostile conditions:
+The wasm4pm project addresses this gap by compiling 21 process mining algorithms to WebAssembly. But algorithm correctness is insufficient. A WASM module running in a browser tab, on an IoT gateway, or in a serverless function faces hostile conditions:
 
 - **No filesystem** — event logs arrive via streaming, not files
 - **Single-threaded** — no `std::thread`, no `tokio::spawn`, no `Arc<RwLock>`
@@ -287,7 +287,7 @@ pub fn compile(guard: &Guard) -> Box<dyn Fn(&ExecutionContext) -> bool + '_> {
 
 ### 5.1 Motivation
 
-Van der Aalst's 43 workflow patterns [4] form the complete vocabulary of process control flow. In the pictl WASM core, only 9 patterns were previously implemented (DFG, Alpha++, Heuristic, Inductive, etc.). The 43-Pattern Dispatch Table fills this gap by providing **execution semantics**, not just algorithm names.
+Van der Aalst's 43 workflow patterns [4] form the complete vocabulary of process control flow. In the wasm4pm WASM core, only 9 patterns were previously implemented (DFG, Alpha++, Heuristic, Inductive, etc.). The 43-Pattern Dispatch Table fills this gap by providing **execution semantics**, not just algorithm names.
 
 ### 5.2 Formal Specification
 
@@ -342,7 +342,7 @@ This eliminates branch prediction misses — the handler is selected by a single
 
 **Pain Point:** Process mining outputs (DFGs, Petri nets, process trees) represent the *discovered* process model, not the *intended* control-flow semantics. A practitioner seeing a parallel branch in a DFG cannot tell whether the original process required all branches to complete (AND-join) or any branch to complete (OR-join).
 
-**Solution:** The 43-Pattern Dispatch Table maps each process step to its workflow pattern. When the pictl kernel discovers a control-flow structure, it can tag each step with the corresponding `PatternType`. The `PatternValidator` then checks pattern combinations for soundness (e.g., ParallelSplit must be followed by Synchronization).
+**Solution:** The 43-Pattern Dispatch Table maps each process step to its workflow pattern. When the wasm4pm kernel discovers a control-flow structure, it can tag each step with the corresponding `PatternType`. The `PatternValidator` then checks pattern combinations for soundness (e.g., ParallelSplit must be followed by Synchronization).
 
 **Key Scenarios:**
 
@@ -755,7 +755,7 @@ All five modules are tested under `cargo test --lib` with 60 total tests:
 ### 11.2 Compilation Metrics
 
 ```
-cargo check --lib (pictl v26.4.10):
+cargo check --lib (wasm4pm v26.4.10):
   0 errors
   2 warnings (pre-existing in smart_engine.rs, not from ported code)
   12.7s build time (incremental)
@@ -1347,7 +1347,7 @@ The claw implements a **complete** autonomic control loop — all five MAPE-K fu
 
 [16] Jasper J. (2024). *Criterion.rs: Statistics-Driven Microbenchmarking in Rust*. [https://github.com/bheisler/criterion.rs](https://github.com/bheisler/criterion.rs)
 
-[17] Chatman, S. (2026). *JTBD Benchmark Suite for Operational Autonomy Modules*. pictl v26.4.10 Technical Report. `wasm4pm/benches/`
+[17] Chatman, S. (2026). *JTBD Benchmark Suite for Operational Autonomy Modules*. wasm4pm v26.4.10 Technical Report. `wasm4pm/benches/`
 
 [18] Kephart, J. O. & Chess, D. M. (2003). The Vision of Autonomic Computing. *IEEE Computer*, 36(1), 41–50.
 

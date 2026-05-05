@@ -6,15 +6,15 @@ Comprehensive validation suite for @wasm4pm/cli v26.4.9.
 
 Six independent JavaScript/MJS validators that test different execution surfaces:
 
-| Validator         | Tests | Use Case                                |
-| ----------------- | ----- | --------------------------------------- |
-| **CLI**           | 5     | pictl command-line interface validation |
-| **HTTP**          | 9     | REST API endpoints and status codes     |
-| **WebSocket**     | 4     | Real-time streaming and connections     |
-| **Observability** | 8     | Logging, tracing, and monitoring        |
-| **I/O**           | 14    | Import/export formats (XES, JSON, OCEL) |
-| **Performance**   | 16    | Latency, scalability, memory bounds     |
-| **All**           | 56    | Unified report across all surfaces      |
+| Validator         | Tests | Use Case                                  |
+| ----------------- | ----- | ----------------------------------------- |
+| **CLI**           | 5     | wasm4pm command-line interface validation |
+| **HTTP**          | 9     | REST API endpoints and status codes       |
+| **WebSocket**     | 4     | Real-time streaming and connections       |
+| **Observability** | 8     | Logging, tracing, and monitoring          |
+| **I/O**           | 14    | Import/export formats (XES, JSON, OCEL)   |
+| **Performance**   | 16    | Latency, scalability, memory bounds       |
+| **All**           | 56    | Unified report across all surfaces        |
 
 ## Installation
 
@@ -210,7 +210,7 @@ These validators are called by the `/lab/` post-publication validation system to
 - **Node.js**: 18+ (16+ minimum)
 - **@wasm4pm/cli**: Published npm package or local build
 - **HTTP Service** (optional): For HTTP/WebSocket tests
-- **pictl CLI** (optional): For CLI tests
+- **wasm4pm CLI** (optional): For CLI tests
 
 ## Exit Codes
 
@@ -233,7 +233,7 @@ A: Start the HTTP service: `npm run start:service` in another terminal
 A: Ensure the HTTP service is running with WebSocket support enabled
 
 **Q: CLI tests fail with "command not found"**  
-A: Install pictl or link the local version: `npm link @wasm4pm/cli`
+A: Install wasm4pm or link the local version: `npm link @wasm4pm/cli`
 
 **Q: How do I generate a conformance report?**  
 A: Run `node validators/index.mjs --output report.json`

@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "project": "pictl",
+  "project": "wasm4pm",
   "description": "Kaizen metrics tracking for continuous improvement",
   "schema": {
     "timestamp": "ISO8601 UTC timestamp",

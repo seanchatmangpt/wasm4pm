@@ -48,6 +48,10 @@ export {
 } from './errors.js';
 export type { KernelErrorCode } from './errors.js';
 
+// Validation exports
+export { ValidationError } from './validation.js';
+export type { ViolationReport } from './validation.js';
+
 // Step dispatcher bridge
 export { buildKernelStepHandlers } from './step-dispatcher.js';
 
@@ -99,8 +103,10 @@ export {
   petriNetToModelIr,
   powlModelToModelIr,
 } from './converters/model-ir-converter.js';
-export type {
-  DirectlyFollowsGraph,
-  PetriNet,
-  PowlModel,
-} from './converters/model-ir-converter.js';
+export type { DirectlyFollowsGraph, PetriNet, PowlModel } from './converters/model-ir-converter.js';
+
+// Prediction subsystem — orchestrates the 6 Van der Aalst perspectives.
+export * as prediction from './prediction/index.js';
+
+// Introspection APIs — discovery, diagnostics, validation, and quick-start helpers
+export * as introspection from './introspection/index.js';

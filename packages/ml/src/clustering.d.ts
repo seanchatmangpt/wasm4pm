@@ -13,10 +13,13 @@ import type { ClusteringMethod, ClusteringResult } from './types.js';
 /**
  * Cluster traces by similarity using ML algorithms.
  */
-export declare function clusterTraces(featuresJson: Array<Record<string, unknown>>, options?: {
+export declare function clusterTraces(
+  featuresJson: Array<Record<string, unknown>>,
+  options?: {
     method?: ClusteringMethod;
     k?: number;
     eps?: number;
     minPoints?: number;
-}): Promise<ClusteringResult>;
+  }
+): Promise<ClusteringResult>;
 //# sourceMappingURL=clustering.d.ts.map

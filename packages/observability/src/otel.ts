@@ -54,7 +54,12 @@ export class OtelTracer implements Tracer {
     }
   ): Span {
     const ctx: SpanContext = options?.parent
-      ? { traceId: options.parent.traceId, spanId: generateSpanId(), parentSpanId: options.parent.spanId, requiredFields: this.requiredFields }
+      ? {
+          traceId: options.parent.traceId,
+          spanId: generateSpanId(),
+          parentSpanId: options.parent.spanId,
+          requiredFields: this.requiredFields,
+        }
       : { traceId: '', spanId: generateSpanId(), requiredFields: this.requiredFields };
 
     // If no parent, the span IS the root — needs its own traceId
@@ -82,18 +87,14 @@ export class OtelTracer implements Tracer {
 
     const batch = this.config.batch_size ?? 100;
     if (this.queue.length >= batch && !this.shuttingDown) {
-      this.flush().catch((e) =>
-        console.error(`[observability] OTEL export error: ${e}`)
-      );
+      this.flush().catch((e) => console.error(`[observability] OTEL export error: ${e}`));
     }
   }
 
   private startAutoFlush(): void {
     const interval = this.config.timeout_ms ?? 5000;
     this.flushTimer = setInterval(() => {
-      this.flush().catch((e) =>
-        console.error(`[observability] OTEL flush error: ${e}`)
-      );
+      this.flush().catch((e) => console.error(`[observability] OTEL flush error: ${e}`));
     }, interval);
     if (this.flushTimer.unref) this.flushTimer.unref();
   }
@@ -210,9 +211,7 @@ function encodeValue(value: unknown): Record<string, unknown> {
   if (typeof value === 'string') return { stringValue: value };
   if (typeof value === 'boolean') return { boolValue: value };
   if (typeof value === 'number') {
-    return Number.isInteger(value)
-      ? { intValue: String(value) }
-      : { doubleValue: value };
+    return Number.isInteger(value) ? { intValue: String(value) } : { doubleValue: value };
   }
   return { stringValue: JSON.stringify(value) };
 }

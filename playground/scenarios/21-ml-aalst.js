@@ -16,7 +16,7 @@
  * No silent fallbacks (|| 0) that hide failures.
  */
 import { describe, it, expect } from 'vitest';
-import { pictl, extractJson, resolveRepo } from '../helpers/cli.js';
+import { wasm4pm, extractJson, resolveRepo } from '../helpers/cli.js';
 const RUNNING_EXAMPLE = resolveRepo('wasm4pm/tests/fixtures/running-example.xes');
 describe('ML correctness (Aalst methodology)', () => {
     /**
@@ -27,7 +27,7 @@ describe('ML correctness (Aalst methodology)', () => {
      */
     describe('classify task', () => {
         it('output structure conforms to declared schema (predictions array)', async () => {
-            const result = await pictl(['ml', 'classify', '-i', RUNNING_EXAMPLE, '--format', 'json']);
+            const result = await wasm4pm(['ml', 'classify', '-i', RUNNING_EXAMPLE, '--format', 'json']);
             expect(result.exitCode).toBe(0);
             const json = extractJson(result.stdout);
             // Oracle (Rank 1): Declared schema requires predictions field
@@ -35,7 +35,7 @@ describe('ML correctness (Aalst methodology)', () => {
             expect(Array.isArray(json.predictions)).toBe(true);
         });
         it('predictions have required attributes (caseId, class/label)', async () => {
-            const result = await pictl(['ml', 'classify', '-i', RUNNING_EXAMPLE, '--format', 'json']);
+            const result = await wasm4pm(['ml', 'classify', '-i', RUNNING_EXAMPLE, '--format', 'json']);
             const json = extractJson(result.stdout);
             const predictions = json.predictions || [];
             // Empty predictions are lawful only if log has no classifiable features.
@@ -46,7 +46,7 @@ describe('ML correctness (Aalst methodology)', () => {
             }
         });
         it('predictions have confidence bounds (when present) — Rank 1: Mathematical invariant', async () => {
-            const result = await pictl(['ml', 'classify', '-i', RUNNING_EXAMPLE, '--format', 'json']);
+            const result = await wasm4pm(['ml', 'classify', '-i', RUNNING_EXAMPLE, '--format', 'json']);
             const json = extractJson(result.stdout);
             const predictions = json.predictions || [];
             // Oracle (Rank 1, Mathematical): Confidence scores must be bounded [0, 1]
@@ -61,7 +61,7 @@ describe('ML correctness (Aalst methodology)', () => {
             }
         });
         it('determinism: two runs produce identical predictions for same k — Rank 3: Metamorphic', async () => {
-            const result1 = await pictl([
+            const result1 = await wasm4pm([
                 'ml',
                 'classify',
                 '-i',
@@ -71,7 +71,7 @@ describe('ML correctness (Aalst methodology)', () => {
                 '--format',
                 'json',
             ]);
-            const result2 = await pictl([
+            const result2 = await wasm4pm([
                 'ml',
                 'classify',
                 '-i',
@@ -99,7 +99,7 @@ describe('ML correctness (Aalst methodology)', () => {
      */
     describe('cluster task', () => {
         it('output structure conforms to clustering schema', async () => {
-            const result = await pictl([
+            const result = await wasm4pm([
                 'ml',
                 'cluster',
                 '-i',
@@ -113,7 +113,7 @@ describe('ML correctness (Aalst methodology)', () => {
             expect(Array.isArray(json.assignments)).toBe(true);
         });
         it('cluster IDs respect domain invariant: all indices in [0, k) — Rank 2: Domain Contract', async () => {
-            const result = await pictl([
+            const result = await wasm4pm([
                 'ml',
                 'cluster',
                 '-i',
@@ -139,7 +139,7 @@ describe('ML correctness (Aalst methodology)', () => {
             expect(maxAssignment < 3).toBe(true); // All clusters < k
         });
         it('determinism: same k produces identical cluster assignments — Rank 3: Metamorphic', async () => {
-            const result1 = await pictl([
+            const result1 = await wasm4pm([
                 'ml',
                 'cluster',
                 '-i',
@@ -149,7 +149,7 @@ describe('ML correctness (Aalst methodology)', () => {
                 '--format',
                 'json',
             ]);
-            const result2 = await pictl([
+            const result2 = await wasm4pm([
                 'ml',
                 'cluster',
                 '-i',
@@ -177,7 +177,7 @@ describe('ML correctness (Aalst methodology)', () => {
      */
     describe('forecast task', () => {
         it('forecast output has trend field with required numeric structure — Rank 1: Mathematical', async () => {
-            const result = await pictl([
+            const result = await wasm4pm([
                 'ml',
                 'forecast',
                 '-i',
@@ -204,7 +204,7 @@ describe('ML correctness (Aalst methodology)', () => {
             }
         });
         it('forecast values are finite (no NaN, no Infinity) — Rank 1: Mathematical invariant', async () => {
-            const result = await pictl([
+            const result = await wasm4pm([
                 'ml',
                 'forecast',
                 '-i',
@@ -232,7 +232,7 @@ describe('ML correctness (Aalst methodology)', () => {
             checkFinite(trend);
         });
         it('forecast field values (when present) are valid numbers — Rank 1: Mathematical', async () => {
-            const result = await pictl([
+            const result = await wasm4pm([
                 'ml',
                 'forecast',
                 '-i',
@@ -260,7 +260,7 @@ describe('ML correctness (Aalst methodology)', () => {
      */
     describe('anomaly task', () => {
         it('output structure conforms to anomaly schema (peakIndices array)', async () => {
-            const result = await pictl([
+            const result = await wasm4pm([
                 'ml',
                 'anomaly',
                 '-i',
@@ -274,7 +274,7 @@ describe('ML correctness (Aalst methodology)', () => {
             expect(Array.isArray(json.peakIndices)).toBe(true);
         });
         it('peak indices are integers and valid array positions — Rank 2: Domain Contract', async () => {
-            const result = await pictl([
+            const result = await wasm4pm([
                 'ml',
                 'anomaly',
                 '-i',
@@ -295,7 +295,7 @@ describe('ML correctness (Aalst methodology)', () => {
             }
         });
         it('signal values are finite numbers — Rank 1: Mathematical invariant', async () => {
-            const result = await pictl([
+            const result = await wasm4pm([
                 'ml',
                 'anomaly',
                 '-i',
@@ -312,7 +312,7 @@ describe('ML correctness (Aalst methodology)', () => {
             }
         });
         it('non-trivial signals (>10 samples) should have at least one peak — Rank 2: Domain Contract', async () => {
-            const result = await pictl([
+            const result = await wasm4pm([
                 'ml',
                 'anomaly',
                 '-i',
@@ -340,7 +340,7 @@ describe('ML correctness (Aalst methodology)', () => {
      */
     describe('regress task', () => {
         it('output structure conforms to regression schema (predictions)', async () => {
-            const result = await pictl([
+            const result = await wasm4pm([
                 'ml',
                 'regress',
                 '-i',
@@ -354,7 +354,7 @@ describe('ML correctness (Aalst methodology)', () => {
             expect(Array.isArray(json.predictions)).toBe(true);
         });
         it('predictions have required fields (actual, predicted)', async () => {
-            const result = await pictl([
+            const result = await wasm4pm([
                 'ml',
                 'regress',
                 '-i',
@@ -374,7 +374,7 @@ describe('ML correctness (Aalst methodology)', () => {
             }
         });
         it('predictions are finite numbers without coercion — Rank 2: Domain Contract', async () => {
-            const result = await pictl([
+            const result = await wasm4pm([
                 'ml',
                 'regress',
                 '-i',
@@ -422,7 +422,7 @@ describe('ML correctness (Aalst methodology)', () => {
             regress: 'predictions',
         };
         for (const task of tasks) {
-            const result = await pictl([
+            const result = await wasm4pm([
                 'ml',
                 task,
                 '-i',

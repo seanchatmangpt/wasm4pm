@@ -1,5 +1,5 @@
 /**
- * Scenario: diff command — pictl diff log1.xes log2.xes
+ * Scenario: 0 — wpm diff log1.xes log2.xes
  *
  * Dev action simulated: "I refactored the Jaccard computation or changed how
  * computeDiff normalises variant keys. Does same-file diff still produce 1.0?
@@ -18,7 +18,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import * as path from 'path';
 import * as fs from 'fs/promises';
-import { pictl, assertExitCode, assertJsonOutput, createCliTestEnv, EXIT_CODES } from '@wasm4pm/testing';
+import { wpm, assertExitCode, assertJsonOutput, createCliTestEnv, EXIT_CODES } from '@wasm4pm/testing';
 import type { CliTestEnv } from '@wasm4pm/testing';
 
 // ── XES fixtures ──────────────────────────────────────────────────────────────
@@ -109,21 +109,21 @@ afterAll(async () => { await _env?.cleanup(); _env = null; });
 
 describe('diff command: error paths', () => {
   it('exits 2 (source_error) when log1 does not exist', async () => {
-    const result = await pictl(['diff', '/tmp/phantom-diff-log1-99999.xes', '/tmp/phantom-diff-log2-99999.xes']);
+    const result = await wpm(['diff', '/tmp/phantom-diff-log1-99999.xes', '/tmp/phantom-diff-log2-99999.xes']);
     assertExitCode(result, EXIT_CODES.SOURCE_ERROR);
     expect(result.stderr + result.stdout).toMatch(/not found|no such file|does not exist/i);
     console.info('[diff] missing log1 message:', (result.stderr + result.stdout).slice(0, 120));
   });
 
   it('exits 2 (source_error) when log2 does not exist but log1 does', async () => {
-    const result = await pictl(['diff', miniXesPath, '/tmp/phantom-diff-log2-99999.xes']);
+    const result = await wpm(['diff', miniXesPath, '/tmp/phantom-diff-log2-99999.xes']);
     assertExitCode(result, EXIT_CODES.SOURCE_ERROR);
     expect(result.stderr + result.stdout).toMatch(/not found|no such file|does not exist/i);
     console.info('[diff] missing log2 message:', (result.stderr + result.stdout).slice(0, 120));
   });
 
   it('--format json emits parseable error envelope on missing file', async () => {
-    const result = await pictl(['diff', '/tmp/phantom-diff-log1-99999.xes', '/tmp/phantom-diff-log2-99999.xes', '--format', 'json']);
+    const result = await wpm(['diff', '/tmp/phantom-diff-log1-99999.xes', '/tmp/phantom-diff-log2-99999.xes', '--format', 'json']);
     assertExitCode(result, EXIT_CODES.SOURCE_ERROR);
     const envelope = assertJsonOutput(result) as Record<string, unknown>;
     expect(envelope).toHaveProperty('status', 'error');
@@ -136,7 +136,7 @@ describe('diff command: error paths', () => {
 
 describe('diff command: same-file comparison', () => {
   it('exits 0 (or 3 if WASM unbuilt) when both paths are the same file', async () => {
-    const result = await pictl(['diff', miniXesPath, miniXesPath]);
+    const result = await wpm(['diff', miniXesPath, miniXesPath]);
     const acceptable = [EXIT_CODES.SUCCESS, EXIT_CODES.EXECUTION_ERROR];
     if (!acceptable.includes(result.exitCode)) {
       console.error('[diff] same-file unexpected exit:', result.exitCode);
@@ -152,7 +152,7 @@ describe('diff command: same-file comparison', () => {
   }, 30_000);
 
   it('--format json same-file Jaccard is 1.0 with zero added/removed', async () => {
-    const result = await pictl(['diff', miniXesPath, miniXesPath, '--format', 'json']);
+    const result = await wpm(['diff', miniXesPath, miniXesPath, '--format', 'json']);
     if (result.exitCode !== EXIT_CODES.SUCCESS) {
       console.warn('[diff] skipping Jaccard=1.0 check — exit', result.exitCode);
       return;
@@ -177,7 +177,7 @@ describe('diff command: same-file comparison', () => {
 
 describe('diff command: cross-log comparison', () => {
   it('exits 0 (or 3) comparing two structurally different logs', async () => {
-    const result = await pictl(['diff', miniXesPath, driftXesPath]);
+    const result = await wpm(['diff', miniXesPath, driftXesPath]);
     const acceptable = [EXIT_CODES.SUCCESS, EXIT_CODES.EXECUTION_ERROR];
     if (!acceptable.includes(result.exitCode)) {
       console.error('[diff] cross-log unexpected exit:', result.exitCode);
@@ -191,7 +191,7 @@ describe('diff command: cross-log comparison', () => {
   }, 30_000);
 
   it('--format json cross-log Jaccard is < 1.0', async () => {
-    const result = await pictl(['diff', miniXesPath, driftXesPath, '--format', 'json']);
+    const result = await wpm(['diff', miniXesPath, driftXesPath, '--format', 'json']);
     if (result.exitCode !== EXIT_CODES.SUCCESS) {
       console.warn('[diff] skipping Jaccard<1.0 check — exit', result.exitCode);
       return;
@@ -205,7 +205,7 @@ describe('diff command: cross-log comparison', () => {
   }, 30_000);
 
   it('human output contains "Structural similarity" banner', async () => {
-    const result = await pictl(['diff', miniXesPath, driftXesPath]);
+    const result = await wpm(['diff', miniXesPath, driftXesPath]);
     if (result.exitCode !== EXIT_CODES.SUCCESS) {
       console.warn('[diff] skipping banner check — exit', result.exitCode);
       return;

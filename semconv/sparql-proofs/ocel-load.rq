@@ -1,5 +1,5 @@
 # SPARQL CONSTRUCT: Transform OCEL Load Result to RDF
-# Maps pictl OCEL load result into pm:ObjectCentricEventLog and related triples
+# Maps wasm4pm OCEL load result into pm:ObjectCentricEventLog and related triples
 # Input: JSON with object_types[], event_types[], counts, timestamp_range
 # Output: RDF graph describing object-centric event log structure and metadata
 
@@ -83,11 +83,11 @@ WHERE {
   #                  startTime: "2026-01-01", endTime: "2026-04-10" }
 
   # Generate OCEL IRI
-  BIND(IRI(CONCAT("http://pictl.org/ocel/", SUBSTR(STR(NOW()), 1, 10), "/", RAND())) AS ?ocel)
+  BIND(IRI(CONCAT("http://wasm4pm.org/ocel/", SUBSTR(STR(NOW()), 1, 10), "/", RAND())) AS ?ocel)
   BIND(NOW() AS ?timestamp)
 
   # Placeholder URIs
-  BIND(IRI("http://pictl.org/log/ocel-2026-04.jsonocel") AS ?source_file)
+  BIND(IRI("http://wasm4pm.org/log/ocel-2026-04.jsonocel") AS ?source_file)
 
   # OCEL metadata
   BIND("Order-to-Cash Event Log (Object-Centric)" AS ?ocel_label)
@@ -102,7 +102,7 @@ WHERE {
   BIND("Comprehensive O2C process with order, invoice, and payment objects" AS ?ocel_description)
 
   # Object type 1: Order
-  BIND(IRI("http://pictl.org/objecttype/order") AS ?object_type)
+  BIND(IRI("http://wasm4pm.org/objecttype/order") AS ?object_type)
   BIND("Order (Object Type)" AS ?object_type_label)
   BIND(1200 AS ?object_type_count)
   BIND(8400 AS ?events_involving_type)
@@ -110,7 +110,7 @@ WHERE {
   BIND("Primary business object; lifecycle from creation to closure" AS ?object_type_description)
 
   # Event type 1: Create Order
-  BIND(IRI("http://pictl.org/eventtype/create-order") AS ?event_type)
+  BIND(IRI("http://wasm4pm.org/eventtype/create-order") AS ?event_type)
   BIND("Create Order" AS ?event_type_label)
   BIND(1200 AS ?event_type_count)
   BIND(0.027 AS ?event_frequency)
@@ -119,16 +119,16 @@ WHERE {
   BIND("Initial event for all order objects" AS ?event_type_description)
 
   # Object relationships
-  BIND(IRI(CONCAT("http://pictl.org/relation/", RAND())) AS ?object_relationship)
+  BIND(IRI(CONCAT("http://wasm4pm.org/relation/", RAND())) AS ?object_relationship)
   BIND("Order-Invoice Relationship" AS ?relationship_label)
-  BIND(IRI("http://pictl.org/objecttype/order") AS ?object_type_1)
-  BIND(IRI("http://pictl.org/objecttype/invoice") AS ?object_type_2)
+  BIND(IRI("http://wasm4pm.org/objecttype/order") AS ?object_type_1)
+  BIND(IRI("http://wasm4pm.org/objecttype/invoice") AS ?object_type_2)
   BIND("one-to-many" AS ?relation_type)
   BIND(0.92 AS ?strength)
   BIND(1200 AS ?relation_frequency)
 
   # Statistics
-  BIND(IRI(CONCAT("http://pictl.org/stats/", RAND())) AS ?statistics)
+  BIND(IRI(CONCAT("http://wasm4pm.org/stats/", RAND())) AS ?statistics)
   BIND(37.5 AS ?avg_trace_length)
   BIND(2.9 AS ?avg_objects_per_event)
   BIND(15 AS ?event_type_count)
@@ -137,7 +137,7 @@ WHERE {
   BIND(0.72 AS ?complexity_score)
 
   # Data quality
-  BIND(IRI(CONCAT("http://pictl.org/quality/", RAND())) AS ?data_quality)
+  BIND(IRI(CONCAT("http://wasm4pm.org/quality/", RAND())) AS ?data_quality)
   BIND(0.94 AS ?completeness)
   BIND(0.96 AS ?consistency)
   BIND(0.91 AS ?accuracy)

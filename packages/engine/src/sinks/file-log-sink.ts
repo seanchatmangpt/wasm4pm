@@ -110,11 +110,9 @@ export class FileLogSinkAdapter implements SinkAdapter {
     } catch (e) {
       if ((e as any).code === 'EACCES') {
         return error(
-          createError(
-            'SINK_PERMISSION',
-            `Permission denied writing to: ${this.config.directory}`,
-            { directory: this.config.directory }
-          )
+          createError('SINK_PERMISSION', `Permission denied writing to: ${this.config.directory}`, {
+            directory: this.config.directory,
+          })
         );
       }
 
@@ -170,11 +168,10 @@ export class FileLogSinkAdapter implements SinkAdapter {
     } catch (e) {
       if ((e as any).code === 'EACCES') {
         return error(
-          createError(
-            'SINK_PERMISSION',
-            `Permission denied writing artifact: ${e}`,
-            { type, artifact: String(artifact) }
-          )
+          createError('SINK_PERMISSION', `Permission denied writing artifact: ${e}`, {
+            type,
+            artifact: String(artifact),
+          })
         );
       }
 

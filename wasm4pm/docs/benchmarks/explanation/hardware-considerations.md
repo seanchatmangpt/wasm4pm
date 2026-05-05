@@ -1,12 +1,12 @@
 # Apple M3 Max Hardware Considerations
 
-How the hardware we benchmark on affects our results, and what to expect when running pictl on different machines.
+How the hardware we benchmark on affects our results, and what to expect when running wasm4pm on different machines.
 
 ---
 
 ## Reference Hardware
 
-All benchmark numbers published in the pictl documentation were measured on:
+All benchmark numbers published in the wasm4pm documentation were measured on:
 
 | Component           | Specification                      |
 | ------------------- | ---------------------------------- |

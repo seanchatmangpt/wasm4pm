@@ -4,7 +4,7 @@
                        2026-04-16 21:01 UTC
 ================================================================================
 
-PROJECT: pictl — Process Intelligence Control
+PROJECT: wasm4pm — Process Intelligence Control
 RELEASE: Vision 2030 — Autonomic Loop + RL Agents + Western Electric SPC
 
 STATUS: ✅ READY FOR IMMEDIATE PUBLISH
@@ -19,19 +19,19 @@ WASM CORE (1):
   ✅ wasm4pm                            v26.4.16    (3.6M WASM binary)
 
 PRIMARY CLI (1):
-  ✅ @seanchatmangpt/pictl              v26.4.16    (main entry point)
+  ✅ @seanchatmangpt/wasm4pm              v26.4.16    (main entry point)
 
 FOUNDATION PACKAGES (10):
-  ✅ @pictl/agents                      v26.4.16
-  ✅ @pictl/config                      v26.4.16
-  ✅ @pictl/contracts                   v26.4.16
-  ✅ @pictl/engine                      v26.4.16
-  ✅ @pictl/kernel                      v26.4.16
-  ✅ @pictl/ml                          v26.4.16
-  ✅ @pictl/observability               v26.4.16
-  ✅ @pictl/planner                     v26.4.16
-  ✅ @pictl/swarm                       v26.4.16
-  ✅ @pictl/testing                     v26.4.16
+  ✅ @wasm4pm/agents                      v26.4.16
+  ✅ @wasm4pm/config                      v26.4.16
+  ✅ @wasm4pm/contracts                   v26.4.16
+  ✅ @wasm4pm/engine                      v26.4.16
+  ✅ @wasm4pm/kernel                      v26.4.16
+  ✅ @wasm4pm/ml                          v26.4.16
+  ✅ @wasm4pm/observability               v26.4.16
+  ✅ @wasm4pm/planner                     v26.4.16
+  ✅ @wasm4pm/swarm                       v26.4.16
+  ✅ @wasm4pm/testing                     v26.4.16
 
 TOTAL: 12 public npm packages, all at v26.4.16
 
@@ -78,24 +78,24 @@ TOTAL: 12 public npm packages, all at v26.4.16
 ================================================================================
 
 PUBLISH COMMAND (Option A — Recommended):
-  $ cd /Users/sac/chatmangpt/pictl
+  $ cd /Users/sac/chatmangpt/wasm4pm
   $ pnpm publish --recursive --access public
 
 PUBLISH COMMAND (Option B — Dry Run First):
   $ pnpm publish --recursive --access public --dry-run
 
 PUBLISH COMMAND (Option C — Manual Order):
-  $ pnpm --filter @pictl/contracts publish --access public
-  $ pnpm --filter @pictl/observability publish --access public
-  $ pnpm --filter @pictl/config publish --access public
+  $ pnpm --filter @wasm4pm/contracts publish --access public
+  $ pnpm --filter @wasm4pm/observability publish --access public
+  $ pnpm --filter @wasm4pm/config publish --access public
   ... (10 more packages in dependency order)
 
 VERIFY POST-PUBLISH:
-  $ npm view @seanchatmangpt/pictl@26.4.16
+  $ npm view @seanchatmangpt/wasm4pm@26.4.16
   $ npm view wasm4pm@26.4.16
-  $ npm install -g @seanchatmangpt/pictl@26.4.16
-  $ pictl --version
-  $ pictl doctor
+  $ npm install -g @seanchatmangpt/wasm4pm@26.4.16
+  $ wasm4pm --version
+  $ wasm4pm doctor
 
 ================================================================================
                       CREATED DOCUMENTS
@@ -137,7 +137,7 @@ Risk level:                     LOW
 
 RUN THIS BEFORE PUBLISHING:
 
-  $ cd /Users/sac/chatmangpt/pictl
+  $ cd /Users/sac/chatmangpt/wasm4pm
   $ git status              # Should show: working tree clean
   $ git branch              # Should show: * main
   $ npm whoami              # Verify npm login
@@ -149,9 +149,9 @@ THEN PUBLISH:
 
 VERIFY IMMEDIATELY AFTER:
 
-  $ npm view @seanchatmangpt/pictl@26.4.16
-  $ npm install -g @seanchatmangpt/pictl@26.4.16
-  $ pictl --version        # Should output: 26.4.16
+  $ npm view @seanchatmangpt/wasm4pm@26.4.16
+  $ npm install -g @seanchatmangpt/wasm4pm@26.4.16
+  $ wasm4pm --version        # Should output: 26.4.16
 
 ================================================================================
                            CONCLUSION
@@ -176,7 +176,7 @@ The repository has ~29 uncommitted changes from development/testing:
   • package.json version updates (intentional, v26.4.16 aligned)
   • Source code changes in lib.rs, reinforcement.rs, etc. (development)
   • Test artifact files (.vite/vitest/results.json)
-  • Cache/checkpoint files (.pictl/)
+  • Cache/checkpoint files (.wasm4pm/)
   • Documentation created (NPM_PUBLISH_SUMMARY, etc.)
 
 THESE ARE NOT BLOCKERS FOR PUBLISHING because:

@@ -35,8 +35,8 @@ export async function runCertification(version) {
             });
         }
     }
-    const passed = gates.every(g => g.passed);
-    const passCount = gates.filter(g => g.passed).length;
+    const passed = gates.every((g) => g.passed);
+    const passCount = gates.filter((g) => g.passed).length;
     const summary = `${passCount}/${gates.length} gates passed`;
     return {
         timestamp: new Date().toISOString(),
@@ -110,7 +110,7 @@ registerGate('performance:benchmarks', async () => {
         path.resolve(process.cwd(), 'tests/fixtures/BPI_2020_Travel_Permits_Actual.xes'),
         path.resolve(process.cwd(), '..', 'wasm4pm/tests/fixtures/BPI_2020_Travel_Permits_Actual.xes'),
     ];
-    const fixturePath = fixturePaths.find(p => {
+    const fixturePath = fixturePaths.find((p) => {
         try {
             fs.accessSync(p);
             return true;
@@ -127,14 +127,13 @@ registerGate('performance:benchmarks', async () => {
             duration_ms: 0,
         };
     }
-    // Load WASM module via dynamic import to avoid hard dependency on @pictl/engine
+    // Load WASM module via dynamic import to avoid hard dependency on @wasm4pm/engine
     let wasm;
     try {
-        // Dynamic import is intentionally used — @pictl/engine is not a declared dependency
+        // Dynamic import is intentionally used — @wasm4pm/engine is not a declared dependency
         // so this gracefully degrades when the module is unavailable (e.g. in CI or when only
-        // @pictl/testing is installed without the full monorepo).
-        const engine = await import(
-        /* @vite-ignore */ '@pictl/engine');
+        // @wasm4pm/testing is installed without the full monorepo).
+        const engine = (await import(/* @vite-ignore */ '@wasm4pm/engine'));
         const loader = engine.WasmLoader.getInstance();
         await loader.init();
         wasm = loader.get();

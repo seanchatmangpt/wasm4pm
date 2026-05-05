@@ -47,13 +47,13 @@
 
 - `vision-2030-hyperthesis.md` (80KB) — 7-pillar foundational theory (Chatman Equation, Signal Theory, External Verifiability, Knowledge Hooks, Closed Claw Constitution, KGC 4D, HDIT)
 - `THESIS-V2.md` (78KB) — Operational autonomy thesis with RL formulations
-- `pictl-phd-thesis.md` (49KB) — Benchmarks and algorithmic complexity analysis
+- `wasm4pm-phd-thesis.md` (49KB) — Benchmarks and algorithmic complexity analysis
 - `API.md` (38KB) — Complete WASM API reference (70+ functions)
 - `DEPLOYMENT.md` (11KB) — Feature flags, deployment profiles (browser/iot/edge/fog/cloud)
 
 ### In Project Root
 
-- `.claude/CLAUDE.md` — Project-level CLAUDE.md with pictl versioning, testing layers, feature flags
+- `.claude/CLAUDE.md` — Project-level CLAUDE.md with wasm4pm versioning, testing layers, feature flags
 - `.claude/rules/ml-rl-testing.md` — Statistical oracles (Rank 1-5), Bellman correctness tests
 - `.claude/rules/chicago-tdd.md` — Van der Aalst methodology, adversarial test categories A-H
 - `.claude/rules/critical-constraints.md` — MTTR <1s, TPS compliance, WASM constraints
@@ -197,7 +197,7 @@ A: All 5 phases execute sequentially in a tight loop (Perception → Decision �
 A: Execution phase checks `circuit_allowed`. If false, action is skipped, reward penalty applied (-0.5), and circuit remains open until timeout (default ~1s) then transitions to HalfOpen.
 
 **Q: Can RL state be restored across different CLI commands?**  
-A: Yes. `.wasm4pm/state/rl_orchestrator.json` persists Q-tables, telemetry, and circuit state. When pictl starts, it auto-loads the state (unless `--no-restore` flag is passed).
+A: Yes. `.wasm4pm/state/rl_orchestrator.json` persists Q-tables, telemetry, and circuit state. When wasm4pm starts, it auto-loads the state (unless `--no-restore` flag is passed).
 
 **Q: What's the difference between "Guard Rule 3" and the SPC "Rule 3"?**  
 A: Guard Rule 3 is a guard that *blocks* execution if SPC Rule 3 fires (6-point trend detected). SPC Rule 3 is the Western Electric rule that detects the trend. Guard uses SPC as input.

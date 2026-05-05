@@ -142,7 +142,7 @@ DFG:
 
 The approximate formula is `T(n) = 0.003n ms`, where n is the number of cases. This means at 100K cases you would expect ~300 ms, and at 1M cases ~3 seconds. Predictable.
 
-Most pictl algorithms scale linearly: DFG, Process Skeleton, Heuristic Miner, Inductive Miner, Hill Climbing, Declare, Simulated Annealing, and all analytics functions.
+Most wasm4pm algorithms scale linearly: DFG, Process Skeleton, Heuristic Miner, Inductive Miner, Hill Climbing, Declare, Simulated Annealing, and all analytics functions.
 
 ### Superlinear scaling (warning sign)
 

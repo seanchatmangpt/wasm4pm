@@ -1,4 +1,4 @@
-# pictl Semantic Conventions Index
+# wasm4pm Semantic Conventions Index
 
 > **Complete RDF/SPARQL ecosystem for process mining proofs**  
 > **Version**: 1.0 | **Status**: Production-Ready | **Date**: 2026-04-10
@@ -69,7 +69,7 @@
 ## Architecture Overview
 
 ```
-pictl MCP Tool            JSON Result              SPARQL CONSTRUCT      RDF Triples
+wasm4pm MCP Tool            JSON Result              SPARQL CONSTRUCT      RDF Triples
 (discover_dfg)      →    {nodes, edges,    →    discover-dfg.rq   →   pm:DirectlyFollowsGraph
                          fitness: 0.92}                                 pm:hasFitness 0.92
                                                                         pm:hasPrecision 0.88
@@ -89,7 +89,7 @@ pictl MCP Tool            JSON Result              SPARQL CONSTRUCT      RDF Tri
 
 ## Five-Step Integration Pipeline
 
-1. **Call MCP Tool** (pictl)
+1. **Call MCP Tool** (wasm4pm)
    - Input: XES event log
    - Output: JSON {nodes, edges, metrics, executionTime, ...}
 
@@ -278,7 +278,7 @@ WHERE {
 ## Documentation Structure
 
 ```
-pictl/semconv/
+wasm4pm/semconv/
 ├── INDEX.md (this file)
 ├── wasm4pm-ontology.ttl              ← RDF definitions
 ├── wasm4pm-shapes.ttl                ← SHACL validation
@@ -322,7 +322,7 @@ A: Link RDF proof timestamps to OTEL span timestamps. See integration section in
 - **W3C SPARQL 1.1**: https://www.w3.org/TR/sparql11-query/
 - **W3C PROV Ontology**: https://www.w3.org/TR/prov-o/
 - **Oxigraph**: https://oxigraph.org/
-- **pictl MCP Server**: ./wasm4pm/MCP.md
+- **wasm4pm MCP Server**: ./wasm4pm/MCP.md
 
 ---
 
@@ -338,4 +338,4 @@ A: Link RDF proof timestamps to OTEL span timestamps. See integration section in
 **Version**: 1.0  
 **Status**: Production-Ready ✓  
 **Last Updated**: 2026-04-10  
-**Maintainer**: pictl Development Team
+**Maintainer**: wasm4pm Development Team

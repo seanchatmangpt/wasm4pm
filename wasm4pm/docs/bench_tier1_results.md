@@ -7,7 +7,7 @@
 
 ## Summary
 
-Tier 1 discovery algorithms are the foundational process discovery methods in pictl. These benchmarks measure throughput (events/second) and latency (milliseconds/operation) across 4 dataset sizes: 100, 1,000, 10,000, and 50,000 cases.
+Tier 1 discovery algorithms are the foundational process discovery methods in wasm4pm. These benchmarks measure throughput (events/second) and latency (milliseconds/operation) across 4 dataset sizes: 100, 1,000, 10,000, and 50,000 cases.
 
 ### Key Findings
 

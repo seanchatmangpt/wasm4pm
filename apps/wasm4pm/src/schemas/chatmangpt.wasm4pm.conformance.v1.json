@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "chatmangpt.wasm4pm.conformance.v1",
+  "title": "wasm4pm Conformance Result v1",
+  "type": "object",
+  "required": ["schema", "status", "input", "method", "threshold", "fitness", "isFit"],
+  "properties": {
+    "schema":    { "type": "string", "const": "chatmangpt.wasm4pm.conformance.v1" },
+    "status":    { "type": "string", "enum": ["success", "conformance_fail"] },
+    "input":     { "type": "string" },
+    "activityKey": { "type": "string" },
+    "method":    { "type": "string", "enum": ["token_replay", "alignment"] },
+    "threshold": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
+    "fitness":   { "type": "number", "minimum": 0.0, "maximum": 1.0 },
+    "precision": { "type": ["number", "null"] },
+    "precision_available": { "type": "boolean" },
+    "isFit":     { "type": "boolean" },
+    "diagnostics": {
+      "type": "object",
+      "properties": {
+        "traced":    { "type": "number" },
+        "remaining": { "type": "number" },
+        "missing":   { "type": "number" },
+        "consumed":  { "type": "number" },
+        "produced":  { "type": "number" }
+      }
+    }
+  },
+  "additionalProperties": true
+}

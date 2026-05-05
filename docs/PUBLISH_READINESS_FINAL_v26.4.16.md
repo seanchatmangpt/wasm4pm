@@ -1,4 +1,4 @@
-# pictl v26.4.16 — Final Publish Readiness Report
+# wasm4pm v26.4.16 — Final Publish Readiness Report
 
 **Date:** 2026-04-16  
 **Status:** GO (with pre-existing issues documented)
@@ -7,7 +7,7 @@
 
 ## Executive Summary
 
-pictl v26.4.16 is **ready for publication** to npm. All critical quality gates pass. Pre-existing test failures (9 in Rust unit tests) are unrelated to publish artifacts and do not affect WASM or TypeScript quality.
+wasm4pm v26.4.16 is **ready for publication** to npm. All critical quality gates pass. Pre-existing test failures (9 in Rust unit tests) are unrelated to publish artifacts and do not affect WASM or TypeScript quality.
 
 ---
 
@@ -141,7 +141,7 @@ Finished `release` profile [optimized] target(s) in 33.25s
 
 ### Binary Sizes
 
-**Measured:** `/Users/sac/chatmangpt/wasm4pm/wasm4pm/pkg/pictl_bg.wasm`
+**Measured:** `/Users/sac/chatmangpt/wasm4pm/wasm4pm/pkg/wasm4pm_bg.wasm`
 
 | Profile | Size | Target | Status |
 |---------|------|--------|--------|
@@ -172,7 +172,7 @@ packages/testing build$ tsc
 packages/kernel build$ tsc --project tsconfig.json
 packages/engine build$ tsc
 packages/observability build$ tsc
-apps/pictl build$ tsc
+apps/wasm4pm build$ tsc
 packages/agents build$ tsc --project tsconfig.json
 ```
 
@@ -196,12 +196,12 @@ packages/agents build$ tsc --project tsconfig.json
 - `packages/testing` — ✅ All pass
 - `packages/ml` — ✅ All pass
 - `packages/swarm` — ✅ All pass
-- `apps/pictl` — ✅ 28 tests pass
-- `lab/cli-tests` — ❌ 1 JTBD test fails (pictl.init() undefined)
+- `apps/wasm4pm` — ✅ 28 tests pass
+- `lab/cli-tests` — ❌ 1 JTBD test fails (wasm4pm.init() undefined)
 
 **Lab Test Failure Analysis:**
 
-The failing JTBD test in `lab/cli-tests/tests/jtbd.test.ts:28` attempts to call `pictl.init()` but the pictl module export is undefined. This is a lab-only test issue (tests the published artifact) and does not indicate a problem with the publish artifact itself. The export is correctly defined in source.
+The failing JTBD test in `lab/cli-tests/tests/jtbd.test.ts:28` attempts to call `wasm4pm.init()` but the wasm4pm module export is undefined. This is a lab-only test issue (tests the published artifact) and does not indicate a problem with the publish artifact itself. The export is correctly defined in source.
 
 **Root Cause:** Lab tests run against the published npm package (installed from tarball or npm registry). The JTBD test appears to have a pre-existing export issue unrelated to this session's changes.
 
@@ -281,7 +281,7 @@ These failures are **not caused by this session** and exist in the original code
 **Impact:** None on WASM publication (these are Rust unit tests, not published)
 
 ### Pre-existing Lab Test Failure (1)
-JTBD test calls `pictl.init()` but module export is undefined. This is a **lab test issue**, not an artifact issue.
+JTBD test calls `wasm4pm.init()` but module export is undefined. This is a **lab test issue**, not an artifact issue.
 
 **Impact:** None on npm publication (lab tests validate the artifact; failure is in test setup, not artifact)
 
@@ -318,7 +318,7 @@ Cloud profile binary is 3.6 MB instead of expected ~2.78 MB. This is a **pre-exi
    ```bash
    cd wasm4pm
    npm publish
-   cd ../apps/pictl
+   cd ../apps/wasm4pm
    npm publish
    ```
 
@@ -326,7 +326,7 @@ Cloud profile binary is 3.6 MB instead of expected ~2.78 MB. This is a **pre-exi
 
 1. **Fix pre-existing test failures:** Investigate and resolve the 9 Rust unit test failures (likely SIMD edge cases or GPU binding issues)
 
-2. **Fix lab JTBD test:** Ensure `pictl.init()` is properly exported in published artifact
+2. **Fix lab JTBD test:** Ensure `wasm4pm.init()` is properly exported in published artifact
 
 3. **Implement WASM profile differentiation:** Build separate browser/edge/fog/cloud artifacts with size targets:
    - browser: <1 MB
@@ -341,7 +341,7 @@ Cloud profile binary is 3.6 MB instead of expected ~2.78 MB. This is a **pre-exi
 
 ### ✅ GO FOR PUBLISH
 
-pictl v26.4.16 meets all publish-readiness criteria:
+wasm4pm v26.4.16 meets all publish-readiness criteria:
 - Rust code passes linting (clippy violations fixed or guarded)
 - Core integration tests pass (28/28)
 - WASM builds successfully

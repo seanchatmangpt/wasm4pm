@@ -35,7 +35,7 @@ const RESULTS_DIR = path.join(BENCHMARK_DIR, 'results');
 async function main() {
   console.log('');
   console.log('╔═════════════════════════════════════════════════════════════╗');
-  console.log('║   Adversarial Van der Aalst Algorithm Audit (pictl v26.4)   ║');
+  console.log('║   Adversarial Van der Aalst Algorithm Audit (wasm4pm v26.4)   ║');
   console.log('╚═════════════════════════════════════════════════════════════╝');
   console.log('');
 

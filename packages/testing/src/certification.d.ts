@@ -5,17 +5,17 @@
  * Run all gates before publishing a release.
  */
 export interface GateResult {
-    gate: string;
-    passed: boolean;
-    details: string;
-    duration_ms: number;
+  gate: string;
+  passed: boolean;
+  details: string;
+  duration_ms: number;
 }
 export interface CertificationReport {
-    timestamp: string;
-    version: string;
-    gates: GateResult[];
-    passed: boolean;
-    summary: string;
+  timestamp: string;
+  version: string;
+  gates: GateResult[];
+  passed: boolean;
+  summary: string;
 }
 export type GateFunction = () => Promise<GateResult> | GateResult;
 /**
@@ -41,7 +41,11 @@ export declare function getRegisteredGates(): string[];
  * Create a gate that checks a condition.
  * @internal
  */
-export declare function createGate(name: string, check: () => Promise<boolean> | boolean, details?: string): void;
+export declare function createGate(
+  name: string,
+  check: () => Promise<boolean> | boolean,
+  details?: string
+): void;
 /**
  * Print certification report to console.
  * @internal

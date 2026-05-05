@@ -142,7 +142,7 @@
   "production_verdict": "GO FOR PRODUCTION",
   "exit_code": 0,
   "notes": [
-    "KC-10 KNOWN_ISSUE: rand crate carries RUSTSEC-2026-0097 and RUSTSEC-2024-0436. Both are unsound advisories at warn-level, not deny-level. Not exploitable via pictl code paths. Tracked in deny.toml.",
+    "KC-10 KNOWN_ISSUE: rand crate carries RUSTSEC-2026-0097 and RUSTSEC-2024-0436. Both are unsound advisories at warn-level, not deny-level. Not exploitable via wasm4pm code paths. Tracked in deny.toml.",
     "GI-8 self-referential: this report is the GI-8 gate artifact.",
     "GPU parity test (TC-9) requires --features gpu to execute; guarded behind #[cfg(feature = gpu)]. CPU baseline tests (TC-8) always run.",
     "50 total gates across all phases: Phase 1 (KC 1-7, GI 4-6), Phase 2 (OTel/observability), Phase 3 (TC 1-7, CQ historical) per Agent 9 report; Phase 4 (this report) covers the remaining 12."

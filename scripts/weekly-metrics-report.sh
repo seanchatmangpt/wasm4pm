@@ -7,10 +7,10 @@
 
 set -e
 
-PICTL_DIR="${CLAUDE_PROJECT_DIR:-.}"
-METRICS_FILE="$PICTL_DIR/.wasm4pm/metrics.json"
-OUTPUT_FILE="${1:-$PICTL_DIR/.wasm4pm/metrics-dashboard.md}"
-BUILD_LOG="$PICTL_DIR/.wasm4pm/build-times.log"
+WASM4PM_DIR="${CLAUDE_PROJECT_DIR:-.}"
+METRICS_FILE="$WASM4PM_DIR/.wasm4pm/metrics.json"
+OUTPUT_FILE="${1:-$WASM4PM_DIR/.wasm4pm/metrics-dashboard.md}"
+BUILD_LOG="$WASM4PM_DIR/.wasm4pm/build-times.log"
 
 # Helper: ISO8601 date (7 days ago)
 date_7_days_ago() {

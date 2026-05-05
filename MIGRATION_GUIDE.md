@@ -41,7 +41,7 @@ npm install -g @wasm4pm/cli
 npm install @wasm4pm/cli
 
 # Verify installation
-pictl --version
+wasm4pm --version
 ```
 
 ### For Service Deployment (NEW)
@@ -112,7 +112,7 @@ PLUS 10 NEW PACKAGES:
 - ✅ MCP integration (Claude)
 
 ### New (Available if You Opt In)
-- 🆕 CLI tool (pictl)
+- 🆕 CLI tool (wasm4pm)
 - 🆕 HTTP service (@wasm4pm/service)
 - 🆕 Configuration system (@wasm4pm/config)
 - 🆕 Streaming conformance checking
@@ -183,15 +183,15 @@ program.parse();
 ```
 
 #### After (v26.4.5)
-Use the official pictl CLI:
+Use the official wpm CLI:
 
 ```bash
 # Instead of custom tool
-pictl run data.xes --algorithm genetic --profile balanced
+wpm run data.xes --algorithm genetic --profile balanced
 
-# Or integrate pictl programmatically
-const { pictl } = require('@wasm4pm/cli');
-await pictl.run('data.xes', { algorithm: 'genetic' });
+# Or integrate wasm4pm programmatically
+const { wasm4pm } = require('@wasm4pm/cli');
+await wasm4pm.run('data.xes', { algorithm: 'genetic' });
 ```
 
 **Benefits:**
@@ -431,7 +431,7 @@ const result = pm.discoverAlphaPlusPlus(log, {
 profile = "quality"
 
 // Via CLI
-pictl run data.xes --profile quality
+wpm run data.xes --profile quality
 ```
 
 ---
@@ -444,7 +444,7 @@ Understanding the configuration hierarchy:
 Priority (High → Low)
 │
 ├─ 1. CLI Arguments (highest)
-│  └─ pictl run --algorithm genetic --profile quality
+│  └─ wpm run --algorithm genetic --profile quality
 │
 ├─ 2. TOML Files
 │  ├─ ./wasm4pm.toml
@@ -596,7 +596,7 @@ fetch('http://service:3000/api/v1/discover', {
 - Rate limiting
 - Connection pooling
 
-### 4. Use pictl for Automation
+### 4. Use wasm4pm for Automation
 
 Instead of custom Node.js scripts:
 
@@ -609,7 +609,7 @@ Instead of custom Node.js scripts:
 **After:**
 ```bash
 #!/bin/bash
-pictl run data.xes --algorithm genetic --output result.json
+wpm run data.xes --algorithm genetic --output result.json
 ```
 
 **Benefits:**
@@ -653,10 +653,10 @@ fs.writeFileSync('receipt.json', JSON.stringify(receipt));
 ### Q: Is it safe to upgrade?
 **A:** Completely safe. No breaking changes. All existing APIs remain unchanged.
 
-### Q: Should I use pictl or the library?
+### Q: Should I use wasm4pm or the library?
 **A:** 
 - **Library** (`wasm4pm`) - If you're building an application
-- **pictl CLI** - If you need command-line automation
+- **wpm CLI** - If you need command-line automation
 - **Both** - For maximum flexibility
 
 ### Q: Can I use the old config system?
@@ -708,7 +708,7 @@ Nothing is slower. All optimizations are backward compatible.
 npm install @wasm4pm/config
 ```
 
-### Issue: "pictl command not found"
+### Issue: "wpm command not found"
 **Solution:** Install globally
 ```bash
 npm install -g @wasm4pm/cli
@@ -724,14 +724,14 @@ wasm4pm-service --port 3001
 ### Issue: "Config validation error"
 **Solution:** Check config format
 ```bash
-# Run pictl init to generate valid config
-pictl init
+# Run wpm init to generate valid config
+wpm init
 ```
 
 ### Issue: "Memory exceeded"
 **Solution:** Use streaming for large logs
 ```bash
-pictl run large-log.xes --profile stream
+wpm run large-log.xes --profile stream
 ```
 
 ---

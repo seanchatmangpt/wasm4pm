@@ -8,6 +8,12 @@
  *   - Single-pass mean/variance aggregation
  *   - Early termination in tree split search
  *   - Log-sum-exp numerically stable softmax
+ *
+ * Defensive bridge hardening:
+ *   - Parameter validation on entry points (k, maxDepth, etc.)
+ *   - Guard against division by zero in all statistics
+ *   - Safely serialize Float64Array/typed arrays to plain JSON
+ *   - Null-safe metric computation (RMSE, MAE, R²)
  */
 
 import { buildFeatureMatrix, encodeLabels } from './bridge.js';
@@ -18,13 +24,39 @@ import type {
   RegressionResult,
 } from './types.js';
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Parameter validation helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Validate and clamp k-NN parameter k.
+ * Valid range: [1, n-1], defaults to 5 (exclude self for k-NN).
+ */
+function validateKnnK(k: number | undefined, n: number): number {
+  const val = k ?? 5;
+  if (!Number.isInteger(val) || val < 1) return 1;
+  // For k-NN, we need k < n (leave at least 1 point to compare against)
+  const maxK = Math.max(1, n - 1);
+  return Math.min(val, maxK);
+}
+
+/**
+ * Validate and clamp decision tree max depth.
+ * Valid range: [1, n], defaults to 5.
+ */
+function validateMaxDepth(depth: number | undefined): number {
+  const val = depth ?? 5;
+  if (!Number.isInteger(val) || val < 1) return 1;
+  return Math.min(val, 100); // Reasonable upper bound
+}
+
 // ---------------------------------------------------------------------------
 // Columnar layout: number[][] → Float64Array columns (zero-copy read)
 // ---------------------------------------------------------------------------
 
 interface ColumnarMatrix {
   data: number[][];
-  cols: Float64Array[];  // cols[j] = column j values
+  cols: Float64Array[]; // cols[j] = column j values
   n: number;
   d: number;
 }
@@ -45,40 +77,57 @@ function toColumnar(data: number[][]): ColumnarMatrix {
 // Metrics (single-pass)
 // ---------------------------------------------------------------------------
 
+/**
+ * Compute RMSE with guards against NaN/Infinity.
+ */
 function rmse(actual: number[], predicted: number[]): number {
   const n = actual.length;
   if (n === 0) return 0;
   let ss = 0;
   for (let i = 0; i < n; i++) {
     const d = actual[i] - predicted[i];
-    ss += d * d;
+    if (Number.isFinite(d)) ss += d * d;
   }
-  return Math.sqrt(ss / n);
+  const result = Math.sqrt(ss / n);
+  return Number.isFinite(result) ? result : 0;
 }
 
+/**
+ * Compute MAE with guards against NaN/Infinity.
+ */
 function mae(actual: number[], predicted: number[]): number {
   const n = actual.length;
   if (n === 0) return 0;
   let sum = 0;
-  for (let i = 0; i < n; i++) sum += actual[i] - predicted[i] < 0 ? predicted[i] - actual[i] : actual[i] - predicted[i];
-  return sum / n;
+  for (let i = 0; i < n; i++) {
+    const d = actual[i] - predicted[i];
+    if (Number.isFinite(d)) sum += d < 0 ? -d : d;
+  }
+  const result = sum / n;
+  return Number.isFinite(result) ? result : 0;
 }
 
+/**
+ * Compute R² with guards against zero variance and NaN/Infinity.
+ */
 function rSquared(actual: number[], predicted: number[]): number {
   const n = actual.length;
   if (n === 0) return 1;
   let mean = 0;
-  for (let i = 0; i < n; i++) mean += actual[i];
+  for (let i = 0; i < n; i++) {
+    if (Number.isFinite(actual[i])) mean += actual[i];
+  }
   mean /= n;
   let ssRes = 0;
   let ssTot = 0;
   for (let i = 0; i < n; i++) {
     const rd = actual[i] - predicted[i];
-    ssRes += rd * rd;
     const td = actual[i] - mean;
-    ssTot += td * td;
+    if (Number.isFinite(rd)) ssRes += rd * rd;
+    if (Number.isFinite(td)) ssTot += td * td;
   }
-  return ssTot === 0 ? 1 : 1 - ssRes / ssTot;
+  // Guard against zero or very small variance
+  return ssTot < 1e-15 ? 1 : Math.min(1, Math.max(-1, 1 - ssRes / ssTot));
 }
 
 // ---------------------------------------------------------------------------
@@ -88,7 +137,7 @@ function rSquared(actual: number[], predicted: number[]): number {
 function knnBatch(
   col: ColumnarMatrix,
   labels: number[],
-  k: number,
+  k: number
 ): { label: number; confidence: number }[] {
   const { cols, n, d } = col;
   // Pre-allocate distance buffer (reused across queries)
@@ -111,7 +160,7 @@ function knnBatch(
     const sorted = new Array<number>(k);
     let sortedLen = 0;
     for (let i = 0; i < n && sortedLen < k; i++) {
-      if (i === qi) continue;  // Skip self-match
+      if (i === qi) continue; // Skip self-match
       // Insert into sorted position
       let pos = sortedLen;
       while (pos > 0 && distBuf[i] < distBuf[sorted[pos - 1]]) pos--;
@@ -126,7 +175,7 @@ function knnBatch(
     } else {
       // Replace worst neighbor with better ones from remaining
       for (let i = k; i < n; i++) {
-        if (i === qi) continue;  // Skip self-match
+        if (i === qi) continue; // Skip self-match
         if (distBuf[i] < distBuf[sorted[k - 1]]) {
           // Remove worst, insert new
           let pos = k - 1;
@@ -145,7 +194,7 @@ function knnBatch(
     for (let ni = 0; ni < sortedLen; ni++) {
       const idx = sorted[ni];
       const dist = Math.sqrt(distBuf[idx]);
-      const w = dist < 1e-10 ? 1e10 : 1 / dist;  // Cap weight for zero-distance
+      const w = dist < 1e-10 ? 1e10 : 1 / dist; // Cap weight for zero-distance
       totalWeight += w;
       const vw = (votes.get(labels[idx]) ?? 0) + w;
       votes.set(labels[idx], vw);
@@ -167,9 +216,9 @@ function knnBatch(
 
 interface NBModel {
   classLogPriors: Float64Array;
-  classMeans: Float64Array[];   // per-class per-feature
-  classInvVars: Float64Array[];  // 1/(2*variance) for log-likelihood
-  logDet: Float64Array[];        // log(2*pi*variance) per class
+  classMeans: Float64Array[]; // per-class per-feature
+  classInvVars: Float64Array[]; // 1/(2*variance) for log-likelihood
+  logDet: Float64Array[]; // log(2*pi*variance) per class
   classes: number[];
   nFeatures: number;
   nClasses: number;
@@ -200,7 +249,7 @@ function gaussianNBTrain(data: number[][], labels: number[]): NBModel {
   }
 
   const classLogPriors = new Float64Array(nClasses);
-  const classMeans = sums;  // reuse, will divide below
+  const classMeans = sums; // reuse, will divide below
   const classInvVars = Array.from({ length: nClasses }, () => new Float64Array(d));
   const logDet = Array.from({ length: nClasses }, () => new Float64Array(d));
 
@@ -213,7 +262,7 @@ function gaussianNBTrain(data: number[][], labels: number[]): NBModel {
       const m = sums[ci][j] / cnt;
       classMeans[ci][j] = m;
       const rawVariance = sumSq[ci][j] / cnt - m * m;
-      const variance = Math.max(0, rawVariance) + 1e-9;  // Clamp to non-negative
+      const variance = Math.max(0, rawVariance) + 1e-9; // Clamp to non-negative
       classInvVars[ci][j] = 1 / (2 * variance);
       logDet[ci][j] = LN2PI + Math.log(variance);
     }
@@ -224,7 +273,7 @@ function gaussianNBTrain(data: number[][], labels: number[]): NBModel {
 
 function gaussianNBPredictBatch(
   model: NBModel,
-  data: number[][],
+  data: number[][]
 ): { label: number; confidence: number }[] {
   const n = data.length;
   const { classLogPriors, classMeans, classInvVars, logDet, nFeatures, nClasses } = model;
@@ -255,7 +304,10 @@ function gaussianNBPredictBatch(
     }
     let expSum = 0;
     for (let ci = 0; ci < nClasses; ci++) expSum += Math.exp(logProbs[ci] - maxLp);
-    results[i] = { label: model.classes[bestClass], confidence: Math.exp(bestLog - maxLp) / expSum };
+    results[i] = {
+      label: model.classes[bestClass],
+      confidence: Math.exp(bestLog - maxLp) / expSum,
+    };
   }
 
   return results;
@@ -269,7 +321,7 @@ function logisticRegressionTrain(
   data: number[][],
   labels: number[],
   maxIter = 100,
-  lr = 0.01,
+  lr = 0.01
 ): { weights: Float64Array[]; nClasses: number; iterations: number } {
   const classes = [...new Set(labels)].sort((a, b) => a - b);
   const n = data.length;
@@ -329,7 +381,7 @@ function logisticRegressionTrain(
 
 function logisticRegressionPredictBatch(
   model: ReturnType<typeof logisticRegressionTrain>,
-  data: number[][],
+  data: number[][]
 ): { label: number; confidence: number }[] {
   const n = data.length;
   const d = data[0]?.length ?? 0;
@@ -344,7 +396,7 @@ function logisticRegressionPredictBatch(
       const w = model.weights[ci];
       let z = w[0];
       for (let j = 0; j < d; j++) z += data[i][j] * w[j + 1];
-      scores[ci] = z;  // Store raw logit, not sigmoid
+      scores[ci] = z; // Store raw logit, not sigmoid
     }
 
     // Softmax across classes for proper probability normalization
@@ -362,7 +414,10 @@ function logisticRegressionPredictBatch(
     }
 
     for (let ci = 0; ci < model.nClasses; ci++) {
-      if (scores[ci] > bestScore) { bestScore = scores[ci]; bestClass = ci; }
+      if (scores[ci] > bestScore) {
+        bestScore = scores[ci];
+        bestClass = ci;
+      }
     }
 
     results[i] = { label: bestClass, confidence: bestScore };
@@ -389,11 +444,11 @@ interface TreeNode {
 function buildTree(
   data: number[][],
   labels: number[],
-  indices: Int32Array,  // pre-allocated index buffer
+  indices: Int32Array, // pre-allocated index buffer
   depth: number,
   maxDepth: number,
   d: number,
-  classCount: number,
+  classCount: number
 ): TreeNode {
   const len = indices.length;
 
@@ -412,12 +467,23 @@ function buildTree(
   let majorityCount = 0;
   for (let c = 0; c < classCount; c++) {
     if (freq[c] > 0) nClasses++;
-    if (freq[c] > majorityCount) { majorityCount = freq[c]; majorityLabel = c; }
+    if (freq[c] > majorityCount) {
+      majorityCount = freq[c];
+      majorityLabel = c;
+    }
   }
 
   // Leaf conditions
   if (nClasses <= 1 || depth >= maxDepth || len < 2) {
-    return { feature: 0, threshold: 0, left: null, right: null, label: majorityLabel, depth, classCounts: freq };
+    return {
+      feature: 0,
+      threshold: 0,
+      left: null,
+      right: null,
+      label: majorityLabel,
+      depth,
+      classCounts: freq,
+    };
   }
 
   // Parent gini (single pass with existing freq)
@@ -488,7 +554,15 @@ function buildTree(
 
   // No improvement
   if (bestGini >= parentGini) {
-    return { feature: 0, threshold: 0, left: null, right: null, label: majorityLabel, depth, classCounts: freq };
+    return {
+      feature: 0,
+      threshold: 0,
+      left: null,
+      right: null,
+      label: majorityLabel,
+      depth,
+      classCounts: freq,
+    };
   }
 
   // Partition indices (pre-allocated buffers)
@@ -508,8 +582,24 @@ function buildTree(
   return {
     feature: bestFeature,
     threshold: bestThreshold,
-    left: buildTree(data, labels, leftIndices.subarray(0, leftLen), depth + 1, maxDepth, d, classCount),
-    right: buildTree(data, labels, rightIndices.subarray(0, rightLen), depth + 1, maxDepth, d, classCount),
+    left: buildTree(
+      data,
+      labels,
+      leftIndices.subarray(0, leftLen),
+      depth + 1,
+      maxDepth,
+      d,
+      classCount
+    ),
+    right: buildTree(
+      data,
+      labels,
+      rightIndices.subarray(0, rightLen),
+      depth + 1,
+      maxDepth,
+      d,
+      classCount
+    ),
     label: -1,
     depth,
     classCounts: null,
@@ -536,10 +626,7 @@ function predictTree(node: TreeNode, query: number[]): { label: number; confiden
 
 function treeDepth(node: TreeNode): number {
   if (node.label !== -1) return node.depth;
-  return Math.max(
-    node.left ? treeDepth(node.left) : 0,
-    node.right ? treeDepth(node.right) : 0,
-  );
+  return Math.max(node.left ? treeDepth(node.left) : 0, node.right ? treeDepth(node.right) : 0);
 }
 
 function treeNodes(node: TreeNode): number {
@@ -551,9 +638,15 @@ function treeNodes(node: TreeNode): number {
 // Linear regression (single-pass, no intermediate objects)
 // ---------------------------------------------------------------------------
 
-function linearRegressionFit(x: number[], y: number[]): { slope: number; intercept: number; predict: (xi: number) => number } {
+function linearRegressionFit(
+  x: number[],
+  y: number[]
+): { slope: number; intercept: number; predict: (xi: number) => number } {
   const n = x.length;
-  let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+  let sumX = 0,
+    sumY = 0,
+    sumXY = 0,
+    sumXX = 0;
   for (let i = 0; i < n; i++) {
     sumX += x[i];
     sumY += y[i];
@@ -573,7 +666,11 @@ function linearRegressionFit(x: number[], y: number[]): { slope: number; interce
 // Polynomial regression (Vandermonde, Gauss-Jordan)
 // ---------------------------------------------------------------------------
 
-function polyFit(x: number[], y: number[], degree: number): { coefficients: number[]; predict: (xi: number) => number } {
+function polyFit(
+  x: number[],
+  y: number[],
+  degree: number
+): { coefficients: number[]; predict: (xi: number) => number } {
   const n = x.length;
   const d = degree + 1;
 
@@ -608,10 +705,15 @@ function polyFit(x: number[], y: number[], degree: number): { coefficients: numb
     let maxVal = Math.abs(aug[col][col]);
     for (let row = col + 1; row < d; row++) {
       const v = Math.abs(aug[row][col]);
-      if (v > maxVal) { maxVal = v; maxRow = row; }
+      if (v > maxVal) {
+        maxVal = v;
+        maxRow = row;
+      }
     }
     if (maxRow !== col) {
-      const tmp = aug[col]; aug[col] = aug[maxRow]; aug[maxRow] = tmp;
+      const tmp = aug[col];
+      aug[col] = aug[maxRow];
+      aug[maxRow] = tmp;
     }
     const pivot = aug[col][col];
     if (Math.abs(pivot) < 1e-12) continue;
@@ -629,7 +731,10 @@ function polyFit(x: number[], y: number[], degree: number): { coefficients: numb
     predict: (xi: number) => {
       let val = 0;
       let p = 1;
-      for (let j = 0; j < d; j++) { val += coefficients[j] * p; p *= xi; }
+      for (let j = 0; j < d; j++) {
+        val += coefficients[j] * p;
+        p *= xi;
+      }
       return val;
     },
   };
@@ -639,7 +744,16 @@ function polyFit(x: number[], y: number[], degree: number): { coefficients: numb
 // Exponential regression: y = a * e^(bx)
 // ---------------------------------------------------------------------------
 
-function expFit(x: number[], y: number[]): { a: number; b: number; rSquared: number; predict: (xi: number) => number; doublingTime: () => number } {
+function expFit(
+  x: number[],
+  y: number[]
+): {
+  a: number;
+  b: number;
+  rSquared: number;
+  predict: (xi: number) => number;
+  doublingTime: () => number;
+} {
   // Filter valid indices (single pass)
   const validIndices: number[] = [];
   for (let i = 0; i < y.length; i++) {
@@ -647,7 +761,13 @@ function expFit(x: number[], y: number[]): { a: number; b: number; rSquared: num
   }
 
   if (validIndices.length < 2) {
-    return { a: 1, b: 0, rSquared: 0, predict: () => y.reduce((s, v) => s + v, 0) / y.length, doublingTime: () => Infinity };
+    return {
+      a: 1,
+      b: 0,
+      rSquared: 0,
+      predict: () => y.reduce((s, v) => s + v, 0) / y.length,
+      doublingTime: () => Infinity,
+    };
   }
 
   const vx = new Float64Array(validIndices.length);
@@ -669,7 +789,8 @@ function expFit(x: number[], y: number[]): { a: number; b: number; rSquared: num
   let meanY = 0;
   for (let k = 0; k < vn; k++) meanY += vy[k];
   meanY /= vn;
-  let ssRes = 0, ssTot = 0;
+  let ssRes = 0,
+    ssTot = 0;
   for (let k = 0; k < vn; k++) {
     const pred = a * Math.exp(b * vx[k]);
     const rd = vy[k] - pred;
@@ -679,7 +800,8 @@ function expFit(x: number[], y: number[]): { a: number; b: number; rSquared: num
   }
 
   return {
-    a, b,
+    a,
+    b,
     rSquared: ssTot === 0 ? 1 : 1 - ssRes / ssTot,
     predict: (xi: number) => a * Math.exp(b * xi),
     doublingTime: () => (b === 0 ? Infinity : Math.log(2) / b),
@@ -691,7 +813,24 @@ function expFit(x: number[], y: number[]): { a: number; b: number; rSquared: num
 // ---------------------------------------------------------------------------
 
 /**
- * Classify traces using k-NN, logistic regression, decision tree, or naive Bayes.
+ * Classify traces by a categorical target (e.g., process outcome).
+ *
+ * Supports four methods:
+ *   - `'knn'` — k-nearest neighbours (inverse-distance weighted vote, leave-one-out)
+ *   - `'logistic_regression'` — multinomial softmax with batch gradient descent
+ *   - `'decision_tree'` — CART (Gini, configurable max depth)
+ *   - `'naive_bayes'` — Gaussian, single-pass mean/variance training
+ *
+ * The function consumes the JSON output of `wasm.extract_case_features()`.
+ * Empty input returns `{ predictions: [] }` rather than throwing — callers must
+ * handle the empty case.
+ *
+ * @param featuresJson - Per-case feature objects (must include `case_id`).
+ * @param options.targetKey - Categorical target column. Default `'outcome'`.
+ * @param options.method - Classifier method. Default `'knn'`.
+ * @param options.k - Neighbours for k-NN. Default `5`.
+ * @param options.maxDepth - Max depth for decision tree. Default `5`.
+ * @returns ClassificationResult with per-case predictions and confidence in [0, 1].
  */
 export async function classifyTraces(
   featuresJson: Array<Record<string, unknown>>,
@@ -700,7 +839,7 @@ export async function classifyTraces(
     method?: ClassificationMethod;
     k?: number;
     maxDepth?: number;
-  } = {},
+  } = {}
 ): Promise<ClassificationResult> {
   const targetKey = options.targetKey ?? 'outcome';
   const method = options.method ?? 'knn';
@@ -713,17 +852,22 @@ export async function classifyTraces(
   const { encoded, reverseMap } = encodeLabels(matrix.labels);
 
   if (method === 'knn') {
-    const k = options.k ?? 5;
+    const validatedK = validateKnnK(options.k, matrix.data.length);
     const col = toColumnar(matrix.data);
-    const batch = knnBatch(col, encoded, k);
+    const batch = knnBatch(col, encoded, validatedK);
     return {
       method: 'knn',
       predictions: matrix.caseIds.map((caseId, i) => ({
         caseId,
         predicted: reverseMap.get(batch[i].label) ?? 'unknown',
-        confidence: batch[i].confidence,
+        confidence: Math.max(0, Math.min(1, batch[i].confidence)), // Clamp confidence to [0, 1]
       })),
-      modelInfo: { k, featureCount: col.d, traceCount: col.n, classCount: reverseMap.size },
+      modelInfo: {
+        k: validatedK,
+        featureCount: col.d,
+        traceCount: col.n,
+        classCount: reverseMap.size,
+      },
     };
   }
 
@@ -737,18 +881,25 @@ export async function classifyTraces(
         predicted: reverseMap.get(batch[i].label) ?? 'unknown',
         confidence: batch[i].confidence,
       })),
-      modelInfo: { weights: model.weights, iterations: model.iterations, featureCount: matrix.featureNames.length, traceCount: matrix.data.length, classCount: reverseMap.size },
+      // Convert Float64Array to plain arrays for JSON serialization
+      modelInfo: {
+        weights: model.weights.map((w) => Array.from(w)),
+        iterations: model.iterations,
+        featureCount: matrix.featureNames.length,
+        traceCount: matrix.data.length,
+        classCount: reverseMap.size,
+      },
     };
   }
 
   if (method === 'decision_tree') {
-    const maxDepth = options.maxDepth ?? 5;
+    const validatedMaxDepth = validateMaxDepth(options.maxDepth);
     const classCount = reverseMap.size;
     const n = matrix.data.length;
     const d = matrix.featureNames.length;
     const indices = new Int32Array(n);
     for (let i = 0; i < n; i++) indices[i] = i;
-    const tree = buildTree(matrix.data, encoded, indices, 0, maxDepth, d, classCount);
+    const tree = buildTree(matrix.data, encoded, indices, 0, validatedMaxDepth, d, classCount);
     return {
       method: 'decision_tree',
       predictions: matrix.caseIds.map((caseId, i) => {
@@ -756,10 +907,16 @@ export async function classifyTraces(
         return {
           caseId,
           predicted: reverseMap.get(label) ?? 'unknown',
-          confidence,
+          confidence: Math.max(0, Math.min(1, confidence)), // Clamp confidence to [0, 1]
         };
       }),
-      modelInfo: { depth: treeDepth(tree), nNodes: treeNodes(tree), featureCount: d, traceCount: n, classCount: reverseMap.size },
+      modelInfo: {
+        depth: treeDepth(tree),
+        nNodes: treeNodes(tree),
+        featureCount: d,
+        traceCount: n,
+        classCount: reverseMap.size,
+      },
     };
   }
 
@@ -771,14 +928,31 @@ export async function classifyTraces(
     predictions: matrix.caseIds.map((caseId, i) => ({
       caseId,
       predicted: reverseMap.get(batch[i].label) ?? 'unknown',
-      confidence: batch[i].confidence,
+      confidence: Math.max(0, Math.min(1, batch[i].confidence)), // Clamp confidence to [0, 1]
     })),
-    modelInfo: { nClasses: model.nClasses, nFeatures: model.nFeatures, featureCount: matrix.featureNames.length, traceCount: matrix.data.length, classCount: reverseMap.size },
+    modelInfo: {
+      nClasses: model.nClasses,
+      nFeatures: model.nFeatures,
+      featureCount: matrix.featureNames.length,
+      traceCount: matrix.data.length,
+      classCount: reverseMap.size,
+    },
   };
 }
 
 /**
  * Predict remaining case time using regression on trace features.
+ *
+ * NOTE: This is a univariate regression — only the first feature column is used
+ * as the independent variable. For multi-feature regression, project features
+ * with PCA or pre-aggregate before calling.
+ *
+ * Methods:
+ *   - `'linear_regression'` — least-squares slope/intercept (default)
+ *   - `'polynomial_regression'` — Vandermonde + Gauss–Jordan, configurable `degree`
+ *   - `'exponential_regression'` — log-linear fit `y = a · e^(b·x)`
+ *
+ * @throws Error if fewer than 2 traces are supplied (`'Not enough traces ...'`).
  */
 export async function regressRemainingTime(
   featuresJson: Array<Record<string, unknown>>,
@@ -786,7 +960,7 @@ export async function regressRemainingTime(
     targetKey?: string;
     method?: RegressionMethod;
     degree?: number;
-  } = {},
+  } = {}
 ): Promise<RegressionResult> {
   const targetKey = options.targetKey ?? 'remaining_time';
   const method = options.method ?? 'linear_regression';
@@ -796,35 +970,62 @@ export async function regressRemainingTime(
     throw new Error('Not enough traces for regression (need at least 2)');
   }
 
-  const x = matrix.data.map(row => row[0] ?? 0);
+  const x = matrix.data.map((row) => row[0] ?? 0);
   const y = matrix.targets;
 
   if (method === 'polynomial_regression') {
-    const degree = options.degree ?? 2;
+    // Validate degree: [1, min(n-1, 10)]
+    const rawDegree = options.degree ?? 2;
+    const degree = Math.max(1, Math.min(Math.floor(rawDegree), Math.min(x.length - 1, 10)));
     const model = polyFit(x, y, degree);
-    const predicted = x.map(xi => model.predict(xi));
+    const predicted = x.map((xi) => model.predict(xi));
     return {
-      method: 'polynomial_regression', rSquared: rSquared(y, predicted), rmse: rmse(y, predicted), mae: mae(y, predicted),
-      predictions: matrix.caseIds.map((caseId, i) => ({ caseId, actual: y[i], predicted: predicted[i] })),
-      degree, coefficients: model.coefficients,
+      method: 'polynomial_regression',
+      rSquared: rSquared(y, predicted),
+      rmse: rmse(y, predicted),
+      mae: mae(y, predicted),
+      predictions: matrix.caseIds.map((caseId, i) => ({
+        caseId,
+        actual: y[i],
+        predicted: predicted[i],
+      })),
+      degree,
+      coefficients: model.coefficients,
     };
   }
 
   if (method === 'exponential_regression') {
     const model = expFit(x, y);
-    const predicted = x.map(xi => model.predict(xi));
+    const predicted = x.map((xi) => model.predict(xi));
     return {
-      method: 'exponential_regression', rSquared: model.rSquared, rmse: rmse(y, predicted), mae: mae(y, predicted),
-      predictions: matrix.caseIds.map((caseId, i) => ({ caseId, actual: y[i], predicted: predicted[i] })),
-      growthRate: model.b, amplitude: model.a, doublingTime: model.doublingTime(),
+      method: 'exponential_regression',
+      rSquared: model.rSquared,
+      rmse: rmse(y, predicted),
+      mae: mae(y, predicted),
+      predictions: matrix.caseIds.map((caseId, i) => ({
+        caseId,
+        actual: y[i],
+        predicted: predicted[i],
+      })),
+      growthRate: model.b,
+      amplitude: model.a,
+      doublingTime: model.doublingTime(),
     };
   }
 
   const model = linearRegressionFit(x, y);
-  const predicted = x.map(xi => model.predict(xi));
+  const predicted = x.map((xi) => model.predict(xi));
   return {
-    method: 'linear_regression', slope: model.slope, intercept: model.intercept,
-    rSquared: rSquared(y, predicted), rmse: rmse(y, predicted), mae: mae(y, predicted),
-    predictions: matrix.caseIds.map((caseId, i) => ({ caseId, actual: y[i], predicted: predicted[i] })),
+    method: 'linear_regression',
+    slope: model.slope,
+    intercept: model.intercept,
+    rSquared: rSquared(y, predicted),
+    rmse: rmse(y, predicted),
+    mae: mae(y, predicted),
+    predictions: matrix.caseIds.map((caseId, i) => ({
+      caseId,
+      actual: y[i],
+      predicted: predicted[i],
+    })),
   };
 }

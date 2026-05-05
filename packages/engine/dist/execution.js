@@ -342,13 +342,20 @@ export async function executePlan(plan, dispatcher, runId, onProgress) {
  */
 function taskToKernelCall(task) {
     switch (task) {
-        case 'next_activity': return 'predict_next_activity';
-        case 'remaining_time': return 'predict_case_duration';
-        case 'outcome': return 'score_anomaly';
-        case 'drift': return 'detect_drift';
-        case 'features': return 'build_transition_probabilities';
-        case 'resource': return 'estimate_queue_delay';
-        default: return task;
+        case 'next_activity':
+            return 'predict_next_activity';
+        case 'remaining_time':
+            return 'predict_case_duration';
+        case 'outcome':
+            return 'score_anomaly';
+        case 'drift':
+            return 'detect_drift';
+        case 'features':
+            return 'build_transition_probabilities';
+        case 'resource':
+            return 'estimate_queue_delay';
+        default:
+            return task;
     }
 }
 /**

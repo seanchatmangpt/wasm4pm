@@ -12,7 +12,7 @@ import * as url from 'url';
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 export const WASM4PM = path.resolve(__dirname, '../../apps/wasm4pm/dist/bin/wpm.js');
 /** @deprecated Use WASM4PM instead. */
-export const PICTL = WASM4PM;
+export const WASM4PM = WASM4PM;
 
 /** Spawn the wasm4pm (wpm) CLI as a child process, capturing stdout/stderr/exitCode. */
 export function wpm(
@@ -49,7 +49,7 @@ export function combinedOutput(result: CliResult): string {
 }
 
 /** @deprecated Use wpm instead. */
-export const pictl = wpm;
+export const wasm4pm = wpm;
 
 /** Resolve a path relative to the wasm4pm repo root. */
 export function resolveRepo(...segments: string[]): string {

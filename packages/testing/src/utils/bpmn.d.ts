@@ -5,39 +5,39 @@
  * Provides helpers for validating BPMN structure and content.
  */
 export interface BPMNElement {
-    id: string;
-    name?: string;
-    type?: string;
-    incoming?: string[];
-    outgoing?: string[];
-    [key: string]: unknown;
+  id: string;
+  name?: string;
+  type?: string;
+  incoming?: string[];
+  outgoing?: string[];
+  [key: string]: unknown;
 }
 export interface BPMNProcess {
-    id: string;
-    name?: string;
-    isExecutable?: boolean;
-    elements: BPMNElement[];
+  id: string;
+  name?: string;
+  isExecutable?: boolean;
+  elements: BPMNElement[];
 }
 export interface BPMNDefinition {
+  id: string;
+  targetNamespace?: string;
+  processes: BPMNProcess[];
+  messageFlows?: Array<{
     id: string;
-    targetNamespace?: string;
-    processes: BPMNProcess[];
-    messageFlows?: Array<{
-        id: string;
-        sourceRef: string;
-        targetRef: string;
-    }>;
+    sourceRef: string;
+    targetRef: string;
+  }>;
 }
 export interface BPMNValidationResult {
-    valid: boolean;
-    errors: BPMNValidationError[];
-    warnings: BPMNValidationError[];
+  valid: boolean;
+  errors: BPMNValidationError[];
+  warnings: BPMNValidationError[];
 }
 export interface BPMNValidationError {
-    element: string;
-    attribute: string;
-    message: string;
-    severity: 'error' | 'warning';
+  element: string;
+  attribute: string;
+  message: string;
+  severity: 'error' | 'warning';
 }
 /**
  * Parse BPMN XML string into structured format.
@@ -77,9 +77,9 @@ export declare function createInvalidBPMN(): string;
  * Returns true if the round-trip produces equivalent XML.
  */
 export declare function roundTripBPMN(bpmnXml: string): {
-    success: boolean;
-    result?: string;
-    error?: string;
+  success: boolean;
+  result?: string;
+  error?: string;
 };
 /**
  * Format BPMN validation result as human-readable string.

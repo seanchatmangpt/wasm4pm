@@ -12,7 +12,7 @@ Vision 2030 organizes autonomous process mining into 5 orthogonal domains, each 
 
 ## Domain Matrix
 
-### Domain 1: Process Mining (pictl Algorithms)
+### Domain 1: Process Mining (wasm4pm Algorithms)
 
 | Aspect | Details |
 |--------|---------|

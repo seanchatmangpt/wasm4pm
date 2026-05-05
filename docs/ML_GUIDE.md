@@ -1,6 +1,6 @@
 # Nanosecond ML: High-Performance Analytics Kernels
 
-This guide documents the "Nanosecond ML" breakthrough in `wasm4pm`, where traditional machine learning families are implemented as zero-allocation, branchless (where possible), and cache-efficient kernels designed for sub-microsecond execution in resource-constrained environments.
+This guide documents the "Nanosecond ML" breakthrough in `wasm4pm`, where traditional machine learning families are implemented as zero-allocation, hot-path optimized (conditional moves, loop unrolling, popcount-based similarity), and cache-efficient kernels designed for sub-microsecond execution in resource-constrained environments.
 
 ## 1. Architectural Principles
 
@@ -8,7 +8,7 @@ The transition from "hardcoded stubs" to "mathematically grounded nanosecond ker
 
 1.  **Zero-Allocation Paths**: Hot loops utilize `Float64Array` (TypeScript) or stack-allocated arrays (Rust) to eliminate GC pressure and heap fragmentation.
 2.  **Columnar Layout**: Data is stored in columnar format to ensure cache-friendly access patterns during covariance and distance computations.
-3.  **Branchless Derivations**: Mathematical simplifications (e.g., squared distance, single-pass variance) remove conditional branches that trigger CPU pipeline stalls.
+3.  **Hot-Path Optimizations**: Mathematical simplifications (e.g., squared distance, single-pass variance) reduce branching on the critical path; inner loops use conditional moves, loop unrolling, and popcount-based similarity to minimize CPU pipeline stalls.
 4.  **Analytical Solvers**: Replacing iterative optimization with closed-form solutions (e.g., Least Squares for linear regression, Jacobi rotations for 2x2 subproblems).
 
 ---

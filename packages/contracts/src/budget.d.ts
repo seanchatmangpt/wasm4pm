@@ -38,51 +38,51 @@ export type ExecutionMode = 'online' | 'near-online' | 'batch' | 'research';
  * - mode is deterministic (same config → same mode via profile mapping)
  */
 export interface BudgetEnvelope {
+  /**
+   * Maximum acceptable latency tier.
+   * Used by rule 3 (budget latency gate) in backend selection algorithm.
+   * Excludes any backend where latencyClass > latencyBudget.
+   */
+  readonly latencyBudget: LatencyClass;
+  /**
+   * Maximum memory in bytes. 0 means no limit.
+   * Used by degradation rule 1: if prior run exceeded this, demote to cheaper algorithm.
+   */
+  readonly memoryBudget: number;
+  /**
+   * Minimum quality tier expected from the result.
+   * Used by rule 4 (quality floor gate) in backend selection algorithm.
+   * Excludes any backend where maxQualityTier < qualityFloor.
+   * Also used by promotion rule 2: if conformance score < qualityFloor, promote job.
+   */
+  readonly qualityFloor: QualityTier;
+  /**
+   * Environment capabilities and constraints.
+   * Used by rules 1 (environment gate) and 3 (browser-safe enforcement).
+   */
+  readonly environment: {
     /**
-     * Maximum acceptable latency tier.
-     * Used by rule 3 (budget latency gate) in backend selection algorithm.
-     * Excludes any backend where latencyClass > latencyBudget.
+     * True if running in a browser or edge context.
+     * browserSafe=true forces WASM only (rule 3).
      */
-    readonly latencyBudget: LatencyClass;
+    readonly browserSafe: boolean;
     /**
-     * Maximum memory in bytes. 0 means no limit.
-     * Used by degradation rule 1: if prior run exceeded this, demote to cheaper algorithm.
+     * True if Python is available for pm4py invocation.
+     * Used by rule 1 (environment gate).
      */
-    readonly memoryBudget: number;
-    /**
-     * Minimum quality tier expected from the result.
-     * Used by rule 4 (quality floor gate) in backend selection algorithm.
-     * Excludes any backend where maxQualityTier < qualityFloor.
-     * Also used by promotion rule 2: if conformance score < qualityFloor, promote job.
-     */
-    readonly qualityFloor: QualityTier;
-    /**
-     * Environment capabilities and constraints.
-     * Used by rules 1 (environment gate) and 3 (browser-safe enforcement).
-     */
-    readonly environment: {
-        /**
-         * True if running in a browser or edge context.
-         * browserSafe=true forces WASM only (rule 3).
-         */
-        readonly browserSafe: boolean;
-        /**
-         * True if Python is available for pm4py invocation.
-         * Used by rule 1 (environment gate).
-         */
-        readonly pythonAvailable: boolean;
-    };
-    /**
-     * Execution mode determines dispatch pattern.
-     * Derived from execution.profile at resolveConfig() time:
-     *   fast → online
-     *   balanced → online or near-online (by log size: >50K events → near-online)
-     *   quality → near-online or batch (by algorithm: ilp/genetic → batch)
-     *   stream → online (always)
-     *
-     * Used by rules 1 and 2 in the engine selection algorithm (Section 4.2).
-     */
-    readonly mode: ExecutionMode;
+    readonly pythonAvailable: boolean;
+  };
+  /**
+   * Execution mode determines dispatch pattern.
+   * Derived from execution.profile at resolveConfig() time:
+   *   fast → online
+   *   balanced → online or near-online (by log size: >50K events → near-online)
+   *   quality → near-online or batch (by algorithm: ilp/genetic → batch)
+   *   stream → online (always)
+   *
+   * Used by rules 1 and 2 in the engine selection algorithm (Section 4.2).
+   */
+  readonly mode: ExecutionMode;
 }
 /**
  * LatencyClass tier ordering function.
@@ -103,7 +103,10 @@ export declare function latencyExceedsBudget(actual: LatencyClass, budget: Laten
  * Validates that a QualityTier can satisfy a floor.
  * Used by rule 4 (quality floor gate).
  */
-export declare function qualityDeficientForFloor(maxQualityTier: QualityTier, floor: QualityTier): boolean;
+export declare function qualityDeficientForFloor(
+  maxQualityTier: QualityTier,
+  floor: QualityTier
+): boolean;
 /**
  * Creates a BudgetEnvelope with sensible defaults.
  * Useful for testing and default construction.

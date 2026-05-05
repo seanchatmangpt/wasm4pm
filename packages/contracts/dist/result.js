@@ -54,14 +54,14 @@ export function error(errorInfo) {
  */
 export function deriveLatencyClass(latency_ms) {
     if (latency_ms < 1)
-        return "sub_ms";
+        return 'sub_ms';
     if (latency_ms < 100)
-        return "low_ms";
+        return 'low_ms';
     if (latency_ms < 1000)
-        return "high_ms";
+        return 'high_ms';
     if (latency_ms < 60000)
-        return "seconds";
-    return "minutes";
+        return 'seconds';
+    return 'minutes';
 }
 /**
  * Guard function to check if a value is a valid ProvenanceChain.
@@ -86,7 +86,7 @@ export function isProvenanceChain(value) {
         'algorithm_version',
         'backend_id',
         'kernel_version',
-        'wasm_build_hash'
+        'wasm_build_hash',
     ];
     for (const field of requiredFields) {
         const value = prov[field];
@@ -119,15 +119,19 @@ export function isResultEnvelope(value) {
         return false;
     const envelope = value;
     // Check basic fields
-    if (typeof envelope.run_id !== 'string' || envelope.run_id.length === 0 ||
-        typeof envelope.invocation_id !== 'string' || envelope.invocation_id.length === 0)
+    if (typeof envelope.run_id !== 'string' ||
+        envelope.run_id.length === 0 ||
+        typeof envelope.invocation_id !== 'string' ||
+        envelope.invocation_id.length === 0)
         return false;
     // Check status
     const validStatuses = ['success', 'partial', 'failed'];
     if (!validStatuses.includes(envelope.status))
         return false;
     // Check latency fields
-    if (typeof envelope.latency_ms !== 'number' || !Number.isFinite(envelope.latency_ms) || envelope.latency_ms < 0) {
+    if (typeof envelope.latency_ms !== 'number' ||
+        !Number.isFinite(envelope.latency_ms) ||
+        envelope.latency_ms < 0) {
         return false;
     }
     // Check latency_class matches the derived class
@@ -140,7 +144,9 @@ export function isResultEnvelope(value) {
     if (typeof envelope.algorithm_id !== 'string' || envelope.algorithm_id.length === 0)
         return false;
     // Check cycle_seq
-    if (typeof envelope.cycle_seq !== 'number' || !Number.isInteger(envelope.cycle_seq) || envelope.cycle_seq < 0) {
+    if (typeof envelope.cycle_seq !== 'number' ||
+        !Number.isInteger(envelope.cycle_seq) ||
+        envelope.cycle_seq < 0) {
         return false;
     }
     // Check provenance
@@ -155,7 +161,9 @@ export function isResultEnvelope(value) {
     }
     // Check stale/stale_age_ms co-requirement
     if (envelope.stale === true) {
-        if (typeof envelope.stale_age_ms !== 'number' || !Number.isFinite(envelope.stale_age_ms) || envelope.stale_age_ms < 0) {
+        if (typeof envelope.stale_age_ms !== 'number' ||
+            !Number.isFinite(envelope.stale_age_ms) ||
+            envelope.stale_age_ms < 0) {
             return false;
         }
     }

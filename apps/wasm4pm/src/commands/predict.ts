@@ -4,7 +4,7 @@ import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import type { OutputOptions } from '../output.js';
 import { WasmLoader } from '@wasm4pm/engine';
-import { loadPictlConfig, buildCliOverrides } from '../config-loader.js';
+import { loadWasm4pmConfig, buildCliOverrides } from '../config-loader.js';
 import { savePredictionResult } from './results.js';
 import { VALID_PREDICT_CLI_TASKS } from '@wasm4pm/contracts';
 
@@ -102,11 +102,12 @@ export const predict = defineCommand({
         predictionNgramOrder: ctx.args['ngram-order'],
         predictionDriftWindow: ctx.args['drift-window'],
       });
-      const config = await loadPictlConfig(cliOverrides, formatter);
+      const config = await loadWasm4pmConfig(cliOverrides, formatter);
       const pred = config.prediction;
 
       // Resolve parameters: CLI flag > config > hardcoded default
-      const activityKey = (ctx.args['activity-key'] as string) || pred?.activityKey || 'concept:name';
+      const activityKey =
+        (ctx.args['activity-key'] as string) || pred?.activityKey || 'concept:name';
       const rawTopK = ctx.args['top-k'] as string | undefined;
       const parsedTopK = rawTopK != null ? parseInt(rawTopK, 10) : undefined;
       if (parsedTopK !== undefined && Number.isNaN(parsedTopK)) {
@@ -169,7 +170,7 @@ export const predict = defineCommand({
         topK,
         ngramOrder,
         driftWindow,
-        prefixActivities,
+        prefixActivities
       );
 
       // Step 7: Output results
@@ -221,11 +222,15 @@ async function executePredictionTask(
   topK: number,
   ngramOrder: number,
   driftWindow: number,
-  prefixActivities?: string[],
+  prefixActivities?: string[]
 ): Promise<Record<string, unknown>> {
   switch (task) {
     case 'next-activity': {
-      const predictorHandle: string = wasm.build_ngram_predictor(logHandle, activityKey, ngramOrder);
+      const predictorHandle: string = wasm.build_ngram_predictor(
+        logHandle,
+        activityKey,
+        ngramOrder
+      );
       const prefix = prefixActivities ?? [];
       const raw: string = wasm.predict_next_activity(predictorHandle, JSON.stringify(prefix));
       const predictions: Array<{ activity: string; probability: number }> = JSON.parse(raw);
@@ -235,15 +240,25 @@ async function executePredictionTask(
     }
 
     case 'remaining-time': {
-      const modelHandle: string = wasm.build_remaining_time_model(logHandle, activityKey, 'time:timestamp');
+      const modelHandle: string = wasm.build_remaining_time_model(
+        logHandle,
+        activityKey,
+        'time:timestamp'
+      );
       if (prefixActivities && prefixActivities.length > 0) {
-        const raw: string = wasm.predict_case_duration(modelHandle, JSON.stringify(prefixActivities));
+        const raw: string = wasm.predict_case_duration(
+          modelHandle,
+          JSON.stringify(prefixActivities)
+        );
         const prediction = JSON.parse(raw);
         wasm.delete_object(modelHandle);
         return { prediction };
       } else {
         wasm.delete_object(modelHandle);
-        return { message: 'Remaining-time model built. Use --prefix "Activity1,Activity2" to predict case duration.' };
+        return {
+          message:
+            'Remaining-time model built. Use --prefix "Activity1,Activity2" to predict case duration.',
+        };
       }
     }
 
@@ -257,7 +272,10 @@ async function executePredictionTask(
         const anomaly = JSON.parse(anomalyRaw);
         // Also score log-likelihood with n-gram
         const ngramHandle: string = wasm.build_ngram_predictor(logHandle, activityKey, ngramOrder);
-        const logLikelihood: number = wasm.score_trace_likelihood(ngramHandle, JSON.stringify(prefixActivities));
+        const logLikelihood: number = wasm.score_trace_likelihood(
+          ngramHandle,
+          JSON.stringify(prefixActivities)
+        );
         wasm.delete_object(ngramHandle);
         wasm.delete_object(dfgHandle);
         return { anomaly, logLikelihood };
@@ -281,7 +299,9 @@ async function executePredictionTask(
       const transitions = JSON.parse(raw);
       // Also extract prefix features if prefix given
       if (prefixActivities && prefixActivities.length > 0) {
-        const prefixRaw: string = wasm.extract_prefix_features_wasm(JSON.stringify(prefixActivities));
+        const prefixRaw: string = wasm.extract_prefix_features_wasm(
+          JSON.stringify(prefixActivities)
+        );
         const prefixFeatures = JSON.parse(prefixRaw);
         return { transitions, prefixFeatures };
       }
@@ -312,7 +332,7 @@ async function executePredictionTask(
 function formatHumanOutput(
   formatter: HumanFormatter,
   task: PredictTask,
-  result: Record<string, unknown>,
+  result: Record<string, unknown>
 ): void {
   switch (task) {
     case 'next-activity': {
@@ -371,7 +391,7 @@ function formatHumanOutput(
         formatter.log('  ───────────────────  ────────  ─────────');
         for (const a of anomalies) {
           const caseId = String(a.case_id ?? a.trace_id ?? '?').padEnd(19);
-          const score = (a.score as number ?? 0).toFixed(4).padStart(8);
+          const score = ((a.score as number) ?? 0).toFixed(4).padStart(8);
           const flag = a.is_anomalous ? 'yes' : 'no';
           formatter.log(`  ${caseId}  ${score}  ${flag}`);
         }
@@ -382,16 +402,19 @@ function formatHumanOutput(
 
     case 'drift': {
       const dr = result.driftResult as Record<string, unknown>;
-      const drifts = dr?.drifts as Array<Record<string, unknown>> ?? [];
+      const drifts = (dr?.drifts as Array<Record<string, unknown>>) ?? [];
       if (drifts.length === 0) {
         formatter.info('No concept drift detected.');
         return;
       }
       formatter.log('');
-      formatter.log(`  Detected ${drifts.length} drift point(s) (method: ${dr?.method ?? 'jaccard_window'}):`);
+      formatter.log(
+        `  Detected ${drifts.length} drift point(s) (method: ${dr?.method ?? 'jaccard_window'}):`
+      );
       for (const dp of drifts) {
         const pos = dp.position ?? '?';
-        const dist = typeof dp.distance === 'number' ? dp.distance.toFixed(4) : String(dp.distance ?? '');
+        const dist =
+          typeof dp.distance === 'number' ? dp.distance.toFixed(4) : String(dp.distance ?? '');
         formatter.log(`    Position ${pos}  distance=${dist}  type=${dp.type ?? 'concept_drift'}`);
       }
       formatter.log('');
@@ -422,8 +445,8 @@ function formatHumanOutput(
       const qs = result.queueStats as Record<string, unknown>;
       formatter.log('');
       formatter.log('  M/M/1 Queue Model Estimate:');
-      formatter.log(`    Wait time:    ${(qs?.wait_time as number ?? 0).toFixed(2)}s`);
-      formatter.log(`    Utilization:  ${((qs?.utilization as number ?? 0) * 100).toFixed(1)}%`);
+      formatter.log(`    Wait time:    ${((qs?.wait_time as number) ?? 0).toFixed(2)}s`);
+      formatter.log(`    Utilization:  ${(((qs?.utilization as number) ?? 0) * 100).toFixed(1)}%`);
       formatter.log(`    Stable:       ${qs?.is_stable ?? false}`);
       formatter.log(`  Transitions in model: ${result.transitionCount}`);
       formatter.log('');

@@ -6,9 +6,9 @@
  * Validation result with detailed error information
  */
 export interface ValidationResult {
-    valid: boolean;
-    errors: string[];
-    warnings: string[];
+  valid: boolean;
+  errors: string[];
+  warnings: string[];
 }
 /**
  * Validate receipt structure and all required fields
@@ -24,7 +24,12 @@ export declare function validateReceipt(receipt: unknown): ValidationResult;
  * @param plan Execution plan
  * @returns Validation result with hash verification
  */
-export declare function verifyReceiptHashes(receipt: unknown, config: Record<string, any>, input: any, plan: Record<string, any>): ValidationResult;
+export declare function verifyReceiptHashes(
+  receipt: unknown,
+  config: Record<string, any>,
+  input: any,
+  plan: Record<string, any>
+): ValidationResult;
 /**
  * Verify a complete receipt against expected hashes for all 5 hash fields
  * Per task requirement: verify receipt with known inputs produces expected BLAKE3 output
@@ -32,12 +37,15 @@ export declare function verifyReceiptHashes(receipt: unknown, config: Record<str
  * @param expectedHashes Expected BLAKE3 hashes for all fields
  * @returns Validation result with complete hash verification
  */
-export declare function verifyReceipt(receipt: unknown, expectedHashes: {
+export declare function verifyReceipt(
+  receipt: unknown,
+  expectedHashes: {
     config_hash: string;
     input_hash: string;
     plan_hash: string;
     output_hash: string;
-}): ValidationResult;
+  }
+): ValidationResult;
 /**
  * Detect if receipt has been tampered with by comparing hashes
  * @param receipt Receipt to check
@@ -46,5 +54,10 @@ export declare function verifyReceipt(receipt: unknown, expectedHashes: {
  * @param plan Execution plan
  * @returns True if any hash mismatches detected
  */
-export declare function detectTampering(receipt: unknown, config: Record<string, any>, input: any, plan: Record<string, any>): boolean;
+export declare function detectTampering(
+  receipt: unknown,
+  config: Record<string, any>,
+  input: any,
+  plan: Record<string, any>
+): boolean;
 //# sourceMappingURL=validation.d.ts.map

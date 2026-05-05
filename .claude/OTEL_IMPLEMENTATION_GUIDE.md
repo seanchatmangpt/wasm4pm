@@ -1,6 +1,6 @@
 # OTEL Span Coverage Implementation Guide
 
-**Objective:** Achieve 100% OTEL span coverage across all public functions in pictl monorepo.
+**Objective:** Achieve 100% OTEL span coverage across all public functions in wasm4pm monorepo.
 
 **Current Status:** 0/596 functions instrumented (0%)  
 **Target:** 100% (merge-blocking at <80%)  
@@ -69,7 +69,7 @@ export function hashConfig(
     traceId,
     'hashConfig',
     requiredAttrs || {
-      'service.name': 'pictl',
+      'service.name': 'wasm4pm',
       'run.id': 'cli',
       'trace.id': traceId,
       'span.id': Instrumentation.generateSpanId(),
@@ -107,7 +107,7 @@ export function verifyConfigHash(
     traceId,
     100, // Verification is instant
     requiredAttrs || {
-      'service.name': 'pictl',
+      'service.name': 'wasm4pm',
       'run.id': 'cli',
       'trace.id': traceId,
       'span.id': Instrumentation.generateSpanId(),
@@ -315,7 +315,7 @@ export async function readLog(
 - [ ] Each `export const` (if callable) has Instrumentation call
 - [ ] Correct event type used (state/algorithm/error/progress/ml/io)
 - [ ] All required OTEL attributes populated:
-  - `'service.name': 'pictl'`
+  - `'service.name': 'wasm4pm'`
   - `'run.id'` — unique execution ID
   - `'trace.id'` — distributed trace ID
   - `'span.id'` — unique span ID
@@ -379,7 +379,7 @@ These often lack requiredAttrs. Provide defaults:
 export function main(argv: string[]) {
   const traceId = process.env.TRACE_ID || generateTraceId();
   const requiredAttrs = {
-    'service.name': 'pictl',
+    'service.name': 'wasm4pm',
     'run.id': process.env.RUN_ID || 'cli',
     'trace.id': traceId,
     'span.id': generateSpanId(),
@@ -464,7 +464,7 @@ import { Instrumentation } from '@wasm4pm/observability';
 describe('hashConfig', () => {
   it('should emit progress event', () => {
     const requiredAttrs = {
-      'service.name': 'pictl',
+      'service.name': 'wasm4pm',
       'run.id': 'test',
       'trace.id': 'test-trace',
       'span.id': 'test-span',
@@ -491,7 +491,7 @@ describe('hashConfig integration', () => {
     const capture = createOtelCapture();
     
     const requiredAttrs = {
-      'service.name': 'pictl',
+      'service.name': 'wasm4pm',
       'run.id': capture.runId,
       'trace.id': capture.traceId,
       'span.id': generateSpanId(),
@@ -503,7 +503,7 @@ describe('hashConfig integration', () => {
     const spans = capture.exportedSpans();
     expect(spans).toHaveLength(1);
     expect(spans[0].name).toBe('hashConfig');
-    expect(spans[0].attributes['service.name']).toBe('pictl');
+    expect(spans[0].attributes['service.name']).toBe('wasm4pm');
   });
 });
 ```
@@ -563,7 +563,7 @@ export interface Bar {}
 ls -la .git/hooks/pre-commit
 
 # Verify config
-grep -A 2 'pictl-observability' .eslintrc.cjs
+grep -A 2 'wasm4pm-observability' .eslintrc.cjs
 
 # Manually run linter
 npm run lint -- packages/config/src/
@@ -584,7 +584,7 @@ const { event, otelEvent } = Instrumentation.createProgressEvent(...);
 ## References
 
 - OTEL Specification: https://opentelemetry.io/docs/specs/protocol/
-- pictl Observability API: `packages/observability/src/instrumentation.ts`
+- wasm4pm Observability API: `packages/observability/src/instrumentation.ts`
 - Coverage Dashboard: `.wasm4pm/otel-coverage.md`
 - Coverage JSON: `.wasm4pm/otel-coverage.json`
 - Enforcement Rules: `.claude/OTEL_COVERAGE.md`

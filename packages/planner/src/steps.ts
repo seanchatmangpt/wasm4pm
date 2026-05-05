@@ -249,9 +249,7 @@ export function createAnalysisStep(
  * Creates a report generation step
  * @internal
  */
-export function createGenerateReportsStep(
-  resultDependencies: string[]
-): PlanStep {
+export function createGenerateReportsStep(resultDependencies: string[]): PlanStep {
   return {
     id: 'generate_reports',
     type: PlanStepType.GENERATE_REPORTS,
@@ -302,4 +300,3 @@ export function createCleanupStep(allPreviousSteps: string[]): PlanStep {
     estimatedMemoryMB: 0,
   };
 }
-

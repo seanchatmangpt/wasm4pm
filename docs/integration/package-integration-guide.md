@@ -1,12 +1,12 @@
 # Package Integration Guide
 
 **Last Updated:** April 2026  
-**Audience:** Developers integrating pictl packages, architects designing cross-package workflows  
+**Audience:** Developers integrating wasm4pm packages, architects designing cross-package workflows  
 **Status:** Production-ready
 
 ## Overview
 
-The pictl monorepo comprises 9 interdependent packages that form a unified system for process mining and discovery. This guide explains how these packages relate, how they depend on each other, and how they work together in real workflows.
+The wasm4pm monorepo comprises 9 interdependent packages that form a unified system for process mining and discovery. This guide explains how these packages relate, how they depend on each other, and how they work together in real workflows.
 
 **Core Philosophy:** Each package has a single, well-defined responsibility. Integration happens through stable contracts (types) and well-defined interfaces. Packages depend on layers below them but never upward.
 
@@ -44,7 +44,7 @@ The pictl monorepo comprises 9 interdependent packages that form a unified syste
               ┌──────────┼──────────┐
               │          │          │
          ┌────▼────┐ ┌───▼──┐ ┌────▼─────┐
-         │@wasm4pm/  │ │@pictl│ │ @wasm4pm/  │
+         │@wasm4pm/  │ │@wasm4pm│ │ @wasm4pm/  │
          │contracts│ │kernel│ │ (base)   │
          │(types)  │ │(WASM)│ │ ontology │
          └──────────┘ └──────┘ └──────────┘
@@ -67,7 +67,7 @@ The pictl monorepo comprises 9 interdependent packages that form a unified syste
 ### Layer 0: Foundation
 
 #### `@wasm4pm/contracts` (~500 lines)
-**Purpose:** Type definitions and schemas—the lingua franca of pictl  
+**Purpose:** Type definitions and schemas—the lingua franca of wasm4pm  
 **Exports:**
 - `EngineState` — union of 8 valid states (uninitialized, bootstrapping, ready, planning, running, watching, degraded, failed)
 - `ExecutionPlan` — DAG of execution steps with dependencies
@@ -214,7 +214,7 @@ export interface Provenance {
 
 **Real example: resolveConfig flow**
 ```typescript
-// User calls: pictl discover --config wasm4pm.toml --profile quality
+// User calls: wasm4pm discover --config wasm4pm.toml --profile quality
 const config = await resolveConfig({
   fileConfig: await loadToml('wasm4pm.toml'),
   cliOverrides: { execution: { profile: 'quality' } },
@@ -226,7 +226,7 @@ console.log(config.metadata.provenance['execution.profile']);
 // → { source: 'cli', value: 'quality' }
 
 console.log(config.metadata.provenance['observability.otel.enabled']);
-// → { source: 'env', key: 'PICTL_OTEL_ENABLED', value: true }
+// → { source: 'env', key: 'WASM4PM_OTEL_ENABLED', value: true }
 ```
 
 #### `@wasm4pm/observability` (~1500 lines)
@@ -475,7 +475,7 @@ console.log(executionPlan);
 ### Layer 4: High-Level Abstractions
 
 #### `@wasm4pm/testing` (~800 lines)
-**Purpose:** Test utilities and assertions for pictl workflows  
+**Purpose:** Test utilities and assertions for wasm4pm workflows  
 **Exports:**
 - `createMockKernel()`, `createMockPlanner()`, `createMockExecutor()`
 - `assertStateTransition()` — validate state machines
@@ -764,11 +764,11 @@ const config = await resolveConfig({
         enabled: true,
         exporter: 'datadog',
         exporterUrl: 'http://localhost:8126',
-        attributes: { service: 'pictl-discovery', env: 'prod' },
+        attributes: { service: 'wasm4pm-discovery', env: 'prod' },
       },
       jsonOutput: {
         enabled: true,
-        path: '/var/log/pictl/events.jsonl',
+        path: '/var/log/wasm4pm/events.jsonl',
       },
     },
   },
@@ -776,7 +776,7 @@ const config = await resolveConfig({
 
 const engine = new Engine(kernel, planner, executor, undefined, config.observability);
 await engine.bootstrap();
-// Spans sent to Datadog, JSON events appended to /var/log/pictl/events.jsonl
+// Spans sent to Datadog, JSON events appended to /var/log/wasm4pm/events.jsonl
 ```
 
 ---

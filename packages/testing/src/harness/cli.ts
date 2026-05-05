@@ -73,7 +73,7 @@ export function runCli(
     env?: Record<string, string>;
     timeout?: number;
     cliPath?: string;
-  },
+  }
 ): Promise<CliResult> {
   const cliPath = options?.cliPath ?? 'npx';
   const fullArgs = cliPath === 'npx' ? ['wasm4pm', ...args] : args;
@@ -81,18 +81,22 @@ export function runCli(
 
   return new Promise((resolve) => {
     const start = Date.now();
-    const child = execFile(cliPath, fullArgs, {
-      cwd: options?.cwd,
-      env: { ...process.env, ...options?.env },
-      timeout,
-      maxBuffer: 10 * 1024 * 1024,
-    }, (error, stdout, stderr) => {
-      const durationMs = Date.now() - start;
-      const exitCode = error && 'code' in error && typeof error.code === 'number'
-        ? error.code
-        : (error ? 1 : 0);
-      resolve({ exitCode, stdout: stdout ?? '', stderr: stderr ?? '', durationMs });
-    });
+    const child = execFile(
+      cliPath,
+      fullArgs,
+      {
+        cwd: options?.cwd,
+        env: { ...process.env, ...options?.env },
+        timeout,
+        maxBuffer: 10 * 1024 * 1024,
+      },
+      (error, stdout, stderr) => {
+        const durationMs = Date.now() - start;
+        const exitCode =
+          error && 'code' in error && typeof error.code === 'number' ? error.code : error ? 1 : 0;
+        resolve({ exitCode, stdout: stdout ?? '', stderr: stderr ?? '', durationMs });
+      }
+    );
 
     // Handle process timeout
     child.on('error', () => {
@@ -113,8 +117,8 @@ export function assertExitCode(result: CliResult, expected: number): void {
   if (result.exitCode !== expected) {
     throw new Error(
       `Exit code mismatch: expected ${expected}, got ${result.exitCode}\n` +
-      `stdout: ${result.stdout.slice(0, 500)}\n` +
-      `stderr: ${result.stderr.slice(0, 500)}`,
+        `stdout: ${result.stdout.slice(0, 500)}\n` +
+        `stderr: ${result.stderr.slice(0, 500)}`
     );
   }
 }
@@ -137,8 +141,8 @@ export function assertErrorCode(result: CliResult, errorCode: string): void {
   if (!result.stderr.includes(errorCode) && !result.stdout.includes(errorCode)) {
     throw new Error(
       `Expected error code '${errorCode}' in output\n` +
-      `stdout: ${result.stdout.slice(0, 500)}\n` +
-      `stderr: ${result.stderr.slice(0, 500)}`,
+        `stdout: ${result.stdout.slice(0, 500)}\n` +
+        `stderr: ${result.stderr.slice(0, 500)}`
     );
   }
 }
@@ -149,7 +153,7 @@ export function assertErrorCode(result: CliResult, errorCode: string): void {
 export async function writeTestConfig(
   dir: string,
   config: Record<string, unknown>,
-  filename = 'wasm4pm.json',
+  filename = 'wasm4pm.json'
 ): Promise<string> {
   const filePath = path.join(dir, filename);
   await fs.writeFile(filePath, JSON.stringify(config, null, 2), 'utf-8');
@@ -159,7 +163,10 @@ export async function writeTestConfig(
 /**
  * Read a receipt file from the output directory.
  */
-export async function readReceipt(outputDir: string, filename = 'receipt.json'): Promise<Record<string, unknown>> {
+export async function readReceipt(
+  outputDir: string,
+  filename = 'receipt.json'
+): Promise<Record<string, unknown>> {
   const content = await fs.readFile(path.join(outputDir, filename), 'utf-8');
   return JSON.parse(content);
 }

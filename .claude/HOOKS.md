@@ -1,8 +1,8 @@
-# pictl Claude Code Hooks
+# wasm4pm Claude Code Hooks
 
 ## Resilience Configuration: Three-Layer Failure Prevention
 
-Three hooks are configured to ensure Claude Code **cannot fail** when working with pictl.
+Three hooks are configured to ensure Claude Code **cannot fail** when working with wasm4pm.
 
 **Critical Principle:** Hooks fail loudly with exit code 1 or 2, never degrade gracefully. If a check cannot run, the hook exits with an error rather than silently proceeding.
 
@@ -14,14 +14,14 @@ Three hooks are configured to ensure Claude Code **cannot fail** when working wi
 Runs on every session start (including after context compaction).
 
 **Output to Claude's context:**
-- Health summary: `✓ pictl environment: HEALTHY (20 ok, 3 warn, 0 fail)`
-- Or degradation notice with list: `✗ pictl environment: DEGRADED (failures listed)`
+- Health summary: `✓ wasm4pm environment: HEALTHY (20 ok, 3 warn, 0 fail)`
+- Or degradation notice with list: `✗ wasm4pm environment: DEGRADED (failures listed)`
 - Checkpoint status: `Checkpoint: 20/100 traces processed (last: 2026-04-11T19:04:59Z)`
 
 **Failure modes (loud):**
-- No pictl in PATH AND no dist/cli.js → Exit 1 with `ERROR: pictl doctor unavailable`
-- pictl doctor returns empty → Exit 1 with `ERROR: pictl doctor returned empty output`
-- jq parse failure on doctor output → Exit 1 with `ERROR: Cannot parse pictl doctor output`
+- No wasm4pm in PATH AND no dist/cli.js → Exit 1 with `ERROR: wpm doctor unavailable`
+- wpm doctor returns empty → Exit 1 with `ERROR: wpm doctor returned empty output`
+- jq parse failure on doctor output → Exit 1 with `ERROR: Cannot parse wpm doctor output`
 
 Claude Code sees these exit codes and knows the environment is broken — it cannot proceed.
 
@@ -38,8 +38,8 @@ Fires whenever Claude finishes responding.
 - If already active: exit 0 → prevents infinite loop via `stop_hook_active` check
 
 **Failure modes (loud):**
-- pictl doctor unavailable → Exit 2 (blocks stop)
-- pictl doctor returns empty → Exit 2 (blocks stop)
+- wpm doctor unavailable → Exit 2 (blocks stop)
+- wpm doctor returns empty → Exit 2 (blocks stop)
 - jq parse failure → Exit 2 (blocks stop)
 
 When Claude tries to stop with a broken environment, the hook returns:
@@ -48,7 +48,7 @@ When Claude tries to stop with a broken environment, the hook returns:
   "hookSpecificOutput": {
     "hookEventName": "Stop",
     "decision": "block",
-    "blockReason": "pictl doctor: 2 critical failure(s) detected\n• WASM binary: not built\n• Node.js version: too old\n\nRun: pictl doctor --verbose"
+    "blockReason": "wpm doctor: 2 critical failure(s) detected\n• WASM binary: not built\n• Node.js version: too old\n\nRun: wpm doctor --verbose"
   }
 }
 ```
@@ -63,10 +63,10 @@ Claude is blocked from stopping and must fix the failures.
 Fires when any tool call fails. Injects recovery suggestions to stderr.
 
 **Output examples:**
-- npm/pnpm failure: `[pictl recovery] Bash failed. Action: npm/pnpm command failed: try 'pnpm install && pnpm build'`
-- WASM failure: `[pictl recovery] Bash failed. Action: WASM build command failed: try 'cd wasm4pm && npm run build && cd ..'`
-- TypeScript failure: `[pictl recovery] Bash failed. Action: TypeScript check failed: try 'pnpm lint'`
-- Default: `[pictl recovery] Bash failed. Action: Run 'pictl doctor' to check environment.`
+- npm/pnpm failure: `[wasm4pm recovery] Bash failed. Action: npm/pnpm command failed: try 'pnpm install && pnpm build'`
+- WASM failure: `[wasm4pm recovery] Bash failed. Action: WASM build command failed: try 'cd wasm4pm && npm run build && cd ..'`
+- TypeScript failure: `[wasm4pm recovery] Bash failed. Action: TypeScript check failed: try 'pnpm lint'`
+- Default: `[wasm4pm recovery] Bash failed. Action: Run 'wpm doctor' to check environment.`
 
 **Failure modes (loud):**
 - Invalid JSON input → Exit 1 with `ERROR: Cannot parse tool name`
@@ -80,7 +80,7 @@ Claude receives these messages and knows how to recover.
 ```
 ┌─────────────────────────────────────────────────┐
 │  SESSION START                                  │
-│  SessionStart hook runs pictl doctor            │
+│  SessionStart hook runs wpm doctor            │
 │  Claude's context: ✓ HEALTHY or ✗ DEGRADED     │
 └────────────┬────────────────────────────────────┘
              │
@@ -88,7 +88,7 @@ Claude receives these messages and knows how to recover.
 ┌─────────────────────────────────────────────────┐
 │  TOOL EXECUTION                                 │
 │  Tool fails → PostToolUseFailure hook fires     │
-│  Claude receives: [pictl recovery] action:...   │
+│  Claude receives: [wasm4pm recovery] action:...   │
 │  Claude self-corrects with specific guidance    │
 └────────────┬────────────────────────────────────┘
              │
@@ -132,17 +132,17 @@ bash scripts/weekly-metrics-report.sh
 
 ## Testing the Hooks
 
-### SessionStart (with valid pictl)
+### SessionStart (with valid wasm4pm)
 ```bash
 CLAUDE_PROJECT_DIR=/Users/sac/chatmangpt/wasm4pm .claude/hooks/session-start.sh
 ```
 Output: Health summary + checkpoint
 
-### SessionStart (with missing pictl)
+### SessionStart (with missing wasm4pm)
 ```bash
 CLAUDE_PROJECT_DIR=/tmp .claude/hooks/session-start.sh
 ```
-Output: `ERROR: pictl doctor unavailable` (exit 1)
+Output: `ERROR: wpm doctor unavailable` (exit 1)
 
 ### Stop Gate (healthy environment)
 ```bash
@@ -165,7 +165,7 @@ Output: JSON block decision (exit 0 with block decision)
 echo '{"tool_name":"Bash","tool_input":{"command":"npm install"},"error_message":"command not found"}' | \
   .claude/hooks/failure-recovery.sh 2>&1
 ```
-Output: `[pictl recovery] Bash failed. Action: npm/pnpm command failed: try 'pnpm install && pnpm build'`
+Output: `[wasm4pm recovery] Bash failed. Action: npm/pnpm command failed: try 'pnpm install && pnpm build'`
 
 ---
 
@@ -255,4 +255,4 @@ Together, these ensure:
 - ✓ No session ends with a broken environment
 - ✓ Every commit advances continuous improvement metrics
 
-**Claude Code cannot fail in the pictl project.**
+**Claude Code cannot fail in the wasm4pm project.**

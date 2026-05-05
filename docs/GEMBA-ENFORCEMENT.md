@@ -1,6 +1,6 @@
 # Gemba Enforcement: Test Purity Standards
 
-**Document:** Gemba enforcement rules for pictl
+**Document:** Gemba enforcement rules for wasm4pm
 **Updated:** 2026-04-11
 **Status:** Active (blocking commits)
 
@@ -54,7 +54,7 @@ Blocks mocks in integration tests at lint time:
 npm run lint  # Fails if integration tests contain mocks
 ```
 
-Rule ID: `pictl-testing/no-mocks-in-integration`
+Rule ID: `wasm4pm-testing/no-mocks-in-integration`
 
 ### 2. Pre-commit Hook
 File: `.claude/hooks/test-purity.sh`

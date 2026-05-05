@@ -1,1 +1,0 @@
-{"version":3,"file":"temporal.d.ts","sourceRoot":"","sources":["temporal.ts"],"names":[],"mappings":"AAIA,OAAO,KAAK,EAAE,aAAa,EAAE,MAAM,cAAc,CAAC;AAIlD,MAAM,WAAW,eAAgB,SAAQ,aAAa;IACpD,KAAK,CAAC,EAAE,MAAM,CAAC;IACf,SAAS,CAAC,EAAE,MAAM,CAAC;IACnB,WAAW,CAAC,EAAE,MAAM,CAAC;IACrB,YAAY,CAAC,EAAE,MAAM,CAAC;CACvB;AAED,eAAO,MAAM,QAAQ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;EA2MnB,CAAC"}

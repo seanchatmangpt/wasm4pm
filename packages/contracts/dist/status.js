@@ -86,17 +86,11 @@ export const STATUS_JSON_SCHEMA = {
         timestamp: { type: 'string', format: 'date-time' },
         last_transition: { type: 'string', format: 'date-time' },
         previous_state: {
-            oneOf: [
-                { type: 'string', enum: [...LIFECYCLE_STATES] },
-                { type: 'null' },
-            ],
+            oneOf: [{ type: 'string', enum: [...LIFECYCLE_STATES] }, { type: 'null' }],
         },
         transition_count: { type: 'integer', minimum: 0 },
         run_id: {
-            oneOf: [
-                { type: 'string', format: 'uuid' },
-                { type: 'null' },
-            ],
+            oneOf: [{ type: 'string', format: 'uuid' }, { type: 'null' }],
         },
         degradation: {
             type: 'object',

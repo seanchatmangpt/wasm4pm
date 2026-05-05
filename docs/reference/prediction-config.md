@@ -213,4 +213,4 @@ logLevel = "info"
 
 - [Prediction CLI Reference](./prediction-cli.md) -- `wpm predict` task documentation
 - [Config Schema Reference](./config-schema.md) -- full configuration schema
-- [CLI Commands Reference](./cli-commands.md) -- all pictl commands
+- [CLI Commands Reference](./cli-commands.md) -- all wasm4pm commands

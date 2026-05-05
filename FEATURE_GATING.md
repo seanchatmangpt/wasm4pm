@@ -1,4 +1,4 @@
-# pictl Feature Gating Infrastructure
+# wasm4pm Feature Gating Infrastructure
 
 **Last Updated:** April 16, 2026 (v26.4.16)
 
@@ -8,7 +8,7 @@ Complete guide to WASM feature flags, deployment profiles, and size optimization
 
 ## Overview
 
-pictl implements **size-optimized WASM deployment** through conditional feature compilation. A single Rust codebase compiles to 5 different binary profiles (mobile, iot, edge, fog, browser), ranging from 500KB to 2.78MB, with algorithm availability scaled to each target.
+wasm4pm implements **size-optimized WASM deployment** through conditional feature compilation. A single Rust codebase compiles to 5 different binary profiles (mobile, iot, edge, fog, browser), ranging from 500KB to 2.78MB, with algorithm availability scaled to each target.
 
 **Key principles:**
 - One canonical source tree
@@ -508,7 +508,7 @@ bash wasm4pm/measure-size.sh
 Output:
 ```
 ╔═══════════════════════════════════════════════════════════════╗
-║  PICTL DEPLOYMENT PROFILE SIZE MEASUREMENT                   ║
+║  WASM4PM DEPLOYMENT PROFILE SIZE MEASUREMENT                   ║
 ╚═══════════════════════════════════════════════════════════════╝
 
 Measuring profile: browser

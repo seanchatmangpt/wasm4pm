@@ -94,8 +94,8 @@ check_git_workflow() {
 
 # 1. Check directory structure
 echo -e "${BLUE}1. Directory Structure${NC}"
-check_dir "$SCRIPT_DIR" "Benchmarks directory (.pictl/benchmarks)"
-check_dir "$SCRIPT_DIR/baselines" "Baselines directory (.pictl/benchmarks/baselines)"
+check_dir "$SCRIPT_DIR" "Benchmarks directory (.wasm4pm/benchmarks)"
+check_dir "$SCRIPT_DIR/baselines" "Baselines directory (.wasm4pm/benchmarks/baselines)"
 echo ""
 
 # 2. Check shell scripts
@@ -237,15 +237,15 @@ if [ $CHECKS_FAILED -eq 0 ]; then
   echo -e "${GREEN}✅ All checks passed! Setup is complete.${NC}"
   echo ""
   echo "Next steps:"
-  echo "1. On main branch: make bench && bash .pictl/benchmarks/update-baseline.sh"
-  echo "2. Commit: git add .pictl/benchmarks/baselines/ && git commit -m 'chore: establish baselines'"
+  echo "1. On main branch: make bench && bash .wasm4pm/benchmarks/update-baseline.sh"
+  echo "2. Commit: git add .wasm4pm/benchmarks/baselines/ && git commit -m 'chore: establish baselines'"
   echo "3. On PR: make bench-regression"
   exit 0
 else
   echo -e "${RED}❌ $CHECKS_FAILED check(s) failed. See details above.${NC}"
   echo ""
   echo "To fix:"
-  echo "1. chmod +x .pictl/benchmarks/*.sh .pictl/benchmarks/*.py"
+  echo "1. chmod +x .wasm4pm/benchmarks/*.sh .wasm4pm/benchmarks/*.py"
   echo "2. Verify all required files exist"
   echo "3. Run: make help | grep bench"
   exit 1

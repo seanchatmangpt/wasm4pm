@@ -72,7 +72,9 @@ export function compareTraces(trace1: Trace | string[], trace2: Trace | string[]
     for (const [activity, count] of counts1) {
       if (counts2.get(activity) !== count) {
         permutationMatch = false;
-        differences.push(`Activity count mismatch: "${activity}" (${count} vs ${counts2.get(activity) || 0})`);
+        differences.push(
+          `Activity count mismatch: "${activity}" (${count} vs ${counts2.get(activity) || 0})`
+        );
       }
     }
 
@@ -119,7 +121,7 @@ export function areTracesPermutation(trace1: Trace | string[], trace2: Trace | s
  */
 export function findTracePermutation(
   original: string[],
-  permuted: string[],
+  permuted: string[]
 ): TracePermutationResult {
   if (original.length !== permuted.length) {
     return {
@@ -216,7 +218,10 @@ export function generateAllPermutations(activities: string[]): string[][] {
 /**
  * Check if a trace is complete (has start and end activities).
  */
-export function isTraceComplete(trace: Trace, options: { requireStart?: string; requireEnd?: string } = {}): boolean {
+export function isTraceComplete(
+  trace: Trace,
+  options: { requireStart?: string; requireEnd?: string } = {}
+): boolean {
   const { requireStart, requireEnd } = options;
 
   if (trace.activities.length === 0) {
@@ -245,7 +250,9 @@ export function validateTraceTimestamps(trace: Trace): { valid: boolean; errors:
   }
 
   if (trace.timestamps.length !== trace.activities.length) {
-    errors.push(`Timestamp count (${trace.timestamps.length}) doesn't match activity count (${trace.activities.length})`);
+    errors.push(
+      `Timestamp count (${trace.timestamps.length}) doesn't match activity count (${trace.activities.length})`
+    );
     return { valid: false, errors };
   }
 
@@ -259,7 +266,9 @@ export function validateTraceTimestamps(trace: Trace): { valid: boolean; errors:
     }
 
     if (currTime < prevTime) {
-      errors.push(`Timestamp out of order at position ${i}: ${trace.timestamps[i]} < ${trace.timestamps[i - 1]}`);
+      errors.push(
+        `Timestamp out of order at position ${i}: ${trace.timestamps[i]} < ${trace.timestamps[i - 1]}`
+      );
     }
   }
 
@@ -272,7 +281,10 @@ export function validateTraceTimestamps(trace: Trace): { valid: boolean; errors:
 /**
  * Check if trace contains duplicate consecutive activities.
  */
-export function hasDuplicateConsecutiveActivities(trace: Trace): { hasDuplicates: boolean; positions: number[] } {
+export function hasDuplicateConsecutiveActivities(trace: Trace): {
+  hasDuplicates: boolean;
+  positions: number[];
+} {
   const positions: number[] = [];
 
   for (let i = 1; i < trace.activities.length; i++) {
@@ -290,7 +302,10 @@ export function hasDuplicateConsecutiveActivities(trace: Trace): { hasDuplicates
 /**
  * Check if trace contains self-loops (activity appears twice with activities in between).
  */
-export function hasSelfLoops(trace: Trace): { hasLoops: boolean; loops: Array<{ activity: string; positions: number[] }> } {
+export function hasSelfLoops(trace: Trace): {
+  hasLoops: boolean;
+  loops: Array<{ activity: string; positions: number[] }>;
+} {
   const activityPositions = new Map<string, number[]>();
   const loops: Array<{ activity: string; positions: number[] }> = [];
 
@@ -349,7 +364,7 @@ export function computeTraceStatistics(traces: Trace[]): {
     };
   }
 
-  const lengths = traces.map(t => t.activities.length);
+  const lengths = traces.map((t) => t.activities.length);
   const minLength = Math.min(...lengths);
   const maxLength = Math.max(...lengths);
   const avgLength = lengths.reduce((sum, len) => sum + len, 0) / traces.length;
@@ -569,7 +584,9 @@ export function longestCommonSubsequence(trace1: string[], trace2: string[]): st
   const n = trace2.length;
 
   // Build LCS table
-  const dp: number[][] = Array(m + 1).fill(null).map(() => Array(n + 1).fill(0));
+  const dp: number[][] = Array(m + 1)
+    .fill(null)
+    .map(() => Array(n + 1).fill(0));
 
   for (let i = 1; i <= m; i++) {
     for (let j = 1; j <= n; j++) {
@@ -583,7 +600,8 @@ export function longestCommonSubsequence(trace1: string[], trace2: string[]): st
 
   // Backtrack to find LCS
   const lcs: string[] = [];
-  let i = m, j = n;
+  let i = m,
+    j = n;
 
   while (i > 0 && j > 0) {
     if (trace1[i - 1] === trace2[j - 1]) {

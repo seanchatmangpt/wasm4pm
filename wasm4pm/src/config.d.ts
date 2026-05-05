@@ -1,5 +1,5 @@
 /**
- * Configuration Schema for pictl Engine
+ * Configuration Schema for wasm4pm Engine
  * Defines all configuration structures, validation, and execution profiles
  */
 /**
@@ -128,9 +128,9 @@ export interface PipelineStep {
   parallelizable?: boolean;
 }
 /**
- * Top-level configuration for the pictl engine
+ * Top-level configuration for the wasm4pm engine
  */
-export interface PictlConfig {
+export interface Wasm4pmConfig {
   /** Version of the configuration schema */
   version: '1.0';
   /** Source data configuration */
@@ -170,13 +170,13 @@ export interface ValidationIssue {
  */
 export declare function validateConfig(config: unknown): ValidationIssue[];
 /**
- * Asserts that a configuration is valid, throwing a PictlError if not
- * Type guard that narrows the type to PictlConfig
+ * Asserts that a configuration is valid, throwing a Wasm4pmError if not
+ * Type guard that narrows the type to Wasm4pmConfig
  *
  * @param config - Configuration to validate
- * @throws PictlError - If validation fails
+ * @throws Wasm4pmError - If validation fails
  */
-export declare function assertConfigValid(config: unknown): asserts config is PictlConfig;
+export declare function assertConfigValid(config: unknown): asserts config is Wasm4pmConfig;
 /**
  * Resolves an execution profile to a default pipeline of steps
  * Returns the recommended sequence of algorithms and analyses for the profile
@@ -187,7 +187,7 @@ export declare function assertConfigValid(config: unknown): asserts config is Pi
 export declare function resolveProfile(profile: ExecutionProfile): PipelineStep[];
 /**
  * Type alias for backward compatibility
- * @deprecated Use PictlConfig instead
+ * @deprecated Use Wasm4pmConfig instead
  */
-export type Wasm4pmConfig = PictlConfig;
+export type Wasm4pmConfig = Wasm4pmConfig;
 //# sourceMappingURL=config.d.ts.map

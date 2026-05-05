@@ -1,6 +1,6 @@
 # PhD Thesis: Performance Analysis and Optimization of Process Mining Algorithms Across Heterogeneous Deployment Architectures
 
-**Author:** pictl Research Team  
+**Author:** wasm4pm Research Team  
 **Date:** April 2026  
 **Institution:** Computational Process Mining Laboratory  
 **Version:** 1.0 (Complete)
@@ -852,7 +852,7 @@ POWL                    | —       | —   | —    | —   | ✓
 
 ## Acknowledgments
 
-This thesis represents the culmination of systematic benchmarking, architectural design, and rigorous validation of the pictl process mining platform. Particular thanks to the Van der Aalst process mining doctrine for grounding all validation in event log evidence rather than code paths.
+This thesis represents the culmination of systematic benchmarking, architectural design, and rigorous validation of the wasm4pm process mining platform. Particular thanks to the Van der Aalst process mining doctrine for grounding all validation in event log evidence rather than code paths.
 
 ---
 

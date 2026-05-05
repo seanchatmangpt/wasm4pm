@@ -229,5 +229,196 @@ describe('Instrumentation', () => {
             expect(sinkEvent.otelEvent.kind).toBe('PRODUCER');
         });
     });
+    // ───────────────────────── ML / RL / Prediction / Drift / Conformance ─────────
+    describe('RL agent decision events', () => {
+        it('should create rl.agent.decision span with required attributes', () => {
+            const { event, otelEvent } = Instrumentation.createRlAgentDecisionEvent(traceId, {
+                agentType: 'QLearning',
+                agentId: 'agent-0',
+                actionSelected: 3,
+                stateHealthLevel: 1,
+                stateCircuitState: 'Closed',
+                epsilon: 0.1,
+                isExplore: false,
+                durationMs: 2,
+            }, requiredAttrs);
+            expect(event.type).toBe('RlAgentDecision');
+            expect(event.actionSelected).toBe('3');
+            expect(otelEvent.name).toBe('rl.agent.decision');
+            expect(otelEvent.kind).toBe('INTERNAL');
+            expect(otelEvent.attributes['rl.agent.type']).toBe('QLearning');
+            expect(otelEvent.attributes['rl.agent.id']).toBe('agent-0');
+            expect(otelEvent.attributes['rl.action.selected']).toBe('3');
+            expect(otelEvent.attributes['rl.state.health_level']).toBe(1);
+            expect(otelEvent.attributes['rl.state.circuit_state']).toBe('Closed');
+            expect(otelEvent.attributes['rl.exploration.epsilon']).toBe(0.1);
+            expect(otelEvent.attributes['rl.exploration.is_explore']).toBe(false);
+            expect(otelEvent.status?.code).toBe('OK');
+        });
+        it('should omit optional exploration fields when not provided', () => {
+            const { otelEvent } = Instrumentation.createRlAgentDecisionEvent(traceId, {
+                agentType: 'REINFORCE',
+                agentId: 'agent-policy',
+                actionSelected: 'noop',
+                stateHealthLevel: 0,
+                stateCircuitState: 'Open',
+            }, requiredAttrs);
+            expect('rl.exploration.epsilon' in otelEvent.attributes).toBe(false);
+            expect('rl.exploration.is_explore' in otelEvent.attributes).toBe(false);
+        });
+    });
+    describe('RL policy update events', () => {
+        it('should compute convergence delta = |q_after - q_before|', () => {
+            const { otelEvent } = Instrumentation.createRlPolicyUpdateEvent(traceId, {
+                agentType: 'DoubleQLearning',
+                agentId: 'agent-0',
+                reward: 1.1,
+                tdError: 0.4,
+                qBefore: 0.2,
+                qAfter: 0.6,
+                terminal: false,
+                durationMs: 1,
+            }, requiredAttrs);
+            expect(otelEvent.name).toBe('rl.policy.update');
+            expect(otelEvent.attributes['rl.update.reward']).toBe(1.1);
+            expect(otelEvent.attributes['rl.update.td_error']).toBe(0.4);
+            expect(otelEvent.attributes['rl.update.q_before']).toBe(0.2);
+            expect(otelEvent.attributes['rl.update.q_after']).toBe(0.6);
+            expect(otelEvent.attributes['rl.convergence.delta']).toBeCloseTo(0.4, 6);
+            expect(otelEvent.attributes['rl.update.terminal']).toBe(false);
+        });
+        it('should mark terminal updates correctly', () => {
+            const { otelEvent } = Instrumentation.createRlPolicyUpdateEvent(traceId, {
+                agentType: 'SARSA',
+                agentId: 'agent-0',
+                reward: -2.0,
+                tdError: -1.5,
+                qBefore: 0.5,
+                qAfter: -1.0,
+                terminal: true,
+            }, requiredAttrs);
+            expect(otelEvent.attributes['rl.update.terminal']).toBe(true);
+        });
+    });
+    describe('RL agent switch events', () => {
+        it('should record from/to agents and ucb score', () => {
+            const { otelEvent } = Instrumentation.createRlAgentSwitchEvent(traceId, 'QLearning', 'ExpectedSARSA', requiredAttrs, { ucbScore: 1.42, cycleCount: 100 });
+            expect(otelEvent.name).toBe('rl.agent.switch');
+            expect(otelEvent.attributes['rl.agent.from']).toBe('QLearning');
+            expect(otelEvent.attributes['rl.agent.to']).toBe('ExpectedSARSA');
+            expect(otelEvent.attributes['rl.linucb.score']).toBe(1.42);
+            expect(otelEvent.attributes['rl.cycle.count']).toBe(100);
+        });
+    });
+    describe('Prediction task events', () => {
+        it('should create prediction.<task> span (normalizing dashes to underscores)', () => {
+            const { event, otelEvent } = Instrumentation.createPredictionTaskStartedEvent(traceId, 'next-activity', requiredAttrs, { inputTraceCount: 100, inputEventCount: 1234, topK: 3, ngramOrder: 2 });
+            expect(event.predictionTask).toBe('next_activity');
+            expect(otelEvent.name).toBe('prediction.next_activity');
+            expect(otelEvent.attributes['prediction.task']).toBe('next_activity');
+            expect(otelEvent.attributes['prediction.input.trace_count']).toBe(100);
+            expect(otelEvent.attributes['prediction.input.event_count']).toBe(1234);
+            expect(otelEvent.attributes['prediction.top_k']).toBe(3);
+            expect(otelEvent.attributes['prediction.ngram_order']).toBe(2);
+        });
+        it('should emit completed span with output count', () => {
+            const start = Instrumentation.createPredictionTaskStartedEvent(traceId, 'remaining-time', requiredAttrs);
+            const complete = Instrumentation.createPredictionTaskCompletedEvent(traceId, start.event.spanId, 'remaining-time', requiredAttrs, { outputPredictionCount: 50, durationMs: 12 });
+            expect(complete.name).toBe('prediction.remaining_time');
+            expect(complete.attributes['prediction.output.count']).toBe(50);
+            expect(complete.attributes['prediction.duration_ms']).toBe(12);
+            expect(complete.status?.code).toBe('OK');
+        });
+        it('should set ERROR status when failure occurs', () => {
+            const start = Instrumentation.createPredictionTaskStartedEvent(traceId, 'outcome', requiredAttrs);
+            const complete = Instrumentation.createPredictionTaskCompletedEvent(traceId, start.event.spanId, 'outcome', requiredAttrs, { status: 'ERROR', errorCode: 'PRED_400', errorMessage: 'no labels' });
+            expect(complete.status?.code).toBe('ERROR');
+            expect(complete.status?.message).toBe('no labels');
+            expect(complete.attributes['error.code']).toBe('PRED_400');
+        });
+    });
+    describe('Drift detection events', () => {
+        it('should create drift.check span pair with score and detection flag', () => {
+            const start = Instrumentation.createDriftCheckStartedEvent(traceId, 'ewma', requiredAttrs, { windowSize: 10, threshold: 0.05 });
+            expect(start.otelEvent.name).toBe('drift.check');
+            expect(start.otelEvent.attributes['drift.method']).toBe('ewma');
+            expect(start.otelEvent.attributes['drift.window_size']).toBe(10);
+            expect(start.otelEvent.attributes['drift.threshold']).toBe(0.05);
+            const complete = Instrumentation.createDriftCheckCompletedEvent(traceId, start.event.spanId, 'ewma', requiredAttrs, { driftScore: 0.12, driftDetected: true, durationMs: 3 });
+            expect(complete.attributes['drift.score']).toBe(0.12);
+            expect(complete.attributes['drift.detected']).toBe(true);
+        });
+    });
+    describe('Conformance check events', () => {
+        it('should record fitness/precision/generalization/simplicity', () => {
+            const start = Instrumentation.createConformanceCheckStartedEvent(traceId, 'token_replay', requiredAttrs, { modelKind: 'petri_net', traceCount: 1000 });
+            expect(start.otelEvent.name).toBe('conformance.check');
+            const complete = Instrumentation.createConformanceCheckCompletedEvent(traceId, start.event.spanId, 'token_replay', requiredAttrs, {
+                fitness: 0.92,
+                precision: 0.87,
+                generalization: 0.81,
+                simplicity: 0.78,
+                durationMs: 50,
+            });
+            expect(complete.attributes['conformance.fitness']).toBe(0.92);
+            expect(complete.attributes['conformance.precision']).toBe(0.87);
+            expect(complete.attributes['conformance.generalization']).toBe(0.81);
+            expect(complete.attributes['conformance.simplicity']).toBe(0.78);
+            expect(complete.status?.code).toBe('OK');
+        });
+    });
+    describe('ML execution wrapper (instrumentMlExecution)', () => {
+        it('should emit start + completed spans on success', async () => {
+            const captured = [];
+            const result = await Instrumentation.instrumentMlExecution(traceId, 'classify', 'knn', requiredAttrs, async () => 42, (e) => captured.push(e), { inputAttributes: { inputTraceCount: 50, parameterK: 3 } });
+            expect(result).toBe(42);
+            expect(captured).toHaveLength(2);
+            expect(captured[0].name).toBe('ml.classify');
+            expect(captured[0].attributes['ml.input.trace_count']).toBe(50);
+            expect(captured[0].attributes['ml.parameter.k']).toBe(3);
+            expect(captured[1].name).toBe('ml.classify');
+            expect(captured[1].status.code).toBe('OK');
+            expect(captured[1].attributes).toHaveProperty('ml.duration_ms');
+        });
+        it('should emit ERROR-status completion span and re-throw on failure', async () => {
+            const captured = [];
+            await expect(Instrumentation.instrumentMlExecution(traceId, 'cluster', 'kmeans', requiredAttrs, async () => {
+                throw new Error('boom');
+            }, (e) => captured.push(e))).rejects.toThrow('boom');
+            expect(captured).toHaveLength(2);
+            expect(captured[1].status.code).toBe('ERROR');
+            expect(captured[1].status.message).toBe('boom');
+        });
+        it('should never block on OTEL: emit failures are swallowed', async () => {
+            const result = await Instrumentation.instrumentMlExecution(traceId, 'forecast', 'linear', requiredAttrs, async () => 'ok', () => {
+                throw new Error('exporter dead');
+            });
+            expect(result).toBe('ok');
+        });
+    });
+    describe('Span name and attribute conventions', () => {
+        it('all ML/RL/prediction/drift/conformance spans carry service.name=wasm4pm', () => {
+            const events = [
+                Instrumentation.createRlAgentDecisionEvent(traceId, {
+                    agentType: 'QLearning',
+                    agentId: 'a',
+                    actionSelected: 0,
+                    stateHealthLevel: 0,
+                    stateCircuitState: 'Closed',
+                }, requiredAttrs).otelEvent,
+                Instrumentation.createRlPolicyUpdateEvent(traceId, { agentType: 'QLearning', agentId: 'a', reward: 0, tdError: 0, qBefore: 0, qAfter: 0 }, requiredAttrs).otelEvent,
+                Instrumentation.createPredictionTaskStartedEvent(traceId, 'drift', requiredAttrs)
+                    .otelEvent,
+                Instrumentation.createDriftCheckStartedEvent(traceId, 'ewma', requiredAttrs).otelEvent,
+                Instrumentation.createConformanceCheckStartedEvent(traceId, 'alignments', requiredAttrs)
+                    .otelEvent,
+            ];
+            for (const e of events) {
+                expect(e.attributes['service.name']).toBe('wasm4pm');
+                // All required attrs present:
+                expect(e.attributes['run.id']).toBe(requiredAttrs['run.id']);
+                expect(e.attributes['config.hash']).toBe(requiredAttrs['config.hash']);
+            }
+        });
+    });
 });
-//# sourceMappingURL=instrumentation.test.js.map

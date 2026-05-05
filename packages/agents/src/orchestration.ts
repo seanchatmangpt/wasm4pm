@@ -52,10 +52,12 @@ export class AgentOrchestrator {
   private registry: AgentRegistry;
   private audit: AuditStore;
 
-  constructor(options: {
-    registryPath?: string;
-    auditPath?: string;
-  } = {}) {
+  constructor(
+    options: {
+      registryPath?: string;
+      auditPath?: string;
+    } = {}
+  ) {
     this.registry = new AgentRegistry(options.registryPath);
     this.audit = new AuditStore(options.auditPath);
   }
@@ -73,9 +75,7 @@ export class AgentOrchestrator {
   /**
    * Run a single MAPE-K cycle for an artifact
    */
-  async runMapekCycle(
-    context: AgentExecutionContext,
-  ): Promise<MAPEKCycleResult> {
+  async runMapekCycle(context: AgentExecutionContext): Promise<MAPEKCycleResult> {
     const cycleId = this._generateCycleId();
     const startTime = Date.now();
 
@@ -151,10 +151,7 @@ export class AgentOrchestrator {
   /**
    * Execute a specific agent (without full MAPE-K cycle)
    */
-  async executeAgent(
-    agentName: string,
-    context: AgentExecutionContext,
-  ): Promise<AgentResult> {
+  async executeAgent(agentName: string, context: AgentExecutionContext): Promise<AgentResult> {
     const agentState = this.registry.getAgent(agentName);
     if (!agentState) {
       return {
@@ -257,10 +254,7 @@ export class AgentOrchestrator {
   /**
    * ANALYZE: Run agents to detect violations
    */
-  async analyze(
-    context: AgentExecutionContext,
-    monitor: MonitorResult,
-  ): Promise<AnalyzeResult> {
+  async analyze(context: AgentExecutionContext, monitor: MonitorResult): Promise<AnalyzeResult> {
     const violations: Violation[] = [];
     const agentsTriggered: string[] = [];
 
@@ -341,10 +335,7 @@ export class AgentOrchestrator {
   /**
    * EXECUTE: Apply corrective actions
    */
-  async execute(
-    plan: PlanResult,
-    context: AgentExecutionContext,
-  ): Promise<ExecuteResult> {
+  async execute(plan: PlanResult, context: AgentExecutionContext): Promise<ExecuteResult> {
     const corrections: AuditEntry[] = [];
     let successfulCount = 0;
     let failedCount = 0;
@@ -420,10 +411,7 @@ export class AgentOrchestrator {
   /**
    * LEARN: Update knowledge base
    */
-  learn(
-    analyze: AnalyzeResult,
-    execute: ExecuteResult,
-  ): LearnResult {
+  learn(analyze: AnalyzeResult, execute: ExecuteResult): LearnResult {
     // Track drift by violation patterns
     const driftScores: Record<string, number> = {};
 
@@ -509,7 +497,7 @@ export class AgentOrchestrator {
    */
   private async _runAgentLogic(
     agentName: string,
-    context: AgentExecutionContext,
+    context: AgentExecutionContext
   ): Promise<AgentResult> {
     const agentState = this.registry.getAgent(agentName);
     if (!agentState) {
@@ -551,7 +539,7 @@ export class AgentOrchestrator {
   /** MockInterceptor: detect mock/stub patterns */
   private _validateMockInterceptor(
     context: AgentExecutionContext,
-    config: { thresholds: { max_deviations: number } },
+    config: { thresholds: { max_deviations: number } }
   ): AgentResult {
     const violations: Violation[] = [];
     const traces = context.traces || [];
@@ -600,7 +588,7 @@ export class AgentOrchestrator {
   /** ConfigDriftGuardian: detect configuration drift */
   private _validateConfigDrift(
     _context: AgentExecutionContext,
-    config: { thresholds: { max_deviations: number } },
+    config: { thresholds: { max_deviations: number } }
   ): AgentResult {
     // In the TypeScript layer, this validates wasm4pm.toml consistency
     // The Python layer handles settings.json enforcement
@@ -635,7 +623,7 @@ export class AgentOrchestrator {
   /** ReceiptChainAttacker: validate BLAKE3 receipt chains */
   private _validateReceiptChain(
     context: AgentExecutionContext,
-    config: { thresholds: { max_deviations: number } },
+    config: { thresholds: { max_deviations: number } }
   ): AgentResult {
     const violations: Violation[] = [];
     const receipts = context.receipts || [];
@@ -689,7 +677,7 @@ export class AgentOrchestrator {
   /** GateIndependenceVerifier: verify gates are independent */
   private _validateGateIndependence(
     context: AgentExecutionContext,
-    config: { thresholds: { max_deviations: number } },
+    config: { thresholds: { max_deviations: number } }
   ): AgentResult {
     const violations: Violation[] = [];
 
@@ -723,7 +711,7 @@ export class AgentOrchestrator {
   /** EvidenceFabricationDetector: detect fabricated telemetry */
   private _validateEvidenceFabrication(
     context: AgentExecutionContext,
-    config: { thresholds: { max_deviations: number } },
+    config: { thresholds: { max_deviations: number } }
   ): AgentResult {
     const violations: Violation[] = [];
     const traces = context.traces || [];
@@ -773,7 +761,7 @@ export class AgentOrchestrator {
   /** ProcessMiningSkeptic: validate process models with pm4py */
   private _validateProcessMiningSkeptic(
     context: AgentExecutionContext,
-    config: { thresholds: { min_fitness: number; min_precision: number } },
+    config: { thresholds: { min_fitness: number; min_precision: number } }
   ): AgentResult {
     const violations: Violation[] = [];
     const events = context.ocel_events || [];
@@ -861,7 +849,7 @@ export class AgentOrchestrator {
   /** TheaterDetector: detect testing theater */
   private _validateTheaterDetector(
     context: AgentExecutionContext,
-    config: { thresholds: { max_deviations: number } },
+    config: { thresholds: { max_deviations: number } }
   ): AgentResult {
     const violations: Violation[] = [];
     const traces = context.traces || [];
@@ -913,7 +901,7 @@ export class AgentOrchestrator {
   /** AuthorityEscalationWatcher: detect privilege escalation */
   private _validateAuthorityEscalation(
     context: AgentExecutionContext,
-    config: { thresholds: { max_deviations: number } },
+    config: { thresholds: { max_deviations: number } }
   ): AgentResult {
     const violations: Violation[] = [];
     const events = context.ocel_events || [];
@@ -974,7 +962,7 @@ export class AgentOrchestrator {
   /** Apply a corrective action */
   private async _applyCorrection(
     action: CorrectiveAction,
-    context: AgentExecutionContext,
+    context: AgentExecutionContext
   ): Promise<{ success: boolean; action: string; details: Record<string, unknown> }> {
     // In production, this delegates to Python agents via subprocess bridge
     // For now, record the intended correction

@@ -12,7 +12,7 @@ You need to detect when a process changes behavior in real-time -- for example, 
 ## 1. Start a basic drift monitor
 
 ```bash
-pictl drift-watch --input production.xes
+wpm drift-watch --input production.xes
 ```
 
 What you should see:
@@ -63,7 +63,7 @@ When a new drift point is detected, an `ALERT` line appears with the position in
 ### Faster polling (every 2 seconds)
 
 ```bash
-pictl drift-watch -i live.xes --interval 2000
+wpm drift-watch -i live.xes --interval 2000
 ```
 
 ### More responsive smoothing (higher alpha)
@@ -71,7 +71,7 @@ pictl drift-watch -i live.xes --interval 2000
 A higher alpha gives more weight to recent observations, making the monitor react faster to sudden changes:
 
 ```bash
-pictl drift-watch -i live.xes --alpha 0.5
+wpm drift-watch -i live.xes --alpha 0.5
 ```
 
 With `alpha=0.5`, the EWMA responds more quickly to new drift points. With the default `alpha=0.3`, it is smoother and less noisy.
@@ -81,7 +81,7 @@ With `alpha=0.5`, the EWMA responds more quickly to new drift points. With the d
 Trigger alerts on smaller drift values:
 
 ```bash
-pictl drift-watch -i live.xes --threshold 0.2
+wpm drift-watch -i live.xes --threshold 0.2
 ```
 
 ### Smaller sliding window
@@ -89,13 +89,13 @@ pictl drift-watch -i live.xes --threshold 0.2
 A smaller window detects localized changes; a larger window captures gradual drift:
 
 ```bash
-pictl drift-watch -i live.xes --window 30
+wpm drift-watch -i live.xes --window 30
 ```
 
 ### All parameters together
 
 ```bash
-pictl drift-watch -i live.xes --interval 2000 --window 30 --alpha 0.5 --threshold 0.2
+wpm drift-watch -i live.xes --interval 2000 --window 30 --alpha 0.5 --threshold 0.2
 ```
 
 ---
@@ -103,7 +103,7 @@ pictl drift-watch -i live.xes --interval 2000 --window 30 --alpha 0.5 --threshol
 ## 4. Get JSON output for integration
 
 ```bash
-pictl drift-watch -i stream.xes --json
+wpm drift-watch -i stream.xes --json
 ```
 
 What you should see:
@@ -117,7 +117,7 @@ What you should see:
 Each line is a valid JSON object, one per poll interval. Pipe into a monitoring tool:
 
 ```bash
-pictl drift-watch -i stream.xes --json | while read -r line; do
+wpm drift-watch -i stream.xes --json | while read -r line; do
   ewma=$(echo "$line" | jq -r '.ewma')
   if (( $(echo "$ewma > 0.3" | bc -l) )); then
     echo "DRIFT ALERT: ewma=$ewma" | send-alert

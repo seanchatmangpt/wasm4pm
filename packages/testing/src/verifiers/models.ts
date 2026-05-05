@@ -61,30 +61,34 @@ export interface ConformanceResult {
  * 2. Safe/Bounded: No place can contain more than one token
  * 3. Proper completion: From the initial marking, we can always reach the final marking
  */
-export function verifySoundness(net: PetriNet, initialMarking: string[], finalMarking: string[]): SoundnessResult {
+export function verifySoundness(
+  net: PetriNet,
+  initialMarking: string[],
+  finalMarking: string[]
+): SoundnessResult {
   const details: string[] = [];
   let deadlockFree = false;
   let live = false;
   let bounded = false;
 
   // Build adjacency structure
-  const placeMap = new Map(net.places.map(p => [p.id, p]));
-  const transitionMap = new Map(net.transitions.map(t => [t.id, t]));
+  const placeMap = new Map(net.places.map((p) => [p.id, p]));
+  const transitionMap = new Map(net.transitions.map((t) => [t.id, t]));
   const incomingArcs = new Map<string, Array<{ source: string; weight: number }>>();
   const outgoingArcs = new Map<string, Array<{ target: string; weight: number }>>();
 
   // Initialize arc maps
-  net.places.forEach(p => {
+  net.places.forEach((p) => {
     incomingArcs.set(p.id, []);
     outgoingArcs.set(p.id, []);
   });
-  net.transitions.forEach(t => {
+  net.transitions.forEach((t) => {
     incomingArcs.set(t.id, []);
     outgoingArcs.set(t.id, []);
   });
 
   // Populate arcs
-  net.arcs.forEach(arc => {
+  net.arcs.forEach((arc) => {
     const outgoing = outgoingArcs.get(arc.source) || [];
     outgoing.push({ target: arc.target, weight: arc.weight || 1 });
     outgoingArcs.set(arc.source, outgoing);
@@ -101,7 +105,14 @@ export function verifySoundness(net: PetriNet, initialMarking: string[], finalMa
   deadlockFree = checkDeadlockFreedom(net, initialMarking, incomingArcs, outgoingArcs, details);
 
   // Check 3: Proper completion (can reach final marking)
-  live = canReachFinalMarking(net, initialMarking, finalMarking, incomingArcs, outgoingArcs, details);
+  live = canReachFinalMarking(
+    net,
+    initialMarking,
+    finalMarking,
+    incomingArcs,
+    outgoingArcs,
+    details
+  );
 
   const sound = deadlockFree && live && bounded;
 
@@ -125,22 +136,30 @@ function checkBoundedness(
   net: PetriNet,
   incomingArcs: Map<string, Array<{ source: string; weight: number }>>,
   outgoingArcs: Map<string, Array<{ target: string; weight: number }>>,
-  details: string[],
+  details: string[]
 ): boolean {
   // For structural boundedness, every place must have at least one incoming arc from a place
   // (not a transition) or be in the initial marking
-  const placeIds = new Set(net.places.map(p => p.id));
-  const initiallyMarked = new Set(net.places.filter(p => (p.initialMarking || 0) > 0).map(p => p.id));
+  const placeIds = new Set(net.places.map((p) => p.id));
+  const initiallyMarked = new Set(
+    net.places.filter((p) => (p.initialMarking || 0) > 0).map((p) => p.id)
+  );
 
   for (const place of net.places) {
     const incoming = incomingArcs.get(place.id) || [];
 
     // Check if there's a path from an initially marked place to this place
-    const hasPathFromInitial = hasPathFromInitiallyMarked(place.id, initiallyMarked, placeIds, incomingArcs, outgoingArcs);
+    const hasPathFromInitial = hasPathFromInitiallyMarked(
+      place.id,
+      initiallyMarked,
+      placeIds,
+      incomingArcs,
+      outgoingArcs
+    );
 
     // Check if this place can receive tokens (has incoming arc from a transition that can fire)
-    const canReceiveTokens = incoming.some(arc => {
-      const sourceIsTransition = net.transitions.some(t => t.id === arc.source);
+    const canReceiveTokens = incoming.some((arc) => {
+      const sourceIsTransition = net.transitions.some((t) => t.id === arc.source);
       return sourceIsTransition;
     });
 
@@ -163,7 +182,7 @@ function hasPathFromInitiallyMarked(
   placeIds: Set<string>,
   incomingArcs: Map<string, Array<{ source: string; weight: number }>>,
   outgoingArcs: Map<string, Array<{ target: string; weight: number }>>,
-  visited = new Set<string>(),
+  visited = new Set<string>()
 ): boolean {
   if (initiallyMarked.has(placeId)) {
     return true;
@@ -178,7 +197,16 @@ function hasPathFromInitiallyMarked(
   for (const arc of incoming) {
     // If source is a place, recurse
     if (placeIds.has(arc.source)) {
-      if (hasPathFromInitiallyMarked(arc.source, initiallyMarked, placeIds, incomingArcs, outgoingArcs, visited)) {
+      if (
+        hasPathFromInitiallyMarked(
+          arc.source,
+          initiallyMarked,
+          placeIds,
+          incomingArcs,
+          outgoingArcs,
+          visited
+        )
+      ) {
         return true;
       }
     }
@@ -195,12 +223,12 @@ function checkDeadlockFreedom(
   initialMarking: string[],
   incomingArcs: Map<string, Array<{ source: string; weight: number }>>,
   outgoingArcs: Map<string, Array<{ target: string; weight: number }>>,
-  details: string[],
+  details: string[]
 ): boolean {
   // Simplified check: every transition should have at least one incoming place
   for (const transition of net.transitions) {
     const incoming = incomingArcs.get(transition.id) || [];
-    const incomingPlaces = incoming.filter(arc => net.places.some(p => p.id === arc.source));
+    const incomingPlaces = incoming.filter((arc) => net.places.some((p) => p.id === arc.source));
 
     if (incomingPlaces.length === 0) {
       details.push(`Transition ${transition.id} has no input places (source transition)`);
@@ -221,7 +249,7 @@ function canReachFinalMarking(
   finalMarking: string[],
   incomingArcs: Map<string, Array<{ source: string; weight: number }>>,
   outgoingArcs: Map<string, Array<{ target: string; weight: number }>>,
-  details: string[],
+  details: string[]
 ): boolean {
   // Simplified structural check: there must be a path from initial to final marking
   const initialSet = new Set(initialMarking);
@@ -229,7 +257,13 @@ function canReachFinalMarking(
 
   // Check if all final places are reachable from initial places
   for (const finalPlace of finalMarking) {
-    const reachable = isPlaceReachable(finalPlace, initialSet, new Set(net.places.map(p => p.id)), incomingArcs, outgoingArcs);
+    const reachable = isPlaceReachable(
+      finalPlace,
+      initialSet,
+      new Set(net.places.map((p) => p.id)),
+      incomingArcs,
+      outgoingArcs
+    );
 
     if (!reachable) {
       details.push(`Final place ${finalPlace} is not reachable from initial marking`);
@@ -250,7 +284,7 @@ function isPlaceReachable(
   placeIds: Set<string>,
   incomingArcs: Map<string, Array<{ source: string; weight: number }>>,
   outgoingArcs: Map<string, Array<{ target: string; weight: number }>>,
-  visited = new Set<string>(),
+  visited = new Set<string>()
 ): boolean {
   if (sourcePlaces.has(targetPlace)) {
     return true;
@@ -265,7 +299,9 @@ function isPlaceReachable(
   for (const arc of incoming) {
     // Follow path backward through transitions
     if (placeIds.has(arc.source)) {
-      if (isPlaceReachable(arc.source, sourcePlaces, placeIds, incomingArcs, outgoingArcs, visited)) {
+      if (
+        isPlaceReachable(arc.source, sourcePlaces, placeIds, incomingArcs, outgoingArcs, visited)
+      ) {
         return true;
       }
     } else {
@@ -273,7 +309,16 @@ function isPlaceReachable(
       const transIncoming = incomingArcs.get(arc.source) || [];
       for (const transArc of transIncoming) {
         if (placeIds.has(transArc.source)) {
-          if (isPlaceReachable(transArc.source, sourcePlaces, placeIds, incomingArcs, outgoingArcs, visited)) {
+          if (
+            isPlaceReachable(
+              transArc.source,
+              sourcePlaces,
+              placeIds,
+              incomingArcs,
+              outgoingArcs,
+              visited
+            )
+          ) {
             return true;
           }
         }
@@ -292,7 +337,7 @@ function isPlaceReachable(
 export function computeQualityMetrics(
   model: PetriNet | VerifierDFG,
   eventLog: Array<{ activities: string[] }>,
-  options: { type: 'petrinet' | 'dfg' } = { type: 'petrinet' },
+  options: { type: 'petrinet' | 'dfg' } = { type: 'petrinet' }
 ): QualityMetrics {
   // Fitness: based on token replay
   const fitness = computeFitness(model, eventLog, options);
@@ -315,7 +360,7 @@ export function computeQualityMetrics(
 function computeFitness(
   model: PetriNet | VerifierDFG,
   eventLog: Array<{ activities: string[] }>,
-  options: { type: 'petrinet' | 'dfg' },
+  options: { type: 'petrinet' | 'dfg' }
 ): number {
   if (options.type === 'dfg') {
     return computeDFGFitness(model as VerifierDFG, eventLog);
@@ -339,7 +384,7 @@ function computeDFGFitness(dfg: VerifierDFG, eventLog: Array<{ activities: strin
       const target = trace.activities[i + 1];
       totalEdges++;
 
-      const edgeExists = dfg.edges.some(e => e.source === source && e.target === target);
+      const edgeExists = dfg.edges.some((e) => e.source === source && e.target === target);
       if (edgeExists) {
         matchingEdges++;
       }
@@ -354,7 +399,7 @@ function computeDFGFitness(dfg: VerifierDFG, eventLog: Array<{ activities: strin
  */
 function computeTokenReplayConformance(
   net: PetriNet,
-  eventLog: Array<{ activities: string[] }>,
+  eventLog: Array<{ activities: string[] }>
 ): ConformanceResult {
   let consumedTokens = 0;
   let producedTokens = 0;
@@ -371,21 +416,21 @@ function computeTokenReplayConformance(
     // Simplified token replay
     for (const activity of trace.activities) {
       // Find transition for this activity
-      const transition = net.transitions.find(t => t.label === activity);
+      const transition = net.transitions.find((t) => t.label === activity);
       if (!transition) {
         traceMissing++;
         continue;
       }
 
       // Consume tokens from input places
-      const inputArcs = net.arcs.filter(a => a.target === transition.id);
+      const inputArcs = net.arcs.filter((a) => a.target === transition.id);
       for (const arc of inputArcs) {
         traceConsumed += arc.weight || 1;
         consumedTokens += arc.weight || 1;
       }
 
       // Produce tokens to output places
-      const outputArcs = net.arcs.filter(a => a.source === transition.id);
+      const outputArcs = net.arcs.filter((a) => a.source === transition.id);
       for (const arc of outputArcs) {
         traceProduced += arc.weight || 1;
         producedTokens += arc.weight || 1;
@@ -397,16 +442,18 @@ function computeTokenReplayConformance(
     remainingTokens += traceRemaining;
 
     // Compute trace fitness: 1 - (missing + remaining) / (consumed + produced)
-    const traceFit = traceConsumed + traceProduced > 0
-      ? 1 - (traceMissing + traceRemaining) / (traceConsumed + traceProduced)
-      : 0;
+    const traceFit =
+      traceConsumed + traceProduced > 0
+        ? 1 - (traceMissing + traceRemaining) / (traceConsumed + traceProduced)
+        : 0;
     traceFitness.push(Math.max(0, traceFit));
   }
 
   // Overall fitness
-  const fit = consumedTokens + producedTokens > 0
-    ? 1 - (missingTokens + remainingTokens) / (consumedTokens + producedTokens)
-    : 0;
+  const fit =
+    consumedTokens + producedTokens > 0
+      ? 1 - (missingTokens + remainingTokens) / (consumedTokens + producedTokens)
+      : 0;
 
   return {
     fit: Math.max(0, fit),
@@ -424,7 +471,7 @@ function computeTokenReplayConformance(
 function computePrecision(
   model: PetriNet | VerifierDFG,
   eventLog: Array<{ activities: string[] }>,
-  options: { type: 'petrinet' | 'dfg' },
+  options: { type: 'petrinet' | 'dfg' }
 ): number {
   if (options.type === 'dfg') {
     return computeDFGPrecision(model as VerifierDFG, eventLog);
@@ -441,8 +488,8 @@ function computePrecision(
   for (const transition of net.transitions) {
     if (!transition.label) continue;
 
-    const inputPlaces = net.arcs.filter(a => a.target === transition.id).map(a => a.source);
-    const outputPlaces = net.arcs.filter(a => a.source === transition.id).map(a => a.target);
+    const inputPlaces = net.arcs.filter((a) => a.target === transition.id).map((a) => a.source);
+    const outputPlaces = net.arcs.filter((a) => a.source === transition.id).map((a) => a.target);
 
     // For each input-output pair, check if sequence appears in log
     for (const input of inputPlaces) {
@@ -450,8 +497,12 @@ function computePrecision(
         modelEdges++;
 
         // Find transitions connected to these places
-        const prevTransition = net.transitions.find(t => net.arcs.some(a => a.source === t.id && a.target === input));
-        const nextTransition = net.transitions.find(t => net.arcs.some(a => a.target === t.id && a.source === output));
+        const prevTransition = net.transitions.find((t) =>
+          net.arcs.some((a) => a.source === t.id && a.target === input)
+        );
+        const nextTransition = net.transitions.find((t) =>
+          net.arcs.some((a) => a.target === t.id && a.source === output)
+        );
 
         if (prevTransition?.label && nextTransition?.label) {
           const edgeExists = logEdges.has(`${prevTransition.label}->${nextTransition.label}`);
@@ -471,7 +522,7 @@ function computePrecision(
  */
 function computeDFGPrecision(dfg: VerifierDFG, eventLog: Array<{ activities: string[] }>): number {
   const logEdges = extractLogEdges(eventLog);
-  const modelEdges = new Set(dfg.edges.map(e => `${e.source}->${e.target}`));
+  const modelEdges = new Set(dfg.edges.map((e) => `${e.source}->${e.target}`));
 
   let escapedEdges = 0;
   for (const edge of modelEdges) {
@@ -505,7 +556,7 @@ function extractLogEdges(eventLog: Array<{ activities: string[] }>): Set<string>
 function computeGeneralization(
   model: PetriNet | VerifierDFG,
   eventLog: Array<{ activities: string[] }>,
-  options: { type: 'petrinet' | 'dfg' },
+  options: { type: 'petrinet' | 'dfg' }
 ): number {
   // Generalization: how well would the model handle unseen traces
   // Simplified: based on edge frequency distribution
@@ -540,7 +591,7 @@ function computeGeneralization(
  */
 function computeSimplicity(
   model: PetriNet | VerifierDFG,
-  options: { type: 'petrinet' | 'dfg' },
+  options: { type: 'petrinet' | 'dfg' }
 ): number {
   if (options.type === 'dfg') {
     const dfg = model as VerifierDFG;
@@ -617,7 +668,7 @@ export function formatSoundnessResult(result: SoundnessResult): string {
 
   if (result.details.length > 0) {
     lines.push('\nDetails:');
-    result.details.forEach(d => lines.push(`  - ${d}`));
+    result.details.forEach((d) => lines.push(`  - ${d}`));
   }
 
   return lines.join('\n');

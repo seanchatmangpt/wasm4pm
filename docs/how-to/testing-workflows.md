@@ -89,10 +89,10 @@ describe('Full Pipeline', () => {
 set -e
 
 echo "1. Validate config"
-pictl init --validate config.toml
+wpm init --validate config.toml
 
 echo "2. Run analysis"
-pictl run --config config.toml
+wpm run --config config.toml
 
 echo "3. Check outputs"
 test -f output/receipt.json
@@ -100,7 +100,7 @@ test -f output/model.json
 
 echo "4. Verify determinism"
 run1=$(jq -r '.hashes.combined_hash' output/receipt.json)
-pictl run --config config.toml
+wpm run --config config.toml
 run2=$(jq -r '.hashes.combined_hash' output/receipt.json)
 test "$run1" = "$run2"
 
@@ -123,21 +123,21 @@ chmod +x test/e2e.sh
 echo "Testing compliance requirements..."
 
 # 1. Receipt generation
-pictl run --config config.toml
+wpm run --config config.toml
 test -f output/receipt.json || exit 1
 
 # 2. Determinism
 HASH1=$(jq -r '.hashes.combined_hash' output/receipt.json)
-pictl run --config config.toml
+wpm run --config config.toml
 HASH2=$(jq -r '.hashes.combined_hash' output/receipt.json)
 test "$HASH1" = "$HASH2" || exit 1
 
 # 3. Error codes
-pictl run --config bad-config.toml
+wpm run --config bad-config.toml
 test $? -eq 1  # CONFIG_ERROR
 
 # 4. Timeout handling
-timeout 1 pictl run --config timeout-config.toml
+timeout 1 wpm run --config timeout-config.toml
 test $? -eq 124 || exit 1  # Timeout exit code
 
 echo "✓ All compliance tests passed"

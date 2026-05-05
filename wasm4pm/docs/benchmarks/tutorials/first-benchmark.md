@@ -7,7 +7,7 @@
 
 By the end of this tutorial you will:
 
-1. Install pictl and verify your environment
+1. Install wasm4pm and verify your environment
 2. Run a single-algorithm benchmark against a real event log
 3. Run the full benchmark suite across all 21 discovery algorithms
 4. Compare two algorithms side by side using `wpm compare`
@@ -39,7 +39,7 @@ If any of these commands fail, install the missing tool before continuing.
 
 ---
 
-## Step 1: Install pictl
+## Step 1: Install wasm4pm
 
 You have two options. Option A installs the published npm package. Option B builds from source, which is necessary if you are modifying the algorithms.
 
@@ -47,7 +47,7 @@ You have two options. Option A installs the published npm package. Option B buil
 
 ```bash
 npm install -g @wasm4pm/cli
-pictl --version
+wasm4pm --version
 ```
 
 You should see `v26.4.x` or later. If the version is older, update with `npm update -g @wasm4pm/cli`.
@@ -67,7 +67,7 @@ cd wasm4pm
 npm run build:nodejs
 
 # Build and link the CLI
-cd ../apps/pictl
+cd ../apps/wasm4pm
 npm run build
 npm link
 ```
@@ -75,7 +75,7 @@ npm link
 Verify the CLI works:
 
 ```bash
-pictl status
+wpm status
 ```
 
 You should see output confirming the WASM engine is loaded and healthy.
@@ -84,7 +84,7 @@ You should see output confirming the WASM engine is loaded and healthy.
 
 ## Step 2: Get test data
 
-Benchmarks need an event log in XES format. pictl ships with a synthetic log generator, but real-world data gives you more meaningful results.
+Benchmarks need an event log in XES format. wasm4pm ships with a synthetic log generator, but real-world data gives you more meaningful results.
 
 ### Option A: Use the built-in synthetic generator (fastest)
 
@@ -111,12 +111,12 @@ The BPI 2020 dataset contains 10,500 traces and 56,437 events across 17 activiti
 
 There are two ways to run benchmarks: the CLI and the Node.js runner. Both measure the same WASM algorithms. Use the CLI for quick single-algorithm checks and the runner for the full suite.
 
-### Quick benchmark with pictl CLI
+### Quick benchmark with wasm4pm CLI
 
 Run DFG discovery on a log and time it:
 
 ```bash
-pictl run -i wasm4pm/tests/fixtures/BPI_2020_Travel_Permits_Actual.xes --algorithm dfg --format json
+wpm run -i wasm4pm/tests/fixtures/BPI_2020_Travel_Permits_Actual.xes --algorithm dfg --format json
 ```
 
 The JSON output includes a `summary` field with timing information. On an Apple M3 Max, DFG discovery on BPI 2020 (10,500 traces, 56K events) completes in approximately **6.5 ms**.
@@ -231,10 +231,10 @@ discover_genetic_algorithm                   1000       768.0       816.3
 
 ## Step 5: Compare algorithms
 
-pictl provides a built-in comparison command that runs multiple algorithms against the same log and presents results side by side:
+wasm4pm provides a built-in comparison command that runs multiple algorithms against the same log and presents results side by side:
 
 ```bash
-pictl compare dfg heuristic_miner inductive_miner -i wasm4pm/tests/fixtures/BPI_2020_Travel_Permits_Actual.xes
+wpm compare dfg heuristic_miner inductive_miner -i wasm4pm/tests/fixtures/BPI_2020_Travel_Permits_Actual.xes
 ```
 
 Expected output (abbreviated):
@@ -258,8 +258,8 @@ The `wpm compare` command is useful when you need to:
 You can also use `wpm explain <algorithm>` to get an academic description of what each algorithm does and when to use it:
 
 ```bash
-pictl explain dfg
-pictl explain heuristic_miner
+wpm explain dfg
+wpm explain heuristic_miner
 ```
 
 ---

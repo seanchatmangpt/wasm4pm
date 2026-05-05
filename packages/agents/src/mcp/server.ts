@@ -16,7 +16,7 @@ import type { AgentExecutionContext } from '../orchestration.js';
  */
 export async function handleToolCall(
   toolName: string,
-  args: Record<string, unknown>,
+  args: Record<string, unknown>
 ): Promise<Record<string, unknown>> {
   const orchestrator = new AgentOrchestrator();
 
@@ -116,7 +116,7 @@ export function getClaudeDesktopConfig(
   options?: {
     auditPath?: string;
     registryPath?: string;
-  },
+  }
 ): Record<string, unknown> {
   return {
     mcpServers: {
@@ -124,8 +124,8 @@ export function getClaudeDesktopConfig(
         command: 'node',
         args: [`${wasm4pmPath}/packages/agents/dist/mcp/server.js`],
         env: {
-          PICTL_AGENT_AUDIT_PATH: options?.auditPath || '',
-          PICTL_AGENT_REGISTRY_PATH: options?.registryPath || '',
+          WASM4PM_AGENT_AUDIT_PATH: options?.auditPath || '',
+          WASM4PM_AGENT_REGISTRY_PATH: options?.registryPath || '',
         },
       },
     },

@@ -180,17 +180,17 @@ Results are **deterministic within measurement noise** (~358ps to 4.7µs range).
 
 ### 1. LinUCB Upper Confidence Bound
 **Current:** 3.166 ns inline  
-**Status:** Already optimized (branchless SIMD candidate)  
+**Status:** Already optimized (hot-path optimized — SIMD candidate)  
 **Opportunity:** Negligible impact (< 0.01% of budget)
 
 ### 2. Guard Evaluation
 **Current:** 1.321 ns inline  
-**Status:** Already branchless  
+**Status:** Already hot-path optimized (conditional moves)  
 **Opportunity:** Negligible impact
 
 ### 3. Perception Encoding
 **Current:** 1.047 ns inline  
-**Status:** Already branchless quantization  
+**Status:** Already hot-path optimized quantization (conditional moves)  
 **Opportunity:** Below noise floor
 
 ### 4. Bellman Update Batching (PRIMARY LEVER)
@@ -253,7 +253,7 @@ Results are **deterministic within measurement noise** (~358ps to 4.7µs range).
 
 ```toml
 [dependencies]
-pictl = { version = "26.4.16", features = ["deferred-bellman-queue"] }
+wasm4pm = { version = "26.4.16", features = ["deferred-bellman-queue"] }
 
 # Or in code:
 agent.set_drain_cadence(128);  # Drain Bellman queue every 128 cycles

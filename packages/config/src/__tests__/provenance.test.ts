@@ -13,7 +13,7 @@ describe('Provenance', () => {
       const map = trackProvenance(
         { execution: { profile: 'fast', timeout: 60000 } },
         'toml',
-        './wasm4pm.toml',
+        './wasm4pm.toml'
       );
       expect(map['execution.profile']).toEqual({
         value: 'fast',
@@ -31,7 +31,7 @@ describe('Provenance', () => {
       const map = trackProvenance(
         { observability: { otel: { enabled: true, endpoint: 'http://localhost:4318' } } },
         'json',
-        './config.json',
+        './config.json'
       );
       expect(map['observability.otel.enabled']).toEqual({
         value: true,
@@ -81,8 +81,8 @@ describe('Provenance', () => {
 
   describe('mergeProvenance', () => {
     it('merges non-overlapping maps', () => {
-      const a: ProvenanceMap = { 'x': { value: 1, source: 'default' } };
-      const b: ProvenanceMap = { 'y': { value: 2, source: 'env' } };
+      const a: ProvenanceMap = { x: { value: 1, source: 'default' } };
+      const b: ProvenanceMap = { y: { value: 2, source: 'env' } };
       const merged = mergeProvenance(a, b);
       expect(merged['x'].source).toBe('default');
       expect(merged['y'].source).toBe('env');
@@ -106,7 +106,7 @@ describe('Provenance', () => {
 
     it('preserves keys not overridden', () => {
       const defaults: ProvenanceMap = {
-        'version': { value: '1.0.0', source: 'default' },
+        version: { value: '1.0.0', source: 'default' },
         'execution.profile': { value: 'balanced', source: 'default' },
       };
       const toml: ProvenanceMap = {
@@ -126,10 +126,10 @@ describe('Provenance', () => {
 
     it('preserves file path through merges', () => {
       const a: ProvenanceMap = {
-        'x': { value: 1, source: 'toml', path: '/a.toml' },
+        x: { value: 1, source: 'toml', path: '/a.toml' },
       };
       const b: ProvenanceMap = {
-        'y': { value: 2, source: 'json', path: '/b.json' },
+        y: { value: 2, source: 'json', path: '/b.json' },
       };
       const merged = mergeProvenance(a, b);
       expect(merged['x'].path).toBe('/a.toml');
@@ -138,10 +138,10 @@ describe('Provenance', () => {
 
     it('follows resolution order: default < env < toml/json < cli', () => {
       const layers: ProvenanceMap[] = [
-        { 'k': { value: 'd', source: 'default' } },
-        { 'k': { value: 'e', source: 'env' } },
-        { 'k': { value: 't', source: 'toml' } },
-        { 'k': { value: 'c', source: 'cli' } },
+        { k: { value: 'd', source: 'default' } },
+        { k: { value: 'e', source: 'env' } },
+        { k: { value: 't', source: 'toml' } },
+        { k: { value: 'c', source: 'cli' } },
       ];
       const merged = mergeProvenance(...layers);
       expect(merged['k'].source).toBe('cli');

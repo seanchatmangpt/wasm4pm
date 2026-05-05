@@ -13,7 +13,11 @@ import type { FeatureMatrix, LabelEncoding } from './types.js';
  * @param numericTargetKey - Key for numeric target (e.g., 'remaining_time')
  * @param categoricalTargetKey - Key for categorical target (e.g., 'outcome')
  */
-export declare function buildFeatureMatrix(featuresJson: Array<Record<string, unknown>>, numericTargetKey?: string, categoricalTargetKey?: string): FeatureMatrix;
+export declare function buildFeatureMatrix(
+  featuresJson: Array<Record<string, unknown>>,
+  numericTargetKey?: string,
+  categoricalTargetKey?: string
+): FeatureMatrix;
 /**
  * Encode string labels to numeric indices for classifiers.
  */

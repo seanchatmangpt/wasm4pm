@@ -84,11 +84,13 @@ export class JSONFormatter {
 
   success(message: string, data?: unknown): void {
     if (!this.quiet) {
-      const normalizedData = Array.isArray(data) ? { data } : (data as Record<string, unknown> ?? {});
+      const normalizedData = Array.isArray(data)
+        ? { data }
+        : ((data as Record<string, unknown>) ?? {});
       this.output({
         status: 'success',
         message,
-        ...(normalizedData),
+        ...normalizedData,
       });
     }
   }
@@ -97,18 +99,19 @@ export class JSONFormatter {
     this.output({
       status: 'error',
       message,
-      error:
-        error instanceof Error ? { message: error.message, stack: error.stack } : error,
+      error: error instanceof Error ? { message: error.message, stack: error.stack } : error,
     });
   }
 
   warn(message: string, data?: unknown): void {
     if (!this.quiet) {
-      const normalizedData = Array.isArray(data) ? { data } : (data as Record<string, unknown> ?? {});
+      const normalizedData = Array.isArray(data)
+        ? { data }
+        : ((data as Record<string, unknown>) ?? {});
       this.output({
         status: 'warning',
         message,
-        ...(normalizedData),
+        ...normalizedData,
       });
     }
   }

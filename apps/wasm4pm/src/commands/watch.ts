@@ -4,10 +4,7 @@ import { watch as fsWatch } from 'fs';
 import * as path from 'path';
 import chokidar from 'chokidar';
 import { resolveConfig as loadConfig } from '@wasm4pm/config';
-import { 
-  createFullEngine, 
-  WasmLoader, 
-} from '@wasm4pm/engine';
+import { createFullEngine, WasmLoader } from '@wasm4pm/engine';
 import { getTracer, WatchingSpans } from '@wasm4pm/observability';
 import { WasmBackend } from '@wasm4pm/kernel';
 import { plan } from '@wasm4pm/planner';
@@ -61,18 +58,22 @@ export const watch = defineCommand({
     // Step 1: Initialize Engine and Backends
     const wasmLoader = WasmLoader.getInstance();
     await wasmLoader.init();
-    
+
     const kernel = new WasmBackend();
     await kernel.init();
 
     // In a real implementation, we'd use a more sophisticated planner/executor
-    const engine = createFullEngine(kernel as any, plan as any, { 
+    const engine = createFullEngine(
+      kernel as any,
+      plan as any,
+      {
         run: async (p: any) => {
-            streaming.emitEvent('executing', { plan: p.id });
-            await new Promise(resolve => setTimeout(resolve, 500));
-            return { run_id: 'watch-run', status: 'success', payload: {} } as any;
-        }
-    } as any);
+          streaming.emitEvent('executing', { plan: p.id });
+          await new Promise((resolve) => setTimeout(resolve, 500));
+          return { run_id: 'watch-run', status: 'success', payload: {} } as any;
+        },
+      } as any
+    );
 
     streaming.startStream();
     streaming.emitEvent('initialized', {
@@ -101,7 +102,7 @@ export const watch = defineCommand({
         // Reload and Run
         const config = await loadConfig({ configSearchPaths: [configPath] });
         const executionPlan = plan(config as any);
-        
+
         streaming.emitEvent('processing_started', {
           planId: executionPlan.id,
           steps: executionPlan.steps.length,
@@ -112,7 +113,6 @@ export const watch = defineCommand({
           status: 'success',
           timestamp: new Date().toISOString(),
         });
-
       } catch (error) {
         streaming.emitEvent('error', {
           message: error instanceof Error ? error.message : String(error),

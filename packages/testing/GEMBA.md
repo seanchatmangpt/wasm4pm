@@ -115,7 +115,7 @@ npm run lint
 **Error:**
 ```
   packages/observability/__tests__/fields.test.ts
-    10:5  error  Mocks not allowed in integration tests  pictl-testing/no-mocks-in-integration
+    10:5  error  Mocks not allowed in integration tests  wasm4pm-testing/no-mocks-in-integration
 ```
 
 ### Pre-commit Hook
@@ -195,7 +195,7 @@ test('handles DOM event with mocked listener', () => {
 
 ## API Reference
 
-### Custom ESLint Rule: `pictl-testing/no-mocks-in-integration`
+### Custom ESLint Rule: `wasm4pm-testing/no-mocks-in-integration`
 
 **Type:** Problem (auto-fix not available)
 
@@ -211,9 +211,9 @@ Move to a unit test (*.unit.test.ts or *.spec.ts) or use real APIs.
 ```javascript
 // .eslintrc.cjs
 {
-  plugins: ['pictl-testing'],
+  plugins: ['wasm4pm-testing'],
   rules: {
-    'pictl-testing/no-mocks-in-integration': 'error'
+    'wasm4pm-testing/no-mocks-in-integration': 'error'
   }
 }
 ```
@@ -365,12 +365,12 @@ test('processes log file', async () => {
 
 ## Troubleshooting
 
-### ESLint: "pictl-testing rule not found"
+### ESLint: "wasm4pm-testing rule not found"
 
 **Problem:** ESLint doesn't see the custom rule.
 
 **Fix:**
-1. Ensure `.eslintrc.cjs` has `'pictl-testing'` in plugins
+1. Ensure `.eslintrc.cjs` has `'wasm4pm-testing'` in plugins
 2. Ensure `packages/testing/src/eslint-plugin.cjs` exists
 3. Run `npm run lint -- --debug-inspect-config` to verify rule loads
 
@@ -396,6 +396,6 @@ find . -name "*.test.ts" -o -name "*.spec.ts" | head -5
 ## See Also
 
 - `../../docs/GEMBA-ENFORCEMENT.md` — Comprehensive Gemba rules
-- `../../CLAUDE.md` — pictl configuration and standards
+- `../../CLAUDE.md` — wasm4pm configuration and standards
 - `../.claude/rules/chicago-tdd.md` — Test-first discipline
 - `../.claude/rules/toyota-production.md` — Lean principles

@@ -1,4 +1,4 @@
-# pictl Process Mining Domain
+# wasm4pm Process Mining Domain
 
 **Van der Aalst perspectives, event log formats, algorithm taxonomy.**
 
@@ -24,7 +24,7 @@
 - Captures complex relationships
 - Feature flag: `feature-ocel`
 
-### JSON (pictl format)
+### JSON (wasm4pm format)
 - Custom format for direct JavaScript consumption
 - Parse: `load_eventlog_from_json(json_content)`
 

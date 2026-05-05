@@ -1,6 +1,6 @@
 # Package Implementation History
 
-Historical record of package implementations across the pictl monorepo.
+Historical record of package implementations across the wasm4pm monorepo.
 
 ## @wasm4pm/config
 

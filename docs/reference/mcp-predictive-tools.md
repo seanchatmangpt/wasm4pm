@@ -269,4 +269,4 @@ Handles are freed in nested `try/finally` blocks. Even if the computation throws
 
 - [Prediction CLI Reference](./prediction-cli.md) -- `wpm predict` task documentation
 - [Prediction Config Reference](./prediction-config.md) -- prediction configuration schema
-- [CLI Commands Reference](./cli-commands.md) -- all pictl commands
+- [CLI Commands Reference](./cli-commands.md) -- all wasm4pm commands

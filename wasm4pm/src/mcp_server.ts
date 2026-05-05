@@ -5,7 +5,7 @@
  * Enables Claude and other MCP clients to use wasm4pm for process discovery, analysis, and visualization.
  *
  * Usage:
- *   const server = new PictlMCPServer();
+ *   const server = new Wasm4pmMCPServer();
  *   await server.start();
  */
 
@@ -31,7 +31,7 @@ interface ToolInput {
  * - Process analysis and visualization
  * - Event log import/export
  */
-export class PictlMCPServer {
+export class Wasm4pmMCPServer {
   private server: Server;
   private transport: StdioServerTransport;
 
@@ -1667,7 +1667,7 @@ export class PictlMCPServer {
  * Entry point for MCP server
  */
 async function main(): Promise<void> {
-  const server = new PictlMCPServer();
+  const server = new Wasm4pmMCPServer();
   await server.start();
 }
 
@@ -1675,4 +1675,4 @@ if (require.main === module) {
   main().catch(console.error);
 }
 
-export default PictlMCPServer;
+export default Wasm4pmMCPServer;

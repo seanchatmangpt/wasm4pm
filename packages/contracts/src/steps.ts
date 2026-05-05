@@ -82,4 +82,4 @@ export const PLAN_STEP_TYPE_VALUES = [
   'cleanup',
 ] as const;
 
-export type PlanStepTypeValue = typeof PLAN_STEP_TYPE_VALUES[number];
+export type PlanStepTypeValue = (typeof PLAN_STEP_TYPE_VALUES)[number];

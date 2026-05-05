@@ -190,7 +190,11 @@ export class SecretRedaction {
   /**
    * Create a redaction report showing what was redacted
    */
-  static createRedactionReport(original: any, redacted: any, path = ''): { path: string; reason: string }[] {
+  static createRedactionReport(
+    original: any,
+    redacted: any,
+    path = ''
+  ): { path: string; reason: string }[] {
     const report: { path: string; reason: string }[] = [];
 
     if (typeof original !== 'object' || original === null) {
@@ -217,7 +221,12 @@ export class SecretRedaction {
           path: currentPath,
           reason: 'Sensitive field name',
         });
-      } else if (typeof value === 'object' && value !== null && !Array.isArray(value) && !(value instanceof Date)) {
+      } else if (
+        typeof value === 'object' &&
+        value !== null &&
+        !Array.isArray(value) &&
+        !(value instanceof Date)
+      ) {
         report.push(...this.createRedactionReport(value, redacted[key], currentPath));
       }
     }

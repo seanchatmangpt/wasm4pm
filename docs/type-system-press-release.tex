@@ -53,14 +53,14 @@
 \title{\textbf{The Type System as Press Release}\\[6pt]
 \large $A = \mu(\mathcal{O}^*)$ and the Instruments of Ontological Closure}
 \author{Sean Chatman\\
-\small ChatmanGPT / pictl project}
+\small ChatmanGPT / wasm4pm project}
 \date{April 2026}
 
 \begin{document}
 \maketitle
 
 \begin{abstract}
-The \textit{Chatman Equation} $A = \mu(\mathcal{O}^*)$ asserts that every software artifact $A$ is a lawful transformation $\mu$ of an operationally complete source ontology $\mathcal{O}^*$. This demands that code, schemas, documentation, tests, and generated interfaces be deterministic projections from one governing semantic source---not improvisations from partial observation. This paper surveys the practical instruments by which $\mathcal{O}^*$ is encoded, propagated, and enforced across compiler, runtime, human reader, and cross-language boundary: Rust's type system with \texttt{rustdoc} and doctests; TypeScript's static types paired with Zod for runtime enforcement; Protocol Buffers with Buf for cross-language contracts; JSON Schema and OpenAPI 3.1; and the Serde/Schemars bridge for Rust-to-schema emission. We introduce the \textit{Blue River Dam} principle---upstream semantic control over all admissible downstream engineering work---and argue that the strongest tool stacks are those that preserve $\mathcal{O}^*$ across the most system boundaries with the least semantic drift. A five-dimension maturity matrix ranks each instrument. We conclude with a 5~Whys and Root Cause Analysis applied to the \texttt{pictl}$\to$\texttt{bcinr} transition, demonstrating that the Working Backwards architecture's true power is not avoiding failure but converting exploration results into rational press release revision---and that this revision is itself provable by mathematical oracle.
+The \textit{Chatman Equation} $A = \mu(\mathcal{O}^*)$ asserts that every software artifact $A$ is a lawful transformation $\mu$ of an operationally complete source ontology $\mathcal{O}^*$. This demands that code, schemas, documentation, tests, and generated interfaces be deterministic projections from one governing semantic source---not improvisations from partial observation. This paper surveys the practical instruments by which $\mathcal{O}^*$ is encoded, propagated, and enforced across compiler, runtime, human reader, and cross-language boundary: Rust's type system with \texttt{rustdoc} and doctests; TypeScript's static types paired with Zod for runtime enforcement; Protocol Buffers with Buf for cross-language contracts; JSON Schema and OpenAPI 3.1; and the Serde/Schemars bridge for Rust-to-schema emission. We introduce the \textit{Blue River Dam} principle---upstream semantic control over all admissible downstream engineering work---and argue that the strongest tool stacks are those that preserve $\mathcal{O}^*$ across the most system boundaries with the least semantic drift. A five-dimension maturity matrix ranks each instrument. We conclude with a 5~Whys and Root Cause Analysis applied to the \texttt{wasm4pm}$\to$\texttt{bcinr} transition, demonstrating that the Working Backwards architecture's true power is not avoiding failure but converting exploration results into rational press release revision---and that this revision is itself provable by mathematical oracle.
 \end{abstract}
 
 \tableofcontents
@@ -103,7 +103,7 @@ $$\text{Schedulable}(P) \propto \text{Strength}(\Omega)$$
 The stronger the oracle (Rank~1 mathematical theorem $>$ Rank~4 statistical trend), the more precisely $P$ can be converted into a delivery schedule rather than a wish.
 \end{theorem}
 
-This is why the \texttt{bcinr} library was chosen as the post-\texttt{pictl} target. Its domain---branchless integer algorithms---admits Rank~1 oracles:
+This is why the \texttt{bcinr} library was chosen as the post-\texttt{wasm4pm} target. Its domain---branchless integer algorithms---admits Rank~1 oracles:
 $$\forall a, b \in \mathbb{Z}_2^{32},\quad \texttt{select\_u32}(\texttt{0xFFFF\_FFFF}, a, b) = a$$
 Such a statement is not a test; it is a theorem. The type system plus a doctest that executes this assertion turns the theorem into a continuously enforced delivery constraint.
 
@@ -279,17 +279,17 @@ fn add(a: u32, b: u32) -> u32 {
 \noindent The docstring cannot catch the bug. The type system alone cannot catch the semantic error. Only a doctest that asserts \texttt{add(2, 3) == 5} closes the loop.
 
 %% ────────────────────────────────────────────────────────────────
-\section{5~Whys and Root Cause Analysis: pictl $\to$ bcinr}
+\section{5~Whys and Root Cause Analysis: wasm4pm $\to$ bcinr}
 
 \subsection{Why This RCA Proves the Exploit Theory}
 
-In the companion paper \textit{``Working Backwards in Code''} we introduced the Explore/Plan/Write agent architecture as a computational Working Backwards engine. The pictl adversarial audit was the Explore phase: 41 algorithms claimed, 0 production-ready. This section applies 5~Whys to that result and shows how it produces the bcinr press release---not as consolation but as rational exploitation of the information gained.
+In the companion paper \textit{``Working Backwards in Code''} we introduced the Explore/Plan/Write agent architecture as a computational Working Backwards engine. The wasm4pm adversarial audit was the Explore phase: 41 algorithms claimed, 0 production-ready. This section applies 5~Whys to that result and shows how it produces the bcinr press release---not as consolation but as rational exploitation of the information gained.
 
 The \emph{Exploit theory} states: once Exploration has measured the gap precisely enough to identify structural root cause, the correct response is not incremental repair but press release revision toward a target whose gap is closable with mathematical oracles. The bcinr transition is the proof.
 
 \subsection{5~Whys Chain}
 
-\paragraph{Why 1: Why were 0 of 41 pictl algorithms production-ready?}
+\paragraph{Why 1: Why were 0 of 41 wasm4pm algorithms production-ready?}
 Because 24 crashed on invocation with \texttt{RefCell} borrow panics, 2 returned wrong types, and the remainder fell into stub or aspirational categories. None met the Tier~0 standard (returns correct typed output, matches declared performance, passes adversarial inputs).
 
 \paragraph{Why 2: Why did the RefCell borrow panics occur?}
@@ -307,7 +307,7 @@ Because no oracle was specified when the registry was created. A name is the wea
 \subsection{Root Cause}
 
 \begin{rulebox}
-\textbf{Root Cause:} The pictl press release committed to algorithm names without committing to mathematical oracles. This made the gap metric ($\Delta$) insensitive to the difference between ``exists'' and ``works.'' Sequential exploration could not aggregate crash signals into the architectural inference. The result was an architecture (RefCell/Mutex in WASM) that was fundamentally incompatible with the declared target, invisible until audited in full.
+\textbf{Root Cause:} The wasm4pm press release committed to algorithm names without committing to mathematical oracles. This made the gap metric ($\Delta$) insensitive to the difference between ``exists'' and ``works.'' Sequential exploration could not aggregate crash signals into the architectural inference. The result was an architecture (RefCell/Mutex in WASM) that was fundamentally incompatible with the declared target, invisible until audited in full.
 \end{rulebox}
 
 \subsection{The Exploit: bcinr as Rational Press Release Revision}
@@ -317,7 +317,7 @@ The 5~Whys chain produces the corrective specification directly:
 \begin{center}
 \begin{tabular}{@{}l l@{}}
 \toprule
-\textbf{pictl defect} & \textbf{bcinr corrective commitment} \\
+\textbf{wasm4pm defect} & \textbf{bcinr corrective commitment} \\
 \midrule
 Weak oracle (name existence) & Rank-1 mathematical theorems as oracle \\
 Architectural WASM incompatibility & \texttt{no\_std}, no \texttt{Mutex}, no \texttt{RefCell} \\
@@ -329,7 +329,7 @@ Gap metric: names & Gap metric: doctest pass rate \\
 \end{tabular}
 \end{center}
 
-Every bcinr architectural decision is a direct consequence of the pictl 5~Whys chain. This is what distinguishes press release revision from retreat: the new press release is narrower precisely because the exploration revealed which structural properties made the old one undeliverable.
+Every bcinr architectural decision is a direct consequence of the wasm4pm 5~Whys chain. This is what distinguishes press release revision from retreat: the new press release is narrower precisely because the exploration revealed which structural properties made the old one undeliverable.
 
 The \textit{Exploit} is not ``try again.'' It is ``commit to a target whose gap can be closed with instruments of higher oracle rank.''
 
@@ -389,7 +389,7 @@ $$\text{Write}: \quad R_{t+1} = W(R_t, \delta_t) \quad \text{s.t.}\; \Omega(\del
 Doctests are the most compact, cheapest, and most semantically precise convergence signals available in the Rust ecosystem.
 
 %% ────────────────────────────────────────────────────────────────
-\section{Empirical Validation: The pictl Registry Published (April 2026)}
+\section{Empirical Validation: The wasm4pm Registry Published (April 2026)}
 
 The theory of the Chatman Equation and the Blue River Dam principle became concrete on April 17, 2026, when the \code{wasm4pm@26.4.18} npm package was successfully published. This section documents the empirical validation of the theoretical framework.
 
@@ -486,7 +486,7 @@ We have argued that the Chatman Equation $A = \mu(\mathcal{O}^*)$ demands tool s
 
 The Blue River Dam principle unifies these rankings: the strongest tool stack is the one that places the highest oracle-rank artifact furthest upstream and generates all downstream forms from it deterministically.
 
-The pictl$\to$bcinr 5~Whys chain demonstrates the Exploit theory in practice. The Explore phase surfaced the structural root cause (weak oracle + WASM-incompatible architecture). The Plan phase converted this into a rational press release revision. The Write phase is now executing against a target whose gap is measurable by Rank-1 mathematical theorems---doctests that encode universal quantification over the integer domain.
+The wasm4pm$\to$bcinr 5~Whys chain demonstrates the Exploit theory in practice. The Explore phase surfaced the structural root cause (weak oracle + WASM-incompatible architecture). The Plan phase converted this into a rational press release revision. The Write phase is now executing against a target whose gap is measurable by Rank-1 mathematical theorems---doctests that encode universal quantification over the integer domain.
 
 \begin{rulebox}
 The product is not the code. The product is the gap between the press release and reality.\\[4pt]

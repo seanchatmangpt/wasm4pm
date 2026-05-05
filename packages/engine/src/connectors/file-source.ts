@@ -37,7 +37,10 @@ class FileEventStream implements EventStream {
   private closed = false;
   private skippedLines = 0;
 
-  constructor(fileContent: string, private format: 'xes' | 'json' | 'ocel') {
+  constructor(
+    fileContent: string,
+    private format: 'xes' | 'json' | 'ocel'
+  ) {
     // For XES, keep as single block; for JSON/OCEL, split into objects
     if (format === 'xes') {
       this.lines = [fileContent];
@@ -170,11 +173,10 @@ export class FileSourceAdapter implements SourceAdapter {
 
       if (!stats.isFile()) {
         return error(
-          createError(
-            'SOURCE_INVALID',
-            `Not a file: ${this.config.filePath}`,
-            { path: this.config.filePath, isDirectory: stats.isDirectory() }
-          )
+          createError('SOURCE_INVALID', `Not a file: ${this.config.filePath}`, {
+            path: this.config.filePath,
+            isDirectory: stats.isDirectory(),
+          })
         );
       }
 
@@ -185,12 +187,7 @@ export class FileSourceAdapter implements SourceAdapter {
       await handle.close();
 
       if (bytesRead === 0) {
-        return error(
-          createError(
-            'SOURCE_INVALID',
-            `File is empty: ${this.config.filePath}`
-          )
-        );
+        return error(createError('SOURCE_INVALID', `File is empty: ${this.config.filePath}`));
       }
 
       const content = buffer.toString('utf-8', 0, bytesRead);
@@ -210,21 +207,17 @@ export class FileSourceAdapter implements SourceAdapter {
     } catch (e) {
       if ((e as any).code === 'ENOENT') {
         return error(
-          createError(
-            'SOURCE_NOT_FOUND',
-            `File not found: ${this.config.filePath}`,
-            { path: this.config.filePath }
-          )
+          createError('SOURCE_NOT_FOUND', `File not found: ${this.config.filePath}`, {
+            path: this.config.filePath,
+          })
         );
       }
 
       if ((e as any).code === 'EACCES') {
         return error(
-          createError(
-            'SOURCE_PERMISSION',
-            `Permission denied reading: ${this.config.filePath}`,
-            { path: this.config.filePath }
-          )
+          createError('SOURCE_PERMISSION', `Permission denied reading: ${this.config.filePath}`, {
+            path: this.config.filePath,
+          })
         );
       }
 
@@ -304,9 +297,7 @@ export class FileSourceAdapter implements SourceAdapter {
       );
     }
 
-    return err(
-      `Failed to open file after ${this.retry.maxAttempts} retries: ${lastError}`
-    );
+    return err(`Failed to open file after ${this.retry.maxAttempts} retries: ${lastError}`);
   }
 
   /**

@@ -22,9 +22,27 @@ describe('Agent 7: Drift Monitor', () => {
       const baseline: OcelEventLog = {
         version: '2.0',
         events: [
-          { id: '1', activity: 'a', timestamp: '2026-04-12T10:00:00Z', objects: ['t1'], attributes: {} },
-          { id: '2', activity: 'b', timestamp: '2026-04-12T10:00:01Z', objects: ['t1'], attributes: {} },
-          { id: '3', activity: 'c', timestamp: '2026-04-12T10:00:02Z', objects: ['t1'], attributes: {} },
+          {
+            id: '1',
+            activity: 'a',
+            timestamp: '2026-04-12T10:00:00Z',
+            objects: ['t1'],
+            attributes: {},
+          },
+          {
+            id: '2',
+            activity: 'b',
+            timestamp: '2026-04-12T10:00:01Z',
+            objects: ['t1'],
+            attributes: {},
+          },
+          {
+            id: '3',
+            activity: 'c',
+            timestamp: '2026-04-12T10:00:02Z',
+            objects: ['t1'],
+            attributes: {},
+          },
         ],
         objects: [{ id: 't1', type: 'tool_invocation', state: 'completed', attributes: {} }],
         metadata: {
@@ -38,9 +56,27 @@ describe('Agent 7: Drift Monitor', () => {
       const current: OcelEventLog = {
         version: '2.0',
         events: [
-          { id: '1', activity: 'a', timestamp: '2026-04-12T11:00:00Z', objects: ['t1'], attributes: {} },
-          { id: '2', activity: 'b', timestamp: '2026-04-12T11:00:01Z', objects: ['t1'], attributes: {} },
-          { id: '3', activity: 'd', timestamp: '2026-04-12T11:00:02Z', objects: ['t1'], attributes: {} },
+          {
+            id: '1',
+            activity: 'a',
+            timestamp: '2026-04-12T11:00:00Z',
+            objects: ['t1'],
+            attributes: {},
+          },
+          {
+            id: '2',
+            activity: 'b',
+            timestamp: '2026-04-12T11:00:01Z',
+            objects: ['t1'],
+            attributes: {},
+          },
+          {
+            id: '3',
+            activity: 'd',
+            timestamp: '2026-04-12T11:00:02Z',
+            objects: ['t1'],
+            attributes: {},
+          },
         ],
         objects: [{ id: 't1', type: 'tool_invocation', state: 'completed', attributes: {} }],
         metadata: {
@@ -62,8 +98,20 @@ describe('Agent 7: Drift Monitor', () => {
       const baseline: OcelEventLog = {
         version: '2.0',
         events: [
-          { id: '1', activity: 'a', timestamp: '2026-04-12T10:00:00Z', objects: ['t1'], attributes: { 'duration_ms': 10 } },
-          { id: '2', activity: 'b', timestamp: '2026-04-12T10:00:01Z', objects: ['t1'], attributes: { 'duration_ms': 10 } },
+          {
+            id: '1',
+            activity: 'a',
+            timestamp: '2026-04-12T10:00:00Z',
+            objects: ['t1'],
+            attributes: { duration_ms: 10 },
+          },
+          {
+            id: '2',
+            activity: 'b',
+            timestamp: '2026-04-12T10:00:01Z',
+            objects: ['t1'],
+            attributes: { duration_ms: 10 },
+          },
         ],
         objects: [{ id: 't1', type: 'tool_invocation', state: 'completed', attributes: {} }],
         metadata: {
@@ -77,8 +125,20 @@ describe('Agent 7: Drift Monitor', () => {
       const current: OcelEventLog = {
         version: '2.0',
         events: [
-          { id: '1', activity: 'a', timestamp: '2026-04-12T11:00:00Z', objects: ['t1'], attributes: { 'duration_ms': 500 } },
-          { id: '2', activity: 'b', timestamp: '2026-04-12T11:00:01Z', objects: ['t1'], attributes: { 'duration_ms': 500 } },
+          {
+            id: '1',
+            activity: 'a',
+            timestamp: '2026-04-12T11:00:00Z',
+            objects: ['t1'],
+            attributes: { duration_ms: 500 },
+          },
+          {
+            id: '2',
+            activity: 'b',
+            timestamp: '2026-04-12T11:00:01Z',
+            objects: ['t1'],
+            attributes: { duration_ms: 500 },
+          },
         ],
         objects: [{ id: 't1', type: 'tool_invocation', state: 'completed', attributes: {} }],
         metadata: {
@@ -100,7 +160,13 @@ describe('Agent 7: Drift Monitor', () => {
       const baseline: OcelEventLog = {
         version: '2.0',
         events: [
-          { id: '1', activity: 'a', timestamp: '2026-04-12T10:00:00Z', objects: ['t1'], attributes: { 'resource': 'cpu' } },
+          {
+            id: '1',
+            activity: 'a',
+            timestamp: '2026-04-12T10:00:00Z',
+            objects: ['t1'],
+            attributes: { resource: 'cpu' },
+          },
         ],
         objects: [{ id: 't1', type: 'tool_invocation', state: 'completed', attributes: {} }],
         metadata: {
@@ -114,7 +180,13 @@ describe('Agent 7: Drift Monitor', () => {
       const current: OcelEventLog = {
         version: '2.0',
         events: [
-          { id: '1', activity: 'a', timestamp: '2026-04-12T11:00:00Z', objects: ['t1'], attributes: { 'resource': 'gpu' } },
+          {
+            id: '1',
+            activity: 'a',
+            timestamp: '2026-04-12T11:00:00Z',
+            objects: ['t1'],
+            attributes: { resource: 'gpu' },
+          },
         ],
         objects: [{ id: 't1', type: 'tool_invocation', state: 'completed', attributes: {} }],
         metadata: {
@@ -137,9 +209,27 @@ describe('Agent 7: Drift Monitor', () => {
       const baseline: OcelEventLog = {
         version: '2.0',
         events: [
-          { id: '1', activity: 'a', timestamp: '2026-04-12T10:00:00Z', objects: ['t1'], attributes: {} },
-          { id: '2', activity: 'b', timestamp: '2026-04-12T10:00:01Z', objects: ['t1'], attributes: {} },
-          { id: '3', activity: 'c', timestamp: '2026-04-12T10:00:02Z', objects: ['t1'], attributes: {} },
+          {
+            id: '1',
+            activity: 'a',
+            timestamp: '2026-04-12T10:00:00Z',
+            objects: ['t1'],
+            attributes: {},
+          },
+          {
+            id: '2',
+            activity: 'b',
+            timestamp: '2026-04-12T10:00:01Z',
+            objects: ['t1'],
+            attributes: {},
+          },
+          {
+            id: '3',
+            activity: 'c',
+            timestamp: '2026-04-12T10:00:02Z',
+            objects: ['t1'],
+            attributes: {},
+          },
         ],
         objects: [{ id: 't1', type: 'tool_invocation', state: 'completed', attributes: {} }],
         metadata: {
@@ -153,10 +243,34 @@ describe('Agent 7: Drift Monitor', () => {
       const current: OcelEventLog = {
         version: '2.0',
         events: [
-          { id: '1', activity: 'a', timestamp: '2026-04-12T11:00:00Z', objects: ['t1'], attributes: {} },
-          { id: '2', activity: 'b', timestamp: '2026-04-12T11:00:01Z', objects: ['t1'], attributes: {} },
-          { id: '3', activity: 'c', timestamp: '2026-04-12T11:00:02Z', objects: ['t1'], attributes: {} },
-          { id: '4', activity: 'd', timestamp: '2026-04-12T11:00:03Z', objects: ['t1'], attributes: {} },
+          {
+            id: '1',
+            activity: 'a',
+            timestamp: '2026-04-12T11:00:00Z',
+            objects: ['t1'],
+            attributes: {},
+          },
+          {
+            id: '2',
+            activity: 'b',
+            timestamp: '2026-04-12T11:00:01Z',
+            objects: ['t1'],
+            attributes: {},
+          },
+          {
+            id: '3',
+            activity: 'c',
+            timestamp: '2026-04-12T11:00:02Z',
+            objects: ['t1'],
+            attributes: {},
+          },
+          {
+            id: '4',
+            activity: 'd',
+            timestamp: '2026-04-12T11:00:03Z',
+            objects: ['t1'],
+            attributes: {},
+          },
         ],
         objects: [{ id: 't1', type: 'tool_invocation', state: 'completed', attributes: {} }],
         metadata: {
@@ -176,7 +290,13 @@ describe('Agent 7: Drift Monitor', () => {
       const baseline: OcelEventLog = {
         version: '2.0',
         events: [
-          { id: '1', activity: 'a', timestamp: '2026-04-12T10:00:00Z', objects: ['t1'], attributes: {} },
+          {
+            id: '1',
+            activity: 'a',
+            timestamp: '2026-04-12T10:00:00Z',
+            objects: ['t1'],
+            attributes: {},
+          },
         ],
         objects: [{ id: 't1', type: 'tool_invocation', state: 'completed', attributes: {} }],
         metadata: {
@@ -190,9 +310,27 @@ describe('Agent 7: Drift Monitor', () => {
       const current: OcelEventLog = {
         version: '2.0',
         events: [
-          { id: '1', activity: 'x', timestamp: '2026-04-12T11:00:00Z', objects: ['t1'], attributes: {} },
-          { id: '2', activity: 'y', timestamp: '2026-04-12T11:00:01Z', objects: ['t1'], attributes: {} },
-          { id: '3', activity: 'z', timestamp: '2026-04-12T11:00:02Z', objects: ['t1'], attributes: {} },
+          {
+            id: '1',
+            activity: 'x',
+            timestamp: '2026-04-12T11:00:00Z',
+            objects: ['t1'],
+            attributes: {},
+          },
+          {
+            id: '2',
+            activity: 'y',
+            timestamp: '2026-04-12T11:00:01Z',
+            objects: ['t1'],
+            attributes: {},
+          },
+          {
+            id: '3',
+            activity: 'z',
+            timestamp: '2026-04-12T11:00:02Z',
+            objects: ['t1'],
+            attributes: {},
+          },
         ],
         objects: [{ id: 't1', type: 'tool_invocation', state: 'completed', attributes: {} }],
         metadata: {
@@ -214,8 +352,20 @@ describe('Agent 7: Drift Monitor', () => {
       const baselineLog: OcelEventLog = {
         version: '2.0',
         events: [
-          { id: '1', activity: 'a', timestamp: '2026-04-12T10:00:00Z', objects: ['t1'], attributes: {} },
-          { id: '2', activity: 'b', timestamp: '2026-04-12T10:00:01Z', objects: ['t1'], attributes: {} },
+          {
+            id: '1',
+            activity: 'a',
+            timestamp: '2026-04-12T10:00:00Z',
+            objects: ['t1'],
+            attributes: {},
+          },
+          {
+            id: '2',
+            activity: 'b',
+            timestamp: '2026-04-12T10:00:01Z',
+            objects: ['t1'],
+            attributes: {},
+          },
         ],
         objects: [{ id: 't1', type: 'tool_invocation', state: 'completed', attributes: {} }],
         metadata: {
@@ -249,7 +399,13 @@ describe('Agent 7: Drift Monitor', () => {
       const baseline: OcelEventLog = {
         version: '2.0',
         events: [
-          { id: '1', activity: 'a', timestamp: '2026-04-12T10:00:00Z', objects: ['t1'], attributes: {} },
+          {
+            id: '1',
+            activity: 'a',
+            timestamp: '2026-04-12T10:00:00Z',
+            objects: ['t1'],
+            attributes: {},
+          },
         ],
         objects: [{ id: 't1', type: 'tool_invocation', state: 'completed', attributes: {} }],
         metadata: {
@@ -262,8 +418,20 @@ describe('Agent 7: Drift Monitor', () => {
       const current: OcelEventLog = {
         version: '2.0',
         events: [
-          { id: '1', activity: 'a', timestamp: '2026-04-12T11:00:00Z', objects: ['t1'], attributes: {} },
-          { id: '2', activity: 'b', timestamp: '2026-04-12T11:00:01Z', objects: ['t1'], attributes: {} },
+          {
+            id: '1',
+            activity: 'a',
+            timestamp: '2026-04-12T11:00:00Z',
+            objects: ['t1'],
+            attributes: {},
+          },
+          {
+            id: '2',
+            activity: 'b',
+            timestamp: '2026-04-12T11:00:01Z',
+            objects: ['t1'],
+            attributes: {},
+          },
         ],
         objects: [{ id: 't1', type: 'tool_invocation', state: 'completed', attributes: {} }],
         metadata: {

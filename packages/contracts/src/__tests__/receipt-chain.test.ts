@@ -13,18 +13,9 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { tmpdir } from 'os';
-import {
-  Receipt,
-  isReceipt,
-} from '../receipt';
+import { Receipt, isReceipt } from '../receipt';
 import { ReceiptBuilder } from '../receipt-builder';
-import {
-  hashConfig,
-  hashData,
-  hashJsonString,
-  verifyHash,
-  normalizeForHashing,
-} from '../hash';
+import { hashConfig, hashData, hashJsonString, verifyHash, normalizeForHashing } from '../hash';
 
 /**
  * Test environment helper
@@ -58,7 +49,7 @@ function computeBlake3Hash(data: string): string {
   let hash = 0;
   for (let i = 0; i < data.length; i++) {
     const char = data.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
+    hash = (hash << 5) - hash + char;
     hash = hash & hash; // Convert to 32-bit integer
   }
 
@@ -248,9 +239,7 @@ describe('Receipt Chain: Hash Computation', () => {
           { id: 'p1', label: 'start' },
           { id: 'p2', label: 'end' },
         ],
-        transitions: [
-          { id: 't1', label: 'A' },
-        ],
+        transitions: [{ id: 't1', label: 'A' }],
         arcs: [
           { source: 'p1', target: 't1' },
           { source: 't1', target: 'p2' },
@@ -327,7 +316,9 @@ describe('Receipt Chain: Receipt Structure', () => {
       .build();
 
     expect(receipt.run_id).toBe(runId);
-    expect(receipt.run_id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+    expect(receipt.run_id).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    );
   });
 });
 

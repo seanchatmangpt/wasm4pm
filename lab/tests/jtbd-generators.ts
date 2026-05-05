@@ -393,6 +393,36 @@ export function generateSeasonalLog(config: {
 export type EventLog = any[];
 
 /**
+ * Convert flat event array to WASM EventLog JSON format.
+ *
+ * WASM expects: { attributes: {}, traces: [{ attributes: { "concept:name": {tag,value} }, events: [...] }] }
+ * AttributeValue uses adjacently-tagged enum: { tag: "String"|"Int"|"Float"|"Date"|"Boolean", value: ... }
+ */
+export function toEventLogJson(events: EventLog): string {
+  const cases = new Map<string, any[]>();
+  for (const event of events) {
+    const caseId = event.case_id as string;
+    if (!cases.has(caseId)) cases.set(caseId, []);
+    cases.get(caseId)!.push(event);
+  }
+
+  const traces = Array.from(cases.entries()).map(([caseId, caseEvents]) => ({
+    attributes: { 'concept:name': { tag: 'String', value: caseId } },
+    events: caseEvents.map((e: any) => {
+      const attrs: Record<string, unknown> = {
+        'concept:name': { tag: 'String', value: String(e.activity ?? '') },
+        'time:timestamp': { tag: 'Date', value: String(e.timestamp ?? new Date().toISOString()) },
+      };
+      if (e['lifecycle:transition']) attrs['lifecycle:transition'] = { tag: 'String', value: String(e['lifecycle:transition']) };
+      if (e.duration_ms !== undefined) attrs['duration_ms'] = { tag: 'Int', value: Math.floor(Number(e.duration_ms)) };
+      return { attributes: attrs };
+    }),
+  }));
+
+  return JSON.stringify({ attributes: {}, traces });
+}
+
+/**
  * Count deviations manually from exported log.
  *
  * This is a VERIFICATION function — it proves the conformance result

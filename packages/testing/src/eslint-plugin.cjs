@@ -1,5 +1,5 @@
 /**
- * ESLint Plugin: pictl-testing
+ * ESLint Plugin: wasm4pm-testing
  * Exports custom rules for Gemba enforcement and test quality gates
  */
 

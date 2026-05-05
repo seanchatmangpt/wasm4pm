@@ -4,7 +4,7 @@
  * Singleton pattern for efficient module reuse across multiple engine.run() calls
  * Handles panic hooks, memory validation, and runtime environment detection
  */
-import { ObservabilityLayer } from '@pictl/observability';
+import { ObservabilityLayer } from '@wasm4pm/observability';
 /**
  * WASM initialization error codes
  */
@@ -140,9 +140,7 @@ export class WasmLoader {
         const memory = this.module.memory;
         const memoryPages = memory.buffer.byteLength / (64 * 1024); // 64KB pages
         const memoryMaxPages = memory.maximum ?? undefined;
-        const memoryUsagePercent = memoryMaxPages
-            ? (memoryPages / memoryMaxPages) * 100
-            : 0;
+        const memoryUsagePercent = memoryMaxPages ? (memoryPages / memoryMaxPages) * 100 : 0;
         return {
             initialized: this.initialized,
             moduleVersion: this.module.version?.(),
@@ -234,7 +232,7 @@ export class WasmLoader {
         // Dynamically import based on runtime environment
         let wasmModule;
         try {
-            // Import from the built pictl WASM package
+            // Import from the built wasm4pm WASM package
             let modulePath = this.config.modulePath;
             if (!modulePath) {
                 // Compute workspace root from import.meta.url
@@ -249,7 +247,7 @@ export class WasmLoader {
                     throw new Error('Cannot determine workspace root: "packages/engine" not found in path');
                 }
                 const workspaceRoot = currentPath.substring(0, engineIndex);
-                modulePath = workspaceRoot + 'wasm4pm/pkg/pictl.js';
+                modulePath = workspaceRoot + 'wasm4pm/pkg/wasm4pm.js';
             }
             // Use dynamic import for flexibility
             wasmModule = await import(modulePath);

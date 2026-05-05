@@ -262,7 +262,7 @@ export OBSERVABILITY_OTEL_ENABLED=false
 ### Staging/Production
 ```bash
 # Log to file for archival
-export OBSERVABILITY_JSON_DEST=/var/log/pictl/events.jsonl
+export OBSERVABILITY_JSON_DEST=/var/log/wasm4pm/events.jsonl
 
 # Send to OTEL collector
 export OBSERVABILITY_OTEL_ENDPOINT=http://otel-collector:4317

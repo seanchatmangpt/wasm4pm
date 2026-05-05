@@ -3,7 +3,7 @@
  * Engine status tracking and reporting
  * Maintains accurate progress, timing, and error information
  */
-import { EngineState, EngineError, EngineStatus, ExecutionReceipt, ExecutionPlan } from '@pictl/contracts';
+import { EngineState, EngineError, EngineStatus, ExecutionReceipt, ExecutionPlan } from '@wasm4pm/contracts';
 /**
  * Tracks engine execution progress and status
  */

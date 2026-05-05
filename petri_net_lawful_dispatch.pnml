@@ -2,7 +2,7 @@
 <pnml xmlns="http://www.pnml.org/version-1-0/pnml">
   <net id="lawful_dispatch_system" type="http://www.pnml.org/version-1-0/pnmlcoremodel">
     <name>
-      <text>Lawful Dispatch Petri Net (pictl AutoProcess)</text>
+      <text>Lawful Dispatch Petri Net (wasm4pm AutoProcess)</text>
     </name>
 
     <!-- PLACES -->

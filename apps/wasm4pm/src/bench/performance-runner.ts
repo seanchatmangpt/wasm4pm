@@ -127,11 +127,26 @@ const BYTES_PER_EVENT_ESTIMATE = 256; // realistic XES encoding estimate
 // ─────────────────────────────────────────────────────────────────────────────
 
 const ACTIVITIES = [
-  'Register', 'Validate', 'Check_Completeness', 'Check_Docs', 'Assess_Risk',
-  'Calculate_Fee', 'Send_Invoice', 'Wait_Payment', 'Confirm_Payment',
-  'Approve_Basic', 'Approve_Senior', 'Approve_Director', 'Notify_Applicant',
-  'Create_Record', 'Archive', 'Close', 'Reject', 'Escalate',
-  'Return_Docs', 'Reopen',
+  'Register',
+  'Validate',
+  'Check_Completeness',
+  'Check_Docs',
+  'Assess_Risk',
+  'Calculate_Fee',
+  'Send_Invoice',
+  'Wait_Payment',
+  'Confirm_Payment',
+  'Approve_Basic',
+  'Approve_Senior',
+  'Approve_Director',
+  'Notify_Applicant',
+  'Create_Record',
+  'Archive',
+  'Close',
+  'Reject',
+  'Escalate',
+  'Return_Docs',
+  'Reopen',
 ];
 
 /**
@@ -140,12 +155,14 @@ const ACTIVITIES = [
 class Lcg {
   private state: bigint;
 
-  constructor(seed: bigint = 0xDEAD_BEEF_CAFE_BABEn) {
+  constructor(seed: bigint = 0xdead_beef_cafe_baben) {
     this.state = seed;
   }
 
   next(): bigint {
-    this.state = (this.state * 6_364_136_223_846_793_005n + 1_442_695_040_888_963_407n) & 0xFFFF_FFFF_FFFF_FFFFn;
+    this.state =
+      (this.state * 6_364_136_223_846_793_005n + 1_442_695_040_888_963_407n) &
+      0xffff_ffff_ffff_ffffn;
     return this.state;
   }
 
@@ -154,7 +171,7 @@ class Lcg {
   }
 
   nextF64Unit(): number {
-    return Number(this.next() >> 11n) / (2 ** 53);
+    return Number(this.next() >> 11n) / 2 ** 53;
   }
 }
 
@@ -166,7 +183,7 @@ function buildSyntheticXes(
   numCases: number,
   avgEventsPerCase: number,
   numActivities: number,
-  noiseFactor: number,
+  noiseFactor: number
 ): { xes: string; totalEvents: number } {
   const acts = ACTIVITIES.slice(0, numActivities);
   const rng = new Lcg();
@@ -187,24 +204,26 @@ function buildSyntheticXes(
       const min = (e % 60).toString().padStart(2, '0');
       events.push(
         `    <event>\n` +
-        `      <string key="concept:name" value="${acts[actIdx]}"/>\n` +
-        `      <date key="time:timestamp" value="2024-01-${day}T${hour}:${min}:00+00:00"/>\n` +
-        `    </event>`,
+          `      <string key="concept:name" value="${acts[actIdx]}"/>\n` +
+          `      <date key="time:timestamp" value="2024-01-${day}T${hour}:${min}:00+00:00"/>\n` +
+          `    </event>`
       );
     }
 
     traces.push(
       `  <trace>\n` +
-      `    <string key="concept:name" value="case_${c}"/>\n` +
-      events.join('\n') + '\n' +
-      `  </trace>`,
+        `    <string key="concept:name" value="case_${c}"/>\n` +
+        events.join('\n') +
+        '\n' +
+        `  </trace>`
     );
   }
 
   const xes =
     `<?xml version="1.0" encoding="utf-8"?>\n` +
     `<log xes.version="2.0" xes.features="nested-attributes" openxes.version="1.0RC7" xmlns="http://www.xes-standard.org/">\n` +
-    traces.join('\n') + '\n' +
+    traces.join('\n') +
+    '\n' +
     `</log>`;
 
   return { xes, totalEvents };
@@ -249,7 +268,7 @@ function sampleThermalMacOs(): { cpu_temp_c: number | null; gpu_temp_c: number |
   try {
     const raw = execSync(
       'sudo powermetrics --samplers smc --sample-count 1 --sample-rate 1000 2>/dev/null',
-      { timeout: 3000, encoding: 'utf-8' },
+      { timeout: 3000, encoding: 'utf-8' }
     );
     const cpuMatch = raw.match(/CPU die temperature:\s+([\d.]+)/);
     const gpuMatch = raw.match(/GPU die temperature:\s+([\d.]+)/);
@@ -310,27 +329,55 @@ interface AlgorithmDef {
 }
 
 const ALGORITHM_DEFS: AlgorithmDef[] = [
-  { id: 'dfg',                 invoke: (w, h, k) => w['discover_dfg'](h, k),                                   maxCases: Infinity },
-  { id: 'skeleton',            invoke: (w, h, k) => w['extract_process_skeleton'](h, k),                       maxCases: Infinity },
-  { id: 'alpha_plus_plus',     invoke: (w, h, k) => w['discover_alpha_plus_plus'](h, k, 0.0),                 maxCases: 10_000 },
-  { id: 'heuristic_miner',     invoke: (w, h, k) => w['discover_heuristic_miner'](h, k, 0.5),                 maxCases: 10_000 },
-  { id: 'inductive_miner',     invoke: (w, h, k) => w['discover_inductive_miner'](h, k),                      maxCases: 10_000 },
-  { id: 'hill_climbing',       invoke: (w, h, k) => w['discover_hill_climbing'](h, k),                        maxCases: 1_000 },
-  { id: 'declare',             invoke: (w, h, k) => w['discover_declare'](h, k),                              maxCases: 10_000 },
-  { id: 'simulated_annealing', invoke: (w, h, k) => w['discover_simulated_annealing'](h, k, 1.0, 0.95),      maxCases: 1_000 },
-  { id: 'a_star',              invoke: (w, h, k) => w['discover_astar'](h, k, 500),                           maxCases: 1_000 },
-  { id: 'ant_colony',          invoke: (w, h, k) => w['discover_ant_colony'](h, k, 20, 20),                   maxCases: 1_000 },
-  { id: 'pso',                 invoke: (w, h, k) => w['discover_pso_algorithm'](h, k, 20, 20),                maxCases: 1_000 },
-  { id: 'genetic_algorithm',   invoke: (w, h, k) => w['discover_genetic_algorithm'](h, k, 20, 20),            maxCases: 1_000 },
-  { id: 'ilp',                 invoke: (w, h, k) => w['discover_ilp_petri_net'](h, k),                        maxCases: 1_000 },
-  { id: 'simd_dfg',            invoke: (w, h, k) => w['discover_dfg_simd'](h, k, 0.0),                        maxCases: Infinity },
-  { id: 'hierarchical_dfg',    invoke: (w, h, k) => w['discover_dfg_hierarchical'](h, k, 3),                  maxCases: Infinity },
-  { id: 'ml_classify',         invoke: (w, h, k) => w['ml_classify'](h, k, 'knn', 3),                         maxCases: 5_000 },
-  { id: 'ml_cluster',          invoke: (w, h, k) => w['ml_cluster'](h, k, 'kmeans', 5),                       maxCases: 5_000 },
-  { id: 'ml_forecast',         invoke: (w, h, k) => w['ml_forecast'](h, k, 10),                               maxCases: 5_000 },
-  { id: 'ml_anomaly',          invoke: (w, h, k) => w['ml_anomaly'](h, k, 2.0),                               maxCases: 5_000 },
-  { id: 'ml_regress',          invoke: (w, h, k) => w['ml_regress'](h, k, 'linear'),                          maxCases: 5_000 },
-  { id: 'ml_pca',              invoke: (w, h, k) => w['ml_pca'](h, k, 2),                                     maxCases: 5_000 },
+  { id: 'dfg', invoke: (w, h, k) => w['discover_dfg'](h, k), maxCases: Infinity },
+  { id: 'skeleton', invoke: (w, h, k) => w['extract_process_skeleton'](h, k), maxCases: Infinity },
+  {
+    id: 'alpha_plus_plus',
+    invoke: (w, h, k) => w['discover_alpha_plus_plus'](h, k, 0.0),
+    maxCases: 10_000,
+  },
+  {
+    id: 'heuristic_miner',
+    invoke: (w, h, k) => w['discover_heuristic_miner'](h, k, 0.5),
+    maxCases: 10_000,
+  },
+  {
+    id: 'inductive_miner',
+    invoke: (w, h, k) => w['discover_inductive_miner'](h, k),
+    maxCases: 10_000,
+  },
+  { id: 'hill_climbing', invoke: (w, h, k) => w['discover_hill_climbing'](h, k), maxCases: 1_000 },
+  { id: 'declare', invoke: (w, h, k) => w['discover_declare'](h, k), maxCases: 10_000 },
+  {
+    id: 'simulated_annealing',
+    invoke: (w, h, k) => w['discover_simulated_annealing'](h, k, 1.0, 0.95),
+    maxCases: 1_000,
+  },
+  { id: 'a_star', invoke: (w, h, k) => w['discover_astar'](h, k, 500), maxCases: 1_000 },
+  {
+    id: 'ant_colony',
+    invoke: (w, h, k) => w['discover_ant_colony'](h, k, 20, 20),
+    maxCases: 1_000,
+  },
+  { id: 'pso', invoke: (w, h, k) => w['discover_pso_algorithm'](h, k, 20, 20), maxCases: 1_000 },
+  {
+    id: 'genetic_algorithm',
+    invoke: (w, h, k) => w['discover_genetic_algorithm'](h, k, 20, 20),
+    maxCases: 1_000,
+  },
+  { id: 'ilp', invoke: (w, h, k) => w['discover_ilp_petri_net'](h, k), maxCases: 1_000 },
+  { id: 'simd_dfg', invoke: (w, h, k) => w['discover_dfg_simd'](h, k, 0.0), maxCases: Infinity },
+  {
+    id: 'hierarchical_dfg',
+    invoke: (w, h, k) => w['discover_dfg_hierarchical'](h, k, 3),
+    maxCases: Infinity,
+  },
+  { id: 'ml_classify', invoke: (w, h, k) => w['ml_classify'](h, k, 'knn', 3), maxCases: 5_000 },
+  { id: 'ml_cluster', invoke: (w, h, k) => w['ml_cluster'](h, k, 'kmeans', 5), maxCases: 5_000 },
+  { id: 'ml_forecast', invoke: (w, h, k) => w['ml_forecast'](h, k, 10), maxCases: 5_000 },
+  { id: 'ml_anomaly', invoke: (w, h, k) => w['ml_anomaly'](h, k, 2.0), maxCases: 5_000 },
+  { id: 'ml_regress', invoke: (w, h, k) => w['ml_regress'](h, k, 'linear'), maxCases: 5_000 },
+  { id: 'ml_pca', invoke: (w, h, k) => w['ml_pca'](h, k, 2), maxCases: 5_000 },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -353,7 +400,7 @@ const DEFAULT_OPTIONS: BenchOptions = {
   numCases: 1000,
   avgEventsPerCase: 15,
   numActivities: 12,
-  noiseFactor: 0.10,
+  noiseFactor: 0.1,
   activityKey: 'concept:name',
 };
 
@@ -366,7 +413,7 @@ async function benchmarkAlgorithm(
   def: AlgorithmDef,
   xes: string,
   totalEvents: number,
-  opts: BenchOptions,
+  opts: BenchOptions
 ): Promise<AlgorithmBenchResult | null> {
   const { activityKey, samples, warmup } = opts;
 
@@ -392,7 +439,11 @@ async function benchmarkAlgorithm(
   // Warmup
   for (let i = 0; i < warmup; i++) {
     const h = wasm['load_eventlog_from_xes'](xes) as string;
-    try { def.invoke(wasm, h, activityKey); } catch { /* ignore warmup errors */ }
+    try {
+      def.invoke(wasm, h, activityKey);
+    } catch {
+      /* ignore warmup errors */
+    }
     if (typeof wasm['delete_object'] === 'function') wasm['delete_object'](h);
   }
 
@@ -442,7 +493,7 @@ async function benchmarkAlgorithm(
 
   // Memory bandwidth proxy
   const bytesPerInvocation = totalEvents * BYTES_PER_EVENT_ESTIMATE;
-  const bandwidthGbps = (bytesPerInvocation / (stats.mean_ns / 1e9)) / 1e9;
+  const bandwidthGbps = bytesPerInvocation / (stats.mean_ns / 1e9) / 1e9;
 
   // Peak heap sampled after the run
   const heapUsed = process.memoryUsage().heapUsed;
@@ -461,7 +512,8 @@ async function benchmarkAlgorithm(
     meets_latency_target: perStateMeanNs <= TARGET_MAX_PER_STATE_NS,
     meets_throughput_target: throughput >= TARGET_MIN_THROUGHPUT,
     meets_memory_target: peakHeapMb < TARGET_MAX_HEAP_MB,
-    margin_latency_pct: ((TARGET_MAX_PER_STATE_NS - perStateMeanNs) / TARGET_MAX_PER_STATE_NS) * 100,
+    margin_latency_pct:
+      ((TARGET_MAX_PER_STATE_NS - perStateMeanNs) / TARGET_MAX_PER_STATE_NS) * 100,
     margin_throughput_pct: ((throughput - TARGET_MIN_THROUGHPUT) / TARGET_MIN_THROUGHPUT) * 100,
   };
 }
@@ -478,23 +530,31 @@ function formatHumanReport(report: PerformanceReport): string {
   const DIM = '\x1b[2m';
   const RESET = '\x1b[0m';
 
-  const pass = (ok: boolean): string => ok ? `${GREEN}PASS${RESET}` : `${RED}FAIL${RESET}`;
+  const pass = (ok: boolean): string => (ok ? `${GREEN}PASS${RESET}` : `${RED}FAIL${RESET}`);
   const fmt = (n: number, decimals = 1): string => n.toFixed(decimals);
 
   lines.push('');
-  lines.push(`${BOLD}wasm4pm Performance Benchmark Report${RESET}  ${DIM}${report.generated_at}${RESET}`);
+  lines.push(
+    `${BOLD}wasm4pm Performance Benchmark Report${RESET}  ${DIM}${report.generated_at}${RESET}`
+  );
   lines.push(`Platform: ${report.platform}  |  Node: ${report.node_version}`);
   lines.push('');
   lines.push(`${BOLD}Targets:${RESET}`);
   lines.push(`  Latency per state : ≤${report.targets.max_per_state_ns} ns`);
-  lines.push(`  Throughput        : ≥${(report.targets.min_throughput_states_per_sec / 1000).toFixed(0)}K states/sec`);
+  lines.push(
+    `  Throughput        : ≥${(report.targets.min_throughput_states_per_sec / 1000).toFixed(0)}K states/sec`
+  );
   lines.push(`  Peak heap         : <${report.targets.max_peak_heap_mb} MB`);
   lines.push(`  Sustained temp    : <${report.targets.max_sustained_temp_c}°C`);
   lines.push('');
 
   lines.push(`${BOLD}Thermal Profile:${RESET}  [${report.thermal.source}]`);
-  lines.push(`  CPU: ${report.thermal.cpu_temp_c != null ? fmt(report.thermal.cpu_temp_c) + '°C' : 'N/A'}`);
-  lines.push(`  GPU: ${report.thermal.gpu_temp_c != null ? fmt(report.thermal.gpu_temp_c) + '°C' : 'N/A'}`);
+  lines.push(
+    `  CPU: ${report.thermal.cpu_temp_c != null ? fmt(report.thermal.cpu_temp_c) + '°C' : 'N/A'}`
+  );
+  lines.push(
+    `  GPU: ${report.thermal.gpu_temp_c != null ? fmt(report.thermal.gpu_temp_c) + '°C' : 'N/A'}`
+  );
   lines.push(`  Note: ${report.thermal.note}`);
   lines.push('');
   lines.push(`${BOLD}GPU Utilization:${RESET}  [${report.gpu.source}]`);
@@ -504,27 +564,30 @@ function formatHumanReport(report: PerformanceReport): string {
   lines.push(`${BOLD}Algorithm Results:${RESET}`);
   lines.push(
     '  Algorithm'.padEnd(26) +
-    'Mean(ns/st)'.padStart(12) +
-    'p99(ns/st)'.padStart(12) +
-    'Throughput(K)'.padStart(15) +
-    'Heap(MB)'.padStart(10) +
-    'BW(GB/s)'.padStart(10) +
-    'Lat'.padStart(6) +
-    'Tput'.padStart(6),
+      'Mean(ns/st)'.padStart(12) +
+      'p99(ns/st)'.padStart(12) +
+      'Throughput(K)'.padStart(15) +
+      'Heap(MB)'.padStart(10) +
+      'BW(GB/s)'.padStart(10) +
+      'Lat'.padStart(6) +
+      'Tput'.padStart(6)
   );
   lines.push('  ' + '─'.repeat(97));
 
   for (const r of report.algorithms) {
     const perStateP99 = r.latency.p99_ns / r.total_events;
     lines.push(
-      '  ' + r.algorithm.padEnd(24) +
-      fmt(r.per_state_mean_ns, 2).padStart(12) +
-      fmt(perStateP99, 2).padStart(12) +
-      fmt(r.throughput_states_per_sec / 1000, 1).padStart(15) +
-      fmt(r.peak_heap_mb, 1).padStart(10) +
-      fmt(r.memory_bandwidth_gbps, 2).padStart(10) +
-      '  ' + pass(r.meets_latency_target) +
-      ' ' + pass(r.meets_throughput_target),
+      '  ' +
+        r.algorithm.padEnd(24) +
+        fmt(r.per_state_mean_ns, 2).padStart(12) +
+        fmt(perStateP99, 2).padStart(12) +
+        fmt(r.throughput_states_per_sec / 1000, 1).padStart(15) +
+        fmt(r.peak_heap_mb, 1).padStart(10) +
+        fmt(r.memory_bandwidth_gbps, 2).padStart(10) +
+        '  ' +
+        pass(r.meets_latency_target) +
+        ' ' +
+        pass(r.meets_throughput_target)
     );
   }
   lines.push('');
@@ -558,10 +621,7 @@ async function saveReport(report: PerformanceReport, overridePath?: string): Pro
   if (overridePath) {
     outPath = overridePath;
   } else {
-    const ts = new Date()
-      .toISOString()
-      .replace(/[-:]/g, '')
-      .replace(/\..+/, '');
+    const ts = new Date().toISOString().replace(/[-:]/g, '').replace(/\..+/, '');
     outPath = path.join(dir, `performance-${ts}.json`);
   }
 
@@ -599,7 +659,9 @@ export async function runBenchmark(options: RunBenchmarkOptions = {}): Promise<P
   const format = options.format ?? 'human';
 
   if (format === 'human') {
-    process.stdout.write(`wpm performance benchmark — ${opts.samples} samples, ${opts.numCases} cases\n`);
+    process.stdout.write(
+      `wpm performance benchmark — ${opts.samples} samples, ${opts.numCases} cases\n`
+    );
     process.stdout.write('Loading WASM kernel...\n');
   }
 
@@ -609,28 +671,34 @@ export async function runBenchmark(options: RunBenchmarkOptions = {}): Promise<P
 
   if (format === 'human') {
     process.stdout.write(
-      `Generating synthetic XES log (${opts.numCases} cases, ~${opts.avgEventsPerCase} avg events/case)...\n`,
+      `Generating synthetic XES log (${opts.numCases} cases, ~${opts.avgEventsPerCase} avg events/case)...\n`
     );
   }
 
   const { xes, totalEvents } = buildSyntheticXes(
-    opts.numCases, opts.avgEventsPerCase, opts.numActivities, opts.noiseFactor,
+    opts.numCases,
+    opts.avgEventsPerCase,
+    opts.numActivities,
+    opts.noiseFactor
   );
 
   if (format === 'human') process.stdout.write('Sampling thermal baseline...\n');
   const thermal = collectThermal();
   const gpu = collectGpu();
 
-  const defsToRun = options.algorithms && options.algorithms.length > 0
-    ? ALGORITHM_DEFS.filter(d => (options.algorithms as string[]).includes(d.id))
-    : ALGORITHM_DEFS;
+  const defsToRun =
+    options.algorithms && options.algorithms.length > 0
+      ? ALGORITHM_DEFS.filter((d) => (options.algorithms as string[]).includes(d.id))
+      : ALGORITHM_DEFS;
 
   const results: AlgorithmBenchResult[] = [];
 
   for (const def of defsToRun) {
     if (opts.numCases > def.maxCases) {
       if (format === 'human') {
-        process.stdout.write(`  Skipping ${def.id} (log ${opts.numCases} cases > limit ${def.maxCases})\n`);
+        process.stdout.write(
+          `  Skipping ${def.id} (log ${opts.numCases} cases > limit ${def.maxCases})\n`
+        );
       }
       continue;
     }
@@ -649,7 +717,7 @@ export async function runBenchmark(options: RunBenchmarkOptions = {}): Promise<P
       const ok = result.meets_latency_target && result.meets_throughput_target;
       process.stdout.write(
         ` ${ok ? 'ok' : 'FAIL'}  ${result.per_state_mean_ns.toFixed(2)} ns/state  ` +
-        `${(result.throughput_states_per_sec / 1000).toFixed(1)}K/s\n`,
+          `${(result.throughput_states_per_sec / 1000).toFixed(1)}K/s\n`
       );
     }
   }
@@ -683,10 +751,14 @@ export async function runBenchmark(options: RunBenchmarkOptions = {}): Promise<P
     return emptyReport;
   }
 
-  const fastest = results.reduce((a, b) => a.per_state_mean_ns < b.per_state_mean_ns ? a : b);
-  const slowest = results.reduce((a, b) => a.per_state_mean_ns > b.per_state_mean_ns ? a : b);
-  const bestTput = results.reduce((a, b) => a.throughput_states_per_sec > b.throughput_states_per_sec ? a : b);
-  const worstTput = results.reduce((a, b) => a.throughput_states_per_sec < b.throughput_states_per_sec ? a : b);
+  const fastest = results.reduce((a, b) => (a.per_state_mean_ns < b.per_state_mean_ns ? a : b));
+  const slowest = results.reduce((a, b) => (a.per_state_mean_ns > b.per_state_mean_ns ? a : b));
+  const bestTput = results.reduce((a, b) =>
+    a.throughput_states_per_sec > b.throughput_states_per_sec ? a : b
+  );
+  const worstTput = results.reduce((a, b) =>
+    a.throughput_states_per_sec < b.throughput_states_per_sec ? a : b
+  );
 
   const report: PerformanceReport = {
     version: 1,
@@ -703,9 +775,9 @@ export async function runBenchmark(options: RunBenchmarkOptions = {}): Promise<P
     gpu,
     algorithms: results,
     summary: {
-      all_latency_targets_met: results.every(r => r.meets_latency_target),
-      all_throughput_targets_met: results.every(r => r.meets_throughput_target),
-      all_memory_targets_met: results.every(r => r.meets_memory_target),
+      all_latency_targets_met: results.every((r) => r.meets_latency_target),
+      all_throughput_targets_met: results.every((r) => r.meets_throughput_target),
+      all_memory_targets_met: results.every((r) => r.meets_memory_target),
       fastest_algorithm: fastest.algorithm,
       slowest_algorithm: slowest.algorithm,
       best_throughput_algorithm: bestTput.algorithm,
@@ -753,8 +825,7 @@ function parseArgs(argv: string[]): RunBenchmarkOptions {
 // Direct invocation guard
 const scriptName = process.argv[1] ?? '';
 const isMain =
-  scriptName.endsWith('performance-runner.js') ||
-  scriptName.endsWith('performance-runner.ts');
+  scriptName.endsWith('performance-runner.js') || scriptName.endsWith('performance-runner.ts');
 
 if (isMain) {
   const cliOpts = parseArgs(process.argv.slice(2));
@@ -773,7 +844,7 @@ if (isMain) {
     })
     .catch((err: unknown) => {
       process.stderr.write(
-        `Benchmark failed: ${err instanceof Error ? err.message : String(err)}\n`,
+        `Benchmark failed: ${err instanceof Error ? err.message : String(err)}\n`
       );
       process.exit(1);
     });
