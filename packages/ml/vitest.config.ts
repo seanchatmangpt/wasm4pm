@@ -6,7 +6,7 @@ export default defineConfig({
     globals: true,
     // Only run TypeScript test sources; ignore stale build artefacts under src/__tests__/.
     include: ['src/**/*.test.ts'],
-    exclude: ['node_modules/**', 'dist/**', '**/*.test.js'],
+    exclude: ['node_modules/**', 'dist/**', '**/*.test.js', '**/*.bench.ts', '**/*.bench.js'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
@@ -16,6 +16,7 @@ export default defineConfig({
         'dist/**',
         'src/**/__tests__/**',
         'src/**/*.test.ts',
+        'src/**/*.bench.ts',
         'src/types.ts',
         'src/index.ts',
       ],
@@ -26,5 +27,9 @@ export default defineConfig({
         branches: 60,
       },
     },
+  },
+  benchmark: {
+    include: ['src/**/*.bench.ts'],
+    exclude: ['node_modules/**', 'dist/**'],
   },
 });

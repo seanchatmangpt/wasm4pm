@@ -96,23 +96,23 @@ pub fn bench_sizes_slow() -> Vec<LogShape> {
 }
 
 /// Linear congruential generator — deterministic, no external rand crate needed.
-struct Lcg(u64);
+pub struct Lcg(pub u64);
 
 impl Lcg {
-    const fn new(seed: u64) -> Self {
+    pub const fn new(seed: u64) -> Self {
         Self(seed)
     }
-    fn next(&mut self) -> u64 {
+    pub fn next(&mut self) -> u64 {
         self.0 = self
             .0
             .wrapping_mul(6_364_136_223_846_793_005)
             .wrapping_add(1_442_695_040_888_963_407);
         self.0
     }
-    fn next_usize_mod(&mut self, m: usize) -> usize {
+    pub fn next_usize_mod(&mut self, m: usize) -> usize {
         (self.next() as usize) % m
     }
-    fn next_f64_unit(&mut self) -> f64 {
+    pub fn next_f64_unit(&mut self) -> f64 {
         (self.next() >> 11) as f64 / (1u64 << 53) as f64
     }
 }
