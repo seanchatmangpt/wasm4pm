@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# profile-energy-cost.sh — GPU power and energy measurement for pictl GPU+RL compiler
+# profile-energy-cost.sh — GPU power and energy measurement for wasm4pm GPU+RL compiler
 #
 # Measures:
 #   1. GPU power (W) via nvidia-smi or rocm-smi; falls back to TDP estimation
@@ -7,7 +7,7 @@
 #   3. Thermal state (temperature, frequency scaling / throttle detection)
 #   4. Sustained load test (10 s) for thermal stability
 #
-# Outputs JSON to .pictl/benchmarks/energy-cost-<timestamp>.json (partial; cost-calculator.py completes it)
+# Outputs JSON to .wasm4pm/benchmarks/energy-cost-<timestamp>.json (partial; cost-calculator.py completes it)
 #
 # Usage:
 #   ./scripts/profile-energy-cost.sh [--batch-size 2048] [--stages 8] [--output /path/to/out.json]
@@ -18,7 +18,7 @@ set -euo pipefail
 BATCH_SIZE=${BATCH_SIZE:-2048}
 STAGES=${STAGES:-8}
 PCIE_GEN=${PCIE_GEN:-3}          # PCIe generation (3 = 16 GB/s)
-OUTPUT_DIR=".pictl/benchmarks"
+OUTPUT_DIR=".wasm4pm/benchmarks"
 TIMESTAMP=$(date +%Y%m%dT%H%M%S)
 OUTPUT_FILE="${OUTPUT_DIR}/energy-cost-${TIMESTAMP}.json"
 THERMAL_DURATION=10              # seconds for thermal load test
@@ -154,7 +154,7 @@ KERNEL_TIME_MS="null"
 KERNEL_TIME_SOURCE="estimated_flops"
 
 NODE_BIN=$(command -v node 2>/dev/null || echo "")
-WASM_PKG="/Users/sac/chatmangpt/pictl/wasm4pm/pkg/pictl.js"
+WASM_PKG="/Users/sac/chatmangpt/wasm4pm/wasm4pm/pkg/wasm4pm.js"
 
 if [[ -n "${NODE_BIN}" ]] && [[ -f "${WASM_PKG}" ]]; then
   log "  Running WASM kernel timing via Node.js..."
@@ -163,7 +163,7 @@ const { performance } = require('perf_hooks');
 
 async function run() {
   try {
-    const wasm = require('/Users/sac/chatmangpt/pictl/wasm4pm/pkg/pictl.js');
+    const wasm = require('/Users/sac/chatmangpt/wasm4pm/wasm4pm/pkg/wasm4pm.js');
     if (typeof wasm.default === 'function') await wasm.default();
 
     const BATCH = 2048, STAGES = 8;
@@ -234,7 +234,7 @@ THERMAL_MIN_FREQ_MHZ="null"
 THERMAL_PERF_DEGRADATION_PCT="null"
 
 if [[ "${GPU_VENDOR}" == "nvidia" ]]; then
-  THERMAL_LOG=$(mktemp /tmp/pictl-thermal.XXXXXX)
+  THERMAL_LOG=$(mktemp /tmp/wasm4pm-thermal.XXXXXX)
   timeout ${THERMAL_DURATION} nvidia-smi \
     --query-gpu=temperature.gpu,clocks.gr,power.draw,pstate \
     --format=csv,noheader,nounits -l 1 > "${THERMAL_LOG}" 2>/dev/null &
@@ -350,7 +350,7 @@ thermal_throttle = pb("${THERMAL_THROTTLE_DETECTED}")
 
 profile = {
     "schema_version": "1.0",
-    "tool": "pictl profile-energy-cost",
+    "tool": "wasm4pm profile-energy-cost",
     "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
     "gpu_info": {
         "vendor":           "${GPU_VENDOR}",
@@ -413,5 +413,5 @@ if pcie_overhead_pct:
 print(f"[profile-energy] Throttling: {thermal_throttle}")
 PYEOF
 
-log "Done. Run: python3 /Users/sac/chatmangpt/pictl/scripts/cost-calculator.py --input ${OUTPUT_FILE}"
+log "Done. Run: python3 /Users/sac/chatmangpt/wasm4pm/scripts/cost-calculator.py --input ${OUTPUT_FILE}"
 echo "${OUTPUT_FILE}"

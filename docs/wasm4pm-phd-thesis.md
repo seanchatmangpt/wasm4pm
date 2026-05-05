@@ -6,7 +6,7 @@
 **Institution:** ChatmanGPT Research Laboratories
 **Date:** April 10, 2026
 **Version:** v26.4.10
-**Repository:** https://github.com/seanchatmangpt/pictl
+**Repository:** https://github.com/seanchatmangpt/wasm4pm
 
 ---
 
@@ -20,7 +20,7 @@ pictl's architecture introduces three novel contributions to the discipline:
 
 2. **A five-tier feature gate system** (`minimal`, `mobile`, `edge`, `fog`, `iot`, `browser`) that compiles targeted subsets of the 55,352-line Rust codebase into WASM binaries ranging from ~500KB (mobile) to ~2.7MB (browser), achieving up to 82% binary size reduction while preserving algorithmic correctness.
 
-3. **A TypeScript orchestration layer** comprising 10 npm packages (`@pictl/contracts`, `@pictl/engine`, `@pictl/kernel`, `@pictl/config`, `@pictl/planner`, `@pictl/observability`, `@pictl/testing`, `@pictl/ml`, `@pictl/swarm`, and the `@pictl/cli` binary) that provides a state machine-driven execution engine, cryptographic receipt provenance, and 18 CLI commands for end-to-end process mining workflows.
+3. **A TypeScript orchestration layer** comprising 10 npm packages (`@wasm4pm/contracts`, `@wasm4pm/engine`, `@wasm4pm/kernel`, `@wasm4pm/config`, `@wasm4pm/planner`, `@wasm4pm/observability`, `@wasm4pm/testing`, `@wasm4pm/ml`, `@wasm4pm/swarm`, and the `@wasm4pm/cli` binary) that provides a state machine-driven execution engine, cryptographic receipt provenance, and 18 CLI commands for end-to-end process mining workflows.
 
 The framework was validated through a 10-wave autonomous agent swarm (van der Aalst process cube methodology) that ported 17 algorithms from the pm4wasm reference implementation, resolved 95 test assertions, and produced 35,378 lines of new code across 175 files in a single 24-hour development cycle—all verified through compilation checks, clippy linting, and 579 unit test annotations.
 
@@ -101,7 +101,7 @@ The pictl framework encompasses:
 - **331 WASM-exported functions** accessible from JavaScript/TypeScript
 - **70 feature gate configurations** controlling conditional compilation
 - **42 registered algorithms** in the TypeScript kernel registry
-- **18 CLI commands** in the `@pictl/cli` binary
+- **18 CLI commands** in the `@wasm4pm/cli` binary
 - **10 TypeScript packages** providing orchestration, configuration, planning, observability, testing, and ML capabilities
 - **579 unit test annotations** across 95 test modules
 - **17 format conversion** pathways (XES, PNML, BPMN, YAWL, OCEL 2.0)
@@ -266,7 +266,7 @@ pictl's architecture follows a three-layer design:
 ```
 ┌─────────────────────────────────────────────────────┐
 │                    LAYER 3: CLI & Apps               │
-│  @pictl/cli (18 commands) + apps/pictl/             │
+│  @wasm4pm/cli (18 commands) + apps/wasm4pm/             │
 ├─────────────────────────────────────────────────────┤
 │                  LAYER 2: TypeScript Packages        │
 │  contracts engine kernel config planner             │
@@ -1192,7 +1192,7 @@ packages/
 
 ### 16.2 Engine State Machine
 
-The `@pictl/engine` package implements a finite state machine governing the execution lifecycle:
+The `@wasm4pm/engine` package implements a finite state machine governing the execution lifecycle:
 
 ```
 uninitialized → bootstrapping → ready ↔ planning → running → watching
@@ -1206,7 +1206,7 @@ State transitions are tracked via `getTransitionHistory()`, providing an audit t
 
 ### 16.3 Kernel Algorithm Registry
 
-The `@pictl/kernel` package maintains a registry of 42 algorithms with metadata:
+The `@wasm4pm/kernel` package maintains a registry of 42 algorithms with metadata:
 
 ```typescript
 interface AlgorithmMetadata {
@@ -1228,7 +1228,7 @@ The registry provides `run(algorithmId, handle, params)` and `stream(algorithmId
 
 ### 16.4 Configuration System
 
-The `@pictl/config` package implements Zod-validated configuration with 5-layer precedence:
+The `@wasm4pm/config` package implements Zod-validated configuration with 5-layer precedence:
 
 ```
 CLI flags > TOML file > JSON file > Environment variables > Defaults
@@ -1272,29 +1272,29 @@ This provides tamper-evident provenance for all process mining operations.
 
 ### 17.1 Command Inventory
 
-The `@pictl/cli` binary (version 26.4.10) provides 18 commands:
+The `@wasm4pm/cli` binary (version 26.4.10) provides 18 commands:
 
 | Command | Exit Codes | Description |
 |---------|-----------|-------------|
-| `pictl run <log.xes>` | 0/2/3 | Process discovery |
-| `pictl compare <algos> -i <log>` | 0 | Side-by-side algorithm comparison with sparklines |
-| `pictl diff <log1> <log2>` | 0 | Log comparison via Jaccard similarity |
-| `pictl predict <task> -i <log>` | 0 | Predictive mining |
-| `pictl drift-watch -i <log>` | 0 | Real-time EWMA drift monitoring |
-| `pictl watch` | 0 | Config file watcher |
-| `pictl status` | 0 | WASM engine health |
-| `pictl doctor` | 0/1 | 17-check diagnostic |
-| `pictl explain` | 0 | Algorithm explanations |
-| `pictl init` | 0 | Scaffold project |
-| `pictl results` | 0 | Browse saved results |
-| `pictl ml <task> -i <log>` | 0 | ML process mining |
-| `pictl powl <sub>` | 0 | POWL analysis |
-| `pictl conformance -i <log>` | 0 | Conformance checking |
-| `pictl simulate -i <log>` | 0 | Monte Carlo simulation |
-| `pictl temporal -i <log>` | 0 | Temporal profile analysis |
-| `pictl social -i <log>` | 0 | Social network analysis |
-| `pictl quality -i <log>` | 0 | Quality metrics |
-| `pictl validate <model>` | 0 | Model validation |
+| `wpm run <log.xes>` | 0/2/3 | Process discovery |
+| `wpm compare <algos> -i <log>` | 0 | Side-by-side algorithm comparison with sparklines |
+| `wpm diff <log1> <log2>` | 0 | Log comparison via Jaccard similarity |
+| `wpm predict <task> -i <log>` | 0 | Predictive mining |
+| `wpm drift-watch -i <log>` | 0 | Real-time EWMA drift monitoring |
+| `wpm watch` | 0 | Config file watcher |
+| `wpm status` | 0 | WASM engine health |
+| `wpm doctor` | 0/1 | 17-check diagnostic |
+| `wpm explain` | 0 | Algorithm explanations |
+| `wpm init` | 0 | Scaffold project |
+| `wpm results` | 0 | Browse saved results |
+| `wpm ml <task> -i <log>` | 0 | ML process mining |
+| `wpm powl <sub>` | 0 | POWL analysis |
+| `wpm conformance -i <log>` | 0 | Conformance checking |
+| `wpm simulate -i <log>` | 0 | Monte Carlo simulation |
+| `wpm temporal -i <log>` | 0 | Temporal profile analysis |
+| `wpm social -i <log>` | 0 | Social network analysis |
+| `wpm quality -i <log>` | 0 | Quality metrics |
+| `wpm validate <model>` | 0 | Model validation |
 
 ### 17.2 Exit Code Contract
 
@@ -1315,7 +1315,7 @@ Commands support two output formats:
 - `--format human`: Colored console output via consola
 - `--format json`: Structured JSON output for machine consumption
 
-Results auto-save to `.pictl/results/<timestamp>-<task>.json` (skippable with `--no-save`).
+Results auto-save to `.wasm4pm/results/<timestamp>-<task>.json` (skippable with `--no-save`).
 
 ---
 
@@ -1323,7 +1323,7 @@ Results auto-save to `.pictl/results/<timestamp>-<task>.json` (skippable with `-
 
 ### 18.1 Three-Layer Output
 
-The `@pictl/observability` package provides three output layers:
+The `@wasm4pm/observability` package provides three output layers:
 
 1. **CLI Layer**: Human-readable colored output for terminal use
 2. **JSONL Layer**: Machine-readable newline-delimited JSON for log aggregation

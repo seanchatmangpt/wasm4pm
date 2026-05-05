@@ -23,7 +23,7 @@ These tests are structured to be **LLM-proof**: no amount of reasoning, training
 
 Every JTBD test passes only when ALL THREE are true:
 
-1. **OTEL span exists** in Jaeger with service=`pictl`, span_name=`operation`, status=`ok`
+1. **OTEL span exists** in Jaeger with service=`wpm` (wasm4pm), span_name=`operation`, status=`ok`
 2. **Test assertion passes** with claim directly checked (not a proxy)
 3. **Event log proves it** — mined result matches claim (fitness > 0.85, timestamps consistent, causal soundness)
 

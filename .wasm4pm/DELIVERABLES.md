@@ -16,12 +16,12 @@
 | 2 | GitHub Actions: Staleness | `.github/workflows/pr-staleness.yml` | ✅ | Hourly stale PR detection |
 | 3 | Local Pre-Push Hook | `.claude/hooks/wip-check.sh` | ✅ | Prevent push when limit exceeded |
 | 4 | Hook Installation Script | `.claude/scripts/setup-hooks.sh` | ✅ | One-time setup for developers |
-| 5 | WIP Configuration | `.pictl/wip-config.json` | ✅ | Tunable limits & thresholds |
-| 6 | Status Dashboard | `.pictl/wip-status.md` | ✅ | Visual status + workflow examples |
-| 7 | Full Documentation | `.pictl/WIP-IMPLEMENTATION.md` | ✅ | Architecture, troubleshooting, FAQ |
-| 8 | Quick Start Guide | `.pictl/QUICKSTART-WIP.md` | ✅ | Installation & common scenarios |
-| 9 | Test Suite | `.pictl/test-wip-system.sh` | ✅ | Validation (10 tests, all pass) |
-| 10 | This Summary | `.pictl/DELIVERABLES.md` | ✅ | Project completion report |
+| 5 | WIP Configuration | `.wasm4pm/wip-config.json` | ✅ | Tunable limits & thresholds |
+| 6 | Status Dashboard | `.wasm4pm/wip-status.md` | ✅ | Visual status + workflow examples |
+| 7 | Full Documentation | `.wasm4pm/WIP-IMPLEMENTATION.md` | ✅ | Architecture, troubleshooting, FAQ |
+| 8 | Quick Start Guide | `.wasm4pm/QUICKSTART-WIP.md` | ✅ | Installation & common scenarios |
+| 9 | Test Suite | `.wasm4pm/test-wip-system.sh` | ✅ | Validation (10 tests, all pass) |
+| 10 | This Summary | `.wasm4pm/DELIVERABLES.md` | ✅ | Project completion report |
 
 ---
 
@@ -39,7 +39,7 @@ pictl/
 │   └── scripts/
 │       └── setup-hooks.sh               ← Hook installation script
 │
-└── .pictl/
+└── .wasm4pm/
     ├── wip-config.json                  ← Configuration file
     ├── wip-status.md                    ← Status dashboard
     ├── WIP-IMPLEMENTATION.md            ← Full documentation
@@ -56,7 +56,7 @@ pictl/
 
 **Trigger:** PR opened, ready_for_review, synchronize  
 **Logic:**
-- Loads config from `.pictl/wip-config.json`
+- Loads config from `.wasm4pm/wip-config.json`
 - Queries GitHub API: `gh pr list --author <current-user> --state open`
 - Compares: `$OPEN_PRS` vs `max_concurrent_prs` (default: 3)
 - If exceeded: posts comment + labels PR + fails workflow
@@ -146,7 +146,7 @@ bash .claude/scripts/setup-hooks.sh
 
 ---
 
-### 5. WIP Configuration (`.pictl/wip-config.json`)
+### 5. WIP Configuration (`.wasm4pm/wip-config.json`)
 
 **Format:** JSON  
 **Fields:**
@@ -174,14 +174,14 @@ bash .claude/scripts/setup-hooks.sh
 
 **Tuning:** Edit and commit to change behavior
 ```bash
-git add .pictl/wip-config.json
+git add .wasm4pm/wip-config.json
 git commit -m "config(wip): increase limit to 5"
 git push origin main
 ```
 
 ---
 
-### 6. Status Dashboard (`.pictl/wip-status.md`)
+### 6. Status Dashboard (`.wasm4pm/wip-status.md`)
 
 **Purpose:** Visual status + workflow examples  
 **Content:**
@@ -196,7 +196,7 @@ git push origin main
 
 ---
 
-### 7. Full Documentation (`.pictl/WIP-IMPLEMENTATION.md`)
+### 7. Full Documentation (`.wasm4pm/WIP-IMPLEMENTATION.md`)
 
 **Purpose:** Complete reference manual  
 **Content:**
@@ -215,7 +215,7 @@ git push origin main
 
 ---
 
-### 8. Quick Start Guide (`.pictl/QUICKSTART-WIP.md`)
+### 8. Quick Start Guide (`.wasm4pm/QUICKSTART-WIP.md`)
 
 **Purpose:** Get started in 5 minutes  
 **Content:**
@@ -230,7 +230,7 @@ git push origin main
 
 ---
 
-### 9. Test Suite (`.pictl/test-wip-system.sh`)
+### 9. Test Suite (`.wasm4pm/test-wip-system.sh`)
 
 **Purpose:** Validation that all components installed  
 **Tests:**
@@ -250,7 +250,7 @@ git push origin main
 
 **Usage:**
 ```bash
-bash .pictl/test-wip-system.sh
+bash .wasm4pm/test-wip-system.sh
 # Output: 10/10 tests passing
 ```
 
@@ -267,7 +267,7 @@ Developer Push
     ↓ (calls)
 .claude/hooks/wip-check.sh
     ├─ Queries: gh pr list --author @me
-    ├─ Loads: .pictl/wip-config.json
+    ├─ Loads: .wasm4pm/wip-config.json
     ├─ Compares: $OPEN_PRS vs max_concurrent_prs
     ├─ Exit 0: OK to push
     └─ Exit 1: Block push
@@ -296,7 +296,7 @@ Every Hour
 ### Configuration Hierarchy
 
 ```
-.pictl/wip-config.json (editable)
+.wasm4pm/wip-config.json (editable)
   └─ max_concurrent_prs: 3
   └─ max_review_hours: 24
   └─ escalation_hours: 48
@@ -319,10 +319,10 @@ Every Hour
 ### Test Execution
 
 ```
-bash .pictl/test-wip-system.sh
+bash .wasm4pm/test-wip-system.sh
 
 Test 1: WIP config file...
-  ✅ PASS: .pictl/wip-config.json is valid JSON
+  ✅ PASS: .wasm4pm/wip-config.json is valid JSON
 Test 2: WIP check script...
   ✅ PASS: .claude/hooks/wip-check.sh is executable
 Test 3: Setup hooks script...
@@ -332,9 +332,9 @@ Test 4: GitHub Actions WIP check workflow...
 Test 5: GitHub Actions staleness workflow...
   ✅ PASS: .github/workflows/pr-staleness.yml exists
 Test 6: WIP status dashboard...
-  ✅ PASS: .pictl/wip-status.md exists
+  ✅ PASS: .wasm4pm/wip-status.md exists
 Test 7: WIP implementation documentation...
-  ✅ PASS: .pictl/WIP-IMPLEMENTATION.md exists
+  ✅ PASS: .wasm4pm/WIP-IMPLEMENTATION.md exists
 Test 8: Config has required fields...
   ✅ PASS: All required config fields present
 Test 9: GitHub CLI availability...
@@ -380,9 +380,9 @@ git push origin feat/healing
 **To adjust WIP limits:**
 ```bash
 # Edit config
-vi .pictl/wip-config.json
+vi .wasm4pm/wip-config.json
 # Change: "max_concurrent_prs": 5
-git add .pictl/wip-config.json
+git add .wasm4pm/wip-config.json
 git commit -m "config(wip): increase to 5"
 git push origin main
 # Takes effect on next check
@@ -391,8 +391,8 @@ git push origin main
 **To disable WIP checks:**
 ```bash
 # Edit config
-jq '.enabled = false' .pictl/wip-config.json > tmp && mv tmp .pictl/wip-config.json
-git add .pictl/wip-config.json
+jq '.enabled = false' .wasm4pm/wip-config.json > tmp && mv tmp .wasm4pm/wip-config.json
+git add .wasm4pm/wip-config.json
 git commit -m "config(wip): disable checks"
 git push origin main
 ```
@@ -421,12 +421,12 @@ From `.claude/CLAUDE.md` (Toyota Production System):
 2. ✅ `.github/workflows/pr-staleness.yml`
 3. ✅ `.claude/hooks/wip-check.sh`
 4. ✅ `.claude/scripts/setup-hooks.sh`
-5. ✅ `.pictl/wip-config.json`
-6. ✅ `.pictl/wip-status.md`
-7. ✅ `.pictl/WIP-IMPLEMENTATION.md`
-8. ✅ `.pictl/QUICKSTART-WIP.md`
-9. ✅ `.pictl/test-wip-system.sh`
-10. ✅ `.pictl/DELIVERABLES.md` (this file)
+5. ✅ `.wasm4pm/wip-config.json`
+6. ✅ `.wasm4pm/wip-status.md`
+7. ✅ `.wasm4pm/WIP-IMPLEMENTATION.md`
+8. ✅ `.wasm4pm/QUICKSTART-WIP.md`
+9. ✅ `.wasm4pm/test-wip-system.sh`
+10. ✅ `.wasm4pm/DELIVERABLES.md` (this file)
 
 ### Modified (0 files):
 None. All new files, no existing files changed.
@@ -465,18 +465,18 @@ None. All new files, no existing files changed.
    ```
 
 4. **For full documentation:**
-   - Quick start: [`.pictl/QUICKSTART-WIP.md`](.pictl/QUICKSTART-WIP.md)
-   - Full guide: [`.pictl/WIP-IMPLEMENTATION.md`](.pictl/WIP-IMPLEMENTATION.md)
-   - Dashboard: [`.pictl/wip-status.md`](.pictl/wip-status.md)
+   - Quick start: [`.wasm4pm/QUICKSTART-WIP.md`](.wasm4pm/QUICKSTART-WIP.md)
+   - Full guide: [`.wasm4pm/WIP-IMPLEMENTATION.md`](.wasm4pm/WIP-IMPLEMENTATION.md)
+   - Dashboard: [`.wasm4pm/wip-status.md`](.wasm4pm/wip-status.md)
 
 ---
 
 ## Support
 
 For issues or questions:
-- See [`.pictl/WIP-IMPLEMENTATION.md`](.pictl/WIP-IMPLEMENTATION.md) (Troubleshooting section)
-- See [`.pictl/QUICKSTART-WIP.md`](.pictl/QUICKSTART-WIP.md) (Common Issues)
-- Check configuration: [`.pictl/wip-config.json`](.pictl/wip-config.json)
+- See [`.wasm4pm/WIP-IMPLEMENTATION.md`](.wasm4pm/WIP-IMPLEMENTATION.md) (Troubleshooting section)
+- See [`.wasm4pm/QUICKSTART-WIP.md`](.wasm4pm/QUICKSTART-WIP.md) (Common Issues)
+- Check configuration: [`.wasm4pm/wip-config.json`](.wasm4pm/wip-config.json)
 
 ---
 

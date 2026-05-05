@@ -264,16 +264,16 @@ Documentation Files (137 markdown files in ./docs)
 
 ## Files
 
-- **Exporter**: `/Users/sac/chatmangpt/pictl/src/docs/metrics_exporter.py` (516 lines)
-- **Convergence Report**: `/Users/sac/chatmangpt/pictl/scripts/docs_convergence_report.py` (818 lines)
-- **Init**: `/Users/sac/chatmangpt/pictl/src/docs/__init__.py` (public API)
+- **Exporter**: `/Users/sac/chatmangpt/wasm4pm/src/docs/metrics_exporter.py` (516 lines)
+- **Convergence Report**: `/Users/sac/chatmangpt/wasm4pm/scripts/docs_convergence_report.py` (818 lines)
+- **Init**: `/Users/sac/chatmangpt/wasm4pm/src/docs/__init__.py` (public API)
 
 ## Testing
 
 Run the convergence report to verify:
 
 ```bash
-cd /Users/sac/chatmangpt/pictl
+cd /Users/sac/chatmangpt/wasm4pm
 python3 scripts/docs_convergence_report.py \
   --docs-dir docs \
   --output /tmp/test_report.json \

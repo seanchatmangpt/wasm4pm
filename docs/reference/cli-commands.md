@@ -56,7 +56,7 @@ Options:
 - `-i, --input <FILE>` - Input event log
 - `--format <FORMAT>` - Output format
 
-Example: `pictl compare dfg,alpha,heuristic -i log.xes`
+Example: `wpm compare dfg,alpha,heuristic -i log.xes`
 
 ## pictl diff
 
@@ -98,7 +98,7 @@ Options:
 - `-k <N>` - Number of neighbors/clusters
 - `--format <FORMAT>` - Output format
 
-Example: `pictl ml classify -i log.xes --method knn -k 5`
+Example: `wpm ml classify -i log.xes --method knn -k 5`
 
 ## pictl powl
 

@@ -1,16 +1,16 @@
 #!/bin/bash
-# pictl Weekly Metrics Report — Kaizen Trend Analysis
+# wasm4pm Weekly Metrics Report — Kaizen Trend Analysis
 # Aggregates metrics from the past 7 days, generates markdown dashboard
 #
 # Usage: bash scripts/weekly-metrics-report.sh [output_file]
-# Default output: .pictl/metrics-dashboard.md
+# Default output: .wasm4pm/metrics-dashboard.md
 
 set -e
 
 PICTL_DIR="${CLAUDE_PROJECT_DIR:-.}"
-METRICS_FILE="$PICTL_DIR/.pictl/metrics.json"
-OUTPUT_FILE="${1:-$PICTL_DIR/.pictl/metrics-dashboard.md}"
-BUILD_LOG="$PICTL_DIR/.pictl/build-times.log"
+METRICS_FILE="$PICTL_DIR/.wasm4pm/metrics.json"
+OUTPUT_FILE="${1:-$PICTL_DIR/.wasm4pm/metrics-dashboard.md}"
+BUILD_LOG="$PICTL_DIR/.wasm4pm/build-times.log"
 
 # Helper: ISO8601 date (7 days ago)
 date_7_days_ago() {
@@ -133,7 +133,7 @@ calculate_trend() {
 # === GENERATE DASHBOARD ===
 
 cat > "$OUTPUT_FILE" << 'EOF'
-# pictl Kaizen Metrics Dashboard
+# wasm4pm Kaizen Metrics Dashboard
 
 **Last Updated:** {{timestamp}}
 
@@ -378,8 +378,8 @@ These metrics are collected automatically:
 ## References
 
 - **Toyota Production System:** Muda (waste) elimination, Kaizen (continuous improvement)
-- **Metrics:** See `.pictl/metrics.json` for raw data
-- **Build times:** See `.pictl/build-times.log` for historical records
+- **Metrics:** See `.wasm4pm/metrics.json` for raw data
+- **Build times:** See `.wasm4pm/build-times.log` for historical records
 - **CLAUDE.md:** See `.claude/rules/toyota-production.md` for full TPS principles
 
 **Last Generated:** {{timestamp}}

@@ -15,7 +15,7 @@
 set -eu
 
 PROJECT_ROOT="$(git rev-parse --show-toplevel)"
-TEMP_DIR="/tmp/pictl_otel_check_$$"
+TEMP_DIR="/tmp/wasm4pm_otel_check_$$"
 mkdir -p "$TEMP_DIR"
 
 trap "rm -rf $TEMP_DIR" EXIT

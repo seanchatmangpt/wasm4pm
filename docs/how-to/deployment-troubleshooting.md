@@ -14,7 +14,7 @@ Before diving into details, use this 5-point checklist for 80% of issues:
 - [ ] **Binary too large?** Verify profile-specific build was used, not default cloud build
 - [ ] **Out of memory?** Reduce `execution.maxMemory` or use `fast` profile
 - [ ] **Algorithm timeout?** Increase `execution.timeout` or switch to faster algorithm (DFG → Heuristic)
-- [ ] **Config won't load?** Validate TOML syntax with `pictl init --validate pictl.toml`
+- [ ] **Config won't load?** Validate TOML syntax with `wpm init --validate wasm4pm.toml`
 
 If none apply, continue to symptom-specific sections below.
 
@@ -69,8 +69,8 @@ This is the **browser profile**, not mobile/edge/iot/fog.
 Check what profile your config specifies:
 
 ```bash
-# In pictl.toml
-cat pictl.toml | grep -A 5 "\[execution\]"
+# In wasm4pm.toml
+cat wasm4pm.toml | grep -A 5 "\[execution\]"
 
 # Output:
 # [execution]
@@ -135,10 +135,10 @@ After redeploying:
 ls -lh wasm4pm.wasm
 
 # Verify config matches
-pictl explain --config pictl.toml | grep -A 3 execution
+pictl explain --config wasm4pm.toml | grep -A 3 execution
 
 # Run test
-pictl run -i test.xes --config pictl.toml
+pictl run -i test.xes --config wasm4pm.toml
 ```
 
 ---
@@ -262,7 +262,7 @@ Test the smaller binary works:
 
 ```bash
 # Run on target device
-pictl run -i small-log.xes --config pictl.toml
+pictl run -i small-log.xes --config wasm4pm.toml
 ```
 
 If it fails with "algorithm not found", the profile was too minimal for your use case. Try the next larger profile:
@@ -318,7 +318,7 @@ kubectl describe node NODE_NAME | grep -A 10 "Allocated resources"
 Reduce the config limit to match device:
 
 ```toml
-# pictl.toml
+# wasm4pm.toml
 
 [execution]
 profile = "fast"           # Use faster algorithm first
@@ -330,7 +330,7 @@ Or via CLI:
 
 ```bash
 # Temporary override
-pictl run -i events.xes --config pictl.toml \
+pictl run -i events.xes --config wasm4pm.toml \
   --override execution.maxMemory=536870912
 ```
 
@@ -385,7 +385,7 @@ After fixes, monitor memory during execution:
 ```bash
 # Watch memory in real-time
 while true; do free -h | grep Mem; sleep 1; done &
-pictl run -i events.xes --config pictl.toml
+pictl run -i events.xes --config wasm4pm.toml
 ```
 
 Or check resource limits:
@@ -429,7 +429,7 @@ One of these:
 Check config:
 
 ```bash
-cat pictl.toml | grep -A 3 "\[algorithm\]"
+cat wasm4pm.toml | grep -A 3 "\[algorithm\]"
 
 # Output example:
 # [algorithm]
@@ -462,7 +462,7 @@ profile = "quality"   # Slower profile needs more time
 Or via CLI:
 
 ```bash
-pictl run -i events.xes --config pictl.toml --timeout 600000
+pictl run -i events.xes --config wasm4pm.toml --timeout 600000
 ```
 
 #### Step 4: Match Profile to Timeout
@@ -535,7 +535,7 @@ One of these:
 Use pictl's validator:
 
 ```bash
-pictl init --validate pictl.toml
+pictl init --validate wasm4pm.toml
 
 # Output on success:
 # ✓ Configuration valid
@@ -599,7 +599,7 @@ cat example.toml | head -20
 Compare to your config:
 
 ```bash
-diff example.toml pictl.toml
+diff example.toml wasm4pm.toml
 ```
 
 Add any missing sections (e.g., if `[execution]` is missing):
@@ -670,13 +670,13 @@ path = /path/to/file
 Verify config file exists:
 
 ```bash
-ls -la pictl.toml
+ls -la wasm4pm.toml
 
 # If not found, create it
-pictl init > pictl.toml
+pictl init > wasm4pm.toml
 
 # Or specify explicit path
-pictl run -i events.xes --config /full/path/to/pictl.toml
+pictl run -i events.xes --config /full/path/to/wasm4pm.toml
 ```
 
 ### Verification
@@ -684,11 +684,11 @@ pictl run -i events.xes --config /full/path/to/pictl.toml
 After fixes, validate:
 
 ```bash
-pictl init --validate pictl.toml
+pictl init --validate wasm4pm.toml
 # Should output: ✓ Configuration valid
 
 # Then test
-pictl run -i events.xes --config pictl.toml
+pictl run -i events.xes --config wasm4pm.toml
 ```
 
 ---
@@ -701,7 +701,7 @@ OTel traces aren't being collected:
 
 - `observability.otel.enabled = true` but no traces appear
 - JSONL output file is empty or doesn't exist
-- Jaeger/Tempo shows no spans from pictl
+- Jaeger/Tempo shows no spans from wasm4pm
 - OTel endpoint errors in logs
 
 ### Root Cause
@@ -721,7 +721,7 @@ One of these:
 Check if OTel is enabled:
 
 ```bash
-cat pictl.toml | grep -A 10 "\[observability.otel\]"
+cat wasm4pm.toml | grep -A 10 "\[observability.otel\]"
 
 # Should show:
 # [observability.otel]
@@ -790,7 +790,7 @@ exporter = "console"    # Outputs spans to console
 Then run and check output:
 
 ```bash
-pictl run -i events.xes --config pictl.toml 2>&1 | grep -i span
+pictl run -i events.xes --config wasm4pm.toml 2>&1 | grep -i span
 ```
 
 #### Step 5: Check Sink Configuration
@@ -799,7 +799,7 @@ Verify output sink is configured:
 
 ```bash
 # Check output destination
-cat pictl.toml | grep -A 5 "\[output\]"
+cat wasm4pm.toml | grep -A 5 "\[output\]"
 
 # Should show:
 # [output]
@@ -824,7 +824,7 @@ Check if traces are being written locally:
 
 ```bash
 # If console exporter
-pictl run -i events.xes --config pictl.toml 2>&1 | head -50
+pictl run -i events.xes --config wasm4pm.toml 2>&1 | head -50
 
 # If file exporter
 cat .wasm4pm/otel-traces.jsonl | jq '.' | head -20
@@ -875,7 +875,7 @@ Exit codes are standardized:
 | Code | Category | Cause | Fix |
 |------|----------|-------|-----|
 | 0 | Success | Completed successfully | None needed |
-| 1 | Config | Configuration invalid | Validate with `pictl init --validate` |
+| 1 | Config | Configuration invalid | Validate with `wpm init --validate` |
 | 2 | Source | Input file not found | Check file path exists |
 | 3 | Execution | Algorithm timeout or OOM | Increase timeout or reduce memory usage |
 | 4 | Partial | Some outputs succeeded, some failed | Check receipt for failed sinks |
@@ -914,20 +914,20 @@ pictl run -i events.xes 2>&1 | grep -i "error:"
 
 **Exit 1 (Config):**
 ```bash
-pictl init --validate pictl.toml
+pictl init --validate wasm4pm.toml
 # Fix reported errors
 ```
 
 **Exit 2 (Source):**
 ```bash
 ls -la events.xes    # Verify file exists
-cat pictl.toml | grep -A 3 "\[source\]"  # Check path
+cat wasm4pm.toml | grep -A 3 "\[source\]"  # Check path
 ```
 
 **Exit 3 (Execution):**
 ```bash
 # Increase timeout or switch algorithm
-cat pictl.toml | grep -A 5 "\[execution\]"
+cat wasm4pm.toml | grep -A 5 "\[execution\]"
 # Edit timeout = 600000 (10 min)
 # or algorithm = "dfg" (faster)
 ```
@@ -951,15 +951,15 @@ pictl status
 
 Use this before filing an issue:
 
-- [ ] **Validate config:** `pictl init --validate pictl.toml`
+- [ ] **Validate config:** `wpm init --validate wasm4pm.toml`
 - [ ] **Check file exists:** `ls -la events.xes`
-- [ ] **View provenance:** `pictl explain --show-provenance --config pictl.toml`
-- [ ] **Check environment:** `pictl doctor`
-- [ ] **Try minimal config:** `pictl run -i small-test.xes` (no config file)
+- [ ] **View provenance:** `wpm explain --show-provenance --config wasm4pm.toml`
+- [ ] **Check environment:** `wpm doctor`
+- [ ] **Try minimal config:** `wpm run -i small-test.xes` (no config file)
 - [ ] **Check logs:** `cat output/execution.log | tail -50`
 - [ ] **Verify binary:** `ls -lh wasm4pm.wasm` (check size for profile)
 - [ ] **Test connectivity:** `curl http://localhost:4318/v1/traces` (for OTel)
-- [ ] **Memory usage:** `pictl run ... --verbose 2>&1 | grep -i memory`
+- [ ] **Memory usage:** `wpm run ... --verbose 2>&1 | grep -i memory`
 - [ ] **Exit code:** `echo $?` (after running command)
 
 ---
@@ -975,11 +975,11 @@ pictl run -i events.xes
 # Exit code: 3 (EXECUTION_ERROR)
 
 # 2. Validate config
-pictl init --validate pictl.toml
+pictl init --validate wasm4pm.toml
 # Output: ✓ Configuration valid
 
 # 3. Check which algorithm
-cat pictl.toml | grep "algorithm.name"
+cat wasm4pm.toml | grep "algorithm.name"
 # Output: genetic (slow!)
 
 # 4. Check which profile
@@ -997,7 +997,7 @@ ls -lh wasm4pm.wasm
 # - Increase timeout: timeout = 60000 (1 min, enough for DFG)
 
 # 7. Verify
-pictl run -i events.xes --config pictl.toml
+pictl run -i events.xes --config wasm4pm.toml
 # Success!
 ```
 
@@ -1015,7 +1015,7 @@ Most deployment issues fall into 7 categories. Use this guide to quickly identif
 6. **Observability** — Enable OTel, verify endpoint connectivity
 7. **Exit Codes** — Use standard codes to identify issue category
 
-Always start with the 5-point checklist and `pictl explain --show-provenance` for debugging.
+Always start with the 5-point checklist and `wpm explain --show-provenance` for debugging.
 
 ---
 

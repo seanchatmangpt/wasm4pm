@@ -136,12 +136,12 @@ Both builds completed without errors:
 Finished `release` profile [optimized] target(s) in 33.25s
 [INFO]: ⬇️  Installing wasm-bindgen...
 [INFO]: ✨   Done in 33.61s
-[INFO]: 📦   Your wasm pkg is ready to publish at /Users/sac/chatmangpt/pictl/wasm4pm/pkg.
+[INFO]: 📦   Your wasm pkg is ready to publish at /Users/sac/chatmangpt/wasm4pm/wasm4pm/pkg.
 ```
 
 ### Binary Sizes
 
-**Measured:** `/Users/sac/chatmangpt/pictl/wasm4pm/pkg/pictl_bg.wasm`
+**Measured:** `/Users/sac/chatmangpt/wasm4pm/wasm4pm/pkg/pictl_bg.wasm`
 
 | Profile | Size | Target | Status |
 |---------|------|--------|--------|
@@ -213,13 +213,13 @@ The failing JTBD test in `lab/cli-tests/tests/jtbd.test.ts:28` attempts to call 
 
 ### Version Command
 
-**Command:** `node apps/pictl/dist/cli.js --version`
+**Command:** `node apps/wasm4pm/dist/cli.js --version`
 
 **Status:** ✅ Works (no error output)
 
 ### Status Command
 
-**Command:** `node apps/pictl/dist/cli.js status`
+**Command:** `node apps/wasm4pm/dist/cli.js status`
 
 **Status:** ✅ Works (executes without error)
 
@@ -237,7 +237,7 @@ commits ahead: 11
 
 ### Modified Files
 - 8 Rust source files (clippy fixes)
-- 1 TypeScript type file (crates/pictl-types/src/provenance.rs)
+- 1 TypeScript type file (crates/wasm4pm-types/src/provenance.rs)
 - 2 package.json files (version updates)
 - 1 Cargo.lock
 - 1 WASM package manifest

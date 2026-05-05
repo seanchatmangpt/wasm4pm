@@ -13,7 +13,7 @@
 
 This thesis presents the v26.4.8 release of wasm4pm, a process mining platform compiled to WebAssembly that represents a paradigm shift from academic demonstration to production-grade, publicly distributable software. Where the prior work (v0.5.4) established the viability of 13 discovery algorithms in WASM, v26.4.8 delivers **22 discovery algorithms (14 classical + 8 POWL variants), 6 ML-powered analysis algorithms (classification, clustering, forecasting, anomaly detection, regression, PCA), 20+ predictive analytics functions, 30+ conformance and analysis capabilities, 5 deployment profiles for optimized WASM binary sizes, and an MCP (Model Context Protocol) server for AI-assisted process mining** — all in a single WASM binary.
 
-Our primary contributions are: (1) the first WASM-native implementation of POWL (Partially Ordered Workflow Language) discovery with 7 variants ported from pm4py, preserving concurrency information that Process Trees lose; (2) a comprehensive predictive analytics suite covering next-activity prediction, remaining-time estimation, outcome classification, concept drift detection, and resource optimization; (3) a native ML engine (`@pictl/ml`) providing hyper-optimized algorithms purpose-built for process intelligence — decision trees, naive Bayes, polynomial/exponential regression, and EMA smoothing — enabling `pictl run` to execute ML steps within execution plans; (4) **five deployment profiles** (mobile ~500KB, edge ~1.5MB, fog ~2.0MB, iot ~1.0MB, browser ~2.7MB) using 30+ Cargo feature flags for conditional compilation with `#[cfg(feature)]` gates — enabling up to 82% binary size reduction for resource-constrained environments while maintaining zero breaking changes; (5) successful publication to the npm registry at 2.7 MB unpacked — a non-trivial engineering feat given wasm-pack's default `.gitignore` that excludes all build artifacts; (6) empirical benchmarking demonstrating POWL discovery at **~360,000 events/second** on BPI 2020 (56,437 events, 10,500 traces), with all 8 variants completing in **~157 ms** median; and (7) a Vision 2030 roadmap for autonomous, privacy-preserving, federated process intelligence.
+Our primary contributions are: (1) the first WASM-native implementation of POWL (Partially Ordered Workflow Language) discovery with 7 variants ported from pm4py, preserving concurrency information that Process Trees lose; (2) a comprehensive predictive analytics suite covering next-activity prediction, remaining-time estimation, outcome classification, concept drift detection, and resource optimization; (3) a native ML engine (`@wasm4pm/ml`) providing hyper-optimized algorithms purpose-built for process intelligence — decision trees, naive Bayes, polynomial/exponential regression, and EMA smoothing — enabling `wpm run` to execute ML steps within execution plans; (4) **five deployment profiles** (mobile ~500KB, edge ~1.5MB, fog ~2.0MB, iot ~1.0MB, browser ~2.7MB) using 30+ Cargo feature flags for conditional compilation with `#[cfg(feature)]` gates — enabling up to 82% binary size reduction for resource-constrained environments while maintaining zero breaking changes; (5) successful publication to the npm registry at 2.7 MB unpacked — a non-trivial engineering feat given wasm-pack's default `.gitignore` that excludes all build artifacts; (6) empirical benchmarking demonstrating POWL discovery at **~360,000 events/second** on BPI 2020 (56,437 events, 10,500 traces), with all 8 variants completing in **~157 ms** median; and (7) a Vision 2030 roadmap for autonomous, privacy-preserving, federated process intelligence.
 
 We argue that the act of publishing — making software installable via `npm install wasm4pm` — is itself a contribution: it transforms research artifacts into infrastructure that others can build upon, and we document the engineering challenges that nearly prevented a successful publish.
 
@@ -102,7 +102,7 @@ This thesis addresses:
 1. **POWL Discovery in WASM** — 7 variants ported from pm4py to Rust, with cut detection (concurrency, sequence, loop, XOR), fall-through handling (decision graphs, flower models), and streaming support
 2. **POWL API Surface** — 18 functions covering parsing, simplification, introspection, conversion (BPMN/Petri Net/Process Tree), conformance (token replay), and analysis (complexity metrics, behavioral footprints, model diff)
 3. **Predictive Analytics Suite** — 6 prediction domains: next-activity (n-gram Markov), remaining-time (Weibull survival), outcome (anomaly scoring), drift detection (EWMA + Jaccard), resource optimization (M/M/1 queue, UCB1 bandit), and feature extraction (ML-ready)
-4. **ML Engine** — `@pictl/ml` package provides hyper-optimized, native algorithms purpose-built for process intelligence: decision tree classification, naive Bayes classification, polynomial regression, exponential regression, and EMA smoothing; 6 ML algorithms registered in the kernel pipeline (`ml_classify`, `ml_cluster`, `ml_forecast`, `ml_anomaly`, `ml_regress`, `ml_pca`) enabling execution plans with ML steps via `pictl run`
+4. **ML Engine** — `@wasm4pm/ml` package provides hyper-optimized, native algorithms purpose-built for process intelligence: decision tree classification, naive Bayes classification, polynomial regression, exponential regression, and EMA smoothing; 6 ML algorithms registered in the kernel pipeline (`ml_classify`, `ml_cluster`, `ml_forecast`, `ml_anomaly`, `ml_regress`, `ml_pca`) enabling execution plans with ML steps via `wpm run`
 5. **Deployment Profiles** — 5 deployment profiles (mobile/edge/fog/iot/browser) using 30+ Cargo feature flags for conditional `#[cfg(feature)]` compilation; up to 82% binary size reduction; hand-rolled `hand_stats.rs` replacing statrs for size-constrained profiles; TypeScript registry filtering via `getForDeploymentProfile()`; zero breaking changes
 6. **Publication Engineering** — documented and resolved the wasm-pack `.gitignore` trap, flaky test elimination, and `prepublishOnly` hook design
 7. **Empirical Benchmarks** — POWL: ~157 ms/8 variants on BPI 2020; analytics: 0.002 ms (event stats) to 144 ms (concept drift); all 22 discovery + 6 ML algorithms operational
@@ -157,7 +157,7 @@ Predictive process mining augments discovery with forward-looking analytics:
 - **Outcome prediction**: Classify case outcomes (e.g., normal vs. anomalous) from partial traces.
 - **Concept drift detection**: Monitor event streams for changes in process behavior (Šalgovic et al., 2020).
 
-wasm4pm v26.4.8 implements all four domains using lightweight, WASM-friendly algorithms: n-gram Markov chains, Weibull survival analysis, information-theoretic anomaly scoring, and EWMA/Jaccard drift detection. Additionally, the `@pictl/ml` engine provides native, hyper-optimized algorithms for supervised and unsupervised learning within the process intelligence domain: decision tree and naive Bayes classification, linear/polynomial/exponential regression, K-means clustering, PCA dimensionality reduction, and enhanced anomaly detection with EMA smoothing. These ML algorithms are purpose-built for process mining — not general-purpose ML — and execute via dynamic import in the kernel pipeline, enabling execution plans that interleave discovery, ML, and analytics steps.
+wasm4pm v26.4.8 implements all four domains using lightweight, WASM-friendly algorithms: n-gram Markov chains, Weibull survival analysis, information-theoretic anomaly scoring, and EWMA/Jaccard drift detection. Additionally, the `@wasm4pm/ml` engine provides native, hyper-optimized algorithms for supervised and unsupervised learning within the process intelligence domain: decision tree and naive Bayes classification, linear/polynomial/exponential regression, K-means clustering, PCA dimensionality reduction, and enhanced anomaly detection with EMA smoothing. These ML algorithms are purpose-built for process mining — not general-purpose ML — and execute via dynamic import in the kernel pipeline, enabling execution plans that interleave discovery, ML, and analytics steps.
 
 ### 2.4 WebAssembly for Scientific Computing
 
@@ -176,8 +176,8 @@ The npm registry hosts 2.3 million packages but academic software is underrepres
 ```
 ┌──────────────────────────────────────────────────────────┐
 │  TypeScript Monorepo (9 packages + CLI)                  │
-│  pictl CLI | @pictl/engine | @pictl/config | ...         │
-│  @pictl/ml (native process ML engine) | @pictl/swarm     │
+│  pictl CLI | @wasm4pm/engine | @wasm4pm/config | ...         │
+│  @wasm4pm/ml (native process ML engine) | @wasm4pm/swarm     │
 ├──────────────────────────────────────────────────────────┤
 │  wasm4pm.js / wasm4pm_bg.js (wasm-bindgen glue code)    │
 │  170 KB JS + 166 KB glue = 336 KB JavaScript layer      │
@@ -186,7 +186,7 @@ The npm registry hosts 2.3 million packages but academic software is underrepres
 │  ~500KB–2.78MB binary | 54 modules | 28 algorithms       │
 │  Size varies by deployment profile (mobile/browser)       │
 ├──────────────────────────────────────────────────────────┤
-│  @pictl/ml (native, process-optimized ML)               │
+│  @wasm4pm/ml (native, process-optimized ML)               │
 │  Classification | Regression | Clustering | Forecasting  │
 │  PCA | Anomaly Detection | Smoothing                     │
 └──────────────────────────────────────────────────────────┘
@@ -196,15 +196,15 @@ The monorepo was consolidated from 16 packages to 9 in the v26.4.7 release cycle
 
 | Package                  | Role                                                                                 |
 | ------------------------ | ------------------------------------------------------------------------------------ |
-| `@pictl/contracts`       | Shared types, receipts, errors, plans, hashing, algorithm registry, prediction tasks |
-| `@pictl/engine`          | Engine lifecycle state machine (8 states)                                            |
-| `@pictl/kernel`          | WASM facade — 22 discovery + 6 ML algorithms, streaming via `stream()`               |
-| `@pictl/config`          | Zod-validated config, 5-layer precedence, provenance tracking                        |
-| `@pictl/planner`         | `plan(config)` → `ExecutionPlan`, 4 profiles: fast/balanced/quality/stream           |
-| `@pictl/observability`   | 3-layer output: CLI human, JSONL machine, OTEL spans                                 |
-| `@pictl/testing`         | Parity, determinism, CLI, OtelCapture, certification harnesses                       |
-| `@pictl/ml`              | Native process ML engine: classification, clustering, forecasting, anomaly, regression, PCA |
-| `@pictl/swarm`           | Multi-worker coordinator with convergence detection                                  |
+| `@wasm4pm/contracts`       | Shared types, receipts, errors, plans, hashing, algorithm registry, prediction tasks |
+| `@wasm4pm/engine`          | Engine lifecycle state machine (8 states)                                            |
+| `@wasm4pm/kernel`          | WASM facade — 22 discovery + 6 ML algorithms, streaming via `stream()`               |
+| `@wasm4pm/config`          | Zod-validated config, 5-layer precedence, provenance tracking                        |
+| `@wasm4pm/planner`         | `plan(config)` → `ExecutionPlan`, 4 profiles: fast/balanced/quality/stream           |
+| `@wasm4pm/observability`   | 3-layer output: CLI human, JSONL machine, OTEL spans                                 |
+| `@wasm4pm/testing`         | Parity, determinism, CLI, OtelCapture, certification harnesses                       |
+| `@wasm4pm/ml`              | Native process ML engine: classification, clustering, forecasting, anomaly, regression, PCA |
+| `@wasm4pm/swarm`           | Multi-worker coordinator with convergence detection                                  |
 
 ### 3.2 Rust Module Structure (54 modules)
 
@@ -488,7 +488,7 @@ The O(1) queue delay computation and O(k) bandit selection are designed for real
 
 ### 5.6 Native Process ML Engine
 
-The `@pictl/ml` package provides a native, hyper-optimized ML engine purpose-built for process intelligence — not a general-purpose ML library. Every algorithm is designed around the data structures and access patterns of event logs, trace features, and process model metrics.
+The `@wasm4pm/ml` package provides a native, hyper-optimized ML engine purpose-built for process intelligence — not a general-purpose ML library. Every algorithm is designed around the data structures and access patterns of event logs, trace features, and process model metrics.
 
 **Architecture**:
 
@@ -497,26 +497,26 @@ WASM Event Log
     │
     ├──► extract_case_features()        — WASM → FeatureMatrix (number[][])
     │
-    ├──► classifyTraces(features, {     — @pictl/ml (native)
+    ├──► classifyTraces(features, {     — @wasm4pm/ml (native)
     │      method: 'decision_tree' | 'naive_bayes',
     │      k: 5, maxDepth: 10 })
     │
-    ├──► regressRemainingTime(features, { — @pictl/ml (native)
+    ├──► regressRemainingTime(features, { — @wasm4pm/ml (native)
     │      method: 'linear_regression' | 'polynomial_regression'
     │             | 'exponential_regression',
     │      degree: 3 })
     │
-    ├──► clusterTraces(features, {      — @pictl/ml (native)
+    ├──► clusterTraces(features, {      — @wasm4pm/ml (native)
     │      method: 'kmeans', k: 5 })
     │
-    ├──► forecastThroughput(timestamps, { — @pictl/ml (native)
+    ├──► forecastThroughput(timestamps, { — @wasm4pm/ml (native)
     │      useExponential: true,
     │      forecastPeriods: 5 })
     │
-    ├──► detectEnhancedAnomalies(distances, { — @pictl/ml (native)
+    ├──► detectEnhancedAnomalies(distances, { — @wasm4pm/ml (native)
     │      smoothingMethod: 'ema' | 'sma' })
     │
-    └──► reduceFeaturesPCA(features, {  — @pictl/ml (native)
+    └──► reduceFeaturesPCA(features, {  — @wasm4pm/ml (native)
            nComponents: 3 })
 ```
 
@@ -530,13 +530,13 @@ WASM Event Log
 | Exponential Regression | `exponential_regression` | —                 | Growth modeling, doubling-time estimation         |
 | EMA Smoothing          | `ema`                    | `smoothingMethod` | Better drift signal smoothing than SMA            |
 
-**Kernel Pipeline Integration**: All 6 ML algorithms are registered in `@pictl/kernel` with full metadata (speed/quality tiers, complexity classes, memory estimates) and handler implementations. They execute via dynamic import (`await import('@pictl/ml')`) with `@ts-expect-error` annotations since the kernel package has no build-time dependency on the ML package. This pattern matches the MCP server's existing dynamic import approach and enables execution plans that interleave discovery, ML, and analytics steps:
+**Kernel Pipeline Integration**: All 6 ML algorithms are registered in `@wasm4pm/kernel` with full metadata (speed/quality tiers, complexity classes, memory estimates) and handler implementations. They execute via dynamic import (`await import('@wasm4pm/ml')`) with `@ts-expect-error` annotations since the kernel package has no build-time dependency on the ML package. This pattern matches the MCP server's existing dynamic import approach and enables execution plans that interleave discovery, ML, and analytics steps:
 
 ```
 pictl run -i log.xes --algorithm ml_classify --params '{"method":"decision_tree"}'
 ```
 
-**Design rationale**: The ML engine is implemented natively in TypeScript within `@pictl/ml`, not as a bridge to an external library. This design choice is deliberate: general-purpose WASM ML libraries (such as miniml) target broad ML workloads and include algorithms and abstractions unnecessary for process intelligence. By implementing purpose-built algorithms that operate directly on process mining data structures — trace feature matrices, activity frequency vectors, DFG adjacency counts — the engine avoids conversion overhead and enables optimizations specific to process data (e.g., sparse feature handling, activity-vocabulary-aware distance metrics). The native implementation also ensures that ML algorithms respect the same deployment profile gating as the WASM core, enabling consistent size optimization across the entire stack.
+**Design rationale**: The ML engine is implemented natively in TypeScript within `@wasm4pm/ml`, not as a bridge to an external library. This design choice is deliberate: general-purpose WASM ML libraries (such as miniml) target broad ML workloads and include algorithms and abstractions unnecessary for process intelligence. By implementing purpose-built algorithms that operate directly on process mining data structures — trace feature matrices, activity frequency vectors, DFG adjacency counts — the engine avoids conversion overhead and enables optimizations specific to process data (e.g., sparse feature handling, activity-vocabulary-aware distance metrics). The native implementation also ensures that ML algorithms respect the same deployment profile gating as the WASM core, enabling consistent size optimization across the entire stack.
 
 ---
 
@@ -572,7 +572,7 @@ pictl run -i log.xes --algorithm ml_classify --params '{"method":"decision_tree"
 | Regression        | linear, polynomial, exponential                      | O(n \* d²)     | ml_result | `ml_regress`  |
 | PCA               | covariance eigendecomposition                        | O(n \* d²)     | ml_result | `ml_pca`      |
 
-ML algorithms execute via dynamic import of `@pictl/ml` at runtime, receiving feature matrices from the WASM core's `extract_case_features()` function and returning JSON-serialized results as model handles in the kernel pipeline.
+ML algorithms execute via dynamic import of `@wasm4pm/ml` at runtime, receiving feature matrices from the WASM core's `extract_case_features()` function and returning JSON-serialized results as model handles in the kernel pipeline.
 
 ### 6.2 Quality Metrics (fitness, precision, simplicity, F-measure)
 
@@ -767,7 +767,7 @@ The predictive analytics suite demonstrates that ML algorithms can execute effic
 - **UCB1 bandit selection** is O(k) per selection — microseconds per call
 - **EWMA drift detection** is O(1) per value update — streaming-compatible
 
-**Native process ML engine** (`@pictl/ml`):
+**Native process ML engine** (`@wasm4pm/ml`):
 
 - **Decision trees** provide interpretable classification rules — critical for compliance use cases where auditors need to understand why a trace was classified as anomalous
 - **Naive Bayes** offers fast probabilistic baselines with confidence scoring via `predictProba`
@@ -807,8 +807,8 @@ The 82% size reduction for the mobile profile (2.7 MB → ~500 KB) is achieved b
 3. **Browser memory limit** — ~100 MB practical limit constrains logs to ~5,000 cases
 4. **serde_wasm_bindgen serialization** — `analyze_event_statistics` returns an empty object via the WASM binding; the JSON is constructed correctly in Rust but `serde_wasm_bindgen::to_value` produces `{}` — a known serialization issue requiring investigation
 5. **OCEL POWL discovery** — two variants (flattening, oc_powl) are implemented but less tested than classical discovery
-6. **ML kernel handlers require `@pictl/ml` at runtime** — the 6 ML algorithms use dynamic `import('@pictl/ml')` which will fail if the ML package is not installed; the kernel has no build-time dependency on the ML package by design (optional dependency pattern)
-7. **ML algorithm depth** — `@pictl/ml` provides foundational ML algorithms optimized for process intelligence but lacks advanced techniques (ensemble methods, gradient boosting, neural networks); these may be added as the engine matures and process-specific ML research advances
+6. **ML kernel handlers require `@wasm4pm/ml` at runtime** — the 6 ML algorithms use dynamic `import('@wasm4pm/ml')` which will fail if the ML package is not installed; the kernel has no build-time dependency on the ML package by design (optional dependency pattern)
+7. **ML algorithm depth** — `@wasm4pm/ml` provides foundational ML algorithms optimized for process intelligence but lacks advanced techniques (ensemble methods, gradient boosting, neural networks); these may be added as the engine matures and process-specific ML research advances
 
 ---
 
@@ -913,7 +913,7 @@ Organization C ──┘   (Model hashes, not data)   (No raw data shared)
 | Languages (via WASM)           | JavaScript/TypeScript    | Python, Go, Java, .NET |
 | Privacy-preserving deployments | 100%                     | 95%+                   |
 | Average process time saved     | N/A                      | 15-20%                 |
-| ML methods available           | 6 (native @pictl/ml)   | 30+                    |
+| ML methods available           | 6 (native @wasm4pm/ml)   | 30+                    |
 
 ---
 
@@ -923,11 +923,11 @@ wasm4pm v26.4.8 represents a qualitative leap from research prototype to product
 
 **Algorithms**: 28 registered algorithms — 22 discovery (14 classical + 8 POWL variants) + 6 ML (classification, clustering, forecasting, anomaly detection, regression, PCA) — with 30+ analytics functions and 18 POWL API functions. The most comprehensive WASM process mining toolkit to date.
 
-**Machine Learning**: The `@pictl/ml` native engine provides hyper-optimized algorithms purpose-built for process intelligence — decision trees, naive Bayes, polynomial/exponential regression, and EMA smoothing. All 6 ML algorithms are registered in the kernel pipeline with full metadata and handler implementations, enabling execution plans with ML steps via `pictl run`. The native implementation ensures consistent deployment profile gating and avoids external library dependencies.
+**Machine Learning**: The `@wasm4pm/ml` native engine provides hyper-optimized algorithms purpose-built for process intelligence — decision trees, naive Bayes, polynomial/exponential regression, and EMA smoothing. All 6 ML algorithms are registered in the kernel pipeline with full metadata and handler implementations, enabling execution plans with ML steps via `wpm run`. The native implementation ensures consistent deployment profile gating and avoids external library dependencies.
 
 **Deployment Profiles**: Five deployment profiles (mobile/edge/fog/iot/browser) using 30+ Cargo feature flags for conditional compilation — enabling up to 82% binary size reduction for resource-constrained environments. The hand-rolled `hand_stats.rs` module replaces statrs for size-constrained profiles. Zero breaking changes: the default `npm install wasm4pm` experience is unchanged.
 
-**Performance**: POWL discovery at ~360,000 events/second on BPI 2020. All classical algorithms linear from 100 to 50,000 cases. Predictive analytics at sub-millisecond latency for interactive use. ML inference via the native `@pictl/ml` engine (typically < 50 ms for classification/regression on typical event logs). Browser profile at ~500 KB enables process mining in mobile web applications.
+**Performance**: POWL discovery at ~360,000 events/second on BPI 2020. All classical algorithms linear from 100 to 50,000 cases. Predictive analytics at sub-millisecond latency for interactive use. ML inference via the native `@wasm4pm/ml` engine (typically < 50 ms for classification/regression on typical event logs). Browser profile at ~500 KB enables process mining in mobile web applications.
 
 **Engineering**: Successful npm publication (2.7 MB, 9 files) overcoming wasm-pack's `.gitignore` trap. 319 passing tests. 16→9 package monorepo consolidation. Three build targets (bundler, nodejs, web). MCP server for AI integration. pictl doctor with 17 environment checks.
 
@@ -1006,21 +1006,21 @@ Weitl, F., Lánský, J., & Nguyen, P. T. (2023). Remaining time prediction for b
 | 21  | POWL Tree                         | 30            | 80              | POWL         | Kourani & van der Aalst  |
 | 22  | POWL from DFG                     | 35            | 85              | POWL         | Extended                 |
 
-**ML Algorithms (native engine, registered in kernel pipeline via @pictl/ml):**
+**ML Algorithms (native engine, registered in kernel pipeline via @wasm4pm/ml):**
 
 | #   | Algorithm   | Speed (1-100) | Quality (1-100) | Output Type | Source          |
 | --- | ----------- | ------------- | --------------- | ----------- | --------------- |
-| 23  | ML Classify | 50            | 60              | ml_result   | @pictl/ml      |
-| 24  | ML Cluster  | 55            | 55              | ml_result   | @pictl/ml      |
-| 25  | ML Forecast | 45            | 65              | ml_result   | @pictl/ml      |
-| 26  | ML Anomaly  | 40            | 70              | ml_result   | @pictl/ml      |
-| 27  | ML Regress  | 50            | 60              | ml_result   | @pictl/ml      |
-| 28  | ML PCA      | 45            | 50              | ml_result   | @pictl/ml      |
+| 23  | ML Classify | 50            | 60              | ml_result   | @wasm4pm/ml      |
+| 24  | ML Cluster  | 55            | 55              | ml_result   | @wasm4pm/ml      |
+| 25  | ML Forecast | 45            | 65              | ml_result   | @wasm4pm/ml      |
+| 26  | ML Anomaly  | 40            | 70              | ml_result   | @wasm4pm/ml      |
+| 27  | ML Regress  | 50            | 60              | ml_result   | @wasm4pm/ml      |
+| 28  | ML PCA      | 45            | 50              | ml_result   | @wasm4pm/ml      |
 
 ## Appendix B: Complete Capability Catalog (50+ functions)
 
 Discovery: 14 classical + 8 POWL variants  
-ML: 6 algorithms (classify, cluster, forecast, anomaly, regress, PCA) via @pictl/ml (native engine)
+ML: 6 algorithms (classify, cluster, forecast, anomaly, regress, PCA) via @wasm4pm/ml (native engine)
 Prediction: 15+ functions (next-activity, remaining-time, outcome, drift, resource, features)  
 Conformance: 4 functions (token replay, alignments, DECLARE, OCEL)  
 Analysis: 15+ functions (statistics, bottlenecks, rework, variants, complexity, patterns, dependencies, clustering, data quality)  

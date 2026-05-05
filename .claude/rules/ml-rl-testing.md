@@ -13,7 +13,7 @@
 | `ml_regress` | Features + target | Coefficients | R², MAE |
 | `ml_pca` | Feature matrix | Reduced dimensions | Variance explained |
 
-**Known behavior:** `@pictl/ml` functions succeed with empty arrays. Don't assume rejection.
+**Known behavior:** `@wasm4pm/ml` functions succeed with empty arrays. Don't assume rejection.
 
 ## Prediction Tasks (6 perspectives)
 

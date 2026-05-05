@@ -4,7 +4,7 @@ High-performance process mining CLI for the Vision 2030 architecture.
 
 ## Overview
 
-`pictl` is the primary command-line interface for the `pictl` platform. It provides tools for system diagnostics, project initialization, real-time event routing (telco), and core process mining operations like discovery and conformance checking.
+`wpm` (wasm4pm) is the primary command-line interface for the `wpm` (wasm4pm) platform. It provides tools for system diagnostics, project initialization, real-time event routing (telco), and core process mining operations like discovery and conformance checking.
 
 ## Installation
 

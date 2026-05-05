@@ -16,14 +16,14 @@
 ./scripts/verify-otel-coverage.sh --verbose
 
 # JSON output for tooling
-cat .pictl/otel-coverage.json | jq '.by_package.config.missing[]'
+cat .wasm4pm/otel-coverage.json | jq '.by_package.config.missing[]'
 ```
 
 ### 2. Pick a Package
 Start with smaller packages:
-- `@pictl/observability` (48 functions) — owns Instrumentation API
-- `@pictl/ml` (19 functions) — contained ML analysis
-- `@pictl/kernel` (37 functions) — algorithm registry
+- `@wasm4pm/observability` (48 functions) — owns Instrumentation API
+- `@wasm4pm/ml` (19 functions) — contained ML analysis
+- `@wasm4pm/kernel` (37 functions) — algorithm registry
 
 ### 3. Add Spans to Package
 1. Open each file in the package
@@ -57,7 +57,7 @@ export function verifyConfigHash(config: Config, hash: string): boolean {
 
 **After instrumentation:**
 ```typescript
-import { Instrumentation, RequiredOtelAttributes } from '@pictl/observability';
+import { Instrumentation, RequiredOtelAttributes } from '@wasm4pm/observability';
 
 export function hashConfig(
   config: Config,
@@ -270,38 +270,38 @@ export async function readLog(
 ## Priority Order for Instrumentation
 
 ### Phase 1: Foundation (80 functions)
-1. **@pictl/observability** (48 functions)
+1. **@wasm4pm/observability** (48 functions)
    - Rationale: Owns Instrumentation API; must be 100% instrumented
    - Impact: Enables all other packages
 
-2. **@pictl/contracts** (102 functions)
+2. **@wasm4pm/contracts** (102 functions)
    - Rationale: Shared types; high reuse
    - Impact: Shared contract compliance
 
 ### Phase 2: Core Engines (100+ functions)
-3. **@pictl/engine** (81 functions)
+3. **@wasm4pm/engine** (81 functions)
    - Rationale: State machine; critical path
    - Impact: Observability of engine lifecycle
 
-4. **@pictl/kernel** (37 functions)
+4. **@wasm4pm/kernel** (37 functions)
    - Rationale: Algorithm orchestration
    - Impact: Visibility into algorithm execution
 
 ### Phase 3: Analysis & Planning (46 functions)
-5. **@pictl/ml** (19 functions)
+5. **@wasm4pm/ml** (19 functions)
    - Rationale: ML analysis; contained scope
    - Impact: ML operation tracing
 
-6. **@pictl/planner** (27 functions)
+6. **@wasm4pm/planner** (27 functions)
    - Rationale: Execution planning
    - Impact: Plan generation observability
 
 ### Phase 4: Utilities (245 functions)
-7. **@pictl/swarm** (29 functions)
+7. **@wasm4pm/swarm** (29 functions)
    - Rationale: Multi-worker coordination
    - Impact: Distributed execution tracing
 
-8. **@pictl/testing** (216 functions)
+8. **@wasm4pm/testing** (216 functions)
    - Rationale: Test infrastructure; less critical
    - Impact: Test execution transparency
 
@@ -459,7 +459,7 @@ export function* generateConfigs(
 
 ### Unit Test Example
 ```typescript
-import { Instrumentation } from '@pictl/observability';
+import { Instrumentation } from '@wasm4pm/observability';
 
 describe('hashConfig', () => {
   it('should emit progress event', () => {
@@ -484,7 +484,7 @@ describe('hashConfig', () => {
 
 ### Integration Test Example
 ```typescript
-import { OtelCapture } from '@pictl/testing';
+import { OtelCapture } from '@wasm4pm/testing';
 
 describe('hashConfig integration', () => {
   it('should emit OTEL span during hashing', async () => {
@@ -522,7 +522,7 @@ Track instrumentation progress:
 watch -n 5 './scripts/verify-otel-coverage.sh --threshold=100'
 
 # Export to CSV
-jq -r '.by_package | to_entries[] | [.key, .value.instrumented, .value.total] | @csv' .pictl/otel-coverage.json
+jq -r '.by_package | to_entries[] | [.key, .value.instrumented, .value.total] | @csv' .wasm4pm/otel-coverage.json
 ```
 
 **Target milestones:**
@@ -585,8 +585,8 @@ const { event, otelEvent } = Instrumentation.createProgressEvent(...);
 
 - OTEL Specification: https://opentelemetry.io/docs/specs/protocol/
 - pictl Observability API: `packages/observability/src/instrumentation.ts`
-- Coverage Dashboard: `.pictl/otel-coverage.md`
-- Coverage JSON: `.pictl/otel-coverage.json`
+- Coverage Dashboard: `.wasm4pm/otel-coverage.md`
+- Coverage JSON: `.wasm4pm/otel-coverage.json`
 - Enforcement Rules: `.claude/OTEL_COVERAGE.md`
 
 ---

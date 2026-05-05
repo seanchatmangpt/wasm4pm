@@ -12,7 +12,7 @@ A single process model answers "what is the process?" But many real questions re
 - **Temporal**: How does Q1 execution compare to Q2?
 - **Variant detection**: What distinguishes the "happy path" (normal cases) from the exception path (cases that required manual intervention)?
 
-`pictl diff` answers these questions by computing a structured comparison of two event logs. The comparison is grounded in a single metric -- **Jaccard similarity on DFG edges** -- with additional detail on activities, edge frequencies, and trace variants.
+`wpm diff` answers these questions by computing a structured comparison of two event logs. The comparison is grounded in a single metric -- **Jaccard similarity on DFG edges** -- with additional detail on activities, edge frequencies, and trace variants.
 
 ---
 
@@ -51,7 +51,7 @@ Where E_A is the edge set from log A and E_B is the edge set from log B.
 | 0.3 - 0.5 | Significantly different. Only partial overlap in process behavior. |
 | 0.0 - 0.3 | Almost unrelated processes. May share activity names but very different flows. |
 
-A single number is useful for quick assessment, but it hides the details. A Jaccard score of 0.70 could mean "one extra edge" or "30% of the process is different." That is why `pictl diff` decomposes the comparison into four dimensions.
+A single number is useful for quick assessment, but it hides the details. A Jaccard score of 0.70 could mean "one extra edge" or "30% of the process is different." That is why `wpm diff` decomposes the comparison into four dimensions.
 
 ---
 
@@ -240,8 +240,8 @@ Both DFGs are discovered using the same algorithm (`dfg` -- the fast directly-fo
 
 **Drift detection** is concept drift detection applied within a single log over time (sliding windows). **Diff** is comparison applied between two separate logs. Both use Jaccard similarity on DFG edges, but they answer different questions:
 
-- `pictl predict drift`: "Is this single process changing over time?"
-- `pictl diff`: "Are these two logs from the same or different processes?"
+- `wpm predict drift`: "Is this single process changing over time?"
+- `wpm diff`: "Are these two logs from the same or different processes?"
 
 **Conformance checking** compares a single trace against a reference model. Diff compares two models against each other. Conformance answers "does this case follow the rules?" Diff answers "are the rules themselves different?"
 

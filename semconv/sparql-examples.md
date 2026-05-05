@@ -2,7 +2,7 @@
 
 > **Purpose**: Demonstrate SPARQL patterns for querying pictl proof artifacts stored as RDF triples.
 > **Audience**: Process mining analysts, data engineers, semantic reasoning developers.
-> **Ontology**: `pictl-ontology.ttl` (pm: = http://purl.org/pm/ontology#)
+> **Ontology**: `wasm4pm-ontology.ttl` (pm: = http://purl.org/pm/ontology#)
 
 ---
 
@@ -811,7 +811,7 @@ BIND(IF(?condition, ?value_if_true, ?value_if_false) AS ?result)
 
 ## Resources
 
-- **pictl Ontology**: `pictl-ontology.ttl`
+- **pictl Ontology**: `wasm4pm-ontology.ttl`
 - **Query Registry**: `query-registry.json`
 - **SPARQL 1.1 Standard**: https://www.w3.org/TR/sparql11-query/
 - **W3C PROV Ontology**: https://www.w3.org/TR/prov-o/

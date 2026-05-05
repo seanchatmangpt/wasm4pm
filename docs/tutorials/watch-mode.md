@@ -264,9 +264,9 @@ Response:
 | Scenario | Recommendation |
 |----------|-----------------|
 | Live event streams | ✅ Use watch mode |
-| Static files | ❌ Use normal `pictl run` |
+| Static files | ❌ Use normal `wpm run` |
 | Real-time dashboards | ✅ Use watch mode |
-| Batch processing | ❌ Use normal `pictl run` |
+| Batch processing | ❌ Use normal `wpm run` |
 | Continuous monitoring | ✅ Use watch mode |
 
 ### Checkpoint Semantics

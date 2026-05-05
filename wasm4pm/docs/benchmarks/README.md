@@ -27,7 +27,7 @@ benchmarks/
 
 ### How-To Guides (solve a specific problem)
 
-- [Compare Algorithms](./how-to/compare-algorithms.md) -- side-by-side algorithm comparison with `pictl compare`
+- [Compare Algorithms](./how-to/compare-algorithms.md) -- side-by-side algorithm comparison with `wpm compare`
 - [Profile a Slow Algorithm](./how-to/profile-slow-algorithm.md) -- diagnose performance bottlenecks
 - [CI/CD Integration](./how-to/cicd-integration.md) -- add benchmarks to your pipeline
 - [Browser Benchmarks](./how-to/browser-benchmarks.md) -- run benchmarks in Chrome via Playwright

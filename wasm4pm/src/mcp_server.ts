@@ -1,8 +1,8 @@
 /**
- * MCP Server Integration for pictl
+ * MCP Server Integration for wasm4pm
  *
- * Exposes pictl process mining capabilities as Model Context Protocol (MCP) tools.
- * Enables Claude and other MCP clients to use pictl for process discovery, analysis, and visualization.
+ * Exposes wasm4pm process mining capabilities as Model Context Protocol (MCP) tools.
+ * Enables Claude and other MCP clients to use wasm4pm for process discovery, analysis, and visualization.
  *
  * Usage:
  *   const server = new PictlMCPServer();
@@ -16,16 +16,16 @@ import {
   type CallToolResult,
 } from '@modelcontextprotocol/sdk/types.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import * as wasm from '../pkg/pictl.js';
+import * as wasm from '../pkg/wasm4pm.js';
 
 interface ToolInput {
   [key: string]: unknown;
 }
 
 /**
- * pictl MCP Server
+ * wasm4pm MCP Server
  *
- * Provides MCP interface to pictl functionality including:
+ * Provides MCP interface to wasm4pm functionality including:
  * - Process discovery (18 algorithms)
  * - Conformance checking
  * - Process analysis and visualization
@@ -38,7 +38,7 @@ export class PictlMCPServer {
   constructor() {
     this.server = new Server(
       {
-        name: 'pictl',
+        name: 'wasm4pm',
         version: '0.5.4',
       },
       {
@@ -669,7 +669,7 @@ export class PictlMCPServer {
       // Registry
       {
         name: 'get_capability_registry',
-        description: 'Get the complete catalog of all pictl functions organized by category.',
+        description: 'Get the complete catalog of all wasm4pm functions organized by category.',
         inputSchema: {
           type: 'object' as const,
           properties: {},
@@ -1659,7 +1659,7 @@ export class PictlMCPServer {
    */
   async start(): Promise<void> {
     this.server.connect(this.transport);
-    console.error('pictl MCP server started');
+    console.error('wasm4pm MCP server started');
   }
 }
 

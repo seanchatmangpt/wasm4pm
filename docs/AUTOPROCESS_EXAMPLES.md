@@ -1,8 +1,8 @@
 # pictl autoprocess — Usage Examples
 
-The `pictl autoprocess` command runs the four-phase autonomic loop: **Perception → Decision → Protection → Optimization**. Each cycle analyzes the event log, evaluates system health, checks statistical process control alerts, and dispatches RL-selected actions.
+The `wpm autoprocess` command runs the four-phase autonomic loop: **Perception → Decision → Protection → Optimization**. Each cycle analyzes the event log, evaluates system health, checks statistical process control alerts, and dispatches RL-selected actions.
 
-State (RL, SPC, circuit breaker) persists to `.pictl/autoprocess-state.json` across runs, enabling long-horizon learning and failure recovery.
+State (RL, SPC, circuit breaker) persists to `.wasm4pm/autoprocess-state.json` across runs, enabling long-horizon learning and failure recovery.
 
 ---
 
@@ -55,7 +55,7 @@ Run AutoProcess 9 times on the same log, observing RL state growth and health im
 # First run — cold start (RL state initialized from scratch)
 pictl autoprocess data/purchase_process.xes
 
-# Run 2-9 — warm start (RL state restored from .pictl/autoprocess-state.json)
+# Run 2-9 — warm start (RL state restored from .wasm4pm/autoprocess-state.json)
 for i in {2..9}; do
   echo "=== Run $i ==="
   pictl autoprocess data/purchase_process.xes
@@ -74,10 +74,10 @@ State file grows as RL agent explores Q-table (`~500 entries after 9 runs`).
 **Check state growth:**
 
 ```bash
-ls -lh .pictl/autoprocess-state.json
-# -rw-r--r--  5.2K  Apr 16 10:23  .pictl/autoprocess-state.json
+ls -lh .wasm4pm/autoprocess-state.json
+# -rw-r--r--  5.2K  Apr 16 10:23  .wasm4pm/autoprocess-state.json
 
-cat .pictl/autoprocess-state.json | jq '.rl_state | keys | length'
+cat .wasm4pm/autoprocess-state.json | jq '.rl_state | keys | length'
 # 487  (487 unique state-action pairs learned)
 ```
 
@@ -88,8 +88,8 @@ cat .pictl/autoprocess-state.json | jq '.rl_state | keys | length'
 Restore RL and SPC state from a saved checkpoint, continue learning from that point.
 
 ```bash
-# Assume .pictl/autoprocess-state.json exists from previous session
-cat .pictl/autoprocess-state.json | jq '.saved_at'
+# Assume .wasm4pm/autoprocess-state.json exists from previous session
+cat .wasm4pm/autoprocess-state.json | jq '.saved_at'
 # "2026-04-16T09:15:23.456Z"
 
 # Run next cycle — RL state is restored automatically
@@ -304,7 +304,7 @@ exit 0
 
 ## Output Files
 
-### `.pictl/autoprocess-state.json`
+### `.wasm4pm/autoprocess-state.json`
 
 Persisted autonomic state (auto-saved after each cycle).
 
@@ -368,7 +368,7 @@ done
 **Recovery:**
 ```bash
 # Reset state, start fresh
-rm .pictl/autoprocess-state.json
+rm .wasm4pm/autoprocess-state.json
 pictl autoprocess data/purchase_process.xes
 ```
 

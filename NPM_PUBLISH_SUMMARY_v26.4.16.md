@@ -11,21 +11,21 @@
 | Package | Name | Version | Private | Exports | Publisher |
 |---------|------|---------|---------|---------|-----------|
 | wasm4pm | `wasm4pm` | 26.4.16 | ❌ | JS (bundler, nodejs, web) | Yes |
-| @pictl/agents | `@pictl/agents` | 26.4.16 | ❌ | `dist/` | Yes |
-| @pictl/config | `@pictl/config` | 26.4.16 | ❌ | `dist/` | Yes |
-| @pictl/contracts | `@pictl/contracts` | 26.4.16 | ❌ | `dist/` | Yes |
-| @pictl/engine | `@pictl/engine` | 26.4.16 | ❌ | `dist/` | Yes |
-| @pictl/kernel | `@pictl/kernel` | 26.4.16 | ❌ | `dist/` | Yes |
-| @pictl/ml | `@pictl/ml` | 26.4.16 | ❌ | `dist/` | Yes |
-| @pictl/observability | `@pictl/observability` | 26.4.16 | ❌ | `dist/` | Yes |
-| @pictl/planner | `@pictl/planner` | 26.4.16 | ❌ | `dist/` | Yes |
-| @pictl/swarm | `@pictl/swarm` | 26.4.16 | ❌ | `dist/` | Yes |
-| @pictl/testing | `@pictl/testing` | 26.4.16 | ❌ | `dist/` | Yes |
-| **@pictl/cli** | **@seanchatmangpt/pictl** | 26.4.16 | ❌ | `dist/` + bin | **Yes** |
+| @wasm4pm/agents | `@wasm4pm/agents` | 26.4.16 | ❌ | `dist/` | Yes |
+| @wasm4pm/config | `@wasm4pm/config` | 26.4.16 | ❌ | `dist/` | Yes |
+| @wasm4pm/contracts | `@wasm4pm/contracts` | 26.4.16 | ❌ | `dist/` | Yes |
+| @wasm4pm/engine | `@wasm4pm/engine` | 26.4.16 | ❌ | `dist/` | Yes |
+| @wasm4pm/kernel | `@wasm4pm/kernel` | 26.4.16 | ❌ | `dist/` | Yes |
+| @wasm4pm/ml | `@wasm4pm/ml` | 26.4.16 | ❌ | `dist/` | Yes |
+| @wasm4pm/observability | `@wasm4pm/observability` | 26.4.16 | ❌ | `dist/` | Yes |
+| @wasm4pm/planner | `@wasm4pm/planner` | 26.4.16 | ❌ | `dist/` | Yes |
+| @wasm4pm/swarm | `@wasm4pm/swarm` | 26.4.16 | ❌ | `dist/` | Yes |
+| @wasm4pm/testing | `@wasm4pm/testing` | 26.4.16 | ❌ | `dist/` | Yes |
+| **@wasm4pm/cli** | **@wasm4pm/cli** | 26.4.16 | ❌ | `dist/` + bin | **Yes** |
 
 **Total Packages**: 12 public npm packages  
-**Primary Package**: `@seanchatmangpt/pictl` (the CLI tool)  
-**Secondary Packages**: 10 foundation packages (`@pictl/*`) + 1 WASM core (`wasm4pm`)
+**Primary Package**: `@wasm4pm/cli` (the CLI tool)  
+**Secondary Packages**: 10 foundation packages (`@wasm4pm/*`) + 1 WASM core (`wasm4pm`)
 
 ---
 
@@ -53,7 +53,7 @@ publish-branch=main
 **Fixed in this session:**
 - ❌ Root `package.json`: 26.4.9 → ✅ 26.4.16
 - ❌ `wasm4pm/package.json`: 26.4.6 → ✅ 26.4.16
-- ✅ All 10 `@pictl/*` packages: Already 26.4.16
+- ✅ All 10 `@wasm4pm/*` packages: Already 26.4.16
 
 **All 12 packages now at v26.4.16** ✅
 
@@ -62,7 +62,7 @@ publish-branch=main
 ## Changelog Status
 
 ### CHANGELOG.md — Vision 2030 Release
-**Location**: `/Users/sac/chatmangpt/pictl/CHANGELOG.md`
+**Location**: `/Users/sac/chatmangpt/wasm4pm/CHANGELOG.md`
 
 **Section**: `[26.4.16] - 2026-04-16 — Vision 2030`
 
@@ -72,8 +72,8 @@ publish-branch=main
 - ✅ Western Electric SPC (100-snapshot ring buffer)
 - ✅ 8D state space (460,800 states)
 - ✅ Circuit breaker pattern
-- ✅ State persistence to `.pictl/autoprocess-state.json`
-- ✅ New command: `pictl autoprocess <log.xes>`
+- ✅ State persistence to `.wasm4pm/autoprocess-state.json`
+- ✅ New command: `wpm autoprocess <log.xes>`
 - ✅ Full cycle latency: 102.32 ns
 - ✅ Recovery MTTR: <1 second
 - ✅ Features, changes, fixes, performance metrics, testing
@@ -88,29 +88,29 @@ publish-branch=main
 ## Publishing Dependency Tree
 
 ```
-@seanchatmangpt/pictl (@pictl/cli)
-├─ @pictl/config (5-layer config system)
-├─ @pictl/engine (state machine lifecycle)
-│  └─ @pictl/contracts (shared types, receipts, errors)
-├─ @pictl/ml (6 ML algorithms)
-└─ ... 8 more @pictl/* packages
+@wasm4pm/cli (@wasm4pm/cli)
+├─ @wasm4pm/config (5-layer config system)
+├─ @wasm4pm/engine (state machine lifecycle)
+│  └─ @wasm4pm/contracts (shared types, receipts, errors)
+├─ @wasm4pm/ml (6 ML algorithms)
+└─ ... 8 more @wasm4pm/* packages
 
 wasm4pm (WASM core)
 └─ Compiled to 3 targets: bundler, nodejs, web
 
 Dependency order (publish in this sequence):
-1. @pictl/contracts (no dependencies)
-2. @pictl/observability (minimal deps)
-3. @pictl/config (depends on contracts)
-4. @pictl/engine (depends on contracts, observability, config)
-5. @pictl/kernel (depends on contracts, engine)
-6. @pictl/planner (depends on contracts, config)
-7. @pictl/ml (standalone, minimal deps)
-8. @pictl/agents (depends on contracts, engine)
-9. @pictl/swarm (depends on contracts, engine, kernel)
-10. @pictl/testing (depends on contracts, engine)
+1. @wasm4pm/contracts (no dependencies)
+2. @wasm4pm/observability (minimal deps)
+3. @wasm4pm/config (depends on contracts)
+4. @wasm4pm/engine (depends on contracts, observability, config)
+5. @wasm4pm/kernel (depends on contracts, engine)
+6. @wasm4pm/planner (depends on contracts, config)
+7. @wasm4pm/ml (standalone, minimal deps)
+8. @wasm4pm/agents (depends on contracts, engine)
+9. @wasm4pm/swarm (depends on contracts, engine, kernel)
+10. @wasm4pm/testing (depends on contracts, engine)
 11. wasm4pm (WASM core, published to npm)
-12. @seanchatmangpt/pictl (CLI, depends on all above)
+12. @wasm4pm/cli (CLI, depends on all above)
 ```
 
 ---
@@ -143,8 +143,8 @@ Dependency order (publish in this sequence):
 ### Post-Publish Validation (Lab Environment)
 - [ ] Run `cd lab && pnpm test` against published npm artifacts
 - [ ] All 12 packages installable from npm
-- [ ] @seanchatmangpt/pictl CLI executable (`pictl --version`)
-- [ ] All 20 commands available (`pictl --help`)
+- [ ] @wasm4pm/cli CLI executable (`wpm --version`)
+- [ ] All 20 commands available (`wpm --help`)
 
 ---
 
@@ -154,7 +154,7 @@ Dependency order (publish in this sequence):
 
 **Step 1: Pre-flight checks**
 ```bash
-cd /Users/sac/chatmangpt/pictl
+cd /Users/sac/chatmangpt/wasm4pm
 git status                               # Should be clean
 git branch                               # Should be main
 pnpm run release:verify                  # Full release validation
@@ -166,11 +166,11 @@ pnpm run release:verify                  # Full release validation
 pnpm publish --recursive --access public
 
 # Or publish individual packages (if needed)
-pnpm --filter @pictl/contracts publish
-pnpm --filter @pictl/observability publish
-pnpm --filter @pictl/config publish
+pnpm --filter @wasm4pm/contracts publish
+pnpm --filter @wasm4pm/observability publish
+pnpm --filter @wasm4pm/config publish
 # ... (continue in dependency order above)
-pnpm --filter @seanchatmangpt/pictl publish --access public
+pnpm --filter @wasm4pm/cli publish --access public
 pnpm --filter wasm4pm publish
 ```
 
@@ -208,10 +208,10 @@ git push origin v26.4.16
 1. **AutoProcess Autonomic Loop** — Closed-loop MAPE-K cycle with <102 ns latency
 2. **5 RL Agents** — Q-Learning, SARSA, Double Q-Learning, Expected SARSA, REINFORCE
 3. **Western Electric SPC** — Real-time process drift detection (100-snapshot buffer)
-4. **State Persistence** — Q-table + SPC history auto-saved to `.pictl/autoprocess-state.json`
+4. **State Persistence** — Q-table + SPC history auto-saved to `.wasm4pm/autoprocess-state.json`
 5. **Circuit Breaker** — 3-state fault isolation (Closed/Open/HalfOpen)
 6. **Recovery MTTR** — <1 second (degraded→ready ~10-100ms, failed→ready <1s)
-7. **New Command** — `pictl autoprocess <log.xes>` for autonomous process analysis
+7. **New Command** — `wpm autoprocess <log.xes>` for autonomous process analysis
 8. **No Breaking Changes** — Fully backward compatible
 
 ---
@@ -225,8 +225,8 @@ git push origin v26.4.16
 
 ### Package Artifacts
 - **wasm4pm**: WASM binaries in `pkg/` (compiled by wasm-pack)
-- **@pictl/** packages: TypeScript compiled to `dist/` (type-safe ESM)
-- **@seanchatmangpt/pictl**: CLI binary in `dist/bin/pictl.js` (executable)
+- **@wasm4pm/** packages: TypeScript compiled to `dist/` (type-safe ESM)
+- **@wasm4pm/cli**: CLI binary in `dist/bin/pictl.js` (executable)
 
 ### Authentication
 - Ensure npm token is configured: `npm config get registry`

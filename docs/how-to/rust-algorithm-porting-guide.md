@@ -20,7 +20,7 @@ Create a new file in `wasm4pm/src/algorithms/`:
 
 ```bash
 # Example: porting frequency analysis algorithm
-touch /Users/sac/chatmangpt/pictl/wasm4pm/src/algorithms/frequency_analysis.rs
+touch /Users/sac/chatmangpt/wasm4pm/wasm4pm/src/algorithms/frequency_analysis.rs
 ```
 
 ### 1.2 Algorithm Structure Template
@@ -266,7 +266,7 @@ Zod schemas ensure type safety and LLM-readable function signatures.
 ### 2.1 Create Contract File
 
 ```bash
-touch /Users/sac/chatmangpt/pictl/packages/contracts/src/algorithms/frequency_analysis.ts
+touch /Users/sac/chatmangpt/wasm4pm/packages/contracts/src/algorithms/frequency_analysis.ts
 ```
 
 ### 2.2 Contract Definitions
@@ -365,7 +365,7 @@ log.analyzeActivityPairs(eventlog_handle, 'concept:name');
 ### 4.1 Build WASM Target
 
 ```bash
-cd /Users/sac/chatmangpt/pictl/wasm4pm
+cd /Users/sac/chatmangpt/wasm4pm/wasm4pm
 
 # Build for Node.js (server-side)
 npm run build:nodejs
@@ -374,7 +374,7 @@ npm run build:nodejs
 npm run build:web
 
 # Or via Makefile (all targets)
-cd /Users/sac/chatmangpt/pictl
+cd /Users/sac/chatmangpt/wasm4pm
 make bench-wasm  # Builds WASM as part of full suite
 ```
 
@@ -416,7 +416,7 @@ export function discover_activity_frequencies(
 
 ```bash
 # Use BPI Challenge 2012 dataset (standard for testing)
-cd /Users/sac/chatmangpt/pictl
+cd /Users/sac/chatmangpt/wasm4pm
 make bench-data  # Downloads datasets to bench_data/
 
 # Or create minimal test log
@@ -448,7 +448,7 @@ console.log(JSON.stringify(log, null, 2));
 
 ```bash
 # Via pictl CLI (requires wasm4pm compiled)
-cd /Users/sac/chatmangpt/pictl
+cd /Users/sac/chatmangpt/wasm4pm
 
 # Load log
 LOG_HANDLE=$(node -e "
@@ -529,7 +529,7 @@ criterion_main!(benches);
 ### 6.2 Run Benchmark
 
 ```bash
-cd /Users/sac/chatmangpt/pictl/wasm4pm
+cd /Users/sac/chatmangpt/wasm4pm/wasm4pm
 
 # Single benchmark
 cargo bench --release --bench fast_algorithms -- activity_frequencies_200k

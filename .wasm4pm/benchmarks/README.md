@@ -11,8 +11,8 @@ First time setup:
 ```bash
 git checkout main
 make bench                                    # Run full benchmark suite
-bash .pictl/benchmarks/update-baseline.sh     # Save baseline
-git add .pictl/benchmarks/baselines/
+bash .wasm4pm/benchmarks/update-baseline.sh     # Save baseline
+git add .wasm4pm/benchmarks/baselines/
 git commit -m "chore: establish benchmark baselines"
 git push origin main
 ```
@@ -33,14 +33,14 @@ This automatically:
 
 ```bash
 make bench-trends                                          # Show trend summary
-python3 .pictl/benchmarks/plot-trends.py --algorithm dfg  # Specific algorithm
-python3 .pictl/benchmarks/plot-trends.py --days 7         # Last 7 days
+python3 .wasm4pm/benchmarks/plot-trends.py --algorithm dfg  # Specific algorithm
+python3 .wasm4pm/benchmarks/plot-trends.py --days 7         # Last 7 days
 ```
 
 ## System Architecture
 
 ```
-.pictl/benchmarks/
+.wasm4pm/benchmarks/
 ├── baselines/                    ← Baseline storage (versioned)
 │   ├── main-latest.json         (symlink to most recent main run)
 │   ├── main-20260411_120000.json (timestamped results)
@@ -78,12 +78,12 @@ git commit -m "feat: add filtering support [PERF-JUSTIFIED]"
 # After merging PR to main:
 git pull origin main
 make bench-baseline-update      # Save new baseline
-git add .pictl/benchmarks/baselines/
+git add .wasm4pm/benchmarks/baselines/
 git commit -m "chore: update benchmark baselines after <feature>"
 git push origin main
 
 # Or in CI/CD pipeline:
-# bash .pictl/benchmarks/update-baseline.sh --ci
+# bash .wasm4pm/benchmarks/update-baseline.sh --ci
 ```
 
 ### For Performance Analysis (Any Time)
@@ -93,21 +93,21 @@ git push origin main
 make bench-trends
 
 # Specific algorithm, last 7 days:
-python3 .pictl/benchmarks/plot-trends.py --algorithm ilp --days 7 --format ascii
+python3 .wasm4pm/benchmarks/plot-trends.py --algorithm ilp --days 7 --format ascii
 
 # Export as JSON for external tools:
-python3 .pictl/benchmarks/plot-trends.py --algorithm dfg --format json > dfg_trends.json
+python3 .wasm4pm/benchmarks/plot-trends.py --algorithm dfg --format json > dfg_trends.json
 
 # Compare two algorithms:
-python3 .pictl/benchmarks/plot-trends.py --algorithm dfg --days 30 --format ascii
-python3 .pictl/benchmarks/plot-trends.py --algorithm heuristic_miner --days 30 --format ascii
+python3 .wasm4pm/benchmarks/plot-trends.py --algorithm dfg --days 30 --format ascii
+python3 .wasm4pm/benchmarks/plot-trends.py --algorithm heuristic_miner --days 30 --format ascii
 ```
 
 ## Files & Formats
 
 ### Baselines (JSON)
 
-**File:** `.pictl/benchmarks/baselines/main-{TIMESTAMP}.json`
+**File:** `.wasm4pm/benchmarks/baselines/main-{TIMESTAMP}.json`
 
 Structure:
 ```json
@@ -138,7 +138,7 @@ Structure:
 
 ### Regression Report (Markdown)
 
-**File:** `.pictl/benchmarks/regression-report.md` + `regression-report-{TIMESTAMP}.md`
+**File:** `.wasm4pm/benchmarks/regression-report.md` + `regression-report-{TIMESTAMP}.md`
 
 Contains:
 - Summary dashboard (pass/fail at a glance)
@@ -151,7 +151,7 @@ Auto-updated on every benchmark run.
 
 ### Trends Database (JSON Schema)
 
-**File:** `.pictl/benchmarks/trends.json`
+**File:** `.wasm4pm/benchmarks/trends.json`
 
 Structure:
 ```json
@@ -320,11 +320,11 @@ Every 12 months:
 
 ```bash
 # Move baselines older than 1 year to archive/
-mkdir -p .pictl/benchmarks/baselines/archive
-find .pictl/benchmarks/baselines -name "main-202*.json" -type f -mtime +365 \
-  -exec mv {} .pictl/benchmarks/baselines/archive/ \;
+mkdir -p .wasm4pm/benchmarks/baselines/archive
+find .wasm4pm/benchmarks/baselines -name "main-202*.json" -type f -mtime +365 \
+  -exec mv {} .wasm4pm/benchmarks/baselines/archive/ \;
 
-git add .pictl/benchmarks/
+git add .wasm4pm/benchmarks/
 git commit -m "chore: archive benchmark baselines >1 year old"
 ```
 
@@ -334,13 +334,13 @@ If main-latest.json is stale:
 
 ```bash
 # Check symlink
-ls -l .pictl/benchmarks/baselines/main-latest.json
+ls -l .wasm4pm/benchmarks/baselines/main-latest.json
 
 # Re-establish
-LATEST=$(ls -t .pictl/benchmarks/baselines/main-*.json | head -1)
-rm .pictl/benchmarks/baselines/main-latest.json
-ln -s "$(basename "$LATEST")" .pictl/benchmarks/baselines/main-latest.json
-git add .pictl/benchmarks/baselines/main-latest.json
+LATEST=$(ls -t .wasm4pm/benchmarks/baselines/main-*.json | head -1)
+rm .wasm4pm/benchmarks/baselines/main-latest.json
+ln -s "$(basename "$LATEST")" .wasm4pm/benchmarks/baselines/main-latest.json
+git add .wasm4pm/benchmarks/baselines/main-latest.json
 git commit -m "chore: update main-latest symlink"
 ```
 
@@ -350,9 +350,9 @@ If trends.json grows too large (>10MB):
 
 ```bash
 # Keep only last 365 days
-python3 .pictl/benchmarks/plot-trends.py --days 365 --format json > trends_clean.json
+python3 .wasm4pm/benchmarks/plot-trends.py --days 365 --format json > trends_clean.json
 mv trends_clean.json trends.json
-git add .pictl/benchmarks/trends.json
+git add .wasm4pm/benchmarks/trends.json
 git commit -m "chore: archive trends older than 1 year"
 ```
 
@@ -370,14 +370,14 @@ git commit -m "chore: archive trends older than 1 year"
 | `make bench-trends` | Show 30-day trend summary |
 | `make bench-compare LABEL=main` | Compare Criterion against baseline |
 | `make clean-bench` | Remove results and Criterion cache |
-| `bash .pictl/benchmarks/update-baseline.sh` | Manual baseline update |
-| `bash .pictl/benchmarks/detect-regression.sh` | Manual regression detection |
-| `python3 .pictl/benchmarks/plot-trends.py --help` | Trend visualization options |
+| `bash .wasm4pm/benchmarks/update-baseline.sh` | Manual baseline update |
+| `bash .wasm4pm/benchmarks/detect-regression.sh` | Manual regression detection |
+| `python3 .wasm4pm/benchmarks/plot-trends.py --help` | Trend visualization options |
 
 ## Troubleshooting
 
 **Q: "Baseline file not found"**  
-A: Run on main branch: `make bench && bash .pictl/benchmarks/update-baseline.sh`
+A: Run on main branch: `make bench && bash .wasm4pm/benchmarks/update-baseline.sh`
 
 **Q: "Regression detection not enabled"**  
 A: Baseline doesn't exist yet. Establish on main branch first.
@@ -405,9 +405,9 @@ A: Only with explicit `[PERF-JUSTIFIED]` + maintainer approval. Default is fail-
 
 Issues? Questions?
 
-- Check existing baselines: `ls -lh .pictl/benchmarks/baselines/`
-- View reports: `cat .pictl/benchmarks/regression-report.md`
-- Debug trends: `python3 .pictl/benchmarks/plot-trends.py --format json | jq '.data_points[] | select(.algorithm=="dfg")'`
+- Check existing baselines: `ls -lh .wasm4pm/benchmarks/baselines/`
+- View reports: `cat .wasm4pm/benchmarks/regression-report.md`
+- Debug trends: `python3 .wasm4pm/benchmarks/plot-trends.py --format json | jq '.data_points[] | select(.algorithm=="dfg")'`
 
 ---
 

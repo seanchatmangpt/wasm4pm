@@ -6,9 +6,9 @@ Performance regression detection that **prevents merge if >5% slowdown**. Automa
 
 | Step | Command | Who | When |
 |------|---------|-----|------|
-| 1. Establish baseline | `make bench && bash .pictl/benchmarks/update-baseline.sh` | Maintainer | Once on main |
+| 1. Establish baseline | `make bench && bash .wasm4pm/benchmarks/update-baseline.sh` | Maintainer | Once on main |
 | 2. Check regression | `make bench-regression` | Contributor | Before push |
-| 3. Update baseline | `bash .pictl/benchmarks/update-baseline.sh` | CI/CD | After merge |
+| 3. Update baseline | `bash .wasm4pm/benchmarks/update-baseline.sh` | CI/CD | After merge |
 
 ## Command Reference
 
@@ -32,8 +32,8 @@ git commit -m "feat: new filtering [PERF-JUSTIFIED]"
 # After PR merges to main:
 git pull origin main
 make bench
-bash .pictl/benchmarks/update-baseline.sh
-git add .pictl/benchmarks/baselines/
+bash .wasm4pm/benchmarks/update-baseline.sh
+git add .wasm4pm/benchmarks/baselines/
 git commit -m "chore: update benchmark baselines"
 git push origin main
 ```
@@ -45,19 +45,19 @@ git push origin main
 make bench-trends
 
 # Specific algorithm (last 7 days)
-python3 .pictl/benchmarks/plot-trends.py --algorithm dfg --days 7 --format ascii
+python3 .wasm4pm/benchmarks/plot-trends.py --algorithm dfg --days 7 --format ascii
 
 # Export as JSON for external tools
-python3 .pictl/benchmarks/plot-trends.py --algorithm dfg --format json > dfg.json
+python3 .wasm4pm/benchmarks/plot-trends.py --algorithm dfg --format json > dfg.json
 ```
 
 ## Key Files
 
 | File | Purpose |
 |------|---------|
-| `.pictl/benchmarks/baselines/main-latest.json` | Current baseline (symlink) |
-| `.pictl/benchmarks/regression-report.md` | Latest regression report |
-| `.pictl/benchmarks/trends.json` | Historical trend data |
+| `.wasm4pm/benchmarks/baselines/main-latest.json` | Current baseline (symlink) |
+| `.wasm4pm/benchmarks/regression-report.md` | Latest regression report |
+| `.wasm4pm/benchmarks/trends.json` | Historical trend data |
 | `.github/workflows/bench-regression.yml` | Automatic PR checks (GitHub Actions) |
 | `Makefile` | CLI targets: `make bench-regression`, etc. |
 
@@ -80,10 +80,10 @@ git checkout main
 make bench
 
 # 3. Save baseline
-bash .pictl/benchmarks/update-baseline.sh
+bash .wasm4pm/benchmarks/update-baseline.sh
 
 # 4. Commit
-git add .pictl/benchmarks/baselines/
+git add .wasm4pm/benchmarks/baselines/
 git commit -m "chore: establish benchmark baselines"
 git push origin main
 
@@ -94,11 +94,11 @@ git push origin main
 
 | Problem | Solution |
 |---------|----------|
-| "Baseline not found" | Run on main: `make bench && bash .pictl/benchmarks/update-baseline.sh` |
-| "Permission denied" | `chmod +x .pictl/benchmarks/*.sh .pictl/benchmarks/*.py` |
+| "Baseline not found" | Run on main: `make bench && bash .wasm4pm/benchmarks/update-baseline.sh` |
+| "Permission denied" | `chmod +x .wasm4pm/benchmarks/*.sh .wasm4pm/benchmarks/*.py` |
 | "Regression >10% but I changed nothing" | System load variance. Run 3x to verify. |
 | "Need to ignore a regression" | Add `[PERF-JUSTIFIED]` to commit message + explain in PR |
-| "How do I see the report?" | `.pictl/benchmarks/regression-report.md` or GitHub PR comment |
+| "How do I see the report?" | `.wasm4pm/benchmarks/regression-report.md` or GitHub PR comment |
 
 ## Documentation Map
 
@@ -112,7 +112,7 @@ git push origin main
 ## Validate Everything Works
 
 ```bash
-bash .pictl/benchmarks/validate-setup.sh
+bash .wasm4pm/benchmarks/validate-setup.sh
 # Expected: ✅ All checks passed! (22/22)
 ```
 
@@ -211,7 +211,7 @@ make help                       # All targets
 
 ### Customize Thresholds
 
-Edit `.pictl/benchmarks/detect-regression.sh` lines 12-14:
+Edit `.wasm4pm/benchmarks/detect-regression.sh` lines 12-14:
 ```bash
 REGRESSION_THRESHOLD=5.0
 WARNING_THRESHOLD=2.0
@@ -221,7 +221,7 @@ IMPROVEMENT_THRESHOLD=2.0
 ### View Raw Baseline Data
 
 ```bash
-jq . .pictl/benchmarks/baselines/main-latest.json
+jq . .wasm4pm/benchmarks/baselines/main-latest.json
 
 # Filter for specific algorithm:
 jq '.benchmarks[] | select(.group=="discovery/dfg")' main-latest.json
@@ -231,10 +231,10 @@ jq '.benchmarks[] | select(.group=="discovery/dfg")' main-latest.json
 
 ```bash
 # JSON export
-python3 .pictl/benchmarks/plot-trends.py --format json > trends.json
+python3 .wasm4pm/benchmarks/plot-trends.py --format json > trends.json
 
 # Filter + export
-python3 .pictl/benchmarks/plot-trends.py --algorithm dfg --days 30 --format json > dfg_30day.json
+python3 .wasm4pm/benchmarks/plot-trends.py --algorithm dfg --days 30 --format json > dfg_30day.json
 ```
 
 ---
@@ -242,9 +242,9 @@ python3 .pictl/benchmarks/plot-trends.py --algorithm dfg --days 30 --format json
 ## Support
 
 For more details, see:
-- **Setup:** `.pictl/benchmarks/SETUP.md`
-- **Full Guide:** `.pictl/benchmarks/README.md`
-- **Technical:** `.pictl/benchmarks/IMPLEMENTATION_SUMMARY.md`
+- **Setup:** `.wasm4pm/benchmarks/SETUP.md`
+- **Full Guide:** `.wasm4pm/benchmarks/README.md`
+- **Technical:** `.wasm4pm/benchmarks/IMPLEMENTATION_SUMMARY.md`
 - **Help:** `make help | grep bench`
 
 ---

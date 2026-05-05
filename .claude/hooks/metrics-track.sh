@@ -1,13 +1,13 @@
 #!/bin/bash
-# pictl Kaizen Metrics Tracking — Post-commit Hook
+# wasm4pm Kaizen Metrics Tracking — Post-commit Hook
 # Collects metrics: test pass rate, compiler warnings, build time, OTEL coverage, TPS violations, MTTR
 #
 # Called by: post-commit hook (via .git/hooks/post-commit)
 # Exit code: 0 (always succeeds, failures logged but non-blocking)
 
 PICTL_DIR="${CLAUDE_PROJECT_DIR:-.}"
-METRICS_FILE="$PICTL_DIR/.pictl/metrics.json"
-BUILD_LOG="$PICTL_DIR/.pictl/build-times.log"
+METRICS_FILE="$PICTL_DIR/.wasm4pm/metrics.json"
+BUILD_LOG="$PICTL_DIR/.wasm4pm/build-times.log"
 
 # Ensure metrics file exists
 if [[ ! -f "$METRICS_FILE" ]]; then
@@ -26,7 +26,7 @@ git_commit() {
 
 # Metric 1: Test pass rate
 collect_test_pass_rate() {
-  local test_output_file="/tmp/pictl_test_output_$$.log"
+  local test_output_file="/tmp/wasm4pm_test_output_$$.log"
   local vitest_pass=0 vitest_fail=0
   local cargo_pass=0 cargo_fail=0
 

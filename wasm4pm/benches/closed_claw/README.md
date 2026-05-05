@@ -1,6 +1,6 @@
 # Closed Claw Benchmarking Constitution
 
-A Criterion-based benchmark suite for the `pictl` process mining engine, organized around 6 canonical pipeline classes and 5 pass/fail gates. Every benchmark produces a BLAKE3 receipt proving deterministic execution.
+A Criterion-based benchmark suite for the `wpm` (wasm4pm) process mining engine, organized around 6 canonical pipeline classes and 5 pass/fail gates. Every benchmark produces a BLAKE3 receipt proving deterministic execution.
 
 ## Quick Start
 

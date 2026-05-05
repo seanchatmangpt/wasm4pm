@@ -28,7 +28,7 @@ pictl's native ML engine provides 6 machine learning tasks, all implemented in T
 **Interface:**
 
 ```typescript
-import { classify } from '@pictl/ml';
+import { classify } from '@wasm4pm/ml';
 
 const result = await classify({
   data: [[1, 2, 3], [4, 5, 6]],      // Feature rows
@@ -277,7 +277,7 @@ const classifier = await classify({
 **Interface:**
 
 ```typescript
-import { cluster } from '@pictl/ml';
+import { cluster } from '@wasm4pm/ml';
 
 const result = await cluster({
   data: [[1, 2], [2, 3], [10, 11]],  // Feature rows
@@ -507,7 +507,7 @@ console.log(`Anomaly rate: ${clustering.noiseCount / data.length}`);
 **Interface:**
 
 ```typescript
-import { forecast } from '@pictl/ml';
+import { forecast } from '@wasm4pm/ml';
 
 const result = await forecast({
   series: [10, 12, 15, 20, 18, 22, 25, 28, 30],  // Time series
@@ -689,7 +689,7 @@ const forecast = await forecast({
 **Interface:**
 
 ```typescript
-import { detectAnomalies } from '@pictl/ml';
+import { detectAnomalies } from '@wasm4pm/ml';
 
 const result = await detectAnomalies({
   series: [10, 12, 11, 10, 9, 100, 8, 10, 11],  // Spike at index 5
@@ -828,7 +828,7 @@ const anomaly = await detectAnomalies({
 **Interface:**
 
 ```typescript
-import { regress } from '@pictl/ml';
+import { regress } from '@wasm4pm/ml';
 
 const result = await regress({
   data: [[1], [2], [3], [4], [5]],     // Feature values
@@ -996,7 +996,7 @@ const regression = await regress({
 **Interface:**
 
 ```typescript
-import { pca } from '@pictl/ml';
+import { pca } from '@wasm4pm/ml';
 
 const result = await pca({
   data: [
@@ -1272,4 +1272,4 @@ Typical performance on BPI Challenge 2012 (350k events, 13k traces, 20 features)
 
 **Document Version:** 26.4.10  
 **Last Updated:** April 10, 2026  
-**ML Package:** @pictl/ml (native TypeScript, zero external dependencies)
+**ML Package:** @wasm4pm/ml (native TypeScript, zero external dependencies)

@@ -153,7 +153,7 @@ bash .claude/hooks/wip-check.sh
 
 ## Configuration
 
-Edit `.pictl/wip-config.json` to customize limits:
+Edit `.wasm4pm/wip-config.json` to customize limits:
 
 ```json
 {
@@ -168,7 +168,7 @@ Edit `.pictl/wip-config.json` to customize limits:
 
 After editing, commit and push:
 ```bash
-git add .pictl/wip-config.json
+git add .wasm4pm/wip-config.json
 git commit -m "config(wip): adjust limits"
 git push origin <branch>
 ```
@@ -216,7 +216,7 @@ git push origin feature  # Now hook passes
 **Exception:** If you have a hotfix, add a label and exclude it:
 ```bash
 gh pr edit 999 --add-label "hotfix"
-# Then in .pictl/wip-config.json:
+# Then in .wasm4pm/wip-config.json:
 # "exclude_labels": ["blocked", "hotfix"]
 ```
 
@@ -248,9 +248,9 @@ From Toyota Production System (TPS):
 
 ## Documentation
 
-- **Full Guide:** [`.pictl/WIP-IMPLEMENTATION.md`](.pictl/WIP-IMPLEMENTATION.md)
-- **Dashboard:** [`.pictl/wip-status.md`](.pictl/wip-status.md)
-- **Configuration:** [`.pictl/wip-config.json`](.pictl/wip-config.json)
+- **Full Guide:** [`.wasm4pm/WIP-IMPLEMENTATION.md`](.wasm4pm/WIP-IMPLEMENTATION.md)
+- **Dashboard:** [`.wasm4pm/wip-status.md`](.wasm4pm/wip-status.md)
+- **Configuration:** [`.wasm4pm/wip-config.json`](.wasm4pm/wip-config.json)
 - **TPS Philosophy:** [`.../../CLAUDE.md`](../../CLAUDE.md) (Toyota Production System section)
 
 ---
@@ -283,7 +283,7 @@ From Toyota Production System (TPS):
 
 **Questions?**
 
-See [`.pictl/WIP-IMPLEMENTATION.md`](.pictl/WIP-IMPLEMENTATION.md) for:
+See [`.wasm4pm/WIP-IMPLEMENTATION.md`](.wasm4pm/WIP-IMPLEMENTATION.md) for:
 - Full architecture
 - Detailed troubleshooting
 - Integration examples

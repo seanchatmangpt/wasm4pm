@@ -15,14 +15,14 @@ make bench-data
 make bench
 
 # Save baseline with git metadata
-bash .pictl/benchmarks/update-baseline.sh
+bash .wasm4pm/benchmarks/update-baseline.sh
 
 # Verify baseline was created
-ls -lh .pictl/benchmarks/baselines/
+ls -lh .wasm4pm/benchmarks/baselines/
 # Should show: main-20260411_120000.json and main-latest.json (symlink)
 
 # Commit to repository
-git add .pictl/benchmarks/baselines/
+git add .wasm4pm/benchmarks/baselines/
 git commit -m "chore: establish benchmark baselines for regression detection"
 git push origin main
 ```
@@ -90,10 +90,10 @@ git pull origin main
 make bench
 
 # Save new baseline
-bash .pictl/benchmarks/update-baseline.sh
+bash .wasm4pm/benchmarks/update-baseline.sh
 
 # Commit
-git add .pictl/benchmarks/baselines/
+git add .wasm4pm/benchmarks/baselines/
 git commit -m "chore: update benchmark baselines after <feature description>"
 git push origin main
 ```
@@ -104,7 +104,7 @@ git push origin main
 
 ```bash
 # Check that baseline files exist and are valid
-test -f .pictl/benchmarks/baselines/main-latest.json && echo "✅ Baseline exists" || echo "❌ Missing"
+test -f .wasm4pm/benchmarks/baselines/main-latest.json && echo "✅ Baseline exists" || echo "❌ Missing"
 
 # Test regression detection (should pass on main)
 make bench-regression
@@ -132,7 +132,7 @@ The regression detection workflow (`.github/workflows/bench-regression.yml`) is 
 After setup:
 
 ```
-.pictl/benchmarks/
+.wasm4pm/benchmarks/
 ├── .gitkeep
 ├── README.md                    ← Full documentation
 ├── SETUP.md                     ← This file
@@ -152,9 +152,9 @@ After setup:
 
 | Task | Command |
 |------|---------|
-| Establish baseline (once) | `bash .pictl/benchmarks/update-baseline.sh` |
+| Establish baseline (once) | `bash .wasm4pm/benchmarks/update-baseline.sh` |
 | Check for regressions (PR) | `make bench-regression` |
-| Update baseline (after merge) | `bash .pictl/benchmarks/update-baseline.sh` |
+| Update baseline (after merge) | `bash .wasm4pm/benchmarks/update-baseline.sh` |
 | View trends (anytime) | `make bench-trends` |
 | Full benchmarks | `make bench` |
 | CI mode (fast) | `make bench-ci` |
@@ -167,8 +167,8 @@ After setup:
 # Baseline doesn't exist yet. Create it:
 git checkout main
 make bench
-bash .pictl/benchmarks/update-baseline.sh
-git add .pictl/benchmarks/baselines/
+bash .wasm4pm/benchmarks/update-baseline.sh
+git add .wasm4pm/benchmarks/baselines/
 git commit -m "chore: establish baselines"
 git push origin main
 ```
@@ -176,25 +176,25 @@ git push origin main
 **Problem: "detect-regression.sh: command not found"**
 ```bash
 # Script not executable. Fix it:
-chmod +x .pictl/benchmarks/detect-regression.sh
-chmod +x .pictl/benchmarks/update-baseline.sh
-chmod +x .pictl/benchmarks/plot-trends.py
+chmod +x .wasm4pm/benchmarks/detect-regression.sh
+chmod +x .wasm4pm/benchmarks/update-baseline.sh
+chmod +x .wasm4pm/benchmarks/plot-trends.py
 ```
 
 **Problem: "make bench-regression fails with permission error"**
 ```bash
-# Ensure .pictl/benchmarks/ directory is writable:
-chmod -R u+w .pictl/benchmarks/
+# Ensure .wasm4pm/benchmarks/ directory is writable:
+chmod -R u+w .wasm4pm/benchmarks/
 ```
 
 **Problem: "Baseline file is huge (>100MB)"**
 ```bash
 # This is normal if Criterion is saving detailed analysis
 # Archive old baselines to keep repo size reasonable:
-mkdir -p .pictl/benchmarks/baselines/archive
-find .pictl/benchmarks/baselines -name "main-*.json" -mtime +30 \
-  -exec mv {} .pictl/benchmarks/baselines/archive/ \;
-git add .pictl/benchmarks/baselines/
+mkdir -p .wasm4pm/benchmarks/baselines/archive
+find .wasm4pm/benchmarks/baselines -name "main-*.json" -mtime +30 \
+  -exec mv {} .wasm4pm/benchmarks/baselines/archive/ \;
+git add .wasm4pm/benchmarks/baselines/
 git commit -m "chore: archive old benchmarks"
 ```
 
@@ -210,8 +210,8 @@ git commit -m "chore: archive old benchmarks"
 ## Support
 
 For detailed documentation, see:
-- `.pictl/benchmarks/README.md` — Complete reference
-- `.pictl/benchmarks/regression-report.md` — Latest report format
+- `.wasm4pm/benchmarks/README.md` — Complete reference
+- `.wasm4pm/benchmarks/regression-report.md` — Latest report format
 - `Makefile` — All benchmark commands
 
 ---

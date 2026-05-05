@@ -1,6 +1,6 @@
 # Run Browser Benchmarks
 
-**Problem:** You want to test WASM performance in a real browser environment, because your users will run pictl algorithms in the browser and you need to know how they will perform there.
+**Problem:** You want to test WASM performance in a real browser environment, because your users will run wpm algorithms in the browser and you need to know how they will perform there.
 
 ## Why Browser Benchmarks Matter
 

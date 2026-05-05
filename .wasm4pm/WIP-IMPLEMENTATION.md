@@ -35,7 +35,7 @@ PR Opened / Ready for Review
     ↓
 GitHub Actions: wip-check.yml
     ├─ Trigger: PR opened, ready_for_review, synchronize
-    ├─ Load: .pictl/wip-config.json
+    ├─ Load: .wasm4pm/wip-config.json
     ├─ Query: gh pr list --author $AUTHOR --state open
     ├─ Compare: $OPEN_PRS vs max_concurrent_prs
     ├─ Action: Comment + Label if exceeded
@@ -59,9 +59,9 @@ GitHub Actions: pr-staleness.yml
 
 | File | Purpose | Type |
 |------|---------|------|
-| `.pictl/wip-config.json` | Configuration (max_concurrent_prs, thresholds, etc.) | Config |
-| `.pictl/wip-status.md` | Dashboard showing current WIP status | Dashboard |
-| `.pictl/WIP-IMPLEMENTATION.md` | This document | Documentation |
+| `.wasm4pm/wip-config.json` | Configuration (max_concurrent_prs, thresholds, etc.) | Config |
+| `.wasm4pm/wip-status.md` | Dashboard showing current WIP status | Dashboard |
+| `.wasm4pm/WIP-IMPLEMENTATION.md` | This document | Documentation |
 | `.github/workflows/wip-check.yml` | PR open gate (GitHub Actions) | Workflow |
 | `.github/workflows/pr-staleness.yml` | Hourly staleness detector | Workflow |
 | `.claude/hooks/wip-check.sh` | Local pre-push hook logic | Script |
@@ -71,7 +71,7 @@ GitHub Actions: pr-staleness.yml
 
 ## Configuration
 
-### `.pictl/wip-config.json`
+### `.wasm4pm/wip-config.json`
 
 ```json
 {
@@ -147,7 +147,7 @@ $ git push origin feature/my-feature
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   User: seanchatmangpt
-  Repo: seanchatmangpt/pictl
+  Repo: seanchatmangpt/wasm4pm
   Open PRs: 2 / 3
 
   ✅ WIP limit check passed
@@ -392,10 +392,10 @@ Track these metrics to measure system health:
 
 ```bash
 # Count stale PRs (labeled with ⏳-stale)
-gh pr list --state closed --search "label:⏳-stale" --repo seanchatmangpt/pictl | wc -l
+gh pr list --state closed --search "label:⏳-stale" --repo seanchatmangpt/wasm4pm | wc -l
 
 # Count escalations (labeled with ⏰-escalation)
-gh pr list --state closed --search "label:⏰-escalation" --repo seanchatmangpt/pictl | wc -l
+gh pr list --state closed --search "label:⏰-escalation" --repo seanchatmangpt/wasm4pm | wc -l
 
 # Average time in review (requires parsing timestamps)
 gh pr list --state closed --limit 20 --json createdAt,mergedAt,number
@@ -540,10 +540,10 @@ Extracted from `CLAUDE.md` (Toyota Production System section):
 
 ### Update Configuration
 
-Edit `.pictl/wip-config.json` and commit:
+Edit `.wasm4pm/wip-config.json` and commit:
 
 ```bash
-git add .pictl/wip-config.json
+git add .wasm4pm/wip-config.json
 git commit -m "config(wip): increase max_concurrent_prs to 5"
 git push origin main
 ```
@@ -587,7 +587,7 @@ gh pr edit 456 --add-label "dependencies"
 A: Mark it with a label and exclude that label:
 ```bash
 gh pr edit 999 --add-label "hotfix"
-# Then update .pictl/wip-config.json:
+# Then update .wasm4pm/wip-config.json:
 "exclude_labels": ["blocked", "hotfix"]
 ```
 
@@ -609,7 +609,7 @@ PR is labeled with the **highest** threshold reached.
 
 **Q: Can I disable WIP limits entirely?**
 
-A: Yes, set in `.pictl/wip-config.json`:
+A: Yes, set in `.wasm4pm/wip-config.json`:
 ```json
 {
   "enabled": false
@@ -622,8 +622,8 @@ But this defeats the purpose of the system. Better to adjust limits than disable
 
 ## See Also
 
-- `.pictl/wip-config.json` — Configuration file
-- `.pictl/wip-status.md` — Dashboard template
+- `.wasm4pm/wip-config.json` — Configuration file
+- `.wasm4pm/wip-status.md` — Dashboard template
 - `.github/workflows/wip-check.yml` — PR open gate workflow
 - `.github/workflows/pr-staleness.yml` — Hourly staleness detector
 - `.claude/hooks/wip-check.sh` — Local pre-push hook script

@@ -5,7 +5,7 @@
 
 ## Problem
 
-You need to detect when a process changes behavior in real-time -- for example, a production system where the event log grows over time and you want an alert when the process starts deviating from its established pattern. `pictl drift-watch` polls an XES file, computes structural distance between sliding windows, and applies EWMA smoothing to surface drift as it happens.
+You need to detect when a process changes behavior in real-time -- for example, a production system where the event log grows over time and you want an alert when the process starts deviating from its established pattern. `wpm drift-watch` polls an XES file, computes structural distance between sliding windows, and applies EWMA smoothing to surface drift as it happens.
 
 ---
 
@@ -155,6 +155,6 @@ The file is only re-parsed when its modification timestamp changes, so idle peri
 
 ## See Also
 
-- [How-To: Compare Two Event Logs](./compare-process-models.md) -- one-time structural comparison via `pictl diff`
-- [How-To: Predictive Mining](./predictive-mining.md) -- batch drift detection via `pictl predict drift`
+- [How-To: Compare Two Event Logs](./compare-process-models.md) -- one-time structural comparison via `wpm diff`
+- [How-To: Predictive Mining](./predictive-mining.md) -- batch drift detection via `wpm predict drift`
 - [How-To: Monitor Jobs](./monitor-jobs.md) -- monitoring discovery job execution

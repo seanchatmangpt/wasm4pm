@@ -1,5 +1,5 @@
 /**
- * Configuration Schema for pictl Engine
+ * Configuration Schema for wasm4pm Engine
  * Defines all configuration structures, validation, and execution profiles
  */
 import { PictlError, ErrorCode, ErrorRecovery } from './errors.js';

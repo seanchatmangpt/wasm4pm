@@ -24,7 +24,7 @@ jobs:
       - name: Check if baseline exists
         id: check
         run: |
-          if [ -f ".pictl/benchmarks/baselines/main-latest.json" ]; then
+          if [ -f ".wasm4pm/benchmarks/baselines/main-latest.json" ]; then
             echo "exists=true" >> $GITHUB_OUTPUT
             echo "✅ Baseline found"
           else
@@ -100,11 +100,11 @@ jobs:
       # Run regression detection
       - name: Detect regressions
         id: regression
-        working-directory: ./pictl
+        working-directory: ./wasm4pm
         continue-on-error: true
         run: |
           echo "=== Regression Detection ==="
-          bash .pictl/benchmarks/detect-regression.sh .pictl/benchmarks/baselines/main-latest.json
+          bash .wasm4pm/benchmarks/detect-regression.sh .wasm4pm/benchmarks/baselines/main-latest.json
 
       # Upload regression report as artifact
       - name: Upload regression report
@@ -113,7 +113,7 @@ jobs:
         with:
           name: regression-report
           path: |
-            .pictl/benchmarks/regression-report-*.md
+            .wasm4pm/benchmarks/regression-report-*.md
             /tmp/fast_bench.txt
             /tmp/analytics_bench.txt
           retention-days: 30
@@ -128,7 +128,7 @@ jobs:
             const path = require('path');
 
             // Find latest regression report
-            const reportsDir = '.pictl/benchmarks';
+            const reportsDir = '.wasm4pm/benchmarks';
             const files = fs.readdirSync(reportsDir).filter(f => f.startsWith('regression-report-') && f.endsWith('.md'));
             files.sort();
 
@@ -198,10 +198,10 @@ jobs:
           echo "1. On main branch, run:"
           echo "   git checkout main"
           echo "   make bench"
-          echo "   bash .pictl/benchmarks/update-baseline.sh"
+          echo "   bash .wasm4pm/benchmarks/update-baseline.sh"
           echo ""
           echo "2. Commit and push:"
-          echo "   git add .pictl/benchmarks/baselines/"
+          echo "   git add .wasm4pm/benchmarks/baselines/"
           echo "   git commit -m 'chore: establish benchmark baselines'"
           echo "   git push origin main"
           echo ""

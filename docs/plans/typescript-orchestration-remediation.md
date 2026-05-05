@@ -25,7 +25,7 @@ Phase 8: GAP-19,20 (testing) — depends on Phases 1-5
 
 **Gap:** `ALGORITHM_IDS` in `algorithm-registry.ts` lists only 21 algorithms. The kernel registry has 35+ (including 16 Wave 1 algorithms).
 
-### File: `/Users/sac/chatmangpt/pictl/packages/contracts/src/templates/algorithm-registry.ts`
+### File: `/Users/sac/chatmangpt/wasm4pm/packages/contracts/src/templates/algorithm-registry.ts`
 
 **Current state:** 21 IDs (15 discovery + 6 ML).
 
@@ -114,7 +114,7 @@ export const ALGORITHM_IDS = [
 
 ### GAP-2: ALGORITHM_OUTPUT_TYPES missing 16 algorithms
 
-**File:** `/Users/sac/chatmangpt/pictl/packages/contracts/src/templates/algorithm-registry.ts`
+**File:** `/Users/sac/chatmangpt/wasm4pm/packages/contracts/src/templates/algorithm-registry.ts`
 
 **Change:** Add entries for all missing IDs:
 
@@ -202,7 +202,7 @@ playout: 'Process Tree Playout',
 
 ### GAP-9: PlanStepType values missing Wave 1 algorithm step types
 
-**File:** `/Users/sac/chatmangpt/pictl/packages/planner/src/steps.ts`
+**File:** `/Users/sac/chatmangpt/wasm4pm/packages/planner/src/steps.ts`
 
 **Current state:** Has `DISCOVER_DFG`, `DISCOVER_PROCESS_SKELETON`, etc. but missing Wave 1 step types.
 
@@ -274,7 +274,7 @@ Also update `stepTypeToAlgorithmId()` in handlers.ts to include the reverse mapp
 
 ### GAP-25: Error codes missing for new feature domains
 
-**File:** `/Users/sac/chatmangpt/pictl/packages/contracts/src/errors.ts`
+**File:** `/Users/sac/chatmangpt/wasm4pm/packages/contracts/src/errors.ts`
 
 **Change:** Add new error codes:
 
@@ -290,7 +290,7 @@ export type ErrorCode =
 
 Also update the `TypedError` numeric code mapping in the same file, assigning codes in the 400-499 range for algorithm subdomains.
 
-**File:** `/Users/sac/chatmangpt/pictl/apps/pictl/src/exit-codes.ts`
+**File:** `/Users/sac/chatmangpt/wasm4pm/apps/wasm4pm/src/exit-codes.ts`
 
 **Change:** No change needed — existing `execution_error: 3` covers algorithm failures. The new typed error codes are for structured reporting within receipts, not CLI exit codes.
 
@@ -308,7 +308,7 @@ Also update the `TypedError` numeric code mapping in the same file, assigning co
 
 ### GAP-5: 30+ Rust WASM exports not registered in kernel registry
 
-**File:** `/Users/sac/chatmangpt/pictl/packages/kernel/src/registry.ts`
+**File:** `/Users/sac/chatmangpt/wasm4pm/packages/kernel/src/registry.ts`
 
 **Current state:** The registry already has Wave 1 entries (lines 870-1168) for: `transition_system`, `log_to_trie`, `causal_graph`, `performance_spectrum`, `batches`, `correlation_miner`, `generalization`, `petri_net_reduction`, `etconformance_precision`, `alignments`, `complexity_metrics`, `pnml_import`, `bpmn_import`, `powl_to_process_tree`, `yawl_export`, `playout`.
 
@@ -318,7 +318,7 @@ Also update the `TypedError` numeric code mapping in the same file, assigning co
 
 ### GAP-6: Dispatcher missing cases for Wave 1 algorithms
 
-**File:** `/Users/sac/chatmangpt/pictl/packages/kernel/src/handlers.ts`
+**File:** `/Users/sac/chatmangpt/wasm4pm/packages/kernel/src/handlers.ts`
 
 **Current state:** `implementAlgorithmStep()` already has switch cases for all Wave 1 algorithms (lines 537-690): `transition_system`, `log_to_trie`, `causal_graph`, `performance_spectrum`, `batches`, `correlation_miner`, `generalization`, `petri_net_reduction`, `etconformance_precision`, `alignments`, `complexity_metrics`, `pnml_import`, `bpmn_import`, `powl_to_process_tree`, `yawl_export`, `playout`.
 
@@ -326,7 +326,7 @@ Also update the `TypedError` numeric code mapping in the same file, assigning co
 
 ### GAP-7: Playout dispatches to `play_out()` but Rust export is `play_out_process_tree()`
 
-**File:** `/Users/sac/chatmangpt/pictl/packages/kernel/src/handlers.ts`
+**File:** `/Users/sac/chatmangpt/wasm4pm/packages/kernel/src/handlers.ts`
 
 **Current state (line 219):**
 ```typescript
@@ -358,7 +358,7 @@ test('playout dispatches to WASM play_out', async () => {
 
 ### GAP-8: Planner profiles don't include ANY Wave 1 algorithms
 
-**File:** `/Users/sac/chatmangpt/pictl/packages/contracts/src/templates/algorithm-registry.ts` (getProfileAlgorithms)
+**File:** `/Users/sac/chatmangpt/wasm4pm/packages/contracts/src/templates/algorithm-registry.ts` (getProfileAlgorithms)
 
 **Current state:** `getProfileAlgorithms()` returns only original 15 algorithms per profile.
 
@@ -392,7 +392,7 @@ export function getProfileAlgorithms(profile: string): string[] {
 
 ### GAP-10: ANALYZE_CONFORMANCE/ANALYZE_VARIANTS/ANALYZE_PERFORMANCE are no-op abstract steps
 
-**File:** `/Users/sac/chatmangpt/pictl/packages/kernel/src/step-dispatcher.ts`
+**File:** `/Users/sac/chatmangpt/wasm4pm/packages/kernel/src/step-dispatcher.ts`
 
 **Current state:** The step-dispatcher only handles ML algorithms. Analysis steps (`ANALYZE_CONFORMANCE`, etc.) have no handler — they're abstract.
 
@@ -409,14 +409,14 @@ export function getProfileAlgorithms(profile: string): string[] {
 
 ### GAP-11: Config schema can't select Wave 1 algorithms
 
-**File:** `/Users/sac/chatmangpt/pictl/packages/config/src/schema.ts`
+**File:** `/Users/sac/chatmangpt/wasm4pm/packages/config/src/schema.ts`
 
 **Current state:** `algorithmIdSchema = z.enum(ALGORITHM_IDS)` — since `ALGORITHM_IDS` only had 21 entries, Wave 1 algorithms couldn't be selected.
 
 **Resolution:** After Phase 1 (GAP-1) adds Wave 1 IDs to `ALGORITHM_IDS`, this schema automatically accepts them. The `algorithmIdSchema` already derives from `ALGORITHM_IDS`:
 
 ```typescript
-import { ALGORITHM_IDS } from '@pictl/contracts';
+import { ALGORITHM_IDS } from '@wasm4pm/contracts';
 export const algorithmIdSchema = z.enum(ALGORITHM_IDS);
 ```
 
@@ -424,7 +424,7 @@ export const algorithmIdSchema = z.enum(ALGORITHM_IDS);
 
 ### GAP-12: executionConfigSchema missing maxEvents and mode fields
 
-**File:** `/Users/sac/chatmangpt/pictl/packages/config/src/schema.ts`
+**File:** `/Users/sac/chatmangpt/wasm4pm/packages/config/src/schema.ts`
 
 **Change:** Add missing fields:
 
@@ -456,7 +456,7 @@ All new CLI commands follow the same pattern as `run.ts`. Here's the template:
 ```typescript
 import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
-import { WasmLoader } from '@pictl/engine';
+import { WasmLoader } from '@wasm4pm/engine';
 import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { savePredictionResult } from './results.js';
@@ -525,9 +525,9 @@ export const commandName = defineCommand({
 });
 ```
 
-### GAP-13: `pictl conformance` CLI command
+### GAP-13: `wpm conformance` CLI command
 
-**File:** `/Users/sac/chatmangpt/pictl/apps/pictl/src/commands/conformance.ts`
+**File:** `/Users/sac/chatmangpt/wasm4pm/apps/wasm4pm/src/commands/conformance.ts`
 
 **Args:**
 ```
@@ -543,9 +543,9 @@ const raw = wasm.compute_optimal_alignments(logHandle, modelHandle, activityKey,
 const raw = wasm.simd_token_replay(logHandle, activityKey);
 ```
 
-### GAP-14: `pictl simulate` CLI command
+### GAP-14: `wpm simulate` CLI command
 
-**File:** `/Users/sac/chatmangpt/pictl/apps/pictl/src/commands/simulate.ts`
+**File:** `/Users/sac/chatmangpt/wasm4pm/apps/wasm4pm/src/commands/simulate.ts`
 
 **Args:**
 ```
@@ -559,9 +559,9 @@ const raw = wasm.simd_token_replay(logHandle, activityKey);
 const raw = wasm.play_out(modelHandle, numTraces, maxTraceLength);
 ```
 
-### GAP-15: `pictl temporal` CLI command
+### GAP-15: `wpm temporal` CLI command
 
-**File:** `/Users/sac/chatmangpt/pictl/apps/pictl/src/commands/temporal.ts`
+**File:** `/Users/sac/chatmangpt/wasm4pm/apps/wasm4pm/src/commands/temporal.ts`
 
 **Args:**
 ```
@@ -575,9 +575,9 @@ const raw = wasm.discover_performance_spectrum(logHandle, activityKey, timestamp
 const raw = wasm.detect_bottlenecks(logHandle, activityKey, timestampKey, threshold);
 ```
 
-### GAP-16: `pictl social` CLI command
+### GAP-16: `wpm social` CLI command
 
-**File:** `/Users/sac/chatmangpt/pictl/apps/pictl/src/commands/social.ts`
+**File:** `/Users/sac/chatmangpt/wasm4pm/apps/wasm4pm/src/commands/social.ts`
 
 **Args:**
 ```
@@ -589,9 +589,9 @@ const raw = wasm.detect_bottlenecks(logHandle, activityKey, timestampKey, thresh
 const raw = wasm.discover_correlation(logHandle, activityKey, timestampKey);
 ```
 
-### GAP-17: `pictl quality` CLI command
+### GAP-17: `wpm quality` CLI command
 
-**File:** `/Users/sac/chatmangpt/pictl/apps/pictl/src/commands/quality.ts`
+**File:** `/Users/sac/chatmangpt/wasm4pm/apps/wasm4pm/src/commands/quality.ts`
 
 **Args:**
 ```
@@ -605,9 +605,9 @@ const raw = wasm.measure_complexity(powlHandle);
 const raw = wasm.generalization(logHandle, petriNetHandle);
 ```
 
-### GAP-18: `pictl validate` CLI command
+### GAP-18: `wpm validate` CLI command
 
-**File:** `/Users/sac/chatmangpt/pictl/apps/pictl/src/commands/validate.ts`
+**File:** `/Users/sac/chatmangpt/wasm4pm/apps/wasm4pm/src/commands/validate.ts`
 
 **Args:**
 ```
@@ -623,7 +623,7 @@ const precision = wasm.precision_etconformance(logHandle, modelHandle, activityK
 
 ### CLI Registration
 
-**File:** `/Users/sac/chatmangpt/pictl/apps/pictl/src/cli.ts`
+**File:** `/Users/sac/chatmangpt/wasm4pm/apps/wasm4pm/src/cli.ts`
 
 **Change:** Import and register all new commands:
 
@@ -650,8 +650,8 @@ subCommands: {
 Also update the help text banner to include new commands.
 
 **Testing:**
-- CLI smoke test: `pictl conformance --help` exits 0
-- CLI smoke test: `pictl simulate --help` exits 0
+- CLI smoke test: `wpm conformance --help` exits 0
+- CLI smoke test: `wpm simulate --help` exits 0
 - Integration test: Each command shows appropriate error when no input provided
 
 ---
@@ -660,7 +660,7 @@ Also update the help text banner to include new commands.
 
 ### GAP-21: MCP server missing tools for new feature domains
 
-**File:** `/Users/sac/chatmangpt/pictl/wasm4pm/src/mcp_server.ts`
+**File:** `/Users/sac/chatmangpt/wasm4pm/wasm4pm/src/mcp_server.ts`
 
 **Missing tools to add:**
 
@@ -814,7 +814,7 @@ this.server = new Server(
 
 ### GAP-24: Engine state machine has no timeout protection
 
-**File:** `/Users/sac/chatmangpt/pictl/packages/engine/src/engine.ts`
+**File:** `/Users/sac/chatmangpt/wasm4pm/packages/engine/src/engine.ts`
 
 **Assessment:** The state machine transitions are defined in `transitions.ts` but don't include timeout protection. If the engine gets stuck in `bootstrapping`, `planning`, or `running`, it never auto-transitions to `degraded`.
 
@@ -877,7 +877,7 @@ private handleStateTimeout(): void {
 
 ### GAP-19: No parity tests for Wave 1 algorithms
 
-**File:** `/Users/sac/chatmangpt/pictl/packages/testing/src/harness/parity.ts`
+**File:** `/Users/sac/chatmangpt/wasm4pm/packages/testing/src/harness/parity.ts`
 
 **Change:** Add parity test entries for each Wave 1 algorithm. Parity tests verify `explain(algo) == plan(config)`.
 
@@ -908,7 +908,7 @@ export const WAVE1_PARITY_CASES = [
 
 ### GAP-20: No determinism tests for Wave 1 algorithms
 
-**File:** `/Users/sac/chatmangpt/pictl/packages/testing/src/harness/determinism.ts`
+**File:** `/Users/sac/chatmangpt/wasm4pm/packages/testing/src/harness/determinism.ts`
 
 **Change:** Add determinism test entries:
 
@@ -923,7 +923,7 @@ export const WAVE1_DETERMINISM_CASES = [
 
 Determinism tests run the same algorithm twice on the same input and verify identical output hashes.
 
-**Testing location:** `/Users/sac/chatmangpt/pictl/playground/` or `/Users/sac/chatmangpt/pictl/packages/testing/__tests__/`
+**Testing location:** `/Users/sac/chatmangpt/wasm4pm/playground/` or `/Users/sac/chatmangpt/wasm4pm/packages/testing/__tests__/`
 
 **Test pattern:**
 ```typescript
@@ -965,13 +965,13 @@ for (const algo of WAVE1_DETERMINISM_CASES) {
 | `packages/contracts/src/errors.ts` | 2 |
 | `packages/config/src/schema.ts` | 2 (GAP-12) |
 | `packages/planner/src/planner.ts` | 4 (minor) |
-| `apps/pictl/src/commands/conformance.ts` (new) | 5 |
-| `apps/pictl/src/commands/simulate.ts` (new) | 5 |
-| `apps/pictl/src/commands/temporal.ts` (new) | 5 |
-| `apps/pictl/src/commands/social.ts` (new) | 5 |
-| `apps/pictl/src/commands/quality.ts` (new) | 5 |
-| `apps/pictl/src/commands/validate.ts` (new) | 5 |
-| `apps/pictl/src/cli.ts` | 5 |
+| `apps/wasm4pm/src/commands/conformance.ts` (new) | 5 |
+| `apps/wasm4pm/src/commands/simulate.ts` (new) | 5 |
+| `apps/wasm4pm/src/commands/temporal.ts` (new) | 5 |
+| `apps/wasm4pm/src/commands/social.ts` (new) | 5 |
+| `apps/wasm4pm/src/commands/quality.ts` (new) | 5 |
+| `apps/wasm4pm/src/commands/validate.ts` (new) | 5 |
+| `apps/wasm4pm/src/cli.ts` | 5 |
 | `wasm4pm/src/mcp_server.ts` | 6 |
 | `packages/engine/src/engine.ts` | 7 |
 | `packages/testing/src/harness/parity.ts` | 8 |

@@ -5,7 +5,7 @@
 
 ## Problem
 
-pictl commands are failing and you do not know why. Maybe the WASM binary is missing, Node.js is too old, or your config file cannot be found. `pictl doctor` runs six health checks in parallel and tells you exactly what is wrong and how to fix it.
+pictl commands are failing and you do not know why. Maybe the WASM binary is missing, Node.js is too old, or your config file cannot be found. `wpm doctor` runs six health checks in parallel and tells you exactly what is wrong and how to fix it.
 
 ---
 
@@ -128,7 +128,7 @@ Run the fix command:
 cd wasm4pm && npm run build
 ```
 
-Then re-run `pictl doctor` to confirm.
+Then re-run `wpm doctor` to confirm.
 
 ### Node.js too old
 

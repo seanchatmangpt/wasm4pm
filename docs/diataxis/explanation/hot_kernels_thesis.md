@@ -233,14 +233,14 @@ In DO-178C (avionics) and IEC 61508 (industrial) contexts, **non-determinism is 
 
 ---
 
-## Integration Path: Hot Kernels → @pictl/kernel → pictl CLI
+## Integration Path: Hot Kernels → @wasm4pm/kernel → pictl CLI
 
 ```
 User Input (XES file)
     ↓
 pictl CLI (TypeScript)
     ↓
-@pictl/kernel (WASM bridge)
+@wasm4pm/kernel (WASM bridge)
     ↓
 wasm4pm::hot_kernels::ingress_decide_8 (Rust hot path)
     ↓
@@ -251,7 +251,7 @@ SPARQL CONSTRUCT INTO Oxigraph
 Lawfulness Verdict + Receipt (per-event audit trail)
 ```
 
-**Key:** TypeScript layer (`@pictl/kernel`) calls hot kernels via `js_sys::Uint32Array` views, avoiding serde overhead. Each event costs ~800ns in Rust, ~200ns in JavaScript binding overhead.
+**Key:** TypeScript layer (`@wasm4pm/kernel`) calls hot kernels via `js_sys::Uint32Array` views, avoiding serde overhead. Each event costs ~800ns in Rust, ~200ns in JavaScript binding overhead.
 
 ---
 

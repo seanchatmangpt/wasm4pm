@@ -23,9 +23,9 @@ module-not-found error.
 
 ---
 
-## 2. Package Dependency — `@seanchatmangpt/pictl`
+## 2. Package Dependency — `@wasm4pm/cli`
 
-`@seanchatmangpt/pictl` is a **local workspace alias** — it is not a published
+`@wasm4pm/cli` is a **local workspace alias** — it is not a published
 npm package. It resolves via the `pnpm` workspace configuration at the monorepo
 root (`/Users/sac/wasm4pm`).
 
@@ -36,7 +36,7 @@ cd /Users/sac/wasm4pm
 pnpm install
 ```
 
-This links the workspace packages so that `@seanchatmangpt/pictl` resolves
+This links the workspace packages so that `@wasm4pm/cli` resolves
 correctly inside `lab/node_modules`.
 
 ---
@@ -63,9 +63,9 @@ npm test
 
 ## 4. Runtime Dependency — `chokidar` (added spec 057 / 2026-04-27)
 
-`apps/pictl/src/commands/watch.ts` now uses `chokidar@^4.0.1` (resolved 4.0.3)
+`apps/wasm4pm/src/commands/watch.ts` now uses `chokidar@^4.0.1` (resolved 4.0.3)
 for cross-platform file watching. This replaces the previous `fs.watch` debounce
-loop. `chokidar` is declared in `apps/pictl/package.json` and is resolved via the
+loop. `chokidar` is declared in `apps/wasm4pm/package.json` and is resolved via the
 `pnpm` workspace lock file (`pnpm-lock.yaml`).
 
 Running `pnpm install` from the monorepo root is sufficient to install it. No
@@ -88,7 +88,7 @@ As of 2026-04-27:
 - Running `npm install` from the monorepo root **does not** trigger the
   `build:nodejs` step for `wasm4pm/`. The build artifact must be produced
   manually (or via a CI pre-step).
-- `@seanchatmangpt/pictl` workspace linking requires `pnpm`; plain `npm install`
+- `@wasm4pm/cli` workspace linking requires `pnpm`; plain `npm install`
   at the root may not establish the alias correctly.
 - These 13 infrastructure-gated test failures are tracked under spec
   `053-T003` in speckit-ralph and are considered resolved once the above

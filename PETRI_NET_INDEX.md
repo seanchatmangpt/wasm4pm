@@ -144,7 +144,7 @@ Formal proof of WvdA soundness properties:
 ## File Locations
 
 ```
-/Users/sac/chatmangpt/pictl/
+/Users/sac/chatmangpt/wasm4pm/
 ├── petri_net_lawful_dispatch.pnml      (XML, ISO 20481)
 ├── reachability_graph.yaml             (BFS exploration, 8 markings)
 ├── soundness_proof.md                  (WvdA + Armstrong + TPS proof)

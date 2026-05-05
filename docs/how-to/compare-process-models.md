@@ -5,7 +5,7 @@
 
 ## Problem
 
-You have two event logs and need to understand how the underlying processes differ. Perhaps you are comparing logs from before and after a process change, or logs from two different teams performing the same workflow. `pictl diff` computes a structural comparison of the two process models and reports the differences in a human-readable format.
+You have two event logs and need to understand how the underlying processes differ. Perhaps you are comparing logs from before and after a process change, or logs from two different teams performing the same workflow. `wpm diff` computes a structural comparison of the two process models and reports the differences in a human-readable format.
 
 ---
 
@@ -47,7 +47,7 @@ Traces:
 
 ## 2. Understand what is compared
 
-`pictl diff` discovers a directly-follows graph (DFG) for each log, then compares them on four dimensions:
+`wpm diff` discovers a directly-follows graph (DFG) for each log, then compares them on four dimensions:
 
 ### Activities
 

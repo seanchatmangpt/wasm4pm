@@ -22,7 +22,7 @@ Real-time **Western Electric rules** monitor 100 snapshots of process metrics ac
 
 ### State Persistence Across Restarts
 
-The autonomic loop's Q-table, SPC history, and circuit breaker state now auto-save to `.pictl/autoprocess-state.json` and restore on next startup. Your process model's learned behavior survives crashes — no cold-start latency on recovery.
+The autonomic loop's Q-table, SPC history, and circuit breaker state now auto-save to `.wasm4pm/autoprocess-state.json` and restore on next startup. Your process model's learned behavior survives crashes — no cold-start latency on recovery.
 
 ---
 
@@ -76,7 +76,7 @@ Meets human-scale workflow decision times while enabling sub-millisecond respons
 
 ### 6. State Persistence and Crash Recovery
 
-- Auto-save to `.pictl/autoprocess-state.json` every cycle
+- Auto-save to `.wasm4pm/autoprocess-state.json` every cycle
 - Atomic write-and-move to prevent corruption
 - Automatic restore on engine bootstrap
 - MTTR (Mean Time To Recovery): <1 second
@@ -129,17 +129,17 @@ However, behavior changes due to autonomic loop engagement:
 
 ### Behavioral Changes
 
-1. **AutoProcess Command**: New `pictl autoprocess <log>` command added. Existing commands unchanged.
-2. **State Persistence**: `.pictl/autoprocess-state.json` is created automatically. Safe to delete (cold-start recovery applies).
+1. **AutoProcess Command**: New `wpm autoprocess <log>` command added. Existing commands unchanged.
+2. **State Persistence**: `.wasm4pm/autoprocess-state.json` is created automatically. Safe to delete (cold-start recovery applies).
 3. **SPC Alerts**: New OTEL span type `spc_alert_detected` may appear in your observability pipeline.
 4. **Circuit Breaker Engagement**: Circuit breaker now auto-engages on 3 Bellman update timeouts (was manual-only in v26.4.10).
 
 ### Configuration
 
-No required changes to `pictl.toml` or environment variables. The autonomic loop runs alongside existing algorithms without interference.
+No required changes to `wasm4pm.toml` or environment variables. The autonomic loop runs alongside existing algorithms without interference.
 
 ```toml
-# pictl.toml (unchanged)
+# wasm4pm.toml (unchanged)
 [algorithm]
 name = "dfg"  # Autonomic loop runs regardless of this setting
 
@@ -163,9 +163,9 @@ cp -r .pictl /tmp/pictl-backup/  # Backup old results and state
 #### Step 2: Update pictl
 
 ```bash
-npm install -g @seanchatmangpt/pictl@26.4.16
+npm install -g @wasm4pm/cli@26.4.16
 # or
-pnpm update @seanchatmangpt/pictl --latest
+pnpm update @wasm4pm/cli --latest
 ```
 
 #### Step 3: Verify WASM Module Loaded
@@ -182,7 +182,7 @@ pictl doctor
 ```bash
 pictl autoprocess sample.xes --format json
 # Output includes: state_id, action_taken, reward, spc_alerts
-# Auto-creates: .pictl/autoprocess-state.json
+# Auto-creates: .wasm4pm/autoprocess-state.json
 ```
 
 #### Step 5: Observe Autonomic Loop
@@ -200,13 +200,13 @@ pictl autoprocess sample.xes --cycles 5 --watch
 #### Step 6: Check State Persistence
 
 ```bash
-cat .pictl/autoprocess-state.json | jq '.metadata'
+cat .wasm4pm/autoprocess-state.json | jq '.metadata'
 # Expected: timestamp, cycle_count, agent_selected, q_table_hash
 ```
 
 ### Minimal Migration (No Changes)
 
-If you're not using `pictl autoprocess`:
+If you're not using `wpm autoprocess`:
 
 1. Update to v26.4.16
 2. Run existing commands as before
@@ -216,8 +216,8 @@ If you're not using `pictl autoprocess`:
 ### Rollback to v26.4.10
 
 ```bash
-npm install -g @seanchatmangpt/pictl@26.4.10
-# State file (.pictl/autoprocess-state.json) is ignored by v26.4.10
+npm install -g @wasm4pm/cli@26.4.10
+# State file (.wasm4pm/autoprocess-state.json) is ignored by v26.4.10
 ```
 
 ---
@@ -286,14 +286,14 @@ After 3 consecutive failures (3 strikes), the circuit breaker opens and requires
 ```bash
 pictl status --circuit-breaker-reset
 # or
-rm .pictl/autoprocess-state.json  # Full state reset
+rm .wasm4pm/autoprocess-state.json  # Full state reset
 pictl doctor --bootstrap-fresh
 ```
 
 This ensures human visibility into repeated problems. Automatic recovery is available via scheduled job:
 ```bash
 # Cron: Reset circuit every 6 hours if open
-0 */6 * * * [ -f .pictl/autoprocess-state.json ] && pictl status --circuit-breaker-reset > /dev/null 2>&1
+0 */6 * * * [ -f .wasm4pm/autoprocess-state.json ] && pictl status --circuit-breaker-reset > /dev/null 2>&1
 ```
 
 ### 4. Determinism via Seeded RNG
@@ -340,8 +340,8 @@ For detailed technical information, see:
 
 ## Support
 
-- **Issues**: https://github.com/seanchatmangpt/pictl/issues
-- **Discussions**: https://github.com/seanchatmangpt/pictl/discussions
+- **Issues**: https://github.com/seanchatmangpt/wasm4pm/issues
+- **Discussions**: https://github.com/seanchatmangpt/wasm4pm/discussions
 - **Email**: info@chatmangpt.com
 
 ---

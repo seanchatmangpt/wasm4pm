@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build all 5 pictl deployment profiles
+# Build all5 wasm4pm deployment profiles
 # Usage: bash scripts/build-all-profiles.sh
 set -euo pipefail
 
@@ -8,7 +8,7 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 PROFILES=("browser" "iot" "edge" "fog" "cloud")
 
 echo "========================================"
-echo " Building all pictl deployment profiles"
+echo " Building all wasm4pm deployment profiles"
 echo "========================================"
 echo ""
 
@@ -23,7 +23,7 @@ echo " Build Summary"
 echo "========================================"
 
 for PROFILE in "${PROFILES[@]}"; do
-  WASM_FILE="$PROJECT_ROOT/dist/pictl-${PROFILE}/pictl.wasm"
+  WASM_FILE="$PROJECT_ROOT/dist/wasm4pm-${PROFILE}/wasm4pm.wasm"
   if [ -f "$WASM_FILE" ]; then
     if [ "$(uname)" = "Darwin" ]; then
       SIZE=$(stat -f%z "$WASM_FILE")

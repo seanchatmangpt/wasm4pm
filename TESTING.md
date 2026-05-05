@@ -124,7 +124,7 @@ Consistency across algorithms, configurations, or data sources.
 
 - **WasmLoader is a singleton** — call `WasmLoader.reset()` between tests
 - **`cargo test --lib` exits SIGABRT** — verify with `grep -c "^test .* ok$"`
-- **`@pictl/ml` handles empty arrays** — don't assume rejection
+- **`@wasm4pm/ml` handles empty arrays** — don't assume rejection
 - **Run vitest from package directory**, not monorepo root
 - **`as const` is type-level only**, not runtime frozen
 - **`pub(crate)` NOT enough** for integration tests — must be `pub`

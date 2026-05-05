@@ -77,7 +77,7 @@ Generate logs at each size used in the benchmarks:
 # standalone XES files for manual testing with pictl run.
 
 # 100 cases
-pictl init --algorithm dfg  # Creates pictl.toml
+pictl init --algorithm dfg  # Creates wasm4pm.toml
 pictl run synthetic_100.xes --algorithm dfg --format json
 ```
 
@@ -220,7 +220,7 @@ When sharing reproduced results, include:
 3. **Rust version** -- `rustc --version`.
 4. **wasm-pack version** -- `wasm-pack --version`.
 5. **Build flags** -- Confirm SIMD was enabled.
-6. **pictl version** -- `pictl --version`.
+6. **pictl version** -- `wpm --version`.
 7. **Iterations** -- How many runs, median reported.
 8. **Full results table** -- Algorithm, size, median ms, p95 ms.
 

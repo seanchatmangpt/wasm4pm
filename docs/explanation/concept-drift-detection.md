@@ -223,4 +223,4 @@ The shape of the EWMA curve over time tells you what kind of change is happening
 - [Explanation: Predictive Process Mining](./predictive-process-mining.md) -- all six prediction perspectives including drift
 - [Explanation: Process Model Comparison](./process-model-comparison.md) -- Jaccard-based comparison of two event logs with frequency deltas
 - [Explanation: Profiles](./profiles.md) -- how discovery profile affects DFG quality (and thus drift sensitivity)
-- [Explanation: Streaming](./streaming.md) -- real-time drift detection with `pictl drift-watch`
+- [Explanation: Streaming](./streaming.md) -- real-time drift detection with `wpm drift-watch`

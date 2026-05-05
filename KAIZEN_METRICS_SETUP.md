@@ -29,11 +29,11 @@ Metrics are collected automatically on every commit and aggregated weekly for tr
 
 | File | Purpose | Format |
 |------|---------|--------|
-| `.pictl/metrics.json` | Raw metrics data (append-only) | JSON |
-| `.pictl/metrics.json` → `historical_data` | Timestamped snapshots (one per commit) | JSON array |
-| `.pictl/build-times.log` | Build time history for trend analysis | CSV |
-| `.pictl/metrics-dashboard.md` | Weekly aggregated report | Markdown |
-| `.pictl/metrics-dashboard-template.md` | Dashboard template & reference | Markdown |
+| `.wasm4pm/metrics.json` | Raw metrics data (append-only) | JSON |
+| `.wasm4pm/metrics.json` → `historical_data` | Timestamped snapshots (one per commit) | JSON array |
+| `.wasm4pm/build-times.log` | Build time history for trend analysis | CSV |
+| `.wasm4pm/metrics-dashboard.md` | Weekly aggregated report | Markdown |
+| `.wasm4pm/metrics-dashboard-template.md` | Dashboard template & reference | Markdown |
 | `.claude/hooks/metrics-track.sh` | Post-commit collection script | Bash |
 | `.claude/hooks/pre-push-metrics.sh` | Pre-push gate (optional) | Bash |
 | `scripts/weekly-metrics-report.sh` | Weekly aggregation & dashboard generation | Bash |
@@ -42,7 +42,7 @@ Metrics are collected automatically on every commit and aggregated weekly for tr
 
 ```
 pictl/
-├── .pictl/
+├── .wasm4pm/
 │   ├── metrics.json                   # Raw data (append-only)
 │   ├── build-times.log                # Build time history (CSV)
 │   ├── metrics-dashboard.md           # Generated weekly report
@@ -77,7 +77,7 @@ chmod +x .git/hooks/post-commit
 git commit --allow-empty -m "test: validate metrics hook"
 
 # Check that metrics were collected
-cat .pictl/metrics.json | jq '.historical_data[-1]'
+cat .wasm4pm/metrics.json | jq '.historical_data[-1]'
 ```
 
 Expected output (JSON object with all metrics):
@@ -104,7 +104,7 @@ To generate the weekly report:
 bash scripts/weekly-metrics-report.sh
 
 # Verify it was created
-cat .pictl/metrics-dashboard.md | head -50
+cat .wasm4pm/metrics-dashboard.md | head -50
 
 # OR generate at a specific output path
 bash scripts/weekly-metrics-report.sh /custom/path/dashboard.md
@@ -231,7 +231,7 @@ find packages -name "*.ts" -not -path "*/node_modules/*" \
 
 # Add spans to missing APIs
 # Example:
-import { Instrumentation } from '@pictl/observability';
+import { Instrumentation } from '@wasm4pm/observability';
 
 export function myPublicAPI(input: string) {
   return Instrumentation.createSpan('my.api', {}, () => {
@@ -343,7 +343,7 @@ for i in {1..10}; do
 
 **Trigger:** After every `git commit`  
 **Hook:** `.git/hooks/post-commit` → `.claude/hooks/metrics-track.sh`  
-**Output:** Appends to `.pictl/metrics.json` + `.pictl/build-times.log`
+**Output:** Appends to `.wasm4pm/metrics.json` + `.wasm4pm/build-times.log`
 
 ```bash
 $ git commit -m "feat: add new API"
@@ -358,14 +358,14 @@ $ git commit -m "feat: add new API"
 
 **Trigger:** Manual or scheduled (e.g., Friday EOD)  
 **Script:** `bash scripts/weekly-metrics-report.sh`  
-**Output:** `.pictl/metrics-dashboard.md`
+**Output:** `.wasm4pm/metrics-dashboard.md`
 
 ```bash
 # Generate report
 bash scripts/weekly-metrics-report.sh
 
 # Or view in terminal
-cat .pictl/metrics-dashboard.md | less
+cat .wasm4pm/metrics-dashboard.md | less
 ```
 
 ### Pre-Push Gate (Optional)
@@ -440,7 +440,7 @@ Friday:   Measure
 
 ### Metrics Collection Not Working
 
-**Symptom:** `.pictl/metrics.json` not being updated after commits
+**Symptom:** `.wasm4pm/metrics.json` not being updated after commits
 
 **Diagnosis:**
 ```bash
@@ -471,7 +471,7 @@ git commit --allow-empty -m "test: metrics"
 **Diagnosis:**
 ```bash
 # Check metrics.json has data
-cat .pictl/metrics.json | jq '.historical_data | length'  # Should be >0
+cat .wasm4pm/metrics.json | jq '.historical_data | length'  # Should be >0
 
 # Check jq and perl are available
 which jq perl
@@ -483,7 +483,7 @@ which jq perl
 bash scripts/weekly-metrics-report.sh
 
 # Or manually populate with defaults
-cat .pictl/metrics-dashboard-template.md > .pictl/metrics-dashboard.md
+cat .wasm4pm/metrics-dashboard-template.md > .wasm4pm/metrics-dashboard.md
 ```
 
 ### Pre-Push Gate Blocking Legitimate Pushes
@@ -512,9 +512,9 @@ git push --no-verify
 ### After Setup
 
 - [ ] `.git/hooks/post-commit` exists and is executable
-- [ ] `.pictl/metrics.json` has `historical_data` array with ≥1 entry
-- [ ] `.pictl/build-times.log` exists (CSV header + entries)
-- [ ] `.pictl/metrics-dashboard.md` generated (at least 100 lines)
+- [ ] `.wasm4pm/metrics.json` has `historical_data` array with ≥1 entry
+- [ ] `.wasm4pm/build-times.log` exists (CSV header + entries)
+- [ ] `.wasm4pm/metrics-dashboard.md` generated (at least 100 lines)
 - [ ] `scripts/weekly-metrics-report.sh` is executable
 - [ ] `.claude/hooks/metrics-track.sh` is executable
 
@@ -528,9 +528,9 @@ git push --no-verify
 
 ### Adding a New Metric
 
-1. **Add to schema** (`.pictl/metrics.json` → `schema.metrics`)
+1. **Add to schema** (`.wasm4pm/metrics.json` → `schema.metrics`)
 2. **Add collection function** (`.claude/hooks/metrics-track.sh`)
-3. **Add to report** (`.pictl/metrics-dashboard-template.md`)
+3. **Add to report** (`.wasm4pm/metrics-dashboard-template.md`)
 4. **Add to weekly aggregation** (`.scripts/weekly-metrics-report.sh`)
 5. **Document** (this file)
 
@@ -538,7 +538,7 @@ git push --no-verify
 
 If metrics collection fails, check:
 1. Hook exit code: `bash .git/hooks/post-commit; echo $?` (should be 0)
-2. Permissions: `ls -la .pictl/metrics.json` (should be writable)
+2. Permissions: `ls -la .wasm4pm/metrics.json` (should be writable)
 3. jq installation: `which jq` (required for JSON manipulation)
 
 ---

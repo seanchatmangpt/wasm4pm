@@ -5,7 +5,7 @@
 
 ## Problem
 
-You want to answer predictive questions about your process: what activity happens next, how long until a case completes, is a given trace anomalous, or is the process drifting over time. `pictl predict` provides seven task types that each answer a different predictive question using the event log as training data.
+You want to answer predictive questions about your process: what activity happens next, how long until a case completes, is a given trace anomalous, or is the process drifting over time. `wpm predict` provides seven task types that each answer a different predictive question using the event log as training data.
 
 ---
 
@@ -271,7 +271,7 @@ pictl predict next-activity -i orders.xes --prefix "Create Order" --no-save
 
 ## See Also
 
-- [How-To: Monitor Drift in Real-Time](./monitor-drift.md) -- continuous drift monitoring via `pictl drift-watch`
-- [How-To: Compare Two Event Logs](./compare-process-models.md) -- structural comparison via `pictl diff`
+- [How-To: Monitor Drift in Real-Time](./monitor-drift.md) -- continuous drift monitoring via `wpm drift-watch`
+- [How-To: Compare Two Event Logs](./compare-process-models.md) -- structural comparison via `wpm diff`
 - [How-To: Choose an Algorithm](./choose-algorithm.md) -- selecting a discovery algorithm
 - [Reference: Config Schema](../reference/config-schema.md) -- prediction config options (`prediction.ngramOrder`, `prediction.driftWindowSize`)

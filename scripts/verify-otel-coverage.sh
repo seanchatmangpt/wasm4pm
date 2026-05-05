@@ -20,8 +20,8 @@ set -eu
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 PACKAGES_DIR="$PROJECT_ROOT/packages"
-COVERAGE_JSON="$PROJECT_ROOT/.pictl/otel-coverage.json"
-COVERAGE_MD="$PROJECT_ROOT/.pictl/otel-coverage.md"
+COVERAGE_JSON="$PROJECT_ROOT/.wasm4pm/otel-coverage.json"
+COVERAGE_MD="$PROJECT_ROOT/.wasm4pm/otel-coverage.md"
 
 FIX_MODE=false
 THRESHOLD=80

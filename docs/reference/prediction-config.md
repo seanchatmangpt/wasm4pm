@@ -5,7 +5,7 @@
 
 ## Overview
 
-The prediction configuration section (`prediction`) in `wasm4pm.toml` or `wasm4pm.json` controls default values for predictive process mining tasks. These defaults are used by `pictl predict` when CLI flags are not provided.
+The prediction configuration section (`prediction`) in `wasm4pm.toml` or `wasm4pm.json` controls default values for predictive process mining tasks. These defaults are used by `wpm predict` when CLI flags are not provided.
 
 The schema is defined by `predictionConfigSchema` in `packages/config/src/schema.ts`.
 
@@ -211,6 +211,6 @@ logLevel = "info"
 
 ## See Also
 
-- [Prediction CLI Reference](./prediction-cli.md) -- `pictl predict` task documentation
+- [Prediction CLI Reference](./prediction-cli.md) -- `wpm predict` task documentation
 - [Config Schema Reference](./config-schema.md) -- full configuration schema
 - [CLI Commands Reference](./cli-commands.md) -- all pictl commands

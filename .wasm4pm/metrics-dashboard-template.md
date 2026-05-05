@@ -6,7 +6,7 @@ This is a template. To generate the live dashboard:
 bash scripts/weekly-metrics-report.sh
 ```
 
-The generated dashboard will be saved to: `.pictl/metrics-dashboard.md`
+The generated dashboard will be saved to: `.wasm4pm/metrics-dashboard.md`
 
 ---
 
@@ -135,10 +135,10 @@ Every week:
 
 | File | Purpose |
 |------|---------|
-| `.pictl/metrics.json` | Raw metric data (JSON, append-only) |
-| `.pictl/build-times.log` | Build time history (CSV) |
-| `.pictl/metrics-dashboard.md` | Weekly aggregated report (generated) |
-| `.pictl/metrics-dashboard-template.md` | This file (reference) |
+| `.wasm4pm/metrics.json` | Raw metric data (JSON, append-only) |
+| `.wasm4pm/build-times.log` | Build time history (CSV) |
+| `.wasm4pm/metrics-dashboard.md` | Weekly aggregated report (generated) |
+| `.wasm4pm/metrics-dashboard-template.md` | This file (reference) |
 | `.claude/hooks/metrics-track.sh` | Post-commit collection script |
 | `.claude/hooks/pre-push-metrics.sh` | Pre-push gate (red/yellow/green) |
 | `scripts/weekly-metrics-report.sh` | Report generator |
@@ -149,8 +149,8 @@ Every week:
 
 **On Every Commit:**
 - `.git/hooks/post-commit` calls `metrics-track.sh`
-- Metrics collected and persisted to `.pictl/metrics.json`
-- Build time appended to `.pictl/build-times.log`
+- Metrics collected and persisted to `.wasm4pm/metrics.json`
+- Build time appended to `.wasm4pm/build-times.log`
 
 **Before Every Push (Optional):**
 - `.git/hooks/pre-push` calls `pre-push-metrics.sh`
@@ -159,7 +159,7 @@ Every week:
 
 **Weekly (Manual or Scheduled):**
 - Run `bash scripts/weekly-metrics-report.sh`
-- Generates `.pictl/metrics-dashboard.md`
+- Generates `.wasm4pm/metrics-dashboard.md`
 - Share with team for Kaizen planning
 
 ---
@@ -168,9 +168,9 @@ Every week:
 
 1. Enable metrics collection: `cp .claude/hooks/metrics-track.sh .git/hooks/post-commit && chmod +x .git/hooks/post-commit`
 2. Make a test commit: `git commit --allow-empty -m "test: collect metrics"`
-3. Check collection: `cat .pictl/metrics.json | jq '.historical_data[-1]'`
+3. Check collection: `cat .wasm4pm/metrics.json | jq '.historical_data[-1]'`
 4. Generate dashboard: `bash scripts/weekly-metrics-report.sh`
-5. Review metrics: `cat .pictl/metrics-dashboard.md`
+5. Review metrics: `cat .wasm4pm/metrics-dashboard.md`
 
 ---
 

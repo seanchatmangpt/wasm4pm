@@ -2,7 +2,7 @@
 
 ## Quickstart
 
-The `agentic` module provides lawful control primitives for `pictl`. Use these to orchestrate complex process mining workflows.
+The `agentic` module provides lawful control primitives for `wpm` (wasm4pm). Use these to orchestrate complex process mining workflows.
 
 ### Components
 

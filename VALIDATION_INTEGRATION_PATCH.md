@@ -2,12 +2,12 @@
 
 ## Overview
 
-Agent 3's mandate: Wire pictl-shapes.ttl SHACL constraints into the result validation pipeline. Every pictl tool output gets validated before returning to caller. Invalid results are rejected with clear error messages.
+Agent 3's mandate: Wire wasm4pm-shapes.ttl SHACL constraints into the result validation pipeline. Every wasm4pm tool output gets validated before returning to caller. Invalid results are rejected with clear error messages.
 
 ## Files Created
 
-1. `/Users/sac/chatmangpt/pictl/src/validate-shacl.mjs` — Core validation engine
-2. `/Users/sac/chatmangpt/pictl/src/logger.mjs` — Logging utility
+1. `/Users/sac/chatmangpt/wasm4pm/src/validate-shacl.mjs` — Core validation engine
+2. `/Users/sac/chatmangpt/wasm4pm/src/logger.mjs` — Logging utility
 
 ## Integration Points
 
@@ -58,10 +58,10 @@ export class PictlMCPServer {
   private async initializeValidator() {
     try {
       this.shaclValidator = await SHACLValidator.create();
-      console.log('[pictl] SHACL validator initialized successfully');
+      console.log('[wasm4pm] SHACL validator initialized successfully');
     } catch (error) {
       console.error(
-        '[pictl] Failed to initialize SHACL validator:',
+        '[wasm4pm] Failed to initialize SHACL validator:',
         error instanceof Error ? error.message : String(error)
       );
       // Continue without validation (graceful degradation)
@@ -106,7 +106,7 @@ Replace the final return statement (lines 1338-1345) with validation:
         // Soft violations (warnings) — log but proceed
         if (validationReport.warnings.length > 0) {
           console.warn(
-            `[pictl] Validation warnings for ${toolName}:`,
+            `[wasm4pm] Validation warnings for ${toolName}:`,
             validationReport.warnings.map(w => w.message)
           );
         }
@@ -195,10 +195,10 @@ Below is the actual patch in unified diff format:
 +  private async initializeValidator() {
 +    try {
 +      this.shaclValidator = await SHACLValidator.create();
-+      console.log('[pictl] SHACL validator initialized successfully');
++      console.log('[wasm4pm] SHACL validator initialized successfully');
 +    } catch (error) {
 +      console.error(
-+        '[pictl] Failed to initialize SHACL validator:',
++        '[wasm4pm] Failed to initialize SHACL validator:',
 +        error instanceof Error ? error.message : String(error)
 +      );
 +    }
@@ -243,7 +243,7 @@ Below is the actual patch in unified diff format:
 +        }
 +
 +        if (validationReport.warnings.length > 0) {
-+          console.warn(`[pictl] Validation warnings for ${toolName}:`);
++          console.warn(`[wasm4pm] Validation warnings for ${toolName}:`);
 +        }
 +      }
 +      // === END VALIDATION GATE ===
@@ -345,7 +345,7 @@ Below is the actual patch in unified diff format:
 **Case 2: Fitness 0.65 (Soft Violation)**
 
 ```
-[pictl] Validation warnings for check_conformance:
+[wasm4pm] Validation warnings for check_conformance:
 Fitness below 0.7 may indicate quality issues
 Result still returned, but flagged in logs
 ```
@@ -372,7 +372,7 @@ validator.getStats() returns:
 
 ## Configuration
 
-The validator automatically loads `pictl-shapes.ttl` on startup. If the file is missing or unreadable, it falls back to built-in SHACL shapes (hardcoded in `initializeBuiltInShapes()`).
+The validator automatically loads `wasm4pm-shapes.ttl` on startup. If the file is missing or unreadable, it falls back to built-in SHACL shapes (hardcoded in `initializeBuiltInShapes()`).
 
 ### Per-Tool Validators
 
@@ -407,7 +407,7 @@ echo '{"hasFitness": 1.5}' | pictl discover_dfg
 All validation events logged to console:
 
 ```
-[validate-shacl] [timestamp] INFO: Loaded SHACL shapes from /path/to/pictl-shapes.ttl
+[validate-shacl] [timestamp] INFO: Loaded SHACL shapes from /path/to/wasm4pm-shapes.ttl
 [validate-shacl] [timestamp] INFO: [discover_dfg] Validation PASSED
 [validate-shacl] [timestamp] WARN: [check_conformance] Validation warnings: Fitness below 0.7
 [validate-shacl] [timestamp] ERROR: [discover_genetic_algorithm] Validation Error: fitness out of range
@@ -415,12 +415,12 @@ All validation events logged to console:
 
 ## Mandate Completion
 
-✅ **Objective 1**: Created `/Users/sac/chatmangpt/pictl/src/validate-shacl.mjs`
+✅ **Objective 1**: Created `/Users/sac/chatmangpt/wasm4pm/src/validate-shacl.mjs`
 - Exports `validateResult(toolName, result)` function
 - Inputs: toolName, JSON result object
 - Outputs: `ValidationResult` with `valid`, `errors`, `warnings`, `violations`
 
-✅ **Objective 2**: Loads pictl-shapes.ttl on module init
+✅ **Objective 2**: Loads wasm4pm-shapes.ttl on module init
 - `SHACLValidator.create()` async initializer
 - Falls back to built-in shapes if file missing
 
@@ -444,7 +444,7 @@ All validation events logged to console:
 
 **Agent 3 — SHACL Validation Gatekeeper**
 
-Mandate: Wire pictl-shapes.ttl SHACL constraints into the result validation pipeline. Every pictl tool output gets validated before returning to caller. Invalid results are rejected.
+Mandate: Wire wasm4pm-shapes.ttl SHACL constraints into the result validation pipeline. Every wasm4pm tool output gets validated before returning to caller. Invalid results are rejected.
 
 Status: **COMPLETE**
 

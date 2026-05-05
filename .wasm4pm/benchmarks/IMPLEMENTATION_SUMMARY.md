@@ -22,7 +22,7 @@ A comprehensive performance regression detection system that:
 
 ### 1. Benchmark Baseline Storage ✅
 
-**Location:** `.pictl/benchmarks/baselines/`
+**Location:** `.wasm4pm/benchmarks/baselines/`
 
 **Files Created:**
 - `main-latest.json` — Symlink to most recent main baseline
@@ -56,7 +56,7 @@ A comprehensive performance regression detection system that:
 - All baselines retained (no deletion) for long-term trend analysis
 - Symlink `main-latest.json` always points to most recent
 - Metadata included: timestamp, git commit, branch, CI mode
-- Directory: `.pictl/benchmarks/baselines/` (gitkeep placeholder)
+- Directory: `.wasm4pm/benchmarks/baselines/` (gitkeep placeholder)
 
 ---
 
@@ -89,18 +89,18 @@ A comprehensive performance regression detection system that:
 
 ### 3. Baseline Update Script ✅
 
-**File:** `.pictl/benchmarks/update-baseline.sh` (executable)
+**File:** `.wasm4pm/benchmarks/update-baseline.sh` (executable)
 
 **Usage:**
 ```bash
-bash .pictl/benchmarks/update-baseline.sh        # Full suite
-bash .pictl/benchmarks/update-baseline.sh --ci   # Fast CI mode
+bash .wasm4pm/benchmarks/update-baseline.sh        # Full suite
+bash .wasm4pm/benchmarks/update-baseline.sh --ci   # Fast CI mode
 ```
 
 **What it does:**
 1. ✅ Runs full benchmark suite: `make bench-rust`
 2. ✅ Collects Criterion results from `wasm4pm/target/criterion/`
-3. ✅ Stores in `.pictl/benchmarks/baselines/main-{TIMESTAMP}.json`
+3. ✅ Stores in `.wasm4pm/benchmarks/baselines/main-{TIMESTAMP}.json`
 4. ✅ Saves metadata: git hash, branch, timestamp
 5. ✅ Updates `main-latest.json` symlink
 6. ✅ Prints summary statistics (if jq available)
@@ -115,7 +115,7 @@ bash .pictl/benchmarks/update-baseline.sh --ci   # Fast CI mode
 
 ### 4. Regression Report ✅
 
-**File:** `.pictl/benchmarks/regression-report.md`
+**File:** `.wasm4pm/benchmarks/regression-report.md`
 
 **Auto-Updated On Each Benchmark Run:**
 - `regression-report.md` — Latest (always current)
@@ -142,7 +142,7 @@ bash .pictl/benchmarks/update-baseline.sh --ci   # Fast CI mode
 
 ### 5. Performance Trend Tracking ✅
 
-**File:** `.pictl/benchmarks/trends.json` (JSON Schema)
+**File:** `.wasm4pm/benchmarks/trends.json` (JSON Schema)
 
 **Structure:**
 ```json
@@ -298,10 +298,10 @@ git checkout main
 make bench
 
 # Save baseline
-bash .pictl/benchmarks/update-baseline.sh
+bash .wasm4pm/benchmarks/update-baseline.sh
 
 # Commit
-git add .pictl/benchmarks/baselines/
+git add .wasm4pm/benchmarks/baselines/
 git commit -m "chore: establish benchmark baselines"
 git push origin main
 ```
@@ -317,7 +317,7 @@ make bench-regression
 
 ```bash
 make bench-trends  # Last 30 days
-python3 .pictl/benchmarks/plot-trends.py --days 7 --algorithm dfg
+python3 .wasm4pm/benchmarks/plot-trends.py --days 7 --algorithm dfg
 ```
 
 ---
@@ -340,7 +340,7 @@ python3 .pictl/benchmarks/plot-trends.py --days 7 --algorithm dfg
                    │
          ┌─────────┴──────────┐
          ▼                    ▼
-    .pictl/benchmarks/    Regression Report
+    .wasm4pm/benchmarks/    Regression Report
      regression-report-   (markdown + JSON)
      {timestamp}.md
          │
@@ -357,7 +357,7 @@ python3 .pictl/benchmarks/plot-trends.py --days 7 --algorithm dfg
 └──────────────────┬──────────────────────────────────┘
                    │
                    ▼
-           .pictl/benchmarks/baselines/
+           .wasm4pm/benchmarks/baselines/
              main-latest.json (symlink)
              main-20260411_120000.json
              20260411_120000_metadata.json
@@ -388,11 +388,11 @@ python3 .pictl/benchmarks/plot-trends.py --days 7 --algorithm dfg
 ### Criterion Integration
 - **Input source:** `wasm4pm/target/criterion/` (Criterion v0.5+ JSON output)
 - **Parsed metrics:** throughput (ops/s), latency (ns/op), percentiles (p50/p95/p99)
-- **Stored:** Timestamped baseline + metadata in `.pictl/benchmarks/baselines/`
+- **Stored:** Timestamped baseline + metadata in `.wasm4pm/benchmarks/baselines/`
 - **Comparison:** Baseline vs current, delta %, regression classification
 
 ### Git Workflow
-- **Baseline storage:** Versioned in `.pictl/benchmarks/baselines/` (checked in)
+- **Baseline storage:** Versioned in `.wasm4pm/benchmarks/baselines/` (checked in)
 - **Metadata:** Git commit, branch, timestamp (per baseline)
 - **Symlink:** `main-latest.json` for easy reference
 - **Retention:** All baselines kept (no deletion)
@@ -447,7 +447,7 @@ python3 .pictl/benchmarks/plot-trends.py --days 7 --algorithm dfg
 ### Created Files (11 total)
 
 ```
-.pictl/benchmarks/
+.wasm4pm/benchmarks/
 ├── .gitkeep                              (placeholder)
 ├── README.md                             (reference guide)
 ├── SETUP.md                              (first-time setup)
@@ -478,16 +478,16 @@ Makefile                                  (updated with 5 new targets)
 
 ```bash
 # 1. Validate setup
-bash .pictl/benchmarks/validate-setup.sh
+bash .wasm4pm/benchmarks/validate-setup.sh
 # Output: ✅ All checks passed! (22/22)
 
 # 2. Test plot-trends.py
-python3 .pictl/benchmarks/plot-trends.py --help
+python3 .wasm4pm/benchmarks/plot-trends.py --help
 # Output: help text
 
 # 3. Test shell scripts syntax
-bash -n .pictl/benchmarks/detect-regression.sh
-bash -n .pictl/benchmarks/update-baseline.sh
+bash -n .wasm4pm/benchmarks/detect-regression.sh
+bash -n .wasm4pm/benchmarks/update-baseline.sh
 # Output: (silent = success)
 
 # 4. Test Makefile targets
@@ -495,8 +495,8 @@ make help | grep bench
 # Output: All regression targets listed
 
 # 5. Verify JSON validity
-jq . .pictl/benchmarks/trends.json > /dev/null
-jq . .pictl/benchmarks/baselines/SAMPLE_BASELINE.json > /dev/null
+jq . .wasm4pm/benchmarks/trends.json > /dev/null
+jq . .wasm4pm/benchmarks/baselines/SAMPLE_BASELINE.json > /dev/null
 # Output: (silent = success)
 ```
 
@@ -505,7 +505,7 @@ jq . .pictl/benchmarks/baselines/SAMPLE_BASELINE.json > /dev/null
 ```bash
 # These steps are ready to run but require full benchmark suite
 # 1. Establish baseline (on main branch):
-#    make bench && bash .pictl/benchmarks/update-baseline.sh
+#    make bench && bash .wasm4pm/benchmarks/update-baseline.sh
 #
 # 2. Create feature branch and change code:
 #    git checkout -b feat/my-feature
@@ -551,13 +551,13 @@ jq . .pictl/benchmarks/baselines/SAMPLE_BASELINE.json > /dev/null
 ### Common Issues
 
 **Q: "Baseline not found"**
-- A: Run on main: `make bench && bash .pictl/benchmarks/update-baseline.sh`
+- A: Run on main: `make bench && bash .wasm4pm/benchmarks/update-baseline.sh`
 
 **Q: "detect-regression.sh fails with 'permission denied'"**
-- A: `chmod +x .pictl/benchmarks/*.sh .pictl/benchmarks/*.py`
+- A: `chmod +x .wasm4pm/benchmarks/*.sh .wasm4pm/benchmarks/*.py`
 
 **Q: "Python syntax error"**
-- A: Verify: `python3 -m py_compile .pictl/benchmarks/plot-trends.py`
+- A: Verify: `python3 -m py_compile .wasm4pm/benchmarks/plot-trends.py`
 
 **Q: "Can I override the 5% threshold?"**
 - A: Edit thresholds in `detect-regression.sh` (lines ~12-14)
@@ -566,21 +566,21 @@ jq . .pictl/benchmarks/baselines/SAMPLE_BASELINE.json > /dev/null
 
 ```bash
 # View latest baseline
-cat .pictl/benchmarks/baselines/main-latest.json | jq .
+cat .wasm4pm/benchmarks/baselines/main-latest.json | jq .
 
 # Check symlink
-ls -l .pictl/benchmarks/baselines/main-latest.json
+ls -l .wasm4pm/benchmarks/baselines/main-latest.json
 
 # List all baselines
-ls -lh .pictl/benchmarks/baselines/main-*.json
+ls -lh .wasm4pm/benchmarks/baselines/main-*.json
 
 # Test regression detection locally
-bash .pictl/benchmarks/detect-regression.sh .pictl/benchmarks/baselines/SAMPLE_BASELINE.json
+bash .wasm4pm/benchmarks/detect-regression.sh .wasm4pm/benchmarks/baselines/SAMPLE_BASELINE.json
 
 # View help for any tool
 make help | grep bench
-python3 .pictl/benchmarks/plot-trends.py --help
-bash .pictl/benchmarks/validate-setup.sh
+python3 .wasm4pm/benchmarks/plot-trends.py --help
+bash .wasm4pm/benchmarks/validate-setup.sh
 ```
 
 ---
@@ -597,7 +597,7 @@ bash .pictl/benchmarks/validate-setup.sh
 
 ### For Contributors
 
-1. ✅ Read `.pictl/benchmarks/SETUP.md` for workflow
+1. ✅ Read `.wasm4pm/benchmarks/SETUP.md` for workflow
 2. ⏭️ Before pushing: `make bench-regression`
 3. ⏭️ If regression >5%: fix performance or add `[PERF-JUSTIFIED]`
 4. ⏭️ PR will auto-comment with regression report
@@ -625,11 +625,11 @@ Comprehensive benchmark regression detection system is **fully implemented and v
 
 **Status: PRODUCTION READY**
 
-For questions or enhancements, refer to `.pictl/benchmarks/README.md` or run `bash .pictl/benchmarks/validate-setup.sh`.
+For questions or enhancements, refer to `.wasm4pm/benchmarks/README.md` or run `bash .wasm4pm/benchmarks/validate-setup.sh`.
 
 ---
 
 **Generated:** 2026-04-11T17:45:00Z  
-**Repository:** /Users/sac/chatmangpt/pictl  
+**Repository:** /Users/sac/chatmangpt/wasm4pm  
 **Implementation Time:** ~60 minutes  
 **Production Ready:** Yes ✅

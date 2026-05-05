@@ -88,7 +88,7 @@ describe('1. Package Integrity After Install', () => {
         expect(pkg['version']).toMatch(/^\d+\.\d+\.\d+/);
         console.info('[release] installed version:', pkg['version']);
     });
-    it('1.2 pkg/pictl.js glue file exists and size > 1 KB', () => {
+    it('1.2 pkg/wasm4pm.js glue file exists and size > 1 KB', () => {
         const jsPath = path.join(pkgDir, 'pkg', 'pictl.js');
         expect(fs.existsSync(jsPath), `pictl.js not found at ${jsPath}`).toBe(true);
         expect(fs.statSync(jsPath).size).toBeGreaterThan(1000);

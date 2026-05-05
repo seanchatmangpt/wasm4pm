@@ -82,8 +82,8 @@ Vision 2030 organizes autonomous process mining into 5 orthogonal domains, each 
 |--------|---------|
 | **Problem** | RL learning lost on CLI restart; no audit trail of decisions; state recovery requires manual intervention; distributed replay impossible |
 | **Objectives** | (1) Survive restarts without losing RL progress; (2) persist decision audit trail; (3) enable deterministic replay; (4) support multi-session learning |
-| **Architectural Changes** | State serialized to `.pictl/state/rl_orchestrator.json` after each cycle; Q-tables exported/restored; SPC ring buffer persisted; telemetry includes cycle_count, cumulative_reward |
-| **Key Decisions** | What to persist? (telemetry, Q-tables, SPC rings, circuit state); When to save? (after every cycle); Where? (.pictl/state/); How? (JSON + serde) |
+| **Architectural Changes** | State serialized to `.wasm4pm/state/rl_orchestrator.json` after each cycle; Q-tables exported/restored; SPC ring buffer persisted; telemetry includes cycle_count, cumulative_reward |
+| **Key Decisions** | What to persist? (telemetry, Q-tables, SPC rings, circuit state); When to save? (after every cycle); Where? (.wasm4pm/state/); How? (JSON + serde) |
 | **Quality Metrics** | Restore fidelity = 100% (loaded ≡ saved), continuity = monotonic cycle_count, file size <10MB (10K cycles), restore time <100ms |
 | **Verification Methods** | (1) Deterministic comparison: loaded state === saved state; (2) continuity: cycle_count increments; (3) bounds: file size <10MB |
 | **Failure Mode** | Restore file corrupted (malformed JSON) → warn user, start fresh; restore fails → fallback to new orchestrator, log warning |

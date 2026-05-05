@@ -8,7 +8,7 @@ The pictl WASM process mining platform is organized as a Rust workspace with mul
 wasm4pm/
 ├── Cargo.toml                 # Workspace root
 ├── crates/
-│   ├── pictl-types/           # 1️⃣ Foundational: Binary data structures
+│   ├── wasm4pm-types/           # 1️⃣ Foundational: Binary data structures
 │   │   ├── Cargo.toml
 │   │   └── src/
 │   │       ├── lib.rs         # Module exports
@@ -33,7 +33,7 @@ wasm4pm/
 
 ## Crates
 
-### 1. pictl-types (Foundational)
+### 1. wasm4pm-types (Foundational)
 
 **Purpose:** Defines the canonical binary data structures that all functions pass around.
 
@@ -58,7 +58,7 @@ wasm4pm/
 
 ### 2. pictl-core (Algorithm Implementation)
 
-**Purpose:** Algorithm implementations that depend on pictl-types.
+**Purpose:** Algorithm implementations that depend on wasm4pm-types.
 
 **Future:** Will contain implementations of discovery algorithms, conformance checkers, and other process mining operations.
 
@@ -66,7 +66,7 @@ wasm4pm/
 
 **Purpose:** WebAssembly bindings and public API.
 
-**Depends On:** `pictl-types`
+**Depends On:** `wasm4pm-types`
 
 **Exports:**
 
@@ -81,18 +81,18 @@ wasm4pm/
 ```
 pictl-core
    ↓
-pictl-types
+wasm4pm-types
 
 pictl (main library)
    ↓
-pictl-types
+wasm4pm-types
 ```
 
-No circular dependencies. No crate depends on `pictl` (the WASM library).
+No circular dependencies. No crate depends on `wpm` (wasm4pm) (the WASM library).
 
 ### 2. Types as the Foundation
 
-All functions pass around types defined in `pictl-types`. This ensures:
+All functions pass around types defined in `wasm4pm-types`. This ensures:
 
 - **Determinism:** Type definitions are immutable across all callers
 - **Versionability:** Type schema changes are tracked and auditable
@@ -101,7 +101,7 @@ All functions pass around types defined in `pictl-types`. This ensures:
 
 ### 3. Binary Data Structures
 
-Types in `pictl-types` are "binary" in that they:
+Types in `wasm4pm-types` are "binary" in that they:
 
 - Serialize to deterministic JSON (canonical form with sorted keys)
 - Hash to BLAKE3 for provenance tracking
@@ -110,7 +110,7 @@ Types in `pictl-types` are "binary" in that they:
 
 ### 4. No Platform Dependencies in Core
 
-`pictl-types` is platform-agnostic:
+`wasm4pm-types` is platform-agnostic:
 
 - No `wasm-bindgen` features
 - No JavaScript APIs
@@ -121,35 +121,35 @@ Types in `pictl-types` are "binary" in that they:
 
 ### Phase 1: ✓ Types Crate (COMPLETE)
 
-All type definitions moved to `pictl-types`.
+All type definitions moved to `wasm4pm-types`.
 
 ### Phase 2: Algorithm Core
 
-Implementations of discovery, conformance, and analysis algorithms depend on `pictl-types`.
+Implementations of discovery, conformance, and analysis algorithms depend on `wasm4pm-types`.
 
 ### Phase 3: WASM Bindings
 
-Main `pictl` crate becomes thin wrapper around `pictl-types` and `pictl-core`.
+Main `wpm` (wasm4pm) crate becomes thin wrapper around `wasm4pm-types` and `pictl-core`.
 
 ### Phase 4: Multi-Language Support
 
-TypeScript converters (EventLogIR ↔ EventLog) can use `pictl-types` schema as the source of truth.
+TypeScript converters (EventLogIR ↔ EventLog) can use `wasm4pm-types` schema as the source of truth.
 
 ## Cargo Workspace Commands
 
 ```bash
 # Build all crates
-cargo build -p pictl-types
-cargo build -p pictl-core
+cargo build -p wasm4pm-cli-types
+cargo build -p wasm4pm-cli-core
 cargo build
 
 # Test all crates
-cargo test -p pictl-types
-cargo test -p pictl-core
+cargo test -p wasm4pm-cli-types
+cargo test -p wasm4pm-cli-core
 cargo test
 
 # Run specific test
-cargo test -p pictl-types hash::tests::test_blake3_string_hash
+cargo test -p wasm4pm-cli-types hash::tests::test_blake3_string_hash
 
 # Check for compilation errors
 cargo check
@@ -163,17 +163,17 @@ cargo clippy
 
 ## WASM Build
 
-The main `pictl` crate is still built with `wasm-pack`:
+The main `wpm` (wasm4pm) crate is still built with `wasm-pack`:
 
 ```bash
 wasm-pack build --target bundler
 wasm-pack build --target nodejs
 ```
 
-`pictl-types` is built as a library and can be compiled natively:
+`wasm4pm-types` is built as a library and can be compiled natively:
 
 ```bash
-cd crates/pictl-types
+cd crates/wasm4pm-types
 cargo build --release
 cargo test
 ```
@@ -198,4 +198,4 @@ All crates use shared `workspace.package.version`:
 
 - Cargo Workspaces: https://doc.rust-lang.org/cargo/reference/workspaces.html
 - Three-Layer Architecture: See `../../CLAUDE.md` (Control Plane section)
-- ProvenanceChain: See `pictl-types/src/provenance.rs`
+- ProvenanceChain: See `wasm4pm-types/src/provenance.rs`

@@ -218,7 +218,7 @@ A: Start with [Tutorial: Your First Model](tutorials/first-model.md) (5 min), th
 A: Use [How-To: Choose Algorithm](how-to/choose-algorithm.md) for a quick decision tree.
 
 **Q: How do I run ML analysis?**
-A: Enable the `[ml]` config section or use `pictl ml <task>`. See [How-To: Predictive Mining](how-to/predictive-mining.md).
+A: Enable the `[ml]` config section or use `wpm ml <task>`. See [How-To: Predictive Mining](how-to/predictive-mining.md).
 
 **Q: How do I deploy to production?**
 A: Follow [How-To: Docker Deployment](how-to/docker-deploy.md) or see [Deployment Profiles](../wasm4pm/DEPLOYMENT_PROFILES.md) for WASM binary optimization.

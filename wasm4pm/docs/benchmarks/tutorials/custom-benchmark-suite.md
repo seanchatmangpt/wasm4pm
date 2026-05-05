@@ -519,4 +519,4 @@ discover_frequency_dfg                       10000      3.35        3.68
 
 - **Understanding Benchmark Results** -- deep-dive into interpreting scaling and anomaly detection
 - **BENCHMARK-TIERS-USAGE.md** -- run your algorithm against real BPI Challenge datasets
-- **Testing harness** -- explore `@pictl/testing` for parity checks and determinism verification
+- **Testing harness** -- explore `@wasm4pm/testing` for parity checks and determinism verification

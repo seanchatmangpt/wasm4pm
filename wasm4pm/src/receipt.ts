@@ -13,7 +13,7 @@ import { PictlConfig, ExecutionProfile } from './config.js';
 export interface ExecutionReceipt {
   // Identification
   runId: string; // Unique run identifier: "run_<ISO_timestamp>_<random4>"
-  engineVersion: string; // Version of pictl engine (0.5.4)
+  engineVersion: string; // Version of wasm4pm engine (0.5.4)
   configHash: string; // Deterministic hash of configuration (32-char hex)
 
   // Execution context

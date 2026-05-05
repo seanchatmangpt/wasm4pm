@@ -11,9 +11,9 @@ RESULTS_FILE = REPO_ROOT / "docs" / "REAL-BENCHMARK-RESULTS.md"
 
 def run_wasm4pm_bench(log_path):
     print(f"Benchmarking wasm4pm on {log_path.name}...")
-    # Use pictl run for a real-world benchmark
+    # Use wasm4pm (wpm) run for a real-world benchmark
     cmd = [
-        "node", str(REPO_ROOT / "apps/pictl/dist/bin/pictl.js"),
+        "node", str(REPO_ROOT / "apps/wasm4pm/dist/bin/wpm.js"),
         "run", str(log_path),
         "--no-save", "--format", "json", "--algorithm", "heuristic"
     ]
@@ -52,8 +52,8 @@ def run_pm4py_bench(log_path):
         return None
 
 def main():
-    # Ensure pictl is built
-    subprocess.run(["cd apps/pictl && pnpm run build"], shell=True, capture_output=True)
+    # Ensure wasm4pm is built
+    subprocess.run(["cd apps/wasm4pm && pnpm run build"], shell=True, capture_output=True)
     
     # Try to find a large log (BPI 2012 or 2017)
     logs = list(BENCH_DATA.glob("*.xes"))

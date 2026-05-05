@@ -74,7 +74,7 @@ make clean-bench                # Cleanup results
 ## Directory Structure
 
 ```
-.pictl/benchmarks/
+.wasm4pm/benchmarks/
 ├── baselines/                          ← Baseline storage (versioned)
 │   ├── .gitkeep
 │   ├── main-latest.json               ← Symlink to newest
@@ -131,7 +131,7 @@ make clean-bench                # Cleanup results
    ↓
 4. bash update-baseline.sh        ← Save new baseline
    ↓
-5. git add .pictl/benchmarks/baselines/
+5. git add .wasm4pm/benchmarks/baselines/
    git commit -m "chore: update baselines"
    git push origin main
 ```
@@ -238,7 +238,7 @@ A: All kept, symlink points to latest. See "Baseline Update Script" in [IMPLEMEN
 git checkout main
 make bench
 bash update-baseline.sh
-git add .pictl/benchmarks/baselines/
+git add .wasm4pm/benchmarks/baselines/
 git commit -m "chore: establish benchmark baselines"
 git push origin main
 ```
@@ -288,9 +288,9 @@ Status: ✅ PRODUCTION READY
 
 - **GitHub Actions:** `.github/workflows/bench-regression.yml`
 - **Makefile:** See `make help | grep bench`
-- **Baseline Storage:** `.pictl/benchmarks/baselines/`
-- **Trends Data:** `.pictl/benchmarks/trends.json`
-- **Latest Report:** `.pictl/benchmarks/regression-report.md`
+- **Baseline Storage:** `.wasm4pm/benchmarks/baselines/`
+- **Trends Data:** `.wasm4pm/benchmarks/trends.json`
+- **Latest Report:** `.wasm4pm/benchmarks/regression-report.md`
 
 ---
 

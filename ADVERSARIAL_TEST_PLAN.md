@@ -1,4 +1,4 @@
-# Adversarial Test Plan — pictl Autonomic Process Control
+# Adversarial Test Plan — wasm4pm Autonomic Process Control
 
 **Testing an RL-based autonomic loop against itself.**
 

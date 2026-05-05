@@ -19,7 +19,7 @@
 
 ## Configuration
 
-See [`.pictl/wip-config.json`](.pictl/wip-config.json) for full settings.
+See [`.wasm4pm/wip-config.json`](.wasm4pm/wip-config.json) for full settings.
 
 | Setting | Value | Purpose |
 |---------|-------|---------|
@@ -43,7 +43,7 @@ $ git push origin feature/my-feature
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   User: seanchatmangpt
-  Repo: seanchatmangpt/pictl
+  Repo: seanchatmangpt/wasm4pm
   Open PRs: 2 / 3
 
   ✅ WIP limit check passed
@@ -192,7 +192,7 @@ See [`CLAUDE.md`](../../CLAUDE.md) (Toyota Production System section) for full p
 
 ## Configuration: How to Adjust Limits
 
-Edit `.pictl/wip-config.json`:
+Edit `.wasm4pm/wip-config.json`:
 
 ```json
 {
@@ -208,7 +208,7 @@ Edit `.pictl/wip-config.json`:
 
 After editing, commit and push:
 ```bash
-git add .pictl/wip-config.json
+git add .wasm4pm/wip-config.json
 git commit -m "config(wip): adjust limits to max 5 concurrent PRs"
 git push origin <branch>
 ```
@@ -240,7 +240,7 @@ Track in your team's metrics dashboard:
 
 ## See Also
 
-- [`.pictl/wip-config.json`](.pictl/wip-config.json) — WIP configuration
+- [`.wasm4pm/wip-config.json`](.wasm4pm/wip-config.json) — WIP configuration
 - [`.claude/hooks/wip-check.sh`](../.claude/hooks/wip-check.sh) — Local pre-push hook
 - [`.github/workflows/wip-check.yml`](../../.github/workflows/wip-check.yml) — GitHub Actions WIP limit
 - [`.github/workflows/pr-staleness.yml`](../../.github/workflows/pr-staleness.yml) — Hourly staleness detection

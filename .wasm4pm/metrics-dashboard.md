@@ -412,8 +412,8 @@ These metrics are collected automatically:
 ## References
 
 - **Toyota Production System:** Muda (waste) elimination, Kaizen (continuous improvement)
-- **Metrics:** See `.pictl/metrics.json` for raw data
-- **Build times:** See `.pictl/build-times.log` for historical records
+- **Metrics:** See `.wasm4pm/metrics.json` for raw data
+- **Build times:** See `.wasm4pm/build-times.log` for historical records
 - **CLAUDE.md:** See `.claude/rules/toyota-production.md` for full TPS principles
 
 **Last Generated:** 2026-04-12T01:20:00Z

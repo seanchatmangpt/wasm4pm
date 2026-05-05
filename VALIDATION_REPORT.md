@@ -41,7 +41,7 @@ cd wasm4pm && npm run build
 - `pictl.js` and `pictl_bg.js`
 - TypeScript definitions
 
-**Note:** The WASM package name is `pictl`, not `wasm4pm`. The doctor.ts checks still reference old names (`wasm4pm_bg.wasm`) — this is a pre-existing issue, not caused by the hooks.
+**Note:** The WASM package name is `wpm` (wasm4pm), not `wasm4pm`. The doctor.ts checks still reference old names (`wasm4pm_bg.wasm`) — this is a pre-existing issue, not caused by the hooks.
 
 ---
 
@@ -89,7 +89,7 @@ CLAUDE_PROJECT_DIR=$(pwd) bash .claude/hooks/session-start.sh
 ✗ pictl environment: DEGRADED (17 ok, 5 warn, 2 fail)
 
 Critical failures:
-  • WASM binary: WASM binary not built — /Users/sac/chatmangpt/pictl/wasm4pm/pkg/wasm4pm_bg.wasm not found
+  • WASM binary: WASM binary not built — /Users/sac/chatmangpt/wasm4pm/wasm4pm/pkg/wasm4pm_bg.wasm not found
     Fix: Build the WASM module: cd wasm4pm && npm run build
   • WASM loads: wasm4pm.js not found — module not built
     Fix: cd wasm4pm && npm run build
@@ -119,7 +119,7 @@ echo '{"stop_hook_active":false}' | CLAUDE_PROJECT_DIR=$(pwd) bash .claude/hooks
   "hookSpecificOutput": {
     "hookEventName": "Stop",
     "decision": "block",
-    "blockReason": "pictl doctor: 2 critical failure(s) detected\n  • WASM binary: WASM binary not built — /Users/sac/chatmangpt/pictl/wasm4pm/pkg/wasm4pm_bg.wasm not found (fix: Build the WASM module: cd wasm4pm && npm run build)\n  • WASM loads: wasm4pm.js not found — module not built (fix: cd wasm4pm && npm run build)\n\nRun: pictl doctor --verbose for full report"
+    "blockReason": "pictl doctor: 2 critical failure(s) detected\n  • WASM binary: WASM binary not built — /Users/sac/chatmangpt/wasm4pm/wasm4pm/pkg/wasm4pm_bg.wasm not found (fix: Build the WASM module: cd wasm4pm && npm run build)\n  • WASM loads: wasm4pm.js not found — module not built (fix: cd wasm4pm && npm run build)\n\nRun: pictl doctor --verbose for full report"
   }
 }
 ```
@@ -141,7 +141,7 @@ echo '{"stop_hook_active":false}' | CLAUDE_PROJECT_DIR=$(pwd) bash .claude/hooks
 
 | Issue | Severity | File | Details |
 |-------|----------|------|---------|
-| Doctor checks wrong WASM names | Low | `apps/pictl/src/commands/doctor.ts` | Checks for `wasm4pm_bg.wasm` but package is named `pictl` (file is `pictl_bg.wasm`) |
+| Doctor checks wrong WASM names | Low | `apps/wasm4pm/src/commands/doctor.ts` | Checks for `wasm4pm_bg.wasm` but package is named `wpm` (wasm4pm) (file is `pictl_bg.wasm`) |
 | Duplicate empty check | Low | `.claude/hooks/stop-gate.sh` L36+L41 | Two identical `[ -z "$DOCTOR_OUTPUT" ]` checks (dead code) |
 | Inconsistent build tool | Low | `Makefile` | Uses `npm run build` instead of `pnpm run build` (workspace uses pnpm) |
 | Misleading set -e | Cosmetic | `.claude/hooks/session-start.sh` | `set -e` at top but all critical execs have `\|\| true` (intentional but confusing) |
@@ -172,7 +172,7 @@ None of these affect hook functionality. The hooks work correctly despite these 
 3. Checks `.healthy` field
 4. If healthy: prints "✓ HEALTHY" with counts
 5. If degraded: prints "✗ DEGRADED" + lists critical failures
-6. Reads `.pictl/checkpoint` if available, displays progress
+6. Reads `.wasm4pm/checkpoint` if available, displays progress
 7. Always exits 0 (bootstrap hook must never block)
 
 **Use case:** Inject environment status into Claude's context at session start.

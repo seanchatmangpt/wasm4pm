@@ -183,7 +183,7 @@ cd test-pictl
 npm install ../pictl
 
 # Test it works
-node -e "const w = require('@seanchatmangpt/pictl'); console.log('Loaded:', w)"
+node -e "const w = require('@wasm4pm/cli'); console.log('Loaded:', w)"
 ```
 
 ### Test in Browser
@@ -308,7 +308,7 @@ For build issues:
 
 - Check wasm-pack documentation: https://rustwasm.github.io/docs/wasm-pack/
 - Check npm documentation: https://docs.npmjs.com/
-- File issues on GitHub: https://github.com/seanchatmangpt/pictl/issues
+- File issues on GitHub: https://github.com/seanchatmangpt/wasm4pm/issues
 
 ---
 

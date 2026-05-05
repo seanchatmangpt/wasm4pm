@@ -5,7 +5,7 @@
 
 ## Problem
 
-You want to enable prediction capabilities in your wasm4pm configuration so that `pictl predict` uses your preferred settings by default, without passing flags every time on the command line.
+You want to enable prediction capabilities in your wasm4pm configuration so that `wpm predict` uses your preferred settings by default, without passing flags every time on the command line.
 
 ## Prediction Config Schema
 
@@ -208,7 +208,7 @@ If you prefer JSON config (`wasm4pm.json`) instead of TOML:
 
 wasm4pm uses a 5-layer precedence system. For the prediction section, values from higher layers override lower ones:
 
-1. **CLI flags** (highest priority) -- e.g., `pictl predict next-activity --ngram-order 5`
+1. **CLI flags** (highest priority) -- e.g., `wpm predict next-activity --ngram-order 5`
 2. **Config file** -- `wasm4pm.toml` or `wasm4pm.json`
 3. **Environment variables** -- e.g., `WASM4PM_PREDICTION_NGRAM_ORDER=5`
 4. **Defaults** -- built-in defaults from the schema

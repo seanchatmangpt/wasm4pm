@@ -23,7 +23,7 @@ import initWasm, {
   circuit_breaker_get_state,
   circuit_breaker_set_state,
   delete_object,
-} from "@seanchatmangpt/pictl";
+} from "@wasm4pm/cli";
 
 // 1. Initialize WASM
 await initWasm();
@@ -830,4 +830,4 @@ All profiles support the Vision 2030 autonomic API (autonomic_execute_cycle, RL 
 
 ---
 
-**Generated:** 2026-04-16 | **Package:** @seanchatmangpt/pictl v26.4.16
+**Generated:** 2026-04-16 | **Package:** @wasm4pm/cli v26.4.16

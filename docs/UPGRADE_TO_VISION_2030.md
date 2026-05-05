@@ -61,7 +61,7 @@ Create a backup of your current pictl installation and results:
 # Backup results and configuration
 mkdir -p ~/.pictl-backup/v26.4.10
 cp -r .pictl ~/.pictl-backup/v26.4.10/
-cp pictl.toml ~/.pictl-backup/v26.4.10/ 2>/dev/null || true
+cp wasm4pm.toml ~/.pictl-backup/v26.4.10/ 2>/dev/null || true
 
 # Backup package lock (if using pnpm/npm)
 cp pnpm-lock.yaml ~/.pictl-backup/v26.4.10/ 2>/dev/null || true
@@ -76,10 +76,10 @@ This allows you to rollback if needed (see [Rollback](#rollback) section).
 
 ```bash
 # Remove old version
-npm uninstall -g @seanchatmangpt/pictl
+npm uninstall -g @wasm4pm/cli
 
 # Install new version
-npm install -g @seanchatmangpt/pictl@26.4.16
+npm install -g @wasm4pm/cli@26.4.16
 ```
 
 **Verify**:
@@ -94,9 +94,9 @@ pictl --version
 cd your-project
 
 # Update in package.json
-pnpm update @seanchatmangpt/pictl --latest
+pnpm update @wasm4pm/cli --latest
 # or
-npm update @seanchatmangpt/pictl --latest
+npm update @wasm4pm/cli --latest
 
 # Verify
 npx pictl --version
@@ -105,8 +105,8 @@ npx pictl --version
 #### Option C: Docker Image
 
 ```bash
-docker pull @seanchatmangpt/pictl:26.4.16
-docker run @seanchatmangpt/pictl:26.4.16 pictl --version
+docker pull @wasm4pm/cli:26.4.16
+docker run @wasm4pm/cli:26.4.16 pictl --version
 ```
 
 ### Step 3: Verify Installation
@@ -197,10 +197,10 @@ cat autoprocess-test.json | jq '.' | head -50
 Check that the autonomic state is being saved:
 
 ```bash
-ls -la .pictl/autoprocess-state.json
+ls -la .wasm4pm/autoprocess-state.json
 
 # View the state file
-cat .pictl/autoprocess-state.json | jq '.metadata'
+cat .wasm4pm/autoprocess-state.json | jq '.metadata'
 ```
 
 **Expected output**:
@@ -216,7 +216,7 @@ cat .pictl/autoprocess-state.json | jq '.metadata'
 
 ### Step 7: Update Configuration (Optional)
 
-If you want to customize the autonomic loop behavior, update `pictl.toml`:
+If you want to customize the autonomic loop behavior, update `wasm4pm.toml`:
 
 ```toml
 [observability]
@@ -285,7 +285,7 @@ test -f /tmp/test-autoprocess.json || exit 1
 
 # 4. Verify state persistence
 echo "4. Verifying state persistence..."
-test -f .pictl/autoprocess-state.json || exit 1
+test -f .wasm4pm/autoprocess-state.json || exit 1
 
 # 5. Existing command test
 echo "5. Running existing discovery command..."
@@ -338,17 +338,17 @@ Error: load_eventlog_from_xes is not exported
 ```bash
 # Clear cache and rebuild
 rm -rf node_modules/.vite
-rm -rf .pictl/wasm-cache/
+rm -rf .wasm4pm/wasm-cache/
 
 # Reinstall
-npm install @seanchatmangpt/pictl@26.4.16 --force
+npm install @wasm4pm/cli@26.4.16 --force
 pictl doctor
 ```
 
 If issue persists:
 ```bash
 # Check WASM binary
-ls -lah node_modules/@seanchatmangpt/pictl/dist/wasm4pm.js
+ls -lah node_modules/@wasm4pm/cli/dist/wasm4pm.js
 
 # Should be ~2.7 MB for browser profile
 # If <100 KB, download failed
@@ -359,7 +359,7 @@ ls -lah node_modules/@seanchatmangpt/pictl/dist/wasm4pm.js
 **Symptoms**:
 ```
 ✗ State persistence enabled
-Error: Cannot write to .pictl/autoprocess-state.json
+Error: Cannot write to .wasm4pm/autoprocess-state.json
 ```
 
 **Cause**: Insufficient disk permissions or full disk.
@@ -371,7 +371,7 @@ Error: Cannot write to .pictl/autoprocess-state.json
 df -h .pictl
 
 # Check permissions
-touch .pictl/test-write && rm .pictl/test-write
+touch .wasm4pm/test-write && rm .wasm4pm/test-write
 
 # Create directory if missing
 mkdir -p .pictl
@@ -397,12 +397,12 @@ Failures: 3
 pictl status --circuit-breaker-reset
 
 # Option 2: Delete state file (full reset)
-rm .pictl/autoprocess-state.json
+rm .wasm4pm/autoprocess-state.json
 pictl doctor --bootstrap-fresh
 
 # Option 3: Scheduled reset (cron)
 # Reset circuit every 6 hours if open
-0 */6 * * * [ -f .pictl/autoprocess-state.json ] && pictl status --circuit-breaker-reset
+0 */6 * * * [ -f .wasm4pm/autoprocess-state.json ] && pictl status --circuit-breaker-reset
 ```
 
 After reset, the circuit breaker returns to `Closed` state.
@@ -479,9 +479,9 @@ If you need to downgrade to v26.4.10:
 ### Step 1: Uninstall v26.4.16
 
 ```bash
-npm uninstall -g @seanchatmangpt/pictl
+npm uninstall -g @wasm4pm/cli
 # or
-pnpm remove @seanchatmangpt/pictl
+pnpm remove @wasm4pm/cli
 ```
 
 ### Step 2: Restore Backup (Optional)
@@ -493,13 +493,13 @@ If you created a backup in Step 1:
 cp -r ~/.pictl-backup/v26.4.10/.pictl .pictl
 
 # Restore configuration
-cp ~/.pictl-backup/v26.4.10/pictl.toml pictl.toml 2>/dev/null || true
+cp ~/.pictl-backup/v26.4.10/wasm4pm.toml wasm4pm.toml 2>/dev/null || true
 ```
 
 ### Step 3: Install Previous Version
 
 ```bash
-npm install -g @seanchatmangpt/pictl@26.4.10
+npm install -g @wasm4pm/cli@26.4.10
 ```
 
 ### Step 4: Verify
@@ -511,10 +511,10 @@ pictl --version
 pictl doctor
 ```
 
-**Note**: The `.pictl/autoprocess-state.json` file created by v26.4.16 will be ignored by v26.4.10. You can safely delete it:
+**Note**: The `.wasm4pm/autoprocess-state.json` file created by v26.4.16 will be ignored by v26.4.10. You can safely delete it:
 
 ```bash
-rm .pictl/autoprocess-state.json
+rm .wasm4pm/autoprocess-state.json
 ```
 
 ---
@@ -530,18 +530,18 @@ rm .pictl/autoprocess-state.json
 | SPC monitoring | ✗ | ✓ (Western Electric) |
 | Circuit breaker | ✓ (manual) | ✓ (automatic) |
 | State persistence | ✗ | ✓ (auto-save) |
-| `pictl autoprocess` command | ✗ | ✓ |
+| `wpm autoprocess` command | ✗ | ✓ |
 
 ### Unchanged
 
 | Component | Status |
 |-----------|--------|
-| `pictl run` | Same |
-| `pictl compare` | Same |
-| `pictl diff` | Same |
-| `pictl conformance` | Same |
-| `pictl ml` | Same |
-| `pictl powl` | Same |
+| `wpm run` | Same |
+| `wpm compare` | Same |
+| `wpm diff` | Same |
+| `wpm conformance` | Same |
+| `wpm ml` | Same |
+| `wpm powl` | Same |
 | Config format | Same (backward compatible) |
 | WASM algorithms (41 total) | Same |
 | Exit codes | Same |
@@ -564,7 +564,7 @@ These are optional and don't break existing observability pipelines.
 ### Recommended Configuration for Production
 
 ```toml
-# pictl.toml (production)
+# wasm4pm.toml (production)
 
 [execution]
 profile = "cloud"  # Full feature set
@@ -591,7 +591,7 @@ kind: ConfigMap
 metadata:
   name: pictl-config
 data:
-  pictl.toml: |
+  wasm4pm.toml: |
     [execution]
     profile = "cloud"
     timeout_ms = 30000
@@ -610,8 +610,8 @@ spec:
         image: pictl:26.4.16
         volumeMounts:
         - name: config
-          mountPath: /app/pictl.toml
-          subPath: pictl.toml
+          mountPath: /app/wasm4pm.toml
+          subPath: wasm4pm.toml
         - name: state
           mountPath: /app/.pictl
       volumes:
@@ -645,8 +645,8 @@ pictl status | jq -e '.circuit_breaker.state == "Closed"' && exit 0 || exit 1
 
 ## Support
 
-- **GitHub Issues**: https://github.com/seanchatmangpt/pictl/issues
-- **Discussions**: https://github.com/seanchatmangpt/pictl/discussions
+- **GitHub Issues**: https://github.com/seanchatmangpt/wasm4pm/issues
+- **Discussions**: https://github.com/seanchatmangpt/wasm4pm/discussions
 - **Email**: info@chatmangpt.com
 
 ---

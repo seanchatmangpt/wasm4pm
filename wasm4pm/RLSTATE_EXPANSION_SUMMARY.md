@@ -10,7 +10,7 @@ Expand the RlState from a 1-dimensional representation (just health_level) to an
 
 ### 1. RlState Structure (Step 1 - 60 minutes)
 
-**File:** `/Users/sac/chatmangpt/pictl/wasm4pm/src/lib.rs`
+**File:** `/Users/sac/chatmangpt/wasm4pm/wasm4pm/src/lib.rs`
 **Location:** Lines 1076-1198
 
 **Before:**
@@ -75,7 +75,7 @@ impl reinforcement::WorkflowState for RlState {
 
 ### 4. Updated Instantiation Sites (Step 2 - 30 minutes)
 
-**File:** `/Users/sac/chatmangpt/pictl/wasm4pm/src/lib.rs`
+**File:** `/Users/sac/chatmangpt/wasm4pm/wasm4pm/src/lib.rs`
 
 **Line 995:**
 

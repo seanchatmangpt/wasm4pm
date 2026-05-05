@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build pictl WASM for a specific deployment profile with optimization and compression.
+# Build wasm4pm WASM for a specific deployment profile with optimization and compression.
 #
 # Usage:
 #   bash scripts/build-profile.sh <profile> [--no-compress] [--dry-run]
@@ -33,10 +33,10 @@ done
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-OUTPUT_DIR="$PROJECT_ROOT/dist/pictl-${PROFILE}"
-WASM_FILE="$OUTPUT_DIR/pictl.wasm"
-WASM_OPT_FILE="$OUTPUT_DIR/pictl.opt.wasm"
-WASM_BROTLI_FILE="$OUTPUT_DIR/pictl.wasm.br"
+OUTPUT_DIR="$PROJECT_ROOT/dist/wasm4pm-${PROFILE}"
+WASM_FILE="$OUTPUT_DIR/wasm4pm.wasm"
+WASM_OPT_FILE="$OUTPUT_DIR/wasm4pm.opt.wasm"
+WASM_BROTLI_FILE="$OUTPUT_DIR/wasm4pm.wasm.br"
 
 # Size targets (MB)
 case "$PROFILE" in
@@ -82,7 +82,7 @@ esac
 
 
 echo "╔═══════════════════════════════════════════════════════════════════════════╗"
-echo "║  pictl WASM Build Orchestration — Profile: $PROFILE"
+echo "║  wasm4pm WASM Build Orchestration — Profile: $PROFILE"
 echo "╚═══════════════════════════════════════════════════════════════════════════╝"
 echo ""
 echo "Profile Description: $DESCRIPTION"
@@ -222,8 +222,8 @@ if [ "$PROFILE" = "cloud" ] && [ $(python3 -c "print(1 if $RAW_SIZE_MB > $CODE_S
   if command -v wasm-split &> /dev/null; then
     echo "[4/5] Code splitting (binary >4.5MB detected: ${RAW_SIZE_MB} MB)..."
     wasm-split "$WASM_FILE" \
-      --export-prefix pictl_core \
-      --secondary-output "$OUTPUT_DIR/pictl-advanced.wasm" \
+      --export-prefix wasm4pm_core \
+      --secondary-output "$OUTPUT_DIR/wasm4pm-advanced.wasm" \
       -o "$WASM_FILE.tmp" 2>/dev/null || {
       echo "WARN: wasm-split failed, skipping code splitting"
     }
@@ -232,7 +232,7 @@ if [ "$PROFILE" = "cloud" ] && [ $(python3 -c "print(1 if $RAW_SIZE_MB > $CODE_S
       mv "$WASM_FILE.tmp" "$WASM_FILE"
       echo "[✓] Code splitting complete"
       echo "    Core:     $WASM_FILE"
-      echo "    Advanced: $OUTPUT_DIR/pictl-advanced.wasm"
+      echo "    Advanced: $OUTPUT_DIR/wasm4pm-advanced.wasm"
     fi
   else
     echo "[4/5] Skipping code splitting (wasm-split not available)"

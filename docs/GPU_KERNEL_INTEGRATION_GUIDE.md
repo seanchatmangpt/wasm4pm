@@ -42,7 +42,7 @@ pass. The GPU parity test is gated behind `#[cfg(feature = "gpu")]`.
 
 ## Configuration
 
-Add to `pictl.toml`:
+Add to `wasm4pm.toml`:
 
 ```toml
 [execution]

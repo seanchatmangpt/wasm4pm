@@ -24,7 +24,7 @@ jobs:
       - uses: actions/checkout@v3
       
       - name: Install wasm4pm
-        run: npm install -g @pictl/cli
+        run: npm install -g @wasm4pm/cli
       
       - name: Validate config
         run: pictl init --validate config.toml
@@ -71,7 +71,7 @@ stages:
 validate_config:
   stage: validate
   script:
-    - npm install -g @pictl/cli
+    - npm install -g @wasm4pm/cli
     - pictl init --validate config.toml
 
 run_analysis:
@@ -103,7 +103,7 @@ pipeline {
   stages {
     stage('Install') {
       steps {
-        sh 'npm install -g @pictl/cli'
+        sh 'npm install -g @wasm4pm/cli'
       }
     }
     

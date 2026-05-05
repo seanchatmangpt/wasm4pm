@@ -14,7 +14,7 @@ Agent 5 implements the **Process Mining Conformance Auditor**, embodying Wil van
 > "If the code says it worked but the event log cannot prove a lawful process happened, then it did not work."
 
 The auditor automatically:
-1. **Captures** OpenTelemetry spans from pictl execution
+1. **Captures** OpenTelemetry spans from wasm4pm execution
 2. **Converts** spans to Object-Centric Event Log (OCEL) format
 3. **Discovers** actual process from event log using DFG algorithm
 4. **Compares** discovered vs declared process
@@ -118,13 +118,13 @@ The auditor automatically:
 
 ## Integration Points
 
-### With pictl Core
+### With wasm4pm Core
 
 1. **OTEL Instrumentation** (`packages/observability/`)
-   - Captures pictl spans during execution
+   - Captures wasm4pm spans during execution
    - Exports to OTEL collector or Jaeger
 
-2. **Declared Process** (`semconv/pictl-process-mining.yaml`)
+2. **Declared Process** (`semconv/wasm4pm-process-mining.yaml`)
    - Defines expected span sequence
    - Sets required attributes per span type
    - Documents allowed/disallowed transitions
@@ -161,7 +161,7 @@ node examples/conformance-audit-example.mjs --spans=/path/to/spans.json
 ### Audit Live System (Jaeger)
 
 ```bash
-node examples/conformance-audit-example.mjs --jaeger-url=http://localhost:16686 --service=pictl
+node examples/conformance-audit-example.mjs --jaeger-url=http://localhost:16686 --service=wasm4pm
 ```
 
 ### Programmatic Usage
@@ -301,7 +301,7 @@ The auditor strictly follows three principles:
 ## Test Execution
 
 ```bash
-$ cd /Users/sac/chatmangpt/pictl
+$ cd /Users/sac/chatmangpt/wasm4pm
 $ npx vitest run test/conformance-audit.test.mjs
 
  ✓ test/conformance-audit.test.mjs  (35 tests) 13ms

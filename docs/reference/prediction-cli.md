@@ -1,11 +1,11 @@
-# Reference: Prediction CLI (`pictl predict`)
+# Reference: Prediction CLI (`wpm predict`)
 
 **Version**: 26.4.6
-**Source**: `apps/pictl/src/commands/predict.ts`
+**Source**: `apps/wasm4pm/src/commands/predict.ts`
 
 ## Overview
 
-`pictl predict` runs predictive process mining tasks on an XES event log. It supports six task types covering the four prediction perspectives defined by van der Aalst: next activity, remaining time, outcome, and concept drift. Two additional utility tasks provide feature extraction and resource estimation.
+`wpm predict` runs predictive process mining tasks on an XES event log. It supports six task types covering the four prediction perspectives defined by van der Aalst: next activity, remaining time, outcome, and concept drift. Two additional utility tasks provide feature extraction and resource estimation.
 
 All results are auto-saved to `.wasm4pm/results/<timestamp>-<task>.json` unless `--no-save` is passed.
 

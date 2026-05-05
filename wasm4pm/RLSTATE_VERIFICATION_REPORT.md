@@ -24,7 +24,7 @@ Expand RlState from 1-dimensional to 8-dimensional to capture rich process minin
 - [x] Update `features()` method to return 8-dimensional vector
 - [x] Verify `is_terminal()` logic unchanged
 
-**Location:** `/Users/sac/chatmangpt/pictl/wasm4pm/src/lib.rs` lines 1076-1198
+**Location:** `/Users/sac/chatmangpt/wasm4pm/wasm4pm/src/lib.rs` lines 1076-1198
 
 ### Step 2: Update autonomic_execute_cycle (30 minutes) ✅
 
@@ -33,7 +33,7 @@ Expand RlState from 1-dimensional to 8-dimensional to capture rich process minin
 - [x] Verify `run_cycle()` signature matches new RlState
 - [x] Pass both `rl_state` and `rl_next_state` to `run_cycle()`
 
-**Location:** `/Users/sac/chatmangpt/pictl/wasm4pm/src/lib.rs` lines 995, 1005-1013
+**Location:** `/Users/sac/chatmangpt/wasm4pm/wasm4pm/src/lib.rs` lines 995, 1005-1013
 
 ### Step 3: Update State Space Documentation (10 minutes) ✅
 
@@ -41,7 +41,7 @@ Expand RlState from 1-dimensional to 8-dimensional to capture rich process minin
 - [x] Document requirement for function approximation
 - [x] Explain quantization strategy
 
-**Location:** `/Users/sac/chatmangpt/pictl/wasm4pm/src/lib.rs` line 1072-1073
+**Location:** `/Users/sac/chatmangpt/wasm4pm/wasm4pm/src/lib.rs` line 1072-1073
 
 ## Code Quality Checks
 

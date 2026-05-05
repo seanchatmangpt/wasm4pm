@@ -124,5 +124,5 @@ Output: `X(A, B)` — XOR choice between A and B
 
 - [POWL Concepts](../explanation/powl-concepts.md) — POWL theory and notation
 - [Algorithm Reference](../reference/algorithms.md) — All discovery algorithms
-- `pictl powl parse` — Parse and analyze existing POWL models
-- `pictl powl convert` — Convert POWL to BPMN/Petri Net/Process Tree
+- `wpm powl parse` — Parse and analyze existing POWL models
+- `wpm powl convert` — Convert POWL to BPMN/Petri Net/Process Tree

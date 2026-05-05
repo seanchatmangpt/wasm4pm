@@ -1,4 +1,4 @@
-# @pictl/cli - Professional CLI Tool
+# @wasm4pm/cli - Professional CLI Tool
 
 **Professional command-line interface for process mining discovery, analysis, and automation.**
 
@@ -26,21 +26,21 @@ Status: Production Ready
 
 ### Global Installation
 ```bash
-npm install -g @pictl/cli
+npm install -g @wasm4pm/cli
 pictl --version
 ```
 
 ### Local Installation
 ```bash
-npm install @pictl/cli
+npm install @wasm4pm/cli
 npx pictl --help
 ```
 
 ### From Workspace
 ```bash
 pnpm install
-pnpm --filter @pictl/cli build
-node apps/pictl/dist/bin/pictl.js --help
+pnpm --filter @wasm4pm/cli build
+node apps/wasm4pm/dist/bin/pictl.js --help
 ```
 
 ---
@@ -61,13 +61,13 @@ pictl init --force
 
 Output:
 ```
-✓ Created pictl.toml
+✓ Created wasm4pm.toml
 ✓ Created .env.example
 ✓ Created .gitignore
 ✓ Created README.md
 
 Next steps:
-  1. Edit pictl.toml with your preferences
+  1. Edit wasm4pm.toml with your preferences
   2. Run: pictl run data/log.xes --profile balanced
   3. Check: pictl status
 ```
@@ -152,7 +152,7 @@ pictl init [OPTIONS]
 ```
 
 **Output Files:**
-- `pictl.toml` - Main configuration file
+- `wasm4pm.toml` - Main configuration file
 - `.env.example` - Environment variables template
 - `.gitignore` - Git ignore patterns
 - `README.md` - Project documentation
@@ -313,7 +313,7 @@ pictl status --verbose --format json
     "version": "26.4.5"
   },
   "config": {
-    "source": "./pictl.toml",
+    "source": "./wasm4pm.toml",
     "hash": "abc123...",
     "valid": true
   }
@@ -377,7 +377,7 @@ pictl explain --algorithm genetic --level detailed
 
 ## Configuration
 
-### Configuration File (pictl.toml)
+### Configuration File (wasm4pm.toml)
 
 ```toml
 # Engine settings
@@ -411,8 +411,8 @@ file_path = "./pictl.log"
 
 Priority (high to low):
 1. CLI arguments (`--profile quality`)
-2. TOML file (`./pictl.toml`)
-3. JSON file (`./pictl.json`)
+2. TOML file (`./wasm4pm.toml`)
+3. JSON file (`./wasm4pm.json`)
 4. Environment variables (`PICTL_PROFILE=quality`)
 5. Defaults
 
@@ -511,9 +511,9 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-RUN npm install -g @pictl/cli
+RUN npm install -g @wasm4pm/cli
 
-COPY pictl.toml .
+COPY wasm4pm.toml .
 COPY data/ ./data/
 
 CMD ["pictl", "run", "data/eventlog.xes", "--profile", "balanced"]
@@ -526,7 +526,7 @@ CMD ["pictl", "run", "data/eventlog.xes", "--profile", "balanced"]
 ### Issue: "Command not found"
 **Solution:** Install globally or use npx
 ```bash
-npm install -g @pictl/cli
+npm install -g @wasm4pm/cli
 pictl --version
 ```
 
@@ -544,7 +544,7 @@ pictl run /absolute/path/to/eventlog.xes
 **Solution:** Run init to generate valid config
 ```bash
 pictl init --force
-# Edit pictl.toml as needed
+# Edit wasm4pm.toml as needed
 ```
 
 ### Issue: "Memory exceeded"
@@ -600,13 +600,13 @@ pictl run data.xes --profile fast
 pnpm install
 
 # Build pictl
-pnpm --filter @pictl/cli build
+pnpm --filter @wasm4pm/cli build
 
 # Run tests
-pnpm --filter @pictl/cli test
+pnpm --filter @wasm4pm/cli test
 
 # Watch mode
-pnpm --filter @pictl/cli dev
+pnpm --filter @wasm4pm/cli dev
 ```
 
 ### Adding New Commands
@@ -622,7 +622,7 @@ pnpm --filter @pictl/cli dev
 ### Programmatic Usage
 
 ```typescript
-import { pictl } from '@pictl/cli';
+import { pictl } from '@wasm4pm/cli';
 
 // Run discovery
 const result = await pictl.run('data.xes', {
@@ -648,7 +648,7 @@ console.log(status.engine.status);
 
 ## Resources
 
-- **Main Repository:** https://github.com/seanchatmangpt/pictl
+- **Main Repository:** https://github.com/seanchatmangpt/wasm4pm
 - **Main Documentation:** [../docs/](../../docs/)
 - **Configuration Guide:** [../../packages/config/README.md](../../packages/config/README.md)
 - **API Reference:** [../../docs/API.md](../../docs/API.md)
@@ -664,8 +664,8 @@ MIT OR Apache-2.0
 
 ## Support
 
-- **Issues:** https://github.com/seanchatmangpt/pictl/issues
-- **Discussions:** https://github.com/seanchatmangpt/pictl/discussions
+- **Issues:** https://github.com/seanchatmangpt/wasm4pm/issues
+- **Discussions:** https://github.com/seanchatmangpt/wasm4pm/discussions
 - **Documentation:** [../../docs/FAQ.md](../../docs/FAQ.md)
 
 ---

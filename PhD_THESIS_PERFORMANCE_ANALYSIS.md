@@ -174,7 +174,7 @@ Our health state machine (5 levels: normal, warning, degraded, critical, failed)
 
 #### 3.2.3 Test Infrastructure
 
-- **Harness:** @pictl/testing with OtelCapture
+- **Harness:** @wasm4pm/testing with OtelCapture
 - **Execution Environment:** Node.js 18+ (WASM runtime)
 - **Isolation:** Fresh WasmLoader instance per test
 - **Repetitions:** Minimum 5 runs per algorithm/dataset (median reported)

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-cost-calculator.py — GPU cost/energy breakdown calculator for pictl GPU+RL compiler.
+cost-calculator.py — GPU cost/energy breakdown calculator for wasm4pm GPU+RL compiler.
 
 Ingests the partial JSON produced by profile-energy-cost.sh (or runs standalone with
 synthetic measurements) and produces a complete energy-cost report covering:
@@ -359,7 +359,7 @@ def build_report(
 
     return {
         "schema_version": "1.0",
-        "tool": "pictl cost-calculator",
+        "tool": "wasm4pm cost-calculator",
         "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "batch_profile": {
             "name": "Marking4",
@@ -439,7 +439,7 @@ def print_report(report: dict) -> None:
 
     print()
     print(ruler)
-    print("  pictl GPU+RL Compiler — Energy & Cost Profiler Report")
+    print("  wasm4pm GPU+RL Compiler — Energy & Cost Profiler Report")
     print(ruler)
     print(f"  Generated  : {report['generated_at']}")
     print(f"  Batch      : {bp['name']} — {bp['batch_size']} states × {bp['stages']} stages = {bp['total_ops']:,} ops")
@@ -537,7 +537,7 @@ def print_report(report: dict) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="pictl GPU cost/energy calculator for Marking4 RL kernel",
+        description="wasm4pm GPU cost/energy calculator for Marking4 RL kernel",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__,
     )
@@ -575,7 +575,7 @@ def main() -> None:
         out_path = Path(args.output)
     else:
         ts = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%S")
-        out_dir = Path(".pictl/benchmarks")
+        out_dir = Path(".wasm4pm/benchmarks")
         out_dir.mkdir(parents=True, exist_ok=True)
         out_path = out_dir / f"energy-cost-{ts}.json"
 

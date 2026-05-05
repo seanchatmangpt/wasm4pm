@@ -188,6 +188,6 @@ Full benchmark output saved to: `/tmp/bench_tier1.txt`
 To regenerate:
 
 ```bash
-cd /Users/sac/chatmangpt/pictl/wasm4pm
+cd /Users/sac/chatmangpt/wasm4pm/wasm4pm
 cargo bench --bench tier1_discovery --all-features
 ```

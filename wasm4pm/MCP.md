@@ -47,7 +47,7 @@ The pictl MCP server exposes 14 discovery algorithms, analysis functions, and vi
 
 ```bash
 npm install @modelcontextprotocol/sdk
-npm install @pictl/cli
+npm install @wasm4pm/cli
 ```
 
 ### Setup

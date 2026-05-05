@@ -1,4 +1,4 @@
-# @pictl/planner
+# @wasm4pm/planner
 
 Execution plan generation for the pictl process mining engine.
 
@@ -17,13 +17,13 @@ Generates deterministic, reproducible execution plans from process mining config
 ## Installation
 
 ```bash
-npm install @pictl/planner
+npm install @wasm4pm/planner
 ```
 
 ## Quick Start
 
 ```typescript
-import { plan, explain } from '@pictl/planner';
+import { plan, explain } from '@wasm4pm/planner';
 
 // Create a configuration
 const config = {
@@ -277,7 +277,7 @@ This ensures consistency: the explanation shows exactly what will be executed.
 ### Generate a Plan for XES File
 
 ```typescript
-import { plan, explain } from '@pictl/planner';
+import { plan, explain } from '@wasm4pm/planner';
 
 const config = {
   version: '1.0',
@@ -296,7 +296,7 @@ console.log(`\nPlan explanation:\n${markdown}`);
 ### Validate a Plan
 
 ```typescript
-import { validatePlan, assertPlanValid } from '@pictl/planner';
+import { validatePlan, assertPlanValid } from '@wasm4pm/planner';
 
 const errors = validatePlan(executionPlan);
 if (errors.length > 0) {
@@ -320,7 +320,7 @@ try {
 ### Analyze Plan Dependencies
 
 ```typescript
-import { getDependencies, getDependents, topologicalSort } from '@pictl/planner';
+import { getDependencies, getDependents, topologicalSort } from '@wasm4pm/planner';
 
 // Get all prerequisites for a step
 const deps = getDependencies(executionPlan.graph, 'analyze_statistics');

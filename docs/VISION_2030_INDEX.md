@@ -197,7 +197,7 @@ A: All 5 phases execute sequentially in a tight loop (Perception â†’ Decision â†
 A: Execution phase checks `circuit_allowed`. If false, action is skipped, reward penalty applied (-0.5), and circuit remains open until timeout (default ~1s) then transitions to HalfOpen.
 
 **Q: Can RL state be restored across different CLI commands?**  
-A: Yes. `.pictl/state/rl_orchestrator.json` persists Q-tables, telemetry, and circuit state. When pictl starts, it auto-loads the state (unless `--no-restore` flag is passed).
+A: Yes. `.wasm4pm/state/rl_orchestrator.json` persists Q-tables, telemetry, and circuit state. When pictl starts, it auto-loads the state (unless `--no-restore` flag is passed).
 
 **Q: What's the difference between "Guard Rule 3" and the SPC "Rule 3"?**  
 A: Guard Rule 3 is a guard that *blocks* execution if SPC Rule 3 fires (6-point trend detected). SPC Rule 3 is the Western Electric rule that detects the trend. Guard uses SPC as input.

@@ -37,7 +37,7 @@ describe('Adversarial WvdA Algorithm Audit — Vitest Suite', () => {
       wasm = require('pictl');
     } catch {
       try {
-        wasm = require(path.join(BENCHMARK_DIR, '../../../wasm4pm/pkg/pictl.js'));
+        wasm = require(path.join(BENCHMARK_DIR, '../../../wasm4pm/pkg/wasm4pm.js'));
       } catch (e) {
         console.warn('WASM not available, skipping audit tests');
         return;

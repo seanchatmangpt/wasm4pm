@@ -11,7 +11,7 @@ FROM node:20-slim
 WORKDIR /app
 
 # Install wasm4pm
-RUN npm install -g @pictl/cli
+RUN npm install -g @wasm4pm/cli
 
 # Copy config
 COPY config.toml /app/
@@ -79,7 +79,7 @@ docker run -d \
 FROM node:20-slim
 
 WORKDIR /app
-RUN npm install -g @pictl/cli
+RUN npm install -g @wasm4pm/cli
 
 COPY config.toml /app/
 
@@ -96,7 +96,7 @@ CMD ["wasm4pm-service", "--port", "3001"]
 # Build stage
 FROM node:20 as builder
 WORKDIR /build
-RUN npm install -g @pictl/cli
+RUN npm install -g @wasm4pm/cli
 
 # Runtime stage
 FROM node:20-slim

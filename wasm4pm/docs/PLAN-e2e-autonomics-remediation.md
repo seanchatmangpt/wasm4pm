@@ -1,8 +1,8 @@
 # End-to-End Autonomics Remediation Plan
 
-**Goal:** Achieve zero human intervention for `pictl run revops.xes` → complete artifact with receipts, telemetry, quality gates.
+**Goal:** Achieve zero human intervention for `wpm run revops.xes` → complete artifact with receipts, telemetry, quality gates.
 
-**Critical structural finding:** The CLAUDE.md describes an aspirational architecture (`packages/`, `apps/pictl/`) that does **not exist yet**. The actual codebase is a flat Rust/WASM crate (`wasm4pm/`) with TypeScript client files in `src/`. There is no `packages/kernel/`, no `packages/planner/`, no `packages/observability/`, no `apps/pictl/`. Several gaps reference these phantom paths. This plan targets the **actual** codebase.
+**Critical structural finding:** The CLAUDE.md describes an aspirational architecture (`packages/`, `apps/wasm4pm/`) that does **not exist yet**. The actual codebase is a flat Rust/WASM crate (`wasm4pm/`) with TypeScript client files in `src/`. There is no `packages/kernel/`, no `packages/planner/`, no `packages/observability/`, no `apps/wasm4pm/`. Several gaps reference these phantom paths. This plan targets the **actual** codebase.
 
 **Actual file layout:**
 
@@ -616,7 +616,7 @@ DECLARE_CONSTRAINTS = 'declare_constraints',
 
 ### GAP-08: 6 ML algorithms cannot run through Kernel.run()
 
-**Finding:** No `Kernel.run()` exists. ML functions are called individually via MCP server tools. The MCP server uses `dynamic import('@pictl/ml')` — an external package not in this repo.
+**Finding:** No `Kernel.run()` exists. ML functions are called individually via MCP server tools. The MCP server uses `dynamic import('@wasm4pm/ml')` — an external package not in this repo.
 
 **Assessment:** This gap assumes architecture that doesn't exist. ML functions ARE callable via WASM (gated by `ml` feature flag). The MCP server dispatches them correctly. The gap is that there's no unified `Kernel.run()` orchestrator.
 

@@ -13,7 +13,7 @@ pictl resolves configuration through 5 layers, each with a specific scope and pr
 **Resolution order (highest to lowest priority):**
 
 1. **CLI arguments** (e.g., `--profile fast`)
-2. **TOML config file** (e.g., `./pictl.toml` or `~/.wasm4pm/pictl.toml`)
+2. **TOML config file** (e.g., `./wasm4pm.toml` or `~/.wasm4pm/wasm4pm.toml`)
 3. **JSON config file** (fallback if no TOML exists)
 4. **Environment variables** (e.g., `WASM4PM_PROFILE=fast`)
 5. **Hardcoded defaults** (built into pictl)
@@ -159,12 +159,12 @@ The first file found is used. If TOML exists, JSON is skipped.
 
 ### Layer 2: TOML Config File
 
-TOML is the preferred format for pictl. It's human-readable and supports deep nesting. pictl searches for `pictl.toml` in:
+TOML is the preferred format for pictl. It's human-readable and supports deep nesting. pictl searches for `wasm4pm.toml` in:
 
 1. Current working directory (`.`)
 2. Home directory config folder (`~/.wasm4pm/`)
 
-**Example `pictl.toml`:**
+**Example `wasm4pm.toml`:**
 
 ```toml
 schema_version = 1
@@ -269,7 +269,7 @@ WASM4PM_PROFILE=fast pictl run -i events.xes --profile quality
 - `WASM4PM_PROFILE=fast` → `execution.profile = "fast"`
 
 **Layer 3 (TOML file):**
-Suppose `./pictl.toml` exists with:
+Suppose `./wasm4pm.toml` exists with:
 ```toml
 [execution]
 profile = "stream"
@@ -289,7 +289,7 @@ The resolution order applies as we go UP the layers:
 ```
 CLI (--profile quality)           ← WINS (highest priority)
     ↓ overrides
-TOML (pictl.toml: stream)
+TOML (wasm4pm.toml: stream)
     ↓ overrides
 Env (WASM4PM_PROFILE=fast)
     ↓ overrides
@@ -358,7 +358,7 @@ WASM4PM_PROFILE=invalid_profile pictl run -i events.xes
 
 **Resolution:**
 1. CLI layer: Not specified (no `--profile` flag)
-2. TOML layer: Not specified (assume no pictl.toml)
+2. TOML layer: Not specified (assume no wasm4pm.toml)
 3. JSON layer: Not specified
 4. Env layer: `WASM4PM_PROFILE=invalid_profile`
 5. Default layer: `execution.profile = "balanced"`
@@ -426,7 +426,7 @@ const algorithmIdSchema = z.enum(ALGORITHM_IDS);
 
 pictl tracks which layer each config value came from. This helps debug resolution issues.
 
-### View Provenance with `pictl explain`
+### View Provenance with `wpm explain`
 
 ```bash
 pictl explain --config custom.toml --show-provenance
@@ -481,7 +481,7 @@ The resolved config includes metadata:
 
 **Step 1: View resolved config**
 ```bash
-pictl explain --config pictl.toml --show-provenance
+pictl explain --config wasm4pm.toml --show-provenance
 ```
 
 This shows the final merged config and where each value came from.
@@ -500,7 +500,7 @@ env | grep WASM4PM_
 
 TOML file:
 ```bash
-cat pictl.toml
+cat wasm4pm.toml
 ```
 
 JSON file:
@@ -607,11 +607,11 @@ Fix: Check spelling against the schema.
 
 ### 1. Use TOML for Projects
 
-Version control your `pictl.toml` alongside your event logs:
+Version control your `wasm4pm.toml` alongside your event logs:
 ```
 project/
   ├── events.xes
-  ├── pictl.toml  ← Version control this
+  ├── wasm4pm.toml  ← Version control this
   └── README.md
 ```
 
@@ -635,14 +635,14 @@ Quick experiments don't need config files:
 pictl run -i events.xes --profile fast
 
 # OK: If you have a project config
-pictl run -i events.xes --config ./pictl.toml --profile fast
+pictl run -i events.xes --config ./wasm4pm.toml --profile fast
 ```
 
 ### 4. Check Provenance When Debugging
 
-Always run `pictl explain --show-provenance` before filing an issue:
+Always run `wpm explain --show-provenance` before filing an issue:
 ```bash
-pictl explain --config pictl.toml --show-provenance > debug.txt
+pictl explain --config wasm4pm.toml --show-provenance > debug.txt
 ```
 
 ### 5. Document Non-Obvious Settings
@@ -688,7 +688,7 @@ pictl's 5-layer configuration system gives you flexibility:
 - **Config files** (TOML/JSON) for projects
 - **CLI args** for one-off overrides
 
-Higher layers always win. Use `pictl explain --show-provenance` to debug resolution issues. Validate early and often with `pictl init --validate`.
+Higher layers always win. Use `wpm explain --show-provenance` to debug resolution issues. Validate early and often with `wpm init --validate`.
 
 ---
 

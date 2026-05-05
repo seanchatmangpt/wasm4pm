@@ -237,6 +237,6 @@ All computation runs inside the WASM runtime (Rust compiled to WebAssembly). The
 ## See Also
 
 - [Explanation: Concept Drift Detection](./concept-drift-detection.md) -- deep dive on drift detection methodology
-- [Explanation: Process Model Comparison](./process-model-comparison.md) -- how `pictl diff` compares two event logs
+- [Explanation: Process Model Comparison](./process-model-comparison.md) -- how `wpm diff` compares two event logs
 - [Explanation: OCPM](./ocpm.md) -- object-centric extensions to predictive mining
 - [Explanation: Profiles](./profiles.md) -- how execution profiles affect discovery quality

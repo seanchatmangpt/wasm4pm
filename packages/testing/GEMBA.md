@@ -1,4 +1,4 @@
-# Gemba Enforcement in @pictl/testing
+# Gemba Enforcement in @wasm4pm/testing
 
 **Principle:** Go to where the work actually happens. Integration tests must be real.
 
@@ -271,8 +271,8 @@ Unit Tests:
 ```typescript
 // packages/kernel/__tests__/integration.test.ts
 import { describe, it, expect } from 'vitest';
-import { Kernel } from '@pictl/kernel';
-import { MINIMAL_XES } from '@pictl/testing/fixtures';
+import { Kernel } from '@wasm4pm/kernel';
+import { MINIMAL_XES } from '@wasm4pm/testing/fixtures';
 
 describe('Kernel Integration', () => {
   it('discovers DFG from real event log', async () => {
@@ -293,7 +293,7 @@ describe('Kernel Integration', () => {
 ```typescript
 // packages/observability/__tests__/fields.unit.test.ts
 import { describe, it, expect, vi } from 'vitest';
-import { sendMetrics } from '@pictl/observability';
+import { sendMetrics } from '@wasm4pm/observability';
 
 describe('Observability (Unit)', () => {
   it('handles fetch failure gracefully', async () => {
@@ -353,7 +353,7 @@ const mockFileReader = vi.fn();
 ### Using Fixtures in Integration Tests
 
 ```typescript
-import { createEventLog, XES_MINIMAL } from '@pictl/testing/fixtures';
+import { createEventLog, XES_MINIMAL } from '@wasm4pm/testing/fixtures';
 
 // ✅ Real fixtures, no mocks
 test('processes log file', async () => {

@@ -3,7 +3,7 @@
 **Author:** b5-profiles Benchmark Agent
 **Date:** 2026-04-10
 **Version:** v26.4.10
-**Repository:** https://github.com/seanchatmangpt/pictl
+**Repository:** https://github.com/seanchatmangpt/wasm4pm
 
 ---
 
@@ -50,7 +50,7 @@ Our key findings reveal that **SIMD-accelerated token replay achieves 40-47x spe
 
 Process mining enables organizations to discover, monitor, and improve business processes based on event log data. Traditional process mining tools require native code execution, limiting deployment to server environments. The emergence of **WebAssembly (WASM)** as a portable, high-performance compilation target enables process mining algorithms to run efficiently across diverse environments from web browsers to edge devices.
 
-**pictl** (`@seanchatmangpt/pictl`) is a Rust-based process mining framework compiled to WebAssembly, providing:
+**pictl** (`@wasm4pm/cli`) is a Rust-based process mining framework compiled to WebAssembly, providing:
 
 - **21 registered algorithms** across discovery, conformance, and prediction
 - **5 deployment profiles** optimized for different resource constraints

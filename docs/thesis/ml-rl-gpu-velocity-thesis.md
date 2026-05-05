@@ -142,7 +142,7 @@ All algorithms compile to WebAssembly via wasm-pack, targeting the `wasm32-unkno
 
 The pictl system provides machine learning capabilities through two complementary layers:
 
-**Layer 1: TypeScript ML** (`packages/ml/`) — Six micro-ML algorithms exposed through the `pictl ml` command:
+**Layer 1: TypeScript ML** (`packages/ml/`) — Six micro-ML algorithms exposed through the `wpm ml` command:
 
 | Algorithm | Task | Latency (100 cases) |
 |-----------|------|---------------------|

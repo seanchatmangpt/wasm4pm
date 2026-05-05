@@ -2,14 +2,14 @@
 <h1><strong>pictl</strong> - Process Mining for WebAssembly</h1>
 <p><strong>High-Performance Process Mining Algorithms in JavaScript/TypeScript</strong></p>
 <p>
-  <a href="https://www.npmjs.com/package/@seanchatmangpt/pictl">
-    <img src="https://img.shields.io/npm/v/@seanchatmangpt/pictl" alt="npm version"/></a>
-  <a href="https://www.npmjs.com/package/@seanchatmangpt/pictl">
-    <img src="https://img.shields.io/npm/dm/@seanchatmangpt/pictl" alt="npm downloads"/></a>
-  <a href="https://github.com/seanchatmangpt/pictl">
-    <img src="https://img.shields.io/github/stars/seanchatmangpt/pictl" alt="GitHub stars"/></a>
+  <a href="https://www.npmjs.com/package/@wasm4pm/cli">
+    <img src="https://img.shields.io/npm/v/@wasm4pm/cli" alt="npm version"/></a>
+  <a href="https://www.npmjs.com/package/@wasm4pm/cli">
+    <img src="https://img.shields.io/npm/dm/@wasm4pm/cli" alt="npm downloads"/></a>
+  <a href="https://github.com/seanchatmangpt/wasm4pm">
+    <img src="https://img.shields.io/github/stars/seanchatmangpt/wasm4pm" alt="GitHub stars"/></a>
 </p>
-<img src="https://raw.githubusercontent.com/seanchatmangpt/pictl/main/Ferris%20emerges%20from%20the%20black%20hole.png" width="300" alt="pictl logo: Ferris emerges from the black hole"/>
+<img src="https://raw.githubusercontent.com/seanchatmangpt/wasm4pm/main/Ferris%20emerges%20from%20the%20black%20hole.png" width="300" alt="pictl logo: Ferris emerges from the black hole"/>
 </div>
 
 ---
@@ -21,10 +21,10 @@
 Process mining extracts actionable insights from event logs by discovering process models, detecting deviations, and analyzing performance bottlenecks. **pictl** makes this accessible to JavaScript developers with near-native performance, plus professional CLI tools, HTTP APIs, and observability for enterprise deployments.
 
 ### Version 26.4.28 (April 2026)
-**High-Performance Rust CLI:** New `pictl` Rust CLI for system diagnostics, process discovery, and conformance checking. Replaces the legacy TypeScript CLI with nanosecond-latency architecture. Includes `doctor`, `wizard`, `telco`, and `mining` commands.
+**High-Performance Rust CLI:** New `wpm` (wasm4pm) Rust CLI for system diagnostics, process discovery, and conformance checking. Replaces the legacy TypeScript CLI with nanosecond-latency architecture. Includes `doctor`, `wizard`, `telco`, and `mining` commands.
 
 ### Version 26.4.15 (April 2026)
-**Van der Aalst Agents:** 8 autonomous adversarial agents for manufacturing integrity validation using process mining principles (soundness, conformance, multi-surface corroboration). New `pictl agent` commands: execute, list, audit, status, register.
+**Van der Aalst Agents:** 8 autonomous adversarial agents for manufacturing integrity validation using process mining principles (soundness, conformance, multi-surface corroboration). New `wpm agent` commands: execute, list, audit, status, register.
 
 **MTTR Optimization:** Mean Time To Recovery reduced from 3 minutes to <1 second through fast recovery paths. All 12 dashboard metrics now GREEN ✅.
 
@@ -83,7 +83,7 @@ npm run build:edge    # ~1.5MB
 npm run build:fog     # ~2.0MB
 ```
 
-See [DEPLOYMENT_PROFILES.md](https://github.com/seanchatmangpt/pictl/blob/main/wasm4pm/DEPLOYMENT_PROFILES.md) for complete guide.
+See [DEPLOYMENT_PROFILES.md](https://github.com/seanchatmangpt/wasm4pm/blob/main/wasm4pm/DEPLOYMENT_PROFILES.md) for complete guide.
 
 ### Discovery Layer
 **41 Algorithms** across discovery, ML analysis, and utility functions with 4 execution profiles (Fast, Balanced, Quality, Stream):
@@ -192,12 +192,12 @@ Use pictl directly with Claude through the Model Context Protocol:
 - Discover models with natural language requests
 - Analyze processes conversationally
 - Generate visualizations on demand
-- See [MCP.md](https://github.com/seanchatmangpt/pictl/blob/main/wasm4pm/MCP.md) for setup
+- See [MCP.md](https://github.com/seanchatmangpt/wasm4pm/blob/main/wasm4pm/MCP.md) for setup
 
 ## 📦 Installation
 
 ```bash
-npm install @seanchatmangpt/pictl
+npm install @wasm4pm/cli
 ```
 
 ### Requirements
@@ -232,7 +232,7 @@ npm install @seanchatmangpt/pictl
 - **hand_stats.rs:** Hand-rolled statistics replacing statrs for minimal builds
 - **TypeScript registry:** Deployment profile filtering with auto-inference
 
-See [DEPLOYMENT_PROFILES.md](https://github.com/seanchatmangpt/pictl/blob/main/wasm4pm/DEPLOYMENT_PROFILES.md) for complete guide.
+See [DEPLOYMENT_PROFILES.md](https://github.com/seanchatmangpt/wasm4pm/blob/main/wasm4pm/DEPLOYMENT_PROFILES.md) for complete guide.
 
 ## 🎯 What's New in v26.4.15
 
@@ -256,16 +256,16 @@ See [DEPLOYMENT_PROFILES.md](https://github.com/seanchatmangpt/pictl/blob/main/w
 ## 🎯 What's New in v26.4.5
 
 ### 10 Consolidated Packages
-1. **@pictl/contracts** - Type-safe contracts, receipts, errors, algorithm registry
-2. **@pictl/config** - Configuration management with Zod validation
-3. **@pictl/engine** - Execution engine lifecycle state machine
-4. **@pictl/observability** - Non-blocking logging and OTEL spans
-5. **@pictl/kernel** - WASM kernel operations (41 algorithms)
-6. **@pictl/planner** - Algorithm recommendation and execution plans
-7. **@pictl/testing** - Parity, determinism, CLI, and OTEL test harnesses
-8. **@pictl/ml** - Micro-ML analysis (classify, cluster, forecast, anomaly, regress, PCA)
-9. **@pictl/swarm** - Multi-worker coordinator with convergence detection
-10. **@pictl/agents** - Van der Aalst adversarial agents for manufacturing integrity validation
+1. **@wasm4pm/contracts** - Type-safe contracts, receipts, errors, algorithm registry
+2. **@wasm4pm/config** - Configuration management with Zod validation
+3. **@wasm4pm/engine** - Execution engine lifecycle state machine
+4. **@wasm4pm/observability** - Non-blocking logging and OTEL spans
+5. **@wasm4pm/kernel** - WASM kernel operations (41 algorithms)
+6. **@wasm4pm/planner** - Algorithm recommendation and execution plans
+7. **@wasm4pm/testing** - Parity, determinism, CLI, and OTEL test harnesses
+8. **@wasm4pm/ml** - Micro-ML analysis (classify, cluster, forecast, anomaly, regress, PCA)
+9. **@wasm4pm/swarm** - Multi-worker coordinator with convergence detection
+10. **@wasm4pm/agents** - Van der Aalst adversarial agents for manufacturing integrity validation
 
 ### Highlights
 - **Streaming Conformance:** Real-time trace validation (177× faster)
@@ -275,7 +275,7 @@ See [DEPLOYMENT_PROFILES.md](https://github.com/seanchatmangpt/pictl/blob/main/w
 - **Service Mode:** Deploy as Express HTTP server
 - **100% Compatible:** No breaking changes from v26.4.4
 
-See [RELEASE_NOTES.md](https://github.com/seanchatmangpt/pictl/blob/main/RELEASE_NOTES.md) for complete details.
+See [RELEASE_NOTES.md](https://github.com/seanchatmangpt/wasm4pm/blob/main/RELEASE_NOTES.md) for complete details.
 
 ## ⚡ Quick Start
 
@@ -309,7 +309,7 @@ npm run size:check
 
 ### Browser
 ```html
-<script src="node_modules/@seanchatmangpt/pictl/pkg/pictl.js"></script>
+<script src="node_modules/@wasm4pm/cli/pkg/pictl.js"></script>
 <script>
   const pm = pictl;
   await pm.init();
@@ -330,7 +330,7 @@ npm run size:check
 
 ### Node.js
 ```javascript
-const pm = require('@seanchatmangpt/pictl');
+const pm = require('@wasm4pm/cli');
 
 await pm.init();
 
@@ -402,45 +402,45 @@ wscat -c ws://localhost:3000/api/v1/stream
 ### Core Documentation
 | Document | Purpose |
 |----------|---------|
-| [**RELEASE_NOTES.md**](https://github.com/seanchatmangpt/pictl/blob/main/RELEASE_NOTES.md) | v26.4.8 and v26.4.5 release notes |
-| [**DEPLOYMENT_PROFILES.md**](https://github.com/seanchatmangpt/pictl/blob/main/wasm4pm/DEPLOYMENT_PROFILES.md) | Deployment profile guide (v26.4.8) |
-| [**CHANGELOG.md**](https://github.com/seanchatmangpt/pictl/blob/main/CHANGELOG.md) | Complete version history |
-| [**MIGRATION_GUIDE.md**](https://github.com/seanchatmangpt/pictl/blob/main/MIGRATION_GUIDE.md) | Upgrading from v26.4.4 |
-| [**QUICKSTART.md**](https://github.com/seanchatmangpt/pictl/blob/main/docs/QUICKSTART.md) | 5-minute setup guide |
-| [**TUTORIAL.md**](https://github.com/seanchatmangpt/pictl/blob/main/docs/TUTORIAL.md) | Real-world examples |
-| [**DEPLOYMENT.md**](https://github.com/seanchatmangpt/pictl/blob/main/docs/DEPLOYMENT.md) | Build, test, and deploy |
+| [**RELEASE_NOTES.md**](https://github.com/seanchatmangpt/wasm4pm/blob/main/RELEASE_NOTES.md) | v26.4.8 and v26.4.5 release notes |
+| [**DEPLOYMENT_PROFILES.md**](https://github.com/seanchatmangpt/wasm4pm/blob/main/wasm4pm/DEPLOYMENT_PROFILES.md) | Deployment profile guide (v26.4.8) |
+| [**CHANGELOG.md**](https://github.com/seanchatmangpt/wasm4pm/blob/main/CHANGELOG.md) | Complete version history |
+| [**MIGRATION_GUIDE.md**](https://github.com/seanchatmangpt/wasm4pm/blob/main/MIGRATION_GUIDE.md) | Upgrading from v26.4.4 |
+| [**QUICKSTART.md**](https://github.com/seanchatmangpt/wasm4pm/blob/main/docs/QUICKSTART.md) | 5-minute setup guide |
+| [**TUTORIAL.md**](https://github.com/seanchatmangpt/wasm4pm/blob/main/docs/TUTORIAL.md) | Real-world examples |
+| [**DEPLOYMENT.md**](https://github.com/seanchatmangpt/wasm4pm/blob/main/docs/DEPLOYMENT.md) | Build, test, and deploy |
 
 ### Reference Documentation
 | Document | Purpose |
 |----------|---------|
-| [**API.md**](https://github.com/seanchatmangpt/pictl/blob/main/docs/API.md) | Complete function reference + pictl commands |
-| [**ALGORITHMS.md**](https://github.com/seanchatmangpt/pictl/blob/main/docs/reference/algorithms.md) | Algorithm descriptions and parameters |
-| [**FAQ.md**](https://github.com/seanchatmangpt/pictl/blob/main/docs/FAQ.md) | Troubleshooting and common questions |
+| [**API.md**](https://github.com/seanchatmangpt/wasm4pm/blob/main/docs/API.md) | Complete function reference + pictl commands |
+| [**ALGORITHMS.md**](https://github.com/seanchatmangpt/wasm4pm/blob/main/docs/reference/algorithms.md) | Algorithm descriptions and parameters |
+| [**FAQ.md**](https://github.com/seanchatmangpt/wasm4pm/blob/main/docs/FAQ.md) | Troubleshooting and common questions |
 
 ### Package Documentation
 | Package | Purpose |
 |---------|---------|
-| [**pictl CLI**](https://github.com/seanchatmangpt/pictl/blob/main/apps/pictl/README.md) | CLI tool reference |
-| [**@pictl/kernel**](https://github.com/seanchatmangpt/pictl/blob/main/packages/kernel/README.md) | WASM kernel, 41 algorithms |
-| [**@pictl/config**](https://github.com/seanchatmangpt/pictl/blob/main/packages/config/README.md) | Configuration system |
-| [**@pictl/engine**](https://github.com/seanchatmangpt/pictl/blob/main/packages/engine/README.md) | Engine lifecycle |
-| [**@pictl/observability**](https://github.com/seanchatmangpt/pictl/blob/main/packages/observability/README.md) | Logging and telemetry |
-| [**@pictl/contracts**](https://github.com/seanchatmangpt/pictl/blob/main/packages/contracts/README.md) | Type-safe contracts |
-| [**@pictl/planner**](https://github.com/seanchatmangpt/pictl/blob/main/packages/planner/README.md) | Algorithm planner |
-| [**@pictl/testing**](https://github.com/seanchatmangpt/pictl/blob/main/packages/testing/README.md) | Test harnesses |
-| [**@pictl/ml**](https://github.com/seanchatmangpt/pictl/blob/main/packages/ml/README.md) | Micro-ML analysis |
-| [**@pictl/swarm**](https://github.com/seanchatmangpt/pictl/blob/main/packages/swarm/README.md) | Multi-worker coordinator |
-| [**@pictl/agents**](https://github.com/seanchatmangpt/pictl/blob/main/packages/agents/README.md) | Van der Aalst adversarial agents |
+| [**pictl CLI**](https://github.com/seanchatmangpt/wasm4pm/blob/main/apps/wasm4pm/README.md) | CLI tool reference |
+| [**@wasm4pm/kernel**](https://github.com/seanchatmangpt/wasm4pm/blob/main/packages/kernel/README.md) | WASM kernel, 41 algorithms |
+| [**@wasm4pm/config**](https://github.com/seanchatmangpt/wasm4pm/blob/main/packages/config/README.md) | Configuration system |
+| [**@wasm4pm/engine**](https://github.com/seanchatmangpt/wasm4pm/blob/main/packages/engine/README.md) | Engine lifecycle |
+| [**@wasm4pm/observability**](https://github.com/seanchatmangpt/wasm4pm/blob/main/packages/observability/README.md) | Logging and telemetry |
+| [**@wasm4pm/contracts**](https://github.com/seanchatmangpt/wasm4pm/blob/main/packages/contracts/README.md) | Type-safe contracts |
+| [**@wasm4pm/planner**](https://github.com/seanchatmangpt/wasm4pm/blob/main/packages/planner/README.md) | Algorithm planner |
+| [**@wasm4pm/testing**](https://github.com/seanchatmangpt/wasm4pm/blob/main/packages/testing/README.md) | Test harnesses |
+| [**@wasm4pm/ml**](https://github.com/seanchatmangpt/wasm4pm/blob/main/packages/ml/README.md) | Micro-ML analysis |
+| [**@wasm4pm/swarm**](https://github.com/seanchatmangpt/wasm4pm/blob/main/packages/swarm/README.md) | Multi-worker coordinator |
+| [**@wasm4pm/agents**](https://github.com/seanchatmangpt/wasm4pm/blob/main/packages/agents/README.md) | Van der Aalst adversarial agents |
 
 ### Advanced Documentation
 | Document | Purpose |
 |----------|---------|
-| [**BROWSER-BENCHMARKS.md**](https://github.com/seanchatmangpt/pictl/blob/main/docs/BROWSER-BENCHMARKS.md) | Browser performance testing |
-| [**MCP.md**](https://github.com/seanchatmangpt/pictl/blob/main/wasm4pm/MCP.md) | Claude integration (Model Context Protocol) |
+| [**BROWSER-BENCHMARKS.md**](https://github.com/seanchatmangpt/wasm4pm/blob/main/docs/BROWSER-BENCHMARKS.md) | Browser performance testing |
+| [**MCP.md**](https://github.com/seanchatmangpt/wasm4pm/blob/main/wasm4pm/MCP.md) | Claude integration (Model Context Protocol) |
 
 ## 📊 Performance
 
-**Benchmarking Results** (See [BROWSER-BENCHMARKS.md](https://github.com/seanchatmangpt/pictl/blob/main/docs/BROWSER-BENCHMARKS.md) and [reference/benchmarks.md](https://github.com/seanchatmangpt/pictl/blob/main/docs/reference/benchmarks.md) for full details):
+**Benchmarking Results** (See [BROWSER-BENCHMARKS.md](https://github.com/seanchatmangpt/wasm4pm/blob/main/docs/BROWSER-BENCHMARKS.md) and [reference/benchmarks.md](https://github.com/seanchatmangpt/wasm4pm/blob/main/docs/reference/benchmarks.md) for full details):
 
 | Algorithm | 100 events | 1K events | 10K events | 100K events |
 |-----------|-----------|-----------|-----------|-----------|
@@ -503,16 +503,16 @@ pictl/                             # Monorepo root
 │       ├── src/commands/           # run, compare, diff, predict, ml, powl, agent, etc.
 │       └── package.json
 ├── packages/
-│   ├── contracts/                  # Type-safe contracts, receipts, errors (@pictl/contracts)
-│   ├── config/                     # Configuration with Zod validation (@pictl/config)
-│   ├── engine/                     # Engine lifecycle state machine (@pictl/engine)
-│   ├── observability/              # Non-blocking logging + OTEL (@pictl/observability)
-│   ├── kernel/                     # WASM kernel, 41 algorithms (@pictl/kernel)
-│   ├── planner/                    # Algorithm planner + explain (@pictl/planner)
-│   ├── testing/                    # Test harnesses (@pictl/testing)
-│   ├── ml/                         # Micro-ML analysis (@pictl/ml)
-│   ├── swarm/                      # Multi-worker coordinator (@pictl/swarm)
-│   └── agents/                     # Van der Aalst adversarial agents (@pictl/agents)
+│   ├── contracts/                  # Type-safe contracts, receipts, errors (@wasm4pm/contracts)
+│   ├── config/                     # Configuration with Zod validation (@wasm4pm/config)
+│   ├── engine/                     # Engine lifecycle state machine (@wasm4pm/engine)
+│   ├── observability/              # Non-blocking logging + OTEL (@wasm4pm/observability)
+│   ├── kernel/                     # WASM kernel, 41 algorithms (@wasm4pm/kernel)
+│   ├── planner/                    # Algorithm planner + explain (@wasm4pm/planner)
+│   ├── testing/                    # Test harnesses (@wasm4pm/testing)
+│   ├── ml/                         # Micro-ML analysis (@wasm4pm/ml)
+│   ├── swarm/                      # Multi-worker coordinator (@wasm4pm/swarm)
+│   └── agents/                     # Van der Aalst adversarial agents (@wasm4pm/agents)
 ├── wasm4pm/                        # Rust/WASM core (41 algorithms)
 │   ├── src/
 │   │   ├── lib.rs                  # WASM entry point + conditional compilation
@@ -610,17 +610,17 @@ Contributions welcome! Please:
 ## 📝 License
 
 This project is dual-licensed under:
-- **Apache License 2.0** - [LICENSE-APACHE](https://github.com/seanchatmangpt/pictl/blob/main/LICENSE-APACHE)
-- **MIT License** - [LICENSE-MIT](https://github.com/seanchatmangpt/pictl/blob/main/LICENSE-MIT)
+- **Apache License 2.0** - [LICENSE-APACHE](https://github.com/seanchatmangpt/wasm4pm/blob/main/LICENSE-APACHE)
+- **MIT License** - [LICENSE-MIT](https://github.com/seanchatmangpt/wasm4pm/blob/main/LICENSE-MIT)
 
 Choose whichever license works best for your use case.
 
 ## 🔗 Links
 
-- **NPM Package**: https://www.npmjs.com/package/@seanchatmangpt/pictl
-- **GitHub**: https://github.com/seanchatmangpt/pictl
+- **NPM Package**: https://www.npmjs.com/package/@wasm4pm/cli
+- **GitHub**: https://github.com/seanchatmangpt/wasm4pm
 - **Documentation**: See docs/ directory
-- **Research Paper**: See [REAL-BENCHMARK-RESULTS.md](https://github.com/seanchatmangpt/pictl/blob/main/docs/REAL-BENCHMARK-RESULTS.md) for benchmarks and performance data
+- **Research Paper**: See [REAL-BENCHMARK-RESULTS.md](https://github.com/seanchatmangpt/wasm4pm/blob/main/docs/REAL-BENCHMARK-RESULTS.md) for benchmarks and performance data
 
 ## 📚 Citation
 
@@ -631,15 +631,15 @@ If you use pictl in your research, please cite:
   title={pictl: Process Mining for WebAssembly},
   author={Sean Chat Man GPT},
   year={2026},
-  url={https://github.com/seanchatmangpt/pictl}
+  url={https://github.com/seanchatmangpt/wasm4pm}
 }
 ```
 
 ## 🙋 Support
 
-- **Documentation**: See [TUTORIAL.md](https://github.com/seanchatmangpt/pictl/blob/main/docs/TUTORIAL.md) and [FAQ.md](https://github.com/seanchatmangpt/pictl/blob/main/docs/FAQ.md)
-- **Issues**: Report bugs on [GitHub](https://github.com/seanchatmangpt/pictl/issues)
-- **Discussions**: Join [GitHub Discussions](https://github.com/seanchatmangpt/pictl/discussions)
+- **Documentation**: See [TUTORIAL.md](https://github.com/seanchatmangpt/wasm4pm/blob/main/docs/TUTORIAL.md) and [FAQ.md](https://github.com/seanchatmangpt/wasm4pm/blob/main/docs/FAQ.md)
+- **Issues**: Report bugs on [GitHub](https://github.com/seanchatmangpt/wasm4pm/issues)
+- **Discussions**: Join [GitHub Discussions](https://github.com/seanchatmangpt/wasm4pm/discussions)
 
 ---
 

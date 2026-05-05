@@ -278,7 +278,7 @@ AssertionError: expected 1 to be 2
 
 ### Exit Code Issues
 Most common failure category. Check:
-- Exit code mapping in `apps/pictl/src/exit-codes.ts`
+- Exit code mapping in `apps/wasm4pm/src/exit-codes.ts`
 - Error handling in individual command files
 - Configuration validation logic
 

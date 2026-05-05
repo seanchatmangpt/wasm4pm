@@ -320,12 +320,12 @@ node examples/conformance-audit-example.mjs
 node examples/conformance-audit-example.mjs --spans=/tmp/spans.json
 
 # Audit live pictl service from Jaeger
-node examples/conformance-audit-example.mjs --jaeger-url=http://localhost:16686 --service=pictl
+node examples/conformance-audit-example.mjs --jaeger-url=http://localhost:16686 --service=wasm4pm
 ```
 
 ---
 
-## Declared Process (pictl-process-mining.yaml)
+## Declared Process (wasm4pm-process-mining.yaml)
 
 The audit compares against this declared process:
 
@@ -537,7 +537,7 @@ The auditor integrates with:
    - Captures pictl's own spans during execution
    - Exports to OTEL collector or Jaeger
 
-2. **Declared Process** (`semconv/pictl-process-mining.yaml`)
+2. **Declared Process** (`semconv/wasm4pm-process-mining.yaml`)
    - Defines expected span sequence
    - Sets required attributes per span type
    - Documents allowed/disallowed transitions

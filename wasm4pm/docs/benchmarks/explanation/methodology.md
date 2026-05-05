@@ -198,7 +198,7 @@ Every algorithm receives the same pre-parsed event log structure. We do not allo
 
 ### Parameter Defaults
 
-We benchmark with default parameters unless otherwise noted. This reflects what users experience when they run `pictl run log.xes --algorithm <name>` without additional flags. Some algorithms have parameters that dramatically affect performance (e.g., noise threshold in Heuristic Miner). We document these sensitivities separately.
+We benchmark with default parameters unless otherwise noted. This reflects what users experience when they run `wpm run log.xes --algorithm <name>` without additional flags. Some algorithms have parameters that dramatically affect performance (e.g., noise threshold in Heuristic Miner). We document these sensitivities separately.
 
 ### Timeout Policy
 
@@ -220,7 +220,7 @@ cd wasm4pm && npm run build
 # Run benchmarks (requires Node.js 20+)
 node scripts/benchmark.mjs --dataset bpi2020 --runs 7 --warmup 3
 
-# Results are written to .pictl/results/ with full metadata
+# Results are written to .wasm4pm/results/ with full metadata
 pictl results --latest
 ```
 

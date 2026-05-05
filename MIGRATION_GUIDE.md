@@ -35,10 +35,10 @@ If you want the new CLI tool:
 
 ```bash
 # Install globally
-npm install -g @pictl/cli
+npm install -g @wasm4pm/cli
 
 # Or locally
-npm install @pictl/cli
+npm install @wasm4pm/cli
 
 # Verify installation
 pictl --version
@@ -82,7 +82,7 @@ wasm4pm (core library) ← UNCHANGED
 └── TypeScript bindings
 
 PLUS 10 NEW PACKAGES:
-├── @pictl/cli ← Professional CLI
+├── @wasm4pm/cli ← Professional CLI
 ├── @wasm4pm/config ← Config management
 ├── @wasm4pm/engine ← Execution engine
 ├── @wasm4pm/service ← HTTP service
@@ -190,7 +190,7 @@ Use the official pictl CLI:
 pictl run data.xes --algorithm genetic --profile balanced
 
 # Or integrate pictl programmatically
-const { pictl } = require('@pictl/cli');
+const { pictl } = require('@wasm4pm/cli');
 await pictl.run('data.xes', { algorithm: 'genetic' });
 ```
 
@@ -670,7 +670,7 @@ fs.writeFileSync('receipt.json', JSON.stringify(receipt));
 
 ### Q: How do I handle the new 10 packages?
 **A:** They're optional. Install only what you need:
-- Using CLI? → Add `@pictl/cli`
+- Using CLI? → Add `@wasm4pm/cli`
 - Need HTTP API? → Add `@wasm4pm/service`
 - Want logging? → Add `@wasm4pm/observability`
 - Want config? → Add `@wasm4pm/config`
@@ -711,7 +711,7 @@ npm install @wasm4pm/config
 ### Issue: "pictl command not found"
 **Solution:** Install globally
 ```bash
-npm install -g @pictl/cli
+npm install -g @wasm4pm/cli
 ```
 
 ### Issue: "Service won't start"
@@ -768,7 +768,7 @@ pictl run large-log.xes --profile stream
 1. **Update:** `npm update` or `pnpm update`
 2. **Read:** [RELEASE_NOTES.md](./RELEASE_NOTES.md) for full feature list
 3. **Explore:** [docs/QUICKSTART.md](./docs/QUICKSTART.md) for examples
-4. **Integrate:** Try `pictl init` for CLI tool
+4. **Integrate:** Try `wpm init` for CLI tool
 5. **Monitor:** Set up logging with `@wasm4pm/observability`
 
 ---

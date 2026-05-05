@@ -181,7 +181,7 @@ if (!wasmModule || typeof wasmModule.load_eventlog_from_xes !== 'function') {
 
 **Files Changed:**
 - `packages/engine/src/wasm-loader.ts` — Export validation instead of memory field check
-- `apps/pictl/src/commands/*.ts` — Removed `isWasmAvailable` guards (12 commands)
+- `apps/wasm4pm/src/commands/*.ts` — Removed `isWasmAvailable` guards (12 commands)
 - `wasm4pm/src/*.rs` — Removed `.unwrap()` panics, added proper error returns
 
 ---
@@ -201,7 +201,7 @@ if (!wasmModule || typeof wasmModule.load_eventlog_from_xes !== 'function') {
 
 **Files Changed:**
 - `packages/*/src/__tests__/*` — Removed API surface tests
-- `.pictl/metrics-dashboard.md` — Updated test quality metrics
+- `.wasm4pm/metrics-dashboard.md` — Updated test quality metrics
 
 ---
 
@@ -242,7 +242,7 @@ However, **behavioral changes** due to TPS compliance:
 ### New Documentation
 - **memory/mttr_optimization_complete.md** — MTTR diagnosis and optimization record
 - **docs/explanation/error-handling.md** — Added Recovery and MTTR section
-- **.pictl/metrics-dashboard.md** — Updated with TPS Violation Resolution History
+- **.wasm4pm/metrics-dashboard.md** — Updated with TPS Violation Resolution History
 
 ### Updated Documentation
 - **README.md** — v26.4.10 section with MTTR improvements
@@ -280,7 +280,7 @@ However, **behavioral changes** due to TPS compliance:
 - `packages/testing/src/certification.ts` — TPS compliance gates
 
 ### CLI Changes
-- `apps/pictl/src/commands/run.ts` — Removed silent fallbacks
+- `apps/wasm4pm/src/commands/run.ts` — Removed silent fallbacks
 - `.claude/hooks/metrics-track.sh` — Actual MTTR measurement
 
 ### WASM Changes
@@ -290,7 +290,7 @@ However, **behavioral changes** due to TPS compliance:
 ### Documentation
 - `README.md` — v26.4.10 section
 - `docs/explanation/error-handling.md` — Recovery section
-- `.pictl/metrics-dashboard.md` — TPS resolution history
+- `.wasm4pm/metrics-dashboard.md` — TPS resolution history
 
 ---
 
@@ -298,12 +298,12 @@ However, **behavioral changes** due to TPS compliance:
 
 ### New Installation
 ```bash
-npm install @seanchatmangpt/pictl
+npm install @wasm4pm/cli
 ```
 
 ### From v26.4.9
 ```bash
-npm update @seanchatmangpt/pictl
+npm update @wasm4pm/cli
 ```
 
 **No migration required** — Fully backward compatible.
@@ -322,7 +322,7 @@ Based on MTTR optimization plan:
 ## 📦 Download
 
 ```bash
-npm install @seanchatmangpt/pictl@26.4.10
+npm install @wasm4pm/cli@26.4.10
 ```
 
 ---
@@ -332,7 +332,7 @@ npm install @seanchatmangpt/pictl@26.4.10
 
 ---
 
-**Questions?** Create an issue or discussion on [GitHub](https://github.com/seanchatmangpt/pictl).
+**Questions?** Create an issue or discussion on [GitHub](https://github.com/seanchatmangpt/wasm4pm).
 
 ---
 
@@ -898,7 +898,7 @@ const log = new wasm4pm.WasmEventLog();  // Works correctly
 - **MIGRATION_GUIDE.md** - Upgrading from v26.4.4
 - **docs/BROWSER-BENCHMARKS.md** - Browser performance guide
 - Package-level READMEs:
-  - `apps/pictl/README.md` - CLI documentation
+  - `apps/wasm4pm/README.md` - CLI documentation
   - `packages/config/README.md` - Configuration guide
   - `packages/engine/README.md` - Engine lifecycle
   - `packages/observability/README.md` - Logging guide
@@ -1071,7 +1071,7 @@ None in this release. All existing APIs remain supported.
 
 ### For Users
 1. **Upgrade:** Run `npm install wasm4pm@latest` or `pnpm update`
-2. **Explore CLI:** Try `pictl init` and `pictl --help`
+2. **Explore CLI:** Try `wpm init` and `wpm --help`
 3. **Read Migration Guide:** See MIGRATION_GUIDE.md for new features
 4. **Check Examples:** Browse `examples/` directory for common patterns
 

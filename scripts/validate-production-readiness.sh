@@ -11,14 +11,14 @@
 #
 # Exit code: 0 if all items PASS (WARN is non-blocking), 1 if any FAIL
 #
-# Output: JSON report saved to .pictl/benchmarks/production-readiness-<timestamp>.json
+# Output: JSON report saved to .wasm4pm/benchmarks/production-readiness-<timestamp>.json
 # =============================================================================
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 TIMESTAMP=$(date -u +"%Y%m%dT%H%M%SZ")
-REPORT_DIR="$REPO_ROOT/.pictl/benchmarks"
+REPORT_DIR="$REPO_ROOT/.wasm4pm/benchmarks"
 REPORT_FILE="$REPORT_DIR/production-readiness-${TIMESTAMP}.json"
 VALIDATORS_DIR="$REPO_ROOT/scripts/validators"
 TMP_DIR=$(mktemp -d)
@@ -43,7 +43,7 @@ log_warn() { log "  ${YELLOW}WARN${RESET} $1: $2"; }
 # Make all validators executable
 chmod +x "$VALIDATORS_DIR/"*.sh 2>/dev/null || true
 
-log "${BOLD}pictl Production Readiness Validator${RESET}"
+log "${BOLD}wasm4pm Production Readiness Validator${RESET}"
 log "Timestamp: $TIMESTAMP"
 log "Repository: $REPO_ROOT"
 log "Report: $REPORT_FILE"

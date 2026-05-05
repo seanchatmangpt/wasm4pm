@@ -116,10 +116,10 @@ mv wasm4pm/__tests__/integration/browser.test.ts \
 ```
 
 ### Option 3: Create Fixtures
-Use the `@pictl/testing` module to create real test data:
+Use the `@wasm4pm/testing` module to create real test data:
 
 ```typescript
-import { createMockEventLog } from '@pictl/testing';
+import { createMockEventLog } from '@wasm4pm/testing';
 
 // Real data, not mocked
 const log = createMockEventLog({ traceCount: 100 });

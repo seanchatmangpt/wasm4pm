@@ -23,7 +23,7 @@
 ### Via npm (Node.js)
 
 ```bash
-npm install -g @pictl/cli
+npm install -g @wasm4pm/cli
 pictl --version
 ```
 
@@ -338,6 +338,6 @@ You've successfully:
 
 - **[How-To: Analyze an Event Log](../how-to/analyze-log.md)** — Next task-focused guide
 - **[How-To: Choose the Right Algorithm](../how-to/choose-algorithm.md)** — Algorithm selection decision tree
-- **[Reference: CLI Commands](../reference/cli-commands.md)** — All `pictl` commands
+- **[Reference: CLI Commands](../reference/cli-commands.md)** — All `wpm` (wasm4pm) commands
 - **[Reference: Config Schema](../reference/config-schema.md)** — Complete configuration options
 - **[Explanation: Algorithm Profiles](../explanation/profiles.md)** — Deep dive into profiles

@@ -108,7 +108,7 @@ gzip -c pkg/wasm4pm_bg.wasm | wc -c
 **Production example:**
 ```typescript
 // In your web app
-import init, { discover } from '@pictl/wasm4pm-mobile';
+import init, { discover } from '@wasm4pm/wasm4pm-mobile';
 
 await init();
 const result = discover({
@@ -183,7 +183,7 @@ const result = discover({
 **Production example:**
 ```typescript
 // Cloudflare Worker
-import init, { discover } from '@pictl/wasm4pm-edge';
+import init, { discover } from '@wasm4pm/wasm4pm-edge';
 
 export default {
   async fetch(request) {
@@ -270,8 +270,8 @@ const result = discover({
 **Production example:**
 ```typescript
 // Node.js fog gateway
-import init, { discover } from '@pictl/wasm4pm-fog';
-import { OcelLog } from '@pictl/ocel';
+import init, { discover } from '@wasm4pm/wasm4pm-fog';
+import { OcelLog } from '@wasm4pm/ocel';
 
 await init();
 const ocelLog = new OcelLog();
@@ -347,7 +347,7 @@ const result = discover({
 **Production example:**
 ```typescript
 // Raspberry Pi process monitoring
-import init, { discover } from '@pictl/wasm4pm-iot';
+import init, { discover } from '@wasm4pm/wasm4pm-iot';
 
 await init();
 const result = discover({
@@ -717,7 +717,7 @@ npm run build:mobile
 npm install ./pkg
 
 # Use in React
-import init, { discover } from '@pictl/wasm4pm-mobile';
+import init, { discover } from '@wasm4pm/wasm4pm-mobile';
 
 useEffect(async () => {
   await init();
