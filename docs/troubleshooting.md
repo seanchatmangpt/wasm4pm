@@ -642,6 +642,167 @@ wpm run log.xes
 
 ---
 
+## CLI-Specific Issues
+
+### "WASM init failed" or "WebAssembly module failed to load"
+
+**Problem:** The WASM binary cannot be loaded at startup.
+
+**Required Node.js version:** 16 or later. Node 18+ is recommended.
+
+```bash
+node --version   # Must be 16+
+```
+
+**If Node.js version is correct, reinstall the CLI package:**
+```bash
+npm install -g @wasm4pm/cli
+# or, if running from source:
+cd apps/wasm4pm && npm install && npm run build
+```
+
+**Then verify the install:**
+```bash
+wpm doctor   # Runs 17 environment checks; WASM load is check #1
+```
+
+If `wpm doctor` passes, the WASM module is healthy. If it fails at the WASM check, the binary may be missing. Rebuild:
+```bash
+cd wasm4pm && npm run build:nodejs
+```
+
+---
+
+### "Algorithm not found: xyz"
+
+**Problem:** The algorithm name passed via `--algorithm` or `algorithm.name` in config does not match any registered algorithm.
+
+**Fix — check the exact spelling:**
+```bash
+wpm status   # Lists all 41 registered algorithms with their current availability
+```
+
+**Common spelling mistakes:**
+
+| Wrong | Correct |
+|-------|---------|
+| `dfgs` | `dfg` |
+| `alpha_plus` | `alpha_plus_plus` |
+| `heuristic` | `heuristic_miner` |
+| `genetic` | `genetic_algorithm` |
+| `ilp_miner` | `ilp` |
+| `inductive` | `inductive_miner` |
+
+**Note:** An unrecognized algorithm name returns exit code 2 (`source_error`), not exit code 1. This is intentional — the algorithm name is part of the source resolution path.
+
+---
+
+### "Config file not found" or config not being read
+
+**Problem:** wasm4pm looks for `wasm4pm.toml` or `wasm4pm.json` in the current working directory and does not find one.
+
+**Solution — scaffold a config file:**
+```bash
+wpm init
+```
+
+This creates `wasm4pm.toml`, `.env.example`, and `.gitignore` in the current directory with sensible defaults.
+
+**To use a config file at a non-default path:**
+```bash
+wpm run log.xes --config /path/to/my-config.toml
+```
+
+**Config file search order:** `wasm4pm.toml` first, then `wasm4pm.json`. If neither is found, defaults apply (no error is raised — the config file is optional).
+
+---
+
+### Exit code 2 on a file that exists
+
+**Problem:** `wpm run log.xes` exits with code 2 (`source_error`) even though the file is present.
+
+**Check 1 — file path is relative to the current working directory:**
+```bash
+ls -la log.xes          # Confirm the file is actually there
+wpm run $(pwd)/log.xes  # Use an absolute path to rule out CWD issues
+```
+
+**Check 2 — file is readable:**
+```bash
+chmod 644 log.xes
+```
+
+**Check 3 — file content is valid:**
+```bash
+wpm validate -i log.xes   # Reports specific schema problems
+xmllint --noout log.xes    # Checks XML well-formedness independently
+```
+
+**Check 4 — algorithm name is valid** (exit code 2 also fires for unknown algorithms):
+```bash
+wpm status   # Confirm algorithm name is in the list
+```
+
+---
+
+### DFG shows 0 nodes or 0 edges
+
+**Problem:** `wpm run log.xes --algorithm dfg` reports zero nodes or zero edges in the output.
+
+**Cause 1 — wrong activity key.** The DFG groups events by the activity attribute. The XES standard uses `concept:name`, but your log may use a different attribute (e.g., `task`, `ActivityName`, `eventType`).
+
+```bash
+# Check what attribute names appear in your log
+wpm validate -i log.xes   # Reports available attribute keys
+
+# Run with the correct key
+wpm run log.xes --algorithm dfg --activity-key task
+```
+
+**Cause 2 — the log has fewer than 2 events per trace.** A DFG requires at least two consecutive events to form an edge.
+
+```bash
+wpm validate -i log.xes   # Reports trace count and min/max trace length
+```
+
+**Cause 3 — all traces have length 1.** If every case has exactly one event, the DFG will have nodes but zero edges. This is correct behavior — there are no directly-follows relationships to draw.
+
+---
+
+### "Memory exceeded" or process killed during discovery
+
+**Problem:** Large log files cause the WASM process to run out of memory or be killed by the OS OOM manager.
+
+**Solution 1 — switch to a lighter deployment profile.** The `fog` profile (~2MB binary) uses less overhead than `browser`:
+```bash
+wpm run huge-log.xes --profile fast
+```
+
+**Solution 2 — use the streaming algorithm** for very large logs:
+```bash
+wpm run huge-log.xes --algorithm simd_streaming_dfg --profile stream
+```
+
+**Solution 3 — subset the log** to verify the pipeline works before scaling:
+```bash
+head -c 1000000 huge-log.xes > sample.xes
+wpm run sample.xes
+```
+
+**Solution 4 — increase the Node.js heap** (does not increase WASM linear memory, but may help with TypeScript overhead on large result sets):
+```bash
+NODE_OPTIONS="--max-old-space-size=4096" wpm run huge-log.xes
+```
+
+**If you need to rebuild for a smaller profile:**
+```bash
+cd wasm4pm
+npm run build:fog    # ~2MB, drops POWL but keeps ML and streaming
+npm run build:edge   # ~1.5MB, basic streaming, no ML
+```
+
+---
+
 ## Getting Help
 
 If troubleshooting doesn't solve it:

@@ -76,7 +76,21 @@ Start here if you're new to wasm4pm.
 
 ### FAQ & Troubleshooting
 
-- **[faq/ml-rl-faq.md](./faq/ml-rl-faq.md)** — 50+ Q&A
+- **[FAQ.md](./FAQ.md)** — General and CLI-specific Q&A
+  - Algorithm selection: speed/quality tradeoffs, DFG vs ILP
+  - Exit codes: what codes 1-6 mean and how to diagnose them
+  - Deployment profiles: browser / fog / edge / iot / mobile
+  - `wpm predict`: all 6 prediction perspectives with examples
+  - `wpm ml`: all 6 ML tasks with examples
+  - WASM handles: what they are and when they matter
+  - Environment variables: all `WASM4PM_*` keys
+  - Config file format: `wasm4pm.toml` sections
+  - Conformance checking: `wpm conformance` usage
+  - Drift detection: `wpm predict drift` and `wpm drift-watch`
+  - Quality metrics: fitness / precision / generalization / simplicity
+  - Heuristic miner tuning: `dependency_threshold` guidance
+
+- **[faq/ml-rl-faq.md](./faq/ml-rl-faq.md)** — ML and RL deep-dive Q&A
   - ML algorithm selection and tuning
   - RL convergence and debugging
   - Prediction accuracy
@@ -87,7 +101,10 @@ Start here if you're new to wasm4pm.
   - Installation problems
   - Config validation
   - Log loading
-  - Algorithm issues
+  - Algorithm issues: "algorithm not found", "config file not found"
+  - DFG zero nodes: activity key mismatch diagnosis
+  - Memory exceeded: profile switching and streaming workarounds
+  - Exit code 2 on valid files: step-by-step diagnosis
   - ML accuracy
   - RL convergence
   - Performance optimization

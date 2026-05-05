@@ -114,5 +114,20 @@ Agent 9 has created a comprehensive end-to-end testing and certification strateg
 
 ---
 
+## User-Facing Documentation
+
+For end-users of the `wpm` CLI, the following documents are most relevant:
+
+| Document | What it covers |
+|----------|---------------|
+| [FAQ.md](./FAQ.md) | Algorithm selection, exit codes, deployment profiles, `wpm predict`, `wpm ml`, WASM handles, env vars, config format, conformance, drift, quality metrics, heuristic tuning |
+| [troubleshooting.md](./troubleshooting.md) | WASM init failures, algorithm not found, config file issues, exit code 2 diagnosis, DFG zero nodes, memory exceeded |
+| [DOCUMENTATION_INDEX.md](./DOCUMENTATION_INDEX.md) | Complete cross-reference to all guides, API refs, examples, and quick-starts |
+| [guides/cli-guide.md](./guides/cli-guide.md) | All 20 commands with full option listings |
+| [guides/configuration-guide.md](./guides/configuration-guide.md) | All config options, TOML format, ENV vars, precedence rules |
+| [faq/ml-rl-faq.md](./faq/ml-rl-faq.md) | ML and RL deep-dive questions |
+
+---
+
 **Status:** Planning Complete — Ready for Implementation  
 **Date:** 2026-05-05
