@@ -47,7 +47,7 @@ wasm4pm/
 │   └── package.json        # npm package for the compiled WASM
 ├── packages/               # TypeScript monorepo (10 packages)
 ├── apps/
-│   └── pictl/              # CLI tool (@wasm4pm/cli)
+│   └── wasm4pm/              # CLI tool (@wasm4pm/cli)
 ├── lab/                    # Post-publish artifact validation (tests published npm package)
 └── playground/             # Local dev behavior testing (tests local source)
 ```
@@ -292,7 +292,7 @@ npm run start:mcp            # build + run MCP server
 
 ## Feature Flags & Deployment Profiles
 
-pictl uses **12 canonical feature flags** that map to **5 deployment profiles**. Feature gates in `Cargo.toml` control which modules compile for each profile.
+wasm4pm uses **12 canonical feature flags** that map to **5 deployment profiles**. Feature gates in `Cargo.toml` control which modules compile for each profile.
 
 ### Canonical Feature Flags (WASM Feature API)
 
@@ -462,7 +462,7 @@ wasm4pm/src/agentic/           # Agentic framework (9 traits, 14 modules)
 - "bad algorithm" exit code is `SOURCE_ERROR` (2), not `CONFIG_ERROR` (1) — intentional
 - `@wasm4pm/planner`'s `plan()` is **synchronous** (no async), but `PlannerLike` accepts either
 - `cargo test --lib` exits with SIGABRT (signal 6) due to wasm-bindgen thread cleanup — all tests pass but process crashes on exit. This is pre-existing. Use `cargo test --lib 2>&1 | grep -c "^test .* ok$"` to verify pass count.
-- Cargo workspace root is `pictl/` (parent of `wasm4pm/`), so `cargo clippy` from `wasm4pm/` shows a harmless "profiles for the non root package" warning
+- Cargo workspace root is `wasm4pm/` (parent of `wasm4pm/`), so `cargo clippy` from `wasm4pm/` shows a harmless "profiles for the non root package" warning
 - Crate name is `wpm` (wasm4pm), npm package is `@wasm4pm/cli`, but the source directory remains `wasm4pm/` — only published names changed, not filesystem layout
 - `tests/*.rs` are integration tests (separate crates) — `pub(crate)` is NOT enough for external test access, items must be `pub`
 - Cargo auto-discovers `tests/*.rs` but NOT `tests/subdir/*.rs` — use top-level `tests/*_tests.rs` files or add `tests/subdir/mod.rs`
@@ -472,7 +472,7 @@ wasm4pm/src/agentic/           # Agentic framework (9 traits, 14 modules)
 - `src/streaming/` has zero `#[wasm_bindgen]` exports — algorithms there are unreachable from JS. Check before assuming a streaming variant is usable.
 - **Direct WASM testing** (bypasses CLI wrapper, which drops model data for handle-based algorithms):
   ```js
-  const wasm = require('./wasm4pm/pkg/pictl.js');
+  const wasm = require('./wasm4pm/pkg/wasm4pm.js');
   const handle = wasm.load_eventlog_from_xes(fs.readFileSync('log.xes', 'utf8'));
   const parse = r => typeof r === 'string' ? JSON.parse(r) : r;
   const result = parse(wasm.discover_dfg(handle, 'concept:name'));

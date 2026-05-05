@@ -53,7 +53,7 @@ describe('JTBD-1: Bottleneck discovery under drift', () => {
     });
     
     // Execute: Autonomic loop detects drift, identifies bottleneck
-    const result = await pictl.autoprocess(logHandle, {
+    const result = await wpm.autoprocess(logHandle, {
       prediction: { tasks: ['drift', 'bottleneck'] }
     });
     
@@ -68,7 +68,7 @@ describe('JTBD-1: Bottleneck discovery under drift', () => {
     expect(otelSpans).toContainSpan('autoprocess.execute', { status: 'ok' });
     
     // Verify: Event log proves it (mine the log yourself)
-    const mined = await pictl.run('temporal', { input: logHandle });
+    const mined = await wpm.run('temporal', { input: logHandle });
     const creditCheckDuration = mined.activities['Credit Check'].avgDuration;
     expect(creditCheckDuration).toBeGreaterThan(8 * 3600 * 1000); // > 8 hours
   });
@@ -109,7 +109,7 @@ describe('JTBD-2: Rework detection in manufacturing', () => {
     });
     
     // Execute: Discover DFG, detect rework
-    const result = await pictl.run('advanced_algorithms', {
+    const result = await wpm.run('advanced_algorithms', {
       input: logHandle,
       algorithm: 'detect_rework'
     });
@@ -140,7 +140,7 @@ describe('JTBD-2: Rework detection in manufacturing', () => {
     expect(otelSpans).toContainSpan('detect_rework.execute', { status: 'ok' });
     
     // Verify: Mine DFG yourself to confirm loops exist
-    const dfg = await pictl.run('dfg', { input: logHandle });
+    const dfg = await wpm.run('dfg', { input: logHandle });
     expect(dfg.edges).toContainEqual({ from: 'C', to: 'B' });
     expect(dfg.edges).toContainEqual({ from: 'E', to: 'D' });
   });
@@ -211,11 +211,11 @@ describe('JTBD-3: RL convergence under resource constraints', () => {
     expect(otelSpans).toContainSpanCount('autonomic_execute_cycle', 100);
     
     // Verify: RL state is serializable and restoreable
-    const serialized = await pictl.rl_orchestrator_serialize();
-    await pictl.rl_orchestrator_reset();
-    await pictl.rl_orchestrator_restore(serialized);
+    const serialized = await wpm.rl_orchestrator_serialize();
+    await wpm.rl_orchestrator_reset();
+    await wpm.rl_orchestrator_restore(serialized);
     
-    const restoredTelemetry = await pictl.rl_orchestrator_get_telemetry();
+    const restoredTelemetry = await wpm.rl_orchestrator_get_telemetry();
     expect(restoredTelemetry.cycleCount).toBe(100);
   });
 });
@@ -258,8 +258,8 @@ describe('JTBD-4: Conformance checking on deviating process', () => {
       });
       
       // Execute: Discover model, check conformance
-      const discovered = await pictl.run('alpha_plus_plus', { input: logHandle });
-      const conformance = await pictl.run('conformance', {
+      const discovered = await wpm.run('alpha_plus_plus', { input: logHandle });
+      const conformance = await wpm.run('conformance', {
         input: logHandle,
         model: discovered.handle
       });
@@ -282,7 +282,7 @@ describe('JTBD-4: Conformance checking on deviating process', () => {
       expect(otelSpans).toContainSpan('conformance.check', { status: 'ok' });
       
       // Verify: Mine the log yourself, count deviations manually
-      const log = await pictl.export_eventlog_to_json(logHandle);
+      const log = await wpm.export_eventlog_to_json(logHandle);
       const manualDeviationCount = countManualDeviations(log, ['A', 'B', 'C', 'D', 'E']);
       expect(manualDeviationCount).toBeGreaterThan(80); // ~10% of 1000 cases
       expect(manualDeviationCount).toBeLessThan(120);
@@ -324,7 +324,7 @@ describe('JTBD-5: ML anomaly detection on seasonal data', () => {
     });
     
     // Execute: Train ML model, detect anomalies
-    const result = await pictl.ml('anomaly', {
+    const result = await wpm.ml('anomaly', {
       input: logHandle,
       training: 0.8, // 80% for training
       threshold: 0.9 // 90th percentile
@@ -351,7 +351,7 @@ describe('JTBD-5: ML anomaly detection on seasonal data', () => {
     // Verify: Manually check 5 flagged anomalies
     const sample = result.anomalies.slice(0, 5);
     for (const anomaly of sample) {
-      const caseData = await pictl.get_case(anomaly.caseId);
+      const caseData = await wpm.get_case(anomaly.caseId);
       // Either cycle time or sequence is wrong
       const isWrongCycleTime = caseData.cycleTime > 7 * 24 * 3600 * 1000;
       const isWrongSequence = !isValidSequence(caseData.activities);

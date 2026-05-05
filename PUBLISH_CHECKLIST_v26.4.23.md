@@ -167,7 +167,7 @@ npm view wasm4pm@26.4.23 dist.unpackedSize
 ### Full Integration Test (optional)
 ```bash
 # Clean install and test
-cd /tmp && mkdir pictl-publish-test && cd pictl-publish-test
+cd /tmp && mkdir wasm4pm-publish-test && cd wasm4pm-publish-test
 npm init -y
 npm install @wasm4pm/cli@26.4.23 wasm4pm@26.4.23
 

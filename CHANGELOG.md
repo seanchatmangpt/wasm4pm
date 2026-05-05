@@ -23,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 **MCP (Model Context Protocol) Integration**
 - New tools for AI-assisted process mining: `discover_alpha_footprints`, `compute_conformance_fitness`, `check_backend_health`
-- Schema discriminators for conformance output (`chatmangpt.pictl.conformance.v1`)
+- Schema discriminators for conformance output (`chatmangpt.wasm4pm.conformance.v1`)
 
 **Robustness & Determinism**
 - Seeded RNG implementation for Genetic, PSO, ACO, and Simulated Annealing algorithms
@@ -44,7 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Crate Renaming**: Renamed core crate from `pictl` to `wasm4pm` for workspace consistency
+- **Crate Renaming**: Renamed core crate from `wasm4pm` to `wasm4pm` for workspace consistency
 - **Version Synchronization**: Aligned all crates and packages to v26.4.28
 - **Performance**: Vectorized inner loops (SIMD) for DFG, conformance, and variant discovery
 
@@ -58,7 +58,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Protection layer: Circuit breaker + guard rules (1.509 ns, branchless bitwise operations)
 - Optimization layer: Bellman Q-learning updates (88 ns)
 - **Full cycle latency**: 102.32 ns (3x safety margin)
-- State persistence: Auto-save/restore of Q-table and SPC history to `.pictl/autoprocess-state.json`
+- State persistence: Auto-save/restore of Q-table and SPC history to `.wasm4pm/autoprocess-state.json`
 - OTEL instrumentation: `autoprocess.cycle` span with state_id, action, reward, spc_alerts
 
 **Five RL Agents with Contextual Bandit Selection**
@@ -106,7 +106,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 **New Command: `wpm autoprocess`**
 - Usage: `wpm autoprocess <log.xes> [--cycles N] [--watch] [--format json|human]`
-- Auto-creates `.pictl/autoprocess-state.json`
+- Auto-creates `.wasm4pm/autoprocess-state.json`
 - Output includes: state_id, action_taken, reward, spc_alerts, next_state
 - Watch mode: Real-time metrics dashboard
 
@@ -173,7 +173,7 @@ RUST_MIN_STACK=8388608 cargo test -- --ignored --test-threads=1
 **Behavioral Changes** (due to autonomic loop):
 - New command `wpm autoprocess` available
 - New OTEL span types: `autoprocess.cycle`, `spc_alert_detected`
-- State persistence file created automatically (`.pictl/autoprocess-state.json`)
+- State persistence file created automatically (`.wasm4pm/autoprocess-state.json`)
 - Circuit breaker now auto-engages (was manual-only in v26.4.10)
 
 ### Migration Guide
@@ -264,7 +264,7 @@ wpm autoprocess sample.xes --format json
 - **docs/explanation/error-handling.md**: Added Recovery and MTTR section
 - **RELEASE_NOTES.md**: Added v26.4.10 comprehensive release notes
 - **memory/mttr_optimization_complete.md**: Full MTTR optimization record
-- **.pictl/metrics-dashboard.md**: Updated with TPS resolution history
+- **.wasm4pm/metrics-dashboard.md**: Updated with TPS resolution history
 
 ### Technical Details
 
@@ -309,7 +309,7 @@ wpm run --config broken-config.toml  # Exit 1, clear error message
 
 ### Breaking
 
-- **@pictl/ml**: Removed `micro-ml` dependency. All ML algorithms are now native TypeScript implementations with zero external ML dependencies.
+- **@wasm4pm/ml**: Removed `micro-ml` dependency. All ML algorithms are now native TypeScript implementations with zero external ML dependencies.
 - **License**: Changed from MIT/Apache-2.0 to BSL 1.1, converting to AGPL-3.0-only after 2 years.
 
 ### Added
@@ -331,7 +331,7 @@ wpm run --config broken-config.toml  # Exit 1, clear error message
 
 ### Changed
 
-- **@pictl/ml — Native ML Engine**: All 6 ML modules rewritten with hyper-optimized native implementations
+- **@wasm4pm/ml — Native ML Engine**: All 6 ML modules rewritten with hyper-optimized native implementations
   - `classifiers.ts`: Columnar `Float64Array` layout, pre-allocated distance buffers, single-pass Naive Bayes, log-sum-exp stable softmax
   - `clustering.ts`: Columnar k-means (k-means++ init, squared-distance), DBSCAN with bitset visited tracking
   - `anomaly.ts`: O(n) sliding window SMA, pre-computed autocorrelation denominator, Float64Array throughout
@@ -353,7 +353,7 @@ wpm run --config broken-config.toml  # Exit 1, clear error message
 
 ### Removed
 
-- `micro-ml` dependency from `@pictl/ml` (replaced by native implementations)
+- `micro-ml` dependency from `@wasm4pm/ml` (replaced by native implementations)
 - 40+ redundant documentation files (archived, not deleted)
 - `LICENSE-MIT` and `LICENSE-APACHE` (replaced by `LICENSE` with BSL 1.1)
 
@@ -392,7 +392,7 @@ Phase 7 — Swarm ML Support:
 - `ml_ensemble` aggregation strategy
 
 **Monorepo Consolidation — 16 packages to 9**
-- Deleted 7 packages, merged into `@pictl/contracts` and `@pictl/engine`
+- Deleted 7 packages, merged into `@wasm4pm/contracts` and `@wasm4pm/engine`
 - Removed circular dependencies
 
 **DX Improvements**
@@ -409,7 +409,7 @@ Phase 7 — Swarm ML Support:
 - `powl.ts` type cast
 
 ### Breaking
-- All imports from `@wasm4pm/types` and `@wasm4pm/templates` → `@pictl/contracts`
+- All imports from `@wasm4pm/types` and `@wasm4pm/templates` → `@wasm4pm/contracts`
 - `ErrorInfo` type renamed to `EngineError`
 
 ## [26.4.5] - 2026-04-04

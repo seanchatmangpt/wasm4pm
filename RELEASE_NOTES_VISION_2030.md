@@ -1,6 +1,6 @@
 # Release Notes: Vision 2030
 
-**pictl v26.4.16** — Autonomous Process Monitoring with AutoProcess
+**wasm4pm v26.4.16** — Autonomous Process Monitoring with AutoProcess
 
 **Release Date:** April 16, 2026
 
@@ -10,7 +10,7 @@
 
 ### Autonomous Process Monitoring with AutoProcess Loop
 
-**The system now monitors and adapts itself.** Vision 2030 introduces the closed-loop **MAPE-K** (Monitor → Analyze → Plan → Execute → Knowledge) cycle, embedded directly in the WASM core. This means pictl doesn't just report what processes are doing — it detects problems, decides how to respond, protects against cascading failures, and learns from experience — all in <100ms per cycle.
+**The system now monitors and adapts itself.** Vision 2030 introduces the closed-loop **MAPE-K** (Monitor → Analyze → Plan → Execute → Knowledge) cycle, embedded directly in the WASM core. This means wasm4pm doesn't just report what processes are doing — it detects problems, decides how to respond, protects against cascading failures, and learns from experience — all in <100ms per cycle.
 
 ### Intelligent Resource Allocation via Reinforcement Learning
 
@@ -156,11 +156,11 @@ profile = "balanced"  # RL agent selection works for all profiles
 #### Step 1: Backup Existing State (Optional)
 
 ```bash
-mkdir -p /tmp/pictl-backup
-cp -r .pictl /tmp/pictl-backup/  # Backup old results and state
+mkdir -p /tmp/wasm4pm-backup
+cp -r .wasm4pm /tmp/wasm4pm-backup/  # Backup old results and state
 ```
 
-#### Step 2: Update pictl
+#### Step 2: Update wasm4pm
 
 ```bash
 npm install -g @wasm4pm/cli@26.4.16
@@ -320,7 +320,7 @@ This release represents the culmination of months of careful engineering across 
 - **Joe Armstrong** — Erlang/OTP supervision and fault tolerance patterns adapted to WASM constraints
 - **Sean Chatman** — Vision, architecture, and relentless commitment to measurable claims backed by event evidence
 - **Roberto & Straughter** — MIOSA collaboration on BusinessOS integration and field validation
-- **The pictl test team** — 26 end-to-end tests (8 autoprocess + 18 ML) proving autonomic behavior via process mining
+- **The wasm4pm test team** — 26 end-to-end tests (8 autoprocess + 18 ML) proving autonomic behavior via process mining
 - **The pm4py-mcp team** — Python/MCP integration providing external validation of discovered models
 
 ---
@@ -346,4 +346,4 @@ For detailed technical information, see:
 
 ---
 
-**pictl: Process mining at machine speed, autonomous adaptation at human trust.**
+**wasm4pm: Process mining at machine speed, autonomous adaptation at human trust.**

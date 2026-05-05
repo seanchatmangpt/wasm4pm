@@ -129,9 +129,9 @@ or     eax, edx     ; Combine
 
 **Zero mispredictions. No pipeline flushes. Deterministic latency.**
 
-### 3.3 Integration into pictl
+### 3.3 Integration into wasm4pm
 
-The bcinr library (39 branchless functions integrated into pictl during this session) provides:
+The bcinr library (39 branchless functions integrated into wasm4pm during this session) provides:
 
 - **FNV-1a hashing**: Branchless byte-loop over data, no conditional increments
 - **Byte scanning** (find_byte): SIMD-ready without conditional exits
@@ -176,7 +176,7 @@ The Directly-Follows Graph is the foundational algorithm in process mining:
 - Nodes represent activities
 - Edge $(a_i, a_{i+1})$ has frequency equal to the number of times $a_{i+1}$ immediately follows $a_i$ across all traces
 
-**Nanosecond Implementation (pictl):**
+**Nanosecond Implementation (wasm4pm):**
 
 ```rust
 fn compute_dfg_parallel(col: &ColumnarLog) -> DirectlyFollowsGraph {
@@ -356,7 +356,7 @@ But allocator contention (cache line bouncing for malloc metadata) reduces this 
 
 ### 6.2 Fingerprinting Approach (FNV-1a)
 
-**Integration** (pictl/log_to_trie.rs with bcinr):
+**Integration** (wasm4pm/log_to_trie.rs with bcinr):
 
 ```rust
 #[cfg(feature = "bcinr")]
@@ -405,7 +405,7 @@ The **roofline model** (Williams et al., 2009) characterizes achievable performa
 
 $$\text{Performance} = \min \left( \text{Peak FLOPs}, \text{Memory Bandwidth} \times \text{Arithmetic Intensity} \right)$$
 
-For pictl DFG discovery on an Intel Core i9-13900K:
+For wasm4pm DFG discovery on an Intel Core i9-13900K:
 - **Peak FLOPs**: 32 single-precision FLOPs per cycle × 5.8 GHz × 8 cores = 1.5 TFLOPS
 - **Memory bandwidth**: 119.6 GB/s (DDR5)
 - **Arithmetic intensity** (DFG loop): ~0.5 FLOPs per byte (hash table operations)
@@ -446,7 +446,7 @@ At 34 nanoseconds per cycle, we are **operating at the L3 cache boundary**. Any 
 
 ## 8. Empirical Validation and Benchmarks
 
-### 8.1 Benchmark Results (pictl Integration, April 2026)
+### 8.1 Benchmark Results (wasm4pm Integration, April 2026)
 
 **Fast Algorithms Benchmark** (DFG discovery with bcinr):
 
@@ -590,7 +590,7 @@ Vision 2030 **accepts these tradeoffs** because autonomous systems **must be pre
 **Goal**: Validate 34-nanosecond cycle on single-machine deployment.
 
 **Milestones**:
-1. **Q2 2026**: Complete bcinr integration into pictl
+1. **Q2 2026**: Complete bcinr integration into wasm4pm
    - FNV-1a hashing in cache.rs
    - Branchless marking in simd_token_replay.rs
    - Fingerprint-based variant dedup in log_to_trie.rs

@@ -111,14 +111,14 @@ Feature Gating - Algorithm Registry Integration
 ### Modified
 - `wasm4pm/Cargo.toml` (feature flags + deployment profiles)
 - `wasm4pm/package.json` (build scripts)
-- `pictl/CLAUDE.md` (documentation section)
+- `wasm4pm/CLAUDE.md` (documentation section)
 
 ### Created
 - `wasm4pm/measure-size.sh` (size measurement)
 - `wasm4pm/tests/feature_gating_tests.rs` (Rust tests)
 - `packages/kernel/__tests__/feature-gating.test.ts` (TypeScript tests)
-- `pictl/FEATURE_GATING.md` (complete guide)
-- `pictl/IMPLEMENTATION_SUMMARY.md` (this file)
+- `wasm4pm/FEATURE_GATING.md` (complete guide)
+- `wasm4pm/IMPLEMENTATION_SUMMARY.md` (this file)
 
 ---
 

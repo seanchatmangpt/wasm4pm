@@ -35,7 +35,7 @@ All deliverables implemented and verified.
 ## Deliverable 2: ESLint Config Update
 
 - [x] Created `.eslintrc.cjs`
-  - [x] Adds `pictl-testing` plugin
+  - [x] Adds `wasm4pm-testing` plugin
   - [x] Adds rule to `rules` section
   - [x] Set to `error` level (blocks merge)
   - [x] Proper overrides for unit tests (warning or off)

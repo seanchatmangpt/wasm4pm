@@ -1,6 +1,6 @@
 # Lawful Dispatch Petri Net — Formal Verification Artifacts
 
-**System:** pictl AutoProcess (34ns closed-loop cycle)  
+**System:** wasm4pm AutoProcess (34ns closed-loop cycle)  
 **Date:** 2026-04-11  
 **Status:** VERIFIED SOUND (Deadlock-Free, Live, Bounded)  
 **Author:** Claude Code Agent + Agent 1 (process mining)
@@ -118,8 +118,8 @@ Formal proof of WvdA soundness properties:
 
 ### 3. Runtime Verification (OTEL Spans)
 ```bash
-# Instrument actual pictl execution with OTEL spans:
-#   service: pictl
+# Instrument actual wasm4pm execution with OTEL spans:
+#   service: wasm4pm
 #   span_name: lawful_dispatch.<phase>.<transition>
 #   attributes: {phase: 1|2|3|4, transition: <name>, timing_ns: <actual>}
 # 
@@ -176,4 +176,4 @@ Formal proof of WvdA soundness properties:
 
 **Document Version:** 1.0  
 **Last Updated:** 2026-04-11  
-**Maintainer:** Sean Chatman (pictl project)
+**Maintainer:** Sean Chatman (wasm4pm project)

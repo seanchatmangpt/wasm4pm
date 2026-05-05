@@ -41,7 +41,7 @@ Metrics are collected automatically on every commit and aggregated weekly for tr
 ### Directories
 
 ```
-pictl/
+wasm4pm/
 ├── .wasm4pm/
 │   ├── metrics.json                   # Raw data (append-only)
 │   ├── build-times.log                # Build time history (CSV)
@@ -379,7 +379,7 @@ cat .wasm4pm/metrics-dashboard.md | less
 
 ```bash
 $ git push origin branch
-pictl Pre-Push Metrics Gate
+wasm4pm Pre-Push Metrics Gate
 ==============================
 
 Passing Metrics:
@@ -554,4 +554,4 @@ If metrics collection fails, check:
 
 **Last Updated:** 2026-04-12  
 **Maintained by:** Sean Chatman  
-**License:** MIT (pictl project)
+**License:** MIT (wasm4pm project)

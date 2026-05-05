@@ -1,6 +1,6 @@
 # PhD Thesis: Performance Analysis and Optimization of Process Mining Algorithms Across Heterogeneous Deployment Architectures
 
-**Author:** pictl Research Team  
+**Author:** wasm4pm Research Team  
 **Date:** April 2026  
 **Institution:** Computational Process Mining Laboratory  
 **Version:** 1.0 (Complete)

@@ -6,7 +6,7 @@
 
 ## Summary
 
-The pictl Rust codebase has been reorganized into a **three-crate workspace**:
+The wasm4pm Rust codebase has been reorganized into a **three-crate workspace**:
 
 1. **wasm4pm-types** — Canonical data structures (EventLog, DFG, PetriNet, ProvenanceChain)
 2. **wasm4pm-algos** — High-performance algorithm implementations with branchless patterns
@@ -108,7 +108,7 @@ Old Pattern (WASM state management):
   wasm_bindgen(discover_dfg) → get_or_init_state().with_object() → ...
 
 New Pattern (Algorithm-first):
-  wasm_bindgen(discover_dfg) → pictl_algos::dfg::discover() → ...
+  wasm_bindgen(discover_dfg) → wasm4pm_algos::dfg::discover() → ...
   
   Benefits:
   - Testable without WASM state layer
@@ -144,11 +144,11 @@ cargo bench --bench discovery_benchmarks -- discover_dfg
 ```
 Application Layer (packages/)
     ↓
-Engine (pictl/packages/engine)
+Engine (wasm4pm/packages/engine)
     ↓
-Kernel Registry (pictl/packages/kernel)
+Kernel Registry (wasm4pm/packages/kernel)
     ↓
-pictl WASM Bindings (wasm4pm/src/)
+wasm4pm WASM Bindings (wasm4pm/src/)
     ↓ (imported)
 wasm4pm-algos Algorithms (wasm4pm/crates/wasm4pm-algos/)
     ↓ (depends on)
@@ -157,7 +157,7 @@ wasm4pm-types Structures (wasm4pm/crates/wasm4pm-types/)
 
 **Unidirectional dependencies:**
 - ✅ wasm4pm-algos imports wasm4pm-types
-- ✅ pictl (WASM) can import wasm4pm-algos
+- ✅ wasm4pm (WASM) can import wasm4pm-algos
 - ✅ TypeScript packages import compiled WASM
 - ❌ No circular dependencies
 
@@ -190,7 +190,7 @@ wasm4pm-types Structures (wasm4pm/crates/wasm4pm-types/)
    - Add to wasm4pm-algos/src/conformance.rs
 
 2. **Wire WASM Bindings**
-   - Update wasm4pm/src/discovery.rs to call pictl_algos::*
+   - Update wasm4pm/src/discovery.rs to call wasm4pm_algos::*
    - Verify test parity with old implementation
    - Benchmark columnar optimization
 
@@ -213,7 +213,7 @@ wasm4pm-types Structures (wasm4pm/crates/wasm4pm-types/)
 ✅ cargo check --all
    Checking wasm4pm-types v26.4.10 — Finished
    Checking wasm4pm-algos v26.4.10 — Finished
-   Checking pictl v26.4.10 — Finished
+   Checking wasm4pm v26.4.10 — Finished
 ```
 
 **Test Results:**

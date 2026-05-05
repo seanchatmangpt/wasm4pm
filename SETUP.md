@@ -14,7 +14,7 @@ This document confirms the pnpm monorepo has been successfully set up according 
 ### Package Structure
 
 #### Applications (1)
-- ✓ `apps/pictl` - @wasm4pm/cli (CLI tool with pictl binary)
+- ✓ `apps/wasm4pm` - @wasm4pm/cli (CLI tool with wpm binary)
 
 #### Core Packages (2)
 - ✓ `packages/contracts` - @wasm4pm/contracts (Type definitions - zero dependencies)
@@ -157,7 +157,7 @@ node-linker=hoisted         # Optimize node_modules layout
 ├── README.md                # Project overview
 ├── docs/                    # Documentation
 ├── apps/
-│   └── pictl/
+│   └── wasm4pm/
 │       ├── package.json
 │       ├── src/
 │       └── __tests__/
@@ -190,7 +190,7 @@ node-linker=hoisted         # Optimize node_modules layout
 1. Contracts is foundation - zero dependencies
 2. Engine is the main service - depends on WASM4PM
 3. Connectors and Sinks add I/O capabilities
-4. pictl CLI ties everything together
+4. wpm CLI ties everything together
 5. Use `pnpm ls` to visualize dependency tree
 
 ### For Release Teams
@@ -212,7 +212,7 @@ node-linker=hoisted         # Optimize node_modules layout
 
 - ✓ New monorepo structure created
 - ✓ 13 packages scaffolded with valid package.json
-- ✓ 1 application (pictl) scaffolded
+- ✓ 1 application (wasm4pm) scaffolded
 - ✓ Dependency graph validated
 - ✓ Root configuration complete
 - ⏳ Source code implementation - ready for teams

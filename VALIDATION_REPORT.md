@@ -37,8 +37,8 @@ cd wasm4pm && npm run build
 ```
 
 **Result:** ✅ Built successfully. Output is in `pkg/` with:
-- `pictl_bg.wasm` (3.4 MB)
-- `pictl.js` and `pictl_bg.js`
+- `wasm4pm_bg.wasm` (3.4 MB)
+- `wasm4pm.js` and `wasm4pm_bg.js`
 - TypeScript definitions
 
 **Note:** The WASM package name is `wpm` (wasm4pm), not `wasm4pm`. The doctor.ts checks still reference old names (`wasm4pm_bg.wasm`) — this is a pre-existing issue, not caused by the hooks.
@@ -65,7 +65,7 @@ make doctor | jq '.healthy, .ok, .warn, .fail'
 ```json
 {
   "status": "warning",
-  "message": "pictl environment has issues",
+  "message": "wasm4pm environment has issues",
   "healthy": false,
   "ok": 17,
   "warn": 5,
@@ -86,7 +86,7 @@ CLAUDE_PROJECT_DIR=$(pwd) bash .claude/hooks/session-start.sh
 
 **Output:**
 ```
-✗ pictl environment: DEGRADED (17 ok, 5 warn, 2 fail)
+✗ wasm4pm environment: DEGRADED (17 ok, 5 warn, 2 fail)
 
 Critical failures:
   • WASM binary: WASM binary not built — /Users/sac/chatmangpt/wasm4pm/wasm4pm/pkg/wasm4pm_bg.wasm not found
@@ -141,7 +141,7 @@ echo '{"stop_hook_active":false}' | CLAUDE_PROJECT_DIR=$(pwd) bash .claude/hooks
 
 | Issue | Severity | File | Details |
 |-------|----------|------|---------|
-| Doctor checks wrong WASM names | Low | `apps/wasm4pm/src/commands/doctor.ts` | Checks for `wasm4pm_bg.wasm` but package is named `wpm` (wasm4pm) (file is `pictl_bg.wasm`) |
+| Doctor checks wrong WASM names | Low | `apps/wasm4pm/src/commands/doctor.ts` | Checks for `wasm4pm_bg.wasm` but package is named `wpm` (wasm4pm) (file is `wasm4pm_bg.wasm`) |
 | Duplicate empty check | Low | `.claude/hooks/stop-gate.sh` L36+L41 | Two identical `[ -z "$DOCTOR_OUTPUT" ]` checks (dead code) |
 | Inconsistent build tool | Low | `Makefile` | Uses `npm run build` instead of `pnpm run build` (workspace uses pnpm) |
 | Misleading set -e | Cosmetic | `.claude/hooks/session-start.sh` | `set -e` at top but all critical execs have `\|\| true` (intentional but confusing) |
@@ -208,7 +208,7 @@ The hooks work correctly in the current DEGRADED environment (2 critical WASM fa
 ## Next Steps (Optional)
 
 If desired, pre-existing issues could be fixed:
-1. Update doctor.ts to check for `pictl_bg.wasm` instead of `wasm4pm_bg.wasm`
+1. Update doctor.ts to check for `wasm4pm_bg.wasm` instead of `wasm4pm_bg.wasm`
 2. Remove duplicate empty check in stop-gate.sh (line 41-44)
 3. Update Makefile to use `pnpm run build`
 

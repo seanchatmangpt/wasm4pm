@@ -1,5 +1,5 @@
 <div align="center">
-<h1><strong>pictl</strong> - Process Mining for WebAssembly</h1>
+<h1><strong>wasm4pm</strong> - Process Mining for WebAssembly</h1>
 <p><strong>High-Performance Process Mining Algorithms in JavaScript/TypeScript</strong></p>
 <p>
   <a href="https://www.npmjs.com/package/@wasm4pm/cli">
@@ -9,12 +9,12 @@
   <a href="https://github.com/seanchatmangpt/wasm4pm">
     <img src="https://img.shields.io/github/stars/seanchatmangpt/wasm4pm" alt="GitHub stars"/></a>
 </p>
-<img src="https://raw.githubusercontent.com/seanchatmangpt/wasm4pm/main/Ferris%20emerges%20from%20the%20black%20hole.png" width="300" alt="pictl logo: Ferris emerges from the black hole"/>
+<img src="https://raw.githubusercontent.com/seanchatmangpt/wasm4pm/main/Ferris%20emerges%20from%20the%20black%20hole.png" width="300" alt="wasm4pm logo: Ferris emerges from the black hole"/>
 </div>
 
 ---
 
-## What is pictl?
+## What is wasm4pm?
 
 **wasm4pm** is a comprehensive, enterprise-grade process mining platform compiled to WebAssembly. It brings production-grade process discovery, conformance checking, analysis, and automation capabilities to browsers, Node.js, and containers.
 
@@ -49,7 +49,7 @@ Process mining extracts actionable insights from event logs by discovering proce
 **Deployment Profiles Reorganized:** Renamed "cloud" profile to "browser" (default, all 41 algorithms, 2.78MB) and "browser" profile to "mobile" (minimal, 500KB, 82% smaller). Choose from 5 optimized WASM builds: mobile ~500KB, edge ~1.5MB, fog ~2.0MB, iot ~1.0MB, browser ~2.78MB (default). Zero breaking changes — `npm run build` now builds the full browser profile.
 
 ### Version 26.4.5 (April 2026)
-**Major Release:** Added 10 new packages (engine, config, service, observability, contracts, types, kernel, planner, templates, testing) while maintaining 100% backward compatibility. Introduces professional CLI tool (pictl), configuration management, HTTP service layer, and comprehensive observability.
+**Major Release:** Added 10 new packages (engine, config, service, observability, contracts, types, kernel, planner, templates, testing) while maintaining 100% backward compatibility. Introduces professional CLI tool (wasm4pm), configuration management, HTTP service layer, and comprehensive observability.
 
 ## 🚀 Key Capabilities
 
@@ -122,7 +122,7 @@ See [DEPLOYMENT_PROFILES.md](https://github.com/seanchatmangpt/wasm4pm/blob/main
 - Streaming logs, hierarchical DFG
 
 ### Professional Tools (NEW in v26.4.5)
-- **pictl CLI** - Command-line interface with init, run, watch, status, explain commands
+- **wpm CLI** - Command-line interface with init, run, watch, status, explain commands
 - **Configuration System** - TOML/JSON/environment-based configuration with Zod validation
 - **HTTP Service** - Express-based REST API + WebSocket streaming (OpenAPI documented)
 - **Engine Lifecycle** - State machine for controlled algorithm execution
@@ -142,11 +142,11 @@ See [DEPLOYMENT_PROFILES.md](https://github.com/seanchatmangpt/wasm4pm/blob/main
 
 **CLI Commands:**
 ```bash
-pictl agent execute mock-interceptor --target ./src
-pictl agent list
-pictl agent audit --severity critical
-pictl agent status
-pictl agent register custom-agent ./path/to/agent.ts
+wasm4pm agent execute mock-interceptor --target ./src
+wasm4pm agent list
+wasm4pm agent audit --severity critical
+wasm4pm agent status
+wasm4pm agent register custom-agent ./path/to/agent.ts
 ```
 
 ### Predictive Process Mining (NEW in Phase 4)
@@ -188,7 +188,7 @@ Verify event logs against discovered models:
 - Trace classification (conforming/deviating)
 
 ### Claude Integration via MCP
-Use pictl directly with Claude through the Model Context Protocol:
+Use wasm4pm directly with Claude through the Model Context Protocol:
 - Discover models with natural language requests
 - Analyze processes conversationally
 - Generate visualizations on demand
@@ -309,9 +309,9 @@ npm run size:check
 
 ### Browser
 ```html
-<script src="node_modules/@wasm4pm/cli/pkg/pictl.js"></script>
+<script src="node_modules/@wasm4pm/cli/pkg/wasm4pm.js"></script>
 <script>
-  const pm = pictl;
+  const pm = wasm4pm;
   await pm.init();
   
   // Load and discover
@@ -354,7 +354,7 @@ const conformance = pm.checkConformance(logHandle, alphaPlusPlus);
 console.log(JSON.stringify(conformance, null, 2));
 ```
 
-### CLI (pictl - NEW)
+### CLI (wasm4pm - NEW)
 ```bash
 # Initialize project with configuration
 wpm init
@@ -372,17 +372,17 @@ wpm status --verbose
 wpm explain --algorithm genetic --level detailed
 
 # Van der Aalst agents (NEW)
-pictl agent execute mock-interceptor --target ./src
-pictl agent list
-pictl agent audit --severity critical
-pictl agent status
-pictl agent register custom-agent ./path/to/agent.ts
+wasm4pm agent execute mock-interceptor --target ./src
+wasm4pm agent list
+wasm4pm agent audit --severity critical
+wasm4pm agent status
+wasm4pm agent register custom-agent ./path/to/agent.ts
 ```
 
 ### HTTP Service (NEW)
 ```bash
 # Start HTTP service
-pictl-service --port 3000 --workers 4
+wasm4pm-service --port 3000 --workers 4
 
 # Send discovery request
 curl -X POST http://localhost:3000/api/v1/discover \
@@ -413,14 +413,14 @@ wscat -c ws://localhost:3000/api/v1/stream
 ### Reference Documentation
 | Document | Purpose |
 |----------|---------|
-| [**API.md**](https://github.com/seanchatmangpt/wasm4pm/blob/main/docs/API.md) | Complete function reference + pictl commands |
+| [**API.md**](https://github.com/seanchatmangpt/wasm4pm/blob/main/docs/API.md) | Complete function reference + wpm commands |
 | [**ALGORITHMS.md**](https://github.com/seanchatmangpt/wasm4pm/blob/main/docs/reference/algorithms.md) | Algorithm descriptions and parameters |
 | [**FAQ.md**](https://github.com/seanchatmangpt/wasm4pm/blob/main/docs/FAQ.md) | Troubleshooting and common questions |
 
 ### Package Documentation
 | Package | Purpose |
 |---------|---------|
-| [**pictl CLI**](https://github.com/seanchatmangpt/wasm4pm/blob/main/apps/wasm4pm/README.md) | CLI tool reference |
+| [**wpm CLI**](https://github.com/seanchatmangpt/wasm4pm/blob/main/apps/wasm4pm/README.md) | CLI tool reference |
 | [**@wasm4pm/kernel**](https://github.com/seanchatmangpt/wasm4pm/blob/main/packages/kernel/README.md) | WASM kernel, 41 algorithms |
 | [**@wasm4pm/config**](https://github.com/seanchatmangpt/wasm4pm/blob/main/packages/config/README.md) | Configuration system |
 | [**@wasm4pm/engine**](https://github.com/seanchatmangpt/wasm4pm/blob/main/packages/engine/README.md) | Engine lifecycle |
@@ -487,7 +487,7 @@ pnpm test
 
 # Build specific targets
 pnpm build:wasm         # WASM core library
-pnpm build:cli          # pictl CLI
+pnpm build:cli          # wpm CLI
 pnpm build:engine       # Engine lifecycle
 pnpm build:service      # HTTP service
 
@@ -497,9 +497,9 @@ pnpm dev
 
 ### Project Structure
 ```
-pictl/                             # Monorepo root
+wasm4pm/                             # Monorepo root
 ├── apps/
-│   └── pictl/                      # CLI tool (pictl)
+│   └── wasm4pm/                      # CLI tool (wasm4pm)
 │       ├── src/commands/           # run, compare, diff, predict, ml, powl, agent, etc.
 │       └── package.json
 ├── packages/
@@ -624,11 +624,11 @@ Choose whichever license works best for your use case.
 
 ## 📚 Citation
 
-If you use pictl in your research, please cite:
+If you use wasm4pm in your research, please cite:
 
 ```bibtex
-@software{pictl2026,
-  title={pictl: Process Mining for WebAssembly},
+@software{wasm4pm2026,
+  title={wasm4pm: Process Mining for WebAssembly},
   author={Sean Chat Man GPT},
   year={2026},
   url={https://github.com/seanchatmangpt/wasm4pm}

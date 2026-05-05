@@ -1,6 +1,6 @@
 # WvdA Soundness Proof: Lawful Dispatch Petri Net
 
-**System:** pictl AutoProcess (34ns closed loop)  
+**System:** wasm4pm AutoProcess (34ns closed loop)  
 **Date:** 2026-04-11  
 **Proof Method:** Structural Analysis + Reachability Graph Inspection  
 **Conclusion:** SOUND (Deadlock-Free, Live, Bounded)

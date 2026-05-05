@@ -1,8 +1,8 @@
-# SIMD Vectorization for pictl Inner Loops
+# SIMD Vectorization for wasm4pm Inner Loops
 
 ## Summary
 
-Vectorized core inner loops in pictl with **4-8x speedup** on modern CPUs using SSE4.2, AVX-2, and AVX-512 SIMD intrinsics. All implementations are **deterministic** (bit-exact match across runs and platforms) and maintain **100% correctness parity** with scalar baselines.
+Vectorized core inner loops in wasm4pm with **4-8x speedup** on modern CPUs using SSE4.2, AVX-2, and AVX-512 SIMD intrinsics. All implementations are **deterministic** (bit-exact match across runs and platforms) and maintain **100% correctness parity** with scalar baselines.
 
 ## Implementation
 

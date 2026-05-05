@@ -8,7 +8,7 @@ Complete guide to WASM feature flags, deployment profiles, and size optimization
 
 ## Overview
 
-pictl implements **size-optimized WASM deployment** through conditional feature compilation. A single Rust codebase compiles to 5 different binary profiles (mobile, iot, edge, fog, browser), ranging from 500KB to 2.78MB, with algorithm availability scaled to each target.
+wasm4pm implements **size-optimized WASM deployment** through conditional feature compilation. A single Rust codebase compiles to 5 different binary profiles (mobile, iot, edge, fog, browser), ranging from 500KB to 2.78MB, with algorithm availability scaled to each target.
 
 **Key principles:**
 - One canonical source tree

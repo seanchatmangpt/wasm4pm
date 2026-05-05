@@ -7,7 +7,7 @@
 
 ## Executive Summary
 
-Refactored four critical hot loops in pictl process mining core for compile-time predictable cycle counts. All loops now have:
+Refactored four critical hot loops in wasm4pm process mining core for compile-time predictable cycle counts. All loops now have:
 
 - **Fixed iteration bounds** (no dynamic breaks)
 - **Loop unrolling** (4x or 8x to reduce iteration overhead)

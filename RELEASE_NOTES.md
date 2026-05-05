@@ -8,7 +8,7 @@
 
 ## 🚀 Headline Features: MTTR Optimization & TPS Compliance
 
-pictl v26.4.10 delivers **fast recovery** (<1 second) and **complete Toyota Production System compliance**. All 12 dashboard metrics are now GREEN ✅.
+wasm4pm v26.4.10 delivers **fast recovery** (<1 second) and **complete Toyota Production System compliance**. All 12 dashboard metrics are now GREEN ✅.
 
 ### Key Achievements
 - **MTTR reduced from 3min to <1s** — Fast recovery paths with soft reset
@@ -350,7 +350,7 @@ This major release transforms wasm4pm from a pure WebAssembly library into a com
 
 ### Key Achievements
 - **10 New Packages** - Microservice-ready architecture
-- **CLI Tool (pictl)** - Professional command-line interface
+- **CLI Tool (wasm4pm)** - Professional command-line interface
 - **Configuration System** - TOML/JSON/environment-based configuration
 - **Receipts** - Complete audit trails and reproducibility tracking
 - **Observability** - Non-blocking logging and telemetry
@@ -361,7 +361,7 @@ This major release transforms wasm4pm from a pure WebAssembly library into a com
 
 ## Major Features
 
-### 1. Package @wasm4pm/pictl - CLI Tool for Process Mining (NEW)
+### 1. Package @wasm4pm/wasm4pm - CLI Tool for Process Mining (NEW)
 **Version:** 26.4.5  
 **Status:** Production Ready
 
@@ -369,7 +369,7 @@ The professional command-line interface for all process mining operations.
 
 #### Core Commands
 - **wpm init** - Bootstrap new projects with configuration templates
-- **pictl run** - Execute discovery algorithms with profile-based optimization
+- **wasm4pm run** - Execute discovery algorithms with profile-based optimization
 - **wpm watch** - File system watcher for continuous analysis
 - **wpm status** - Real-time system and engine status
 - **wpm explain** - Interactive algorithm and model explanation
@@ -907,7 +907,7 @@ const log = new wasm4pm.WasmEventLog();  // Works correctly
 
 ### Updated Documentation
 - **README.md** - Added v26.4.5 features, CLI examples
-- **docs/API.md** - New pictl commands, service endpoints
+- **docs/API.md** - New wpm commands, service endpoints
 - **docs/DEPLOYMENT.md** - Service mode deployment
 - **docs/FAQ.md** - Configuration and monitoring Q&A
 - **docs/QUICKSTART.md** - CLI quick start examples
@@ -998,7 +998,7 @@ pnpm build:all
 pnpm test
 
 # Optional: Install CLI
-pnpm add -g @wasm4pm/pictl
+pnpm add -g @wasm4pm/wasm4pm
 ```
 
 ### Installation Methods
@@ -1009,7 +1009,7 @@ pnpm add -g @wasm4pm/pictl
 npm install wasm4pm
 
 # CLI tool
-npm install -g @wasm4pm/pictl
+npm install -g @wasm4pm/wasm4pm
 
 # Complete packages
 npm install @wasm4pm/engine @wasm4pm/service @wasm4pm/config
@@ -1084,7 +1084,7 @@ None in this release. All existing APIs remain supported.
 ### For Operators
 1. **Deploy Service:** Use `@wasm4pm/service` for HTTP API
 2. **Configure Monitoring:** Set up `@wasm4pm/observability`
-3. **Use pictl:** Deploy CLI via container or systemd
+3. **Use wasm4pm:** Deploy CLI via container or systemd
 4. **Read Deployment Guide:** See docs/DEPLOYMENT.md
 
 ---
