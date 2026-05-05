@@ -95,7 +95,7 @@ export const quality = defineCommand({
         formatter.error(
           `Invalid metric(s): ${invalidMetrics.join(', ')}. Valid: ${validMetrics.join(', ')}`
         );
-        process.exit(EXIT_CODES.config_error);
+        process.exit(EXIT_CODES.source_error);
       }
 
       if (formatter instanceof HumanFormatter) {
