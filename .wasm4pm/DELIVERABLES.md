@@ -1,6 +1,6 @@
 # WIP Limits Implementation — Deliverables
 
-**Project:** pictl  
+**Project:** wasm4pm  
 **Scope:** Implement Work-In-Progress (WIP) limits and PR staleness detection  
 **Status:** ✅ **COMPLETE**  
 **Date:** 2026-04-11  
@@ -28,7 +28,7 @@
 ## File Locations
 
 ```
-pictl/
+wasm4pm/
 ├── .github/workflows/
 │   ├── wip-check.yml                    ← PR open gate (GitHub Actions)
 │   └── pr-staleness.yml                 ← Hourly staleness detector

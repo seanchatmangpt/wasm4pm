@@ -398,7 +398,7 @@ function levenshteinDistance(a: string, b: string): number {
 
 function getAlgorithmsForProfile(
   profile: 'mobile' | 'iot' | 'edge' | 'fog' | 'browser'
-): typeof ALGORITHM_IDS {
+): string[] {
   // Simplified profiles; in production, this would be derived from feature flags
   const allAlgos = ALGORITHM_IDS;
   const advanced = [
@@ -417,7 +417,7 @@ function getAlgorithmsForProfile(
   const ocel = ['log_to_ocel'];
   const powl = ['powl_to_process_tree'];
 
-  if (profile === 'browser') return allAlgos;
+  if (profile === 'browser') return [...allAlgos];
   if (profile === 'fog') return allAlgos.filter((a) => !powl.includes(a as any));
   if (profile === 'edge')
     return allAlgos.filter((a) => !advanced.includes(a as any) && !ocel.includes(a as any));
@@ -442,5 +442,5 @@ function getAlgorithmsForProfile(
         ].includes(a as any)
     );
 
-  return allAlgos;
+  return [...allAlgos];
 }

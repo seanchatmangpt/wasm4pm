@@ -198,7 +198,10 @@ export class SecretRedaction {
                     reason: 'Sensitive field name',
                 });
             }
-            else if (typeof value === 'object' && value !== null && !Array.isArray(value) && !(value instanceof Date)) {
+            else if (typeof value === 'object' &&
+                value !== null &&
+                !Array.isArray(value) &&
+                !(value instanceof Date)) {
                 report.push(...this.createRedactionReport(value, redacted[key], currentPath));
             }
         }

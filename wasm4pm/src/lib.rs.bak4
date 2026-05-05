@@ -1,6 +1,6 @@
-//! # pictl — High-Performance Process Mining in WebAssembly
+//! # wasm4pm — High-Performance Process Mining in WebAssembly
 //!
-//! `pictl` provides production-ready process mining algorithms compiled to WebAssembly,
+//! `wasm4pm` provides production-ready process mining algorithms compiled to WebAssembly,
 //! enabling efficient **process discovery**, **conformance checking**, and **predictive analytics**
 //! in JavaScript/TypeScript environments.
 //!
@@ -20,7 +20,7 @@
 //!   load_eventlog_from_xes,
 //!   discover_dfg,
 //!   delete_object,
-//! } from "@seanchatmangpt/pictl";
+//! } from "@seanchatmangpt/wasm4pm";
 //!
 //! // Initialize WASM module
 //! await initWasm();
@@ -73,9 +73,9 @@
 //!
 //! ## Links
 //!
-//! - [GitHub Repository](https://github.com/seanchatmangpt/pictl)
-//! - [npm Package](https://www.npmjs.com/package/@seanchatmangpt/pictl)
-//! - [Documentation](https://docs.rs/pictl)
+//! - [GitHub Repository](https://github.com/seanchatmangpt/wasm4pm)
+//! - [npm Package](https://www.npmjs.com/package/@seanchatmangpt/wasm4pm)
+//! - [Documentation](https://docs.rs/wasm4pm)
 
 pub mod error;
 pub mod io;
@@ -120,8 +120,8 @@ fn has_activity_repetition(trace: &models::Trace, activity_key: &str) -> bool {
     false
 }
 
-// Auto-generated registries from pictl ontology (A = μ(O))
-// DO NOT EDIT — regenerate via: ostar manufacture pictl
+// Auto-generated registries from wasm4pm ontology (A = μ(O))
+// DO NOT EDIT — regenerate via: ostar manufacture wasm4pm
 #[allow(dead_code)]
 pub mod algorithm_registry;
 #[allow(dead_code)]

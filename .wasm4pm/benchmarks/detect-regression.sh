@@ -1,7 +1,7 @@
 #!/bin/bash
 # Detect performance regressions by comparing PR benchmarks to main baseline
 # Returns exit code 1 if regression >5%, 0 if within tolerance
-# Usage: bash .pictl/benchmarks/detect-regression.sh [baseline_file]
+# Usage: bash .wasm4pm/benchmarks/detect-regression.sh [baseline_file]
 
 set -e
 

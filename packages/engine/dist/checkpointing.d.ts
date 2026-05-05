@@ -3,7 +3,7 @@
  * Checkpoint management for watch mode execution
  * Saves and restores execution state for resumability
  */
-import { EngineState } from '@pictl/contracts';
+import { EngineState } from '@wasm4pm/contracts';
 /**
  * A checkpoint capturing execution state at a point in time
  */

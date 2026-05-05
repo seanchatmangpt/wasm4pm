@@ -34,9 +34,7 @@ export class CheckpointManager {
      * Get the most recent checkpoint
      */
     getLatest() {
-        return this.checkpoints.length > 0
-            ? this.checkpoints[this.checkpoints.length - 1]
-            : undefined;
+        return this.checkpoints.length > 0 ? this.checkpoints[this.checkpoints.length - 1] : undefined;
     }
     /**
      * Get a checkpoint by ID

@@ -182,7 +182,7 @@ See `docs/UPGRADE_TO_VISION_2030.md` for step-by-step upgrade instructions.
 
 **Quick start**:
 ```bash
-npm install -g @seanchatmangpt/pictl@26.4.16
+npm install -g @seanchatmangpt/wasm4pm@26.4.16
 wpm doctor  # Verify autonomic loop active
 wpm autoprocess sample.xes --format json
 ```
@@ -193,7 +193,7 @@ wpm autoprocess sample.xes --format json
 2. **SPC history**: 100-snapshot buffer provides ~100ms to 100s window (configurable).
 3. **Manual circuit reset**: After 3 strikes, requires manual intervention or state file deletion.
 4. **No GPU acceleration**: Autonomic loop runs in WASM (single-threaded). Non-WASM targets can use `feature-gpu`.
-5. **Determinism via seed**: Set `PICTL_SEED=<value>` for reproducible exploration.
+5. **Determinism via seed**: Set `WASM4PM_SEED=<value>` for reproducible exploration.
 
 ### Contributors
 
@@ -201,7 +201,7 @@ wpm autoprocess sample.xes --format json
 - Joe Armstrong (fault tolerance patterns)
 - Sean Chatman (vision, architecture)
 - Roberto & Straughter (MIOSA integration)
-- pictl test team (8 autoprocess + 18 ML validation tests)
+- wasm4pm test team (8 autoprocess + 18 ML validation tests)
 - pm4py-mcp team (external model validation)
 
 ---
@@ -376,8 +376,8 @@ Phase 3 — Planner / Config / Registry:
 - New `[ml]` config section
 - Planner generates ML analysis steps when `config.ml.enabled`
 
-Phase 4 — pictl Integration:
-- `pictl run`: ML post-discovery phase when ML config enabled
+Phase 4 — wasm4pm Integration:
+- `wasm4pm run`: ML post-discovery phase when ML config enabled
 - `wpm drift-watch --enhanced`: ML anomaly detection overlay on EWMA drift
 
 Phase 5 — ML Observability:

@@ -7,7 +7,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
-  PictlError,
+  Wasm4pmError,
   ConfigError,
   SourceError,
   ExecutionError,
@@ -17,29 +17,29 @@ import {
 } from '../src/errors.js';
 import { EXIT_CODES } from '../src/exit-codes.js';
 
-describe('PictlError (base class)', () => {
+describe('Wasm4pmError (base class)', () => {
   it('is an instance of Error', () => {
-    const err = new PictlError('test', EXIT_CODES.config_error);
+    const err = new Wasm4pmError('test', EXIT_CODES.config_error);
     expect(err).toBeInstanceOf(Error);
-    expect(err).toBeInstanceOf(PictlError);
+    expect(err).toBeInstanceOf(Wasm4pmError);
   });
 
   it('stores message and exit code', () => {
-    const err = new PictlError('something went wrong', EXIT_CODES.execution_error);
+    const err = new Wasm4pmError('something went wrong', EXIT_CODES.execution_error);
     expect(err.message).toBe('something went wrong');
     expect(err.exitCode).toBe(EXIT_CODES.execution_error);
   });
 
-  it('has name set to "PictlError"', () => {
-    const err = new PictlError('test', EXIT_CODES.success);
-    expect(err.name).toBe('PictlError');
+  it('has name set to "Wasm4pmError"', () => {
+    const err = new Wasm4pmError('test', EXIT_CODES.success);
+    expect(err.name).toBe('Wasm4pmError');
   });
 });
 
 describe('ConfigError', () => {
-  it('is an instance of PictlError and Error', () => {
+  it('is an instance of Wasm4pmError and Error', () => {
     const err = new ConfigError('bad config');
-    expect(err).toBeInstanceOf(PictlError);
+    expect(err).toBeInstanceOf(Wasm4pmError);
     expect(err).toBeInstanceOf(Error);
     expect(err).toBeInstanceOf(ConfigError);
   });
@@ -61,9 +61,9 @@ describe('ConfigError', () => {
 });
 
 describe('SourceError', () => {
-  it('is an instance of PictlError', () => {
+  it('is an instance of Wasm4pmError', () => {
     const err = new SourceError('bad file');
-    expect(err).toBeInstanceOf(PictlError);
+    expect(err).toBeInstanceOf(Wasm4pmError);
   });
 
   it('has exit code 2 (source_error)', () => {
@@ -78,9 +78,9 @@ describe('SourceError', () => {
 });
 
 describe('ExecutionError', () => {
-  it('is an instance of PictlError', () => {
+  it('is an instance of Wasm4pmError', () => {
     const err = new ExecutionError('algorithm failed');
-    expect(err).toBeInstanceOf(PictlError);
+    expect(err).toBeInstanceOf(Wasm4pmError);
   });
 
   it('has exit code 3 (execution_error)', () => {
@@ -95,9 +95,9 @@ describe('ExecutionError', () => {
 });
 
 describe('PartialFailureError', () => {
-  it('is an instance of PictlError', () => {
+  it('is an instance of Wasm4pmError', () => {
     const err = new PartialFailureError('partial', ['a'], ['b']);
-    expect(err).toBeInstanceOf(PictlError);
+    expect(err).toBeInstanceOf(Wasm4pmError);
   });
 
   it('has exit code 4 (partial_failure)', () => {
@@ -124,9 +124,9 @@ describe('PartialFailureError', () => {
 });
 
 describe('SystemError', () => {
-  it('is an instance of PictlError', () => {
+  it('is an instance of Wasm4pmError', () => {
     const err = new SystemError('disk full');
-    expect(err).toBeInstanceOf(PictlError);
+    expect(err).toBeInstanceOf(Wasm4pmError);
   });
 
   it('has exit code 5 (system_error)', () => {
@@ -183,7 +183,7 @@ describe('handleError', () => {
     expect(exitSpy).toHaveBeenCalledWith(EXIT_CODES.system_error);
   });
 
-  it('logs error name and message for PictlError', () => {
+  it('logs error name and message for Wasm4pmError', () => {
     const consoleSpy = vi.spyOn(console, 'error');
     handleError(new ConfigError('bad config'));
     expect(consoleSpy).toHaveBeenCalledWith('[ConfigError] bad config');

@@ -215,10 +215,7 @@ export function formatError(error) {
  * Formats status for display
  */
 export function formatStatus(status) {
-    const lines = [
-        `Engine Status: ${status.state}`,
-        `Progress: ${status.progress}%`,
-    ];
+    const lines = [`Engine Status: ${status.state}`, `Progress: ${status.progress}%`];
     if (status.estimate) {
         const elapsedSecs = Math.round(status.estimate.elapsed / 1000);
         const remainingSecs = Math.round(status.estimate.remaining / 1000);

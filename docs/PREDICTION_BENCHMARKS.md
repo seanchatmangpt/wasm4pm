@@ -779,7 +779,7 @@ Inference: Predict queue time
 
 ## Conclusion
 
-Pictl's prediction system achieves production-ready accuracy across all 6 perspectives:
+Wasm4pm's prediction system achieves production-ready accuracy across all 6 perspectives:
 
 - **Next-Activity (78% top-1):** Strong baseline for process guidance
 - **Remaining-Time (MAE 850ms):** Acceptable for SLA tracking

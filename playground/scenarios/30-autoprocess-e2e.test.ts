@@ -28,7 +28,7 @@ const FIXTURE_LOG = path.join(PROJECT_ROOT, 'lab/fixtures/sample-logs/simple.xes
 const AUTOPROCESS_STATE_FILE = '.wasm4pm/autoprocess-state.json';
 const CLI_PATH = path.join(PROJECT_ROOT, 'apps/wasm4pm/dist/bin/wpm.js');
 
-async function runPictl(args: string[], cwd: string) {
+async function runWasm4pm(args: string[], cwd: string) {
   // Use the compiled Node.js CLI by passing cliPath as 'node' and prepending the script
   const fullArgs = [CLI_PATH, ...args];
   return runCli(fullArgs, {
@@ -51,7 +51,7 @@ describe('wpm autoprocess e2e', () => {
 
   describe('Scenario 1: Basic invocation', () => {
     it('should run autoprocess on valid XES and output JSON with all required fields', async () => {
-      const result = await runPictl(
+      const result = await runWasm4pm(
         ['autoprocess', FIXTURE_LOG, '--format', 'json'],
         testEnv.tempDir
       );
@@ -122,7 +122,7 @@ describe('wpm autoprocess e2e', () => {
     }, { timeout: 30000 });
 
     it('should accept optional --activity-key parameter', async () => {
-      const result = await runPictl(
+      const result = await runWasm4pm(
         [
           'autoprocess',
           FIXTURE_LOG,
@@ -140,7 +140,7 @@ describe('wpm autoprocess e2e', () => {
     }, { timeout: 30000 });
 
     it('should output human-readable format by default', async () => {
-      const result = await runPictl(
+      const result = await runWasm4pm(
         ['autoprocess', FIXTURE_LOG],
         testEnv.tempDir
       );
@@ -157,7 +157,7 @@ describe('wpm autoprocess e2e', () => {
   describe('Scenario 2: Persistence across runs', () => {
     it('should load and increment state from previous cycle', async () => {
       // Run 1: First cycle
-      const result1 = await runPictl(
+      const result1 = await runWasm4pm(
         ['autoprocess', FIXTURE_LOG, '--format', 'json'],
         testEnv.tempDir
       );
@@ -183,7 +183,7 @@ describe('wpm autoprocess e2e', () => {
       expect(savedState).toHaveProperty('saved_at');
 
       // Run 2: Second cycle (should load state from Run 1)
-      const result2 = await runPictl(
+      const result2 = await runWasm4pm(
         ['autoprocess', FIXTURE_LOG, '--format', 'json'],
         testEnv.tempDir
       );
@@ -210,7 +210,7 @@ describe('wpm autoprocess e2e', () => {
 
     it('should persist and restore circuit breaker state', async () => {
       // Run 1
-      const result1 = await runPictl(
+      const result1 = await runWasm4pm(
         ['autoprocess', FIXTURE_LOG, '--format', 'json'],
         testEnv.tempDir
       );
@@ -221,7 +221,7 @@ describe('wpm autoprocess e2e', () => {
       const state1 = JSON.parse(await fs.readFile(stateFilePath, 'utf-8'));
 
       // Run 2 should load circuit breaker state
-      const result2 = await runPictl(
+      const result2 = await runWasm4pm(
         ['autoprocess', FIXTURE_LOG, '--format', 'json'],
         testEnv.tempDir
       );
@@ -237,7 +237,7 @@ describe('wpm autoprocess e2e', () => {
 
   describe('Scenario 3: Error handling', () => {
     it('should return SOURCE_ERROR (exit code 2) for missing log file', async () => {
-      const result = await runPictl(
+      const result = await runWasm4pm(
         ['autoprocess', '/nonexistent/path/to/log.xes', '--format', 'json'],
         testEnv.tempDir
       );
@@ -246,7 +246,7 @@ describe('wpm autoprocess e2e', () => {
     });
 
     it('should include error message in JSON output for missing file', async () => {
-      const result = await runPictl(
+      const result = await runWasm4pm(
         ['autoprocess', '/nonexistent/path/to/log.xes', '--format', 'json'],
         testEnv.tempDir
       );
@@ -259,7 +259,7 @@ describe('wpm autoprocess e2e', () => {
     });
 
     it('should include error message in human output for missing file', async () => {
-      const result = await runPictl(
+      const result = await runWasm4pm(
         ['autoprocess', '/nonexistent/path/to/log.xes'],
         testEnv.tempDir
       );
@@ -270,7 +270,7 @@ describe('wpm autoprocess e2e', () => {
 
     it('should handle ENOENT errors gracefully', async () => {
       const badPath = path.join(testEnv.tempDir, 'does-not-exist.xes');
-      const result = await runPictl(
+      const result = await runWasm4pm(
         ['autoprocess', badPath, '--format', 'json'],
         testEnv.tempDir
       );
@@ -281,13 +281,13 @@ describe('wpm autoprocess e2e', () => {
 
   describe('Integration: Output structure validation', () => {
     it('should produce consistent JSON schema across runs', async () => {
-      const result1 = await runPictl(
+      const result1 = await runWasm4pm(
         ['autoprocess', FIXTURE_LOG, '--format', 'json'],
         testEnv.tempDir
       );
       const output1 = assertJsonOutput(result1) as any;
 
-      const result2 = await runPictl(
+      const result2 = await runWasm4pm(
         ['autoprocess', FIXTURE_LOG, '--format', 'json'],
         testEnv.tempDir
       );
@@ -321,7 +321,7 @@ describe('wpm autoprocess e2e', () => {
         return;
       }
 
-      const result = await runPictl(
+      const result = await runWasm4pm(
         ['autoprocess', complexLog, '--format', 'json'],
         testEnv.tempDir
       );
@@ -336,7 +336,7 @@ describe('wpm autoprocess e2e', () => {
 
   describe('Performance: Latency contract', () => {
     it('should complete single cycle in <100ms (WASM overhead)', async () => {
-      const result = await runPictl(
+      const result = await runWasm4pm(
         ['autoprocess', FIXTURE_LOG, '--format', 'json'],
         testEnv.tempDir
       );

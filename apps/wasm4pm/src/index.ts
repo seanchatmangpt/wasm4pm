@@ -12,7 +12,7 @@ export { EXIT_CODES } from './exit-codes.js';
 export type { ExitCode } from './exit-codes.js';
 
 export {
-  PictlError,
+  Wasm4pmError,
   ConfigError,
   SourceError,
   ExecutionError,

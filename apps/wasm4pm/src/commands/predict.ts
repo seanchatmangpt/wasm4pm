@@ -4,7 +4,7 @@ import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import type { OutputOptions } from '../output.js';
 import { WasmLoader } from '@wasm4pm/engine';
-import { loadPictlConfig, buildCliOverrides } from '../config-loader.js';
+import { loadWasm4pmConfig, buildCliOverrides } from '../config-loader.js';
 import { savePredictionResult } from './results.js';
 import { VALID_PREDICT_CLI_TASKS } from '@wasm4pm/contracts';
 
@@ -102,7 +102,7 @@ export const predict = defineCommand({
         predictionNgramOrder: ctx.args['ngram-order'],
         predictionDriftWindow: ctx.args['drift-window'],
       });
-      const config = await loadPictlConfig(cliOverrides, formatter);
+      const config = await loadWasm4pmConfig(cliOverrides, formatter);
       const pred = config.prediction;
 
       // Resolve parameters: CLI flag > config > hardcoded default

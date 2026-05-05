@@ -143,7 +143,9 @@ describe('Instrumentation', () => {
     });
     describe('Progress events', () => {
         it('should create progress event', () => {
-            const { event, jsonEvent } = Instrumentation.createProgressEvent(traceId, 50, requiredAttrs, { message: 'Processing step 2 of 4' });
+            const { event, jsonEvent } = Instrumentation.createProgressEvent(traceId, 50, requiredAttrs, {
+                message: 'Processing step 2 of 4',
+            });
             expect(event.type).toBe('Progress');
             expect(event.progress).toBe(50);
             expect(event.message).toBe('Processing step 2 of 4');
@@ -339,7 +341,10 @@ describe('Instrumentation', () => {
     });
     describe('Drift detection events', () => {
         it('should create drift.check span pair with score and detection flag', () => {
-            const start = Instrumentation.createDriftCheckStartedEvent(traceId, 'ewma', requiredAttrs, { windowSize: 10, threshold: 0.05 });
+            const start = Instrumentation.createDriftCheckStartedEvent(traceId, 'ewma', requiredAttrs, {
+                windowSize: 10,
+                threshold: 0.05,
+            });
             expect(start.otelEvent.name).toBe('drift.check');
             expect(start.otelEvent.attributes['drift.method']).toBe('ewma');
             expect(start.otelEvent.attributes['drift.window_size']).toBe(10);
@@ -407,8 +412,7 @@ describe('Instrumentation', () => {
                     stateCircuitState: 'Closed',
                 }, requiredAttrs).otelEvent,
                 Instrumentation.createRlPolicyUpdateEvent(traceId, { agentType: 'QLearning', agentId: 'a', reward: 0, tdError: 0, qBefore: 0, qAfter: 0 }, requiredAttrs).otelEvent,
-                Instrumentation.createPredictionTaskStartedEvent(traceId, 'drift', requiredAttrs)
-                    .otelEvent,
+                Instrumentation.createPredictionTaskStartedEvent(traceId, 'drift', requiredAttrs).otelEvent,
                 Instrumentation.createDriftCheckStartedEvent(traceId, 'ewma', requiredAttrs).otelEvent,
                 Instrumentation.createConformanceCheckStartedEvent(traceId, 'alignments', requiredAttrs)
                     .otelEvent,

@@ -3,7 +3,7 @@
  * Watch mode implementation with streaming, checkpointing, and reconnection
  * Provides incremental processing with progress tracking and fault tolerance
  */
-import { PictlError, ErrorCode, ErrorRecovery } from './errors.js';
+import { Wasm4pmError, ErrorCode, ErrorRecovery } from './errors.js';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
@@ -51,7 +51,7 @@ class FileStreamSource {
   }
   async open() {
     if (!fs.existsSync(this.filePath)) {
-      throw new PictlError(
+      throw new Wasm4pmError(
         `Source file not found: ${this.filePath}`,
         ErrorCode.SOURCE_UNAVAILABLE,
         { nextAction: ErrorRecovery.VALIDATE_INPUT }
@@ -71,7 +71,7 @@ class FileStreamSource {
       const lines = chunk.split('\n').filter((line) => line.trim());
       return lines.map((line) => JSON.parse(line));
     } catch (err) {
-      throw new PictlError(
+      throw new Wasm4pmError(
         `Failed to parse source file at position ${this.position}`,
         ErrorCode.PARSE_FAILED,
         { nextAction: ErrorRecovery.VALIDATE_INPUT, cause: err }
@@ -242,7 +242,7 @@ export class WatchMode {
       // Verify checkpoint integrity
       const hash = this.computeProgressHash(checkpoint.progress);
       if (hash !== checkpoint.progressHash) {
-        throw new PictlError('Checkpoint integrity check failed', ErrorCode.STATE_CORRUPTED, {
+        throw new Wasm4pmError('Checkpoint integrity check failed', ErrorCode.STATE_CORRUPTED, {
           nextAction: ErrorRecovery.REINITIALIZE,
         });
       }
@@ -300,7 +300,7 @@ export class WatchMode {
    * Check if error is recoverable
    */
   isRecoverableError(err) {
-    if (err instanceof PictlError) {
+    if (err instanceof Wasm4pmError) {
       return err.nextAction === ErrorRecovery.RETRY;
     }
     return false;
@@ -309,7 +309,7 @@ export class WatchMode {
    * Format error for event emission
    */
   formatError(err) {
-    if (err instanceof PictlError) {
+    if (err instanceof Wasm4pmError) {
       return {
         code: err.code,
         message: err.message,

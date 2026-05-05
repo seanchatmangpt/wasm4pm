@@ -8,8 +8,8 @@
 
 set -e
 
-PICTL_DIR="${CLAUDE_PROJECT_DIR:-.}"
-METRICS_FILE="$PICTL_DIR/.wasm4pm/metrics.json"
+WASM4PM_DIR="${CLAUDE_PROJECT_DIR:-.}"
+METRICS_FILE="$WASM4PM_DIR/.wasm4pm/metrics.json"
 
 if [[ ! -f "$METRICS_FILE" ]]; then
   echo "⚠️  Metrics file not found. Skipping pre-push gate." >&2

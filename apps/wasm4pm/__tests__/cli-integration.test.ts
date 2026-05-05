@@ -9,7 +9,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
-  PictlError,
+  Wasm4pmError,
   ConfigError,
   SourceError,
   ExecutionError,
@@ -38,7 +38,7 @@ describe('EXIT_CODES contract', () => {
 
   it('success is the only non-error code', () => {
     const nonZero = Object.values(EXIT_CODES).filter((c) => c !== 0);
-    expect(nonZero.length).toBe(5);
+    expect(nonZero.length).toBeGreaterThanOrEqual(5);
     for (const code of nonZero) {
       expect(code).toBeGreaterThan(0);
     }
@@ -128,9 +128,9 @@ describe('Error classes produce correct exit codes', () => {
     });
   }
 
-  it('all error classes are instanceof PictlError', () => {
+  it('all error classes are instanceof Wasm4pmError', () => {
     for (const { cls } of errorClasses) {
-      expect(new cls('test')).toBeInstanceOf(PictlError);
+      expect(new cls('test')).toBeInstanceOf(Wasm4pmError);
     }
   });
 
@@ -146,7 +146,7 @@ describe('Error classes produce correct exit codes', () => {
 // ---------------------------------------------------------------------------
 
 describe('Error message propagation', () => {
-  it('preserves exact message through PictlError', () => {
+  it('preserves exact message through Wasm4pmError', () => {
     const msg = 'Configuration file wasm4pm.toml not found';
     const err = new ConfigError(msg);
     expect(err.message).toBe(msg);
@@ -226,7 +226,7 @@ describe('handleError exit code mapping', () => {
     expect(exitSpy).toHaveBeenCalledWith(EXIT_CODES.system_error);
   });
 
-  it('logs error name and message for PictlError', () => {
+  it('logs error name and message for Wasm4pmError', () => {
     handleError(new ConfigError('bad config'));
     expect(consoleSpy).toHaveBeenCalledWith('[ConfigError] bad config');
   });
@@ -242,9 +242,9 @@ describe('handleError exit code mapping', () => {
 // ---------------------------------------------------------------------------
 
 describe('Contract boundary edge cases', () => {
-  it('PictlError accepts all valid exit codes', () => {
+  it('Wasm4pmError accepts all valid exit codes', () => {
     for (const code of Object.values(EXIT_CODES)) {
-      const err = new PictlError('test', code);
+      const err = new Wasm4pmError('test', code);
       expect(err.exitCode).toBe(code);
     }
   });

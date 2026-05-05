@@ -16,7 +16,13 @@ export class MockSinkAdapter {
         /** Track calls for assertion */
         this.calls = [];
         this.kind = options.kind ?? 'mock';
-        this._supportedArtifacts = options.supportedArtifacts ?? ['receipt', 'model', 'report', 'snapshot', 'log'];
+        this._supportedArtifacts = options.supportedArtifacts ?? [
+            'receipt',
+            'model',
+            'report',
+            'snapshot',
+            'log',
+        ];
         this.atomicity = options.atomicity ?? 'batch';
         this.onExists = options.onExists ?? 'overwrite';
         this.failureMode = options.failureMode ?? 'fail_fast';
@@ -43,7 +49,7 @@ export class MockSinkAdapter {
     async write(artifact, type) {
         this.calls.push({ method: 'write', timestamp: Date.now(), args: [artifact, type] });
         if (this._writeDelay > 0) {
-            await new Promise(r => setTimeout(r, this._writeDelay));
+            await new Promise((r) => setTimeout(r, this._writeDelay));
         }
         if (this._shouldFailWrite) {
             return err('Mock write failure');
@@ -59,10 +65,14 @@ export class MockSinkAdapter {
         this.calls.push({ method: 'close', timestamp: Date.now() });
         this._closed = true;
     }
-    get isClosed() { return this._closed; }
-    get writeCount() { return this.written.length; }
+    get isClosed() {
+        return this._closed;
+    }
+    get writeCount() {
+        return this.written.length;
+    }
     getWrittenByType(type) {
-        return this.written.filter(w => w.type === type);
+        return this.written.filter((w) => w.type === type);
     }
     assertWritten(type, count) {
         const matching = this.getWrittenByType(type);

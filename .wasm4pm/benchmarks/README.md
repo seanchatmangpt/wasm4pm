@@ -1,6 +1,6 @@
 # Benchmark Regression Detection System
 
-Automated performance regression detection for pictl. Prevents merges when algorithm performance degrades >5%.
+Automated performance regression detection for wasm4pm. Prevents merges when algorithm performance degrades >5%.
 
 ## Quick Start
 

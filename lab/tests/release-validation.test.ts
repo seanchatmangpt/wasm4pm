@@ -273,16 +273,19 @@ describe('4. All 14 Algorithm IDs Reachable', () => {
     }
     const result = (wasm!['available_discovery_algorithms'] as () => unknown)();
     let count = 0;
-    if (result instanceof Map) {
-      // The map may have metadata keys — count total values or look for algorithms array
-      const algorithms = result.get('algorithms');
+    // WASM returns a JSON string via to_js_str(); may also return Map or Array
+    const parsed = typeof result === 'string' ? JSON.parse(result) : result;
+    if (parsed instanceof Map) {
+      const algorithms = parsed.get('algorithms');
       if (Array.isArray(algorithms)) {
         count = algorithms.length;
       } else {
-        count = result.size; // count map entries as fallback
+        count = parsed.size;
       }
-    } else if (Array.isArray(result)) {
-      count = result.length;
+    } else if (Array.isArray(parsed)) {
+      count = parsed.length;
+    } else if (parsed && typeof parsed === 'object' && Array.isArray(parsed.algorithms)) {
+      count = parsed.algorithms.length;
     }
     // Note: published v26.4.x returns a Map with 4 metadata keys — the 14 function exports
     // verified in test 4.1 are the canonical check for algorithm availability

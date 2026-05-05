@@ -3,7 +3,7 @@ use std::process;
 
 /// Custom error types for the wasm4pm (wpm) CLI
 #[derive(thiserror::Error, Debug)]
-pub enum PictlError {
+pub enum Wasm4pmError {
     #[error("IO error: {0}")]
     Io(#[from] std::io::Error),
 

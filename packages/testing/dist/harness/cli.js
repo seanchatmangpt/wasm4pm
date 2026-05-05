@@ -1,14 +1,14 @@
 /**
  * CLI integration test helpers.
  *
- * Provides utilities to spawn pictl as a child process, capture stdout/stderr,
+ * Provides utilities to spawn wpm as a child process, capture stdout/stderr,
  * and assert on exit codes without depending on the actual CLI implementation.
  */
 import { execFile } from 'child_process';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { tmpdir } from 'os';
-/** Known exit codes — must match pictl exit-codes.ts */
+/** Known exit codes — must match wpm exit-codes.ts */
 export const EXIT_CODES = {
     SUCCESS: 0,
     CONFIG_ERROR: 1,
@@ -47,7 +47,7 @@ export async function createCliTestEnv(configContent) {
  */
 export function runCli(args, options) {
     const cliPath = options?.cliPath ?? 'npx';
-    const fullArgs = cliPath === 'npx' ? ['pictl', ...args] : args;
+    const fullArgs = cliPath === 'npx' ? ['wasm4pm', ...args] : args;
     const timeout = options?.timeout ?? 30000;
     return new Promise((resolve) => {
         const start = Date.now();
@@ -58,9 +58,7 @@ export function runCli(args, options) {
             maxBuffer: 10 * 1024 * 1024,
         }, (error, stdout, stderr) => {
             const durationMs = Date.now() - start;
-            const exitCode = error && 'code' in error && typeof error.code === 'number'
-                ? error.code
-                : (error ? 1 : 0);
+            const exitCode = error && 'code' in error && typeof error.code === 'number' ? error.code : error ? 1 : 0;
             resolve({ exitCode, stdout: stdout ?? '', stderr: stderr ?? '', durationMs });
         });
         // Handle process timeout

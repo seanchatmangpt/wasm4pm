@@ -135,7 +135,7 @@ const PROJECT_ROOT = path.join(__dirname, '../..');
 const FIXTURE_LOG = path.join(PROJECT_ROOT, 'lab/fixtures/sample-logs/simple.xes');
 const CLI_PATH = path.join(PROJECT_ROOT, 'apps/wasm4pm/dist/bin/wpm.js');
 
-async function runPictl(args: string[], cwd: string) {
+async function runWasm4pm(args: string[], cwd: string) {
   const fullArgs = [CLI_PATH, ...args];
   return runCli(fullArgs, {
     cwd,
@@ -156,7 +156,7 @@ describe('E2E-XX: [Test Name]', () => {
   });
 
   it('should [describe what happens]', async () => {
-    const result = await runPictl(
+    const result = await runWasm4pm(
       ['run', FIXTURE_LOG, '--format', 'json'],
       testEnv.tempDir
     );

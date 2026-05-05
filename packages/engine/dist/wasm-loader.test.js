@@ -16,7 +16,10 @@ class TestWasmModule {
     init;
     constructor(versionString) {
         try {
-            this.memory = new globalThis.WebAssembly.Memory({ initial: 256, maximum: 512 });
+            this.memory = new globalThis.WebAssembly.Memory({
+                initial: 256,
+                maximum: 512,
+            });
         }
         catch {
             this.memory = { buffer: new ArrayBuffer(256 * 64 * 1024) };

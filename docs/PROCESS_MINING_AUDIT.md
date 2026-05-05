@@ -42,7 +42,7 @@ The auditor captures wasm4pm's own OpenTelemetry spans as an Object-Centric Even
                        │
                        ▼
 ┌─────────────────────────────────────────────────────────────┐
-│         Process Comparison (PictlAuditor)                    │
+│         Process Comparison (Wasm4pmAuditor)                    │
 │  - Compare discovered vs declared process                    │
 │  - Identify deviations (undeclared activities, transitions)   │
 │  - Calculate metrics (fitness, precision, generalization)    │
@@ -249,7 +249,7 @@ Remedy: Fix implementation immediately (likely a bug)
 ### 1. Basic Audit (Memory-based, Synthetic Data)
 
 ```javascript
-import { auditPictlProcess } from './semconv/conformance-audit.mjs';
+import { auditWasm4pmProcess } from './semconv/conformance-audit.mjs';
 
 const spans = [
   {
@@ -267,7 +267,7 @@ const spans = [
   // ... more spans
 ];
 
-const report = await auditPictlProcess(spans);
+const report = await auditWasm4pmProcess(spans);
 
 console.log(`Verdict: ${report.verdict.status}`);
 console.log(`Fitness: ${report.metrics.fitness}`);
@@ -277,31 +277,31 @@ console.log(`Deviations: ${report.comparison.total_deviations}`);
 ### 2. File-based Audit (OTEL Collector Export)
 
 ```javascript
-import { loadSpansFromFile, auditPictlProcess } from './semconv/conformance-audit.mjs';
+import { loadSpansFromFile, auditWasm4pmProcess } from './semconv/conformance-audit.mjs';
 
 const spans = loadSpansFromFile('/path/to/spans.json');
-const report = await auditPictlProcess(spans);
+const report = await auditWasm4pmProcess(spans);
 ```
 
 ### 3. Jaeger-based Audit (Live System)
 
 ```javascript
-import { loadSpansFromJaeger, auditPictlProcess } from './semconv/conformance-audit.mjs';
+import { loadSpansFromJaeger, auditWasm4pmProcess } from './semconv/conformance-audit.mjs';
 
 const spans = await loadSpansFromJaeger(
   'http://localhost:16686',
   'wasm4pm',
   { limit: 1000, lookback: '1h' }
 );
-const report = await auditPictlProcess(spans);
+const report = await auditWasm4pmProcess(spans);
 ```
 
 ### 4. Custom Configuration
 
 ```javascript
-import { PictlAuditor } from './semconv/conformance-audit.mjs';
+import { Wasm4pmAuditor } from './semconv/conformance-audit.mjs';
 
-const auditor = new PictlAuditor(declaredProcess, {
+const auditor = new Wasm4pmAuditor(declaredProcess, {
   fitnessThreshold: 0.99,  // Stricter threshold
   varianceThreshold: 0.80, // Higher tolerance for variance
   maxDeviations: 5         // Report top 5 deviations
@@ -486,7 +486,7 @@ The test suite (`test/conformance-audit.test.mjs`) includes:
 
 | File | Purpose |
 |------|---------|
-| `semconv/conformance-audit.mjs` | Core auditor implementation (OCELEventLog, PictlAuditor, auditPictlProcess) |
+| `semconv/conformance-audit.mjs` | Core auditor implementation (OCELEventLog, Wasm4pmAuditor, auditWasm4pmProcess) |
 | `semconv/conformance-audit-report.md` | Audit report template with Nunjucks placeholders |
 | `test/conformance-audit.test.mjs` | 48 test cases covering all scenarios |
 | `examples/conformance-audit-example.mjs` | Usage examples (memory, file, Jaeger-based) |

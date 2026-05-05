@@ -9,7 +9,7 @@ import type { HumanFormatter, JSONFormatter } from './output.js';
  * @returns Loaded and validated configuration
  * @throws Error with appropriate exit code on failure
  */
-export async function loadPictlConfig(
+export async function loadWasm4pmConfig(
   cliOverrides: CliOverrides = {},
   formatter?: HumanFormatter | JSONFormatter
 ): Promise<Config> {

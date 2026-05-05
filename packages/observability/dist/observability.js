@@ -210,7 +210,10 @@ export class ObservabilityLayer {
         return {
             success: !hasErrors,
             error: hasErrors
-                ? results.filter((r) => !r.success).map((r) => r.error).join('; ')
+                ? results
+                    .filter((r) => !r.success)
+                    .map((r) => r.error)
+                    .join('; ')
                 : undefined,
             timestamp: new Date(),
         };

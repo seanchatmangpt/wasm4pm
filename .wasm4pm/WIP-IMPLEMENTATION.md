@@ -4,7 +4,7 @@
 **Last Updated:** 2026-04-11  
 **Status:** ✅ Complete
 
-This document describes the WIP limit and PR staleness detection system for pictl, implementing Toyota Production System (TPS) principles to prevent context thrashing and ensure serial task completion.
+This document describes the WIP limit and PR staleness detection system for wasm4pm, implementing Toyota Production System (TPS) principles to prevent context thrashing and ensure serial task completion.
 
 ---
 

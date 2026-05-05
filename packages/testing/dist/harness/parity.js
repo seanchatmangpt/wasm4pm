@@ -5,7 +5,7 @@
  * that `run(config)` executes. This harness captures both outputs and compares them
  * structurally.
  */
-import { PLAN_STEP_TYPE_VALUES } from '@pictl/contracts';
+import { PLAN_STEP_TYPE_VALUES } from '@wasm4pm/contracts';
 /**
  * Compare explain output with actual plan steps.
  * Returns a detailed parity result.
@@ -14,15 +14,13 @@ export async function checkParity(planner, config) {
     const explainText = planner.explain(config);
     const plan = await planner.plan(config);
     const explainSteps = extractStepsFromExplain(explainText);
-    const runSteps = plan.steps.map(s => s.type);
+    const runSteps = plan.steps.map((s) => s.type);
     const explainSet = new Set(explainSteps);
     const runSet = new Set(runSteps);
-    const missingFromExplain = runSteps.filter(s => !explainSet.has(s));
-    const missingFromRun = explainSteps.filter(s => !runSet.has(s));
+    const missingFromExplain = runSteps.filter((s) => !explainSet.has(s));
+    const missingFromRun = explainSteps.filter((s) => !runSet.has(s));
     const orderMismatch = !arraysMatchOrder(explainSteps, runSteps);
-    const passed = missingFromExplain.length === 0 &&
-        missingFromRun.length === 0 &&
-        !orderMismatch;
+    const passed = missingFromExplain.length === 0 && missingFromRun.length === 0 && !orderMismatch;
     let details = '';
     if (!passed) {
         const parts = [];
@@ -59,8 +57,8 @@ export async function checkParityBatch(planner, configs) {
     for (const config of configs) {
         results.push(await checkParity(planner, config));
     }
-    const allPassed = results.every(r => r.passed);
-    const passCount = results.filter(r => r.passed).length;
+    const allPassed = results.every((r) => r.passed);
+    const passCount = results.filter((r) => r.passed).length;
     const summary = `Parity: ${passCount}/${results.length} configs passed`;
     return { results, allPassed, summary };
 }
@@ -89,8 +87,8 @@ function extractStepsFromExplain(text) {
  * Check if the common elements between two arrays appear in the same relative order.
  */
 function arraysMatchOrder(a, b) {
-    const common = a.filter(item => b.includes(item));
-    const bFiltered = b.filter(item => a.includes(item));
+    const common = a.filter((item) => b.includes(item));
+    const bFiltered = b.filter((item) => a.includes(item));
     if (common.length !== bFiltered.length)
         return false;
     for (let i = 0; i < common.length; i++) {

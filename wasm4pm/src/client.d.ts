@@ -21,7 +21,7 @@ import {
 /**
  * Structured error returned from WASM functions
  */
-export interface PictlModuleError {
+export interface Wasm4pmModuleError {
   code: string;
   message: string;
 }
@@ -29,7 +29,7 @@ export interface PictlModuleError {
  * Parse a WASM error response
  * WASM functions return JSON-stringified errors: {"code":"...", "message":"..."}
  */
-export declare function parsePictlError(error: unknown): PictlModuleError;
+export declare function parseWasm4pmError(error: unknown): Wasm4pmModuleError;
 /**
  * Main client for wasm4pm operations
  * Handles initialization, data management, and algorithm execution
@@ -686,7 +686,7 @@ export declare function loadFileAsText(file: File): Promise<string>;
 /**
  * Initialize the global WASM module reference
  */
-export declare function initializePictlModule(wasmModule: any): void;
+export declare function initializeWasm4pmModule(wasmModule: any): void;
 /**
  * Encode DFG as plain text representation
  */

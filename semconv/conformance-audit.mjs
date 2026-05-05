@@ -215,7 +215,7 @@ export class OCELEventLog {
  * Process Mining Auditor
  * Compares discovered vs declared process
  */
-export class PictlAuditor {
+export class Wasm4pmAuditor {
   constructor(declaredProcess, config = {}) {
     this.declaredProcess = declaredProcess;
     this.discoveredProcess = null;
@@ -584,7 +584,7 @@ export class PictlAuditor {
  * @param {Object} options - Audit configuration
  * @returns {Promise<Object>} Audit report
  */
-export async function auditPictlProcess(otelSpans, options = {}) {
+export async function auditWasm4pmProcess(otelSpans, options = {}) {
   const declaredProcess = {
     // Declared span sequence from wasm4pm-process-mining.yaml
     spans: [
@@ -596,7 +596,7 @@ export async function auditPictlProcess(otelSpans, options = {}) {
     ],
   };
 
-  const auditor = new PictlAuditor(declaredProcess, options);
+  const auditor = new Wasm4pmAuditor(declaredProcess, options);
   return auditor.audit(otelSpans);
 }
 
@@ -680,4 +680,4 @@ export async function loadSpansFromJaeger(jaegerUrl, serviceName, options = {}) 
   }
 }
 
-export { OCELEventLog, PictlAuditor };
+export { OCELEventLog, Wasm4pmAuditor };

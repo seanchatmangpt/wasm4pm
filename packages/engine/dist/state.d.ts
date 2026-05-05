@@ -3,7 +3,7 @@
  * State definitions and metadata for the engine lifecycle
  * Provides type-safe state introspection and classification
  */
-import { EngineState } from '@pictl/contracts';
+import { EngineState } from '@wasm4pm/contracts';
 export type { EngineState };
 /**
  * Metadata describing each engine state

@@ -40,7 +40,7 @@ export declare enum ErrorRecovery {
  * Enhanced error class with structured context for wasm4pm operations
  * Extends Error with error classification, root cause tracking, and recovery guidance
  */
-export declare class PictlError extends Error {
+export declare class Wasm4pmError extends Error {
   readonly code: ErrorCode;
   readonly cause: Error | null;
   readonly nextAction: ErrorRecovery;
@@ -87,7 +87,7 @@ export declare class PictlError extends Error {
  * @param context - Optional context including the execution step
  * @returns ErrorCode matching the error pattern
  */
-export declare function classifyPictlError(
+export declare function classifyWasm4pmError(
   raw: string,
   context?: {
     step?: string;
@@ -95,27 +95,27 @@ export declare function classifyPictlError(
 ): ErrorCode;
 /**
  * Wraps a WASM function call with error handling and classification
- * Converts raw WASM errors to structured PictlError instances
+ * Converts raw WASM errors to structured Wasm4pmError instances
  *
  * @template T - Return type of the wrapped function
  * @param fn - Function that calls WASM code
  * @param context - Optional context including the execution step
  * @returns Result of the function call
- * @throws PictlError - Classified and contextualized error
+ * @throws Wasm4pmError - Classified and contextualized error
  */
-export declare function wrapPictlOperation<T>(
+export declare function wrapWasm4pmOperation<T>(
   fn: () => T,
   context?: {
     step?: string;
   }
 ): T;
 /**
- * Type guard to check if an error is a PictlError
+ * Type guard to check if an error is a Wasm4pmError
  * Optionally filters by specific error code
  *
  * @param err - Error to check
  * @param code - Optional specific ErrorCode to match
- * @returns true if err is a PictlError (and matches code if specified)
+ * @returns true if err is a Wasm4pmError (and matches code if specified)
  */
-export declare function isPictlError(err: unknown, code?: ErrorCode): err is PictlError;
+export declare function isWasm4pmError(err: unknown, code?: ErrorCode): err is Wasm4pmError;
 //# sourceMappingURL=errors.d.ts.map

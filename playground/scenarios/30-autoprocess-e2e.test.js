@@ -19,7 +19,7 @@ const PROJECT_ROOT = path.join(__dirname, '../..');
 const FIXTURE_LOG = path.join(PROJECT_ROOT, 'lab/fixtures/sample-logs/simple.xes');
 const AUTOPROCESS_STATE_FILE = '.wasm4pm/autoprocess-state.json';
 const CLI_PATH = path.join(PROJECT_ROOT, 'apps/wasm4pm/dist/bin/wpm.js');
-async function runPictl(args, cwd) {
+async function runWasm4pm(args, cwd) {
     // Use the compiled Node.js CLI by passing cliPath as 'node' and prepending the script
     const fullArgs = [CLI_PATH, ...args];
     return runCli(fullArgs, {
@@ -38,7 +38,7 @@ describe('wpm autoprocess e2e', () => {
     });
     describe('Scenario 1: Basic invocation', () => {
         it('should run autoprocess on valid XES and output JSON with all required fields', async () => {
-            const result = await runPictl(['autoprocess', FIXTURE_LOG, '--format', 'json'], testEnv.tempDir);
+            const result = await runWasm4pm(['autoprocess', FIXTURE_LOG, '--format', 'json'], testEnv.tempDir);
             assertExitCode(result, EXIT_CODES.SUCCESS);
             const output = assertJsonOutput(result);
             expect(output).toBeDefined();
@@ -93,7 +93,7 @@ describe('wpm autoprocess e2e', () => {
             // This just verifies it's measured
         }, { timeout: 30000 });
         it('should accept optional --activity-key parameter', async () => {
-            const result = await runPictl([
+            const result = await runWasm4pm([
                 'autoprocess',
                 FIXTURE_LOG,
                 '--activity-key',
@@ -106,7 +106,7 @@ describe('wpm autoprocess e2e', () => {
             expect(output).toHaveProperty('status');
         }, { timeout: 30000 });
         it('should output human-readable format by default', async () => {
-            const result = await runPictl(['autoprocess', FIXTURE_LOG], testEnv.tempDir);
+            const result = await runWasm4pm(['autoprocess', FIXTURE_LOG], testEnv.tempDir);
             assertExitCode(result, EXIT_CODES.SUCCESS);
             expect(result.stdout).toContain('AutoProcess');
             expect(result.stdout).toContain('Perception');
@@ -118,7 +118,7 @@ describe('wpm autoprocess e2e', () => {
     describe('Scenario 2: Persistence across runs', () => {
         it('should load and increment state from previous cycle', async () => {
             // Run 1: First cycle
-            const result1 = await runPictl(['autoprocess', FIXTURE_LOG, '--format', 'json'], testEnv.tempDir);
+            const result1 = await runWasm4pm(['autoprocess', FIXTURE_LOG, '--format', 'json'], testEnv.tempDir);
             assertExitCode(result1, EXIT_CODES.SUCCESS);
             const output1 = assertJsonOutput(result1);
             // Verify state file was created
@@ -136,7 +136,7 @@ describe('wpm autoprocess e2e', () => {
             expect(savedState).toHaveProperty('circuit_breaker_state');
             expect(savedState).toHaveProperty('saved_at');
             // Run 2: Second cycle (should load state from Run 1)
-            const result2 = await runPictl(['autoprocess', FIXTURE_LOG, '--format', 'json'], testEnv.tempDir);
+            const result2 = await runWasm4pm(['autoprocess', FIXTURE_LOG, '--format', 'json'], testEnv.tempDir);
             assertExitCode(result2, EXIT_CODES.SUCCESS);
             const output2 = assertJsonOutput(result2);
             // Both runs should have cycle data
@@ -151,13 +151,13 @@ describe('wpm autoprocess e2e', () => {
         }, { timeout: 60000 });
         it('should persist and restore circuit breaker state', async () => {
             // Run 1
-            const result1 = await runPictl(['autoprocess', FIXTURE_LOG, '--format', 'json'], testEnv.tempDir);
+            const result1 = await runWasm4pm(['autoprocess', FIXTURE_LOG, '--format', 'json'], testEnv.tempDir);
             assertExitCode(result1, EXIT_CODES.SUCCESS);
             const stateFilePath = path.join(testEnv.tempDir, AUTOPROCESS_STATE_FILE);
             await new Promise((resolve) => setTimeout(resolve, 100));
             const state1 = JSON.parse(await fs.readFile(stateFilePath, 'utf-8'));
             // Run 2 should load circuit breaker state
-            const result2 = await runPictl(['autoprocess', FIXTURE_LOG, '--format', 'json'], testEnv.tempDir);
+            const result2 = await runWasm4pm(['autoprocess', FIXTURE_LOG, '--format', 'json'], testEnv.tempDir);
             assertExitCode(result2, EXIT_CODES.SUCCESS);
             const state2 = JSON.parse(await fs.readFile(stateFilePath, 'utf-8'));
             // Both states should have circuit breaker
@@ -167,11 +167,11 @@ describe('wpm autoprocess e2e', () => {
     });
     describe('Scenario 3: Error handling', () => {
         it('should return SOURCE_ERROR (exit code 2) for missing log file', async () => {
-            const result = await runPictl(['autoprocess', '/nonexistent/path/to/log.xes', '--format', 'json'], testEnv.tempDir);
+            const result = await runWasm4pm(['autoprocess', '/nonexistent/path/to/log.xes', '--format', 'json'], testEnv.tempDir);
             assertExitCode(result, EXIT_CODES.SOURCE_ERROR);
         });
         it('should include error message in JSON output for missing file', async () => {
-            const result = await runPictl(['autoprocess', '/nonexistent/path/to/log.xes', '--format', 'json'], testEnv.tempDir);
+            const result = await runWasm4pm(['autoprocess', '/nonexistent/path/to/log.xes', '--format', 'json'], testEnv.tempDir);
             expect(result.stdout).toBeTruthy();
             const output = JSON.parse(result.stdout);
             expect(output).toHaveProperty('status');
@@ -179,21 +179,21 @@ describe('wpm autoprocess e2e', () => {
             expect(output).toHaveProperty('message');
         });
         it('should include error message in human output for missing file', async () => {
-            const result = await runPictl(['autoprocess', '/nonexistent/path/to/log.xes'], testEnv.tempDir);
+            const result = await runWasm4pm(['autoprocess', '/nonexistent/path/to/log.xes'], testEnv.tempDir);
             assertExitCode(result, EXIT_CODES.SOURCE_ERROR);
             expect(result.stdout).toContain('failed');
         });
         it('should handle ENOENT errors gracefully', async () => {
             const badPath = path.join(testEnv.tempDir, 'does-not-exist.xes');
-            const result = await runPictl(['autoprocess', badPath, '--format', 'json'], testEnv.tempDir);
+            const result = await runWasm4pm(['autoprocess', badPath, '--format', 'json'], testEnv.tempDir);
             expect(result.exitCode).toBe(EXIT_CODES.SOURCE_ERROR);
         });
     });
     describe('Integration: Output structure validation', () => {
         it('should produce consistent JSON schema across runs', async () => {
-            const result1 = await runPictl(['autoprocess', FIXTURE_LOG, '--format', 'json'], testEnv.tempDir);
+            const result1 = await runWasm4pm(['autoprocess', FIXTURE_LOG, '--format', 'json'], testEnv.tempDir);
             const output1 = assertJsonOutput(result1);
-            const result2 = await runPictl(['autoprocess', FIXTURE_LOG, '--format', 'json'], testEnv.tempDir);
+            const result2 = await runWasm4pm(['autoprocess', FIXTURE_LOG, '--format', 'json'], testEnv.tempDir);
             const output2 = assertJsonOutput(result2);
             // Both outputs should have identical top-level keys
             const keys1 = Object.keys(output1).sort();
@@ -215,7 +215,7 @@ describe('wpm autoprocess e2e', () => {
                 console.log('Skipping complex.xes test (fixture not found)');
                 return;
             }
-            const result = await runPictl(['autoprocess', complexLog, '--format', 'json'], testEnv.tempDir);
+            const result = await runWasm4pm(['autoprocess', complexLog, '--format', 'json'], testEnv.tempDir);
             assertExitCode(result, EXIT_CODES.SUCCESS);
             const output = assertJsonOutput(result);
             expect(output.data.cycle_result.perception.trace_count).toBeGreaterThan(0);
@@ -223,7 +223,7 @@ describe('wpm autoprocess e2e', () => {
     });
     describe('Performance: Latency contract', () => {
         it('should complete single cycle in <100ms (WASM overhead)', async () => {
-            const result = await runPictl(['autoprocess', FIXTURE_LOG, '--format', 'json'], testEnv.tempDir);
+            const result = await runWasm4pm(['autoprocess', FIXTURE_LOG, '--format', 'json'], testEnv.tempDir);
             assertExitCode(result, EXIT_CODES.SUCCESS);
             // Note: WASM overhead makes actual time much longer than 34ns autonomic loop budget
             // This verifies completion within reasonable time (100ms is the internal guidance)

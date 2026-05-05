@@ -43,7 +43,7 @@ pub fn run(args: &TelcoArgs) -> Result<()> {
 }
 
 fn status() -> Result<()> {
-    println!("\n{}", "--- PICTL TELCO ROUTER STATUS ---".bold().cyan());
+    println!("\n{}", "--- WASM4PM TELCO ROUTER STATUS ---".bold().cyan());
     println!("{:<25} {}", "Operational State:".bold(), "ACTIVE".green());
     println!(
         "{:<25} {} ns",

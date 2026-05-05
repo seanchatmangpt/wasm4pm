@@ -56,9 +56,9 @@ npm install @wasm4pm/cli
 
 ```typescript
 // mcp_server.ts (already provided)
-import PictlMCPServer from './mcp_server';
+import Wasm4pmMCPServer from './mcp_server';
 
-const server = new PictlMCPServer();
+const server = new Wasm4pmMCPServer();
 await server.start();
 ```
 

@@ -16,9 +16,9 @@
  */
 
 import {
-  auditPictlProcess,
+  auditWasm4pmProcess,
   OCELEventLog,
-  PictlAuditor,
+  Wasm4pmAuditor,
   loadSpansFromFile,
   loadSpansFromJaeger,
 } from '../semconv/conformance-audit.mjs';
@@ -98,7 +98,7 @@ async function auditMemorySpans() {
     },
   ];
 
-  const report = await auditPictlProcess(truthfulSpans);
+  const report = await auditWasm4pmProcess(truthfulSpans);
 
   console.log(`✓ Audit completed in ${report.duration_ms}ms\n`);
   console.log(`Verdict: ${report.verdict.status}`);
@@ -162,7 +162,7 @@ async function auditMemorySpans() {
     ...truthfulSpans.slice(1),
   ];
 
-  const variantReport = await auditPictlProcess(variantSpans);
+  const variantReport = await auditWasm4pmProcess(variantSpans);
 
   console.log(`Verdict: ${variantReport.verdict.status}`);
   console.log(`Confidence: ${(variantReport.verdict.confidence * 100).toFixed(1)}%\n`);
@@ -213,7 +213,7 @@ async function auditMemorySpans() {
     },
   ];
 
-  const deceptiveReport = await auditPictlProcess(deceptiveSpans);
+  const deceptiveReport = await auditWasm4pmProcess(deceptiveSpans);
 
   console.log(`Verdict: ${deceptiveReport.verdict.status}`);
   console.log(`Confidence: ${(deceptiveReport.verdict.confidence * 100).toFixed(1)}%\n`);
@@ -262,7 +262,7 @@ async function auditFileSpans() {
 
   console.log(`✓ Loaded ${spans.length} spans\n`);
 
-  const report = await auditPictlProcess(spans);
+  const report = await auditWasm4pmProcess(spans);
   console.log(`\nVerdict: ${report.verdict.status}`);
   console.log(`Fitness: ${report.metrics.fitness.toFixed(2)}\n`);
 
@@ -289,7 +289,7 @@ async function auditJaegerSpans() {
 
   console.log(`✓ Loaded ${spans.length} spans from Jaeger\n`);
 
-  const report = await auditPictlProcess(spans);
+  const report = await auditWasm4pmProcess(spans);
   console.log(`\nVerdict: ${report.verdict.status}`);
   console.log(`Fitness: ${report.metrics.fitness.toFixed(2)}\n`);
 

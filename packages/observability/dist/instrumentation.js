@@ -816,7 +816,9 @@ export class Instrumentation {
         try {
             emit(start.otelEvent);
         }
-        catch { /* never block on OTEL */ }
+        catch {
+            /* never block on OTEL */
+        }
         const t0 = Date.now();
         let result;
         try {
@@ -834,7 +836,9 @@ export class Instrumentation {
             try {
                 emit(completeErr);
             }
-            catch { /* never block on OTEL */ }
+            catch {
+                /* never block on OTEL */
+            }
             throw err; // fail-fast
         }
         const complete = this.createMlAnalysisCompletedEvent(traceId, start.event.spanId, mlTask, method, requiredAttrs, {
@@ -844,7 +848,9 @@ export class Instrumentation {
         try {
             emit(complete);
         }
-        catch { /* never block on OTEL */ }
+        catch {
+            /* never block on OTEL */
+        }
         return result;
     }
     /**

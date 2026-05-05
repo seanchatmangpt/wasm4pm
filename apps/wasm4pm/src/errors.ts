@@ -60,6 +60,7 @@ export class SystemError extends Wasm4pmError {
 
 /**
  * Handle a Wasm4pmError by exiting with its typed exit code.
+ * ValidationError from @wasm4pm/kernel exits with execution_error (3).
  * For unknown errors, exits with system_error (5).
  * Appends diagnoseError() suggestions when available.
  */
@@ -70,10 +71,30 @@ export function handleError(error: unknown): never {
     process.exit(error.exitCode);
   }
 
+  // ValidationError from @wasm4pm/kernel — model failed structural checks
+  if (isValidationError(error)) {
+    console.error(`[ValidationError] ${(error as Error).message}`);
+    const violations = (error as { violations?: Array<{ rule: string; severity: string; message: string }> }).violations ?? [];
+    const errors = violations.filter((v) => v.severity === 'error');
+    if (errors.length > 0) {
+      console.error('\nViolations:');
+      errors.forEach((v, i) => console.error(`  ${i + 1}. [${v.rule}] ${v.message}`));
+    }
+    process.exit(EXIT_CODES.execution_error);
+  }
+
   const message = error instanceof Error ? error.message : String(error);
   console.error(`[SystemError] ${message}`);
   printDiagnosticHint(error);
   process.exit(EXIT_CODES.system_error);
+}
+
+function isValidationError(error: unknown): boolean {
+  return (
+    error instanceof Error &&
+    error.name === 'ValidationError' &&
+    'violations' in error
+  );
 }
 
 function printDiagnosticHint(error: unknown): void {

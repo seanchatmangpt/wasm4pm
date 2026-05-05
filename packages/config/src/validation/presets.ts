@@ -401,6 +401,218 @@ ucb1_exploration = 1.4142 # √2 (standard LinUCB recommendation)
 `;
 }
 
+// Public preset names (ticket API)
+export type PublicPreset = 'fast' | 'balanced' | 'quality';
+
+const PRESET_ALIAS: Record<PublicPreset, PresetScenario> = {
+  fast: 'quick-test',
+  balanced: 'production',
+  quality: 'research',
+};
+
+export function getPublicPresetConfig(preset: PublicPreset): BaseConfig {
+  return getPresetConfig(PRESET_ALIAS[preset]);
+}
+
+export function describePublicPreset(preset: PublicPreset): string {
+  return describePreset(PRESET_ALIAS[preset]);
+}
+
+export interface PresetConstraints {
+  maxMemoryMb?: number;
+  maxLatencyMs?: number;
+  requiredAlgorithms?: string[];
+  requiredFeatures?: string[];
+}
+
+const QUALITY_ALGORITHMS = new Set(['genetic_algorithm', 'ilp', 'a_star', 'aco', 'pso', 'simulated_annealing']);
+
+export function suggestPreset(constraints: PresetConstraints): PublicPreset {
+  const { maxMemoryMb, maxLatencyMs, requiredAlgorithms = [] } = constraints;
+
+  if (requiredAlgorithms.some((a) => QUALITY_ALGORITHMS.has(a))) return 'quality';
+  if (maxMemoryMb !== undefined && maxMemoryMb < 1000) return 'fast';
+  if (maxLatencyMs !== undefined && maxLatencyMs < 200) return 'fast';
+
+  return 'balanced';
+}
+
+// ============================================================================
+// Benchmark-driven AutoML preset selection
+// ============================================================================
+
+export interface AlgorithmMeasurement {
+  median_ms_per_100_events: number | null;
+  speed_score: number;
+  quality_score: number;
+  profile: string[];
+}
+
+export interface BenchmarkData {
+  schema_version: string;
+  algorithms: Record<string, AlgorithmMeasurement>;
+}
+
+/**
+ * Select the best PublicPreset by scoring algorithms against actual benchmark
+ * latency measurements.
+ *
+ * Steps:
+ *  1. Filter by deployment profile (default: 'browser')
+ *  2. Filter by latency: keep algos where
+ *     `median_ms_per_100_events * (logSizeHint / 100) <= maxLatencyMs`
+ *  3. If requiredAlgorithms is set, at least one must survive filtering
+ *  4. Score remaining: `quality_score * qualityWeight + (100 - speed_score) * speedWeight`
+ *     where qualityWeight = 0.6 and speedWeight = 0.4 (balanced default)
+ *  5. Map winner's speed_score to preset: ≤30 → fast, ≤55 → balanced, else → quality
+ *  6. Fall back to suggestPreset() if no algorithms pass all filters
+ */
+export function suggestPresetFromBenchmarks(
+  benchmarks: BenchmarkData,
+  constraints: PresetConstraints & { deploymentProfile?: string; logSizeHint?: number }
+): PublicPreset {
+  const {
+    maxLatencyMs,
+    requiredAlgorithms = [],
+    deploymentProfile = 'browser',
+    logSizeHint = 100,
+  } = constraints;
+
+  const entries = Object.entries(benchmarks.algorithms);
+  if (entries.length === 0) {
+    return suggestPreset(constraints);
+  }
+
+  // 1. Filter by deployment profile
+  let candidates = entries.filter(([, m]) => m.profile.includes(deploymentProfile));
+
+  // 2. Filter by latency constraint
+  if (maxLatencyMs !== undefined && maxLatencyMs > 0) {
+    candidates = candidates.filter(([, m]) => {
+      if (m.median_ms_per_100_events === null) return false;
+      const estimatedMs = m.median_ms_per_100_events * (logSizeHint / 100);
+      return estimatedMs <= maxLatencyMs;
+    });
+  }
+
+  // 3. If requiredAlgorithms specified, at least one must survive
+  if (requiredAlgorithms.length > 0) {
+    const passingNames = new Set(candidates.map(([name]) => name));
+    const hasRequired = requiredAlgorithms.some((a) => passingNames.has(a));
+    if (!hasRequired) {
+      return suggestPreset(constraints);
+    }
+    // Prefer required algorithms when scoring
+    const requiredCandidates = candidates.filter(([name]) => requiredAlgorithms.includes(name));
+    if (requiredCandidates.length > 0) {
+      candidates = requiredCandidates;
+    }
+  }
+
+  if (candidates.length === 0) {
+    return suggestPreset(constraints);
+  }
+
+  // 4. Score: quality is primary concern (0.6), speed is secondary (0.4)
+  const qualityWeight = 0.6;
+  const speedWeight = 0.4;
+
+  const scored = candidates.map(([name, m]) => ({
+    name,
+    measurement: m,
+    score: m.quality_score * qualityWeight + (100 - m.speed_score) * speedWeight,
+  }));
+
+  scored.sort((a, b) => b.score - a.score);
+  const winner = scored[0].measurement;
+
+  // 5. Map speed_score to preset
+  if (winner.speed_score <= 30) return 'fast';
+  if (winner.speed_score <= 55) return 'balanced';
+  return 'quality';
+}
+
+/**
+ * Generate an optimal BaseConfig by combining preset selection with specific
+ * algorithm selection from benchmark data.
+ *
+ * Returns a BaseConfig with additional metadata fields:
+ *  - `_selectedAlgorithm`: the specific algorithm chosen
+ *  - `_selectionReason`: human-readable explanation of the selection
+ */
+export function generateOptimalConfig(
+  constraints: PresetConstraints & { deploymentProfile?: string; logSizeHint?: number },
+  benchmarks?: BenchmarkData
+): BaseConfig & { _selectedAlgorithm: string; _selectionReason: string } {
+  const preset = benchmarks
+    ? suggestPresetFromBenchmarks(benchmarks, constraints)
+    : suggestPreset(constraints);
+
+  const base = getPublicPresetConfig(preset);
+
+  let selectedAlgorithm = base.algorithm.name;
+  let selectionReason = `Preset '${preset}' selected by hardcoded rules; default algorithm used`;
+
+  if (benchmarks && Object.keys(benchmarks.algorithms).length > 0) {
+    const {
+      maxLatencyMs,
+      requiredAlgorithms = [],
+      deploymentProfile = 'browser',
+      logSizeHint = 100,
+    } = constraints;
+
+    const entries = Object.entries(benchmarks.algorithms);
+
+    // Filter by profile
+    let candidates = entries.filter(([, m]) => m.profile.includes(deploymentProfile));
+
+    // Filter by latency
+    if (maxLatencyMs !== undefined && maxLatencyMs > 0) {
+      candidates = candidates.filter(([, m]) => {
+        if (m.median_ms_per_100_events === null) return false;
+        return m.median_ms_per_100_events * (logSizeHint / 100) <= maxLatencyMs;
+      });
+    }
+
+    // Prefer required algorithms
+    if (requiredAlgorithms.length > 0) {
+      const passingNames = new Set(candidates.map(([name]) => name));
+      const hasRequired = requiredAlgorithms.some((a) => passingNames.has(a));
+      if (hasRequired) {
+        const requiredCandidates = candidates.filter(([name]) =>
+          requiredAlgorithms.includes(name)
+        );
+        if (requiredCandidates.length > 0) {
+          candidates = requiredCandidates;
+        }
+      }
+    }
+
+    if (candidates.length > 0) {
+      const qualityWeight = 0.6;
+      const speedWeight = 0.4;
+
+      const scored = candidates.map(([name, m]) => ({
+        name,
+        score: m.quality_score * qualityWeight + (100 - m.speed_score) * speedWeight,
+        measurement: m,
+      }));
+      scored.sort((a, b) => b.score - a.score);
+
+      const winner = scored[0];
+      selectedAlgorithm = winner.name;
+      selectionReason = `Algorithm '${winner.name}' selected from benchmarks (score=${winner.score.toFixed(1)}, quality=${winner.measurement.quality_score}, speed=${winner.measurement.speed_score}) for preset '${preset}'`;
+    }
+  }
+
+  return {
+    ...base,
+    algorithm: { ...base.algorithm, name: selectedAlgorithm as BaseConfig['algorithm']['name'] },
+    _selectedAlgorithm: selectedAlgorithm,
+    _selectionReason: selectionReason,
+  } as BaseConfig & { _selectedAlgorithm: string; _selectionReason: string };
+}
+
 /**
  * Describe what each preset is best for.
  */

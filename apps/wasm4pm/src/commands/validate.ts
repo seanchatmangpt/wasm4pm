@@ -101,7 +101,7 @@ export const validate = defineCommand({
 
       if (!['xes', 'csv'].includes(logFormat)) {
         formatter.error(`Invalid format: ${logFormat}. Must be 'xes' or 'csv'`);
-        process.exit(EXIT_CODES.config_error);
+        process.exit(EXIT_CODES.source_error);
       }
 
       // For validate, we use a custom formatter that can show detailed validation results

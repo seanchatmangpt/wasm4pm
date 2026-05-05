@@ -36,7 +36,7 @@ import {
 /**
  * Structured error returned from WASM functions
  */
-export interface PictlModuleError {
+export interface Wasm4pmModuleError {
   code: string;
   message: string;
 }
@@ -45,7 +45,7 @@ export interface PictlModuleError {
  * Parse a WASM error response
  * WASM functions return JSON-stringified errors: {"code":"...", "message":"..."}
  */
-export function parsePictlError(error: unknown): PictlModuleError {
+export function parseWasm4pmError(error: unknown): Wasm4pmModuleError {
   if (typeof error === 'string') {
     try {
       const parsed = JSON.parse(error);
@@ -1391,7 +1391,7 @@ let wasmModuleGlobal: any = null;
 /**
  * Initialize the global WASM module reference
  */
-export function initializePictlModule(wasmModule: any): void {
+export function initializeWasm4pmModule(wasmModule: any): void {
   wasmModuleGlobal = wasmModule;
 }
 
@@ -1400,7 +1400,7 @@ export function initializePictlModule(wasmModule: any): void {
  */
 export async function encodeTextAsText(dfgHandle: DFGHandle): Promise<string> {
   if (!wasmModuleGlobal) {
-    throw new Error('WASM module not initialized. Call initializePictlModule() first.');
+    throw new Error('WASM module not initialized. Call initializeWasm4pmModule() first.');
   }
   try {
     return wasmModuleGlobal.encode_dfg_as_text(dfgHandle.getId());
@@ -1418,7 +1418,7 @@ export async function encodeVariantsAsText(
   topN: number = 10
 ): Promise<string> {
   if (!wasmModuleGlobal) {
-    throw new Error('WASM module not initialized. Call initializePictlModule() first.');
+    throw new Error('WASM module not initialized. Call initializeWasm4pmModule() first.');
   }
   try {
     return wasmModuleGlobal.encode_variants_as_text(logHandle.getId(), activityKey, topN);
@@ -1432,7 +1432,7 @@ export async function encodeVariantsAsText(
  */
 export async function encodeLogAsText(logHandle: EventLogHandle): Promise<string> {
   if (!wasmModuleGlobal) {
-    throw new Error('WASM module not initialized. Call initializePictlModule() first.');
+    throw new Error('WASM module not initialized. Call initializeWasm4pmModule() first.');
   }
   try {
     return wasmModuleGlobal.encode_statistics_as_text(logHandle.getId());
@@ -1446,7 +1446,7 @@ export async function encodeLogAsText(logHandle: EventLogHandle): Promise<string
  */
 export async function encodePetriNetAsText(petriNetHandle: PetriNetHandle): Promise<string> {
   if (!wasmModuleGlobal) {
-    throw new Error('WASM module not initialized. Call initializePictlModule() first.');
+    throw new Error('WASM module not initialized. Call initializeWasm4pmModule() first.');
   }
   try {
     return wasmModuleGlobal.encode_petri_net_as_text(petriNetHandle.getId());
@@ -1460,7 +1460,7 @@ export async function encodePetriNetAsText(petriNetHandle: PetriNetHandle): Prom
  */
 export async function encodeOCELAsText(ocelHandle: OCELHandle): Promise<string> {
   if (!wasmModuleGlobal) {
-    throw new Error('WASM module not initialized. Call initializePictlModule() first.');
+    throw new Error('WASM module not initialized. Call initializeWasm4pmModule() first.');
   }
   try {
     return wasmModuleGlobal.encode_ocel_as_text(ocelHandle.getId());
@@ -1474,7 +1474,7 @@ export async function encodeOCELAsText(ocelHandle: OCELHandle): Promise<string> 
  */
 export async function encodeOCPetriNetAsText(ocpnHandle: OCPetriNetHandle): Promise<string> {
   if (!wasmModuleGlobal) {
-    throw new Error('WASM module not initialized. Call initializePictlModule() first.');
+    throw new Error('WASM module not initialized. Call initializeWasm4pmModule() first.');
   }
   try {
     return wasmModuleGlobal.encode_oc_petri_net_as_text(ocpnHandle.getId());
@@ -1491,7 +1491,7 @@ export async function encodeModelComparisonAsText(
   model2Handle: DFGHandle | PetriNetHandle
 ): Promise<string> {
   if (!wasmModuleGlobal) {
-    throw new Error('WASM module not initialized. Call initializePictlModule() first.');
+    throw new Error('WASM module not initialized. Call initializeWasm4pmModule() first.');
   }
   try {
     const id1 = model1Handle instanceof DFGHandle ? model1Handle.getId() : model1Handle.getId();
@@ -1506,7 +1506,7 @@ export async function encodeModelComparisonAsText(
 // Van der Aalst Prediction API — standalone functions
 // =============================================================================
 // These wrap the six perspective modules introduced in Phase 4.
-// They all require the global WASM module (call initializePictlModule() first).
+// They all require the global WASM module (call initializeWasm4pmModule() first).
 
 // ---------------------------------------------------------------------------
 // Outcome prediction (answers "Does this case complete normally?")

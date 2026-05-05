@@ -25,8 +25,8 @@ from typing import Any, NamedTuple
 from urllib.parse import urlparse
 
 # wasm4pm version and constants
-PICTL_VERSION = "26.4.10"
-PICTL_GLOSSARY = {
+WASM4PM_VERSION = "26.4.10"
+WASM4PM_GLOSSARY = {
     "wasm4pm": "Process Mining in WebAssembly",
     "WASM": "WebAssembly",
     "DFG": "Directly Follows Graph",
@@ -47,7 +47,7 @@ PICTL_GLOSSARY = {
     "streaming": "real-time event processing",
 }
 
-PICTL_STYLE_GUIDE = {
+WASM4PM_STYLE_GUIDE = {
     "code_blocks_required": True,
     "jargon_must_be_defined": True,
     "max_sentence_length": 30,  # words
@@ -57,7 +57,7 @@ PICTL_STYLE_GUIDE = {
     "structure": "Diataxis-compliant (tutorial/how-to/explanation/reference)",
 }
 
-PICTL_DOC_PATHS = [
+WASM4PM_DOC_PATHS = [
     "wasm4pm/docs/benchmarks/tutorials/",
     "wasm4pm/docs/benchmarks/how-to/",
     "wasm4pm/docs/benchmarks/explanation/",
@@ -338,7 +338,7 @@ def _gate_clarity_score(
         If readability is poor or jargon is undefined.
     """
     # Check for jargon without definition
-    wasm4pm_terms = [term for term in PICTL_GLOSSARY.keys() if len(term) > 3]
+    wasm4pm_terms = [term for term in WASM4PM_GLOSSARY.keys() if len(term) > 3]
     undefined_terms = []
 
     for term in wasm4pm_terms:
@@ -411,7 +411,7 @@ def _gate_recency_valid(
     AssertionError
         If version is outdated or links are broken.
     """
-    current_major_minor = PICTL_VERSION.rsplit(".", 1)[0]  # "26.4"
+    current_major_minor = WASM4PM_VERSION.rsplit(".", 1)[0]  # "26.4"
 
     # Check version references
     version_pattern = r"v?(\d+\.\d+\.\d+)"
@@ -422,7 +422,7 @@ def _gate_recency_valid(
             major_minor = version.rsplit(".", 1)[0]
             assert major_minor == current_major_minor, (
                 f"Doc references outdated version: {version}. "
-                f"Current version is {PICTL_VERSION}. "
+                f"Current version is {WASM4PM_VERSION}. "
                 f"Update all version references."
             )
 
@@ -536,7 +536,7 @@ def _gate_consistency_check(
         If inconsistencies are detected.
     """
     # Check glossary term usage consistency
-    glossary_terms = list(PICTL_GLOSSARY.keys())
+    glossary_terms = list(WASM4PM_GLOSSARY.keys())
 
     for term in glossary_terms:
         # Count variations
@@ -620,7 +620,7 @@ def _gate_process_conformant(
 
     # Version should be specified for recency
     if doc_metadata.version is None:
-        assert PICTL_VERSION, "Doc version should match wasm4pm version"
+        assert WASM4PM_VERSION, "Doc version should match wasm4pm version"
 
     # For longer docs, require TOC
     word_count = len(doc_content.split())
@@ -898,7 +898,7 @@ def extract_metadata_from_doc(
         declared_category=category,
         author=author,
         updated_date=updated_date,
-        version=PICTL_VERSION,
+        version=WASM4PM_VERSION,
     )
 
 

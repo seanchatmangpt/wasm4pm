@@ -54,7 +54,7 @@ export enum ErrorRecovery {
  * Enhanced error class with structured context for wasm4pm operations
  * Extends Error with error classification, root cause tracking, and recovery guidance
  */
-export class PictlError extends Error {
+export class Wasm4pmError extends Error {
   readonly code: ErrorCode;
   readonly cause: Error | null;
   readonly nextAction: ErrorRecovery;
@@ -73,7 +73,7 @@ export class PictlError extends Error {
     }
   ) {
     super(message);
-    this.name = 'PictlError';
+    this.name = 'Wasm4pmError';
     this.code = code;
     this.cause = options?.cause || null;
     this.nextAction = options?.nextAction || ErrorRecovery.CONTACT_SUPPORT;
@@ -82,7 +82,7 @@ export class PictlError extends Error {
     this.timestamp = new Date();
 
     // Maintain proper prototype chain for instanceof checks
-    Object.setPrototypeOf(this, PictlError.prototype);
+    Object.setPrototypeOf(this, Wasm4pmError.prototype);
   }
 
   /**
@@ -122,7 +122,7 @@ export class PictlError extends Error {
  * @param context - Optional context including the execution step
  * @returns ErrorCode matching the error pattern
  */
-export function classifyPictlError(raw: string, context?: { step?: string }): ErrorCode {
+export function classifyWasm4pmError(raw: string, context?: { step?: string }): ErrorCode {
   if (!raw || typeof raw !== 'string') {
     return ErrorCode.UNKNOWN;
   }
@@ -182,20 +182,20 @@ export function classifyPictlError(raw: string, context?: { step?: string }): Er
 
 /**
  * Wraps a WASM function call with error handling and classification
- * Converts raw WASM errors to structured PictlError instances
+ * Converts raw WASM errors to structured Wasm4pmError instances
  *
  * @template T - Return type of the wrapped function
  * @param fn - Function that calls WASM code
  * @param context - Optional context including the execution step
  * @returns Result of the function call
- * @throws PictlError - Classified and contextualized error
+ * @throws Wasm4pmError - Classified and contextualized error
  */
-export function wrapPictlOperation<T>(fn: () => T, context?: { step?: string }): T {
+export function wrapWasm4pmOperation<T>(fn: () => T, context?: { step?: string }): T {
   try {
     return fn();
   } catch (err) {
     const raw = err instanceof Error ? err.message : String(err);
-    const code = classifyPictlError(raw, context);
+    const code = classifyWasm4pmError(raw, context);
 
     // Determine recovery action based on error code
     let nextAction = ErrorRecovery.CONTACT_SUPPORT;
@@ -224,7 +224,7 @@ export function wrapPictlOperation<T>(fn: () => T, context?: { step?: string }):
         break;
     }
 
-    throw new PictlError(raw, code, {
+    throw new Wasm4pmError(raw, code, {
       cause: err instanceof Error ? err : null,
       nextAction,
       step: context?.step || undefined,
@@ -233,15 +233,15 @@ export function wrapPictlOperation<T>(fn: () => T, context?: { step?: string }):
 }
 
 /**
- * Type guard to check if an error is a PictlError
+ * Type guard to check if an error is a Wasm4pmError
  * Optionally filters by specific error code
  *
  * @param err - Error to check
  * @param code - Optional specific ErrorCode to match
- * @returns true if err is a PictlError (and matches code if specified)
+ * @returns true if err is a Wasm4pmError (and matches code if specified)
  */
-export function isPictlError(err: unknown, code?: ErrorCode): err is PictlError {
-  if (!(err instanceof PictlError)) {
+export function isWasm4pmError(err: unknown, code?: ErrorCode): err is Wasm4pmError {
+  if (!(err instanceof Wasm4pmError)) {
     return false;
   }
   if (code !== undefined) {

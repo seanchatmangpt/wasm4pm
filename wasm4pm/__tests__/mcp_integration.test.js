@@ -11,15 +11,15 @@ import { describe, it, expect, vi } from 'vitest';
 // not WASM execution, so an empty stub is sufficient.
 vi.mock('../pkg/wasm4pm.js', () => ({}));
 
-import { PictlMCPServer } from '../src/mcp_server.js';
-describe('PictlMCPServer', () => {
+import { Wasm4pmMCPServer } from '../src/mcp_server.js';
+describe('Wasm4pmMCPServer', () => {
   it('constructs without error', () => {
     // Server construction sets up handlers and transport
-    expect(() => new PictlMCPServer()).not.toThrow();
+    expect(() => new Wasm4pmMCPServer()).not.toThrow();
   });
   it('registers all expected discovery tools', async () => {
     // Access the private getAvailableTools method via reflection on the prototype
-    const server = new PictlMCPServer();
+    const server = new Wasm4pmMCPServer();
     const tools = server.getAvailableTools();
     const toolNames = tools.map((t) => t.name);
     // Core discovery tools
@@ -30,7 +30,7 @@ describe('PictlMCPServer', () => {
     expect(toolNames).toContain('discover_variants');
   });
   it('registers all expected analysis tools', async () => {
-    const server = new PictlMCPServer();
+    const server = new Wasm4pmMCPServer();
     const tools = server.getAvailableTools();
     const toolNames = tools.map((t) => t.name);
     expect(toolNames).toContain('check_conformance');
@@ -39,7 +39,7 @@ describe('PictlMCPServer', () => {
     expect(toolNames).toContain('detect_concept_drift');
   });
   it('registers all OCEL tools', async () => {
-    const server = new PictlMCPServer();
+    const server = new Wasm4pmMCPServer();
     const tools = server.getAvailableTools();
     const toolNames = tools.map((t) => t.name);
     expect(toolNames).toContain('load_ocel');
@@ -49,7 +49,7 @@ describe('PictlMCPServer', () => {
     expect(toolNames).toContain('encode_ocel_as_text');
   });
   it('registers all predictive tools', async () => {
-    const server = new PictlMCPServer();
+    const server = new Wasm4pmMCPServer();
     const tools = server.getAvailableTools();
     const toolNames = tools.map((t) => t.name);
     expect(toolNames).toContain('predict_next_activity');
@@ -57,7 +57,7 @@ describe('PictlMCPServer', () => {
     expect(toolNames).toContain('score_trace_anomaly');
   });
   it('registers all ML tools', async () => {
-    const server = new PictlMCPServer();
+    const server = new Wasm4pmMCPServer();
     const tools = server.getAvailableTools();
     const toolNames = tools.map((t) => t.name);
     expect(toolNames).toContain('ml_classify_traces');
@@ -68,7 +68,7 @@ describe('PictlMCPServer', () => {
     expect(toolNames).toContain('ml_pca_reduce');
   });
   it('registers utility tools', async () => {
-    const server = new PictlMCPServer();
+    const server = new Wasm4pmMCPServer();
     const tools = server.getAvailableTools();
     const toolNames = tools.map((t) => t.name);
     expect(toolNames).toContain('compare_algorithms');
@@ -77,13 +77,13 @@ describe('PictlMCPServer', () => {
     expect(toolNames).toContain('cache_stats');
   });
   it('has at least 30 registered tools', async () => {
-    const server = new PictlMCPServer();
+    const server = new Wasm4pmMCPServer();
     const tools = server.getAvailableTools();
     // MCP server exposes 30+ tools across all categories
     expect(tools.length).toBeGreaterThanOrEqual(30);
   });
   it('all tools have valid input schemas', async () => {
-    const server = new PictlMCPServer();
+    const server = new Wasm4pmMCPServer();
     const tools = server.getAvailableTools();
     for (const tool of tools) {
       expect(tool.inputSchema.type).toBe('object');
@@ -100,7 +100,7 @@ describe('PictlMCPServer', () => {
     }
   });
   it('all required params have corresponding property definitions', async () => {
-    const server = new PictlMCPServer();
+    const server = new Wasm4pmMCPServer();
     const tools = server.getAvailableTools();
     for (const tool of tools) {
       for (const req of tool.inputSchema.required ?? []) {
@@ -109,14 +109,14 @@ describe('PictlMCPServer', () => {
     }
   });
   it('all tools have non-empty descriptions', async () => {
-    const server = new PictlMCPServer();
+    const server = new Wasm4pmMCPServer();
     const tools = server.getAvailableTools();
     for (const tool of tools) {
       expect(tool.description.length).toBeGreaterThan(0);
     }
   });
   it('discovery tools require xes_content parameter', async () => {
-    const server = new PictlMCPServer();
+    const server = new Wasm4pmMCPServer();
     const tools = server.getAvailableTools();
     const discoveryTools = tools.filter(
       (t) => t.name.startsWith('discover_') && !t.name.includes('ocel') && !t.name.includes('oc_')
@@ -126,7 +126,7 @@ describe('PictlMCPServer', () => {
     }
   });
   it('OCEL tools require ocel_handle parameter', async () => {
-    const server = new PictlMCPServer();
+    const server = new Wasm4pmMCPServer();
     const tools = server.getAvailableTools();
     const ocelTools = tools.filter((t) => t.name.includes('ocel') || t.name.includes('oc_'));
     for (const tool of ocelTools) {

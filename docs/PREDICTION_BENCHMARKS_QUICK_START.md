@@ -162,7 +162,7 @@ Latency benchmarks for:
 2. Increase variance multiplier (3σ → 4σ)
 3. Reduce contamination_ratio estimate
 
-## Integration with Pictl
+## Integration with Wasm4pm
 
 These benchmarks measure the **accuracy** and **latency** of wasm4pm's prediction modules:
 

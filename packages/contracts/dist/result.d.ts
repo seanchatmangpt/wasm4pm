@@ -83,7 +83,7 @@ import type { ModelIR } from './model.js';
  *
  * Gap closure: LC-1 — latency_class is non-optional and derived.
  */
-export type LatencyClass = "sub_ms" | "low_ms" | "high_ms" | "seconds" | "minutes";
+export type LatencyClass = 'sub_ms' | 'low_ms' | 'high_ms' | 'seconds' | 'minutes';
 /**
  * Derives the LatencyClass from a latency duration in milliseconds.
  *
@@ -181,7 +181,7 @@ export interface ProvenanceChain {
  */
 export interface ResultEnvelope<T = unknown> {
     readonly run_id: string;
-    readonly status: "success" | "partial" | "failed";
+    readonly status: 'success' | 'partial' | 'failed';
     readonly payload: T;
     readonly error?: string;
     readonly latency_ms: number;

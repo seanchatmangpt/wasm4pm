@@ -28,8 +28,8 @@ export { isReceipt, RECEIPT_JSON_SCHEMA } from './receipt.js';
 export { hashData, hashConfig, hashJsonString, normalizeForHashing, verifyHash } from './hash.js';
 // Receipt builder
 export { ReceiptBuilder } from './receipt-builder.js';
-export { isPlan, validatePlanDAG, sortNodes, sortEdges, normalizePlan, PLAN_JSON_SCHEMA } from './plan.js';
-export { isStatus, isLifecycleState, isValidTransition, LIFECYCLE_STATES, STATE_TRANSITIONS, STATUS_JSON_SCHEMA } from './status.js';
+export { isPlan, validatePlanDAG, sortNodes, sortEdges, normalizePlan, PLAN_JSON_SCHEMA, } from './plan.js';
+export { isStatus, isLifecycleState, isValidTransition, LIFECYCLE_STATES, STATE_TRANSITIONS, STATUS_JSON_SCHEMA, } from './status.js';
 export { isExplainSnapshot, EXPLAIN_JSON_SCHEMA } from './explain.js';
 // Plan step type values — shared between @wasm4pm/planner and @wasm4pm/testing
 export { PLAN_STEP_TYPE_VALUES } from './steps.js';

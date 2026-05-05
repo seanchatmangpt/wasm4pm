@@ -95,7 +95,7 @@ export class StateMachine {
         });
         // Propagate listener errors to prevent silent state machine corruption
         if (listenerErrors.length > 0) {
-            const aggregated = new Error(`${listenerErrors.length} lifecycle listener error(s): ${listenerErrors.map(e => e.message).join('; ')}`);
+            const aggregated = new Error(`${listenerErrors.length} lifecycle listener error(s): ${listenerErrors.map((e) => e.message).join('; ')}`);
             throw aggregated;
         }
         return event;

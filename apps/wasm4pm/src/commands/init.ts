@@ -5,7 +5,7 @@ import { existsSync } from 'fs';
 import { getFormatter } from '../output.js';
 import type { OutputOptions } from '../output.js';
 import type { HumanFormatter, JSONFormatter } from '../output.js';
-import { getExampleTomlConfig, getExampleJsonConfig } from '@wasm4pm/config';
+import { getExampleTomlConfig, getExampleJsonConfig, getPublicPresetConfig, getExamplePresetConfig, type PublicPreset } from '@wasm4pm/config';
 
 // Template content generators
 function getEnvExampleContent(): string {
@@ -241,6 +241,11 @@ export const init = defineCommand({
       description: 'Suppress non-error output',
       alias: 'q',
     },
+    preset: {
+      type: 'string',
+      description: 'Initialize with a preset (fast, balanced, quality)',
+      alias: 'p',
+    },
   },
   async run(ctx) {
     const outputFormat = ctx.args.format as 'human' | 'json';
@@ -254,6 +259,7 @@ export const init = defineCommand({
       const cwd = process.cwd();
       const configFormat = ((ctx.args.configFormat as string) || 'toml').toLowerCase();
       const force = ctx.args.force ?? false;
+      const preset = ctx.args.preset as string | undefined;
 
       if (configFormat !== 'toml' && configFormat !== 'json') {
         formatter.error(`Invalid format: ${configFormat}. Must be 'toml' or 'json'`);
@@ -261,11 +267,24 @@ export const init = defineCommand({
         process.exit(EXIT_CODES.config_error);
       }
 
+      const VALID_PRESETS = ['fast', 'balanced', 'quality'];
+      if (preset && !VALID_PRESETS.includes(preset)) {
+        formatter.error(`Invalid preset: ${preset}. Must be one of: ${VALID_PRESETS.join(', ')}`);
+        const { EXIT_CODES } = await import('../exit-codes.js');
+        process.exit(EXIT_CODES.config_error);
+      }
+
       // Create config file
       const configFilename = configFormat === 'toml' ? 'wasm4pm.toml' : 'wasm4pm.json';
       const configPath = path.join(cwd, configFilename);
-      const configContent =
-        configFormat === 'toml' ? getExampleTomlConfig() : getExampleJsonConfig();
+      let configContent: string;
+      if (preset) {
+        configContent = configFormat === 'toml'
+          ? getExamplePresetConfig(preset as PublicPreset)
+          : JSON.stringify(getPublicPresetConfig(preset as PublicPreset), null, 2);
+      } else {
+        configContent = configFormat === 'toml' ? getExampleTomlConfig() : getExampleJsonConfig();
+      }
 
       const configCreated = await safeWriteFile(
         configPath,
@@ -323,7 +342,8 @@ export const init = defineCommand({
       } else {
         const humanFormatter = formatter as HumanFormatter;
         if (filesCreated.length > 0) {
-          humanFormatter.success('Configuration initialized successfully');
+          const presetLabel = preset ? ` with ${preset} preset` : '';
+          humanFormatter.success(`Configuration initialized successfully${presetLabel}`);
           humanFormatter.log(`\nCreated files:`);
           filesCreated.forEach((file) => {
             humanFormatter.log(`  ✓ ${file}`);

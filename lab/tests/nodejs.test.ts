@@ -361,13 +361,18 @@ describe('Node.js Artifact Validation - @wasm4pm/wasm4pm', () => {
       const algosData = wasm.available_discovery_algorithms();
       expect(algosData).toBeTruthy();
 
-      // Handle Map object returned from WASM
-      let algorithms = [];
-      if (algosData instanceof Map) {
-        const algosList = algosData.get('algorithms');
+      // WASM returns a JSON string via to_js_str(); may also return Map or Array
+      const parsed = typeof algosData === 'string' ? JSON.parse(algosData) : algosData;
+      let algorithms: unknown[] = [];
+      if (parsed instanceof Map) {
+        const algosList = parsed.get('algorithms');
         if (Array.isArray(algosList)) {
           algorithms = algosList;
         }
+      } else if (parsed && typeof parsed === 'object' && Array.isArray((parsed as { algorithms?: unknown[] }).algorithms)) {
+        algorithms = (parsed as { algorithms: unknown[] }).algorithms;
+      } else if (Array.isArray(parsed)) {
+        algorithms = parsed;
       }
 
       expect(algorithms.length).toBeGreaterThanOrEqual(1);

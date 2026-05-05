@@ -154,7 +154,7 @@ describe('Engine', () => {
                 expect(status.errors.length).toBeGreaterThanOrEqual(1);
                 // The timeout handler creates BOOTSTRAP_TIMEOUT and transitions to degraded,
                 // then the outer catch adds BOOTSTRAP_FAILED and transitions to failed
-                const codes = status.errors.map(e => e.code);
+                const codes = status.errors.map((e) => e.code);
                 expect(codes).toContain('BOOTSTRAP_TIMEOUT');
             }
         });
@@ -280,7 +280,7 @@ describe('Engine', () => {
             const status = badEngine.status();
             expect(status.errors.length).toBeGreaterThan(0);
             // The timeout handler creates PLANNING_TIMEOUT, then the outer catch adds PLANNING_FAILED
-            const codes = status.errors.map(e => e.code);
+            const codes = status.errors.map((e) => e.code);
             expect(codes).toContain('PLANNING_TIMEOUT');
         });
         it('should provide recovery suggestions', async () => {
@@ -634,7 +634,9 @@ describe('Engine WASM Integration', () => {
     });
     describe('WASM Module Version Compatibility', () => {
         it('should detect version mismatch if configured', async () => {
-            const engineWithVersionCheck = createFullEngine(kernel, planner, executor, { expectedVersion: '0.5.4' });
+            const engineWithVersionCheck = createFullEngine(kernel, planner, executor, {
+                expectedVersion: '0.5.4',
+            });
             try {
                 await engineWithVersionCheck.bootstrap();
             }
@@ -700,7 +702,9 @@ describe('Engine WASM Integration', () => {
     });
     describe('WASM Configuration Options', () => {
         it('should accept custom module path', () => {
-            const engineCustom = createFullEngine(kernel, planner, executor, { modulePath: '/custom/path.js' });
+            const engineCustom = createFullEngine(kernel, planner, executor, {
+                modulePath: '/custom/path.js',
+            });
             expect(engineCustom).toBeDefined();
         });
         it('should accept memory threshold configuration', () => {
@@ -712,7 +716,7 @@ describe('Engine WASM Integration', () => {
             expect(enginePanic).toBeDefined();
         });
         it('should pass through observability layer', async () => {
-            const { ObservabilityLayer } = await import('@pictl/observability');
+            const { ObservabilityLayer } = await import('@wasm4pm/observability');
             const obsLayer = new ObservabilityLayer();
             const engineObs = createFullEngine(kernel, planner, executor, { observability: obsLayer });
             expect(engineObs).toBeDefined();

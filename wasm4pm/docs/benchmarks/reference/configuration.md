@@ -122,7 +122,7 @@ enabled = false
 
 ## Environment Variables
 
-### Pictl ENV Variables
+### Wasm4pm ENV Variables
 
 | Variable                | Config Path                   | Default    | Example                                       |
 | ----------------------- | ----------------------------- | ---------- | --------------------------------------------- |

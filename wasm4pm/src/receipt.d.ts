@@ -3,7 +3,7 @@
  * Execution receipt builder and types
  * Tracks execution metadata, timing, and outputs for audit trail and debugging
  */
-import { PictlConfig, ExecutionProfile } from './config.js';
+import { Wasm4pmConfig, ExecutionProfile } from './config.js';
 /**
  * Complete execution receipt containing all metadata about a pipeline run
  * Serves as audit trail and debugging information for compliance and debugging
@@ -41,7 +41,7 @@ export declare class ReceiptBuilder {
   private inputDataSize?;
   private outputDataSize?;
   private sourceFormat?;
-  constructor(config: PictlConfig);
+  constructor(config: Wasm4pmConfig);
   /**
    * Records the start time of execution
    * Must be called once at the beginning of pipeline execution
@@ -103,7 +103,7 @@ export declare function generateRunId(): string;
  * @param config - Configuration to hash
  * @returns Hex string hash (32 chars, like MD5)
  */
-export declare function hashConfig(config: PictlConfig): string;
+export declare function hashConfig(config: Wasm4pmConfig): string;
 /**
  * Formats an ExecutionReceipt for console logging
  * Provides human-readable summary of execution with timing and metadata

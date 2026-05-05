@@ -30,7 +30,7 @@ declare -A RESULTS
 declare -A STATUS
 
 echo "╔═══════════════════════════════════════════════════════════════╗"
-echo "║  PICTL DEPLOYMENT PROFILE SIZE MEASUREMENT                   ║"
+echo "║  WASM4PM DEPLOYMENT PROFILE SIZE MEASUREMENT                   ║"
 echo "╚═══════════════════════════════════════════════════════════════╝"
 echo ""
 

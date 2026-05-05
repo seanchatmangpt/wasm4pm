@@ -6,7 +6,7 @@
  * @param {Object} options - Audit configuration
  * @returns {Promise<Object>} Audit report
  */
-export function auditPictlProcess(otelSpans: any[], options?: Object): Promise<Object>;
+export function auditWasm4pmProcess(otelSpans: any[], options?: Object): Promise<Object>;
 /**
  * Load OTEL spans from JSON file (e.g., from OTEL collector export)
  * @param {string} filePath - Path to JSON file with spans
@@ -61,7 +61,7 @@ export class OCELEventLog {
  * Process Mining Auditor
  * Compares discovered vs declared process
  */
-export class PictlAuditor {
+export class Wasm4pmAuditor {
     constructor(declaredProcess: any, config?: {});
     declaredProcess: any;
     discoveredProcess: {
