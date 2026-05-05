@@ -1,6 +1,6 @@
 # Hot Kernels Thesis: Allocation-Free, Deterministic Process Conformance at 8-Tick Constant
 
-**A van der Aalst-grade process mining runtime unlocking fixed-hop, stack-only, branchless conformance checking.**
+**A van der Aalst-grade process mining runtime unlocking fixed-hop, stack-only, hot-path optimized conformance checking (conditional moves, loop unrolling, popcount-based similarity).**
 
 ---
 
@@ -8,7 +8,7 @@
 
 The `hot_kernels` module delivers **21 fixed-hop, allocation-free micro-kernels** designed for a single, high-assurance use case: **per-event conformance stepping in OCEL-compatible process models** without heap allocation, dynamic dispatch, or branch prediction overhead.
 
-Each kernel is `#[inline(always)]` with `#[repr(C)]`, stack-only state (no Box, Vec, HashMap), and uses branchless (`select_u32` / `select_u64`) conditionals instead of `if`. The result: **predictable, deterministic execution suitable for real-time process mining in embedded, streaming, and resource-constrained environments** where the allocator is unavailable or the latency jitter of garbage collection is unacceptable.
+Each kernel is `#[inline(always)]` with `#[repr(C)]`, stack-only state (no Box, Vec, HashMap), and uses hot-path optimized (`select_u32` / `select_u64` via conditional moves) patterns instead of `if` branches. The result: **predictable, deterministic execution suitable for real-time process mining in embedded, streaming, and resource-constrained environments** where the allocator is unavailable or the latency jitter of garbage collection is unacceptable.
 
 ---
 
@@ -33,7 +33,7 @@ Existing process mining tools (pm4py, ProM, prom-models) use allocating architec
 Per-event ingress:
   Input: state: HotState, next_activity: Id, rules: &[TransitionRule; N]
   
-  Step 1: branchless transition matching (rule_match 4 times)
+  Step 1: hot-path optimized transition matching via conditional moves (rule_match 4 times)
   Step 2: select next state without branching (select_u32)
   Step 3: compute receipt seed (receipt_seed_mix)
   Step 4: generate OCEL CONSTRUCT8 triples (construct8_transition)
@@ -161,7 +161,7 @@ In DO-178C (avionics) and IEC 61508 (industrial) contexts, **non-determinism is 
 | `marking_enabled4` | Check transition preconditions (all places) | 4 | marking, transition | u8 (enabled?) |
 | `marking_fire4` | Apply transition: consume inputs, produce outputs | 4 | marking, transition, enabled | Marking4 |
 
-**Use:** Petri-net reachability analysis, deadlock detection. All operations branchless — no conditional arc traversal.
+**Use:** Petri-net reachability analysis, deadlock detection. All operations hot-path optimized (conditional moves, no conditional arc traversal).
 
 ### Bit Operations (Fast Predicates)
 

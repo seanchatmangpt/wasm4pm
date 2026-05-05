@@ -102,7 +102,7 @@ On 3.5 GHz ARM64 (M-series):
 ```
 GATE 1: transition_lawful_4    (4 rule match checks + OR reduction)
 GATE 2: apply_transition        (state advancement logic)
-GATE 3: select_u32 × 3          (branchless state reconstruction)
+GATE 3: select_u32 × 3          (hot-path optimized state reconstruction via conditional moves)
 GATE 4: receipt_seed_mix        (XOR avalanche hashing)
 ```
 
@@ -134,7 +134,7 @@ After fix:
 - ✅ All benchmarks now measure nanoseconds (not picoseconds for compound ops)
 - ✅ CPU cycle counts match logical gate count expectations
 - ✅ Coefficient of variation <1% (deterministic)
-- ✅ Lawful vs. unlawful paths show same latency (branchless confirmation)
+- ✅ Lawful vs. unlawful paths show same latency (hot-path optimized: conditional moves avoid branch misprediction)
 - ✅ No outliers >10% above baseline (Criterion reports found 8–14 outliers, all mild)
 
 ---

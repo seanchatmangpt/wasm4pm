@@ -526,7 +526,7 @@ wpm run --debug
 | ID | Name | Type | Output |
 |----|------|------|--------|
 | `ml_classify` | Classification | knn, logistic_regression | ClassificationResult |
-| `ml_cluster` | Clustering | kmeans, dbscan | ClusteringResult |
+| `ml_cluster` | Clustering | kmeans, dbscan | ClusteringResult | ⚠️ internal only — not yet exported to the JS API (no `#[wasm_bindgen]` export) |
 | `ml_forecast` | Forecasting | linear_regression | ForecastResult |
 | `ml_anomaly` | Anomaly Detection | statistical | AnomalyResult |
 | `ml_regress` | Regression | linear_regression | RegressionResult |

@@ -54,7 +54,7 @@ All <20 ns. These are CPU primitives.
 ask_eq_u32:                   1–3 ns        (cmp + cast)
 compare_lt_u32:               2–4 ns
 validate_range_u32:           5–8 ns        (two cmp + AND)
-min_u32:                      5–10 ns       (branchless select)
+min_u32:                      5–10 ns       (conditional-move select)
 max_u32:                      5–10 ns
 abs_diff_u32:                 10–15 ns      (sub + select)
 select_u32:                   5–10 ns       (mask branch)

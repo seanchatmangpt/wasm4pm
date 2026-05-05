@@ -139,7 +139,7 @@ where x in R^8 is the normalized feature vector, w_a in R^8 is the weight vector
 ```rust
 // marking_enabled4: checks if transition can fire (all input places have tokens)
 // marking_fire4: consumes from input places, produces to output places
-// Both are branchless, 1.62-2.09 ns, zero heap allocation
+// Both are hot-path optimized (conditional moves, popcount), 1.62-2.09 ns, zero heap allocation
 ```
 
 The Marking4 micro-kernel operates on {p0, p1, p2, p3: u32} — a 4-place token-count representation that maps directly to SIMD registers. A transition fires if and only if all input places have sufficient tokens, and the firing atomically updates the marking.
@@ -516,7 +516,7 @@ Six ML algorithms are registered in the kernel:
 | Algorithm | Speed | Quality | Implementation |
 |-----------|-------|---------|---------------|
 | ml_classify | 40 | 60 | k-nearest neighbors |
-| ml_cluster | 35 | 55 | k-means variant |
+| ml_cluster | 35 | 55 | k-means variant | ⚠️ internal only — not yet exported to the JS API |
 | ml_forecast | 30 | 50 | Exponential smoothing |
 | ml_anomaly | 30 | 55 | Z-score deviation |
 | ml_regress | 25 | 50 | Linear regression |

@@ -52,7 +52,7 @@ This document defines the comprehensive end-to-end testing and certification str
 - Fast (tier 1): dfg, process_skeleton, simd_streaming_dfg
 - Balanced (tier 2): alpha_plus_plus, heuristic_miner, inductive_miner
 - Quality (tier 3): simulated_annealing, a_star, aco, pso, genetic_algorithm, ilp
-- ML (6): ml_classify, ml_cluster, ml_forecast, ml_anomaly, ml_regress, ml_pca
+- ML (6): ml_classify, ml_cluster (internal only — no JS export), ml_forecast, ml_anomaly, ml_regress, ml_pca
 - Analysis (20+): conformance, simulation, drift, social, temporal
 
 **Parity constraint:** explain() output must exactly match plan() execution (bitwise).

@@ -180,17 +180,17 @@ Results are **deterministic within measurement noise** (~358ps to 4.7µs range).
 
 ### 1. LinUCB Upper Confidence Bound
 **Current:** 3.166 ns inline  
-**Status:** Already optimized (branchless SIMD candidate)  
+**Status:** Already optimized (hot-path optimized — SIMD candidate)  
 **Opportunity:** Negligible impact (< 0.01% of budget)
 
 ### 2. Guard Evaluation
 **Current:** 1.321 ns inline  
-**Status:** Already branchless  
+**Status:** Already hot-path optimized (conditional moves)  
 **Opportunity:** Negligible impact
 
 ### 3. Perception Encoding
 **Current:** 1.047 ns inline  
-**Status:** Already branchless quantization  
+**Status:** Already hot-path optimized quantization (conditional moves)  
 **Opportunity:** Below noise floor
 
 ### 4. Bellman Update Batching (PRIMARY LEVER)

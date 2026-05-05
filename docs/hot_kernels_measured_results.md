@@ -9,7 +9,7 @@
 
 ## Key Finding: Realistic Nanosecond Execution (Fixed Benchmarks)
 
-The hot kernels measure in **nanoseconds** (5–12 ns for compound operations, picoseconds for primitives). These times are realistic for the logical complexity: 6–8 operator gates executed branchlessly.
+The hot kernels measure in **nanoseconds** (5–12 ns for compound operations, picoseconds for primitives). These times are realistic for the logical complexity: 6–8 operator gates executed via hot-path optimized sequences (conditional moves, loop unrolling, popcount-based similarity).
 
 This is the win: the kernels are deterministic, allocation-free, and **sub-microsecond** — negligible overhead compared to I/O and serialization (which dominate at milliseconds).
 
@@ -46,7 +46,7 @@ This is the win: the kernels are deterministic, allocation-free, and **sub-micro
 
 **Analysis:** These sub-3ns operations are the result of efficient register allocation and inline expansion. Marking4 (16 bytes) fits in two ARM64 registers, allowing compare-and-move sequences to execute in ~5–7 CPU cycles.
 
-The branchless nature (using conditional instructions ccmp on ARM64) ensures uniform latency regardless of input patterns.
+The hot-path optimized nature (using conditional instructions ccmp on ARM64, avoiding branch misprediction) ensures uniform latency regardless of input patterns.
 
 ---
 
@@ -57,7 +57,7 @@ Measured in picoseconds. These are CPU primitives compiled to single instruction
 - `ask_eq_u32`: **800 ps** (cmp + cast)
 - `compare_lt_u32`: **800 ps** (cmp)
 - `select_u32`: ~1.0–1.5 ns (bitwise mask)
-- `min_u32`: ~1.0–1.5 ns (branchless select)
+- `min_u32`: ~1.0–1.5 ns (conditional-move select)
 - `popcount_u64`: ~1.0–1.5 ns (builtin POPCNT)
 
 ---
@@ -266,11 +266,11 @@ For future releases, maintain these targets:
 
 ## Conclusion
 
-Hot kernels deliver on the promise: **deterministic nanosecond execution, zero-allocation, branchless conformance checking**.
+Hot kernels deliver on the promise: **deterministic nanosecond execution, zero-allocation, hot-path optimized conformance checking**.
 
 **Measured times (5–12 ns) are realistic for the logical complexity:**
 - 6–8 operator gates per kernel (rule checking, state transition, receipt mixing)
-- Branchless execution (all conditionals via bitwise masking, not CPU jumps)
+- Hot-path optimized execution (conditional moves, loop unrolling, popcount-based similarity — not CPU branch jumps on the critical path)
 - No allocations (stack-only, fixed-size structures)
 - Sub-microsecond per-event cost (<1% overhead vs. serialization)
 

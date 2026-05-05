@@ -134,7 +134,7 @@ All features must be caller-normalized into [0.0, 1.0] before passing to the ker
 | Slots | Algorithms |
 |-------|-----------|
 | 0–13 | Discovery algorithms (dfg, heuristic_miner, inductive_miner, ...) |
-| 14–19 | ML analysis (ml_classify, ml_cluster, ml_forecast, ...) |
+| 14–19 | ML analysis (ml_classify, ml_cluster [internal only — no JS export], ml_forecast, ...) |
 | 20–36 | Extended discovery + conformance |
 | 37–39 | Reserved for future algorithms |
 

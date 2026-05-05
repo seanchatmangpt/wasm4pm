@@ -461,7 +461,7 @@ CLI Entry → ML Handler (apps/wasm4pm/src/commands/ml.ts:ml)
     │   │   └─→ Return { labels, accuracies, feature_importance }
     │   │
     │   ├─→ TASK = "cluster":
-    │   │   ├─→ ml_cluster(X) [unsupervised]
+    │   │   ├─→ ml_cluster(X) [unsupervised] [⚠️ internal only — not yet exported to JS API]
     │   │   │   ├─→ K-means (k=3, auto-tuned)
     │   │   │   ├─→ OR DBSCAN
     │   │   │   ├─→ Compute silhouette score

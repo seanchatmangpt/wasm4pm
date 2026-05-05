@@ -147,7 +147,7 @@ The wasm4pm system provides machine learning capabilities through two complement
 | Algorithm | Task | Latency (100 cases) |
 |-----------|------|---------------------|
 | `ml_classify` | Activity classification | 25 ms |
-| `ml_cluster` | Trace clustering (k-means) | 20 ms |
+| `ml_cluster` | Trace clustering (k-means) | — | ⚠️ internal only — not yet exported to the JS API (no `#[wasm_bindgen]` export); `wpm ml cluster` is not callable |
 | `ml_forecast` | Time-series forecasting | 15 ms |
 | `ml_anomaly` | Anomaly detection | ~25 ms |
 | `ml_regress` | Regression analysis | ~20 ms |

@@ -141,7 +141,7 @@ const result = discover({
 - `genetic_algorithm` — Genetic algorithm
 - `ilp` — Integer Linear Programming
 - `a_star` — A* search
-- `ml_classify`, `ml_forecast`, `ml_cluster`, `ml_anomaly`, `ml_regress`, `ml_pca` — All 6 ML algorithms
+- `ml_classify`, `ml_forecast`, `ml_cluster` (internal only — no JS export), `ml_anomaly`, `ml_regress`, `ml_pca` — 6 ML algorithms registered (note: `ml_cluster` has no `#[wasm_bindgen]` export and is not callable from JS)
 - `streaming_dfg` — Streaming DFG
 
 **Latency budget:**
@@ -506,11 +506,13 @@ Which algorithms are available in each profile:
 | pso | ❌ | ❌ | ✅ | ❌ | ✅ |
 | simulated_annealing | ❌ | ❌ | ✅ | ❌ | ✅ |
 | ml_classify | ❌ | ✅ | ✅ | ❌ | ✅ |
-| ml_cluster | ❌ | ✅ | ✅ | ❌ | ✅ |
+| ml_cluster ⚠️ | ❌ | ✅ | ✅ | ❌ | ✅ |
 | ml_forecast | ❌ | ✅ | ✅ | ❌ | ✅ |
 | ml_anomaly | ❌ | ✅ | ✅ | ❌ | ✅ |
 | ml_regress | ❌ | ✅ | ✅ | ❌ | ✅ |
 | ml_pca | ❌ | ✅ | ✅ | ❌ | ✅ |
+
+> ⚠️ `ml_cluster` is present in the WASM binary (feature-ml flag) but has **no `#[wasm_bindgen]` export** and is not callable from JavaScript or the CLI. It is internal only.
 
 ---
 
