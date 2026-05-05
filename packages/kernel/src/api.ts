@@ -12,6 +12,50 @@ import { getRegistry, type AlgorithmRegistry } from './registry.js';
 import { KERNEL_VERSION, checkCompatibility, type CompatibilityResult } from './versioning.js';
 import { hashOutput, hashAlgorithmResult } from './hashing.js';
 import { KernelError, wrapKernelCall, classifyRustError } from './errors.js';
+import { validateKernelResult, ValidationError } from './validation.js';
+export { ValidationError } from './validation.js';
+export type { ViolationReport } from './validation.js';
+
+// ─── OTEL-compatible span emission ───────────────────────────────────────────
+//
+// The kernel package does not depend on @wasm4pm/observability to keep the
+// dependency graph acyclic (kernel is a foundation layer). Instead it emits
+// JSON Lines spans to a pluggable sink function so that any consumer — CLI,
+// engine, tests — can intercept, forward, or suppress the spans.
+//
+// Span schema follows the OpenTelemetry OTLP JSON Protobuf shape subset used
+// throughout the wasm4pm observability package. Attributes match the semconv
+// defined in packages/observability/src/instrumentation.ts for AlgorithmEvent.
+
+export interface KernelSpan {
+  trace_id: string;
+  span_id: string;
+  name: string;
+  kind: 'INTERNAL';
+  start_time: number; // nanoseconds (Date.now() * 1_000_000)
+  end_time: number;   // nanoseconds
+  status: { code: 'OK' | 'ERROR'; message?: string };
+  attributes: {
+    'service.name': string;
+    'kernel.version': string;
+    'algorithm.name': string;
+    'algorithm.output_type': string;
+    'algorithm.duration_ms': number;
+    'algorithm.status': 'ok' | 'error';
+    [key: string]: unknown;
+  };
+}
+
+/** Sink function type — receives a completed span and may emit it anywhere. */
+export type SpanSink = (span: KernelSpan) => void;
+
+/** Default no-op sink — suppresses all spans unless overridden. */
+const DEFAULT_SINK: SpanSink = () => {};
+
+/** Hex generator for W3C trace/span IDs. */
+function hexId(length: number): string {
+  return Array.from({ length }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+}
 
 /** Result returned from Kernel.run() */
 export interface KernelResult {
@@ -80,6 +124,9 @@ export interface KernelWasmModule extends WasmModule {
   /** Get wasm4pm version */
   get_version?(): string;
 
+  /** Load an event log from an XES string and return an opaque handle */
+  load_eventlog_from_xes?(xes: string): string;
+
   /** Delete an object handle from WASM memory */
   delete_object?(handle: string): void;
 
@@ -110,10 +157,30 @@ export class Kernel {
   private _cacheHits = 0;
   private _startTime = Date.now();
   private _resultCache = new Map<string, KernelResult>();
+  private _spanSink: SpanSink = DEFAULT_SINK;
 
-  constructor(wasmModule: KernelWasmModule) {
+  constructor(wasmModule: KernelWasmModule, options?: { spanSink?: SpanSink }) {
     this.wasm = wasmModule;
     this.registry = getRegistry();
+    if (options?.spanSink) {
+      this._spanSink = options.spanSink;
+    }
+  }
+
+  /**
+   * Replace the span sink at runtime.
+   *
+   * Useful for tests that want to capture emitted spans without re-constructing
+   * the kernel:
+   * ```ts
+   * const spans: KernelSpan[] = [];
+   * kernel.setSpanSink(s => spans.push(s));
+   * await kernel.run('dfg', handle);
+   * expect(spans[0].attributes['algorithm.name']).toBe('dfg');
+   * ```
+   */
+  setSpanSink(sink: SpanSink): void {
+    this._spanSink = sink;
   }
 
   /**
@@ -201,12 +268,51 @@ export class Kernel {
     }
 
     const activityKey = (params.activity_key as string) ?? 'concept:name';
+
+    // ── OTEL span setup ────────────────────────────────────────────────────
+    const traceId = hexId(32);
+    const spanId = hexId(16);
+    const spanStartNs = Date.now() * 1_000_000;
     const startTime = performance.now();
 
-    const wasmResult = await wrapKernelCall(
-      () => this.dispatchAlgorithm(algorithmName, eventLogHandle, activityKey, params),
-      { algorithm: algorithmName }
-    );
+    let wasmResult: { handle: string };
+    let spanStatus: 'OK' | 'ERROR' = 'OK';
+    let spanErrorMessage: string | undefined;
+
+    try {
+      wasmResult = await wrapKernelCall(
+        () => this.dispatchAlgorithm(algorithmName, eventLogHandle, activityKey, params),
+        { algorithm: algorithmName }
+      );
+    } catch (err) {
+      spanStatus = 'ERROR';
+      spanErrorMessage = err instanceof Error ? err.message : String(err);
+      const durationMsErr = performance.now() - startTime;
+      // Emit error span non-blocking — never let OTEL block the hot path.
+      try {
+        this._spanSink({
+          trace_id: traceId,
+          span_id: spanId,
+          name: 'kernel.run',
+          kind: 'INTERNAL',
+          start_time: spanStartNs,
+          end_time: Date.now() * 1_000_000,
+          status: { code: 'ERROR', message: spanErrorMessage },
+          attributes: {
+            'service.name': 'wasm4pm',
+            'kernel.version': KERNEL_VERSION,
+            'algorithm.name': algorithmName,
+            'algorithm.output_type': metadata.outputType,
+            'algorithm.duration_ms': durationMsErr,
+            'algorithm.status': 'error',
+          },
+        });
+      } catch {
+        // Never block on OTEL — per TPS fail-fast rules the underlying error
+        // is already re-thrown; the span emission failure is discarded.
+      }
+      throw err;
+    }
 
     const durationMs = performance.now() - startTime;
     this._totalRuns++;
@@ -228,6 +334,34 @@ export class Kernel {
         }
       ),
     };
+
+    // Validate structural integrity before caching
+    validateKernelResult(result, metadata);
+
+    // ── Emit completion span (non-blocking) ────────────────────────────────
+    try {
+      this._spanSink({
+        trace_id: traceId,
+        span_id: spanId,
+        name: 'kernel.run',
+        kind: 'INTERNAL',
+        start_time: spanStartNs,
+        end_time: Date.now() * 1_000_000,
+        status: { code: spanStatus, message: spanErrorMessage },
+        attributes: {
+          'service.name': 'wasm4pm',
+          'kernel.version': KERNEL_VERSION,
+          'algorithm.name': algorithmName,
+          'algorithm.output_type': metadata.outputType,
+          'algorithm.duration_ms': durationMs,
+          'algorithm.status': 'ok',
+          'algorithm.handle': result.handle,
+          'algorithm.hash': result.hash,
+        },
+      });
+    } catch {
+      // Never block on OTEL.
+    }
 
     this._resultCache.set(cacheKey, result);
     return result;

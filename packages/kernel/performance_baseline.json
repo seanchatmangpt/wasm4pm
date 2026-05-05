@@ -1,0 +1,54 @@
+{
+  "_comment": "Kernel.run() dispatch overhead baselines. ceiling_ms is the CI enforcement ceiling (generous). measured_ms is the P99 observed on a developer workstation. Tighten ceiling_ms as performance improves.",
+  "_updated": "2026-05-05",
+  "_methodology": "100 or 1000 sequential kernel.run() calls against a deterministic WASM stub. Measures TypeScript facade overhead only (dispatch, cache key hashing, OTEL span emission, result validation).",
+  "dfg_n100": {
+    "description": "100 sequential DFG runs (distinct log handles, no cache hits)",
+    "n": 100,
+    "algorithm": "dfg",
+    "measured_ms": 5,
+    "ceiling_ms": 100
+  },
+  "dfg_n1k": {
+    "description": "1000 sequential DFG runs (distinct log handles, no cache hits)",
+    "n": 1000,
+    "algorithm": "dfg",
+    "measured_ms": 50,
+    "ceiling_ms": 500
+  },
+  "heuristic_n100": {
+    "description": "100 sequential heuristic_miner runs (distinct log handles, no cache hits)",
+    "n": 100,
+    "algorithm": "heuristic_miner",
+    "measured_ms": 5,
+    "ceiling_ms": 200
+  },
+  "heuristic_n1k": {
+    "description": "1000 sequential heuristic_miner runs (distinct log handles, no cache hits)",
+    "n": 1000,
+    "algorithm": "heuristic_miner",
+    "measured_ms": 50,
+    "ceiling_ms": 500
+  },
+  "alpha_n100": {
+    "description": "100 sequential alpha_plus_plus runs (distinct log handles, no cache hits)",
+    "n": 100,
+    "algorithm": "alpha_plus_plus",
+    "measured_ms": 5,
+    "ceiling_ms": 200
+  },
+  "span_capture_overhead": {
+    "description": "100 DFG runs with an in-process span capture sink — measures OTEL emission overhead",
+    "n": 100,
+    "algorithm": "dfg",
+    "measured_ms": 5,
+    "ceiling_ms": 150
+  },
+  "cache_hit_n1k": {
+    "description": "1000 cache-hit DFG calls (single log handle, all served from result cache)",
+    "n": 1000,
+    "algorithm": "dfg",
+    "measured_ms": 2,
+    "ceiling_ms": 50
+  }
+}

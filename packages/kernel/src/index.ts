@@ -48,6 +48,10 @@ export {
 } from './errors.js';
 export type { KernelErrorCode } from './errors.js';
 
+// Validation exports
+export { ValidationError } from './validation.js';
+export type { ViolationReport } from './validation.js';
+
 // Step dispatcher bridge
 export { buildKernelStepHandlers } from './step-dispatcher.js';
 
