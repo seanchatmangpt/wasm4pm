@@ -15,6 +15,8 @@ import {
   reduceFeaturesPCA,
 } from '@wasm4pm/ml';
 import type { ClassificationMethod, ClusteringMethod } from '@wasm4pm/ml';
+import { Instrumentation } from '@wasm4pm/observability';
+import type { OtelEvent, RequiredOtelAttributes } from '@wasm4pm/observability';
 
 export const VALID_ML_TASKS = [
   'classify',
@@ -35,6 +37,17 @@ export interface MlTaskOptions {
   eps?: number | string;
   smoothingMethod?: 'sma' | 'ema';
   useExponential?: boolean;
+  /**
+   * Optional OTEL instrumentation. When provided, every ML task execution
+   * emits a `ml.<task>` start/complete span pair via {@link Instrumentation.instrumentMlExecution}.
+   * Emission is non-blocking: exporter exceptions are swallowed.
+   */
+  instrumentation?: {
+    traceId: string;
+    requiredAttrs: RequiredOtelAttributes;
+    emit: (event: OtelEvent) => void;
+    parentSpanId?: string;
+  };
 }
 
 /**
@@ -54,6 +67,36 @@ export async function executeMlTask(
   activityKey: string,
   options: MlTaskOptions = {}
 ): Promise<Record<string, unknown>> {
+  // If instrumentation is configured, wrap the entire task dispatch in a span.
+  if (options.instrumentation) {
+    const { traceId, requiredAttrs, emit, parentSpanId } = options.instrumentation;
+    const method =
+      (options.method as string) ||
+      ({ classify: 'knn', cluster: 'kmeans', forecast: 'linear', anomaly: 'ewma',
+         regress: 'linear', pca: 'svd' } as Record<MlTask, string>)[task];
+    const inputAttributes: Record<string, unknown> = {};
+    const k = options.k !== undefined ? Number(options.k) : undefined;
+    if (k !== undefined && !Number.isNaN(k)) inputAttributes.parameterK = k;
+    const eps = options.eps !== undefined ? Number(options.eps) : undefined;
+    if (eps !== undefined && !Number.isNaN(eps)) inputAttributes.parameterEps = eps;
+    const nc = options.nComponents !== undefined ? Number(options.nComponents) : undefined;
+    if (nc !== undefined && !Number.isNaN(nc)) inputAttributes.parameterNComponents = nc;
+    const fp = options.forecastPeriods !== undefined ? Number(options.forecastPeriods) : undefined;
+    if (fp !== undefined && !Number.isNaN(fp)) inputAttributes.parameterForecastPeriods = fp;
+
+    // Recurse without instrumentation to avoid infinite loop.
+    const inner: MlTaskOptions = { ...options, instrumentation: undefined };
+    return Instrumentation.instrumentMlExecution(
+      traceId,
+      task,
+      method,
+      requiredAttrs,
+      () => executeMlTask(wasm, task, logHandle, activityKey, inner),
+      emit,
+      { parentSpanId, inputAttributes: inputAttributes as any }
+    );
+  }
+
   switch (task) {
     case 'classify': {
       const configJson = JSON.stringify({

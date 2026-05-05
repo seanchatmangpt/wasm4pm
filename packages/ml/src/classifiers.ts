@@ -60,7 +60,10 @@ function mae(actual: number[], predicted: number[]): number {
   const n = actual.length;
   if (n === 0) return 0;
   let sum = 0;
-  for (let i = 0; i < n; i++) sum += actual[i] - predicted[i] < 0 ? predicted[i] - actual[i] : actual[i] - predicted[i];
+  for (let i = 0; i < n; i++) {
+    const d = actual[i] - predicted[i];
+    sum += d < 0 ? -d : d;
+  }
   return sum / n;
 }
 
@@ -691,7 +694,24 @@ function expFit(x: number[], y: number[]): { a: number; b: number; rSquared: num
 // ---------------------------------------------------------------------------
 
 /**
- * Classify traces using k-NN, logistic regression, decision tree, or naive Bayes.
+ * Classify traces by a categorical target (e.g., process outcome).
+ *
+ * Supports four methods:
+ *   - `'knn'` — k-nearest neighbours (inverse-distance weighted vote, leave-one-out)
+ *   - `'logistic_regression'` — multinomial softmax with batch gradient descent
+ *   - `'decision_tree'` — CART (Gini, configurable max depth)
+ *   - `'naive_bayes'` — Gaussian, single-pass mean/variance training
+ *
+ * The function consumes the JSON output of `wasm.extract_case_features()`.
+ * Empty input returns `{ predictions: [] }` rather than throwing — callers must
+ * handle the empty case.
+ *
+ * @param featuresJson - Per-case feature objects (must include `case_id`).
+ * @param options.targetKey - Categorical target column. Default `'outcome'`.
+ * @param options.method - Classifier method. Default `'knn'`.
+ * @param options.k - Neighbours for k-NN. Default `5`.
+ * @param options.maxDepth - Max depth for decision tree. Default `5`.
+ * @returns ClassificationResult with per-case predictions and confidence in [0, 1].
  */
 export async function classifyTraces(
   featuresJson: Array<Record<string, unknown>>,
@@ -779,6 +799,17 @@ export async function classifyTraces(
 
 /**
  * Predict remaining case time using regression on trace features.
+ *
+ * NOTE: This is a univariate regression — only the first feature column is used
+ * as the independent variable. For multi-feature regression, project features
+ * with PCA or pre-aggregate before calling.
+ *
+ * Methods:
+ *   - `'linear_regression'` — least-squares slope/intercept (default)
+ *   - `'polynomial_regression'` — Vandermonde + Gauss–Jordan, configurable `degree`
+ *   - `'exponential_regression'` — log-linear fit `y = a · e^(b·x)`
+ *
+ * @throws Error if fewer than 2 traces are supplied (`'Not enough traces ...'`).
  */
 export async function regressRemainingTime(
   featuresJson: Array<Record<string, unknown>>,

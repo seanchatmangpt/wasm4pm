@@ -104,3 +104,6 @@ export type {
   PetriNet,
   PowlModel,
 } from './converters/model-ir-converter.js';
+
+// Prediction subsystem — orchestrates the 6 Van der Aalst perspectives.
+export * as prediction from './prediction/index.js';

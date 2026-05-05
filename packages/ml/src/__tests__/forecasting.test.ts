@@ -182,9 +182,16 @@ describe('forecastSeries edge cases', () => {
     );
     const strongResult = await forecastSeries(strongSeasonal, { forecastPeriods: 4 });
 
-    // Weak seasonality: noise-dominated (small amplitude on large mean)
+    // Weak seasonality: deterministic pseudo-noise on top of a large mean.
+    // Using a fixed sequence (sin at coprime frequencies) keeps the test
+    // bit-exact across runs while still dominating the small periodic signal.
     const weakSeasonal = Array.from({ length: 32 }, (_, i) =>
-      Math.round(1000 + 5 * Math.sin(2 * Math.PI * i / 8) + (Math.random() - 0.5) * 200)
+      Math.round(
+        1000
+        + 5 * Math.sin(2 * Math.PI * i / 8)
+        + 100 * Math.sin(2 * Math.PI * i / 13)
+        + 80 * Math.cos(2 * Math.PI * i / 17),
+      ),
     );
     const weakResult = await forecastSeries(weakSeasonal, { forecastPeriods: 4 });
 

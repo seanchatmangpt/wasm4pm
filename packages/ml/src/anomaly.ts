@@ -186,7 +186,21 @@ function detectSeasonality(series: number[] | Float64Array): { period: number; s
 // ---------------------------------------------------------------------------
 
 /**
- * Detect enhanced anomalies in drift distance series.
+ * Detect peaks and residual anomalies in a numeric series (e.g., concept-drift
+ * distances over a sliding window).
+ *
+ * Pipeline:
+ *   1. Smooth the series (SMA or EMA) with the supplied window.
+ *   2. Find peaks in the *original* series (preserves exact spike positions).
+ *   3. Decompose the smoothed series into trend + seasonal + residual when
+ *      `length >= 4`, then surface peaks of the residual as `residualPeaks`.
+ *
+ * Series shorter than 3 points return empty peak lists with the original data
+ * passed through as `smoothedSeries`.
+ *
+ * @param driftDistances - Numeric series in chronological order.
+ * @param options.smoothingWindow - SMA/EMA window size (default 3, clamped to length).
+ * @param options.smoothingMethod - `'sma'` (default) or `'ema'`.
  */
 export async function detectEnhancedAnomalies(
   driftDistances: number[],

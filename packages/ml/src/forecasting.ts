@@ -219,11 +219,66 @@ function exponentialFit(series: number[] | Float64Array): { rSquared: number; pr
 }
 
 // ---------------------------------------------------------------------------
+// Shared seasonality + exponential post-processing
+// ---------------------------------------------------------------------------
+
+/**
+ * Compute optional seasonality, decomposition, and exponential forecast for a
+ * pre-checked series (n >= 3). Both `forecastThroughput` and `forecastSeries`
+ * delegate to this to avoid duplication.
+ */
+function deriveSeasonalAndExponential(
+  series: number[] | Float64Array,
+  forecastPeriods: number,
+  useExponential: boolean,
+): {
+  seasonality?: { period: number; strength: number };
+  decomposition?: { trend: number[]; seasonal: number[]; residual: number[] };
+  exponentialForecast?: number[];
+} {
+  const n = series.length;
+  let seasonality: { period: number; strength: number } | undefined;
+  let decomposition: { trend: number[]; seasonal: number[]; residual: number[] } | undefined;
+
+  try {
+    if (n >= 4) {
+      const seasonResult = detectSeasonalityCore(series);
+      seasonality = { period: seasonResult.period, strength: seasonResult.strength };
+      if (seasonResult.period > 1 && seasonResult.period < n) {
+        const decomp = seasonalDecomposeCore(series, seasonResult.period);
+        decomposition = {
+          trend: Array.from(decomp.trend),
+          seasonal: Array.from(decomp.seasonal),
+          residual: Array.from(decomp.residual),
+        };
+      }
+    }
+  } catch { /* non-fatal */ }
+
+  let exponentialForecast: number[] | undefined;
+  if (useExponential && n >= 3) {
+    try {
+      const expModel = exponentialFit(series);
+      if (expModel.rSquared > 0.5) {
+        exponentialForecast = new Array(forecastPeriods);
+        for (let i = 0; i < forecastPeriods; i++) exponentialForecast[i] = expModel.predict(n + i);
+      }
+    } catch { /* non-fatal */ }
+  }
+
+  return { seasonality, decomposition, exponentialForecast };
+}
+
+// ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
 
 /**
- * Build event count time series from timestamps.
+ * Build an event-count time series by binning event timestamps into fixed-width
+ * windows. Returns one count per window, plus the start time of each window.
+ *
+ * @param eventTimestamps - Event timestamps in milliseconds (any order).
+ * @param windowSizeMs - Bin width in milliseconds.
  */
 export function buildThroughputSeries(
   eventTimestamps: number[],
@@ -259,6 +314,14 @@ export function buildThroughputSeries(
 
 /**
  * Forecast future process throughput and detect seasonal patterns.
+ *
+ * Pipeline: bin timestamps → linear trend → autocorrelation seasonality →
+ * (optional) exponential overlay if R² > 0.5.
+ *
+ * @param eventTimestamps - Event timestamps (milliseconds).
+ * @param options.windowSizeMs - Bin size (default 1 hour = 3_600_000 ms).
+ * @param options.forecastPeriods - Number of future windows to forecast (default 5).
+ * @param options.useExponential - Also fit `y = a · e^(b·x)` (default false).
  */
 export async function forecastThroughput(
   eventTimestamps: number[],
@@ -283,50 +346,30 @@ export async function forecastThroughput(
   const forecastPeriods = options.forecastPeriods ?? 5;
   const n = series.length;
   const trendModel = trendForecastCore(series, n, forecastPeriods);
-
-  let seasonality: { period: number; strength: number } | undefined;
-  let decomposition: { trend: number[]; seasonal: number[]; residual: number[] } | undefined;
-
-  try {
-    if (n >= 4) {
-      const seasonResult = detectSeasonalityCore(series);
-      seasonality = { period: seasonResult.period, strength: seasonResult.strength };
-      if (seasonResult.period > 1 && seasonResult.period < n) {
-        const decomp = seasonalDecomposeCore(series, seasonResult.period);
-        decomposition = {
-          trend: Array.from(decomp.trend),
-          seasonal: Array.from(decomp.seasonal),
-          residual: Array.from(decomp.residual),
-        };
-      }
-    }
-  } catch { /* non-fatal */ }
-
-  let exponentialForecast: number[] | undefined;
-  if (options.useExponential && n >= 3) {
-    try {
-      const expModel = exponentialFit(series);
-      if (expModel.rSquared > 0.5) {
-        exponentialForecast = [];
-        for (let i = 0; i < forecastPeriods; i++) exponentialForecast.push(expModel.predict(n + i));
-      }
-    } catch { /* non-fatal */ }
-  }
+  const extra = deriveSeasonalAndExponential(series, forecastPeriods, options.useExponential ?? false);
 
   return {
     eventCounts: series,
     windowCount: n,
     trend: { direction: trendModel.direction, slope: trendModel.slope, strength: trendModel.strength },
     forecast: Array.from(trendModel.forecast),
-    seasonality,
-    decomposition,
+    seasonality: extra.seasonality,
+    decomposition: extra.decomposition,
     windowSizeMs,
-    exponentialForecast,
+    exponentialForecast: extra.exponentialForecast,
   };
 }
 
 /**
  * Forecast future values from any numeric series.
+ *
+ * Same pipeline as `forecastThroughput`, but accepts a pre-binned numeric
+ * series (e.g., drift distances, queue lengths). Returns `direction: 'unknown'`
+ * for series with fewer than 3 observations.
+ *
+ * @param series - Numeric observations in chronological order.
+ * @param options.forecastPeriods - Number of future steps to forecast (default 5).
+ * @param options.useExponential - Also fit exponential model (default false).
  */
 export async function forecastSeries(
   series: number[],
@@ -342,42 +385,14 @@ export async function forecastSeries(
   const forecastPeriods = options.forecastPeriods ?? 5;
   const n = series.length;
   const trendModel = trendForecastCore(series, n, forecastPeriods);
-
-  let seasonality: { period: number; strength: number } | undefined;
-  let decomposition: { trend: number[]; seasonal: number[]; residual: number[] } | undefined;
-
-  try {
-    if (n >= 4) {
-      const seasonResult = detectSeasonalityCore(series);
-      seasonality = { period: seasonResult.period, strength: seasonResult.strength };
-      if (seasonResult.period > 1 && seasonResult.period < n) {
-        const decomp = seasonalDecomposeCore(series, seasonResult.period);
-        decomposition = {
-          trend: Array.from(decomp.trend),
-          seasonal: Array.from(decomp.seasonal),
-          residual: Array.from(decomp.residual),
-        };
-      }
-    }
-  } catch { /* non-fatal */ }
-
-  let exponentialForecast: number[] | undefined;
-  if (options.useExponential && n >= 3) {
-    try {
-      const expModel = exponentialFit(series);
-      if (expModel.rSquared > 0.5) {
-        exponentialForecast = [];
-        for (let i = 0; i < forecastPeriods; i++) exponentialForecast.push(expModel.predict(n + i));
-      }
-    } catch { /* non-fatal */ }
-  }
+  const extra = deriveSeasonalAndExponential(series, forecastPeriods, options.useExponential ?? false);
 
   return {
     seriesLength: n,
     trend: { direction: trendModel.direction, slope: trendModel.slope, strength: trendModel.strength },
     forecast: Array.from(trendModel.forecast),
-    seasonality,
-    decomposition,
-    exponentialForecast,
+    seasonality: extra.seasonality,
+    decomposition: extra.decomposition,
+    exponentialForecast: extra.exponentialForecast,
   };
 }

@@ -15,7 +15,13 @@
  */
 
 // Resolution
-export { resolveConfig, getExampleTomlConfig, getExampleJsonConfig } from './resolver.js';
+export {
+  resolveConfig,
+  getExampleTomlConfig,
+  getExampleJsonConfig,
+  getExampleEnvFile,
+  getExamplePresetConfig,
+} from './resolver.js';
 
 // Schema & validation
 export {
@@ -43,6 +49,16 @@ export {
   predictionConfigSchema,
   rlConfigSchema,
   mlConfigSchema,
+  driftConfigSchema,
+  classifyConfigSchema,
+  clusterConfigSchema,
+  forecastConfigSchema,
+  anomalyConfigSchema,
+  regressConfigSchema,
+  pcaConfigSchema,
+  rlConvergenceSchema,
+  rlAgentSchema,
+  mlTaskSchema,
 } from './schema.js';
 export type { AlgorithmId } from './schema.js';
 
@@ -72,7 +88,18 @@ export type {
   OutputConfig,
   ExecutionConfig,
   PredictionConfig,
+  DriftConfig,
+  MlConfig,
+  ClassifyConfig,
+  ClusterConfig,
+  ForecastConfig,
+  AnomalyConfig,
+  RegressConfig,
+  PcaConfig,
   RlConfig,
+  RlConvergenceConfig,
+  RlAgent,
+  MlTask,
   SourceKind,
   SinkKind,
   ExecutionProfile,

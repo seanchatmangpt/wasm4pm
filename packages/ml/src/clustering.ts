@@ -235,7 +235,21 @@ function dbscanCore(
 // ---------------------------------------------------------------------------
 
 /**
- * Cluster traces by similarity using ML algorithms.
+ * Cluster traces by feature similarity.
+ *
+ * Methods:
+ *   - `'kmeans'` — k-means++ initialisation, columnar squared-distance loop.
+ *     Convergence is deterministic for identical input.
+ *   - `'dbscan'` — density-based clustering. Points with fewer than `minPoints`
+ *     within `eps` distance are labelled as noise (cluster `-2`).
+ *
+ * Returns `{ assignments: [] }` for empty input — does not throw.
+ *
+ * @param featuresJson - Per-case feature objects.
+ * @param options.method - `'kmeans'` (default) or `'dbscan'`.
+ * @param options.k - k-means cluster count (default 3, capped at sample count).
+ * @param options.eps - DBSCAN neighbourhood radius (default 1.0).
+ * @param options.minPoints - DBSCAN min cluster density (default 3).
  */
 export async function clusterTraces(
   featuresJson: Array<Record<string, unknown>>,

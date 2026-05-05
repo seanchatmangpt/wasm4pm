@@ -179,6 +179,10 @@ harness = false
 name = "rdtsc_validation"
 harness = false
 
+[[bench]]
+name = "drift_bench"
+harness = false
+
 [[example]]
 name = "scalability_report"
 

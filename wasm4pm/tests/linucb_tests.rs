@@ -89,9 +89,10 @@ fn fresh_agent_q_equals_exploration_bonus_only() {
 fn update_intercept_tracks_reward_direction() {
     let mut agent = LinUCBAgent::new();
     let features = [0.0_f32; N_FEATURES]; // zero features → gradient only on b
-    let initial_b = agent.intercept(10);
-    agent.update(&features, 10, 1.0);
-    let after_b = agent.intercept(10);
+    const ACTION: usize = 2; // valid: 0..N_ACTIONS (N_ACTIONS=5)
+    let initial_b = agent.intercept(ACTION);
+    agent.update(&features, ACTION as u32, 1.0);
+    let after_b = agent.intercept(ACTION);
     assert!(
         after_b > initial_b,
         "positive reward should increase intercept: {initial_b} → {after_b}"
@@ -102,11 +103,12 @@ fn update_intercept_tracks_reward_direction() {
 fn update_with_unit_features_updates_all_weights() {
     let mut agent = LinUCBAgent::new();
     let ones = [1.0_f32; N_FEATURES];
-    let w_before = agent.weight_vector(20);
-    agent.update(&ones, 20, 5.0);
-    let w_after = agent.weight_vector(20);
+    const ACTION: usize = 4; // valid: 0..N_ACTIONS (N_ACTIONS=5), highest index
+    let w_before = agent.weight_vector(ACTION);
+    agent.update(&ones, ACTION as u32, 5.0);
+    let w_after = agent.weight_vector(ACTION);
     for j in 0..N_FEATURES {
-        assert_ne!(w_before[j], w_after[j], "W[20][{j}] should change");
+        assert_ne!(w_before[j], w_after[j], "W[{ACTION}][{j}] should change");
     }
 }
 

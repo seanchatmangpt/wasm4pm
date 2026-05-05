@@ -212,6 +212,88 @@ function parseEnvConfig(env: NodeJS.ProcessEnv): Record<string, unknown> {
     }
     config.prediction = { ...(config.prediction as Record<string, unknown>), ngramOrder: n };
   }
+  // --- ML environment variables ---
+  if (env.WASM4PM_ML_ENABLED) {
+    config.ml = {
+      ...(config.ml as Record<string, unknown>),
+      enabled: env.WASM4PM_ML_ENABLED === 'true' || env.WASM4PM_ML_ENABLED === '1',
+    };
+  }
+  if (env.WASM4PM_ML_ALGORITHMS) {
+    config.ml = {
+      ...(config.ml as Record<string, unknown>),
+      tasks: env.WASM4PM_ML_ALGORITHMS.split(',').map((t) => t.trim()).filter(Boolean),
+    };
+  }
+
+  // --- RL environment variables ---
+  if (env.WASM4PM_RL_ENABLED) {
+    config.rl = {
+      ...(config.rl as Record<string, unknown>),
+      enabled: env.WASM4PM_RL_ENABLED === 'true' || env.WASM4PM_RL_ENABLED === '1',
+    };
+  }
+  if (env.WASM4PM_RL_AGENTS) {
+    config.rl = {
+      ...(config.rl as Record<string, unknown>),
+      agents: env.WASM4PM_RL_AGENTS.split(',').map((t) => t.trim()).filter(Boolean),
+    };
+  }
+  if (env.WASM4PM_RL_LEARNING_RATE) {
+    const v = parseFloat(env.WASM4PM_RL_LEARNING_RATE);
+    if (Number.isNaN(v)) {
+      throw new Error(
+        `Invalid WASM4PM_RL_LEARNING_RATE: "${env.WASM4PM_RL_LEARNING_RATE}" is not a valid number`
+      );
+    }
+    if (v <= 0 || v > 1) {
+      throw new Error(`Invalid WASM4PM_RL_LEARNING_RATE: ${v} must be in (0, 1]`);
+    }
+    config.rl = { ...(config.rl as Record<string, unknown>), learning_rate: v };
+  }
+  if (env.WASM4PM_RL_DISCOUNT_FACTOR) {
+    const v = parseFloat(env.WASM4PM_RL_DISCOUNT_FACTOR);
+    if (Number.isNaN(v) || v < 0 || v > 1) {
+      throw new Error(
+        `Invalid WASM4PM_RL_DISCOUNT_FACTOR: "${env.WASM4PM_RL_DISCOUNT_FACTOR}" must be a number in [0, 1]`
+      );
+    }
+    config.rl = { ...(config.rl as Record<string, unknown>), discount_factor: v };
+  }
+  if (env.WASM4PM_RL_EPSILON) {
+    const v = parseFloat(env.WASM4PM_RL_EPSILON);
+    if (Number.isNaN(v) || v < 0 || v > 1) {
+      throw new Error(
+        `Invalid WASM4PM_RL_EPSILON: "${env.WASM4PM_RL_EPSILON}" must be a number in [0, 1]`
+      );
+    }
+    config.rl = { ...(config.rl as Record<string, unknown>), epsilon: v };
+  }
+
+  // --- Prediction drift environment variables ---
+  if (env.WASM4PM_PREDICTION_DRIFT_THRESHOLD) {
+    const v = parseFloat(env.WASM4PM_PREDICTION_DRIFT_THRESHOLD);
+    if (Number.isNaN(v) || v <= 0 || v > 1) {
+      throw new Error(
+        `Invalid WASM4PM_PREDICTION_DRIFT_THRESHOLD: "${env.WASM4PM_PREDICTION_DRIFT_THRESHOLD}" must be a number in (0, 1]`
+      );
+    }
+    const existing = (config.prediction as Record<string, unknown>) ?? {};
+    const drift = (existing.drift as Record<string, unknown>) ?? {};
+    config.prediction = { ...existing, drift: { ...drift, threshold: v } };
+  }
+  if (env.WASM4PM_PREDICTION_DRIFT_EWMA_ALPHA) {
+    const v = parseFloat(env.WASM4PM_PREDICTION_DRIFT_EWMA_ALPHA);
+    if (Number.isNaN(v) || v <= 0 || v > 1) {
+      throw new Error(
+        `Invalid WASM4PM_PREDICTION_DRIFT_EWMA_ALPHA: "${env.WASM4PM_PREDICTION_DRIFT_EWMA_ALPHA}" must be a number in (0, 1]`
+      );
+    }
+    const existing = (config.prediction as Record<string, unknown>) ?? {};
+    const drift = (existing.drift as Record<string, unknown>) ?? {};
+    config.prediction = { ...existing, drift: { ...drift, ewma_alpha: v } };
+  }
+
   if (env.WASM4PM_PREDICTION_DRIFT_WINDOW) {
     const w = parseInt(env.WASM4PM_PREDICTION_DRIFT_WINDOW, 10);
     // CRITICAL: Only accept valid integers, reject NaN
@@ -271,6 +353,27 @@ function parseCliOverrides(cli: CliOverrides): Record<string, unknown> {
     if (cli.predictionNgramOrder !== undefined) prediction.ngramOrder = cli.predictionNgramOrder;
     if (cli.predictionDriftWindow !== undefined) prediction.driftWindowSize = cli.predictionDriftWindow;
     config.prediction = prediction;
+  }
+  if (cli.mlEnabled !== undefined || cli.mlTasks) {
+    const ml: Record<string, unknown> = {};
+    if (cli.mlEnabled !== undefined) ml.enabled = cli.mlEnabled;
+    if (cli.mlTasks) ml.tasks = cli.mlTasks;
+    config.ml = ml;
+  }
+  if (
+    cli.rlEnabled !== undefined ||
+    cli.rlAgents ||
+    cli.rlLearningRate !== undefined ||
+    cli.rlDiscountFactor !== undefined ||
+    cli.rlEpsilon !== undefined
+  ) {
+    const rl: Record<string, unknown> = {};
+    if (cli.rlEnabled !== undefined) rl.enabled = cli.rlEnabled;
+    if (cli.rlAgents) rl.agents = cli.rlAgents;
+    if (cli.rlLearningRate !== undefined) rl.learning_rate = cli.rlLearningRate;
+    if (cli.rlDiscountFactor !== undefined) rl.discount_factor = cli.rlDiscountFactor;
+    if (cli.rlEpsilon !== undefined) rl.epsilon = cli.rlEpsilon;
+    config.rl = rl;
   }
 
   return config;
@@ -356,7 +459,242 @@ ngramOrder = 2           # 2–5
 driftWindowSize = 10
 # tasks = ["next_activity", "remaining_time", "drift", "outcome", "features", "resource"]
 tasks = []
+
+[prediction.drift]
+ewma_alpha = 0.2   # EWMA smoothing factor in (0, 1]
+threshold  = 0.3   # drift threshold in (0, 1]
+
+# ---------------------------------------------------------------------------
+# ML analysis (classify / cluster / forecast / anomaly / regress / pca)
+# ---------------------------------------------------------------------------
+[ml]
+enabled    = false
+algorithms = ["classify", "cluster", "forecast"]   # alias of "tasks"
+
+[ml.classify]
+model     = "decision_tree"   # decision_tree | naive_bayes | logistic_regression | knn
+targetKey = "outcome"
+k         = 5                 # only used when model = "knn"
+
+[ml.cluster]
+method = "kmeans"             # kmeans | dbscan | hierarchical
+k      = 5
+eps    = 1.0                  # DBSCAN ε
+
+[ml.forecast]
+method            = "linear"  # linear | exponential | polynomial
+periods           = 5
+polynomialDegree  = 2
+
+[ml.anomaly]
+method    = "ema"             # ema | isolation_forest | zscore
+alpha     = 0.3
+threshold = 2.5
+
+[ml.regress]
+method    = "linear"          # linear | polynomial | ridge
+targetKey = "outcome"
+lambda    = 0.0               # L2 strength (ridge only)
+
+[ml.pca]
+nComponents = 2
+
+# ---------------------------------------------------------------------------
+# RL system (tabular TD agents + LinUCB algorithm-selector)
+# ---------------------------------------------------------------------------
+[rl]
+enabled         = false
+agents          = ["QLearning", "SARSA", "DoubleQLearning"]
+learning_rate   = 0.1     # α in (0, 1]
+discount_factor = 0.99    # γ in [0, 1]
+epsilon         = 0.1     # ε-greedy exploration in [0, 1]
+
+[rl.convergence]
+min_cycles                = 50
+target_reward_improvement = 0.05
+window_size               = 10
+
+# LinUCB / GPU dispatch (algorithm-selector)
+gpu_enabled      = false
+linucb_lambda    = 1.0
+ucb1_exploration = 1.4142  # √2
 `;
+}
+
+/**
+ * Get example .env file string showing every supported WASM4PM_* variable.
+ */
+export function getExampleEnvFile(): string {
+  return `# wasm4pm environment variables (.env)
+# Place at: ./.env or ~/.wasm4pm/.env
+
+# --- Core ---
+WASM4PM_PROFILE=balanced              # fast | balanced | quality | stream
+WASM4PM_ALGORITHM=dfg
+WASM4PM_OUTPUT_FORMAT=human           # human | json
+WASM4PM_OUTPUT_DESTINATION=stdout
+WASM4PM_LOG_LEVEL=info
+WASM4PM_WATCH=false
+WASM4PM_SOURCE_KIND=file
+WASM4PM_SINK_KIND=stdout
+
+# --- OpenTelemetry ---
+WASM4PM_OTEL_ENABLED=false
+WASM4PM_OTEL_ENDPOINT=http://localhost:4318
+
+# --- Prediction ---
+WASM4PM_PREDICTION_ENABLED=false
+WASM4PM_PREDICTION_TASKS=next_activity,remaining_time,drift
+WASM4PM_PREDICTION_ACTIVITY_KEY=concept:name
+WASM4PM_PREDICTION_NGRAM_ORDER=2      # integer in [2, 5]
+WASM4PM_PREDICTION_DRIFT_WINDOW=10    # positive integer
+WASM4PM_PREDICTION_DRIFT_EWMA_ALPHA=0.2  # number in (0, 1]
+WASM4PM_PREDICTION_DRIFT_THRESHOLD=0.3   # number in (0, 1]
+
+# --- ML ---
+WASM4PM_ML_ENABLED=false
+WASM4PM_ML_ALGORITHMS=classify,cluster,forecast
+
+# --- RL ---
+WASM4PM_RL_ENABLED=false
+WASM4PM_RL_AGENTS=QLearning,SARSA
+WASM4PM_RL_LEARNING_RATE=0.1          # α in (0, 1]
+WASM4PM_RL_DISCOUNT_FACTOR=0.99       # γ in [0, 1]
+WASM4PM_RL_EPSILON=0.1                # ε in [0, 1]
+`;
+}
+
+/**
+ * Get a preset example config suitable for one of the standard execution profiles.
+ *
+ * Useful for `pictl init --preset fast|balanced|quality` and as documentation.
+ */
+export function getExamplePresetConfig(preset: 'fast' | 'balanced' | 'quality'): string {
+  switch (preset) {
+    case 'fast':
+      return `# wasm4pm — "fast" preset (latency-optimised)
+schema_version = ${SCHEMA_VERSION}
+version = "26.4.5"
+
+[source]
+kind = "file"
+
+[sink]
+kind = "stdout"
+
+[algorithm]
+name = "dfg"
+
+[execution]
+profile = "fast"
+timeout = 60000
+
+[ml]
+enabled = false
+
+[rl]
+enabled = false
+
+[prediction]
+enabled = false
+`;
+    case 'balanced':
+      return `# wasm4pm — "balanced" preset
+schema_version = ${SCHEMA_VERSION}
+version = "26.4.5"
+
+[source]
+kind = "file"
+
+[sink]
+kind = "stdout"
+
+[algorithm]
+name = "heuristic_miner"
+
+[execution]
+profile = "balanced"
+
+[ml]
+enabled = true
+tasks = ["classify", "anomaly"]
+
+[ml.classify]
+model = "decision_tree"
+
+[ml.anomaly]
+method = "ema"
+
+[prediction]
+enabled = true
+tasks = ["next_activity", "drift"]
+
+[prediction.drift]
+ewma_alpha = 0.2
+`;
+    case 'quality':
+      return `# wasm4pm — "quality" preset (accuracy-optimised, longer runtime)
+schema_version = ${SCHEMA_VERSION}
+version = "26.4.5"
+
+[source]
+kind = "file"
+
+[sink]
+kind = "stdout"
+
+[algorithm]
+name = "ilp"
+
+[execution]
+profile = "quality"
+timeout = 1800000
+
+[ml]
+enabled = true
+tasks = ["classify", "cluster", "forecast", "anomaly", "regress", "pca"]
+
+[ml.classify]
+model = "logistic_regression"
+
+[ml.cluster]
+method = "kmeans"
+k = 8
+
+[ml.forecast]
+method = "polynomial"
+polynomialDegree = 3
+periods = 12
+
+[ml.regress]
+method = "ridge"
+lambda = 0.5
+
+[ml.pca]
+nComponents = 4
+
+[rl]
+enabled = true
+agents = ["QLearning", "SARSA", "DoubleQLearning", "ExpectedSARSA"]
+learning_rate = 0.05
+discount_factor = 0.99
+epsilon = 0.05
+
+[rl.convergence]
+min_cycles = 100
+target_reward_improvement = 0.01
+window_size = 20
+
+[prediction]
+enabled = true
+tasks = ["next_activity", "remaining_time", "outcome", "drift"]
+ngramOrder = 4
+
+[prediction.drift]
+ewma_alpha = 0.1
+threshold = 0.2
+`;
+  }
 }
 
 /**

@@ -33,6 +33,25 @@ console.log(config.metadata.hash);            // BLAKE3 hash
 console.log(config.metadata.provenance);      // provenance tracking
 ```
 
+## Migration: flat ML config → nested ML sub-sections
+
+Schema v1 used a flat layout for `[ml]`. Schema v1 keeps validating, but
+new code should use the nested per-task layout introduced in v26.5.x.
+
+| Legacy (still valid)              | Preferred                           |
+|-----------------------------------|-------------------------------------|
+| `ml.method = "knn"`               | `ml.classify.model = "knn"`         |
+| `ml.k = 5`                        | `ml.classify.k = 5`, `ml.cluster.k = 5` |
+| `ml.targetKey = "outcome"`        | `ml.classify.targetKey`, `ml.regress.targetKey` |
+| `ml.eps = 1.0`                    | `ml.cluster.eps = 1.0`              |
+| `ml.forecastPeriods = 5`          | `ml.forecast.periods = 5`           |
+| `ml.nComponents = 2`              | `ml.pca.nComponents = 2`            |
+
+`validate()` performs the promotion automatically — there is no rename
+step required for in-place upgrades. You can adopt nested sections one
+task at a time, and explicit nested values always win over their legacy
+counterparts.
+
 ## Configuration Sources
 
 Config is loaded in this priority order (highest first):
@@ -111,16 +130,164 @@ Create `./wasm4pm.json` or `~/.wasm4pm/config.json`:
 }
 ```
 
+## ML / RL / Prediction Configuration
+
+The `[ml]`, `[rl]`, and `[prediction]` sections let you configure the
+ML/RL/predictive-mining pipeline declaratively — no code edits required.
+
+### `[ml]` — Machine learning analysis
+
+Six ML tasks are supported. Each has its own nested sub-section so the
+hyperparameters that matter for one task never collide with another.
+
+```toml
+[ml]
+enabled = true
+tasks   = ["classify", "cluster", "forecast", "anomaly", "regress", "pca"]
+
+[ml.classify]
+model     = "decision_tree"   # decision_tree | naive_bayes | logistic_regression | knn
+targetKey = "outcome"
+k         = 5                 # only used when model = "knn"
+
+[ml.cluster]
+method = "kmeans"             # kmeans | dbscan | hierarchical
+k      = 5
+eps    = 1.0                  # DBSCAN ε neighbourhood radius
+
+[ml.forecast]
+method           = "linear"   # linear | exponential | polynomial
+periods          = 5
+polynomialDegree = 2          # only used when method = "polynomial"
+
+[ml.anomaly]
+method    = "ema"             # ema | isolation_forest | zscore
+alpha     = 0.3               # EMA smoothing in (0, 1]
+threshold = 2.5               # score above which a point is anomalous
+
+[ml.regress]
+method    = "linear"          # linear | polynomial | ridge
+targetKey = "outcome"
+lambda    = 0.0               # L2 regularisation strength (ridge only)
+
+[ml.pca]
+nComponents = 2
+```
+
+**Backwards-compatibility.** Schema-v1 configs that used the flat
+`ml.method` / `ml.k` / `ml.eps` / `ml.forecastPeriods` / `ml.nComponents`
+/ `ml.targetKey` keys still validate. `validate()` promotes them into the
+matching nested sub-section, so downstream code can always read
+`config.ml.classify`, `config.ml.cluster`, etc.
+
+### `[rl]` — Reinforcement-learning system
+
+Configure the tabular TD agents (`wasm4pm/src/rl_orchestrator.rs`) plus
+the LinUCB algorithm-selector (`wasm4pm/src/ml/linucb.rs`).
+
+```toml
+[rl]
+enabled         = true
+agents          = ["QLearning", "SARSA", "DoubleQLearning", "ExpectedSARSA", "REINFORCE"]
+learning_rate   = 0.1     # α in (0, 1]
+discount_factor = 0.99    # γ in [0, 1]
+epsilon         = 0.1     # ε-greedy exploration in [0, 1]
+
+[rl.convergence]
+min_cycles                = 50    # gate: no convergence checks before this
+target_reward_improvement = 0.05  # mean Δ-reward (window over window) considered "still improving"
+window_size               = 10    # trailing window for mean-reward computation
+
+# LinUCB / GPU dispatch (algorithm-selector contextual bandit)
+gpu_enabled      = false
+linucb_lambda    = 1.0
+ucb1_exploration = 1.4142  # √2 (Li et al. 2010 default)
+```
+
+### `[prediction]` — Predictive process mining
+
+```toml
+[prediction]
+enabled         = true
+activityKey     = "concept:name"
+ngramOrder      = 2                     # 2..5
+driftWindowSize = 10
+tasks           = ["next_activity", "remaining_time", "drift", "outcome"]
+
+[prediction.drift]
+ewma_alpha = 0.2   # EWMA smoothing α in (0, 1]
+threshold  = 0.3   # drift score in (0, 1] that fires a drift event
+```
+
+### Built-in presets
+
+For convenience there are three presets you can scaffold from:
+
+```typescript
+import { getExamplePresetConfig } from '@wasm4pm/config';
+
+await fs.writeFile('wasm4pm.toml', getExamplePresetConfig('quality'));
+//                                       ^ 'fast' | 'balanced' | 'quality'
+```
+
+- **fast** — discovery only (DFG), ML/RL/prediction off, 60 s timeout
+- **balanced** — heuristic miner + classify/anomaly + next-activity + drift
+- **quality** — ILP miner + all six ML tasks + 4 RL agents + 4 prediction tasks
+
 ## Environment Variables
 
-Override config via environment variables with `PICTL_` prefix:
+Override config via environment variables with `WASM4PM_` prefix.
+
+### Core
 
 ```bash
-PICTL_PROFILE=quality          # execution.profile
-PICTL_LOG_LEVEL=debug          # observability.logLevel
-PICTL_WATCH=true               # watch.enabled
-PICTL_OUTPUT_FORMAT=json        # output.format
-PICTL_OUTPUT_DESTINATION=/tmp/out.json
+WASM4PM_PROFILE=quality              # execution.profile (fast|balanced|quality|stream)
+WASM4PM_ALGORITHM=heuristic_miner    # algorithm.name
+WASM4PM_LOG_LEVEL=debug              # observability.logLevel
+WASM4PM_WATCH=true                   # watch.enabled
+WASM4PM_OUTPUT_FORMAT=json           # output.format
+WASM4PM_OUTPUT_DESTINATION=/tmp/out.json
+WASM4PM_SOURCE_KIND=stream           # source.kind
+WASM4PM_SINK_KIND=http               # sink.kind
+WASM4PM_OTEL_ENABLED=true
+WASM4PM_OTEL_ENDPOINT=http://localhost:4318
+```
+
+### ML / RL / Prediction
+
+```bash
+# ML
+WASM4PM_ML_ENABLED=true
+WASM4PM_ML_ALGORITHMS=classify,cluster,forecast    # comma-separated tasks
+
+# RL
+WASM4PM_RL_ENABLED=true
+WASM4PM_RL_AGENTS=QLearning,SARSA                  # comma-separated agents
+WASM4PM_RL_LEARNING_RATE=0.05                      # number in (0, 1]
+WASM4PM_RL_DISCOUNT_FACTOR=0.95                    # number in [0, 1]
+WASM4PM_RL_EPSILON=0.1                             # number in [0, 1]
+
+# Prediction
+WASM4PM_PREDICTION_ENABLED=true
+WASM4PM_PREDICTION_TASKS=next_activity,drift
+WASM4PM_PREDICTION_ACTIVITY_KEY=concept:name
+WASM4PM_PREDICTION_NGRAM_ORDER=3                   # integer in [2, 5]
+WASM4PM_PREDICTION_DRIFT_WINDOW=10
+WASM4PM_PREDICTION_DRIFT_EWMA_ALPHA=0.2            # number in (0, 1]
+WASM4PM_PREDICTION_DRIFT_THRESHOLD=0.3             # number in (0, 1]
+```
+
+A complete `.env` template covering every supported variable is available
+programmatically via `getExampleEnvFile()`.
+
+### Validation
+
+Out-of-range or non-numeric env values are rejected at load time with a
+clear, prefixed error message — for example:
+
+```
+Invalid WASM4PM_RL_LEARNING_RATE: 5 must be in (0, 1]
+Invalid WASM4PM_PREDICTION_DRIFT_THRESHOLD: "abc" must be a number in (0, 1]
 ```
 
 ## CLI Overrides

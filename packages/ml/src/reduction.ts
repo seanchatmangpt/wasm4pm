@@ -197,7 +197,21 @@ function eigenSymmetric(cov: Float64Array[], maxIter = 200): { eigenvalues: Floa
 // ---------------------------------------------------------------------------
 
 /**
- * Reduce feature dimensionality using PCA.
+ * Reduce feature dimensionality using Principal Component Analysis.
+ *
+ * Algorithm:
+ *   1. Min-max normalise each feature column (skipped if `normalize: false`).
+ *   2. Centre columns and build the covariance matrix in a single pass.
+ *   3. Solve the symmetric eigenproblem with cyclic Jacobi rotations.
+ *   4. Sort eigenvectors by `|eigenvalue|` descending, project the centred data.
+ *
+ * `explainedVariance[i]` is the share of total positive variance carried by
+ * the i-th component, clamped to `[0, 1]` to absorb floating-point noise.
+ *
+ * @param featuresJson - Per-case feature objects (must yield >=2 numeric columns).
+ * @param options.nComponents - Number of components to keep (default 2, capped at d).
+ * @param options.normalize - Min-max normalise columns first (default true).
+ * @throws Error when fewer than 2 traces or 2 features are available.
  */
 export async function reduceFeaturesPCA(
   featuresJson: Array<Record<string, unknown>>,
