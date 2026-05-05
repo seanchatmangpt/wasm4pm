@@ -1,6 +1,6 @@
 /**
  * e2e-watch.test.ts
- * Watch mode tests for pictl
+ * Watch mode tests for wasm4pm
  * Tests: Streaming events, checkpoints, reconnection, progress tracking
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';

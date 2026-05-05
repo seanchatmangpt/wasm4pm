@@ -1,5 +1,5 @@
 /**
- * pictl - High-performance process mining CLI
+ * wasm4pm - High-performance process mining CLI
  */
 export { main } from './cli.js';
 export { run, watch, status, explain, init, results, compare } from './cli.js';

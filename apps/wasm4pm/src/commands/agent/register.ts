@@ -66,7 +66,9 @@ export const register = defineCommand({
         if (formatter instanceof JSONFormatter) {
           formatter.error('Failed to register agent', error);
         } else {
-          formatter.error(`Failed to register agent: ${error instanceof Error ? error.message : String(error)}`);
+          formatter.error(
+            `Failed to register agent: ${error instanceof Error ? error.message : String(error)}`
+          );
         }
         process.exit(EXIT_CODES.execution_error);
       }

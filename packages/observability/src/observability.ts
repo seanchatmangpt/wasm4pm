@@ -61,7 +61,11 @@ export class ObservabilityLayer {
   /**
    * Enable OTEL export (non-blocking)
    */
-  public enableOtel(config: { endpoint: string; exporter?: 'otlp_http' | 'otlp_grpc'; required?: boolean }): void {
+  public enableOtel(config: {
+    endpoint: string;
+    exporter?: 'otlp_http' | 'otlp_grpc';
+    required?: boolean;
+  }): void {
     if (this.otelExporter) {
       // Already enabled
       return;
@@ -140,11 +144,7 @@ export class ObservabilityLayer {
    *     otel: { trace_id: '...', span_id: '...', ... }
    *   })
    */
-  public emit(event: {
-    cli?: CliEvent;
-    json?: JsonEvent;
-    otel?: OtelEvent;
-  }): void {
+  public emit(event: { cli?: CliEvent; json?: JsonEvent; otel?: OtelEvent }): void {
     // All non-blocking; emit to each layer that's configured
     if (event.cli) {
       this.emitCli(event.cli);
@@ -190,18 +190,14 @@ export class ObservabilityLayer {
    * Helper: Generate a W3C-compliant trace ID (32 hex chars)
    */
   public static generateTraceId(): string {
-    return Array.from({ length: 32 }, () =>
-      Math.floor(Math.random() * 16).toString(16)
-    ).join('');
+    return Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
   }
 
   /**
    * Helper: Generate a W3C-compliant span ID (16 hex chars)
    */
   private generateSpanId(): string {
-    return Array.from({ length: 16 }, () =>
-      Math.floor(Math.random() * 16).toString(16)
-    ).join('');
+    return Array.from({ length: 16 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
   }
 
   /**
@@ -271,7 +267,10 @@ export class ObservabilityLayer {
     return {
       success: !hasErrors,
       error: hasErrors
-        ? results.filter((r) => !r.success).map((r) => r.error).join('; ')
+        ? results
+            .filter((r) => !r.success)
+            .map((r) => r.error)
+            .join('; ')
         : undefined,
       timestamp: new Date(),
     };
@@ -287,9 +286,7 @@ let defaultInstance: ObservabilityLayer | null = null;
 /**
  * Get or create the default observability instance
  */
-export function getObservabilityLayer(
-  config?: ObservabilityConfig
-): ObservabilityLayer {
+export function getObservabilityLayer(config?: ObservabilityConfig): ObservabilityLayer {
   if (!defaultInstance) {
     defaultInstance = new ObservabilityLayer(config);
   }

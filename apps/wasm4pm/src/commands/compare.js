@@ -5,7 +5,7 @@ import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { WasmLoader } from '@wasm4pm/engine';
 /**
- * Algorithms supported by `pictl compare`.
+ * Algorithms supported by `wasm4pm compare`.
  * Each entry describes how to invoke the discovery function via the WASM module.
  */
 const ALGORITHMS = [

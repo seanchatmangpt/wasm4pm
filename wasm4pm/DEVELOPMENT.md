@@ -1,4 +1,4 @@
-# Development Guide for pictl
+# Development Guide for wasm4pm
 
 Architecture, extension points, and internal design documentation.
 
@@ -29,7 +29,7 @@ wasm4pm/
 │   └── streaming.rs              # Streaming DFG builder (IoT/chunked ingestion)
 │
 ├── cli/                          # Command-line interface
-│   └── index.ts                  # pictl CLI commands
+│   └── index.ts                  # wasm4pm CLI commands
 │
 ├── examples/                      # Example applications
 │   ├── interactive-demo.html      # Browser demo

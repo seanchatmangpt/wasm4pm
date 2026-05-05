@@ -1,7 +1,7 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { existsSync } from 'fs';
-const SEARCH_FILES = ['pictl.toml', 'pictl.json'];
+const SEARCH_FILES = ['wasm4pm.toml', 'wasm4pm.json'];
 /**
  * Resolve config file path using standard search order
  */
@@ -10,7 +10,7 @@ export function resolveConfigPath(cliConfigPath) {
     if (cliConfigPath) {
         return { path: path.resolve(cliConfigPath), source: 'cli' };
     }
-    // 2-3. Search for pictl.toml, then pictl.json in cwd
+    // 2-3. Search for wasm4pm.toml, then wasm4pm.json in cwd
     const cwd = process.cwd();
     for (const file of SEARCH_FILES) {
         const candidate = path.join(cwd, file);

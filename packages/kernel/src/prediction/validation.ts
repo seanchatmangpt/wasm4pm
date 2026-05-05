@@ -50,28 +50,24 @@ export class PredictionValidationError extends Error {
 const VALID_MODES: readonly PredictionMode[] = ['fit', 'predict', 'fit_predict'];
 
 export function isPredictionPerspective(value: unknown): value is PredictionPerspective {
-  return typeof value === 'string' &&
-    (ALL_PREDICTION_PERSPECTIVES as readonly string[]).includes(value);
+  return (
+    typeof value === 'string' && (ALL_PREDICTION_PERSPECTIVES as readonly string[]).includes(value)
+  );
 }
 
-function assertNumberInRange(
-  value: unknown,
-  field: string,
-  min: number,
-  max: number,
-): number {
+function assertNumberInRange(value: unknown, field: string, min: number, max: number): number {
   if (typeof value !== 'number' || !Number.isFinite(value)) {
     throw new PredictionValidationError(
       'param_invalid_type',
       `${field} must be a finite number`,
-      field,
+      field
     );
   }
   if (value < min || value > max) {
     throw new PredictionValidationError(
       'param_out_of_range',
       `${field} must be in [${min}, ${max}]; got ${value}`,
-      field,
+      field
     );
   }
   return value;
@@ -86,21 +82,21 @@ function validateEvent(event: unknown, path: string): void {
     throw new PredictionValidationError(
       'invalid_event',
       'event.activity must be a non-empty string',
-      `${path}.activity`,
+      `${path}.activity`
     );
   }
   if (typeof e.timestamp !== 'number' || !Number.isFinite(e.timestamp)) {
     throw new PredictionValidationError(
       'invalid_event',
       'event.timestamp must be a finite number (epoch ms)',
-      `${path}.timestamp`,
+      `${path}.timestamp`
     );
   }
   if (e.resource !== undefined && typeof e.resource !== 'string') {
     throw new PredictionValidationError(
       'invalid_event',
       'event.resource must be a string when present',
-      `${path}.resource`,
+      `${path}.resource`
     );
   }
 }
@@ -114,14 +110,14 @@ export function validateTrace(trace: unknown, path = 'trace'): asserts trace is 
     throw new PredictionValidationError(
       'invalid_trace',
       'trace.caseId must be a non-empty string',
-      `${path}.caseId`,
+      `${path}.caseId`
     );
   }
   if (!Array.isArray(t.events)) {
     throw new PredictionValidationError(
       'invalid_trace',
       'trace.events must be an array',
-      `${path}.events`,
+      `${path}.events`
     );
   }
   t.events.forEach((event, idx) => validateEvent(event, `${path}.events[${idx}]`));
@@ -136,14 +132,14 @@ export function validateLog(log: unknown, path = 'log'): asserts log is Predicti
     throw new PredictionValidationError(
       'empty_log',
       'log.traces must be an array',
-      `${path}.traces`,
+      `${path}.traces`
     );
   }
   if (l.traces.length === 0) {
     throw new PredictionValidationError(
       'empty_log',
       'log.traces must contain at least one trace',
-      `${path}.traces`,
+      `${path}.traces`
     );
   }
   l.traces.forEach((tr, idx) => validateTrace(tr, `${path}.traces[${idx}]`));
@@ -163,14 +159,14 @@ export function validateTask(task: unknown): asserts task is PredictionTask {
     throw new PredictionValidationError(
       'unknown_perspective',
       `unknown perspective '${String(t.perspective)}'; expected one of: ${ALL_PREDICTION_PERSPECTIVES.join(', ')}`,
-      'task.perspective',
+      'task.perspective'
     );
   }
   if (t.activityKey !== undefined && typeof t.activityKey !== 'string') {
     throw new PredictionValidationError(
       'param_invalid_type',
       'activityKey must be a string when present',
-      'task.activityKey',
+      'task.activityKey'
     );
   }
   if (t.maxPrefixLength !== undefined) {
@@ -188,7 +184,8 @@ export function validateTask(task: unknown): asserts task is PredictionTask {
       break;
     }
     case 'drift': {
-      if (t.windowSize !== undefined) assertNumberInRange(t.windowSize, 'task.windowSize', 5, 10_000);
+      if (t.windowSize !== undefined)
+        assertNumberInRange(t.windowSize, 'task.windowSize', 5, 10_000);
       if (t.ewmaAlpha !== undefined) assertNumberInRange(t.ewmaAlpha, 'task.ewmaAlpha', 0.0001, 1);
       if (t.driftThreshold !== undefined)
         assertNumberInRange(t.driftThreshold, 'task.driftThreshold', 0, 1);
@@ -199,7 +196,7 @@ export function validateTask(task: unknown): asserts task is PredictionTask {
         throw new PredictionValidationError(
           'param_invalid_type',
           "aggregator must be 'mean' or 'median'",
-          'task.aggregator',
+          'task.aggregator'
         );
       }
       break;
@@ -213,7 +210,7 @@ export function validateTask(task: unknown): asserts task is PredictionTask {
         throw new PredictionValidationError(
           'param_invalid_type',
           'labeller must be a function when present',
-          'task.labeller',
+          'task.labeller'
         );
       }
       break;
@@ -223,7 +220,7 @@ export function validateTask(task: unknown): asserts task is PredictionTask {
         throw new PredictionValidationError(
           'param_invalid_type',
           'includeRework must be boolean when present',
-          'task.includeRework',
+          'task.includeRework'
         );
       }
       break;
@@ -241,7 +238,7 @@ export function validateRequest(req: unknown): asserts req is PredictionRequest 
     throw new PredictionValidationError(
       'invalid_mode',
       `mode must be one of: ${VALID_MODES.join(', ')}`,
-      'request.mode',
+      'request.mode'
     );
   }
 
@@ -254,7 +251,7 @@ export function validateRequest(req: unknown): asserts req is PredictionRequest 
       throw new PredictionValidationError(
         'missing_log',
         `mode='${r.mode}' requires request.log`,
-        'request.log',
+        'request.log'
       );
     }
     validateLog(r.log);
@@ -264,7 +261,7 @@ export function validateRequest(req: unknown): asserts req is PredictionRequest 
       throw new PredictionValidationError(
         'missing_prefixes',
         `mode='${r.mode}' requires non-empty request.prefixes`,
-        'request.prefixes',
+        'request.prefixes'
       );
     }
     r.prefixes.forEach((p, i) => validateTrace(p, `request.prefixes[${i}]`));
@@ -274,7 +271,7 @@ export function validateRequest(req: unknown): asserts req is PredictionRequest 
       throw new PredictionValidationError(
         'missing_model',
         `mode='predict' requires request.model`,
-        'request.model',
+        'request.model'
       );
     }
     const model = r.model as { perspective?: unknown };
@@ -283,7 +280,7 @@ export function validateRequest(req: unknown): asserts req is PredictionRequest 
       throw new PredictionValidationError(
         'model_mismatch',
         `model.perspective='${String(model.perspective)}' does not match task.perspective='${taskPerspective}'`,
-        'request.model.perspective',
+        'request.model.perspective'
       );
     }
   }

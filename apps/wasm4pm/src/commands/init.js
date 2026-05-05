@@ -66,9 +66,9 @@ results/
 `;
 }
 function getReadmeContent() {
-    return `# pictl Project
+    return `# wasm4pm Project
 
-This is a wasm4pm process mining project initialized with pictl.
+This is a wasm4pm process mining project initialized with wasm4pm.
 
 ## Setup
 
@@ -82,35 +82,35 @@ This is a wasm4pm process mining project initialized with pictl.
    cp .env.example .env
    \`\`\`
 
-3. Edit \`pictl.toml\` or \`wasm4pm.json\` to customize configuration
+3. Edit \`wasm4pm.toml\` or \`wasm4pm.json\` to customize configuration
 
 ## Usage
 
 ### Run process discovery
 \`\`\`bash
-pictl run --config pictl.toml --algorithm dfg --input data/log.xes
+wasm4pm run --config wasm4pm.toml --algorithm dfg --input data/log.xes
 \`\`\`
 
 ### Watch mode
 \`\`\`bash
-pictl watch --config pictl.toml --interval 1000
+wasm4pm watch --config wasm4pm.toml --interval 1000
 \`\`\`
 
 ### Check status
 \`\`\`bash
-pictl status --format human
+wasm4pm status --format human
 \`\`\`
 
 ### Explain algorithm
 \`\`\`bash
-pictl explain --algorithm genetic --level detailed
+wasm4pm explain --algorithm genetic --level detailed
 \`\`\`
 
 ## Configuration
 
 Configuration is resolved in this order (highest to lowest priority):
 1. CLI arguments (--config, --profile, etc.)
-2. \`pictl.toml\` in current directory
+2. \`wasm4pm.toml\` in current directory
 3. \`wasm4pm.json\` in current directory
 4. Environment variables with \`WASM4PM_\` prefix
 5. Default values
@@ -147,7 +147,7 @@ async function ensureDirectory(dirpath) {
  * CRITICAL: Config errors are not recoverable — must propagate to fail fast
  */
 async function validateConfigFiles(dirpath, formatter, outputFormat) {
-    const tomlPath = path.join(dirpath, 'pictl.toml');
+    const tomlPath = path.join(dirpath, 'wasm4pm.toml');
     const jsonPath = path.join(dirpath, 'wasm4pm.json');
     // Try to load TOML if it exists
     if (existsSync(tomlPath)) {
@@ -232,7 +232,7 @@ export const init = defineCommand({
                 process.exit(EXIT_CODES.config_error);
             }
             // Create config file
-            const configFilename = configFormat === 'toml' ? 'pictl.toml' : 'wasm4pm.json';
+            const configFilename = configFormat === 'toml' ? 'wasm4pm.toml' : 'wasm4pm.json';
             const configPath = path.join(cwd, configFilename);
             const configContent = configFormat === 'toml' ? getExampleTomlConfig() : getExampleJsonConfig();
             const configCreated = await safeWriteFile(configPath, configContent, force, formatter, outputFormat);
@@ -268,7 +268,7 @@ export const init = defineCommand({
                 instructions: [
                     `1. Review and edit ${configFilename} to customize your configuration`,
                     '2. Copy .env.example to .env and add any secret values',
-                    '3. Use "pictl run --help" to see available options',
+                    '3. Use "wasm4pm run --help" to see available options',
                 ],
             };
             if (outputFormat === 'json') {

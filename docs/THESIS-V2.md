@@ -176,7 +176,7 @@ The npm registry hosts 2.3 million packages but academic software is underrepres
 ```
 ┌──────────────────────────────────────────────────────────┐
 │  TypeScript Monorepo (9 packages + CLI)                  │
-│  pictl CLI | @wasm4pm/engine | @wasm4pm/config | ...         │
+│  wasm4pm CLI | @wasm4pm/engine | @wasm4pm/config | ...         │
 │  @wasm4pm/ml (native process ML engine) | @wasm4pm/swarm     │
 ├──────────────────────────────────────────────────────────┤
 │  wasm4pm.js / wasm4pm_bg.js (wasm-bindgen glue code)    │
@@ -1063,7 +1063,7 @@ Kernel Pipeline: 28 registered algorithms (22 discovery + 6 ML) with full metada
 | Version  | Date       | Key Addition                                                                                                                                                                                  |
 | -------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | v0.5.4   | 2026-04-04 | 13 discovery algorithms, 8 analytics (THESIS v1.0)                                                                                                                                            |
-| v26.4.5  | 2026-04-05 | TypeScript monorepo (14 packages), pictl CLI, engine state machine                                                                                                                            |
+| v26.4.5  | 2026-04-05 | TypeScript monorepo (14 packages), wasm4pm CLI, engine state machine                                                                                                                            |
 | v26.4.6  | 2026-04-06 | Prediction suite, drift detection, MCP server, OCEL support                                                                                                                                   |
 | v26.4.7  | 2026-04-07 | POWL discovery (8 variants), conversions, conformance, npm publish; ML integration; 16→9 package consolidation; wpm doctor 17 checks                                                      |
 | v26.4.8  | 2026-04-08 | 5 deployment profiles (mobile/edge/fog/iot/browser); 30+ Cargo feature flags; conditional #[cfg(feature)] compilation; hand_stats.rs; up to 82% binary size reduction; zero breaking changes |

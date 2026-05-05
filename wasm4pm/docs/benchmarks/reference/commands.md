@@ -164,4 +164,4 @@ Outputs a table with per-algorithm timing in both environments and the ratio.
 | `quality`  | Genetic Algorithm, ILP Petri Net, all ML algorithms | High-quality models     |
 | `stream`   | Streaming DFG                                       | Infinite event streams  |
 
-Profile is set via `--profile` flag, `PICTL_PROFILE` ENV var, or `execution.profile` in config file.
+Profile is set via `--profile` flag, `WASM4PM_PROFILE` ENV var, or `execution.profile` in config file.

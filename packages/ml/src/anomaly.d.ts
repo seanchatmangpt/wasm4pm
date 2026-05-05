@@ -12,8 +12,11 @@ import type { EnhancedAnomalyResult } from './types.js';
 /**
  * Detect enhanced anomalies in drift distance series.
  */
-export declare function detectEnhancedAnomalies(driftDistances: number[], options?: {
+export declare function detectEnhancedAnomalies(
+  driftDistances: number[],
+  options?: {
     smoothingWindow?: number;
     smoothingMethod?: 'sma' | 'ema';
-}): Promise<EnhancedAnomalyResult>;
+  }
+): Promise<EnhancedAnomalyResult>;
 //# sourceMappingURL=anomaly.d.ts.map

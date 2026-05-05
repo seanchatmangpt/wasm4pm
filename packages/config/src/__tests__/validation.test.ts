@@ -12,7 +12,11 @@ import {
   validateAlgorithmInProfile,
   getProfileComparisonTable,
 } from '../validation/profile-management.js';
-import { getPresetConfig, getExampleTomlWithComments, describePreset } from '../validation/presets.js';
+import {
+  getPresetConfig,
+  getExampleTomlWithComments,
+  describePreset,
+} from '../validation/presets.js';
 import { checkConfigWarnings } from '../resolver.js';
 import { validate } from '../schema.js';
 import type { Config } from '../types.js';
@@ -50,8 +54,8 @@ describe('Validation - Detailed Errors', () => {
     };
 
     const warnings = validateMlConfig(config, 50); // Log size: 50 traces
-    expect(warnings.some(w => w.field === 'ml.cluster.k')).toBe(true);
-    expect(warnings.some(w => w.warning.includes('larger than log size'))).toBe(true);
+    expect(warnings.some((w) => w.field === 'ml.cluster.k')).toBe(true);
+    expect(warnings.some((w) => w.warning.includes('larger than log size'))).toBe(true);
   });
 
   it('warns on suspicious RL config (learning_rate > 0.5)', () => {
@@ -70,8 +74,8 @@ describe('Validation - Detailed Errors', () => {
     };
 
     const warnings = validateRlConfig(config);
-    expect(warnings.some(w => w.field === 'rl.learning_rate')).toBe(true);
-    expect(warnings.some(w => w.warning.includes('very high'))).toBe(true);
+    expect(warnings.some((w) => w.field === 'rl.learning_rate')).toBe(true);
+    expect(warnings.some((w) => w.warning.includes('very high'))).toBe(true);
   });
 
   it('warns on suspicious prediction config (ngramOrder too low)', () => {
@@ -87,7 +91,7 @@ describe('Validation - Detailed Errors', () => {
     };
 
     const warnings = validatePredictionConfig(config);
-    expect(warnings.some(w => w.field === 'prediction.ngramOrder')).toBe(true);
+    expect(warnings.some((w) => w.field === 'prediction.ngramOrder')).toBe(true);
   });
 });
 
@@ -225,7 +229,7 @@ describe('Config - Warnings', () => {
 
     const warnings = checkConfigWarnings(config, 100);
     // Should warn about k > sqrt(logSize) = 10
-    expect(warnings.some(w => w.field === 'ml.cluster.k')).toBe(true);
+    expect(warnings.some((w) => w.field === 'ml.cluster.k')).toBe(true);
   });
 
   it('returns empty warnings for valid config', () => {
@@ -237,7 +241,7 @@ describe('Config - Warnings', () => {
 
     const warnings = checkConfigWarnings(config, 1000);
     // Should be no warnings for DFG + fast profile + disabled ML
-    expect(warnings.filter(w => w.field === 'algorithm.name').length).toBe(0);
+    expect(warnings.filter((w) => w.field === 'algorithm.name').length).toBe(0);
   });
 });
 

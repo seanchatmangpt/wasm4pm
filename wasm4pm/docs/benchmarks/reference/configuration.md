@@ -124,24 +124,24 @@ enabled = false
 
 ### Pictl ENV Variables
 
-| Variable              | Config Path                   | Default    | Example                                     |
-| --------------------- | ----------------------------- | ---------- | ------------------------------------------- |
-| `PICTL_PROFILE`       | `execution.profile`           | `balanced` | `PICTL_PROFILE=fast`                        |
-| `PICTL_ALGORITHM`     | `algorithm.name`              | `dfg`      | `PICTL_ALGORITHM=ilp`                       |
-| `PICTL_OUTPUT_FORMAT` | `output.format`               | `human`    | `PICTL_OUTPUT_FORMAT=json`                  |
-| `PICTL_LOG_LEVEL`     | `observability.log_level`     | `info`     | `PICTL_LOG_LEVEL=debug`                     |
-| `PICTL_WATCH`         | `watch.enabled`               | `false`    | `PICTL_WATCH=true`                          |
-| `PICTL_OTEL_ENABLED`  | `observability.otel_enabled`  | `false`    | `PICTL_OTEL_ENABLED=true`                   |
-| `PICTL_OTEL_ENDPOINT` | `observability.otel_endpoint` | --         | `PICTL_OTEL_ENDPOINT=http://localhost:4317` |
+| Variable                | Config Path                   | Default    | Example                                       |
+| ----------------------- | ----------------------------- | ---------- | --------------------------------------------- |
+| `WASM4PM_PROFILE`       | `execution.profile`           | `balanced` | `WASM4PM_PROFILE=fast`                        |
+| `WASM4PM_ALGORITHM`     | `algorithm.name`              | `dfg`      | `WASM4PM_ALGORITHM=ilp`                       |
+| `WASM4PM_OUTPUT_FORMAT` | `output.format`               | `human`    | `WASM4PM_OUTPUT_FORMAT=json`                  |
+| `WASM4PM_LOG_LEVEL`     | `observability.log_level`     | `info`     | `WASM4PM_LOG_LEVEL=debug`                     |
+| `WASM4PM_WATCH`         | `watch.enabled`               | `false`    | `WASM4PM_WATCH=true`                          |
+| `WASM4PM_OTEL_ENABLED`  | `observability.otel_enabled`  | `false`    | `WASM4PM_OTEL_ENABLED=true`                   |
+| `WASM4PM_OTEL_ENDPOINT` | `observability.otel_endpoint` | --         | `WASM4PM_OTEL_ENDPOINT=http://localhost:4317` |
 
 ### Legacy ENV Variables (Backward Compatible)
 
-| Legacy Variable         | Maps To               |
-| ----------------------- | --------------------- |
-| `WASM4PM_PROFILE`       | `PICTL_PROFILE`       |
-| `WASM4PM_ALGORITHM`     | `PICTL_ALGORITHM`     |
-| `WASM4PM_OUTPUT_FORMAT` | `PICTL_OUTPUT_FORMAT` |
-| `WASM4PM_LOG_LEVEL`     | `PICTL_LOG_LEVEL`     |
+| Legacy Variable         | Maps To                 |
+| ----------------------- | ----------------------- |
+| `WASM4PM_PROFILE`       | `WASM4PM_PROFILE`       |
+| `WASM4PM_ALGORITHM`     | `WASM4PM_ALGORITHM`     |
+| `WASM4PM_OUTPUT_FORMAT` | `WASM4PM_OUTPUT_FORMAT` |
+| `WASM4PM_LOG_LEVEL`     | `WASM4PM_LOG_LEVEL`     |
 
 ---
 
@@ -158,7 +158,7 @@ enabled = false
 
 ### Profile Precedence
 
-CLI `--profile` > `PICTL_PROFILE` ENV > config `execution.profile` > default (`balanced`)
+CLI `--profile` > `WASM4PM_PROFILE` ENV > config `execution.profile` > default (`balanced`)
 
 ---
 
@@ -193,7 +193,7 @@ CLI `--profile` > `PICTL_PROFILE` ENV > config `execution.profile` > default (`b
 
 ## Benchmark-Specific Configuration
 
-Benchmark runs are not configured via pictl config files. They use the benchmark runner's own configuration:
+Benchmark runs are not configured via wasm4pm config files. They use the benchmark runner's own configuration:
 
 | Setting          | Location                  | Default        | Description                      |
 | ---------------- | ------------------------- | -------------- | -------------------------------- |

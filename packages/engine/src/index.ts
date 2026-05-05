@@ -51,12 +51,7 @@ export {
   validatePlan,
   createStepDispatcher,
 } from './execution.js';
-export type {
-  ExecutionContext,
-  StepDispatcher,
-  StepHandler,
-  StepResult,
-} from './execution.js';
+export type { ExecutionContext, StepDispatcher, StepHandler, StepResult } from './execution.js';
 
 // Bootstrap
 export { bootstrapEngine, createBootstrapError } from './bootstrap.js';
@@ -72,11 +67,7 @@ export type { Checkpoint } from './checkpointing.js';
 
 // WASM loader
 export { WasmLoader, createWasmLoader, getWasmLoader } from './wasm-loader.js';
-export type {
-  WasmModule,
-  WasmLoaderConfig,
-  WasmLoaderStatus,
-} from './wasm-loader.js';
+export type { WasmModule, WasmLoaderConfig, WasmLoaderStatus } from './wasm-loader.js';
 
 // Re-export error code for tests
 export { WasmErrorCode } from './wasm-loader.js';
@@ -88,11 +79,7 @@ export {
   initializeFederationStack,
   planFederationIntegration,
 } from './federation.js';
-export type {
-  BackendState,
-  CircuitBreakerState,
-  DecisionTraceEntry,
-} from './federation.js';
+export type { BackendState, CircuitBreakerState, DecisionTraceEntry } from './federation.js';
 
 // NullBackend sentinel
 export { NullBackend } from './null-backend.js';

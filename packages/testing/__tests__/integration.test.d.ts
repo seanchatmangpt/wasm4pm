@@ -1,7 +1,7 @@
 /**
  * Comprehensive Three-Layer Integration Tests
  *
- * Validates the complete pictl architecture working together:
+ * Validates the complete wasm4pm architecture working together:
  * - Application Layer (Config + ExecutionPlan)
  * - Control Plane (EventLogIR + ModelIR)
  * - Execution Substrate (WASM kernel + backends)

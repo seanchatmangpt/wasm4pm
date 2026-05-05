@@ -798,7 +798,7 @@ const pkg = require('../package.json');
 
 // In constructor:
 this.server = new Server(
-  { name: 'pictl', version: pkg.version },
+  { name: 'wasm4pm', version: pkg.version },
   { capabilities: { tools: {} } }
 );
 ```

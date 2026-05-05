@@ -25,14 +25,17 @@ export function trackProvenance(
   obj: Record<string, unknown>,
   source: ProvenanceSource,
   filePath?: string,
-  prefix = '',
+  prefix = ''
 ): ProvenanceMap {
   const map: ProvenanceMap = {};
   for (const [key, value] of Object.entries(obj)) {
     if (value === undefined || value === null) continue;
     const fullKey = prefix ? `${prefix}.${key}` : key;
     if (typeof value === 'object' && !Array.isArray(value)) {
-      Object.assign(map, trackProvenance(value as Record<string, unknown>, source, filePath, fullKey));
+      Object.assign(
+        map,
+        trackProvenance(value as Record<string, unknown>, source, filePath, fullKey)
+      );
     } else {
       const entry: Provenance = { value, source };
       if (filePath) entry.path = filePath;

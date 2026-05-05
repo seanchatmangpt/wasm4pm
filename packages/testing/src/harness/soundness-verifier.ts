@@ -128,7 +128,11 @@ export class SoundnessVerifier {
     };
   }
 
-  private checkBoundedness(ocel: OcelEventLog): { bounded: boolean; maxQueueDepth: number; maxMemoryMb: number } {
+  private checkBoundedness(ocel: OcelEventLog): {
+    bounded: boolean;
+    maxQueueDepth: number;
+    maxMemoryMb: number;
+  } {
     // Boundedness: check for unbounded growth
     let maxQueueDepth = 0;
     const queueGrowth: number[] = [];

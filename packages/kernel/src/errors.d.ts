@@ -12,17 +12,21 @@ export type KernelErrorCode = ErrorCode | 'KERNEL_VERSION_MISMATCH' | 'KERNEL_NO
  * KernelError — extends Error with structured context for kernel operations
  */
 export declare class KernelError extends Error {
-    readonly code: KernelErrorCode;
-    readonly context: Record<string, unknown>;
-    readonly recoverable: boolean;
-    readonly timestamp: Date;
-    readonly cause: Error | undefined;
-    constructor(message: string, code: KernelErrorCode, options?: {
-        cause?: Error;
-        context?: Record<string, unknown>;
-        recoverable?: boolean;
-    });
-    toJSON(): Record<string, unknown>;
+  readonly code: KernelErrorCode;
+  readonly context: Record<string, unknown>;
+  readonly recoverable: boolean;
+  readonly timestamp: Date;
+  readonly cause: Error | undefined;
+  constructor(
+    message: string,
+    code: KernelErrorCode,
+    options?: {
+      cause?: Error;
+      context?: Record<string, unknown>;
+      recoverable?: boolean;
+    }
+  );
+  toJSON(): Record<string, unknown>;
 }
 /**
  * Type guard for KernelError
@@ -53,8 +57,11 @@ export declare function toTypedError(raw: unknown, algorithmId?: string): TypedE
  * @returns Result of the function call
  * @throws KernelError with classified code and context
  */
-export declare function wrapKernelCall<T>(fn: () => Promise<T>, context?: {
+export declare function wrapKernelCall<T>(
+  fn: () => Promise<T>,
+  context?: {
     algorithm?: string;
     step?: string;
-}): Promise<T>;
+  }
+): Promise<T>;
 //# sourceMappingURL=errors.d.ts.map

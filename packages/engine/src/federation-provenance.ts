@@ -50,8 +50,8 @@ export function canonicalJson(obj: unknown): string {
   if (typeof obj === 'object') {
     const sortedKeys = Object.keys(obj as Record<string, unknown>).sort();
     const pairs = sortedKeys
-      .filter(k => (obj as Record<string, unknown>)[k] !== undefined)
-      .map(k => JSON.stringify(k) + ':' + canonicalJson((obj as Record<string, unknown>)[k]));
+      .filter((k) => (obj as Record<string, unknown>)[k] !== undefined)
+      .map((k) => JSON.stringify(k) + ':' + canonicalJson((obj as Record<string, unknown>)[k]));
     return '{' + pairs.join(',') + '}';
   }
 
@@ -125,7 +125,7 @@ export function computeProvenanceChain(
   algorithmVersion: string,
   backendId: string,
   kernelVersion: string,
-  wasmBuildHash: string,
+  wasmBuildHash: string
 ): ProvenanceChain {
   // Compute individual hashes
   const input_hash = blake3Hex(eventLogIR);
@@ -196,13 +196,13 @@ export interface RawModelOutput {
 export function buildModelIR(
   rawOutput: RawModelOutput,
   algorithmId: string,
-  capabilities: ModelIR['capabilities'],
+  capabilities: ModelIR['capabilities']
 ): ModelIR {
   const model = rawOutput.model as Record<string, unknown>;
 
   // Extract nodes and edges (structure varies by model type)
   const nodes = Array.isArray(model.nodes)
-    ? (model.nodes as any[]).map(n => ({
+    ? (model.nodes as any[]).map((n) => ({
         id: String(n.id),
         label: String(n.label),
         type: String(n.type || 'activity'),
@@ -210,7 +210,7 @@ export function buildModelIR(
     : [];
 
   const edges = Array.isArray(model.edges)
-    ? (model.edges as any[]).map(e => ({
+    ? (model.edges as any[]).map((e) => ({
         from: String(e.from),
         to: String(e.to),
         weight: typeof e.weight === 'number' ? e.weight : undefined,
@@ -322,7 +322,7 @@ export function wrapDiscoveryResult(
   kernelVersion: string,
   wasmBuildHash: string,
   cycleSeq: number,
-  modelCapabilities: ModelIR['capabilities'],
+  modelCapabilities: ModelIR['capabilities']
 ): ResultEnvelope<ModelIR> {
   // Build model IR from raw output
   const model_ir = buildModelIR(rawOutput, algorithmId, modelCapabilities);
@@ -337,7 +337,7 @@ export function wrapDiscoveryResult(
     rawOutput.algorithm_version,
     backendId,
     kernelVersion,
-    wasmBuildHash,
+    wasmBuildHash
   );
 
   // Derive latency class

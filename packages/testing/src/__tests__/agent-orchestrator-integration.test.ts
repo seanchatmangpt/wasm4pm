@@ -59,10 +59,34 @@ describe('Agent Orchestrator - Full Pipeline Integration', () => {
     sampleOcel = {
       version: '2.0',
       events: [
-        { id: '1', activity: 'start', timestamp: '2026-04-12T10:00:00Z', objects: ['t1'], attributes: { duration_ms: 1 } },
-        { id: '2', activity: 'process', timestamp: '2026-04-12T10:00:01Z', objects: ['t1'], attributes: { duration_ms: 49, cost: 50 } },
-        { id: '3', activity: 'validate', timestamp: '2026-04-12T10:00:02Z', objects: ['t1'], attributes: { duration_ms: 20 } },
-        { id: '4', activity: 'end', timestamp: '2026-04-12T10:00:03Z', objects: ['t1'], attributes: { duration_ms: 1 } },
+        {
+          id: '1',
+          activity: 'start',
+          timestamp: '2026-04-12T10:00:00Z',
+          objects: ['t1'],
+          attributes: { duration_ms: 1 },
+        },
+        {
+          id: '2',
+          activity: 'process',
+          timestamp: '2026-04-12T10:00:01Z',
+          objects: ['t1'],
+          attributes: { duration_ms: 49, cost: 50 },
+        },
+        {
+          id: '3',
+          activity: 'validate',
+          timestamp: '2026-04-12T10:00:02Z',
+          objects: ['t1'],
+          attributes: { duration_ms: 20 },
+        },
+        {
+          id: '4',
+          activity: 'end',
+          timestamp: '2026-04-12T10:00:03Z',
+          objects: ['t1'],
+          attributes: { duration_ms: 1 },
+        },
       ],
       objects: [{ id: 't1', type: 'tool_invocation', state: 'completed', attributes: {} }],
       metadata: {
@@ -200,8 +224,20 @@ describe('Agent Orchestrator - Full Pipeline Integration', () => {
       const baselineOcel: OcelEventLog = {
         version: '2.0',
         events: [
-          { id: '1', activity: 'a', timestamp: '2026-04-12T09:00:00Z', objects: ['baseline'], attributes: {} },
-          { id: '2', activity: 'b', timestamp: '2026-04-12T09:00:01Z', objects: ['baseline'], attributes: {} },
+          {
+            id: '1',
+            activity: 'a',
+            timestamp: '2026-04-12T09:00:00Z',
+            objects: ['baseline'],
+            attributes: {},
+          },
+          {
+            id: '2',
+            activity: 'b',
+            timestamp: '2026-04-12T09:00:01Z',
+            objects: ['baseline'],
+            attributes: {},
+          },
         ],
         objects: [{ id: 'baseline', type: 'tool_invocation', state: 'completed', attributes: {} }],
         metadata: {
@@ -272,13 +308,16 @@ describe('Agent Orchestrator - Full Pipeline Integration', () => {
 
       // 2. Path derived from actual execution (via conformance + drift)
       expect(result.stageResults.conformance?.fitness).toBeDefined();
-      expect(result.stageResults.drift === undefined || result.stageResults.drift.driftDetected !== undefined).toBe(
-        true
-      );
+      expect(
+        result.stageResults.drift === undefined ||
+          result.stageResults.drift.driftDetected !== undefined
+      ).toBe(true);
 
       // 3. Intelligence synthesized from reality (via federation voting)
       expect(result.stageResults.federation?.verdict).toBeDefined();
-      expect(['TRUTHFUL', 'VARIANCE', 'DECEPTIVE']).toContain(result.stageResults.federation!.verdict);
+      expect(['TRUTHFUL', 'VARIANCE', 'DECEPTIVE']).toContain(
+        result.stageResults.federation!.verdict
+      );
 
       // All agents contribute to ground truth: consensus verdict reflects reality, not design
       expect(result.stageResults.federation!.confidence).toBeGreaterThanOrEqual(0);

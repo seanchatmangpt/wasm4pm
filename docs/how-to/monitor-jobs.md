@@ -101,7 +101,7 @@ Stop running job:
 curl -X POST http://localhost:3001/stop/run-abc123
 
 # Via CLI
-pkill -f "pictl run"
+pkill -f "wasm4pm run"
 ```
 
 ## Monitor Memory

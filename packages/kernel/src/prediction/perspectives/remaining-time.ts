@@ -87,7 +87,7 @@ export class RemainingTimeHandler implements PerspectiveHandler<RemainingTimeTas
   predict(
     task: RemainingTimeTask,
     model: PredictionModel,
-    prefixes: readonly PredictionTrace[],
+    prefixes: readonly PredictionTrace[]
   ): readonly PredictionRecord[] {
     const state = model.state as unknown as RemainingTimeState;
     const out: PredictionRecord[] = [];
@@ -97,7 +97,8 @@ export class RemainingTimeHandler implements PerspectiveHandler<RemainingTimeTas
       const samples = state.byPrefix[k] ?? [];
       const remainingMs =
         samples.length > 0 ? aggregate(samples, state.aggregator) : state.globalRemainingMs;
-      const elapsedMs = events.length >= 2 ? events[events.length - 1].timestamp - events[0].timestamp : 0;
+      const elapsedMs =
+        events.length >= 2 ? events[events.length - 1].timestamp - events[0].timestamp : 0;
       out.push({
         caseId: prefix.caseId,
         prefixLength: k,

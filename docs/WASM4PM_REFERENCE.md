@@ -1,8 +1,8 @@
 # wasm4pm - Command Line Reference
 
-pictl: High-performance process mining CLI
+wasm4pm: High-performance process mining CLI
 
-pictl is a high-performance command-line interface for process mining, focusing on nanosecond-latency event routing and analysis. It is part of the Vision 2030 architecture for real-time process intelligence.
+wasm4pm is a high-performance command-line interface for process mining, focusing on nanosecond-latency event routing and analysis. It is part of the Vision 2030 architecture for real-time process intelligence.
 
 ## Global Options
 

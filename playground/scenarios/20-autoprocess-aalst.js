@@ -16,7 +16,7 @@
  * Test evidence is measurable output + exit codes, not internal assertions.
  */
 import { describe, it, expect } from 'vitest';
-import { pictl, extractJson, combinedOutput, resolveRepo } from '../helpers/cli.js';
+import { wasm4pm, extractJson, combinedOutput, resolveRepo } from '../helpers/cli.js';
 const RUNNING_EXAMPLE = resolveRepo('wasm4pm/tests/fixtures/running-example.xes');
 describe('autoprocess command (Aalst methodology)', () => {
     /**
@@ -27,7 +27,7 @@ describe('autoprocess command (Aalst methodology)', () => {
      * Additionally, JSON output must contain the declared four phase objects.
      */
     it('completes successfully (exit code 0) with valid structure', async () => {
-        const result = await pictl(['autoprocess', RUNNING_EXAMPLE, '--format', 'json']);
+        const result = await wasm4pm(['autoprocess', RUNNING_EXAMPLE, '--format', 'json']);
         // Oracle: Success is proven by exit code 0
         expect(result.exitCode).toBe(0);
         // Oracle: Output structure must contain the four declared phases
@@ -51,7 +51,7 @@ describe('autoprocess command (Aalst methodology)', () => {
      * with all four phase objects. Loose type checking allows null/undefined to pass.
      */
     it('JSON output is strictly an object with declared phases', async () => {
-        const result = await pictl(['autoprocess', RUNNING_EXAMPLE, '--format', 'json']);
+        const result = await wasm4pm(['autoprocess', RUNNING_EXAMPLE, '--format', 'json']);
         expect(result.exitCode).toBe(0);
         const json = extractJson(result.stdout);
         // Oracle: Output must be a truthy object (not null/undefined/primitive)
@@ -75,8 +75,8 @@ describe('autoprocess command (Aalst methodology)', () => {
      * This proves the process is deterministic, not random.
      */
     it('two consecutive runs produce deterministically identical output', async () => {
-        const result1 = await pictl(['autoprocess', RUNNING_EXAMPLE, '--format', 'json']);
-        const result2 = await pictl(['autoprocess', RUNNING_EXAMPLE, '--format', 'json']);
+        const result1 = await wasm4pm(['autoprocess', RUNNING_EXAMPLE, '--format', 'json']);
+        const result2 = await wasm4pm(['autoprocess', RUNNING_EXAMPLE, '--format', 'json']);
         expect(result1.exitCode).toBe(0);
         expect(result2.exitCode).toBe(0);
         const json1 = extractJson(result1.stdout);
@@ -94,7 +94,7 @@ describe('autoprocess command (Aalst methodology)', () => {
      * System must fail with exit code 2, not panic or ignore error.
      */
     it('nonexistent file returns source error (exit 2) without panic', async () => {
-        const result = await pictl(['autoprocess', '/nonexistent/file.xes']);
+        const result = await wasm4pm(['autoprocess', '/nonexistent/file.xes']);
         // Oracle: Must fail with source_error (exit code 2), never panic
         expect(result.exitCode).toBe(2);
         // Oracle: No panic in stdout or stderr
@@ -108,7 +108,7 @@ describe('autoprocess command (Aalst methodology)', () => {
      * System must exit with exit code 1, not default to empty log or proceed.
      */
     it('missing input argument returns config error (exit 1)', async () => {
-        const result = await pictl(['autoprocess']); // No input file
+        const result = await wasm4pm(['autoprocess']); // No input file
         // Oracle: Must indicate config_error (exit code 1) specifically
         expect(result.exitCode).toBe(1);
         // Oracle: Error message must be present in output
@@ -125,7 +125,7 @@ describe('autoprocess command (Aalst methodology)', () => {
      */
     it('processes BPI 2020 real-scale dataset (20MB) with valid result', async () => {
         const bpiPath = resolveRepo('wasm4pm/tests/fixtures/BPI_2020_Travel_Permits_Actual.xes');
-        const result = await pictl(['autoprocess', bpiPath, '--format', 'json'], {
+        const result = await wasm4pm(['autoprocess', bpiPath, '--format', 'json'], {
             timeout: 90000, // 90 seconds for 20MB dataset
         });
         // Oracle (Rank 2): MUST succeed with exit code 0
@@ -157,7 +157,7 @@ describe('autoprocess command (Aalst methodology)', () => {
      * Multiple keywords in sequence prove actual computation, not just exit 0.
      */
     it('human format output shows phase execution sequence', async () => {
-        const result = await pictl(['autoprocess', RUNNING_EXAMPLE]);
+        const result = await wasm4pm(['autoprocess', RUNNING_EXAMPLE]);
         expect(result.exitCode).toBe(0);
         const combined = combinedOutput(result);
         // Oracle (Rank 2): Output must contain multiple keywords showing execution
@@ -181,7 +181,7 @@ describe('autoprocess command (Aalst methodology)', () => {
      * Hanging or killing the process proves the system is unsound (violates liveness property).
      */
     it('small logs complete within reasonable time (< 30s, exit 0)', async () => {
-        const result = await pictl(['autoprocess', RUNNING_EXAMPLE], {
+        const result = await wasm4pm(['autoprocess', RUNNING_EXAMPLE], {
             timeout: 30000,
         });
         // Oracle (Rank 2): Must succeed (exit code 0)

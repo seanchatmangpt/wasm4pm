@@ -200,7 +200,7 @@ Benefits:
 
 ```bash
 # No config provided
-pictl run
+wasm4pm run
 
 # Resolution:
 # 1. Check CLI flags: --config? No

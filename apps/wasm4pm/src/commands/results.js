@@ -159,8 +159,8 @@ export const results = defineCommand({
                     formatter.log(`  Directory: ${dir}`);
                     formatter.log('');
                     formatter.log('  Results are saved automatically when you run:');
-                    formatter.log('    pictl run <log.xes>                       (discovery)');
-                    formatter.log('    pictl predict <task> --input <log.xes>    (prediction)');
+                    formatter.log('    wasm4pm run <log.xes>                       (discovery)');
+                    formatter.log('    wasm4pm predict <task> --input <log.xes>    (prediction)');
                 }
                 else {
                     formatter.success('No saved results', { directory: dir, count: 0, results: [] });
@@ -214,8 +214,8 @@ export const results = defineCommand({
                 humanFormatter.log(`  ... ${files.length - limit} more. Use --limit to show more.`);
             }
             humanFormatter.log('');
-            humanFormatter.log('  Tip: pictl results --last          Print the most recent result');
-            humanFormatter.log('  Tip: pictl results --cat 1         Print result #1 in full');
+            humanFormatter.log('  Tip: wasm4pm results --last          Print the most recent result');
+            humanFormatter.log('  Tip: wasm4pm results --cat 1         Print result #1 in full');
             humanFormatter.log('');
             process.exit(EXIT_CODES.success);
         }

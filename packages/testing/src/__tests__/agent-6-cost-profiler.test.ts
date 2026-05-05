@@ -19,9 +19,36 @@ describe('Agent 6: Cost Profiler', () => {
   describe('Algorithm Selection by Budget', () => {
     it('selects fastest algorithm under strict latency budget', async () => {
       const algorithms: AlgorithmResult[] = [
-        { name: 'dfg', fitness: 0.85, precision: 0.75, simplicity: 0.9, generalization: 0.8, executionTimeMs: 2, edgeCount: 10, transitionCount: 5 },
-        { name: 'genetic_algorithm', fitness: 0.95, precision: 0.92, simplicity: 0.7, generalization: 0.9, executionTimeMs: 500, edgeCount: 15, transitionCount: 12 },
-        { name: 'ilp', fitness: 0.98, precision: 0.96, simplicity: 0.6, generalization: 0.95, executionTimeMs: 1000, edgeCount: 20, transitionCount: 18 },
+        {
+          name: 'dfg',
+          fitness: 0.85,
+          precision: 0.75,
+          simplicity: 0.9,
+          generalization: 0.8,
+          executionTimeMs: 2,
+          edgeCount: 10,
+          transitionCount: 5,
+        },
+        {
+          name: 'genetic_algorithm',
+          fitness: 0.95,
+          precision: 0.92,
+          simplicity: 0.7,
+          generalization: 0.9,
+          executionTimeMs: 500,
+          edgeCount: 15,
+          transitionCount: 12,
+        },
+        {
+          name: 'ilp',
+          fitness: 0.98,
+          precision: 0.96,
+          simplicity: 0.6,
+          generalization: 0.95,
+          executionTimeMs: 1000,
+          edgeCount: 20,
+          transitionCount: 18,
+        },
       ];
 
       const budget = { maxLatencyMs: 10, maxComputeUnits: 100, costLimit: 5 };
@@ -33,9 +60,36 @@ describe('Agent 6: Cost Profiler', () => {
 
     it('selects highest quality within compute budget', async () => {
       const algorithms: AlgorithmResult[] = [
-        { name: 'dfg', fitness: 0.85, precision: 0.75, simplicity: 0.9, generalization: 0.8, executionTimeMs: 2, edgeCount: 10, transitionCount: 5 },
-        { name: 'heuristic_miner', fitness: 0.88, precision: 0.85, simplicity: 0.8, generalization: 0.85, executionTimeMs: 20, edgeCount: 12, transitionCount: 8 },
-        { name: 'genetic_algorithm', fitness: 0.95, precision: 0.92, simplicity: 0.7, generalization: 0.9, executionTimeMs: 500, edgeCount: 15, transitionCount: 12 },
+        {
+          name: 'dfg',
+          fitness: 0.85,
+          precision: 0.75,
+          simplicity: 0.9,
+          generalization: 0.8,
+          executionTimeMs: 2,
+          edgeCount: 10,
+          transitionCount: 5,
+        },
+        {
+          name: 'heuristic_miner',
+          fitness: 0.88,
+          precision: 0.85,
+          simplicity: 0.8,
+          generalization: 0.85,
+          executionTimeMs: 20,
+          edgeCount: 12,
+          transitionCount: 8,
+        },
+        {
+          name: 'genetic_algorithm',
+          fitness: 0.95,
+          precision: 0.92,
+          simplicity: 0.7,
+          generalization: 0.9,
+          executionTimeMs: 500,
+          edgeCount: 15,
+          transitionCount: 12,
+        },
       ];
 
       const budget = { maxLatencyMs: 100, maxComputeUnits: 50, costLimit: 10 };
@@ -48,9 +102,36 @@ describe('Agent 6: Cost Profiler', () => {
 
     it('balances fitness vs cost tradeoff', async () => {
       const algorithms: AlgorithmResult[] = [
-        { name: 'dfg', fitness: 0.8, precision: 0.7, simplicity: 0.95, generalization: 0.75, executionTimeMs: 1, edgeCount: 5, transitionCount: 3 },
-        { name: 'a_star', fitness: 0.92, precision: 0.9, simplicity: 0.65, generalization: 0.88, executionTimeMs: 200, edgeCount: 20, transitionCount: 15 },
-        { name: 'ilp', fitness: 0.98, precision: 0.97, simplicity: 0.5, generalization: 0.96, executionTimeMs: 2000, edgeCount: 30, transitionCount: 25 },
+        {
+          name: 'dfg',
+          fitness: 0.8,
+          precision: 0.7,
+          simplicity: 0.95,
+          generalization: 0.75,
+          executionTimeMs: 1,
+          edgeCount: 5,
+          transitionCount: 3,
+        },
+        {
+          name: 'a_star',
+          fitness: 0.92,
+          precision: 0.9,
+          simplicity: 0.65,
+          generalization: 0.88,
+          executionTimeMs: 200,
+          edgeCount: 20,
+          transitionCount: 15,
+        },
+        {
+          name: 'ilp',
+          fitness: 0.98,
+          precision: 0.97,
+          simplicity: 0.5,
+          generalization: 0.96,
+          executionTimeMs: 2000,
+          edgeCount: 30,
+          transitionCount: 25,
+        },
       ];
 
       const result = await profiler.rankByFitnessPerCost(algorithms);
@@ -83,8 +164,26 @@ describe('Agent 6: Cost Profiler', () => {
 
     it('identifies cost-prohibitive algorithms', async () => {
       const algorithms: AlgorithmResult[] = [
-        { name: 'dfg', fitness: 0.85, precision: 0.75, simplicity: 0.9, generalization: 0.8, executionTimeMs: 2, edgeCount: 10, transitionCount: 5 },
-        { name: 'ilp', fitness: 0.98, precision: 0.96, simplicity: 0.6, generalization: 0.95, executionTimeMs: 5000, edgeCount: 50, transitionCount: 45 },
+        {
+          name: 'dfg',
+          fitness: 0.85,
+          precision: 0.75,
+          simplicity: 0.9,
+          generalization: 0.8,
+          executionTimeMs: 2,
+          edgeCount: 10,
+          transitionCount: 5,
+        },
+        {
+          name: 'ilp',
+          fitness: 0.98,
+          precision: 0.96,
+          simplicity: 0.6,
+          generalization: 0.95,
+          executionTimeMs: 5000,
+          edgeCount: 50,
+          transitionCount: 45,
+        },
       ];
 
       const budget = { maxLatencyMs: 100, maxComputeUnits: 200, costLimit: 20 };
@@ -98,9 +197,36 @@ describe('Agent 6: Cost Profiler', () => {
   describe('Resource Tier Selection', () => {
     it('recommends tier based on budget constraints', async () => {
       const algorithms: AlgorithmResult[] = [
-        { name: 'dfg', fitness: 0.85, precision: 0.75, simplicity: 0.9, generalization: 0.8, executionTimeMs: 2, edgeCount: 10, transitionCount: 5 },
-        { name: 'genetic_algorithm', fitness: 0.95, precision: 0.92, simplicity: 0.7, generalization: 0.9, executionTimeMs: 500, edgeCount: 15, transitionCount: 12 },
-        { name: 'ilp', fitness: 0.98, precision: 0.96, simplicity: 0.6, generalization: 0.95, executionTimeMs: 2000, edgeCount: 30, transitionCount: 25 },
+        {
+          name: 'dfg',
+          fitness: 0.85,
+          precision: 0.75,
+          simplicity: 0.9,
+          generalization: 0.8,
+          executionTimeMs: 2,
+          edgeCount: 10,
+          transitionCount: 5,
+        },
+        {
+          name: 'genetic_algorithm',
+          fitness: 0.95,
+          precision: 0.92,
+          simplicity: 0.7,
+          generalization: 0.9,
+          executionTimeMs: 500,
+          edgeCount: 15,
+          transitionCount: 12,
+        },
+        {
+          name: 'ilp',
+          fitness: 0.98,
+          precision: 0.96,
+          simplicity: 0.6,
+          generalization: 0.95,
+          executionTimeMs: 2000,
+          edgeCount: 30,
+          transitionCount: 25,
+        },
       ];
 
       const budget = { maxLatencyMs: 100, maxComputeUnits: 100, costLimit: 50 };

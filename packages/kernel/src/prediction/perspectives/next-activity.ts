@@ -80,7 +80,7 @@ export class NextActivityHandler implements PerspectiveHandler<NextActivityTask>
   predict(
     task: NextActivityTask,
     model: PredictionModel,
-    prefixes: readonly PredictionTrace[],
+    prefixes: readonly PredictionTrace[]
   ): readonly PredictionRecord[] {
     const state = model.state as unknown as NgramState;
     const order = state.ngramOrder;
@@ -103,7 +103,7 @@ export class NextActivityHandler implements PerspectiveHandler<NextActivityTask>
       scored.sort(
         (a, b) =>
           b.probability - a.probability ||
-          (a.activity < b.activity ? -1 : a.activity > b.activity ? 1 : 0),
+          (a.activity < b.activity ? -1 : a.activity > b.activity ? 1 : 0)
       );
       const candidates = scored.slice(0, topK);
       out.push({

@@ -20,7 +20,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { assertExitCode, pictl, extractJson, EXIT_CODES } from '../helpers/cli.js';
+import { assertExitCode, wasm4pm, extractJson, EXIT_CODES } from '../helpers/cli.js';
 
 describe('status command', () => {
   // ── JSON output ───────────────────────────────────────────────────────────

@@ -111,17 +111,21 @@ function runCli(args: string[], timeoutMs: number = 30000): Promise<CliResult> {
     // Use direct path to built CLI binary instead of npx wpm
     // npx can't resolve wpm in vitest child_process (no symlink in node_modules/.bin)
     const cliPath = path.resolve(__dirname, '../../dist/bin/wpm.js');
-    const cwd = path.resolve(__dirname, '../..');  // Set working directory to apps/wasm4pm
-    const child = execFile(process.execPath, [cliPath, ...args], {
-      timeout: timeoutMs,
-      maxBuffer: 10 * 1024 * 1024,
-      cwd,  // Required for proper module resolution
-    }, (error, stdout, stderr) => {
-      const exitCode = error && 'code' in error && typeof error.code === 'number'
-        ? error.code
-        : (error ? 1 : 0);
-      resolve({ exitCode, stdout: stdout ?? '', stderr: stderr ?? '' });
-    });
+    const cwd = path.resolve(__dirname, '../..'); // Set working directory to apps/wasm4pm
+    const child = execFile(
+      process.execPath,
+      [cliPath, ...args],
+      {
+        timeout: timeoutMs,
+        maxBuffer: 10 * 1024 * 1024,
+        cwd, // Required for proper module resolution
+      },
+      (error, stdout, stderr) => {
+        const exitCode =
+          error && 'code' in error && typeof error.code === 'number' ? error.code : error ? 1 : 0;
+        resolve({ exitCode, stdout: stdout ?? '', stderr: stderr ?? '' });
+      }
+    );
 
     child.on('error', () => {
       resolve({
@@ -140,8 +144,8 @@ function assertExitCode(result: CliResult, expected: number): void {
   if (result.exitCode !== expected) {
     throw new Error(
       `Exit code mismatch: expected ${expected}, got ${result.exitCode}\n` +
-      `stdout: ${result.stdout.slice(0, 500)}\n` +
-      `stderr: ${result.stderr.slice(0, 500)}`,
+        `stdout: ${result.stdout.slice(0, 500)}\n` +
+        `stderr: ${result.stderr.slice(0, 500)}`
     );
   }
 }
@@ -221,7 +225,6 @@ describe('New Commands: JSON Output Validation', () => {
       expect(json.method).toBe('token-replay');
     });
   });
-
 });
 
 describe('New Commands: Error Handling', () => {
@@ -246,12 +249,7 @@ describe('New Commands: Error Handling', () => {
     const invalidModelPath = path.join(env.tempDir, 'invalid.json');
     await fs.writeFile(invalidModelPath, '{ invalid json }', 'utf-8');
 
-    const result = await runCli([
-      'conformance',
-      env.xesPath,
-      '--model',
-      invalidModelPath,
-    ]);
+    const result = await runCli(['conformance', env.xesPath, '--model', invalidModelPath]);
 
     expect(result.exitCode).toBe(2);
   });
@@ -267,12 +265,7 @@ describe('New Commands: Error Handling', () => {
   });
 
   it('should validate numeric parameters', async () => {
-    const result = await runCli([
-      'simulate',
-      env.xesPath,
-      '--cases',
-      'not_a_number',
-    ]);
+    const result = await runCli(['simulate', env.xesPath, '--cases', 'not_a_number']);
 
     // Should fail gracefully with appropriate error code
     // May be CONFIG_ERROR (1), SOURCE_ERROR (2), or EXECUTION_ERROR (3)

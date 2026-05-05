@@ -6,7 +6,7 @@
 
 ## Agent 9: Integration Testing & Certification
 
-Agent 9 has created a comprehensive end-to-end testing and certification strategy for pictl's ML/AI/RL system.
+Agent 9 has created a comprehensive end-to-end testing and certification strategy for wasm4pm's ML/AI/RL system.
 
 ### Core Documents
 

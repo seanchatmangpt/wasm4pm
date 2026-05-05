@@ -103,7 +103,7 @@ export const execute = defineCommand({
         formatter.error('Agent execution failed', error);
       } else {
         formatter.error(
-          `Agent execution failed: ${error instanceof Error ? error.message : String(error)}`,
+          `Agent execution failed: ${error instanceof Error ? error.message : String(error)}`
         );
       }
       process.exit(EXIT_CODES.execution_error);

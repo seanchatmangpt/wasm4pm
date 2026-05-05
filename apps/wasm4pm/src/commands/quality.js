@@ -56,7 +56,7 @@ export const quality = defineCommand({
             // Resolve input path (positional OR --file/-i)
             const inputPath = ctx.args.input || ctx.args.file;
             if (!inputPath) {
-                formatter.error('Input file required.\n\nUsage:  pictl quality <log.xes>\n        pictl quality <log.xes> --metrics fitness,precision\n\nRun "pictl quality --help" for details.');
+                formatter.error('Input file required.\n\nUsage:  wasm4pm quality <log.xes>\n        wasm4pm quality <log.xes> --metrics fitness,precision\n\nRun "wasm4pm quality --help" for details.');
                 process.exit(EXIT_CODES.source_error);
             }
             // Validate input file exists

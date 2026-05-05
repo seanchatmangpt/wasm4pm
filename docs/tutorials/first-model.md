@@ -24,14 +24,14 @@
 
 ```bash
 npm install -g @wasm4pm/cli
-pictl --version
+wasm4pm --version
 ```
 
 ### Via pip (Python)
 
 ```bash
 pip install wasm4pm
-pictl --version
+wasm4pm --version
 ```
 
 ### Verify Installation

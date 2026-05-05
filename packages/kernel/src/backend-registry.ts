@@ -74,9 +74,7 @@ export interface BackendRegistry {
    * Each backend receives a 500ms timeout.
    * Returns array with health status and latency for each backend.
    */
-  healthCheckAll(): Promise<
-    ReadonlyArray<{ id: string; healthy: boolean; latency_ms: number }>
-  >;
+  healthCheckAll(): Promise<ReadonlyArray<{ id: string; healthy: boolean; latency_ms: number }>>;
 }
 
 /**
@@ -108,7 +106,7 @@ export class DefaultBackendRegistry implements BackendRegistry {
     ) {
       throw new Error(
         `Backend ${backend.id} must implement all 5 interface methods: ` +
-          `capabilities(), discover(), conformance(), analyze(), healthCheck()`,
+          `capabilities(), discover(), conformance(), analyze(), healthCheck()`
       );
     }
 
@@ -184,7 +182,7 @@ export class DefaultBackendRegistry implements BackendRegistry {
     if (candidates.length === 0) {
       throw new Error(
         `No backend found for algorithmId=${algorithmId}. ` +
-          `Candidates filtered out by rules 1-6.`,
+          `Candidates filtered out by rules 1-6.`
       );
     }
 
@@ -225,16 +223,15 @@ export class DefaultBackendRegistry implements BackendRegistry {
           // Race against timeout
           const result = await Promise.race([
             backend.healthCheck(),
-            new Promise<{ healthy: false; latency_ms: number }>(
-              (resolve) =>
-                setTimeout(
-                  () =>
-                    resolve({
-                      healthy: false,
-                      latency_ms: HEALTH_CHECK_TIMEOUT_MS,
-                    }),
-                  HEALTH_CHECK_TIMEOUT_MS,
-                ),
+            new Promise<{ healthy: false; latency_ms: number }>((resolve) =>
+              setTimeout(
+                () =>
+                  resolve({
+                    healthy: false,
+                    latency_ms: HEALTH_CHECK_TIMEOUT_MS,
+                  }),
+                HEALTH_CHECK_TIMEOUT_MS
+              )
             ),
           ]);
 
@@ -252,7 +249,7 @@ export class DefaultBackendRegistry implements BackendRegistry {
             latency_ms: HEALTH_CHECK_TIMEOUT_MS,
           };
         }
-      }),
+      })
     );
 
     return results;

@@ -80,7 +80,7 @@ describe('buildFeatureMatrix - marshaling contracts', () => {
     const features = [
       { case_id: 'c1', value: 10 },
       { case_id: 'c2', value: 'invalid' }, // String in numeric column
-      { case_id: 'c3', value: {} },       // Object in numeric column
+      { case_id: 'c3', value: {} }, // Object in numeric column
     ];
     const result = buildFeatureMatrix(features);
     expect(result.data[1][0]).toBe(0); // Non-numeric coerced to 0
@@ -143,7 +143,10 @@ describe('classifyTraces - output contracts', () => {
       { case_id: 'c2', f1: 2, outcome: 'B' },
       { case_id: 'c3', f1: 3, outcome: 'A' },
     ];
-    const result = await classifyTraces(features, { targetKey: 'outcome', method: 'logistic_regression' });
+    const result = await classifyTraces(features, {
+      targetKey: 'outcome',
+      method: 'logistic_regression',
+    });
     // Weights should be serializable to JSON
     const serialized = JSON.stringify(result.modelInfo);
     expect(serialized).toBeDefined();
@@ -224,7 +227,10 @@ describe('regressRemainingTime - metric contracts', () => {
       { case_id: 'c3', idx: 3, remaining_time: 300 },
     ];
     // Polynomial regression should return degree
-    const result = await regressRemainingTime(features, { method: 'polynomial_regression', degree: 2 });
+    const result = await regressRemainingTime(features, {
+      method: 'polynomial_regression',
+      degree: 2,
+    });
     expect(result.degree).toBe(2);
   });
 });

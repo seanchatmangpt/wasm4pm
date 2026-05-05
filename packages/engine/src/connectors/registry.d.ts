@@ -12,26 +12,26 @@ import { WebSocketSourceConfig } from './ws-source.js';
  * Extension of SourceRegistry with helper functions for registration
  */
 export declare class ExtendedSourceRegistry extends SourceRegistry {
-    /**
-     * Register the built-in file adapter
-     */
-    registerFileAdapter(config?: FileSourceConfig): void;
-    /**
-     * Register the HTTP adapter
-     */
-    registerHttpAdapter(config?: HttpSourceConfig): void;
-    /**
-     * Register the stream (stdin) adapter
-     */
-    registerStreamAdapter(config?: StreamSourceConfig): void;
-    /**
-     * Auto-detect and register adapters based on available implementations
-     */
-    registerBuiltins(): void;
-    /**
-     * Register the WebSocket adapter
-     */
-    registerWebSocketAdapter(config?: WebSocketSourceConfig): void;
+  /**
+   * Register the built-in file adapter
+   */
+  registerFileAdapter(config?: FileSourceConfig): void;
+  /**
+   * Register the HTTP adapter
+   */
+  registerHttpAdapter(config?: HttpSourceConfig): void;
+  /**
+   * Register the stream (stdin) adapter
+   */
+  registerStreamAdapter(config?: StreamSourceConfig): void;
+  /**
+   * Auto-detect and register adapters based on available implementations
+   */
+  registerBuiltins(): void;
+  /**
+   * Register the WebSocket adapter
+   */
+  registerWebSocketAdapter(config?: WebSocketSourceConfig): void;
 }
 /**
  * Create extended registry instance

@@ -2,7 +2,7 @@
 
 ## 30-Second Overview
 
-Agent 7 has created comprehensive benchmarks for all 6 prediction perspectives in pictl:
+Agent 7 has created comprehensive benchmarks for all 6 prediction perspectives in wasm4pm:
 
 ```
 ✅ Next-Activity     (78% top-1 accuracy, 0.68ms latency)
@@ -164,7 +164,7 @@ Latency benchmarks for:
 
 ## Integration with Pictl
 
-These benchmarks measure the **accuracy** and **latency** of pictl's prediction modules:
+These benchmarks measure the **accuracy** and **latency** of wasm4pm's prediction modules:
 
 | Module | Perspective | Benchmark |
 |---|---|---|

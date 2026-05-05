@@ -14,7 +14,7 @@ This crate defines the canonical types used throughout the wasm4pm ecosystem, in
 ## Usage
 
 ```rust
-use pictl_types::{EventLog, Trace, Event, Attributes};
+use wasm4pm_types::{EventLog, Trace, Event, Attributes};
 
 // Create a simple event log
 let mut log = EventLog {

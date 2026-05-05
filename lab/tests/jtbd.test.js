@@ -10,12 +10,12 @@
  * Binary: @wasm4pm/cli (published npm package, not local source)
  */
 import { describe, it, expect, beforeAll } from 'vitest';
-import pictl from '@wasm4pm/cli';
+import wasm4pm from '@wasm4pm/cli';
 import { generateDriftedLog, generateReworkLog, generateDiverseLogs, generateDeviatingLog, generateSeasonalLog, countManualDeviations, verifyAnomaly } from './jtbd-generators.js';
 describe('JTBD: End-to-End Business Challenges', () => {
     beforeAll(async () => {
         // Initialize WASM module
-        await pictl.init();
+        await wasm4pm.init();
     });
     /**
      * JTBD-1: Bottleneck Discovery Under Drift
@@ -46,10 +46,10 @@ describe('JTBD: End-to-End Business Challenges', () => {
                 seed: 42
             });
             // Load event log into WASM
-            const logHandle = await pictl.load_eventlog_from_json(JSON.stringify(events));
+            const logHandle = await wasm4pm.load_eventlog_from_json(JSON.stringify(events));
             // Execute: Detect drift and identify bottleneck
-            const driftResult = JSON.parse(await pictl.detect_concept_drift(logHandle, 'concept:name', 1000));
-            const bottleneckResult = JSON.parse(await pictl.detect_bottlenecks(logHandle, 'concept:name'));
+            const driftResult = JSON.parse(await wasm4pm.detect_concept_drift(logHandle, 'concept:name', 1000));
+            const bottleneckResult = JSON.parse(await wasm4pm.detect_bottlenecks(logHandle, 'concept:name'));
             // Assert: Drift detected
             expect(driftResult.drift_detected).toBe(true);
             // Assert: Bottleneck identified as Credit Check
@@ -61,7 +61,7 @@ describe('JTBD: End-to-End Business Challenges', () => {
             expect(driftResult.drift_window.start_month).toBeGreaterThanOrEqual(2);
             expect(driftResult.drift_window.start_month).toBeLessThanOrEqual(4);
             // Verify: Mine temporal profile to confirm bottleneck duration
-            const temporalResult = JSON.parse(await pictl.analyze_temporal_bottlenecks(logHandle, 'concept:name'));
+            const temporalResult = JSON.parse(await wasm4pm.analyze_temporal_bottlenecks(logHandle, 'concept:name'));
             const creditCheckDuration = temporalResult.activities.find((a) => a.name === 'Credit Check');
             expect(creditCheckDuration.avg_duration_ms).toBeGreaterThan(8 * 3600 * 1000); // > 8 hours
         });
@@ -95,11 +95,11 @@ describe('JTBD: End-to-End Business Challenges', () => {
                 maxEventsPerCase: 10,
                 seed: 123
             });
-            const logHandle = await pictl.load_eventlog_from_json(JSON.stringify(events));
+            const logHandle = await wasm4pm.load_eventlog_from_json(JSON.stringify(events));
             // Execute: Discover DFG to find rework edges
-            const dfgResult = JSON.parse(await pictl.discover_dfg(logHandle, 'concept:name'));
+            const dfgResult = JSON.parse(await wasm4pm.discover_dfg(logHandle, 'concept:name'));
             // Execute: Detect rework
-            const reworkResult = JSON.parse(await pictl.detect_rework(logHandle, 'concept:name'));
+            const reworkResult = JSON.parse(await wasm4pm.detect_rework(logHandle, 'concept:name'));
             // Assert: Rework detected
             expect(reworkResult.rework_detected).toBe(true);
             // Assert: Both rework loops found in DFG
@@ -140,16 +140,16 @@ describe('JTBD: End-to-End Business Challenges', () => {
                 seed: 456
             });
             // Reset RL orchestrator to fresh state with seeded RNG
-            await pictl.rl_orchestrator_reset();
+            await wasm4pm.rl_orchestrator_reset();
             // Enable LinUCB for adaptive agent selection
-            await pictl.rl_orchestrator_set_linucb(true);
+            await wasm4pm.rl_orchestrator_set_linucb(true);
             // Execute: Run 100 learning cycles
             const rewards = [];
             for (let i = 0; i < 100; i++) {
                 const log = logs[i % logs.length];
-                const logHandle = await pictl.load_eventlog_from_json(JSON.stringify(log));
+                const logHandle = await wasm4pm.load_eventlog_from_json(JSON.stringify(log));
                 // Execute autonomic cycle with time constraint
-                const cycleResult = JSON.parse(await pictl.autonomic_execute_cycle(logHandle, 'concept:name', 100, // time budget: 100ms
+                const cycleResult = JSON.parse(await wasm4pm.autonomic_execute_cycle(logHandle, 'concept:name', 100, // time budget: 100ms
                 42, // seeded RNG for determinism
                 0.1, // learning rate
                 0.99 // discount factor
@@ -164,13 +164,13 @@ describe('JTBD: End-to-End Business Challenges', () => {
             const totalReward = rewards.reduce((a, b) => a + b, 0);
             expect(totalReward / 100).toBeGreaterThan(0);
             // Assert: Agent selection stable (not switching every cycle)
-            const telemetry = JSON.parse(await pictl.rl_orchestrator_get_telemetry());
+            const telemetry = JSON.parse(await wasm4pm.rl_orchestrator_get_telemetry());
             expect(telemetry.agent_switches).toBeLessThan(30); // < 30% of cycles
             // Verify: RL state is serializable and restoreable
-            const serialized = await pictl.serialize_rl_state();
-            await pictl.rl_orchestrator_reset();
-            await pictl.restore_rl_state(serialized);
-            const restoredTelemetry = JSON.parse(await pictl.rl_orchestrator_get_telemetry());
+            const serialized = await wasm4pm.serialize_rl_state();
+            await wasm4pm.rl_orchestrator_reset();
+            await wasm4pm.restore_rl_state(serialized);
+            const restoredTelemetry = JSON.parse(await wasm4pm.rl_orchestrator_get_telemetry());
             expect(restoredTelemetry.cycle_count).toBe(100);
         });
     });
@@ -200,18 +200,18 @@ describe('JTBD: End-to-End Business Challenges', () => {
                 caseCount: 1000,
                 seed: 789
             });
-            const logHandle = await pictl.load_eventlog_from_json(JSON.stringify(events));
+            const logHandle = await wasm4pm.load_eventlog_from_json(JSON.stringify(events));
             // Execute: Discover model from log
-            const discoveredModel = JSON.parse(await pictl.discover_alpha_plus_plus(logHandle, 'concept:name'));
+            const discoveredModel = JSON.parse(await wasm4pm.discover_alpha_plus_plus(logHandle, 'concept:name'));
             // Execute: Check conformance using token replay
-            const conformanceResult = JSON.parse(await pictl.check_token_based_replay(logHandle, 'concept:name'));
+            const conformanceResult = JSON.parse(await wasm4pm.check_token_based_replay(logHandle, 'concept:name'));
             // Assert: Fitness approximately correct (±0.05 tolerance)
             expect(conformanceResult.fitness).toBeGreaterThan(0.85);
             expect(conformanceResult.fitness).toBeLessThan(0.95);
             // Assert: Deviations detected (at least the major ones)
             expect(conformanceResult.deviations.length).toBeGreaterThanOrEqual(2);
             // Verify: Count deviations manually from exported log
-            const exportedLog = JSON.parse(await pictl.export_eventlog_to_json(logHandle));
+            const exportedLog = JSON.parse(await wasm4pm.export_eventlog_to_json(logHandle));
             const manualDeviationCount = countManualDeviations(exportedLog, ['A', 'B', 'C', 'D', 'E']);
             expect(manualDeviationCount).toBeGreaterThan(80); // ~10% of 1000 cases
             expect(manualDeviationCount).toBeLessThan(120);
@@ -243,9 +243,9 @@ describe('JTBD: End-to-End Business Challenges', () => {
                 activities: ['Receive', 'Process', 'Ship'],
                 seed: 101112
             });
-            const logHandle = await pictl.load_eventlog_from_json(JSON.stringify(events));
+            const logHandle = await wasm4pm.load_eventlog_from_json(JSON.stringify(events));
             // Execute: Run ML anomaly detection
-            const anomalyResult = JSON.parse(await pictl.ml_anomaly(logHandle, 'concept:name', 0.8, // training ratio
+            const anomalyResult = JSON.parse(await wasm4pm.ml_anomaly(logHandle, 'concept:name', 0.8, // training ratio
             0.9 // threshold percentile
             ));
             // Assert: Anomalies detected (approximately correct count)

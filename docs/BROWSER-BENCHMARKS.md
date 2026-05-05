@@ -4,7 +4,7 @@ Performance testing for WASM4PM algorithms in browser and Node.js environments u
 
 ## Overview
 
-The browser profile benchmark suite tests pictl's full-featured build (2.78MB, all 41 algorithms) in real browser and Node.js environments, providing insights into:
+The browser profile benchmark suite tests wasm4pm's full-featured build (2.78MB, all 41 algorithms) in real browser and Node.js environments, providing insights into:
 
 - **Real-world browser performance** — Actual JavaScript engine optimization patterns
 - **Environment differences** — Node.js vs browser WASM execution

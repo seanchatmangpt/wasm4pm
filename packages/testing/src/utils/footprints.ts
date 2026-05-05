@@ -13,9 +13,9 @@ export interface FootprintMatrix {
 }
 
 export type FootprintRelation =
-  | 'sequence'     // A -> B (A precedes B)
-  | 'parallel'     // A || B (A and B are parallel)
-  | 'choice'       // A # B (A and B are in exclusive choice)
+  | 'sequence' // A -> B (A precedes B)
+  | 'parallel' // A || B (A and B are parallel)
+  | 'choice' // A # B (A and B are in exclusive choice)
   | 'no_relation'; // A and B are unrelated
 
 export interface FootprintComparison {
@@ -33,7 +33,9 @@ export interface FootprintComparison {
  *
  * The footprint matrix captures the ordering relationships between activities.
  */
-export function extractFootprintsFromLog(eventLog: Array<{ activities: string[] }>): FootprintMatrix {
+export function extractFootprintsFromLog(
+  eventLog: Array<{ activities: string[] }>
+): FootprintMatrix {
   const activities = extractActivities(eventLog);
   const matrix = new Map<string, Map<string, FootprintRelation>>();
 
@@ -154,7 +156,7 @@ export function extractFootprintsFromDFG(dfg: {
 
     if (matrix.has(source) && matrix.get(source)!.has(target)) {
       // Check if reverse edge exists
-      const reverseExists = dfg.edges.some(e => e.source === target && e.target === source);
+      const reverseExists = dfg.edges.some((e) => e.source === target && e.target === source);
 
       if (reverseExists) {
         matrix.get(source)!.set(target, 'parallel');
@@ -197,7 +199,7 @@ export function extractFootprintsFromDFG(dfg: {
 function canReachInDFG(
   dfg: { nodes: string[]; edges: Array<{ source: string; target: string }> },
   source: string,
-  target: string,
+  target: string
 ): boolean {
   const visited = new Set<string>();
 
@@ -206,7 +208,7 @@ function canReachInDFG(
     if (visited.has(node)) return false;
     visited.add(node);
 
-    const outgoing = dfg.edges.filter(e => e.source === node);
+    const outgoing = dfg.edges.filter((e) => e.source === node);
     for (const edge of outgoing) {
       if (dfs(edge.target)) {
         return true;

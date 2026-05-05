@@ -1427,7 +1427,11 @@ export class Instrumentation {
         }),
       });
     }
-    try { emit(start.otelEvent); } catch { /* never block on OTEL */ }
+    try {
+      emit(start.otelEvent);
+    } catch {
+      /* never block on OTEL */
+    }
 
     const t0 = Date.now();
     let result: T;
@@ -1449,7 +1453,11 @@ export class Instrumentation {
         code: 'ERROR',
         message: err instanceof Error ? err.message : String(err),
       };
-      try { emit(completeErr); } catch { /* never block on OTEL */ }
+      try {
+        emit(completeErr);
+      } catch {
+        /* never block on OTEL */
+      }
       throw err; // fail-fast
     }
 
@@ -1464,7 +1472,11 @@ export class Instrumentation {
         durationMs: Date.now() - t0,
       }
     );
-    try { emit(complete); } catch { /* never block on OTEL */ }
+    try {
+      emit(complete);
+    } catch {
+      /* never block on OTEL */
+    }
     return result;
   }
 

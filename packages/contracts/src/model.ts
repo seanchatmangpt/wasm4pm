@@ -126,8 +126,8 @@ export interface ModelEdge {
  * 4. Nodes and edges form a DAG or cyclic graph; no isolated nodes.
  */
 export interface ModelIR {
-  readonly format_version: "1.0";
-  readonly model_type: "dfg" | "petri_net" | "process_tree" | "declare" | "powl";
+  readonly format_version: '1.0';
+  readonly model_type: 'dfg' | 'petri_net' | 'process_tree' | 'declare' | 'powl';
   readonly algorithm_id: string;
   readonly capabilities: ModelCapabilities;
   readonly nodes: ReadonlyArray<ModelNode>;
@@ -155,10 +155,10 @@ export function isModelIR(value: unknown): value is ModelIR {
   const model = value as Record<string, unknown>;
 
   // Check format_version
-  if (model.format_version !== "1.0") return false;
+  if (model.format_version !== '1.0') return false;
 
   // Check model_type
-  const validTypes = ["dfg", "petri_net", "process_tree", "declare", "powl"];
+  const validTypes = ['dfg', 'petri_net', 'process_tree', 'declare', 'powl'];
   if (!validTypes.includes(model.model_type as string)) return false;
 
   // Check algorithm_id
@@ -175,14 +175,16 @@ export function isModelIR(value: unknown): value is ModelIR {
     typeof caps.streaming_compatible !== 'boolean' ||
     typeof caps.exportable_to_pnml !== 'boolean' ||
     typeof caps.exportable_to_bpmn !== 'boolean'
-  ) return false;
+  )
+    return false;
 
   // Check nodes (non-empty array)
   if (!Array.isArray(model.nodes) || model.nodes.length === 0) return false;
   for (const node of model.nodes) {
     if (!node || typeof node !== 'object') return false;
     const n = node as Record<string, unknown>;
-    if (typeof n.id !== 'string' || typeof n.label !== 'string' || typeof n.type !== 'string') return false;
+    if (typeof n.id !== 'string' || typeof n.label !== 'string' || typeof n.type !== 'string')
+      return false;
   }
 
   // Check edges (array, can be empty)
@@ -191,7 +193,8 @@ export function isModelIR(value: unknown): value is ModelIR {
     if (!edge || typeof edge !== 'object') return false;
     const e = edge as Record<string, unknown>;
     if (typeof e.from !== 'string' || typeof e.to !== 'string') return false;
-    if (e.weight !== undefined && (typeof e.weight !== 'number' || !Number.isFinite(e.weight))) return false;
+    if (e.weight !== undefined && (typeof e.weight !== 'number' || !Number.isFinite(e.weight)))
+      return false;
   }
 
   // Check quality (optional but must be valid if present)

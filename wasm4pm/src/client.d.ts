@@ -1,11 +1,11 @@
 /**
- * pictl - Process Intelligence Control WebAssembly Client Library
+ * wasm4pm - Process Intelligence Control WebAssembly Client Library
  *
  * High-level TypeScript API for process mining in the browser.
  * Provides intuitive access to discovery, analysis, and conformance checking.
  */
 import * as api from './api.js';
-import type * as WasmModule from '../pkg/pictl.js';
+import type * as WasmModule from '../pkg/wasm4pm.js';
 import {
   EventLogHandleId,
   OCELHandleId,
@@ -31,7 +31,7 @@ export interface PictlModuleError {
  */
 export declare function parsePictlError(error: unknown): PictlModuleError;
 /**
- * Main client for pictl operations
+ * Main client for wasm4pm operations
  * Handles initialization, data management, and algorithm execution
  */
 export declare class ProcessMiningClient {
@@ -109,7 +109,7 @@ export declare class ProcessMiningClient {
    */
   analyzeOCPerformance(ocel: OCELHandle): any;
   /**
-   * Get the version of pictl
+   * Get the version of wasm4pm
    */
   getVersion(): string;
 }

@@ -1,6 +1,6 @@
 # Why BPI 2020 Travel Permits?
 
-The dataset behind every benchmark number in pictl, and why it was chosen over alternatives.
+The dataset behind every benchmark number in wasm4pm, and why it was chosen over alternatives.
 
 ---
 
@@ -18,7 +18,7 @@ The dataset behind every benchmark number in pictl, and why it was chosen over a
 | Source               | BPI Challenge 2020           |
 | Domain               | Government permit processing |
 
-This is the primary dataset for all pictl benchmarks. Every algorithm timing, every memory measurement, every streaming comparison uses this log as input.
+This is the primary dataset for all wasm4pm benchmarks. Every algorithm timing, every memory measurement, every streaming comparison uses this log as input.
 
 ---
 
@@ -157,4 +157,4 @@ wpm run my-process.xes --algorithm dfg --format json
 wpm compare dfg heuristic_miner --format json > comparison.json
 ```
 
-Any XES or CSV event log with the standard columns (case:concept:name, concept:name, time:timestamp) will work with pictl's benchmarking infrastructure.
+Any XES or CSV event log with the standard columns (case:concept:name, concept:name, time:timestamp) will work with wasm4pm's benchmarking infrastructure.

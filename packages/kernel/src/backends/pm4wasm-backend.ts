@@ -232,7 +232,7 @@ export class Pm4wasmBackend implements MiningBackend {
   async discover(
     log: EventLogIR,
     algorithmId: string,
-    budget: BudgetEnvelope,
+    budget: BudgetEnvelope
   ): Promise<ResultEnvelope<ModelIR>> {
     const startMs = Date.now();
     const runId = this.generateUuid();
@@ -290,7 +290,7 @@ export class Pm4wasmBackend implements MiningBackend {
       const wasmResult = await this.withTimeout(
         this.callWasmAlgorithm(algo.wasmFunctionName, wasmLog),
         timeout,
-        `${algorithmId} exceeded budget timeout of ${timeout}ms`,
+        `${algorithmId} exceeded budget timeout of ${timeout}ms`
       );
 
       // Step 6: Parse WASM output to ModelIR
@@ -360,7 +360,7 @@ export class Pm4wasmBackend implements MiningBackend {
   async conformance(
     log: EventLogIR,
     model: ModelIR,
-    budget: BudgetEnvelope,
+    budget: BudgetEnvelope
   ): Promise<ResultEnvelope<ConformanceResult>> {
     const startMs = Date.now();
     const runId = this.generateUuid();
@@ -387,7 +387,7 @@ export class Pm4wasmBackend implements MiningBackend {
         result = await this.withTimeout(
           this.alignmentConformance(wasmLog, wasmModel),
           timeout,
-          `Conformance checking exceeded budget timeout of ${timeout}ms`,
+          `Conformance checking exceeded budget timeout of ${timeout}ms`
         );
       } else {
         // Fallback: return zero metrics for unsupported model types
@@ -460,7 +460,7 @@ export class Pm4wasmBackend implements MiningBackend {
   async analyze(
     log: EventLogIR,
     task: AnalysisTask,
-    budget: BudgetEnvelope,
+    budget: BudgetEnvelope
   ): Promise<ResultEnvelope<unknown>> {
     const startMs = Date.now();
 
@@ -534,7 +534,10 @@ export class Pm4wasmBackend implements MiningBackend {
    * Check if algorithm budget tier is compatible with budget latency budget.
    * Algorithm.budgetTier ≤ budget.latencyBudget (in tier ordering).
    */
-  private isBudgetCompatible(algorithmBudgetTier: LatencyClass, budgetLatency: LatencyClass): boolean {
+  private isBudgetCompatible(
+    algorithmBudgetTier: LatencyClass,
+    budgetLatency: LatencyClass
+  ): boolean {
     return latencyTierLte(algorithmBudgetTier, budgetLatency);
   }
 
@@ -546,15 +549,12 @@ export class Pm4wasmBackend implements MiningBackend {
   private withTimeout<T>(
     promise: Promise<T>,
     timeoutMs: number,
-    timeoutMessage: string,
+    timeoutMessage: string
   ): Promise<T> {
     return Promise.race([
       promise,
       new Promise<T>((_, reject) =>
-        setTimeout(
-          () => reject(new Error(`timeout: ${timeoutMessage}`)),
-          timeoutMs,
-        ),
+        setTimeout(() => reject(new Error(`timeout: ${timeoutMessage}`)), timeoutMs)
       ),
     ]);
   }
@@ -622,7 +622,7 @@ export class Pm4wasmBackend implements MiningBackend {
   private parseModelOutput(
     wasmOutput: string,
     outputType: 'dfg' | 'petri_net' | 'declare',
-    algorithmId: string,
+    algorithmId: string
   ): ModelIR {
     // Parse WASM JSON output
     let parsed: any;
@@ -654,7 +654,7 @@ export class Pm4wasmBackend implements MiningBackend {
       edges: parsed.edges || [],
       quality: parsed.quality || {
         fitness: 0.85,
-        precision: 0.80,
+        precision: 0.8,
         generalization: 0.75,
         simplicity: 100,
       },
@@ -667,7 +667,7 @@ export class Pm4wasmBackend implements MiningBackend {
    */
   private async tokenReplayConformance(
     logHandle: string,
-    modelHandle: string,
+    modelHandle: string
   ): Promise<ConformanceResult> {
     if (!this.wasmModule) {
       throw new Error('WASM module not loaded');
@@ -677,7 +677,7 @@ export class Pm4wasmBackend implements MiningBackend {
       // Fallback: return stub result
       return {
         fitness: 0.85,
-        precision: 0.80,
+        precision: 0.8,
         generalization: 0.75,
         simplicity: 100,
       };
@@ -688,7 +688,7 @@ export class Pm4wasmBackend implements MiningBackend {
 
     return {
       fitness: parsed.fitness ?? 0.85,
-      precision: parsed.precision ?? 0.80,
+      precision: parsed.precision ?? 0.8,
       generalization: parsed.generalization ?? 0.75,
       simplicity: parsed.simplicity ?? 100,
     };
@@ -700,7 +700,7 @@ export class Pm4wasmBackend implements MiningBackend {
    */
   private async alignmentConformance(
     logHandle: string,
-    modelHandle: string,
+    modelHandle: string
   ): Promise<ConformanceResult> {
     if (!this.wasmModule) {
       throw new Error('WASM module not loaded');
@@ -709,9 +709,9 @@ export class Pm4wasmBackend implements MiningBackend {
     if (typeof this.wasmModule.compute_optimal_alignments !== 'function') {
       // Fallback: return stub result
       return {
-        fitness: 0.90,
+        fitness: 0.9,
         precision: 0.85,
-        generalization: 0.80,
+        generalization: 0.8,
         simplicity: 100,
       };
     }
@@ -720,9 +720,9 @@ export class Pm4wasmBackend implements MiningBackend {
     const parsed = typeof result === 'string' ? JSON.parse(result) : result;
 
     return {
-      fitness: parsed.fitness ?? 0.90,
+      fitness: parsed.fitness ?? 0.9,
       precision: parsed.precision ?? 0.85,
-      generalization: parsed.generalization ?? 0.80,
+      generalization: parsed.generalization ?? 0.8,
       simplicity: parsed.simplicity ?? 100,
     };
   }
@@ -735,7 +735,7 @@ export class Pm4wasmBackend implements MiningBackend {
     algorithmId: string,
     operationType: string,
     log: EventLogIR,
-    model: ModelIR | null,
+    model: ModelIR | null
   ): ProvenanceChain {
     // Derive hashes from inputs using canonical JSON serialization
     const inputHash = hashOutput(log);
@@ -773,7 +773,6 @@ export class Pm4wasmBackend implements MiningBackend {
   private generateUuid(): string {
     return crypto.randomUUID?.() || `uuid-${Date.now()}-${Math.random()}`;
   }
-
 
   /**
    * Load WASM module dynamically.

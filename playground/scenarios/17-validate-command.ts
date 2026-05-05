@@ -22,7 +22,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { assertExitCode, pictl, combinedOutput, EXIT_CODES, resolveRepo } from '../helpers/cli.js';
+import { assertExitCode, wasm4pm, combinedOutput, EXIT_CODES, resolveRepo } from '../helpers/cli.js';
 
 // Real XES fixture files
 const RUNNING_EXAMPLE = resolveRepo('wasm4pm/tests/fixtures/running-example.xes');

@@ -96,7 +96,7 @@ Within a tier, differences are usually not actionable. Between tiers, the choice
 
 The answer depends on your use case:
 
-### Interactive CLI Use (pictl run)
+### Interactive CLI Use (wasm4pm run)
 
 When a human runs `wpm run log.xes` from the command line, they are waiting for the result. A 10% difference between 3.0ms and 3.3ms is imperceptible. Even a 10x difference (3ms vs 30ms) is imperceptible -- both complete in the blink of an eye.
 
@@ -163,7 +163,7 @@ Let us walk through a real example:
 - The difference is larger than the within-algorithm range (0.6-0.7ms), suggesting it is real and not just noise.
 - Both algorithms are in the "ultra-fast" tier. For interactive CLI use, the difference is imperceptible.
 - DFG produces a direct-follows graph. Process Skeleton produces a simplified DFG with skeleton edges. These are different outputs -- the choice should be based on which output format you need, not on the 0.3ms speed difference.
-- For streaming on an IoT device processing millions of events, the 10% advantage could matter. But for typical pictl usage, it does not.
+- For streaming on an IoT device processing millions of events, the 10% advantage could matter. But for typical wasm4pm usage, it does not.
 
 **Conclusion**: Process Skeleton is measurably faster, but the speed difference is not a meaningful differentiator. Choose based on output format requirements.
 

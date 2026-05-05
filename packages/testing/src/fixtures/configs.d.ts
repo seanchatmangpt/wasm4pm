@@ -3,55 +3,55 @@
  * source kinds, algorithm types, and edge cases.
  */
 export interface TestConfig {
-    version: '1.0';
-    source: {
-        kind: string;
-        path?: string;
-        format?: string;
-        content?: string;
+  version: '1.0';
+  source: {
+    kind: string;
+    path?: string;
+    format?: string;
+    content?: string;
+  };
+  execution: {
+    profile: string;
+    timeout?: number;
+    maxMemory?: number;
+    mode?: string;
+    maxEvents?: number;
+    parameters?: Record<string, unknown>;
+  };
+  observability?: {
+    otel?: {
+      enabled: boolean;
+      endpoint?: string;
     };
-    execution: {
-        profile: string;
-        timeout?: number;
-        maxMemory?: number;
-        mode?: string;
-        maxEvents?: number;
-        parameters?: Record<string, unknown>;
-    };
-    observability?: {
-        otel?: {
-            enabled: boolean;
-            endpoint?: string;
-        };
-        logLevel?: string;
-        metricsEnabled?: boolean;
-    };
-    watch?: {
-        enabled: boolean;
-        interval: number;
-        debounce?: number;
-    };
-    output?: {
-        format: string;
-        destination: string;
-        pretty?: boolean;
-        colorize?: boolean;
-        generateReports?: boolean;
-        includeMetrics?: boolean;
-    };
-    pipeline?: Array<{
-        id: string;
-        type: string;
-        required?: boolean;
-        parameters?: Record<string, unknown>;
-        dependsOn?: string[];
-        parallelizable?: boolean;
-    }>;
-    metadata?: {
-        name?: string;
-        description?: string;
-        tags?: string[];
-    };
+    logLevel?: string;
+    metricsEnabled?: boolean;
+  };
+  watch?: {
+    enabled: boolean;
+    interval: number;
+    debounce?: number;
+  };
+  output?: {
+    format: string;
+    destination: string;
+    pretty?: boolean;
+    colorize?: boolean;
+    generateReports?: boolean;
+    includeMetrics?: boolean;
+  };
+  pipeline?: Array<{
+    id: string;
+    type: string;
+    required?: boolean;
+    parameters?: Record<string, unknown>;
+    dependsOn?: string[];
+    parallelizable?: boolean;
+  }>;
+  metadata?: {
+    name?: string;
+    description?: string;
+    tags?: string[];
+  };
 }
 /** Minimal valid config — fast DFG discovery */
 export declare const MINIMAL_CONFIG: TestConfig;

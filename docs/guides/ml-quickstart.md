@@ -8,7 +8,7 @@ Get started with ML-powered process mining in 5 steps.
 
 ## What are ML algorithms?
 
-ML algorithms in pictl extract patterns from event logs without mining a process model. Instead of "what is the process?", ask:
+ML algorithms in wasm4pm extract patterns from event logs without mining a process model. Instead of "what is the process?", ask:
 - **Classify:** Which outcomes do these cases exhibit?
 - **Cluster:** What cohorts exist in my process?
 - **Forecast:** What's the next event rate?

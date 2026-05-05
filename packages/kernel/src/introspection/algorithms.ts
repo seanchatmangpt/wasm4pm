@@ -26,7 +26,10 @@ export type ClusteringMethod = 'kmeans' | 'dbscan';
 /**
  * Regression method.
  */
-export type RegressionMethod = 'linear_regression' | 'polynomial_regression' | 'exponential_regression';
+export type RegressionMethod =
+  | 'linear_regression'
+  | 'polynomial_regression'
+  | 'exponential_regression';
 
 /**
  * Forecasting method.
@@ -50,7 +53,12 @@ export interface MlAlgorithmMetadata {
   inputType: 'trace_features' | 'event_log' | 'numeric_series' | 'feature_matrix';
 
   /** Output type: what does it return? */
-  outputType: 'predictions' | 'cluster_assignments' | 'anomaly_scores' | 'forecast' | 'reduced_features';
+  outputType:
+    | 'predictions'
+    | 'cluster_assignments'
+    | 'anomaly_scores'
+    | 'forecast'
+    | 'reduced_features';
 
   /** Speed estimate: 0-100 (lower = faster) */
   speedEstimate: number; // 0-30: fast, 30-60: moderate, 60+: slow
@@ -77,7 +85,13 @@ export interface MlAlgorithmMetadata {
   parameters: AlgorithmParameter[];
 
   /** Which ML subdomains this algorithm is part of */
-  category: 'classification' | 'clustering' | 'forecasting' | 'anomaly_detection' | 'regression' | 'dimensionality_reduction';
+  category:
+    | 'classification'
+    | 'clustering'
+    | 'forecasting'
+    | 'anomaly_detection'
+    | 'regression'
+    | 'dimensionality_reduction';
 
   /** Academic references or papers */
   references?: string[];
@@ -163,7 +177,8 @@ class MlAlgorithmRegistry {
           required: true,
           default: 'decision_tree',
           options: ['knn', 'logistic_regression', 'decision_tree', 'naive_bayes'],
-          domainHint: 'KNN sensitive to feature scaling; Logistic good for linear boundaries; Tree handles nonlinear patterns',
+          domainHint:
+            'KNN sensitive to feature scaling; Logistic good for linear boundaries; Tree handles nonlinear patterns',
         },
         {
           name: 'kValue',
@@ -403,7 +418,8 @@ class MlAlgorithmRegistry {
           required: true,
           default: 'linear_regression',
           options: ['linear_regression', 'polynomial_regression', 'exponential_regression'],
-          domainHint: 'Linear: simple, fast. Polynomial: captures curves. Exponential: for growth patterns',
+          domainHint:
+            'Linear: simple, fast. Polynomial: captures curves. Exponential: for growth patterns',
         },
         {
           name: 'degree',
@@ -526,9 +542,7 @@ class MlAlgorithmRegistry {
    * console.log(classifiers.length);  // 1 (classify)
    * ```
    */
-  public getByCategory(
-    category: MlAlgorithmMetadata['category']
-  ): MlAlgorithmMetadata[] {
+  public getByCategory(category: MlAlgorithmMetadata['category']): MlAlgorithmMetadata[] {
     return Array.from(this.algorithms.values()).filter((a) => a.category === category);
   }
 
@@ -571,9 +585,10 @@ class MlAlgorithmRegistry {
       quality_control: ['anomaly'],
     };
 
-    const candidates_by_domain = domainMap[domain]
-      ?.map((id) => this.algorithms.get(id))
-      .filter((a): a is MlAlgorithmMetadata => a !== undefined) || candidates;
+    const candidates_by_domain =
+      domainMap[domain]
+        ?.map((id) => this.algorithms.get(id))
+        .filter((a): a is MlAlgorithmMetadata => a !== undefined) || candidates;
 
     // Filter by constraints
     let filtered = candidates_by_domain;

@@ -25,7 +25,10 @@ class TestWasmModule implements WasmModule {
 
   constructor(versionString?: string) {
     try {
-      this.memory = new (globalThis as any).WebAssembly.Memory({ initial: 256, maximum: 512 } as any);
+      this.memory = new (globalThis as any).WebAssembly.Memory({
+        initial: 256,
+        maximum: 512,
+      } as any);
     } catch {
       this.memory = { buffer: new ArrayBuffer(256 * 64 * 1024) };
     }

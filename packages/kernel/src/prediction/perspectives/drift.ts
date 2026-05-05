@@ -81,7 +81,7 @@ export class DriftHandler implements PerspectiveHandler<DriftTask> {
   predict(
     task: DriftTask,
     model: PredictionModel,
-    prefixes: readonly PredictionTrace[],
+    prefixes: readonly PredictionTrace[]
   ): readonly PredictionRecord[] {
     const state = model.state as unknown as DriftState;
     const reference = new Set(state.referenceEdges);

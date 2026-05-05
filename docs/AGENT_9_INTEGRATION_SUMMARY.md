@@ -9,7 +9,7 @@
 
 ## Mission Summary
 
-Agent 9's mandate is to create comprehensive end-to-end testing and quality certification for pictl's ML/AI/RL system. This report consolidates the planning phase findings.
+Agent 9's mandate is to create comprehensive end-to-end testing and quality certification for wasm4pm's ML/AI/RL system. This report consolidates the planning phase findings.
 
 ---
 
@@ -430,7 +430,7 @@ Agent 9 has completed the **planning phase** for comprehensive end-to-end testin
 2. **CRITICAL_PATH_ANALYSIS.md** — Detailed technical mapping (7 critical paths, 80+ spans)
 3. **E2E_TEST_HARNESS_GUIDE.md** — Implementation guide (templates, examples, checklists)
 
-**Current state:** pictl has a strong unit test base (674 Rust + 9 TS packages) with mature testing infrastructure. Key gaps are E2E formalization, OTEL coverage (0%), and performance baselines.
+**Current state:** wasm4pm has a strong unit test base (674 Rust + 9 TS packages) with mature testing infrastructure. Key gaps are E2E formalization, OTEL coverage (0%), and performance baselines.
 
 **Recommendation:** Proceed with Phase 1 (Discovery path, E2E-01 to E2E-06) immediately. This phase validates the E2E test framework and establishes patterns for phases 2-7.
 

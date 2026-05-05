@@ -5,9 +5,9 @@
  * Adds only playground-specific helpers not available in the testing package.
  */
 import { assertExitCode, type CliResult, EXIT_CODES } from '@wasm4pm/testing';
-export declare const PICTL: string;
-/** Spawn pictl CLI as a child process, capturing stdout/stderr/exitCode. */
-export declare function pictl(userArgs: string[], options?: {
+export declare const WASM4PM: string;
+/** Spawn wasm4pm CLI as a child process, capturing stdout/stderr/exitCode. */
+export declare function wasm4pm(userArgs: string[], options?: {
     timeout?: number;
     env?: Record<string, string>;
 }): Promise<CliResult>;
@@ -25,7 +25,7 @@ export declare function extractJson<T = Record<string, unknown>>(stdout: string)
  * (via consola). This helper combines both for human-output assertions.
  */
 export declare function combinedOutput(result: CliResult): string;
-/** Resolve a path relative to the pictl repo root. */
+/** Resolve a path relative to the wasm4pm repo root. */
 export declare function resolveRepo(...segments: string[]): string;
 export { assertExitCode, EXIT_CODES };
 export type { CliResult };

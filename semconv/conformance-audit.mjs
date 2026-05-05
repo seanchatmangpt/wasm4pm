@@ -2,7 +2,7 @@
  * Process Mining Conformance Auditor — Van der Aalst Doctrine
  * "If the code says it worked but the event log cannot prove a lawful process happened, then it did not work."
  *
- * This module captures pictl's own OTel spans as an OCEL event log, discovers the actual process,
+ * This module captures wasm4pm's own OTel spans as an OCEL event log, discovers the actual process,
  * and compares against the declared process to produce a conformance verdict.
  *
  * Verdicts:
@@ -54,7 +54,7 @@ export class OCELEventLog {
           id: `event:${span.span_id}`,
           timestamp: span.start_time,
           activity: span.name,
-          service: span.attributes?.service_name || 'pictl',
+          service: span.attributes?.service_name || 'wasm4pm',
           status: span.status?.code || 'UNSET',
           duration_ms: span.end_time
             ? new Date(span.end_time) - new Date(span.start_time)
@@ -552,7 +552,7 @@ export class PictlAuditor {
    * @private
    */
   _normalizeDeclaredProcess() {
-    // Extract from pictl-process-mining.yaml span definitions
+    // Extract from wasm4pm-process-mining.yaml span definitions
     // Simplified: assume declared spans define activities and sequencing
 
     const activities = [
@@ -577,7 +577,7 @@ export class PictlAuditor {
 }
 
 /**
- * Audit pictl's own process execution
+ * Audit wasm4pm's own process execution
  * Captures OTEL spans and produces conformance report
  *
  * @param {Array} otelSpans - OTEL spans from collector
@@ -586,7 +586,7 @@ export class PictlAuditor {
  */
 export async function auditPictlProcess(otelSpans, options = {}) {
   const declaredProcess = {
-    // Declared span sequence from pictl-process-mining.yaml
+    // Declared span sequence from wasm4pm-process-mining.yaml
     spans: [
       'pm.discovery',
       'pm.conformance',

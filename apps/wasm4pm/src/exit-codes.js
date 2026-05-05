@@ -1,5 +1,5 @@
 /**
- * Exit codes for pictl CLI
+ * Exit codes for wasm4pm CLI
  * Follows standard Unix/POSIX conventions
  */
 export const EXIT_CODES = {

@@ -68,7 +68,7 @@ prefix features.
 **Method:** EWMA over activity-distribution Jaccard distance between sliding
 windows. See [`drift-detection.md`](./drift-detection.md).
 
-**Output:** drift score + threshold-crossed flag. Combine with `pictl
+**Output:** drift score + threshold-crossed flag. Combine with `wasm4pm
 drift-watch` for streaming.
 
 ## 5. `features`
@@ -88,7 +88,7 @@ likely to maximise expected throughput while keeping queues balanced.
 
 ## Configuration
 
-In `pictl.toml`:
+In `wasm4pm.toml`:
 
 ```toml
 [prediction]
@@ -103,7 +103,7 @@ ENV equivalents: `WASM4PM_PREDICTION_ENABLED`, `WASM4PM_PREDICTION_TASKS`,
 `WASM4PM_PREDICTION_NGRAM_ORDER`, `WASM4PM_PREDICTION_DRIFT_WINDOW`,
 `WASM4PM_PREDICTION_ACTIVITY_KEY`.
 
-Auto-saves to `.pictl/results/<timestamp>-predict-<task>.json`.
+Auto-saves to `.wasm4pm/results/<timestamp>-predict-<task>.json`.
 
 ## Accuracy expectations
 

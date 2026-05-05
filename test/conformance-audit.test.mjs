@@ -29,7 +29,7 @@ function createTruthfulSpans() {
       end_time: new Date(baseTime + 1000).toISOString(),
       status: { code: 'OK' },
       attributes: {
-        service_name: 'pictl',
+        service_name: 'wasm4pm',
         pm_discovery_algorithm: 'dfg',
         pm_discovery_input_format: 'ocel',
         pm_discovery_model_type: 'dfg',
@@ -45,7 +45,7 @@ function createTruthfulSpans() {
       end_time: new Date(baseTime + 2500).toISOString(),
       status: { code: 'OK' },
       attributes: {
-        service_name: 'pictl',
+        service_name: 'wasm4pm',
         pm_conformance_fitness: 0.97,
         pm_conformance_precision: 0.95,
         pm_conformance_conforms: true,
@@ -59,7 +59,7 @@ function createTruthfulSpans() {
       end_time: new Date(baseTime + 4000).toISOString(),
       status: { code: 'OK' },
       attributes: {
-        service_name: 'pictl',
+        service_name: 'wasm4pm',
         pm_analysis_type: 'variant',
         pm_analysis_metric_name: 'variant_count',
         pm_analysis_metric_value: 3,
@@ -73,7 +73,7 @@ function createTruthfulSpans() {
       end_time: new Date(baseTime + 5500).toISOString(),
       status: { code: 'OK' },
       attributes: {
-        service_name: 'pictl',
+        service_name: 'wasm4pm',
         federation_quorum_id: 'quorum-1',
         federation_node_id: 'node-1',
         federation_vote: 'approve',
@@ -87,7 +87,7 @@ function createTruthfulSpans() {
       end_time: new Date(baseTime + 7000).toISOString(),
       status: { code: 'OK' },
       attributes: {
-        service_name: 'pictl',
+        service_name: 'wasm4pm',
         federation_quorum_id: 'quorum-1',
         federation_receipt_hash: 'hash-receipt-1',
         federation_previous_hash: 'hash-0',
@@ -114,7 +114,7 @@ function createVariantSpans() {
       end_time: new Date(baseTime + 1300).toISOString(),
       status: { code: 'OK' },
       attributes: {
-        service_name: 'pictl',
+        service_name: 'wasm4pm',
         error_recovery: true,
         retry_attempt: 1,
       },
@@ -136,7 +136,7 @@ function createDeceptiveSpans() {
       start_time: new Date(baseTime).toISOString(),
       end_time: new Date(baseTime + 1000).toISOString(),
       status: { code: 'OK' },
-      attributes: { service_name: 'pictl', pm_conformance_fitness: 0.8 },
+      attributes: { service_name: 'wasm4pm', pm_conformance_fitness: 0.8 },
     },
     {
       span_id: 'span-2',
@@ -145,7 +145,7 @@ function createDeceptiveSpans() {
       start_time: new Date(baseTime + 1500).toISOString(),
       end_time: new Date(baseTime + 2500).toISOString(),
       status: { code: 'OK' },
-      attributes: { service_name: 'pictl', pm_discovery_algorithm: 'dfg' },
+      attributes: { service_name: 'wasm4pm', pm_discovery_algorithm: 'dfg' },
     },
     {
       span_id: 'span-3',
@@ -155,7 +155,7 @@ function createDeceptiveSpans() {
       end_time: new Date(baseTime + 4000).toISOString(),
       status: { code: 'UNSET' },
       attributes: {
-        service_name: 'pictl',
+        service_name: 'wasm4pm',
         federation_quorum_id: 'quorum-1',
         federation_vote: 'reject',
       },
@@ -324,7 +324,7 @@ describe('Process Mining Conformance Auditor', () => {
           start_time: new Date(baseTime).toISOString(),
           end_time: new Date(baseTime + 1000).toISOString(),
           status: { code: 'OK' },
-          attributes: { service_name: 'pictl' },
+          attributes: { service_name: 'wasm4pm' },
         },
         {
           span_id: 'span-validate',
@@ -333,7 +333,7 @@ describe('Process Mining Conformance Auditor', () => {
           start_time: new Date(baseTime + 2000).toISOString(),
           end_time: new Date(baseTime + 3000).toISOString(),
           status: { code: 'OK' },
-          attributes: { service_name: 'pictl' },
+          attributes: { service_name: 'wasm4pm' },
         },
       ];
 
@@ -358,7 +358,7 @@ describe('Process Mining Conformance Auditor', () => {
           start_time: new Date(baseTime).toISOString(),
           end_time: new Date(baseTime + 1000).toISOString(),
           status: { code: 'OK' },
-          attributes: { service_name: 'pictl', artifact_id: 'artifact-1' },
+          attributes: { service_name: 'wasm4pm', artifact_id: 'artifact-1' },
         },
         {
           span_id: 'span-failure',
@@ -367,7 +367,7 @@ describe('Process Mining Conformance Auditor', () => {
           start_time: new Date(baseTime + 100).toISOString(),
           end_time: new Date(baseTime + 1100).toISOString(),
           status: { code: 'ERROR' },
-          attributes: { service_name: 'pictl', artifact_id: 'artifact-1' },
+          attributes: { service_name: 'wasm4pm', artifact_id: 'artifact-1' },
         },
       ];
 
@@ -425,7 +425,7 @@ describe('Process Mining Conformance Auditor', () => {
             start_time: new Date(baseTime + i * 1000).toISOString(),
             end_time: new Date(baseTime + i * 1000 + 500).toISOString(),
             status: { code: 'OK' },
-            attributes: { service_name: 'pictl' },
+            attributes: { service_name: 'wasm4pm' },
           },
           {
             span_id: `span-${i}-b`,
@@ -434,7 +434,7 @@ describe('Process Mining Conformance Auditor', () => {
             start_time: new Date(baseTime + i * 1000 + 600).toISOString(),
             end_time: new Date(baseTime + i * 1000 + 1000).toISOString(),
             status: { code: 'OK' },
-            attributes: { service_name: 'pictl' },
+            attributes: { service_name: 'wasm4pm' },
           }
         );
       }
@@ -584,7 +584,7 @@ describe('Process Mining Conformance Auditor', () => {
           start_time: new Date().toISOString(),
           end_time: new Date().toISOString(),
           status: { code: 'OK' }, // Says it succeeded
-          attributes: { service_name: 'pictl' },
+          attributes: { service_name: 'wasm4pm' },
         },
         // But no follow-up validation event
       ];

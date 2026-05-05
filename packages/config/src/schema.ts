@@ -276,13 +276,7 @@ export const mlConfigSchema = z
 // RL configuration — agents, hyperparameters, convergence, LinUCB selection
 // =============================================================================
 
-const RL_AGENTS = [
-  'QLearning',
-  'SARSA',
-  'DoubleQLearning',
-  'ExpectedSARSA',
-  'REINFORCE',
-] as const;
+const RL_AGENTS = ['QLearning', 'SARSA', 'DoubleQLearning', 'ExpectedSARSA', 'REINFORCE'] as const;
 export const rlAgentSchema = z
   .enum(RL_AGENTS)
   .describe('RL agent: QLearning, SARSA, DoubleQLearning, ExpectedSARSA, or REINFORCE');

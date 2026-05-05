@@ -35,7 +35,7 @@ if [ -f "${HOOK_DIR}/wip-check.sh" ]; then
   if [ $WIP_EXIT -ne 0 ]; then
     echo ""
     echo "❌ Pre-push hook failed (WIP limit exceeded)"
-    echo "📖 See .pictl/wip-config.json for configuration"
+    echo "📖 See .wasm4pm/wip-config.json for configuration"
     exit $WIP_EXIT
   fi
 fi
@@ -59,7 +59,7 @@ echo ""
 echo "Installed hooks:"
 echo "  • pre-push: WIP limit check"
 echo ""
-echo "Configuration: .pictl/wip-config.json"
+echo "Configuration: .wasm4pm/wip-config.json"
 echo ""
 echo "Test the hook:"
 echo "  git push origin <branch>"

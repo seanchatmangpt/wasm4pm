@@ -18,12 +18,7 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { FederationController, FederationCircuitBreaker } from './federation.js';
-import type {
-  MiningBackend,
-  EventLogIR,
-  ResultEnvelope,
-  ModelIR,
-} from '@wasm4pm/kernel';
+import type { MiningBackend, EventLogIR, ResultEnvelope, ModelIR } from '@wasm4pm/kernel';
 import type { BudgetEnvelope } from '@wasm4pm/contracts';
 
 /**
@@ -35,7 +30,7 @@ class MockBackend implements MiningBackend {
     readonly browserSafe: boolean = false,
     readonly supportedAlgorithms: string[] = ['dfg'],
     readonly maxQualityFloor: 'fast' | 'balanced' | 'quality' | 'research' = 'quality',
-    readonly maxConcurrentInvocations: number = 8,
+    readonly maxConcurrentInvocations: number = 8
   ) {}
 
   async healthCheck() {
@@ -45,7 +40,7 @@ class MockBackend implements MiningBackend {
   async discover(
     log: EventLogIR,
     algorithmId: string,
-    budget: BudgetEnvelope,
+    budget: BudgetEnvelope
   ): Promise<ResultEnvelope<ModelIR>> {
     return {
       run_id: 'run_' + Date.now(),
@@ -145,7 +140,8 @@ class MockBackendRegistry {
     // Simple selection: prefer WASM > pm4wasm > pm4py > ML
     const order = { wasm: 0, pm4wasm: 1, pm4py: 2, ml: 3, null: 999 };
     return candidates.sort(
-      (a, b) => (order[a.id as keyof typeof order] || 999) - (order[b.id as keyof typeof order] || 999),
+      (a, b) =>
+        (order[a.id as keyof typeof order] || 999) - (order[b.id as keyof typeof order] || 999)
     )[0];
   }
 
@@ -265,7 +261,7 @@ describe('FederationController with pm4wasm backend', () => {
       false,
       ['dfg', 'alpha_plus_plus', 'inductive_miner', 'ilp', 'genetic_algorithm'],
       'quality',
-      8,
+      8
     );
 
     pm4wasmBackend = new MockBackend(
@@ -273,7 +269,7 @@ describe('FederationController with pm4wasm backend', () => {
       true,
       ['dfg', 'process_skeleton', 'alpha_plus_plus', 'heuristic_miner', 'inductive_miner'],
       'quality',
-      3,
+      3
     );
 
     mlBackend = new MockBackend(
@@ -281,7 +277,7 @@ describe('FederationController with pm4wasm backend', () => {
       false,
       ['ml_classify', 'ml_cluster', 'ml_forecast', 'dfg'],
       'research',
-      5,
+      5
     );
 
     // Register backends
@@ -596,7 +592,7 @@ describe('FederationController with pm4wasm backend', () => {
 
     it('pm4wasm limit (3) < WASM limit (8) due to memory footprint', () => {
       expect(pm4wasmBackend.maxConcurrentInvocations).toBeLessThan(
-        wasmBackend.maxConcurrentInvocations,
+        wasmBackend.maxConcurrentInvocations
       );
     });
   });
@@ -733,8 +729,18 @@ describe('FederationController with pm4wasm backend', () => {
     it('Scenario A-D: All scenarios populate result envelope completely', async () => {
       const scenarios = [
         { log: createSmallEventLog(), budget: createSubMsBudget(), algo: 'dfg', health: 0 },
-        { log: createMediumEventLog(), budget: createHighMsBudget(), algo: 'inductive_miner', health: 0 },
-        { log: createLargeEventLog(), budget: createSecondsBudget(), algo: 'ml_classify', health: 0 },
+        {
+          log: createMediumEventLog(),
+          budget: createHighMsBudget(),
+          algo: 'inductive_miner',
+          health: 0,
+        },
+        {
+          log: createLargeEventLog(),
+          budget: createSecondsBudget(),
+          algo: 'ml_classify',
+          health: 0,
+        },
         { log: createSmallEventLog(), budget: createHighMsBudget(), algo: 'dfg', health: 3 },
       ];
 
@@ -743,7 +749,7 @@ describe('FederationController with pm4wasm backend', () => {
           scenario.algo,
           scenario.log,
           scenario.budget,
-          scenario.health,
+          scenario.health
         );
 
         // Verify all envelope fields
@@ -751,7 +757,7 @@ describe('FederationController with pm4wasm backend', () => {
         expect(['success', 'partial', 'failed']).toContain(result.status);
         expect(result.latency_ms).toBeGreaterThanOrEqual(0);
         expect(['sub_ms', 'low_ms', 'high_ms', 'seconds', 'minutes']).toContain(
-          result.latency_class,
+          result.latency_class
         );
         expect(result.backend_id).toBeTruthy();
         expect(result.invocation_id).toBeTruthy();

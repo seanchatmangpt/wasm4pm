@@ -16,7 +16,7 @@ export class ValidationResult {
  */
 export class SHACLValidator {
     /**
-     * Initialize validator from pictl-shapes.ttl
+     * Initialize validator from wasm4pm-shapes.ttl
      */
     static create(shapesPath?: null): Promise<SHACLValidator>;
     constructor(shapes?: any[]);

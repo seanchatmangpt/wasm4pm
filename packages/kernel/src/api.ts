@@ -183,7 +183,10 @@ export class Kernel {
     const metadata = this.registry.get(algorithmName);
     if (!metadata) {
       throw new KernelError(
-        `Algorithm not found: "${algorithmName}". Available: ${this.registry.list().map((a) => a.id).join(', ')}`,
+        `Algorithm not found: "${algorithmName}". Available: ${this.registry
+          .list()
+          .map((a) => a.id)
+          .join(', ')}`,
         'ALGORITHM_NOT_FOUND',
         { context: { algorithmName } }
       );
@@ -216,10 +219,14 @@ export class Kernel {
       durationMs,
       execution_ms: durationMs,
       params: { activity_key: activityKey, ...params },
-      hash: hashAlgorithmResult(algorithmName, { activity_key: activityKey, ...params }, {
-        handle: wasmResult.handle,
-        outputType: metadata.outputType,
-      }),
+      hash: hashAlgorithmResult(
+        algorithmName,
+        { activity_key: activityKey, ...params },
+        {
+          handle: wasmResult.handle,
+          outputType: metadata.outputType,
+        }
+      ),
     };
 
     this._resultCache.set(cacheKey, result);
@@ -301,7 +308,10 @@ export class Kernel {
 
   private assertInitialized(): void {
     if (!this._initialized) {
-      throw new KernelError('Kernel not initialized. Call kernel.init() first.', 'KERNEL_NOT_INITIALIZED');
+      throw new KernelError(
+        'Kernel not initialized. Call kernel.init() first.',
+        'KERNEL_NOT_INITIALIZED'
+      );
     }
   }
 
@@ -407,10 +417,7 @@ export class Kernel {
         );
 
       case 'optimized_dfg':
-        return this.wasm.discover_dfg(
-          eventLogHandle,
-          activityKey
-        );
+        return this.wasm.discover_dfg(eventLogHandle, activityKey);
 
       // ─── Wave 1 Migration: Discovery algorithms ───────────────────────
 
@@ -464,9 +471,7 @@ export class Kernel {
         );
 
       case 'petri_net_reduction':
-        return this.wasm.reduce_petri_net(
-          (params.petri_net_handle as string)!
-        );
+        return this.wasm.reduce_petri_net((params.petri_net_handle as string)!);
 
       case 'etconformance_precision':
       case 'precision':
@@ -502,31 +507,21 @@ export class Kernel {
       // ─── Wave 1 Migration: Quality metrics ───────────────────────────────
 
       case 'complexity_metrics':
-        return this.wasm.measure_complexity(
-          (params.powl_handle as string)!
-        );
+        return this.wasm.measure_complexity((params.powl_handle as string)!);
 
       // ─── Wave 1 Migration: Model conversion ────────────────────────────
 
       case 'pnml_import':
-        return this.wasm.from_pnml(
-          (params.pnml_xml as string)!
-        );
+        return this.wasm.from_pnml((params.pnml_xml as string)!);
 
       case 'bpmn_import':
-        return this.wasm.read_bpmn(
-          (params.bpmn_xml as string)!
-        );
+        return this.wasm.read_bpmn((params.bpmn_xml as string)!);
 
       case 'powl_to_process_tree':
-        return this.wasm.powl_to_process_tree(
-          (params.powl_handle as string)!
-        );
+        return this.wasm.powl_to_process_tree((params.powl_handle as string)!);
 
       case 'yawl_export': {
-        const xml = await this.wasm.powl_to_yawl_string(
-          (params.powl_string as string)!
-        );
+        const xml = await this.wasm.powl_to_yawl_string((params.powl_string as string)!);
         return { handle: `yawl_${Date.now()}`, ...JSON.parse(xml) };
       }
 
@@ -547,7 +542,7 @@ export class Kernel {
           activity_service_time_ms: {},
           resource_capacity: {},
           simulation_time_ms: 60000,
-          random_seed: 42
+          random_seed: 42,
         };
         return this.wasm.monte_carlo_simulation(
           (params.model_handle as string)!, // log_handle

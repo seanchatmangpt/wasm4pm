@@ -344,14 +344,7 @@ export class Validators {
    * ```
    */
   public static validatePerspective(value: string): ValidatorResult {
-    const valid = [
-      'next_activity',
-      'remaining_time',
-      'outcome',
-      'drift',
-      'features',
-      'resource',
-    ];
+    const valid = ['next_activity', 'remaining_time', 'outcome', 'drift', 'features', 'resource'];
 
     if (!valid.includes(value)) {
       return {

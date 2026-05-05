@@ -1,5 +1,5 @@
 /**
- * Configuration Schema for pictl Engine
+ * Configuration Schema for wasm4pm Engine
  * Defines all configuration structures, validation, and execution profiles
  */
 /**
@@ -128,7 +128,7 @@ export interface PipelineStep {
   parallelizable?: boolean;
 }
 /**
- * Top-level configuration for the pictl engine
+ * Top-level configuration for the wasm4pm engine
  */
 export interface PictlConfig {
   /** Version of the configuration schema */

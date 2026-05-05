@@ -17,25 +17,25 @@ import type { EventLogIR } from '@wasm4pm/contracts';
  * Mirrors EventLogIR structure but optimized for WASM serialization.
  */
 export interface WasmEventLog {
-    format_version: "1.0";
-    source_format: "xes" | "ocel" | "json" | "csv";
-    traces: Array<{
-        case_id: string;
-        events: Array<{
-            activity: string;
-            timestamp: string;
-            resource?: string;
-            attributes: Record<string, unknown>;
-        }>;
+  format_version: '1.0';
+  source_format: 'xes' | 'ocel' | 'json' | 'csv';
+  traces: Array<{
+    case_id: string;
+    events: Array<{
+      activity: string;
+      timestamp: string;
+      resource?: string;
+      attributes: Record<string, unknown>;
     }>;
-    metadata: {
-        trace_count: number;
-        event_count: number;
-        activity_count: number;
-        start_time: string;
-        end_time: string;
-        source_hash: string;
-    };
+  }>;
+  metadata: {
+    trace_count: number;
+    event_count: number;
+    activity_count: number;
+    start_time: string;
+    end_time: string;
+    source_hash: string;
+  };
 }
 /**
  * Validate that a string is a valid ISO-8601 timestamp.

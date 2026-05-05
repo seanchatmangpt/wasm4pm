@@ -1,4 +1,4 @@
-# SPARQL Proof Engine for pictl — RDF Knowledge Graph Generation
+# SPARQL Proof Engine for wasm4pm — RDF Knowledge Graph Generation
 
 > **Status**: Production-Ready Proof Generation System | **Version**: 1.0 | **Date**: 2026-04-10
 
@@ -6,11 +6,11 @@
 
 ## Overview
 
-This directory contains the **SPARQL CONSTRUCT query engine** that transforms pictl MCP tool outputs (JSON) into RDF triples conforming to `wasm4pm-ontology.ttl`. These queries are the **"proof generators"** — they make pictl outputs inspectable, queryable, and reasonably sound using semantic web technologies.
+This directory contains the **SPARQL CONSTRUCT query engine** that transforms wasm4pm MCP tool outputs (JSON) into RDF triples conforming to `wasm4pm-ontology.ttl`. These queries are the **"proof generators"** — they make wasm4pm outputs inspectable, queryable, and reasonably sound using semantic web technologies.
 
 ### Three Key Innovations
 
-1. **Proof as RDF**: Every pictl operation (discovery, conformance, drift, prediction) produces immutable RDF triples, not just JSON.
+1. **Proof as RDF**: Every wasm4pm operation (discovery, conformance, drift, prediction) produces immutable RDF triples, not just JSON.
 2. **Semantic Reasoning**: Use SPARQL to ask complex questions across proof artifacts: "If drift detected, which models failed conformance?" "What's the causal chain: deviation → bottleneck → optimization?"
 3. **Automated Governance**: Link discovery → conformance → deployment with traceable provenance using PROV ontology.
 
@@ -43,7 +43,7 @@ Each `.rq` file transforms one MCP tool's output into RDF triples.
 
 ## Quick Start: From JSON to RDF
 
-### 1. Call pictl MCP Tool (from application)
+### 1. Call wasm4pm MCP Tool (from application)
 
 ```javascript
 const result = await mcp.call('discover_dfg', {
@@ -186,7 +186,7 @@ WHERE {
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│ pictl MCP Tool (e.g., discover_dfg)                             │
+│ wasm4pm MCP Tool (e.g., discover_dfg)                             │
 │ Input: XES event log                                            │
 │ Output: JSON {nodes, edges, metrics, executionTime, ...}       │
 └───────────────────────────┬─────────────────────────────────────┘
@@ -355,10 +355,10 @@ CONSTRUCT {
 Use consistent IRI patterns for queryability:
 
 ```
-http://pictl.org/{resource_type}/{timestamp}/{random_id}
-http://pictl.org/discovery/2026-04-10/abc123
-http://pictl.org/conformance/2026-04-10/def456
-http://pictl.org/drift/2026-04-10/ghi789
+http://wasm4pm.org/{resource_type}/{timestamp}/{random_id}
+http://wasm4pm.org/discovery/2026-04-10/abc123
+http://wasm4pm.org/conformance/2026-04-10/def456
+http://wasm4pm.org/drift/2026-04-10/ghi789
 ```
 
 ---
@@ -380,11 +380,11 @@ curl -X POST http://localhost:7878/query \
 
 ```bash
 # Load sample RDF triples
-oxigraph load --location ./pictl-data.db --format ntriples \
+oxigraph load --location ./wasm4pm-data.db --format ntriples \
   <(cat discover-dfg.rq | sed 's/CONSTRUCT/SELECT ?s ?p ?o/; s/{.*/WHERE { ?s ?p ?o }/')
 
 # Execute verification query
-oxigraph query --location ./pictl-data.db \
+oxigraph query --location ./wasm4pm-data.db \
   'ASK { ?model a pm:DirectlyFollowsGraph ; pm:hasFitness ?f . FILTER (?f > 0.9) }'
 ```
 
@@ -526,5 +526,5 @@ To add a new SPARQL proof query:
 ---
 
 **Last Updated**: 2026-04-10
-**Maintained By**: pictl Development Team
+**Maintained By**: wasm4pm Development Team
 **Status**: Stable (v1.0)

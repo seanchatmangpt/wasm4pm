@@ -9,22 +9,33 @@
  *   - Early termination in tree split search
  *   - Log-sum-exp numerically stable softmax
  */
-import type { ClassificationMethod, ClassificationResult, RegressionMethod, RegressionResult } from './types.js';
+import type {
+  ClassificationMethod,
+  ClassificationResult,
+  RegressionMethod,
+  RegressionResult,
+} from './types.js';
 /**
  * Classify traces using k-NN, logistic regression, decision tree, or naive Bayes.
  */
-export declare function classifyTraces(featuresJson: Array<Record<string, unknown>>, options?: {
+export declare function classifyTraces(
+  featuresJson: Array<Record<string, unknown>>,
+  options?: {
     targetKey?: string;
     method?: ClassificationMethod;
     k?: number;
     maxDepth?: number;
-}): Promise<ClassificationResult>;
+  }
+): Promise<ClassificationResult>;
 /**
  * Predict remaining case time using regression on trace features.
  */
-export declare function regressRemainingTime(featuresJson: Array<Record<string, unknown>>, options?: {
+export declare function regressRemainingTime(
+  featuresJson: Array<Record<string, unknown>>,
+  options?: {
     targetKey?: string;
     method?: RegressionMethod;
     degree?: number;
-}): Promise<RegressionResult>;
+  }
+): Promise<RegressionResult>;
 //# sourceMappingURL=classifiers.d.ts.map

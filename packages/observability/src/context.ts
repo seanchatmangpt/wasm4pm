@@ -74,11 +74,7 @@ export function parseTraceparent(header?: string): TraceContext | undefined {
 /**
  * Create a W3C traceparent header string.
  */
-export function createTraceparent(
-  traceId: string,
-  spanId: string,
-  sampled = true
-): string {
+export function createTraceparent(traceId: string, spanId: string, sampled = true): string {
   return `00-${traceId}-${spanId}-${sampled ? '01' : '00'}`;
 }
 

@@ -68,7 +68,7 @@ Kernel Layer
     ├─ Registry: Algorithm metadata lookup
     └─ Handlers: WASM function invocation
     ↓ (algorithm ID, parameters)
-WASM Layer (pictl)
+WASM Layer (wasm4pm)
     └─ discover_* functions (Rust compiled to WASM)
 ```
 
@@ -227,7 +227,7 @@ for (const algo of registry.list()) {
 import { implementAlgorithmStep } from '@wasm4pm/kernel';
 import { PlanStepType, type PlanStep } from '@wasm4pm/planner';
 
-// Initialize WASM module (from pictl)
+// Initialize WASM module (from wasm4pm)
 const wasmModule = await initWasm4pm();
 
 // Load event log (returns handle string)
@@ -474,7 +474,7 @@ try {
 
 ## References
 
-- [pictl Documentation](https://github.com/seanchatmangpt/wasm4pm)
+- [wasm4pm Documentation](https://github.com/seanchatmangpt/wasm4pm)
 - [Algorithm Papers](./docs/algorithms.md)
 - [Performance Benchmarks](./docs/benchmarks.md)
 

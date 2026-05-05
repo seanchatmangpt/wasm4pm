@@ -111,18 +111,22 @@ export class MockSourceAdapter {
 
   /** Assert that methods were called in expected order */
   assertCallOrder(expectedOrder: string[]): void {
-    const actual = this.calls.map(c => c.method);
+    const actual = this.calls.map((c) => c.method);
     for (let i = 0; i < expectedOrder.length; i++) {
       if (actual[i] !== expectedOrder[i]) {
         throw new Error(
-          `Call order mismatch at index ${i}: expected '${expectedOrder[i]}', got '${actual[i] ?? 'undefined'}'. Full order: [${actual.join(', ')}]`,
+          `Call order mismatch at index ${i}: expected '${expectedOrder[i]}', got '${actual[i] ?? 'undefined'}'. Full order: [${actual.join(', ')}]`
         );
       }
     }
   }
 
-  get isOpened(): boolean { return this._opened; }
-  get isClosed(): boolean { return this._closed; }
+  get isOpened(): boolean {
+    return this._opened;
+  }
+  get isClosed(): boolean {
+    return this._closed;
+  }
 
   reset(): void {
     this.calls.length = 0;
@@ -132,7 +136,7 @@ export class MockSourceAdapter {
 }
 
 function delay(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export function createMockSource(options?: MockSourceOptions): MockSourceAdapter {

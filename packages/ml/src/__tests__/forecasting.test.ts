@@ -4,9 +4,13 @@ import { forecastThroughput, buildThroughputSeries, forecastSeries } from '../fo
 describe('buildThroughputSeries', () => {
   it('builds series from timestamps', () => {
     const timestamps = [
-      1000, 1500, 2000,   // window 0: 3 events
-      5000,               // window 1: 1 event
-      8000, 8500, 9000,   // window 2: 3 events
+      1000,
+      1500,
+      2000, // window 0: 3 events
+      5000, // window 1: 1 event
+      8000,
+      8500,
+      9000, // window 2: 3 events
     ];
     const { series, windowStarts } = buildThroughputSeries(timestamps, 3000);
     expect(series.slice(0, 3)).toEqual([3, 1, 3]);
@@ -99,7 +103,7 @@ describe('forecastSeries', () => {
   it('detects seasonality at correct period for sine wave', async () => {
     // Sine wave with clear period 8
     const series = Array.from({ length: 24 }, (_, i) =>
-      Math.round(50 + 30 * Math.sin(2 * Math.PI * i / 8))
+      Math.round(50 + 30 * Math.sin((2 * Math.PI * i) / 8))
     );
     const result = await forecastSeries(series, { forecastPeriods: 4 });
     expect(result.seriesLength).toBe(24);
@@ -150,9 +154,7 @@ describe('forecastSeries edge cases', () => {
   });
 
   it('handles exponential growth pattern', async () => {
-    const series = Array.from({ length: 20 }, (_, i) =>
-      Math.round(10 * Math.pow(1.15, i))
-    );
+    const series = Array.from({ length: 20 }, (_, i) => Math.round(10 * Math.pow(1.15, i)));
     const result = await forecastSeries(series, { forecastPeriods: 5 });
     expect(result.seriesLength).toBe(20);
     expect(result.trend.direction).toBe('up');
@@ -178,7 +180,7 @@ describe('forecastSeries edge cases', () => {
   it('detects strong vs weak seasonality', async () => {
     // Strong seasonality: clear sine wave with amplitude 30 on mean 50
     const strongSeasonal = Array.from({ length: 32 }, (_, i) =>
-      Math.round(50 + 30 * Math.sin(2 * Math.PI * i / 8))
+      Math.round(50 + 30 * Math.sin((2 * Math.PI * i) / 8))
     );
     const strongResult = await forecastSeries(strongSeasonal, { forecastPeriods: 4 });
 
@@ -187,11 +189,11 @@ describe('forecastSeries edge cases', () => {
     // bit-exact across runs while still dominating the small periodic signal.
     const weakSeasonal = Array.from({ length: 32 }, (_, i) =>
       Math.round(
-        1000
-        + 5 * Math.sin(2 * Math.PI * i / 8)
-        + 100 * Math.sin(2 * Math.PI * i / 13)
-        + 80 * Math.cos(2 * Math.PI * i / 17),
-      ),
+        1000 +
+          5 * Math.sin((2 * Math.PI * i) / 8) +
+          100 * Math.sin((2 * Math.PI * i) / 13) +
+          80 * Math.cos((2 * Math.PI * i) / 17)
+      )
     );
     const weakResult = await forecastSeries(weakSeasonal, { forecastPeriods: 4 });
 
@@ -203,7 +205,9 @@ describe('forecastSeries edge cases', () => {
     // Weak seasonal data should have lower or no detected seasonality strength
     // compared to the strong seasonal signal
     if (weakResult.seasonality) {
-      expect(weakResult.seasonality.strength).toBeLessThanOrEqual(strongResult.seasonality!.strength);
+      expect(weakResult.seasonality.strength).toBeLessThanOrEqual(
+        strongResult.seasonality!.strength
+      );
     }
   });
 });

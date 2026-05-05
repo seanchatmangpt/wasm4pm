@@ -81,7 +81,7 @@ function toColumnar(data: number[][]): Columnar {
 function kmeansCore(
   data: number[][],
   k: number,
-  maxIter = 100,
+  maxIter = 100
 ): { assignments: Int32Array; centroids: number[][]; inertia: number; iterations: number } {
   const col = toColumnar(data);
   const { cols, n, d } = col;
@@ -117,7 +117,10 @@ function kmeansCore(
     let chosen = n - 1;
     for (let i = 0; i < n; i++) {
       cumulative += minDists[i];
-      if (cumulative >= threshold) { chosen = i; break; }
+      if (cumulative >= threshold) {
+        chosen = i;
+        break;
+      }
     }
 
     for (let j = 0; j < d; j++) centCols[j][c] = cols[j][chosen];
@@ -142,9 +145,15 @@ function kmeansCore(
           const diff = cols[j][i] - centCols[j][c];
           ss += diff * diff;
         }
-        if (ss < bestDist) { bestDist = ss; bestC = c; }
+        if (ss < bestDist) {
+          bestDist = ss;
+          bestC = c;
+        }
       }
-      if (assignments[i] !== bestC) { assignments[i] = bestC; changed = true; }
+      if (assignments[i] !== bestC) {
+        assignments[i] = bestC;
+        changed = true;
+      }
     }
 
     iterations = iter + 1;
@@ -192,11 +201,7 @@ function kmeansCore(
 // DBSCAN (pre-computed distance matrix for small n, brute-force for large)
 // ---------------------------------------------------------------------------
 
-function dbscanCore(
-  data: number[][],
-  eps: number,
-  minPoints: number,
-): Int32Array {
+function dbscanCore(data: number[][], eps: number, minPoints: number): Int32Array {
   const col = toColumnar(data);
   const { cols, n, d } = col;
   const epsSq = eps * eps;
@@ -297,13 +302,19 @@ export async function clusterTraces(
     k?: number;
     eps?: number;
     minPoints?: number;
-  } = {},
+  } = {}
 ): Promise<ClusteringResult> {
   const method = options.method ?? 'kmeans';
   const matrix = buildFeatureMatrix(featuresJson);
 
   if (matrix.data.length === 0) {
-    return { method, clusterCount: 0, noiseCount: 0, assignments: [], modelInfo: { error: 'No features available' } };
+    return {
+      method,
+      clusterCount: 0,
+      noiseCount: 0,
+      assignments: [],
+      modelInfo: { error: 'No features available' },
+    };
   }
 
   if (method === 'dbscan') {
@@ -321,7 +332,12 @@ export async function clusterTraces(
       clusterCount: nClusters,
       noiseCount: nNoise,
       assignments: matrix.caseIds.map((caseId, i) => ({ caseId, cluster: labels[i] })),
-      modelInfo: { eps: validatedEps, minPoints: validatedMinPts, featureCount: matrix.featureNames.length, traceCount: matrix.data.length },
+      modelInfo: {
+        eps: validatedEps,
+        minPoints: validatedMinPts,
+        featureCount: matrix.featureNames.length,
+        traceCount: matrix.data.length,
+      },
     };
   }
 
@@ -334,6 +350,12 @@ export async function clusterTraces(
     noiseCount: 0,
     assignments: matrix.caseIds.map((caseId, i) => ({ caseId, cluster: result.assignments[i] })),
     centroids: result.centroids,
-    modelInfo: { k: validatedK, inertia: result.inertia, iterations: result.iterations, featureCount: matrix.featureNames.length, traceCount: matrix.data.length },
+    modelInfo: {
+      k: validatedK,
+      inertia: result.inertia,
+      iterations: result.iterations,
+      featureCount: matrix.featureNames.length,
+      traceCount: matrix.data.length,
+    },
   };
 }

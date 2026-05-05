@@ -1,6 +1,6 @@
 # wasm4pm Documentation
 
-Welcome to the wasm4pm documentation. This folder contains comprehensive guides for understanding, using, and deploying pictl.
+Welcome to the wasm4pm documentation. This folder contains comprehensive guides for understanding, using, and deploying wasm4pm.
 
 The docs follow the **Diataxis framework** — see [INDEX.md](./INDEX.md) for the full organized index, or [DIATAXIS.md](./DIATAXIS.md) for the framework overview.
 
@@ -21,7 +21,7 @@ The docs follow the **Diataxis framework** — see [INDEX.md](./INDEX.md) for th
 ### Reference
 - **[API.md](./API.md)** - Complete API reference for all functions
 - **[reference/algorithms.md](./reference/algorithms.md)** - 18 tools + 6 ML analysis tasks
-- **[reference/cli-commands.md](./reference/cli-commands.md)** - pictl CLI reference
+- **[reference/cli-commands.md](./reference/cli-commands.md)** - wasm4pm CLI reference
 
 ### Advanced Topics
 - **[FAQ.md](./FAQ.md)** - Troubleshooting and common questions

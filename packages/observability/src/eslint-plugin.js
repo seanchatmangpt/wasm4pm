@@ -1,8 +1,8 @@
 /**
- * ESLint Plugin: pictl-observability
+ * ESLint Plugin: wasm4pm-observability
  *
  * Custom rules for OTEL span coverage enforcement.
- * Loaded via .eslintrc.cjs as 'pictl-observability'
+ * Loaded via .eslintrc.cjs as 'wasm4pm-observability'
  *
  * Rules:
  * - require-span-for-public: Enforces Instrumentation calls on public functions

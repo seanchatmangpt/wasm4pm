@@ -182,9 +182,9 @@ describe('Agent 1: OCEL Harvester', () => {
       ] as unknown as OtelSpan[];
 
       // Act & Assert
-      await expect(
-        harvester.harvestWithInstrumentation(invalidSpans)
-      ).rejects.toThrow('span missing required field: name');
+      await expect(harvester.harvestWithInstrumentation(invalidSpans)).rejects.toThrow(
+        'span missing required field: name'
+      );
     });
   });
 

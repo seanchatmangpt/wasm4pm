@@ -49,7 +49,9 @@ export function resolveConfigPath(cliConfigPath?: string): ResolvedConfigPath {
 /**
  * Read and parse resolved config file content
  */
-export async function readConfigFile(resolved: ResolvedConfigPath): Promise<Record<string, unknown> | null> {
+export async function readConfigFile(
+  resolved: ResolvedConfigPath
+): Promise<Record<string, unknown> | null> {
   if (!resolved.path) {
     return null;
   }

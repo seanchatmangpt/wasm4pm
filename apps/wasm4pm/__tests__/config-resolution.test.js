@@ -20,7 +20,7 @@ describe('Config Resolution Order', () => {
     describe('CLI > TOML > JSON > ENV > defaults', () => {
         it('should apply CLI override with highest priority', async () => {
             // Set up files with conflicting values
-            const tomlPath = path.join(tmpDir, 'pictl.toml');
+            const tomlPath = path.join(tmpDir, 'wasm4pm.toml');
             await fs.writeFile(tomlPath, `version = "26.4.5"
 [execution]
 profile = "balanced"
@@ -34,7 +34,7 @@ profile = "balanced"
             expect(config.metadata.provenance['execution.profile']?.source).toBe('cli');
         });
         it('should load from TOML with second priority', async () => {
-            const tomlPath = path.join(tmpDir, 'pictl.toml');
+            const tomlPath = path.join(tmpDir, 'wasm4pm.toml');
             await fs.writeFile(tomlPath, `version = "26.4.5"
 [execution]
 profile = "fast"
@@ -50,7 +50,7 @@ timeout = 60000
         });
         it('should prefer TOML over JSON', async () => {
             // Create both TOML and JSON
-            const tomlPath = path.join(tmpDir, 'pictl.toml');
+            const tomlPath = path.join(tmpDir, 'wasm4pm.toml');
             const jsonPath = path.join(tmpDir, 'wasm4pm.json');
             await fs.writeFile(tomlPath, `version = "26.4.5"
 [execution]
@@ -83,7 +83,7 @@ profile = "fast"
             expect(config.metadata.provenance['execution.profile']?.path).toBe(jsonPath);
         });
         it('should merge CLI overrides with file config', async () => {
-            const tomlPath = path.join(tmpDir, 'pictl.toml');
+            const tomlPath = path.join(tmpDir, 'wasm4pm.toml');
             await fs.writeFile(tomlPath, `version = "26.4.5"
 [execution]
 profile = "balanced"
@@ -109,7 +109,7 @@ destination = "stdout"
             expect(config.metadata.provenance['output.format']?.source).toBe('cli');
         });
         it('should track file path in provenance', async () => {
-            const tomlPath = path.join(tmpDir, 'pictl.toml');
+            const tomlPath = path.join(tmpDir, 'wasm4pm.toml');
             await fs.writeFile(tomlPath, `version = "26.4.5"
 [execution]
 profile = "quality"
@@ -136,7 +136,7 @@ profile = "quality"
     });
     describe('Configuration Validation', () => {
         it('should reject invalid TOML', async () => {
-            const tomlPath = path.join(tmpDir, 'pictl.toml');
+            const tomlPath = path.join(tmpDir, 'wasm4pm.toml');
             await fs.writeFile(tomlPath, `invalid toml content [[[`);
             try {
                 await loadConfig({
@@ -164,7 +164,7 @@ profile = "quality"
             }
         });
         it('should validate execution profile enum', async () => {
-            const tomlPath = path.join(tmpDir, 'pictl.toml');
+            const tomlPath = path.join(tmpDir, 'wasm4pm.toml');
             await fs.writeFile(tomlPath, `version = "26.4.5"
 [execution]
 profile = "invalid_profile"
@@ -199,7 +199,7 @@ profile = "invalid_profile"
             }
         });
         it('should validate timeout is positive', async () => {
-            const tomlPath = path.join(tmpDir, 'pictl.toml');
+            const tomlPath = path.join(tmpDir, 'wasm4pm.toml');
             await fs.writeFile(tomlPath, `version = "26.4.5"
 [execution]
 profile = "balanced"
@@ -265,7 +265,7 @@ timeout = -1000
     });
     describe('Hash and Provenance', () => {
         it('should compute deterministic config hash', async () => {
-            const tomlPath = path.join(tmpDir, 'pictl.toml');
+            const tomlPath = path.join(tmpDir, 'wasm4pm.toml');
             await fs.writeFile(tomlPath, `version = "26.4.5"
 [execution]
 profile = "balanced"
@@ -280,7 +280,7 @@ profile = "balanced"
             expect(config1.metadata.hash).toBe(config2.metadata.hash);
         });
         it('should detect config changes in hash', async () => {
-            const tomlPath = path.join(tmpDir, 'pictl.toml');
+            const tomlPath = path.join(tmpDir, 'wasm4pm.toml');
             // First config
             await fs.writeFile(tomlPath, `version = "26.4.5"
 [execution]
@@ -301,7 +301,7 @@ profile = "fast"
             expect(config1.metadata.hash).not.toBe(config2.metadata.hash);
         });
         it('should include all config values in provenance', async () => {
-            const tomlPath = path.join(tmpDir, 'pictl.toml');
+            const tomlPath = path.join(tmpDir, 'wasm4pm.toml');
             await fs.writeFile(tomlPath, `version = "26.4.5"
 [execution]
 profile = "quality"
@@ -324,7 +324,7 @@ timeout = 600000
             await fs.mkdir(dir1, { recursive: true });
             await fs.mkdir(dir2, { recursive: true });
             // Write to dir2
-            await fs.writeFile(path.join(dir2, 'pictl.toml'), `version = "26.4.5"
+            await fs.writeFile(path.join(dir2, 'wasm4pm.toml'), `version = "26.4.5"
 [execution]
 profile = "balanced"
 `);
@@ -333,7 +333,7 @@ profile = "balanced"
                 configSearchPaths: [dir1, dir2],
             });
             expect(config.execution.profile).toBe('balanced');
-            expect(config.metadata.provenance['execution.profile']?.path).toBe(path.join(dir2, 'pictl.toml'));
+            expect(config.metadata.provenance['execution.profile']?.path).toBe(path.join(dir2, 'wasm4pm.toml'));
         });
         it('should use first matching config file', async () => {
             const dir1 = path.join(tmpDir, 'dir1');
@@ -341,11 +341,11 @@ profile = "balanced"
             await fs.mkdir(dir1, { recursive: true });
             await fs.mkdir(dir2, { recursive: true });
             // Write to both
-            await fs.writeFile(path.join(dir1, 'pictl.toml'), `version = "26.4.5"
+            await fs.writeFile(path.join(dir1, 'wasm4pm.toml'), `version = "26.4.5"
 [execution]
 profile = "fast"
 `);
-            await fs.writeFile(path.join(dir2, 'pictl.toml'), `version = "26.4.5"
+            await fs.writeFile(path.join(dir2, 'wasm4pm.toml'), `version = "26.4.5"
 [execution]
 profile = "balanced"
 `);
@@ -354,7 +354,7 @@ profile = "balanced"
                 configSearchPaths: [dir1, dir2],
             });
             expect(config.execution.profile).toBe('fast');
-            expect(config.metadata.provenance['execution.profile']?.path).toBe(path.join(dir1, 'pictl.toml'));
+            expect(config.metadata.provenance['execution.profile']?.path).toBe(path.join(dir1, 'wasm4pm.toml'));
         });
     });
 });

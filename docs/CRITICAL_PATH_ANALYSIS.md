@@ -9,7 +9,7 @@
 
 ## Critical Paths Map
 
-This document traces the exact control flow and data transformations through pictl's core subsystems. Each path is a **sequence of function calls** that must be tested end-to-end.
+This document traces the exact control flow and data transformations through wasm4pm's core subsystems. Each path is a **sequence of function calls** that must be tested end-to-end.
 
 ---
 

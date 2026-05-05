@@ -1,6 +1,6 @@
 # @wasm4pm/config
 
-Configuration management system for pictl with Zod-based validation, provenance tracking, and support for multiple config sources.
+Configuration management system for wasm4pm with Zod-based validation, provenance tracking, and support for multiple config sources.
 
 ## Features
 
@@ -59,7 +59,7 @@ Config is loaded in this priority order (highest first):
 1. **CLI arguments** - Passed to `loadConfig({ cliOverrides })`
 2. **TOML files** - `./wasm4pm.toml` or `~/.wasm4pm/config.toml`
 3. **JSON files** - `./wasm4pm.json` or `~/.wasm4pm/config.json`
-4. **Environment variables** - `PICTL_*` prefix
+4. **Environment variables** - `WASM4PM_*` prefix
 5. **Defaults** - Built-in defaults
 
 ## Configuration Files
@@ -443,7 +443,7 @@ function loadConfig(options?: LoadConfigOptions): Promise<Config>
 
 **Options:**
 - `cliOverrides?: CliOverrides` - CLI-provided overrides (highest priority)
-- `configSearchPaths?: string[]` - Paths to search for config files (default: `[cwd, ~/.pictl]`)
+- `configSearchPaths?: string[]` - Paths to search for config files (default: `[cwd, ~/.wasm4pm]`)
 - `env?: NodeJS.ProcessEnv` - Environment variables (default: `process.env`)
 
 **Returns:** Complete configuration with metadata

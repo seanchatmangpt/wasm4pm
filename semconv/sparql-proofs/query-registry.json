@@ -1,7 +1,7 @@
 {
   "registry_version": "1.0",
   "registry_date": "2026-04-10T22:30:00Z",
-  "description": "SPARQL CONSTRUCT query registry mapping pictl MCP tool outputs to RDF triples",
+  "description": "SPARQL CONSTRUCT query registry mapping wasm4pm MCP tool outputs to RDF triples",
   "ontology_namespace": "http://purl.org/pm/ontology#",
   "ontology_prefix": "pm",
   "queries": {
@@ -220,7 +220,7 @@
     }
   },
   "usage_instructions": {
-    "step_1": "Call pictl MCP tool (e.g., discover_dfg with XES content)",
+    "step_1": "Call wasm4pm MCP tool (e.g., discover_dfg with XES content)",
     "step_2": "Tool returns JSON result (e.g., {nodes: [...], edges: [...], metrics: {...}})",
     "step_3": "Application layer parses JSON, binds to SPARQL CONSTRUCT WHERE clause",
     "step_4": "Execute SPARQL CONSTRUCT query to generate RDF triples",
@@ -231,6 +231,6 @@
     "json_to_sparql": "Application must translate JSON → SPARQL BIND() statements. SPARQL cannot directly parse JSON; use SPARQL 1.1 BIND with IRI/literal constructors.",
     "blank_nodes": "Complex structures (metrics, relationships) use blank nodes [...] for readability. Generator should mint IRIs for persistence.",
     "namespace": "All classes/properties use pm: prefix. Map pm = http://purl.org/pm/ontology# in application.",
-    "example_iri_pattern": "http://pictl.org/{resource_type}/{id} — customize domain as needed"
+    "example_iri_pattern": "http://wasm4pm.org/{resource_type}/{id} — customize domain as needed"
   }
 }

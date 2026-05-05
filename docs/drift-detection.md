@@ -1,7 +1,7 @@
 # Drift Detection Guide
 
 Concept drift is the silent killer of process-mining models — yesterday's model
-no longer fits today's behaviour. pictl provides a streaming drift detector
+no longer fits today's behaviour. wasm4pm provides a streaming drift detector
 based on **EWMA smoothing** over a **windowed Jaccard-distance** series.
 
 This guide covers the underlying theory, the public API, configuration and

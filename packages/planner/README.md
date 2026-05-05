@@ -383,7 +383,7 @@ console.log(`Balanced plan hash: ${balancedPlan.hash}`);
 
 ## Contributing
 
-See the main pictl repository for contribution guidelines.
+See the main wasm4pm repository for contribution guidelines.
 
 ## License
 

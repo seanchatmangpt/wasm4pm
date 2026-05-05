@@ -51,7 +51,7 @@ describe('@wasm4pm/ml public API', () => {
         { case_id: '2', a: 2, b: 4 },
         { case_id: '3', a: 3, b: 6 },
       ],
-      { nComponents: 1 },
+      { nComponents: 1 }
     );
     expect(pca.transformedData).toHaveLength(3);
     expect(pca.transformedData[0]).toHaveLength(1);

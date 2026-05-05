@@ -1,5 +1,5 @@
 /**
- * Scenario: ml command — pictl ml <task> -i <log.xes>
+ * Scenario: ml command — wasm4pm ml <task> -i <log.xes>
  *
  * Tests ML-powered process mining using real WASM and real XES files.
  * No mocks — real @wasm4pm/ml package with real algorithm execution.
@@ -15,7 +15,7 @@
  *   - Results are deterministic across runs
  *   - --activity-key, --method, --k flags work
  *
- * Binary: apps/pictl/dist/bin/pictl.js (must be built first)
+ * Binary: apps/wasm4pm/dist/bin/wasm4pm.js (must be built first)
  */
 export {};
 //# sourceMappingURL=19-ml-command.d.ts.map

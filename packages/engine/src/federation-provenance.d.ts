@@ -48,8 +48,8 @@ export declare function blake3Hex(obj: unknown): string;
  * - `algorithmId`: Which algorithm was executed
  * - `algorithmVersion`: Semver or CalVer of the algorithm
  * - `backendId`: Which backend executed it (wasm, pm4py, ml, null)
- * - `kernelVersion`: @seanchatmangpt/pictl npm package version
- * - `wasmBuildHash`: Content hash of pictl.wasm binary
+ * - `kernelVersion`: @seanchatmangpt/wasm4pm npm package version
+ * - `wasmBuildHash`: Content hash of wasm4pm.wasm binary
  *
  * **Returns:**
  * A ProvenanceChain with all 10 fields populated:
@@ -80,7 +80,17 @@ export declare function blake3Hex(obj: unknown): string;
  * );
  * ```
  */
-export declare function computeProvenanceChain(eventLogIR: EventLogIR, config: BaseConfig, plan: Plan, modelHash: string, algorithmId: string, algorithmVersion: string, backendId: string, kernelVersion: string, wasmBuildHash: string): ProvenanceChain;
+export declare function computeProvenanceChain(
+  eventLogIR: EventLogIR,
+  config: BaseConfig,
+  plan: Plan,
+  modelHash: string,
+  algorithmId: string,
+  algorithmVersion: string,
+  backendId: string,
+  kernelVersion: string,
+  wasmBuildHash: string
+): ProvenanceChain;
 /**
  * RawModelOutput type matching WASM serialization.
  *
@@ -88,12 +98,12 @@ export declare function computeProvenanceChain(eventLogIR: EventLogIR, config: B
  * JavaScript receives this as JSON from WASM discovery functions.
  */
 export interface RawModelOutput {
-    model: Record<string, unknown>;
-    model_hash: string;
-    deterministic: boolean;
-    algorithm_version: string;
-    latency_class: string;
-    algorithm_duration_ms: number;
+  model: Record<string, unknown>;
+  model_hash: string;
+  deterministic: boolean;
+  algorithm_version: string;
+  latency_class: string;
+  algorithm_duration_ms: number;
 }
 /**
  * Builds a complete ModelIR from a RawModelOutput.
@@ -122,7 +132,11 @@ export interface RawModelOutput {
  * });
  * ```
  */
-export declare function buildModelIR(rawOutput: RawModelOutput, algorithmId: string, capabilities: ModelIR['capabilities']): ModelIR;
+export declare function buildModelIR(
+  rawOutput: RawModelOutput,
+  algorithmId: string,
+  capabilities: ModelIR['capabilities']
+): ModelIR;
 /**
  * Wraps a discovery result in a complete ResultEnvelope<ModelIR>.
  *
@@ -136,8 +150,8 @@ export declare function buildModelIR(rawOutput: RawModelOutput, algorithmId: str
  * - `plan`: The execution plan
  * - `algorithmId`: Which algorithm was executed
  * - `backendId`: Which backend executed it
- * - `kernelVersion`: @seanchatmangpt/pictl package version
- * - `wasmBuildHash`: Content hash of pictl.wasm
+ * - `kernelVersion`: @seanchatmangpt/wasm4pm package version
+ * - `wasmBuildHash`: Content hash of wasm4pm.wasm
  * - `cycleSeq`: Monotonic counter from FederationController
  * - `modelCapabilities`: Declared capabilities for the model
  *
@@ -169,5 +183,16 @@ export declare function buildModelIR(rawOutput: RawModelOutput, algorithmId: str
  * );
  * ```
  */
-export declare function wrapDiscoveryResult(rawOutput: RawModelOutput, eventLogIR: EventLogIR, config: BaseConfig, plan: Plan, algorithmId: string, backendId: string, kernelVersion: string, wasmBuildHash: string, cycleSeq: number, modelCapabilities: ModelIR['capabilities']): ResultEnvelope<ModelIR>;
+export declare function wrapDiscoveryResult(
+  rawOutput: RawModelOutput,
+  eventLogIR: EventLogIR,
+  config: BaseConfig,
+  plan: Plan,
+  algorithmId: string,
+  backendId: string,
+  kernelVersion: string,
+  wasmBuildHash: string,
+  cycleSeq: number,
+  modelCapabilities: ModelIR['capabilities']
+): ResultEnvelope<ModelIR>;
 //# sourceMappingURL=federation-provenance.d.ts.map

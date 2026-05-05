@@ -88,14 +88,7 @@ export function selectEngineByPriority(
  * Helper to detect if an algorithm ID belongs to the ML family.
  */
 function isMLAlgorithm(algorithmId: AlgorithmId): boolean {
-  const mlIds = [
-    'ml_classify',
-    'ml_cluster',
-    'ml_forecast',
-    'ml_anomaly',
-    'ml_regress',
-    'ml_pca',
-  ];
+  const mlIds = ['ml_classify', 'ml_cluster', 'ml_forecast', 'ml_anomaly', 'ml_regress', 'ml_pca'];
   return mlIds.includes(algorithmId);
 }
 

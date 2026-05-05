@@ -166,7 +166,7 @@ const REVOPS_XES = `<?xml version="1.0" encoding="UTF-8"?>
   </trace>
 </log>`;
 async function createTestEnv() {
-    const tempDir = await fs.mkdtemp(path.join(tmpdir(), 'pictl-revops-'));
+    const tempDir = await fs.mkdtemp(path.join(tmpdir(), 'wasm4pm-revops-'));
     const xesPath = path.join(tempDir, 'revops_sales_pipeline.xes');
     await fs.writeFile(xesPath, REVOPS_XES, 'utf-8');
     return {
@@ -185,7 +185,7 @@ async function createTestEnv() {
 function runCli(args, timeoutMs = 30000) {
     return new Promise((resolve) => {
         const start = Date.now();
-        const child = execFile('npx', ['pictl', ...args], {
+        const child = execFile('npx', ['wasm4pm', ...args], {
             timeout: timeoutMs,
             maxBuffer: 10 * 1024 * 1024,
         }, (error, stdout, stderr) => {

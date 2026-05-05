@@ -65,7 +65,7 @@ export const simulate = defineCommand({
             // Resolve input path (positional OR --file/-i)
             const inputPath = ctx.args.input || ctx.args.file;
             if (!inputPath) {
-                formatter.error('Input file required.\n\nUsage:  pictl simulate <log.xes>\n        pictl simulate <log.xes> --cases 500\n\nRun "pictl simulate --help" for details.');
+                formatter.error('Input file required.\n\nUsage:  wasm4pm simulate <log.xes>\n        wasm4pm simulate <log.xes> --cases 500\n\nRun "wasm4pm simulate --help" for details.');
                 process.exit(EXIT_CODES.source_error);
             }
             // Validate input file exists

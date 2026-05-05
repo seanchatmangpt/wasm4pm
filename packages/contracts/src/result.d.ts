@@ -11,24 +11,24 @@ import type { ErrorInfo as ErrorDetails } from './errors.js';
  * @internal
  */
 interface Ok<T> {
-    type: 'ok';
-    value: T;
+  type: 'ok';
+  value: T;
 }
 /**
  * Error result wrapping an error message (simple string variant)
  * @internal
  */
 interface Err {
-    type: 'err';
-    error: string;
+  type: 'err';
+  error: string;
 }
 /**
  * Error result wrapping structured error info (PRD §14)
  * @internal
  */
 interface ErrorResult {
-    type: 'error';
-    error: ErrorDetails;
+  type: 'error';
+  error: ErrorDetails;
 }
 /**
  * Result type: Either Ok<T>, Err (string), or ErrorResult (structured)
@@ -83,7 +83,7 @@ import type { ModelIR } from './model.js';
  *
  * Gap closure: LC-1 — latency_class is non-optional and derived.
  */
-export type LatencyClass = "sub_ms" | "low_ms" | "high_ms" | "seconds" | "minutes";
+export type LatencyClass = 'sub_ms' | 'low_ms' | 'high_ms' | 'seconds' | 'minutes';
 /**
  * Derives the LatencyClass from a latency duration in milliseconds.
  *
@@ -112,24 +112,24 @@ export declare function deriveLatencyClass(latency_ms: number): LatencyClass;
  * - `algorithm_id`: Which algorithm was executed
  * - `algorithm_version`: Semver or CalVer version of the algorithm
  * - `backend_id`: Which backend executed it (wasm, pm4py, ml, null)
- * - `kernel_version`: @seanchatmangpt/pictl npm package version
- * - `wasm_build_hash`: Content hash of the pictl.wasm binary
+ * - `kernel_version`: @seanchatmangpt/wasm4pm npm package version
+ * - `wasm_build_hash`: Content hash of the wasm4pm.wasm binary
  *
  * **Invariants:**
  * - All hash fields must be non-empty strings (BLAKE3 hash: 64 hex characters = 256 bits)
  * - A missing or empty `combined_hash` is a schema violation, not a warning
  */
 export interface ProvenanceChain {
-    readonly input_hash: string;
-    readonly config_hash: string;
-    readonly plan_hash: string;
-    readonly output_hash: string;
-    readonly combined_hash: string;
-    readonly algorithm_id: string;
-    readonly algorithm_version: string;
-    readonly backend_id: string;
-    readonly kernel_version: string;
-    readonly wasm_build_hash: string;
+  readonly input_hash: string;
+  readonly config_hash: string;
+  readonly plan_hash: string;
+  readonly output_hash: string;
+  readonly combined_hash: string;
+  readonly algorithm_id: string;
+  readonly algorithm_version: string;
+  readonly backend_id: string;
+  readonly kernel_version: string;
+  readonly wasm_build_hash: string;
 }
 /**
  * Typed wrapper around every algorithm output with provenance and metadata.
@@ -180,20 +180,20 @@ export interface ProvenanceChain {
  * ```
  */
 export interface ResultEnvelope<T = unknown> {
-    readonly run_id: string;
-    readonly status: "success" | "partial" | "failed";
-    readonly payload: T;
-    readonly error?: string;
-    readonly latency_ms: number;
-    readonly latency_class: LatencyClass;
-    readonly backend_id: string;
-    readonly invocation_id: string;
-    readonly cycle_seq: number;
-    readonly algorithm_id: string;
-    readonly model_ir?: ModelIR;
-    readonly provenance: ProvenanceChain;
-    readonly stale?: boolean;
-    readonly stale_age_ms?: number;
+  readonly run_id: string;
+  readonly status: 'success' | 'partial' | 'failed';
+  readonly payload: T;
+  readonly error?: string;
+  readonly latency_ms: number;
+  readonly latency_class: LatencyClass;
+  readonly backend_id: string;
+  readonly invocation_id: string;
+  readonly cycle_seq: number;
+  readonly algorithm_id: string;
+  readonly model_ir?: ModelIR;
+  readonly provenance: ProvenanceChain;
+  readonly stale?: boolean;
+  readonly stale_age_ms?: number;
 }
 /**
  * Guard function to check if a value is a valid ProvenanceChain.

@@ -28,7 +28,7 @@ module.exports = {
         'Require OTEL span instrumentation for all public functions',
       category: 'Observability',
       recommended: true,
-      url: 'https://github.com/seanchatmangpt/pictl/blob/main/.claude/OTEL_COVERAGE.md',
+      url: 'https://github.com/seanchatmangpt/wasm4pm/blob/main/.claude/OTEL_COVERAGE.md',
     },
     fixable: 'code',
     messages: {

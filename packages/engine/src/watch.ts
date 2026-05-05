@@ -211,11 +211,9 @@ export class WatchSession {
   }
 
   private saveCheckpoint(): Checkpoint {
-    const checkpoint = this.checkpointManager.create(
-      this.currentState,
-      this.currentProgress,
-      { planId: this.plan.planId }
-    );
+    const checkpoint = this.checkpointManager.create(this.currentState, this.currentProgress, {
+      planId: this.plan.planId,
+    });
 
     try {
       this.onCheckpoint?.(checkpoint);

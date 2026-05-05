@@ -1,10 +1,10 @@
 # WASM Profile Optimization Guide
 
 **Version:** 1.0  
-**Target:** pictl WASM builds for different deployment environments  
+**Target:** wasm4pm WASM builds for different deployment environments  
 **Last Updated:** 2026-04-10
 
-Practical guide to optimizing pictl WASM binaries for specific deployment profiles. Each profile provides a different balance of size, features, and performance.
+Practical guide to optimizing wasm4pm WASM binaries for specific deployment profiles. Each profile provides a different balance of size, features, and performance.
 
 ---
 
@@ -764,10 +764,10 @@ npm run build:iot
 cargo build --target armv7-unknown-linux-gnueabihf --release --features iot
 
 # Transfer to Raspberry Pi
-scp target/armv7-unknown-linux-gnueabihf/release/pictl pi@raspberry:/opt/pictl
+scp target/armv7-unknown-linux-gnueabihf/release/wasm4pm pi@raspberry:/opt/wasm4pm
 
 # Run on device
-ssh pi@raspberry 'nohup /opt/pictl --algorithm dfg --input /var/log/events.xes &'
+ssh pi@raspberry 'nohup /opt/wasm4pm --algorithm dfg --input /var/log/events.xes &'
 ```
 
 **Memory usage:** 30-50MB  
@@ -787,7 +787,7 @@ Expected sizes by profile (uncompressed WASM binary):
 | fog | 2.0MB | 1.95MB | 580KB | 700KB |
 | browser | 2.7MB | 2.697MB | 820KB | 980KB |
 
-*(Gzipped = single file. With deps = including @pictl module dependencies.)*
+*(Gzipped = single file. With deps = including @wasm4pm module dependencies.)*
 
 ---
 
@@ -856,5 +856,5 @@ Before deploying a profile:
 ---
 
 **Last Updated:** 2026-04-10  
-**Maintained by:** pictl core team  
+**Maintained by:** wasm4pm core team  
 **License:** MIT

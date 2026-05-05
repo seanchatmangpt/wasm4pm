@@ -60,11 +60,25 @@ export { ReceiptBuilder } from './receipt-builder.js';
 
 // Plan schema - DAG representation
 export type { Plan, PlanNode, PlanEdge, PlanNodeKind } from './plan.js';
-export { isPlan, validatePlanDAG, sortNodes, sortEdges, normalizePlan, PLAN_JSON_SCHEMA } from './plan.js';
+export {
+  isPlan,
+  validatePlanDAG,
+  sortNodes,
+  sortEdges,
+  normalizePlan,
+  PLAN_JSON_SCHEMA,
+} from './plan.js';
 
 // Status schema - lifecycle states
 export type { Status, LifecycleState } from './status.js';
-export { isStatus, isLifecycleState, isValidTransition, LIFECYCLE_STATES, STATE_TRANSITIONS, STATUS_JSON_SCHEMA } from './status.js';
+export {
+  isStatus,
+  isLifecycleState,
+  isValidTransition,
+  LIFECYCLE_STATES,
+  STATE_TRANSITIONS,
+  STATUS_JSON_SCHEMA,
+} from './status.js';
 
 // Explain snapshot
 export type { ExplainSnapshot } from './explain.js';

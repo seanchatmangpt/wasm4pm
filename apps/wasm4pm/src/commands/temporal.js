@@ -65,7 +65,7 @@ export const temporal = defineCommand({
             // Resolve input path (positional OR --file/-i)
             const inputPath = ctx.args.input || ctx.args.file;
             if (!inputPath) {
-                formatter.error('Input file required.\n\nUsage:  pictl temporal <log.xes>\n        pictl temporal <log.xes> --threshold 0.01\n\nRun "pictl temporal --help" for details.');
+                formatter.error('Input file required.\n\nUsage:  wasm4pm temporal <log.xes>\n        wasm4pm temporal <log.xes> --threshold 0.01\n\nRun "wasm4pm temporal --help" for details.');
                 process.exit(EXIT_CODES.source_error);
             }
             // Validate input file exists

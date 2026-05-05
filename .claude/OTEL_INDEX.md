@@ -1,6 +1,6 @@
 # OTEL Coverage System — Documentation Index
 
-Complete reference for the OTEL span coverage mandate implementation in pictl.
+Complete reference for the OTEL span coverage mandate implementation in wasm4pm.
 
 ---
 
@@ -59,7 +59,7 @@ Complete reference for the OTEL span coverage mandate implementation in pictl.
 - **File:** `packages/observability/src/eslint-rules/require-span-for-public.js`
 - **Language:** JavaScript (ESLint API)
 - **Purpose:** Real-time IDE feedback
-- **Rule ID:** `pictl-observability/require-span-for-public`
+- **Rule ID:** `wasm4pm-observability/require-span-for-public`
 - **Usage:** `npm run lint` or `npm run lint -- --fix`
 - **Severity:** Warn (escalate to error in Phase 2)
 

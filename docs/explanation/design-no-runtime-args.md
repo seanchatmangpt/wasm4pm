@@ -27,7 +27,7 @@ wpm run --config config.toml
 
 ```bash
 # Bad: Arguments scattered across shell history
-history | grep pictl | grep -v config
+history | grep wasm4pm | grep -v config
 
 # Good: All parameters in single config file
 cat config.toml | grep -A10 discovery

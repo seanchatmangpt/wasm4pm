@@ -15,10 +15,7 @@ import { OutcomeHandler } from './perspectives/outcome.js';
 import { DriftHandler } from './perspectives/drift.js';
 import { FeaturesHandler } from './perspectives/features.js';
 import { ResourceHandler } from './perspectives/resource.js';
-import {
-  ALL_PREDICTION_PERSPECTIVES,
-  PredictionPerspective,
-} from './types.js';
+import { ALL_PREDICTION_PERSPECTIVES, PredictionPerspective } from './types.js';
 import { PredictionValidationError } from './validation.js';
 
 export class PredictionRegistry {
@@ -54,7 +51,7 @@ export class PredictionRegistry {
       throw new PredictionValidationError(
         'unknown_perspective',
         `no handler registered for perspective '${perspective}'`,
-        'registry',
+        'registry'
       );
     }
     return h;

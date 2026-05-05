@@ -16,30 +16,33 @@ import { implementAlgorithmStep } from './handlers.js';
  * Defined here to avoid importing @wasm4pm/engine (prevents circular dependency).
  */
 export interface EngineStep {
-    id: string;
-    name: string;
-    inputs?: Record<string, unknown>;
-    dependencies?: string[];
-    optional?: boolean;
-    description?: string;
-    outputs?: string[];
-    timeout?: number;
+  id: string;
+  name: string;
+  inputs?: Record<string, unknown>;
+  dependencies?: string[];
+  optional?: boolean;
+  description?: string;
+  outputs?: string[];
+  timeout?: number;
 }
 export interface EngineStepResult {
-    stepId: string;
-    success: boolean;
-    output?: Record<string, unknown>;
-    error?: {
-        code: string;
-        message: string;
-        severity: string;
-        recoverable: boolean;
-        context?: Record<string, unknown>;
-    };
-    durationMs?: number;
-    metadata?: Record<string, unknown>;
+  stepId: string;
+  success: boolean;
+  output?: Record<string, unknown>;
+  error?: {
+    code: string;
+    message: string;
+    severity: string;
+    recoverable: boolean;
+    context?: Record<string, unknown>;
+  };
+  durationMs?: number;
+  metadata?: Record<string, unknown>;
 }
-export type EngineStepHandler = (step: EngineStep, context: Record<string, unknown>) => Promise<EngineStepResult>;
+export type EngineStepHandler = (
+  step: EngineStep,
+  context: Record<string, unknown>
+) => Promise<EngineStepResult>;
 /**
  * Build a handlers map suitable for engine's createStepDispatcher().
  *
@@ -51,5 +54,9 @@ export type EngineStepHandler = (step: EngineStep, context: Record<string, unkno
  * @param eventLogHandle - Handle returned by wasm.load_eventlog_from_xes()
  * @returns Map<string, EngineStepHandler> keyed by step name
  */
-export declare function buildKernelStepHandlers(wasmModule: WasmModule, eventLogHandle: string, stepImpl?: typeof implementAlgorithmStep): Map<string, EngineStepHandler>;
+export declare function buildKernelStepHandlers(
+  wasmModule: WasmModule,
+  eventLogHandle: string,
+  stepImpl?: typeof implementAlgorithmStep
+): Map<string, EngineStepHandler>;
 //# sourceMappingURL=step-dispatcher.d.ts.map

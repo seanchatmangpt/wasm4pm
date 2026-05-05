@@ -18,66 +18,66 @@ import type { ModelIR, ModelNode, ModelEdge, QualityMetrics } from '@wasm4pm/con
  * Suitable for fast streaming and online discovery.
  */
 export interface DirectlyFollowsGraph {
-    format: "dfg";
-    model_type: "dfg";
-    algorithm_id: string;
-    nodes: Array<{
-        id: string;
-        label: string;
-    }>;
-    edges: Array<{
-        from: string;
-        to: string;
-        weight?: number;
-    }>;
-    start_activities: string[];
-    end_activities: string[];
-    quality?: QualityMetrics;
+  format: 'dfg';
+  model_type: 'dfg';
+  algorithm_id: string;
+  nodes: Array<{
+    id: string;
+    label: string;
+  }>;
+  edges: Array<{
+    from: string;
+    to: string;
+    weight?: number;
+  }>;
+  start_activities: string[];
+  end_activities: string[];
+  quality?: QualityMetrics;
 }
 /**
  * Petri Net representation (places, transitions, arcs, markings).
  * Suitable for conformance checking and replays.
  */
 export interface PetriNet {
-    format: "petri_net";
-    model_type: "petri_net";
-    algorithm_id: string;
-    places: Array<{
-        id: string;
-        label?: string;
-    }>;
-    transitions: Array<{
-        id: string;
-        label: string;
-    }>;
-    arcs: Array<{
-        source: string;
-        target: string;
-        weight?: number;
-    }>;
-    initial_marking: Record<string, number>;
-    final_markings: Array<Record<string, number>>;
-    quality?: QualityMetrics;
+  format: 'petri_net';
+  model_type: 'petri_net';
+  algorithm_id: string;
+  places: Array<{
+    id: string;
+    label?: string;
+  }>;
+  transitions: Array<{
+    id: string;
+    label: string;
+  }>;
+  arcs: Array<{
+    source: string;
+    target: string;
+    weight?: number;
+  }>;
+  initial_marking: Record<string, number>;
+  final_markings: Array<Record<string, number>>;
+  quality?: QualityMetrics;
 }
 /**
  * Partial-Order Workflow Language (POWL) arena-based representation.
  * Supports complex control flow with concurrency.
  */
 export interface PowlModel {
-    format: "powl";
-    model_type: "powl";
-    algorithm_id: string;
-    arena: Array<{
-        id: number;
-        label: string;
-        node_type: "activity" | "operator" | "gateway";
-    }>;
-    edges: Array<{
-        from: number;
-        to: number;
-    }>;
-    index_map: Record<string, number>;
-    quality?: QualityMetrics;
+  format: 'powl';
+  model_type: 'powl';
+  algorithm_id: string;
+  arena: Array<{
+    id: number;
+    label: string;
+    node_type: 'activity' | 'operator' | 'gateway';
+  }>;
+  edges: Array<{
+    from: number;
+    to: number;
+  }>;
+  index_map: Record<string, number>;
+  quality?: QualityMetrics;
 }
 /**
  * Infer start activities from node/edge topology.
@@ -87,7 +87,10 @@ export interface PowlModel {
  * @param edges - List of model edges
  * @returns Array of start activity IDs
  */
-export declare function inferStartActivities(nodes: ReadonlyArray<ModelNode>, edges: ReadonlyArray<ModelEdge>): string[];
+export declare function inferStartActivities(
+  nodes: ReadonlyArray<ModelNode>,
+  edges: ReadonlyArray<ModelEdge>
+): string[];
 /**
  * Infer end activities from node/edge topology.
  * End activities are transitions with no outgoing edges.
@@ -96,7 +99,10 @@ export declare function inferStartActivities(nodes: ReadonlyArray<ModelNode>, ed
  * @param edges - List of model edges
  * @returns Array of end activity IDs
  */
-export declare function inferEndActivities(nodes: ReadonlyArray<ModelNode>, edges: ReadonlyArray<ModelEdge>): string[];
+export declare function inferEndActivities(
+  nodes: ReadonlyArray<ModelNode>,
+  edges: ReadonlyArray<ModelEdge>
+): string[];
 /**
  * Convert ModelIR to Directly-Follows Graph (DFG).
  *

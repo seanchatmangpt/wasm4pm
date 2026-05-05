@@ -254,7 +254,7 @@ Automatically created after each successful cycle. Contains:
 
 ### Per Cycle
 
-1. **Initialize WASM:** Load pictl WASM kernel (auto-compiled, cached)
+1. **Initialize WASM:** Load wasm4pm WASM kernel (auto-compiled, cached)
 2. **Restore State:** Load RL/SPC/circuit breaker from `.wasm4pm/autoprocess-state.json` (if exists)
 3. **Parse Log:** Read XES file, load into WASM memory
 4. **Perception:** Analyze event log — counts, activities, traces, health score

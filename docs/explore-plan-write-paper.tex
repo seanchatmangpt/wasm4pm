@@ -116,7 +116,7 @@
     closes it.  The one-task-at-a-time sequential cycle fails frontier work
     not because tasks are hard but because it destroys the press release:
     each completed ticket becomes its own end, severed from the original
-    vision.  We demonstrate with the \code{pictl}/\code{bcinr} arc, where an
+    vision.  We demonstrate with the \code{wasm4pm}/\code{bcinr} arc, where an
     ambitious process-mining registry and a branchless algorithm library were
     each press releases written before their implementations existed---and
     where the agent architecture was the mechanism for measuring and closing
@@ -144,7 +144,7 @@ describe what exists but to make vivid what should exist, so that everyone
 building toward it shares the same target.  The press release is a commitment
 device operating on desired reality, not a report operating on current reality.
 
-Now consider the \code{pictl} algorithm registry.
+Now consider the \code{wasm4pm} algorithm registry.
 
 The registry claimed 41 algorithms: DFG, Alpha++, Inductive Miner, ILP, Genetic
 Algorithm, 36 more.  It declared output types, quality scores, speed scores,
@@ -204,7 +204,7 @@ It is the fixed star that implementation navigates by.
 \subsection{The Computational Equivalent}
 
 In a software system, the press release is expressed not in English but in
-types, APIs, registries, and configuration schemas.  The \code{pictl} registry
+types, APIs, registries, and configuration schemas.  The \code{wasm4pm} registry
 was a press release written in TypeScript:
 
 \begin{lstlisting}
@@ -275,7 +275,7 @@ computational press release.  It is:
   \item Visible to the human before any implementation begins
 \end{itemize}
 
-When the \code{pictl} arc reached the conclusion that 0 of 41 algorithms were
+When the \code{wasm4pm} arc reached the conclusion that 0 of 41 algorithms were
 production-ready, the plan file was not amended with a note.  It was
 \textbf{rewritten}---from ``audit and fix 41 algorithms'' to ``implement 12
 branchless families in \code{bcinr}''.  This is exactly what Working Backwards
@@ -287,7 +287,7 @@ else follows from the new press release.
 An explore agent's job is to produce a precise measurement of the gap
 $\gap = \text{press release} - \text{reality}$.
 
-In the \code{pictl} arc:
+In the \code{wasm4pm} arc:
 
 \begin{itemize}
   \item Press release: 41 algorithms, all callable, all returning typed outputs,
@@ -337,7 +337,7 @@ a gap that the press release revision has made irrelevant.
 
 \subsection{Ticket Completion Severs Tasks from the Press Release}
 
-Consider the \code{pictl} inductive miner task.  As a ticket, it reads:
+Consider the \code{wasm4pm} inductive miner task.  As a ticket, it reads:
 
 \begin{lstlisting}
 Title: Implement discover_inductive_miner
@@ -389,7 +389,7 @@ system one task at a time.  If task $i$ fails, the team moves to task $i+1$.
 The failure of task $i$ is treated as a local defect, not as a signal about
 the architecture.
 
-In the \code{pictl} arc, sequential debugging would have found:
+In the \code{wasm4pm} arc, sequential debugging would have found:
 \begin{itemize}
   \item Task 1: \code{alpha\_plus\_plus} crashes. Fix: unclear. Status: blocked.
   \item Task 2: \code{genetic\_algorithm} crashes. Fix: unclear. Status: blocked.
@@ -410,12 +410,12 @@ architectural facts.  Architectural facts are the only ones that can revise the
 press release.}
 
 % ─────────────────────────────────────────────────────────────────────────────
-\section{The pictl Arc as Working Backwards in Practice}
+\section{The wasm4pm Arc as Working Backwards in Practice}
 % ─────────────────────────────────────────────────────────────────────────────
 
 \subsection{The Press Release: 41 Algorithms}
 
-The \code{pictl} registry was a press release written in TypeScript.  It
+The \code{wasm4pm} registry was a press release written in TypeScript.  It
 described a process mining platform with 41 algorithms spanning discovery,
 conformance, ML analysis, streaming, import/export, and autonomic control.
 Each algorithm had metadata: speed, quality, output type, deployment profiles.
@@ -452,7 +452,7 @@ The audit ran on real process mining datasets: Sepsis Cases (5\,MB, 476 traces, 
 as a smoke test, and Road Traffic Fine Management Process (177\,MB, 561,470 events) as a stress
 test.  Both datasets are published benchmarks widely used in the process mining community.
 
-The result was not ``pictl failed.''  The result was:
+The result was not ``wasm4pm failed.''  The result was:
 $\gap = 41$ algorithms, structured as follows:
 \begin{itemize}
   \item 0 algorithms at Tier 0 (press release target)
@@ -585,14 +585,14 @@ not a performance optimisation.  It is an epistemological requirement: the gap
 between the press release and reality is a global property of the system, not
 a local property of any file.
 
-The \code{pictl} architectural finding---\code{RefCell<Mutex>} incompatible
+The \code{wasm4pm} architectural finding---\code{RefCell<Mutex>} incompatible
 with WASM---was a structural fact.  It required seeing all 41 algorithm results
 simultaneously.  A sequential audit would have seen it as 41 local facts, each
 ambiguous in isolation.
 
 \subsection{False Completion Is Press Release Revision, Not Failure}
 
-When the \code{pictl} audit concluded that the Tier 2 gap was not worth
+When the \code{wasm4pm} audit concluded that the Tier 2 gap was not worth
 closing, this was not a declaration of failure.  It was a \textbf{press release
 revision}: the product vision moved from ``41-algorithm process mining
 platform'' to ``12-family branchless algorithm library with mathematical
@@ -619,7 +619,7 @@ instrument: a future state written in present tense to pull a team toward it.
 The press release is correct at the time of writing because it describes the
 intended system, not the current system.  The gap between them is the work.
 
-The \code{pictl} registry was a press release written in code.  The 41
+The \code{wasm4pm} registry was a press release written in code.  The 41
 algorithms were design commitments, not implementation claims.  The error was
 not making the commitments.  The error was failing to measure the gap
 systematically and failing to update the press release when the gap proved too
@@ -648,7 +648,7 @@ what you can.  Revise the horizon.  Repeat.}
 
 \medskip
 
-The \code{pictl} registry and the \code{bcinr} ontology are both press
+The \code{wasm4pm} registry and the \code{bcinr} ontology are both press
 releases.  Neither is a lie.  Both are the correct starting point for the work
 they represent.  The difference is that \code{bcinr} has oracles---and oracles
 are what turn press releases into delivery schedules.
@@ -656,7 +656,7 @@ are what turn press releases into delivery schedules.
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Epilogue: The Press Release Made Real (April 2026)}
 
-The \code{pictl} registry was published to npm as \code{wasm4pm@26.4.18} on April 17, 2026.
+The \code{wasm4pm} registry was published to npm as \code{wasm4pm@26.4.18} on April 17, 2026.
 This section documents the final closure: how the written press release became a verifiable artifact.
 
 \subsection{The Publication Verification}
@@ -716,7 +716,7 @@ This is \textbf{rational gap closure}: the gap $\Delta$ was measured, found to b
 
 The author thanks Jeff Bezos and the Amazon Working Backwards process for the
 press-release-first discipline; Wil van der Aalst for the process mining
-doctrine that served as the primary oracle throughout the \code{pictl} arc; and
+doctrine that served as the primary oracle throughout the \code{wasm4pm} arc; and
 the Anthropic Claude Code team for the Explore/Plan/Write agent architecture
 that made the gap-measurement methodology concrete and executable. Finally, gratitude to the npm registry for making the final verification—installed packages—possible.
 

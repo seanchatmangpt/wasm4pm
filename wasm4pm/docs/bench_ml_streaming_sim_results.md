@@ -2,7 +2,7 @@
 
 **Benchmark:** `ml_streaming_sim_bench`  
 **Date:** 2026-04-10  
-**Rust:** pictl v26.4.10  
+**Rust:** wasm4pm v26.4.10  
 **Platform:** aarch64-apple-darwin  
 **Profile:** bench (opt-level 3, no LTO)
 

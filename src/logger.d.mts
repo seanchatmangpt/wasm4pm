@@ -1,5 +1,5 @@
 /**
- * Logger utility for pictl
+ * Logger utility for wasm4pm
  *
  * Provides structured logging with prefixes and optional JSON formatting.
  */

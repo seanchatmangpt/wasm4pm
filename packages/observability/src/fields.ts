@@ -45,9 +45,7 @@ export const REQUIRED_FIELD_NAMES: ReadonlyArray<keyof RequiredFields> = [
  * Validate that all required fields are present and non-empty.
  * Returns list of missing/empty field names, or empty array if valid.
  */
-export function validateRequiredFields(
-  attrs: Record<string, unknown>
-): string[] {
+export function validateRequiredFields(attrs: Record<string, unknown>): string[] {
   const missing: string[] = [];
   for (const name of REQUIRED_FIELD_NAMES) {
     const val = attrs[name];
@@ -62,9 +60,7 @@ export function validateRequiredFields(
  * Create a RequiredFields object with defaults for unset values.
  * Useful for early bootstrap when not all values are known yet.
  */
-export function createRequiredFields(
-  partial: Partial<RequiredFields> = {}
-): RequiredFields {
+export function createRequiredFields(partial: Partial<RequiredFields> = {}): RequiredFields {
   return {
     'run.id': partial['run.id'] ?? 'unknown',
     'config.hash': partial['config.hash'] ?? 'unknown',

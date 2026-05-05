@@ -1,6 +1,6 @@
 import { resolveConfig as loadConfig } from '@wasm4pm/config';
 /**
- * Load configuration for pictl command with error handling and user feedback
+ * Load configuration for wasm4pm command with error handling and user feedback
  * @param cliOverrides CLI arguments (--config, --profile, etc.)
  * @param formatter Output formatter for error messages
  * @returns Loaded and validated configuration
@@ -34,11 +34,11 @@ export async function loadPictlConfig(cliOverrides = {}, formatter) {
 }
 /**
  * Build CLI overrides from command arguments
- * Maps pictl flags to @wasm4pm/config CliOverrides interface
+ * Maps wasm4pm flags to @wasm4pm/config CliOverrides interface
  */
 export function buildCliOverrides(args) {
     const overrides = {};
-    // Map pictl command arguments to config overrides
+    // Map wasm4pm command arguments to config overrides
     if (args.config) {
         overrides.configPath = args.config;
     }

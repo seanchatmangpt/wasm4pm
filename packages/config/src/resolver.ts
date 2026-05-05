@@ -5,7 +5,12 @@ import * as toml from 'toml';
 import { validate, SCHEMA_VERSION } from './schema.js';
 import { trackProvenance, mergeProvenance, type ProvenanceMap } from './provenance.js';
 import { hashConfig } from './hash.js';
-import { validateMlConfig, validateRlConfig, validatePredictionConfig, validateAlgorithmProfile } from './validation/detailed-errors.js';
+import {
+  validateMlConfig,
+  validateRlConfig,
+  validatePredictionConfig,
+  validateAlgorithmProfile,
+} from './validation/detailed-errors.js';
 import type { BaseConfig, Config, CliOverrides, LoadConfigOptions } from './types.js';
 
 /**
@@ -76,11 +81,16 @@ export async function resolveConfig(options?: LoadConfigOptions): Promise<Config
     defaults as Record<string, unknown>,
     envLayer as Record<string, unknown>,
     fileLayer,
-    cliLayer as Record<string, unknown>,
+    cliLayer as Record<string, unknown>
   );
 
   // Merge provenance in same order (later wins)
-  const mergedProvenance = mergeProvenance(provenance, envProvenance, fileProvenance, cliProvenance);
+  const mergedProvenance = mergeProvenance(
+    provenance,
+    envProvenance,
+    fileProvenance,
+    cliProvenance
+  );
 
   // Validate the merged config
   const validated = validate(merged) as BaseConfig;
@@ -148,28 +158,45 @@ function parseEnvConfig(env: NodeJS.ProcessEnv): Record<string, unknown> {
     config.execution = { profile: env.WASM4PM_PROFILE };
   }
   if (env.WASM4PM_LOG_LEVEL) {
-    config.observability = { ...(config.observability as Record<string, unknown>), logLevel: env.WASM4PM_LOG_LEVEL };
+    config.observability = {
+      ...(config.observability as Record<string, unknown>),
+      logLevel: env.WASM4PM_LOG_LEVEL,
+    };
   }
   if (env.WASM4PM_WATCH) {
     config.watch = { enabled: env.WASM4PM_WATCH === 'true' || env.WASM4PM_WATCH === '1' };
   }
   if (env.WASM4PM_OUTPUT_FORMAT) {
-    config.output = { ...(config.output as Record<string, unknown>), format: env.WASM4PM_OUTPUT_FORMAT };
+    config.output = {
+      ...(config.output as Record<string, unknown>),
+      format: env.WASM4PM_OUTPUT_FORMAT,
+    };
   }
   if (env.WASM4PM_OUTPUT_DESTINATION) {
-    config.output = { ...(config.output as Record<string, unknown>), destination: env.WASM4PM_OUTPUT_DESTINATION };
+    config.output = {
+      ...(config.output as Record<string, unknown>),
+      destination: env.WASM4PM_OUTPUT_DESTINATION,
+    };
   }
   if (env.WASM4PM_ALGORITHM) {
-    config.algorithm = { ...(config.algorithm as Record<string, unknown>), name: env.WASM4PM_ALGORITHM };
+    config.algorithm = {
+      ...(config.algorithm as Record<string, unknown>),
+      name: env.WASM4PM_ALGORITHM,
+    };
   }
   if (env.WASM4PM_SINK_KIND) {
     config.sink = { ...(config.sink as Record<string, unknown>), kind: env.WASM4PM_SINK_KIND };
   }
   if (env.WASM4PM_SOURCE_KIND) {
-    config.source = { ...(config.source as Record<string, unknown>), kind: env.WASM4PM_SOURCE_KIND };
+    config.source = {
+      ...(config.source as Record<string, unknown>),
+      kind: env.WASM4PM_SOURCE_KIND,
+    };
   }
   if (env.WASM4PM_OTEL_ENABLED) {
-    const otel = { enabled: env.WASM4PM_OTEL_ENABLED === 'true' || env.WASM4PM_OTEL_ENABLED === '1' };
+    const otel = {
+      enabled: env.WASM4PM_OTEL_ENABLED === 'true' || env.WASM4PM_OTEL_ENABLED === '1',
+    };
     config.observability = { ...(config.observability as Record<string, unknown>), otel };
   }
   if (env.WASM4PM_OTEL_ENDPOINT) {
@@ -188,7 +215,9 @@ function parseEnvConfig(env: NodeJS.ProcessEnv): Record<string, unknown> {
   if (env.WASM4PM_PREDICTION_TASKS) {
     config.prediction = {
       ...(config.prediction as Record<string, unknown>),
-      tasks: env.WASM4PM_PREDICTION_TASKS.split(',').map(t => t.trim()).filter(Boolean),
+      tasks: env.WASM4PM_PREDICTION_TASKS.split(',')
+        .map((t) => t.trim())
+        .filter(Boolean),
     };
   }
   if (env.WASM4PM_PREDICTION_ACTIVITY_KEY) {
@@ -207,9 +236,7 @@ function parseEnvConfig(env: NodeJS.ProcessEnv): Record<string, unknown> {
     }
     // Validate range: ngramOrder must be 2-5
     if (n < 2 || n > 5) {
-      throw new Error(
-        `Invalid WASM4PM_PREDICTION_NGRAM_ORDER: ${n} is out of range [2, 5]`
-      );
+      throw new Error(`Invalid WASM4PM_PREDICTION_NGRAM_ORDER: ${n} is out of range [2, 5]`);
     }
     config.prediction = { ...(config.prediction as Record<string, unknown>), ngramOrder: n };
   }
@@ -223,7 +250,9 @@ function parseEnvConfig(env: NodeJS.ProcessEnv): Record<string, unknown> {
   if (env.WASM4PM_ML_ALGORITHMS) {
     config.ml = {
       ...(config.ml as Record<string, unknown>),
-      tasks: env.WASM4PM_ML_ALGORITHMS.split(',').map((t) => t.trim()).filter(Boolean),
+      tasks: env.WASM4PM_ML_ALGORITHMS.split(',')
+        .map((t) => t.trim())
+        .filter(Boolean),
     };
   }
 
@@ -237,7 +266,9 @@ function parseEnvConfig(env: NodeJS.ProcessEnv): Record<string, unknown> {
   if (env.WASM4PM_RL_AGENTS) {
     config.rl = {
       ...(config.rl as Record<string, unknown>),
-      agents: env.WASM4PM_RL_AGENTS.split(',').map((t) => t.trim()).filter(Boolean),
+      agents: env.WASM4PM_RL_AGENTS.split(',')
+        .map((t) => t.trim())
+        .filter(Boolean),
     };
   }
   if (env.WASM4PM_RL_LEARNING_RATE) {
@@ -305,9 +336,7 @@ function parseEnvConfig(env: NodeJS.ProcessEnv): Record<string, unknown> {
     }
     // Validate range: driftWindowSize must be > 0
     if (w <= 0) {
-      throw new Error(
-        `Invalid WASM4PM_PREDICTION_DRIFT_WINDOW: ${w} must be greater than 0`
-      );
+      throw new Error(`Invalid WASM4PM_PREDICTION_DRIFT_WINDOW: ${w} must be greater than 0`);
     }
     config.prediction = { ...(config.prediction as Record<string, unknown>), driftWindowSize: w };
   }
@@ -352,7 +381,8 @@ function parseCliOverrides(cli: CliOverrides): Record<string, unknown> {
     if (cli.predictionTasks) prediction.tasks = cli.predictionTasks;
     if (cli.predictionActivityKey) prediction.activityKey = cli.predictionActivityKey;
     if (cli.predictionNgramOrder !== undefined) prediction.ngramOrder = cli.predictionNgramOrder;
-    if (cli.predictionDriftWindow !== undefined) prediction.driftWindowSize = cli.predictionDriftWindow;
+    if (cli.predictionDriftWindow !== undefined)
+      prediction.driftWindowSize = cli.predictionDriftWindow;
     config.prediction = prediction;
   }
   if (cli.mlEnabled !== undefined || cli.mlTasks) {
@@ -391,7 +421,10 @@ function deepMerge(...objects: Record<string, unknown>[]): Record<string, unknow
     for (const [key, value] of Object.entries(obj)) {
       if (value === undefined || value === null) continue;
       if (isPlainObject(value) && isPlainObject(result[key])) {
-        result[key] = deepMerge(result[key] as Record<string, unknown>, value as Record<string, unknown>);
+        result[key] = deepMerge(
+          result[key] as Record<string, unknown>,
+          value as Record<string, unknown>
+        );
       } else {
         result[key] = value;
       }
@@ -415,7 +448,7 @@ function isPlainObject(v: unknown): v is Record<string, unknown> {
  */
 export function checkConfigWarnings(
   config: Partial<Config>,
-  logSize?: number,
+  logSize?: number
 ): Array<{ field: string; warning: string }> {
   const warnings: Array<{ field: string; warning: string }> = [];
 
@@ -761,6 +794,6 @@ export function getExampleJsonConfig(): string {
       },
     },
     null,
-    2,
+    2
   );
 }

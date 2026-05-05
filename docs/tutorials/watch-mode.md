@@ -6,7 +6,7 @@
 
 ## What You'll Learn
 
-- Start pictl in watch mode for file monitoring
+- Start wasm4pm in watch mode for file monitoring
 - Observe incremental processing as data arrives
 - Understand checkpoint creation and recovery
 - Monitor progress in real-time

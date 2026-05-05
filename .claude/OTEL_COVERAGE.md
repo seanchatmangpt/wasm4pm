@@ -52,7 +52,7 @@ New public functions must have Instrumentation calls.
 Fix by adding Instrumentation.create*() call at function start.
 ```
 
-### 2. ESLint Rule (`pictl-observability/require-span-for-public`)
+### 2. ESLint Rule (`wasm4pm-observability/require-span-for-public`)
 
 **Warns** when public functions lack spans during linting.
 
@@ -71,7 +71,7 @@ Instrumentation call. Add Instrumentation.createSpan() or similar at the start o
 **Configure in `.eslintrc.cjs`:**
 ```javascript
 rules: {
-  'pictl-observability/require-span-for-public': 'warn', // Elevate to 'error' when ready
+  'wasm4pm-observability/require-span-for-public': 'warn', // Elevate to 'error' when ready
 }
 ```
 
@@ -275,7 +275,7 @@ Functions that do NOT require spans:
 To exempt a function, add ESLint disable comment:
 
 ```typescript
-// eslint-disable-next-line pictl-observability/require-span-for-public
+// eslint-disable-next-line wasm4pm-observability/require-span-for-public
 export function simpleUtility() {
   return 42;
 }
@@ -287,7 +287,7 @@ export function simpleUtility() {
 
 - OTEL Specification: https://opentelemetry.io/docs/spec/
 - Semantic Conventions: https://opentelemetry.io/docs/specs/semconv/
-- pictl Observability Package: `packages/observability/src/`
+- wasm4pm Observability Package: `packages/observability/src/`
 - Scanner Implementation: `scripts/verify-otel-coverage.sh`
 - Hook Implementation: `.claude/hooks/otel-coverage.sh`
 

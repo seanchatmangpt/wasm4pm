@@ -108,7 +108,8 @@ class PerspectiveRegistry {
       },
       outputs: {
         outputType: 'ranked_predictions',
-        exampleOutput: '[ {activity: "Approve", confidence: 0.92}, {activity: "Reject", confidence: 0.07}, ... ]',
+        exampleOutput:
+          '[ {activity: "Approve", confidence: 0.92}, {activity: "Reject", confidence: 0.07}, ... ]',
       },
       characteristics: {
         speedEstimate: 20,
@@ -168,7 +169,8 @@ class PerspectiveRegistry {
       },
       outputs: {
         outputType: 'numeric_estimate',
-        exampleOutput: '{ remaining_ms: 3600000, confidence: 0.85, lowerBound: 2400000, upperBound: 5000000 }',
+        exampleOutput:
+          '{ remaining_ms: 3600000, confidence: 0.85, lowerBound: 2400000, upperBound: 5000000 }',
       },
       characteristics: {
         speedEstimate: 25,
@@ -219,7 +221,8 @@ class PerspectiveRegistry {
       },
       outputs: {
         outputType: 'classification',
-        exampleOutput: '{ outcome: "Approved", confidence: 0.88, alternatives: [{outcome: "Rejected", confidence: 0.12}] }',
+        exampleOutput:
+          '{ outcome: "Approved", confidence: 0.88, alternatives: [{outcome: "Rejected", confidence: 0.12}] }',
       },
       characteristics: {
         speedEstimate: 35,
@@ -332,7 +335,8 @@ class PerspectiveRegistry {
       },
       outputs: {
         outputType: 'feature_vector',
-        exampleOutput: '{ activity_count: 5, rework_score: 0.2, path_uniqueness: 0.8, resource_diversity: 3 }',
+        exampleOutput:
+          '{ activity_count: 5, rework_score: 0.2, path_uniqueness: 0.8, resource_diversity: 3 }',
       },
       characteristics: {
         speedEstimate: 10,
@@ -383,7 +387,8 @@ class PerspectiveRegistry {
       },
       outputs: {
         outputType: 'resource_recommendation',
-        exampleOutput: '{ recommendedResource: "Bob", confidence: 0.92, alternatives: [{resource: "Alice", confidence: 0.08}] }',
+        exampleOutput:
+          '{ recommendedResource: "Bob", confidence: 0.92, alternatives: [{resource: "Alice", confidence: 0.08}] }',
       },
       characteristics: {
         speedEstimate: 30,

@@ -1,6 +1,6 @@
 # ML Algorithms Guide
 
-The `@pictl/ml` package provides six purpose-built machine-learning families
+The `@wasm4pm/ml` package provides six purpose-built machine-learning families
 optimized for process mining. All algorithms are zero-dependency, deterministic,
 and run in the browser, Node.js, or via the `wpm ml` CLI.
 

@@ -1,12 +1,12 @@
-# Rust Algorithm Porting Guide for pictl
+# Rust Algorithm Porting Guide for wasm4pm
 
-**How to add a new Rust algorithm to pictl and register it in the WASM kernel**
+**How to add a new Rust algorithm to wasm4pm and register it in the WASM kernel**
 
-This guide walks you through the complete process of porting a classical process mining algorithm from pseudocode or academic papers into pictl's high-performance WASM kernel, then exposing it via the LLM-discoverable capability registry.
+This guide walks you through the complete process of porting a classical process mining algorithm from pseudocode or academic papers into wasm4pm's high-performance WASM kernel, then exposing it via the LLM-discoverable capability registry.
 
 **Prerequisites:**
 - Rust 1.70+ with `wasm-pack` and `cargo-wasm`
-- Familiarity with pictl's EventLog and model data structures
+- Familiarity with wasm4pm's EventLog and model data structures
 - Knowledge of the algorithm you're porting (theory and complexity)
 - Basic understanding of WASM binary constraints (speed, memory, code size)
 
@@ -382,10 +382,10 @@ make bench-wasm  # Builds WASM as part of full suite
 
 ```bash
 # Size must remain < 10 MB for browser targets
-ls -lh wasm4pm/pkg/pictl*.wasm
+ls -lh wasm4pm/pkg/wasm4pm*.wasm
 
 # Example output:
-# -rw-r--r--  1 sac  staff  8.2M Apr 10 23:45 pictl_bg.wasm
+# -rw-r--r--  1 sac  staff  8.2M Apr 10 23:45 wasm4pm_bg.wasm
 ```
 
 If binary size balloons, check for:
@@ -397,7 +397,7 @@ If binary size balloons, check for:
 
 ```bash
 # Check that your function appears in bindings
-grep -A 5 "discover_activity_frequencies" wasm4pm/pkg/pictl.d.ts
+grep -A 5 "discover_activity_frequencies" wasm4pm/pkg/wasm4pm.d.ts
 ```
 
 Expected output:
@@ -410,7 +410,7 @@ export function discover_activity_frequencies(
 
 ---
 
-## 5. Test with pictl CLI
+## 5. Test with wasm4pm CLI
 
 ### 5.1 Load Test Data
 
@@ -421,7 +421,7 @@ make bench-data  # Downloads datasets to bench_data/
 
 # Or create minimal test log
 node -e "
-const pm = require('./wasm4pm/pkg/pictl_bg.js');
+const pm = require('./wasm4pm/pkg/wasm4pm_bg.js');
 const log = {
   traces: [
     {
@@ -447,12 +447,12 @@ console.log(JSON.stringify(log, null, 2));
 ### 5.2 Run Test via CLI
 
 ```bash
-# Via pictl CLI (requires wasm4pm compiled)
+# Via wasm4pm CLI (requires wasm4pm compiled)
 cd /Users/sac/chatmangpt/wasm4pm
 
 # Load log
 LOG_HANDLE=$(node -e "
-  const pm = require('./wasm4pm/pkg/pictl_bg.js');
+  const pm = require('./wasm4pm/pkg/wasm4pm_bg.js');
   const log = require('/tmp/test.jsonl');
   const h = pm.load_eventlog(JSON.stringify(log));
   console.log(h);
@@ -460,7 +460,7 @@ LOG_HANDLE=$(node -e "
 
 # Run algorithm
 node -e "
-  const pm = require('./wasm4pm/pkg/pictl_bg.js');
+  const pm = require('./wasm4pm/pkg/wasm4pm_bg.js');
   const result = pm.discover_activity_frequencies('$LOG_HANDLE', 'concept:name');
   console.log(JSON.stringify(JSON.parse(result), null, 2));
 "
@@ -501,7 +501,7 @@ Create `wasm4pm/benches/fast_algorithms.rs` (or extend existing):
 
 ```rust
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use pictl::*;
+use wasm4pm::*;
 
 fn bench_activity_frequencies(c: &mut Criterion) {
     let mut group = c.benchmark_group("analytics");
@@ -599,7 +599,7 @@ codegen-units = 1    # Better optimization at cost of build time
 
 # In package.json:
 "scripts": {
-  "build:nodejs": "wasm-pack build --target nodejs --release && wasm-opt -Oz -o pkg/pictl_bg_opt.wasm pkg/pictl_bg.wasm && mv pkg/pictl_bg_opt.wasm pkg/pictl_bg.wasm"
+  "build:nodejs": "wasm-pack build --target nodejs --release && wasm-opt -Oz -o pkg/wasm4pm_bg_opt.wasm pkg/wasm4pm_bg.wasm && mv pkg/wasm4pm_bg_opt.wasm pkg/wasm4pm_bg.wasm"
 }
 ```
 
@@ -756,7 +756,7 @@ pub fn analyze_text_frequency(
 ```typescript
 // packages/ml/__tests__/text_frequency.test.ts
 import { describe, it, expect } from 'vitest';
-import pm from '../../wasm4pm/pkg/pictl_bg.js';
+import pm from '../../wasm4pm/pkg/wasm4pm_bg.js';
 
 describe('analyze_text_frequency', () => {
   it('should count word frequencies correctly', () => {
@@ -814,7 +814,7 @@ To port a new algorithm:
 ---
 
 **References:**
-- [pictl ALGORITHMS.md](../../../wasm4pm/ALGORITHMS.md)
+- [wasm4pm ALGORITHMS.md](../../../wasm4pm/ALGORITHMS.md)
 - [Capability Registry](../../../wasm4pm/src/capability_registry.rs)
 - [Zod Contracts](../../../packages/contracts/src/)
 - [Benchmark Suite](../../../Makefile)

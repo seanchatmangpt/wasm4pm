@@ -103,10 +103,7 @@ export const explain = defineCommand({
         }
       } else if (ctx.args.algorithm) {
         // Algorithm explanation
-        explanationContent = getAlgorithmExplanation(
-          ctx.args.algorithm,
-          level
-        );
+        explanationContent = getAlgorithmExplanation(ctx.args.algorithm, level);
       }
 
       // Step 3: Format output
@@ -663,9 +660,7 @@ Maximize: Σ yₜ - λ × Σ xₑ
   };
 
   const algoKey = algorithm.toLowerCase().replace(/[+*-]/g, '');
-  const algo = Object.keys(explanations).find((k) =>
-    algoKey.includes(k) || k.includes(algoKey)
-  );
+  const algo = Object.keys(explanations).find((k) => algoKey.includes(k) || k.includes(algoKey));
 
   if (!algo || !explanations[algo]) {
     return `No detailed explanation available for algorithm: ${algorithm}`;

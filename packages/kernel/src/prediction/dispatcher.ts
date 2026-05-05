@@ -36,7 +36,7 @@ export class PredictionDispatcher {
   }
 
   execute<T extends PredictionTask = PredictionTask>(
-    request: PredictionRequest<T>,
+    request: PredictionRequest<T>
   ): PredictionResponse {
     validateRequest(request);
     const handler = this.registry.get(request.task.perspective) as PerspectiveHandler<T>;
@@ -84,7 +84,7 @@ export class PredictionDispatcher {
    * perspective do not abort the others.
    */
   executeBatch(
-    requests: readonly PredictionRequest[],
+    requests: readonly PredictionRequest[]
   ): readonly { request: PredictionRequest; response?: PredictionResponse; error?: Error }[] {
     return requests.map((request) => {
       try {

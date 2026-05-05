@@ -300,7 +300,7 @@ This ensures human visibility into repeated problems. Automatic recovery is avai
 
 The RL agents use seeded random number generators for reproducibility. To ensure identical behavior across runs, use:
 ```bash
-export PICTL_SEED=42
+export WASM4PM_SEED=42
 wpm autoprocess sample.xes
 ```
 

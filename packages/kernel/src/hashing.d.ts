@@ -43,5 +43,9 @@ export declare function verifyOutputHash(data: unknown, expectedHash: string): b
  * @param output - Algorithm output data
  * @returns Hex-encoded SHA-256 hash covering algorithm + params + output
  */
-export declare function hashAlgorithmResult(algorithmId: string, params: Record<string, unknown>, output: unknown): string;
+export declare function hashAlgorithmResult(
+  algorithmId: string,
+  params: Record<string, unknown>,
+  output: unknown
+): string;
 //# sourceMappingURL=hashing.d.ts.map

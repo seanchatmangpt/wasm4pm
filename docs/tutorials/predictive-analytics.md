@@ -1,17 +1,17 @@
-# Predictive Analytics with pictl
+# Predictive Analytics with wasm4pm
 
 **Time**: 40 minutes
-**Prerequisites**: pictl installed, an XES event log file (use any `.xes` file in the project or generate one with `wpm init --sample`)
+**Prerequisites**: wasm4pm installed, an XES event log file (use any `.xes` file in the project or generate one with `wpm init --sample`)
 
 ## Introduction
 
-Process discovery tells you what happened. Predictive analytics tells you what will happen. In this tutorial you'll learn how to use pictl's predictive commands to answer three fundamental process mining questions:
+Process discovery tells you what happened. Predictive analytics tells you what will happen. In this tutorial you'll learn how to use wasm4pm's predictive commands to answer three fundamental process mining questions:
 
 - **What happens next?** -- next-activity prediction
 - **How long will it take?** -- remaining-time estimation
 - **Is the process changing?** -- concept drift detection
 
-All three capabilities are built into pictl's `predict` and `drift-watch` commands. Results auto-save to `.wasm4pm/results/` so you can review them later with `wpm results`.
+All three capabilities are built into wasm4pm's `predict` and `drift-watch` commands. Results auto-save to `.wasm4pm/results/` so you can review them later with `wpm results`.
 
 ---
 

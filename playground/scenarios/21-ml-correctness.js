@@ -13,13 +13,13 @@
  *   - pca: produces reduced dimensions
  */
 import { describe, it, expect } from 'vitest';
-import { pictl, extractJson, resolveRepo, EXIT_CODES, assertExitCode } from '../helpers/cli.js';
+import { wasm4pm, extractJson, resolveRepo, EXIT_CODES, assertExitCode } from '../helpers/cli.js';
 const RUNNING_EXAMPLE = resolveRepo('wasm4pm/tests/fixtures/running-example.xes');
 describe('ML correctness validation', () => {
     // ── classify: Does it produce a meaningful classification? ──────────────────
     describe('classify task — correctness', () => {
         it('classify produces at least one unique class label', async () => {
-            const result = await pictl(['ml', 'classify', '-i', RUNNING_EXAMPLE, '--format', 'json']);
+            const result = await wasm4pm(['ml', 'classify', '-i', RUNNING_EXAMPLE, '--format', 'json']);
             assertExitCode(result, EXIT_CODES.success);
             const json = extractJson(result.stdout);
             const predictions = json.predictions || [];
@@ -35,7 +35,7 @@ describe('ML correctness validation', () => {
             expect(classes.size).toBeGreaterThan(0);
         });
         it('classify assigns a class to each trace', async () => {
-            const result = await pictl(['ml', 'classify', '-i', RUNNING_EXAMPLE, '--format', 'json']);
+            const result = await wasm4pm(['ml', 'classify', '-i', RUNNING_EXAMPLE, '--format', 'json']);
             const json = extractJson(result.stdout);
             const predictions = json.predictions || [];
             // Oracle: every trace gets a classification
@@ -45,8 +45,8 @@ describe('ML correctness validation', () => {
             }
         });
         it('classify results are deterministic (same k, same output)', async () => {
-            const result1 = await pictl(['ml', 'classify', '-i', RUNNING_EXAMPLE, '-k', '3', '--format', 'json']);
-            const result2 = await pictl(['ml', 'classify', '-i', RUNNING_EXAMPLE, '-k', '3', '--format', 'json']);
+            const result1 = await wasm4pm(['ml', 'classify', '-i', RUNNING_EXAMPLE, '-k', '3', '--format', 'json']);
+            const result2 = await wasm4pm(['ml', 'classify', '-i', RUNNING_EXAMPLE, '-k', '3', '--format', 'json']);
             const json1 = extractJson(result1.stdout);
             const json2 = extractJson(result2.stdout);
             const pred1 = json1.predictions || [];
@@ -61,7 +61,7 @@ describe('ML correctness validation', () => {
     // ── cluster: Does clustering produce stable, meaningful groups? ─────────────
     describe('cluster task — correctness', () => {
         it('cluster produces assignments for all traces', async () => {
-            const result = await pictl(['ml', 'cluster', '-i', RUNNING_EXAMPLE, '--format', 'json']);
+            const result = await wasm4pm(['ml', 'cluster', '-i', RUNNING_EXAMPLE, '--format', 'json']);
             assertExitCode(result, EXIT_CODES.success);
             const json = extractJson(result.stdout);
             const assignments = json.assignments || [];
@@ -73,7 +73,7 @@ describe('ML correctness validation', () => {
             }
         });
         it('cluster produces at least one cluster', async () => {
-            const result = await pictl(['ml', 'cluster', '-i', RUNNING_EXAMPLE, '--format', 'json']);
+            const result = await wasm4pm(['ml', 'cluster', '-i', RUNNING_EXAMPLE, '--format', 'json']);
             const json = extractJson(result.stdout);
             const assignments = json.assignments || [];
             // Count unique clusters
@@ -82,7 +82,7 @@ describe('ML correctness validation', () => {
             expect(uniqueClusters.size).toBeGreaterThan(0);
         });
         it('cluster number of clusters matches k parameter', async () => {
-            const result = await pictl(['ml', 'cluster', '-i', RUNNING_EXAMPLE, '-k', '3', '--format', 'json']);
+            const result = await wasm4pm(['ml', 'cluster', '-i', RUNNING_EXAMPLE, '-k', '3', '--format', 'json']);
             const json = extractJson(result.stdout);
             const assignments = json.assignments || [];
             // Count unique clusters
@@ -92,8 +92,8 @@ describe('ML correctness validation', () => {
             expect(uniqueClusters.size).toBeGreaterThan(0);
         });
         it('cluster assignments are deterministic with same k', async () => {
-            const result1 = await pictl(['ml', 'cluster', '-i', RUNNING_EXAMPLE, '-k', '2', '--format', 'json']);
-            const result2 = await pictl(['ml', 'cluster', '-i', RUNNING_EXAMPLE, '-k', '2', '--format', 'json']);
+            const result1 = await wasm4pm(['ml', 'cluster', '-i', RUNNING_EXAMPLE, '-k', '2', '--format', 'json']);
+            const result2 = await wasm4pm(['ml', 'cluster', '-i', RUNNING_EXAMPLE, '-k', '2', '--format', 'json']);
             const json1 = extractJson(result1.stdout);
             const json2 = extractJson(result2.stdout);
             const assign1 = json1.assignments || [];
@@ -105,7 +105,7 @@ describe('ML correctness validation', () => {
     // ── forecast: Does it produce values in a reasonable range? ────────────────
     describe('forecast task — correctness', () => {
         it('forecast produces a trend object with numeric values', async () => {
-            const result = await pictl(['ml', 'forecast', '-i', RUNNING_EXAMPLE, '--format', 'json']);
+            const result = await wasm4pm(['ml', 'forecast', '-i', RUNNING_EXAMPLE, '--format', 'json']);
             assertExitCode(result, EXIT_CODES.success);
             const json = extractJson(result.stdout);
             const trend = json.trend || {};
@@ -114,7 +114,7 @@ describe('ML correctness validation', () => {
             expect(Object.keys(trend).length).toBeGreaterThan(0);
         });
         it('forecast produces reasonable values (not NaN, not Infinity)', async () => {
-            const result = await pictl(['ml', 'forecast', '-i', RUNNING_EXAMPLE, '--format', 'json']);
+            const result = await wasm4pm(['ml', 'forecast', '-i', RUNNING_EXAMPLE, '--format', 'json']);
             const json = extractJson(result.stdout);
             const trend = json.trend || {};
             // Extract all numeric values from trend
@@ -129,7 +129,7 @@ describe('ML correctness validation', () => {
     // ── anomaly: Do peak indices fall within the signal bounds? ────────────────
     describe('anomaly task — correctness', () => {
         it('anomaly produces peakIndices array', async () => {
-            const result = await pictl(['ml', 'anomaly', '-i', RUNNING_EXAMPLE, '--format', 'json']);
+            const result = await wasm4pm(['ml', 'anomaly', '-i', RUNNING_EXAMPLE, '--format', 'json']);
             assertExitCode(result, EXIT_CODES.success);
             const json = extractJson(result.stdout);
             const peaks = json.peakIndices || [];
@@ -137,7 +137,7 @@ describe('ML correctness validation', () => {
             expect(Array.isArray(peaks)).toBe(true);
         });
         it('anomaly peak indices are valid array indices', async () => {
-            const result = await pictl(['ml', 'anomaly', '-i', RUNNING_EXAMPLE, '--format', 'json']);
+            const result = await wasm4pm(['ml', 'anomaly', '-i', RUNNING_EXAMPLE, '--format', 'json']);
             const json = extractJson(result.stdout);
             const peaks = json.peakIndices || [];
             const signal = json.signal || [];
@@ -151,7 +151,7 @@ describe('ML correctness validation', () => {
     // ── regress: Does regression predict values close to actual? ──────────────
     describe('regress task — correctness', () => {
         it('regress produces predictions for all traces', async () => {
-            const result = await pictl(['ml', 'regress', '-i', RUNNING_EXAMPLE, '--format', 'json']);
+            const result = await wasm4pm(['ml', 'regress', '-i', RUNNING_EXAMPLE, '--format', 'json']);
             assertExitCode(result, EXIT_CODES.success);
             const json = extractJson(result.stdout);
             const predictions = json.predictions || [];
@@ -165,7 +165,7 @@ describe('ML correctness validation', () => {
             }
         });
         it('regress predictions are non-negative', async () => {
-            const result = await pictl(['ml', 'regress', '-i', RUNNING_EXAMPLE, '--format', 'json']);
+            const result = await wasm4pm(['ml', 'regress', '-i', RUNNING_EXAMPLE, '--format', 'json']);
             const json = extractJson(result.stdout);
             const predictions = json.predictions || [];
             // Oracle: remaining time should be non-negative
@@ -177,7 +177,7 @@ describe('ML correctness validation', () => {
             }
         });
         it('regress error is reasonable (not massive gaps)', async () => {
-            const result = await pictl(['ml', 'regress', '-i', RUNNING_EXAMPLE, '--format', 'json']);
+            const result = await wasm4pm(['ml', 'regress', '-i', RUNNING_EXAMPLE, '--format', 'json']);
             const json = extractJson(result.stdout);
             const predictions = json.predictions || [];
             // Compute mean actual value (for scaling)
@@ -203,7 +203,7 @@ describe('ML correctness validation', () => {
         it('all 5 working tasks handle running-example without crashing', async () => {
             const tasks = ['classify', 'cluster', 'forecast', 'anomaly', 'regress'];
             for (const task of tasks) {
-                const result = await pictl(['ml', task, '-i', RUNNING_EXAMPLE, '--format', 'json']);
+                const result = await wasm4pm(['ml', task, '-i', RUNNING_EXAMPLE, '--format', 'json']);
                 expect(result.exitCode).toBe(EXIT_CODES.success);
                 const json = extractJson(result.stdout);
                 expect(json).toBeDefined();

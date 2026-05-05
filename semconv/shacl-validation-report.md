@@ -1,4 +1,4 @@
-# SHACL Validation Report — pictl Quality Gatekeeper
+# SHACL Validation Report — wasm4pm Quality Gatekeeper
 
 **Generated**: 2026-04-10
 **Agent**: Agent 3 — SHACL Validation Gatekeeper
@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-The SHACL Validation Gatekeeper enforces semantic constraints on all pictl process mining tool outputs. This document tracks:
+The SHACL Validation Gatekeeper enforces semantic constraints on all wasm4pm process mining tool outputs. This document tracks:
 
 1. **Validation Pass Rate**: Percentage of tool results passing SHACL constraints
 2. **Common Violations**: Most frequently detected constraint failures

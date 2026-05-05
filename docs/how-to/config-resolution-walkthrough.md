@@ -8,7 +8,7 @@
 
 ## Quick Summary
 
-pictl resolves configuration through 5 layers, each with a specific scope and priority. Understanding the resolution order helps you predict which setting wins when multiple layers define the same value.
+wasm4pm resolves configuration through 5 layers, each with a specific scope and priority. Understanding the resolution order helps you predict which setting wins when multiple layers define the same value.
 
 **Resolution order (highest to lowest priority):**
 
@@ -16,7 +16,7 @@ pictl resolves configuration through 5 layers, each with a specific scope and pr
 2. **TOML config file** (e.g., `./wasm4pm.toml` or `~/.wasm4pm/wasm4pm.toml`)
 3. **JSON config file** (fallback if no TOML exists)
 4. **Environment variables** (e.g., `WASM4PM_PROFILE=fast`)
-5. **Hardcoded defaults** (built into pictl)
+5. **Hardcoded defaults** (built into wasm4pm)
 
 Later layers override earlier ones. When a field is defined in multiple layers, **the higher layer wins**.
 
@@ -26,7 +26,7 @@ Later layers override earlier ones. When a field is defined in multiple layers, 
 
 ### Layer 5: Hardcoded Defaults
 
-These are the values pictl uses if you don't specify anything:
+These are the values wasm4pm uses if you don't specify anything:
 
 ```
 schema_version = 1
@@ -93,7 +93,7 @@ WASM4PM_PROFILE=fast WASM4PM_OUTPUT_FORMAT=json wpm run -i events.xes
 
 ### Layer 3: JSON Config File
 
-JSON config provides granular control via a file. pictl searches for `wasm4pm.json` in:
+JSON config provides granular control via a file. wasm4pm searches for `wasm4pm.json` in:
 
 1. Current working directory (`.`)
 2. Home directory config folder (`~/.wasm4pm/`)
@@ -159,7 +159,7 @@ The first file found is used. If TOML exists, JSON is skipped.
 
 ### Layer 2: TOML Config File
 
-TOML is the preferred format for pictl. It's human-readable and supports deep nesting. pictl searches for `wasm4pm.toml` in:
+TOML is the preferred format for wasm4pm. It's human-readable and supports deep nesting. wasm4pm searches for `wasm4pm.toml` in:
 
 1. Current working directory (`.`)
 2. Home directory config folder (`~/.wasm4pm/`)
@@ -363,7 +363,7 @@ WASM4PM_PROFILE=invalid_profile wpm run -i events.xes
 4. Env layer: `WASM4PM_PROFILE=invalid_profile`
 5. Default layer: `execution.profile = "balanced"`
 
-The environment variable wins, so pictl tries to use `profile = "invalid_profile"`.
+The environment variable wins, so wasm4pm tries to use `profile = "invalid_profile"`.
 
 #### Validation Catches It
 
@@ -415,7 +415,7 @@ const algorithmIdSchema = z.enum(ALGORITHM_IDS);
 ```
 
 **What happens if validation fails:**
-1. pictl reports which field failed
+1. wasm4pm reports which field failed
 2. Shows expected type/values
 3. Indicates which layer the invalid value came from
 4. Exits with code 1 (CONFIG_ERROR)
@@ -424,7 +424,7 @@ const algorithmIdSchema = z.enum(ALGORITHM_IDS);
 
 ## Provenance Tracking
 
-pictl tracks which layer each config value came from. This helps debug resolution issues.
+wasm4pm tracks which layer each config value came from. This helps debug resolution issues.
 
 ### View Provenance with `wpm explain`
 
@@ -441,7 +441,7 @@ execution.profile = "quality"
   Source: CLI (--profile quality)
 
 execution.timeout = 300000
-  Source: default (pictl built-in)
+  Source: default (wasm4pm built-in)
 
 observability.logLevel = "debug"
   Source: TOML file (./custom.toml)
@@ -450,7 +450,7 @@ output.format = "json"
   Source: environment (WASM4PM_OUTPUT_FORMAT)
 
 prediction.enabled = false
-  Source: default (pictl built-in)
+  Source: default (wasm4pm built-in)
 ```
 
 ### Programmatic Provenance
@@ -574,7 +574,7 @@ pwd  # Current directory
 echo $HOME  # Home directory for ~/.wasm4pm/
 ```
 
-pictl searches these paths in order:
+wasm4pm searches these paths in order:
 1. Current directory (`.`)
 2. `~/.wasm4pm/`
 
@@ -681,7 +681,7 @@ logLevel = "debug"    # Temporary for performance investigation
 
 ## Summary
 
-pictl's 5-layer configuration system gives you flexibility:
+wasm4pm's 5-layer configuration system gives you flexibility:
 
 - **Defaults** for out-of-box simplicity
 - **Env vars** for CI/CD and secrets

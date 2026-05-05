@@ -7,8 +7,8 @@
  *   - Worker registry and convergence utilities
  */
 
-export { runSwarm } from './loop.js'
-export type { SwarmConfig, SwarmArtifact, SwarmEpisode } from './loop.js'
+export { runSwarm } from './loop.js';
+export type { SwarmConfig, SwarmArtifact, SwarmEpisode } from './loop.js';
 
 export {
   spawnWorker,
@@ -16,19 +16,19 @@ export {
   listWorkers,
   dissolveWorkers,
   getSwarmId,
-} from './worker-registry.js'
+} from './worker-registry.js';
 
 export {
   hashOutput,
   checkConvergence,
   checkSwarmConvergence,
   checkMlConvergence,
-} from './convergence.js'
+} from './convergence.js';
 
-export { aggregate } from './aggregation.js'
-export type { AggregationStrategy } from './aggregation.js'
+export { aggregate } from './aggregation.js';
+export type { AggregationStrategy } from './aggregation.js';
 
-export { sendDirective } from './directive-bus.js'
+export { sendDirective } from './directive-bus.js';
 
 export type {
   WorkerState,
@@ -36,4 +36,4 @@ export type {
   WorkerStatus,
   SwarmConvergenceReport,
   Directive,
-} from './types.js'
+} from './types.js';

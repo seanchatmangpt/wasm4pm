@@ -2,7 +2,7 @@
 
 ## Overview
 
-pictl is a modular CLI tool built with:
+wasm4pm is a modular CLI tool built with:
 - **citty** - Command routing and argument parsing
 - **consola** - Human-friendly terminal output
 - **TypeScript** - Type-safe implementation
@@ -80,7 +80,7 @@ All commands registered in `cli.ts`:
 
 ```typescript
 export const main = defineCommand({
-  meta: { name: 'pictl', version: '26.4.10' },
+  meta: { name: 'wasm4pm', version: '26.4.10' },
   subCommands: {
     // Discovery (3)
     run,      // Discovery execution
@@ -125,7 +125,7 @@ export const main = defineCommand({
 ### Command Invocation
 
 ```
-pictl [COMMAND] [OPTIONS]
+wasm4pm [COMMAND] [OPTIONS]
 │      │         └─ Command-specific arguments
 │      └─ Routed to corresponding defineCommand()
 └─ Entry point (bin.ts) → runMain(cli.ts)
@@ -380,13 +380,13 @@ const isVerbose = Boolean(ctx.args.verbose);
 
 ### Interactive Mode
 ```bash
-pictl interactive
+wasm4pm interactive
 # Guided wizard for configuration
 ```
 
 ### Plugin System
 ```bash
-pictl plugin install custom-algorithm
+wasm4pm plugin install custom-algorithm
 wpm run --algorithm custom-algorithm
 ```
 

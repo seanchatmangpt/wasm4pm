@@ -102,7 +102,7 @@ function findPeaks(series: number[] | Float64Array): number[] {
 
 function seasonalDecompose(
   series: number[] | Float64Array,
-  period: number,
+  period: number
 ): { trend: Float64Array; seasonal: Float64Array; residual: Float64Array } {
   const n = series.length;
   const halfPeriod = Math.floor(period / 2);
@@ -136,7 +136,8 @@ function seasonalDecompose(
   }
   const seasonalMean = countTotal > 0 ? seasonalTotal / countTotal : 0;
   for (let p = 0; p < period; p++) {
-    seasonalParts[p] = seasonalCounts[p] > 0 ? seasonalParts[p] / seasonalCounts[p] - seasonalMean : 0;
+    seasonalParts[p] =
+      seasonalCounts[p] > 0 ? seasonalParts[p] / seasonalCounts[p] - seasonalMean : 0;
   }
 
   // Build full seasonal + residual in one pass
@@ -226,7 +227,7 @@ export async function detectEnhancedAnomalies(
   options: {
     smoothingWindow?: number;
     smoothingMethod?: 'sma' | 'ema';
-  } = {},
+  } = {}
 ): Promise<EnhancedAnomalyResult> {
   if (driftDistances.length < 3) {
     return {
@@ -239,13 +240,14 @@ export async function detectEnhancedAnomalies(
 
   const validatedWindow = validateSmoothingWindow(options.smoothingWindow, driftDistances.length);
   const smoothingMethod = options.smoothingMethod ?? 'sma';
-  const smoothed = smoothingMethod === 'ema'
-    ? ema(driftDistances, validatedWindow)
-    : sma(driftDistances, validatedWindow);
+  const smoothed =
+    smoothingMethod === 'ema'
+      ? ema(driftDistances, validatedWindow)
+      : sma(driftDistances, validatedWindow);
 
   // Find peaks in original series to preserve exact spike locations
   const peakIndices = findPeaks(driftDistances);
-  const peakValues = peakIndices.map(i => driftDistances[i]);
+  const peakValues = peakIndices.map((i) => driftDistances[i]);
 
   // Decompose smoothed for residual anomalies
   let decomposed: { trend: number[]; seasonal: number[]; residual: number[] } | undefined;
@@ -253,10 +255,7 @@ export async function detectEnhancedAnomalies(
 
   try {
     if (smoothed.length >= 4) {
-      const period = Math.min(
-        Math.max(Math.floor(smoothed.length / 3), 2),
-        smoothed.length - 1,
-      );
+      const period = Math.min(Math.max(Math.floor(smoothed.length / 3), 2), smoothed.length - 1);
       const decomp = seasonalDecompose(smoothed, period);
       decomposed = {
         trend: Array.from(decomp.trend),

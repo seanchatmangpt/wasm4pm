@@ -253,7 +253,7 @@ Results are **deterministic within measurement noise** (~358ps to 4.7µs range).
 
 ```toml
 [dependencies]
-pictl = { version = "26.4.16", features = ["deferred-bellman-queue"] }
+wasm4pm = { version = "26.4.16", features = ["deferred-bellman-queue"] }
 
 # Or in code:
 agent.set_drain_cadence(128);  # Drain Bellman queue every 128 cycles

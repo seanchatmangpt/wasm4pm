@@ -5,12 +5,7 @@
 
 import type { z } from 'zod';
 import type { Config } from '../types.js';
-import {
-  executionProfileSchema,
-  mlTaskSchema,
-  rlAgentSchema,
-  ALGORITHM_IDS,
-} from '../schema.js';
+import { executionProfileSchema, mlTaskSchema, rlAgentSchema, ALGORITHM_IDS } from '../schema.js';
 
 export interface ValidationErrorContext {
   field: string;
@@ -61,7 +56,7 @@ export function formatDetailedZodError(error: z.ZodError, config: unknown): stri
  */
 export function validateAlgorithmProfile(
   algorithm: string,
-  profile: 'mobile' | 'iot' | 'edge' | 'fog' | 'browser',
+  profile: 'mobile' | 'iot' | 'edge' | 'fog' | 'browser'
 ): { compatible: boolean; warning?: string } {
   const profileAlgos = getAlgorithmsForProfile(profile);
 
@@ -90,7 +85,7 @@ export function validateAlgorithmProfile(
  */
 export function validateMlConfig(
   config: Partial<Config>,
-  logSize?: number,
+  logSize?: number
 ): Array<{ field: string; warning: string }> {
   const warnings: Array<{ field: string; warning: string }> = [];
 
@@ -146,7 +141,9 @@ export function validateMlConfig(
 /**
  * Warn on suspicious RL configurations.
  */
-export function validateRlConfig(config: Partial<Config>): Array<{ field: string; warning: string }> {
+export function validateRlConfig(
+  config: Partial<Config>
+): Array<{ field: string; warning: string }> {
   const warnings: Array<{ field: string; warning: string }> = [];
 
   if (!config.rl?.enabled) return warnings;
@@ -174,7 +171,11 @@ export function validateRlConfig(config: Partial<Config>): Array<{ field: string
     });
   }
 
-  if (convergence && convergence.target_reward_improvement && convergence.target_reward_improvement < 0.001) {
+  if (
+    convergence &&
+    convergence.target_reward_improvement &&
+    convergence.target_reward_improvement < 0.001
+  ) {
     warnings.push({
       field: 'rl.convergence.target_reward_improvement',
       warning: `target_reward_improvement=${convergence.target_reward_improvement} is very small. Consider ≥ 0.01.`,
@@ -187,7 +188,9 @@ export function validateRlConfig(config: Partial<Config>): Array<{ field: string
 /**
  * Warn on suspicious prediction configurations.
  */
-export function validatePredictionConfig(config: Partial<Config>): Array<{ field: string; warning: string }> {
+export function validatePredictionConfig(
+  config: Partial<Config>
+): Array<{ field: string; warning: string }> {
   const warnings: Array<{ field: string; warning: string }> = [];
 
   if (!config.prediction?.enabled) return warnings;
@@ -228,10 +231,7 @@ export function validatePredictionConfig(config: Partial<Config>): Array<{ field
 // --- Internal helpers ---
 
 function formatIssue(context: ValidationErrorContext, message: string): string {
-  const lines = [
-    `  ✗ [${context.field}]`,
-    `      Received: ${JSON.stringify(context.value)}`,
-  ];
+  const lines = [`  ✗ [${context.field}]`, `      Received: ${JSON.stringify(context.value)}`];
 
   if (context.expectedType) {
     lines.push(`      Expected: ${context.expectedType}`);
@@ -239,10 +239,13 @@ function formatIssue(context: ValidationErrorContext, message: string): string {
 
   if (context.allowedValues && context.allowedValues.length > 0) {
     if (context.allowedValues.length <= 5) {
-      lines.push(`      Allowed values: ${context.allowedValues.map(v => `'${v}'`).join(' | ')}`);
+      lines.push(`      Allowed values: ${context.allowedValues.map((v) => `'${v}'`).join(' | ')}`);
     } else {
       lines.push(
-        `      Allowed values: ${context.allowedValues.slice(0, 3).map(v => `'${v}'`).join(', ')}, ... (${context.allowedValues.length} total)`,
+        `      Allowed values: ${context.allowedValues
+          .slice(0, 3)
+          .map((v) => `'${v}'`)
+          .join(', ')}, ... (${context.allowedValues.length} total)`
       );
     }
   }
@@ -280,7 +283,8 @@ function inferExpectedType(code: string, fieldPath: string): string | undefined 
   if (code === 'invalid_enum_value') return 'enum value (one of allowed options)';
   if (code === 'too_small' || code === 'too_big') return 'number within allowed range';
   if (fieldPath.includes('profile')) return 'execution profile: fast|balanced|quality|stream';
-  if (fieldPath.includes('agent')) return 'RL agent: QLearning|SARSA|DoubleQLearning|ExpectedSARSA|REINFORCE';
+  if (fieldPath.includes('agent'))
+    return 'RL agent: QLearning|SARSA|DoubleQLearning|ExpectedSARSA|REINFORCE';
   if (fieldPath.includes('task')) return 'ML task: classify|cluster|forecast|anomaly|regress|pca';
   return undefined;
 }
@@ -330,31 +334,31 @@ function generateSuggestion(fieldPath: string, value: unknown): string | undefin
   // Profile suggestions
   if (fieldPath.includes('profile')) {
     const profiles = ['fast', 'balanced', 'quality', 'stream'];
-    const close = profiles.find(p => levenshteinDistance(str, p) <= 2);
+    const close = profiles.find((p) => levenshteinDistance(str, p) <= 2);
     if (close) return `Did you mean "${close}"?`;
   }
 
   // Agent suggestions
   if (fieldPath.includes('agent')) {
     const agents = ['QLearning', 'SARSA', 'DoubleQLearning', 'ExpectedSARSA', 'REINFORCE'];
-    const close = agents.find(a => levenshteinDistance(str, a.toLowerCase()) <= 2);
+    const close = agents.find((a) => levenshteinDistance(str, a.toLowerCase()) <= 2);
     if (close) return `Did you mean "${close}"?`;
   }
 
   // Task suggestions
   if (fieldPath.includes('task')) {
     const tasks = ['classify', 'cluster', 'forecast', 'anomaly', 'regress', 'pca'];
-    const close = tasks.find(t => levenshteinDistance(str, t) <= 2);
+    const close = tasks.find((t) => levenshteinDistance(str, t) <= 2);
     if (close) return `Did you mean "${close}"?`;
   }
 
   // Algorithm suggestions (only show first few)
   if (fieldPath.includes('algorithm')) {
     const matching = ALGORITHM_IDS.filter(
-      a => levenshteinDistance(str, String(a).toLowerCase()) <= 3,
+      (a) => levenshteinDistance(str, String(a).toLowerCase()) <= 3
     ).slice(0, 3);
     if (matching.length > 0) {
-      return `Did you mean: ${matching.map(m => `"${m}"`).join(', ')}?`;
+      return `Did you mean: ${matching.map((m) => `"${m}"`).join(', ')}?`;
     }
   }
 
@@ -382,9 +386,9 @@ function levenshteinDistance(a: string, b: string): number {
     for (let j = 1; j <= n; j++) {
       const cost = a[i - 1] === b[j - 1] ? 0 : 1;
       dp[i][j] = Math.min(
-        dp[i - 1][j] + 1,      // deletion
-        dp[i][j - 1] + 1,      // insertion
-        dp[i - 1][j - 1] + cost, // substitution
+        dp[i - 1][j] + 1, // deletion
+        dp[i][j - 1] + 1, // insertion
+        dp[i - 1][j - 1] + cost // substitution
       );
     }
   }
@@ -393,7 +397,7 @@ function levenshteinDistance(a: string, b: string): number {
 }
 
 function getAlgorithmsForProfile(
-  profile: 'mobile' | 'iot' | 'edge' | 'fog' | 'browser',
+  profile: 'mobile' | 'iot' | 'edge' | 'fog' | 'browser'
 ): typeof ALGORITHM_IDS {
   // Simplified profiles; in production, this would be derived from feature flags
   const allAlgos = ALGORITHM_IDS;
@@ -414,15 +418,19 @@ function getAlgorithmsForProfile(
   const powl = ['powl_to_process_tree'];
 
   if (profile === 'browser') return allAlgos;
-  if (profile === 'fog') return allAlgos.filter(a => !powl.includes(a as any));
-  if (profile === 'edge') return allAlgos.filter(a => !advanced.includes(a as any) && !ocel.includes(a as any));
+  if (profile === 'fog') return allAlgos.filter((a) => !powl.includes(a as any));
+  if (profile === 'edge')
+    return allAlgos.filter((a) => !advanced.includes(a as any) && !ocel.includes(a as any));
   if (profile === 'iot')
     return allAlgos.filter(
-      a => ![...advanced, ...ocel, 'simulated_annealing', 'hill_climbing', 'declare'].includes(a as any),
+      (a) =>
+        ![...advanced, ...ocel, 'simulated_annealing', 'hill_climbing', 'declare'].includes(
+          a as any
+        )
     );
   if (profile === 'mobile')
     return allAlgos.filter(
-      a =>
+      (a) =>
         ![
           ...advanced,
           ...ocel,
@@ -431,7 +439,7 @@ function getAlgorithmsForProfile(
           'declare',
           'heuristic_miner',
           'inductive_miner',
-        ].includes(a as any),
+        ].includes(a as any)
     );
 
   return allAlgos;

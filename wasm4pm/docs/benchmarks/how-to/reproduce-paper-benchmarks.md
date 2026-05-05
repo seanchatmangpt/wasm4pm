@@ -10,18 +10,18 @@ The published benchmarks in `docs/BENCHMARKS.md` were measured on specific hardw
 
 From `docs/BENCHMARKS.md`:
 
-| Property          | Value                                               |
-| ----------------- | --------------------------------------------------- |
-| **Hardware**      | Apple M3 Max MacBook Pro                            |
-| **CPU**           | 16P + 4E cores (12 performance, 4 efficiency)       |
-| **Memory**        | 36 GB unified memory                                |
-| **OS**            | macOS (Darwin)                                      |
-| **Rust**          | stable toolchain, `cargo build --release`           |
-| **WASM build**    | `wasm-pack build --target nodejs`                   |
-| **RUSTFLAGS**     | `-C target-feature=+simd128`                        |
-| **pictl version** | v26.4.9                                             |
-| **Iterations**    | Median of 7 runs                                    |
-| **Dataset**       | Synthetic event logs (6 activities, 20 events/case) |
+| Property            | Value                                               |
+| ------------------- | --------------------------------------------------- |
+| **Hardware**        | Apple M3 Max MacBook Pro                            |
+| **CPU**             | 16P + 4E cores (12 performance, 4 efficiency)       |
+| **Memory**          | 36 GB unified memory                                |
+| **OS**              | macOS (Darwin)                                      |
+| **Rust**            | stable toolchain, `cargo build --release`           |
+| **WASM build**      | `wasm-pack build --target nodejs`                   |
+| **RUSTFLAGS**       | `-C target-feature=+simd128`                        |
+| **wasm4pm version** | v26.4.9                                             |
+| **Iterations**      | Median of 7 runs                                    |
+| **Dataset**         | Synthetic event logs (6 activities, 20 events/case) |
 
 ## Step 2: Set Up Your Environment
 
@@ -74,7 +74,7 @@ Generate logs at each size used in the benchmarks:
 
 ```bash
 # The benchmark runner generates logs internally, but you can create
-# standalone XES files for manual testing with pictl run.
+# standalone XES files for manual testing with wasm4pm run.
 
 # 100 cases
 wpm init --algorithm dfg  # Creates wasm4pm.toml
@@ -111,7 +111,7 @@ npm run bench:browser    # Full (5 iterations)
 npm run bench:browser:ci # CI mode (3 iterations)
 ```
 
-### Individual algorithm timing via pictl run
+### Individual algorithm timing via wasm4pm run
 
 For spot-checking a single algorithm:
 
@@ -220,7 +220,7 @@ When sharing reproduced results, include:
 3. **Rust version** -- `rustc --version`.
 4. **wasm-pack version** -- `wasm-pack --version`.
 5. **Build flags** -- Confirm SIMD was enabled.
-6. **pictl version** -- `wpm --version`.
+6. **wasm4pm version** -- `wpm --version`.
 7. **Iterations** -- How many runs, median reported.
 8. **Full results table** -- Algorithm, size, median ms, p95 ms.
 
@@ -233,7 +233,7 @@ Hardware: Apple M2 Pro, 16GB unified memory
 OS: macOS 14.4 (Darwin 23.4.0)
 Rust: 1.80.0 (stable)
 wasm-pack: 0.13.1
-pictl: v26.4.9
+wasm4pm: v26.4.9
 Build: RUSTFLAGS="-C target-feature=+simd128" wasm-pack build --target nodejs
 Iterations: 7 (median reported)
 

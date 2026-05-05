@@ -410,6 +410,6 @@ Prediction parameters can be set in the `[prediction]` section of `wasm4pm.toml`
 
 ## See Also
 
-- [CLI Commands Reference](./cli-commands.md) -- all pictl commands
+- [CLI Commands Reference](./cli-commands.md) -- all wasm4pm commands
 - [Prediction Config Reference](./prediction-config.md) -- configuration schema for prediction
 - [MCP Predictive Tools Reference](./mcp-predictive-tools.md) -- MCP server equivalents

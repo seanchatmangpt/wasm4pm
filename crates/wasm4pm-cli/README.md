@@ -9,7 +9,7 @@ High-performance process mining CLI for the Vision 2030 architecture.
 ## Installation
 
 ```bash
-cargo install --path crates/pictl
+cargo install --path crates/wasm4pm
 ```
 
 ## Commands

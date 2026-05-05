@@ -1,5 +1,5 @@
 /**
- * pictl - High-performance process mining CLI
+ * wasm4pm - High-performance process mining CLI
  */
 export { main } from './cli.js';
 export { run, watch, status, explain, init, results, compare } from './cli.js';
@@ -7,7 +7,15 @@ export { getFormatter, HumanFormatter, JSONFormatter, StreamingOutput } from './
 export type { OutputOptions } from './output.js';
 export { EXIT_CODES } from './exit-codes.js';
 export type { ExitCode } from './exit-codes.js';
-export { PictlError, ConfigError, SourceError, ExecutionError, PartialFailureError, SystemError, handleError, } from './errors.js';
+export {
+  PictlError,
+  ConfigError,
+  SourceError,
+  ExecutionError,
+  PartialFailureError,
+  SystemError,
+  handleError,
+} from './errors.js';
 export { resolveConfigPath, readConfigFile } from './config/resolver.js';
 export type { ResolvedConfigPath } from './config/resolver.js';
 export type { RunOptions } from './commands/run.js';

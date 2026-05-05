@@ -233,12 +233,12 @@ In DO-178C (avionics) and IEC 61508 (industrial) contexts, **non-determinism is 
 
 ---
 
-## Integration Path: Hot Kernels → @wasm4pm/kernel → pictl CLI
+## Integration Path: Hot Kernels → @wasm4pm/kernel → wasm4pm CLI
 
 ```
 User Input (XES file)
     ↓
-pictl CLI (TypeScript)
+wasm4pm CLI (TypeScript)
     ↓
 @wasm4pm/kernel (WASM bridge)
     ↓
@@ -278,7 +278,7 @@ Expected results:
 To verify claimed tick counts, disassemble on native target:
 
 ```bash
-cargo asm --lib pictl::hot_kernels::ingress_decide_4 --intel
+cargo asm --lib wasm4pm::hot_kernels::ingress_decide_4 --intel
 ```
 
 Expected output: ~8 instructions (add, cmp, and, or, xor, shl, etc.) — no call/jmp/je/jne in the hot loop.
@@ -286,7 +286,7 @@ Expected output: ~8 instructions (add, cmp, and, or, xor, shl, etc.) — no call
 On WASM target:
 
 ```bash
-wasm-objdump -t target/wasm32-unknown-unknown/release/pictl_*.wasm | grep hot_kernels
+wasm-objdump -t target/wasm32-unknown-unknown/release/wasm4pm_*.wasm | grep hot_kernels
 ```
 
 Expect: <2KB of WASM bytecode per kernel (no loop structures, no tables).

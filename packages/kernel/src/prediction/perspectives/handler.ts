@@ -33,7 +33,7 @@ export interface PerspectiveHandler<T extends PredictionTask = PredictionTask> {
   predict(
     task: T,
     model: PredictionModel,
-    prefixes: readonly PredictionTrace[],
+    prefixes: readonly PredictionTrace[]
   ): readonly PredictionRecord[];
 }
 
@@ -41,10 +41,7 @@ export interface PerspectiveHandler<T extends PredictionTask = PredictionTask> {
  * Helper for handler implementations: trim a trace to `maxPrefixLength` events
  * if the task asked for it, otherwise return the trace unchanged.
  */
-export function clipTrace(
-  trace: PredictionTrace,
-  maxPrefixLength?: number,
-): PredictionTrace {
+export function clipTrace(trace: PredictionTrace, maxPrefixLength?: number): PredictionTrace {
   if (!maxPrefixLength || trace.events.length <= maxPrefixLength) return trace;
   return { caseId: trace.caseId, events: trace.events.slice(0, maxPrefixLength) };
 }

@@ -20,7 +20,10 @@ export interface WasmModule {
   discover_ocel_dfg_per_type(ocel_handle: string): Promise<{ handle: string }>;
 
   // Alpha++ (improved Alpha algorithm)
-  discover_alpha_plus_plus(eventlog_handle: string, activity_key: string): Promise<{ handle: string }>;
+  discover_alpha_plus_plus(
+    eventlog_handle: string,
+    activity_key: string
+  ): Promise<{ handle: string }>;
 
   // Heuristic Miner
   discover_heuristic_miner(
@@ -135,10 +138,7 @@ export interface WasmModule {
     direction: string
   ): Promise<{ handle: string }>;
 
-  discover_prefix_tree(
-    eventlog_handle: string,
-    activity_key: string
-  ): Promise<{ handle: string }>;
+  discover_prefix_tree(eventlog_handle: string, activity_key: string): Promise<{ handle: string }>;
 
   discover_causal_graph(
     eventlog_handle: string,
@@ -174,9 +174,7 @@ export interface WasmModule {
     activity_key: string
   ): Promise<{ handle: string }>;
 
-  reduce_petri_net(
-    petri_net_handle: string
-  ): Promise<{ handle: string }>;
+  reduce_petri_net(petri_net_handle: string): Promise<{ handle: string }>;
 
   wasm_compute_precision(
     eventlog_handle: string,
@@ -195,27 +193,17 @@ export interface WasmModule {
 
   // ── Wave 1 Migration: Quality metrics ─────────────────────
 
-  measure_complexity(
-    powl_handle: string
-  ): Promise<{ handle: string }>;
+  measure_complexity(powl_handle: string): Promise<{ handle: string }>;
 
   // ── Wave 1 Migration: Model conversion ────────────────────
 
-  from_pnml(
-    pnml_xml: string
-  ): Promise<{ handle: string }>;
+  from_pnml(pnml_xml: string): Promise<{ handle: string }>;
 
-  read_bpmn(
-    bpmn_xml: string
-  ): Promise<{ handle: string }>;
+  read_bpmn(bpmn_xml: string): Promise<{ handle: string }>;
 
-  powl_to_process_tree(
-    powl_handle: string
-  ): Promise<{ handle: string }>;
+  powl_to_process_tree(powl_handle: string): Promise<{ handle: string }>;
 
-  powl_to_yawl_string(
-    powl_string: string
-  ): Promise<string>;
+  powl_to_yawl_string(powl_string: string): Promise<string>;
 
   // ── Wave 1 Migration: Simulation ──────────────────────────
 
@@ -241,11 +229,7 @@ export interface WasmModule {
     configJson: string
   ): string;
 
-  detect_drift(
-    eventLogHandle: string,
-    activityKey: string,
-    windowSize: number
-  ): string;
+  detect_drift(eventLogHandle: string, activityKey: string, windowSize: number): string;
 }
 
 /**
@@ -375,7 +359,10 @@ export async function implementAlgorithmStep(
   if (!metadata) {
     throw new Error(
       `Algorithm not found in registry: ${algorithmId} (step type: ${step.type}). ` +
-        `Available algorithms: ${registry.list().map((a) => a.id).join(', ')}`
+        `Available algorithms: ${registry
+          .list()
+          .map((a) => a.id)
+          .join(', ')}`
     );
   }
 
@@ -418,7 +405,7 @@ export async function implementAlgorithmStep(
       }
 
       case 'heuristic_miner': {
-        const depThreshold = (params.dependency_threshold as number) ??0.5;
+        const depThreshold = (params.dependency_threshold as number) ?? 0.5;
         const result = await wasmModule.discover_heuristic_miner(
           eventLogHandle,
           activityKey,
@@ -429,7 +416,7 @@ export async function implementAlgorithmStep(
       }
 
       case 'inductive_miner': {
-        const noiseThreshold = (params.noise_threshold as number) ??0.2;
+        const noiseThreshold = (params.noise_threshold as number) ?? 0.2;
         const result = await wasmModule.discover_inductive_miner(
           eventLogHandle,
           activityKey,
@@ -440,8 +427,8 @@ export async function implementAlgorithmStep(
       }
 
       case 'genetic_algorithm': {
-        const popSize = (params.population_size as number) ??50;
-        const generations = (params.generations as number) ??100;
+        const popSize = (params.population_size as number) ?? 50;
+        const generations = (params.generations as number) ?? 100;
         const result = await wasmModule.discover_genetic_algorithm(
           eventLogHandle,
           activityKey,
@@ -453,8 +440,8 @@ export async function implementAlgorithmStep(
       }
 
       case 'pso': {
-        const swarmSize = (params.swarm_size as number) ??30;
-        const iterations = (params.iterations as number) ??50;
+        const swarmSize = (params.swarm_size as number) ?? 30;
+        const iterations = (params.iterations as number) ?? 50;
         const result = await wasmModule.discover_pso_algorithm(
           eventLogHandle,
           activityKey,
@@ -466,18 +453,14 @@ export async function implementAlgorithmStep(
       }
 
       case 'a_star': {
-        const maxIterations = (params.max_iterations as number) ??10000;
-        const result = await wasmModule.discover_astar(
-          eventLogHandle,
-          activityKey,
-          maxIterations
-        );
+        const maxIterations = (params.max_iterations as number) ?? 10000;
+        const result = await wasmModule.discover_astar(eventLogHandle, activityKey, maxIterations);
         modelHandle = result.handle;
         break;
       }
 
       case 'hill_climbing': {
-        const maxIterations = (params.max_iterations as number) ??100;
+        const maxIterations = (params.max_iterations as number) ?? 100;
         const result = await wasmModule.discover_hill_climbing(
           eventLogHandle,
           activityKey,
@@ -488,7 +471,7 @@ export async function implementAlgorithmStep(
       }
 
       case 'ilp': {
-        const timeout = (params.timeout_seconds as number) ??30;
+        const timeout = (params.timeout_seconds as number) ?? 30;
         const result = await wasmModule.discover_ilp_petri_net(
           eventLogHandle,
           activityKey,
@@ -499,8 +482,8 @@ export async function implementAlgorithmStep(
       }
 
       case 'aco': {
-        const colonySize = (params.colony_size as number) ??40;
-        const iterations = (params.iterations as number) ??100;
+        const colonySize = (params.colony_size as number) ?? 40;
+        const iterations = (params.iterations as number) ?? 100;
         const result = await wasmModule.discover_ant_colony(
           eventLogHandle,
           activityKey,
@@ -512,8 +495,8 @@ export async function implementAlgorithmStep(
       }
 
       case 'simulated_annealing': {
-        const initialTemp = (params.initial_temperature as number) ??100;
-        const coolingRate = (params.cooling_rate as number) ??0.95;
+        const initialTemp = (params.initial_temperature as number) ?? 100;
+        const coolingRate = (params.cooling_rate as number) ?? 0.95;
         const result = await wasmModule.discover_simulated_annealing(
           eventLogHandle,
           activityKey,
@@ -525,7 +508,7 @@ export async function implementAlgorithmStep(
       }
 
       case 'declare': {
-        const supportThreshold = (params.support_threshold as number) ??0.8;
+        const supportThreshold = (params.support_threshold as number) ?? 0.8;
         const result = await wasmModule.discover_declare(
           eventLogHandle,
           activityKey,
@@ -537,10 +520,7 @@ export async function implementAlgorithmStep(
 
       case 'optimized_dfg': {
         // optimized_dfg is now an alias for standard discover_dfg
-        const result = await wasmModule.discover_dfg(
-          eventLogHandle,
-          activityKey
-        );
+        const result = await wasmModule.discover_dfg(eventLogHandle, activityKey);
         modelHandle = result.handle;
         break;
       }
@@ -566,7 +546,7 @@ export async function implementAlgorithmStep(
         if (!logJson) {
           throw new Error(
             `POWL discovery requires log_json parameter. ` +
-            `Use Kernel.run_powl() instead of Kernel.run() for POWL discovery.`
+              `Use Kernel.run_powl() instead of Kernel.run() for POWL discovery.`
           );
         }
 
@@ -651,9 +631,7 @@ export async function implementAlgorithmStep(
       }
 
       case 'petri_net_reduction': {
-        const result = await wasmModule.reduce_petri_net(
-          (params.petri_net_handle as string)!
-        );
+        const result = await wasmModule.reduce_petri_net((params.petri_net_handle as string)!);
         modelHandle = result.handle;
         break;
       }
@@ -687,9 +665,7 @@ export async function implementAlgorithmStep(
       // ── Wave 1 Migration: Quality metrics ───────────────────
 
       case 'complexity_metrics': {
-        const result = await wasmModule.measure_complexity(
-          (params.powl_handle as string)!
-        );
+        const result = await wasmModule.measure_complexity((params.powl_handle as string)!);
         modelHandle = result.handle;
         break;
       }
@@ -709,17 +685,13 @@ export async function implementAlgorithmStep(
       }
 
       case 'powl_to_process_tree': {
-        const result = await wasmModule.powl_to_process_tree(
-          (params.powl_handle as string)!
-        );
+        const result = await wasmModule.powl_to_process_tree((params.powl_handle as string)!);
         modelHandle = result.handle;
         break;
       }
 
       case 'yawl_export': {
-        const result = await wasmModule.powl_to_yawl_string(
-          (params.powl_string as string)!
-        );
+        const result = await wasmModule.powl_to_yawl_string((params.powl_string as string)!);
         modelHandle = result;
         break;
       }
@@ -744,7 +716,7 @@ export async function implementAlgorithmStep(
           activity_service_time_ms: {},
           resource_capacity: {},
           simulation_time_ms: 60000,
-          random_seed: 42
+          random_seed: 42,
         };
         const result = await wasmModule.monte_carlo_simulation(
           (params.model_handle as string)!, // log_handle
@@ -761,10 +733,22 @@ export async function implementAlgorithmStep(
       case 'ml_classify': {
         const { classifyTraces } = await import('@wasm4pm/ml');
         const configJson = JSON.stringify({
-          features: ['trace_length', 'elapsed_time', 'activity_counts', 'rework_count', 'unique_activities', 'avg_inter_event_time'],
+          features: [
+            'trace_length',
+            'elapsed_time',
+            'activity_counts',
+            'rework_count',
+            'unique_activities',
+            'avg_inter_event_time',
+          ],
           target: (params.target_key as string) || 'outcome',
         });
-        const rawFeatures = wasmModule.extract_case_features(eventLogHandle, activityKey, 'time:timestamp', configJson);
+        const rawFeatures = wasmModule.extract_case_features(
+          eventLogHandle,
+          activityKey,
+          'time:timestamp',
+          configJson
+        );
         const features = typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
         const result = await classifyTraces(features, {
           method: params.method as any,
@@ -777,9 +761,20 @@ export async function implementAlgorithmStep(
       case 'ml_cluster': {
         const { clusterTraces } = await import('@wasm4pm/ml');
         const configJson = JSON.stringify({
-          features: ['trace_length', 'elapsed_time', 'activity_counts', 'rework_count', 'unique_activities'],
+          features: [
+            'trace_length',
+            'elapsed_time',
+            'activity_counts',
+            'rework_count',
+            'unique_activities',
+          ],
         });
-        const rawFeatures = wasmModule.extract_case_features(eventLogHandle, activityKey, 'time:timestamp', configJson);
+        const rawFeatures = wasmModule.extract_case_features(
+          eventLogHandle,
+          activityKey,
+          'time:timestamp',
+          configJson
+        );
         const features = typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
         const result = await clusterTraces(features, {
           method: params.method as any,
@@ -818,10 +813,21 @@ export async function implementAlgorithmStep(
       case 'ml_regress': {
         const { regressRemainingTime } = await import('@wasm4pm/ml');
         const configJson = JSON.stringify({
-          features: ['trace_length', 'elapsed_time', 'rework_count', 'unique_activities', 'avg_inter_event_time'],
+          features: [
+            'trace_length',
+            'elapsed_time',
+            'rework_count',
+            'unique_activities',
+            'avg_inter_event_time',
+          ],
           target: (params.target_key as string) || 'remaining_time',
         });
-        const rawFeatures = wasmModule.extract_case_features(eventLogHandle, activityKey, 'time:timestamp', configJson);
+        const rawFeatures = wasmModule.extract_case_features(
+          eventLogHandle,
+          activityKey,
+          'time:timestamp',
+          configJson
+        );
         const features = typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
         const result = await regressRemainingTime(features, {
           method: params.method as any,
@@ -833,9 +839,21 @@ export async function implementAlgorithmStep(
       case 'ml_pca': {
         const { reduceFeaturesPCA } = await import('@wasm4pm/ml');
         const configJson = JSON.stringify({
-          features: ['trace_length', 'elapsed_time', 'activity_counts', 'rework_count', 'unique_activities', 'avg_inter_event_time'],
+          features: [
+            'trace_length',
+            'elapsed_time',
+            'activity_counts',
+            'rework_count',
+            'unique_activities',
+            'avg_inter_event_time',
+          ],
         });
-        const rawFeatures = wasmModule.extract_case_features(eventLogHandle, activityKey, 'time:timestamp', configJson);
+        const rawFeatures = wasmModule.extract_case_features(
+          eventLogHandle,
+          activityKey,
+          'time:timestamp',
+          configJson
+        );
         const features = typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
         const result = await reduceFeaturesPCA(features, {
           nComponents: (params.n_components as number) ?? 2,
@@ -847,7 +865,10 @@ export async function implementAlgorithmStep(
       default:
         throw new Error(
           `Unsupported algorithm: ${algorithmId}. ` +
-            `Available: ${registry.list().map((a) => a.id).join(', ')}`
+            `Available: ${registry
+              .list()
+              .map((a) => a.id)
+              .join(', ')}`
         );
     }
 
@@ -867,9 +888,7 @@ export async function implementAlgorithmStep(
       executionTimeMs,
       parameters: {
         activity_key: activityKey,
-        ...Object.fromEntries(
-          Object.entries(params).filter(([key]) => key !== 'activity_key')
-        ),
+        ...Object.fromEntries(Object.entries(params).filter(([key]) => key !== 'activity_key')),
       },
       metadata: {
         algorithmName: metadata.name,

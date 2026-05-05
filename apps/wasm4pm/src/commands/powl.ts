@@ -43,7 +43,8 @@ type ImportSource = (typeof IMPORT_SOURCES)[number];
 export const powl = defineCommand({
   meta: {
     name: 'powl',
-    description: 'POWL model analysis — parse, convert, simplify, diff, complexity, footprints, conformance, import, discover, get-children, node-info',
+    description:
+      'POWL model analysis — parse, convert, simplify, diff, complexity, footprints, conformance, import, discover, get-children, node-info',
   },
   args: {
     subcommand: {
@@ -101,7 +102,8 @@ export const powl = defineCommand({
     },
     variant: {
       type: 'string',
-      description: 'POWL discovery variant: decision_graph_cyclic (default), decision_graph_cyclic_strict, decision_graph_max, decision_graph_clustering, dynamic_clustering, maximal, tree',
+      description:
+        'POWL discovery variant: decision_graph_cyclic (default), decision_graph_cyclic_strict, decision_graph_max, decision_graph_clustering, dynamic_clustering, maximal, tree',
     },
     'activity-key': {
       type: 'string',
@@ -126,7 +128,9 @@ export const powl = defineCommand({
     try {
       const subcommand = ctx.args.subcommand as string;
       if (!POWL_SUBCOMMANDS.includes(subcommand as PowlSubcommand)) {
-        formatter.error(`Unknown operation: "${subcommand}". Valid: ${POWL_SUBCOMMANDS.join(', ')}`);
+        formatter.error(
+          `Unknown operation: "${subcommand}". Valid: ${POWL_SUBCOMMANDS.join(', ')}`
+        );
         process.exit(EXIT_CODES.source_error);
       }
 
@@ -138,7 +142,7 @@ export const powl = defineCommand({
         formatter.error(`Missing required argument: --model`);
         process.exit(EXIT_CODES.source_error);
       }
-      const modelStr = needsModel ? (await resolveModelInput(modelInput)) ?? '' : '';
+      const modelStr = needsModel ? ((await resolveModelInput(modelInput)) ?? '') : '';
       if (needsModel && !modelStr) {
         process.exit(EXIT_CODES.source_error);
       }
@@ -156,7 +160,7 @@ export const powl = defineCommand({
         subcommand as PowlSubcommand,
         modelStr,
         modelInput ?? '',
-        ctx.args,
+        ctx.args
       );
 
       // Step 4: Output
@@ -169,13 +173,11 @@ export const powl = defineCommand({
 
       // Step 5: Persist
       if (!ctx.args['no-save']) {
-        const inputLabel = modelInput && modelInput.length > 100 ? modelInput.slice(0, 100) + '...' : (modelInput || '');
-        const savedPath = await savePredictionResult(
-          `powl-${subcommand}`,
-          inputLabel,
-          '',
-          result,
-        );
+        const inputLabel =
+          modelInput && modelInput.length > 100
+            ? modelInput.slice(0, 100) + '...'
+            : modelInput || '';
+        const savedPath = await savePredictionResult(`powl-${subcommand}`, inputLabel, '', result);
         if (savedPath && formatter instanceof HumanFormatter) {
           formatter.debug(`Result saved: ${savedPath}`);
         }
@@ -187,7 +189,7 @@ export const powl = defineCommand({
         formatter.error('POWL operation failed', error);
       } else {
         formatter.error(
-          `POWL operation failed: ${error instanceof Error ? error.message : String(error)}`,
+          `POWL operation failed: ${error instanceof Error ? error.message : String(error)}`
         );
       }
       process.exit(EXIT_CODES.execution_error);
@@ -265,9 +267,7 @@ function extractTaggedString(value: unknown): string | null {
 /**
  * Resolve model input: if it looks like a file path, read it; otherwise treat as inline string.
  */
-async function resolveModelInput(
-  input: string,
-): Promise<string | null> {
+async function resolveModelInput(input: string): Promise<string | null> {
   // If it contains path separators or ends with .powl, treat as file
   if (input.includes('/') || input.includes('\\') || input.endsWith('.powl')) {
     try {
@@ -289,7 +289,7 @@ async function executePowlCommand(
   subcommand: PowlSubcommand,
   modelStr: string,
   rawInput: string,
-  args: Record<string, any>,
+  args: Record<string, any>
 ): Promise<Record<string, unknown>> {
   switch (subcommand) {
     case 'parse': {
@@ -439,7 +439,7 @@ async function executePowlCommand(
 
       // Call appropriate WASM function based on parameters
       let raw;
-      if (Object.keys(args).some(k => ['min-trace-count', 'noise-threshold'].includes(k))) {
+      if (Object.keys(args).some((k) => ['min-trace-count', 'noise-threshold'].includes(k))) {
         // Use config function if custom parameters provided
         raw = wasm.discover_powl_from_log_config(
           logJson,
@@ -467,7 +467,7 @@ async function executePowlCommand(
 function formatHumanOutput(
   formatter: HumanFormatter,
   subcommand: PowlSubcommand,
-  result: Record<string, unknown>,
+  result: Record<string, unknown>
 ): void {
   switch (subcommand) {
     case 'parse': {
@@ -519,19 +519,30 @@ function formatHumanOutput(
         formatter.log(`  Added activities: ${(result.added_activities as string[]).join(', ')}`);
       }
       if (result.removed_activities && (result.removed_activities as string[]).length > 0) {
-        formatter.log(`  Removed activities: ${(result.removed_activities as string[]).join(', ')}`);
+        formatter.log(
+          `  Removed activities: ${(result.removed_activities as string[]).join(', ')}`
+        );
       }
-      if (result.always_changes && (result.always_changes as Array<Record<string, unknown>>).length > 0) {
+      if (
+        result.always_changes &&
+        (result.always_changes as Array<Record<string, unknown>>).length > 0
+      ) {
         formatter.log(`  Always-changes:`);
         for (const ac of result.always_changes as Array<Record<string, unknown>>) {
           const type = Object.keys(ac)[0];
           formatter.log(`    ${type}: ${ac[type]}`);
         }
       }
-      if (result.order_changes && (result.order_changes as Array<Record<string, unknown>>).length > 0) {
+      if (
+        result.order_changes &&
+        (result.order_changes as Array<Record<string, unknown>>).length > 0
+      ) {
         formatter.log(`  Order changes: ${(result.order_changes as unknown[]).length}`);
       }
-      if (result.structure_changes && (result.structure_changes as Array<Record<string, unknown>>).length > 0) {
+      if (
+        result.structure_changes &&
+        (result.structure_changes as Array<Record<string, unknown>>).length > 0
+      ) {
         formatter.log(`  Structure changes: ${(result.structure_changes as unknown[]).length}`);
       }
       formatter.log('');
@@ -568,18 +579,29 @@ function formatHumanOutput(
 
     case 'conformance': {
       formatter.log('');
-      formatter.log(`  Fitness:                    ${((result.percentage as number) * 100).toFixed(1)}%`);
-      formatter.log(`  Avg trace fitness:          ${((result.avg_trace_fitness as number) * 100).toFixed(1)}%`);
-      formatter.log(`  Perfectly fitting traces:    ${result.perfectly_fitting_traces} / ${result.total_traces}`);
-      if (result.trace_results && (result.trace_results as Array<Record<string, unknown>>).length > 0) {
+      formatter.log(
+        `  Fitness:                    ${((result.percentage as number) * 100).toFixed(1)}%`
+      );
+      formatter.log(
+        `  Avg trace fitness:          ${((result.avg_trace_fitness as number) * 100).toFixed(1)}%`
+      );
+      formatter.log(
+        `  Perfectly fitting traces:    ${result.perfectly_fitting_traces} / ${result.total_traces}`
+      );
+      if (
+        result.trace_results &&
+        (result.trace_results as Array<Record<string, unknown>>).length > 0
+      ) {
         formatter.log('  Per-trace results:');
         for (const tr of result.trace_results as Array<Record<string, unknown>>) {
           const caseId = String(tr.case_id ?? '?');
           const fit = ((tr.fitness as number) * 100).toFixed(1);
           const missing = tr.missing_tokens ?? 0;
           const remaining = tr.remaining_tokens ?? 0;
-          const marker = (tr.missing_tokens === 0 && tr.remaining_tokens === 0) ? '✓' : '✗';
-          formatter.log(`    ${marker} ${caseId.padEnd(20)} fitness=${fit}%  missing=${missing} remaining=${remaining}`);
+          const marker = tr.missing_tokens === 0 && tr.remaining_tokens === 0 ? '✓' : '✗';
+          formatter.log(
+            `    ${marker} ${caseId.padEnd(20)} fitness=${fit}%  missing=${missing} remaining=${remaining}`
+          );
         }
       }
       formatter.log('');
@@ -608,8 +630,10 @@ function formatHumanOutput(
       if (result.label !== undefined) formatter.log(`  Label: ${result.label}`);
       formatter.log(`  Children: ${(result.children as number[]).join(', ')}`);
       if (result.edges) formatter.log(`  Edges: ${(result.edges as unknown[]).length}`);
-      if (result.start_nodes !== undefined) formatter.log(`  Start nodes: ${(result.start_nodes as number[]).join(', ')}`);
-      if (result.end_nodes !== undefined) formatter.log(`  End nodes: ${(result.end_nodes as number[]).join(', ')}`);
+      if (result.start_nodes !== undefined)
+        formatter.log(`  Start nodes: ${(result.start_nodes as number[]).join(', ')}`);
+      if (result.end_nodes !== undefined)
+        formatter.log(`  End nodes: ${(result.end_nodes as number[]).join(', ')}`);
       if (result.empty_path !== undefined) formatter.log(`  Empty path: ${result.empty_path}`);
       formatter.log('');
       break;

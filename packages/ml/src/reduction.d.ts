@@ -12,8 +12,11 @@ import type { PCAResult } from './types.js';
 /**
  * Reduce feature dimensionality using PCA.
  */
-export declare function reduceFeaturesPCA(featuresJson: Array<Record<string, unknown>>, options?: {
+export declare function reduceFeaturesPCA(
+  featuresJson: Array<Record<string, unknown>>,
+  options?: {
     nComponents?: number;
     normalize?: boolean;
-}): Promise<PCAResult>;
+  }
+): Promise<PCAResult>;
 //# sourceMappingURL=reduction.d.ts.map

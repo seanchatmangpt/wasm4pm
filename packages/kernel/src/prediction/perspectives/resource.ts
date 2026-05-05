@@ -79,7 +79,7 @@ export class ResourceHandler implements PerspectiveHandler<ResourceTask> {
   predict(
     task: ResourceTask,
     model: PredictionModel,
-    prefixes: readonly PredictionTrace[],
+    prefixes: readonly PredictionTrace[]
   ): readonly PredictionRecord[] {
     const state = model.state as unknown as ResourceState;
     const ucbC = task.ucbC ?? state.ucbC;
@@ -88,7 +88,7 @@ export class ResourceHandler implements PerspectiveHandler<ResourceTask> {
     for (const prefix of prefixes) {
       const events = clipTrace(prefix, task.maxPrefixLength).events;
       const last = events[events.length - 1];
-      const arms = last ? state.byActivity[last.activity] ?? {} : {};
+      const arms = last ? (state.byActivity[last.activity] ?? {}) : {};
       const totalPullsForActivity = Object.values(arms).reduce((s, a) => s + a.pulls, 0) || 1;
 
       const scored = Object.entries(arms).map(([resource, arm]) => {

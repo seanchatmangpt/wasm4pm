@@ -47,8 +47,8 @@ Same input → same output (bit-exact).
 import { checkDeterminism, receiptsMatch } from '@wasm4pm/testing';
 
 // Run twice, compare receipts
-const receipt1 = await pictl.run(config);
-const receipt2 = await pictl.run(config);
+const receipt1 = await wasm4pm.run(config);
+const receipt2 = await wasm4pm.run(config);
 assert(receiptsMatch(receipt1, receipt2));
 ```
 

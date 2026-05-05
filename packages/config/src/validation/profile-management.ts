@@ -127,13 +127,13 @@ export function suggestProfile(constraints: ProfileSuggestionConstraints): {
   // Memory constraint
   if (memoryBudgetMb) {
     if (memoryBudgetMb < 1) {
-      candidates = candidates.filter(c => c.profile === 'fast');
+      candidates = candidates.filter((c) => c.profile === 'fast');
       candidates[0].reason.push('Memory budget <1MB → fast profile only');
     } else if (memoryBudgetMb < 1.5) {
-      candidates = candidates.filter(c => ['fast', 'stream'].includes(c.profile));
+      candidates = candidates.filter((c) => ['fast', 'stream'].includes(c.profile));
       candidates[0].reason.push('Memory budget <1.5MB → fast/stream profiles');
     } else if (memoryBudgetMb < 2.2) {
-      candidates = candidates.filter(c => c.profile !== 'quality');
+      candidates = candidates.filter((c) => c.profile !== 'quality');
       candidates[0].reason.push('Memory budget <2.2MB → exclude quality');
     }
   }
@@ -155,7 +155,7 @@ export function suggestProfile(constraints: ProfileSuggestionConstraints): {
   if (requiredAlgorithms && requiredAlgorithms.length > 0) {
     for (const c of candidates) {
       const caps = getProfileCapabilities(c.profile);
-      const missing = requiredAlgorithms.filter(a => !caps.algorithms.includes(a as any));
+      const missing = requiredAlgorithms.filter((a) => !caps.algorithms.includes(a as any));
       if (missing.length > 0) {
         c.score -= 100;
         c.reason.push(`Missing algorithms: ${missing.join(', ')}`);
@@ -170,7 +170,7 @@ export function suggestProfile(constraints: ProfileSuggestionConstraints): {
   if (desiredFeatures && desiredFeatures.length > 0) {
     for (const c of candidates) {
       const caps = getProfileCapabilities(c.profile);
-      const hasFeatures = desiredFeatures.filter(f => caps.features.includes(f)).length;
+      const hasFeatures = desiredFeatures.filter((f) => caps.features.includes(f)).length;
       c.score += hasFeatures * 3;
       if (hasFeatures > 0) {
         c.reason.push(`Has ${hasFeatures}/${desiredFeatures.length} desired features`);
@@ -181,7 +181,7 @@ export function suggestProfile(constraints: ProfileSuggestionConstraints): {
   // Default scoring if no constraints
   if (!memoryBudgetMb && !latencyBudgetMs && !requiredAlgorithms && !desiredFeatures) {
     // balanced is default
-    const balanced = candidates.find(c => c.profile === 'balanced')!;
+    const balanced = candidates.find((c) => c.profile === 'balanced')!;
     balanced.score += 100;
     balanced.reason.push('Default recommendation');
   }
@@ -190,7 +190,7 @@ export function suggestProfile(constraints: ProfileSuggestionConstraints): {
   candidates.sort((a, b) => b.score - a.score);
 
   const recommended = candidates[0].profile;
-  const alternatives = candidates.slice(1).map(c => c.profile);
+  const alternatives = candidates.slice(1).map((c) => c.profile);
 
   return {
     recommended,
@@ -204,7 +204,7 @@ export function suggestProfile(constraints: ProfileSuggestionConstraints): {
  */
 export function validateAlgorithmInProfile(
   algorithm: string,
-  profile: ExecutionProfile,
+  profile: ExecutionProfile
 ): { valid: boolean; error?: string } {
   const caps = getProfileCapabilities(profile);
 
@@ -233,12 +233,12 @@ export function validateAlgorithmInProfile(
  */
 export function getProfileComparisonTable(): string {
   const profiles: ExecutionProfile[] = ['fast', 'balanced', 'quality', 'stream'];
-  const rows = profiles.map(p => {
+  const rows = profiles.map((p) => {
     const caps = getProfileCapabilities(p);
     return {
       Profile: caps.displayName,
       'Size Target': caps.sizeTarget,
-      'Algorithms': `~${caps.algorithms.length}`,
+      Algorithms: `~${caps.algorithms.length}`,
       'Use Cases': caps.recommendedFor.slice(0, 2).join(', '),
     };
   });
@@ -246,9 +246,11 @@ export function getProfileComparisonTable(): string {
   // ASCII table
   const header = Object.keys(rows[0]);
   const lines = [
-    header.map(h => h.padEnd(25)).join(' | '),
+    header.map((h) => h.padEnd(25)).join(' | '),
     header.map(() => '-'.padEnd(25)).join('-+-'),
-    ...rows.map(row => header.map(h => String(row[h as keyof typeof row]).padEnd(25)).join(' | ')),
+    ...rows.map((row) =>
+      header.map((h) => String(row[h as keyof typeof row]).padEnd(25)).join(' | ')
+    ),
   ];
 
   return lines.join('\n');
@@ -260,8 +262,8 @@ export function getProfileComparisonTable(): string {
  */
 export function findProfilesWithFeatures(requiredFeatures: string[]): ExecutionProfile[] {
   const profiles: ExecutionProfile[] = ['fast', 'balanced', 'quality', 'stream'];
-  return profiles.filter(p => {
+  return profiles.filter((p) => {
     const caps = getProfileCapabilities(p);
-    return requiredFeatures.every(f => caps.features.includes(f));
+    return requiredFeatures.every((f) => caps.features.includes(f));
   });
 }

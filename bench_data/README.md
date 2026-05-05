@@ -1,6 +1,6 @@
 # Benchmark Datasets
 
-Real-world process mining datasets for pictl benchmarks.
+Real-world process mining datasets for wasm4pm benchmarks.
 All datasets are freely available under CC BY 4.0 from [4TU.ResearchData](https://data.4tu.nl).
 
 Run `make bench-data` (or `bash scripts/download_datasets.sh`) to download them.

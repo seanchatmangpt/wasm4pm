@@ -1,6 +1,6 @@
 # ML & RL FAQ / Troubleshooting
 
-Quick answers to common questions about the `@pictl/ml` package, the
+Quick answers to common questions about the `@wasm4pm/ml` package, the
 `wpm predict` command, and the RL orchestrator.
 
 ---
@@ -42,7 +42,7 @@ Either:
 - For `dbscan`, your `eps` is too large — halve it and re-run.
 - Scale features first if any feature has very different magnitude.
 
-### Q. Why does `@pictl/ml` accept empty arrays without complaining?
+### Q. Why does `@wasm4pm/ml` accept empty arrays without complaining?
 Intentional — the kernels are non-throwing (FAIL FAST is a TPS rule for
 *pipelines*, not pure-function calls). Empty input → empty result. Your
 caller decides what to do with it.
@@ -142,6 +142,6 @@ exporter is configured (`WASM4PM_OTEL_ENABLED=true`,
 ## Where to file bugs
 
 GitHub Issues — include:
-- `pictl --version`
+- `wasm4pm --version`
 - `wpm doctor` output
 - A minimal XES log that reproduces.

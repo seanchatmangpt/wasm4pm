@@ -134,27 +134,27 @@ bench-compare:
 
 # ── Regression Detection: Compare PR to main baseline ────────────────────────
 bench-regression:
-	@bash .pictl/benchmarks/detect-regression.sh .pictl/benchmarks/baselines/main-latest.json
+	@bash .wasm4pm/benchmarks/detect-regression.sh .wasm4pm/benchmarks/baselines/main-latest.json
 
 # ── Unified Benchmarking: Runs both Rust and WASM and unifies reports ───────
 bench-all: bench-data
 	@echo "=== Running Unified Benchmark Suite ==="
 	@$(MAKE) bench-rust
 	@$(MAKE) bench-wasm
-	@python3 .pictl/benchmarks/consolidate_and_report.py
+	@python3 .wasm4pm/benchmarks/consolidate_and_report.py
 
 bench-all-baseline: bench-data
 	@echo "=== Updating Unified Baselines ==="
 	@$(MAKE) bench-rust
 	@$(MAKE) bench-wasm
-	@python3 .pictl/benchmarks/consolidate_and_report.py --update-baseline
+	@python3 .wasm4pm/benchmarks/consolidate_and_report.py --update-baseline
 
 # ── Update Main Baseline: Runs after merge to main ──────────────────────────
 bench-baseline-update:
-	@bash .pictl/benchmarks/update-baseline.sh
+	@bash .wasm4pm/benchmarks/update-baseline.sh
 
 bench-baseline-update-ci:
-	@bash .pictl/benchmarks/update-baseline.sh --ci
+	@bash .wasm4pm/benchmarks/update-baseline.sh --ci
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Build Profile Targets: pm4wasm Feature Tiers (Tier 1/2/3)
@@ -194,10 +194,10 @@ verify-profiles:
 # ── Benchmark Trends: Generate trend graphs ──────────────────────────────────
 bench-trends:
 	@echo "=== Benchmark Trends Report ==="
-	@python3 .pictl/benchmarks/plot-trends.py --format summary --days 30
+	@python3 .wasm4pm/benchmarks/plot-trends.py --format summary --days 30
 	@echo ""
 	@echo "Fast algorithms (last 7 days):"
-	@python3 .pictl/benchmarks/plot-trends.py --algorithm dfg --profile fast --days 7 --format ascii || true
+	@python3 .wasm4pm/benchmarks/plot-trends.py --algorithm dfg --profile fast --days 7 --format ascii || true
 
 # ── Cleanup ───────────────────────────────────────────────────────────────────
 clean-bench:
@@ -211,7 +211,7 @@ doctor:
 
 help:
 	@echo "╔═══════════════════════════════════════════════════════════════════════════╗"
-	@echo "║  wasm4pm Build pictl Build & Benchmark Targets Benchmark Targets"
+	@echo "║  wasm4pm Build wasm4pm Build & Benchmark Targets Benchmark Targets"
 	@echo "╚═══════════════════════════════════════════════════════════════════════════╝"
 	@echo ""
 	@echo "WASM Profile Building (5 deployment profiles, pm4wasm tiers):"

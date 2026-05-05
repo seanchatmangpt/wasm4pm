@@ -1,6 +1,6 @@
 # wasm4pm Benchmark Fixtures
 
-Process mining event logs for benchmarking pictl's discovery and conformance algorithms.
+Process mining event logs for benchmarking wasm4pm's discovery and conformance algorithms.
 
 ## Real Datasets (from 4TU Research Data)
 
@@ -26,7 +26,7 @@ All datasets are **real-world event logs** licensed under **CC BY 4.0** from htt
 
 **Use:** Standard benchmarks.
 
-- BPI 2020: Current pictl primary baseline (typical workload).
+- BPI 2020: Current wasm4pm primary baseline (typical workload).
 - BPI 2012: Cited in 100+ process mining papers; literature comparison baseline.
 - BPI 2013: ITSM process with reference model for conformance checking.
 
@@ -114,7 +114,7 @@ pm4py discovery outputs for parity verification:
 
 - `pm4py_*.json` — Reference model shapes + metrics from pm4py-core
 
-These are **read-only**; benchmarks compare pictl outputs against these for regression detection.
+These are **read-only**; benchmarks compare wasm4pm outputs against these for regression detection.
 
 ---
 

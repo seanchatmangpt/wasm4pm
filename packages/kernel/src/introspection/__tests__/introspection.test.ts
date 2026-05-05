@@ -295,7 +295,10 @@ describe('Validators', () => {
     const validators = getConfigValidators();
 
     const result = validators.validateFeatureMatrix({
-      data: [[1, 2], [3, 4]],
+      data: [
+        [1, 2],
+        [3, 4],
+      ],
       featureNames: ['f1', 'f2'],
       caseIds: ['c1', 'c2'],
     });
@@ -320,7 +323,10 @@ describe('Validators', () => {
     const validators = getConfigValidators();
 
     const result = validators.validateFeatureMatrix({
-      data: [[1, 2], [3, 4, 5]], // second row has 3 columns
+      data: [
+        [1, 2],
+        [3, 4, 5],
+      ], // second row has 3 columns
       featureNames: ['f1', 'f2'],
       caseIds: ['c1', 'c2'],
     });

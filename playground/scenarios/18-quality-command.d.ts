@@ -1,5 +1,5 @@
 /**
- * Scenario: quality command — pictl quality <log.xes>
+ * Scenario: quality command — wasm4pm quality <log.xes>
  *
  * Tests multi-dimensional quality assessment using real WASM.
  *
@@ -14,7 +14,7 @@
  *   - --file alias for input file works
  *   - --activity-key flag is accepted
  *
- * Binary: apps/pictl/dist/bin/pictl.js (must be built first)
+ * Binary: apps/wasm4pm/dist/bin/wasm4pm.js (must be built first)
  */
 export {};
 //# sourceMappingURL=18-quality-command.d.ts.map

@@ -39,7 +39,7 @@ pm.init(): string
 
 **Parameters** — none
 
-**Returns** `string` — `"pictl WASM initialized successfully"`
+**Returns** `string` — `"wasm4pm WASM initialized successfully"`
 
 **Throws** — never
 

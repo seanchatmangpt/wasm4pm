@@ -2,14 +2,14 @@
 
 **Author:** Sean Chatman  
 **Date:** April 2026  
-**Platform:** pictl (wasm4pm) v26.4.11  
+**Platform:** wasm4pm (wasm4pm) v26.4.11  
 **Commit:** main (2026-04-11) — 693/693 tests, 41-test E2E suite added  
 
 ---
 
 ## Abstract
 
-Autonomous AI agents execute closed-loop cycles of observation, decision, action, and adaptation. Current agentic architectures implement these loops in software that is opaque, untestable against real execution evidence, and disconnected from the processes they claim to automate. This thesis demonstrates that a WebAssembly-based process mining engine — pictl — can serve as the **evidence layer and decision substrate** for agentic AI systems, replacing four of six core agentic loop components with formally verified, empirically grounded process mining primitives.
+Autonomous AI agents execute closed-loop cycles of observation, decision, action, and adaptation. Current agentic architectures implement these loops in software that is opaque, untestable against real execution evidence, and disconnected from the processes they claim to automate. This thesis demonstrates that a WebAssembly-based process mining engine — wasm4pm — can serve as the **evidence layer and decision substrate** for agentic AI systems, replacing four of six core agentic loop components with formally verified, empirically grounded process mining primitives.
 
 We show that:
 
@@ -109,7 +109,7 @@ We decompose the agentic loop into six functional components and analyze each ag
 
 **What agentic systems do:** LLMs use chain-of-thought reasoning to select the next action. This is stochastic, unbounded in latency (100ms–30s), and produces no evidence of optimality.
 
-**What pictl does:** The LinUCB contextual bandit selects among 40 registered algorithms based on 8 log-characteristic features:
+**What wasm4pm does:** The LinUCB contextual bandit selects among 40 registered algorithms based on 8 log-characteristic features:
 
 ```
 Q̂_a(x) = w_a · x + b_a + α √(x^T A^{-1} x)
@@ -134,7 +134,7 @@ where x in R^8 is the normalized feature vector, w_a in R^8 is the weight vector
 
 **What agentic systems do:** Guardrails, prompt engineering, and output parsing attempt to ensure actions are lawful. These are heuristic and incomplete — they catch known failure modes but cannot prove lawful execution.
 
-**What pictl does:** Petri net marking semantics enforce **formally verified** state transitions:
+**What wasm4pm does:** Petri net marking semantics enforce **formally verified** state transitions:
 
 ```rust
 // marking_enabled4: checks if transition can fire (all input places have tokens)
@@ -161,7 +161,7 @@ The Marking4 micro-kernel operates on {p0, p1, p2, p3: u32} — a 4-place token-
 
 **What agentic systems do:** LLMs update their behavior based on feedback — usually through memory systems, RAG updates, or prompt modification. These adaptations are opaque and unverifiable.
 
-**What pictl does:** Two mechanisms provide formally grounded adaptation:
+**What wasm4pm does:** Two mechanisms provide formally grounded adaptation:
 
 **Statistical Process Control (SPC):** Western Electric rules detect concept drift in 4.85 ns per observation:
 - Rule 1: Point beyond 3 sigma (1 observation)
@@ -191,7 +191,7 @@ This is a rank-1 update that preserves the positive-definiteness of A while adap
 
 **What agentic systems do:** Tool calls, API invocations, file operations.
 
-**What pictl does:** The process mining pipeline is the execution layer — it discovers, conforms, predicts, and monitors processes. This is not a substitution; it is the **native execution environment** that agentic loops operate within.
+**What wasm4pm does:** The process mining pipeline is the execution layer — it discovers, conforms, predicts, and monitors processes. This is not a substitution; it is the **native execution environment** that agentic loops operate within.
 
 **Verdict:** **COMPLEMENTARY.** Process mining is the execution substrate, not a replacement for external tool use.
 
@@ -199,7 +199,7 @@ This is a rank-1 update that preserves the positive-definiteness of A while adap
 
 **What agentic systems do:** Generate natural language explanations, reports, and user-facing output.
 
-**What pictl does:** Produces structured outputs (JSON, DFG edge lists, conformance metrics) that can be rendered by downstream systems.
+**What wasm4pm does:** Produces structured outputs (JSON, DFG edge lists, conformance metrics) that can be rendered by downstream systems.
 
 **Verdict:** **NOT SUBSTITUTABLE.** Natural language generation requires LLM capability. Process mining provides the evidence that LLMs can draw upon to produce grounded explanations.
 
@@ -451,7 +451,7 @@ The ten traits meet production standards:
 ✅ **Formally specified:** Each trait has documented input/output contracts and soundness properties  
 ✅ **Empirically measured:** Latency benchmarks on M3 Max with 1000 samples  
 ✅ **Test-driven:** JTBD harness validates all assertions per case  
-✅ **Zero dependencies:** No external crates; pure Rust std + pictl internals  
+✅ **Zero dependencies:** No external crates; pure Rust std + wasm4pm internals  
 ✅ **Deterministic:** 2,500 runs, identical results  
 ✅ **Compilation:** cargo check passes, zero warnings  
 
@@ -530,7 +530,7 @@ These operate on extracted process features and provide secondary signals that f
 
 ### 5.1 Van der Aalst's Four Quality Dimensions
 
-Every process model produced by pictl is evaluated against four dimensions:
+Every process model produced by wasm4pm is evaluated against four dimensions:
 
 1. **Fitness:** Can the model replay all observed behavior? Measured by token replay.
 2. **Precision:** Does the model allow only observed behavior? Measured by escape edges.
@@ -614,7 +614,7 @@ Recommended batch size: 1024 (balances all three distributions).
 | Code Quality | 2 | 0 | 0 |
 | **Total** | **48** | **0** | **2** |
 
-2 known issues: RUSTSEC-2026-0097 and RUSTSEC-2024-0436 (rand crate, warn-level, not exploitable via pictl code paths).
+2 known issues: RUSTSEC-2026-0097 and RUSTSEC-2024-0436 (rand crate, warn-level, not exploitable via wasm4pm code paths).
 
 ---
 

@@ -2,7 +2,7 @@
 
 **Location**: `/Users/sac/chatmangpt/wasm4pm/semconv/sparql-proofs/`  
 **Version**: 1.0 | **Status**: Production  
-**What**: Convert pictl MCP tool outputs (JSON) → RDF triples (SPARQL CONSTRUCT)  
+**What**: Convert wasm4pm MCP tool outputs (JSON) → RDF triples (SPARQL CONSTRUCT)  
 **Why**: Make process mining results queryable, reasonably sound, and governed with provenance.
 
 ---

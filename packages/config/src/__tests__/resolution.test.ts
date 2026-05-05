@@ -40,7 +40,11 @@ describe('Resolution', () => {
     it('JSON file overrides env', async () => {
       await fs.writeFile(
         path.join(tmpDir, 'wasm4pm.json'),
-        JSON.stringify({ version: '26.4.5', source: { kind: 'file' }, execution: { profile: 'fast' } }),
+        JSON.stringify({
+          version: '26.4.5',
+          source: { kind: 'file' },
+          execution: { profile: 'fast' },
+        })
       );
       const cfg = await resolveConfig({
         configSearchPaths: [tmpDir],
@@ -55,7 +59,11 @@ describe('Resolution', () => {
       await fs.writeFile(path.join(tmpDir, 'wasm4pm.toml'), '[execution]\nprofile = "quality"');
       await fs.writeFile(
         path.join(tmpDir, 'wasm4pm.json'),
-        JSON.stringify({ version: '26.4.5', source: { kind: 'file' }, execution: { profile: 'fast' } }),
+        JSON.stringify({
+          version: '26.4.5',
+          source: { kind: 'file' },
+          execution: { profile: 'fast' },
+        })
       );
       const cfg = await resolveConfig({ configSearchPaths: [tmpDir] });
       expect(cfg.execution.profile).toBe('quality');
@@ -80,7 +88,7 @@ describe('Resolution', () => {
     it('loads source config from TOML', async () => {
       await fs.writeFile(
         path.join(tmpDir, 'wasm4pm.toml'),
-        `version = "1.0.0"\n[source]\nkind = "http"\nurl = "http://localhost:9000/events"`,
+        `version = "1.0.0"\n[source]\nkind = "http"\nurl = "http://localhost:9000/events"`
       );
       const cfg = await resolveConfig({ configSearchPaths: [tmpDir] });
       expect(cfg.source.kind).toBe('http');
@@ -90,7 +98,7 @@ describe('Resolution', () => {
     it('loads sink config from TOML', async () => {
       await fs.writeFile(
         path.join(tmpDir, 'wasm4pm.toml'),
-        `version = "1.0.0"\n[source]\nkind = "file"\n[sink]\nkind = "file"\npath = "./out.pnml"`,
+        `version = "1.0.0"\n[source]\nkind = "file"\n[sink]\nkind = "file"\npath = "./out.pnml"`
       );
       const cfg = await resolveConfig({ configSearchPaths: [tmpDir] });
       expect(cfg.sink.kind).toBe('file');
@@ -100,7 +108,7 @@ describe('Resolution', () => {
     it('loads algorithm config from TOML', async () => {
       await fs.writeFile(
         path.join(tmpDir, 'wasm4pm.toml'),
-        `version = "1.0.0"\n[source]\nkind = "file"\n[algorithm]\nname = "heuristic_miner"\n[algorithm.parameters]\nthreshold = 0.8`,
+        `version = "1.0.0"\n[source]\nkind = "file"\n[algorithm]\nname = "heuristic_miner"\n[algorithm.parameters]\nthreshold = 0.8`
       );
       const cfg = await resolveConfig({ configSearchPaths: [tmpDir] });
       expect(cfg.algorithm.name).toBe('heuristic_miner');
@@ -148,7 +156,7 @@ describe('Resolution', () => {
     it('loads otel config with exporter and required fields', async () => {
       await fs.writeFile(
         path.join(tmpDir, 'wasm4pm.toml'),
-        `version = "1.0.0"\n[source]\nkind = "file"\n[observability.otel]\nenabled = true\nexporter = "console"\nendpoint = "http://localhost:4318"\nrequired = true`,
+        `version = "1.0.0"\n[source]\nkind = "file"\n[observability.otel]\nenabled = true\nexporter = "console"\nendpoint = "http://localhost:4318"\nrequired = true`
       );
       const cfg = await resolveConfig({ configSearchPaths: [tmpDir] });
       expect(cfg.observability.otel?.enabled).toBe(true);
@@ -173,7 +181,7 @@ describe('Resolution', () => {
     it('loads watch with poll_interval and checkpoint_dir', async () => {
       await fs.writeFile(
         path.join(tmpDir, 'wasm4pm.toml'),
-        `version = "1.0.0"\n[source]\nkind = "file"\n[watch]\nenabled = true\npoll_interval = 500\ncheckpoint_dir = "/tmp/ckpts"`,
+        `version = "1.0.0"\n[source]\nkind = "file"\n[watch]\nenabled = true\npoll_interval = 500\ncheckpoint_dir = "/tmp/ckpts"`
       );
       const cfg = await resolveConfig({ configSearchPaths: [tmpDir] });
       expect(cfg.watch?.enabled).toBe(true);
@@ -209,7 +217,7 @@ describe('Resolution', () => {
     it('preserves explicit schema version from file', async () => {
       await fs.writeFile(
         path.join(tmpDir, 'wasm4pm.toml'),
-        `version = "1.0.0"\nschema_version = 1\n[source]\nkind = "file"`,
+        `version = "1.0.0"\nschema_version = 1\n[source]\nkind = "file"`
       );
       const cfg = await resolveConfig({ configSearchPaths: [tmpDir] });
       expect(cfg.schemaVersion).toBe(1);
@@ -240,7 +248,10 @@ describe('Resolution', () => {
     });
 
     it('includes provenance for all resolved values', async () => {
-      await fs.writeFile(path.join(tmpDir, 'wasm4pm.toml'), '[source]\nkind = "file"\n[execution]\nprofile = "fast"');
+      await fs.writeFile(
+        path.join(tmpDir, 'wasm4pm.toml'),
+        '[source]\nkind = "file"\n[execution]\nprofile = "fast"'
+      );
       const cfg = await resolveConfig({
         cliOverrides: { outputFormat: 'json' },
         configSearchPaths: [tmpDir],
@@ -260,7 +271,7 @@ describe('Resolution', () => {
     it('merges partial file config with defaults', async () => {
       await fs.writeFile(
         path.join(tmpDir, 'wasm4pm.toml'),
-        `version = "1.0.0"\n[source]\nkind = "file"\n[execution]\ntimeout = 60000`,
+        `version = "1.0.0"\n[source]\nkind = "file"\n[execution]\ntimeout = 60000`
       );
       const cfg = await resolveConfig({ configSearchPaths: [tmpDir] });
       // File value
@@ -272,7 +283,7 @@ describe('Resolution', () => {
     it('CLI output.destination merges with file output.format', async () => {
       await fs.writeFile(
         path.join(tmpDir, 'wasm4pm.toml'),
-        `version = "1.0.0"\n[source]\nkind = "file"\n[output]\nformat = "json"`,
+        `version = "1.0.0"\n[source]\nkind = "file"\n[output]\nformat = "json"`
       );
       const cfg = await resolveConfig({
         cliOverrides: { outputDestination: '/tmp/out.json' },
@@ -288,17 +299,23 @@ describe('Resolution', () => {
   describe('error handling', () => {
     it('throws on invalid TOML syntax', async () => {
       await fs.writeFile(path.join(tmpDir, 'wasm4pm.toml'), '[execution\nbad');
-      await expect(resolveConfig({ configSearchPaths: [tmpDir] })).rejects.toThrow(/Failed to parse TOML/);
+      await expect(resolveConfig({ configSearchPaths: [tmpDir] })).rejects.toThrow(
+        /Failed to parse TOML/
+      );
     });
 
     it('throws on invalid JSON syntax', async () => {
       await fs.writeFile(path.join(tmpDir, 'wasm4pm.json'), '{ bad }');
-      await expect(resolveConfig({ configSearchPaths: [tmpDir] })).rejects.toThrow(/Failed to parse JSON/);
+      await expect(resolveConfig({ configSearchPaths: [tmpDir] })).rejects.toThrow(
+        /Failed to parse JSON/
+      );
     });
 
     it('throws on schema-invalid file config', async () => {
       await fs.writeFile(path.join(tmpDir, 'wasm4pm.toml'), '[execution]\nprofile = "turbo"');
-      await expect(resolveConfig({ configSearchPaths: [tmpDir] })).rejects.toThrow(/validation failed/i);
+      await expect(resolveConfig({ configSearchPaths: [tmpDir] })).rejects.toThrow(
+        /validation failed/i
+      );
     });
 
     it('handles empty config file gracefully', async () => {
@@ -319,14 +336,23 @@ describe('Resolution', () => {
 
   describe('env boolean parsing', () => {
     it('treats "true" and "1" as true', async () => {
-      const cfg1 = await resolveConfig({ configSearchPaths: [tmpDir], env: { WASM4PM_WATCH: 'true' } });
-      const cfg2 = await resolveConfig({ configSearchPaths: [tmpDir], env: { WASM4PM_WATCH: '1' } });
+      const cfg1 = await resolveConfig({
+        configSearchPaths: [tmpDir],
+        env: { WASM4PM_WATCH: 'true' },
+      });
+      const cfg2 = await resolveConfig({
+        configSearchPaths: [tmpDir],
+        env: { WASM4PM_WATCH: '1' },
+      });
       expect(cfg1.watch?.enabled).toBe(true);
       expect(cfg2.watch?.enabled).toBe(true);
     });
 
     it('treats other values as false', async () => {
-      const cfg = await resolveConfig({ configSearchPaths: [tmpDir], env: { WASM4PM_WATCH: 'false' } });
+      const cfg = await resolveConfig({
+        configSearchPaths: [tmpDir],
+        env: { WASM4PM_WATCH: 'false' },
+      });
       expect(cfg.watch?.enabled).toBe(false);
     });
   });
@@ -366,7 +392,7 @@ describe('Resolution', () => {
       });
       const diff = diffConfigs(cfg1, cfg2);
       expect(diff.changed).toBe(true);
-      expect(diff.differences.some(d => d.path.includes('profile'))).toBe(true);
+      expect(diff.differences.some((d) => d.path.includes('profile'))).toBe(true);
     });
   });
 });

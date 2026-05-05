@@ -60,7 +60,10 @@ export function createDFG(eventLog: Array<{ activities: string[] }>): DFG {
     startActivities.set(activities[0], (startActivities.get(activities[0]) || 0) + 1);
 
     // Record end activity
-    endActivities.set(activities[activities.length - 1], (endActivities.get(activities[activities.length - 1]) || 0) + 1);
+    endActivities.set(
+      activities[activities.length - 1],
+      (endActivities.get(activities[activities.length - 1]) || 0) + 1
+    );
 
     // Add all activities to nodes
     for (const activity of activities) {
@@ -104,7 +107,7 @@ export function createDFG(eventLog: Array<{ activities: string[] }>): DFG {
  */
 export function createDFGFromEdges(
   edges: Array<{ source: string; target: string; count: number }>,
-  options: { startActivities?: string[]; endActivities?: string[] } = {},
+  options: { startActivities?: string[]; endActivities?: string[] } = {}
 ): DFG {
   const nodes = new Set<string>();
   const edgeMap = new Map<string, DFGEdge>();
@@ -158,12 +161,14 @@ export function compareDFGs(df1: DFG, df2: DFG): DFGComparison {
   const nodes1 = new Set(df1.nodes);
   const nodes2 = new Set(df2.nodes);
 
-  const nodeIntersection = Array.from(nodes1).filter(n => nodes2.has(n)).sort();
+  const nodeIntersection = Array.from(nodes1)
+    .filter((n) => nodes2.has(n))
+    .sort();
   const nodeUnion = Array.from(new Set([...df1.nodes, ...df2.nodes])).sort();
 
   // Edge comparison
-  const edges1 = new Map(df1.edges.map(e => [`${e.source}->${e.target}`, e]));
-  const edges2 = new Map(df2.edges.map(e => [`${e.source}->${e.target}`, e]));
+  const edges1 = new Map(df1.edges.map((e) => [`${e.source}->${e.target}`, e]));
+  const edges2 = new Map(df2.edges.map((e) => [`${e.source}->${e.target}`, e]));
 
   const edgeIntersection: DFGEdge[] = [];
   const edgeUnion: DFGEdge[] = [];
@@ -193,13 +198,13 @@ export function compareDFGs(df1: DFG, df2: DFG): DFGComparison {
 
   // Missing elements
   const missingInFirst = {
-    nodes: Array.from(nodes2).filter(n => !nodes1.has(n)),
-    edges: df2.edges.filter(e => !edges1.has(`${e.source}->${e.target}`)),
+    nodes: Array.from(nodes2).filter((n) => !nodes1.has(n)),
+    edges: df2.edges.filter((e) => !edges1.has(`${e.source}->${e.target}`)),
   };
 
   const missingInSecond = {
-    nodes: Array.from(nodes1).filter(n => !nodes2.has(n)),
-    edges: df1.edges.filter(e => !edges2.has(`${e.source}->${e.target}`)),
+    nodes: Array.from(nodes1).filter((n) => !nodes2.has(n)),
+    edges: df1.edges.filter((e) => !edges2.has(`${e.source}->${e.target}`)),
   };
 
   const identical = nodeJaccard === 1 && edgeJaccard === 1;
@@ -310,7 +315,10 @@ export function validateDFG(dfg: DFG): { valid: boolean; errors: string[] } {
  *
  * Verifies that DFG statistics match the event log.
  */
-export function validateDFGConsistency(dfg: DFG, eventLog: Array<{ activities: string[] }>): { consistent: boolean; errors: string[] } {
+export function validateDFGConsistency(
+  dfg: DFG,
+  eventLog: Array<{ activities: string[] }>
+): { consistent: boolean; errors: string[] } {
   const errors: string[] = [];
 
   // Recompute DFG from log
@@ -328,12 +336,14 @@ export function validateDFGConsistency(dfg: DFG, eventLog: Array<{ activities: s
 
   // Compare nodes
   if (dfg.nodes.length !== recomputed.nodes.length) {
-    errors.push(`Node count mismatch: expected ${recomputed.nodes.length}, got ${dfg.nodes.length}`);
+    errors.push(
+      `Node count mismatch: expected ${recomputed.nodes.length}, got ${dfg.nodes.length}`
+    );
   }
 
   // Compare edges (including counts)
-  const edges1 = new Map(dfg.edges.map(e => [`${e.source}->${e.target}`, e.count]));
-  const edges2 = new Map(recomputed.edges.map(e => [`${e.source}->${e.target}`, e.count]));
+  const edges1 = new Map(dfg.edges.map((e) => [`${e.source}->${e.target}`, e.count]));
+  const edges2 = new Map(recomputed.edges.map((e) => [`${e.source}->${e.target}`, e.count]));
 
   for (const [key, count] of edges2) {
     const count1 = edges1.get(key);
@@ -420,9 +430,10 @@ export function findLongestPath(dfg: DFG): string[] {
   }
 
   // DFS from each start node to find longest path
-  const startNodes = dfg.startActivities.size > 0
-    ? Array.from(dfg.startActivities.keys())
-    : dfg.nodes.filter(n => !dfg.edges.some(e => e.target === n));
+  const startNodes =
+    dfg.startActivities.size > 0
+      ? Array.from(dfg.startActivities.keys())
+      : dfg.nodes.filter((n) => !dfg.edges.some((e) => e.target === n));
 
   let longestPath: string[] = [];
 
@@ -594,14 +605,18 @@ export function formatDFGComparison(comparison: DFGComparison): string {
  * Serialize DFG to JSON string.
  */
 export function serializeDFG(dfg: DFG): string {
-  return JSON.stringify({
-    nodes: dfg.nodes,
-    edges: dfg.edges,
-    startActivities: Array.from(dfg.startActivities.entries()),
-    endActivities: Array.from(dfg.endActivities.entries()),
-    totalEvents: dfg.totalEvents,
-    totalTraces: dfg.totalTraces,
-  }, null, 2);
+  return JSON.stringify(
+    {
+      nodes: dfg.nodes,
+      edges: dfg.edges,
+      startActivities: Array.from(dfg.startActivities.entries()),
+      endActivities: Array.from(dfg.endActivities.entries()),
+      totalEvents: dfg.totalEvents,
+      totalTraces: dfg.totalTraces,
+    },
+    null,
+    2
+  );
 }
 
 /**

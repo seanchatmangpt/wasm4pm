@@ -396,7 +396,14 @@ export function plan(config: Config): ExecutionPlan {
       );
     }
     // Keep analysis steps, replace discovery steps with the override
-    const analysisOnly = pipelineSteps.filter((s) => !s.toString().includes('discover') && !s.toString().includes('import') && !s.toString().includes('convert') && !s.toString().includes('export') && !s.toString().includes('simulate'));
+    const analysisOnly = pipelineSteps.filter(
+      (s) =>
+        !s.toString().includes('discover') &&
+        !s.toString().includes('import') &&
+        !s.toString().includes('convert') &&
+        !s.toString().includes('export') &&
+        !s.toString().includes('simulate')
+    );
     pipelineSteps = [overrideStepType as PlanStepType, ...analysisOnly];
   }
 
@@ -408,7 +415,13 @@ export function plan(config: Config): ExecutionPlan {
       ? { ...(config.execution.parameters || {}), ...(config.algorithm?.parameters || {}) }
       : config.execution.parameters || {};
 
-    if (algoType.toString().includes('discover') || algoType.toString().includes('import') || algoType.toString().includes('convert') || algoType.toString().includes('export') || algoType.toString().includes('simulate')) {
+    if (
+      algoType.toString().includes('discover') ||
+      algoType.toString().includes('import') ||
+      algoType.toString().includes('convert') ||
+      algoType.toString().includes('export') ||
+      algoType.toString().includes('simulate')
+    ) {
       // It's a discovery algorithm
       planStep = createAlgorithmStep(
         algoName,

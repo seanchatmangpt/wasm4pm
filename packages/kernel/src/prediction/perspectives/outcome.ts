@@ -100,7 +100,7 @@ export class OutcomeHandler implements PerspectiveHandler<OutcomeTask> {
   predict(
     task: OutcomeTask,
     model: PredictionModel,
-    prefixes: readonly PredictionTrace[],
+    prefixes: readonly PredictionTrace[]
   ): readonly PredictionRecord[] {
     const state = model.state as unknown as OutcomeState;
     const out: PredictionRecord[] = [];

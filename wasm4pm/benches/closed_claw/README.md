@@ -5,7 +5,7 @@ A Criterion-based benchmark suite for the `wpm` (wasm4pm) process mining engine,
 ## Quick Start
 
 ```bash
-# From pictl/ workspace root
+# From wasm4pm/ workspace root
 cargo bench --bench closed_claw --features browser
 
 # Single pipeline

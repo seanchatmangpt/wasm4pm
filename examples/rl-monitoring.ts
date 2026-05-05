@@ -20,7 +20,7 @@ import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
 // Direct WASM import — bypasses CLI wrappers (see CLAUDE.md gotchas).
-const wasm = require('../wasm4pm/pkg/pictl.js') as {
+const wasm = require('../wasm4pm/pkg/wasm4pm.js') as {
   RlOrchestrator: new (seed: bigint) => RlOrchestratorWasm;
 };
 

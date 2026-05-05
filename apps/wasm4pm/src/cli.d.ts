@@ -18,18 +18,39 @@ import { social } from './commands/social.js';
 import { quality } from './commands/quality.js';
 import { validate } from './commands/validate.js';
 import { autoprocess } from './commands/autoprocess.js';
-export declare const main: import("citty").CommandDef<{
-    json: {
-        type: "boolean";
-        description: string;
-    };
-    config: {
-        type: "string";
-        description: string;
-    };
+export declare const main: import('citty').CommandDef<{
+  json: {
+    type: 'boolean';
+    description: string;
+  };
+  config: {
+    type: 'string';
+    description: string;
+  };
 }>;
 /**
  * Export all commands for testing and programmatic use
  */
-export { run, watch, status, explain, init, predict, driftWatch, doctor, diff, results, compare, ml, powl, conformance, simulate, temporal, social, quality, validate, autoprocess, };
+export {
+  run,
+  watch,
+  status,
+  explain,
+  init,
+  predict,
+  driftWatch,
+  doctor,
+  diff,
+  results,
+  compare,
+  ml,
+  powl,
+  conformance,
+  simulate,
+  temporal,
+  social,
+  quality,
+  validate,
+  autoprocess,
+};
 //# sourceMappingURL=cli.d.ts.map

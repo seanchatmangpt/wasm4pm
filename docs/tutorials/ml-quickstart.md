@@ -5,12 +5,12 @@ minutes.
 
 ## Prerequisites
 
-- pictl CLI installed (`npm i -g @seanchatmangpt/pictl-cli`) **or** the source
+- wasm4pm CLI installed (`npm i -g @seanchatmangpt/wasm4pm-cli`) **or** the source
   monorepo built (`pnpm build` from repo root).
 - An XES log. If you don't have one, generate a synthetic sample:
 
   ```bash
-  wpm init                          # scaffolds pictl.toml
+  wpm init                          # scaffolds wasm4pm.toml
   curl -L -o sample.xes \
     https://www.tf-pm.org/resources/logs/road-traffic-fine.xes
   ```
@@ -73,7 +73,7 @@ wpm ml cluster -i sample.xes
 ```
 
 Use the returned `assignments` to group traces by `cluster` and inspect each
-cohort with `pictl run`:
+cohort with `wasm4pm run`:
 
 ```bash
 wpm ml cluster -i sample.xes --format json |

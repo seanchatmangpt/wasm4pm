@@ -142,7 +142,7 @@ export const ALGORITHM_OUTPUT_TYPES = {
     ml_regress: 'ml_result',
     ml_pca: 'ml_result',
 };
-/** Maps kernel registry ID → CLI alias for pictl run/compare */
+/** Maps kernel registry ID → CLI alias for wasm4pm run/compare */
 export const ALGORITHM_CLI_ALIASES = {
     process_skeleton: 'skeleton',
     dfg: 'dfg',

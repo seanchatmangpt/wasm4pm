@@ -9,11 +9,11 @@ export type { EngineState };
  * Metadata describing each engine state
  */
 export interface StateMetadata {
-    name: EngineState;
-    description: string;
-    operational: boolean;
-    terminal: boolean;
-    processing: boolean;
+  name: EngineState;
+  description: string;
+  operational: boolean;
+  terminal: boolean;
+  processing: boolean;
 }
 /**
  * Complete state metadata map

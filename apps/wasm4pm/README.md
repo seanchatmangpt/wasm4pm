@@ -27,7 +27,7 @@ Status: Production Ready
 ### Global Installation
 ```bash
 npm install -g @wasm4pm/cli
-pictl --version
+wasm4pm --version
 ```
 
 ### Local Installation
@@ -40,7 +40,7 @@ npx wpm --help
 ```bash
 pnpm install
 pnpm --filter @wasm4pm/cli build
-node apps/wasm4pm/dist/bin/pictl.js --help
+node apps/wasm4pm/dist/bin/wasm4pm.js --help
 ```
 
 ---
@@ -135,7 +135,7 @@ wpm explain --config
 
 ### wpm init
 
-Initialize a new pictl project with configuration templates.
+Initialize a new wasm4pm project with configuration templates.
 
 **Usage:**
 ```bash
@@ -164,7 +164,7 @@ wpm init --configFormat toml --force
 
 ---
 
-### pictl run
+### wasm4pm run
 
 Execute a discovery algorithm on event log(s).
 
@@ -404,7 +404,7 @@ destination = "stdout"            # stdout, stderr, or filepath
 enabled = true
 level = "info"
 sinks = ["console"]               # console, file, http
-file_path = "./pictl.log"
+file_path = "./wasm4pm.log"
 ```
 
 ### Configuration Resolution
@@ -413,29 +413,29 @@ Priority (high to low):
 1. CLI arguments (`--profile quality`)
 2. TOML file (`./wasm4pm.toml`)
 3. JSON file (`./wasm4pm.json`)
-4. Environment variables (`PICTL_PROFILE=quality`)
+4. Environment variables (`WASM4PM_PROFILE=quality`)
 5. Defaults
 
 ### Environment Variables
 
 ```bash
 # Engine configuration
-PICTL_PROFILE=quality
-PICTL_LOG_LEVEL=info
-PICTL_MAX_MEMORY_MB=2048
-PICTL_TIMEOUT_SECONDS=300
+WASM4PM_PROFILE=quality
+WASM4PM_LOG_LEVEL=info
+WASM4PM_MAX_MEMORY_MB=2048
+WASM4PM_TIMEOUT_SECONDS=300
 
 # Discovery configuration
-PICTL_DEFAULT_ALGORITHM=genetic
-PICTL_GENETIC_POPULATIONS=50
+WASM4PM_DEFAULT_ALGORITHM=genetic
+WASM4PM_GENETIC_POPULATIONS=50
 
 # Output configuration
-PICTL_OUTPUT_FORMAT=json
-PICTL_OUTPUT_DESTINATION=./results/
+WASM4PM_OUTPUT_FORMAT=json
+WASM4PM_OUTPUT_DESTINATION=./results/
 
 # Feature flags
-PICTL_WATCH_ENABLED=true
-PICTL_VERBOSE=true
+WASM4PM_WATCH_ENABLED=true
+WASM4PM_VERBOSE=true
 ```
 
 ---
@@ -516,7 +516,7 @@ RUN npm install -g @wasm4pm/cli
 COPY wasm4pm.toml .
 COPY data/ ./data/
 
-CMD ["pictl", "run", "data/eventlog.xes", "--profile", "balanced"]
+CMD ["wasm4pm", "run", "data/eventlog.xes", "--profile", "balanced"]
 ```
 
 ---
@@ -527,7 +527,7 @@ CMD ["pictl", "run", "data/eventlog.xes", "--profile", "balanced"]
 **Solution:** Install globally or use npx
 ```bash
 npm install -g @wasm4pm/cli
-pictl --version
+wasm4pm --version
 ```
 
 ### Issue: "File not found"
@@ -556,7 +556,7 @@ wpm run data.xes --profile stream --algorithm dfg
 ### Issue: "Timeout"
 **Solution:** Increase timeout or use faster profile
 ```bash
-PICTL_TIMEOUT_SECONDS=600 wpm run data.xes
+WASM4PM_TIMEOUT_SECONDS=600 wpm run data.xes
 # OR
 wpm run data.xes --profile fast
 ```
@@ -587,7 +587,7 @@ wpm run data.xes --profile fast
 
 5. **Enable Logging Strategically**
    ```bash
-   PICTL_LOG_LEVEL=warn wpm run data.xes
+   WASM4PM_LOG_LEVEL=warn wpm run data.xes
    ```
 
 ---
@@ -599,7 +599,7 @@ wpm run data.xes --profile fast
 # Install dependencies
 pnpm install
 
-# Build pictl
+# Build wasm4pm
 pnpm --filter @wasm4pm/cli build
 
 # Run tests
@@ -622,17 +622,17 @@ pnpm --filter @wasm4pm/cli dev
 ### Programmatic Usage
 
 ```typescript
-import { pictl } from '@wasm4pm/cli';
+import { wasm4pm } from '@wasm4pm/cli';
 
 // Run discovery
-const result = await pictl.run('data.xes', {
+const result = await wasm4pm.run('data.xes', {
   algorithm: 'genetic',
   profile: 'quality',
   output: 'result.json'
 });
 
 // Watch directory
-pictl.watch('data/', {
+wasm4pm.watch('data/', {
   profile: 'fast',
   output: 'results/'
 }).on('processed', (file) => {
@@ -640,7 +640,7 @@ pictl.watch('data/', {
 });
 
 // Get status
-const status = await pictl.status();
+const status = await wasm4pm.status();
 console.log(status.engine.status);
 ```
 

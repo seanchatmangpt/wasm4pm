@@ -7,17 +7,17 @@
  */
 /** Parsed semantic version */
 export interface SemVer {
-    major: number;
-    minor: number;
-    patch: number;
-    prerelease?: string;
+  major: number;
+  minor: number;
+  patch: number;
+  prerelease?: string;
 }
 /** Version compatibility result */
 export interface CompatibilityResult {
-    compatible: boolean;
-    current: string;
-    required: string;
-    reason?: string;
+  compatible: boolean;
+  current: string;
+  required: string;
+  reason?: string;
 }
 /** The kernel's own version — derived from package.json */
 export declare const KERNEL_VERSION: string;

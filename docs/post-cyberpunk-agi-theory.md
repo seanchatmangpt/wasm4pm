@@ -445,4 +445,4 @@ Van der Aalst's process mining algorithms [1] discover process models from event
 
 ---
 
-*This document is a theory paper. All empirical measurements are from Criterion.rs benchmarks executed on Apple Silicon (macOS Darwin 25.2.0, ARM64, 3.5 GHz nominal) with Rust 1.80+ at `-C opt-level=3`. Source code: the five modules (`guards.rs`, `pattern_dispatch.rs`, `reinforcement.rs`, `self_healing.rs`, `spc.rs`) in the pictl/wasm4pm repository, totaling 4,228 lines of pure Rust compiled to WebAssembly.*
+*This document is a theory paper. All empirical measurements are from Criterion.rs benchmarks executed on Apple Silicon (macOS Darwin 25.2.0, ARM64, 3.5 GHz nominal) with Rust 1.80+ at `-C opt-level=3`. Source code: the five modules (`guards.rs`, `pattern_dispatch.rs`, `reinforcement.rs`, `self_healing.rs`, `spc.rs`) in the wasm4pm/wasm4pm repository, totaling 4,228 lines of pure Rust compiled to WebAssembly.*

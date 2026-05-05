@@ -49,7 +49,9 @@ export const swarm = defineCommand({
         // JSONFormatter doesn't have .warn() or .log().
       } else {
         formatter.warn('GROQ_API_KEY environment variable is missing.');
-        formatter.warn('The swarm relies on Vercel AI SDK and Groq for orchestrating the mining agents.');
+        formatter.warn(
+          'The swarm relies on Vercel AI SDK and Groq for orchestrating the mining agents.'
+        );
         formatter.warn('Running with mocked LLM output for demonstration purposes.');
       }
 
@@ -61,7 +63,7 @@ export const swarm = defineCommand({
         formatter.log('');
         formatter.info(`Initializing Agent Swarm Logic on ${inputPath}...`);
       }
-      
+
       const config = {
         maxEpisodes,
         maxSteps: 20,
@@ -79,13 +81,15 @@ export const swarm = defineCommand({
         formatter.log('');
         formatter.success(`Swarm reached convergence: ${result.converged ? 'YES' : 'NO'}`);
         formatter.log(`Episodes run: ${result.episodes.length}`);
-        
+
         formatter.log('');
         formatter.info('Final Worker Results (Core Mining Backends):');
         for (const worker of result.finalWorkerResults) {
-          formatter.log(`  - Worker [${worker.workerId}]: executed ${worker.algorithmId} in ${worker.durationMs}ms`);
+          formatter.log(
+            `  - Worker [${worker.workerId}]: executed ${worker.algorithmId} in ${worker.durationMs}ms`
+          );
         }
-        
+
         if (ctx.args.verbose) {
           formatter.log('');
           formatter.log(JSON.stringify(result.artifact, null, 2));
@@ -98,7 +102,7 @@ export const swarm = defineCommand({
         formatter.error('Agent Swarm execution failed', error);
       } else {
         formatter.error(
-          `Agent Swarm execution failed: ${error instanceof Error ? error.message : String(error)}`,
+          `Agent Swarm execution failed: ${error instanceof Error ? error.message : String(error)}`
         );
       }
       process.exit(EXIT_CODES.execution_error);

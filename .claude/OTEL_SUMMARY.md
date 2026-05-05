@@ -17,7 +17,7 @@
 - **Plugin Wrapper:** `packages/observability/src/eslint-plugin.js` — Load custom rule
 
 ### Configuration
-- **ESLint Config:** `.eslintrc.cjs` — Updated to include pictl-observability plugin
+- **ESLint Config:** `.eslintrc.cjs` — Updated to include wasm4pm-observability plugin
 - **Coverage Dashboard (JSON):** `.wasm4pm/otel-coverage.json` — Metrics & tracking
 - **Coverage Dashboard (MD):** `.wasm4pm/otel-coverage.md` — Human-readable summary
 
@@ -133,7 +133,7 @@ Instrumentation.createSinkStartedEvent(traceId, kind, requiredAttrs)
 
 **"ESLint rule not showing warnings"**
 → Run: `npm run lint -- packages/config/src/`  
-→ Check `.eslintrc.cjs` has `pictl-observability` plugin
+→ Check `.eslintrc.cjs` has `wasm4pm-observability` plugin
 
 **"Pre-commit hook not running"**
 → Install hook: `ln -s ../../.claude/hooks/otel-coverage.sh .git/hooks/pre-commit`  

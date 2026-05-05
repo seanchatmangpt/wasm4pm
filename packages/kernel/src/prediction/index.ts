@@ -42,9 +42,7 @@
  *   4. Add per-task range checks to `validation.ts::validateTask`.
  */
 
-export {
-  ALL_PREDICTION_PERSPECTIVES,
-} from './types.js';
+export { ALL_PREDICTION_PERSPECTIVES } from './types.js';
 export type {
   PredictionPerspective,
   PredictionEvent,
@@ -77,14 +75,9 @@ export {
 } from './validation.js';
 export type { PredictionValidationCode } from './validation.js';
 
-export {
-  PredictionRegistry,
-  getDefaultPredictionRegistry,
-} from './registry.js';
+export { PredictionRegistry, getDefaultPredictionRegistry } from './registry.js';
 
-export {
-  PredictionDispatcher,
-} from './dispatcher.js';
+export { PredictionDispatcher } from './dispatcher.js';
 export type { DispatcherOptions } from './dispatcher.js';
 
 export type { PerspectiveHandler } from './perspectives/handler.js';

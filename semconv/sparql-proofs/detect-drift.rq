@@ -1,5 +1,5 @@
 # SPARQL CONSTRUCT: Transform Drift Detection JSON to RDF
-# Maps pictl detect_concept_drift MCP tool result into pm:ConceptDrift triples
+# Maps wasm4pm detect_concept_drift MCP tool result into pm:ConceptDrift triples
 # Input: JSON with driftDetected, changePoint, beforeMetrics, afterMetrics, confidence
 # Output: RDF graph documenting process drift behavior and timing
 
@@ -67,11 +67,11 @@ WHERE {
   #                   beforeMetrics: {...}, afterMetrics: {...}, confidence: 0.87 }
 
   # Generate drift detection IRI
-  BIND(IRI(CONCAT("http://pictl.org/drift/", SUBSTR(STR(NOW()), 1, 10), "/", RAND())) AS ?drift)
+  BIND(IRI(CONCAT("http://wasm4pm.org/drift/", SUBSTR(STR(NOW()), 1, 10), "/", RAND())) AS ?drift)
   BIND(NOW() AS ?timestamp)
 
   # Placeholder URIs (would be replaced by actual data from application)
-  BIND(IRI("http://pictl.org/log/current") AS ?event_log)
+  BIND(IRI("http://wasm4pm.org/log/current") AS ?event_log)
 
   # Conditional bindings based on drift detection flag
   BIND(IF(true, "Concept Drift Detected in Process Behavior", "No Drift Detected") AS ?drift_label)
@@ -88,29 +88,29 @@ WHERE {
   BIND("Drift in activity sequence and timing patterns" AS ?drift_description)
 
   # Before-drift metrics
-  BIND(IRI(CONCAT("http://pictl.org/metrics/before/", RAND())) AS ?before_metrics)
+  BIND(IRI(CONCAT("http://wasm4pm.org/metrics/before/", RAND())) AS ?before_metrics)
   BIND(1200 AS ?before_trace_count)
   BIND(5400 AS ?before_event_count)
   BIND(8 AS ?before_activity_count)
   BIND("PT2H30M"^^xsd:duration AS ?before_avg_duration)
-  BIND(IRI("http://pictl.org/activity/A") AS ?before_dominant)
+  BIND(IRI("http://wasm4pm.org/activity/A") AS ?before_dominant)
   BIND(xsd:dateTime(SUBSTR(STR(?timestamp), 1, 19)) AS ?before_timestamp)
 
   # After-drift metrics
-  BIND(IRI(CONCAT("http://pictl.org/metrics/after/", RAND())) AS ?after_metrics)
+  BIND(IRI(CONCAT("http://wasm4pm.org/metrics/after/", RAND())) AS ?after_metrics)
   BIND(800 AS ?after_trace_count)
   BIND(3800 AS ?after_event_count)
   BIND(12 AS ?after_activity_count)
   BIND("PT4H15M"^^xsd:duration AS ?after_avg_duration)
-  BIND(IRI("http://pictl.org/activity/C") AS ?after_dominant)
+  BIND(IRI("http://wasm4pm.org/activity/C") AS ?after_dominant)
   BIND(xsd:dateTime(SUBSTR(STR(?timestamp), 1, 19)) AS ?after_timestamp)
 
   # Analysis summary
-  BIND(IRI(CONCAT("http://pictl.org/analysis/", RAND())) AS ?analysis)
+  BIND(IRI(CONCAT("http://wasm4pm.org/analysis/", RAND())) AS ?analysis)
   BIND(0.91 AS ?significance)
   BIND("Process design change or resource constraint" AS ?drift_cause)
   BIND("Investigate activity sequences after event 500; consider model retraining" AS ?recommended_action)
 
   # Reference to drift instance
-  BIND(IRI(CONCAT("http://pictl.org/drift/instance/", RAND())) AS ?drift_instance)
+  BIND(IRI(CONCAT("http://wasm4pm.org/drift/instance/", RAND())) AS ?drift_instance)
 }

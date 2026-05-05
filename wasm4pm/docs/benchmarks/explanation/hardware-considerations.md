@@ -1,6 +1,6 @@
 # Apple M3 Max Hardware Considerations
 
-How the hardware we benchmark on affects our results, and what to expect when running pictl on different machines.
+How the hardware we benchmark on affects our results, and what to expect when running wasm4pm on different machines.
 
 ---
 

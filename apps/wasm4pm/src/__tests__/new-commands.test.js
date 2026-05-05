@@ -67,7 +67,7 @@ const MINIMAL_XES = `<?xml version="1.0" encoding="UTF-8"?>
   </trace>
 </log>`;
 async function createTestEnv() {
-    const tempDir = await fs.mkdtemp(path.join(tmpdir(), 'pictl-test-'));
+    const tempDir = await fs.mkdtemp(path.join(tmpdir(), 'wasm4pm-test-'));
     const xesPath = path.join(tempDir, 'test.xes');
     await fs.writeFile(xesPath, MINIMAL_XES, 'utf-8');
     return {
@@ -86,10 +86,10 @@ async function createTestEnv() {
 function runCli(args, timeoutMs = 30000) {
     return new Promise((resolve) => {
         const start = Date.now();
-        // Use direct path to built CLI binary instead of npx pictl
-        // npx can't resolve pictl in vitest child_process (no symlink in node_modules/.bin)
-        const cliPath = path.resolve(__dirname, '../../dist/bin/pictl.js');
-        const cwd = path.resolve(__dirname, '../..'); // Set working directory to apps/pictl
+        // Use direct path to built CLI binary instead of npx wasm4pm
+        // npx can't resolve wasm4pm in vitest child_process (no symlink in node_modules/.bin)
+        const cliPath = path.resolve(__dirname, '../../dist/bin/wasm4pm.js');
+        const cwd = path.resolve(__dirname, '../..'); // Set working directory to apps/wasm4pm
         const child = execFile(process.execPath, [cliPath, ...args], {
             timeout: timeoutMs,
             maxBuffer: 10 * 1024 * 1024,

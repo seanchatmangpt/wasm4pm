@@ -1,6 +1,6 @@
 import re
 
-with open('apps/pictl/src/commands/doctor.ts', 'r') as f:
+with open('apps/wasm4pm/src/commands/doctor.ts', 'r') as f:
     content = f.read()
 
 # Replace interfaces
@@ -88,7 +88,7 @@ def replacer(match):
         pathology = "'DEPLOYABILITY_TRUTH_FAULT'"
     elif 'TypeScript' in name:
         pathology = "'EPISTEMIC_FAULT'"
-    elif '@pictl/ml' in name:
+    elif '@wasm4pm/ml' in name:
         pathology = "'ENVIRONMENT_FAULT'"
     elif 'Results' in name:
         pathology = "'DEPLOYABILITY_TRUTH_FAULT'"
@@ -137,7 +137,7 @@ function renderBadge(severity: Diagnosis['severity']): string {
 
 function printReport(formatter: HumanFormatter, report: DoctorReport): void {
   formatter.log('');
-  formatter.log('pictl doctor — epistemic diagnostician & autonomic governor');
+  formatter.log('wasm4pm doctor — epistemic diagnostician & autonomic governor');
   formatter.log('─'.repeat(80));
 
   let lastSection = '';
@@ -171,9 +171,9 @@ function printReport(formatter: HumanFormatter, report: DoctorReport): void {
           } else if (fixText.includes('pnpm install')) {
               inferredRepairMode = 'REINSTALL_DEPENDENCIES';
               inferredRepairCmd = 'pnpm install';
-          } else if (fixText.includes('pictl init')) {
+          } else if (fixText.includes('wasm4pm init')) {
               inferredRepairMode = 'SCAFFOLD_CONFIG';
-              inferredRepairCmd = 'pictl init';
+              inferredRepairCmd = 'wasm4pm init';
           } else if (fixText.includes('corepack')) {
               inferredRepairMode = 'REINSTALL_DEPENDENCIES';
               inferredRepairCmd = fixText;
@@ -228,5 +228,5 @@ content = content.replace("healthy: checks.every((c) => c.status !== 'fail'),", 
 content = content.replace('report.healthy', 'report.epistemicHealth')
 content = content.replace('checks: report.checks', 'diagnoses: report.diagnoses')
 
-with open('apps/pictl/src/commands/doctor.ts', 'w') as f:
+with open('apps/wasm4pm/src/commands/doctor.ts', 'w') as f:
     f.write(content)

@@ -28,7 +28,7 @@ This is not a technology problem. It is a **correctness problem**. Three indepen
 
 **The Coordination Failure Theorem** (Chapter 1 Problem Statement) proves that semantic drift between distributed teams grows as $\delta(\mathcal{O}_i, \mathcal{O}_j) \geq k \cdot t \cdot p_{\text{conflict}}$. When Disney accumulated 4,200+ contradictions in Star Wars canon, when Boeing's MCAS parameters diverged across teams costing 346 lives, when FDA pharma compliance failures exceeded $500M—all were instances of the same theorem: **without mechanical invariant enforcement, distributed systems drift into incoherence at a rate proportional to team count and time since last synchronization**.
 
-**The Epistemological Gap** (pictl benchmarks thesis) identifies that benchmark results without cryptographic proof of execution are merely claims, not evidence. An algorithm that processes 200 million events per second but produces non-deterministic results is a liability, not an asset, in compliance-critical applications. The gap between "we measured this" and "we can prove this" is the gap between research and production.
+**The Epistemological Gap** (wasm4pm benchmarks thesis) identifies that benchmark results without cryptographic proof of execution are merely claims, not evidence. An algorithm that processes 200 million events per second but produces non-deterministic results is a liability, not an asset, in compliance-critical applications. The gap between "we measured this" and "we can prove this" is the gap between research and production.
 
 **The Information-Theoretic Opacity Principle** (Knowledge Hooks thesis) proves that user-facing complexity must be absorbed by the system, not exposed to the user. The channel capacity of human input ($C_{\text{input}} \ll H(\Lambda)$) cannot match the entropy of enterprise operations ($H(\Lambda) \approx 50$ nats). The system must bridge this gap through opaque operators—or the human becomes the bottleneck.
 
@@ -38,7 +38,7 @@ Each thesis in this hyperthesis independently arrives at the same architectural 
 
 | Thesis | Core Contribution | Convergence Point |
 |--------|-------------------|-------------------|
-| **pictl Benchmarks** | Closed Claw Constitution: 6 pipelines, 5 gates, BLAKE3 receipts | Proof that process mining operates at web scale with cryptographic correctness |
+| **wasm4pm Benchmarks** | Closed Claw Constitution: 6 pipelines, 5 gates, BLAKE3 receipts | Proof that process mining operates at web scale with cryptographic correctness |
 | **KGC 4D** | Temporal event-sourced knowledge graphs with vector clock causality | Proof that ontology state can be deterministically reconstructed at any point in time |
 | **HDIT** | Hyperdimensional Information Theory: Monoidal Semantic Compression Theorem | Proof that single-pass engineering achieves 99.99% correctness via information geometry |
 | **Big Bang 80/20** | 11-step single-pass methodology from spec to deployment | Proof that the engineering methodology exists to build these systems efficiently |
@@ -80,7 +80,7 @@ Signal Theory $S = (M, G, T, F, W)$ provides the encoding layer—every artifact
 
 ### Pillar 1: Operational Truth via the Closed Claw Constitution
 
-**Source:** pictl benchmarks thesis — "Towards Operational Truth: What WebAssembly Process Mining Benchmarks Actually Prove"
+**Source:** wasm4pm benchmarks thesis — "Towards Operational Truth: What WebAssembly Process Mining Benchmarks Actually Prove"
 
 The Closed Claw Benchmarking Constitution establishes that benchmark results constitute **operational truth** only when they pass five cryptographic gates:
 
@@ -409,7 +409,7 @@ The receipt is not merely a checksum—it is a **cryptographic commitment** that
 Each pillar addresses a distinct dimension of the autonomous enterprise problem:
 
 - **Correctness** (External Verifiability) — Are the operations lawful?
-- **Performance** (pictl Benchmarks) — Are the operations fast enough?
+- **Performance** (wasm4pm Benchmarks) — Are the operations fast enough?
 - **Integrity** (KGC 4D) — Is the state temporally consistent?
 - **Foundations** (HDIT) — Are the mathematical assumptions valid?
 - **Methodology** (BB80/20) — Can we build it efficiently?
@@ -480,7 +480,7 @@ The Semantic Drift Inevitability Theorem proves that organizations beyond Dunbar
 
 ### 6.3 For Process Mining
 
-The pictl benchmarks thesis proves that the complete van der Aalst framework can execute at web scale. The HDIT thesis proves that the mathematical foundations of process mining (fitness, precision, generalization, simplicity) are information-theoretically grounded. The combination suggests that process mining is not merely an analytical tool but the **verification engine** for autonomous enterprise operation—proving that observed processes conform to declared models.
+The wasm4pm benchmarks thesis proves that the complete van der Aalst framework can execute at web scale. The HDIT thesis proves that the mathematical foundations of process mining (fitness, precision, generalization, simplicity) are information-theoretically grounded. The combination suggests that process mining is not merely an analytical tool but the **verification engine** for autonomous enterprise operation—proving that observed processes conform to declared models.
 
 ### 6.4 For AI Safety
 
@@ -523,7 +523,7 @@ That is the autonomous enterprise. That is Vision 2030.
 
 | # | Thesis | Location | Lines |
 |---|--------|----------|-------|
-| 1 | pictl Benchmarks | `pictl/docs/pictl-phd-thesis-benchmarks.md` | ~700 |
+| 1 | wasm4pm Benchmarks | `wasm4pm/docs/wasm4pm-phd-thesis-benchmarks.md` | ~700 |
 | 2 | KGC 4D Blue Ocean | `unrdf/packages/kgc-4d/docs/4d-blue-ocean/thesis.tex` | ~810 |
 | 3 | HDIT Advanced | `unrdf/packages/kgc-4d/docs/explanation/thesis-advanced-hdit.tex` | ~1,633 |
 | 4 | Big Bang 80/20 | `unrdf/packages/kgc-4d/docs/explanation/thesis-bigbang-80-20.tex` | ~1,190 |
@@ -548,13 +548,13 @@ That is the autonomous enterprise. That is Vision 2030.
 
 | Component | Status | Tests | Evidence |
 |-----------|--------|-------|----------|
-| pictl WASM engine | Complete | 21 algorithms, 6 pipeline classes | Closed Claw Constitution implemented |
+| wasm4pm WASM engine | Complete | 21 algorithms, 6 pipeline classes | Closed Claw Constitution implemented |
 | KGC 4D | Complete | 302 tests, 24 Poka-Yoke guards | Zero critical failure modes |
 | OSA | Complete | 8,433 tests | Healing, hooks, board intelligence |
 | BusinessOS | Complete | 56 Go tests | Compliance engine, SOC2 rules |
 | Canopy | Complete | Full stack | Heartbeat, workspace protocol |
 | Signal Theory | Complete | Integrated | S/N gates, failure mode detection |
-| BLAKE3 receipts | Complete | Cross-platform | Receipt chains in pictl + KGC 4D + BusinessOS |
+| BLAKE3 receipts | Complete | Cross-platform | Receipt chains in wasm4pm + KGC 4D + BusinessOS |
 
 ---
 

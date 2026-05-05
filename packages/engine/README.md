@@ -1,6 +1,6 @@
 # @wasm4pm/engine
 
-High-level engine lifecycle and state machine for pictl. Manages bootstrap, planning, execution, and error recovery with a well-defined state machine and comprehensive error handling.
+High-level engine lifecycle and state machine for wasm4pm. Manages bootstrap, planning, execution, and error recovery with a well-defined state machine and comprehensive error handling.
 
 ## Features
 

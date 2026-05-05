@@ -155,7 +155,7 @@ To verify claimed tick counts, inspect the WASM and native codegen:
 ### Native (x86-64)
 
 ```bash
-cargo asm --lib pictl::hot_kernels::ingress_decide_4 --intel
+cargo asm --lib wasm4pm::hot_kernels::ingress_decide_4 --intel
 ```
 
 Expected: ~8 x86 instructions (no jmp, no call). Example:
@@ -171,7 +171,7 @@ movl  %eax, (%r8)             # store result
 ### WASM (Binary Size)
 
 ```bash
-wasm-opt -o /tmp/opt.wasm target/wasm32-unknown-unknown/release/pictl_*.wasm
+wasm-opt -o /tmp/opt.wasm target/wasm32-unknown-unknown/release/wasm4pm_*.wasm
 wasm-objdump -t /tmp/opt.wasm | grep hot_kernels
 ```
 

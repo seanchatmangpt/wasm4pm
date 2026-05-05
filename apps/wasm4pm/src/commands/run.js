@@ -8,7 +8,7 @@ import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { savePredictionResult } from './results.js';
 import { executeMlTask } from '../ml-runner.js';
-/** All algorithms supported by pictl run, mapped to their WASM discovery functions. */
+/** All algorithms supported by wasm4pm run, mapped to their WASM discovery functions. */
 const ALGORITHMS = [
     'dfg',
     'alpha',
@@ -113,7 +113,7 @@ export const run = defineCommand({
         },
         config: {
             type: 'string',
-            description: 'Path to configuration file (pictl.toml or wasm4pm.json)',
+            description: 'Path to configuration file (wasm4pm.toml or wasm4pm.json)',
         },
         algorithm: {
             type: 'string',
@@ -225,7 +225,7 @@ export const run = defineCommand({
             // Step 3: Resolve input path (positional OR --file/-i)
             const inputPath = ctx.args.input || ctx.args.file;
             if (!inputPath) {
-                formatter.error('Input file required.\n\nUsage:  pictl run <log.xes>\n        pictl run <log.xes> --algorithm heuristic\n\nRun "pictl --help" to see all commands.');
+                formatter.error('Input file required.\n\nUsage:  wasm4pm run <log.xes>\n        wasm4pm run <log.xes> --algorithm heuristic\n\nRun "wasm4pm --help" to see all commands.');
                 process.exit(EXIT_CODES.source_error);
             }
             try {
@@ -428,8 +428,8 @@ export const run = defineCommand({
                     formatter.info(`  Simplicity: ${(qualityMetrics.simplicity * 100).toFixed(1)}%`);
                 }
                 formatter.log('');
-                formatter.log('  Run "pictl results" to view saved results.');
-                formatter.log('  Run "pictl compare dfg,heuristic -i ' +
+                formatter.log('  Run "wasm4pm results" to view saved results.');
+                formatter.log('  Run "wasm4pm compare dfg,heuristic -i ' +
                     path.basename(inputPath) +
                     '" to compare algorithms.');
             }
@@ -463,7 +463,7 @@ export const run = defineCommand({
                 formatter.error('Discovery failed', error);
             }
             else {
-                formatter.error(`Discovery failed: ${error instanceof Error ? error.message : String(error)}\n\nRun "pictl doctor" to check your environment.`);
+                formatter.error(`Discovery failed: ${error instanceof Error ? error.message : String(error)}\n\nRun "wasm4pm doctor" to check your environment.`);
             }
             process.exit(EXIT_CODES.execution_error);
         }

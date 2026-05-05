@@ -9,7 +9,14 @@ import { PlanStepType } from '@wasm4pm/planner';
 /**
  * Complexity class for O(n) analysis
  */
-export type ComplexityClass = 'O(n)' | 'O(n log n)' | 'O(n²)' | 'O(n³)' | 'O(n * d²)' | 'Exponential' | 'NP-Hard';
+export type ComplexityClass =
+  | 'O(n)'
+  | 'O(n log n)'
+  | 'O(n²)'
+  | 'O(n³)'
+  | 'O(n * d²)'
+  | 'Exponential'
+  | 'NP-Hard';
 
 /**
  * Speed tier: 0-100 (lower = faster)
@@ -238,7 +245,8 @@ export class AlgorithmRegistry {
     this.registerWithInferredProfiles({
       id: 'inductive_miner',
       name: 'Inductive Miner',
-      description: 'Recursive cut-based process tree discovery (XOR/Sequence/Parallel/Loop cuts). IM-basic: no noise filtering, all directly-follows preserved.',
+      description:
+        'Recursive cut-based process tree discovery (XOR/Sequence/Parallel/Loop cuts). IM-basic: no noise filtering, all directly-follows preserved.',
       outputType: 'tree',
       complexity: 'O(n log n)',
       speedTier: 30,
@@ -272,7 +280,8 @@ export class AlgorithmRegistry {
     this.registerWithInferredProfiles({
       id: 'genetic_algorithm',
       name: 'Genetic Algorithm',
-      description: 'Uses evolutionary computation. Actually returns DFG, not Petri net (Phase 4 audit correction).',
+      description:
+        'Uses evolutionary computation. Actually returns DFG, not Petri net (Phase 4 audit correction).',
       outputType: 'dfg',
       complexity: 'Exponential',
       speedTier: 75,
@@ -315,7 +324,8 @@ export class AlgorithmRegistry {
     this.registerWithInferredProfiles({
       id: 'pso',
       name: 'Particle Swarm Optimization (PSO)',
-      description: 'Swarm-based algorithm. Actually returns DFG, not Petri net (Phase 4 audit correction).',
+      description:
+        'Swarm-based algorithm. Actually returns DFG, not Petri net (Phase 4 audit correction).',
       outputType: 'dfg',
       complexity: 'Exponential',
       speedTier: 70,
@@ -358,7 +368,8 @@ export class AlgorithmRegistry {
     this.registerWithInferredProfiles({
       id: 'a_star',
       name: 'A* Search',
-      description: 'Heuristic search algorithm. Actually returns DFG, not Petri net (Phase 4 audit correction).',
+      description:
+        'Heuristic search algorithm. Actually returns DFG, not Petri net (Phase 4 audit correction).',
       outputType: 'dfg',
       complexity: 'Exponential',
       speedTier: 60,
@@ -392,7 +403,8 @@ export class AlgorithmRegistry {
     this.registerWithInferredProfiles({
       id: 'hill_climbing',
       name: 'Hill Climbing',
-      description: 'Greedy local search. Actually returns DFG, not Petri net (Phase 4 audit correction).',
+      description:
+        'Greedy local search. Actually returns DFG, not Petri net (Phase 4 audit correction).',
       outputType: 'dfg',
       complexity: 'O(n²)',
       speedTier: 40,
@@ -426,7 +438,8 @@ export class AlgorithmRegistry {
     this.registerWithInferredProfiles({
       id: 'aco',
       name: 'Ant Colony Optimization (ACO)',
-      description: 'Swarm intelligence algorithm. Actually returns DFG, not Petri net (Phase 4 audit correction).',
+      description:
+        'Swarm intelligence algorithm. Actually returns DFG, not Petri net (Phase 4 audit correction).',
       outputType: 'dfg',
       complexity: 'Exponential',
       speedTier: 65,
@@ -469,7 +482,8 @@ export class AlgorithmRegistry {
     this.registerWithInferredProfiles({
       id: 'simulated_annealing',
       name: 'Simulated Annealing',
-      description: 'Probabilistic technique. Actually returns DFG, not Petri net (Phase 4 audit correction).',
+      description:
+        'Probabilistic technique. Actually returns DFG, not Petri net (Phase 4 audit correction).',
       outputType: 'dfg',
       complexity: 'Exponential',
       speedTier: 55,
@@ -512,7 +526,8 @@ export class AlgorithmRegistry {
     this.registerWithInferredProfiles({
       id: 'declare',
       name: 'Declare (Constraints)',
-      description: 'Discovers declarative (constraint-based) process models. Good for flexible processes.',
+      description:
+        'Discovers declarative (constraint-based) process models. Good for flexible processes.',
       outputType: 'declare',
       complexity: 'O(n²)',
       speedTier: 35,
@@ -753,10 +768,39 @@ export class AlgorithmRegistry {
       speedTier: 35,
       qualityTier: 55,
       parameters: [
-        { name: 'activity_key', type: 'string', description: 'Activity key', required: true, default: 'concept:name' },
-        { name: 'method', type: 'select', description: 'Clustering method', required: false, default: 'kmeans', options: ['kmeans', 'dbscan'] },
-        { name: 'k', type: 'number', description: 'Number of clusters', required: false, default: 3, min: 2, max: 20 },
-        { name: 'eps', type: 'number', description: 'DBSCAN epsilon', required: false, default: 1.0, min: 0.01, max: 100 },
+        {
+          name: 'activity_key',
+          type: 'string',
+          description: 'Activity key',
+          required: true,
+          default: 'concept:name',
+        },
+        {
+          name: 'method',
+          type: 'select',
+          description: 'Clustering method',
+          required: false,
+          default: 'kmeans',
+          options: ['kmeans', 'dbscan'],
+        },
+        {
+          name: 'k',
+          type: 'number',
+          description: 'Number of clusters',
+          required: false,
+          default: 3,
+          min: 2,
+          max: 20,
+        },
+        {
+          name: 'eps',
+          type: 'number',
+          description: 'DBSCAN epsilon',
+          required: false,
+          default: 1.0,
+          min: 0.01,
+          max: 100,
+        },
       ],
       supportedProfiles: ['balanced', 'quality'],
       estimatedDurationMs: 20,
@@ -770,14 +814,28 @@ export class AlgorithmRegistry {
     this.registerWithInferredProfiles({
       id: 'ml_anomaly',
       name: 'ML Anomaly Detection',
-      description: 'Detect anomalous process windows using peak finding and seasonal decomposition on drift distances.',
+      description:
+        'Detect anomalous process windows using peak finding and seasonal decomposition on drift distances.',
       outputType: 'ml_result',
       complexity: 'O(n log n)',
       speedTier: 30,
       qualityTier: 55,
       parameters: [
-        { name: 'activity_key', type: 'string', description: 'Activity key', required: true, default: 'concept:name' },
-        { name: 'smoothing_method', type: 'select', description: 'Smoothing algorithm', required: false, default: 'sma', options: ['sma', 'ema'] },
+        {
+          name: 'activity_key',
+          type: 'string',
+          description: 'Activity key',
+          required: true,
+          default: 'concept:name',
+        },
+        {
+          name: 'smoothing_method',
+          type: 'select',
+          description: 'Smoothing algorithm',
+          required: false,
+          default: 'sma',
+          options: ['sma', 'ema'],
+        },
       ],
       supportedProfiles: ['balanced', 'quality'],
       estimatedDurationMs: 15,
@@ -801,9 +859,30 @@ export class AlgorithmRegistry {
       speedTier: 70,
       qualityTier: 50,
       parameters: [
-        { name: 'activity_key', type: 'string', description: 'Event attribute key for activity names', required: true, default: 'concept:name' },
-        { name: 'window', type: 'number', description: 'Sliding window size', required: false, default: 1, min: 1, max: 10 },
-        { name: 'direction', type: 'select', description: 'Window direction', required: false, default: 'forward', options: ['forward', 'backward'] },
+        {
+          name: 'activity_key',
+          type: 'string',
+          description: 'Event attribute key for activity names',
+          required: true,
+          default: 'concept:name',
+        },
+        {
+          name: 'window',
+          type: 'number',
+          description: 'Sliding window size',
+          required: false,
+          default: 1,
+          min: 1,
+          max: 10,
+        },
+        {
+          name: 'direction',
+          type: 'select',
+          description: 'Window direction',
+          required: false,
+          default: 'forward',
+          options: ['forward', 'backward'],
+        },
       ],
       supportedProfiles: ['quality', 'stream'],
       estimatedDurationMs: 15,
@@ -821,7 +900,13 @@ export class AlgorithmRegistry {
       speedTier: 75,
       qualityTier: 50,
       parameters: [
-        { name: 'activity_key', type: 'string', description: 'Event attribute key for activity names', required: true, default: 'concept:name' },
+        {
+          name: 'activity_key',
+          type: 'string',
+          description: 'Event attribute key for activity names',
+          required: true,
+          default: 'concept:name',
+        },
       ],
       supportedProfiles: ['balanced', 'quality', 'stream'],
       estimatedDurationMs: 10,
@@ -839,9 +924,30 @@ export class AlgorithmRegistry {
       speedTier: 60,
       qualityTier: 55,
       parameters: [
-        { name: 'activity_key', type: 'string', description: 'Event attribute key for activity names', required: true, default: 'concept:name' },
-        { name: 'method', type: 'select', description: 'Discovery method', required: false, default: 'heuristic', options: ['alpha', 'heuristic'] },
-        { name: 'dependency_threshold', type: 'number', description: 'Minimum dependency threshold (heuristic)', required: false, default: 0.5, min: 0, max: 1 },
+        {
+          name: 'activity_key',
+          type: 'string',
+          description: 'Event attribute key for activity names',
+          required: true,
+          default: 'concept:name',
+        },
+        {
+          name: 'method',
+          type: 'select',
+          description: 'Discovery method',
+          required: false,
+          default: 'heuristic',
+          options: ['alpha', 'heuristic'],
+        },
+        {
+          name: 'dependency_threshold',
+          type: 'number',
+          description: 'Minimum dependency threshold (heuristic)',
+          required: false,
+          default: 0.5,
+          min: 0,
+          max: 1,
+        },
       ],
       supportedProfiles: ['quality', 'stream'],
       estimatedDurationMs: 20,
@@ -859,8 +965,20 @@ export class AlgorithmRegistry {
       speedTier: 55,
       qualityTier: 60,
       parameters: [
-        { name: 'activity_key', type: 'string', description: 'Activity attribute key', required: true, default: 'concept:name' },
-        { name: 'timestamp_key', type: 'string', description: 'Timestamp attribute key', required: false, default: 'time:timestamp' },
+        {
+          name: 'activity_key',
+          type: 'string',
+          description: 'Activity attribute key',
+          required: true,
+          default: 'concept:name',
+        },
+        {
+          name: 'timestamp_key',
+          type: 'string',
+          description: 'Timestamp attribute key',
+          required: false,
+          default: 'time:timestamp',
+        },
       ],
       supportedProfiles: ['quality', 'stream'],
       estimatedDurationMs: 30,
@@ -878,9 +996,28 @@ export class AlgorithmRegistry {
       speedTier: 50,
       qualityTier: 55,
       parameters: [
-        { name: 'activity_key', type: 'string', description: 'Activity attribute key', required: true, default: 'concept:name' },
-        { name: 'timestamp_key', type: 'string', description: 'Timestamp attribute key', required: false, default: 'time:timestamp' },
-        { name: 'batch_threshold', type: 'number', description: 'Maximum time difference within a batch (ms)', required: false, default: 86400000, min: 0 },
+        {
+          name: 'activity_key',
+          type: 'string',
+          description: 'Activity attribute key',
+          required: true,
+          default: 'concept:name',
+        },
+        {
+          name: 'timestamp_key',
+          type: 'string',
+          description: 'Timestamp attribute key',
+          required: false,
+          default: 'time:timestamp',
+        },
+        {
+          name: 'batch_threshold',
+          type: 'number',
+          description: 'Maximum time difference within a batch (ms)',
+          required: false,
+          default: 86400000,
+          min: 0,
+        },
       ],
       supportedProfiles: ['quality', 'stream'],
       estimatedDurationMs: 35,
@@ -898,9 +1035,28 @@ export class AlgorithmRegistry {
       speedTier: 45,
       qualityTier: 60,
       parameters: [
-        { name: 'timestamp_key', type: 'string', description: 'Timestamp attribute key', required: false, default: 'time:timestamp' },
-        { name: 'activity_key', type: 'string', description: 'Activity attribute key', required: true, default: 'concept:name' },
-        { name: 'max_gap', type: 'number', description: 'Maximum time gap between correlated events (ms)', required: false, default: 3600000, min: 0 },
+        {
+          name: 'timestamp_key',
+          type: 'string',
+          description: 'Timestamp attribute key',
+          required: false,
+          default: 'time:timestamp',
+        },
+        {
+          name: 'activity_key',
+          type: 'string',
+          description: 'Activity attribute key',
+          required: true,
+          default: 'concept:name',
+        },
+        {
+          name: 'max_gap',
+          type: 'number',
+          description: 'Maximum time gap between correlated events (ms)',
+          required: false,
+          default: 3600000,
+          min: 0,
+        },
       ],
       supportedProfiles: ['quality', 'stream'],
       estimatedDurationMs: 40,
@@ -920,7 +1076,12 @@ export class AlgorithmRegistry {
       speedTier: 65,
       qualityTier: 65,
       parameters: [
-        { name: 'petri_net_handle', type: 'string', description: 'Handle of the Petri net model', required: true },
+        {
+          name: 'petri_net_handle',
+          type: 'string',
+          description: 'Handle of the Petri net model',
+          required: true,
+        },
       ],
       supportedProfiles: ['quality'],
       estimatedDurationMs: 20,
@@ -940,7 +1101,12 @@ export class AlgorithmRegistry {
       speedTier: 55,
       qualityTier: 70,
       parameters: [
-        { name: 'petri_net_handle', type: 'string', description: 'Handle of the Petri net model', required: true },
+        {
+          name: 'petri_net_handle',
+          type: 'string',
+          description: 'Handle of the Petri net model',
+          required: true,
+        },
       ],
       supportedProfiles: ['quality'],
       estimatedDurationMs: 25,
@@ -958,9 +1124,30 @@ export class AlgorithmRegistry {
       speedTier: 20,
       qualityTier: 90,
       parameters: [
-        { name: 'sync_cost', type: 'number', description: 'Cost of synchronous move', required: false, default: 0, min: 0 },
-        { name: 'log_move_cost', type: 'number', description: 'Cost of log move', required: false, default: 1, min: 0 },
-        { name: 'model_move_cost', type: 'number', description: 'Cost of model move', required: false, default: 1, min: 0 },
+        {
+          name: 'sync_cost',
+          type: 'number',
+          description: 'Cost of synchronous move',
+          required: false,
+          default: 0,
+          min: 0,
+        },
+        {
+          name: 'log_move_cost',
+          type: 'number',
+          description: 'Cost of log move',
+          required: false,
+          default: 1,
+          min: 0,
+        },
+        {
+          name: 'model_move_cost',
+          type: 'number',
+          description: 'Cost of model move',
+          required: false,
+          default: 1,
+          min: 0,
+        },
       ],
       supportedProfiles: ['quality'],
       estimatedDurationMs: 200,
@@ -998,7 +1185,12 @@ export class AlgorithmRegistry {
       speedTier: 75,
       qualityTier: 80,
       parameters: [
-        { name: 'pnml_xml', type: 'string', description: 'PNML XML string to import', required: true },
+        {
+          name: 'pnml_xml',
+          type: 'string',
+          description: 'PNML XML string to import',
+          required: true,
+        },
       ],
       supportedProfiles: ['balanced', 'quality', 'stream'],
       estimatedDurationMs: 15,
@@ -1016,7 +1208,12 @@ export class AlgorithmRegistry {
       speedTier: 70,
       qualityTier: 70,
       parameters: [
-        { name: 'bpmn_xml', type: 'string', description: 'BPMN 2.0 XML string to import', required: true },
+        {
+          name: 'bpmn_xml',
+          type: 'string',
+          description: 'BPMN 2.0 XML string to import',
+          required: true,
+        },
       ],
       supportedProfiles: ['balanced', 'quality', 'stream'],
       estimatedDurationMs: 20,
@@ -1068,8 +1265,24 @@ export class AlgorithmRegistry {
       speedTier: 60,
       qualityTier: 50,
       parameters: [
-        { name: 'num_traces', type: 'number', description: 'Number of traces to generate', required: false, default: 100, min: 1, max: 10000 },
-        { name: 'max_trace_length', type: 'number', description: 'Maximum trace length', required: false, default: 100, min: 1, max: 1000 },
+        {
+          name: 'num_traces',
+          type: 'number',
+          description: 'Number of traces to generate',
+          required: false,
+          default: 100,
+          min: 1,
+          max: 10000,
+        },
+        {
+          name: 'max_trace_length',
+          type: 'number',
+          description: 'Maximum trace length',
+          required: false,
+          default: 100,
+          min: 1,
+          max: 1000,
+        },
       ],
       supportedProfiles: ['balanced', 'quality', 'stream'],
       estimatedDurationMs: 50,
@@ -1082,19 +1295,61 @@ export class AlgorithmRegistry {
     this.registerWithInferredProfiles({
       id: 'monte_carlo_simulation',
       name: 'Monte Carlo Simulation',
-      description: 'Run Monte Carlo simulation with stochastic replay for probabilistic process analysis.',
+      description:
+        'Run Monte Carlo simulation with stochastic replay for probabilistic process analysis.',
       outputType: 'dfg',
       complexity: 'O(n²)',
       speedTier: 70,
       qualityTier: 60,
       parameters: [
-        { name: 'model_handle', type: 'string', description: 'Handle to the event log or model to simulate', required: true },
-        { name: 'powl_handle', type: 'string', description: 'Handle to POWL model (optional, not used in current implementation)', required: false },
-        { name: 'root_id', type: 'string', description: 'Root ID for POWL model (optional, not used in current implementation)', required: false },
-        { name: 'num_cases', type: 'number', description: 'Number of simulation cases to generate', required: false, default: 1000, min: 100, max: 100000 },
-        { name: 'inter_arrival_mean_ms', type: 'number', description: 'Mean inter-arrival time in milliseconds', required: false, default: 1000.0 },
-        { name: 'simulation_time_ms', type: 'number', description: 'Total simulation time in milliseconds', required: false, default: 60000 },
-        { name: 'random_seed', type: 'number', description: 'Random seed for reproducibility', required: false, default: 42 },
+        {
+          name: 'model_handle',
+          type: 'string',
+          description: 'Handle to the event log or model to simulate',
+          required: true,
+        },
+        {
+          name: 'powl_handle',
+          type: 'string',
+          description: 'Handle to POWL model (optional, not used in current implementation)',
+          required: false,
+        },
+        {
+          name: 'root_id',
+          type: 'string',
+          description: 'Root ID for POWL model (optional, not used in current implementation)',
+          required: false,
+        },
+        {
+          name: 'num_cases',
+          type: 'number',
+          description: 'Number of simulation cases to generate',
+          required: false,
+          default: 1000,
+          min: 100,
+          max: 100000,
+        },
+        {
+          name: 'inter_arrival_mean_ms',
+          type: 'number',
+          description: 'Mean inter-arrival time in milliseconds',
+          required: false,
+          default: 1000.0,
+        },
+        {
+          name: 'simulation_time_ms',
+          type: 'number',
+          description: 'Total simulation time in milliseconds',
+          required: false,
+          default: 60000,
+        },
+        {
+          name: 'random_seed',
+          type: 'number',
+          description: 'Random seed for reproducibility',
+          required: false,
+          default: 42,
+        },
       ],
       supportedProfiles: ['quality'],
       estimatedDurationMs: 100,

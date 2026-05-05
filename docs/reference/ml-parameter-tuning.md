@@ -1,14 +1,14 @@
-# ML Parameter Tuning Reference for pictl
+# ML Parameter Tuning Reference for wasm4pm
 
 **Detailed reference for tuning parameters of the 6 core ML tasks: classify, cluster, forecast, anomaly, regress, PCA**
 
-This reference documents every parameter for each ML task, what it does, how to adjust it, trade-offs, failure modes, and real examples tuned on actual pictl datasets.
+This reference documents every parameter for each ML task, what it does, how to adjust it, trade-offs, failure modes, and real examples tuned on actual wasm4pm datasets.
 
 ---
 
 ## Overview: 6 ML Tasks
 
-pictl's native ML engine provides 6 machine learning tasks, all implemented in TypeScript with zero external library dependencies:
+wasm4pm's native ML engine provides 6 machine learning tasks, all implemented in TypeScript with zero external library dependencies:
 
 | Task | Method(s) | Input | Output | Use Case |
 |------|-----------|-------|--------|----------|

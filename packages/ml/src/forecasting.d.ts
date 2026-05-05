@@ -13,23 +13,32 @@ import type { ThroughputForecastResult, SeriesForecastResult } from './types.js'
 /**
  * Build event count time series from timestamps.
  */
-export declare function buildThroughputSeries(eventTimestamps: number[], windowSizeMs: number): {
-    series: number[];
-    windowStarts: number[];
+export declare function buildThroughputSeries(
+  eventTimestamps: number[],
+  windowSizeMs: number
+): {
+  series: number[];
+  windowStarts: number[];
 };
 /**
  * Forecast future process throughput and detect seasonal patterns.
  */
-export declare function forecastThroughput(eventTimestamps: number[], options?: {
+export declare function forecastThroughput(
+  eventTimestamps: number[],
+  options?: {
     windowSizeMs?: number;
     forecastPeriods?: number;
     useExponential?: boolean;
-}): Promise<ThroughputForecastResult>;
+  }
+): Promise<ThroughputForecastResult>;
 /**
  * Forecast future values from any numeric series.
  */
-export declare function forecastSeries(series: number[], options?: {
+export declare function forecastSeries(
+  series: number[],
+  options?: {
     forecastPeriods?: number;
     useExponential?: boolean;
-}): Promise<SeriesForecastResult>;
+  }
+): Promise<SeriesForecastResult>;
 //# sourceMappingURL=forecasting.d.ts.map

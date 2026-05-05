@@ -37,7 +37,7 @@ import type { FeatureMatrix, LabelEncoding } from './types.js';
 export function buildFeatureMatrix(
   featuresJson: Array<Record<string, unknown>>,
   numericTargetKey?: string,
-  categoricalTargetKey?: string,
+  categoricalTargetKey?: string
 ): FeatureMatrix {
   // Validate non-null array
   if (!featuresJson || !Array.isArray(featuresJson) || featuresJson.length === 0) {
@@ -45,7 +45,9 @@ export function buildFeatureMatrix(
   }
 
   // Filter out null/undefined elements
-  const validRows = featuresJson.filter((row): row is Record<string, unknown> => row != null && typeof row === 'object');
+  const validRows = featuresJson.filter(
+    (row): row is Record<string, unknown> => row != null && typeof row === 'object'
+  );
   if (validRows.length === 0) {
     return { data: [], featureNames: [], caseIds: [], targets: [], labels: [] };
   }
@@ -57,7 +59,7 @@ export function buildFeatureMatrix(
   ]);
 
   // Collect all feature keys from first valid row (guaranteed non-null by filter)
-  const allKeys = Object.keys(validRows[0]).filter(k => !excludeKeys.has(k));
+  const allKeys = Object.keys(validRows[0]).filter((k) => !excludeKeys.has(k));
 
   // Separate numeric vs string columns from first valid row
   const numericCols: string[] = [];
@@ -79,7 +81,7 @@ export function buildFeatureMatrix(
     const uniqueSet = new Set<string>();
     for (const row of validRows) {
       const val = row[col];
-      const str = (val == null) ? '' : String(val);
+      const str = val == null ? '' : String(val);
       uniqueSet.add(str);
     }
     const uniqueValues = Array.from(uniqueSet).sort();
@@ -160,6 +162,6 @@ export function encodeLabels(labels: string[]): LabelEncoding {
   const unique = [...new Set(labels)].sort();
   const labelMap = new Map(unique.map((l, i) => [l, i]));
   const reverseMap = new Map(unique.map((l, i) => [i, l]));
-  const encoded = labels.map(l => labelMap.get(l) ?? 0);
+  const encoded = labels.map((l) => labelMap.get(l) ?? 0);
   return { encoded, labelMap, reverseMap };
 }

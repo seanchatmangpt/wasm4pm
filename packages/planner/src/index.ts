@@ -25,7 +25,14 @@ export { plan, toContractsPlan, PlannerError, type Config, type ExecutionPlan } 
 export { explain, explainBrief } from './explain.js';
 
 // DAG utilities
-export { topologicalSort, hasCycle, getDependencies, getDependents, validateDAG, type DAG } from './dag.js';
+export {
+  topologicalSort,
+  hasCycle,
+  getDependencies,
+  getDependents,
+  validateDAG,
+  type DAG,
+} from './dag.js';
 
 // Step types and factories
 export {
@@ -43,7 +50,12 @@ export {
 } from './steps.js';
 
 // Validation utilities
-export { validatePlan, assertPlanValid, validateSourceSinkCompatibility, type ValidationError } from './validation.js';
+export {
+  validatePlan,
+  assertPlanValid,
+  validateSourceSinkCompatibility,
+  type ValidationError,
+} from './validation.js';
 
 // Policy and budget enforcement (Section 4 — Planner Policy and Budget Enforcement)
 export {

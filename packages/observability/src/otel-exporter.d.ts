@@ -11,63 +11,63 @@ import { OtelEvent, OtelConfig, ObservabilityResult } from './types.js';
  * All operations are non-blocking and async
  */
 export declare class OtelExporter {
-    private config;
-    private queue;
-    private flushTimer?;
-    private flushPromise;
-    private isShuttingDown;
-    private flushErrors;
-    constructor(config: OtelConfig);
-    private recordFlushError;
-    getFlushErrors(): Array<{
-        timestamp: Date;
-        error: any;
-    }>;
-    /**
-     * Start automatic flush timer
-     */
-    private startAutoFlush;
-    /**
-     * Emit an OTEL event (non-blocking)
-     * Returns immediately; queuing happens synchronously, export happens asynchronously
-     */
-    emit(event: OtelEvent): void;
-    /**
-     * Flush queued events to OTEL HTTP endpoint
-     */
-    private flush;
-    /**
-     * Internal flush implementation
-     * When required=true, throws error so it propagates; when false, logs and continues
-     */
-    private doFlush;
-    /**
-     * Export events to OTEL HTTP endpoint
-     * This is the actual HTTP export logic
-     */
-    private exportEvents;
-    /**
-     * Send payload to OTEL endpoint via HTTP POST
-     */
-    private sendToEndpoint;
-    /**
-     * Get the correct OTEL export URL based on exporter type
-     */
-    private getExportUrl;
-    /**
-     * Encode attributes for OTEL format
-     * OTEL uses typed attributes
-     */
-    private encodeAttributes;
-    /**
-     * Encode a single attribute value
-     */
-    private encodeValue;
-    /**
-     * Gracefully shutdown exporter
-     * Flushes any remaining events
-     * Throws if required=true and flush errors occurred
-     */
-    shutdown(): Promise<ObservabilityResult>;
+  private config;
+  private queue;
+  private flushTimer?;
+  private flushPromise;
+  private isShuttingDown;
+  private flushErrors;
+  constructor(config: OtelConfig);
+  private recordFlushError;
+  getFlushErrors(): Array<{
+    timestamp: Date;
+    error: any;
+  }>;
+  /**
+   * Start automatic flush timer
+   */
+  private startAutoFlush;
+  /**
+   * Emit an OTEL event (non-blocking)
+   * Returns immediately; queuing happens synchronously, export happens asynchronously
+   */
+  emit(event: OtelEvent): void;
+  /**
+   * Flush queued events to OTEL HTTP endpoint
+   */
+  private flush;
+  /**
+   * Internal flush implementation
+   * When required=true, throws error so it propagates; when false, logs and continues
+   */
+  private doFlush;
+  /**
+   * Export events to OTEL HTTP endpoint
+   * This is the actual HTTP export logic
+   */
+  private exportEvents;
+  /**
+   * Send payload to OTEL endpoint via HTTP POST
+   */
+  private sendToEndpoint;
+  /**
+   * Get the correct OTEL export URL based on exporter type
+   */
+  private getExportUrl;
+  /**
+   * Encode attributes for OTEL format
+   * OTEL uses typed attributes
+   */
+  private encodeAttributes;
+  /**
+   * Encode a single attribute value
+   */
+  private encodeValue;
+  /**
+   * Gracefully shutdown exporter
+   * Flushes any remaining events
+   * Throws if required=true and flush errors occurred
+   */
+  shutdown(): Promise<ObservabilityResult>;
 }
 //# sourceMappingURL=otel-exporter.d.ts.map

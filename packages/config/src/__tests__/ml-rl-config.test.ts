@@ -60,28 +60,28 @@ describe('ML nested sub-sections', () => {
 
   it('rejects invalid classify model', () => {
     expect(() =>
-      validate({ ...minimal, ml: { enabled: true, classify: { model: 'random_forest' } } }),
+      validate({ ...minimal, ml: { enabled: true, classify: { model: 'random_forest' } } })
     ).toThrow(/validation failed/i);
   });
 
   it('rejects invalid cluster method', () => {
     expect(() =>
-      validate({ ...minimal, ml: { enabled: true, cluster: { method: 'gmm' } } }),
+      validate({ ...minimal, ml: { enabled: true, cluster: { method: 'gmm' } } })
     ).toThrow(/validation failed/i);
   });
 
   it('rejects negative ridge lambda', () => {
     expect(() =>
-      validate({ ...minimal, ml: { enabled: true, regress: { lambda: -0.1 } } }),
+      validate({ ...minimal, ml: { enabled: true, regress: { lambda: -0.1 } } })
     ).toThrow();
   });
 
   it('rejects polynomial degree out of range', () => {
     expect(() =>
-      validate({ ...minimal, ml: { enabled: true, forecast: { polynomialDegree: 0 } } }),
+      validate({ ...minimal, ml: { enabled: true, forecast: { polynomialDegree: 0 } } })
     ).toThrow();
     expect(() =>
-      validate({ ...minimal, ml: { enabled: true, forecast: { polynomialDegree: 99 } } }),
+      validate({ ...minimal, ml: { enabled: true, forecast: { polynomialDegree: 99 } } })
     ).toThrow();
   });
 });
@@ -171,9 +171,9 @@ describe('RL configuration', () => {
   });
 
   it('rejects unknown agent names', () => {
-    expect(() =>
-      validate({ ...minimal, rl: { enabled: true, agents: ['DeepQ'] } }),
-    ).toThrow(/validation failed/i);
+    expect(() => validate({ ...minimal, rl: { enabled: true, agents: ['DeepQ'] } })).toThrow(
+      /validation failed/i
+    );
   });
 
   it('rejects learning_rate outside (0, 1]', () => {
@@ -193,14 +193,10 @@ describe('RL configuration', () => {
   });
 
   it('rejects non-positive convergence params', () => {
+    expect(() => validate({ ...minimal, rl: { convergence: { min_cycles: 0 } } })).toThrow();
+    expect(() => validate({ ...minimal, rl: { convergence: { window_size: -1 } } })).toThrow();
     expect(() =>
-      validate({ ...minimal, rl: { convergence: { min_cycles: 0 } } }),
-    ).toThrow();
-    expect(() =>
-      validate({ ...minimal, rl: { convergence: { window_size: -1 } } }),
-    ).toThrow();
-    expect(() =>
-      validate({ ...minimal, rl: { convergence: { target_reward_improvement: -0.01 } } }),
+      validate({ ...minimal, rl: { convergence: { target_reward_improvement: -0.01 } } })
     ).toThrow();
   });
 });
@@ -226,21 +222,13 @@ describe('Prediction drift sub-section', () => {
   });
 
   it('rejects ewma_alpha outside (0, 1]', () => {
-    expect(() =>
-      validate({ ...minimal, prediction: { drift: { ewma_alpha: 0 } } }),
-    ).toThrow();
-    expect(() =>
-      validate({ ...minimal, prediction: { drift: { ewma_alpha: 1.1 } } }),
-    ).toThrow();
+    expect(() => validate({ ...minimal, prediction: { drift: { ewma_alpha: 0 } } })).toThrow();
+    expect(() => validate({ ...minimal, prediction: { drift: { ewma_alpha: 1.1 } } })).toThrow();
   });
 
   it('rejects threshold outside (0, 1]', () => {
-    expect(() =>
-      validate({ ...minimal, prediction: { drift: { threshold: 0 } } }),
-    ).toThrow();
-    expect(() =>
-      validate({ ...minimal, prediction: { drift: { threshold: 2 } } }),
-    ).toThrow();
+    expect(() => validate({ ...minimal, prediction: { drift: { threshold: 0 } } })).toThrow();
+    expect(() => validate({ ...minimal, prediction: { drift: { threshold: 2 } } })).toThrow();
   });
 });
 
@@ -353,19 +341,19 @@ describe('Environment variables — ML / RL / drift', () => {
       resolveConfig({
         configSearchPaths: [tmpDir],
         env: { WASM4PM_RL_LEARNING_RATE: '5.0' },
-      }),
+      })
     ).rejects.toThrow(/WASM4PM_RL_LEARNING_RATE/);
     await expect(
       resolveConfig({
         configSearchPaths: [tmpDir],
         env: { WASM4PM_RL_DISCOUNT_FACTOR: '1.5' },
-      }),
+      })
     ).rejects.toThrow(/WASM4PM_RL_DISCOUNT_FACTOR/);
     await expect(
       resolveConfig({
         configSearchPaths: [tmpDir],
         env: { WASM4PM_RL_EPSILON: '-0.1' },
-      }),
+      })
     ).rejects.toThrow(/WASM4PM_RL_EPSILON/);
   });
 
@@ -374,13 +362,13 @@ describe('Environment variables — ML / RL / drift', () => {
       resolveConfig({
         configSearchPaths: [tmpDir],
         env: { WASM4PM_PREDICTION_DRIFT_THRESHOLD: '0' },
-      }),
+      })
     ).rejects.toThrow(/WASM4PM_PREDICTION_DRIFT_THRESHOLD/);
     await expect(
       resolveConfig({
         configSearchPaths: [tmpDir],
         env: { WASM4PM_PREDICTION_DRIFT_EWMA_ALPHA: 'xyz' },
-      }),
+      })
     ).rejects.toThrow(/WASM4PM_PREDICTION_DRIFT_EWMA_ALPHA/);
   });
 });
@@ -397,7 +385,7 @@ describe('CLI overrides — ML / RL', () => {
   it('CLI ML overrides win over file ML config', async () => {
     await fs.writeFile(
       path.join(tmpDir, 'wasm4pm.toml'),
-      `version = "26.4.5"\n[source]\nkind = "file"\n[ml]\nenabled = false\ntasks = ["forecast"]\n`,
+      `version = "26.4.5"\n[source]\nkind = "file"\n[ml]\nenabled = false\ntasks = ["forecast"]\n`
     );
     const cfg = await resolveConfig({
       configSearchPaths: [tmpDir],
@@ -441,7 +429,7 @@ describe('Example presets', () => {
       await fs.writeFile(path.join(tmpDir, 'wasm4pm.toml'), getExamplePresetConfig(preset));
       const cfg = await resolveConfig({ configSearchPaths: [tmpDir] });
       expect(cfg.execution.profile).toBe(preset);
-    },
+    }
   );
 
   it('exposes a complete .env example covering every WASM4PM_* var', () => {

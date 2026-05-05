@@ -4,7 +4,7 @@
 
 ## Executive Summary
 
-This report presents comprehensive benchmarks for all 6 prediction perspectives in pictl:
+This report presents comprehensive benchmarks for all 6 prediction perspectives in wasm4pm:
 
 | Perspective | Metric | Baseline | Status |
 |---|---|---|---|

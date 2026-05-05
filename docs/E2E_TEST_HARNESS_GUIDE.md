@@ -592,7 +592,7 @@ test('performance: dfg does not regress >2x', () => {
 ### Report Template (docs/certification/REPORT_v26.4.17.md)
 
 ```markdown
-# Certification Report — pictl v26.4.17
+# Certification Report — wasm4pm v26.4.17
 
 **Date:** 2026-05-05
 **Tester:** Agent 9

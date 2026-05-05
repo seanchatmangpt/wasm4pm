@@ -1,6 +1,6 @@
 ================================================================================
 LAWFUL DISPATCH PETRI NET — QUICK REFERENCE
-pictl AutoProcess (34ns closed-loop)
+wasm4pm AutoProcess (34ns closed-loop)
 ================================================================================
 
 PLACES (8):
@@ -79,7 +79,7 @@ FILES:
 USAGE:
   1. Simulate: Import PNML into ePNK, CPN Tools, or ProM
   2. Verify:   Run soundness check using Petri Net tools
-  3. Monitor:  Instrument pictl with OTEL spans matching phases
+  3. Monitor:  Instrument wasm4pm with OTEL spans matching phases
   4. Conform:  Extract execution logs, compare vs. formal model via pm4py
 
 STATUS:

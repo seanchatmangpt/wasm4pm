@@ -141,7 +141,7 @@ export class WasmLoader {
         if (actualVersion !== this.config.expectedVersion) {
           throw new Error(
             `WASM module version mismatch: expected ${this.config.expectedVersion}, ` +
-            `got ${actualVersion}`
+              `got ${actualVersion}`
           );
         }
       }
@@ -168,9 +168,7 @@ export class WasmLoader {
    */
   public get(): WasmModule {
     if (!this.module || !this.initialized) {
-      throw new Error(
-        'WASM module not initialized. Call init() before using the module.'
-      );
+      throw new Error('WASM module not initialized. Call init() before using the module.');
     }
     return this.module;
   }
@@ -200,9 +198,7 @@ export class WasmLoader {
     const memory = this.module.memory;
     const memoryPages = memory.buffer.byteLength / (64 * 1024); // 64KB pages
     const memoryMaxPages = memory.maximum ?? undefined;
-    const memoryUsagePercent = memoryMaxPages
-      ? (memoryPages / memoryMaxPages) * 100
-      : 0;
+    const memoryUsagePercent = memoryMaxPages ? (memoryPages / memoryMaxPages) * 100 : 0;
 
     return {
       initialized: this.initialized,
@@ -293,7 +289,8 @@ export class WasmLoader {
       if (status.memoryUsagePercent > maxMemoryPercent) {
         this.observability.emitCli({
           level: 'warn',
-          message: `WASM memory usage at ${status.memoryUsagePercent.toFixed(1)}% ` +
+          message:
+            `WASM memory usage at ${status.memoryUsagePercent.toFixed(1)}% ` +
             `(${status.memoryPages} pages)`,
         });
       }
@@ -375,7 +372,8 @@ export class WasmLoader {
     } else {
       this.observability.emitCli({
         level: 'warn',
-        message: 'WASM module does not export set_panic_hook. Continuing without custom panic hook.',
+        message:
+          'WASM module does not export set_panic_hook. Continuing without custom panic hook.',
       });
     }
 

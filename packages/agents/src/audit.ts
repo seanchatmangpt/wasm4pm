@@ -180,7 +180,8 @@ export class AuditStore {
       by_correction_type: byType as Record<CorrectionType, number>,
       success_rate: this.entries.length > 0 ? successCount / this.entries.length : 0,
       critical_count: criticalCount,
-      last_activity: this.entries.length > 0 ? this.entries[this.entries.length - 1].timestamp : null,
+      last_activity:
+        this.entries.length > 0 ? this.entries[this.entries.length - 1].timestamp : null,
     };
   }
 

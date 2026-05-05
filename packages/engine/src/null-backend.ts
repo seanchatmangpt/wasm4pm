@@ -33,7 +33,9 @@ export class NullBackend implements MiningBackend {
 
   async init(): Promise<void> {}
   async shutdown(): Promise<void> {}
-  isReady(): boolean { return this.initialized; }
+  isReady(): boolean {
+    return this.initialized;
+  }
 
   capabilities(): BackendCapabilities {
     return {

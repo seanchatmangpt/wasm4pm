@@ -1,10 +1,10 @@
 # wasm4pm Browser Benchmarks
 
-Browser-based performance testing for pictl algorithms using Vitest with headless Chromium and Playwright.
+Browser-based performance testing for wasm4pm algorithms using Vitest with headless Chromium and Playwright.
 
 ## Overview
 
-Browser benchmarks test pictl algorithms in a browser environment (via headless Chromium), providing insights into:
+Browser benchmarks test wasm4pm algorithms in a browser environment (via headless Chromium), providing insights into:
 
 - **Real-world browser performance** — Actual JavaScript engine optimization patterns
 - **Environment differences** — Node.js vs browser WASM memory models

@@ -28,12 +28,7 @@ import { NullBackend } from './null-backend.js';
 /**
  * Backend state machine (Section 5.2)
  */
-export type BackendState =
-  | 'unregistered'
-  | 'registering'
-  | 'ready'
-  | 'degraded'
-  | 'evicted';
+export type BackendState = 'unregistered' | 'registering' | 'ready' | 'degraded' | 'evicted';
 
 /**
  * Circuit breaker state (Section 5.3)
@@ -207,7 +202,7 @@ export class FederationController {
     algorithmId: string,
     log: EventLogIR,
     budget: BudgetEnvelope,
-    healthLevel: number = 0,
+    healthLevel: number = 0
   ): Promise<ResultEnvelope> {
     this.cycle_seq++;
     const startMs = Date.now();
@@ -324,7 +319,7 @@ export class FederationController {
   private getCandidatesForRule7(
     algorithmId: string,
     budget: BudgetEnvelope,
-    healthLevel: number,
+    healthLevel: number
   ): MiningBackend[] {
     try {
       // Use registry's 7-rule selection; we've already applied health filtering
@@ -385,7 +380,7 @@ export class FederationController {
  */
 export async function initializeFederationStack(
   wasmModule: any, // KernelWasmModule
-  pm4pyMcpPath: string = 'pm4py-mcp',
+  pm4pyMcpPath: string = 'pm4py-mcp'
 ): Promise<FederationController> {
   const registry = new DefaultBackendRegistry();
   const controller = new FederationController(registry);
@@ -427,7 +422,7 @@ export async function planFederationIntegration(
   plan: ExecutionPlan,
   log: EventLogIR,
   controller: FederationController,
-  healthLevel: number = 0,
+  healthLevel: number = 0
 ): Promise<ResultEnvelope> {
   // For now, assume the plan has a single discovery step
   // In production, this would iterate through plan.steps

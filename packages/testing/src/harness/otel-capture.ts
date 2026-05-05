@@ -74,7 +74,11 @@ export class OtelCapture {
         endTime: (event.end_time ?? event.endTime) as number | undefined,
         status: event.status as { code: string; message?: string } | undefined,
         attributes: (event.attributes ?? {}) as Record<string, unknown>,
-        events: ((event.events ?? []) as Array<{ name: string; timestamp: number; attributes?: Record<string, unknown> }>),
+        events: (event.events ?? []) as Array<{
+          name: string;
+          timestamp: number;
+          attributes?: Record<string, unknown>;
+        }>,
       });
     } else if ('component' in event) {
       this.captureJson({
@@ -93,13 +97,19 @@ export class OtelCapture {
     }
   }
 
-  get spans(): readonly CapturedOtelSpan[] { return this._spans; }
-  get jsonEvents(): readonly CapturedJsonEvent[] { return this._jsonEvents; }
-  get cliEvents(): readonly CapturedCliEvent[] { return this._cliEvents; }
+  get spans(): readonly CapturedOtelSpan[] {
+    return this._spans;
+  }
+  get jsonEvents(): readonly CapturedJsonEvent[] {
+    return this._jsonEvents;
+  }
+  get cliEvents(): readonly CapturedCliEvent[] {
+    return this._cliEvents;
+  }
 
   stats(): OtelCaptureStats {
-    const traceIds = [...new Set(this._spans.map(s => s.traceId))];
-    const components = [...new Set(this._jsonEvents.map(e => e.component))];
+    const traceIds = [...new Set(this._spans.map((s) => s.traceId))];
+    const components = [...new Set(this._jsonEvents.map((e) => e.component))];
     return {
       spanCount: this._spans.length,
       eventCount: this._spans.reduce((sum, s) => sum + s.events.length, 0),
@@ -113,12 +123,12 @@ export class OtelCapture {
   /** Find spans by name pattern */
   findSpans(namePattern: string | RegExp): CapturedOtelSpan[] {
     const pattern = typeof namePattern === 'string' ? new RegExp(namePattern, 'i') : namePattern;
-    return this._spans.filter(s => pattern.test(s.name));
+    return this._spans.filter((s) => pattern.test(s.name));
   }
 
   /** Find spans that have a specific attribute */
   findSpansByAttribute(key: string, value?: unknown): CapturedOtelSpan[] {
-    return this._spans.filter(s => {
+    return this._spans.filter((s) => {
       if (!(key in s.attributes)) return false;
       return value === undefined || s.attributes[key] === value;
     });
@@ -126,7 +136,7 @@ export class OtelCapture {
 
   /** Find JSON events by component */
   findJsonEvents(component: string): CapturedJsonEvent[] {
-    return this._jsonEvents.filter(e => e.component === component);
+    return this._jsonEvents.filter((e) => e.component === component);
   }
 
   /** Assert that required OTEL attributes are present on all spans */
@@ -149,7 +159,9 @@ export class OtelCapture {
       if (span.endTime && span.startTime) {
         const durationMs = (span.endTime - span.startTime) / 1_000_000;
         if (durationMs > maxDurationMs) {
-          errors.push(`Span '${span.name}' took ${durationMs.toFixed(1)}ms, exceeds ${maxDurationMs}ms limit`);
+          errors.push(
+            `Span '${span.name}' took ${durationMs.toFixed(1)}ms, exceeds ${maxDurationMs}ms limit`
+          );
         }
       }
     }
@@ -159,7 +171,7 @@ export class OtelCapture {
   /** Assert span parent-child relationships form valid trees */
   assertValidTraces(): string[] {
     const errors: string[] = [];
-    const spanIds = new Set(this._spans.map(s => s.spanId));
+    const spanIds = new Set(this._spans.map((s) => s.spanId));
     for (const span of this._spans) {
       if (span.parentSpanId && !spanIds.has(span.parentSpanId)) {
         errors.push(`Span '${span.name}' references unknown parent ${span.parentSpanId}`);

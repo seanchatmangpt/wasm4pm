@@ -171,7 +171,7 @@ export class Engine {
       if (!this.stateMachine.canTransition('bootstrapping')) {
         throw new Error(
           `Cannot bootstrap from state: ${this.state()}. ` +
-          `Valid transitions: ${this.stateMachine.getValidTransitions().join(', ')}`
+            `Valid transitions: ${this.stateMachine.getValidTransitions().join(', ')}`
         );
       }
 
@@ -195,8 +195,8 @@ export class Engine {
         bootstrapEngine(this.kernel, this.wasmLoader),
         new Promise<never>((_, reject) =>
           setTimeout(() => reject(new Error(`Bootstrap timeout after ${timeoutMs}ms`)), timeoutMs)
-        )
-      ]).catch(err => {
+        ),
+      ]).catch((err) => {
         // On timeout or error, transition to degraded state
         const timeoutError: EngineError = {
           code: 'BOOTSTRAP_TIMEOUT',
@@ -297,7 +297,7 @@ export class Engine {
       if (this.state() !== 'ready') {
         throw new Error(
           `Cannot plan in state: ${this.state()}. Engine must be ready. ` +
-          `Call bootstrap() first if engine is uninitialized.`
+            `Call bootstrap() first if engine is uninitialized.`
         );
       }
 
@@ -323,9 +323,12 @@ export class Engine {
       const plan = await Promise.race([
         this.planner.plan(config),
         new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error(`Plan generation timeout after ${timeoutMs}ms`)), timeoutMs)
-        )
-      ]).catch(err => {
+          setTimeout(
+            () => reject(new Error(`Plan generation timeout after ${timeoutMs}ms`)),
+            timeoutMs
+          )
+        ),
+      ]).catch((err) => {
         const timeoutError: EngineError = {
           code: 'PLANNING_TIMEOUT',
           message: err instanceof Error ? err.message : String(err),
@@ -350,7 +353,9 @@ export class Engine {
         }
 
         // Try to recover to degraded state
-        const recoveryState = TransitionValidator.suggestRecoveryState(this.state(), [timeoutError]);
+        const recoveryState = TransitionValidator.suggestRecoveryState(this.state(), [
+          timeoutError,
+        ]);
         if (recoveryState && this.stateMachine.canTransition(recoveryState)) {
           this.stateMachine.transition(recoveryState, `Planning timeout: ${timeoutError.message}`);
         }
@@ -361,7 +366,9 @@ export class Engine {
       });
 
       // Calculate plan hash (simple hash of plan ID + steps count)
-      const planHash = Buffer.from(plan.planId + plan.totalSteps).toString('base64').substring(0, 32);
+      const planHash = Buffer.from(plan.planId + plan.totalSteps)
+        .toString('base64')
+        .substring(0, 32);
       this.requiredOtelAttrs['plan.hash'] = planHash;
 
       // Return to ready state after planning (can then run or plan again)
@@ -459,9 +466,7 @@ export class Engine {
     try {
       // Validate state
       if (this.state() !== 'ready') {
-        throw new Error(
-          `Cannot run in state: ${this.state()}. Engine must be ready.`
-        );
+        throw new Error(`Cannot run in state: ${this.state()}. Engine must be ready.`);
       }
 
       if (!this.executor) {
@@ -496,8 +501,8 @@ export class Engine {
         this.executor.run(plan),
         new Promise<never>((_, reject) =>
           setTimeout(() => reject(new Error(`Execution timeout after ${timeoutMs}ms`)), timeoutMs)
-        )
-      ]).catch(err => {
+        ),
+      ]).catch((err) => {
         this.statusTracker.finish();
 
         const timeoutError: EngineError = {
@@ -525,7 +530,9 @@ export class Engine {
         }
 
         // Try to recover or degrade
-        const recoveryState = TransitionValidator.suggestRecoveryState(this.state(), [timeoutError]);
+        const recoveryState = TransitionValidator.suggestRecoveryState(this.state(), [
+          timeoutError,
+        ]);
         if (recoveryState && this.stateMachine.canTransition(recoveryState)) {
           this.stateMachine.transition(recoveryState, `Execution timeout: ${timeoutError.message}`);
         } else {
@@ -621,9 +628,7 @@ export class Engine {
     try {
       // Validate state
       if (this.state() !== 'ready') {
-        throw new Error(
-          `Cannot watch in state: ${this.state()}. Engine must be ready.`
-        );
+        throw new Error(`Cannot watch in state: ${this.state()}. Engine must be ready.`);
       }
 
       if (!this.executor) {
@@ -806,7 +811,7 @@ export class Engine {
         this.kernel.init(),
         new Promise<never>((_, reject) =>
           setTimeout(() => reject(new Error(`Recovery timeout after ${timeoutMs}ms`)), timeoutMs)
-        )
+        ),
       ]);
 
       if (!this.kernel.isReady()) {
@@ -830,7 +835,6 @@ export class Engine {
 
       // Track MTTR in state machine
       this.stateMachine.recordRecovery(recoveryDuration);
-
     } catch (err) {
       // Handle timeout specifically
       const isTimeout = err instanceof Error && err.message.includes('timeout');
@@ -885,7 +889,6 @@ export class Engine {
       // Track recovery time
       const recoveryDuration = Date.now() - recoveryStart;
       this.stateMachine.recordRecovery(recoveryDuration);
-
     } catch (err) {
       // Fast recovery failed, fall back to full bootstrap
       await this.bootstrap();
@@ -1026,7 +1029,7 @@ export class Engine {
     return {
       success: result.success,
       error: result.error,
-      timestamp: result.timestamp || new Date()
+      timestamp: result.timestamp || new Date(),
     };
   }
 }

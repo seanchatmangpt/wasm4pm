@@ -79,7 +79,11 @@ export function classifyRustError(raw: string): ErrorCode {
   }
 
   // Type mismatch — "Object X is not an EventLog"
-  if (lower.includes('is not a') || lower.includes('is not an') || lower.includes('type mismatch')) {
+  if (
+    lower.includes('is not a') ||
+    lower.includes('is not an') ||
+    lower.includes('type mismatch')
+  ) {
     return 'ALGORITHM_FAILED';
   }
 
@@ -94,7 +98,11 @@ export function classifyRustError(raw: string): ErrorCode {
   }
 
   // Parse failures — "invalid json", "failed to parse"
-  if (lower.includes('invalid json') || lower.includes('failed to parse') || lower.includes('parse error')) {
+  if (
+    lower.includes('invalid json') ||
+    lower.includes('failed to parse') ||
+    lower.includes('parse error')
+  ) {
     return 'SOURCE_INVALID';
   }
 
@@ -109,10 +117,7 @@ export function classifyRustError(raw: string): ErrorCode {
  * @param algorithmId - Algorithm that was running when the error occurred
  * @returns Structured TypedError
  */
-export function toTypedError(
-  raw: unknown,
-  algorithmId?: string
-): TypedError {
+export function toTypedError(raw: unknown, algorithmId?: string): TypedError {
   const message = raw instanceof Error ? raw.message : String(raw);
   const code = classifyRustError(message);
 

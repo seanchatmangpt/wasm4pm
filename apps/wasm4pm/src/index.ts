@@ -1,5 +1,5 @@
 /**
-* wasm4pm (wpm) - High-performance process mining CLI
+ * wasm4pm (wpm) - High-performance process mining CLI
  */
 
 export { main } from './cli.js';

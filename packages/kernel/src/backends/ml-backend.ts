@@ -44,10 +44,10 @@ export class MlBackend implements MiningBackend {
 
   async init(): Promise<void> {
     try {
-        await import('@wasm4pm/ml');
-        this.initialized = true;
+      await import('@wasm4pm/ml');
+      this.initialized = true;
     } catch (e) {
-        console.error('Failed to initialize ML backend:', e);
+      console.error('Failed to initialize ML backend:', e);
     }
   }
 
@@ -80,15 +80,17 @@ export class MlBackend implements MiningBackend {
   async discover(
     log: EventLogIR,
     algorithmId: string,
-    budget: BudgetEnvelope,
+    budget: BudgetEnvelope
   ): Promise<ResultEnvelope<ModelIR>> {
-    throw new Error('MlBackend does not support model discovery directly. Use analyze() for ML tasks.');
+    throw new Error(
+      'MlBackend does not support model discovery directly. Use analyze() for ML tasks.'
+    );
   }
 
   async conformance(
     log: EventLogIR,
     model: ModelIR,
-    budget: BudgetEnvelope,
+    budget: BudgetEnvelope
   ): Promise<ResultEnvelope<ConformanceResult>> {
     throw new Error('MlBackend does not support conformance checking directly.');
   }
@@ -96,7 +98,7 @@ export class MlBackend implements MiningBackend {
   async analyze(
     log: EventLogIR,
     task: AnalysisTask,
-    budget: BudgetEnvelope,
+    budget: BudgetEnvelope
   ): Promise<ResultEnvelope<unknown>> {
     const startMs = Date.now();
 
@@ -118,7 +120,12 @@ export class MlBackend implements MiningBackend {
             features: params.features || ['trace_length', 'elapsed_time'],
             target: params.target || 'outcome',
           });
-          const rawFeatures = wasm.extract_case_features(logHandle, 'concept:name', 'time:timestamp', configJson);
+          const rawFeatures = wasm.extract_case_features(
+            logHandle,
+            'concept:name',
+            'time:timestamp',
+            configJson
+          );
           const features = typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
           resultRaw = await ml.classifyTraces(features, {
             method: params.method || 'knn',
@@ -130,7 +137,12 @@ export class MlBackend implements MiningBackend {
           const configJson = JSON.stringify({
             features: params.features || ['trace_length', 'elapsed_time'],
           });
-          const rawFeatures = wasm.extract_case_features(logHandle, 'concept:name', 'time:timestamp', configJson);
+          const rawFeatures = wasm.extract_case_features(
+            logHandle,
+            'concept:name',
+            'time:timestamp',
+            configJson
+          );
           const features = typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
           resultRaw = await ml.clusterTraces(features, {
             method: params.method || 'kmeans',
@@ -148,7 +160,9 @@ export class MlBackend implements MiningBackend {
           break;
         }
         default:
-          throw new Error(`Execution for ML task ${task.task_type} not implemented in ML backend bridge`);
+          throw new Error(
+            `Execution for ML task ${task.task_type} not implemented in ML backend bridge`
+          );
       }
 
       const latency_ms = Date.now() - startMs;
@@ -211,7 +225,7 @@ export class MlBackend implements MiningBackend {
   private createFailedResult(
     algorithmId: string,
     startMs: number,
-    errorMessage: string,
+    errorMessage: string
   ): ResultEnvelope<null> {
     const latency_ms = Date.now() - startMs;
     return {

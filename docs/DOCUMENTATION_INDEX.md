@@ -1,6 +1,6 @@
 # Documentation Index
 
-Complete guide to pictl process mining platform documentation.
+Complete guide to wasm4pm process mining platform documentation.
 
 **Latest version:** v26.4.10+ | **Last updated:** 2026-05-05
 
@@ -8,7 +8,7 @@ Complete guide to pictl process mining platform documentation.
 
 ## Getting Started (5 min)
 
-Start here if you're new to pictl.
+Start here if you're new to wasm4pm.
 
 1. **[README.md](../README.md)** — Project overview
 2. **[guides/ml-quickstart.md](./guides/ml-quickstart.md)** — 5-step ML guide

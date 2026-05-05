@@ -93,8 +93,8 @@ export interface LogMetadata {
  * 4. `source_format` matches the original input type for provenance.
  */
 export interface EventLogIR {
-  readonly format_version: "1.0";
-  readonly source_format: "xes" | "ocel" | "json" | "csv";
+  readonly format_version: '1.0';
+  readonly source_format: 'xes' | 'ocel' | 'json' | 'csv';
   readonly traces: ReadonlyArray<LogTrace>;
   readonly metadata: LogMetadata;
 }
@@ -117,23 +117,28 @@ export function isEventLogIR(value: unknown): value is EventLogIR {
   const log = value as Record<string, unknown>;
 
   // Check format_version
-  if (log.format_version !== "1.0") return false;
+  if (log.format_version !== '1.0') return false;
 
   // Check source_format
-  const validFormats = ["xes", "ocel", "json", "csv"];
+  const validFormats = ['xes', 'ocel', 'json', 'csv'];
   if (!validFormats.includes(log.source_format as string)) return false;
 
   // Check metadata exists and is valid
   if (!log.metadata || typeof log.metadata !== 'object') return false;
   const meta = log.metadata as Record<string, unknown>;
   if (
-    typeof meta.trace_count !== 'number' || !Number.isFinite(meta.trace_count) ||
-    typeof meta.event_count !== 'number' || !Number.isFinite(meta.event_count) ||
-    typeof meta.activity_count !== 'number' || !Number.isFinite(meta.activity_count) ||
-    typeof meta.source_hash !== 'string' || meta.source_hash.length === 0 ||
+    typeof meta.trace_count !== 'number' ||
+    !Number.isFinite(meta.trace_count) ||
+    typeof meta.event_count !== 'number' ||
+    !Number.isFinite(meta.event_count) ||
+    typeof meta.activity_count !== 'number' ||
+    !Number.isFinite(meta.activity_count) ||
+    typeof meta.source_hash !== 'string' ||
+    meta.source_hash.length === 0 ||
     typeof meta.start_time !== 'string' ||
     typeof meta.end_time !== 'string'
-  ) return false;
+  )
+    return false;
 
   // Check traces is a non-empty array
   if (!Array.isArray(log.traces) || log.traces.length === 0) return false;

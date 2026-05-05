@@ -1,6 +1,6 @@
-# `@pictl/ml` — API Reference
+# `@wasm4pm/ml` — API Reference
 
-Public surface of the `@pictl/ml` package. All functions are pure (no I/O, no
+Public surface of the `@wasm4pm/ml` package. All functions are pure (no I/O, no
 hidden state) and deterministic given a fixed input.
 
 ```ts
@@ -11,7 +11,7 @@ import {
   forecastThroughput, forecastSeries, buildThroughputSeries,
   detectEnhancedAnomalies,
   reduceFeaturesPCA,
-} from '@pictl/ml';
+} from '@wasm4pm/ml';
 ```
 
 ---

@@ -10,7 +10,7 @@
 
 ## Overview
 
-This document presents performance characteristics of pictl's 6 native ML algorithms:
+This document presents performance characteristics of wasm4pm's 6 native ML algorithms:
 
 1. **Classification** (4 variants): k-NN, logistic regression, decision tree, naive Bayes
 2. **Clustering** (2 variants): k-means, DBSCAN

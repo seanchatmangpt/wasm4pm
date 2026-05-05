@@ -1058,7 +1058,7 @@ mod tests {
 <trace><event><string key="concept:name" value="A"/></event><event><string key="concept:name" value="B"/></event><event><string key="concept:name" value="C"/></event></trace>
 </log>"#;
 
-        let tmp = std::env::temp_dir().join("pictl_bench_test.xes");
+        let tmp = std::env::temp_dir().join("wasm4pm_bench_test.xes");
         fs::write(&tmp, xes).unwrap();
         let path_str = tmp.to_str().unwrap();
 
@@ -1086,7 +1086,7 @@ mod tests {
 <trace><event><string key="concept:name" value="A"/></event><event><string key="concept:name" value="B"/></event></trace>
 </log>"#;
 
-        let tmp = std::env::temp_dir().join("pictl_bench_summary_test.xes");
+        let tmp = std::env::temp_dir().join("wasm4pm_bench_summary_test.xes");
         fs::write(&tmp, xes).unwrap();
         let path_str = tmp.to_str().unwrap();
 

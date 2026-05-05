@@ -57,12 +57,22 @@ function mean(series: number[] | Float64Array): number {
 // Linear regression (single-pass, no intermediate objects)
 // ---------------------------------------------------------------------------
 
-function linearRegressionFit(x: number[] | Float64Array, y: number[] | Float64Array): { slope: number; intercept: number } {
+function linearRegressionFit(
+  x: number[] | Float64Array,
+  y: number[] | Float64Array
+): { slope: number; intercept: number } {
   const n = x.length;
-  let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+  let sumX = 0,
+    sumY = 0,
+    sumXY = 0,
+    sumXX = 0;
   for (let i = 0; i < n; i++) {
-    const xi = x[i], yi = y[i];
-    sumX += xi; sumY += yi; sumXY += xi * yi; sumXX += xi * xi;
+    const xi = x[i],
+      yi = y[i];
+    sumX += xi;
+    sumY += yi;
+    sumXY += xi * yi;
+    sumXX += xi * xi;
   }
   const denom = n * sumXX - sumX * sumX;
   const slope = denom === 0 ? 0 : (n * sumXY - sumX * sumY) / denom;
@@ -77,12 +87,18 @@ function linearRegressionFit(x: number[] | Float64Array, y: number[] | Float64Ar
 function trendForecastCore(
   series: number[] | Float64Array,
   n: number,
-  forecastPeriods: number,
+  forecastPeriods: number
 ): { direction: string; slope: number; strength: number; forecast: Float64Array } {
   // x = 0..n-1
-  let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+  let sumX = 0,
+    sumY = 0,
+    sumXY = 0,
+    sumXX = 0;
   for (let i = 0; i < n; i++) {
-    sumX += i; sumY += series[i]; sumXY += i * series[i]; sumXX += i * i;
+    sumX += i;
+    sumY += series[i];
+    sumXY += i * series[i];
+    sumXX += i * i;
   }
   const denom = n * sumXX - sumX * sumX;
   const slope = denom === 0 ? 0 : (n * sumXY - sumX * sumY) / denom;
@@ -90,7 +106,10 @@ function trendForecastCore(
 
   const direction = slope > 0.01 ? 'up' : slope < -0.01 ? 'down' : 'flat';
   const avgY = sumY / n;
-  const strength = avgY === 0 ? 0 : Math.min(1, (slope < 0 ? -slope : slope) / ((avgY < 0 ? -avgY : avgY) + 1e-10));
+  const strength =
+    avgY === 0
+      ? 0
+      : Math.min(1, (slope < 0 ? -slope : slope) / ((avgY < 0 ? -avgY : avgY) + 1e-10));
 
   const forecast = new Float64Array(forecastPeriods);
   for (let i = 0; i < forecastPeriods; i++) forecast[i] = slope * (n + i) + intercept;
@@ -102,7 +121,10 @@ function trendForecastCore(
 // Seasonality detection (autocorrelation, pre-computed)
 // ---------------------------------------------------------------------------
 
-function detectSeasonalityCore(series: number[] | Float64Array): { period: number; strength: number } {
+function detectSeasonalityCore(series: number[] | Float64Array): {
+  period: number;
+  strength: number;
+} {
   const n = series.length;
   if (n < 4) return { period: 1, strength: 0 };
 
@@ -136,9 +158,7 @@ function detectSeasonalityCore(series: number[] | Float64Array): { period: numbe
 
   for (let lag = 2; lag < maxLag; lag++) {
     const acf = acfValues[lag];
-    const isLocalMax = acf > 0
-      && acf > acfValues[lag - 1]
-      && acf > acfValues[lag + 1];
+    const isLocalMax = acf > 0 && acf > acfValues[lag - 1] && acf > acfValues[lag + 1];
     if (isLocalMax && acf > bestAcf) {
       bestAcf = acf;
       bestLag = lag;
@@ -154,7 +174,7 @@ function detectSeasonalityCore(series: number[] | Float64Array): { period: numbe
 
 function seasonalDecomposeCore(
   series: number[] | Float64Array,
-  period: number,
+  period: number
 ): { trend: Float64Array; seasonal: Float64Array; residual: Float64Array } {
   const n = series.length;
   const halfPeriod = Math.floor(period / 2);
@@ -186,7 +206,8 @@ function seasonalDecomposeCore(
   }
   const seasonalMean = countTotal > 0 ? seasonalTotal / countTotal : 0;
   for (let p = 0; p < period; p++) {
-    seasonalParts[p] = seasonalCounts[p] > 0 ? seasonalParts[p] / seasonalCounts[p] - seasonalMean : 0;
+    seasonalParts[p] =
+      seasonalCounts[p] > 0 ? seasonalParts[p] / seasonalCounts[p] - seasonalMean : 0;
   }
 
   const seasonal = new Float64Array(n);
@@ -203,7 +224,10 @@ function seasonalDecomposeCore(
 // Exponential regression (single-pass r²)
 // ---------------------------------------------------------------------------
 
-function exponentialFit(series: number[] | Float64Array): { rSquared: number; predict: (xi: number) => number } {
+function exponentialFit(series: number[] | Float64Array): {
+  rSquared: number;
+  predict: (xi: number) => number;
+} {
   const n = series.length;
 
   // Filter valid (y > 0)
@@ -232,7 +256,8 @@ function exponentialFit(series: number[] | Float64Array): { rSquared: number; pr
   let meanY = 0;
   for (let k = 0; k < vn; k++) meanY += yArr[k];
   meanY /= vn;
-  let ssRes = 0, ssTot = 0;
+  let ssRes = 0,
+    ssTot = 0;
   for (let k = 0; k < vn; k++) {
     const pred = a * Math.exp(b * xArr[k]);
     const rd = yArr[k] - pred;
@@ -259,7 +284,7 @@ function exponentialFit(series: number[] | Float64Array): { rSquared: number; pr
 function deriveSeasonalAndExponential(
   series: number[] | Float64Array,
   forecastPeriods: number,
-  useExponential: boolean,
+  useExponential: boolean
 ): {
   seasonality?: { period: number; strength: number };
   decomposition?: { trend: number[]; seasonal: number[]; residual: number[] };
@@ -282,7 +307,9 @@ function deriveSeasonalAndExponential(
         };
       }
     }
-  } catch { /* non-fatal */ }
+  } catch {
+    /* non-fatal */
+  }
 
   let exponentialForecast: number[] | undefined;
   if (useExponential && n >= 3) {
@@ -292,7 +319,9 @@ function deriveSeasonalAndExponential(
         exponentialForecast = new Array(forecastPeriods);
         for (let i = 0; i < forecastPeriods; i++) exponentialForecast[i] = expModel.predict(n + i);
       }
-    } catch { /* non-fatal */ }
+    } catch {
+      /* non-fatal */
+    }
   }
 
   return { seasonality, decomposition, exponentialForecast };
@@ -311,7 +340,7 @@ function deriveSeasonalAndExponential(
  */
 export function buildThroughputSeries(
   eventTimestamps: number[],
-  windowSizeMs: number,
+  windowSizeMs: number
 ): { series: number[]; windowStarts: number[] } {
   if (eventTimestamps.length === 0) return { series: [], windowStarts: [] };
 
@@ -358,7 +387,7 @@ export async function forecastThroughput(
     windowSizeMs?: number;
     forecastPeriods?: number;
     useExponential?: boolean;
-  } = {},
+  } = {}
 ): Promise<ThroughputForecastResult> {
   const validatedWindowSizeMs = validateWindowSizeMs(options.windowSizeMs);
   const { series } = buildThroughputSeries(eventTimestamps, validatedWindowSizeMs);
@@ -375,12 +404,20 @@ export async function forecastThroughput(
   const validatedForecastPeriods = validateForecastPeriods(options.forecastPeriods);
   const n = series.length;
   const trendModel = trendForecastCore(series, n, validatedForecastPeriods);
-  const extra = deriveSeasonalAndExponential(series, validatedForecastPeriods, options.useExponential ?? false);
+  const extra = deriveSeasonalAndExponential(
+    series,
+    validatedForecastPeriods,
+    options.useExponential ?? false
+  );
 
   return {
     eventCounts: series,
     windowCount: n,
-    trend: { direction: trendModel.direction, slope: trendModel.slope, strength: trendModel.strength },
+    trend: {
+      direction: trendModel.direction,
+      slope: trendModel.slope,
+      strength: trendModel.strength,
+    },
     forecast: Array.from(trendModel.forecast),
     seasonality: extra.seasonality,
     decomposition: extra.decomposition,
@@ -405,7 +442,7 @@ export async function forecastSeries(
   options: {
     forecastPeriods?: number;
     useExponential?: boolean;
-  } = {},
+  } = {}
 ): Promise<SeriesForecastResult> {
   if (series.length < 3) {
     return { seriesLength: series.length, trend: { direction: 'unknown', slope: 0, strength: 0 } };
@@ -414,11 +451,19 @@ export async function forecastSeries(
   const validatedForecastPeriods = validateForecastPeriods(options.forecastPeriods);
   const n = series.length;
   const trendModel = trendForecastCore(series, n, validatedForecastPeriods);
-  const extra = deriveSeasonalAndExponential(series, validatedForecastPeriods, options.useExponential ?? false);
+  const extra = deriveSeasonalAndExponential(
+    series,
+    validatedForecastPeriods,
+    options.useExponential ?? false
+  );
 
   return {
     seriesLength: n,
-    trend: { direction: trendModel.direction, slope: trendModel.slope, strength: trendModel.strength },
+    trend: {
+      direction: trendModel.direction,
+      slope: trendModel.slope,
+      strength: trendModel.strength,
+    },
     forecast: Array.from(trendModel.forecast),
     seasonality: extra.seasonality,
     decomposition: extra.decomposition,

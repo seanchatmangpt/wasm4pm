@@ -1,4 +1,4 @@
-# Reference: pictl CLI Commands
+# Reference: wasm4pm CLI Commands
 
 **Version**: 26.4.7
 **Platform**: Linux, macOS, Windows
@@ -175,7 +175,7 @@ wpm results [OPTIONS]
 ## Global Options
 
 ```bash
-pictl [GLOBAL_OPTIONS] <COMMAND>
+wasm4pm [GLOBAL_OPTIONS] <COMMAND>
 ```
 
 Global options:

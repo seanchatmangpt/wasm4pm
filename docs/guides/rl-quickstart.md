@@ -8,7 +8,7 @@ Get started with autonomous process health management in 5 steps.
 
 ## What is the RL system?
 
-The RL (Reinforcement Learning) system in pictl autonomously optimizes process health by learning from feedback. It runs a loop:
+The RL (Reinforcement Learning) system in wasm4pm autonomously optimizes process health by learning from feedback. It runs a loop:
 
 1. **Perceive:** Extract health signals from the log (SPC alerts, drift, rework)
 2. **Decide:** RL agent selects an action (Continue, Scale, Retry, Fallback, Restart)
@@ -63,7 +63,7 @@ The agent sees this 8-dimensional state and must pick an action.
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
-const wasm = require('../wasm4pm/pkg/pictl.js');
+const wasm = require('../wasm4pm/pkg/wasm4pm.js');
 
 // Create a single orchestrator (persistent across cycles)
 const orchestrator = new wasm.RlOrchestrator(42n); // seed for determinism

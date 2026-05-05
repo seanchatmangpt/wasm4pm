@@ -113,7 +113,12 @@ export function getPresetConfig(scenario: PresetScenario): BaseConfig {
           metricsEnabled: true,
         },
         watch: { enabled: true, poll_interval: 500 },
-        output: { format: 'json', destination: '/tmp/wasm4pm-results.json', pretty: true, colorize: false },
+        output: {
+          format: 'json',
+          destination: '/tmp/wasm4pm-results.json',
+          pretty: true,
+          colorize: false,
+        },
         prediction: {
           enabled: true,
           activityKey: 'concept:name',

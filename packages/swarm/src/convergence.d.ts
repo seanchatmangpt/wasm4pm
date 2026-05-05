@@ -18,7 +18,12 @@ export declare function hashOutput(data: unknown): string;
  * @param threshold - fraction that must agree (1.0 = unanimous, 0.8 = 80% quorum)
  * @param workerIds - optional subset of workers to check
  */
-export declare function checkConvergence(results: WorkerResult[], algorithm: string, threshold?: number, workerIds?: string[]): SwarmConvergenceReport;
+export declare function checkConvergence(
+  results: WorkerResult[],
+  algorithm: string,
+  threshold?: number,
+  workerIds?: string[]
+): SwarmConvergenceReport;
 /**
  * Check swarm-level convergence across all workers and algorithms in the latest round.
  * Uses ring-buffer history for inter-episode stability detection.
@@ -27,11 +32,15 @@ export declare function checkConvergence(results: WorkerResult[], algorithm: str
  * @param hashHistory - Map<workerKey, string[]> ring buffer of recent hashes
  * @param convergenceRuns - Number of identical runs required (from ostar.toml)
  */
-export declare function checkSwarmConvergence(results: WorkerResult[], hashHistory: Map<string, string[]>, convergenceRuns?: number): {
-    converged: boolean;
-    stableWorkers: string[];
-    unstableWorkers: string[];
-    agreementRate: number;
+export declare function checkSwarmConvergence(
+  results: WorkerResult[],
+  hashHistory: Map<string, string[]>,
+  convergenceRuns?: number
+): {
+  converged: boolean;
+  stableWorkers: string[];
+  unstableWorkers: string[];
+  agreementRate: number;
 };
 /**
  * Check convergence for ML results using epsilon-tolerance on numeric fields.
@@ -43,5 +52,10 @@ export declare function checkSwarmConvergence(results: WorkerResult[], hashHisto
  * @param epsilon - Maximum allowed difference for numeric fields (default 0.01)
  * @param threshold - fraction that must agree (default 1.0)
  */
-export declare function checkMlConvergence(results: WorkerResult[], algorithm: string, epsilon?: number, threshold?: number): SwarmConvergenceReport;
+export declare function checkMlConvergence(
+  results: WorkerResult[],
+  algorithm: string,
+  epsilon?: number,
+  threshold?: number
+): SwarmConvergenceReport;
 //# sourceMappingURL=convergence.d.ts.map

@@ -183,7 +183,8 @@ export const run = defineCommand({
     },
     'smart-engine': {
       type: 'boolean',
-      description: 'Use smart execution engine with caching (shortcut for --algorithm smart-engine)',
+      description:
+        'Use smart execution engine with caching (shortcut for --algorithm smart-engine)',
     },
     'no-cache': {
       type: 'boolean',
@@ -195,7 +196,8 @@ export const run = defineCommand({
     },
     'with-quality': {
       type: 'boolean',
-      description: 'Compute and display quality metrics (fitness, precision, simplicity) after discovery',
+      description:
+        'Compute and display quality metrics (fitness, precision, simplicity) after discovery',
     },
   },
   async run(ctx) {
@@ -346,9 +348,12 @@ export const run = defineCommand({
         // Petri net algorithms return places/transitions/arcs as counts (numbers)
         // or arrays. DFG returns nodes/edges. Either form indicates a Petri net.
         const hasPetriNetFields =
-          (typeof resultDataEarly?.places === 'number' || Array.isArray(resultDataEarly?.places)) ||
-          (typeof resultDataEarly?.transitions === 'number' || Array.isArray(resultDataEarly?.transitions)) ||
-          (typeof resultDataEarly?.arcs === 'number' || Array.isArray(resultDataEarly?.arcs));
+          typeof resultDataEarly?.places === 'number' ||
+          Array.isArray(resultDataEarly?.places) ||
+          typeof resultDataEarly?.transitions === 'number' ||
+          Array.isArray(resultDataEarly?.transitions) ||
+          typeof resultDataEarly?.arcs === 'number' ||
+          Array.isArray(resultDataEarly?.arcs);
         const isPetriNet = hasPetriNetFields;
 
         if (!isPetriNet) {
@@ -391,16 +396,22 @@ export const run = defineCommand({
 
             // Simplicity via WASM compute_simplicity(places, transitions, arcs)
             let simplicity = 1.0;
-            const numPlaces = typeof resultDataEarly?.places === 'number'
-              ? resultDataEarly.places
-              : (resultDataEarly?.places as unknown[] | undefined)?.length ?? 0;
-            const numTransitions = typeof resultDataEarly?.transitions === 'number'
-              ? resultDataEarly.transitions
-              : (resultDataEarly?.transitions as unknown[] | undefined)?.length ?? 0;
-            const numArcs = typeof resultDataEarly?.arcs === 'number'
-              ? resultDataEarly.arcs
-              : (resultDataEarly?.arcs as unknown[] | undefined)?.length ?? 0;
-            if (typeof wasm.wasm_compute_simplicity === 'function' && (numPlaces + numTransitions + numArcs) > 0) {
+            const numPlaces =
+              typeof resultDataEarly?.places === 'number'
+                ? resultDataEarly.places
+                : ((resultDataEarly?.places as unknown[] | undefined)?.length ?? 0);
+            const numTransitions =
+              typeof resultDataEarly?.transitions === 'number'
+                ? resultDataEarly.transitions
+                : ((resultDataEarly?.transitions as unknown[] | undefined)?.length ?? 0);
+            const numArcs =
+              typeof resultDataEarly?.arcs === 'number'
+                ? resultDataEarly.arcs
+                : ((resultDataEarly?.arcs as unknown[] | undefined)?.length ?? 0);
+            if (
+              typeof wasm.wasm_compute_simplicity === 'function' &&
+              numPlaces + numTransitions + numArcs > 0
+            ) {
               simplicity = wasm.wasm_compute_simplicity(numPlaces, numTransitions, numArcs);
             } else {
               // Fallback heuristic when WASM function unavailable or model lacks Petri net structure
@@ -508,7 +519,9 @@ export const run = defineCommand({
       // Step 12: Print cache statistics if requested
       if (ctx.args['cache-stats']) {
         if (typeof wasm.get_cache_stats !== 'function') {
-          formatter.error('Cache statistics requested (--cache-stats) but not available in WASM module');
+          formatter.error(
+            'Cache statistics requested (--cache-stats) but not available in WASM module'
+          );
           process.exit(EXIT_CODES.execution_error);
         }
         const statsRaw = wasm.get_cache_stats();

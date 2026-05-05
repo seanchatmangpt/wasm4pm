@@ -251,7 +251,20 @@ function createSyntheticDataset(): PublicDataset {
     ['Start', 'Analyze', 'Design', 'Build', 'Test', 'Deploy', 'Monitor'], // happy path
     ['Start', 'Analyze', 'Design', 'Build', 'Test', 'Build', 'Test', 'Deploy', 'Monitor'], // rework variant
     ['Start', 'Analyze', 'Deploy', 'Monitor'], // fast-track variant
-    ['Start', 'Analyze', 'Design', 'Build', 'Test', 'Rollback', 'Analyze', 'Design', 'Build', 'Test', 'Deploy', 'Monitor'], // failure variant
+    [
+      'Start',
+      'Analyze',
+      'Design',
+      'Build',
+      'Test',
+      'Rollback',
+      'Analyze',
+      'Design',
+      'Build',
+      'Test',
+      'Deploy',
+      'Monitor',
+    ], // failure variant
     ['Start', 'Design', 'Build', 'Test', 'Deploy', 'Monitor'], // skip analyze variant
   ];
 

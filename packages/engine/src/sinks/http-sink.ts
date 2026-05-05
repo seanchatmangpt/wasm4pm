@@ -84,7 +84,7 @@ export class HttpSinkAdapter implements SinkAdapter {
       return error(
         createError('SINK_FAILED', `Invalid URL: ${this.config.url}`, {
           url: this.config.url,
-        }),
+        })
       );
     }
 
@@ -116,7 +116,7 @@ export class HttpSinkAdapter implements SinkAdapter {
           headers['Authorization'] = `Bearer ${this.config.auth.token}`;
         } else if (this.config.auth.type === 'basic' && this.config.auth.username) {
           const encoded = Buffer.from(
-            `${this.config.auth.username}:${this.config.auth.password ?? ''}`,
+            `${this.config.auth.username}:${this.config.auth.password ?? ''}`
           ).toString('base64');
           headers['Authorization'] = `Basic ${encoded}`;
         }
@@ -152,7 +152,7 @@ export class HttpSinkAdapter implements SinkAdapter {
             url: this.config.url,
             status: response.status,
             artifactType: type,
-          }),
+          })
         );
       }
 
@@ -174,7 +174,7 @@ export class HttpSinkAdapter implements SinkAdapter {
           createError('SINK_FAILED', `Request timed out after ${this.config.timeoutMs}ms`, {
             url: this.config.url,
             timeoutMs: this.config.timeoutMs,
-          }),
+          })
         );
       }
 
@@ -191,7 +191,7 @@ export class HttpSinkAdapter implements SinkAdapter {
         createError('SINK_FAILED', `Failed to send artifact: ${(e as Error).message}`, {
           url: this.config.url,
           artifactType: type,
-        }),
+        })
       );
     }
   }

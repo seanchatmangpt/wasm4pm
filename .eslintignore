@@ -1,4 +1,4 @@
-# ESLint Ignore Patterns — pictl monorepo
+# ESLint Ignore Patterns — wasm4pm monorepo
 # Fixtures and mock helpers are exempt from Gemba enforcement
 
 # Dependencies

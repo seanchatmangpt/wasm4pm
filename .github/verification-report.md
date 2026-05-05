@@ -48,7 +48,7 @@ Caused by: invalid type: sequence, expected a string at line 3 column 19
  FAIL  __tests__/state/object-storage.test.js > State Management - Object Storage > should store OCEL and return a handle
  FAIL  __tests__/state/object-storage.test.ts > State Management - Object Storage > should store OCEL and return a handle
 TypeError: Cannot read properties of undefined (reading '__wbindgen_free')
- ❯ Module.load_ocel_from_json pkg/pictl.js:4644:14
+ ❯ Module.load_ocel_from_json pkg/wasm4pm.js:4644:14
     4642|         return getStringFromWasm0(ptr2, len2);
     4643|     } finally {
     4644|         wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
@@ -62,7 +62,7 @@ TypeError: Cannot read properties of undefined (reading '__wbindgen_free')
  FAIL  __tests__/state/object-storage.test.js > State Management - Object Storage > should generate unique handles for different objects
  FAIL  __tests__/state/object-storage.test.ts > State Management - Object Storage > should generate unique handles for different objects
 TypeError: Cannot read properties of undefined (reading '__wbindgen_free')
- ❯ Module.load_eventlog_from_xes pkg/pictl.js:4561:14
+ ❯ Module.load_eventlog_from_xes pkg/wasm4pm.js:4561:14
     4559|         return getStringFromWasm0(ptr2, len2);
     4560|     } finally {
     4561|         wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
@@ -76,7 +76,7 @@ TypeError: Cannot read properties of undefined (reading '__wbindgen_free')
  FAIL  __tests__/state/object-storage.test.js > State Management - Object Storage > should track object count correctly
  FAIL  __tests__/state/object-storage.test.ts > State Management - Object Storage > should track object count correctly
 TypeError: Cannot read properties of undefined (reading 'object_count')
- ❯ Module.object_count pkg/pictl.js:4843:22
+ ❯ Module.object_count pkg/wasm4pm.js:4843:22
     4841|  */
     4842| export function object_count() {
     4843|     const ret = wasm.object_count();
@@ -172,12 +172,12 @@ paste 1.0.15
 ├── simba 0.8.1
 │   └── nalgebra 0.32.6
 │       └── statrs 0.17.1
-│           └── pictl 26.4.10
+│           └── wasm4pm 26.4.10
 └── metal 0.27.0
     └── wgpu-hal 0.19.5
         ├── wgpu-core 0.19.4
         │   └── wgpu 0.19.4
-        │       └── pictl 26.4.10
+        │       └── wasm4pm 26.4.10
         └── wgpu 0.19.4
 
 Crate:     rand
@@ -190,12 +190,12 @@ URL:       https://rustsec.org/advisories/RUSTSEC-2026-0097
 Dependency tree:
 rand 0.8.5
 ├── statrs 0.17.1
-│   └── pictl 26.4.10
+│   └── wasm4pm 26.4.10
 ├── rand_distr 0.4.3
-│   ├── pictl 26.4.10
+│   ├── wasm4pm 26.4.10
 │   └── nalgebra 0.32.6
 │       └── statrs 0.17.1
-├── pictl 26.4.10
+├── wasm4pm 26.4.10
 └── nalgebra 0.32.6
 
 error: 2 denied warnings found!

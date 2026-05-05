@@ -172,8 +172,12 @@ export class MockEngine {
     return [...this._history];
   }
 
-  isReady(): boolean { return this._state === 'ready'; }
-  isFailed(): boolean { return this._state === 'failed'; }
+  isReady(): boolean {
+    return this._state === 'ready';
+  }
+  isFailed(): boolean {
+    return this._state === 'failed';
+  }
 
   reset(): void {
     this._state = 'uninitialized';
@@ -184,7 +188,7 @@ export class MockEngine {
 }
 
 function delay(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export function createMockEngine(options?: MockEngineOptions): MockEngine {

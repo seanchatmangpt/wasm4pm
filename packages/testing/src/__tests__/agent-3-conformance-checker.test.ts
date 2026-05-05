@@ -21,9 +21,27 @@ describe('Agent 3: Conformance Checker', () => {
       const ocel: OcelEventLog = {
         version: '2.0',
         events: [
-          { id: '1', activity: 'a', timestamp: '2026-04-12T10:00:00Z', objects: ['t1'], attributes: {} },
-          { id: '2', activity: 'b', timestamp: '2026-04-12T10:00:01Z', objects: ['t1'], attributes: {} },
-          { id: '3', activity: 'c', timestamp: '2026-04-12T10:00:02Z', objects: ['t1'], attributes: {} },
+          {
+            id: '1',
+            activity: 'a',
+            timestamp: '2026-04-12T10:00:00Z',
+            objects: ['t1'],
+            attributes: {},
+          },
+          {
+            id: '2',
+            activity: 'b',
+            timestamp: '2026-04-12T10:00:01Z',
+            objects: ['t1'],
+            attributes: {},
+          },
+          {
+            id: '3',
+            activity: 'c',
+            timestamp: '2026-04-12T10:00:02Z',
+            objects: ['t1'],
+            attributes: {},
+          },
         ],
         objects: [{ id: 't1', type: 'tool_invocation', state: 'completed', attributes: {} }],
         metadata: {
@@ -54,9 +72,27 @@ describe('Agent 3: Conformance Checker', () => {
       const ocel: OcelEventLog = {
         version: '2.0',
         events: [
-          { id: '1', activity: 'a', timestamp: '2026-04-12T10:00:00Z', objects: ['t1'], attributes: {} },
-          { id: '2', activity: 'c', timestamp: '2026-04-12T10:00:01Z', objects: ['t1'], attributes: {} }, // Violates: c doesn't follow a
-          { id: '3', activity: 'b', timestamp: '2026-04-12T10:00:02Z', objects: ['t1'], attributes: {} },
+          {
+            id: '1',
+            activity: 'a',
+            timestamp: '2026-04-12T10:00:00Z',
+            objects: ['t1'],
+            attributes: {},
+          },
+          {
+            id: '2',
+            activity: 'c',
+            timestamp: '2026-04-12T10:00:01Z',
+            objects: ['t1'],
+            attributes: {},
+          }, // Violates: c doesn't follow a
+          {
+            id: '3',
+            activity: 'b',
+            timestamp: '2026-04-12T10:00:02Z',
+            objects: ['t1'],
+            attributes: {},
+          },
         ],
         objects: [{ id: 't1', type: 'tool_invocation', state: 'completed', attributes: {} }],
         metadata: {
@@ -77,10 +113,34 @@ describe('Agent 3: Conformance Checker', () => {
       const ocel: OcelEventLog = {
         version: '2.0',
         events: [
-          { id: '1', activity: 'a', timestamp: '2026-04-12T10:00:00Z', objects: ['t1'], attributes: {} },
-          { id: '2', activity: 'b', timestamp: '2026-04-12T10:00:01Z', objects: ['t1'], attributes: {} },
-          { id: '3', activity: 'c', timestamp: '2026-04-12T10:00:02Z', objects: ['t1'], attributes: {} },
-          { id: '4', activity: 'd', timestamp: '2026-04-12T10:00:03Z', objects: ['t1'], attributes: {} },
+          {
+            id: '1',
+            activity: 'a',
+            timestamp: '2026-04-12T10:00:00Z',
+            objects: ['t1'],
+            attributes: {},
+          },
+          {
+            id: '2',
+            activity: 'b',
+            timestamp: '2026-04-12T10:00:01Z',
+            objects: ['t1'],
+            attributes: {},
+          },
+          {
+            id: '3',
+            activity: 'c',
+            timestamp: '2026-04-12T10:00:02Z',
+            objects: ['t1'],
+            attributes: {},
+          },
+          {
+            id: '4',
+            activity: 'd',
+            timestamp: '2026-04-12T10:00:03Z',
+            objects: ['t1'],
+            attributes: {},
+          },
         ],
         objects: [{ id: 't1', type: 'tool_invocation', state: 'completed', attributes: {} }],
         metadata: {
@@ -113,11 +173,41 @@ describe('Agent 3: Conformance Checker', () => {
       const ocel: OcelEventLog = {
         version: '2.0',
         events: [
-          { id: '1', activity: 'a', timestamp: '2026-04-12T10:00:00Z', objects: ['t1'], attributes: {} },
-          { id: '2', activity: 'b', timestamp: '2026-04-12T10:00:01Z', objects: ['t1'], attributes: {} },
-          { id: '3', activity: 'c', timestamp: '2026-04-12T10:00:02Z', objects: ['t1'], attributes: {} },
-          { id: '4', activity: 'a', timestamp: '2026-04-12T10:00:03Z', objects: ['t1'], attributes: {} }, // Minor deviation
-          { id: '5', activity: 'b', timestamp: '2026-04-12T10:00:04Z', objects: ['t1'], attributes: {} },
+          {
+            id: '1',
+            activity: 'a',
+            timestamp: '2026-04-12T10:00:00Z',
+            objects: ['t1'],
+            attributes: {},
+          },
+          {
+            id: '2',
+            activity: 'b',
+            timestamp: '2026-04-12T10:00:01Z',
+            objects: ['t1'],
+            attributes: {},
+          },
+          {
+            id: '3',
+            activity: 'c',
+            timestamp: '2026-04-12T10:00:02Z',
+            objects: ['t1'],
+            attributes: {},
+          },
+          {
+            id: '4',
+            activity: 'a',
+            timestamp: '2026-04-12T10:00:03Z',
+            objects: ['t1'],
+            attributes: {},
+          }, // Minor deviation
+          {
+            id: '5',
+            activity: 'b',
+            timestamp: '2026-04-12T10:00:04Z',
+            objects: ['t1'],
+            attributes: {},
+          },
         ],
         objects: [{ id: 't1', type: 'tool_invocation', state: 'completed', attributes: {} }],
         metadata: {
@@ -137,12 +227,48 @@ describe('Agent 3: Conformance Checker', () => {
       const ocel: OcelEventLog = {
         version: '2.0',
         events: [
-          { id: '1', activity: 'start', timestamp: '2026-04-12T10:00:00Z', objects: ['t1'], attributes: {} },
-          { id: '2', activity: 'step', timestamp: '2026-04-12T10:00:01Z', objects: ['t1'], attributes: {} },
-          { id: '3', activity: 'end', timestamp: '2026-04-12T10:00:02Z', objects: ['t1'], attributes: {} },
-          { id: '4', activity: 'start', timestamp: '2026-04-12T10:00:03Z', objects: ['t2'], attributes: {} },
-          { id: '5', activity: 'step', timestamp: '2026-04-12T10:00:04Z', objects: ['t2'], attributes: {} },
-          { id: '6', activity: 'end', timestamp: '2026-04-12T10:00:05Z', objects: ['t2'], attributes: {} },
+          {
+            id: '1',
+            activity: 'start',
+            timestamp: '2026-04-12T10:00:00Z',
+            objects: ['t1'],
+            attributes: {},
+          },
+          {
+            id: '2',
+            activity: 'step',
+            timestamp: '2026-04-12T10:00:01Z',
+            objects: ['t1'],
+            attributes: {},
+          },
+          {
+            id: '3',
+            activity: 'end',
+            timestamp: '2026-04-12T10:00:02Z',
+            objects: ['t1'],
+            attributes: {},
+          },
+          {
+            id: '4',
+            activity: 'start',
+            timestamp: '2026-04-12T10:00:03Z',
+            objects: ['t2'],
+            attributes: {},
+          },
+          {
+            id: '5',
+            activity: 'step',
+            timestamp: '2026-04-12T10:00:04Z',
+            objects: ['t2'],
+            attributes: {},
+          },
+          {
+            id: '6',
+            activity: 'end',
+            timestamp: '2026-04-12T10:00:05Z',
+            objects: ['t2'],
+            attributes: {},
+          },
         ],
         objects: [
           { id: 't1', type: 'tool_invocation', state: 'completed', attributes: {} },
@@ -167,8 +293,20 @@ describe('Agent 3: Conformance Checker', () => {
       const ocel: OcelEventLog = {
         version: '2.0',
         events: [
-          { id: '1', activity: 'middle', timestamp: '2026-04-12T10:00:00Z', objects: ['t1'], attributes: {} }, // Invalid start
-          { id: '2', activity: 'end', timestamp: '2026-04-12T10:00:01Z', objects: ['t1'], attributes: {} },
+          {
+            id: '1',
+            activity: 'middle',
+            timestamp: '2026-04-12T10:00:00Z',
+            objects: ['t1'],
+            attributes: {},
+          }, // Invalid start
+          {
+            id: '2',
+            activity: 'end',
+            timestamp: '2026-04-12T10:00:01Z',
+            objects: ['t1'],
+            attributes: {},
+          },
         ],
         objects: [{ id: 't1', type: 'tool_invocation', state: 'completed', attributes: {} }],
         metadata: {
@@ -199,8 +337,20 @@ describe('Agent 3: Conformance Checker', () => {
       const ocel: OcelEventLog = {
         version: '2.0',
         events: [
-          { id: '1', activity: 'a', timestamp: '2026-04-12T10:00:00Z', objects: ['t1'], attributes: {} },
-          { id: '2', activity: 'c', timestamp: '2026-04-12T10:00:01Z', objects: ['t1'], attributes: {} }, // Should be b
+          {
+            id: '1',
+            activity: 'a',
+            timestamp: '2026-04-12T10:00:00Z',
+            objects: ['t1'],
+            attributes: {},
+          },
+          {
+            id: '2',
+            activity: 'c',
+            timestamp: '2026-04-12T10:00:01Z',
+            objects: ['t1'],
+            attributes: {},
+          }, // Should be b
         ],
         objects: [{ id: 't1', type: 'tool_invocation', state: 'completed', attributes: {} }],
         metadata: {
@@ -229,11 +379,35 @@ describe('Agent 3: Conformance Checker', () => {
         version: '2.0',
         events: [
           // Trace 1: conforms
-          { id: '1', activity: 'a', timestamp: '2026-04-12T10:00:00Z', objects: ['t1'], attributes: {} },
-          { id: '2', activity: 'b', timestamp: '2026-04-12T10:00:01Z', objects: ['t1'], attributes: {} },
+          {
+            id: '1',
+            activity: 'a',
+            timestamp: '2026-04-12T10:00:00Z',
+            objects: ['t1'],
+            attributes: {},
+          },
+          {
+            id: '2',
+            activity: 'b',
+            timestamp: '2026-04-12T10:00:01Z',
+            objects: ['t1'],
+            attributes: {},
+          },
           // Trace 2: diverges
-          { id: '3', activity: 'a', timestamp: '2026-04-12T10:00:02Z', objects: ['t2'], attributes: {} },
-          { id: '4', activity: 'x', timestamp: '2026-04-12T10:00:03Z', objects: ['t2'], attributes: {} }, // Not allowed
+          {
+            id: '3',
+            activity: 'a',
+            timestamp: '2026-04-12T10:00:02Z',
+            objects: ['t2'],
+            attributes: {},
+          },
+          {
+            id: '4',
+            activity: 'x',
+            timestamp: '2026-04-12T10:00:03Z',
+            objects: ['t2'],
+            attributes: {},
+          }, // Not allowed
         ],
         objects: [
           { id: 't1', type: 'tool_invocation', state: 'completed', attributes: {} },
@@ -264,10 +438,34 @@ describe('Agent 3: Conformance Checker', () => {
       const ocel: OcelEventLog = {
         version: '2.0',
         events: [
-          { id: '1', activity: 'login', timestamp: '2026-04-12T10:00:00Z', objects: ['u1'], attributes: {} },
-          { id: '2', activity: 'browse', timestamp: '2026-04-12T10:00:01Z', objects: ['u1'], attributes: {} },
-          { id: '3', activity: 'purchase', timestamp: '2026-04-12T10:00:02Z', objects: ['u1'], attributes: {} },
-          { id: '4', activity: 'logout', timestamp: '2026-04-12T10:00:03Z', objects: ['u1'], attributes: {} },
+          {
+            id: '1',
+            activity: 'login',
+            timestamp: '2026-04-12T10:00:00Z',
+            objects: ['u1'],
+            attributes: {},
+          },
+          {
+            id: '2',
+            activity: 'browse',
+            timestamp: '2026-04-12T10:00:01Z',
+            objects: ['u1'],
+            attributes: {},
+          },
+          {
+            id: '3',
+            activity: 'purchase',
+            timestamp: '2026-04-12T10:00:02Z',
+            objects: ['u1'],
+            attributes: {},
+          },
+          {
+            id: '4',
+            activity: 'logout',
+            timestamp: '2026-04-12T10:00:03Z',
+            objects: ['u1'],
+            attributes: {},
+          },
         ],
         objects: [{ id: 'u1', type: 'tool_invocation', state: 'completed', attributes: {} }],
         metadata: {

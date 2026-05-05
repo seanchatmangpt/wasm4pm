@@ -9,7 +9,7 @@
 
 ## Executive Summary
 
-This document defines the comprehensive end-to-end testing and certification strategy for pictl's ML/AI/RL system. The goal is to establish:
+This document defines the comprehensive end-to-end testing and certification strategy for wasm4pm's ML/AI/RL system. The goal is to establish:
 
 1. **15+ end-to-end test scenarios** covering happy path, edge cases, and error conditions
 2. **Mutation score ≥80%** for critical paths (discovery, conformance, RL)

@@ -54,9 +54,9 @@ linucb_exploration_bonus = 1.414 # Exploration parameter α (√2 default)
 Environment variable overrides:
 
 ```bash
-export PICTL_GPU_ENABLED=true
-export PICTL_LINUCB_LAMBDA=1.0
-export PICTL_LINUCB_EXPLORATION_BONUS=1.414
+export WASM4PM_GPU_ENABLED=true
+export WASM4PM_LINUCB_LAMBDA=1.0
+export WASM4PM_LINUCB_EXPLORATION_BONUS=1.414
 ```
 
 ---
@@ -66,7 +66,7 @@ export PICTL_LINUCB_EXPLORATION_BONUS=1.414
 ### CPU Reference (always available)
 
 ```rust
-use pictl::ml::LinUCBAgent;
+use wasm4pm::ml::LinUCBAgent;
 
 // Construct with defaults (λ=1.0, α=√2, lr=0.1)
 let mut agent = LinUCBAgent::new();
@@ -86,7 +86,7 @@ agent.update(&features, action, reward);
 ### GPU Kernel (requires `--features gpu`)
 
 ```rust
-use pictl::gpu::LinUCBGPU;
+use wasm4pm::gpu::LinUCBGPU;
 
 // Initialise (async GPU device acquisition)
 let mut kernel = LinUCBGPU::new()?;

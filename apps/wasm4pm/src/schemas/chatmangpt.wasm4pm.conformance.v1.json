@@ -1,11 +1,11 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "chatmangpt.pictl.conformance.v1",
-  "title": "pictl Conformance Result v1",
+  "$id": "chatmangpt.wasm4pm.conformance.v1",
+  "title": "wasm4pm Conformance Result v1",
   "type": "object",
   "required": ["schema", "status", "input", "method", "threshold", "fitness", "isFit"],
   "properties": {
-    "schema":    { "type": "string", "const": "chatmangpt.pictl.conformance.v1" },
+    "schema":    { "type": "string", "const": "chatmangpt.wasm4pm.conformance.v1" },
     "status":    { "type": "string", "enum": ["success", "conformance_fail"] },
     "input":     { "type": "string" },
     "activityKey": { "type": "string" },

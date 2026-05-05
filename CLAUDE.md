@@ -456,7 +456,7 @@ wasm4pm/src/agentic/           # Agentic framework (9 traits, 14 modules)
 
 - `WasmLoader` is a **singleton** — call `WasmLoader.reset()` between tests that need a clean state
 - All receipts auto-save to `.wasm4pm/results/` unless `--no-save` is passed
-- ENV var prefix is `WASM4PM_*` (NOT `PICTL_*`) — precedence is CLI > file > ENV > defaults
+- ENV var prefix is `WASM4PM_*` (NOT `WASM4PM_*`) — precedence is CLI > file > ENV > defaults
 - `assertRequiredAttributes()`, `assertValidTraces()`, `assertNonBlocking()` in OtelCapture return `string[]` (violations), not void/throw
 - OTEL span `startTime`/`endTime` are in **nanoseconds** (`Date.now() * 1_000_000`)
 - "bad algorithm" exit code is `SOURCE_ERROR` (2), not `CONFIG_ERROR` (1) — intentional

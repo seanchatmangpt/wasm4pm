@@ -1,6 +1,6 @@
 /**
  * ml-runner.ts
- * Shared ML execution logic used by both `pictl ml` and `pictl run`.
+ * Shared ML execution logic used by both `wasm4pm ml` and `wasm4pm run`.
  *
  * Extracts the core ML task dispatch from commands/ml.ts so it can be
  * reused without CLI-specific formatting concerns.

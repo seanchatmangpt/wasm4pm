@@ -1,4 +1,4 @@
-# ESLint Custom Rules for pictl
+# ESLint Custom Rules for wasm4pm
 
 Rules in this directory provide Gemba enforcement for the wasm4pm test suite.
 
@@ -8,7 +8,7 @@ Rules in this directory provide Gemba enforcement for the wasm4pm test suite.
 
 **Purpose:** Block mocks/stubs in integration tests (Gemba enforcement)
 
-**ID:** `pictl-testing/no-mocks-in-integration`
+**ID:** `wasm4pm-testing/no-mocks-in-integration`
 
 **Type:** Problem (no auto-fix)
 
@@ -46,7 +46,7 @@ packages/observability/__tests__/fields.test.ts
   10:5  error  Mocks not allowed in integration tests. 
                Integration tests must use real implementations. 
                Move to a unit test (*.unit.test.ts or *.spec.ts) or use real APIs.
-               pictl-testing/no-mocks-in-integration
+               wasm4pm-testing/no-mocks-in-integration
 ```
 
 ## Adding New Rules
@@ -83,10 +83,10 @@ To add a new rule:
 
 4. Register in `.eslintrc.cjs`
    ```javascript
-   plugins: ['pictl-testing'],
+   plugins: ['wasm4pm-testing'],
    rules: {
-     'pictl-testing/no-mocks-in-integration': 'error',
-     'pictl-testing/my-new-rule': 'error',
+     'wasm4pm-testing/no-mocks-in-integration': 'error',
+     'wasm4pm-testing/my-new-rule': 'error',
    }
    ```
 
@@ -108,4 +108,4 @@ npx eslint --no-eslintrc --config .eslintrc.cjs \
 
 - [ESLint Rule Format](https://eslint.org/docs/developers/rule-structure)
 - [ESLint Visitor Pattern](https://eslint.org/docs/developers/working-with-rules)
-- [pictl GEMBA.md](../GEMBA.md)
+- [wasm4pm GEMBA.md](../GEMBA.md)

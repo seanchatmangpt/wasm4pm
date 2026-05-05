@@ -9,53 +9,53 @@ import { JsonEvent, JsonConfig, ObservabilityResult } from './types.js';
  * All operations are async and non-blocking
  */
 export declare class JsonWriter {
-    private config;
-    private buffer;
-    private fileHandle?;
-    private flushPromise;
-    private readonly BUFFER_SIZE;
-    private readonly FLUSH_INTERVAL_MS;
-    private flushTimer?;
-    private flushErrors;
-    private initPromise;
-    constructor(config: JsonConfig);
-    /**
-     * Initialize file handle (async, non-blocking)
-     */
-    private initializeFile;
-    /**
-     * Start auto-flush timer
-     * Errors are logged and recorded; caller should monitor via getFlushErrors()
-     */
-    private startAutoFlush;
-    /**
-     * Emit a JSON event (non-blocking)
-     * Returns immediately; writing happens asynchronously
-     */
-    emit(event: JsonEvent): void;
-    /**
-     * Flush buffered events to output
-     */
-    private flush;
-    /**
-     * Internal flush implementation
-     * Throws on error so caller can handle; failed events are re-enqueued
-     */
-    private doFlush;
-    private recordFlushError;
-    getFlushErrors(): Array<{
-        timestamp: Date;
-        error: any;
-    }>;
-    /**
-     * Redact secrets from event data
-     * Removes sensitive fields like passwords, tokens, keys
-     */
-    static redactSecrets(data: Record<string, any>): Record<string, any>;
-    /**
-     * Gracefully shutdown the writer
-     * Flushes any remaining events; reports errors without breaking shutdown
-     */
-    shutdown(): Promise<ObservabilityResult>;
+  private config;
+  private buffer;
+  private fileHandle?;
+  private flushPromise;
+  private readonly BUFFER_SIZE;
+  private readonly FLUSH_INTERVAL_MS;
+  private flushTimer?;
+  private flushErrors;
+  private initPromise;
+  constructor(config: JsonConfig);
+  /**
+   * Initialize file handle (async, non-blocking)
+   */
+  private initializeFile;
+  /**
+   * Start auto-flush timer
+   * Errors are logged and recorded; caller should monitor via getFlushErrors()
+   */
+  private startAutoFlush;
+  /**
+   * Emit a JSON event (non-blocking)
+   * Returns immediately; writing happens asynchronously
+   */
+  emit(event: JsonEvent): void;
+  /**
+   * Flush buffered events to output
+   */
+  private flush;
+  /**
+   * Internal flush implementation
+   * Throws on error so caller can handle; failed events are re-enqueued
+   */
+  private doFlush;
+  private recordFlushError;
+  getFlushErrors(): Array<{
+    timestamp: Date;
+    error: any;
+  }>;
+  /**
+   * Redact secrets from event data
+   * Removes sensitive fields like passwords, tokens, keys
+   */
+  static redactSecrets(data: Record<string, any>): Record<string, any>;
+  /**
+   * Gracefully shutdown the writer
+   * Flushes any remaining events; reports errors without breaking shutdown
+   */
+  shutdown(): Promise<ObservabilityResult>;
 }
 //# sourceMappingURL=json-writer.d.ts.map

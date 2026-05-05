@@ -205,7 +205,7 @@ echo $?  # 0=success, 1-5=error
 
 **Architectural Principle (v26.4.10+):** Fail fast, not fail silently.
 
-pictl follows Toyota Production System (TPS) principles to ensure defects are always visible. See [`~/.claude/rules/toyota-production.md`](../../../.claude/rules/toyota-production.md) for the authoritative rule file.
+wasm4pm follows Toyota Production System (TPS) principles to ensure defects are always visible. See [`~/.claude/rules/toyota-production.md`](../../../.claude/rules/toyota-production.md) for the authoritative rule file.
 
 ### Silent Fallbacks Removed (v26.4.10)
 

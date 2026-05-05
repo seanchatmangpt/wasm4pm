@@ -1,20 +1,20 @@
 /**
- * Exit codes for pictl CLI
+ * Exit codes for wasm4pm CLI
  * Follows standard Unix/POSIX conventions
  */
 export declare const EXIT_CODES: {
-    /** Successful execution */
-    readonly success: 0;
-    /** Configuration file error (missing, invalid, malformed) */
-    readonly config_error: 1;
-    /** Source data error (invalid format, missing files, parsing error) */
-    readonly source_error: 2;
-    /** Execution error (algorithm failure, timeout, resource exhaustion) */
-    readonly execution_error: 3;
-    /** Partial failure (some operations succeeded, some failed) */
-    readonly partial_failure: 4;
-    /** System error (I/O, permission, system resource issues) */
-    readonly system_error: 5;
+  /** Successful execution */
+  readonly success: 0;
+  /** Configuration file error (missing, invalid, malformed) */
+  readonly config_error: 1;
+  /** Source data error (invalid format, missing files, parsing error) */
+  readonly source_error: 2;
+  /** Execution error (algorithm failure, timeout, resource exhaustion) */
+  readonly execution_error: 3;
+  /** Partial failure (some operations succeeded, some failed) */
+  readonly partial_failure: 4;
+  /** System error (I/O, permission, system resource issues) */
+  readonly system_error: 5;
 };
 export type ExitCode = (typeof EXIT_CODES)[keyof typeof EXIT_CODES];
 /**

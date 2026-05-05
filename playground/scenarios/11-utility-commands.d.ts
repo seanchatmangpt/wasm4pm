@@ -1,9 +1,9 @@
 /**
  * Scenario: utility commands — init, results, explain, doctor
  *
- * Dev action simulated: "I scaffolded a new project with `pictl init`, browsed
- * saved results with `pictl results`, got an algorithm explanation with
- * `pictl explain`, and diagnosed the environment with `pictl doctor`."
+ * Dev action simulated: "I scaffolded a new project with `wasm4pm init`, browsed
+ * saved results with `wasm4pm results`, got an algorithm explanation with
+ * `wasm4pm explain`, and diagnosed the environment with `wasm4pm doctor`."
  *
  * Key contracts verified:
  *   init:
@@ -30,7 +30,7 @@
  * IMPORTANT: init and results use process.cwd() at runtime — must pass
  * cwd: tempDir option to runCli so files land in the temp dir, not the repo root.
  *
- * Binary: apps/pictl/dist/bin/pictl.js (must be built first)
+ * Binary: apps/wasm4pm/dist/bin/wasm4pm.js (must be built first)
  */
 export {};
 //# sourceMappingURL=11-utility-commands.d.ts.map

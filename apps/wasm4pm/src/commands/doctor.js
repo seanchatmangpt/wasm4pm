@@ -87,8 +87,8 @@ async function checkWasmBinary() {
             fix: 'Run this command from inside the wasm4pm workspace, then rebuild: cd wasm4pm && pnpm run build',
         };
     }
-    const wasmFile = path.join(wasmPkgDir, 'pictl_bg.wasm');
-    const jsFile = path.join(wasmPkgDir, 'pictl.js');
+    const wasmFile = path.join(wasmPkgDir, 'wasm4pm_bg.wasm');
+    const jsFile = path.join(wasmPkgDir, 'wasm4pm.js');
     try {
         const [wasmStat, jsStat] = await Promise.all([fs.stat(wasmFile), fs.stat(jsFile)]);
         if (wasmStat.size === 0) {
@@ -101,7 +101,7 @@ async function checkWasmBinary() {
         }
         const sizeMb = (wasmStat.size / 1024 / 1024).toFixed(1);
         void jsStat;
-        return { name: 'WASM binary', status: 'ok', message: `pictl_bg.wasm found (${sizeMb} MB)` };
+        return { name: 'WASM binary', status: 'ok', message: `wasm4pm_bg.wasm found (${sizeMb} MB)` };
     }
     catch {
         return {
@@ -125,12 +125,12 @@ async function checkWasmLoads() {
             fix: 'Run from inside the wasm4pm workspace',
         };
     }
-    const jsFile = path.join(wasmPkgDir, 'pictl.js');
+    const jsFile = path.join(wasmPkgDir, 'wasm4pm.js');
     if (!existsSync(jsFile)) {
         return {
             name: 'WASM loads',
             status: 'fail',
-            message: 'pictl.js not found — module not built',
+            message: 'wasm4pm.js not found — module not built',
             fix: 'cd wasm4pm && pnpm run build',
         };
     }
@@ -191,7 +191,7 @@ async function checkSimdSupport() {
 // Check 6: Config file found
 // ────────────────────────────────────────────────────────────────────────────
 async function checkConfigFound() {
-    const configNames = ['pictl.toml', 'pictl.json', 'wasm4pm.toml', 'wasm4pm.json'];
+    const configNames = ['wasm4pm.toml', 'wasm4pm.json', 'wasm4pm.toml', 'wasm4pm.json'];
     const cwd = process.cwd();
     const searchDirs = [cwd];
     let current = cwd;
@@ -214,15 +214,15 @@ async function checkConfigFound() {
     return {
         name: 'Config file',
         status: 'warn',
-        message: 'No pictl.toml / wasm4pm.json found in current directory or parents',
-        fix: 'Create a config with: pictl init    (defaults work fine without one)',
+        message: 'No wasm4pm.toml / wasm4pm.json found in current directory or parents',
+        fix: 'Create a config with: wasm4pm init    (defaults work fine without one)',
     };
 }
 // ────────────────────────────────────────────────────────────────────────────
 // Check 7: Config validation (if found, parse with Zod)
 // ────────────────────────────────────────────────────────────────────────────
 async function checkConfigValidation() {
-    const configNames = ['pictl.toml', 'pictl.json', 'wasm4pm.toml', 'wasm4pm.json'];
+    const configNames = ['wasm4pm.toml', 'wasm4pm.json', 'wasm4pm.toml', 'wasm4pm.json'];
     const cwd = process.cwd();
     let configPath = null;
     const searchDirs = [cwd];
@@ -273,7 +273,7 @@ async function checkConfigValidation() {
                 name: 'Config validation',
                 status: 'warn',
                 message: `${path.basename(configPath)} is empty`,
-                fix: 'Add configuration or run: pictl init',
+                fix: 'Add configuration or run: wasm4pm init',
             };
         }
         return {
@@ -326,7 +326,7 @@ async function checkXesFiles() {
             name: 'XES event logs',
             status: 'warn',
             message: 'No .xes files found in current directory (depth ≤ 2)',
-            fix: 'Place an XES event log here, or pass --input <path> to pictl run/predict',
+            fix: 'Place an XES event log here, or pass --input <path> to wasm4pm run/predict',
         };
     }
     const preview = found.slice(0, 3).join(', ') + (found.length > 3 ? ` (+${found.length - 3} more)` : '');
@@ -552,7 +552,7 @@ async function checkAlgorithmRegistry() {
     if (!wasmPkgDir) {
         return { name: 'Algorithm registry', status: 'ok', message: 'Skipped — workspace not found' };
     }
-    const jsFile = path.join(wasmPkgDir, 'pictl.js');
+    const jsFile = path.join(wasmPkgDir, 'wasm4pm.js');
     if (!existsSync(jsFile)) {
         return { name: 'Algorithm registry', status: 'ok', message: 'Skipped — WASM not built' };
     }
@@ -616,7 +616,7 @@ async function checkWorkspaceIntegrity() {
         'packages/wasm4pm',
         'packages/ml',
         'packages/swarm',
-        'apps/pictl',
+        'apps/wasm4pm',
     ];
     const missing = [];
     for (const pkg of expectedPackages) {
@@ -1018,7 +1018,7 @@ function renderBadge(status) {
 }
 function printReport(formatter, report) {
     formatter.log('');
-    formatter.log('pictl doctor — system health check');
+    formatter.log('wasm4pm doctor — system health check');
     formatter.log('─'.repeat(58));
     let lastSection = '';
     for (const check of report.checks) {
@@ -1042,10 +1042,10 @@ function printReport(formatter, report) {
     formatter.log(`Result: ${report.ok} ok  ${report.warn} warn  ${report.fail} fail`);
     formatter.log('');
     if (report.healthy) {
-        formatter.success('All required checks passed. pictl is ready to use.');
+        formatter.success('All required checks passed. wasm4pm is ready to use.');
     }
     else {
-        formatter.error('One or more required checks failed. Fix the issues above and re-run: pictl doctor');
+        formatter.error('One or more required checks failed. Fix the issues above and re-run: wasm4pm doctor');
     }
     formatter.log('');
 }
@@ -1117,14 +1117,14 @@ export const doctor = defineCommand({
         };
         if (formatter instanceof JSONFormatter) {
             if (report.healthy) {
-                formatter.success('pictl environment is healthy', {
+                formatter.success('wasm4pm environment is healthy', {
                     ...report,
                     healthy: true,
                     checks: report.checks.map((c) => ({ ...c })),
                 });
             }
             else {
-                formatter.warn('pictl environment has issues', {
+                formatter.warn('wasm4pm environment has issues', {
                     ...report,
                     healthy: false,
                     checks: report.checks.map((c) => ({ ...c })),

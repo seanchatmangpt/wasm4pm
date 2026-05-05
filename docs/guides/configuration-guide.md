@@ -1,6 +1,6 @@
 # Configuration Guide
 
-Complete reference for all pictl configuration options.
+Complete reference for all wasm4pm configuration options.
 
 **Format:** TOML, JSON, or environment variables | **Validation:** Zod schema | **Precedence:** CLI > File > ENV > Defaults
 

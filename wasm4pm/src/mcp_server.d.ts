@@ -1,17 +1,17 @@
 /**
- * MCP Server Integration for pictl
+ * MCP Server Integration for wasm4pm
  *
- * Exposes pictl process mining capabilities as Model Context Protocol (MCP) tools.
- * Enables Claude and other MCP clients to use pictl for process discovery, analysis, and visualization.
+ * Exposes wasm4pm process mining capabilities as Model Context Protocol (MCP) tools.
+ * Enables Claude and other MCP clients to use wasm4pm for process discovery, analysis, and visualization.
  *
  * Usage:
  *   const server = new PictlMCPServer();
  *   await server.start();
  */
 /**
- * pictl MCP Server
+ * wasm4pm MCP Server
  *
- * Provides MCP interface to pictl functionality including:
+ * Provides MCP interface to wasm4pm functionality including:
  * - Process discovery (18 algorithms)
  * - Conformance checking
  * - Process analysis and visualization

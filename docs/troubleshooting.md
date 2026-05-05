@@ -1,6 +1,6 @@
 # Troubleshooting Guide
 
-Common issues and solutions for pictl process mining platform.
+Common issues and solutions for wasm4pm process mining platform.
 
 ---
 
@@ -101,7 +101,7 @@ WASM4PM_LOG_LEVEL=debug wpm run log.xes
 **Problem:** `WASM4PM_*` variables not applied.
 
 **Solutions:**
-1. Check prefix is `WASM4PM_` (not `PICTL_`)
+1. Check prefix is `WASM4PM_` (not `WASM4PM_`)
 2. Use underscores for nested keys: `WASM4PM_OTEL_ENDPOINT` not `WASM4PM_OTEL.ENDPOINT`
 3. Export before running:
    ```bash
@@ -166,7 +166,7 @@ xmllint --noout my-log.xes
 # Validate JSON
 jq empty my-log.json
 
-# Test with pictl
+# Test with wasm4pm
 wpm validate -i my-log.xes
 ```
 

@@ -65,7 +65,8 @@ function extract(trace: PredictionTrace, includeRework: boolean): Record<string,
     totalGap += gap;
     if (gap > maxGap) maxGap = gap;
   }
-  const elapsed = events.length >= 2 ? events[events.length - 1].timestamp - events[0].timestamp : 0;
+  const elapsed =
+    events.length >= 2 ? events[events.length - 1].timestamp - events[0].timestamp : 0;
   const meanGap = events.length >= 2 ? totalGap / (events.length - 1) : 0;
   const result: Record<string, number> = {
     prefix_length: events.length,
@@ -103,7 +104,7 @@ export class FeaturesHandler implements PerspectiveHandler<FeaturesTask> {
   predict(
     task: FeaturesTask,
     model: PredictionModel,
-    prefixes: readonly PredictionTrace[],
+    prefixes: readonly PredictionTrace[]
   ): readonly PredictionRecord[] {
     const state = model.state as unknown as FeaturesState;
     return prefixes.map((prefix) => {

@@ -900,15 +900,15 @@ interface ExecutionReceipt {
 ```typescript
 // telemetry.ts — span name constants
 export const SPAN_NAMES = {
-  DISCOVERY: 'pictl.discovery',
-  CONFORMANCE: 'pictl.conformance',
-  PREDICTION: 'pictl.prediction',
-  DRIFT: 'pictl.drift',
-  ML_CLASSIFY: 'pictl.ml.classify',
-  ML_CLUSTER: 'pictl.ml.cluster',
-  ML_FORECAST: 'pictl.ml.forecast',
-  ML_ANOMALY: 'pictl.ml.anomaly',
-  PIPELINE: 'pictl.pipeline',
+  DISCOVERY: 'wasm4pm.discovery',
+  CONFORMANCE: 'wasm4pm.conformance',
+  PREDICTION: 'wasm4pm.prediction',
+  DRIFT: 'wasm4pm.drift',
+  ML_CLASSIFY: 'wasm4pm.ml.classify',
+  ML_CLUSTER: 'wasm4pm.ml.cluster',
+  ML_FORECAST: 'wasm4pm.ml.forecast',
+  ML_ANOMALY: 'wasm4pm.ml.anomaly',
+  PIPELINE: 'wasm4pm.pipeline',
 } as const;
 ```
 
@@ -1354,13 +1354,13 @@ case ExecutionProfile.RESEARCH:
 # Build and measure
 cd wasm4pm
 wasm-pack build --target web -- --no-default-features --features basic
-ls -la pkg/pictl_bg.wasm  # Record actual size
+ls -la pkg/wasm4pm_bg.wasm  # Record actual size
 
 wasm-pack build --target web -- --no-default-features --features basic,discovery_advanced
-ls -la pkg/pictl_bg.wasm
+ls -la pkg/wasm4pm_bg.wasm
 
 wasm-pack build --target web -- --no-default-features --features basic,discovery_advanced,ml
-ls -la pkg/pictl_bg.wasm
+ls -la pkg/wasm4pm_bg.wasm
 ```
 
 **Dependencies:** None

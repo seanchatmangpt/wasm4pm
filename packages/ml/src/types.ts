@@ -33,7 +33,10 @@ export interface LabelEncoding {
 export type ClassificationMethod = 'knn' | 'logistic_regression' | 'decision_tree' | 'naive_bayes';
 
 /** Regression method */
-export type RegressionMethod = 'linear_regression' | 'polynomial_regression' | 'exponential_regression';
+export type RegressionMethod =
+  | 'linear_regression'
+  | 'polynomial_regression'
+  | 'exponential_regression';
 
 /** Clustering method */
 export type ClusteringMethod = 'kmeans' | 'dbscan';

@@ -61,7 +61,7 @@ export const social = defineCommand({
             // Resolve input path (positional OR --file/-i)
             const inputPath = ctx.args.input || ctx.args.file;
             if (!inputPath) {
-                formatter.error('Input file required.\n\nUsage:  pictl social <log.xes>\n        pictl social <log.xes> --metric working-together\n\nRun "pictl social --help" for details.');
+                formatter.error('Input file required.\n\nUsage:  wasm4pm social <log.xes>\n        wasm4pm social <log.xes> --metric working-together\n\nRun "wasm4pm social --help" for details.');
                 process.exit(EXIT_CODES.source_error);
             }
             // Validate input file exists

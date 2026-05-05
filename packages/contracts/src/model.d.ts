@@ -48,13 +48,13 @@
  * - `exportable_to_bpmn`: Can be serialized to BPMN (Business Process Model Notation).
  */
 export interface ModelCapabilities {
-    online_safe: boolean;
-    offline_only: boolean;
-    replay_ready: boolean;
-    alignment_ready: boolean;
-    streaming_compatible: boolean;
-    exportable_to_pnml: boolean;
-    exportable_to_bpmn: boolean;
+  online_safe: boolean;
+  offline_only: boolean;
+  replay_ready: boolean;
+  alignment_ready: boolean;
+  streaming_compatible: boolean;
+  exportable_to_pnml: boolean;
+  exportable_to_bpmn: boolean;
 }
 /**
  * Quality metrics of a discovered or conformance-checked model.
@@ -72,18 +72,18 @@ export interface ModelCapabilities {
  *   Fewer elements = higher simplicity.
  */
 export interface QualityMetrics {
-    fitness?: number;
-    precision?: number;
-    generalization?: number;
-    simplicity?: number;
+  fitness?: number;
+  precision?: number;
+  generalization?: number;
+  simplicity?: number;
 }
 /**
  * Node in the process model graph (place, transition, activity, etc.).
  */
 export interface ModelNode {
-    id: string;
-    label: string;
-    type: string;
+  id: string;
+  label: string;
+  type: string;
 }
 /**
  * Edge in the process model graph (flow, arc, directly-follows, etc.).
@@ -91,9 +91,9 @@ export interface ModelNode {
  * - `weight` is optional and represents frequency or strength.
  */
 export interface ModelEdge {
-    from: string;
-    to: string;
-    weight?: number;
+  from: string;
+  to: string;
+  weight?: number;
 }
 /**
  * Canonical Intermediate Representation of a process model.
@@ -121,13 +121,13 @@ export interface ModelEdge {
  * 4. Nodes and edges form a DAG or cyclic graph; no isolated nodes.
  */
 export interface ModelIR {
-    readonly format_version: "1.0";
-    readonly model_type: "dfg" | "petri_net" | "process_tree" | "declare" | "powl";
-    readonly algorithm_id: string;
-    readonly capabilities: ModelCapabilities;
-    readonly nodes: ReadonlyArray<ModelNode>;
-    readonly edges: ReadonlyArray<ModelEdge>;
-    readonly quality?: QualityMetrics;
+  readonly format_version: '1.0';
+  readonly model_type: 'dfg' | 'petri_net' | 'process_tree' | 'declare' | 'powl';
+  readonly algorithm_id: string;
+  readonly capabilities: ModelCapabilities;
+  readonly nodes: ReadonlyArray<ModelNode>;
+  readonly edges: ReadonlyArray<ModelEdge>;
+  readonly quality?: QualityMetrics;
 }
 /**
  * Guard function to check if a value is a valid ModelIR.

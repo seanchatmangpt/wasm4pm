@@ -34,9 +34,9 @@ export interface AuthConfig {
  * Capability declaration for a source adapter
  */
 export interface Capabilities {
-  streaming: boolean;       // Can stream events incrementally
-  checkpoint: boolean;      // Can save/restore position in stream
-  filtering: boolean;       // Supports pre-filtering events
+  streaming: boolean; // Can stream events incrementally
+  checkpoint: boolean; // Can save/restore position in stream
+  filtering: boolean; // Supports pre-filtering events
 }
 
 /**
@@ -203,8 +203,8 @@ export class SourceRegistry {
     if (this.adapters.has(adapter.kind)) {
       throw new Error(
         `Source adapter kind '${adapter.kind}' is already registered. ` +
-        `Adapter versions: existing=${this.adapters.get(adapter.kind)?.version}, ` +
-        `new=${adapter.version}`
+          `Adapter versions: existing=${this.adapters.get(adapter.kind)?.version}, ` +
+          `new=${adapter.version}`
       );
     }
     this.adapters.set(adapter.kind, adapter);

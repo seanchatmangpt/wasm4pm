@@ -62,13 +62,17 @@ function minMaxNormalize(col: Columnar): void {
   const { cols, n, d } = col;
   for (let j = 0; j < d; j++) {
     const c = cols[j];
-    let min = c[0], max = c[0];
+    let min = c[0],
+      max = c[0];
     for (let i = 1; i < n; i++) {
       if (c[i] < min) min = c[i];
       if (c[i] > max) max = c[i];
     }
     const range = max - min;
-    if (range === 0) { c.fill(0); continue; }
+    if (range === 0) {
+      c.fill(0);
+      continue;
+    }
     const invRange = 1 / range;
     for (let i = 0; i < n; i++) c[i] = (c[i] - min) * invRange;
   }
@@ -120,7 +124,10 @@ function covarianceMatrix(col: Columnar): Float64Array[] {
 // Jacobi eigendecomposition (in-place, pre-allocated)
 // ---------------------------------------------------------------------------
 
-function eigenSymmetric(cov: Float64Array[], maxIter = 200): { eigenvalues: Float64Array; eigenvectors: Float64Array[] } {
+function eigenSymmetric(
+  cov: Float64Array[],
+  maxIter = 200
+): { eigenvalues: Float64Array; eigenvectors: Float64Array[] } {
   const n = cov.length;
 
   // Work on a copy
@@ -138,11 +145,16 @@ function eigenSymmetric(cov: Float64Array[], maxIter = 200): { eigenvalues: Floa
   for (let iter = 0; iter < maxIter; iter++) {
     // Find largest off-diagonal
     let maxVal = 0;
-    let p = 0, q = 1;
+    let p = 0,
+      q = 1;
     for (let i = 0; i < n; i++) {
       for (let j = i + 1; j < n; j++) {
         const av = a[i][j] < 0 ? -a[i][j] : a[i][j];
-        if (av > maxVal) { maxVal = av; p = i; q = j; }
+        if (av > maxVal) {
+          maxVal = av;
+          p = i;
+          q = j;
+        }
       }
     }
     if (maxVal < 1e-10) break;
@@ -163,7 +175,9 @@ function eigenSymmetric(cov: Float64Array[], maxIter = 200): { eigenvalues: Floa
     const cs = c * s;
 
     // Update matrix elements
-    const app = a[p][p], aqq = a[q][q], apq = a[p][q];
+    const app = a[p][p],
+      aqq = a[q][q],
+      apq = a[p][q];
 
     a[p][p] = c2 * app + 2 * cs * apq + s2 * aqq;
     a[q][q] = s2 * app - 2 * cs * apq + c2 * aqq;
@@ -238,7 +252,7 @@ export async function reduceFeaturesPCA(
   options: {
     nComponents?: number;
     normalize?: boolean;
-  } = {},
+  } = {}
 ): Promise<PCAResult> {
   const matrix = buildFeatureMatrix(featuresJson);
 

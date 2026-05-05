@@ -41,7 +41,7 @@ describe('OTEL enabled (spans captured)', () => {
     it('captures bootstrap spans', async () => {
         const tracer = createTracer(otelConfig, fields);
         const span = tracer.startSpan(BootstrapSpans.configLoad());
-        span.addEvent('file_read', { path: 'pictl.toml' });
+        span.addEvent('file_read', { path: 'wasm4pm.toml' });
         span.end();
         const span2 = tracer.startSpan(BootstrapSpans.configValidation());
         span2.setStatus('OK');

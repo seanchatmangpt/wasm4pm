@@ -564,7 +564,7 @@ wpm explain alpha_plus_plus --cite          # With references
 
 ### `wpm init`
 
-Scaffold a new pictl project.
+Scaffold a new wasm4pm project.
 
 ```bash
 wpm init                                    # Interactive setup

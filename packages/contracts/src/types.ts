@@ -30,7 +30,7 @@ export interface ExecutionPlan {
   estimatedDurationMs?: number;
   metadata?: Record<string, unknown>;
   prediction?: {
-    tasks: string[];        // ['next_activity', 'drift', 'outcome', ...]
+    tasks: string[]; // ['next_activity', 'drift', 'outcome', ...]
     activityKey: string;
     ngramOrder: number;
     driftWindowSize?: number;

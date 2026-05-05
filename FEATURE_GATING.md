@@ -508,7 +508,7 @@ bash wasm4pm/measure-size.sh
 Output:
 ```
 ╔═══════════════════════════════════════════════════════════════╗
-║  PICTL DEPLOYMENT PROFILE SIZE MEASUREMENT                   ║
+║  WASM4PM DEPLOYMENT PROFILE SIZE MEASUREMENT                   ║
 ╚═══════════════════════════════════════════════════════════════╝
 
 Measuring profile: browser

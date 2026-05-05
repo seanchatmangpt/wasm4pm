@@ -15,5 +15,10 @@ export type { WebSocketSourceConfig } from './ws-source.js';
 export { createSourceRegistry, ExtendedSourceRegistry } from './registry.js';
 export { sourceRegistry, SourceRegistry } from './registry.js';
 export type { SourceAdapter, Capabilities, EventStream, RetryStrategy } from './registry.js';
-export { FileSourceConfigSchema, HttpSourceConfigSchema, StreamSourceConfigSchema, SourceConfigSchema, } from './schemas.js';
+export {
+  FileSourceConfigSchema,
+  HttpSourceConfigSchema,
+  StreamSourceConfigSchema,
+  SourceConfigSchema,
+} from './schemas.js';
 //# sourceMappingURL=index.d.ts.map

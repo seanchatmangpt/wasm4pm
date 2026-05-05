@@ -66,7 +66,7 @@ export const validate = defineCommand({
             // Resolve input path (positional OR --file/-i)
             const inputPath = ctx.args.input || ctx.args.file;
             if (!inputPath) {
-                formatter.error('Input file required.\n\nUsage:  pictl validate <log.xes>\n        pictl validate <log.csv> --format csv\n\nRun "pictl validate --help" for details.');
+                formatter.error('Input file required.\n\nUsage:  wasm4pm validate <log.xes>\n        wasm4pm validate <log.csv> --format csv\n\nRun "wasm4pm validate --help" for details.');
                 process.exit(EXIT_CODES.source_error);
             }
             // Validate input file exists

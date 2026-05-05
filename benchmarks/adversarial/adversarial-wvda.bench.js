@@ -28,7 +28,7 @@ describe('Adversarial WvdA Algorithm Audit — Vitest Suite', () => {
     beforeAll(async () => {
         // Load WASM
         try {
-            wasm = require('pictl');
+            wasm = require('wasm4pm');
         }
         catch {
             try {

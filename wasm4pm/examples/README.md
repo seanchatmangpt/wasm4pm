@@ -1,6 +1,6 @@
-# Examples for pictl
+# Examples for wasm4pm
 
-This directory contains working examples demonstrating how to use pictl in different environments.
+This directory contains working examples demonstrating how to use wasm4pm in different environments.
 
 ## Quick Start
 
@@ -402,7 +402,7 @@ To add new examples:
 
 ## Further Reading
 
-- [pictl README](../README.md)
+- [wasm4pm README](../README.md)
 - [Integration Tests](../__tests__/integration/README.md)
 - [Test Fixtures](../__tests__/data/fixtures/README.md)
 - [XES Standard](http://xes-standard.org/)

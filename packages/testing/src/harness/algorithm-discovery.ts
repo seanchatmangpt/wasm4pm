@@ -96,9 +96,10 @@ export class AlgorithmDiscovery {
 
     return {
       algorithms: results,
-      fastest: results.reduce((prev, curr) =>
-        curr.executionTimeMs < prev.executionTimeMs ? curr : prev
-      ) || null,
+      fastest:
+        results.reduce((prev, curr) =>
+          curr.executionTimeMs < prev.executionTimeMs ? curr : prev
+        ) || null,
       highestQuality: results[0] || null,
     };
   }

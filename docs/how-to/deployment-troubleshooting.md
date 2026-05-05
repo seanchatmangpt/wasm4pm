@@ -120,7 +120,7 @@ Or in Kubernetes:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: pictl-config
+  name: wasm4pm-config
 data:
   deployment-profile: "browser"  # Matches binary
   config-profile: "balanced"      # Config setting
@@ -374,7 +374,7 @@ wpm run -i events.xes --filter-activity-min-freq 2
 # Filter by trace (process subset)
 wpm run -i events.xes --max-traces 1000
 
-# Pre-process (outside pictl)
+# Pre-process (outside wasm4pm)
 # Filter, sample, or compress the input file
 ```
 
@@ -532,7 +532,7 @@ One of these:
 
 #### Step 1: Validate Config Syntax
 
-Use pictl's validator:
+Use wasm4pm's validator:
 
 ```bash
 wpm init --validate wasm4pm.toml
@@ -900,7 +900,7 @@ esac
 
 ### Step 2: Read Error Message
 
-pictl outputs error details to stderr:
+wasm4pm outputs error details to stderr:
 
 ```bash
 # Capture both stdout and stderr

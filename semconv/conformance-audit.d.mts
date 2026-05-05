@@ -1,5 +1,5 @@
 /**
- * Audit pictl's own process execution
+ * Audit wasm4pm's own process execution
  * Captures OTEL spans and produces conformance report
  *
  * @param {Array} otelSpans - OTEL spans from collector

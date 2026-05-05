@@ -1,6 +1,6 @@
 # Upgrade Guide: Vision 2030 (v26.4.16)
 
-This guide walks you through upgrading from pictl v26.4.10 (or earlier) to v26.4.16, which introduces the **AutoProcess autonomic loop**.
+This guide walks you through upgrading from wasm4pm v26.4.10 (or earlier) to v26.4.16, which introduces the **AutoProcess autonomic loop**.
 
 ---
 
@@ -33,7 +33,7 @@ Vision 2030 adds autonomous process monitoring via a closed-loop MAPE-K cycle em
 
 ### Required
 
-- **pictl v26.4.x**: Upgrade from v26.4.10 or later
+- **wasm4pm v26.4.x**: Upgrade from v26.4.10 or later
 - **Node.js 18+**: Runtime for TypeScript/WASM
 - **Disk space**: 200 MB for WASM binaries + state files
 
@@ -55,22 +55,22 @@ Vision 2030 adds autonomous process monitoring via a closed-loop MAPE-K cycle em
 
 ### Step 1: Backup Existing State (Recommended)
 
-Create a backup of your current pictl installation and results:
+Create a backup of your current wasm4pm installation and results:
 
 ```bash
 # Backup results and configuration
-mkdir -p ~/.pictl-backup/v26.4.10
-cp -r .pictl ~/.pictl-backup/v26.4.10/
-cp wasm4pm.toml ~/.pictl-backup/v26.4.10/ 2>/dev/null || true
+mkdir -p ~/.wasm4pm-backup/v26.4.10
+cp -r .wasm4pm ~/.wasm4pm-backup/v26.4.10/
+cp wasm4pm.toml ~/.wasm4pm-backup/v26.4.10/ 2>/dev/null || true
 
 # Backup package lock (if using pnpm/npm)
-cp pnpm-lock.yaml ~/.pictl-backup/v26.4.10/ 2>/dev/null || true
-cp package-lock.json ~/.pictl-backup/v26.4.10/ 2>/dev/null || true
+cp pnpm-lock.yaml ~/.wasm4pm-backup/v26.4.10/ 2>/dev/null || true
+cp package-lock.json ~/.wasm4pm-backup/v26.4.10/ 2>/dev/null || true
 ```
 
 This allows you to rollback if needed (see [Rollback](#rollback) section).
 
-### Step 2: Update pictl Package
+### Step 2: Update wasm4pm Package
 
 #### Option A: Global Installation (npm)
 
@@ -84,8 +84,8 @@ npm install -g @wasm4pm/cli@26.4.16
 
 **Verify**:
 ```bash
-pictl --version
-# Output: pictl 26.4.16 (or similar)
+wasm4pm --version
+# Output: wasm4pm 26.4.16 (or similar)
 ```
 
 #### Option B: Project-Local Installation (pnpm/npm)
@@ -106,7 +106,7 @@ npx wpm --version
 
 ```bash
 docker pull @wasm4pm/cli:26.4.16
-docker run @wasm4pm/cli:26.4.16 pictl --version
+docker run @wasm4pm/cli:26.4.16 wasm4pm --version
 ```
 
 ### Step 3: Verify Installation
@@ -368,16 +368,16 @@ Error: Cannot write to .wasm4pm/autoprocess-state.json
 
 ```bash
 # Check disk space
-df -h .pictl
+df -h .wasm4pm
 
 # Check permissions
 touch .wasm4pm/test-write && rm .wasm4pm/test-write
 
 # Create directory if missing
-mkdir -p .pictl
+mkdir -p .wasm4pm
 
 # Set proper permissions (user-readable)
-chmod 755 .pictl
+chmod 755 .wasm4pm
 ```
 
 ### Issue 3: "Circuit breaker stuck in Open state"
@@ -490,10 +490,10 @@ If you created a backup in Step 1:
 
 ```bash
 # Restore results
-cp -r ~/.pictl-backup/v26.4.10/.pictl .pictl
+cp -r ~/.wasm4pm-backup/v26.4.10/.wasm4pm .wasm4pm
 
 # Restore configuration
-cp ~/.pictl-backup/v26.4.10/wasm4pm.toml wasm4pm.toml 2>/dev/null || true
+cp ~/.wasm4pm-backup/v26.4.10/wasm4pm.toml wasm4pm.toml 2>/dev/null || true
 ```
 
 ### Step 3: Install Previous Version
@@ -505,8 +505,8 @@ npm install -g @wasm4pm/cli@26.4.10
 ### Step 4: Verify
 
 ```bash
-pictl --version
-# Output: pictl 26.4.10
+wasm4pm --version
+# Output: wasm4pm 26.4.10
 
 wpm doctor
 ```
@@ -589,7 +589,7 @@ enabled = false  # Disable file watching in production
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: pictl-config
+  name: wasm4pm-config
 data:
   wasm4pm.toml: |
     [execution]
@@ -601,23 +601,23 @@ data:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: pictl-service
+  name: wasm4pm-service
 spec:
   template:
     spec:
       containers:
-      - name: pictl
-        image: pictl:26.4.16
+      - name: wasm4pm
+        image: wasm4pm:26.4.16
         volumeMounts:
         - name: config
           mountPath: /app/wasm4pm.toml
           subPath: wasm4pm.toml
         - name: state
-          mountPath: /app/.pictl
+          mountPath: /app/.wasm4pm
       volumes:
       - name: config
         configMap:
-          name: pictl-config
+          name: wasm4pm-config
       - name: state
         emptyDir: {}  # Or persistent volume for production
 ```

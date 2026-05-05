@@ -1,7 +1,7 @@
 # Process Mining Conformance Audit — Agent 5 Implementation
 
 **Date**: 2026-04-10
-**Mandate**: Implement van der Aalst's Process Mining Doctrine for pictl
+**Mandate**: Implement van der Aalst's Process Mining Doctrine for wasm4pm
 **Status**: Complete
 
 ---
@@ -12,7 +12,7 @@ Agent 5 implements the **Process Mining Conformance Auditor**, which embodies Wi
 
 > "If the code says it worked but the event log cannot prove a lawful process happened, then it did not work."
 
-The auditor captures pictl's own OpenTelemetry spans as an Object-Centric Event Log (OCEL), discovers the actual process that happened, and compares it against the declared process to produce a conformance verdict.
+The auditor captures wasm4pm's own OpenTelemetry spans as an Object-Centric Event Log (OCEL), discovers the actual process that happened, and compares it against the declared process to produce a conformance verdict.
 
 ---
 
@@ -260,7 +260,7 @@ const spans = [
     end_time: '2026-04-10T10:00:05Z',
     status: { code: 'OK' },
     attributes: {
-      service_name: 'pictl',
+      service_name: 'wasm4pm',
       pm_discovery_algorithm: 'dfg'
     }
   },
@@ -290,7 +290,7 @@ import { loadSpansFromJaeger, auditPictlProcess } from './semconv/conformance-au
 
 const spans = await loadSpansFromJaeger(
   'http://localhost:16686',
-  'pictl',
+  'wasm4pm',
   { limit: 1000, lookback: '1h' }
 );
 const report = await auditPictlProcess(spans);
@@ -319,7 +319,7 @@ node examples/conformance-audit-example.mjs
 # Audit real spans from file
 node examples/conformance-audit-example.mjs --spans=/tmp/spans.json
 
-# Audit live pictl service from Jaeger
+# Audit live wasm4pm service from Jaeger
 node examples/conformance-audit-example.mjs --jaeger-url=http://localhost:16686 --service=wasm4pm
 ```
 
@@ -529,12 +529,12 @@ The auditor embodies three core principles:
 
 ---
 
-## Integration with pictl
+## Integration with wasm4pm
 
 The auditor integrates with:
 
 1. **OTEL Instrumentation** (`packages/observability/`)
-   - Captures pictl's own spans during execution
+   - Captures wasm4pm's own spans during execution
    - Exports to OTEL collector or Jaeger
 
 2. **Declared Process** (`semconv/wasm4pm-process-mining.yaml`)
@@ -562,7 +562,7 @@ The auditor integrates with:
    - Implement ILP (Integer Linear Programming) for optimal model fitting
 
 2. **Streaming Audit**
-   - Real-time event log analysis (audit while pictl is running)
+   - Real-time event log analysis (audit while wasm4pm is running)
    - Sliding window conformance (detect drift over time)
    - Early deviation detection (alert before process completes)
 

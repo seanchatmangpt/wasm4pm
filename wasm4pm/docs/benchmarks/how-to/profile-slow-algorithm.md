@@ -114,7 +114,7 @@ If the bottleneck appears to be at the WASM/JS boundary (serializing large resul
 ### Step 1: Generate a V8 profile
 
 ```bash
-node --prof $(which pictl) run log.xes --algorithm hill-climbing
+node --prof $(which wasm4pm) run log.xes --algorithm hill-climbing
 ```
 
 This creates `isolate-*.log` in the working directory.

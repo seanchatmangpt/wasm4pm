@@ -5,7 +5,7 @@
 **Candidate:** Sean Chatman
 **Institution:** ChatmanGPT Research
 **Date:** April 2026
-**Program:** pictl v26.4.10 — Process Mining in WebAssembly
+**Program:** wasm4pm v26.4.10 — Process Mining in WebAssembly
 
 ---
 
@@ -55,7 +55,7 @@ Process mining, as formalized by van der Aalst [1], transforms event logs into p
 
 However, a critical gap exists: **the runtime substrate for process mining algorithms is narrowing**. The browser, via WebAssembly (WASM), is becoming the dominant analytics platform for embedded, edge, and mobile deployments. Simultaneously, IoT devices, point-of-sale terminals, and embedded controllers generate event logs that need real-time process mining — but cannot run server-side Java or Python stacks.
 
-The pictl project addresses this gap by compiling 21 process mining algorithms to WebAssembly. But algorithm correctness is insufficient. A WASM module running in a browser tab, on an IoT gateway, or in a serverless function faces hostile conditions:
+The wasm4pm project addresses this gap by compiling 21 process mining algorithms to WebAssembly. But algorithm correctness is insufficient. A WASM module running in a browser tab, on an IoT gateway, or in a serverless function faces hostile conditions:
 
 - **No filesystem** — event logs arrive via streaming, not files
 - **Single-threaded** — no `std::thread`, no `tokio::spawn`, no `Arc<RwLock>`
@@ -755,7 +755,7 @@ All five modules are tested under `cargo test --lib` with 60 total tests:
 ### 11.2 Compilation Metrics
 
 ```
-cargo check --lib (pictl v26.4.10):
+cargo check --lib (wasm4pm v26.4.10):
   0 errors
   2 warnings (pre-existing in smart_engine.rs, not from ported code)
   12.7s build time (incremental)
@@ -1347,7 +1347,7 @@ The claw implements a **complete** autonomic control loop — all five MAPE-K fu
 
 [16] Jasper J. (2024). *Criterion.rs: Statistics-Driven Microbenchmarking in Rust*. [https://github.com/bheisler/criterion.rs](https://github.com/bheisler/criterion.rs)
 
-[17] Chatman, S. (2026). *JTBD Benchmark Suite for Operational Autonomy Modules*. pictl v26.4.10 Technical Report. `wasm4pm/benches/`
+[17] Chatman, S. (2026). *JTBD Benchmark Suite for Operational Autonomy Modules*. wasm4pm v26.4.10 Technical Report. `wasm4pm/benches/`
 
 [18] Kephart, J. O. & Chess, D. M. (2003). The Vision of Autonomic Computing. *IEEE Computer*, 36(1), 41–50.
 

@@ -223,7 +223,7 @@ describe('computeProvenanceChain', () => {
       '26.4.8.dfg_v1',
       'wasm',
       '26.4.8',
-      'b'.repeat(64),
+      'b'.repeat(64)
     );
 
     expect(provenance.input_hash).toHaveLength(64);
@@ -248,7 +248,7 @@ describe('computeProvenanceChain', () => {
       '26.4.8.dfg_v1',
       'wasm',
       '26.4.8',
-      'b'.repeat(64),
+      'b'.repeat(64)
     );
 
     // Verify that combined_hash is different from individual hashes
@@ -268,7 +268,7 @@ describe('computeProvenanceChain', () => {
       '26.4.8.dfg_v1',
       'wasm',
       '26.4.8',
-      'b'.repeat(64),
+      'b'.repeat(64)
     );
 
     const prov2 = computeProvenanceChain(
@@ -280,7 +280,7 @@ describe('computeProvenanceChain', () => {
       '26.4.8.dfg_v1',
       'wasm',
       '26.4.8',
-      'b'.repeat(64),
+      'b'.repeat(64)
     );
 
     expect(prov1.combined_hash).toBe(prov2.combined_hash);
@@ -296,7 +296,7 @@ describe('computeProvenanceChain', () => {
       '26.4.8.dfg_v1',
       'wasm',
       '26.4.8',
-      'b'.repeat(64),
+      'b'.repeat(64)
     );
 
     expect(provenance.input_hash.length).toBeGreaterThan(0);
@@ -368,12 +368,16 @@ describe('wrapDiscoveryResult', () => {
       '26.4.8',
       'b'.repeat(64),
       42,
-      mockCapabilities,
+      mockCapabilities
     );
 
     // UUID v4 format: 8-4-4-4-12 hex digits with hyphens
-    expect(envelope.run_id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
-    expect(envelope.invocation_id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+    expect(envelope.run_id).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    );
+    expect(envelope.invocation_id).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    );
   });
 
   it('should set status to "success"', () => {
@@ -387,7 +391,7 @@ describe('wrapDiscoveryResult', () => {
       '26.4.8',
       'b'.repeat(64),
       42,
-      mockCapabilities,
+      mockCapabilities
     );
 
     expect(envelope.status).toBe('success');
@@ -404,7 +408,7 @@ describe('wrapDiscoveryResult', () => {
       '26.4.8',
       'b'.repeat(64),
       42,
-      mockCapabilities,
+      mockCapabilities
     );
 
     expect(envelope.latency_class).toBe('low_ms'); // 45ms
@@ -421,7 +425,7 @@ describe('wrapDiscoveryResult', () => {
       '26.4.8',
       'b'.repeat(64),
       42,
-      mockCapabilities,
+      mockCapabilities
     );
 
     expect(envelope.run_id).toBeDefined();
@@ -448,7 +452,7 @@ describe('wrapDiscoveryResult', () => {
       '26.4.8',
       'b'.repeat(64),
       42,
-      mockCapabilities,
+      mockCapabilities
     );
 
     const prov = envelope.provenance;
@@ -475,7 +479,7 @@ describe('wrapDiscoveryResult', () => {
       '26.4.8',
       'b'.repeat(64),
       42,
-      mockCapabilities,
+      mockCapabilities
     );
 
     expect(envelope.stale).toBe(false);
@@ -492,7 +496,7 @@ describe('wrapDiscoveryResult', () => {
       '26.4.8',
       'b'.repeat(64),
       42,
-      mockCapabilities,
+      mockCapabilities
     );
 
     expect(envelope.stale_age_ms).toBeUndefined();
@@ -514,7 +518,7 @@ describe('Round-trip Serialization', () => {
       '26.4.8.dfg_v1',
       'wasm',
       '26.4.8',
-      'b'.repeat(64),
+      'b'.repeat(64)
     );
 
     const serialized = JSON.stringify(original);
@@ -535,7 +539,7 @@ describe('Round-trip Serialization', () => {
       '26.4.8',
       'b'.repeat(64),
       42,
-      mockCapabilities,
+      mockCapabilities
     );
 
     const json = JSON.stringify(envelope);

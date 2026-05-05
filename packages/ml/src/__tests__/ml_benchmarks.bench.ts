@@ -41,7 +41,7 @@ import {
 function generateTraces(
   n_samples: number,
   n_features: number,
-  seed: number = 42,
+  seed: number = 42
 ): Array<Record<string, number | string>> {
   const rng = new Lcg(seed);
   const traces: Array<Record<string, number | string>> = [];
@@ -79,7 +79,7 @@ function generateTimeSeries(
   n_points: number,
   trend: number = 0.05,
   seasonality: number = 2.0,
-  seed: number = 42,
+  seed: number = 42
 ): number[] {
   const rng = new Lcg(seed);
   const series: number[] = [];
@@ -327,7 +327,7 @@ describe('Anomaly Detection Benchmarks', () => {
   });
 
   bench('anomaly 10% anomalies, n=1K', () => {
-    const series = injectAnomalies(generateTimeSeries(1000), 0.10);
+    const series = injectAnomalies(generateTimeSeries(1000), 0.1);
     detectEnhancedAnomalies(series);
   });
 

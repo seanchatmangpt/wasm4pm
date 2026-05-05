@@ -3,7 +3,7 @@
  *
  * Dev action simulated: "I changed getProfileAlgorithms('quality') to add a
  * new algorithm. Do balanced and quality plans now differ in step count as
- * expected? Does `wpm compare` show the right table columns? Does `pictl
+ * expected? Does `wpm compare` show the right table columns? Does `wasm4pm
  * explain` return content for each algorithm?"
  *
  * Key contracts verified:

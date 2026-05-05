@@ -199,7 +199,7 @@ pub fn ingress_decide_4(...) -> IngressResult {
 ```erlang
 %% Outside the kernel
 hot_conformance_step(State, NextActivity, Rules) ->
-    case pictl_hot:ingress_decide_4(State, NextActivity, Rules) of
+    case wasm4pm_hot:ingress_decide_4(State, NextActivity, Rules) of
         {ok, IngressResult} ->
             {ok, IngressResult};
         {error, Reason} ->
@@ -235,7 +235,7 @@ The kernel is:
 // Same kernel, called from three worlds:
 
 // 1. From Erlang (via NIF):
-pictl_hot:ingress_decide_4(State, Next, Rules)
+wasm4pm_hot:ingress_decide_4(State, Next, Rules)
 
 // 2. From TypeScript (via WASM):
 const result = wasmModule.ingress_decide_4(state, next, rules);

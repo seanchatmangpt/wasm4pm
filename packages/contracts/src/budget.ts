@@ -127,10 +127,7 @@ export function qualityTierLte(a: QualityTier, b: QualityTier): boolean {
  * Validates that a LatencyClass is within a budget.
  * Used by rule 3 (budget latency gate).
  */
-export function latencyExceedsBudget(
-  actual: LatencyClass,
-  budget: LatencyClass
-): boolean {
+export function latencyExceedsBudget(actual: LatencyClass, budget: LatencyClass): boolean {
   return !latencyTierLte(actual, budget);
 }
 
@@ -138,10 +135,7 @@ export function latencyExceedsBudget(
  * Validates that a QualityTier can satisfy a floor.
  * Used by rule 4 (quality floor gate).
  */
-export function qualityDeficientForFloor(
-  maxQualityTier: QualityTier,
-  floor: QualityTier
-): boolean {
+export function qualityDeficientForFloor(maxQualityTier: QualityTier, floor: QualityTier): boolean {
   return !qualityTierLte(floor, maxQualityTier);
 }
 

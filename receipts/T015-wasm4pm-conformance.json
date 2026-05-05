@@ -2,7 +2,7 @@
   "task": "T015",
   "title": "Token replay and alignment conformance",
   "codebase": "/Users/sac/wasm4pm",
-  "file": "crates/pictl-algos/src/conformance.rs",
+  "file": "crates/wasm4pm-algos/src/conformance.rs",
   "status": "complete",
   "date": "2026-04-26",
   "implementation": {
@@ -37,6 +37,6 @@
       "result": "PASSED"
     }
   ],
-  "build": "cargo check -p pictl-algos: PASSED",
-  "test_run": "cargo test -p pictl-algos conformance: 4/4 PASSED"
+  "build": "cargo check -p wasm4pm-algos: PASSED",
+  "test_run": "cargo test -p wasm4pm-algos conformance: 4/4 PASSED"
 }

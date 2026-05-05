@@ -71,7 +71,7 @@ export function blake3Hex(obj) {
  * - `algorithmVersion`: Semver or CalVer of the algorithm
  * - `backendId`: Which backend executed it (wasm, pm4py, ml, null)
  * - `kernelVersion`: @wasm4pm/cli npm package version
- * - `wasmBuildHash`: Content hash of pictl.wasm binary
+ * - `wasmBuildHash`: Content hash of wasm4pm.wasm binary
  *
  * **Returns:**
  * A ProvenanceChain with all 10 fields populated:
@@ -225,7 +225,7 @@ function inferModelType(algorithmId) {
  * - `algorithmId`: Which algorithm was executed
  * - `backendId`: Which backend executed it
  * - `kernelVersion`: @wasm4pm/cli package version
- * - `wasmBuildHash`: Content hash of pictl.wasm
+ * - `wasmBuildHash`: Content hash of wasm4pm.wasm
  * - `cycleSeq`: Monotonic counter from FederationController
  * - `modelCapabilities`: Declared capabilities for the model
  *

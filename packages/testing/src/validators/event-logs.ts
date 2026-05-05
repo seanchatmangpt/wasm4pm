@@ -68,7 +68,9 @@ export function validateXES(xesContent: string): ValidationResult {
     if (parseError) {
       return {
         valid: false,
-        errors: [{ path: '/', message: 'Invalid XML: ' + parseError.textContent, severity: 'error' }],
+        errors: [
+          { path: '/', message: 'Invalid XML: ' + parseError.textContent, severity: 'error' },
+        ],
         warnings: [],
       };
     }
@@ -93,48 +95,78 @@ export function validateXES(xesContent: string): ValidationResult {
   if (!version) {
     warnings.push({ path: '/log', message: 'Missing xes.version attribute', severity: 'warning' });
   } else if (!/^1\.0/.test(version)) {
-    warnings.push({ path: '/log', message: `Unexpected XES version: ${version}`, severity: 'warning' });
+    warnings.push({
+      path: '/log',
+      message: `Unexpected XES version: ${version}`,
+      severity: 'warning',
+    });
   }
 
   // Validate traces
   const traces = doc.querySelectorAll('trace');
   if (traces.length === 0) {
-    errors.push({ path: '/log', message: 'Log must contain at least one trace', severity: 'error' });
+    errors.push({
+      path: '/log',
+      message: 'Log must contain at least one trace',
+      severity: 'error',
+    });
   }
 
   traces.forEach((trace, traceIndex) => {
     const tracePath = `/log/trace[${traceIndex + 1}]`;
 
     // Check trace name
-    const traceName = trace.querySelector('string[key="concept:name"], string[key*="concept:name"]');
+    const traceName = trace.querySelector(
+      'string[key="concept:name"], string[key*="concept:name"]'
+    );
     if (!traceName) {
-      warnings.push({ path: tracePath, message: 'Trace missing concept:name', severity: 'warning' });
+      warnings.push({
+        path: tracePath,
+        message: 'Trace missing concept:name',
+        severity: 'warning',
+      });
     }
 
     // Check events
     const events = trace.querySelectorAll('event');
     if (events.length === 0) {
-      errors.push({ path: tracePath, message: 'Trace must contain at least one event', severity: 'error' });
+      errors.push({
+        path: tracePath,
+        message: 'Trace must contain at least one event',
+        severity: 'error',
+      });
     }
 
     events.forEach((event, eventIndex) => {
       const eventPath = `${tracePath}/event[${eventIndex + 1}]`;
 
       // Check event name (required)
-      const eventName = event.querySelector('string[key="concept:name"], string[key*="concept:name"]');
+      const eventName = event.querySelector(
+        'string[key="concept:name"], string[key*="concept:name"]'
+      );
       if (!eventName) {
         errors.push({ path: eventPath, message: 'Event missing concept:name', severity: 'error' });
       }
 
       // Check timestamp (recommended)
-      const timestamp = event.querySelector('date[key="time:timestamp"], date[key*="time:timestamp"]');
+      const timestamp = event.querySelector(
+        'date[key="time:timestamp"], date[key*="time:timestamp"]'
+      );
       if (!timestamp) {
-        warnings.push({ path: eventPath, message: 'Event missing time:timestamp', severity: 'warning' });
+        warnings.push({
+          path: eventPath,
+          message: 'Event missing time:timestamp',
+          severity: 'warning',
+        });
       } else {
         // Validate timestamp format
         const tsValue = timestamp.getAttribute('value');
         if (tsValue && !isValidISO8601(tsValue)) {
-          errors.push({ path: eventPath, message: `Invalid timestamp format: ${tsValue}`, severity: 'error' });
+          errors.push({
+            path: eventPath,
+            message: `Invalid timestamp format: ${tsValue}`,
+            severity: 'error',
+          });
         }
       }
     });
@@ -155,7 +187,11 @@ export function validateXESStructure(xes: XESSchema): ValidationResult {
   const warnings: ValidationError[] = [];
 
   if (!xes.traces || xes.traces.length === 0) {
-    errors.push({ path: 'traces', message: 'Log must contain at least one trace', severity: 'error' });
+    errors.push({
+      path: 'traces',
+      message: 'Log must contain at least one trace',
+      severity: 'error',
+    });
     return { valid: false, errors, warnings };
   }
 
@@ -163,7 +199,11 @@ export function validateXESStructure(xes: XESSchema): ValidationResult {
     const tracePath = `traces[${traceIndex}]`;
 
     if (!trace.events || trace.events.length === 0) {
-      errors.push({ path: tracePath, message: 'Trace must contain at least one event', severity: 'error' });
+      errors.push({
+        path: tracePath,
+        message: 'Trace must contain at least one event',
+        severity: 'error',
+      });
       return;
     }
 
@@ -195,7 +235,10 @@ export function validateXESStructure(xes: XESSchema): ValidationResult {
  * - resource (optional)
  * - lifecycle:transition (optional)
  */
-export function validateCSV(csvContent: string, options: { delimiter?: string; hasHeader?: boolean } = {}): ValidationResult {
+export function validateCSV(
+  csvContent: string,
+  options: { delimiter?: string; hasHeader?: boolean } = {}
+): ValidationResult {
   const errors: ValidationError[] = [];
   const warnings: ValidationError[] = [];
   const { delimiter = ',', hasHeader = true } = options;
@@ -219,16 +262,24 @@ export function validateCSV(csvContent: string, options: { delimiter?: string; h
 
   // Check required columns
   if (hasHeader) {
-    requiredColumns.forEach(col => {
+    requiredColumns.forEach((col) => {
       if (!header.includes(col)) {
-        errors.push({ path: headerPath, message: `Missing required column: ${col}`, severity: 'error' });
+        errors.push({
+          path: headerPath,
+          message: `Missing required column: ${col}`,
+          severity: 'error',
+        });
       }
     });
 
     // Check recommended columns
-    recommendedColumns.forEach(col => {
+    recommendedColumns.forEach((col) => {
       if (!header.includes(col)) {
-        warnings.push({ path: headerPath, message: `Missing recommended column: ${col}`, severity: 'warning' });
+        warnings.push({
+          path: headerPath,
+          message: `Missing recommended column: ${col}`,
+          severity: 'warning',
+        });
       }
     });
   }
@@ -248,7 +299,11 @@ export function validateCSV(csvContent: string, options: { delimiter?: string; h
 
     // Check row length
     if (values.length !== header.length) {
-      warnings.push({ path: rowPath, message: `Row has ${values.length} columns, expected ${header.length}`, severity: 'warning' });
+      warnings.push({
+        path: rowPath,
+        message: `Row has ${values.length} columns, expected ${header.length}`,
+        severity: 'warning',
+      });
     }
 
     // Check required fields
@@ -263,7 +318,11 @@ export function validateCSV(csvContent: string, options: { delimiter?: string; h
     // Validate timestamp if present
     if (timestampIdx >= 0 && values[timestampIdx]) {
       if (!isValidISO8601(values[timestampIdx])) {
-        errors.push({ path: rowPath, message: `Invalid timestamp format: ${values[timestampIdx]}`, severity: 'error' });
+        errors.push({
+          path: rowPath,
+          message: `Invalid timestamp format: ${values[timestampIdx]}`,
+          severity: 'error',
+        });
       }
     }
   }
@@ -317,7 +376,11 @@ export function validateEventLog(log: EventLogSchema): ValidationResult {
   const warnings: ValidationError[] = [];
 
   if (!log.traces || log.traces.length === 0) {
-    errors.push({ path: 'traces', message: 'Event log must contain at least one trace', severity: 'error' });
+    errors.push({
+      path: 'traces',
+      message: 'Event log must contain at least one trace',
+      severity: 'error',
+    });
     return { valid: false, errors, warnings };
   }
 
@@ -326,12 +389,20 @@ export function validateEventLog(log: EventLogSchema): ValidationResult {
 
     // Check trace name
     if (!trace['concept:name']) {
-      warnings.push({ path: tracePath, message: 'Trace missing concept:name', severity: 'warning' });
+      warnings.push({
+        path: tracePath,
+        message: 'Trace missing concept:name',
+        severity: 'warning',
+      });
     }
 
     // Check events
     if (!trace.events || trace.events.length === 0) {
-      errors.push({ path: tracePath, message: 'Trace must contain at least one event', severity: 'error' });
+      errors.push({
+        path: tracePath,
+        message: 'Trace must contain at least one event',
+        severity: 'error',
+      });
       return;
     }
 
@@ -345,7 +416,11 @@ export function validateEventLog(log: EventLogSchema): ValidationResult {
 
       // Check timestamp format
       if (event['time:timestamp'] && !isValidISO8601(event['time:timestamp'])) {
-        errors.push({ path: eventPath, message: `Invalid timestamp: ${event['time:timestamp']}`, severity: 'error' });
+        errors.push({
+          path: eventPath,
+          message: `Invalid timestamp: ${event['time:timestamp']}`,
+          severity: 'error',
+        });
       }
     });
   });
@@ -411,7 +486,10 @@ export function validateTimestampOrdering(log: EventLogSchema): ValidationResult
 /**
  * Validate trace completeness (no missing events).
  */
-export function validateTraceCompleteness(log: EventLogSchema, expectedActivities?: string[]): ValidationResult {
+export function validateTraceCompleteness(
+  log: EventLogSchema,
+  expectedActivities?: string[]
+): ValidationResult {
   const errors: ValidationError[] = [];
   const warnings: ValidationError[] = [];
 
@@ -432,9 +510,9 @@ export function validateTraceCompleteness(log: EventLogSchema, expectedActivitie
 
     log.traces?.forEach((trace, traceIndex) => {
       const tracePath = `traces[${traceIndex}]`;
-      const foundActivities = new Set(trace.events?.map(e => e['concept:name']) || []);
+      const foundActivities = new Set(trace.events?.map((e) => e['concept:name']) || []);
 
-      expectedActivities.forEach(activity => {
+      expectedActivities.forEach((activity) => {
         if (!foundActivities.has(activity)) {
           warnings.push({
             path: tracePath,
@@ -549,14 +627,14 @@ export function formatValidationResult(result: ValidationResult): string {
 
   if (result.errors.length > 0) {
     lines.push('\nErrors:');
-    result.errors.forEach(e => {
+    result.errors.forEach((e) => {
       lines.push(`  [${e.severity.toUpperCase()}] ${e.path}: ${e.message}`);
     });
   }
 
   if (result.warnings.length > 0) {
     lines.push('\nWarnings:');
-    result.warnings.forEach(w => {
+    result.warnings.forEach((w) => {
       lines.push(`  [${w.severity.toUpperCase()}] ${w.path}: ${w.message}`);
     });
   }

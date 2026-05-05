@@ -1,6 +1,6 @@
 # wasm4pm Benchmarking Suite
 
-Comprehensive performance testing for pictl algorithms in both Node.js and browser environments.
+Comprehensive performance testing for wasm4pm algorithms in both Node.js and browser environments.
 
 ## Quick Start
 

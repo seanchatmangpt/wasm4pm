@@ -460,7 +460,7 @@ YAWL v6 (Java 25) ──── 8080 ──┘                                   
 | **L1: Network** | Canopy workspace protocol | Agent coordination | Process models define valid agent interactions |
 | **L2: Signal** | BusinessOS signal module | Intent encoding | Event logs as the ground truth of organizational signals |
 | **L3: Composition** | wasm4pm + YAWL v6 | Workflow execution | Discovered models drive actual process execution |
-| **L4: Interface** | pictl CLI + MCP server | Developer access | CLI-first + AI-native access patterns |
+| **L4: Interface** | wasm4pm CLI + MCP server | Developer access | CLI-first + AI-native access patterns |
 | **L5: Data** | PostgreSQL + Redis | Storage | XES event logs + discovered model persistence |
 | **L6: Feedback** | Drift detection + conformance | Self-correction | Real-time monitoring of model-log alignment |
 | **L7: Governance** | BusinessOS policies | Compliance | Soundness guarantees as policy enforcement |
@@ -486,7 +486,7 @@ No competitor spans all four dimensions.
 | Year | Milestone | Strategic Impact |
 |------|-----------|-----------------|
 | 2024 | wasm4pm v1.0 — 15 algorithms in WASM | Establishes WASM as viable substrate for process mining |
-| 2025 | pictl v26.4 — full CLI + MCP integration | Developer-native access, Claude Code integration |
+| 2025 | wasm4pm v26.4 — full CLI + MCP integration | Developer-native access, Claude Code integration |
 | 2026 | POWL complete — 8 variants, DecisionGraph, partial orders | Cutting-edge process representation, ahead of pm4py |
 | 2027 | Vision 2030 Wave 1 — BusinessOS integration | Process models drive business operations |
 | 2028 | Vision 2030 Wave 2 — Canopy agent orchestration | Agents operate within formally verified process bounds |

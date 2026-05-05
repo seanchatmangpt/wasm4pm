@@ -1,6 +1,6 @@
 # RL System Guide
 
-The pictl reinforcement-learning subsystem provides autonomous monitoring and
+The wasm4pm reinforcement-learning subsystem provides autonomous monitoring and
 self-healing for process-mining pipelines. It is exposed through the
 `RlOrchestrator` (Rust/WASM) and consumed by `wpm autoprocess` and the MCP
 server.

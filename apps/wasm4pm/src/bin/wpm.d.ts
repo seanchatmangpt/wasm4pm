@@ -1,3 +1,3 @@
 #!/usr/bin/env node
 export {};
-//# sourceMappingURL=pictl.d.ts.map
+//# sourceMappingURL=wasm4pm.d.ts.map

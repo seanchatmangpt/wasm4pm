@@ -1,7 +1,7 @@
 /**
  * Comprehensive Three-Layer Integration Tests
  *
- * Validates the complete pictl architecture working together:
+ * Validates the complete wasm4pm architecture working together:
  * - Application Layer (Config + ExecutionPlan)
  * - Control Plane (EventLogIR + ModelIR)
  * - Execution Substrate (WASM kernel + backends)
@@ -855,7 +855,7 @@ describe('Suite 7: Determinism Verification', () => {
 describe('Suite 7b: OTEL Span Structure Validation', () => {
     it('should enforce required OTEL span fields', () => {
         const span = {
-            service_name: 'pictl',
+            service_name: 'wasm4pm',
             span_name: 'healing.diagnosis',
             trace_id: 'trace-' + '0'.repeat(32),
             span_id: 'span-' + '0'.repeat(16),
@@ -874,7 +874,7 @@ describe('Suite 7b: OTEL Span Structure Validation', () => {
     });
     it('should reject span with missing status field', () => {
         const invalidSpan = {
-            service_name: 'pictl',
+            service_name: 'wasm4pm',
             span_name: 'healing.diagnosis',
             // status field missing - INVALID
         };

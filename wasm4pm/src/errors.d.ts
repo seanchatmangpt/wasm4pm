@@ -1,9 +1,9 @@
 /**
- * Error Model for pictl Engine
+ * Error Model for wasm4pm Engine
  * Provides comprehensive error handling with classification, context, and recovery guidance
  */
 /**
- * Error codes for pictl operations
+ * Error codes for wasm4pm operations
  * Used to classify and handle errors consistently across the engine
  */
 export declare enum ErrorCode {
@@ -37,7 +37,7 @@ export declare enum ErrorRecovery {
   CONTACT_SUPPORT = 'CONTACT_SUPPORT',
 }
 /**
- * Enhanced error class with structured context for pictl operations
+ * Enhanced error class with structured context for wasm4pm operations
  * Extends Error with error classification, root cause tracking, and recovery guidance
  */
 export declare class PictlError extends Error {

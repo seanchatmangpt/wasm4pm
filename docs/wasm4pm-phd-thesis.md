@@ -14,7 +14,7 @@
 
 This thesis presents **wasm4pm** (Process Intelligence Compiled to LLVM), a WebAssembly-native process mining framework that implements 42 registered algorithms spanning process discovery, conformance checking, predictive analytics, simulation, and format conversion entirely within a single self-contained WASM binary. The framework addresses a fundamental challenge in the field of process mining: the delivery of production-grade mining capabilities to heterogeneous deployment targets—ranging from cloud servers to embedded IoT devices—without sacrificing algorithmic completeness or statistical rigor.
 
-pictl's architecture introduces three novel contributions to the discipline:
+wasm4pm's architecture introduces three novel contributions to the discipline:
 
 1. **A handle-based foreign function interface (FFI) pattern** that eliminates manual lifetime management across the WASM/JavaScript boundary while maintaining type safety through a discriminated union of stored objects (`StoredObject`), enabling zero-copy borrowed access via closures.
 
@@ -94,7 +94,7 @@ This thesis demonstrates that a comprehensive process mining framework—encompa
 
 ### 1.4 Scope and Contributions
 
-The pictl framework encompasses:
+The wasm4pm framework encompasses:
 
 - **55,352 lines of Rust** across 141 source files organized into 20 top-level modules and 3 submodule directories
 - **1,866 public API items** (functions, structs, enums, traits)
@@ -116,7 +116,7 @@ This thesis is organized into 26 chapters. Chapters 2-3 establish theoretical fo
 
 ### 2.1 Van der Aalst's Process Mining Framework
 
-The theoretical foundation of pictl rests on Wil van der Aalst's process cube (2016), which defines three dimensions along which process mining techniques can be classified:
+The theoretical foundation of wasm4pm rests on Wil van der Aalst's process cube (2016), which defines three dimensions along which process mining techniques can be classified:
 
 **The Control-Flow Perspective** examines the ordering of activities. Key constructs include:
 - **Directly-Follows Graphs (DFG)**: Directed graphs where nodes represent activities and edges represent observed succession
@@ -151,13 +151,13 @@ The quality of discovered process models is evaluated along four dimensions (van
 
 4. **Simplicity**: The degree to which the model is parsimonious. Simpler models (fewer nodes, edges, operators) are preferred, all else being equal.
 
-These four dimensions define a **Pareto frontier**: improving one typically requires trading off another. The pictl framework provides algorithms for measuring all four dimensions, enabling practitioners to navigate this trade-off space.
+These four dimensions define a **Pareto frontier**: improving one typically requires trading off another. The wasm4pm framework provides algorithms for measuring all four dimensions, enabling practitioners to navigate this trade-off space.
 
 ### 2.3 Conformance Checking Theory
 
-Conformance checking compares observed event logs against reference process models. The primary approaches implemented in pictl are:
+Conformance checking compares observed event logs against reference process models. The primary approaches implemented in wasm4pm are:
 
-**Token-Based Replay**: Simulates the process model by "firing" transitions and consuming/producing tokens. Each log trace is replayed on the Petri net, and the fraction of consumed vs. produced tokens yields a fitness score. pictl implements both standard and SIMD-accelerated token replay.
+**Token-Based Replay**: Simulates the process model by "firing" transitions and consuming/producing tokens. Each log trace is replayed on the Petri net, and the fraction of consumed vs. produced tokens yields a fitness score. wasm4pm implements both standard and SIMD-accelerated token replay.
 
 **A* Alignments**: Constructs a synchronous product net (the product of the log trace and the process model) and searches for the shortest path through this product using the A* algorithm with a marking-equation-based heuristic. The resulting alignment maps each log event to either a model transition (matched), a log move (consumed but not produced), or a model move (produced but not consumed). This provides the most precise conformance diagnostics available.
 
@@ -167,7 +167,7 @@ Conformance checking compares observed event logs against reference process mode
 
 ### 2.4 Process Discovery Theory
 
-Process discovery algorithms in pictl span the complexity-quality spectrum:
+Process discovery algorithms in wasm4pm span the complexity-quality spectrum:
 
 **DFG-Based Methods** (`dfg`, `process_skeleton`, `optimized_dfg`): Construct directly-follows graphs directly from log traces. Fast (O(n) where n is the number of events) but limited in expressiveness.
 
@@ -175,7 +175,7 @@ Process discovery algorithms in pictl span the complexity-quality spectrum:
 
 **Heuristic Miner**: Extends alpha mining by considering frequency information, using dependency thresholds to filter noise, and producing more robust models from real-world logs.
 
-**Inductive Miner**: Guarantees fitness-perfect models by recursively applying cut detection (exclusive choice, sequence, parallel, loop) to partition the activity set. pictl implements the inductive miner with fallback to the process tree representation.
+**Inductive Miner**: Guarantees fitness-perfect models by recursively applying cut detection (exclusive choice, sequence, parallel, loop) to partition the activity set. wasm4pm implements the inductive miner with fallback to the process tree representation.
 
 **Metaheuristic Methods** (`genetic_algorithm`, `ilp`, `aco`, `pso`, `a_star`, `simulated_annealing`, `hill_climbing`): Optimize a fitness function over the space of Petri net structures using nature-inspired search strategies. These provide higher quality models at significantly higher computational cost.
 
@@ -183,7 +183,7 @@ Process discovery algorithms in pictl span the complexity-quality spectrum:
 
 ### 2.5 Petri Net Theory
 
-Petri nets provide the formal foundation for many of pictl's algorithms. A Petri net is a bipartite directed graph (P, T, F, W, M₀) where:
+Petri nets provide the formal foundation for many of wasm4pm's algorithms. A Petri net is a bipartite directed graph (P, T, F, W, M₀) where:
 - P is a finite set of places
 - T is a finite set of transitions (P ∩ T = ∅)
 - F ⊆ (P × T) ∪ (T × P) is the flow relation
@@ -197,7 +197,7 @@ A transition t is enabled at marking M if all its input places contain at least 
 - **Liveness**: Every transition can eventually fire from the initial marking
 - **Boundedness**: No place can accumulate an unbounded number of tokens
 
-pictl implements Petri net reduction rules (Murata, 1989) for simplifying discovered nets while preserving behavioral equivalence.
+wasm4pm implements Petri net reduction rules (Murata, 1989) for simplifying discovered nets while preserving behavioral equivalence.
 
 ### 2.6 Marking Equation and Linear Programming
 
@@ -205,7 +205,7 @@ The marking equation provides a mathematical framework for relating Petri net st
 
 M = M₀ + C · σ, where σ ≥ 0 (non-negative firing vector)
 
-The marking equation is used in pictl as the heuristic function for A* alignment search. The implementation uses a two-phase simplex algorithm implemented from scratch (no external LP solver dependency) to solve the relaxation of the integer linear program, providing an admissible lower bound on the cost-to-go.
+The marking equation is used in wasm4pm as the heuristic function for A* alignment search. The implementation uses a two-phase simplex algorithm implemented from scratch (no external LP solver dependency) to solve the relaxation of the integer linear program, providing an admissible lower bound on the cost-to-go.
 
 ### 2.7 Log-Normal Distribution for Service Time Modeling
 
@@ -228,7 +228,7 @@ This ensures that the sampling distribution has the desired mean and standard de
 
 pm4py (Bose et al., 2023) is the most widely used open-source process mining library, implemented in Python with optional C extensions. It provides comprehensive coverage of discovery, conformance, and enhancement algorithms. However, pm4py's Python runtime introduces significant deployment challenges: dependency management, interpreter overhead (~10-50x slower than native for compute-intensive operations), and inability to run in browser environments.
 
-pictl achieves algorithmic parity with pm4py's core algorithms while providing a deployment model that works everywhere JavaScript runs. The 17 algorithms ported from pm4wasm (a WASM precursor) cover the most commonly used subset of pm4py's functionality.
+wasm4pm achieves algorithmic parity with pm4py's core algorithms while providing a deployment model that works everywhere JavaScript runs. The 17 algorithms ported from pm4wasm (a WASM precursor) cover the most commonly used subset of pm4py's functionality.
 
 ### 3.2 ProM (Java)
 
@@ -236,7 +236,7 @@ ProM (van der Aalst et al., 2007) is the academic reference implementation for p
 
 ### 3.3 pm4wasm (Rust/WASM)
 
-pm4wasm was an earlier attempt to bring process mining to WebAssembly. pictl supersedes pm4wasm by providing:
+pm4wasm was an earlier attempt to bring process mining to WebAssembly. wasm4pm supersedes pm4wasm by providing:
 - A more mature handle-based FFI (vs. raw pointer passing)
 - A five-tier feature gate system (vs. monolithic compilation)
 - A TypeScript orchestration layer (vs. direct WASM invocation)
@@ -245,15 +245,15 @@ pm4wasm was an earlier attempt to bring process mining to WebAssembly. pictl sup
 
 ### 3.4 Celonis (Commercial)
 
-Celonis is the leading commercial process mining platform. While pictl does not compete with Celonis's enterprise features (UI, data connectors, cloud platform), it provides the algorithmic core that could power such a system, with the advantage of being open-source and deployable anywhere.
+Celonis is the leading commercial process mining platform. While wasm4pm does not compete with Celonis's enterprise features (UI, data connectors, cloud platform), it provides the algorithmic core that could power such a system, with the advantage of being open-source and deployable anywhere.
 
 ### 3.5 Apromore (Java)
 
-Apromore (La Rosa et al., 2018) is an open-source process analytics platform providing model management, comparison, and analysis. pictl provides the underlying algorithmic capabilities that a platform like Apromore would expose through its UI.
+Apromore (La Rosa et al., 2018) is an open-source process analytics platform providing model management, comparison, and analysis. wasm4pm provides the underlying algorithmic capabilities that a platform like Apromore would expose through its UI.
 
 ### 3.6 WebAssembly Process Mining Landscape
 
-As of this writing, pictl is the most comprehensive WebAssembly-native process mining implementation. The framework's combination of algorithmic breadth (42 algorithms), deployment flexibility (5 feature profiles), and language ecosystem (Rust + TypeScript) represents a novel contribution to the field.
+As of this writing, wasm4pm is the most comprehensive WebAssembly-native process mining implementation. The framework's combination of algorithmic breadth (42 algorithms), deployment flexibility (5 feature profiles), and language ecosystem (Rust + TypeScript) represents a novel contribution to the field.
 
 ---
 
@@ -261,7 +261,7 @@ As of this writing, pictl is the most comprehensive WebAssembly-native process m
 
 ### 4.1 Overview
 
-pictl's architecture follows a three-layer design:
+wasm4pm's architecture follows a three-layer design:
 
 ```
 ┌─────────────────────────────────────────────────────┐
@@ -343,10 +343,10 @@ Rust source (141 files)
     │
     └── wasm-pack build --target [bundler|nodejs|web]
          │
-         ├── pkg/pictl.js             ← JavaScript bindings
-         ├── pkg/pictl.d.ts           ← TypeScript declarations
-         ├── pkg/pictl_bg.wasm        ← WASM binary
-         └── pkg/pictl_bg.wasm.d.ts   ← WASM type declarations
+         ├── pkg/wasm4pm.js             ← JavaScript bindings
+         ├── pkg/wasm4pm.d.ts           ← TypeScript declarations
+         ├── pkg/wasm4pm_bg.wasm        ← WASM binary
+         └── pkg/wasm4pm_bg.wasm.d.ts   ← WASM type declarations
 ```
 
 ---
@@ -396,7 +396,7 @@ This design enables:
 
 ### 5.2 Process Model Representations
 
-pictl implements four process model representations:
+wasm4pm implements four process model representations:
 
 **PetriNet** — Bipartite graph with places, transitions, arcs, and markings:
 
@@ -473,7 +473,7 @@ The `parse_timestamp_ms()` function provides robust timestamp parsing supporting
 
 WebAssembly's linear memory model presents unique challenges for object management. Rust objects allocated on the WASM heap cannot be directly referenced from JavaScript—only numeric values (integers, floats) can cross the WASM boundary. Traditional approaches use raw pointers or indices, which sacrifice type safety.
 
-pictl introduces a **handle-based state management system** where all objects are stored in a global `AppState` and referenced by opaque string handles (e.g., `"obj_42"`). This provides:
+wasm4pm introduces a **handle-based state management system** where all objects are stored in a global `AppState` and referenced by opaque string handles (e.g., `"obj_42"`). This provides:
 
 1. **Type safety**: The `StoredObject` enum ensures that handles are used with the correct object type
 2. **Memory safety**: Objects are stored in a `HashMap<String, StoredObject>` protected by a `Mutex`
@@ -548,7 +548,7 @@ The `once_cell::sync::Lazy` ensures exactly one initialization, thread-safe and 
 
 ### 7.1 Algorithm Taxonomy
 
-pictl implements 25 discovery algorithms organized by complexity tier:
+wasm4pm implements 25 discovery algorithms organized by complexity tier:
 
 **Tier 1 — Instant (O(n))**:
 - `dfg`: Directly-follows graph construction from event log
@@ -588,7 +588,7 @@ E = {(a,b) | ∃ trace t ∈ L, ∃ i: t[i] = a, t[i+1] = b}
 W(e) = |{(a,b) | (a,b) = e}|  (frequency of each edge)
 ```
 
-pictl's implementation uses `FxHashMap` for O(1) insertion and lookup, with `rustc-hash` providing faster hashing than the standard library's SipHash for string keys. The algorithm is single-pass over the event log, achieving O(n) time complexity.
+wasm4pm's implementation uses `FxHashMap` for O(1) insertion and lookup, with `rustc-hash` providing faster hashing than the standard library's SipHash for string keys. The algorithm is single-pass over the event log, achieving O(n) time complexity.
 
 ### 7.3 Inductive Miner
 
@@ -601,7 +601,7 @@ The inductive miner (Leemans et al., 2013) guarantees fitness-perfect process mo
 5. **Loop cut**: If traces exhibit do-while-repeat patterns, apply loop
 6. **Fall-through**: If no cut applies, use a fallback strategy (flower model or activity renaming)
 
-pictl's implementation handles the full inductive miner lifecycle including base case detection, cut detection, and fall-through handling.
+wasm4pm's implementation handles the full inductive miner lifecycle including base case detection, cut detection, and fall-through handling.
 
 ### 7.4 Genetic Algorithm Discovery
 
@@ -620,13 +620,13 @@ The algorithm parameter space includes population size, mutation rate, crossover
 
 While A* is primarily a conformance checking technique, it serves a secondary role in discovery: the alignment between the log and a discovered model provides a precise fitness/precision measurement that can drive iterative model refinement.
 
-pictl's A* implementation uses a binary heap priority queue with floating-point f-cost comparison (avoiding the integer truncation pitfall that affected earlier versions). The marking equation heuristic provides an admissible lower bound, guaranteeing optimality.
+wasm4pm's A* implementation uses a binary heap priority queue with floating-point f-cost comparison (avoiding the integer truncation pitfall that affected earlier versions). The marking equation heuristic provides an admissible lower bound, guaranteeing optimality.
 
 ### 7.6 Correlation Miner
 
 The correlation miner addresses a fundamental limitation of most discovery algorithms: the requirement for case identifiers. In many real-world event logs (especially IoT and streaming scenarios), events lack explicit case correlation.
 
-pictl's correlation miner uses temporal gap analysis to infer case boundaries:
+wasm4pm's correlation miner uses temporal gap analysis to infer case boundaries:
 1. Compute inter-event time gaps for each activity pair
 2. Identify natural gap thresholds using statistical clustering
 3. Group events into cases based on gap thresholds
@@ -656,13 +656,13 @@ for event in trace:
 fitness = consumed / (consumed + missing + remaining)
 ```
 
-pictl implements two variants:
+wasm4pm implements two variants:
 - **Standard token replay**: O(n · m) per trace, where m is the number of transitions
 - **SIMD-accelerated token replay** (`simd_token_replay.rs`): Uses WASM SIMD instructions for parallel marking computation, achieving ~4x speedup on supported hardware
 
 ### 8.2 A* Alignments
 
-Alignments provide the most precise conformance diagnostics by finding the optimal mapping between log traces and model behavior. pictl constructs a **synchronous product net** from the log trace and the process model, then searches for the minimum-cost path using A*.
+Alignments provide the most precise conformance diagnostics by finding the optimal mapping between log traces and model behavior. wasm4pm constructs a **synchronous product net** from the log trace and the process model, then searches for the minimum-cost path using A*.
 
 The implementation handles:
 - **Synchronous product construction**: Combines log transitions and model transitions, adding synchronous moves
@@ -683,7 +683,7 @@ subject to: C · σ ≥ M_target - M_current
 
 Where C is the incidence matrix, σ is the firing vector, and c is the cost vector.
 
-pictl implements a two-phase simplex algorithm from scratch (no external LP solver dependency), suitable for the WASM environment where linking against C libraries (like GLPK) is impractical. The implementation:
+wasm4pm implements a two-phase simplex algorithm from scratch (no external LP solver dependency), suitable for the WASM environment where linking against C libraries (like GLPK) is impractical. The implementation:
 1. Constructs the standard form LP tableau
 2. Applies the two-phase method (Phase I: find feasible basis, Phase II: optimize)
 3. Handles degeneracy through Bland's rule
@@ -735,7 +735,7 @@ Deviations from expected temporal profiles indicate conformance violations in th
 
 ### 9.1 Prediction Framework
 
-pictl implements 6 ML-powered prediction tasks:
+wasm4pm implements 6 ML-powered prediction tasks:
 
 | Task | Algorithm | Output |
 |------|-----------|--------|
@@ -786,7 +786,7 @@ Concept drift detection monitors changes in process behavior over time using EWM
 EWMA_t = α · x_t + (1 - α) · EWMA_{t-1}
 ```
 
-When the EWMA statistic exceeds a control limit (typically ±3σ), a drift alert is triggered. pictl supports:
+When the EWMA statistic exceeds a control limit (typically ±3σ), a drift alert is triggered. wasm4pm supports:
 - **Control-flow drift**: Changes in DFG edge frequencies
 - **Performance drift**: Changes in cycle time distributions
 - **Data drift**: Changes in attribute value distributions
@@ -808,7 +808,7 @@ This enables proactive resource allocation in operational settings.
 
 ### 10.1 Streaming Architecture
 
-pictl implements 9 streaming algorithms in the `streaming/` submodule:
+wasm4pm implements 9 streaming algorithms in the `streaming/` submodule:
 
 | Algorithm | Approach | Update Complexity |
 |-----------|----------|-------------------|
@@ -849,7 +849,7 @@ Edges whose weight drops below a threshold are pruned, enabling the streaming DF
 
 ### 11.1 OCEL 2.0 Support
 
-pictl implements Object-Centric Event Logs (OCEL 2.0) support gated by the `ocel` feature flag. The OCEL data model differs from traditional case-based logs:
+wasm4pm implements Object-Centric Event Logs (OCEL 2.0) support gated by the `ocel` feature flag. The OCEL data model differs from traditional case-based logs:
 
 **Traditional log**: Events → Case (1:N)
 **OCEL**: Events ↔ Objects (M:N)
@@ -898,7 +898,7 @@ POWL (Partially Ordered Workflow Language) extends process trees with partial or
 
 ### 12.2 POWL Arena
 
-pictl uses an arena allocator pattern for POWL models:
+wasm4pm uses an arena allocator pattern for POWL models:
 
 ```rust
 pub struct PowlArena {
@@ -1032,14 +1032,14 @@ The process tree playout module (`playout.rs`) generates traces from hierarchica
 
 ### 14.1 XES (eXtensible Event Stream)
 
-XES is the standard XML-based format for event log storage. pictl supports:
+XES is the standard XML-based format for event log storage. wasm4pm supports:
 - **Parsing**: `load_eventlog_from_xes(xes_string)` → EventLog handle
 - **Serialization**: EventLog → XES XML string
 - **Binary format**: Custom PM4BIN format for faster I/O (~10x smaller than XES)
 
 ### 14.2 PNML (Petri Net Markup Language)
 
-PNML is the ISO/IEC 15909 standard for Petri net interchange. pictl implements:
+PNML is the ISO/IEC 15909 standard for Petri net interchange. wasm4pm implements:
 - **Import**: `from_pnml(pnml_string)` → PetriNet handle
 - **Export**: PetriNet → PNML XML string
 - **Validation**: Structural and semantic checks
@@ -1048,7 +1048,7 @@ The implementation uses `roxmltree` for XML parsing, handling the full PNML stan
 
 ### 14.3 BPMN (Business Process Model and Notation)
 
-BPMN is the OMG standard for business process modeling. pictl's BPMN import (`bpmn_import.rs`) parses BPMN 2.0 XML and converts to POWL:
+BPMN is the OMG standard for business process modeling. wasm4pm's BPMN import (`bpmn_import.rs`) parses BPMN 2.0 XML and converts to POWL:
 
 1. Parse XML elements (tasks, gateways, events, connectors)
 2. Classify gateways (XOR, AND, OR, complex)
@@ -1058,7 +1058,7 @@ BPMN is the OMG standard for business process modeling. pictl's BPMN import (`bp
 
 ### 14.4 YAWL (Yet Another Workflow Language)
 
-YAWL is a workflow language that extends Petri nets with direct support for common workflow patterns (cancellation, multiple instances, deferred choice). pictl's YAWL export (`yawl_export.rs`) converts POWL models to YAWL v6 XML:
+YAWL is a workflow language that extends Petri nets with direct support for common workflow patterns (cancellation, multiple instances, deferred choice). wasm4pm's YAWL export (`yawl_export.rs`) converts POWL models to YAWL v6 XML:
 
 1. Compute topological levels for node ordering
 2. Map POWL operators to YAWL constructs (XOR, AND, OR join/split)
@@ -1067,7 +1067,7 @@ YAWL is a workflow language that extends Petri nets with direct support for comm
 
 ### 14.5 OCEL 2.0 (Object-Centric Event Log)
 
-OCEL is the JSON-based format for object-centric event logs. pictl supports:
+OCEL is the JSON-based format for object-centric event logs. wasm4pm supports:
 - **Import**: `load_ocel2_from_json(json_string)` → OCEL handle
 - **Export**: OCEL → JSON string (pretty-printed)
 - **Validation**: Referential integrity, timestamp consistency, object type correctness
@@ -1080,7 +1080,7 @@ OCEL is the JSON-based format for object-centric event logs. pictl supports:
 
 A monolithic WASM binary containing all 42 algorithms would be impractical for deployment in resource-constrained environments. A browser extension performing basic DFG discovery does not need the A* alignment search engine, ILP solver, or OCEL support.
 
-pictl's feature gate system enables **targeted compilation** of algorithm subsets, producing binaries optimized for specific deployment scenarios.
+wasm4pm's feature gate system enables **targeted compilation** of algorithm subsets, producing binaries optimized for specific deployment scenarios.
 
 ### 15.2 Profile Hierarchy
 
@@ -1234,7 +1234,7 @@ The `@wasm4pm/config` package implements Zod-validated configuration with 5-laye
 CLI flags > TOML file > JSON file > Environment variables > Defaults
 ```
 
-Environment variable mappings: `PICTL_PROFILE`, `PICTL_ALGORITHM`, `PICTL_OUTPUT_FORMAT`, `PICTL_LOG_LEVEL`, `PICTL_WATCH`, `PICTL_OTEL_ENABLED`, `PICTL_OTEL_ENDPOINT`.
+Environment variable mappings: `WASM4PM_PROFILE`, `WASM4PM_ALGORITHM`, `WASM4PM_OUTPUT_FORMAT`, `WASM4PM_LOG_LEVEL`, `WASM4PM_WATCH`, `WASM4PM_OTEL_ENABLED`, `WASM4PM_OTEL_ENDPOINT`.
 
 ### 16.5 Execution Profiles
 
@@ -1339,7 +1339,7 @@ The `Instrumentation.create*Event()` API creates structured events for:
 
 ### 18.3 Cache System
 
-pictl implements a three-tier cache:
+wasm4pm implements a three-tier cache:
 - **Parse cache**: Cached XES parse results (hit/miss tracking)
 - **Columnar cache**: Column-oriented event data for fast analytics
 - **Interner cache**: String deduplication for activity names
@@ -1357,7 +1357,7 @@ Caches can be cleared via `clear_all_caches()`.
 
 ### 19.1 Test Organization
 
-pictl's test suite spans three layers:
+wasm4pm's test suite spans three layers:
 
 **Layer 1 — Rust Unit Tests** (`#[cfg(test)]` modules):
 - 95 files with test modules
@@ -1435,7 +1435,7 @@ Binary size is controlled through feature gates, ranging from ~500KB (mobile) to
 
 ### 21.1 The 10-Wave Swarm
 
-The 24-hour development cycle that produced the current state of pictl employed a novel development methodology: **autonomous agent swarms** guided by van der Aalst's process cube theory.
+The 24-hour development cycle that produced the current state of wasm4pm employed a novel development methodology: **autonomous agent swarms** guided by van der Aalst's process cube theory.
 
 **Wave 1** (Initial Swarm — 5 agents):
 - Ported 17 algorithms from pm4wasm reference implementation
@@ -1514,7 +1514,7 @@ Total output across 10 waves:
 
 ### 22.1 Browser-Based Process Discovery
 
-A web application loads an XES event log via file upload, discovers a DFG using pictl's WASM binary (mobile profile, ~500KB), and renders an interactive process map using SVG. The entire algorithm executes in the browser with no server round-trip.
+A web application loads an XES event log via file upload, discovers a DFG using wasm4pm's WASM binary (mobile profile, ~500KB), and renders an interactive process map using SVG. The entire algorithm executes in the browser with no server round-trip.
 
 ### 22.2 Serverless Conformance Checking
 
@@ -1534,7 +1534,7 @@ An enterprise deployment (browser profile, ~2.7MB) provides the full algorithm s
 
 ### 23.1 Current Limitations
 
-1. **No visual output**: pictl produces algorithmic results but does not include a visualization engine. Users must render DFGs, Petri nets, and process trees using external libraries.
+1. **No visual output**: wasm4pm produces algorithmic results but does not include a visualization engine. Users must render DFGs, Petri nets, and process trees using external libraries.
 
 2. **Limited declarative mining**: While Declare conformance checking is supported, Declare model discovery (mining constraints from logs) is not yet implemented.
 
@@ -1562,13 +1562,13 @@ An enterprise deployment (browser profile, ~2.7MB) provides the full algorithm s
 
 ## 24. Conclusion
 
-This thesis has presented pictl, a comprehensive WebAssembly-native process mining framework that implements 42 algorithms across the full spectrum of process mining tasks: discovery, conformance checking, predictive analytics, simulation, and format conversion.
+This thesis has presented wasm4pm, a comprehensive WebAssembly-native process mining framework that implements 42 algorithms across the full spectrum of process mining tasks: discovery, conformance checking, predictive analytics, simulation, and format conversion.
 
 The framework's three novel contributions—a handle-based FFI pattern, a five-tier feature gate system, and a TypeScript orchestration layer—address fundamental challenges in deploying process mining capabilities to heterogeneous environments. The handle-based state management eliminates manual lifetime management while maintaining type safety. The feature gate system enables binary sizes from 500KB to 2.7MB through conditional compilation of 70 feature configurations. The TypeScript orchestration layer provides production-grade execution, configuration, planning, observability, and testing infrastructure.
 
 The 10-wave autonomous agent swarm development methodology demonstrated that complex software systems can be constructed rapidly and reliably through parallel, specialized agent teams guided by theoretical frameworks (van der Aalst's process cube). In 24 hours, the swarm produced 35,374 lines of new code across 175 files, with zero compilation errors and 68 passing tests.
 
-pictl represents a new paradigm in process mining: algorithms that run everywhere JavaScript runs, from browsers to edge devices to cloud servers, with the same API and the same algorithmic fidelity. As WebAssembly adoption continues to grow across the software industry, pictl's architecture provides a blueprint for bringing computationally intensive domains to the universal runtime layer.
+wasm4pm represents a new paradigm in process mining: algorithms that run everywhere JavaScript runs, from browsers to edge devices to cloud servers, with the same API and the same algorithmic fidelity. As WebAssembly adoption continues to grow across the software industry, wasm4pm's architecture provides a blueprint for bringing computationally intensive domains to the universal runtime layer.
 
 ---
 
@@ -1666,13 +1666,13 @@ cloud ───┬── basic ───┬── discovery_minimal
 ### Appendix C: Commit History (24-Hour Development Cycle)
 
 ```
-7ce62b0 feat(pictl): waves 3-10 — full autonomics pipeline completion
+7ce62b0 feat(wasm4pm): waves 3-10 — full autonomics pipeline completion
          175 files changed, 21,452 insertions(+), 1,422 deletions(-)
 
-49e16d9 feat(pictl): wave 2 — Tier 3-4 algorithms, docs, version bump, test fixes
+49e16d9 feat(wasm4pm): wave 2 — Tier 3-4 algorithms, docs, version bump, test fixes
           17 files changed, 416 insertions(+), 24 deletions(-)
 
-7c9ac9e feat(pictl): van der Aalst swarm — 17 algorithms, 6 CLI commands, E2E autonomics
+7c9ac9e feat(wasm4pm): van der Aalst swarm — 17 algorithms, 6 CLI commands, E2E autonomics
           72 files changed, 13,506 insertions(+), 272 deletions(-)
 ```
 
@@ -1680,7 +1680,7 @@ cloud ───┬── basic ───┬── discovery_minimal
 
 ### Appendix D: Version History
 
-pictl uses CalVer (Calendar Versioning):
+wasm4pm uses CalVer (Calendar Versioning):
 
 - `v26.4.10` = April 10, 2026 (current version, this thesis)
 - Format: `vYEAR.MONTH.DAY`

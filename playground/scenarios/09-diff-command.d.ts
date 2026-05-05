@@ -1,5 +1,5 @@
 /**
- * Scenario: diff command — pictl diff log1.xes log2.xes
+ * Scenario: diff command — wasm4pm diff log1.xes log2.xes
  *
  * Dev action simulated: "I refactored the Jaccard computation or changed how
  * computeDiff normalises variant keys. Does same-file diff still produce 1.0?
@@ -12,7 +12,7 @@
  *   - Different files → Jaccard < 1.0 when processes differ structurally
  *   - Human output contains the "Structural similarity" banner
  *
- * Binary: apps/pictl/dist/bin/pictl.js (must be built first)
+ * Binary: apps/wasm4pm/dist/bin/wasm4pm.js (must be built first)
  */
 export {};
 //# sourceMappingURL=09-diff-command.d.ts.map

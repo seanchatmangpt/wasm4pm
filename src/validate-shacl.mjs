@@ -1,11 +1,11 @@
 /**
- * SHACL Validation Gatekeeper for pictl
+ * SHACL Validation Gatekeeper for wasm4pm
  *
- * Validates all pictl tool outputs against SHACL constraints from pictl-shapes.ttl.
+ * Validates all wasm4pm tool outputs against SHACL constraints from wasm4pm-shapes.ttl.
  * Enforces hard violations (errors) and warns on soft violations (warnings).
  *
  * Agency: Agent 3 — SHACL Validation Gatekeeper
- * Mandate: Wire pictl-shapes.ttl constraints into result validation pipeline.
+ * Mandate: Wire wasm4pm-shapes.ttl constraints into result validation pipeline.
  *
  * Usage:
  *   const validator = await SHACLValidator.create();
@@ -255,12 +255,12 @@ export class SHACLValidator {
   }
 
   /**
-   * Initialize validator from pictl-shapes.ttl
+   * Initialize validator from wasm4pm-shapes.ttl
    */
   static async create(shapesPath = null) {
     // Default path relative to this file
     if (!shapesPath) {
-      shapesPath = path.join(__dirname, '..', 'semconv', 'pictl-shapes.ttl');
+      shapesPath = path.join(__dirname, '..', 'semconv', 'wasm4pm-shapes.ttl');
     }
 
     const validator = new SHACLValidator();

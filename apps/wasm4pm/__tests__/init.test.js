@@ -6,7 +6,7 @@ import { init } from '../src/commands/init.js';
 describe('Init Command', () => {
     let tmpDir;
     beforeEach(async () => {
-        tmpDir = path.join(process.cwd(), `.test-pictl-${Date.now()}`);
+        tmpDir = path.join(process.cwd(), `.test-wasm4pm-${Date.now()}`);
         await fs.mkdir(tmpDir, { recursive: true });
     });
     afterEach(async () => {
@@ -41,7 +41,7 @@ describe('Init Command', () => {
             }
             exitSpy.mockRestore();
             cwdSpy.mockRestore();
-            const tomlPath = path.join(tmpDir, 'pictl.toml');
+            const tomlPath = path.join(tmpDir, 'wasm4pm.toml');
             const envPath = path.join(tmpDir, '.env.example');
             expect(existsSync(tomlPath)).toBe(true);
             expect(existsSync(envPath)).toBe(true);
@@ -114,13 +114,13 @@ describe('Init Command', () => {
             expect(gitignoreContent).toContain('.env');
             expect(gitignoreContent).toContain('dist/');
             const readmeContent = await fs.readFile(readmePath, 'utf-8');
-            expect(readmeContent).toContain('# pictl Project');
-            expect(readmeContent).toContain('pictl run');
-            expect(readmeContent).toContain('pictl watch');
+            expect(readmeContent).toContain('# wasm4pm Project');
+            expect(readmeContent).toContain('wasm4pm run');
+            expect(readmeContent).toContain('wasm4pm watch');
         });
         it('should not overwrite existing files without --force flag', async () => {
             // Create existing file
-            const tomlPath = path.join(tmpDir, 'pictl.toml');
+            const tomlPath = path.join(tmpDir, 'wasm4pm.toml');
             await fs.writeFile(tomlPath, 'existing content');
             const cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(tmpDir);
             const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {
@@ -148,7 +148,7 @@ describe('Init Command', () => {
             expect(content).toBe('existing content');
         });
         it('should overwrite existing files with --force flag', async () => {
-            const tomlPath = path.join(tmpDir, 'pictl.toml');
+            const tomlPath = path.join(tmpDir, 'wasm4pm.toml');
             await fs.writeFile(tomlPath, 'old content');
             const cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(tmpDir);
             const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {

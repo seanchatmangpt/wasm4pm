@@ -23,12 +23,17 @@ const SECRET_PATTERNS: Array<{ name: string; pattern: RegExp }> = [
 
 /** Well-known env var names that contain secrets */
 const SECRET_ENV_VARS = new Set([
-  'AWS_SECRET_ACCESS_KEY', 'AWS_SESSION_TOKEN',
-  'DATABASE_URL', 'DB_PASSWORD',
-  'API_KEY', 'API_SECRET',
+  'AWS_SECRET_ACCESS_KEY',
+  'AWS_SESSION_TOKEN',
+  'DATABASE_URL',
+  'DB_PASSWORD',
+  'API_KEY',
+  'API_SECRET',
   'OTEL_EXPORTER_OTLP_HEADERS',
-  'GITHUB_TOKEN', 'NPM_TOKEN',
-  'ENCRYPTION_KEY', 'SIGNING_KEY',
+  'GITHUB_TOKEN',
+  'NPM_TOKEN',
+  'ENCRYPTION_KEY',
+  'SIGNING_KEY',
 ]);
 
 interface RedactionViolation {
@@ -69,10 +74,7 @@ function scanForSecrets(text: string, location = 'unknown'): RedactionViolation[
  * Deep-scan an object for secret patterns in all string values.
  * @internal
  */
-function scanObjectForSecrets(
-  obj: unknown,
-  path = 'root',
-): RedactionViolation[] {
+function scanObjectForSecrets(obj: unknown, path = 'root'): RedactionViolation[] {
   const violations: RedactionViolation[] = [];
 
   if (typeof obj === 'string') {
@@ -88,10 +90,10 @@ function scanObjectForSecrets(
         typeof value === 'string' &&
         value.length > 0 &&
         (keyLower.includes('password') ||
-         keyLower.includes('secret') ||
-         keyLower.includes('token') ||
-         keyLower.includes('key') ||
-         keyLower.includes('auth'))
+          keyLower.includes('secret') ||
+          keyLower.includes('token') ||
+          keyLower.includes('key') ||
+          keyLower.includes('auth'))
       ) {
         // A sensitive-named field has a non-redacted value
         if (!isRedacted(value)) {
@@ -118,8 +120,14 @@ function verifyRedaction(obj: unknown, location = 'output'): RedactionResult {
   let scannedFields = 0;
 
   function count(val: unknown): void {
-    if (typeof val === 'string') { scannedFields++; return; }
-    if (Array.isArray(val)) { val.forEach(count); return; }
+    if (typeof val === 'string') {
+      scannedFields++;
+      return;
+    }
+    if (Array.isArray(val)) {
+      val.forEach(count);
+      return;
+    }
     if (val && typeof val === 'object') {
       scannedFields++;
       Object.values(val as Record<string, unknown>).forEach(count);
@@ -131,9 +139,10 @@ function verifyRedaction(obj: unknown, location = 'output'): RedactionResult {
     passed: violations.length === 0,
     violations,
     scannedFields,
-    details: violations.length === 0
-      ? `Redaction verified: ${scannedFields} fields scanned, no secrets found`
-      : `Found ${violations.length} violations in ${scannedFields} fields: ${violations.map(v => v.pattern).join(', ')}`,
+    details:
+      violations.length === 0
+        ? `Redaction verified: ${scannedFields} fields scanned, no secrets found`
+        : `Found ${violations.length} violations in ${scannedFields} fields: ${violations.map((v) => v.pattern).join(', ')}`,
   };
 }
 
@@ -141,7 +150,10 @@ function verifyRedaction(obj: unknown, location = 'output'): RedactionResult {
  * Verify that env vars with secret names are not present in output.
  * @internal
  */
-function verifyEnvRedaction(output: string, env: Record<string, string | undefined> = process.env as Record<string, string | undefined>): RedactionViolation[] {
+function verifyEnvRedaction(
+  output: string,
+  env: Record<string, string | undefined> = process.env as Record<string, string | undefined>
+): RedactionViolation[] {
   const violations: RedactionViolation[] = [];
   for (const varName of SECRET_ENV_VARS) {
     const value = env[varName];
@@ -163,11 +175,13 @@ function verifyEnvRedaction(output: string, env: Record<string, string | undefin
 const TEST_SECRETS = {
   awsKey: 'AKIAIOSFODNN7EXAMPLE',
   awsSecret: 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',
-  bearer: 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U',
+  bearer:
+    'Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U',
   basicAuth: 'Basic dXNlcm5hbWU6cGFzc3dvcmQ=',
   jwt: 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U',
   connectionString: 'postgresql://user:password=s3cret@localhost:5432/db',
-  privateKey: '-----BEGIN RSA PRIVATE KEY-----\nMIIEpAIBAAKCAQEA0Z3VS5JJcds3xfn/ygWyF=\n-----END RSA PRIVATE KEY-----',
+  privateKey:
+    '-----BEGIN RSA PRIVATE KEY-----\nMIIEpAIBAAKCAQEA0Z3VS5JJcds3xfn/ygWyF=\n-----END RSA PRIVATE KEY-----',
 };
 
 /** Properly redacted values for positive testing
