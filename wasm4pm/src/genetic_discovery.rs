@@ -1,12 +1,12 @@
 use crate::models::*;
 use crate::state::{get_or_init_state, StoredObject};
 use crate::utilities::{evaluate_edges_fitness, to_js_str};
+use rand::rngs::StdRng;
+use rand::{Rng, SeedableRng};
 use rustc_hash::FxHashMap;
 use serde_json::json;
 use std::collections::HashSet;
 use wasm_bindgen::prelude::*;
-use rand::{Rng, SeedableRng};
-use rand::rngs::StdRng;
 
 type EdgeSet = HashSet<(u32, u32)>;
 
@@ -83,8 +83,12 @@ pub fn discover_genetic_algorithm(
 
                     // Generate offspring through crossover and mutation
                     while new_population.len() < population_size {
-                        let parent1 = population[rand_select_seeded(&population, &mut rng)].0.clone();
-                        let parent2 = population[rand_select_seeded(&population, &mut rng)].0.clone();
+                        let parent1 = population[rand_select_seeded(&population, &mut rng)]
+                            .0
+                            .clone();
+                        let parent2 = population[rand_select_seeded(&population, &mut rng)]
+                            .0
+                            .clone();
 
                         let mut child = crossover_edges_seeded(&parent1, &parent2, &mut rng);
                         mutate_edges_seeded(&mut child, 0.1, &edge_vocab, &mut rng);
@@ -200,8 +204,12 @@ pub fn discover_pso_algorithm(
                     for (edge_set, current_fitness, pbest, pbest_fitness) in particles.iter_mut() {
                         // Blend toward personal best, then toward global best
                         let toward_pbest = blend_edges_seeded(edge_set, pbest, 0.2, &mut rng);
-                        let toward_global =
-                            blend_edges_seeded(&toward_pbest, &best_global.as_ref().unwrap().0, 0.3, &mut rng);
+                        let toward_global = blend_edges_seeded(
+                            &toward_pbest,
+                            &best_global.as_ref().unwrap().0,
+                            0.3,
+                            &mut rng,
+                        );
                         *edge_set = toward_global;
 
                         // Small mutation for exploration
@@ -284,7 +292,11 @@ fn edge_set_to_dfg(edge_set: &EdgeSet, vocab: &[String]) -> DirectlyFollowsGraph
 
 // Seeded variants for determinism
 
-fn create_random_edge_set_seeded(edge_vocab: &[(u32, u32)], inclusion_probability: f64, rng: &mut StdRng) -> EdgeSet {
+fn create_random_edge_set_seeded(
+    edge_vocab: &[(u32, u32)],
+    inclusion_probability: f64,
+    rng: &mut StdRng,
+) -> EdgeSet {
     let mut edge_set: EdgeSet = HashSet::new();
     for &edge in edge_vocab {
         if rng.gen::<f64>() < inclusion_probability {
@@ -314,7 +326,12 @@ fn crossover_edges_seeded(parent1: &EdgeSet, parent2: &EdgeSet, rng: &mut StdRng
     child
 }
 
-fn mutate_edges_seeded(edge_set: &mut EdgeSet, mutation_rate: f64, edge_vocab: &[(u32, u32)], rng: &mut StdRng) {
+fn mutate_edges_seeded(
+    edge_set: &mut EdgeSet,
+    mutation_rate: f64,
+    edge_vocab: &[(u32, u32)],
+    rng: &mut StdRng,
+) {
     if rng.gen::<f64>() < mutation_rate {
         if !edge_set.is_empty() && rng.gen::<f64>() < 0.5 {
             if let Some(&edge) = edge_set.iter().next() {

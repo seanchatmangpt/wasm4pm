@@ -38,8 +38,12 @@ impl PromptBindingCompiler for DefaultPromptBindingCompiler {
         }
 
         // Extract receipts
-        let evidence_receipts: Vec<ReceiptId> =
-            task.evidence.receipt_refs.iter().map(|r| r.id.clone()).collect();
+        let evidence_receipts: Vec<ReceiptId> = task
+            .evidence
+            .receipt_refs
+            .iter()
+            .map(|r| r.id.clone())
+            .collect();
 
         // Extract actions
         let recommended_actions: Vec<ActionClass> =

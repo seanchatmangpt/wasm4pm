@@ -61,7 +61,7 @@ pub struct CycleTelemetry {
     pub cumulative_reward: f32,
     pub last_reward: f32,
     pub active_agent_name: String,
-    pub consecutive_successes: u32,  // Track consecutive successes for health improvement eligibility
+    pub consecutive_successes: u32, // Track consecutive successes for health improvement eligibility
 }
 
 impl Default for CycleTelemetry {
@@ -92,11 +92,7 @@ impl Default for CycleTelemetry {
 ///
 /// This function extracts the health computation logic from perception
 /// so it can be reused to compute the "next state" after cycle completion.
-pub fn compute_health_state(
-    event_count: u64,
-    trace_count: u64,
-    unique_activities: u64,
-) -> u8 {
+pub fn compute_health_state(event_count: u64, trace_count: u64, unique_activities: u64) -> u8 {
     if event_count == 0 || unique_activities == 0 {
         4 // Failed: empty log or no activities
     } else if trace_count == 0 {
@@ -440,7 +436,10 @@ impl RlOrchestrator {
     }
 
     /// Restore all Q-tables to all 5 agents from serialized format.
-    pub fn restore_all_q_tables(&self, tables: Vec<crate::rl_state_serialization::SerializedAgentQTable>) {
+    pub fn restore_all_q_tables(
+        &self,
+        tables: Vec<crate::rl_state_serialization::SerializedAgentQTable>,
+    ) {
         for table in tables {
             match table.agent_type {
                 0 => self.q_learning.restore_from_serialized(table),

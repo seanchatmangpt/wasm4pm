@@ -705,7 +705,10 @@ fn extract_model_summary(
             "Object '{}' is not a DFG or PetriNet",
             handle
         ))),
-        None => Err(crate::error::js_val(&format!("Model '{}' not found", handle))),
+        None => Err(crate::error::js_val(&format!(
+            "Model '{}' not found",
+            handle
+        ))),
     })
 }
 

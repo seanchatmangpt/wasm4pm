@@ -11,7 +11,7 @@
 //! ## Example
 //!
 //! ```javascript
-//! import { load_ocel2_from_json, validate_ocel } from "@seanchatmangpt/pictl";
+//! import { load_ocel2_from_json, validate_ocel } from "wasm4pm";
 //!
 //! const handle = load_ocel2_from_json(jsonString);
 //! const validation = validate_ocel(handle);

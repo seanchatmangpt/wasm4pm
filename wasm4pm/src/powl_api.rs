@@ -25,7 +25,8 @@ use crate::powl_models::PowlPetriNetResult;
 use crate::powl_parser::parse_powl_model_string;
 
 fn to_js(val: &impl serde::Serialize) -> Result<JsValue, JsValue> {
-    serde_wasm_bindgen::to_value(val).map_err(|e| crate::error::js_val(&format!("serde error: {}", e)))
+    serde_wasm_bindgen::to_value(val)
+        .map_err(|e| crate::error::js_val(&format!("serde error: {}", e)))
 }
 
 fn wasm_err(msg: &str) -> JsValue {

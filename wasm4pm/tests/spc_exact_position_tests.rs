@@ -10,8 +10,8 @@
 //! detection within ±10 traces. Here we verify exact matches at exact positions.
 
 use wasm4pm::spc::{
-    check_western_electric_rules, spc_mean, spc_std_dev, ChartData, ShiftDirection,
-    SpecialCause, TrendDirection,
+    check_western_electric_rules, spc_mean, spc_std_dev, ChartData, ShiftDirection, SpecialCause,
+    TrendDirection,
 };
 use wasm4pm::spc_history::{SpcHistory, SpcSnapshot};
 
@@ -73,7 +73,9 @@ fn test_rule_1_fires_at_exact_observation_index() {
     for window_end in 9..=20 {
         let alerts = check_western_electric_rules(&data[..window_end]);
         assert!(
-            !alerts.iter().any(|a| matches!(a, SpecialCause::OutOfControl { .. })),
+            !alerts
+                .iter()
+                .any(|a| matches!(a, SpecialCause::OutOfControl { .. })),
             "Rule 1 must NOT fire at window_end={} (outlier not yet in trailing window)",
             window_end
         );
@@ -97,11 +99,13 @@ fn test_rule_1_fires_at_exact_observation_index() {
             outlier_value, value
         );
         assert_eq!(
-            *ucl, cl + 3.0 * sigma,
+            *ucl,
+            cl + 3.0 * sigma,
             "OutOfControl alert UCL must be exact"
         );
         assert_eq!(
-            *lcl, f64::max(cl - 3.0 * sigma, 0.0),
+            *lcl,
+            f64::max(cl - 3.0 * sigma, 0.0),
             "OutOfControl alert LCL must be exact"
         );
     }
@@ -119,7 +123,9 @@ fn test_rule_1_fires_at_exact_observation_index() {
     for window_end in 22..=25 {
         let alerts = check_western_electric_rules(&data[..window_end]);
         assert!(
-            !alerts.iter().any(|a| matches!(a, SpecialCause::OutOfControl { .. })),
+            !alerts
+                .iter()
+                .any(|a| matches!(a, SpecialCause::OutOfControl { .. })),
             "Rule 1 must NOT fire at window_end={} (latest point is stable)",
             window_end
         );
@@ -188,10 +194,7 @@ fn test_rule_2_fires_at_exact_ninth_consecutive_point() {
             ShiftDirection::Above,
             "Shift direction must be Above (all 9 points above CL)"
         );
-        assert_eq!(
-            *count, 9,
-            "Shift count must be exactly 9"
-        );
+        assert_eq!(*count, 9, "Shift count must be exactly 9");
     }
 }
 
@@ -274,17 +277,16 @@ fn test_rule_3_fires_at_exact_sixth_increasing_point() {
             TrendDirection::Increasing,
             "Trend direction must be Increasing"
         );
-        assert_eq!(
-            *count, 6,
-            "Trend count must be exactly 6"
-        );
+        assert_eq!(*count, 6, "Trend count must be exactly 6");
     }
 
     // At window_end=12, last 6 = data[6..=11]. data[10]=56.0, data[11]=56.0.
     // 56.0 -> 56.0 is NOT strictly increasing (not >), so trend stops.
     let alerts_at_12 = check_western_electric_rules(&data[..12]);
     assert!(
-        !alerts_at_12.iter().any(|a| matches!(a, SpecialCause::Trend { .. })),
+        !alerts_at_12
+            .iter()
+            .any(|a| matches!(a, SpecialCause::Trend { .. })),
         "Rule 3 must NOT fire at window_end=12 (plateau breaks monotone increase)"
     );
 }
@@ -302,11 +304,9 @@ fn test_stable_data_has_zero_exact_position_matches() {
 
     // Deterministic residuals: cycle through values that stay within ±1.5 sigma.
     const RESIDUALS: &[f64] = &[
-        0.1, -0.3, 0.2, -0.1, 0.4, -0.2, 0.0, 0.3, -0.4, 0.1,
-        -0.2, 0.3, -0.1, 0.2, -0.3, 0.1, 0.0, -0.2, 0.4, -0.1,
-        0.2, -0.3, 0.1, -0.1, 0.3, -0.2, 0.0, 0.1, -0.3, 0.2,
-        -0.1, 0.4, -0.2, 0.1, 0.0, -0.3, 0.2, -0.1, 0.3, -0.2,
-        0.1, -0.1, 0.2, 0.0, -0.3, 0.3, -0.2, 0.1, -0.1, 0.2,
+        0.1, -0.3, 0.2, -0.1, 0.4, -0.2, 0.0, 0.3, -0.4, 0.1, -0.2, 0.3, -0.1, 0.2, -0.3, 0.1, 0.0,
+        -0.2, 0.4, -0.1, 0.2, -0.3, 0.1, -0.1, 0.3, -0.2, 0.0, 0.1, -0.3, 0.2, -0.1, 0.4, -0.2,
+        0.1, 0.0, -0.3, 0.2, -0.1, 0.3, -0.2, 0.1, -0.1, 0.2, 0.0, -0.3, 0.3, -0.2, 0.1, -0.1, 0.2,
     ];
 
     let data: Vec<ChartData> = (0..50)
@@ -321,7 +321,9 @@ fn test_stable_data_has_zero_exact_position_matches() {
         assert!(
             point.value >= point.lcl && point.value <= point.ucl,
             "All stable data must be within control limits, got value={} (lcl={}, ucl={})",
-            point.value, point.lcl, point.ucl
+            point.value,
+            point.lcl,
+            point.ucl
         );
     }
 
@@ -331,7 +333,8 @@ fn test_stable_data_has_zero_exact_position_matches() {
         assert!(
             alerts.is_empty(),
             "Stable data must produce zero alerts at window_end={}, got {:?}",
-            window_end, alerts
+            window_end,
+            alerts
         );
     }
 }
@@ -363,7 +366,9 @@ fn test_multiple_rules_can_fire_at_same_position() {
     let alerts = check_western_electric_rules(&data);
 
     // Rule 1 (OutOfControl) must fire -- the latest point is beyond UCL.
-    let ooc = alerts.iter().find(|a| matches!(a, SpecialCause::OutOfControl { .. }));
+    let ooc = alerts
+        .iter()
+        .find(|a| matches!(a, SpecialCause::OutOfControl { .. }));
     assert!(
         ooc.is_some(),
         "Rule 1 (OutOfControl) must fire on point beyond UCL. Got alerts: {:?}",
@@ -371,7 +376,9 @@ fn test_multiple_rules_can_fire_at_same_position() {
     );
 
     // Rule 2 (Shift) must fire -- all 9 trailing points are above CL.
-    let shift = alerts.iter().find(|a| matches!(a, SpecialCause::Shift { .. }));
+    let shift = alerts
+        .iter()
+        .find(|a| matches!(a, SpecialCause::Shift { .. }));
     assert!(
         shift.is_some(),
         "Rule 2 (Shift) must fire on 9 consecutive above-CL points. Got alerts: {:?}",
@@ -382,7 +389,8 @@ fn test_multiple_rules_can_fire_at_same_position() {
     if let Some(SpecialCause::OutOfControl { value, .. }) = ooc {
         assert_eq!(
             *value, outlier_value,
-            "OutOfControl value must exactly match outlier ({})", outlier_value
+            "OutOfControl value must exactly match outlier ({})",
+            outlier_value
         );
     }
 
@@ -393,7 +401,8 @@ fn test_multiple_rules_can_fire_at_same_position() {
 
     // Both alerts must be present simultaneously.
     assert_eq!(
-        alerts.len(), 2,
+        alerts.len(),
+        2,
         "Exactly 2 alerts (OutOfControl + Shift) must fire, got {:?}",
         alerts
     );
@@ -448,13 +457,15 @@ fn test_ring_buffer_evicts_oldest_when_full() {
     // The newest snapshot must be the last one inserted.
     let newest = history.history.iter().last().unwrap();
     assert_eq!(
-        newest.timestamp, format!("snap-{}", SPC_CAPACITY),
+        newest.timestamp,
+        format!("snap-{}", SPC_CAPACITY),
         "Newest entry must be snap-{}",
         SPC_CAPACITY
     );
     assert_eq!(
         newest.event_rate, SPC_CAPACITY as f64,
-        "Newest event_rate must be {}", SPC_CAPACITY
+        "Newest event_rate must be {}",
+        SPC_CAPACITY
     );
 
     // Verify no snapshot with event_rate=0.0 exists.
@@ -478,24 +489,12 @@ fn test_evicted_data_does_not_affect_spc_analysis() {
 
     // Record 50 snapshots with event_rate=5.0.
     for i in 0..50 {
-        history.record_snapshot(SpcSnapshot::new(
-            format!("snap-{}", i),
-            5.0,
-            150.0,
-            0.85,
-            0,
-        ));
+        history.record_snapshot(SpcSnapshot::new(format!("snap-{}", i), 5.0, 150.0, 0.85, 0));
     }
 
     // Record 51 more snapshots with event_rate=8.0 (total 101).
     for i in 50..101 {
-        history.record_snapshot(SpcSnapshot::new(
-            format!("snap-{}", i),
-            8.0,
-            200.0,
-            0.92,
-            1,
-        ));
+        history.record_snapshot(SpcSnapshot::new(format!("snap-{}", i), 8.0, 200.0, 0.92, 1));
     }
 
     // Total recorded: 101. Buffer holds 100. One evicted.
@@ -517,7 +516,8 @@ fn test_evicted_data_does_not_affect_spc_analysis() {
     assert!(
         (mean - expected_mean).abs() < 1e-10,
         "Mean must reflect the post-eviction composition (expected={:.2}, got={:.2})",
-        expected_mean, mean
+        expected_mean,
+        mean
     );
 
     // The mean must be closer to 8.0 than to 5.0 (51 out of 100 entries are 8.0).
@@ -528,10 +528,7 @@ fn test_evicted_data_does_not_affect_spc_analysis() {
     );
 
     // Verify no snapshot with timestamp "snap-0" exists.
-    let has_snap_zero = history
-        .history
-        .iter()
-        .any(|s| s.timestamp == "snap-0");
+    let has_snap_zero = history.history.iter().any(|s| s.timestamp == "snap-0");
     assert!(
         !has_snap_zero,
         "Evicted snapshot 'snap-0' must not appear in history"
@@ -580,10 +577,7 @@ fn test_cycle_count_increments_past_eviction() {
         oldest.timestamp, "snap-50",
         "Oldest retained snapshot must be snap-50 after 50 evictions"
     );
-    assert_eq!(
-        oldest.event_rate, 50.0,
-        "Oldest event_rate must be 50.0"
-    );
+    assert_eq!(oldest.event_rate, 50.0, "Oldest event_rate must be 50.0");
 }
 
 // ---------------------------------------------------------------------------
@@ -596,24 +590,12 @@ fn test_control_limits_stable_during_eviction() {
 
     // Record 100 snapshots with event_rate=5.0 (fill buffer to capacity).
     for i in 0..100 {
-        history.record_snapshot(SpcSnapshot::new(
-            format!("snap-{}", i),
-            5.0,
-            150.0,
-            0.85,
-            0,
-        ));
+        history.record_snapshot(SpcSnapshot::new(format!("snap-{}", i), 5.0, 150.0, 0.85, 0));
     }
 
     // Record 50 more with event_rate=5.0 (eviction happening, but identical data).
     for i in 100..150 {
-        history.record_snapshot(SpcSnapshot::new(
-            format!("snap-{}", i),
-            5.0,
-            150.0,
-            0.85,
-            0,
-        ));
+        history.record_snapshot(SpcSnapshot::new(format!("snap-{}", i), 5.0, 150.0, 0.85, 0));
     }
 
     // Buffer is full. Oldest evicted, but all values are identical.
@@ -687,18 +669,28 @@ fn test_get_all_snapshots_reflects_eviction() {
         "First retained snapshot must be snap-10"
     );
     assert_eq!(
-        timestamps[timestamps.len() - 1], "snap-109",
+        timestamps[timestamps.len() - 1],
+        "snap-109",
         "Last retained snapshot must be snap-109"
     );
 
     // Verify chronological order is preserved (oldest to newest).
     for i in 1..timestamps.len() {
-        let prev_num: usize = timestamps[i - 1].strip_prefix("snap-").unwrap().parse().unwrap();
-        let curr_num: usize = timestamps[i].strip_prefix("snap-").unwrap().parse().unwrap();
+        let prev_num: usize = timestamps[i - 1]
+            .strip_prefix("snap-")
+            .unwrap()
+            .parse()
+            .unwrap();
+        let curr_num: usize = timestamps[i]
+            .strip_prefix("snap-")
+            .unwrap()
+            .parse()
+            .unwrap();
         assert!(
             curr_num > prev_num,
             "Snapshots must be in chronological order: snap-{} before snap-{}",
-            prev_num, curr_num
+            prev_num,
+            curr_num
         );
     }
 }

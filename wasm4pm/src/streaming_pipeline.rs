@@ -394,7 +394,8 @@ pub fn pipeline_snapshot(handle: &str) -> Result<JsValue, JsValue> {
     get_or_init_state().with_object(handle, |obj| match obj {
         Some(StoredObject::StreamingPipeline(pipeline)) => {
             let snapshot = pipeline.snapshot_json();
-            serde_wasm_bindgen::to_value(&snapshot).map_err(|e| crate::error::js_val(&e.to_string()))
+            serde_wasm_bindgen::to_value(&snapshot)
+                .map_err(|e| crate::error::js_val(&e.to_string()))
         }
         Some(_) => Err(crate::error::js_val("Object is not a StreamingPipeline")),
         None => Err(crate::error::js_val(&format!(

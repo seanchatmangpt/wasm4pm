@@ -1,6 +1,6 @@
-//! # pictl — High-Performance Process Mining in WebAssembly
+//! # wasm4pm — High-Performance Process Mining in WebAssembly
 //!
-//! `pictl` provides production-ready process mining algorithms compiled to WebAssembly,
+//! `wasm4pm` provides production-ready process mining algorithms compiled to WebAssembly,
 //! enabling efficient **process discovery**, **conformance checking**, and **predictive analytics**
 //! in JavaScript/TypeScript environments.
 //!
@@ -20,7 +20,7 @@
 //!   load_eventlog_from_xes,
 //!   discover_dfg,
 //!   delete_object,
-//! } from "@seanchatmangpt/pictl";
+//! } from "wasm4pm";
 //!
 //! // Initialize WASM module
 //! await initWasm();
@@ -73,9 +73,9 @@
 //!
 //! ## Links
 //!
-//! - [GitHub Repository](https://github.com/seanchatmangpt/pictl)
-//! - [npm Package](https://www.npmjs.com/package/@seanchatmangpt/pictl)
-//! - [Documentation](https://docs.rs/pictl)
+//! - [GitHub Repository](https://github.com/seanchatmangpt/wasm4pm)
+//! - [npm Package](https://www.npmjs.com/package/@wasm4pm/cli)
+//! - [Documentation](https://docs.rs/wasm4pm)
 
 pub mod cache_resident;
 pub mod error;
@@ -85,13 +85,14 @@ pub mod models;
 pub mod state;
 pub mod types;
 
+use std::cell::RefCell;
 use tracing_subscriber::fmt::format::FmtSpan;
 
 #[wasm_bindgen(start)]
 pub fn main() {
     #[cfg(feature = "console_error_panic_hook")]
     console_error_panic_hook::set_once();
-    
+
     tracing_subscriber::fmt()
         .with_span_events(FmtSpan::CLOSE)
         .init();
@@ -180,10 +181,16 @@ pub fn parse_iso8601_duration(first: &str, last: &str) -> f64 {
         // Strip trailing Z or +00:00 timezone
         let s = if let Some(stripped) = s.strip_suffix('Z') {
             stripped
-        } else if s.len() > 6 && s.chars().nth(s.len() - 3) == Some(':') && s.chars().nth(s.len() - 6) == Some('+') {
+        } else if s.len() > 6
+            && s.chars().nth(s.len() - 3) == Some(':')
+            && s.chars().nth(s.len() - 6) == Some('+')
+        {
             // +HH:MM offset — strip it (6 chars)
             &s[..s.len() - 6]
-        } else if s.len() > 6 && s.chars().nth(s.len() - 3) == Some(':') && s.chars().nth(s.len() - 6) == Some('-') {
+        } else if s.len() > 6
+            && s.chars().nth(s.len() - 3) == Some(':')
+            && s.chars().nth(s.len() - 6) == Some('-')
+        {
             // -HH:MM offset — strip it (6 chars)
             &s[..s.len() - 6]
         } else {
@@ -220,7 +227,11 @@ pub fn parse_iso8601_duration(first: &str, last: &str) -> f64 {
         let mut total_days: i64 = 0;
         // Full years
         for y in 1970..year {
-            total_days += if (y % 4 == 0 && y % 100 != 0) || (y % 400 == 0) { 366 } else { 365 };
+            total_days += if (y % 4 == 0 && y % 100 != 0) || (y % 400 == 0) {
+                366
+            } else {
+                365
+            };
         }
         // Full months
         for m in 1..month {
@@ -233,10 +244,7 @@ pub fn parse_iso8601_duration(first: &str, last: &str) -> f64 {
         total_days += day - 1;
 
         // Convert to milliseconds
-        let ms: i64 = total_days * 86_400_000
-            + hour * 3_600_000
-            + minute * 60_000
-            + second * 1_000;
+        let ms: i64 = total_days * 86_400_000 + hour * 3_600_000 + minute * 60_000 + second * 1_000;
 
         Some(ms)
     }
@@ -247,28 +255,28 @@ pub fn parse_iso8601_duration(first: &str, last: &str) -> f64 {
     }
 }
 
-// Auto-generated registries from pictl ontology (A = μ(O))
-// DO NOT EDIT — regenerate via: ostar manufacture pictl
+// Auto-generated registries from wasm4pm ontology (A = μ(O))
+// DO NOT EDIT — regenerate via: ostar manufacture wasm4pm
 #[allow(dead_code)]
 pub mod algorithm_registry;
 #[allow(dead_code)]
-pub mod wasm_export_registry;
-#[allow(dead_code)]
-pub mod tps_metrics_registry;
-#[allow(dead_code)]
-pub mod feature_flag_registry;
-#[allow(dead_code)]
-pub mod proof_gate_registry;
-#[allow(dead_code)]
-pub mod operator_registry;
-#[allow(dead_code)]
-pub mod deployment_profile_constants;
-#[allow(dead_code)]
-pub mod module_category_constants;
+pub mod benchmark_registry;
 #[allow(dead_code)]
 pub mod capability_registry_generated;
 #[allow(dead_code)]
-pub mod benchmark_registry;
+pub mod deployment_profile_constants;
+#[allow(dead_code)]
+pub mod feature_flag_registry;
+#[allow(dead_code)]
+pub mod module_category_constants;
+#[allow(dead_code)]
+pub mod operator_registry;
+#[allow(dead_code)]
+pub mod proof_gate_registry;
+#[allow(dead_code)]
+pub mod tps_metrics_registry;
+#[allow(dead_code)]
+pub mod wasm_export_registry;
 
 // Hand-rolled statistics (when hand_rolled_stats feature is enabled)
 pub mod algorithms;
@@ -278,8 +286,6 @@ pub mod binary_format;
 pub mod branchless;
 pub mod cache;
 pub mod capability_registry;
-#[cfg(feature = "conformance_basic")]
-pub mod pattern_analysis;
 #[cfg(feature = "conformance_basic")]
 pub mod conformance;
 #[cfg(feature = "conformance_basic")]
@@ -305,18 +311,20 @@ pub mod incremental_dfg;
 #[cfg(feature = "discovery_advanced")]
 pub mod more_discovery;
 pub mod parallel_executor;
+#[cfg(feature = "conformance_basic")]
+pub mod pattern_analysis;
 #[cfg(feature = "petri_net_playout")]
 pub mod playout;
 pub mod probabilistic;
 pub mod process_tree;
+#[cfg(feature = "cloud")]
+pub mod rl_state_serialization;
 #[cfg(feature = "discovery_advanced")]
 pub mod smart_engine;
 pub mod social_network;
 pub mod text_encoding;
 pub mod utilities;
 pub mod xes_format;
-#[cfg(feature = "cloud")]
-pub mod rl_state_serialization;
 
 // OCEL support (gated by ocel feature)
 #[cfg(feature = "ocel")]
@@ -558,7 +566,6 @@ use state::*;
 #[allow(unused)]
 use types::*;
 
-use std::cell::RefCell;
 use wasm_bindgen::prelude::*;
 
 /// Initialize the WASM module
@@ -818,7 +825,7 @@ pub fn autonomic_execute_cycle(
         let rework_count = col.count_traces_with_rework();
         let loop_count_l1 = col.count_loops_length_1();
         let loop_count_l2 = col.count_loops_length_2();
-        
+
         let rework_ratio = if trace_count > 0 {
             rework_count as f32 / trace_count as f32
         } else {
@@ -947,15 +954,12 @@ pub fn autonomic_execute_cycle(
         }
 
         // Analyze trace structure to select pattern dynamically
-        let analysis = pattern_analysis::analyze_trace_structure(
-            &traces_for_analysis,
-            &activity_frequencies,
-        );
+        let analysis =
+            pattern_analysis::analyze_trace_structure(&traces_for_analysis, &activity_frequencies);
 
         Ok::<pattern_analysis::TraceStructureAnalysis, JsValue>(analysis)
     })?;
     let t_perception_end = wall_clock_us();
-
 
     // -----------------------------------------------------------------------
     // Layer 2: Decision — Guards + Pattern Dispatch
@@ -1029,7 +1033,6 @@ pub fn autonomic_execute_cycle(
     };
 
     let guard_result = compound_guard.evaluate(&exec_ctx);
-
 
     // Pattern dispatch — use dynamic pattern from analysis
     let pattern_ctx = pattern_dispatch::PatternContext {
@@ -1149,7 +1152,6 @@ pub fn autonomic_execute_cycle(
                 cl: mean_td,
                 lcl: (mean_td - 3.0 * std_td).max(0.0),
                 subgroup_data: None,
-
             })
             .collect();
         let causes = spc::check_western_electric_rules(&chart_data);
@@ -1209,9 +1211,7 @@ pub fn autonomic_execute_cycle(
 
     // Record SPC snapshot to history (cross-cycle trend analysis)
     // Use cycle counter instead of system time (WASM doesn't support std::time)
-    let cycle_num = SPC_HISTORY.with(|history| {
-        history.borrow().cycle_count + 1
-    });
+    let cycle_num = SPC_HISTORY.with(|history| history.borrow().cycle_count + 1);
     let timestamp = format!("cycle-{}", cycle_num);
     let event_rate_mean = if event_counts_per_trace.is_empty() {
         0.0
@@ -1240,24 +1240,30 @@ pub fn autonomic_execute_cycle(
     let (history_cycle_count, history_len, has_sufficient_data) = SPC_HISTORY.with(|history| {
         let mut history = history.borrow_mut();
         history.record_snapshot(snapshot);
-        (history.cycle_count, history.history.len(), history.has_sufficient_data())
+        (
+            history.cycle_count,
+            history.history.len(),
+            history.has_sufficient_data(),
+        )
     });
 
-    spc_results.insert("history_cycle_count".to_string(), serde_json::json!(history_cycle_count));
+    spc_results.insert(
+        "history_cycle_count".to_string(),
+        serde_json::json!(history_cycle_count),
+    );
     spc_results.insert("history_len".to_string(), serde_json::json!(history_len));
-    spc_results.insert("has_sufficient_data".to_string(), serde_json::json!(has_sufficient_data));
+    spc_results.insert(
+        "has_sufficient_data".to_string(),
+        serde_json::json!(has_sufficient_data),
+    );
 
     // If sufficient historical data exists, apply Western Electric rules across cycles
     if has_sufficient_data {
-        let historical_event_rates = SPC_HISTORY.with(|history| {
-            history.borrow().get_event_rates()
-        });
-        let historical_trace_durations = SPC_HISTORY.with(|history| {
-            history.borrow().get_trace_durations()
-        });
-        let historical_activity_freqs = SPC_HISTORY.with(|history| {
-            history.borrow().get_activity_frequencies()
-        });
+        let historical_event_rates = SPC_HISTORY.with(|history| history.borrow().get_event_rates());
+        let historical_trace_durations =
+            SPC_HISTORY.with(|history| history.borrow().get_trace_durations());
+        let historical_activity_freqs =
+            SPC_HISTORY.with(|history| history.borrow().get_activity_frequencies());
 
         // Apply Western Electric rules to historical event rates
         if historical_event_rates.len() >= 9 {
@@ -1285,10 +1291,7 @@ pub fn autonomic_execute_cycle(
                     all_special_causes.push(format!("event_rate_historical: {:?}", c));
                 }
             } else {
-                spc_results.insert(
-                    "event_rate_historical".to_string(),
-                    serde_json::json!("OK"),
-                );
+                spc_results.insert("event_rate_historical".to_string(), serde_json::json!("OK"));
             }
         }
 
@@ -1384,114 +1387,125 @@ pub fn autonomic_execute_cycle(
         cb.as_rl_circuit_state()
     });
 
-    let (action_label, reward_val, agent_name, cycle_count, cumulative_reward, autoprocess_state_id, autoprocess_q_value) = RL_ORCHESTRATOR
-        .with(|orch_cell| {
-            let mut orch = orch_cell.borrow_mut();
+    let (
+        action_label,
+        reward_val,
+        agent_name,
+        cycle_count,
+        cumulative_reward,
+        autoprocess_state_id,
+        autoprocess_q_value,
+    ) = RL_ORCHESTRATOR.with(|orch_cell| {
+        let mut orch = orch_cell.borrow_mut();
 
-            // Build 8-dim feature vector for LinUCB (normalized to [0,1])
-            // Compute activity entropy for drift detection
-            let activity_entropy = {
-                let freqs: Vec<usize> = perception["activity_frequencies"]
-                    .as_object()
-                    .map(|m| m.values().map(|v| v.as_f64().unwrap_or(0.0) as usize).collect())
-                    .unwrap_or_default();
+        // Build 8-dim feature vector for LinUCB (normalized to [0,1])
+        // Compute activity entropy for drift detection
+        let activity_entropy = {
+            let freqs: Vec<usize> = perception["activity_frequencies"]
+                .as_object()
+                .map(|m| {
+                    m.values()
+                        .map(|v| v.as_f64().unwrap_or(0.0) as usize)
+                        .collect()
+                })
+                .unwrap_or_default();
 
-                if freqs.is_empty() {
-                    0.0
-                } else {
-                    let total: usize = freqs.iter().sum();
-                    let mut entropy = 0.0_f32;
-                    for &count in &freqs {
-                        if total > 0 {
-                            let p = (count as f32) / (total as f32);
-                            if p > 0.0 {
-                                entropy -= p * p.log2();
-                            }
+            if freqs.is_empty() {
+                0.0
+            } else {
+                let total: usize = freqs.iter().sum();
+                let mut entropy = 0.0_f32;
+                for &count in &freqs {
+                    if total > 0 {
+                        let p = (count as f32) / (total as f32);
+                        if p > 0.0 {
+                            entropy -= p * p.log2();
                         }
                     }
-                    if freqs.len() > 1 {
-                        entropy / (freqs.len() as f32).log2()
-                    } else {
-                        entropy
-                    }
                 }
-            };
-
-            let features: [f32; 8] = [
-                (event_count_val as f32 / 10_000.0).min(1.0),       // [0] event_rate
-                (trace_count_val as f32 / 1_000.0).min(1.0),       // [1] trace_count (unused)
-                (unique_activities_val as f32 / 100.0).min(1.0),   // [2] activity_count
-                (health_level as f32 / 4.0).min(1.0),              // [3] health (unused in from_features)
-                if circuit_allowed { 1.0 } else { 0.0 },           // [4] circuit_state
-                (all_special_causes.len() as f32 / 10.0).min(1.0), // [5] spc_alert_level
-                activity_entropy,                                    // [6] drift_status (activity entropy)
-                (orch.telemetry().cycle_count as f32 / 1_000.0).min(1.0), // [7] cycle_phase
-            ];
-
-            let rl_state = RlState::from_features(&features, health_level, rework_ratio_val);
-
-            // Compute next health state based on cycle outcome and consecutive successes.
-            // After 3 consecutive successful cycles (guard_pass && circuit_allowed),
-            // health improves by 1 level (3→2→1→0). Failed cycles degrade health and reset counter.
-            const IMPROVEMENT_THRESHOLD: u32 = 3;
-            let consecutive_successes = orch.telemetry().consecutive_successes;
-
-            let next_health_level = if guard_pass && circuit_allowed {
-                // Success: check if we've earned an improvement
-                if consecutive_successes >= IMPROVEMENT_THRESHOLD {
-                    health_level.saturating_sub(1) // Improve: 3→2→1→0 (min 0)
+                if freqs.len() > 1 {
+                    entropy / (freqs.len() as f32).log2()
                 } else {
-                    health_level // Stable: not enough consecutive successes yet
+                    entropy
                 }
+            }
+        };
+
+        let features: [f32; 8] = [
+            (event_count_val as f32 / 10_000.0).min(1.0), // [0] event_rate
+            (trace_count_val as f32 / 1_000.0).min(1.0),  // [1] trace_count (unused)
+            (unique_activities_val as f32 / 100.0).min(1.0), // [2] activity_count
+            (health_level as f32 / 4.0).min(1.0),         // [3] health (unused in from_features)
+            if circuit_allowed { 1.0 } else { 0.0 },      // [4] circuit_state
+            (all_special_causes.len() as f32 / 10.0).min(1.0), // [5] spc_alert_level
+            activity_entropy,                             // [6] drift_status (activity entropy)
+            (orch.telemetry().cycle_count as f32 / 1_000.0).min(1.0), // [7] cycle_phase
+        ];
+
+        let rl_state = RlState::from_features(&features, health_level, rework_ratio_val);
+
+        // Compute next health state based on cycle outcome and consecutive successes.
+        // After 3 consecutive successful cycles (guard_pass && circuit_allowed),
+        // health improves by 1 level (3→2→1→0). Failed cycles degrade health and reset counter.
+        const IMPROVEMENT_THRESHOLD: u32 = 3;
+        let consecutive_successes = orch.telemetry().consecutive_successes;
+
+        let next_health_level = if guard_pass && circuit_allowed {
+            // Success: check if we've earned an improvement
+            if consecutive_successes >= IMPROVEMENT_THRESHOLD {
+                health_level.saturating_sub(1) // Improve: 3→2→1→0 (min 0)
             } else {
-                (health_level + 1).min(4) // Degrade: failed cycle (cap at 4)
-            };
-            let rl_next_state = RlState::from_features(&features, next_health_level, rework_ratio_val);
-            
-            // Domain 2 wiring: Call AutoProcessAgent if feature-cloud enabled
-            let (autoprocess_state_id, autoprocess_q_value) = {
-                #[cfg(feature = "cloud")]
-                {
-                    AUTO_PROCESS_AGENT.with(|agent_cell| {
-                        let mut agent = agent_cell.borrow_mut();
-                        let decision = agent.run_cycle(
-                            &rl_state,
-                            &features,
-                            orch.telemetry().last_reward,
-                            &rl_next_state,
-                            next_health_level == 4,  // done = terminal health
-                            guard_pass,              // action_success
-                            circuit_state_u8,
-                        );
-                        (decision.state_id, decision.q_value)
-                    })
-                }
-                #[cfg(not(feature = "cloud"))]
-                {
-                    (0u32, 0.0f32)  // No-op for non-cloud builds
-                }
-            };
+                health_level // Stable: not enough consecutive successes yet
+            }
+        } else {
+            (health_level + 1).min(4) // Degrade: failed cycle (cap at 4)
+        };
+        let rl_next_state = RlState::from_features(&features, next_health_level, rework_ratio_val);
 
-            let (label, _reward) = orch.run_cycle(
-                &features,
-                &rl_state,
-                &rl_next_state,
-                all_special_causes.len(),
-                guard_pass,
-                circuit_allowed,
-                cycle_latency_budget_exceeded,
-            );
+        // Domain 2 wiring: Call AutoProcessAgent if feature-cloud enabled
+        let (autoprocess_state_id, autoprocess_q_value) = {
+            #[cfg(feature = "cloud")]
+            {
+                AUTO_PROCESS_AGENT.with(|agent_cell| {
+                    let mut agent = agent_cell.borrow_mut();
+                    let decision = agent.run_cycle(
+                        &rl_state,
+                        &features,
+                        orch.telemetry().last_reward,
+                        &rl_next_state,
+                        next_health_level == 4, // done = terminal health
+                        guard_pass,             // action_success
+                        circuit_state_u8,
+                    );
+                    (decision.state_id, decision.q_value)
+                })
+            }
+            #[cfg(not(feature = "cloud"))]
+            {
+                (0u32, 0.0f32) // No-op for non-cloud builds
+            }
+        };
 
-            (
-                label,
-                orch.telemetry().last_reward,
-                orch.telemetry().active_agent_name.clone(),
-                orch.telemetry().cycle_count,
-                orch.telemetry().cumulative_reward,
-                autoprocess_state_id,
-                autoprocess_q_value,
-            )
-        });
+        let (label, _reward) = orch.run_cycle(
+            &features,
+            &rl_state,
+            &rl_next_state,
+            all_special_causes.len(),
+            guard_pass,
+            circuit_allowed,
+            cycle_latency_budget_exceeded,
+        );
+
+        (
+            label,
+            orch.telemetry().last_reward,
+            orch.telemetry().active_agent_name.clone(),
+            orch.telemetry().cycle_count,
+            orch.telemetry().cumulative_reward,
+            autoprocess_state_id,
+            autoprocess_q_value,
+        )
+    });
 
     // Record circuit breaker outcome AFTER actual cycle work completes
     // (not before, so the breaker tracks real success/failure rates)
@@ -1526,7 +1540,10 @@ pub fn autonomic_execute_cycle(
     // MAPE-K Action Dispatch: Translate RL decision to system actions
     // -----------------------------------------------------------------------
     let (action_dispatch_detail, action_taken) = match action_label.as_str() {
-        "Continue" => ("no-op: continue normal operation".to_string(), "continue".to_string()),
+        "Continue" => (
+            "no-op: continue normal operation".to_string(),
+            "continue".to_string(),
+        ),
         "Scale" => {
             // Bump epsilon to 0.5, set drain_every=16 for faster learning
             RL_ORCHESTRATOR.with(|orch_cell| {
@@ -1536,18 +1553,27 @@ pub fn autonomic_execute_cycle(
             SCALE_BOOST_REMAINING.with(|sb| {
                 sb.set(3); // 3 more cycles with boosted exploration
             });
-            ("exploration boost: epsilon=0.5 x3 cycles".to_string(), "scale".to_string())
+            (
+                "exploration boost: epsilon=0.5 x3 cycles".to_string(),
+                "scale".to_string(),
+            )
         }
         "Retry" => {
             // Set backoff flag for next perception cycle
-            ("backoff: exponential retry scheduling".to_string(), "retry".to_string())
+            (
+                "backoff: exponential retry scheduling".to_string(),
+                "retry".to_string(),
+            )
         }
         "Fallback" => {
             // Override algorithm to "dfg", reduce event budget to 10%
             LAST_ALGORITHM.with(|la| {
                 *la.borrow_mut() = "dfg".to_string();
             });
-            ("fallback: switch to dfg, reduce event budget 10%".to_string(), "fallback".to_string())
+            (
+                "fallback: switch to dfg, reduce event budget 10%".to_string(),
+                "fallback".to_string(),
+            )
         }
         "Restart" => {
             // Clear SPC history, reset circuit breaker, reset epsilon to 1.0
@@ -1561,7 +1587,10 @@ pub fn autonomic_execute_cycle(
                 let mut orch = orch_cell.borrow_mut();
                 orch.reset_all_exploration_rates();
             });
-            ("restart: reset SPC, circuit breaker, epsilon=1.0".to_string(), "restart".to_string())
+            (
+                "restart: reset SPC, circuit breaker, epsilon=1.0".to_string(),
+                "restart".to_string(),
+            )
         }
         _ => ("unknown action".to_string(), "unknown".to_string()),
     };
@@ -1624,14 +1653,14 @@ pub fn autonomic_execute_cycle(
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
 #[wasm_bindgen]
 pub struct RlState {
-    pub health_level: u8,        // 0-4 (5 states)
-    pub event_rate_q: u8,        // 0-7 (8 quantization levels)
-    pub activity_count_q: u8,    // 0-7 (8 quantization levels)
-    pub spc_alert_level: u8,     // 0-3 (4 levels)
-    pub drift_status: u8,        // 0-2 (3 states)
-    pub rework_ratio_q: u8,      // 0-7 (8 quantization levels)
-    pub circuit_state: u8,       // 0-2 (3 states)
-    pub cycle_phase: u8,         // 0-3 (4 phases)
+    pub health_level: u8,     // 0-4 (5 states)
+    pub event_rate_q: u8,     // 0-7 (8 quantization levels)
+    pub activity_count_q: u8, // 0-7 (8 quantization levels)
+    pub spc_alert_level: u8,  // 0-3 (4 levels)
+    pub drift_status: u8,     // 0-2 (3 states)
+    pub rework_ratio_q: u8,   // 0-7 (8 quantization levels)
+    pub circuit_state: u8,    // 0-2 (3 states)
+    pub cycle_phase: u8,      // 0-3 (4 phases)
 }
 
 impl RlState {
@@ -1722,10 +1751,10 @@ impl RlState {
         // normalized_cycles is in [0,1], representing [0, 1000] cycles
         let cycles = (normalized_cycles * 1000.0) as u32;
         match cycles {
-            0..=10 => 0,      // Initial
-            11..=50 => 1,     // Learning
-            51..=100 => 2,    // Mature
-            _ => 3,           // Stable
+            0..=10 => 0,   // Initial
+            11..=50 => 1,  // Learning
+            51..=100 => 2, // Mature
+            _ => 3,        // Stable
         }
     }
 
@@ -1734,14 +1763,14 @@ impl RlState {
         // Quantize to 8 levels
         let ratio_percent = (rework_ratio * 100.0) as u32;
         match ratio_percent {
-            0..=5 => 0,       // 0-5%: minimal rework
-            6..=15 => 1,      // 6-15%: low rework
-            16..=25 => 2,     // 16-25%: moderate-low
-            26..=40 => 3,     // 26-40%: moderate
-            41..=55 => 4,     // 41-55%: moderate-high
-            56..=70 => 5,     // 56-70%: high rework
-            71..=85 => 6,     // 71-85%: very high
-            _ => 7,           // 86-100%: extreme rework
+            0..=5 => 0,   // 0-5%: minimal rework
+            6..=15 => 1,  // 6-15%: low rework
+            16..=25 => 2, // 16-25%: moderate-low
+            26..=40 => 3, // 26-40%: moderate
+            41..=55 => 4, // 41-55%: moderate-high
+            56..=70 => 5, // 56-70%: high rework
+            71..=85 => 6, // 71-85%: very high
+            _ => 7,       // 86-100%: extreme rework
         }
     }
 }
@@ -1971,20 +2000,42 @@ pub fn rl_orchestrator_get_telemetry() -> Result<JsValue, JsValue> {
         let obj = js_sys::Object::new();
 
         // Use JsValue to convert Rust types to JavaScript types
-        js_sys::Reflect::set(&obj, &crate::error::js_val("cycle_count"), &JsValue::from(t.cycle_count))
-            .map_err(|e| crate::error::js_val(&format!("Failed to set cycle_count: {:?}", e)))?;
+        js_sys::Reflect::set(
+            &obj,
+            &crate::error::js_val("cycle_count"),
+            &JsValue::from(t.cycle_count),
+        )
+        .map_err(|e| crate::error::js_val(&format!("Failed to set cycle_count: {:?}", e)))?;
 
-        js_sys::Reflect::set(&obj, &crate::error::js_val("last_health_state"), &JsValue::from(t.last_health_state))
-            .map_err(|e| crate::error::js_val(&format!("Failed to set last_health_state: {:?}", e)))?;
+        js_sys::Reflect::set(
+            &obj,
+            &crate::error::js_val("last_health_state"),
+            &JsValue::from(t.last_health_state),
+        )
+        .map_err(|e| crate::error::js_val(&format!("Failed to set last_health_state: {:?}", e)))?;
 
-        js_sys::Reflect::set(&obj, &crate::error::js_val("cumulative_reward"), &JsValue::from(t.cumulative_reward))
-            .map_err(|e| crate::error::js_val(&format!("Failed to set cumulative_reward: {:?}", e)))?;
+        js_sys::Reflect::set(
+            &obj,
+            &crate::error::js_val("cumulative_reward"),
+            &JsValue::from(t.cumulative_reward),
+        )
+        .map_err(|e| crate::error::js_val(&format!("Failed to set cumulative_reward: {:?}", e)))?;
 
-        js_sys::Reflect::set(&obj, &crate::error::js_val("last_reward"), &JsValue::from(t.last_reward))
-            .map_err(|e| crate::error::js_val(&format!("Failed to set last_reward: {:?}", e)))?;
+        js_sys::Reflect::set(
+            &obj,
+            &crate::error::js_val("last_reward"),
+            &JsValue::from(t.last_reward),
+        )
+        .map_err(|e| crate::error::js_val(&format!("Failed to set last_reward: {:?}", e)))?;
 
-        js_sys::Reflect::set(&obj, &crate::error::js_val("last_spc_alert_count"), &JsValue::from(t.last_spc_alert_count))
-            .map_err(|e| crate::error::js_val(&format!("Failed to set last_spc_alert_count: {:?}", e)))?;
+        js_sys::Reflect::set(
+            &obj,
+            &crate::error::js_val("last_spc_alert_count"),
+            &JsValue::from(t.last_spc_alert_count),
+        )
+        .map_err(|e| {
+            crate::error::js_val(&format!("Failed to set last_spc_alert_count: {:?}", e))
+        })?;
 
         Ok(JsValue::from(obj))
     })
@@ -2047,41 +2098,41 @@ pub fn restore_rl_state(json: &str) -> Result<String, JsValue> {
     let state: rl_state_serialization::SerializedRlState = serde_json::from_str(json)
         .map_err(|e| crate::error::js_val(&format!("Invalid JSON: {}", e)))?;
 
-    RL_ORCHESTRATOR.with(|orch| {
-        let mut orch_ref = orch.borrow_mut();
+    RL_ORCHESTRATOR
+        .with(|orch| {
+            let mut orch_ref = orch.borrow_mut();
 
-        // Restore active agent
-        if let Some(agent_type) = rl_orchestrator::AgentType::from_u8(state.active_agent) {
-            orch_ref.switch_agent(agent_type);
-        }
+            // Restore active agent
+            if let Some(agent_type) = rl_orchestrator::AgentType::from_u8(state.active_agent) {
+                orch_ref.switch_agent(agent_type);
+            }
 
-        // Restore LinUCB setting
-        orch_ref.set_linucb_selection(state.linucb_enabled);
+            // Restore LinUCB setting
+            orch_ref.set_linucb_selection(state.linucb_enabled);
 
-        // Restore telemetry (cycle_count, cumulative_reward, etc.)
-        let restored_telemetry = rl_orchestrator::CycleTelemetry {
-            cycle_count: state.telemetry.cycle_count,
-            last_health_state: state.telemetry.last_health_state,
-            last_action_label: state.telemetry.last_action_label.clone(),
-            last_spc_alert_count: state.telemetry.last_spc_alert_count,
-            cumulative_reward: state.telemetry.cumulative_reward as f32,
-            ..Default::default()
-        };
-        orch_ref.restore_telemetry(restored_telemetry);
+            // Restore telemetry (cycle_count, cumulative_reward, etc.)
+            let restored_telemetry = rl_orchestrator::CycleTelemetry {
+                cycle_count: state.telemetry.cycle_count,
+                last_health_state: state.telemetry.last_health_state,
+                last_action_label: state.telemetry.last_action_label.clone(),
+                last_spc_alert_count: state.telemetry.last_spc_alert_count,
+                cumulative_reward: state.telemetry.cumulative_reward as f32,
+                ..Default::default()
+            };
+            orch_ref.restore_telemetry(restored_telemetry);
 
-        // Restore Q-tables for all agents
-        let num_q_tables = state.agent_q_tables.len();
-        if num_q_tables > 0 {
-            orch_ref.restore_all_q_tables(state.agent_q_tables);
-        }
+            // Restore Q-tables for all agents
+            let num_q_tables = state.agent_q_tables.len();
+            if num_q_tables > 0 {
+                orch_ref.restore_all_q_tables(state.agent_q_tables);
+            }
 
-        Ok::<String, JsValue>(format!(
-            "Restored RL state from cycle {} (agent {}, linucb={}, {} Q-tables)",
-            state.telemetry.cycle_count, state.active_agent, state.linucb_enabled,
-            num_q_tables
-        ))
-    })
-    .map_err(|_e| crate::error::js_val("Failed to restore RL state"))
+            Ok::<String, JsValue>(format!(
+                "Restored RL state from cycle {} (agent {}, linucb={}, {} Q-tables)",
+                state.telemetry.cycle_count, state.active_agent, state.linucb_enabled, num_q_tables
+            ))
+        })
+        .map_err(|_e| crate::error::js_val("Failed to restore RL state"))
 }
 
 /// Get SPC history as JSON.
@@ -2156,15 +2207,15 @@ pub fn circuit_breaker_set_state(json: &str) -> Result<String, JsValue> {
 #[cfg(feature = "cloud")]
 #[wasm_bindgen]
 pub fn circuit_breaker_configure(config_json: &str) -> Result<String, JsValue> {
-    CIRCUIT_BREAKER.with(|breaker| {
-        match self_healing::CircuitBreaker::from_json(config_json) {
+    CIRCUIT_BREAKER.with(
+        |breaker| match self_healing::CircuitBreaker::from_json(config_json) {
             Ok(new_breaker) => {
                 *breaker.borrow_mut() = new_breaker;
                 Ok("Circuit breaker configured".to_string())
             }
             Err(e) => Err(crate::error::js_val(&e)),
-        }
-    })
+        },
+    )
 }
 
 /// Get current circuit breaker configuration as JSON.
@@ -2255,28 +2306,19 @@ mod tests {
 
     #[test]
     fn test_parse_iso8601_duration_basic() {
-        let dur = parse_iso8601_duration(
-            "2026-04-13T10:00:00Z",
-            "2026-04-13T11:00:00Z",
-        );
+        let dur = parse_iso8601_duration("2026-04-13T10:00:00Z", "2026-04-13T11:00:00Z");
         assert_eq!(dur, 3_600_000.0); // 1 hour in ms
     }
 
     #[test]
     fn test_parse_iso8601_duration_same_timestamp() {
-        let dur = parse_iso8601_duration(
-            "2026-04-13T10:00:00Z",
-            "2026-04-13T10:00:00Z",
-        );
+        let dur = parse_iso8601_duration("2026-04-13T10:00:00Z", "2026-04-13T10:00:00Z");
         assert_eq!(dur, 0.0);
     }
 
     #[test]
     fn test_parse_iso8601_duration_reverse_order() {
-        let dur = parse_iso8601_duration(
-            "2026-04-13T11:00:00Z",
-            "2026-04-13T10:00:00Z",
-        );
+        let dur = parse_iso8601_duration("2026-04-13T11:00:00Z", "2026-04-13T10:00:00Z");
         assert_eq!(dur, -3_600_000.0); // negative when reversed
     }
 
@@ -2288,28 +2330,19 @@ mod tests {
 
     #[test]
     fn test_parse_iso8601_duration_with_offset() {
-        let dur = parse_iso8601_duration(
-            "2026-04-13T10:00:00+00:00",
-            "2026-04-13T10:00:01+00:00",
-        );
+        let dur = parse_iso8601_duration("2026-04-13T10:00:00+00:00", "2026-04-13T10:00:01+00:00");
         assert_eq!(dur, 1_000.0); // 1 second in ms
     }
 
     #[test]
     fn test_parse_iso8601_duration_cross_day() {
-        let dur = parse_iso8601_duration(
-            "2026-04-13T23:00:00Z",
-            "2026-04-14T01:00:00Z",
-        );
+        let dur = parse_iso8601_duration("2026-04-13T23:00:00Z", "2026-04-14T01:00:00Z");
         assert_eq!(dur, 7_200_000.0); // 2 hours in ms
     }
 
     #[test]
     fn test_parse_iso8601_duration_with_fractional_seconds() {
-        let dur = parse_iso8601_duration(
-            "2026-04-13T10:00:00.500Z",
-            "2026-04-13T10:00:01.500Z",
-        );
+        let dur = parse_iso8601_duration("2026-04-13T10:00:00.500Z", "2026-04-13T10:00:01.500Z");
         // Fractional seconds are stripped, so both resolve to the same second
         assert_eq!(dur, 1_000.0); // 1 second in ms
     }
@@ -2319,10 +2352,7 @@ mod tests {
         // TS-1 regression: same-duration timestamps with different string lengths
         // Old code: (last.len() - first.len()) would return 0 for same-length strings
         // even if they represented different times (e.g., different months)
-        let dur = parse_iso8601_duration(
-            "2026-01-13T10:00:00Z",
-            "2026-11-13T10:00:00Z",
-        );
+        let dur = parse_iso8601_duration("2026-01-13T10:00:00Z", "2026-11-13T10:00:00Z");
         // Jan 13 → Nov 13 = 304 days (2026 is not a leap year, Jan has 31, Feb 28, etc.)
         // 304 × 86_400_000 = 26,265,600,000 ms
         assert!(dur > 26_000_000_000.0); // > 26 billion ms
@@ -2332,10 +2362,7 @@ mod tests {
     #[test]
     fn test_parse_iso8601_duration_string_lengths_same_but_times_differ() {
         // TS-1 regression: timestamps with identical string length but different durations
-        let dur = parse_iso8601_duration(
-            "2026-01-01T00:00:00Z",
-            "2026-12-31T23:59:59Z",
-        );
+        let dur = parse_iso8601_duration("2026-01-01T00:00:00Z", "2026-12-31T23:59:59Z");
         // Old code: (20 - 20) = 0 ms. New code: ~365 days in ms
         assert!(dur > 31_000_000_000.0); // > 31 billion ms (~361 days)
     }
@@ -2372,8 +2399,16 @@ mod tests {
         // Verify cycle_count is restored
         RL_ORCHESTRATOR.with(|orch| {
             let orch = orch.borrow();
-            assert_eq!(orch.telemetry().cycle_count, 42, "cycle_count should be restored");
-            assert_eq!(orch.active_agent() as u8, 0, "active agent should be restored");
+            assert_eq!(
+                orch.telemetry().cycle_count,
+                42,
+                "cycle_count should be restored"
+            );
+            assert_eq!(
+                orch.active_agent() as u8,
+                0,
+                "active agent should be restored"
+            );
             assert!(orch.linucb_selection_enabled(), "linucb should be restored");
         });
 

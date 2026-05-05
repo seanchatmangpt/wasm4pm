@@ -1,12 +1,12 @@
 use crate::models::*;
 use crate::state::{get_or_init_state, StoredObject};
 use crate::utilities::{evaluate_edges_fitness, to_js_str};
+use rand::rngs::StdRng;
+use rand::{Rng, SeedableRng};
 use rustc_hash::FxHashMap;
 use serde_json::json;
 use std::collections::HashSet;
 use wasm_bindgen::prelude::*;
-use rand::{Rng, SeedableRng};
-use rand::rngs::StdRng;
 
 /// Inductive Miner - recursive structure discovery via cuts
 /// Implements IM-basic (no noise filtering, all directly-follows preserved)
@@ -19,8 +19,8 @@ pub fn discover_inductive_miner(
     let tree = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
             let activities = log.get_activities(activity_key);
-            let mut sorted_acts: Vec<_> = activities.iter().cloned().collect();
-            sorted_acts.sort();  // Deterministic ordering
+            let mut sorted_acts: Vec<_> = activities.to_vec();
+            sorted_acts.sort(); // Deterministic ordering
 
             inductive_miner_recursive(log, &sorted_acts, activity_key, 0)
         }
@@ -77,7 +77,12 @@ fn inductive_miner_recursive(
         if partitions.len() > 1 {
             let mut trees = Vec::new();
             for partition in partitions {
-                trees.push(inductive_miner_recursive(log, &partition, activity_key, depth + 1)?);
+                trees.push(inductive_miner_recursive(
+                    log,
+                    &partition,
+                    activity_key,
+                    depth + 1,
+                )?);
             }
             return Ok(ProcessTreeNode::parallel(trees));
         }
@@ -101,14 +106,15 @@ fn build_df_subset(
 ) -> FxHashMap<(String, String), usize> {
     let mut df = FxHashMap::default();
     let activity_set: HashSet<_> = activities.iter().cloned().collect();
-    let _ = &activity_set;  // Used in loop check below
+    let _ = &activity_set; // Used in loop check below
 
     for trace in &log.traces {
         for i in 0..trace.events.len().saturating_sub(1) {
             let curr = trace.events[i].attributes.get(activity_key);
             let next = trace.events[i + 1].attributes.get(activity_key);
 
-            if let (Some(AttributeValue::String(c)), Some(AttributeValue::String(n))) = (curr, next) {
+            if let (Some(AttributeValue::String(c)), Some(AttributeValue::String(n))) = (curr, next)
+            {
                 if activity_set.contains(c) && activity_set.contains(n) {
                     *df.entry((c.clone(), n.clone())).or_insert(0) += 1;
                 }
@@ -129,7 +135,8 @@ fn find_xor_cut(
         let right: Vec<_> = activities[i..].to_vec();
 
         let has_cross_edge = df.keys().any(|(from, to)| {
-            (left.contains(from) && right.contains(to)) || (right.contains(from) && left.contains(to))
+            (left.contains(from) && right.contains(to))
+                || (right.contains(from) && left.contains(to))
         });
 
         if !has_cross_edge && !left.is_empty() && !right.is_empty() {
@@ -159,9 +166,18 @@ fn find_sequence_cut(
             let to_in_right = right.contains(to);
 
             match (from_in_left, from_in_right, to_in_left, to_in_right) {
-                (true, false, true, false) => { valid = false; break; }  // left→left (bad)
-                (false, true, false, true) => { valid = false; break; }  // right→right (bad)
-                (false, true, true, false) => { valid = false; break; }  // right→left (bad)
+                (true, false, true, false) => {
+                    valid = false;
+                    break;
+                } // left→left (bad)
+                (false, true, false, true) => {
+                    valid = false;
+                    break;
+                } // right→right (bad)
+                (false, true, true, false) => {
+                    valid = false;
+                    break;
+                } // right→left (bad)
                 _ => {}
             }
         }
@@ -180,7 +196,7 @@ fn find_parallel_cut(
 ) -> Option<Vec<Vec<String>>> {
     // All pairs must have bidirectional edges
     // For now, just check if all activities are mutually connected
-    let activity_set: HashSet<_> = activities.iter().cloned().collect();
+    let _activity_set: HashSet<_> = activities.iter().cloned().collect();
 
     let mut all_bidirectional = true;
     for a1 in activities {
@@ -202,12 +218,7 @@ fn find_parallel_cut(
 
     if all_bidirectional && activities.len() > 1 {
         // Return as individual partitions (each activity is its own parallel branch)
-        return Some(
-            activities
-                .iter()
-                .map(|a| vec![a.clone()])
-                .collect()
-        );
+        return Some(activities.iter().map(|a| vec![a.clone()]).collect());
     }
 
     None
@@ -222,9 +233,9 @@ fn find_loop_cut(
         let body: Vec<_> = activities[..i].to_vec();
         let redo: Vec<_> = activities[i..].to_vec();
 
-        let has_redo_to_body = df.keys().any(|(from, to)| {
-            redo.contains(from) && body.contains(to)
-        });
+        let has_redo_to_body = df
+            .keys()
+            .any(|(from, to)| redo.contains(from) && body.contains(to));
 
         if has_redo_to_body && !body.is_empty() && !redo.is_empty() {
             return Some((body, redo));
@@ -244,7 +255,12 @@ pub fn discover_ant_colony(
     iterations: usize,
 ) -> Result<JsValue, JsValue> {
     // DEPRECATED: delegates to discover_aco_algorithm (proper ACO implementation with heuristic eta and all-ant pheromone deposit)
-    crate::genetic_discovery::discover_aco_algorithm(eventlog_handle, activity_key, num_ants, iterations)
+    crate::genetic_discovery::discover_aco_algorithm(
+        eventlog_handle,
+        activity_key,
+        num_ants,
+        iterations,
+    )
 }
 
 /// Simulated Annealing - thermal search for optimal models

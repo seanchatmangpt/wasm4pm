@@ -3,9 +3,7 @@
 //! Tests the action dispatch layer that converts RL action labels to
 //! executable operations.
 
-use wasm4pm::action_dispatch::{
-    dispatch_action, DispatchError, DispatchOutcome, ExecutionContext,
-};
+use wasm4pm::action_dispatch::{dispatch_action, DispatchError, DispatchOutcome, ExecutionContext};
 use wasm4pm::RlAction;
 
 #[test]
@@ -162,9 +160,9 @@ fn test_action_scale_respects_minimum_thresholds() {
     // Test with very low values to ensure minimum thresholds are enforced
     let context = ExecutionContext {
         health_level: 4,
-        current_memory_mb: 32, // below minimum
+        current_memory_mb: 32,    // below minimum
         current_timeout_ms: 1000, // below minimum
-        current_batch_size: 10, // below minimum
+        current_batch_size: 10,   // below minimum
         ..Default::default()
     };
 
@@ -200,7 +198,7 @@ fn test_action_retry_first_attempt() {
 
     if let DispatchOutcome::RetryInitiated { attempt, delay_ms } = result.unwrap() {
         assert_eq!(attempt, 1); // first retry
-        // Exponential: 1000 * 2^0 = 1000 + jitter(500) = 1500
+                                // Exponential: 1000 * 2^0 = 1000 + jitter(500) = 1500
         assert_eq!(delay_ms, 1500);
     } else {
         panic!("Expected RetryInitiated outcome");
@@ -221,7 +219,7 @@ fn test_action_retry_second_attempt() {
 
     if let DispatchOutcome::RetryInitiated { attempt, delay_ms } = result.unwrap() {
         assert_eq!(attempt, 2); // second retry
-        // Exponential: 1000 * 2^1 = 2000 + jitter(500) = 2500
+                                // Exponential: 1000 * 2^1 = 2000 + jitter(500) = 2500
         assert_eq!(delay_ms, 2500);
     } else {
         panic!("Expected RetryInitiated outcome");
@@ -242,7 +240,7 @@ fn test_action_retry_exponential_backoff() {
 
     if let DispatchOutcome::RetryInitiated { attempt, delay_ms } = result.unwrap() {
         assert_eq!(attempt, 3); // third retry
-        // Exponential: 1000 * 2^2 = 4000 + jitter(500) = 4500
+                                // Exponential: 1000 * 2^2 = 4000 + jitter(500) = 4500
         assert_eq!(delay_ms, 4500);
     } else {
         panic!("Expected RetryInitiated outcome");

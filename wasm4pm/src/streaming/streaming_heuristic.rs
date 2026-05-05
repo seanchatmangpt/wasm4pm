@@ -151,11 +151,15 @@ impl StreamingHeuristicBuilder {
                 {
                     let pass = (dep_score.abs() >= threshold) as u64;
                     let mask = bcinr::mask::select_u64(pass, 1, 0);
-                    if mask == 0 { return None; }
+                    if mask == 0 {
+                        return None;
+                    }
                 }
                 #[cfg(not(feature = "bcinr"))]
                 {
-                    if dep_score.abs() < threshold { return None; }
+                    if dep_score.abs() < threshold {
+                        return None;
+                    }
                 }
                 Some(crate::models::DirectlyFollowsRelation {
                     from: self.interner.get(from).unwrap_or("").to_string(),

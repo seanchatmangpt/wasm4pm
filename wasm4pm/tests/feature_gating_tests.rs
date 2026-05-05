@@ -1,4 +1,4 @@
-//! Feature Gating Tests for pictl Deployment Profiles
+//! Feature Gating Tests for wasm4pm Deployment Profiles
 //!
 //! Verifies that:
 //! 1. All feature flags compile without errors
@@ -302,7 +302,10 @@ fn test_streaming_modules_conditional() {
         assert!(true, "Streaming full modules compiled with SIMD");
     }
 
-    #[cfg(not(any(feature = "feature-streaming-basic", feature = "feature-streaming-full")))]
+    #[cfg(not(any(
+        feature = "feature-streaming-basic",
+        feature = "feature-streaming-full"
+    )))]
     {
         assert!(true, "No streaming modules compiled");
     }

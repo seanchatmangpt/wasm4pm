@@ -155,8 +155,10 @@ fn test_convergence_reward_improves_with_health_recovery() {
         healthy_rewards.push(reward);
     }
 
-    let degraded_avg: f64 = degraded_rewards.iter().sum::<f32>() as f64 / degraded_rewards.len() as f64;
-    let healthy_avg: f64 = healthy_rewards.iter().sum::<f32>() as f64 / healthy_rewards.len() as f64;
+    let degraded_avg: f64 =
+        degraded_rewards.iter().sum::<f32>() as f64 / degraded_rewards.len() as f64;
+    let healthy_avg: f64 =
+        healthy_rewards.iter().sum::<f32>() as f64 / healthy_rewards.len() as f64;
 
     assert!(
         healthy_avg > degraded_avg,
@@ -193,10 +195,8 @@ fn test_convergence_exploration_decay_reduces_variance() {
     }
 
     // Compute number of unique actions selected
-    let first_unique: std::collections::HashSet<String> =
-        first_actions.into_iter().collect();
-    let late_unique: std::collections::HashSet<String> =
-        late_actions.into_iter().collect();
+    let first_unique: std::collections::HashSet<String> = first_actions.into_iter().collect();
+    let late_unique: std::collections::HashSet<String> = late_actions.into_iter().collect();
 
     // With 5 possible actions and decaying exploration,
     // late-stage should use fewer distinct actions
@@ -286,8 +286,7 @@ fn test_convergence_different_environments_different_actions() {
         "Healthy and degraded environments should produce different action distributions.\n\
          Healthy: {:?}\n\
          Degraded: {:?}",
-        healthy_dist,
-        degraded_dist,
+        healthy_dist, degraded_dist,
     );
 }
 
@@ -314,7 +313,8 @@ fn test_multi_seed_final_reward_distributions_are_consistent() {
             // Run 200 cycles, collect rewards
             let mut all_rewards = Vec::new();
             for _ in 0..total_cycles {
-                let (_action, reward) = orch.run_cycle(&features, &state, &state, 0, true, true, false);
+                let (_action, reward) =
+                    orch.run_cycle(&features, &state, &state, 0, true, true, false);
                 all_rewards.push(reward);
             }
 
@@ -326,10 +326,13 @@ fn test_multi_seed_final_reward_distributions_are_consistent() {
         .collect();
 
     // Compute mean and std dev of per-seed means
-    let mean_of_means: f32 = per_seed_final_means.iter().sum::<f32>() / per_seed_final_means.len() as f32;
-    let variance: f32 = per_seed_final_means.iter()
+    let mean_of_means: f32 =
+        per_seed_final_means.iter().sum::<f32>() / per_seed_final_means.len() as f32;
+    let variance: f32 = per_seed_final_means
+        .iter()
         .map(|m| (m - mean_of_means).powi(2))
-        .sum::<f32>() / per_seed_final_means.len() as f32;
+        .sum::<f32>()
+        / per_seed_final_means.len() as f32;
     let std_dev = variance.sqrt();
 
     // Coefficient of variation: std_dev / mean (< 50% indicates consistency)
@@ -422,7 +425,11 @@ fn test_b4_terminal_recovery_reward_trend_improves() {
             circuit_state: 0,
             cycle_phase: 0,
         };
-        let next_health = if current_health > 0 { current_health - 1 } else { 0 };
+        let next_health = if current_health > 0 {
+            current_health - 1
+        } else {
+            0
+        };
         let next_state = RlState {
             health_level: next_health,
             event_rate_q: 3,

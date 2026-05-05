@@ -290,10 +290,8 @@ fn get_variants_from_log(log: &EventLog, activity_key: &str) -> Result<Vec<Varia
     }
 
     // Extract variants and sort by fingerprint for deterministic order
-    let mut variants_with_fp: Vec<(u64, Vec<String>, usize)> = table
-        .into_iter()
-        .flatten()
-        .collect();
+    let mut variants_with_fp: Vec<(u64, Vec<String>, usize)> =
+        table.into_iter().flatten().collect();
     variants_with_fp.sort_by_key(|t| t.0);
 
     Ok(variants_with_fp

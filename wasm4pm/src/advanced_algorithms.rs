@@ -121,11 +121,14 @@ pub fn analyze_infrequent_paths(
             let total_traces = log.traces.len() as f64;
 
             // Build activity vocabulary
-            let mut vocab: std::collections::HashMap<&str, u32> = std::collections::HashMap::default();
+            let mut vocab: std::collections::HashMap<&str, u32> =
+                std::collections::HashMap::default();
             let mut vocab_len: u32 = 0;
             for trace in &log.traces {
                 for event in &trace.events {
-                    if let Some(AttributeValue::String(activity)) = event.attributes.get(activity_key) {
+                    if let Some(AttributeValue::String(activity)) =
+                        event.attributes.get(activity_key)
+                    {
                         vocab.entry(activity.as_str()).or_insert_with(|| {
                             let id = vocab_len;
                             vocab_len += 1;
@@ -163,7 +166,8 @@ pub fn analyze_infrequent_paths(
                     (h ^ (id as u64)).wrapping_mul(FNV_PRIME)
                 });
 
-                path_frequencies.entry(path_hash)
+                path_frequencies
+                    .entry(path_hash)
                     .and_modify(|(_, count)| *count += 1)
                     .or_insert((path_str, 1));
             }

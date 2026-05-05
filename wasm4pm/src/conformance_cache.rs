@@ -1,7 +1,7 @@
 //! Conformance result memoization.
 //!
 //! Caches conformance checking results keyed by (log_handle, model_hash).
-//! Same log + same model = instant cache hit.  Useful for `pictl compare`
+//! Same log + same model = instant cache hit.  Useful for `wpm compare`
 //! which runs multiple algorithms against the same log, triggering repeated
 //! conformance checks on identical log+model pairs.
 
@@ -136,14 +136,16 @@ pub fn conformance_cache_get(
             let result = cache.get(log_handle, model_hash).cloned();
             *s = serde_json::to_string(&cache).unwrap_or_default();
             match result {
-                Some(r) => {
-                    serde_wasm_bindgen::to_value(&r).map_err(|e| crate::error::js_val(&e.to_string()))
-                }
+                Some(r) => serde_wasm_bindgen::to_value(&r)
+                    .map_err(|e| crate::error::js_val(&e.to_string())),
                 None => Ok(JsValue::NULL),
             }
         }
         Some(_) => Err(crate::error::js_val("Object is not a ConformanceCache")),
-        None => Err(crate::error::js_val(&format!("Cache '{}' not found", handle))),
+        None => Err(crate::error::js_val(&format!(
+            "Cache '{}' not found",
+            handle
+        ))),
     })
 }
 
@@ -176,7 +178,10 @@ pub fn conformance_cache_insert(
                 .map_err(|e| crate::error::js_val(&e.to_string()))
         }
         Some(_) => Err(crate::error::js_val("Object is not a ConformanceCache")),
-        None => Err(crate::error::js_val(&format!("Cache '{}' not found", handle))),
+        None => Err(crate::error::js_val(&format!(
+            "Cache '{}' not found",
+            handle
+        ))),
     })
 }
 
@@ -195,7 +200,10 @@ pub fn conformance_cache_stats(handle: &str) -> Result<JsValue, JsValue> {
             .map_err(|e| crate::error::js_val(&e.to_string()))
         }
         Some(_) => Err(crate::error::js_val("Object is not a ConformanceCache")),
-        None => Err(crate::error::js_val(&format!("Cache '{}' not found", handle))),
+        None => Err(crate::error::js_val(&format!(
+            "Cache '{}' not found",
+            handle
+        ))),
     })
 }
 
@@ -211,7 +219,10 @@ pub fn conformance_cache_clear(handle: &str) -> Result<JsValue, JsValue> {
                 .map_err(|e| crate::error::js_val(&e.to_string()))
         }
         Some(_) => Err(crate::error::js_val("Object is not a ConformanceCache")),
-        None => Err(crate::error::js_val(&format!("Cache '{}' not found", handle))),
+        None => Err(crate::error::js_val(&format!(
+            "Cache '{}' not found",
+            handle
+        ))),
     })
 }
 

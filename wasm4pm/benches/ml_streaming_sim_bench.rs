@@ -11,14 +11,14 @@
 ///
 /// Note: Uses internal Rust APIs directly, not WASM bindings.
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+use std::collections::HashMap;
+use std::time::Duration;
 use wasm4pm::models::{
     AttributeValue, Event, EventLog, NGramPredictor, OCELEvent, OCELObject, Trace, OCEL,
 };
 use wasm4pm::montecarlo::{run_monte_carlo_simulation, MonteCarloConfig};
 use wasm4pm::state::{get_or_init_state, StoredObject};
 use wasm4pm::streaming::{StreamingAlgorithm, StreamingDfgBuilder, StreamingSkeletonBuilder};
-use std::collections::HashMap;
-use std::time::Duration;
 
 #[path = "helpers.rs"]
 mod helpers;
@@ -229,8 +229,8 @@ fn build_ngram_predictor_internal(log: &EventLog, activity_key: &str, n: usize) 
 
 /// Build a DFG from an event log (internal version).
 fn build_dfg_internal(log: &EventLog, activity_key: &str) -> wasm4pm::models::DirectlyFollowsGraph {
-    use wasm4pm::models::{DFGNode, DirectlyFollowsRelation};
     use std::collections::HashMap;
+    use wasm4pm::models::{DFGNode, DirectlyFollowsRelation};
 
     let mut node_counts: HashMap<String, usize> = HashMap::new();
     let mut edge_counts: HashMap<(String, String), usize> = HashMap::new();

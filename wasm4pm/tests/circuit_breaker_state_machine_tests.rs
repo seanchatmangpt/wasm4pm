@@ -10,10 +10,10 @@
 //!   HalfOpen --[success count >= threshold]--> Closed
 //!   HalfOpen --[failure]--> Open
 
+use wasm4pm::rl_orchestrator::compute_reward;
 use wasm4pm::self_healing::{
     advance_clock, reset_clock, CircuitBreaker, CircuitBreakerConfig, CircuitState,
 };
-use wasm4pm::rl_orchestrator::compute_reward;
 
 fn setup() {
     reset_clock();
@@ -86,15 +86,29 @@ fn test_open_to_half_open_after_timeout() {
 
     // Just before timeout: allow_request must return false, state stays Open
     advance_clock(open_timeout_ms - 1);
-    assert!(!breaker.allow_request(), "expected allow_request=false just before timeout");
-    assert_eq!(breaker.state(), CircuitState::Open, "expected Open just before timeout");
+    assert!(
+        !breaker.allow_request(),
+        "expected allow_request=false just before timeout"
+    );
+    assert_eq!(
+        breaker.state(),
+        CircuitState::Open,
+        "expected Open just before timeout"
+    );
 
     // Advance past the timeout boundary
     advance_clock(1);
 
     // Now allow_request triggers the transition to HalfOpen
-    assert!(breaker.allow_request(), "expected allow_request=true after timeout");
-    assert_eq!(breaker.state(), CircuitState::HalfOpen, "expected HalfOpen after timeout");
+    assert!(
+        breaker.allow_request(),
+        "expected allow_request=true after timeout"
+    );
+    assert_eq!(
+        breaker.state(),
+        CircuitState::HalfOpen,
+        "expected HalfOpen after timeout"
+    );
 }
 
 // ===========================================================================
@@ -194,7 +208,10 @@ fn test_allow_request_per_state() {
     // --- Closed: allow_request returns true ---
     let mut breaker_closed = CircuitBreaker::new();
     assert_eq!(breaker_closed.state(), CircuitState::Closed);
-    assert!(breaker_closed.allow_request(), "Closed should allow requests");
+    assert!(
+        breaker_closed.allow_request(),
+        "Closed should allow requests"
+    );
 
     // --- Open: allow_request returns false ---
     let mut breaker_open = CircuitBreaker::with_config(CircuitBreakerConfig {
@@ -219,11 +236,17 @@ fn test_allow_request_per_state() {
     breaker_half_open.record_failure();
     assert_eq!(breaker_half_open.state(), CircuitState::Open);
     advance_clock(1_100); // past open_timeout_ms
-    assert!(breaker_half_open.allow_request(), "HalfOpen should allow requests (probe)");
+    assert!(
+        breaker_half_open.allow_request(),
+        "HalfOpen should allow requests (probe)"
+    );
     assert_eq!(breaker_half_open.state(), CircuitState::HalfOpen);
 
     // Verify allow_request in HalfOpen still returns true on second call
-    assert!(breaker_half_open.allow_request(), "HalfOpen should continue allowing requests");
+    assert!(
+        breaker_half_open.allow_request(),
+        "HalfOpen should continue allowing requests"
+    );
 }
 
 // ===========================================================================
@@ -429,7 +452,7 @@ fn test_full_lifecycle_closed_open_half_open_closed() {
     // Verify: full lifecycle completed, all transitions at expected points
     // The breaker survived two complete Open cycles without corrupting state
     assert_eq!(breaker.failure_count(), 4); // 3 + 3 from cycles, but transition_to resets
-    // (failure_count accumulates across cycles because Open transition only resets success_count)
+                                            // (failure_count accumulates across cycles because Open transition only resets success_count)
 }
 
 // ===========================================================================
@@ -449,8 +472,22 @@ fn test_d6_circuit_breaker_reward_delta_at_least_0_5() {
     let spc_alerts = 0usize;
     let guard_pass = true;
 
-    let reward_allowed = compute_reward(prev_health, curr_health, spc_alerts, guard_pass, true, false);
-    let reward_blocked = compute_reward(prev_health, curr_health, spc_alerts, guard_pass, false, false);
+    let reward_allowed = compute_reward(
+        prev_health,
+        curr_health,
+        spc_alerts,
+        guard_pass,
+        true,
+        false,
+    );
+    let reward_blocked = compute_reward(
+        prev_health,
+        curr_health,
+        spc_alerts,
+        guard_pass,
+        false,
+        false,
+    );
 
     let delta = reward_allowed - reward_blocked;
 

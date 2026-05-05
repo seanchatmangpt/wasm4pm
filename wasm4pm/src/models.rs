@@ -244,7 +244,8 @@ impl<'a> ColumnarLog<'a> {
             let end = self.trace_offsets[t + 1];
             if end > start + 2 {
                 for i in start..end - 2 {
-                    if self.events[i] == self.events[i + 2] && self.events[i] != self.events[i + 1] {
+                    if self.events[i] == self.events[i + 2] && self.events[i] != self.events[i + 1]
+                    {
                         count += 1;
                     }
                 }
@@ -260,7 +261,7 @@ impl<'a> ColumnarLog<'a> {
             let start = self.trace_offsets[t];
             let end = self.trace_offsets[t + 1];
             let mut has_rework = false;
-            
+
             // Check L1
             if end > start + 1 {
                 for i in start..end - 1 {
@@ -270,11 +271,12 @@ impl<'a> ColumnarLog<'a> {
                     }
                 }
             }
-            
+
             // Check L2 if no L1 found
             if !has_rework && end > start + 2 {
                 for i in start..end - 2 {
-                    if self.events[i] == self.events[i + 2] && self.events[i] != self.events[i + 1] {
+                    if self.events[i] == self.events[i + 2] && self.events[i] != self.events[i + 1]
+                    {
                         has_rework = true;
                         break;
                     }
@@ -284,7 +286,7 @@ impl<'a> ColumnarLog<'a> {
             // General repetition check (if needed, but L1/L2 cover most "rework")
             // The previous implementation used a HashSet for any repetition.
             // Let's stick to the roadmap's focus on L1/L2.
-            
+
             if has_rework {
                 count += 1;
             }
@@ -969,8 +971,8 @@ impl Default for TemporalProfile {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ProcessTreeNode {
-    pub node_type: String,  // "sequence", "xor", "parallel", "loop", "leaf"
-    pub label: Option<String>,  // Activity name (leaf only)
+    pub node_type: String,     // "sequence", "xor", "parallel", "loop", "leaf"
+    pub label: Option<String>, // Activity name (leaf only)
     pub children: Vec<ProcessTreeNode>,
 }
 

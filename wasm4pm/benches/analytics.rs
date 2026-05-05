@@ -1,6 +1,7 @@
 /// Criterion benchmarks for analytics and analysis functions.
 /// All sweeps use full four-size range; O(n²) algorithms capped at 1K cases.
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+use std::time::Duration;
 use wasm4pm::advanced_algorithms::{
     analyze_infrequent_paths, compute_model_metrics, detect_bottlenecks, detect_rework,
 };
@@ -11,7 +12,6 @@ use wasm4pm::final_analytics::{
     compute_activity_transition_matrix, compute_trace_similarity_matrix, extract_activity_ordering,
 };
 use wasm4pm::more_discovery::analyze_activity_dependencies;
-use std::time::Duration;
 
 #[path = "helpers.rs"]
 mod helpers;

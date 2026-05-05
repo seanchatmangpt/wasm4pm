@@ -5,6 +5,49 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [26.4.28] - 2026-04-28 — Swarm Intelligence & Adversarial Resilience
+
+### Added
+
+**Agent Swarm & Mining Backends**
+- Fully implemented core Mining Backends with lifecycle contracts
+- Added `MiningBackend` trait and `Tracer`/`LiveSpan` modules for real-time observability
+- Exposed Agent Swarm logic via CLI for decentralized process discovery
+- Integrated autonomic loop with OpenTelemetry (OTel) swarm spans
+
+**Advanced Discovery & Conformance Algorithms**
+- `FootprintMatrix` discovery and loop detectors for complex process structures
+- DFG token-replay fitness calculation (SIMD accelerated)
+- Inductive Miner implementation with recursive cuts
+- Alpha footprints discovery for rapid model sketching
+
+**MCP (Model Context Protocol) Integration**
+- New tools for AI-assisted process mining: `discover_alpha_footprints`, `compute_conformance_fitness`, `check_backend_health`
+- Schema discriminators for conformance output (`chatmangpt.pictl.conformance.v1`)
+
+**Robustness & Determinism**
+- Seeded RNG implementation for Genetic, PSO, ACO, and Simulated Annealing algorithms
+- Structured diagnostics in CLI for better error reporting and automated parsing
+
+### Fixed
+
+**Adversarial Audit Corrections**
+- Resolved 9 of 10 identified WASM crash scenarios from Phase 6 audit
+- Corrected registry output types for 8 analytics algorithms
+- Fixed parameter dispatch for 12 previously unstable algorithms
+- Removed 5 missing or unimplemented algorithms from the registry
+
+**Core Engine Fixes**
+- Fixed critical bugs in Western Electric SPC rules and circuit-breaker transitions
+- Resolved DFG double-encoding issue in token-replay
+- Corrected Temporal Dead Zone in command parsing
+
+### Changed
+
+- **Crate Renaming**: Renamed core crate from `pictl` to `wasm4pm` for workspace consistency
+- **Version Synchronization**: Aligned all crates and packages to v26.4.28
+- **Performance**: Vectorized inner loops (SIMD) for DFG, conformance, and variant discovery
+
 ## [26.4.16] - 2026-04-16 — Vision 2030
 
 ### Added

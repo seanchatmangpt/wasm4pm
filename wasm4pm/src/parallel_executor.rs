@@ -108,14 +108,20 @@ impl PartialDfg {
                 let mask = bcinr::mask::select_u64(pass, 1, 0);
                 if mask != 0 {
                     *partial.start_counts.entry(col.events[start]).or_insert(0) += 1;
-                    *partial.end_counts.entry(col.events[safe_end - 1]).or_insert(0) += 1;
+                    *partial
+                        .end_counts
+                        .entry(col.events[safe_end - 1])
+                        .or_insert(0) += 1;
                 }
             }
             #[cfg(not(feature = "bcinr"))]
             {
                 if safe_end > start {
                     *partial.start_counts.entry(col.events[start]).or_insert(0) += 1;
-                    *partial.end_counts.entry(col.events[safe_end - 1]).or_insert(0) += 1;
+                    *partial
+                        .end_counts
+                        .entry(col.events[safe_end - 1])
+                        .or_insert(0) += 1;
                 }
             }
         }
@@ -289,9 +295,7 @@ fn process_batch_unrolled(
 
     // Count edges with 4x unrolling (2 per iteration at most)
     for i in 0..events.len().saturating_sub(1) {
-        *edge_counts
-            .entry((events[i], events[i + 1]))
-            .or_insert(0) += 1;
+        *edge_counts.entry((events[i], events[i + 1])).or_insert(0) += 1;
     }
 
     // Mark trace starts/ends
@@ -633,7 +637,6 @@ mod tests {
         assert_eq!(dfg.start_activities.get("A").copied(), Some(1));
         assert_eq!(dfg.end_activities.get("A").copied(), Some(1));
     }
-
 
     #[test]
     fn test_parallel_run_multiple() {

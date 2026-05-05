@@ -1,4 +1,4 @@
-//! Scalability Report Generator — pictl process mining kernel.
+//! Scalability Report Generator — wasm4pm process mining kernel.
 //!
 //! Sweeps batch_size (trace count) from 256 to 8192 in steps of 256 across
 //! three feature distributions: uniform, skewed, adversarial.
@@ -7,16 +7,16 @@
 //! inflection point where throughput growth drops below 10% per step,
 //! and writes three JSON reports to a caller-supplied output directory.
 //!
-//! Run: cargo run -p pictl --example scalability_report --release [output_dir]
+//! Run: cargo run -p wasm4pm-cli --example scalability_report --release [output_dir]
 //!
-//! output_dir defaults to .pictl/benchmarks relative to cwd.
+//! output_dir defaults to .wasm4pm/benchmarks relative to cwd.
 
-use wasm4pm::discovery::discover_dfg;
-use wasm4pm::models::{AttributeValue, Event, EventLog, Trace};
-use wasm4pm::state::{get_or_init_state, StoredObject};
 use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::time::Instant;
+use wasm4pm::discovery::discover_dfg;
+use wasm4pm::models::{AttributeValue, Event, EventLog, Trace};
+use wasm4pm::state::{get_or_init_state, StoredObject};
 
 const ACTIVITY_KEY: &str = "concept:name";
 const TIMESTAMP_KEY: &str = "time:timestamp";
@@ -415,7 +415,7 @@ fn run_sweep<F: Fn(usize) -> EventLog>(generator: F, label: &str) -> Value {
 fn main() {
     let output_dir = std::env::args()
         .nth(1)
-        .unwrap_or_else(|| ".pictl/benchmarks".into());
+        .unwrap_or_else(|| ".wasm4pm/benchmarks".into());
     std::fs::create_dir_all(&output_dir).expect("cannot create output dir");
     let ts = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)

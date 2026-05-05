@@ -12,8 +12,8 @@
 //! All operations use integer arithmetic and LUT-based quantization.
 //! No floating-point operations in the critical path except Bellman alpha.
 
-use crate::{RlAction, RlState};
 use crate::reinforcement::WorkflowAction;
+use crate::{RlAction, RlState};
 
 /// 8-dimensional state space: 5×8×8×4×3×8×3×4 = 460,800 total states
 /// Q-table indexed by u32 state_id (0..460_799)
@@ -33,7 +33,7 @@ struct BellmanTransition {
     state_id: u32,
     action_idx: u8,
     done: bool,
-    _pad: u16,  // Padding for alignment
+    _pad: u16, // Padding for alignment
     reward: f32,
     next_state_id: u32,
 }
@@ -42,24 +42,24 @@ struct BellmanTransition {
 mod perception_lut {
     /// Precomputed multipliers for encoding 8D state to u32 state_id (branchless)
     /// state_id = h*122400 + er*15300 + ac*1912 + sa*456 + d*152 + rr*19 + cs*8 + cp
-    pub const H_MULT: u32 = 122_400;  // 8*8*4*3*8*3*4
-    pub const ER_MULT: u32 = 15_300;  // 8*4*3*8*3*4
-    pub const AC_MULT: u32 = 1_912;   // 4*3*8*3*4
-    pub const SA_MULT: u32 = 456;     // 3*8*3*4
-    pub const D_MULT: u32 = 152;      // 8*3*4
-    pub const RR_MULT: u32 = 19;      // 3*4
-    pub const CS_MULT: u32 = 8;       // 4
+    pub const H_MULT: u32 = 122_400; // 8*8*4*3*8*3*4
+    pub const ER_MULT: u32 = 15_300; // 8*4*3*8*3*4
+    pub const AC_MULT: u32 = 1_912; // 4*3*8*3*4
+    pub const SA_MULT: u32 = 456; // 3*8*3*4
+    pub const D_MULT: u32 = 152; // 8*3*4
+    pub const RR_MULT: u32 = 19; // 3*4
+    pub const CS_MULT: u32 = 8; // 4
     #[allow(dead_code)]
-    pub const CP_MULT: u32 = 1;       // 1
+    pub const CP_MULT: u32 = 1; // 1
 }
 
 /// Circuit breaker states
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 pub enum CircuitState {
-    Closed = 0,      // Normal operation
-    HalfOpen = 1,    // Testing after timeout
-    Open = 2,        // Blocking requests
+    Closed = 0,   // Normal operation
+    HalfOpen = 1, // Testing after timeout
+    Open = 2,     // Blocking requests
 }
 
 impl From<u8> for CircuitState {
@@ -104,7 +104,7 @@ pub struct Decision {
     pub q_value: f32,
     pub guard_allowed: bool,
     pub circuit_allowed: bool,
-    pub agent_confidence: f32,  // LinUCB UCB score (for informational purposes)
+    pub agent_confidence: f32, // LinUCB UCB score (for informational purposes)
 }
 
 /// AutoProcessAgent — branchless autonomic loop
@@ -342,11 +342,7 @@ impl AutoProcessAgent {
     /// For speed, we use precomputed sqrt LUT and estimate visit_count from
     /// Q-value magnitude.
     #[inline(always)]
-    pub fn linucb_ucb_estimate(
-        &self,
-        q_value: f32,
-        features: &[f32; 8],
-    ) -> f32 {
+    pub fn linucb_ucb_estimate(&self, q_value: f32, features: &[f32; 8]) -> f32 {
         // Estimate feature magnitude: L2 norm quantized to [0..127]
         let magnitude_sq: f32 = features.iter().map(|x| x * x).sum();
         let magnitude = magnitude_sq.sqrt();
@@ -455,7 +451,10 @@ impl AutoProcessAgent {
     /// Check if circuit breaker allows request execution
     #[inline(always)]
     pub fn circuit_allows_request(&self) -> bool {
-        matches!(self.circuit_state, CircuitState::Closed | CircuitState::HalfOpen)
+        matches!(
+            self.circuit_state,
+            CircuitState::Closed | CircuitState::HalfOpen
+        )
     }
 
     // =========================================================================
@@ -509,27 +508,34 @@ impl AutoProcessAgent {
             let trans = self.deferred_queue[idx];
 
             let mut max_next_q = f32::NEG_INFINITY;
-            // Unrolled 5-element max reduction
             let next_base = (trans.next_state_id as usize) * ACTION_SPACE_SIZE;
-            if next_base + ACTION_SPACE_SIZE <= QTABLE_SIZE {
-                let s = &self.q_table[next_base..next_base + ACTION_SPACE_SIZE];
-                let m01 = if s[0] > s[1] { s[0] } else { s[1] };
-                let m23 = if s[2] > s[3] { s[2] } else { s[3] };
-                let m = if m01 > m23 { m01 } else { m23 };
-                max_next_q = if m > s[4] { m } else { s[4] };
+
+            // Unsafe: we trust next_state_id is bounds checked during encoding
+            unsafe {
+                if next_base + ACTION_SPACE_SIZE <= QTABLE_SIZE {
+                    let s = self
+                        .q_table
+                        .get_unchecked(next_base..next_base + ACTION_SPACE_SIZE);
+                    let m01 = if s[0] > s[1] { s[0] } else { s[1] };
+                    let m23 = if s[2] > s[3] { s[2] } else { s[3] };
+                    let m = if m01 > m23 { m01 } else { m23 };
+                    max_next_q = if m > s[4] { m } else { s[4] };
+                }
             }
 
-            // Branchless terminal check
-            let target = trans.reward + (1.0 - trans.done as u32 as f32) * self.discount_factor * max_next_q;
+            let target =
+                trans.reward + (1.0 - trans.done as u32 as f32) * self.discount_factor * max_next_q;
 
             let q_idx = (trans.state_id as usize)
                 .wrapping_mul(ACTION_SPACE_SIZE)
                 .wrapping_add(trans.action_idx as usize);
 
-            if q_idx < QTABLE_SIZE {
-                let current_q = self.q_table[q_idx];
-                let delta = target - current_q;
-                self.q_table[q_idx] = current_q + self.learning_rate * delta;
+            unsafe {
+                if q_idx < QTABLE_SIZE {
+                    let current_q = *self.q_table.get_unchecked(q_idx);
+                    let delta = target - current_q;
+                    *self.q_table.get_unchecked_mut(q_idx) = current_q + self.learning_rate * delta;
+                }
             }
         }
         self.queue_head = 0;
@@ -556,16 +562,23 @@ impl AutoProcessAgent {
         next_state_id: u32,
         done: bool,
     ) {
-        // Hoisted bounds + unrolled 5-element max reduction
         let next_base = (next_state_id as usize) * ACTION_SPACE_SIZE;
-        let max_next_q = if next_base + ACTION_SPACE_SIZE <= QTABLE_SIZE {
-            let s = &self.q_table[next_base..next_base + ACTION_SPACE_SIZE];
-            let m01 = if s[0] > s[1] { s[0] } else { s[1] };
-            let m23 = if s[2] > s[3] { s[2] } else { s[3] };
-            let m = if m01 > m23 { m01 } else { m23 };
-            if m > s[4] { m } else { s[4] }
-        } else {
-            0.0
+        let max_next_q = unsafe {
+            if next_base + ACTION_SPACE_SIZE <= QTABLE_SIZE {
+                let s = self
+                    .q_table
+                    .get_unchecked(next_base..next_base + ACTION_SPACE_SIZE);
+                let m01 = if s[0] > s[1] { s[0] } else { s[1] };
+                let m23 = if s[2] > s[3] { s[2] } else { s[3] };
+                let m = if m01 > m23 { m01 } else { m23 };
+                if m > s[4] {
+                    m
+                } else {
+                    s[4]
+                }
+            } else {
+                0.0
+            }
         };
 
         // Branchless terminal check: if done, target = r; else r + γ Q(s', a')
@@ -576,10 +589,12 @@ impl AutoProcessAgent {
             .wrapping_mul(ACTION_SPACE_SIZE)
             .wrapping_add(action_idx);
 
-        if q_idx < QTABLE_SIZE {
-            let current_q = self.q_table[q_idx];
-            let delta = target - current_q;
-            self.q_table[q_idx] = current_q + self.learning_rate * delta;
+        unsafe {
+            if q_idx < QTABLE_SIZE {
+                let current_q = *self.q_table.get_unchecked(q_idx);
+                let delta = target - current_q;
+                *self.q_table.get_unchecked_mut(q_idx) = current_q + self.learning_rate * delta;
+            }
         }
     }
 
@@ -621,22 +636,10 @@ impl AutoProcessAgent {
         // Step 4: OPTIMIZATION — Bellman update (immediate or deferred)
         if self.drain_every == 0 {
             // Immediate update path
-            self.bellman_update_direct(
-                state_id,
-                action.to_index(),
-                reward,
-                next_state_id,
-                done,
-            );
+            self.bellman_update_direct(state_id, action.to_index(), reward, next_state_id, done);
         } else {
             // Deferred queue path
-            self.enqueue_bellman(
-                state_id,
-                action.to_index(),
-                reward,
-                next_state_id,
-                done,
-            );
+            self.enqueue_bellman(state_id, action.to_index(), reward, next_state_id, done);
 
             // Periodic drain check
             self.cycle_mod = self.cycle_mod.wrapping_add(1);
@@ -669,7 +672,7 @@ impl AutoProcessAgent {
     #[cfg(test)]
     pub fn new_immediate() -> Self {
         let mut agent = Self::new();
-        agent.drain_every = 0;  // Immediate mode
+        agent.drain_every = 0; // Immediate mode
         agent
     }
 

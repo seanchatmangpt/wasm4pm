@@ -234,7 +234,10 @@ fn test_short_feature_vector_two_elements() {
     let state_short = rl_state_from_features(&features_short, 1, 0.0);
     let state_padded = RlState::from_features(&features_padded, 1, 0.0);
 
-    assert_eq!(state_short, state_padded, "Short slice should pad with zeros");
+    assert_eq!(
+        state_short, state_padded,
+        "Short slice should pad with zeros"
+    );
 }
 
 #[test]
@@ -291,7 +294,10 @@ fn test_empty_feature_vector_matches_all_zeros() {
     let state_empty = rl_state_from_features(&features_empty, 3, 0.5);
     let state_zeros = RlState::from_features(&features_zeros, 3, 0.5);
 
-    assert_eq!(state_empty, state_zeros, "Empty slice should produce same state as all-zeros");
+    assert_eq!(
+        state_empty, state_zeros,
+        "Empty slice should produce same state as all-zeros"
+    );
 }
 
 #[test]
@@ -336,8 +342,8 @@ fn test_quantization_event_rate_is_monotonic() {
 #[test]
 fn test_quantization_activity_count_is_monotonic() {
     // features[2] maps to activity_count_q via quantize_activity_count
-    let low = 0.05f32;  // 5 activities
-    let mid = 0.30f32;  // 30 activities
+    let low = 0.05f32; // 5 activities
+    let mid = 0.30f32; // 30 activities
     let high = 0.80f32; // 80 activities
 
     let state_low = RlState::from_features(&[0.0, 0.0, low, 0.0, 0.0, 0.0, 0.0, 0.0], 0, 0.0);
@@ -361,9 +367,9 @@ fn test_quantization_activity_count_is_monotonic() {
 #[test]
 fn test_quantization_spc_alerts_is_monotonic() {
     // features[5] maps to spc_alert_level
-    let low = 0.0f32;   // 0 alerts
-    let mid = 0.3f32;   // 3 alerts
-    let high = 0.8f32;  // 8 alerts
+    let low = 0.0f32; // 0 alerts
+    let mid = 0.3f32; // 3 alerts
+    let high = 0.8f32; // 8 alerts
 
     let state_low = RlState::from_features(&[0.0, 0.0, 0.0, 0.0, 0.0, low, 0.0, 0.0], 0, 0.0);
     let state_mid = RlState::from_features(&[0.0, 0.0, 0.0, 0.0, 0.0, mid, 0.0, 0.0], 0, 0.0);
@@ -411,8 +417,8 @@ fn test_quantization_cycle_phase_is_monotonic() {
 #[test]
 fn test_quantization_rework_ratio_is_monotonic() {
     // rework_ratio param maps to rework_ratio_q
-    let low = 0.03f32;  // 3%
-    let mid = 0.30f32;  // 30%
+    let low = 0.03f32; // 3%
+    let mid = 0.30f32; // 30%
     let high = 0.90f32; // 90%
 
     let state_low = RlState::from_features(&[0.0; 8], 0, low);
@@ -461,11 +467,9 @@ fn test_health_level_independent_of_all_feature_values() {
     for health in 0..=4u8 {
         let state = rl_state_from_features(&features, health, 0.5);
         assert_eq!(
-            state.health_level,
-            health,
+            state.health_level, health,
             "health_level should be {} but got {}",
-            health,
-            state.health_level
+            health, state.health_level
         );
     }
 }
@@ -504,8 +508,7 @@ fn test_health_level_roundtrip_all_levels() {
         assert_eq!(
             extracted, health,
             "Roundtrip failed: set health={}, got health={}",
-            health,
-            extracted
+            health, extracted
         );
     }
 }

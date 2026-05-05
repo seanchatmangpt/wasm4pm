@@ -62,7 +62,7 @@ Real Criterion benchmarks (Rust native binary), 4 dataset sizes (100–50K cases
 - ✅ **Fast execution** — most algorithms < 1ms @ 100 cases
 - ✅ **Reproducible results** — median of 7 runs per configuration
 
-**Full benchmark report:** [docs/REAL-BENCHMARK-RESULTS.md](../docs/REAL-BENCHMARK-RESULTS.md)
+**Full benchmark report:** [docs/REAL-BENCHMARK-RESULTS.md](https://github.com/seanchatmangpt/pictl/blob/main/docs/REAL-BENCHMARK-RESULTS.md)
 
 ## Installation
 
@@ -128,14 +128,14 @@ console.log(`DFG: ${result.dfg_handle}  (${result.nodes} nodes, ${result.edges} 
 
 ## Documentation
 
-See [`docs/`](../docs/) for full guides:
+See [`docs/`](https://github.com/seanchatmangpt/pictl/tree/main/docs) for full guides:
 
-- [QUICKSTART.md](../docs/QUICKSTART.md) — 5-minute setup
-- [TUTORIAL.md](../docs/TUTORIAL.md) — real-world workflows (includes IoT streaming tutorial)
-- [API.md](./API.md) — complete function reference
-- [ALGORITHMS.md](./ALGORITHMS.md) — algorithm descriptions
-- [MCP.md](./MCP.md) — Claude integration
-- [FAQ.md](../docs/FAQ.md) — troubleshooting
+- [QUICKSTART.md](https://github.com/seanchatmangpt/pictl/blob/main/docs/QUICKSTART.md) — 5-minute setup
+- [TUTORIAL.md](https://github.com/seanchatmangpt/pictl/blob/main/docs/TUTORIAL.md) — real-world workflows (includes IoT streaming tutorial)
+- [API.md](https://github.com/seanchatmangpt/pictl/blob/main/wasm4pm/API.md) — complete function reference
+- [ALGORITHMS.md](https://github.com/seanchatmangpt/pictl/blob/main/wasm4pm/ALGORITHMS.md) — algorithm descriptions
+- [MCP.md](https://github.com/seanchatmangpt/pictl/blob/main/wasm4pm/MCP.md) — Claude integration
+- [FAQ.md](https://github.com/seanchatmangpt/pictl/blob/main/docs/FAQ.md) — troubleshooting
 
 ## Status
 

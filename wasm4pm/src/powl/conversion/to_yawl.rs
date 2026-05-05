@@ -286,7 +286,7 @@ pub fn to_yawl_xml(arena: &PowlArena, root: u32) -> String {
         r#"<specificationSet xmlns="http://www.yawlfoundation.org/yawlschema" version="6.0">"#,
         r#"  <specification uri="powl_workflow">"#,
         r#"    <meta>"#,
-        r#"      <creator>pictl</creator>"#,
+        r#"      <creator>wasm4pm</creator>"#,
         r#"      <description>Generated from POWL model</description>"#,
         r#"    </meta>"#,
         r#"    <net id="mainNet">"#,

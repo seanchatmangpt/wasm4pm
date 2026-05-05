@@ -1223,20 +1223,18 @@ impl PatternFactory {
     /// Validate pattern specification
     pub fn validate(pattern_type: PatternType, config: &PatternConfig) -> Result<(), String> {
         match pattern_type {
-            PatternType::ParallelSplit | PatternType::MultiChoice => {
-                if config.max_instances == 0 || config.max_instances > 64 {
-                    return Err("Invalid max_instances for split pattern".to_string());
-                }
+            PatternType::ParallelSplit | PatternType::MultiChoice
+                if (config.max_instances == 0 || config.max_instances > 64) =>
+            {
+                return Err("Invalid max_instances for split pattern".to_string());
             }
-            PatternType::Synchronization | PatternType::StructuredSyncMerge => {
-                if config.join_threshold == 0 || config.join_threshold > 64 {
-                    return Err("Invalid join_threshold for sync pattern".to_string());
-                }
+            PatternType::Synchronization | PatternType::StructuredSyncMerge
+                if (config.join_threshold == 0 || config.join_threshold > 64) =>
+            {
+                return Err("Invalid join_threshold for sync pattern".to_string());
             }
-            PatternType::Recursion => {
-                if !config.flags.is_cancellable() {
-                    return Err("Recursion patterns must be cancellable".to_string());
-                }
+            PatternType::Recursion if !config.flags.is_cancellable() => {
+                return Err("Recursion patterns must be cancellable".to_string());
             }
             _ => {}
         }

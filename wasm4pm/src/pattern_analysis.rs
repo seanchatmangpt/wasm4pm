@@ -247,14 +247,12 @@ fn detect_choice_points(traces: &[Vec<String>]) -> (usize, f64) {
 /// Confidence is [0, 1] where higher means more confident in the selection
 fn select_pattern(chars: &StructureCharacteristics) -> (PatternType, f64) {
     // Scoring for each pattern type
-    let sequence_score = if chars.concurrency_score < 0.2
-        && !chars.has_repetitions
-        && chars.choice_score < 0.3
-    {
-        0.9
-    } else {
-        0.0
-    };
+    let sequence_score =
+        if chars.concurrency_score < 0.2 && !chars.has_repetitions && chars.choice_score < 0.3 {
+            0.9
+        } else {
+            0.0
+        };
 
     let parallel_score = chars.concurrency_score;
     let loop_score = if chars.has_repetitions {

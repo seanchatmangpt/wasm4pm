@@ -20,6 +20,9 @@
 
 Process mining extracts actionable insights from event logs by discovering process models, detecting deviations, and analyzing performance bottlenecks. **pictl** makes this accessible to JavaScript developers with near-native performance, plus professional CLI tools, HTTP APIs, and observability for enterprise deployments.
 
+### Version 26.4.28 (April 2026)
+**High-Performance Rust CLI:** New `pictl` Rust CLI for system diagnostics, process discovery, and conformance checking. Replaces the legacy TypeScript CLI with nanosecond-latency architecture. Includes `doctor`, `wizard`, `telco`, and `mining` commands.
+
 ### Version 26.4.15 (April 2026)
 **Van der Aalst Agents:** 8 autonomous adversarial agents for manufacturing integrity validation using process mining principles (soundness, conformance, multi-surface corroboration). New `pictl agent` commands: execute, list, audit, status, register.
 

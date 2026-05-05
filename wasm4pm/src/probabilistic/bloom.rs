@@ -91,7 +91,8 @@ impl<const BITS: usize> BloomFilter<BITS> {
             #[cfg(feature = "bcinr")]
             {
                 // Ensure word bounds in a branchless way
-                let word = bcinr::mask::select_u64((word < Self::WORDS) as u64, word as u64, 0) as usize;
+                let word =
+                    bcinr::mask::select_u64((word < Self::WORDS) as u64, word as u64, 0) as usize;
                 self.bits[word] |= 1u64 << bit_in_word;
             }
             #[cfg(not(feature = "bcinr"))]
@@ -110,12 +111,13 @@ impl<const BITS: usize> BloomFilter<BITS> {
     #[inline]
     pub fn contains(&self, hash: u64) -> bool {
         let (h1, h2) = Self::double_hash(hash);
-        let mut possible = 1u64;
+        let _possible = 1u64;
         for i in 0..self.num_hashes {
             let bit = Self::nth_hash(h1, h2, i);
             let word = bit / 64;
             let bit_in_word = bit % 64;
-            let exists = (word < Self::WORDS && (self.bits[word] & (1u64 << bit_in_word)) != 0) as u64;
+            let exists =
+                (word < Self::WORDS && (self.bits[word] & (1u64 << bit_in_word)) != 0) as u64;
 
             #[cfg(feature = "bcinr")]
             {

@@ -95,7 +95,11 @@ impl SimdPetriNet {
         })
     }
 
-    pub fn replay_trace(&self, activities: impl Iterator<Item = u32>, vocab: &[&str]) -> TraceReplayResult {
+    pub fn replay_trace(
+        &self,
+        activities: impl Iterator<Item = u32>,
+        vocab: &[&str],
+    ) -> TraceReplayResult {
         let mut marking = [0u32; 64];
         let mut consumed: u32 = 0;
         let mut produced: u32 = 0;
@@ -203,10 +207,10 @@ impl SimdPetriNet {
 
     pub fn replay_log(&self, col: &ColumnarLog) -> LogReplayResult {
         let mut trace_results = Vec::with_capacity(col.trace_offsets.len().saturating_sub(1));
-        
+
         for t in 0..col.trace_offsets.len().saturating_sub(1) {
-            let start = col.trace_offsets[t] as usize;
-            let end = col.trace_offsets[t + 1] as usize;
+            let start = col.trace_offsets[t];
+            let end = col.trace_offsets[t + 1];
             let activities = col.events[start..end].iter().copied();
             trace_results.push(self.replay_trace(activities, &col.vocab));
         }
@@ -276,8 +280,8 @@ pub fn replay_log(log_handle: &str, activity_key: &str) -> String {
             let mut seen: FxHashMap<u32, usize> = FxHashMap::default();
 
             for t in 0..col.trace_offsets.len().saturating_sub(1) {
-                let start = col.trace_offsets[t] as usize;
-                let end = col.trace_offsets[t + 1] as usize;
+                let start = col.trace_offsets[t];
+                let end = col.trace_offsets[t + 1];
                 for i in start..end {
                     *seen.entry(col.events[i]).or_insert(0) += 1;
                 }

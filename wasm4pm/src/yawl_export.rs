@@ -204,7 +204,7 @@ impl<'a> YawlExporter<'a> {
             "      <title>{}</title>\n",
             escape_xml(&self.config.spec_name)
         ));
-        xml.push_str("      <creator>pictl/wasm4pm</creator>\n");
+        xml.push_str("      <creator>wasm4pm</creator>\n");
         xml.push_str("      <description>Exported from POWL model</description>\n");
         xml.push_str("    </meta>\n");
 

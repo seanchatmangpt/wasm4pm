@@ -1,4 +1,4 @@
-//! agentic module — Lawful agentic control primitives for pictl
+//! agentic module — Lawful agentic control primitives for wasm4pm
 //!
 //! This module provides type-first, trait-first shells for role selection, task decomposition,
 //! handoffs, topology selection, evidence sufficiency checking, escalation, artifact dispatch,
@@ -21,18 +21,18 @@
 //! - SPC drift: Western Electric rules trigger escalation
 //! - Receipt chains: EvidenceEnvelope carries receipt refs through pipeline
 
-pub mod types;
-pub mod traits;
-pub mod role_selector;
-pub mod task_decomposer;
-pub mod handoff;
-pub mod topology;
-pub mod evidence_sufficiency;
-pub mod escalation;
 pub mod artifact_dispatch;
-pub mod prompt_bindings;
 pub mod counterfactual;
+pub mod escalation;
+pub mod evidence_sufficiency;
+pub mod handoff;
 pub mod jtbd;
 pub mod prelude;
+pub mod prompt_bindings;
+pub mod role_selector;
+pub mod task_decomposer;
+pub mod topology;
+pub mod traits;
+pub mod types;
 
 pub use prelude::*;

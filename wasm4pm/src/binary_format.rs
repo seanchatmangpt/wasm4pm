@@ -742,66 +742,58 @@ fn parse_xes_to_event_log(content: &str) -> Result<EventLog, String> {
         let second = if bytes.len() > 1 { bytes[1] } else { 0 };
 
         match second {
-            b't' => {
-                if trimmed.starts_with("<trace>") || trimmed.starts_with("<trace ") {
-                    current_trace = Some(Trace {
-                        attributes: HashMap::new(),
-                        events: Vec::with_capacity(20),
-                    });
+            b't' if (trimmed.starts_with("<trace>") || trimmed.starts_with("<trace ")) => {
+                current_trace = Some(Trace {
+                    attributes: HashMap::new(),
+                    events: Vec::with_capacity(20),
+                });
+            }
+            b'e' if (trimmed.starts_with("<event>") || trimmed.starts_with("<event ")) => {
+                current_event = Some(Event {
+                    attributes: HashMap::new(),
+                });
+            }
+            b's' if trimmed.len() > 8
+                && &bytes[..8] == b"<string "
+                && bytes[bytes.len() - 1] == b'>' =>
+            {
+                if let (Some(key), Some(value)) = (
+                    extract_attr_simple(trimmed, b"key"),
+                    extract_attr_simple(trimmed, b"value"),
+                ) {
+                    insert_attr_simple(
+                        &mut current_event,
+                        &mut current_trace,
+                        key.to_string(),
+                        AttributeValue::String(value.to_string()),
+                    );
                 }
             }
-            b'e' => {
-                if trimmed.starts_with("<event>") || trimmed.starts_with("<event ") {
-                    current_event = Some(Event {
-                        attributes: HashMap::new(),
-                    });
+            b'd' if trimmed.len() > 6 && &bytes[..6] == b"<date " => {
+                if let (Some(key), Some(value)) = (
+                    extract_attr_simple(trimmed, b"key"),
+                    extract_attr_simple(trimmed, b"value"),
+                ) {
+                    insert_attr_simple(
+                        &mut current_event,
+                        &mut current_trace,
+                        key.to_string(),
+                        AttributeValue::Date(value.to_string()),
+                    );
                 }
             }
-            b's' => {
-                if trimmed.len() > 8 && &bytes[..8] == b"<string " && bytes[bytes.len() - 1] == b'>'
-                {
-                    if let (Some(key), Some(value)) = (
-                        extract_attr_simple(trimmed, b"key"),
-                        extract_attr_simple(trimmed, b"value"),
-                    ) {
+            b'i' if trimmed.len() > 5 && &bytes[..5] == b"<int " => {
+                if let (Some(key), Some(value_str)) = (
+                    extract_attr_simple(trimmed, b"key"),
+                    extract_attr_simple(trimmed, b"value"),
+                ) {
+                    if let Ok(value) = value_str.parse::<i64>() {
                         insert_attr_simple(
                             &mut current_event,
                             &mut current_trace,
                             key.to_string(),
-                            AttributeValue::String(value.to_string()),
+                            AttributeValue::Int(value),
                         );
-                    }
-                }
-            }
-            b'd' => {
-                if trimmed.len() > 6 && &bytes[..6] == b"<date " {
-                    if let (Some(key), Some(value)) = (
-                        extract_attr_simple(trimmed, b"key"),
-                        extract_attr_simple(trimmed, b"value"),
-                    ) {
-                        insert_attr_simple(
-                            &mut current_event,
-                            &mut current_trace,
-                            key.to_string(),
-                            AttributeValue::Date(value.to_string()),
-                        );
-                    }
-                }
-            }
-            b'i' => {
-                if trimmed.len() > 5 && &bytes[..5] == b"<int " {
-                    if let (Some(key), Some(value_str)) = (
-                        extract_attr_simple(trimmed, b"key"),
-                        extract_attr_simple(trimmed, b"value"),
-                    ) {
-                        if let Ok(value) = value_str.parse::<i64>() {
-                            insert_attr_simple(
-                                &mut current_event,
-                                &mut current_trace,
-                                key.to_string(),
-                                AttributeValue::Int(value),
-                            );
-                        }
                     }
                 }
             }

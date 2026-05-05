@@ -93,7 +93,15 @@ fn test_all_five_agents_work_in_loop() {
         orch.switch_agent(*agent_type);
         for i in 0..10 {
             let spc_alerts = if i % 3 == 0 { 2 } else { 0 };
-            let (action, reward) = orch.run_cycle(&features, &state, &next_state, spc_alerts, true, true, false);
+            let (action, reward) = orch.run_cycle(
+                &features,
+                &state,
+                &next_state,
+                spc_alerts,
+                true,
+                true,
+                false,
+            );
             assert!(
                 !action.is_empty(),
                 "Agent {:?} should produce an action",
@@ -244,7 +252,11 @@ fn test_g3_degraded_to_recovery_reward_increases() {
     let mut current_health: u8 = 3;
     for _ in 0..10 {
         let state = make_test_state(current_health);
-        let next_health = if current_health > 0 { current_health - 1 } else { 0 };
+        let next_health = if current_health > 0 {
+            current_health - 1
+        } else {
+            0
+        };
         let next_state = make_test_state(next_health);
         let (_, reward) = orch.run_cycle(&features, &state, &next_state, 0, true, true, false);
         phase2_rewards.push(reward);

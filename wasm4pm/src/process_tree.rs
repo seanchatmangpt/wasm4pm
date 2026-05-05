@@ -136,7 +136,8 @@ pub fn validate_process_tree(tree_json: &str) -> Result<JsValue, JsValue> {
     }
 
     let validated = validate(&v, 0).map_err(|e| crate::error::js_val(&e))?;
-    let out = serde_json::to_string(&validated).map_err(|e| crate::error::js_val(&e.to_string()))?;
+    let out =
+        serde_json::to_string(&validated).map_err(|e| crate::error::js_val(&e.to_string()))?;
     Ok(crate::error::js_val(&out))
 }
 

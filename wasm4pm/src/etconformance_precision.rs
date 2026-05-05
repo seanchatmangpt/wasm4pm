@@ -14,7 +14,7 @@
 //!
 //! The result is clamped to [0.0, 1.0]. An empty log yields precision = 1.0.
 //!
-//! Adapted from pm4wasm `conformance::precision` to pictl's `models::PetriNet`.
+//! Adapted from pm4wasm `conformance::precision` to wasm4pm's `models::PetriNet`.
 
 use crate::models::EventLog;
 use crate::models::PetriNet;
@@ -23,7 +23,7 @@ use std::collections::HashMap;
 use wasm_bindgen::prelude::*;
 
 // ---------------------------------------------------------------------------
-// Marking type for pictl models::PetriNet
+// Marking type for wasm4pm models::PetriNet
 // ---------------------------------------------------------------------------
 
 /// A marking maps place IDs to token counts (usize to match models::PetriNet).
@@ -147,7 +147,7 @@ fn fire_silent_enabled(net: &PetriNet, marking: &mut Marking) {
 
 /// Extract the activity name from a trace event.
 ///
-/// pictl's `Event` stores attributes in a `HashMap<String, AttributeValue>`.
+/// wasm4pm's `Event` stores attributes in a `HashMap<String, AttributeValue>`.
 /// The activity is stored under `activity_key` (typically "concept:name").
 fn event_activity(event: &crate::models::Event, activity_key: &str) -> Option<String> {
     event

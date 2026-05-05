@@ -60,7 +60,8 @@ pub fn score_anomaly(model_handle: &str, trace_json: &str) -> Result<JsValue, Js
                 "threshold": threshold
             });
             Ok(crate::error::js_val(
-                &serde_json::to_string(&result).map_err(|e| crate::error::js_val(&e.to_string()))?,
+                &serde_json::to_string(&result)
+                    .map_err(|e| crate::error::js_val(&e.to_string()))?,
             ))
         }
         Some(_) => Err(crate::error::js_val("Handle is not a DirectlyFollowsGraph")),
@@ -135,7 +136,8 @@ pub fn compute_boundary_coverage(
                 "normal_completions": normal_count
             });
             Ok(crate::error::js_val(
-                &serde_json::to_string(&result).map_err(|e| crate::error::js_val(&e.to_string()))?,
+                &serde_json::to_string(&result)
+                    .map_err(|e| crate::error::js_val(&e.to_string()))?,
             ))
         }
         Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
@@ -191,7 +193,8 @@ pub fn compute_trace_likelihood(model_handle: &str, trace_json: &str) -> Result<
                 "normalized": normalized
             });
             Ok(crate::error::js_val(
-                &serde_json::to_string(&result).map_err(|e| crate::error::js_val(&e.to_string()))?,
+                &serde_json::to_string(&result)
+                    .map_err(|e| crate::error::js_val(&e.to_string()))?,
             ))
         }
         Some(_) => Err(crate::error::js_val("Handle is not an NGramPredictor")),

@@ -20,7 +20,7 @@ use wasm_bindgen::prelude::*;
 ///
 /// **Invariants:**
 /// - `model_hash` is always a 128-character hex string (BLAKE3 hex-64)
-/// - `deterministic` is const true for all pictl algorithms
+/// - `deterministic` is const true for all wasm4pm algorithms
 /// - `algorithm_version` follows format: "CRATE_VERSION.algorithm_variant"
 /// - `latency_class` is derived from `algorithm_duration_ms`
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -31,7 +31,7 @@ pub struct RawModelOutput {
     /// BLAKE3 hash of model JSON (64 hex characters, no uppercase)
     pub model_hash: String,
 
-    /// Const true — all pictl algorithms are deterministic
+    /// Const true — all wasm4pm algorithms are deterministic
     pub deterministic: bool,
 
     /// Algorithm version string: "CRATE_VERSION.variant"

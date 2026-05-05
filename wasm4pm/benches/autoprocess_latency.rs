@@ -10,9 +10,9 @@
 //! Budget: 34 nanoseconds per cycle (target: 30.6ns with 10% margin)
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use std::time::Duration;
 use wasm4pm::autoprocess::AutoProcessAgent;
 use wasm4pm::RlState;
-use std::time::Duration;
 
 // =========================================================================
 // Benchmark: Perception (Encode 8D state to state_id)
@@ -54,15 +54,13 @@ fn bench_decision_select_action(c: &mut Criterion) {
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(10000);
 
+    let mut agent = AutoProcessAgent::new();
+
     group.bench_function("select_action_epsilon_greedy", |b| {
-        b.iter_batched(
-            || AutoProcessAgent::new(),
-            |mut agent| {
-                let state_id = 12345u32;
-                agent.select_action_epsilon_greedy(black_box(state_id), black_box(None))
-            },
-            criterion::BatchSize::SmallInput,
-        )
+        b.iter(|| {
+            let state_id = 12345u32;
+            agent.select_action_epsilon_greedy(black_box(state_id), black_box(None))
+        })
     });
 
     group.finish();
@@ -123,15 +121,14 @@ fn bench_protection_circuit_advance(c: &mut Criterion) {
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(10000);
 
+    let mut agent = AutoProcessAgent::new();
+
     group.bench_function("advance_circuit_breaker", |b| {
-        b.iter_batched(
-            || AutoProcessAgent::new(),
-            |mut agent| {
-                agent.advance_circuit_breaker();
-                agent
-            },
-            criterion::BatchSize::SmallInput,
-        )
+        b.iter(|| {
+            for _ in 0..1000 {
+                black_box(&mut agent).advance_circuit_breaker();
+            }
+        })
     });
 
     group.finish();
@@ -162,49 +159,18 @@ fn bench_optimization_bellman_update(c: &mut Criterion) {
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(10000);
 
+    let mut agent = AutoProcessAgent::new();
+
     group.bench_function("bellman_update_direct", |b| {
-        b.iter_batched(
-            || AutoProcessAgent::new(),
-            |mut agent| {
-                agent.bellman_update_direct(
-                    black_box(100u32),
-                    black_box(0usize),
-                    black_box(0.5),
-                    black_box(200u32),
-                    black_box(false),
-                );
-                agent
-            },
-            criterion::BatchSize::SmallInput,
-        )
-    });
-
-    group.finish();
-}
-
-// =========================================================================
-// Benchmark: Deferred Bellman queue drain
-// =========================================================================
-
-fn bench_drain_bellman_queue(c: &mut Criterion) {
-    let mut group = c.benchmark_group("autoprocess/deferred_drain");
-    group.measurement_time(Duration::from_secs(5));
-    group.warm_up_time(Duration::from_secs(2));
-    group.sample_size(1000);
-
-    group.bench_function("drain_128_transitions", |b| {
-        b.iter_batched(
-            || {
-                let mut agent = AutoProcessAgent::new();
-                agent.set_drain_cadence(128);
-                agent
-            },
-            |mut agent| {
-                agent.drain_bellman_queue();
-                agent
-            },
-            criterion::BatchSize::SmallInput,
-        )
+        b.iter(|| {
+            agent.bellman_update_direct(
+                black_box(100u32),
+                black_box(0usize),
+                black_box(0.5),
+                black_box(200u32),
+                black_box(false),
+            );
+        })
     });
 
     group.finish();
@@ -289,48 +255,45 @@ fn bench_full_cycle(c: &mut Criterion) {
     // Budget target: 34ns per cycle, with 10% margin → 30.6ns target
     group.significance_level(0.05);
 
+    let mut agent = AutoProcessAgent::new();
+
     group.bench_function("run_cycle_nominal", |b| {
-        b.iter_batched(
-            || AutoProcessAgent::new(),
-            |mut agent| {
-                let state = RlState {
-                    health_level: 2,
-                    event_rate_q: 3,
-                    activity_count_q: 4,
-                    spc_alert_level: 1,
-                    drift_status: 1,
-                    rework_ratio_q: 2,
-                    circuit_state: 0,
-                    cycle_phase: 1,
-                };
+        b.iter(|| {
+            let state = RlState {
+                health_level: 2,
+                event_rate_q: 3,
+                activity_count_q: 4,
+                spc_alert_level: 1,
+                drift_status: 1,
+                rework_ratio_q: 2,
+                circuit_state: 0,
+                cycle_phase: 1,
+            };
 
-                let next_state = RlState {
-                    health_level: 2,
-                    event_rate_q: 3,
-                    activity_count_q: 4,
-                    spc_alert_level: 1,
-                    drift_status: 1,
-                    rework_ratio_q: 2,
-                    circuit_state: 0,
-                    cycle_phase: 2,
-                };
+            let next_state = RlState {
+                health_level: 2,
+                event_rate_q: 3,
+                activity_count_q: 4,
+                spc_alert_level: 1,
+                drift_status: 1,
+                rework_ratio_q: 2,
+                circuit_state: 0,
+                cycle_phase: 2,
+            };
 
-                let features = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8];
-                let reward = 0.5;
+            let features = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8];
+            let reward = 0.5;
 
-                let _decision = agent.run_cycle(
-                    black_box(&state),
-                    black_box(&features),
-                    black_box(reward),
-                    black_box(&next_state),
-                    black_box(false),
-                    black_box(true),
-                    black_box(0u8),
-                );
-                agent
-            },
-            criterion::BatchSize::SmallInput,
-        )
+            agent.run_cycle(
+                black_box(&state),
+                black_box(&features),
+                black_box(reward),
+                black_box(&next_state),
+                black_box(false),
+                black_box(true),
+                black_box(0u8),
+            )
+        })
     });
 
     group.finish();
@@ -464,7 +427,6 @@ criterion_group!(
         bench_protection_circuit_advance,
         bench_protection_circuit_check,
         bench_optimization_bellman_update,
-        bench_drain_bellman_queue,
         bench_amortized_cycle,
         bench_full_cycle
 );

@@ -121,28 +121,26 @@ pub fn load_eventlog_from_xes(content: &str) -> Result<String, JsValue> {
         let second = if bytes.len() > 1 { bytes[1] } else { 0 };
 
         match second {
-            b't' => {
+            b't'
                 // <trace> or </trace> — the </trace> case has second byte '/'
                 // We reach here only for <trace…>
-                if trimmed.starts_with("<trace>") || trimmed.starts_with("<trace ") {
+                if (trimmed.starts_with("<trace>") || trimmed.starts_with("<trace ")) => {
                     current_trace = Some(Trace {
                         attributes: HashMap::new(),
                         // Pre-allocate for a typical trace length to avoid reallocations
                         events: Vec::with_capacity(20),
                     });
                 }
-            }
-            b'e' => {
-                if trimmed.starts_with("<event>") || trimmed.starts_with("<event ") {
+            b'e'
+                if (trimmed.starts_with("<event>") || trimmed.starts_with("<event ")) => {
                     current_event = Some(Event {
                         attributes: HashMap::new(),
                     });
                 }
-            }
-            b's' => {
+            b's'
                 // <string key="…" value="…"/>
                 if trimmed.len() > 8 && &bytes[..8] == b"<string " && bytes[bytes.len() - 1] == b'>'
-                {
+                => {
                     if let (Some(key), Some(value)) = (
                         extract_attr(trimmed, b"key"),
                         extract_attr(trimmed, b"value"),
@@ -155,10 +153,9 @@ pub fn load_eventlog_from_xes(content: &str) -> Result<String, JsValue> {
                         );
                     }
                 }
-            }
-            b'd' => {
+            b'd'
                 // <date key="…" value="…"/>
-                if trimmed.len() > 6 && &bytes[..6] == b"<date " {
+                if trimmed.len() > 6 && &bytes[..6] == b"<date " => {
                     if let (Some(key), Some(value)) = (
                         extract_attr(trimmed, b"key"),
                         extract_attr(trimmed, b"value"),
@@ -171,10 +168,9 @@ pub fn load_eventlog_from_xes(content: &str) -> Result<String, JsValue> {
                         );
                     }
                 }
-            }
-            b'i' => {
+            b'i'
                 // <int key="…" value="…"/>
-                if trimmed.len() > 5 && &bytes[..5] == b"<int " {
+                if trimmed.len() > 5 && &bytes[..5] == b"<int " => {
                     if let (Some(key), Some(value_str)) = (
                         extract_attr(trimmed, b"key"),
                         extract_attr(trimmed, b"value"),
@@ -189,7 +185,6 @@ pub fn load_eventlog_from_xes(content: &str) -> Result<String, JsValue> {
                         }
                     }
                 }
-            }
             b'/' => {
                 // Closing tags: </trace> or </event>
                 // Third byte tells us which

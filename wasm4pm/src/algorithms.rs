@@ -3,7 +3,7 @@ use crate::models::*;
 use crate::state::{get_or_init_state, StoredObject};
 use crate::utilities::to_js_str;
 use rustc_hash::FxHashMap;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::collections::{HashMap, HashSet};
 use wasm_bindgen::prelude::*;
@@ -27,10 +27,7 @@ pub struct FootprintMatrix {
 
 /// Discover the footprint matrix from an event log
 #[wasm_bindgen]
-pub fn discover_footprints(
-    eventlog_handle: &str,
-    activity_key: &str,
-) -> Result<JsValue, JsValue> {
+pub fn discover_footprints(eventlog_handle: &str, activity_key: &str) -> Result<JsValue, JsValue> {
     get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
             let col = log.to_columnar(activity_key);
@@ -210,12 +207,13 @@ fn alpha_plus_plus_inner(
                     new_a.sort();
                     // Check: all pairs in new_a are in # relation
                     let a_ok = (0..new_a.len()).all(|p| {
-                        (p + 1..new_a.len()).all(|q| {
-                            never_follow(new_a[p].as_str(), new_a[q].as_str())
-                        })
+                        (p + 1..new_a.len())
+                            .all(|q| never_follow(new_a[p].as_str(), new_a[q].as_str()))
                     });
                     // Check: all a ∈ new_a causally precede all b ∈ b1
-                    let ab_ok = new_a.iter().all(|a| b1.iter().all(|b| causal(a.as_str(), b.as_str())));
+                    let ab_ok = new_a
+                        .iter()
+                        .all(|a| b1.iter().all(|b| causal(a.as_str(), b.as_str())));
                     if a_ok && ab_ok {
                         let candidate = (new_a, b1.clone());
                         if !candidates.contains(&candidate) && !to_add.contains(&candidate) {
@@ -236,12 +234,13 @@ fn alpha_plus_plus_inner(
                     new_b.sort();
                     // Check: all pairs in new_b are in # relation
                     let b_ok = (0..new_b.len()).all(|p| {
-                        (p + 1..new_b.len()).all(|q| {
-                            never_follow(new_b[p].as_str(), new_b[q].as_str())
-                        })
+                        (p + 1..new_b.len())
+                            .all(|q| never_follow(new_b[p].as_str(), new_b[q].as_str()))
                     });
                     // Check: all a ∈ a1 causally precede all b ∈ new_b
-                    let ab_ok = a1.iter().all(|a| new_b.iter().all(|b| causal(a.as_str(), b.as_str())));
+                    let ab_ok = a1
+                        .iter()
+                        .all(|a| new_b.iter().all(|b| causal(a.as_str(), b.as_str())));
                     if b_ok && ab_ok {
                         let candidate = (a1.clone(), new_b);
                         if !candidates.contains(&candidate) && !to_add.contains(&candidate) {
@@ -285,10 +284,18 @@ fn alpha_plus_plus_inner(
     let mut start_acts: HashSet<String> = HashSet::new();
     let mut end_acts: HashSet<String> = HashSet::new();
     for trace in &log.traces {
-        if let Some(AttributeValue::String(first)) = trace.events.first().and_then(|e| e.attributes.get(activity_key)) {
+        if let Some(AttributeValue::String(first)) = trace
+            .events
+            .first()
+            .and_then(|e| e.attributes.get(activity_key))
+        {
             start_acts.insert(first.clone());
         }
-        if let Some(AttributeValue::String(last)) = trace.events.last().and_then(|e| e.attributes.get(activity_key)) {
+        if let Some(AttributeValue::String(last)) = trace
+            .events
+            .last()
+            .and_then(|e| e.attributes.get(activity_key))
+        {
             end_acts.insert(last.clone());
         }
     }
@@ -297,10 +304,22 @@ fn alpha_plus_plus_inner(
     let mut pn = PetriNet::new();
 
     // Source and sink places
-    pn.places.push(PetriNetPlace { id: "p_source".to_string(), label: "source".to_string(), marking: Some(1) });
-    pn.places.push(PetriNetPlace { id: "p_sink".to_string(), label: "sink".to_string(), marking: None });
+    pn.places.push(PetriNetPlace {
+        id: "p_source".to_string(),
+        label: "source".to_string(),
+        marking: Some(1),
+    });
+    pn.places.push(PetriNetPlace {
+        id: "p_sink".to_string(),
+        label: "sink".to_string(),
+        marking: None,
+    });
     pn.initial_marking.insert("p_source".to_string(), 1);
-    pn.final_markings.push({ let mut m = HashMap::new(); m.insert("p_sink".to_string(), 1); m });
+    pn.final_markings.push({
+        let mut m = HashMap::new();
+        m.insert("p_sink".to_string(), 1);
+        m
+    });
 
     // Transitions for each activity
     for activity in &activities {
@@ -313,26 +332,46 @@ fn alpha_plus_plus_inner(
 
     // Source → start-activity transitions
     for act in &start_acts {
-        pn.arcs.push(PetriNetArc { from: "p_source".to_string(), to: format!("t_{}", act), weight: Some(1) });
+        pn.arcs.push(PetriNetArc {
+            from: "p_source".to_string(),
+            to: format!("t_{}", act),
+            weight: Some(1),
+        });
     }
 
     // End-activity transitions → sink
     for act in &end_acts {
-        pn.arcs.push(PetriNetArc { from: format!("t_{}", act), to: "p_sink".to_string(), weight: Some(1) });
+        pn.arcs.push(PetriNetArc {
+            from: format!("t_{}", act),
+            to: "p_sink".to_string(),
+            weight: Some(1),
+        });
     }
 
     // Places for each maximal (A,B) candidate
     for (idx, (a_set, b_set)) in maximal.iter().enumerate() {
         let place_id = format!("p_place_{}", idx);
         let label = format!("({} → {})", a_set.join(","), b_set.join(","));
-        pn.places.push(PetriNetPlace { id: place_id.clone(), label, marking: None });
+        pn.places.push(PetriNetPlace {
+            id: place_id.clone(),
+            label,
+            marking: None,
+        });
         // Arcs: all a ∈ A → place
         for a in a_set.iter() {
-            pn.arcs.push(PetriNetArc { from: format!("t_{}", a), to: place_id.clone(), weight: Some(1) });
+            pn.arcs.push(PetriNetArc {
+                from: format!("t_{}", a),
+                to: place_id.clone(),
+                weight: Some(1),
+            });
         }
         // Arcs: place → all b ∈ B
         for b in b_set.iter() {
-            pn.arcs.push(PetriNetArc { from: place_id.clone(), to: format!("t_{}", b), weight: Some(1) });
+            pn.arcs.push(PetriNetArc {
+                from: place_id.clone(),
+                to: format!("t_{}", b),
+                weight: Some(1),
+            });
         }
     }
 
@@ -345,8 +384,16 @@ fn alpha_plus_plus_inner(
             marking: None,
         });
         // t_act → loop_place → t_act  (self-loop in the net)
-        pn.arcs.push(PetriNetArc { from: format!("t_{}", act), to: loop_place_id.clone(), weight: Some(1) });
-        pn.arcs.push(PetriNetArc { from: loop_place_id.clone(), to: format!("t_{}", act), weight: Some(1) });
+        pn.arcs.push(PetriNetArc {
+            from: format!("t_{}", act),
+            to: loop_place_id.clone(),
+            weight: Some(1),
+        });
+        pn.arcs.push(PetriNetArc {
+            from: loop_place_id.clone(),
+            to: format!("t_{}", act),
+            weight: Some(1),
+        });
     }
 
     // L2L short-loop places: for each (a,b) ∈ L2L, add a place p_l2l_{a}_{b}
@@ -354,7 +401,11 @@ fn alpha_plus_plus_inner(
     let mut seen_l2l: HashSet<String> = HashSet::new();
     for (a, b) in &l2l {
         // Avoid duplicating the symmetric pair
-        let key = if a < b { format!("{}_{}", a, b) } else { format!("{}_{}", b, a) };
+        let key = if a < b {
+            format!("{}_{}", a, b)
+        } else {
+            format!("{}_{}", b, a)
+        };
         if seen_l2l.insert(key) {
             // Forward arc: t_a → place → t_b is handled by maximal candidate places.
             // Back-arc: t_b → p_back_{a}_{b} → t_a
@@ -364,8 +415,16 @@ fn alpha_plus_plus_inner(
                 label: format!("back({},{})", a, b),
                 marking: None,
             });
-            pn.arcs.push(PetriNetArc { from: format!("t_{}", b), to: back_id.clone(), weight: Some(1) });
-            pn.arcs.push(PetriNetArc { from: back_id.clone(), to: format!("t_{}", a), weight: Some(1) });
+            pn.arcs.push(PetriNetArc {
+                from: format!("t_{}", b),
+                to: back_id.clone(),
+                weight: Some(1),
+            });
+            pn.arcs.push(PetriNetArc {
+                from: back_id.clone(),
+                to: format!("t_{}", a),
+                weight: Some(1),
+            });
         }
     }
 
@@ -390,9 +449,7 @@ pub fn discover_alpha_plus_plus(
 ) -> Result<JsValue, JsValue> {
     // Compute inside closure (no store — avoids mutex re-entry), store outside.
     let pn = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
-            alpha_plus_plus_inner(log, activity_key, min_support)
-        }
+        Some(StoredObject::EventLog(log)) => alpha_plus_plus_inner(log, activity_key, min_support),
         Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
         None => Err(wasm_err(
             codes::INVALID_HANDLE,
@@ -576,13 +633,28 @@ mod tests {
         let pn = alpha_plus_plus_inner(&log, "concept:name", 0.0).expect("alpha++ should succeed");
 
         // Should have transitions for A, B, C
-        assert!(pn.transitions.iter().any(|t| t.label == "A"), "missing transition A");
-        assert!(pn.transitions.iter().any(|t| t.label == "B"), "missing transition B");
-        assert!(pn.transitions.iter().any(|t| t.label == "C"), "missing transition C");
+        assert!(
+            pn.transitions.iter().any(|t| t.label == "A"),
+            "missing transition A"
+        );
+        assert!(
+            pn.transitions.iter().any(|t| t.label == "B"),
+            "missing transition B"
+        );
+        assert!(
+            pn.transitions.iter().any(|t| t.label == "C"),
+            "missing transition C"
+        );
 
         // Should have source and sink places
-        assert!(pn.places.iter().any(|p| p.id == "p_source"), "missing source place");
-        assert!(pn.places.iter().any(|p| p.id == "p_sink"), "missing sink place");
+        assert!(
+            pn.places.iter().any(|p| p.id == "p_source"),
+            "missing source place"
+        );
+        assert!(
+            pn.places.iter().any(|p| p.id == "p_sink"),
+            "missing sink place"
+        );
     }
 
     #[test]
@@ -594,8 +666,11 @@ mod tests {
         // L1L should have detected A as a self-loop activity
         // There should be a self-loop place for A
         let has_loop_place = pn.places.iter().any(|p| p.label.contains("loop(A)"));
-        assert!(has_loop_place, "Expected a self-loop place for activity A; places: {:?}",
-            pn.places.iter().map(|p| &p.label).collect::<Vec<_>>());
+        assert!(
+            has_loop_place,
+            "Expected a self-loop place for activity A; places: {:?}",
+            pn.places.iter().map(|p| &p.label).collect::<Vec<_>>()
+        );
     }
 
     #[test]
@@ -609,11 +684,15 @@ mod tests {
         let pn = alpha_plus_plus_inner(&log, "concept:name", 0.0).expect("alpha++ should succeed");
 
         // Should have a back-arc place for the L2L pair (A,B) or (B,A)
-        let has_back_place = pn.places.iter().any(|p| {
-            p.label.contains("back(A,B)") || p.label.contains("back(B,A)")
-        });
-        assert!(has_back_place, "Expected a back-arc place for L2L pair (A,B); places: {:?}",
-            pn.places.iter().map(|p| &p.label).collect::<Vec<_>>());
+        let has_back_place = pn
+            .places
+            .iter()
+            .any(|p| p.label.contains("back(A,B)") || p.label.contains("back(B,A)"));
+        assert!(
+            has_back_place,
+            "Expected a back-arc place for L2L pair (A,B); places: {:?}",
+            pn.places.iter().map(|p| &p.label).collect::<Vec<_>>()
+        );
 
         // Should still have transitions for A, B, C
         assert!(pn.transitions.iter().any(|t| t.label == "A"));

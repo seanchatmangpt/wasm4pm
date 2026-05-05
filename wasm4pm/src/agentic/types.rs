@@ -1,6 +1,6 @@
 use core::fmt;
+use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
-use serde::{Serialize, Deserialize};
 
 pub type ReceiptId = String;
 pub type TaskId = String;

@@ -124,8 +124,7 @@ pub fn score_log_anomalies(
                 let steps = acts.len() - 1;
                 let mut cost = 0.0_f64;
                 for i in 0..steps {
-                    let from_total =
-                        source_totals.get(acts[i]).copied().unwrap_or(1).max(1);
+                    let from_total = source_totals.get(acts[i]).copied().unwrap_or(1).max(1);
                     let freq = freq_map.get(&(acts[i], acts[i + 1])).copied().unwrap_or(0);
                     cost += if freq == 0 {
                         MISSING_EDGE_COST

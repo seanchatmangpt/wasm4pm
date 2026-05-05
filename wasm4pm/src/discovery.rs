@@ -450,7 +450,9 @@ pub fn discover_declare(eventlog_handle: &str, activity_key: &str) -> Result<JsV
                         let activity_id = col.events[start + pos];
                         profile.mark_activity(activity_id as usize, pos);
                         if pos < (end - start - 1) {
-                            profile.immediate_follows.insert((activity_id, col.events[start + pos + 1]));
+                            profile
+                                .immediate_follows
+                                .insert((activity_id, col.events[start + pos + 1]));
                         }
                     }
                 }
@@ -481,7 +483,7 @@ pub fn discover_declare(eventlog_handle: &str, activity_key: &str) -> Result<JsV
                         confidence: 1.0,
                     });
                 } else if (1.0 - support) >= min_support {
-                     model.constraints.push(DeclareConstraint {
+                    model.constraints.push(DeclareConstraint {
                         template: "Absence".to_string(),
                         activities: vec![col.vocab[a].to_string()],
                         support: 1.0 - support,
@@ -490,7 +492,9 @@ pub fn discover_declare(eventlog_handle: &str, activity_key: &str) -> Result<JsV
                 }
 
                 for b in 0..n {
-                    if a == b { continue; }
+                    if a == b {
+                        continue;
+                    }
 
                     let mut both_count = 0;
                     let mut a_before_b_count = 0;
@@ -501,7 +505,7 @@ pub fn discover_declare(eventlog_handle: &str, activity_key: &str) -> Result<JsV
                     for profile in &traces_profiles {
                         let has_a = profile.first_positions[a] != u8::MAX;
                         let has_b = profile.first_positions[b] != u8::MAX;
-                        
+
                         if has_a && has_b {
                             both_count += 1;
                             if profile.appears_before(a, b) {
@@ -524,18 +528,24 @@ pub fn discover_declare(eventlog_handle: &str, activity_key: &str) -> Result<JsV
                         if coex_support >= min_support {
                             model.constraints.push(DeclareConstraint {
                                 template: "CoExistence".to_string(),
-                                activities: vec![col.vocab[a].to_string(), col.vocab[b].to_string()],
+                                activities: vec![
+                                    col.vocab[a].to_string(),
+                                    col.vocab[b].to_string(),
+                                ],
                                 support: coex_support,
                                 confidence: 1.0,
                             });
                         }
-                        
+
                         // NotCoExistence
                         let not_coex_support = (total_cases - both_count) as f64 / total_f64;
                         if not_coex_support >= 0.9 {
-                             model.constraints.push(DeclareConstraint {
+                            model.constraints.push(DeclareConstraint {
                                 template: "NotCoExistence".to_string(),
-                                activities: vec![col.vocab[a].to_string(), col.vocab[b].to_string()],
+                                activities: vec![
+                                    col.vocab[a].to_string(),
+                                    col.vocab[b].to_string(),
+                                ],
                                 support: not_coex_support,
                                 confidence: 1.0,
                             });
@@ -548,7 +558,10 @@ pub fn discover_declare(eventlog_handle: &str, activity_key: &str) -> Result<JsV
                         if conf >= min_confidence {
                             model.constraints.push(DeclareConstraint {
                                 template: "Response".to_string(),
-                                activities: vec![col.vocab[a].to_string(), col.vocab[b].to_string()],
+                                activities: vec![
+                                    col.vocab[a].to_string(),
+                                    col.vocab[b].to_string(),
+                                ],
                                 support: a_before_b_count as f64 / total_f64,
                                 confidence: conf,
                             });
@@ -559,9 +572,12 @@ pub fn discover_declare(eventlog_handle: &str, activity_key: &str) -> Result<JsV
                     if activity_counts[b] > 0 {
                         let conf = a_before_b_count as f64 / activity_counts[b] as f64;
                         if conf >= min_confidence {
-                             model.constraints.push(DeclareConstraint {
+                            model.constraints.push(DeclareConstraint {
                                 template: "Precedence".to_string(),
-                                activities: vec![col.vocab[a].to_string(), col.vocab[b].to_string()],
+                                activities: vec![
+                                    col.vocab[a].to_string(),
+                                    col.vocab[b].to_string(),
+                                ],
                                 support: a_before_b_count as f64 / total_f64,
                                 confidence: conf,
                             });
@@ -575,7 +591,10 @@ pub fn discover_declare(eventlog_handle: &str, activity_key: &str) -> Result<JsV
                         if conf_a >= min_confidence && conf_b >= min_confidence {
                             model.constraints.push(DeclareConstraint {
                                 template: "Succession".to_string(),
-                                activities: vec![col.vocab[a].to_string(), col.vocab[b].to_string()],
+                                activities: vec![
+                                    col.vocab[a].to_string(),
+                                    col.vocab[b].to_string(),
+                                ],
                                 support: a_before_b_count as f64 / total_f64,
                                 confidence: (conf_a + conf_b) / 2.0,
                             });
@@ -588,7 +607,10 @@ pub fn discover_declare(eventlog_handle: &str, activity_key: &str) -> Result<JsV
                         if conf >= min_confidence {
                             model.constraints.push(DeclareConstraint {
                                 template: "ChainResponse".to_string(),
-                                activities: vec![col.vocab[a].to_string(), col.vocab[b].to_string()],
+                                activities: vec![
+                                    col.vocab[a].to_string(),
+                                    col.vocab[b].to_string(),
+                                ],
                                 support: a_immediately_before_b_count as f64 / total_f64,
                                 confidence: conf,
                             });
@@ -599,9 +621,12 @@ pub fn discover_declare(eventlog_handle: &str, activity_key: &str) -> Result<JsV
                     if activity_counts[b] > 0 {
                         let conf = a_immediately_before_b_count as f64 / activity_counts[b] as f64;
                         if conf >= min_confidence {
-                             model.constraints.push(DeclareConstraint {
+                            model.constraints.push(DeclareConstraint {
                                 template: "ChainPrecedence".to_string(),
-                                activities: vec![col.vocab[a].to_string(), col.vocab[b].to_string()],
+                                activities: vec![
+                                    col.vocab[a].to_string(),
+                                    col.vocab[b].to_string(),
+                                ],
                                 support: a_immediately_before_b_count as f64 / total_f64,
                                 confidence: conf,
                             });

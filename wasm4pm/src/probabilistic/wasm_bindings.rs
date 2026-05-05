@@ -70,8 +70,9 @@ pub fn streaming_log_add_trace(handle: usize, activities: &JsValue) -> Result<()
             crate::error::js_val(&format!("Invalid StreamingLog handle: {}", handle))
         })?;
 
-        let arr: Vec<String> = serde_wasm_bindgen::from_value(activities.clone())
-            .map_err(|e| crate::error::js_val(&format!("Failed to parse activities array: {}", e)))?;
+        let arr: Vec<String> = serde_wasm_bindgen::from_value(activities.clone()).map_err(|e| {
+            crate::error::js_val(&format!("Failed to parse activities array: {}", e))
+        })?;
 
         let refs: Vec<&str> = arr.iter().map(|s| s.as_str()).collect();
         slog.add_trace(&refs);

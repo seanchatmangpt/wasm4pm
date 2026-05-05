@@ -22,8 +22,8 @@
 
 use naga::front::wgsl;
 use naga::valid::{Capabilities, ValidationFlags, Validator};
-use wasm4pm::ml::linucb::{LinUCBAgent, N_ACTIONS, N_FEATURES};
 use std::time::Instant;
+use wasm4pm::ml::linucb::{LinUCBAgent, N_ACTIONS, N_FEATURES};
 
 // Path to the WGSL kernel source
 const WGSL_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/src/gpu/linucb_kernel.wgsl");
