@@ -458,6 +458,150 @@ where $q=100$ and $f_\text{ant}$ is the fitness of the ant's discovered model.
 \end{equation}
 
 % ─────────────────────────────────────────────────────────────────────────────
+\section{Heuristic Miner Dependency Measure}
+% Source: \texttt{wasm4pm/src/advanced\_algorithms.rs}, lines 77--88
+% ─────────────────────────────────────────────────────────────────────────────
+
+The Heuristic Miner filters DFG edges by a dependency measure that balances
+forward and reverse follow counts. For activity pair $(a,b)$:
+
+\paragraph{Follows and precedes counts (single-pass):}
+\begin{align}
+  |a \!\to\! b| &= \texttt{follows}[(a,b)] \\
+  |b \!\to\! a| &= \texttt{precedes}[(b,a)]
+\end{align}
+
+\paragraph{Dependency measure:}
+\begin{equation}
+  \operatorname{dep}(a,b)
+  = \frac{|a \!\to\! b| - |b \!\to\! a|}{|a \!\to\! b| + |b \!\to\! a| + 1}
+\end{equation}
+
+The $+1$ in the denominator makes division unconditionally safe (no branch
+needed), as noted in the source comment. The edge $(a \to b)$ is retained if
+and only if
+\begin{equation}
+  \operatorname{dep}(a,b) \;\geq\; \theta
+\end{equation}
+where $\theta \in (-1, 1)$ is the caller-supplied \texttt{dependency\_threshold}.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Resource Prediction: M/M/1 Queue and UCB1 Bandit}
+% Source: \texttt{wasm4pm/src/prediction\_resource.rs}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\subsection{M/M/1 Queue Waiting Time}
+
+Given arrival rate $\lambda$ (\texttt{arrival\_rate}) and service rate $\mu$
+(\texttt{service\_rate}):
+
+\begin{align}
+  \rho &= \frac{\lambda}{\mu} \tag{utilization} \\[6pt]
+  W    &= \frac{1/\mu}{1 - \rho}, \qquad \rho < 1 \tag{mean waiting time}
+\end{align}
+
+When $\rho \geq 1$ the queue is unstable; the implementation clamps $\rho$ to
+$0.99$ before applying the formula.
+
+\subsection{UCB1 Arm Selection}
+
+For $n$ resource arms indexed $i = 1,\ldots,n$, with empirical mean reward
+$\hat{\mu}_i$, pull count $n_i$, and total pulls $N = \sum_j n_j$:
+
+\paragraph{Forced exploration:}
+If any arm satisfies $n_i = 0$, that arm is selected immediately (no score
+computed).
+
+\paragraph{UCB1 index:}
+\begin{equation}
+  \text{ucb}_i = \hat{\mu}_i + c \sqrt{\frac{\ln N}{n_i}}, \qquad c = \sqrt{2}
+\end{equation}
+
+The arm with the largest $\text{ucb}_i$ is recommended.
+
+\subsection{Intervention Ranking Score}
+
+Interventions are scored by a convex combination of utility and time-decaying
+exploration bonus. For the $i$-th candidate intervention (0-indexed):
+
+\begin{equation}
+  s_i = e_w \cdot u_i + (1 - e_w) \cdot \min\!\left(\frac{1}{\sqrt{i+1}},\;1\right)
+\end{equation}
+
+where $u_i$ is the utility score and $e_w \in [0,1]$ is the
+\texttt{exploration\_weight} parameter controlling the exploit/explore balance.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{AutoML Configuration Selection}
+% Source: \texttt{packages/config/src/validation/presets.ts}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\subsection{Hardcoded Rule-Based Preset Selection (\texttt{suggestPreset})}
+
+Given a set of constraints $C = (\texttt{maxMemoryMb},\;\texttt{maxLatencyMs},\;
+\texttt{requiredAlgorithms})$:
+
+\begin{enumerate}
+  \item If $\texttt{maxMemoryMb} < 1000$ $\Rightarrow$ \texttt{fast}
+  \item Else if $\texttt{requiredAlgorithms}$ contains \texttt{genetic\_algorithm}
+        or \texttt{ilp} $\Rightarrow$ \texttt{quality}
+  \item Else if $\texttt{maxLatencyMs} < 200$ $\Rightarrow$ \texttt{fast}
+  \item Else if $\texttt{maxLatencyMs} \leq 30000$ $\Rightarrow$ \texttt{balanced}
+  \item Default $\Rightarrow$ \texttt{balanced}
+\end{enumerate}
+
+\subsection{Benchmark-Driven Scoring (\texttt{suggestPresetFromBenchmarks})}
+
+For each candidate algorithm $a$ with quality score $q_a \in [0,100]$ and speed
+score $v_a \in [0,100]$ (higher speed score = slower):
+
+\paragraph{Composite score:}
+\begin{equation}
+  S_a = 0.6\,q_a + 0.4\,(100 - v_a)
+\end{equation}
+
+\paragraph{Latency filter:}
+Let $\tau_a$ be the benchmark median latency in ms per 100 events
+(\texttt{median\_ms\_per\_100\_events}), and $L$ be the caller-supplied log
+size hint (\texttt{logSizeHint}). The algorithm passes the filter if and only if
+
+\begin{equation}
+  \hat{t}_a = \tau_a \cdot \frac{L}{100} \;\leq\; T_{\max}
+\end{equation}
+
+where $T_{\max}$ is \texttt{maxLatencyMs}. Algorithms failing the filter are
+excluded from the candidate set.
+
+\paragraph{Profile compatibility filter:}
+Algorithms are further restricted to those whose \texttt{deploymentProfiles}
+array includes the target \texttt{DeploymentProfile}. If no algorithm survives
+all filters, \texttt{suggestPresetFromBenchmarks} falls back to the plain
+\texttt{suggestPreset} rules.
+
+\paragraph{Speed-score to preset mapping:}
+The selected algorithm's $v_a$ determines the returned preset:
+\begin{equation}
+  \text{preset} =
+  \begin{cases}
+    \texttt{fast}     & v_a \leq 30 \\
+    \texttt{balanced} & 30 < v_a \leq 55 \\
+    \texttt{quality}  & v_a > 55
+  \end{cases}
+\end{equation}
+
+\subsection{Optimal Config Generation (\texttt{generateOptimalConfig})}
+
+\texttt{generateOptimalConfig} chains the above into a single pass:
+\begin{enumerate}
+  \item Run \texttt{suggestPresetFromBenchmarks} to select preset $p^*$ and
+        top-scoring algorithm $a^*$.
+  \item Retrieve base config $\mathbf{c}_{p^*}$ from \texttt{getPresetConfig}$(p^*)$.
+  \item Override \texttt{algorithm.name} $\leftarrow a^*$,
+        \texttt{algorithm.parameters} $\leftarrow$ defaults for $a^*$.
+  \item Return $(\mathbf{c}_{p^*},\,a^*,\,p^*,\,S_{a^*})$.
+\end{enumerate}
+
+% ─────────────────────────────────────────────────────────────────────────────
 \section{Summary of Constants}
 % ─────────────────────────────────────────────────────────────────────────────
 
@@ -486,6 +630,13 @@ Confidence size saturation & 10 & \texttt{prediction\_remaining\_time.rs} \\
 Confidence floor & 0.6 (size), 0.4 (precision) & \texttt{prediction\_remaining\_time.rs} \\
 Normal CDF $p_1$ & 0.2316419 & \texttt{spc.rs} \\
 Normal CDF $p_2$ & 0.319381530 & \texttt{spc.rs} \\
+Heuristic dep.\ denom.\ offset & 1.0 & \texttt{advanced\_algorithms.rs} \\
+UCB1 exploration $c$ & $\sqrt{2}$ & \texttt{prediction\_resource.rs} \\
+M/M/1 stability cap $\rho$ & 0.99 & \texttt{prediction\_resource.rs} \\
+AutoML quality weight & 0.6 & \texttt{presets.ts} \\
+AutoML speed weight & 0.4 & \texttt{presets.ts} \\
+AutoML fast speed ceiling & 30 & \texttt{presets.ts} \\
+AutoML balanced speed ceiling & 55 & \texttt{presets.ts} \\
 \bottomrule
 \end{tabular}
 \caption{Hardcoded constants in the wasm4pm Rust implementation.}
