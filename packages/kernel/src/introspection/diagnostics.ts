@@ -358,6 +358,160 @@ export function getDiagnostic(
 }
 
 /**
+ * Diagnose a general CLI or kernel error and return actionable guidance.
+ *
+ * Pattern-matches on error message content to identify the error type and
+ * return specific root causes and suggestions.
+ *
+ * @example
+ * ```typescript
+ * try {
+ *   await kernel.run('dfg', handle);
+ * } catch (err) {
+ *   const diag = diagnoseError(err);
+ *   console.error(formatDiagnostic(diag));
+ * }
+ * ```
+ */
+export function diagnoseError(error: unknown): DiagnosticError {
+  const msg = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+
+  if (msg.includes('wasm') && (msg.includes('init') || msg.includes('load') || msg.includes('instantiat'))) {
+    return {
+      message: 'WASM initialization failed',
+      rootCauses: [
+        'WASM binary not built — run `npm run build:wasm` in the wasm4pm/ directory',
+        'Incompatible Node.js version — requires Node 18+',
+        'pkg/ directory missing or stale — rebuild with wasm-pack',
+      ],
+      suggestions: [
+        'Run `cd wasm4pm && npm run build` to rebuild the WASM module',
+        'Check `node --version` — minimum Node.js 18.0.0 required',
+        'Verify `wasm4pm/pkg/wasm4pm_bg.wasm` exists after build',
+        'Run `wpm doctor` for a full 17-check environment diagnostic',
+      ],
+    };
+  }
+
+  if ((msg.includes('not found') || msg.includes('unknown')) && msg.includes('algorithm')) {
+    return {
+      message: 'Algorithm not found',
+      rootCauses: [
+        'Algorithm ID may be misspelled',
+        'Algorithm is not available in the current deployment profile',
+        'Algorithm requires a feature flag not compiled into this WASM build',
+      ],
+      suggestions: [
+        'Run `wpm status` to list available algorithms for your profile',
+        'Check the algorithm ID spelling against the registry (e.g. "heuristic_miner" not "heuristic")',
+        'Use `listAlgorithmsByProfile("browser")` to see available algorithms',
+        'Try a simpler algorithm first: "dfg" is available in all profiles',
+      ],
+    };
+  }
+
+  if (msg.includes('config') && (msg.includes('invalid') || msg.includes('missing') || msg.includes('not found'))) {
+    return {
+      message: 'Configuration error',
+      rootCauses: [
+        'wasm4pm.toml not found in the current directory',
+        'Required field missing from configuration file',
+        'ENV variable override has invalid value',
+      ],
+      suggestions: [
+        'Run `wpm init` to create a default wasm4pm.toml in the current directory',
+        'Check that `source.path` points to an existing .xes file',
+        'Validate configuration with `wpm validate`',
+        'See ENV variable reference: WASM4PM_PROFILE, WASM4PM_ALGORITHM, WASM4PM_OUTPUT_FORMAT',
+      ],
+    };
+  }
+
+  if ((msg.includes('not found') || msg.includes('enoent') || msg.includes('no such file')) && (msg.includes('.xes') || msg.includes('source') || msg.includes('log'))) {
+    return {
+      message: 'Source event log not found',
+      rootCauses: [
+        'Path in source.path does not exist',
+        'Relative path resolved from wrong working directory',
+        'File permissions deny read access',
+      ],
+      suggestions: [
+        'Use an absolute path for source.path in wasm4pm.toml',
+        'Run the command from the directory containing the .xes file',
+        'Check file permissions with `ls -la <path>`',
+        'Use `loadSampleDataset("simple")` for a built-in test log',
+      ],
+    };
+  }
+
+  if (msg.includes('memory') && (msg.includes('exceed') || msg.includes('out of') || msg.includes('heap'))) {
+    return {
+      message: 'WASM memory limit exceeded',
+      rootCauses: [
+        'Event log is too large for the current deployment profile',
+        'Algorithm memory usage exceeds WASM linear memory limit (typically 4GB max)',
+        'Multiple large handles retained in memory simultaneously',
+      ],
+      suggestions: [
+        'Use a lighter algorithm: "dfg" or "process_skeleton" use minimal memory',
+        'Switch to the "stream" execution profile for memory-bounded processing',
+        'Free unused handles with `kernel.freeHandle(handle)` before running',
+        'Use the "fog" or "cloud" deployment profile for larger logs',
+      ],
+    };
+  }
+
+  if (msg.includes('algorithm') && msg.includes('fail')) {
+    return {
+      message: 'Algorithm execution failed',
+      rootCauses: [
+        'Algorithm parameter is out of valid range',
+        'Event log has no traces or is malformed',
+        'Activity key does not match any event attributes',
+      ],
+      suggestions: [
+        'Validate the event log with `wpm validate -i <log.xes>`',
+        'Check algorithm parameters against valid ranges in the registry metadata',
+        'Use the default activity key "concept:name" unless your log uses a different attribute',
+        'Try the "dfg" algorithm to verify the log parses correctly',
+      ],
+    };
+  }
+
+  if (msg.includes('conformance') && (msg.includes('fail') || msg.includes('mismatch') || msg.includes('fitness'))) {
+    return {
+      message: 'Conformance check failed',
+      rootCauses: [
+        'Process model does not fit the observed event log (fitness < 0.85)',
+        'Log contains activities not present in the model',
+        'Model is too restrictive for the actual process behaviour',
+      ],
+      suggestions: [
+        'Run `wpm quality -i <log.xes>` to see fitness, precision, and generalization scores',
+        'Rediscover the model from the same log to check for model/log divergence',
+        'Use a less restrictive algorithm (heuristic_miner) to allow more flexible conformance',
+        'Check for rework or loop activities that the model may not capture',
+      ],
+    };
+  }
+
+  // Generic fallback
+  return {
+    message: error instanceof Error ? error.message : String(error),
+    rootCauses: [
+      'Unexpected error — the specific cause could not be automatically determined',
+      'Environment configuration may be incomplete',
+      'A recent code change may have introduced a regression',
+    ],
+    suggestions: [
+      'Run `wpm doctor --verbose` for a full environment diagnostic',
+      'Check the error stack trace for more specific information',
+      'Search the issue tracker or documentation for this error message',
+    ],
+  };
+}
+
+/**
  * Format diagnostic for console output.
  *
  * @param diagnostic - Diagnostic error

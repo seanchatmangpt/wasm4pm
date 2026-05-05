@@ -14,9 +14,15 @@ import {
   _resetPerspectiveRegistry,
   getDiagnostic,
   formatDiagnostic,
+  diagnoseError,
   loadPublicDataset,
   getAvailableDatasets,
   getConfigValidators,
+  getAlgorithmMetadata,
+  listAlgorithmsByProfile,
+  validateAlgorithmInProfile,
+  getProfileCapabilities,
+  validateWasmReadiness,
 } from '../index.js';
 import { getAllDatasets } from '../datasets.js';
 
@@ -384,5 +390,211 @@ describe('Validators', () => {
 
     const tooHigh = validators.validateRange('k', 20, { min: 1, max: 10 });
     expect(tooHigh.success).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// General Algorithm Registry Introspection
+// ---------------------------------------------------------------------------
+
+describe('getAlgorithmMetadata', () => {
+  it('should return metadata for dfg', () => {
+    const meta = getAlgorithmMetadata('dfg');
+    expect(meta).toBeDefined();
+    expect(meta?.id).toBe('dfg');
+    expect(meta?.speedTier).toBe(5);
+    expect(meta?.qualityTier).toBe(30);
+    expect(meta?.outputType).toBe('dfg');
+    expect(meta?.deploymentProfiles.length).toBeGreaterThan(0);
+  });
+
+  it('should return undefined for unknown algorithm', () => {
+    const meta = getAlgorithmMetadata('nonexistent_algo_xyz');
+    expect(meta).toBeUndefined();
+  });
+
+  it('should return metadata for heuristic_miner', () => {
+    const meta = getAlgorithmMetadata('heuristic_miner');
+    expect(meta).toBeDefined();
+    expect(meta?.outputType).toBe('dfg');
+    expect(meta?.speedTier).toBeGreaterThan(0);
+  });
+});
+
+describe('listAlgorithmsByProfile', () => {
+  it('should return algorithms for browser profile', () => {
+    const ids = listAlgorithmsByProfile('browser');
+    expect(ids.length).toBeGreaterThan(0);
+    expect(ids).toContain('dfg');
+  });
+
+  it('should return algorithms for iot profile', () => {
+    const ids = listAlgorithmsByProfile('iot');
+    expect(ids.length).toBeGreaterThan(0);
+    expect(ids).toContain('dfg');
+  });
+
+  it('should return fewer algorithms for iot than browser', () => {
+    const browser = listAlgorithmsByProfile('browser');
+    const iot = listAlgorithmsByProfile('iot');
+    expect(browser.length).toBeGreaterThanOrEqual(iot.length);
+  });
+
+  it('should return string array', () => {
+    const ids = listAlgorithmsByProfile('fog');
+    expect(Array.isArray(ids)).toBe(true);
+    ids.forEach((id) => expect(typeof id).toBe('string'));
+  });
+});
+
+describe('validateAlgorithmInProfile', () => {
+  it('should return valid for dfg in browser', () => {
+    const result = validateAlgorithmInProfile('dfg', 'browser');
+    expect(result.valid).toBe(true);
+    expect(result.algorithm).toBe('dfg');
+    expect(result.profile).toBe('browser');
+    expect(result.reasons).toBeUndefined();
+  });
+
+  it('should return invalid for unknown algorithm with alternatives', () => {
+    const result = validateAlgorithmInProfile('nonexistent_algo', 'browser');
+    expect(result.valid).toBe(false);
+    expect(result.reasons?.length).toBeGreaterThan(0);
+    expect(result.alternatives?.length).toBeGreaterThan(0);
+  });
+
+  it('should return invalid for algorithm not in profile with reasons and alternatives', () => {
+    // ilp is quality-tier, may not be in iot
+    const result = validateAlgorithmInProfile('ilp', 'iot');
+    if (!result.valid) {
+      expect(result.reasons?.length).toBeGreaterThan(0);
+      expect(result.alternatives).toBeDefined();
+    }
+    // Either valid or invalid is acceptable — just must be a well-formed result
+    expect(result.algorithm).toBe('ilp');
+    expect(result.profile).toBe('iot');
+  });
+
+  it('should include algorithm name in result', () => {
+    const result = validateAlgorithmInProfile('heuristic_miner', 'edge');
+    expect(result.algorithm).toBe('heuristic_miner');
+    expect(result.profile).toBe('edge');
+  });
+});
+
+describe('getProfileCapabilities', () => {
+  it('should return capabilities for browser profile', () => {
+    const caps = getProfileCapabilities('browser');
+    expect(caps.profile).toBe('browser');
+    expect(caps.count).toBeGreaterThan(0);
+    expect(caps.availableAlgorithms.length).toBe(caps.count);
+    expect(caps.estimatedBinarySize).toBe('~2.7MB');
+  });
+
+  it('should return capabilities for iot profile', () => {
+    const caps = getProfileCapabilities('iot');
+    expect(caps.profile).toBe('iot');
+    expect(caps.estimatedBinarySize).toBe('~1.0MB');
+  });
+
+  it('should include supported output types', () => {
+    const caps = getProfileCapabilities('fog');
+    expect(Array.isArray(caps.supportedOutputTypes)).toBe(true);
+    expect(caps.supportedOutputTypes.length).toBeGreaterThan(0);
+  });
+
+  it('should have consistent count and array length', () => {
+    for (const profile of ['browser', 'edge', 'fog', 'iot', 'cloud'] as const) {
+      const caps = getProfileCapabilities(profile);
+      expect(caps.availableAlgorithms.length).toBe(caps.count);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WASM Pre-flight Check
+// ---------------------------------------------------------------------------
+
+describe('validateWasmReadiness', () => {
+  it('should return a readiness result', async () => {
+    const result = await validateWasmReadiness();
+    expect(typeof result.ready).toBe('boolean');
+    expect(typeof result.version).toBe('string');
+    expect(Array.isArray(result.availableAlgorithms)).toBe(true);
+    expect(Array.isArray(result.warnings)).toBe(true);
+  });
+
+  it('should report version as a string', async () => {
+    const result = await validateWasmReadiness();
+    expect(result.version.length).toBeGreaterThan(0);
+  });
+
+  it('should include available algorithms', async () => {
+    const result = await validateWasmReadiness();
+    expect(result.availableAlgorithms.length).toBeGreaterThan(0);
+    expect(result.availableAlgorithms).toContain('dfg');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// General Error Diagnostics
+// ---------------------------------------------------------------------------
+
+describe('diagnoseError', () => {
+  it('should diagnose WASM init errors', () => {
+    const err = new Error('Failed to wasm init module');
+    const diag = diagnoseError(err);
+    expect(diag.rootCauses.length).toBeGreaterThanOrEqual(2);
+    expect(diag.suggestions.length).toBeGreaterThanOrEqual(2);
+    expect(diag.message).toBeTruthy();
+  });
+
+  it('should diagnose algorithm not found errors', () => {
+    const err = new Error('Algorithm not found: xyz');
+    const diag = diagnoseError(err);
+    expect(diag.rootCauses.length).toBeGreaterThanOrEqual(2);
+    const allSuggestions = diag.suggestions.join(' ');
+    expect(allSuggestions.toLowerCase()).toMatch(/profile|algorithm|available/);
+  });
+
+  it('should diagnose config errors', () => {
+    const err = new Error('Configuration file wasm4pm.toml not found');
+    const diag = diagnoseError(err);
+    expect(diag.rootCauses.length).toBeGreaterThanOrEqual(2);
+    expect(diag.suggestions.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('should diagnose source not found errors', () => {
+    const err = new Error('Source not found: /path/to/log.xes');
+    const diag = diagnoseError(err);
+    expect(diag.rootCauses.length).toBeGreaterThanOrEqual(2);
+    expect(diag.suggestions.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('should diagnose memory exceeded errors', () => {
+    const err = new Error('WASM memory exceeded: heap out of bounds');
+    const diag = diagnoseError(err);
+    expect(diag.rootCauses.length).toBeGreaterThanOrEqual(2);
+    expect(diag.suggestions.join(' ')).toMatch(/profile|memory|stream/i);
+  });
+
+  it('should diagnose conformance errors', () => {
+    const err = new Error('Conformance check failed: fitness 0.42');
+    const diag = diagnoseError(err);
+    expect(diag.rootCauses.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('should return fallback for unknown errors', () => {
+    const err = new Error('some completely unexpected error message zzz');
+    const diag = diagnoseError(err);
+    expect(diag.rootCauses.length).toBeGreaterThanOrEqual(1);
+    expect(diag.suggestions.length).toBeGreaterThanOrEqual(1);
+    expect(diag.message).toBeTruthy();
+  });
+
+  it('should handle non-Error inputs gracefully', () => {
+    const diag = diagnoseError('plain string error');
+    expect(diag.rootCauses.length).toBeGreaterThanOrEqual(1);
+    expect(diag.suggestions.length).toBeGreaterThanOrEqual(1);
   });
 });

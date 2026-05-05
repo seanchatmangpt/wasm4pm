@@ -12,7 +12,20 @@
  * - rl-agents: RL agent metadata and LinUCB debugging (when available)
  */
 
-// Algorithm discovery
+// General algorithm registry introspection
+export {
+  getAlgorithmMetadata,
+  listAlgorithmsByProfile,
+  validateAlgorithmInProfile,
+  getProfileCapabilities,
+} from './general.js';
+export type { ValidationResult, ProfileCapabilities } from './general.js';
+
+// WASM pre-flight check
+export { validateWasmReadiness } from './preflight.js';
+export type { WasmReadinessResult } from './preflight.js';
+
+// ML algorithm discovery
 export { getMlRegistry, _resetMlRegistry } from './algorithms.js';
 export type { MlAlgorithmMetadata, AlgorithmParameter, MlAlgorithmId } from './algorithms.js';
 
@@ -21,7 +34,7 @@ export { getPerspectiveRegistry, _resetPerspectiveRegistry } from './perspective
 export type { PerspectiveMetadata } from './perspectives.js';
 
 // Diagnostics and error suggestions
-export { DiagnosticsEngine, getDiagnostic, formatDiagnostic } from './diagnostics.js';
+export { DiagnosticsEngine, getDiagnostic, formatDiagnostic, diagnoseError } from './diagnostics.js';
 export type { DiagnosticError } from './diagnostics.js';
 
 // Sample datasets
