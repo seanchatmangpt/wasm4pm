@@ -265,7 +265,7 @@ pub fn filter_log_by_activity(
         .store_object(StoredObject::EventLog(filtered))
         .map_err(|_e| js_val("Failed to store filtered log"))?;
 
-    to_js(&json!({
+    to_js_str(&json!({
         "handle": handle,
         "trace_count": trace_count,
         "event_count": event_count,
@@ -305,7 +305,7 @@ pub fn filter_log_by_trace_length(
         .store_object(StoredObject::EventLog(filtered))
         .map_err(|_e| js_val("Failed to store filtered log"))?;
 
-    to_js(&json!({
+    to_js_str(&json!({
         "handle": handle,
         "trace_count": trace_count,
         "event_count": event_count,

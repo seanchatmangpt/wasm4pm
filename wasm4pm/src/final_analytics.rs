@@ -1,6 +1,6 @@
 use crate::models::*;
 use crate::state::{get_or_init_state, StoredObject};
-use crate::utilities::to_js;
+use crate::utilities::to_js_str;
 use hashbrown::HashMap;
 use itertools::Itertools;
 use rustc_hash::FxHashMap;
@@ -59,7 +59,7 @@ pub fn analyze_variant_complexity(
                 1.0
             };
 
-            to_js(&json!({
+            to_js_str(&json!({
                 "total_variants": variants.len(),
                 "entropy": entropy,
                 "max_entropy": max_entropy,
@@ -129,7 +129,7 @@ pub fn compute_activity_transition_matrix(
                 })
                 .collect();
 
-            to_js(&json!({
+            to_js_str(&json!({
                 "matrix": matrix_data,
                 "num_activities": activities.len(),
             }))
@@ -167,7 +167,7 @@ pub fn analyze_process_speedup(
             }
 
             if time_gaps.is_empty() {
-                return to_js(&json!({
+                return to_js_str(&json!({
                     "message": "No timestamps found",
                     "gaps": []
                 }));
@@ -183,7 +183,7 @@ pub fn analyze_process_speedup(
             let percentile_25 = time_gaps[p25_idx];
             let percentile_75 = time_gaps[p75_idx];
 
-            to_js(&json!({
+            to_js_str(&json!({
                 "avg_gap": mean,
                 "p25": percentile_25,
                 "p75": percentile_75,
@@ -236,7 +236,7 @@ pub fn compute_trace_similarity_matrix(
                 }
             }
 
-            to_js(&json!({
+            to_js_str(&json!({
                 "similar_pairs": similarities,
                 "total_pairs": (log.traces.len() * (log.traces.len() - 1)) / 2,
             }))
@@ -299,7 +299,7 @@ pub fn analyze_temporal_bottlenecks(
                 })
                 .collect();
 
-            to_js(&json!({
+            to_js_str(&json!({
                 "bottlenecks": bottlenecks,
             }))
         }
@@ -358,7 +358,7 @@ pub fn extract_activity_ordering(
                 })
                 .collect();
 
-            to_js(&json!({
+            to_js_str(&json!({
                 "activity_ordering": result,
             }))
         }

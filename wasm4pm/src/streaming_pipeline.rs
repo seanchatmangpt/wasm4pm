@@ -27,6 +27,7 @@ use crate::state::{get_or_init_state, StoredObject};
 use crate::streaming::{
     StreamingAlgorithm, StreamingDfgBuilder, StreamingHeuristicBuilder, StreamingSkeletonBuilder,
 };
+use crate::utilities::to_js_str;
 
 // ---------------------------------------------------------------------------
 // Pipeline configuration
@@ -336,12 +337,11 @@ pub fn pipeline_add_event(handle: &str, case_id: &str, activity: &str) -> Result
     get_or_init_state().with_object_mut(handle, |obj| match obj {
         Some(StoredObject::StreamingPipeline(pipeline)) => {
             pipeline.add_event(case_id, activity);
-            serde_wasm_bindgen::to_value(&json!({
+            to_js_str(&json!({
                 "ok": true,
                 "total_events": pipeline.total_events,
                 "open_traces": pipeline.open_traces,
             }))
-            .map_err(|e| crate::error::js_val(&e.to_string()))
         }
         Some(_) => Err(crate::error::js_val("Object is not a StreamingPipeline")),
         None => Err(crate::error::js_val(&format!(
@@ -357,12 +357,11 @@ pub fn pipeline_close_trace(handle: &str, case_id: &str) -> Result<JsValue, JsVa
     get_or_init_state().with_object_mut(handle, |obj| match obj {
         Some(StoredObject::StreamingPipeline(pipeline)) => {
             pipeline.close_trace(case_id);
-            serde_wasm_bindgen::to_value(&json!({
+            to_js_str(&json!({
                 "ok": true,
                 "total_traces": pipeline.total_traces,
                 "open_traces": pipeline.open_traces,
             }))
-            .map_err(|e| crate::error::js_val(&e.to_string()))
         }
         Some(_) => Err(crate::error::js_val("Object is not a StreamingPipeline")),
         None => Err(crate::error::js_val(&format!(
@@ -411,7 +410,7 @@ pub fn pipeline_finalize(handle: &str) -> Result<JsValue, JsValue> {
     get_or_init_state().with_object_mut(handle, |obj| match obj {
         Some(StoredObject::StreamingPipeline(pipeline)) => {
             let result = pipeline.finalize();
-            serde_wasm_bindgen::to_value(&json!({
+            to_js_str(&json!({
                 "ok": true,
                 "total_events": result.total_events,
                 "total_traces": result.total_traces,
@@ -419,7 +418,6 @@ pub fn pipeline_finalize(handle: &str) -> Result<JsValue, JsValue> {
                 "skeleton": result.skeleton.is_some(),
                 "heuristic": result.heuristic.is_some(),
             }))
-            .map_err(|e| crate::error::js_val(&e.to_string()))
         }
         Some(_) => Err(crate::error::js_val("Object is not a StreamingPipeline")),
         None => Err(crate::error::js_val(&format!(
