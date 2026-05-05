@@ -8,9 +8,38 @@
  *   - O(n) sliding window SMA (no nested loops)
  *   - Seasonal decomposition with single-pass per-cycle accumulation
  *   - Pre-allocated throughput binning
+ *
+ * Defensive hardening:
+ *   - Parameter validation (window size, forecast periods)
+ *   - Guard against division by zero in mean/variance
+ *   - Safe handling of very short series
  */
 
 import type { ThroughputForecastResult, SeriesForecastResult } from './types.js';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Parameter validation
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Validate forecast periods.
+ * Valid range: [1, inf]
+ */
+function validateForecastPeriods(periods: number | undefined): number {
+  const val = periods ?? 5;
+  if (!Number.isInteger(val) || val < 1) return 1;
+  return Math.min(val, 1000); // Reasonable upper bound
+}
+
+/**
+ * Validate window size in milliseconds.
+ * Valid range: (0, inf]
+ */
+function validateWindowSizeMs(windowMs: number | undefined): number {
+  const val = windowMs ?? 3_600_000;
+  if (val <= 0 || !Number.isFinite(val)) return 3_600_000;
+  return val;
+}
 
 // ---------------------------------------------------------------------------
 // Single-pass mean
@@ -331,22 +360,22 @@ export async function forecastThroughput(
     useExponential?: boolean;
   } = {},
 ): Promise<ThroughputForecastResult> {
-  const windowSizeMs = options.windowSizeMs ?? 3_600_000;
-  const { series } = buildThroughputSeries(eventTimestamps, windowSizeMs);
+  const validatedWindowSizeMs = validateWindowSizeMs(options.windowSizeMs);
+  const { series } = buildThroughputSeries(eventTimestamps, validatedWindowSizeMs);
 
   if (series.length < 3) {
     return {
       eventCounts: series,
       windowCount: series.length,
       trend: { direction: 'unknown', slope: 0, strength: 0 },
-      windowSizeMs,
+      windowSizeMs: validatedWindowSizeMs,
     };
   }
 
-  const forecastPeriods = options.forecastPeriods ?? 5;
+  const validatedForecastPeriods = validateForecastPeriods(options.forecastPeriods);
   const n = series.length;
-  const trendModel = trendForecastCore(series, n, forecastPeriods);
-  const extra = deriveSeasonalAndExponential(series, forecastPeriods, options.useExponential ?? false);
+  const trendModel = trendForecastCore(series, n, validatedForecastPeriods);
+  const extra = deriveSeasonalAndExponential(series, validatedForecastPeriods, options.useExponential ?? false);
 
   return {
     eventCounts: series,
@@ -355,7 +384,7 @@ export async function forecastThroughput(
     forecast: Array.from(trendModel.forecast),
     seasonality: extra.seasonality,
     decomposition: extra.decomposition,
-    windowSizeMs,
+    windowSizeMs: validatedWindowSizeMs,
     exponentialForecast: extra.exponentialForecast,
   };
 }
@@ -382,10 +411,10 @@ export async function forecastSeries(
     return { seriesLength: series.length, trend: { direction: 'unknown', slope: 0, strength: 0 } };
   }
 
-  const forecastPeriods = options.forecastPeriods ?? 5;
+  const validatedForecastPeriods = validateForecastPeriods(options.forecastPeriods);
   const n = series.length;
-  const trendModel = trendForecastCore(series, n, forecastPeriods);
-  const extra = deriveSeasonalAndExponential(series, forecastPeriods, options.useExponential ?? false);
+  const trendModel = trendForecastCore(series, n, validatedForecastPeriods);
+  const extra = deriveSeasonalAndExponential(series, validatedForecastPeriods, options.useExponential ?? false);
 
   return {
     seriesLength: n,

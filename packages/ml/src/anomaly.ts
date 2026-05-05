@@ -7,9 +7,28 @@
  *   - Autocorrelation with pre-computed mean (single-pass denominator)
  *   - Seasonal decomposition with single-pass accumulation per cycle position
  *   - Peak finding with no allocations in inner loop
+ *
+ * Defensive hardening:
+ *   - Parameter validation (smoothing window)
+ *   - Guard against division by zero in smoothing
+ *   - Safe empty-series handling
  */
 
 import type { EnhancedAnomalyResult } from './types.js';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Parameter validation
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Validate and clamp smoothing window.
+ * Valid range: [1, n]
+ */
+function validateSmoothingWindow(window: number | undefined, seriesLength: number): number {
+  const val = window ?? 3;
+  if (!Number.isInteger(val) || val < 1) return 1;
+  return Math.min(val, seriesLength);
+}
 
 // ---------------------------------------------------------------------------
 // Smoothing (O(n) sliding window SMA)
@@ -218,11 +237,11 @@ export async function detectEnhancedAnomalies(
     };
   }
 
-  const window = Math.min(options.smoothingWindow ?? 3, driftDistances.length);
+  const validatedWindow = validateSmoothingWindow(options.smoothingWindow, driftDistances.length);
   const smoothingMethod = options.smoothingMethod ?? 'sma';
   const smoothed = smoothingMethod === 'ema'
-    ? ema(driftDistances, window)
-    : sma(driftDistances, window);
+    ? ema(driftDistances, validatedWindow)
+    : sma(driftDistances, validatedWindow);
 
   // Find peaks in original series to preserve exact spike locations
   const peakIndices = findPeaks(driftDistances);

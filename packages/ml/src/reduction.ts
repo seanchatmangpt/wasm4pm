@@ -7,10 +7,30 @@
  *   - Jacobi eigendecomposition with in-place rotation (no matrix copy per iteration)
  *   - Pre-allocated eigenvector matrix
  *   - Float64Array for centered data
+ *
+ * Defensive hardening:
+ *   - Parameter validation (nComponents)
+ *   - Guard against division by zero in variance computation
+ *   - Clamp explained variance to [0, 1]
+ *   - Error on insufficient data
  */
 
 import { buildFeatureMatrix } from './bridge.js';
 import type { PCAResult } from './types.js';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Parameter validation
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Validate and clamp number of PCA components.
+ * Valid range: [1, d] where d is number of features
+ */
+function validateNComponents(nComponents: number | undefined, d: number): number {
+  const val = nComponents ?? 2;
+  if (!Number.isInteger(val) || val < 1) return 1;
+  return Math.min(val, d);
+}
 
 // ---------------------------------------------------------------------------
 // Columnar layout
@@ -231,7 +251,7 @@ export async function reduceFeaturesPCA(
 
   if (options.normalize !== false) minMaxNormalize(col);
 
-  const nComponents = Math.min(options.nComponents ?? 2, d);
+  const validatedNComponents = validateNComponents(options.nComponents, d);
 
   // Covariance (centers data in-place)
   const cov = covarianceMatrix(col);
@@ -247,7 +267,7 @@ export async function reduceFeaturesPCA(
   const invTotal = totalVariance === 0 ? 0 : 1 / totalVariance;
 
   const explainedVariance: number[] = [];
-  for (let i = 0; i < nComponents; i++) {
+  for (let i = 0; i < validatedNComponents; i++) {
     // Clamp to [0, 1] to handle floating-point edge cases
     const ev = Math.max(0, Math.min(1, eigenvalues[i] * invTotal));
     explainedVariance.push(ev);
@@ -259,8 +279,8 @@ export async function reduceFeaturesPCA(
   const transformedData: number[][] = [];
 
   for (let i = 0; i < n; i++) {
-    const row = new Array(nComponents);
-    for (let c = 0; c < nComponents; c++) {
+    const row = new Array(validatedNComponents);
+    for (let c = 0; c < validatedNComponents; c++) {
       const vec = eigenvectors[c]; // c-th eigenvector
       let val = 0;
       for (let j = 0; j < d; j++) val += col.cols[j][i] * vec[j];
@@ -269,12 +289,12 @@ export async function reduceFeaturesPCA(
     transformedData.push(row);
   }
 
-  for (let c = 0; c < nComponents; c++) {
+  for (let c = 0; c < validatedNComponents; c++) {
     components.push(Array.from(eigenvectors[c]));
   }
 
   return {
-    nComponents,
+    nComponents: validatedNComponents,
     explainedVariance,
     transformedData,
     components,
