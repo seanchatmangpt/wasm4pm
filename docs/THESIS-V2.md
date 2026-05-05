@@ -102,7 +102,7 @@ This thesis addresses:
 1. **POWL Discovery in WASM** — 7 variants ported from pm4py to Rust, with cut detection (concurrency, sequence, loop, XOR), fall-through handling (decision graphs, flower models), and streaming support
 2. **POWL API Surface** — 18 functions covering parsing, simplification, introspection, conversion (BPMN/Petri Net/Process Tree), conformance (token replay), and analysis (complexity metrics, behavioral footprints, model diff)
 3. **Predictive Analytics Suite** — 6 prediction domains: next-activity (n-gram Markov), remaining-time (Weibull survival), outcome (anomaly scoring), drift detection (EWMA + Jaccard), resource optimization (M/M/1 queue, UCB1 bandit), and feature extraction (ML-ready)
-4. **ML Engine** — `@wasm4pm/ml` package provides hyper-optimized, native algorithms purpose-built for process intelligence: decision tree classification, naive Bayes classification, polynomial regression, exponential regression, and EMA smoothing; 6 ML algorithms registered in the kernel pipeline (`ml_classify`, `ml_cluster`, `ml_forecast`, `ml_anomaly`, `ml_regress`, `ml_pca`) enabling execution plans with ML steps via `wpm run`
+4. **ML Engine** — `@wasm4pm/ml` package provides hyper-optimized, native algorithms purpose-built for process intelligence: decision tree classification, naive Bayes classification, polynomial regression, exponential regression, and EMA smoothing; 6 ML algorithms registered in the kernel pipeline (`ml_classify`, `ml_cluster`, `ml_forecast`, `ml_anomaly`, `ml_regress`, `ml_pca`) enabling execution plans with ML steps via `wpm run`. Note: `ml_cluster` is registered in the kernel but is not yet exported to the JS API (internal only — no `#[wasm_bindgen]` export).
 5. **Deployment Profiles** — 5 deployment profiles (mobile/edge/fog/iot/browser) using 30+ Cargo feature flags for conditional `#[cfg(feature)]` compilation; up to 82% binary size reduction; hand-rolled `hand_stats.rs` replacing statrs for size-constrained profiles; TypeScript registry filtering via `getForDeploymentProfile()`; zero breaking changes
 6. **Publication Engineering** — documented and resolved the wasm-pack `.gitignore` trap, flaky test elimination, and `prepublishOnly` hook design
 7. **Empirical Benchmarks** — POWL: ~157 ms/8 variants on BPI 2020; analytics: 0.002 ms (event stats) to 144 ms (concept drift); all 22 discovery + 6 ML algorithms operational
@@ -566,7 +566,7 @@ wpm run -i log.xes --algorithm ml_classify --params '{"method":"decision_tree"}'
 | Algorithm         | Method Options                                       | Complexity     | Output    | Kernel ID     |
 | ----------------- | ---------------------------------------------------- | -------------- | --------- | ------------- |
 | Classification    | knn, logistic_regression, decision_tree, naive_bayes | O(n \* d²)     | ml_result | `ml_classify` |
-| Clustering        | kmeans, dbscan                                       | O(n \* k \* i) | ml_result | `ml_cluster`  |
+| Clustering        | kmeans, dbscan                                       | O(n \* k \* i) | ml_result | `ml_cluster` ⚠️ internal only — not yet exported to JS API |
 | Forecasting       | trend + seasonal + exponential                       | O(n \* p)      | ml_result | `ml_forecast` |
 | Anomaly Detection | peak finding + seasonal decomposition                | O(n \* w)      | ml_result | `ml_anomaly`  |
 | Regression        | linear, polynomial, exponential                      | O(n \* d²)     | ml_result | `ml_regress`  |

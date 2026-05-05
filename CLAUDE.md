@@ -200,7 +200,7 @@ From `packages/kernel/src/registry.ts`:
 | Algorithm ID | Speed | Quality | Output |
 |---|---|---|---|
 | `ml_classify` | 40 | 60 | ml_result |
-| `ml_cluster` | 35 | 55 | ml_result |
+| `ml_cluster` | 35 | 55 | ml_result | ⚠️ internal only — not yet exported to JS API |
 | `ml_forecast` | 30 | 50 | ml_result |
 | `ml_anomaly` | 30 | 55 | ml_result |
 | `ml_regress` | 25 | 50 | ml_result |
@@ -215,7 +215,7 @@ From `packages/kernel/src/registry.ts`:
 | Algorithm ID | Speed | Quality | Output |
 |---|---|---|---|
 | `ml_classify` | 40 | 60 | ml_result |
-| `ml_cluster` | 35 | 55 | ml_result |
+| `ml_cluster` | 35 | 55 | ml_result | ⚠️ internal only — not yet exported to JS API |
 | `ml_forecast` | 30 | 50 | ml_result |
 | `ml_anomaly` | 30 | 55 | ml_result |
 | `ml_regress` | 25 | 50 | ml_result |

@@ -38,6 +38,10 @@ Either:
    stabilise.
 
 ### Q. `ml_cluster` always returns one big cluster.
+
+> **Note:** `ml_cluster` is not yet exported to the JS API (internal only). The underlying clustering logic exists in `fast_discovery.rs` but has no `#[wasm_bindgen]` export and is not callable from JavaScript or the CLI.
+
+If you are testing an internal build where it is exposed:
 - For `kmeans`, increase `k`.
 - For `dbscan`, your `eps` is too large — halve it and re-run.
 - Scale features first if any feature has very different magnitude.
@@ -56,7 +60,7 @@ Practical limits on a laptop:
 | `ml_anomaly`  | 1 M                    |
 | `ml_regress`  | 500 k                  |
 | `ml_classify` | 100 k (excl. `knn`)    |
-| `ml_cluster`  | 100 k (excl. `dbscan`) |
+| `ml_cluster`  | **internal only — no JS export** |
 | `ml_pca`      | 100 k                  |
 | `knn`/`dbscan`| 10 k                   |
 

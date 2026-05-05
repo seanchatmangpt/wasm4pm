@@ -740,7 +740,7 @@ wasm4pm implements 6 ML-powered prediction tasks:
 | Task | Algorithm | Output |
 |------|-----------|--------|
 | `ml_classify` | Decision tree / k-NN | Case class label |
-| `ml_cluster` | K-means | Case cluster assignment |
+| `ml_cluster` | K-means | Case cluster assignment | ⚠️ **internal only — not yet exported to the JS API** |
 | `ml_forecast` | ARIMA / exponential smoothing | Future event count |
 | `ml_anomaly` | Isolation forest | Anomaly score per trace |
 | `ml_regress` | Linear regression | Continuous target value |
@@ -1613,7 +1613,7 @@ wasm4pm represents a new paradigm in process mining: algorithms that run everywh
 | `optimized_dfg` | 70 | 85 | Discovery | always |
 | `ilp` | 80 | 90 | Discovery | discovery_advanced |
 | `ml_classify` | 40 | 60 | ML | ml |
-| `ml_cluster` | 35 | 55 | ML | ml |
+| `ml_cluster` | 35 | 55 | ML | ml | ⚠️ internal only — not yet exported to JS API |
 | `ml_forecast` | 30 | 50 | ML | ml |
 | `ml_anomaly` | 30 | 55 | ML | ml |
 | `ml_regress` | 25 | 50 | ML | ml |

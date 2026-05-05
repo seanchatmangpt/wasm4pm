@@ -14,7 +14,7 @@ and run in the browser, Node.js, or via the `wpm ml` CLI.
 | ID            | Family            | Typical use case                          | Output            |
 |---------------|-------------------|-------------------------------------------|-------------------|
 | `ml_classify` | Classification    | Predict trace outcome (SLA met / missed)  | Class + confidence|
-| `ml_cluster`  | Clustering        | Discover trace cohorts / variant families | Cluster ids       |
+| `ml_cluster`  | Clustering        | Discover trace cohorts / variant families | Cluster ids       | ⚠️ **internal only — not yet exported to the JS API** |
 | `ml_forecast` | Time-series       | Forecast throughput / drift distance      | Future values     |
 | `ml_anomaly`  | Anomaly detection | Spot rare or impossible behaviour         | Peak indices      |
 | `ml_regress`  | Regression        | Predict remaining cycle time              | Numeric prediction|
@@ -61,6 +61,8 @@ from `featureMatrix.labels`.
 ```
 
 ## 2. `ml_cluster` — Trace clustering
+
+> **Note:** `ml_cluster` is not yet exported to the JS API (internal only). The underlying `cluster_traces()` function exists in `fast_discovery.rs` but has no `#[wasm_bindgen]` export. It cannot be called from JavaScript or the `wpm ml cluster` CLI at this time.
 
 Groups similar traces (variant families, journey patterns).
 
@@ -132,7 +134,7 @@ Reduces a high-dimensional feature matrix to a small number of components
 | Algorithm     | 1k traces       | 10k traces      | Notes                        |
 |---------------|-----------------|-----------------|------------------------------|
 | `ml_classify` | 5–50 ms         | 50–500 ms       | `knn` is the slowest variant |
-| `ml_cluster`  | 5–30 ms         | 50–300 ms       | `dbscan` is O(n²)            |
+| `ml_cluster`  | —               | —               | **internal only, no JS export** — bitset k-means exists in Rust but has no `#[wasm_bindgen]` export |
 | `ml_forecast` | 1–5 ms          | 10–30 ms        | Per series, single pass      |
 | `ml_anomaly`  | 1–5 ms          | 10–30 ms        | Includes EMA smoothing       |
 | `ml_regress`  | 1–10 ms         | 10–80 ms        | Closed-form solver           |
