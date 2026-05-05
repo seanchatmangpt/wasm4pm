@@ -9,7 +9,7 @@
  * 2. Persistence across runs: State restored on subsequent runs with cycle count
  * 3. Error handling: Bad file paths return SOURCE_ERROR (exit code 2)
  *
- * Uses @pictl/testing CLI harness and real XES fixtures from lab/fixtures/
+ * Uses @wasm4pm/testing CLI harness and real XES fixtures from lab/fixtures/
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
@@ -21,7 +21,7 @@ import {
   assertJsonOutput,
   createCliTestEnv,
   EXIT_CODES,
-} from '@pictl/testing';
+} from '@wasm4pm/testing';
 
 // Resolve paths relative to the project root
 const PROJECT_ROOT = path.join(__dirname, '../..');

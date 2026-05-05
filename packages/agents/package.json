@@ -1,5 +1,5 @@
 {
-  "name": "@pictl/agents",
+  "name": "@wasm4pm/agents",
   "version": "26.4.17",
   "description": "Van der Aalst process mining agents — autonomous adversarial validation",
   "type": "module",
@@ -28,9 +28,9 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@pictl/contracts": "workspace:*",
-    "@pictl/kernel": "workspace:*",
-    "@pictl/engine": "workspace:*"
+    "@wasm4pm/contracts": "workspace:*",
+    "@wasm4pm/kernel": "workspace:*",
+    "@wasm4pm/engine": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.7.0",

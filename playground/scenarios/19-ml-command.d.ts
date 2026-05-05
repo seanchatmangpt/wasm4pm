@@ -2,7 +2,7 @@
  * Scenario: ml command — pictl ml <task> -i <log.xes>
  *
  * Tests ML-powered process mining using real WASM and real XES files.
- * No mocks — real @pictl/ml package with real algorithm execution.
+ * No mocks — real @wasm4pm/ml package with real algorithm execution.
  *
  * Key contracts verified:
  *   - Missing task exits with error (exit 1)

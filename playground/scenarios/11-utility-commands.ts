@@ -37,7 +37,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import { existsSync } from 'fs';
-import { pictl, assertExitCode, assertJsonOutput, EXIT_CODES } from '@pictl/testing';
+import { pictl, assertExitCode, assertJsonOutput, EXIT_CODES } from '@wasm4pm/testing';
 
 let tempDir: string;
 

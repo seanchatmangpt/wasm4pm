@@ -7,8 +7,8 @@
  */
 import { promises as fs } from 'fs';
 import { createHash } from 'crypto';
-import { ok, err, error } from '@pictl/contracts';
-import { createError } from '@pictl/contracts';
+import { ok, err, error } from '@wasm4pm/contracts';
+import { createError } from '@wasm4pm/contracts';
 /**
  * Simple line-based stream for reading events from files
  */

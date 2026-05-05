@@ -5,7 +5,7 @@
  * Implements idempotency via BLAKE3 fingerprinting and retry logic
  * with exponential backoff for transient errors.
  */
-import { SourceAdapter, Capabilities, EventStream, Result, SourceAdapterKind, RetryStrategy } from '@pictl/contracts';
+import { SourceAdapter, Capabilities, EventStream, Result, SourceAdapterKind, RetryStrategy } from '@wasm4pm/contracts';
 /**
  * Configuration for FileSourceAdapter
  */

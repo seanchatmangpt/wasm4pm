@@ -11,7 +11,7 @@
  * - NullBackend — Fail-open sentinel backend
  */
 import { randomUUID } from 'crypto';
-import { DefaultBackendRegistry, WasmBackend, MlBackend, Pm4pyBackend } from '@pictl/kernel';
+import { DefaultBackendRegistry, WasmBackend, MlBackend, Pm4pyBackend } from '@wasm4pm/kernel';
 import { NullBackend } from './null-backend.js';
 /**
  * FederationCircuitBreaker (Section 5.3)

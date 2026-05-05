@@ -1,7 +1,7 @@
 import { defineCommand } from 'citty';
 import { getFormatter, JSONFormatter } from '../../output.js';
 import { EXIT_CODES } from '../../exit-codes.js';
-import { AuditStore } from '@pictl/agents';
+import { AuditStore } from '@wasm4pm/agents';
 export const audit = defineCommand({
     meta: {
         name: 'audit',

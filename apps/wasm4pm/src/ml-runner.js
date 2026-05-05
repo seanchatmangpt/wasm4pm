@@ -5,7 +5,7 @@
  * Extracts the core ML task dispatch from commands/ml.ts so it can be
  * reused without CLI-specific formatting concerns.
  */
-import { classifyTraces, clusterTraces, regressRemainingTime, forecastSeries, detectEnhancedAnomalies, reduceFeaturesPCA, } from '@pictl/ml';
+import { classifyTraces, clusterTraces, regressRemainingTime, forecastSeries, detectEnhancedAnomalies, reduceFeaturesPCA, } from '@wasm4pm/ml';
 export const VALID_ML_TASKS = [
     'classify',
     'cluster',

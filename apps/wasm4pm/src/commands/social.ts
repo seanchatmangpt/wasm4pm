@@ -3,7 +3,7 @@ import * as fs from 'fs/promises';
 import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import type { OutputOptions } from '../output.js';
-import { WasmLoader } from '@pictl/engine';
+import { WasmLoader } from '@wasm4pm/engine';
 import { createQuietObservabilityLayer } from '../observability-util.js';
 
 export interface SocialOptions extends OutputOptions {
@@ -74,7 +74,7 @@ export const social = defineCommand({
 
       if (!inputPath) {
         formatter.error(
-          'Input file required.\n\nUsage:  pictl social <log.xes>\n        pictl social <log.xes> --metric working-together\n\nRun "pictl social --help" for details.'
+          'Input file required.\n\nUsage:  wpm social <log.xes>\n        wpm social <log.xes> --metric working-together\n\nRun "wpm social --help" for details.'
         );
         process.exit(EXIT_CODES.source_error);
       }

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { loadPictlConfig, buildCliOverrides } from '../src/config-loader.js';
-import type { CliOverrides } from '@pictl/config';
+import type { CliOverrides } from '@wasm4pm/config';
 
 describe('Config Loader', () => {
   describe('buildCliOverrides', () => {

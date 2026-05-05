@@ -1,5 +1,5 @@
 /**
- * @pictl/contracts
+ * @wasm4pm/contracts
  *
  * Shared type definitions and contracts for the wasm4pm ecosystem.
  * Provides interfaces for source connectors, sink adapters, compatibility matrices,
@@ -7,9 +7,9 @@
  *
  * All schemas are versioned and export both TypeScript types and JSON schemas.
  */
-// Engine types (merged from @pictl/types)
+// Engine types (merged from @wasm4pm/types)
 export * from './types.js';
-// Template static data (merged from @pictl/templates)
+// Template static data (merged from @wasm4pm/templates)
 export * from './templates/index.js';
 // Error system - PRD §14
 export * from './errors.js';
@@ -31,7 +31,7 @@ export { ReceiptBuilder } from './receipt-builder.js';
 export { isPlan, validatePlanDAG, sortNodes, sortEdges, normalizePlan, PLAN_JSON_SCHEMA } from './plan.js';
 export { isStatus, isLifecycleState, isValidTransition, LIFECYCLE_STATES, STATE_TRANSITIONS, STATUS_JSON_SCHEMA } from './status.js';
 export { isExplainSnapshot, EXPLAIN_JSON_SCHEMA } from './explain.js';
-// Plan step type values — shared between @pictl/planner and @pictl/testing
+// Plan step type values — shared between @wasm4pm/planner and @wasm4pm/testing
 export { PLAN_STEP_TYPE_VALUES } from './steps.js';
 export { latencyTierLte, qualityTierLte, latencyExceedsBudget, qualityDeficientForFloor, createDefaultBudgetEnvelope, } from './budget.js';
 //# sourceMappingURL=index.js.map

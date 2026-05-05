@@ -264,7 +264,7 @@ async function checkConfigValidation() {
             };
         }
     }
-    // TOML configs — basic check (full validation requires @pictl/config)
+    // TOML configs — basic check (full validation requires @wasm4pm/config)
     try {
         const raw = await fs.readFile(configPath, 'utf-8');
         const lines = raw.split('\n').filter((l) => l.trim() && !l.trim().startsWith('#'));
@@ -457,24 +457,24 @@ async function checkTypeScriptCompilation() {
     }
 }
 // ────────────────────────────────────────────────────────────────────────────
-// Check 13: @pictl/ml available
+// Check 13: @wasm4pm/ml available
 // ────────────────────────────────────────────────────────────────────────────
 async function checkMicroMl() {
     try {
         // Try to resolve the package
-        const mlPath = await import('@pictl/ml');
+        const mlPath = await import('@wasm4pm/ml');
         const hasClassify = typeof mlPath.classifyTraces === 'function';
         if (hasClassify) {
-            return { name: '@pictl/ml', status: 'ok', message: 'Native ML package available (classify, cluster, forecast, anomaly, regress, pca)' };
+            return { name: '@wasm4pm/ml', status: 'ok', message: 'Native ML package available (classify, cluster, forecast, anomaly, regress, pca)' };
         }
-        return { name: '@pictl/ml', status: 'warn', message: 'Package found but classifyTraces not exported' };
+        return { name: '@wasm4pm/ml', status: 'warn', message: 'Package found but classifyTraces not exported' };
     }
     catch {
         return {
-            name: '@pictl/ml',
+            name: '@wasm4pm/ml',
             status: 'warn',
-            message: '@pictl/ml not resolvable — ML commands will not work',
-            fix: 'Install the ML package: pnpm install @pictl/ml',
+            message: '@wasm4pm/ml not resolvable — ML commands will not work',
+            fix: 'Install the ML package: pnpm install @wasm4pm/ml',
         };
     }
 }

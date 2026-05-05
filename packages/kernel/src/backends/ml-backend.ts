@@ -44,7 +44,7 @@ export class MlBackend implements MiningBackend {
 
   async init(): Promise<void> {
     try {
-        await import('@pictl/ml');
+        await import('@wasm4pm/ml');
         this.initialized = true;
     } catch (e) {
         console.error('Failed to initialize ML backend:', e);
@@ -105,7 +105,7 @@ export class MlBackend implements MiningBackend {
         throw new Error(`Analysis task ${task.task_type} not supported by ML backend`);
       }
 
-      const ml = await import('@pictl/ml');
+      const ml = await import('@wasm4pm/ml');
       const logJson = JSON.stringify(log);
       const logHandle = wasm.load_eventlog_from_json(logJson);
 
@@ -174,11 +174,11 @@ export class MlBackend implements MiningBackend {
   async healthCheck(): Promise<{ healthy: boolean; latency_ms: number; detail?: string }> {
     const startMs = Date.now();
     try {
-      const ml = await import('@pictl/ml');
+      const ml = await import('@wasm4pm/ml');
       return {
         healthy: !!ml,
         latency_ms: Date.now() - startMs,
-        detail: 'ML subsystem (@pictl/ml) available',
+        detail: 'ML subsystem (@wasm4pm/ml) available',
       };
     } catch (error) {
       return {

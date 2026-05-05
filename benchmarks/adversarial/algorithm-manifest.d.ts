@@ -2,7 +2,7 @@
  * Algorithm Manifest — Ground Truth
  *
  * Maps 41 registered algorithm IDs to their WASM implementations
- * Built from cross-referencing @pictl/contracts registry with actual #[wasm_bindgen] exports
+ * Built from cross-referencing @wasm4pm/contracts registry with actual #[wasm_bindgen] exports
  *
  * Source truth: wasm4pm/src/*.rs files with #[wasm_bindgen] decorators
  */

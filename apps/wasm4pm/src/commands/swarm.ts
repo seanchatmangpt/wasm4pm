@@ -3,7 +3,7 @@ import * as fs from 'fs/promises';
 import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import type { OutputOptions } from '../output.js';
-import { runSwarm } from '@pictl/swarm';
+import { runSwarm } from '@wasm4pm/swarm';
 
 export const swarm = defineCommand({
   meta: {

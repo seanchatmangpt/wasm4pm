@@ -10,9 +10,9 @@
  * - DecisionTraceEntry — Audit trail for backend selections
  * - NullBackend — Fail-open sentinel backend
  */
-import type { ExecutionPlan, BudgetEnvelope } from '@pictl/contracts';
-import type { MiningBackend, EventLogIR, ResultEnvelope } from '@pictl/kernel';
-import { DefaultBackendRegistry } from '@pictl/kernel';
+import type { ExecutionPlan, BudgetEnvelope } from '@wasm4pm/contracts';
+import type { MiningBackend, EventLogIR, ResultEnvelope } from '@wasm4pm/kernel';
+import { DefaultBackendRegistry } from '@wasm4pm/kernel';
 /**
  * Backend state machine (Section 5.2)
  */

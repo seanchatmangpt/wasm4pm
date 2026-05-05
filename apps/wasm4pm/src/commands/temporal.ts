@@ -3,7 +3,7 @@ import * as fs from 'fs/promises';
 import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import type { OutputOptions } from '../output.js';
-import { WasmLoader } from '@pictl/engine';
+import { WasmLoader } from '@wasm4pm/engine';
 import { createQuietObservabilityLayer } from '../observability-util.js';
 
 export interface TemporalOptions extends OutputOptions {
@@ -78,7 +78,7 @@ export const temporal = defineCommand({
 
       if (!inputPath) {
         formatter.error(
-          'Input file required.\n\nUsage:  pictl temporal <log.xes>\n        pictl temporal <log.xes> --threshold 0.01\n\nRun "pictl temporal --help" for details.'
+          'Input file required.\n\nUsage:  wpm temporal <log.xes>\n        wpm temporal <log.xes> --threshold 0.01\n\nRun "wpm temporal --help" for details.'
         );
         process.exit(EXIT_CODES.source_error);
       }

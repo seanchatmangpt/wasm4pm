@@ -2,7 +2,7 @@
  * Unit tests for DFG utilities
  */
 import { describe, it, expect } from 'vitest';
-import { createDFG, createDFGFromEdges, compareDFGs, areDFGsEquivalent, validateDFG, validateDFGConsistency, computeDFGDensity, computeAverageNodeDegree, findLongestPath, createSequentialTestDFG, createParallelTestDFG, createChoiceTestDFG, createTestEventLogForDFG, formatDFG, formatDFGComparison, serializeDFG, deserializeDFG, } from '@pictl/testing';
+import { createDFG, createDFGFromEdges, compareDFGs, areDFGsEquivalent, validateDFG, validateDFGConsistency, computeDFGDensity, computeAverageNodeDegree, findLongestPath, createSequentialTestDFG, createParallelTestDFG, createChoiceTestDFG, createTestEventLogForDFG, formatDFG, formatDFGComparison, serializeDFG, deserializeDFG, } from '@wasm4pm/testing';
 describe('DFG Utilities', () => {
     describe('createDFG', () => {
         it('should create DFG from event log', () => {

@@ -3,8 +3,8 @@ import { z } from 'zod';
  * Schema version for config format migration.
  */
 export declare const SCHEMA_VERSION = 1;
-export { ALGORITHM_IDS } from '@pictl/contracts';
-export type { AlgorithmId } from '@pictl/contracts';
+export { ALGORITHM_IDS } from '@wasm4pm/contracts';
+export type { AlgorithmId } from '@wasm4pm/contracts';
 export declare const algorithmIdSchema: z.ZodEnum<["process_skeleton", "dfg", "alpha_plus_plus", "heuristic_miner", "inductive_miner", "declare", "hill_climbing", "simulated_annealing", "a_star", "aco", "optimized_dfg", "pso", "genetic_algorithm", "ilp", "transition_system", "log_to_trie", "causal_graph", "performance_spectrum", "batches", "correlation_miner", "generalization", "petri_net_reduction", "etconformance_precision", "alignments", "complexity_metrics", "pnml_import", "bpmn_import", "powl_to_process_tree", "yawl_export", "playout", "monte_carlo_simulation", "ml_classify", "ml_cluster", "ml_forecast", "ml_anomaly", "ml_regress", "ml_pca"]>;
 export declare const sourceKindSchema: z.ZodEnum<["file", "stream", "http"]>;
 export declare const sinkKindSchema: z.ZodEnum<["stdout", "file", "http"]>;

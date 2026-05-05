@@ -100,7 +100,7 @@ export interface ModelEdge {
  *
  * This is the contract between:
  * - Control plane (packages/kernel, packages/planner)
- * - Execution substrates (wasm4pm, pm4py-mcp, @pictl/ml)
+ * - Execution substrates (wasm4pm, pm4py-mcp, @wasm4pm/ml)
  *
  * No backend ever returns raw PNML, BPMN, or Petri net structures — they return ModelIR.
  * No backend receives raw model files — they receive EventLogIR and return ModelIR.

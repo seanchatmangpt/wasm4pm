@@ -24,8 +24,8 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import * as path from 'path';
 import * as fs from 'fs/promises';
-import { pictl, assertExitCode, assertJsonOutput, createCliTestEnv, EXIT_CODES } from '@pictl/testing';
-import { getProfileAlgorithms } from '@pictl/contracts';
+import { pictl, assertExitCode, assertJsonOutput, createCliTestEnv, EXIT_CODES } from '@wasm4pm/testing';
+import { getProfileAlgorithms } from '@wasm4pm/contracts';
 const MINI_XES = `<?xml version="1.0" encoding="UTF-8"?>
 <log xes.version="1.0">
   <extension name="Concept" prefix="concept" uri="http://www.xes-standard.org/concept.xesext"/>
@@ -53,12 +53,12 @@ let xesPath;
 beforeAll(async () => {
     // Try loading planner
     try {
-        const mod = await import('@pictl/planner');
+        const mod = await import('@wasm4pm/planner');
         planFn = (cfg) => mod.plan(cfg);
-        console.info('[profiles] @pictl/planner loaded');
+        console.info('[profiles] @wasm4pm/planner loaded');
     }
     catch {
-        console.warn('[profiles] @pictl/planner not built — planner tests will skip');
+        console.warn('[profiles] @wasm4pm/planner not built — planner tests will skip');
     }
     // Shared XES file for CLI tests
     _env = await createCliTestEnv();

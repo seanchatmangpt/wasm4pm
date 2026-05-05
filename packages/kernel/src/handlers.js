@@ -3,7 +3,7 @@
  * Algorithm step handlers - execute algorithm steps from execution plans
  * Bridge between planner (algorithm name) and WASM module (function calls)
  */
-import { PlanStepType } from '@pictl/planner';
+import { PlanStepType } from '@wasm4pm/planner';
 import { getRegistry } from './registry.js';
 /**
  * Map PlanStepType to algorithm ID
@@ -334,9 +334,9 @@ export async function implementAlgorithmStep(step, wasmModule, eventLogHandle) {
                 modelHandle = result.handle;
                 break;
             }
-            // ── ML Analysis (dynamic import from @pictl/ml) ──────
+            // ── ML Analysis (dynamic import from @wasm4pm/ml) ──────
             case 'ml_classify': {
-                const { classifyTraces } = await import('@pictl/ml');
+                const { classifyTraces } = await import('@wasm4pm/ml');
                 const configJson = JSON.stringify({
                     features: ['trace_length', 'elapsed_time', 'activity_counts', 'rework_count', 'unique_activities', 'avg_inter_event_time'],
                     target: params.target_key || 'outcome',
@@ -351,7 +351,7 @@ export async function implementAlgorithmStep(step, wasmModule, eventLogHandle) {
                 break;
             }
             case 'ml_cluster': {
-                const { clusterTraces } = await import('@pictl/ml');
+                const { clusterTraces } = await import('@wasm4pm/ml');
                 const configJson = JSON.stringify({
                     features: ['trace_length', 'elapsed_time', 'activity_counts', 'rework_count', 'unique_activities'],
                 });
@@ -366,7 +366,7 @@ export async function implementAlgorithmStep(step, wasmModule, eventLogHandle) {
                 break;
             }
             case 'ml_forecast': {
-                const { forecastSeries } = await import('@pictl/ml');
+                const { forecastSeries } = await import('@wasm4pm/ml');
                 const driftRaw = wasmModule.detect_drift(eventLogHandle, activityKey, 5);
                 const driftResult = typeof driftRaw === 'string' ? JSON.parse(driftRaw) : driftRaw;
                 const distances = (driftResult?.drifts ?? []).map((d) => d.distance ?? 0);
@@ -378,7 +378,7 @@ export async function implementAlgorithmStep(step, wasmModule, eventLogHandle) {
                 break;
             }
             case 'ml_anomaly': {
-                const { detectEnhancedAnomalies } = await import('@pictl/ml');
+                const { detectEnhancedAnomalies } = await import('@wasm4pm/ml');
                 const driftRaw = wasmModule.detect_drift(eventLogHandle, activityKey, 10);
                 const driftResult = typeof driftRaw === 'string' ? JSON.parse(driftRaw) : driftRaw;
                 const distances = (driftResult?.drifts ?? []).map((d) => d.distance ?? 0);
@@ -389,7 +389,7 @@ export async function implementAlgorithmStep(step, wasmModule, eventLogHandle) {
                 break;
             }
             case 'ml_regress': {
-                const { regressRemainingTime } = await import('@pictl/ml');
+                const { regressRemainingTime } = await import('@wasm4pm/ml');
                 const configJson = JSON.stringify({
                     features: ['trace_length', 'elapsed_time', 'rework_count', 'unique_activities', 'avg_inter_event_time'],
                     target: params.target_key || 'remaining_time',
@@ -403,7 +403,7 @@ export async function implementAlgorithmStep(step, wasmModule, eventLogHandle) {
                 break;
             }
             case 'ml_pca': {
-                const { reduceFeaturesPCA } = await import('@pictl/ml');
+                const { reduceFeaturesPCA } = await import('@wasm4pm/ml');
                 const configJson = JSON.stringify({
                     features: ['trace_length', 'elapsed_time', 'activity_counts', 'rework_count', 'unique_activities', 'avg_inter_event_time'],
                 });

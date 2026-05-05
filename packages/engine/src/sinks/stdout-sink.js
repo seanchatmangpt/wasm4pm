@@ -4,7 +4,7 @@
  * Useful for piping output to other tools or viewing results in the terminal.
  * Outputs JSON for structured artifacts, raw text for reports.
  */
-import { ok, err } from '@pictl/contracts';
+import { ok, err } from '@wasm4pm/contracts';
 /**
  * StdoutSinkAdapter - Writes artifacts to stdout or a writable stream
  *

@@ -602,23 +602,23 @@ export class AgentOrchestrator {
     _context: AgentExecutionContext,
     config: { thresholds: { max_deviations: number } },
   ): AgentResult {
-    // In the TypeScript layer, this validates pictl.toml consistency
+    // In the TypeScript layer, this validates wasm4pm.toml consistency
     // The Python layer handles settings.json enforcement
     const violations: Violation[] = [];
 
-    // Check for pictl.toml existence
+    // Check for wasm4pm.toml existence
     const { existsSync } = require('fs');
-    const pictlToml = 'pictl.toml';
-    if (!existsSync(pictlToml)) {
+    const wasm4pmToml = 'wasm4pm.toml';
+    if (!existsSync(wasm4pmToml)) {
       violations.push({
         agent_name: 'config-drift-guardian',
         violation_type: 'missing_config',
         severity: 'warning',
-        evidence: { file: pictlToml },
+        evidence: { file: wasm4pmToml },
         process_mining_proof: null,
         timestamp: new Date().toISOString(),
         blocked_manufacturing: false,
-        target: pictlToml,
+        target: wasm4pmToml,
       });
     }
 

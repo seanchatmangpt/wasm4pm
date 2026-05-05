@@ -12,7 +12,7 @@
  * - POWL arena allocation: bidirectional ID mapping (string ↔ u32 indices)
  * - Round-trip losslessness: ModelIR → format → ModelIR is semantically equivalent
  */
-import type { ModelIR, ModelNode, ModelEdge, QualityMetrics } from '@pictl/contracts';
+import type { ModelIR, ModelNode, ModelEdge, QualityMetrics } from '@wasm4pm/contracts';
 /**
  * Directly-Follows Graph (DFG) - simplest process model format.
  * Suitable for fast streaming and online discovery.

@@ -18,7 +18,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@pictl/testing': path.resolve(__dirname, './src'),
+      '@wasm4pm/testing': path.resolve(__dirname, './src'),
     },
   },
   // Use happy-dom for tests that need DOM (XML parsing)

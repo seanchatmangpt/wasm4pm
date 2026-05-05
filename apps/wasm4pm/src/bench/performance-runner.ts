@@ -1,7 +1,7 @@
 /**
  * performance-runner.ts
  *
- * TypeScript performance benchmarking harness for the pictl kernel.
+ * TypeScript performance benchmarking harness for the wasm4pm kernel.
  *
  * Measures (all 21 algorithm targets via the WASM API):
  *   - Per-state latency distribution: mean, stddev, p99, p99.9 (nanoseconds)
@@ -12,7 +12,7 @@
  *   - GPU utilization: not measurable from Node.js userspace on Apple Silicon;
  *     reported as 0 with note — no fabricated data.
  *
- * Targets (from CLAUDE.md / pictl specification):
+ * Targets (from CLAUDE.md / wasm4pm specification):
  *   ≤120 ns per state, ≥250K states/sec, <512 MB peak heap, <80°C sustained
  *
  * Usage (standalone):
@@ -24,14 +24,14 @@
  *   --cases <N>          Log size in cases for latency bench (default: 1000)
  *   --out <path>         Override output file path
  *   --format human|json  Output format (default: human)
- *   --no-save            Skip writing JSON report to .pictl/benchmarks/
+ *   --no-save            Skip writing JSON report to .wasm4pm/benchmarks/
  *   --algorithms <ids>   Comma-separated algorithm IDs to benchmark (default: all)
  */
 
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { execSync } from 'child_process';
-import { WasmLoader } from '@pictl/engine';
+import { WasmLoader } from '@wasm4pm/engine';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -482,7 +482,7 @@ function formatHumanReport(report: PerformanceReport): string {
   const fmt = (n: number, decimals = 1): string => n.toFixed(decimals);
 
   lines.push('');
-  lines.push(`${BOLD}pictl Performance Benchmark Report${RESET}  ${DIM}${report.generated_at}${RESET}`);
+  lines.push(`${BOLD}wasm4pm Performance Benchmark Report${RESET}  ${DIM}${report.generated_at}${RESET}`);
   lines.push(`Platform: ${report.platform}  |  Node: ${report.node_version}`);
   lines.push('');
   lines.push(`${BOLD}Targets:${RESET}`);
@@ -542,10 +542,10 @@ function formatHumanReport(report: PerformanceReport): string {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Save report to .pictl/benchmarks/
+// Save report to .wasm4pm/benchmarks/
 // ─────────────────────────────────────────────────────────────────────────────
 
-const BENCHMARKS_DIR = path.join('.pictl', 'benchmarks');
+const BENCHMARKS_DIR = path.join('.wasm4pm', 'benchmarks');
 
 async function saveReport(report: PerformanceReport, overridePath?: string): Promise<string> {
   const dir = overridePath
@@ -586,7 +586,7 @@ export interface RunBenchmarkOptions {
 
 /**
  * Run the full performance benchmark suite and return the report.
- * Writes JSON to .pictl/benchmarks/ unless save=false.
+ * Writes JSON to .wasm4pm/benchmarks/ unless save=false.
  */
 export async function runBenchmark(options: RunBenchmarkOptions = {}): Promise<PerformanceReport> {
   const opts: BenchOptions = {
@@ -599,7 +599,7 @@ export async function runBenchmark(options: RunBenchmarkOptions = {}): Promise<P
   const format = options.format ?? 'human';
 
   if (format === 'human') {
-    process.stdout.write(`pictl performance benchmark — ${opts.samples} samples, ${opts.numCases} cases\n`);
+    process.stdout.write(`wpm performance benchmark — ${opts.samples} samples, ${opts.numCases} cases\n`);
     process.stdout.write('Loading WASM kernel...\n');
   }
 

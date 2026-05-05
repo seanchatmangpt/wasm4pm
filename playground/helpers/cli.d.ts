@@ -1,10 +1,10 @@
 /**
  * Shared CLI test utilities for playground scenarios.
  *
- * Re-exports from @pictl/testing where possible — no duplication.
+ * Re-exports from @wasm4pm/testing where possible — no duplication.
  * Adds only playground-specific helpers not available in the testing package.
  */
-import { assertExitCode, type CliResult, EXIT_CODES } from '@pictl/testing';
+import { assertExitCode, type CliResult, EXIT_CODES } from '@wasm4pm/testing';
 export declare const PICTL: string;
 /** Spawn pictl CLI as a child process, capturing stdout/stderr/exitCode. */
 export declare function pictl(userArgs: string[], options?: {

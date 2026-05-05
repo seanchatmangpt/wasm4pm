@@ -3,11 +3,11 @@
  * Main Engine class implementing the lifecycle and state machine
  * Orchestrates bootstrap, planning, execution, and monitoring
  */
-import { EngineState, ExecutionPlan, ExecutionReceipt, EngineStatus, StatusUpdate, EngineError } from '@pictl/contracts';
+import { EngineState, ExecutionPlan, ExecutionReceipt, EngineStatus, StatusUpdate, EngineError } from '@wasm4pm/contracts';
 import { LifecycleEvent } from './lifecycle.js';
 import { WasmLoaderConfig, WasmModule } from './wasm-loader.js';
 import { WatchSession, WatchConfig } from './watch.js';
-import { ObservabilityConfig } from '@pictl/observability';
+import { ObservabilityConfig } from '@wasm4pm/observability';
 /**
  * Result returned from Kernel.run()
  */

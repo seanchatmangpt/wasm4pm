@@ -13,7 +13,7 @@ import type { WasmModule } from './handlers.js';
 import { implementAlgorithmStep } from './handlers.js';
 /**
  * Minimal type matching the engine's StepHandler signature.
- * Defined here to avoid importing @pictl/engine (prevents circular dependency).
+ * Defined here to avoid importing @wasm4pm/engine (prevents circular dependency).
  */
 export interface EngineStep {
     id: string;

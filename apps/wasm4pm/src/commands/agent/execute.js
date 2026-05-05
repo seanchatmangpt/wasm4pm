@@ -1,7 +1,7 @@
 import { defineCommand } from 'citty';
 import { getFormatter, JSONFormatter } from '../../output.js';
 import { EXIT_CODES } from '../../exit-codes.js';
-import { AgentOrchestrator } from '@pictl/agents';
+import { AgentOrchestrator } from '@wasm4pm/agents';
 export const execute = defineCommand({
     meta: {
         name: 'execute',

@@ -20,9 +20,9 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import * as path from 'path';
 import * as fs from 'fs/promises';
-import { pictl, assertExitCode, assertJsonOutput, createCliTestEnv, EXIT_CODES } from '@pictl/testing';
-import { VALID_PREDICT_CLI_TASKS } from '@pictl/contracts';
-import type { CliTestEnv } from '@pictl/testing';
+import { pictl, assertExitCode, assertJsonOutput, createCliTestEnv, EXIT_CODES } from '@wasm4pm/testing';
+import { VALID_PREDICT_CLI_TASKS } from '@wasm4pm/contracts';
+import type { CliTestEnv } from '@wasm4pm/testing';
 
 // ── XES fixtures (inline, self-contained) ─────────────────────────────────────
 

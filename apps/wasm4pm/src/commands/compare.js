@@ -1,9 +1,9 @@
 import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
-import { ALGORITHM_CLI_ALIASES } from '@pictl/contracts';
+import { ALGORITHM_CLI_ALIASES } from '@wasm4pm/contracts';
 import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
-import { WasmLoader } from '@pictl/engine';
+import { WasmLoader } from '@wasm4pm/engine';
 /**
  * Algorithms supported by `pictl compare`.
  * Each entry describes how to invoke the discovery function via the WASM module.

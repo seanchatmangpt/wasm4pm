@@ -1,9 +1,9 @@
 /**
- * @pictl/config — Configuration management with Zod schemas and provenance tracking.
+ * @wasm4pm/config — Configuration management with Zod schemas and provenance tracking.
  *
  * @example
  * ```ts
- * import { resolveConfig } from '@pictl/config';
+ * import { resolveConfig } from '@wasm4pm/config';
  *
  * const config = await resolveConfig({
  *   cliOverrides: { profile: 'quality' },
@@ -17,8 +17,8 @@
 export { resolveConfig, getExampleTomlConfig, getExampleJsonConfig } from './resolver.js';
 // Schema & validation
 export { configSchema, SCHEMA_VERSION, validate, validatePartial, toJsonSchema, ALGORITHM_IDS, algorithmIdSchema, sourceKindSchema, sinkKindSchema, executionProfileSchema, outputFormatSchema, logLevelSchema, otelExporterSchema, sourceConfigSchema, sinkConfigSchema, algorithmConfigSchema, otelConfigSchema, observabilityConfigSchema, watchConfigSchema, outputConfigSchema, executionConfigSchema, predictionConfigSchema, rlConfigSchema, mlConfigSchema, } from './schema.js';
-// Re-export generated constants so consumers can get them from @pictl/config
-export { PREDICTION_TASKS, VALID_PREDICT_CLI_TASKS, CLI_SLUG_TO_TASK_ID, TASK_ID_TO_CLI_SLUG } from '@pictl/contracts';
+// Re-export generated constants so consumers can get them from @wasm4pm/config
+export { PREDICTION_TASKS, VALID_PREDICT_CLI_TASKS, CLI_SLUG_TO_TASK_ID, TASK_ID_TO_CLI_SLUG } from '@wasm4pm/contracts';
 // Provenance
 export { trackProvenance, mergeProvenance, } from './provenance.js';
 // Hashing (only hashConfig is used externally - by resolver.ts)

@@ -19,8 +19,8 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import * as path from 'path';
 import * as fs from 'fs/promises';
-import { pictl, assertExitCode, assertJsonOutput, createCliTestEnv, EXIT_CODES } from '@pictl/testing';
-import { VALID_PREDICT_CLI_TASKS } from '@pictl/contracts';
+import { pictl, assertExitCode, assertJsonOutput, createCliTestEnv, EXIT_CODES } from '@wasm4pm/testing';
+import { VALID_PREDICT_CLI_TASKS } from '@wasm4pm/contracts';
 // ── XES fixtures (inline, self-contained) ─────────────────────────────────────
 const MINI_XES = `<?xml version="1.0" encoding="UTF-8"?>
 <log xes.version="1.0">

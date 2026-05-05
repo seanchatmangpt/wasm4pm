@@ -3,10 +3,10 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
 import { EXIT_CODES, type ExitCode } from '../exit-codes.js';
-import { WasmLoader } from '@pictl/engine';
+import { WasmLoader } from '@wasm4pm/engine';
 import type { OutputOptions } from '../output.js';
 
-const AUTOPROCESS_STATE_FILE = '.pictl/autoprocess-state.json';
+const AUTOPROCESS_STATE_FILE = '.wasm4pm/autoprocess-state.json';
 
 export interface AutoProcessOptions extends OutputOptions {
   'activity-key'?: string;

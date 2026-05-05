@@ -5,7 +5,7 @@
  * and that the WASM binary sizes match expectations for each profile.
  */
 import { describe, it, expect } from 'vitest';
-import { getRegistry } from '@pictl/kernel';
+import { getRegistry } from '@wasm4pm/kernel';
 describe('Deployment Profiles', () => {
     describe('Algorithm Filtering', () => {
         it('should include basic algorithms in browser profile', () => {

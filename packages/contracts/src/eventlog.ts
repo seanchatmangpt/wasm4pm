@@ -79,7 +79,7 @@ export interface LogMetadata {
  *
  * This is the contract between:
  * - Control plane (packages/kernel, packages/planner)
- * - Execution substrates (wasm4pm, pm4py-mcp, @pictl/ml)
+ * - Execution substrates (wasm4pm, pm4py-mcp, @wasm4pm/ml)
  *
  * No backend ever receives raw XES, OCEL, or JSON — they receive EventLogIR.
  * No backend returns raw results — they return ResultEnvelope<ModelIR> or similar.

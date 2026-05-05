@@ -5,18 +5,18 @@ import { existsSync } from 'fs';
 /**
  * Config file search order:
  * 1. Explicit --config path
- * 2. ./pictl.toml
- * 3. ./pictl.json
+ * 2. ./wasm4pm.toml
+ * 3. ./wasm4pm.json
  * 4. PMC_CONFIG_PATH environment variable
  * 5. Defaults (no file)
  */
 
 export interface ResolvedConfigPath {
   path: string | null;
-  source: 'cli' | 'pictl.toml' | 'pictl.json' | 'env' | 'defaults';
+  source: 'cli' | 'wasm4pm.toml' | 'wasm4pm.json' | 'env' | 'defaults';
 }
 
-const SEARCH_FILES = ['pictl.toml', 'pictl.json'] as const;
+const SEARCH_FILES = ['wasm4pm.toml', 'wasm4pm.json'] as const;
 
 /**
  * Resolve config file path using standard search order
@@ -27,12 +27,12 @@ export function resolveConfigPath(cliConfigPath?: string): ResolvedConfigPath {
     return { path: path.resolve(cliConfigPath), source: 'cli' };
   }
 
-  // 2-3. Search for pictl.toml, then pictl.json in cwd
+  // 2-3. Search for wasm4pm.toml, then wasm4pm.json in cwd
   const cwd = process.cwd();
   for (const file of SEARCH_FILES) {
     const candidate = path.join(cwd, file);
     if (existsSync(candidate)) {
-      return { path: candidate, source: file as 'pictl.toml' | 'pictl.json' };
+      return { path: candidate, source: file as 'wasm4pm.toml' | 'wasm4pm.json' };
     }
   }
 
@@ -62,8 +62,8 @@ export async function readConfigFile(resolved: ResolvedConfigPath): Promise<Reco
   }
 
   if (ext === '.toml') {
-    // Delegate to @pictl/config for TOML parsing
-    const { resolveConfig } = await import('@pictl/config');
+    // Delegate to @wasm4pm/config for TOML parsing
+    const { resolveConfig } = await import('@wasm4pm/config');
     const config = await resolveConfig({ configSearchPaths: [path.dirname(resolved.path)] });
     return config as unknown as Record<string, unknown>;
   }

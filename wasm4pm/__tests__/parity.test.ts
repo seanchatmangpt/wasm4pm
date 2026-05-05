@@ -87,7 +87,7 @@ let wasmModule: any = null;
 beforeAll(async () => {
   try {
     // Try to load from the built WASM package
-    const pictlWasm = await import('@pictl/wasm');
+    const pictlWasm = await import('@wasm4pm/wasm');
     wasmModule = pictlWasm.default || pictlWasm;
   } catch (error) {
     // If not available, skip tests gracefully

@@ -106,7 +106,7 @@ const REMEDIATIONS = {
     VALIDATION_FAILED: 'Model validation failed. Check that the model structure is valid and required attributes are present.',
     IMPORT_FAILED: 'Model import failed. Verify the import file is valid and the format is supported (PNML, BPMN).',
     // WASM runtime errors
-    WASM_INIT_FAILED: 'Failed to initialize the WASM module. Ensure Node.js/browser is compatible (Node 16+, modern browser). Try reinstalling the package: npm install @pictl/engine',
+    WASM_INIT_FAILED: 'Failed to initialize the WASM module. Ensure Node.js/browser is compatible (Node 16+, modern browser). Try reinstalling the package: npm install @wasm4pm/engine',
     WASM_MEMORY_EXCEEDED: 'Insufficient memory in WASM sandbox. Try processing your data in smaller batches or check available memory limits.',
     // Sink errors
     SINK_FAILED: 'Failed to write output to sink. Check the sink configuration and ensure the destination exists and is writable.',

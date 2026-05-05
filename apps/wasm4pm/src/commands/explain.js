@@ -1,5 +1,5 @@
 import { defineCommand } from 'citty';
-import { resolveConfig as loadConfig } from '@pictl/config';
+import { resolveConfig as loadConfig } from '@wasm4pm/config';
 import { getFormatter, JSONFormatter } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 export const explain = defineCommand({

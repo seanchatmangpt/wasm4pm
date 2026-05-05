@@ -1,7 +1,7 @@
 import { EXIT_CODES, type ExitCode } from './exit-codes.js';
 
 /**
- * Base error class for pictl with typed exit codes
+ * Base error class for wasm4pm with typed exit codes
  */
 export class PictlError extends Error {
   readonly exitCode: ExitCode;

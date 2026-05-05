@@ -3,7 +3,7 @@ import * as fs from 'fs/promises';
 import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import type { OutputOptions } from '../output.js';
-import { WasmLoader } from '@pictl/engine';
+import { WasmLoader } from '@wasm4pm/engine';
 import { createQuietObservabilityLayer } from '../observability-util.js';
 
 export interface QualityOptions extends OutputOptions {
@@ -68,7 +68,7 @@ export const quality = defineCommand({
 
       if (!inputPath) {
         formatter.error(
-          'Input file required.\n\nUsage:  pictl quality <log.xes>\n        pictl quality <log.xes> --metrics fitness,precision\n\nRun "pictl quality --help" for details.'
+          'Input file required.\n\nUsage:  wpm quality <log.xes>\n        wpm quality <log.xes> --metrics fitness,precision\n\nRun "wpm quality --help" for details.'
         );
         process.exit(EXIT_CODES.source_error);
       }

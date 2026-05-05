@@ -39,8 +39,8 @@ export async function readConfigFile(resolved) {
         return JSON.parse(content);
     }
     if (ext === '.toml') {
-        // Delegate to @pictl/config for TOML parsing
-        const { resolveConfig } = await import('@pictl/config');
+        // Delegate to @wasm4pm/config for TOML parsing
+        const { resolveConfig } = await import('@wasm4pm/config');
         const config = await resolveConfig({ configSearchPaths: [path.dirname(resolved.path)] });
         return config;
     }

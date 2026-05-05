@@ -1052,7 +1052,7 @@ export class PictlMCPServer {
         }
         // ML Tools (native process intelligence — dynamic import for lazy loading)
         case 'ml_classify_traces': {
-          const { classifyTraces } = await import('@pictl/ml');
+          const { classifyTraces } = await import('@wasm4pm/ml');
           const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
           try {
             const configJson = JSON.stringify({
@@ -1088,7 +1088,7 @@ export class PictlMCPServer {
           break;
         }
         case 'ml_cluster_traces': {
-          const { clusterTraces } = await import('@pictl/ml');
+          const { clusterTraces } = await import('@wasm4pm/ml');
           const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
           try {
             const configJson = JSON.stringify({
@@ -1123,7 +1123,7 @@ export class PictlMCPServer {
           break;
         }
         case 'ml_forecast_throughput': {
-          const { forecastThroughput } = await import('@pictl/ml');
+          const { forecastThroughput } = await import('@wasm4pm/ml');
           const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
           try {
             const driftRaw = wasm.detect_drift(logHandle, 'concept:name', 5);
@@ -1142,7 +1142,7 @@ export class PictlMCPServer {
           break;
         }
         case 'ml_detect_anomalies': {
-          const { detectEnhancedAnomalies } = await import('@pictl/ml');
+          const { detectEnhancedAnomalies } = await import('@wasm4pm/ml');
           const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
           try {
             const driftRaw = wasm.detect_drift(logHandle, 'concept:name', 10);
@@ -1159,7 +1159,7 @@ export class PictlMCPServer {
           break;
         }
         case 'ml_regress_remaining_time': {
-          const { regressRemainingTime } = await import('@pictl/ml');
+          const { regressRemainingTime } = await import('@wasm4pm/ml');
           const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
           try {
             const configJson = JSON.stringify({
@@ -1191,7 +1191,7 @@ export class PictlMCPServer {
           break;
         }
         case 'ml_pca_reduce': {
-          const { reduceFeaturesPCA } = await import('@pictl/ml');
+          const { reduceFeaturesPCA } = await import('@wasm4pm/ml');
           const logHandle = wasm.load_eventlog_from_xes(input.xes_content);
           try {
             const configJson = JSON.stringify({

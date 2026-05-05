@@ -3,10 +3,10 @@ import * as fs from 'fs/promises';
 import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import type { OutputOptions } from '../output.js';
-import { WasmLoader } from '@pictl/engine';
+import { WasmLoader } from '@wasm4pm/engine';
 import { loadPictlConfig, buildCliOverrides } from '../config-loader.js';
 import { savePredictionResult } from './results.js';
-import { VALID_PREDICT_CLI_TASKS } from '@pictl/contracts';
+import { VALID_PREDICT_CLI_TASKS } from '@wasm4pm/contracts';
 
 const VALID_TASKS = VALID_PREDICT_CLI_TASKS;
 type PredictTask = (typeof VALID_TASKS)[number];

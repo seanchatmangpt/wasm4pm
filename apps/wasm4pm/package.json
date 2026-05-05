@@ -1,10 +1,10 @@
 {
-  "name": "@seanchatmangpt/pictl",
+  "name": "@wasm4pm/cli",
   "version": "26.4.23",
-  "description": "pictl — Process Intelligence Control CLI",
+  "description": "wasm4pm — High-performance WASM-powered process mining CLI",
   "type": "module",
   "bin": {
-    "pictl": "./dist/bin/pictl.js"
+    "wpm": "./dist/bin/wpm.js"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -27,15 +27,15 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@pictl/agents": "workspace:*",
-    "@pictl/config": "workspace:*",
-    "@pictl/contracts": "workspace:*",
-    "@pictl/engine": "workspace:*",
-    "@pictl/kernel": "workspace:*",
-    "@pictl/ml": "workspace:^",
-    "@pictl/observability": "workspace:^",
-    "@pictl/planner": "workspace:*",
-    "@pictl/swarm": "workspace:*",
+    "@wasm4pm/agents": "workspace:*",
+    "@wasm4pm/config": "workspace:*",
+    "@wasm4pm/contracts": "workspace:*",
+    "@wasm4pm/engine": "workspace:*",
+    "@wasm4pm/kernel": "workspace:*",
+    "@wasm4pm/ml": "workspace:^",
+    "@wasm4pm/observability": "workspace:^",
+    "@wasm4pm/planner": "workspace:*",
+    "@wasm4pm/swarm": "workspace:*",
     "chokidar": "^4.0.1",
     "citty": "^0.1.6",
     "consola": "^3.2.3"

@@ -14,8 +14,8 @@ import {
   ExistsBehavior,
   AtomicityLevel,
   FailureMode,
-} from '@pictl/contracts';
-import { ok, err } from '@pictl/contracts';
+} from '@wasm4pm/contracts';
+import { ok, err } from '@wasm4pm/contracts';
 
 /**
  * Configuration for StdoutSinkAdapter

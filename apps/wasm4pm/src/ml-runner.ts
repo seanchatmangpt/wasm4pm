@@ -1,6 +1,6 @@
 /**
  * ml-runner.ts
- * Shared ML execution logic used by both `pictl ml` and `pictl run`.
+ * Shared ML execution logic used by both `wpm ml` and `wpm run`.
  *
  * Extracts the core ML task dispatch from commands/ml.ts so it can be
  * reused without CLI-specific formatting concerns.
@@ -13,8 +13,8 @@ import {
   forecastSeries,
   detectEnhancedAnomalies,
   reduceFeaturesPCA,
-} from '@pictl/ml';
-import type { ClassificationMethod, ClusteringMethod } from '@pictl/ml';
+} from '@wasm4pm/ml';
+import type { ClassificationMethod, ClusteringMethod } from '@wasm4pm/ml';
 
 export const VALID_ML_TASKS = [
   'classify',

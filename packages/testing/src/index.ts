@@ -1,4 +1,4 @@
-// @pictl/testing — Testing utilities, fixtures, mocks, and harnesses
+// @wasm4pm/testing — Testing utilities, fixtures, mocks, and harnesses
 
 // Types
 export type { OtelSpan, OtelResource, OtelInstrumentationScope } from './types.js';

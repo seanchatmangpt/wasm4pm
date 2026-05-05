@@ -714,7 +714,7 @@ describe('Engine WASM Integration', () => {
             expect(enginePanic).toBeDefined();
         });
         it('should pass through observability layer', async () => {
-            const { ObservabilityLayer } = await import('@pictl/observability');
+            const { ObservabilityLayer } = await import('@wasm4pm/observability');
             const obsLayer = new ObservabilityLayer();
             const engineObs = createFullEngine(kernel, planner, executor, { observability: obsLayer });
             expect(engineObs).toBeDefined();

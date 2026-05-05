@@ -1,4 +1,4 @@
-import type { Config, CliOverrides } from '@pictl/config';
+import type { Config, CliOverrides } from '@wasm4pm/config';
 import type { HumanFormatter, JSONFormatter } from './output.js';
 /**
  * Load configuration for pictl command with error handling and user feedback
@@ -10,7 +10,7 @@ import type { HumanFormatter, JSONFormatter } from './output.js';
 export declare function loadPictlConfig(cliOverrides?: CliOverrides, formatter?: HumanFormatter | JSONFormatter): Promise<Config>;
 /**
  * Build CLI overrides from command arguments
- * Maps pictl flags to @pictl/config CliOverrides interface
+ * Maps pictl flags to @wasm4pm/config CliOverrides interface
  */
 export declare function buildCliOverrides(args: Record<string, unknown>): CliOverrides;
 //# sourceMappingURL=config-loader.d.ts.map

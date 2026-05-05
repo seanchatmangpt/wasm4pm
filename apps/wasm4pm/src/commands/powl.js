@@ -14,7 +14,7 @@ import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
 import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
-import { WasmLoader } from '@pictl/engine';
+import { WasmLoader } from '@wasm4pm/engine';
 import { savePredictionResult } from './results.js';
 const POWL_SUBCOMMANDS = [
     'parse',

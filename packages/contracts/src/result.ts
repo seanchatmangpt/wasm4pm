@@ -145,8 +145,8 @@ export function deriveLatencyClass(latency_ms: number): LatencyClass {
  * - `algorithm_id`: Which algorithm was executed
  * - `algorithm_version`: Semver or CalVer version of the algorithm
  * - `backend_id`: Which backend executed it (wasm, pm4py, ml, null)
- * - `kernel_version`: @seanchatmangpt/pictl npm package version
- * - `wasm_build_hash`: Content hash of the pictl.wasm binary
+ * - `kernel_version`: @wasm4pm/cli npm package version
+ * - `wasm_build_hash`: Content hash of the wasm4pm.wasm binary
  *
  * **Invariants:**
  * - All hash fields must be non-empty strings (BLAKE3 hash: 64 hex characters = 256 bits)

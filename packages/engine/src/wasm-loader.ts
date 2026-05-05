@@ -5,7 +5,7 @@
  * Handles panic hooks, memory validation, and runtime environment detection
  */
 
-import { ObservabilityLayer } from '@pictl/observability';
+import { ObservabilityLayer } from '@wasm4pm/observability';
 
 /**
  * Runtime environment detection
@@ -313,7 +313,7 @@ export class WasmLoader {
     let wasmModule: any;
 
     try {
-      // Import from the built pictl WASM package
+      // Import from the built wasm4pm WASM package
       let modulePath = this.config.modulePath;
 
       if (!modulePath) {
@@ -330,7 +330,7 @@ export class WasmLoader {
           throw new Error('Cannot determine workspace root: "packages/engine" not found in path');
         }
         const workspaceRoot = currentPath.substring(0, engineIndex);
-        modulePath = workspaceRoot + 'wasm4pm/pkg/pictl.js';
+        modulePath = workspaceRoot + 'wasm4pm/pkg/wasm4pm.js';
       }
 
       // Use dynamic import for flexibility

@@ -1,8 +1,8 @@
 import { defineCommand } from 'citty';
 import { getFormatter, JSONFormatter } from '../../output.js';
 import { EXIT_CODES } from '../../exit-codes.js';
-import { AgentRegistry } from '@pictl/agents';
-import type { AgentConfig } from '@pictl/agents';
+import { AgentRegistry } from '@wasm4pm/agents';
+import type { AgentConfig } from '@wasm4pm/agents';
 import { readFileSync } from 'fs';
 
 export const register = defineCommand({

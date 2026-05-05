@@ -12,7 +12,7 @@ import {
   formatTokenReplayResult,
   formatAlignment,
   type TokenReplayResult,
-} from '@pictl/testing';
+} from '@wasm4pm/testing';
 
 describe('tokenReplayConformance', () => {
   it('should return fitness 1.0 for perfectly fitting traces', () => {

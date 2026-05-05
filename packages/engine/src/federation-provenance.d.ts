@@ -6,10 +6,10 @@
  *
  * Section 2.4 & 2.3 of the Three-Layer Architecture Contract Specification.
  */
-import { ProvenanceChain, ResultEnvelope, ModelIR } from '@pictl/contracts';
-import type { BaseConfig } from '@pictl/config';
-import type { Plan } from '@pictl/contracts';
-import type { EventLogIR } from '@pictl/contracts';
+import { ProvenanceChain, ResultEnvelope, ModelIR } from '@wasm4pm/contracts';
+import type { BaseConfig } from '@wasm4pm/config';
+import type { Plan } from '@wasm4pm/contracts';
+import type { EventLogIR } from '@wasm4pm/contracts';
 /**
  * Deterministic JSON serialization with sorted keys at all levels.
  *

@@ -1,7 +1,7 @@
 import { defineCommand } from 'citty';
 import { getFormatter, JSONFormatter, HumanFormatter } from '../../output.js';
 import { EXIT_CODES } from '../../exit-codes.js';
-import { AgentOrchestrator } from '@pictl/agents';
+import { AgentOrchestrator } from '@wasm4pm/agents';
 
 export interface AgentExecuteOptions {
   format?: 'human' | 'json';

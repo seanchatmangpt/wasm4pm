@@ -1,11 +1,11 @@
 import { z } from 'zod';
-import { ALGORITHM_IDS, PREDICTION_TASKS } from '@pictl/contracts';
+import { ALGORITHM_IDS, PREDICTION_TASKS } from '@wasm4pm/contracts';
 /**
  * Schema version for config format migration.
  */
 export const SCHEMA_VERSION = 1;
-// Re-export for consumers that import from @pictl/config
-export { ALGORITHM_IDS } from '@pictl/contracts';
+// Re-export for consumers that import from @wasm4pm/config
+export { ALGORITHM_IDS } from '@wasm4pm/contracts';
 export const algorithmIdSchema = z
     .enum(ALGORITHM_IDS)
     .describe('Algorithm ID: one of the registered wasm4pm kernel algorithms');

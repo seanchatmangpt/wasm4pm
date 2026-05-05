@@ -138,8 +138,8 @@ async function checkWasmBinary(): Promise<Diagnosis> {
     };
   }
 
-  const wasmFile = path.join(wasmPkgDir, 'pictl_bg.wasm');
-  const jsFile = path.join(wasmPkgDir, 'pictl.js');
+  const wasmFile = path.join(wasmPkgDir, 'wpm_bg.wasm');
+  const jsFile = path.join(wasmPkgDir, 'wpm.js');
 
   try {
     const [wasmStat, jsStat] = await Promise.all([fs.stat(wasmFile), fs.stat(jsFile)]);
@@ -155,7 +155,7 @@ async function checkWasmBinary(): Promise<Diagnosis> {
 
     const sizeMb = (wasmStat.size / 1024 / 1024).toFixed(1);
     void jsStat;
-    return { name: 'WASM binary', pathology: 'ENVIRONMENT_FAULT', severity: 'INFO', message: `pictl_bg.wasm found (${sizeMb} MB)` };
+    return { name: 'WASM binary', pathology: 'ENVIRONMENT_FAULT', severity: 'INFO', message: `wasm4pm_bg.wasm found (${sizeMb} MB)` };
   } catch {
     return {
       name: 'WASM binary', pathology: 'ENVIRONMENT_FAULT',
@@ -181,12 +181,12 @@ async function checkWasmLoads(): Promise<Diagnosis> {
     };
   }
 
-  const jsFile = path.join(wasmPkgDir, 'pictl.js');
+  const jsFile = path.join(wasmPkgDir, 'wpm.js');
   if (!existsSync(jsFile)) {
     return {
       name: 'WASM loads', pathology: 'ENVIRONMENT_FAULT',
       severity: 'STOP_THE_LINE',
-      message: 'pictl.js not found — module not built',
+      message: 'wpm.js not found — module not built',
       fix: 'cd wasm4pm && pnpm run build',
     };
   }
@@ -252,7 +252,7 @@ async function checkSimdSupport(): Promise<Diagnosis> {
 // ────────────────────────────────────────────────────────────────────────────
 
 async function checkConfigFound(): Promise<Diagnosis> {
-  const configNames = ['pictl.toml', 'pictl.json', 'wasm4pm.toml', 'wasm4pm.json'];
+  const configNames = ['wasm4pm.toml', 'wasm4pm.json', 'wasm4pm.toml', 'wasm4pm.json'];
   const cwd = process.cwd();
   const searchDirs: string[] = [cwd];
   let current = cwd;
@@ -276,8 +276,8 @@ async function checkConfigFound(): Promise<Diagnosis> {
   return {
     name: 'Config file', pathology: 'REPRODUCIBILITY_TRUTH_FAULT',
     severity: 'WARNING',
-    message: 'No pictl.toml / wasm4pm.json found in current directory or parents',
-    fix: 'Create a config with: pictl init    (defaults work fine without one)',
+    message: 'No wasm4pm.toml / wasm4pm.json found in current directory or parents',
+    fix: 'Create a config with: wpm init    (defaults work fine without one)',
   };
 }
 
@@ -286,7 +286,7 @@ async function checkConfigFound(): Promise<Diagnosis> {
 // ────────────────────────────────────────────────────────────────────────────
 
 async function checkConfigValidation(): Promise<Diagnosis> {
-  const configNames = ['pictl.toml', 'pictl.json', 'wasm4pm.toml', 'wasm4pm.json'];
+  const configNames = ['wasm4pm.toml', 'wasm4pm.json', 'wasm4pm.toml', 'wasm4pm.json'];
   const cwd = process.cwd();
   let configPath: string | null = null;
 
@@ -330,7 +330,7 @@ async function checkConfigValidation(): Promise<Diagnosis> {
     }
   }
 
-  // TOML configs — basic check (full validation requires @pictl/config)
+  // TOML configs — basic check (full validation requires @wasm4pm/config)
   try {
     const raw = await fs.readFile(configPath, 'utf-8');
     const lines = raw.split('\n').filter((l) => l.trim() && !l.trim().startsWith('#'));
@@ -339,7 +339,7 @@ async function checkConfigValidation(): Promise<Diagnosis> {
         name: 'Config validation', pathology: 'REPRODUCIBILITY_TRUTH_FAULT',
         severity: 'WARNING',
         message: `${path.basename(configPath)} is empty`,
-        fix: 'Add configuration or run: pictl init',
+        fix: 'Add configuration or run: wpm init',
       };
     }
     return {
@@ -392,7 +392,7 @@ async function checkXesFiles(): Promise<Diagnosis> {
       name: 'XES event logs', pathology: 'REPRODUCIBILITY_TRUTH_FAULT',
       severity: 'WARNING',
       message: 'No .xes files found in current directory (depth ≤ 2)',
-      fix: 'Place an XES event log here, or pass --input <path> to pictl run/predict',
+      fix: 'Place an XES event log here, or pass --input <path> to wpm run/predict',
     };
   }
 
@@ -537,24 +537,24 @@ async function checkTypeScriptCompilation(): Promise<Diagnosis> {
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// Check 13: @pictl/ml available
+// Check 13: @wasm4pm/ml available
 // ────────────────────────────────────────────────────────────────────────────
 
 async function checkMicroMl(): Promise<Diagnosis> {
   try {
     // Try to resolve the package
-    const mlPath = await import('@pictl/ml');
+    const mlPath = await import('@wasm4pm/ml');
     const hasClassify = typeof mlPath.classifyTraces === 'function';
     if (hasClassify) {
-      return { name: '@pictl/ml', pathology: 'ENVIRONMENT_FAULT', severity: 'INFO', message: 'Native ML package available (classify, cluster, forecast, anomaly, regress, pca)' };
+      return { name: '@wasm4pm/ml', pathology: 'ENVIRONMENT_FAULT', severity: 'INFO', message: 'Native ML package available (classify, cluster, forecast, anomaly, regress, pca)' };
     }
-    return { name: '@pictl/ml', pathology: 'ENVIRONMENT_FAULT', severity: 'WARNING', message: 'Package found but classifyTraces not exported' };
+    return { name: '@wasm4pm/ml', pathology: 'ENVIRONMENT_FAULT', severity: 'WARNING', message: 'Package found but classifyTraces not exported' };
   } catch {
     return {
-      name: '@pictl/ml', pathology: 'ENVIRONMENT_FAULT',
+      name: '@wasm4pm/ml', pathology: 'ENVIRONMENT_FAULT',
       severity: 'WARNING',
-      message: '@pictl/ml not resolvable — ML commands will not work',
-      fix: 'Install the ML package: pnpm install @pictl/ml',
+      message: '@wasm4pm/ml not resolvable — ML commands will not work',
+      fix: 'Install the ML package: pnpm install @wasm4pm/ml',
     };
   }
 }
@@ -640,7 +640,7 @@ async function checkAlgorithmRegistry(): Promise<Diagnosis> {
     return { name: 'Algorithm registry', pathology: 'ENVIRONMENT_FAULT', severity: 'INFO', message: 'Skipped — workspace not found' };
   }
 
-  const jsFile = path.join(wasmPkgDir, 'pictl.js');
+  const jsFile = path.join(wasmPkgDir, 'wpm.js');
   if (!existsSync(jsFile)) {
     return { name: 'Algorithm registry', pathology: 'ENVIRONMENT_FAULT', severity: 'INFO', message: 'Skipped — WASM not built' };
   }
@@ -711,7 +711,7 @@ async function checkWorkspaceIntegrity(): Promise<Diagnosis> {
     'packages/wasm4pm',
     'packages/ml',
     'packages/swarm',
-    'apps/pictl',
+    'apps/wasm4pm',
   ];
 
   const missing: string[] = [];
@@ -1176,7 +1176,7 @@ function renderBadge(severity: Diagnosis['severity']): string {
 
 function printReport(formatter: HumanFormatter, report: DoctorReport): void {
   formatter.log('');
-  formatter.log('pictl doctor — epistemic diagnostician & autonomic governor');
+  formatter.log('wpm doctor — epistemic diagnostician & autonomic governor');
   formatter.log('─'.repeat(80));
 
   let lastSection = '';
@@ -1210,9 +1210,9 @@ function printReport(formatter: HumanFormatter, report: DoctorReport): void {
           } else if (fixText.includes('pnpm install')) {
               inferredRepairMode = 'REINSTALL_DEPENDENCIES';
               inferredRepairCmd = 'pnpm install';
-          } else if (fixText.includes('pictl init')) {
+          } else if (fixText.includes('wpm init')) {
               inferredRepairMode = 'SCAFFOLD_CONFIG';
-              inferredRepairCmd = 'pictl init';
+              inferredRepairCmd = 'wpm init';
           } else if (fixText.includes('corepack')) {
               inferredRepairMode = 'REINSTALL_DEPENDENCIES';
               inferredRepairCmd = fixText;
@@ -1319,13 +1319,13 @@ export const doctor = defineCommand({
 
     if (formatter instanceof JSONFormatter) {
       if (report.epistemicHealth) {
-        formatter.success('pictl environment is healthy', {
+        formatter.success('wpm environment is healthy', {
           ...report,
           healthy: true,
           diagnoses: report.diagnoses.map((c) => ({ ...c })),
         });
       } else {
-        formatter.warn('pictl environment has issues', {
+        formatter.warn('wpm environment has issues', {
           ...report,
           healthy: false,
           diagnoses: report.diagnoses.map((c) => ({ ...c })),

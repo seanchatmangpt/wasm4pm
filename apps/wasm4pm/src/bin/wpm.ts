@@ -4,7 +4,7 @@ import { runMain } from 'citty';
 import { main } from '../cli.js';
 
 /**
- * pictl CLI entry point
+ * wasm4pm (wpm) CLI entry point
  * Parses command-line arguments and routes to appropriate command handler
  */
 runMain(main).catch((error) => {

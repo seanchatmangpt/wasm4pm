@@ -1,7 +1,7 @@
 import { defineCommand } from 'citty';
 import { getFormatter, JSONFormatter } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
-import { WasmLoader } from '@pictl/engine';
+import { WasmLoader } from '@wasm4pm/engine';
 export const status = defineCommand({
     meta: {
         name: 'status',

@@ -5,7 +5,7 @@
  * Outputs JSON for structured artifacts, raw text for reports.
  */
 import type { Writable } from 'stream';
-import { SinkAdapter, ArtifactType, SinkAdapterKind, Result, ExistsBehavior, AtomicityLevel, FailureMode } from '@pictl/contracts';
+import { SinkAdapter, ArtifactType, SinkAdapterKind, Result, ExistsBehavior, AtomicityLevel, FailureMode } from '@wasm4pm/contracts';
 /**
  * Configuration for StdoutSinkAdapter
  */

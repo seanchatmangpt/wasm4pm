@@ -5,7 +5,7 @@
  * Per PRD §11: explain() == run()
  * The plan is used by both explain() and run() - only difference is explanation vs execution
  */
-import type { ErrorInfo, BudgetEnvelope } from '@pictl/contracts';
+import type { ErrorInfo, BudgetEnvelope } from '@wasm4pm/contracts';
 import type { DAG } from './dag.js';
 import type { PlanStep } from './steps.js';
 /**

@@ -2,7 +2,7 @@
  * Unit tests for trace utilities
  */
 import { describe, it, expect } from 'vitest';
-import { compareTraces, areTracesIdentical, areTracesPermutation, findTracePermutation, isTraceComplete, validateTraceTimestamps, hasDuplicateConsecutiveActivities, hasSelfLoops, computeTraceStatistics, getUniqueActivities, computeActivityFrequency, findMostCommonVariant, createTestTrace, createTestTraces, formatTrace, formatTraceComparison, traceToArray, arrayToTrace, isSubsequence, longestCommonSubsequence, traceSimilarity, } from '@pictl/testing';
+import { compareTraces, areTracesIdentical, areTracesPermutation, findTracePermutation, isTraceComplete, validateTraceTimestamps, hasDuplicateConsecutiveActivities, hasSelfLoops, computeTraceStatistics, getUniqueActivities, computeActivityFrequency, findMostCommonVariant, createTestTrace, createTestTraces, formatTrace, formatTraceComparison, traceToArray, arrayToTrace, isSubsequence, longestCommonSubsequence, traceSimilarity, } from '@wasm4pm/testing';
 describe('Trace Utilities', () => {
     describe('compareTraces', () => {
         it('should detect identical traces', () => {

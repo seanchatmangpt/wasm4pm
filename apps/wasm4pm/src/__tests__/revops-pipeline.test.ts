@@ -178,7 +178,7 @@ interface TestEnv {
 }
 
 async function createTestEnv(): Promise<TestEnv> {
-  const tempDir = await fs.mkdtemp(path.join(tmpdir(), 'pictl-revops-'));
+  const tempDir = await fs.mkdtemp(path.join(tmpdir(), 'wpm-revops-'));
   const xesPath = path.join(tempDir, 'revops_sales_pipeline.xes');
   await fs.writeFile(xesPath, REVOPS_XES, 'utf-8');
 
@@ -207,7 +207,7 @@ interface CliResult {
 function runCli(args: string[], timeoutMs: number = 30000): Promise<CliResult> {
   return new Promise((resolve) => {
     const start = Date.now();
-    const child = execFile('npx', ['pictl', ...args], {
+    const child = execFile('npx', ['wpm', ...args], {
       timeout: timeoutMs,
       maxBuffer: 10 * 1024 * 1024,
     }, (error, stdout, stderr) => {

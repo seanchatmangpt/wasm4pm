@@ -10,17 +10,17 @@
  *   3. CLI     — pictl run --algorithm X exits 0 or 3 (never 1=config or 2=source)
  *   4. CLI     — pictl compare with all 14 IDs comma-joined exits 0 or 3
  *
- * Driven by ALGORITHM_IDS from @pictl/contracts — if a new algorithm is added
+ * Driven by ALGORITHM_IDS from @wasm4pm/contracts — if a new algorithm is added
  * to the ontology and regenerated, this scenario covers it automatically.
  */
 
 import { describe, it, expect, beforeAll, afterEach } from 'vitest';
 import * as path from 'path';
 import * as fs from 'fs/promises';
-import { resolveConfig } from '@pictl/config';
-import { ALGORITHM_IDS } from '@pictl/contracts';
-import { pictl, createCliTestEnv, EXIT_CODES } from '@pictl/testing';
-import type { CliTestEnv } from '@pictl/testing';
+import { resolveConfig } from '@wasm4pm/config';
+import { ALGORITHM_IDS } from '@wasm4pm/contracts';
+import { pictl, createCliTestEnv, EXIT_CODES } from '@wasm4pm/testing';
+import type { CliTestEnv } from '@wasm4pm/testing';
 
 const MINI_XES = `<?xml version="1.0" encoding="UTF-8"?>
 <log xes.version="1.0">
@@ -82,9 +82,9 @@ describe('all algorithms: planner layer', () => {
 
   beforeAll(async () => {
     try {
-      const mod = await import('@pictl/planner');
+      const mod = await import('@wasm4pm/planner');
       plan = (cfg) => mod.plan(cfg as Parameters<typeof mod.plan>[0]) as ReturnType<typeof mod.plan>;
-      console.info('[all-algos] @pictl/planner loaded');
+      console.info('[all-algos] @wasm4pm/planner loaded');
     } catch {
       console.warn('[all-algos] planner not built — planner tests will skip');
     }

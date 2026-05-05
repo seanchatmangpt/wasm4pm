@@ -5,7 +5,7 @@
  * what the system decided to do about the current state — is my process healthy?"
  *
  * Tests the full Perception → Decision → Protection → Optimization cycle via the CLI.
- * No mocks — real @pictl/engine, real WASM, real XES files.
+ * No mocks — real @wasm4pm/engine, real WASM, real XES files.
  *
  * Key contracts verified:
  *   - Error handling: missing input, invalid path exits with correct code

@@ -22,7 +22,7 @@ import {
   serializeDFG,
   deserializeDFG,
   type DFG,
-} from '@pictl/testing';
+} from '@wasm4pm/testing';
 
 describe('DFG Utilities', () => {
   describe('createDFG', () => {

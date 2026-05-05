@@ -1,5 +1,5 @@
 {
-  "name": "@pictl/swarm",
+  "name": "@wasm4pm/swarm",
   "version": "26.4.17",
   "description": "Autonomic swarm coordinator for wasm4pm — multi-worker process mining with convergence detection",
   "type": "module",
@@ -24,8 +24,8 @@
   "dependencies": {
     "@ai-sdk/groq": "^3.0.35",
     "@modelcontextprotocol/sdk": "^1.10.2",
-    "@pictl/contracts": "workspace:*",
-    "@pictl/observability": "workspace:*",
+    "@wasm4pm/contracts": "workspace:*",
+    "@wasm4pm/observability": "workspace:*",
     "ai": "^6.0.168",
     "smol-toml": "^1.3.4",
     "uuid": "^11.1.0",

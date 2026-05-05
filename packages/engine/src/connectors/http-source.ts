@@ -15,9 +15,9 @@ import {
   RetryStrategy,
   AuthConfig,
   AuthType,
-} from '@pictl/contracts';
-import { ok, err, error } from '@pictl/contracts';
-import { createError } from '@pictl/contracts';
+} from '@wasm4pm/contracts';
+import { ok, err, error } from '@wasm4pm/contracts';
+import { createError } from '@wasm4pm/contracts';
 
 /**
  * Configuration for HttpSourceAdapter

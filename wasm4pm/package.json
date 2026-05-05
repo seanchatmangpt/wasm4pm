@@ -48,12 +48,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/seanchatmangpt/pictl.git",
+    "url": "https://github.com/seanchatmangpt/wasm4pm.git",
     "directory": "wasm4pm"
   },
-  "homepage": "https://github.com/seanchatmangpt/pictl/tree/main/wasm4pm",
+  "homepage": "https://github.com/seanchatmangpt/wasm4pm/tree/main/wasm4pm",
   "bugs": {
-    "url": "https://github.com/seanchatmangpt/pictl/issues"
+    "url": "https://github.com/seanchatmangpt/wasm4pm/issues"
   },
   "keywords": [
     "process-mining",

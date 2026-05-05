@@ -12,7 +12,7 @@
  */
 
 import { randomUUID } from 'crypto';
-import type { ExecutionPlan, BudgetEnvelope } from '@pictl/contracts';
+import type { ExecutionPlan, BudgetEnvelope } from '@wasm4pm/contracts';
 import type {
   MiningBackend,
   EventLogIR,
@@ -21,8 +21,8 @@ import type {
   ConformanceResult,
   AnalysisTask,
   ProvenanceChain,
-} from '@pictl/kernel';
-import { DefaultBackendRegistry, WasmBackend, MlBackend, Pm4pyBackend } from '@pictl/kernel';
+} from '@wasm4pm/kernel';
+import { DefaultBackendRegistry, WasmBackend, MlBackend, Pm4pyBackend } from '@wasm4pm/kernel';
 import { NullBackend } from './null-backend.js';
 
 /**

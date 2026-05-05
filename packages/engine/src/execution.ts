@@ -10,7 +10,7 @@ import {
   EngineError,
   StatusUpdate,
   PlanStep,
-} from '@pictl/contracts';
+} from '@wasm4pm/contracts';
 
 /**
  * Step handler function type

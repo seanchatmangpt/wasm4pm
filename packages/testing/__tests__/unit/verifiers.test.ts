@@ -11,7 +11,7 @@ import {
   formatQualityMetrics,
   type PetriNet,
   type VerifierDFG,
-} from '@pictl/testing';
+} from '@wasm4pm/testing';
 
 describe('verifySoundness', () => {
   it('should verify a sound sequential Petri net', () => {

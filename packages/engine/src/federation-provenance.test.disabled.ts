@@ -19,8 +19,8 @@ import {
   wrapDiscoveryResult,
 } from './federation-provenance';
 import type { RawModelOutput } from './federation-provenance';
-import type { EventLogIR, Plan, ModelCapabilities } from '@pictl/contracts';
-import type { BaseConfig } from '@pictl/config';
+import type { EventLogIR, Plan, ModelCapabilities } from '@wasm4pm/contracts';
+import type { BaseConfig } from '@wasm4pm/config';
 
 // ============================================================================
 // Test Fixtures

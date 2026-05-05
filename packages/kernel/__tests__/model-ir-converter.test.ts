@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import type { ModelIR } from '@pictl/contracts';
+import type { ModelIR } from '@wasm4pm/contracts';
 import {
   inferStartActivities,
   inferEndActivities,

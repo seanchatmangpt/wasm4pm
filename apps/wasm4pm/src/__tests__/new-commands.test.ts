@@ -79,7 +79,7 @@ interface TestEnv {
 }
 
 async function createTestEnv(): Promise<TestEnv> {
-  const tempDir = await fs.mkdtemp(path.join(tmpdir(), 'pictl-test-'));
+  const tempDir = await fs.mkdtemp(path.join(tmpdir(), 'wpm-test-'));
   const xesPath = path.join(tempDir, 'test.xes');
   await fs.writeFile(xesPath, MINIMAL_XES, 'utf-8');
 
@@ -97,7 +97,7 @@ async function createTestEnv(): Promise<TestEnv> {
 }
 
 /**
- * CLI execution helper using npx pictl
+ * CLI execution helper using npx wpm
  */
 interface CliResult {
   exitCode: number;
@@ -108,10 +108,10 @@ interface CliResult {
 function runCli(args: string[], timeoutMs: number = 30000): Promise<CliResult> {
   return new Promise((resolve) => {
     const start = Date.now();
-    // Use direct path to built CLI binary instead of npx pictl
-    // npx can't resolve pictl in vitest child_process (no symlink in node_modules/.bin)
-    const cliPath = path.resolve(__dirname, '../../dist/bin/pictl.js');
-    const cwd = path.resolve(__dirname, '../..');  // Set working directory to apps/pictl
+    // Use direct path to built CLI binary instead of npx wpm
+    // npx can't resolve wpm in vitest child_process (no symlink in node_modules/.bin)
+    const cliPath = path.resolve(__dirname, '../../dist/bin/wpm.js');
+    const cwd = path.resolve(__dirname, '../..');  // Set working directory to apps/wasm4pm
     const child = execFile(process.execPath, [cliPath, ...args], {
       timeout: timeoutMs,
       maxBuffer: 10 * 1024 * 1024,

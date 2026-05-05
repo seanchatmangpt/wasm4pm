@@ -19,8 +19,8 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import * as path from 'path';
 import * as fs from 'fs/promises';
-import { pictl, assertExitCode, assertJsonOutput, createCliTestEnv, EXIT_CODES } from '@pictl/testing';
-import type { CliTestEnv } from '@pictl/testing';
+import { pictl, assertExitCode, assertJsonOutput, createCliTestEnv, EXIT_CODES } from '@wasm4pm/testing';
+import type { CliTestEnv } from '@wasm4pm/testing';
 import { PICTL } from '../helpers/cli.js';
 
 let _env: CliTestEnv | null = null;

@@ -1,9 +1,9 @@
 import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { resolveConfig as loadConfig } from '@pictl/config';
-import { WasmLoader } from '@pictl/engine';
-import { ALGORITHM_CLI_ALIASES } from '@pictl/contracts';
+import { resolveConfig as loadConfig } from '@wasm4pm/config';
+import { WasmLoader } from '@wasm4pm/engine';
+import { ALGORITHM_CLI_ALIASES } from '@wasm4pm/contracts';
 import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { savePredictionResult } from './results.js';
@@ -19,7 +19,7 @@ export interface RunOptions extends OutputOptions {
   timeout?: number;
 }
 
-/** All algorithms supported by pictl run, mapped to their WASM discovery functions. */
+/** All algorithms supported by wpm run, mapped to their WASM discovery functions. */
 const ALGORITHMS = [
   'dfg',
   'alpha',
@@ -135,7 +135,7 @@ export const run = defineCommand({
     },
     config: {
       type: 'string',
-      description: 'Path to configuration file (pictl.toml or wasm4pm.json)',
+      description: 'Path to configuration file (wasm4pm.toml or wasm4pm.json)',
     },
     algorithm: {
       type: 'string',
@@ -262,7 +262,7 @@ export const run = defineCommand({
 
       if (!inputPath) {
         formatter.error(
-          'Input file required.\n\nUsage:  pictl run <log.xes>\n        pictl run <log.xes> --algorithm heuristic\n\nRun "pictl --help" to see all commands.'
+          'Input file required.\n\nUsage:  wpm run <log.xes>\n        wpm run <log.xes> --algorithm heuristic\n\nRun "wpm --help" to see all commands.'
         );
         process.exit(EXIT_CODES.source_error);
       }
@@ -497,9 +497,9 @@ export const run = defineCommand({
         }
 
         formatter.log('');
-        formatter.log('  Run "pictl results" to view saved results.');
+        formatter.log('  Run "wpm results" to view saved results.');
         formatter.log(
-          '  Run "pictl compare dfg,heuristic -i ' +
+          '  Run "wpm compare dfg,heuristic -i ' +
             path.basename(inputPath) +
             '" to compare algorithms.'
         );
@@ -535,7 +535,7 @@ export const run = defineCommand({
         formatter.error('Discovery failed', error);
       } else {
         formatter.error(
-          `Discovery failed: ${error instanceof Error ? error.message : String(error)}\n\nRun "pictl doctor" to check your environment.`
+          `Discovery failed: ${error instanceof Error ? error.message : String(error)}\n\nRun "wpm doctor" to check your environment.`
         );
       }
       process.exit(EXIT_CODES.execution_error);

@@ -3,7 +3,7 @@ import * as fs from 'fs/promises';
 import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import type { OutputOptions } from '../output.js';
-import { WasmLoader } from '@pictl/engine';
+import { WasmLoader } from '@wasm4pm/engine';
 import { createQuietObservabilityLayer } from '../observability-util.js';
 
 export interface ConformanceOptions extends OutputOptions {
@@ -80,7 +80,7 @@ export const conformance = defineCommand({
 
       if (!inputPath) {
         formatter.error(
-          'Input file required.\n\nUsage:  pictl conformance <log.xes>\n        pictl conformance <log.xes> --model <model.json>\n\nRun "pictl conformance --help" for details.'
+          'Input file required.\n\nUsage:  wpm conformance <log.xes>\n        wpm conformance <log.xes> --model <model.json>\n\nRun "wpm conformance --help" for details.'
         );
         process.exit(EXIT_CODES.source_error);
       }
@@ -186,7 +186,7 @@ export const conformance = defineCommand({
       const fitnessValue = (conformanceResult as Record<string, unknown>).fitness ?? 0.0;
       const isFit = (fitnessValue as number) >= threshold;
       const result = {
-        schema: 'chatmangpt.pictl.conformance.v1',
+        schema: 'chatmangpt.wasm4pm.conformance.v1',
         status: isFit ? 'success' : 'conformance_fail',
         input: inputPath,
         activityKey,

@@ -5,7 +5,7 @@
  * Bridges raw WASM errors from wasm4pm into the contracts TypedError system.
  * Provides classification, context enrichment, and recovery guidance.
  */
-import { createTypedError } from '@pictl/contracts';
+import { createTypedError } from '@wasm4pm/contracts';
 /**
  * KernelError — extends Error with structured context for kernel operations
  */

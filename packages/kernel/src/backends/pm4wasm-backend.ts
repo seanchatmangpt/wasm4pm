@@ -777,7 +777,7 @@ export class Pm4wasmBackend implements MiningBackend {
 
   /**
    * Load WASM module dynamically.
-   * In Phase 2, this will import from @seanchatmangpt/pictl or equivalent.
+   * In Phase 2, this will import from @wasm4pm/cli or equivalent.
    */
   private async loadWasmModule(): Promise<any> {
     return await import('wasm4pm');

@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { resolveConfig as loadConfig } from "@pictl/config";;
-import type { CliOverrides } from '@pictl/config';
+import { resolveConfig as loadConfig } from "@wasm4pm/config";;
+import type { CliOverrides } from '@wasm4pm/config';
 
 describe('Config Resolution Order', () => {
   let tmpDir: string;

@@ -1,10 +1,10 @@
 /**
  * Shared CLI test utilities for playground scenarios.
  *
- * Re-exports from @pictl/testing where possible — no duplication.
+ * Re-exports from @wasm4pm/testing where possible — no duplication.
  * Adds only playground-specific helpers not available in the testing package.
  */
-import { runCli, assertExitCode, EXIT_CODES } from '@pictl/testing';
+import { runCli, assertExitCode, EXIT_CODES } from '@wasm4pm/testing';
 import * as path from 'path';
 import * as url from 'url';
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));

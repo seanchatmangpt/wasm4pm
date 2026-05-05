@@ -1,7 +1,7 @@
 import { defineCommand } from 'citty';
 import { getFormatter, JSONFormatter } from '../../output.js';
 import { EXIT_CODES } from '../../exit-codes.js';
-import { AgentRegistry } from '@pictl/agents';
+import { AgentRegistry } from '@wasm4pm/agents';
 export const status = defineCommand({
     meta: {
         name: 'status',

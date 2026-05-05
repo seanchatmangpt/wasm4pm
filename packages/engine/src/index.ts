@@ -1,10 +1,10 @@
 /**
- * @pictl/engine
+ * @wasm4pm/engine
  * Engine lifecycle and state machine for wasm4pm
  * Provides state management, error handling, and execution orchestration
  */
 
-// Re-export types from @pictl/contracts
+// Re-export types from @wasm4pm/contracts
 export type {
   EngineState,
   EngineStatus,
@@ -13,7 +13,7 @@ export type {
   EngineError,
   StatusUpdate,
   PlanStep,
-} from '@pictl/contracts';
+} from '@wasm4pm/contracts';
 
 // Engine lifecycle and state machine
 export { Engine, createSimpleEngine, createFullEngine } from './engine.js';

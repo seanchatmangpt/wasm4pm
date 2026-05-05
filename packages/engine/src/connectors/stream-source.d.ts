@@ -5,7 +5,7 @@
  * or process.stdin for piped input.
  */
 import type { Readable } from 'stream';
-import { SourceAdapter, Capabilities, EventStream, Result, SourceAdapterKind } from '@pictl/contracts';
+import { SourceAdapter, Capabilities, EventStream, Result, SourceAdapterKind } from '@wasm4pm/contracts';
 /**
  * Configuration for StreamSourceAdapter
  */

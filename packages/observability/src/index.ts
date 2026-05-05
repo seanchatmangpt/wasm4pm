@@ -1,5 +1,5 @@
 /**
- * @pictl/observability
+ * @wasm4pm/observability
  * Unified observability, metrics, and telemetry for wasm4pm.
  */
 

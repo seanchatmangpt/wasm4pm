@@ -660,12 +660,12 @@ export class Pm4wasmBackend {
     /**
      * Load WASM module dynamically.
      * Placeholder: actual implementation depends on WASM bundler configuration.
-     * In Phase 2, this will import from @seanchatmangpt/pictl or equivalent.
+     * In Phase 2, this will import from @wasm4pm/cli or equivalent.
      */
     async loadWasmModule() {
         // Placeholder: would dynamically import WASM module here
         // Example (Phase 2):
-        // const wasmModule = await import('@seanchatmangpt/pictl');
+        // const wasmModule = await import('@wasm4pm/cli');
         // return wasmModule;
         return {
             discovery_info: async () => ({ version: '1.0' }),

@@ -44,7 +44,7 @@ function deriveLatencyClass(estimatedDurationMs) {
  * - supportedAlgorithmIds: 6 algorithms
  * - maxConcurrentInvocations: 4
  *
- * The @pictl/ml package is loaded dynamically to avoid circular dependencies.
+ * The @wasm4pm/ml package is loaded dynamically to avoid circular dependencies.
  */
 export class MlBackend {
     constructor() {
@@ -170,7 +170,7 @@ export class MlBackend {
             if (!SUPPORTED_ALGORITHM_IDS.includes(task.task_type)) {
                 return this.createFailedAnalysisResult(task.task_type, startMs, `Analysis task ${task.task_type} not supported by ML backend`);
             }
-            // TODO: Call @pictl/ml package with task parameters
+            // TODO: Call @wasm4pm/ml package with task parameters
             // For now, return stub result
             const result = {
                 task_type: task.task_type,
@@ -205,7 +205,7 @@ export class MlBackend {
     async healthCheck() {
         const startMs = Date.now();
         try {
-            // TODO: Attempt to load @pictl/ml package
+            // TODO: Attempt to load @wasm4pm/ml package
             // For now, return healthy
             const latency_ms = Date.now() - startMs;
             return {

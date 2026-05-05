@@ -7,10 +7,10 @@
  * Key principle: Trust event evidence, not code paths.
  * Verification: OTEL span + test assertion + event log mining (AND logic)
  *
- * Binary: @seanchatmangpt/pictl (published npm package, not local source)
+ * Binary: @wasm4pm/cli (published npm package, not local source)
  */
 import { describe, it, expect, beforeAll } from 'vitest';
-import pictl from '@seanchatmangpt/pictl';
+import pictl from '@wasm4pm/cli';
 import { generateDriftedLog, generateReworkLog, generateDiverseLogs, generateDeviatingLog, generateSeasonalLog, countManualDeviations, verifyAnomaly } from './jtbd-generators.js';
 describe('JTBD: End-to-End Business Challenges', () => {
     beforeAll(async () => {

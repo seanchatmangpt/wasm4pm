@@ -3,7 +3,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import { existsSync } from 'fs';
 import { getFormatter } from '../output.js';
-import { getExampleTomlConfig, getExampleJsonConfig } from '@pictl/config';
+import { getExampleTomlConfig, getExampleJsonConfig } from '@wasm4pm/config';
 // Template content generators
 function getEnvExampleContent() {
     return `# Environment variables for wasm4pm
@@ -152,7 +152,7 @@ async function validateConfigFiles(dirpath, formatter, outputFormat) {
     // Try to load TOML if it exists
     if (existsSync(tomlPath)) {
         try {
-            const { resolveConfig } = await import('@pictl/config');
+            const { resolveConfig } = await import('@wasm4pm/config');
             await resolveConfig({ configSearchPaths: [dirpath] });
             if (outputFormat === 'human') {
                 formatter.debug(`✓ TOML config is valid: ${tomlPath}`);
@@ -167,7 +167,7 @@ async function validateConfigFiles(dirpath, formatter, outputFormat) {
     // Try to load JSON if it exists
     if (existsSync(jsonPath)) {
         try {
-            const { resolveConfig } = await import('@pictl/config');
+            const { resolveConfig } = await import('@wasm4pm/config');
             await resolveConfig({ configSearchPaths: [dirpath] });
             if (outputFormat === 'human') {
                 formatter.debug(`✓ JSON config is valid: ${jsonPath}`);

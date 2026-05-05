@@ -1,5 +1,5 @@
 /**
- * @pictl/engine
+ * @wasm4pm/engine
  * Engine lifecycle and state machine for wasm4pm
  * Provides state management, error handling, and execution orchestration
  */

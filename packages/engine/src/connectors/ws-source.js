@@ -6,7 +6,7 @@
  * Supports reconnection with exponential backoff.
  */
 import { createHash } from 'crypto';
-import { ok, err, isOk } from '@pictl/contracts';
+import { ok, err, isOk } from '@wasm4pm/contracts';
 /**
  * EventStream implementation that reads from a WebSocket connection.
  * Buffers incoming messages and serves them in batches.
@@ -103,7 +103,7 @@ class WebSocketEventStream {
 /**
  * WebSocketSourceAdapter — reads event data from a WebSocket server.
  *
- * Implements the SourceAdapter contract from @pictl/contracts.
+ * Implements the SourceAdapter contract from @wasm4pm/contracts.
  * Each WebSocket message should be a JSON event object or an array of events.
  */
 export class WebSocketSourceAdapter {

@@ -18,7 +18,7 @@
  */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import * as fs from 'fs/promises';
-import { pictl, assertExitCode, assertJsonOutput, createCliTestEnv, EXIT_CODES } from '@pictl/testing';
+import { pictl, assertExitCode, assertJsonOutput, createCliTestEnv, EXIT_CODES } from '@wasm4pm/testing';
 // ─── Test Data ───────────────────────────────────────────────────────────────
 // Simple DecisionGraph: A and B are both start and end nodes, no ordering
 const DG_PARALLEL = `DG=(nodes={A, B}, order={}, starts=[A, B], ends=[A, B], empty=false)`;

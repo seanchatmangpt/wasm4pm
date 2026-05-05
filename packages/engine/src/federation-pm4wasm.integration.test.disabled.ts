@@ -23,8 +23,8 @@ import type {
   EventLogIR,
   ResultEnvelope,
   ModelIR,
-} from '@pictl/kernel';
-import type { BudgetEnvelope } from '@pictl/contracts';
+} from '@wasm4pm/kernel';
+import type { BudgetEnvelope } from '@wasm4pm/contracts';
 
 /**
  * Mock MiningBackend for testing

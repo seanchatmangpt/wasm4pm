@@ -3,14 +3,14 @@ import * as fs from 'fs/promises';
 import { watch as fsWatch } from 'fs';
 import * as path from 'path';
 import chokidar from 'chokidar';
-import { resolveConfig as loadConfig } from '@pictl/config';
+import { resolveConfig as loadConfig } from '@wasm4pm/config';
 import { 
   createFullEngine, 
   WasmLoader, 
-} from '@pictl/engine';
-import { getTracer, WatchingSpans } from '@pictl/observability';
-import { WasmBackend } from '@pictl/kernel';
-import { plan } from '@pictl/planner';
+} from '@wasm4pm/engine';
+import { getTracer, WatchingSpans } from '@wasm4pm/observability';
+import { WasmBackend } from '@wasm4pm/kernel';
+import { plan } from '@wasm4pm/planner';
 import { StreamingOutput } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import type { OutputOptions } from '../output.js';
