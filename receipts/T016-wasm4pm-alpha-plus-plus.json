@@ -1,0 +1,45 @@
+{
+  "task": "T016",
+  "title": "Alpha++ process discovery",
+  "codebase": "/Users/sac/wasm4pm",
+  "file": "wasm4pm/src/algorithms.rs",
+  "status": "complete",
+  "date": "2026-04-26",
+  "implementation": {
+    "function": "alpha_plus_plus_inner (called from discover_alpha_plus_plus wasm_bindgen export)",
+    "steps": [
+      "1. Compute DF relations with min_support threshold",
+      "2. Build L1L = activities a where (a,a) in DF (length-1 loops)",
+      "3. Build L2L = pairs (a,b) where (a,b) and (b,a) both in DF and a!=b (length-2 loops)",
+      "4. Build Alpha++-aware causal relation: standard causal OR L2L pair",
+      "5. Collect place candidates (A,B): all a in A causally precede all b in B; within-A and within-B activities are in # relation",
+      "6. Expand candidates greedily by merging compatible pairs on A-side and B-side",
+      "7. Retain maximal pairs only",
+      "8. Construct Petri net: source/sink places, transitions per activity, places per maximal candidate, self-loop places for L1L, back-arc places for L2L"
+    ],
+    "key_alpha_plus_plus_extensions": [
+      "L1L detection: self-following activities get a self-loop place (t_a -> p_loop_a -> t_a)",
+      "L2L detection: back-arc places for mutual DF pairs (t_b -> p_back_a_b -> t_a)",
+      "L2L pairs reclassified from Parallel to Causal in footprint matrix"
+    ]
+  },
+  "tests": [
+    {
+      "name": "test_alpha_plus_plus_linear_process",
+      "description": "Linear log A->B->C discovers correct transitions (A,B,C) and source/sink places",
+      "result": "PASSED"
+    },
+    {
+      "name": "test_alpha_plus_plus_length1_loop_detected",
+      "description": "Log A->A->B discovers self-loop place for A (loop(A) label)",
+      "result": "PASSED"
+    },
+    {
+      "name": "test_alpha_plus_plus_length2_loop_detected",
+      "description": "Log A->B->A->B->C discovers back-arc place for L2L pair (A,B) or (B,A)",
+      "result": "PASSED"
+    }
+  ],
+  "build": "cargo check -p wasm4pm: PASSED (no errors, pre-existing warnings only)",
+  "test_run": "cargo test -p wasm4pm --lib algorithms: 3/3 PASSED"
+}

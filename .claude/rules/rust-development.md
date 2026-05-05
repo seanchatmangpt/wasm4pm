@@ -9,15 +9,15 @@ pictl/                          # Workspace root
 ├── Cargo.toml                  # members = ["wasm4pm", "tps-metrics"]
 ├── wasm4pm/                    # WASM crate (source: wasm4pm/src/)
 │   ├── Cargo.toml              # crate name: "pictl"
-│   ├── package.json            # npm package: "@seanchatmangpt/pictl"
+│   ├── package.json            # npm package: "@wasm4pm/cli"
 │   └── src/                    # 114 modules
 ├── tps-metrics/               # Metrics crate
 └── target/                    # Build artifacts (auto-generated)
 ```
 
 **Key naming:**
-- Crate name: `pictl`
-- npm package: `@seanchatmangpt/pictl`
+- Crate name: `wpm` (wasm4pm)
+- npm package: `@wasm4pm/cli`
 - Source directory: `wasm4pm/` (historical, not renamed)
 - Binary artifact: `liblinucb.rlib` (in workspace root, gitignored)
 
@@ -150,7 +150,7 @@ Cargo auto-discovers `tests/*.rs` but NOT `tests/subdir/*.rs`.
 - Never use PATCH > 31
 
 **Known inconsistency:** Four different version numbers exist across the project:
-- `apps/pictl/package.json`: `26.4.10`
+- `apps/wasm4pm/package.json`: `26.4.10`
 - `wasm4pm/Cargo.toml`: `26.4.10`
 - `wasm4pm/package.json`: `26.4.6`
-- `apps/pictl/src/cli.ts` (hardcoded): `26.4.7`
+- `apps/wasm4pm/src/cli.ts` (hardcoded): `26.4.7`

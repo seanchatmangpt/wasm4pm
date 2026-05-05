@@ -1084,7 +1084,7 @@ const receipts = await Promise.all([
 
 **Flow:**
 ```typescript
-import { Engine } from '@pictl/engine';
+import { Engine } from '@wasm4pm/engine';
 import express from 'express';
 
 const app = express();

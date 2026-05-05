@@ -1,4 +1,4 @@
-// gpu/mod.rs — GPU compute module for pictl process mining
+// gpu/mod.rs — GPU compute module for wasm4pm process mining
 //
 // This module provides GPU-accelerated inference for the LinUCB contextual
 // bandit algorithm (resource/intervention prediction perspective).

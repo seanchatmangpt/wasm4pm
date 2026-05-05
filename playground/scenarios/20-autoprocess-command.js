@@ -5,7 +5,7 @@
  * what the system decided to do about the current state — is my process healthy?"
  *
  * Tests the full Perception → Decision → Protection → Optimization cycle via the CLI.
- * No mocks — real @pictl/engine, real WASM, real XES files.
+ * No mocks — real @wasm4pm/engine, real WASM, real XES files.
  *
  * Key contracts verified:
  *   - Error handling: missing input, invalid path exits with correct code
@@ -17,7 +17,7 @@
  *   - Determinism: two runs produce identical structure and metrics
  *   - Real-scale: BPI 2020 (20MB+) processes without timeout/error
  *
- * Binary: apps/pictl/dist/bin/pictl.js (must be built first)
+ * Binary: apps/wasm4pm/dist/bin/wpm.js (must be built first)
  */
 import { describe, it, expect } from 'vitest';
 import { assertExitCode, pictl, extractJson, combinedOutput, EXIT_CODES, resolveRepo } from '../helpers/cli.js';

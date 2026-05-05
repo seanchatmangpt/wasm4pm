@@ -24,7 +24,7 @@ use wasm_bindgen::prelude::*;
 #[wasm_bindgen]
 pub fn extract_prefix_features_wasm(prefix_json: &str) -> Result<JsValue, JsValue> {
     let prefix: Vec<String> = serde_json::from_str(prefix_json)
-        .map_err(|e| JsValue::from_str(&format!("Invalid prefix JSON: {}", e)))?;
+        .map_err(|e| crate::error::js_val(&format!("Invalid prefix JSON: {}", e)))?;
 
     let features = extract_prefix_features(&prefix);
 
@@ -37,8 +37,8 @@ pub fn extract_prefix_features_wasm(prefix_json: &str) -> Result<JsValue, JsValu
     });
 
     let serialized = serde_json::to_string(&result)
-        .map_err(|e| JsValue::from_str(&format!("Serialization error: {}", e)))?;
-    Ok(JsValue::from_str(&serialized))
+        .map_err(|e| crate::error::js_val(&format!("Serialization error: {}", e)))?;
+    Ok(crate::error::js_val(&serialized))
 }
 
 /// Compute rework metrics for a trace (JSON string array).
@@ -57,7 +57,7 @@ pub fn extract_prefix_features_wasm(prefix_json: &str) -> Result<JsValue, JsValu
 #[wasm_bindgen]
 pub fn compute_rework_score(trace_json: &str) -> Result<JsValue, JsValue> {
     let trace: Vec<String> = serde_json::from_str(trace_json)
-        .map_err(|e| JsValue::from_str(&format!("Invalid trace JSON: {}", e)))?;
+        .map_err(|e| crate::error::js_val(&format!("Invalid trace JSON: {}", e)))?;
 
     let rework_count = calculate_rework_score(&trace);
     let denominator = if trace.len() > 1 { trace.len() - 1 } else { 1 };
@@ -77,8 +77,8 @@ pub fn compute_rework_score(trace_json: &str) -> Result<JsValue, JsValue> {
     });
 
     let serialized = serde_json::to_string(&result)
-        .map_err(|e| JsValue::from_str(&format!("Serialization error: {}", e)))?;
-    Ok(JsValue::from_str(&serialized))
+        .map_err(|e| crate::error::js_val(&format!("Serialization error: {}", e)))?;
+    Ok(crate::error::js_val(&serialized))
 }
 
 /// Build a transition probability graph from an event log stored in state.
@@ -138,11 +138,11 @@ pub fn build_transition_probabilities(
             });
 
             serde_json::to_string(&result)
-                .map_err(|e| JsValue::from_str(&format!("Serialization error: {}", e)))
+                .map_err(|e| crate::error::js_val(&format!("Serialization error: {}", e)))
         }
-        Some(_) => Err(JsValue::from_str("Handle is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog handle not found")),
+        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
+        None => Err(crate::error::js_val("EventLog handle not found")),
     })?;
 
-    Ok(JsValue::from_str(&result_json))
+    Ok(crate::error::js_val(&result_json))
 }

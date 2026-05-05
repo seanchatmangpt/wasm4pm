@@ -10,7 +10,7 @@
 - Inline mocks allowed
 - Fast (<100ms per test)
 - Test public APIs in isolation
-- Run: `pnpm --filter @pictl/<package> test`
+- Run: `pnpm --filter @wasm4pm/<package> test`
 
 ### 2. Behavioral Tests
 **Location:** `playground/`
@@ -44,7 +44,7 @@ Same input → same output (bit-exact).
 
 **Verification:**
 ```typescript
-import { checkDeterminism, receiptsMatch } from '@pictl/testing';
+import { checkDeterminism, receiptsMatch } from '@wasm4pm/testing';
 
 // Run twice, compare receipts
 const receipt1 = await pictl.run(config);
@@ -71,7 +71,7 @@ The algorithm explanation from `explain()` must match the execution plan from `p
 
 **Verification:**
 ```typescript
-import { checkParity, checkParityBatch } from '@pictl/testing';
+import { checkParity, checkParityBatch } from '@wasm4pm/testing';
 
 const config = resolveConfig({ algorithm: 'dfg' });
 const planResult = plan(config);
@@ -104,7 +104,7 @@ checkParity(planResult, explainResult); // Throws if mismatch
 **100% of operations must emit OTEL spans.**
 
 ### Span Requirements
-- **Service name**: `pictl` (or package name)
+- **Service name**: `wpm` (wasm4pm) (or package name)
 - **Span name**: `operation_name` (e.g., `healing.diagnosis`, `kernel.run`)
 - **Status**: `"ok"` or `"error"` (NOT omitted)
 - **Attributes**: Key parameters (`agent_id`, `algorithm`, `log_size`, etc.)
@@ -131,7 +131,7 @@ checkParity(planResult, explainResult); // Throws if mismatch
 
 **Generated semconv constants:**
 ```typescript
-import { HealingAttributes } from '@pictl/semconv/incubating';
+import { HealingAttributes } from '@wasm4pm/semconv/incubating';
 assert(result.failure_mode === HealingAttributes.healing_failure_mode_values().deadlock);
 ```
 

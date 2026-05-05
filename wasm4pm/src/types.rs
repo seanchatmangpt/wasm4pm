@@ -23,8 +23,8 @@ impl WasmEventLog {
                 let count = log.traces.iter().map(|t| t.events.len()).sum();
                 Ok(count)
             }
-            Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
-            None => Err(JsValue::from_str("EventLog not found")),
+            Some(_) => Err(crate::error::js_val("Object is not an EventLog")),
+            None => Err(crate::error::js_val("EventLog not found")),
         })
     }
 
@@ -32,8 +32,8 @@ impl WasmEventLog {
     pub fn case_count(&self) -> Result<usize, JsValue> {
         get_or_init_state().with_object(&self.handle, |obj| match obj {
             Some(StoredObject::EventLog(log)) => Ok(log.traces.len()),
-            Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
-            None => Err(JsValue::from_str("EventLog not found")),
+            Some(_) => Err(crate::error::js_val("Object is not an EventLog")),
+            None => Err(crate::error::js_val("EventLog not found")),
         })
     }
 
@@ -41,8 +41,8 @@ impl WasmEventLog {
     pub fn attribute_count(&self) -> Result<usize, JsValue> {
         get_or_init_state().with_object(&self.handle, |obj| match obj {
             Some(StoredObject::EventLog(log)) => Ok(log.attributes.len()),
-            Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
-            None => Err(JsValue::from_str("EventLog not found")),
+            Some(_) => Err(crate::error::js_val("Object is not an EventLog")),
+            None => Err(crate::error::js_val("EventLog not found")),
         })
     }
 
@@ -58,8 +58,8 @@ impl WasmEventLog {
                 });
                 to_js(&stats)
             }
-            Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
-            None => Err(JsValue::from_str("EventLog not found")),
+            Some(_) => Err(crate::error::js_val("Object is not an EventLog")),
+            None => Err(crate::error::js_val("EventLog not found")),
         })
     }
 }
@@ -89,8 +89,8 @@ impl WasmOCEL {
     pub fn event_count(&self) -> Result<usize, JsValue> {
         get_or_init_state().with_object(&self.handle, |obj| match obj {
             Some(StoredObject::OCEL(ocel)) => Ok(ocel.events.len()),
-            Some(_) => Err(JsValue::from_str("Object is not an OCEL")),
-            None => Err(JsValue::from_str("OCEL not found")),
+            Some(_) => Err(crate::error::js_val("Object is not an OCEL")),
+            None => Err(crate::error::js_val("OCEL not found")),
         })
     }
 
@@ -98,8 +98,8 @@ impl WasmOCEL {
     pub fn object_count(&self) -> Result<usize, JsValue> {
         get_or_init_state().with_object(&self.handle, |obj| match obj {
             Some(StoredObject::OCEL(ocel)) => Ok(ocel.objects.len()),
-            Some(_) => Err(JsValue::from_str("Object is not an OCEL")),
-            None => Err(JsValue::from_str("OCEL not found")),
+            Some(_) => Err(crate::error::js_val("Object is not an OCEL")),
+            None => Err(crate::error::js_val("OCEL not found")),
         })
     }
 
@@ -113,8 +113,8 @@ impl WasmOCEL {
                 });
                 to_js(&stats)
             }
-            Some(_) => Err(JsValue::from_str("Object is not an OCEL")),
-            None => Err(JsValue::from_str("OCEL not found")),
+            Some(_) => Err(crate::error::js_val("Object is not an OCEL")),
+            None => Err(crate::error::js_val("OCEL not found")),
         })
     }
 }

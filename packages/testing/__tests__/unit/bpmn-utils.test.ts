@@ -16,7 +16,7 @@ import {
   extractActivityNames,
   formatBPMNValidationResult,
   type BPMNValidationResult,
-} from '@pictl/testing';
+} from '@wasm4pm/testing';
 
 const describeIf = typeof DOMParser !== 'undefined' ? describe : describe.skip;
 
@@ -70,27 +70,27 @@ describe('createInvalidBPMN', () => {
 
 describeIf('parseBPMN + validateBPMN', () => {
   it('should validate minimal BPMN as valid', async () => {
-    const { validateBPMN } = await import('@pictl/testing');
+    const { validateBPMN } = await import('@wasm4pm/testing');
     const result = validateBPMN(createMinimalBPMN());
     expect(result.valid).toBe(true);
     expect(result.errors).toHaveLength(0);
   });
 
   it('should detect invalid BPMN', async () => {
-    const { validateBPMN } = await import('@pictl/testing');
+    const { validateBPMN } = await import('@wasm4pm/testing');
     const result = validateBPMN(createInvalidBPMN());
     expect(result.valid).toBe(false);
     expect(result.errors.length).toBeGreaterThan(0);
   });
 
   it('should validate process mining requirements', async () => {
-    const { validateBPMNForProcessMining } = await import('@pictl/testing');
+    const { validateBPMNForProcessMining } = await import('@wasm4pm/testing');
     const result = validateBPMNForProcessMining(createMinimalBPMN());
     expect(result.valid).toBe(true);
   });
 
   it('should warn about missing tasks', async () => {
-    const { validateBPMNForProcessMining } = await import('@pictl/testing');
+    const { validateBPMNForProcessMining } = await import('@wasm4pm/testing');
     const minimalNoTasks = `<?xml version="1.0" encoding="UTF-8"?>
 <definitions id="D1" targetNamespace="http://bpmn.io/schema/bpmn">
   <process id="P1" isExecutable="false">
@@ -104,14 +104,14 @@ describeIf('parseBPMN + validateBPMN', () => {
   });
 
   it('should detect invalid XML', async () => {
-    const { validateBPMN } = await import('@pictl/testing');
+    const { validateBPMN } = await import('@wasm4pm/testing');
     const result = validateBPMN('not xml at all');
     expect(result.valid).toBe(false);
     expect(result.errors[0].message).toContain('Invalid XML');
   });
 
   it('should round-trip BPMN XML', async () => {
-    const { roundTripBPMN } = await import('@pictl/testing');
+    const { roundTripBPMN } = await import('@wasm4pm/testing');
     const xml = createMinimalBPMN();
     const result = roundTripBPMN(xml);
     expect(result.success).toBe(true);
@@ -123,7 +123,7 @@ describeIf('parseBPMN + validateBPMN', () => {
 
 describeIf('countBPMNElementsByType', () => {
   it('should count elements by type', async () => {
-    const { countBPMNElementsByType } = await import('@pictl/testing');
+    const { countBPMNElementsByType } = await import('@wasm4pm/testing');
     const counts = countBPMNElementsByType(createMinimalBPMN());
     expect(counts.get('startEvent')).toBe(1);
     expect(counts.get('endEvent')).toBe(1);
@@ -134,7 +134,7 @@ describeIf('countBPMNElementsByType', () => {
 
 describeIf('extractActivityNames', () => {
   it('should extract task names', async () => {
-    const { extractActivityNames } = await import('@pictl/testing');
+    const { extractActivityNames } = await import('@wasm4pm/testing');
     const names = extractActivityNames(createMinimalBPMN());
     expect(names).toContain('Task A');
     expect(names).toContain('Task B');

@@ -47,8 +47,11 @@ pub fn analyze_variant_complexity(
 
             let mut variant_counts: Vec<usize> = variants.values().copied().collect();
             variant_counts.sort_unstable_by(|a, b| b.cmp(a));
-            let coverage_top_10: f64 =
-                variant_counts.iter().take(10).map(|&v| v as f64 / total).sum();
+            let coverage_top_10: f64 = variant_counts
+                .iter()
+                .take(10)
+                .map(|&v| v as f64 / total)
+                .sum();
 
             let max_entropy = if variants.len() > 1 {
                 (variants.len() as f64).log2()
@@ -65,8 +68,8 @@ pub fn analyze_variant_complexity(
                 "predominant_variant_size": variant_counts.first().copied().unwrap_or(0),
             }))
         }
-        Some(_) => Err(JsValue::from_str("Not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(crate::error::js_val("Not an EventLog")),
+        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 
@@ -113,8 +116,8 @@ pub fn compute_activity_transition_matrix(
                 .filter_map(|((from, to), count)| {
                     activities.get(*from as usize).and_then(|from_name| {
                         activities.get(*to as usize).map(|to_name| {
-                            let prob =
-                                *count as f64 / activity_total.get(from).copied().unwrap_or(1) as f64;
+                            let prob = *count as f64
+                                / activity_total.get(from).copied().unwrap_or(1) as f64;
                             json!({
                                 "from": from_name,
                                 "to": to_name,
@@ -131,8 +134,8 @@ pub fn compute_activity_transition_matrix(
                 "num_activities": activities.len(),
             }))
         }
-        Some(_) => Err(JsValue::from_str("Not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(crate::error::js_val("Not an EventLog")),
+        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 
@@ -157,7 +160,8 @@ pub fn analyze_process_speedup(
 
                 // Calculate gaps using real ISO-8601 timestamp parsing
                 for i in 0..timestamps.len().saturating_sub(1) {
-                    let gap = crate::parse_iso8601_duration(&timestamps[i], &timestamps[i + 1]).abs();
+                    let gap =
+                        crate::parse_iso8601_duration(&timestamps[i], &timestamps[i + 1]).abs();
                     time_gaps.push(gap);
                 }
             }
@@ -186,8 +190,8 @@ pub fn analyze_process_speedup(
                 "speedup_range": percentile_75 - percentile_25,
             }))
         }
-        Some(_) => Err(JsValue::from_str("Not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(crate::error::js_val("Not an EventLog")),
+        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 
@@ -237,8 +241,8 @@ pub fn compute_trace_similarity_matrix(
                 "total_pairs": (log.traces.len() * (log.traces.len() - 1)) / 2,
             }))
         }
-        Some(_) => Err(JsValue::from_str("Not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(crate::error::js_val("Not an EventLog")),
+        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 
@@ -273,10 +277,8 @@ pub fn analyze_temporal_bottlenecks(
                     .collect();
 
                 for i in 0..activities.len().saturating_sub(1) {
-                    let duration = crate::parse_iso8601_duration(
-                        &activities[i].1,
-                        &activities[i + 1].1,
-                    );
+                    let duration =
+                        crate::parse_iso8601_duration(&activities[i].1, &activities[i + 1].1);
                     activity_durations
                         .entry(activities[i].0.clone())
                         .or_default()
@@ -301,8 +303,8 @@ pub fn analyze_temporal_bottlenecks(
                 "bottlenecks": bottlenecks,
             }))
         }
-        Some(_) => Err(JsValue::from_str("Not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(crate::error::js_val("Not an EventLog")),
+        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 
@@ -314,8 +316,7 @@ pub fn extract_activity_ordering(
 ) -> Result<JsValue, JsValue> {
     get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
-            let mut mandatory_predecessors: HashMap<String, HashSet<String>> =
-                HashMap::default();
+            let mut mandatory_predecessors: HashMap<String, HashSet<String>> = HashMap::default();
 
             for trace in &log.traces {
                 // Collect only events that carry the activity key, preserving order
@@ -361,8 +362,8 @@ pub fn extract_activity_ordering(
                 "activity_ordering": result,
             }))
         }
-        Some(_) => Err(JsValue::from_str("Not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(crate::error::js_val("Not an EventLog")),
+        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 

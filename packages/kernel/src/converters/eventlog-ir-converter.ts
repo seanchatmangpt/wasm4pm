@@ -12,7 +12,7 @@
  *   (except computed metadata fields like source_hash which are regenerated)
  */
 
-import type { EventLogIR, LogEvent, LogTrace, LogMetadata } from '@pictl/contracts';
+import type { EventLogIR, LogEvent, LogTrace, LogMetadata } from '@wasm4pm/contracts';
 import { canonicalize } from '../hashing.js';
 
 /**

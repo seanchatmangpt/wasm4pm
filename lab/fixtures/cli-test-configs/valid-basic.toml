@@ -1,4 +1,4 @@
-# Valid basic configuration for pictl testing
+# Valid basic configuration for wasm4pm testing
 
 [source]
 type = "xes"

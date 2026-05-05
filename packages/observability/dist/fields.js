@@ -40,5 +40,8 @@ export function createRequiredFields(partial = {}) {
         'execution.profile': partial['execution.profile'] ?? 'default',
         'source.kind': partial['source.kind'] ?? 'unknown',
         'sink.kind': partial['sink.kind'] ?? 'unknown',
+        'agent.role': partial['agent.role'],
+        'agent.task_id': partial['agent.task_id'],
+        'agent.failure_code': partial['agent.failure_code'],
     };
 }

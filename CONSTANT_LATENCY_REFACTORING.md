@@ -347,11 +347,11 @@ cargo build --release
 
 ## Files Modified
 
-1. `/Users/sac/chatmangpt/pictl/wasm4pm/src/parallel_executor.rs` — DFG batch processing
-2. `/Users/sac/chatmangpt/pictl/wasm4pm/src/simd_token_replay.rs` — Conformance loop
-3. `/Users/sac/chatmangpt/pictl/wasm4pm/src/log_to_trie.rs` — Variant dedup hashtable
-4. `/Users/sac/chatmangpt/pictl/wasm4pm/src/cache.rs` — FNV-1a 8x unroll
-5. `/Users/sac/chatmangpt/pictl/wasm4pm/Cargo.toml` — Added constant_latency_loops bench
+1. `/Users/sac/chatmangpt/wasm4pm/wasm4pm/src/parallel_executor.rs` — DFG batch processing
+2. `/Users/sac/chatmangpt/wasm4pm/wasm4pm/src/simd_token_replay.rs` — Conformance loop
+3. `/Users/sac/chatmangpt/wasm4pm/wasm4pm/src/log_to_trie.rs` — Variant dedup hashtable
+4. `/Users/sac/chatmangpt/wasm4pm/wasm4pm/src/cache.rs` — FNV-1a 8x unroll
+5. `/Users/sac/chatmangpt/wasm4pm/wasm4pm/Cargo.toml` — Added constant_latency_loops bench
 
 ---
 

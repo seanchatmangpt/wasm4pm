@@ -9,9 +9,9 @@
 
 1. **Rust/WASM core** (`wasm4pm/` — Cargo workspace member) — 41 algorithms compiled to WebAssembly via wasm-pack. This is the algorithm backend. Users rarely touch it directly.
 
-2. **TypeScript monorepo** (`packages/` + `apps/`) — 10 packages that wrap, orchestrate, and expose the WASM core via a professional CLI (`pictl`), configuration system, observability, contracts, and testing harnesses.
+2. **TypeScript monorepo** (`packages/` + `apps/`) — 10 packages that wrap, orchestrate, and expose the WASM core via a professional CLI (`wpm` (wasm4pm)), configuration system, observability, contracts, and testing harnesses.
 
-The primary entry point for users is **`pictl`** (`apps/pictl/`). The primary entry point for developers extending the system is the **`packages/`** monorepo.
+The primary entry point for users is **`wpm` (wasm4pm)** (`apps/wasm4pm/`). The primary entry point for developers extending the system is the **`packages/`** monorepo.
 
 **State machine source of truth:** `packages/engine/src/transitions.ts` — the VALID_TRANSITIONS map is authoritative, not the CLAUDE.md diagram.
 
@@ -47,7 +47,7 @@ wasm4pm/
 │   └── package.json        # npm package for the compiled WASM
 ├── packages/               # TypeScript monorepo (10 packages)
 ├── apps/
-│   └── pictl/              # CLI tool (@pictl/cli)
+│   └── pictl/              # CLI tool (@wasm4pm/cli)
 ├── lab/                    # Post-publish artifact validation (tests published npm package)
 └── playground/             # Local dev behavior testing (tests local source)
 ```
@@ -58,15 +58,15 @@ wasm4pm/
 
 | Package | Role |
 |---|---|
-| `@pictl/contracts` | Shared types + receipts + errors + plans + hashing + algorithm registry + prediction tasks (leaf package, no deps) |
-| `@pictl/engine` | Engine lifecycle state machine (uninitialized → bootstrapping → ready → planning → running → watching / degraded / failed) |
-| `@pictl/kernel` | WASM facade — 41 registered algorithms, `run(algorithmName, handle, params)`, streaming via `stream()` |
-| `@pictl/config` | Zod-validated config, `resolveConfig()`, 5-layer precedence (CLI > TOML > JSON > ENV > defaults), provenance tracking |
-| `@pictl/planner` | `plan(config)` → `ExecutionPlan`, `explain(config)` → string. 4 profiles: fast/balanced/quality/stream |
-| `@pictl/observability` | 3-layer: CLI human output, JSONL machine output, OTEL spans. `Instrumentation.create*Event()` |
-| `@pictl/testing` | Parity harness, determinism harness, CLI harness, OtelCapture, certification gates, fixtures, mocks |
-| `@pictl/ml` | Micro-ML analysis: classify, cluster, forecast, anomaly, regress, PCA |
-| `@pictl/swarm` | Multi-worker coordinator with convergence detection |
+| `@wasm4pm/contracts` | Shared types + receipts + errors + plans + hashing + algorithm registry + prediction tasks (leaf package, no deps) |
+| `@wasm4pm/engine` | Engine lifecycle state machine (uninitialized → bootstrapping → ready → planning → running → watching / degraded / failed) |
+| `@wasm4pm/kernel` | WASM facade — 41 registered algorithms, `run(algorithmName, handle, params)`, streaming via `stream()` |
+| `@wasm4pm/config` | Zod-validated config, `resolveConfig()`, 5-layer precedence (CLI > TOML > JSON > ENV > defaults), provenance tracking |
+| `@wasm4pm/planner` | `plan(config)` → `ExecutionPlan`, `explain(config)` → string. 4 profiles: fast/balanced/quality/stream |
+| `@wasm4pm/observability` | 3-layer: CLI human output, JSONL machine output, OTEL spans. `Instrumentation.create*Event()` |
+| `@wasm4pm/testing` | Parity harness, determinism harness, CLI harness, OtelCapture, certification gates, fixtures, mocks |
+| `@wasm4pm/ml` | Micro-ML analysis: classify, cluster, forecast, anomaly, regress, PCA |
+| `@wasm4pm/swarm` | Multi-worker coordinator with convergence detection |
 
 ---
 
@@ -113,7 +113,7 @@ Key API: `engine.bootstrap()`, `engine.plan(config)`, `engine.run(plan)`, `engin
 
 ENV var mappings: `WASM4PM_PROFILE`, `WASM4PM_ALGORITHM`, `WASM4PM_OUTPUT_FORMAT`, `WASM4PM_LOG_LEVEL`, `WASM4PM_WATCH`, `WASM4PM_OTEL_ENABLED`, `WASM4PM_OTEL_ENDPOINT`
 
-Config file names searched: `pictl.toml`, `wasm4pm.json`
+Config file names searched: `wasm4pm.toml`, `wasm4pm.json`
 
 ---
 
@@ -122,52 +122,52 @@ Config file names searched: `pictl.toml`, `wasm4pm.json`
 ### Core
 | Command | Exit codes | Description |
 |---|---|---|
-| `pictl run <log.xes>` | 0 success, 2 bad input, 3 WASM fail | Process discovery |
-| `pictl compare <algos> -i <log>` | 0 | Side-by-side algorithm comparison with ASCII sparklines |
-| `pictl diff <log1> <log2>` | 0 | Compare two logs via Jaccard similarity on DFG edges |
-| `pictl watch` | 0 | Config file watcher — re-runs discovery on change |
-| `pictl status` | 0 | WASM engine health + system info |
+| `wpm run <log.xes>` | 0 success, 2 bad input, 3 WASM fail | Process discovery |
+| `wpm compare <algos> -i <log>` | 0 | Side-by-side algorithm comparison with ASCII sparklines |
+| `wpm diff <log1> <log2>` | 0 | Compare two logs via Jaccard similarity on DFG edges |
+| `wpm watch` | 0 | Config file watcher — re-runs discovery on change |
+| `wpm status` | 0 | WASM engine health + system info |
 
 ### Prediction
 | Command | Description |
 |----------|-------------|
-| `pictl predict <task> -i <log>` | Predictive mining (next-activity, remaining-time, outcome, drift, features, resource) |
-| `pictl drift-watch -i <log>` | Real-time EWMA drift monitoring (streaming) |
+| `wpm predict <task> -i <log>` | Predictive mining (next-activity, remaining-time, outcome, drift, features, resource) |
+| `wpm drift-watch -i <log>` | Real-time EWMA drift monitoring (streaming) |
 
 ### Analysis & ML
 | Command | Description |
 |----------|-------------|
-| `pictl ml <task> -i <log>` | ML-powered process mining (classify, cluster, forecast, anomaly, regress, pca) |
-| `pictl powl <subcommand>` | POWL model analysis (parse, simplify, convert, diff, complexity, footprints, conformance, import, discover) |
+| `wpm ml <task> -i <log>` | ML-powered process mining (classify, cluster, forecast, anomaly, regress, pca) |
+| `wpm powl <subcommand>` | POWL model analysis (parse, simplify, convert, diff, complexity, footprints, conformance, import, discover) |
 
 ### Quality & Conformance
 | Command | Description |
 |----------|-------------|
-| `pictl quality` | Multi-dimensional quality assessment of a process model |
-| `pictl conformance` | Measure log-to-model fitness and precision |
-| `pictl validate` | Validate event log schema, required attributes, and data quality |
+| `wpm quality` | Multi-dimensional quality assessment of a process model |
+| `wpm conformance` | Measure log-to-model fitness and precision |
+| `wpm validate` | Validate event log schema, required attributes, and data quality |
 
 ### Analysis & Simulation
 | Command | Description |
 |----------|-------------|
-| `pictl simulate` | Monte Carlo simulation and process tree playout |
-| `pictl temporal` | Analyze temporal profiles and performance patterns |
-| `pictl social` | Mine social networks from event logs |
+| `wpm simulate` | Monte Carlo simulation and process tree playout |
+| `wpm temporal` | Analyze temporal profiles and performance patterns |
+| `wpm social` | Mine social networks from event logs |
 
 ### Autonomic & Utility
 | Command | Description |
 |----------|-------------|
-| `pictl autoprocess` | AutoProcess: Perception → Decision → Protection → Optimization |
-| `pictl doctor` | 17-check environment diagnostic |
-| `pictl explain` | Human/academic algorithm explanations |
-| `pictl init` | Scaffold `pictl.toml`, `.env.example`, `.gitignore` |
-| `pictl results` | Browse/inspect saved results in `.pictl/results/` |
+| `wpm autoprocess` | AutoProcess: Perception → Decision → Protection → Optimization |
+| `wpm doctor` | 17-check environment diagnostic |
+| `wpm explain` | Human/academic algorithm explanations |
+| `wpm init` | Scaffold `wasm4pm.toml`, `.env.example`, `.gitignore` |
+| `wpm results` | Browse/inspect saved results in `.wasm4pm/results/` |
 
 **Exit code contract:** 0=success, 1=config_error, 2=source_error, 3=execution_error, 4=partial_failure, 5=system_error
 
 **Output formats:** `--format human` (consola colored output) or `--format json` (`{ status, message, ...data }`)
 
-Auto-saves: discovery and prediction results to `.pictl/results/<timestamp>-<task>.json` (pass `--no-save` to skip)
+Auto-saves: discovery and prediction results to `.wasm4pm/results/<timestamp>-<task>.json` (pass `--no-save` to skip)
 
 ---
 
@@ -231,17 +231,17 @@ Profiles: `fast` → dfg/skeleton; `balanced` → heuristic/alpha + all ML; `qua
 
 ### Layers
 - **`packages/*/src/__tests__/`** — unit tests per package (inline mocks, internal correctness)
-- **`playground/`** — local dev behavior (uses `@pictl/testing` harnesses against local source)
+- **`playground/`** — local dev behavior (uses `@wasm4pm/testing` harnesses against local source)
 - **`lab/`** — post-publish validation (runs against installed npm artifact)
 
-### `@pictl/testing` harnesses
+### `@wasm4pm/testing` harnesses
 
 ```typescript
-import { checkParity, checkParityBatch }    from '@pictl/testing'; // explain() == plan()
-import { checkDeterminism, stableReceiptHash, receiptsMatch } from '@pictl/testing';
-import { runCli, assertExitCode, assertJsonOutput, createCliTestEnv, EXIT_CODES } from '@pictl/testing';
-import { OtelCapture, createOtelCapture }   from '@pictl/testing';
-import { CertificationGate, runCertification } from '@pictl/testing';
+import { checkParity, checkParityBatch }    from '@wasm4pm/testing'; // explain() == plan()
+import { checkDeterminism, stableReceiptHash, receiptsMatch } from '@wasm4pm/testing';
+import { runCli, assertExitCode, assertJsonOutput, createCliTestEnv, EXIT_CODES } from '@wasm4pm/testing';
+import { OtelCapture, createOtelCapture }   from '@wasm4pm/testing';
+import { CertificationGate, runCertification } from '@wasm4pm/testing';
 ```
 
 ---
@@ -368,7 +368,7 @@ Canonical features map to internal Rust `#[cfg]` flags:
 
 ### TypeScript Registry Integration
 
-The `@pictl/kernel` registry automatically detects available algorithms based on the WASM build profile. Each algorithm metadata includes `deploymentProfiles: DeploymentProfile[]`, which allows the registry to:
+The `@wasm4pm/kernel` registry automatically detects available algorithms based on the WASM build profile. Each algorithm metadata includes `deploymentProfiles: DeploymentProfile[]`, which allows the registry to:
 
 1. Report algorithm availability per profile
 2. Suggest best algorithms for each profile
@@ -376,7 +376,7 @@ The `@pictl/kernel` registry automatically detects available algorithms based on
 
 Query registry for a profile:
 ```typescript
-import { getRegistry } from '@pictl/kernel';
+import { getRegistry } from '@wasm4pm/kernel';
 
 const registry = getRegistry();
 const browserAlgos = registry.getForDeploymentProfile('browser');
@@ -411,10 +411,10 @@ interface Receipt {
 ## Key file locations
 
 ```
-apps/pictl/src/commands/     # run.ts, compare.ts, diff.ts, predict.ts, conformance.ts, simulate.ts, etc.
-apps/pictl/src/cli.ts            # CLI entry point with command registration
-apps/pictl/src/exit-codes.ts # EXIT_CODES constants
-apps/pictl/src/output.ts     # Formatter (human vs json)
+apps/wasm4pm/src/commands/     # run.ts, compare.ts, diff.ts, predict.ts, conformance.ts, simulate.ts, etc.
+apps/wasm4pm/src/cli.ts            # CLI entry point with command registration
+apps/wasm4pm/src/exit-codes.ts # EXIT_CODES constants
+apps/wasm4pm/src/output.ts     # Formatter (human vs json)
 packages/engine/src/engine.ts
 packages/engine/src/transitions.ts
 packages/engine/src/lifecycle.ts # StateMachine class
@@ -438,9 +438,9 @@ packages/planner/src/planner.ts
 packages/planner/src/explain.ts
 packages/swarm/src/loop.ts        # Swarm orchestration loop
 packages/swarm/src/convergence.ts # Convergence detection
-apps/pictl/src/ml-runner.ts    # ML task execution logic
-apps/pictl/src/commands/ml.ts  # `pictl ml` command
-apps/pictl/src/commands/powl.ts # `pictl powl` command
+apps/wasm4pm/src/ml-runner.ts    # ML task execution logic
+apps/wasm4pm/src/commands/ml.ts  # `wpm ml` command
+apps/wasm4pm/src/commands/powl.ts # `wpm powl` command
 wasm4pm/src/                 # Rust algorithm implementations
 wasm4pm/src/mcp_server.ts      # WASM MCP server
 wasm4pm/src/rl_orchestrator.rs # RL orchestrator (5 agents, LinUCB)
@@ -455,15 +455,15 @@ wasm4pm/src/agentic/           # Agentic framework (9 traits, 14 modules)
 ## Common gotchas
 
 - `WasmLoader` is a **singleton** — call `WasmLoader.reset()` between tests that need a clean state
-- All receipts auto-save to `.pictl/results/` unless `--no-save` is passed
+- All receipts auto-save to `.wasm4pm/results/` unless `--no-save` is passed
 - ENV var prefix is `WASM4PM_*` (NOT `PICTL_*`) — precedence is CLI > file > ENV > defaults
 - `assertRequiredAttributes()`, `assertValidTraces()`, `assertNonBlocking()` in OtelCapture return `string[]` (violations), not void/throw
 - OTEL span `startTime`/`endTime` are in **nanoseconds** (`Date.now() * 1_000_000`)
 - "bad algorithm" exit code is `SOURCE_ERROR` (2), not `CONFIG_ERROR` (1) — intentional
-- `@pictl/planner`'s `plan()` is **synchronous** (no async), but `PlannerLike` accepts either
+- `@wasm4pm/planner`'s `plan()` is **synchronous** (no async), but `PlannerLike` accepts either
 - `cargo test --lib` exits with SIGABRT (signal 6) due to wasm-bindgen thread cleanup — all tests pass but process crashes on exit. This is pre-existing. Use `cargo test --lib 2>&1 | grep -c "^test .* ok$"` to verify pass count.
 - Cargo workspace root is `pictl/` (parent of `wasm4pm/`), so `cargo clippy` from `wasm4pm/` shows a harmless "profiles for the non root package" warning
-- Crate name is `pictl`, npm package is `@seanchatmangpt/pictl`, but the source directory remains `wasm4pm/` — only published names changed, not filesystem layout
+- Crate name is `wpm` (wasm4pm), npm package is `@wasm4pm/cli`, but the source directory remains `wasm4pm/` — only published names changed, not filesystem layout
 - `tests/*.rs` are integration tests (separate crates) — `pub(crate)` is NOT enough for external test access, items must be `pub`
 - Cargo auto-discovers `tests/*.rs` but NOT `tests/subdir/*.rs` — use top-level `tests/*_tests.rs` files or add `tests/subdir/mod.rs`
 - `to_js(&json!({...}))` silently returns `{}` on wasm32 — `serde_wasm_bindgen` cannot serialize `serde_json::Value`. Use `to_js_str(&json!({...}))` (defined in `utilities.rs`) instead; it serializes via `serde_json::to_string` + `JsValue::from_str`.

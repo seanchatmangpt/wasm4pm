@@ -4,8 +4,8 @@
  * Sends JSON-serialized artifacts via HTTP POST with configurable
  * authentication and retry logic.
  */
-import { ok, err, error } from '@pictl/contracts';
-import { createError } from '@pictl/contracts';
+import { ok, err, error } from '@wasm4pm/contracts';
+import { createError } from '@wasm4pm/contracts';
 /**
  * HttpSinkAdapter - Sends artifacts to a remote HTTP endpoint
  *

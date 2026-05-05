@@ -2,9 +2,9 @@
 
 **Problem:** An algorithm is taking longer than expected. You need to find the bottleneck -- whether it is in the Rust implementation, the WASM/JS boundary, or the Node.js wrapper layer.
 
-## Approach 1: Built-in Timing from `pictl run`
+## Approach 1: Built-in Timing from `wpm run`
 
-The simplest starting point. `pictl run` reports wall-clock time automatically:
+The simplest starting point. `wpm run` reports wall-clock time automatically:
 
 ```bash
 pictl run log.xes --algorithm hill-climbing --format json
@@ -21,7 +21,7 @@ The JSON output includes `elapsedMs`:
 }
 ```
 
-For a quick comparison across algorithms, `pictl compare` shows timing in its side-by-side table:
+For a quick comparison across algorithms, `wpm compare` shows timing in its side-by-side table:
 
 ```bash
 pictl compare dfg hill-climbing -i log.xes
@@ -34,7 +34,7 @@ This gives you the total execution time but does not break it down into phases (
 If you need to separate parsing from discovery, use the WASM kernel directly in a Node.js script:
 
 ```javascript
-const pm = require('@pictl/wasm4pm');
+const pm = require('@wasm4pm/wasm4pm');
 
 // Phase 1: Parse XES
 const t0 = performance.now();
@@ -183,7 +183,7 @@ The fix reduced execution from ~500ms to ~135ms on 10K cases (3.7x speedup).
 
 ## Quick Checklist
 
-1. **Run `pictl run --format json`** to get total time.
+1. **Run `wpm run --format json`** to get total time.
 2. **Break into phases** (parse vs discover) to narrow the scope.
 3. **If parse is slow**, the log format or size is the issue.
 4. **If discover is slow**, profile with Instruments or flamegraph.

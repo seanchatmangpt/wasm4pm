@@ -3,7 +3,7 @@
  * Central registry for managing source adapters
  * Re-exports SourceRegistry from contracts and provides helper functions
  */
-import { SourceRegistry, sourceRegistry as contractRegistry } from '@pictl/contracts';
+import { SourceRegistry, sourceRegistry as contractRegistry } from '@wasm4pm/contracts';
 import { FileSourceAdapter } from './file-source.js';
 import { HttpSourceAdapter } from './http-source.js';
 import { StreamSourceAdapter } from './stream-source.js';
@@ -62,5 +62,5 @@ export function createSourceRegistry() {
  * Export the contract registry as default singleton
  */
 export { contractRegistry as sourceRegistry };
-export { SourceRegistry } from '@pictl/contracts';
+export { SourceRegistry } from '@wasm4pm/contracts';
 //# sourceMappingURL=registry.js.map

@@ -54,7 +54,7 @@ export interface WatchConfig {
   heartbeatIntervalMs?: number; // Default: 1000ms
   heartbeatEventThreshold?: number; // Default: 10 events
   checkpointIntervalMs?: number; // Default: 5000ms
-  checkpointPath?: string; // Default: .pictl/checkpoint
+  checkpointPath?: string; // Default: .wasm4pm/checkpoint
   maxReconnectAttempts?: number; // Default: 10
   initialBackoffMs?: number; // Default: 100ms
   maxBackoffMs?: number; // Default: 5000ms
@@ -217,7 +217,7 @@ export class WatchMode {
       heartbeatIntervalMs: watchConfig.heartbeatIntervalMs ?? 1000,
       heartbeatEventThreshold: watchConfig.heartbeatEventThreshold ?? 10,
       checkpointIntervalMs: watchConfig.checkpointIntervalMs ?? 5000,
-      checkpointPath: watchConfig.checkpointPath ?? '.pictl/checkpoint',
+      checkpointPath: watchConfig.checkpointPath ?? '.wasm4pm/checkpoint',
       maxReconnectAttempts: watchConfig.maxReconnectAttempts ?? 10,
       initialBackoffMs: watchConfig.initialBackoffMs ?? 100,
       maxBackoffMs: watchConfig.maxBackoffMs ?? 5000,

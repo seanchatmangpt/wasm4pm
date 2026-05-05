@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ---------------------------------------------------------------------------
 # Module: kernel-correctness.sh — 10 items
-# Always run from the pictl repo root.
+# Always run from the wasm4pm repo root.
 # ---------------------------------------------------------------------------
 
 RESULTS_FILE="${1:-/tmp/kernel-correctness.json}"

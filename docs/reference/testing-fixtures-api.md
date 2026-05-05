@@ -1,7 +1,7 @@
 # pictl Testing Fixtures API Reference
 
 **Version:** 1.0  
-**Package:** `@pictl/testing`  
+**Package:** `@wasm4pm/testing`  
 **Last Updated:** 2026-04-10
 
 Complete API reference for the pictl testing fixtures ecosystem. Fixtures provide reusable components for algorithm validation, determinism verification, CLI testing, and observability assertion.
@@ -93,7 +93,7 @@ interface ParityResult {
 
 **Example:**
 ```typescript
-import { checkParity } from '@pictl/testing';
+import { checkParity } from '@wasm4pm/testing';
 
 const myPlanner = {
   explain(config) {
@@ -202,7 +202,7 @@ interface DeterminismResult {
 
 **Example:**
 ```typescript
-import { checkDeterminism } from '@pictl/testing';
+import { checkDeterminism } from '@wasm4pm/testing';
 
 const result = await checkDeterminism(async () => {
   const receipt = await algorithm.process(inputConfig, eventLog);
@@ -331,7 +331,7 @@ interface CliTestEnv {
 
 **Example:**
 ```typescript
-import { createCliTestEnv } from '@pictl/testing';
+import { createCliTestEnv } from '@wasm4pm/testing';
 
 let env = await createCliTestEnv(JSON.stringify({
   version: '1.0',
@@ -495,7 +495,7 @@ import {
   assertExitCode,
   assertJsonOutput,
   EXIT_CODES,
-} from '@pictl/testing';
+} from '@wasm4pm/testing';
 
 describe('pictl CLI', () => {
   let env;
@@ -830,7 +830,7 @@ Creates a new OtelCapture instance.
 
 **Example:**
 ```typescript
-import { createOtelCapture } from '@pictl/testing';
+import { createOtelCapture } from '@wasm4pm/testing';
 const capture = createOtelCapture();
 ```
 
@@ -838,7 +838,7 @@ const capture = createOtelCapture();
 
 ```typescript
 import { describe, it, expect } from 'vitest';
-import { createOtelCapture } from '@pictl/testing';
+import { createOtelCapture } from '@wasm4pm/testing';
 
 describe('Observability', () => {
   it('captures discovery algorithm spans', async () => {
@@ -906,7 +906,7 @@ interface GateResult {
 
 **Example:**
 ```typescript
-import { registerGate } from '@pictl/testing';
+import { registerGate } from '@wasm4pm/testing';
 
 registerGate('my:custom-check', async () => {
   const passed = await validateSomething();
@@ -1045,7 +1045,7 @@ import {
   checkParity,
   checkDeterminism,
   OtelCapture,
-} from '@pictl/testing';
+} from '@wasm4pm/testing';
 
 async function certifyRelease(version) {
   // Register custom gates
@@ -1111,7 +1111,7 @@ import {
   createOtelCapture,
   ALL_VALID_CONFIGS,
   SIMPLE_SEQUENTIAL,
-} from '@pictl/testing';
+} from '@wasm4pm/testing';
 
 describe('pictl Algorithm Suite', () => {
   let env;
@@ -1181,7 +1181,7 @@ describe('pictl Algorithm Suite', () => {
 ### Testing All Valid Configs
 
 ```typescript
-import { ALL_VALID_CONFIGS } from '@pictl/testing';
+import { ALL_VALID_CONFIGS } from '@wasm4pm/testing';
 
 for (const config of ALL_VALID_CONFIGS) {
   it(`works with ${config.execution.profile} profile`, async () => {
@@ -1198,7 +1198,7 @@ import {
   PARALLEL_SPLIT,
   EXCLUSIVE_CHOICE,
   LOOP_PROCESS,
-} from '@pictl/testing';
+} from '@wasm4pm/testing';
 
 const eventLogs = [
   SIMPLE_SEQUENTIAL,

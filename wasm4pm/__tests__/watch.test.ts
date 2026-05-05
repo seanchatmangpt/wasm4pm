@@ -5,6 +5,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as fs from 'fs';
+import * as os from 'os';
 import * as path from 'path';
 import {
   WatchMode,
@@ -65,15 +66,12 @@ describe('WatchMode - Streaming', () => {
   let tempDir: string;
 
   beforeEach(() => {
-    tempDir = path.join(process.cwd(), '.test-watch');
-    if (!fs.existsSync(tempDir)) {
-      fs.mkdirSync(tempDir, { recursive: true });
-    }
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'watch-test-stream-'));
   });
 
   afterEach(() => {
     if (fs.existsSync(tempDir)) {
-      fs.rmSync(tempDir, { recursive: true });
+      fs.rmSync(tempDir, { recursive: true, force: true });
     }
   });
 
@@ -192,16 +190,13 @@ describe('WatchMode - Checkpointing', () => {
   let checkpointPath: string;
 
   beforeEach(() => {
-    tempDir = path.join(process.cwd(), '.test-checkpoint');
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'watch-test-ckpt-'));
     checkpointPath = path.join(tempDir, 'checkpoint');
-    if (!fs.existsSync(tempDir)) {
-      fs.mkdirSync(tempDir, { recursive: true });
-    }
   });
 
   afterEach(() => {
     if (fs.existsSync(tempDir)) {
-      fs.rmSync(tempDir, { recursive: true });
+      fs.rmSync(tempDir, { recursive: true, force: true });
     }
   });
 

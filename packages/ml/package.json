@@ -1,5 +1,5 @@
 {
-  "name": "@pictl/ml",
+  "name": "@wasm4pm/ml",
   "version": "26.4.17",
   "description": "Native ML-powered process mining analysis — classification, clustering, forecasting, anomaly detection, PCA",
   "type": "module",
@@ -18,7 +18,7 @@
   ],
   "scripts": {
     "build": "tsc",
-    "test": "vitest",
+    "test": "vitest run",
     "test:watch": "vitest --watch",
     "test:coverage": "vitest --coverage",
     "lint": "tsc --noEmit",
@@ -39,7 +39,7 @@
     "anomaly-detection",
     "pca",
     "wasm4pm",
-    "pictl"
+    "wasm4pm"
   ],
   "author": "Sean Chatman",
   "license": "SEE LICENSE IN LICENSE"

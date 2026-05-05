@@ -1,5 +1,5 @@
 /**
- * @pictl/planner - Execution plan generation for wasm4pm
+ * @wasm4pm/planner - Execution plan generation for wasm4pm
  *
  * Generates deterministic, reproducible execution plans from process mining configurations.
  *

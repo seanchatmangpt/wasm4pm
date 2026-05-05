@@ -10,7 +10,7 @@ import {
   EngineStatus,
   ExecutionReceipt,
   ExecutionPlan,
-} from '@pictl/contracts';
+} from '@wasm4pm/contracts';
 
 /**
  * Tracks engine execution progress and status

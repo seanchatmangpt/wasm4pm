@@ -5,8 +5,8 @@
  * backoff for transient network failures.
  */
 import { createHash } from 'crypto';
-import { ok, err, error } from '@pictl/contracts';
-import { createError } from '@pictl/contracts';
+import { ok, err, error } from '@wasm4pm/contracts';
+import { createError } from '@wasm4pm/contracts';
 /**
  * Bearer token authentication config
  */

@@ -12,7 +12,7 @@ import {
   StatusTracker,
 } from './index.js';
 import type { Kernel, Planner, Executor } from './engine.js';
-import type { ExecutionPlan, ExecutionReceipt } from '@pictl/contracts';
+import type { ExecutionPlan, ExecutionReceipt } from '@wasm4pm/contracts';
 
 // Mock bootstrapEngine to avoid loading actual WASM in tests
 vi.mock('./bootstrap.js', async () => {
@@ -901,7 +901,7 @@ describe('Engine WASM Integration', () => {
     });
 
     it('should pass through observability layer', async () => {
-      const { ObservabilityLayer } = await import('@pictl/observability');
+      const { ObservabilityLayer } = await import('@wasm4pm/observability');
       const obsLayer = new ObservabilityLayer();
       const engineObs = createFullEngine(
         kernel,

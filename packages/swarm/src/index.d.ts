@@ -1,5 +1,5 @@
 /**
- * @pictl/swarm — Autonomic swarm coordinator for wasm4pm
+ * @wasm4pm/swarm — Autonomic swarm coordinator for wasm4pm
  *
  * Exports:
  *   - createSwarmMcpServer: start the MCP server programmatically

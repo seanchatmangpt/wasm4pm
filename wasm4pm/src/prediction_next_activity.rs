@@ -44,7 +44,7 @@ use crate::state::{get_or_init_state, StoredObject};
 #[wasm_bindgen]
 pub fn predict_next_k(model_handle: &str, prefix_json: &str, k: usize) -> Result<JsValue, JsValue> {
     let prefix: Vec<String> = serde_json::from_str(prefix_json)
-        .map_err(|e| JsValue::from_str(&format!("Invalid prefix JSON: {}", e)))?;
+        .map_err(|e| crate::error::js_val(&format!("Invalid prefix JSON: {}", e)))?;
 
     get_or_init_state().with_object(model_handle, |obj| match obj {
         Some(StoredObject::NGramPredictor(predictor)) => {
@@ -55,10 +55,7 @@ pub fn predict_next_k(model_handle: &str, prefix_json: &str, k: usize) -> Result
             let activities: Vec<&str> = top_k.iter().map(|(a, _)| a.as_str()).collect();
             let probabilities: Vec<f64> = top_k.iter().map(|(_, p)| *p).collect();
 
-            let confidence = probabilities
-                .first()
-                .copied()
-                .ok_or_else(|| JsValue::from_str("No activities predicted"))?;
+            let confidence = probabilities.first().copied().unwrap_or(0.0);
             let entropy_val = normalised_entropy(&probabilities);
 
             let result = json!({
@@ -68,11 +65,11 @@ pub fn predict_next_k(model_handle: &str, prefix_json: &str, k: usize) -> Result
                 "entropy": entropy_val,
             });
             serde_json::to_string(&result)
-                .map(|s| JsValue::from_str(&s))
-                .map_err(|e| JsValue::from_str(&e.to_string()))
+                .map(|s| crate::error::js_val(&s))
+                .map_err(|e| crate::error::js_val(&e.to_string()))
         }
-        Some(_) => Err(JsValue::from_str("Handle is not an NGramPredictor")),
-        None => Err(JsValue::from_str("NGramPredictor handle not found")),
+        Some(_) => Err(crate::error::js_val("Handle is not an NGramPredictor")),
+        None => Err(crate::error::js_val("NGramPredictor handle not found")),
     })
 }
 
@@ -99,17 +96,17 @@ pub fn predict_beam_paths(
     max_steps: usize,
 ) -> Result<JsValue, JsValue> {
     let prefix: Vec<String> = serde_json::from_str(prefix_json)
-        .map_err(|e| JsValue::from_str(&format!("Invalid prefix JSON: {}", e)))?;
+        .map_err(|e| crate::error::js_val(&format!("Invalid prefix JSON: {}", e)))?;
 
     get_or_init_state().with_object(model_handle, |obj| match obj {
         Some(StoredObject::NGramPredictor(predictor)) => {
             let paths = beam_search_on_ngram(predictor, &prefix, beam_width, max_steps);
             serde_json::to_string(&paths)
-                .map(|s| JsValue::from_str(&s))
-                .map_err(|e| JsValue::from_str(&e.to_string()))
+                .map(|s| crate::error::js_val(&s))
+                .map_err(|e| crate::error::js_val(&e.to_string()))
         }
-        Some(_) => Err(JsValue::from_str("Handle is not an NGramPredictor")),
-        None => Err(JsValue::from_str("NGramPredictor handle not found")),
+        Some(_) => Err(crate::error::js_val("Handle is not an NGramPredictor")),
+        None => Err(crate::error::js_val("NGramPredictor handle not found")),
     })
 }
 

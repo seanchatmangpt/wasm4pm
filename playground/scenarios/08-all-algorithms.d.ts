@@ -10,7 +10,7 @@
  *   3. CLI     — pictl run --algorithm X exits 0 or 3 (never 1=config or 2=source)
  *   4. CLI     — pictl compare with all 14 IDs comma-joined exits 0 or 3
  *
- * Driven by ALGORITHM_IDS from @pictl/contracts — if a new algorithm is added
+ * Driven by ALGORITHM_IDS from @wasm4pm/contracts — if a new algorithm is added
  * to the ontology and regenerated, this scenario covers it automatically.
  */
 export {};

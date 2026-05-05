@@ -53,7 +53,7 @@ Suitable for offline discovery and comparative studies. 20 ms to 75 ms per 500-e
 
 ## ML Analysis Tasks
 
-ML tasks run post-discovery via `pictl ml <task>` or automatically when `[ml]` config is enabled.
+ML tasks run post-discovery via `wpm ml <task>` or automatically when `[ml]` config is enabled.
 
 | Task | CLI Alias | Description | Key Parameters |
 |------|-----------|-------------|----------------|
@@ -64,7 +64,7 @@ ML tasks run post-discovery via `pictl ml <task>` or automatically when `[ml]` c
 | ML Regression | `ml regress` | Remaining-time regression | `--method linear_regression` |
 | ML PCA | `ml pca` | Feature dimensionality reduction | `--n-components 2` |
 
-ML tasks can also run via `pictl run` when the config has `[ml] enabled = true`. The `ml` profile
+ML tasks can also run via `wpm run` when the config has `[ml] enabled = true`. The `ml` profile
 selects all 6 ML algorithms for the planner.
 
 ---

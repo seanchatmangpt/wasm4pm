@@ -1,10 +1,11 @@
 # End-to-End Autonomics Remediation Plan
 
-**Goal:** Achieve zero human intervention for `pictl run revops.xes` → complete artifact with receipts, telemetry, quality gates.
+**Goal:** Achieve zero human intervention for `wpm run revops.xes` → complete artifact with receipts, telemetry, quality gates.
 
-**Critical structural finding:** The CLAUDE.md describes an aspirational architecture (`packages/`, `apps/pictl/`) that does **not exist yet**. The actual codebase is a flat Rust/WASM crate (`wasm4pm/`) with TypeScript client files in `src/`. There is no `packages/kernel/`, no `packages/planner/`, no `packages/observability/`, no `apps/pictl/`. Several gaps reference these phantom paths. This plan targets the **actual** codebase.
+**Critical structural finding:** The CLAUDE.md describes an aspirational architecture (`packages/`, `apps/wasm4pm/`) that does **not exist yet**. The actual codebase is a flat Rust/WASM crate (`wasm4pm/`) with TypeScript client files in `src/`. There is no `packages/kernel/`, no `packages/planner/`, no `packages/observability/`, no `apps/wasm4pm/`. Several gaps reference these phantom paths. This plan targets the **actual** codebase.
 
 **Actual file layout:**
+
 ```
 wasm4pm/
 ├── src/                    # Rust source (discovery.rs, conformance.rs, etc.)
@@ -31,6 +32,7 @@ wasm4pm/
 **Risk reassessment:** LOW — no code path calls the wrong name. The `extract_process_skeleton` function exists and works.
 
 **Fix:**
+
 1. File: `wasm4pm/src/capability_registry.rs` — verify `extract_process_skeleton` is listed (not `discover_process_skeleton`)
 2. File: `CLAUDE.md` — correct the gap description to reflect reality
 
@@ -45,6 +47,7 @@ wasm4pm/
 **Risk:** MEDIUM — if someone adds `StepType.OPTIMIZED_DFG` later, the mapping would need to exist. Currently not a runtime crash since nothing dispatches it.
 
 **Fix:**
+
 1. File: `wasm4pm/src/config.ts` — Add `OPTIMIZED_DFG = 'optimized_dfg'` to `StepType` enum
 2. File: `wasm4pm/src/pipeline.ts` — Add mapping: `[StepType.OPTIMIZED_DFG]: 'discover_optimized_dfg'`
 3. File: `wasm4pm/src/config.ts` — Add `step_optimized_dfg` to `QUALITY` and `RESEARCH` profiles in `resolveProfile()`
@@ -76,6 +79,7 @@ OPTIMIZED_DFG = 'optimized_dfg',
 ### GAP-06: Three incompatible exit code systems
 
 **Finding:** The CLAUDE.md claims three exit code systems (CLI 0-5, contracts 200-700, kernel 10-60). **Reality:** Only TWO exist:
+
 1. **`errors.ts` `ErrorCode`** — string enums (`CONFIG_INVALID`, `SOURCE_UNAVAILABLE`, etc.) — 15 codes
 2. **`cli/index.ts`** — bare `process.exit(1)` in 2 places, no semantic codes
 
@@ -84,6 +88,7 @@ No numeric exit codes, no contracts package, no kernel exit codes.
 **Fix:** Add semantic exit codes to CLI
 
 1. File: `wasm4pm/src/exit-codes.ts` (NEW)
+
 ```typescript
 export const EXIT_CODES = {
   SUCCESS: 0,
@@ -97,6 +102,7 @@ export type ExitCode = (typeof EXIT_CODES)[keyof typeof EXIT_CODES];
 ```
 
 2. File: `wasm4pm/src/errors.ts` — Add `toExitCode()` method to `PictlError`:
+
 ```typescript
 toExitCode(): number {
   switch (this.code) {
@@ -135,9 +141,11 @@ toExitCode(): number {
 **Finding:** No `cloud` profile exists. The profiles are: `fast`, `balanced`, `quality`, `stream`, `research`. POWL discovery (8 variants in `src/powl/discovery/`) is not wired into any profile. POWL functions exist as WASM exports but are not in `StepType` enum or `pipeline.ts`.
 
 **Fix:**
+
 1. File: `wasm4pm/src/config.ts` — Add `POWL_DISCOVERY = 'powl_discovery'` to `StepType`
 2. File: `wasm4pm/src/pipeline.ts` — Add: `[StepType.POWL_DISCOVERY]: 'discover_powl'`
 3. File: `wasm4pm/src/config.ts` — Add POWL step to `QUALITY` and `RESEARCH` profiles:
+
 ```typescript
 {
   id: 'step_powl',
@@ -148,6 +156,7 @@ toExitCode(): number {
   parameters: { variant: 'decision_graph_cyclic' },
 },
 ```
+
 4. Verify `discover_powl` exists in `src/powl_api.rs` — if named differently, map to actual function name.
 
 **Dependencies:** GAP-05 (StepType pattern established)
@@ -548,9 +557,10 @@ fn replay_trace(events: &[Event], net: &PetriNet, activity_key: &str) -> ReplayR
 
 **Dependencies:** None (uses existing `models.rs` types)
 **Testing:** Create test in `tests/conformance_tests.rs`:
+
 - Load running-example.xes, discover ILP Petri net, run token replay
 - Assert fitness > 0.8, deviations list populated, tokens_remaining computed
-**Risk:** HIGH — changes core conformance behavior. Existing benchmarks use the stub; results will change.
+  **Risk:** HIGH — changes core conformance behavior. Existing benchmarks use the stub; results will change.
 
 ---
 
@@ -563,12 +573,15 @@ Analytics: `analyze_footprints`, `analyze_complexity`, `analyze_bottlenecks`, `a
 Advanced discovery: `discover_aco`, `discover_simulated_annealing`, `discover_astar` (these ARE in pipeline but only in RESEARCH profile)
 ML: all 6 ML algorithms
 
-**Assessment:** The 6 "missing" algorithms (ACO, SA, A*, etc.) ARE already mapped in `pipeline.ts` — they just aren't in all profiles. The real gap is:
+**Assessment:** The 6 "missing" algorithms (ACO, SA, A\*, etc.) ARE already mapped in `pipeline.ts` — they just aren't in all profiles. The real gap is:
+
 1. Analytics functions not in `StepType`
 2. POWL not in `StepType` (covered by GAP-14)
 
 **Fix:**
+
 1. File: `wasm4pm/src/config.ts` — Add to `StepType`:
+
 ```typescript
 FOOTPRINTS = 'footprints',
 COMPLEXITY = 'complexity',
@@ -581,6 +594,7 @@ DECLARE_CONSTRAINTS = 'declare_constraints',
 ```
 
 2. File: `wasm4pm/src/pipeline.ts` — Add mappings:
+
 ```typescript
 [StepType.FOOTPRINTS]: 'analyze_footprints',
 [StepType.COMPLEXITY]: 'analyze_complexity',
@@ -602,13 +616,14 @@ DECLARE_CONSTRAINTS = 'declare_constraints',
 
 ### GAP-08: 6 ML algorithms cannot run through Kernel.run()
 
-**Finding:** No `Kernel.run()` exists. ML functions are called individually via MCP server tools. The MCP server uses `dynamic import('@pictl/ml')` — an external package not in this repo.
+**Finding:** No `Kernel.run()` exists. ML functions are called individually via MCP server tools. The MCP server uses `dynamic import('@wasm4pm/ml')` — an external package not in this repo.
 
 **Assessment:** This gap assumes architecture that doesn't exist. ML functions ARE callable via WASM (gated by `ml` feature flag). The MCP server dispatches them correctly. The gap is that there's no unified `Kernel.run()` orchestrator.
 
 **Fix:** Add ML StepTypes to pipeline (same approach as GAP-07):
 
 1. File: `wasm4pm/src/config.ts`:
+
 ```typescript
 ML_CLASSIFY = 'ml_classify',
 ML_CLUSTER = 'ml_cluster',
@@ -619,6 +634,7 @@ ML_PCA = 'ml_pca',
 ```
 
 2. File: `wasm4pm/src/pipeline.ts`:
+
 ```typescript
 [StepType.ML_CLASSIFY]: 'classify_traces',
 [StepType.ML_CLUSTER]: 'cluster_traces',
@@ -643,7 +659,9 @@ ML_PCA = 'ml_pca',
 **Finding CONFIRMED:** `ReceiptBuilder` in `receipt.ts` is never used in any production code path. `WatchMode.buildReceipt()` in `watch.ts` constructs an `ExecutionReceipt` directly (inline, not using ReceiptBuilder). `hashConfig()` uses DJB2 hash (NOT BLAKE3). No receipt is generated on failure.
 
 **Fix:**
+
 1. File: `wasm4pm/src/receipt.ts` — Replace `simpleHash()` with BLAKE3 (or Web Crypto SHA-256):
+
 ```typescript
 async function hashConfig(config: PictlConfig): Promise<string> {
   const sorted = sortObjectKeys(config);
@@ -653,12 +671,13 @@ async function hashConfig(config: PictlConfig): Promise<string> {
   // Use Web Crypto SHA-256 (available in Node.js 15+, browsers)
   const hashBuffer = await crypto.subtle.digest('SHA-256', data);
   return Array.from(new Uint8Array(hashBuffer))
-    .map(b => b.toString(16).padStart(2, '0'))
+    .map((b) => b.toString(16).padStart(2, '0'))
     .join('');
 }
 ```
 
 2. File: `wasm4pm/src/watch.ts` — Wire `ReceiptBuilder` into WatchMode:
+
 ```typescript
 import { ReceiptBuilder, formatReceipt, compressReceipt } from './receipt.js';
 
@@ -692,6 +711,7 @@ yield { type: 'complete', receipt };
 **Assessment:** This gap is already solved. The function exists and works.
 
 **Fix:** None needed. If a `get_capabilities` alias is desired for API compatibility, add:
+
 ```rust
 #[wasm_bindgen]
 pub fn get_capabilities() -> Result<JsValue, JsValue> {
@@ -712,11 +732,13 @@ pub fn get_capabilities() -> Result<JsValue, JsValue> {
 **Assessment:** Building a full OTEL layer is a large effort. The right approach is to add a lightweight instrumentation layer that creates structured span-like objects (not requiring @opentelemetry SDK) and can export them.
 
 **Fix:**
+
 1. File: `wasm4pm/src/telemetry.ts` (NEW):
+
 ```typescript
 export interface TelemetrySpan {
   name: string;
-  startTime: number;   // nanoseconds
+  startTime: number; // nanoseconds
   endTime: number;
   attributes: Record<string, string | number | boolean>;
   status: 'ok' | 'error';
@@ -749,9 +771,18 @@ export class SpanBuilder {
     };
     this.setAttributes(attributes);
   }
-  start() { this.span.startTime = process.hrtime.bigint() as unknown as number; return this; }
-  end() { this.span.endTime = process.hrtime.bigint() as unknown as number; return this; }
-  setStatus(status: 'ok' | 'error') { this.span.status = status; return this; }
+  start() {
+    this.span.startTime = process.hrtime.bigint() as unknown as number;
+    return this;
+  }
+  end() {
+    this.span.endTime = process.hrtime.bigint() as unknown as number;
+    return this;
+  }
+  setStatus(status: 'ok' | 'error') {
+    this.span.status = status;
+    return this;
+  }
   setAttributes(attrs: Record<string, unknown>) {
     for (const [k, v] of Object.entries(attrs)) {
       if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') {
@@ -766,15 +797,22 @@ export class SpanBuilder {
     this.span.events.push({ name, timestamp: Date.now(), attributes: attrs });
     return this;
   }
-  build() { return this.span; }
+  build() {
+    return this.span;
+  }
 }
 
 let globalExporter: TelemetryExporter = new ConsoleExporter();
-export function setExporter(e: TelemetryExporter) { globalExporter = e; }
-export function getExporter() { return globalExporter; }
+export function setExporter(e: TelemetryExporter) {
+  globalExporter = e;
+}
+export function getExporter() {
+  return globalExporter;
+}
 ```
 
 2. File: `wasm4pm/src/watch.ts` — Wrap each pipeline step in a span:
+
 ```typescript
 import { SpanBuilder, getExporter } from './telemetry.js';
 
@@ -801,6 +839,7 @@ getExporter().exportSpan(span.build());
 **Finding:** No OTEL attributes are set at all (GAP-12).
 
 **Fix:** Addressed by GAP-12 implementation. The `SpanBuilder` will set:
+
 - `pipeline.step_id`, `pipeline.profile`, `pipeline.required` (static)
 - `result.size_bytes`, `algorithm.name`, `trace.count`, `event.count` (dynamic)
 - `source.format`, `source.size_bytes` (input metadata)
@@ -816,7 +855,9 @@ getExporter().exportSpan(span.build());
 **Finding CONFIRMED:** `WatchMode` yields `{ type: 'error', error: ErrorInfo }` but no receipt. The `complete` path yields a receipt.
 
 **Fix:**
+
 1. File: `wasm4pm/src/watch.ts` — Add failure receipt in error handler:
+
 ```typescript
 // In the catch block or error yield:
 const failureReceipt = this.receiptBuilder
@@ -830,6 +871,7 @@ yield {
 ```
 
 2. File: `wasm4pm/src/receipt.ts` — Add `status` field to `ExecutionReceipt`:
+
 ```typescript
 interface ExecutionReceipt {
   // ... existing fields
@@ -854,6 +896,7 @@ interface ExecutionReceipt {
 **Finding:** No OTEL spans exist at all (GAP-12). Span schemas are premature.
 
 **Fix:** After GAP-12, add domain-specific span names in the telemetry module:
+
 ```typescript
 // telemetry.ts — span name constants
 export const SPAN_NAMES = {
@@ -896,11 +939,14 @@ export const SPAN_NAMES = {
 ### GAP-10: WASM panic/trap error classification is fragile
 
 **Finding CONFIRMED:** `classifyPictlError()` in `errors.ts` uses substring matching (`lowerRaw.includes('not found')`, etc.). This is fragile because:
+
 1. WASM panic messages may change between versions
 2. Overlapping patterns (e.g., "missing" maps to CONFIG_INVALID but could be a state error)
 
 **Fix:**
+
 1. File: `wasm4pm/src/errors.ts` — Improve pattern matching with priority ordering and regex:
+
 ```typescript
 export function classifyPictlError(raw: string, context?: { step?: string }): ErrorCode {
   if (!raw || typeof raw !== 'string') return ErrorCode.UNKNOWN;
@@ -933,7 +979,9 @@ export function classifyPictlError(raw: string, context?: { step?: string }): Er
 **Finding:** WASM functions accept specific parameter types (handles, strings, floats). The TypeScript client passes parameters without validation. If wrong types are passed, WASM throws a generic error.
 
 **Fix:**
+
 1. File: `wasm4pm/src/pipeline.ts` — Add parameter validation before WASM call:
+
 ```typescript
 function validateStepParams(step: ExecutableStep): string[] {
   const warnings: string[] = [];
@@ -941,20 +989,41 @@ function validateStepParams(step: ExecutableStep): string[] {
 
   // Check for handle-type params that should be strings
   if (params.eventlog_handle && typeof params.eventlog_handle !== 'string') {
-    warnings.push(`${step.stepId}: eventlog_handle should be string, got ${typeof params.eventlog_handle}`);
+    warnings.push(
+      `${step.stepId}: eventlog_handle should be string, got ${typeof params.eventlog_handle}`
+    );
   }
   if (params.activity_key && typeof params.activity_key !== 'string') {
-    warnings.push(`${step.stepId}: activity_key should be string, got ${typeof params.activity_key}`);
+    warnings.push(
+      `${step.stepId}: activity_key should be string, got ${typeof params.activity_key}`
+    );
   }
   // Check numeric params
-  if (params.dependency_threshold !== undefined && typeof params.dependency_threshold !== 'number') {
+  if (
+    params.dependency_threshold !== undefined &&
+    typeof params.dependency_threshold !== 'number'
+  ) {
     warnings.push(`${step.stepId}: dependency_threshold should be number`);
   }
   // Warn on unknown params
-  const knownParams = new Set(['eventlog_handle', 'activity_key', 'dependency_threshold',
-    'generations', 'populationSize', 'particles', 'iterations', 'fitness_weight',
-    'simplicity_weight', 'min_frequency', 'streaming', 'variant', 'timeout',
-    'window_size', 'drift_threshold', 'ngram_order']);
+  const knownParams = new Set([
+    'eventlog_handle',
+    'activity_key',
+    'dependency_threshold',
+    'generations',
+    'populationSize',
+    'particles',
+    'iterations',
+    'fitness_weight',
+    'simplicity_weight',
+    'min_frequency',
+    'streaming',
+    'variant',
+    'timeout',
+    'window_size',
+    'drift_threshold',
+    'ngram_order',
+  ]);
   for (const key of Object.keys(params)) {
     if (!knownParams.has(key)) {
       warnings.push(`${step.stepId}: unknown parameter "${key}"`);
@@ -976,6 +1045,7 @@ function validateStepParams(step: ExecutableStep): string[] {
 ### GAP-19: Dual disconnected OTEL subsystems
 
 **Finding:** There are NOT dual OTEL subsystems. There is ZERO OTEL implementation. The only OTEL-related files are:
+
 1. `validators/observability.mjs` — trivial validator checking env vars
 2. `docs/` — documentation describing OTEL config not yet implemented
 
@@ -996,18 +1066,26 @@ function validateStepParams(step: ExecutableStep): string[] {
 **Assessment:** After GAP-12 adds `telemetry.ts`, create a `TestExporter` for test capture.
 
 **Fix:**
+
 1. File: `wasm4pm/__tests__/helpers/telemetry-capture.ts` (NEW):
+
 ```typescript
 import { TelemetryExporter, TelemetrySpan } from '../../src/telemetry.js';
 
 export class TestExporter implements TelemetryExporter {
   spans: TelemetrySpan[] = [];
-  exportSpan(span: TelemetrySpan) { this.spans.push(span); }
+  exportSpan(span: TelemetrySpan) {
+    this.spans.push(span);
+  }
   async flush() {}
-  clear() { this.spans = []; }
-  getSpansByName(name: string) { return this.spans.filter(s => s.name === name); }
+  clear() {
+    this.spans = [];
+  }
+  getSpansByName(name: string) {
+    return this.spans.filter((s) => s.name === name);
+  }
   assertSpanExists(name: string, requiredAttrs: string[]) {
-    const span = this.spans.find(s => s.name === name);
+    const span = this.spans.find((s) => s.name === name);
     if (!span) throw new Error(`Expected span "${name}" but none found`);
     for (const attr of requiredAttrs) {
       if (!(attr in span.attributes)) throw new Error(`Span "${name}" missing attribute "${attr}"`);
@@ -1028,6 +1106,7 @@ export class TestExporter implements TelemetryExporter {
 ### GAP-22: `resource` prediction uses hardcoded dummy values
 
 **Finding REBUTTED:** `prediction_resource.rs` implements real algorithms:
+
 - M/M/1 queue delay estimation (`compute_queue_delay`)
 - Greedy intervention ranking (`compute_ranked_interventions`)
 - UCB1 bandit selection (`compute_ucb1_selection`)
@@ -1043,6 +1122,7 @@ All values are computed from inputs. No hardcoded dummy values exist. The 0.7 an
 ### GAP-23: compare.ts result parsing fails for handle-wrapper shape
 
 **Finding CONFIRMED:** `mcp_server.ts` `compareAlgorithms()` (line 1381) has fragile handle extraction repeated 14 times:
+
 ```typescript
 const r = wasm.discover_dfg(logHandle, 'concept:name');
 modelHandle = typeof r === 'object' && r?.handle ? r.handle : String(r);
@@ -1051,7 +1131,9 @@ modelHandle = typeof r === 'object' && r?.handle ? r.handle : String(r);
 If WASM returns `{ handle: "abc" }`, extraction works. If it returns a bare string `"abc"`, the `String(r)` fallback works. But if it returns an object without `.handle`, `String(r)` produces `"[object Object]"`.
 
 **Fix:** Extract a shared handle utility:
+
 1. File: `wasm4pm/src/handle-utils.ts` (NEW):
+
 ```typescript
 /**
  * Extracts a handle string from a WASM return value.
@@ -1084,6 +1166,7 @@ export function extractHandle(raw: unknown): string {
 ### GAP-15: ALGORITHMS.md severely outdated
 
 **Finding:** ALGORITHMS.md documents 34 methods (14 discovery + 20 analytics). The actual codebase has:
+
 - 14 discovery algorithms in Rust
 - 8 POWL discovery variants
 - 6 ML algorithms
@@ -1091,6 +1174,7 @@ export function extractHandle(raw: unknown): string {
 - Streaming variants
 
 **Fix:** Rewrite ALGORITHMS.md to document all 58+ functions organized by category. Include:
+
 - Discovery (14 + 8 POWL = 22)
 - Analytics (~30)
 - ML (6)
@@ -1109,7 +1193,9 @@ export function extractHandle(raw: unknown): string {
 **Finding:** No `explain.ts` exists. The closest is `text_encoding.rs` which provides `encode_dfg_as_text`, `encode_petri_net_as_text`, etc. These are human-readable summaries, not academic explanations.
 
 **Fix:**
+
 1. File: `wasm4pm/src/explanations.ts` (NEW):
+
 ```typescript
 export interface AlgorithmExplanation {
   id: string;
@@ -1129,29 +1215,46 @@ export const ALGORITHM_EXPLANATIONS: Record<string, AlgorithmExplanation> = {
     id: 'dfg',
     name: 'Directly-Follows Graph',
     category: 'discovery',
-    description: 'Constructs a directed graph where nodes are activities and edges represent direct succession in the event log. The weight of each edge is the frequency of that succession.',
+    description:
+      'Constructs a directed graph where nodes are activities and edges represent direct succession in the event log. The weight of each edge is the frequency of that succession.',
     input: 'Event log with activity labels',
     output: 'DFG (nodes + weighted edges)',
     complexity: 'O(T × E) where T=traces, E=events per trace',
     suitableFor: ['Quick process overview', 'Large event logs', 'Real-time monitoring'],
     limitations: ['Cannot represent concurrency', 'No soundness guarantees'],
     parameters: [
-      { name: 'activity_key', type: 'string', default: 'concept:name', description: 'Activity attribute key' },
-      { name: 'min_frequency', type: 'number', default: '1', description: 'Minimum edge frequency threshold' },
+      {
+        name: 'activity_key',
+        type: 'string',
+        default: 'concept:name',
+        description: 'Activity attribute key',
+      },
+      {
+        name: 'min_frequency',
+        type: 'number',
+        default: '1',
+        description: 'Minimum edge frequency threshold',
+      },
     ],
   },
   alpha_plus_plus: {
     id: 'alpha_plus_plus',
     name: 'Alpha++ Algorithm',
     category: 'discovery',
-    description: 'Extends the Alpha Miner with lifecycle transitions, frequency thresholds, and parallelism detection. Discovers a Petri net that is sound by construction.',
+    description:
+      'Extends the Alpha Miner with lifecycle transitions, frequency thresholds, and parallelism detection. Discovers a Petri net that is sound by construction.',
     input: 'Event log with activity labels',
     output: 'Petri net (places, transitions, arcs, markings)',
     complexity: 'O(A² × T × E) where A=activities',
     suitableFor: ['Sound process models', 'Noise-tolerant discovery', 'Structured processes'],
     limitations: ['Cannot handle loops of length > 1', 'May produce non-free-choice constructs'],
     parameters: [
-      { name: 'activity_key', type: 'string', default: 'concept:name', description: 'Activity attribute key' },
+      {
+        name: 'activity_key',
+        type: 'string',
+        default: 'concept:name',
+        description: 'Activity attribute key',
+      },
     ],
   },
   // ... continue for all 21+ algorithms
@@ -1169,8 +1272,10 @@ export const ALGORITHM_EXPLANATIONS: Record<string, AlgorithmExplanation> = {
 **Finding:** POWL discovery is implemented in `src/powl/discovery/` with 8 variants. They are NOT in `StepType` enum, `pipeline.ts`, or the capability registry.
 
 **Fix:**
+
 1. File: `wasm4pm/src/config.ts` — Add `POWL_DISCOVERY` to StepType (covered by GAP-14)
 2. File: `wasm4pm/src/capability_registry.rs` — Add POWL discovery entries:
+
 ```rust
 {
     "name": "discover_powl",
@@ -1195,9 +1300,10 @@ export const ALGORITHM_EXPLANATIONS: Record<string, AlgorithmExplanation> = {
 
 ### GAP-26: `research` profile inconsistency
 
-**Finding:** `research` profile exists and works in `resolveProfile()`. It includes: DFG, Alpha++, Genetic, PSO, A*, ACO, SA, ILP, Statistics, Conformance, Variants, Performance, Clustering. Missing: Heuristic Miner, Inductive Miner, DECLARE, optimized DFG, POWL, analytics functions.
+**Finding:** `research` profile exists and works in `resolveProfile()`. It includes: DFG, Alpha++, Genetic, PSO, A\*, ACO, SA, ILP, Statistics, Conformance, Variants, Performance, Clustering. Missing: Heuristic Miner, Inductive Miner, DECLARE, optimized DFG, POWL, analytics functions.
 
 **Fix:** Add missing steps to `research` profile:
+
 ```typescript
 case ExecutionProfile.RESEARCH:
   return [
@@ -1240,6 +1346,7 @@ case ExecutionProfile.RESEARCH:
 **Finding:** CLAUDE.md claims size profiles (cloud ~2.78MB, browser ~500KB, edge ~1.5MB) but the actual build sizes may differ. These are Cargo feature-gated profiles.
 
 **Fix:**
+
 1. Build all profiles and measure actual sizes
 2. Update CLAUDE.md with actual numbers
 
@@ -1267,7 +1374,9 @@ ls -la pkg/pictl_bg.wasm
 **Finding:** `prediction_drift.rs` has a single drift detection algorithm (windowed Jaccard with 0.3 threshold). There is no "basic" vs "enhanced" mode in the Rust code. The MCP server adds EWMA smoothing on top in one of its tool handlers, but this is not a "mode" — it's a separate tool.
 
 **Fix:**
+
 1. Make the drift threshold configurable (currently hardcoded 0.3):
+
 ```rust
 // prediction_drift.rs
 pub fn detect_drift(
@@ -1279,6 +1388,7 @@ pub fn detect_drift(
 ```
 
 2. Add proper error handling for invalid thresholds:
+
 ```rust
 if threshold <= 0.0 || threshold >= 1.0 {
     return Err(JsValue::from_str("Drift threshold must be between 0.0 and 1.0 (exclusive)"));
@@ -1292,6 +1402,7 @@ if threshold <= 0.0 || threshold >= 1.0 {
 **Risk:** Medium — changes WASM function signature (breaking if existing callers don't pass threshold)
 
 **Mitigation:** Make `threshold` optional with default 0.3:
+
 ```rust
 pub fn detect_drift(log_handle: &str, activity_key: &str, window_size: usize) -> Result<JsValue, JsValue> {
     detect_drift_with_threshold(log_handle, activity_key, window_size, 0.3)
@@ -1306,35 +1417,35 @@ pub fn detect_drift_with_threshold(log_handle: &str, activity_key: &str, window_
 
 ## Summary: Gap Status After Plan Execution
 
-| Gap | Phase | Status | Actual Risk |
-|-----|-------|--------|-------------|
-| GAP-01 | 2 | **FIX** — Create RevOps XES fixture | LOW (additive) |
-| GAP-02 | 2 | **FIX** — Implement real token replay | HIGH (behavior change) |
-| GAP-03 | 3 | **FIX** — Wire ReceiptBuilder + SHA-256 | MEDIUM (hash change) |
-| GAP-04 | 1 | **CLOSED** — Doc mismatch, not runtime crash | NONE |
-| GAP-05 | 1 | **FIX** — Map OPTIMIZED_DFG in pipeline | LOW (additive) |
-| GAP-06 | 1 | **FIX** — Add exit codes | LOW (additive) |
-| GAP-07 | 2 | **FIX** — Add analytics StepTypes | LOW (additive) |
-| GAP-08 | 2 | **FIX** — Add ML StepTypes | MEDIUM (feature gate) |
-| GAP-09 | 4 | **CLOSED** — Architecture is correct as-is | NONE |
-| GAP-10 | 4 | **FIX** — Improve error classification patterns | LOW |
-| GAP-11 | 3 | **CLOSED** — `get_capability_registry` exists | NONE |
-| GAP-12 | 3 | **FIX** — Create telemetry.ts | LOW (additive) |
-| GAP-13 | 3 | **FIX** — Part of GAP-12 | LOW |
-| GAP-14 | 1 | **FIX** — Add POWL StepType + profile | MEDIUM (feature gate) |
-| GAP-15 | 5 | **FIX** — Rewrite ALGORITHMS.md | NONE (docs) |
-| GAP-16 | 3 | **FIX** — Failure receipts | LOW (additive) |
-| GAP-17 | 4 | **FIX** — Parameter validation warnings | LOW |
-| GAP-18 | 5 | **FIX** — Create explanations.ts | NONE (additive) |
-| GAP-19 | 4 | **CLOSED** — No dual OTEL, nothing to consolidate | NONE |
-| GAP-20 | 4 | **FIX** — Create TestExporter | LOW (additive) |
-| GAP-21 | 5 | **FIX** — POWL registry entries | LOW |
-| GAP-22 | 4 | **CLOSED** — Resource prediction is fully algorithmic | NONE |
-| GAP-23 | 4 | **FIX** — Extract shared handle utility | MEDIUM (error behavior) |
-| GAP-24 | 3 | **FIX** — Span name constants | NONE (additive) |
-| GAP-25 | 6 | **FIX** — Measure and update sizes | NONE |
-| GAP-26 | 5 | **FIX** — Complete research profile | LOW |
-| GAP-27 | 6 | **FIX** — Configurable drift threshold | MEDIUM (API change) |
+| Gap    | Phase | Status                                                | Actual Risk             |
+| ------ | ----- | ----------------------------------------------------- | ----------------------- |
+| GAP-01 | 2     | **FIX** — Create RevOps XES fixture                   | LOW (additive)          |
+| GAP-02 | 2     | **FIX** — Implement real token replay                 | HIGH (behavior change)  |
+| GAP-03 | 3     | **FIX** — Wire ReceiptBuilder + SHA-256               | MEDIUM (hash change)    |
+| GAP-04 | 1     | **CLOSED** — Doc mismatch, not runtime crash          | NONE                    |
+| GAP-05 | 1     | **FIX** — Map OPTIMIZED_DFG in pipeline               | LOW (additive)          |
+| GAP-06 | 1     | **FIX** — Add exit codes                              | LOW (additive)          |
+| GAP-07 | 2     | **FIX** — Add analytics StepTypes                     | LOW (additive)          |
+| GAP-08 | 2     | **FIX** — Add ML StepTypes                            | MEDIUM (feature gate)   |
+| GAP-09 | 4     | **CLOSED** — Architecture is correct as-is            | NONE                    |
+| GAP-10 | 4     | **FIX** — Improve error classification patterns       | LOW                     |
+| GAP-11 | 3     | **CLOSED** — `get_capability_registry` exists         | NONE                    |
+| GAP-12 | 3     | **FIX** — Create telemetry.ts                         | LOW (additive)          |
+| GAP-13 | 3     | **FIX** — Part of GAP-12                              | LOW                     |
+| GAP-14 | 1     | **FIX** — Add POWL StepType + profile                 | MEDIUM (feature gate)   |
+| GAP-15 | 5     | **FIX** — Rewrite ALGORITHMS.md                       | NONE (docs)             |
+| GAP-16 | 3     | **FIX** — Failure receipts                            | LOW (additive)          |
+| GAP-17 | 4     | **FIX** — Parameter validation warnings               | LOW                     |
+| GAP-18 | 5     | **FIX** — Create explanations.ts                      | NONE (additive)         |
+| GAP-19 | 4     | **CLOSED** — No dual OTEL, nothing to consolidate     | NONE                    |
+| GAP-20 | 4     | **FIX** — Create TestExporter                         | LOW (additive)          |
+| GAP-21 | 5     | **FIX** — POWL registry entries                       | LOW                     |
+| GAP-22 | 4     | **CLOSED** — Resource prediction is fully algorithmic | NONE                    |
+| GAP-23 | 4     | **FIX** — Extract shared handle utility               | MEDIUM (error behavior) |
+| GAP-24 | 3     | **FIX** — Span name constants                         | NONE (additive)         |
+| GAP-25 | 6     | **FIX** — Measure and update sizes                    | NONE                    |
+| GAP-26 | 5     | **FIX** — Complete research profile                   | LOW                     |
+| GAP-27 | 6     | **FIX** — Configurable drift threshold                | MEDIUM (API change)     |
 
 **CLOSED gaps (not real issues):** GAP-04, GAP-09, GAP-11, GAP-19, GAP-22 (5 of 27)
 **Active fixes needed:** 22 gaps across 6 phases
@@ -1376,6 +1487,7 @@ Phase 6 (after all):
 ```
 
 ## Files Created (7 new)
+
 1. `wasm4pm/tests/fixtures/revops_sales_pipeline.xes`
 2. `wasm4pm/src/exit-codes.ts`
 3. `wasm4pm/src/telemetry.ts`
@@ -1385,6 +1497,7 @@ Phase 6 (after all):
 7. `wasm4pm/src/validate-params.ts`
 
 ## Files Modified (11 existing)
+
 1. `wasm4pm/src/config.ts` — 10 new StepTypes, profile updates
 2. `wasm4pm/src/pipeline.ts` — 10 new WASM mappings, param validation
 3. `wasm4pm/src/errors.ts` — improved classification, toExitCode()

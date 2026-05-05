@@ -11,7 +11,7 @@
 //!    edges randomly, end at sink or when reaching an end-activity (30% early-stop
 //!    probability). Respects min/max trace length.
 //!
-//! Ported from pm4wasm, adapted to use `fastrand` and pictl's POWL arena types.
+//! Ported from pm4wasm, adapted to use `fastrand` and wasm4pm's POWL arena types.
 
 use crate::error::{codes, wasm_err};
 use crate::models::{AttributeValue, Event, EventLog, Trace};

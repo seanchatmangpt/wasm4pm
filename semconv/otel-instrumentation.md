@@ -8,9 +8,9 @@
 
 ## Overview
 
-The `wasm4pm` MCP server (`/Users/sac/chatmangpt/pictl/wasm4pm/dist/mcp_server.js`) has been instrumented with OpenTelemetry spans that emit to `http://localhost:4317` (configurable via `OTEL_EXPORTER_OTLP_ENDPOINT`).
+The `wasm4pm` MCP server (`/Users/sac/chatmangpt/wasm4pm/wasm4pm/dist/mcp_server.js`) has been instrumented with OpenTelemetry spans that emit to `http://localhost:4317` (configurable via `OTEL_EXPORTER_OTLP_ENDPOINT`).
 
-All spans follow the semantic conventions defined in `semconv/pictl-process-mining.yaml` and use the attribute keys and span names from that spec.
+All spans follow the semantic conventions defined in `semconv/wasm4pm-process-mining.yaml` and use the attribute keys and span names from that spec.
 
 ---
 
@@ -268,7 +268,7 @@ All attributes follow the semantic convention prefix:
 
 ### Required Attributes (must be set)
 
-Per the `pictl-process-mining.yaml` schema, these attributes are **always** required:
+Per the `wasm4pm-process-mining.yaml` schema, these attributes are **always** required:
 
 | Span | Required Attributes |
 |------|---------------------|
@@ -315,7 +315,7 @@ catch (err) {
 
 ### Before committing instrumentation:
 
-- [ ] **All spans use correct names** from `pictl-process-mining.yaml`
+- [ ] **All spans use correct names** from `wasm4pm-process-mining.yaml`
 - [ ] **Required attributes set** for each span type
 - [ ] **Status always set** (never omitted) — `OK` or `ERROR`
 - [ ] **Exception recorded** when operation fails
@@ -334,7 +334,7 @@ catch (err) {
 
 2. Run MCP server:
    ```bash
-   node /Users/sac/chatmangpt/pictl/wasm4pm/dist/mcp_server.js
+   node /Users/sac/chatmangpt/wasm4pm/wasm4pm/dist/mcp_server.js
    ```
 
 3. Call a tool via MCP:
@@ -374,13 +374,13 @@ For future phases:
 
 ## Files Modified
 
-- `/Users/sac/chatmangpt/pictl/wasm4pm/dist/mcp_server.js` — Added span instrumentation to 15 tool handlers
+- `/Users/sac/chatmangpt/wasm4pm/wasm4pm/dist/mcp_server.js` — Added span instrumentation to 15 tool handlers
 
 ---
 
 ## References
 
-- **Semconv Schema**: `/Users/sac/chatmangpt/pictl/semconv/pictl-process-mining.yaml`
+- **Semconv Schema**: `/Users/sac/chatmangpt/wasm4pm/semconv/wasm4pm-process-mining.yaml`
 - **OTel API**: `@opentelemetry/api` v1.x
 - **Jaeger UI**: http://localhost:16686 (default)
 - **OTLP HTTP Exporter**: `@opentelemetry/exporter-trace-otlp-http`

@@ -52,8 +52,8 @@ Public function "resolveConfig" must have an Instrumentation call.
 ```
 
 ### 4. Coverage Dashboards
-- **JSON:** `.pictl/otel-coverage.json` — machine-readable metrics
-- **Markdown:** `.pictl/otel-coverage.md` — human-readable summary
+- **JSON:** `.wasm4pm/otel-coverage.json` — machine-readable metrics
+- **Markdown:** `.wasm4pm/otel-coverage.md` — human-readable summary
 - Auto-updated on every scan
 - Consumed by CI/CD, monitoring, dashboards
 
@@ -71,8 +71,8 @@ Public function "resolveConfig" must have an Instrumentation call.
 5. `.eslintrc.cjs` (updated +3 lines, added pictl-observability plugin)
 
 ### Dashboards (2 files)
-6. `.pictl/otel-coverage.json` (generated, updated per scan)
-7. `.pictl/otel-coverage.md` (generated, updated per scan)
+6. `.wasm4pm/otel-coverage.json` (generated, updated per scan)
+7. `.wasm4pm/otel-coverage.md` (generated, updated per scan)
 
 ### Documentation (6 files)
 8. `.claude/OTEL_SUMMARY.md` (150 lines — quick reference)
@@ -181,7 +181,7 @@ See: `.claude/OTEL_IMPLEMENTATION_GUIDE.md` for full examples
 ### 1. View current coverage
 ```bash
 ./scripts/verify-otel-coverage.sh --verbose
-cat .pictl/otel-coverage.md
+cat .wasm4pm/otel-coverage.md
 ```
 
 ### 2. Read how-to guide
@@ -272,8 +272,8 @@ See: `.claude/OTEL_IMPLEMENTATION_GUIDE.md` (section: Step-by-Step Example)
 - No conflicts with existing rules
 
 ### ✅ Dashboards Verified
-- JSON report generated at `.pictl/otel-coverage.json`
-- Markdown dashboard generated at `.pictl/otel-coverage.md`
+- JSON report generated at `.wasm4pm/otel-coverage.json`
+- Markdown dashboard generated at `.wasm4pm/otel-coverage.md`
 - Both updated on every scan
 
 ---
@@ -341,8 +341,8 @@ Configuration:
   .eslintrc.cjs                                      ESLint config
 
 Dashboards:
-  .pictl/otel-coverage.json                          Metrics (JSON)
-  .pictl/otel-coverage.md                            Dashboard (Markdown)
+  .wasm4pm/otel-coverage.json                          Metrics (JSON)
+  .wasm4pm/otel-coverage.md                            Dashboard (Markdown)
 
 Documentation:
   .claude/OTEL_SUMMARY.md                            Quick reference
@@ -369,14 +369,14 @@ npm run lint -- --fix
 ./.claude/hooks/otel-coverage.sh
 
 # View dashboards
-cat .pictl/otel-coverage.json | jq
-cat .pictl/otel-coverage.md
+cat .wasm4pm/otel-coverage.json | jq
+cat .wasm4pm/otel-coverage.md
 
 # Track progress
 watch -n 5 './scripts/verify-otel-coverage.sh'
 
 # Export metrics
-jq '.by_package | to_entries[] | [.key, .value.coverage] | @csv' .pictl/otel-coverage.json
+jq '.by_package | to_entries[] | [.key, .value.coverage] | @csv' .wasm4pm/otel-coverage.json
 ```
 
 ---
@@ -415,7 +415,7 @@ jq '.by_package | to_entries[] | [.key, .value.coverage] | @csv' .pictl/otel-cov
 ### For All Developers
 1. Read `.claude/OTEL_SUMMARY.md` (5 min)
 2. Run `./scripts/verify-otel-coverage.sh` (2 min)
-3. Check `.pictl/otel-coverage.md` for gaps
+3. Check `.wasm4pm/otel-coverage.md` for gaps
 
 ### For Feature Developers
 1. Read `.claude/OTEL_IMPLEMENTATION_GUIDE.md` (15 min)

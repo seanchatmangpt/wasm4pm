@@ -8,19 +8,19 @@
 
 The pictl Rust codebase has been reorganized into a **three-crate workspace**:
 
-1. **pictl-types** — Canonical data structures (EventLog, DFG, PetriNet, ProvenanceChain)
-2. **pictl-algos** — High-performance algorithm implementations with branchless patterns
+1. **wasm4pm-types** — Canonical data structures (EventLog, DFG, PetriNet, ProvenanceChain)
+2. **wasm4pm-algos** — High-performance algorithm implementations with branchless patterns
 3. **pictl** (wasm4pm/src) — WASM bindings and compatibility layer
 
-All core discovery algorithms have been ported from `wasm4pm/src` into `pictl-algos` using optimized branchless patterns for cache-friendly execution.
+All core discovery algorithms have been ported from `wasm4pm/src` into `wasm4pm-algos` using optimized branchless patterns for cache-friendly execution.
 
 ---
 
 ## Phase 1: Architecture Setup ✅
 
-### pictl-types Crate (Complete)
+### wasm4pm-types Crate (Complete)
 
-**Location:** `wasm4pm/crates/pictl-types/`
+**Location:** `wasm4pm/crates/wasm4pm-types/`
 
 | Component | Status | Files |
 |-----------|--------|-------|
@@ -40,9 +40,9 @@ All core discovery algorithms have been ported from `wasm4pm/src` into `pictl-al
 
 **Tests:** 18 unit tests, all passing ✅
 
-### pictl-algos Crate (Phase 1)
+### wasm4pm-algos Crate (Phase 1)
 
-**Location:** `wasm4pm/crates/pictl-algos/`
+**Location:** `wasm4pm/crates/wasm4pm-algos/`
 
 | Algorithm | Status | Implementation | Optimizations |
 |-----------|--------|-----------------|----------------|
@@ -97,9 +97,9 @@ All core discovery algorithms have been ported from `wasm4pm/src` into `pictl-al
 
 Current state:
 - ✅ Old code compiles and tests pass (597 tests)
-- ✅ New pictl-algos imports and works
-- 🔄 Need to wire pictl-algos exports to WASM boundary
-- 🔄 Need to migrate old implementations to use pictl-algos internally
+- ✅ New wasm4pm-algos imports and works
+- 🔄 Need to wire wasm4pm-algos exports to WASM boundary
+- 🔄 Need to migrate old implementations to use wasm4pm-algos internally
 
 ### Dependency Injection Plan
 
@@ -127,11 +127,11 @@ cargo check --all
 # Run all tests (597 passing, 1 pre-existing failure)
 cargo test --all
 
-# Test pictl-types in isolation
-cargo test -p pictl-types
+# Test wasm4pm-types in isolation
+cargo test -p wasm4pm-cli-types
 
-# Test pictl-algos in isolation
-cargo test -p pictl-algos
+# Test wasm4pm-algos in isolation
+cargo test -p wasm4pm-cli-algos
 
 # Profile DFG discovery (columnar optimization)
 cargo bench --bench discovery_benchmarks -- discover_dfg
@@ -150,14 +150,14 @@ Kernel Registry (pictl/packages/kernel)
     ↓
 pictl WASM Bindings (wasm4pm/src/)
     ↓ (imported)
-pictl-algos Algorithms (wasm4pm/crates/pictl-algos/)
+wasm4pm-algos Algorithms (wasm4pm/crates/wasm4pm-algos/)
     ↓ (depends on)
-pictl-types Structures (wasm4pm/crates/pictl-types/)
+wasm4pm-types Structures (wasm4pm/crates/wasm4pm-types/)
 ```
 
 **Unidirectional dependencies:**
-- ✅ pictl-algos imports pictl-types
-- ✅ pictl (WASM) can import pictl-algos
+- ✅ wasm4pm-algos imports wasm4pm-types
+- ✅ pictl (WASM) can import wasm4pm-algos
 - ✅ TypeScript packages import compiled WASM
 - ❌ No circular dependencies
 
@@ -168,7 +168,7 @@ pictl-types Structures (wasm4pm/crates/pictl-types/)
 ### Issue 1: Old Code Duplication
 
 **Status:** Acceptable during migration  
-**Mitigation:** Keep old code until pictl-algos has >95% feature parity
+**Mitigation:** Keep old code until wasm4pm-algos has >95% feature parity
 
 ### Issue 2: WASM State Management
 
@@ -187,7 +187,7 @@ pictl-types Structures (wasm4pm/crates/pictl-types/)
 1. **Implement Conformance Layer**
    - Token replay fitness computation
    - Alignment-based conformance checking
-   - Add to pictl-algos/src/conformance.rs
+   - Add to wasm4pm-algos/src/conformance.rs
 
 2. **Wire WASM Bindings**
    - Update wasm4pm/src/discovery.rs to call pictl_algos::*
@@ -211,8 +211,8 @@ pictl-types Structures (wasm4pm/crates/pictl-types/)
 **Workspace Compilation:**
 ```
 ✅ cargo check --all
-   Checking pictl-types v26.4.10 — Finished
-   Checking pictl-algos v26.4.10 — Finished
+   Checking wasm4pm-types v26.4.10 — Finished
+   Checking wasm4pm-algos v26.4.10 — Finished
    Checking pictl v26.4.10 — Finished
 ```
 
@@ -221,8 +221,8 @@ pictl-types Structures (wasm4pm/crates/pictl-types/)
 ✅ 597 tests PASS
 ❌ 1 test FAIL (gpu::wgpu_binding — pre-existing, unrelated)
 
-pictl-types: 18 tests PASS
-pictl-algos: 12 tests PASS
+wasm4pm-types: 18 tests PASS
+wasm4pm-algos: 12 tests PASS
 ```
 
 **Git Status:**
@@ -236,17 +236,17 @@ e9b65e8d feat(algos): implement core discovery algorithms with branchless patter
 
 ```
 wasm4pm/Cargo.toml
-  - Added workspace members: crates/pictl-types, crates/pictl-algos
+  - Added workspace members: crates/wasm4pm-types, crates/wasm4pm-algos
   - Shared version: 26.4.10
 
-wasm4pm/crates/pictl-types/
+wasm4pm/crates/wasm4pm-types/
   - NEW: Complete binary type layer (event_log, models, conformance, provenance, hash, error)
 
-wasm4pm/crates/pictl-algos/
+wasm4pm/crates/wasm4pm-algos/
   - NEW: Core algorithms with branchless patterns (dfg, heuristic, inductive, alpha)
   - Improved from old wasm4pm/src implementations
 
-wasm4pm/crates/pictl-algos/src/
+wasm4pm/crates/wasm4pm-algos/src/
   - dfg.rs: 102 → 157 lines (single-pass columnar optimization)
   - heuristic.rs: 7 → 97 lines (full Heuristic Miner implementation)
   - streaming.rs: 7 → 97 lines (Inductive Miner implementation)

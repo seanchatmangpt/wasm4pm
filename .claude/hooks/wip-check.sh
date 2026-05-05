@@ -8,7 +8,7 @@
 set -euo pipefail
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
-WIP_CONFIG="${REPO_ROOT}/.pictl/wip-config.json"
+WIP_CONFIG="${REPO_ROOT}/.wasm4pm/wip-config.json"
 
 # Exit gracefully if config doesn't exist
 if [ ! -f "$WIP_CONFIG" ]; then

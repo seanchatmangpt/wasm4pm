@@ -560,32 +560,32 @@ export class Kernel {
 
       case 'ml_classify':
         throw new Error(
-          `ML algorithm '${algorithmId}' requires the @pictl/ml package. Run 'pictl ml classify ...' instead.`
+          `ML algorithm '${algorithmId}' requires the @wasm4pm/ml package. Run 'wpm ml classify ...' instead.`
         );
 
       case 'ml_cluster':
         throw new Error(
-          `ML algorithm '${algorithmId}' requires the @pictl/ml package. Run 'pictl ml cluster ...' instead.`
+          `ML algorithm '${algorithmId}' requires the @wasm4pm/ml package. Run 'wpm ml cluster ...' instead.`
         );
 
       case 'ml_forecast':
         throw new Error(
-          `ML algorithm '${algorithmId}' requires the @pictl/ml package. Run 'pictl ml forecast ...' instead.`
+          `ML algorithm '${algorithmId}' requires the @wasm4pm/ml package. Run 'wpm ml forecast ...' instead.`
         );
 
       case 'ml_anomaly':
         throw new Error(
-          `ML algorithm '${algorithmId}' requires the @pictl/ml package. Run 'pictl ml anomaly ...' instead.`
+          `ML algorithm '${algorithmId}' requires the @wasm4pm/ml package. Run 'wpm ml anomaly ...' instead.`
         );
 
       case 'ml_regress':
         throw new Error(
-          `ML algorithm '${algorithmId}' requires the @pictl/ml package. Run 'pictl ml regress ...' instead.`
+          `ML algorithm '${algorithmId}' requires the @wasm4pm/ml package. Run 'wpm ml regress ...' instead.`
         );
 
       case 'ml_pca':
         throw new Error(
-          `ML algorithm '${algorithmId}' requires the @pictl/ml package. Run 'pictl ml pca ...' instead.`
+          `ML algorithm '${algorithmId}' requires the @wasm4pm/ml package. Run 'wpm ml pca ...' instead.`
         );
 
       default:

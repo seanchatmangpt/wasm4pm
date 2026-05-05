@@ -1,4 +1,4 @@
-# @pictl/testing
+# @wasm4pm/testing
 
 Test harnesses for the pictl monorepo. Provides parity, determinism, CLI, OTEL, and certification testing infrastructure.
 
@@ -6,19 +6,19 @@ Test harnesses for the pictl monorepo. Provides parity, determinism, CLI, OTEL, 
 
 ```typescript
 // Parity: explain() output matches plan() structure
-import { checkParity, checkParityBatch } from '@pictl/testing';
+import { checkParity, checkParityBatch } from '@wasm4pm/testing';
 
 // Determinism: same input → same output (receipt hash stable)
-import { checkDeterminism, stableReceiptHash, receiptsMatch } from '@pictl/testing';
+import { checkDeterminism, stableReceiptHash, receiptsMatch } from '@wasm4pm/testing';
 
-// CLI: run pictl commands and assert exit codes / JSON output
-import { runCli, assertExitCode, assertJsonOutput, createCliTestEnv, EXIT_CODES } from '@pictl/testing';
+// CLI: run wpm commands and assert exit codes / JSON output
+import { runCli, assertExitCode, assertJsonOutput, createCliTestEnv, EXIT_CODES } from '@wasm4pm/testing';
 
 // OTEL: capture and validate OpenTelemetry spans
-import { OtelCapture, createOtelCapture } from '@pictl/testing';
+import { OtelCapture, createOtelCapture } from '@wasm4pm/testing';
 
 // Certification: gate tests that must pass before merge
-import { CertificationGate, runCertification } from '@pictl/testing';
+import { CertificationGate, runCertification } from '@wasm4pm/testing';
 ```
 
 ## OtelCapture

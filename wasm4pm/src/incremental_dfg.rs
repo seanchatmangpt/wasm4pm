@@ -448,10 +448,10 @@ pub fn streaming_dfg_string_event(handle: &str, activity: &str) -> Result<JsValu
                 "ok": true,
                 "event_count": sdfg.event_count(),
             }))
-            .map_err(|e| JsValue::from_str(&e.to_string()))
+            .map_err(|e| crate::error::js_val(&e.to_string()))
         }
-        Some(_) => Err(JsValue::from_str("Object is not a StreamingDFG")),
-        None => Err(JsValue::from_str(&format!(
+        Some(_) => Err(crate::error::js_val("Object is not a StreamingDFG")),
+        None => Err(crate::error::js_val(&format!(
             "StreamingDFG '{}' not found",
             handle
         ))),
@@ -465,10 +465,10 @@ pub fn streaming_dfg_string_end_trace(handle: &str) -> Result<JsValue, JsValue> 
         Some(state::StoredObject::StreamingDFG(sdfg)) => {
             sdfg.end_trace();
             serde_wasm_bindgen::to_value(&json!({ "ok": true }))
-                .map_err(|e| JsValue::from_str(&e.to_string()))
+                .map_err(|e| crate::error::js_val(&e.to_string()))
         }
-        Some(_) => Err(JsValue::from_str("Object is not a StreamingDFG")),
-        None => Err(JsValue::from_str(&format!(
+        Some(_) => Err(crate::error::js_val("Object is not a StreamingDFG")),
+        None => Err(crate::error::js_val(&format!(
             "StreamingDFG '{}' not found",
             handle
         ))),

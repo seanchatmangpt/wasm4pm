@@ -10,15 +10,15 @@
  *   3. CLI     — pictl run --algorithm X exits 0 or 3 (never 1=config or 2=source)
  *   4. CLI     — pictl compare with all 14 IDs comma-joined exits 0 or 3
  *
- * Driven by ALGORITHM_IDS from @pictl/contracts — if a new algorithm is added
+ * Driven by ALGORITHM_IDS from @wasm4pm/contracts — if a new algorithm is added
  * to the ontology and regenerated, this scenario covers it automatically.
  */
 import { describe, it, expect, beforeAll, afterEach } from 'vitest';
 import * as path from 'path';
 import * as fs from 'fs/promises';
-import { resolveConfig } from '@pictl/config';
-import { ALGORITHM_IDS } from '@pictl/contracts';
-import { pictl, createCliTestEnv, EXIT_CODES } from '@pictl/testing';
+import { resolveConfig } from '@wasm4pm/config';
+import { ALGORITHM_IDS } from '@wasm4pm/contracts';
+import { pictl, createCliTestEnv, EXIT_CODES } from '@wasm4pm/testing';
 const MINI_XES = `<?xml version="1.0" encoding="UTF-8"?>
 <log xes.version="1.0">
   <extension name="Concept" prefix="concept" uri="http://www.xes-standard.org/concept.xesext"/>
@@ -67,9 +67,9 @@ describe('all algorithms: planner layer', () => {
     let plan = null;
     beforeAll(async () => {
         try {
-            const mod = await import('@pictl/planner');
+            const mod = await import('@wasm4pm/planner');
             plan = (cfg) => mod.plan(cfg);
-            console.info('[all-algos] @pictl/planner loaded');
+            console.info('[all-algos] @wasm4pm/planner loaded');
         }
         catch {
             console.warn('[all-algos] planner not built — planner tests will skip');
@@ -98,7 +98,7 @@ describe('all algorithms: planner layer', () => {
 // ── 3. CLI: pictl run --algorithm X exits 0 or 3, never 1 or 2 ────────────────
 describe('all algorithms: CLI run layer', () => {
     for (const id of ALGORITHM_IDS) {
-        it(`pictl run --algorithm ${id} exits 0 or 3 (not config/source error)`, async () => {
+        it(`wpm run --algorithm ${id} exits 0 or 3 (not config/source error)`, async () => {
             const result = await pictl(['run', xesPath, '--algorithm', id, '--no-save']);
             const acceptable = [EXIT_CODES.SUCCESS, EXIT_CODES.EXECUTION_ERROR];
             if (!acceptable.includes(result.exitCode)) {
@@ -106,7 +106,7 @@ describe('all algorithms: CLI run layer', () => {
                 console.error('  stdout:', result.stdout.slice(0, 200));
                 console.error('  stderr:', result.stderr.slice(0, 200));
             }
-            expect(acceptable, `pictl run --algorithm ${id} exited ${result.exitCode}`).toContain(result.exitCode);
+            expect(acceptable, `wpm run --algorithm ${id} exited ${result.exitCode}`).toContain(result.exitCode);
         }, 20000);
     }
 });

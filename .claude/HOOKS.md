@@ -117,7 +117,7 @@ chmod +x .git/hooks/post-commit
 git commit --allow-empty -m "test: metrics collection"
 
 # 3. Verify metrics were collected
-cat .pictl/metrics.json | jq '.historical_data[-1]'
+cat .wasm4pm/metrics.json | jq '.historical_data[-1]'
 
 # 4. Generate weekly dashboard
 bash scripts/weekly-metrics-report.sh
@@ -134,7 +134,7 @@ bash scripts/weekly-metrics-report.sh
 
 ### SessionStart (with valid pictl)
 ```bash
-CLAUDE_PROJECT_DIR=/Users/sac/chatmangpt/pictl .claude/hooks/session-start.sh
+CLAUDE_PROJECT_DIR=/Users/sac/chatmangpt/wasm4pm .claude/hooks/session-start.sh
 ```
 Output: Health summary + checkpoint
 
@@ -147,7 +147,7 @@ Output: `ERROR: pictl doctor unavailable` (exit 1)
 ### Stop Gate (healthy environment)
 ```bash
 echo '{"stop_hook_active":false}' | \
-  CLAUDE_PROJECT_DIR=/Users/sac/chatmangpt/pictl \
+  CLAUDE_PROJECT_DIR=/Users/sac/chatmangpt/wasm4pm \
   .claude/hooks/stop-gate.sh
 ```
 Output: (exit 0 — allows stop)
@@ -155,7 +155,7 @@ Output: (exit 0 — allows stop)
 ### Stop Gate (degraded environment)
 ```bash
 echo '{"stop_hook_active":false}' | \
-  CLAUDE_PROJECT_DIR=/Users/sac/chatmangpt/pictl \
+  CLAUDE_PROJECT_DIR=/Users/sac/chatmangpt/wasm4pm \
   .claude/hooks/stop-gate.sh
 ```
 Output: JSON block decision (exit 0 with block decision)
@@ -210,8 +210,8 @@ Runs after every commit (manual setup required — see "Setup" section).
 
 **Behavior:**
 - Collects 8 metrics: test pass rate, compiler warnings, build time, OTEL coverage, TPS violations, MTTR, test determinism, LOCs
-- Persists to `.pictl/metrics.json` with timestamp and git commit hash
-- Logs build times to `.pictl/build-times.log` for trend analysis
+- Persists to `.wasm4pm/metrics.json` with timestamp and git commit hash
+- Logs build times to `.wasm4pm/build-times.log` for trend analysis
 - All metrics collected even if individual collection fails (non-blocking)
 
 **Metrics Collected:**

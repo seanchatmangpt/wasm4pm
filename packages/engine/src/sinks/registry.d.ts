@@ -3,7 +3,7 @@
  * Central registry for managing sink adapters
  * Re-exports SinkRegistry from contracts and provides helper functions
  */
-import { SinkRegistry, sinkRegistry as contractRegistry } from '@pictl/contracts';
+import { SinkRegistry, sinkRegistry as contractRegistry } from '@wasm4pm/contracts';
 import { FileLogSinkConfig } from './file-log-sink.js';
 import { StdoutSinkConfig } from './stdout-sink.js';
 import { HttpSinkConfig } from './http-sink.js';
@@ -39,6 +39,6 @@ export declare function createSinkRegistry(config?: Partial<FileLogSinkConfig>):
  * Export the contract registry as default singleton
  */
 export { contractRegistry as sinkRegistry };
-export { SinkRegistry } from '@pictl/contracts';
-export type { SinkAdapter, ArtifactType, AtomicityLevel, ExistsBehavior, FailureMode, } from '@pictl/contracts';
+export { SinkRegistry } from '@wasm4pm/contracts';
+export type { SinkAdapter, ArtifactType, AtomicityLevel, ExistsBehavior, FailureMode, } from '@wasm4pm/contracts';
 //# sourceMappingURL=registry.d.ts.map

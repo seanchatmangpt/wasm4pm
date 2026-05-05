@@ -2,7 +2,7 @@
  * Unit tests for footprint utilities
  */
 import { describe, it, expect } from 'vitest';
-import { extractFootprintsFromLog, extractFootprintsFromDFG, compareFootprints, areFootprintsEquivalent, createSequentialFootprint, createParallelFootprint, createChoiceFootprint, formatFootprints, formatFootprintComparison, serializeFootprints, deserializeFootprints, computeFootprintEntropy, } from '@pictl/testing';
+import { extractFootprintsFromLog, extractFootprintsFromDFG, compareFootprints, areFootprintsEquivalent, createSequentialFootprint, createParallelFootprint, createChoiceFootprint, formatFootprints, formatFootprintComparison, serializeFootprints, deserializeFootprints, computeFootprintEntropy, } from '@wasm4pm/testing';
 describe('extractFootprintsFromLog', () => {
     it('should extract sequence footprints from sequential log', () => {
         const eventLog = [

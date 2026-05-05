@@ -9,7 +9,7 @@
 //! Fix: Use `models::parse_timestamp_ms()` to parse ISO-8601 timestamps and
 //! compute durations in milliseconds, then convert to seconds.
 
-use wasm4pm::models::{EventLog, Event, Trace, AttributeValue};
+use wasm4pm::models::{AttributeValue, Event, EventLog, Trace};
 
 #[test]
 fn test_trace_duration_from_iso8601_timestamps() {
@@ -65,7 +65,11 @@ fn test_trace_duration_computation() {
     let dur_sec = dur_ms as f64 / 1000.0;
 
     // Should be exactly 5.0 seconds
-    assert!((dur_sec - 5.0).abs() < 1e-6, "Duration should be 5.0 seconds, got {}", dur_sec);
+    assert!(
+        (dur_sec - 5.0).abs() < 1e-6,
+        "Duration should be 5.0 seconds, got {}",
+        dur_sec
+    );
 }
 
 #[test]
@@ -84,15 +88,19 @@ fn test_trace_duration_handles_reversed_order() {
     let dur_sec = dur_ms as f64 / 1000.0;
 
     // Should still be 5.0 seconds (absolute value)
-    assert!((dur_sec - 5.0).abs() < 1e-6, "Duration should be 5.0 seconds (absolute), got {}", dur_sec);
+    assert!(
+        (dur_sec - 5.0).abs() < 1e-6,
+        "Duration should be 5.0 seconds (absolute), got {}",
+        dur_sec
+    );
 }
 
 #[test]
 fn test_trace_duration_not_string_length() {
     // This test explicitly verifies that we're NOT using string length
     // Create two timestamps with the same time but different string representations
-    let ts1 = "2024-01-01T10:00:00+00:00";  // 25 characters
-    let ts2 = "2024-01-01T10:00:00Z";         // 20 characters (shorter!)
+    let ts1 = "2024-01-01T10:00:00+00:00"; // 25 characters
+    let ts2 = "2024-01-01T10:00:00Z"; // 20 characters (shorter!)
 
     // If we used string length, we'd get a meaningless difference
     let len_diff = ts2.len() as f64 - ts1.len() as f64;
@@ -108,36 +116,53 @@ fn test_trace_duration_not_string_length() {
     let dur_sec = dur_ms as f64 / 1000.0;
 
     // Should be exactly 0, not the string length difference!
-    assert_eq!(dur_sec, 0.0, "Duration should be 0.0 seconds (same instant), got {}", dur_sec);
-    assert_ne!(dur_sec, len_diff, "Duration should NOT equal string length difference");
+    assert_eq!(
+        dur_sec, 0.0,
+        "Duration should be 0.0 seconds (same instant), got {}",
+        dur_sec
+    );
+    assert_ne!(
+        dur_sec, len_diff,
+        "Duration should NOT equal string length difference"
+    );
 }
 
 // Helper function to create a test event log
 fn create_test_log_with_timestamps() -> EventLog {
     EventLog {
         attributes: std::collections::HashMap::new(),
-        traces: vec![
-            Trace {
-                attributes: std::collections::HashMap::new(),
-                events: vec![
-                    Event {
-                        attributes: {
-                            let mut attrs = std::collections::HashMap::new();
-                            attrs.insert("concept:name".to_string(), AttributeValue::String("A".to_string()));
-                            attrs.insert("time:timestamp".to_string(), AttributeValue::Date("2024-01-01T10:00:00+00:00".to_string()));
-                            attrs
-                        },
+        traces: vec![Trace {
+            attributes: std::collections::HashMap::new(),
+            events: vec![
+                Event {
+                    attributes: {
+                        let mut attrs = std::collections::HashMap::new();
+                        attrs.insert(
+                            "concept:name".to_string(),
+                            AttributeValue::String("A".to_string()),
+                        );
+                        attrs.insert(
+                            "time:timestamp".to_string(),
+                            AttributeValue::Date("2024-01-01T10:00:00+00:00".to_string()),
+                        );
+                        attrs
                     },
-                    Event {
-                        attributes: {
-                            let mut attrs = std::collections::HashMap::new();
-                            attrs.insert("concept:name".to_string(), AttributeValue::String("B".to_string()));
-                            attrs.insert("time:timestamp".to_string(), AttributeValue::Date("2024-01-01T10:00:05+00:00".to_string()));
-                            attrs
-                        },
+                },
+                Event {
+                    attributes: {
+                        let mut attrs = std::collections::HashMap::new();
+                        attrs.insert(
+                            "concept:name".to_string(),
+                            AttributeValue::String("B".to_string()),
+                        );
+                        attrs.insert(
+                            "time:timestamp".to_string(),
+                            AttributeValue::Date("2024-01-01T10:00:05+00:00".to_string()),
+                        );
+                        attrs
                     },
-                ],
-            },
-        ],
+                },
+            ],
+        }],
     }
 }

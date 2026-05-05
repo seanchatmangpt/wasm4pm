@@ -10,7 +10,7 @@ case "$SCRIPT_DIR" in
   */scripts)            REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)" ;;
   *)                    REPO_ROOT="$SCRIPT_DIR" ;;
 esac
-SEMCONV_FILE="$REPO_ROOT/semconv/pictl-process-mining.yaml"
+SEMCONV_FILE="$REPO_ROOT/semconv/wasm4pm-process-mining.yaml"
 INSTR_DIR="$REPO_ROOT/packages/observability/src"
 cd "$REPO_ROOT"
 
@@ -18,9 +18,9 @@ cd "$REPO_ROOT"
 
 # OT-1: Semconv schema file present
 if [ -f "$SEMCONV_FILE" ]; then
-  echo "PASS|OT-1|pictl-process-mining.yaml semconv schema present"
+  echo "PASS|OT-1|wasm4pm-process-mining.yaml semconv schema present"
 else
-  echo "FAIL|OT-1|semconv/pictl-process-mining.yaml missing"
+  echo "FAIL|OT-1|semconv/wasm4pm-process-mining.yaml missing"
 fi
 
 # OT-2: Required span groups (pm.discovery, pm.conformance, pm.prediction, pm.drift, pm.ml)
@@ -151,7 +151,7 @@ WEAVER_BIN=$(which weaver 2>/dev/null || echo "")
 if [ -n "$WEAVER_BIN" ]; then
   YAML_N=$(find "$REPO_ROOT/semconv" -name "*.yaml" 2>/dev/null | wc -l | tr -d ' ')
   YAML_INT=$(echo "$YAML_N" | tr -d '[:space:]')
-  # The pictl semconv is a flat YAML, not a weaver registry directory format.
+  # The wasm4pm semconv is a flat YAML, not a weaver registry directory format.
   # A weaver registry requires groups/ subdirectory structure.
   HAS_REGISTRY_STRUCT=$(find "$REPO_ROOT/semconv" -name "*.yaml" -path "*/groups/*" 2>/dev/null | wc -l | tr -d ' ')
   HRS_INT=$(echo "$HAS_REGISTRY_STRUCT" | tr -d '[:space:]')

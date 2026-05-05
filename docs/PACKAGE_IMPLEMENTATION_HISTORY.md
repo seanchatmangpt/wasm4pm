@@ -2,7 +2,7 @@
 
 Historical record of package implementations across the pictl monorepo.
 
-## @pictl/config
+## @wasm4pm/config
 
 Configuration management with Zod validation, multi-source loading, and BLAKE3 hashing.
 
@@ -14,7 +14,7 @@ Configuration management with Zod validation, multi-source loading, and BLAKE3 h
 
 Full archive: [docs/archive/packages/config/IMPLEMENTATION.md](archive/packages/config/IMPLEMENTATION.md)
 
-## @pictl/contracts
+## @wasm4pm/contracts
 
 Type-safe contracts, receipts, error system, hashing, algorithm registry, and prediction tasks.
 
@@ -27,7 +27,7 @@ Type-safe contracts, receipts, error system, hashing, algorithm registry, and pr
 
 Full archive: [docs/archive/packages/contracts/IMPLEMENTATION.md](archive/packages/contracts/IMPLEMENTATION.md)
 
-## @pictl/engine
+## @wasm4pm/engine
 
 Engine lifecycle state machine with 8 states and graceful degradation/recovery.
 
@@ -40,7 +40,7 @@ Engine lifecycle state machine with 8 states and graceful degradation/recovery.
 
 Full archive: [docs/archive/packages/engine/IMPLEMENTATION.md](archive/packages/engine/IMPLEMENTATION.md)
 
-## @pictl/observability
+## @wasm4pm/observability
 
 Three-layer observability: CLI output, JSONL machine output, OTEL spans.
 
@@ -53,7 +53,7 @@ Three-layer observability: CLI output, JSONL machine output, OTEL spans.
 
 Full archive: [docs/archive/packages/observability/IMPLEMENTATION.md](archive/packages/observability/IMPLEMENTATION.md)
 
-## @pictl/planner
+## @wasm4pm/planner
 
 Execution plan generation with DAG validation and algorithm selection.
 

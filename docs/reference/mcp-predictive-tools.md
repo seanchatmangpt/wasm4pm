@@ -267,6 +267,6 @@ Handles are freed in nested `try/finally` blocks. Even if the computation throws
 
 ## See Also
 
-- [Prediction CLI Reference](./prediction-cli.md) -- `pictl predict` task documentation
+- [Prediction CLI Reference](./prediction-cli.md) -- `wpm predict` task documentation
 - [Prediction Config Reference](./prediction-config.md) -- prediction configuration schema
 - [CLI Commands Reference](./cli-commands.md) -- all pictl commands

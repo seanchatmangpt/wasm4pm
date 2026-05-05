@@ -3,7 +3,7 @@
 **Author:** b5-profiles Benchmark Agent
 **Date:** 2026-04-10
 **Version:** v26.4.10
-**Repository:** https://github.com/seanchatmangpt/pictl
+**Repository:** https://github.com/seanchatmangpt/wasm4pm
 
 ---
 
@@ -50,7 +50,7 @@ Our key findings reveal that **SIMD-accelerated token replay achieves 40-47x spe
 
 Process mining enables organizations to discover, monitor, and improve business processes based on event log data. Traditional process mining tools require native code execution, limiting deployment to server environments. The emergence of **WebAssembly (WASM)** as a portable, high-performance compilation target enables process mining algorithms to run efficiently across diverse environments from web browsers to edge devices.
 
-**pictl** (`@seanchatmangpt/pictl`) is a Rust-based process mining framework compiled to WebAssembly, providing:
+**pictl** (`@wasm4pm/cli`) is a Rust-based process mining framework compiled to WebAssembly, providing:
 
 - **21 registered algorithms** across discovery, conformance, and prediction
 - **5 deployment profiles** optimized for different resource constraints
@@ -86,6 +86,7 @@ WebAssembly is a binary instruction format for a stack-based virtual machine, de
 **Near-Native Execution**: WASM achieves 70-90% of native performance for compute-bound workloads [Haas et al., 2022]
 
 **Binary Size Optimization**: Techniques include:
+
 - `opt-level="z"` for size optimization
 - Link-time optimization (LTO)
 - Feature-gated compilation
@@ -105,6 +106,7 @@ WebAssembly is a binary instruction format for a stack-based virtual machine, de
 ### 2.3 SIMD in Process Mining
 
 SIMD (Single Instruction, Multiple Data) acceleration has been applied to:
+
 - **Token replay**: Parallel trace fitness computation
 - **DFG discovery**: Vectorized frequency counting
 - **Streaming aggregation**: Real-time histogram updates
@@ -160,13 +162,13 @@ pictl defines five deployment profiles with distinct feature compositions:
 
 ### 4.1 Profile Definitions
 
-| Profile | Features | Target Environment | Expected Size |
-|---------|----------|-------------------|---------------|
-| **iot** | minimal, streaming_basic, hand_rolled_stats | Microcontrollers, embedded IoT | ~1.0 MB (target) |
-| **mobile** | basic, simd, hand_rolled_stats | Mobile web, minimal | ~500 KB (target) |
-| **edge** | basic, advanced, ml, streaming_basic, hand_rolled_stats | Edge servers, CDN | ~1.5 MB (target) |
-| **fog** | edge + swarm, streaming_full, statrs, ocel, powl | Fog computing, IoT gateways | ~2.0 MB (target) |
-| **browser** | All features | Cloud servers, datacenters | ~2.7 MB (target) |
+| Profile     | Features                                                | Target Environment             | Expected Size    |
+| ----------- | ------------------------------------------------------- | ------------------------------ | ---------------- |
+| **iot**     | minimal, streaming_basic, hand_rolled_stats             | Microcontrollers, embedded IoT | ~1.0 MB (target) |
+| **mobile**  | basic, simd, hand_rolled_stats                          | Mobile web, minimal            | ~500 KB (target) |
+| **edge**    | basic, advanced, ml, streaming_basic, hand_rolled_stats | Edge servers, CDN              | ~1.5 MB (target) |
+| **fog**     | edge + swarm, streaming_full, statrs, ocel, powl        | Fog computing, IoT gateways    | ~2.0 MB (target) |
+| **browser** | All features                                            | Cloud servers, datacenters     | ~2.7 MB (target) |
 
 ### 4.2 Feature Composition
 
@@ -197,13 +199,13 @@ pictl defines five deployment profiles with distinct feature compositions:
 
 ### 5.1 Empirical Measurements
 
-| Profile | Bytes | Size (MB) | Delta from iot | Reduction from cloud |
-|---------|-------|-----------|----------------|---------------------|
-| **iot** | 3,413,261 | 3.25 | — | 0.4% |
-| **browser** | 3,413,263 | 3.25 | +2 bytes | 0.4% |
-| **edge** | 3,413,586 | 3.25 | +325 bytes | 0.4% |
-| **fog** | 3,413,523 | 3.25 | +262 bytes | 0.4% |
-| **cloud** | 3,417,138 | 3.26 | +3,877 bytes | — |
+| Profile     | Bytes     | Size (MB) | Delta from iot | Reduction from cloud |
+| ----------- | --------- | --------- | -------------- | -------------------- |
+| **iot**     | 3,413,261 | 3.25      | —              | 0.4%                 |
+| **browser** | 3,413,263 | 3.25      | +2 bytes       | 0.4%                 |
+| **edge**    | 3,413,586 | 3.25      | +325 bytes     | 0.4%                 |
+| **fog**     | 3,413,523 | 3.25      | +262 bytes     | 0.4%                 |
+| **cloud**   | 3,417,138 | 3.26      | +3,877 bytes   | —                    |
 
 ### 5.2 Analysis
 
@@ -217,6 +219,7 @@ pictl defines five deployment profiles with distinct feature compositions:
 4. **Dependency Chain**: Core dependencies (serde, chrono, nalgebra) are pulled in by all profiles
 
 **Evidence**: The browser profile adds only 3,877 bytes (0.1%) over iot despite including:
+
 - statrs instead of hand_rolled_stats
 - All Tier 2-3 metaheuristic algorithms
 - OCEL and POWL support
@@ -227,6 +230,7 @@ pictl defines five deployment profiles with distinct feature compositions:
 **Positive**: All deployment scenarios get full algorithm availability
 **Negative**: No size optimization benefit from feature gates
 **Recommendation**: Focus optimization efforts on:
+
 1. wasm-bindgen runtime reduction
 2. Dependency tree pruning
 3. Alternative serialization (msgpack vs serde)
@@ -252,6 +256,7 @@ Throughput (Melem/s): 57.1 → 58.7 → 59.7 → 60.3
 ```
 
 **Characteristics**:
+
 - Fastest discovery algorithm
 - Minimal memory footprint
 - No model quality guarantees (soundness not enforced)
@@ -265,6 +270,7 @@ Throughput (Melem/s): 57.1 → 58.7 → 59.7 → 60.3
 **Memory**: O(activities) for unique activity set
 
 **Characteristics**:
+
 - Simplified DFG with frequency thresholding
 - Reduces noise by filtering low-frequency transitions
 - Best for: High-level process overview
@@ -277,6 +283,7 @@ Throughput (Melem/s): 57.1 → 58.7 → 59.7 → 60.3
 **Memory**: O(places + transitions) for Petri net
 
 **Characteristics**:
+
 - Produces sound Petri nets (guaranteed deadlock-free)
 - 5x slower than DFG due to dependency matrix computation
 - Best for: Process model discovery requiring soundness guarantees
@@ -289,6 +296,7 @@ Throughput (Melem/s): 57.1 → 58.7 → 59.7 → 60.3
 **Memory**: O(m²) for dependency matrix
 
 **Characteristics**:
+
 - Frequency-based dependency thresholding
 - Balances speed and model quality
 - Best for: Noisy real-world logs
@@ -301,19 +309,20 @@ Throughput (Melem/s): 57.1 → 58.7 → 59.7 → 60.3
 **Memory**: O(tree_depth) for process tree
 
 **Characteristics**:
+
 - Guaranteed sound process models
 - Handles invisible tasks
 - Best for: Complex process structures
 
 ### 6.6 Tier 1 Summary
 
-| Algorithm | Throughput (Melem/s) | Relative Speed | Use Case |
-|-----------|---------------------|----------------|----------|
-| DFG | 142.7 | 1.0x (baseline) | Fastest exploration |
-| Process Skeleton | ~100 | 0.7x | Noise-reduced discovery |
-| Heuristic Miner | 84.9 | 0.6x | Balanced quality/speed |
-| Inductive Miner | ~60 | 0.4x | Sound models |
-| Alpha++ | 11.7 | 0.08x | Quality-critical discovery |
+| Algorithm        | Throughput (Melem/s) | Relative Speed  | Use Case                   |
+| ---------------- | -------------------- | --------------- | -------------------------- |
+| DFG              | 142.7                | 1.0x (baseline) | Fastest exploration        |
+| Process Skeleton | ~100                 | 0.7x            | Noise-reduced discovery    |
+| Heuristic Miner  | 84.9                 | 0.6x            | Balanced quality/speed     |
+| Inductive Miner  | ~60                  | 0.4x            | Sound models               |
+| Alpha++          | 11.7                 | 0.08x           | Quality-critical discovery |
 
 **Key Insight**: DFG provides 12x speedup over Alpha++ with proportional quality reduction. Users must trade off speed for model soundness.
 
@@ -325,27 +334,29 @@ Tier 2-3 algorithms use metaheuristic search for high-quality process model disc
 
 ### 7.1 Algorithm Characteristics
 
-| Algorithm | Search Strategy | Quality | Speed | Output |
-|-----------|----------------|---------|-------|--------|
-| **Hill Climbing** | Local search | 55 | 40 | Petri net |
-| **Simulated Annealing** | Probabilistic local search | 65 | 55 | Petri net |
-| **A* Search** | Best-first search | 70 | 60 | Petri net |
-| **ACO** | Ant colony optimization | 75 | 65 | Petri net |
-| **PSO** | Particle swarm optimization | 75 | 70 | Petri net |
-| **Genetic Algorithm** | Evolutionary search | 80 | 75 | Petri net |
-| **ILP** | Integer linear programming | 90 | 80 | Petri net |
-| **Optimized DFG** | Hybrid | 85 | 70 | DFG |
+| Algorithm               | Search Strategy             | Quality | Speed | Output    |
+| ----------------------- | --------------------------- | ------- | ----- | --------- |
+| **Hill Climbing**       | Local search                | 55      | 40    | Petri net |
+| **Simulated Annealing** | Probabilistic local search  | 65      | 55    | Petri net |
+| **A\* Search**          | Best-first search           | 70      | 60    | Petri net |
+| **ACO**                 | Ant colony optimization     | 75      | 65    | Petri net |
+| **PSO**                 | Particle swarm optimization | 75      | 70    | Petri net |
+| **Genetic Algorithm**   | Evolutionary search         | 80      | 75    | Petri net |
+| **ILP**                 | Integer linear programming  | 90      | 80    | Petri net |
+| **Optimized DFG**       | Hybrid                      | 85      | 70    | DFG       |
 
 ### 7.2 Performance Characteristics
 
 **Time Complexity**: O(k × n × m) where k = iterations, n = events, m = activities
 
 **Typical Performance**:
+
 - Small logs (< 1000 cases): 10-100 ms
 - Medium logs (1000-10000 cases): 100-1000 ms
 - Large logs (> 10000 cases): 1-10 seconds
 
 **Quality Metrics**:
+
 - Fitness: 0.85-0.95 (vs 0.70-0.80 for Tier 1)
 - Precision: 0.75-0.90 (vs 0.60-0.75 for Tier 1)
 - Generalization: 0.70-0.85 (vs 0.80-0.90 for Tier 1)
@@ -354,7 +365,7 @@ Tier 2-3 algorithms use metaheuristic search for high-quality process model disc
 
 **Hill Climbing**: Fast local optimization, good for refinement
 **Simulated Annealing**: Escapes local optima, moderate speed
-**A* Search**: Optimal alignment, computationally expensive
+**A\* Search**: Optimal alignment, computationally expensive
 **ACO/PSO**: Swarm intelligence, good for large search spaces
 **Genetic Algorithm**: Global search, parallelizable
 **ILP**: Mathematical optimality, slowest
@@ -371,30 +382,33 @@ Conformance checking measures how well a process model fits an event log. We ben
 
 ### 8.1 Algorithm Comparison
 
-| Algorithm | 100 cases | 1000 cases | 5000 cases | 10000 cases | Throughput (Melem/s) |
-|-----------|-----------|------------|------------|-------------|---------------------|
-| **Token Replay** | 266 µs | 2.37 ms | 13.27 ms | N/A | 4.5-5.1 |
-| **SIMD Token Replay** | 5.62 µs | 56.7 µs | 293 µs | 601 µs | 190-207 |
-| **ETConformance Precision** | 143 µs | 1.40 ms | 6.95 ms | N/A | 8.2-8.6 |
-| **DECLARE Conformance** | 7.86 µs | 80.9 µs | 408 µs | 880 µs | 136-153 |
-| **Temporal Profile Discovery** | 105 µs | 876 µs | 4.35 ms | N/A | 11-14 |
-| **Temporal Profile Checking** | N/A | 751 µs | N/A | N/A | 79.9 |
+| Algorithm                      | 100 cases | 1000 cases | 5000 cases | 10000 cases | Throughput (Melem/s) |
+| ------------------------------ | --------- | ---------- | ---------- | ----------- | -------------------- |
+| **Token Replay**               | 266 µs    | 2.37 ms    | 13.27 ms   | N/A         | 4.5-5.1              |
+| **SIMD Token Replay**          | 5.62 µs   | 56.7 µs    | 293 µs     | 601 µs      | 190-207              |
+| **ETConformance Precision**    | 143 µs    | 1.40 ms    | 6.95 ms    | N/A         | 8.2-8.6              |
+| **DECLARE Conformance**        | 7.86 µs   | 80.9 µs    | 408 µs     | 880 µs      | 136-153              |
+| **Temporal Profile Discovery** | 105 µs    | 876 µs     | 4.35 ms    | N/A         | 11-14                |
+| **Temporal Profile Checking**  | N/A       | 751 µs     | N/A        | N/A         | 79.9                 |
 
 ### 8.2 Key Findings
 
 **SIMD Token Replay**:
+
 - 40-47x speedup over standard token replay
 - Consistent across all log sizes
 - Highest throughput (190-207 Melem/s)
 - Best for: Large-scale fitness computation
 
 **DECLARE Conformance**:
+
 - Fastest absolute performance for small logs
 - Throughput: 136-153 Melem/s
 - No model required (template-based)
 - Best for: Rule-based validation, SLA checking
 
 **ETConformance Precision**:
+
 - 2x slower than token replay
 - More expensive computation (escaping edges)
 - Best for: Model quality assessment
@@ -402,12 +416,14 @@ Conformance checking measures how well a process model fits an event log. We ben
 ### 8.3 Scalability Analysis
 
 **Time Complexity**:
+
 - Token Replay: O(n)
 - SIMD Token Replay: O(n) with vectorization
 - DECLARE: O(n × c) where c = constraints
 - ETConformance: O(n × m) where m = model size
 
 **Scalability Results**:
+
 - SIMD Token Replay scales linearly to 10k cases
 - DECLARE shows 11% variance at 10k cases (GC pressure)
 - Standard Token Replay: O(n) verified
@@ -415,11 +431,13 @@ Conformance checking measures how well a process model fits an event log. We ben
 ### 8.4 Recommendation
 
 **For Production**:
+
 1. **SIMD Token Replay** — Best all-around choice
 2. **DECLARE Conformance** — Fastest for constraint checking
 3. **Temporal Profile** — Best for time-aware conformance
 
 **For Research**:
+
 1. **ETConformance Precision** — When precision metric needed
 2. **Standard Token Replay** — Legacy compatibility
 
@@ -430,6 +448,7 @@ Conformance checking measures how well a process model fits an event log. We ben
 ### 9.1 SIMD Implementation Details
 
 pictl's SIMD token replay uses:
+
 - **Integer encoding**: Places and transitions as integers (not strings)
 - **Vectorized fire_transition**: Loop-unrolled transition firing
 - **Direct memory access**: No handle serialization overhead
@@ -437,30 +456,34 @@ pictl's SIMD token replay uses:
 
 ### 9.2 Performance Breakdown
 
-| Component | Standard (µs) | SIMD (µs) | Speedup |
-|-----------|---------------|-----------|---------|
-| Model encoding | 50 | 10 | 5x |
-| Token firing | 200 | 3 | 67x |
-| Fitness computation | 15 | 2 | 7.5x |
-| **Total** | **265** | **5.62** | **47x** |
+| Component           | Standard (µs) | SIMD (µs) | Speedup |
+| ------------------- | ------------- | --------- | ------- |
+| Model encoding      | 50            | 10        | 5x      |
+| Token firing        | 200           | 3         | 67x     |
+| Fitness computation | 15            | 2         | 7.5x    |
+| **Total**           | **265**       | **5.62**  | **47x** |
 
 ### 9.3 Ablation Study
 
 **What if we remove integer encoding?**
+
 - Speedup drops from 47x to 25x
 - String operations dominate
 
 **What if we remove loop unrolling?**
+
 - Speedup drops from 47x to 35x
 - Branch misprediction increases
 
 **What if we use standard HashMap instead of FxHashMap?**
+
 - 10% performance degradation
 - Hash function overhead
 
 ### 9.4 Platform Considerations
 
 **WASM SIMD Support**:
+
 - Chrome/Edge: Full support (v91+)
 - Firefox: Full support (89+)
 - Safari: Full support (15.4+)
@@ -482,6 +505,7 @@ Streaming algorithms enable real-time process mining on event streams with bound
 **Latency**: <1ms per event
 
 **Characteristics**:
+
 - Constant memory regardless of stream length
 - EWMA (Exponentially Weighted Moving Average) for decay
 - SIMD-accelerated histogram updates
@@ -493,6 +517,7 @@ Streaming algorithms enable real-time process mining on event streams with bound
 **Memory**: O(places) for marking state
 
 **Characteristics**:
+
 - Detects deviations in real-time
 - Configurable alert thresholds
 - Supports late-arriving events
@@ -509,18 +534,19 @@ Streaming algorithms enable real-time process mining on event streams with bound
 
 ### 11.1 Memory per Algorithm
 
-| Algorithm | Memory per Event | Total Memory (10k events) |
-|-----------|------------------|---------------------------|
-| DFG | 16 bytes | 160 KB |
-| Alpha++ | 32 bytes | 320 KB |
-| Heuristic Miner | 24 bytes | 240 KB |
-| Inductive Miner | 40 bytes | 400 KB |
-| Genetic Algorithm | 128 bytes | 1.28 MB |
-| ILP | 256 bytes | 2.56 MB |
+| Algorithm         | Memory per Event | Total Memory (10k events) |
+| ----------------- | ---------------- | ------------------------- |
+| DFG               | 16 bytes         | 160 KB                    |
+| Alpha++           | 32 bytes         | 320 KB                    |
+| Heuristic Miner   | 24 bytes         | 240 KB                    |
+| Inductive Miner   | 40 bytes         | 400 KB                    |
+| Genetic Algorithm | 128 bytes        | 1.28 MB                   |
+| ILP               | 256 bytes        | 2.56 MB                   |
 
 ### 11.2 Columnar Data Layout
 
 pictl uses columnar data layouts for efficient memory access:
+
 - **Event attributes**: Stored column-wise (cache-friendly)
 - **Trace metadata**: Separate from event data
 - **String interning**: Deduplicates activity names
@@ -530,11 +556,13 @@ pictl uses columnar data layouts for efficient memory access:
 ### 11.3 Object Pooling
 
 Automatic memory management via object pooling:
+
 - Reuses allocated objects across operations
 - Reduces allocation overhead
 - Prevents memory fragmentation
 
 **Pool Sizes**:
+
 - EventLog pool: 100 objects
 - PetriNet pool: 50 objects
 - Result pool: 200 objects
@@ -590,34 +618,37 @@ Automatic memory management via object pooling:
 ### 13.1 Development Cost
 
 | Profile | Development Effort (person-months) | Maintenance Cost |
-|---------|-------------------------------------|------------------|
-| iot | 2 | Low |
-| browser | 3 | Low |
-| edge | 6 | Medium |
-| fog | 10 | Medium |
-| cloud | 15 | High |
+| ------- | ---------------------------------- | ---------------- |
+| iot     | 2                                  | Low              |
+| browser | 3                                  | Low              |
+| edge    | 6                                  | Medium           |
+| fog     | 10                                 | Medium           |
+| cloud   | 15                                 | High             |
 
 ### 13.2 Deployment Cost
 
-| Profile | Hosting Cost (monthly) | Scaling Cost |
-|---------|----------------------|--------------|
-| iot | $0 (on-device) | — |
-| browser | $0 (client-side) | — |
-| edge | $100-500 | Linear |
-| fog | $500-2000 | Sub-linear |
-| cloud | $2000-10000+ | Volume discounts |
+| Profile | Hosting Cost (monthly) | Scaling Cost     |
+| ------- | ---------------------- | ---------------- |
+| iot     | $0 (on-device)         | —                |
+| browser | $0 (client-side)       | —                |
+| edge    | $100-500               | Linear           |
+| fog     | $500-2000              | Sub-linear       |
+| cloud   | $2000-10000+           | Volume discounts |
 
 ### 13.3 ROI Analysis
 
 **Small deployments (<100 users)**:
+
 - browser profile: Lowest TCO
 - Edge: Unnecessary overhead
 
 **Medium deployments (100-1000 users)**:
+
 - edge profile: Optimal balance
 - cloud: Overkill
 
 **Large deployments (>1000 users)**:
+
 - browser profile: Economies of scale
 - fog: For reduced latency
 
@@ -628,9 +659,10 @@ Automatic memory management via object pooling:
 ### 14.1 Horizontal Scaling
 
 **Algorithm Parallelizability**:
+
 - **Embarrassingly parallel**: DFG, skeleton, heuristic miner (per-trace independent)
 - **Moderately parallel**: Inductive miner (tree-based)
-- **Sequential**: ILP, A* search (global optimization)
+- **Sequential**: ILP, A\* search (global optimization)
 
 **Swarm Mode**: Multi-worker coordinator achieves near-linear scaling to 8 workers
 
@@ -642,12 +674,12 @@ Automatic memory management via object pooling:
 ### 14.3 Data Scaling
 
 | Event Count | Memory | Time (DFG) | Time (Alpha++) |
-|-------------|--------|------------|----------------|
-| 1K | 16 KB | 1 ms | 10 ms |
-| 10K | 160 KB | 10 ms | 100 ms |
-| 100K | 1.6 MB | 100 ms | 1 s |
-| 1M | 16 MB | 1 s | 10 s |
-| 10M | 160 MB | 10 s | 100 s |
+| ----------- | ------ | ---------- | -------------- |
+| 1K          | 16 KB  | 1 ms       | 10 ms          |
+| 10K         | 160 KB | 10 ms      | 100 ms         |
+| 100K        | 1.6 MB | 100 ms     | 1 s            |
+| 1M          | 16 MB  | 1 s        | 10 s           |
+| 10M         | 160 MB | 10 s       | 100 s          |
 
 **Key Insight**: Linear scaling verified for all O(n) algorithms
 
@@ -660,6 +692,7 @@ Automatic memory management via object pooling:
 **Definition**: Fraction of traces that can be fully replayed
 
 **Benchmark Results**:
+
 - Alpha++ on synthetic log: 0.95
 - Heuristic miner on noisy log: 0.85
 - Genetic algorithm on complex log: 0.92
@@ -669,6 +702,7 @@ Automatic memory management via object pooling:
 **Definition**: Fraction of allowed behavior that is actually observed
 
 **Benchmark Results**:
+
 - ETConformance precision metric: 0.75-0.90
 - Improved with escaping edges approach
 
@@ -677,6 +711,7 @@ Automatic memory management via object pooling:
 **Definition**: Fraction of behavior in log that is not specific to this log
 
 **Benchmark Results**:
+
 - Inductive miner: 0.80-0.90
 - Alpha++: 0.70-0.80
 
@@ -685,6 +720,7 @@ Automatic memory management via object pooling:
 **Definition**: Inverse of model complexity (elements, edges)
 
 **Benchmark Results**:
+
 - DFG: Highest simplicity (no soundness constraints)
 - Alpha++: Moderate simplicity
 - ILP: Lowest simplicity (overfitting risk)
@@ -697,21 +733,22 @@ Automatic memory management via object pooling:
 
 Measured by binary size difference when feature added/removed:
 
-| Feature | Size Impact (bytes) | Percentage |
-|---------|---------------------|------------|
-| hand_rolled_stats | -3,877 | -0.11% |
-| statrs | +3,877 | +0.11% |
-| ocel | +1,200 | +0.04% |
-| powl | +800 | +0.02% |
-| streaming_full | +500 | +0.01% |
-| discovery_advanced | +400 | +0.01% |
-| conformance_full | +300 | +0.01% |
+| Feature            | Size Impact (bytes) | Percentage |
+| ------------------ | ------------------- | ---------- |
+| hand_rolled_stats  | -3,877              | -0.11%     |
+| statrs             | +3,877              | +0.11%     |
+| ocel               | +1,200              | +0.04%     |
+| powl               | +800                | +0.02%     |
+| streaming_full     | +500                | +0.01%     |
+| discovery_advanced | +400                | +0.01%     |
+| conformance_full   | +300                | +0.01%     |
 
 **Key Finding**: Individual features contribute <0.2% to binary size
 
 ### 16.2 Feature Interaction
 
 **Combination Effects**:
+
 - statrs + ocel: +4,500 bytes (not additive)
 - streaming_full + powl: +900 bytes
 - All advanced features: +4,000 bytes total
@@ -725,14 +762,17 @@ Measured by binary size difference when feature added/removed:
 ### 17.1 Compiler Optimizations
 
 **opt-level="z"**: Size-optimized compilation
+
 - Impact: 30% size reduction vs opt-level="3"
 - Tradeoff: 10% performance degradation
 
 **lto=true**: Link-time optimization
+
 - Impact: 15% size reduction
 - Tradeoff: 50% increase in compile time
 
 **codegen-units=1**: Single codegen unit
+
 - Impact: 5% size reduction
 - Tradeoff: Slower compilation
 
@@ -755,28 +795,28 @@ Measured by binary size difference when feature added/removed:
 
 ### 18.1 vs PM4Py (Python)
 
-| Metric | pictl (WASM) | PM4Py (Python) | Ratio |
-|--------|--------------|----------------|-------|
-| DFG throughput | 142.7 Melem/s | 5-10 Melem/s | 14-28x faster |
-| Token replay | 4.5-5.1 Melem/s | 1-2 Melem/s | 2-5x faster |
-| Memory | 160 KB (10k events) | 500 KB (10k events) | 3x less |
-| Startup | 50-100 ms | 100-500 ms | 2-5x faster |
+| Metric         | pictl (WASM)        | PM4Py (Python)      | Ratio         |
+| -------------- | ------------------- | ------------------- | ------------- |
+| DFG throughput | 142.7 Melem/s       | 5-10 Melem/s        | 14-28x faster |
+| Token replay   | 4.5-5.1 Melem/s     | 1-2 Melem/s         | 2-5x faster   |
+| Memory         | 160 KB (10k events) | 500 KB (10k events) | 3x less       |
+| Startup        | 50-100 ms           | 100-500 ms          | 2-5x faster   |
 
 ### 18.2 vs ProM (Java)
 
-| Metric | pictl (WASM) | ProM (Java) | Ratio |
-|--------|--------------|-------------|-------|
-| DFG throughput | 142.7 Melem/s | 0.5-1 Melem/s | 140-280x faster |
-| Plugin ecosystem | 21 algorithms | 500+ plugins | 24x fewer |
-| Portability | Any platform with WASM | Requires JVM | More portable |
+| Metric           | pictl (WASM)           | ProM (Java)   | Ratio           |
+| ---------------- | ---------------------- | ------------- | --------------- |
+| DFG throughput   | 142.7 Melem/s          | 0.5-1 Melem/s | 140-280x faster |
+| Plugin ecosystem | 21 algorithms          | 500+ plugins  | 24x fewer       |
+| Portability      | Any platform with WASM | Requires JVM  | More portable   |
 
 ### 18.3 vs Apromore (Cloud)
 
-| Metric | pictl (WASM) | Apromore (Cloud) | Ratio |
-|--------|--------------|-----------------|-------|
-| Latency | 10-100 ms | 500-2000 ms | 5-20x lower |
-| Privacy | Local execution | Cloud execution | More private |
-| Cost | Free (open source) | Subscription | Lower cost |
+| Metric  | pictl (WASM)       | Apromore (Cloud) | Ratio        |
+| ------- | ------------------ | ---------------- | ------------ |
+| Latency | 10-100 ms          | 500-2000 ms      | 5-20x lower  |
+| Privacy | Local execution    | Cloud execution  | More private |
+| Cost    | Free (open source) | Subscription     | Lower cost   |
 
 ---
 
@@ -804,16 +844,19 @@ ELSE IF datacenter AND resource_unlimited:
 ### 19.2 Algorithm Selection Guide
 
 **For Speed**:
+
 - DFG (142.7 Melem/s) — Fastest discovery
 - SIMD Token Replay (207 Melem/s) — Fastest conformance
 - DECLARE (153 Melem/s) — Fastest constraint checking
 
 **For Quality**:
+
 - ILP (90 quality score) — Best fitness/precision
 - Genetic Algorithm (80 quality, 75 speed) — Best balance
 - Inductive Miner — Sound models guaranteed
 
 **For Scalability**:
+
 - DFG — Linear to 10M+ events
 - Streaming DFG — Unbounded streams
 - Swarm mode — Horizontal scaling
@@ -821,16 +864,19 @@ ELSE IF datacenter AND resource_unlimited:
 ### 19.3 Configuration Tuning
 
 **Memory Limits**:
+
 ```
 max_memory_mb = min(available_memory * 0.5, event_count * 0.001)
 ```
 
 **Timeout Settings**:
+
 ```
 timeout_ms = case_count * 0.1  # 0.1ms per case
 ```
 
 **Parallelism**:
+
 ```
 workers = min(cpu_cores, case_count / 100)
 ```
@@ -886,6 +932,7 @@ This thesis presented a comprehensive performance characterization of pictl, a W
 ### 21.2 Practical Impact
 
 pictl enables process mining in previously infeasible scenarios:
+
 - **Browser-based**: Client-side discovery without server round-trips
 - **Edge deployment**: Sub-100ms response for 1000-case logs
 - **IoT integration**: Process mining on resource-constrained devices
@@ -894,6 +941,7 @@ pictl enables process mining in previously infeasible scenarios:
 ### 21.3 Future Directions
 
 The minimal binary size variation suggests opportunities for:
+
 - Component-based WASM for true size optimization
 - Alternative serialization frameworks
 - Runtime dead code elimination
@@ -905,14 +953,14 @@ As WebAssembly evolves with features like GC, threads, and component model, pict
 
 ## 22. References
 
-1. van der Aalst, W. (2016). *Process Mining: Data Science in Action*. Springer.
-2. Haas, A., et al. (2022). "Bringing the Web up to Speed with WebAssembly." *ACM SIGPLAN Notices*.
-3. Rozinat, A., & van der Aalst, W. (2008). "Conformance checking of processes based on monitoring real behavior." *Information Systems*.
-4. Leemans, S., et al. (2018). "Visualizing unsupervised process discovery results." *BPM Workshop*.
-5. Weber, P., et al. (2020). "Automated process model comparison: A survey." *ACM Computing Surveys*.
-6. Mannhardt, F., et al. (2016). "Advanced process discovery with simulated annealing." *BPM Demo Sessions*.
-7. Verbeek, H., et al. (2010). "XES, XESame, and XESte: Leveraging standardization for process mining tool interoperability." *OTM Conferences*.
-8. Burattin, A., et al. (2017). "Automatic discovery of process models from event logs: The declarative perspective." *Information Systems*.
+1. van der Aalst, W. (2016). _Process Mining: Data Science in Action_. Springer.
+2. Haas, A., et al. (2022). "Bringing the Web up to Speed with WebAssembly." _ACM SIGPLAN Notices_.
+3. Rozinat, A., & van der Aalst, W. (2008). "Conformance checking of processes based on monitoring real behavior." _Information Systems_.
+4. Leemans, S., et al. (2018). "Visualizing unsupervised process discovery results." _BPM Workshop_.
+5. Weber, P., et al. (2020). "Automated process model comparison: A survey." _ACM Computing Surveys_.
+6. Mannhardt, F., et al. (2016). "Advanced process discovery with simulated annealing." _BPM Demo Sessions_.
+7. Verbeek, H., et al. (2010). "XES, XESame, and XESte: Leveraging standardization for process mining tool interoperability." _OTM Conferences_.
+8. Burattin, A., et al. (2017). "Automatic discovery of process models from event logs: The declarative perspective." _Information Systems_.
 
 ---
 
@@ -957,39 +1005,39 @@ case_counts = [100, 500, 1000, 5000, 10000]
 
 ### B.1 Binary Sizes (bytes)
 
-| Profile | Run 1 | Run 2 | Run 3 | Median |
-|---------|-------|-------|-------|--------|
-| iot | 3413261 | 3413261 | 3413261 | 3413261 |
+| Profile | Run 1   | Run 2   | Run 3   | Median  |
+| ------- | ------- | ------- | ------- | ------- |
+| iot     | 3413261 | 3413261 | 3413261 | 3413261 |
 | browser | 3413263 | 3413263 | 3413263 | 3413263 |
-| edge | 3413586 | 3413586 | 3413586 | 3413586 |
-| fog | 3413523 | 3413523 | 3413523 | 3413523 |
-| cloud | 3417138 | 3417138 | 3417138 | 3417138 |
+| edge    | 3413586 | 3413586 | 3413586 | 3413586 |
+| fog     | 3413523 | 3413523 | 3413523 | 3413523 |
+| cloud   | 3417138 | 3417138 | 3417138 | 3417138 |
 
 ### B.2 Tier 1 Throughput (Melem/s)
 
 | Algorithm | 100 cases | 1000 cases | 5000 cases | 10000 cases |
-|-----------|-----------|------------|------------|-------------|
-| DFG | 57.1 | 58.7 | 59.7 | 60.3 |
-| Skeleton | 45.2 | 46.8 | 47.5 | 48.1 |
-| Alpha++ | 9.8 | 10.5 | 11.2 | 11.7 |
-| Heuristic | 82.3 | 83.5 | 84.2 | 84.9 |
-| Inductive | 52.1 | 54.2 | 56.8 | 58.9 |
+| --------- | --------- | ---------- | ---------- | ----------- |
+| DFG       | 57.1      | 58.7       | 59.7       | 60.3        |
+| Skeleton  | 45.2      | 46.8       | 47.5       | 48.1        |
+| Alpha++   | 9.8       | 10.5       | 11.2       | 11.7        |
+| Heuristic | 82.3      | 83.5       | 84.2       | 84.9        |
+| Inductive | 52.1      | 54.2       | 56.8       | 58.9        |
 
 ### B.3 Conformance Performance (µs)
 
-| Algorithm | 100 | 500 | 1000 | 5000 | 10000 |
-|-----------|-----|-----|------|------|-------|
-| Token Replay | 265.8 | 1239.7 | 2369.6 | 13272 | N/A |
-| SIMD Token Replay | 5.62 | 28.84 | 56.69 | 292.76 | 600.51 |
-| DECLARE | 7.86 | 40.30 | 80.92 | 408.12 | 879.58 |
-| ETConformance | 142.94 | 726.38 | 1401.3 | 6945 | N/A |
-| Temporal Discovery | 105.24 | 445.10 | 875.74 | 4352.3 | N/A |
+| Algorithm          | 100    | 500    | 1000   | 5000   | 10000  |
+| ------------------ | ------ | ------ | ------ | ------ | ------ |
+| Token Replay       | 265.8  | 1239.7 | 2369.6 | 13272  | N/A    |
+| SIMD Token Replay  | 5.62   | 28.84  | 56.69  | 292.76 | 600.51 |
+| DECLARE            | 7.86   | 40.30  | 80.92  | 408.12 | 879.58 |
+| ETConformance      | 142.94 | 726.38 | 1401.3 | 6945   | N/A    |
+| Temporal Discovery | 105.24 | 445.10 | 875.74 | 4352.3 | N/A    |
 
 ---
 
 **End of Thesis**
 
-*Generated: 2026-04-10*
-*Agent: b5-profiles*
-*Word count: ~15,000*
-*Chapters: 24*
+_Generated: 2026-04-10_
+_Agent: b5-profiles_
+_Word count: ~15,000_
+_Chapters: 24_

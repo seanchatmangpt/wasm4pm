@@ -38,12 +38,12 @@ pub fn oc_conformance_check(ocel_handle: &str) -> Result<JsValue, JsValue> {
         // Store log temporarily for discovery
         let temp_handle = get_or_init_state()
             .store_object(StoredObject::EventLog(log.clone()))
-            .map_err(|_e| JsValue::from_str("Failed to store flattened EventLog"))?;
+            .map_err(|_e| crate::error::js_val("Failed to store flattened EventLog"))?;
 
         // Discover reference net
         let net_js = discover_alpha_plus_plus(&temp_handle, "concept:name", 0.5)?;
         let net_json: serde_json::Value = serde_wasm_bindgen::from_value(net_js)
-            .map_err(|e| JsValue::from_str(&format!("Failed to parse Petri Net: {}", e)))?;
+            .map_err(|e| crate::error::js_val(&format!("Failed to parse Petri Net: {}", e)))?;
 
         // Extract transitions for simple replay check
         let transition_labels: HashSet<String> =

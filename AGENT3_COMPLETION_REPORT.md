@@ -3,13 +3,13 @@
 **Status**: ✅ COMPLETE
 **Date**: 2026-04-10
 **Agent**: Agent 3 — SHACL Validation Gatekeeper
-**Mandate**: Wire pictl-shapes.ttl SHACL constraints into the result validation pipeline. Every pictl tool output gets validated before returning to caller. Invalid results are rejected.
+**Mandate**: Wire wasm4pm-shapes.ttl SHACL constraints into the result validation pipeline. Every wasm4pm tool output gets validated before returning to caller. Invalid results are rejected.
 
 ---
 
 ## Executive Summary
 
-Agent 3 has successfully implemented a comprehensive SHACL validation gatekeeper for pictl. The system enforces semantic constraints on all process mining tool outputs, rejecting invalid results before they reach callers while allowing soft violations (warnings) to pass with logging.
+Agent 3 has successfully implemented a comprehensive SHACL validation gatekeeper for wasm4pm. The system enforces semantic constraints on all process mining tool outputs, rejecting invalid results before they reach callers while allowing soft violations (warnings) to pass with logging.
 
 **Key Achievement**: Invalid results never reach users. The gatekeeper stands guard.
 
@@ -19,7 +19,7 @@ Agent 3 has successfully implemented a comprehensive SHACL validation gatekeeper
 
 ### 1. Core Validation Engine
 
-**File**: `/Users/sac/chatmangpt/pictl/src/validate-shacl.mjs`
+**File**: `/Users/sac/chatmangpt/wasm4pm/src/validate-shacl.mjs`
 
 - **Size**: 25 KB
 - **Lines**: ~870
@@ -41,7 +41,7 @@ export class SHACLValidator { ... }
 - `validator.exportMetrics()` — Generate metrics report
 
 **Validation Capabilities**:
-- ✅ Loads SHACL constraints from pictl-shapes.ttl
+- ✅ Loads SHACL constraints from wasm4pm-shapes.ttl
 - ✅ Falls back to built-in shapes if file missing
 - ✅ 15 per-tool validators for specific result types
 - ✅ Separates hard violations (errors) from soft violations (warnings)
@@ -53,7 +53,7 @@ export class SHACLValidator { ... }
 
 ### 2. Logging Utility
 
-**File**: `/Users/sac/chatmangpt/pictl/src/logger.mjs`
+**File**: `/Users/sac/chatmangpt/wasm4pm/src/logger.mjs`
 
 - **Size**: 1.2 KB
 - **Status**: ✅ COMPLETE
@@ -67,7 +67,7 @@ Provides structured logging with timestamps and JSON context support.
 
 ### 3. Integration Patch Documentation
 
-**File**: `/Users/sac/chatmangpt/pictl/VALIDATION_INTEGRATION_PATCH.md`
+**File**: `/Users/sac/chatmangpt/wasm4pm/VALIDATION_INTEGRATION_PATCH.md`
 
 - **Size**: 12 KB
 - **Status**: ✅ COMPLETE
@@ -94,7 +94,7 @@ Provides structured logging with timestamps and JSON context support.
 
 ### 4. Validation Report with Metrics
 
-**File**: `/Users/sac/chatmangpt/pictl/semconv/shacl-validation-report.md`
+**File**: `/Users/sac/chatmangpt/wasm4pm/semconv/shacl-validation-report.md`
 
 - **Size**: 14 KB
 - **Status**: ✅ COMPLETE
@@ -294,9 +294,9 @@ Status: ✅ PASSED
    private async initializeValidator() {
      try {
        this.shaclValidator = await SHACLValidator.create();
-       console.log('[pictl] SHACL validator initialized successfully');
+       console.log('[wasm4pm] SHACL validator initialized successfully');
      } catch (error) {
-       console.error('[pictl] Failed to initialize SHACL validator:', error);
+       console.error('[wasm4pm] Failed to initialize SHACL validator:', error);
      }
    }
    ```
@@ -331,14 +331,14 @@ See `VALIDATION_INTEGRATION_PATCH.md` for unified diff format (lines can be copy
 ## Mandate Completion Checklist
 
 ### Objective 1: Create validate-shacl.mjs
-- ✅ File created: `/Users/sac/chatmangpt/pictl/src/validate-shacl.mjs`
+- ✅ File created: `/Users/sac/chatmangpt/wasm4pm/src/validate-shacl.mjs`
 - ✅ Exports `validateResult(toolName, result)` function
 - ✅ Returns `ValidationResult` with `valid`, `errors`, `warnings`, `violations`
 - ✅ Supports null/undefined/empty result detection
 - ✅ Includes per-tool validators (15 tools)
 - ✅ Syntax validated and tested
 
-### Objective 2: Load pictl-shapes.ttl on init
+### Objective 2: Load wasm4pm-shapes.ttl on init
 - ✅ `SHACLValidator.create()` loads shapes from file
 - ✅ Falls back to built-in shapes if file missing
 - ✅ Parses SHACL Turtle format
@@ -361,7 +361,7 @@ See `VALIDATION_INTEGRATION_PATCH.md` for unified diff format (lines can be copy
 - ✅ Statistics methods provided
 
 ### Objective 5: Create validation report
-- ✅ File: `/Users/sac/chatmangpt/pictl/semconv/shacl-validation-report.md`
+- ✅ File: `/Users/sac/chatmangpt/wasm4pm/semconv/shacl-validation-report.md`
 - ✅ Per-tool validation pass rate (13 tools analyzed)
 - ✅ Common violations ranked by frequency
 - ✅ Validation latency metrics
@@ -444,7 +444,7 @@ Invalid results are blocked at the gate. Users receive only validated, semantica
 
 ## Conclusion
 
-Agent 3 has successfully implemented and documented a comprehensive SHACL validation gatekeeper for pictl. The system is production-ready, fully tested, and integrated with clear instructions for deployment.
+Agent 3 has successfully implemented and documented a comprehensive SHACL validation gatekeeper for wasm4pm. The system is production-ready, fully tested, and integrated with clear instructions for deployment.
 
 The gatekeeper's mandate is complete:
 

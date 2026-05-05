@@ -18,8 +18,8 @@
 
 ### Configuration
 - **ESLint Config:** `.eslintrc.cjs` — Updated to include pictl-observability plugin
-- **Coverage Dashboard (JSON):** `.pictl/otel-coverage.json` — Metrics & tracking
-- **Coverage Dashboard (MD):** `.pictl/otel-coverage.md` — Human-readable summary
+- **Coverage Dashboard (JSON):** `.wasm4pm/otel-coverage.json` — Metrics & tracking
+- **Coverage Dashboard (MD):** `.wasm4pm/otel-coverage.md` — Human-readable summary
 
 ### Documentation
 - **Mandate Document:** `.claude/OTEL_COVERAGE.md` — Requirements, patterns, checklist
@@ -34,7 +34,7 @@
 ### 1. View Current Coverage
 ```bash
 ./scripts/verify-otel-coverage.sh --verbose
-cat .pictl/otel-coverage.md
+cat .wasm4pm/otel-coverage.md
 ```
 
 ### 2. Add Spans to a Function
@@ -42,7 +42,7 @@ See `.claude/OTEL_IMPLEMENTATION_GUIDE.md` for examples.
 
 **Pattern:**
 ```typescript
-import { Instrumentation } from '@pictl/observability';
+import { Instrumentation } from '@wasm4pm/observability';
 
 export function myFunction(requiredAttrs) {
   const { event, otelEvent } = Instrumentation.createProgressEvent(
@@ -147,7 +147,7 @@ Instrumentation.createSinkStartedEvent(traceId, kind, requiredAttrs)
 2. **Requirements** → `.claude/OTEL_COVERAGE.md`
 3. **How-To Guide** → `.claude/OTEL_IMPLEMENTATION_GUIDE.md`
 4. **System Design** → `.claude/OTEL_ARCHITECTURE.md`
-5. **Live Dashboard** → `.pictl/otel-coverage.md`
+5. **Live Dashboard** → `.wasm4pm/otel-coverage.md`
 
 ---
 
@@ -195,7 +195,7 @@ npm test
 ./.claude/hooks/otel-coverage.sh
 
 # Export coverage to JSON
-cat .pictl/otel-coverage.json | jq .
+cat .wasm4pm/otel-coverage.json | jq .
 
 # Track progress over time
 watch -n 5 './scripts/verify-otel-coverage.sh'

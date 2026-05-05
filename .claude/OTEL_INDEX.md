@@ -32,8 +32,8 @@ Complete reference for the OTEL span coverage mandate implementation in pictl.
 
 | File | Purpose | Updated | Format |
 |------|---------|---------|--------|
-| `.pictl/otel-coverage.json` | Coverage metrics & tracking | Per scan | JSON |
-| `.pictl/otel-coverage.md` | Coverage dashboard | Per scan | Markdown |
+| `.wasm4pm/otel-coverage.json` | Coverage metrics & tracking | Per scan | JSON |
+| `.wasm4pm/otel-coverage.md` | Coverage dashboard | Per scan | Markdown |
 
 ---
 
@@ -76,8 +76,8 @@ Complete reference for the OTEL span coverage mandate implementation in pictl.
 ### Task: View current coverage
 ```bash
 ./scripts/verify-otel-coverage.sh --verbose
-cat .pictl/otel-coverage.md
-cat .pictl/otel-coverage.json | jq '.coverage'
+cat .wasm4pm/otel-coverage.md
+cat .wasm4pm/otel-coverage.json | jq '.coverage'
 ```
 See: `.claude/OTEL_SUMMARY.md` (section: Quick Start)
 
@@ -116,7 +116,7 @@ watch -n 5 './scripts/verify-otel-coverage.sh'
 
 ### Task: Export metrics for dashboard
 ```bash
-cat .pictl/otel-coverage.json | jq '.by_package | to_entries[] | [.key, .value.coverage] | @csv'
+cat .wasm4pm/otel-coverage.json | jq '.by_package | to_entries[] | [.key, .value.coverage] | @csv'
 ```
 
 ---
@@ -182,8 +182,8 @@ By Package:
   testing:       0/216  (0%)
 ```
 
-See: `.pictl/otel-coverage.json` (machine-readable)  
-See: `.pictl/otel-coverage.md` (human-readable)
+See: `.wasm4pm/otel-coverage.json` (machine-readable)  
+See: `.wasm4pm/otel-coverage.md` (human-readable)
 
 ---
 
@@ -268,7 +268,7 @@ See: `.claude/OTEL_COVERAGE.md` (section: Merge Checklist)
 └── hooks/
     └── otel-coverage.sh          ← Pre-commit enforcement
 
-.pictl/
+.wasm4pm/
 ├── otel-coverage.json            ← Metrics (machine-readable)
 └── otel-coverage.md              ← Dashboard (human-readable)
 
@@ -295,8 +295,8 @@ packages/observability/src/
 | `npm run lint` | Check for violations | ESLint report |
 | `npm run lint -- --fix` | Auto-fix where possible | Fixed files |
 | `./.claude/hooks/otel-coverage.sh` | Run pre-commit check manually | Pass/fail |
-| `cat .pictl/otel-coverage.json \| jq` | View metrics as JSON | JSON output |
-| `cat .pictl/otel-coverage.md` | View dashboard | Markdown table |
+| `cat .wasm4pm/otel-coverage.json \| jq` | View metrics as JSON | JSON output |
+| `cat .wasm4pm/otel-coverage.md` | View dashboard | Markdown table |
 | `watch -n 5 './scripts/verify-otel-coverage.sh'` | Watch progress | Real-time updates |
 
 ---

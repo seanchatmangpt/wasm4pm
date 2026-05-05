@@ -81,11 +81,11 @@ pub fn detect_drift(
                 "method": "jaccard_window"
             });
             serde_json::to_string(&result)
-                .map(|s| JsValue::from_str(&s))
-                .map_err(|e| JsValue::from_str(&e.to_string()))
+                .map(|s| crate::error::js_val(&s))
+                .map_err(|e| crate::error::js_val(&e.to_string()))
         }
-        Some(_) => Err(JsValue::from_str("Handle is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog handle not found")),
+        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
+        None => Err(crate::error::js_val("EventLog handle not found")),
     })
 }
 
@@ -106,13 +106,13 @@ pub fn detect_drift(
 #[wasm_bindgen]
 pub fn compute_ewma(values_json: &str, alpha: f64) -> Result<JsValue, JsValue> {
     let values: Vec<f64> = serde_json::from_str(values_json)
-        .map_err(|e| JsValue::from_str(&format!("Invalid values JSON: {}", e)))?;
+        .map_err(|e| crate::error::js_val(&format!("Invalid values JSON: {}", e)))?;
 
     if values.is_empty() {
         let r = json!({ "smoothed": [], "trend": "stable", "last_value": null });
         return serde_json::to_string(&r)
-            .map(|s| JsValue::from_str(&s))
-            .map_err(|e| JsValue::from_str(&e.to_string()));
+            .map(|s| crate::error::js_val(&s))
+            .map_err(|e| crate::error::js_val(&e.to_string()));
     }
 
     // Compute EWMA inline (same logic as prediction_additions::ewma)
@@ -148,8 +148,8 @@ pub fn compute_ewma(values_json: &str, alpha: f64) -> Result<JsValue, JsValue> {
         "last_value": last_value
     });
     serde_json::to_string(&result)
-        .map(|s| JsValue::from_str(&s))
-        .map_err(|e| JsValue::from_str(&e.to_string()))
+        .map(|s| crate::error::js_val(&s))
+        .map_err(|e| crate::error::js_val(&e.to_string()))
 }
 
 #[cfg(test)]

@@ -3,7 +3,7 @@
  * Algorithm step handlers - execute algorithm steps from execution plans
  * Bridge between planner (algorithm name) and WASM module (function calls)
  */
-import { type PlanStep } from '@pictl/planner';
+import { type PlanStep } from '@wasm4pm/planner';
 /**
  * WASM module interface - defines all discoverable WASM functions
  * Maps to the actual wasm4pm Rust module compiled to JavaScript

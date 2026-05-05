@@ -1,11 +1,11 @@
 /**
- * Scenario: status command — pictl status
+ * Scenario: status command — wpm status
  *
  * Tests the system health and WASM module status endpoint.
  * Uses real WASM — no mocks.
  *
  * Key contracts verified:
- *   - pictl status exits 0 (success)
+ *   - wpm status exits 0 (success)
  *   - JSON output contains engine, system, memory sections
  *   - engine.wasmLoaded is true
  *   - engine.state is "ready"
@@ -16,7 +16,7 @@
  * NOTE: Human output tests are limited because consola filters log-level
  *       messages in child process capture. Only JSON output is fully verifiable.
  *
- * Binary: apps/pictl/dist/bin/pictl.js (must be built first)
+ * Binary: apps/wasm4pm/dist/bin/wpm.js (must be built first)
  */
 
 import { describe, it, expect } from 'vitest';

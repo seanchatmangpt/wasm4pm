@@ -17,7 +17,7 @@ import {
   deserializeFootprints,
   computeFootprintEntropy,
   type FootprintMatrix,
-} from '@pictl/testing';
+} from '@wasm4pm/testing';
 
 describe('extractFootprintsFromLog', () => {
   it('should extract sequence footprints from sequential log', () => {

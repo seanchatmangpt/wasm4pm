@@ -283,17 +283,17 @@ export class Kernel {
                 JSON.stringify(mcConfig));
             // ─── ML algorithms (TypeScript, not WASM) ────────────────────────────
             case 'ml_classify':
-                throw new Error(`ML algorithm '${algorithmId}' requires the @pictl/ml package. Run 'pictl ml classify ...' instead.`);
+                throw new Error(`ML algorithm '${algorithmId}' requires the @wasm4pm/ml package. Run 'pictl ml classify ...' instead.`);
             case 'ml_cluster':
-                throw new Error(`ML algorithm '${algorithmId}' requires the @pictl/ml package. Run 'pictl ml cluster ...' instead.`);
+                throw new Error(`ML algorithm '${algorithmId}' requires the @wasm4pm/ml package. Run 'pictl ml cluster ...' instead.`);
             case 'ml_forecast':
-                throw new Error(`ML algorithm '${algorithmId}' requires the @pictl/ml package. Run 'pictl ml forecast ...' instead.`);
+                throw new Error(`ML algorithm '${algorithmId}' requires the @wasm4pm/ml package. Run 'pictl ml forecast ...' instead.`);
             case 'ml_anomaly':
-                throw new Error(`ML algorithm '${algorithmId}' requires the @pictl/ml package. Run 'pictl ml anomaly ...' instead.`);
+                throw new Error(`ML algorithm '${algorithmId}' requires the @wasm4pm/ml package. Run 'pictl ml anomaly ...' instead.`);
             case 'ml_regress':
-                throw new Error(`ML algorithm '${algorithmId}' requires the @pictl/ml package. Run 'pictl ml regress ...' instead.`);
+                throw new Error(`ML algorithm '${algorithmId}' requires the @wasm4pm/ml package. Run 'pictl ml regress ...' instead.`);
             case 'ml_pca':
-                throw new Error(`ML algorithm '${algorithmId}' requires the @pictl/ml package. Run 'pictl ml pca ...' instead.`);
+                throw new Error(`ML algorithm '${algorithmId}' requires the @wasm4pm/ml package. Run 'pictl ml pca ...' instead.`);
             default:
                 throw new Error(`Unsupported algorithm: ${algorithmId}`);
         }

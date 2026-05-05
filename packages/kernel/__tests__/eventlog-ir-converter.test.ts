@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import type { EventLogIR } from '@pictl/contracts';
+import type { EventLogIR } from '@wasm4pm/contracts';
 import {
   eventLogIrToWasmJson,
   wasmJsonToEventLogIr,

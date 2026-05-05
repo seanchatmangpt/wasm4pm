@@ -648,7 +648,7 @@ fn fnv1a_hash(data: &[u8]) -> u64 {
 #[wasm_bindgen]
 pub fn write_pm4bin(xes_content: &str) -> Result<Vec<u8>, JsValue> {
     // Parse XES using the existing parser to get an EventLog
-    let log = parse_xes_to_event_log(xes_content).map_err(|e| JsValue::from_str(&e))?;
+    let log = parse_xes_to_event_log(xes_content).map_err(|e| crate::error::js_val(&e))?;
 
     let builder = BinaryLogBuilder::from_event_log(&log, "concept:name", "time:timestamp");
     Ok(builder.finish())
@@ -661,15 +661,15 @@ pub fn write_pm4bin(xes_content: &str) -> Result<Vec<u8>, JsValue> {
 /// default timestamp key.
 #[wasm_bindgen]
 pub fn read_pm4bin(bytes: &[u8]) -> Result<String, JsValue> {
-    let view = BinaryLogView::from_bytes(bytes).map_err(|e| JsValue::from_str(&e))?;
+    let view = BinaryLogView::from_bytes(bytes).map_err(|e| crate::error::js_val(&e))?;
 
     let log = view
         .to_event_log("concept:name", "time:timestamp")
-        .map_err(|e| JsValue::from_str(&e))?;
+        .map_err(|e| crate::error::js_val(&e))?;
 
     let handle = get_or_init_state()
         .store_object(StoredObject::EventLog(log))
-        .map_err(|_| JsValue::from_str("Failed to store EventLog"))?;
+        .map_err(|_| crate::error::js_val("Failed to store EventLog"))?;
 
     Ok(handle)
 }
@@ -691,14 +691,14 @@ pub fn read_pm4bin(bytes: &[u8]) -> Result<String, JsValue> {
 #[wasm_bindgen]
 pub fn pm4bin_info(bytes: &[u8]) -> Result<String, JsValue> {
     if bytes.len() < size_of::<BinaryHeader>() {
-        return Err(JsValue::from_str(&format!(
+        return Err(crate::error::js_val(&format!(
             "Buffer too small: {} < {}",
             bytes.len(),
             size_of::<BinaryHeader>()
         )));
     }
 
-    let header = BinaryHeader::from_bytes(bytes).map_err(|e| JsValue::from_str(&e))?;
+    let header = BinaryHeader::from_bytes(bytes).map_err(|e| crate::error::js_val(&e))?;
 
     let info = json!({
         "version": header.version,
@@ -711,7 +711,7 @@ pub fn pm4bin_info(bytes: &[u8]) -> Result<String, JsValue> {
     });
 
     serde_json::to_string(&info)
-        .map_err(|e| JsValue::from_str(&format!("Failed to serialize info: {}", e)))
+        .map_err(|e| crate::error::js_val(&format!("Failed to serialize info: {}", e)))
 }
 
 // ---------------------------------------------------------------------------
@@ -742,66 +742,58 @@ fn parse_xes_to_event_log(content: &str) -> Result<EventLog, String> {
         let second = if bytes.len() > 1 { bytes[1] } else { 0 };
 
         match second {
-            b't' => {
-                if trimmed.starts_with("<trace>") || trimmed.starts_with("<trace ") {
-                    current_trace = Some(Trace {
-                        attributes: HashMap::new(),
-                        events: Vec::with_capacity(20),
-                    });
+            b't' if (trimmed.starts_with("<trace>") || trimmed.starts_with("<trace ")) => {
+                current_trace = Some(Trace {
+                    attributes: HashMap::new(),
+                    events: Vec::with_capacity(20),
+                });
+            }
+            b'e' if (trimmed.starts_with("<event>") || trimmed.starts_with("<event ")) => {
+                current_event = Some(Event {
+                    attributes: HashMap::new(),
+                });
+            }
+            b's' if trimmed.len() > 8
+                && &bytes[..8] == b"<string "
+                && bytes[bytes.len() - 1] == b'>' =>
+            {
+                if let (Some(key), Some(value)) = (
+                    extract_attr_simple(trimmed, b"key"),
+                    extract_attr_simple(trimmed, b"value"),
+                ) {
+                    insert_attr_simple(
+                        &mut current_event,
+                        &mut current_trace,
+                        key.to_string(),
+                        AttributeValue::String(value.to_string()),
+                    );
                 }
             }
-            b'e' => {
-                if trimmed.starts_with("<event>") || trimmed.starts_with("<event ") {
-                    current_event = Some(Event {
-                        attributes: HashMap::new(),
-                    });
+            b'd' if trimmed.len() > 6 && &bytes[..6] == b"<date " => {
+                if let (Some(key), Some(value)) = (
+                    extract_attr_simple(trimmed, b"key"),
+                    extract_attr_simple(trimmed, b"value"),
+                ) {
+                    insert_attr_simple(
+                        &mut current_event,
+                        &mut current_trace,
+                        key.to_string(),
+                        AttributeValue::Date(value.to_string()),
+                    );
                 }
             }
-            b's' => {
-                if trimmed.len() > 8 && &bytes[..8] == b"<string " && bytes[bytes.len() - 1] == b'>'
-                {
-                    if let (Some(key), Some(value)) = (
-                        extract_attr_simple(trimmed, b"key"),
-                        extract_attr_simple(trimmed, b"value"),
-                    ) {
+            b'i' if trimmed.len() > 5 && &bytes[..5] == b"<int " => {
+                if let (Some(key), Some(value_str)) = (
+                    extract_attr_simple(trimmed, b"key"),
+                    extract_attr_simple(trimmed, b"value"),
+                ) {
+                    if let Ok(value) = value_str.parse::<i64>() {
                         insert_attr_simple(
                             &mut current_event,
                             &mut current_trace,
                             key.to_string(),
-                            AttributeValue::String(value.to_string()),
+                            AttributeValue::Int(value),
                         );
-                    }
-                }
-            }
-            b'd' => {
-                if trimmed.len() > 6 && &bytes[..6] == b"<date " {
-                    if let (Some(key), Some(value)) = (
-                        extract_attr_simple(trimmed, b"key"),
-                        extract_attr_simple(trimmed, b"value"),
-                    ) {
-                        insert_attr_simple(
-                            &mut current_event,
-                            &mut current_trace,
-                            key.to_string(),
-                            AttributeValue::Date(value.to_string()),
-                        );
-                    }
-                }
-            }
-            b'i' => {
-                if trimmed.len() > 5 && &bytes[..5] == b"<int " {
-                    if let (Some(key), Some(value_str)) = (
-                        extract_attr_simple(trimmed, b"key"),
-                        extract_attr_simple(trimmed, b"value"),
-                    ) {
-                        if let Ok(value) = value_str.parse::<i64>() {
-                            insert_attr_simple(
-                                &mut current_event,
-                                &mut current_trace,
-                                key.to_string(),
-                                AttributeValue::Int(value),
-                            );
-                        }
                     }
                 }
             }

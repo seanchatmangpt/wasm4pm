@@ -25,11 +25,12 @@ use crate::powl_models::PowlPetriNetResult;
 use crate::powl_parser::parse_powl_model_string;
 
 fn to_js(val: &impl serde::Serialize) -> Result<JsValue, JsValue> {
-    serde_wasm_bindgen::to_value(val).map_err(|e| JsValue::from_str(&format!("serde error: {}", e)))
+    serde_wasm_bindgen::to_value(val)
+        .map_err(|e| crate::error::js_val(&format!("serde error: {}", e)))
 }
 
 fn wasm_err(msg: &str) -> JsValue {
-    JsValue::from_str(msg)
+    crate::error::js_val(msg)
 }
 
 /// Helper: parse a POWL string into an arena + root, returning a JS error on failure.
@@ -186,7 +187,7 @@ pub fn node_info_json(s: &str, arena_idx: u32) -> Result<String, JsValue> {
         None => serde_json::json!({ "error": "invalid index" }),
     };
     serde_json::to_string(&info)
-        .map_err(|e| JsValue::from_str(&format!("Failed to serialize model info: {}", e)))
+        .map_err(|e| crate::error::js_val(&format!("Failed to serialize model info: {}", e)))
 }
 
 // ─── Conversions ──────────────────────────────────────────────────────────
@@ -564,7 +565,7 @@ mod tests {
     use super::*;
     use crate::powl_event_log::Trace;
 
-    /// Test-only parse helper that avoids JsValue::from_str (panics outside WASM).
+    /// Test-only parse helper that avoids crate::error::js_val (panics outside WASM).
     fn parse_test(s: &str) -> Result<(PowlArena, u32), String> {
         let mut arena = PowlArena::new();
         let root = parse_powl_model_string(s.trim(), &mut arena)?;

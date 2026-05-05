@@ -14,9 +14,9 @@
 //! - **Commit droughts**: Days with zero commits (target: 0)
 
 use anyhow::{Context, Result};
-use chrono::{DateTime, Utc, Duration, Timelike};
+use chrono::{DateTime, Duration, Timelike, Utc};
 use git2::Repository;
-use std::collections::{HashMap, BTreeMap};
+use std::collections::{BTreeMap, HashMap};
 
 /// Takt time metrics for a repository
 #[derive(Debug, Clone, serde::Serialize)]
@@ -42,14 +42,11 @@ pub struct TaktTimeMetrics {
 
 /// Analyze takt time from git repository
 pub fn analyze_takt_time(repo_path: &str, days: usize) -> Result<TaktTimeMetrics> {
-    let repo = Repository::open(repo_path)
-        .context("Failed to open git repository")?;
+    let repo = Repository::open(repo_path).context("Failed to open git repository")?;
 
-    let mut revwalk = repo.revwalk()
-        .context("Failed to create revwalk")?;
+    let mut revwalk = repo.revwalk().context("Failed to create revwalk")?;
 
-    revwalk.push_head()
-        .context("Failed to push HEAD")?;
+    revwalk.push_head().context("Failed to push HEAD")?;
 
     let cutoff_date = Utc::now() - Duration::days(days as i64);
     let mut commits_by_date: HashMap<String, usize> = HashMap::new();
@@ -62,8 +59,7 @@ pub fn analyze_takt_time(repo_path: &str, days: usize) -> Result<TaktTimeMetrics
         let commit = repo.find_commit(oid)?;
 
         let time = commit.time();
-        let commit_date = DateTime::<Utc>::from_timestamp(time.seconds(), 0)
-            .unwrap_or_default();
+        let commit_date = DateTime::<Utc>::from_timestamp(time.seconds(), 0).unwrap_or_default();
 
         if commit_date < cutoff_date {
             break;
@@ -129,12 +125,14 @@ fn calculate_consistency(commit_times: &[DateTime<Utc>]) -> f64 {
 
     // Calculate mean and standard deviation
     let mean: f64 = durations.iter().map(|d| *d as f64).sum::<f64>() / durations.len() as f64;
-    let variance = durations.iter()
+    let variance = durations
+        .iter()
         .map(|d| {
             let diff = *d as f64 - mean;
             diff * diff
         })
-        .sum::<f64>() / durations.len() as f64;
+        .sum::<f64>()
+        / durations.len() as f64;
     let std_dev = variance.sqrt();
 
     // Consistency score: 1 when std_dev is 0, decreases as std_dev increases
@@ -167,7 +165,8 @@ fn calculate_weekday_averages(commits_by_date: &HashMap<String, usize>) -> HashM
     }
 
     // Calculate average for each weekday
-    weekday_counts.into_iter()
+    weekday_counts
+        .into_iter()
         .map(|(weekday, counts)| {
             let avg = counts.iter().map(|c| *c as f64).sum::<f64>() / counts.len() as f64;
             (weekday, avg)
@@ -187,7 +186,10 @@ pub fn generate_report(metrics: &TaktTimeMetrics) -> String {
 
     // Overall metrics
     report.push_str(&"Overall Metrics:\n".bold());
-    report.push_str(&format!("  Commits per Day: {:.2} (target: ≥3)\n", metrics.commits_per_day));
+    report.push_str(&format!(
+        "  Commits per Day: {:.2} (target: ≥3)\n",
+        metrics.commits_per_day
+    ));
 
     let commits_status = if metrics.commits_per_day >= 3.0 {
         "✅".green()
@@ -198,7 +200,10 @@ pub fn generate_report(metrics: &TaktTimeMetrics) -> String {
     };
     report.push_str(&format!("    Status: {}\n", commits_status));
 
-    report.push_str(&format!("  Consistency Score: {:.2}% (target: >80%)\n", metrics.consistency_score * 100.0));
+    report.push_str(&format!(
+        "  Consistency Score: {:.2}% (target: >80%)\n",
+        metrics.consistency_score * 100.0
+    ));
 
     let consistency_status = if metrics.consistency_score >= 0.8 {
         "✅".green()
@@ -209,7 +214,10 @@ pub fn generate_report(metrics: &TaktTimeMetrics) -> String {
     };
     report.push_str(&format!("    Status: {}\n", consistency_status));
 
-    report.push_str(&format!("  Drought Days: {} (target: 0)\n", metrics.drought_days));
+    report.push_str(&format!(
+        "  Drought Days: {} (target: 0)\n",
+        metrics.drought_days
+    ));
 
     let drought_status = if metrics.drought_days == 0 {
         "✅".green()
@@ -222,7 +230,15 @@ pub fn generate_report(metrics: &TaktTimeMetrics) -> String {
 
     // Weekday breakdown
     report.push_str(&"\nWeekday Averages:\n".bold());
-    let weekdays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+    let weekdays = [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+        "Sunday",
+    ];
     for day in weekdays {
         if let Some(avg) = metrics.weekday_avg.get(day) {
             report.push_str(&format!("  {}: {:.2} commits/day\n", day, avg));
@@ -245,14 +261,24 @@ pub fn generate_report(metrics: &TaktTimeMetrics) -> String {
     }
 
     if metrics.consistency_score < 0.8 {
-        report.push_str(&"  • Commit rhythm inconsistent. Aim for regular daily commits\n".yellow());
+        report
+            .push_str(&"  • Commit rhythm inconsistent. Aim for regular daily commits\n".yellow());
     }
 
     if metrics.drought_days > 0 {
-        report.push_str(&format!("  • {} day(s) with no commits. Maintain daily rhythm\n", metrics.drought_days).yellow());
+        report.push_str(
+            &format!(
+                "  • {} day(s) with no commits. Maintain daily rhythm\n",
+                metrics.drought_days
+            )
+            .yellow(),
+        );
     }
 
-    if metrics.commits_per_day >= 3.0 && metrics.consistency_score >= 0.8 && metrics.drought_days == 0 {
+    if metrics.commits_per_day >= 3.0
+        && metrics.consistency_score >= 0.8
+        && metrics.drought_days == 0
+    {
         report.push_str(&"  • Takt time is optimal! Maintain consistent daily rhythm\n".green());
     }
 
@@ -275,11 +301,7 @@ mod tests {
     #[test]
     fn test_calculate_consistency_perfect_rhythm() {
         let base = Utc::now();
-        let times = vec![
-            base,
-            base - Duration::hours(24),
-            base - Duration::hours(48),
-        ];
+        let times = vec![base, base - Duration::hours(24), base - Duration::hours(48)];
         let score = calculate_consistency(&times);
         // Perfect rhythm (24h between commits)
         assert!(score > 0.9);
@@ -288,11 +310,7 @@ mod tests {
     #[test]
     fn test_calculate_consistency_variable_rhythm() {
         let base = Utc::now();
-        let times = vec![
-            base,
-            base - Duration::hours(1),
-            base - Duration::hours(48),
-        ];
+        let times = vec![base, base - Duration::hours(1), base - Duration::hours(48)];
         let score = calculate_consistency(&times);
         // Variable rhythm
         assert!(score < 0.8);

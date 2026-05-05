@@ -1,5 +1,5 @@
 {
-  "name": "@pictl/contracts",
+  "name": "@wasm4pm/contracts",
   "version": "26.4.17",
   "description": "Runtime contracts, receipts, and hash verification",
   "type": "module",
@@ -49,7 +49,7 @@
   ],
   "scripts": {
     "build": "tsc",
-    "test": "vitest",
+    "test": "vitest run",
     "test:watch": "vitest --watch",
     "test:coverage": "vitest --coverage",
     "lint": "tsc --noEmit",

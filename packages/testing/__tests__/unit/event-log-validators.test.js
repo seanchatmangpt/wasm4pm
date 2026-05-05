@@ -2,7 +2,7 @@
  * Unit tests for event log validators
  */
 import { describe, it, expect } from 'vitest';
-import { validateXES, validateCSV, validateEventLog, validateTimestampOrdering, validateTraceCompleteness, validateNoDuplicates, } from '@pictl/testing';
+import { validateXES, validateCSV, validateEventLog, validateTimestampOrdering, validateTraceCompleteness, validateNoDuplicates, } from '@wasm4pm/testing';
 describe('Event Log Validators', () => {
     // Skip XES tests in Node.js (DOMParser is browser-only)
     const describeIf = typeof DOMParser !== 'undefined' ? describe : describe.skip;

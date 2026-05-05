@@ -1,4 +1,4 @@
-# @pictl/ml
+# @wasm4pm/ml
 
 Micro-ML analysis for process mining. 6 algorithms for classification, clustering, forecasting, anomaly detection, regression, and dimensionality reduction.
 
@@ -15,7 +15,7 @@ Micro-ML analysis for process mining. 6 algorithms for classification, clusterin
 
 ## Known Behavior
 
-- `@pictl/ml` functions succeed with empty arrays. Do not assume rejection — always handle the empty result case.
+- `@wasm4pm/ml` functions succeed with empty arrays. Do not assume rejection — always handle the empty result case.
 - `regressRemainingTime` uses only the first feature column as independent variable (univariate regression).
 - PCA fails on `running-example.xes` (insufficient features).
 - Decision tree classifier always reports `confidence: 1` (hardcoded).
@@ -24,7 +24,7 @@ Micro-ML analysis for process mining. 6 algorithms for classification, clusterin
 ## Usage
 
 ```typescript
-import { classifyTraces, forecastSeries, detectEnhancedAnomalies } from '@pictl/ml';
+import { classifyTraces, forecastSeries, detectEnhancedAnomalies } from '@wasm4pm/ml';
 
 const result = classifyTraces(features, labels);
 // result: { classes: string[], accuracy: number, confusionMatrix: number[][] }

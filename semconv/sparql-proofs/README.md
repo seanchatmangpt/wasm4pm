@@ -6,7 +6,7 @@
 
 ## Overview
 
-This directory contains the **SPARQL CONSTRUCT query engine** that transforms pictl MCP tool outputs (JSON) into RDF triples conforming to `pictl-ontology.ttl`. These queries are the **"proof generators"** — they make pictl outputs inspectable, queryable, and reasonably sound using semantic web technologies.
+This directory contains the **SPARQL CONSTRUCT query engine** that transforms pictl MCP tool outputs (JSON) into RDF triples conforming to `wasm4pm-ontology.ttl`. These queries are the **"proof generators"** — they make pictl outputs inspectable, queryable, and reasonably sound using semantic web technologies.
 
 ### Three Key Innovations
 
@@ -231,7 +231,7 @@ WHERE {
 
 ## Ontology Reference
 
-All queries use **pictl-ontology.ttl**. Key classes:
+All queries use **wasm4pm-ontology.ttl**. Key classes:
 
 - **pm:ProcessModel** — Abstract base for all models
   - pm:DirectlyFollowsGraph
@@ -251,7 +251,7 @@ Key properties:
 - **pm:predictionConfidence** — Prediction certainty (0-1)
 - **pm:executionTime** — Duration of operation
 
-See `pictl-ontology.ttl` for complete property definitions.
+See `wasm4pm-ontology.ttl` for complete property definitions.
 
 ---
 
@@ -504,7 +504,7 @@ ORDER BY DESC(?importance)
 
 ## References & Further Reading
 
-- **pictl-ontology.ttl** — Full semantic definitions
+- **wasm4pm-ontology.ttl** — Full semantic definitions
 - **query-registry.json** — Tool mappings & schemas
 - **../sparql-examples.md** — 50+ complete query examples
 - **W3C SPARQL 1.1**: https://www.w3.org/TR/sparql11-query/
@@ -518,7 +518,7 @@ ORDER BY DESC(?importance)
 To add a new SPARQL proof query:
 
 1. **Identify the MCP tool** (e.g., new tool: `detect_anomalies`)
-2. **Create output class** (e.g., `pm:AnomalyDetection` — add to pictl-ontology.ttl if needed)
+2. **Create output class** (e.g., `pm:AnomalyDetection` — add to wasm4pm-ontology.ttl if needed)
 3. **Write CONSTRUCT query** (new file: `detect-anomalies.rq`)
 4. **Register in query-registry.json** (add entry under `queries`)
 5. **Document with examples** (add query examples to sparql-examples.md)

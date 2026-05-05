@@ -5,7 +5,7 @@
 This document catalogs the end-to-end tests that validate ML, RL, and AutoProcess implementations actually work — not just that they exit 0, but that they produce correct, meaningful results for the process mining domain.
 
 **Total:** 4 new test files, **50+ tests**, covering:
-- ✅ `pictl autoprocess` command (TypeScript CLI)
+- ✅ `wpm autoprocess` command (TypeScript CLI)
 - ✅ ML task correctness (classify, cluster, forecast, anomaly, regress)
 - ✅ RL learning (Bellman correctness, reward monotonicity, cumulative learning)
 - ✅ BPI 2020 real-scale validation (20-32 MB datasets)
@@ -14,7 +14,7 @@ This document catalogs the end-to-end tests that validate ML, RL, and AutoProces
 
 ## TypeScript Tests (Playground Scenarios)
 
-### Scenario 20: `pictl autoprocess` Command
+### Scenario 20: `wpm autoprocess` Command
 
 **File:** `playground/scenarios/20-autoprocess-command.ts`  
 **Tests:** 25 + 5 real-scale = **30 tests**
@@ -35,7 +35,7 @@ This document catalogs the end-to-end tests that validate ML, RL, and AutoProces
 
 **Run:**
 ```bash
-cd /Users/sac/chatmangpt/pictl/playground
+cd /Users/sac/chatmangpt/wasm4pm/playground
 pnpm test scenarios/20-autoprocess-command.ts
 ```
 
@@ -65,7 +65,7 @@ pnpm test scenarios/20-autoprocess-command.ts
 
 **Run:**
 ```bash
-cd /Users/sac/chatmangpt/pictl/playground
+cd /Users/sac/chatmangpt/wasm4pm/playground
 pnpm test scenarios/21-ml-correctness.ts
 ```
 
@@ -92,7 +92,7 @@ pnpm test scenarios/21-ml-correctness.ts
 
 **Run:**
 ```bash
-cd /Users/sac/chatmangpt/pictl/wasm4pm
+cd /Users/sac/chatmangpt/wasm4pm/wasm4pm
 cargo test --test jtbd_bpi2020_tests -- --include-ignored
 ```
 
@@ -124,7 +124,7 @@ cargo test --test jtbd_bpi2020_tests -- --include-ignored
 
 **Run:**
 ```bash
-cd /Users/sac/chatmangpt/pictl/wasm4pm
+cd /Users/sac/chatmangpt/wasm4pm/wasm4pm
 cargo test --test rl_correctness_validation
 ```
 
@@ -187,18 +187,18 @@ Before running e2e tests:
 
 - [ ] WASM compiled: `cargo make build` from `wasm4pm/`
 - [ ] TypeScript packages built: `pnpm build` from monorepo root
-- [ ] pictl CLI built: `npm run build` from `apps/pictl/`
+- [ ] pictl CLI built: `npm run build` from `apps/wasm4pm/`
 - [ ] All test files exist (4 files, 50+ tests)
 
 Run all tests:
 
 ```bash
 # TypeScript: Scenarios 20-21
-cd /Users/sac/chatmangpt/pictl/playground
+cd /Users/sac/chatmangpt/wasm4pm/playground
 pnpm test scenarios/20-autoprocess-command.ts scenarios/21-ml-correctness.ts
 
 # Rust: RL correctness (quick, ~5s)
-cd /Users/sac/chatmangpt/pictl/wasm4pm
+cd /Users/sac/chatmangpt/wasm4pm/wasm4pm
 cargo test --test rl_correctness_validation
 
 # Rust: BPI 2020 real-scale (slow, ~2min per test, requires --include-ignored)

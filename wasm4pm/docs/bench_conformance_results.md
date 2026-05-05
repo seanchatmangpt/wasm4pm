@@ -10,14 +10,14 @@
 
 This benchmark evaluates the performance of 5 conformance checking approaches across multiple log sizes:
 
-| Algorithm | 100 cases | 1000 cases | 5000 cases | 10000 cases |
-|-----------|-----------|------------|------------|-------------|
-| **Token Replay** | 266 µs | 2.37 ms | 13.27 ms | N/A |
-| **SIMD Token Replay** | 5.62 µs (47x) | 56.7 µs (42x) | 293 µs (45x) | 601 µs (22x) |
-| **ETConformance Precision** | 143 µs | 1.40 ms | 6.95 ms | N/A |
-| **DECLARE Conformance** | 7.86 µs | 80.9 µs | 408 µs | 880 µs |
-| **Temporal Profile Discovery** | 105 µs | 876 µs | 4.35 ms | N/A |
-| **Temporal Profile Checking** | N/A | 751 µs | N/A | N/A |
+| Algorithm                      | 100 cases     | 1000 cases    | 5000 cases   | 10000 cases  |
+| ------------------------------ | ------------- | ------------- | ------------ | ------------ |
+| **Token Replay**               | 266 µs        | 2.37 ms       | 13.27 ms     | N/A          |
+| **SIMD Token Replay**          | 5.62 µs (47x) | 56.7 µs (42x) | 293 µs (45x) | 601 µs (22x) |
+| **ETConformance Precision**    | 143 µs        | 1.40 ms       | 6.95 ms      | N/A          |
+| **DECLARE Conformance**        | 7.86 µs       | 80.9 µs       | 408 µs       | 880 µs       |
+| **Temporal Profile Discovery** | 105 µs        | 876 µs        | 4.35 ms      | N/A          |
+| **Temporal Profile Checking**  | N/A           | 751 µs        | N/A          | N/A          |
 
 **Key Finding:** SIMD-accelerated token replay is **40-47x faster** than standard token replay for conformance checking.
 
@@ -27,14 +27,15 @@ This benchmark evaluates the performance of 5 conformance checking approaches ac
 
 Standard token-based replay using handle-based state management with PetriNet objects.
 
-| Cases | Time (µs) | Throughput (Melem/s) | Change |
-|-------|-----------|---------------------|--------|
-| 100 | 265.82 | 4.51 | +5.7% (noise) |
-| 500 | 1,239.7 | 4.84 | +4.6% (regression) |
-| 1000 | 2,369.6 | 5.06 | -4.5% (improved) |
-| 5000 | 13,272 | 4.52 | 0% (stable) |
+| Cases | Time (µs) | Throughput (Melem/s) | Change             |
+| ----- | --------- | -------------------- | ------------------ |
+| 100   | 265.82    | 4.51                 | +5.7% (noise)      |
+| 500   | 1,239.7   | 4.84                 | +4.6% (regression) |
+| 1000  | 2,369.6   | 5.06                 | -4.5% (improved)   |
+| 5000  | 13,272    | 4.52                 | 0% (stable)        |
 
 **Characteristics:**
+
 - Linear scaling O(n) with case count
 - Handle-based serialization overhead
 - Throughput: ~4.5-5.1 Melem/s
@@ -46,20 +47,22 @@ Standard token-based replay using handle-based state management with PetriNet ob
 Integer-encoded Petri net with vectorized token replay via SIMD instructions.
 
 | Cases | Time (µs) | Throughput (Melem/s) | Speedup |
-|-------|-----------|---------------------|---------|
-| 100 | 5.62 | 207.0 | **47x** |
-| 500 | 28.84 | 203.1 | **43x** |
-| 1000 | 56.69 | 202.7 | **42x** |
-| 5000 | 292.76 | 195.7 | **45x** |
-| 10000 | 600.51 | 190.9 | **22x** |
+| ----- | --------- | -------------------- | ------- |
+| 100   | 5.62      | 207.0                | **47x** |
+| 500   | 28.84     | 203.1                | **43x** |
+| 1000  | 56.69     | 202.7                | **42x** |
+| 5000  | 292.76    | 195.7                | **45x** |
+| 10000 | 600.51    | 190.9                | **22x** |
 
 **Characteristics:**
+
 - Consistent 40-47x speedup over standard token replay
 - Throughput: ~190-207 Melem/s (40x higher)
 - Excellent scalability to 10K cases
 - Loop-unrolled fire_transition with integer encoding
 
 **Technical Details:**
+
 - Integer-encoded places/transitions (not string-based)
 - SIMD-friendly data layout
 - Direct memory access without handle serialization
@@ -70,14 +73,15 @@ Integer-encoded Petri net with vectorized token replay via SIMD instructions.
 
 Escaping edges approach for computing precision metric (ETConformance algorithm).
 
-| Cases | Time (µs) | Throughput (Melem/s) | Change |
-|-------|-----------|---------------------|--------|
-| 100 | 142.94 | 8.40 | Stable |
-| 500 | 726.38 | 8.26 | +4.4% (regression) |
-| 1000 | 1,401.3 | 8.56 | Stable |
-| 5000 | 6,945 | 8.64 | -24.7% (improved) |
+| Cases | Time (µs) | Throughput (Melem/s) | Change             |
+| ----- | --------- | -------------------- | ------------------ |
+| 100   | 142.94    | 8.40                 | Stable             |
+| 500   | 726.38    | 8.26                 | +4.4% (regression) |
+| 1000  | 1,401.3   | 8.56                 | Stable             |
+| 5000  | 6,945     | 8.64                 | -24.7% (improved)  |
 
 **Characteristics:**
+
 - Linear scaling O(n)
 - Throughput: ~8.2-8.6 Melem/s
 - ~2x slower than token replay (more computation per event)
@@ -90,14 +94,15 @@ Escaping edges approach for computing precision metric (ETConformance algorithm)
 Inline DECLARE constraint checking (Response, Existence, Absence, Init, Precedence templates).
 
 | Cases | Time (µs) | Throughput (Melem/s) |
-|-------|-----------|---------------------|
-| 100 | 7.86 | 152.7 |
-| 500 | 40.30 | 148.9 |
-| 1000 | 80.92 | 148.3 |
-| 5000 | 408.12 | 147.0 |
-| 10000 | 879.58 | 136.4 |
+| ----- | --------- | -------------------- |
+| 100   | 7.86      | 152.7                |
+| 500   | 40.30     | 148.9                |
+| 1000  | 80.92     | 148.3                |
+| 5000  | 408.12    | 147.0                |
+| 10000 | 879.58    | 136.4                |
 
 **Characteristics:**
+
 - **Fastest conformance algorithm** (even faster than SIMD for small logs)
 - Throughput: ~136-153 Melem/s
 - Linear scaling O(n × c) where c = constraint count
@@ -105,6 +110,7 @@ Inline DECLARE constraint checking (Response, Existence, Absence, Init, Preceden
 - Performance degrades slightly at 10K cases (memory allocation)
 
 **Constraints Benchmarked:**
+
 - Response(A,B), Response(B,C), Response(C,D)
 - Existence(A)
 - Total: 4 constraints checked per trace
@@ -118,13 +124,14 @@ Inline DECLARE constraint checking (Response, Existence, Absence, Init, Preceden
 Discovering temporal profiles (mean, variance, count) for activity transitions.
 
 | Cases | Time (µs) | Throughput (Melem/s) |
-|-------|-----------|---------------------|
-| 100 | 105.24 | 11.40 |
-| 500 | 445.10 | 13.48 |
-| 1000 | 875.74 | 13.70 |
-| 5000 | 4,352.3 | 13.79 |
+| ----- | --------- | -------------------- |
+| 100   | 105.24    | 11.40                |
+| 500   | 445.10    | 13.48                |
+| 1000  | 875.74    | 13.70                |
+| 5000  | 4,352.3   | 13.79                |
 
 **Characteristics:**
+
 - Linear scaling O(n)
 - Throughput: ~11-14 Melem/s
 - Slightly faster than ETConformance (less model traversal)
@@ -135,10 +142,11 @@ Discovering temporal profiles (mean, variance, count) for activity transitions.
 Checking traces against a pre-computed temporal profile with z-score deviation detection.
 
 | Cases | Time (µs) | Throughput (Melem/s) |
-|-------|-----------|---------------------|
-| 1000 | 750.95 | 79.90 |
+| ----- | --------- | -------------------- |
+| 1000  | 750.95    | 79.90                |
 
 **Characteristics:**
+
 - Tested at 1000 cases (fixed profile size)
 - Throughput: ~80 Melem/s
 - ~6x faster than discovery (no aggregation overhead)
@@ -167,24 +175,24 @@ Temporal Profile Discovery   876          10.8x
 
 ### Time Complexity (O notation)
 
-| Algorithm | Complexity | Verified |
-|-----------|------------|----------|
-| Token Replay | O(n) | Yes (linear) |
-| SIMD Token Replay | O(n) | Yes (linear) |
-| ETConformance | O(n × m) | Yes (n=events, m=model size) |
-| DECLARE | O(n × c) | Yes (n=events, c=constraints) |
-| Temporal Discovery | O(n) | Yes (linear) |
-| Temporal Checking | O(n) | Yes (linear) |
+| Algorithm          | Complexity | Verified                      |
+| ------------------ | ---------- | ----------------------------- |
+| Token Replay       | O(n)       | Yes (linear)                  |
+| SIMD Token Replay  | O(n)       | Yes (linear)                  |
+| ETConformance      | O(n × m)   | Yes (n=events, m=model size)  |
+| DECLARE            | O(n × c)   | Yes (n=events, c=constraints) |
+| Temporal Discovery | O(n)       | Yes (linear)                  |
+| Temporal Checking  | O(n)       | Yes (linear)                  |
 
 ### Throughput Stability
 
-| Algorithm | Min (Melem/s) | Max (Melem/s) | Variance |
-|-----------|---------------|---------------|----------|
-| SIMD Token Replay | 190.9 | 207.0 | 8% |
-| DECLARE | 136.4 | 152.7 | 11% |
-| Temporal Checking | 79.9 | 79.9 | 0% |
-| ETConformance | 8.26 | 8.64 | 4% |
-| Token Replay | 4.51 | 5.06 | 11% |
+| Algorithm         | Min (Melem/s) | Max (Melem/s) | Variance |
+| ----------------- | ------------- | ------------- | -------- |
+| SIMD Token Replay | 190.9         | 207.0         | 8%       |
+| DECLARE           | 136.4         | 152.7         | 11%      |
+| Temporal Checking | 79.9          | 79.9          | 0%       |
+| ETConformance     | 8.26          | 8.64          | 4%       |
+| Token Replay      | 4.51          | 5.06          | 11%      |
 
 **Best stability:** Temporal Profile Checking (fixed profile)
 **Worst stability:** DECLARE (at 10K cases, GC pressure)
@@ -233,12 +241,14 @@ throughput = Elements(total_events)
 ```
 
 **Log Shape:**
+
 - Activities: 4 (A, B, C, D)
 - Avg events per case: 12
 - Noise factor: 0.1 (10% deviations)
 - Cases tested: 100, 500, 1000, 5000, 10000
 
 **Petri Net:**
+
 - Sequential structure: A → B → C → D
 - 5 places (p_start, p1, p2, p3, p_end)
 - 4 transitions (t_a, t_b, t_c, t_d)
@@ -247,7 +257,8 @@ throughput = Elements(total_events)
 
 ## Excluded Algorithms
 
-### A* Alignment
+### A\* Alignment
+
 - **Reason:** Private internal function `compute_trace_alignment`
 - **Complexity:** O(b^d) worst-case (exponential)
 - **Use Case:** Optimal alignment for small traces only
@@ -258,6 +269,7 @@ throughput = Elements(total_events)
 ## Appendix: Raw Benchmark Output
 
 See `/tmp/bench_conformance.txt` for full Criterion output with:
+
 - Per-iteration measurements
 - Outlier detection
 - Statistical confidence intervals

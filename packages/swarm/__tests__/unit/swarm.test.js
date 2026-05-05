@@ -1,5 +1,5 @@
 /**
- * Unit tests for @pictl/swarm
+ * Unit tests for @wasm4pm/swarm
  */
 import { describe, it, expect, beforeEach } from 'vitest';
 // Import after resetting module state

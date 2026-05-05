@@ -4,7 +4,7 @@
  * Section 4 of the Three-Layer Architecture Specification.
  * Implements backend selection rules, algorithm decision tables, and job promotion/degradation.
  */
-import { latencyTierLte, } from '@pictl/contracts';
+import { latencyTierLte, } from '@wasm4pm/contracts';
 /**
  * Section 4.2: Seven-Priority Engine Selection Rule Table
  * Applied in priority order; first matching rule wins.

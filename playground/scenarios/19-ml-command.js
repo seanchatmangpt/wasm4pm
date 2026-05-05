@@ -2,7 +2,7 @@
  * Scenario: ml command — pictl ml <task> -i <log.xes>
  *
  * Tests ML-powered process mining using real WASM and real XES files.
- * No mocks — real @pictl/ml package with real algorithm execution.
+ * No mocks — real @wasm4pm/ml package with real algorithm execution.
  *
  * Key contracts verified:
  *   - Missing task exits with error (exit 1)
@@ -15,7 +15,7 @@
  *   - Results are deterministic across runs
  *   - --activity-key, --method, --k flags work
  *
- * Binary: apps/pictl/dist/bin/pictl.js (must be built first)
+ * Binary: apps/wasm4pm/dist/bin/wpm.js (must be built first)
  */
 import { describe, it, expect } from 'vitest';
 import { assertExitCode, pictl, extractJson, combinedOutput, EXIT_CODES, resolveRepo } from '../helpers/cli.js';
@@ -48,7 +48,7 @@ describe('ml command', () => {
     describe('ML tasks — JSON output', () => {
         for (const task of WORKING_ML_TASKS) {
             describe(`${task} task`, () => {
-                it(`pictl ml ${task} exits 0 and returns valid JSON`, async () => {
+                it(`wpm ml ${task} exits 0 and returns valid JSON`, async () => {
                     const result = await pictl(['ml', task, '-i', RUNNING_EXAMPLE, '--format', 'json']);
                     assertExitCode(result, EXIT_CODES.SUCCESS);
                     const json = extractJson(result.stdout);

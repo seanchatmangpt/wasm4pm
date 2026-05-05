@@ -14,13 +14,13 @@
  *   - VALID_PREDICT_CLI_TASKS has exactly 6 entries, all hyphen-form (no underscores)
  *   - remaining-time without --prefix → returns message, not prediction (model-only mode)
  *
- * Binary: apps/pictl/dist/bin/pictl.js (must be built first)
+ * Binary: apps/wasm4pm/dist/bin/wpm.js (must be built first)
  */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import * as path from 'path';
 import * as fs from 'fs/promises';
-import { pictl, assertExitCode, assertJsonOutput, createCliTestEnv, EXIT_CODES } from '@pictl/testing';
-import { VALID_PREDICT_CLI_TASKS } from '@pictl/contracts';
+import { pictl, assertExitCode, assertJsonOutput, createCliTestEnv, EXIT_CODES } from '@wasm4pm/testing';
+import { VALID_PREDICT_CLI_TASKS } from '@wasm4pm/contracts';
 // ── XES fixtures (inline, self-contained) ─────────────────────────────────────
 const MINI_XES = `<?xml version="1.0" encoding="UTF-8"?>
 <log xes.version="1.0">
@@ -103,7 +103,7 @@ describe('predict command: error paths', () => {
 // All 6 valid tasks must exit 0 or 3. Exit 1 or 2 signals a routing regression.
 describe('predict command: task routing — exit codes', () => {
     for (const task of VALID_PREDICT_CLI_TASKS) {
-        it(`pictl predict ${task} exits 0 or 3 (never 1 or 2)`, async () => {
+        it(`wpm predict ${task} exits 0 or 3 (never 1 or 2)`, async () => {
             const result = await pictl(['predict', task, '-i', xesPath, '--no-save']);
             const acceptable = [EXIT_CODES.SUCCESS, EXIT_CODES.EXECUTION_ERROR];
             if (!acceptable.includes(result.exitCode)) {

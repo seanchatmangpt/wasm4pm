@@ -1,5 +1,5 @@
 {
-  "name": "@pictl/planner",
+  "name": "@wasm4pm/planner",
   "version": "26.4.17",
   "description": "Process mining planning and optimization",
   "type": "module",
@@ -17,14 +17,14 @@
   ],
   "scripts": {
     "build": "tsc",
-    "test": "vitest",
+    "test": "vitest run",
     "test:watch": "vitest --watch",
     "test:coverage": "vitest --coverage",
     "lint": "tsc --noEmit",
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@pictl/contracts": "workspace:*",
+    "@wasm4pm/contracts": "workspace:*",
     "blake3": "^2.1.4",
     "uuid": "^9.0.1"
   },

@@ -23,7 +23,7 @@ The pictl monorepo comprises 9 interdependent packages that form a unified syste
          ┌───────────────┼────────────────┬──────────────┐
          │               │                │              │
     ┌────▼─────┐   ┌─────▼──────┐  ┌─────▼─────┐  ┌───▼──────┐
-    │ @pictl/  │   │ @pictl/    │  │ @pictl/   │  │@pictl/   │
+    │ @wasm4pm/  │   │ @wasm4pm/    │  │ @wasm4pm/   │  │@wasm4pm/   │
     │  engine  │   │  planner   │  │    ml     │  │ swarm    │
     │  (state  │   │ (execution │  │(predictions│ │(async   │
     │ machine) │   │   plans)   │  │)          │ │orchestr.)│
@@ -34,7 +34,7 @@ The pictl monorepo comprises 9 interdependent packages that form a unified syste
          ┌───────────────┼────────────┬─────────────┐
          │               │            │             │
     ┌────▼──────┐  ┌─────▼──────┐   │        ┌─────▼────┐
-    │@pictl/    │  │ @pictl/    │   │        │ @pictl/  │
+    │@wasm4pm/    │  │ @wasm4pm/    │   │        │ @wasm4pm/  │
     │observability│ │   config  │   │        │ testing  │
     │(OTel, JSON)│ │ (zod,TOML) │   │        │(assertions)
     └────┬───────┘  └─────┬──────┘   │        └─────┬─────┘
@@ -44,7 +44,7 @@ The pictl monorepo comprises 9 interdependent packages that form a unified syste
               ┌──────────┼──────────┐
               │          │          │
          ┌────▼────┐ ┌───▼──┐ ┌────▼─────┐
-         │@pictl/  │ │@pictl│ │ @pictl/  │
+         │@wasm4pm/  │ │@pictl│ │ @wasm4pm/  │
          │contracts│ │kernel│ │ (base)   │
          │(types)  │ │(WASM)│ │ ontology │
          └──────────┘ └──────┘ └──────────┘
@@ -52,11 +52,11 @@ The pictl monorepo comprises 9 interdependent packages that form a unified syste
 ```
 
 **Direction of dependencies:**
-- Layer 0 (bottom): `@pictl/contracts`, `@pictl/kernel` — no internal dependencies
-- Layer 1: `@pictl/config`, `@pictl/observability` — depend on contracts
-- Layer 2: `@pictl/engine` — depends on contracts + observability
-- Layer 3: `@pictl/planner`, `@pictl/ml` — depend on contracts + config
-- Layer 4: `@pictl/testing`, `@pictl/swarm` — depend on engine + planner + ml
+- Layer 0 (bottom): `@wasm4pm/contracts`, `@wasm4pm/kernel` — no internal dependencies
+- Layer 1: `@wasm4pm/config`, `@wasm4pm/observability` — depend on contracts
+- Layer 2: `@wasm4pm/engine` — depends on contracts + observability
+- Layer 3: `@wasm4pm/planner`, `@wasm4pm/ml` — depend on contracts + config
+- Layer 4: `@wasm4pm/testing`, `@wasm4pm/swarm` — depend on engine + planner + ml
 
 **Backward dependency rule:** A package at layer N may NEVER depend on layer N+1 or higher. Only downward dependencies are allowed.
 
@@ -66,7 +66,7 @@ The pictl monorepo comprises 9 interdependent packages that form a unified syste
 
 ### Layer 0: Foundation
 
-#### `@pictl/contracts` (~500 lines)
+#### `@wasm4pm/contracts` (~500 lines)
 **Purpose:** Type definitions and schemas—the lingua franca of pictl  
 **Exports:**
 - `EngineState` — union of 8 valid states (uninitialized, bootstrapping, ready, planning, running, watching, degraded, failed)
@@ -121,7 +121,7 @@ export interface EngineStatus {
 }
 ```
 
-#### `@pictl/kernel` (~800 lines)
+#### `@wasm4pm/kernel` (~800 lines)
 **Purpose:** Type-safe API facade over wasm4pm WASM algorithms  
 **Exports:**
 - `Kernel` class — interface to load and invoke WASM algorithms
@@ -164,7 +164,7 @@ export interface AlgorithmMetadata {
 
 ### Layer 1: Infrastructure
 
-#### `@pictl/config` (~1200 lines)
+#### `@wasm4pm/config` (~1200 lines)
 **Purpose:** Configuration management with Zod validation and provenance tracking  
 **Exports:**
 - `resolveConfig()` — CLI + file + env var → merged config with provenance
@@ -174,7 +174,7 @@ export interface AlgorithmMetadata {
 
 **Core files:** `packages/config/src/{resolver.ts, schema.ts, provenance.ts, hash.ts}`
 
-**Depends on:** `@pictl/contracts`
+**Depends on:** `@wasm4pm/contracts`
 
 ```typescript
 // From packages/config/src/types.ts
@@ -214,9 +214,9 @@ export interface Provenance {
 
 **Real example: resolveConfig flow**
 ```typescript
-// User calls: pictl discover --config pictl.toml --profile quality
+// User calls: pictl discover --config wasm4pm.toml --profile quality
 const config = await resolveConfig({
-  fileConfig: await loadToml('pictl.toml'),
+  fileConfig: await loadToml('wasm4pm.toml'),
   cliOverrides: { execution: { profile: 'quality' } },
   envVars: process.env,
 });
@@ -229,7 +229,7 @@ console.log(config.metadata.provenance['observability.otel.enabled']);
 // → { source: 'env', key: 'PICTL_OTEL_ENABLED', value: true }
 ```
 
-#### `@pictl/observability` (~1500 lines)
+#### `@wasm4pm/observability` (~1500 lines)
 **Purpose:** OpenTelemetry + JSON logging integration  
 **Exports:**
 - `ObservabilityWrapper` — unified OTel + JSON logging
@@ -240,7 +240,7 @@ console.log(config.metadata.provenance['observability.otel.enabled']);
 
 **Core files:** `packages/observability/src/{instrumentation.ts, observability-wrapper.ts, otel-exporter.ts, secret-redaction.ts}`
 
-**Depends on:** `@pictl/contracts`
+**Depends on:** `@wasm4pm/contracts`
 
 ```typescript
 // From packages/observability/src/instrumentation.ts
@@ -317,7 +317,7 @@ async bootstrap(timeoutMs: number = 30000): Promise<void> {
 
 ### Layer 2: Core Orchestration
 
-#### `@pictl/engine` (~2000 lines)
+#### `@wasm4pm/engine` (~2000 lines)
 **Purpose:** State machine orchestrating bootstrap → planning → execution → monitoring  
 **Exports:**
 - `Engine` class — main state machine (8 states, 12 transitions)
@@ -327,7 +327,7 @@ async bootstrap(timeoutMs: number = 30000): Promise<void> {
 
 **Core files:** `packages/engine/src/{engine.ts, lifecycle.ts, transitions.ts, state.ts, bootstrap.ts}`
 
-**Depends on:** `@pictl/contracts`, `@pictl/observability`
+**Depends on:** `@wasm4pm/contracts`, `@wasm4pm/observability`
 
 ```typescript
 // From packages/engine/src/engine.ts (lines 74–125)
@@ -384,7 +384,7 @@ export const VALID_TRANSITIONS: Record<EngineState, Set<EngineState>> = {
 
 ### Layer 3: Execution Strategies
 
-#### `@pictl/planner` (~1200 lines)
+#### `@wasm4pm/planner` (~1200 lines)
 **Purpose:** Generate deterministic execution plans from process mining configurations  
 **Exports:**
 - `plan(config)` → `ExecutionPlan` — DAG of steps with dependencies
@@ -395,7 +395,7 @@ export const VALID_TRANSITIONS: Record<EngineState, Set<EngineState>> = {
 
 **Core files:** `packages/planner/src/{planner.ts, dag.ts, steps.ts, explain.ts}`
 
-**Depends on:** `@pictl/contracts`, `@pictl/config`
+**Depends on:** `@wasm4pm/contracts`, `@wasm4pm/config`
 
 ```typescript
 // From packages/planner/src/planner.ts
@@ -463,18 +463,18 @@ console.log(executionPlan);
 // }
 ```
 
-#### `@pictl/ml` (~400 lines)
+#### `@wasm4pm/ml` (~400 lines)
 **Purpose:** Prediction models and ML-based workflow orchestration  
 **Exports:**
 - `PredictionEngine` — score future states
 - `ParameterOptimizer` — tune algorithm parameters for quality/speed
 - Model training utilities
 
-**Depends on:** `@pictl/contracts`, `@pictl/config`
+**Depends on:** `@wasm4pm/contracts`, `@wasm4pm/config`
 
 ### Layer 4: High-Level Abstractions
 
-#### `@pictl/testing` (~800 lines)
+#### `@wasm4pm/testing` (~800 lines)
 **Purpose:** Test utilities and assertions for pictl workflows  
 **Exports:**
 - `createMockKernel()`, `createMockPlanner()`, `createMockExecutor()`
@@ -482,16 +482,16 @@ console.log(executionPlan);
 - `assertPlanValid()` — DAG validation
 - `assertReceiptValid()` — receipt structure and hash validation
 
-**Depends on:** `@pictl/contracts`, `@pictl/engine`, `@pictl/planner`
+**Depends on:** `@wasm4pm/contracts`, `@wasm4pm/engine`, `@wasm4pm/planner`
 
-#### `@pictl/swarm` (~600 lines)
+#### `@wasm4pm/swarm` (~600 lines)
 **Purpose:** Async orchestration of multiple engines or discovery workflows  
 **Exports:**
 - `SwarmPool` — manage multiple engine instances
 - `WorkflowScheduler` — queue and execute jobs
 - `ResultAggregator` — combine results from parallel executions
 
-**Depends on:** `@pictl/engine`, `@pictl/planner`, `@pictl/config`
+**Depends on:** `@wasm4pm/engine`, `@wasm4pm/planner`, `@wasm4pm/config`
 
 ---
 
@@ -525,9 +525,9 @@ All packages ship with synchronized versions. The monorepo enforces this:
 ```json
 {
   "dependencies": {
-    "@pictl/engine": "^26.4.0",
-    "@pictl/planner": "^26.4.0",
-    "@pictl/config": "^26.4.0"
+    "@wasm4pm/engine": "^26.4.0",
+    "@wasm4pm/planner": "^26.4.0",
+    "@wasm4pm/config": "^26.4.0"
   }
 }
 ```
@@ -578,9 +578,9 @@ const config = await resolveConfig({
 
 ```typescript
 // packages/engine/src/engine.ts (application layer)
-import { Kernel } from '@pictl/kernel';
-import { Engine } from '@pictl/engine';
-import { resolveConfig } from '@pictl/config';
+import { Kernel } from '@wasm4pm/kernel';
+import { Engine } from '@wasm4pm/engine';
+import { resolveConfig } from '@wasm4pm/config';
 
 const kernel = new Kernel();
 const planner = new PlannerImpl(); // Implements Planner interface
@@ -685,8 +685,8 @@ for await (const update of engine.watch(executionPlan)) {
 **Use case:** HTTP API server that bootstraps on startup, accepts requests to discover different models.
 
 ```typescript
-import { Engine } from '@pictl/engine';
-import { Kernel } from '@pictl/kernel';
+import { Engine } from '@wasm4pm/engine';
+import { Kernel } from '@wasm4pm/kernel';
 
 const engine = new Engine(new Kernel(), planner, executor);
 await engine.bootstrap(); // Once at startup
@@ -705,7 +705,7 @@ app.post('/discover', async (req, res) => {
 **Use case:** Batch processing many event logs independently.
 
 ```typescript
-import { SwarmPool } from '@pictl/swarm';
+import { SwarmPool } from '@wasm4pm/swarm';
 
 const pool = new SwarmPool(4); // 4 parallel engines
 const configs = [config1, config2, config3, config4];
@@ -755,7 +755,7 @@ try {
 **Use case:** Ship OTel spans to Datadog and JSON logs to file simultaneously.
 
 ```typescript
-import { resolveConfig } from '@pictl/config';
+import { resolveConfig } from '@wasm4pm/config';
 
 const config = await resolveConfig({
   fileConfig: {
@@ -787,14 +787,14 @@ await engine.bootstrap();
 
 **Symptom:** TypeScript compilation fails with "Type 'X' is not assignable to 'Y'"
 
-**Cause:** Mixed package versions (`@pictl/engine@26.4.9` + `@pictl/contracts@26.4.10`)
+**Cause:** Mixed package versions (`@wasm4pm/engine@26.4.9` + `@wasm4pm/contracts@26.4.10`)
 
 **Fix:**
 ```bash
-npm ls @pictl/*
+npm ls @wasm4pm/*
 # Check all are the same version
 # If not:
-npm install @pictl/engine@26.4.10 @pictl/contracts@26.4.10 @pictl/planner@26.4.10
+npm install @wasm4pm/engine@26.4.10 @wasm4pm/contracts@26.4.10 @wasm4pm/planner@26.4.10
 ```
 
 ### Issue: Engine State Refuses Transition
@@ -836,7 +836,7 @@ console.log(status.observabilityErrors); // May have OTel export failures
 
 **Fix:** Check source → sink compatibility:
 ```typescript
-import { validateSourceSinkCompatibility } from '@pictl/planner';
+import { validateSourceSinkCompatibility } from '@wasm4pm/planner';
 
 const errors = validateSourceSinkCompatibility(
   config.sources,
@@ -854,17 +854,17 @@ if (errors.length > 0) {
 
 ### Why Packages Depend Only Downward
 
-**Consequence:** Changes to `@pictl/contracts` can affect all packages, but changes to `@pictl/engine` only affect high-level integrations.
+**Consequence:** Changes to `@wasm4pm/contracts` can affect all packages, but changes to `@wasm4pm/engine` only affect high-level integrations.
 
 **Benefit:** Stable core. Contract changes are explicitly versioned. Application-layer code can be loose without breaking the foundation.
 
-### Why @pictl/config Is Separate from @pictl/engine
+### Why @wasm4pm/config Is Separate from @wasm4pm/engine
 
 **Consequence:** Engine doesn't know about TOML, environment variables, or file resolution.
 
 **Benefit:** Engine is reusable for programmatic use cases (REST API, MCP server, testing). Configuration is an application concern.
 
-### Why @pictl/observability Is Separate from @pictl/engine
+### Why @wasm4pm/observability Is Separate from @wasm4pm/engine
 
 **Consequence:** Engine doesn't couple to OTEL. Observability is passed in via `ObservabilityConfig`.
 
@@ -875,9 +875,9 @@ if (errors.length > 0) {
 ## Performance Considerations
 
 ### Memory
-- **@pictl/engine:** ~10 MB for kernel WASM + state
-- **@pictl/planner:** ~2–5 MB for large plans (100+ steps)
-- **@pictl/observability:** ~5–20 MB for buffered spans (depends on exporter batch size)
+- **@wasm4pm/engine:** ~10 MB for kernel WASM + state
+- **@wasm4pm/planner:** ~2–5 MB for large plans (100+ steps)
+- **@wasm4pm/observability:** ~5–20 MB for buffered spans (depends on exporter batch size)
 
 **Mitigation:** Use `SwarmPool` with limited concurrency if memory is tight.
 
@@ -895,4 +895,4 @@ if (errors.length > 0) {
 
 The 9 packages form a coherent stack where each layer has clear responsibility. Integration happens through stable types and well-defined interfaces. Version alignment ensures consistency, and downward-only dependencies keep the architecture stable.
 
-Start with `@pictl/contracts` to understand types, then move up through `@pictl/engine`, `@pictl/planner`, and `@pictl/config` as your use case demands.
+Start with `@wasm4pm/contracts` to understand types, then move up through `@wasm4pm/engine`, `@wasm4pm/planner`, and `@wasm4pm/config` as your use case demands.

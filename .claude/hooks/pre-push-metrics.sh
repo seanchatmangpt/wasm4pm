@@ -1,5 +1,5 @@
 #!/bin/bash
-# pictl Pre-Push Metrics Gate — Red/Yellow/Green Delta Display
+# wasm4pm Pre-Push Metrics Gate — Red/Yellow/Green Delta Display
 # Checks metrics deltas since last push and displays color-coded status
 # Blocks push if red flags detected
 #
@@ -9,7 +9,7 @@
 set -e
 
 PICTL_DIR="${CLAUDE_PROJECT_DIR:-.}"
-METRICS_FILE="$PICTL_DIR/.pictl/metrics.json"
+METRICS_FILE="$PICTL_DIR/.wasm4pm/metrics.json"
 
 if [[ ! -f "$METRICS_FILE" ]]; then
   echo "⚠️  Metrics file not found. Skipping pre-push gate." >&2
@@ -105,7 +105,7 @@ check_yellow_flag() {
 # === MAIN CHECK ===
 
 echo ""
-echo "pictl Pre-Push Metrics Gate"
+echo "wasm4pm Pre-Push Metrics Gate"
 echo "=============================="
 echo ""
 

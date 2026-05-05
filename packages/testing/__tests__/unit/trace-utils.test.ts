@@ -26,7 +26,7 @@ import {
   longestCommonSubsequence,
   traceSimilarity,
   type Trace,
-} from '@pictl/testing';
+} from '@wasm4pm/testing';
 
 describe('Trace Utilities', () => {
   describe('compareTraces', () => {

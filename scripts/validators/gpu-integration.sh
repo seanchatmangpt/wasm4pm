@@ -81,7 +81,7 @@ RL_TOTAL=$((RL_CONFIG + RUST_INT))
 if [ "$RL_TOTAL" -gt 0 ]; then
   echo "PASS|GI-7|RL execution profile: $RL_TOTAL reference(s) in config/src"
 else
-  echo "FAIL|GI-7|No RL execution profile found — pictl.toml needs linucb_lambda, ucb1_exploration, gpu_enabled"
+  echo "FAIL|GI-7|No RL execution profile found — wasm4pm.toml needs linucb_lambda, ucb1_exploration, gpu_enabled"
 fi
 
 # GI-8: GPU conformance test vectors (25 required per checklist)

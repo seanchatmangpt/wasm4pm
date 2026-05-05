@@ -236,7 +236,7 @@ The key insight: **process mining is not a subset of any existing category**. It
 4. POWL (Partially Ordered Workflow Language) — the cutting edge of process representation
 5. Predictive process mining (7 task types)
 6. Concept drift detection (EWMA-based streaming)
-7. CLI-first developer experience (`pictl`)
+7. CLI-first developer experience (`wpm` (wasm4pm))
 8. Cryptographic receipts (BLAKE3) for reproducibility
 
 No competitor occupies this intersection. The space is uncontested.
@@ -544,7 +544,7 @@ wasm4pm's moat generates value through:
 1. **Pricing power** — No substitute exists for WASM-native process mining with formal correctness. Customers cannot negotiate down by threatening to switch.
 2. **Retention** — Once integrated into a CI/CD pipeline or agent orchestration stack, switching costs are astronomical.
 3. **Network effects** — Each new integration (BusinessOS, Canopy, OSA) increases the value of wasm4pm for all existing users.
-4. **Learning curve asymmetry** — Users who learn `pictl` and POWL develop expertise that doesn't transfer to competitors (because there are no competitors in this space).
+4. **Learning curve asymmetry** — Users who learn `wpm` (wasm4pm) and POWL develop expertise that doesn't transfer to competitors (because there are no competitors in this space).
 
 ---
 

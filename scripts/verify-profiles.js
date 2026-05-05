@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * verify-profiles.js — Binary Size Validator for pictl WASM Profiles
+ * verify-profiles.js — Binary Size Validator for wasm4pm WASM Profiles
  *
  * Validates built WASM binaries against size targets.
  * Supports dry-run mode, compressed size checking, and algorithm inventory.
@@ -166,7 +166,7 @@ for (const arg of process.argv.slice(2)) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 console.log("╔═══════════════════════════════════════════════════════════════════════════╗");
-console.log("║  pictl WASM Profile Size Verification");
+console.log("║  wasm4pm WASM Profile Size Verification");
 console.log("╚═══════════════════════════════════════════════════════════════════════════╝");
 console.log("");
 
@@ -178,9 +178,9 @@ let allPassed = true;
 const results = [];
 
 for (const [profile, targetMB] of Object.entries(SIZE_TARGETS_MB)) {
-  const distDir = path.join(__dirname, "..", "dist", `pictl-${profile}`);
-  const wasmPath = path.join(distDir, "pictl.wasm");
-  const brPath = path.join(distDir, "pictl.wasm.br");
+  const distDir = path.join(__dirname, "..", "dist", `wasm4pm-${profile}`);
+  const wasmPath = path.join(distDir, "wasm4pm.wasm");
+  const brPath = path.join(distDir, "wasm4pm.wasm.br");
 
   console.log(`\n[${profile.toUpperCase()}]`);
 

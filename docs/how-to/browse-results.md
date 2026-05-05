@@ -5,11 +5,11 @@
 
 ## Problem
 
-You have run discovery and prediction tasks with `pictl`, and the results were auto-saved. Now you need to find and inspect those previous results without re-running the tasks.
+You have run discovery and prediction tasks with `wpm` (wasm4pm), and the results were auto-saved. Now you need to find and inspect those previous results without re-running the tasks.
 
 ## How Results Are Stored
 
-Every `pictl run` and `pictl predict` command automatically saves its output to the local results directory:
+Every `wpm run` and `wpm predict` command automatically saves its output to the local results directory:
 
 ```
 .wasm4pm/results/<timestamp>-<task>.json
@@ -155,15 +155,15 @@ What you should see:
 
 | Command | Description |
 |---------|-------------|
-| `pictl results` | List recent results (default 20) |
-| `pictl results --limit N` | List up to N results |
-| `pictl results --last` | Print the most recent result in full |
-| `pictl results --cat N` | Print result at index N |
-| `pictl results --cat <task>` | Print most recent result matching task name |
-| `pictl results --format json` | JSON output for the listing |
+| `wpm results` | List recent results (default 20) |
+| `wpm results --limit N` | List up to N results |
+| `wpm results --last` | Print the most recent result in full |
+| `wpm results --cat N` | Print result at index N |
+| `wpm results --cat <task>` | Print most recent result matching task name |
+| `wpm results --format json` | JSON output for the listing |
 
 ## Related
 
 - [How-To: Analyze an Event Log](analyze-log.md) -- running discovery that produces results
 - [How-To: Configure Predictions](configure-predictions.md) -- setting up prediction tasks
-- [How-To: Benchmark Algorithms](benchmark-algorithms.md) -- comparing algorithms with `pictl compare`
+- [How-To: Benchmark Algorithms](benchmark-algorithms.md) -- comparing algorithms with `wpm compare`

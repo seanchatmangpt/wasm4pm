@@ -1,6 +1,6 @@
 {
-  "name": "@pictl/kernel",
-  "version": "26.4.17",
+  "name": "@wasm4pm/kernel",
+  "version": "26.4.23",
   "description": "Core kernel and runtime utilities",
   "type": "module",
   "main": "./dist/index.js",
@@ -17,21 +17,22 @@
   ],
   "scripts": {
     "build": "tsc --project tsconfig.json",
-    "test": "vitest",
+    "test": "vitest run",
     "test:watch": "vitest --watch",
     "test:coverage": "vitest --coverage",
     "lint": "tsc --noEmit",
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@pictl/contracts": "workspace:*",
-    "@pictl/planner": "workspace:*",
-    "@pictl/ml": "workspace:*"
+    "@wasm4pm/contracts": "workspace:*",
+    "@wasm4pm/ml": "workspace:*",
+    "@wasm4pm/planner": "workspace:*",
+    "wasm4pm": "workspace:*"
   },
   "devDependencies": {
+    "@vitest/coverage-v8": "^1.6.0",
     "typescript": "^5.3.3",
-    "vitest": "^1.1.0",
-    "@vitest/coverage-v8": "^1.6.0"
+    "vitest": "^1.1.0"
   },
   "keywords": [
     "kernel",

@@ -8,7 +8,7 @@
  *
  * Spec reference: Section 5.4
  */
-import type { MiningBackend, BackendCapabilities, ModelIR, ConformanceResult } from '@pictl/kernel';
+import type { MiningBackend, BackendCapabilities, ModelIR, ConformanceResult } from '@wasm4pm/kernel';
 /**
  * NullBackend: Fail-open sentinel backend.
  *

@@ -2,9 +2,9 @@
 
 **Problem:** You want to know whether Algorithm A is faster, produces a more complex model, or discovers more edges than Algorithm B on the same event log.
 
-## Solution: Use `pictl compare`
+## Solution: Use `wpm compare`
 
-The `pictl compare` command runs two or more discovery algorithms against the same XES event log and prints a side-by-side table with timing, node counts, edge counts, and ASCII sparklines.
+The `wpm compare` command runs two or more discovery algorithms against the same XES event log and prints a side-by-side table with timing, node counts, edge counts, and ASCII sparklines.
 
 ### Basic comparison
 
@@ -104,9 +104,9 @@ Output:
 }
 ```
 
-## Alternative: Compare Two Logs with `pictl diff`
+## Alternative: Compare Two Logs with `wpm diff`
 
-`pictl compare` compares algorithms on the same log. If you want to compare two different logs (for example, before and after a process change), use `pictl diff`:
+`wpm compare` compares algorithms on the same log. If you want to compare two different logs (for example, before and after a process change), use `wpm diff`:
 
 ```bash
 pictl diff log_v1.xes log_v2.xes
@@ -143,22 +143,22 @@ JSON output is also available with `--format json`.
 
 ### Unfair comparison due to different log sizes
 
-`pictl compare` uses the same log for all algorithms, so log size is not a factor. However, if you are comparing results across separate benchmark runs, ensure both runs use the same log file and the same number of cases.
+`wpm compare` uses the same log for all algorithms, so log size is not a factor. However, if you are comparing results across separate benchmark runs, ensure both runs use the same log file and the same number of cases.
 
 ### WASM warmup skew
 
-The first WASM call after loading can be slower due to JIT compilation in the JavaScript engine. `pictl compare` does not perform an explicit warmup run, so the first algorithm in the list may appear slightly slower. Mitigate this by:
+The first WASM call after loading can be slower due to JIT compilation in the JavaScript engine. `wpm compare` does not perform an explicit warmup run, so the first algorithm in the list may appear slightly slower. Mitigate this by:
 
 1. Running the comparison twice and discarding the first result.
 2. Putting the algorithm you care most about _last_ in the argument list.
 
 ### Algorithm parameters affect speed and quality
 
-Some algorithms accept parameters that change both runtime and result quality. `pictl compare` uses sensible defaults (e.g., `heuristic` uses a threshold of 0.5, `astar` uses maxIter=500). If you need custom parameters, use `pictl run` instead and compare the JSON outputs manually.
+Some algorithms accept parameters that change both runtime and result quality. `wpm compare` uses sensible defaults (e.g., `heuristic` uses a threshold of 0.5, `astar` uses maxIter=500). If you need custom parameters, use `wpm run` instead and compare the JSON outputs manually.
 
 ### Cache effects
 
-If you run `pictl compare` multiple times on the same log, the WASM parse cache may speed up subsequent runs. To get clean measurements, restart the process between runs or use `pictl run --no-cache` for individual measurements.
+If you run `wpm compare` multiple times on the same log, the WASM parse cache may speed up subsequent runs. To get clean measurements, restart the process between runs or use `wpm run --no-cache` for individual measurements.
 
 ## See Also
 

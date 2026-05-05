@@ -14,10 +14,10 @@ import {
   LatencyClass,
   deriveLatencyClass,
   ModelIR,
-} from '@pictl/contracts';
-import type { BaseConfig } from '@pictl/config';
-import type { Plan } from '@pictl/contracts';
-import type { EventLogIR } from '@pictl/contracts';
+} from '@wasm4pm/contracts';
+import type { BaseConfig } from '@wasm4pm/config';
+import type { Plan } from '@wasm4pm/contracts';
+import type { EventLogIR } from '@wasm4pm/contracts';
 import { v4 as uuidv4 } from 'uuid';
 
 /**
@@ -84,8 +84,8 @@ export function blake3Hex(obj: unknown): string {
  * - `algorithmId`: Which algorithm was executed
  * - `algorithmVersion`: Semver or CalVer of the algorithm
  * - `backendId`: Which backend executed it (wasm, pm4py, ml, null)
- * - `kernelVersion`: @seanchatmangpt/pictl npm package version
- * - `wasmBuildHash`: Content hash of pictl.wasm binary
+ * - `kernelVersion`: @wasm4pm/cli npm package version
+ * - `wasmBuildHash`: Content hash of wasm4pm.wasm binary
  *
  * **Returns:**
  * A ProvenanceChain with all 10 fields populated:
@@ -279,8 +279,8 @@ function inferModelType(algorithmId: string): ModelIR['model_type'] {
  * - `plan`: The execution plan
  * - `algorithmId`: Which algorithm was executed
  * - `backendId`: Which backend executed it
- * - `kernelVersion`: @seanchatmangpt/pictl package version
- * - `wasmBuildHash`: Content hash of pictl.wasm
+ * - `kernelVersion`: @wasm4pm/cli package version
+ * - `wasmBuildHash`: Content hash of wasm4pm.wasm
  * - `cycleSeq`: Monotonic counter from FederationController
  * - `modelCapabilities`: Declared capabilities for the model
  *

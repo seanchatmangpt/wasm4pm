@@ -10,7 +10,7 @@
  * This bridge translates between them.
  */
 import { implementAlgorithmStep } from './handlers.js';
-import { PlanStepType } from '@pictl/planner';
+import { PlanStepType } from '@wasm4pm/planner';
 /** Map of ML algorithm IDs to their PlanStepType */
 const ML_ALGORITHM_TO_STEP_TYPE = {
     ml_classify: PlanStepType.ML_CLASSIFY,

@@ -70,7 +70,7 @@ struct ReplayNet {
 }
 
 impl ReplayNet {
-    /// Build a replay network from a pictl PetriNet.
+    /// Build a replay network from a wasm4pm PetriNet.
     fn from_petri_net(net: &PetriNet) -> Result<Self, JsValue> {
         // Build place ID mapping
         let mut place_ids: FxHashMap<String, usize> = FxHashMap::default();

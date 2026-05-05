@@ -1,5 +1,5 @@
 /**
- * @pictl/observability
+ * @wasm4pm/observability
  *
  * Optional, non-blocking OpenTelemetry integration.
  * - Disabled by default (zero overhead via NoopTracer)

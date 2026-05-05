@@ -98,7 +98,7 @@ The answer depends on your use case:
 
 ### Interactive CLI Use (pictl run)
 
-When a human runs `pictl run log.xes` from the command line, they are waiting for the result. A 10% difference between 3.0ms and 3.3ms is imperceptible. Even a 10x difference (3ms vs 30ms) is imperceptible -- both complete in the blink of an eye.
+When a human runs `wpm run log.xes` from the command line, they are waiting for the result. A 10% difference between 3.0ms and 3.3ms is imperceptible. Even a 10x difference (3ms vs 30ms) is imperceptible -- both complete in the blink of an eye.
 
 In this context, **speed differences within the same tier do not matter**. Choose based on output quality (petri net vs DFG vs process tree), not speed.
 

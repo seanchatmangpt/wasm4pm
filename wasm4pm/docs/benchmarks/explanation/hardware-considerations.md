@@ -137,7 +137,7 @@ After several benchmark runs, the chip is warmer and runs at a lower sustained f
 
 ### Practical Implication
 
-If you run `pictl run log.xes --algorithm dfg` once, you might see 2.5ms (turbo boost + JIT). If you run it 10 times in a row, the median will be closer to 3.0ms (sustained frequency). Our published numbers reflect the sustained case.
+If you run `wpm run log.xes --algorithm dfg` once, you might see 2.5ms (turbo boost + JIT). If you run it 10 times in a row, the median will be closer to 3.0ms (sustained frequency). Our published numbers reflect the sustained case.
 
 ---
 

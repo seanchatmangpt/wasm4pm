@@ -2,7 +2,7 @@
 """
 Documentation Semantic Convergence Analysis Report
 
-Analyzes up to 50 pictl documentation files for convergence patterns.
+Analyzes up to 50 wasm4pm documentation files for convergence patterns.
 Generates 12 independent metrics with statistical analysis and JSON output.
 
 Usage:
@@ -748,7 +748,7 @@ def main():
     parser.add_argument(
         '--docs-dir',
         type=Path,
-        default=Path(__file__).parent.parent.parent / 'pictl' / 'docs',
+        default=Path(__file__).parent.parent.parent  / 'wasm4pm' / 'docs',
         help='Path to documentation directory'
     )
     parser.add_argument(

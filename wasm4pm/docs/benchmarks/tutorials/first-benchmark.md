@@ -10,7 +10,7 @@ By the end of this tutorial you will:
 1. Install pictl and verify your environment
 2. Run a single-algorithm benchmark against a real event log
 3. Run the full benchmark suite across all 21 discovery algorithms
-4. Compare two algorithms side by side using `pictl compare`
+4. Compare two algorithms side by side using `wpm compare`
 5. Read and interpret the benchmark output columns (median, p95, iterations)
 
 You do not need to understand process mining theory to follow this tutorial. You only need the tools listed below and a willingness to read some numbers.
@@ -46,11 +46,11 @@ You have two options. Option A installs the published npm package. Option B buil
 ### Option A: Install from npm (recommended for running benchmarks only)
 
 ```bash
-npm install -g @pictl/cli
+npm install -g @wasm4pm/cli
 pictl --version
 ```
 
-You should see `v26.4.x` or later. If the version is older, update with `npm update -g @pictl/cli`.
+You should see `v26.4.x` or later. If the version is older, update with `npm update -g @wasm4pm/cli`.
 
 ### Option B: Build from source (required if you are developing algorithms)
 
@@ -249,13 +249,13 @@ Heuristic Miner        7.86         dfg        25 (balanced)
 Inductive Miner        17.69        tree       30 (balanced)
 ```
 
-The `pictl compare` command is useful when you need to:
+The `wpm compare` command is useful when you need to:
 
 - Choose between algorithms for a production use case
 - Validate that an algorithm change did not regress performance
 - Show stakeholders the trade-off between speed and model quality
 
-You can also use `pictl explain <algorithm>` to get an academic description of what each algorithm does and when to use it:
+You can also use `wpm explain <algorithm>` to get an academic description of what each algorithm does and when to use it:
 
 ```bash
 pictl explain dfg
@@ -269,7 +269,7 @@ pictl explain heuristic_miner
 - **Benchmark lifecycle**: build WASM, run the runner, read the JSON/CSV output
 - **Output format**: the table columns (algorithm, cases, median ms, p95 ms) and what each measures
 - **Median vs mean**: why the benchmark runner reports median (robustness to outliers) and includes p95 for tail latency
-- **Algorithm comparison**: how to use `pictl compare` to evaluate algorithms against the same log
+- **Algorithm comparison**: how to use `wpm compare` to evaluate algorithms against the same log
 - **Real vs synthetic data**: BPI 2020 provides realistic results; synthetic data is faster for iteration
 
 ## Next steps

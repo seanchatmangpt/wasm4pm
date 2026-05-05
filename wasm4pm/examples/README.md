@@ -146,7 +146,7 @@ npm run example:webpack
 Requirements:
 
 - Node.js 14+
-- @seanchatmangpt/pictl package built for Node.js
+- @wasm4pm/cli package built for Node.js
 
 Build for Node.js:
 
@@ -157,7 +157,7 @@ npm run build:nodejs
 Usage:
 
 ```javascript
-const pm = require('@seanchatmangpt/pictl');
+const pm = require('@wasm4pm/cli');
 pm.init();
 const handle = pm.load_eventlog_from_xes(xesContent);
 ```
@@ -178,7 +178,7 @@ npm run build:web
 Usage:
 
 ```javascript
-import init, * as pm from '@seanchatmangpt/pictl';
+import init, * as pm from '@wasm4pm/cli';
 
 async function setup() {
   await init();

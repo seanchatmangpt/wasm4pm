@@ -10,11 +10,11 @@ export declare function readXes(path: string): string;
 export declare function countTraces(xes: string): number;
 export declare function ms(start: number): number;
 export interface BenchRow {
-    algorithm: string;
-    dataset: string;
-    traces: number;
-    durationMs: number;
-    note?: string;
+  algorithm: string;
+  dataset: string;
+  traces: number;
+  durationMs: number;
+  note?: string;
 }
 /** Pretty-print a table of benchmark results */
 export declare function printTable(rows: BenchRow[]): void;

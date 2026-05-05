@@ -42,14 +42,14 @@
                Generated Artifacts
 
 ┌─────────────────────────────────────────┐
-│  .pictl/otel-coverage.json             │
+│  .wasm4pm/otel-coverage.json             │
 │  - coverage %, by package               │
 │  - missing functions list               │
 │  - trend tracking                       │
 └─────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────┐
-│  .pictl/otel-coverage.md               │
+│  .wasm4pm/otel-coverage.md               │
 │  - dashboard (human-readable)           │
 │  - top gaps & actionable fixes          │
 │  - how-to guide                         │
@@ -154,8 +154,8 @@ CHANGED_FILES=$(git diff --cached --name-only --diff-filter=A)
 2. Extracts public exports from each file
 3. For each export, checks for Instrumentation calls
 4. Aggregates coverage % by package
-5. Generates JSON report (`.pictl/otel-coverage.json`)
-6. Generates Markdown dashboard (`.pictl/otel-coverage.md`)
+5. Generates JSON report (`.wasm4pm/otel-coverage.json`)
+6. Generates Markdown dashboard (`.wasm4pm/otel-coverage.md`)
 7. Compares against threshold (default: 80%)
 
 **Output example:**
@@ -330,7 +330,7 @@ OTEL Collector receives:
 
 ## Coverage Metrics
 
-### JSON Schema (`.pictl/otel-coverage.json`)
+### JSON Schema (`.wasm4pm/otel-coverage.json`)
 
 ```json
 {
@@ -361,7 +361,7 @@ OTEL Collector receives:
 }
 ```
 
-### Dashboard (`.pictl/otel-coverage.md`)
+### Dashboard (`.wasm4pm/otel-coverage.md`)
 
 **Human-readable summary:**
 - Overall coverage % with status
@@ -445,7 +445,7 @@ If coverage >= 80%:
 ### 4. Testing Infrastructure
 ```typescript
 // Test harnesses (OtelCapture) can verify spans
-import { createOtelCapture } from '@pictl/testing';
+import { createOtelCapture } from '@wasm4pm/testing';
 
 const capture = createOtelCapture();
 myFunction(capture.requiredAttrs);

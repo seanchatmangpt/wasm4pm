@@ -2,7 +2,7 @@
 
 **Generated**: 2026-04-10
 **Agent**: Agent 3 — SHACL Validation Gatekeeper
-**Purpose**: Quality assurance metrics for tool outputs validated against pictl-shapes.ttl
+**Purpose**: Quality assurance metrics for tool outputs validated against wasm4pm-shapes.ttl
 
 ---
 
@@ -31,7 +31,7 @@ The SHACL Validation Gatekeeper enforces semantic constraints on all pictl proce
 
 ### Shapes Implemented
 
-From `pictl-shapes.ttl`:
+From `wasm4pm-shapes.ttl`:
 
 1. **DFGDiscoveryShape** — Directly-Follows Graph discovery validation
    - fitness ∈ [0, 1]

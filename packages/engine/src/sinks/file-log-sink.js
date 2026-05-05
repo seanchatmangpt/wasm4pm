@@ -11,8 +11,8 @@
  */
 import { promises as fs } from 'fs';
 import { dirname } from 'path';
-import { ok, err, error } from '@pictl/contracts';
-import { createError } from '@pictl/contracts';
+import { ok, err, error } from '@wasm4pm/contracts';
+import { createError } from '@wasm4pm/contracts';
 /**
  * FileLogSinkAdapter - Write results to local filesystem
  *

@@ -11,10 +11,10 @@
 //! expensive (O(b^d) worst case) and the internal function is private.
 
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
-use wasm4pm::models::*;
-use wasm4pm::state::{get_or_init_state, StoredObject};
 use std::collections::HashMap;
 use std::time::Duration;
+use wasm4pm::models::*;
+use wasm4pm::state::{get_or_init_state, StoredObject};
 
 #[path = "helpers.rs"]
 mod helpers;

@@ -1,6 +1,6 @@
 # pictl autoprocess — Help Text Reference
 
-This document specifies the canonical help text for the `pictl autoprocess` command. Use this as the reference for what `pictl autoprocess --help` should display.
+This document specifies the canonical help text for the `wpm autoprocess` command. Use this as the reference for what `wpm autoprocess --help` should display.
 
 ---
 
@@ -18,7 +18,7 @@ pictl autoprocess <log.xes> [options]
 
 Executes a single cycle of the autonomic loop on an event log. Analyzes process health, applies reinforcement learning policy, monitors statistical process control alerts, and manages circuit breaker state.
 
-State (RL agent Q-table, SPC history, circuit breaker) persists to `.pictl/autoprocess-state.json` across invocations, enabling long-horizon learning and multi-cycle failure recovery.
+State (RL agent Q-table, SPC history, circuit breaker) persists to `.wasm4pm/autoprocess-state.json` across invocations, enabling long-horizon learning and multi-cycle failure recovery.
 
 ---
 
@@ -30,7 +30,7 @@ State (RL agent Q-table, SPC history, circuit breaker) persists to `.pictl/autop
 
 **Description:** Path to XES event log file
 
-**Example:** `pictl autoprocess data/purchase_process.xes`
+**Example:** `wpm autoprocess data/purchase_process.xes`
 
 **Error if missing:** `Config error (exit 1)` — logs cannot be discovered automatically
 
@@ -233,7 +233,7 @@ AutoProcess Results
 
 ## State Persistence
 
-### File: `.pictl/autoprocess-state.json`
+### File: `.wasm4pm/autoprocess-state.json`
 
 Automatically created after each successful cycle. Contains:
 
@@ -244,7 +244,7 @@ Automatically created after each successful cycle. Contains:
 
 **Restore behavior:** On next invocation, state is automatically loaded and used. No explicit flag required.
 
-**Clear state:** `rm .pictl/autoprocess-state.json` (then next run starts fresh).
+**Clear state:** `rm .wasm4pm/autoprocess-state.json` (then next run starts fresh).
 
 **Note:** State file is NOT created if the cycle fails (exit code ≠ 0).
 
@@ -255,13 +255,13 @@ Automatically created after each successful cycle. Contains:
 ### Per Cycle
 
 1. **Initialize WASM:** Load pictl WASM kernel (auto-compiled, cached)
-2. **Restore State:** Load RL/SPC/circuit breaker from `.pictl/autoprocess-state.json` (if exists)
+2. **Restore State:** Load RL/SPC/circuit breaker from `.wasm4pm/autoprocess-state.json` (if exists)
 3. **Parse Log:** Read XES file, load into WASM memory
 4. **Perception:** Analyze event log — counts, activities, traces, health score
 5. **Decision:** Evaluate guard condition, select RL agent pattern
 6. **Protection:** Check circuit breaker, run SPC rules on metrics, detect special causes
 7. **Optimization:** Dispatch RL action, update reward estimate
-8. **Save State:** Persist RL/SPC/circuit breaker to `.pictl/autoprocess-state.json`
+8. **Save State:** Persist RL/SPC/circuit breaker to `.wasm4pm/autoprocess-state.json`
 9. **Format Output:** Human or JSON based on `--format` flag
 10. **Exit:** Return appropriate exit code
 
@@ -330,7 +330,7 @@ echo '{"epsilon_decay": 0.95}' | jq empty && echo "Valid JSON"
 
 ### Source error (exit 2)
 
-**Input:** `pictl autoprocess nonexistent.xes`
+**Input:** `wpm autoprocess nonexistent.xes`
 
 **Output:** `Source error (exit 2) — file not found`
 
@@ -349,7 +349,7 @@ ls -l data/purchase_process.xes
 
 **Fix:** Clear state and retry:
 ```bash
-rm .pictl/autoprocess-state.json
+rm .wasm4pm/autoprocess-state.json
 pictl autoprocess data/log.xes
 ```
 
@@ -357,10 +357,10 @@ pictl autoprocess data/log.xes
 
 ## Related Commands
 
-- `pictl run` — Process discovery with algorithm selection
-- `pictl predict` — Predictive mining (next-activity, remaining-time, drift)
-- `pictl status` — System health and WASM engine info
-- `pictl watch` — Continuous autonomic monitoring (runs autoprocess repeatedly)
+- `wpm run` — Process discovery with algorithm selection
+- `wpm predict` — Predictive mining (next-activity, remaining-time, drift)
+- `wpm status` — System health and WASM engine info
+- `wpm watch` — Continuous autonomic monitoring (runs autoprocess repeatedly)
 
 ---
 

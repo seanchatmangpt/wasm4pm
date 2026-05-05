@@ -1,8 +1,8 @@
 use crate::models::*;
 use crate::state::{get_or_init_state, StoredObject};
 use crate::utilities::to_js_str;
-use serde_json::json;
 use hashbrown::HashMap;
+use serde_json::json;
 use wasm_bindgen::prelude::*;
 
 /// Pure-Rust token-based replay: returns ConformanceResult without wasm-bindgen.
@@ -115,7 +115,7 @@ pub fn token_replay_pure(
                         .get(place_id)
                         .map(|&idx| current_marking[idx])
                         .unwrap_or(0);
-                    
+
                     #[cfg(feature = "bcinr")]
                     {
                         let is_short = (available < *weight) as u64;
@@ -246,8 +246,8 @@ pub fn check_token_based_replay(
     // Clone PetriNet data for replay (sequential access, no deadlock).
     let petri_net_cloned = get_or_init_state().with_object(petri_net_handle, |obj| match obj {
         Some(StoredObject::PetriNet(pn)) => Ok(pn.clone()),
-        Some(_) => Err(JsValue::from_str("Handle is not a PetriNet")),
-        None => Err(JsValue::from_str("PetriNet not found")),
+        Some(_) => Err(crate::error::js_val("Handle is not a PetriNet")),
+        None => Err(crate::error::js_val("PetriNet not found")),
     })?;
 
     // Perform conformance using borrowed EventLog — no clone.
@@ -471,8 +471,8 @@ pub fn check_token_based_replay(
 
             to_js_str(&result)
         }
-        Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+        Some(_) => Err(crate::error::js_val("Object is not an EventLog")),
+        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 

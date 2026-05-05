@@ -1,4 +1,4 @@
-// pictl – Process Mining in TypeScript and WASM
+// wasm4pm – Process Mining in TypeScript and WASM
 // Copyright (C) 2024-2025 Sean Chatman
 //
 // Licensed under the Apache License, Version 2.0 (the "License");

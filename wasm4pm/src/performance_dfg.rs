@@ -126,11 +126,11 @@ pub fn discover_performance_dfg(
                 "start_activities": start_acts,
                 "end_activities": end_acts,
             });
-            serde_json::to_string(&result).map_err(|e| JsValue::from_str(&e.to_string()))
+            serde_json::to_string(&result).map_err(|e| crate::error::js_val(&e.to_string()))
         }
-        Some(_) => Err(JsValue::from_str("Handle is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog handle not found")),
+        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
+        None => Err(crate::error::js_val("EventLog handle not found")),
     })?;
 
-    Ok(JsValue::from_str(&json))
+    Ok(crate::error::js_val(&json))
 }

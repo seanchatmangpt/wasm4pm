@@ -7,7 +7,7 @@
  * Section 2.4 & 2.3 of the Three-Layer Architecture Contract Specification.
  */
 import { hash as blake3 } from 'blake3';
-import { deriveLatencyClass, } from '@pictl/contracts';
+import { deriveLatencyClass, } from '@wasm4pm/contracts';
 import { v4 as uuidv4 } from 'uuid';
 /**
  * Deterministic JSON serialization with sorted keys at all levels.
@@ -70,7 +70,7 @@ export function blake3Hex(obj) {
  * - `algorithmId`: Which algorithm was executed
  * - `algorithmVersion`: Semver or CalVer of the algorithm
  * - `backendId`: Which backend executed it (wasm, pm4py, ml, null)
- * - `kernelVersion`: @seanchatmangpt/pictl npm package version
+ * - `kernelVersion`: @wasm4pm/cli npm package version
  * - `wasmBuildHash`: Content hash of pictl.wasm binary
  *
  * **Returns:**
@@ -224,7 +224,7 @@ function inferModelType(algorithmId) {
  * - `plan`: The execution plan
  * - `algorithmId`: Which algorithm was executed
  * - `backendId`: Which backend executed it
- * - `kernelVersion`: @seanchatmangpt/pictl package version
+ * - `kernelVersion`: @wasm4pm/cli package version
  * - `wasmBuildHash`: Content hash of pictl.wasm
  * - `cycleSeq`: Monotonic counter from FederationController
  * - `modelCapabilities`: Declared capabilities for the model

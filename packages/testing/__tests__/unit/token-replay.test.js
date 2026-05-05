@@ -2,7 +2,7 @@
  * Unit tests for token replay conformance checking
  */
 import { describe, it, expect } from 'vitest';
-import { tokenReplayConformance, computeAlignment, createTestPetriNet, createTestEventLog, assertTokenReplayResult, formatTokenReplayResult, formatAlignment, } from '@pictl/testing';
+import { tokenReplayConformance, computeAlignment, createTestPetriNet, createTestEventLog, assertTokenReplayResult, formatTokenReplayResult, formatAlignment, } from '@wasm4pm/testing';
 describe('tokenReplayConformance', () => {
     it('should return fitness 1.0 for perfectly fitting traces', () => {
         const net = createTestPetriNet();

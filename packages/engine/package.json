@@ -1,5 +1,5 @@
 {
-  "name": "@pictl/engine",
+  "name": "@wasm4pm/engine",
   "version": "26.4.17",
   "description": "Engine lifecycle and state machine for wasm4pm",
   "type": "module",
@@ -15,16 +15,16 @@
     "build": "tsc",
     "lint": "tsc --noEmit",
     "clean": "rm -rf dist",
-    "test": "vitest",
+    "test": "vitest run",
     "test:coverage": "vitest --coverage"
   },
   "dependencies": {
-    "@pictl/config": "workspace:*",
-    "@pictl/contracts": "workspace:*",
-    "@pictl/observability": "workspace:*"
+    "@wasm4pm/config": "workspace:*",
+    "@wasm4pm/contracts": "workspace:*",
+    "@wasm4pm/observability": "workspace:*"
   },
   "devDependencies": {
-    "@pictl/kernel": "workspace:^",
+    "@wasm4pm/kernel": "workspace:^",
     "@vitest/coverage-v8": "^1.6.0",
     "typescript": "^5.3.3",
     "vitest": "^1.1.0"

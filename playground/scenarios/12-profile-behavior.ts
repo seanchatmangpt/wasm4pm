@@ -3,7 +3,7 @@
  *
  * Dev action simulated: "I changed getProfileAlgorithms('quality') to add a
  * new algorithm. Do balanced and quality plans now differ in step count as
- * expected? Does `pictl compare` show the right table columns? Does `pictl
+ * expected? Does `wpm compare` show the right table columns? Does `pictl
  * explain` return content for each algorithm?"
  *
  * Key contracts verified:
@@ -13,21 +13,21 @@
  *     - quality plan includes analyze_performance step, fast does not
  *     - getProfileAlgorithms('fast') and 'quality' are disjoint sets
  *   CLI compare:
- *     - pictl compare dfg,heuristic exits 0 or 3
+ *     - wpm compare dfg,heuristic exits 0 or 3
  *     - --format json has algorithms array, each entry has algorithm/nodes/edges/elapsedMs
  *   CLI explain:
  *     - --algorithm dfg exits 0 and stdout contains "Directly"
  *     - --format json has content and subject fields
  *
- * Binary: apps/pictl/dist/bin/pictl.js (must be built first)
+ * Binary: apps/wasm4pm/dist/bin/wpm.js (must be built first)
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import * as path from 'path';
 import * as fs from 'fs/promises';
-import { pictl, assertExitCode, assertJsonOutput, createCliTestEnv, EXIT_CODES } from '@pictl/testing';
-import { getProfileAlgorithms } from '@pictl/contracts';
-import type { CliTestEnv } from '@pictl/testing';
+import { pictl, assertExitCode, assertJsonOutput, createCliTestEnv, EXIT_CODES } from '@wasm4pm/testing';
+import { getProfileAlgorithms } from '@wasm4pm/contracts';
+import type { CliTestEnv } from '@wasm4pm/testing';
 
 const MINI_XES = `<?xml version="1.0" encoding="UTF-8"?>
 <log xes.version="1.0">
@@ -62,11 +62,11 @@ let xesPath: string;
 beforeAll(async () => {
   // Try loading planner
   try {
-    const mod = await import('@pictl/planner');
+    const mod = await import('@wasm4pm/planner');
     planFn = (cfg) => mod.plan(cfg as Parameters<typeof mod.plan>[0]) as ReturnType<typeof mod.plan>;
-    console.info('[profiles] @pictl/planner loaded');
+    console.info('[profiles] @wasm4pm/planner loaded');
   } catch {
-    console.warn('[profiles] @pictl/planner not built — planner tests will skip');
+    console.warn('[profiles] @wasm4pm/planner not built — planner tests will skip');
   }
 
   // Shared XES file for CLI tests
@@ -142,7 +142,7 @@ describe('profiles: algorithm set disjointness', () => {
 // ── CLI compare ───────────────────────────────────────────────────────────────
 
 describe('profiles: CLI compare command', () => {
-  it('pictl compare dfg,heuristic exits 0 or 3', async () => {
+  it('wpm compare dfg,heuristic exits 0 or 3', async () => {
     const result = await pictl(['compare', 'dfg,heuristic', '-i', xesPath, '--no-save']);
     const acceptable = [EXIT_CODES.SUCCESS, EXIT_CODES.EXECUTION_ERROR];
     if (!acceptable.includes(result.exitCode)) {

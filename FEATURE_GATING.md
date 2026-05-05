@@ -163,7 +163,7 @@ Each profile combines canonical features into a preset configuration for a speci
 **Use case:**
 ```typescript
 // Load and analyze an event log in a mobile app
-import initWasm, { discover_dfg, delete_object } from "@seanchatmangpt/pictl";
+import initWasm, { discover_dfg, delete_object } from "@wasm4pm/cli";
 
 await initWasm();
 const log = load_eventlog_from_xes(xesString);
@@ -408,7 +408,7 @@ Total: ~2700 KB (browser profile)
 
 ## TypeScript Registry Integration
 
-The `@pictl/kernel` package maintains an algorithm registry with deployment profile metadata. The registry is **generated at WASM build time** and reflects which algorithms are available in each build profile.
+The `@wasm4pm/kernel` package maintains an algorithm registry with deployment profile metadata. The registry is **generated at WASM build time** and reflects which algorithms are available in each build profile.
 
 ### Algorithm Registration
 
@@ -430,7 +430,7 @@ interface AlgorithmMetadata {
 ### Querying Available Algorithms
 
 ```typescript
-import { getRegistry } from '@pictl/kernel';
+import { getRegistry } from '@wasm4pm/kernel';
 
 const registry = getRegistry();
 

@@ -1,23 +1,25 @@
 /**
  * Shared CLI test utilities for playground scenarios.
  *
- * Re-exports from @pictl/testing where possible — no duplication.
+ * Re-exports from @wasm4pm/testing where possible — no duplication.
  * Adds only playground-specific helpers not available in the testing package.
  */
 
-import { runCli, assertExitCode, type CliResult, EXIT_CODES } from '@pictl/testing';
+import { runCli, assertExitCode, type CliResult, EXIT_CODES } from '@wasm4pm/testing';
 import * as path from 'path';
 import * as url from 'url';
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
-export const PICTL = path.resolve(__dirname, '../../apps/pictl/dist/bin/pictl.js');
+export const WASM4PM = path.resolve(__dirname, '../../apps/wasm4pm/dist/bin/wpm.js');
+/** @deprecated Use WASM4PM instead. */
+export const PICTL = WASM4PM;
 
-/** Spawn pictl CLI as a child process, capturing stdout/stderr/exitCode. */
-export function pictl(
+/** Spawn the wasm4pm (wpm) CLI as a child process, capturing stdout/stderr/exitCode. */
+export function wpm(
   userArgs: string[],
   options?: { timeout?: number; env?: Record<string, string> },
 ): Promise<CliResult> {
-  return runCli([PICTL, ...userArgs], {
+  return runCli([WASM4PM, ...userArgs], {
     cliPath: 'node',
     timeout: options?.timeout ?? 30_000,
     env: options?.env,
@@ -46,7 +48,10 @@ export function combinedOutput(result: CliResult): string {
   return result.stdout + result.stderr;
 }
 
-/** Resolve a path relative to the pictl repo root. */
+/** @deprecated Use wpm instead. */
+export const pictl = wpm;
+
+/** Resolve a path relative to the wasm4pm repo root. */
 export function resolveRepo(...segments: string[]): string {
   return path.resolve(__dirname, '..', '..', ...segments);
 }

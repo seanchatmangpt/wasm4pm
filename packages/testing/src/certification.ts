@@ -163,14 +163,14 @@ registerGate('performance:benchmarks', async () => {
     };
   }
 
-  // Load WASM module via dynamic import to avoid hard dependency on @pictl/engine
+  // Load WASM module via dynamic import to avoid hard dependency on @wasm4pm/engine
   let wasm: Record<string, any>;
   try {
-    // Dynamic import is intentionally used — @pictl/engine is not a declared dependency
+    // Dynamic import is intentionally used — @wasm4pm/engine is not a declared dependency
     // so this gracefully degrades when the module is unavailable (e.g. in CI or when only
-    // @pictl/testing is installed without the full monorepo).
+    // @wasm4pm/testing is installed without the full monorepo).
     const engine = await import(
-      /* @vite-ignore */ '@pictl/engine' as string
+      /* @vite-ignore */ '@wasm4pm/engine' as string
     ) as { WasmLoader: { getInstance: () => { init: () => Promise<void>; get: () => Record<string, any> } } };
     const loader = engine.WasmLoader.getInstance();
     await loader.init();

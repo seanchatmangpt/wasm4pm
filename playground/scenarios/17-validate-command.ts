@@ -18,7 +18,7 @@
  *       Also note: consola filters log-level messages in test capture, so
  *       assertions target warn/success level output that IS captured.
  *
- * Binary: apps/pictl/dist/bin/pictl.js (must be built first)
+ * Binary: apps/wasm4pm/dist/bin/wpm.js (must be built first)
  */
 
 import { describe, it, expect } from 'vitest';

@@ -1,7 +1,7 @@
 #!/bin/bash
-# Stop Hook: pictl Doctor Gate
+# Stop Hook: wasm4pm (wpm) Doctor Gate
 #
-# Prevents Claude from stopping if pictl environment has critical failures.
+# Prevents Claude from stopping if wasm4pm environment has critical failures.
 # CRITICAL: Must fail loudly if doctor check fails.
 
 set -e
@@ -14,7 +14,7 @@ if [ "$HOOK_ACTIVE" = "true" ]; then
   exit 0  # Allow stop
 fi
 
-# Run pictl doctor via make target (must succeed)
+# Run wpm doctor via make target (must succeed)
 DOCTOR_OUTPUT=""
 cd "$CLAUDE_PROJECT_DIR" 2>/dev/null || {
   echo "WARN: Cannot change to project directory, skipping doctor check" >&2
@@ -28,20 +28,20 @@ fi
 
 # Fallback to direct node execution if make fails
 if [ -z "$DOCTOR_OUTPUT" ] || ! echo "$DOCTOR_OUTPUT" | jq -e '.healthy' >/dev/null 2>&1; then
-  if [ -f "apps/pictl/dist/bin/pictl.js" ]; then
-    DOCTOR_OUTPUT=$(node apps/pictl/dist/bin/pictl.js doctor --format json 2>&1 | awk '/^{/,/^}/ {print}') || true
+  if [ -f "apps/wasm4pm/dist/bin/wpm.js" ]; then
+    DOCTOR_OUTPUT=$(node apps/wasm4pm/dist/bin/wpm.js doctor --format json 2>&1 | awk '/^{/,/^}/ {print}') || true
   fi
 fi
 
 if [ -z "$DOCTOR_OUTPUT" ]; then
-  echo "WARN: pictl doctor unavailable, skipping gate" >&2
+  echo "WARN: wpm doctor unavailable, skipping gate" >&2
   exit 0  # Allow stop — can't check, don't block
 fi
 
 # Parse health status
 HEALTHY=$(echo "$DOCTOR_OUTPUT" | jq -r '.healthy // false' 2>/dev/null)
 if [ $? -ne 0 ] || [ -z "$HEALTHY" ]; then
-  echo "WARN: Cannot parse pictl doctor output, skipping gate" >&2
+  echo "WARN: Cannot parse wpm doctor output, skipping gate" >&2
   exit 0  # Allow stop — can't check, don't block
 fi
 
@@ -54,10 +54,10 @@ fi
 FAIL=$(echo "$DOCTOR_OUTPUT" | jq -r '.fail // 0')
 FAILS=$(echo "$DOCTOR_OUTPUT" | jq -r '.checks[] | select(.status == "fail") | "\(.name): \(.message) (fix: \(.fix))"' 2>/dev/null | head -3 | sed 's/^/  • /')
 
-REASON="pictl doctor: $FAIL critical failure(s) detected
+REASON="wpm doctor: $FAIL critical failure(s) detected
 $FAILS
 
-Run: pictl doctor --verbose for full report"
+Run: wpm doctor --verbose for full report"
 
 # Block stop with JSON decision (properly escape reason for JSON)
 REASON_JSON=$(echo "$REASON" | jq -Rs .)

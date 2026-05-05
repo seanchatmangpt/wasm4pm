@@ -34,7 +34,7 @@ git clone https://github.com/your-username/pictl.git
 cd pictl
 
 # Add upstream remote
-git remote add upstream https://github.com/seanchatmangpt/pictl.git
+git remote add upstream https://github.com/seanchatmangpt/wasm4pm.git
 ```
 
 ## Development Setup

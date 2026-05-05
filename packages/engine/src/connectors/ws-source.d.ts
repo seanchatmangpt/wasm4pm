@@ -5,7 +5,7 @@
  * Each message should be a JSON object representing a single event.
  * Supports reconnection with exponential backoff.
  */
-import { SourceAdapter, Capabilities, EventStream, Result, SourceAdapterKind } from '@pictl/contracts';
+import { SourceAdapter, Capabilities, EventStream, Result, SourceAdapterKind } from '@wasm4pm/contracts';
 /**
  * Configuration for WebSocketSourceAdapter
  */
@@ -26,7 +26,7 @@ export interface WebSocketSourceConfig {
 /**
  * WebSocketSourceAdapter — reads event data from a WebSocket server.
  *
- * Implements the SourceAdapter contract from @pictl/contracts.
+ * Implements the SourceAdapter contract from @wasm4pm/contracts.
  * Each WebSocket message should be a JSON event object or an array of events.
  */
 export declare class WebSocketSourceAdapter implements SourceAdapter {

@@ -5,7 +5,7 @@
  * still exit with the right code? Does JSON output still parse?"
  *
  * Runs against the real pictl binary built from local source.
- * Binary: apps/pictl/dist/bin/pictl.js (must be built first: cd apps/pictl && npm run build)
+ * Binary: apps/wasm4pm/dist/bin/wpm.js (must be built first: cd apps/pictl && npm run build)
  *
  * Exit code contract:
  *   0  success
@@ -19,8 +19,8 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import * as path from 'path';
 import * as fs from 'fs/promises';
-import { pictl, assertExitCode, assertJsonOutput, createCliTestEnv, EXIT_CODES } from '@pictl/testing';
-import type { CliTestEnv } from '@pictl/testing';
+import { pictl, assertExitCode, assertJsonOutput, createCliTestEnv, EXIT_CODES } from '@wasm4pm/testing';
+import type { CliTestEnv } from '@wasm4pm/testing';
 import { PICTL } from '../helpers/cli.js';
 
 let _env: CliTestEnv | null = null;

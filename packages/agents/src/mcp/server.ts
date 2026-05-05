@@ -112,7 +112,7 @@ export async function handleToolCall(
  * Get the MCP server configuration for Claude Desktop
  */
 export function getClaudeDesktopConfig(
-  pictlPath: string,
+  wasm4pmPath: string,
   options?: {
     auditPath?: string;
     registryPath?: string;
@@ -120,9 +120,9 @@ export function getClaudeDesktopConfig(
 ): Record<string, unknown> {
   return {
     mcpServers: {
-      'pictl-agents': {
+      'wasm4pm-agents': {
         command: 'node',
-        args: [`${pictlPath}/packages/agents/dist/mcp/server.js`],
+        args: [`${wasm4pmPath}/packages/agents/dist/mcp/server.js`],
         env: {
           PICTL_AGENT_AUDIT_PATH: options?.auditPath || '',
           PICTL_AGENT_REGISTRY_PATH: options?.registryPath || '',

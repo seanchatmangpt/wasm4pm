@@ -74,7 +74,7 @@ pnpm run build:all
 ### Engine + CLI
 ```bash
 pnpm build:engine       # @wasm4pm/engine
-pnpm build:cli          # @pictl/cli
+pnpm build:cli          # @wasm4pm/cli
 ```
 
 ### Development Build

@@ -19,7 +19,7 @@ import type { MiningBackend, BackendCapabilities, EventLogIR, ModelIR, ResultEnv
  * - supportedAlgorithmIds: 6 algorithms
  * - maxConcurrentInvocations: 4
  *
- * The @pictl/ml package is loaded dynamically to avoid circular dependencies.
+ * The @wasm4pm/ml package is loaded dynamically to avoid circular dependencies.
  */
 export declare class MlBackend implements MiningBackend {
     readonly id = "ml";

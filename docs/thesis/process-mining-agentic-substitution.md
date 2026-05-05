@@ -600,7 +600,7 @@ Recommended batch size: 1024 (balances all three distributions).
 
 ### 6.4 Determinism Validation
 
-2,500 consecutive runs of the full test suite produce **identical results**. Zero variance detected. This is verified by the checkDeterminism harness in @pictl/testing.
+2,500 consecutive runs of the full test suite produce **identical results**. Zero variance detected. This is verified by the checkDeterminism harness in @wasm4pm/testing.
 
 ### 6.5 Production Gate Results
 
@@ -722,10 +722,10 @@ The practical implication: any agentic AI system that makes decisions about proc
 ## Appendix B: Benchmark Data
 
 Full benchmark results available in:
-- .pictl/benchmarks/PHASE3_FINAL_REPORT.md
-- .pictl/benchmarks/scalability-uniform-1775954879.json
-- .pictl/benchmarks/gpu_wgsl_1775955815.json
-- .pictl/production-readiness-phase4-final.json
+- .wasm4pm/benchmarks/PHASE3_FINAL_REPORT.md
+- .wasm4pm/benchmarks/scalability-uniform-1775954879.json
+- .wasm4pm/benchmarks/gpu_wgsl_1775955815.json
+- .wasm4pm/production-readiness-phase4-final.json
 - **wasm4pm/target/criterion/agentic/** (criterion HTML reports for 9 agentic traits)
 
 ### Agentic Control Primitives Benchmark (April 2026)

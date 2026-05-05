@@ -2,7 +2,7 @@
 
 ## CLI Commands
 
-### `pictl run <log.xes>`
+### `wpm run <log.xes>`
 
 Run a single discovery algorithm on an event log.
 
@@ -11,7 +11,7 @@ pictl run log.xes                          # default algorithm (DFG)
 pictl run log.xes --algorithm inductive    # specific algorithm
 pictl run log.xes --format json            # JSON output
 pictl run log.xes --profile quality        # execution profile
-pictl run log.xes --no-save                # skip auto-save to .pictl/results/
+pictl run log.xes --no-save                # skip auto-save to .wasm4pm/results/
 ```
 
 | Flag          | Type    | Default    | Description                                                |
@@ -19,13 +19,13 @@ pictl run log.xes --no-save                # skip auto-save to .pictl/results/
 | `--algorithm` | string  | `dfg`      | Algorithm name from registry                               |
 | `--format`    | string  | `human`    | Output format: `human` or `json`                           |
 | `--profile`   | string  | `balanced` | Execution profile: `fast`, `balanced`, `quality`, `stream` |
-| `--no-save`   | boolean | false      | Suppress auto-save to `.pictl/results/`                    |
+| `--no-save`   | boolean | false      | Suppress auto-save to `.wasm4pm/results/`                  |
 
 Exit codes: `0` success, `1` config error, `2` source error, `3` execution error.
 
 ---
 
-### `pictl compare <algos> -i <log>`
+### `wpm compare <algos> -i <log>`
 
 Run multiple algorithms on the same log, output side-by-side table.
 
@@ -45,7 +45,7 @@ Algorithm names are space-separated or comma-separated. See [datasets.md](./data
 
 ---
 
-### `pictl diff <log1> <log2>`
+### `wpm diff <log1> <log2>`
 
 Compare two event logs via Jaccard similarity on DFG edges.
 
@@ -62,7 +62,7 @@ Output includes: structural similarity score, activities added/removed/shared, e
 
 ---
 
-### `pictl status`
+### `wpm status`
 
 WASM engine health check and system info.
 
@@ -74,7 +74,7 @@ Reports: WASM binary loaded, algorithm registry count, memory usage, platform in
 
 ---
 
-### `pictl doctor`
+### `wpm doctor`
 
 Six-check environment diagnostic.
 

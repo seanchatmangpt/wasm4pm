@@ -18,8 +18,8 @@
  * a lawful process happened, then it did not work.
  */
 import { describe, it, expect } from 'vitest';
-import { hashData, normalizeForHashing, verifyHash, } from '@pictl/contracts';
-import { isModelIR } from '@pictl/contracts';
+import { hashData, normalizeForHashing, verifyHash, } from '@wasm4pm/contracts';
+import { isModelIR } from '@wasm4pm/contracts';
 // ============================================================================
 // Section 1: Helper Functions for Testing
 // ============================================================================

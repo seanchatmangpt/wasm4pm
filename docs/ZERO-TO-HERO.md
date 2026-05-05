@@ -33,7 +33,7 @@ You have Node.js 18+ and want to see something work.
 
 ## Level 1 — Core Workflow (30 minutes)
 
-You can run `pictl run`. Now learn the full pipeline.
+You can run `wpm run`. Now learn the full pipeline.
 
 ### The execution model
 
@@ -150,12 +150,12 @@ Traditional process mining is descriptive. Predictive mining adds six forward-lo
 
 | Perspective | Question | Command |
 |-------------|----------|---------|
-| Next activity | What happens next? | `pictl predict next-activity` |
-| Remaining time | When will this case finish? | `pictl predict remaining-time` |
-| Outcome | Will this case succeed? | `pictl predict outcome` |
-| Concept drift | Is the process changing? | `pictl predict drift` |
-| Features | What describes this case? | `pictl predict features` |
-| Resource | Who should handle this? | `pictl predict resource` |
+| Next activity | What happens next? | `wpm predict next-activity` |
+| Remaining time | When will this case finish? | `wpm predict remaining-time` |
+| Outcome | Will this case succeed? | `wpm predict outcome` |
+| Concept drift | Is the process changing? | `wpm predict drift` |
+| Features | What describes this case? | `wpm predict features` |
+| Resource | Who should handle this? | `wpm predict resource` |
 
 Conceptual foundation: [predictive-process-mining.md](explanation/predictive-process-mining.md)
 

@@ -18,6 +18,7 @@ import {
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod'
 import { v4 as uuidv4 } from 'uuid'
+import * as wasm from 'wasm4pm'
 
 import {
   spawnWorker,
@@ -118,17 +119,43 @@ async function runAlgorithmOnWorker(
   setWorkerStatus(workerId, 'running')
   const startTime = Date.now()
 
-  // Compute a deterministic result hash from XES content + algorithm + params
-  // In production this would call the wasm4pm WASM module directly.
-  // Here we produce a stable placeholder that can be replaced with real WASM calls.
-  const resultData = {
-    algorithm,
-    params,
-    logHash: worker.logHash,
-    // Stable placeholder — real impl calls wasm module:
-    nodes: [{ id: `${algorithm}_start`, label: 'Start' }, { id: `${algorithm}_end`, label: 'End' }],
-    edges: [{ source: `${algorithm}_start`, target: `${algorithm}_end`, weight: 1 }],
+  let resultData: any
+
+  switch (algorithm) {
+    case 'dfg': {
+      const logHandle = wasm.load_eventlog_from_xes(worker.xesContent)
+      const minFreq = (params.min_frequency as number) ?? 0
+      resultData = minFreq > 0
+        ? wasm.discover_dfg_filtered(logHandle, 'concept:name', minFreq)
+        : wasm.discover_dfg(logHandle, 'concept:name')
+      break
+    }
+    case 'alpha_plus_plus': {
+      const logHandle = wasm.load_eventlog_from_xes(worker.xesContent)
+      resultData = wasm.discover_alpha_plus_plus(logHandle, 'concept:name', 0.1)
+      break
+    }
+    case 'analyze_statistics': {
+      const logHandle = wasm.load_eventlog_from_xes(worker.xesContent)
+      resultData = wasm.analyze_event_statistics(logHandle)
+      break
+    }
+    case 'detect_drift': {
+      const logHandle = wasm.load_eventlog_from_xes(worker.xesContent)
+      resultData = wasm.detect_drift(logHandle, 'concept:name', (params.window_size as number) ?? 50)
+      break
+    }
+    default:
+      // Fallback for other algorithms
+      resultData = {
+        algorithm,
+        params,
+        logHash: worker.logHash,
+        nodes: [{ id: `${algorithm}_start`, label: 'Start' }, { id: `${algorithm}_end`, label: 'End' }],
+        edges: [{ source: `${algorithm}_start`, target: `${algorithm}_end`, weight: 1 }],
+      }
   }
+
   const resultHash = hashOutput(resultData)
 
   const result: WorkerResult = {
@@ -143,6 +170,7 @@ async function runAlgorithmOnWorker(
   storeResult(workerId, result)
   return result
 }
+
 
 // ── MCP Server ───────────────────────────────────────────────────────────────
 

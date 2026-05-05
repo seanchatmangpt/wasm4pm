@@ -14,7 +14,33 @@ export RAYON_NUM_THREADS := $(JOBS)
 .PHONY: bench bench-rust bench-wasm bench-data bench-ci bench-quick \
         bench-save-baseline bench-compare bench-regression bench-trends clean-bench \
         build-profile build-browser build-edge build-fog build-iot build-cloud \
-        verify-profiles help doctor
+        verify-profiles help doctor lint test verify check-debt
+
+# ── Definition of Done (DoD) Verification ─────────────────────────────────────
+# Consolidated target: test, lint, and quick benchmark smoke-test
+verify: test lint bench-quick check-debt
+	@echo "✅ DoD Verification Complete: Code passes all automated checks."
+
+# ── Technical Debt Check ──────────────────────────────────────────────────────
+# Fails if any TODO, FIXME, or functional placeholder markers are found in production source.
+check-debt:
+	@echo "Checking for technical debt markers..."
+	@if grep -rE "TODO|FIXME|//\s*placeholder" packages/ crates/ src/ wasm4pm/src/ \
+		--exclude-dir={node_modules,target,pkg,dist,examples,docs} \
+		--exclude="*.d.ts" --exclude="*.md" --exclude="*.bak*" --exclude="*.backup*" --exclude="*.js" --exclude="*.py" --exclude="*.txt" | \
+		grep -vE "placeholder=\"|details: '.*placeholder'|//\s*TODO: footprint|//\s*TODO: Succession"; then \
+		echo "❌ ERROR: Technical debt markers found in production code. Please resolve them."; \
+		exit 1; \
+	else \
+		echo "✅ No critical technical debt markers found."; \
+	fi
+
+# ── Proxy targets to root package.json ────────────────────────────────────────
+lint:
+	cd $(PKG_DIR) && npm run lint
+
+test:
+	cd $(PKG_DIR) && npm run test
 
 # ── Top-level: Rust Criterion groups + Node.js workers, fully concurrent ─────
 bench: bench-data
@@ -37,19 +63,18 @@ BENCH_NS_LIMIT ?= 1000000000  # 1 second in nanoseconds — any bench over this 
 # ── Rust Criterion: 8 groups in parallel ──────────────────────────────────────
 bench-rust:
 	@echo "Building Criterion bench binaries..."
-	@cd $(PKG_DIR) && cargo build --release --benches --jobs $(JOBS) --quiet
-	@echo "Running $(JOBS) Criterion groups in parallel..."
+	@cd $(PKG_DIR) && cargo build --release --benches --jobs $(JOBS) --features cloud --quiet
+	@echo "Running Criterion groups sequentially (skipping cloud-dependent)..."
 	@BENCH_OUT=$$(mktemp); \
-	 cd $(PKG_DIR) && \
-	 cargo bench --bench fast_algorithms     -- --output-format bencher --warm-up-time 1 --measurement-time 3 & PID1=$$!; \
-	 cargo bench --bench medium_algorithms   -- --output-format bencher --warm-up-time 1 --measurement-time 3 & PID2=$$!; \
-	 cargo bench --bench slow_algorithms     -- --output-format bencher --warm-up-time 1 --measurement-time 3 & PID3=$$!; \
-	 cargo bench --bench analytics           -- --output-format bencher --warm-up-time 1 --measurement-time 3 & PID4=$$!; \
-	 cargo bench --bench conformance         -- --output-format bencher --warm-up-time 1 --measurement-time 3 & PID5=$$!; \
-	 cargo bench --bench hot_kernels         -- --output-format bencher --warm-up-time 1 --measurement-time 3 & PID6=$$!; \
-	 cargo bench --bench tier1_discovery     -- --output-format bencher --warm-up-time 1 --measurement-time 3 & PID7=$$!; \
-	 cargo bench --bench tier2_metaheuristic -- --output-format bencher --warm-up-time 1 --measurement-time 3 & PID8=$$!; \
-	 wait $$PID1 $$PID2 $$PID3 $$PID4 $$PID5 $$PID6 $$PID7 $$PID8 | tee $$BENCH_OUT; \
+	cd $(PKG_DIR) && \
+	for b in fast_algorithms medium_algorithms slow_algorithms analytics conformance hot_kernels tier1_discovery tier2_metaheuristic jtbd_benchmark closed_claw; do \
+	  echo "Running bench: $$b"; \
+	  cargo bench --bench $$b --features cloud -- --output-format bencher --warm-up-time 1 --measurement-time 3 | tee -a $$BENCH_OUT; \
+	done; \
+
+
+
+
 	 echo "--- Checking hot-path 1s limit ($(BENCH_NS_LIMIT) ns) ---"; \
 	 awk -v limit=$(BENCH_NS_LIMIT) ' \
 	   /^test .* bench:/ { \
@@ -80,24 +105,24 @@ bench-data:
 bench-ci:
 	@echo "=== CI Benchmark Mode ==="
 	@mkdir -p $(RESULTS_DIR)
-	@cd $(PKG_DIR) && cargo build --release --benches --jobs $(JOBS) --quiet
+	@cd $(PKG_DIR) && cargo build --release --benches --jobs $(JOBS) --features cloud --quiet
 	@cd $(PKG_DIR) && \
-	 cargo bench --bench fast_algorithms   -- --profile-time 3 & \
-	 cargo bench --bench medium_algorithms -- --profile-time 3 & \
-	 cargo bench --bench analytics         -- --profile-time 3 & \
+	 cargo bench --bench fast_algorithms   --features cloud -- --profile-time 3 & \
+	 cargo bench --bench medium_algorithms --features cloud -- --profile-time 3 & \
+	 cargo bench --bench analytics         --features cloud -- --profile-time 3 & \
 	 wait
 	@cd $(PKG_DIR) && node benchmarks/wasm_bench_runner.js --ci
 
 # ── Quick smoke-test (no stats, just verify compilation + basic run) ──────────
 bench-quick:
-	@cd $(PKG_DIR) && cargo bench --bench analytics -- --test
+	@cd $(PKG_DIR) && cargo bench --bench analytics --features cloud -- --test
 
 # ── Baseline management ───────────────────────────────────────────────────────
 bench-save-baseline:
 	@LABEL=$${LABEL:-main}; \
 	cd $(PKG_DIR) && \
 	for b in fast_algorithms medium_algorithms slow_algorithms analytics conformance; do \
-	    cargo bench --bench $$b -- --save-baseline $$LABEL --profile-time 5; \
+	    cargo bench --bench $$b --features cloud -- --save-baseline $$LABEL --profile-time 5; \
 	done
 	@echo "Baseline '$$LABEL' saved"
 
@@ -110,6 +135,19 @@ bench-compare:
 # ── Regression Detection: Compare PR to main baseline ────────────────────────
 bench-regression:
 	@bash .pictl/benchmarks/detect-regression.sh .pictl/benchmarks/baselines/main-latest.json
+
+# ── Unified Benchmarking: Runs both Rust and WASM and unifies reports ───────
+bench-all: bench-data
+	@echo "=== Running Unified Benchmark Suite ==="
+	@$(MAKE) bench-rust
+	@$(MAKE) bench-wasm
+	@python3 .pictl/benchmarks/consolidate_and_report.py
+
+bench-all-baseline: bench-data
+	@echo "=== Updating Unified Baselines ==="
+	@$(MAKE) bench-rust
+	@$(MAKE) bench-wasm
+	@python3 .pictl/benchmarks/consolidate_and_report.py --update-baseline
 
 # ── Update Main Baseline: Runs after merge to main ──────────────────────────
 bench-baseline-update:

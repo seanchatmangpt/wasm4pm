@@ -50,7 +50,7 @@ Configuration validation failed:
 - Missing required field
 - Invalid value
 
-Next: Run `pictl init --validate config.toml`
+Next: Run `wpm init --validate config.toml`
 
 ## Source Error (2)
 

@@ -1,17 +1,17 @@
 /**
  * Shared CLI test utilities for playground scenarios.
  *
- * Re-exports from @pictl/testing where possible — no duplication.
+ * Re-exports from @wasm4pm/testing where possible — no duplication.
  * Adds only playground-specific helpers not available in the testing package.
  */
-import { runCli, assertExitCode, EXIT_CODES } from '@pictl/testing';
+import { runCli, assertExitCode, EXIT_CODES } from '@wasm4pm/testing';
 import * as path from 'path';
 import * as url from 'url';
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
-export const PICTL = path.resolve(__dirname, '../../apps/pictl/dist/bin/pictl.js');
-/** Spawn pictl CLI as a child process, capturing stdout/stderr/exitCode. */
-export function pictl(userArgs, options) {
-    return runCli([PICTL, ...userArgs], {
+export const PICTL = path.resolve(__dirname, '../../apps/wasm4pm/dist/bin/wpm.js');
+/** Spawn the wasm4pm (wpm) CLI as a child process, capturing stdout/stderr/exitCode. */
+export function wpm(userArgs, options) {
+    return runCli([WASM4PM, ...userArgs], {
         cliPath: 'node',
         timeout: options?.timeout ?? 30000,
         env: options?.env,
@@ -38,7 +38,7 @@ export function extractJson(stdout) {
 export function combinedOutput(result) {
     return result.stdout + result.stderr;
 }
-/** Resolve a path relative to the pictl repo root. */
+/** Resolve a path relative to the wasm4pm repo root. */
 export function resolveRepo(...segments) {
     return path.resolve(__dirname, '..', '..', ...segments);
 }

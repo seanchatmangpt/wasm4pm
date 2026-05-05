@@ -16,12 +16,12 @@
  *   - DecisionGraph nodes are created when appropriate
  *   - Partial order structure is preserved
  *
- * Binary: apps/pictl/dist/bin/pictl.js (must be built first)
+ * Binary: apps/wasm4pm/dist/bin/wpm.js (must be built first)
  */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import * as path from 'path';
 import * as fs from 'fs/promises';
-import { pictl, assertExitCode, assertJsonOutput, createCliTestEnv, EXIT_CODES } from '@pictl/testing';
+import { pictl, assertExitCode, assertJsonOutput, createCliTestEnv, EXIT_CODES } from '@wasm4pm/testing';
 // ─── Test Data ───────────────────────────────────────────────────────────────
 // Simple event log for discovery (JSON format compatible with models::EventLog)
 // AttributeValue uses adjacently tagged enum: { "tag": "String", "value": "A" }

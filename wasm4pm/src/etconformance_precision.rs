@@ -14,7 +14,7 @@
 //!
 //! The result is clamped to [0.0, 1.0]. An empty log yields precision = 1.0.
 //!
-//! Adapted from pm4wasm `conformance::precision` to pictl's `models::PetriNet`.
+//! Adapted from pm4wasm `conformance::precision` to wasm4pm's `models::PetriNet`.
 
 use crate::models::EventLog;
 use crate::models::PetriNet;
@@ -23,7 +23,7 @@ use std::collections::HashMap;
 use wasm_bindgen::prelude::*;
 
 // ---------------------------------------------------------------------------
-// Marking type for pictl models::PetriNet
+// Marking type for wasm4pm models::PetriNet
 // ---------------------------------------------------------------------------
 
 /// A marking maps place IDs to token counts (usize to match models::PetriNet).
@@ -147,7 +147,7 @@ fn fire_silent_enabled(net: &PetriNet, marking: &mut Marking) {
 
 /// Extract the activity name from a trace event.
 ///
-/// pictl's `Event` stores attributes in a `HashMap<String, AttributeValue>`.
+/// wasm4pm's `Event` stores attributes in a `HashMap<String, AttributeValue>`.
 /// The activity is stored under `activity_key` (typically "concept:name").
 fn event_activity(event: &crate::models::Event, activity_key: &str) -> Option<String> {
     event
@@ -315,7 +315,7 @@ pub fn wasm_compute_precision(
         });
 
     let Ok(Some(net)) = petri_net else {
-        return Err(JsValue::from_str(&format!(
+        return Err(crate::error::js_val(&format!(
             r#"{{"error":"PetriNet '{}' not found or wrong type"}}"#,
             petri_net_handle
         )));
@@ -331,18 +331,18 @@ pub fn wasm_compute_precision(
         .final_markings
         .first()
         .cloned()
-        .ok_or_else(|| JsValue::from_str("No final marking defined in Petri net"))?;
+        .ok_or_else(|| crate::error::js_val("No final marking defined in Petri net"))?;
 
     let result = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
             let precision =
                 compute_precision(&net, &initial_marking, &final_marking, log, activity_key);
             serde_json::to_string(&precision).map_err(|e| {
-                JsValue::from_str(&format!("Failed to serialize precision result: {}", e))
+                crate::error::js_val(&format!("Failed to serialize precision result: {}", e))
             })
         }
-        Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
-        None => Err(JsValue::from_str(&format!(
+        Some(_) => Err(crate::error::js_val("Object is not an EventLog")),
+        None => Err(crate::error::js_val(&format!(
             "EventLog '{}' not found",
             eventlog_handle
         ))),

@@ -11,9 +11,9 @@
 
 | File | Purpose | Read First? |
 |------|---------|-----------|
-| **pictl-ontology.ttl** | RDF class/property definitions (pm: namespace) | YES (reference) |
-| **pictl-shapes.ttl** | SHACL validation constraints | Validation-aware code |
-| **pictl-process-mining.yaml** | OpenTelemetry semantic conventions | OTEL integration |
+| **wasm4pm-ontology.ttl** | RDF class/property definitions (pm: namespace) | YES (reference) |
+| **wasm4pm-shapes.ttl** | SHACL validation constraints | Validation-aware code |
+| **wasm4pm-process-mining.yaml** | OpenTelemetry semantic conventions | OTEL integration |
 
 ### SPARQL Proof Engine
 
@@ -56,13 +56,13 @@
 → [sparql-proofs/query-registry.json](./sparql-proofs/query-registry.json)
 
 **Understand RDF classes & properties**
-→ [pictl-ontology.ttl](./pictl-ontology.ttl) (reference)
+→ [wasm4pm-ontology.ttl](./wasm4pm-ontology.ttl) (reference)
 
 **Validate RDF output against constraints**
-→ [pictl-shapes.ttl](./pictl-shapes.ttl)
+→ [wasm4pm-shapes.ttl](./wasm4pm-shapes.ttl)
 
 **Integrate OTEL tracing**
-→ [pictl-process-mining.yaml](./pictl-process-mining.yaml)
+→ [wasm4pm-process-mining.yaml](./wasm4pm-process-mining.yaml)
 
 ---
 
@@ -219,10 +219,10 @@ WHERE {
 - [ ] Review [sparql-proofs/QUICK-REFERENCE.md](./sparql-proofs/QUICK-REFERENCE.md) (quick start)
 - [ ] Check [query-registry.json](./sparql-proofs/query-registry.json) (tool mappings)
 - [ ] Study [sparql-examples.md](./sparql-examples.md) (working queries)
-- [ ] Reference [pictl-ontology.ttl](./pictl-ontology.ttl) (class definitions)
+- [ ] Reference [wasm4pm-ontology.ttl](./wasm4pm-ontology.ttl) (class definitions)
 - [ ] Implement JSON→SPARQL binding in your app
 - [ ] Deploy Oxigraph or Jena triplestore
-- [ ] Load pictl-ontology.ttl
+- [ ] Load wasm4pm-ontology.ttl
 - [ ] Execute your first CONSTRUCT query
 - [ ] Run ASK/SELECT queries
 
@@ -280,9 +280,9 @@ WHERE {
 ```
 pictl/semconv/
 ├── INDEX.md (this file)
-├── pictl-ontology.ttl              ← RDF definitions
-├── pictl-shapes.ttl                ← SHACL validation
-├── pictl-process-mining.yaml       ← OTEL semconv
+├── wasm4pm-ontology.ttl              ← RDF definitions
+├── wasm4pm-shapes.ttl                ← SHACL validation
+├── wasm4pm-process-mining.yaml       ← OTEL semconv
 ├── sparql-examples.md              ← 50+ query examples
 │
 └── sparql-proofs/

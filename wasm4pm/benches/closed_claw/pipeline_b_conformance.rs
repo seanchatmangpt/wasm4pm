@@ -15,13 +15,13 @@
 //!   3. Output hashed with blake3 for determinism verification
 
 use criterion::{black_box, BenchmarkId, Criterion, Throughput};
+use std::collections::HashMap;
+use std::time::Duration;
 use wasm4pm::conformance;
 use wasm4pm::etconformance_precision;
 use wasm4pm::models::*;
 use wasm4pm::simd_token_replay::SimdPetriNet;
 use wasm4pm::state::{get_or_init_state, StoredObject};
-use std::collections::HashMap;
-use std::time::Duration;
 
 #[path = "../helpers.rs"]
 mod helpers;

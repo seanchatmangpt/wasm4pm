@@ -172,7 +172,7 @@ mode = "overwrite"
 
 [[generation.rules]]
 name = "prediction-otel-attrs"
-description = "OTel attribute names for process mining predictions — sourced from weaver registry, used by pictl and MCP server instrumentation"
+description = "OTel attribute names for process mining predictions — sourced from weaver registry, used by wasm4pm (wpm) and MCP server instrumentation"
 query = """
 PREFIX wasm4pm: <urn:wasm4pm:>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -219,7 +219,7 @@ mode = "overwrite"
 
 [[generation.rules]]
 name = "prediction-tasks"
-description = "TypeScript constants for PREDICTION_TASKS (underscore, for config enum) and VALID_PREDICT_CLI_TASKS (hyphen, for pictl argument parsing) — derived from PredictionTask ontology individuals."
+description = "TypeScript constants for PREDICTION_TASKS (underscore, for config enum) and VALID_PREDICT_CLI_TASKS (hyphen, for wpm argument parsing) — derived from PredictionTask ontology individuals."
 query = """
 PREFIX wasm4pm: <urn:wasm4pm:>
 PREFIX skos: <http://www.w3.org/2004/02/skos/core#>

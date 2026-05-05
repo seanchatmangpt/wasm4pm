@@ -4,7 +4,13 @@
  * Validates MCP tool registration, schema structure, and server setup.
  * Does NOT test WASM execution (that's covered by Rust integration tests).
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+
+// Mock thewasm4pm WASM artifact so tests run without a compiled binary.
+// The mcp_integration tests only validate tool registration and schema structure,
+// not WASM execution, so an empty stub is sufficient.
+vi.mock('../pkg/wasm4pm.js', () => ({}));
+
 import { PictlMCPServer } from '../src/mcp_server.js';
 
 describe('PictlMCPServer', () => {
@@ -17,7 +23,7 @@ describe('PictlMCPServer', () => {
     // Access the private getAvailableTools method via reflection on the prototype
     const server = new PictlMCPServer();
     const tools = (server as any).getAvailableTools() as Array<{ name: string }>;
-    const toolNames = tools.map(t => t.name);
+    const toolNames = tools.map((t) => t.name);
 
     // Core discovery tools
     expect(toolNames).toContain('discover_dfg');
@@ -30,7 +36,7 @@ describe('PictlMCPServer', () => {
   it('registers all expected analysis tools', async () => {
     const server = new PictlMCPServer();
     const tools = (server as any).getAvailableTools() as Array<{ name: string }>;
-    const toolNames = tools.map(t => t.name);
+    const toolNames = tools.map((t) => t.name);
 
     expect(toolNames).toContain('check_conformance');
     expect(toolNames).toContain('analyze_statistics');
@@ -41,7 +47,7 @@ describe('PictlMCPServer', () => {
   it('registers all OCEL tools', async () => {
     const server = new PictlMCPServer();
     const tools = (server as any).getAvailableTools() as Array<{ name: string }>;
-    const toolNames = tools.map(t => t.name);
+    const toolNames = tools.map((t) => t.name);
 
     expect(toolNames).toContain('load_ocel');
     expect(toolNames).toContain('flatten_ocel');
@@ -53,7 +59,7 @@ describe('PictlMCPServer', () => {
   it('registers all predictive tools', async () => {
     const server = new PictlMCPServer();
     const tools = (server as any).getAvailableTools() as Array<{ name: string }>;
-    const toolNames = tools.map(t => t.name);
+    const toolNames = tools.map((t) => t.name);
 
     expect(toolNames).toContain('predict_next_activity');
     expect(toolNames).toContain('predict_case_duration');
@@ -63,7 +69,7 @@ describe('PictlMCPServer', () => {
   it('registers all ML tools', async () => {
     const server = new PictlMCPServer();
     const tools = (server as any).getAvailableTools() as Array<{ name: string }>;
-    const toolNames = tools.map(t => t.name);
+    const toolNames = tools.map((t) => t.name);
 
     expect(toolNames).toContain('ml_classify_traces');
     expect(toolNames).toContain('ml_cluster_traces');
@@ -76,7 +82,7 @@ describe('PictlMCPServer', () => {
   it('registers utility tools', async () => {
     const server = new PictlMCPServer();
     const tools = (server as any).getAvailableTools() as Array<{ name: string }>;
-    const toolNames = tools.map(t => t.name);
+    const toolNames = tools.map((t) => t.name);
 
     expect(toolNames).toContain('compare_algorithms');
     expect(toolNames).toContain('get_capability_registry');
@@ -84,11 +90,24 @@ describe('PictlMCPServer', () => {
     expect(toolNames).toContain('cache_stats');
   });
 
-  it('has at least 30 registered tools', async () => {
+  it('registers spec-059 gap-fill tools', async () => {
     const server = new PictlMCPServer();
     const tools = (server as any).getAvailableTools() as Array<{ name: string }>;
-    // MCP server exposes 30+ tools across all categories
-    expect(tools.length).toBeGreaterThanOrEqual(30);
+    const toolNames = tools.map((t) => t.name);
+
+    // T001 — Alpha Miner footprint matrix (Process Discovery perspective)
+    expect(toolNames).toContain('discover_alpha_footprints');
+    // T002 — DFG token-replay fitness (Conformance Checking perspective)
+    expect(toolNames).toContain('compute_conformance_fitness');
+    // T003 — WASM backend health (Resource and intervention perspective)
+    expect(toolNames).toContain('check_backend_health');
+  });
+
+  it('has at least 33 registered tools', async () => {
+    const server = new PictlMCPServer();
+    const tools = (server as any).getAvailableTools() as Array<{ name: string }>;
+    // MCP server exposes 33+ tools after spec-059 additions
+    expect(tools.length).toBeGreaterThanOrEqual(33);
   });
 
   it('all tools have valid input schemas', async () => {
@@ -106,7 +125,14 @@ describe('PictlMCPServer', () => {
         expect(Array.isArray(tool.inputSchema.required)).toBe(true);
         // Every tool should have at least one required parameter
         // (except utility tools with no required params like get_capability_registry)
-        if (!['get_capability_registry', 'clear_caches', 'cache_stats'].includes(tool.name)) {
+        if (
+          ![
+            'get_capability_registry',
+            'clear_caches',
+            'cache_stats',
+            'check_backend_health',
+          ].includes(tool.name)
+        ) {
           expect(tool.inputSchema.required.length).toBeGreaterThan(0);
         }
       }
@@ -146,8 +172,8 @@ describe('PictlMCPServer', () => {
       inputSchema: { required: string[] };
     }>;
 
-    const discoveryTools = tools.filter(t =>
-      t.name.startsWith('discover_') && !t.name.includes('ocel') && !t.name.includes('oc_')
+    const discoveryTools = tools.filter(
+      (t) => t.name.startsWith('discover_') && !t.name.includes('ocel') && !t.name.includes('oc_')
     );
 
     for (const tool of discoveryTools) {
@@ -162,9 +188,7 @@ describe('PictlMCPServer', () => {
       inputSchema: { required: string[] };
     }>;
 
-    const ocelTools = tools.filter(t =>
-      t.name.includes('ocel') || t.name.includes('oc_')
-    );
+    const ocelTools = tools.filter((t) => t.name.includes('ocel') || t.name.includes('oc_'));
 
     for (const tool of ocelTools) {
       if (tool.name !== 'load_ocel') {

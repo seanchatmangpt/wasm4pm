@@ -272,7 +272,7 @@ pub fn build_remaining_time_model(
         )
     })?;
     let handle = state.store_object(StoredObject::JsonString(json))?;
-    Ok(JsValue::from_str(&handle))
+    Ok(crate::error::js_val(&handle))
 }
 
 // ---------------------------------------------------------------------------
@@ -338,7 +338,7 @@ pub fn predict_case_duration(model_handle: &str, prefix_json: &str) -> Result<Js
         let last_activity = match prefix.last() {
             Some(act) => act,
             None => {
-                return Err(JsValue::from_str("Cannot predict on empty prefix"));
+                return Err(crate::error::js_val("Cannot predict on empty prefix"));
             }
         };
         let prefix_len = prefix.len();
@@ -352,7 +352,7 @@ pub fn predict_case_duration(model_handle: &str, prefix_json: &str) -> Result<Js
                 "confidence": confidence,
                 "method": format!("bucket({})", exact_key)
             });
-            return Ok(JsValue::from_str(&result.to_string()));
+            return Ok(crate::error::js_val(&result.to_string()));
         }
 
         // Strategy 2: same activity, any prefix length
@@ -381,7 +381,7 @@ pub fn predict_case_duration(model_handle: &str, prefix_json: &str) -> Result<Js
                 "confidence": confidence,
                 "method": format!("activity_avg({})", last_activity)
             });
-            return Ok(JsValue::from_str(&result.to_string()));
+            return Ok(crate::error::js_val(&result.to_string()));
         }
 
         // Strategy 3: same prefix length, any activity
@@ -406,7 +406,7 @@ pub fn predict_case_duration(model_handle: &str, prefix_json: &str) -> Result<Js
                 "confidence": confidence,
                 "method": format!("prefix_len_avg({})", prefix_len)
             });
-            return Ok(JsValue::from_str(&result.to_string()));
+            return Ok(crate::error::js_val(&result.to_string()));
         }
 
         // Strategy 4: global fallback
@@ -415,7 +415,7 @@ pub fn predict_case_duration(model_handle: &str, prefix_json: &str) -> Result<Js
             "confidence": 0.3,
             "method": "global_fallback"
         });
-        Ok(JsValue::from_str(&result.to_string()))
+        Ok(crate::error::js_val(&result.to_string()))
     })
 }
 
@@ -523,7 +523,7 @@ pub fn predict_hazard_rate(model_handle: &str, elapsed_ms: f64) -> Result<JsValu
             "scale": lambda
         });
 
-        Ok(JsValue::from_str(&result.to_string()))
+        Ok(crate::error::js_val(&result.to_string()))
     })
 }
 

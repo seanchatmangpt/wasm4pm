@@ -1,6 +1,6 @@
 # SPARQL Proof Engine — Quick Reference Card
 
-**Location**: `/Users/sac/chatmangpt/pictl/semconv/sparql-proofs/`  
+**Location**: `/Users/sac/chatmangpt/wasm4pm/semconv/sparql-proofs/`  
 **Version**: 1.0 | **Status**: Production  
 **What**: Convert pictl MCP tool outputs (JSON) → RDF triples (SPARQL CONSTRUCT)  
 **Why**: Make process mining results queryable, reasonably sound, and governed with provenance.
@@ -254,7 +254,7 @@ LIMIT 20
 ## File Locations
 
 ```
-/Users/sac/chatmangpt/pictl/semconv/
+/Users/sac/chatmangpt/wasm4pm/semconv/
 ├── sparql-proofs/
 │   ├── discover-dfg.rq               ← DFG discovery
 │   ├── conformance-check.rq          ← Conformance analysis
@@ -267,9 +267,9 @@ LIMIT 20
 │   ├── QUICK-REFERENCE.md            ← This file
 │   └── ../sparql-examples.md         ← 50+ examples
 │
-├── pictl-ontology.ttl                ← Semantic definitions
-├── pictl-shapes.ttl                  ← SHACL validation
-└── pictl-process-mining.yaml         ← OTel semconv defs
+├── wasm4pm-ontology.ttl                ← Semantic definitions
+├── wasm4pm-shapes.ttl                  ← SHACL validation
+└── wasm4pm-process-mining.yaml         ← OTel semconv defs
 ```
 
 ---
@@ -279,7 +279,7 @@ LIMIT 20
 1. **README.md** — Architecture, best practices, troubleshooting
 2. **../sparql-examples.md** — Complete query patterns (ASK, SELECT, CONSTRUCT)
 3. **query-registry.json** — Tool mappings, schemas, integration guide
-4. **pictl-ontology.ttl** — Full RDF class/property definitions
+4. **wasm4pm-ontology.ttl** — Full RDF class/property definitions
 
 ---
 
@@ -292,7 +292,7 @@ LIMIT 20
 
 **Report Issues**:
 - Syntax errors in SPARQL → Validate with SPARQL 1.1 validator
-- Ontology gaps → Add class/property to `pictl-ontology.ttl`
+- Ontology gaps → Add class/property to `wasm4pm-ontology.ttl`
 - New MCP tools → Add CONSTRUCT query + register in `query-registry.json`
 
 ---

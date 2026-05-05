@@ -111,10 +111,10 @@ pub fn analyze_resource_utilization(
 
                 // Get first and last event timestamps
                 let min_ts = events.iter().map(|e| e.1).min().ok_or_else(|| {
-                    JsValue::from_str(&format!("No events found for resource {}", resource))
+                    crate::error::js_val(&format!("No events found for resource {}", resource))
                 })?;
                 let max_ts = events.iter().map(|e| e.1).max().ok_or_else(|| {
-                    JsValue::from_str(&format!("No events found for resource {}", resource))
+                    crate::error::js_val(&format!("No events found for resource {}", resource))
                 })?;
 
                 // Format timestamps
@@ -160,13 +160,13 @@ pub fn analyze_resource_utilization(
                 "resources": resources_obj,
                 "total_resources": total_resources
             }))
-            .map_err(|e| JsValue::from_str(&e.to_string()))
+            .map_err(|e| crate::error::js_val(&e.to_string()))
         }
-        Some(_) => Err(JsValue::from_str("Handle is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog handle not found")),
+        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
+        None => Err(crate::error::js_val("EventLog handle not found")),
     })?;
 
-    Ok(JsValue::from_str(&json))
+    Ok(crate::error::js_val(&json))
 }
 
 /// Analyze resource-activity matrix: which resources perform which activities.
@@ -245,13 +245,13 @@ pub fn analyze_resource_activity_matrix(
                 "matrix": matrix_obj,
                 "specialization_scores": specialization_scores
             }))
-            .map_err(|e| JsValue::from_str(&e.to_string()))
+            .map_err(|e| crate::error::js_val(&e.to_string()))
         }
-        Some(_) => Err(JsValue::from_str("Handle is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog handle not found")),
+        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
+        None => Err(crate::error::js_val("EventLog handle not found")),
     })?;
 
-    Ok(JsValue::from_str(&json))
+    Ok(crate::error::js_val(&json))
 }
 
 /// Identify resource bottlenecks: waiting times, processing times, queue sizes.
@@ -427,13 +427,13 @@ pub fn identify_resource_bottlenecks(
             serde_json::to_string(&json!({
                 "bottlenecks": bottlenecks
             }))
-            .map_err(|e| JsValue::from_str(&e.to_string()))
+            .map_err(|e| crate::error::js_val(&e.to_string()))
         }
-        Some(_) => Err(JsValue::from_str("Handle is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog handle not found")),
+        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
+        None => Err(crate::error::js_val("EventLog handle not found")),
     })?;
 
-    Ok(JsValue::from_str(&json))
+    Ok(crate::error::js_val(&json))
 }
 
 /// Helper: format timestamp milliseconds as ISO 8601 string

@@ -7,8 +7,8 @@
  */
 import { v4 as uuidv4 } from 'uuid';
 import { hash as blake3Hash } from 'blake3';
-import { createError } from '@pictl/contracts';
-import { ALGORITHM_ID_TO_STEP_TYPE, getProfileAlgorithms, ALGORITHM_DISPLAY_NAMES, } from '@pictl/contracts';
+import { createError } from '@wasm4pm/contracts';
+import { ALGORITHM_ID_TO_STEP_TYPE, getProfileAlgorithms, ALGORITHM_DISPLAY_NAMES, } from '@wasm4pm/contracts';
 import { topologicalSort, validateDAG } from './dag.js';
 import { PlanStepType, createBootstrapStep, createInitWasmStep, createLoadSourceStep, createValidateSourceStep, createAlgorithmStep, createAnalysisStep, createGenerateReportsStep, createSinkStep, createCleanupStep, } from './steps.js';
 /**
@@ -33,7 +33,7 @@ export class PlannerError extends Error {
  */
 /**
  * Returns the profile's primary discovery step types + standard analysis steps.
- * Discovery algorithm IDs come from @pictl/generated (ontology-derived).
+ * Discovery algorithm IDs come from @wasm4pm/generated (ontology-derived).
  * Analysis steps are structural and always appended for non-fast profiles.
  */
 function getDefaultPipeline(profile) {
@@ -431,7 +431,7 @@ export function toContractsPlan(executionPlan) {
         nodes: nodes.sort((a, b) => a.id.localeCompare(b.id)),
         edges: edges.sort((a, b) => a.from.localeCompare(b.from) || a.to.localeCompare(b.to)),
         metadata: {
-            planner: '@pictl/planner',
+            planner: '@wasm4pm/planner',
             planner_version: '26.4.5',
             estimated_duration_ms: totalDuration,
         },

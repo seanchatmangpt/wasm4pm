@@ -5,8 +5,8 @@
  * or process.stdin for piped input.
  */
 import { createHash } from 'crypto';
-import { ok, err, error } from '@pictl/contracts';
-import { createError } from '@pictl/contracts';
+import { ok, err, error } from '@wasm4pm/contracts';
+import { createError } from '@wasm4pm/contracts';
 /**
  * EventStream backed by a Readable (stdin, pipe, etc.)
  *

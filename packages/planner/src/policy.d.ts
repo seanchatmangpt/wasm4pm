@@ -4,7 +4,7 @@
  * Section 4 of the Three-Layer Architecture Specification.
  * Implements backend selection rules, algorithm decision tables, and job promotion/degradation.
  */
-import type { BudgetEnvelope, QualityTier, LatencyClass } from '@pictl/contracts';
+import type { BudgetEnvelope, QualityTier, LatencyClass } from '@wasm4pm/contracts';
 /**
  * Backend IDs recognized by the federation system.
  */

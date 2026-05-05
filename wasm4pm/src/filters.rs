@@ -9,7 +9,7 @@ use wasm_bindgen::prelude::*;
 
 fn store_filtered(log: EventLog) -> Result<JsValue, JsValue> {
     let handle = get_or_init_state().store_object(StoredObject::EventLog(log))?;
-    Ok(JsValue::from_str(&handle))
+    Ok(crate::error::js_val(&handle))
 }
 
 /// Filter traces that start with one of the specified activities.
@@ -24,7 +24,7 @@ pub fn filter_by_start_activity(
     activity_key: &str,
 ) -> Result<JsValue, JsValue> {
     let keep: std::collections::HashSet<String> = serde_json::from_str(activities_json)
-        .map_err(|e| JsValue::from_str(&format!("Invalid JSON: {}", e)))?;
+        .map_err(|e| crate::error::js_val(&format!("Invalid JSON: {}", e)))?;
 
     get_or_init_state().with_object(log_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
@@ -45,8 +45,8 @@ pub fn filter_by_start_activity(
                 .collect();
             store_filtered(out)
         }
-        Some(_) => Err(JsValue::from_str("Handle is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog handle not found")),
+        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
+        None => Err(crate::error::js_val("EventLog handle not found")),
     })
 }
 
@@ -58,7 +58,7 @@ pub fn filter_by_end_activity(
     activity_key: &str,
 ) -> Result<JsValue, JsValue> {
     let keep: std::collections::HashSet<String> = serde_json::from_str(activities_json)
-        .map_err(|e| JsValue::from_str(&format!("Invalid JSON: {}", e)))?;
+        .map_err(|e| crate::error::js_val(&format!("Invalid JSON: {}", e)))?;
 
     get_or_init_state().with_object(log_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
@@ -79,8 +79,8 @@ pub fn filter_by_end_activity(
                 .collect();
             store_filtered(out)
         }
-        Some(_) => Err(JsValue::from_str("Handle is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog handle not found")),
+        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
+        None => Err(crate::error::js_val("EventLog handle not found")),
     })
 }
 
@@ -104,8 +104,8 @@ pub fn filter_by_case_size(
                 .collect();
             store_filtered(out)
         }
-        Some(_) => Err(JsValue::from_str("Handle is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog handle not found")),
+        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
+        None => Err(crate::error::js_val("EventLog handle not found")),
     })
 }
 
@@ -123,7 +123,7 @@ pub fn filter_by_directly_follows(
     activity_key: &str,
 ) -> Result<JsValue, JsValue> {
     let pairs: Vec<[String; 2]> = serde_json::from_str(pairs_json)
-        .map_err(|e| JsValue::from_str(&format!("Invalid pairs JSON: {}", e)))?;
+        .map_err(|e| crate::error::js_val(&format!("Invalid pairs JSON: {}", e)))?;
     let pair_set: std::collections::HashSet<(String, String)> =
         pairs.into_iter().map(|[f, t]| (f, t)).collect();
 
@@ -147,8 +147,8 @@ pub fn filter_by_directly_follows(
                 .collect();
             store_filtered(out)
         }
-        Some(_) => Err(JsValue::from_str("Handle is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog handle not found")),
+        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
+        None => Err(crate::error::js_val("EventLog handle not found")),
     })
 }
 
@@ -225,8 +225,8 @@ pub fn filter_by_variant_coverage(
                 .collect();
             store_filtered(out)
         }
-        Some(_) => Err(JsValue::from_str("Handle is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog handle not found")),
+        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
+        None => Err(crate::error::js_val("EventLog handle not found")),
     })
 }
 
@@ -283,8 +283,8 @@ pub fn filter_by_variants_top_k(
                 .collect();
             store_filtered(out)
         }
-        Some(_) => Err(JsValue::from_str("Handle is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog handle not found")),
+        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
+        None => Err(crate::error::js_val("EventLog handle not found")),
     })
 }
 
@@ -296,7 +296,7 @@ pub fn filter_traces_containing_activities(
     activity_key: &str,
 ) -> Result<JsValue, JsValue> {
     let required: std::collections::HashSet<String> = serde_json::from_str(activities_json)
-        .map_err(|e| JsValue::from_str(&format!("Invalid JSON: {}", e)))?;
+        .map_err(|e| crate::error::js_val(&format!("Invalid JSON: {}", e)))?;
 
     get_or_init_state().with_object(log_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
@@ -318,8 +318,8 @@ pub fn filter_traces_containing_activities(
                 .collect();
             store_filtered(out)
         }
-        Some(_) => Err(JsValue::from_str("Handle is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog handle not found")),
+        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
+        None => Err(crate::error::js_val("EventLog handle not found")),
     })
 }
 
@@ -331,7 +331,7 @@ pub fn filter_traces_excluding_activities(
     activity_key: &str,
 ) -> Result<JsValue, JsValue> {
     let excluded: std::collections::HashSet<String> = serde_json::from_str(activities_json)
-        .map_err(|e| JsValue::from_str(&format!("Invalid JSON: {}", e)))?;
+        .map_err(|e| crate::error::js_val(&format!("Invalid JSON: {}", e)))?;
 
     get_or_init_state().with_object(log_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
@@ -353,8 +353,8 @@ pub fn filter_traces_excluding_activities(
                 .collect();
             store_filtered(out)
         }
-        Some(_) => Err(JsValue::from_str("Handle is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog handle not found")),
+        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
+        None => Err(crate::error::js_val("EventLog handle not found")),
     })
 }
 
@@ -388,8 +388,8 @@ pub fn filter_by_time_range(
                 .collect();
             store_filtered(out)
         }
-        Some(_) => Err(JsValue::from_str("Handle is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog handle not found")),
+        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
+        None => Err(crate::error::js_val("EventLog handle not found")),
     })
 }
 
@@ -437,8 +437,8 @@ pub fn filter_by_case_performance(
                 .collect();
             store_filtered(out)
         }
-        Some(_) => Err(JsValue::from_str("Handle is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog handle not found")),
+        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
+        None => Err(crate::error::js_val("EventLog handle not found")),
     })
 }
 
@@ -473,8 +473,8 @@ pub fn filter_rework_traces(log_handle: &str, activity_key: &str) -> Result<JsVa
                 .collect();
             store_filtered(out)
         }
-        Some(_) => Err(JsValue::from_str("Handle is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog handle not found")),
+        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
+        None => Err(crate::error::js_val("EventLog handle not found")),
     })
 }
 
@@ -504,8 +504,8 @@ pub fn filter_by_trace_attribute(
                 .collect();
             store_filtered(out)
         }
-        Some(_) => Err(JsValue::from_str("Handle is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog handle not found")),
+        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
+        None => Err(crate::error::js_val("EventLog handle not found")),
     })
 }
 
@@ -536,8 +536,8 @@ pub fn filter_by_event_attribute_value(
                 .collect();
             store_filtered(out)
         }
-        Some(_) => Err(JsValue::from_str("Handle is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog handle not found")),
+        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
+        None => Err(crate::error::js_val("EventLog handle not found")),
     })
 }
 
@@ -549,7 +549,7 @@ pub fn filter_by_case_ids(
     case_id_key: &str,
 ) -> Result<JsValue, JsValue> {
     let keep_ids: std::collections::HashSet<String> = serde_json::from_str(case_ids_json)
-        .map_err(|e| JsValue::from_str(&format!("Invalid JSON: {}", e)))?;
+        .map_err(|e| crate::error::js_val(&format!("Invalid JSON: {}", e)))?;
 
     get_or_init_state().with_object(log_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
@@ -570,8 +570,8 @@ pub fn filter_by_case_ids(
                 .collect();
             store_filtered(out)
         }
-        Some(_) => Err(JsValue::from_str("Handle is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog handle not found")),
+        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
+        None => Err(crate::error::js_val("EventLog handle not found")),
     })
 }
 
@@ -583,7 +583,7 @@ pub fn filter_traces_starting_with_sequence(
     activity_key: &str,
 ) -> Result<JsValue, JsValue> {
     let sequence: Vec<String> = serde_json::from_str(sequence_json)
-        .map_err(|e| JsValue::from_str(&format!("Invalid JSON: {}", e)))?;
+        .map_err(|e| crate::error::js_val(&format!("Invalid JSON: {}", e)))?;
 
     get_or_init_state().with_object(log_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
@@ -613,8 +613,8 @@ pub fn filter_traces_starting_with_sequence(
                 .collect();
             store_filtered(out)
         }
-        Some(_) => Err(JsValue::from_str("Handle is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog handle not found")),
+        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
+        None => Err(crate::error::js_val("EventLog handle not found")),
     })
 }
 
@@ -626,7 +626,7 @@ pub fn filter_traces_ending_with_sequence(
     activity_key: &str,
 ) -> Result<JsValue, JsValue> {
     let sequence: Vec<String> = serde_json::from_str(sequence_json)
-        .map_err(|e| JsValue::from_str(&format!("Invalid JSON: {}", e)))?;
+        .map_err(|e| crate::error::js_val(&format!("Invalid JSON: {}", e)))?;
 
     get_or_init_state().with_object(log_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
@@ -652,7 +652,7 @@ pub fn filter_traces_ending_with_sequence(
                 .collect();
             store_filtered(out)
         }
-        Some(_) => Err(JsValue::from_str("Handle is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog handle not found")),
+        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
+        None => Err(crate::error::js_val("EventLog handle not found")),
     })
 }

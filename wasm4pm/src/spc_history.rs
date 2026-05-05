@@ -4,8 +4,8 @@
 //! Enables Western Electric rules to evaluate trends across cycles, not just
 //! within a single cycle's data.
 
+use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
-use serde::{Serialize, Deserialize};
 
 // ---------------------------------------------------------------------------
 // Step 1: Ring Buffer Data Structure
@@ -284,10 +284,7 @@ impl SpcHistory {
     /// # Returns
     /// Vector of trace_duration_avg values in chronological order
     pub fn get_trace_durations(&self) -> Vec<f64> {
-        self.history
-            .iter()
-            .map(|s| s.trace_duration_avg)
-            .collect()
+        self.history.iter().map(|s| s.trace_duration_avg).collect()
     }
 
     /// Get historical activity frequencies as a vector (oldest to newest).
@@ -295,10 +292,7 @@ impl SpcHistory {
     /// # Returns
     /// Vector of activity_frequency values in chronological order
     pub fn get_activity_frequencies(&self) -> Vec<f64> {
-        self.history
-            .iter()
-            .map(|s| s.activity_frequency)
-            .collect()
+        self.history.iter().map(|s| s.activity_frequency).collect()
     }
 
     /// Get all snapshots as a vector (oldest to newest).
@@ -397,13 +391,7 @@ mod tests {
 
     #[test]
     fn test_spc_snapshot_new() {
-        let snapshot = SpcSnapshot::new(
-            "2026-04-13T12:00:00Z".to_string(),
-            5.2,
-            150.0,
-            0.85,
-            0,
-        );
+        let snapshot = SpcSnapshot::new("2026-04-13T12:00:00Z".to_string(), 5.2, 150.0, 0.85, 0);
         assert_eq!(snapshot.timestamp, "2026-04-13T12:00:00Z");
         assert_eq!(snapshot.event_rate, 5.2);
         assert_eq!(snapshot.trace_duration_avg, 150.0);
@@ -436,13 +424,7 @@ mod tests {
 
         // Add 8 snapshots - not enough
         for i in 0..8 {
-            history.record_snapshot(SpcSnapshot::new(
-                format!("cycle-{}", i),
-                5.0,
-                150.0,
-                0.8,
-                0,
-            ));
+            history.record_snapshot(SpcSnapshot::new(format!("cycle-{}", i), 5.0, 150.0, 0.8, 0));
         }
         assert!(!history.has_sufficient_data());
 

@@ -49,7 +49,7 @@ pub fn discover_oc_petri_net(ocel_handle: &str, algorithm: &str) -> Result<JsVal
         // Store flattened log temporarily
         let temp_handle = get_or_init_state()
             .store_object(StoredObject::EventLog(flattened_log))
-            .map_err(|_e| JsValue::from_str("Failed to store flattened EventLog"))?;
+            .map_err(|_e| crate::error::js_val("Failed to store flattened EventLog"))?;
 
         // Discover Petri Net using specified algorithm
         // Note: discover_alpha_plus_plus returns Result<JsValue, JsValue> which is the Petri Net JSON
@@ -62,7 +62,7 @@ pub fn discover_oc_petri_net(ocel_handle: &str, algorithm: &str) -> Result<JsVal
                 discover_alpha_plus_plus(&temp_handle, "concept:name", 0.5)?
             }
             _ => {
-                return Err(JsValue::from_str(&format!(
+                return Err(crate::error::js_val(&format!(
                     "Unknown algorithm: {}",
                     algorithm
                 )))
@@ -71,7 +71,7 @@ pub fn discover_oc_petri_net(ocel_handle: &str, algorithm: &str) -> Result<JsVal
 
         // Convert JsValue to serde_json::Value
         let net_json = serde_wasm_bindgen::from_value::<serde_json::Value>(net_json_value)
-            .map_err(|e| JsValue::from_str(&format!("Failed to parse Petri Net: {}", e)))?;
+            .map_err(|e| crate::error::js_val(&format!("Failed to parse Petri Net: {}", e)))?;
 
         // Add object_type annotation to places
         let mut annotated_net = net_json.clone();
@@ -114,7 +114,7 @@ pub fn flatten_ocel_to_eventlog_for_type(
         .collect();
 
     if target_objects.is_empty() {
-        return Err(JsValue::from_str(&format!(
+        return Err(crate::error::js_val(&format!(
             "No objects found of type '{}'",
             object_type
         )));

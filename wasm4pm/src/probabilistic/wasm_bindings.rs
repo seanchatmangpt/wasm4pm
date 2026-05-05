@@ -67,11 +67,12 @@ pub fn create_streaming_log() -> usize {
 pub fn streaming_log_add_trace(handle: usize, activities: &JsValue) -> Result<(), JsValue> {
     with_store(|store| {
         let slog = store.get_mut(&handle).ok_or_else(|| {
-            JsValue::from_str(&format!("Invalid StreamingLog handle: {}", handle))
+            crate::error::js_val(&format!("Invalid StreamingLog handle: {}", handle))
         })?;
 
-        let arr: Vec<String> = serde_wasm_bindgen::from_value(activities.clone())
-            .map_err(|e| JsValue::from_str(&format!("Failed to parse activities array: {}", e)))?;
+        let arr: Vec<String> = serde_wasm_bindgen::from_value(activities.clone()).map_err(|e| {
+            crate::error::js_val(&format!("Failed to parse activities array: {}", e))
+        })?;
 
         let refs: Vec<&str> = arr.iter().map(|s| s.as_str()).collect();
         slog.add_trace(&refs);
@@ -87,14 +88,14 @@ pub fn streaming_log_add_trace(handle: usize, activities: &JsValue) -> Result<()
 pub fn streaming_log_estimate_dfg(handle: usize) -> Result<JsValue, JsValue> {
     with_store(|store| {
         let slog = store.get(&handle).ok_or_else(|| {
-            JsValue::from_str(&format!("Invalid StreamingLog handle: {}", handle))
+            crate::error::js_val(&format!("Invalid StreamingLog handle: {}", handle))
         })?;
 
         let dfg = slog.estimate_dfg();
         let json = serde_json::to_string(&dfg)
-            .map_err(|e| JsValue::from_str(&format!("Failed to serialize DFG: {}", e)))?;
+            .map_err(|e| crate::error::js_val(&format!("Failed to serialize DFG: {}", e)))?;
 
-        Ok(JsValue::from_str(&json))
+        Ok(crate::error::js_val(&json))
     })
 }
 
@@ -103,7 +104,7 @@ pub fn streaming_log_estimate_dfg(handle: usize) -> Result<JsValue, JsValue> {
 pub fn streaming_log_estimate_cardinality(handle: usize) -> Result<usize, JsValue> {
     with_store(|store| {
         let slog = store.get(&handle).ok_or_else(|| {
-            JsValue::from_str(&format!("Invalid StreamingLog handle: {}", handle))
+            crate::error::js_val(&format!("Invalid StreamingLog handle: {}", handle))
         })?;
 
         Ok(slog.estimate_cardinality())
@@ -115,7 +116,7 @@ pub fn streaming_log_estimate_cardinality(handle: usize) -> Result<usize, JsValu
 pub fn streaming_log_event_count(handle: usize) -> Result<usize, JsValue> {
     with_store(|store| {
         let slog = store.get(&handle).ok_or_else(|| {
-            JsValue::from_str(&format!("Invalid StreamingLog handle: {}", handle))
+            crate::error::js_val(&format!("Invalid StreamingLog handle: {}", handle))
         })?;
 
         Ok(slog.event_count())
@@ -127,7 +128,7 @@ pub fn streaming_log_event_count(handle: usize) -> Result<usize, JsValue> {
 pub fn streaming_log_activity_count(handle: usize) -> Result<usize, JsValue> {
     with_store(|store| {
         let slog = store.get(&handle).ok_or_else(|| {
-            JsValue::from_str(&format!("Invalid StreamingLog handle: {}", handle))
+            crate::error::js_val(&format!("Invalid StreamingLog handle: {}", handle))
         })?;
 
         Ok(slog.activity_count())
@@ -139,7 +140,7 @@ pub fn streaming_log_activity_count(handle: usize) -> Result<usize, JsValue> {
 pub fn streaming_log_memory_bytes(handle: usize) -> Result<usize, JsValue> {
     with_store(|store| {
         let slog = store.get(&handle).ok_or_else(|| {
-            JsValue::from_str(&format!("Invalid StreamingLog handle: {}", handle))
+            crate::error::js_val(&format!("Invalid StreamingLog handle: {}", handle))
         })?;
 
         Ok(slog.memory_bytes())
@@ -151,7 +152,7 @@ pub fn streaming_log_memory_bytes(handle: usize) -> Result<usize, JsValue> {
 pub fn free_streaming_log(handle: usize) -> Result<(), JsValue> {
     with_store(|store| {
         if store.remove(&handle).is_none() {
-            return Err(JsValue::from_str(&format!(
+            return Err(crate::error::js_val(&format!(
                 "Invalid StreamingLog handle: {}",
                 handle
             )));

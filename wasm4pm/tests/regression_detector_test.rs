@@ -9,7 +9,7 @@
 //!   - SPC alerts verified against Western Electric mathematical conditions
 //!   - CPU reference kernel vs. same Rust output (deterministic parity)
 //!
-//! Report: .pictl/benchmarks/regression-<unix_seconds>.json
+//! Report: .wasm4pm/benchmarks/regression-<unix_seconds>.json
 
 use wasm4pm::guards::{
     ExecutionContext, Guard, ObservationBuffer, Predicate, ResourceState, ResourceType, StateFlags,
@@ -235,7 +235,7 @@ fn write_report(reports: &[VectorReport]) -> io::Result<()> {
         .unwrap_or_default()
         .as_secs();
 
-    let dir = "../.pictl/benchmarks";
+    let dir = "../.wasm4pm/benchmarks";
     fs::create_dir_all(dir)?;
     let path = format!("{dir}/regression-{ts}.json");
 

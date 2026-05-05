@@ -312,7 +312,7 @@ pub fn pipeline_begin(config_json: &str) -> Result<String, JsValue> {
         PipelineConfig::default()
     } else {
         serde_json::from_str(config_json)
-            .map_err(|e| JsValue::from_str(&format!("Invalid config JSON: {}", e)))?
+            .map_err(|e| crate::error::js_val(&format!("Invalid config JSON: {}", e)))?
     };
 
     let pipeline = StreamingPipeline::new(config);
@@ -325,7 +325,7 @@ pub fn pipeline_begin(config_json: &str) -> Result<String, JsValue> {
         "include_skeleton": config.include_skeleton,
         "include_heuristic": config.include_heuristic,
     }))
-    .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    .map_err(|e| crate::error::js_val(&e.to_string()))?;
 
     Ok(info)
 }
@@ -341,10 +341,10 @@ pub fn pipeline_add_event(handle: &str, case_id: &str, activity: &str) -> Result
                 "total_events": pipeline.total_events,
                 "open_traces": pipeline.open_traces,
             }))
-            .map_err(|e| JsValue::from_str(&e.to_string()))
+            .map_err(|e| crate::error::js_val(&e.to_string()))
         }
-        Some(_) => Err(JsValue::from_str("Object is not a StreamingPipeline")),
-        None => Err(JsValue::from_str(&format!(
+        Some(_) => Err(crate::error::js_val("Object is not a StreamingPipeline")),
+        None => Err(crate::error::js_val(&format!(
             "Pipeline '{}' not found",
             handle
         ))),
@@ -362,10 +362,10 @@ pub fn pipeline_close_trace(handle: &str, case_id: &str) -> Result<JsValue, JsVa
                 "total_traces": pipeline.total_traces,
                 "open_traces": pipeline.open_traces,
             }))
-            .map_err(|e| JsValue::from_str(&e.to_string()))
+            .map_err(|e| crate::error::js_val(&e.to_string()))
         }
-        Some(_) => Err(JsValue::from_str("Object is not a StreamingPipeline")),
-        None => Err(JsValue::from_str(&format!(
+        Some(_) => Err(crate::error::js_val("Object is not a StreamingPipeline")),
+        None => Err(crate::error::js_val(&format!(
             "Pipeline '{}' not found",
             handle
         ))),
@@ -378,10 +378,10 @@ pub fn pipeline_stats(handle: &str) -> Result<JsValue, JsValue> {
     get_or_init_state().with_object(handle, |obj| match obj {
         Some(StoredObject::StreamingPipeline(pipeline)) => {
             let stats = pipeline.stats();
-            serde_wasm_bindgen::to_value(&stats).map_err(|e| JsValue::from_str(&e.to_string()))
+            serde_wasm_bindgen::to_value(&stats).map_err(|e| crate::error::js_val(&e.to_string()))
         }
-        Some(_) => Err(JsValue::from_str("Object is not a StreamingPipeline")),
-        None => Err(JsValue::from_str(&format!(
+        Some(_) => Err(crate::error::js_val("Object is not a StreamingPipeline")),
+        None => Err(crate::error::js_val(&format!(
             "Pipeline '{}' not found",
             handle
         ))),
@@ -394,10 +394,11 @@ pub fn pipeline_snapshot(handle: &str) -> Result<JsValue, JsValue> {
     get_or_init_state().with_object(handle, |obj| match obj {
         Some(StoredObject::StreamingPipeline(pipeline)) => {
             let snapshot = pipeline.snapshot_json();
-            serde_wasm_bindgen::to_value(&snapshot).map_err(|e| JsValue::from_str(&e.to_string()))
+            serde_wasm_bindgen::to_value(&snapshot)
+                .map_err(|e| crate::error::js_val(&e.to_string()))
         }
-        Some(_) => Err(JsValue::from_str("Object is not a StreamingPipeline")),
-        None => Err(JsValue::from_str(&format!(
+        Some(_) => Err(crate::error::js_val("Object is not a StreamingPipeline")),
+        None => Err(crate::error::js_val(&format!(
             "Pipeline '{}' not found",
             handle
         ))),
@@ -418,10 +419,10 @@ pub fn pipeline_finalize(handle: &str) -> Result<JsValue, JsValue> {
                 "skeleton": result.skeleton.is_some(),
                 "heuristic": result.heuristic.is_some(),
             }))
-            .map_err(|e| JsValue::from_str(&e.to_string()))
+            .map_err(|e| crate::error::js_val(&e.to_string()))
         }
-        Some(_) => Err(JsValue::from_str("Object is not a StreamingPipeline")),
-        None => Err(JsValue::from_str(&format!(
+        Some(_) => Err(crate::error::js_val("Object is not a StreamingPipeline")),
+        None => Err(crate::error::js_val(&format!(
             "Pipeline '{}' not found",
             handle
         ))),

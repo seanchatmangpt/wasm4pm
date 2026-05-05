@@ -106,7 +106,7 @@ npm warn Unknown env config "use-lockfile". This will stop working in the next m
 > tsc --noEmit
 
 __tests__/analysis.test.ts(6,23): error TS2307: Cannot find module '../pkg/wasm4pm.js' or its corresponding type declarations.
-__tests__/parity.test.ts(90,36): error TS2307: Cannot find module '@pictl/wasm' or its corresponding type declarations.
+__tests__/parity.test.ts(90,36): error TS2307: Cannot find module '@wasm4pm/wasm' or its corresponding type declarations.
 ---
 ### Gate 4: Rust Code Quality (Clippy)
 ⚠ **Clippy warnings (continuing):**
@@ -129,7 +129,7 @@ error: creating a mutable reference to mutable static
    = note: for more information, see <https://doc.rust-lang.org/edition-guide/rust-2024/static-mut-references.html>
    = note: mutable references to mutable statics are dangerous; it's undefined behavior if any other pointer to the static is used or if any other reference is created for the static while the mutable reference lives
 
-error: could not compile `pictl` (lib) due to 26 previous errors
+error: could not compile `wpm` (wasm4pm) (lib) due to 26 previous errors
 ---
 ### Gate 5: Code Formatting
 ⚠ **Formatting issues (auto-fixable):**

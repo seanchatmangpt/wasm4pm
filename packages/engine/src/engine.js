@@ -8,7 +8,7 @@ import { StatusTracker, formatStatus } from './status.js';
 import { WasmLoader } from './wasm-loader.js';
 import { bootstrapEngine, createBootstrapError } from './bootstrap.js';
 import { WatchSession } from './watch.js';
-import { ObservabilityWrapper, Instrumentation, } from '@pictl/observability';
+import { ObservabilityWrapper, Instrumentation, } from '@wasm4pm/observability';
 /**
  * Main Engine class orchestrating the complete lifecycle
  * Manages state transitions, error handling, and execution coordination

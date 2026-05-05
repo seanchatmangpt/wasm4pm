@@ -272,8 +272,8 @@ All blocking operations have explicit timeouts:
 **Fitness for production:** The net satisfies Armstrong fault tolerance (no crashes, supervised restarts, timeouts enforced) and Toyota TPS (bounded waste, visible defects, measurable throughput).
 
 **Evidence artifacts:**
-1. PNML XML: `/Users/sac/chatmangpt/pictl/petri_net_lawful_dispatch.pnml`
-2. Reachability graph: `/Users/sac/chatmangpt/pictl/reachability_graph.yaml`
+1. PNML XML: `/Users/sac/chatmangpt/wasm4pm/petri_net_lawful_dispatch.pnml`
+2. Reachability graph: `/Users/sac/chatmangpt/wasm4pm/reachability_graph.yaml`
 3. Soundness proof: This document
 
 ---

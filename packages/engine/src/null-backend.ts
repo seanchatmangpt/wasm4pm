@@ -19,7 +19,7 @@ import type {
   BudgetEnvelope,
   ConformanceResult,
   AnalysisTask,
-} from '@pictl/kernel';
+} from '@wasm4pm/kernel';
 
 /**
  * NullBackend: Fail-open sentinel backend.
@@ -29,6 +29,11 @@ import type {
  */
 export class NullBackend implements MiningBackend {
   readonly id = 'null';
+  private initialized = true;
+
+  async init(): Promise<void> {}
+  async shutdown(): Promise<void> {}
+  isReady(): boolean { return this.initialized; }
 
   capabilities(): BackendCapabilities {
     return {

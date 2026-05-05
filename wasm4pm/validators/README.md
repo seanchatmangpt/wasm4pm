@@ -1,6 +1,6 @@
-# @pictl/validators
+# @wasm4pm/validators
 
-Comprehensive validation suite for @seanchatmangpt/pictl v26.4.9.
+Comprehensive validation suite for @wasm4pm/cli v26.4.9.
 
 ## Overview
 
@@ -19,7 +19,7 @@ Six independent JavaScript/MJS validators that test different execution surfaces
 ## Installation
 
 ```bash
-npm install @pictl/validators
+npm install @wasm4pm/validators
 ```
 
 ## Usage
@@ -76,7 +76,7 @@ node validators/index.mjs --ws ws://custom-host:3000 --output report.json
 ## As a Module
 
 ```javascript
-import { runAllValidators } from '@pictl/validators';
+import { runAllValidators } from '@wasm4pm/validators';
 
 const results = await runAllValidators({
   httpBaseUrl: 'http://localhost:3000',
@@ -89,9 +89,9 @@ console.log(`Passed: ${results.summary.passed}/${results.summary.total}`);
 
 ```javascript
 // Individual validators
-import { validateCLI } from '@pictl/validators/cli';
-import { validateHTTP } from '@pictl/validators/http';
-import { validateIO } from '@pictl/validators/io';
+import { validateCLI } from '@wasm4pm/validators/cli';
+import { validateHTTP } from '@wasm4pm/validators/http';
+import { validateIO } from '@wasm4pm/validators/io';
 
 const cli = await validateCLI();
 const http = await validateHTTP('http://localhost:3000');
@@ -208,7 +208,7 @@ These validators are called by the `/lab/` post-publication validation system to
 ## Requirements
 
 - **Node.js**: 18+ (16+ minimum)
-- **@seanchatmangpt/pictl**: Published npm package or local build
+- **@wasm4pm/cli**: Published npm package or local build
 - **HTTP Service** (optional): For HTTP/WebSocket tests
 - **pictl CLI** (optional): For CLI tests
 
@@ -233,7 +233,7 @@ A: Start the HTTP service: `npm run start:service` in another terminal
 A: Ensure the HTTP service is running with WebSocket support enabled
 
 **Q: CLI tests fail with "command not found"**  
-A: Install pictl or link the local version: `npm link @seanchatmangpt/pictl`
+A: Install pictl or link the local version: `npm link @wasm4pm/cli`
 
 **Q: How do I generate a conformance report?**  
 A: Run `node validators/index.mjs --output report.json`

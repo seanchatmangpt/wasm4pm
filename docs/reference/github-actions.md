@@ -26,7 +26,7 @@ jobs:
           node-version: '20'
       
       - name: Install wasm4pm
-        run: npm install -g @pictl/cli
+        run: npm install -g @wasm4pm/cli
       
       - name: Validate Configuration
         run: pictl init --validate config.toml
@@ -73,7 +73,7 @@ jobs:
       - uses: actions/checkout@v3
       
       - name: Install
-        run: npm install -g @pictl/cli
+        run: npm install -g @wasm4pm/cli
       
       - name: Run Tests
         run: npm test

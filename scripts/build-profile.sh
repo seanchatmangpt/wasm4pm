@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build pictl WASM for a specific deployment profile with optimization and compression.
+# Build wasm4pm WASM for a specific deployment profile with optimization and compression.
 #
 # Usage:
 #   bash scripts/build-profile.sh <profile> [--no-compress] [--dry-run]
@@ -33,18 +33,16 @@ done
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-OUTPUT_DIR="$PROJECT_ROOT/dist/pictl-${PROFILE}"
-WASM_FILE="$OUTPUT_DIR/pictl.wasm"
-WASM_OPT_FILE="$OUTPUT_DIR/pictl.opt.wasm"
-WASM_BROTLI_FILE="$OUTPUT_DIR/pictl.wasm.br"
+OUTPUT_DIR="$PROJECT_ROOT/dist/wasm4pm-${PROFILE}"
+WASM_FILE="$OUTPUT_DIR/wasm4pm.wasm"
+WASM_OPT_FILE="$OUTPUT_DIR/wasm4pm.opt.wasm"
+WASM_BROTLI_FILE="$OUTPUT_DIR/wasm4pm.wasm.br"
 
 # Size targets (MB)
-declare -A SIZE_TARGETS
-SIZE_TARGETS[browser]=4.0
-SIZE_TARGETS[edge]=4.0
-SIZE_TARGETS[fog]=4.0
-SIZE_TARGETS[iot]=4.0
-SIZE_TARGETS[cloud]=5.0
+case "$PROFILE" in
+  cloud)   TARGET_MB=5.0 ;;
+  *)       TARGET_MB=4.0 ;;
+esac
 
 # Code splitting threshold (MB)
 CODE_SPLIT_THRESHOLD=4.5
@@ -82,10 +80,9 @@ case "$PROFILE" in
     ;;
 esac
 
-TARGET_MB=${SIZE_TARGETS[$PROFILE]}
 
 echo "╔═══════════════════════════════════════════════════════════════════════════╗"
-echo "║  pictl WASM Build Orchestration — Profile: $PROFILE"
+echo "║  wasm4pm WASM Build Orchestration — Profile: $PROFILE"
 echo "╚═══════════════════════════════════════════════════════════════════════════╝"
 echo ""
 echo "Profile Description: $DESCRIPTION"
@@ -142,7 +139,7 @@ RUSTFLAGS="${RUSTFLAGS:-} -C target-feature=+simd128" \
     --quiet 2>&1 | grep -v "warning:" || true
 
 # Copy to output directory
-BUILT_WASM="$PROJECT_ROOT/target/wasm32-unknown-unknown/release/pictl.wasm"
+BUILT_WASM="$PROJECT_ROOT/target/wasm32-unknown-unknown/release/wasm4pm.wasm"
 if [ ! -f "$BUILT_WASM" ]; then
   echo "ERROR: Cargo build failed, WASM file not found at $BUILT_WASM"
   exit 1
@@ -197,7 +194,7 @@ echo ""
 
 if [ "$NO_COMPRESS" = false ] && [ "$BROTLI_AVAILABLE" = true ]; then
   echo "[3/5] Compressing with Brotli (quality 6)..."
-  brotli -6 -k "$WASM_FILE" -o "$WASM_BROTLI_FILE" 2>/dev/null || {
+  brotli -6 -f -k "$WASM_FILE" -o "$WASM_BROTLI_FILE" 2>/dev/null || {
     echo "ERROR: Brotli compression failed"
     exit 1
   }
@@ -225,8 +222,8 @@ if [ "$PROFILE" = "cloud" ] && [ $(python3 -c "print(1 if $RAW_SIZE_MB > $CODE_S
   if command -v wasm-split &> /dev/null; then
     echo "[4/5] Code splitting (binary >4.5MB detected: ${RAW_SIZE_MB} MB)..."
     wasm-split "$WASM_FILE" \
-      --export-prefix pictl_core \
-      --secondary-output "$OUTPUT_DIR/pictl-advanced.wasm" \
+      --export-prefix wasm4pm_core \
+      --secondary-output "$OUTPUT_DIR/wasm4pm-advanced.wasm" \
       -o "$WASM_FILE.tmp" 2>/dev/null || {
       echo "WARN: wasm-split failed, skipping code splitting"
     }
@@ -235,7 +232,7 @@ if [ "$PROFILE" = "cloud" ] && [ $(python3 -c "print(1 if $RAW_SIZE_MB > $CODE_S
       mv "$WASM_FILE.tmp" "$WASM_FILE"
       echo "[✓] Code splitting complete"
       echo "    Core:     $WASM_FILE"
-      echo "    Advanced: $OUTPUT_DIR/pictl-advanced.wasm"
+      echo "    Advanced: $OUTPUT_DIR/wasm4pm-advanced.wasm"
     fi
   else
     echo "[4/5] Skipping code splitting (wasm-split not available)"
@@ -252,7 +249,8 @@ echo ""
 
 echo "[5/5] Verifying binary size against target..."
 
-if [ $(python3 -c "print(1 if $(python3 -c \"print(f'{$RAW_SIZE_MB}')\") <= $TARGET_MB else 0)") -eq 1 ]; then
+IS_PASS=$(python3 -c "print(1 if $RAW_SIZE_MB <= $TARGET_MB else 0)")
+if [ "$IS_PASS" -eq 1 ]; then
   echo "[✓] PASS: ${RAW_SIZE_MB} MB ≤ ${TARGET_MB} MB target"
   EXIT_CODE=0
 else

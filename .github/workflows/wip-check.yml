@@ -19,7 +19,7 @@ jobs:
       - name: Load WIP config
         id: config
         run: |
-          MAX_PRS=$(jq -r '.max_concurrent_prs' .pictl/wip-config.json)
+          MAX_PRS=$(jq -r '.max_concurrent_prs' .wasm4pm/wip-config.json)
           echo "max_prs=$MAX_PRS" >> $GITHUB_OUTPUT
           echo "Loaded WIP config: max_concurrent_prs=$MAX_PRS"
 
@@ -72,7 +72,7 @@ Per Toyota Production System principles, we enforce WIP (work-in-progress) limit
 **Open PRs:**
 ${openPrs > maxPrs ? '⚠️ Exceeds limit by ' + (openPrs - maxPrs) : '✅ Within limit'}
 
-See [\`.pictl/wip-config.json\`](.pictl/wip-config.json) for configuration.`;
+See [\`.wasm4pm/wip-config.json\`](.wasm4pm/wip-config.json) for configuration.`;
 
             github.rest.issues.createComment({
               issue_number: context.issue.number,

@@ -14,7 +14,7 @@ This document confirms the pnpm monorepo has been successfully set up according 
 ### Package Structure
 
 #### Applications (1)
-- ✓ `apps/pictl` - @pictl/cli (CLI tool with pictl binary)
+- ✓ `apps/pictl` - @wasm4pm/cli (CLI tool with pictl binary)
 
 #### Core Packages (2)
 - ✓ `packages/contracts` - @wasm4pm/contracts (Type definitions - zero dependencies)

@@ -11,7 +11,7 @@
  * - Round-trip losslessness: EventLogIR → WASM JSON → EventLogIR is byte-identical
  *   (except computed metadata fields like source_hash which are regenerated)
  */
-import type { EventLogIR } from '@pictl/contracts';
+import type { EventLogIR } from '@wasm4pm/contracts';
 /**
  * WASM-compatible JSON representation of an event log.
  * Mirrors EventLogIR structure but optimized for WASM serialization.

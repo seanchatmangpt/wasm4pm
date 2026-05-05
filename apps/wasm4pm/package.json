@@ -1,0 +1,56 @@
+{
+  "name": "@wasm4pm/cli",
+  "version": "26.4.23",
+  "description": "wasm4pm — High-performance WASM-powered process mining CLI",
+  "type": "module",
+  "bin": {
+    "wpm": "./dist/bin/wpm.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@wasm4pm/agents": "workspace:*",
+    "@wasm4pm/config": "workspace:*",
+    "@wasm4pm/contracts": "workspace:*",
+    "@wasm4pm/engine": "workspace:*",
+    "@wasm4pm/kernel": "workspace:*",
+    "@wasm4pm/ml": "workspace:^",
+    "@wasm4pm/observability": "workspace:^",
+    "@wasm4pm/planner": "workspace:*",
+    "@wasm4pm/swarm": "workspace:*",
+    "chokidar": "^4.0.1",
+    "citty": "^0.1.6",
+    "consola": "^3.2.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.3",
+    "vitest": "^1.1.0"
+  },
+  "keywords": [
+    "process-mining",
+    "cli",
+    "discovery",
+    "workflow"
+  ],
+  "author": "Sean Chatman",
+  "license": "MIT"
+}

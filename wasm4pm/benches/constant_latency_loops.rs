@@ -2,8 +2,8 @@
 //! Measures cycle predictability via perf counters.
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use wasm4pm::models::{AttributeValue, Event, EventLog, Trace};
 use std::collections::HashMap;
+use wasm4pm::models::{AttributeValue, Event, EventLog, Trace};
 
 fn make_log(num_traces: usize, events_per_trace: usize) -> EventLog {
     let traces: Vec<Trace> = (0..num_traces)
@@ -13,10 +13,7 @@ fn make_log(num_traces: usize, events_per_trace: usize) -> EventLog {
                 .map(|i| {
                     let mut attrs = HashMap::new();
                     let activity = format!("activity_{}", i % 10);
-                    attrs.insert(
-                        "concept:name".to_string(),
-                        AttributeValue::String(activity),
-                    );
+                    attrs.insert("concept:name".to_string(), AttributeValue::String(activity));
                     Event { attributes: attrs }
                 })
                 .collect(),

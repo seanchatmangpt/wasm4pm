@@ -1,4 +1,4 @@
-# @pictl/observability
+# @wasm4pm/observability
 
 Non-blocking three-layer observability system with optional OpenTelemetry support.
 
@@ -107,7 +107,7 @@ interface ObservabilityConfig {
 ### Basic Usage
 
 ```typescript
-import { ObservabilityLayer } from '@pictl/observability';
+import { ObservabilityLayer } from '@wasm4pm/observability';
 
 const obs = new ObservabilityLayer({
   json: { enabled: true, dest: './events.jsonl' },

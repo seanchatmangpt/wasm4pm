@@ -1,7 +1,7 @@
-//! PNML (Petri Net Markup Language) import/export for pictl.
+//! PNML (Petri Net Markup Language) import/export for wasm4pm.
 //!
 //! Supports the PNML standard for exchanging Petri nets between tools.
-//! Uses `roxmltree` for XML parsing (consistent with the rest of pictl).
+//! Uses `roxmltree` for XML parsing (consistent with the rest of wasm4pm).
 //!
 //! # Public API
 //!

@@ -1,7 +1,7 @@
 # Predictive Analytics with pictl
 
 **Time**: 40 minutes
-**Prerequisites**: pictl installed, an XES event log file (use any `.xes` file in the project or generate one with `pictl init --sample`)
+**Prerequisites**: pictl installed, an XES event log file (use any `.xes` file in the project or generate one with `wpm init --sample`)
 
 ## Introduction
 
@@ -11,7 +11,7 @@ Process discovery tells you what happened. Predictive analytics tells you what w
 - **How long will it take?** -- remaining-time estimation
 - **Is the process changing?** -- concept drift detection
 
-All three capabilities are built into pictl's `predict` and `drift-watch` commands. Results auto-save to `.wasm4pm/results/` so you can review them later with `pictl results`.
+All three capabilities are built into pictl's `predict` and `drift-watch` commands. Results auto-save to `.wasm4pm/results/` so you can review them later with `wpm results`.
 
 ---
 
@@ -166,7 +166,7 @@ The alert tells you which window shows drift, what the score is, and which activ
 - **Next-activity prediction** uses n-gram models (a form of Markov chain). The n-gram order controls how much history the model considers. Higher orders capture more context but need more data.
 - **Remaining-time estimation** uses bucket-based estimation. Historical cases with similar activity prefixes are grouped, and the median remaining time from those cases is reported as the prediction.
 - **Drift detection** uses Jaccard-distance comparison between sliding windows, smoothed with an EWMA filter. The `--alpha` and `--threshold` parameters let you trade off sensitivity versus noise tolerance.
-- All results auto-save to `.wasm4pm/results/` and can be browsed with `pictl results --last`.
+- All results auto-save to `.wasm4pm/results/` and can be browsed with `wpm results --last`.
 
 ---
 

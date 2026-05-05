@@ -1,15 +1,15 @@
 /**
- * End-to-End Test: pictl autoprocess persistence and state management
+ * End-to-End Test: wpm autoprocess persistence and state management
  *
  * Complementary to the existing 30-autoprocess-e2e.test.ts, this scenario
  * focuses on the specific persistence and state recovery behavior of AutoProcess.
  *
  * Tests:
- * 1. Basic invocation: pictl autoprocess <log.xes> --format json returns required fields
+ * 1. Basic invocation: wpm autoprocess <log.xes> --format json returns required fields
  * 2. Persistence across runs: State restored on subsequent runs with cycle count
  * 3. Error handling: Bad file paths return SOURCE_ERROR (exit code 2)
  *
- * Uses @pictl/testing CLI harness and real XES fixtures from lab/fixtures/
+ * Uses @wasm4pm/testing CLI harness and real XES fixtures from lab/fixtures/
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
@@ -21,13 +21,13 @@ import {
   assertJsonOutput,
   createCliTestEnv,
   EXIT_CODES,
-} from '@pictl/testing';
+} from '@wasm4pm/testing';
 
 // Resolve paths relative to the project root
 const PROJECT_ROOT = path.join(__dirname, '../..');
 const FIXTURE_LOG = path.join(PROJECT_ROOT, 'lab/fixtures/sample-xes-1.0.xes');
-const AUTOPROCESS_STATE_FILE = '.pictl/autoprocess-state.json';
-const CLI_PATH = path.join(PROJECT_ROOT, 'apps/pictl/dist/bin/pictl.js');
+const AUTOPROCESS_STATE_FILE = '.wasm4pm/autoprocess-state.json';
+const CLI_PATH = path.join(PROJECT_ROOT, 'apps/wasm4pm/dist/bin/wpm.js');
 
 async function runPictl(args: string[], cwd: string) {
   // Use the compiled Node.js CLI by passing cliPath as 'node' and prepending the script
@@ -39,7 +39,7 @@ async function runPictl(args: string[], cwd: string) {
   });
 }
 
-describe('pictl autoprocess persistence (E2E)', () => {
+describe('wpm autoprocess persistence (E2E)', () => {
   let testEnv: Awaited<ReturnType<typeof createCliTestEnv>>;
 
   beforeEach(async () => {
@@ -182,7 +182,7 @@ describe('pictl autoprocess persistence (E2E)', () => {
 
   // Test 2: Persistence across runs
   describe('Test 2: Persistence across runs', () => {
-    it('should create .pictl/autoprocess-state.json on first run', async () => {
+    it('should create .wasm4pm/autoprocess-state.json on first run', async () => {
       const result = await runPictl(
         ['autoprocess', FIXTURE_LOG, '--format', 'json'],
         testEnv.tempDir

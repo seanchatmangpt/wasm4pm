@@ -1,14 +1,14 @@
 /**
- * End-to-End Test: pictl autoprocess command
+ * End-to-End Test: wpm autoprocess command
  *
  * Task: Verify CLI integration for AutoProcess (Perception → Decision → Protection → Optimization)
  *
  * Scenarios:
- * 1. Basic invocation: pictl autoprocess <log.xes> --format json
+ * 1. Basic invocation: wpm autoprocess <log.xes> --format json
  * 2. Persistence across runs: State loaded from previous cycle
  * 3. Error handling: Bad log path returns SOURCE_ERROR
  *
- * Uses @pictl/testing CLI harness and real XES fixtures from lab/fixtures/
+ * Uses @wasm4pm/testing CLI harness and real XES fixtures from lab/fixtures/
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
@@ -20,13 +20,13 @@ import {
   assertJsonOutput,
   createCliTestEnv,
   EXIT_CODES,
-} from '@pictl/testing';
+} from '@wasm4pm/testing';
 
 // Resolve paths relative to the project root
 const PROJECT_ROOT = path.join(__dirname, '../..');
 const FIXTURE_LOG = path.join(PROJECT_ROOT, 'lab/fixtures/sample-logs/simple.xes');
-const AUTOPROCESS_STATE_FILE = '.pictl/autoprocess-state.json';
-const CLI_PATH = path.join(PROJECT_ROOT, 'apps/pictl/dist/bin/pictl.js');
+const AUTOPROCESS_STATE_FILE = '.wasm4pm/autoprocess-state.json';
+const CLI_PATH = path.join(PROJECT_ROOT, 'apps/wasm4pm/dist/bin/wpm.js');
 
 async function runPictl(args: string[], cwd: string) {
   // Use the compiled Node.js CLI by passing cliPath as 'node' and prepending the script
@@ -38,7 +38,7 @@ async function runPictl(args: string[], cwd: string) {
   });
 }
 
-describe('pictl autoprocess e2e', () => {
+describe('wpm autoprocess e2e', () => {
   let testEnv: Awaited<ReturnType<typeof createCliTestEnv>>;
 
   beforeEach(async () => {

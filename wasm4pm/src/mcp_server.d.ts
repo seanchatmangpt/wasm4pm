@@ -18,26 +18,26 @@
  * - Event log import/export
  */
 export declare class PictlMCPServer {
-    private server;
-    private transport;
-    constructor();
-    private setupHandlers;
-    /**
-     * Get all available MCP tools
-     */
-    private getAvailableTools;
-    /**
-     * Execute a tool by name
-     */
-    private executeTool;
-    /**
-     * Compare multiple algorithms on the same log
-     */
-    private compareAlgorithms;
-    /**
-     * Start the MCP server
-     */
-    start(): Promise<void>;
+  private server;
+  private transport;
+  constructor();
+  private setupHandlers;
+  /**
+   * Get all available MCP tools
+   */
+  private getAvailableTools;
+  /**
+   * Execute a tool by name
+   */
+  private executeTool;
+  /**
+   * Compare multiple algorithms on the same log
+   */
+  private compareAlgorithms;
+  /**
+   * Start the MCP server
+   */
+  start(): Promise<void>;
 }
 export default PictlMCPServer;
 //# sourceMappingURL=mcp_server.d.ts.map

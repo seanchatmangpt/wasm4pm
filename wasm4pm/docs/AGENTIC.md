@@ -1,13 +1,17 @@
 # Agentic Control Primitives
+
 ## Quickstart
-The `agentic` module provides lawful control primitives for `pictl`. Use these to orchestrate complex process mining workflows.
+
+The `agentic` module provides lawful control primitives for `wpm` (wasm4pm). Use these to orchestrate complex process mining workflows.
 
 ### Components
+
 - `RoleSelector`: Determines the best agent for a task phase.
 - `TaskDecomposer`: Maps risk and phase to an optimal swarm topology.
 - `HandoffValidator`: Ensures secure transition between agent roles.
 
 ### Example
+
 ```rust
 use wasm4pm::agentic::prelude::*;
 

@@ -8,11 +8,11 @@ use wasm_bindgen::prelude::*;
 #[wasm_bindgen]
 pub fn load_eventlog_from_json(content: &str) -> Result<String, JsValue> {
     let log: EventLog = serde_json::from_str(content)
-        .map_err(|e| JsValue::from_str(&format!("Failed to parse EventLog JSON: {}", e)))?;
+        .map_err(|e| crate::error::js_val(&format!("Failed to parse EventLog JSON: {}", e)))?;
 
     let handle = get_or_init_state()
         .store_object(StoredObject::EventLog(log))
-        .map_err(|_e| JsValue::from_str("Failed to store EventLog"))?;
+        .map_err(|_e| crate::error::js_val("Failed to store EventLog"))?;
 
     Ok(handle)
 }
@@ -21,14 +21,14 @@ pub fn load_eventlog_from_json(content: &str) -> Result<String, JsValue> {
 #[wasm_bindgen]
 pub fn load_ocel_from_json(content: &str) -> Result<String, JsValue> {
     let mut ocel: OCEL = serde_json::from_str(content)
-        .map_err(|e| JsValue::from_str(&format!("Failed to parse OCEL JSON: {}", e)))?;
+        .map_err(|e| crate::error::js_val(&format!("Failed to parse OCEL JSON: {}", e)))?;
 
     // Normalize relations: merge embedded relations from objects into global object_relations
     ocel.normalize_relations();
 
     let handle = get_or_init_state()
         .store_object(StoredObject::OCEL(ocel))
-        .map_err(|_e| JsValue::from_str("Failed to store OCEL"))?;
+        .map_err(|_e| crate::error::js_val("Failed to store OCEL"))?;
 
     Ok(handle)
 }
@@ -38,9 +38,9 @@ pub fn load_ocel_from_json(content: &str) -> Result<String, JsValue> {
 pub fn export_eventlog_to_json(handle: &str) -> Result<String, JsValue> {
     get_or_init_state().with_object(handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => serde_json::to_string(log)
-            .map_err(|e| JsValue::from_str(&format!("Failed to serialize EventLog: {}", e))),
-        Some(_) => Err(JsValue::from_str("Object is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog not found")),
+            .map_err(|e| crate::error::js_val(&format!("Failed to serialize EventLog: {}", e))),
+        Some(_) => Err(crate::error::js_val("Object is not an EventLog")),
+        None => Err(crate::error::js_val("EventLog not found")),
     })
 }
 
@@ -49,9 +49,9 @@ pub fn export_eventlog_to_json(handle: &str) -> Result<String, JsValue> {
 pub fn export_ocel_to_json(handle: &str) -> Result<String, JsValue> {
     get_or_init_state().with_object(handle, |obj| match obj {
         Some(StoredObject::OCEL(ocel)) => serde_json::to_string(ocel)
-            .map_err(|e| JsValue::from_str(&format!("Failed to serialize OCEL: {}", e))),
-        Some(_) => Err(JsValue::from_str("Object is not an OCEL")),
-        None => Err(JsValue::from_str("OCEL not found")),
+            .map_err(|e| crate::error::js_val(&format!("Failed to serialize OCEL: {}", e))),
+        Some(_) => Err(crate::error::js_val("Object is not an OCEL")),
+        None => Err(crate::error::js_val("OCEL not found")),
     })
 }
 
@@ -60,7 +60,7 @@ pub fn export_ocel_to_json(handle: &str) -> Result<String, JsValue> {
 #[wasm_bindgen]
 pub fn load_ocel_from_xml(content: &str) -> Result<String, JsValue> {
     let doc = roxmltree::Document::parse(content)
-        .map_err(|e| JsValue::from_str(&format!("Failed to parse XML: {}", e)))?;
+        .map_err(|e| crate::error::js_val(&format!("Failed to parse XML: {}", e)))?;
 
     let mut ocel = OCEL::new();
 
@@ -226,7 +226,7 @@ pub fn load_ocel_from_xml(content: &str) -> Result<String, JsValue> {
 
     let handle = get_or_init_state()
         .store_object(StoredObject::OCEL(ocel))
-        .map_err(|_e| JsValue::from_str("Failed to store OCEL"))?;
+        .map_err(|_e| crate::error::js_val("Failed to store OCEL"))?;
 
     Ok(handle)
 }
@@ -236,8 +236,8 @@ pub fn load_ocel_from_xml(content: &str) -> Result<String, JsValue> {
 pub fn get_ocel_event_count(ocel_handle: &str) -> Result<usize, JsValue> {
     get_or_init_state().with_object(ocel_handle, |obj| match obj {
         Some(StoredObject::OCEL(ocel)) => Ok(ocel.event_count()),
-        Some(_) => Err(JsValue::from_str("Object is not an OCEL")),
-        None => Err(JsValue::from_str("OCEL not found")),
+        Some(_) => Err(crate::error::js_val("Object is not an OCEL")),
+        None => Err(crate::error::js_val("OCEL not found")),
     })
 }
 
@@ -246,8 +246,8 @@ pub fn get_ocel_event_count(ocel_handle: &str) -> Result<usize, JsValue> {
 pub fn get_ocel_object_count(ocel_handle: &str) -> Result<usize, JsValue> {
     get_or_init_state().with_object(ocel_handle, |obj| match obj {
         Some(StoredObject::OCEL(ocel)) => Ok(ocel.object_count()),
-        Some(_) => Err(JsValue::from_str("Object is not an OCEL")),
-        None => Err(JsValue::from_str("OCEL not found")),
+        Some(_) => Err(crate::error::js_val("Object is not an OCEL")),
+        None => Err(crate::error::js_val("OCEL not found")),
     })
 }
 

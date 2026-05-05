@@ -6,8 +6,8 @@
 
 | Priority | File Name      | Status           |
 | -------- | -------------- | ---------------- |
-| 1        | `pictl.toml`   | Current standard |
-| 2        | `pictl.json`   | Current standard |
+| 1        | `wasm4pm.toml` | Current standard |
+| 2        | `wasm4pm.json` | Current standard |
 | 3        | `wasm4pm.toml` | Backward compat  |
 | 4        | `wasm4pm.json` | Backward compat  |
 
@@ -25,7 +25,7 @@ Higher-priority sources override lower-priority sources. Merging is per-section:
 
 ## Config File Schema
 
-### `pictl.toml` Example
+### `wasm4pm.toml` Example
 
 ```toml
 [source]
@@ -55,7 +55,7 @@ colorize = true
 enabled = false
 ```
 
-### `pictl.json` Example
+### `wasm4pm.json` Example
 
 ```json
 {

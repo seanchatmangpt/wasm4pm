@@ -2,16 +2,16 @@
 
 /**
  * Test Vision 2030 persistence by running autoprocess 9 times on same log
- * Verifies that state (.pictl/autoprocess-state.json) persists across invocations
+ * Verifies that state (.wasm4pm/autoprocess-state.json) persists across invocations
  */
 
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
-const LOG_PATH = '/Users/sac/chatmangpt/pictl/lab/fixtures/sample-logs/complex.xes';
-const STATE_FILE = path.join(process.cwd(), '.pictl', 'autoprocess-state.json');
-const RESULTS_DIR = path.join(process.cwd(), '.pictl', 'results');
+const LOG_PATH = '/Users/sac/chatmangpt/wasm4pm/lab/fixtures/sample-logs/complex.xes';
+const STATE_FILE = path.join(process.cwd(), '.wasm4pm', 'autoprocess-state.json');
+const RESULTS_DIR = path.join(process.cwd(), '.wasm4pm', 'results');
 
 // Ensure state directory exists
 const stateDirPath = path.dirname(STATE_FILE);

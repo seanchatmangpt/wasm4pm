@@ -4,7 +4,7 @@
  * Supports JSON and XES responses. Implements retry with exponential
  * backoff for transient network failures.
  */
-import { SourceAdapter, Capabilities, EventStream, Result, SourceAdapterKind, RetryStrategy, AuthConfig, AuthType } from '@pictl/contracts';
+import { SourceAdapter, Capabilities, EventStream, Result, SourceAdapterKind, RetryStrategy, AuthConfig, AuthType } from '@wasm4pm/contracts';
 /**
  * Configuration for HttpSourceAdapter
  */

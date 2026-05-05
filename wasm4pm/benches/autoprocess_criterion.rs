@@ -1,4 +1,4 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId, Throughput};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use std::time::Duration;
 
 // Placeholder for actual AutoProcessKernel measurement
@@ -9,7 +9,9 @@ fn measure_autoprocess_kernel() -> u32 {
     // Dummy computation to match ~34 cycles @ 3.5GHz
     let mut result = 0u32;
     for i in 0..8 {
-        result = result.wrapping_add((i as u32).wrapping_mul(73)).wrapping_add(17);
+        result = result
+            .wrapping_add((i as u32).wrapping_mul(73))
+            .wrapping_add(17);
     }
     result
 }

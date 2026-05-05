@@ -19,17 +19,17 @@ All 12 npm packages (1 WASM core + 1 CLI + 10 foundation) have been prepared and
 | Tier | Package | Version | Type | Size |
 |------|---------|---------|------|------|
 | **Core** | `wasm4pm` | 26.4.16 | WASM + JS | 3.6M |
-| **Primary CLI** | `@seanchatmangpt/pictl` | 26.4.16 | ESM TypeScript | 1.2M |
-| **Foundation** | `@pictl/agents` | 26.4.16 | ESM TypeScript | 208K |
-| | `@pictl/config` | 26.4.16 | ESM TypeScript | 152K |
-| | `@pictl/contracts` | 26.4.16 | ESM TypeScript | 432K |
-| | `@pictl/engine` | 26.4.16 | ESM TypeScript | 800K |
-| | `@pictl/kernel` | 26.4.16 | ESM TypeScript | 816K |
-| | `@pictl/ml` | 26.4.16 | ESM TypeScript | 240K |
-| | `@pictl/observability` | 26.4.16 | ESM TypeScript | 272K |
-| | `@pictl/planner` | 26.4.16 | ESM TypeScript | 208K |
-| | `@pictl/swarm` | 26.4.16 | ESM TypeScript | 128K |
-| | `@pictl/testing` | 26.4.16 | ESM TypeScript | 980K |
+| **Primary CLI** | `@wasm4pm/cli` | 26.4.16 | ESM TypeScript | 1.2M |
+| **Foundation** | `@wasm4pm/agents` | 26.4.16 | ESM TypeScript | 208K |
+| | `@wasm4pm/config` | 26.4.16 | ESM TypeScript | 152K |
+| | `@wasm4pm/contracts` | 26.4.16 | ESM TypeScript | 432K |
+| | `@wasm4pm/engine` | 26.4.16 | ESM TypeScript | 800K |
+| | `@wasm4pm/kernel` | 26.4.16 | ESM TypeScript | 816K |
+| | `@wasm4pm/ml` | 26.4.16 | ESM TypeScript | 240K |
+| | `@wasm4pm/observability` | 26.4.16 | ESM TypeScript | 272K |
+| | `@wasm4pm/planner` | 26.4.16 | ESM TypeScript | 208K |
+| | `@wasm4pm/swarm` | 26.4.16 | ESM TypeScript | 128K |
+| | `@wasm4pm/testing` | 26.4.16 | ESM TypeScript | 980K |
 | | | | **TOTAL** | **~9.7M** |
 
 ---
@@ -72,8 +72,8 @@ All 12 npm packages (1 WASM core + 1 CLI + 10 foundation) have been prepared and
 - **Western Electric SPC**: 100-snapshot ring buffer for drift detection
 - **8D State Space**: 460,800 states (health, event rate, activities, SPC alerts, drift, rework, circuit, phase)
 - **Circuit Breaker**: 3-state fault isolation (Closed/Open/HalfOpen)
-- **State Persistence**: Auto-save/restore to `.pictl/autoprocess-state.json`
-- **New Command**: `pictl autoprocess <log.xes>` for autonomous process analysis
+- **State Persistence**: Auto-save/restore to `.wasm4pm/autoprocess-state.json`
+- **New Command**: `wpm autoprocess <log.xes>` for autonomous process analysis
 - **Recovery MTTR**: <1 second (degraded→ready ~10-100ms, failed→ready <1s)
 - **No Breaking Changes**: Fully backward compatible
 
@@ -88,7 +88,7 @@ All 12 npm packages (1 WASM core + 1 CLI + 10 foundation) have been prepared and
 **Changes made this session**:
 - Root `package.json`: 26.4.9 → 26.4.16
 - `wasm4pm/package.json`: 26.4.6 → 26.4.16
-- All 10 `@pictl/*`: Already 26.4.16 (verified)
+- All 10 `@wasm4pm/*`: Already 26.4.16 (verified)
 
 ---
 
@@ -96,7 +96,7 @@ All 12 npm packages (1 WASM core + 1 CLI + 10 foundation) have been prepared and
 
 ### Option A: Recommended (Commit First)
 ```bash
-cd /Users/sac/chatmangpt/pictl
+cd /Users/sac/chatmangpt/wasm4pm
 git add package.json wasm4pm/package.json
 git commit -m "chore(version): align all packages to 26.4.16"
 pnpm publish --recursive --access public
@@ -142,12 +142,12 @@ Run this immediately after publishing:
 
 ```bash
 # Verify packages appear on npm
-npm view @seanchatmangpt/pictl@26.4.16
+npm view @wasm4pm/cli@26.4.16
 npm view wasm4pm@26.4.16
-npm view @pictl/contracts@26.4.16
+npm view @wasm4pm/contracts@26.4.16
 
 # Install globally and test
-npm install -g @seanchatmangpt/pictl@26.4.16
+npm install -g @wasm4pm/cli@26.4.16
 pictl --version        # Should output: 26.4.16
 pictl doctor           # Full system check
 ```
@@ -163,7 +163,7 @@ git tag -a v26.4.16 -m "Release v26.4.16 - Vision 2030: Autonomic Loop"
 git push origin v26.4.16
 
 # Create GitHub Release
-# Go to: https://github.com/seanchatmangpt/pictl/releases
+# Go to: https://github.com/seanchatmangpt/wasm4pm/releases
 # Create release v26.4.16 with CHANGELOG content
 ```
 
@@ -190,11 +190,11 @@ If issues arise (unlikely):
 
 ```bash
 # Deprecate published version (soft rollback)
-npm deprecate @seanchatmangpt/pictl@26.4.16 "Deprecated: See v26.4.17"
+npm deprecate @wasm4pm/cli@26.4.16 "Deprecated: See v26.4.17"
 npm deprecate wasm4pm@26.4.16 "Deprecated: See v26.4.17"
 
 # For catastrophic issues only (within 72 hours)
-npm unpublish @seanchatmangpt/pictl@26.4.16 --force
+npm unpublish @wasm4pm/cli@26.4.16 --force
 npm unpublish wasm4pm@26.4.16 --force
 ```
 

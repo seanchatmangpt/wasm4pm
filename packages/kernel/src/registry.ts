@@ -4,7 +4,7 @@
  * Maintains metadata, profiles, and execution configuration for all 15+ discovery algorithms
  */
 
-import { PlanStepType } from '@pictl/planner';
+import { PlanStepType } from '@wasm4pm/planner';
 
 /**
  * Complexity class for O(n) analysis

@@ -651,7 +651,7 @@ impl GpuLinUcb {
 ///
 /// Tries GPU if the `gpu` feature is compiled in; falls back to CPU otherwise.
 /// This is the primary entry point called from `prediction_resource.rs` and the
-/// `pictl predict resource` CLI command.
+/// `wpm predict resource` CLI command.
 ///
 /// Interpretability contract: the returned `LinUcbResult` always includes
 /// `algorithm_id` (human-readable), `ucb_value` (confidence score), and
@@ -893,38 +893,38 @@ mod tests {
     // This test is annotated cfg(feature = "gpu") — it only runs when the GPU
     // feature is compiled in and a device is available.
     #[cfg(feature = "gpu")]
-    #[tokio::test]
-    async fn gpu_cpu_parity() {
-        use futures::executor::block_on;
+    #[test]
+    fn gpu_cpu_parity() {
+        pollster::block_on(async {
+            let state = LinUcbState::new(0.5);
+            let features = default_features();
 
-        let state = LinUcbState::new(0.5);
-        let features = default_features();
+            let gpu_opt = GpuLinUcb::new().await.expect("GPU init should not error");
+            if gpu_opt.is_none() {
+                // No GPU in this environment — skip rather than fail
+                eprintln!("[parity test] No GPU available, skipping GPU/CPU parity check");
+                return;
+            }
+            let gpu = gpu_opt.unwrap();
 
-        let gpu_opt = GpuLinUcb::new().await.expect("GPU init should not error");
-        if gpu_opt.is_none() {
-            // No GPU in this environment — skip rather than fail
-            eprintln!("[parity test] No GPU available, skipping GPU/CPU parity check");
-            return;
-        }
-        let gpu = gpu_opt.unwrap();
+            let gpu_result = gpu
+                .infer_single(&features, &state)
+                .await
+                .expect("GPU inference failed");
+            let cpu_result = cpu_infer(&features, &state);
 
-        let gpu_result = gpu
-            .infer_single(&features, &state)
-            .await
-            .expect("GPU inference failed");
-        let cpu_result = cpu_infer(&features, &state);
-
-        assert_eq!(
-            gpu_result.action_index, cpu_result.action_index,
-            "GPU and CPU selected different actions: GPU={} CPU={}",
-            gpu_result.action_index, cpu_result.action_index
-        );
-        assert!(
-            (gpu_result.ucb_value - cpu_result.ucb_value).abs() < 1e-4,
-            "GPU UCB value {:.6} differs from CPU {:.6} by more than tolerance",
-            gpu_result.ucb_value,
-            cpu_result.ucb_value
-        );
+            assert_eq!(
+                gpu_result.action_index, cpu_result.action_index,
+                "GPU and CPU selected different actions: GPU={} CPU={}",
+                gpu_result.action_index, cpu_result.action_index
+            );
+            assert!(
+                (gpu_result.ucb_value - cpu_result.ucb_value).abs() < 1e-4,
+                "GPU UCB value {:.6} differs from CPU {:.6} by more than tolerance",
+                gpu_result.ucb_value,
+                cpu_result.ucb_value
+            );
+        });
     }
 
     // ── Throughput smoke test ─────────────────────────────────────────────────

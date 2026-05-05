@@ -4,7 +4,7 @@
  * JTBD: "Verify the simulate command is integrated and callable without crashing."
  *
  * Van der Aalst doctrine: A command that crashes or is missing from the CLI is not a usable
- * process mining tool. This scenario validates that `pictl simulate` exists, is callable,
+ * process mining tool. This scenario validates that `wpm simulate` exists, is callable,
  * and produces valid results without crashing.
  *
  * Test phases:

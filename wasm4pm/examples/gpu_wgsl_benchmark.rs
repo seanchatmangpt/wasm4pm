@@ -17,11 +17,11 @@
 //!   - Benchmark: CPU LinUCB at batch=2048 using `std::time::Instant`
 //!   - Parity: all 2048 CPU actions verified for determinism (two independent runs)
 //!
-//! Output: `.pictl/benchmarks/benchmarks/gpu_wgsl_<timestamp>.json`
+//! Output: `.wasm4pm/benchmarks/benchmarks/gpu_wgsl_<timestamp>.json`
 
-use wasm4pm::ml::LinUCBAgent;
 use std::fs;
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
+use wasm4pm::ml::LinUCBAgent;
 
 // ─── Constants matching the WGSL kernel ───────────────────────────────────────
 
@@ -386,7 +386,7 @@ fn main() {
 
     let output_dir = concat!(
         env!("CARGO_MANIFEST_DIR"),
-        "/../.pictl/benchmarks/benchmarks"
+        "/../.wasm4pm/benchmarks/benchmarks"
     );
     fs::create_dir_all(output_dir).expect("Cannot create output directory");
     let filename = format!("{output_dir}/gpu_wgsl_{timestamp}.json");

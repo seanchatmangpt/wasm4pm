@@ -5,7 +5,7 @@
  * Bridges raw WASM errors from wasm4pm into the contracts TypedError system.
  * Provides classification, context enrichment, and recovery guidance.
  */
-import type { ErrorCode, TypedError } from '@pictl/contracts';
+import type { ErrorCode, TypedError } from '@wasm4pm/contracts';
 /** Kernel-specific error codes extending the contracts error system */
 export type KernelErrorCode = ErrorCode | 'KERNEL_VERSION_MISMATCH' | 'KERNEL_NOT_INITIALIZED';
 /**

@@ -89,7 +89,7 @@ impl ProcessTreeNode {
 #[wasm_bindgen]
 pub fn validate_process_tree(tree_json: &str) -> Result<JsValue, JsValue> {
     let v: serde_json::Value = serde_json::from_str(tree_json)
-        .map_err(|e| JsValue::from_str(&format!("Invalid JSON: {}", e)))?;
+        .map_err(|e| crate::error::js_val(&format!("Invalid JSON: {}", e)))?;
 
     fn validate(node: &serde_json::Value, depth: usize) -> Result<serde_json::Value, String> {
         if depth > 50 {
@@ -135,9 +135,10 @@ pub fn validate_process_tree(tree_json: &str) -> Result<JsValue, JsValue> {
         }
     }
 
-    let validated = validate(&v, 0).map_err(|e| JsValue::from_str(&e))?;
-    let out = serde_json::to_string(&validated).map_err(|e| JsValue::from_str(&e.to_string()))?;
-    Ok(JsValue::from_str(&out))
+    let validated = validate(&v, 0).map_err(|e| crate::error::js_val(&e))?;
+    let out =
+        serde_json::to_string(&validated).map_err(|e| crate::error::js_val(&e.to_string()))?;
+    Ok(crate::error::js_val(&out))
 }
 
 /// Discover a simple process tree from an event log using frequency-based
@@ -204,11 +205,11 @@ pub fn discover_simple_process_tree(
                 })
             };
 
-            serde_json::to_string(&tree).map_err(|e| JsValue::from_str(&e.to_string()))
+            serde_json::to_string(&tree).map_err(|e| crate::error::js_val(&e.to_string()))
         }
-        Some(_) => Err(JsValue::from_str("Handle is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog handle not found")),
+        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
+        None => Err(crate::error::js_val("EventLog handle not found")),
     })?;
 
-    Ok(JsValue::from_str(&result_json))
+    Ok(crate::error::js_val(&result_json))
 }

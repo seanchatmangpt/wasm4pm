@@ -20,11 +20,11 @@ jobs:
       - name: Load WIP config
         id: config
         run: |
-          MAX_REVIEW_HOURS=$(jq -r '.max_review_hours' .pictl/wip-config.json)
-          ESCALATION_HOURS=$(jq -r '.escalation_hours' .pictl/wip-config.json)
-          MERGE_BLOCK_HOURS=$(jq -r '.merge_block_hours' .pictl/wip-config.json)
-          AUTO_LABEL=$(jq -r '.auto_label_stale' .pictl/wip-config.json)
-          AUTO_COMMENT=$(jq -r '.auto_comment_escalation' .pictl/wip-config.json)
+          MAX_REVIEW_HOURS=$(jq -r '.max_review_hours' .wasm4pm/wip-config.json)
+          ESCALATION_HOURS=$(jq -r '.escalation_hours' .wasm4pm/wip-config.json)
+          MERGE_BLOCK_HOURS=$(jq -r '.merge_block_hours' .wasm4pm/wip-config.json)
+          AUTO_LABEL=$(jq -r '.auto_label_stale' .wasm4pm/wip-config.json)
+          AUTO_COMMENT=$(jq -r '.auto_comment_escalation' .wasm4pm/wip-config.json)
 
           echo "max_review_hours=$MAX_REVIEW_HOURS" >> $GITHUB_OUTPUT
           echo "escalation_hours=$ESCALATION_HOURS" >> $GITHUB_OUTPUT
@@ -100,7 +100,7 @@ This PR has been in review for **${HOURS_IN_REVIEW} hours** (limit: ${MERGE_BLOC
 - Obtain explicit decision (approve/request changes) from reviewer(s)
 - Or close this PR if no longer needed
 
-See [\`.pictl/wip-config.json\`](/.pictl/wip-config.json) for staleness policy." \
+See [\`.wasm4pm/wip-config.json\`](/.wasm4pm/wip-config.json) for staleness policy." \
                   --repo "${{ github.repository }}" 2>/dev/null || true
               fi
             fi

@@ -174,12 +174,27 @@ function deriveLatencyClass(estimatedDurationMs: number): LatencyClass {
  */
 export class Pm4wasmBackend implements MiningBackend {
   readonly id = 'pm4wasm';
+  private initialized = false;
 
   /**
    * Optional WASM module (passed at construction or lazy-loaded).
    * Type is any to avoid hard dependency on @wasm4pm/pm4wasm during testing.
    */
   private wasmModule: any;
+
+  async init(): Promise<void> {
+    this.wasmModule = await this.loadWasmModule();
+    this.initialized = true;
+  }
+
+  async shutdown(): Promise<void> {
+    this.wasmModule = null;
+    this.initialized = false;
+  }
+
+  isReady(): boolean {
+    return this.initialized;
+  }
 
   /**
    * Constructor: Accept optional pre-loaded WASM module.
@@ -547,7 +562,6 @@ export class Pm4wasmBackend implements MiningBackend {
   /**
    * Convert EventLogIR to WASM-compatible format.
    * Serializes to JSON and calls wasm::eventlog_from_json().
-   * Placeholder: actual implementation fills in WASM call details in Phase 2.
    */
   private async convertEventLogToWasm(log: EventLogIR): Promise<string> {
     // Serialize EventLogIR to JSON string
@@ -567,7 +581,6 @@ export class Pm4wasmBackend implements MiningBackend {
     });
 
     // Call WASM function to parse and store log
-    // Placeholder: actual pm4wasm function name may differ
     if (this.wasmModule && typeof this.wasmModule.eventlog_from_json === 'function') {
       return await this.wasmModule.eventlog_from_json(logJson);
     }
@@ -578,35 +591,15 @@ export class Pm4wasmBackend implements MiningBackend {
 
   /**
    * Convert ModelIR to WASM-compatible format.
-   * Serializes to JSON and calls wasm::model_from_json().
-   * Placeholder: actual implementation in Phase 2.
+   * Serializes to JSON.
    */
   private async convertModelToWasm(model: ModelIR): Promise<string> {
-    // Serialize ModelIR to JSON string
-    const modelJson = JSON.stringify({
-      format_version: model.format_version,
-      model_type: model.model_type,
-      algorithm_id: model.algorithm_id,
-      capabilities: model.capabilities,
-      nodes: model.nodes,
-      edges: model.edges,
-      quality: model.quality,
-    });
-
-    // Call WASM function to parse and store model
-    // Placeholder: actual pm4wasm function name may differ
-    if (this.wasmModule && typeof this.wasmModule.model_from_json === 'function') {
-      return await this.wasmModule.model_from_json(modelJson);
-    }
-
-    // Fallback: return handle-like string
-    return `model_handle_${this.generateUuid().substring(0, 8)}`;
+    return JSON.stringify(model);
   }
 
   /**
    * Call a WASM algorithm function by name from ALGORITHM_MAP.
    * Dispatches to the appropriate pm4wasm function with log handle.
-   * Placeholder: actual implementation in Phase 2.
    */
   private async callWasmAlgorithm(wasmFunctionName: string, logHandle: string): Promise<string> {
     if (!this.wasmModule) {
@@ -625,7 +618,6 @@ export class Pm4wasmBackend implements MiningBackend {
   /**
    * Parse WASM algorithm output to ModelIR.
    * Takes the WASM JSON result and converts to canonical ModelIR format.
-   * Placeholder: actual implementation in Phase 2.
    */
   private parseModelOutput(
     wasmOutput: string,
@@ -672,7 +664,6 @@ export class Pm4wasmBackend implements MiningBackend {
   /**
    * Token-based replay conformance checking.
    * Calls wasm::token_replay() and returns ConformanceResult.
-   * Placeholder: actual pm4wasm function call in Phase 2.
    */
   private async tokenReplayConformance(
     logHandle: string,
@@ -706,7 +697,6 @@ export class Pm4wasmBackend implements MiningBackend {
   /**
    * Alignment-based conformance checking for Petri nets.
    * Calls wasm::compute_optimal_alignments() and returns ConformanceResult.
-   * Placeholder: actual pm4wasm function call in Phase 2.
    */
   private async alignmentConformance(
     logHandle: string,
@@ -787,26 +777,9 @@ export class Pm4wasmBackend implements MiningBackend {
 
   /**
    * Load WASM module dynamically.
-   * Placeholder: actual implementation depends on WASM bundler configuration.
-   * In Phase 2, this will import from @seanchatmangpt/pictl or equivalent.
+   * In Phase 2, this will import from @wasm4pm/cli or equivalent.
    */
   private async loadWasmModule(): Promise<any> {
-    // Placeholder: would dynamically import WASM module here
-    // Example (Phase 2):
-    // const wasmModule = await import('@seanchatmangpt/pictl');
-    // return wasmModule;
-
-    return {
-      discovery_info: async () => ({ version: '1.0' }),
-      discover_dfg: async (handle: string) => JSON.stringify({ nodes: [], edges: [] }),
-      discover_alpha_plus_plus: async (handle: string) => JSON.stringify({ nodes: [], edges: [] }),
-      discover_inductive_miner: async (handle: string) => JSON.stringify({ nodes: [], edges: [] }),
-      eventlog_from_json: async (json: string) => `log_handle_${Date.now()}`,
-      model_from_json: async (json: string) => `model_handle_${Date.now()}`,
-      token_replay_pure: async (logHandle: string, modelHandle: string) =>
-        JSON.stringify({ fitness: 0.85, precision: 0.80, generalization: 0.75, simplicity: 100 }),
-      compute_optimal_alignments: async (logHandle: string, modelHandle: string) =>
-        JSON.stringify({ fitness: 0.90, precision: 0.85, generalization: 0.80, simplicity: 100 }),
-    };
+    return await import('wasm4pm');
   }
 }

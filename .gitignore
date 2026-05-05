@@ -2,16 +2,20 @@
 /target
 **/*.rs.bk
 
-# WASM build artifacts (tracked in wasm4pm/.gitignore)
-# *.wasm and pkg/ patterns removed from root to allow npm publish
+# WASM build artifacts
+*.wasm
+wasm4pm/pkg/
 
 # Node
 node_modules/
 .pnpm-store/
+package-lock.json
+pnpm-lock.yaml
 
 # TypeScript build
 dist/
 *.tsbuildinfo
+**/node_modules/.vite/
 
 # Test & coverage
 coverage/
@@ -20,6 +24,7 @@ coverage/
 # wasm4pm runtime
 .wasm4pm/
 results/
+benchmarks/results/
 
 # OS
 .DS_Store
@@ -27,6 +32,7 @@ Thumbs.db
 
 # IDE
 .idea/
+.vscode/
 *.swp
 *.swo
 *~
@@ -36,3 +42,13 @@ Thumbs.db
 .env.local
 .env.*.local
 data/Road_Traffic_Fine_Management_Process.xes
+
+# Metrics & Logs
+*.log
+.wasm4pm/build-times.log
+.wasm4pm/checkpoint
+.wasm4pm/metrics-dashboard.md
+.wasm4pm/otel-coverage.json
+.wasm4pm/otel-coverage.md
+.wasm4pm/production-readiness-phase4-final.json
+.wasm4pm/test-wip-system.sh

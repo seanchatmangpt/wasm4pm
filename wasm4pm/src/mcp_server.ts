@@ -1,8 +1,8 @@
 /**
- * MCP Server Integration for pictl
+ * MCP Server Integration for wasm4pm
  *
- * Exposes pictl process mining capabilities as Model Context Protocol (MCP) tools.
- * Enables Claude and other MCP clients to use pictl for process discovery, analysis, and visualization.
+ * Exposes wasm4pm process mining capabilities as Model Context Protocol (MCP) tools.
+ * Enables Claude and other MCP clients to use wasm4pm for process discovery, analysis, and visualization.
  *
  * Usage:
  *   const server = new PictlMCPServer();
@@ -16,16 +16,16 @@ import {
   type CallToolResult,
 } from '@modelcontextprotocol/sdk/types.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import * as wasm from '../pkg/pictl.js';
+import * as wasm from '../pkg/wasm4pm.js';
 
 interface ToolInput {
   [key: string]: unknown;
 }
 
 /**
- * pictl MCP Server
+ * wasm4pm MCP Server
  *
- * Provides MCP interface to pictl functionality including:
+ * Provides MCP interface to wasm4pm functionality including:
  * - Process discovery (18 algorithms)
  * - Conformance checking
  * - Process analysis and visualization
@@ -38,7 +38,7 @@ export class PictlMCPServer {
   constructor() {
     this.server = new Server(
       {
-        name: 'pictl',
+        name: 'wasm4pm',
         version: '0.5.4',
       },
       {
@@ -669,7 +669,7 @@ export class PictlMCPServer {
       // Registry
       {
         name: 'get_capability_registry',
-        description: 'Get the complete catalog of all pictl functions organized by category.',
+        description: 'Get the complete catalog of all wasm4pm functions organized by category.',
         inputSchema: {
           type: 'object' as const,
           properties: {},
@@ -711,6 +711,61 @@ export class PictlMCPServer {
             },
           },
           required: ['xes_content'],
+        },
+      },
+      // Process Discovery — Alpha Miner footprint matrix
+      {
+        name: 'discover_alpha_footprints',
+        description:
+          'Compute the Alpha Miner footprint matrix. Answers "What are the causal, parallel, and never-follow relations between activities in this process?" Returns causal pairs (A→B), parallel pairs (A||B), and never-follow pairs for every activity pair in the log.',
+        inputSchema: {
+          type: 'object' as const,
+          properties: {
+            xes_content: {
+              type: 'string',
+              description: 'XES event log content as string',
+            },
+            activity_key: {
+              type: 'string',
+              description: 'XES activity attribute key (default: concept:name)',
+            },
+          },
+          required: ['xes_content'],
+        },
+      },
+      // Conformance Checking — DFG token-replay fitness
+      {
+        name: 'compute_conformance_fitness',
+        description:
+          'Compute DFG token-replay fitness for an event log. Answers "How well does this log conform to the process model discovered from it?" Returns a 0–1 fitness score with a quality label (good/partial/poor) and an interpretation. Uses SIMD-accelerated token replay internally.',
+        inputSchema: {
+          type: 'object' as const,
+          properties: {
+            xes_content: {
+              type: 'string',
+              description: 'XES event log content as string',
+            },
+            activity_key: {
+              type: 'string',
+              description: 'XES activity attribute key (default: concept:name)',
+            },
+          },
+          required: ['xes_content'],
+        },
+      },
+      // Resource and intervention — WASM backend health
+      {
+        name: 'check_backend_health',
+        description:
+          'Check whether the process mining WASM backend is initialized and ready to accept discovery and conformance requests. Returns version, feature flags, cache statistics, and a readiness flag.',
+        inputSchema: {
+          type: 'object' as const,
+          properties: {
+            force_reinit: {
+              type: 'boolean',
+              description: 'If true, call wasm.init() even if already initialized (default: false)',
+            },
+          },
         },
       },
     ];
@@ -1049,7 +1104,7 @@ export class PictlMCPServer {
 
         // ML Tools (native process intelligence — dynamic import for lazy loading)
         case 'ml_classify_traces': {
-          const { classifyTraces } = await import('@pictl/ml');
+          const { classifyTraces } = await import('@wasm4pm/ml');
           const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
           try {
             const configJson = JSON.stringify({
@@ -1086,7 +1141,7 @@ export class PictlMCPServer {
         }
 
         case 'ml_cluster_traces': {
-          const { clusterTraces } = await import('@pictl/ml');
+          const { clusterTraces } = await import('@wasm4pm/ml');
           const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
           try {
             const configJson = JSON.stringify({
@@ -1122,7 +1177,7 @@ export class PictlMCPServer {
         }
 
         case 'ml_forecast_throughput': {
-          const { forecastThroughput } = await import('@pictl/ml');
+          const { forecastThroughput } = await import('@wasm4pm/ml');
           const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
           try {
             const driftRaw = wasm.detect_drift(logHandle, 'concept:name', 5);
@@ -1144,7 +1199,7 @@ export class PictlMCPServer {
         }
 
         case 'ml_detect_anomalies': {
-          const { detectEnhancedAnomalies } = await import('@pictl/ml');
+          const { detectEnhancedAnomalies } = await import('@wasm4pm/ml');
           const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
           try {
             const driftRaw = wasm.detect_drift(logHandle, 'concept:name', 10);
@@ -1164,7 +1219,7 @@ export class PictlMCPServer {
         }
 
         case 'ml_regress_remaining_time': {
-          const { regressRemainingTime } = await import('@pictl/ml');
+          const { regressRemainingTime } = await import('@wasm4pm/ml');
           const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
           try {
             const configJson = JSON.stringify({
@@ -1197,7 +1252,7 @@ export class PictlMCPServer {
         }
 
         case 'ml_pca_reduce': {
-          const { reduceFeaturesPCA } = await import('@pictl/ml');
+          const { reduceFeaturesPCA } = await import('@wasm4pm/ml');
           const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
           try {
             const configJson = JSON.stringify({
@@ -1331,6 +1386,151 @@ export class PictlMCPServer {
           break;
         }
 
+        // Process Discovery — Alpha Miner footprint matrix (T001)
+        case 'discover_alpha_footprints': {
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
+          try {
+            const actKey = (input.activity_key as string) ?? 'concept:name';
+            const raw = wasm.discover_footprints(logHandle, actKey);
+            const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+            // Tally relation types across the matrix
+            const matrix: string[][] = parsed?.matrix ?? [];
+            const activities: string[] = parsed?.activities ?? [];
+            let causalPairs = 0;
+            let parallelPairs = 0;
+            let neverFollowPairs = 0;
+            let loopL1 = 0;
+            for (let i = 0; i < matrix.length; i++) {
+              for (let j = 0; j < (matrix[i]?.length ?? 0); j++) {
+                const rel = matrix[i]?.[j];
+                if (rel === '>' || rel === 'causal') causalPairs++;
+                else if (rel === '||' || rel === 'parallel') parallelPairs++;
+                else if (rel === '#' || rel === 'never') neverFollowPairs++;
+                // Self-loop on diagonal = length-1 loop
+                if (i === j && (rel === '>' || rel === 'causal')) loopL1++;
+              }
+            }
+            const loopL2: number = parsed?.loop_count_l2 ?? 0;
+            result = {
+              activities,
+              matrix,
+              causal_pairs: causalPairs,
+              parallel_pairs: parallelPairs,
+              never_follow_pairs: neverFollowPairs,
+              loop_count_l1: loopL1,
+              loop_count_l2: loopL2,
+              interpretation:
+                activities.length === 0
+                  ? 'No activities found in the log. Verify the activity_key parameter.'
+                  : `Alpha footprint computed over ${activities.length} activities. Found ${causalPairs} causal pair(s) (A→B), ${parallelPairs} parallel pair(s) (A||B), and ${neverFollowPairs} never-follow pair(s) (#). ${loopL1 > 0 ? `${loopL1} length-1 loop(s) detected.` : 'No length-1 loops.'} ${loopL2 > 0 ? `${loopL2} length-2 loop(s) detected.` : ''}`.trim(),
+            };
+          } finally {
+            try {
+              wasm.delete_object(logHandle);
+            } catch {
+              /* best-effort */
+            }
+          }
+          break;
+        }
+
+        // Conformance Checking — DFG token-replay fitness (T002)
+        case 'compute_conformance_fitness': {
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
+          try {
+            const actKey = (input.activity_key as string) ?? 'concept:name';
+            const rawReplay = wasm.simd_token_replay(logHandle, actKey);
+            const replayResult = typeof rawReplay === 'string' ? JSON.parse(rawReplay) : rawReplay;
+            const fitness: number = replayResult?.fitness ?? replayResult?.avg_fitness ?? 0;
+            const precision: number = replayResult?.precision ?? replayResult?.avg_precision ?? 0;
+            const testedTraces: number =
+              replayResult?.trace_count ?? replayResult?.total_traces ?? 0;
+            const conformingTraces: number =
+              replayResult?.conforming_traces ?? Math.round(fitness * testedTraces);
+            const qualityLabel: 'good' | 'partial' | 'poor' =
+              fitness >= 0.8 ? 'good' : fitness >= 0.5 ? 'partial' : 'poor';
+            const qualityDesc =
+              qualityLabel === 'good'
+                ? 'Good fit — the log closely follows the discovered process model.'
+                : qualityLabel === 'partial'
+                  ? 'Partial fit — the log deviates from the model in some cases. Review variant analysis for deviations.'
+                  : 'Poor fit — the log diverges significantly from the discovered process model. Expect frequent deviations or noise.';
+            result = {
+              fitness: parseFloat(fitness.toFixed(4)),
+              precision: parseFloat(precision.toFixed(4)),
+              tested_traces: testedTraces,
+              conforming_traces: conformingTraces,
+              quality_label: qualityLabel,
+              interpretation: `Token-replay fitness: ${(fitness * 100).toFixed(1)}% over ${testedTraces} trace(s). ${qualityDesc}`,
+            };
+          } finally {
+            try {
+              wasm.delete_object(logHandle);
+            } catch {
+              /* best-effort */
+            }
+          }
+          break;
+        }
+
+        // Resource and intervention — WASM backend health (T003)
+        case 'check_backend_health': {
+          const forceReinit = (input.force_reinit as boolean) ?? false;
+          let ready = true;
+          let version = 'unknown';
+          let features: unknown = {};
+          let cacheStats: unknown = {};
+
+          try {
+            version = wasm.get_version();
+          } catch {
+            ready = false;
+          }
+
+          try {
+            const rawCaps = wasm.get_capabilities();
+            features = typeof rawCaps === 'string' ? JSON.parse(rawCaps) : rawCaps;
+          } catch {
+            ready = false;
+          }
+
+          try {
+            const rawCache = wasm.get_cache_stats();
+            cacheStats = typeof rawCache === 'string' ? JSON.parse(rawCache) : rawCache;
+          } catch (e) {
+            // Cache stats failure may indicate un-initialized state — attempt init
+            ready = false;
+          }
+
+          if (forceReinit || !ready) {
+            try {
+              wasm.init();
+              ready = true;
+              // Re-fetch cache stats after init
+              const rawCache = wasm.get_cache_stats();
+              cacheStats = typeof rawCache === 'string' ? JSON.parse(rawCache) : rawCache;
+            } catch {
+              ready = false;
+            }
+          }
+
+          const caps = features as Record<string, unknown>;
+          const conformanceReady = caps?.conformance ?? caps?.token_replay ?? false;
+          const mlReady = caps?.ml ?? caps?.machine_learning ?? false;
+
+          result = {
+            ready,
+            version,
+            features,
+            cache_stats: cacheStats,
+            backend_id: 'wasm',
+            interpretation: ready
+              ? `WASM backend is initialized and ready. Version ${version}. Conformance: ${String(conformanceReady)}. ML: ${String(mlReady)}.`
+              : `WASM backend is NOT ready. Version reported as "${version}". Call with force_reinit: true to attempt reinitialization.`,
+          };
+          break;
+        }
+
         default:
           throw new Error(`Unknown tool: ${toolName}`);
       }
@@ -1459,7 +1659,7 @@ export class PictlMCPServer {
    */
   async start(): Promise<void> {
     this.server.connect(this.transport);
-    console.error('pictl MCP server started');
+    console.error('wasm4pm MCP server started');
   }
 }
 

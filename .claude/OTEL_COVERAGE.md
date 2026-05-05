@@ -14,7 +14,7 @@ Coverage: 0/596 public functions (0%)
 Target:   100% (merge-blocking at <80%)
 ```
 
-See `.pictl/otel-coverage.json` and `.pictl/otel-coverage.md` for live dashboard.
+See `.wasm4pm/otel-coverage.json` and `.wasm4pm/otel-coverage.md` for live dashboard.
 
 ---
 
@@ -109,7 +109,7 @@ rules: {
 ### Pattern 1: State Change (Engine operations)
 
 ```typescript
-import { Instrumentation, RequiredOtelAttributes } from '@pictl/observability';
+import { Instrumentation, RequiredOtelAttributes } from '@wasm4pm/observability';
 
 export async function updateEngineState(
   currentState: string,
@@ -246,7 +246,7 @@ Before merging any PR that adds/modifies public functions:
 - [ ] All OTEL attributes are populated (service.name, run.id, trace.id, span.id)
 - [ ] Spans are properly nested (parent_span_id set where applicable)
 - [ ] Error spans have status="error" + errorCode + errorMessage
-- [ ] Update `.pictl/otel-coverage.json` and `.pictl/otel-coverage.md` if coverage changes
+- [ ] Update `.wasm4pm/otel-coverage.json` and `.wasm4pm/otel-coverage.md` if coverage changes
 - [ ] Coverage report committed (automation will update on every `verify-otel-coverage.sh` run)
 
 ---

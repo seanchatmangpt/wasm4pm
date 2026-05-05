@@ -87,8 +87,8 @@ let wasmModule: any = null;
 beforeAll(async () => {
   try {
     // Try to load from the built WASM package
-    const pictlWasm = await import('@pictl/wasm');
-    wasmModule = pictlWasm.default || pictlWasm;
+    constwasm4pmWasm = await import('@wasm4pm/wasm');
+    wasmModule = wasm4pmWasm.default || wasm4pmWasm;
   } catch (error) {
     // If not available, skip tests gracefully
     console.warn('WASM module not available, skipping parity tests');
@@ -388,7 +388,8 @@ describe('Cross-Algorithm Parity: Conformance Metrics', () => {
         'concept:name',
         JSON.stringify(model)
       );
-      const conformance = typeof conformanceRaw === 'string' ? JSON.parse(conformanceRaw) : conformanceRaw;
+      const conformance =
+        typeof conformanceRaw === 'string' ? JSON.parse(conformanceRaw) : conformanceRaw;
 
       // Fitness must be in [0, 1] (WvdA soundness)
       expect(conformance).toHaveProperty('fitness');
@@ -428,7 +429,8 @@ describe('Cross-Algorithm Parity: Conformance Metrics', () => {
           'concept:name',
           JSON.stringify(model)
         );
-        const precisionResult = typeof precisionRaw === 'string' ? JSON.parse(precisionRaw) : precisionRaw;
+        const precisionResult =
+          typeof precisionRaw === 'string' ? JSON.parse(precisionRaw) : precisionRaw;
 
         // Precision must be in [0, 1] (WvdA soundness)
         expect(precisionResult).toHaveProperty('precision');

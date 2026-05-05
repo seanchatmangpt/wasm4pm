@@ -13,24 +13,24 @@
  * @returns Mermaid diagram code
  */
 export function petriNetToMermaid(petriNet) {
-    let diagram = 'graph LR\n';
-    // Add places (circles)
-    for (const place of petriNet.places) {
-        const marking = place.marking ? ` [${place.marking}]` : '';
-        diagram += `  ${place.id}((${place.label}${marking}))\n`;
-    }
-    // Add transitions (rectangles)
-    for (const transition of petriNet.transitions) {
-        const style = transition.isInvisible ? '[[' : '[';
-        const endStyle = transition.isInvisible ? ']]' : ']';
-        diagram += `  ${transition.id}${style}${transition.label}${endStyle}\n`;
-    }
-    // Add arcs
-    for (const arc of petriNet.arcs) {
-        const weight = arc.weight && arc.weight > 1 ? `|${arc.weight}|` : '';
-        diagram += `  ${arc.from} -->|${weight}| ${arc.to}\n`;
-    }
-    return diagram;
+  let diagram = 'graph LR\n';
+  // Add places (circles)
+  for (const place of petriNet.places) {
+    const marking = place.marking ? ` [${place.marking}]` : '';
+    diagram += `  ${place.id}((${place.label}${marking}))\n`;
+  }
+  // Add transitions (rectangles)
+  for (const transition of petriNet.transitions) {
+    const style = transition.isInvisible ? '[[' : '[';
+    const endStyle = transition.isInvisible ? ']]' : ']';
+    diagram += `  ${transition.id}${style}${transition.label}${endStyle}\n`;
+  }
+  // Add arcs
+  for (const arc of petriNet.arcs) {
+    const weight = arc.weight && arc.weight > 1 ? `|${arc.weight}|` : '';
+    diagram += `  ${arc.from} -->|${weight}| ${arc.to}\n`;
+  }
+  return diagram;
 }
 /**
  * Generate Mermaid diagram for a DFG
@@ -38,30 +38,30 @@ export function petriNetToMermaid(petriNet) {
  * @returns Mermaid diagram code
  */
 export function dfgToMermaid(dfg) {
-    let diagram = 'graph LR\n';
-    // Add nodes with frequency labels
-    const maxFreq = Math.max(...dfg.nodes.map((n) => n.frequency));
-    for (const node of dfg.nodes) {
-        const sizePercent = Math.max(20, (node.frequency / maxFreq) * 100);
-        const fontSize = Math.max(10, sizePercent / 5);
-        diagram += `  ${node.id}["${node.label}<br/>(${node.frequency})"] style ${node.id} fill:#667eea,color:#fff,font-size:${fontSize}px\n`;
-    }
-    // Add edges with frequency labels
-    for (const edge of dfg.edges) {
-        const lineWidth = Math.max(1, Math.min(5, (edge.frequency / maxFreq) * 5));
-        diagram += `  ${edge.from} -->|${edge.frequency}| ${edge.to} style ${edge.from}-${edge.to} stroke-width:${lineWidth}px\n`;
-    }
-    // Add start activities
-    diagram += '  START[" "]\n';
-    for (const [activity, freq] of Object.entries(dfg.startActivities)) {
-        diagram += `  START -->|start${freq > 1 ? ` (${freq})` : ''}| ${activity}\n`;
-    }
-    // Add end activities
-    diagram += '  END[" "]\n';
-    for (const [activity, freq] of Object.entries(dfg.endActivities)) {
-        diagram += `  ${activity} -->|end${freq > 1 ? ` (${freq})` : ''}| END\n`;
-    }
-    return diagram;
+  let diagram = 'graph LR\n';
+  // Add nodes with frequency labels
+  const maxFreq = Math.max(...dfg.nodes.map((n) => n.frequency));
+  for (const node of dfg.nodes) {
+    const sizePercent = Math.max(20, (node.frequency / maxFreq) * 100);
+    const fontSize = Math.max(10, sizePercent / 5);
+    diagram += `  ${node.id}["${node.label}<br/>(${node.frequency})"] style ${node.id} fill:#667eea,color:#fff,font-size:${fontSize}px\n`;
+  }
+  // Add edges with frequency labels
+  for (const edge of dfg.edges) {
+    const lineWidth = Math.max(1, Math.min(5, (edge.frequency / maxFreq) * 5));
+    diagram += `  ${edge.from} -->|${edge.frequency}| ${edge.to} style ${edge.from}-${edge.to} stroke-width:${lineWidth}px\n`;
+  }
+  // Add start activities
+  diagram += '  START[" "]\n';
+  for (const [activity, freq] of Object.entries(dfg.startActivities)) {
+    diagram += `  START -->|start${freq > 1 ? ` (${freq})` : ''}| ${activity}\n`;
+  }
+  // Add end activities
+  diagram += '  END[" "]\n';
+  for (const [activity, freq] of Object.entries(dfg.endActivities)) {
+    diagram += `  ${activity} -->|end${freq > 1 ? ` (${freq})` : ''}| END\n`;
+  }
+  return diagram;
 }
 /**
  * Generate Mermaid diagram for DECLARE constraints
@@ -69,28 +69,28 @@ export function dfgToMermaid(dfg) {
  * @returns Mermaid diagram code
  */
 export function declareToMermaid(model) {
-    let diagram = 'graph TB\n';
-    // Group constraints by type
-    const constraintsByType = {};
-    for (const constraint of model.constraints) {
-        if (!constraintsByType[constraint.template]) {
-            constraintsByType[constraint.template] = [];
-        }
-        constraintsByType[constraint.template].push(constraint);
+  let diagram = 'graph TB\n';
+  // Group constraints by type
+  const constraintsByType = {};
+  for (const constraint of model.constraints) {
+    if (!constraintsByType[constraint.template]) {
+      constraintsByType[constraint.template] = [];
     }
-    let nodeId = 1;
-    for (const [template, constraints] of Object.entries(constraintsByType)) {
-        const subgraph = `subgraph ${template}\n`;
-        for (const constraint of constraints) {
-            const support = (constraint.support * 100).toFixed(0);
-            const confidence = (constraint.confidence * 100).toFixed(0);
-            const activities = constraint.activities.join(' → ');
-            diagram += `  n${nodeId}["${activities}<br/>${support}% / ${confidence}%"]\n`;
-            nodeId++;
-        }
-        diagram += `  end\n`;
+    constraintsByType[constraint.template].push(constraint);
+  }
+  let nodeId = 1;
+  for (const [template, constraints] of Object.entries(constraintsByType)) {
+    const subgraph = `subgraph ${template}\n`;
+    for (const constraint of constraints) {
+      const support = (constraint.support * 100).toFixed(0);
+      const confidence = (constraint.confidence * 100).toFixed(0);
+      const activities = constraint.activities.join(' → ');
+      diagram += `  n${nodeId}["${activities}<br/>${support}% / ${confidence}%"]\n`;
+      nodeId++;
     }
-    return diagram;
+    diagram += `  end\n`;
+  }
+  return diagram;
 }
 /**
  * Generate interactive D3 visualization code for DFG
@@ -98,20 +98,20 @@ export function declareToMermaid(model) {
  * @returns HTML with embedded D3 visualization
  */
 export function dfgToD3HTML(dfg, containerId = 'visualization') {
-    const nodes = dfg.nodes.map((n, i) => ({
-        id: n.id,
-        label: n.label,
-        frequency: n.frequency,
-        index: i,
-    }));
-    const links = dfg.edges.map((e) => ({
-        source: e.from,
-        target: e.to,
-        value: e.frequency,
-    }));
-    const nodesJSON = JSON.stringify(nodes);
-    const linksJSON = JSON.stringify(links);
-    return `
+  const nodes = dfg.nodes.map((n, i) => ({
+    id: n.id,
+    label: n.label,
+    frequency: n.frequency,
+    index: i,
+  }));
+  const links = dfg.edges.map((e) => ({
+    source: e.from,
+    target: e.to,
+    value: e.frequency,
+  }));
+  const nodesJSON = JSON.stringify(nodes);
+  const linksJSON = JSON.stringify(links);
+  return `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -222,9 +222,9 @@ export function dfgToD3HTML(dfg, containerId = 'visualization') {
  * @returns Complete HTML report
  */
 export function generateProcessMiningReport(log, dfg) {
-    const dfgMermaid = dfgToMermaid(dfg);
-    const dfgD3 = dfgToD3HTML(dfg, 'dfg-visualization');
-    return `
+  const dfgMermaid = dfgToMermaid(dfg);
+  const dfgD3 = dfgToD3HTML(dfg, 'dfg-visualization');
+  return `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -315,9 +315,12 @@ ${dfgMermaid}
       <h2>🎯 Activities</h2>
       <ul style="list-style: none;">
         ${log.activities
-        .slice(0, 10)
-        .map((a, i) => `<li style="padding: 8px 0; border-bottom: 1px solid #eee;">${i + 1}. ${a}</li>`)
-        .join('')}
+          .slice(0, 10)
+          .map(
+            (a, i) =>
+              `<li style="padding: 8px 0; border-bottom: 1px solid #eee;">${i + 1}. ${a}</li>`
+          )
+          .join('')}
       </ul>
     </div>
 

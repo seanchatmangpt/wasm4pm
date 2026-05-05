@@ -1,32 +1,56 @@
 /**
- * @pictl/observability
- *
- * Optional, non-blocking OpenTelemetry integration.
- * - Disabled by default (zero overhead via NoopTracer)
- * - Enabled: spans exported to OTLP endpoint
- * - Exporter unavailable: logs warning, continues (unless required=true)
+ * @wasm4pm/observability
+ * Unified observability, metrics, and telemetry for wasm4pm.
  */
 
-// Core factory (exported for external use)
-export { createTracer, OtelTracer, type OtelConfig } from './otel.js';
+// Core types and interfaces
+export * from './types.js';
 
-// Observability layer
-export { ObservabilityLayer, getObservabilityLayer } from './observability.js';
+// OTEL Spans and Tracers
+export * from './spans.js';
 
-// Instrumentation utilities
-export { Instrumentation } from './instrumentation.js';
+// Context management
+export * from './context.js';
 
-// Observability wrapper
-export { ObservabilityWrapper } from './observability-wrapper.js';
+// Required fields for all spans
+export * from './fields.js';
 
-// Public types used by engine
-export type {
-  RequiredOtelAttributes,
-  ObservabilityConfig,
-} from './types.js';
+// OTEL exporter
+export * from './otel-exporter.js';
 
-// Internal-only exports (not re-exported)
-// - Span, Tracer, SpanKind, etc. (used only internally)
-// - RequiredFields, TraceContext, etc. (used only internally)
-// - EventType, StateChangeEvent, etc. (used only internally)
-// - NoopTracer (used only internally)
+// JSON logger/writer
+export * from './json-writer.js';
+
+// Secret redaction
+export * from './secret-redaction.js';
+
+// Instrumentation helpers
+export * from './instrumentation.js';
+
+// Observability wrapper (facade)
+export * from './observability-wrapper.js';
+
+export * from './observability.js';
+
+// Global singleton access
+import { ObservabilityWrapper } from './observability-wrapper.js';
+import { Tracer } from './spans.js';
+
+let globalWrapper: ObservabilityWrapper | null = null;
+
+/**
+ * Get the global observability wrapper instance.
+ */
+export function getObservability(): ObservabilityWrapper {
+  if (!globalWrapper) {
+    globalWrapper = new ObservabilityWrapper();
+  }
+  return globalWrapper;
+}
+
+/**
+ * Get the global tracer instance.
+ */
+export function getTracer(): Tracer {
+  return getObservability().getTracer();
+}

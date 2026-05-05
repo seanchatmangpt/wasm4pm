@@ -1,6 +1,6 @@
 # GitHub Actions Scripts
 
-This directory contains helper scripts used by GitHub Actions workflows for testing, building, and releasing pictl.
+This directory contains helper scripts used by GitHub Actions workflows for testing, building, and releasing wasm4pm.
 
 ## Scripts
 
@@ -36,7 +36,7 @@ Ensures version consistency across all package manifests.
 **Checks:**
 - Root package.json version matches wasm4pm/package.json
 - wasm4pm/package.json version matches wasm4pm/Cargo.toml
-- All @pictl/* packages have consistent versions
+- All @wasm4pm/* packages have consistent versions
 
 **Output:** stdout + exit code (0 = success)
 

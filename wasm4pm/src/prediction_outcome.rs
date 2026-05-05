@@ -15,7 +15,7 @@ use wasm_bindgen::prelude::*;
 #[wasm_bindgen]
 pub fn score_anomaly(model_handle: &str, trace_json: &str) -> Result<JsValue, JsValue> {
     let activities: Vec<String> = serde_json::from_str(trace_json)
-        .map_err(|e| JsValue::from_str(&format!("Invalid trace JSON: {}", e)))?;
+        .map_err(|e| crate::error::js_val(&format!("Invalid trace JSON: {}", e)))?;
 
     get_or_init_state().with_object(model_handle, |obj| match obj {
         Some(StoredObject::DirectlyFollowsGraph(dfg)) => {
@@ -25,9 +25,9 @@ pub fn score_anomaly(model_handle: &str, trace_json: &str) -> Result<JsValue, Js
                     "is_anomalous": false,
                     "threshold": 0.7
                 });
-                return Ok(JsValue::from_str(
+                return Ok(crate::error::js_val(
                     &serde_json::to_string(&result)
-                        .map_err(|e| JsValue::from_str(&e.to_string()))?,
+                        .map_err(|e| crate::error::js_val(&e.to_string()))?,
                 ));
             }
 
@@ -59,12 +59,13 @@ pub fn score_anomaly(model_handle: &str, trace_json: &str) -> Result<JsValue, Js
                 "is_anomalous": score > threshold,
                 "threshold": threshold
             });
-            Ok(JsValue::from_str(
-                &serde_json::to_string(&result).map_err(|e| JsValue::from_str(&e.to_string()))?,
+            Ok(crate::error::js_val(
+                &serde_json::to_string(&result)
+                    .map_err(|e| crate::error::js_val(&e.to_string()))?,
             ))
         }
-        Some(_) => Err(JsValue::from_str("Handle is not a DirectlyFollowsGraph")),
-        None => Err(JsValue::from_str("DFG handle not found")),
+        Some(_) => Err(crate::error::js_val("Handle is not a DirectlyFollowsGraph")),
+        None => Err(crate::error::js_val("DFG handle not found")),
     })
 }
 
@@ -79,7 +80,7 @@ pub fn compute_boundary_coverage(
     activity_key: &str,
 ) -> Result<JsValue, JsValue> {
     let prefix: Vec<String> = serde_json::from_str(prefix_json)
-        .map_err(|e| JsValue::from_str(&format!("Invalid prefix JSON: {}", e)))?;
+        .map_err(|e| crate::error::js_val(&format!("Invalid prefix JSON: {}", e)))?;
 
     get_or_init_state().with_object(log_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
@@ -134,12 +135,13 @@ pub fn compute_boundary_coverage(
                 "matching_traces": matching_count,
                 "normal_completions": normal_count
             });
-            Ok(JsValue::from_str(
-                &serde_json::to_string(&result).map_err(|e| JsValue::from_str(&e.to_string()))?,
+            Ok(crate::error::js_val(
+                &serde_json::to_string(&result)
+                    .map_err(|e| crate::error::js_val(&e.to_string()))?,
             ))
         }
-        Some(_) => Err(JsValue::from_str("Handle is not an EventLog")),
-        None => Err(JsValue::from_str("EventLog handle not found")),
+        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
+        None => Err(crate::error::js_val("EventLog handle not found")),
     })
 }
 
@@ -153,7 +155,7 @@ pub fn compute_boundary_coverage(
 #[wasm_bindgen]
 pub fn compute_trace_likelihood(model_handle: &str, trace_json: &str) -> Result<JsValue, JsValue> {
     let acts: Vec<String> = serde_json::from_str(trace_json)
-        .map_err(|e| JsValue::from_str(&format!("Invalid trace JSON: {}", e)))?;
+        .map_err(|e| crate::error::js_val(&format!("Invalid trace JSON: {}", e)))?;
 
     get_or_init_state().with_object(model_handle, |obj| match obj {
         Some(StoredObject::NGramPredictor(predictor)) => {
@@ -162,9 +164,9 @@ pub fn compute_trace_likelihood(model_handle: &str, trace_json: &str) -> Result<
                     "log_likelihood": 0.0,
                     "normalized": 0.0
                 });
-                return Ok(JsValue::from_str(
+                return Ok(crate::error::js_val(
                     &serde_json::to_string(&result)
-                        .map_err(|e| JsValue::from_str(&e.to_string()))?,
+                        .map_err(|e| crate::error::js_val(&e.to_string()))?,
                 ));
             }
 
@@ -190,11 +192,12 @@ pub fn compute_trace_likelihood(model_handle: &str, trace_json: &str) -> Result<
                 "log_likelihood": log_prob,
                 "normalized": normalized
             });
-            Ok(JsValue::from_str(
-                &serde_json::to_string(&result).map_err(|e| JsValue::from_str(&e.to_string()))?,
+            Ok(crate::error::js_val(
+                &serde_json::to_string(&result)
+                    .map_err(|e| crate::error::js_val(&e.to_string()))?,
             ))
         }
-        Some(_) => Err(JsValue::from_str("Handle is not an NGramPredictor")),
-        None => Err(JsValue::from_str("NGramPredictor handle not found")),
+        Some(_) => Err(crate::error::js_val("Handle is not an NGramPredictor")),
+        None => Err(crate::error::js_val("NGramPredictor handle not found")),
     })
 }

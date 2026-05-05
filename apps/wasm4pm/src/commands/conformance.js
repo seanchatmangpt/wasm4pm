@@ -1,0 +1,227 @@
+import { defineCommand } from 'citty';
+import * as fs from 'fs/promises';
+import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
+import { EXIT_CODES } from '../exit-codes.js';
+import { WasmLoader } from '@wasm4pm/engine';
+import { createQuietObservabilityLayer } from '../observability-util.js';
+export const conformance = defineCommand({
+    meta: {
+        name: 'conformance',
+        description: 'Measure how well an event log conforms to a process model (fitness, precision, diagnostics)',
+    },
+    args: {
+        input: {
+            type: 'positional',
+            description: 'Path to XES event log file',
+            required: false,
+        },
+        file: {
+            type: 'string',
+            description: 'Path to XES event log file (named alternative to positional)',
+            alias: 'i',
+        },
+        model: {
+            type: 'string',
+            description: 'Process model handle or file path to compare against (Petri net JSON)',
+            alias: 'm',
+        },
+        method: {
+            type: 'string',
+            description: 'Conformance checking method: token-replay (default) or alignment',
+            default: 'token-replay',
+        },
+        'activity-key': {
+            type: 'string',
+            description: 'XES activity attribute key (default: concept:name)',
+            default: 'concept:name',
+        },
+        threshold: {
+            type: 'string',
+            description: 'Fitness threshold for "good" conformance (default: 0.8)',
+            default: '0.8',
+        },
+        format: {
+            type: 'string',
+            description: 'Output format (human or json)',
+            default: 'human',
+        },
+        verbose: {
+            type: 'boolean',
+            description: 'Enable verbose output',
+            alias: 'v',
+        },
+        quiet: {
+            type: 'boolean',
+            description: 'Suppress non-error output',
+            alias: 'q',
+        },
+    },
+    async run(ctx) {
+        const formatter = getFormatter({
+            format: ctx.args.format,
+            verbose: ctx.args.verbose,
+            quiet: ctx.args.quiet,
+        });
+        try {
+            // Resolve input path (positional OR --file/-i)
+            const inputPath = ctx.args.input || ctx.args.file;
+            if (!inputPath) {
+                formatter.error('Input file required.\n\nUsage:  pictl conformance <log.xes>\n        pictl conformance <log.xes> --model <model.json>\n\nRun "pictl conformance --help" for details.');
+                process.exit(EXIT_CODES.source_error);
+            }
+            // Validate input file exists
+            try {
+                await fs.access(inputPath);
+            }
+            catch {
+                formatter.error(`Input file not found: ${inputPath}`);
+                process.exit(EXIT_CODES.source_error);
+            }
+            const activityKey = ctx.args['activity-key'] || 'concept:name';
+            const method = ctx.args.method;
+            const rawThreshold = ctx.args.threshold;
+            const parsedThreshold = rawThreshold != null ? parseFloat(rawThreshold) : undefined;
+            if (parsedThreshold !== undefined && Number.isNaN(parsedThreshold)) {
+                formatter.error('Invalid --threshold value: must be a number');
+                process.exit(EXIT_CODES.config_error);
+            }
+            const threshold = parsedThreshold ?? 0.8;
+            if (formatter instanceof HumanFormatter) {
+                formatter.info(`Conformance checking: ${inputPath}`);
+                formatter.debug(`Method: ${method}, Threshold: ${threshold}`);
+            }
+            // Load WASM module
+            const loaderConfig = ctx.args.format === 'json' ? { observability: createQuietObservabilityLayer() } : {};
+            const loader = WasmLoader.getInstance(loaderConfig);
+            await loader.init();
+            const wasm = loader.get();
+            // Parse XES and load log
+            if (formatter instanceof HumanFormatter) {
+                formatter.debug('Loading event log from XES file...');
+            }
+            const xesContent = await fs.readFile(inputPath, 'utf-8');
+            const logHandle = wasm.load_eventlog_from_xes(xesContent);
+            // First discover a Petri Net model if none provided
+            let petriNetHandle;
+            const modelPath = ctx.args.model;
+            if (modelPath) {
+                // Load provided model from file, store it, and get a handle
+                try {
+                    await fs.access(modelPath);
+                    const modelContent = await fs.readFile(modelPath, 'utf-8');
+                    const modelData = JSON.parse(modelContent);
+                    if (formatter instanceof HumanFormatter) {
+                        formatter.debug(`Using provided model: ${modelPath}`);
+                    }
+                    // Note: For now, we assume the model file is a Petri Net JSON
+                    // In the future, we could store it via WASM API
+                    petriNetHandle = `model_${Date.now()}`;
+                }
+                catch {
+                    formatter.error(`Model file not found or invalid: ${modelPath}`);
+                    process.exit(EXIT_CODES.source_error);
+                }
+            }
+            else {
+                // Auto-discover a Petri Net using Alpha++
+                if (formatter instanceof HumanFormatter) {
+                    formatter.debug('No model provided, discovering with Alpha++...');
+                }
+                const result = wasm.discover_alpha_plus_plus(logHandle, activityKey, 0.1);
+                const resultData = typeof result === 'string' ? JSON.parse(result) : result;
+                petriNetHandle = resultData.handle;
+                if (!petriNetHandle) {
+                    formatter.error('Failed to discover Petri Net model');
+                    process.exit(EXIT_CODES.execution_error);
+                }
+            }
+            // Run conformance checking based on method
+            let conformanceResult;
+            if (method === 'alignment') {
+                if (formatter instanceof HumanFormatter) {
+                    formatter.debug('Running alignment-based conformance...');
+                }
+                const configJson = JSON.stringify({ max_iterations: 100000, sync_cost: 0.0, log_move_cost: 1.0, model_move_cost: 1.0 });
+                const raw = wasm.alignment_fitness(logHandle, petriNetHandle, configJson);
+                conformanceResult = typeof raw === 'string' ? JSON.parse(raw) : raw;
+            }
+            else {
+                if (formatter instanceof HumanFormatter) {
+                    formatter.debug('Running token-based replay conformance...');
+                }
+                const raw = wasm.check_token_based_replay(logHandle, petriNetHandle, activityKey);
+                conformanceResult = typeof raw === 'string' ? JSON.parse(raw) : raw;
+            }
+            // Precision calculation not yet supported in current API
+            const precision = 0.0;
+            // Free log handle
+            wasm.delete_object(logHandle);
+            // Build result
+            const result = {
+                status: 'success',
+                input: inputPath,
+                activityKey,
+                method,
+                threshold,
+                fitness: conformanceResult.fitness ?? 0.0,
+                precision,
+                isFit: (conformanceResult.fitness ?? 0.0) >= threshold,
+                diagnostics: {
+                    traced: conformanceResult.traced ?? 0,
+                    remaining: conformanceResult.remaining ?? 0,
+                    missing: conformanceResult.missing ?? 0,
+                    consumed: conformanceResult.consumed ?? 0,
+                    produced: conformanceResult.produced ?? 0,
+                },
+                modelHandle: petriNetHandle,
+            };
+            // Output results
+            if (formatter instanceof JSONFormatter) {
+                formatter.success('Conformance check complete', result);
+            }
+            else {
+                printHumanConformance(formatter, result);
+            }
+            process.exit(EXIT_CODES.success);
+        }
+        catch (error) {
+            if (formatter instanceof JSONFormatter) {
+                formatter.error('Conformance check failed', error);
+            }
+            else {
+                formatter.error(`Conformance check failed: ${error instanceof Error ? error.message : String(error)}`);
+            }
+            process.exit(EXIT_CODES.execution_error);
+        }
+    },
+});
+function printHumanConformance(formatter, result) {
+    const fitness = result.fitness ?? 0.0;
+    const precision = result.precision ?? 0.0;
+    const threshold = result.threshold ?? 0.8;
+    const isFit = result.isFit;
+    const diagnostics = result.diagnostics;
+    formatter.log('');
+    formatter.success(`Conformance Check — ${result.input}`);
+    formatter.log(`  Activity key: ${result.activityKey}`);
+    formatter.log(`  Method: ${result.method}`);
+    formatter.log('');
+    formatter.log(`  Fitness: ${fitness.toFixed(3)} ${isFit ? '✓' : '✗'} (threshold: ${threshold.toFixed(2)})`);
+    formatter.log(`  Precision: ${precision.toFixed(3)}`);
+    formatter.log('');
+    formatter.log('  Diagnostics (token replay):');
+    formatter.log(`    Traced:     ${diagnostics.traced}`);
+    formatter.log(`    Remaining:  ${diagnostics.remaining}`);
+    formatter.log(`    Missing:    ${diagnostics.missing}`);
+    formatter.log(`    Consumed:   ${diagnostics.consumed}`);
+    formatter.log(`    Produced:   ${diagnostics.produced}`);
+    formatter.log('');
+    if (isFit) {
+        formatter.success('Log conforms to model (fitness ≥ threshold)');
+    }
+    else {
+        formatter.warn('Log does NOT conform to model (fitness < threshold)');
+    }
+    formatter.log('');
+}
+//# sourceMappingURL=conformance.js.map

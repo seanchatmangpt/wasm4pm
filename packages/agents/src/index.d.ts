@@ -1,5 +1,5 @@
 /**
- * @pictl/agents — Van der Aalst Process Mining Agents
+ * @wasm4pm/agents — Van der Aalst Process Mining Agents
  *
  * 8 autonomous adversarial agents that validate manufacturing integrity
  * using process mining principles (soundness, conformance, multi-surface corroboration).

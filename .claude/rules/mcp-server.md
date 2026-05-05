@@ -80,7 +80,7 @@ Configure in Claude Desktop settings:
   "mcpServers": {
     "pictl": {
       "command": "/usr/local/bin/node",
-      "args": ["/Users/sac/chatmangpt/pictl/dist/mcp_server.js"]
+      "args": ["/Users/sac/chatmangpt/wasm4pm/dist/mcp_server.js"]
     }
   }
 }
@@ -90,10 +90,10 @@ Claude discovers tools dynamically via `listTools` and selects algorithms based 
 
 ## Swarm MCP Server
 
-A separate MCP server in `@pictl/swarm` provides multi-worker coordination:
+A separate MCP server in `@wasm4pm/swarm` provides multi-worker coordination:
 
 ```typescript
-import { createSwarmMcpServer } from '@pictl/swarm';
+import { createSwarmMcpServer } from '@wasm4pm/swarm';
 ```
 
 ## Build & Run

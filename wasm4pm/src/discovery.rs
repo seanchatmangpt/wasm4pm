@@ -160,7 +160,7 @@ pub fn discover_dfg_handle(eventlog_handle: &str, activity_key: &str) -> Result<
         })?;
 
     let handle = get_or_init_state().store_object(StoredObject::DirectlyFollowsGraph(dfg))?;
-    Ok(JsValue::from_str(&handle))
+    Ok(crate::error::js_val(&handle))
 }
 
 /// Pure-Rust OCEL DFG discovery: returns DirectlyFollowsGraph without wasm-bindgen.
@@ -359,15 +359,17 @@ pub fn discover_ocel_dfg_per_type(ocel_handle: &str) -> Result<JsValue, JsValue>
     })
 }
 
-/// TraceProfile: Compact representation of activities in a trace
-/// for O(1) membership testing and positional queries.
 struct TraceProfile {
-    /// Bitmask of present activities (A <= 64). For A > 64, still used for
-    /// fast filtering, with fallback to first_positions for definitive checks.
+    /// Bitmask of present activities (A <= 128).
     activity_mask: u128,
     /// first_position[a] = index of first occurrence of activity a in trace
-    /// (or u8::MAX if not present). For A <= 255.
+    /// (or u8::MAX if not present).
     first_positions: Vec<u8>,
+    /// last_position[a] = index of last occurrence of activity a in trace
+    /// (or u8::MAX if not present).
+    last_positions: Vec<u8>,
+    /// immediate_follows[(a,b)] = true if a is immediately followed by b at least once
+    immediate_follows: std::collections::HashSet<(u32, u32)>,
 }
 
 impl TraceProfile {
@@ -375,6 +377,8 @@ impl TraceProfile {
         TraceProfile {
             activity_mask: 0,
             first_positions: vec![u8::MAX; n],
+            last_positions: vec![u8::MAX; n],
+            immediate_follows: std::collections::HashSet::new(),
         }
     }
 
@@ -383,8 +387,11 @@ impl TraceProfile {
         if activity_idx < 128 {
             self.activity_mask |= 1u128 << (activity_idx as u128);
         }
-        if position < 256 && self.first_positions[activity_idx] == u8::MAX {
-            self.first_positions[activity_idx] = position as u8;
+        if position < 256 {
+            if self.first_positions[activity_idx] == u8::MAX {
+                self.first_positions[activity_idx] = position as u8;
+            }
+            self.last_positions[activity_idx] = position as u8;
         }
     }
 
@@ -393,8 +400,15 @@ impl TraceProfile {
     fn appears_before(&self, a: usize, b: usize) -> bool {
         let fa = self.first_positions[a];
         let fb = self.first_positions[b];
-        // Non-short-circuit `&` keeps all three comparisons in one predicate (no branches)
         (fa != u8::MAX) & (fb != u8::MAX) & (fa < fb)
+    }
+
+    /// Check if activity a appeared after activity b in this trace.
+    #[inline(always)]
+    fn appears_after(&self, a: usize, b: usize) -> bool {
+        let la = self.last_positions[a];
+        let fb = self.first_positions[b];
+        (la != u8::MAX) & (fb != u8::MAX) & (la > fb)
     }
 }
 
@@ -404,19 +418,6 @@ pub fn discover_declare(eventlog_handle: &str, activity_key: &str) -> Result<JsV
     get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
             let mut model = DeclareModel::new();
-
-            // DECLARE discovery — O(T×E + A²×T) optimized algorithm.
-            //
-            // Previous complexity: O(A² × T × E)
-            //   For each activity pair (a,b), scan all traces, scan all events in each trace
-            //
-            // New complexity: O(T×E + A²×T)
-            //   Phase 1 (T×E): Build columnar log, scan once to compute TraceProfile per trace
-            //   Phase 2 (A²×T): Iterate activity pairs, use profiles for O(1) membership checks
-            //
-            // Key insight: TraceProfile bitmask + first_positions[] enable O(1) pair checking
-            // instead of O(E) re-scanning per pair.
-            // For 1K cases with A=20: ~20ms → ~0.1ms (200x gain)
 
             let col_owned = crate::cache::columnar_cache_get(eventlog_handle, activity_key)
                 .unwrap_or_else(|| {
@@ -432,75 +433,46 @@ pub fn discover_declare(eventlog_handle: &str, activity_key: &str) -> Result<JsV
             let n = col.vocab.len();
             let total_cases = col.trace_offsets.len().saturating_sub(1);
 
-            // Sort activities by name to ensure stable/reproducible ordering.
-            let mut sorted_indices: Vec<usize> = (0..n).collect();
-            sorted_indices.sort_by(|&a, &b| col.vocab[a].cmp(col.vocab[b]));
-
             model.activities = col.vocab.iter().map(|s| s.to_string()).collect();
 
             if n == 0 || total_cases == 0 {
                 return to_js_str(&model);
             }
 
-            // Phase 1: Single pass over all traces to build TraceProfile for each
-            // Time: O(T×E)
+            // Phase 1: Build TraceProfile for each trace
             let mut traces_profiles: Vec<TraceProfile> = Vec::with_capacity(total_cases);
-
             for t in 0..total_cases {
                 let start = col.trace_offsets[t];
                 let end = col.trace_offsets[t + 1];
-                if start >= end {
-                    traces_profiles.push(TraceProfile::new(n));
-                    continue;
-                }
-
                 let mut profile = TraceProfile::new(n);
-
-                // Scan events in trace, recording first occurrence position
-                for (pos, &activity_id) in col.events[start..end].iter().enumerate() {
-                    let activity_idx = activity_id as usize;
-                    profile.mark_activity(activity_idx, pos);
+                if start < end {
+                    for pos in 0..(end - start) {
+                        let activity_id = col.events[start + pos];
+                        profile.mark_activity(activity_id as usize, pos);
+                        if pos < (end - start - 1) {
+                            profile
+                                .immediate_follows
+                                .insert((activity_id, col.events[start + pos + 1]));
+                        }
+                    }
                 }
-
                 traces_profiles.push(profile);
             }
 
-            // Count activity occurrences (single pass over all profiles)
-            // Time: O(T × A)
+            // Phase 2: Iterate over activity pairs and count template matches
             let mut activity_counts = vec![0u32; n];
             for profile in &traces_profiles {
-                for (a, fp) in profile.first_positions.iter().enumerate() {
-                    activity_counts[a] += (*fp != u8::MAX) as u32;
-                }
-            }
-
-            // Phase 2: Iterate over activity pairs, count satisfaction using profiles
-            // Time: O(A² × T)
-            let mut response_counts = vec![0u32; n * n];
-            let mut coexistence_counts = vec![0u32; n * n];
-
-            // For each activity pair (a, b)
-            for a in 0..n {
-                for b in 0..n {
-                    if a == b {
-                        continue;
-                    }
-
-                    // Count traces where a appears before b, and traces with both
-                    for profile in &traces_profiles {
-                        response_counts[a * n + b] += profile.appears_before(a, b) as u32;
-                        let has_a = profile.first_positions[a] != u8::MAX;
-                        let has_b = profile.first_positions[b] != u8::MAX;
-                        coexistence_counts[a * n + b] += (has_a && has_b) as u32;
+                for a in 0..n {
+                    if profile.first_positions[a] != u8::MAX {
+                        activity_counts[a] += 1;
                     }
                 }
             }
 
-            // Emit constraints — 5 DECLARE templates.
             let total_f64 = total_cases as f64;
             let min_support = 0.1;
+            let min_confidence = 0.8;
 
-            // Template 1: Existence — activity appears in >= min_support fraction of traces
             for a in 0..n {
                 let support = activity_counts[a] as f64 / total_f64;
                 if support >= min_support {
@@ -510,89 +482,158 @@ pub fn discover_declare(eventlog_handle: &str, activity_key: &str) -> Result<JsV
                         support,
                         confidence: 1.0,
                     });
-                }
-            }
-
-            // Template 2: Absence — activity appears in < (1 - min_support) fraction of traces
-            for a in 0..n {
-                let absence_support = (total_cases - activity_counts[a] as usize) as f64 / total_f64;
-                if absence_support >= min_support {
+                } else if (1.0 - support) >= min_support {
                     model.constraints.push(DeclareConstraint {
                         template: "Absence".to_string(),
                         activities: vec![col.vocab[a].to_string()],
-                        support: absence_support,
+                        support: 1.0 - support,
                         confidence: 1.0,
                     });
                 }
-            }
 
-            // Template 3: Co-existence — both A and B appear together
-            for a in 0..n {
-                for b in (a + 1)..n {
-                    let coex_count = coexistence_counts[a * n + b];
-                    let support = coex_count as f64 / total_f64;
-                    if support >= min_support {
-                        model.constraints.push(DeclareConstraint {
-                            template: "CoExistence".to_string(),
-                            activities: vec![col.vocab[a].to_string(), col.vocab[b].to_string()],
-                            support,
-                            confidence: 1.0,
-                        });
-                    }
-                }
-            }
-
-            // Template 4: Precedence — A always before B when both present
-            for a in 0..n {
                 for b in 0..n {
                     if a == b {
                         continue;
                     }
-                    let coex_count = coexistence_counts[a * n + b];
-                    if coex_count == 0 {
-                        continue;
+
+                    let mut both_count = 0;
+                    let mut a_before_b_count = 0;
+                    let mut a_immediately_before_b_count = 0;
+                    let mut b_immediately_before_a_count = 0;
+                    let mut only_one_count = 0;
+
+                    for profile in &traces_profiles {
+                        let has_a = profile.first_positions[a] != u8::MAX;
+                        let has_b = profile.first_positions[b] != u8::MAX;
+
+                        if has_a && has_b {
+                            both_count += 1;
+                            if profile.appears_before(a, b) {
+                                a_before_b_count += 1;
+                            }
+                            if profile.immediate_follows.contains(&(a as u32, b as u32)) {
+                                a_immediately_before_b_count += 1;
+                            }
+                            if profile.immediate_follows.contains(&(b as u32, a as u32)) {
+                                b_immediately_before_a_count += 1;
+                            }
+                        } else if has_a || has_b {
+                            only_one_count += 1;
+                        }
                     }
-                    let precedence_count = response_counts[a * n + b];
-                    let support = coex_count as f64 / total_f64;
-                    let confidence = precedence_count as f64 / coex_count as f64;
-                    if support >= min_support && confidence >= 0.8 {
-                        model.constraints.push(DeclareConstraint {
-                            template: "Precedence".to_string(),
-                            activities: vec![col.vocab[a].to_string(), col.vocab[b].to_string()],
-                            support,
-                            confidence,
-                        });
+
+                    // CoExistence
+                    if a < b {
+                        let coex_support = both_count as f64 / total_f64;
+                        if coex_support >= min_support {
+                            model.constraints.push(DeclareConstraint {
+                                template: "CoExistence".to_string(),
+                                activities: vec![
+                                    col.vocab[a].to_string(),
+                                    col.vocab[b].to_string(),
+                                ],
+                                support: coex_support,
+                                confidence: 1.0,
+                            });
+                        }
+
+                        // NotCoExistence
+                        let not_coex_support = (total_cases - both_count) as f64 / total_f64;
+                        if not_coex_support >= 0.9 {
+                            model.constraints.push(DeclareConstraint {
+                                template: "NotCoExistence".to_string(),
+                                activities: vec![
+                                    col.vocab[a].to_string(),
+                                    col.vocab[b].to_string(),
+                                ],
+                                support: not_coex_support,
+                                confidence: 1.0,
+                            });
+                        }
+                    }
+
+                    // Response: A -> eventually B
+                    if activity_counts[a] > 0 {
+                        let conf = a_before_b_count as f64 / activity_counts[a] as f64;
+                        if conf >= min_confidence {
+                            model.constraints.push(DeclareConstraint {
+                                template: "Response".to_string(),
+                                activities: vec![
+                                    col.vocab[a].to_string(),
+                                    col.vocab[b].to_string(),
+                                ],
+                                support: a_before_b_count as f64 / total_f64,
+                                confidence: conf,
+                            });
+                        }
+                    }
+
+                    // Precedence: B -> always preceded by A
+                    if activity_counts[b] > 0 {
+                        let conf = a_before_b_count as f64 / activity_counts[b] as f64;
+                        if conf >= min_confidence {
+                            model.constraints.push(DeclareConstraint {
+                                template: "Precedence".to_string(),
+                                activities: vec![
+                                    col.vocab[a].to_string(),
+                                    col.vocab[b].to_string(),
+                                ],
+                                support: a_before_b_count as f64 / total_f64,
+                                confidence: conf,
+                            });
+                        }
+                    }
+
+                    // Succession: Response + Precedence
+                    if activity_counts[a] > 0 && activity_counts[b] > 0 {
+                        let conf_a = a_before_b_count as f64 / activity_counts[a] as f64;
+                        let conf_b = a_before_b_count as f64 / activity_counts[b] as f64;
+                        if conf_a >= min_confidence && conf_b >= min_confidence {
+                            model.constraints.push(DeclareConstraint {
+                                template: "Succession".to_string(),
+                                activities: vec![
+                                    col.vocab[a].to_string(),
+                                    col.vocab[b].to_string(),
+                                ],
+                                support: a_before_b_count as f64 / total_f64,
+                                confidence: (conf_a + conf_b) / 2.0,
+                            });
+                        }
+                    }
+
+                    // ChainResponse: A -> immediately B
+                    if activity_counts[a] > 0 {
+                        let conf = a_immediately_before_b_count as f64 / activity_counts[a] as f64;
+                        if conf >= min_confidence {
+                            model.constraints.push(DeclareConstraint {
+                                template: "ChainResponse".to_string(),
+                                activities: vec![
+                                    col.vocab[a].to_string(),
+                                    col.vocab[b].to_string(),
+                                ],
+                                support: a_immediately_before_b_count as f64 / total_f64,
+                                confidence: conf,
+                            });
+                        }
+                    }
+
+                    // ChainPrecedence: B -> always immediately preceded by A
+                    if activity_counts[b] > 0 {
+                        let conf = a_immediately_before_b_count as f64 / activity_counts[b] as f64;
+                        if conf >= min_confidence {
+                            model.constraints.push(DeclareConstraint {
+                                template: "ChainPrecedence".to_string(),
+                                activities: vec![
+                                    col.vocab[a].to_string(),
+                                    col.vocab[b].to_string(),
+                                ],
+                                support: a_immediately_before_b_count as f64 / total_f64,
+                                confidence: conf,
+                            });
+                        }
                     }
                 }
             }
-
-            // Template 5: Response — when A occurs, B eventually follows
-            for a in 0..n {
-                if activity_counts[a] == 0 {
-                    continue;
-                }
-                for b in 0..n {
-                    if a == b {
-                        continue;
-                    }
-                    let response_count = response_counts[a * n + b];
-                    if response_count == 0 {
-                        continue;
-                    }
-                    let support = response_count as f64 / total_f64;
-                    let confidence = response_count as f64 / activity_counts[a] as f64;
-                    if support >= min_support && confidence >= 0.8 {
-                        model.constraints.push(DeclareConstraint {
-                            template: "Response".to_string(),
-                            activities: vec![col.vocab[a].to_string(), col.vocab[b].to_string()],
-                            support,
-                            confidence,
-                        });
-                    }
-                }
-            }
-
-            // TODO: Succession, NotCoExistence, ChainPrecedence, ChainResponse require additional LTL-style trace scanning
 
             to_js_str(&model)
         }

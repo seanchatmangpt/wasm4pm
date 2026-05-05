@@ -1,0 +1,7 @@
+pkg/
+target/
+dist/
+node_modules/
+*.d.ts
+*.js.map
+*.d.ts.map

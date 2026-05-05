@@ -2,7 +2,7 @@
  * Unit tests for process model verifiers
  */
 import { describe, it, expect } from 'vitest';
-import { verifySoundness, computeQualityMetrics, validateVerifierDFG, formatSoundnessResult, formatQualityMetrics, } from '@pictl/testing';
+import { verifySoundness, computeQualityMetrics, validateVerifierDFG, formatSoundnessResult, formatQualityMetrics, } from '@wasm4pm/testing';
 describe('verifySoundness', () => {
     it('should verify a sound sequential Petri net', () => {
         const net = {

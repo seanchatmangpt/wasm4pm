@@ -78,7 +78,7 @@ The loop runs at **~34 nanoseconds** closed-cycle (execution + validation + adap
         │   - Restart (reset loop) │
         │ • Emit OTEL span         │
         │ • Update persistent state│
-        │   to .pictl/state/       │
+        │   to .wasm4pm/state/       │
         │ • Propagate feedback to  │
         │   Knowledge Base         │
         └──────────────────────────┘
@@ -325,7 +325,7 @@ The execution phase dispatches the selected action and persists state for recove
 **Continue:**
 - Run discovery with current algorithm (e.g., DFG)
 - Emit OTEL span: `kernel.run` with algorithm name
-- Save results to `.pictl/results/`
+- Save results to `.wasm4pm/results/`
 
 **Scale:**
 - Upgrade algorithm profile: fast → balanced → quality
@@ -353,7 +353,7 @@ The execution phase dispatches the selected action and persists state for recove
 
 ### Persistent State Serialization
 
-**File:** `.pictl/state/rl_orchestrator.json`
+**File:** `.wasm4pm/state/rl_orchestrator.json`
 
 ```json
 {
@@ -377,7 +377,7 @@ The execution phase dispatches the selected action and persists state for recove
 
 **Restore on Startup:**
 ```
-if .pictl/state/rl_orchestrator.json exists:
+if .wasm4pm/state/rl_orchestrator.json exists:
   telemetry = load(json)
   q_tables = load(json.q_tables)
   orch.restore_telemetry(telemetry)
@@ -471,14 +471,14 @@ duration_us = actual elapsed time
 │ Dispatch action to kernel                    │
 │ Run discovery/conformance                    │
 │ Emit OTEL span                               │
-│ Persist state to .pictl/state/               │
+│ Persist state to .wasm4pm/state/               │
 └──────┬───────────────────────────────────────┘
        │
        ▼
    Results
  (DFG, receipt, metrics)
        │
-       └──→ Save to .pictl/results/
+       └──→ Save to .wasm4pm/results/
 ```
 
 ---
@@ -537,7 +537,7 @@ duration_us = actual elapsed time
 **Changes:**
 - 5 RL agents learn simultaneously, best agent selected via LinUCB
 - Reward signal derived from health transitions + SPC feedback
-- Q-table persisted across CLI invocations (state in `.pictl/state/`)
+- Q-table persisted across CLI invocations (state in `.wasm4pm/state/`)
 
 **Verification:**
 - Bellman correctness: After update with s ≠ s', Q(s,a) changes predictably
@@ -585,7 +585,7 @@ duration_us = actual elapsed time
 - Audit trail of all cycles via persistent telemetry
 
 **Changes:**
-- Serialized state saved to `.pictl/state/rl_orchestrator.json` after each cycle
+- Serialized state saved to `.wasm4pm/state/rl_orchestrator.json` after each cycle
 - Q-tables exported/restored from persistent storage
 - Cycle count, cumulative reward, and agent choice persisted
 
@@ -607,7 +607,7 @@ duration_us = actual elapsed time
 | `wasm4pm/src/spc.rs` | Western Electric rules & SPC detection |
 | `wasm4pm/src/spc_history.rs` | Ring buffer (100 snapshots) for 6-point trend detection |
 | `wasm4pm/src/ml.rs` | LinUCB contextual bandit for agent selection |
-| `apps/pictl/src/commands/autoprocess.ts` | TypeScript dispatch layer: perception → action |
+| `apps/wasm4pm/src/commands/autoprocess.ts` | TypeScript dispatch layer: perception → action |
 | `packages/engine/src/engine.ts` | State machine: manages MAPE-K lifecycle transitions |
 | `packages/config/src/resolver.ts` | Config loading with 5-layer precedence |
 

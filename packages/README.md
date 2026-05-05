@@ -5,7 +5,7 @@
 ## Dependency Graph
 
 ```
-Application Layer:  apps/pictl/
+Application Layer:  apps/wasm4pm/
     ↓
 Orchestration:    engine → planner → swarm → ml
     ↓
@@ -18,15 +18,15 @@ WASM Layer:       wasm4pm/ (Rust/WASM core)
 
 | Package | Role |
 |---------|------|
-| `@pictl/contracts` | Shared types, receipts, errors, plans, hashing (leaf, no deps) |
-| `@pictl/config` | Zod-validated config, `resolveConfig()`, 5-layer precedence |
-| `@pictl/kernel` | WASM facade — 41 algorithms, `run()`, `stream()` |
-| `@pictl/engine` | Lifecycle state machine (uninitialized → watching / failed) |
-| `@pictl/planner` | `plan(config)` → ExecutionPlan, `explain(config)` → string |
-| `@pictl/observability` | 3-layer: CLI human, JSONL machine, OTEL spans |
-| `@pictl/testing` | Parity, determinism, CLI, OtelCapture, certification gates |
-| `@pictl/ml` | Micro-ML: classify, cluster, forecast, anomaly, regress, PCA |
-| `@pictl/swarm` | Multi-worker coordinator with convergence detection |
+| `@wasm4pm/contracts` | Shared types, receipts, errors, plans, hashing (leaf, no deps) |
+| `@wasm4pm/config` | Zod-validated config, `resolveConfig()`, 5-layer precedence |
+| `@wasm4pm/kernel` | WASM facade — 41 algorithms, `run()`, `stream()` |
+| `@wasm4pm/engine` | Lifecycle state machine (uninitialized → watching / failed) |
+| `@wasm4pm/planner` | `plan(config)` → ExecutionPlan, `explain(config)` → string |
+| `@wasm4pm/observability` | 3-layer: CLI human, JSONL machine, OTEL spans |
+| `@wasm4pm/testing` | Parity, determinism, CLI, OtelCapture, certification gates |
+| `@wasm4pm/ml` | Micro-ML: classify, cluster, forecast, anomaly, regress, PCA |
+| `@wasm4pm/swarm` | Multi-worker coordinator with convergence detection |
 
 ## Build
 

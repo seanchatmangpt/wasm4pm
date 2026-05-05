@@ -1,5 +1,5 @@
 /**
- * @pictl/ml
+ * @wasm4pm/ml
  *
  * Native ML-powered process mining analysis.
  * Classification, clustering, forecasting, anomaly detection, PCA.

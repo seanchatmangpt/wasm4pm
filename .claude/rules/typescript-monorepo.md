@@ -20,7 +20,7 @@ packages/
 ## Dependency Graph
 
 ```
-Application Layer:  apps/pictl/
+Application Layer:  apps/wasm4pm/
     ↓
 Orchestration:    engine → planner → swarm → ml
     ↓
@@ -34,11 +34,11 @@ WASM Layer:       wasm4pm/ (Rust/WASM core)
 ```bash
 pnpm build                    # Build all packages
 pnpm test                     # Test all packages
-pnpm --filter @pictl/config test  # Test one package
+pnpm --filter @wasm4pm/config test  # Test one package
 cd packages/engine && npm test     # Test one package (npm)
 ```
 
-## pictl CLI (apps/pictl/)
+## pictl CLI (apps/wasm4pm/)
 
 **20 commands:**
 
@@ -70,7 +70,7 @@ cd packages/engine && npm test     # Test one package (npm)
 
 ### Auto-save
 
-Results auto-save to `.pictl/results/<timestamp>-<task>.json`. Pass `--no-save` to skip.
+Results auto-save to `.wasm4pm/results/<timestamp>-<task>.json`. Pass `--no-save` to skip.
 
 ## Config System
 
@@ -79,7 +79,7 @@ Results auto-save to `.pictl/results/<timestamp>-<task>.json`. Pass `--no-save` 
 ### 5-Layer Precedence
 
 1. **CLI arguments** (highest priority)
-2. **TOML config file** (`pictl.toml`)
+2. **TOML config file** (`wasm4pm.toml`)
 3. **JSON config file** (`wasm4pm.json`)
 4. **Environment variables** (`WASM4PM_*` prefix)
 5. **Defaults** (lowest priority)
@@ -106,14 +106,14 @@ Results auto-save to `.pictl/results/<timestamp>-<task>.json`. Pass `--no-save` 
 | `WASM4PM_PREDICTION_NGRAM_ORDER` | prediction.ngramOrder |
 | `WASM4PM_PREDICTION_DRIFT_WINDOW` | prediction.driftWindowSize |
 
-## Testing Harnesses (@pictl/testing)
+## Testing Harnesses (@wasm4pm/testing)
 
 ```typescript
-import { checkParity, checkParityBatch }     from '@pictl/testing';
-import { checkDeterminism, stableReceiptHash, receiptsMatch } from '@pictl/testing';
-import { runCli, assertExitCode, assertJsonOutput, createCliTestEnv, EXIT_CODES } from '@pictl/testing';
-import { OtelCapture, createOtelCapture }   from '@pictl/testing';
-import { CertificationGate, runCertification } from '@pictl/testing';
+import { checkParity, checkParityBatch }     from '@wasm4pm/testing';
+import { checkDeterminism, stableReceiptHash, receiptsMatch } from '@wasm4pm/testing';
+import { runCli, assertExitCode, assertJsonOutput, createCliTestEnv, EXIT_CODES } from '@wasm4pm/testing';
+import { OtelCapture, createOtelCapture }   from '@wasm4pm/testing';
+import { CertificationGate, runCertification } from '@wasm4pm/testing';
 ```
 
 ### Testing Gotchas
@@ -121,5 +121,5 @@ import { CertificationGate, runCertification } from '@pictl/testing';
 - **Run vitest from package directory**, not monorepo root
 - **Read test files before declaring untested** — tests may be in consolidated files
 - **`as const` is type-level only**, not runtime frozen
-- **`@pictl/ml` handles empty arrays** — don't assume rejection
+- **`@wasm4pm/ml` handles empty arrays** — don't assume rejection
 - **WasmLoader is a singleton** — call `WasmLoader.reset()` between tests
