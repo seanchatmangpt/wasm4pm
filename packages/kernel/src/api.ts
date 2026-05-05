@@ -616,7 +616,7 @@ export class Kernel {
         );
 
       case 'compute_simplicity': {
-        const result = this.wasm.wasm_compute_simplicity(
+        this.wasm.wasm_compute_simplicity(
           (params.places as number) ?? 0,
           (params.transitions as number) ?? 0,
           (params.arcs as number) ?? 0
@@ -668,8 +668,7 @@ export class Kernel {
           (params.max_trace_length as number) ?? 100
         );
 
-      case 'monte_carlo_simulation':
-        // Monte Carlo simulation requires log_handle, powl_handle, root_id, and config_json
+      case 'monte_carlo_simulation': {
         const mcConfig = {
           num_cases: (params.num_simulations as number) ?? 1000,
           inter_arrival_mean_ms: 1000.0,
@@ -684,6 +683,7 @@ export class Kernel {
           '', // root_id (not used in current implementation)
           JSON.stringify(mcConfig)
         );
+      }
 
       // ─── ML algorithms (TypeScript, not WASM) ────────────────────────────
 
