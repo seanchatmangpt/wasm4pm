@@ -33,7 +33,7 @@ pictl --version
 ### Local Installation
 ```bash
 npm install @wasm4pm/cli
-npx pictl --help
+npx wpm --help
 ```
 
 ### From Workspace
@@ -50,13 +50,13 @@ node apps/wasm4pm/dist/bin/pictl.js --help
 ### 1. Initialize Project
 ```bash
 # Create configuration files
-pictl init
+wpm init
 
 # With specific format
-pictl init --configFormat json
+wpm init --configFormat json
 
 # Override existing files
-pictl init --force
+wpm init --force
 ```
 
 Output:
@@ -68,78 +68,78 @@ Output:
 
 Next steps:
   1. Edit wasm4pm.toml with your preferences
-  2. Run: pictl run data/log.xes --profile balanced
-  3. Check: pictl status
+  2. Run: wpm run data/log.xes --profile balanced
+  3. Check: wpm status
 ```
 
 ### 2. Run Discovery
 ```bash
 # Basic usage
-pictl run data/eventlog.xes
+wpm run data/eventlog.xes
 
 # With algorithm selection
-pictl run data/eventlog.xes --algorithm genetic
+wpm run data/eventlog.xes --algorithm genetic
 
 # With profile optimization
-pictl run data/eventlog.xes --profile quality
+wpm run data/eventlog.xes --profile quality
 
 # Specify output file
-pictl run data/eventlog.xes --output result.json
+wpm run data/eventlog.xes --output result.json
 
 # JSON output format
-pictl run data/eventlog.xes --format json > result.json
+wpm run data/eventlog.xes --format json > result.json
 ```
 
 ### 3. Watch Directory
 ```bash
 # Watch for new files
-pictl watch data/ --output results/
+wpm watch data/ --output results/
 
 # With specific profile
-pictl watch data/ --profile fast --output results/
+wpm watch data/ --profile fast --output results/
 
 # Verbose logging
-pictl watch data/ --verbose
+wpm watch data/ --verbose
 ```
 
 ### 4. Check Status
 ```bash
 # Quick status
-pictl status
+wpm status
 
 # Detailed status
-pictl status --verbose
+wpm status --verbose
 
 # JSON output
-pictl status --format json
+wpm status --format json
 ```
 
 ### 5. Get Explanations
 ```bash
 # Explain an algorithm
-pictl explain --algorithm genetic
+wpm explain --algorithm genetic
 
 # Detailed explanation
-pictl explain --algorithm genetic --level detailed
+wpm explain --algorithm genetic --level detailed
 
 # Academic details
-pictl explain --algorithm genetic --level academic
+wpm explain --algorithm genetic --level academic
 
 # Explain with current config
-pictl explain --config
+wpm explain --config
 ```
 
 ---
 
 ## Commands
 
-### pictl init
+### wpm init
 
 Initialize a new pictl project with configuration templates.
 
 **Usage:**
 ```bash
-pictl init [OPTIONS]
+wpm init [OPTIONS]
 ```
 
 **Options:**
@@ -159,7 +159,7 @@ pictl init [OPTIONS]
 
 **Example:**
 ```bash
-pictl init --configFormat toml --force
+wpm init --configFormat toml --force
 ```
 
 ---
@@ -170,7 +170,7 @@ Execute a discovery algorithm on event log(s).
 
 **Usage:**
 ```bash
-pictl run <LOG_FILE> [OPTIONS]
+wpm run <LOG_FILE> [OPTIONS]
 ```
 
 **Arguments:**
@@ -211,18 +211,18 @@ pictl run <LOG_FILE> [OPTIONS]
 
 **Example:**
 ```bash
-pictl run data/log.xes --algorithm genetic --profile quality --output model.json
+wpm run data/log.xes --algorithm genetic --profile quality --output model.json
 ```
 
 ---
 
-### pictl watch
+### wpm watch
 
 Monitor a directory for new event logs and process them continuously.
 
 **Usage:**
 ```bash
-pictl watch <DIRECTORY> [OPTIONS]
+wpm watch <DIRECTORY> [OPTIONS]
 ```
 
 **Arguments:**
@@ -250,7 +250,7 @@ pictl watch <DIRECTORY> [OPTIONS]
 
 **Example:**
 ```bash
-pictl watch data/ \
+wpm watch data/ \
   --algorithm alpha++ \
   --profile balanced \
   --output results/ \
@@ -259,13 +259,13 @@ pictl watch data/ \
 
 ---
 
-### pictl status
+### wpm status
 
 Show system status and engine information.
 
 **Usage:**
 ```bash
-pictl status [OPTIONS]
+wpm status [OPTIONS]
 ```
 
 **Options:**
@@ -286,7 +286,7 @@ pictl status [OPTIONS]
 
 **Example:**
 ```bash
-pictl status --verbose --format json
+wpm status --verbose --format json
 ```
 
 **Output:**
@@ -322,13 +322,13 @@ pictl status --verbose --format json
 
 ---
 
-### pictl explain
+### wpm explain
 
 Get detailed explanations of algorithms and models.
 
 **Usage:**
 ```bash
-pictl explain [OPTIONS]
+wpm explain [OPTIONS]
 ```
 
 **Options:**
@@ -370,7 +370,7 @@ and > is the directly-follows relation...
 
 **Example:**
 ```bash
-pictl explain --algorithm genetic --level detailed
+wpm explain --algorithm genetic --level detailed
 ```
 
 ---
@@ -458,7 +458,7 @@ For scripting and CI/CD integration:
 
 **Example:**
 ```bash
-pictl run data.xes || exit $?
+wpm run data.xes || exit $?
 ```
 
 ---
@@ -467,12 +467,12 @@ pictl run data.xes || exit $?
 
 ### Example 1: Basic Discovery
 ```bash
-pictl run data/eventlog.xes --output model.json
+wpm run data/eventlog.xes --output model.json
 ```
 
 ### Example 2: Quality Analysis
 ```bash
-pictl run data/eventlog.xes \
+wpm run data/eventlog.xes \
   --algorithm genetic \
   --profile quality \
   --output result.json \
@@ -481,7 +481,7 @@ pictl run data/eventlog.xes \
 
 ### Example 3: Continuous Monitoring
 ```bash
-pictl watch data/ \
+wpm watch data/ \
   --profile fast \
   --output results/ \
   --verbose
@@ -493,16 +493,16 @@ pictl watch data/ \
 set -e
 
 # Initialize
-pictl init --force
+wpm init --force
 
 # Run discovery
-pictl run data/log.xes --algorithm alpha++ --output model.json
+wpm run data/log.xes --algorithm alpha++ --output model.json
 
 # Check status
-pictl status --verbose
+wpm status --verbose
 
 # Explain results
-pictl explain --model model.json
+wpm explain --model model.json
 ```
 
 ### Example 5: Docker Deployment
@@ -537,28 +537,28 @@ pictl --version
 ls -la data/eventlog.xes
 
 # Use absolute path if relative doesn't work
-pictl run /absolute/path/to/eventlog.xes
+wpm run /absolute/path/to/eventlog.xes
 ```
 
 ### Issue: "Config validation error"
 **Solution:** Run init to generate valid config
 ```bash
-pictl init --force
+wpm init --force
 # Edit wasm4pm.toml as needed
 ```
 
 ### Issue: "Memory exceeded"
 **Solution:** Use streaming profile or reduce algorithm complexity
 ```bash
-pictl run data.xes --profile stream --algorithm dfg
+wpm run data.xes --profile stream --algorithm dfg
 ```
 
 ### Issue: "Timeout"
 **Solution:** Increase timeout or use faster profile
 ```bash
-PICTL_TIMEOUT_SECONDS=600 pictl run data.xes
+PICTL_TIMEOUT_SECONDS=600 wpm run data.xes
 # OR
-pictl run data.xes --profile fast
+wpm run data.xes --profile fast
 ```
 
 ---
@@ -577,17 +577,17 @@ pictl run data.xes --profile fast
 
 3. **Monitor Memory**
    ```bash
-   pictl status --format json | jq .memory
+   wpm status --format json | jq .memory
    ```
 
 4. **Use Watch Mode for Batches**
    ```bash
-   pictl watch data/ --profile fast
+   wpm watch data/ --profile fast
    ```
 
 5. **Enable Logging Strategically**
    ```bash
-   PICTL_LOG_LEVEL=warn pictl run data.xes
+   PICTL_LOG_LEVEL=warn wpm run data.xes
    ```
 
 ---

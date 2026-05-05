@@ -1,4 +1,4 @@
-# pictl CLI Architecture
+# wasm4pm CLI Architecture
 
 ## Overview
 
@@ -177,7 +177,7 @@ EXIT_CODES = {
 
 Exit codes propagate to shell:
 ```bash
-pictl run --config bad.json
+wpm run --config bad.json
 # Returns: exit code 1 (config_error)
 
 echo $?  # Prints: 1
@@ -387,18 +387,18 @@ pictl interactive
 ### Plugin System
 ```bash
 pictl plugin install custom-algorithm
-pictl run --algorithm custom-algorithm
+wpm run --algorithm custom-algorithm
 ```
 
 ### Streaming Results
 ```bash
-pictl run --stream results.ndjson
+wpm run --stream results.ndjson
 # Outputs NDJSON for large result sets
 ```
 
 ### Debugging
 ```bash
-pictl run --debug
+wpm run --debug
 # Verbose logging, performance metrics
 ```
 

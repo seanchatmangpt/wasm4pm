@@ -6,7 +6,7 @@ How the hardware we benchmark on affects our results, and what to expect when ru
 
 ## Reference Hardware
 
-All benchmark numbers published in the pictl documentation were measured on:
+All benchmark numbers published in the wasm4pm documentation were measured on:
 
 | Component           | Specification                      |
 | ------------------- | ---------------------------------- |

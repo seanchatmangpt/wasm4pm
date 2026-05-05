@@ -1,8 +1,8 @@
 # wasm4pm-types
 
-Binary data structures for the pictl process mining platform.
+Binary data structures for the wasm4pm process mining platform.
 
-This crate defines the canonical types used throughout the pictl ecosystem, including event logs, process models, and conformance results.
+This crate defines the canonical types used throughout the wasm4pm ecosystem, including event logs, process models, and conformance results.
 
 ## Key Types
 

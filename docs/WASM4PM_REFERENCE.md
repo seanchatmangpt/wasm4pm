@@ -1,4 +1,4 @@
-# pictl - Command Line Reference
+# wasm4pm - Command Line Reference
 
 pictl: High-performance process mining CLI
 

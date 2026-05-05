@@ -1,4 +1,4 @@
-# pictl Documentation Index
+# wasm4pm Documentation Index
 
 **Last Updated:** 2026-05-05
 

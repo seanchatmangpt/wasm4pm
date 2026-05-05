@@ -22,7 +22,7 @@ Schema validation failed
 
 ```
 Remediation:
-1. pictl init --validate config.toml
+1. wpm init --validate config.toml
 2. Review error message
 3. Fix config field
 4. Retry

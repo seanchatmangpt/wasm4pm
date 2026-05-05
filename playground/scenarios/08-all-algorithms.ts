@@ -7,7 +7,7 @@
  * User paths covered:
  *   1. Config  — resolveConfig({ cliOverrides: { algorithm: X } }) accepts every ID
  *   2. Planner — plan() with algorithm override produces a valid plan for every ID
- *   3. CLI     — pictl run --algorithm X exits 0 or 3 (never 1=config or 2=source)
+ *   3. CLI     — wpm run --algorithm X exits 0 or 3 (never 1=config or 2=source)
  *   4. CLI     — wpm compare with all 14 IDs comma-joined exits 0 or 3
  *
  * Driven by ALGORITHM_IDS from @wasm4pm/contracts — if a new algorithm is added
@@ -19,7 +19,7 @@ import * as path from 'path';
 import * as fs from 'fs/promises';
 import { resolveConfig } from '@wasm4pm/config';
 import { ALGORITHM_IDS } from '@wasm4pm/contracts';
-import { pictl, createCliTestEnv, EXIT_CODES } from '@wasm4pm/testing';
+import { pictl, createCliTestEnv, EXIT_CODES } from '../helpers/cli.js';
 import type { CliTestEnv } from '@wasm4pm/testing';
 
 const MINI_XES = `<?xml version="1.0" encoding="UTF-8"?>
@@ -112,7 +112,7 @@ describe('all algorithms: planner layer', () => {
   });
 });
 
-// ── 3. CLI: pictl run --algorithm X exits 0 or 3, never 1 or 2 ────────────────
+// ── 3. CLI: wpm run --algorithm X exits 0 or 3, never 1 or 2 ────────────────
 
 describe('all algorithms: CLI run layer', () => {
   for (const id of ALGORITHM_IDS) {

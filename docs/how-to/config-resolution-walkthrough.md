@@ -86,7 +86,7 @@ Set these in your shell or in CI/CD to override defaults across multiple runs wi
 **Example:**
 ```bash
 # Run with fast profile and JSON output
-WASM4PM_PROFILE=fast WASM4PM_OUTPUT_FORMAT=json pictl run -i events.xes
+WASM4PM_PROFILE=fast WASM4PM_OUTPUT_FORMAT=json wpm run -i events.xes
 ```
 
 ---
@@ -245,7 +245,7 @@ CLI flags override all other layers. These apply only to the single command invo
 
 **Example:**
 ```bash
-pictl run -i events.xes --profile fast --format json --output /tmp/results.json
+wpm run -i events.xes --profile fast --format json --output /tmp/results.json
 ```
 
 ---
@@ -257,7 +257,7 @@ pictl run -i events.xes --profile fast --format json --output /tmp/results.json
 Let's trace where the final `execution.profile` value comes from when you run:
 
 ```bash
-WASM4PM_PROFILE=fast pictl run -i events.xes --profile quality
+WASM4PM_PROFILE=fast wpm run -i events.xes --profile quality
 ```
 
 #### Step 1: Collect from each layer
@@ -310,7 +310,7 @@ The CLI argument `--profile quality` overrides the TOML, environment variable, a
 Run this command with a mixed config setup:
 
 ```bash
-WASM4PM_OUTPUT_FORMAT=json pictl run -i events.xes --config ./custom.toml
+WASM4PM_OUTPUT_FORMAT=json wpm run -i events.xes --config ./custom.toml
 ```
 
 **Setup:**
@@ -353,7 +353,7 @@ The TOML config wins because the CLI didn't override it.
 Run:
 
 ```bash
-WASM4PM_PROFILE=invalid_profile pictl run -i events.xes
+WASM4PM_PROFILE=invalid_profile wpm run -i events.xes
 ```
 
 **Resolution:**
@@ -367,7 +367,7 @@ The environment variable wins, so pictl tries to use `profile = "invalid_profile
 
 #### Validation Catches It
 
-When pictl validates the resolved config using Zod schema, it rejects invalid profile:
+When wpm validates the resolved config using Zod schema, it rejects invalid profile:
 
 ```
 Zod schema requires: profile must be one of ["fast", "balanced", "quality", "stream"]
@@ -429,7 +429,7 @@ pictl tracks which layer each config value came from. This helps debug resolutio
 ### View Provenance with `wpm explain`
 
 ```bash
-pictl explain --config custom.toml --show-provenance
+wpm explain --config custom.toml --show-provenance
 ```
 
 **Output:**
@@ -481,7 +481,7 @@ The resolved config includes metadata:
 
 **Step 1: View resolved config**
 ```bash
-pictl explain --config wasm4pm.toml --show-provenance
+wpm explain --config wasm4pm.toml --show-provenance
 ```
 
 This shows the final merged config and where each value came from.
@@ -490,7 +490,7 @@ This shows the final merged config and where each value came from.
 
 Defaults:
 ```bash
-pictl init --sample  # Shows default config
+wpm init --sample  # Shows default config
 ```
 
 Environment:
@@ -510,7 +510,7 @@ cat wasm4pm.json
 
 CLI:
 ```bash
-pictl run --help
+wpm run --help
 ```
 
 **Step 3: Trace resolution manually**
@@ -541,7 +541,7 @@ Reason: Expected integer, got string
 
 **Step 2: Find which layer provided it**
 ```bash
-pictl explain --show-provenance | grep "execution.timeout"
+wpm explain --show-provenance | grep "execution.timeout"
 ```
 
 Output:
@@ -563,7 +563,7 @@ export WASM4PM_TIMEOUT=600000
 
 Or remove the quotes:
 ```bash
-WASM4PM_TIMEOUT=600000 pictl run -i events.xes
+WASM4PM_TIMEOUT=600000 wpm run -i events.xes
 ```
 
 ### Symptom: Config file not found
@@ -580,7 +580,7 @@ pictl searches these paths in order:
 
 **To use a specific config file:**
 ```bash
-pictl run -i events.xes --config /path/to/custom/config.toml
+wpm run -i events.xes --config /path/to/custom/config.toml
 ```
 
 ### Symptom: "Unknown field" error
@@ -620,7 +620,7 @@ project/
 Never commit OTel endpoints or sensitive settings:
 ```bash
 # Good: In CI/CD secrets
-WASM4PM_OTEL_ENDPOINT=$SECRET_OTEL_ENDPOINT pictl run -i events.xes
+WASM4PM_OTEL_ENDPOINT=$SECRET_OTEL_ENDPOINT wpm run -i events.xes
 
 # Bad: In config file
 [observability.otel]
@@ -632,17 +632,17 @@ endpoint = "http://internal.secrets..."
 Quick experiments don't need config files:
 ```bash
 # Good: One-off test
-pictl run -i events.xes --profile fast
+wpm run -i events.xes --profile fast
 
 # OK: If you have a project config
-pictl run -i events.xes --config ./wasm4pm.toml --profile fast
+wpm run -i events.xes --config ./wasm4pm.toml --profile fast
 ```
 
 ### 4. Check Provenance When Debugging
 
 Always run `wpm explain --show-provenance` before filing an issue:
 ```bash
-pictl explain --config wasm4pm.toml --show-provenance > debug.txt
+wpm explain --config wasm4pm.toml --show-provenance > debug.txt
 ```
 
 ### 5. Document Non-Obvious Settings

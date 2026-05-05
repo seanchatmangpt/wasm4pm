@@ -1,4 +1,4 @@
-# pictl Hooks Validation Report
+# wasm4pm Hooks Validation Report
 
 **Date:** 2026-04-11  
 **Status:** ✅ **ALL HOOKS WORKING CORRECTLY**
@@ -48,7 +48,7 @@ cd wasm4pm && npm run build
 ### 3. CLI Build
 
 ```bash
-cd apps/pictl && npm run build
+cd apps/wasm4pm && npm run build
 ```
 
 **Result:** ✅ TypeScript compiled successfully to `dist/`.
@@ -119,7 +119,7 @@ echo '{"stop_hook_active":false}' | CLAUDE_PROJECT_DIR=$(pwd) bash .claude/hooks
   "hookSpecificOutput": {
     "hookEventName": "Stop",
     "decision": "block",
-    "blockReason": "pictl doctor: 2 critical failure(s) detected\n  • WASM binary: WASM binary not built — /Users/sac/chatmangpt/wasm4pm/wasm4pm/pkg/wasm4pm_bg.wasm not found (fix: Build the WASM module: cd wasm4pm && npm run build)\n  • WASM loads: wasm4pm.js not found — module not built (fix: cd wasm4pm && npm run build)\n\nRun: pictl doctor --verbose for full report"
+    "blockReason": "wpm doctor: 2 critical failure(s) detected\n  • WASM binary: WASM binary not built — /Users/sac/chatmangpt/wasm4pm/wasm4pm/pkg/wasm4pm_bg.wasm not found (fix: Build the WASM module: cd wasm4pm && npm run build)\n  • WASM loads: wasm4pm.js not found — module not built (fix: cd wasm4pm && npm run build)\n\nRun: wpm doctor --verbose for full report"
   }
 }
 ```

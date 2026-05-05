@@ -1,4 +1,4 @@
-# pictl Benchmark Fixtures
+# wasm4pm Benchmark Fixtures
 
 Process mining event logs for benchmarking pictl's discovery and conformance algorithms.
 

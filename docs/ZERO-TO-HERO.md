@@ -15,15 +15,15 @@ You have Node.js 18+ and want to see something work.
 
 2. **Run the health check**
    ```bash
-   npx pictl doctor
+   npx wpm doctor
    ```
    17 checks verify Node.js, WASM binary, SIMD, config, memory, disk, and git hooks.
    See [health-check.md](how-to/health-check.md) for troubleshooting any failures.
 
 3. **Run your first discovery**
    ```bash
-   npx pictl init          # scaffold wasm4pm.toml
-   npx pictl run log.xes   # discover a process model
+   npx wpm init          # scaffold wasm4pm.toml
+   npx wpm run log.xes   # discover a process model
    ```
    Full walkthrough: [first-model.md](tutorials/first-model.md)
 
@@ -99,7 +99,7 @@ You understand single runs. Now compare and contrast.
 ### Side-by-side comparison
 
 ```bash
-pictl compare dfg,heuristic_miner,inductive_miner -i log.xes
+wpm compare dfg,heuristic_miner,inductive_miner -i log.xes
 ```
 
 ASCII sparklines show fitness, precision, generalization, and simplicity for each algorithm. Pick the best trade-off for your use case.
@@ -111,7 +111,7 @@ Tutorial: [TUTORIAL.md](TUTORIAL.md) (7 progressive exercises from DFG to DECLAR
 How well does your event log match the discovered model?
 
 ```bash
-pictl run log.xes --algorithm alpha_plus_plus --conformance
+wpm run log.xes --algorithm alpha_plus_plus --conformance
 ```
 
 Understand fitness, precision, simplicity, and generalization — the four quality dimensions: [EXPLANATION.md](EXPLANATION.md#why-different-algorithms-have-different-trade-offs)
@@ -119,7 +119,7 @@ Understand fitness, precision, simplicity, and generalization — the four quali
 ### Comparing logs
 
 ```bash
-pictl diff baseline.xes current.xes
+wpm diff baseline.xes current.xes
 ```
 
 Jaccard similarity on DFG edges reveals what changed between two time periods, cohorts, or system versions.
@@ -188,7 +188,7 @@ CLI reference: [prediction-cli.md](reference/prediction-cli.md)
 ### Real-time drift monitoring
 
 ```bash
-pictl drift-watch -i streaming-log.xes
+wpm drift-watch -i streaming-log.xes
 ```
 
 EWMA-smoothed Jaccard similarity with configurable alpha and threshold. Alerts when control flow shifts beyond your tolerance.
@@ -207,17 +207,17 @@ You can mine and predict. Now make it reliable, observable, and automated.
 11 commands, 5 exit codes, human + JSON output formats:
 
 ```bash
-pictl run log.xes              # 0=success, 2=bad input, 3=WASM fail
-pictl compare dfg,ilp -i log.xes
-pictl diff v1.xes v2.xes
-pictl predict next-activity -i log.xes
-pictl drift-watch -i log.xes
-pictl watch                    # re-run on config change
-pictl status                   # engine health + system info
-pictl doctor                   # 17 health checks
-pictl explain                  # academic algorithm descriptions
-pictl init                     # scaffold project
-pictl results                  # browse saved results
+wpm run log.xes              # 0=success, 2=bad input, 3=WASM fail
+wpm compare dfg,ilp -i log.xes
+wpm diff v1.xes v2.xes
+wpm predict next-activity -i log.xes
+wpm drift-watch -i log.xes
+wpm watch                    # re-run on config change
+wpm status                   # engine health + system info
+wpm doctor                   # 17 health checks
+wpm explain                  # academic algorithm descriptions
+wpm init                     # scaffold project
+wpm results                  # browse saved results
 ```
 
 Full reference: [cli-commands.md](reference/cli-commands.md)
@@ -244,7 +244,7 @@ Error handling philosophy: [error-handling.md](explanation/error-handling.md)
 ### Watch mode
 
 ```bash
-pictl watch   # re-run discovery when wasm4pm.toml or source changes
+wpm watch   # re-run discovery when wasm4pm.toml or source changes
 ```
 
 Reconnection after failure: [watch-reconnection.md](explanation/watch-reconnection.md)

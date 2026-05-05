@@ -1,4 +1,4 @@
-# pictl autoprocess — Help Text Reference
+# wpm autoprocess — Help Text Reference
 
 This document specifies the canonical help text for the `wpm autoprocess` command. Use this as the reference for what `wpm autoprocess --help` should display.
 
@@ -7,7 +7,7 @@ This document specifies the canonical help text for the `wpm autoprocess` comman
 ## Usage
 
 ```
-pictl autoprocess <log.xes> [options]
+wpm autoprocess <log.xes> [options]
 ```
 
 ---
@@ -48,8 +48,8 @@ State (RL agent Q-table, SPC history, circuit breaker) persists to `.wasm4pm/aut
 
 **Example:**
 ```bash
-pictl autoprocess data/log.xes --activity-key activity_type
-pictl autoprocess data/log.xes -k task_name
+wpm autoprocess data/log.xes --activity-key activity_type
+wpm autoprocess data/log.xes -k task_name
 ```
 
 ---
@@ -64,7 +64,7 @@ pictl autoprocess data/log.xes -k task_name
 
 **Example:**
 ```bash
-pictl autoprocess data/log.xes --config '{"epsilon_decay": 0.95, "learning_rate": 0.1}'
+wpm autoprocess data/log.xes --config '{"epsilon_decay": 0.95, "learning_rate": 0.1}'
 ```
 
 **Invalid JSON will cause:** `Config error (exit 1)`
@@ -85,7 +85,7 @@ pictl autoprocess data/log.xes --config '{"epsilon_decay": 0.95, "learning_rate"
 
 **Example:**
 ```bash
-pictl autoprocess data/log.xes --format json | jq '.result.cycle_result.perception.health_score'
+wpm autoprocess data/log.xes --format json | jq '.result.cycle_result.perception.health_score'
 ```
 
 ---
@@ -100,7 +100,7 @@ pictl autoprocess data/log.xes --format json | jq '.result.cycle_result.percepti
 
 **Example:**
 ```bash
-pictl autoprocess data/log.xes --verbose
+wpm autoprocess data/log.xes --verbose
 ```
 
 ---
@@ -115,7 +115,7 @@ pictl autoprocess data/log.xes --verbose
 
 **Example:**
 ```bash
-pictl autoprocess data/log.xes --quiet
+wpm autoprocess data/log.xes --quiet
 if [ $? -eq 0 ]; then echo "Success"; fi
 ```
 
@@ -283,32 +283,32 @@ Automatically created after each successful cycle. Contains:
 ### Basic Usage
 
 ```bash
-pictl autoprocess data/purchase_process.xes
+wpm autoprocess data/purchase_process.xes
 ```
 
 ### JSON Output for Scripting
 
 ```bash
-pictl autoprocess data/purchase_process.xes --format json | jq '.result.cycle_result.protection.special_causes'
+wpm autoprocess data/purchase_process.xes --format json | jq '.result.cycle_result.protection.special_causes'
 ```
 
 ### Custom Activity Key
 
 ```bash
-pictl autoprocess data/log.xes --activity-key activity_type
+wpm autoprocess data/log.xes --activity-key activity_type
 ```
 
 ### Quiet Mode (Exit Code Only)
 
 ```bash
-pictl autoprocess data/log.xes --quiet
+wpm autoprocess data/log.xes --quiet
 echo "Exit: $?"
 ```
 
 ### With RL Configuration
 
 ```bash
-pictl autoprocess data/log.xes --config '{"epsilon_decay": 0.95}'
+wpm autoprocess data/log.xes --config '{"epsilon_decay": 0.95}'
 ```
 
 ---
@@ -350,7 +350,7 @@ ls -l data/purchase_process.xes
 **Fix:** Clear state and retry:
 ```bash
 rm .wasm4pm/autoprocess-state.json
-pictl autoprocess data/log.xes
+wpm autoprocess data/log.xes
 ```
 
 ---

@@ -132,7 +132,7 @@ But it should never be the only thing you look at. Always check the activity, ed
 
 ---
 
-## How pictl diff Works Internally
+## How wpm diff Works Internally
 
 ```
   Log A (XES)                    Log B (XES)

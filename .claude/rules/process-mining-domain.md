@@ -1,4 +1,4 @@
-# pictl Process Mining Domain
+# wasm4pm Process Mining Domain
 
 **Van der Aalst perspectives, event log formats, algorithm taxonomy.**
 

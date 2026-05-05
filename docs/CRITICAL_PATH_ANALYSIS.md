@@ -1,4 +1,4 @@
-# pictl Critical Path Analysis
+# wasm4pm Critical Path Analysis
 
 **Version:** v26.4.17  
 **Status:** DETAILED MAPPING OF CONTROL & DATA FLOW  

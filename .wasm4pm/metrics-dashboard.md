@@ -1,4 +1,4 @@
-# pictl Kaizen Metrics Dashboard
+# wasm4pm Kaizen Metrics Dashboard
 
 **Last Updated:** 2026-04-12T20:30:00Z
 

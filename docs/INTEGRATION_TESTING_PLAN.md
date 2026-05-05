@@ -1,4 +1,4 @@
-# pictl Integration Testing & Certification Plan
+# wasm4pm Integration Testing & Certification Plan
 
 **Version:** v26.4.17  
 **Status:** COMPREHENSIVE E2E TESTING & QUALITY CERTIFICATION ROADMAP  

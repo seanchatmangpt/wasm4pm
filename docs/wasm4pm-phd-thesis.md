@@ -1,4 +1,4 @@
-# pictl: A Comprehensive WebAssembly-Native Process Mining Framework
+# wasm4pm: A Comprehensive WebAssembly-Native Process Mining Framework
 
 ## Doctoral Thesis in Computer Science
 
@@ -12,7 +12,7 @@
 
 ## Abstract
 
-This thesis presents **pictl** (Process Intelligence Compiled to LLVM), a WebAssembly-native process mining framework that implements 42 registered algorithms spanning process discovery, conformance checking, predictive analytics, simulation, and format conversion entirely within a single self-contained WASM binary. The framework addresses a fundamental challenge in the field of process mining: the delivery of production-grade mining capabilities to heterogeneous deployment targets—ranging from cloud servers to embedded IoT devices—without sacrificing algorithmic completeness or statistical rigor.
+This thesis presents **wasm4pm** (Process Intelligence Compiled to LLVM), a WebAssembly-native process mining framework that implements 42 registered algorithms spanning process discovery, conformance checking, predictive analytics, simulation, and format conversion entirely within a single self-contained WASM binary. The framework addresses a fundamental challenge in the field of process mining: the delivery of production-grade mining capabilities to heterogeneous deployment targets—ranging from cloud servers to embedded IoT devices—without sacrificing algorithmic completeness or statistical rigor.
 
 pictl's architecture introduces three novel contributions to the discipline:
 
@@ -1708,4 +1708,4 @@ pictl uses CalVer (Calendar Versioning):
 
 *End of Thesis*
 
-*This document was auto-generated on April 10, 2026, from the pictl codebase at commit 7ce62b0 on branch refactor/performance-optimizations. The thesis reflects the state of the art as of v26.4.10.*
+*This document was auto-generated on April 10, 2026, from the wasm4pm codebase at commit 7ce62b0 on branch refactor/performance-optimizations. The thesis reflects the state of the art as of v26.4.10.*

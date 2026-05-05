@@ -1,6 +1,6 @@
 # @wasm4pm/kernel
 
-Core kernel for algorithm registration and step execution in the pictl process mining pipeline.
+Core kernel for algorithm registration and step execution in the wasm4pm process mining pipeline.
 
 ## Overview
 

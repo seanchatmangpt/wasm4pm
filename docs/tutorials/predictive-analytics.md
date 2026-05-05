@@ -24,7 +24,7 @@ All three capabilities are built into pictl's `predict` and `drift-watch` comman
 Run the prediction against your event log. This builds an n-gram model from all completed traces and outputs the most likely next activity given an empty prefix (i.e., the most common first activity in the log).
 
 ```bash
-pictl predict next-activity -i your-log.xes
+wpm predict next-activity -i your-log.xes
 ```
 
 The output shows a ranked list of predicted activities with their probabilities. The probability reflects how frequently each activity follows the given prefix across all traces in the log.
@@ -34,7 +34,7 @@ The output shows a ranked list of predicted activities with their probabilities.
 A prefix is the sequence of activities that have already occurred in a running case. Supplying a prefix gives the model context and produces more specific predictions.
 
 ```bash
-pictl predict next-activity -i your-log.xes --prefix "activity1,activity2"
+wpm predict next-activity -i your-log.xes --prefix "activity1,activity2"
 ```
 
 Replace `activity1,activity2` with actual activity names from your log. Use activity names exactly as they appear in the XES file. The prediction now answers: given that `activity1` then `activity2` have occurred, what comes next?
@@ -47,7 +47,7 @@ Two parameters control prediction behavior:
 - `--top-k` -- how many predictions to return (default: 3). Shows only the k most likely activities.
 
 ```bash
-pictl predict next-activity -i your-log.xes --ngram-order 3 --top-k 5
+wpm predict next-activity -i your-log.xes --ngram-order 3 --top-k 5
 ```
 
 When you increase `ngram-order`, the model considers a longer prefix. This can improve accuracy for processes with complex sequential patterns, but it also means some prefixes may never have been seen in the training data, resulting in lower confidence.
@@ -57,7 +57,7 @@ When you increase `ngram-order`, the model considers a longer prefix. This can i
 Every `predict` run auto-saves its output. View the most recent result:
 
 ```bash
-pictl results --last
+wpm results --last
 ```
 
 This prints the full JSON result including the model parameters, predictions, and metadata (timestamp, input hash, task).
@@ -86,7 +86,7 @@ A high coverage value (close to 1.0) means the model has seen most prefix patter
 Provide a prefix of activities that have already occurred. The model looks at historical cases with similar prefixes and estimates the remaining time.
 
 ```bash
-pictl predict remaining-time -i your-log.xes --prefix "start,process,review"
+wpm predict remaining-time -i your-log.xes --prefix "start,process,review"
 ```
 
 ### Step 2: Interpret the output
@@ -116,7 +116,7 @@ Concept drift occurs when the underlying process changes -- new activities appea
 Run a single drift analysis across the entire log. This divides the log into windows and compares activity distributions between consecutive windows.
 
 ```bash
-pictl predict drift -i your-log.xes --drift-window 50
+wpm predict drift -i your-log.xes --drift-window 50
 ```
 
 The `--drift-window` parameter controls the window size (number of events per window). Smaller windows are more sensitive to short-term fluctuations; larger windows smooth over noise but may miss gradual drift.
@@ -131,7 +131,7 @@ The output reports:
 For continuous monitoring, use `drift-watch`. This command reads the log and runs drift detection at a configurable interval, printing results as they arrive.
 
 ```bash
-pictl drift-watch -i your-log.xes --interval 5000
+wpm drift-watch -i your-log.xes --interval 5000
 ```
 
 The `--interval` parameter sets the polling interval in milliseconds (default: 5000). The command runs until you press Ctrl+C.
@@ -144,7 +144,7 @@ Two parameters control drift detection sensitivity:
 - `--threshold` -- the alert threshold (default: 0.2). A window pair with a drift score above this value triggers an ALERT.
 
 ```bash
-pictl drift-watch -i your-log.xes --alpha 0.5 --threshold 0.2
+wpm drift-watch -i your-log.xes --alpha 0.5 --threshold 0.2
 ```
 
 ### Step 4: Watch for alerts

@@ -1,4 +1,4 @@
-# pictl Browser Benchmarks
+# wasm4pm Browser Benchmarks
 
 Browser-based performance testing for pictl algorithms using Vitest with headless Chromium and Playwright.
 

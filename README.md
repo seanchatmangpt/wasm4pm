@@ -16,9 +16,9 @@
 
 ## What is pictl?
 
-**pictl** is a comprehensive, enterprise-grade process mining platform compiled to WebAssembly. It brings production-grade process discovery, conformance checking, analysis, and automation capabilities to browsers, Node.js, and containers.
+**wasm4pm** is a comprehensive, enterprise-grade process mining platform compiled to WebAssembly. It brings production-grade process discovery, conformance checking, analysis, and automation capabilities to browsers, Node.js, and containers.
 
-Process mining extracts actionable insights from event logs by discovering process models, detecting deviations, and analyzing performance bottlenecks. **pictl** makes this accessible to JavaScript developers with near-native performance, plus professional CLI tools, HTTP APIs, and observability for enterprise deployments.
+Process mining extracts actionable insights from event logs by discovering process models, detecting deviations, and analyzing performance bottlenecks. **wasm4pm** makes this accessible to JavaScript developers with near-native performance, plus professional CLI tools, HTTP APIs, and observability for enterprise deployments.
 
 ### Version 26.4.28 (April 2026)
 **High-Performance Rust CLI:** New `wpm` (wasm4pm) Rust CLI for system diagnostics, process discovery, and conformance checking. Replaces the legacy TypeScript CLI with nanosecond-latency architecture. Includes `doctor`, `wizard`, `telco`, and `mining` commands.
@@ -163,9 +163,9 @@ pictl agent register custom-agent ./path/to/agent.ts
 
 Run predictions from the CLI:
 ```bash
-pictl predict next-activity --input log.xes
-pictl predict drift --input log.xes
-pictl predict features --input log.xes --prefix '["A","B","C"]'
+wpm predict next-activity --input log.xes
+wpm predict drift --input log.xes
+wpm predict features --input log.xes --prefix '["A","B","C"]'
 ```
 
 ### 20+ Analytics Functions
@@ -357,19 +357,19 @@ console.log(JSON.stringify(conformance, null, 2));
 ### CLI (pictl - NEW)
 ```bash
 # Initialize project with configuration
-pictl init
+wpm init
 
 # Discover with balanced profile
-pictl run data/log.xes --algorithm genetic --profile balanced
+wpm run data/log.xes --algorithm genetic --profile balanced
 
 # Watch directory for continuous processing
-pictl watch data/ --output results/ --profile fast
+wpm watch data/ --output results/ --profile fast
 
 # Check system and engine status
-pictl status --verbose
+wpm status --verbose
 
 # Get algorithm recommendations
-pictl explain --algorithm genetic --level detailed
+wpm explain --algorithm genetic --level detailed
 
 # Van der Aalst agents (NEW)
 pictl agent execute mock-interceptor --target ./src

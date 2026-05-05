@@ -8,13 +8,13 @@
 Basic analysis command:
 
 ```bash
-pictl run --config config.toml
+wpm run --config config.toml
 ```
 
 With options:
 
 ```bash
-pictl run \
+wpm run \
   --config config.toml \
   --profile fast \
   --format json \

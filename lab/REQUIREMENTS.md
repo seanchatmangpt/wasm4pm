@@ -50,7 +50,7 @@ Run these commands from a clean checkout before executing `lab/` tests:
 cd /Users/sac/wasm4pm
 pnpm install
 
-# Step 2 — Build the pictl Node.js artifact
+# Step 2 — Build the wasm4pm Node.js artifact
 cd /Users/sac/wasm4pm/wasm4pm
 npm run build:nodejs
 

@@ -15,11 +15,11 @@ This means: All parameters should be in configuration, not command-line argument
 
 ```bash
 # Bad (CLI args):
-pictl run --algorithm heuristic --noise-threshold 0.2 --population 50
+wpm run --algorithm heuristic --noise-threshold 0.2 --population 50
 # Did we remember all the flags? Are they documented?
 
 # Good (config file):
-pictl run --config config.toml
+wpm run --config config.toml
 # Everything explicit, version-controlled
 ```
 
@@ -60,7 +60,7 @@ We support **minimal** flags for convenience:
 
 ```bash
 # Flag overrides config (exception)
-pictl run --config config.toml --profile fast
+wpm run --config config.toml --profile fast
 
 # Profile = template for algorithm selection
 # (But specific algorithm in config.toml)
@@ -115,17 +115,17 @@ Execution:
 
 ```bash
 # No arguments needed
-pictl run --config config.toml
+wpm run --config config.toml
 
 # Optionally override profile
-pictl run --config config.toml --profile fast
+wpm run --config config.toml --profile fast
 ```
 
 ## Example: Bad Design
 
 ```bash
 # Many arguments (hard to remember, easy to mess up)
-pictl run \
+wpm run \
   --config config.toml \
   --algorithm genetic \
   --population 100 \

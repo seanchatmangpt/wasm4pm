@@ -187,7 +187,7 @@ Use the official pictl CLI:
 
 ```bash
 # Instead of custom tool
-pictl run data.xes --algorithm genetic --profile balanced
+wpm run data.xes --algorithm genetic --profile balanced
 
 # Or integrate pictl programmatically
 const { pictl } = require('@wasm4pm/cli');
@@ -431,7 +431,7 @@ const result = pm.discoverAlphaPlusPlus(log, {
 profile = "quality"
 
 // Via CLI
-pictl run data.xes --profile quality
+wpm run data.xes --profile quality
 ```
 
 ---
@@ -444,7 +444,7 @@ Understanding the configuration hierarchy:
 Priority (High → Low)
 │
 ├─ 1. CLI Arguments (highest)
-│  └─ pictl run --algorithm genetic --profile quality
+│  └─ wpm run --algorithm genetic --profile quality
 │
 ├─ 2. TOML Files
 │  ├─ ./wasm4pm.toml
@@ -609,7 +609,7 @@ Instead of custom Node.js scripts:
 **After:**
 ```bash
 #!/bin/bash
-pictl run data.xes --algorithm genetic --output result.json
+wpm run data.xes --algorithm genetic --output result.json
 ```
 
 **Benefits:**
@@ -724,14 +724,14 @@ wasm4pm-service --port 3001
 ### Issue: "Config validation error"
 **Solution:** Check config format
 ```bash
-# Run pictl init to generate valid config
-pictl init
+# Run wpm init to generate valid config
+wpm init
 ```
 
 ### Issue: "Memory exceeded"
 **Solution:** Use streaming for large logs
 ```bash
-pictl run large-log.xes --profile stream
+wpm run large-log.xes --profile stream
 ```
 
 ---

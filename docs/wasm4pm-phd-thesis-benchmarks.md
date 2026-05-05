@@ -19,7 +19,7 @@ This thesis interrogates the empirical meaning of benchmark results obtained fro
 
 ## Declaration
 
-This thesis is the original work of the author. All benchmark data was collected on the author's hardware (macOS Darwin 25.2.0, Apple Silicon) using the pictl WASM engine version 26.4.10. The Closed Claw Benchmarking Constitution and all benchmark implementations are open source under the pictl repository.
+This thesis is the original work of the author. All benchmark data was collected on the author's hardware (macOS Darwin 25.2.0, Apple Silicon) using the wasm4pm WASM engine version 26.4.10. The Closed Claw Benchmarking Constitution and all benchmark implementations are open source under the wasm4pm repository.
 
 ---
 
@@ -95,11 +95,11 @@ This thesis addresses four research questions:
 
 ### 1.3 Thesis Statement
 
-*The benchmark results of the pictl WASM process mining engine prove that the complete van der Aalst process mining framework---discovery, conformance checking, streaming analytics, prediction, simulation, and object-centric analysis---can execute at production scale in web browsers without server infrastructure. The Closed Claw Benchmarking Constitution, with its BLAKE3 receipt chains and five pass/fail gates, establishes that these results constitute operational truth: cryptographically verified, deterministically reproducible evidence of algorithmic correctness and performance.*
+*The benchmark results of the wasm4pm WASM process mining engine prove that the complete van der Aalst process mining framework---discovery, conformance checking, streaming analytics, prediction, simulation, and object-centric analysis---can execute at production scale in web browsers without server infrastructure. The Closed Claw Benchmarking Constitution, with its BLAKE3 receipt chains and five pass/fail gates, establishes that these results constitute operational truth: cryptographically verified, deterministically reproducible evidence of algorithmic correctness and performance.*
 
 ### 1.4 Scope and Limitations
 
-This thesis covers the pictl engine exclusively. Comparisons with pm4py, ProM, Apromore, or other process mining tools are made where benchmark data is available, but systematic cross-tool benchmarking is outside the scope. All measurements were collected on Apple Silicon (aarch64-darwin); x86-64 and ARM server results may differ. The benchmark suite does not cover all process mining algorithms---specifically, A* alignment is excluded due to its O(b^d) worst-case complexity making it unsuitable for automated benchmarking at scale.
+This thesis covers the wasm4pm engine exclusively. Comparisons with pm4py, ProM, Apromore, or other process mining tools are made where benchmark data is available, but systematic cross-tool benchmarking is outside the scope. All measurements were collected on Apple Silicon (aarch64-darwin); x86-64 and ARM server results may differ. The benchmark suite does not cover all process mining algorithms---specifically, A* alignment is excluded due to its O(b^d) worst-case complexity making it unsuitable for automated benchmarking at scale.
 
 ---
 
@@ -659,7 +659,7 @@ This five-gate framework transforms benchmark results from performance claims in
 
 ## Chapter 10: Conclusion
 
-This thesis has demonstrated that the pictl WebAssembly process mining engine achieves performance levels that enable a fundamental shift in how and where process mining is deployed. The key findings are:
+This thesis has demonstrated that the wasm4pm WebAssembly process mining engine achieves performance levels that enable a fundamental shift in how and where process mining is deployed. The key findings are:
 
 1. **Web-scale process discovery is real.** DFG discovery at 142.7 Melem/s means process models can be discovered interactively in browsers, not just on servers.
 

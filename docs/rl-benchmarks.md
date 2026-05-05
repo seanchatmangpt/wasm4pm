@@ -1,4 +1,4 @@
-# pictl RL System Benchmarks
+# wasm4pm RL System Benchmarks
 
 **Comprehensive performance and convergence evaluation of all 5 RL agents.**
 

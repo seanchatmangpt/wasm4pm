@@ -145,10 +145,10 @@ const { encoded, labelMap, reverseMap } = encodeLabels(['A', 'B', 'A']);
 ## CLI
 
 ```bash
-pictl ml classify -i events.json
-pictl ml forecast -i events.json --horizon 10
-pictl ml anomaly  -i events.json --threshold 0.8
-pictl ml pca      -i events.json --components 2
+wpm ml classify -i events.json
+wpm ml forecast -i events.json --horizon 10
+wpm ml anomaly  -i events.json --threshold 0.8
+wpm ml pca      -i events.json --components 2
 ```
 
 ## Testing

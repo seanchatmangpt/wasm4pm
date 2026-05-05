@@ -1,4 +1,4 @@
-# pictl v26.4.10 Release Notes
+# wasm4pm v26.4.10 Release Notes
 
 **Release Date:** April 12, 2026  
 **Status:** Production Ready  
@@ -368,11 +368,11 @@ This major release transforms wasm4pm from a pure WebAssembly library into a com
 The professional command-line interface for all process mining operations.
 
 #### Core Commands
-- **pictl init** - Bootstrap new projects with configuration templates
+- **wpm init** - Bootstrap new projects with configuration templates
 - **pictl run** - Execute discovery algorithms with profile-based optimization
-- **pictl watch** - File system watcher for continuous analysis
-- **pictl status** - Real-time system and engine status
-- **pictl explain** - Interactive algorithm and model explanation
+- **wpm watch** - File system watcher for continuous analysis
+- **wpm status** - Real-time system and engine status
+- **wpm explain** - Interactive algorithm and model explanation
 
 #### Features
 - Profile-based execution (fast, balanced, quality, stream)
@@ -384,16 +384,16 @@ The professional command-line interface for all process mining operations.
 #### Example Usage
 ```bash
 # Initialize a new project
-pictl init --configFormat toml
+wpm init --configFormat toml
 
 # Run discovery with quality profile
-pictl run data/eventlog.xes --algorithm genetic --profile quality
+wpm run data/eventlog.xes --algorithm genetic --profile quality
 
 # Watch directory for new logs
-pictl watch data/ --output results/ --profile balanced
+wpm watch data/ --output results/ --profile balanced
 
 # Check system status
-pictl status --verbose
+wpm status --verbose
 ```
 
 ---

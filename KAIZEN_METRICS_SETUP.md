@@ -1,4 +1,4 @@
-# pictl Kaizen Metrics Tracking — Complete Setup & Operations Guide
+# wasm4pm Kaizen Metrics Tracking — Complete Setup & Operations Guide
 
 **Version:** 1.0  
 **Last Updated:** 2026-04-12  
@@ -8,7 +8,7 @@
 
 ## Overview
 
-Kaizen metrics tracking automates the collection and reporting of 8 key quality indicators for the pictl project:
+Kaizen metrics tracking automates the collection and reporting of 8 key quality indicators for the wasm4pm project:
 
 1. **Test Pass Rate** (target: 100%) — Are tests passing?
 2. **Compiler Warnings** (target: 0) — Any code quality issues?

@@ -1,6 +1,6 @@
-# pictl Critical Constraints
+# wasm4pm Critical Constraints
 
-**Non-negotiable rules for the pictl process mining platform.**
+**Non-negotiable rules for the wasm4pm process mining platform.**
 
 ## MTTR Requirements
 

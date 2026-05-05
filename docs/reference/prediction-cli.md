@@ -12,7 +12,7 @@ All results are auto-saved to `.wasm4pm/results/<timestamp>-<task>.json` unless 
 ## Command Signature
 
 ```
-pictl predict <TASK> --input <LOG> [OPTIONS]
+wpm predict <TASK> --input <LOG> [OPTIONS]
 ```
 
 ## Global Prediction Options
@@ -89,9 +89,9 @@ Predict the most likely next activity given an observed prefix, using an n-gram 
 ### Examples
 
 ```bash
-pictl predict next-activity -i process.xes --prefix "Register,Check"
-pictl predict next-activity -i process.xes --prefix "A,B" --ngram-order 3 --top-k 5
-pictl predict next-activity -i process.xes --prefix "Submit,Review,Decision" --format json
+wpm predict next-activity -i process.xes --prefix "Register,Check"
+wpm predict next-activity -i process.xes --prefix "A,B" --ngram-order 3 --top-k 5
+wpm predict next-activity -i process.xes --prefix "Submit,Review,Decision" --format json
 ```
 
 ---
@@ -147,8 +147,8 @@ If no `--prefix` is provided, the model is built but no prediction is returned. 
 ### Examples
 
 ```bash
-pictl predict remaining-time -i process.xes --prefix "Register,Check,Review"
-pictl predict remaining-time -i process.xes --prefix "A,B,C" --format json
+wpm predict remaining-time -i process.xes --prefix "Register,Check,Review"
+wpm predict remaining-time -i process.xes --prefix "A,B,C" --format json
 ```
 
 ---
@@ -215,9 +215,9 @@ Score a trace prefix for anomaly against the reference DFG discovered from the l
 ### Examples
 
 ```bash
-pictl predict outcome -i process.xes --prefix "A,B,C"
-pictl predict outcome -i process.xes --prefix "Register,Skip,Close" --format json
-pictl predict outcome -i process.xes --top-k 10
+wpm predict outcome -i process.xes --prefix "A,B,C"
+wpm predict outcome -i process.xes --prefix "Register,Skip,Close" --format json
+wpm predict outcome -i process.xes --top-k 10
 ```
 
 ---
@@ -266,9 +266,9 @@ One-shot concept drift detection across the entire event log using Jaccard-windo
 ### Examples
 
 ```bash
-pictl predict drift -i process.xes
-pictl predict drift -i process.xes --drift-window 20
-pictl predict drift -i process.xes --drift-window 50 --format json
+wpm predict drift -i process.xes
+wpm predict drift -i process.xes --drift-window 20
+wpm predict drift -i process.xes --drift-window 50 --format json
 ```
 
 ---
@@ -323,9 +323,9 @@ Extract ML-ready features from the event log, specifically transition probabilit
 ### Examples
 
 ```bash
-pictl predict features -i process.xes
-pictl predict features -i process.xes --prefix "A,B,C"
-pictl predict features -i process.xes --format json
+wpm predict features -i process.xes
+wpm predict features -i process.xes --prefix "A,B,C"
+wpm predict features -i process.xes --format json
 ```
 
 ---
@@ -375,8 +375,8 @@ The resource task uses fixed demonstration arrival and service rates (arrival=0.
 ### Examples
 
 ```bash
-pictl predict resource -i process.xes
-pictl predict resource -i process.xes --format json
+wpm predict resource -i process.xes
+wpm predict resource -i process.xes --format json
 ```
 
 ---

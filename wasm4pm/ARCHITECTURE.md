@@ -1,6 +1,6 @@
 # Architecture of pictl
 
-Design, structure, and internals of the pictl module.
+Design, structure, and internals of the wasm4pm module.
 
 ## Overview
 

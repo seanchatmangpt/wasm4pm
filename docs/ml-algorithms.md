@@ -2,7 +2,7 @@
 
 The `@pictl/ml` package provides six purpose-built machine-learning families
 optimized for process mining. All algorithms are zero-dependency, deterministic,
-and run in the browser, Node.js, or via the `pictl ml` CLI.
+and run in the browser, Node.js, or via the `wpm ml` CLI.
 
 > Background: see [`ML_GUIDE.md`](./ML_GUIDE.md) for the algorithmic principles
 > behind each kernel ("Nanosecond ML"). This document is a *user-facing* guide.
@@ -20,7 +20,7 @@ and run in the browser, Node.js, or via the `pictl ml` CLI.
 | `ml_regress`  | Regression        | Predict remaining cycle time              | Numeric prediction|
 | `ml_pca`      | Dim. reduction    | Visualize / denoise feature matrices      | Components        |
 
-CLI form: `pictl ml <task> -i <log.xes>` — see `pictl ml --help`.
+CLI form: `wpm ml <task> -i <log.xes>` — see `wpm ml --help`.
 
 ---
 

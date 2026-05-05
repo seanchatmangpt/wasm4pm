@@ -171,7 +171,7 @@ pnpm update @wasm4pm/cli --latest
 #### Step 3: Verify WASM Module Loaded
 
 ```bash
-pictl doctor
+wpm doctor
 # Expected: "WASM module loaded" ✓
 #           "Autonomic loop active" ✓
 #           "State persistence enabled" ✓
@@ -180,7 +180,7 @@ pictl doctor
 #### Step 4: Try AutoProcess on Sample Log
 
 ```bash
-pictl autoprocess sample.xes --format json
+wpm autoprocess sample.xes --format json
 # Output includes: state_id, action_taken, reward, spc_alerts
 # Auto-creates: .wasm4pm/autoprocess-state.json
 ```
@@ -189,7 +189,7 @@ pictl autoprocess sample.xes --format json
 
 ```bash
 # Run 5 cycles and watch state evolution
-pictl autoprocess sample.xes --cycles 5 --watch
+wpm autoprocess sample.xes --cycles 5 --watch
 # Metrics dashboard updates every cycle:
 # - Health level
 # - SPC alert status
@@ -284,16 +284,16 @@ spc_buffer_size = 1000  # Increase from 100 to 1000
 
 After 3 consecutive failures (3 strikes), the circuit breaker opens and requires manual reset:
 ```bash
-pictl status --circuit-breaker-reset
+wpm status --circuit-breaker-reset
 # or
 rm .wasm4pm/autoprocess-state.json  # Full state reset
-pictl doctor --bootstrap-fresh
+wpm doctor --bootstrap-fresh
 ```
 
 This ensures human visibility into repeated problems. Automatic recovery is available via scheduled job:
 ```bash
 # Cron: Reset circuit every 6 hours if open
-0 */6 * * * [ -f .wasm4pm/autoprocess-state.json ] && pictl status --circuit-breaker-reset > /dev/null 2>&1
+0 */6 * * * [ -f .wasm4pm/autoprocess-state.json ] && wpm status --circuit-breaker-reset > /dev/null 2>&1
 ```
 
 ### 4. Determinism via Seeded RNG
@@ -301,7 +301,7 @@ This ensures human visibility into repeated problems. Automatic recovery is avai
 The RL agents use seeded random number generators for reproducibility. To ensure identical behavior across runs, use:
 ```bash
 export PICTL_SEED=42
-pictl autoprocess sample.xes
+wpm autoprocess sample.xes
 ```
 
 Without explicit seed, RL exploration is pseudo-random but deterministic within a session.

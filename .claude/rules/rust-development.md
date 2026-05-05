@@ -1,4 +1,4 @@
-# pictl Rust/WASM Development
+# wasm4pm Rust/WASM Development
 
 **Cargo workspace, wasm-bindgen patterns, deployment profiles.**
 
@@ -8,7 +8,7 @@
 pictl/                          # Workspace root
 ├── Cargo.toml                  # members = ["wasm4pm", "tps-metrics"]
 ├── wasm4pm/                    # WASM crate (source: wasm4pm/src/)
-│   ├── Cargo.toml              # crate name: "pictl"
+│   ├── Cargo.toml              # crate name: "wasm4pm"
 │   ├── package.json            # npm package: "@wasm4pm/cli"
 │   └── src/                    # 114 modules
 ├── tps-metrics/               # Metrics crate

@@ -283,7 +283,7 @@ Every error **must** include a clear "how to fix this" message. Users should nev
 ```ts
 // ✓ Good
 createError('CONFIG_MISSING', 'wasm4pm.toml not found');
-// Includes: "Create wasm4pm.toml in your project root or run: pictl init"
+// Includes: "Create wasm4pm.toml in your project root or run: wpm init"
 
 // ✗ Wrong - would need remediation
 createError('UNKNOWN_ERROR', 'Something went wrong');

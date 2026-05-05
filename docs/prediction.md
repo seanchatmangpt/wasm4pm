@@ -1,6 +1,6 @@
 # Prediction Tasks Guide
 
-`pictl predict <task>` runs *predictive* process mining — answering questions
+`wpm predict <task>` runs *predictive* process mining — answering questions
 about what is *about to happen* in a running case.
 
 Six perspectives are supported, each addressing a distinct managerial question.
@@ -18,7 +18,7 @@ Six perspectives are supported, each addressing a distinct managerial question.
 | `features`        | Which signals best predict the outcome?        | Feature importance ranking      |
 | `resource`        | Who should handle the next event?              | Resource recommendation + score |
 
-CLI form: `pictl predict <task> -i <log.xes> [--task-options]`.
+CLI form: `wpm predict <task> -i <log.xes> [--task-options]`.
 
 ---
 

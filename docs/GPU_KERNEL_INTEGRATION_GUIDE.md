@@ -9,7 +9,7 @@
 ## Overview
 
 The GPU LinUCB kernel (`wasm4pm/src/gpu/linucb_kernel.wgsl`) accelerates algorithm
-selection for the pictl process mining platform. It processes 2048 context feature
+selection for the wasm4pm process mining platform. It processes 2048 context feature
 vectors per dispatch, selecting the best algorithm from a 40-slot registry using
 the LinUCB contextual bandit formula:
 
@@ -129,7 +129,7 @@ All features must be caller-normalized into [0.0, 1.0] before passing to the ker
 
 ## Action Space
 
-40 algorithm slots map to the pictl algorithm registry:
+40 algorithm slots map to the wasm4pm algorithm registry:
 
 | Slots | Algorithms |
 |-------|-----------|

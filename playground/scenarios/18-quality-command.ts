@@ -1,5 +1,5 @@
 /**
- * Scenario: quality command — pictl quality <log.xes>
+ * Scenario: quality command — wpm quality <log.xes>
  *
  * Tests multi-dimensional quality assessment using real WASM.
  *

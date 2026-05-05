@@ -63,7 +63,7 @@ patterns = ["api_key", "password", "secret", "token"]
 ## Step 3: Run with Observability
 
 ```bash
-pictl run --config config-with-otel.toml --verbose
+wpm run --config config-with-otel.toml --verbose
 ```
 
 Output includes trace context:
@@ -128,7 +128,7 @@ export DD_API_KEY="your-api-key"
 export DD_APP_KEY="your-app-key"
 export DD_SITE="datadoghq.com"  # or eu.datadoghq.com
 
-pictl run --config config-with-otel.toml
+wpm run --config config-with-otel.toml
 ```
 
 ## Step 6: View JSON Logs
@@ -249,7 +249,7 @@ Identify bottlenecks:
 
 ```bash
 # Run with detailed tracing
-WASM4PM_TRACE_LEVEL=detailed pictl run --config config.toml > traces.log 2>&1
+WASM4PM_TRACE_LEVEL=detailed wpm run --config config.toml > traces.log 2>&1
 
 # Analyze durations
 grep "duration_ms" traces.log | sort -t= -k2 -rn | head -10
@@ -286,7 +286,7 @@ Verify redaction working:
 
 ```bash
 # View logs with redaction
-pictl run --config config-with-otel.toml 2>&1 | grep -i "api_key\|password\|token"
+wpm run --config config-with-otel.toml 2>&1 | grep -i "api_key\|password\|token"
 
 # Should see [REDACTED] instead of actual values
 ```

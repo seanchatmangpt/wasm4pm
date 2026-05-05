@@ -1,4 +1,4 @@
-# pictl Crates Porting Status
+# wasm4pm Crates Porting Status
 
 **Status:** Phase 1 Complete  
 **Date:** 2026-04-16  
@@ -10,7 +10,7 @@ The pictl Rust codebase has been reorganized into a **three-crate workspace**:
 
 1. **wasm4pm-types** — Canonical data structures (EventLog, DFG, PetriNet, ProvenanceChain)
 2. **wasm4pm-algos** — High-performance algorithm implementations with branchless patterns
-3. **pictl** (wasm4pm/src) — WASM bindings and compatibility layer
+3. **wasm4pm** (wasm4pm/src) — WASM bindings and compatibility layer
 
 All core discovery algorithms have been ported from `wasm4pm/src` into `wasm4pm-algos` using optimized branchless patterns for cache-friendly execution.
 

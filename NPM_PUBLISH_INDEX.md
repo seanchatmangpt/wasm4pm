@@ -149,7 +149,7 @@ npm view @wasm4pm/contracts@26.4.16
 # Install globally and test
 npm install -g @wasm4pm/cli@26.4.16
 pictl --version        # Should output: 26.4.16
-pictl doctor           # Full system check
+wpm doctor           # Full system check
 ```
 
 ---

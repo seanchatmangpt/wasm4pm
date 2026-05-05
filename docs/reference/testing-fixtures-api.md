@@ -1,16 +1,16 @@
-# pictl Testing Fixtures API Reference
+# wasm4pm Testing Fixtures API Reference
 
 **Version:** 1.0  
 **Package:** `@wasm4pm/testing`  
 **Last Updated:** 2026-04-10
 
-Complete API reference for the pictl testing fixtures ecosystem. Fixtures provide reusable components for algorithm validation, determinism verification, CLI testing, and observability assertion.
+Complete API reference for the wasm4pm testing fixtures ecosystem. Fixtures provide reusable components for algorithm validation, determinism verification, CLI testing, and observability assertion.
 
 ---
 
 ## Overview
 
-Testing fixtures are specialized utilities that enable consistent, reliable testing patterns across the pictl codebase. They abstract common testing tasks and enforce best practices around evidence collection, state validation, and boundary crossing.
+Testing fixtures are specialized utilities that enable consistent, reliable testing patterns across the wasm4pm codebase. They abstract common testing tasks and enforce best practices around evidence collection, state validation, and boundary crossing.
 
 ### When to Use Fixtures
 

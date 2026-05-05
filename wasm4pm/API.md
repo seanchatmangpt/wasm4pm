@@ -1,4 +1,4 @@
-# pictl API Reference
+# wasm4pm API Reference
 
 All functions are exported from the WASM module. Import the module before calling any function.
 

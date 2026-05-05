@@ -7,7 +7,7 @@
 The simplest starting point. `wpm run` reports wall-clock time automatically:
 
 ```bash
-pictl run log.xes --algorithm hill-climbing --format json
+wpm run log.xes --algorithm hill-climbing --format json
 ```
 
 The JSON output includes `elapsedMs`:
@@ -24,7 +24,7 @@ The JSON output includes `elapsedMs`:
 For a quick comparison across algorithms, `wpm compare` shows timing in its side-by-side table:
 
 ```bash
-pictl compare dfg hill-climbing -i log.xes
+wpm compare dfg hill-climbing -i log.xes
 ```
 
 This gives you the total execution time but does not break it down into phases (parse, discover, serialize).

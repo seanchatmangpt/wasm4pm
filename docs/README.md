@@ -1,6 +1,6 @@
-# pictl Documentation
+# wasm4pm Documentation
 
-Welcome to the pictl documentation. This folder contains comprehensive guides for understanding, using, and deploying pictl.
+Welcome to the wasm4pm documentation. This folder contains comprehensive guides for understanding, using, and deploying pictl.
 
 The docs follow the **Diataxis framework** — see [INDEX.md](./INDEX.md) for the full organized index, or [DIATAXIS.md](./DIATAXIS.md) for the framework overview.
 

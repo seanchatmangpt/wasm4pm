@@ -1,4 +1,4 @@
-# pictl RL Benchmarks — Actual Results
+# wasm4pm RL Benchmarks — Actual Results
 
 **Run Date:** May 5, 2026
 **Platform:** macOS (Apple Silicon)

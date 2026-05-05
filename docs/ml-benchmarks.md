@@ -1,4 +1,4 @@
-# pictl ML Algorithm Benchmarks
+# wasm4pm ML Algorithm Benchmarks
 
 **Comprehensive performance analysis of all 6 ML algorithms.**
 

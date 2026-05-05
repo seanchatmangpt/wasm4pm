@@ -49,7 +49,7 @@ directory = "${OUTPUT_DIR}"
 ## Command Line
 
 ```bash
-WASM4PM_PROFILE=fast pictl run --config config.toml
+WASM4PM_PROFILE=fast wpm run --config config.toml
 ```
 
 ## .env File
@@ -69,7 +69,7 @@ Load:
 set -a
 source .env
 set +a
-pictl run --config config.toml
+wpm run --config config.toml
 ```
 
 ## Precedence

@@ -1,4 +1,4 @@
-# pictl Kaizen Metrics Dashboard (Template)
+# wasm4pm Kaizen Metrics Dashboard (Template)
 
 This is a template. To generate the live dashboard:
 

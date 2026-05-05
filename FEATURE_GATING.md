@@ -1,4 +1,4 @@
-# pictl Feature Gating Infrastructure
+# wasm4pm Feature Gating Infrastructure
 
 **Last Updated:** April 16, 2026 (v26.4.16)
 

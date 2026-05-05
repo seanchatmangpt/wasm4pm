@@ -99,7 +99,7 @@ pnpm update @wasm4pm/cli --latest
 npm update @wasm4pm/cli --latest
 
 # Verify
-npx pictl --version
+npx wpm --version
 ```
 
 #### Option C: Docker Image
@@ -114,7 +114,7 @@ docker run @wasm4pm/cli:26.4.16 pictl --version
 Run the built-in health check:
 
 ```bash
-pictl doctor
+wpm doctor
 ```
 
 **Expected output**:
@@ -136,7 +136,7 @@ If any check fails, see [Troubleshooting](#troubleshooting).
 Test that the WASM core is properly loaded with Vision 2030 capabilities:
 
 ```bash
-pictl status
+wpm status
 ```
 
 **Expected output**:
@@ -165,7 +165,7 @@ Test the new autonomic loop with a sample event log:
 
 ```bash
 # Using a sample log (replace with your own)
-pictl autoprocess sample.xes --cycles 3 --format json > autoprocess-test.json
+wpm autoprocess sample.xes --cycles 3 --format json > autoprocess-test.json
 
 # View the output
 cat autoprocess-test.json | jq '.' | head -50
@@ -245,13 +245,13 @@ Verify that existing commands still work as before:
 
 ```bash
 # Process discovery (unchanged)
-pictl run sample.xes --algorithm dfg --format json
+wpm run sample.xes --algorithm dfg --format json
 
 # Algorithm comparison (unchanged)
-pictl compare "dfg,heuristic_miner,genetic_algorithm" -i sample.xes
+wpm compare "dfg,heuristic_miner,genetic_algorithm" -i sample.xes
 
 # Conformance checking (unchanged)
-pictl conformance model.pnml -i sample.xes
+wpm conformance model.pnml -i sample.xes
 ```
 
 **Expected**: All commands produce identical output to v26.4.10.
@@ -272,15 +272,15 @@ echo "=== Vision 2030 Integration Test ==="
 
 # 1. Doctor check
 echo "1. Running doctor..."
-pictl doctor || exit 1
+wpm doctor || exit 1
 
 # 2. Status check
 echo "2. Checking status..."
-pictl status | jq '.autonomic_loop' || exit 1
+wpm status | jq '.autonomic_loop' || exit 1
 
 # 3. AutoProcess test
 echo "3. Testing AutoProcess..."
-pictl autoprocess sample.xes --cycles 1 --format json > /tmp/test-autoprocess.json
+wpm autoprocess sample.xes --cycles 1 --format json > /tmp/test-autoprocess.json
 test -f /tmp/test-autoprocess.json || exit 1
 
 # 4. Verify state persistence
@@ -289,12 +289,12 @@ test -f .wasm4pm/autoprocess-state.json || exit 1
 
 # 5. Existing command test
 echo "5. Running existing discovery command..."
-pictl run sample.xes --algorithm dfg --format json > /tmp/test-discovery.json
+wpm run sample.xes --algorithm dfg --format json > /tmp/test-discovery.json
 test -f /tmp/test-discovery.json || exit 1
 
 # 6. Circuit breaker test
 echo "6. Checking circuit breaker..."
-pictl status | jq '.circuit_breaker.state' | grep -q "Closed" || exit 1
+wpm status | jq '.circuit_breaker.state' | grep -q "Closed" || exit 1
 
 echo "=== All Tests Passed ✓ ==="
 ```
@@ -312,7 +312,7 @@ Measure autonomic loop performance:
 
 ```bash
 # Measure cycle latency (should be <100ms)
-time pictl autoprocess sample.xes --cycles 100 > /dev/null
+time wpm autoprocess sample.xes --cycles 100 > /dev/null
 
 # Expected output: real 0m0.1s (100 cycles in ~0.1 seconds)
 ```
@@ -342,7 +342,7 @@ rm -rf .wasm4pm/wasm-cache/
 
 # Reinstall
 npm install @wasm4pm/cli@26.4.16 --force
-pictl doctor
+wpm doctor
 ```
 
 If issue persists:
@@ -394,15 +394,15 @@ Failures: 3
 
 ```bash
 # Option 1: Manual reset via CLI
-pictl status --circuit-breaker-reset
+wpm status --circuit-breaker-reset
 
 # Option 2: Delete state file (full reset)
 rm .wasm4pm/autoprocess-state.json
-pictl doctor --bootstrap-fresh
+wpm doctor --bootstrap-fresh
 
 # Option 3: Scheduled reset (cron)
 # Reset circuit every 6 hours if open
-0 */6 * * * [ -f .wasm4pm/autoprocess-state.json ] && pictl status --circuit-breaker-reset
+0 */6 * * * [ -f .wasm4pm/autoprocess-state.json ] && wpm status --circuit-breaker-reset
 ```
 
 After reset, the circuit breaker returns to `Closed` state.
@@ -433,14 +433,14 @@ spc_sigma_threshold = 4.0  # Increase from 3.0 (less sensitive)
 
 Option 3: Temporarily disable SPC:
 ```bash
-WASM4PM_OBSERVABILITY_SPC_ENABLED=false pictl autoprocess sample.xes
+WASM4PM_OBSERVABILITY_SPC_ENABLED=false wpm autoprocess sample.xes
 ```
 
 ### Issue 5: "Autonomic loop not responding"
 
 **Symptoms**:
 ```
-$ pictl autoprocess sample.xes --cycles 5
+$ wpm autoprocess sample.xes --cycles 5
 # Hangs for >10 seconds
 ```
 
@@ -450,11 +450,11 @@ $ pictl autoprocess sample.xes --cycles 5
 
 ```bash
 # Increase stack size for Rust
-RUST_MIN_STACK=16777216 pictl autoprocess sample.xes --cycles 5
+RUST_MIN_STACK=16777216 wpm autoprocess sample.xes --cycles 5
 
 # Or run with fewer cycles first
-pictl autoprocess sample.xes --cycles 1  # Primes the Q-table
-pictl autoprocess sample.xes --cycles 10 # Should be faster
+wpm autoprocess sample.xes --cycles 1  # Primes the Q-table
+wpm autoprocess sample.xes --cycles 10 # Should be faster
 ```
 
 If hangs persist, check system resources:
@@ -508,7 +508,7 @@ npm install -g @wasm4pm/cli@26.4.10
 pictl --version
 # Output: pictl 26.4.10
 
-pictl doctor
+wpm doctor
 ```
 
 **Note**: The `.wasm4pm/autoprocess-state.json` file created by v26.4.16 will be ignored by v26.4.10. You can safely delete it:
@@ -626,10 +626,10 @@ spec:
 
 ```bash
 # Kubernetes liveness probe
-pictl doctor | grep -q "Autonomic loop active" && exit 0 || exit 1
+wpm doctor | grep -q "Autonomic loop active" && exit 0 || exit 1
 
 # Circuit breaker status (readiness probe)
-pictl status | jq -e '.circuit_breaker.state == "Closed"' && exit 0 || exit 1
+wpm status | jq -e '.circuit_breaker.state == "Closed"' && exit 0 || exit 1
 ```
 
 ---

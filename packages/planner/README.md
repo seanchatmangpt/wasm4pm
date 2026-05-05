@@ -1,6 +1,6 @@
 # @wasm4pm/planner
 
-Execution plan generation for the pictl process mining engine.
+Execution plan generation for the wasm4pm process mining engine.
 
 Generates deterministic, reproducible execution plans from process mining configurations. Plans are used by both the `explain()` and `run()` functions (per PRD §11: explain() == run()).
 

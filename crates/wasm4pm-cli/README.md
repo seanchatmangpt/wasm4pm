@@ -1,4 +1,4 @@
-# pictl
+# wasm4pm
 
 High-performance process mining CLI for the Vision 2030 architecture.
 

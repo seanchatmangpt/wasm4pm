@@ -1,4 +1,4 @@
-# pictl WASM API Reference — Vision 2030
+# wasm4pm WASM API Reference — Vision 2030
 
 **Complete catalog of WebAssembly exports for process mining and autonomic control.**
 

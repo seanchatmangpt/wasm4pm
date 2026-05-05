@@ -1,4 +1,4 @@
-# pictl Vision 2030 — Verification Report
+# wasm4pm Vision 2030 — Verification Report
 
 **Date:** 2026-04-16 | **Status:** VERIFIED | **Evidence:** Rank 1-2 Oracles (Mathematical Theorems + Domain Contracts)
 

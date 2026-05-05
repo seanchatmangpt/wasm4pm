@@ -1,4 +1,4 @@
-# pictl Performance Characteristics: Enabling Process Mining Across the Edge-to-Cloud Continuum
+# wasm4pm Performance Characteristics: Enabling Process Mining Across the Edge-to-Cloud Continuum
 
 **Author:** b5-profiles Benchmark Agent
 **Date:** 2026-04-10
@@ -9,7 +9,7 @@
 
 ## Abstract
 
-This thesis presents a comprehensive performance characterization of **pictl**, a WebAssembly-based process mining framework that enables efficient process discovery, conformance checking, and predictive analytics across the edge-to-cloud deployment continuum. We analyze binary size characteristics across five deployment profiles (iot, browser, edge, fog, cloud), algorithm throughput for 21 registered algorithms, and conformance checking performance across five distinct approaches.
+This thesis presents a comprehensive performance characterization of **wasm4pm**, a WebAssembly-based process mining framework that enables efficient process discovery, conformance checking, and predictive analytics across the edge-to-cloud deployment continuum. We analyze binary size characteristics across five deployment profiles (iot, browser, edge, fog, cloud), algorithm throughput for 21 registered algorithms, and conformance checking performance across five distinct approaches.
 
 Our key findings reveal that **SIMD-accelerated token replay achieves 40-47x speedup** over standard token replay, **DECLARE conformance** demonstrates the fastest absolute throughput at 136-153 Melem/s, and **binary size variations** across deployment profiles are minimal (3.25-3.26 MB) due to WASM runtime dominance. These characteristics enable pictl to serve diverse deployment scenarios from resource-constrained IoT devices to cloud-scale analytics platforms.
 
@@ -50,7 +50,7 @@ Our key findings reveal that **SIMD-accelerated token replay achieves 40-47x spe
 
 Process mining enables organizations to discover, monitor, and improve business processes based on event log data. Traditional process mining tools require native code execution, limiting deployment to server environments. The emergence of **WebAssembly (WASM)** as a portable, high-performance compilation target enables process mining algorithms to run efficiently across diverse environments from web browsers to edge devices.
 
-**pictl** (`@wasm4pm/cli`) is a Rust-based process mining framework compiled to WebAssembly, providing:
+**wasm4pm** (`@wasm4pm/cli`) is a Rust-based process mining framework compiled to WebAssembly, providing:
 
 - **21 registered algorithms** across discovery, conformance, and prediction
 - **5 deployment profiles** optimized for different resource constraints
@@ -975,7 +975,7 @@ As WebAssembly evolves with features like GC, threads, and component model, pict
 
 ### A.2 Software Versions
 
-- **pictl**: v26.4.10
+- **wasm4pm**: v26.4.10
 - **Criterion**: 0.5.1
 - **wasm-bindgen**: 0.2.95
 - **serde**: 1.0.228

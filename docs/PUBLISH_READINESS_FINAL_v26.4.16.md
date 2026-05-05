@@ -1,4 +1,4 @@
-# pictl v26.4.16 — Final Publish Readiness Report
+# wasm4pm v26.4.16 — Final Publish Readiness Report
 
 **Date:** 2026-04-16  
 **Status:** GO (with pre-existing issues documented)
@@ -201,7 +201,7 @@ packages/agents build$ tsc --project tsconfig.json
 
 **Lab Test Failure Analysis:**
 
-The failing JTBD test in `lab/cli-tests/tests/jtbd.test.ts:28` attempts to call `pictl.init()` but the pictl module export is undefined. This is a lab-only test issue (tests the published artifact) and does not indicate a problem with the publish artifact itself. The export is correctly defined in source.
+The failing JTBD test in `lab/cli-tests/tests/jtbd.test.ts:28` attempts to call `pictl.init()` but the wasm4pm module export is undefined. This is a lab-only test issue (tests the published artifact) and does not indicate a problem with the publish artifact itself. The export is correctly defined in source.
 
 **Root Cause:** Lab tests run against the published npm package (installed from tarball or npm registry). The JTBD test appears to have a pre-existing export issue unrelated to this session's changes.
 

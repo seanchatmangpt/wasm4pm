@@ -1,4 +1,4 @@
-# pictl Algorithms Reference
+# wasm4pm Algorithms Reference
 
 Complete catalog of all 20+ process discovery and analytics methods.
 

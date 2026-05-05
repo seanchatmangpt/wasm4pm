@@ -57,7 +57,7 @@ npm run build:nodejs
 ### Verify the build
 
 ```bash
-pictl status
+wpm status
 ```
 
 This should print WASM engine health and system information, confirming the module loaded correctly.
@@ -77,8 +77,8 @@ Generate logs at each size used in the benchmarks:
 # standalone XES files for manual testing with pictl run.
 
 # 100 cases
-pictl init --algorithm dfg  # Creates wasm4pm.toml
-pictl run synthetic_100.xes --algorithm dfg --format json
+wpm init --algorithm dfg  # Creates wasm4pm.toml
+wpm run synthetic_100.xes --algorithm dfg --format json
 ```
 
 For exact reproduction, the benchmark runner in `benchmarks/wasm_bench_worker.js` generates logs programmatically using a deterministic LCG PRNG (seed `0xdeadbeefcafebabe`). The log generator is in `__tests__/benchmarks/browser.test.ts`.
@@ -116,18 +116,18 @@ npm run bench:browser:ci # CI mode (3 iterations)
 For spot-checking a single algorithm:
 
 ```bash
-pictl run log_10k.xes --algorithm dfg --format json
+wpm run log_10k.xes --algorithm dfg --format json
 # Look for "elapsedMs" in the output
 
-pictl run log_10k.xes --algorithm hill-climbing --format json
+wpm run log_10k.xes --algorithm hill-climbing --format json
 
-pictl run log_10k.xes --algorithm heuristic --format json
+wpm run log_10k.xes --algorithm heuristic --format json
 ```
 
 ### Side-by-side comparison
 
 ```bash
-pictl compare dfg heuristic inductive hill-climbing -i log_10k.xes
+wpm compare dfg heuristic inductive hill-climbing -i log_10k.xes
 ```
 
 ## Step 5: Compare with Published Results
@@ -204,9 +204,9 @@ The methodology section of `docs/BENCHMARKS.md` mentions validation on BPI 2020.
 2. Run the algorithms:
 
    ```bash
-   pictl run bpi2020.xes --algorithm heuristic --format json
-   pictl run bpi2020.xes --algorithm inductive --format json
-   pictl run bpi2020.xes --algorithm ilp --format json
+   wpm run bpi2020.xes --algorithm heuristic --format json
+   wpm run bpi2020.xes --algorithm inductive --format json
+   wpm run bpi2020.xes --algorithm ilp --format json
    ```
 
 3. Compare the relative rankings with the published results. The absolute times will differ (BPI 2020 has 10,500 traces vs the synthetic 10K), but the ranking order should match.

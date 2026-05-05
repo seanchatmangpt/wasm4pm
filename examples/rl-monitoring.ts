@@ -5,7 +5,7 @@
  * and reports whether the policy is improving (mean reward of last 10 cycles
  * vs. first 10 cycles).
  *
- * This is the same shape used by `pictl autoprocess` internally — useful as
+ * This is the same shape used by `wpm autoprocess` internally — useful as
  * a template for embedding the RL loop in your own service.
  *
  * Run:

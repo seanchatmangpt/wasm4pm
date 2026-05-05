@@ -1,5 +1,5 @@
 /**
- * Scenario: validate command — pictl validate <log.xes>
+ * Scenario: validate command — wpm validate <log.xes>
  *
  * Tests log/schema validation against real XES files.
  * Uses real WASM — no mocks.

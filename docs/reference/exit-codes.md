@@ -14,7 +14,7 @@
 ## Checking Exit Code
 
 ```bash
-pictl run --config config.toml
+wpm run --config config.toml
 EXIT_CODE=$?
 
 if [ $EXIT_CODE -eq 0 ]; then

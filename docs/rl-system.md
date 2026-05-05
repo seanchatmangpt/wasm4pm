@@ -2,7 +2,7 @@
 
 The pictl reinforcement-learning subsystem provides autonomous monitoring and
 self-healing for process-mining pipelines. It is exposed through the
-`RlOrchestrator` (Rust/WASM) and consumed by `pictl autoprocess` and the MCP
+`RlOrchestrator` (Rust/WASM) and consumed by `wpm autoprocess` and the MCP
 server.
 
 This guide is intended for **users**, not RL researchers — it explains what the
@@ -112,7 +112,7 @@ Every cycle emits OTEL spans:
 - `circuit.transition` — when state changes.
 - `spc.alert` — Western Electric rule firings.
 
-View in Jaeger (`http://localhost:16686`, service `pictl`).
+View in Jaeger (`http://localhost:16686`, service `wasm4pm`).
 
 ## 7. WASM constraints
 

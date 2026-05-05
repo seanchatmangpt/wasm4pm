@@ -180,7 +180,7 @@ cd lab
 pnpm install                             # Install published versions from npm
 pnpm test                                # Run tests against published artifacts
 pictl --version                          # Verify CLI
-pictl doctor                             # Full system check
+wpm doctor                             # Full system check
 ```
 
 **Step 4: Git tag & release**

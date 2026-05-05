@@ -10,7 +10,7 @@ minutes.
 - An XES log. If you don't have one, generate a synthetic sample:
 
   ```bash
-  pictl init                          # scaffolds pictl.toml
+  wpm init                          # scaffolds pictl.toml
   curl -L -o sample.xes \
     https://www.tf-pm.org/resources/logs/road-traffic-fine.xes
   ```
@@ -18,8 +18,8 @@ minutes.
 ## Step 1 — Inspect the log
 
 ```bash
-pictl validate -i sample.xes
-pictl run -i sample.xes --algorithm dfg
+wpm validate -i sample.xes
+wpm run -i sample.xes --algorithm dfg
 ```
 
 You should see basic statistics (cases, events, activities) and a DFG output.
@@ -27,7 +27,7 @@ You should see basic statistics (cases, events, activities) and a DFG output.
 ## Step 2 — Run a classifier
 
 ```bash
-pictl ml classify -i sample.xes
+wpm ml classify -i sample.xes
 ```
 
 You'll see consola output similar to:
@@ -42,7 +42,7 @@ top accuracy  0.78  (held-out 20 %)
 JSON form for piping into other tools:
 
 ```bash
-pictl ml classify -i sample.xes --format json | jq '.predictions[0:3]'
+wpm ml classify -i sample.xes --format json | jq '.predictions[0:3]'
 ```
 
 ## Step 3 — Interpret the result
@@ -64,26 +64,26 @@ A `ClassificationResult` has three useful pieces:
 3. `modelInfo.accuracy` — held-out validation score; **trust above 0.65**.
 
 If accuracy is below 0.6, your features may not predict the outcome — run
-`pictl predict features -i sample.xes` to see which signals carry information.
+`wpm predict features -i sample.xes` to see which signals carry information.
 
 ## Step 4 — Try clustering
 
 ```bash
-pictl ml cluster -i sample.xes
+wpm ml cluster -i sample.xes
 ```
 
 Use the returned `assignments` to group traces by `cluster` and inspect each
 cohort with `pictl run`:
 
 ```bash
-pictl ml cluster -i sample.xes --format json |
+wpm ml cluster -i sample.xes --format json |
   jq -r '.assignments[] | select(.cluster==0) | .caseId' > cluster0.txt
 ```
 
 ## Step 5 — Visualise with PCA
 
 ```bash
-pictl ml pca -i sample.xes --components 2 --format json > pca.json
+wpm ml pca -i sample.xes --components 2 --format json > pca.json
 ```
 
 Plot `transformedData` columns 0 and 1 in your favourite plotting tool — colour

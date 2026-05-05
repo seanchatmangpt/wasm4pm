@@ -1,4 +1,4 @@
-# pictl autoprocess — Usage Examples
+# wpm autoprocess — Usage Examples
 
 The `wpm autoprocess` command runs the four-phase autonomic loop: **Perception → Decision → Protection → Optimization**. Each cycle analyzes the event log, evaluates system health, checks statistical process control alerts, and dispatches RL-selected actions.
 
@@ -11,7 +11,7 @@ State (RL, SPC, circuit breaker) persists to `.wasm4pm/autoprocess-state.json` a
 Run a single AutoProcess cycle on an event log, using default activity key.
 
 ```bash
-pictl autoprocess data/purchase_process.xes
+wpm autoprocess data/purchase_process.xes
 ```
 
 **Expected output (human format):**
@@ -53,12 +53,12 @@ Run AutoProcess 9 times on the same log, observing RL state growth and health im
 
 ```bash
 # First run — cold start (RL state initialized from scratch)
-pictl autoprocess data/purchase_process.xes
+wpm autoprocess data/purchase_process.xes
 
 # Run 2-9 — warm start (RL state restored from .wasm4pm/autoprocess-state.json)
 for i in {2..9}; do
   echo "=== Run $i ==="
-  pictl autoprocess data/purchase_process.xes
+  wpm autoprocess data/purchase_process.xes
   sleep 1
 done
 ```
@@ -93,7 +93,7 @@ cat .wasm4pm/autoprocess-state.json | jq '.saved_at'
 # "2026-04-16T09:15:23.456Z"
 
 # Run next cycle — RL state is restored automatically
-pictl autoprocess data/purchase_process.xes --format json | jq '.result.cycle_result.optimization.rl_action'
+wpm autoprocess data/purchase_process.xes --format json | jq '.result.cycle_result.optimization.rl_action'
 # "maintain_buffer"  (action from learned policy, not random exploration)
 ```
 
@@ -110,7 +110,7 @@ pictl autoprocess data/purchase_process.xes --format json | jq '.result.cycle_re
 Run AutoProcess with JSON output to programmatically inspect which SPC rules fired.
 
 ```bash
-pictl autoprocess data/purchase_process.xes --format json | jq '.result.cycle_result.protection'
+wpm autoprocess data/purchase_process.xes --format json | jq '.result.cycle_result.protection'
 ```
 
 **Expected JSON output:**
@@ -144,7 +144,7 @@ pictl autoprocess data/purchase_process.xes --format json | jq '.result.cycle_re
 **Scripted alert response:**
 
 ```bash
-pictl autoprocess data/purchase_process.xes --format json | jq -r '.result.cycle_result.protection.special_causes[] | select(.rule == "rule2_nine_consecutive") | "SHIFT DETECTED: \(.metric) at \(.value) (expected \(.expected))"'
+wpm autoprocess data/purchase_process.xes --format json | jq -r '.result.cycle_result.protection.special_causes[] | select(.rule == "rule2_nine_consecutive") | "SHIFT DETECTED: \(.metric) at \(.value) (expected \(.expected))"'
 # Output: SHIFT DETECTED: event_rate at 45.2 (expected 38.5)
 ```
 
@@ -156,12 +156,12 @@ Run AutoProcess with a custom RL configuration, observe epsilon decay and health
 
 ```bash
 # Configuration with explicit epsilon decay rate
-pictl autoprocess data/purchase_process.xes \
+wpm autoprocess data/purchase_process.xes \
   --config '{"epsilon_decay": 0.95, "learning_rate": 0.1}' \
   --format json \
   > run1.json
 
-pictl autoprocess data/purchase_process.xes \
+wpm autoprocess data/purchase_process.xes \
   --config '{"epsilon_decay": 0.95, "learning_rate": 0.1}' \
   --format json \
   > run2.json
@@ -231,13 +231,13 @@ Process logs where activity names are stored in a custom attribute.
 
 ```bash
 # Standard XES (concept:name is the activity)
-pictl autoprocess data/standard_log.xes
+wpm autoprocess data/standard_log.xes
 
 # Custom attribute (e.g., "activity_type" instead of "concept:name")
-pictl autoprocess data/custom_log.xes --activity-key activity_type
+wpm autoprocess data/custom_log.xes --activity-key activity_type
 
 # Short form
-pictl autoprocess data/custom_log.xes -k activity_type
+wpm autoprocess data/custom_log.xes -k activity_type
 ```
 
 ---
@@ -248,10 +248,10 @@ Control output verbosity.
 
 ```bash
 # Verbose — includes debug info (not yet implemented, but reserved)
-pictl autoprocess data/purchase_process.xes --verbose
+wpm autoprocess data/purchase_process.xes --verbose
 
 # Quiet — suppress non-error output (useful in scripts)
-pictl autoprocess data/purchase_process.xes --quiet
+wpm autoprocess data/purchase_process.xes --quiet
 echo "Exit code: $?"
 ```
 
@@ -266,7 +266,7 @@ Run AutoProcess as part of a continuous process monitoring pipeline.
 set -e
 
 # Daily autonomic execution
-pictl autoprocess data/production_log.xes \
+wpm autoprocess data/production_log.xes \
   --format json \
   --no-save > /tmp/autoprocess_result.json
 
@@ -345,7 +345,7 @@ Persisted autonomic state (auto-saved after each cycle).
 ```bash
 # Wait for circuit to half-open (30 seconds default), then probe
 sleep 30
-pictl autoprocess data/purchase_process.xes
+wpm autoprocess data/purchase_process.xes
 ```
 
 ### Issue: SPC alerts every run (rule2_nine_consecutive)
@@ -356,7 +356,7 @@ pictl autoprocess data/purchase_process.xes
 
 ```bash
 for i in {1..5}; do
-  pictl autoprocess data/purchase_process.xes --format json | \
+  wpm autoprocess data/purchase_process.xes --format json | \
     jq -r '.result.cycle_result.perception.health_score'
 done
 ```
@@ -369,7 +369,7 @@ done
 ```bash
 # Reset state, start fresh
 rm .wasm4pm/autoprocess-state.json
-pictl autoprocess data/purchase_process.xes
+wpm autoprocess data/purchase_process.xes
 ```
 
 ---

@@ -533,7 +533,7 @@ WASM Event Log
 **Kernel Pipeline Integration**: All 6 ML algorithms are registered in `@wasm4pm/kernel` with full metadata (speed/quality tiers, complexity classes, memory estimates) and handler implementations. They execute via dynamic import (`await import('@wasm4pm/ml')`) with `@ts-expect-error` annotations since the kernel package has no build-time dependency on the ML package. This pattern matches the MCP server's existing dynamic import approach and enables execution plans that interleave discovery, ML, and analytics steps:
 
 ```
-pictl run -i log.xes --algorithm ml_classify --params '{"method":"decision_tree"}'
+wpm run -i log.xes --algorithm ml_classify --params '{"method":"decision_tree"}'
 ```
 
 **Design rationale**: The ML engine is implemented natively in TypeScript within `@wasm4pm/ml`, not as a bridge to an external library. This design choice is deliberate: general-purpose WASM ML libraries (such as miniml) target broad ML workloads and include algorithms and abstractions unnecessary for process intelligence. By implementing purpose-built algorithms that operate directly on process mining data structures — trace feature matrices, activity frequency vectors, DFG adjacency counts — the engine avoids conversion overhead and enables optimizations specific to process data (e.g., sparse feature handling, activity-vocabulary-aware distance metrics). The native implementation also ensures that ML algorithms respect the same deployment profile gating as the WASM core, enabling consistent size optimization across the entire stack.
@@ -929,7 +929,7 @@ wasm4pm v26.4.8 represents a qualitative leap from research prototype to product
 
 **Performance**: POWL discovery at ~360,000 events/second on BPI 2020. All classical algorithms linear from 100 to 50,000 cases. Predictive analytics at sub-millisecond latency for interactive use. ML inference via the native `@wasm4pm/ml` engine (typically < 50 ms for classification/regression on typical event logs). Browser profile at ~500 KB enables process mining in mobile web applications.
 
-**Engineering**: Successful npm publication (2.7 MB, 9 files) overcoming wasm-pack's `.gitignore` trap. 319 passing tests. 16→9 package monorepo consolidation. Three build targets (bundler, nodejs, web). MCP server for AI integration. pictl doctor with 17 environment checks.
+**Engineering**: Successful npm publication (2.7 MB, 9 files) overcoming wasm-pack's `.gitignore` trap. 319 passing tests. 16→9 package monorepo consolidation. Three build targets (bundler, nodejs, web). MCP server for AI integration. wpm doctor with 17 environment checks.
 
 **Vision**: A credible roadmap to autonomous, privacy-preserving, federated process intelligence by 2030 — built on the foundation of WASM's zero-installation, cross-platform execution model.
 
@@ -1065,5 +1065,5 @@ Kernel Pipeline: 28 registered algorithms (22 discovery + 6 ML) with full metada
 | v0.5.4   | 2026-04-04 | 13 discovery algorithms, 8 analytics (THESIS v1.0)                                                                                                                                            |
 | v26.4.5  | 2026-04-05 | TypeScript monorepo (14 packages), pictl CLI, engine state machine                                                                                                                            |
 | v26.4.6  | 2026-04-06 | Prediction suite, drift detection, MCP server, OCEL support                                                                                                                                   |
-| v26.4.7  | 2026-04-07 | POWL discovery (8 variants), conversions, conformance, npm publish; ML integration; 16→9 package consolidation; pictl doctor 17 checks                                                      |
+| v26.4.7  | 2026-04-07 | POWL discovery (8 variants), conversions, conformance, npm publish; ML integration; 16→9 package consolidation; wpm doctor 17 checks                                                      |
 | v26.4.8  | 2026-04-08 | 5 deployment profiles (mobile/edge/fog/iot/browser); 30+ Cargo feature flags; conditional #[cfg(feature)] compilation; hand_stats.rs; up to 82% binary size reduction; zero breaking changes |

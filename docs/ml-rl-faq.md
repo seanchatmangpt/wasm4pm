@@ -1,7 +1,7 @@
 # ML & RL FAQ / Troubleshooting
 
 Quick answers to common questions about the `@pictl/ml` package, the
-`pictl predict` command, and the RL orchestrator.
+`wpm predict` command, and the RL orchestrator.
 
 ---
 
@@ -17,9 +17,9 @@ Yes — given the same input and seed. RL agents accept a seed via
 `new_with_seed(seed: u64)`; ML algorithms are deterministic by construction
 (no RNG except in `kmeans` initialisation, which uses a fixed seed by default).
 
-### Q. What's the difference between `pictl ml` and `pictl predict`?
-- `pictl ml <task>` — one-shot ML on a static log (classify, cluster, etc.).
-- `pictl predict <task>` — *predictive* mining for in-flight cases
+### Q. What's the difference between `wpm ml` and `wpm predict`?
+- `wpm ml <task>` — one-shot ML on a static log (classify, cluster, etc.).
+- `wpm predict <task>` — *predictive* mining for in-flight cases
   (next-activity, remaining-time, etc.), often used in `drift-watch`/streaming.
 
 ### Q. Can these run in the browser?
@@ -29,10 +29,10 @@ Yes — the WASM build (`browser` profile, ~2.7 MB) ships every algorithm.
 
 ## ML
 
-### Q. `pictl ml classify` returns accuracy ≈ 0.5 — what's wrong?
+### Q. `wpm ml classify` returns accuracy ≈ 0.5 — what's wrong?
 Either:
 1. Classes are not predictable from the available features — run
-   `pictl predict features -i log.xes` to see signal strength.
+   `wpm predict features -i log.xes` to see signal strength.
 2. Class imbalance is severe — check `modelInfo.classDistribution`.
 3. Too few traces — `naive_bayes` and `decision_tree` need ≥100 traces to
    stabilise.
@@ -103,7 +103,7 @@ returns the same, the Bellman update is self-referential and learning stalls.
 - Lower λ in EWMA (more smoothing).
 
 ### Q. Multi-axis drift detection?
-Run `pictl drift-watch` separately per axis (activity, resource, time) and
+Run `wpm drift-watch` separately per axis (activity, resource, time) and
 union the alerts.
 
 ---
@@ -143,5 +143,5 @@ exporter is configured (`WASM4PM_OTEL_ENABLED=true`,
 
 GitHub Issues — include:
 - `pictl --version`
-- `pictl doctor` output
+- `wpm doctor` output
 - A minimal XES log that reproduces.

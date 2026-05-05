@@ -1,4 +1,4 @@
-# pictl TypeScript Monorepo
+# wasm4pm TypeScript Monorepo
 
 **Package structure, config system, CLI contracts.**
 
@@ -38,7 +38,7 @@ pnpm --filter @wasm4pm/config test  # Test one package
 cd packages/engine && npm test     # Test one package (npm)
 ```
 
-## pictl CLI (apps/wasm4pm/)
+## wasm4pm CLI (apps/wasm4pm/)
 
 **20 commands:**
 

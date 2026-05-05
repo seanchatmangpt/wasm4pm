@@ -37,7 +37,7 @@ pictl --version
 ### Verify Installation
 
 ```bash
-pictl init
+wpm init
 # Creates a sample config.toml in current directory
 ```
 
@@ -74,7 +74,7 @@ wasm4pm comes with sample event logs. Create `sample.xes` or download from the r
 
 ```bash
 # Option 1: Use built-in sample
-pictl init --sample sample.xes
+wpm init --sample sample.xes
 
 # Option 2: Download from repo
 curl -o sample.xes https://raw.githubusercontent.com/seanchatmangpt/wasm4pm/main/examples/sample.xes
@@ -107,7 +107,7 @@ You should see XML with events like:
 Execute the first analysis:
 
 ```bash
-pictl run --config config.toml --verbose
+wpm run --config config.toml --verbose
 ```
 
 Output should look like:
@@ -233,7 +233,7 @@ timeout_ms = 60000
 Run again:
 
 ```bash
-pictl run --config config.toml --verbose
+wpm run --config config.toml --verbose
 ```
 
 Compare the results:
@@ -262,7 +262,7 @@ overwrite = "overwrite"    # Replace previous files
 Run again:
 
 ```bash
-pictl run --config config.toml
+wpm run --config config.toml
 ls -la output/ | grep pnml
 ```
 
@@ -280,14 +280,14 @@ ls -la output/ | grep pnml
 
 ```bash
 # Create a sample config
-pictl init
+wpm init
 ```
 
 ### Error: "sample.xes not found"
 
 ```bash
 # Download the sample
-pictl init --sample sample.xes
+wpm init --sample sample.xes
 ```
 
 ### Error: "Algorithm timeout"

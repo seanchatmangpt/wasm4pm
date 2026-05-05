@@ -1,11 +1,11 @@
-# pictl — Claude Code Configuration
+# wasm4pm — Claude Code Configuration
 
 **REQUIRED READING:**
 - **Root instructions**: See `../CLAUDE.md` (Constitutional Law, Evidence Standards, Git Safety, Dependencies)
 
 ## What this project is
 
-**pictl** is a process mining platform with two layers:
+**wasm4pm** is a process mining platform with two layers:
 
 1. **Rust/WASM core** (`wasm4pm/` — Cargo workspace member) — 41 algorithms compiled to WebAssembly via wasm-pack. This is the algorithm backend. Users rarely touch it directly.
 
@@ -117,7 +117,7 @@ Config file names searched: `wasm4pm.toml`, `wasm4pm.json`
 
 ---
 
-## pictl commands (20 total)
+## wasm4pm commands (20 total)
 
 ### Core
 | Command | Exit codes | Description |
@@ -255,9 +255,9 @@ pnpm test                     # test all packages
 cd packages/engine && npm test # test one package
 ```
 
-### pictl CLI
+### wasm4pm CLI
 ```bash
-cd apps/pictl
+cd apps/wasm4pm
 npm run build                 # tsc → dist/
 npm test                      # vitest
 ```

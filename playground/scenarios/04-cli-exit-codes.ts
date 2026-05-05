@@ -1,11 +1,11 @@
 /**
- * Scenario: CLI exit codes — pictl exit code contract
+ * Scenario: CLI exit codes — wpm exit code contract
  *
  * Dev action simulated: "I changed the algorithm dispatch table. Does bad input
  * still exit with the right code? Does JSON output still parse?"
  *
- * Runs against the real pictl binary built from local source.
- * Binary: apps/wasm4pm/dist/bin/wpm.js (must be built first: cd apps/pictl && npm run build)
+ * Runs against the real wpm binary built from local source.
+ * Binary: apps/wasm4pm/dist/bin/wpm.js (must be built first: cd apps/wasm4pm && npm run build)
  *
  * Exit code contract:
  *   0  success
@@ -19,7 +19,8 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import * as path from 'path';
 import * as fs from 'fs/promises';
-import { pictl, assertExitCode, assertJsonOutput, createCliTestEnv, EXIT_CODES } from '@wasm4pm/testing';
+import { pictl, assertExitCode, assertJsonOutput, EXIT_CODES } from '../helpers/cli.js';
+import { createCliTestEnv } from '@wasm4pm/testing';
 import type { CliTestEnv } from '@wasm4pm/testing';
 import { PICTL } from '../helpers/cli.js';
 
@@ -52,7 +53,7 @@ describe('cli exit codes: binary availability', () => {
       console.info('[cli] binary found:', PICTL);
     } catch {
       console.warn('[cli] binary not found:', PICTL);
-      console.warn('[cli] Run: cd apps/pictl && npm run build');
+      console.warn('[cli] Run: cd apps/wasm4pm && npm run build');
       // Skip rather than fail — missing binary is a setup issue, not a code bug
       expect(true).toBe(true); // vitest has no built-in skip in this pattern
     }
@@ -76,7 +77,7 @@ describe('cli exit codes: missing XES file', () => {
 });
 
 // ── Invalid algorithm → exit 2 ────────────────────────────────────────────────
-// Note: algorithm errors use SOURCE_ERROR (2) not CONFIG_ERROR (1) — intentional pictl design
+// Note: algorithm errors use SOURCE_ERROR (2) not CONFIG_ERROR (1) — intentional wasm4pm design
 
 describe('cli exit codes: invalid algorithm name', () => {
   it('exits 2 (source_error) for an unknown algorithm', async () => {

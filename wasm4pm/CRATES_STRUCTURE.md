@@ -1,4 +1,4 @@
-# pictl Crates Structure
+# wasm4pm Crates Structure
 
 ## Overview
 

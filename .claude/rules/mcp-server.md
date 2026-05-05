@@ -1,4 +1,4 @@
-# pictl MCP Server
+# wasm4pm MCP Server
 
 **Model Context Protocol integration for AI-assisted process mining.**
 
@@ -78,7 +78,7 @@ Configure in Claude Desktop settings:
 ```json
 {
   "mcpServers": {
-    "pictl": {
+    "wasm4pm": {
       "command": "/usr/local/bin/node",
       "args": ["/Users/sac/chatmangpt/wasm4pm/dist/mcp_server.js"]
     }

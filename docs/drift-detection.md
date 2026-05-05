@@ -139,10 +139,10 @@ pub const TREND_STABILITY_FRACTION: f64 = 0.05;
 
 ```bash
 # One-shot drift report
-pictl predict drift -i log.xes
+wpm predict drift -i log.xes
 
 # Streaming watcher
-pictl drift-watch -i live.xes \
+wpm drift-watch -i live.xes \
     --window 50 \
     --interval 5000 \
     --alpha 0.3 \

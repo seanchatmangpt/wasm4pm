@@ -104,8 +104,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bitwise guard evaluation (1.144 ns)
 - All operations deterministic and cycle-invariant
 
-**New Command: `pictl autoprocess`**
-- Usage: `pictl autoprocess <log.xes> [--cycles N] [--watch] [--format json|human]`
+**New Command: `wpm autoprocess`**
+- Usage: `wpm autoprocess <log.xes> [--cycles N] [--watch] [--format json|human]`
 - Auto-creates `.pictl/autoprocess-state.json`
 - Output includes: state_id, action_taken, reward, spc_alerts, next_state
 - Watch mode: Real-time metrics dashboard
@@ -139,7 +139,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 **Files Modified**:
 - `packages/engine/src/transitions.ts` — Added autonomic state transitions
 - `packages/observability/src/instrumentation.ts` — Added `autoprocess.cycle` span type
-- `apps/pictl/src/commands/autoprocess.ts` — New command implementation
+- `apps/wasm4pm/src/commands/autoprocess.ts` — New command implementation
 - `wasm4pm/Cargo.toml` — Feature flags for autonomic loop
 
 ### Fixed
@@ -171,7 +171,7 @@ RUST_MIN_STACK=8388608 cargo test -- --ignored --test-threads=1
 **None** — Fully backward compatible.
 
 **Behavioral Changes** (due to autonomic loop):
-- New command `pictl autoprocess` available
+- New command `wpm autoprocess` available
 - New OTEL span types: `autoprocess.cycle`, `spc_alert_detected`
 - State persistence file created automatically (`.pictl/autoprocess-state.json`)
 - Circuit breaker now auto-engages (was manual-only in v26.4.10)
@@ -183,8 +183,8 @@ See `docs/UPGRADE_TO_VISION_2030.md` for step-by-step upgrade instructions.
 **Quick start**:
 ```bash
 npm install -g @seanchatmangpt/pictl@26.4.16
-pictl doctor  # Verify autonomic loop active
-pictl autoprocess sample.xes --format json
+wpm doctor  # Verify autonomic loop active
+wpm autoprocess sample.xes --format json
 ```
 
 ### Known Limitations
@@ -299,10 +299,10 @@ pictl autoprocess sample.xes --format json
 However, scripts that relied on graceful degradation should now handle explicit errors:
 ```bash
 # Before (v26.4.9) — degraded mode hid errors
-pictl run --config broken-config.toml  # Exit 0, but results degraded
+wpm run --config broken-config.toml  # Exit 0, but results degraded
 
 # After (v26.4.10) — fail fast makes errors visible
-pictl run --config broken-config.toml  # Exit 1, clear error message
+wpm run --config broken-config.toml  # Exit 1, clear error message
 ```
 
 ## [26.4.8] - 2026-04-08
@@ -364,8 +364,8 @@ pictl run --config broken-config.toml  # Exit 1, clear error message
 **ML Integration — All 10 Gaps Closed**
 
 Phase 1 — CLI Registration:
-- `pictl ml` command: classify, cluster, forecast, anomaly, regress, pca subtasks
-- `pictl powl` command: POWL process model discovery
+- `wpm ml` command: classify, cluster, forecast, anomaly, regress, pca subtasks
+- `wpm powl` command: POWL process model discovery
 
 Phase 2 — Dispatcher Wiring:
 - `packages/kernel/src/step-dispatcher.ts` bridges engine StepDispatcher to kernel ML handlers
@@ -378,7 +378,7 @@ Phase 3 — Planner / Config / Registry:
 
 Phase 4 — pictl Integration:
 - `pictl run`: ML post-discovery phase when ML config enabled
-- `pictl drift-watch --enhanced`: ML anomaly detection overlay on EWMA drift
+- `wpm drift-watch --enhanced`: ML anomaly detection overlay on EWMA drift
 
 Phase 5 — ML Observability:
 - New event types: `MlModelTraining`, `MlPredictionMade`, `MlFeatureExtraction`, `MlAnomalyDetected`
@@ -400,7 +400,7 @@ Phase 7 — Swarm ML Support:
 - GitHub Actions CI: `typescript.yml` workflow
 - `scripts/health.mjs` and `scripts/check-engines.mjs`
 
-**pictl doctor — 6 checks to 17 checks**
+**wpm doctor — 6 checks to 17 checks**
 
 ### Fixed
 - ESM runtime error (`ERR_MODULE_NOT_FOUND`) — added `.js` extensions

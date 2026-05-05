@@ -1,5 +1,5 @@
 /**
- * Scenario: ml command — pictl ml <task> -i <log.xes>
+ * Scenario: ml command — wpm ml <task> -i <log.xes>
  *
  * Tests ML-powered process mining using real WASM and real XES files.
  * No mocks — real @wasm4pm/ml package with real algorithm execution.

@@ -1,6 +1,6 @@
 # Algorithm Reference
 
-Complete reference for all 27 algorithms in the pictl kernel registry (21 discovery + 6 ML analysis).
+Complete reference for all 27 algorithms in the wasm4pm kernel registry (21 discovery + 6 ML analysis).
 
 **Version:** v26.4.10
 

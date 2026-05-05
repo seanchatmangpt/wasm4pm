@@ -75,7 +75,7 @@ npm link
 Verify the CLI works:
 
 ```bash
-pictl status
+wpm status
 ```
 
 You should see output confirming the WASM engine is loaded and healthy.
@@ -116,7 +116,7 @@ There are two ways to run benchmarks: the CLI and the Node.js runner. Both measu
 Run DFG discovery on a log and time it:
 
 ```bash
-pictl run -i wasm4pm/tests/fixtures/BPI_2020_Travel_Permits_Actual.xes --algorithm dfg --format json
+wpm run -i wasm4pm/tests/fixtures/BPI_2020_Travel_Permits_Actual.xes --algorithm dfg --format json
 ```
 
 The JSON output includes a `summary` field with timing information. On an Apple M3 Max, DFG discovery on BPI 2020 (10,500 traces, 56K events) completes in approximately **6.5 ms**.
@@ -234,7 +234,7 @@ discover_genetic_algorithm                   1000       768.0       816.3
 pictl provides a built-in comparison command that runs multiple algorithms against the same log and presents results side by side:
 
 ```bash
-pictl compare dfg heuristic_miner inductive_miner -i wasm4pm/tests/fixtures/BPI_2020_Travel_Permits_Actual.xes
+wpm compare dfg heuristic_miner inductive_miner -i wasm4pm/tests/fixtures/BPI_2020_Travel_Permits_Actual.xes
 ```
 
 Expected output (abbreviated):
@@ -258,8 +258,8 @@ The `wpm compare` command is useful when you need to:
 You can also use `wpm explain <algorithm>` to get an academic description of what each algorithm does and when to use it:
 
 ```bash
-pictl explain dfg
-pictl explain heuristic_miner
+wpm explain dfg
+wpm explain heuristic_miner
 ```
 
 ---

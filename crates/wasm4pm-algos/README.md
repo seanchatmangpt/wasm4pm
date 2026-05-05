@@ -1,6 +1,6 @@
 # wasm4pm-algos
 
-High-performance, branchless algorithm implementations for the pictl process mining platform.
+High-performance, branchless algorithm implementations for the wasm4pm process mining platform.
 
 This crate provides the core algorithms for process discovery and conformance checking, optimized for speed and predictable latency.
 

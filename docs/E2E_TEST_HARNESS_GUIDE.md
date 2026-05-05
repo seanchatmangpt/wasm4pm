@@ -9,7 +9,7 @@
 
 ## Overview
 
-This guide provides step-by-step instructions to implement 15+ E2E test scenarios across the pictl platform. Tests are split between:
+This guide provides step-by-step instructions to implement 15+ E2E test scenarios across the wasm4pm platform. Tests are split between:
 
 1. **Rust integration tests** (`wasm4pm/tests/e2e_*.rs`) — Test WASM core directly
 2. **TypeScript E2E tests** (`playground/scenarios/e2e-*.test.ts`) — Test full CLI stack

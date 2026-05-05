@@ -1,4 +1,4 @@
-# pictl Verification Protocol
+# wasm4pm Verification Protocol
 
 **Evidence-based verification standard for all claims.**
 

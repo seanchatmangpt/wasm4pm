@@ -1,4 +1,4 @@
-# pictl Semantic Conventions Index
+# wasm4pm Semantic Conventions Index
 
 > **Complete RDF/SPARQL ecosystem for process mining proofs**  
 > **Version**: 1.0 | **Status**: Production-Ready | **Date**: 2026-04-10

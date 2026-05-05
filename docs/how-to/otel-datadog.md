@@ -39,7 +39,7 @@ export DD_APP_KEY="your-app-key"
 export DD_SERVICE="wasm4pm"
 export DD_ENV="production"
 
-pictl run --config config.toml
+wpm run --config config.toml
 ```
 
 ## Docker Compose

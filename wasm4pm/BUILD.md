@@ -1,6 +1,6 @@
 # Building and Publishing pictl
 
-Complete guide for building, testing, and publishing the pictl npm package.
+Complete guide for building, testing, and publishing the wasm4pm npm package.
 
 ## Prerequisites
 

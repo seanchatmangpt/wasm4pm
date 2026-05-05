@@ -1,4 +1,4 @@
-# pictl Examples
+# wasm4pm Examples
 
 Runnable examples for ML, RL, prediction, and process mining workflows.
 

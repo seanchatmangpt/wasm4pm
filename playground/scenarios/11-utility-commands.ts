@@ -76,7 +76,7 @@ describe('init: scaffolding', () => {
   it('--format json emits files_created array', async () => {
     const result = await wpm(['init', '--force', '--format', 'json'], tempDir);
     assertExitCode(result, EXIT_CODES.SUCCESS);
-    // init outputs JSON then prints the pictl help text (citty behavior).
+    // init outputs JSON then prints the wpm help text (citty behavior).
     // Extract just the leading JSON object before the help text.
     const jsonEnd = result.stdout.lastIndexOf('\n}') + 2;
     const jsonStr = result.stdout.slice(0, jsonEnd).trim();

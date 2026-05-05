@@ -1,6 +1,6 @@
 # ESLint Custom Rules for pictl
 
-Rules in this directory provide Gemba enforcement for the pictl test suite.
+Rules in this directory provide Gemba enforcement for the wasm4pm test suite.
 
 ## Rules
 

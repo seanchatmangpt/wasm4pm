@@ -12,13 +12,13 @@ pictl commands are failing and you do not know why. Maybe the WASM binary is mis
 ## 1. Run the health check
 
 ```bash
-pictl doctor
+wpm doctor
 ```
 
 This runs all six checks and prints a badge for each:
 
 ```
-pictl doctor — system health check
+wpm doctor — system health check
 ──────────────────────────────────────────────────────────
 [  ok  ]  Node.js version
          v20.11.0 (>= 18 required)
@@ -51,7 +51,7 @@ Exit code `0` means everything is fine. Exit code `1` means at least one require
 ## 2. Get machine-readable output for CI
 
 ```bash
-pictl doctor --format json
+wpm doctor --format json
 ```
 
 What you should see:
@@ -80,7 +80,7 @@ What you should see:
 Use this in CI pipelines to gate on environment readiness:
 
 ```bash
-pictl doctor --format json | jq -e '.data.healthy == true'
+wpm doctor --format json | jq -e '.data.healthy == true'
 ```
 
 ---
@@ -151,13 +151,13 @@ nvm use 20
 ```
 [ warn ]  Config file
          No wasm4pm.toml / wasm4pm.json found in current directory or parents
-         Fix: Create a config with: pictl init    (defaults work fine without one)
+         Fix: Create a config with: wpm init    (defaults work fine without one)
 ```
 
 This is a warning, not a failure. You can either create a config file or ignore it (defaults work):
 
 ```bash
-pictl init
+wpm init
 ```
 
 ### Low system memory
