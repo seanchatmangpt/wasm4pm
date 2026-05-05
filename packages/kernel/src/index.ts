@@ -107,3 +107,6 @@ export type {
 
 // Prediction subsystem — orchestrates the 6 Van der Aalst perspectives.
 export * as prediction from './prediction/index.js';
+
+// Introspection APIs — discovery, diagnostics, validation, and quick-start helpers
+export * as introspection from './introspection/index.js';

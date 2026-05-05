@@ -1,5 +1,5 @@
 /**
- * @pictl/contracts
+ * @wasm4pm/contracts
  *
  * Shared type definitions and contracts for the wasm4pm ecosystem.
  * Provides interfaces for source connectors, sink adapters, compatibility matrices,

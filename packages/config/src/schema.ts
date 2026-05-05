@@ -383,6 +383,9 @@ export const configSchema = z
  *     [rl.learning_rate] expected number, got string
  *     [rl.convergence.min_cycles] Number must be greater than 0
  *     [ml.tasks.0] Invalid enum value. Expected 'classify' | … , received 'foo'
+ *
+ * For advanced error formatting with suggestions and constraints, use
+ * formatDetailedZodError from the validation module.
  */
 function formatZodErrors(error: z.ZodError, header = 'Configuration validation failed'): string {
   const lines = error.errors.map((err) => {

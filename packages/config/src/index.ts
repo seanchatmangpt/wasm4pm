@@ -17,6 +17,7 @@
 // Resolution
 export {
   resolveConfig,
+  checkConfigWarnings,
   getExampleTomlConfig,
   getExampleJsonConfig,
   getExampleEnvFile,
@@ -112,3 +113,30 @@ export type {
 
 // Hashing (only hashConfig is used externally - by resolver.ts)
 export { hashConfig } from './hash.js';
+
+// Validation & Profiles
+export {
+  formatDetailedZodError,
+  validateAlgorithmProfile,
+  validateMlConfig,
+  validateRlConfig,
+  validatePredictionConfig,
+  type ValidationErrorContext,
+} from './validation/detailed-errors.js';
+
+export {
+  getProfileCapabilities,
+  suggestProfile,
+  validateAlgorithmInProfile,
+  getProfileComparisonTable,
+  findProfilesWithFeatures,
+  type ProfileCapabilities,
+  type ProfileSuggestionConstraints,
+} from './validation/profile-management.js';
+
+export {
+  getPresetConfig,
+  getExampleTomlWithComments,
+  describePreset,
+  type PresetScenario,
+} from './validation/presets.js';

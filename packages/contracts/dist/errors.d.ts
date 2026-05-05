@@ -106,7 +106,7 @@ export interface ErrorInfo {
  *
  * @example
  * ```ts
- * const error = createError('CONFIG_MISSING', 'pictl.toml not found in /path/to/project');
+ * const error = createError('CONFIG_MISSING', 'wasm4pm.toml not found in /path/to/project');
  * console.error(formatError(error)); // Human-readable output
  * process.exit(error.exit_code);    // Proper exit code
  * ```
@@ -160,7 +160,7 @@ export declare function formatErrorJSON(error: ErrorInfo): Record<string, any>;
  *
  * @example
  * ```ts
- * const error = createError('CONFIG_INVALID', 'Invalid syntax in pictl.toml');
+ * const error = createError('CONFIG_INVALID', 'Invalid syntax in wasm4pm.toml');
  * logError(error, 'human');    // Colored terminal output
  * logError(error, 'json');     // JSON for structured logging
  * ```

@@ -5,6 +5,7 @@ import * as toml from 'toml';
 import { validate, SCHEMA_VERSION } from './schema.js';
 import { trackProvenance, mergeProvenance, type ProvenanceMap } from './provenance.js';
 import { hashConfig } from './hash.js';
+import { validateMlConfig, validateRlConfig, validatePredictionConfig, validateAlgorithmProfile } from './validation/detailed-errors.js';
 import type { BaseConfig, Config, CliOverrides, LoadConfigOptions } from './types.js';
 
 /**
@@ -401,6 +402,41 @@ function deepMerge(...objects: Record<string, unknown>[]): Record<string, unknow
 
 function isPlainObject(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v);
+}
+
+/**
+ * Check a resolved config for warnings (not errors).
+ * Returns an array of warnings that don't prevent execution but may indicate
+ * suboptimal choices (e.g., aggressive k for clustering a small log).
+ *
+ * @param config The resolved configuration
+ * @param logSize Optional: estimated event log size for better warnings
+ * @returns Array of { field, warning } objects
+ */
+export function checkConfigWarnings(
+  config: Partial<Config>,
+  logSize?: number,
+): Array<{ field: string; warning: string }> {
+  const warnings: Array<{ field: string; warning: string }> = [];
+
+  // Algorithm profile compatibility
+  if (config.algorithm?.name && config.execution?.profile) {
+    const result = validateAlgorithmProfile(config.algorithm.name, config.execution.profile as any);
+    if (!result.compatible && result.warning) {
+      warnings.push({ field: 'algorithm.name', warning: result.warning });
+    }
+  }
+
+  // ML configuration warnings
+  warnings.push(...validateMlConfig(config, logSize));
+
+  // RL configuration warnings
+  warnings.push(...validateRlConfig(config));
+
+  // Prediction configuration warnings
+  warnings.push(...validatePredictionConfig(config));
+
+  return warnings;
 }
 
 /**
