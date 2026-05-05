@@ -3,7 +3,7 @@
  *
  * Dev action simulated: "I changed getProfileAlgorithms('quality') to add a
  * new algorithm. Do balanced and quality plans now differ in step count as
- * expected? Does `pictl compare` show the right table columns? Does `pictl
+ * expected? Does `wpm compare` show the right table columns? Does `pictl
  * explain` return content for each algorithm?"
  *
  * Key contracts verified:
@@ -19,7 +19,7 @@
  *     - --algorithm dfg exits 0 and stdout contains "Directly"
  *     - --format json has content and subject fields
  *
- * Binary: apps/pictl/dist/bin/pictl.js (must be built first)
+ * Binary: apps/wasm4pm/dist/bin/wpm.js (must be built first)
  */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import * as path from 'path';

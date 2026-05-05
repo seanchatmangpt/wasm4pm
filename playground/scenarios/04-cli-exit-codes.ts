@@ -5,7 +5,7 @@
  * still exit with the right code? Does JSON output still parse?"
  *
  * Runs against the real pictl binary built from local source.
- * Binary: apps/pictl/dist/bin/pictl.js (must be built first: cd apps/pictl && npm run build)
+ * Binary: apps/wasm4pm/dist/bin/wpm.js (must be built first: cd apps/pictl && npm run build)
  *
  * Exit code contract:
  *   0  success

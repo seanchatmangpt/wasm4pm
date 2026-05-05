@@ -16,7 +16,7 @@
  *   - DecisionGraph nodes are created when appropriate
  *   - Partial order structure is preserved
  *
- * Binary: apps/pictl/dist/bin/pictl.js (must be built first)
+ * Binary: apps/wasm4pm/dist/bin/wpm.js (must be built first)
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';

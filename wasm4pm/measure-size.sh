@@ -37,7 +37,7 @@ echo ""
 # Function to check if file exists
 check_file() {
   local profile=$1
-  local wasm_file="pkg/pictl_bg.wasm"
+  local wasm_file="pkg/wasm4pm_bg.wasm"
 
   if [ -f "$wasm_file" ]; then
     return 0
@@ -90,7 +90,7 @@ for profile in mobile iot edge fog browser; do
 
   # Check if built
   if check_file "$profile"; then
-    size_kb=$(get_size_kb "pkg/pictl_bg.wasm")
+    size_kb=$(get_size_kb "pkg/wasm4pm_bg.wasm")
     target_kb=${SIZE_TARGETS[$profile]}
     algo_count=$(count_algorithms "$profile")
 

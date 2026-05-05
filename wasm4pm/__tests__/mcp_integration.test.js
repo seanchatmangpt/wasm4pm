@@ -6,7 +6,7 @@
  */
 import { describe, it, expect, vi } from 'vitest';
 
-// Mock the pictl WASM artifact so tests run without a compiled binary.
+// Mock thewasm4pm WASM artifact so tests run without a compiled binary.
 // The mcp_integration tests only validate tool registration and schema structure,
 // not WASM execution, so an empty stub is sufficient.
 vi.mock('../pkg/wasm4pm.js', () => ({}));

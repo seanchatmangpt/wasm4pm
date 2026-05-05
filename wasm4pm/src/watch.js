@@ -105,7 +105,7 @@ export class WatchMode {
       heartbeatIntervalMs: watchConfig.heartbeatIntervalMs ?? 1000,
       heartbeatEventThreshold: watchConfig.heartbeatEventThreshold ?? 10,
       checkpointIntervalMs: watchConfig.checkpointIntervalMs ?? 5000,
-      checkpointPath: watchConfig.checkpointPath ?? '.pictl/checkpoint',
+      checkpointPath: watchConfig.checkpointPath ?? '.wasm4pm/checkpoint',
       maxReconnectAttempts: watchConfig.maxReconnectAttempts ?? 10,
       initialBackoffMs: watchConfig.initialBackoffMs ?? 100,
       maxBackoffMs: watchConfig.maxBackoffMs ?? 5000,

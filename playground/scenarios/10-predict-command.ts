@@ -14,7 +14,7 @@
  *   - VALID_PREDICT_CLI_TASKS has exactly 6 entries, all hyphen-form (no underscores)
  *   - remaining-time without --prefix → returns message, not prediction (model-only mode)
  *
- * Binary: apps/pictl/dist/bin/pictl.js (must be built first)
+ * Binary: apps/wasm4pm/dist/bin/wpm.js (must be built first)
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
@@ -120,7 +120,7 @@ describe('predict command: error paths', () => {
 
 describe('predict command: task routing — exit codes', () => {
   for (const task of VALID_PREDICT_CLI_TASKS) {
-    it(`pictl predict ${task} exits 0 or 3 (never 1 or 2)`, async () => {
+    it(`wpm predict ${task} exits 0 or 3 (never 1 or 2)`, async () => {
       const result = await pictl(['predict', task, '-i', xesPath, '--no-save']);
       const acceptable = [EXIT_CODES.SUCCESS, EXIT_CODES.EXECUTION_ERROR];
       if (!acceptable.includes(result.exitCode)) {

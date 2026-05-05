@@ -1,5 +1,5 @@
 /**
- * Scenario: autoprocess command — pictl autoprocess <log.xes>
+ * Scenario: autoprocess command — wpm autoprocess <log.xes>
  *
  * JTBD: "I want to run my process through the autonomic control loop and understand
  * what the system decided to do about the current state — is my process healthy?"
@@ -17,7 +17,7 @@
  *   - Determinism: two runs produce identical structure and metrics
  *   - Real-scale: BPI 2020 (20MB+) processes without timeout/error
  *
- * Binary: apps/pictl/dist/bin/pictl.js (must be built first)
+ * Binary: apps/wasm4pm/dist/bin/wpm.js (must be built first)
  */
 
 import { describe, it, expect } from 'vitest';

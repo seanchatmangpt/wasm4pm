@@ -8,7 +8,7 @@
  *   1. Config  — resolveConfig({ cliOverrides: { algorithm: X } }) accepts every ID
  *   2. Planner — plan() with algorithm override produces a valid plan for every ID
  *   3. CLI     — pictl run --algorithm X exits 0 or 3 (never 1=config or 2=source)
- *   4. CLI     — pictl compare with all 14 IDs comma-joined exits 0 or 3
+ *   4. CLI     — wpm compare with all 14 IDs comma-joined exits 0 or 3
  *
  * Driven by ALGORITHM_IDS from @wasm4pm/contracts — if a new algorithm is added
  * to the ontology and regenerated, this scenario covers it automatically.
@@ -116,7 +116,7 @@ describe('all algorithms: planner layer', () => {
 
 describe('all algorithms: CLI run layer', () => {
   for (const id of ALGORITHM_IDS) {
-    it(`pictl run --algorithm ${id} exits 0 or 3 (not config/source error)`, async () => {
+    it(`wpm run --algorithm ${id} exits 0 or 3 (not config/source error)`, async () => {
       const result = await pictl(['run', xesPath, '--algorithm', id, '--no-save']);
       const acceptable = [EXIT_CODES.SUCCESS, EXIT_CODES.EXECUTION_ERROR];
       if (!acceptable.includes(result.exitCode)) {
@@ -124,15 +124,15 @@ describe('all algorithms: CLI run layer', () => {
         console.error('  stdout:', result.stdout.slice(0, 200));
         console.error('  stderr:', result.stderr.slice(0, 200));
       }
-      expect(acceptable, `pictl run --algorithm ${id} exited ${result.exitCode}`).toContain(result.exitCode);
+      expect(acceptable, `wpm run --algorithm ${id} exited ${result.exitCode}`).toContain(result.exitCode);
     }, 20_000);
   }
 });
 
-// ── 4. CLI: pictl compare with all algorithms ────────────────────────────────
+// ── 4. CLI: wpm compare with all algorithms ────────────────────────────────
 
 describe('all algorithms: CLI compare layer', () => {
-  it('pictl compare accepts all 14 algorithm IDs comma-joined', async () => {
+  it('wpm compare accepts all 14 algorithm IDs comma-joined', async () => {
     const result = await pictl(['compare', ALGORITHM_IDS.join(','), '-i', xesPath, '--no-save']);
     const acceptable = [EXIT_CODES.SUCCESS, EXIT_CODES.EXECUTION_ERROR];
     if (!acceptable.includes(result.exitCode)) {
@@ -143,7 +143,7 @@ describe('all algorithms: CLI compare layer', () => {
     expect(acceptable).toContain(result.exitCode);
   }, 30_000);
 
-  it('pictl compare with unknown algorithm exits 2', async () => {
+  it('wpm compare with unknown algorithm exits 2', async () => {
     const result = await pictl(['compare', 'dfg,ghost_algo', '-i', xesPath]);
     expect(result.exitCode).toBe(EXIT_CODES.SOURCE_ERROR);
   }, 20_000);

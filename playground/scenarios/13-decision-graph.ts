@@ -14,7 +14,7 @@
  *   - POWL → Process Tree handles DecisionGraph via DAG-based algorithm
  *   - Roundtrip: DecisionGraph → Petri Net → DecisionGraph preserves structure
  *
- * Binary: apps/pictl/dist/bin/pictl.js (must be built first)
+ * Binary: apps/wasm4pm/dist/bin/wpm.js (must be built first)
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';

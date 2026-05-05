@@ -12,7 +12,7 @@
  *   - Different files → Jaccard < 1.0 when processes differ structurally
  *   - Human output contains the "Structural similarity" banner
  *
- * Binary: apps/pictl/dist/bin/pictl.js (must be built first)
+ * Binary: apps/wasm4pm/dist/bin/wpm.js (must be built first)
  */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import * as path from 'path';

@@ -98,7 +98,7 @@ describe('all algorithms: planner layer', () => {
 // ── 3. CLI: pictl run --algorithm X exits 0 or 3, never 1 or 2 ────────────────
 describe('all algorithms: CLI run layer', () => {
     for (const id of ALGORITHM_IDS) {
-        it(`pictl run --algorithm ${id} exits 0 or 3 (not config/source error)`, async () => {
+        it(`wpm run --algorithm ${id} exits 0 or 3 (not config/source error)`, async () => {
             const result = await pictl(['run', xesPath, '--algorithm', id, '--no-save']);
             const acceptable = [EXIT_CODES.SUCCESS, EXIT_CODES.EXECUTION_ERROR];
             if (!acceptable.includes(result.exitCode)) {
@@ -106,7 +106,7 @@ describe('all algorithms: CLI run layer', () => {
                 console.error('  stdout:', result.stdout.slice(0, 200));
                 console.error('  stderr:', result.stderr.slice(0, 200));
             }
-            expect(acceptable, `pictl run --algorithm ${id} exited ${result.exitCode}`).toContain(result.exitCode);
+            expect(acceptable, `wpm run --algorithm ${id} exited ${result.exitCode}`).toContain(result.exitCode);
         }, 20000);
     }
 });

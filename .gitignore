@@ -45,10 +45,10 @@ data/Road_Traffic_Fine_Management_Process.xes
 
 # Metrics & Logs
 *.log
-.pictl/build-times.log
-.pictl/checkpoint
-.pictl/metrics-dashboard.md
-.pictl/otel-coverage.json
-.pictl/otel-coverage.md
-.pictl/production-readiness-phase4-final.json
-.pictl/test-wip-system.sh
+.wasm4pm/build-times.log
+.wasm4pm/checkpoint
+.wasm4pm/metrics-dashboard.md
+.wasm4pm/otel-coverage.json
+.wasm4pm/otel-coverage.md
+.wasm4pm/production-readiness-phase4-final.json
+.wasm4pm/test-wip-system.sh

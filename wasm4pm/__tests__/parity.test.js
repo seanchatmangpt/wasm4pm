@@ -81,8 +81,8 @@ let wasmModule = null;
 beforeAll(async () => {
   try {
     // Try to load from the built WASM package
-    const pictlWasm = await import('@wasm4pm/wasm');
-    wasmModule = pictlWasm.default || pictlWasm;
+    constwasm4pmWasm = await import('@wasm4pm/wasm');
+    wasmModule = wasm4pmWasm.default || wasm4pmWasm;
   } catch (error) {
     // If not available, skip tests gracefully
     console.warn('WASM module not available, skipping parity tests');
