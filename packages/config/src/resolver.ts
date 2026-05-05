@@ -603,7 +603,7 @@ WASM4PM_RL_EPSILON=0.1                # ε in [0, 1]
 /**
  * Get a preset example config suitable for one of the standard execution profiles.
  *
- * Useful for `pictl init --preset fast|balanced|quality` and as documentation.
+ * Useful for `wpm init --preset fast|balanced|quality` and as documentation.
  */
 export function getExamplePresetConfig(preset: 'fast' | 'balanced' | 'quality'): string {
   switch (preset) {

@@ -37,7 +37,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import { existsSync } from 'fs';
-import { pictl, assertExitCode, assertJsonOutput, EXIT_CODES } from '@wasm4pm/testing';
+import { wpm, assertExitCode, assertJsonOutput, EXIT_CODES } from '../helpers/cli.js';
 
 let tempDir: string;
 
@@ -53,14 +53,14 @@ afterEach(async () => {
 
 describe('init: scaffolding', () => {
   it('creates wasm4pm.toml in cwd by default', async () => {
-    const result = await pictl(['init', '--force'], tempDir);
+    const result = await wpm(['init', '--force'], tempDir);
     assertExitCode(result, EXIT_CODES.SUCCESS);
     expect(existsSync(path.join(tempDir, 'wasm4pm.toml'))).toBe(true);
     console.info('[init] created wasm4pm.toml in:', tempDir);
   });
 
   it('creates .env.example containing WASM4PM_PROFILE', async () => {
-    await pictl(['init', '--force'], tempDir);
+    await wpm(['init', '--force'], tempDir);
     const envPath = path.join(tempDir, '.env.example');
     expect(existsSync(envPath)).toBe(true);
     const content = await fs.readFile(envPath, 'utf-8');
@@ -69,12 +69,12 @@ describe('init: scaffolding', () => {
   });
 
   it('creates .gitignore', async () => {
-    await pictl(['init', '--force'], tempDir);
+    await wpm(['init', '--force'], tempDir);
     expect(existsSync(path.join(tempDir, '.gitignore'))).toBe(true);
   });
 
   it('--format json emits files_created array', async () => {
-    const result = await pictl(['init', '--force', '--format', 'json'], tempDir);
+    const result = await wpm(['init', '--force', '--format', 'json'], tempDir);
     assertExitCode(result, EXIT_CODES.SUCCESS);
     // init outputs JSON then prints the pictl help text (citty behavior).
     // Extract just the leading JSON object before the help text.
@@ -94,11 +94,11 @@ describe('init: scaffolding', () => {
 
   it('re-run without --force skips files and exits 0', async () => {
     // First run creates files
-    await pictl(['init', '--force'], tempDir);
+    await wpm(['init', '--force'], tempDir);
     const firstMtime = (await fs.stat(path.join(tempDir, 'wasm4pm.toml'))).mtimeMs;
 
     // Second run without --force should skip
-    const result = await pictl(['init'], tempDir);
+    const result = await wpm(['init'], tempDir);
     assertExitCode(result, EXIT_CODES.SUCCESS);
     const secondMtime = (await fs.stat(path.join(tempDir, 'wasm4pm.toml'))).mtimeMs;
     expect(secondMtime).toBe(firstMtime); // file not overwritten
@@ -107,14 +107,14 @@ describe('init: scaffolding', () => {
 
   it('invalid --configFormat exits 1 (config_error)', async () => {
     // citty uses camelCase flag names: --configFormat not --config-format
-    const result = await pictl(['init', '--configFormat', 'yaml'], tempDir);
+    const result = await wpm(['init', '--configFormat', 'yaml'], tempDir);
     assertExitCode(result, EXIT_CODES.CONFIG_ERROR);
     console.info('[init] invalid format message:', (result.stderr + result.stdout).slice(0, 120));
   });
 
   it('--configFormat json creates wasm4pm.json not wasm4pm.toml', async () => {
     // citty uses camelCase flag names: --configFormat not --config-format
-    const result = await pictl(['init', '--configFormat', 'json', '--force'], tempDir);
+    const result = await wpm(['init', '--configFormat', 'json', '--force'], tempDir);
     assertExitCode(result, EXIT_CODES.SUCCESS);
     expect(existsSync(path.join(tempDir, 'wasm4pm.json'))).toBe(true);
     expect(existsSync(path.join(tempDir, 'wasm4pm.toml'))).toBe(false);
@@ -128,13 +128,13 @@ describe('results: browsing', () => {
   it('empty results dir exits 0', async () => {
     // Human output is suppressed in NODE_ENV=test (consola behavior) — check exit code only.
     // Content is verified via --format json in the next test.
-    const result = await pictl(['results'], tempDir);
+    const result = await wpm(['results'], tempDir);
     assertExitCode(result, EXIT_CODES.SUCCESS);
     console.info('[results] empty dir exit:', result.exitCode, '(human output suppressed in test env)');
   });
 
   it('--format json on empty dir emits count:0 and results:[]', async () => {
-    const result = await pictl(['results', '--format', 'json'], tempDir);
+    const result = await wpm(['results', '--format', 'json'], tempDir);
     assertExitCode(result, EXIT_CODES.SUCCESS);
     const envelope = assertJsonOutput(result) as Record<string, unknown>;
     expect(envelope).toHaveProperty('status', 'success');
@@ -147,7 +147,7 @@ describe('results: browsing', () => {
   });
 
   it('--cat nonexistent exits 2 (source_error)', async () => {
-    const result = await pictl(['results', '--cat', 'nonexistent-file.json'], tempDir);
+    const result = await wpm(['results', '--cat', 'nonexistent-file.json'], tempDir);
     assertExitCode(result, EXIT_CODES.SOURCE_ERROR);
     console.info('[results] --cat nonexistent message:', (result.stderr + result.stdout).slice(0, 120));
   });
@@ -170,7 +170,7 @@ describe('results: browsing', () => {
       'utf-8',
     );
 
-    const result = await pictl(['results', '--format', 'json'], tempDir);
+    const result = await wpm(['results', '--format', 'json'], tempDir);
     assertExitCode(result, EXIT_CODES.SUCCESS);
     const envelope = assertJsonOutput(result) as Record<string, unknown>;
     const data = (envelope['data'] ?? envelope) as Record<string, unknown>;
@@ -186,7 +186,7 @@ describe('results: browsing', () => {
 
 describe('explain: algorithm explanations', () => {
   it('--algorithm dfg exits 0', async () => {
-    const result = await pictl(['explain', '--algorithm', 'dfg']);
+    const result = await wpm(['explain', '--algorithm', 'dfg']);
     assertExitCode(result, EXIT_CODES.SUCCESS);
     console.info('[explain] dfg stdout (first 150):', result.stdout.slice(0, 150));
   });
@@ -194,7 +194,7 @@ describe('explain: algorithm explanations', () => {
   it('unknown algorithm exits 0 (NOT exit 2) — explain never errors on unknown algo', async () => {
     // explain falls through to a generic "no explanation available" message rather than erroring.
     // Human output is suppressed in NODE_ENV=test — check exit code only.
-    const result = await pictl(['explain', '--algorithm', 'bananas']);
+    const result = await wpm(['explain', '--algorithm', 'bananas']);
     assertExitCode(result, EXIT_CODES.SUCCESS);
     // Must NOT be exit 2 (source_error) — that would be a regression
     expect(result.exitCode).not.toBe(EXIT_CODES.SOURCE_ERROR);
@@ -202,13 +202,13 @@ describe('explain: algorithm explanations', () => {
   });
 
   it('no args exits 2 (source_error)', async () => {
-    const result = await pictl(['explain']);
+    const result = await wpm(['explain']);
     assertExitCode(result, EXIT_CODES.SOURCE_ERROR);
     console.info('[explain] no-args message:', (result.stderr + result.stdout).slice(0, 120));
   });
 
   it('--format json --algorithm dfg has content field', async () => {
-    const result = await pictl(['explain', '--algorithm', 'dfg', '--format', 'json']);
+    const result = await wpm(['explain', '--algorithm', 'dfg', '--format', 'json']);
     assertExitCode(result, EXIT_CODES.SUCCESS);
     const envelope = assertJsonOutput(result) as Record<string, unknown>;
     expect(envelope).toHaveProperty('status', 'success');
@@ -224,7 +224,7 @@ describe('explain: algorithm explanations', () => {
 
 describe('doctor: environment diagnostics', () => {
   it('exits 0 (all ok) or 1 (any fail) — never 2 (source) or 3 (execution)', async () => {
-    const result = await pictl(['doctor']);
+    const result = await wpm(['doctor']);
     const acceptable = [EXIT_CODES.SUCCESS, EXIT_CODES.CONFIG_ERROR];
     if (!acceptable.includes(result.exitCode)) {
       console.error('[doctor] unexpected exit:', result.exitCode);
@@ -236,7 +236,7 @@ describe('doctor: environment diagnostics', () => {
   });
 
   it('--format json emits checks array', async () => {
-    const result = await pictl(['doctor', '--format', 'json']);
+    const result = await wpm(['doctor', '--format', 'json']);
     const acceptable = [EXIT_CODES.SUCCESS, EXIT_CODES.CONFIG_ERROR];
     expect(acceptable).toContain(result.exitCode);
     const envelope = assertJsonOutput(result) as Record<string, unknown>;
@@ -250,7 +250,7 @@ describe('doctor: environment diagnostics', () => {
   });
 
   it('each check in --format json has name, status, message fields', async () => {
-    const result = await pictl(['doctor', '--format', 'json']);
+    const result = await wpm(['doctor', '--format', 'json']);
     const acceptable = [EXIT_CODES.SUCCESS, EXIT_CODES.CONFIG_ERROR];
     expect(acceptable).toContain(result.exitCode);
     const envelope = assertJsonOutput(result) as Record<string, unknown>;

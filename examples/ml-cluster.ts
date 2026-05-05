@@ -1,5 +1,5 @@
 /**
- * Example — Trace clustering with @pictl/ml
+ * Example — Trace clustering with @wasm4pm/ml
  *
  * Discovers cohorts of similar traces. Useful for:
  *   - Variant family discovery
@@ -16,8 +16,8 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-import { getRegistry } from '@pictl/kernel';
-import { buildFeatureMatrix, clusterTraces } from '@pictl/ml';
+import { getRegistry } from '@wasm4pm/kernel';
+import { buildFeatureMatrix, clusterTraces } from '@wasm4pm/ml';
 
 async function main(logPath: string, k: number): Promise<void> {
   const xes = readFileSync(resolve(logPath), 'utf8');

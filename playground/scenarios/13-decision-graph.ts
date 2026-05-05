@@ -20,7 +20,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import * as path from 'path';
 import * as fs from 'fs/promises';
-import { pictl, assertExitCode, assertJsonOutput, createCliTestEnv, EXIT_CODES } from '@wasm4pm/testing';
+import { wpm, assertExitCode, assertJsonOutput, createCliTestEnv, EXIT_CODES } from '@wasm4pm/testing';
 import type { CliTestEnv } from '@wasm4pm/testing';
 
 // ─── Test Data ───────────────────────────────────────────────────────────────
@@ -48,7 +48,7 @@ describe('13-decision-graph', () => {
   });
 
   it('parses DecisionGraph with parallel children', async () => {
-    const result = await pictl(['powl', 'parse', '--quiet', '--model', DG_PARALLEL, '--format', 'json']);
+    const result = await wpm(['powl', 'parse', '--quiet', '--model', DG_PARALLEL, '--format', 'json']);
     assertExitCode(result, EXIT_CODES.SUCCESS);
     assertJsonOutput(result);
 
@@ -63,7 +63,7 @@ describe('13-decision-graph', () => {
   });
 
   it('parses DecisionGraph with sequence order', async () => {
-    const result = await pictl(['powl', 'parse', '--quiet', '--model', DG_SEQUENCE, '--format', 'json']);
+    const result = await wpm(['powl', 'parse', '--quiet', '--model', DG_SEQUENCE, '--format', 'json']);
     assertExitCode(result, EXIT_CODES.SUCCESS);
     assertJsonOutput(result);
 
@@ -75,7 +75,7 @@ describe('13-decision-graph', () => {
   });
 
   it('parses DecisionGraph with empty path', async () => {
-    const result = await pictl(['powl', 'parse', '--quiet', '--model', DG_EMPTY_PATH, '--format', 'json']);
+    const result = await wpm(['powl', 'parse', '--quiet', '--model', DG_EMPTY_PATH, '--format', 'json']);
     assertExitCode(result, EXIT_CODES.SUCCESS);
     assertJsonOutput(result);
 
@@ -85,7 +85,7 @@ describe('13-decision-graph', () => {
   });
 
   it('converts DecisionGraph to Petri Net', async () => {
-    const result = await pictl(['powl', 'convert', '--quiet', '--to', 'petri-net', '--model', DG_PARALLEL, '--format', 'json']);
+    const result = await wpm(['powl', 'convert', '--quiet', '--to', 'petri-net', '--model', DG_PARALLEL, '--format', 'json']);
     assertExitCode(result, EXIT_CODES.SUCCESS);
     assertJsonOutput(result);
 
@@ -100,7 +100,7 @@ describe('13-decision-graph', () => {
   });
 
   it('converts DecisionGraph to Process Tree', async () => {
-    const result = await pictl(['powl', 'convert', '--quiet', '--to', 'process-tree', '--model', DG_SEQUENCE, '--format', 'json']);
+    const result = await wpm(['powl', 'convert', '--quiet', '--to', 'process-tree', '--model', DG_SEQUENCE, '--format', 'json']);
     assertExitCode(result, EXIT_CODES.SUCCESS);
     assertJsonOutput(result);
 
@@ -114,12 +114,12 @@ describe('13-decision-graph', () => {
   });
 
   it('exports DecisionGraph children via get_children', async () => {
-    const result = await pictl(['powl', 'parse', '--quiet', '--model', DG_PARALLEL, '--format', 'json']);
+    const result = await wpm(['powl', 'parse', '--quiet', '--model', DG_PARALLEL, '--format', 'json']);
     assertExitCode(result, EXIT_CODES.SUCCESS);
     const json = JSON.parse(result.stdout);
     const root = json.root;
 
-    const childrenResult = await pictl(['powl', 'get-children', '--quiet', '--model', DG_PARALLEL, '--index', String(root), '--format', 'json']);
+    const childrenResult = await wpm(['powl', 'get-children', '--quiet', '--model', DG_PARALLEL, '--index', String(root), '--format', 'json']);
     assertExitCode(childrenResult, EXIT_CODES.SUCCESS);
     assertJsonOutput(childrenResult);
 
@@ -130,12 +130,12 @@ describe('13-decision-graph', () => {
   });
 
   it('exports DecisionGraph detailed info via node_info_json', async () => {
-    const result = await pictl(['powl', 'parse', '--quiet', '--model', DG_PARALLEL, '--format', 'json']);
+    const result = await wpm(['powl', 'parse', '--quiet', '--model', DG_PARALLEL, '--format', 'json']);
     assertExitCode(result, EXIT_CODES.SUCCESS);
     const json = JSON.parse(result.stdout);
     const root = json.root;
 
-    const infoResult = await pictl(['powl', 'node-info', '--quiet', '--model', DG_PARALLEL, '--index', String(root), '--format', 'json']);
+    const infoResult = await wpm(['powl', 'node-info', '--quiet', '--model', DG_PARALLEL, '--index', String(root), '--format', 'json']);
     assertExitCode(infoResult, EXIT_CODES.SUCCESS);
     assertJsonOutput(infoResult);
 
@@ -152,13 +152,13 @@ describe('13-decision-graph', () => {
 
   it('roundtrips DecisionGraph through Petri Net', async () => {
     // 1. Parse original DecisionGraph
-    const parseResult = await pictl(['powl', 'parse', '--quiet', '--model', DG_SEQUENCE, '--format', 'json']);
+    const parseResult = await wpm(['powl', 'parse', '--quiet', '--model', DG_SEQUENCE, '--format', 'json']);
     assertExitCode(parseResult, EXIT_CODES.SUCCESS);
     const parseJson = JSON.parse(parseResult.stdout);
     const originalRepr = parseJson.repr;
 
     // 2. Convert to Petri Net
-    const convertResult = await pictl(['powl', 'convert', '--quiet', '--to', 'petri-net', '--model', DG_SEQUENCE, '--format', 'json']);
+    const convertResult = await wpm(['powl', 'convert', '--quiet', '--to', 'petri-net', '--model', DG_SEQUENCE, '--format', 'json']);
     assertExitCode(convertResult, EXIT_CODES.SUCCESS);
     const convertJson = JSON.parse(convertResult.stdout);
     const petriNetJson = convertJson.output;
@@ -169,7 +169,7 @@ describe('13-decision-graph', () => {
 
     try {
       // 4. Convert Petri Net back to POWL (via import)
-      const importResult = await pictl(['powl', 'import', '--quiet', '--from', 'petri-net', '--model', tmpFile, '--format', 'json']);
+      const importResult = await wpm(['powl', 'import', '--quiet', '--from', 'petri-net', '--model', tmpFile, '--format', 'json']);
       assertExitCode(importResult, EXIT_CODES.SUCCESS);
       assertJsonOutput(importResult);
 

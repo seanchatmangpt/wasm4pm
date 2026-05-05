@@ -35,18 +35,18 @@ describe('ml command', () => {
 
   describe('error handling', () => {
     it('exits 1 when no task provided', async () => {
-      const result = await pictl(['ml']);
+      const result = await wpm(['ml']);
       assertExitCode(result, EXIT_CODES.CONFIG_ERROR);
     });
 
     it('exits 2 for invalid task name', async () => {
-      const result = await pictl(['ml', 'nonexistent_task', '-i', RUNNING_EXAMPLE]);
+      const result = await wpm(['ml', 'nonexistent_task', '-i', RUNNING_EXAMPLE]);
       assertExitCode(result, EXIT_CODES.SOURCE_ERROR);
       expect(combinedOutput(result)).toContain('Unknown ML task');
     });
 
     it('exits 1 when no input provided', async () => {
-      const result = await pictl(['ml', 'classify']);
+      const result = await wpm(['ml', 'classify']);
       assertExitCode(result, EXIT_CODES.CONFIG_ERROR);
       expect(combinedOutput(result)).toContain('Missing required');
     });
@@ -58,20 +58,20 @@ describe('ml command', () => {
     for (const task of WORKING_ML_TASKS) {
       describe(`${task} task`, () => {
         it(`wpm ml ${task} exits 0 and returns valid JSON`, async () => {
-          const result = await pictl(['ml', task, '-i', RUNNING_EXAMPLE, '--format', 'json']);
+          const result = await wpm(['ml', task, '-i', RUNNING_EXAMPLE, '--format', 'json']);
           assertExitCode(result, EXIT_CODES.SUCCESS);
           const json = extractJson(result.stdout);
           expect(json).toBeDefined();
         });
 
         it(`output contains task field set to "${task}"`, async () => {
-          const result = await pictl(['ml', task, '-i', RUNNING_EXAMPLE, '--format', 'json']);
+          const result = await wpm(['ml', task, '-i', RUNNING_EXAMPLE, '--format', 'json']);
           const json = extractJson(result.stdout) as Record<string, unknown>;
           expect(json.task).toBe(task);
         });
 
         it(`output contains status field set to "success"`, async () => {
-          const result = await pictl(['ml', task, '-i', RUNNING_EXAMPLE, '--format', 'json']);
+          const result = await wpm(['ml', task, '-i', RUNNING_EXAMPLE, '--format', 'json']);
           const json = extractJson(result.stdout) as Record<string, unknown>;
           expect(json.status).toBe('success');
         });
@@ -83,7 +83,7 @@ describe('ml command', () => {
 
   describe('PCA task', () => {
     it('exits 3 when running-example.xes has insufficient features for PCA', async () => {
-      const result = await pictl(['ml', PCA_TASK, '-i', RUNNING_EXAMPLE, '--format', 'json']);
+      const result = await wpm(['ml', PCA_TASK, '-i', RUNNING_EXAMPLE, '--format', 'json']);
       assertExitCode(result, EXIT_CODES.EXECUTION_ERROR);
       const json = extractJson(result.stdout) as Record<string, unknown>;
       expect(json.status).toBe('error');
@@ -95,38 +95,38 @@ describe('ml command', () => {
 
   describe('task-specific data fields', () => {
     it('classify has predictions array', async () => {
-      const result = await pictl(['ml', 'classify', '-i', RUNNING_EXAMPLE, '--format', 'json']);
+      const result = await wpm(['ml', 'classify', '-i', RUNNING_EXAMPLE, '--format', 'json']);
       const json = extractJson(result.stdout) as Record<string, unknown>;
       expect(Array.isArray(json.predictions)).toBe(true);
     });
 
     it('cluster has assignments array', async () => {
-      const result = await pictl(['ml', 'cluster', '-i', RUNNING_EXAMPLE, '--format', 'json']);
+      const result = await wpm(['ml', 'cluster', '-i', RUNNING_EXAMPLE, '--format', 'json']);
       const json = extractJson(result.stdout) as Record<string, unknown>;
       expect(Array.isArray(json.assignments)).toBe(true);
     });
 
     it('cluster has modelInfo with k', async () => {
-      const result = await pictl(['ml', 'cluster', '-i', RUNNING_EXAMPLE, '--format', 'json']);
+      const result = await wpm(['ml', 'cluster', '-i', RUNNING_EXAMPLE, '--format', 'json']);
       const json = extractJson(result.stdout) as Record<string, unknown>;
       const modelInfo = json.modelInfo as Record<string, unknown>;
       expect(typeof modelInfo.k).toBe('number');
     });
 
     it('forecast has trend object', async () => {
-      const result = await pictl(['ml', 'forecast', '-i', RUNNING_EXAMPLE, '--format', 'json']);
+      const result = await wpm(['ml', 'forecast', '-i', RUNNING_EXAMPLE, '--format', 'json']);
       const json = extractJson(result.stdout) as Record<string, unknown>;
       expect(json.trend).toBeDefined();
     });
 
     it('anomaly has peakIndices array', async () => {
-      const result = await pictl(['ml', 'anomaly', '-i', RUNNING_EXAMPLE, '--format', 'json']);
+      const result = await wpm(['ml', 'anomaly', '-i', RUNNING_EXAMPLE, '--format', 'json']);
       const json = extractJson(result.stdout) as Record<string, unknown>;
       expect(Array.isArray(json.peakIndices)).toBe(true);
     });
 
     it('regress has predictions array with actual/predicted fields', async () => {
-      const result = await pictl(['ml', 'regress', '-i', RUNNING_EXAMPLE, '--format', 'json']);
+      const result = await wpm(['ml', 'regress', '-i', RUNNING_EXAMPLE, '--format', 'json']);
       const json = extractJson(result.stdout) as Record<string, unknown>;
       expect(Array.isArray(json.predictions)).toBe(true);
       const first = (json.predictions as Array<Record<string, unknown>>)[0];
@@ -135,7 +135,7 @@ describe('ml command', () => {
     });
 
     it('classify has modelInfo with k and traceCount', async () => {
-      const result = await pictl(['ml', 'classify', '-i', RUNNING_EXAMPLE, '--format', 'json']);
+      const result = await wpm(['ml', 'classify', '-i', RUNNING_EXAMPLE, '--format', 'json']);
       const json = extractJson(result.stdout) as Record<string, unknown>;
       const modelInfo = json.modelInfo as Record<string, unknown>;
       expect(typeof modelInfo.k).toBe('number');
@@ -147,8 +147,8 @@ describe('ml command', () => {
 
   describe('determinism', () => {
     it('classify produces same JSON on two runs', async () => {
-      const result1 = await pictl(['ml', 'classify', '-i', RUNNING_EXAMPLE, '--format', 'json']);
-      const result2 = await pictl(['ml', 'classify', '-i', RUNNING_EXAMPLE, '--format', 'json']);
+      const result1 = await wpm(['ml', 'classify', '-i', RUNNING_EXAMPLE, '--format', 'json']);
+      const result2 = await wpm(['ml', 'classify', '-i', RUNNING_EXAMPLE, '--format', 'json']);
 
       assertExitCode(result1, EXIT_CODES.SUCCESS);
       assertExitCode(result2, EXIT_CODES.SUCCESS);
@@ -165,21 +165,21 @@ describe('ml command', () => {
   // ── Flag variants ─────────────────────────────────────────────────────────
 
   it('supports --activity-key flag', async () => {
-    const result = await pictl(['ml', 'classify', '-i', RUNNING_EXAMPLE, '--activity-key', 'concept:name', '--format', 'json']);
+    const result = await wpm(['ml', 'classify', '-i', RUNNING_EXAMPLE, '--activity-key', 'concept:name', '--format', 'json']);
     assertExitCode(result, EXIT_CODES.SUCCESS);
     const json = extractJson(result.stdout) as Record<string, unknown>;
     expect(json.task).toBe('classify');
   });
 
   it('supports --method flag', async () => {
-    const result = await pictl(['ml', 'classify', '-i', RUNNING_EXAMPLE, '--method', 'knn', '--format', 'json']);
+    const result = await wpm(['ml', 'classify', '-i', RUNNING_EXAMPLE, '--method', 'knn', '--format', 'json']);
     assertExitCode(result, EXIT_CODES.SUCCESS);
     const json = extractJson(result.stdout) as Record<string, unknown>;
     expect(json.method).toBe('knn');
   });
 
   it('supports --k flag', async () => {
-    const result = await pictl(['ml', 'cluster', '-i', RUNNING_EXAMPLE, '--k', '3', '--format', 'json']);
+    const result = await wpm(['ml', 'cluster', '-i', RUNNING_EXAMPLE, '--k', '3', '--format', 'json']);
     assertExitCode(result, EXIT_CODES.SUCCESS);
     const json = extractJson(result.stdout) as Record<string, unknown>;
     const modelInfo = json.modelInfo as Record<string, unknown>;

@@ -1,16 +1,16 @@
 /**
- * pictl CLI Subprocess Tests
+ * wpm CLI Subprocess Tests
  *
- * Validates the pictl binary as a subprocess — every user-facing command exits
+ * Validates the wpm binary as a subprocess — every user-facing command exits
  * with the correct code, writes the documented JSON envelope, and produces
  * human-readable error messages (no raw stack traces).
  *
  * This is a POST-RELEASE test file. It tests the compiled binary at a known
- * path, not the installed npm package (pictl is not yet published separately).
+ * path, not the installed npm package (wpm is not yet published separately).
  *
  * Binary resolution:
- *   1. PICTL_BIN env var (for CI / future global-install scenarios)
- *   2. Workspace fallback: ../../apps/pictl/dist/bin/pictl.js
+ *   1. WPM_BIN env var (for CI / future global-install scenarios)
+ *   2. Workspace fallback: ../../apps/wasm4pm/dist/bin/wpm.js
  *
  * JSON envelope contracts:
  *   Success: { "status": "success", "message": "...", ...commandFields }
@@ -18,9 +18,9 @@
  *
  * Test categories:
  *   1. Binary resolution
- *   2. pictl status  — system health, JSON shape
- *   3. pictl run     — XES discovery, exit codes, JSON envelope
- *   4. pictl compare — multi-algorithm, JSON shape
+ *   2. wpm status  — system health, JSON shape
+ *   3. wpm run     — XES discovery, exit codes, JSON envelope
+ *   4. wpm compare — multi-algorithm, JSON shape
  *   5. Exit code contract
  *   6. Human output sanity
  */
@@ -30,15 +30,15 @@ import { spawnSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 
-const PICTL_BIN: string =
-  (process.env['PICTL_BIN'] as string | undefined) ??
-  path.resolve(__dirname, '../../apps/pictl/dist/bin/pictl.js');
+const WPM_BIN: string =
+  (process.env['WPM_BIN'] as string | undefined) ??
+  path.resolve(__dirname, '../../apps/wasm4pm/dist/bin/wpm.js');
 
 const XES_SIMPLE   = path.resolve(__dirname, '../fixtures/sample-logs/simple.xes');
 const XES_STANDARD = path.resolve(__dirname, '../fixtures/sample-xes-1.0.xes');
 
-function pictl(...args: string[]) {
-  return spawnSync('node', [PICTL_BIN, ...args], {
+function wpm(...args: string[]) {
+  return spawnSync('node', [WPM_BIN, ...args], {
     encoding: 'utf8',
     timeout: 30_000,
     env: { ...process.env, NO_COLOR: '1', FORCE_COLOR: '0', NODE_ENV: 'production' },
@@ -74,42 +74,42 @@ function parseJson(output: string): Record<string, unknown> | null {
 // ── 1. Binary Resolution ──────────────────────────────────────────────────────
 
 describe('1. Binary Resolution', () => {
-  it('1.1 pictl binary exists at expected path', () => {
-    const exists = fs.existsSync(PICTL_BIN);
+  it('1.1 wpm binary exists at expected path', () => {
+    const exists = fs.existsSync(WPM_BIN);
     if (!exists) {
-      console.warn('[pictl] Binary not found:', PICTL_BIN);
-      console.warn('[pictl] Build it: cd apps/pictl && npm run build');
+      console.warn('[wpm] Binary not found:', WPM_BIN);
+      console.warn('[wpm] Build it: cd apps/wasm4pm && npm run build');
     }
-    expect(exists, `Binary not found at ${PICTL_BIN}`).toBe(true);
+    expect(exists, `Binary not found at ${WPM_BIN}`).toBe(true);
   });
 
-  it('1.2 pictl --help exits 0', () => {
+  it('1.2 wpm --help exits 0', () => {
     // Note: --help (fast-exit command) has stdout buffering issues in pipe mode.
     // Content is verified by the help text being correct in 6.2 (status output).
     // This test just confirms the binary runs and exits cleanly.
-    const result = pictl('--help');
+    const result = wpm('--help');
     expect(result.status).toBe(0);
-    console.info('[pictl] --help exit:', result.status);
+    console.info('[wpm] --help exit:', result.status);
   });
 });
 
-// ── 2. pictl status ───────────────────────────────────────────────────────────
+// ── 2. wpm status ───────────────────────────────────────────────────────────
 
-describe('2. pictl status', () => {
-  it('2.1 pictl status exits 0', () => {
-    const result = pictl('status');
+describe('2. wpm status', () => {
+  it('2.1 wpm status exits 0', () => {
+    const result = wpm('status');
     expect(result.status).toBe(0);
   });
 
-  it('2.2 pictl status --format json exits 0 and stdout is valid JSON', () => {
-    const result = pictl('status', '--format', 'json');
+  it('2.2 wpm status --format json exits 0 and stdout is valid JSON', () => {
+    const result = wpm('status', '--format', 'json');
     expect(result.status).toBe(0);
     const parsed = parseJson(result.stdout);
     expect(parsed, 'stdout is not valid JSON').not.toBeNull();
   });
 
-  it('2.3 pictl status --format json has engine.state field', () => {
-    const result = pictl('status', '--format', 'json');
+  it('2.3 wpm status --format json has engine.state field', () => {
+    const result = wpm('status', '--format', 'json');
     expect(result.status).toBe(0);
     const parsed = parseJson(result.stdout);
     expect(parsed).not.toBeNull();
@@ -117,23 +117,23 @@ describe('2. pictl status', () => {
     expect(engine).toBeDefined();
     if (engine) {
       expect(['ready', 'unavailable', 'bootstrapping', 'degraded', 'failed']).toContain(engine['state']);
-      console.info('[pictl] engine.state:', engine['state']);
+      console.info('[wpm] engine.state:', engine['state']);
     }
   });
 
-  it('2.4 pictl status --format json has system.nodeVersion matching semver', () => {
-    const result = pictl('status', '--format', 'json');
+  it('2.4 wpm status --format json has system.nodeVersion matching semver', () => {
+    const result = wpm('status', '--format', 'json');
     expect(result.status).toBe(0);
     const parsed = parseJson(result.stdout);
     const system = parsed?.['system'] as Record<string, unknown> | undefined;
     if (system) {
       expect(system['nodeVersion']).toMatch(/v?\d+\.\d+\.\d+/);
-      console.info('[pictl] system.nodeVersion:', system['nodeVersion']);
+      console.info('[wpm] system.nodeVersion:', system['nodeVersion']);
     }
   });
 
-  it('2.5 pictl status --format json memory fields are non-negative', () => {
-    const result = pictl('status', '--format', 'json');
+  it('2.5 wpm status --format json memory fields are non-negative', () => {
+    const result = wpm('status', '--format', 'json');
     expect(result.status).toBe(0);
     const parsed = parseJson(result.stdout);
     const memory = parsed?.['memory'] as Record<string, unknown> | undefined;
@@ -143,38 +143,38 @@ describe('2. pictl status', () => {
           expect(value, `memory.${key} is negative`).toBeGreaterThanOrEqual(0);
         }
       }
-      console.info('[pictl] memory fields:', Object.keys(memory));
+      console.info('[wpm] memory fields:', Object.keys(memory));
     }
   });
 });
 
-// ── 3. pictl run ──────────────────────────────────────────────────────────────
+// ── 3. wpm run ──────────────────────────────────────────────────────────────
 
-describe('3. pictl run', () => {
+describe('3. wpm run', () => {
   beforeAll(() => {
     if (!fs.existsSync(XES_SIMPLE)) {
-      console.warn('[pictl] fixture not found:', XES_SIMPLE);
+      console.warn('[wpm] fixture not found:', XES_SIMPLE);
     }
     if (!fs.existsSync(XES_STANDARD)) {
-      console.warn('[pictl] fixture not found:', XES_STANDARD);
+      console.warn('[wpm] fixture not found:', XES_STANDARD);
     }
   });
 
-  it('3.1 pictl run <simple.xes> exits 0 (or 3 if WASM unbuilt)', () => {
+  it('3.0 wpm run <simple.xes> exits 0 (or 3 if WASM unbuilt)', () => {
     if (!fs.existsSync(XES_SIMPLE)) return;
-    const result = pictl('run', XES_SIMPLE, '--no-save');
+    const result = wpm('run', XES_SIMPLE, '--no-save');
     const acceptable = [0, 3];
     if (!acceptable.includes(result.status ?? -1)) {
-      console.error('[pictl] run unexpected exit:', result.status);
+      console.error('[wpm] run unexpected exit:', result.status);
       console.error('  stdout:', result.stdout.slice(0, 300));
       console.error('  stderr:', result.stderr.slice(0, 300));
     }
     expect(acceptable).toContain(result.status);
   });
 
-  it('3.2 pictl run <simple.xes> --format json exits 0 or 3 and stdout is valid JSON', () => {
+  it('3.0 wpm run <simple.xes> --format json exits 0 or 3 and stdout is valid JSON', () => {
     if (!fs.existsSync(XES_SIMPLE)) return;
-    const result = pictl('run', XES_SIMPLE, '--format', 'json', '--no-save');
+    const result = wpm('run', XES_SIMPLE, '--format', 'json', '--no-save');
     const acceptable = [0, 3];
     expect(acceptable).toContain(result.status);
     if (result.status === 0) {
@@ -183,11 +183,11 @@ describe('3. pictl run', () => {
     }
   });
 
-  it('3.3 pictl run --format json success envelope has required fields', () => {
+  it('3.0 wpm run --format json success envelope has required fields', () => {
     if (!fs.existsSync(XES_SIMPLE)) return;
-    const result = pictl('run', XES_SIMPLE, '--format', 'json', '--no-save');
+    const result = wpm('run', XES_SIMPLE, '--format', 'json', '--no-save');
     if (result.status !== 0) {
-      console.warn('[pictl] skipping shape check — exit', result.status);
+      console.warn('[wpm] skipping shape check — exit', result.status);
       return;
     }
     const parsed = parseJson(result.stdout);
@@ -197,14 +197,14 @@ describe('3. pictl run', () => {
     expect(typeof parsed!['activityKey']).toBe('string');
     expect(typeof parsed!['elapsedMs']).toBe('number');
     expect(parsed!['model']).toBeDefined();
-    console.info('[pictl] run success envelope keys:', Object.keys(parsed!));
+    console.info('[wpm] run success envelope keys:', Object.keys(parsed!));
   });
 
-  it('3.4 pictl run --algorithm dfg --format json model has nodes and edges', () => {
+  it('3.0 wpm run --algorithm dfg --format json model has nodes and edges', () => {
     if (!fs.existsSync(XES_SIMPLE)) return;
-    const result = pictl('run', XES_SIMPLE, '--algorithm', 'dfg', '--format', 'json', '--no-save');
+    const result = wpm('run', XES_SIMPLE, '--algorithm', 'dfg', '--format', 'json', '--no-save');
     if (result.status !== 0) {
-      console.warn('[pictl] skipping model shape check — exit', result.status);
+      console.warn('[wpm] skipping model shape check — exit', result.status);
       return;
     }
     const parsed = parseJson(result.stdout);
@@ -212,25 +212,25 @@ describe('3. pictl run', () => {
     if (model) {
       expect(Array.isArray(model['nodes'])).toBe(true);
       expect(Array.isArray(model['edges'])).toBe(true);
-      console.info('[pictl] dfg model nodes:', (model['nodes'] as unknown[]).length, 'edges:', (model['edges'] as unknown[]).length);
+      console.info('[wpm] dfg model nodes:', (model['nodes'] as unknown[]).length, 'edges:', (model['edges'] as unknown[]).length);
     }
   });
 
-  it('3.5 pictl run with missing input file exits 2 (source_error)', () => {
-    const result = pictl('run', '/tmp/phantom-pictl-test-99999.xes', '--no-save');
+  it('3.0 wpm run with missing input file exits 2 (source_error)', () => {
+    const result = wpm('run', '/tmp/phantom-wpm-test-99999.xes', '--no-save');
     expect(result.status).toBe(2);
     const output = result.stdout + result.stderr;
     expect(output).toMatch(/not found|no such file|does not exist/i);
-    console.info('[pictl] missing file message:', output.slice(0, 120));
+    console.info('[wpm] missing file message:', output.slice(0, 120));
   });
 
-  it('3.6 pictl run with unknown algorithm exits 2 (source_error)', () => {
-    const result = pictl('run', '/tmp/phantom.xes', '--algorithm', 'turbo_miner_9000');
+  it('3.0 wpm run with unknown algorithm exits 2 (source_error)', () => {
+    const result = wpm('run', '/tmp/phantom.xes', '--algorithm', 'turbo_miner_9000');
     expect(result.status).toBe(2);
   });
 
-  it('3.7 pictl run error message does not contain raw stack trace lines', () => {
-    const result = pictl('run', '--format', 'json', '/tmp/phantom-pictl-test-99999.xes');
+  it('3.0 wpm run error message does not contain raw stack trace lines', () => {
+    const result = wpm('run', '--format', 'json', '/tmp/phantom-wpm-test-99999.xes');
     expect(result.status).toBe(2);
     const lines = (result.stdout + result.stderr).split('\n');
     const stackLines = lines.filter(l => l.trim().startsWith('at ') && l.includes('.js:'));
@@ -238,23 +238,23 @@ describe('3. pictl run', () => {
   });
 });
 
-// ── 4. pictl compare ──────────────────────────────────────────────────────────
+// ── 4. wpm compare ──────────────────────────────────────────────────────────
 
-describe('4. pictl compare', () => {
-  it('4.1 pictl compare dfg,heuristic -i <xes> exits 0 or 3', () => {
+describe('4. wpm compare', () => {
+  it('4.0 wpm compare dfg,heuristic -i <xes> exits 0 or 3', () => {
     if (!fs.existsSync(XES_STANDARD)) return;
-    const result = pictl('compare', 'dfg,heuristic', '-i', XES_STANDARD, '--no-save');
+    const result = wpm('compare', 'dfg,heuristic', '-i', XES_STANDARD, '--no-save');
     const acceptable = [0, 3];
     if (!acceptable.includes(result.status ?? -1)) {
-      console.error('[pictl] compare unexpected exit:', result.status);
+      console.error('[wpm] compare unexpected exit:', result.status);
       console.error('  stdout:', result.stdout.slice(0, 300));
     }
     expect(acceptable).toContain(result.status);
   });
 
-  it('4.2 pictl compare --format json exits 0 or 3 and stdout is valid JSON', () => {
+  it('4.0 wpm compare --format json exits 0 or 3 and stdout is valid JSON', () => {
     if (!fs.existsSync(XES_STANDARD)) return;
-    const result = pictl('compare', 'dfg,heuristic', '-i', XES_STANDARD, '--format', 'json', '--no-save');
+    const result = wpm('compare', 'dfg,heuristic', '-i', XES_STANDARD, '--format', 'json', '--no-save');
     const acceptable = [0, 3];
     expect(acceptable).toContain(result.status);
     if (result.status === 0) {
@@ -265,19 +265,19 @@ describe('4. pictl compare', () => {
 
   it('4.3 compare --format json algorithms array has expected length', () => {
     if (!fs.existsSync(XES_STANDARD)) return;
-    const result = pictl('compare', 'dfg,heuristic', '-i', XES_STANDARD, '--format', 'json', '--no-save');
-    if (result.status !== 0) { console.warn('[pictl] skipping compare shape — exit', result.status); return; }
+    const result = wpm('compare', 'dfg,heuristic', '-i', XES_STANDARD, '--format', 'json', '--no-save');
+    if (result.status !== 0) { console.warn('[wpm] skipping compare shape — exit', result.status); return; }
     const parsed = parseJson(result.stdout);
     expect(Array.isArray(parsed?.['algorithms'])).toBe(true);
     const algorithms = parsed!['algorithms'] as unknown[];
     expect(algorithms.length).toBe(2);
-    console.info('[pictl] compare algorithms count:', algorithms.length);
+    console.info('[wpm] compare algorithms count:', algorithms.length);
   });
 
   it('4.4 compare --format json each entry has algorithm, nodes, edges, elapsedMs', () => {
     if (!fs.existsSync(XES_STANDARD)) return;
-    const result = pictl('compare', 'dfg,heuristic', '-i', XES_STANDARD, '--format', 'json', '--no-save');
-    if (result.status !== 0) { console.warn('[pictl] skipping compare entry shape — exit', result.status); return; }
+    const result = wpm('compare', 'dfg,heuristic', '-i', XES_STANDARD, '--format', 'json', '--no-save');
+    if (result.status !== 0) { console.warn('[wpm] skipping compare entry shape — exit', result.status); return; }
     const parsed = parseJson(result.stdout);
     const algorithms = (parsed?.['algorithms'] ?? []) as Array<Record<string, unknown>>;
     for (const entry of algorithms) {
@@ -286,12 +286,12 @@ describe('4. pictl compare', () => {
       expect(entry).toHaveProperty('edges');
       expect(entry).toHaveProperty('elapsedMs');
     }
-    console.info('[pictl] compare entry fields OK');
+    console.info('[wpm] compare entry fields OK');
   });
 
   it('4.5 compare with unknown algorithm exits 2 with "Unknown algorithm" message', () => {
     if (!fs.existsSync(XES_STANDARD)) return;
-    const result = pictl('compare', 'dfg,ghost_algo_9000', '-i', XES_STANDARD);
+    const result = wpm('compare', 'dfg,ghost_algo_9000', '-i', XES_STANDARD);
     expect(result.status).toBe(2);
     const output = result.stdout + result.stderr;
     expect(output).toMatch(/unknown algorithm|not found|invalid/i);
@@ -299,7 +299,7 @@ describe('4. pictl compare', () => {
 
   it('4.6 compare with single algorithm exits 2 with "at least two" message', () => {
     if (!fs.existsSync(XES_STANDARD)) return;
-    const result = pictl('compare', 'dfg', '-i', XES_STANDARD);
+    const result = wpm('compare', 'dfg', '-i', XES_STANDARD);
     expect(result.status).toBe(2);
     const output = result.stdout + result.stderr;
     expect(output).toMatch(/at least two|at least 2|two algorithm/i);
@@ -311,60 +311,60 @@ describe('4. pictl compare', () => {
 describe('5. Exit Code Contract', () => {
   it('5.1 successful run produces exit code 0', () => {
     if (!fs.existsSync(XES_SIMPLE)) return;
-    const result = pictl('run', XES_SIMPLE, '--algorithm', 'dfg', '--no-save');
+    const result = wpm('run', XES_SIMPLE, '--algorithm', 'dfg', '--no-save');
     const acceptable = [0, 3]; // 3 = WASM not built
     expect(acceptable).toContain(result.status);
   });
 
   it('5.2 missing input file produces exit code 2', () => {
-    const result = pictl('run', '/tmp/definitely-does-not-exist-99999.xes', '--no-save');
+    const result = wpm('run', '/tmp/definitely-does-not-exist-99999.xes', '--no-save');
     expect(result.status).toBe(2);
   });
 
   it('5.3 unknown algorithm name produces exit code 2', () => {
-    const result = pictl('run', '/tmp/phantom.xes', '--algorithm', 'ghost_algorithm');
+    const result = wpm('run', '/tmp/phantom.xes', '--algorithm', 'ghost_algorithm');
     expect(result.status).toBe(2);
   });
 
-  it('5.4 pictl run with no input argument produces exit code 2', () => {
-    const result = pictl('run');
+  it('5.0 wpm run with no input argument produces exit code 2', () => {
+    const result = wpm('run');
     expect(result.status).toBe(2);
   });
 
-  it('5.5 pictl doctor exits 0 or 1 — never 2 or 3', () => {
-    const result = pictl('doctor');
+  it('5.0 wpm doctor exits 0 or 1 — never 2 or 3', () => {
+    const result = wpm('doctor');
     const acceptable = [0, 1];
     expect(acceptable, `doctor exited ${result.status}`).toContain(result.status);
-    console.info('[pictl] doctor exit:', result.status, result.status === 0 ? '(healthy)' : '(degraded)');
+    console.info('[wpm] doctor exit:', result.status, result.status === 0 ? '(healthy)' : '(degraded)');
   });
 });
 
 // ── 6. Human output sanity ────────────────────────────────────────────────────
 
 describe('6. Human Output Sanity', () => {
-  it('6.1 pictl run human output mentions the algorithm name', () => {
+  it('6.0 wpm run human output mentions the algorithm name', () => {
     if (!fs.existsSync(XES_SIMPLE)) return;
-    const result = pictl('run', XES_SIMPLE, '--algorithm', 'dfg', '--no-save');
-    if (result.status !== 0) { console.warn('[pictl] skipping human output check — exit', result.status); return; }
+    const result = wpm('run', XES_SIMPLE, '--algorithm', 'dfg', '--no-save');
+    if (result.status !== 0) { console.warn('[wpm] skipping human output check — exit', result.status); return; }
     expect(result.stdout).toMatch(/dfg|DFG|Directly/i);
   });
 
-  it('6.2 pictl status human output mentions WASM or Engine', () => {
-    const result = pictl('status');
+  it('6.0 wpm status human output mentions WASM or Engine', () => {
+    const result = wpm('status');
     expect(result.status).toBe(0);
     expect(result.stdout + result.stderr).toMatch(/wasm|engine|status/i);
   });
 
-  it('6.3 pictl explain --algorithm dfg exits 0 and --format json has content', () => {
+  it('6.0 wpm explain --algorithm dfg exits 0 and --format json has content', () => {
     // explain (fast-exit) has stdout buffering issues in pipe mode; use --format json
     // which runs longer (includes WASM init) and has reliable stdout capture.
-    const result = pictl('explain', '--algorithm', 'dfg', '--format', 'json');
+    const result = wpm('explain', '--algorithm', 'dfg', '--format', 'json');
     expect(result.status).toBe(0);
     const parsed = parseJson(result.stdout);
     expect(parsed, 'explain --format json must be valid JSON').not.toBeNull();
     const data = (parsed?.['data'] ?? parsed) as Record<string, unknown>;
     const hasContent = 'content' in (parsed ?? {}) || 'content' in (data ?? {});
     expect(hasContent, 'explain JSON must have content field').toBe(true);
-    console.info('[pictl] explain dfg json keys:', parsed ? Object.keys(parsed) : 'null');
+    console.info('[wpm] explain dfg json keys:', parsed ? Object.keys(parsed) : 'null');
   });
 });

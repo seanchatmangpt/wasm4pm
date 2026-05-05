@@ -13,7 +13,7 @@
  */
 
 /**
- * The six prediction perspectives supported by pictl.
+ * The six prediction perspectives supported by wasm4pm.
  *
  * Each perspective answers a different runtime question about an in-flight
  * process instance. They map 1:1 to the prediction tasks documented in

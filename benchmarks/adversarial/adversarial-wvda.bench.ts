@@ -34,7 +34,7 @@ describe('Adversarial WvdA Algorithm Audit — Vitest Suite', () => {
   beforeAll(async () => {
     // Load WASM
     try {
-      wasm = require('pictl');
+      wasm = require('@wasm4pm/cli');
     } catch {
       try {
         wasm = require(path.join(BENCHMARK_DIR, '../../../wasm4pm/pkg/wasm4pm.js'));

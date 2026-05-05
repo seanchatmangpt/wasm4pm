@@ -14,29 +14,29 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { pictl, extractJson, resolveRepo } from '../helpers/cli.js';
+import { wpm, extractJson, resolveRepo } from '../helpers/cli.js';
 
 const RUNNING_EXAMPLE = resolveRepo('wasm4pm/tests/fixtures/running-example.xes');
 
 describe('Conformance Command Alive', () => {
-  it('pictl conformance command exists and is callable — Rank 2: domain contract', async () => {
+  it('wpm conformance command exists and is callable — Rank 2: domain contract', async () => {
     // JTBD: "The conformance command must exist in the CLI and be callable"
-    const result = await pictl(['conformance', '--help']);
+    const result = await wpm(['conformance', '--help']);
     // Command should show help without crashing
     expect([0, 1, 2]).toContain(result.exitCode);
   });
 
-  it('pictl conformance accepts input file without crashing — Rank 2: domain contract', async () => {
+  it('wpm conformance accepts input file without crashing — Rank 2: domain contract', async () => {
     // JTBD: "The conformance command must handle input files gracefully"
-    const result = await pictl(['conformance', RUNNING_EXAMPLE, '--format', 'json']);
+    const result = await wpm(['conformance', RUNNING_EXAMPLE, '--format', 'json']);
     // Command should return gracefully (either success 0, or execution error 3, but not hang)
     expect(result.exitCode).toBeDefined();
     expect([0, 1, 2, 3, 4, 5]).toContain(result.exitCode);
   });
 
-  it('pictl conformance returns valid JSON output — Rank 2: domain contract', async () => {
+  it('wpm conformance returns valid JSON output — Rank 2: domain contract', async () => {
     // JTBD: "Output must be parseable JSON even on error"
-    const result = await pictl(['conformance', RUNNING_EXAMPLE, '--format', 'json']);
+    const result = await wpm(['conformance', RUNNING_EXAMPLE, '--format', 'json']);
 
     // Output should be valid JSON
     const output = extractJson(result.stdout);
@@ -44,9 +44,9 @@ describe('Conformance Command Alive', () => {
     expect(typeof output).toBe('object');
   });
 
-  it('pictl conformance on success returns fitness score — Rank 1: mathematical invariant', async () => {
+  it('wpm conformance on success returns fitness score — Rank 1: mathematical invariant', async () => {
     // JTBD: "When conformance succeeds, fitness must be a number in [0.0, 1.0]"
-    const result = await pictl(['conformance', RUNNING_EXAMPLE, '--format', 'json']);
+    const result = await wpm(['conformance', RUNNING_EXAMPLE, '--format', 'json']);
 
     if (result.exitCode === 0) {
       const output = extractJson(result.stdout);

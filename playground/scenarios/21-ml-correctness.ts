@@ -14,7 +14,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { pictl, extractJson, resolveRepo, EXIT_CODES, assertExitCode } from '../helpers/cli.js';
+import { wpm, extractJson, resolveRepo, EXIT_CODES, assertExitCode } from '../helpers/cli.js';
 
 const RUNNING_EXAMPLE = resolveRepo('wasm4pm/tests/fixtures/running-example.xes');
 
@@ -23,7 +23,7 @@ describe('ML correctness validation', () => {
 
   describe('classify task — correctness', () => {
     it('classify produces at least one unique class label', async () => {
-      const result = await pictl(['ml', 'classify', '-i', RUNNING_EXAMPLE, '--format', 'json']);
+      const result = await wpm(['ml', 'classify', '-i', RUNNING_EXAMPLE, '--format', 'json']);
       assertExitCode(result, EXIT_CODES.success);
       const json = extractJson(result.stdout) as Record<string, unknown>;
       const predictions = (json.predictions as Array<Record<string, unknown>>) || [];
@@ -40,7 +40,7 @@ describe('ML correctness validation', () => {
     });
 
     it('classify assigns a class to each trace', async () => {
-      const result = await pictl(['ml', 'classify', '-i', RUNNING_EXAMPLE, '--format', 'json']);
+      const result = await wpm(['ml', 'classify', '-i', RUNNING_EXAMPLE, '--format', 'json']);
       const json = extractJson(result.stdout) as Record<string, unknown>;
       const predictions = (json.predictions as Array<Record<string, unknown>>) || [];
 
@@ -52,8 +52,8 @@ describe('ML correctness validation', () => {
     });
 
     it('classify results are deterministic (same k, same output)', async () => {
-      const result1 = await pictl(['ml', 'classify', '-i', RUNNING_EXAMPLE, '-k', '3', '--format', 'json']);
-      const result2 = await pictl(['ml', 'classify', '-i', RUNNING_EXAMPLE, '-k', '3', '--format', 'json']);
+      const result1 = await wpm(['ml', 'classify', '-i', RUNNING_EXAMPLE, '-k', '3', '--format', 'json']);
+      const result2 = await wpm(['ml', 'classify', '-i', RUNNING_EXAMPLE, '-k', '3', '--format', 'json']);
 
       const json1 = extractJson(result1.stdout) as Record<string, unknown>;
       const json2 = extractJson(result2.stdout) as Record<string, unknown>;
@@ -73,7 +73,7 @@ describe('ML correctness validation', () => {
 
   describe('cluster task — correctness', () => {
     it('cluster produces assignments for all traces', async () => {
-      const result = await pictl(['ml', 'cluster', '-i', RUNNING_EXAMPLE, '--format', 'json']);
+      const result = await wpm(['ml', 'cluster', '-i', RUNNING_EXAMPLE, '--format', 'json']);
       assertExitCode(result, EXIT_CODES.success);
       const json = extractJson(result.stdout) as Record<string, unknown>;
       const assignments = (json.assignments as Array<number>) || [];
@@ -87,7 +87,7 @@ describe('ML correctness validation', () => {
     });
 
     it('cluster produces at least one cluster', async () => {
-      const result = await pictl(['ml', 'cluster', '-i', RUNNING_EXAMPLE, '--format', 'json']);
+      const result = await wpm(['ml', 'cluster', '-i', RUNNING_EXAMPLE, '--format', 'json']);
       const json = extractJson(result.stdout) as Record<string, unknown>;
       const assignments = (json.assignments as Array<number>) || [];
 
@@ -99,7 +99,7 @@ describe('ML correctness validation', () => {
     });
 
     it('cluster number of clusters matches k parameter', async () => {
-      const result = await pictl(['ml', 'cluster', '-i', RUNNING_EXAMPLE, '-k', '3', '--format', 'json']);
+      const result = await wpm(['ml', 'cluster', '-i', RUNNING_EXAMPLE, '-k', '3', '--format', 'json']);
       const json = extractJson(result.stdout) as Record<string, unknown>;
       const assignments = (json.assignments as Array<number>) || [];
 
@@ -112,8 +112,8 @@ describe('ML correctness validation', () => {
     });
 
     it('cluster assignments are deterministic with same k', async () => {
-      const result1 = await pictl(['ml', 'cluster', '-i', RUNNING_EXAMPLE, '-k', '2', '--format', 'json']);
-      const result2 = await pictl(['ml', 'cluster', '-i', RUNNING_EXAMPLE, '-k', '2', '--format', 'json']);
+      const result1 = await wpm(['ml', 'cluster', '-i', RUNNING_EXAMPLE, '-k', '2', '--format', 'json']);
+      const result2 = await wpm(['ml', 'cluster', '-i', RUNNING_EXAMPLE, '-k', '2', '--format', 'json']);
 
       const json1 = extractJson(result1.stdout) as Record<string, unknown>;
       const json2 = extractJson(result2.stdout) as Record<string, unknown>;
@@ -130,7 +130,7 @@ describe('ML correctness validation', () => {
 
   describe('forecast task — correctness', () => {
     it('forecast produces a trend object with numeric values', async () => {
-      const result = await pictl(['ml', 'forecast', '-i', RUNNING_EXAMPLE, '--format', 'json']);
+      const result = await wpm(['ml', 'forecast', '-i', RUNNING_EXAMPLE, '--format', 'json']);
       assertExitCode(result, EXIT_CODES.success);
       const json = extractJson(result.stdout) as Record<string, unknown>;
       const trend = (json.trend as Record<string, unknown>) || {};
@@ -141,7 +141,7 @@ describe('ML correctness validation', () => {
     });
 
     it('forecast produces reasonable values (not NaN, not Infinity)', async () => {
-      const result = await pictl(['ml', 'forecast', '-i', RUNNING_EXAMPLE, '--format', 'json']);
+      const result = await wpm(['ml', 'forecast', '-i', RUNNING_EXAMPLE, '--format', 'json']);
       const json = extractJson(result.stdout) as Record<string, unknown>;
       const trend = (json.trend as Record<string, unknown>) || {};
 
@@ -159,7 +159,7 @@ describe('ML correctness validation', () => {
 
   describe('anomaly task — correctness', () => {
     it('anomaly produces peakIndices array', async () => {
-      const result = await pictl(['ml', 'anomaly', '-i', RUNNING_EXAMPLE, '--format', 'json']);
+      const result = await wpm(['ml', 'anomaly', '-i', RUNNING_EXAMPLE, '--format', 'json']);
       assertExitCode(result, EXIT_CODES.success);
       const json = extractJson(result.stdout) as Record<string, unknown>;
       const peaks = (json.peakIndices as Array<number>) || [];
@@ -169,7 +169,7 @@ describe('ML correctness validation', () => {
     });
 
     it('anomaly peak indices are valid array indices', async () => {
-      const result = await pictl(['ml', 'anomaly', '-i', RUNNING_EXAMPLE, '--format', 'json']);
+      const result = await wpm(['ml', 'anomaly', '-i', RUNNING_EXAMPLE, '--format', 'json']);
       const json = extractJson(result.stdout) as Record<string, unknown>;
       const peaks = (json.peakIndices as Array<number>) || [];
       const signal = (json.signal as Array<number>) || [];
@@ -186,7 +186,7 @@ describe('ML correctness validation', () => {
 
   describe('regress task — correctness', () => {
     it('regress produces predictions for all traces', async () => {
-      const result = await pictl(['ml', 'regress', '-i', RUNNING_EXAMPLE, '--format', 'json']);
+      const result = await wpm(['ml', 'regress', '-i', RUNNING_EXAMPLE, '--format', 'json']);
       assertExitCode(result, EXIT_CODES.success);
       const json = extractJson(result.stdout) as Record<string, unknown>;
       const predictions = (json.predictions as Array<Record<string, unknown>>) || [];
@@ -202,7 +202,7 @@ describe('ML correctness validation', () => {
     });
 
     it('regress predictions are non-negative', async () => {
-      const result = await pictl(['ml', 'regress', '-i', RUNNING_EXAMPLE, '--format', 'json']);
+      const result = await wpm(['ml', 'regress', '-i', RUNNING_EXAMPLE, '--format', 'json']);
       const json = extractJson(result.stdout) as Record<string, unknown>;
       const predictions = (json.predictions as Array<Record<string, unknown>>) || [];
 
@@ -216,7 +216,7 @@ describe('ML correctness validation', () => {
     });
 
     it('regress error is reasonable (not massive gaps)', async () => {
-      const result = await pictl(['ml', 'regress', '-i', RUNNING_EXAMPLE, '--format', 'json']);
+      const result = await wpm(['ml', 'regress', '-i', RUNNING_EXAMPLE, '--format', 'json']);
       const json = extractJson(result.stdout) as Record<string, unknown>;
       const predictions = (json.predictions as Array<Record<string, unknown>>) || [];
 
@@ -248,7 +248,7 @@ describe('ML correctness validation', () => {
       const tasks = ['classify', 'cluster', 'forecast', 'anomaly', 'regress'];
 
       for (const task of tasks) {
-        const result = await pictl(['ml', task, '-i', RUNNING_EXAMPLE, '--format', 'json']);
+        const result = await wpm(['ml', task, '-i', RUNNING_EXAMPLE, '--format', 'json']);
         expect(result.exitCode).toBe(EXIT_CODES.success);
         const json = extractJson(result.stdout);
         expect(json).toBeDefined();

@@ -1,5 +1,5 @@
 {
-  "name": "pictl-adversarial-audit",
+  "name": "wasm4pm-adversarial-audit",
   "version": "1.0.0",
   "type": "module",
   "description": "Adversarial van der Aalst algorithm audit system",

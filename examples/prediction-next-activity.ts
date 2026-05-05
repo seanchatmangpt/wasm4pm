@@ -14,9 +14,9 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-import { resolveConfig } from '@pictl/config';
-import { plan } from '@pictl/planner';
-import { Engine } from '@pictl/engine';
+import { resolveConfig } from '@wasm4pm/config';
+import { plan } from '@wasm4pm/planner';
+import { Engine } from '@wasm4pm/engine';
 
 interface Prediction {
   activity: string;

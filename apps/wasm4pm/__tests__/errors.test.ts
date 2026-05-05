@@ -1,5 +1,5 @@
 /**
- * Unit tests for apps/pictl/src/errors.ts
+ * Unit tests for apps/wasm4pm/src/errors.ts
  *
  * Tests error class hierarchy, exit code mapping, message formatting,
  * and the handleError() function.
@@ -55,8 +55,8 @@ describe('ConfigError', () => {
   });
 
   it('preserves message', () => {
-    const err = new ConfigError('pictl.toml not found');
-    expect(err.message).toBe('pictl.toml not found');
+    const err = new ConfigError('wasm4pm.toml not found');
+    expect(err.message).toBe('wasm4pm.toml not found');
   });
 });
 

@@ -25,7 +25,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import * as path from 'path';
 import * as fs from 'fs/promises';
-import { pictl, assertExitCode, assertJsonOutput, createCliTestEnv, EXIT_CODES } from '@wasm4pm/testing';
+import { wpm, assertExitCode, assertJsonOutput, createCliTestEnv, EXIT_CODES } from '@wasm4pm/testing';
 import { getProfileAlgorithms } from '@wasm4pm/contracts';
 import type { CliTestEnv } from '@wasm4pm/testing';
 
@@ -143,7 +143,7 @@ describe('profiles: algorithm set disjointness', () => {
 
 describe('profiles: CLI compare command', () => {
   it('wpm compare dfg,heuristic exits 0 or 3', async () => {
-    const result = await pictl(['compare', 'dfg,heuristic', '-i', xesPath, '--no-save']);
+    const result = await wpm(['compare', 'dfg,heuristic', '-i', xesPath, '--no-save']);
     const acceptable = [EXIT_CODES.SUCCESS, EXIT_CODES.EXECUTION_ERROR];
     if (!acceptable.includes(result.exitCode)) {
       console.error('[profiles] compare unexpected exit:', result.exitCode);
@@ -157,7 +157,7 @@ describe('profiles: CLI compare command', () => {
   }, 30_000);
 
   it('compare --format json has algorithms array with expected fields', async () => {
-    const result = await pictl(['compare', 'dfg,heuristic', '-i', xesPath, '--format', 'json', '--no-save']);
+    const result = await wpm(['compare', 'dfg,heuristic', '-i', xesPath, '--format', 'json', '--no-save']);
     if (result.exitCode !== EXIT_CODES.SUCCESS) {
       console.warn('[profiles] skipping compare JSON shape — exit', result.exitCode);
       return;
@@ -183,13 +183,13 @@ describe('profiles: CLI explain command', () => {
   it('--algorithm dfg exits 0', async () => {
     // Human output is suppressed in NODE_ENV=test (consola behavior).
     // Content is verified via --format json in the next test.
-    const result = await pictl(['explain', '--algorithm', 'dfg']);
+    const result = await wpm(['explain', '--algorithm', 'dfg']);
     assertExitCode(result, EXIT_CODES.SUCCESS);
     console.info('[profiles] explain dfg exit:', result.exitCode, '(human output suppressed in test env)');
   });
 
   it('--algorithm dfg --format json has content and subject fields', async () => {
-    const result = await pictl(['explain', '--algorithm', 'dfg', '--format', 'json']);
+    const result = await wpm(['explain', '--algorithm', 'dfg', '--format', 'json']);
     assertExitCode(result, EXIT_CODES.SUCCESS);
     const envelope = assertJsonOutput(result) as Record<string, unknown>;
     expect(envelope).toHaveProperty('status', 'success');

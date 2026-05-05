@@ -161,7 +161,7 @@ export function getPresetConfig(scenario: PresetScenario): BaseConfig {
 export function getExampleTomlWithComments(): string {
   return `# wasm4pm Configuration
 # Schema: v${SCHEMA_VERSION}
-# Documentation: https://github.com/sac-ch/pictl/wiki/Configuration
+# Documentation: https://github.com/seanchatmangpt/wasm4pm/wiki/Configuration
 # Place this file at: ./wasm4pm.toml or ~/.wasm4pm/wasm4pm.toml
 
 schema_version = ${SCHEMA_VERSION}
@@ -404,7 +404,7 @@ export function describePreset(scenario: PresetScenario): string {
     'quick-test': `
 Quick Test Preset
 -----------------
-Use this for: rapid prototyping, CI/CD pipelines, learning pictl
+Use this for: rapid prototyping, CI/CD pipelines, learning wasm4pm
 Profile: fast (minimal overhead, sub-100ms response)
 Features: DFG discovery only, no ML/RL/prediction
 Good for: smoke tests, getting started, tight latency budgets

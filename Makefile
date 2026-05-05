@@ -206,12 +206,12 @@ clean-bench:
 
 # ── Environment & Development ─────────────────────────────────────────────────
 doctor:
-	@cd apps/pictl && pnpm run build > /dev/null 2>&1
-	@node apps/pictl/dist/bin/pictl.js doctor --format json 2>&1 | awk '/^{/,/^}/ {print}'
+	@cd apps/wasm4pm && pnpm run build > /dev/null 2>&1
+	@node apps/wasm4pm/dist/bin/wpm.js doctor --format json 2>&1 | awk '/^{/,/^}/ {print}'
 
 help:
 	@echo "╔═══════════════════════════════════════════════════════════════════════════╗"
-	@echo "║  pictl Build & Benchmark Targets"
+	@echo "║  wasm4pm Build pictl Build & Benchmark Targets Benchmark Targets"
 	@echo "╚═══════════════════════════════════════════════════════════════════════════╝"
 	@echo ""
 	@echo "WASM Profile Building (5 deployment profiles, pm4wasm tiers):"

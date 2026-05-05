@@ -1,8 +1,8 @@
 /**
- * Example — Trace classification with @pictl/ml
+ * Example — Trace classification with @wasm4pm/ml
  *
  * Demonstrates:
- *   1. Loading an XES log via @pictl/kernel.
+ *   1. Loading an XES log via @wasm4pm/kernel.
  *   2. Building a feature matrix.
  *   3. Running classification with `naive_bayes`.
  *   4. Interpreting predictions and confidence.
@@ -18,12 +18,12 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-import { getRegistry } from '@pictl/kernel';
+import { getRegistry } from '@wasm4pm/kernel';
 import {
   buildFeatureMatrix,
   classifyTraces,
   type ClassificationResult,
-} from '@pictl/ml';
+} from '@wasm4pm/ml';
 
 async function main(logPath: string): Promise<void> {
   const xes = readFileSync(resolve(logPath), 'utf8');

@@ -147,7 +147,7 @@ describe('Error classes produce correct exit codes', () => {
 
 describe('Error message propagation', () => {
   it('preserves exact message through PictlError', () => {
-    const msg = 'Configuration file pictl.toml not found';
+    const msg = 'Configuration file wasm4pm.toml not found';
     const err = new ConfigError(msg);
     expect(err.message).toBe(msg);
   });

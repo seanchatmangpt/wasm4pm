@@ -15,29 +15,29 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { pictl, extractJson, resolveRepo } from '../helpers/cli.js';
+import { wpm, extractJson, resolveRepo } from '../helpers/cli.js';
 
 const RUNNING_EXAMPLE = resolveRepo('wasm4pm/tests/fixtures/running-example.xes');
 
 describe.sequential('Simulate Command Alive', () => {
-  it('pictl simulate command exists and is callable — Rank 2: domain contract', async () => {
+  it('wpm simulate command exists and is callable — Rank 2: domain contract', async () => {
     // JTBD: "The simulate command must exist in the CLI and be callable"
-    const result = await pictl(['simulate', '--help']);
+    const result = await wpm(['simulate', '--help']);
     // Command should show help without crashing
     expect([0, 1, 2]).toContain(result.exitCode);
   });
 
-  it('pictl simulate accepts input file without crashing — Rank 2: domain contract', async () => {
+  it('wpm simulate accepts input file without crashing — Rank 2: domain contract', async () => {
     // JTBD: "The simulate command must handle input files gracefully"
-    const result = await pictl(['simulate', RUNNING_EXAMPLE, '--format', 'json']);
+    const result = await wpm(['simulate', RUNNING_EXAMPLE, '--format', 'json']);
     // Command should return gracefully (either success 0, or execution error 3, but not hang)
     expect(result.exitCode).toBeDefined();
     expect([0, 1, 2, 3, 4, 5]).toContain(result.exitCode);
   });
 
-  it('pictl simulate returns valid JSON output — Rank 2: domain contract', async () => {
+  it('wpm simulate returns valid JSON output — Rank 2: domain contract', async () => {
     // JTBD: "Output must be parseable JSON even on error"
-    const result = await pictl(['simulate', RUNNING_EXAMPLE, '--format', 'json']);
+    const result = await wpm(['simulate', RUNNING_EXAMPLE, '--format', 'json']);
 
     // Output should be valid JSON
     const output = extractJson(result.stdout);
@@ -45,9 +45,9 @@ describe.sequential('Simulate Command Alive', () => {
     expect(typeof output).toBe('object');
   });
 
-  it('pictl simulate on success returns simulated cases count — Rank 1: mathematical invariant', async () => {
+  it('wpm simulate on success returns simulated cases count — Rank 1: mathematical invariant', async () => {
     // JTBD: "When simulate succeeds, simulated_cases must be a number ≥ 1"
-    const result = await pictl(['simulate', RUNNING_EXAMPLE, '--format', 'json', '--cases', '50']);
+    const result = await wpm(['simulate', RUNNING_EXAMPLE, '--format', 'json', '--cases', '50']);
 
     if (result.exitCode === 0) {
       const output = extractJson(result.stdout);
@@ -58,9 +58,9 @@ describe.sequential('Simulate Command Alive', () => {
     }
   });
 
-  it('pictl simulate on success returns average trace length — Rank 1: mathematical invariant', async () => {
+  it('wpm simulate on success returns average trace length — Rank 1: mathematical invariant', async () => {
     // JTBD: "When simulate succeeds, average_trace_length must be a number ≥ 1"
-    const result = await pictl(['simulate', RUNNING_EXAMPLE, '--format', 'json', '--cases', '50']);
+    const result = await wpm(['simulate', RUNNING_EXAMPLE, '--format', 'json', '--cases', '50']);
 
     if (result.exitCode === 0) {
       const output = extractJson(result.stdout);
