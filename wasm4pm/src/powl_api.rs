@@ -24,9 +24,15 @@ use crate::powl_event_log::EventLog;
 use crate::powl_models::PowlPetriNetResult;
 use crate::powl_parser::parse_powl_model_string;
 
+/// Serialize any `Serialize` value to a JS value via JSON string.
+///
+/// `serde_wasm_bindgen::to_value` silently returns `{}` when given a
+/// `serde_json::Value` (produced by `json!({…})`).  Routing through
+/// `serde_json::to_string` + `JsValue::from_str` avoids that bug.
 fn to_js(val: &impl serde::Serialize) -> Result<JsValue, JsValue> {
-    serde_wasm_bindgen::to_value(val)
-        .map_err(|e| crate::error::js_val(&format!("serde error: {}", e)))
+    let s = serde_json::to_string(val)
+        .map_err(|e| crate::error::js_val(&format!("serde error: {}", e)))?;
+    Ok(JsValue::from_str(&s))
 }
 
 fn wasm_err(msg: &str) -> JsValue {

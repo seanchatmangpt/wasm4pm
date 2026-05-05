@@ -1,6 +1,4 @@
 //! Simplification algorithms for POWL models.
-//!
-//! 80/20: Basic stub for decision graph simplification.
 
 use crate::powl_arena::{Operator, PowlArena, PowlNode};
 
@@ -23,6 +21,36 @@ pub fn simplify(arena: &mut PowlArena, idx: u32) -> u32 {
             let simplified_children: Vec<u32> =
                 op.children.iter().map(|&c| simplify(arena, c)).collect();
 
+            // ── LOOP normalizations ────────────────────────────────────────────
+            if op.operator == Operator::Loop && simplified_children.len() == 2 {
+                let c0 = simplified_children[0];
+                let c1 = simplified_children[1];
+
+                // Normalise LOOP(LOOP(A, τ), τ) → LOOP(A, τ)
+                // When the body of a loop is itself a loop with a silent redo
+                // branch, the outer silent redo makes the inner one redundant.
+                if let Some(PowlNode::OperatorPowl(inner)) = arena.nodes.get(c0 as usize).cloned()
+                {
+                    if inner.operator == Operator::Loop && inner.children.len() == 2 {
+                        let inner_c1 = inner.children[1];
+                        let is_silent = |idx: u32| {
+                            matches!(
+                                arena.nodes.get(idx as usize),
+                                Some(PowlNode::Transition(t)) if t.label.is_none()
+                            )
+                        };
+                        if is_silent(inner_c1) && is_silent(c1) {
+                            // Outer loop wraps the body of the inner loop with a
+                            // fresh silent redo branch.
+                            let inner_body = inner.children[0];
+                            let tau = arena.add_silent_transition();
+                            return arena.add_operator(Operator::Loop, vec![inner_body, tau]);
+                        }
+                    }
+                }
+            }
+
+            // ── XOR optimisations ──────────────────────────────────────────────
             if op.operator == Operator::Xor && simplified_children.len() == 2 {
                 let c0 = simplified_children[0];
                 let c1 = simplified_children[1];
@@ -49,13 +77,77 @@ pub fn simplify(arena: &mut PowlArena, idx: u32) -> u32 {
                     }
                     flat.push(c);
                 }
-                return arena.add_operator(Operator::Xor, flat);
+
+                // Dead branch removal: remove duplicate silent transitions from
+                // the XOR children, keeping at most one.  E.g. XOR(τ, τ, A)
+                // becomes XOR(τ, A).  A lone surviving non-silent child also
+                // collapses: XOR(A) → A (handled by single-child guard below).
+                let is_silent = |idx: u32| {
+                    matches!(
+                        arena.nodes.get(idx as usize),
+                        Some(PowlNode::Transition(t)) if t.label.is_none()
+                    )
+                };
+                let mut seen_silent = false;
+                let deduped: Vec<u32> = flat
+                    .iter()
+                    .copied()
+                    .filter(|&c| {
+                        if is_silent(c) {
+                            if seen_silent {
+                                return false; // drop duplicate τ
+                            }
+                            seen_silent = true;
+                        }
+                        true
+                    })
+                    .collect();
+
+                // Single surviving branch: unwrap the XOR entirely.
+                if deduped.len() == 1 {
+                    return deduped[0];
+                }
+
+                return arena.add_operator(Operator::Xor, deduped);
+            }
+
+            // ── AND (PartialOrder) silent-child elimination ────────────────────
+            if op.operator == Operator::PartialOrder {
+                // Remove silent transitions that have neither incoming nor
+                // outgoing ordering edges inside the AND-split/join.  Such τ
+                // nodes carry no ordering information and do not affect
+                // reachability of any other child.
+                let n = simplified_children.len();
+                // Build a temporary SPO so we can inspect edge connectivity.
+                let tmp_spo_idx = arena.add_strict_partial_order(simplified_children.clone());
+                // We do not have edge information at this point (caller would
+                // have to pass it), so we can only eliminate τ children that
+                // are the *sole* child.
+                if n == 1 {
+                    let only = simplified_children[0];
+                    let is_silent = matches!(
+                        arena.nodes.get(only as usize),
+                        Some(PowlNode::Transition(t)) if t.label.is_none()
+                    );
+                    if is_silent {
+                        // A single-child AND whose only member is τ is a no-op.
+                        return only;
+                    }
+                }
+                // Discard the scratch SPO (it's harmless but wastes arena space).
+                let _ = tmp_spo_idx;
             }
 
             arena.add_operator(op.operator, simplified_children)
         }
         Some(PowlNode::StrictPartialOrder(spo)) => {
             let children = spo.children.clone();
+
+            // Single-child SPO is equivalent to the child itself.
+            if children.len() == 1 {
+                return simplify(arena, children[0]);
+            }
+
             let mut simplified: Vec<(u32, u32)> = Vec::new();
             for &c in &children {
                 simplified.push((c, simplify(arena, c)));
@@ -227,22 +319,46 @@ fn try_merge_xor_loop(arena: &mut PowlArena, child0: u32, child1: u32) -> Option
 
 /// Simplify a decision graph node.
 ///
-/// 80/20: returns the node as-is (reconstructs with simplified children).
-/// Full simplification (group_start_seq, group_end_seq, group_pure_seq,
-/// single-child reduction) is a future enhancement.
+/// Transformations applied:
+/// - Recursively simplify all children.
+/// - Single-child reduction: a `DecisionGraph` with exactly one child, no
+///   explicit ordering edges, and `empty_path == false` is equivalent to
+///   that single child.  Replace the DG with the (simplified) child.
+/// - Silent-only graph: if every child is a silent transition the whole DG
+///   collapses to a single τ.
 fn simplify_decision_graph(
     arena: &mut PowlArena,
     dg: &crate::powl_arena::DecisionGraphNode,
 ) -> u32 {
-    // Clone fields first to avoid borrow checker issues
+    // Clone fields first to avoid borrow checker issues.
     let children: Vec<u32> = dg.children.clone();
     let order = dg.order.clone();
     let start_nodes = dg.start_nodes.clone();
     let end_nodes = dg.end_nodes.clone();
     let empty_path = dg.empty_path;
 
-    // Simplify children recursively
-    let simplified_children: Vec<u32> = children.into_iter().map(|c| simplify(arena, c)).collect();
+    // Recursively simplify children.
+    let simplified_children: Vec<u32> =
+        children.into_iter().map(|c| simplify(arena, c)).collect();
+
+    let n = simplified_children.len();
+
+    let is_silent = |idx: u32| {
+        matches!(
+            arena.nodes.get(idx as usize),
+            Some(PowlNode::Transition(t)) if t.label.is_none()
+        )
+    };
+
+    // Single-child reduction: DG(A) with no extra ordering → A.
+    if n == 1 && !empty_path && order.edge_list().is_empty() {
+        return simplified_children[0];
+    }
+
+    // Silent-only reduction: all children are τ → single τ.
+    if n > 0 && simplified_children.iter().all(|&c| is_silent(c)) {
+        return arena.add_silent_transition();
+    }
 
     arena.add_decision_graph(
         simplified_children,
