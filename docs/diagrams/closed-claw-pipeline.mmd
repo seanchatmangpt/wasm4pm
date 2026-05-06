@@ -1,0 +1,12 @@
+flowchart TD
+    Input["EventLog Handle\nLCG-seeded synthetic log"] --> A["Pipeline A\nDiscovery Core\nDFG · Alpha++ · Heuristic\nInductive · Genetic · DECLARE"]
+    Input --> B["Pipeline B\nConformance Core\nToken Replay · SIMD\nETConformance · DECLARE"]
+    Input --> C["Pipeline C\nOCEL Core\nBuild · Validate\nFlatten · Serialize"]
+    Input --> D["Pipeline D\nSemantic Proof\nPNML Roundtrip\nProof Loop E2E"]
+    Input --> E["Pipeline E\nManufacturing Truth\nTemporal · Monte Carlo\nTruth Loop E2E"]
+    Input --> F["Pipeline F\nML-Augmented\nSIMD DFG · Anomaly\nDrift Detection"]
+    A & B & C & D & E & F --> G1["G1: Determinism\nBLAKE3 hash\nidentical N runs"]
+    C & D & E --> G2["G2: Receipt\nHash chain\nconfig+input+plan+output"]
+    B & E --> G3["G3: Truth\nfitness >= 0.95\nprecision >= 0.80"]
+    D --> G4["G4: Synchrony\nPNML roundtrip\nsemantic equivalence"]
+    A & B & C & D & E & F --> G5["G5: Report\nall sections\npresent"]

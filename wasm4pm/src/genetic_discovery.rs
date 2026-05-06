@@ -196,14 +196,27 @@ pub fn discover_pso_algorithm(
                         best_global = Some((edge_set.clone(), fitness));
                     }
 
-                    particles.push((edge_set.clone(), fitness, edge_set, fitness));
+                    // Fix A: consume edge_set into the position slot; clone only for global best above.
+                    // The personal_best slot starts as a zero-cost empty set; it will be populated on
+                    // the first improvement in the update loop (Fix B avoids per-improvement clones).
+                    particles.push((edge_set, fitness, HashSet::new(), fitness));
                 }
 
                 // PSO iterations
+                // Fix B: track the index + fitness of the best particle; clone its EdgeSet only once
+                // after the full loop rather than cloning inside the inner loop on each improvement.
+                let mut best_particle_idx: usize = 0;
+                let mut best_particle_fitness: f64 = f64::NEG_INFINITY;
+
                 for _iter in 0..iterations {
-                    for (edge_set, current_fitness, pbest, pbest_fitness) in particles.iter_mut() {
-                        // Blend toward personal best, then toward global best
-                        let toward_pbest = blend_edges_seeded(edge_set, pbest, 0.2, &mut rng);
+                    for (idx, (edge_set, current_fitness, pbest, pbest_fitness)) in
+                        particles.iter_mut().enumerate()
+                    {
+                        // Blend toward personal best (use current position when pbest is empty),
+                        // then toward global best
+                        let pbest_ref = if pbest.is_empty() { &*edge_set } else { &*pbest };
+                        let toward_pbest =
+                            blend_edges_seeded(edge_set, pbest_ref, 0.2, &mut rng);
                         let toward_global = blend_edges_seeded(
                             &toward_pbest,
                             &best_global.as_ref().unwrap().0,
@@ -218,10 +231,14 @@ pub fn discover_pso_algorithm(
                         let new_fitness = evaluate_edges_fitness(edge_set, &col);
                         *current_fitness = new_fitness;
 
-                        // Update personal best
+                        // Track personal-best improvement without cloning
                         if new_fitness > *pbest_fitness {
                             *pbest_fitness = new_fitness;
-                            *pbest = edge_set.clone();
+                            // Defer the clone — record which particle won instead
+                            if new_fitness > best_particle_fitness {
+                                best_particle_fitness = new_fitness;
+                                best_particle_idx = idx;
+                            }
                         }
 
                         // Update global best
@@ -229,6 +246,12 @@ pub fn discover_pso_algorithm(
                             best_global = Some((edge_set.clone(), new_fitness));
                         }
                     }
+                }
+
+                // Fix B (cont.): perform the single deferred personal-best clone for the winner
+                if best_particle_fitness > f64::NEG_INFINITY {
+                    let winner_set = particles[best_particle_idx].0.clone();
+                    particles[best_particle_idx].2 = winner_set;
                 }
 
                 match best_global {
@@ -308,16 +331,15 @@ fn create_random_edge_set_seeded(
 
 fn crossover_edges_seeded(parent1: &EdgeSet, parent2: &EdgeSet, rng: &mut StdRng) -> EdgeSet {
     let mut child: EdgeSet = HashSet::new();
-    let p1_edges: Vec<_> = parent1.iter().copied().collect();
-    let p2_edges: Vec<_> = parent2.iter().copied().collect();
 
-    for &edge in &p1_edges {
+    // Fix C: iterate the sets directly — no intermediate Vec allocation
+    for &edge in parent1.iter() {
         if rng.gen::<f64>() < 0.5 {
             child.insert(edge);
         }
     }
 
-    for &edge in &p2_edges {
+    for &edge in parent2.iter() {
         if rng.gen::<f64>() < 0.5 {
             child.insert(edge);
         }

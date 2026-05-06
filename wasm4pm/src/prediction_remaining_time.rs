@@ -14,6 +14,7 @@
 //! | `predict_case_duration` | Point estimate for a running case prefix |
 //! | `predict_hazard_rate` | Instantaneous hazard at elapsed time *t* |
 
+use rustc_hash::FxHashMap;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use wasm_bindgen::prelude::*;
@@ -37,16 +38,16 @@ struct BucketStats {
 /// Weibull distribution parameters fitted via method-of-moments.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct WeibullParams {
-    /// Shape parameter (k). k < 1 → decreasing hazard, k > 1 → increasing.
+    /// Shape parameter (k). k < 1 -> decreasing hazard, k > 1 -> increasing.
     shape: f64,
-    /// Scale parameter (λ) in milliseconds.
+    /// Scale parameter (lambda) in milliseconds.
     scale: f64,
 }
 
 /// Serializable remaining-time model.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct RemainingTimeModel {
-    /// (last_activity, prefix_length) → bucket statistics
+    /// (last_activity, prefix_length) -> bucket statistics
     buckets: HashMap<String, BucketStats>, // key = "activity|prefix_len"
     /// Fallback: global remaining-time stats (all prefixes combined)
     global: BucketStats,
@@ -64,18 +65,15 @@ fn bucket_key(activity: &str, prefix_len: usize) -> String {
 // Weibull fitting (method of moments)
 // ---------------------------------------------------------------------------
 
-/// Approximate Weibull shape *k* from coefficient of variation (cv = σ/μ).
-/// Uses the Newton-Raphson-safe closed-form approximation:
-///   k ≈ (cv)^{-1.086}   (accurate to ~2 % for 0.2 ≤ cv ≤ 5)
+/// Approximate Weibull shape *k* from coefficient of variation (cv = sigma/mu).
 fn weibull_shape_from_cv(cv: f64) -> f64 {
     if cv <= 0.0 || !cv.is_finite() {
-        return 1.0; // degenerate → exponential
+        return 1.0; // degenerate -> exponential
     }
     cv.powf(-1.086).clamp(0.1, 20.0)
 }
 
-/// Weibull scale λ from mean and shape: λ = mean / Γ(1 + 1/k).
-/// Uses Stirling-like approximation for Γ since `std` has no gamma fn.
+/// Weibull scale lambda from mean and shape.
 fn weibull_scale(mean: f64, k: f64) -> f64 {
     let g = gamma_approx(1.0 + 1.0 / k);
     if g > 0.0 {
@@ -85,9 +83,8 @@ fn weibull_scale(mean: f64, k: f64) -> f64 {
     }
 }
 
-/// Lanczos approximation of Γ(x) for x > 0.
+/// Lanczos approximation of Gamma(x) for x > 0.
 fn gamma_approx(x: f64) -> f64 {
-    // Lanczos coefficients (g=7)
     const P: [f64; 8] = [
         676.5203681218851,
         -1259.1392167224028,
@@ -106,7 +103,7 @@ fn gamma_approx(x: f64) -> f64 {
         for (i, &p) in P.iter().enumerate() {
             a += p / (x + i as f64 + 1.0);
         }
-        let t = x + 7.5; // g + 0.5
+        let t = x + 7.5;
         (2.0 * std::f64::consts::PI).sqrt() * t.powf(x + 0.5) * (-t).exp() * a
     }
 }
@@ -116,18 +113,6 @@ fn gamma_approx(x: f64) -> f64 {
 // ---------------------------------------------------------------------------
 
 /// Build a remaining-time prediction model from a completed event log.
-///
-/// # Parameters
-/// - `log_handle` — handle to an `EventLog` in state
-/// - `activity_key` — attribute name for activity labels (e.g. `"concept:name"`)
-/// - `timestamp_key` — attribute name for event timestamps (e.g. `"time:timestamp"`)
-///
-/// # Returns
-/// A string handle to the stored model (internally a `JsonString`).
-///
-/// ```javascript
-/// const model = pm.build_remaining_time_model(logHandle, 'concept:name', 'time:timestamp');
-/// ```
 #[wasm_bindgen]
 pub fn build_remaining_time_model(
     log_handle: &str,
@@ -136,20 +121,25 @@ pub fn build_remaining_time_model(
 ) -> Result<JsValue, JsValue> {
     let state = get_or_init_state();
 
-    // Collect per-bucket samples and case durations from the log.
-    let (bucket_samples, case_durations) = state.with_object(log_handle, |obj| {
+    let (bucket_samples, mut case_durations) = state.with_object(log_handle, |obj| {
         match obj {
             Some(StoredObject::EventLog(log)) => {
-                let mut bucket_samples: HashMap<String, Vec<f64>> = HashMap::new();
+                // Fix A+B: FxHashMap with integer tuple keys eliminates ~190K String
+                // allocs on large logs. Activity names are interned to u32 IDs locally.
+                let mut activity_ids: FxHashMap<&str, u32> = FxHashMap::default();
+                let mut next_id = 0u32;
+                let mut id_to_activity: Vec<&str> = Vec::new();
+                let mut bucket_samples: FxHashMap<(u32, usize), Vec<f64>> =
+                    FxHashMap::default();
                 let mut case_durations: Vec<f64> = Vec::new();
 
                 for trace in &log.traces {
-                    // Extract (activity, timestamp_ms) pairs
                     let events: Vec<(&str, i64)> = trace
                         .events
                         .iter()
                         .filter_map(|e| {
-                            let act = e.attributes.get(activity_key).and_then(|v| v.as_string())?;
+                            let act =
+                                e.attributes.get(activity_key).and_then(|v| v.as_string())?;
                             let ts = match e.attributes.get(timestamp_key) {
                                 Some(AttributeValue::Date(d)) => parse_timestamp_ms(d),
                                 Some(AttributeValue::String(s)) => parse_timestamp_ms(s),
@@ -166,11 +156,11 @@ pub fn build_remaining_time_model(
 
                     let trace_start = match events.first() {
                         Some((_, ts)) => *ts,
-                        None => continue, // Should not happen due to check above, but be defensive
+                        None => continue,
                     };
                     let trace_end = match events.last() {
                         Some((_, ts)) => *ts,
-                        None => continue, // Should not happen due to check above
+                        None => continue,
                     };
                     let duration = (trace_end - trace_start) as f64;
                     if duration <= 0.0 {
@@ -178,16 +168,33 @@ pub fn build_remaining_time_model(
                     }
                     case_durations.push(duration);
 
-                    // For each prefix position, record remaining time
                     for (i, (act, ts)) in events.iter().enumerate() {
+                        let act_id = *activity_ids.entry(act).or_insert_with(|| {
+                            let id = next_id;
+                            next_id += 1;
+                            id_to_activity.push(act);
+                            id
+                        });
                         let remaining = (trace_end - ts) as f64;
                         let prefix_len = i + 1;
-                        let key = bucket_key(act, prefix_len);
-                        bucket_samples.entry(key).or_default().push(remaining);
+                        bucket_samples
+                            .entry((act_id, prefix_len))
+                            .or_default()
+                            .push(remaining);
                     }
                 }
 
-                Ok((bucket_samples, case_durations))
+                // Convert integer tuple keys back to String keys for the serializable
+                // model. Happens once at build time, not per event.
+                let bucket_samples_str: HashMap<String, Vec<f64>> = bucket_samples
+                    .into_iter()
+                    .map(|((act_id, prefix_len), samples)| {
+                        let act = id_to_activity[act_id as usize];
+                        (bucket_key(act, prefix_len), samples)
+                    })
+                    .collect();
+
+                Ok((bucket_samples_str, case_durations))
             }
             Some(_) => Err(wasm_err(codes::INVALID_HANDLE, "Handle is not an EventLog")),
             None => Err(wasm_err(
@@ -204,7 +211,6 @@ pub fn build_remaining_time_model(
         ));
     }
 
-    // Compute bucket statistics
     let buckets: HashMap<String, BucketStats> = bucket_samples
         .into_iter()
         .map(|(key, samples)| {
@@ -213,7 +219,6 @@ pub fn build_remaining_time_model(
         })
         .collect();
 
-    // Global remaining-time stats (all samples flattened)
     let all_remaining: Vec<f64> = buckets
         .values()
         .flat_map(|b| std::iter::repeat_n(b.mean_ms, b.count))
@@ -221,7 +226,6 @@ pub fn build_remaining_time_model(
     let global = if all_remaining.is_empty() {
         compute_stats(&case_durations)
     } else {
-        // Weighted average from bucket means
         let total_count: usize = buckets.values().map(|b| b.count).sum();
         let weighted_mean: f64 = buckets
             .values()
@@ -241,7 +245,6 @@ pub fn build_remaining_time_model(
         }
     };
 
-    // Fit Weibull to case durations
     let dur_stats = compute_stats(&case_durations);
     let cv = if dur_stats.mean_ms > 0.0 {
         dur_stats.std_ms / dur_stats.mean_ms
@@ -251,11 +254,11 @@ pub fn build_remaining_time_model(
     let shape = weibull_shape_from_cv(cv);
     let scale = weibull_scale(dur_stats.mean_ms, shape);
 
-    // Median duration
+    // Fix C: sort in-place; case_durations is not used after this point.
     let median_duration_ms = {
-        let mut sorted = case_durations.clone();
-        sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
-        sorted[sorted.len() / 2]
+        case_durations
+            .sort_unstable_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+        case_durations[case_durations.len() / 2]
     };
 
     let model = RemainingTimeModel {
@@ -280,26 +283,6 @@ pub fn build_remaining_time_model(
 // ---------------------------------------------------------------------------
 
 /// Predict remaining time for a running case given its activity prefix.
-///
-/// # Parameters
-/// - `model_handle` — handle returned by `build_remaining_time_model`
-/// - `prefix_json` — JSON array of activity strings, e.g. `'["Register","Check"]'`
-///
-/// # Returns
-/// JSON string:
-/// ```json
-/// {
-///   "remaining_ms": 54000.0,
-///   "confidence": 0.82,
-///   "method": "bucket(Check|2)"
-/// }
-/// ```
-///
-/// Lookup strategy (most specific → least):
-/// 1. Exact bucket match `(last_activity, prefix_length)`
-/// 2. Same `last_activity`, any prefix length (weighted avg of matching buckets)
-/// 3. Same `prefix_length`, any activity
-/// 4. Global fallback
 #[wasm_bindgen]
 pub fn predict_case_duration(model_handle: &str, prefix_json: &str) -> Result<JsValue, JsValue> {
     let prefix: Vec<String> = serde_json::from_str(prefix_json)
@@ -425,28 +408,6 @@ pub fn predict_case_duration(model_handle: &str, prefix_json: &str) -> Result<Js
 
 /// Estimate the hazard rate at a given elapsed time using the Weibull survival
 /// model fitted to historical case durations.
-///
-/// # Parameters
-/// - `model_handle` — handle returned by `build_remaining_time_model`
-/// - `elapsed_ms` — milliseconds elapsed since case start
-///
-/// # Returns
-/// JSON string:
-/// ```json
-/// {
-///   "hazard_rate": 0.00012,
-///   "survival_probability": 0.43,
-///   "cumulative_hazard": 0.844,
-///   "median_remaining_ms": 25000.0,
-///   "shape": 1.8,
-///   "scale": 120000.0
-/// }
-/// ```
-///
-/// - `hazard_rate` h(t) = (k/λ)(t/λ)^{k-1} — instantaneous failure rate
-/// - `survival_probability` S(t) = exp(-(t/λ)^k) — P(duration > t)
-/// - `cumulative_hazard` H(t) = (t/λ)^k
-/// - `median_remaining_ms` — estimated time until 50 % completion probability
 #[wasm_bindgen]
 pub fn predict_hazard_rate(model_handle: &str, elapsed_ms: f64) -> Result<JsValue, JsValue> {
     if elapsed_ms < 0.0 {
@@ -488,28 +449,17 @@ pub fn predict_hazard_rate(model_handle: &str, elapsed_ms: f64) -> Result<JsValu
         if lambda <= 0.0 {
             return Err(wasm_err(
                 codes::INTERNAL_ERROR,
-                "Invalid Weibull scale (λ ≤ 0)",
+                "Invalid Weibull scale (lambda <= 0)",
             ));
         }
 
-        let t = elapsed_ms.max(1.0); // avoid t=0 singularity when k < 1
+        let t = elapsed_ms.max(1.0);
         let t_over_lambda = t / lambda;
 
-        // Cumulative hazard H(t) = (t/λ)^k
         let cumulative_hazard = t_over_lambda.powf(k);
-
-        // Survival S(t) = exp(-H(t))
         let survival = (-cumulative_hazard).exp();
-
-        // Hazard rate h(t) = (k/λ)(t/λ)^{k-1}
         let hazard_rate = (k / lambda) * t_over_lambda.powf(k - 1.0);
 
-        // Conditional median remaining time:
-        // P(T > t + r | T > t) = 0.5
-        // S(t+r)/S(t) = 0.5
-        // exp(-((t+r)/λ)^k + (t/λ)^k) = 0.5
-        // ((t+r)/λ)^k = (t/λ)^k + ln(2)
-        // t+r = λ * ((t/λ)^k + ln(2))^{1/k}
         let median_remaining =
             lambda * (cumulative_hazard + std::f64::consts::LN_2).powf(1.0 / k) - t;
         let median_remaining = median_remaining.max(0.0);
@@ -553,13 +503,9 @@ fn compute_stats(samples: &[f64]) -> BucketStats {
     }
 }
 
-/// Confidence heuristic: higher when bucket has many samples and low variance
-/// relative to the global distribution.
 fn confidence_from_bucket(bucket: &BucketStats, global: &BucketStats) -> f64 {
-    // Sample-size component: n / (n + 10) — saturates toward 1
     let size_factor = bucket.count as f64 / (bucket.count as f64 + 10.0);
 
-    // Precision component: 1 - (bucket_cv / global_cv), clamped [0, 1]
     let bucket_cv = if bucket.mean_ms > 0.0 {
         bucket.std_ms / bucket.mean_ms
     } else {
@@ -601,21 +547,18 @@ mod tests {
 
     #[test]
     fn test_weibull_shape_exponential() {
-        // cv=1 → k ≈ 1 (exponential)
         let k = weibull_shape_from_cv(1.0);
         assert!((k - 1.0).abs() < 0.1);
     }
 
     #[test]
     fn test_weibull_shape_increasing_hazard() {
-        // cv < 1 → k > 1 (increasing hazard = aging)
         let k = weibull_shape_from_cv(0.5);
         assert!(k > 1.0);
     }
 
     #[test]
     fn test_gamma_approx() {
-        // Γ(1) = 1, Γ(2) = 1, Γ(3) = 2
         assert!((gamma_approx(1.0) - 1.0).abs() < 1e-6);
         assert!((gamma_approx(2.0) - 1.0).abs() < 1e-6);
         assert!((gamma_approx(3.0) - 2.0).abs() < 1e-6);
