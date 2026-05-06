@@ -138,19 +138,26 @@ pub fn analyze_infrequent_paths(
                 }
             }
 
+            // Build reverse vocab for lazy path_str construction
+            let mut vocab_rev: FxHashMap<u32, &str> = FxHashMap::default();
+            for (s, &id) in &vocab {
+                vocab_rev.insert(id, s);
+            }
+
             let mut path_frequencies: FxHashMap<u64, (Vec<String>, usize)> = FxHashMap::default();
+
+            // Pre-allocate reusable buffer outside loop — cleared each iteration
+            let mut trace_ids: Vec<u32> = Vec::with_capacity(64);
 
             // Extract activity sequences (paths) and hash them
             for trace in &log.traces {
-                let mut trace_ids: Vec<u32> = Vec::new();
-                let mut path_str: Vec<String> = Vec::new();
+                trace_ids.clear();
                 for event in &trace.events {
                     if let Some(AttributeValue::String(activity)) =
                         event.attributes.get(activity_key)
                     {
                         if let Some(&id) = vocab.get(activity.as_str()) {
                             trace_ids.push(id);
-                            path_str.push(activity.clone());
                         }
                     }
                 }
@@ -166,10 +173,17 @@ pub fn analyze_infrequent_paths(
                     (h ^ (id as u64)).wrapping_mul(FNV_PRIME)
                 });
 
+                // Lazily build path_str only on first encounter of this hash
                 path_frequencies
                     .entry(path_hash)
-                    .and_modify(|(_, count)| *count += 1)
-                    .or_insert((path_str, 1));
+                    .or_insert_with(|| {
+                        let path: Vec<String> = trace_ids
+                            .iter()
+                            .map(|&id| vocab_rev[&id].to_string())
+                            .collect();
+                        (path, 0)
+                    })
+                    .1 += 1;
             }
 
             // Find infrequent paths
