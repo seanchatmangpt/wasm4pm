@@ -2,7 +2,7 @@ import { defineCommand } from 'citty';
 import { runCertification } from '@wasm4pm/testing';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
-import pkg from '../../package.json' assert { type: 'json' };
+import pkg from '../../package.json' with { type: 'json' };
 
 export const verify = defineCommand({
   meta: {

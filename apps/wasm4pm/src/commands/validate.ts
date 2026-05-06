@@ -59,6 +59,10 @@ export const validate = defineCommand({
       description: 'Enable verbose output',
       alias: 'v',
     },
+    'output-format': {
+      type: 'string',
+      description: 'Output format: human (default) or json',
+    },
     quiet: {
       type: 'boolean',
       description: 'Suppress non-error output',
@@ -67,9 +71,8 @@ export const validate = defineCommand({
   },
   async run(ctx) {
     const t0 = performance.now();
-    // validate uses human format unless quiet is set (legacy behavior preserved)
-    const useJson = ctx.args.format === 'json' || Boolean(ctx.args.quiet);
-    const format = (useJson ? 'json' : 'human') as 'json' | 'human';
+    const outFmt = (ctx.args['output-format'] as string | undefined) ?? 'human';
+    const format = (outFmt === 'json' ? 'json' : 'human') as 'json' | 'human';
     const verbose = Boolean(ctx.args.verbose);
     const quiet = Boolean(ctx.args.quiet);
 
@@ -121,7 +124,7 @@ export const validate = defineCommand({
 
       // Load WASM module
       const loaderConfig =
-        useJson ? { observability: createQuietObservabilityLayer() } : {};
+        (format === 'json') ? { observability: createQuietObservabilityLayer() } : {};
       const loader = WasmLoader.getInstance(loaderConfig);
       await loader.init();
       const wasm = loader.get();

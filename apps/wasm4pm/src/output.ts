@@ -1,6 +1,6 @@
 import { consola } from 'consola';
 import { randomUUID } from 'node:crypto';
-import pkg from '../package.json' assert { type: 'json' };
+import pkg from '../package.json' with { type: 'json' };
 
 // ─── Canonical output types ───────────────────────────────────────────────────
 // Every command builds CommandResult<T> first.
