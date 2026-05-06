@@ -56,6 +56,7 @@ fn bench_genetic_algorithm(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(30));
     group.warm_up_time(Duration::from_secs(3));
     group.sample_size(10);
+    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
 
     // Fixed log for parameter sweep
     let fixed_shape = LogShape {
@@ -97,6 +98,7 @@ fn bench_pso(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(30));
     group.warm_up_time(Duration::from_secs(3));
     group.sample_size(10);
+    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
 
     // Fixed log for parameter sweep
     let fixed_shape = LogShape {
@@ -138,6 +140,7 @@ fn bench_ilp(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(20));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(15);
+    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
 
     for shape in metaheuristic_sizes() {
         let (handle, events) = make_handle(&shape);
@@ -160,6 +163,7 @@ fn bench_aco(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(30));
     group.warm_up_time(Duration::from_secs(3));
     group.sample_size(10);
+    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
 
     // Fixed log for parameter sweep
     let fixed_shape = LogShape {
@@ -201,6 +205,7 @@ fn bench_simulated_annealing(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(25));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(12);
+    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
 
     // Fixed log for parameter sweep
     let fixed_shape = LogShape {
@@ -249,6 +254,7 @@ fn bench_astar(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(20));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(15);
+    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
 
     // Fixed log for parameter sweep
     let fixed_shape = LogShape {
@@ -290,6 +296,7 @@ fn bench_hill_climbing(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(15));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(20);
+    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
 
     // Hill climbing is greedy and fast - benchmark larger sizes
     for shape in metaheuristic_sizes() {

@@ -25,6 +25,7 @@ fn bench_dfg(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(5));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(50);
+    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
 
     for shape in bench_sizes() {
         let (handle, events) = make_handle(&shape);
@@ -44,6 +45,7 @@ fn bench_process_skeleton(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(5));
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(50);
+    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
 
     for shape in bench_sizes() {
         let (handle, events) = make_handle(&shape);
@@ -63,6 +65,7 @@ fn bench_alpha_plus_plus(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(8));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(30);
+    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
 
     for shape in bench_sizes() {
         let (handle, events) = make_handle(&shape);
@@ -82,6 +85,7 @@ fn bench_heuristic_miner(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(8));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(30);
+    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
 
     for shape in bench_sizes() {
         let (handle, events) = make_handle(&shape);
@@ -102,6 +106,7 @@ fn bench_inductive_miner(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(8));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(30);
+    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
 
     for shape in bench_sizes() {
         let (handle, events) = make_handle(&shape);

@@ -304,6 +304,13 @@ export const run = defineCommand({
         formatter.debug(`Loading event log from: ${inputPath}`);
       }
 
+      // Step 5a: Reject non-XES extensions early (before reading file content)
+      const ext = path.extname(inputPath).toLowerCase();
+      if (ext && !['.xes', '.xml'].includes(ext)) {
+        formatter.error('Input file must be an XES or XML event log', { path: inputPath, extension: ext });
+        process.exit(EXIT_CODES.source_error);
+      }
+
       const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
       const xesContent = await fs.readFile(inputPath, 'utf-8');
       if (xesContent.trim() === '') {
@@ -323,6 +330,16 @@ export const run = defineCommand({
       const logHandle: string = wasm.load_eventlog_from_xes(xesContent);
       if (!logHandle) {
         formatter.error('Failed to parse XES event log — file may be corrupted or malformed', { path: inputPath });
+        process.exit(EXIT_CODES.source_error);
+      }
+
+      // Zero-trace check: count <trace elements in the XES content.
+      // A log with no traces cannot be meaningfully discovered.
+      const traceMatches = xesContent.match(/<trace[\s>]/g);
+      const traceCount = traceMatches ? traceMatches.length : 0;
+      if (traceCount === 0) {
+        wasm.delete_object(logHandle);
+        formatter.error('XES file contains no traces — nothing to discover', { path: inputPath });
         process.exit(EXIT_CODES.source_error);
       }
 

@@ -24,6 +24,7 @@ fn bench_ewma(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(3));
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(50);
+    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
     for n in [16usize, 256, 4_096, 65_536] {
         let series: Vec<f64> = (0..n).map(|i| (i as f64 * 0.01).sin()).collect();
         group.throughput(Throughput::Elements(n as u64));
@@ -47,6 +48,7 @@ fn bench_jaccard(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(3));
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(50);
+    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
     for n in [8usize, 64, 512, 4_096] {
         let a = make_set("act", n);
         // Build B with ~50 % overlap with A (worst-case union/intersection sizes).
@@ -73,6 +75,7 @@ fn bench_detect_drift(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(5));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(30);
+    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
 
     let shapes = [
         LogShape {

@@ -14,6 +14,7 @@ fn bench_dfg_scalar(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(8));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(30);
+    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
 
     for shape in bench_sizes() {
         let (handle, events) = make_handle(&shape);
@@ -32,6 +33,7 @@ fn bench_dfg_simd_handle(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(8));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(30);
+    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
 
     for shape in bench_sizes() {
         let (handle, events) = make_handle(&shape);

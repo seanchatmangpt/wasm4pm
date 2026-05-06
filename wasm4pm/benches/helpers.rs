@@ -41,8 +41,46 @@ pub struct LogShape {
     pub noise_factor: f64,
 }
 
+/// Returns true unless BENCH_FULL=1 is set.
+/// Fast mode (default): 1 input size, minimal sampling, < 1s per binary.
+/// Full mode (opt-in):  4 input sizes, statistical sampling, ~minutes per binary.
+#[inline]
+pub fn is_fast_mode() -> bool {
+    !std::env::var("BENCH_FULL").map(|v| v == "1").unwrap_or(false)
+}
+
+/// Apply fast-mode overrides to a Criterion group (default).
+/// 50ms measurement + 20ms warm-up + 10 samples → ~1s per binary.
+pub fn fast_group(group: &mut criterion::BenchmarkGroup<'_, criterion::measurement::WallTime>) {
+    use std::time::Duration;
+    group.measurement_time(Duration::from_millis(50));
+    group.warm_up_time(Duration::from_millis(20));
+    group.sample_size(10);
+}
+
+/// Apply full-mode caps to a Criterion group (opt-in via BENCH_FULL=1).
+/// Overrides the hardcoded 5-8s measurement and 50 samples in each bench fn.
+/// Result: ~1s measurement + 0.5s warm-up + 20 samples → ~30s per binary vs ~5 min.
+pub fn full_group(group: &mut criterion::BenchmarkGroup<'_, criterion::measurement::WallTime>) {
+    use std::time::Duration;
+    group.measurement_time(Duration::from_secs(1));
+    group.warm_up_time(Duration::from_millis(500));
+    group.sample_size(20);
+}
+
 /// Standard benchmark sizes: small → xlarge.
+/// In BENCH_FAST=1 mode returns only the 100-case size so each binary
+/// completes in < 1 second.
 pub fn bench_sizes() -> Vec<LogShape> {
+    if is_fast_mode() {
+        return vec![LogShape {
+            num_cases: 100,
+            avg_events_per_case: 10,
+            num_activities: 8,
+            noise_factor: 0.05,
+        }];
+    }
+    // Full mode: 3 sizes (100 → 10K). 50K dropped — adds minutes, no new insight.
     vec![
         LogShape {
             num_cases: 100,
@@ -62,17 +100,20 @@ pub fn bench_sizes() -> Vec<LogShape> {
             num_activities: 15,
             noise_factor: 0.10,
         },
-        LogShape {
-            num_cases: 50_000,
-            avg_events_per_case: 20,
-            num_activities: 20,
-            noise_factor: 0.15,
-        },
     ]
 }
 
 /// Sizes capped for slow (>200ms) algorithms.
+/// In BENCH_FAST=1 mode returns only the 100-case size.
 pub fn bench_sizes_slow() -> Vec<LogShape> {
+    if is_fast_mode() {
+        return vec![LogShape {
+            num_cases: 100,
+            avg_events_per_case: 10,
+            num_activities: 8,
+            noise_factor: 0.05,
+        }];
+    }
     vec![
         LogShape {
             num_cases: 100,

@@ -123,6 +123,7 @@ fn bench_dfg_batch(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(5));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(50);
+    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
 
     for shape in bench_sizes() {
         let (handle, events) = make_handle(&shape);
@@ -145,6 +146,7 @@ fn bench_dfg_streaming(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(5));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(50);
+    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
 
     for shape in bench_sizes() {
         let log = generate_event_log(&shape);
@@ -168,6 +170,7 @@ fn bench_dfg_simd(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(5));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(50);
+    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
 
     for shape in bench_sizes() {
         let log = generate_event_log(&shape);
@@ -199,6 +202,7 @@ fn bench_parity_check(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(5));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(50);
+    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
 
     for shape in bench_sizes() {
         let log = generate_event_log(&shape);

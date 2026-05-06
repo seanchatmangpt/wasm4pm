@@ -197,6 +197,7 @@ fn bench_token_replay(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(5));
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(30);
+    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
 
     let net = build_sequential_net();
     let net_handle = get_or_init_state()
@@ -240,6 +241,7 @@ fn bench_simd_token_replay(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(5));
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(30);
+    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
 
     for num_cases in [100, 500, 1_000, 5_000, 10_000] {
         let shape = LogShape {
@@ -319,6 +321,7 @@ fn bench_etconformance_precision(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(5));
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(30);
+    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
 
     let net = build_sequential_net();
     let initial_marking: HashMap<String, usize> = net
@@ -365,6 +368,7 @@ fn bench_declare_conformance(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(5));
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(30);
+    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
 
     let declare_model = build_declare_model();
     let constraints = declare_model.constraints;
@@ -482,6 +486,7 @@ fn bench_temporal_profile(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(5));
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(30);
+    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
 
     for num_cases in [100, 500, 1_000, 5_000] {
         let shape = LogShape {

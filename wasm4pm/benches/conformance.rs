@@ -35,6 +35,7 @@ fn bench_token_replay(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(15));
     group.warm_up_time(Duration::from_secs(3));
     group.sample_size(20);
+    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
 
     for shape in bench_sizes_slow() {
         let (log_handle, events) = make_handle(&shape);
@@ -56,6 +57,7 @@ fn bench_discover_and_replay(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(15));
     group.warm_up_time(Duration::from_secs(3));
     group.sample_size(15);
+    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
 
     for shape in bench_sizes_slow() {
         let (log_handle, events) = make_handle(&shape);

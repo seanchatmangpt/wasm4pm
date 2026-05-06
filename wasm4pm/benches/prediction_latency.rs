@@ -378,7 +378,8 @@ fn benchmark_resource_latency(c: &mut Criterion, shape: &LogShape, label: &str) 
 
 fn bench_end_to_end_breakdown(c: &mut Criterion) {
     let mut group = c.benchmark_group("prediction_e2e_breakdown");
-    group.sample_size(30); // Smaller sample size for slower operations
+    group.sample_size(30);
+    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); } // Smaller sample size for slower operations
 
     let shape = LogShape {
         num_cases: 1000,
@@ -486,6 +487,7 @@ fn bench_end_to_end_breakdown(c: &mut Criterion) {
 fn bench_batch_throughput(c: &mut Criterion) {
     let mut group = c.benchmark_group("prediction_batch_throughput");
     group.sample_size(20);
+    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
 
     let shape = LogShape {
         num_cases: 1000,
@@ -561,6 +563,7 @@ fn bench_batch_throughput(c: &mut Criterion) {
 fn bench_scaling_by_trace_length(c: &mut Criterion) {
     let mut group = c.benchmark_group("prediction_scaling_trace_length");
     group.sample_size(20);
+    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
 
     for trace_len in [10, 50, 100, 500].iter() {
         let shape = LogShape {
@@ -633,6 +636,7 @@ fn bench_scaling_by_trace_length(c: &mut Criterion) {
 fn bench_scaling_by_log_size(c: &mut Criterion) {
     let mut group = c.benchmark_group("prediction_scaling_log_size");
     group.sample_size(20);
+    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
 
     for num_cases in [100, 500, 1000, 5000].iter() {
         let shape = LogShape {
