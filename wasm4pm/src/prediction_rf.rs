@@ -362,9 +362,9 @@ pub fn build_rf_predictor(
 /// intentional — `RandomForestModel` is not serialisable.  For latency-sensitive
 /// workloads, cache the fitted model on the JS side.
 ///
-/// Probability values use majority-vote semantics: the predicted class is returned
-/// with probability 1.0 and all others with 0.0, matching the miniml RF majority-vote
-/// contract.  For calibrated probabilities, use an ensemble wrapper on the JS side.
+/// Probabilities are per-tree vote fractions: each tree votes for one class and the
+/// fraction of trees voting for each class is returned as its probability.  Results
+/// are sorted by probability descending so the top prediction is first in the array.
 #[wasm_bindgen]
 pub fn predict_next_activity_rf(
     model_handle: &str,
@@ -462,30 +462,34 @@ pub fn predict_next_activity_rf(
         )
         .map_err(|e| wasm_err(codes::INTERNAL_ERROR, format!("RF fit failed: {}", e)))?;
 
-        // ── 6. Predict ───────────────────────────────────────────────────
-        // model.predict expects a flat row-major matrix; we have 1 sample × N_FEATURES
-        let predictions = model.predict(&query_features);
+        // ── 6. Predict with per-tree vote fractions ──────────────────────
+        // predict_proba_single returns [class_id, fraction, class_id, fraction, ...]
+        // sorted by class_id.  We map class IDs back to activity names and sort by
+        // vote fraction descending so the top prediction is first.
+        let proba_flat = model.predict_proba_single(&query_features);
 
-        if predictions.is_empty() {
+        if proba_flat.is_empty() {
             return Ok("[]".to_owned());
         }
 
-        let predicted_class_id = predictions[0].round() as usize;
+        let mut candidates: Vec<serde_json::Value> = proba_flat
+            .chunks_exact(2)
+            .filter_map(|chunk| {
+                let class_id = chunk[0].round() as usize;
+                let fraction = chunk[1];
+                let name = snapshot.vocab.get(class_id)?.clone();
+                Some(serde_json::json!({"activity": name, "probability": fraction}))
+            })
+            .collect();
 
-        // Majority-vote probability: miniml's RF predict() returns the winning class.
-        // The probability is 1.0 for the predicted class and 0.0 for all others,
-        // matching miniml's internal majority-vote contract.  Trees are private to
-        // the miniml crate, so vote-fraction calibration is intentionally deferred
-        // to the calling layer.
-        let activity_name = snapshot
-            .vocab
-            .get(predicted_class_id)
-            .map(|s| s.as_str())
-            .unwrap_or("<unknown>");
+        // Sort descending by probability so top prediction is first
+        candidates.sort_by(|a, b| {
+            let pa = a["probability"].as_f64().unwrap_or(0.0);
+            let pb = b["probability"].as_f64().unwrap_or(0.0);
+            pb.partial_cmp(&pa).unwrap_or(std::cmp::Ordering::Equal)
+        });
 
-        let result_arr = serde_json::json!([
-            {"activity": activity_name, "probability": 1.0}
-        ]);
+        let result_arr = serde_json::Value::Array(candidates);
 
         serde_json::to_string(&result_arr).map_err(|e| {
             wasm_err(

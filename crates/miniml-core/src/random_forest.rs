@@ -58,6 +58,29 @@ impl RandomForestModel {
         result
     }
 
+    /// Predict class probabilities from per-tree vote fractions for a single sample.
+    ///
+    /// Returns a flat `[class_id, vote_fraction, class_id, vote_fraction, ...]` array
+    /// sorted by class_id ascending.  Only meaningful for classifiers; returns an
+    /// empty vector for regressors.
+    pub fn predict_proba_single(&self, sample: &[f64]) -> Vec<f64> {
+        if !self.is_classifier || sample.len() != self.n_features {
+            return vec![];
+        }
+        let n_trees = self.trees.len() as f64;
+        let mut counts: Vec<(f64, usize)> = Vec::new();
+        for tree in &self.trees {
+            let pred = tree.predict_single(sample).round();
+            if let Some(entry) = counts.iter_mut().find(|(k, _)| (*k - pred).abs() < 1e-10) {
+                entry.1 += 1;
+            } else {
+                counts.push((pred, 1));
+            }
+        }
+        counts.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
+        counts.iter().flat_map(|&(cls, cnt)| [cls, cnt as f64 / n_trees]).collect()
+    }
+
     #[wasm_bindgen(js_name = "toString")]
     pub fn to_string_js(&self) -> String {
         format!("RandomForest(trees={}, features={})", self.n_trees, self.n_features)
