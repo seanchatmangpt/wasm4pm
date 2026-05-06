@@ -10,8 +10,14 @@ use wasm_bindgen::prelude::*;
 // ---------------------------------------------------------------------------
 
 struct PetriNetLookup {
-    /// visible activity label → transition index
-    activity_to_transition: HashMap<String, usize>,
+    /// visible label → transition indices, sorted for O(log n) binary search
+    sorted_label_index: Vec<(String, Vec<usize>)>,
+    /// pre-filtered indices of invisible transitions for fixpoint firing
+    invisible_indices: Vec<usize>,
+    /// per-transition input token bitmask (for bitmask replay path)
+    trans_in_masks: Vec<u64>,
+    /// per-transition output token bitmask (for bitmask replay path)
+    trans_out_masks: Vec<u64>,
     /// transition id → [(place_id, weight)]  (input arcs)
     transition_inputs: HashMap<String, Vec<(String, usize)>>,
     /// transition id → [(place_id, weight)]  (output arcs)
@@ -23,8 +29,6 @@ struct PetriNetLookup {
 impl PetriNetLookup {
     fn build(petri_net: &PetriNet) -> Self {
         // Fix A — capacity hints on every HashMap
-        let mut activity_to_transition: HashMap<String, usize> =
-            HashMap::with_capacity(petri_net.transitions.len());
         let mut transition_inputs: HashMap<String, Vec<(String, usize)>> =
             HashMap::with_capacity(petri_net.arcs.len());
         let mut transition_outputs: HashMap<String, Vec<(String, usize)>> =
@@ -32,11 +36,26 @@ impl PetriNetLookup {
         let mut place_idx: HashMap<String, usize> =
             HashMap::with_capacity(petri_net.places.len());
 
+        // Build sorted label index (replaces activity_to_transition HashMap)
+        let mut label_map: HashMap<String, Vec<usize>> =
+            HashMap::with_capacity(petri_net.transitions.len());
         for (idx, trans) in petri_net.transitions.iter().enumerate() {
-            if !trans.is_invisible.unwrap_or(false) {
-                activity_to_transition.insert(trans.label.clone(), idx);
+            if !trans.is_invisible.unwrap_or(false) && !trans.label.is_empty() {
+                label_map.entry(trans.label.clone()).or_default().push(idx);
             }
         }
+        let mut sorted_label_index: Vec<(String, Vec<usize>)> =
+            label_map.into_iter().collect();
+        sorted_label_index.sort_by(|a, b| a.0.cmp(&b.0));
+
+        // Pre-filter invisible transitions for fixpoint firing
+        let invisible_indices: Vec<usize> = petri_net
+            .transitions
+            .iter()
+            .enumerate()
+            .filter(|(_, t)| t.is_invisible.unwrap_or(false) || t.label.is_empty())
+            .map(|(i, _)| i)
+            .collect();
 
         // Fix B — pre-build HashSet of transition IDs to avoid O(n) scan per arc
         let transition_ids: HashSet<&str> = petri_net
@@ -66,11 +85,70 @@ impl PetriNetLookup {
             place_idx.insert(place.id.clone(), i);
         }
 
+        let n_trans = petri_net.transitions.len();
+        let mut trans_in_masks = vec![0u64; n_trans];
+        let mut trans_out_masks = vec![0u64; n_trans];
+        for (i, trans) in petri_net.transitions.iter().enumerate() {
+            if let Some(inputs) = transition_inputs.get(&trans.id) {
+                for (place_id, _) in inputs {
+                    if let Some(&idx) = place_idx.get(place_id) {
+                        trans_in_masks[i] |= 1u64 << idx;
+                    }
+                }
+            }
+            if let Some(outputs) = transition_outputs.get(&trans.id) {
+                for (place_id, _) in outputs {
+                    if let Some(&idx) = place_idx.get(place_id) {
+                        trans_out_masks[i] |= 1u64 << idx;
+                    }
+                }
+            }
+        }
+
         PetriNetLookup {
-            activity_to_transition,
+            sorted_label_index,
+            invisible_indices,
+            trans_in_masks,
+            trans_out_masks,
             transition_inputs,
             transition_outputs,
             place_idx,
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Bitmask helpers
+// ---------------------------------------------------------------------------
+
+/// POPCNT-based prefix rank: set bits in `marking` at positions 0..=pos.
+#[inline]
+fn rank_u64(marking: u64, pos: usize) -> usize {
+    let mask = if pos >= 63 {
+        u64::MAX
+    } else {
+        (1u64 << (pos + 1)) - 1
+    };
+    (marking & mask).count_ones() as usize
+}
+
+#[inline]
+fn fire_invisible_bitmask(
+    invisible_indices: &[usize],
+    trans_in_masks: &[u64],
+    trans_out_masks: &[u64],
+    marking: &mut u64,
+) {
+    let mut changed = true;
+    while changed {
+        changed = false;
+        for &i in invisible_indices {
+            let in_m = trans_in_masks[i];
+            if (*marking & in_m) == in_m {
+                *marking = (*marking & !in_m) | trans_out_masks[i];
+                changed = true;
+                break;
+            }
         }
     }
 }
@@ -134,6 +212,7 @@ fn replay_log(
                         }
                     }
                 }
+                fire_invisible_bitmask(&lookup.invisible_indices, &lookup.trans_in_masks, &lookup.trans_out_masks, &mut marking);
 
                 for (event_idx, event) in trace.events.iter().enumerate() {
                     let activity = event
@@ -153,9 +232,9 @@ fn replay_log(
                         }
                     };
 
-                    let trans_idx = match lookup.activity_to_transition.get(activity_label) {
-                        Some(&idx) => idx,
-                        None => {
+                    let trans_idx = match lookup.sorted_label_index.binary_search_by_key(&activity_label, |(l, _)| l.as_str()) {
+                        Ok(pos) => lookup.sorted_label_index[pos].1[0],
+                        Err(_) => {
                             deviations.push(TokenReplayDeviation {
                                 event_index: event_idx,
                                 activity: activity_label.to_string(),
@@ -208,9 +287,10 @@ fn replay_log(
                             }
                         }
                     }
+                    fire_invisible_bitmask(&lookup.invisible_indices, &lookup.trans_in_masks, &lookup.trans_out_masks, &mut marking);
                 }
 
-                let tokens_remaining = marking.count_ones() as usize;
+                let tokens_remaining = rank_u64(marking, petri_net.places.len().saturating_sub(1));
 
                 let mut is_final_marking_reached = false;
                 for final_marking in &petri_net.final_markings {
@@ -286,9 +366,9 @@ fn replay_log(
                 }
             };
 
-            let trans_idx = match lookup.activity_to_transition.get(activity_label) {
-                Some(&idx) => idx,
-                None => {
+            let trans_idx = match lookup.sorted_label_index.binary_search_by_key(&activity_label, |(l, _)| l.as_str()) {
+                Ok(pos) => lookup.sorted_label_index[pos].1[0],
+                Err(_) => {
                     deviations.push(TokenReplayDeviation {
                         event_index: event_idx,
                         activity: activity_label.to_string(),
