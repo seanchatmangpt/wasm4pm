@@ -47,7 +47,7 @@ export const verify = defineCommand({
         formatter.info('');
       }
 
-      const report = await runCertification(version);
+      const report = await runCertification(version, { fast });
 
       if ((ctx.args.format as string) === 'json') {
         (formatter as JSONFormatter).output({

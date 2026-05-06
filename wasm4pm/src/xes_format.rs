@@ -86,61 +86,61 @@ fn insert_attr(
 /// XES is the standard eXtensible Event Stream format for process logs
 #[wasm_bindgen]
 pub fn load_eventlog_from_xes(content: &str) -> Result<String, JsValue> {
-    // Estimate trace count from file size to pre-allocate (heuristic: ~500 bytes per trace)
-    let estimated_traces = (content.len() / 500).max(16);
-    let mut log = EventLog::new();
-    log.traces.reserve(estimated_traces);
-
-    let mut current_trace: Option<Trace> = None;
-    let mut current_event: Option<Event> = None;
-
-    for line in content.lines() {
-        let trimmed = line.trim();
-
-        // Fast early exit for empty lines and XML prologue / closing tags
-        if trimmed.is_empty() {
-            continue;
+    #[cfg(feature = "import")]
+    {
+        use wasm4pm_types::import::xes::{import_xes, XESImportOptions};
+        let reader = std::io::BufReader::new(std::io::Cursor::new(content.as_bytes().to_vec()));
+        match import_xes(reader, XESImportOptions::default()) {
+            Ok(types_log) => {
+                let log: EventLog = types_log.into();
+                let handle = get_or_init_state()
+                    .store_object(StoredObject::EventLog(log))
+                    .map_err(|_e| crate::error::js_val("Failed to store EventLog"))?;
+                return Ok(handle);
+            }
+            Err(e) => {
+                return Err(crate::error::js_val(&format!("XES Parse Error: {:?}", e)));
+            }
         }
+    }
 
-        // Dispatch on the second byte (first byte is always '<' for tags we care about).
-        // Non-tag lines and comments fall through to the default arm and are skipped cheaply.
-        let bytes = trimmed.as_bytes();
-        if bytes.is_empty() || bytes[0] != b'<' {
-            continue;
-        }
+    #[cfg(not(feature = "import"))]
+    {
+        // Estimate trace count from file size to pre-allocate (heuristic: ~500 bytes per trace)
+        let estimated_traces = (content.len() / 500).max(16);
+        let mut log = EventLog::new();
+        log.traces.reserve(estimated_traces);
 
-        // Second byte disambiguates the tag family:
-        //   b't' → <trace> / </trace>
-        //   b'e' → <event> / </event>
-        //   b's' → <string …/>
-        //   b'd' → <date …/>
-        //   b'i' → <int …/>
-        //   b'/' → closing tag handled by sub-byte (third byte)
-        //   b'l' → <log …>  (ignored)
-        //   _   → skip
-        let second = if bytes.len() > 1 { bytes[1] } else { 0 };
+        let mut current_trace: Option<Trace> = None;
+        let mut current_event: Option<Event> = None;
 
-        match second {
-            b't'
-                // <trace> or </trace> — the </trace> case has second byte '/'
-                // We reach here only for <trace…>
-                if (trimmed.starts_with("<trace>") || trimmed.starts_with("<trace ")) => {
+        for line in content.lines() {
+            let trimmed = line.trim();
+
+            if trimmed.is_empty() {
+                continue;
+            }
+
+            let bytes = trimmed.as_bytes();
+            if bytes.is_empty() || bytes[0] != b'<' {
+                continue;
+            }
+
+            let second = if bytes.len() > 1 { bytes[1] } else { 0 };
+
+            match second {
+                b't' if (trimmed.starts_with("<trace>") || trimmed.starts_with("<trace ")) => {
                     current_trace = Some(Trace {
                         attributes: HashMap::new(),
-                        // Pre-allocate for a typical trace length to avoid reallocations
                         events: Vec::with_capacity(20),
                     });
                 }
-            b'e'
-                if (trimmed.starts_with("<event>") || trimmed.starts_with("<event ")) => {
+                b'e' if (trimmed.starts_with("<event>") || trimmed.starts_with("<event ")) => {
                     current_event = Some(Event {
                         attributes: HashMap::new(),
                     });
                 }
-            b's'
-                // <string key="…" value="…"/>
-                if trimmed.len() > 8 && &bytes[..8] == b"<string " && bytes[bytes.len() - 1] == b'>'
-                => {
+                b's' if trimmed.len() > 8 && &bytes[..8] == b"<string " && bytes[bytes.len() - 1] == b'>' => {
                     if let (Some(key), Some(value)) = (
                         extract_attr(trimmed, b"key"),
                         extract_attr(trimmed, b"value"),
@@ -153,9 +153,7 @@ pub fn load_eventlog_from_xes(content: &str) -> Result<String, JsValue> {
                         );
                     }
                 }
-            b'd'
-                // <date key="…" value="…"/>
-                if trimmed.len() > 6 && &bytes[..6] == b"<date " => {
+                b'd' if trimmed.len() > 6 && &bytes[..6] == b"<date " => {
                     if let (Some(key), Some(value)) = (
                         extract_attr(trimmed, b"key"),
                         extract_attr(trimmed, b"value"),
@@ -168,9 +166,7 @@ pub fn load_eventlog_from_xes(content: &str) -> Result<String, JsValue> {
                         );
                     }
                 }
-            b'i'
-                // <int key="…" value="…"/>
-                if trimmed.len() > 5 && &bytes[..5] == b"<int " => {
+                b'i' if trimmed.len() > 5 && &bytes[..5] == b"<int " => {
                     if let (Some(key), Some(value_str)) = (
                         extract_attr(trimmed, b"key"),
                         extract_attr(trimmed, b"value"),
@@ -185,61 +181,48 @@ pub fn load_eventlog_from_xes(content: &str) -> Result<String, JsValue> {
                         }
                     }
                 }
-            b'/' => {
-                // Closing tags: </trace> or </event>
-                // Third byte tells us which
-                let third = if bytes.len() > 2 { bytes[2] } else { 0 };
-                match third {
-                    b't' => {
-                        // </trace>
-                        if let Some(trace) = current_trace.take() {
-                            log.traces.push(trace);
-                        }
-                    }
-                    b'e' => {
-                        // </event>
-                        if let Some(event) = current_event.take() {
-                            if let Some(ref mut trace) = current_trace {
-                                trace.events.push(event);
+                b'/' => {
+                    let third = if bytes.len() > 2 { bytes[2] } else { 0 };
+                    match third {
+                        b't' => {
+                            if let Some(trace) = current_trace.take() {
+                                log.traces.push(trace);
                             }
                         }
+                        b'e' => {
+                            if let Some(event) = current_event.take() {
+                                if let Some(ref mut trace) = current_trace {
+                                    trace.events.push(event);
+                                }
+                            }
+                        }
+                        _ => {}
                     }
-                    _ => {}
                 }
-            }
-            _ => {
-                // <log …>, comments, processing instructions — skip
+                _ => {}
             }
         }
+
+        let handle = get_or_init_state()
+            .store_object(StoredObject::EventLog(log))
+            .map_err(|_e| crate::error::js_val("Failed to store EventLog"))?;
+
+        Ok(handle)
     }
-
-    // Store the log
-    let handle = get_or_init_state()
-        .store_object(StoredObject::EventLog(log))
-        .map_err(|_e| crate::error::js_val("Failed to store EventLog"))?;
-
-    Ok(handle)
 }
 
 /// Parse XES format with parse cache — skips re-parsing if content hash matches.
-///
-/// Uses `crate::cache::hash_xes_content` to fingerprint the raw XES string and
-/// `crate::cache::parse_cache_get` / `parse_cache_insert` to avoid redundant
-/// XML parsing.  Falls back to the normal parse path on cache miss.
 #[wasm_bindgen]
 pub fn load_eventlog_from_xes_cached(content: &str) -> Result<String, JsValue> {
     let hash = crate::cache::hash_xes_content(content);
 
     if let Some(cached_handle) = crate::cache::parse_cache_get(&hash) {
-        // Verify the handle still exists in state (it may have been evicted).
         let exists = get_or_init_state().with_object(&cached_handle, |obj| Ok(obj.is_some()))?;
         if exists {
             return Ok(cached_handle);
         }
-        // Handle was evicted — fall through to re-parse and re-insert.
     }
 
-    // Cache miss (or evicted) — delegate to the normal parse path.
     let handle = load_eventlog_from_xes(content)?;
     crate::cache::parse_cache_insert(hash, handle.clone());
     Ok(handle)
@@ -250,39 +233,27 @@ pub fn load_eventlog_from_xes_cached(content: &str) -> Result<String, JsValue> {
 pub fn export_eventlog_to_xes(eventlog_handle: &str) -> Result<String, JsValue> {
     get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
-            // Pre-allocate output buffer. Rough estimate: 200 bytes per event average.
             let total_events: usize = log.traces.iter().map(|t| t.events.len()).sum();
             let mut xes = String::with_capacity(512 + total_events * 200);
 
             xes.push_str("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
             xes.push_str("<log xes:version=\"1.0\" xmlns:xes=\"http://www.xes-standard.org/\">\n");
 
-            // Write traces
             for trace in log.traces.iter() {
                 xes.push_str("  <trace>\n");
-
-                // Write trace attributes
                 for (key, value) in &trace.attributes {
                     write_attribute(&mut xes, 2, key, value);
                 }
-
-                // Write events
                 for event in trace.events.iter() {
                     xes.push_str("    <event>\n");
-
-                    // Write event attributes
                     for (key, value) in &event.attributes {
                         write_attribute(&mut xes, 3, key, value);
                     }
-
                     xes.push_str("    </event>\n");
                 }
-
                 xes.push_str("  </trace>\n");
             }
-
             xes.push_str("</log>");
-
             Ok(xes)
         }
         Some(_) => Err(crate::error::js_val("Object is not an EventLog")),
@@ -291,12 +262,10 @@ pub fn export_eventlog_to_xes(eventlog_handle: &str) -> Result<String, JsValue> 
 }
 
 fn write_attribute(xes: &mut String, indent: usize, key: &str, value: &AttributeValue) {
-    // Use pre-computed indent strings; fall back to runtime repeat only for unusual depths.
     let spaces: &str = match indent {
         2 => INDENT_2,
         3 => INDENT_3,
         _ => {
-            // Rare path — avoid polluting the common case with a branch on a heap String.
             let s = " ".repeat(indent * 2);
             return write_attribute_with_indent(xes, &s, key, value);
         }
@@ -320,7 +289,6 @@ fn write_attribute_with_indent(xes: &mut String, spaces: &str, key: &str, value:
             xes.push_str("<int key=\"");
             xes.push_str(key);
             xes.push_str("\" value=\"");
-            // Avoid format! allocation for integers
             xes.push_str(&i.to_string());
             xes.push_str("\" />\n");
         }
@@ -348,7 +316,7 @@ fn write_attribute_with_indent(xes: &mut String, spaces: &str, key: &str, value:
             xes.push_str(if *b { "true" } else { "false" });
             xes.push_str("\" />\n");
         }
-        _ => {} // Skip complex types for basic XES
+        _ => {}
     }
 }
 

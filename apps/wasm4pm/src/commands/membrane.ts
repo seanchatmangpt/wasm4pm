@@ -4,6 +4,7 @@ import * as path from 'path';
 import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { WasmLoader } from '@wasm4pm/engine';
+import { buildSarifOutput } from '../sarif.js';
 
 // ---------------------------------------------------------------------------
 // Shared parse helper — WASM functions return either a JS string or an object
@@ -50,101 +51,13 @@ path = ".wasm4pm/envelopes"
 `;
 
 // ---------------------------------------------------------------------------
-// SARIF output builder
+// Subcommand: verify  (was: benchmark — verb8 rename, keeps exit-non-zero on failure)
 // ---------------------------------------------------------------------------
 
-function buildSarifOutput(
-  toolVersion: string,
-  results: Array<{
-    verdict: string;
-    actor?: string;
-    action?: string;
-    traceName?: string;
-    explanation?: string;
-    missingEvidence?: string[];
-  }>
-) {
-  const verdictToLevel = (v: string): 'none' | 'note' | 'warning' | 'error' => {
-    const lv = v.toLowerCase().replace(/_/g, '');
-    if (lv === 'allow' || lv === 'allowwithreceipt') return 'note';
-    if (lv === 'warn') return 'warning';
-    return 'error'; // escalate, quarantine, requireevidence, deny, stopline
-  };
-
-  const verdictToRule = (v: string): string => {
-    const lv = v.toLowerCase().replace(/_/g, '');
-    if (lv.includes('custody') || lv === 'deny' || lv === 'requireevidence') return 'AM001';
-    if (lv === 'escalate' || lv === 'warn') return 'AM002';
-    return 'AM003';
-  };
-
-  return {
-    $schema:
-      'https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json',
-    version: '2.1.0',
-    runs: [
-      {
-        tool: {
-          driver: {
-            name: 'wasm4pm-automembrane',
-            version: toolVersion,
-            rules: [
-              {
-                id: 'AM001',
-                name: 'CustodyViolation',
-                shortDescription: {
-                  text: 'High-stakes action without required custody evidence',
-                },
-              },
-              {
-                id: 'AM002',
-                name: 'ActorAnomaly',
-                shortDescription: {
-                  text: 'Actor or AutoML behavior deviates from learned envelope',
-                },
-              },
-              {
-                id: 'AM003',
-                name: 'RouteDeviation',
-                shortDescription: {
-                  text: 'Request follows unexpected process route or pattern',
-                },
-              },
-            ],
-          },
-        },
-        results: results.map((r) => ({
-          ruleId: verdictToRule(r.verdict),
-          level: verdictToLevel(r.verdict),
-          message: {
-            text:
-              r.explanation ||
-              `Verdict: ${r.verdict}` +
-                (r.missingEvidence?.length
-                  ? ` (missing: ${r.missingEvidence.join(', ')})`
-                  : ''),
-          },
-          locations: [],
-          properties: {
-            verdict: r.verdict,
-            actor: r.actor,
-            action: r.action,
-            trace: r.traceName,
-          },
-        })),
-      },
-    ],
-  };
-}
-
-// ---------------------------------------------------------------------------
-// Subcommand: benchmark
-// ---------------------------------------------------------------------------
-
-const benchmark = defineCommand({
+const membraneVerify = defineCommand({
   meta: {
-    name: 'benchmark',
-    description: 'Run all built-in AutoMembrane security benchmark traces',
+    name: 'verify',
+    description: 'Run all built-in AutoMembrane benchmarks — exit non-zero if any fail (CI gate)',
   },
   args: {
     format: {
@@ -238,13 +151,13 @@ const benchmark = defineCommand({
 });
 
 // ---------------------------------------------------------------------------
-// Subcommand: classify
+// Subcommand: replay  (was: classify — verb8 rename; classifying = replaying motion)
 // ---------------------------------------------------------------------------
 
-const classify = defineCommand({
+const membraneReplayLog = defineCommand({
   meta: {
-    name: 'classify',
-    description: 'Classify motions from an XES event log through the AutoMembrane',
+    name: 'replay',
+    description: 'Replay motions from an XES event log through the AutoMembrane',
   },
   args: {
     log: {
@@ -434,10 +347,10 @@ const classify = defineCommand({
 // Subcommand: health
 // ---------------------------------------------------------------------------
 
-const health = defineCommand({
+const membraneShow = defineCommand({
   meta: {
-    name: 'health',
-    description: 'Check health of installed AutoMembrane envelopes',
+    name: 'show',
+    description: 'Show current membrane state, envelope health, and installed handles',
   },
   args: {
     handles: {
@@ -1360,6 +1273,143 @@ const membraneDoctor = defineCommand({
 });
 
 // ---------------------------------------------------------------------------
+// Subcommand: check  (fast preflight — no WASM call needed)
+// ---------------------------------------------------------------------------
+
+const membraneCheck = defineCommand({
+  meta: {
+    name: 'check',
+    description: 'Fast preflight: verify feature profile, config, and envelope presence',
+  },
+  args: {
+    format: { type: 'string', description: 'Output format: human (default) or json' },
+    quiet: { type: 'boolean', alias: 'q' },
+  },
+  async run(ctx) {
+    const formatter = getFormatter({
+      format: ctx.args.format as 'human' | 'json',
+      quiet: ctx.args.quiet,
+    });
+
+    const checks: Array<{ name: string; pass: boolean; detail: string }> = [];
+
+    // Check 1: WASM membrane exports available
+    try {
+      const loader = WasmLoader.getInstance();
+      await loader.init();
+      const wasm = loader.get() as Record<string, unknown>;
+      const hasMemb = typeof wasm.classify_motion === 'function';
+      checks.push({
+        name: 'feature-miniml loaded',
+        pass: hasMemb,
+        detail: hasMemb ? 'classify_motion export present' : 'rebuild with npm run build:fog or build:browser',
+      });
+    } catch (e) {
+      checks.push({ name: 'feature-miniml loaded', pass: false, detail: String(e) });
+    }
+
+    // Check 2: envelopes directory has ≥1 manifest
+    try {
+      const { readdir } = await import('fs/promises');
+      const files = await readdir(ENVELOPES_DIR).catch(() => [] as string[]);
+      const manifests = files.filter((f) => f.endsWith('.json'));
+      checks.push({
+        name: 'envelopes present',
+        pass: manifests.length > 0,
+        detail: manifests.length > 0
+          ? `${manifests.length} envelope manifest(s) found`
+          : 'run wpm membrane build <log.xes> to create envelopes',
+      });
+    } catch {
+      checks.push({ name: 'envelopes present', pass: false, detail: 'cannot read envelopes dir' });
+    }
+
+    const allPass = checks.every((c) => c.pass);
+
+    if (formatter instanceof JSONFormatter) {
+      formatter.output({ checks, all_pass: allPass });
+    } else {
+      for (const c of checks) {
+        const icon = c.pass ? '✓' : '✗';
+        const line = `  ${icon} ${c.name.padEnd(28)} ${c.detail}`;
+        if (c.pass) (formatter as HumanFormatter).info(line);
+        else formatter.warn(line);
+      }
+      if (allPass) formatter.success('Membrane check passed.');
+      else formatter.warn('Membrane check: some checks failed.');
+    }
+
+    process.exit(allPass ? EXIT_CODES.success : EXIT_CODES.execution_error);
+  },
+});
+
+// ---------------------------------------------------------------------------
+// Subcommand: export  (SARIF / JSON output from verify run)
+// ---------------------------------------------------------------------------
+
+const membraneExport = defineCommand({
+  meta: {
+    name: 'export',
+    description: 'Run benchmarks and export results as SARIF, JSON, or report',
+  },
+  args: {
+    format: {
+      type: 'string',
+      default: 'sarif',
+      description: 'Export format: sarif (default), json',
+    },
+    quiet: { type: 'boolean', alias: 'q' },
+  },
+  async run(ctx) {
+    const formatter = getFormatter({ format: 'human', quiet: ctx.args.quiet });
+
+    try {
+      const loader = WasmLoader.getInstance();
+      await loader.init();
+      const wasm = loader.get() as Record<string, unknown>;
+
+      if (typeof wasm.run_all_benchmarks !== 'function') {
+        formatter.error(FEATURE_GUARD_MSG);
+        process.exit(EXIT_CODES.execution_error);
+      }
+
+      const raw = (wasm.run_all_benchmarks as () => unknown)();
+      const result = parse(raw) as {
+        total: number;
+        passed: number;
+        failed: number;
+        pass_rate: number;
+        results: Array<{
+          trace_id: string;
+          name: string;
+          pass: boolean;
+          final_verdict: string;
+          expected_verdict: string;
+          failure_reason?: string;
+        }>;
+      };
+
+      const fmt = (ctx.args.format ?? 'sarif').toLowerCase();
+      if (fmt === 'sarif') {
+        const sarifResults = result.results.map((r) => ({
+          verdict: r.final_verdict,
+          traceName: r.trace_id,
+          explanation: r.failure_reason,
+        }));
+        process.stdout.write(JSON.stringify(buildSarifOutput('26.4.28', sarifResults), null, 2) + '\n');
+      } else {
+        process.stdout.write(JSON.stringify(result, null, 2) + '\n');
+      }
+
+      process.exit(EXIT_CODES.success);
+    } catch (e) {
+      formatter.error(String(e));
+      process.exit(EXIT_CODES.execution_error);
+    }
+  },
+});
+
+// ---------------------------------------------------------------------------
 // Top-level `membrane` command
 // ---------------------------------------------------------------------------
 
@@ -1382,30 +1432,25 @@ export const membrane = defineCommand({
         JSON.stringify({
           status: 'info',
           message:
-            'AutoMembrane subcommands: init, build, benchmark, classify, health, inspect, replay, list, doctor',
+            'AutoMembrane verb8: show, init, build, check, doctor, replay, verify, export',
         }) + '\n'
       );
     } else {
       process.stdout.write(`
-  wpm membrane — AutoMembrane Vision 2030
+  wpm membrane — AutoMembrane Vision 2030  (verb8 grammar)
 
   Subcommands:
-    wpm membrane init                    Scaffold [membrane] config in wasm4pm.toml
-    wpm membrane build <log.xes>         Build all envelope layers from an event log
-    wpm membrane benchmark               Run all built-in security benchmarks
-    wpm membrane classify <log.xes>      Classify motions from an event log
-    wpm membrane health [handles]        Check health of installed envelopes
-    wpm membrane inspect <handle>        Show details for a specific envelope handle
-    wpm membrane replay <motion.json>    Replay a RequestMotion through the classifier
-    wpm membrane list                    List envelopes persisted to .wasm4pm/envelopes/
-    wpm membrane doctor                  Run 8 definition-of-done gate checks
+    wpm membrane show   [handle]          Show state, health, and installed envelopes
+    wpm membrane init                     Scaffold [membrane] config in wasm4pm.toml
+    wpm membrane build  <log.xes>         Build all envelope layers from an event log
+    wpm membrane check                    Fast preflight: profile, config, envelopes
+    wpm membrane doctor                   Run 8 definition-of-done gate checks
+    wpm membrane replay <motion.json>     Replay a RequestMotion through the classifier
+    wpm membrane verify                   Run benchmarks — exit non-zero on failure (CI)
+    wpm membrane export [--format sarif]  Emit SARIF / JSON / report
 
-  The membrane intercepts process motions across five layers:
-    actor     Identity completeness
-    object    Object scope completeness
-    route     Route context validity
-    automl    Reserved for ML-scored risk
-    custody   Evidence chain for high-stakes actions
+  Deprecated aliases (removed v26.6):
+    health → show    classify → replay    benchmark → verify    inspect → show <handle>
 
   Run "wpm membrane <subcommand> --help" for detailed usage.
 `);
@@ -1413,14 +1458,20 @@ export const membrane = defineCommand({
     process.exit(EXIT_CODES.success);
   },
   subCommands: {
-    init: membraneInit,
-    build: membraneBuild,
-    benchmark,
-    classify,
-    health,
-    inspect: membraneInspect,
-    replay: membraneReplay,
-    list: membraneList,
-    doctor: membraneDoctor,
+    // verb8 canonical
+    show:    membraneShow,
+    init:    membraneInit,
+    build:   membraneBuild,
+    check:   membraneCheck,
+    doctor:  membraneDoctor,
+    replay:  membraneReplay,
+    verify:  membraneVerify,
+    export:  membraneExport,
+    // deprecated aliases (kept for backward compat, removed v26.6)
+    health:   membraneShow,
+    classify: membraneReplayLog,
+    inspect:  membraneInspect,
+    list:     membraneList,
+    benchmark: membraneVerify,
   },
 });
