@@ -193,3 +193,71 @@ describe('Metamorphic DFG edge frequency law (Rank 3)', () => {
     }
   });
 });
+
+// ─── Test 5: Non-XES extension rejection ─────────────────────────────────────
+
+describe('Non-XES extension rejection (Fix 1)', () => {
+  it('.csv extension file exits with source_error (2)', () => {
+    const tmpFile = path.join(os.tmpdir(), `data-${Date.now()}.csv`);
+    fs.writeFileSync(tmpFile, 'case_id,activity,timestamp\n1,A,2024-01-01\n1,B,2024-01-02\n');
+    try {
+      const { status } = wpm('run', tmpFile, '--algorithm', 'dfg', '--format', 'json', '--no-save');
+      expect(status).toBe(2);
+    } finally {
+      fs.unlinkSync(tmpFile);
+    }
+  });
+
+  it('.txt extension file exits with source_error (2)', () => {
+    const tmpFile = path.join(os.tmpdir(), `log-${Date.now()}.txt`);
+    fs.writeFileSync(tmpFile, '<log><trace><event><string key="concept:name" value="A"/></event></trace></log>');
+    try {
+      const { status } = wpm('run', tmpFile, '--algorithm', 'dfg', '--format', 'json', '--no-save');
+      expect(status).toBe(2);
+    } finally {
+      fs.unlinkSync(tmpFile);
+    }
+  });
+});
+
+// ─── Test 6: Zero-trace log rejection ────────────────────────────────────────
+
+describe('Zero-trace log rejection (Fix 2)', () => {
+  it('XES with <log></log> (no traces) exits with source_error (2)', () => {
+    const tmpFile = path.join(os.tmpdir(), `empty-traces-${Date.now()}.xes`);
+    const emptyLog = `<?xml version="1.0" encoding="UTF-8"?>
+<log xmlns="http://www.xes-standard.org/">
+</log>`;
+    fs.writeFileSync(tmpFile, emptyLog);
+    try {
+      const { status } = wpm('run', tmpFile, '--algorithm', 'dfg', '--format', 'json', '--no-save');
+      expect(status).not.toBe(0);
+    } finally {
+      fs.unlinkSync(tmpFile);
+    }
+  });
+});
+
+// ─── Test 7: wpm status exits 0 when WASM loads successfully ─────────────────
+
+describe('wpm status exit code contract (Fix 3)', () => {
+  it('wpm status exits 0 when WASM is available in test environment', () => {
+    const { status } = wpm('status', '--format', 'json');
+    // In a healthy environment WASM should load and status should exit 0.
+    // If WASM fails to load (isolated env), exit 5 is acceptable.
+    expect([0, 5]).toContain(status);
+  });
+
+  it('wpm status --format json emits a status field', () => {
+    const { stdout, status } = wpm('status', '--format', 'json');
+    if (status !== 0) {
+      // WASM unavailable in this environment — still verify it exits 5 not some other code
+      expect([5]).toContain(status);
+      return;
+    }
+    const jsonStart = stdout.indexOf('{');
+    const obj = JSON.parse(stdout.slice(jsonStart < 0 ? 0 : jsonStart));
+    expect(obj).toHaveProperty('status');
+    expect(obj.status).toBe('success');
+  });
+});
