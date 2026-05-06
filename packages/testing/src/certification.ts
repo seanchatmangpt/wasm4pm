@@ -13,6 +13,11 @@ export interface GateResult {
   passed: boolean;
   details: string;
   duration_ms: number;
+  timing?: {
+    median_ms: number;
+    p95_ms: number;
+    peak_memory_mb?: number;
+  };
 }
 
 export interface CertificationReport {
@@ -21,6 +26,17 @@ export interface CertificationReport {
   gates: GateResult[];
   passed: boolean;
   summary: string;
+  evidence?: {
+    corpus_hash: string;
+    generator_seed?: number;
+    feature_flags: string[];
+    wasm_build_profile: string;
+    run_environment: {
+      node_version: string;
+      platform: string;
+      arch: string;
+    };
+  };
 }
 
 export type GateFunction = () => Promise<GateResult> | GateResult;
