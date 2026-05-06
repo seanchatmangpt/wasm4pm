@@ -156,7 +156,7 @@ Compare cumulative reward: LinUCB-based selection vs fixed-agent baseline.
 
 ### 7. State Space Coverage
 
-Percentage of 460,800 possible states explored.
+Percentage of 368,640 possible states explored.
 
 **8D State Space:**
 - health_level: 5 (0-4)
@@ -167,7 +167,7 @@ Percentage of 460,800 possible states explored.
 - rework_ratio_q: 8 (0-7)
 - circuit_state: 3 (0-2)
 - cycle_phase: 4 (0-3)
-- **Total: 5 × 8 × 8 × 4 × 3 × 8 × 3 × 4 = 460,800 states**
+- **Total: 5 × 8 × 8 × 4 × 3 × 8 × 3 × 4 = 368,640 states**
 
 **Test Scenario:** 1000-cycle run per agent, track visited state count.
 
@@ -178,7 +178,7 @@ Percentage of 460,800 possible states explored.
 
 **Key Metrics:**
 - Unique states visited (count)
-- Coverage % (visited / 460,800)
+- Coverage % (visited / 368,640)
 - Distribution (uniform vs concentrated)
 
 **Expected Results:**

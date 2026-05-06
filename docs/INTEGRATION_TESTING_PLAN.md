@@ -105,7 +105,7 @@ This document defines the comprehensive end-to-end testing and certification str
 - ExpectedSARSA (expected value update)
 - REINFORCE (policy gradient)
 
-**State space:** 8D (health, event_rate, activity_count, spc_alert, drift, rework, circuit, cycle) = 460,800 states
+**State space:** 8D (health, event_rate, activity_count, spc_alert, drift, rework, circuit, cycle) = 368,640 states
 
 **Reward function:**
 - Health improvement: +1.0

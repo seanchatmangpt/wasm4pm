@@ -6,7 +6,7 @@
 
 ## Executive Summary
 
-Vision 2030 autonomic loop is **complete and verified**. All 12 core autonomic tests pass with mathematical and domain-contract oracles. The system is deadlock-free (WvdA soundness), liveness-guaranteed, and bounded in a 460,800-state RL space.
+Vision 2030 autonomic loop is **complete and verified**. All 12 core autonomic tests pass with mathematical and domain-contract oracles. The system is deadlock-free (WvdA soundness), liveness-guaranteed, and bounded in a 368,640-state RL space.
 
 ---
 
@@ -97,11 +97,11 @@ No state locks itself (all transitions have escape path).
 - All recursive calls bounded: `max_depth = 1000` states in RL
 - All RL episodes terminate when `health == 4` (terminal state)
 
-**Proof:** State space is finite (460,800 states across 8 dimensions). Terminal state reachable. RL agents update Q-values toward terminal → guaranteed convergence.
+**Proof:** State space is finite (368,640 states across 8 dimensions). Terminal state reachable. RL agents update Q-values toward terminal → guaranteed convergence.
 
 ### Boundedness (Resource Guarantee)
 
-✅ **State space bounded to 460,800 states.**
+✅ **State space bounded to 368,640 states.**
 
 | Dimension | Levels | Bound |
 |-----------|--------|-------|
@@ -114,9 +114,9 @@ No state locks itself (all transitions have escape path).
 | `circuit_state` | 0-2 | 3 states |
 | `cycle_phase` | 0-3 | 4 states |
 
-**Total:** 5 × 8 × 8 × 4 × 3 × 8 × 3 × 4 = **460,800 states** ✅
+**Total:** 5 × 8 × 8 × 4 × 3 × 8 × 3 × 4 = **368,640 states** ✅
 
-Memory: ~18MB for 5 RL agents × 460,800 states × 5 actions × 8 bytes per Q-value.
+Memory: ~18MB for 5 RL agents × 368,640 states × 5 actions × 8 bytes per Q-value.
 
 **Proof:** Memory limiter monitors RSS. Test `test_g2_fifty_consecutive_cycles_no_panic` verifies no unbounded growth.
 
@@ -156,7 +156,7 @@ Memory: ~18MB for 5 RL agents × 460,800 states × 5 actions × 8 bytes per Q-va
 | Recovery behavior validated | ✅ | test_g3_degraded_to_recovery_reward_increases PASS |
 | Deadlock-free (WvdA) | ✅ | No circular wait chains; DAG state transitions |
 | Liveness-guaranteed (WvdA) | ✅ | Terminal state reachable; all loops bounded |
-| Bounded state space (WvdA) | ✅ | 460,800 states across 8 finite dimensions |
+| Bounded state space (WvdA) | ✅ | 368,640 states across 8 finite dimensions |
 | Schema conformance (Weaver) | ✅ | OTEL spans: service=wasm4pm, all attributes typed |
 | Van der Aalst process mining oracle | ✅ | Rank 1 mathematical theorems (Bellman, terminal states) |
 
@@ -180,4 +180,4 @@ The autonomic loop is production-ready for deployment.
 **Test Run Date:** 2026-04-16  
 **Autonomic Loop Test Suite:** `tests/autonomic_loop_tests.rs` (12 tests, 100% pass)  
 **Oracle Methodology:** Chicago TDD van der Aalst (Rank 1-2 mathematical + domain contracts)  
-**WvdA Verification:** Deadlock-free, liveness-guaranteed, state space bounded to 460,800 states
+**WvdA Verification:** Deadlock-free, liveness-guaranteed, state space bounded to 368,640 states

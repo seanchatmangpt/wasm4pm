@@ -112,7 +112,7 @@ Rust compiled to native code via WASM achieves single-digit-millisecond latencie
 └────────────────────────────────────────────────────────┘
 ```
 
-The RL state space covers 460,800 states across 8 dimensions (health level, event rate, activity count, SPC alert level, drift status, rework ratio, circuit state, cycle phase). The reward function is calibrated to the Van der Aalst quality dimensions: fitness improvement yields positive reward; fitness degradation yields negative reward.
+The RL state space covers 368,640 states across 8 dimensions (health level, event rate, activity count, SPC alert level, drift status, rework ratio, circuit state, cycle phase). The reward function is calibrated to the Van der Aalst quality dimensions: fitness improvement yields positive reward; fitness degradation yields negative reward.
 
 **Why competitors cannot replicate this.** No existing process mining platform embeds RL-based autonomous optimization. Celonis offers Action Flows — rule-based automation triggered by process KPI thresholds. This is a fundamentally different architecture: reactive, human-authored, and requiring external RPA or workflow integration. The distinction matters because rule-based systems cannot generalize: each rule must be authored for a specific threshold combination. RL generalizes across the full state space.
 

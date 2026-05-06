@@ -3,7 +3,7 @@
 //! **Design Principles:**
 //! - 64-byte cache line alignment for hot-path structs
 //! - 8D state space encoded as a single u32 index (460K states fit in 19 bits)
-//! - QTable<460_800> with sequential memory layout (linear probing)
+//! - QTable<368_640> with sequential memory layout (linear probing)
 //! - Deterministic hashing via FNV-1a for variant deduplication
 //! - Cache hit rate target: >95% via spatial locality
 
@@ -15,7 +15,7 @@ use crate::RlState;
 
 /// Encode 8D RlState into a single u32 index.
 ///
-/// State space: 5 × 8 × 8 × 4 × 3 × 8 × 3 × 4 = 460,800 states
+/// State space: 5 × 8 × 8 × 4 × 3 × 8 × 3 × 4 = 368,640 states
 /// Index range: [0, 460_799]
 ///
 /// Encoding formula:
@@ -108,7 +108,7 @@ impl QEntry {
 
 /// Hash-based Q-table using linear probing.
 ///
-/// Size: 460,800 entries × 16 bytes = ~7.2 MB (fits in L3 cache on modern CPUs)
+/// Size: 368,640 entries × 16 bytes = ~7.2 MB (fits in L3 cache on modern CPUs)
 ///
 /// **Memory Layout:**
 /// - Contiguous array of 64-byte-aligned QEntry
@@ -499,7 +499,7 @@ mod tests {
 
     #[test]
     fn test_qtable_size() {
-        let table: QTable<460_800> = QTable::new();
+        let table: QTable<368_640> = QTable::new();
         let size_mb = table.size_bytes() as f64 / (1024.0 * 1024.0);
         assert!(size_mb < 36.0, "QTable exceeds 36MB: {:.2}MB", size_mb);
     }
