@@ -57,6 +57,7 @@ rayon = { version = "1.10", optional = true }
 wgpu     = { version = "0.19", optional = true }
 pollster = { version = "0.3",  optional = true }
 bcinr = { workspace = true, optional = true }
+miniml = { path = "../crates/miniml-core", optional = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 web-sys = { version = "0.3", features = [] }
@@ -232,7 +233,10 @@ feature-conformance-full = ["conformance_full", "alignment_fitness", "align_etco
 feature-discovery-advanced = ["discovery_advanced", "genetic", "ilp", "a_star", "aco", "pso", "simulated_annealing"]
 
 # Machine learning (classification, clustering, forecasting, anomaly, regression, PCA)
-feature-ml = ["ml", "ml_classify", "ml_cluster", "ml_forecast", "ml_anomaly", "ml_regress", "ml_pca"]
+feature-ml = ["ml", "ml_classify", "ml_cluster", "ml_forecast", "ml_anomaly", "ml_regress", "ml_pca", "miniml"]
+
+# Data importing (XES, OCEL 2.0 streaming)
+feature-import = ["import", "wasm4pm-types/import"]
 
 # Object-centric event logs
 feature-ocel = ["ocel"]
@@ -310,12 +314,14 @@ fog = [
   "feature-streaming-full",
   "feature-ocel",
   "feature-statrs",
+  "feature-import",
   "discovery_advanced",
   "conformance_full",
   "ml",
   "streaming_full",
   "statrs",
   "ocel",
+  "import",
   "bcinr"
 ]
 
@@ -329,6 +335,7 @@ browser = [
   "feature-ocel",
   "feature-powl",
   "feature-statrs",
+  "feature-import",
   "discovery_advanced",
   "conformance_full",
   "ml",
@@ -339,6 +346,7 @@ browser = [
   "statrs",
   "ocel",
   "powl",
+  "import",
   "console_error_panic_hook"
 ]
 
@@ -408,8 +416,10 @@ montecarlo = []
 
 # Dependencies
 statrs = ["dep:statrs"]
+miniml = ["dep:miniml"]
 powl = []
 ocel = []
+import = []
 
 # Utility features
 hand_rolled_stats = []

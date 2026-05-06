@@ -391,14 +391,14 @@ pub mod automembrane;
 pub mod benchmark_runner;
 #[cfg(feature = "miniml")]
 pub mod actor_envelope;
-#[cfg(feature = "miniml")]
-pub mod object_envelope;
+// #[cfg(feature = "miniml")]
+// pub mod object_envelope;
 #[cfg(feature = "miniml")]
 pub mod route_envelope;
 #[cfg(feature = "miniml")]
 pub mod automl_envelope;
-#[cfg(feature = "miniml")]
-pub mod drift_manager;
+// #[cfg(feature = "miniml")]
+// pub mod drift_manager;
 #[cfg(feature = "miniml")]
 pub mod time_envelope;
 
