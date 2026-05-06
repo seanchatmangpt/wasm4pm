@@ -17,7 +17,7 @@
 - Phase 4 (Optimization): Reward function, Bellman updates, Q-table persistence, LinUCB updates
 - Phase 5 (Execution): Action dispatch, state serialization, OTEL instrumentation
 - Data flow diagram (Log → State → Action → Results)
-- Key metrics: cycle latency (~34ns theoretical, 10-500ms practical), state space (460,800), reward bounds ([-5.3, +1.1])
+- Key metrics: cycle latency (~34ns theoretical, 10-500ms practical), state space (368,640), reward bounds ([-5.3, +1.1])
 - Implementation references to source files
 
 **Key Insight:** All five phases execute as one indivisible operation, with feedback from SPC and guards driving reward signals that improve RL policy over time.
@@ -106,7 +106,7 @@
 
 ### State Space
 - **Location:** `VISION_2030_ARCHITECTURE.md` § Phase 1 (Perception)
-- **Dimensions:** 5 × 8 × 8 × 4 × 3 × 8 × 3 × 4 = 460,800 states
+- **Dimensions:** 5 × 8 × 8 × 4 × 3 × 8 × 3 × 4 = 368,640 states
 - **Practical coverage:** 5-15% after 1000 cycles
 
 ---
@@ -117,7 +117,7 @@
 |--------|-------|--------|
 | **Cycle Latency** | ~34ns (theoretical), 10-500ms (practical) | VISION_2030_ARCHITECTURE.md § Key Metrics |
 | **MTTR** | <1 second | .claude/CLAUDE.md § MTTR Requirements |
-| **State Space** | 460,800 reachable states | VISION_2030_ARCHITECTURE.md § Phase 1 |
+| **State Space** | 368,640 reachable states | VISION_2030_ARCHITECTURE.md § Phase 1 |
 | **Reward Bounds** | [-5.3, +1.1] | VISION_2030_ARCHITECTURE.md § Phase 4 |
 | **Fitness Threshold** | ≥0.85 (van der Aalst) | VISION_2030_5_DOMAINS_SUMMARY.md § Domain 1 |
 | **Test Coverage** | 158 tests (63 unit, 67 integration, 28 chaos) | VISION_2030_5_DOMAINS_SUMMARY.md § Test Coverage |
