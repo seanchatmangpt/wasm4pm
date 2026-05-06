@@ -1,0 +1,16 @@
+{
+  "description": "Ground-truth DFG for minimal running example: A→B→C→D (×2), A→B→D (×1)",
+  "log_summary": {
+    "trace_count": 3,
+    "activity_count": 4,
+    "variant_count": 2
+  },
+  "expected_edges": [
+    { "from": "A", "to": "B", "count": 3 },
+    { "from": "B", "to": "C", "count": 2 },
+    { "from": "C", "to": "D", "count": 2 },
+    { "from": "B", "to": "D", "count": 1 }
+  ],
+  "start_activities": ["A"],
+  "end_activities": ["D"]
+}

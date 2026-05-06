@@ -285,7 +285,7 @@ G1 & Determinism & BLAKE3 output hash identical across $N$ runs of the same
 G2 & Receipt & BLAKE3 hash-chain integrity:
                \texttt{config} $\to$ \texttt{input} $\to$ \texttt{plan} $\to$
                \texttt{output} is internally consistent \\[4pt]
-G3 & Truth & Quality metrics meet thresholds: fitness $\geq 0.95$,
+G3 & Quality-Threshold & Quality metrics meet thresholds: fitness $\geq 0.95$,
              precision $\geq 0.80$, temporal zeta $\leq 2.0$ \\[4pt]
 G4 & Synchrony & Cross-profile output agreement (PNML roundtrip
                  semantic equivalence) \\[4pt]
@@ -305,7 +305,7 @@ G5 & Report & All required report sections present:
 \midrule
 G1 Determinism & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark \\
 G2 Receipt     &            &            & \checkmark & \checkmark & \checkmark &            \\
-G3 Truth       &            & \checkmark &            &            & \checkmark &            \\
+G3 Quality-Threshold &            & \checkmark &            &            & \checkmark &            \\
 G4 Synchrony   &            &            &            & \checkmark &            &            \\
 G5 Report      & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark \\
 \bottomrule
@@ -498,7 +498,7 @@ Token-based replay walks each trace through the Petri net, firing
 transitions and tracking token balances. The fitness score is:
 
 \[
-  \text{fitness} = 1 - \frac{m + c}{p + r}
+  \text{fitness} = 0.5 \times \left(1 - \frac{m}{\max(1,c)}\right) + 0.5 \times \left(1 - \frac{r}{\max(1,p)}\right)
 \]
 
 where $m$ = missing tokens, $c$ = consumed tokens (standard count),
@@ -744,7 +744,7 @@ a fixed-width bit field:
 
 where $h$ = health level (0--4), $e$ = event rate quantile (0--7),
 $a$ = activity count quantile (0--7), etc. The total state space is
-$5 \times 8^6 \times 3 \times 4 = 460{,}800$ states.
+$5 \times 8 \times 8 \times 4 \times 3 \times 8 \times 3 \times 4 = 368{,}640$ states.
 
 % ---------------------------------------------------------------------------
 \section{Streaming Algorithms}
@@ -847,7 +847,7 @@ The gate verifies that the stored receipt hash is the BLAKE3 of the four
 component hashes concatenated as UTF-8 hex strings. A mismatch indicates
 that one of the pipeline stages was skipped or produced corrupted output.
 
-\subsection{G3: Truth Gate}
+\subsection{G3: Quality-Threshold Gate}
 
 \begin{equation}
   \text{G3}(m) \triangleq m.\texttt{fitness} \geq 0.95 \;\land\;

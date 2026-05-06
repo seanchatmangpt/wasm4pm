@@ -164,7 +164,7 @@ pub fn check_conformance_alignment(
     let label_to_tid: HashMap<&str, &str> = model
         .transitions
         .iter()
-        .filter(|t| !t.invisible)
+        .filter(|t| !t.is_invisible.unwrap_or(false))
         .map(|t| (t.label.as_str(), t.id.as_str()))
         .collect();
 
@@ -214,17 +214,17 @@ fn derive_model_sequence(model: &PetriNet) -> Vec<String> {
 
     for arc in &model.arcs {
         // Determine if source is a place or transition
-        let src_is_place = model.places.iter().any(|p| p.id == arc.source);
+        let src_is_place = model.places.iter().any(|p| p.id == arc.from);
         if src_is_place {
             place_to_trans
-                .entry(arc.source.as_str())
+                .entry(arc.from.as_str())
                 .or_default()
-                .push(arc.target.as_str());
+                .push(arc.to.as_str());
         } else {
             trans_to_place
-                .entry(arc.source.as_str())
+                .entry(arc.from.as_str())
                 .or_default()
-                .push(arc.target.as_str());
+                .push(arc.to.as_str());
         }
     }
 
@@ -232,7 +232,7 @@ fn derive_model_sequence(model: &PetriNet) -> Vec<String> {
     let start_places: Vec<&str> = model
         .places
         .iter()
-        .filter(|p| p.initial_marking > 0 || p.id.contains("source") || p.id.contains("start"))
+        .filter(|p| p.id.contains("source") || p.id.contains("start"))
         .map(|p| p.id.as_str())
         .collect();
 
@@ -254,7 +254,7 @@ fn derive_model_sequence(model: &PetriNet) -> Vec<String> {
     while let Some(tid) = queue.first().cloned() {
         queue.remove(0);
         if let Some(t) = model.transitions.iter().find(|t| t.id == tid) {
-            if !t.invisible {
+            if !t.is_invisible.unwrap_or(false) {
                 sequence.push(t.label.clone());
             }
             if let Some(out_places) = trans_to_place.get(tid) {
@@ -462,39 +462,15 @@ mod tests {
     fn test_alignment_conforming_trace_zero_cost() {
         // Simple linear Petri net: source -> t_A -> p1 -> t_B -> sink
         let mut net = PetriNet::new();
-        net.places.push(PetriNetPlace {
-            id: "source".to_string(),
-            label: "source".to_string(),
-            initial_marking: 1,
-        });
-        net.places.push(PetriNetPlace {
-            id: "p1".to_string(),
-            label: "p1".to_string(),
-            initial_marking: 0,
-        });
-        net.places.push(PetriNetPlace {
-            id: "sink".to_string(),
-            label: "sink".to_string(),
-            initial_marking: 0,
-        });
-        net.transitions.push(PetriNetTransition::new(
-            "t_A".to_string(),
-            "A".to_string(),
-            false,
-        ));
-        net.transitions.push(PetriNetTransition::new(
-            "t_B".to_string(),
-            "B".to_string(),
-            false,
-        ));
-        net.arcs
-            .push(PetriNetArc::new("source".to_string(), "t_A".to_string(), 1));
-        net.arcs
-            .push(PetriNetArc::new("t_A".to_string(), "p1".to_string(), 1));
-        net.arcs
-            .push(PetriNetArc::new("p1".to_string(), "t_B".to_string(), 1));
-        net.arcs
-            .push(PetriNetArc::new("t_B".to_string(), "sink".to_string(), 1));
+        net.places.push(Place { id: "source".to_string() });
+        net.places.push(Place { id: "p1".to_string() });
+        net.places.push(Place { id: "sink".to_string() });
+        net.transitions.push(Transition { id: "t_A".to_string(), label: "A".to_string(), is_invisible: Some(false) });
+        net.transitions.push(Transition { id: "t_B".to_string(), label: "B".to_string(), is_invisible: Some(false) });
+        net.arcs.push(Arc { from: "source".to_string(), to: "t_A".to_string(), weight: Some(1) });
+        net.arcs.push(Arc { from: "t_A".to_string(), to: "p1".to_string(), weight: Some(1) });
+        net.arcs.push(Arc { from: "p1".to_string(), to: "t_B".to_string(), weight: Some(1) });
+        net.arcs.push(Arc { from: "t_B".to_string(), to: "sink".to_string(), weight: Some(1) });
 
         let log = EventLog::new(vec![make_trace("c1", &["A", "B"])], HashMap::new());
 
@@ -509,39 +485,15 @@ mod tests {
     fn test_alignment_nonconforming_trace_has_cost() {
         // Same linear net: A -> B, but trace is A -> B -> C (extra C)
         let mut net = PetriNet::new();
-        net.places.push(PetriNetPlace {
-            id: "source".to_string(),
-            label: "source".to_string(),
-            initial_marking: 1,
-        });
-        net.places.push(PetriNetPlace {
-            id: "p1".to_string(),
-            label: "p1".to_string(),
-            initial_marking: 0,
-        });
-        net.places.push(PetriNetPlace {
-            id: "sink".to_string(),
-            label: "sink".to_string(),
-            initial_marking: 0,
-        });
-        net.transitions.push(PetriNetTransition::new(
-            "t_A".to_string(),
-            "A".to_string(),
-            false,
-        ));
-        net.transitions.push(PetriNetTransition::new(
-            "t_B".to_string(),
-            "B".to_string(),
-            false,
-        ));
-        net.arcs
-            .push(PetriNetArc::new("source".to_string(), "t_A".to_string(), 1));
-        net.arcs
-            .push(PetriNetArc::new("t_A".to_string(), "p1".to_string(), 1));
-        net.arcs
-            .push(PetriNetArc::new("p1".to_string(), "t_B".to_string(), 1));
-        net.arcs
-            .push(PetriNetArc::new("t_B".to_string(), "sink".to_string(), 1));
+        net.places.push(Place { id: "source".to_string() });
+        net.places.push(Place { id: "p1".to_string() });
+        net.places.push(Place { id: "sink".to_string() });
+        net.transitions.push(Transition { id: "t_A".to_string(), label: "A".to_string(), is_invisible: Some(false) });
+        net.transitions.push(Transition { id: "t_B".to_string(), label: "B".to_string(), is_invisible: Some(false) });
+        net.arcs.push(Arc { from: "source".to_string(), to: "t_A".to_string(), weight: Some(1) });
+        net.arcs.push(Arc { from: "t_A".to_string(), to: "p1".to_string(), weight: Some(1) });
+        net.arcs.push(Arc { from: "p1".to_string(), to: "t_B".to_string(), weight: Some(1) });
+        net.arcs.push(Arc { from: "t_B".to_string(), to: "sink".to_string(), weight: Some(1) });
 
         let log = EventLog::new(vec![make_trace("c1", &["A", "B", "C"])], HashMap::new());
 

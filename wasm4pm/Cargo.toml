@@ -195,6 +195,22 @@ harness = false
 name = "prediction_latency"
 harness = false
 
+[[bench]]
+name = "streaming_vs_batch"
+harness = false
+
+[[bench]]
+name = "oracle_rank_validation"
+harness = false
+
+[[bench]]
+name = "prediction_baseline_comparison"
+harness = false
+
+[[bench]]
+name = "ocel_flattening"
+harness = false
+
 [[example]]
 name = "scalability_report"
 

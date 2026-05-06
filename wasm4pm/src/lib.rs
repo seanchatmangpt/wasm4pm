@@ -1647,7 +1647,7 @@ pub fn autonomic_execute_cycle(
     Ok(serde_json::to_string(&result).unwrap_or_else(|_| "{}".to_string()))
 }
 
-// State space size: 5 × 8 × 8 × 4 × 3 × 8 × 3 × 4 = 460,800 states
+// State space size: 5 × 8 × 8 × 4 × 3 × 8 × 3 × 4 = 368,640 states
 // This requires function approximation (not tabular methods)
 /// Multi-dimensional RL state with quantized dimensions
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]

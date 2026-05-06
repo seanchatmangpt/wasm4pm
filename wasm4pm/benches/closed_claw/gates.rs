@@ -2,7 +2,7 @@
 //!
 //! G1: Determinism -- output hash identical across N runs
 //! G2: Receipt   -- BLAKE3 hash chain integrity
-//! G3: Truth     -- quality metrics meet thresholds
+//! G3: Quality-Threshold Gate -- quality metrics meet thresholds
 //! G4: Synchrony -- cross-profile output agreement
 //! G5: Report    -- all required report sections present
 
@@ -169,10 +169,10 @@ pub fn check_receipt_gate(receipt: &ReceiptBundle) -> GateResult {
 }
 
 // ---------------------------------------------------------------------------
-// G3: Truth Gate
+// G3: Quality-Threshold Gate
 // ---------------------------------------------------------------------------
 
-/// Truth thresholds from the constitution.
+/// Quality-threshold gate thresholds from the constitution.
 pub struct TruthThresholds {
     pub min_fitness: f64,
     pub min_precision: f64,
@@ -189,8 +189,8 @@ impl Default for TruthThresholds {
     }
 }
 
-/// Check G3 truth gate based on quality metrics.
-pub fn check_truth_gate(
+/// Check G3 quality-threshold gate based on quality metrics.
+pub fn check_quality_threshold_gate(
     fitness: Option<f64>,
     precision: Option<f64>,
     temporal_deviations: Option<(usize, usize)>,
@@ -226,9 +226,9 @@ pub fn check_truth_gate(
     }
 
     if failures.is_empty() {
-        GateResult::pass("G3", "Truth")
+        GateResult::pass("G3", "QualityThreshold")
     } else {
-        GateResult::fail("G3", "Truth", failures.join("; "))
+        GateResult::fail("G3", "QualityThreshold", failures.join("; "))
     }
 }
 
@@ -329,7 +329,7 @@ pub fn run_all_gates(
         }
     }
     if gate_requirements.truth {
-        results.push(check_truth_gate(
+        results.push(check_quality_threshold_gate(
             fitness,
             precision,
             temporal,
@@ -478,34 +478,34 @@ mod tests {
 
     #[test]
     fn test_g3_truth_all_pass() {
-        let result = check_truth_gate(Some(0.97), Some(0.85), Some((100, 5)), &Default::default());
+        let result = check_quality_threshold_gate(Some(0.97), Some(0.85), Some((100, 5)), &Default::default());
         assert!(result.passed);
     }
 
     #[test]
     fn test_g3_truth_fitness_fail() {
-        let result = check_truth_gate(Some(0.90), Some(0.85), None, &Default::default());
+        let result = check_quality_threshold_gate(Some(0.90), Some(0.85), None, &Default::default());
         assert!(!result.passed);
         assert!(result.reason.contains("fitness"));
     }
 
     #[test]
     fn test_g3_truth_precision_fail() {
-        let result = check_truth_gate(Some(0.97), Some(0.70), None, &Default::default());
+        let result = check_quality_threshold_gate(Some(0.97), Some(0.70), None, &Default::default());
         assert!(!result.passed);
         assert!(result.reason.contains("precision"));
     }
 
     #[test]
     fn test_g3_truth_temporal_fail() {
-        let result = check_truth_gate(Some(0.97), Some(0.85), Some((50, 200)), &Default::default());
+        let result = check_quality_threshold_gate(Some(0.97), Some(0.85), Some((50, 200)), &Default::default());
         assert!(!result.passed);
         assert!(result.reason.contains("temporal"));
     }
 
     #[test]
     fn test_g3_truth_all_none_passes() {
-        let result = check_truth_gate(None, None, None, &Default::default());
+        let result = check_quality_threshold_gate(None, None, None, &Default::default());
         assert!(result.passed);
     }
 
@@ -516,7 +516,7 @@ mod tests {
             min_precision: 0.90,
             max_temporal_zeta: 1.0,
         };
-        let result = check_truth_gate(Some(0.97), Some(0.92), Some((100, 50)), &strict);
+        let result = check_quality_threshold_gate(Some(0.97), Some(0.92), Some((100, 50)), &strict);
         assert!(!result.passed);
         assert!(result.reason.contains("fitness"));
     }

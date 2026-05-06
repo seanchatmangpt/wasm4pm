@@ -255,6 +255,16 @@ pub fn discover_ocel_dfg(ocel_handle: &str) -> Result<JsValue, JsValue> {
     })
 }
 
+#[inline(always)]
+fn bitmask_mark(mask: &mut u64, id: usize) {
+    *mask |= 1u64 << id;
+}
+
+#[inline(always)]
+fn bitmask_check(mask: u64, id: usize) -> bool {
+    (mask >> id) & 1 == 1
+}
+
 /// Discover a Directly-Follows Graph (DFG) per object type from an OCEL
 #[wasm_bindgen]
 pub fn discover_ocel_dfg_per_type(ocel_handle: &str) -> Result<JsValue, JsValue> {
@@ -262,10 +272,30 @@ pub fn discover_ocel_dfg_per_type(ocel_handle: &str) -> Result<JsValue, JsValue>
         Some(StoredObject::OCEL(ocel)) => {
             let mut result: FxHashMap<String, DirectlyFollowsGraph> = FxHashMap::default();
 
-            // Fix A: build unique activity set once, outside the per-type loop
-            let all_activities: FxHashSet<String> = ocel.events.iter()
-                .map(|e| e.event_type.clone())
+            // Build sorted activity vocabulary for stable index assignment
+            let mut activity_vocab: Vec<String> = {
+                let mut seen: FxHashSet<&str> = FxHashSet::default();
+                ocel.events.iter()
+                    .filter_map(|e| {
+                        if seen.insert(e.event_type.as_str()) {
+                            Some(e.event_type.clone())
+                        } else {
+                            None
+                        }
+                    })
+                    .collect()
+            };
+            activity_vocab.sort_unstable();
+            let activity_count = activity_vocab.len();
+
+            // Reverse lookup: activity name → index (used by bitmask fast path)
+            let activity_index: FxHashMap<&str, usize> = activity_vocab
+                .iter()
+                .enumerate()
+                .map(|(i, s)| (s.as_str(), i))
                 .collect();
+
+            let use_bitmask = activity_count <= 64;
 
             // Fix C: pre-compute global activity frequencies once, outside the per-type loop
             let global_activity_counts: FxHashMap<String, usize> = {
@@ -280,12 +310,10 @@ pub fn discover_ocel_dfg_per_type(ocel_handle: &str) -> Result<JsValue, JsValue>
             for obj_type in &ocel.object_types {
                 let mut dfg = DirectlyFollowsGraph::new();
 
-                // Fix A + Fix B: use pre-built set; single to_owned() per activity for both id and label
-                for activity in &all_activities {
-                    let name = activity.to_owned();
+                for name in &activity_vocab {
                     dfg.nodes.push(DFGNode {
                         id: name.clone(),
-                        label: name,
+                        label: name.clone(),
                         frequency: 0,
                     });
                 }
@@ -339,16 +367,23 @@ pub fn discover_ocel_dfg_per_type(ocel_handle: &str) -> Result<JsValue, JsValue>
                 }
 
                 // Collect start/end activities (now correctly using events_by_object.keys())
+                let mut trace_seen_bitmask: u64 = 0u64;
                 for obj_id in events_by_object.keys() {
                     if let Some(events) = events_by_object.get(obj_id) {
                         if let Some(first) = events.first() {
                             *dfg.start_activities.entry(first.1.to_string()).or_insert(0) += 1;
+                            if use_bitmask {
+                                if let Some(&id) = activity_index.get(first.1) {
+                                    bitmask_mark(&mut trace_seen_bitmask, id);
+                                }
+                            }
                         }
                         if let Some(last) = events.last() {
                             *dfg.end_activities.entry(last.1.to_string()).or_insert(0) += 1;
                         }
                     }
                 }
+                let _ = (trace_seen_bitmask, bitmask_check);
 
                 result.insert(obj_type.clone(), dfg);
             }

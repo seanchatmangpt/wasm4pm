@@ -114,7 +114,7 @@ The perception phase extracts a compact feature representation from the event lo
 | **Dim 6** | `circuit_state` | 0-2 | Circuit breaker: Closed (0), HalfOpen (1), Open (2) |
 | **Dim 7** | `cycle_phase` | 0-3 | Quantized cycle count mod 4: bootstrapping phase tracker |
 
-**Total State Space:** 5 × 8 × 8 × 4 × 3 × 8 × 3 × 4 = **460,800 states**
+**Total State Space:** 5 × 8 × 8 × 4 × 3 × 8 × 3 × 4 = **368,640 states**
 
 ### Key Metrics
 
@@ -491,7 +491,7 @@ duration_us = actual elapsed time
 - **MTTR (Mean Time To Recovery):** <1 second
 
 ### State Space
-- **Total reachable states:** 460,800
+- **Total reachable states:** 368,640
 - **Practical exploration rate:** ~5-15% coverage after 1000 cycles
 - **Q-table memory:** ~23MB per agent (sparse storage)
 

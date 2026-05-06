@@ -1,0 +1,15 @@
+{
+  "places": ["i", "p", "f"],
+  "transitions": [
+    { "id": "A", "label": "A", "is_invisible": false },
+    { "id": "B", "label": "B", "is_invisible": false }
+  ],
+  "arcs": [
+    { "from": "i", "to": "A" },
+    { "from": "A", "to": "p" },
+    { "from": "p", "to": "B" },
+    { "from": "B", "to": "f" }
+  ],
+  "initial_marking": { "i": 1 },
+  "final_markings": [{ "f": 1 }]
+}

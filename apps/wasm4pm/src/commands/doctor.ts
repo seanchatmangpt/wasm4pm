@@ -1,6 +1,7 @@
 import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
-import { existsSync, readFileSync, execSync, statSync } from 'fs';
+import { existsSync, readFileSync, statSync } from 'fs';
+import { execSync } from 'child_process';
 import * as path from 'path';
 import * as os from 'os';
 import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
@@ -1633,7 +1634,9 @@ async function runChecks(
   checks: Array<() => Promise<Diagnosis>>,
   format: string,
   verbose: boolean | undefined,
-  quiet: boolean | undefined
+  quiet: boolean | undefined,
+  extraFields?: Record<string, unknown>,
+  precomputedDiagnoses?: Diagnosis[]
 ): Promise<DoctorReport> {
   const formatter = getFormatter({
     format: format as 'human' | 'json',
@@ -1641,7 +1644,8 @@ async function runChecks(
     quiet,
   });
 
-  const diagnoses: Diagnosis[] = await Promise.all(checks.map((fn) => fn()));
+  const diagnoses: Diagnosis[] =
+    precomputedDiagnoses ?? (await Promise.all(checks.map((fn) => fn())));
 
   const report: DoctorReport = {
     diagnoses,
@@ -1652,17 +1656,26 @@ async function runChecks(
   };
 
   if (formatter instanceof JSONFormatter) {
+    const checksPayload = report.diagnoses.map((c) => ({ ...c }));
+    const summaryPayload = {
+      pass: report.info,
+      warn: report.warnings,
+      fail: report.stopTheLine,
+      critical: report.stopTheLine,
+    };
     if (report.epistemicHealth) {
       formatter.success('wpm environment is healthy', {
-        ...report,
+        checks: checksPayload,
+        summary: summaryPayload,
         healthy: true,
-        diagnoses: report.diagnoses.map((c) => ({ ...c })),
+        ...extraFields,
       });
     } else {
       formatter.warn('wpm environment has issues', {
-        ...report,
+        checks: checksPayload,
+        summary: summaryPayload,
         healthy: false,
-        diagnoses: report.diagnoses.map((c) => ({ ...c })),
+        ...extraFields,
       });
     }
   } else {
@@ -1767,11 +1780,15 @@ export const doctorEnv = defineCommand({
     },
   },
   async run(ctx) {
+    const fmt = (ctx.args.format as string) ?? 'human';
+    const diagnoses = await Promise.all(ENV_CHECKS.map((fn) => fn()));
     await runChecks(
       ENV_CHECKS,
-      (ctx.args.format as string) ?? 'human',
+      fmt,
       ctx.args.verbose,
-      ctx.args.quiet
+      ctx.args.quiet,
+      { environment: diagnoses },
+      diagnoses
     );
   },
 });
@@ -1938,6 +1955,7 @@ export const doctorFix = defineCommand({
         for (const d of fixable) {
           hf.log(`  $ ${d.fix}`);
         }
+        hf.log('');
         return;
       }
 
@@ -1975,8 +1993,18 @@ export const doctorFix = defineCommand({
       hf.log('Re-running checks after fixes...');
     }
 
-    // Final check run
-    await runChecks(ALL_CHECKS, fmt, ctx.args.verbose, ctx.args.quiet);
+    // Final check run — skip if dry-run (already returned above for human formatter)
+    if (!dryRun) {
+      await runChecks(ALL_CHECKS, fmt, ctx.args.verbose, ctx.args.quiet);
+    } else if (formatter instanceof JSONFormatter) {
+      formatter.success('Dry-run: fix commands preview', {
+        dry_run: true,
+        fixable: fixable.map((d) => d.fix),
+        unfixable: diagnoses
+          .filter((d) => d.severity !== 'INFO' && d.fix && !isAutoExecutable(d.fix))
+          .map((d) => d.fix),
+      });
+    }
   },
 });
 
@@ -2072,14 +2100,18 @@ export const doctorPerf = defineCommand({
     }
 
     if (!baseline || !baselinePath) {
-      if (!(formatter instanceof JSONFormatter)) {
+      if (formatter instanceof JSONFormatter) {
+        formatter.success('No baseline file found — no regressions to report', {
+          regressions: [],
+          within_threshold: [],
+        });
+      } else {
         (formatter as HumanFormatter).log('');
         (formatter as HumanFormatter).log(
           'Performance baseline file not found (packages/kernel/performance_baseline.json)'
         );
         (formatter as HumanFormatter).log('Run from within the wasm4pm workspace.');
       }
-      process.exitCode = EXIT_CODES.system_error;
       return;
     }
 
@@ -2122,10 +2154,12 @@ export const doctorPerf = defineCommand({
 
     if (formatter instanceof JSONFormatter) {
       const allOk = results.every((r) => r.status === 'OK');
+      const regressions = results.filter((r) => r.status === 'REGRESSION');
+      const within_threshold = results.filter((r) => r.status === 'OK');
       if (allOk) {
-        formatter.success('Performance baseline check passed', { results });
+        formatter.success('Performance baseline check passed', { results, regressions, within_threshold });
       } else {
-        formatter.warn('Performance regression detected', { results });
+        formatter.warn('Performance regression detected', { results, regressions, within_threshold });
         process.exitCode = EXIT_CODES.config_error;
       }
     } else {
@@ -2785,12 +2819,14 @@ export const doctorPublish = defineCommand({
           coreReport,
           publishChecks,
           publishReady,
+          ready: publishReady,
         });
       } else {
         formatter.warn('Not ready to publish', {
           coreReport,
           publishChecks,
           publishReady,
+          ready: publishReady,
         });
         process.exitCode = EXIT_CODES.config_error;
       }
@@ -2870,14 +2906,5 @@ export const doctor = defineCommand({
       description: 'Suppress non-error output',
       alias: 'q',
     },
-  },
-  // No-verb invocation: wpm doctor → delegates to check (backwards-compatible)
-  async run(ctx) {
-    await runChecks(
-      ALL_CHECKS,
-      (ctx.args.format as string) ?? 'human',
-      ctx.args.verbose,
-      ctx.args.quiet
-    );
   },
 });

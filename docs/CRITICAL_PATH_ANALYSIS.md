@@ -335,7 +335,7 @@ State Persistence:
 
 **Critical checks:**
 - [ ] Features are normalized to [0,1] (invariant FM-5)
-- [ ] State space is bounded (460,800 states max)
+- [ ] State space is bounded (368,640 states max)
 - [ ] Bellman update uses next_state, not state (test FM-1)
 - [ ] SPC rules use timestamp, not String::len() (test TS-1)
 - [ ] Circuit breaker advances clock and transitions correctly (test CB-1)

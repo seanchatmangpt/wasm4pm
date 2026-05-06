@@ -15,9 +15,9 @@
 use crate::reinforcement::WorkflowAction;
 use crate::{RlAction, RlState};
 
-/// 8-dimensional state space: 5×8×8×4×3×8×3×4 = 460,800 total states
+/// 8-dimensional state space: 5×8×8×4×3×8×3×4 = 368,640 total states
 /// Q-table indexed by u32 state_id (0..460_799)
-pub const STATE_SPACE_SIZE: usize = 460_800;
+pub const STATE_SPACE_SIZE: usize = 368_640;
 
 /// Action space size (Continue, Scale, Retry, Fallback, Restart)
 pub const ACTION_SPACE_SIZE: usize = 5;
@@ -109,7 +109,7 @@ pub struct Decision {
 
 /// AutoProcessAgent — branchless autonomic loop
 pub struct AutoProcessAgent {
-    /// Q-table storage: 460,800 states × 5 actions × 4 bytes (f32) = ~9.2 MB
+    /// Q-table storage: 368,640 states × 5 actions × 4 bytes (f32) = ~9.2 MB
     q_table: Box<[f32; QTABLE_SIZE]>,
 
     /// Circuit breaker state (Closed/HalfOpen/Open)
@@ -281,7 +281,7 @@ impl AutoProcessAgent {
     /// Look up Q-value for (state, action) pair
     ///
     /// Direct array indexing (no search, no branching).
-    /// state_id must be < 460,800 (ensured by encode_state).
+    /// state_id must be < 368,640 (ensured by encode_state).
     /// action index is 0..4 (enum constraint).
     #[inline(always)]
     fn q_lookup(&self, state_id: u32, action_idx: usize) -> f32 {

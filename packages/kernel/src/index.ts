@@ -110,3 +110,7 @@ export * as prediction from './prediction/index.js';
 
 // Introspection APIs — discovery, diagnostics, validation, and quick-start helpers
 export * as introspection from './introspection/index.js';
+
+// Enterprise KPI computation
+export { computeCaseKpis, summarizeKpis } from './kpi.js';
+export type { CaseKpi, LogKpiSummary } from './kpi.js';

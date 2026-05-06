@@ -219,11 +219,7 @@ pub fn build_remaining_time_model(
         })
         .collect();
 
-    let all_remaining: Vec<f64> = buckets
-        .values()
-        .flat_map(|b| std::iter::repeat_n(b.mean_ms, b.count))
-        .collect();
-    let global = if all_remaining.is_empty() {
+    let global = if buckets.is_empty() {
         compute_stats(&case_durations)
     } else {
         let total_count: usize = buckets.values().map(|b| b.count).sum();
@@ -240,6 +236,7 @@ pub fn build_remaining_time_model(
             - weighted_mean.powi(2);
         BucketStats {
             mean_ms: weighted_mean,
+            // branchless non-neg floor: compiles to MAXSD on x86-64, f64.max on wasm32
             std_ms: weighted_var.max(0.0).sqrt(),
             count: total_count,
         }
@@ -339,10 +336,11 @@ pub fn predict_case_duration(model_handle: &str, prefix_json: &str) -> Result<Js
         }
 
         // Strategy 2: same activity, any prefix length
+        let activity_prefix = format!("{}|", last_activity); // one alloc before iter
         let activity_buckets: Vec<&BucketStats> = model
             .buckets
             .iter()
-            .filter(|(k, _)| k.starts_with(&format!("{}|", last_activity)))
+            .filter(|(k, _)| k.starts_with(activity_prefix.as_str()))
             .map(|(_, v)| v)
             .collect();
 
@@ -462,6 +460,7 @@ pub fn predict_hazard_rate(model_handle: &str, elapsed_ms: f64) -> Result<JsValu
 
         let median_remaining =
             lambda * (cumulative_hazard + std::f64::consts::LN_2).powf(1.0 / k) - t;
+        // branchless non-neg floor: compiles to MAXSD on x86-64, f64.max on wasm32
         let median_remaining = median_remaining.max(0.0);
 
         let result = serde_json::json!({
