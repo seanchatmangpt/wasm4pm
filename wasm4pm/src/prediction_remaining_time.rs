@@ -14,6 +14,7 @@
 //! | `predict_case_duration` | Point estimate for a running case prefix |
 //! | `predict_hazard_rate` | Instantaneous hazard at elapsed time *t* |
 
+use rustc_hash::FxHashMap;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use wasm_bindgen::prelude::*;
@@ -137,10 +138,17 @@ pub fn build_remaining_time_model(
     let state = get_or_init_state();
 
     // Collect per-bucket samples and case durations from the log.
-    let (bucket_samples, case_durations) = state.with_object(log_handle, |obj| {
+    let (bucket_samples, mut case_durations) = state.with_object(log_handle, |obj| {
         match obj {
             Some(StoredObject::EventLog(log)) => {
-                let mut bucket_samples: HashMap<String, Vec<f64>> = HashMap::new();
+                // Use integer tuple keys to avoid ~190K String allocs on large logs.
+                let mut activity_ids: FxHashMap<&str, u32> = FxHashMap::default();
+                let mut next_id = 0u32;
+                let mut bucket_samples: FxHashMap<(u32, usize), Vec<f64>> =
+                    FxHashMap::default();
+                // Parallel map to recover the activity name for each numeric ID (for
+                // converting back to the String-keyed buckets expected by the model).
+                let mut id_to_activity: Vec<&str> = Vec::new();
                 let mut case_durations: Vec<f64> = Vec::new();
 
                 for trace in &log.traces {
@@ -180,14 +188,33 @@ pub fn build_remaining_time_model(
 
                     // For each prefix position, record remaining time
                     for (i, (act, ts)) in events.iter().enumerate() {
+                        let act_id = *activity_ids.entry(act).or_insert_with(|| {
+                            let id = next_id;
+                            next_id += 1;
+                            id_to_activity.push(act);
+                            id
+                        });
                         let remaining = (trace_end - ts) as f64;
                         let prefix_len = i + 1;
-                        let key = bucket_key(act, prefix_len);
-                        bucket_samples.entry(key).or_default().push(remaining);
+                        bucket_samples
+                            .entry((act_id, prefix_len))
+                            .or_default()
+                            .push(remaining);
                     }
                 }
 
-                Ok((bucket_samples, case_durations))
+                // Convert (u32, usize) keys back to the "activity|prefix_len" String keys
+                // expected by the serializable model — this happens once at model build time,
+                // not per event, so there is no hot-path cost.
+                let bucket_samples_str: HashMap<String, Vec<f64>> = bucket_samples
+                    .into_iter()
+                    .map(|((act_id, prefix_len), samples)| {
+                        let act = id_to_activity[act_id as usize];
+                        (bucket_key(act, prefix_len), samples)
+                    })
+                    .collect();
+
+                Ok((bucket_samples_str, case_durations))
             }
             Some(_) => Err(wasm_err(codes::INVALID_HANDLE, "Handle is not an EventLog")),
             None => Err(wasm_err(
@@ -251,11 +278,12 @@ pub fn build_remaining_time_model(
     let shape = weibull_shape_from_cv(cv);
     let scale = weibull_scale(dur_stats.mean_ms, shape);
 
-    // Median duration
+    // Median duration — sort in-place; case_durations is not used after this point.
     let median_duration_ms = {
-        let mut sorted = case_durations.clone();
-        sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
-        sorted[sorted.len() / 2]
+        case_durations.sort_unstable_by(|a, b| {
+            a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal)
+        });
+        case_durations[case_durations.len() / 2]
     };
 
     let model = RemainingTimeModel {
