@@ -5,7 +5,6 @@
  * Defines the contract that all mining backends must implement:
  * - WASM backend (35 algorithms, sub-ms latency)
  * - ML backend (6 algorithms, low-ms latency)
- * - pm4py backend (4 algorithms, seconds latency)
  *
  * Spec reference: Section 3.1 and 3.2
  */
@@ -162,7 +161,7 @@ export interface BackendCapabilities {
 }
 
 /**
- * MiningBackend interface: Implemented by WASM, ML, and pm4py backends (Section 3.1)
+ * MiningBackend interface: Implemented by WASM and ML backends (Section 3.1)
  *
  * Structural invariants:
  * 1. All five interface methods must be present

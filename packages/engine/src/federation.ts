@@ -22,7 +22,7 @@ import type {
   AnalysisTask,
   ProvenanceChain,
 } from '@wasm4pm/kernel';
-import { DefaultBackendRegistry, WasmBackend, MlBackend, Pm4pyBackend } from '@wasm4pm/kernel';
+import { DefaultBackendRegistry, WasmBackend, MlBackend } from '@wasm4pm/kernel';
 import { NullBackend } from './null-backend.js';
 
 /**
@@ -388,15 +388,6 @@ export async function initializeFederationStack(
   // Register WASM backend
   const wasmBackend = new WasmBackend();
   await controller.registerBackend(wasmBackend);
-
-  // Register pm4py backend
-  const pm4pyBackend = new Pm4pyBackend();
-  try {
-    await controller.registerBackend(pm4pyBackend);
-  } catch (error) {
-    console.warn('Failed to initialize pm4py backend:', error);
-    // Continue without pm4py; WASM will be used instead
-  }
 
   // Register ML backend
   const mlBackend = new MlBackend();
