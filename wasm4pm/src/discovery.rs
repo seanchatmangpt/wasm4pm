@@ -2,7 +2,7 @@ use crate::error::{codes, wasm_err};
 use crate::models::*;
 use crate::state::{get_or_init_state, StoredObject};
 use crate::utilities::to_js_str;
-use rustc_hash::FxHashMap;
+use rustc_hash::{FxHashMap, FxHashSet};
 use serde_json::json;
 use wasm_bindgen::prelude::*;
 
@@ -262,19 +262,30 @@ pub fn discover_ocel_dfg_per_type(ocel_handle: &str) -> Result<JsValue, JsValue>
         Some(StoredObject::OCEL(ocel)) => {
             let mut result: FxHashMap<String, DirectlyFollowsGraph> = FxHashMap::default();
 
+            // Fix A: build unique activity set once, outside the per-type loop
+            let all_activities: FxHashSet<String> = ocel.events.iter()
+                .map(|e| e.event_type.clone())
+                .collect();
+
+            // Fix C: pre-compute global activity frequencies once, outside the per-type loop
+            let global_activity_counts: FxHashMap<String, usize> = {
+                let mut m: FxHashMap<String, usize> = FxHashMap::default();
+                for event in &ocel.events {
+                    *m.entry(event.event_type.clone()).or_insert(0) += 1;
+                }
+                m
+            };
+
             // For each object type, discover a separate DFG
             for obj_type in &ocel.object_types {
                 let mut dfg = DirectlyFollowsGraph::new();
 
-                // Initialize nodes for activities
-                let mut activity_nodes: FxHashMap<String, bool> = FxHashMap::default();
-                for event in &ocel.events {
-                    activity_nodes.insert(event.event_type.clone(), false);
-                }
-                for activity in activity_nodes.keys() {
+                // Fix A + Fix B: use pre-built set; single to_owned() per activity for both id and label
+                for activity in &all_activities {
+                    let name = activity.to_owned();
                     dfg.nodes.push(DFGNode {
-                        id: activity.clone(),
-                        label: activity.clone(),
+                        id: name.clone(),
+                        label: name,
                         frequency: 0,
                     });
                 }
@@ -302,15 +313,9 @@ pub fn discover_ocel_dfg_per_type(ocel_handle: &str) -> Result<JsValue, JsValue>
                     events.sort_by_key(|(idx, _)| ocel.events[*idx].timestamp.clone());
                 }
 
-                // Count activity frequencies only for relevant events of this object type
-                let mut activity_counts: FxHashMap<String, usize> = FxHashMap::default();
-                for events in events_by_object.values() {
-                    for (_, event_type) in events {
-                        *activity_counts.entry(event_type.to_string()).or_insert(0) += 1;
-                    }
-                }
+                // Fix C: use pre-computed global activity frequencies
                 for node in &mut dfg.nodes {
-                    if let Some(count) = activity_counts.get(&node.id) {
+                    if let Some(count) = global_activity_counts.get(&node.id) {
                         node.frequency = *count;
                     }
                 }
