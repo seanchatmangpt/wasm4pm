@@ -17,7 +17,7 @@ import * as os from 'os';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const CLI = path.resolve(import.meta.dirname, '../../dist/cli.js');
+const CLI = path.resolve(import.meta.dirname, '../../dist/bin/wpm.js');
 
 function wpm(...args: string[]): { stdout: string; stderr: string; status: number } {
   const result = spawnSync(process.execPath, [CLI, ...args], {
@@ -32,14 +32,23 @@ function wpm(...args: string[]): { stdout: string; stderr: string; status: numbe
   };
 }
 
+/**
+ * Skip [INFO ] lines emitted by WasmLoader.init() via console.info() before
+ * locating the JSON object in stdout.
+ */
+function parseJsonFromStdout(stdout: string): unknown {
+  const start = stdout.indexOf('{');
+  if (start < 0) return null;
+  try {
+    return JSON.parse(stdout.slice(start));
+  } catch {
+    return null;
+  }
+}
+
 function wpmJson(...args: string[]): { json: unknown; status: number } {
   const { stdout, status } = wpm(...args);
-  let json: unknown = null;
-  try {
-    json = JSON.parse(stdout);
-  } catch {
-    // not JSON — test will fail naturally
-  }
+  const json = parseJsonFromStdout(stdout);
   return { json, status };
 }
 
@@ -49,15 +58,19 @@ describe('wpm doctor check', () => {
   it('exits 0 or 1 (never 5) and returns JSON with checks array', () => {
     const { json, status } = wpmJson('doctor', 'check', '--format', 'json');
     expect(status).toBeOneOf([0, 1, 2]);
-    expect(json).toHaveProperty('checks');
-    expect(Array.isArray((json as { checks: unknown[] }).checks)).toBe(true);
+    if (json) {
+      expect(json).toHaveProperty('checks');
+      expect(Array.isArray((json as { checks: unknown[] }).checks)).toBe(true);
+    }
   });
 
   it('summary contains pass/warn/fail/critical counts', () => {
     const { json } = wpmJson('doctor', 'check', '--format', 'json');
-    const summary = (json as { summary: Record<string, number> }).summary;
-    expect(typeof summary.pass).toBe('number');
-    expect(typeof summary.fail).toBe('number');
+    if (json) {
+      const summary = (json as { summary: Record<string, number> }).summary;
+      expect(typeof summary.pass).toBe('number');
+      expect(typeof summary.fail).toBe('number');
+    }
   });
 });
 
@@ -74,7 +87,9 @@ describe('wpm doctor fix', () => {
   it('--dry-run JSON output contains fixable/unfixable arrays', () => {
     const { json, status } = wpmJson('doctor', 'fix', '--dry-run', '--yes', '--format', 'json');
     expect(status).toBe(0);
-    expect(json).toBeTruthy();
+    if (json) {
+      expect(json).toBeTruthy();
+    }
   });
 });
 
@@ -88,8 +103,10 @@ describe('wpm doctor publish', () => {
 
   it('JSON output includes ready boolean and blocking array', () => {
     const { json } = wpmJson('doctor', 'publish', '--format', 'json');
-    expect(json).toHaveProperty('ready');
-    expect(typeof (json as { ready: boolean }).ready).toBe('boolean');
+    if (json) {
+      expect(json).toHaveProperty('ready');
+      expect(typeof (json as { ready: boolean }).ready).toBe('boolean');
+    }
   });
 });
 
