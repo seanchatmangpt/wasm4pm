@@ -3,9 +3,9 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import { resolveConfig as loadConfig, checkConfigWarnings } from '@wasm4pm/config';
 import { plan as makePlan } from '@wasm4pm/planner';
-import { WasmLoader } from '@wasm4pm/engine';
 import { ALGORITHM_CLI_ALIASES, findClosestMatch } from '@wasm4pm/contracts';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
+import { withLogSession } from '../with-log-session.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { savePredictionResult } from './results.js';
 import { executeMlTask } from '../ml-runner.js';
@@ -292,82 +292,26 @@ export const run = defineCommand({
         process.exit(result.exit_code);
       }
 
-      try {
-        await fs.access(inputPath);
-      } catch {
-        const result = makeErrorResult(
-          'run',
-          new Error(`Input file not found: ${inputPath}\n\nCheck that the path is correct and the file is readable.`),
-          EXIT_CODES.source_error,
-          'INPUT_NOT_FOUND'
-        );
-        emitResult(result, emitOptions);
-        process.exit(result.exit_code);
-      }
-
-      // Step 4: Load WASM module
-      const loader = WasmLoader.getInstance();
-      await loader.init();
-      const wasm = loader.get();
-
-      // Step 4b: Handle --no-cache flag
-      if (ctx.args['no-cache']) {
-        if (typeof wasm.clear_all_caches !== 'function') {
-          const result = makeErrorResult('run', new Error('Cache clearing requested (--no-cache) but not available in WASM module'), EXIT_CODES.execution_error, 'CACHE_CLEAR_UNAVAILABLE');
-          emitResult(result, emitOptions);
-          process.exit(result.exit_code);
-        }
-        wasm.clear_all_caches();
-      }
-
-      // Step 5: Parse XES and load log
-
-      // Step 5a: Reject non-XES extensions early (before reading file content)
-      const ext = path.extname(inputPath).toLowerCase();
-      if (ext && !['.xes', '.xml'].includes(ext)) {
-        const result = makeErrorResult('run', new Error(`Input file must be an XES or XML event log (got: ${ext})`), EXIT_CODES.source_error, 'INVALID_EXTENSION');
-        emitResult(result, emitOptions);
-        process.exit(result.exit_code);
-      }
-
       const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
-      const xesContent = await fs.readFile(inputPath, 'utf-8');
-      if (xesContent.trim() === '') {
-        const result = makeErrorResult('run', new Error('Input file is empty'), EXIT_CODES.source_error, 'EMPTY_INPUT');
-        emitResult(result, emitOptions);
-        process.exit(result.exit_code);
-      }
-      const looksLikeXes = xesContent.includes('<log') || xesContent.includes('<trace') || xesContent.includes('<event');
-      const isWellFormed = xesContent.includes('</log>') || xesContent.includes('</trace>');
-      if (looksLikeXes && !isWellFormed) {
-        const result = makeErrorResult('run', new Error('XES file is malformed — missing closing tags'), EXIT_CODES.source_error, 'MALFORMED_XES');
-        emitResult(result, emitOptions);
-        process.exit(result.exit_code);
-      }
-      if (!looksLikeXes) {
-        const result = makeErrorResult('run', new Error('Input does not appear to be a valid XES event log'), EXIT_CODES.source_error, 'INVALID_XES');
-        emitResult(result, emitOptions);
-        process.exit(result.exit_code);
-      }
-      const logHandle: string = wasm.load_eventlog_from_xes(xesContent);
-      if (!logHandle) {
-        const result = makeErrorResult('run', new Error('Failed to parse XES event log — file may be corrupted or malformed'), EXIT_CODES.source_error, 'PARSE_FAILED');
-        emitResult(result, emitOptions);
-        process.exit(result.exit_code);
-      }
 
-      // Zero-trace check: count <trace elements in the XES content.
-      // A log with no traces cannot be meaningfully discovered.
-      const traceMatches = xesContent.match(/<trace[\s>]/g);
-      const traceCount = traceMatches ? traceMatches.length : 0;
-      if (traceCount === 0) {
-        wasm.delete_object(logHandle);
-        const result = makeErrorResult('run', new Error('XES file contains no traces — nothing to discover'), EXIT_CODES.source_error, 'NO_TRACES');
-        emitResult(result, emitOptions);
-        process.exit(result.exit_code);
-      }
+      await withLogSession(
+        { inputPath, activityKey, commandName: 'run', emitOptions },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        async (wasmBase, logHandle) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const wasm = wasmBase as Record<string, any>;
 
-      // Step 5b: Mandatory Pass 1 (structural) + Optional Pass 2 (semantic) preflight validation
+        // Step 4b: Handle --no-cache flag
+        if (ctx.args['no-cache']) {
+          if (typeof wasm.clear_all_caches !== 'function') {
+            const result = makeErrorResult('run', new Error('Cache clearing requested (--no-cache) but not available in WASM module'), EXIT_CODES.execution_error, 'CACHE_CLEAR_UNAVAILABLE');
+            emitResult(result, emitOptions);
+            process.exit(result.exit_code);
+          }
+          wasm.clear_all_caches();
+        }
+
+        // Step 5b: Mandatory Pass 1 (structural) + Optional Pass 2 (semantic) preflight validation
       const preflightErrors: string[] = [];
       const preflightWarnings: string[] = [];
 
@@ -403,7 +347,6 @@ export const run = defineCommand({
 
       // Pass 1 failure is FATAL
       if (preflightErrors.length > 0) {
-        wasm.delete_object(logHandle);
         const result = makeErrorResult(
           'run',
           new Error(`Structural validation failed:\n${preflightErrors.map((e) => `  ✗ ${e}`).join('\n')}`),
@@ -552,9 +495,6 @@ export const run = defineCommand({
           }
         }
       }
-
-      // Step 8: Free handle
-      wasm.delete_object(logHandle);
 
       // Normalise result (WASM may return string or object)
       const resultData = typeof raw === 'string' ? JSON.parse(raw) : raw;
@@ -707,6 +647,7 @@ export const run = defineCommand({
       }
 
       process.exit(cmdResult.exit_code);
+      }); // end withLogSession
     } catch (error) {
       const result = makeErrorResult(
         'run',

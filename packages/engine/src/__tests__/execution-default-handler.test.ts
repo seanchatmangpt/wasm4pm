@@ -40,7 +40,7 @@ describe('Execution default handler throws (D1 fix)', () => {
 
   it('succeeds when handler is registered for step type', async () => {
     const executor = new SimpleExecutor();
-    executor.registerHandler('source', async (config) => ({ success: true, path: config.path }));
+    executor.registerHandler('source', async (config: Record<string, unknown>) => ({ success: true, path: config['path'] }));
 
     const result = await executor.executeStep('source', { kind: 'file', path: '/dev/null' });
     expect(result).toEqual({ success: true, path: '/dev/null' });
