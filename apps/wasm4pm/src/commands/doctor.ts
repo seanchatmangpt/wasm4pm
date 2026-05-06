@@ -1955,6 +1955,7 @@ export const doctorFix = defineCommand({
         for (const d of fixable) {
           hf.log(`  $ ${d.fix}`);
         }
+        hf.log('');
         return;
       }
 
@@ -1992,8 +1993,18 @@ export const doctorFix = defineCommand({
       hf.log('Re-running checks after fixes...');
     }
 
-    // Final check run
-    await runChecks(ALL_CHECKS, fmt, ctx.args.verbose, ctx.args.quiet);
+    // Final check run — skip if dry-run (already returned above for human formatter)
+    if (!dryRun) {
+      await runChecks(ALL_CHECKS, fmt, ctx.args.verbose, ctx.args.quiet);
+    } else if (formatter instanceof JSONFormatter) {
+      formatter.success('Dry-run: fix commands preview', {
+        dry_run: true,
+        fixable: fixable.map((d) => d.fix),
+        unfixable: diagnoses
+          .filter((d) => d.severity !== 'INFO' && d.fix && !isAutoExecutable(d.fix))
+          .map((d) => d.fix),
+      });
+    }
   },
 });
 
@@ -2089,14 +2100,18 @@ export const doctorPerf = defineCommand({
     }
 
     if (!baseline || !baselinePath) {
-      if (!(formatter instanceof JSONFormatter)) {
+      if (formatter instanceof JSONFormatter) {
+        formatter.success('No baseline file found — no regressions to report', {
+          regressions: [],
+          within_threshold: [],
+        });
+      } else {
         (formatter as HumanFormatter).log('');
         (formatter as HumanFormatter).log(
           'Performance baseline file not found (packages/kernel/performance_baseline.json)'
         );
         (formatter as HumanFormatter).log('Run from within the wasm4pm workspace.');
       }
-      process.exitCode = EXIT_CODES.system_error;
       return;
     }
 

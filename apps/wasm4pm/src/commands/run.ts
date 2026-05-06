@@ -306,7 +306,25 @@ export const run = defineCommand({
 
       const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
       const xesContent = await fs.readFile(inputPath, 'utf-8');
+      if (xesContent.trim() === '') {
+        formatter.error('Input file is empty', { path: inputPath });
+        process.exit(EXIT_CODES.source_error);
+      }
+      const looksLikeXes = xesContent.includes('<log') || xesContent.includes('<trace') || xesContent.includes('<event');
+      const isWellFormed = xesContent.includes('</log>') || xesContent.includes('</trace>');
+      if (looksLikeXes && !isWellFormed) {
+        formatter.error('XES file is malformed — missing closing tags', { path: inputPath });
+        process.exit(EXIT_CODES.source_error);
+      }
+      if (!looksLikeXes) {
+        formatter.error('Input does not appear to be a valid XES event log', { path: inputPath });
+        process.exit(EXIT_CODES.source_error);
+      }
       const logHandle: string = wasm.load_eventlog_from_xes(xesContent);
+      if (!logHandle) {
+        formatter.error('Failed to parse XES event log — file may be corrupted or malformed', { path: inputPath });
+        process.exit(EXIT_CODES.source_error);
+      }
 
       // Step 6: Execute discovery
       if (formatter instanceof HumanFormatter) {
