@@ -196,20 +196,7 @@ beforeAll(() => {
 // ─── JTBD-1: Compare DFG vs Heuristic Miner ─────────────────────────────────
 
 describe('JTBD-1: Compare DFG vs Heuristic Miner to choose the best algorithm for my RevOps log', () => {
-  it('DFG result has edges/nodes, heuristic result also has edges/nodes, neither crashes', () => {
-    const dfgResult = parse(wasm.discover_dfg(logHandle, 'concept:name'));
-    const heuristicResult = parse(wasm.discover_heuristic_miner(logHandle, 'concept:name', 0.5));
-
-    expect(dfgResult).toBeDefined();
-    expect(heuristicResult).toBeDefined();
-
-    // DFG must have edges array
-    expect(dfgResult.edges ?? dfgResult.nodes).toBeDefined();
-    // Heuristic must also return a non-null result
-    expect(heuristicResult.edges ?? heuristicResult.nodes).toBeDefined();
-  });
-
-  it('both results are parseable — either plain object or valid JSON string', () => {
+  it('DFG result has edges/nodes, heuristic result also has edges/nodes, neither crashes + both results are parseable — either plain object or valid JSON string + the two algorithms produce structurally different outputs (DFG has edges, both have non-zero content)', () => {
     const dfgRaw = wasm.discover_dfg(logHandle, 'concept:name');
     const heuristicRaw = wasm.discover_heuristic_miner(logHandle, 'concept:name', 0.5);
 
@@ -217,19 +204,22 @@ describe('JTBD-1: Compare DFG vs Heuristic Miner to choose the best algorithm fo
     expect(() => parse(dfgRaw)).not.toThrow();
     expect(() => parse(heuristicRaw)).not.toThrow();
 
-    const dfgParsed = parse(dfgRaw);
-    const heuristicParsed = parse(heuristicRaw);
+    const dfgResult = parse(dfgRaw);
+    const heuristicResult = parse(heuristicRaw);
+
+    expect(dfgResult).toBeDefined();
+    expect(heuristicResult).toBeDefined();
 
     // Both must be non-null objects
-    expect(typeof dfgParsed).toBe('object');
-    expect(dfgParsed).not.toBeNull();
-    expect(typeof heuristicParsed).toBe('object');
-    expect(heuristicParsed).not.toBeNull();
-  });
+    expect(typeof dfgResult).toBe('object');
+    expect(dfgResult).not.toBeNull();
+    expect(typeof heuristicResult).toBe('object');
+    expect(heuristicResult).not.toBeNull();
 
-  it('the two algorithms produce structurally different outputs (DFG has edges, both have non-zero content)', () => {
-    const dfgResult = parse(wasm.discover_dfg(logHandle, 'concept:name'));
-    const heuristicResult = parse(wasm.discover_heuristic_miner(logHandle, 'concept:name', 0.5));
+    // DFG must have edges array
+    expect(dfgResult.edges ?? dfgResult.nodes).toBeDefined();
+    // Heuristic must also return a non-null result
+    expect(heuristicResult.edges ?? heuristicResult.nodes).toBeDefined();
 
     // DFG must have an edges key
     expect(dfgResult).toHaveProperty('edges');
@@ -249,25 +239,17 @@ describe('JTBD-1: Compare DFG vs Heuristic Miner to choose the best algorithm fo
 // ─── JTBD-2: Model complexity metrics ────────────────────────────────────────
 
 describe('JTBD-2: Get model complexity metrics to decide which model to use in production', () => {
-  it('num_variants is a positive integer', () => {
+  it('num_variants is a positive integer + density is a number in [0, 1] + complexity_score is a non-negative number', () => {
     const metrics = parse(wasm.compute_model_metrics(logHandle, 'concept:name'));
 
     expect(typeof metrics.num_variants).toBe('number');
     expect(Number.isInteger(metrics.num_variants as number)).toBe(true);
     expect(metrics.num_variants as number).toBeGreaterThan(0);
-  });
-
-  it('density is a number in [0, 1]', () => {
-    const metrics = parse(wasm.compute_model_metrics(logHandle, 'concept:name'));
 
     expect(typeof metrics.density).toBe('number');
     const density = metrics.density as number;
     expect(density).toBeGreaterThanOrEqual(0);
     expect(density).toBeLessThanOrEqual(1);
-  });
-
-  it('complexity_score is a non-negative number', () => {
-    const metrics = parse(wasm.compute_model_metrics(logHandle, 'concept:name'));
 
     expect(typeof metrics.complexity_score).toBe('number');
     const score = metrics.complexity_score as number;
@@ -279,24 +261,20 @@ describe('JTBD-2: Get model complexity metrics to decide which model to use in p
 // ─── JTBD-3: Run all algorithms and ensure none crash ────────────────────────
 
 describe('JTBD-3: Run all algorithms and ensure none crash on my RevOps log', () => {
-  it('discover_inductive_miner completes without throwing', () => {
+  it('discover_inductive_miner completes without throwing + discover_alpha_plus_plus returns non-null result + running DFG twice on the same handle returns identical results (determinism)', () => {
     expect(() => {
       const result = wasm.discover_inductive_miner(logHandle, 'concept:name');
       expect(result).toBeDefined();
     }).not.toThrow();
-  });
 
-  it('discover_alpha_plus_plus returns non-null result', () => {
-    const result = wasm.discover_alpha_plus_plus(logHandle, 'concept:name');
-    expect(result).toBeDefined();
-    expect(result).not.toBeNull();
+    const alphaResult = wasm.discover_alpha_plus_plus(logHandle, 'concept:name');
+    expect(alphaResult).toBeDefined();
+    expect(alphaResult).not.toBeNull();
 
-    const parsed = parse(result);
-    expect(parsed).not.toBeNull();
-    expect(typeof parsed).toBe('object');
-  });
+    const parsedAlpha = parse(alphaResult);
+    expect(parsedAlpha).not.toBeNull();
+    expect(typeof parsedAlpha).toBe('object');
 
-  it('running DFG twice on the same handle returns identical results (determinism)', () => {
     const result1 = parse(wasm.discover_dfg(logHandle, 'concept:name'));
     const result2 = parse(wasm.discover_dfg(logHandle, 'concept:name'));
 

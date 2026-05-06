@@ -3,7 +3,7 @@ import * as fs from 'fs/promises';
 import { ALGORITHM_CLI_ALIASES } from '@wasm4pm/contracts';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
-import { WasmLoader } from '@wasm4pm/engine';
+import { withLogSession } from '../with-log-session.js';
 
 /**
  * Algorithms supported by `wpm compare`.
@@ -281,77 +281,55 @@ export const compare = defineCommand({
 
       const algos = resolved as Algorithm[];
 
-      // Validate input file
       const inputPath = ctx.args.input as string;
-      try {
-        await fs.access(inputPath);
-      } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        const result = makeErrorResult(
-          'compare',
-          new Error(`Input file not found: ${inputPath} — ${message}`),
-          EXIT_CODES.source_error,
-          'INPUT_NOT_FOUND'
-        );
-        emitResult(result, emitOptions);
-        process.exit(result.exit_code);
-      }
-
       const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
 
-      // Load WASM
-      const loader = WasmLoader.getInstance();
-      await loader.init();
-      const wasm = loader.get() as Record<string, CallableFunction>;
+      await withLogSession(
+        { inputPath, activityKey, commandName: 'compare', emitOptions },
+        async (wasmBase, logHandle) => {
+        const wasm = wasmBase as Record<string, CallableFunction>;
 
-      // Parse XES and load log
-      const xesContent = await fs.readFile(inputPath, 'utf-8');
-      const logHandle: string = wasm['load_eventlog_from_xes'](xesContent) as string;
+        // Get shared metrics (variants, density, complexity) once from the log
+        const sharedMetrics = extractModelMetrics(wasm, logHandle, activityKey);
 
-      // Get shared metrics (variants, density, complexity) once from the log
-      const sharedMetrics = extractModelMetrics(wasm, logHandle, activityKey);
-
-      // Run each algorithm
-      const t0 = performance.now();
-      const stats: ModelStats[] = [];
-      for (const algo of algos) {
-        const { raw, elapsedMs } = runDiscovery(wasm, algo, logHandle, activityKey);
-        const { nodes, edges } = extractStats(raw);
-        stats.push({
-          algorithm: algo,
-          nodes,
-          edges,
-          variants: sharedMetrics.variants,
-          density: sharedMetrics.density,
-          complexity: sharedMetrics.complexity,
-          elapsedMs,
-        });
-      }
-      const totalElapsedMs = performance.now() - t0;
-
-      // Free log handle — fail if cleanup fails (resource leak is critical)
-      wasm['delete_object'](logHandle);
-
-      // Build canonical result payload
-      const payload = {
-        input: inputPath,
-        activityKey,
-        algorithms: stats,
-      };
-
-      // Handle --cache-stats (fetch before emitting)
-      let cacheStats: Record<string, unknown> | null = null;
-      if (ctx.args['cache-stats']) {
-        if (typeof wasm.get_cache_stats !== 'function') {
-          const errResult = makeErrorResult('compare', new Error('Cache statistics requested but not available in WASM module'), EXIT_CODES.execution_error, 'CACHE_STATS_UNAVAILABLE');
-          emitResult(errResult, emitOptions);
-          process.exit(errResult.exit_code);
+        // Run each algorithm
+        const t0 = performance.now();
+        const stats: ModelStats[] = [];
+        for (const algo of algos) {
+          const { raw, elapsedMs } = runDiscovery(wasm, algo, logHandle, activityKey);
+          const { nodes, edges } = extractStats(raw);
+          stats.push({
+            algorithm: algo,
+            nodes,
+            edges,
+            variants: sharedMetrics.variants,
+            density: sharedMetrics.density,
+            complexity: sharedMetrics.complexity,
+            elapsedMs,
+          });
         }
-        const statsRaw = wasm.get_cache_stats();
-        cacheStats = (typeof statsRaw === 'string' ? JSON.parse(statsRaw) : statsRaw) as Record<string, unknown>;
-      }
+        const totalElapsedMs = performance.now() - t0;
 
-      const cmdResult = makeResult('compare', payload, totalElapsedMs, EXIT_CODES.success);
+        // Build canonical result payload
+        const payload = {
+          input: inputPath,
+          activityKey,
+          algorithms: stats,
+        };
+
+        // Handle --cache-stats (fetch before emitting)
+        let cacheStats: Record<string, unknown> | null = null;
+        if (ctx.args['cache-stats']) {
+          if (typeof wasm.get_cache_stats !== 'function') {
+            const errResult = makeErrorResult('compare', new Error('Cache statistics requested but not available in WASM module'), EXIT_CODES.execution_error, 'CACHE_STATS_UNAVAILABLE');
+            emitResult(errResult, emitOptions);
+            process.exit(errResult.exit_code);
+          }
+          const statsRaw = wasm.get_cache_stats();
+          cacheStats = (typeof statsRaw === 'string' ? JSON.parse(statsRaw) : statsRaw) as Record<string, unknown>;
+        }
+
+        const cmdResult = makeResult('compare', payload, totalElapsedMs, EXIT_CODES.success);
 
       emitResult(cmdResult, emitOptions, (res, projection) => {
         const p = res.payload as typeof payload;
@@ -422,7 +400,8 @@ export const compare = defineCommand({
         }
       });
 
-      process.exit(cmdResult.exit_code);
+        process.exit(cmdResult.exit_code);
+      });  // end withLogSession
     } catch (error) {
       const result = makeErrorResult(
         'compare',

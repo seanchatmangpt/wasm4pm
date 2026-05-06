@@ -2,7 +2,7 @@ import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
-import { WasmLoader } from '@wasm4pm/engine';
+import { withLogSession } from '../with-log-session.js';
 import { loadWasm4pmConfig, buildCliOverrides } from '../config-loader.js';
 import { savePredictionResult } from './results.js';
 import { VALID_PREDICT_CLI_TASKS } from '@wasm4pm/contracts';
@@ -150,70 +150,54 @@ export const predict = defineCommand({
         ? (ctx.args.prefix as string).split(',').map((s) => s.trim())
         : undefined;
 
-      // Step 3: Validate input file
+      // Step 3: Load session and execute
       const inputPath = ctx.args.input as string;
-      try {
-        await fs.access(inputPath);
-      } catch {
-        const result = makeErrorResult(
-          'predict',
-          new Error(`Input file not found: ${inputPath}`),
-          EXIT_CODES.source_error,
-          'INPUT_NOT_FOUND'
+
+      await withLogSession(
+        { inputPath, activityKey, commandName: 'predict', emitOptions: { format, verbose, quiet } },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        async (wasmBase, logHandle) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const wasm = wasmBase as Record<string, any>;
+
+        // Step 4: Execute prediction task
+        const taskResult = await executePredictionTask(
+          wasm,
+          task as PredictTask,
+          logHandle,
+          activityKey,
+          topK,
+          ngramOrder,
+          driftWindow,
+          prefixActivities
         );
-        emitResult(result, { format, verbose, quiet });
-        process.exit(result.exit_code);
-      }
 
-      // Step 4: Load WASM module
-      const loader = WasmLoader.getInstance();
-      await loader.init();
-      const wasm = loader.get();
+        // Step 5: Build result
+        const payload = {
+          task,
+          input: inputPath,
+          activityKey,
+          ...taskResult,
+        };
 
-      // Step 5: Read and parse XES file
-      const xesContent = await fs.readFile(inputPath, 'utf-8');
-      const logHandle: string = wasm.load_eventlog_from_xes(xesContent);
+        const result = makeResult('predict', payload, Date.now() - start);
 
-      // Step 6: Execute prediction task
-      const taskResult = await executePredictionTask(
-        wasm,
-        task as PredictTask,
-        logHandle,
-        activityKey,
-        topK,
-        ngramOrder,
-        driftWindow,
-        prefixActivities
-      );
+        // Step 6: Emit result
+        emitResult(result, { format, verbose, quiet }, (res, p) => {
+          p.success(`Prediction complete: ${res.payload.task}`);
+          formatHumanOutput(p, res.payload.task as PredictTask, res.payload);
+        });
 
-      // Step 7: Build result
-      const payload = {
-        task,
-        input: inputPath,
-        activityKey,
-        ...taskResult,
-      };
-
-      const result = makeResult('predict', payload, Date.now() - start);
-
-      // Step 8: Emit result
-      emitResult(result, { format, verbose, quiet }, (res, p) => {
-        p.success(`Prediction complete: ${res.payload.task}`);
-        formatHumanOutput(p, res.payload.task as PredictTask, res.payload);
-      });
-
-      // Step 9: Persist result (unless --no-save)
-      if (!ctx.args['no-save']) {
-        const savedPath = await savePredictionResult(task, inputPath, activityKey, taskResult);
-        if (savedPath && verbose) {
-          // debug already handled by projection.debug if needed
+        // Step 7: Persist result (unless --no-save)
+        if (!ctx.args['no-save']) {
+          const savedPath = await savePredictionResult(task, inputPath, activityKey, taskResult);
+          if (savedPath && verbose) {
+            // debug already handled by projection.debug if needed
+          }
         }
-      }
 
-      // Step 10: Free handles
-      wasm.delete_object(logHandle);
-
-      process.exit(result.exit_code);
+        process.exit(result.exit_code);
+      });  // end withLogSession
     } catch (error) {
       const result = makeErrorResult(
         'predict',

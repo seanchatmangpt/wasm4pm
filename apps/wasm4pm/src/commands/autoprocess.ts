@@ -2,8 +2,8 @@ import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
-import { EXIT_CODES, type ExitCode } from '../exit-codes.js';
-import { WasmLoader } from '@wasm4pm/engine';
+import { EXIT_CODES } from '../exit-codes.js';
+import { withLogSession } from '../with-log-session.js';
 
 const AUTOPROCESS_STATE_FILE = '.wasm4pm/autoprocess-state.json';
 
@@ -104,36 +104,32 @@ export const autoprocess = defineCommand({
     const quiet = Boolean(ctx.args.quiet);
 
     try {
-      // 1. Load WASM module
-      const loader = WasmLoader.getInstance();
-      await loader.init();
-      const wasm = loader.get();
-
-      // 2. Load persisted state (RL, SPC, circuit breaker)
-      await loadState(wasm);
-
-      // 3. Load XES file
       const inputPath = ctx.args.input as string;
-      const xesContent = await fs.readFile(inputPath, 'utf-8');
-      const logHandle = wasm.load_eventlog_from_xes(xesContent);
 
-      // 4. Run AutoProcess cycle
-      const cycleConfig = (ctx.args.config as string) || '{}';
-      const rawResult = wasm.autonomic_execute_cycle(
-        logHandle,
-        ctx.args['activity-key'],
-        cycleConfig
-      );
-      const cycleResult = typeof rawResult === 'string' ? JSON.parse(rawResult) : rawResult;
+      await withLogSession(
+        { inputPath, commandName: 'autoprocess', emitOptions: { format, verbose, quiet } },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        async (wasmBase, logHandle) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const wasm = wasmBase as Record<string, any>;
 
-      // 5. Save persisted state (RL, SPC, circuit breaker)
-      await saveState(wasm);
+        // 1. Load persisted state (RL, SPC, circuit breaker)
+        await loadState(wasm);
 
-      // 6. Cleanup
-      wasm.delete_object(logHandle);
+        // 2. Run AutoProcess cycle
+        const cycleConfig = (ctx.args.config as string) || '{}';
+        const rawResult = wasm.autonomic_execute_cycle(
+          logHandle,
+          ctx.args['activity-key'],
+          cycleConfig
+        );
+        const cycleResult = typeof rawResult === 'string' ? JSON.parse(rawResult) : rawResult;
 
-      const result = makeResult('autoprocess', cycleResult, performance.now() - t0, EXIT_CODES.success);
-      emitResult(result, { format, verbose, quiet }, (res, projection) => {
+        // 3. Save persisted state (RL, SPC, circuit breaker)
+        await saveState(wasm);
+
+        const result = makeResult('autoprocess', cycleResult, performance.now() - t0, EXIT_CODES.success);
+        emitResult(result, { format, verbose, quiet }, (res, projection) => {
         const data = res.payload as Record<string, unknown>;
         const cycle = data.cycle_result as Record<string, unknown>;
         const timing = data.timing as Record<string, unknown>;
@@ -191,15 +187,10 @@ export const autoprocess = defineCommand({
           projection.log('  Result: Cycle completed with warnings');
         }
       });
-      process.exit(result.exit_code);
+        process.exit(result.exit_code);
+      });  // end withLogSession
     } catch (error) {
-      // Determine correct exit code based on error type
-      let exitCode: ExitCode = EXIT_CODES.execution_error;
-      if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
-        exitCode = EXIT_CODES.source_error;
-      }
-
-      const result = makeErrorResult('autoprocess', error, exitCode);
+      const result = makeErrorResult('autoprocess', error, EXIT_CODES.execution_error);
       emitResult(result, { format, verbose, quiet });
       process.exit(result.exit_code);
     }

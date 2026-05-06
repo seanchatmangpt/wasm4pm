@@ -2,7 +2,7 @@ import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
-import { WasmLoader } from '@wasm4pm/engine';
+import { withLogSession } from '../with-log-session.js';
 import { savePredictionResult } from './results.js';
 import { VALID_ML_TASKS, executeMlTask } from '../ml-runner.js';
 import type { MlTask } from '../ml-runner.js';
@@ -81,31 +81,16 @@ export const ml = defineCommand({
       }
 
       const inputPath = ctx.args.input as string;
-      try {
-        await fs.access(inputPath);
-      } catch {
-        const result = makeErrorResult(
-          'ml',
-          `Input file not found: ${inputPath}`,
-          EXIT_CODES.source_error,
-          'FILE_NOT_FOUND'
-        );
-        emitResult(result, { format, verbose, quiet });
-        process.exit(result.exit_code);
-      }
-
       const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
 
-      const loader = WasmLoader.getInstance();
-      await loader.init();
-      const wasm = loader.get();
+      await withLogSession(
+        { inputPath, activityKey, commandName: 'ml', emitOptions: { format, verbose, quiet } },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        async (wasmBase, logHandle) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const wasm = wasmBase as Record<string, any>;
 
-      const xesContent = await fs.readFile(inputPath, 'utf-8');
-      const logHandle: string = wasm.load_eventlog_from_xes(xesContent);
-
-      let mlResult: Record<string, unknown>;
-      try {
-        mlResult = await executeMlTask(wasm, task as MlTask, logHandle, activityKey, {
+        const mlResult = await executeMlTask(wasm, task as MlTask, logHandle, activityKey, {
           method: ctx.args.method as string,
           k: ctx.args.k as string,
           targetKey: ctx.args['target-key'] as string,
@@ -113,34 +98,32 @@ export const ml = defineCommand({
           nComponents: ctx.args['n-components'] as string,
           eps: ctx.args.eps as string,
         });
-      } finally {
-        wasm.delete_object(logHandle);
-      }
 
-      if (!ctx.args['no-save']) {
-        const savedPath = await savePredictionResult(
-          `ml-${task}`,
-          inputPath,
-          activityKey,
-          mlResult
-        );
-        if (savedPath && format === 'human' && verbose) {
-          // savedPath info surfaced via verbose in human renderer
-          (mlResult as Record<string, unknown>)['_savedPath'] = savedPath;
+        if (!ctx.args['no-save']) {
+          const savedPath = await savePredictionResult(
+            `ml-${task}`,
+            inputPath,
+            activityKey,
+            mlResult
+          );
+          if (savedPath && format === 'human' && verbose) {
+            // savedPath info surfaced via verbose in human renderer
+            (mlResult as Record<string, unknown>)['_savedPath'] = savedPath;
+          }
         }
-      }
 
-      const payload = { task, input: inputPath, ...mlResult };
-      const result = makeResult('ml', payload, performance.now() - t0, EXIT_CODES.success);
-      emitResult(result, { format, verbose, quiet }, (res, projection) => {
-        const data = res.payload as typeof payload;
-        projection.success(`ML complete: ${data.task}`);
-        formatMlHumanOutput(projection, data.task as MlTask, data);
-        if (verbose && (data as Record<string, unknown>)['_savedPath']) {
-          projection.debug(`Result saved: ${(data as Record<string, unknown>)['_savedPath']}`);
-        }
-      });
-      process.exit(result.exit_code);
+        const payload = { task, input: inputPath, ...mlResult };
+        const result = makeResult('ml', payload, performance.now() - t0, EXIT_CODES.success);
+        emitResult(result, { format, verbose, quiet }, (res, projection) => {
+          const data = res.payload as typeof payload;
+          projection.success(`ML complete: ${data.task}`);
+          formatMlHumanOutput(projection, data.task as MlTask, data);
+          if (verbose && (data as Record<string, unknown>)['_savedPath']) {
+            projection.debug(`Result saved: ${(data as Record<string, unknown>)['_savedPath']}`);
+          }
+        });
+        process.exit(result.exit_code);
+      });  // end withLogSession
     } catch (error) {
       const result = makeErrorResult('ml', error, EXIT_CODES.execution_error);
       emitResult(result, { format, verbose, quiet });

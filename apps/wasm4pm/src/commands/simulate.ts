@@ -2,8 +2,7 @@ import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
-import { WasmLoader } from '@wasm4pm/engine';
-import { createQuietObservabilityLayer } from '../observability-util.js';
+import { withLogSession } from '../with-log-session.js';
 
 export const simulate = defineCommand({
   meta: {
@@ -78,19 +77,6 @@ export const simulate = defineCommand({
         process.exit(result.exit_code);
       }
 
-      try {
-        await fs.access(inputPath);
-      } catch {
-        const result = makeErrorResult(
-          'simulate',
-          `Input file not found: ${inputPath}`,
-          EXIT_CODES.source_error,
-          'FILE_NOT_FOUND'
-        );
-        emitResult(result, { format, verbose, quiet });
-        process.exit(result.exit_code);
-      }
-
       const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
       const rawCases = ctx.args.cases as string | undefined;
       const parsedCases = rawCases != null ? parseInt(rawCases, 10) : undefined;
@@ -123,66 +109,62 @@ export const simulate = defineCommand({
         ? parseInt(ctx.args.seed as string, 10)
         : Math.floor(Math.random() * 2_147_483_647);
 
-      // Load WASM module
-      const loaderConfig =
-        format === 'json' ? { observability: createQuietObservabilityLayer() } : {};
-      const loader = WasmLoader.getInstance(loaderConfig);
-      await loader.init();
-      const wasm = loader.get();
+      await withLogSession(
+        { inputPath, activityKey, commandName: 'simulate', emitOptions: { format, verbose, quiet } },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        async (wasmBase, logHandle) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const wasm = wasmBase as Record<string, any>;
 
-      const xesContent = await fs.readFile(inputPath, 'utf-8');
-      const logHandle: string = wasm.load_eventlog_from_xes(xesContent);
+        const config = JSON.stringify({
+          num_cases: numCases,
+          inter_arrival_mean_ms: 1000.0,
+          activity_service_time_ms: {},
+          resource_capacity: {},
+          simulation_time_ms: maxTime,
+          random_seed: seed,
+        });
+        const rawSim = wasm.monte_carlo_simulation(logHandle, '', '', config);
+        const simResult = typeof rawSim === 'string' ? JSON.parse(rawSim) : rawSim;
 
-      const config = JSON.stringify({
-        num_cases: numCases,
-        inter_arrival_mean_ms: 1000.0,
-        activity_service_time_ms: {},
-        resource_capacity: {},
-        simulation_time_ms: maxTime,
-        random_seed: seed,
-      });
-      const rawSim = wasm.monte_carlo_simulation(logHandle, '', '', config);
-      const simResult = typeof rawSim === 'string' ? JSON.parse(rawSim) : rawSim;
+        let playoutResult: Record<string, unknown> | null = null;
+        try {
+          const rawPlayout = wasm.simulate_process_tree_playout(
+            logHandle,
+            activityKey,
+            numCases,
+            seed
+          );
+          playoutResult = typeof rawPlayout === 'string' ? JSON.parse(rawPlayout) : rawPlayout;
+        } catch {
+          // Process tree playout not available
+        }
 
-      let playoutResult: Record<string, unknown> | null = null;
-      try {
-        const rawPlayout = wasm.simulate_process_tree_playout(
-          logHandle,
+        const payload = {
+          input: inputPath,
           activityKey,
-          numCases,
-          seed
-        );
-        playoutResult = typeof rawPlayout === 'string' ? JSON.parse(rawPlayout) : rawPlayout;
-      } catch {
-        // Process tree playout not available
-      }
+          simulation: {
+            method: 'monte_carlo',
+            casesRequested: numCases,
+            casesCompleted: (simResult as Record<string, unknown>).completed_cases ?? numCases,
+            elapsedMs: Math.round((performance.now() - t0) * 100) / 100,
+            seed,
+          },
+          statistics: {
+            avgTraceLength: (simResult as Record<string, unknown>).avg_trace_length ?? 0,
+            avgSojournTime: (simResult as Record<string, unknown>).avg_sojourn_time ?? 0,
+            resourceUtilization: (simResult as Record<string, unknown>).resource_utilization ?? 0,
+          },
+          traces: ((simResult as Record<string, unknown>).traces ?? []) as Array<Record<string, unknown>>,
+          ...(playoutResult && { playout: playoutResult }),
+        };
 
-      wasm.delete_object(logHandle);
-
-      const payload = {
-        input: inputPath,
-        activityKey,
-        simulation: {
-          method: 'monte_carlo',
-          casesRequested: numCases,
-          casesCompleted: (simResult as Record<string, unknown>).completed_cases ?? numCases,
-          elapsedMs: Math.round((performance.now() - t0) * 100) / 100,
-          seed,
-        },
-        statistics: {
-          avgTraceLength: (simResult as Record<string, unknown>).avg_trace_length ?? 0,
-          avgSojournTime: (simResult as Record<string, unknown>).avg_sojourn_time ?? 0,
-          resourceUtilization: (simResult as Record<string, unknown>).resource_utilization ?? 0,
-        },
-        traces: ((simResult as Record<string, unknown>).traces ?? []) as Array<Record<string, unknown>>,
-        ...(playoutResult && { playout: playoutResult }),
-      };
-
-      const result = makeResult('simulate', payload, performance.now() - t0, EXIT_CODES.success);
-      emitResult(result, { format, verbose, quiet }, (res, projection) => {
-        printHumanSimulation(projection, res.payload as typeof payload);
-      });
-      process.exit(result.exit_code);
+        const result = makeResult('simulate', payload, performance.now() - t0, EXIT_CODES.success);
+        emitResult(result, { format, verbose, quiet }, (res, projection) => {
+          printHumanSimulation(projection, res.payload as typeof payload);
+        });
+        process.exit(result.exit_code);
+      });  // end withLogSession
     } catch (error) {
       const result = makeErrorResult('simulate', error, EXIT_CODES.execution_error);
       emitResult(result, { format, verbose, quiet });

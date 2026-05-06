@@ -2,8 +2,7 @@ import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
-import { WasmLoader } from '@wasm4pm/engine';
-import { createQuietObservabilityLayer } from '../observability-util.js';
+import { withLogSession } from '../with-log-session.js';
 
 interface QualityPayload {
   status: string;
@@ -92,22 +91,6 @@ export const quality = defineCommand({
         return;
       }
 
-      // Validate input file exists
-      try {
-        await fs.access(inputPath);
-      } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        const result = makeErrorResult(
-          'quality',
-          new Error(`Input file not found: ${inputPath} — ${message}`),
-          EXIT_CODES.source_error,
-          'SOURCE_ERROR'
-        );
-        emitResult(result, { format, verbose, quiet });
-        process.exit(result.exit_code);
-        return;
-      }
-
       const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
       const metricsRaw =
         (ctx.args.metrics as string) || 'fitness,precision,generalization,simplicity';
@@ -129,16 +112,12 @@ export const quality = defineCommand({
         return;
       }
 
-      // Load WASM module
-      const loaderConfig =
-        ctx.args.format === 'json' ? { observability: createQuietObservabilityLayer() } : {};
-      const loader = WasmLoader.getInstance(loaderConfig);
-      await loader.init();
-      const wasm = loader.get();
-
-      // Parse XES and load log
-      const xesContent = await fs.readFile(inputPath, 'utf-8');
-      const logHandle: string = wasm.load_eventlog_from_xes(xesContent);
+      await withLogSession(
+        { inputPath, activityKey, commandName: 'quality', emitOptions: { format, verbose, quiet } },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        async (wasmBase, logHandle) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const wasm = wasmBase as Record<string, any>;
 
       // Discover a model for quality assessment (use inductive miner — produces Petri net handle)
       let modelHandle: string;
@@ -273,13 +252,10 @@ export const quality = defineCommand({
       const scores = Object.values(qualityScores);
       const aggregate = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0.0;
 
-      // Free handles
+      // Free model handle (logHandle is cleaned up by withLogSession)
       try {
         if (modelHandle) {
           wasm.delete_object(modelHandle);
-        }
-        if (logHandle) {
-          wasm.delete_object(logHandle);
         }
       } catch {
         // Cleanup failure is non-fatal — do not block output
@@ -317,7 +293,8 @@ export const quality = defineCommand({
         printHumanQuality(res.payload, projection);
       });
 
-      process.exit(result.exit_code);
+        process.exit(result.exit_code);
+      });  // end withLogSession
     } catch (error) {
       const result = makeErrorResult(
         'quality',

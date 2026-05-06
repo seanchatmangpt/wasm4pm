@@ -2,8 +2,7 @@ import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
-import { WasmLoader } from '@wasm4pm/engine';
-import { createQuietObservabilityLayer } from '../observability-util.js';
+import { withLogSession } from '../with-log-session.js';
 
 interface ConformancePayload {
   schema: string;
@@ -105,21 +104,6 @@ export const conformance = defineCommand({
         return;
       }
 
-      // Validate input file exists
-      try {
-        await fs.access(inputPath);
-      } catch {
-        const result = makeErrorResult(
-          'conformance',
-          new Error(`Input file not found: ${inputPath}`),
-          EXIT_CODES.source_error,
-          'SOURCE_ERROR'
-        );
-        emitResult(result, { format, verbose, quiet });
-        process.exit(result.exit_code);
-        return;
-      }
-
       const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
       const method = ctx.args.method as 'token-replay' | 'alignment';
       const rawThreshold = ctx.args.threshold as string | undefined;
@@ -137,16 +121,12 @@ export const conformance = defineCommand({
       }
       const threshold = parsedThreshold ?? 0.8;
 
-      // Load WASM module
-      const loaderConfig =
-        ctx.args.format === 'json' ? { observability: createQuietObservabilityLayer() } : {};
-      const loader = WasmLoader.getInstance(loaderConfig);
-      await loader.init();
-      const wasm = loader.get();
-
-      // Parse XES and load log
-      const xesContent = await fs.readFile(inputPath, 'utf-8');
-      const logHandle: string = wasm.load_eventlog_from_xes(xesContent);
+      await withLogSession(
+        { inputPath, activityKey, commandName: 'conformance', emitOptions: { format, verbose, quiet } },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        async (wasmBase, logHandle) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const wasm = wasmBase as Record<string, any>;
 
       // First discover a Petri Net model if none provided
       let petriNetHandle: string;
@@ -213,9 +193,6 @@ export const conformance = defineCommand({
       const precision = null;
       const precision_available = false;
 
-      // Free log handle
-      wasm.delete_object(logHandle);
-
       // Build payload
       const fitnessValue = conformanceResult.fitness ?? 0.0;
       const isFit = (fitnessValue as number) >= threshold;
@@ -250,7 +227,8 @@ export const conformance = defineCommand({
         printHumanConformance(res.payload, projection);
       });
 
-      process.exit(result.exit_code);
+        process.exit(result.exit_code);
+      });  // end withLogSession
     } catch (error) {
       const result = makeErrorResult(
         'conformance',

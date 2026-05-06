@@ -228,15 +228,13 @@ beforeAll(() => {
 // Perception layer: count events, discover process structure, assess health
 
 describe('JTBD-1: I want AutoProcess to give me a full health report on my RevOps pipeline in one command', () => {
-  it('event log loads and models JSON contains all traces', () => {
+  it('event log loads and models JSON contains all traces + DFG discovery produces a non-empty process structure from the RevOps log + total event count across all traces matches the fixture', () => {
     const models = JSON.parse(modelsLogJson) as {
       traces: Array<{ events: unknown[] }>;
     };
     expect(models.traces).toBeDefined();
     expect(models.traces.length).toBe(REVOPS_TRACES.length);
-  });
 
-  it('DFG discovery produces a non-empty process structure from the RevOps log', () => {
     const dfg = parse(wasm.discover_dfg(logHandle, 'concept:name'));
     // DFG nodes should reflect the faker-generated activities
     expect(dfg).toBeDefined();
@@ -244,13 +242,8 @@ describe('JTBD-1: I want AutoProcess to give me a full health report on my RevOp
     const startActs = dfg.start_activities as Record<string, number>;
     expect(typeof startActs).toBe('object');
     expect(Object.keys(startActs).length).toBeGreaterThan(0);
-  });
 
-  it('total event count across all traces matches the fixture', () => {
     // Count events via the models JSON (export_eventlog_to_json format)
-    const models = JSON.parse(modelsLogJson) as {
-      traces: Array<{ events: unknown[] }>;
-    };
     const totalEvents = models.traces.reduce((sum, t) => sum + t.events.length, 0);
     expect(totalEvents).toBe(TOTAL_EVENTS);
   });
@@ -261,30 +254,24 @@ describe('JTBD-1: I want AutoProcess to give me a full health report on my RevOp
 // Decision layer: run drift detection and rework analysis to drive guard decisions
 
 describe('JTBD-2: I want to see what decisions the AutoProcess system made about my pipeline health', () => {
-  it('detect_drift returns a structured result with method and drifts_detected fields', () => {
-    const result = parse(wasm.detect_drift(logHandle, 'concept:name', 2));
-    expect(result).toBeDefined();
-    expect(result).toHaveProperty('drifts_detected');
-    expect(result).toHaveProperty('method');
-    expect(typeof result.drifts_detected).toBe('number');
-    expect(typeof result.method).toBe('string');
-  });
+  it('detect_drift returns a structured result with method and drifts_detected fields + detect_rework returns a valid rework analysis with traces_with_rework field + rework is correctly detected in the complex trace (negotiation_started appears twice)', () => {
+    const driftResult = parse(wasm.detect_drift(logHandle, 'concept:name', 2));
+    expect(driftResult).toBeDefined();
+    expect(driftResult).toHaveProperty('drifts_detected');
+    expect(driftResult).toHaveProperty('method');
+    expect(typeof driftResult.drifts_detected).toBe('number');
+    expect(typeof driftResult.method).toBe('string');
 
-  it('detect_rework returns a valid rework analysis with traces_with_rework field', () => {
-    const result = parse(wasm.detect_rework(logHandle, 'concept:name'));
-    expect(result).toBeDefined();
-    expect(result).toHaveProperty('traces_with_rework');
-    expect(result).toHaveProperty('total_rework_instances');
-    expect(typeof result.traces_with_rework).toBe('number');
-    expect(result.traces_with_rework).toBeGreaterThanOrEqual(0);
-  });
+    const reworkResult = parse(wasm.detect_rework(logHandle, 'concept:name'));
+    expect(reworkResult).toBeDefined();
+    expect(reworkResult).toHaveProperty('traces_with_rework');
+    expect(reworkResult).toHaveProperty('total_rework_instances');
+    expect(typeof reworkResult.traces_with_rework).toBe('number');
+    expect(reworkResult.traces_with_rework).toBeGreaterThanOrEqual(0);
 
-  it('rework is correctly detected in the complex trace (negotiation_started appears twice)', () => {
     // Variant 4 has V.negotiationStarted repeated — detect_rework should identify rework
-    const result = parse(wasm.detect_rework(logHandle, 'concept:name'));
-    // The negotiation loop in variant 4 constitutes rework
-    expect(result.traces_with_rework).toBeGreaterThan(0);
-    expect(result.total_rework_instances).toBeGreaterThan(0);
+    expect(reworkResult.traces_with_rework).toBeGreaterThan(0);
+    expect(reworkResult.total_rework_instances).toBeGreaterThan(0);
   });
 });
 
@@ -293,7 +280,7 @@ describe('JTBD-2: I want to see what decisions the AutoProcess system made about
 // Protection/Optimization layer: verify RL state construction and drift thresholds
 
 describe('JTBD-3: I want to verify the RL and SPC state is being tracked between AutoProcess runs', () => {
-  it('get_drift_thresholds returns valid JSON with low and high threshold fields', () => {
+  it('get_drift_thresholds returns valid JSON with low and high threshold fields + set_drift_thresholds updates and get_drift_thresholds reflects the new values', () => {
     const raw = wasm.get_drift_thresholds();
     expect(typeof raw).toBe('string');
     expect(() => JSON.parse(raw)).not.toThrow();
@@ -303,6 +290,19 @@ describe('JTBD-3: I want to verify the RL and SPC state is being tracked between
     expect(typeof thresholds.low).toBe('number');
     expect(typeof thresholds.high).toBe('number');
     expect(thresholds.low).toBeLessThan(thresholds.high);
+
+    // Set faker-derived thresholds in range [0,1]
+    const newLow = 0.25;
+    const newHigh = 0.65;
+    wasm.set_drift_thresholds(newLow, newHigh);
+
+    const updatedRaw = wasm.get_drift_thresholds();
+    const updatedThresholds = JSON.parse(updatedRaw);
+    expect(updatedThresholds.low).toBeCloseTo(newLow, 2);
+    expect(updatedThresholds.high).toBeCloseTo(newHigh, 2);
+
+    // Restore defaults so other tests are not affected
+    wasm.reset_drift_thresholds();
   });
 
   it('rl_state_from_features constructs a valid RL state from RevOps metric features', () => {
@@ -324,20 +324,5 @@ describe('JTBD-3: I want to verify the RL and SPC state is being tracked between
     const rlState = wasm.rl_state_from_features(features, healthLevel, 0.0);
     expect(rlState).toBeDefined();
     expect(rlState.health_level).toBe(healthLevel);
-  });
-
-  it('set_drift_thresholds updates and get_drift_thresholds reflects the new values', () => {
-    // Set faker-derived thresholds in range [0,1]
-    const newLow = 0.25;
-    const newHigh = 0.65;
-    wasm.set_drift_thresholds(newLow, newHigh);
-
-    const raw = wasm.get_drift_thresholds();
-    const thresholds = JSON.parse(raw);
-    expect(thresholds.low).toBeCloseTo(newLow, 2);
-    expect(thresholds.high).toBeCloseTo(newHigh, 2);
-
-    // Restore defaults so other tests are not affected
-    wasm.reset_drift_thresholds();
   });
 });

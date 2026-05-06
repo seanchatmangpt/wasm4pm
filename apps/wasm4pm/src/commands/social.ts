@@ -2,8 +2,7 @@ import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
-import { WasmLoader } from '@wasm4pm/engine';
-import { createQuietObservabilityLayer } from '../observability-util.js';
+import { withLogSession } from '../with-log-session.js';
 
 export const social = defineCommand({
   meta: {
@@ -74,19 +73,6 @@ export const social = defineCommand({
         process.exit(result.exit_code);
       }
 
-      try {
-        await fs.access(inputPath);
-      } catch {
-        const result = makeErrorResult(
-          'social',
-          `Input file not found: ${inputPath}`,
-          EXIT_CODES.source_error,
-          'FILE_NOT_FOUND'
-        );
-        emitResult(result, { format, verbose, quiet });
-        process.exit(result.exit_code);
-      }
-
       const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
       const resourceKey = (ctx.args['resource-key'] as string) || 'org:resource';
       const metric = (ctx.args.metric as string) || 'handover';
@@ -102,63 +88,59 @@ export const social = defineCommand({
         process.exit(result.exit_code);
       }
 
-      // Load WASM module
-      const loaderConfig =
-        format === 'json' ? { observability: createQuietObservabilityLayer() } : {};
-      const loader = WasmLoader.getInstance(loaderConfig);
-      await loader.init();
-      const wasm = loader.get();
+      await withLogSession(
+        { inputPath, activityKey, commandName: 'social', emitOptions: { format, verbose, quiet } },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        async (wasmBase, logHandle) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const wasm = wasmBase as Record<string, any>;
 
-      const xesContent = await fs.readFile(inputPath, 'utf-8');
-      const logHandle: string = wasm.load_eventlog_from_xes(xesContent);
+        let rawNetwork: unknown;
+        let similarTaskWarning = false;
+        switch (metric) {
+          case 'handover':
+            rawNetwork = wasm.discover_handover_network(logHandle, resourceKey);
+            break;
+          case 'working-together':
+            rawNetwork = wasm.discover_working_together_network(logHandle, resourceKey);
+            break;
+          case 'similar-task':
+            rawNetwork = { nodes: [], edges: [] };
+            similarTaskWarning = true;
+            break;
+          default:
+            throw new Error(`Unknown metric: ${metric}`);
+        }
 
-      let rawNetwork: unknown;
-      let similarTaskWarning = false;
-      switch (metric) {
-        case 'handover':
-          rawNetwork = wasm.discover_handover_network(logHandle, resourceKey);
-          break;
-        case 'working-together':
-          rawNetwork = wasm.discover_working_together_network(logHandle, resourceKey);
-          break;
-        case 'similar-task':
-          rawNetwork = { nodes: [], edges: [] };
-          similarTaskWarning = true;
-          break;
-        default:
-          throw new Error(`Unknown metric: ${metric}`);
-      }
+        const network = typeof rawNetwork === 'string' ? JSON.parse(rawNetwork) : rawNetwork;
 
-      const network = typeof rawNetwork === 'string' ? JSON.parse(rawNetwork) : rawNetwork;
+        let centrality: Record<string, unknown> | null = null;
+        try {
+          const rawCentrality = wasm.compute_network_centrality(logHandle, activityKey, resourceKey);
+          centrality = typeof rawCentrality === 'string' ? JSON.parse(rawCentrality) : rawCentrality;
+        } catch {
+          // Centrality not available
+        }
 
-      let centrality: Record<string, unknown> | null = null;
-      try {
-        const rawCentrality = wasm.compute_network_centrality(logHandle, activityKey, resourceKey);
-        centrality = typeof rawCentrality === 'string' ? JSON.parse(rawCentrality) : rawCentrality;
-      } catch {
-        // Centrality not available
-      }
+        const payload = {
+          input: inputPath,
+          activityKey,
+          resourceKey,
+          metric,
+          similarTaskWarning,
+          network: {
+            nodes: ((network as Record<string, unknown>).nodes ?? []) as Array<{ id: string; label?: string }>,
+            edges: ((network as Record<string, unknown>).edges ?? []) as Array<{ from: string; to: string; weight?: number }>,
+          },
+          centrality,
+        };
 
-      wasm.delete_object(logHandle);
-
-      const payload = {
-        input: inputPath,
-        activityKey,
-        resourceKey,
-        metric,
-        similarTaskWarning,
-        network: {
-          nodes: ((network as Record<string, unknown>).nodes ?? []) as Array<{ id: string; label?: string }>,
-          edges: ((network as Record<string, unknown>).edges ?? []) as Array<{ from: string; to: string; weight?: number }>,
-        },
-        centrality,
-      };
-
-      const result = makeResult('social', payload, performance.now() - t0, EXIT_CODES.success);
-      emitResult(result, { format, verbose, quiet }, (res, projection) => {
-        printHumanSocial(projection, res.payload as typeof payload);
-      });
-      process.exit(result.exit_code);
+        const result = makeResult('social', payload, performance.now() - t0, EXIT_CODES.success);
+        emitResult(result, { format, verbose, quiet }, (res, projection) => {
+          printHumanSocial(projection, res.payload as typeof payload);
+        });
+        process.exit(result.exit_code);
+      });  // end withLogSession
     } catch (error) {
       const result = makeErrorResult('social', error, EXIT_CODES.execution_error);
       emitResult(result, { format, verbose, quiet });

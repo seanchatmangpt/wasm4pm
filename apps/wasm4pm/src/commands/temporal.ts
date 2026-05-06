@@ -2,8 +2,7 @@ import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
-import { WasmLoader } from '@wasm4pm/engine';
-import { createQuietObservabilityLayer } from '../observability-util.js';
+import { withLogSession } from '../with-log-session.js';
 
 export const temporal = defineCommand({
   meta: {
@@ -59,10 +58,6 @@ export const temporal = defineCommand({
     const quiet = Boolean(ctx.args.quiet);
 
     try {
-      // In JSON mode, suppress observability logs to keep output clean
-      if (format === 'json') {
-        WasmLoader.reset();
-      }
       // Resolve input path (positional OR --file/-i)
       const inputPath: string | undefined =
         (ctx.args.input as string | undefined) || (ctx.args.file as string | undefined);
@@ -78,103 +73,85 @@ export const temporal = defineCommand({
         process.exit(result.exit_code);
       }
 
-      // Validate input file exists
-      try {
-        await fs.access(inputPath);
-      } catch {
-        const result = makeErrorResult(
-          'temporal',
-          `Input file not found: ${inputPath}`,
-          EXIT_CODES.source_error,
-          'FILE_NOT_FOUND'
-        );
-        emitResult(result, { format, verbose, quiet });
-        process.exit(result.exit_code);
-      }
-
       const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
       const timestampKey = (ctx.args['timestamp-key'] as string) || 'time:timestamp';
       const threshold = parseFloat((ctx.args.threshold as string) || '0.05');
 
-      // Load WASM module with quiet observability in JSON mode
-      const loaderConfig =
-        format === 'json' ? { observability: createQuietObservabilityLayer() } : {};
-      const loader = WasmLoader.getInstance(loaderConfig);
-      await loader.init();
-      const wasm = loader.get();
+      await withLogSession(
+        { inputPath, activityKey, commandName: 'temporal', emitOptions: { format, verbose, quiet } },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        async (wasmBase, logHandle) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const wasm = wasmBase as Record<string, any>;
 
-      const xesContent = await fs.readFile(inputPath, 'utf-8');
-      const logHandle: string = wasm.load_eventlog_from_xes(xesContent);
+        const rawDfg = wasm.discover_dfg(logHandle, activityKey);
+        const dfg = typeof rawDfg === 'string' ? JSON.parse(rawDfg) : rawDfg;
 
-      const rawDfg = wasm.discover_dfg(logHandle, activityKey);
-      const dfg = typeof rawDfg === 'string' ? JSON.parse(rawDfg) : rawDfg;
+        let temporalProfile: Record<string, unknown> | null = null;
+        try {
+          const rawProfile = wasm.compute_temporal_profile(logHandle, activityKey, timestampKey);
+          temporalProfile = typeof rawProfile === 'string' ? JSON.parse(rawProfile) : rawProfile;
+        } catch {
+          // Temporal profile not available
+        }
 
-      let temporalProfile: Record<string, unknown> | null = null;
-      try {
-        const rawProfile = wasm.compute_temporal_profile(logHandle, activityKey, timestampKey);
-        temporalProfile = typeof rawProfile === 'string' ? JSON.parse(rawProfile) : rawProfile;
-      } catch {
-        // Temporal profile not available
-      }
+        let violations: Array<Record<string, unknown>> = [];
+        try {
+          const rawViolations = wasm.check_temporal_conformance(
+            logHandle,
+            activityKey,
+            timestampKey,
+            threshold
+          );
+          const violationsResult =
+            typeof rawViolations === 'string' ? JSON.parse(rawViolations) : rawViolations;
+          violations = (violationsResult.violations as Array<Record<string, unknown>>) ?? [];
+        } catch {
+          // Temporal conformance not available
+        }
 
-      let violations: Array<Record<string, unknown>> = [];
-      try {
-        const rawViolations = wasm.check_temporal_conformance(
-          logHandle,
+        let performanceDfg: Record<string, unknown> | null = null;
+        try {
+          const rawPerf = wasm.compute_performance_dfg(logHandle, activityKey, timestampKey);
+          performanceDfg = typeof rawPerf === 'string' ? JSON.parse(rawPerf) : rawPerf;
+        } catch {
+          // Performance DFG not available
+        }
+
+        let activityDurations: Record<string, unknown> | null = null;
+        try {
+          const rawDurations = wasm.compute_activity_durations(logHandle, activityKey, timestampKey);
+          activityDurations =
+            typeof rawDurations === 'string' ? JSON.parse(rawDurations) : rawDurations;
+        } catch {
+          // Activity durations not available
+        }
+
+        const payload = {
+          input: inputPath,
           activityKey,
           timestampKey,
-          threshold
-        );
-        const violationsResult =
-          typeof rawViolations === 'string' ? JSON.parse(rawViolations) : rawViolations;
-        violations = (violationsResult.violations as Array<Record<string, unknown>>) ?? [];
-      } catch {
-        // Temporal conformance not available
-      }
-
-      let performanceDfg: Record<string, unknown> | null = null;
-      try {
-        const rawPerf = wasm.compute_performance_dfg(logHandle, activityKey, timestampKey);
-        performanceDfg = typeof rawPerf === 'string' ? JSON.parse(rawPerf) : rawPerf;
-      } catch {
-        // Performance DFG not available
-      }
-
-      let activityDurations: Record<string, unknown> | null = null;
-      try {
-        const rawDurations = wasm.compute_activity_durations(logHandle, activityKey, timestampKey);
-        activityDurations =
-          typeof rawDurations === 'string' ? JSON.parse(rawDurations) : rawDurations;
-      } catch {
-        // Activity durations not available
-      }
-
-      wasm.delete_object(logHandle);
-
-      const payload = {
-        input: inputPath,
-        activityKey,
-        timestampKey,
-        threshold,
-        dfg: {
-          nodes: (dfg as Record<string, unknown>).nodes ?? [],
-          edges: (dfg as Record<string, unknown>).edges ?? [],
-        },
-        temporalProfile,
-        violations: {
-          count: violations.length,
           threshold,
-          items: violations,
-        },
-        performanceDfg,
-        activityDurations,
-      };
+          dfg: {
+            nodes: (dfg as Record<string, unknown>).nodes ?? [],
+            edges: (dfg as Record<string, unknown>).edges ?? [],
+          },
+          temporalProfile,
+          violations: {
+            count: violations.length,
+            threshold,
+            items: violations,
+          },
+          performanceDfg,
+          activityDurations,
+        };
 
-      const result = makeResult('temporal', payload, performance.now() - t0, EXIT_CODES.success);
-      emitResult(result, { format, verbose, quiet }, (res, projection) => {
-        printHumanTemporal(projection, res.payload as typeof payload);
-      });
-      process.exit(result.exit_code);
+        const result = makeResult('temporal', payload, performance.now() - t0, EXIT_CODES.success);
+        emitResult(result, { format, verbose, quiet }, (res, projection) => {
+          printHumanTemporal(projection, res.payload as typeof payload);
+        });
+        process.exit(result.exit_code);
+      });  // end withLogSession
     } catch (error) {
       const result = makeErrorResult('temporal', error, EXIT_CODES.execution_error);
       emitResult(result, { format, verbose, quiet });
