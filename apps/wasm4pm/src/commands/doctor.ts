@@ -1,6 +1,7 @@
 import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
-import { existsSync, readFileSync, execSync, statSync } from 'fs';
+import { existsSync, readFileSync, statSync } from 'fs';
+import { execSync } from 'child_process';
 import * as path from 'path';
 import * as os from 'os';
 import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
@@ -1652,17 +1653,24 @@ async function runChecks(
   };
 
   if (formatter instanceof JSONFormatter) {
+    const checksPayload = report.diagnoses.map((c) => ({ ...c }));
+    const summaryPayload = {
+      pass: report.info,
+      warn: report.warnings,
+      fail: report.stopTheLine,
+      critical: report.stopTheLine,
+    };
     if (report.epistemicHealth) {
       formatter.success('wpm environment is healthy', {
-        ...report,
+        checks: checksPayload,
+        summary: summaryPayload,
         healthy: true,
-        diagnoses: report.diagnoses.map((c) => ({ ...c })),
       });
     } else {
       formatter.warn('wpm environment has issues', {
-        ...report,
+        checks: checksPayload,
+        summary: summaryPayload,
         healthy: false,
-        diagnoses: report.diagnoses.map((c) => ({ ...c })),
       });
     }
   } else {
