@@ -1,0 +1,9 @@
+flowchart LR
+    Log["EventLog\nHandle"] --> Extract["Prefix\nExtraction\nprefix_len 1..N\nfit phase"]
+    Extract --> NA["Next Activity\nN-gram model\nbeam search\nupper_bound 50ms"]
+    Extract --> RT["Remaining Time\nWeibull bucket\nhazard rate\nupper_bound 50ms"]
+    Extract --> OC["Outcome\nAnomaly score\nboundary coverage\nupper_bound 50ms"]
+    Extract --> DR["Drift\nEWMA smoothing\nJaccard window\nupper_bound 50ms"]
+    Extract --> FE["Features\nrework_count\nelapsed_ms prefix\nupper_bound 50ms"]
+    Extract --> RE["Resource\nM/M/1 queue\nUCB1 bandit\nupper_bound 50ms"]
+    NA & RT & OC & DR & FE & RE --> Out["Prediction\nJSON output\nhandle stored\nbatch 500ms max"]
