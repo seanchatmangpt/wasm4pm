@@ -5,7 +5,7 @@ use std::collections::{HashMap, HashSet};
 /// Implements key relations: →, -|→, ||
 /// Time complexity: O(n + m²) where n = events, m = unique activities
 pub fn discover_alpha(log: &EventLog, activity_key: &str) -> Result<PetriNet> {
-    let mut net = PetriNet::new();
+    let mut net = PetriNet::default();
 
     // Collect all activities and compute relations
     let mut directly_follows: HashSet<(String, String)> = HashSet::new();
@@ -40,11 +40,11 @@ pub fn discover_alpha(log: &EventLog, activity_key: &str) -> Result<PetriNet> {
                 if !activity_to_trans_id.contains_key(&activity) {
                     let trans_id = format!("t_{}", net.transitions.len());
                     activity_to_trans_id.insert(activity.clone(), trans_id.clone());
-                    net.transitions.push(PetriNetTransition::new(
-                        trans_id,
-                        activity.clone(),
-                        false,
-                    ));
+                    net.transitions.push(Transition {
+                        id: trans_id,
+                        label: activity.clone(),
+                        is_invisible: Some(false),
+                    });
                 }
             }
         }
@@ -52,12 +52,10 @@ pub fn discover_alpha(log: &EventLog, activity_key: &str) -> Result<PetriNet> {
 
     // Create source place (start) and sink place (end)
     let source_id = "p_source".to_string();
-    net.places
-        .push(PetriNetPlace::new(source_id.clone(), "source".to_string()));
+    net.places.push(Place { id: source_id.clone() });
 
     let sink_id = "p_sink".to_string();
-    net.places
-        .push(PetriNetPlace::new(sink_id.clone(), "sink".to_string()));
+    net.places.push(Place { id: sink_id.clone() });
 
     // Connect source place to all start activities
     for trace in &log.traces {
@@ -67,8 +65,7 @@ pub fn discover_alpha(log: &EventLog, activity_key: &str) -> Result<PetriNet> {
             .and_then(|e| e.get_activity(activity_key))
         {
             if let Some(trans_id) = activity_to_trans_id.get(&first_activity) {
-                net.arcs
-                    .push(PetriNetArc::new(source_id.clone(), trans_id.clone(), 1));
+                net.arcs.push(Arc { from: source_id.clone(), to: trans_id.clone(), weight: Some(1) });
             }
         }
     }
@@ -81,8 +78,7 @@ pub fn discover_alpha(log: &EventLog, activity_key: &str) -> Result<PetriNet> {
             .and_then(|e| e.get_activity(activity_key))
         {
             if let Some(trans_id) = activity_to_trans_id.get(&last_activity) {
-                net.arcs
-                    .push(PetriNetArc::new(trans_id.clone(), sink_id.clone(), 1));
+                net.arcs.push(Arc { from: trans_id.clone(), to: sink_id.clone(), weight: Some(1) });
             }
         }
     }
@@ -93,13 +89,9 @@ pub fn discover_alpha(log: &EventLog, activity_key: &str) -> Result<PetriNet> {
         {
             // Create intermediate place for this relation
             let place_id = format!("p_{}", net.places.len());
-            net.places.push(PetriNetPlace::new(
-                place_id.clone(),
-                format!("{} → {}", a, b),
-            ));
-            net.arcs
-                .push(PetriNetArc::new(a_id.clone(), place_id.clone(), 1));
-            net.arcs.push(PetriNetArc::new(place_id, b_id.clone(), 1));
+            net.places.push(Place { id: place_id.clone() });
+            net.arcs.push(Arc { from: a_id.clone(), to: place_id.clone(), weight: Some(1) });
+            net.arcs.push(Arc { from: place_id, to: b_id.clone(), weight: Some(1) });
         }
     }
 

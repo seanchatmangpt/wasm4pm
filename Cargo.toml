@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 
-members = ["wasm4pm", "tps-metrics", "crates/wasm4pm-types", "crates/wasm4pm-algos", "crates/wasm4pm-cli"]
+members = ["wasm4pm", "tps-metrics", "crates/wasm4pm-types", "crates/wasm4pm-algos", "crates/wasm4pm-cli", "crates/wasm4pm-utils"]
 
 [workspace.package]
 version = "26.4.28"

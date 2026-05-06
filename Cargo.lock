@@ -2649,6 +2649,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "wasm4pm-utils"
+version = "26.4.28"
+dependencies = [
+ "hashbrown 0.17.0",
+ "itertools 0.14.0",
+ "serde",
+ "smallvec",
+]
+
+[[package]]
 name = "web-sys"
 version = "0.3.70"
 source = "registry+https://github.com/rust-lang/crates.io-index"
