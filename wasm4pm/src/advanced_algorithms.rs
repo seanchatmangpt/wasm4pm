@@ -3,6 +3,7 @@ use crate::state::{get_or_init_state, StoredObject};
 use crate::utilities::to_js_str;
 use rustc_hash::FxHashMap;
 use serde_json::json;
+use smallvec::SmallVec;
 use std::collections::HashSet;
 use wasm_bindgen::prelude::*;
 
@@ -140,17 +141,20 @@ pub fn analyze_infrequent_paths(
 
             let mut path_frequencies: FxHashMap<u64, (Vec<String>, usize)> = FxHashMap::default();
 
+            // Hoisted outside the loop — reused across every trace via .clear().
+            // SmallVec<[u32; 16]> covers the common case (≤16 activities) without
+            // heap allocation; longer traces spill transparently.
+            let mut trace_ids: SmallVec<[u32; 16]> = SmallVec::new();
+
             // Extract activity sequences (paths) and hash them
             for trace in &log.traces {
-                let mut trace_ids: Vec<u32> = Vec::new();
-                let mut path_str: Vec<String> = Vec::new();
+                trace_ids.clear();
                 for event in &trace.events {
                     if let Some(AttributeValue::String(activity)) =
                         event.attributes.get(activity_key)
                     {
                         if let Some(&id) = vocab.get(activity.as_str()) {
                             trace_ids.push(id);
-                            path_str.push(activity.clone());
                         }
                     }
                 }
@@ -169,7 +173,19 @@ pub fn analyze_infrequent_paths(
                 path_frequencies
                     .entry(path_hash)
                     .and_modify(|(_, count)| *count += 1)
-                    .or_insert((path_str, 1));
+                    .or_insert_with(|| {
+                        // Cold path: first time we see this variant.  Build path_str
+                        // only here — skipped entirely for every subsequent occurrence.
+                        let path_str = trace
+                            .events
+                            .iter()
+                            .filter_map(|e| match e.attributes.get(activity_key) {
+                                Some(AttributeValue::String(s)) => Some(s.clone()),
+                                _ => None,
+                            })
+                            .collect::<Vec<String>>();
+                        (path_str, 1)
+                    });
             }
 
             // Find infrequent paths

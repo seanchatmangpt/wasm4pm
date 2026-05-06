@@ -6,6 +6,26 @@ use serde_json::json;
 use std::collections::{HashMap, HashSet};
 use wasm_bindgen::prelude::*; // Conditional import: statrs or hand_rolled_stats
 
+/// Sorted edge vector for O(log n) membership testing — faster than HashSet for small edge counts.
+struct SortedEdgeSlice(Vec<(u32, u32)>);
+
+impl SortedEdgeSlice {
+    fn from_hash_set(set: &HashSet<(u32, u32)>) -> Self {
+        let mut v: Vec<(u32, u32)> = set.iter().copied().collect();
+        v.sort_unstable();
+        Self(v)
+    }
+
+    #[inline(always)]
+    fn contains(&self, edge: (u32, u32)) -> bool {
+        self.0.binary_search(&edge).is_ok()
+    }
+}
+
+/// Vocabulary size threshold for u64[64] bitmask edge lookup vs SortedEdgeSlice fallback.
+/// Smaller on wasm32 to stay within stack constraints.
+const BITMASK_VOCAB_LIMIT: usize = if cfg!(target_arch = "wasm32") { 32 } else { 64 };
+
 /// Serialize `val` across the WASM boundary.
 ///
 /// - **WASM target**: `serde_wasm_bindgen::to_value` — produces a native JS object,
@@ -160,8 +180,35 @@ pub fn get_trace_length_statistics(eventlog_handle: &str) -> Result<JsValue, JsV
 /// Evaluate fitness of an edge set against columnar log (zero string allocation)
 /// Used by genetic algorithm, PSO, ACO, and simulated annealing discovery algorithms.
 /// Fitness = 80% trace fit + 20% simplicity penalty (based on edge count).
+///
+/// Fast path: when vocab fits within BITMASK_VOCAB_LIMIT, uses a u64[64] bitmask for
+/// O(1) edge lookup with no heap allocation. Fallback: SortedEdgeSlice for O(log n)
+/// binary search on larger vocabularies.
 #[inline]
 pub(crate) fn evaluate_edges_fitness(edge_set: &HashSet<(u32, u32)>, col: &ColumnarLog) -> f64 {
+    let vocab_len = col.vocab.len();
+    let use_bitmask = vocab_len <= BITMASK_VOCAB_LIMIT;
+
+    let mut bitmask = [0u64; 64];
+    if use_bitmask {
+        for &(f, t) in edge_set {
+            bitmask[f as usize] |= 1u64 << t;
+        }
+    }
+    let sorted = if !use_bitmask {
+        Some(SortedEdgeSlice::from_hash_set(edge_set))
+    } else {
+        None
+    };
+
+    let edge_lookup = |f: u32, t: u32| -> bool {
+        if use_bitmask {
+            (bitmask[f as usize] >> t) & 1 != 0
+        } else {
+            sorted.as_ref().unwrap().contains((f, t))
+        }
+    };
+
     let mut fitting_traces = 0;
     let total_traces = col.trace_offsets.len().saturating_sub(1);
 
@@ -174,7 +221,7 @@ pub(crate) fn evaluate_edges_fitness(edge_set: &HashSet<(u32, u32)>, col: &Colum
             (start..end.saturating_sub(1)).all(|i| {
                 let from = col.events[i];
                 let to = col.events[i + 1];
-                edge_set.contains(&(from, to))
+                edge_lookup(from, to)
             })
         } else {
             true // Empty or single-event traces are considered fitting
