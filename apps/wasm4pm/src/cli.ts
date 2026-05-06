@@ -21,6 +21,9 @@ import { validate } from './commands/validate.js';
 import { autoprocess } from './commands/autoprocess.js';
 import { swarm } from './commands/swarm.js';
 import { agent } from './commands/agent.js';
+import { membrane } from './commands/membrane.js';
+import { config } from './commands/config.js';
+import { verify } from './commands/verify.js';
 
 export const main = defineCommand({
   meta: {
@@ -87,6 +90,16 @@ ${BOLD}POWL${RESET}  ${DIM}(process-oriented workflow language)${RESET}
   ${GREEN}wpm powl${RESET} construct  -i <log>          Construct POWL model from log
   ${GREEN}wpm powl${RESET} replay     -i <log>          Replay log against POWL model
 
+${BOLD}AUTOMEMBRANE${RESET}  ${DIM}(Vision 2030 pre-control membrane — actor · object · route · automl · custody)${RESET}
+  ${GREEN}wpm membrane init${RESET}                        Scaffold [membrane] config in wasm4pm.toml
+  ${GREEN}wpm membrane build${RESET} <log.xes>             Build all envelope layers from an event log
+  ${GREEN}wpm membrane benchmark${RESET}                   Run all built-in security benchmark traces
+  ${GREEN}wpm membrane classify${RESET} <log.xes>          Classify motions from an event log
+  ${GREEN}wpm membrane health${RESET} [handles]            Check health of installed envelopes
+  ${GREEN}wpm membrane inspect${RESET} <handle>            Show details for a specific envelope handle
+  ${GREEN}wpm membrane replay${RESET} <motion.json>        Replay a RequestMotion through the classifier
+  ${GREEN}wpm membrane list${RESET}                        List envelopes persisted to .wasm4pm/envelopes/
+
 ${BOLD}AUTOPROCESS${RESET}  ${DIM}(Perception → Decision → Protection → Optimization)${RESET}
   ${GREEN}wpm autoprocess${RESET} <log.xes>              Run full autonomic control loop
   ${GREEN}wpm autoprocess${RESET} <log.xes> --format json  JSON output
@@ -138,6 +151,9 @@ Activity key defaults to "concept:name" (XES standard). Pass --activity-key to o
     autoprocess,
     swarm,
     agent,
+    membrane,
+    config,
+    verify,
   },
 });
 
@@ -167,4 +183,7 @@ export {
   autoprocess,
   swarm,
   agent,
+  membrane,
+  config,
+  verify,
 };

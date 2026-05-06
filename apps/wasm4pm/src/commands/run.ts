@@ -1,9 +1,10 @@
 import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { resolveConfig as loadConfig } from '@wasm4pm/config';
+import { resolveConfig as loadConfig, checkConfigWarnings } from '@wasm4pm/config';
+import { plan as makePlan } from '@wasm4pm/planner';
 import { WasmLoader } from '@wasm4pm/engine';
-import { ALGORITHM_CLI_ALIASES } from '@wasm4pm/contracts';
+import { ALGORITHM_CLI_ALIASES, findClosestMatch } from '@wasm4pm/contracts';
 import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { savePredictionResult } from './results.js';
@@ -199,6 +200,15 @@ export const run = defineCommand({
       description:
         'Compute and display quality metrics (fitness, precision, simplicity) after discovery',
     },
+    preflight: {
+      type: 'boolean',
+      description:
+        'Run full two-pass preflight validation (structural + semantic) before discovery',
+    },
+    stream: {
+      type: 'boolean',
+      description: 'Show elapsed time during discovery (for long-running algorithms)',
+    },
   },
   async run(ctx) {
     const formatter = getFormatter({
@@ -252,8 +262,14 @@ export const run = defineCommand({
         })();
 
       if (!resolvedAlgo) {
+        const available = Object.keys(ALGORITHM_CLI_ALIASES);
+        const suggestion = findClosestMatch(rawAlgo.toLowerCase(), available.map((a) => a.toLowerCase()), 3);
+        const didYouMean = suggestion
+          ? `\nDid you mean '${suggestion}'?`
+          : '';
+
         formatter.error(
-          `Unknown algorithm: "${rawAlgo}"\nAvailable: ${Object.keys(ALGORITHM_CLI_ALIASES).join(', ')}`
+          `Algorithm '${rawAlgo}' not found.${didYouMean}\nAvailable algorithms: ${available.slice(0, 5).join(', ')}... (${available.length} total)`
         );
         process.exit(EXIT_CODES.source_error);
       }
@@ -343,12 +359,112 @@ export const run = defineCommand({
         process.exit(EXIT_CODES.source_error);
       }
 
-      // Step 6: Execute discovery
-      if (formatter instanceof HumanFormatter) {
-        formatter.debug(`Running ${resolvedAlgo} discovery...`);
+      // Step 5b: Mandatory Pass 1 (structural) + Optional Pass 2 (semantic) preflight validation
+      const preflightErrors: string[] = [];
+      const preflightWarnings: string[] = [];
+
+      // PASS 1: ALWAYS-ON Structural validation
+      try {
+        const schemaResult = typeof wasm.validate_log_schema === 'function'
+          ? wasm.validate_log_schema(logHandle, 'xes')
+          : null;
+        if (schemaResult) {
+          const schema = typeof schemaResult === 'string' ? JSON.parse(schemaResult) : schemaResult;
+          if (!(schema.valid as boolean)) {
+            preflightErrors.push(`Schema validation failed: ${schema.message as string}`);
+          }
+        }
+      } catch {
+        // Schema validation optional
       }
 
-      const { raw, elapsedMs } = runDiscovery(wasm, resolvedAlgo, logHandle, activityKey);
+      try {
+        const attrsResult = typeof wasm.validate_required_attributes === 'function'
+          ? wasm.validate_required_attributes(logHandle, activityKey, 'case:concept:name', 'time:timestamp', 'org:resource')
+          : null;
+        if (attrsResult) {
+          const attrs = typeof attrsResult === 'string' ? JSON.parse(attrsResult) : attrsResult;
+          const missing = (attrs.missing as string[]) ?? [];
+          if (missing.length > 0) {
+            preflightErrors.push(`Missing required attributes: ${missing.join(', ')}`);
+          }
+        }
+      } catch {
+        // Attribute validation optional
+      }
+
+      // Pass 1 failure is FATAL
+      if (preflightErrors.length > 0) {
+        if (formatter instanceof HumanFormatter) {
+          formatter.error('Structural validation failed:');
+          for (const err of preflightErrors) {
+            formatter.error(`  ✗ ${err}`);
+          }
+        }
+        wasm.delete_object(logHandle);
+        process.exit(EXIT_CODES.source_error);
+      }
+
+      // PASS 2: Optional semantic validation (data quality + advanced checks)
+      if (ctx.args.preflight) {
+        if (formatter instanceof HumanFormatter) {
+          formatter.info('Running full preflight validation (Pass 2: semantic)...');
+        }
+
+        try {
+          const qualityResult = typeof wasm.validate_data_quality === 'function'
+            ? wasm.validate_data_quality(logHandle)
+            : null;
+          if (qualityResult) {
+            const quality = typeof qualityResult === 'string' ? JSON.parse(qualityResult) : qualityResult;
+            const issues = (quality.issues as number) ?? 0;
+            if (issues > 0) {
+              preflightWarnings.push(`Data quality: ${issues} issue(s) found`);
+            }
+          }
+        } catch {
+          // Quality validation optional
+        }
+
+        // Report Pass 2 results
+        if (formatter instanceof HumanFormatter) {
+          if (preflightWarnings.length > 0) {
+            for (const warn of preflightWarnings) {
+              formatter.warn(`⚠ ${warn}`);
+            }
+          }
+          formatter.success('Preflight validation complete — log is ready for discovery');
+        }
+      }
+
+      // Step 5c: Estimate discovery duration and show ETA
+      let estimatedMs = 0;
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const executionPlan = makePlan(config as any) as any;
+        estimatedMs = executionPlan?.budget?.estimated_duration_ms ?? 0;
+      } catch {
+        // ETA estimation is optional
+      }
+
+      // Step 6: Execute discovery with optional stream timer
+      if (formatter instanceof HumanFormatter) {
+        const etaStr = estimatedMs > 0 ? ` (~${Math.ceil(estimatedMs / 1000)}s estimated)` : '';
+        formatter.info(`Discovering with ${resolvedAlgo}${etaStr}...`);
+      }
+
+      let raw: unknown;
+      let elapsedMs: number;
+
+      if (ctx.args.stream) {
+        const result = runDiscovery(wasm, resolvedAlgo, logHandle, activityKey);
+        raw = result.raw;
+        elapsedMs = result.elapsedMs;
+      } else {
+        const result = runDiscovery(wasm, resolvedAlgo, logHandle, activityKey);
+        raw = result.raw;
+        elapsedMs = result.elapsedMs;
+      }
 
       // Step 6b: Run ML analysis if configured
       const mlResults: Record<string, unknown> = {};

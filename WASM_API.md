@@ -170,6 +170,240 @@
 | `circuit_breaker_get_config()` | `Result<String, JsValue>` | Get configuration |
 | `circuit_breaker_reset()` | `Result<String, JsValue>` | Reset to defaults |
 
+## AutoMembrane (feature: miniml — fog/browser profiles only)
+
+Pre-execution conformance membrane with five layers: actor → object → route → automl → custody.
+Available when compiled with `--features fog` or `--features browser` (or `--features miniml`).
+
+### Verdict Hierarchy (lowest to highest precedence)
+
+`Allow < AllowWithReceipt < Warn < Escalate < RequireEvidence < Quarantine < Deny < StopLine`
+
+Conservative composition: the final verdict is the highest-precedence verdict across all layers.
+If any layer issues `StopLine`, the entire membrane halts regardless of other layers.
+`Deny` beats `RequireEvidence`, `Escalate`, `Warn`.
+
+### High-Stakes Action Keywords (custody layer)
+
+The custody layer blocks `approve`, `release`, and `transfer` (substring match, case-insensitive)
+when `claimed_evidence` is empty. Supply at least one evidence artefact to pass custody.
+
+### RequestMotion JSON Schema
+
+```json
+{
+  "request_id": "req-001",
+  "actor": "user@example.com",
+  "role": "analyst",
+  "origin_system": "erp-001",
+  "target_system": "crm-002",
+  "object_ids": ["ORDER-123"],
+  "object_types": ["order"],
+  "requested_action": "approve",
+  "claimed_evidence": ["TOKEN-XYZ"],
+  "timestamp_ms": 1714940400000,
+  "route_context": "checkout-flow",
+  "deployment_profile": null
+}
+```
+
+Fields `role`, `origin_system`, `target_system`, `route_context`, `deployment_profile`,
+and `timestamp_ms` are optional (`null` accepted). `object_ids`, `object_types`, and
+`claimed_evidence` default to empty arrays.
+
+### VerdictReceipt JSON Schema
+
+```json
+{
+  "request_id": "req-001",
+  "final_verdict": "require_evidence",
+  "decisive_layer": "custody",
+  "downstream_admitted": false,
+  "explanation": "Verdict: REQUIRE_EVIDENCE\nDecisive layer: custody\n...",
+  "model_version": "automembrane-v1",
+  "state_snapshot": "a3f1b2c4d5e6f789",
+  "timestamp_ms": 1714940400000.0,
+  "missing_evidence": ["approval_chain"],
+  "layer_verdicts": [
+    {
+      "layer": "actor",
+      "verdict": "allow",
+      "confidence": 0.5,
+      "reason": "Actor 'alice' is present; deep scoring deferred to envelope agents",
+      "evidence_used": ["actor_identity"],
+      "missing_evidence": []
+    }
+  ]
+}
+```
+
+`downstream_admitted` is `true` only when `final_verdict` is `allow`, `allow_with_receipt`, or `warn`.
+`state_snapshot` is a 16-character FNV-1a hex token derived from `request_id` and `timestamp_ms`.
+
+### EnvelopeHandles JSON Schema
+
+Pass to `classify_motion_with_envelopes` to activate trained-envelope scoring per layer.
+Any `null` field causes that layer to fall back to the stateless heuristic evaluator.
+
+```json
+{
+  "actor":  "obj_0",
+  "object": "obj_1",
+  "route":  "obj_2",
+  "automl": "obj_3",
+  "time":   "obj_4"
+}
+```
+
+### Core Classification Functions
+
+| Function | Parameters | Returns | Description |
+|---|---|---|---|
+| `classify_motion(motion_json)` | `motion_json: string` | `string (VerdictReceipt JSON)` | Classify using stateless heuristic evaluators for all five layers |
+| `classify_motion_with_envelopes(motion_json, handles_json)` | `motion_json: string, handles_json: string` | `string (VerdictReceipt JSON)` | Classify using trained envelope handles; falls back to stateless per null handle |
+| `get_verdict_explanation(verdict_json)` | `verdict_json: string` | `string` | Return a human-readable breakdown of a VerdictReceipt |
+| `build_motion_from_log_trace(log_handle, trace_index, activity_key, actor_key)` | `string, usize, string, string` | `string (RequestMotion JSON)` | Build a RequestMotion from the last event of a stored log trace |
+
+### Actor Envelope Functions
+
+Learns per-actor behavioural profiles (action frequencies, active hours) from a stored event log.
+Minimum 3 distinct actors required. Profiles sorted by actor name for determinism.
+
+| Function | Parameters | Returns | Description |
+|---|---|---|---|
+| `build_actor_envelope(log_handle, activity_key, actor_key, timestamp_key)` | `string, string, string, string` | `string (handle)` | Train actor profiles; returns opaque handle |
+| `score_actor_motion(envelope_handle, actor, requested_action, hour_of_day)` | `string, string, string, u8` | `string (ActorScoringResult JSON)` | Score (actor, action, hour) against the envelope; pass `255` to skip hour scoring |
+| `get_actor_profiles(envelope_handle)` | `string` | `string (ActorProfile[] JSON)` | Return all trained profiles sorted by actor name |
+
+**ActorScoringResult JSON** includes `verdict`, `confidence`, `anomaly_score`, `action_score`,
+`hour_score`, `actor`, `requested_action`, `common_action_rank`, `actor_total_events`.
+
+Verdict thresholds: `anomaly_score > 0.7` → `escalate`; `> 0.4` → `warn`; else `allow`.
+Unknown actor (no history in envelope) → `require_evidence` with `missing_evidence: ["actor_history"]`.
+
+### Object Envelope Functions
+
+Learns lawful activity-to-activity transitions per object type.
+
+| Function | Parameters | Returns | Description |
+|---|---|---|---|
+| `build_object_envelope(log_handle, activity_key)` | `string, string` | `string (handle)` | Learn object transitions; returns opaque handle |
+| `score_object_motion(envelope_handle, object_type, current_action, previous_action)` | `string, string, string, string` | `string (ObjectScoringResult JSON)` | Score a proposed transition |
+| `get_transition_map(envelope_handle, object_type)` | `string, string` | `string (transitions JSON)` | Return all observed transitions for an object type |
+
+### Route Envelope Functions
+
+Learns dominant trace variants (up to `coverage_threshold` cumulative frequency) and
+scores candidate prefixes against those variants.
+
+| Function | Parameters | Returns | Description |
+|---|---|---|---|
+| `build_route_envelope(log_handle, activity_key, coverage_threshold)` | `string, string, f64` | `string (handle)` | Learn variants; pass `0.0` to use default threshold (0.8). Minimum 5 traces. |
+| `score_route_motion(envelope_handle, prefix_json)` | `string, string` | `string (RouteScoreResult JSON)` | Score a prefix array `["A","B","C"]` against known variants |
+| `get_route_variants(envelope_handle)` | `string` | `string (RouteVariant[] JSON)` | Return all stored variants sorted by frequency descending |
+
+**RouteScoreResult JSON** includes `verdict`, `confidence`, `match_rate`, `matching_variants`,
+`total_variants`, `prefix`, `candidate_continuations`, `reason`.
+
+Verdict thresholds: `match_rate > 0.5` → `allow`; `match_rate == 0` or `<= 0.5` → `warn`.
+Empty prefix → `allow` with `match_rate: 1.0` (vacuous truth).
+
+### AutoML Envelope Functions
+
+Trains a micro-ML anomaly model over activity feature vectors.
+
+| Function | Parameters | Returns | Description |
+|---|---|---|---|
+| `build_automl_envelope(log_handle, activity_key)` | `string, string` | `string (handle)` | Train AutoML model; returns opaque handle |
+| `score_motion_automl(envelope_handle, motion_features_json)` | `string, string` | `string (MotionScoringResult JSON)` | Score a motion feature vector |
+| `inspect_automl_envelope(envelope_handle)` | `string` | `string (AutomlEnvelopeModel JSON)` | Inspect trained model parameters |
+
+### Time Envelope Functions
+
+Tracks temporal freshness — requests with timestamps outside the configured window are flagged.
+
+| Function | Parameters | Returns | Description |
+|---|---|---|---|
+| `build_time_envelope(log_handle, timestamp_key, freshness_window_ms)` | `string, string, f64` | `string (handle)` | Learn timestamp distribution; `freshness_window_ms` controls replay-attack detection |
+| `score_time_motion(envelope_handle, timestamp_ms)` | `string, f64` | `string (LayerVerdict JSON)` | Score a timestamp for freshness |
+| `get_time_envelope_stats(envelope_handle)` | `string` | `string (TimeEnvelope JSON)` | Return timing statistics |
+
+### Drift Management Functions
+
+| Function | Parameters | Returns | Description |
+|---|---|---|---|
+| `check_envelope_drift(baseline_handle, current_log_handle, activity_key)` | `string, string, string` | `string (DriftRecord JSON)` | Compare current log against a baseline envelope |
+| `quarantine_envelope(envelope_handle)` | `string` | `string` | Mark envelope as quarantined; subsequent scoring returns `Quarantine` |
+| `get_membrane_health(envelope_handles_json)` | `string` | `string (MembraneHealth JSON)` | Report health across all configured envelopes |
+
+### Benchmark Functions
+
+Eight built-in attack traces covering custody bypass, privilege escalation, temporal replay,
+and supply-chain self-approval patterns (Van der Aalst threat taxonomy + ATT&CK T1195, PAIS T1105).
+
+| Function | Parameters | Returns | Description |
+|---|---|---|---|
+| `run_benchmark_trace(trace_json)` | `string (BenchmarkTrace JSON)` | `string (BenchmarkResult JSON)` | Run a single benchmark trace through the membrane |
+| `get_builtin_benchmarks()` | — | `string (BenchmarkTrace[] JSON)` | Return all 8 built-in benchmark trace definitions |
+| `run_all_benchmarks()` | — | `string (AllBenchmarksResult JSON)` | Run all 8 traces and return aggregate pass/fail counts |
+
+**AllBenchmarksResult JSON**: `{ total, passed, failed, pass_rate, results[] }`.
+All 8 built-in benchmarks pass with the stateless heuristic evaluators.
+
+### End-to-End JavaScript Example
+
+```javascript
+const wasm = require('./pkg/wasm4pm.js');
+const parse = r => typeof r === 'string' ? JSON.parse(r) : r;
+
+// 1. Load event log
+const log_handle = wasm.load_eventlog_from_xes(xesContent);
+
+// 2. Build envelopes (requires >= 3 actors, >= 5 traces)
+const actor_handle  = wasm.build_actor_envelope(log_handle, 'concept:name', 'org:resource', 'time:timestamp');
+const route_handle  = wasm.build_route_envelope(log_handle, 'concept:name', 0.8);
+const automl_handle = wasm.build_automl_envelope(log_handle, 'concept:name');
+
+// 3. Classify a motion using trained envelopes
+const motion = JSON.stringify({
+  request_id: 'req-001',
+  actor: 'alice',
+  role: 'analyst',
+  object_ids: ['ORDER-123'],
+  object_types: ['order'],
+  requested_action: 'approve',
+  claimed_evidence: [],
+  timestamp_ms: Date.now()
+});
+const handles = JSON.stringify({
+  actor: actor_handle,
+  route: route_handle,
+  automl: automl_handle,
+  object: null,
+  time: null
+});
+const receipt = parse(wasm.classify_motion_with_envelopes(motion, handles));
+
+console.log(receipt.final_verdict);       // "require_evidence"
+console.log(receipt.downstream_admitted); // false
+console.log(receipt.decisive_layer);      // "custody"
+console.log(receipt.explanation);         // human-readable breakdown
+
+// 4. Free handles
+wasm.delete_object(log_handle);
+wasm.delete_object(actor_handle);
+wasm.delete_object(route_handle);
+wasm.delete_object(automl_handle);
+```
+
+### Verification
+
+```bash
+cd /Users/sac/wasm4pm
+cargo test --test membrane_oracle_tests --features miniml 2>&1 | tail -10
+# Expected: 29 passed; 0 failed
+```
+
 ## Serialization Notes
 
 - All `Result<JsValue, JsValue>` returns use `serde_json::to_string()` + `JsValue::from_str()` — NOT `serde_wasm_bindgen` (known bug with `json!()` macro)
