@@ -50,14 +50,14 @@ export interface StepDispatcher {
 }
 
 /**
- * Default step handler that always succeeds
+ * Default step handler that enforces registration requirement
+ * Throws if no dispatcher is registered for a step
  */
 function defaultStepHandler(step: PlanStep): StepResult {
-  return {
-    stepId: step.id,
-    success: true,
-    output: {},
-  };
+  throw new Error(
+    `No handler registered for plan step '${step.id}' (${step.name}). ` +
+    `Register a StepDispatcher before executing this plan.`
+  );
 }
 
 /**
@@ -338,9 +338,17 @@ export async function executePlan(
         previousResults.set(ngramStep.id, ngramResult);
         if (ngramResult.success) {
           predictionResults['ngram_model'] = ngramResult.output;
+        } else if (ngramResult.error) {
+          errors.push(ngramResult.error);
         }
-      } catch {
-        // n-gram build is optional; continue with individual tasks
+      } catch (err) {
+        errors.push({
+          code: 'NGRAM_BUILD_FAILED',
+          message: `N-gram model build failed: ${err instanceof Error ? err.message : String(err)}`,
+          severity: 'warning',
+          recoverable: true,
+          context: { task: 'ngram_build' },
+        });
       }
 
       // Step 2: Run each requested prediction task

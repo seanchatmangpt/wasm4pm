@@ -167,6 +167,7 @@ describe('Pm4wasmBackend', () => {
             { id: 'B', label: 'B', type: 'activity' },
           ],
           edges: [{ from: 'A', to: 'B', weight: 1 }],
+          quality: { fitness: 0.85, precision: 0.8, generalization: 0.75, simplicity: 100 },
         }),
       ),
       discover_inductive_miner: vi.fn(async (handle: string) =>
@@ -176,6 +177,7 @@ describe('Pm4wasmBackend', () => {
             { id: 't1', label: 'Transition', type: 'transition' },
           ],
           edges: [{ from: 'p0', to: 't1' }],
+          quality: { fitness: 0.9, precision: 0.85, generalization: 0.8, simplicity: 50 },
         }),
       ),
       discover_genetic_algorithm: vi.fn(async (handle: string) =>
@@ -185,6 +187,7 @@ describe('Pm4wasmBackend', () => {
             { id: 'B', label: 'B', type: 'activity' },
           ],
           edges: [{ from: 'A', to: 'B', weight: 1 }],
+          quality: { fitness: 0.88, precision: 0.82, generalization: 0.78, simplicity: 100 },
         }),
       ),
       eventlog_from_json: vi.fn(async (json: string) => `log_handle_test`),
@@ -403,9 +406,10 @@ describe('Pm4wasmBackend', () => {
 
       const result = await backend.conformance(SAMPLE_LOG, unsupportedModel, BUDGET_ONLINE);
 
-      // Should still succeed but with default metrics
-      expect(result.status).toBe('success');
-      expect(result.payload).toBeDefined();
+      // Unsupported model types now fail (Armstrong style fail-fast)
+      expect(result.status).toBe('failed');
+      expect(result.error).toContain('not supported for model type');
+      expect(result.payload).toEqual({ fitness: 0, precision: 0, generalization: 0, simplicity: 0 });
     });
 
     it('should populate provenance for conformance', async () => {

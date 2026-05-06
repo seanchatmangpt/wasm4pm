@@ -364,33 +364,21 @@ export const run = defineCommand({
       const preflightWarnings: string[] = [];
 
       // PASS 1: ALWAYS-ON Structural validation
-      try {
-        const schemaResult = typeof wasm.validate_log_schema === 'function'
-          ? wasm.validate_log_schema(logHandle, 'xes')
-          : null;
-        if (schemaResult) {
-          const schema = typeof schemaResult === 'string' ? JSON.parse(schemaResult) : schemaResult;
-          if (!(schema.valid as boolean)) {
-            preflightErrors.push(`Schema validation failed: ${schema.message as string}`);
-          }
+      if (typeof wasm.validate_log_schema === 'function') {
+        const schemaResult = wasm.validate_log_schema(logHandle, 'xes');
+        const schema = typeof schemaResult === 'string' ? JSON.parse(schemaResult) : schemaResult;
+        if (!(schema.valid as boolean)) {
+          preflightErrors.push(`Schema validation failed: ${schema.message as string}`);
         }
-      } catch {
-        // Schema validation optional
       }
 
-      try {
-        const attrsResult = typeof wasm.validate_required_attributes === 'function'
-          ? wasm.validate_required_attributes(logHandle, activityKey, 'case:concept:name', 'time:timestamp', 'org:resource')
-          : null;
-        if (attrsResult) {
-          const attrs = typeof attrsResult === 'string' ? JSON.parse(attrsResult) : attrsResult;
-          const missing = (attrs.missing as string[]) ?? [];
-          if (missing.length > 0) {
-            preflightErrors.push(`Missing required attributes: ${missing.join(', ')}`);
-          }
+      if (typeof wasm.validate_required_attributes === 'function') {
+        const attrsResult = wasm.validate_required_attributes(logHandle, activityKey, 'case:concept:name', 'time:timestamp', 'org:resource');
+        const attrs = typeof attrsResult === 'string' ? JSON.parse(attrsResult) : attrsResult;
+        const missing = (attrs.missing as string[]) ?? [];
+        if (missing.length > 0) {
+          preflightErrors.push(`Missing required attributes: ${missing.join(', ')}`);
         }
-      } catch {
-        // Attribute validation optional
       }
 
       // Pass 1 failure is FATAL
@@ -411,19 +399,13 @@ export const run = defineCommand({
           formatter.info('Running full preflight validation (Pass 2: semantic)...');
         }
 
-        try {
-          const qualityResult = typeof wasm.validate_data_quality === 'function'
-            ? wasm.validate_data_quality(logHandle)
-            : null;
-          if (qualityResult) {
-            const quality = typeof qualityResult === 'string' ? JSON.parse(qualityResult) : qualityResult;
-            const issues = (quality.issues as number) ?? 0;
-            if (issues > 0) {
-              preflightWarnings.push(`Data quality: ${issues} issue(s) found`);
-            }
+        if (typeof wasm.validate_data_quality === 'function') {
+          const qualityResult = wasm.validate_data_quality(logHandle);
+          const quality = typeof qualityResult === 'string' ? JSON.parse(qualityResult) : qualityResult;
+          const issues = (quality.issues as number) ?? 0;
+          if (issues > 0) {
+            preflightWarnings.push(`Data quality: ${issues} issue(s) found`);
           }
-        } catch {
-          // Quality validation optional
         }
 
         // Report Pass 2 results
@@ -532,16 +514,26 @@ export const run = defineCommand({
             }
 
             // Precision via ETConformance escaping-edge analysis (3-arg WASM function)
-            let precision = 1.0;
+            let precision: number | null = null;
             if (typeof wasm.wasm_compute_precision === 'function' && modelHandle) {
               try {
                 const precRaw = wasm.wasm_compute_precision(logHandle, modelHandle, activityKey);
                 const prec = typeof precRaw === 'string' ? JSON.parse(precRaw) : precRaw;
-                if (prec.precision !== undefined) {
+                if (typeof prec.precision === 'number') {
                   precision = prec.precision;
+                } else {
+                  if (formatter instanceof HumanFormatter) {
+                    formatter.warn(
+                      `Precision computation returned missing/invalid value: ${JSON.stringify(prec).slice(0, 100)}`
+                    );
+                  }
                 }
-              } catch {
-                // etconformance may fail for certain model types; use default
+              } catch (err) {
+                if (formatter instanceof HumanFormatter) {
+                  formatter.warn(
+                    `Precision computation failed: ${err instanceof Error ? err.message : String(err)}`
+                  );
+                }
               }
             }
 
@@ -572,7 +564,11 @@ export const run = defineCommand({
               simplicity = 1.0 / (1.0 + numEdges / 10.0);
             }
 
-            qualityMetrics = { fitness, precision, simplicity };
+            qualityMetrics = {
+              fitness,
+              precision: precision ?? 0,
+              simplicity,
+            };
           } catch (qualityError) {
             if (formatter instanceof HumanFormatter) {
               formatter.warn(

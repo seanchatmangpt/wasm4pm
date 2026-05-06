@@ -77,6 +77,56 @@ function deriveLatencyClass(estimatedDurationMs: number): LatencyClass {
 }
 
 /**
+ * Validate that parsed WASM output contains all required quality fields.
+ * Throws with descriptive error if any field is missing or undefined.
+ */
+function validateQualityMetrics(
+  parsed: any,
+  algorithmId: string
+): { fitness: number; precision: number; generalization: number; simplicity: number } {
+  if (parsed.fitness === undefined || parsed.fitness === null) {
+    throw new Error(
+      `WASM output for algorithm '${algorithmId}' missing required field 'fitness'. ` +
+      `Ensure the algorithm was executed and returned all quality metrics.`
+    );
+  }
+  if (parsed.precision === undefined || parsed.precision === null) {
+    throw new Error(
+      `WASM output for algorithm '${algorithmId}' missing required field 'precision'. ` +
+      `Ensure the algorithm was executed and returned all quality metrics.`
+    );
+  }
+  if (parsed.generalization === undefined || parsed.generalization === null) {
+    throw new Error(
+      `WASM output for algorithm '${algorithmId}' missing required field 'generalization'. ` +
+      `Ensure the algorithm was executed and returned all quality metrics.`
+    );
+  }
+  if (parsed.simplicity === undefined || parsed.simplicity === null) {
+    throw new Error(
+      `WASM output for algorithm '${algorithmId}' missing required field 'simplicity'. ` +
+      `Ensure the algorithm was executed and returned all quality metrics.`
+    );
+  }
+
+  const fitness = Number(parsed.fitness);
+  const precision = Number(parsed.precision);
+  const generalization = Number(parsed.generalization);
+  const simplicity = Number(parsed.simplicity);
+
+  if (!Number.isFinite(fitness) || !Number.isFinite(precision) ||
+      !Number.isFinite(generalization) || !Number.isFinite(simplicity)) {
+    throw new Error(
+      `WASM output for algorithm '${algorithmId}' contains non-numeric quality metrics. ` +
+      `Received: fitness=${parsed.fitness}, precision=${parsed.precision}, ` +
+      `generalization=${parsed.generalization}, simplicity=${parsed.simplicity}`
+    );
+  }
+
+  return { fitness, precision, generalization, simplicity };
+}
+
+/**
  * WasmBackend: WASM process mining algorithms.
  */
 export class WasmBackend implements MiningBackend {
@@ -172,6 +222,7 @@ export class WasmBackend implements MiningBackend {
       }
 
       const parsed = typeof resultRaw === 'string' ? JSON.parse(resultRaw) : resultRaw;
+      const quality = validateQualityMetrics(parsed, algorithmId);
 
       const modelIr: ModelIR = {
         format_version: '1.0',
@@ -188,12 +239,7 @@ export class WasmBackend implements MiningBackend {
         },
         nodes: parsed.nodes || [],
         edges: parsed.edges || [],
-        quality: {
-          fitness: parsed.fitness || 0.85,
-          precision: parsed.precision || 0.8,
-          generalization: parsed.generalization || 0.75,
-          simplicity: parsed.simplicity || 100,
-        },
+        quality,
       };
 
       const latency_ms = Date.now() - startMs;
@@ -232,12 +278,8 @@ export class WasmBackend implements MiningBackend {
       const resultRaw = wasm.check_token_based_replay(logHandle, modelJson, 'concept:name');
       const parsed = typeof resultRaw === 'string' ? JSON.parse(resultRaw) : resultRaw;
 
-      const result: ConformanceResult = {
-        fitness: parsed.fitness ?? 0.85,
-        precision: parsed.precision ?? 0.8,
-        generalization: parsed.generalization ?? 0.75,
-        simplicity: parsed.simplicity ?? 100,
-      };
+      const quality = validateQualityMetrics(parsed, 'conformance');
+      const result: ConformanceResult = quality;
 
       const latency_ms = Date.now() - startMs;
 
@@ -335,7 +377,10 @@ export class WasmBackend implements MiningBackend {
   }
 
   private generateUuid(): string {
-    return crypto.randomUUID?.() || `uuid-${Date.now()}-${Math.random()}`;
+    if (typeof crypto?.randomUUID !== 'function') {
+      throw new Error('crypto.randomUUID not available — Node.js 19+ required');
+    }
+    return crypto.randomUUID();
   }
 
   private createProvenance(algorithmId: string, operationType: string): ProvenanceChain {

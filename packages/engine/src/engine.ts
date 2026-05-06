@@ -891,6 +891,11 @@ export class Engine {
       this.stateMachine.recordRecovery(recoveryDuration);
     } catch (err) {
       // Fast recovery failed, fall back to full bootstrap
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      this.observability.emitCliSafe({
+        level: 'warn',
+        message: `Fast recovery failed (${errorMsg}), falling back to full bootstrap`,
+      });
       await this.bootstrap();
     }
   }

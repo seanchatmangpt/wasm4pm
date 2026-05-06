@@ -2,6 +2,8 @@ import { defineCommand } from 'citty';
 import { resolveConfig as loadConfig } from '@wasm4pm/config';
 import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
+import { existsSync, readFileSync } from 'fs';
+import * as path from 'path';
 import type { OutputOptions } from '../output.js';
 
 export interface ExplainOptions extends OutputOptions {
@@ -79,8 +81,26 @@ export const explain = defineCommand({
       const level = (ctx.args.level || 'detailed') as 'brief' | 'detailed' | 'academic';
 
       if (ctx.args.model) {
-        // Model explanation - placeholder for now
-        explanationContent = `Model explanation for: ${ctx.args.model}\n\nPlaceholder content (awaiting planner integration)`;
+        // Model explanation - parse PNML/BPMN and generate real explanation
+        const modelPath = ctx.args.model as string;
+        if (!existsSync(modelPath)) {
+          throw new Error(`Model file not found: ${modelPath}`);
+        }
+
+        const ext = path.extname(modelPath).toLowerCase();
+        const modelContent = readFileSync(modelPath, 'utf-8');
+
+        if (ext === '.pnml') {
+          explanationContent = explainPnml(modelContent, modelPath, level);
+        } else if (ext === '.bpmn') {
+          explanationContent = explainBpmn(modelContent, modelPath, level);
+        } else if (ext === '.json') {
+          explanationContent = explainJsonModel(modelContent, modelPath, level);
+        } else {
+          throw new Error(
+            `Unsupported model format '${ext}' — supported formats: .pnml, .bpmn, .json`
+          );
+        }
       } else if (ctx.args.config) {
         // Config explanation
         try {
@@ -667,4 +687,175 @@ Maximize: Σ yₜ - λ × Σ xₑ
   }
 
   return explanations[algo][level] || explanations[algo].detailed;
+}
+
+/**
+ * Explains a PNML (Petri Net Markup Language) model
+ */
+function explainPnml(
+  content: string,
+  modelPath: string,
+  level: 'brief' | 'detailed' | 'academic'
+): string {
+  try {
+    // Simple XML parsing to extract places, transitions, arcs
+    const places = (content.match(/<place\s/g) || []).length;
+    const transitions = (content.match(/<transition\s/g) || []).length;
+    const arcs = (content.match(/<arc\s/g) || []).length;
+
+    const summary = `Petri Net Model: ${path.basename(modelPath)}
+Places: ${places}, Transitions: ${transitions}, Arcs: ${arcs}`;
+
+    if (level === 'brief') {
+      return summary;
+    }
+
+    let explanation = `## Petri Net Analysis\n\n${summary}\n\n`;
+
+    // Extract initial marking if present
+    const markingMatch = content.match(/<initialMarking>([^<]+)<\/initialMarking>/);
+    if (markingMatch) {
+      explanation += `**Initial Marking**: ${markingMatch[1]}\n`;
+    }
+
+    // Calculate model complexity
+    const complexity = places + transitions + arcs;
+    const complexityLevel =
+      complexity < 10 ? 'simple' : complexity < 30 ? 'moderate' : 'complex';
+    explanation += `**Complexity**: ${complexityLevel} (${complexity} total elements)\n\n`;
+
+    if (level === 'detailed') {
+      explanation += `**Structure**:\n`;
+      explanation += `- Places (state nodes): ${places}\n`;
+      explanation += `- Transitions (activity nodes): ${transitions}\n`;
+      explanation += `- Arcs (flow relations): ${arcs}\n`;
+      explanation += `\n**Interpretation**: This Petri net model defines a process with ${transitions} distinct activities `;
+      explanation += `distributed across ${places} state positions. The ${arcs} arcs define the flow between them.`;
+    } else if (level === 'academic') {
+      explanation += `**Formal Definition**:\n`;
+      explanation += `N = (P, T, F, m₀) where:\n`;
+      explanation += `- P = set of ${places} places (states)\n`;
+      explanation += `- T = set of ${transitions} transitions (activities)\n`;
+      explanation += `- F ⊆ (P × T) ∪ (T × P) with |F| = ${arcs} arcs\n`;
+      explanation += `- m₀ = initial marking\n\n`;
+      explanation += `**Soundness Analysis**:\n`;
+      explanation += `Check structural correctness (no deadlock, proper termination) via state space analysis.`;
+    }
+
+    return explanation;
+  } catch (err) {
+    return `Error parsing PNML model: ${err instanceof Error ? err.message : String(err)}`;
+  }
+}
+
+/**
+ * Explains a BPMN (Business Process Model and Notation) model
+ */
+function explainBpmn(
+  content: string,
+  modelPath: string,
+  level: 'brief' | 'detailed' | 'academic'
+): string {
+  try {
+    // Simple XML parsing for BPMN elements
+    const tasks = (content.match(/<bpmn:task\s|<bpmn:userTask\s|<bpmn:serviceTask\s/g) || []).length;
+    const gateways = (content.match(/<bpmn:gateway\s|<bpmn:exclusiveGateway\s|<bpmn:parallelGateway\s/g) || []).length;
+    const events = (content.match(/<bpmn:startEvent\s|<bpmn:endEvent\s|<bpmn:intermediateCatchEvent\s/g) || []).length;
+
+    const summary = `BPMN Process Model: ${path.basename(modelPath)}
+Tasks: ${tasks}, Gateways: ${gateways}, Events: ${events}`;
+
+    if (level === 'brief') {
+      return summary;
+    }
+
+    let explanation = `## BPMN Process Model Analysis\n\n${summary}\n\n`;
+
+    // Detect control flow patterns
+    const hasParallelism = content.includes('parallelGateway');
+    const hasChoice = content.includes('exclusiveGateway');
+    const hasLoops = content.includes('loop') || content.toLowerCase().includes('loop');
+
+    explanation += `**Control Flow Features**:\n`;
+    if (hasChoice) explanation += `✓ Decision points (exclusive gateways)\n`;
+    if (hasParallelism) explanation += `✓ Parallel execution (parallel gateways)\n`;
+    if (hasLoops) explanation += `✓ Iterative loops\n`;
+    if (!hasChoice && !hasParallelism && !hasLoops) explanation += `- Sequential flow only\n`;
+
+    if (level === 'detailed') {
+      explanation += `\n**Structure**:\n`;
+      explanation += `- Tasks (activities): ${tasks}\n`;
+      explanation += `- Gateways (control logic): ${gateways}\n`;
+      explanation += `- Events (triggers/completions): ${events}\n`;
+      explanation += `\n**Process Behavior**:\n`;
+      explanation += `This BPMN model defines a business process with ${tasks} work items, `;
+      explanation += `${gateways > 0 ? `controlled by ${gateways} decision/synchronization points` : `sequential flow`}, `;
+      explanation += `and ${events} event listeners.`;
+    } else if (level === 'academic') {
+      explanation += `\n**Graph-based Semantics**:\n`;
+      explanation += `G = (N, F) where:\n`;
+      explanation += `- N = {t₁,...,t${tasks}} ∪ {g₁,...,g${gateways}} ∪ {e₁,...,e${events}}\n`;
+      explanation += `- F = flow relations (sequence flows)\n`;
+      explanation += `- Semantics: token-based execution per BPMN 2.0 spec\n\n`;
+      explanation += `**Reachability**: Model's reachability set determines all possible execution paths.`;
+    }
+
+    return explanation;
+  } catch (err) {
+    return `Error parsing BPMN model: ${err instanceof Error ? err.message : String(err)}`;
+  }
+}
+
+/**
+ * Explains a JSON model representation
+ */
+function explainJsonModel(
+  content: string,
+  modelPath: string,
+  level: 'brief' | 'detailed' | 'academic'
+): string {
+  try {
+    const model = JSON.parse(content);
+
+    const nodes = (model.nodes || []).length;
+    const edges = (model.edges || []).length;
+    const nodeTypes = new Set<string>();
+    (model.nodes || []).forEach((n: any) => {
+      if (n.type) nodeTypes.add(n.type);
+    });
+
+    const summary = `Process Model: ${path.basename(modelPath)}
+Nodes: ${nodes}, Edges: ${edges}`;
+
+    if (level === 'brief') {
+      return summary;
+    }
+
+    let explanation = `## Process Model Analysis\n\n${summary}\n\n`;
+
+    explanation += `**Composition**:\n`;
+    explanation += `- Nodes (vertices): ${nodes}\n`;
+    explanation += `- Edges (relations): ${edges}\n`;
+    if (nodeTypes.size > 0) {
+      explanation += `- Node types: ${Array.from(nodeTypes).join(', ')}\n`;
+    }
+
+    if (level === 'detailed') {
+      explanation += `\n**Structure**:\n`;
+      explanation += `Graph density: ${edges > 0 ? (edges / (nodes * nodes)).toFixed(3) : 'empty'}\n`;
+      explanation += `Average degree: ${nodes > 0 ? (2 * edges / nodes).toFixed(1) : '0'}\n`;
+      explanation += `\nThis model represents a directed acyclic or cyclic graph with ${nodes} entities and ${edges} relationships, `;
+      explanation += `suitable for process mining discovery or conformance analysis.`;
+    } else if (level === 'academic') {
+      explanation += `\n**Graph Theory Analysis**:\n`;
+      explanation += `Directed graph G = (V, E) where |V| = ${nodes}, |E| = ${edges}\n`;
+      explanation += `Density ρ = |E| / (|V| × (|V|-1)) = ${edges > 0 ? (edges / (nodes * (nodes - 1))).toFixed(4) : '0'}\n`;
+      explanation += `Average degree δ̄ = 2|E| / |V| = ${nodes > 0 ? (2 * edges / nodes).toFixed(2) : '0'}\n\n`;
+      explanation += `**Reachability**: Compute transitive closure via matrix multiplication.`;
+    }
+
+    return explanation;
+  } catch (err) {
+    return `Error parsing JSON model: ${err instanceof Error ? err.message : String(err)}`;
+  }
 }

@@ -525,14 +525,12 @@ export class AgentOrchestrator {
       case 'authority-escalation-watcher':
         return this._validateAuthorityEscalation(context, config);
       default:
-        return {
-          passed: true,
-          violations: [],
-          process_mining_proof: null,
-          execution_time_ms: 0,
-          agent_name: agentName,
-          raw_output: 'No validation logic for custom agent',
-        };
+        throw new Error(
+          `Unknown agent '${agentName}' — no validation logic registered. ` +
+          `Register the agent before running validation. ` +
+          `Supported agents: mock-interceptor, evidence-fabrication, process-mining-skeptic, ` +
+          `theater-detector, authority-escalation-watcher.`
+        );
     }
   }
 
@@ -768,12 +766,23 @@ export class AgentOrchestrator {
 
     if (events.length === 0) {
       return {
-        passed: true,
-        violations: [],
+        passed: false,
+        violations: [
+          {
+            agent_name: 'process-mining-skeptic',
+            violation_type: 'NO_EVIDENCE',
+            severity: 'critical',
+            evidence: { reason: 'OCEL event log is empty — no process evidence to validate against' },
+            process_mining_proof: null,
+            timestamp: new Date().toISOString(),
+            blocked_manufacturing: true,
+            target: context.artifact_id,
+          },
+        ],
         process_mining_proof: null,
         execution_time_ms: 0,
         agent_name: 'process-mining-skeptic',
-        raw_output: 'No OCEL events to analyze',
+        raw_output: 'Empty event log; validation cannot proceed',
       };
     }
 
@@ -964,17 +973,25 @@ export class AgentOrchestrator {
     action: CorrectiveAction,
     context: AgentExecutionContext
   ): Promise<{ success: boolean; action: string; details: Record<string, unknown> }> {
-    // In production, this delegates to Python agents via subprocess bridge
-    // For now, record the intended correction
-    return {
-      success: true,
-      action: `${action.type} applied to ${action.target}`,
-      details: {
-        agent: action.agent,
-        type: action.type,
-        target: action.target,
-        dry_run: context.dry_run,
-      },
-    };
+    if (context.dry_run) {
+      return {
+        success: false,
+        action: `DRY RUN: ${action.type} on ${action.target}`,
+        details: {
+          agent: action.agent,
+          type: action.type,
+          target: action.target,
+          dry_run: true,
+          message: 'Dry run mode: no actual corrections applied',
+        },
+      };
+    }
+
+    // All corrective actions require external system integration (Python bridge, kernel APIs)
+    // not yet implemented in this version
+    throw new Error(
+      `Corrective action '${action.type}' on '${action.target}' is not yet implemented. ` +
+      `No Python bridge, kernel integration, or orchestration infrastructure available.`
+    );
   }
 }

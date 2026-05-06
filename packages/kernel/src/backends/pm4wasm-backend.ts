@@ -390,13 +390,10 @@ export class Pm4wasmBackend implements MiningBackend {
           `Conformance checking exceeded budget timeout of ${timeout}ms`
         );
       } else {
-        // Fallback: return zero metrics for unsupported model types
-        result = {
-          fitness: 0,
-          precision: 0,
-          generalization: 0,
-          simplicity: 0,
-        };
+        throw new Error(
+          `Conformance checking not supported for model type '${model.model_type}'. ` +
+          `Supported types: 'dfg' (token replay), 'petri_net' (alignments).`
+        );
       }
 
       const latency_ms = Date.now() - startMs;
@@ -581,12 +578,14 @@ export class Pm4wasmBackend implements MiningBackend {
     });
 
     // Call WASM function to parse and store log
-    if (this.wasmModule && typeof this.wasmModule.eventlog_from_json === 'function') {
-      return await this.wasmModule.eventlog_from_json(logJson);
+    if (!this.wasmModule || typeof this.wasmModule.eventlog_from_json !== 'function') {
+      throw new Error(
+        'WASM module missing eventlog_from_json — cannot load event log. ' +
+        'Ensure WASM module is initialized and compiled with event log support.'
+      );
     }
 
-    // Fallback: return handle-like string for testing
-    return `log_handle_${this.generateUuid().substring(0, 8)}`;
+    return await this.wasmModule.eventlog_from_json(logJson);
   }
 
   /**
@@ -628,12 +627,40 @@ export class Pm4wasmBackend implements MiningBackend {
     let parsed: any;
     try {
       parsed = JSON.parse(wasmOutput);
-    } catch {
-      // Fallback: create stub model
-      parsed = {
-        nodes: [],
-        edges: [],
-      };
+    } catch (err) {
+      throw new Error(
+        `WASM output for algorithm '${algorithmId}' is not valid JSON. ` +
+        `Error: ${(err as Error).message}. Raw output: ${wasmOutput.slice(0, 200)}`
+      );
+    }
+
+    // Validate required quality fields
+    if (!parsed.quality) {
+      throw new Error(
+        `WASM output for algorithm '${algorithmId}' missing 'quality' field. ` +
+        `Output: ${JSON.stringify(parsed).slice(0, 200)}`
+      );
+    }
+
+    if (typeof parsed.quality.fitness !== 'number' || !Number.isFinite(parsed.quality.fitness)) {
+      throw new Error(
+        `WASM algorithm '${algorithmId}' returned invalid fitness: ${parsed.quality.fitness}`
+      );
+    }
+    if (typeof parsed.quality.precision !== 'number' || !Number.isFinite(parsed.quality.precision)) {
+      throw new Error(
+        `WASM algorithm '${algorithmId}' returned invalid precision: ${parsed.quality.precision}`
+      );
+    }
+    if (typeof parsed.quality.generalization !== 'number' || !Number.isFinite(parsed.quality.generalization)) {
+      throw new Error(
+        `WASM algorithm '${algorithmId}' returned invalid generalization: ${parsed.quality.generalization}`
+      );
+    }
+    if (typeof parsed.quality.simplicity !== 'number' || !Number.isFinite(parsed.quality.simplicity)) {
+      throw new Error(
+        `WASM algorithm '${algorithmId}' returned invalid simplicity: ${parsed.quality.simplicity}`
+      );
     }
 
     // Map WASM output to ModelIR
@@ -652,12 +679,7 @@ export class Pm4wasmBackend implements MiningBackend {
       },
       nodes: parsed.nodes || [],
       edges: parsed.edges || [],
-      quality: parsed.quality || {
-        fitness: 0.85,
-        precision: 0.8,
-        generalization: 0.75,
-        simplicity: 100,
-      },
+      quality: parsed.quality,
     };
   }
 
@@ -674,23 +696,41 @@ export class Pm4wasmBackend implements MiningBackend {
     }
 
     if (typeof this.wasmModule.token_replay_pure !== 'function') {
-      // Fallback: return stub result
-      return {
-        fitness: 0.85,
-        precision: 0.8,
-        generalization: 0.75,
-        simplicity: 100,
-      };
+      throw new Error(
+        'WASM module missing token_replay_pure — token-based conformance check cannot proceed. ' +
+        'Rebuild with feature-conformance-basic or ensure WASM module is fully initialized.'
+      );
     }
 
     const result = await this.wasmModule.token_replay_pure(logHandle, modelHandle);
     const parsed = typeof result === 'string' ? JSON.parse(result) : result;
 
+    if (typeof parsed.fitness !== 'number' || !Number.isFinite(parsed.fitness)) {
+      throw new Error(
+        `token_replay_pure returned invalid fitness: ${parsed.fitness}. Output: ${JSON.stringify(parsed)}`
+      );
+    }
+    if (typeof parsed.precision !== 'number' || !Number.isFinite(parsed.precision)) {
+      throw new Error(
+        `token_replay_pure returned invalid precision: ${parsed.precision}`
+      );
+    }
+    if (typeof parsed.generalization !== 'number' || !Number.isFinite(parsed.generalization)) {
+      throw new Error(
+        `token_replay_pure returned invalid generalization: ${parsed.generalization}`
+      );
+    }
+    if (typeof parsed.simplicity !== 'number' || !Number.isFinite(parsed.simplicity)) {
+      throw new Error(
+        `token_replay_pure returned invalid simplicity: ${parsed.simplicity}`
+      );
+    }
+
     return {
-      fitness: parsed.fitness ?? 0.85,
-      precision: parsed.precision ?? 0.8,
-      generalization: parsed.generalization ?? 0.75,
-      simplicity: parsed.simplicity ?? 100,
+      fitness: parsed.fitness,
+      precision: parsed.precision,
+      generalization: parsed.generalization,
+      simplicity: parsed.simplicity,
     };
   }
 
@@ -707,23 +747,41 @@ export class Pm4wasmBackend implements MiningBackend {
     }
 
     if (typeof this.wasmModule.compute_optimal_alignments !== 'function') {
-      // Fallback: return stub result
-      return {
-        fitness: 0.9,
-        precision: 0.85,
-        generalization: 0.8,
-        simplicity: 100,
-      };
+      throw new Error(
+        'WASM module missing compute_optimal_alignments — alignment-based conformance unavailable. ' +
+        'Use token replay conformance instead, or rebuild with feature-conformance-full.'
+      );
     }
 
     const result = await this.wasmModule.compute_optimal_alignments(logHandle, modelHandle);
     const parsed = typeof result === 'string' ? JSON.parse(result) : result;
 
+    if (typeof parsed.fitness !== 'number' || !Number.isFinite(parsed.fitness)) {
+      throw new Error(
+        `compute_optimal_alignments returned invalid fitness: ${parsed.fitness}`
+      );
+    }
+    if (typeof parsed.precision !== 'number' || !Number.isFinite(parsed.precision)) {
+      throw new Error(
+        `compute_optimal_alignments returned invalid precision: ${parsed.precision}`
+      );
+    }
+    if (typeof parsed.generalization !== 'number' || !Number.isFinite(parsed.generalization)) {
+      throw new Error(
+        `compute_optimal_alignments returned invalid generalization: ${parsed.generalization}`
+      );
+    }
+    if (typeof parsed.simplicity !== 'number' || !Number.isFinite(parsed.simplicity)) {
+      throw new Error(
+        `compute_optimal_alignments returned invalid simplicity: ${parsed.simplicity}`
+      );
+    }
+
     return {
-      fitness: parsed.fitness ?? 0.9,
-      precision: parsed.precision ?? 0.85,
-      generalization: parsed.generalization ?? 0.8,
-      simplicity: parsed.simplicity ?? 100,
+      fitness: parsed.fitness,
+      precision: parsed.precision,
+      generalization: parsed.generalization,
+      simplicity: parsed.simplicity,
     };
   }
 
@@ -769,9 +827,13 @@ export class Pm4wasmBackend implements MiningBackend {
 
   /**
    * Generate a UUID v4.
+   * Requires Node.js 19+ where crypto.randomUUID is available.
    */
   private generateUuid(): string {
-    return crypto.randomUUID?.() || `uuid-${Date.now()}-${Math.random()}`;
+    if (typeof crypto?.randomUUID !== 'function') {
+      throw new Error('crypto.randomUUID not available — Node.js 19+ required');
+    }
+    return crypto.randomUUID();
   }
 
   /**

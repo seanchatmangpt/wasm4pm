@@ -47,7 +47,10 @@ export class MlBackend implements MiningBackend {
       await import('@wasm4pm/ml');
       this.initialized = true;
     } catch (e) {
-      console.error('Failed to initialize ML backend:', e);
+      throw new Error(
+        `ML backend failed to initialize: ${e instanceof Error ? e.message : String(e)}. ` +
+        `Ensure @wasm4pm/ml is installed and properly built.`
+      );
     }
   }
 
@@ -204,7 +207,10 @@ export class MlBackend implements MiningBackend {
   }
 
   private generateUuid(): string {
-    return crypto.randomUUID?.() || `uuid-${Date.now()}-${Math.random()}`;
+    if (typeof crypto?.randomUUID !== 'function') {
+      throw new Error('crypto.randomUUID not available — Node.js 19+ required');
+    }
+    return crypto.randomUUID();
   }
 
   private createProvenance(algorithmId: string): ProvenanceChain {
