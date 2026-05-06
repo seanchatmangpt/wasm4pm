@@ -104,14 +104,14 @@ mod tests {
 
     #[test]
     fn test_alpha_miner_simple() {
-        let mut attrs_a = std::collections::HashMap::new();
-        attrs_a.insert(
+        let mut attrs_a = Vec::new();
+        attrs_a.add_to_attributes(
             "concept:name".to_string(),
             AttributeValue::String("A".to_string()),
         );
 
-        let mut attrs_b = std::collections::HashMap::new();
-        attrs_b.insert(
+        let mut attrs_b = Vec::new();
+        attrs_b.add_to_attributes(
             "concept:name".to_string(),
             AttributeValue::String("B".to_string()),
         );
@@ -121,7 +121,7 @@ mod tests {
                 "case1".to_string(),
                 vec![Event::new(attrs_a), Event::new(attrs_b)],
             )],
-            std::collections::HashMap::new(),
+            Vec::new(),
         );
 
         let net = discover_alpha(&log, "concept:name").unwrap();

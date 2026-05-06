@@ -132,6 +132,48 @@ where
     deserializer.deserialize_any(AttributesVisitor)
 }
 
+impl From<wasm4pm_types::AttributeValue> for AttributeValue {
+    fn from(v: wasm4pm_types::AttributeValue) -> Self {
+        match v {
+            wasm4pm_types::AttributeValue::String(s) => AttributeValue::String(s),
+            wasm4pm_types::AttributeValue::Int(i) => AttributeValue::Int(i),
+            wasm4pm_types::AttributeValue::Float(f) => AttributeValue::Float(f),
+            wasm4pm_types::AttributeValue::Boolean(b) => AttributeValue::Boolean(b),
+            wasm4pm_types::AttributeValue::Date(d) => AttributeValue::Date(d.to_rfc3339()),
+            wasm4pm_types::AttributeValue::List(l) => AttributeValue::List(l.into_iter().map(|a| a.value.into()).collect()),
+            wasm4pm_types::AttributeValue::Container(l) => AttributeValue::Container(l.into_iter().map(|a| (a.key, a.value.into())).collect()),
+            wasm4pm_types::AttributeValue::ID(u) => AttributeValue::String(u.to_string()),
+            wasm4pm_types::AttributeValue::None() => AttributeValue::String("".to_string()),
+        }
+    }
+}
+
+impl From<wasm4pm_types::Event> for Event {
+    fn from(e: wasm4pm_types::Event) -> Self {
+        Event {
+            attributes: e.attributes.into_iter().map(|a| (a.key, a.value.into())).collect(),
+        }
+    }
+}
+
+impl From<wasm4pm_types::Trace> for Trace {
+    fn from(t: wasm4pm_types::Trace) -> Self {
+        Trace {
+            attributes: t.attributes.into_iter().map(|a| (a.key, a.value.into())).collect(),
+            events: t.events.into_iter().map(|e| e.into()).collect(),
+        }
+    }
+}
+
+impl From<wasm4pm_types::EventLog> for EventLog {
+    fn from(log: wasm4pm_types::EventLog) -> Self {
+        EventLog {
+            attributes: log.attributes.into_iter().map(|a| (a.key, a.value.into())).collect(),
+            traces: log.traces.into_iter().map(|t| t.into()).collect(),
+        }
+    }
+}
+
 /// Event within a trace
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Event {

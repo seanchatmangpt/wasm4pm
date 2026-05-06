@@ -39,16 +39,19 @@ pub fn build_edge_counts(log: &EventLog, activity_key: &str) -> ColumnarEdgeCoun
         // Inline the interning to avoid a mutable closure capturing `vocab`.
         let mut ids: Vec<u32> = Vec::new();
         for event in &trace.events {
-            if let Some(AttributeValue::String(name)) = event.attributes.get(activity_key) {
-                let id = if let Some(&id) = activity_ids.get(name.as_str()) {
-                    id
-                } else {
-                    let id = vocab.len() as u32;
-                    vocab.push(name.clone());
-                    activity_ids.insert(name.clone(), id);
-                    id
-                };
-                ids.push(id);
+            use wasm4pm_types::event_log::XESEditableAttribute;
+            if let Some(attr) = event.attributes.get_by_key(activity_key) {
+                if let AttributeValue::String(name) = &attr.value {
+                    let id = if let Some(&id) = activity_ids.get(name.as_str()) {
+                        id
+                    } else {
+                        let id = vocab.len() as u32;
+                        vocab.push(name.clone());
+                        activity_ids.insert(name.clone(), id);
+                        id
+                    };
+                    ids.push(id);
+                }
             }
         }
 
@@ -143,8 +146,9 @@ mod tests {
                 let events = activities
                     .into_iter()
                     .map(|a| {
-                        let mut attrs = StdHashMap::new();
-                        attrs.insert(
+                        use wasm4pm_types::event_log::XESEditableAttribute;
+                        let mut attrs = Vec::new();
+                        attrs.add_to_attributes(
                             "concept:name".to_string(),
                             AttributeValue::String(a.to_string()),
                         );
@@ -154,7 +158,7 @@ mod tests {
                 Trace::new(format!("case{i}"), events)
             })
             .collect();
-        EventLog::new(traces, StdHashMap::new())
+        EventLog::new(traces, Vec::new())
     }
 
     #[test]

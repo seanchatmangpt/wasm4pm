@@ -104,7 +104,7 @@ fn load_log(path: &PathBuf) -> Result<EventLog> {
     } else {
         // Simple mock parser for XES or others
         // In a real scenario, this would call the actual XES parser
-        Ok(EventLog::new(vec![], std::collections::HashMap::new()))
+        Ok(EventLog::new(vec![], Vec::new()))
     }
 }
 
