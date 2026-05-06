@@ -290,6 +290,7 @@ fn bench_window_sizes(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(3));
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(30);
+    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
 
     let shape = LogShape {
         num_cases: 1_000,
@@ -323,6 +324,7 @@ fn bench_alpha_tuning(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(2));
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(50);
+    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
 
     let series: Vec<f64> = (0..1_000)
         .map(|i| ((i as f64 * 0.01).sin() + (i as f64 * 0.002).cos()).abs())
@@ -350,6 +352,7 @@ fn bench_drift_scenarios(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(4));
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(25);
+    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
 
     let scenarios = [
         ("abrupt", generate_abrupt_drift_log(500, 10)),
@@ -394,6 +397,7 @@ fn bench_threshold_sensitivity(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(3));
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(30);
+    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
 
     // Use abrupt drift scenario for clear signal.
     let log = generate_abrupt_drift_log(200, 10);
@@ -430,6 +434,7 @@ fn bench_edge_cases(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(2));
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(50);
+    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
 
     // Empty sets (no activities) — Jaccard(∅, ∅) = 0.0 by convention
     let empty_a: HashSet<String> = HashSet::new();
@@ -468,6 +473,7 @@ fn bench_determinism(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(2));
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(50);
+    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
 
     let series = vec![1.0, 2.5, 3.7, 2.1, 4.9, 1.2, 3.4];
     let alpha = 0.3;

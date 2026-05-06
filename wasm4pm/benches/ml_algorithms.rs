@@ -140,6 +140,7 @@ fn bench_ml_classify(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(10));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(30);
+    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
 
     for &n in &[100_usize, 1_000, 10_000] {
         let (features, labels) = make_classify_data(n);
@@ -199,6 +200,7 @@ fn bench_ml_cluster(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(10));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(30);
+    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
 
     for shape in bench_sizes_slow() {
         let (handle, events) = make_handle(&shape);
@@ -224,6 +226,7 @@ fn bench_ml_forecast(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(10));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(50);
+    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
 
     for &n in &[100_usize, 1_000, 10_000] {
         let data = make_forecast_data(n);
@@ -258,6 +261,7 @@ fn bench_ml_anomaly(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(10));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(50);
+    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
 
     for &n in &[100_usize, 1_000, 10_000] {
         group.throughput(Throughput::Elements(n as u64));
@@ -292,6 +296,7 @@ fn bench_ml_regress(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(10));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(50);
+    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
 
     for &n in &[100_usize, 1_000, 10_000] {
         let (x, y) = make_regression_data(n);
@@ -323,6 +328,7 @@ fn bench_ml_pca(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(10));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(50);
+    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
 
     for &n in &[100_usize, 1_000, 10_000] {
         let features = make_pca_data(n);

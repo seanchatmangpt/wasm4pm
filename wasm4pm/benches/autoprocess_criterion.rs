@@ -21,6 +21,7 @@ fn autoprocess_single_cycle(c: &mut Criterion) {
 
     // Large sample size for statistical power
     group.sample_size(10_000);
+    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
     group.measurement_time(Duration::from_secs(60));
     group.warm_up_time(Duration::from_secs(10));
 
@@ -66,6 +67,7 @@ fn dfg_discovery_throughput(c: &mut Criterion) {
 fn conformance_token_replay(c: &mut Criterion) {
     let mut group = c.benchmark_group("conformance");
     group.sample_size(1_000);
+    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
     group.measurement_time(Duration::from_secs(30));
 
     // Simulate token replay: per-event marking updates
@@ -96,6 +98,7 @@ fn conformance_token_replay(c: &mut Criterion) {
 fn variant_deduplication(c: &mut Criterion) {
     let mut group = c.benchmark_group("variant_dedup");
     group.sample_size(100);
+    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
     group.measurement_time(Duration::from_secs(20));
 
     let variant_counts = [100u32, 1_000u32, 10_000u32];

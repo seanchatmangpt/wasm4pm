@@ -113,6 +113,7 @@ fn bench_ngram_build_unigram(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(5));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(50);
+    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
 
     // Fixed: 1K-trace log (as specified in the task description)
     let shape = LogShape {
@@ -141,6 +142,7 @@ fn bench_ngram_build_bigram(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(5));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(50);
+    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
 
     let shape = LogShape {
         num_cases: 1_000,
@@ -167,6 +169,7 @@ fn bench_ngram_predict_unigram(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(5));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(50);
+    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
 
     let shape = LogShape {
         num_cases: 1_000,
@@ -205,6 +208,7 @@ fn bench_ngram_predict_bigram(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(5));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(50);
+    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
 
     let shape = LogShape {
         num_cases: 1_000,
@@ -247,6 +251,7 @@ fn bench_uniform_random_baseline(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(5));
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(50);
+    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
 
     let shape = LogShape {
         num_cases: 1_000,

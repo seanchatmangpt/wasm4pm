@@ -209,6 +209,7 @@ fn bench_dfg_edge_map_comparison(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(5));
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(50);
+    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
 
     // Only use the smallest size — oracle cost benchmarks are about overhead, not scalability
     let shape = bench_sizes().remove(0);
@@ -243,6 +244,7 @@ fn bench_jaccard_distance(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(5));
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(50);
+    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
 
     let shape = bench_sizes().remove(0);
     let log = generate_event_log(&shape);
@@ -277,6 +279,7 @@ fn bench_fitness_token_replay(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(5));
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(50);
+    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
 
     let activities = ["Register", "Validate", "Approve", "Archive"];
     let log = make_conforming_log(&activities, 100);
@@ -299,6 +302,7 @@ fn bench_heuristic_threshold_sweep(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(5));
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(50);
+    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
 
     let shape = bench_sizes().remove(0);
     let (handle, events) = make_handle(&shape);
