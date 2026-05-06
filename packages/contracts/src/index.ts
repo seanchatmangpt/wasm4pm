@@ -103,3 +103,7 @@ export {
   qualityDeficientForFloor,
   createDefaultBudgetEnvelope,
 } from './budget.js';
+
+// Quality thresholds — per-algorithm fitness/precision/generalization/simplicity floors
+export { getQualityThreshold, ALGORITHM_QUALITY_THRESHOLDS, DEFAULT_QUALITY_THRESHOLD } from './quality-thresholds.js';
+export type { QualityThresholdProfile } from './quality-thresholds.js';

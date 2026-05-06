@@ -36,4 +36,6 @@ export { PLAN_STEP_TYPE_VALUES } from './steps.js';
 export type { PlanStepTypeValue } from './steps.js';
 export type { BudgetEnvelope, LatencyClass as BudgetLatencyClass, QualityTier, ExecutionMode, } from './budget.js';
 export { latencyTierLte, qualityTierLte, latencyExceedsBudget, qualityDeficientForFloor, createDefaultBudgetEnvelope, } from './budget.js';
+export { getQualityThreshold, ALGORITHM_QUALITY_THRESHOLDS, DEFAULT_QUALITY_THRESHOLD } from './quality-thresholds.js';
+export type { QualityThresholdProfile } from './quality-thresholds.js';
 //# sourceMappingURL=index.d.ts.map
