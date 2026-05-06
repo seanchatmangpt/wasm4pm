@@ -17,6 +17,11 @@ hashbrown = { workspace = true }
 smallvec = { workspace = true }
 blake3 = { workspace = true }
 rustc-hash = { workspace = true }
+quick-xml = { version = "0.37", optional = true }
+flate2 = { version = "1.0", optional = true }
+
+[features]
+import = ["quick-xml", "flate2"]
 
 [dev-dependencies]
 serde_json = { workspace = true }

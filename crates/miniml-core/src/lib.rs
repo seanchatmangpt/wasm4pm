@@ -61,6 +61,7 @@ mod association;
 mod survival;
 mod recommendation;
 mod graph;
+mod streaming_features;
 
 use wasm_bindgen::prelude::*;
 pub use error::MlError;
@@ -126,3 +127,4 @@ pub use association::*;
 pub use survival::*;
 pub use recommendation::*;
 pub use graph::*;
+pub use streaming_features::*;

@@ -23,6 +23,8 @@ blake3 = "1.5"
 bcinr = { version = "26.4.22", default-features = false }
 wasm4pm-types = { version = "26.4.17", path = "crates/wasm4pm-types" }
 miniml = { path = "crates/miniml-core" }
+fake = "2.9"
+proptest = "1.4"
 
 [profile.release]
 opt-level = "z"

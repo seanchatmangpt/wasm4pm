@@ -330,7 +330,7 @@ pub mod xes_format;
 #[cfg(feature = "ocel")]
 pub mod oc_conformance;
 #[cfg(feature = "ocel")]
-pub mod oc_performance;
+pub mod oc_orchestrator;
 #[cfg(feature = "ocel")]
 pub mod oc_petri_net;
 #[cfg(feature = "ocel")]
@@ -391,8 +391,8 @@ pub mod automembrane;
 pub mod benchmark_runner;
 #[cfg(feature = "miniml")]
 pub mod actor_envelope;
-#[cfg(feature = "miniml")]
-pub mod object_envelope;
+// #[cfg(feature = "miniml")]
+// pub mod object_envelope;
 #[cfg(feature = "miniml")]
 pub mod route_envelope;
 #[cfg(feature = "miniml")]
