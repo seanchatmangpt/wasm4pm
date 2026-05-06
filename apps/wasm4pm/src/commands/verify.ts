@@ -1,8 +1,7 @@
 import { defineCommand } from 'citty';
 import { runCertification } from '@wasm4pm/testing';
-import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
+import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
-import type { OutputOptions } from '../output.js';
 import pkg from '../../package.json' assert { type: 'json' };
 
 export const verify = defineCommand({
@@ -20,66 +19,50 @@ export const verify = defineCommand({
       default: 'human',
       description: 'Output format: human | json',
     },
-    verbose: {
-      type: 'boolean',
-      description: 'Show detailed output',
-      alias: 'v',
-    },
-    quiet: {
-      type: 'boolean',
-      description: 'Suppress non-error output',
-      alias: 'q',
-    },
+    verbose: { type: 'boolean', alias: 'v' },
+    quiet: { type: 'boolean', alias: 'q' },
   },
   async run(ctx) {
-    const formatter = getFormatter({
-      format: (ctx.args.format as 'human' | 'json') ?? 'human',
-      verbose: ctx.args.verbose,
-      quiet: ctx.args.quiet,
-    });
+    const t0 = performance.now();
+    const format = (ctx.args.format as 'json' | 'human') ?? 'human';
+    const verbose = ctx.args.verbose ?? false;
+    const quiet = ctx.args.quiet ?? false;
 
     try {
       const version = pkg.version ?? '26.4.23';
-      const fast = ctx.args.fast ?? false;
+      const report = await runCertification(version, { fast: ctx.args.fast ?? false });
 
-      if (formatter instanceof HumanFormatter) {
-        formatter.info('wpm verify — Definition-of-Done gate check');
-        formatter.info('');
-      }
+      const passCount = report.gates.filter((g) => g.passed).length;
+      const failCount = report.gates.filter((g) => !g.passed).length;
+      const exitCode = failCount > 0 ? EXIT_CODES.execution_error : EXIT_CODES.success;
 
-      const report = await runCertification(version, { fast });
+      const result = makeResult('verify', {
+        passed: report.passed,
+        gates: report.gates,
+        summary: report.summary,
+        pass_count: passCount,
+        fail_count: failCount,
+      }, performance.now() - t0, exitCode);
 
-      if ((ctx.args.format as string) === 'json') {
-        (formatter as JSONFormatter).output({
-          status: report.passed ? 'pass' : 'fail',
-          gates: report.gates,
-          timestamp: new Date().toISOString(),
-        });
-      } else {
-        const humanFormatter = formatter as HumanFormatter;
-        const passCount = report.gates.filter((g) => g.passed).length;
-        const failCount = report.gates.filter((g) => !g.passed).length;
-
-        for (const gate of report.gates) {
+      emitResult(result, { format, verbose, quiet }, (res, projection) => {
+        projection.info('wpm verify — Definition-of-Done gate check');
+        projection.info('');
+        for (const gate of res.payload.gates) {
           const status = gate.passed ? '[PASS]' : '[FAIL]';
           const duration = gate.duration_ms ? ` (${gate.duration_ms}ms)` : '';
-          humanFormatter.log(`  ${status} ${gate.gate.padEnd(25)} ${duration}   ${gate.details ?? ''}`);
+          projection.log(`  ${status} ${gate.gate.padEnd(25)} ${duration}   ${gate.details ?? ''}`);
         }
-
-        humanFormatter.log('');
-        humanFormatter.log(`${passCount}/${report.gates.length} gates passed`);
-
-        if (failCount > 0) {
-          humanFormatter.warn(`${failCount} gate(s) failed`);
-          process.exit(EXIT_CODES.execution_error);
+        projection.log('');
+        projection.log(`${res.payload.pass_count}/${res.payload.gates.length} gates passed`);
+        if (res.payload.fail_count > 0) {
+          projection.warn(`${res.payload.fail_count} gate(s) failed`);
         }
-      }
+      });
 
-      process.exit(EXIT_CODES.success);
+      process.exit(exitCode);
     } catch (error) {
-      formatter.error(
-        `Verification failed: ${error instanceof Error ? error.message : String(error)}`
-      );
+      const result = makeErrorResult('verify', error, EXIT_CODES.system_error, 'VERIFY_ERROR');
+      emitResult(result, { format, verbose, quiet });
       process.exit(EXIT_CODES.system_error);
     }
   },

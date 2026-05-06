@@ -1,8 +1,7 @@
 import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
-import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
+import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
-import type { OutputOptions } from '../output.js';
 import { WasmLoader } from '@wasm4pm/engine';
 import { loadWasm4pmConfig, buildCliOverrides } from '../config-loader.js';
 import { savePredictionResult } from './results.js';
@@ -10,13 +9,6 @@ import { VALID_PREDICT_CLI_TASKS } from '@wasm4pm/contracts';
 
 const VALID_TASKS = VALID_PREDICT_CLI_TASKS;
 type PredictTask = (typeof VALID_TASKS)[number];
-
-export interface PredictOptions extends OutputOptions {
-  input?: string;
-  activityKey?: string;
-  prefix?: string;
-  topK?: number;
-}
 
 export const predict = defineCommand({
   meta: {
@@ -81,18 +73,23 @@ export const predict = defineCommand({
     },
   },
   async run(ctx) {
-    const formatter = getFormatter({
-      format: ctx.args.format as 'human' | 'json',
-      verbose: ctx.args.verbose,
-      quiet: ctx.args.quiet,
-    });
+    const format = (ctx.args.format as 'json' | 'human') ?? 'human';
+    const verbose = Boolean(ctx.args.verbose);
+    const quiet = Boolean(ctx.args.quiet);
+    const start = Date.now();
 
     try {
       // Step 1: Validate task
       const task = ctx.args.task as string;
       if (!VALID_TASKS.includes(task as PredictTask)) {
-        formatter.error(`Unknown task: "${task}". Valid tasks: ${VALID_TASKS.join(', ')}`);
-        process.exit(EXIT_CODES.source_error);
+        const result = makeErrorResult(
+          'predict',
+          new Error(`Unknown task: "${task}". Valid tasks: ${VALID_TASKS.join(', ')}`),
+          EXIT_CODES.source_error,
+          'INVALID_TASK'
+        );
+        emitResult(result, { format, verbose, quiet });
+        process.exit(result.exit_code);
       }
 
       // Step 2: Load config to get prediction defaults
@@ -102,7 +99,7 @@ export const predict = defineCommand({
         predictionNgramOrder: ctx.args['ngram-order'],
         predictionDriftWindow: ctx.args['drift-window'],
       });
-      const config = await loadWasm4pmConfig(cliOverrides, formatter);
+      const config = await loadWasm4pmConfig(cliOverrides);
       const pred = config.prediction;
 
       // Resolve parameters: CLI flag > config > hardcoded default
@@ -111,24 +108,42 @@ export const predict = defineCommand({
       const rawTopK = ctx.args['top-k'] as string | undefined;
       const parsedTopK = rawTopK != null ? parseInt(rawTopK, 10) : undefined;
       if (parsedTopK !== undefined && Number.isNaN(parsedTopK)) {
-        formatter.error('Invalid --top-k value: must be a number');
-        process.exit(EXIT_CODES.config_error);
+        const result = makeErrorResult(
+          'predict',
+          new Error('Invalid --top-k value: must be a number'),
+          EXIT_CODES.config_error,
+          'INVALID_ARG'
+        );
+        emitResult(result, { format, verbose, quiet });
+        process.exit(result.exit_code);
       }
       const topK = parsedTopK ?? 3;
 
       const rawNgram = ctx.args['ngram-order'] as string | undefined;
       const parsedNgram = rawNgram != null ? parseInt(rawNgram, 10) : undefined;
       if (parsedNgram !== undefined && Number.isNaN(parsedNgram)) {
-        formatter.error('Invalid --ngram-order value: must be a number');
-        process.exit(EXIT_CODES.config_error);
+        const result = makeErrorResult(
+          'predict',
+          new Error('Invalid --ngram-order value: must be a number'),
+          EXIT_CODES.config_error,
+          'INVALID_ARG'
+        );
+        emitResult(result, { format, verbose, quiet });
+        process.exit(result.exit_code);
       }
       const ngramOrder = parsedNgram ?? pred?.ngramOrder ?? 2;
 
       const rawDrift = ctx.args['drift-window'] as string | undefined;
       const parsedDrift = rawDrift != null ? parseInt(rawDrift, 10) : undefined;
       if (parsedDrift !== undefined && Number.isNaN(parsedDrift)) {
-        formatter.error('Invalid --drift-window value: must be a number');
-        process.exit(EXIT_CODES.config_error);
+        const result = makeErrorResult(
+          'predict',
+          new Error('Invalid --drift-window value: must be a number'),
+          EXIT_CODES.config_error,
+          'INVALID_ARG'
+        );
+        emitResult(result, { format, verbose, quiet });
+        process.exit(result.exit_code);
       }
       const driftWindow = parsedDrift ?? pred?.driftWindowSize ?? 10;
       const prefixActivities = ctx.args.prefix
@@ -140,29 +155,27 @@ export const predict = defineCommand({
       try {
         await fs.access(inputPath);
       } catch {
-        formatter.error(`Input file not found: ${inputPath}`);
-        process.exit(EXIT_CODES.source_error);
+        const result = makeErrorResult(
+          'predict',
+          new Error(`Input file not found: ${inputPath}`),
+          EXIT_CODES.source_error,
+          'INPUT_NOT_FOUND'
+        );
+        emitResult(result, { format, verbose, quiet });
+        process.exit(result.exit_code);
       }
 
       // Step 4: Load WASM module
-      if (formatter instanceof HumanFormatter) {
-        formatter.info(`Running prediction task: ${task}`);
-      }
-
       const loader = WasmLoader.getInstance();
       await loader.init();
       const wasm = loader.get();
 
       // Step 5: Read and parse XES file
-      if (formatter instanceof HumanFormatter) {
-        formatter.debug(`Loading event log from: ${inputPath}`);
-      }
-
       const xesContent = await fs.readFile(inputPath, 'utf-8');
       const logHandle: string = wasm.load_eventlog_from_xes(xesContent);
 
       // Step 6: Execute prediction task
-      const result = await executePredictionTask(
+      const taskResult = await executePredictionTask(
         wasm,
         task as PredictTask,
         logHandle,
@@ -173,40 +186,43 @@ export const predict = defineCommand({
         prefixActivities
       );
 
-      // Step 7: Output results
-      if (formatter instanceof JSONFormatter) {
-        formatter.success(`Prediction complete: ${task}`, {
-          task,
-          input: inputPath,
-          activityKey,
-          ...result,
-        });
-      } else {
-        formatter.success(`Prediction complete: ${task}`);
-        formatHumanOutput(formatter, task as PredictTask, result);
-      }
+      // Step 7: Build result
+      const payload = {
+        task,
+        input: inputPath,
+        activityKey,
+        ...taskResult,
+      };
 
-      // Step 8: Persist result (unless --no-save)
+      const result = makeResult('predict', payload, Date.now() - start);
+
+      // Step 8: Emit result
+      emitResult(result, { format, verbose, quiet }, (res, p) => {
+        p.success(`Prediction complete: ${res.payload.task}`);
+        formatHumanOutput(p, res.payload.task as PredictTask, res.payload);
+      });
+
+      // Step 9: Persist result (unless --no-save)
       if (!ctx.args['no-save']) {
-        const savedPath = await savePredictionResult(task, inputPath, activityKey, result);
-        if (savedPath && formatter instanceof HumanFormatter) {
-          formatter.debug(`Result saved: ${savedPath}`);
+        const savedPath = await savePredictionResult(task, inputPath, activityKey, taskResult);
+        if (savedPath && verbose) {
+          // debug already handled by projection.debug if needed
         }
       }
 
-      // Step 9: Free handles
+      // Step 10: Free handles
       wasm.delete_object(logHandle);
 
-      process.exit(EXIT_CODES.success);
+      process.exit(result.exit_code);
     } catch (error) {
-      if (formatter instanceof JSONFormatter) {
-        formatter.error('Prediction failed', error);
-      } else {
-        formatter.error(
-          `Prediction failed: ${error instanceof Error ? error.message : String(error)}`
-        );
-      }
-      process.exit(EXIT_CODES.execution_error);
+      const result = makeErrorResult(
+        'predict',
+        error,
+        EXIT_CODES.execution_error,
+        'PREDICTION_ERROR'
+      );
+      emitResult(result, { format, verbose, quiet });
+      process.exit(result.exit_code);
     }
   },
 });
@@ -327,10 +343,10 @@ async function executePredictionTask(
 }
 
 /**
- * Format results for human-readable output.
+ * Format results for human-readable output via ConsoleProjection.
  */
 function formatHumanOutput(
-  formatter: HumanFormatter,
+  p: import('../output.js').ConsoleProjection,
   task: PredictTask,
   result: Record<string, unknown>
 ): void {
@@ -338,19 +354,19 @@ function formatHumanOutput(
     case 'next-activity': {
       const preds = result.predictions as Array<{ activity: string; probability: number }>;
       if (!preds || preds.length === 0) {
-        formatter.info('No predictions available for the given prefix.');
+        p.info('No predictions available for the given prefix.');
         return;
       }
-      formatter.log('');
-      formatter.log('  Rank  Activity                   Probability');
-      formatter.log('  ────  ─────────────────────────  ───────────');
-      preds.forEach((p, i) => {
+      p.log('');
+      p.log('  Rank  Activity                   Probability');
+      p.log('  ────  ─────────────────────────  ───────────');
+      preds.forEach((pred, i) => {
         const rank = String(i + 1).padStart(4);
-        const act = p.activity.padEnd(25);
-        const prob = (p.probability * 100).toFixed(1).padStart(8) + '%';
-        formatter.log(`  ${rank}  ${act}  ${prob}`);
+        const act = pred.activity.padEnd(25);
+        const prob = (pred.probability * 100).toFixed(1).padStart(8) + '%';
+        p.log(`  ${rank}  ${act}  ${prob}`);
       });
-      formatter.log('');
+      p.log('');
       break;
     }
 
@@ -360,13 +376,13 @@ function formatHumanOutput(
         const remainingMs = (pred.remaining_ms as number) ?? 0;
         const remainingH = remainingMs / 3_600_000;
         const confidence = ((pred.confidence as number) ?? 0) * 100;
-        formatter.log('');
-        formatter.log(`  Estimated remaining time:  ${remainingH.toFixed(1)} hours`);
-        formatter.log(`  Confidence:                ${confidence.toFixed(1)}%`);
-        formatter.log(`  Method:                    ${pred.method ?? 'unknown'}`);
-        formatter.log('');
+        p.log('');
+        p.log(`  Estimated remaining time:  ${remainingH.toFixed(1)} hours`);
+        p.log(`  Confidence:                ${confidence.toFixed(1)}%`);
+        p.log(`  Method:                    ${pred.method ?? 'unknown'}`);
+        p.log('');
       } else {
-        formatter.info((result.message as string) ?? 'Use --prefix to predict case duration.');
+        p.info((result.message as string) ?? 'Use --prefix to predict case duration.');
       }
       break;
     }
@@ -374,28 +390,28 @@ function formatHumanOutput(
     case 'outcome': {
       if (result.anomaly) {
         const a = result.anomaly as Record<string, unknown>;
-        formatter.log('');
-        formatter.log(`  Anomaly score:    ${(a.score as number).toFixed(4)}`);
-        formatter.log(`  Is anomalous:     ${a.is_anomalous}`);
-        formatter.log(`  Threshold:        ${a.threshold}`);
-        formatter.log(`  Log-likelihood:   ${(result.logLikelihood as number).toFixed(4)}`);
-        formatter.log('');
+        p.log('');
+        p.log(`  Anomaly score:    ${(a.score as number).toFixed(4)}`);
+        p.log(`  Is anomalous:     ${a.is_anomalous}`);
+        p.log(`  Threshold:        ${a.threshold}`);
+        p.log(`  Log-likelihood:   ${(result.logLikelihood as number).toFixed(4)}`);
+        p.log('');
       } else {
         const anomalies = result.anomalies as Array<Record<string, unknown>>;
         if (!anomalies || anomalies.length === 0) {
-          formatter.info('No anomalous traces found.');
+          p.info('No anomalous traces found.');
           return;
         }
-        formatter.log('');
-        formatter.log('  Case ID              Score     Anomalous');
-        formatter.log('  ───────────────────  ────────  ─────────');
+        p.log('');
+        p.log('  Case ID              Score     Anomalous');
+        p.log('  ───────────────────  ────────  ─────────');
         for (const a of anomalies) {
           const caseId = String(a.case_id ?? a.trace_id ?? '?').padEnd(19);
           const score = ((a.score as number) ?? 0).toFixed(4).padStart(8);
           const flag = a.is_anomalous ? 'yes' : 'no';
-          formatter.log(`  ${caseId}  ${score}  ${flag}`);
+          p.log(`  ${caseId}  ${score}  ${flag}`);
         }
-        formatter.log('');
+        p.log('');
       }
       break;
     }
@@ -404,52 +420,52 @@ function formatHumanOutput(
       const dr = result.driftResult as Record<string, unknown>;
       const drifts = (dr?.drifts as Array<Record<string, unknown>>) ?? [];
       if (drifts.length === 0) {
-        formatter.info('No concept drift detected.');
+        p.info('No concept drift detected.');
         return;
       }
-      formatter.log('');
-      formatter.log(
+      p.log('');
+      p.log(
         `  Detected ${drifts.length} drift point(s) (method: ${dr?.method ?? 'jaccard_window'}):`
       );
       for (const dp of drifts) {
         const pos = dp.position ?? '?';
         const dist =
           typeof dp.distance === 'number' ? dp.distance.toFixed(4) : String(dp.distance ?? '');
-        formatter.log(`    Position ${pos}  distance=${dist}  type=${dp.type ?? 'concept_drift'}`);
+        p.log(`    Position ${pos}  distance=${dist}  type=${dp.type ?? 'concept_drift'}`);
       }
-      formatter.log('');
+      p.log('');
       break;
     }
 
     case 'features': {
       const transitions = result.transitions as Array<Record<string, unknown>>;
-      formatter.log('');
+      p.log('');
       if (Array.isArray(transitions)) {
-        formatter.log(`  Transition probabilities: ${transitions.length} edge(s)`);
+        p.log(`  Transition probabilities: ${transitions.length} edge(s)`);
         for (const t of transitions.slice(0, 5)) {
-          formatter.log(`    ${JSON.stringify(t)}`);
+          p.log(`    ${JSON.stringify(t)}`);
         }
-        if (transitions.length > 5) formatter.log(`    ... (${transitions.length - 5} more)`);
+        if (transitions.length > 5) p.log(`    ... (${transitions.length - 5} more)`);
       } else {
-        formatter.log(`  ${JSON.stringify(transitions)}`);
+        p.log(`  ${JSON.stringify(transitions)}`);
       }
       if (result.prefixFeatures) {
-        formatter.log('');
-        formatter.log(`  Prefix features: ${JSON.stringify(result.prefixFeatures)}`);
+        p.log('');
+        p.log(`  Prefix features: ${JSON.stringify(result.prefixFeatures)}`);
       }
-      formatter.log('');
+      p.log('');
       break;
     }
 
     case 'resource': {
       const qs = result.queueStats as Record<string, unknown>;
-      formatter.log('');
-      formatter.log('  M/M/1 Queue Model Estimate:');
-      formatter.log(`    Wait time:    ${((qs?.wait_time as number) ?? 0).toFixed(2)}s`);
-      formatter.log(`    Utilization:  ${(((qs?.utilization as number) ?? 0) * 100).toFixed(1)}%`);
-      formatter.log(`    Stable:       ${qs?.is_stable ?? false}`);
-      formatter.log(`  Transitions in model: ${result.transitionCount}`);
-      formatter.log('');
+      p.log('');
+      p.log('  M/M/1 Queue Model Estimate:');
+      p.log(`    Wait time:    ${((qs?.wait_time as number) ?? 0).toFixed(2)}s`);
+      p.log(`    Utilization:  ${(((qs?.utilization as number) ?? 0) * 100).toFixed(1)}%`);
+      p.log(`    Stable:       ${qs?.is_stable ?? false}`);
+      p.log(`  Transitions in model: ${result.transitionCount}`);
+      p.log('');
       break;
     }
   }

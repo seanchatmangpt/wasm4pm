@@ -1,15 +1,25 @@
 import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
-import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
+import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
-import type { OutputOptions } from '../output.js';
 import { WasmLoader } from '@wasm4pm/engine';
 import { createQuietObservabilityLayer } from '../observability-util.js';
 
-export interface QualityOptions extends OutputOptions {
-  input?: string;
-  metrics?: string;
-  activityKey?: string;
+interface QualityPayload {
+  status: string;
+  input: string;
+  activityKey: string;
+  metrics: string[];
+  scores: Record<string, number>;
+  aggregate: {
+    score: number;
+    level: string;
+  };
+  model: {
+    type: string;
+    nodes: number;
+    edges: number;
+  };
 }
 
 export const quality = defineCommand({
@@ -57,11 +67,11 @@ export const quality = defineCommand({
     },
   },
   async run(ctx) {
-    const formatter = getFormatter({
-      format: ctx.args.format as 'human' | 'json',
-      verbose: ctx.args.verbose,
-      quiet: ctx.args.quiet,
-    });
+    const format = (ctx.args.format as 'json' | 'human') ?? 'human';
+    const verbose = Boolean(ctx.args.verbose);
+    const quiet = Boolean(ctx.args.quiet);
+
+    const t0 = Date.now();
 
     try {
       // Resolve input path (positional OR --file/-i)
@@ -69,10 +79,17 @@ export const quality = defineCommand({
         (ctx.args.input as string | undefined) || (ctx.args.file as string | undefined);
 
       if (!inputPath) {
-        formatter.error(
-          'Input file required.\n\nUsage:  wpm quality <log.xes>\n        wpm quality <log.xes> --metrics fitness,precision\n\nRun "wpm quality --help" for details.'
+        const result = makeErrorResult(
+          'quality',
+          new Error(
+            'Input file required.\n\nUsage:  wpm quality <log.xes>\n        wpm quality <log.xes> --metrics fitness,precision\n\nRun "wpm quality --help" for details.'
+          ),
+          EXIT_CODES.source_error,
+          'SOURCE_ERROR'
         );
-        process.exit(EXIT_CODES.source_error);
+        emitResult(result, { format, verbose, quiet });
+        process.exit(result.exit_code);
+        return;
       }
 
       // Validate input file exists
@@ -80,8 +97,15 @@ export const quality = defineCommand({
         await fs.access(inputPath);
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
-        formatter.error(`Input file not found: ${inputPath} — ${message}`);
-        process.exit(EXIT_CODES.source_error);
+        const result = makeErrorResult(
+          'quality',
+          new Error(`Input file not found: ${inputPath} — ${message}`),
+          EXIT_CODES.source_error,
+          'SOURCE_ERROR'
+        );
+        emitResult(result, { format, verbose, quiet });
+        process.exit(result.exit_code);
+        return;
       }
 
       const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
@@ -92,15 +116,17 @@ export const quality = defineCommand({
       const validMetrics = ['fitness', 'precision', 'generalization', 'simplicity'];
       const invalidMetrics = requestedMetrics.filter((m) => !validMetrics.includes(m));
       if (invalidMetrics.length > 0) {
-        formatter.error(
-          `Invalid metric(s): ${invalidMetrics.join(', ')}. Valid: ${validMetrics.join(', ')}`
+        const result = makeErrorResult(
+          'quality',
+          new Error(
+            `Invalid metric(s): ${invalidMetrics.join(', ')}. Valid: ${validMetrics.join(', ')}`
+          ),
+          EXIT_CODES.source_error,
+          'SOURCE_ERROR'
         );
-        process.exit(EXIT_CODES.source_error);
-      }
-
-      if (formatter instanceof HumanFormatter) {
-        formatter.info(`Quality assessment: ${inputPath}`);
-        formatter.debug(`Metrics: ${requestedMetrics.join(', ')}`);
+        emitResult(result, { format, verbose, quiet });
+        process.exit(result.exit_code);
+        return;
       }
 
       // Load WASM module
@@ -111,18 +137,10 @@ export const quality = defineCommand({
       const wasm = loader.get();
 
       // Parse XES and load log
-      if (formatter instanceof HumanFormatter) {
-        formatter.debug('Loading event log from XES file...');
-      }
-
       const xesContent = await fs.readFile(inputPath, 'utf-8');
       const logHandle: string = wasm.load_eventlog_from_xes(xesContent);
 
       // Discover a model for quality assessment (use inductive miner — produces Petri net handle)
-      if (formatter instanceof HumanFormatter) {
-        formatter.debug('Discovering process model with inductive miner...');
-      }
-
       let modelHandle: string;
       try {
         const modelResult = wasm.discover_inductive_miner(logHandle, activityKey);
@@ -155,10 +173,6 @@ export const quality = defineCommand({
 
       // Compute quality metrics via WASM conformance functions
       const qualityScores: Record<string, number> = {};
-
-      if (formatter instanceof HumanFormatter) {
-        formatter.debug('Computing quality metrics...');
-      }
 
       // Fitness — via token-based replay (alignments)
       if (requestedMetrics.includes('fitness')) {
@@ -267,16 +281,12 @@ export const quality = defineCommand({
         if (logHandle) {
           wasm.delete_object(logHandle);
         }
-      } catch (e) {
-        if (formatter instanceof HumanFormatter) {
-          formatter.warn(
-            `Failed to clean up WASM handles: ${e instanceof Error ? e.message : String(e)}`
-          );
-        }
+      } catch {
+        // Cleanup failure is non-fatal — do not block output
       }
 
-      // Build result
-      const result = {
+      // Build payload
+      const payload: QualityPayload = {
         status: 'success',
         input: inputPath,
         activityKey,
@@ -300,39 +310,41 @@ export const quality = defineCommand({
         },
       };
 
-      // Output results
-      if (formatter instanceof JSONFormatter) {
-        formatter.success('Quality assessment complete', result);
-      } else {
-        printHumanQuality(formatter as HumanFormatter, result);
-      }
+      const elapsedMs = Date.now() - t0;
+      const result = makeResult('quality', payload, elapsedMs, EXIT_CODES.success);
 
-      process.exit(EXIT_CODES.success);
+      emitResult(result, { format, verbose, quiet }, (res, projection) => {
+        printHumanQuality(res.payload, projection);
+      });
+
+      process.exit(result.exit_code);
     } catch (error) {
-      if (formatter instanceof JSONFormatter) {
-        formatter.error('Quality assessment failed', error);
-      } else {
-        formatter.error(
-          `Quality assessment failed: ${error instanceof Error ? error.message : String(error)}`
-        );
-      }
-      process.exit(EXIT_CODES.execution_error);
+      const result = makeErrorResult(
+        'quality',
+        error,
+        EXIT_CODES.execution_error,
+        'EXECUTION_ERROR'
+      );
+      emitResult(result, { format, verbose, quiet });
+      process.exit(result.exit_code);
     }
   },
 });
 
-function printHumanQuality(formatter: HumanFormatter, result: Record<string, unknown>): void {
-  const scores = result.scores as Record<string, number>;
-  const aggregate = result.aggregate as Record<string, unknown>;
-  const modelInfo = result.model as Record<string, unknown>;
+import type { ConsoleProjection } from '../output.js';
 
-  formatter.log('');
-  formatter.success(`Quality Assessment — ${result.input as string}`);
-  formatter.log(`  Activity key: ${result.activityKey as string}`);
-  formatter.log(
-    `  Model: ${modelInfo.type as string} (${modelInfo.nodes} nodes, ${modelInfo.edges} edges)`
+function printHumanQuality(payload: QualityPayload, projection: ConsoleProjection): void {
+  const scores = payload.scores;
+  const aggregate = payload.aggregate;
+  const modelInfo = payload.model;
+
+  projection.log('');
+  projection.success(`Quality Assessment — ${payload.input}`);
+  projection.log(`  Activity key: ${payload.activityKey}`);
+  projection.log(
+    `  Model: ${modelInfo.type} (${modelInfo.nodes} nodes, ${modelInfo.edges} edges)`
   );
-  formatter.log('');
+  projection.log('');
 
   // ASCII bar chart for quality scores
   const sparkBar = (value: number, width = 20): string => {
@@ -346,29 +358,29 @@ function printHumanQuality(formatter: HumanFormatter, result: Record<string, unk
     return '✗';
   };
 
-  formatter.log('  Quality Scores:');
+  projection.log('  Quality Scores:');
   for (const [metric, score] of Object.entries(scores)) {
     const bar = sparkBar(score);
     const label = scoreLabel(score);
-    formatter.log(`    ${metric.padEnd(15)} ${score.toFixed(3).padStart(6)}  ${label}  ${bar}`);
+    projection.log(`    ${metric.padEnd(15)} ${score.toFixed(3).padStart(6)}  ${label}  ${bar}`);
   }
-  formatter.log('');
+  projection.log('');
 
   // Aggregate score
-  const aggScore = aggregate.score as number;
-  const aggLevel = aggregate.level as string;
+  const aggScore = aggregate.score;
+  const aggLevel = aggregate.level;
   const aggBar = sparkBar(aggScore);
   const aggLabel = scoreLabel(aggScore);
-  formatter.log(
+  projection.log(
     `  Aggregate: ${aggScore.toFixed(3).padStart(6)}  ${aggLabel}  ${aggBar}  (${aggLevel})`
   );
-  formatter.log('');
+  projection.log('');
 
   // Interpretation
-  formatter.log('  Interpretation:');
-  formatter.log(`    - Fitness:       How well the model can replay the log`);
-  formatter.log(`    - Precision:     How much unobserved behavior the model allows`);
-  formatter.log(`    - Generalization: How well the model generalizes to unseen behavior`);
-  formatter.log(`    - Simplicity:    How simple/complex the model is`);
-  formatter.log('');
+  projection.log('  Interpretation:');
+  projection.log(`    - Fitness:       How well the model can replay the log`);
+  projection.log(`    - Precision:     How much unobserved behavior the model allows`);
+  projection.log(`    - Generalization: How well the model generalizes to unseen behavior`);
+  projection.log(`    - Simplicity:    How simple/complex the model is`);
+  projection.log('');
 }

@@ -2,7 +2,7 @@ import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { existsSync } from 'fs';
-import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
+import { emitResult, makeResult, makeErrorResult, ConsoleProjection } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 
 /**
@@ -91,6 +91,15 @@ async function listResultFiles(
   return withStats.sort((a, b) => b.mtime.getTime() - a.mtime.getTime());
 }
 
+/**
+ * Read and pretty-print a single saved result file.
+ * Returns parsed SavedResult for machine output; emits human projection inline.
+ */
+async function catResult(filepath: string): Promise<SavedResult> {
+  const raw = await fs.readFile(filepath, 'utf-8');
+  return JSON.parse(raw) as SavedResult;
+}
+
 export const results = defineCommand({
   meta: {
     name: 'results',
@@ -129,11 +138,10 @@ export const results = defineCommand({
     },
   },
   async run(ctx) {
-    const formatter = getFormatter({
-      format: ctx.args.format as 'human' | 'json',
-      verbose: ctx.args.verbose,
-      quiet: ctx.args.quiet,
-    });
+    const t0 = performance.now();
+    const format = (ctx.args.format as 'json' | 'human') ?? 'human';
+    const verbose = Boolean(ctx.args.verbose);
+    const quiet = Boolean(ctx.args.quiet);
 
     try {
       const dir = path.resolve(process.cwd(), RESULTS_DIR);
@@ -141,19 +149,32 @@ export const results = defineCommand({
       const rawLimit = ctx.args.limit as string | undefined;
       const parsedLimit = rawLimit != null ? parseInt(rawLimit, 10) : undefined;
       if (parsedLimit !== undefined && Number.isNaN(parsedLimit)) {
-        console.error('Invalid --limit value: must be a number');
-        process.exit(EXIT_CODES.config_error);
+        const errResult = makeErrorResult(
+          'results',
+          new Error('Invalid --limit value: must be a number'),
+          EXIT_CODES.config_error,
+          'INVALID_LIMIT'
+        );
+        emitResult(errResult, { format, verbose, quiet });
+        process.exit(errResult.exit_code);
       }
       const limit = parsedLimit ?? 20;
 
       // --last: cat the newest result
       if (ctx.args.last) {
         if (files.length === 0) {
-          formatter.warn('No saved results found.');
+          const result = makeResult('results', { files: [], count: 0, directory: dir }, performance.now() - t0);
+          emitResult(result, { format, verbose, quiet }, (_res, projection) => {
+            projection.warn('No saved results found.');
+          });
           process.exit(EXIT_CODES.success);
         }
         const file = files[0];
-        await catResult(file.filepath, formatter);
+        const parsed = await catResult(file.filepath);
+        const result = makeResult('results', { cat: parsed, filepath: file.filepath }, performance.now() - t0);
+        emitResult(result, { format, verbose, quiet }, (_res, projection) => {
+          printCatResult(file.filepath, parsed, projection);
+        });
         process.exit(EXIT_CODES.success);
       }
 
@@ -162,144 +183,126 @@ export const results = defineCommand({
         const ref = ctx.args.cat as string;
         let filepath: string | undefined;
 
-        // Try as a 1-based index first
         const idx = parseInt(ref, 10);
         if (!isNaN(idx) && idx >= 1 && idx <= files.length) {
           filepath = files[idx - 1].filepath;
         } else {
-          // Try as a filename (with or without .json)
           const name = ref.endsWith('.json') ? ref : `${ref}.json`;
           const match = files.find((f) => f.name === name);
           if (match) filepath = match.filepath;
         }
 
         if (!filepath) {
-          formatter.error(`Result not found: ${ref}`);
-          process.exit(EXIT_CODES.source_error);
+          const errResult = makeErrorResult(
+            'results',
+            new Error(`Result not found: ${ref}`),
+            EXIT_CODES.source_error,
+            'RESULT_NOT_FOUND'
+          );
+          emitResult(errResult, { format, verbose, quiet });
+          process.exit(errResult.exit_code);
         }
 
-        await catResult(filepath, formatter);
-        process.exit(EXIT_CODES.success);
-      }
-
-      // Default: list results
-      if (files.length === 0) {
-        if (formatter instanceof HumanFormatter) {
-          formatter.info('No saved results found.');
-          formatter.log(`  Directory: ${dir}`);
-          formatter.log('');
-          formatter.log('  Results are saved automatically when you run:');
-          formatter.log('    wpm run <log.xes>                       (discovery)');
-          formatter.log('    wpm predict <task> --input <log.xes>    (prediction)');
-        } else {
-          (formatter as JSONFormatter).success('No saved results', {
-            directory: dir,
-            count: 0,
-            results: [],
-          });
-        }
-        process.exit(EXIT_CODES.success);
-      }
-
-      const displayed = files.slice(0, limit);
-
-      if (formatter instanceof JSONFormatter) {
-        (formatter as JSONFormatter).success('Saved results', {
-          directory: dir,
-          count: files.length,
-          showing: displayed.length,
-          results: displayed.map((f, i) => ({
-            index: i + 1,
-            name: f.name,
-            filepath: f.filepath,
-            savedAt: f.mtime.toISOString(),
-          })),
+        const parsed = await catResult(filepath);
+        const result = makeResult('results', { cat: parsed, filepath }, performance.now() - t0);
+        emitResult(result, { format, verbose, quiet }, (_res, projection) => {
+          printCatResult(filepath!, parsed, projection);
         });
         process.exit(EXIT_CODES.success);
       }
 
-      const humanFormatter = formatter as HumanFormatter;
-      humanFormatter.info(`Saved results (${files.length} total — discovery + prediction)`);
-      humanFormatter.log(`  Directory: ${dir}`);
-      humanFormatter.log('');
-      humanFormatter.log(`  #   Saved at              Task              File`);
-      humanFormatter.log(
-        `  ──  ────────────────────  ────────────────  ────────────────────────────────────`
-      );
+      // Default: list results
+      const displayed = files.slice(0, limit);
 
-      for (let i = 0; i < displayed.length; i++) {
-        const f = displayed[i];
-        // Parse task from filename: <timestamp>-<task>.json
-        const taskSlug = f.name.replace(/^\d{8}T\d{6}-/, '').replace(/\.json$/, '');
-        const savedAt = f.mtime.toISOString().slice(0, 19).replace('T', ' ');
-        const idx = String(i + 1).padStart(3);
-        const task = taskSlug.padEnd(16);
-        const at = savedAt.padEnd(20);
-        humanFormatter.log(`  ${idx}  ${at}  ${task}  ${f.name}`);
+      const payload = {
+        directory: dir,
+        count: files.length,
+        showing: displayed.length,
+        results: displayed.map((f, i) => ({
+          index: i + 1,
+          name: f.name,
+          filepath: f.filepath,
+          savedAt: f.mtime.toISOString(),
+        })),
+      };
 
-        if (ctx.args.verbose) {
-          try {
-            const raw = await fs.readFile(f.filepath, 'utf-8');
-            const parsed: SavedResult = JSON.parse(raw);
-            humanFormatter.log(`       Input: ${parsed.input}`);
-            humanFormatter.log(`       Activity key: ${parsed.activityKey}`);
-          } catch {
-            // skip unreadable files
+      const result = makeResult('results', payload, performance.now() - t0, EXIT_CODES.success);
+      emitResult(result, { format, verbose, quiet }, async (res, projection) => {
+        const p = res.payload as typeof payload;
+
+        if (p.count === 0) {
+          projection.info('No saved results found.');
+          projection.log(`  Directory: ${p.directory}`);
+          projection.log('');
+          projection.log('  Results are saved automatically when you run:');
+          projection.log('    wpm run <log.xes>                       (discovery)');
+          projection.log('    wpm predict <task> --input <log.xes>    (prediction)');
+          return;
+        }
+
+        projection.info(`Saved results (${p.count} total — discovery + prediction)`);
+        projection.log(`  Directory: ${p.directory}`);
+        projection.log('');
+        projection.log(`  #   Saved at              Task              File`);
+        projection.log(
+          `  ──  ────────────────────  ────────────────  ────────────────────────────────────`
+        );
+
+        for (const entry of p.results) {
+          const taskSlug = entry.name.replace(/^\d{8}T\d{6}-/, '').replace(/\.json$/, '');
+          const savedAt = entry.savedAt.slice(0, 19).replace('T', ' ');
+          const idxStr = String(entry.index).padStart(3);
+          const task = taskSlug.padEnd(16);
+          const at = savedAt.padEnd(20);
+          projection.log(`  ${idxStr}  ${at}  ${task}  ${entry.name}`);
+
+          if (verbose) {
+            try {
+              const raw = await fs.readFile(entry.filepath, 'utf-8');
+              const parsed: SavedResult = JSON.parse(raw);
+              projection.log(`       Input: ${parsed.input}`);
+              projection.log(`       Activity key: ${parsed.activityKey}`);
+            } catch {
+              // skip unreadable files
+            }
           }
         }
-      }
 
-      if (files.length > limit) {
-        humanFormatter.log('');
-        humanFormatter.log(`  ... ${files.length - limit} more. Use --limit to show more.`);
-      }
+        if (p.count > limit) {
+          projection.log('');
+          projection.log(`  ... ${p.count - limit} more. Use --limit to show more.`);
+        }
 
-      humanFormatter.log('');
-      humanFormatter.log('  Tip: wpm results --last          Print the most recent result');
-      humanFormatter.log('  Tip: wpm results --cat 1         Print result #1 in full');
-      humanFormatter.log('');
+        projection.log('');
+        projection.log('  Tip: wpm results --last          Print the most recent result');
+        projection.log('  Tip: wpm results --cat 1         Print result #1 in full');
+        projection.log('');
+      });
 
-      process.exit(EXIT_CODES.success);
+      process.exit(result.exit_code);
     } catch (error) {
-      if (formatter instanceof JSONFormatter) {
-        (formatter as JSONFormatter).error('Failed to list results', error);
-      } else {
-        formatter.error(
-          `Failed to list results: ${error instanceof Error ? error.message : String(error)}`
-        );
-      }
-      process.exit(EXIT_CODES.system_error);
+      const errResult = makeErrorResult('results', error, EXIT_CODES.system_error, 'RESULTS_ERROR');
+      emitResult(errResult, { format, verbose, quiet });
+      process.exit(errResult.exit_code);
     }
   },
 });
 
 /**
- * Read and pretty-print a single saved result file.
+ * Emit a single saved result to the console projection.
  */
-async function catResult(
-  filepath: string,
-  formatter: HumanFormatter | JSONFormatter
-): Promise<void> {
-  const raw = await fs.readFile(filepath, 'utf-8');
-  const parsed: SavedResult = JSON.parse(raw);
-
-  if (formatter instanceof JSONFormatter) {
-    (formatter as JSONFormatter).output(parsed as unknown as Record<string, unknown>);
-    return;
-  }
-
-  const humanFormatter = formatter as HumanFormatter;
-  humanFormatter.log('');
-  humanFormatter.log(`  File:         ${path.basename(filepath)}`);
-  humanFormatter.log(`  Task:         ${parsed.task}`);
-  humanFormatter.log(`  Saved at:     ${parsed.savedAt}`);
-  humanFormatter.log(`  Input:        ${parsed.input}`);
-  humanFormatter.log(`  Activity key: ${parsed.activityKey}`);
-  humanFormatter.log('');
-  humanFormatter.log('  Result:');
+function printCatResult(filepath: string, parsed: SavedResult, projection: ConsoleProjection): void {
+  projection.log('');
+  projection.log(`  File:         ${path.basename(filepath)}`);
+  projection.log(`  Task:         ${parsed.task}`);
+  projection.log(`  Saved at:     ${parsed.savedAt}`);
+  projection.log(`  Input:        ${parsed.input}`);
+  projection.log(`  Activity key: ${parsed.activityKey}`);
+  projection.log('');
+  projection.log('  Result:');
   const lines = JSON.stringify(parsed.result, null, 2).split('\n');
   for (const line of lines) {
-    humanFormatter.log(`    ${line}`);
+    projection.log(`    ${line}`);
   }
-  humanFormatter.log('');
+  projection.log('');
 }

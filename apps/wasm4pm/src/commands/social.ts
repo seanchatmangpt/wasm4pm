@@ -1,17 +1,9 @@
 import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
-import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
+import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
-import type { OutputOptions } from '../output.js';
 import { WasmLoader } from '@wasm4pm/engine';
 import { createQuietObservabilityLayer } from '../observability-util.js';
-
-export interface SocialOptions extends OutputOptions {
-  input?: string;
-  metric?: 'handover' | 'working-together' | 'similar-task';
-  resourceKey?: string;
-  activityKey?: string;
-}
 
 export const social = defineCommand({
   meta: {
@@ -61,11 +53,10 @@ export const social = defineCommand({
     },
   },
   async run(ctx) {
-    const formatter = getFormatter({
-      format: ctx.args.format as 'human' | 'json',
-      verbose: ctx.args.verbose,
-      quiet: ctx.args.quiet,
-    });
+    const t0 = performance.now();
+    const format = (ctx.args.format as 'json' | 'human') ?? 'human';
+    const verbose = Boolean(ctx.args.verbose);
+    const quiet = Boolean(ctx.args.quiet);
 
     try {
       // Resolve input path (positional OR --file/-i)
@@ -73,18 +64,27 @@ export const social = defineCommand({
         (ctx.args.input as string | undefined) || (ctx.args.file as string | undefined);
 
       if (!inputPath) {
-        formatter.error(
-          'Input file required.\n\nUsage:  wpm social <log.xes>\n        wpm social <log.xes> --metric working-together\n\nRun "wpm social --help" for details.'
+        const result = makeErrorResult(
+          'social',
+          'Input file required.\n\nUsage:  wpm social <log.xes>\n        wpm social <log.xes> --metric working-together\n\nRun "wpm social --help" for details.',
+          EXIT_CODES.source_error,
+          'MISSING_INPUT'
         );
-        process.exit(EXIT_CODES.source_error);
+        emitResult(result, { format, verbose, quiet });
+        process.exit(result.exit_code);
       }
 
-      // Validate input file exists
       try {
         await fs.access(inputPath);
       } catch {
-        formatter.error(`Input file not found: ${inputPath}`);
-        process.exit(EXIT_CODES.source_error);
+        const result = makeErrorResult(
+          'social',
+          `Input file not found: ${inputPath}`,
+          EXIT_CODES.source_error,
+          'FILE_NOT_FOUND'
+        );
+        emitResult(result, { format, verbose, quiet });
+        process.exit(result.exit_code);
       }
 
       const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
@@ -92,38 +92,28 @@ export const social = defineCommand({
       const metric = (ctx.args.metric as string) || 'handover';
 
       if (!['handover', 'working-together', 'similar-task'].includes(metric)) {
-        formatter.error(
-          `Invalid metric: ${metric}. Must be one of: handover, working-together, similar-task`
+        const result = makeErrorResult(
+          'social',
+          `Invalid metric: ${metric}. Must be one of: handover, working-together, similar-task`,
+          EXIT_CODES.source_error,
+          'INVALID_METRIC'
         );
-        process.exit(EXIT_CODES.source_error);
-      }
-
-      if (formatter instanceof HumanFormatter) {
-        formatter.info(`Social network mining: ${inputPath}`);
-        formatter.debug(`Metric: ${metric}, Resource key: ${resourceKey}`);
+        emitResult(result, { format, verbose, quiet });
+        process.exit(result.exit_code);
       }
 
       // Load WASM module
       const loaderConfig =
-        ctx.args.format === 'json' ? { observability: createQuietObservabilityLayer() } : {};
+        format === 'json' ? { observability: createQuietObservabilityLayer() } : {};
       const loader = WasmLoader.getInstance(loaderConfig);
       await loader.init();
       const wasm = loader.get();
 
-      // Parse XES and load log
-      if (formatter instanceof HumanFormatter) {
-        formatter.debug('Loading event log from XES file...');
-      }
-
       const xesContent = await fs.readFile(inputPath, 'utf-8');
       const logHandle: string = wasm.load_eventlog_from_xes(xesContent);
 
-      // Mine social network based on metric
       let rawNetwork: unknown;
-      if (formatter instanceof HumanFormatter) {
-        formatter.debug(`Mining ${metric} social network...`);
-      }
-
+      let similarTaskWarning = false;
       switch (metric) {
         case 'handover':
           rawNetwork = wasm.discover_handover_network(logHandle, resourceKey);
@@ -132,11 +122,8 @@ export const social = defineCommand({
           rawNetwork = wasm.discover_working_together_network(logHandle, resourceKey);
           break;
         case 'similar-task':
-          // No similar_task equivalent exists — return empty network
           rawNetwork = { nodes: [], edges: [] };
-          if (formatter instanceof HumanFormatter) {
-            formatter.warn('Similar-task metric not available in current WASM build');
-          }
+          similarTaskWarning = true;
           break;
         default:
           throw new Error(`Unknown metric: ${metric}`);
@@ -144,7 +131,6 @@ export const social = defineCommand({
 
       const network = typeof rawNetwork === 'string' ? JSON.parse(rawNetwork) : rawNetwork;
 
-      // Compute centrality metrics
       let centrality: Record<string, unknown> | null = null;
       try {
         const rawCentrality = wasm.compute_network_centrality(logHandle, activityKey, resourceKey);
@@ -153,89 +139,89 @@ export const social = defineCommand({
         // Centrality not available
       }
 
-      // Free log handle
       wasm.delete_object(logHandle);
 
-      // Build result
-      const result = {
-        status: 'success',
+      const payload = {
         input: inputPath,
         activityKey,
         resourceKey,
         metric,
+        similarTaskWarning,
         network: {
-          nodes: (network as Record<string, unknown>).nodes ?? [],
-          edges: (network as Record<string, unknown>).edges ?? [],
+          nodes: ((network as Record<string, unknown>).nodes ?? []) as Array<{ id: string; label?: string }>,
+          edges: ((network as Record<string, unknown>).edges ?? []) as Array<{ from: string; to: string; weight?: number }>,
         },
         centrality,
       };
 
-      // Output results
-      if (formatter instanceof JSONFormatter) {
-        formatter.success('Social network mining complete', result);
-      } else {
-        printHumanSocial(formatter as HumanFormatter, result);
-      }
-
-      process.exit(EXIT_CODES.success);
+      const result = makeResult('social', payload, performance.now() - t0, EXIT_CODES.success);
+      emitResult(result, { format, verbose, quiet }, (res, projection) => {
+        printHumanSocial(projection, res.payload as typeof payload);
+      });
+      process.exit(result.exit_code);
     } catch (error) {
-      if (formatter instanceof JSONFormatter) {
-        formatter.error('Social network mining failed', error);
-      } else {
-        formatter.error(
-          `Social network mining failed: ${error instanceof Error ? error.message : String(error)}`
-        );
-      }
-      process.exit(EXIT_CODES.execution_error);
+      const result = makeErrorResult('social', error, EXIT_CODES.execution_error);
+      emitResult(result, { format, verbose, quiet });
+      process.exit(result.exit_code);
     }
   },
 });
 
-function printHumanSocial(formatter: HumanFormatter, result: Record<string, unknown>): void {
-  const network = result.network as Record<string, unknown>;
-  const centrality = result.centrality as Record<string, unknown> | null;
-  const metric = result.metric as string;
+function printHumanSocial(
+  projection: import('../output.js').ConsoleProjection,
+  payload: {
+    input: string;
+    activityKey: string;
+    resourceKey: string;
+    metric: string;
+    similarTaskWarning: boolean;
+    network: { nodes: Array<{ id: string; label?: string }>; edges: Array<{ from: string; to: string; weight?: number }> };
+    centrality: Record<string, unknown> | null;
+  }
+): void {
+  const { network, centrality, metric } = payload;
 
-  formatter.log('');
-  formatter.success(`Social Network Mining — ${result.input as string}`);
-  formatter.log(`  Activity key: ${result.activityKey as string}`);
-  formatter.log(`  Resource key: ${result.resourceKey as string}`);
-  formatter.log(`  Metric: ${metric}`);
-  formatter.log('');
+  projection.log('');
+  projection.success(`Social Network Mining — ${payload.input}`);
+  projection.log(`  Activity key: ${payload.activityKey}`);
+  projection.log(`  Resource key: ${payload.resourceKey}`);
+  projection.log(`  Metric: ${metric}`);
+  projection.log('');
 
-  const nodes = network.nodes as Array<{ id: string; label?: string }>;
-  const edges = network.edges as Array<{ from: string; to: string; weight?: number }>;
+  if (payload.similarTaskWarning) {
+    projection.warn('Similar-task metric not available in current WASM build');
+  }
 
-  formatter.log(`  Network statistics:`);
-  formatter.log(`    Nodes (resources): ${nodes.length}`);
-  formatter.log(`    Edges (interactions): ${edges.length}`);
-  formatter.log('');
+  projection.log(`  Network statistics:`);
+  projection.log(`    Nodes (resources): ${network.nodes.length}`);
+  projection.log(`    Edges (interactions): ${network.edges.length}`);
+  projection.log('');
 
-  if (edges.length > 0) {
-    const sortedEdges = [...edges].sort((a, b) => (b.weight ?? 0) - (a.weight ?? 0));
-    formatter.log(`  Top interactions (by ${metric}):`);
+  if (network.edges.length > 0) {
+    const sortedEdges = [...network.edges].sort((a, b) => (b.weight ?? 0) - (a.weight ?? 0));
+    projection.log(`  Top interactions (by ${metric}):`);
     for (const edge of sortedEdges.slice(0, 10)) {
       const weight = edge.weight ?? 1;
-      formatter.log(`    ${edge.from} ↔ ${edge.to}: ${weight}`);
+      projection.log(`    ${edge.from} ↔ ${edge.to}: ${weight}`);
     }
     if (sortedEdges.length > 10) {
-      formatter.log(`    ... and ${sortedEdges.length - 10} more interactions`);
+      projection.log(`    ... and ${sortedEdges.length - 10} more interactions`);
     }
-    formatter.log('');
+    projection.log('');
   }
 
   if (centrality) {
     const centralityScores = centrality.scores as Record<string, number>;
     if (centralityScores) {
       const sorted = Object.entries(centralityScores).sort((a, b) => b[1] - a[1]);
-      formatter.log('  Centrality scores (top 10):');
+      projection.log('  Centrality scores (top 10):');
       for (const [resource, score] of sorted.slice(0, 10)) {
-        formatter.log(`    ${resource}: ${score.toFixed(3)}`);
+        projection.log(`    ${resource}: ${score.toFixed(3)}`);
       }
       if (sorted.length > 10) {
-        formatter.log(`    ... and ${sorted.length - 10} more resources`);
+        projection.log(`    ... and ${sorted.length - 10} more resources`);
       }
-      formatter.log('');
+      projection.log('');
     }
   }
 }

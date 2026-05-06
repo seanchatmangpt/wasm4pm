@@ -8,13 +8,14 @@ import { createFullEngine, WasmLoader } from '@wasm4pm/engine';
 import { getTracer, WatchingSpans } from '@wasm4pm/observability';
 import { WasmBackend } from '@wasm4pm/kernel';
 import { plan } from '@wasm4pm/planner';
-import { StreamingOutput } from '../output.js';
+import { StreamingOutput, ConsoleProjection } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
-import type { OutputOptions } from '../output.js';
 
-export interface WatchOptions extends OutputOptions {
+export interface WatchOptions {
   config?: string;
+  format?: 'human' | 'json';
   interval?: number;
+  verbose?: boolean;
   quiet?: boolean;
 }
 

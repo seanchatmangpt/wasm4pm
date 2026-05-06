@@ -1,17 +1,16 @@
 import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
-import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
+import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
-import type { OutputOptions } from '../output.js';
 import { WasmLoader } from '@wasm4pm/engine';
 import { createQuietObservabilityLayer } from '../observability-util.js';
 
-export interface ValidateOptions extends OutputOptions {
-  input?: string;
-  activityKey?: string;
-  'case-id-key'?: string;
-  'timestamp-key'?: string;
-  'resource-key'?: string;
+type CheckStatus = 'pass' | 'fail' | 'warn';
+interface ValidationCheck {
+  name: string;
+  status: CheckStatus;
+  message: string;
+  details?: Record<string, unknown>;
 }
 
 export const validate = defineCommand({
@@ -67,11 +66,12 @@ export const validate = defineCommand({
     },
   },
   async run(ctx) {
-    const formatter = getFormatter({
-      format: 'json',
-      verbose: ctx.args.verbose,
-      quiet: ctx.args.quiet,
-    });
+    const t0 = performance.now();
+    // validate uses human format unless quiet is set (legacy behavior preserved)
+    const useJson = ctx.args.format === 'json' || Boolean(ctx.args.quiet);
+    const format = (useJson ? 'json' : 'human') as 'json' | 'human';
+    const verbose = Boolean(ctx.args.verbose);
+    const quiet = Boolean(ctx.args.quiet);
 
     try {
       // Resolve input path (positional OR --file/-i)
@@ -79,18 +79,27 @@ export const validate = defineCommand({
         (ctx.args.input as string | undefined) || (ctx.args.file as string | undefined);
 
       if (!inputPath) {
-        formatter.error(
-          'Input file required.\n\nUsage:  wpm validate <log.xes>\n        wpm validate <log.csv> --format csv\n\nRun "wpm validate --help" for details.'
+        const result = makeErrorResult(
+          'validate',
+          'Input file required.\n\nUsage:  wpm validate <log.xes>\n        wpm validate <log.csv> --format csv\n\nRun "wpm validate --help" for details.',
+          EXIT_CODES.source_error,
+          'MISSING_INPUT'
         );
-        process.exit(EXIT_CODES.source_error);
+        emitResult(result, { format, verbose, quiet });
+        process.exit(result.exit_code);
       }
 
-      // Validate input file exists
       try {
         await fs.access(inputPath);
       } catch {
-        formatter.error(`Input file not found: ${inputPath}`);
-        process.exit(EXIT_CODES.source_error);
+        const result = makeErrorResult(
+          'validate',
+          `Input file not found: ${inputPath}`,
+          EXIT_CODES.source_error,
+          'FILE_NOT_FOUND'
+        );
+        emitResult(result, { format, verbose, quiet });
+        process.exit(result.exit_code);
       }
 
       const logFormat = (ctx.args.format as string) || 'xes';
@@ -100,26 +109,19 @@ export const validate = defineCommand({
       const resourceKey = (ctx.args['resource-key'] as string) || 'org:resource';
 
       if (!['xes', 'csv'].includes(logFormat)) {
-        formatter.error(`Invalid format: ${logFormat}. Must be 'xes' or 'csv'`);
-        process.exit(EXIT_CODES.source_error);
-      }
-
-      // For validate, we use a custom formatter that can show detailed validation results
-      const useJson = ctx.args.format === 'json' || ctx.args.quiet;
-      const humanFormatter = getFormatter({
-        format: useJson ? 'json' : 'human',
-        verbose: ctx.args.verbose,
-        quiet: ctx.args.quiet,
-      });
-
-      if (humanFormatter instanceof HumanFormatter) {
-        humanFormatter.info(`Validating event log: ${inputPath}`);
-        humanFormatter.debug(`Format: ${logFormat}`);
+        const result = makeErrorResult(
+          'validate',
+          `Invalid format: ${logFormat}. Must be 'xes' or 'csv'`,
+          EXIT_CODES.source_error,
+          'INVALID_FORMAT'
+        );
+        emitResult(result, { format, verbose, quiet });
+        process.exit(result.exit_code);
       }
 
       // Load WASM module
       const loaderConfig =
-        ctx.args.format === 'json' ? { observability: createQuietObservabilityLayer() } : {};
+        useJson ? { observability: createQuietObservabilityLayer() } : {};
       const loader = WasmLoader.getInstance(loaderConfig);
       await loader.init();
       const wasm = loader.get();
@@ -136,42 +138,20 @@ export const validate = defineCommand({
           logHandle = wasm.load_eventlog_from_csv(content, activityKey, caseIdKey, timestampKey);
         }
       } catch (parseError) {
-        const error = parseError instanceof Error ? parseError.message : String(parseError);
-        if (humanFormatter instanceof JSONFormatter) {
-          humanFormatter.error('Validation failed', {
-            input: inputPath,
-            format: logFormat,
-            error: `Failed to parse ${logFormat.toUpperCase()} file: ${error}`,
-            valid: false,
-          });
-        } else {
-          (humanFormatter as HumanFormatter).error(`Parse error: ${error}`);
-        }
-        process.exit(EXIT_CODES.source_error);
+        const errMsg = parseError instanceof Error ? parseError.message : String(parseError);
+        const result = makeErrorResult(
+          'validate',
+          `Failed to parse ${logFormat.toUpperCase()} file: ${errMsg}`,
+          EXIT_CODES.source_error,
+          'PARSE_ERROR'
+        );
+        emitResult(result, { format, verbose, quiet });
+        process.exit(result.exit_code);
       }
 
-      // Run validation checks
-      const validationResults: Record<string, unknown> = {
-        input: inputPath,
-        format: logFormat,
-        checks: [] as Array<{
-          name: string;
-          status: 'pass' | 'fail' | 'warn';
-          message: string;
-          details?: Record<string, unknown>;
-        }>,
-        errors: [] as string[],
-        warnings: [] as string[],
-      };
-
-      const checks = validationResults.checks as Array<{
-        name: string;
-        status: 'pass' | 'fail' | 'warn';
-        message: string;
-        details?: Record<string, unknown>;
-      }>;
-      const errors = validationResults.errors as string[];
-      const warnings = validationResults.warnings as string[];
+      const checks: ValidationCheck[] = [];
+      const errors: string[] = [];
+      const warnings: string[] = [];
 
       // Check 1: Schema validation
       try {
@@ -189,11 +169,7 @@ export const validate = defineCommand({
           errors.push(`Schema validation failed: ${schemaResult.message as string}`);
         }
       } catch {
-        checks.push({
-          name: 'schema',
-          status: 'warn',
-          message: 'Schema validation not available',
-        });
+        checks.push({ name: 'schema', status: 'warn', message: 'Schema validation not available' });
         warnings.push('Schema validation not available for this log format');
       }
 
@@ -221,11 +197,7 @@ export const validate = defineCommand({
           errors.push(`Missing required attributes: ${missing.join(', ')}`);
         }
       } catch {
-        checks.push({
-          name: 'required_attributes',
-          status: 'warn',
-          message: 'Attribute validation not available',
-        });
+        checks.push({ name: 'required_attributes', status: 'warn', message: 'Attribute validation not available' });
         warnings.push('Attribute validation not available for this log format');
       }
 
@@ -246,11 +218,7 @@ export const validate = defineCommand({
           warnings.push(`Data quality: ${qualityResult.issues} issue(s) found`);
         }
       } catch {
-        checks.push({
-          name: 'data_quality',
-          status: 'warn',
-          message: 'Data quality validation not available',
-        });
+        checks.push({ name: 'data_quality', status: 'warn', message: 'Data quality validation not available' });
       }
 
       // Check 4: Trace completeness
@@ -271,11 +239,7 @@ export const validate = defineCommand({
           warnings.push(`${incompleteTraces} incomplete trace(s) found`);
         }
       } catch {
-        checks.push({
-          name: 'trace_completeness',
-          status: 'warn',
-          message: 'Trace completeness validation not available',
-        });
+        checks.push({ name: 'trace_completeness', status: 'warn', message: 'Trace completeness validation not available' });
       }
 
       // Check 5: Timestamp ordering
@@ -297,104 +261,97 @@ export const validate = defineCommand({
           warnings.push(`${outOfOrder} event(s) with out-of-order timestamps`);
         }
       } catch {
-        checks.push({
-          name: 'timestamp_ordering',
-          status: 'warn',
-          message: 'Timestamp ordering validation not available',
-        });
+        checks.push({ name: 'timestamp_ordering', status: 'warn', message: 'Timestamp ordering validation not available' });
       }
 
-      // Free log handle
       wasm.delete_object(logHandle);
 
-      // Determine overall status
       const hasErrors = errors.length > 0;
       const hasWarnings = warnings.length > 0;
       const overallStatus = hasErrors ? 'fail' : hasWarnings ? 'warn' : 'pass';
+      const exitCode = hasErrors ? EXIT_CODES.source_error : EXIT_CODES.success;
 
-      validationResults.status = overallStatus;
-      validationResults.valid = !hasErrors;
+      const payload = {
+        input: inputPath,
+        format: logFormat,
+        status: overallStatus,
+        valid: !hasErrors,
+        checks,
+        errors,
+        warnings,
+      };
 
-      // Output results
-      if (humanFormatter instanceof JSONFormatter) {
-        humanFormatter.success('Validation complete', validationResults);
-      } else {
-        printHumanValidation(humanFormatter as HumanFormatter, validationResults);
-      }
-
-      // Exit with appropriate code
-      process.exit(hasErrors ? EXIT_CODES.source_error : EXIT_CODES.success);
+      const result = makeResult('validate', payload, performance.now() - t0, exitCode);
+      emitResult(result, { format, verbose, quiet }, (res, projection) => {
+        printHumanValidation(projection, res.payload as typeof payload);
+      });
+      process.exit(result.exit_code);
     } catch (error) {
-      if (formatter instanceof JSONFormatter) {
-        formatter.error('Validation failed', error);
-      } else {
-        formatter.error(
-          `Validation failed: ${error instanceof Error ? error.message : String(error)}`
-        );
-      }
-      process.exit(EXIT_CODES.execution_error);
+      const result = makeErrorResult('validate', error, EXIT_CODES.execution_error);
+      emitResult(result, { format, verbose, quiet });
+      process.exit(result.exit_code);
     }
   },
 });
 
-function printHumanValidation(formatter: HumanFormatter, result: Record<string, unknown>): void {
-  const checks = result.checks as Array<{
-    name: string;
-    status: 'pass' | 'fail' | 'warn';
-    message: string;
-  }>;
-  const errors = result.errors as string[];
-  const warnings = result.warnings as string[];
-  const status = result.status as string;
+function printHumanValidation(
+  projection: import('../output.js').ConsoleProjection,
+  payload: {
+    input: string;
+    format: string;
+    status: string;
+    valid: boolean;
+    checks: ValidationCheck[];
+    errors: string[];
+    warnings: string[];
+  }
+): void {
+  const { checks, errors, warnings, status } = payload;
 
-  formatter.log('');
+  projection.log('');
   if (status === 'pass') {
-    formatter.success(`Event Log Validation — ${result.input as string}`);
+    projection.success(`Event Log Validation — ${payload.input}`);
   } else if (status === 'warn') {
-    formatter.warn(`Event Log Validation — ${result.input as string}`);
+    projection.warn(`Event Log Validation — ${payload.input}`);
   } else {
-    formatter.error(`Event Log Validation — ${result.input as string}`);
+    projection.error(`Event Log Validation — ${payload.input}`);
   }
 
-  formatter.log(`  Format: ${(result.format as string).toUpperCase()}`);
-  formatter.log('');
+  projection.log(`  Format: ${payload.format.toUpperCase()}`);
+  projection.log('');
 
-  // Print check results
-  formatter.log('  Checks:');
+  projection.log('  Checks:');
   for (const check of checks) {
     const icon = check.status === 'pass' ? '✓' : check.status === 'fail' ? '✗' : '⚠';
     const statusColor =
       check.status === 'pass' ? '\x1b[32m' : check.status === 'fail' ? '\x1b[31m' : '\x1b[33m';
     const reset = '\x1b[0m';
-    formatter.log(`    ${statusColor}${icon}${reset} ${check.name.padEnd(20)} ${check.message}`);
+    projection.log(`    ${statusColor}${icon}${reset} ${check.name.padEnd(20)} ${check.message}`);
   }
-  formatter.log('');
+  projection.log('');
 
-  // Print errors
   if (errors.length > 0) {
-    formatter.log('  Errors:');
+    projection.log('  Errors:');
     for (const error of errors) {
-      formatter.log(`    ${error}`);
+      projection.log(`    ${error}`);
     }
-    formatter.log('');
+    projection.log('');
   }
 
-  // Print warnings
   if (warnings.length > 0) {
-    formatter.log('  Warnings:');
+    projection.log('  Warnings:');
     for (const warning of warnings) {
-      formatter.log(`    ${warning}`);
+      projection.log(`    ${warning}`);
     }
-    formatter.log('');
+    projection.log('');
   }
 
-  // Overall verdict
   if (status === 'pass') {
-    formatter.success('Validation passed: log is ready for process mining');
+    projection.success('Validation passed: log is ready for process mining');
   } else if (status === 'warn') {
-    formatter.warn('Validation passed with warnings: review warnings before use');
+    projection.warn('Validation passed with warnings: review warnings before use');
   } else {
-    formatter.error('Validation failed: fix errors before use in process mining');
+    projection.error('Validation failed: fix errors before use in process mining');
   }
-  formatter.log('');
+  projection.log('');
 }

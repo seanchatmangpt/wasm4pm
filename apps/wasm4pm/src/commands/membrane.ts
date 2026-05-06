@@ -1,7 +1,7 @@
 import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
+import { emitResult, makeResult, makeErrorResult, EmitOptions, ConsoleProjection } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { WasmLoader } from '@wasm4pm/engine';
 import { buildSarifOutput } from '../sarif.js';
@@ -68,11 +68,10 @@ const membraneVerify = defineCommand({
     quiet: { type: 'boolean', alias: 'q' },
   },
   async run(ctx) {
-    const formatter = getFormatter({
-      format: ctx.args.format as 'human' | 'json',
-      verbose: ctx.args.verbose,
-      quiet: ctx.args.quiet,
-    });
+    const format = (ctx.args.format as EmitOptions['format']) || 'human';
+    const verbose = Boolean(ctx.args.verbose);
+    const quiet = Boolean(ctx.args.quiet);
+    const t0 = Date.now();
 
     try {
       const loader = WasmLoader.getInstance();
@@ -80,14 +79,18 @@ const membraneVerify = defineCommand({
       const wasm = loader.get() as Record<string, unknown>;
 
       if (typeof wasm.run_all_benchmarks !== 'function') {
-        formatter.error(
-          'AutoMembrane requires the fog or browser deployment profile.\nCurrent profile does not include feature-miniml.'
+        const result = makeErrorResult(
+          'membrane verify',
+          'AutoMembrane requires the fog or browser deployment profile.\nCurrent profile does not include feature-miniml.',
+          EXIT_CODES.execution_error,
+          'FEATURE_GUARD'
         );
-        process.exit(EXIT_CODES.execution_error);
+        emitResult(result, { format, verbose, quiet });
+        process.exit(result.exit_code);
       }
 
       const raw = (wasm.run_all_benchmarks as () => unknown)();
-      const result = parse(raw) as {
+      const benchResult = parse(raw) as {
         total: number;
         passed: number;
         failed: number;
@@ -102,9 +105,11 @@ const membraneVerify = defineCommand({
         }>;
       };
 
-      // SARIF output
-      if (ctx.args.format === 'sarif') {
-        const sarifResults = result.results.map((r) => ({
+      const exitCode = benchResult.failed > 0 ? EXIT_CODES.execution_error : EXIT_CODES.success;
+
+      // SARIF output — write custom SARIF then exit
+      if (format === 'sarif') {
+        const sarifResults = benchResult.results.map((r) => ({
           verdict: r.final_verdict,
           traceName: r.name,
           explanation: r.failure_reason,
@@ -114,38 +119,43 @@ const membraneVerify = defineCommand({
         process.exit(EXIT_CODES.success);
       }
 
-      if (formatter instanceof JSONFormatter) {
-        formatter.success('AutoMembrane benchmark complete', result as Record<string, unknown>);
-        process.exit(EXIT_CODES.success);
-      }
+      const result = makeResult(
+        'membrane verify',
+        benchResult as unknown as Record<string, unknown>,
+        Date.now() - t0,
+        exitCode
+      );
 
-      // Human output
-      formatter.log('');
-      formatter.log('  AutoMembrane Benchmark Suite');
-      formatter.log('  ═'.repeat(33));
-      for (const r of result.results) {
-        const status = r.pass ? 'PASS' : 'FAIL';
-        const icon = r.pass ? '✓' : '✗';
-        const name = r.name.padEnd(30);
-        const verdict = r.final_verdict;
-        formatter.log(`  ${name}  ${status}  ${icon} ${verdict}`);
-        if (!r.pass && r.failure_reason) {
-          formatter.log(`    Reason: ${r.failure_reason}`);
+      emitResult(result, { format, verbose, quiet }, (res, p) => {
+        const data = res.payload as typeof benchResult;
+        p.log('');
+        p.log('  AutoMembrane Benchmark Suite');
+        p.log('  ═'.repeat(33));
+        for (const r of data.results) {
+          const status = r.pass ? 'PASS' : 'FAIL';
+          const icon = r.pass ? '✓' : '✗';
+          const name = r.name.padEnd(30);
+          const verdict = r.final_verdict;
+          p.log(`  ${name}  ${status}  ${icon} ${verdict}`);
+          if (!r.pass && r.failure_reason) {
+            p.log(`    Reason: ${r.failure_reason}`);
+          }
         }
-      }
-      formatter.log('');
-      const pct = (result.pass_rate * 100).toFixed(0);
-      formatter.log(
-        `  Passed: ${result.passed}/${result.total}   Pass rate: ${pct}%`
-      );
-      formatter.log('');
+        p.log('');
+        const pct = (data.pass_rate * 100).toFixed(0);
+        p.log(`  Passed: ${data.passed}/${data.total}   Pass rate: ${pct}%`);
+        p.log('');
+      });
 
-      process.exit(result.failed > 0 ? EXIT_CODES.execution_error : EXIT_CODES.success);
+      process.exit(result.exit_code);
     } catch (error) {
-      formatter.error(
-        `Benchmark failed: ${error instanceof Error ? error.message : String(error)}`
+      const result = makeErrorResult(
+        'membrane verify',
+        `Benchmark failed: ${error instanceof Error ? error.message : String(error)}`,
+        EXIT_CODES.execution_error
       );
-      process.exit(EXIT_CODES.execution_error);
+      emitResult(result, { format, verbose, quiet });
+      process.exit(result.exit_code);
     }
   },
 });
@@ -197,19 +207,24 @@ const membraneReplayLog = defineCommand({
     quiet: { type: 'boolean', alias: 'q' },
   },
   async run(ctx) {
-    const formatter = getFormatter({
-      format: ctx.args.format as 'human' | 'json',
-      verbose: ctx.args.verbose,
-      quiet: ctx.args.quiet,
-    });
+    const format = (ctx.args.format as EmitOptions['format']) || 'human';
+    const verbose = Boolean(ctx.args.verbose);
+    const quiet = Boolean(ctx.args.quiet);
+    const t0 = Date.now();
 
     try {
       const logPath = ctx.args.log as string;
       try {
         await fs.access(logPath);
       } catch {
-        formatter.error(`Input file not found: ${logPath}`);
-        process.exit(EXIT_CODES.source_error);
+        const result = makeErrorResult(
+          'membrane classify',
+          `Input file not found: ${logPath}`,
+          EXIT_CODES.source_error,
+          'SOURCE_NOT_FOUND'
+        );
+        emitResult(result, { format, verbose, quiet });
+        process.exit(result.exit_code);
       }
 
       const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
@@ -221,18 +236,28 @@ const membraneReplayLog = defineCommand({
       const wasm = loader.get() as Record<string, unknown>;
 
       if (typeof wasm.classify_motion !== 'function') {
-        formatter.error(
-          'AutoMembrane requires the fog or browser deployment profile.\nCurrent profile does not include feature-miniml.'
+        const result = makeErrorResult(
+          'membrane classify',
+          'AutoMembrane requires the fog or browser deployment profile.\nCurrent profile does not include feature-miniml.',
+          EXIT_CODES.execution_error,
+          'FEATURE_GUARD'
         );
-        process.exit(EXIT_CODES.execution_error);
+        emitResult(result, { format, verbose, quiet });
+        process.exit(result.exit_code);
       }
 
       const xesContent = await fs.readFile(logPath, 'utf-8');
       const logHandle = (wasm.load_eventlog_from_xes as (s: string) => string)(xesContent);
 
       if (!logHandle) {
-        formatter.error('Failed to parse XES event log');
-        process.exit(EXIT_CODES.source_error);
+        const result = makeErrorResult(
+          'membrane classify',
+          'Failed to parse XES event log',
+          EXIT_CODES.source_error,
+          'PARSE_FAILED'
+        );
+        emitResult(result, { format, verbose, quiet });
+        process.exit(result.exit_code);
       }
 
       let motionJson: string;
@@ -258,8 +283,8 @@ const membraneReplayLog = defineCommand({
       }
       (wasm.delete_object as (h: string) => void)(logHandle);
 
-      // SARIF output
-      if (ctx.args.format === 'sarif') {
+      // SARIF output — write custom SARIF then exit
+      if (format === 'sarif') {
         const motion = parse(motionJson) as { actor: string; requested_action: string };
         const sarifResults = [
           {
@@ -274,71 +299,78 @@ const membraneReplayLog = defineCommand({
         process.exit(EXIT_CODES.success);
       }
 
-      if (formatter instanceof JSONFormatter) {
-        formatter.success('AutoMembrane classification complete', verdictReceipt);
-        process.exit(EXIT_CODES.success);
-      }
+      const result = makeResult(
+        'membrane classify',
+        verdictReceipt,
+        Date.now() - t0
+      );
 
-      // Human output — parse motion for display fields
-      const motion = parse(motionJson) as {
-        actor: string;
-        requested_action: string;
-        request_id: string;
-      };
+      const showTrace = Boolean(ctx.args.trace);
+      const explainFailure = Boolean(ctx.args['explain-failure']);
+      const custodyOnly = Boolean(ctx.args['custody-only']);
+      const capturedMotionJson = motionJson;
 
-      const layerVerdicts = verdictReceipt.layer_verdicts as Array<{
-        layer: string;
-        verdict: string;
-        confidence: number;
-        reason?: string;
-        missing_evidence: string[];
-      }>;
+      emitResult(result, { format, verbose, quiet }, (res, p) => {
+        const receipt = res.payload as typeof verdictReceipt;
+        const motion = parse(capturedMotionJson) as {
+          actor: string;
+          requested_action: string;
+          request_id: string;
+        };
 
-      const layersToShow = ctx.args['custody-only']
-        ? layerVerdicts.filter(lv => lv.layer === 'custody')
-        : layerVerdicts;
+        const layerVerdicts = receipt.layer_verdicts as Array<{
+          layer: string;
+          verdict: string;
+          confidence: number;
+          reason?: string;
+          missing_evidence: string[];
+        }>;
 
-      formatter.log('');
-      formatter.log('  AutoMembrane Verdict');
-      formatter.log('  ═'.repeat(22));
-      formatter.log(`  Request:   ${motion.actor} → ${motion.requested_action}`);
-      if (!ctx.args['custody-only']) {
-        formatter.log(
-          `  Verdict:   ${String(verdictReceipt.final_verdict).toUpperCase()}`
-        );
-        formatter.log(`  Decisive:  ${verdictReceipt.decisive_layer}`);
-      }
-      formatter.log('');
-      formatter.log('  Layer breakdown:');
-      for (const lv of layersToShow) {
-        const missing =
-          lv.missing_evidence && lv.missing_evidence.length > 0
-            ? `  Missing: ${lv.missing_evidence.join(', ')}`
-            : '';
-        formatter.log(
-          `    ${lv.layer.padEnd(8)} ${lv.verdict.padEnd(20)} (${lv.confidence.toFixed(2)})${missing}`
-        );
-        if ((ctx.args.trace || ctx.args['custody-only']) && ctx.args['explain-failure'] && lv.verdict !== 'allow' && lv.verdict !== 'allow_with_receipt' && lv.reason) {
-          formatter.log(`             reason: ${lv.reason}`);
+        const layersToShow = custodyOnly
+          ? layerVerdicts.filter(lv => lv.layer === 'custody')
+          : layerVerdicts;
+
+        p.log('');
+        p.log('  AutoMembrane Verdict');
+        p.log('  ═'.repeat(22));
+        p.log(`  Request:   ${motion.actor} → ${motion.requested_action}`);
+        if (!custodyOnly) {
+          p.log(`  Verdict:   ${String(receipt.final_verdict).toUpperCase()}`);
+          p.log(`  Decisive:  ${receipt.decisive_layer}`);
         }
-      }
-      if (ctx.args['explain-failure'] && verdictReceipt.final_verdict !== 'allow' && !ctx.args.trace && !ctx.args['custody-only']) {
-        formatter.log('');
-        formatter.log('  Explanation:');
-        String(verdictReceipt.explanation || '').split('\n').forEach(l => formatter.log('    ' + l));
-      }
-      formatter.log('');
-      formatter.log(
-        `  Replay:  ${verdictReceipt.request_id}  Model: ${verdictReceipt.model_version}`
-      );
-      formatter.log('');
+        p.log('');
+        p.log('  Layer breakdown:');
+        for (const lv of layersToShow) {
+          const missing =
+            lv.missing_evidence && lv.missing_evidence.length > 0
+              ? `  Missing: ${lv.missing_evidence.join(', ')}`
+              : '';
+          p.log(
+            `    ${lv.layer.padEnd(8)} ${lv.verdict.padEnd(20)} (${lv.confidence.toFixed(2)})${missing}`
+          );
+          if ((showTrace || custodyOnly) && explainFailure && lv.verdict !== 'allow' && lv.verdict !== 'allow_with_receipt' && lv.reason) {
+            p.log(`             reason: ${lv.reason}`);
+          }
+        }
+        if (explainFailure && receipt.final_verdict !== 'allow' && !showTrace && !custodyOnly) {
+          p.log('');
+          p.log('  Explanation:');
+          String(receipt.explanation || '').split('\n').forEach(l => p.log('    ' + l));
+        }
+        p.log('');
+        p.log(`  Replay:  ${receipt.request_id}  Model: ${receipt.model_version}`);
+        p.log('');
+      });
 
-      process.exit(EXIT_CODES.success);
+      process.exit(result.exit_code);
     } catch (error) {
-      formatter.error(
-        `Classification failed: ${error instanceof Error ? error.message : String(error)}`
+      const result = makeErrorResult(
+        'membrane classify',
+        `Classification failed: ${error instanceof Error ? error.message : String(error)}`,
+        EXIT_CODES.execution_error
       );
-      process.exit(EXIT_CODES.execution_error);
+      emitResult(result, { format, verbose, quiet });
+      process.exit(result.exit_code);
     }
   },
 });
@@ -366,29 +398,27 @@ const membraneShow = defineCommand({
     quiet: { type: 'boolean', alias: 'q' },
   },
   async run(ctx) {
-    const formatter = getFormatter({
-      format: ctx.args.format as 'human' | 'json',
-      verbose: ctx.args.verbose,
-      quiet: ctx.args.quiet,
-    });
+    const format = (ctx.args.format as EmitOptions['format']) || 'human';
+    const verbose = Boolean(ctx.args.verbose);
+    const quiet = Boolean(ctx.args.quiet);
+    const t0 = Date.now();
 
     const handlesArg = ctx.args.handles as string | undefined;
 
     if (!handlesArg || handlesArg.trim() === '') {
-      if (formatter instanceof JSONFormatter) {
-        formatter.success('No envelopes installed', {
-          envelopes: [],
-          message:
-            'Run wpm membrane classify or wpm ml automl-v2 to build envelopes.',
-        });
-      } else {
-        formatter.log('');
-        formatter.log(
+      const emptyPayload = {
+        envelopes: [] as unknown[],
+        message: 'Run wpm membrane classify or wpm ml automl-v2 to build envelopes.',
+      };
+      const result = makeResult('membrane show', emptyPayload, Date.now() - t0);
+      emitResult(result, { format, verbose, quiet }, (_res, p) => {
+        p.log('');
+        p.log(
           '  No envelopes installed. Run `wpm membrane classify` or `wpm ml automl-v2` to build envelopes.'
         );
-        formatter.log('');
-      }
-      process.exit(EXIT_CODES.success);
+        p.log('');
+      });
+      process.exit(result.exit_code);
     }
 
     try {
@@ -397,10 +427,14 @@ const membraneShow = defineCommand({
       const wasm = loader.get() as Record<string, unknown>;
 
       if (typeof wasm.get_membrane_health !== 'function') {
-        formatter.error(
-          'AutoMembrane requires the fog or browser deployment profile.\nCurrent profile does not include feature-miniml.'
+        const result = makeErrorResult(
+          'membrane show',
+          'AutoMembrane requires the fog or browser deployment profile.\nCurrent profile does not include feature-miniml.',
+          EXIT_CODES.execution_error,
+          'FEATURE_GUARD'
         );
-        process.exit(EXIT_CODES.execution_error);
+        emitResult(result, { format, verbose, quiet });
+        process.exit(result.exit_code);
       }
 
       const handles = handlesArg
@@ -410,24 +444,26 @@ const membraneShow = defineCommand({
       const handlesJson = JSON.stringify(handles);
 
       const raw = (wasm.get_membrane_health as (j: string) => unknown)(handlesJson);
-      const result = parse(raw) as Record<string, unknown>;
+      const healthResult = parse(raw) as Record<string, unknown>;
 
-      if (formatter instanceof JSONFormatter) {
-        formatter.success('Membrane health', result);
-      } else {
-        formatter.log('');
-        formatter.log('  AutoMembrane Envelope Health');
-        formatter.log('  ═'.repeat(30));
-        formatter.log(JSON.stringify(result, null, 2));
-        formatter.log('');
-      }
+      const result = makeResult('membrane show', healthResult, Date.now() - t0);
+      emitResult(result, { format, verbose, quiet }, (_res, p) => {
+        p.log('');
+        p.log('  AutoMembrane Envelope Health');
+        p.log('  ═'.repeat(30));
+        p.log(JSON.stringify(healthResult, null, 2));
+        p.log('');
+      });
 
-      process.exit(EXIT_CODES.success);
+      process.exit(result.exit_code);
     } catch (error) {
-      formatter.error(
-        `Health check failed: ${error instanceof Error ? error.message : String(error)}`
+      const result = makeErrorResult(
+        'membrane show',
+        `Health check failed: ${error instanceof Error ? error.message : String(error)}`,
+        EXIT_CODES.execution_error
       );
-      process.exit(EXIT_CODES.execution_error);
+      emitResult(result, { format, verbose, quiet });
+      process.exit(result.exit_code);
     }
   },
 });
@@ -450,13 +486,13 @@ const membraneInit = defineCommand({
     quiet: { type: 'boolean', alias: 'q' },
   },
   async run(ctx) {
-    const fmt = getFormatter({
-      format: ctx.args.format as 'human' | 'json',
-      verbose: ctx.args.verbose,
-      quiet: ctx.args.quiet,
-    });
-    const dryRun = ctx.args['dry-run'] as boolean | undefined;
-    const force = ctx.args.force as boolean | undefined;
+    const format = (ctx.args.format as EmitOptions['format']) || 'human';
+    const verbose = Boolean(ctx.args.verbose);
+    const quiet = Boolean(ctx.args.quiet);
+    const t0 = Date.now();
+
+    const dryRun = Boolean(ctx.args['dry-run']);
+    const force = Boolean(ctx.args.force);
     const tomlPath = path.join(process.cwd(), 'wasm4pm.toml');
 
     let existing = '';
@@ -467,23 +503,29 @@ const membraneInit = defineCommand({
     }
 
     if (existing.includes('[membrane]') && !force) {
-      if (fmt instanceof JSONFormatter) {
-        fmt.success('Membrane config already present', { file: tomlPath, action: 'skipped' });
-      } else {
-        fmt.warn('[membrane] section already exists in wasm4pm.toml. Use --force to overwrite.');
-      }
-      process.exit(EXIT_CODES.success);
+      const result = makeResult(
+        'membrane init',
+        { file: tomlPath, action: 'skipped' },
+        Date.now() - t0
+      );
+      emitResult(result, { format, verbose, quiet }, (_res, p) => {
+        p.warn('[membrane] section already exists in wasm4pm.toml. Use --force to overwrite.');
+      });
+      process.exit(result.exit_code);
     }
 
     if (dryRun) {
-      if (fmt instanceof JSONFormatter) {
-        fmt.success('Dry-run: membrane config section', { config: MEMBRANE_TOML_SECTION });
-      } else {
-        fmt.log('\n  Dry-run — the following would be appended to wasm4pm.toml:\n');
-        fmt.log(MEMBRANE_TOML_SECTION);
-        fmt.log('  Run without --dry-run to apply.\n');
-      }
-      process.exit(EXIT_CODES.success);
+      const result = makeResult(
+        'membrane init',
+        { config: MEMBRANE_TOML_SECTION },
+        Date.now() - t0
+      );
+      emitResult(result, { format, verbose, quiet }, (_res, p) => {
+        p.log('\n  Dry-run — the following would be appended to wasm4pm.toml:\n');
+        p.log(MEMBRANE_TOML_SECTION);
+        p.log('  Run without --dry-run to apply.\n');
+      });
+      process.exit(result.exit_code);
     }
 
     let base = existing;
@@ -493,19 +535,20 @@ const membraneInit = defineCommand({
     const newContent = base.trimEnd() + '\n' + MEMBRANE_TOML_SECTION;
     await fs.writeFile(tomlPath, newContent, 'utf-8');
 
-    if (fmt instanceof JSONFormatter) {
-      fmt.success('Membrane config initialized', {
-        file: tomlPath,
-        action: existing ? 'appended' : 'created',
-      });
-    } else {
-      fmt.success(`Membrane config initialized in wasm4pm.toml`);
-      fmt.log('\n  Next steps:');
-      fmt.log('    1. Review [membrane] settings in wasm4pm.toml');
-      fmt.log('    2. Run `wpm membrane build <log.xes>` to build envelopes');
-      fmt.log('    3. Run `wpm membrane health` to verify envelope status\n');
-    }
-    process.exit(EXIT_CODES.success);
+    const action = existing ? 'appended' : 'created';
+    const result = makeResult(
+      'membrane init',
+      { file: tomlPath, action },
+      Date.now() - t0
+    );
+    emitResult(result, { format, verbose, quiet }, (_res, p) => {
+      p.success(`Membrane config initialized in wasm4pm.toml`);
+      p.log('\n  Next steps:');
+      p.log('    1. Review [membrane] settings in wasm4pm.toml');
+      p.log('    2. Run `wpm membrane build <log.xes>` to build envelopes');
+      p.log('    3. Run `wpm membrane health` to verify envelope status\n');
+    });
+    process.exit(result.exit_code);
   },
 });
 
@@ -546,20 +589,23 @@ const membraneBuild = defineCommand({
     quiet: { type: 'boolean', alias: 'q' },
   },
   async run(ctx) {
-    const fmt = getFormatter({
-      format: ctx.args.format as 'human' | 'json',
-      verbose: ctx.args.verbose,
-      quiet: ctx.args.quiet,
-    });
+    const format = (ctx.args.format as EmitOptions['format']) || 'human';
+    const verbose = Boolean(ctx.args.verbose);
+    const quiet = Boolean(ctx.args.quiet);
+    const t0 = Date.now();
     const logPath = ctx.args.log as string;
 
     try {
       await fs.access(logPath);
     } catch {
-      fmt.error(
-        `Input file not found: ${logPath}\nProvide a valid path to an XES event log.`
+      const result = makeErrorResult(
+        'membrane build',
+        `Input file not found: ${logPath}\nProvide a valid path to an XES event log.`,
+        EXIT_CODES.source_error,
+        'SOURCE_NOT_FOUND'
       );
-      process.exit(EXIT_CODES.source_error);
+      emitResult(result, { format, verbose, quiet });
+      process.exit(result.exit_code);
     }
 
     const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
@@ -574,17 +620,32 @@ const membraneBuild = defineCommand({
     const wasm = loader.get() as Record<string, unknown>;
 
     if (typeof wasm.build_actor_envelope !== 'function') {
-      fmt.error(FEATURE_GUARD_MSG);
-      process.exit(EXIT_CODES.execution_error);
+      const result = makeErrorResult(
+        'membrane build',
+        FEATURE_GUARD_MSG,
+        EXIT_CODES.execution_error,
+        'FEATURE_GUARD'
+      );
+      emitResult(result, { format, verbose, quiet });
+      process.exit(result.exit_code);
     }
 
     const xesContent = await fs.readFile(logPath, 'utf-8');
-    if (!(fmt instanceof JSONFormatter)) fmt.log('\n  Building AutoMembrane envelopes...');
+    if (format === 'human') {
+      const p = new ConsoleProjection({ verbose, quiet });
+      p.log('\n  Building AutoMembrane envelopes...');
+    }
 
     const logHandle = (wasm.load_eventlog_from_xes as (s: string) => string)(xesContent);
     if (!logHandle) {
-      fmt.error('Failed to parse XES event log.');
-      process.exit(EXIT_CODES.source_error);
+      const result = makeErrorResult(
+        'membrane build',
+        'Failed to parse XES event log.',
+        EXIT_CODES.source_error,
+        'PARSE_FAILED'
+      );
+      emitResult(result, { format, verbose, quiet });
+      process.exit(result.exit_code);
     }
 
     const handles: Record<string, string> = {};
@@ -594,12 +655,16 @@ const membraneBuild = defineCommand({
       try {
         const raw = fn();
         handles[name] = typeof raw === 'string' ? raw : JSON.stringify(raw);
-        if (!(fmt instanceof JSONFormatter))
-          fmt.log(`  Building ${name} envelope... ✓`);
+        if (format === 'human') {
+          const p = new ConsoleProjection({ verbose, quiet });
+          p.log(`  Building ${name} envelope... ✓`);
+        }
       } catch (e) {
         errors[name] = e instanceof Error ? e.message : String(e);
-        if (!(fmt instanceof JSONFormatter))
-          fmt.log(`  Building ${name} envelope... ✗  ${errors[name]}`);
+        if (format === 'human') {
+          const p = new ConsoleProjection({ verbose, quiet });
+          p.log(`  Building ${name} envelope... ✗  ${errors[name]}`);
+        }
       }
     };
 
@@ -636,30 +701,32 @@ const membraneBuild = defineCommand({
       );
     }
 
-    if (fmt instanceof JSONFormatter) {
-      fmt.success('AutoMembrane envelopes built', { handles, errors });
-    } else {
-      fmt.log('\n  Envelope handles:');
-      for (const [layer, handle] of Object.entries(handles)) {
-        fmt.log(`    ${layer.padEnd(8)} ${handle}`);
-      }
-      if (Object.keys(errors).length) {
-        fmt.log('\n  Build errors:');
-        for (const [l, m] of Object.entries(errors)) {
-          fmt.log(`    ${l.padEnd(8)} ${m}`);
-        }
-      }
-      const handleList = Object.values(handles).join(' ');
-      if (handleList) fmt.log(`\n  Next: wpm membrane health ${handleList}\n`);
-    }
-
     const exitCode =
       Object.keys(handles).length === 0
         ? EXIT_CODES.execution_error
         : Object.keys(errors).length > 0
           ? EXIT_CODES.partial_failure
           : EXIT_CODES.success;
-    process.exit(exitCode);
+
+    const payload = { handles, errors };
+    const result = makeResult('membrane build', payload, Date.now() - t0, exitCode);
+
+    emitResult(result, { format, verbose, quiet }, (_res, p) => {
+      p.log('\n  Envelope handles:');
+      for (const [layer, handle] of Object.entries(handles)) {
+        p.log(`    ${layer.padEnd(8)} ${handle}`);
+      }
+      if (Object.keys(errors).length) {
+        p.log('\n  Build errors:');
+        for (const [l, m] of Object.entries(errors)) {
+          p.log(`    ${l.padEnd(8)} ${m}`);
+        }
+      }
+      const handleList = Object.values(handles).join(' ');
+      if (handleList) p.log(`\n  Next: wpm membrane health ${handleList}\n`);
+    });
+
+    process.exit(result.exit_code);
   },
 });
 
@@ -688,11 +755,10 @@ const membraneInspect = defineCommand({
     quiet: { type: 'boolean', alias: 'q' },
   },
   async run(ctx) {
-    const fmt = getFormatter({
-      format: ctx.args.format as 'human' | 'json',
-      verbose: ctx.args.verbose,
-      quiet: ctx.args.quiet,
-    });
+    const format = (ctx.args.format as EmitOptions['format']) || 'human';
+    const verbose = Boolean(ctx.args.verbose);
+    const quiet = Boolean(ctx.args.quiet);
+    const t0 = Date.now();
     const handle = ctx.args.handle as string;
     const objectType = (ctx.args['object-type'] as string) || '';
 
@@ -701,18 +767,24 @@ const membraneInspect = defineCommand({
     const wasm = loader.get() as Record<string, unknown>;
 
     if (typeof wasm.get_actor_profiles !== 'function') {
-      fmt.error(FEATURE_GUARD_MSG);
-      process.exit(EXIT_CODES.execution_error);
+      const result = makeErrorResult(
+        'membrane inspect',
+        FEATURE_GUARD_MSG,
+        EXIT_CODES.execution_error,
+        'FEATURE_GUARD'
+      );
+      emitResult(result, { format, verbose, quiet });
+      process.exit(result.exit_code);
     }
 
-    let result: unknown = null;
+    let inspectResult: unknown = null;
     let envelopeType = '';
 
     const tryFn = (fnName: string, args: unknown[], typeName: string): boolean => {
       if (typeof wasm[fnName] !== 'function') return false;
       try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        result = parse((wasm[fnName] as any)(...args));
+        inspectResult = parse((wasm[fnName] as any)(...args));
         envelopeType = typeName;
         return true;
       } catch {
@@ -728,31 +800,37 @@ const membraneInspect = defineCommand({
       tryFn('get_time_envelope_stats', [handle], 'time');
 
     if (!found) {
-      fmt.error(
-        `No envelope found for handle: ${handle}\nRun \`wpm membrane build <log.xes>\` first to create envelopes.`
+      const result = makeErrorResult(
+        'membrane inspect',
+        `No envelope found for handle: ${handle}\nRun \`wpm membrane build <log.xes>\` first to create envelopes.`,
+        EXIT_CODES.source_error,
+        'ENVELOPE_NOT_FOUND'
       );
-      process.exit(EXIT_CODES.source_error);
+      emitResult(result, { format, verbose, quiet });
+      process.exit(result.exit_code);
     }
 
-    if (fmt instanceof JSONFormatter) {
-      fmt.success(`Envelope inspect (${envelopeType})`, {
-        handle,
-        type: envelopeType,
-        data: result as Record<string, unknown>,
-      });
-    } else {
-      fmt.log(`\n  AutoMembrane Envelope — ${envelopeType}`);
-      fmt.log('  ═'.repeat(30));
-      fmt.log(`  Handle: ${handle}  Type: ${envelopeType}\n`);
-      fmt.log(
-        JSON.stringify(result, null, 2)
+    const payload = {
+      handle,
+      type: envelopeType,
+      data: inspectResult as Record<string, unknown>,
+    };
+    const result = makeResult('membrane inspect', payload, Date.now() - t0);
+
+    emitResult(result, { format, verbose, quiet }, (_res, p) => {
+      p.log(`\n  AutoMembrane Envelope — ${envelopeType}`);
+      p.log('  ═'.repeat(30));
+      p.log(`  Handle: ${handle}  Type: ${envelopeType}\n`);
+      p.log(
+        JSON.stringify(inspectResult, null, 2)
           .split('\n')
           .map((l) => '  ' + l)
           .join('\n')
       );
-      fmt.log('');
-    }
-    process.exit(EXIT_CODES.success);
+      p.log('');
+    });
+
+    process.exit(result.exit_code);
   },
 });
 
@@ -790,45 +868,53 @@ const membraneReplay = defineCommand({
     quiet: { type: 'boolean', alias: 'q' },
   },
   async run(ctx) {
-    const fmt = getFormatter({
-      format: ctx.args.format as 'human' | 'json',
-      verbose: ctx.args.verbose,
-      quiet: ctx.args.quiet,
-    });
+    const format = (ctx.args.format as EmitOptions['format']) || 'human';
+    const verbose = Boolean(ctx.args.verbose);
+    const quiet = Boolean(ctx.args.quiet);
+    const t0 = Date.now();
     const motionPath = ctx.args.motion as string;
 
     let motionText: string;
     try {
       motionText = await fs.readFile(motionPath, 'utf-8');
     } catch {
-      fmt.error(
-        `Motion file not found: ${motionPath}\nCreate a motion.json — see \`wpm membrane replay --help\`.`
+      const result = makeErrorResult(
+        'membrane replay',
+        `Motion file not found: ${motionPath}\nCreate a motion.json — see \`wpm membrane replay --help\`.`,
+        EXIT_CODES.source_error,
+        'SOURCE_NOT_FOUND'
       );
-      process.exit(EXIT_CODES.source_error);
+      emitResult(result, { format, verbose, quiet });
+      process.exit(result.exit_code);
     }
 
     let motionObj: Record<string, unknown>;
     try {
       motionObj = JSON.parse(motionText);
     } catch {
-      fmt.error(`Invalid JSON in ${motionPath}. Expected a RequestMotion JSON object.`);
-      process.exit(EXIT_CODES.source_error);
+      const result = makeErrorResult(
+        'membrane replay',
+        `Invalid JSON in ${motionPath}. Expected a RequestMotion JSON object.`,
+        EXIT_CODES.source_error,
+        'INVALID_JSON'
+      );
+      emitResult(result, { format, verbose, quiet });
+      process.exit(result.exit_code);
     }
 
-    if (ctx.args['dry-run']) {
-      if (fmt instanceof JSONFormatter) {
-        fmt.success('Dry-run: motion parsed', { motion: motionObj });
-      } else {
-        fmt.log('\n  Dry-run — motion parsed successfully (no classification):\n');
-        fmt.log(
+    if (Boolean(ctx.args['dry-run'])) {
+      const result = makeResult('membrane replay', { motion: motionObj }, Date.now() - t0);
+      emitResult(result, { format, verbose, quiet }, (_res, p) => {
+        p.log('\n  Dry-run — motion parsed successfully (no classification):\n');
+        p.log(
           JSON.stringify(motionObj, null, 2)
             .split('\n')
             .map((l) => '  ' + l)
             .join('\n')
         );
-        fmt.log('\n  Remove --dry-run to classify.\n');
-      }
-      process.exit(EXIT_CODES.success);
+        p.log('\n  Remove --dry-run to classify.\n');
+      });
+      process.exit(result.exit_code);
     }
 
     const loader = WasmLoader.getInstance();
@@ -836,8 +922,14 @@ const membraneReplay = defineCommand({
     const wasm = loader.get() as Record<string, unknown>;
 
     if (typeof wasm.classify_motion !== 'function') {
-      fmt.error(FEATURE_GUARD_MSG);
-      process.exit(EXIT_CODES.execution_error);
+      const result = makeErrorResult(
+        'membrane replay',
+        FEATURE_GUARD_MSG,
+        EXIT_CODES.execution_error,
+        'FEATURE_GUARD'
+      );
+      emitResult(result, { format, verbose, quiet });
+      process.exit(result.exit_code);
     }
 
     const raw = (wasm.classify_motion as (j: string) => unknown)(motionText);
@@ -857,58 +949,56 @@ const membraneReplay = defineCommand({
       model_version: string;
     };
 
-    const layersToShow = ctx.args['custody-only']
+    const showTrace = Boolean(ctx.args.trace);
+    const explainFailure = Boolean(ctx.args['explain-failure']);
+    const custodyOnly = Boolean(ctx.args['custody-only']);
+
+    const layersToShow = custodyOnly
       ? receipt.layer_verdicts.filter((lv) => lv.layer === 'custody')
       : receipt.layer_verdicts;
 
-    if (fmt instanceof JSONFormatter) {
-      fmt.success('AutoMembrane replay', {
-        ...receipt,
-        layer_verdicts: layersToShow,
-      } as Record<string, unknown>);
-      process.exit(EXIT_CODES.success);
-    }
+    const payload = { ...receipt, layer_verdicts: layersToShow } as Record<string, unknown>;
+    const result = makeResult('membrane replay', payload, Date.now() - t0);
 
-    fmt.log('\n  AutoMembrane Replay');
-    fmt.log('  ═'.repeat(22));
-    fmt.log(`  Actor:   ${motionObj.actor || '(unknown)'}`);
-    fmt.log(`  Action:  ${motionObj.requested_action || '(unknown)'}`);
-    if (!ctx.args['custody-only']) {
-      fmt.log(`  Verdict: ${receipt.final_verdict.toUpperCase()}`);
-      fmt.log(`  Decisive layer: ${receipt.decisive_layer}`);
-      fmt.log(`  Admitted: ${receipt.downstream_admitted ? 'yes' : 'no'}`);
-    }
-    if (ctx.args.trace || ctx.args['custody-only']) {
-      fmt.log('\n  Layer verdicts:');
-      for (const lv of layersToShow) {
-        const miss =
-          lv.missing_evidence.length > 0
-            ? `  missing: ${lv.missing_evidence.join(', ')}`
-            : '';
-        fmt.log(
-          `    ${lv.layer.padEnd(8)} ${lv.verdict.padEnd(22)} (${lv.confidence.toFixed(2)})${miss}`
-        );
-        if (
-          ctx.args['explain-failure'] &&
-          lv.verdict !== 'allow' &&
-          lv.verdict !== 'allow_with_receipt'
-        ) {
-          fmt.log(`             reason: ${lv.reason}`);
+    emitResult(result, { format, verbose, quiet }, (_res, p) => {
+      p.log('\n  AutoMembrane Replay');
+      p.log('  ═'.repeat(22));
+      p.log(`  Actor:   ${motionObj.actor || '(unknown)'}`);
+      p.log(`  Action:  ${motionObj.requested_action || '(unknown)'}`);
+      if (!custodyOnly) {
+        p.log(`  Verdict: ${receipt.final_verdict.toUpperCase()}`);
+        p.log(`  Decisive layer: ${receipt.decisive_layer}`);
+        p.log(`  Admitted: ${receipt.downstream_admitted ? 'yes' : 'no'}`);
+      }
+      if (showTrace || custodyOnly) {
+        p.log('\n  Layer verdicts:');
+        for (const lv of layersToShow) {
+          const miss =
+            lv.missing_evidence.length > 0
+              ? `  missing: ${lv.missing_evidence.join(', ')}`
+              : '';
+          p.log(
+            `    ${lv.layer.padEnd(8)} ${lv.verdict.padEnd(22)} (${lv.confidence.toFixed(2)})${miss}`
+          );
+          if (
+            explainFailure &&
+            lv.verdict !== 'allow' &&
+            lv.verdict !== 'allow_with_receipt'
+          ) {
+            p.log(`             reason: ${lv.reason}`);
+          }
         }
       }
-    }
-    if (
-      ctx.args['explain-failure'] &&
-      receipt.final_verdict !== 'allow' &&
-      !ctx.args.trace
-    ) {
-      fmt.log('\n  Explanation:');
-      String(receipt.explanation)
-        .split('\n')
-        .forEach((l) => fmt.log('    ' + l));
-    }
-    fmt.log(`\n  Model: ${receipt.model_version}   Request: ${receipt.request_id}\n`);
-    process.exit(EXIT_CODES.success);
+      if (explainFailure && receipt.final_verdict !== 'allow' && !showTrace) {
+        p.log('\n  Explanation:');
+        String(receipt.explanation)
+          .split('\n')
+          .forEach((l) => p.log('    ' + l));
+      }
+      p.log(`\n  Model: ${receipt.model_version}   Request: ${receipt.request_id}\n`);
+    });
+
+    process.exit(result.exit_code);
   },
 });
 
@@ -928,11 +1018,10 @@ const membraneList = defineCommand({
     quiet: { type: 'boolean', alias: 'q' },
   },
   async run(ctx) {
-    const fmt = getFormatter({
-      format: ctx.args.format as 'human' | 'json',
-      verbose: ctx.args.verbose,
-      quiet: ctx.args.quiet,
-    });
+    const format = (ctx.args.format as EmitOptions['format']) || 'human';
+    const verbose = Boolean(ctx.args.verbose);
+    const quiet = Boolean(ctx.args.quiet);
+    const t0 = Date.now();
     const dir = path.resolve(process.cwd(), ENVELOPES_DIR);
 
     type EnvelopeManifest = {
@@ -973,54 +1062,59 @@ const membraneList = defineCommand({
     }
 
     if (entries.length === 0) {
-      if (fmt instanceof JSONFormatter) {
-        fmt.success('No persisted envelopes', { directory: dir, envelopes: [] });
-      } else {
-        fmt.log('\n  No persisted envelopes found.');
-        fmt.log(`  Directory: ${dir}`);
-        fmt.log('\n  To persist: wpm membrane build <log.xes> --persist\n');
-      }
-      process.exit(EXIT_CODES.success);
-    }
-
-    if (fmt instanceof JSONFormatter) {
-      fmt.success('Persisted envelopes', {
-        directory: dir,
-        count: entries.length,
-        envelopes: entries.map((e) => ({
-          name: e.name,
-          created_at: e.mtime.toISOString(),
-          log: e.manifest?.log,
-          handles: e.manifest?.handles ?? {},
-        })),
-      });
-      process.exit(EXIT_CODES.success);
-    }
-
-    fmt.log(
-      `\n  AutoMembrane Envelopes (${entries.length} manifest${entries.length !== 1 ? 's' : ''})`
-    );
-    fmt.log(`  Directory: ${dir}\n`);
-    fmt.log(`  #   Created at            Log                       Layers`);
-    fmt.log(`  ──  ────────────────────  ────────────────────────  ─────────────────`);
-    entries.forEach((e, i) => {
-      const createdAt = e.mtime.toISOString().slice(0, 19).replace('T', ' ');
-      const logShort = e.manifest?.log
-        ? path.basename(e.manifest.log).substring(0, 24).padEnd(24)
-        : '(unknown)               ';
-      const layers = e.manifest?.handles ? Object.keys(e.manifest.handles).join(', ') : '(unreadable)';
-      fmt.log(
-        `  ${String(i + 1).padStart(3)}  ${createdAt}  ${logShort}  ${layers}`
+      const result = makeResult(
+        'membrane list',
+        { directory: dir, envelopes: [] as unknown[] },
+        Date.now() - t0
       );
-      if (ctx.args.verbose && e.manifest?.handles) {
-        for (const [layer, handle] of Object.entries(e.manifest.handles)) {
-          fmt.log(`         ${layer.padEnd(8)} handle: ${handle}`);
+      emitResult(result, { format, verbose, quiet }, (_res, p) => {
+        p.log('\n  No persisted envelopes found.');
+        p.log(`  Directory: ${dir}`);
+        p.log('\n  To persist: wpm membrane build <log.xes> --persist\n');
+      });
+      process.exit(result.exit_code);
+    }
+
+    const envelopesMapped = entries.map((e) => ({
+      name: e.name,
+      created_at: e.mtime.toISOString(),
+      log: e.manifest?.log,
+      handles: e.manifest?.handles ?? {},
+    }));
+
+    const result = makeResult(
+      'membrane list',
+      { directory: dir, count: entries.length, envelopes: envelopesMapped },
+      Date.now() - t0
+    );
+
+    emitResult(result, { format, verbose, quiet }, (_res, p) => {
+      p.log(
+        `\n  AutoMembrane Envelopes (${entries.length} manifest${entries.length !== 1 ? 's' : ''})`
+      );
+      p.log(`  Directory: ${dir}\n`);
+      p.log(`  #   Created at            Log                       Layers`);
+      p.log(`  ──  ────────────────────  ────────────────────────  ─────────────────`);
+      entries.forEach((e, i) => {
+        const createdAt = e.mtime.toISOString().slice(0, 19).replace('T', ' ');
+        const logShort = e.manifest?.log
+          ? path.basename(e.manifest.log).substring(0, 24).padEnd(24)
+          : '(unknown)               ';
+        const layers = e.manifest?.handles ? Object.keys(e.manifest.handles).join(', ') : '(unreadable)';
+        p.log(
+          `  ${String(i + 1).padStart(3)}  ${createdAt}  ${logShort}  ${layers}`
+        );
+        if (verbose && e.manifest?.handles) {
+          for (const [layer, handle] of Object.entries(e.manifest.handles)) {
+            p.log(`         ${layer.padEnd(8)} handle: ${handle}`);
+          }
         }
-      }
+      });
+      p.log('\n  Tip: wpm membrane inspect <handle>   Inspect a specific envelope');
+      p.log('  Tip: wpm membrane health <handles>   Check health of envelopes\n');
     });
-    fmt.log('\n  Tip: wpm membrane inspect <handle>   Inspect a specific envelope');
-    fmt.log('  Tip: wpm membrane health <handles>   Check health of envelopes\n');
-    process.exit(EXIT_CODES.success);
+
+    process.exit(result.exit_code);
   },
 });
 
@@ -1040,11 +1134,10 @@ const membraneDoctor = defineCommand({
     quiet: { type: 'boolean', alias: 'q' },
   },
   async run(ctx) {
-    const fmt = getFormatter({
-      format: ctx.args.format as 'human' | 'json',
-      verbose: ctx.args.verbose,
-      quiet: ctx.args.quiet,
-    });
+    const format = (ctx.args.format as EmitOptions['format']) || 'human';
+    const verbose = Boolean(ctx.args.verbose);
+    const quiet = Boolean(ctx.args.quiet);
+    const t0 = Date.now();
 
     type Check = { name: string; pass: boolean; detail: string; fix?: string };
     const checks: Check[] = [];
@@ -1234,41 +1327,43 @@ const membraneDoctor = defineCommand({
     });
 
     const allPass = checks.every((c) => c.pass);
+    const exitCode = allPass ? EXIT_CODES.success : EXIT_CODES.config_error;
 
-    if (fmt instanceof JSONFormatter) {
-      fmt.success('AutoMembrane doctor', {
-        all_pass: allPass,
-        checks: checks.map((c) => ({
-          name: c.name,
-          pass: c.pass,
-          detail: c.detail,
-          fix: c.pass ? undefined : c.fix,
-        })),
-      });
-    } else {
-      fmt.log('\n  AutoMembrane Doctor — Definition of Done');
-      fmt.log('  ' + '='.repeat(43));
+    const payload = {
+      all_pass: allPass,
+      checks: checks.map((c) => ({
+        name: c.name,
+        pass: c.pass,
+        detail: c.detail,
+        fix: c.pass ? undefined : c.fix,
+      })),
+    };
+    const result = makeResult('membrane doctor', payload, Date.now() - t0, exitCode);
+
+    emitResult(result, { format, verbose, quiet }, (_res, p) => {
+      p.log('\n  AutoMembrane Doctor — Definition of Done');
+      p.log('  ' + '='.repeat(43));
       checks.forEach((c, i) => {
         const icon = c.pass ? 'v' : 'x';
-        fmt.log(`  ${icon}  ${String(i + 1).padStart(2)}.  ${c.name}`);
-        if (ctx.args.verbose || !c.pass) {
-          fmt.log(`         ${c.detail}`);
+        p.log(`  ${icon}  ${String(i + 1).padStart(2)}.  ${c.name}`);
+        if (verbose || !c.pass) {
+          p.log(`         ${c.detail}`);
         }
         if (!c.pass && c.fix) {
-          fmt.log(`         Fix: ${c.fix}`);
+          p.log(`         Fix: ${c.fix}`);
         }
       });
-      fmt.log('');
+      p.log('');
       if (allPass) {
-        fmt.log('  All 8 checks pass — AutoMembrane is production-ready.\n');
+        p.log('  All 8 checks pass — AutoMembrane is production-ready.\n');
       } else {
-        fmt.log(
+        p.log(
           `  ${checks.filter((c) => !c.pass).length} check(s) failed. Fix issues above and re-run.\n`
         );
       }
-    }
+    });
 
-    process.exit(allPass ? EXIT_CODES.success : EXIT_CODES.config_error);
+    process.exit(result.exit_code);
   },
 });
 
@@ -1286,10 +1381,9 @@ const membraneCheck = defineCommand({
     quiet: { type: 'boolean', alias: 'q' },
   },
   async run(ctx) {
-    const formatter = getFormatter({
-      format: ctx.args.format as 'human' | 'json',
-      quiet: ctx.args.quiet,
-    });
+    const format = (ctx.args.format as EmitOptions['format']) || 'human';
+    const quiet = Boolean(ctx.args.quiet);
+    const t0 = Date.now();
 
     const checks: Array<{ name: string; pass: boolean; detail: string }> = [];
 
@@ -1325,21 +1419,22 @@ const membraneCheck = defineCommand({
     }
 
     const allPass = checks.every((c) => c.pass);
+    const exitCode = allPass ? EXIT_CODES.success : EXIT_CODES.execution_error;
 
-    if (formatter instanceof JSONFormatter) {
-      formatter.output({ checks, all_pass: allPass });
-    } else {
+    const result = makeResult('membrane check', { checks, all_pass: allPass }, Date.now() - t0, exitCode);
+
+    emitResult(result, { format, quiet }, (_res, p) => {
       for (const c of checks) {
         const icon = c.pass ? '✓' : '✗';
         const line = `  ${icon} ${c.name.padEnd(28)} ${c.detail}`;
-        if (c.pass) (formatter as HumanFormatter).info(line);
-        else formatter.warn(line);
+        if (c.pass) p.info(line);
+        else p.warn(line);
       }
-      if (allPass) formatter.success('Membrane check passed.');
-      else formatter.warn('Membrane check: some checks failed.');
-    }
+      if (allPass) p.success('Membrane check passed.');
+      else p.warn('Membrane check: some checks failed.');
+    });
 
-    process.exit(allPass ? EXIT_CODES.success : EXIT_CODES.execution_error);
+    process.exit(result.exit_code);
   },
 });
 
@@ -1361,7 +1456,9 @@ const membraneExport = defineCommand({
     quiet: { type: 'boolean', alias: 'q' },
   },
   async run(ctx) {
-    const formatter = getFormatter({ format: 'human', quiet: ctx.args.quiet });
+    const quiet = Boolean(ctx.args.quiet);
+    const exportFmt = ((ctx.args.format ?? 'sarif') as string).toLowerCase();
+    const t0 = Date.now();
 
     try {
       const loader = WasmLoader.getInstance();
@@ -1369,12 +1466,18 @@ const membraneExport = defineCommand({
       const wasm = loader.get() as Record<string, unknown>;
 
       if (typeof wasm.run_all_benchmarks !== 'function') {
-        formatter.error(FEATURE_GUARD_MSG);
-        process.exit(EXIT_CODES.execution_error);
+        const result = makeErrorResult(
+          'membrane export',
+          FEATURE_GUARD_MSG,
+          EXIT_CODES.execution_error,
+          'FEATURE_GUARD'
+        );
+        emitResult(result, { format: 'human', quiet });
+        process.exit(result.exit_code);
       }
 
       const raw = (wasm.run_all_benchmarks as () => unknown)();
-      const result = parse(raw) as {
+      const benchResult = parse(raw) as {
         total: number;
         passed: number;
         failed: number;
@@ -1389,22 +1492,23 @@ const membraneExport = defineCommand({
         }>;
       };
 
-      const fmt = (ctx.args.format ?? 'sarif').toLowerCase();
-      if (fmt === 'sarif') {
-        const sarifResults = result.results.map((r) => ({
+      if (exportFmt === 'sarif') {
+        const sarifResults = benchResult.results.map((r) => ({
           verdict: r.final_verdict,
           traceName: r.trace_id,
           explanation: r.failure_reason,
         }));
         process.stdout.write(JSON.stringify(buildSarifOutput('26.4.28', sarifResults), null, 2) + '\n');
       } else {
-        process.stdout.write(JSON.stringify(result, null, 2) + '\n');
+        const result = makeResult('membrane export', benchResult as unknown as Record<string, unknown>, Date.now() - t0);
+        emitResult(result, { format: 'json', quiet });
       }
 
       process.exit(EXIT_CODES.success);
     } catch (e) {
-      formatter.error(String(e));
-      process.exit(EXIT_CODES.execution_error);
+      const result = makeErrorResult('membrane export', e, EXIT_CODES.execution_error);
+      emitResult(result, { format: 'human', quiet });
+      process.exit(result.exit_code);
     }
   },
 });

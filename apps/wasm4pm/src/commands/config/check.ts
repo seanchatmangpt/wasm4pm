@@ -1,6 +1,6 @@
 import { defineCommand } from 'citty';
 import { resolveConfig, checkConfigWarnings } from '@wasm4pm/config';
-import { HumanFormatter, JSONFormatter } from '../../output.js';
+import { emitResult, makeResult, makeErrorResult } from '../../output.js';
 import { EXIT_CODES } from '../../exit-codes.js';
 
 export const configCheck = defineCommand({
@@ -13,33 +13,32 @@ export const configCheck = defineCommand({
     quiet: { type: 'boolean', alias: 'q' },
   },
   async run(ctx) {
-    const isJson = ctx.args.format === 'json';
+    const t0 = performance.now();
+    const format = (ctx.args.format as 'json' | 'human') ?? 'human';
+    const quiet = ctx.args.quiet ?? false;
 
     try {
       const config = await resolveConfig();
       const warnings = checkConfigWarnings(config);
+      const all_clear = warnings.length === 0;
 
-      if (isJson) {
-        const out = { warnings, all_clear: warnings.length === 0 };
-        process.stdout.write(JSON.stringify(out, null, 2) + '\n');
-      } else {
-        if (warnings.length === 0) {
-          if (!ctx.args.quiet) process.stderr.write('  ✓ Config check passed — no warnings.\n');
+      const result = makeResult('config check', { warnings, all_clear }, performance.now() - t0,
+        all_clear ? EXIT_CODES.success : EXIT_CODES.execution_error);
+
+      emitResult(result, { format, quiet }, (res, projection) => {
+        if (res.payload.all_clear) {
+          projection.success('Config check passed — no warnings.');
         } else {
-          for (const w of warnings) {
-            process.stderr.write(`  ✗ ${w.field}: ${w.warning}\n`);
+          for (const w of res.payload.warnings) {
+            projection.warn(`${(w as any).field}: ${(w as any).warning}`);
           }
         }
-      }
+      });
 
-      process.exit(warnings.length > 0 ? EXIT_CODES.execution_error : EXIT_CODES.success);
+      process.exit(result.exit_code);
     } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      if (isJson) {
-        process.stdout.write(JSON.stringify({ error: msg }) + '\n');
-      } else {
-        process.stderr.write(`  Config resolution failed: ${msg}\n`);
-      }
+      const result = makeErrorResult('config check', e, EXIT_CODES.config_error, 'CONFIG_ERROR');
+      emitResult(result, { format, quiet });
       process.exit(EXIT_CODES.config_error);
     }
   },

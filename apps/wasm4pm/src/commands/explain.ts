@@ -1,10 +1,12 @@
 import { defineCommand } from 'citty';
 import { resolveConfig as loadConfig } from '@wasm4pm/config';
-import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
+import { emitResult, makeResult, makeErrorResult, ConsoleProjection } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
-import type { OutputOptions } from '../output.js';
 
-export interface ExplainOptions extends OutputOptions {
+export interface ExplainOptions {
+  format?: 'human' | 'json';
+  verbose?: boolean;
+  quiet?: boolean;
   config?: string;
   model?: string;
   algorithm?: string;
@@ -53,25 +55,22 @@ export const explain = defineCommand({
     },
   },
   async run(ctx) {
-    const formatter = getFormatter({
-      format: ctx.args.format as 'human' | 'json',
-      verbose: ctx.args.verbose,
-      quiet: ctx.args.quiet,
-    });
+    const t0 = performance.now();
+    const format = (ctx.args.format as 'json' | 'human') ?? 'human';
+    const verbose = Boolean(ctx.args.verbose);
+    const quiet = Boolean(ctx.args.quiet);
 
     try {
       // Step 1: Validate input
       if (!ctx.args.model && !ctx.args.algorithm && !ctx.args.config) {
-        if (formatter instanceof JSONFormatter) {
-          formatter.error(
-            'No model, algorithm, or config specified. Use --model, --algorithm, or --config'
-          );
-        } else {
-          formatter.warn(
-            'No model, algorithm, or config specified. Use --model, --algorithm, or --config'
-          );
-        }
-        process.exit(EXIT_CODES.source_error);
+        const result = makeErrorResult(
+          'explain',
+          new Error('No model, algorithm, or config specified. Use --model, --algorithm, or --config'),
+          EXIT_CODES.source_error,
+          'MISSING_INPUT'
+        );
+        emitResult(result, { format, verbose, quiet });
+        process.exit(result.exit_code);
       }
 
       // Step 2: Generate explanation content
@@ -79,17 +78,14 @@ export const explain = defineCommand({
       const level = (ctx.args.level || 'detailed') as 'brief' | 'detailed' | 'academic';
 
       if (ctx.args.model) {
-        // Model explanation - placeholder for now
         explanationContent = `Model explanation for: ${ctx.args.model}\n\nPlaceholder content (awaiting planner integration)`;
       } else if (ctx.args.config) {
-        // Config explanation
         try {
           const configPath = ctx.args.config || process.cwd();
           const config = await loadConfig({
             configSearchPaths: [configPath],
           });
 
-          // Configuration is already validated by loadConfig
           explanationContent = `Configuration explanation:\n\n`;
           explanationContent += `Profile: ${config.execution.profile}\n`;
           explanationContent += `Timeout: ${config.execution.timeout}ms\n`;
@@ -102,41 +98,34 @@ export const explain = defineCommand({
           );
         }
       } else if (ctx.args.algorithm) {
-        // Algorithm explanation
         explanationContent = getAlgorithmExplanation(ctx.args.algorithm, level);
       }
 
-      // Step 3: Format output
-      const explanationResult = {
+      // Step 3: Build result and emit
+      const payload = {
         subject: ctx.args.model || ctx.args.algorithm || 'execution plan',
         level,
         content: explanationContent,
-        timestamp: new Date().toISOString(),
       };
 
-      if (formatter instanceof JSONFormatter) {
-        formatter.success('Explanation generated', {
-          subject: explanationResult.subject,
-          level: explanationResult.level,
-          content: explanationResult.content,
-        });
-      } else {
-        formatter.info(`Explanation: ${explanationResult.subject}`);
-        formatter.log('');
-        formatter.log(explanationResult.content);
-        formatter.log('');
-      }
-
-      process.exit(EXIT_CODES.success);
+      const result = makeResult('explain', payload, performance.now() - t0, EXIT_CODES.success);
+      emitResult(result, { format, verbose, quiet }, (res, projection) => {
+        const p = res.payload as typeof payload;
+        projection.info(`Explanation: ${p.subject}`);
+        projection.log('');
+        projection.log(p.content);
+        projection.log('');
+      });
+      process.exit(result.exit_code);
     } catch (error) {
-      if (formatter instanceof JSONFormatter) {
-        formatter.error('Failed to generate explanation', error);
-      } else {
-        formatter.error(
-          `Failed to generate explanation: ${error instanceof Error ? error.message : String(error)}`
-        );
-      }
-      process.exit(EXIT_CODES.execution_error);
+      const result = makeErrorResult(
+        'explain',
+        error,
+        EXIT_CODES.execution_error,
+        'EXPLAIN_ERROR'
+      );
+      emitResult(result, { format, verbose, quiet });
+      process.exit(result.exit_code);
     }
   },
 });

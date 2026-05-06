@@ -1,7 +1,7 @@
 import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
 import { ALGORITHM_CLI_ALIASES } from '@wasm4pm/contracts';
-import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
+import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { WasmLoader } from '@wasm4pm/engine';
 
@@ -242,11 +242,10 @@ export const compare = defineCommand({
     },
   },
   async run(ctx) {
-    const formatter = getFormatter({
-      format: ctx.args.format as 'human' | 'json',
-      verbose: ctx.args.verbose,
-      quiet: ctx.args.quiet,
-    });
+    const format = (ctx.args.format as 'json' | 'human') ?? 'human';
+    const verbose = Boolean(ctx.args.verbose);
+    const quiet = Boolean(ctx.args.quiet);
+    const emitOptions = { format, verbose, quiet };
 
     try {
       // Parse algorithms from the single positional (citty collects remaining args as string)
@@ -259,15 +258,25 @@ export const compare = defineCommand({
       const resolved = rawAlgos.map((a) => ALGORITHM_CLI_ALIASES[a] ?? a);
       const invalid = resolved.filter((a) => !ALGORITHMS.includes(a as Algorithm));
       if (invalid.length > 0) {
-        formatter.error(
-          `Unknown algorithm(s): ${invalid.join(', ')}. Available: ${Object.keys(ALGORITHM_CLI_ALIASES).join(', ')}`
+        const result = makeErrorResult(
+          'compare',
+          new Error(`Unknown algorithm(s): ${invalid.join(', ')}. Available: ${Object.keys(ALGORITHM_CLI_ALIASES).join(', ')}`),
+          EXIT_CODES.source_error,
+          'UNKNOWN_ALGORITHMS'
         );
-        process.exit(EXIT_CODES.source_error);
+        emitResult(result, emitOptions);
+        process.exit(result.exit_code);
       }
 
       if (resolved.length < 2) {
-        formatter.error('Please specify at least two algorithms to compare.');
-        process.exit(EXIT_CODES.source_error);
+        const result = makeErrorResult(
+          'compare',
+          new Error('Please specify at least two algorithms to compare.'),
+          EXIT_CODES.source_error,
+          'TOO_FEW_ALGORITHMS'
+        );
+        emitResult(result, emitOptions);
+        process.exit(result.exit_code);
       }
 
       const algos = resolved as Algorithm[];
@@ -278,17 +287,19 @@ export const compare = defineCommand({
         await fs.access(inputPath);
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
-        formatter.error(`Input file not found: ${inputPath} — ${message}`);
-        process.exit(EXIT_CODES.source_error);
+        const result = makeErrorResult(
+          'compare',
+          new Error(`Input file not found: ${inputPath} — ${message}`),
+          EXIT_CODES.source_error,
+          'INPUT_NOT_FOUND'
+        );
+        emitResult(result, emitOptions);
+        process.exit(result.exit_code);
       }
 
       const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
 
       // Load WASM
-      if (formatter instanceof HumanFormatter) {
-        formatter.info(`Comparing algorithms: ${algos.join(', ')}`);
-      }
-
       const loader = WasmLoader.getInstance();
       await loader.init();
       const wasm = loader.get() as Record<string, CallableFunction>;
@@ -301,11 +312,9 @@ export const compare = defineCommand({
       const sharedMetrics = extractModelMetrics(wasm, logHandle, activityKey);
 
       // Run each algorithm
+      const t0 = performance.now();
       const stats: ModelStats[] = [];
       for (const algo of algos) {
-        if (formatter instanceof HumanFormatter) {
-          formatter.debug(`Running ${algo}...`);
-        }
         const { raw, elapsedMs } = runDiscovery(wasm, algo, logHandle, activityKey);
         const { nodes, edges } = extractStats(raw);
         stats.push({
@@ -318,101 +327,111 @@ export const compare = defineCommand({
           elapsedMs,
         });
       }
+      const totalElapsedMs = performance.now() - t0;
 
       // Free log handle — fail if cleanup fails (resource leak is critical)
       wasm['delete_object'](logHandle);
 
-      // Output
-      if (formatter instanceof JSONFormatter) {
-        (formatter as JSONFormatter).success('Algorithm comparison', {
-          input: inputPath,
-          activityKey,
-          algorithms: stats,
-        });
-        process.exit(EXIT_CODES.success);
-      }
+      // Build canonical result payload
+      const payload = {
+        input: inputPath,
+        activityKey,
+        algorithms: stats,
+      };
 
-      // Human-readable side-by-side table with sparklines
-      const humanFormatter = formatter as HumanFormatter;
-      humanFormatter.log('');
-      humanFormatter.success(`Algorithm comparison — ${inputPath}`);
-      humanFormatter.log(
-        `  Activity key: ${activityKey}  |  Log variants: ${sharedMetrics.variants}`
-      );
-      humanFormatter.log('');
-
-      // Compute ranges for sparklines
-      const validStats = stats.filter((s) => s.nodes >= 0);
-      const minNodes = Math.min(...validStats.map((s) => s.nodes));
-      const maxNodes = Math.max(...validStats.map((s) => s.nodes));
-      const minEdges = Math.min(...validStats.map((s) => s.edges));
-      const maxEdges = Math.max(...validStats.map((s) => s.edges));
-      const minTime = Math.min(...validStats.map((s) => s.elapsedMs));
-      const maxTime = Math.max(...validStats.map((s) => s.elapsedMs));
-
-      // Table header
-      humanFormatter.log(
-        `  ${'Algorithm'.padEnd(20)}  ${'Nodes'.padStart(6)}  ${'Edges'.padStart(6)}  ${'Time(ms)'.padStart(9)}  ${'Nodes'.padEnd(10)}  ${'Edges'.padEnd(10)}  ${'Time'.padEnd(10)}`
-      );
-      humanFormatter.log(
-        `  ${'─'.repeat(20)}  ${'─'.repeat(6)}  ${'─'.repeat(6)}  ${'─'.repeat(9)}  ${'(bar)'.padEnd(10)}  ${'(bar)'.padEnd(10)}  ${'(bar)'.padEnd(10)}`
-      );
-
-      for (const s of stats) {
-        const algoCol = col(s.algorithm, 20);
-        if (s.nodes < 0) {
-          humanFormatter.log(
-            `  ${algoCol}  ${'ERROR'.padStart(6)}  ${'─'.padStart(6)}  ${'─'.padStart(9)}`
-          );
-          continue;
-        }
-        const nodesStr = numCol(s.nodes, 6);
-        const edgesStr = numCol(s.edges, 6);
-        const timeStr = numCol(s.elapsedMs, 9, 1);
-        const nodesBar = sparkBar(s.nodes, minNodes, maxNodes).padEnd(10);
-        const edgesBar = sparkBar(s.edges, minEdges, maxEdges).padEnd(10);
-        const timeBar = sparkBar(s.elapsedMs, minTime, maxTime).padEnd(10);
-        humanFormatter.log(
-          `  ${algoCol}  ${nodesStr}  ${edgesStr}  ${timeStr}  ${nodesBar}  ${edgesBar}  ${timeBar}`
-        );
-      }
-
-      humanFormatter.log('');
-      humanFormatter.log(
-        '  Legend: ▓▓▓▓▓▓▓▓ = max  ░░░░░░░░ = min   bars are relative within this comparison'
-      );
-      humanFormatter.log('');
-
-      // Print cache statistics if requested — fail if requested but unavailable
+      // Handle --cache-stats (fetch before emitting)
+      let cacheStats: Record<string, unknown> | null = null;
       if (ctx.args['cache-stats']) {
         if (typeof wasm.get_cache_stats !== 'function') {
-          formatter.error('Cache statistics requested but not available in WASM module');
-          process.exit(EXIT_CODES.execution_error);
+          const errResult = makeErrorResult('compare', new Error('Cache statistics requested but not available in WASM module'), EXIT_CODES.execution_error, 'CACHE_STATS_UNAVAILABLE');
+          emitResult(errResult, emitOptions);
+          process.exit(errResult.exit_code);
         }
         const statsRaw = wasm.get_cache_stats();
-        const stats = typeof statsRaw === 'string' ? JSON.parse(statsRaw) : statsRaw;
-        const hitRate =
-          stats.parse_hits + stats.parse_misses > 0
-            ? ((stats.parse_hits / (stats.parse_hits + stats.parse_misses)) * 100).toFixed(1)
-            : 'N/A';
-        humanFormatter.info('Cache statistics:');
-        humanFormatter.info(`  Parse hits: ${stats.parse_hits}`);
-        humanFormatter.info(`  Parse misses: ${stats.parse_misses}`);
-        humanFormatter.info(`  Hit rate: ${hitRate}%`);
-        humanFormatter.info(`  Columnar entries: ${stats.columnar_entries}`);
-        humanFormatter.info(`  Interner entries: ${stats.interner_entries}`);
+        cacheStats = (typeof statsRaw === 'string' ? JSON.parse(statsRaw) : statsRaw) as Record<string, unknown>;
       }
 
-      process.exit(EXIT_CODES.success);
-    } catch (error) {
-      if (formatter instanceof JSONFormatter) {
-        (formatter as JSONFormatter).error('Comparison failed', error);
-      } else {
-        formatter.error(
-          `Comparison failed: ${error instanceof Error ? error.message : String(error)}`
+      const cmdResult = makeResult('compare', payload, totalElapsedMs, EXIT_CODES.success);
+
+      emitResult(cmdResult, emitOptions, (res, projection) => {
+        const p = res.payload as typeof payload;
+        const s = p.algorithms;
+
+        projection.info(`Comparing algorithms: ${algos.join(', ')}`);
+        projection.log('');
+        projection.success(`Algorithm comparison — ${p.input}`);
+        projection.log(
+          `  Activity key: ${p.activityKey}  |  Log variants: ${sharedMetrics.variants}`
         );
-      }
-      process.exit(EXIT_CODES.execution_error);
+        projection.log('');
+
+        // Compute ranges for sparklines
+        const validStats = s.filter((st) => st.nodes >= 0);
+        const minNodes = Math.min(...validStats.map((st) => st.nodes));
+        const maxNodes = Math.max(...validStats.map((st) => st.nodes));
+        const minEdges = Math.min(...validStats.map((st) => st.edges));
+        const maxEdges = Math.max(...validStats.map((st) => st.edges));
+        const minTime = Math.min(...validStats.map((st) => st.elapsedMs));
+        const maxTime = Math.max(...validStats.map((st) => st.elapsedMs));
+
+        // Table header
+        projection.log(
+          `  ${'Algorithm'.padEnd(20)}  ${'Nodes'.padStart(6)}  ${'Edges'.padStart(6)}  ${'Time(ms)'.padStart(9)}  ${'Nodes'.padEnd(10)}  ${'Edges'.padEnd(10)}  ${'Time'.padEnd(10)}`
+        );
+        projection.log(
+          `  ${'─'.repeat(20)}  ${'─'.repeat(6)}  ${'─'.repeat(6)}  ${'─'.repeat(9)}  ${'(bar)'.padEnd(10)}  ${'(bar)'.padEnd(10)}  ${'(bar)'.padEnd(10)}`
+        );
+
+        for (const st of s) {
+          const algoCol = col(st.algorithm, 20);
+          if (st.nodes < 0) {
+            projection.log(
+              `  ${algoCol}  ${'ERROR'.padStart(6)}  ${'─'.padStart(6)}  ${'─'.padStart(9)}`
+            );
+            continue;
+          }
+          const nodesStr = numCol(st.nodes, 6);
+          const edgesStr = numCol(st.edges, 6);
+          const timeStr = numCol(st.elapsedMs, 9, 1);
+          const nodesBar = sparkBar(st.nodes, minNodes, maxNodes).padEnd(10);
+          const edgesBar = sparkBar(st.edges, minEdges, maxEdges).padEnd(10);
+          const timeBar = sparkBar(st.elapsedMs, minTime, maxTime).padEnd(10);
+          projection.log(
+            `  ${algoCol}  ${nodesStr}  ${edgesStr}  ${timeStr}  ${nodesBar}  ${edgesBar}  ${timeBar}`
+          );
+        }
+
+        projection.log('');
+        projection.log(
+          '  Legend: ▓▓▓▓▓▓▓▓ = max  ░░░░░░░░ = min   bars are relative within this comparison'
+        );
+        projection.log('');
+
+        // Cache statistics (if fetched)
+        if (cacheStats) {
+          const hitRate =
+            (cacheStats.parse_hits as number) + (cacheStats.parse_misses as number) > 0
+              ? (((cacheStats.parse_hits as number) / ((cacheStats.parse_hits as number) + (cacheStats.parse_misses as number))) * 100).toFixed(1)
+              : 'N/A';
+          projection.info('Cache statistics:');
+          projection.info(`  Parse hits: ${cacheStats.parse_hits}`);
+          projection.info(`  Parse misses: ${cacheStats.parse_misses}`);
+          projection.info(`  Hit rate: ${hitRate}%`);
+          projection.info(`  Columnar entries: ${cacheStats.columnar_entries}`);
+          projection.info(`  Interner entries: ${cacheStats.interner_entries}`);
+        }
+      });
+
+      process.exit(cmdResult.exit_code);
+    } catch (error) {
+      const result = makeErrorResult(
+        'compare',
+        error instanceof Error ? error : new Error(String(error)),
+        EXIT_CODES.execution_error,
+        'COMPARISON_FAILED'
+      );
+      emitResult(result, emitOptions);
+      process.exit(result.exit_code);
     }
   },
 });

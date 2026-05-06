@@ -13,9 +13,8 @@
 
 import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
-import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
+import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
-import type { OutputOptions } from '../output.js';
 import { WasmLoader } from '@wasm4pm/engine';
 import { savePredictionResult } from './results.js';
 
@@ -119,43 +118,50 @@ export const powl = defineCommand({
     },
   },
   async run(ctx) {
-    const formatter = getFormatter({
-      format: ctx.args.format as 'human' | 'json',
-      verbose: !!ctx.args.verbose,
-      quiet: !!ctx.args.quiet,
-    });
+    const t0 = performance.now();
+    const format = (ctx.args.format as 'json' | 'human') ?? 'human';
+    const verbose = Boolean(ctx.args.verbose);
+    const quiet = Boolean(ctx.args.quiet);
 
     try {
       const subcommand = ctx.args.subcommand as string;
       if (!POWL_SUBCOMMANDS.includes(subcommand as PowlSubcommand)) {
-        formatter.error(
-          `Unknown operation: "${subcommand}". Valid: ${POWL_SUBCOMMANDS.join(', ')}`
+        const result = makeErrorResult(
+          'powl',
+          `Unknown operation: "${subcommand}". Valid: ${POWL_SUBCOMMANDS.join(', ')}`,
+          EXIT_CODES.source_error,
+          'INVALID_SUBCOMMAND'
         );
-        process.exit(EXIT_CODES.source_error);
+        emitResult(result, { format, verbose, quiet });
+        process.exit(result.exit_code);
       }
 
-      // Step 1: Resolve model input (inline string or file)
-      // discover subcommand uses --input instead of --model
+      // Resolve model input (inline string or file)
       const needsModel = !['discover'].includes(subcommand);
       const modelInput = ctx.args.model as string;
       if (needsModel && !modelInput) {
-        formatter.error(`Missing required argument: --model`);
-        process.exit(EXIT_CODES.source_error);
+        const result = makeErrorResult(
+          'powl',
+          'Missing required argument: --model',
+          EXIT_CODES.source_error,
+          'MISSING_MODEL'
+        );
+        emitResult(result, { format, verbose, quiet });
+        process.exit(result.exit_code);
       }
       const modelStr = needsModel ? ((await resolveModelInput(modelInput)) ?? '') : '';
       if (needsModel && !modelStr) {
         process.exit(EXIT_CODES.source_error);
       }
 
-      // Step 2: Load WASM
-      // Reset singleton to respect quiet flag for each command
+      // Load WASM — reset singleton to respect quiet flag for each command
       WasmLoader.reset();
       const loader = WasmLoader.getInstance({ quiet: ctx.args.quiet as boolean } as any);
       await loader.init();
       const wasm = loader.get();
 
-      // Step 3: Execute subcommand
-      const result = await executePowlCommand(
+      // Execute subcommand
+      const payload = await executePowlCommand(
         wasm,
         subcommand as PowlSubcommand,
         modelStr,
@@ -163,36 +169,32 @@ export const powl = defineCommand({
         ctx.args
       );
 
-      // Step 4: Output
-      if (formatter instanceof JSONFormatter) {
-        formatter.success(`POWL ${subcommand} complete`, result);
-      } else {
-        formatter.success(`POWL ${subcommand} complete`);
-        formatHumanOutput(formatter, subcommand as PowlSubcommand, result);
-      }
-
-      // Step 5: Persist
+      // Persist
       if (!ctx.args['no-save']) {
         const inputLabel =
           modelInput && modelInput.length > 100
             ? modelInput.slice(0, 100) + '...'
             : modelInput || '';
-        const savedPath = await savePredictionResult(`powl-${subcommand}`, inputLabel, '', result);
-        if (savedPath && formatter instanceof HumanFormatter) {
-          formatter.debug(`Result saved: ${savedPath}`);
+        const savedPath = await savePredictionResult(`powl-${subcommand}`, inputLabel, '', payload);
+        if (savedPath && format === 'human' && verbose) {
+          (payload as Record<string, unknown>)['_savedPath'] = savedPath;
         }
       }
 
-      process.exit(EXIT_CODES.success);
+      const result = makeResult(`powl ${subcommand}`, payload, performance.now() - t0, EXIT_CODES.success);
+      emitResult(result, { format, verbose, quiet }, (res, projection) => {
+        const data = res.payload as typeof payload;
+        projection.success(`POWL ${subcommand} complete`);
+        formatHumanOutput(projection, subcommand as PowlSubcommand, data);
+        if (verbose && (data as Record<string, unknown>)['_savedPath']) {
+          projection.debug(`Result saved: ${(data as Record<string, unknown>)['_savedPath']}`);
+        }
+      });
+      process.exit(result.exit_code);
     } catch (error) {
-      if (formatter instanceof JSONFormatter) {
-        formatter.error('POWL operation failed', error);
-      } else {
-        formatter.error(
-          `POWL operation failed: ${error instanceof Error ? error.message : String(error)}`
-        );
-      }
-      process.exit(EXIT_CODES.execution_error);
+      const result = makeErrorResult('powl', error, EXIT_CODES.execution_error);
+      emitResult(result, { format, verbose, quiet });
+      process.exit(result.exit_code);
     }
   },
 });
@@ -201,7 +203,6 @@ export const powl = defineCommand({
 
 /**
  * Normalize WASM return value to a plain object.
- * serde_wasm_bindgen converts serde_json::Map to JS Map — convert to plain object.
  */
 function normalizeResult(raw: unknown): Record<string, unknown> {
   if (raw instanceof Map) {
@@ -214,11 +215,7 @@ function normalizeResult(raw: unknown): Record<string, unknown> {
 }
 
 /**
- * Convert models::EventLog JSON (nested attributes with tagged enums) to
- * powl_event_log::EventLog JSON (flat {name, case_id, timestamp} fields).
- *
- * models::EventLog:  { "traces": [{ "attributes": {...}, "events": [{ "attributes": {...} }] }] }
- * powl_event_log:   { "traces": [{ "case_id": "...", "events": [{ "name": "...", "timestamp": "..." }] }] }
+ * Convert models::EventLog JSON to powl_event_log::EventLog JSON.
  */
 function convertModelsLogToPowlLog(modelsJson: string, activityKey: string): string {
   const models = JSON.parse(modelsJson) as {
@@ -232,7 +229,6 @@ function convertModelsLogToPowlLog(modelsJson: string, activityKey: string): str
   const powlLog = {
     traces: models.traces.map((t) => {
       const traceAttrs = t.attributes ?? {};
-      // Extract case_id from concept:name attribute
       const caseIdAttr = traceAttrs[activityKey];
       const caseId = extractTaggedString(caseIdAttr) ?? '';
       return {
@@ -254,7 +250,6 @@ function convertModelsLogToPowlLog(modelsJson: string, activityKey: string): str
   return JSON.stringify(powlLog);
 }
 
-/** Extract a string value from a serde adjacently-tagged attribute: {"tag":"String","value":"A"} → "A" */
 function extractTaggedString(value: unknown): string | null {
   if (typeof value === 'string') return value;
   if (value !== null && typeof value === 'object' && 'tag' in (value as Record<string, unknown>)) {
@@ -264,26 +259,18 @@ function extractTaggedString(value: unknown): string | null {
   return null;
 }
 
-/**
- * Resolve model input: if it looks like a file path, read it; otherwise treat as inline string.
- */
 async function resolveModelInput(input: string): Promise<string | null> {
-  // If it contains path separators or ends with .powl, treat as file
   if (input.includes('/') || input.includes('\\') || input.endsWith('.powl')) {
     try {
       await fs.access(input);
       return fs.readFile(input, 'utf-8');
     } catch {
-      // Not a valid file path — treat as inline string
       return input;
     }
   }
   return input;
 }
 
-/**
- * Dispatch to the appropriate WASM POWL function.
- */
 async function executePowlCommand(
   wasm: Record<string, any>,
   subcommand: PowlSubcommand,
@@ -360,14 +347,10 @@ async function executePowlCommand(
         process.exit(EXIT_CODES.source_error);
       }
       const confActivityKey = (args['activity-key'] as string) || 'concept:name';
-
-      // Load the log into WASM and convert to powl_event_log format
-      // (token_replay_fitness expects flat {name, case_id} not nested attributes)
       const logHandle: string = wasm.load_eventlog_from_xes(logContent);
       const modelsLogJson: string = wasm.export_eventlog_to_json(logHandle);
       wasm.delete_object(logHandle);
       const logJson: string = convertModelsLogToPowlLog(modelsLogJson, confActivityKey);
-
       const raw: string = wasm.token_replay_fitness(modelStr, logJson);
       return JSON.parse(raw);
     }
@@ -377,7 +360,6 @@ async function executePowlCommand(
       if (!source || !IMPORT_SOURCES.includes(source as ImportSource)) {
         throw new Error(`Unknown source format: "${source}". Valid: ${IMPORT_SOURCES.join(', ')}`);
       }
-      // Use rawInput (file path), not modelStr (already-resolved content)
       let fileContent: string;
       try {
         await fs.access(rawInput);
@@ -407,40 +389,31 @@ async function executePowlCommand(
     case 'node-info': {
       const index = args.index as string;
       const raw = wasm.node_info_json(modelStr, index);
-      return JSON.parse(raw); // node_info_json returns a JSON string, not a JsValue
+      return JSON.parse(raw);
     }
 
     case 'discover': {
-      // POWL discovery from event log
       const input = args.input as string;
       if (!input) {
         throw new Error('Input log required: use --input or -i');
       }
-
-      // Get discovery parameters
       const variant = (args.variant as string) || 'decision_graph_cyclic';
       const activityKey = (args['activity-key'] as string) || 'concept:name';
       const minTraceCount = (args['min-trace-count'] as number) || 1;
       const noiseThreshold = (args['noise-threshold'] as number) || 0.0;
 
-      // Read event log — auto-detect XES vs JSON format
       let logJson: string;
       if (input.endsWith('.xes')) {
-        // XES format: load via WASM and export as models::EventLog JSON
-        // (discover_powl_from_log expects models::EventLog with tagged AttributeValue)
         const xesContent = await fs.readFile(input, 'utf-8');
         const logHandle: string = wasm.load_eventlog_from_xes(xesContent);
         logJson = wasm.export_eventlog_to_json(logHandle);
         wasm.delete_object(logHandle);
       } else {
-        // JSON format: use directly
         logJson = await fs.readFile(input, 'utf-8');
       }
 
-      // Call appropriate WASM function based on parameters
       let raw;
       if (Object.keys(args).some((k) => ['min-trace-count', 'noise-threshold'].includes(k))) {
-        // Use config function if custom parameters provided
         raw = wasm.discover_powl_from_log_config(
           logJson,
           activityKey,
@@ -449,7 +422,6 @@ async function executePowlCommand(
           noiseThreshold
         );
       } else {
-        // Use basic function
         raw = wasm.discover_powl_from_log(logJson, variant);
       }
 
@@ -461,198 +433,164 @@ async function executePowlCommand(
   }
 }
 
-/**
- * Format results for human-readable output.
- */
 function formatHumanOutput(
-  formatter: HumanFormatter,
+  projection: import('../output.js').ConsoleProjection,
   subcommand: PowlSubcommand,
   result: Record<string, unknown>
 ): void {
   switch (subcommand) {
-    case 'parse': {
-      formatter.log('');
-      formatter.log(`  Root index:   ${result.root}`);
-      formatter.log(`  Node count:   ${result.node_count}`);
-      formatter.log(`  Representation: ${result.repr}`);
-      formatter.log('');
-      break;
-    }
-
-    case 'simplify': {
-      formatter.log('');
-      formatter.log(`  Root index:   ${result.root}`);
-      formatter.log(`  Node count:   ${result.node_count}`);
-      formatter.log(`  Representation: ${result.repr}`);
-      formatter.log('');
+    case 'parse':
+    case 'simplify':
+    case 'import': {
+      projection.log('');
+      projection.log(`  Root index:   ${result.root}`);
+      projection.log(`  Node count:   ${result.node_count}`);
+      projection.log(`  Representation: ${result.repr}`);
+      projection.log('');
       break;
     }
 
     case 'convert': {
       const target = result.target as string;
-      formatter.log('');
-      formatter.log(`  Target: ${target}`);
-      formatter.log(`  Output length: ${String(result.output).length} chars`);
-      // Show first few lines for BPMN/Petri Net
+      projection.log('');
+      projection.log(`  Target: ${target}`);
+      projection.log(`  Output length: ${String(result.output).length} chars`);
       const output = result.output as string;
       const lines = output.split('\n').slice(0, 5);
       if (lines.length > 1) {
-        formatter.log('  Preview:');
+        projection.log('  Preview:');
         for (const line of lines) {
-          formatter.log(`    ${line}`);
+          projection.log(`    ${line}`);
         }
         if (output.split('\n').length > 5) {
-          formatter.log(`    ... (${output.split('\n').length - 5} more lines)`);
+          projection.log(`    ... (${output.split('\n').length - 5} more lines)`);
         }
       }
-      formatter.log('');
+      projection.log('');
       break;
     }
 
     case 'diff': {
-      formatter.log('');
-      formatter.log(`  Severity: ${result.severity}`);
-      formatter.log(`  Behaviorally equivalent: ${result.behaviourally_equivalent}`);
-      formatter.log(`  Trace length delta: ${result.min_trace_length_delta}`);
+      projection.log('');
+      projection.log(`  Severity: ${result.severity}`);
+      projection.log(`  Behaviorally equivalent: ${result.behaviourally_equivalent}`);
+      projection.log(`  Trace length delta: ${result.min_trace_length_delta}`);
 
       if (result.added_activities && (result.added_activities as string[]).length > 0) {
-        formatter.log(`  Added activities: ${(result.added_activities as string[]).join(', ')}`);
+        projection.log(`  Added activities: ${(result.added_activities as string[]).join(', ')}`);
       }
       if (result.removed_activities && (result.removed_activities as string[]).length > 0) {
-        formatter.log(
-          `  Removed activities: ${(result.removed_activities as string[]).join(', ')}`
-        );
+        projection.log(`  Removed activities: ${(result.removed_activities as string[]).join(', ')}`);
       }
-      if (
-        result.always_changes &&
-        (result.always_changes as Array<Record<string, unknown>>).length > 0
-      ) {
-        formatter.log(`  Always-changes:`);
+      if (result.always_changes && (result.always_changes as Array<Record<string, unknown>>).length > 0) {
+        projection.log(`  Always-changes:`);
         for (const ac of result.always_changes as Array<Record<string, unknown>>) {
           const type = Object.keys(ac)[0];
-          formatter.log(`    ${type}: ${ac[type]}`);
+          projection.log(`    ${type}: ${ac[type]}`);
         }
       }
-      if (
-        result.order_changes &&
-        (result.order_changes as Array<Record<string, unknown>>).length > 0
-      ) {
-        formatter.log(`  Order changes: ${(result.order_changes as unknown[]).length}`);
+      if (result.order_changes && (result.order_changes as Array<Record<string, unknown>>).length > 0) {
+        projection.log(`  Order changes: ${(result.order_changes as unknown[]).length}`);
       }
-      if (
-        result.structure_changes &&
-        (result.structure_changes as Array<Record<string, unknown>>).length > 0
-      ) {
-        formatter.log(`  Structure changes: ${(result.structure_changes as unknown[]).length}`);
+      if (result.structure_changes && (result.structure_changes as Array<Record<string, unknown>>).length > 0) {
+        projection.log(`  Structure changes: ${(result.structure_changes as unknown[]).length}`);
       }
-      formatter.log('');
+      projection.log('');
       break;
     }
 
     case 'complexity': {
-      formatter.log('');
-      formatter.log(`  Activities:      ${result.activity_count}`);
-      formatter.log(`  Cyclomatic:      ${result.cyclomatic}`);
-      formatter.log(`  CFC:             ${result.cfc}`);
-      formatter.log(`  Cognitive:       ${result.cognitive}`);
+      projection.log('');
+      projection.log(`  Activities:      ${result.activity_count}`);
+      projection.log(`  Cyclomatic:      ${result.cyclomatic}`);
+      projection.log(`  CFC:             ${result.cfc}`);
+      projection.log(`  Cognitive:       ${result.cognitive}`);
       if (result.halstead) {
         const h = result.halstead as Record<string, unknown>;
-        formatter.log(`  Halstead volume: ${h.volume}`);
-        formatter.log(`  Halstead effort: ${h.effort}`);
+        projection.log(`  Halstead volume: ${h.volume}`);
+        projection.log(`  Halstead effort: ${h.effort}`);
       }
-      formatter.log('');
+      projection.log('');
       break;
     }
 
     case 'footprints': {
-      formatter.log('');
-      formatter.log(`  Activities: ${JSON.stringify(result.activities)}`);
-      formatter.log(`  Start activities: ${JSON.stringify(result.start_activities)}`);
-      formatter.log(`  End activities:   ${JSON.stringify(result.end_activities)}`);
-      formatter.log(`  Always happening: ${JSON.stringify(result.activities_always_happening)}`);
-      formatter.log(`  Sequences: ${(result.sequence as unknown[])?.length ?? 0}`);
-      formatter.log(`  Parallels:  ${(result.parallel as unknown[])?.length ?? 0}`);
-      formatter.log(`  Min trace length: ${result.min_trace_length}`);
-      formatter.log('');
+      projection.log('');
+      projection.log(`  Activities: ${JSON.stringify(result.activities)}`);
+      projection.log(`  Start activities: ${JSON.stringify(result.start_activities)}`);
+      projection.log(`  End activities:   ${JSON.stringify(result.end_activities)}`);
+      projection.log(`  Always happening: ${JSON.stringify(result.activities_always_happening)}`);
+      projection.log(`  Sequences: ${(result.sequence as unknown[])?.length ?? 0}`);
+      projection.log(`  Parallels:  ${(result.parallel as unknown[])?.length ?? 0}`);
+      projection.log(`  Min trace length: ${result.min_trace_length}`);
+      projection.log('');
       break;
     }
 
     case 'conformance': {
-      formatter.log('');
-      formatter.log(
+      projection.log('');
+      projection.log(
         `  Fitness:                    ${((result.percentage as number) * 100).toFixed(1)}%`
       );
-      formatter.log(
+      projection.log(
         `  Avg trace fitness:          ${((result.avg_trace_fitness as number) * 100).toFixed(1)}%`
       );
-      formatter.log(
+      projection.log(
         `  Perfectly fitting traces:    ${result.perfectly_fitting_traces} / ${result.total_traces}`
       );
-      if (
-        result.trace_results &&
-        (result.trace_results as Array<Record<string, unknown>>).length > 0
-      ) {
-        formatter.log('  Per-trace results:');
+      if (result.trace_results && (result.trace_results as Array<Record<string, unknown>>).length > 0) {
+        projection.log('  Per-trace results:');
         for (const tr of result.trace_results as Array<Record<string, unknown>>) {
           const caseId = String(tr.case_id ?? '?');
           const fit = ((tr.fitness as number) * 100).toFixed(1);
           const missing = tr.missing_tokens ?? 0;
           const remaining = tr.remaining_tokens ?? 0;
           const marker = tr.missing_tokens === 0 && tr.remaining_tokens === 0 ? '✓' : '✗';
-          formatter.log(
+          projection.log(
             `    ${marker} ${caseId.padEnd(20)} fitness=${fit}%  missing=${missing} remaining=${remaining}`
           );
         }
       }
-      formatter.log('');
-      break;
-    }
-
-    case 'import': {
-      formatter.log('');
-      formatter.log(`  Root index:   ${result.root}`);
-      formatter.log(`  Node count:   ${result.node_count}`);
-      formatter.log(`  Representation: ${result.repr}`);
-      formatter.log('');
+      projection.log('');
       break;
     }
 
     case 'get-children': {
-      formatter.log('');
-      formatter.log(`  Children: ${(result.children as number[]).join(', ')}`);
-      formatter.log('');
+      projection.log('');
+      projection.log(`  Children: ${(result.children as number[]).join(', ')}`);
+      projection.log('');
       break;
     }
 
     case 'node-info': {
-      formatter.log('');
-      formatter.log(`  Type: ${result.type}`);
-      if (result.label !== undefined) formatter.log(`  Label: ${result.label}`);
-      formatter.log(`  Children: ${(result.children as number[]).join(', ')}`);
-      if (result.edges) formatter.log(`  Edges: ${(result.edges as unknown[]).length}`);
+      projection.log('');
+      projection.log(`  Type: ${result.type}`);
+      if (result.label !== undefined) projection.log(`  Label: ${result.label}`);
+      projection.log(`  Children: ${(result.children as number[]).join(', ')}`);
+      if (result.edges) projection.log(`  Edges: ${(result.edges as unknown[]).length}`);
       if (result.start_nodes !== undefined)
-        formatter.log(`  Start nodes: ${(result.start_nodes as number[]).join(', ')}`);
+        projection.log(`  Start nodes: ${(result.start_nodes as number[]).join(', ')}`);
       if (result.end_nodes !== undefined)
-        formatter.log(`  End nodes: ${(result.end_nodes as number[]).join(', ')}`);
-      if (result.empty_path !== undefined) formatter.log(`  Empty path: ${result.empty_path}`);
-      formatter.log('');
+        projection.log(`  End nodes: ${(result.end_nodes as number[]).join(', ')}`);
+      if (result.empty_path !== undefined) projection.log(`  Empty path: ${result.empty_path}`);
+      projection.log('');
       break;
     }
 
     case 'discover': {
-      formatter.log('');
-      formatter.log(`  Root index:       ${result.root}`);
-      formatter.log(`  Node count:       ${result.node_count}`);
-      formatter.log(`  Variant:           ${result.variant}`);
-      formatter.log(`  Representation:     ${result.repr}`);
+      projection.log('');
+      projection.log(`  Root index:       ${result.root}`);
+      projection.log(`  Node count:       ${result.node_count}`);
+      projection.log(`  Variant:           ${result.variant}`);
+      projection.log(`  Representation:     ${result.repr}`);
       if (result.config) {
         const config = result.config as Record<string, unknown>;
-        formatter.log(`  Config:`);
-        formatter.log(`    Activity key:     ${config.activity_key}`);
-        formatter.log(`    Min trace count:  ${config.min_trace_count}`);
-        formatter.log(`    Noise threshold: ${config.noise_threshold}`);
+        projection.log(`  Config:`);
+        projection.log(`    Activity key:     ${config.activity_key}`);
+        projection.log(`    Min trace count:  ${config.min_trace_count}`);
+        projection.log(`    Noise threshold: ${config.noise_threshold}`);
       }
-      formatter.log('');
+      projection.log('');
       break;
     }
   }

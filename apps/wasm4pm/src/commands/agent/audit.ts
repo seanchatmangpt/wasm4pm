@@ -1,5 +1,5 @@
 import { defineCommand } from 'citty';
-import { getFormatter, JSONFormatter, HumanFormatter } from '../../output.js';
+import { emitResult, makeResult, makeErrorResult } from '../../output.js';
 import { EXIT_CODES } from '../../exit-codes.js';
 import { AuditStore } from '@wasm4pm/agents';
 
@@ -30,10 +30,10 @@ export const audit = defineCommand({
     },
   },
   async run(ctx) {
-    const formatter = getFormatter({
-      format: ctx.args.format as 'human' | 'json',
-      quiet: ctx.args.quiet,
-    });
+    const t0 = performance.now();
+    const format = (ctx.args.format as 'json' | 'human') ?? 'human';
+    const verbose = false;
+    const quiet = Boolean(ctx.args.quiet);
 
     try {
       const store = new AuditStore();
@@ -42,42 +42,42 @@ export const audit = defineCommand({
         agent: ctx.args.agent as string | undefined,
         limit,
       });
+      const summary = store.getSummary();
 
-      if (formatter instanceof JSONFormatter) {
-        formatter.success('Audit trail', entries);
-      } else {
-        const summary = store.getSummary();
-
-        formatter.log('');
-        formatter.log(
-          `  Audit: ${summary.total_entries} entries, ${summary.success_rate.toFixed(0)}% success, ${summary.critical_count} critical`
+      const payload = { entries, summary };
+      const result = makeResult('agent audit', payload, performance.now() - t0, EXIT_CODES.success);
+      emitResult(result, { format, verbose, quiet }, (res, projection) => {
+        const p = res.payload as typeof payload;
+        projection.log('');
+        projection.log(
+          `  Audit: ${p.summary.total_entries} entries, ${p.summary.success_rate.toFixed(0)}% success, ${p.summary.critical_count} critical`
         );
-        formatter.log('');
+        projection.log('');
 
-        if (entries.length === 0) {
-          formatter.log('  No entries found');
+        if (p.entries.length === 0) {
+          projection.log('  No entries found');
         }
 
-        for (const entry of entries) {
+        for (const entry of p.entries) {
           const statusIcon = entry.correction_success ? '+' : '!!';
           const time = new Date(entry.timestamp).toLocaleString();
-          formatter.log(`  ${statusIcon} ${time}  ${entry.agent_name}`);
-          formatter.log(`     ${entry.correction_type}: ${entry.correction_action}`);
-          formatter.log(`     Target: ${entry.violation.target}`);
-          formatter.log('');
+          projection.log(`  ${statusIcon} ${time}  ${entry.agent_name}`);
+          projection.log(`     ${entry.correction_type}: ${entry.correction_action}`);
+          projection.log(`     Target: ${entry.violation.target}`);
+          projection.log('');
         }
-      }
+      });
 
-      process.exit(EXIT_CODES.success);
+      process.exit(result.exit_code);
     } catch (error) {
-      if (formatter instanceof JSONFormatter) {
-        formatter.error('Failed to read audit trail', error);
-      } else {
-        formatter.error(
-          `Failed to read audit trail: ${error instanceof Error ? error.message : String(error)}`
-        );
-      }
-      process.exit(EXIT_CODES.execution_error);
+      const result = makeErrorResult(
+        'agent audit',
+        error,
+        EXIT_CODES.execution_error,
+        'AGENT_AUDIT_ERROR'
+      );
+      emitResult(result, { format, verbose, quiet });
+      process.exit(result.exit_code);
     }
   },
 });

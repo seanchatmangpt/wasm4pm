@@ -1,5 +1,6 @@
 import { defineCommand } from 'citty';
 import { resolveConfig, getExampleTomlConfig, getExampleEnvFile } from '@wasm4pm/config';
+import { emitResult, makeResult, makeErrorResult } from '../../output.js';
 import { EXIT_CODES } from '../../exit-codes.js';
 
 export const configExport = defineCommand({
@@ -16,24 +17,31 @@ export const configExport = defineCommand({
     quiet: { type: 'boolean', alias: 'q' },
   },
   async run(ctx) {
+    const t0 = performance.now();
     const fmt = (ctx.args.format ?? 'toml').toLowerCase();
+    const quiet = ctx.args.quiet ?? false;
 
     try {
-      if (fmt === 'toml') {
-        process.stdout.write(getExampleTomlConfig() + '\n');
-      } else if (fmt === 'env') {
-        process.stdout.write(getExampleEnvFile() + '\n');
+      let content: string;
+      if (fmt === 'toml' || fmt === 'env') {
+        content = fmt === 'toml' ? getExampleTomlConfig() : getExampleEnvFile();
       } else if (fmt === 'json') {
         const config = await resolveConfig();
-        process.stdout.write(JSON.stringify(config, null, 2) + '\n');
+        content = JSON.stringify(config, null, 2);
       } else {
-        process.stderr.write(`Unknown format: ${fmt}. Use toml, json, or env.\n`);
+        const result = makeErrorResult('config export', `Unknown format: ${fmt}. Use toml, json, or env.`,
+          EXIT_CODES.config_error, 'CONFIG_ERROR');
+        emitResult(result, { format: 'human', quiet });
         process.exit(EXIT_CODES.config_error);
+        return;
       }
 
+      // Export commands write artifact content directly to stdout — the content IS the machine output
+      process.stdout.write(content + '\n');
       process.exit(EXIT_CODES.success);
     } catch (e) {
-      process.stderr.write(`Export failed: ${e instanceof Error ? e.message : String(e)}\n`);
+      const result = makeErrorResult('config export', e, EXIT_CODES.execution_error, 'EXPORT_ERROR');
+      emitResult(result, { format: 'human', quiet });
       process.exit(EXIT_CODES.execution_error);
     }
   },

@@ -1,8 +1,7 @@
 import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
-import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
+import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
-import type { OutputOptions } from '../output.js';
 import { runSwarm } from '@wasm4pm/swarm';
 
 export const swarm = defineCommand({
@@ -37,32 +36,15 @@ export const swarm = defineCommand({
     },
   },
   async run(ctx) {
-    const formatter = getFormatter({
-      format: ctx.args.format as 'human' | 'json',
-      verbose: ctx.args.verbose,
-      quiet: ctx.args.quiet,
-    });
+    const t0 = performance.now();
+    const format = (ctx.args.format as 'json' | 'human') ?? 'human';
+    const verbose = Boolean(ctx.args.verbose);
+    const quiet = Boolean(ctx.args.quiet);
 
     try {
-      if (formatter instanceof JSONFormatter) {
-        // Only warn in non-JSON mode usually, but we must use appropriate methods
-        // JSONFormatter doesn't have .warn() or .log().
-      } else {
-        formatter.warn('GROQ_API_KEY environment variable is missing.');
-        formatter.warn(
-          'The swarm relies on Vercel AI SDK and Groq for orchestrating the mining agents.'
-        );
-        formatter.warn('Running with mocked LLM output for demonstration purposes.');
-      }
-
       const inputPath = ctx.args.input as string;
       const xesContent = await fs.readFile(inputPath, 'utf-8');
       const maxEpisodes = ctx.args['max-episodes'] ? parseInt(ctx.args['max-episodes'], 10) : 3;
-
-      if (!(formatter instanceof JSONFormatter)) {
-        formatter.log('');
-        formatter.info(`Initializing Agent Swarm Logic on ${inputPath}...`);
-      }
 
       const config = {
         maxEpisodes,
@@ -73,39 +55,43 @@ export const swarm = defineCommand({
         workerModel: 'llama-3.1-70b-versatile',
       };
 
-      const result = await runSwarm(config);
+      const swarmResult = await runSwarm(config);
 
-      if (formatter instanceof JSONFormatter) {
-        formatter.success('Agent Swarm execution complete', result);
-      } else {
-        formatter.log('');
-        formatter.success(`Swarm reached convergence: ${result.converged ? 'YES' : 'NO'}`);
-        formatter.log(`Episodes run: ${result.episodes.length}`);
+      const payload = { ...swarmResult, input: inputPath, maxEpisodes };
+      const result = makeResult('swarm', payload, performance.now() - t0, EXIT_CODES.success);
+      emitResult(result, { format, verbose, quiet }, (res, projection) => {
+        const data = res.payload as typeof payload;
 
-        formatter.log('');
-        formatter.info('Final Worker Results (Core Mining Backends):');
-        for (const worker of result.finalWorkerResults) {
-          formatter.log(
+        projection.warn('GROQ_API_KEY environment variable is missing.');
+        projection.warn(
+          'The swarm relies on Vercel AI SDK and Groq for orchestrating the mining agents.'
+        );
+        projection.warn('Running with mocked LLM output for demonstration purposes.');
+
+        projection.log('');
+        projection.info(`Initializing Agent Swarm Logic on ${data.input}...`);
+        projection.log('');
+        projection.success(`Swarm reached convergence: ${data.converged ? 'YES' : 'NO'}`);
+        projection.log(`Episodes run: ${data.episodes.length}`);
+
+        projection.log('');
+        projection.info('Final Worker Results (Core Mining Backends):');
+        for (const worker of data.finalWorkerResults) {
+          projection.log(
             `  - Worker [${worker.workerId}]: executed ${worker.algorithmId} in ${worker.durationMs}ms`
           );
         }
 
-        if (ctx.args.verbose) {
-          formatter.log('');
-          formatter.log(JSON.stringify(result.artifact, null, 2));
+        if (verbose) {
+          projection.log('');
+          projection.log(JSON.stringify(data.artifact, null, 2));
         }
-      }
-
-      process.exit(EXIT_CODES.success);
+      });
+      process.exit(result.exit_code);
     } catch (error) {
-      if (formatter instanceof JSONFormatter) {
-        formatter.error('Agent Swarm execution failed', error);
-      } else {
-        formatter.error(
-          `Agent Swarm execution failed: ${error instanceof Error ? error.message : String(error)}`
-        );
-      }
-      process.exit(EXIT_CODES.execution_error);
+      const result = makeErrorResult('swarm', error, EXIT_CODES.execution_error);
+      emitResult(result, { format, verbose, quiet });
+      process.exit(result.exit_code);
     }
   },
 });

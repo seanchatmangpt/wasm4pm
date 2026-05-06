@@ -1,15 +1,8 @@
 import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
-import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
+import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
-import type { OutputOptions } from '../output.js';
 import { WasmLoader } from '@wasm4pm/engine';
-
-export interface DiffOptions extends OutputOptions {
-  log1?: string;
-  log2?: string;
-  activityKey?: string;
-}
 
 interface DfgNode {
   id: string;
@@ -60,6 +53,13 @@ interface DiffResult {
   summary: string;
 }
 
+interface DiffPayload {
+  log1: string;
+  log2: string;
+  activityKey: string;
+  diff: DiffResult;
+}
+
 export const diff = defineCommand({
   meta: {
     name: 'diff',
@@ -97,11 +97,11 @@ export const diff = defineCommand({
     },
   },
   async run(ctx) {
-    const formatter = getFormatter({
-      format: ctx.args.format as 'human' | 'json',
-      verbose: ctx.args.verbose,
-      quiet: ctx.args.quiet,
-    });
+    const format = (ctx.args.format as 'json' | 'human') ?? 'human';
+    const verbose = Boolean(ctx.args.verbose);
+    const quiet = Boolean(ctx.args.quiet);
+
+    const t0 = Date.now();
 
     try {
       const log1Path = ctx.args.log1 as string;
@@ -116,13 +116,15 @@ export const diff = defineCommand({
         try {
           await fs.access(filePath);
         } catch {
-          formatter.error(`Input file not found (${label}): ${filePath}`);
-          process.exit(EXIT_CODES.source_error);
+          const result = makeErrorResult(
+            'diff',
+            new Error(`Input file not found (${label}): ${filePath}`),
+            EXIT_CODES.source_error,
+            'SOURCE_ERROR'
+          );
+          emitResult(result, { format, verbose, quiet });
+          process.exit(result.exit_code);
         }
-      }
-
-      if (formatter instanceof HumanFormatter) {
-        formatter.info(`Comparing event logs: ${log1Path} → ${log2Path}`);
       }
 
       // Load WASM module
@@ -131,10 +133,6 @@ export const diff = defineCommand({
       const wasm = loader.get();
 
       // Read and parse both XES files
-      if (formatter instanceof HumanFormatter) {
-        formatter.debug('Loading event logs from XES files...');
-      }
-
       const [xes1, xes2] = await Promise.all([
         fs.readFile(log1Path, 'utf-8'),
         fs.readFile(log2Path, 'utf-8'),
@@ -144,10 +142,6 @@ export const diff = defineCommand({
       const handle2: string = wasm.load_eventlog_from_xes(xes2);
 
       // Discover DFGs for both logs
-      if (formatter instanceof HumanFormatter) {
-        formatter.debug('Discovering directly-follows graphs...');
-      }
-
       const dfg1Raw = wasm.discover_dfg(handle1, activityKey);
       const dfg2Raw = wasm.discover_dfg(handle2, activityKey);
 
@@ -155,10 +149,6 @@ export const diff = defineCommand({
       const dfg2: Dfg = typeof dfg2Raw === 'string' ? JSON.parse(dfg2Raw) : dfg2Raw;
 
       // Discover trace variants for both logs
-      if (formatter instanceof HumanFormatter) {
-        formatter.debug('Analyzing trace variants...');
-      }
-
       const variants1Raw = wasm.analyze_trace_variants(handle1, activityKey);
       const variants2Raw = wasm.analyze_trace_variants(handle2, activityKey);
 
@@ -170,32 +160,30 @@ export const diff = defineCommand({
       );
 
       // Compute diff
-      const result = computeDiff(dfg1, dfg2, variants1, variants2);
+      const diffResult = computeDiff(dfg1, dfg2, variants1, variants2);
 
       // Free handles
       wasm.delete_object(handle1);
       wasm.delete_object(handle2);
 
-      // Output results
-      if (formatter instanceof JSONFormatter) {
-        formatter.success('Process diff complete', {
-          log1: log1Path,
-          log2: log2Path,
-          activityKey,
-          diff: result as unknown as Record<string, unknown>,
-        });
-      } else {
-        printHumanDiff(formatter, log1Path, log2Path, result);
-      }
+      const elapsedMs = Date.now() - t0;
+      const payload: DiffPayload = {
+        log1: log1Path,
+        log2: log2Path,
+        activityKey,
+        diff: diffResult,
+      };
 
-      process.exit(EXIT_CODES.success);
+      const result = makeResult('diff', payload, elapsedMs, EXIT_CODES.success);
+      emitResult(result, { format, verbose, quiet }, (res, projection) => {
+        printHumanDiff(res.payload, log1Path, log2Path, projection);
+      });
+
+      process.exit(result.exit_code);
     } catch (error) {
-      if (formatter instanceof JSONFormatter) {
-        formatter.error('Diff failed', error);
-      } else {
-        formatter.error(`Diff failed: ${error instanceof Error ? error.message : String(error)}`);
-      }
-      process.exit(EXIT_CODES.execution_error);
+      const result = makeErrorResult('diff', error, EXIT_CODES.execution_error, 'EXECUTION_ERROR');
+      emitResult(result, { format, verbose, quiet });
+      process.exit(result.exit_code);
     }
   },
 });
@@ -322,15 +310,18 @@ function computeDiff(
   };
 }
 
+import type { ConsoleProjection } from '../output.js';
+
 /**
- * Print a colour-coded human-readable diff to the formatter.
+ * Print a colour-coded human-readable diff via ConsoleProjection.
  */
 function printHumanDiff(
-  formatter: HumanFormatter,
+  payload: DiffPayload,
   log1Path: string,
   log2Path: string,
-  result: DiffResult
+  projection: ConsoleProjection
 ): void {
+  const result = payload.diff;
   const log1Name = log1Path.split('/').pop() ?? log1Path;
   const log2Name = log2Path.split('/').pop() ?? log2Path;
 
@@ -340,7 +331,7 @@ function printHumanDiff(
   const cyan = (s: string) => `\x1b[36m${s}\x1b[0m`;
   const bold = (s: string) => `\x1b[1m${s}\x1b[0m`;
 
-  const line = (s: string) => formatter.log(s);
+  const line = (s: string) => projection.log(s);
 
   // Sparkbar helper (8 chars, ▓ filled ░ empty)
   const sparkBar = (val: number, min: number, max: number, width = 8): string => {

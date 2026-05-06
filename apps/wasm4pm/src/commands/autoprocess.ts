@@ -1,17 +1,11 @@
 import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
+import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES, type ExitCode } from '../exit-codes.js';
 import { WasmLoader } from '@wasm4pm/engine';
-import type { OutputOptions } from '../output.js';
 
 const AUTOPROCESS_STATE_FILE = '.wasm4pm/autoprocess-state.json';
-
-export interface AutoProcessOptions extends OutputOptions {
-  'activity-key'?: string;
-  config?: string;
-}
 
 async function ensureStateDir() {
   try {
@@ -41,8 +35,8 @@ async function loadState(wasm: any): Promise<void> {
     if (state.circuit_breaker_state) {
       wasm.circuit_breaker_set_state(JSON.stringify(state.circuit_breaker_state));
     }
-  } catch (error) {
-    // File doesn't exist or is invalid - that's okay, we'll start fresh
+  } catch {
+    // File doesn't exist or is invalid - start fresh
   }
 }
 
@@ -61,7 +55,7 @@ async function saveState(wasm: any): Promise<void> {
 
     await ensureStateDir();
     await fs.writeFile(AUTOPROCESS_STATE_FILE, JSON.stringify(fullState, null, 2));
-  } catch (error) {
+  } catch {
     // Silently fail on save - don't block execution
   }
 }
@@ -104,11 +98,10 @@ export const autoprocess = defineCommand({
     },
   },
   async run(ctx) {
-    const formatter = getFormatter({
-      format: ctx.args.format as 'human' | 'json',
-      verbose: ctx.args.verbose,
-      quiet: ctx.args.quiet,
-    });
+    const t0 = performance.now();
+    const format = (ctx.args.format as 'json' | 'human') ?? 'human';
+    const verbose = Boolean(ctx.args.verbose);
+    const quiet = Boolean(ctx.args.quiet);
 
     try {
       // 1. Load WASM module
@@ -131,69 +124,7 @@ export const autoprocess = defineCommand({
         ctx.args['activity-key'],
         cycleConfig
       );
-      const result = typeof rawResult === 'string' ? JSON.parse(rawResult) : rawResult;
-
-      // 4. Format output
-      if (formatter instanceof JSONFormatter) {
-        formatter.success('AutoProcess cycle completed', result);
-      } else {
-        const cycle = result.cycle_result;
-        const timing = result.timing;
-
-        formatter.info('AutoProcess Results');
-        formatter.log('');
-
-        // Perception
-        formatter.log('  Perception:');
-        formatter.log(`    Events: ${cycle.perception.event_count}`);
-        formatter.log(`    Activities: ${cycle.perception.unique_activities}`);
-        formatter.log(`    Traces: ${cycle.perception.trace_count}`);
-        formatter.log(
-          `    Health: ${cycle.perception.health_state} (score ${cycle.perception.health_score})`
-        );
-        formatter.log('');
-
-        // Decision
-        formatter.log('  Decision:');
-        formatter.log(`    Guard: ${cycle.decision.guard_result ? 'PASS' : 'FAIL'}`);
-        formatter.log(
-          `    Pattern: ${cycle.decision.pattern_result} (${cycle.decision.pattern_ticks} ticks)`
-        );
-        formatter.log('');
-
-        // Protection
-        formatter.log('  Protection:');
-        formatter.log(`    Circuit: ${cycle.protection.circuit_state}`);
-        const spc = cycle.protection.spc_results;
-        if (spc) {
-          const spcEntries = Object.entries(spc);
-          for (const [metric, status] of spcEntries) {
-            const icon = status === 'OK' ? '+' : status === 'ALERT' ? '!' : '-';
-            formatter.log(`    SPC ${metric}: ${icon} ${status}`);
-          }
-        }
-        formatter.log(`    Special Causes: ${cycle.protection.special_causes.length}`);
-        formatter.log('');
-
-        // Optimization
-        formatter.log('  Optimization:');
-        formatter.log(`    Action: ${cycle.optimization.rl_action}`);
-        formatter.log('');
-
-        // Timing
-        formatter.log('  Timing:');
-        formatter.log(
-          `    Total: ${timing.total_ns} ns (see benchmarks for nanosecond measurements)`
-        );
-        formatter.log('');
-
-        // Success indicator
-        if (cycle.success) {
-          formatter.log('  Result: Cycle completed successfully');
-        } else {
-          formatter.log('  Result: Cycle completed with warnings');
-        }
-      }
+      const cycleResult = typeof rawResult === 'string' ? JSON.parse(rawResult) : rawResult;
 
       // 5. Save persisted state (RL, SPC, circuit breaker)
       await saveState(wasm);
@@ -201,28 +132,76 @@ export const autoprocess = defineCommand({
       // 6. Cleanup
       wasm.delete_object(logHandle);
 
-      // Use process.exit() to prevent citty from printing help text
-      // The formatter uses synchronous console.log for output that flushes immediately
-      process.exit(EXIT_CODES.success);
+      const result = makeResult('autoprocess', cycleResult, performance.now() - t0, EXIT_CODES.success);
+      emitResult(result, { format, verbose, quiet }, (res, projection) => {
+        const data = res.payload as Record<string, unknown>;
+        const cycle = data.cycle_result as Record<string, unknown>;
+        const timing = data.timing as Record<string, unknown>;
+
+        projection.info('AutoProcess Results');
+        projection.log('');
+
+        // Perception
+        const perception = cycle.perception as Record<string, unknown>;
+        projection.log('  Perception:');
+        projection.log(`    Events: ${perception.event_count}`);
+        projection.log(`    Activities: ${perception.unique_activities}`);
+        projection.log(`    Traces: ${perception.trace_count}`);
+        projection.log(`    Health: ${perception.health_state} (score ${perception.health_score})`);
+        projection.log('');
+
+        // Decision
+        const decision = cycle.decision as Record<string, unknown>;
+        projection.log('  Decision:');
+        projection.log(`    Guard: ${decision.guard_result ? 'PASS' : 'FAIL'}`);
+        projection.log(`    Pattern: ${decision.pattern_result} (${decision.pattern_ticks} ticks)`);
+        projection.log('');
+
+        // Protection
+        const protection = cycle.protection as Record<string, unknown>;
+        projection.log('  Protection:');
+        projection.log(`    Circuit: ${protection.circuit_state}`);
+        const spc = protection.spc_results as Record<string, unknown> | undefined;
+        if (spc) {
+          for (const [metric, status] of Object.entries(spc)) {
+            const icon = status === 'OK' ? '+' : status === 'ALERT' ? '!' : '-';
+            projection.log(`    SPC ${metric}: ${icon} ${status}`);
+          }
+        }
+        projection.log(`    Special Causes: ${(protection.special_causes as unknown[]).length}`);
+        projection.log('');
+
+        // Optimization
+        const optimization = cycle.optimization as Record<string, unknown>;
+        projection.log('  Optimization:');
+        projection.log(`    Action: ${optimization.rl_action}`);
+        projection.log('');
+
+        // Timing
+        projection.log('  Timing:');
+        projection.log(
+          `    Total: ${timing.total_ns} ns (see benchmarks for nanosecond measurements)`
+        );
+        projection.log('');
+
+        // Result
+        if (cycle.success) {
+          projection.log('  Result: Cycle completed successfully');
+        } else {
+          projection.log('  Result: Cycle completed with warnings');
+        }
+      });
+      process.exit(result.exit_code);
     } catch (error) {
       // Determine correct exit code based on error type
       let exitCode: ExitCode = EXIT_CODES.execution_error;
-
-      // File not found or read errors are source errors
-      if (error instanceof Error) {
-        if ('code' in error && error.code === 'ENOENT') {
-          exitCode = EXIT_CODES.source_error;
-        }
+      if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
+        exitCode = EXIT_CODES.source_error;
       }
 
-      if (formatter instanceof JSONFormatter) {
-        formatter.error('AutoProcess failed', error);
-      } else {
-        formatter.error(
-          `AutoProcess failed: ${error instanceof Error ? error.message : String(error)}`
-        );
-      }
-      process.exit(exitCode);
+      const result = makeErrorResult('autoprocess', error, exitCode);
+      emitResult(result, { format, verbose, quiet });
+      process.exit(result.exit_code);
     }
   },
 });

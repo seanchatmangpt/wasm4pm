@@ -1,7 +1,7 @@
 import { defineCommand } from 'citty';
 import { readFileSync, existsSync } from 'node:fs';
 import { WasmLoader } from '@wasm4pm/engine';
-import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
+import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { buildSarifOutput, verdictToLevel } from '../sarif.js';
 
@@ -52,18 +52,20 @@ const benchmarkBuild = defineCommand({
     quiet: { type: 'boolean', alias: 'q' },
   },
   async run(ctx) {
-    const formatter = getFormatter({
-      format: ctx.args.format as 'human' | 'json',
-      quiet: ctx.args.quiet,
-    });
+    const t0 = performance.now();
+    const format = (ctx.args.format as 'json' | 'human') ?? 'human';
+    const quiet = ctx.args.quiet ?? false;
+    const corpusPath = ctx.args.corpus;
 
-    const path = ctx.args.corpus;
-    if (!existsSync(path)) {
-      formatter.error(`Corpus file not found: ${path}`);
+    if (!existsSync(corpusPath)) {
+      const result = makeErrorResult('benchmark build', `Corpus file not found: ${corpusPath}`,
+        EXIT_CODES.source_error, 'SOURCE_NOT_FOUND');
+      emitResult(result, { format, quiet });
       process.exit(EXIT_CODES.source_error);
+      return;
     }
 
-    const lines = readFileSync(path, 'utf8').split('\n').filter((l) => l.trim());
+    const lines = readFileSync(corpusPath, 'utf8').split('\n').filter((l) => l.trim());
     const valid: BenchmarkTrace[] = [];
     const errors: string[] = [];
 
@@ -83,22 +85,28 @@ const benchmarkBuild = defineCommand({
       }
     }
 
-    if (formatter instanceof JSONFormatter) {
-      formatter.output({ valid: valid.length, invalid: errors.length, errors });
-    } else {
-      (formatter as HumanFormatter).info(`Corpus: ${path}`);
-      (formatter as HumanFormatter).info(`  Valid traces:   ${valid.length}`);
-      (formatter as HumanFormatter).info(`  Invalid traces: ${errors.length}`);
-      for (const e of errors) formatter.warn(`  ${e}`);
-      if (errors.length === 0) formatter.success('Corpus validated — all traces valid.');
-    }
+    const exitCode = errors.length > 0 ? EXIT_CODES.execution_error : EXIT_CODES.success;
+    const result = makeResult('benchmark build', {
+      corpus: corpusPath,
+      valid: valid.length,
+      invalid: errors.length,
+      errors,
+    }, performance.now() - t0, exitCode);
 
-    process.exit(errors.length > 0 ? EXIT_CODES.execution_error : EXIT_CODES.success);
+    emitResult(result, { format, quiet }, (res, projection) => {
+      projection.info(`Corpus: ${res.payload.corpus}`);
+      projection.info(`  Valid traces:   ${res.payload.valid}`);
+      projection.info(`  Invalid traces: ${res.payload.invalid}`);
+      for (const e of res.payload.errors) projection.warn(`  ${e}`);
+      if (res.payload.invalid === 0) projection.success('Corpus validated — all traces valid.');
+    });
+
+    process.exit(exitCode);
   },
 });
 
 // ---------------------------------------------------------------------------
-// Subcommand: replay  (shared runner used by verify too)
+// Shared runner
 // ---------------------------------------------------------------------------
 
 async function runBenchmarks(
@@ -125,28 +133,19 @@ async function runBenchmarks(
       .filter((t) => !traceFilter || t.trace_id === traceFilter)
       .map((t) => {
         try {
-          const raw = (wasm.classify_motion as (j: string) => unknown)(
-            JSON.stringify(t.motion)
-          );
+          const raw = (wasm.classify_motion as (j: string) => unknown)(JSON.stringify(t.motion));
           const receipt = parse(raw) as { verdict: string };
           const actual = receipt.verdict ?? 'Unknown';
           const pass = actual.toLowerCase() === t.expected_verdict.toLowerCase();
           return {
-            trace_id: t.trace_id,
-            name: t.name,
-            pass,
-            final_verdict: actual,
+            trace_id: t.trace_id, name: t.name, pass, final_verdict: actual,
             expected_verdict: t.expected_verdict,
             failure_reason: pass ? undefined : `Expected ${t.expected_verdict}, got ${actual}`,
           };
         } catch (e) {
           return {
-            trace_id: t.trace_id,
-            name: t.name,
-            pass: false,
-            final_verdict: 'Error',
-            expected_verdict: t.expected_verdict,
-            failure_reason: String(e),
+            trace_id: t.trace_id, name: t.name, pass: false,
+            final_verdict: 'Error', expected_verdict: t.expected_verdict, failure_reason: String(e),
           };
         }
       });
@@ -155,7 +154,6 @@ async function runBenchmarks(
     return { builtIn: false, results, total: results.length, passed, failed: results.length - passed };
   }
 
-  // Built-in benchmark suite
   if (typeof wasm.run_all_benchmarks !== 'function') {
     throw new Error('run_all_benchmarks not available — requires fog or browser profile');
   }
@@ -163,6 +161,10 @@ async function runBenchmarks(
   const r = parse(raw) as RunAllResult;
   return { builtIn: true, results: r.results, total: r.total, passed: r.passed, failed: r.failed };
 }
+
+// ---------------------------------------------------------------------------
+// Subcommand: replay
+// ---------------------------------------------------------------------------
 
 const benchmarkReplay = defineCommand({
   meta: {
@@ -177,42 +179,41 @@ const benchmarkReplay = defineCommand({
     quiet: { type: 'boolean', alias: 'q' },
   },
   async run(ctx) {
-    const formatter = getFormatter({
-      format: ctx.args.format as 'human' | 'json',
-      verbose: ctx.args.verbose,
-      quiet: ctx.args.quiet,
-    });
+    const t0 = performance.now();
+    const format = (ctx.args.format as 'json' | 'human') ?? 'human';
+    const verbose = ctx.args.verbose ?? false;
+    const quiet = ctx.args.quiet ?? false;
 
     try {
       const { results, total, passed, failed } = await runBenchmarks(ctx.args.corpus, ctx.args.trace);
+      const result = makeResult('benchmark replay', {
+        total, passed, failed, pass_rate: total ? passed / total : 0, results,
+      }, performance.now() - t0);
 
-      if (formatter instanceof JSONFormatter) {
-        formatter.output({ total, passed, failed, pass_rate: total ? passed / total : 0, results });
-      } else {
-        const hf = formatter as HumanFormatter;
+      emitResult(result, { format, verbose, quiet }, (res, projection) => {
         const pad = (s: string, n: number) => s.padEnd(n);
-        hf.info(`\nBenchmark Results`);
-        hf.info(`${'─'.repeat(72)}`);
-        hf.info(`${pad('Trace ID', 28)} ${pad('Verdict', 22)} Expected              Pass`);
-        hf.info(`${'─'.repeat(72)}`);
-        for (const r of results) {
+        projection.info('\nBenchmark Results');
+        projection.info('─'.repeat(72));
+        projection.info(`${pad('Trace ID', 28)} ${pad('Verdict', 22)} Expected              Pass`);
+        projection.info('─'.repeat(72));
+        for (const r of res.payload.results) {
           const ok = r.pass ? '✓' : '✗';
           const line = `${pad(r.trace_id, 28)} ${pad(r.final_verdict, 22)} ${pad(r.expected_verdict, 20)} ${ok}`;
-          if (r.pass) hf.info(line);
-          else formatter.warn(line);
-          if (!r.pass && ctx.args.verbose && r.failure_reason) {
-            formatter.warn(`  → ${r.failure_reason}`);
-          }
+          if (r.pass) projection.info(line);
+          else projection.warn(line);
+          if (!r.pass && verbose && r.failure_reason) projection.warn(`  → ${r.failure_reason}`);
         }
-        hf.info(`${'─'.repeat(72)}`);
-        const summary = `${passed}/${total} passed (${Math.round((passed / (total || 1)) * 100)}%)`;
-        if (failed === 0) formatter.success(summary);
-        else formatter.warn(summary);
-      }
+        projection.info('─'.repeat(72));
+        const pct = Math.round((passed / (total || 1)) * 100);
+        const summary = `${passed}/${total} passed (${pct}%)`;
+        if (failed === 0) projection.success(summary);
+        else projection.warn(summary);
+      });
 
       process.exit(EXIT_CODES.success);
     } catch (e) {
-      formatter.error(String(e));
+      const result = makeErrorResult('benchmark replay', e, EXIT_CODES.execution_error);
+      emitResult(result, { format, verbose, quiet });
       process.exit(EXIT_CODES.execution_error);
     }
   },
@@ -234,45 +235,45 @@ const benchmarkVerify = defineCommand({
     quiet: { type: 'boolean', alias: 'q' },
   },
   async run(ctx) {
-    const formatter = getFormatter({
-      format: ctx.args.format as 'human' | 'json',
-      verbose: ctx.args.verbose,
-      quiet: ctx.args.quiet,
-    });
+    const t0 = performance.now();
+    const format = (ctx.args.format as 'json' | 'sarif' | 'human') ?? 'human';
+    const verbose = ctx.args.verbose ?? false;
+    const quiet = ctx.args.quiet ?? false;
 
     try {
       const { results, total, passed, failed } = await runBenchmarks(ctx.args.corpus, undefined);
+      const exitCode = failed > 0 ? EXIT_CODES.execution_error : EXIT_CODES.success;
 
-      if (ctx.args.format === 'sarif') {
+      if (format === 'sarif') {
         const sarifResults = results.map((r) => ({
-          verdict: r.final_verdict,
-          traceName: r.trace_id,
-          explanation: r.failure_reason,
+          verdict: r.final_verdict, traceName: r.trace_id, explanation: r.failure_reason,
         }));
         process.stdout.write(JSON.stringify(buildSarifOutput('26.4.28', sarifResults), null, 2) + '\n');
-        process.exit(failed > 0 ? EXIT_CODES.execution_error : EXIT_CODES.success);
+        process.exit(exitCode);
         return;
       }
 
-      if (formatter instanceof JSONFormatter) {
-        formatter.output({ total, passed, failed, pass_rate: total ? passed / total : 0, results });
-      } else {
-        const allPass = failed === 0;
-        if (allPass) {
-          formatter.success(`Benchmark verify: ${passed}/${total} passed`);
+      const result = makeResult('benchmark verify', {
+        total, passed, failed, pass_rate: total ? passed / total : 0, results,
+      }, performance.now() - t0, exitCode);
+
+      emitResult(result, { format, verbose, quiet }, (res, projection) => {
+        if (res.payload.failed === 0) {
+          projection.success(`Benchmark verify: ${res.payload.passed}/${res.payload.total} passed`);
         } else {
-          formatter.error(`Benchmark verify FAILED: ${failed}/${total} traces did not match expected verdict`);
-          if (ctx.args.verbose || !ctx.args.quiet) {
-            for (const r of results.filter((x) => !x.pass)) {
-              formatter.warn(`  ✗ ${r.trace_id}: expected ${r.expected_verdict}, got ${r.final_verdict}`);
+          projection.error(`Benchmark verify FAILED: ${res.payload.failed}/${res.payload.total} traces did not match expected verdict`);
+          if (verbose || !quiet) {
+            for (const r of res.payload.results.filter((x) => !x.pass)) {
+              projection.warn(`  ✗ ${r.trace_id}: expected ${r.expected_verdict}, got ${r.final_verdict}`);
             }
           }
         }
-      }
+      });
 
-      process.exit(failed > 0 ? EXIT_CODES.execution_error : EXIT_CODES.success);
+      process.exit(exitCode);
     } catch (e) {
-      formatter.error(String(e));
+      const result = makeErrorResult('benchmark verify', e, EXIT_CODES.execution_error);
+      emitResult(result, { format, verbose, quiet });
       process.exit(EXIT_CODES.execution_error);
     }
   },
@@ -297,17 +298,15 @@ const benchmarkExport = defineCommand({
     quiet: { type: 'boolean', alias: 'q' },
   },
   async run(ctx) {
-    const formatter = getFormatter({ format: 'human', quiet: ctx.args.quiet });
+    const quiet = ctx.args.quiet ?? false;
+    const fmt = (ctx.args.format ?? 'sarif').toLowerCase();
 
     try {
       const { results, total, passed, failed } = await runBenchmarks(ctx.args.corpus, undefined);
-      const fmt = (ctx.args.format ?? 'sarif').toLowerCase();
 
       if (fmt === 'sarif') {
         const sarifResults = results.map((r) => ({
-          verdict: r.final_verdict,
-          traceName: r.trace_id,
-          explanation: r.failure_reason,
+          verdict: r.final_verdict, traceName: r.trace_id, explanation: r.failure_reason,
         }));
         process.stdout.write(JSON.stringify(buildSarifOutput('26.4.28', sarifResults), null, 2) + '\n');
       } else if (fmt === 'json') {
@@ -317,19 +316,21 @@ const benchmarkExport = defineCommand({
       } else if (fmt === 'csv') {
         const rows = ['trace_id,name,expected_verdict,actual_verdict,pass,level'];
         for (const r of results) {
-          rows.push(
-            [r.trace_id, r.name, r.expected_verdict, r.final_verdict, r.pass, verdictToLevel(r.final_verdict)].join(',')
-          );
+          rows.push([r.trace_id, r.name, r.expected_verdict, r.final_verdict, r.pass, verdictToLevel(r.final_verdict)].join(','));
         }
         process.stdout.write(rows.join('\n') + '\n');
       } else {
-        formatter.error(`Unknown format: ${fmt}. Use sarif, json, or csv.`);
+        const result = makeErrorResult('benchmark export', `Unknown format: ${fmt}. Use sarif, json, or csv.`,
+          EXIT_CODES.config_error, 'CONFIG_ERROR');
+        emitResult(result, { format: 'human', quiet });
         process.exit(EXIT_CODES.config_error);
+        return;
       }
 
       process.exit(EXIT_CODES.success);
     } catch (e) {
-      formatter.error(String(e));
+      const result = makeErrorResult('benchmark export', e, EXIT_CODES.execution_error);
+      emitResult(result, { format: 'human', quiet });
       process.exit(EXIT_CODES.execution_error);
     }
   },
