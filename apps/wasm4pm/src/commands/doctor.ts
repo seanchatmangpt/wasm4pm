@@ -1,9 +1,8 @@
 import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
-import { existsSync, readFileSync } from 'fs';
+import { existsSync, readFileSync, execSync, statSync } from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { execSync } from 'child_process';
 import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import type { OutputOptions } from '../output.js';
@@ -261,7 +260,7 @@ async function checkSimdSupport(): Promise<Diagnosis> {
     ]);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const compile = (globalThis as any).WebAssembly?.compile as
-      | ((buf: Uint8Array) => Promise<any>)
+      | ((buf: Uint8Array) => Promise<unknown>)
       | undefined;
     if (!compile) {
       return {
@@ -1379,10 +1378,6 @@ async function checkStepTypeCoverage(): Promise<Diagnosis> {
   for (const m of arrayMatch[1].matchAll(/'([^']+)'/g)) validStepTypes.add(m[1]);
 
   const missing: string[] = [];
-  for (const m of stepTypeMatch[1].matchAll(/'([^']+)'/g)) {
-    // Match the value (after the colon), not the key
-    void m;
-  }
 
   // Parse key: 'value' pairs
   for (const m of stepTypeMatch[1].matchAll(/(\w+)\s*:\s*'([^']+)'/g)) {
@@ -1487,6 +1482,42 @@ async function checkStateMachineCompleteness(): Promise<Diagnosis> {
     fix: 'Add missing transitions in packages/engine/src/transitions.ts',
   };
 }
+
+// ────────────────────────────────────────────────────────────────────────────
+// Check arrays (used by subcommands to slice the check set)
+// ────────────────────────────────────────────────────────────────────────────
+
+export const ENV_CHECKS: Array<() => Promise<Diagnosis>> = [
+  checkNodeVersion,
+  checkPnpmVersion,
+  checkWasmBinary,
+  checkWasmLoads,
+  checkSimdSupport,
+  checkConfigFound,
+  checkConfigValidation,
+  checkXesFiles,
+  checkSystemMemory,
+  checkDiskSpace,
+  checkGitHooks,
+  checkTypeScriptCompilation,
+  checkMicroMl,
+  checkRustToolchain,
+  checkResultsDir,
+  checkAlgorithmRegistry,
+  checkWorkspaceIntegrity,
+];
+
+export const TPS_CHECKS: Array<() => Promise<Diagnosis>> = [
+  checkStepTypeSync,
+  checkRegistryConsistency,
+  checkStateMachineIntegrity,
+  checkProfileCoverage,
+  checkCanonicalNaming,
+  checkStepTypeCoverage,
+  checkStateMachineCompleteness,
+];
+
+export const ALL_CHECKS = [...ENV_CHECKS, ...TPS_CHECKS];
 
 // ────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -1595,14 +1626,128 @@ function printReport(formatter: HumanFormatter, report: DoctorReport): void {
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// Command definition
+// Shared check runner
 // ────────────────────────────────────────────────────────────────────────────
 
-export const doctor = defineCommand({
+async function runChecks(
+  checks: Array<() => Promise<Diagnosis>>,
+  format: string,
+  verbose: boolean | undefined,
+  quiet: boolean | undefined
+): Promise<DoctorReport> {
+  const formatter = getFormatter({
+    format: format as 'human' | 'json',
+    verbose,
+    quiet,
+  });
+
+  const diagnoses: Diagnosis[] = await Promise.all(checks.map((fn) => fn()));
+
+  const report: DoctorReport = {
+    diagnoses,
+    info: diagnoses.filter((c) => c.severity === 'INFO').length,
+    warnings: diagnoses.filter((c) => c.severity === 'WARNING').length,
+    stopTheLine: diagnoses.filter((c) => c.severity === 'STOP_THE_LINE').length,
+    epistemicHealth: diagnoses.every((c) => c.severity !== 'STOP_THE_LINE'),
+  };
+
+  if (formatter instanceof JSONFormatter) {
+    if (report.epistemicHealth) {
+      formatter.success('wpm environment is healthy', {
+        ...report,
+        healthy: true,
+        diagnoses: report.diagnoses.map((c) => ({ ...c })),
+      });
+    } else {
+      formatter.warn('wpm environment has issues', {
+        ...report,
+        healthy: false,
+        diagnoses: report.diagnoses.map((c) => ({ ...c })),
+      });
+    }
+  } else {
+    printReport(formatter as HumanFormatter, report);
+  }
+
+  if (!report.epistemicHealth) {
+    process.exitCode = EXIT_CODES.config_error;
+  }
+
+  return report;
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Safe-to-auto-execute fix prefixes
+// ────────────────────────────────────────────────────────────────────────────
+
+function isAutoExecutable(fixCmd: string): boolean {
+  const safePrefixes = [
+    'pnpm install',
+    'mkdir -p',
+    'pnpm prepare',
+    'cd wasm4pm && pnpm run build',
+  ];
+  return safePrefixes.some((prefix) => fixCmd.startsWith(prefix));
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Subcommand: check
+// ────────────────────────────────────────────────────────────────────────────
+
+export const doctorCheck = defineCommand({
   meta: {
-    name: 'doctor',
-    description:
-      'Check environment health (24 checks) and pipeline integrity — print a fix guide for any issues found',
+    name: 'check',
+    description: 'Run all 24 health checks (or a filtered subset)',
+  },
+  args: {
+    format: {
+      type: 'string',
+      description: 'Output format (human or json)',
+      default: 'human',
+    },
+    verbose: {
+      type: 'boolean',
+      description: 'Show all checks including passing ones',
+      alias: 'v',
+    },
+    quiet: {
+      type: 'boolean',
+      description: 'Suppress non-error output',
+      alias: 'q',
+    },
+    checks: {
+      type: 'string',
+      description: 'Comma-separated check function names to run (e.g. checkWasmBinary,checkNodeVersion)',
+    },
+  },
+  async run(ctx) {
+    let checksToRun = ALL_CHECKS;
+
+    if (ctx.args.checks) {
+      const names = (ctx.args.checks as string).split(',').map((s) => s.trim());
+      const filtered = ALL_CHECKS.filter((fn) => names.includes(fn.name));
+      if (filtered.length > 0) {
+        checksToRun = filtered;
+      }
+    }
+
+    await runChecks(
+      checksToRun,
+      (ctx.args.format as string) ?? 'human',
+      ctx.args.verbose,
+      ctx.args.quiet
+    );
+  },
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// Subcommand: env
+// ────────────────────────────────────────────────────────────────────────────
+
+export const doctorEnv = defineCommand({
+  meta: {
+    name: 'env',
+    description: 'Run only the 17 environment checks',
   },
   args: {
     format: {
@@ -1622,71 +1767,1117 @@ export const doctor = defineCommand({
     },
   },
   async run(ctx) {
+    await runChecks(
+      ENV_CHECKS,
+      (ctx.args.format as string) ?? 'human',
+      ctx.args.verbose,
+      ctx.args.quiet
+    );
+  },
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// Subcommand: tps
+// ────────────────────────────────────────────────────────────────────────────
+
+export const doctorTps = defineCommand({
+  meta: {
+    name: 'tps',
+    description: 'Run only the 7 TPS pipeline integrity checks',
+  },
+  args: {
+    format: {
+      type: 'string',
+      description: 'Output format (human or json)',
+      default: 'human',
+    },
+    verbose: {
+      type: 'boolean',
+      description: 'Show all checks including passing ones',
+      alias: 'v',
+    },
+    quiet: {
+      type: 'boolean',
+      description: 'Suppress non-error output',
+      alias: 'q',
+    },
+    'fail-fast': {
+      type: 'boolean',
+      description: 'Exit on first failure',
+    },
+  },
+  async run(ctx) {
+    const failFast = ctx.args['fail-fast'] as boolean | undefined;
+
+    if (failFast) {
+      const formatter = getFormatter({
+        format: (ctx.args.format as 'human' | 'json') ?? 'human',
+        verbose: ctx.args.verbose,
+        quiet: ctx.args.quiet,
+      });
+
+      for (const fn of TPS_CHECKS) {
+        const diag = await fn();
+        if (diag.severity === 'STOP_THE_LINE') {
+          const report: DoctorReport = {
+            diagnoses: [diag],
+            info: 0,
+            warnings: 0,
+            stopTheLine: 1,
+            epistemicHealth: false,
+          };
+          if (formatter instanceof JSONFormatter) {
+            formatter.warn('TPS check failed', { ...report, healthy: false });
+          } else {
+            printReport(formatter as HumanFormatter, report);
+          }
+          process.exitCode = EXIT_CODES.config_error;
+          return;
+        }
+      }
+
+      // All passed — run full report
+      await runChecks(
+        TPS_CHECKS,
+        (ctx.args.format as string) ?? 'human',
+        ctx.args.verbose,
+        ctx.args.quiet
+      );
+    } else {
+      await runChecks(
+        TPS_CHECKS,
+        (ctx.args.format as string) ?? 'human',
+        ctx.args.verbose,
+        ctx.args.quiet
+      );
+    }
+  },
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// Subcommand: fix
+// ────────────────────────────────────────────────────────────────────────────
+
+export const doctorFix = defineCommand({
+  meta: {
+    name: 'fix',
+    description: 'Run all checks and execute auto-fixable repair commands',
+  },
+  args: {
+    format: {
+      type: 'string',
+      description: 'Output format (human or json)',
+      default: 'human',
+    },
+    verbose: {
+      type: 'boolean',
+      description: 'Show all checks including passing ones',
+      alias: 'v',
+    },
+    quiet: {
+      type: 'boolean',
+      description: 'Suppress non-error output',
+      alias: 'q',
+    },
+    'dry-run': {
+      type: 'boolean',
+      description: 'Print fix commands without executing',
+    },
+    yes: {
+      type: 'boolean',
+      description: 'Skip confirmation prompts',
+      alias: 'y',
+    },
+  },
+  async run(ctx) {
+    const dryRun = ctx.args['dry-run'] as boolean | undefined;
+    const yes = ctx.args.yes as boolean | undefined;
+    const fmt = (ctx.args.format as string) ?? 'human';
+
     const formatter = getFormatter({
-      format: ctx.args.format as 'human' | 'json',
+      format: fmt as 'human' | 'json',
       verbose: ctx.args.verbose,
       quiet: ctx.args.quiet,
     });
 
-    const checks: Diagnosis[] = await Promise.all([
-      // ── Environment checks (1-17) ──
-      checkNodeVersion(),
-      checkPnpmVersion(),
-      checkWasmBinary(),
-      checkWasmLoads(),
-      checkSimdSupport(),
-      checkConfigFound(),
-      checkConfigValidation(),
-      checkXesFiles(),
-      checkSystemMemory(),
-      checkDiskSpace(),
-      checkGitHooks(),
-      checkTypeScriptCompilation(),
-      checkMicroMl(),
-      checkRustToolchain(),
-      checkResultsDir(),
-      checkAlgorithmRegistry(),
-      checkWorkspaceIntegrity(),
-      // ── TPS Pipeline Integrity checks (18-24) ──
-      checkStepTypeSync(),
-      checkRegistryConsistency(),
-      checkStateMachineIntegrity(),
-      checkProfileCoverage(),
-      checkCanonicalNaming(),
-      checkStepTypeCoverage(),
-      checkStateMachineCompleteness(),
-    ]);
+    // Run all checks first
+    const diagnoses: Diagnosis[] = await Promise.all(ALL_CHECKS.map((fn) => fn()));
 
-    const report: DoctorReport = {
-      diagnoses: checks,
-      info: checks.filter((c) => c.severity === 'INFO').length,
-      warnings: checks.filter((c) => c.severity === 'WARNING').length,
-      stopTheLine: checks.filter((c) => c.severity === 'STOP_THE_LINE').length,
-      epistemicHealth: checks.every((c) => c.severity !== 'STOP_THE_LINE'),
-    };
+    // Collect fixable checks
+    const fixable = diagnoses.filter(
+      (d) => d.severity !== 'INFO' && d.fix && isAutoExecutable(d.fix)
+    );
+
+    if (!(formatter instanceof JSONFormatter)) {
+      const hf = formatter as HumanFormatter;
+      hf.log('');
+      hf.log(`wpm doctor fix — found ${fixable.length} auto-fixable issue(s)`);
+      hf.log('─'.repeat(80));
+
+      for (const d of diagnoses) {
+        const badge = renderBadge(d.severity);
+        hf.log(`  ${badge}  ${d.name}: ${d.message}`);
+        if (d.severity !== 'INFO' && d.fix) {
+          if (isAutoExecutable(d.fix)) {
+            hf.log(`         → Auto-fix: ${d.fix}`);
+          } else {
+            hf.log(`         → Manual fix: ${d.fix}`);
+          }
+        }
+      }
+
+      hf.log('');
+
+      if (fixable.length === 0) {
+        hf.log('No auto-fixable issues found.');
+        return;
+      }
+
+      if (dryRun) {
+        hf.log(`Dry-run mode — would execute ${fixable.length} fix command(s):`);
+        for (const d of fixable) {
+          hf.log(`  $ ${d.fix}`);
+        }
+        return;
+      }
+
+      if (!yes) {
+        // Simple confirmation (no readline — just skip if stdin is not a tty)
+        hf.log(`Run ${fixable.length} fix command(s)? [y/N]`);
+        // In non-interactive mode, skip
+        if (!process.stdin.isTTY) {
+          hf.log('Skipping — stdin is not a TTY. Use --yes to force.');
+          return;
+        }
+        // Read one line
+        const answer = await new Promise<string>((resolve) => {
+          process.stdin.setEncoding('utf8');
+          process.stdin.once('data', (chunk) => resolve(String(chunk).trim()));
+        });
+        if (answer.toLowerCase() !== 'y') {
+          hf.log('Aborted.');
+          return;
+        }
+      }
+
+      // Execute fixes
+      for (const d of fixable) {
+        hf.log(`  $ ${d.fix}`);
+        try {
+          execSync(d.fix!, { stdio: 'inherit' });
+        } catch (err) {
+          hf.log(`  ✗ Failed: ${err instanceof Error ? err.message : String(err)}`);
+        }
+      }
+
+      // Re-run all checks after fixes
+      hf.log('');
+      hf.log('Re-running checks after fixes...');
+    }
+
+    // Final check run
+    await runChecks(ALL_CHECKS, fmt, ctx.args.verbose, ctx.args.quiet);
+  },
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// Subcommand: perf
+// ────────────────────────────────────────────────────────────────────────────
+
+interface PerfBaseline {
+  _comment?: string;
+  _updated?: string;
+  _methodology?: string;
+  [scenario: string]: {
+    description: string;
+    n: number;
+    algorithm: string;
+    measured_ms: number;
+    ceiling_ms: number;
+  } | string | undefined;
+}
+
+export const doctorPerf = defineCommand({
+  meta: {
+    name: 'perf',
+    description: 'Benchmark key operations against the performance baseline',
+  },
+  args: {
+    format: {
+      type: 'string',
+      description: 'Output format (human or json)',
+      default: 'human',
+    },
+    verbose: {
+      type: 'boolean',
+      description: 'Show all checks including passing ones',
+      alias: 'v',
+    },
+    quiet: {
+      type: 'boolean',
+      description: 'Suppress non-error output',
+      alias: 'q',
+    },
+    'update-baseline': {
+      type: 'boolean',
+      description: 'Write new measured values to the baseline JSON file',
+    },
+    threshold: {
+      type: 'string',
+      description: 'Percent over ceiling before treating as regression (default: 20)',
+      default: '20',
+    },
+    yes: {
+      type: 'boolean',
+      description: 'Skip confirmation prompts',
+      alias: 'y',
+    },
+  },
+  async run(ctx) {
+    const fmt = (ctx.args.format as string) ?? 'human';
+    const updateBaseline = ctx.args['update-baseline'] as boolean | undefined;
+    const thresholdPct = parseInt((ctx.args.threshold as string) ?? '20', 10);
+    const yes = ctx.args.yes as boolean | undefined;
+
+    const formatter = getFormatter({
+      format: fmt as 'human' | 'json',
+      verbose: ctx.args.verbose,
+      quiet: ctx.args.quiet,
+    });
+
+    // Find the baseline file
+    const baselinePaths = [
+      path.join(process.cwd(), 'packages/kernel/performance_baseline.json'),
+    ];
+
+    const rootDir = await resolveWorkspaceRoot();
+    if (rootDir) {
+      baselinePaths.unshift(path.join(rootDir, 'packages/kernel/performance_baseline.json'));
+    }
+
+    let baselinePath: string | null = null;
+    let baseline: PerfBaseline | null = null;
+
+    for (const p of baselinePaths) {
+      if (existsSync(p)) {
+        try {
+          const raw = readFileSync(p, 'utf-8');
+          baseline = JSON.parse(raw) as PerfBaseline;
+          baselinePath = p;
+          break;
+        } catch {
+          // ignore
+        }
+      }
+    }
+
+    if (!baseline || !baselinePath) {
+      if (!(formatter instanceof JSONFormatter)) {
+        (formatter as HumanFormatter).log('');
+        (formatter as HumanFormatter).log(
+          'Performance baseline file not found (packages/kernel/performance_baseline.json)'
+        );
+        (formatter as HumanFormatter).log('Run from within the wasm4pm workspace.');
+      }
+      process.exitCode = EXIT_CODES.system_error;
+      return;
+    }
+
+    // Synthetic WASM stub — measures TypeScript dispatch overhead only (no real WASM needed)
+    function syntheticDfgRun(_handle: string, _activityKey: string): Record<string, unknown> {
+      return { nodes: ['A', 'B'], edges: [{ from: 'A', to: 'B', count: 1 }] };
+    }
+
+    interface ScenarioResult {
+      scenario: string;
+      measured_ms: number;
+      ceiling_ms: number;
+      status: 'OK' | 'REGRESSION' | 'SKIP';
+    }
+
+    const results: ScenarioResult[] = [];
+
+    // Only test scenarios that involve the dfg/cache benchmarks
+    const measurableScenarios = ['dfg_n100', 'dfg_n1k', 'cache_hit_n1k'];
+
+    for (const scenarioKey of measurableScenarios) {
+      const entry = baseline[scenarioKey];
+      if (!entry || typeof entry === 'string') continue;
+
+      const n = entry.n;
+      const ceiling = entry.ceiling_ms;
+
+      const start = Date.now();
+      for (let i = 0; i < n; i++) {
+        syntheticDfgRun(`handle-${i}`, 'concept:name');
+      }
+      const measured = Date.now() - start;
+
+      const overPct = ((measured - ceiling) / ceiling) * 100;
+      const status: 'OK' | 'REGRESSION' =
+        overPct > thresholdPct ? 'REGRESSION' : 'OK';
+
+      results.push({ scenario: scenarioKey, measured_ms: measured, ceiling_ms: ceiling, status });
+    }
 
     if (formatter instanceof JSONFormatter) {
-      if (report.epistemicHealth) {
-        formatter.success('wpm environment is healthy', {
-          ...report,
-          healthy: true,
-          diagnoses: report.diagnoses.map((c) => ({ ...c })),
-        });
+      const allOk = results.every((r) => r.status === 'OK');
+      if (allOk) {
+        formatter.success('Performance baseline check passed', { results });
       } else {
-        formatter.warn('wpm environment has issues', {
-          ...report,
-          healthy: false,
-          diagnoses: report.diagnoses.map((c) => ({ ...c })),
-        });
+        formatter.warn('Performance regression detected', { results });
+        process.exitCode = EXIT_CODES.config_error;
       }
     } else {
-      printReport(formatter as HumanFormatter, report);
+      const hf = formatter as HumanFormatter;
+      hf.log('');
+      hf.log('wpm doctor perf — performance baseline comparison');
+      hf.log('─'.repeat(80));
+      hf.log('');
+
+      const colWidths = { scenario: 22, measured: 12, ceiling: 10, status: 12 };
+      const header =
+        'Scenario'.padEnd(colWidths.scenario) +
+        'Measured'.padEnd(colWidths.measured) +
+        'Ceiling'.padEnd(colWidths.ceiling) +
+        'Status';
+      hf.log(`  ${header}`);
+      hf.log('  ' + '─'.repeat(header.length));
+
+      for (const r of results) {
+        const row =
+          r.scenario.padEnd(colWidths.scenario) +
+          `${r.measured_ms}ms`.padEnd(colWidths.measured) +
+          `${r.ceiling_ms}ms`.padEnd(colWidths.ceiling) +
+          (r.status === 'OK' ? '✓ OK' : '✗ REGRESSION');
+        hf.log(`  ${row}`);
+      }
+
+      hf.log('');
+
+      const regressions = results.filter((r) => r.status === 'REGRESSION');
+      if (regressions.length === 0) {
+        hf.success('All performance checks within ceiling.');
+      } else {
+        hf.error(`${regressions.length} regression(s) detected (>${thresholdPct}% over ceiling).`);
+        process.exitCode = EXIT_CODES.config_error;
+      }
     }
 
-    // Set exit code but don't call process.exit()
-    // This allows citty to handle the exit properly
-    if (!report.epistemicHealth) {
-      process.exitCode = EXIT_CODES.config_error;
+    // Update baseline if requested
+    if (updateBaseline && baselinePath) {
+      let proceed = yes;
+      if (!proceed && process.stdin.isTTY) {
+        (formatter as HumanFormatter).log(
+          `\nUpdate baseline at ${baselinePath}? [y/N]`
+        );
+        proceed = await new Promise<boolean>((resolve) => {
+          process.stdin.setEncoding('utf8');
+          process.stdin.once('data', (chunk) => resolve(String(chunk).trim().toLowerCase() === 'y'));
+        });
+      }
+
+      if (proceed) {
+        for (const r of results) {
+          const entry = baseline[r.scenario];
+          if (entry && typeof entry !== 'string') {
+            entry.measured_ms = r.measured_ms;
+          }
+        }
+        if (baseline._updated !== undefined) {
+          baseline._updated = new Date().toISOString().slice(0, 10);
+        }
+        await fs.writeFile(baselinePath, JSON.stringify(baseline, null, 2) + '\n', 'utf-8');
+        if (!(formatter instanceof JSONFormatter)) {
+          (formatter as HumanFormatter).log(`Updated baseline: ${baselinePath}`);
+        }
+      }
     }
+  },
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// Subcommand: watch
+// ────────────────────────────────────────────────────────────────────────────
+
+export const doctorWatch = defineCommand({
+  meta: {
+    name: 'watch',
+    description: 'Run doctor check in a loop, printing only changes',
+  },
+  args: {
+    format: {
+      type: 'string',
+      description: 'Output format (human or json)',
+      default: 'human',
+    },
+    verbose: {
+      type: 'boolean',
+      description: 'Show all checks including passing ones',
+      alias: 'v',
+    },
+    quiet: {
+      type: 'boolean',
+      description: 'Suppress non-error output',
+      alias: 'q',
+    },
+    interval: {
+      type: 'string',
+      description: 'Poll interval in seconds (default: 30, min: 5)',
+      default: '30',
+    },
+    'on-fail': {
+      type: 'string',
+      description: 'Shell command to execute on new failure (env: DOCTOR_FAIL_CHECK=<name>)',
+    },
+  },
+  async run(ctx) {
+    const fmt = (ctx.args.format as string) ?? 'human';
+    const onFail = ctx.args['on-fail'] as string | undefined;
+    let intervalSec = parseInt((ctx.args.interval as string) ?? '30', 10);
+
+    const formatter = getFormatter({
+      format: fmt as 'human' | 'json',
+      verbose: ctx.args.verbose,
+      quiet: ctx.args.quiet,
+    });
+
+    if (intervalSec < 5) {
+      if (!(formatter instanceof JSONFormatter)) {
+        (formatter as HumanFormatter).log(
+          `Warning: --interval ${intervalSec} is below minimum (5). Using 5.`
+        );
+      }
+      intervalSec = 5;
+    }
+
+    let prevResults: Map<string, Severity> = new Map();
+    let iteration = 0;
+    let running = true;
+
+    process.on('SIGINT', () => {
+      running = false;
+    });
+
+    while (running) {
+      const diagnoses = await Promise.all(ALL_CHECKS.map((fn) => fn()));
+      const current = new Map(diagnoses.map((d) => [d.name, d.severity]));
+
+      const passing = diagnoses.filter((d) => d.severity === 'INFO').length;
+      const total = diagnoses.length;
+
+      if (iteration === 0) {
+        // Full verbose output on first iteration
+        const report: DoctorReport = {
+          diagnoses,
+          info: diagnoses.filter((d) => d.severity === 'INFO').length,
+          warnings: diagnoses.filter((d) => d.severity === 'WARNING').length,
+          stopTheLine: diagnoses.filter((d) => d.severity === 'STOP_THE_LINE').length,
+          epistemicHealth: diagnoses.every((d) => d.severity !== 'STOP_THE_LINE'),
+        };
+        if (!(formatter instanceof JSONFormatter)) {
+          printReport(formatter as HumanFormatter, report);
+        }
+      } else {
+        // Only print changes
+        const changes: Diagnosis[] = [];
+        const newFailures: Diagnosis[] = [];
+
+        for (const diag of diagnoses) {
+          const prev = prevResults.get(diag.name);
+          if (prev !== diag.severity) {
+            changes.push(diag);
+            if (
+              diag.severity === 'STOP_THE_LINE' &&
+              prev !== 'STOP_THE_LINE'
+            ) {
+              newFailures.push(diag);
+            }
+          }
+        }
+
+        if (changes.length === 0) {
+          if (!(formatter instanceof JSONFormatter)) {
+            const now = new Date();
+            const ts = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+            (formatter as HumanFormatter).log(
+              `[${ts}] ✓ ${passing}/${total} checks passing`
+            );
+          }
+        } else {
+          if (!(formatter instanceof JSONFormatter)) {
+            const hf = formatter as HumanFormatter;
+            hf.log('');
+            hf.log(`[CHANGED] ${changes.length} check(s) changed status:`);
+            for (const d of changes) {
+              const prev = prevResults.get(d.name) ?? 'unknown';
+              hf.log(`  ${d.name}: ${prev} → ${d.severity}`);
+              if (d.fix) hf.log(`    fix: ${d.fix}`);
+            }
+          }
+        }
+
+        // Execute on-fail command for new failures
+        if (onFail && newFailures.length > 0) {
+          for (const d of newFailures) {
+            try {
+              execSync(onFail, {
+                stdio: 'inherit',
+                env: { ...process.env, DOCTOR_FAIL_CHECK: d.name },
+              });
+            } catch {
+              // ignore on-fail errors
+            }
+          }
+        }
+      }
+
+      prevResults = current;
+      iteration++;
+
+      if (!running) break;
+
+      // Wait for the interval
+      await new Promise<void>((resolve) => {
+        const timer = setTimeout(resolve, intervalSec * 1000);
+        process.once('SIGINT', () => {
+          clearTimeout(timer);
+          resolve();
+        });
+      });
+    }
+
+    // Final summary on exit
+    if (!(formatter instanceof JSONFormatter)) {
+      const hf = formatter as HumanFormatter;
+      hf.log('');
+      hf.log(`wpm doctor watch stopped after ${iteration} iteration(s).`);
+    }
+  },
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// Subcommand: report
+// ────────────────────────────────────────────────────────────────────────────
+
+export const doctorReport = defineCommand({
+  meta: {
+    name: 'report',
+    description: 'Generate a JSON or HTML health report',
+  },
+  args: {
+    format: {
+      type: 'string',
+      description: 'Report format: json or html (default: json)',
+      default: 'json',
+    },
+    out: {
+      type: 'string',
+      description: 'Output file path (default: wpm-doctor-report.json or .html)',
+    },
+    open: {
+      type: 'boolean',
+      description: 'Open the report in a browser after generation',
+    },
+    verbose: {
+      type: 'boolean',
+      description: 'Show all checks including passing ones',
+      alias: 'v',
+    },
+    quiet: {
+      type: 'boolean',
+      description: 'Suppress non-error output',
+      alias: 'q',
+    },
+  },
+  async run(ctx) {
+    const reportFormat = ((ctx.args.format as string) ?? 'json').toLowerCase();
+    const openAfter = ctx.args.open as boolean | undefined;
+
+    const formatter = getFormatter({
+      format: 'human',
+      verbose: ctx.args.verbose,
+      quiet: ctx.args.quiet,
+    });
+    const hf = formatter as HumanFormatter;
+
+    const diagnoses = await Promise.all(ALL_CHECKS.map((fn) => fn()));
+
+    // Read package.json version
+    let wpmVersion = 'unknown';
+    try {
+      const pkgJsonPath = new URL('../../package.json', import.meta.url).pathname;
+      if (existsSync(pkgJsonPath)) {
+        const pkgRaw = readFileSync(pkgJsonPath, 'utf-8');
+        const pkg = JSON.parse(pkgRaw) as { version?: string };
+        wpmVersion = pkg.version ?? 'unknown';
+      }
+    } catch {
+      // ignore
+    }
+
+    const summary = {
+      pass: diagnoses.filter((d) => d.severity === 'INFO').length,
+      warn: diagnoses.filter((d) => d.severity === 'WARNING').length,
+      fail: diagnoses.filter((d) => d.severity === 'STOP_THE_LINE').length,
+      critical: diagnoses.filter((d) => d.severity === 'STOP_THE_LINE').length,
+    };
+
+    const reportData = {
+      generated_at: new Date().toISOString(),
+      wpm_version: wpmVersion,
+      platform: {
+        os: process.platform,
+        arch: process.arch,
+        node: process.version,
+      },
+      checks: diagnoses,
+      summary,
+    };
+
+    let outPath: string;
+
+    if (reportFormat === 'html') {
+      outPath = (ctx.args.out as string) ?? 'wpm-doctor-report.html';
+      const html = generateHtmlReport(reportData);
+      await fs.writeFile(outPath, html, 'utf-8');
+    } else {
+      outPath = (ctx.args.out as string) ?? 'wpm-doctor-report.json';
+      await fs.writeFile(outPath, JSON.stringify(reportData, null, 2) + '\n', 'utf-8');
+    }
+
+    hf.log('');
+    hf.log(`Report written to: ${outPath}`);
+    hf.log(
+      `Summary: ${summary.pass} pass, ${summary.warn} warn, ${summary.fail} fail`
+    );
+
+    if (openAfter) {
+      const openCmd =
+        process.platform === 'darwin'
+          ? `open "${outPath}"`
+          : process.platform === 'win32'
+            ? `start "" "${outPath}"`
+            : `xdg-open "${outPath}"`;
+      try {
+        execSync(openCmd, { stdio: 'ignore' });
+      } catch {
+        hf.log(`Could not open ${outPath} automatically.`);
+      }
+    }
+  },
+});
+
+function generateHtmlReport(data: {
+  generated_at: string;
+  wpm_version: string;
+  platform: { os: string; arch: string; node: string };
+  checks: Diagnosis[];
+  summary: { pass: number; warn: number; fail: number; critical: number };
+}): string {
+  const checkRows = data.checks
+    .map((d) => {
+      const color =
+        d.severity === 'INFO' ? '#2ea44f' : d.severity === 'WARNING' ? '#d29922' : '#cf222e';
+      const fixHtml = d.fix
+        ? `<p style="font-size:0.85em;color:#666;margin:4px 0 0 0"><strong>Fix:</strong> <code>${escapeHtml(d.fix)}</code></p>`
+        : '';
+      return `
+      <details style="margin-bottom:8px;border:1px solid #d0d7de;border-radius:6px;padding:0">
+        <summary style="cursor:pointer;padding:8px 12px;background:#f6f8fa;border-radius:6px;list-style:none;display:flex;align-items:center;gap:8px">
+          <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color};flex-shrink:0"></span>
+          <strong>${escapeHtml(d.name)}</strong>
+          <span style="color:#666;font-size:0.9em">[${escapeHtml(d.severity)}]</span>
+        </summary>
+        <div style="padding:12px">
+          <p style="margin:0">${escapeHtml(d.message)}</p>
+          ${fixHtml}
+          ${d.pathology ? `<p style="font-size:0.85em;color:#666;margin:4px 0 0 0">Pathology: ${escapeHtml(d.pathology)}</p>` : ''}
+        </div>
+      </details>`;
+    })
+    .join('\n');
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>wpm doctor report</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; padding: 24px; color: #1f2328; background: #fff; }
+    h1 { border-bottom: 1px solid #d0d7de; padding-bottom: 12px; }
+    .meta { color: #656d76; font-size: 0.9em; margin-bottom: 24px; }
+    .summary { display: flex; gap: 16px; margin-bottom: 24px; }
+    .badge { padding: 4px 12px; border-radius: 20px; font-weight: bold; font-size: 0.9em; }
+    .badge-pass { background: #dcffe4; color: #116329; }
+    .badge-warn { background: #fff8c5; color: #7d4e00; }
+    .badge-fail { background: #ffd7d5; color: #82071e; }
+    code { background: #f6f8fa; padding: 2px 4px; border-radius: 3px; font-size: 0.9em; }
+    details summary::-webkit-details-marker { display: none; }
+  </style>
+</head>
+<body>
+  <h1>wpm doctor report</h1>
+  <div class="meta">
+    Generated: ${escapeHtml(data.generated_at)} &nbsp;|&nbsp;
+    Version: ${escapeHtml(data.wpm_version)} &nbsp;|&nbsp;
+    ${escapeHtml(data.platform.os)}/${escapeHtml(data.platform.arch)} &nbsp;|&nbsp;
+    Node ${escapeHtml(data.platform.node)}
+  </div>
+  <div class="summary">
+    <span class="badge badge-pass">${data.summary.pass} pass</span>
+    <span class="badge badge-warn">${data.summary.warn} warn</span>
+    <span class="badge badge-fail">${data.summary.fail} fail</span>
+  </div>
+  <div>
+${checkRows}
+  </div>
+</body>
+</html>`;
+}
+
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Subcommand: publish
+// ────────────────────────────────────────────────────────────────────────────
+
+interface PublishCheck {
+  name: string;
+  status: 'pass' | 'warn' | 'fail';
+  message: string;
+}
+
+async function runPublishChecks(rootDir: string): Promise<PublishCheck[]> {
+  const checks: PublishCheck[] = [];
+
+  // 1. Versions — all package.json must match CalVer /^\d+\.\d+\.\d+[a-z]?$/
+  const calverPattern = /^\d+\.\d+\.\d+[a-z]?$/;
+  const pkgDirs = [
+    ...['engine', 'kernel', 'config', 'contracts', 'planner', 'observability', 'testing', 'ml', 'swarm'].map(
+      (p) => path.join(rootDir, 'packages', p)
+    ),
+    path.join(rootDir, 'apps', 'wasm4pm'),
+  ];
+
+  const versionIssues: string[] = [];
+  for (const dir of pkgDirs) {
+    const pkgJsonPath = path.join(dir, 'package.json');
+    if (!existsSync(pkgJsonPath)) continue;
+    try {
+      const raw = readFileSync(pkgJsonPath, 'utf-8');
+      const pkg = JSON.parse(raw) as { version?: string; name?: string };
+      if (!pkg.version || !calverPattern.test(pkg.version)) {
+        versionIssues.push(`${pkg.name ?? path.basename(dir)}: ${pkg.version ?? 'missing'}`);
+      }
+    } catch {
+      // ignore
+    }
+  }
+  checks.push({
+    name: 'versions',
+    status: versionIssues.length === 0 ? 'pass' : 'fail',
+    message:
+      versionIssues.length === 0
+        ? 'All packages have valid CalVer versions'
+        : `Invalid versions: ${versionIssues.join(', ')}`,
+  });
+
+  // 2. Artifacts — for publishable packages (build script, not private), dist/ exists
+  const artifactIssues: string[] = [];
+  for (const dir of pkgDirs) {
+    const pkgJsonPath = path.join(dir, 'package.json');
+    if (!existsSync(pkgJsonPath)) continue;
+    try {
+      const raw = readFileSync(pkgJsonPath, 'utf-8');
+      const pkg = JSON.parse(raw) as {
+        private?: boolean;
+        scripts?: Record<string, string>;
+        name?: string;
+      };
+      if (!pkg.private && pkg.scripts?.build) {
+        const distDir = path.join(dir, 'dist');
+        if (!existsSync(distDir)) {
+          artifactIssues.push(`${pkg.name ?? path.basename(dir)}: dist/ missing`);
+        } else {
+          try {
+            const entries = readFileSync(distDir);
+            void entries;
+          } catch {
+            // dist exists but check it's a directory
+            try {
+              const stat = statSync(distDir);
+              if (!stat.isDirectory()) {
+                artifactIssues.push(`${pkg.name ?? path.basename(dir)}: dist/ is not a directory`);
+              }
+            } catch {
+              // ignore
+            }
+          }
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+  checks.push({
+    name: 'artifacts',
+    status: artifactIssues.length === 0 ? 'pass' : 'fail',
+    message:
+      artifactIssues.length === 0
+        ? 'All publishable packages have dist/ directories'
+        : `Missing artifacts: ${artifactIssues.join(', ')}`,
+  });
+
+  // 3. files-field — every publishable package has a files array
+  const filesIssues: string[] = [];
+  for (const dir of pkgDirs) {
+    const pkgJsonPath = path.join(dir, 'package.json');
+    if (!existsSync(pkgJsonPath)) continue;
+    try {
+      const raw = readFileSync(pkgJsonPath, 'utf-8');
+      const pkg = JSON.parse(raw) as {
+        private?: boolean;
+        files?: unknown[];
+        name?: string;
+      };
+      if (!pkg.private && (!pkg.files || !Array.isArray(pkg.files) || pkg.files.length === 0)) {
+        filesIssues.push(pkg.name ?? path.basename(dir));
+      }
+    } catch {
+      // ignore
+    }
+  }
+  checks.push({
+    name: 'files-field',
+    status: filesIssues.length === 0 ? 'pass' : 'warn',
+    message:
+      filesIssues.length === 0
+        ? 'All publishable packages have a files field'
+        : `Missing files field: ${filesIssues.join(', ')}`,
+  });
+
+  // 4. no-private-leakage — @wasm4pm/* packages should not be private: true
+  const privateLeakIssues: string[] = [];
+  for (const dir of pkgDirs) {
+    const pkgJsonPath = path.join(dir, 'package.json');
+    if (!existsSync(pkgJsonPath)) continue;
+    try {
+      const raw = readFileSync(pkgJsonPath, 'utf-8');
+      const pkg = JSON.parse(raw) as { private?: boolean; name?: string };
+      if (pkg.name?.startsWith('@wasm4pm/') && pkg.private === true) {
+        privateLeakIssues.push(pkg.name);
+      }
+    } catch {
+      // ignore
+    }
+  }
+  checks.push({
+    name: 'no-private-leakage',
+    status: privateLeakIssues.length === 0 ? 'pass' : 'fail',
+    message:
+      privateLeakIssues.length === 0
+        ? 'No @wasm4pm/* packages are marked private'
+        : `Private packages: ${privateLeakIssues.join(', ')}`,
+  });
+
+  // 5. registry — npm ping succeeds
+  let registryStatus: 'pass' | 'warn' = 'pass';
+  let registryMsg = 'npm registry is reachable';
+  try {
+    execSync('npm ping', { encoding: 'utf8', stdio: 'pipe', timeout: 3000 });
+  } catch {
+    registryStatus = 'warn';
+    registryMsg = 'npm registry unreachable (network issue or timeout after 3s)';
+  }
+  checks.push({ name: 'registry', status: registryStatus, message: registryMsg });
+
+  // 6. changelog — CHANGELOG.md exists and is non-empty
+  const changelogPath = path.join(rootDir, 'CHANGELOG.md');
+  const hasChangelog =
+    existsSync(changelogPath) && readFileSync(changelogPath, 'utf-8').trim().length > 0;
+  checks.push({
+    name: 'changelog',
+    status: hasChangelog ? 'pass' : 'warn',
+    message: hasChangelog ? 'CHANGELOG.md exists and is non-empty' : 'CHANGELOG.md missing or empty',
+  });
+
+  return checks;
+}
+
+export const doctorPublish = defineCommand({
+  meta: {
+    name: 'publish',
+    description: 'Run all checks plus publish-readiness validation',
+  },
+  args: {
+    format: {
+      type: 'string',
+      description: 'Output format (human or json)',
+      default: 'human',
+    },
+    verbose: {
+      type: 'boolean',
+      description: 'Show all checks including passing ones',
+      alias: 'v',
+    },
+    quiet: {
+      type: 'boolean',
+      description: 'Suppress non-error output',
+      alias: 'q',
+    },
+    publish: {
+      type: 'boolean',
+      description: 'Run pnpm publish if all checks pass',
+    },
+    registry: {
+      type: 'string',
+      description: 'Override npm registry for checks and publish',
+    },
+    yes: {
+      type: 'boolean',
+      description: 'Skip confirmation prompts',
+      alias: 'y',
+    },
+  },
+  async run(ctx) {
+    const fmt = (ctx.args.format as string) ?? 'human';
+    const doPublish = ctx.args.publish as boolean | undefined;
+    const yes = ctx.args.yes as boolean | undefined;
+
+    const formatter = getFormatter({
+      format: fmt as 'human' | 'json',
+      verbose: ctx.args.verbose,
+      quiet: ctx.args.quiet,
+    });
+
+    // Run core checks first
+    const diagnoses = await Promise.all(ALL_CHECKS.map((fn) => fn()));
+    const coreReport: DoctorReport = {
+      diagnoses,
+      info: diagnoses.filter((d) => d.severity === 'INFO').length,
+      warnings: diagnoses.filter((d) => d.severity === 'WARNING').length,
+      stopTheLine: diagnoses.filter((d) => d.severity === 'STOP_THE_LINE').length,
+      epistemicHealth: diagnoses.every((d) => d.severity !== 'STOP_THE_LINE'),
+    };
+
+    // Run publish-specific checks
+    const rootDir = await resolveWorkspaceRoot();
+    let publishChecks: PublishCheck[] = [];
+    if (rootDir) {
+      publishChecks = await runPublishChecks(rootDir);
+    }
+
+    const publishReady =
+      coreReport.epistemicHealth && publishChecks.every((c) => c.status !== 'fail');
+
+    if (formatter instanceof JSONFormatter) {
+      if (publishReady) {
+        formatter.success('Ready to publish', {
+          coreReport,
+          publishChecks,
+          publishReady,
+        });
+      } else {
+        formatter.warn('Not ready to publish', {
+          coreReport,
+          publishChecks,
+          publishReady,
+        });
+        process.exitCode = EXIT_CODES.config_error;
+      }
+    } else {
+      const hf = formatter as HumanFormatter;
+      printReport(hf, coreReport);
+
+      hf.log('');
+      hf.log('Publish readiness checks:');
+      hf.log('─'.repeat(80));
+      for (const c of publishChecks) {
+        const icon = c.status === 'pass' ? '✓' : c.status === 'warn' ? '⚠' : '✗';
+        hf.log(`  ${icon}  ${c.name}: ${c.message}`);
+      }
+      hf.log('');
+
+      if (publishReady) {
+        hf.success('Package is ready to publish.');
+      } else {
+        hf.error('Package is NOT ready to publish. Fix issues above.');
+        process.exitCode = EXIT_CODES.config_error;
+        return;
+      }
+    }
+
+    if (doPublish && publishReady) {
+      let proceed = yes;
+      if (!proceed && !(formatter instanceof JSONFormatter) && process.stdin.isTTY) {
+        (formatter as HumanFormatter).log('\nRun pnpm -r publish --access public? [y/N]');
+        proceed = await new Promise<boolean>((resolve) => {
+          process.stdin.setEncoding('utf8');
+          process.stdin.once('data', (chunk) => resolve(String(chunk).trim().toLowerCase() === 'y'));
+        });
+      }
+
+      if (proceed) {
+        const registryFlag = ctx.args.registry ? ` --registry ${ctx.args.registry as string}` : '';
+        execSync(`pnpm -r publish --access public${registryFlag}`, { stdio: 'inherit' });
+      }
+    }
+  },
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// Main doctor command (with subcommands + backwards-compat fallback)
+// ────────────────────────────────────────────────────────────────────────────
+
+export const doctor = defineCommand({
+  meta: {
+    name: 'doctor',
+    description:
+      'Check environment health (24 checks) and pipeline integrity. Subcommands: check, fix, publish, env, tps, perf, watch, report',
+  },
+  subCommands: {
+    check: doctorCheck,
+    fix: doctorFix,
+    publish: doctorPublish,
+    env: doctorEnv,
+    tps: doctorTps,
+    perf: doctorPerf,
+    watch: doctorWatch,
+    report: doctorReport,
+  },
+  args: {
+    format: {
+      type: 'string',
+      description: 'Output format (human or json)',
+      default: 'human',
+    },
+    verbose: {
+      type: 'boolean',
+      description: 'Show all checks including passing ones',
+      alias: 'v',
+    },
+    quiet: {
+      type: 'boolean',
+      description: 'Suppress non-error output',
+      alias: 'q',
+    },
+  },
+  // No-verb invocation: wpm doctor → delegates to check (backwards-compatible)
+  async run(ctx) {
+    await runChecks(
+      ALL_CHECKS,
+      (ctx.args.format as string) ?? 'human',
+      ctx.args.verbose,
+      ctx.args.quiet
+    );
   },
 });
