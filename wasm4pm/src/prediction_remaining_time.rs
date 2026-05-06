@@ -137,7 +137,7 @@ pub fn build_remaining_time_model(
     let state = get_or_init_state();
 
     // Collect per-bucket samples and case durations from the log.
-    let (bucket_samples, case_durations) = state.with_object(log_handle, |obj| {
+    let (bucket_samples, mut case_durations) = state.with_object(log_handle, |obj| {
         match obj {
             Some(StoredObject::EventLog(log)) => {
                 let mut bucket_samples: HashMap<String, Vec<f64>> = HashMap::new();
