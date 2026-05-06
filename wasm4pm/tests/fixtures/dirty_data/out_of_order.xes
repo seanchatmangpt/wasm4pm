@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<log xmlns="http://www.xes-standard.org/">
+  <trace>
+    <string key="concept:name" value="case3"/>
+    <event>
+      <string key="concept:name" value="ActivityB"/>
+      <date key="time:timestamp" value="2024-01-01T11:00:00Z"/>
+    </event>
+    <event>
+      <string key="concept:name" value="ActivityA"/>
+      <date key="time:timestamp" value="2024-01-01T09:00:00Z"/>
+    </event>
+  </trace>
+</log>

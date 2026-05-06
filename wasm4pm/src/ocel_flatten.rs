@@ -207,6 +207,103 @@ pub fn flatten_ocel_to_eventlog(ocel_handle: &str, object_type: &str) -> Result<
     get_or_init_state().store_object(StoredObject::EventLog(event_log))
 }
 
+/// Report describing information loss when flattening an OCEL to a case-centric event log.
+#[derive(Debug)]
+pub struct FlatteningLossReport {
+    /// Events that are referenced by more than one object of `object_type`
+    /// (each such event will appear duplicated in the flattened log).
+    pub event_duplication_count: usize,
+    /// Number of unique activity-name sequences across all objects of `object_type`
+    /// when considering the OCEL event ordering.
+    pub original_ocel_variant_count: usize,
+    /// Number of unique activity-name sequences in the flattened log
+    /// (after timestamp sort per case).
+    pub flattened_variant_count: usize,
+    /// Variants present in the flattened log that were not in the OCEL ordering.
+    pub new_variants_introduced: usize,
+    /// Total events across all cases in the flattened log.
+    pub total_events_in_flattened_log: usize,
+    /// Number of distinct OCEL event IDs that are referenced by at least one
+    /// object of `object_type`.
+    pub unique_ocel_events_referenced: usize,
+}
+
+/// Measures information loss when flattening an OCEL to a case-centric event log
+/// by projecting onto a single object type.
+///
+/// Does **not** modify state — operates purely on the `OCEL` value.
+#[cfg(feature = "ocel")]
+pub fn measure_flattening_loss(ocel: &OCEL, object_type: &str) -> FlatteningLossReport {
+    use std::collections::{HashMap as StdMap, HashSet};
+
+    // Collect objects of the target type
+    let target_objects: Vec<&OCELObject> = ocel
+        .objects
+        .iter()
+        .filter(|o| o.object_type == object_type)
+        .collect();
+
+    // For each event, count how many target objects reference it
+    let mut event_ref_count: StdMap<&str, usize> = StdMap::new();
+    for event in &ocel.events {
+        let refs = event
+            .all_object_ids()
+            .filter(|oid| {
+                target_objects.iter().any(|o| o.id == *oid)
+            })
+            .count();
+        if refs > 0 {
+            *event_ref_count.entry(&event.id).or_insert(0) += refs;
+        }
+    }
+
+    let unique_ocel_events_referenced = event_ref_count.len();
+    let event_duplication_count = event_ref_count.values().filter(|&&c| c > 1).count();
+
+    // Build OCEL variants (arrival-index order, per target object)
+    let mut ocel_variants: HashSet<Vec<String>> = HashSet::new();
+    let mut flattened_variants: HashSet<Vec<String>> = HashSet::new();
+    let mut total_events_in_flattened_log = 0usize;
+
+    for obj in &target_objects {
+        // Arrival-order sequence
+        let ocel_seq: Vec<String> = ocel
+            .events
+            .iter()
+            .filter(|e| e.all_object_ids().any(|oid| oid == obj.id))
+            .map(|e| e.event_type.clone())
+            .collect();
+
+        // Timestamp-sorted sequence (mirrors what flatten_ocel_to_eventlog produces)
+        let mut ts_sorted: Vec<(&OCELEvent, String)> = ocel
+            .events
+            .iter()
+            .filter(|e| e.all_object_ids().any(|oid| oid == obj.id))
+            .map(|e| (e, e.event_type.clone()))
+            .collect();
+        ts_sorted.sort_by(|(a, _), (b, _)| a.timestamp.cmp(&b.timestamp));
+        let flat_seq: Vec<String> = ts_sorted.iter().map(|(_, et)| et.clone()).collect();
+
+        total_events_in_flattened_log += flat_seq.len();
+        ocel_variants.insert(ocel_seq);
+        flattened_variants.insert(flat_seq);
+    }
+
+    let new_variants_introduced = flattened_variants
+        .iter()
+        .filter(|v| !ocel_variants.contains(*v))
+        .count();
+
+    FlatteningLossReport {
+        event_duplication_count,
+        original_ocel_variant_count: ocel_variants.len(),
+        flattened_variant_count: flattened_variants.len(),
+        new_variants_introduced,
+        total_events_in_flattened_log,
+        unique_ocel_events_referenced,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -159,6 +159,82 @@ pub fn validate_ocel(handle: &str) -> Result<JsValue, JsValue> {
     })
 }
 
+/// Violation where event B appears later in the log for a given object but has an earlier timestamp.
+#[derive(Debug)]
+pub struct LifecycleViolation {
+    pub object_id: String,
+    pub event_a_id: String,
+    pub event_b_id: String,
+    pub timestamp_a_ms: i64,
+    pub timestamp_b_ms: i64,
+}
+
+/// Checks that each object's events are in non-decreasing timestamp order.
+/// Returns violations where event B has an earlier timestamp than event A
+/// but appears later in the log for the same object.
+///
+/// Uses ISO 8601 lexicographic ordering (valid for UTC / offset-normalised strings).
+#[cfg(feature = "ocel")]
+pub fn validate_ocel_object_lifecycles(ocel: &OCEL) -> Vec<LifecycleViolation> {
+    use std::collections::HashMap as StdMap;
+
+    // Parse an ISO 8601 timestamp to milliseconds via chrono, falling back to
+    // lexicographic ordering encoded as i64 (multiply string hash won't work; we
+    // treat parse failure as i64::MIN so the violation is still surfaced).
+    fn parse_ts_ms(s: &str) -> i64 {
+        use chrono::{DateTime, NaiveDateTime, TimeZone, Utc};
+        if let Ok(dt) = DateTime::parse_from_rfc3339(s) {
+            return dt.timestamp_millis();
+        }
+        if let Ok(dt) = DateTime::parse_from_rfc3339(&s.replacen(' ', "T", 1)) {
+            return dt.timestamp_millis();
+        }
+        for fmt in &[
+            "%Y-%m-%dT%H:%M:%S%.f",
+            "%Y-%m-%dT%H:%M:%S",
+            "%Y-%m-%d %H:%M:%S%.f",
+            "%Y-%m-%d %H:%M:%S",
+        ] {
+            if let Ok(ndt) = NaiveDateTime::parse_from_str(s, fmt) {
+                return Utc.from_utc_datetime(&ndt).timestamp_millis();
+            }
+        }
+        i64::MIN
+    }
+
+    // Build object_id → Vec<(arrival_index, event_id, timestamp_ms)>
+    let mut object_events: StdMap<String, Vec<(usize, String, i64)>> = StdMap::new();
+    for (idx, event) in ocel.events.iter().enumerate() {
+        let ts_ms = parse_ts_ms(&event.timestamp);
+        for oid in event.all_object_ids() {
+            object_events
+                .entry(oid.to_string())
+                .or_default()
+                .push((idx, event.id.clone(), ts_ms));
+        }
+    }
+
+    // For each object, sort by arrival index and check consecutive timestamp order
+    let mut violations = Vec::new();
+    for (object_id, mut events) in object_events {
+        events.sort_by_key(|(idx, _, _)| *idx);
+        for pair in events.windows(2) {
+            let (_, ref id_a, ts_a) = pair[0];
+            let (_, ref id_b, ts_b) = pair[1];
+            if ts_b < ts_a {
+                violations.push(LifecycleViolation {
+                    object_id: object_id.clone(),
+                    event_a_id: id_a.clone(),
+                    event_b_id: id_b.clone(),
+                    timestamp_a_ms: ts_a,
+                    timestamp_b_ms: ts_b,
+                });
+            }
+        }
+    }
+    violations
+}
+
 /// Check if a string is a valid ISO 8601 timestamp
 fn is_valid_iso8601(s: &str) -> bool {
     use chrono::{DateTime, NaiveDateTime, TimeZone, Utc};
