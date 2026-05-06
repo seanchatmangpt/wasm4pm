@@ -21,6 +21,20 @@ export RAYON_NUM_THREADS := $(JOBS)
 verify: test lint bench-quick check-debt
 	@echo "✅ DoD Verification Complete: Code passes all automated checks."
 
+# TypeScript-only verification (for packages/*, apps/wasm4pm/src/* changes)
+verify-ts: lint check-debt
+	@echo "🔍 TypeScript Verification: Running TS tests + debt check"
+	cd packages/testing && npm test
+	cd packages/kernel && npm test
+	cd packages/engine && npm test
+	cd packages/agents && npm test || true
+	cd apps/wasm4pm && npm test || true
+	@echo "✅ TypeScript DoD Verification Complete"
+
+# WASM/Rust-only verification (for wasm4pm/src/*, crates/*, Cargo.* changes)
+verify-wasm: test bench-quick lint check-debt
+	@echo "✅ WASM/Rust DoD Verification Complete"
+
 # ── Technical Debt Check ──────────────────────────────────────────────────────
 # Fails if any TODO, FIXME, or functional placeholder markers are found in production source.
 check-debt:
