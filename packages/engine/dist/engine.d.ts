@@ -88,6 +88,10 @@ export declare class Engine {
      * Gets the current engine status
      */
     status(): EngineStatus;
+    /** Record an error, emit OTEL + JSON events, and transition to recovery/fallback state. */
+    private handleEngineError;
+    /** Wrap a promise in a hard timeout; throws the same error shape as the rest of the engine. */
+    private withTimeout;
     /**
      * Bootstraps the engine: loads WASM, initializes kernel
      * Transitions: uninitialized -> bootstrapping -> ready | failed

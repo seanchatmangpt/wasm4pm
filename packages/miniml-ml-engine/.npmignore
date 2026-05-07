@@ -1,0 +1,44 @@
+# Source
+src/
+crates/
+benchmarks/
+examples/
+docs/
+
+# Build artifacts
+*.map
+
+# Development
+tsconfig.json
+tsup.config.ts
+vitest.config.ts
+
+# Tests
+*.test.ts
+*.test.js
+__tests__/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Monorepo
+pnpm-workspace.yaml
+turbo.json
+pnpm-lock.yaml
+package.json
+!packages/miniml/package.json
+
+# CI
+.github/
+CLAUDE.md

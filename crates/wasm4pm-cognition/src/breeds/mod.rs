@@ -260,3 +260,38 @@ pub trait CognitionBreed: Send + Sync {
         compute_receipt(self.id(), input, output)
     }
 }
+
+/// Test harness: dispatch to the correct breed's `run()` method.
+///
+/// Routes each breed name to its corresponding `CognitionBreed::run()` implementation.
+/// Validates all 9 breeds and produces non-empty inference traces.
+///
+/// Used by integration tests in `tests/dispatch_smoke.rs` to verify:
+/// - Correct breed routing by name
+/// - Non-empty trace production (fraud detection)
+/// - Output structure validity
+/// - Multi-breed pipeline execution (Diagram 29)
+pub fn dispatch_breed_test(breed: &str, input: &BreedInput) -> Result<BreedOutput, String> {
+    use crate::breeds::cbr::Cbr;
+    use crate::breeds::dendral::Dendral;
+    use crate::breeds::frame::Eliza;
+    use crate::breeds::gps::Gps;
+    use crate::breeds::hearsay::Hearsay;
+    use crate::breeds::prolog::Prolog;
+    use crate::breeds::production_rules::Mycin;
+    use crate::breeds::soar::Soar;
+    use crate::breeds::strips::Strips;
+
+    match breed {
+        "eliza" => Eliza.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        "cbr" => Cbr.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        "dendral" => Dendral.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        "strips" => Strips.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        "prolog" => Prolog.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        "mycin" => Mycin.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        "gps" => Gps.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        "soar" => Soar.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        "hearsay" => Hearsay.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        other => Err(format!("unknown breed: {}", other)),
+    }
+}

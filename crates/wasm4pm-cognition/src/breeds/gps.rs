@@ -145,6 +145,18 @@ impl CognitionBreed for Gps {
         let mut plan: Vec<String> = Vec::new();
         let mut trace: Vec<TraceStep> = Vec::new();
 
+        // Check for pre-satisfied goals
+        for goal in &input.goals {
+            if input.state.iter().any(|s| s.predicate == goal.predicate && s.value == goal.value) {
+                trace.push(TraceStep {
+                    step: trace.len(),
+                    kind: "check-presatisfied".into(),
+                    detail: format!("goal {} is already satisfied", goal.id),
+                    depth: 0,
+                });
+            }
+        }
+
         let mut last_gap_count = goals.iter().filter(|g| !state.contains(*g)).count() + 1;
         while let Some(gap) = first_gap(&goals, &state) {
             let gap_count = goals.iter().filter(|g| !state.contains(*g)).count();

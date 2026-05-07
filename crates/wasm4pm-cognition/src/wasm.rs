@@ -303,10 +303,35 @@ pub fn system_verify(target: &str, artifacts_json: &str) -> Result<JsValue, JsVa
             MAX_INPUT_LEN
         )));
     }
+
+    // Parse artifacts as evidence source and run all detectors.
+    let artifacts_value: serde_json::Value = serde_json::from_str(artifacts_json)
+        .map_err(|e| wasm_err(&format!("Failed to parse artifacts: {}", e)))?;
+
+    // Wrap JSON as EvidenceSource and run all detectors.
+    let src = JsonEvidenceSource {
+        inner: artifacts_value,
+        chain: ReceiptChain::new(),
+    };
+    let registry = FindingRegistry::new();
+    let findings = registry.run_all(&src);
+
+    let finding_jsons: Vec<serde_json::Value> = findings
+        .into_iter()
+        .map(|f| {
+            serde_json::json!({
+                "code": f.code,
+                "severity": format!("{:?}", f.severity),
+                "message": f.message,
+                "evidence": f.evidence,
+            })
+        })
+        .collect();
+
     let result = serde_json::json!({
         "target": target,
-        "findings": [],
-        "status": "verified"
+        "findings": finding_jsons,
+        "status": if finding_jsons.is_empty() { "verified" } else { "has_findings" }
     });
     to_js_str(&result)
 }

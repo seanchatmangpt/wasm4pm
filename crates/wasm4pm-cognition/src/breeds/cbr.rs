@@ -59,6 +59,9 @@ impl CognitionBreed for Cbr {
         if input.cases.is_empty() {
             return Err("CBR requires at least one case in the case ledger".to_string());
         }
+        if input.facts.is_empty() {
+            return Err("CBR requires at least one query fact to compute similarity".to_string());
+        }
         Ok(())
     }
 
@@ -115,5 +118,60 @@ impl CognitionBreed for Cbr {
             return Err("CBR must score at least one case".to_string());
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn precondition_rejects_empty_facts() {
+        let breed = Cbr;
+        let input = BreedInput {
+            intent: "test".into(),
+            candidates: vec![],
+            facts: vec![],
+            cases: vec![Case {
+                id: "c1".into(),
+                intent: "test".into(),
+                architecture: "arch1".into(),
+                outcome_score: 0.9,
+                facts: vec![Fact {
+                    key: "k".into(),
+                    value: "v".into(),
+                }],
+            }],
+            rules: vec![],
+            goals: vec![],
+            state: vec![],
+        };
+        let result = breed.preconditions(&input);
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .contains("at least one query fact"));
+    }
+
+    #[test]
+    fn precondition_rejects_empty_cases() {
+        let breed = Cbr;
+        let input = BreedInput {
+            intent: "test".into(),
+            candidates: vec![],
+            facts: vec![Fact {
+                key: "k".into(),
+                value: "v".into(),
+            }],
+            cases: vec![],
+            rules: vec![],
+            goals: vec![],
+            state: vec![],
+        };
+        let result = breed.preconditions(&input);
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .contains("at least one case"));
     }
 }

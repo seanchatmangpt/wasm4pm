@@ -172,7 +172,15 @@ impl CognitionBreed for Soar {
 
         let (selected, impasse) = match surviving_ids.len() {
             0 => (None, true),
-            1 => (Some(surviving_ids[0].clone()), false),
+            1 => {
+                trace.push(TraceStep {
+                    step: trace.len(),
+                    kind: "evaluate-single".to_string(),
+                    detail: surviving_ids[0].clone(),
+                    depth: 0,
+                });
+                (Some(surviving_ids[0].clone()), false)
+            }
             _ => {
                 trace.push(TraceStep {
                     step: trace.len(),
@@ -217,11 +225,8 @@ impl CognitionBreed for Soar {
     }
 
     fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
-        if output.inference_trace.is_empty() && output.candidates.len() > 1 {
-            return Err(
-                "SOAR with multiple candidates must record at least one preference step"
-                    .to_string(),
-            );
+        if output.inference_trace.is_empty() {
+            return Err("SOAR must record at least one evaluation step".to_string());
         }
         Ok(())
     }

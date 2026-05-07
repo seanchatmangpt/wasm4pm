@@ -38,4 +38,5 @@ export type { BudgetEnvelope, LatencyClass as BudgetLatencyClass, QualityTier, E
 export { latencyTierLte, qualityTierLte, latencyExceedsBudget, qualityDeficientForFloor, createDefaultBudgetEnvelope, } from './budget.js';
 export { getQualityThreshold, ALGORITHM_QUALITY_THRESHOLDS, DEFAULT_QUALITY_THRESHOLD } from './quality-thresholds.js';
 export type { QualityThresholdProfile } from './quality-thresholds.js';
+export { levenshteinDistance, findClosestMatch } from './algorithm-registry.js';
 //# sourceMappingURL=index.d.ts.map

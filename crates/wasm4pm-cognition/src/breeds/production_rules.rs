@@ -176,8 +176,8 @@ impl CognitionBreed for Mycin {
     }
 
     fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
-        if output.inference_trace.is_empty() && !output.facts.is_empty() {
-            return Err("MYCIN produced facts without trace evidence".to_string());
+        if output.inference_trace.is_empty() {
+            return Err("MYCIN fired 0 rules — no evidence of inference when rules were provided".to_string());
         }
         Ok(())
     }

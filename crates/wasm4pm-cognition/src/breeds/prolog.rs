@@ -16,9 +16,9 @@ use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Receipt, TraceStep,
 };
 use prolog8::{
-    admit_atom, Atom8, Catalog, CatalogId, DecisionKind, EpochId, FactBlock8, FactRow8, Kernel,
-    PredicateId, PredicateMeta, PredicateProofPolicy, ProofMode, QueryAtom8, QueryResult,
-    SourceId,
+    admit_atom, Atom8, Catalog, CatalogId, DecisionKind, EpochId, FactBlock8, FactRow8, FeatureBit,
+    Kernel, PredicateId, PredicateMeta, PredicateProofPolicy, ProofMode, QueryAtom8, QueryResult,
+    Rule8, RuleId, SourceId,
 };
 
 /// Real Prolog breed backed by the Prolog8 kernel.
@@ -117,6 +117,88 @@ impl CognitionBreed for Prolog {
                 breed: BreedId::Prolog,
                 message: format!("fact admission rejected: {:?}", c),
             })?;
+        }
+
+        // 3a. Load rules into kernel
+        for rule_input in &input.rules {
+            // Get or register head predicate
+            let head_pred = if let Some(pid) = kernel.catalog.predicate_id(&rule_input.conclusion) {
+                pid
+            } else {
+                let pid = PredicateId(next_pred_id);
+                next_pred_id += 1;
+                kernel.catalog.add_predicate(PredicateMeta {
+                    pred_id: pid,
+                    label: rule_input.conclusion.clone(),
+                    arity: 1,
+                    access_orders: vec![],
+                    proof_policy: PredicateProofPolicy::OnRequest,
+                    materialized: false,
+                });
+                pid
+            };
+
+            let head_term = kernel.catalog.intern_term(&rule_input.conclusion);
+            let head = Atom8::new(head_pred, 1, &[head_term]);
+
+            // Build body atoms
+            let mut body_atoms = [Atom8::new(PredicateId(0), 0, &[]); 8];
+            let body_len = rule_input.premise.len().min(8);
+
+            for (i, premise) in rule_input.premise.iter().take(8).enumerate() {
+                let premise_pred = if let Some(pid) = kernel.catalog.predicate_id(premise) {
+                    pid
+                } else {
+                    let pid = PredicateId(next_pred_id);
+                    next_pred_id += 1;
+                    kernel.catalog.add_predicate(PredicateMeta {
+                        pred_id: pid,
+                        label: premise.clone(),
+                        arity: 1,
+                        access_orders: vec![],
+                        proof_policy: PredicateProofPolicy::OnRequest,
+                        materialized: false,
+                    });
+                    pid
+                };
+
+                let premise_term = kernel.catalog.intern_term(premise);
+                body_atoms[i] = Atom8::new(premise_pred, 1, &[premise_term]);
+            }
+
+            let body_mask = if body_len > 0 {
+                (1u8 << body_len) - 1
+            } else {
+                0
+            };
+
+            let rule = Rule8 {
+                rule_id: RuleId(trace.len() as u32),
+                head,
+                body: body_atoms,
+                body_len: body_len as u8,
+                body_mask,
+                negation_mask: 0,
+                builtin_mask: 0,
+                var_count: 0,
+                var_live_mask: 0,
+                feature_mask: FeatureBit::HornRules.mask(),
+                proof_mask: 0,
+                plan_id: Default::default(),
+            };
+
+            kernel.load_rule(rule).map_err(|c| BreedError {
+                breed: BreedId::Prolog,
+                message: format!("rule load failed: {:?}", c),
+            })?;
+
+            trace.push(TraceStep {
+                step: step_no,
+                kind: "load-rule".into(),
+                detail: rule_input.id.clone(),
+                depth: 0,
+            });
+            step_no += 1;
         }
 
         // 4. Build a query: ?- intent(VALUE_OF_FIRST_GOAL_OR_FIRST_FACT_VALUE).
@@ -313,5 +395,47 @@ mod tests {
             state: vec![],
         };
         assert!(breed.preconditions(&input).is_err());
+    }
+
+    #[test]
+    fn run_with_horn_rule_loads_and_applies() {
+        use crate::breeds::Rule;
+
+        let breed = Prolog;
+        let input = BreedInput {
+            intent: "ancestor".into(),
+            candidates: vec![],
+            facts: vec![
+                Fact {
+                    key: "parent".into(),
+                    value: "alice".into(),
+                },
+                Fact {
+                    key: "parent".into(),
+                    value: "bob".into(),
+                },
+            ],
+            cases: vec![],
+            rules: vec![Rule {
+                id: "r1".into(),
+                premise: vec!["parent".into()],
+                conclusion: "ancestor".into(),
+                certainty: 1.0,
+            }],
+            goals: vec![Goal {
+                id: "g1".into(),
+                predicate: "ancestor".into(),
+                value: "alice".into(),
+            }],
+            state: vec![],
+        };
+        let out = breed.run(&input).expect("run ok");
+        assert!(!out.inference_trace.is_empty());
+        // Rule should have been loaded and applied in inference
+        let has_load_rule = out
+            .inference_trace
+            .iter()
+            .any(|step| step.kind == "load-rule");
+        assert!(has_load_rule, "trace should contain a load-rule step");
     }
 }

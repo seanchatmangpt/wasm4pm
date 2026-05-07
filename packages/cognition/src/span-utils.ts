@@ -3,7 +3,7 @@
 //! Pure data construction. Failure to emit a span must never block a wrapper's
 //! primary control flow — sinks should swallow their own errors.
 
-import type { OtelSpan, SpanSink } from './observability-types';
+import type { OtelSpan, SpanSink } from './observability-types.js';
 
 export function hexId(length: number): string {
   const len = Math.max(0, length | 0);

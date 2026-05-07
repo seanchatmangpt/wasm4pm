@@ -1,10 +1,12 @@
-//! Receipt-chain types re-exported as a stable surface.
+//! Receipt-chain types and lightweight verification facade.
 //!
-//! ZERO logic — every chain operation lives in Rust (`crates/wasm4pm-cognition`).
-//! The TS facade only re-exports types and the WASM-backed `replayReceipt`
-//! wrapper from `./replay`. No append/verify methods are implemented in TS;
-//! callers obtain a `ReceiptChainSnapshot` from `runContract` and a
-//! `ReplayRecord` from `replayReceipt`.
+//! The TS `ReceiptChain` class is a thin wrapper over `ReceiptLink[]` that
+//! implements sequential hash verification and replay pointer lookup in TS.
+//! Callers obtain a `ReceiptChainSnapshot` from `runContract` and pass its
+//! links into `ReceiptChain` for verification; or use `replayReceipt` from
+//! `./replay` for WASM-backed replay.
+
+import type { ReceiptLink } from '../types.js';
 
 export type {
   Receipt,
@@ -13,5 +15,20 @@ export type {
   ReplayRecord,
 } from '../types';
 
-export { replayReceipt } from './replay';
-export type { ReplayOptions } from './replay';
+export { replayReceipt } from './replay.js';
+export type { ReplayOptions } from './replay.js';
+
+export class ReceiptChain {
+  links: ReceiptLink[] = [];
+
+  verifyChain(): boolean {
+    for (let i = 1; i < this.links.length; i++) {
+      if (this.links[i].prev_hash !== this.links[i - 1].combined_hash) return false;
+    }
+    return true;
+  }
+
+  replayPointer(): string {
+    return this.links.length > 0 ? this.links[this.links.length - 1].combined_hash : 'empty';
+  }
+}

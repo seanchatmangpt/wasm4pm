@@ -4,7 +4,7 @@
 //! package — every wrapper goes through `WasmLoader.getInstance().get()`.
 //! No decision logic; only loading, error wrapping, and singleton bookkeeping.
 
-import { CognitionError } from './errors';
+import { CognitionError } from './errors.js';
 
 export interface CognitionWasmModule {
   cognition_show: () => unknown;
