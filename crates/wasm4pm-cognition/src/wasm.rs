@@ -9,6 +9,18 @@
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
+use crate::autosystems::candidates::{CandidateManifest, CandidateDiscovery};
+use crate::autosystems::candidates::manifest::ManifestDiscovery;
+use crate::autosystems::dimension::DimensionSpec;
+use crate::autosystems::dominance::{reject_dominated, DomainProfile};
+use crate::autosystems::findings::FindingRegistry;
+use crate::autosystems::receipt::ReceiptChain;
+use crate::authority;
+use crate::breeds::{
+    BreedInput, BreedOutput, BreedError, cbr::Cbr, dendral::Dendral, frame::Eliza, gps::Gps, hearsay::Hearsay,
+    prolog::Prolog, production_rules::Mycin, soar::Soar, strips::Strips, CognitionBreed,
+};
+use crate::evidence::{Artifact, EvidenceSource};
 use crate::registry::{CognitionReceipt, REGISTRY};
 
 /// Maximum accepted input size (10 MiB).
@@ -31,6 +43,71 @@ fn to_js_str<T: Serialize>(val: &T) -> Result<JsValue, JsValue> {
     Ok(js_val(&s))
 }
 
+/// Dispatch to the correct breed's `run()` method.
+fn dispatch_breed(breed: &str, input: &BreedInput) -> Result<BreedOutput, String> {
+    match breed {
+        "eliza" => Eliza.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        "cbr" => Cbr.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        "dendral" => Dendral.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        "strips" => Strips.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        "prolog" => Prolog.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        "mycin" => Mycin.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        "gps" => Gps.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        "soar" => Soar.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        "hearsay" => Hearsay.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        other => Err(format!("unknown breed: {}", other)),
+    }
+}
+
+/// JSON-backed evidence source for adversarial detection.
+/// Implements `EvidenceSource` by extracting typed information from a JSON value.
+struct JsonEvidenceSource {
+    inner: serde_json::Value,
+    chain: ReceiptChain,
+}
+
+impl EvidenceSource for JsonEvidenceSource {
+    fn gate_passed(&self, gate_id: &str) -> bool {
+        self.inner["gates"][gate_id]["passed"]
+            .as_bool()
+            .unwrap_or(false)
+    }
+
+    fn evidence_count(&self, gate_id: &str) -> usize {
+        self.inner["gates"][gate_id]["evidence_count"]
+            .as_u64()
+            .unwrap_or(0) as usize
+    }
+
+    fn gate_ids(&self) -> Vec<String> {
+        self.inner["gates"]
+            .as_object()
+            .map(|m| m.keys().cloned().collect())
+            .unwrap_or_default()
+    }
+
+    fn authority_text(&self, slot: &str) -> crate::authority::AuthorityKind {
+        let text = self.inner["authority"][slot]
+            .as_str()
+            .unwrap_or("");
+        authority::classify(text)
+    }
+
+    fn runtime_proof_artifacts(&self, _gate_id: &str) -> Vec<Artifact> {
+        vec![]
+    }
+
+    fn central_bus_present(&self) -> bool {
+        self.inner["central_bus_present"]
+            .as_bool()
+            .unwrap_or(false)
+    }
+
+    fn receipt_chain(&self) -> &ReceiptChain {
+        &self.chain
+    }
+}
+
 #[derive(Debug, Deserialize, Default)]
 #[serde(deny_unknown_fields)]
 struct ValidatedRunOptions {
@@ -42,7 +119,7 @@ struct ValidatedRunOptions {
 #[serde(deny_unknown_fields)]
 struct ValidatedRunInput {
     breed: String,
-    contract: serde_json::Value,
+    contract: BreedInput,
     #[serde(default)]
     options: ValidatedRunOptions,
 }
@@ -82,9 +159,14 @@ pub fn cognition_run(input_json: &str) -> Result<JsValue, JsValue> {
         return Err(wasm_err("breed must be 1..=256 chars"));
     }
 
-    // Compute deterministic ids over the validated payload.
-    let payload = serde_json::to_string(&input.contract).unwrap_or_default();
-    let output_hash = blake3::hash(payload.as_bytes()).to_hex().to_string();
+    // Dispatch to the breed's run() method.
+    let output = dispatch_breed(&input.breed, &input.contract)
+        .map_err(|e| wasm_err(&e))?;
+
+    // Compute deterministic hashes over the actual BreedOutput.
+    let output_payload = serde_json::to_string(&output)
+        .map_err(|e| wasm_err(&format!("output serialization failed: {}", e)))?;
+    let output_hash = blake3::hash(output_payload.as_bytes()).to_hex().to_string();
     let run_id = blake3::hash(format!("{}|{}", input.breed, output_hash).as_bytes())
         .to_hex()
         .to_string();
@@ -104,6 +186,7 @@ pub fn cognition_run(input_json: &str) -> Result<JsValue, JsValue> {
         "output_hash": output_hash,
         "replay_pointer": replay_pointer,
         "options_profile": input.options.profile,
+        "output": output,
     });
     to_js_str(&result)
 }
@@ -117,13 +200,34 @@ pub fn cognition_verify(result_json: &str) -> Result<JsValue, JsValue> {
             MAX_INPUT_LEN
         )));
     }
-    let _result: serde_json::Value = serde_json::from_str(result_json)
+    let result_value: serde_json::Value = serde_json::from_str(result_json)
         .map_err(|e| wasm_err(&format!("Failed to parse result: {}", e)))?;
-    let findings = serde_json::json!({
-        "findings": [],
-        "status": "verified"
+
+    // Wrap JSON as EvidenceSource and run all detectors.
+    let src = JsonEvidenceSource {
+        inner: result_value,
+        chain: ReceiptChain::new(),
+    };
+    let registry = FindingRegistry::new();
+    let findings = registry.run_all(&src);
+
+    let finding_jsons: Vec<serde_json::Value> = findings
+        .into_iter()
+        .map(|f| {
+            serde_json::json!({
+                "code": f.code,
+                "severity": format!("{:?}", f.severity),
+                "message": f.message,
+                "evidence": f.evidence,
+            })
+        })
+        .collect();
+
+    let result = serde_json::json!({
+        "findings": finding_jsons,
+        "status": if finding_jsons.is_empty() { "verified" } else { "has_findings" }
     });
-    to_js_str(&findings)
+    to_js_str(&result)
 }
 
 /// Replay a receipt by run_id (length-bounded).
@@ -138,7 +242,7 @@ pub fn cognition_replay(run_id: &str) -> Result<JsValue, JsValue> {
         .unwrap_or_else(|| Err(wasm_err(&format!("Receipt not found: {}", run_id))))
 }
 
-/// Build an architecture system given intent.
+/// Build an architecture system given intent. Parses manifest and computes Pareto frontier.
 #[wasm_bindgen]
 pub fn system_build(intent_json: &str) -> Result<JsValue, JsValue> {
     if intent_json.len() > MAX_INPUT_LEN {
@@ -147,14 +251,44 @@ pub fn system_build(intent_json: &str) -> Result<JsValue, JsValue> {
             MAX_INPUT_LEN
         )));
     }
-    let candidates = serde_json::json!({
-        "candidates": [
-            { "id": "centralized-cloud", "score": 0.5 },
-            { "id": "local-first-crdt", "score": 0.5 },
-            { "id": "wasm-local", "score": 0.5 },
-        ]
+    let manifest =
+        ManifestDiscovery::from_str("<wasm-input>", intent_json)
+            .and_then(|d| d.discover())
+            .map_err(|e| wasm_err(&e))?;
+
+    let (pareto_front, dominated) =
+        reject_dominated(
+            manifest.candidates.clone(),
+            &DomainProfile::Balanced,
+            &manifest.dimensions,
+        );
+
+    let pareto_json: Vec<serde_json::Value> = pareto_front
+        .into_iter()
+        .map(|c| {
+            serde_json::json!({
+                "id": c.id,
+                "family_id": c.family_id,
+                "dimensions": c.dimensions,
+            })
+        })
+        .collect();
+
+    let dominated_json: Vec<serde_json::Value> = dominated
+        .into_iter()
+        .map(|d| {
+            serde_json::json!({
+                "id": d.id,
+                "reason": d.reason,
+            })
+        })
+        .collect();
+
+    let result = serde_json::json!({
+        "pareto_front": pareto_json,
+        "dominated": dominated_json,
     });
-    to_js_str(&candidates)
+    to_js_str(&result)
 }
 
 /// Verify a target system against artifacts.

@@ -10,7 +10,7 @@ pub mod dominance;
 pub mod findings;
 pub mod receipt;
 
-pub use candidates::{all_candidates, Candidate};
+pub use candidates::Candidate;
 pub use contract::{run_contract, CognitionContract, ContractResult};
 pub use cost_law::{CostLaw, ReplacementCostLaw, TraditionalCostLaw};
 pub use dominance::{reject_dominated, DomainProfile};
