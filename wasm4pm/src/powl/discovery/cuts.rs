@@ -153,22 +153,20 @@ pub fn detect_sequence_cut(
 
     let n = activities.len();
 
-    // Build undirected reachability graph from DFG
-    // Edge exists if (a, b) in DFG OR (b, a) in DFG
-    let mut undirected: Vec<Vec<usize>> = vec![Vec::new(); n];
+    // Build directed graph from DFG
+    // Tarjan's algorithm is for directed graphs, not undirected.
+    // For sequence detection, use only the directed edges from DFG.
+    let mut directed: Vec<Vec<usize>> = vec![Vec::new(); n];
     for (a, b) in &dfg {
         if let (Some(&ai), Some(&bi)) = (act_to_idx.get(a), act_to_idx.get(b)) {
-            if !undirected[ai].contains(&bi) {
-                undirected[ai].push(bi);
-            }
-            if !undirected[bi].contains(&ai) {
-                undirected[bi].push(ai);
+            if !directed[ai].contains(&bi) {
+                directed[ai].push(bi);
             }
         }
     }
 
     // Compute SCCs using Tarjan's algorithm
-    let sccs = tarjan_sccs(&undirected);
+    let sccs = tarjan_sccs(&directed);
 
     // Need at least 2 SCCs for a valid sequence cut
     if sccs.len() < 2 {
@@ -244,7 +242,7 @@ pub fn detect_sequence_cut(
                 .map(|trace| {
                     trace
                         .iter()
-                        .filter(|a| scc_activity_set.contains(a.as_str()))
+                        .filter(|a| scc_activity_set.contains(*a))
                         .cloned()
                         .collect()
                 })
@@ -741,7 +739,6 @@ pub fn detect_xor_cut(
                 let filtered: Vec<String> = trace
                     .iter()
                     .filter(|a| component_activity_set.contains(*a))
-
                     .cloned()
                     .collect();
                 if filtered.is_empty() {
