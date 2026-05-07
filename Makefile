@@ -16,7 +16,7 @@ export RAYON_NUM_THREADS := $(JOBS)
         build-profile build-browser build-edge build-fog build-iot build-cloud \
         verify-profiles help doctor lint test verify check-debt \
         cognition-build cognition-verify cognition-doctor cognition-dod cognition-cycle \
-        cognition-no-stub-gate cognition-examples
+        cognition-no-stub-gate cognition-examples cognition-smoke
 
 # ── Definition of Done (DoD) Verification ─────────────────────────────────────
 # Consolidated target: test, lint, and quick benchmark smoke-test
@@ -284,3 +284,6 @@ cognition-no-stub-gate:
 
 cognition-examples:
 	@cd examples/cognition && bash run-all.sh
+
+cognition-smoke:
+	@bash scripts/cognition-smoke.sh

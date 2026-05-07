@@ -1,0 +1,37 @@
+{
+  "intent": "access_control",
+  "candidates": [],
+  "facts": [
+    { "key": "user",       "value": "alice" },
+    { "key": "role",       "value": "analyst" },
+    { "key": "resource",   "value": "event_log" },
+    { "key": "clearance",  "value": "L2" },
+    { "key": "time_of_day","value": "business_hours" }
+  ],
+  "cases": [],
+  "rules": [
+    {
+      "id": "r-analyst-read",
+      "premise": ["role=analyst", "resource=event_log", "clearance=L2"],
+      "conclusion": "permission=read",
+      "certainty": 0.95
+    },
+    {
+      "id": "r-deny-after-hours",
+      "premise": ["permission=read", "time_of_day=after_hours"],
+      "conclusion": "decision=Deny",
+      "certainty": 0.99
+    },
+    {
+      "id": "r-allow-business-hours",
+      "premise": ["permission=read", "time_of_day=business_hours"],
+      "conclusion": "decision=Allow",
+      "certainty": 0.97
+    }
+  ],
+  "goals": [
+    { "id": "g1", "predicate": "decision", "value": "Allow" },
+    { "id": "g2", "predicate": "permission", "value": "read" }
+  ],
+  "state": []
+}

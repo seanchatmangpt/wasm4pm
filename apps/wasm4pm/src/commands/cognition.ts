@@ -10,6 +10,8 @@ import { adversarial } from './cognition/adversarial.js';
 import { replay } from './cognition/replay.js';
 import { plan } from './cognition/plan.js';
 import { inspect } from './cognition/inspect.js';
+import { doctor } from './cognition/doctor.js';
+import { watch } from './cognition/watch.js';
 
 export const cognition = defineCommand({
   meta: {
@@ -26,5 +28,7 @@ export const cognition = defineCommand({
     replay,
     plan,
     inspect,
+    doctor,
+    watch,
   },
 });
