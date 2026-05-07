@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 
-members = ["wasm4pm", "tps-metrics", "crates/wasm4pm-types", "crates/wasm4pm-algos", "crates/wasm4pm-cli", "crates/wasm4pm-utils", "crates/miniml-core"]
+members = ["wasm4pm", "tps-metrics", "crates/wasm4pm-types", "crates/wasm4pm-algos", "crates/wasm4pm-cli", "crates/wasm4pm-utils", "crates/miniml-core", "crates/wasm4pm-cognition"]
 
 [workspace.package]
 version = "26.4.28"
@@ -23,6 +23,8 @@ blake3 = "1.5"
 bcinr = { version = "26.4.22", default-features = false }
 wasm4pm-types = { version = "26.4.17", path = "crates/wasm4pm-types" }
 miniml = { path = "crates/miniml-core" }
+fake = "2.9"
+proptest = "1.4"
 
 [profile.release]
 opt-level = "z"

@@ -25,6 +25,7 @@ import { membrane } from './commands/membrane.js';
 import { config } from './commands/config.js';
 import { verify } from './commands/verify.js';
 import { benchmark } from './commands/benchmark.js';
+import { cognition } from './commands/cognition.js';
 
 export const main = defineCommand({
   meta: {
@@ -162,6 +163,7 @@ Activity key defaults to "concept:name" (XES standard). Pass --activity-key to o
     config,
     benchmark,
     verify,
+    cognition,
   },
 });
 

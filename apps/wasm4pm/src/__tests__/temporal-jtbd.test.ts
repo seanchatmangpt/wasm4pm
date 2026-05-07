@@ -209,7 +209,7 @@ beforeAll(() => {
 // ─── JTBD-1: Temporal Profile for SLA Benchmarks ─────────────────────────────
 
 describe('JTBD-1: I want a temporal profile to set SLA benchmarks for each deal stage', () => {
-  it('compute_temporal_profile returns a non-null result', () => {
+  it('compute_temporal_profile returns a non-null result + temporal profile result parses as JSON with at least one activity entry + mean durations in temporal profile are non-negative numbers', () => {
     let result: Record<string, unknown> | null = null;
     try {
       result = parse(wasm.compute_temporal_profile(logHandle, ACTIVITY_KEY, TIMESTAMP_KEY));
@@ -218,35 +218,14 @@ describe('JTBD-1: I want a temporal profile to set SLA benchmarks for each deal 
     }
     // Either function exists and returns data, or it's not available — both acceptable
     expect(result === null || result !== null).toBe(true);
-  });
-
-  it('temporal profile result parses as JSON with at least one activity entry', () => {
-    let result: Record<string, unknown> | null = null;
-    try {
-      result = parse(wasm.compute_temporal_profile(logHandle, ACTIVITY_KEY, TIMESTAMP_KEY));
-    } catch {
-      // not available
-    }
     if (result === null) {
-      // Skip structural check if function unavailable
       expect(true).toBe(true);
       return;
     }
+
     // Result should be an object (not throw on parse)
     expect(typeof result).toBe('object');
-  });
 
-  it('mean durations in temporal profile are non-negative numbers', () => {
-    let result: Record<string, unknown> | null = null;
-    try {
-      result = parse(wasm.compute_temporal_profile(logHandle, ACTIVITY_KEY, TIMESTAMP_KEY));
-    } catch {
-      // not available
-    }
-    if (result === null) {
-      expect(true).toBe(true);
-      return;
-    }
     // If there's a durations or activity_stats field, all numeric values must be >= 0
     const durations = result.durations ?? result.activity_stats ?? result.mean_durations;
     if (durations && typeof durations === 'object') {
@@ -264,7 +243,7 @@ describe('JTBD-1: I want a temporal profile to set SLA benchmarks for each deal 
 // ─── JTBD-2: Temporal Conformance Violations ─────────────────────────────────
 
 describe('JTBD-2: I want to find temporal conformance violations — deals where stages took too long', () => {
-  it('check_temporal_conformance returns a result (may be empty for normal log)', () => {
+  it('check_temporal_conformance returns a result (may be empty for normal log) + check_temporal_conformance result is parseable JSON + violations (if any) have case_id and activity fields', () => {
     let result: unknown = null;
     try {
       result = wasm.check_temporal_conformance(logHandle, ACTIVITY_KEY, TIMESTAMP_KEY, 0.05);
@@ -273,40 +252,20 @@ describe('JTBD-2: I want to find temporal conformance violations — deals where
     }
     // Either returns something or is unavailable — must not crash
     expect(result === null || result !== null).toBe(true);
-  });
-
-  it('check_temporal_conformance result is parseable JSON', () => {
-    let result: unknown = null;
-    try {
-      result = wasm.check_temporal_conformance(logHandle, ACTIVITY_KEY, TIMESTAMP_KEY, 0.05);
-    } catch {
-      // not available
-    }
     if (result === null) {
       expect(true).toBe(true);
       return;
     }
+
     // Must parse without throwing
     let parsed: unknown;
     expect(() => {
       parsed = typeof result === 'string' ? JSON.parse(result) : result;
     }).not.toThrow();
     expect(parsed).toBeDefined();
-  });
 
-  it('violations (if any) have case_id and activity fields', () => {
-    let result: unknown = null;
-    try {
-      result = wasm.check_temporal_conformance(logHandle, ACTIVITY_KEY, TIMESTAMP_KEY, 0.05);
-    } catch {
-      // not available
-    }
-    if (result === null) {
-      expect(true).toBe(true);
-      return;
-    }
-    const parsed = parse(result);
-    const violations = (parsed.violations as Array<Record<string, unknown>>) ?? [];
+    const parsedObj = parse(result);
+    const violations = (parsedObj.violations as Array<Record<string, unknown>>) ?? [];
     // If there are violations, each must have case_id and activity
     for (const v of violations) {
       expect(v).toHaveProperty('case_id');
@@ -319,56 +278,43 @@ describe('JTBD-2: I want to find temporal conformance violations — deals where
 // ─── JTBD-3: Performance DFG for Bottleneck Analysis ─────────────────────────
 
 describe('JTBD-3: I want a performance DFG to see where deals get stuck', () => {
-  it('compute_performance_dfg returns a non-null result', () => {
-    let result: Record<string, unknown> | null = null;
+  it('compute_performance_dfg returns a non-null result + performance DFG result has edges or performance_edges field + compute_activity_durations returns duration data with activity names matching vocab', () => {
+    let dfgResult: Record<string, unknown> | null = null;
     try {
-      result = parse(wasm.compute_performance_dfg(logHandle, ACTIVITY_KEY, TIMESTAMP_KEY));
+      dfgResult = parse(wasm.compute_performance_dfg(logHandle, ACTIVITY_KEY, TIMESTAMP_KEY));
     } catch {
       // not available
     }
-    expect(result === null || result !== null).toBe(true);
-  });
+    expect(dfgResult === null || dfgResult !== null).toBe(true);
+    if (dfgResult !== null) {
+      const hasEdges =
+        'edges' in dfgResult ||
+        'performance_edges' in dfgResult ||
+        'nodes' in dfgResult ||
+        'dfg' in dfgResult;
+      expect(hasEdges).toBe(true);
+    }
 
-  it('performance DFG result has edges or performance_edges field', () => {
-    let result: Record<string, unknown> | null = null;
+    let durResult: Record<string, unknown> | null = null;
     try {
-      result = parse(wasm.compute_performance_dfg(logHandle, ACTIVITY_KEY, TIMESTAMP_KEY));
+      durResult = parse(wasm.compute_activity_durations(logHandle, ACTIVITY_KEY, TIMESTAMP_KEY));
     } catch {
       // not available
     }
-    if (result === null) {
-      expect(true).toBe(true);
-      return;
-    }
-    const hasEdges =
-      'edges' in result ||
-      'performance_edges' in result ||
-      'nodes' in result ||
-      'dfg' in result;
-    expect(hasEdges).toBe(true);
-  });
-
-  it('compute_activity_durations returns duration data with activity names matching vocab', () => {
-    let result: Record<string, unknown> | null = null;
-    try {
-      result = parse(wasm.compute_activity_durations(logHandle, ACTIVITY_KEY, TIMESTAMP_KEY));
-    } catch {
-      // not available
-    }
-    if (result === null) {
+    if (durResult === null) {
       expect(true).toBe(true);
       return;
     }
     // Result should be an object
-    expect(typeof result).toBe('object');
+    expect(typeof durResult).toBe('object');
     // If it has activity-keyed data, at least one faker activity should appear
-    const resultStr = JSON.stringify(result);
+    const resultStr = JSON.stringify(durResult);
     const vocabActivities = [
       V.leadCreated, V.leadQualified, V.demoScheduled, V.demoCompleted,
       V.proposalSent, V.negotiationStarted, V.contractSigned, V.dealClosedWon,
     ];
     const hasVocabActivity = vocabActivities.some((a) => resultStr.includes(a));
     // Either vocab activities appear, or the result has some other structure
-    expect(hasVocabActivity || Object.keys(result).length >= 0).toBe(true);
+    expect(hasVocabActivity || Object.keys(durResult).length >= 0).toBe(true);
   });
 });

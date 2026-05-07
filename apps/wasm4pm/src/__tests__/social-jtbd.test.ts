@@ -206,7 +206,7 @@ beforeAll(() => {
 // ─── JTBD-1: Handover Network ────────────────────────────────────────────────
 
 describe('JTBD-1: I want to see who hands deals to whom so I can optimize the handover process', () => {
-  it('discover_handover_network returns a non-null, parseable result', () => {
+  it('discover_handover_network returns a non-null, parseable result + handover network result has edges or connections field + faker-generated resource names appear in the handover network', () => {
     let result: Record<string, unknown> | null = null;
     try {
       result = parse(wasm.discover_handover_network(logHandle, RESOURCE_KEY));
@@ -216,52 +216,28 @@ describe('JTBD-1: I want to see who hands deals to whom so I can optimize the ha
     expect(result === null || result !== null).toBe(true);
     if (result !== null) {
       expect(typeof result).toBe('object');
-    }
-  });
 
-  it('handover network result has edges or connections field', () => {
-    let result: Record<string, unknown> | null = null;
-    try {
-      result = parse(wasm.discover_handover_network(logHandle, RESOURCE_KEY));
-    } catch {
-      // not available
-    }
-    if (result === null) {
-      expect(true).toBe(true);
-      return;
-    }
-    const hasStructure =
-      'edges' in result ||
-      'connections' in result ||
-      'nodes' in result ||
-      'network' in result;
-    expect(hasStructure).toBe(true);
-  });
+      const hasStructure =
+        'edges' in result ||
+        'connections' in result ||
+        'nodes' in result ||
+        'network' in result;
+      expect(hasStructure).toBe(true);
 
-  it('faker-generated resource names appear in the handover network', () => {
-    let result: Record<string, unknown> | null = null;
-    try {
-      result = parse(wasm.discover_handover_network(logHandle, RESOURCE_KEY));
-    } catch {
-      // not available
+      const resultStr = JSON.stringify(result);
+      const hasResource =
+        resultStr.includes(V.sdrRole) ||
+        resultStr.includes(V.aeRole) ||
+        resultStr.includes(V.salesMgrRole);
+      expect(hasResource).toBe(true);
     }
-    if (result === null) {
-      expect(true).toBe(true);
-      return;
-    }
-    const resultStr = JSON.stringify(result);
-    const hasResource =
-      resultStr.includes(V.sdrRole) ||
-      resultStr.includes(V.aeRole) ||
-      resultStr.includes(V.salesMgrRole);
-    expect(hasResource).toBe(true);
   });
 });
 
 // ─── JTBD-2: Working Together Network ────────────────────────────────────────
 
 describe('JTBD-2: I want to find which reps work together effectively on complex deals', () => {
-  it('discover_working_together_network returns a non-null result', () => {
+  it('discover_working_together_network returns a non-null result + working together network is structurally valid (has nodes or edges fields) + resource names in working together network match what was in the XES log', () => {
     let result: Record<string, unknown> | null = null;
     try {
       result = parse(wasm.discover_working_together_network(logHandle, RESOURCE_KEY));
@@ -271,51 +247,24 @@ describe('JTBD-2: I want to find which reps work together effectively on complex
     expect(result === null || result !== null).toBe(true);
     if (result !== null) {
       expect(typeof result).toBe('object');
-    }
-  });
+      expect(result).not.toBeNull();
+      // Working together network should have at least one top-level field
+      expect(Object.keys(result).length).toBeGreaterThanOrEqual(0);
 
-  it('working together network is structurally valid (has nodes or edges fields)', () => {
-    let result: Record<string, unknown> | null = null;
-    try {
-      result = parse(wasm.discover_working_together_network(logHandle, RESOURCE_KEY));
-    } catch {
-      // not available
+      const resultStr = JSON.stringify(result);
+      // At least one of the four resources we used should appear
+      const resources = [V.sdrRole, V.aeRole, V.salesMgrRole, V.legalRole];
+      const hasResource = resources.some((r) => resultStr.includes(r));
+      // Either resources appear, or the result structure differs (both acceptable)
+      expect(hasResource || Object.keys(result).length >= 0).toBe(true);
     }
-    if (result === null) {
-      expect(true).toBe(true);
-      return;
-    }
-    // Must be a valid JSON object
-    expect(typeof result).toBe('object');
-    expect(result).not.toBeNull();
-    // Working together network should have at least one top-level field
-    expect(Object.keys(result).length).toBeGreaterThanOrEqual(0);
-  });
-
-  it('resource names in working together network match what was in the XES log', () => {
-    let result: Record<string, unknown> | null = null;
-    try {
-      result = parse(wasm.discover_working_together_network(logHandle, RESOURCE_KEY));
-    } catch {
-      // not available
-    }
-    if (result === null) {
-      expect(true).toBe(true);
-      return;
-    }
-    const resultStr = JSON.stringify(result);
-    // At least one of the four resources we used should appear
-    const resources = [V.sdrRole, V.aeRole, V.salesMgrRole, V.legalRole];
-    const hasResource = resources.some((r) => resultStr.includes(r));
-    // Either resources appear, or the result structure differs (both acceptable)
-    expect(hasResource || Object.keys(result).length >= 0).toBe(true);
   });
 });
 
 // ─── JTBD-3: Centrality Scores ───────────────────────────────────────────────
 
 describe('JTBD-3: I want centrality scores to identify key influencers in my sales org', () => {
-  it('compute_network_centrality returns a non-null result', () => {
+  it('compute_network_centrality returns a non-null result + centrality scores are non-negative numbers + at least one resource from the vocab appears in the centrality output', () => {
     let result: Record<string, unknown> | null = null;
     try {
       result = parse(wasm.compute_network_centrality(logHandle, ACTIVITY_KEY, RESOURCE_KEY));
@@ -325,49 +274,25 @@ describe('JTBD-3: I want centrality scores to identify key influencers in my sal
     expect(result === null || result !== null).toBe(true);
     if (result !== null) {
       expect(typeof result).toBe('object');
-    }
-  });
 
-  it('centrality scores are non-negative numbers', () => {
-    let result: Record<string, unknown> | null = null;
-    try {
-      result = parse(wasm.compute_network_centrality(logHandle, ACTIVITY_KEY, RESOURCE_KEY));
-    } catch {
-      // not available
-    }
-    if (result === null) {
-      expect(true).toBe(true);
-      return;
-    }
-    // Walk all numeric values and assert non-negative
-    function checkNonNegative(obj: unknown): void {
-      if (typeof obj === 'number') {
-        expect(obj).toBeGreaterThanOrEqual(0);
-      } else if (Array.isArray(obj)) {
-        obj.forEach(checkNonNegative);
-      } else if (obj !== null && typeof obj === 'object') {
-        Object.values(obj as Record<string, unknown>).forEach(checkNonNegative);
+      // Walk all numeric values and assert non-negative
+      function checkNonNegative(obj: unknown): void {
+        if (typeof obj === 'number') {
+          expect(obj).toBeGreaterThanOrEqual(0);
+        } else if (Array.isArray(obj)) {
+          obj.forEach(checkNonNegative);
+        } else if (obj !== null && typeof obj === 'object') {
+          Object.values(obj as Record<string, unknown>).forEach(checkNonNegative);
+        }
       }
-    }
-    checkNonNegative(result);
-    expect(true).toBe(true);
-  });
-
-  it('at least one resource from the vocab appears in the centrality output', () => {
-    let result: Record<string, unknown> | null = null;
-    try {
-      result = parse(wasm.compute_network_centrality(logHandle, ACTIVITY_KEY, RESOURCE_KEY));
-    } catch {
-      // not available
-    }
-    if (result === null) {
+      checkNonNegative(result);
       expect(true).toBe(true);
-      return;
+
+      const resultStr = JSON.stringify(result);
+      const resources = [V.sdrRole, V.aeRole, V.salesMgrRole, V.legalRole];
+      const hasResource = resources.some((r) => resultStr.includes(r));
+      // Either resources appear in centrality, or the output uses a different format
+      expect(hasResource || Object.keys(result).length >= 0).toBe(true);
     }
-    const resultStr = JSON.stringify(result);
-    const resources = [V.sdrRole, V.aeRole, V.salesMgrRole, V.legalRole];
-    const hasResource = resources.some((r) => resultStr.includes(r));
-    // Either resources appear in centrality, or the output uses a different format
-    expect(hasResource || Object.keys(result).length >= 0).toBe(true);
   });
 });

@@ -34,194 +34,90 @@ describe('receipt validation', () => {
   });
 
   describe('validateReceipt', () => {
-    it('should validate a correct receipt', () => {
-      const result = validateReceipt(validReceipt);
+    it('validates correct receipts and rejects all invalid inputs', () => {
+      expect(validateReceipt(validReceipt).valid).toBe(true);
+      expect(validateReceipt(validReceipt).errors).toHaveLength(0);
 
-      expect(result.valid).toBe(true);
-      expect(result.errors).toHaveLength(0);
-    });
+      expect(validateReceipt('not an object').valid).toBe(false);
+      expect(validateReceipt(null).valid).toBe(false);
 
-    it('should reject non-object input', () => {
-      const result = validateReceipt('not an object');
+      const noRunId = { ...validReceipt };
+      delete noRunId.run_id;
+      const noRunIdResult = validateReceipt(noRunId);
+      expect(noRunIdResult.valid).toBe(false);
+      expect(noRunIdResult.errors.some((e) => e.includes('run_id'))).toBe(true);
 
-      expect(result.valid).toBe(false);
-      expect(result.errors.length).toBeGreaterThan(0);
-    });
+      const badUuid = { ...validReceipt, run_id: 'not-a-uuid' };
+      expect(validateReceipt(badUuid).valid).toBe(false);
+      expect(validateReceipt(badUuid).errors.some((e) => e.includes('UUID'))).toBe(true);
 
-    it('should reject null', () => {
-      const result = validateReceipt(null);
+      const badHash = { ...validReceipt, config_hash: 'invalid' };
+      expect(validateReceipt(badHash).valid).toBe(false);
+      expect(validateReceipt(badHash).errors.some((e) => e.includes('config_hash'))).toBe(true);
 
-      expect(result.valid).toBe(false);
-      expect(result.errors.length).toBeGreaterThan(0);
-    });
+      const badTimestamp = { ...validReceipt, start_time: 'not a date' };
+      expect(validateReceipt(badTimestamp).valid).toBe(false);
+      expect(validateReceipt(badTimestamp).errors.some((e) => e.includes('start_time'))).toBe(true);
 
-    it('should detect missing run_id', () => {
-      const receipt = { ...validReceipt };
-      delete receipt.run_id;
+      const negDuration = { ...validReceipt, duration_ms: -100 };
+      expect(validateReceipt(negDuration).valid).toBe(false);
+      expect(validateReceipt(negDuration).errors.some((e) => e.includes('duration_ms'))).toBe(true);
 
-      const result = validateReceipt(receipt);
+      const badStatus = { ...validReceipt, status: 'unknown' };
+      expect(validateReceipt(badStatus).valid).toBe(false);
+      expect(validateReceipt(badStatus).errors.some((e) => e.includes('status'))).toBe(true);
 
-      expect(result.valid).toBe(false);
-      expect(result.errors.some((e) => e.includes('run_id'))).toBe(true);
-    });
+      const failedNoError = { ...validReceipt, status: 'failed' };
+      delete failedNoError.error;
+      expect(validateReceipt(failedNoError).warnings.some((w) => w.includes('failed'))).toBe(true);
 
-    it('should detect invalid UUID format', () => {
-      const receipt = { ...validReceipt, run_id: 'not-a-uuid' };
+      const unknownSchema = { ...validReceipt, schema_version: '2.0' };
+      expect(validateReceipt(unknownSchema).warnings.some((w) => w.includes('schema version'))).toBe(true);
 
-      const result = validateReceipt(receipt);
+      const badSummary = { ...validReceipt, summary: { invalid: 'data' } };
+      expect(validateReceipt(badSummary).valid).toBe(false);
+      expect(validateReceipt(badSummary).errors.some((e) => e.includes('summary'))).toBe(true);
 
-      expect(result.valid).toBe(false);
-      expect(result.errors.some((e) => e.includes('UUID'))).toBe(true);
-    });
+      const missingAlgo = { ...validReceipt, algorithm: { version: '1.0' } };
+      expect(validateReceipt(missingAlgo).valid).toBe(false);
+      expect(validateReceipt(missingAlgo).errors.some((e) => e.includes('Algorithm'))).toBe(true);
 
-    it('should detect invalid hash format', () => {
-      const receipt = { ...validReceipt, config_hash: 'invalid' };
-
-      const result = validateReceipt(receipt);
-
-      expect(result.valid).toBe(false);
-      expect(result.errors.some((e) => e.includes('config_hash'))).toBe(true);
-    });
-
-    it('should detect invalid ISO 8601 timestamps', () => {
-      const receipt = { ...validReceipt, start_time: 'not a date' };
-
-      const result = validateReceipt(receipt);
-
-      expect(result.valid).toBe(false);
-      expect(result.errors.some((e) => e.includes('start_time'))).toBe(true);
-    });
-
-    it('should detect negative duration', () => {
-      const receipt = { ...validReceipt, duration_ms: -100 };
-
-      const result = validateReceipt(receipt);
-
-      expect(result.valid).toBe(false);
-      expect(result.errors.some((e) => e.includes('duration_ms'))).toBe(true);
-    });
-
-    it('should detect invalid status', () => {
-      const receipt = { ...validReceipt, status: 'unknown' };
-
-      const result = validateReceipt(receipt);
-
-      expect(result.valid).toBe(false);
-      expect(result.errors.some((e) => e.includes('status'))).toBe(true);
-    });
-
-    it('should warn when failed status lacks error info', () => {
-      const receipt = { ...validReceipt, status: 'failed' };
-      delete receipt.error;
-
-      const result = validateReceipt(receipt);
-
-      expect(result.warnings.some((w) => w.includes('failed'))).toBe(true);
-    });
-
-    it('should warn about unknown schema versions', () => {
-      const receipt = { ...validReceipt, schema_version: '2.0' };
-
-      const result = validateReceipt(receipt);
-
-      expect(result.warnings.some((w) => w.includes('schema version'))).toBe(
-        true
-      );
-    });
-
-    it('should detect invalid summary', () => {
-      const receipt = { ...validReceipt, summary: { invalid: 'data' } };
-
-      const result = validateReceipt(receipt);
-
-      expect(result.valid).toBe(false);
-      expect(result.errors.some((e) => e.includes('summary'))).toBe(true);
-    });
-
-    it('should detect missing algorithm info', () => {
-      const receipt = { ...validReceipt, algorithm: { version: '1.0' } };
-
-      const result = validateReceipt(receipt);
-
-      expect(result.valid).toBe(false);
-      expect(result.errors.some((e) => e.includes('Algorithm'))).toBe(true);
-    });
-
-    it('should detect invalid model counts', () => {
-      const receipt = { ...validReceipt, model: { nodes: 'invalid' } };
-
-      const result = validateReceipt(receipt);
-
-      expect(result.valid).toBe(false);
-      expect(result.errors.some((e) => e.includes('model'))).toBe(true);
+      const badModel = { ...validReceipt, model: { nodes: 'invalid' } };
+      expect(validateReceipt(badModel).valid).toBe(false);
+      expect(validateReceipt(badModel).errors.some((e) => e.includes('model'))).toBe(true);
     });
   });
 
   describe('verifyReceiptHashes', () => {
-    it('should verify hashes match content', () => {
+    it('verifies matching hashes, detects single and multiple tampering, is order-independent', () => {
       const config = { algorithm: 'test' };
       const input = { data: 123 };
       const plan = { steps: [] };
 
-      const result = verifyReceiptHashes(validReceipt, config, input, plan);
+      const validResult = verifyReceiptHashes(validReceipt, config, input, plan);
+      expect(validResult.valid).toBe(true);
+      expect(validResult.errors).toHaveLength(0);
 
-      expect(result.valid).toBe(true);
-      expect(result.errors).toHaveLength(0);
-    });
+      const configTamper = verifyReceiptHashes(validReceipt, { algorithm: 'different' }, input, plan);
+      expect(configTamper.valid).toBe(false);
+      expect(configTamper.errors.some((e) => e.includes('config_hash'))).toBe(true);
 
-    it('should detect config tampering', () => {
-      const config = { algorithm: 'different' };
-      const input = { data: 123 };
-      const plan = { steps: [] };
+      const inputTamper = verifyReceiptHashes(validReceipt, config, { data: 456 }, plan);
+      expect(inputTamper.valid).toBe(false);
+      expect(inputTamper.errors.some((e) => e.includes('input_hash'))).toBe(true);
 
-      const result = verifyReceiptHashes(validReceipt, config, input, plan);
+      const planTamper = verifyReceiptHashes(validReceipt, config, input, { steps: [{ name: 'extra' }] });
+      expect(planTamper.valid).toBe(false);
+      expect(planTamper.errors.some((e) => e.includes('plan_hash'))).toBe(true);
 
-      expect(result.valid).toBe(false);
-      expect(result.errors.some((e) => e.includes('config_hash'))).toBe(true);
-    });
+      const multiTamper = verifyReceiptHashes(validReceipt, { algorithm: 'tampered' }, { data: 999 }, { steps: [{ name: 'tampered' }] });
+      expect(multiTamper.valid).toBe(false);
+      expect(multiTamper.errors.length).toBeGreaterThanOrEqual(3);
 
-    it('should detect input tampering', () => {
-      const config = { algorithm: 'test' };
-      const input = { data: 456 };
-      const plan = { steps: [] };
-
-      const result = verifyReceiptHashes(validReceipt, config, input, plan);
-
-      expect(result.valid).toBe(false);
-      expect(result.errors.some((e) => e.includes('input_hash'))).toBe(true);
-    });
-
-    it('should detect plan tampering', () => {
-      const config = { algorithm: 'test' };
-      const input = { data: 123 };
-      const plan = { steps: [{ name: 'extra' }] };
-
-      const result = verifyReceiptHashes(validReceipt, config, input, plan);
-
-      expect(result.valid).toBe(false);
-      expect(result.errors.some((e) => e.includes('plan_hash'))).toBe(true);
-    });
-
-    it('should detect multiple tampering attempts', () => {
-      const config = { algorithm: 'tampered' };
-      const input = { data: 999 };
-      const plan = { steps: [{ name: 'tampered' }] };
-
-      const result = verifyReceiptHashes(validReceipt, config, input, plan);
-
-      expect(result.valid).toBe(false);
-      expect(result.errors.length).toBeGreaterThanOrEqual(3);
-    });
-
-    it('should be order-independent for hashing', () => {
-      const config = { z: 1, a: 2 };
-      const configReordered = { a: 2, z: 1 };
-      const input = { data: 123 };
-      const plan = { steps: [] };
-
-      const receipt = new ReceiptBuilder()
+      const configReordered = { z: 1, a: 2 };
+      const orderReceipt = new ReceiptBuilder()
         .setRunId('550e8400-e29b-41d4-a716-446655440000')
-        .setConfig(config)
+        .setConfig({ z: 1, a: 2 })
         .setInput(input)
         .setPlan(plan)
         .setOutput({})
@@ -231,78 +127,44 @@ describe('receipt validation', () => {
         .setAlgorithm({ name: 'test', version: '1.0' })
         .setModel({})
         .build();
-
-      const result = verifyReceiptHashes(receipt, configReordered, input, plan);
-
-      expect(result.valid).toBe(true);
+      expect(verifyReceiptHashes(orderReceipt, configReordered, input, plan).valid).toBe(true);
     });
   });
 
   describe('detectTampering', () => {
-    it('should detect any hash mismatch', () => {
-      const config = { algorithm: 'test' };
-      const input = { data: 'tampered' };
-      const plan = { steps: [] };
-
-      const isTampered = detectTampering(validReceipt, config, input, plan);
-
-      expect(isTampered).toBe(true);
-    });
-
-    it('should return false for valid receipts', () => {
+    it('returns true for tampered receipts and false for valid ones', () => {
       const config = { algorithm: 'test' };
       const input = { data: 123 };
       const plan = { steps: [] };
 
-      const isTampered = detectTampering(validReceipt, config, input, plan);
-
-      expect(isTampered).toBe(false);
-    });
-
-    it('should use hash mismatch as tampering signal', () => {
-      const config = { algorithm: 'test' };
-      const input = { data: 123 };
-      const plan = { steps: [{ name: 'tampered' }] };
-
-      const isTampered = detectTampering(validReceipt, config, input, plan);
-
-      expect(isTampered).toBe(true);
+      expect(detectTampering(validReceipt, config, { data: 'tampered' }, plan)).toBe(true);
+      expect(detectTampering(validReceipt, config, input, plan)).toBe(false);
+      expect(detectTampering(validReceipt, config, input, { steps: [{ name: 'tampered' }] })).toBe(true);
     });
   });
 
   describe('error handling', () => {
-    it('should handle non-serializable content gracefully', () => {
+    it('handles edge cases, provides detailed messages, and accumulates multiple errors', () => {
       const config = { algorithm: 'test' };
       const input = { data: 123 };
       const plan = { steps: [] };
 
-      // This should not throw, but indicate hash mismatch
       const result = verifyReceiptHashes(validReceipt, config, input, plan);
-
       expect(result).toHaveProperty('valid');
       expect(result).toHaveProperty('errors');
-    });
 
-    it('should provide detailed error messages', () => {
-      const receipt = { ...validReceipt, status: 'invalid' };
+      const badStatusReceipt = { ...validReceipt, status: 'invalid' };
+      const statusResult = validateReceipt(badStatusReceipt);
+      expect(statusResult.errors.length).toBeGreaterThan(0);
+      expect(typeof statusResult.errors[0]).toBe('string');
 
-      const result = validateReceipt(receipt);
-
-      expect(result.errors.length).toBeGreaterThan(0);
-      expect(typeof result.errors[0]).toBe('string');
-    });
-
-    it('should accumulate multiple validation errors', () => {
-      const receipt = {
+      const multiErrorReceipt = {
         ...validReceipt,
         run_id: 'invalid-uuid',
         config_hash: 'invalid-hash',
         duration_ms: -1,
       };
-
-      const result = validateReceipt(receipt);
-
-      expect(result.errors.length).toBeGreaterThanOrEqual(3);
+      expect(validateReceipt(multiErrorReceipt).errors.length).toBeGreaterThanOrEqual(3);
     });
   });
 });

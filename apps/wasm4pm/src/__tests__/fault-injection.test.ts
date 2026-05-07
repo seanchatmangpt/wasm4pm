@@ -2,8 +2,8 @@
  * fault-injection.test.ts — adversarial gate hardening tests (Req D)
  *
  * Oracle rank: Rank 2 (Domain contract) and Rank 3 (Metamorphic)
- * Tests: corrupted input rejection, PNML roundtrip behavioral equivalence,
- * metamorphic DFG edge frequency law, cross-backend determinism.
+ * Tests: corrupted input rejection, JSON schema validation, quality threshold
+ * registry, metamorphic DFG edge frequency law, extension rejection, status contract.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -23,241 +23,135 @@ function wpm(...args: string[]): { stdout: string; stderr: string; status: numbe
   return { stdout: result.stdout ?? '', stderr: result.stderr ?? '', status: result.status ?? 1 };
 }
 
-// ─── Test 1: Corrupted input rejection ───────────────────────────────────────
+// ─── Corrupted input rejection ────────────────────────────────────────────────
 
 describe('Corrupted input rejection', () => {
-  it('corrupted XES (missing closing tags) exits with source_error (2)', () => {
-    const tmpFile = path.join(os.tmpdir(), `corrupt-${Date.now()}.xes`);
-    const corruptXes = `<?xml version="1.0" encoding="UTF-8"?>
-<log xmlns="http://www.xes-standard.org/">
-  <trace>
-    <event>
-      <string key="concept:name" value="A"/>
-    <!-- deliberately unclosed tags -->`;
-    fs.writeFileSync(tmpFile, corruptXes);
+  it('corrupted XES and empty XES both exit non-zero', () => {
+    const corrupt = path.join(os.tmpdir(), `corrupt-${Date.now()}.xes`);
+    fs.writeFileSync(corrupt, `<?xml version="1.0"?>\n<log>\n  <trace>\n    <event>\n      <string key="concept:name" value="A"/>\n    <!-- unclosed -->`);
     try {
-      const { status } = wpm('run', tmpFile, '--algorithm', 'dfg', '--format', 'json');
-      // Either exit code 2 (source error) or non-zero is acceptable — must NOT silently succeed
-      expect(status).not.toBe(0);
-    } finally {
-      fs.unlinkSync(tmpFile);
-    }
-  });
+      expect(wpm('run', corrupt, '--algorithm', 'dfg', '--format', 'json').status).not.toBe(0);
+    } finally { fs.unlinkSync(corrupt); }
 
-  it('empty XES file exits with non-zero status', () => {
-    const tmpFile = path.join(os.tmpdir(), `empty-${Date.now()}.xes`);
-    fs.writeFileSync(tmpFile, '');
+    const empty = path.join(os.tmpdir(), `empty-${Date.now()}.xes`);
+    fs.writeFileSync(empty, '');
     try {
-      const { status } = wpm('run', tmpFile, '--algorithm', 'dfg', '--format', 'json');
-      expect(status).not.toBe(0);
-    } finally {
-      fs.unlinkSync(tmpFile);
-    }
+      expect(wpm('run', empty, '--algorithm', 'dfg', '--format', 'json').status).not.toBe(0);
+    } finally { fs.unlinkSync(empty); }
   });
 });
 
-// ─── Test 2: JSON output schema validation ────────────────────────────────────
+// ─── JSON output schema contracts ────────────────────────────────────────────
 
 describe('JSON output schema contracts', () => {
-  it('wpm status --format json returns object with status field', () => {
-    const { stdout, status } = wpm('status', '--format', 'json');
-    if (status !== 0) {
-      // CLI could not start (missing workspace deps in isolated environment) — accept gracefully
-      expect([0, 1, 5]).toContain(status);
-      return;
-    }
-    try {
-      const jsonStart = stdout.indexOf('{');
-      const obj = JSON.parse(stdout.slice(jsonStart < 0 ? 0 : jsonStart));
+  it('wpm status and wpm doctor check return valid JSON schemas or fail gracefully', () => {
+    const { stdout: statusOut, status: statusCode } = wpm('status', '--format', 'json');
+    if (statusCode === 0) {
+      const jsonStart = statusOut.indexOf('{');
+      const obj = JSON.parse(statusOut.slice(jsonStart < 0 ? 0 : jsonStart));
       expect(obj).toHaveProperty('status');
-    } catch {
-      // Parse failed — accept gracefully in isolated environments
-      expect([0, 1, 5]).toContain(status);
+    } else {
+      expect([0, 1, 5]).toContain(statusCode);
     }
-  });
 
-  it('wpm doctor check --format json has checks array', () => {
-    const { stdout, status } = wpm('doctor', 'check', '--format', 'json');
-    // Accept non-zero only if output is not valid JSON (environment limitation)
-    if (status === 0) {
+    const { stdout: doctorOut, status: doctorCode } = wpm('doctor', 'check', '--format', 'json');
+    if (doctorCode === 0) {
       try {
-        const jsonStart = stdout.indexOf('{');
-        const obj = JSON.parse(stdout.slice(jsonStart < 0 ? 0 : jsonStart));
+        const jsonStart = doctorOut.indexOf('{');
+        const obj = JSON.parse(doctorOut.slice(jsonStart < 0 ? 0 : jsonStart));
         expect(Array.isArray(obj.checks)).toBe(true);
       } catch {
-        // Parse failed — accept gracefully in isolated environments
-        expect([0, 1, 2, 5]).toContain(status);
+        expect([0, 1, 2, 5]).toContain(doctorCode);
       }
     } else {
-      // CLI failed to start — acceptable in isolated worktree environments
-      expect([0, 1, 2, 5]).toContain(status);
+      expect([0, 1, 2, 5]).toContain(doctorCode);
     }
   });
 });
 
-// ─── Test 3: Quality threshold registry contract ──────────────────────────────
+// ─── Quality threshold registry contract ─────────────────────────────────────
 
 describe('Quality threshold registry (G3)', () => {
-  // Use a direct relative path to the compiled contracts dist to avoid workspace resolution issues
   const contractsDistPath = path.resolve(
     import.meta.dirname,
     '../../../../packages/contracts/dist/quality-thresholds.js',
   );
 
-  it('getQualityThreshold returns higher fitness_min for dfg than alpha_plus_plus', async () => {
-    const { getQualityThreshold } = await import(contractsDistPath);
-    const dfgThreshold = getQualityThreshold('dfg');
-    const alphaThreshold = getQualityThreshold('alpha_plus_plus');
-    expect(dfgThreshold.fitness_min).toBeGreaterThan(alphaThreshold.fitness_min);
-  });
-
-  it('getQualityThreshold returns default for unknown algorithm', async () => {
-    const { getQualityThreshold, DEFAULT_QUALITY_THRESHOLD } = await import(contractsDistPath);
-    const threshold = getQualityThreshold('nonexistent_algorithm_xyz');
-    expect(threshold.fitness_min).toBe(DEFAULT_QUALITY_THRESHOLD.fitness_min);
-  });
-
-  it('all registered algorithm thresholds have fitness_min in [0, 1]', async () => {
-    const { ALGORITHM_QUALITY_THRESHOLDS } = await import(contractsDistPath);
-    for (const [_algo, profile] of Object.entries(
-      ALGORITHM_QUALITY_THRESHOLDS as Record<string, { fitness_min: number }>,
-    )) {
+  it('dfg has higher fitness_min than alpha_plus_plus; unknown algo returns default; all thresholds in [0,1]', async () => {
+    const { getQualityThreshold, DEFAULT_QUALITY_THRESHOLD, ALGORITHM_QUALITY_THRESHOLDS } = await import(contractsDistPath);
+    expect(getQualityThreshold('dfg').fitness_min).toBeGreaterThan(getQualityThreshold('alpha_plus_plus').fitness_min);
+    expect(getQualityThreshold('nonexistent_algorithm_xyz').fitness_min).toBe(DEFAULT_QUALITY_THRESHOLD.fitness_min);
+    for (const [, profile] of Object.entries(ALGORITHM_QUALITY_THRESHOLDS as Record<string, { fitness_min: number }>)) {
       expect(profile.fitness_min).toBeGreaterThanOrEqual(0);
       expect(profile.fitness_min).toBeLessThanOrEqual(1);
     }
   });
 });
 
-// ─── Test 4: Metamorphic DFG edge frequency law ───────────────────────────────
+// ─── Metamorphic DFG edge frequency law ──────────────────────────────────────
 
 describe('Metamorphic DFG edge frequency law (Rank 3)', () => {
-  it('stable edges unaffected by concurrent-timestamp reordering', async () => {
-    // This test verifies: edges involving activities NOT at the timestamp boundary
-    // must be identical in original and perturbed log.
-    //
-    // We cannot call WASM directly from CLI tests — this test uses the CLI.
-    // Write two XES files and run wpm run on each, compare DFG outputs.
-
+  it('A→B edge appears with frequency 2 for a 2-trace log', async () => {
     const original = `<?xml version="1.0" encoding="UTF-8"?>
 <log>
   <trace>
     <string key="concept:name" value="c1"/>
-    <event>
-      <string key="concept:name" value="A"/>
-      <date key="time:timestamp" value="2024-01-01T09:00:00Z"/>
-    </event>
-    <event>
-      <string key="concept:name" value="B"/>
-      <date key="time:timestamp" value="2024-01-01T10:00:00Z"/>
-    </event>
-    <event>
-      <string key="concept:name" value="C"/>
-      <date key="time:timestamp" value="2024-01-01T11:00:00Z"/>
-    </event>
+    <event><string key="concept:name" value="A"/><date key="time:timestamp" value="2024-01-01T09:00:00Z"/></event>
+    <event><string key="concept:name" value="B"/><date key="time:timestamp" value="2024-01-01T10:00:00Z"/></event>
+    <event><string key="concept:name" value="C"/><date key="time:timestamp" value="2024-01-01T11:00:00Z"/></event>
   </trace>
   <trace>
     <string key="concept:name" value="c2"/>
-    <event>
-      <string key="concept:name" value="A"/>
-      <date key="time:timestamp" value="2024-01-01T09:00:00Z"/>
-    </event>
-    <event>
-      <string key="concept:name" value="B"/>
-      <date key="time:timestamp" value="2024-01-01T10:00:00Z"/>
-    </event>
-    <event>
-      <string key="concept:name" value="C"/>
-      <date key="time:timestamp" value="2024-01-01T11:00:00Z"/>
-    </event>
+    <event><string key="concept:name" value="A"/><date key="time:timestamp" value="2024-01-01T09:00:00Z"/></event>
+    <event><string key="concept:name" value="B"/><date key="time:timestamp" value="2024-01-01T10:00:00Z"/></event>
+    <event><string key="concept:name" value="C"/><date key="time:timestamp" value="2024-01-01T11:00:00Z"/></event>
   </trace>
 </log>`;
-
     const f1 = path.join(os.tmpdir(), `orig-${Date.now()}.xes`);
     fs.writeFileSync(f1, original);
     try {
-      const { stdout: out1, status: s1 } = wpm('run', f1, '--algorithm', 'dfg', '--format', 'json', '--no-save');
-      if (s1 !== 0) {
-        // CLI could not run (missing workspace dependencies in isolated environment) — skip assertion
-        expect([1, 2, 3, 5]).toContain(s1);
-        return;
-      }
-      const jsonStart1 = out1.indexOf('{');
-      const dfg1 = JSON.parse(out1.slice(jsonStart1 < 0 ? 0 : jsonStart1));
-      // A→B edge must exist with frequency 2
-      const abEdge = (dfg1.model?.edges ?? dfg1.edges ?? [])
-        .find((e: { from: string; to: string }) => e.from === 'A' && e.to === 'B');
+      const { stdout, status } = wpm('run', f1, '--algorithm', 'dfg', '--format', 'json', '--no-save');
+      if (status !== 0) { expect([1, 2, 3, 5]).toContain(status); return; }
+      const jsonStart = stdout.indexOf('{');
+      const dfg = JSON.parse(stdout.slice(jsonStart < 0 ? 0 : jsonStart));
+      const abEdge = (dfg.model?.edges ?? dfg.edges ?? []).find((e: { from: string; to: string }) => e.from === 'A' && e.to === 'B');
       expect(abEdge).toBeDefined();
       expect(abEdge.count ?? abEdge.frequency).toBe(2);
-    } finally {
-      fs.unlinkSync(f1);
-    }
+    } finally { fs.unlinkSync(f1); }
   });
 });
 
-// ─── Test 5: Non-XES extension rejection ─────────────────────────────────────
+// ─── Non-XES extension and zero-trace log rejection ──────────────────────────
 
-describe('Non-XES extension rejection (Fix 1)', () => {
-  it('.csv extension file exits with source_error (2)', () => {
-    const tmpFile = path.join(os.tmpdir(), `data-${Date.now()}.csv`);
-    fs.writeFileSync(tmpFile, 'case_id,activity,timestamp\n1,A,2024-01-01\n1,B,2024-01-02\n');
-    try {
-      const { status } = wpm('run', tmpFile, '--algorithm', 'dfg', '--format', 'json', '--no-save');
-      expect(status).toBe(2);
-    } finally {
-      fs.unlinkSync(tmpFile);
-    }
+describe('Non-XES extension and zero-trace log rejection', () => {
+  it('.csv and .txt extensions exit with source_error (2)', () => {
+    const csv = path.join(os.tmpdir(), `data-${Date.now()}.csv`);
+    fs.writeFileSync(csv, 'case_id,activity,timestamp\n1,A,2024-01-01\n');
+    try { expect(wpm('run', csv, '--algorithm', 'dfg', '--format', 'json', '--no-save').status).toBe(2); } finally { fs.unlinkSync(csv); }
+
+    const txt = path.join(os.tmpdir(), `log-${Date.now()}.txt`);
+    fs.writeFileSync(txt, '<log><trace><event><string key="concept:name" value="A"/></event></trace></log>');
+    try { expect(wpm('run', txt, '--algorithm', 'dfg', '--format', 'json', '--no-save').status).toBe(2); } finally { fs.unlinkSync(txt); }
   });
 
-  it('.txt extension file exits with source_error (2)', () => {
-    const tmpFile = path.join(os.tmpdir(), `log-${Date.now()}.txt`);
-    fs.writeFileSync(tmpFile, '<log><trace><event><string key="concept:name" value="A"/></event></trace></log>');
-    try {
-      const { status } = wpm('run', tmpFile, '--algorithm', 'dfg', '--format', 'json', '--no-save');
-      expect(status).toBe(2);
-    } finally {
-      fs.unlinkSync(tmpFile);
-    }
+  it('XES with no traces exits non-zero', () => {
+    const emptyLog = path.join(os.tmpdir(), `empty-traces-${Date.now()}.xes`);
+    fs.writeFileSync(emptyLog, `<?xml version="1.0"?>\n<log xmlns="http://www.xes-standard.org/">\n</log>`);
+    try { expect(wpm('run', emptyLog, '--algorithm', 'dfg', '--format', 'json', '--no-save').status).not.toBe(0); } finally { fs.unlinkSync(emptyLog); }
   });
 });
 
-// ─── Test 6: Zero-trace log rejection ────────────────────────────────────────
+// ─── wpm status exit code contract ───────────────────────────────────────────
 
-describe('Zero-trace log rejection (Fix 2)', () => {
-  it('XES with <log></log> (no traces) exits with source_error (2)', () => {
-    const tmpFile = path.join(os.tmpdir(), `empty-traces-${Date.now()}.xes`);
-    const emptyLog = `<?xml version="1.0" encoding="UTF-8"?>
-<log xmlns="http://www.xes-standard.org/">
-</log>`;
-    fs.writeFileSync(tmpFile, emptyLog);
-    try {
-      const { status } = wpm('run', tmpFile, '--algorithm', 'dfg', '--format', 'json', '--no-save');
-      expect(status).not.toBe(0);
-    } finally {
-      fs.unlinkSync(tmpFile);
-    }
-  });
-});
-
-// ─── Test 7: wpm status exits 0 when WASM loads successfully ─────────────────
-
-describe('wpm status exit code contract (Fix 3)', () => {
-  it('wpm status exits 0 when WASM is available in test environment', () => {
-    const { status } = wpm('status', '--format', 'json');
-    // In a healthy environment WASM should load and status should exit 0.
-    // If WASM fails to load (isolated env), exit 5 is acceptable.
-    expect([0, 5]).toContain(status);
-  });
-
-  it('wpm status --format json emits a status field', () => {
+describe('wpm status exit code contract', () => {
+  it('exits 0 or 5, and emits a status field in JSON when successful', () => {
     const { stdout, status } = wpm('status', '--format', 'json');
-    if (status !== 0) {
-      // WASM unavailable in this environment — still verify it exits 5 not some other code
-      expect([5]).toContain(status);
-      return;
+    expect([0, 5]).toContain(status);
+    if (status === 0) {
+      const jsonStart = stdout.indexOf('{');
+      const obj = JSON.parse(stdout.slice(jsonStart < 0 ? 0 : jsonStart));
+      expect(obj).toHaveProperty('status');
+      expect(obj.status).toBe('success');
     }
-    const jsonStart = stdout.indexOf('{');
-    const obj = JSON.parse(stdout.slice(jsonStart < 0 ? 0 : jsonStart));
-    expect(obj).toHaveProperty('status');
-    expect(obj.status).toBe('success');
   });
 });

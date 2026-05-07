@@ -16,11 +16,12 @@ pub mod provenance;
 pub mod dense_kernel;
 pub mod mask;
 pub mod powl8_op;
+pub mod import;
 
 // Re-exports for convenience
 pub use conformance::{ConformanceResult, TokenReplayResult};
 pub use error::{Error, Result};
-pub use event_log::{AttributeValue, Attributes, Event, EventLog, Trace};
+pub use event_log::{AttributeValue, Attributes, Event, EventLog, Trace, Attribute, XESEditableAttribute};
 pub use hash::Blake3Hash;
 pub use models::{
     DFGEdge, DFGNode, DeclareConstraint, DeclareModel, PetriNet, Arc, Place,
