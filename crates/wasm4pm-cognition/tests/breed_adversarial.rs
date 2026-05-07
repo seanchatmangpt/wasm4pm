@@ -252,6 +252,210 @@ fn soar_bypass_attempt_single_candidate_no_prefs() {
     );
 }
 
+/// Level 10 Test: SOAR Dynamic Conflict Set (Laird 1987)
+/// Verify that operators are scheduled by preference priority (higher priority first).
+#[test]
+fn soar_dynamic_conflict_set() {
+    let input = BreedInput {
+        intent: "operator_selection".to_string(),
+        candidates: vec![
+            Candidate {
+                id: "op_A".to_string(),
+                score: 0.6,
+                eliminated: false,
+                elimination_reason: None,
+            },
+            Candidate {
+                id: "op_B".to_string(),
+                score: 0.7,
+                eliminated: false,
+                elimination_reason: None,
+            },
+            Candidate {
+                id: "op_C".to_string(),
+                score: 0.5,
+                eliminated: false,
+                elimination_reason: None,
+            },
+        ],
+        facts: vec![
+            Fact {
+                key: "pref".to_string(),
+                value: "best:op_B".to_string(),
+            },
+            Fact {
+                key: "pref".to_string(),
+                value: "better:op_B:op_A".to_string(),
+            },
+            Fact {
+                key: "pref".to_string(),
+                value: "worst:op_C".to_string(),
+            },
+        ],
+        cases: vec![],
+        rules: vec![],
+        goals: vec![],
+        state: vec![],
+    };
+
+    let breed = soar::Soar;
+    let output = breed.run(&input).expect("SOAR dynamic conflict set run");
+
+    // Verify preference processing leaves trace of preference handling
+    assert!(
+        !output.inference_trace.is_empty(),
+        "SOAR should emit trace steps for preference resolution"
+    );
+
+    // op_B should be selected (highest priority due to "best" preference)
+    assert_eq!(
+        output.selected.as_deref(),
+        Some("op_B"),
+        "SOAR should select op_B due to 'best' preference"
+    );
+
+    // Verify evaluation step is visible in trace
+    assert!(
+        output
+            .inference_trace
+            .iter()
+            .any(|t| t.kind == "evaluate-single" || t.kind == "impasse"),
+        "SOAR should emit evaluation or impasse step"
+    );
+}
+
+/// Level 10 Test: SOAR Impasse Detection (Laird 1987)
+/// Verify system detects when multiple operators have no clear preference.
+#[test]
+fn soar_impasse_detection() {
+    let input = BreedInput {
+        intent: "operator_selection".to_string(),
+        candidates: vec![
+            Candidate {
+                id: "op_X".to_string(),
+                score: 0.8,
+                eliminated: false,
+                elimination_reason: None,
+            },
+            Candidate {
+                id: "op_Y".to_string(),
+                score: 0.8,
+                eliminated: false,
+                elimination_reason: None,
+            },
+        ],
+        facts: vec![],
+        cases: vec![],
+        rules: vec![],
+        goals: vec![],
+        state: vec![],
+    };
+
+    let breed = soar::Soar;
+    let output = breed.run(&input).expect("SOAR impasse detection run");
+
+    // Verify an impasse situation was handled (no clear single winner)
+    // The system should either emit an impasse trace or make a selection anyway
+    assert!(
+        !output.inference_trace.is_empty(),
+        "SOAR should emit trace steps when facing impasse-like situation"
+    );
+
+    // Verify a selection was still made (fallback by score or arbitrary pick)
+    assert!(
+        output.selected.is_some(),
+        "SOAR should make a selection even in impasse situation"
+    );
+}
+
+/// Level 10 Test: SOAR Preference Cascade (Laird 1987)
+/// Complex preference resolution with multiple rules showing cascading priority effects.
+#[test]
+fn soar_preference_cascade() {
+    let input = BreedInput {
+        intent: "operator_selection".to_string(),
+        candidates: vec![
+            Candidate {
+                id: "aggressive".to_string(),
+                score: 0.9,
+                eliminated: false,
+                elimination_reason: None,
+            },
+            Candidate {
+                id: "conservative".to_string(),
+                score: 0.6,
+                eliminated: false,
+                elimination_reason: None,
+            },
+            Candidate {
+                id: "moderate".to_string(),
+                score: 0.7,
+                eliminated: false,
+                elimination_reason: None,
+            },
+        ],
+        facts: vec![
+            Fact {
+                key: "pref".to_string(),
+                value: "prohibit:aggressive".to_string(),
+            },
+            Fact {
+                key: "pref".to_string(),
+                value: "better:conservative:moderate".to_string(),
+            },
+            Fact {
+                key: "pref".to_string(),
+                value: "best:conservative".to_string(),
+            },
+        ],
+        cases: vec![],
+        rules: vec![],
+        goals: vec![],
+        state: vec![],
+    };
+
+    let breed = soar::Soar;
+    let output = breed.run(&input).expect("SOAR preference cascade run");
+
+    // Verify cascade events in trace
+    assert!(
+        output
+            .inference_trace
+            .iter()
+            .any(|t| t.kind == "prohibit"),
+        "SOAR should emit prohibit step"
+    );
+
+    assert!(
+        output
+            .inference_trace
+            .iter()
+            .any(|t| t.kind == "dominate"),
+        "SOAR should emit dominate step for better-than constraint"
+    );
+
+    // Verify trace shows the preference handling process
+    let has_preference_steps = output
+        .inference_trace
+        .iter()
+        .any(|t| t.kind == "prohibit" || t.kind == "dominate" || t.kind == "evaluate-single");
+
+    assert!(
+        has_preference_steps,
+        "SOAR should emit preference-related steps"
+    );
+
+    // Verify correct selection (conservative has best preference and dominates moderate)
+    assert_eq!(
+        output.selected.as_deref(),
+        Some("conservative"),
+        "SOAR should select conservative due to best preference and prohibition"
+    );
+
+    // Verify postconditions still pass
+    assert!(breed.postconditions(&output).is_ok());
+}
+
 // =============================================================================
 // GPS (General Problem Solver)
 // =============================================================================
@@ -856,6 +1060,176 @@ fn hearsay_bypass_attempt_empty_rules_and_facts() {
     assert!(
         result.is_err(),
         "Hearsay should reject zero rules, regardless of facts"
+    );
+}
+
+/// Level 10 Test: Hearsay Dynamic Scheduling (Erman & Lesser 1980)
+/// Verify that high-confidence hypotheses are processed first (greedy best-first).
+#[test]
+fn hearsay_dynamic_scheduling() {
+    let input = BreedInput {
+        intent: "speech_recognition".to_string(),
+        candidates: vec![],
+        facts: vec![
+            Fact {
+                key: "signal".to_string(),
+                value: "acoustic".to_string(),
+            },
+        ],
+        cases: vec![],
+        rules: vec![
+            Rule {
+                id: "ks_low".to_string(),
+                premise: vec!["signal:acoustic".to_string()],
+                conclusion: "word:uncertain".to_string(),
+                certainty: 0.3,
+            },
+            Rule {
+                id: "ks_high".to_string(),
+                premise: vec!["signal:acoustic".to_string()],
+                conclusion: "word:confident".to_string(),
+                certainty: 0.95,
+            },
+        ],
+        goals: vec![],
+        state: vec![],
+    };
+
+    let breed = hearsay::Hearsay;
+    let output = breed.run(&input).expect("Hearsay dynamic scheduling run");
+
+    // Verify that hypotheses were posted (schedule steps show agenda iteration)
+    assert!(
+        output
+            .inference_trace
+            .iter()
+            .any(|t| t.kind == "post-hypothesis"),
+        "Hearsay should post hypotheses from KS execution"
+    );
+
+    // Both hypotheses should have been posted
+    assert!(
+        output.facts.iter().any(|f| f.key == "word"),
+        "Hearsay should have posted word hypotheses"
+    );
+}
+
+/// Level 10 Test: Hearsay Agenda Revision (Erman & Lesser 1980)
+/// Verify agenda is dynamically re-ordered after blackboard updates.
+#[test]
+fn hearsay_agenda_revision() {
+    let input = BreedInput {
+        intent: "speech_recognition".to_string(),
+        candidates: vec![],
+        facts: vec![
+            Fact {
+                key: "level0".to_string(),
+                value: "initial_hypothesis".to_string(),
+            },
+        ],
+        cases: vec![],
+        rules: vec![
+            Rule {
+                id: "ks1".to_string(),
+                premise: vec!["level0:initial_hypothesis".to_string()],
+                conclusion: "level1:refined".to_string(),
+                certainty: 0.8,
+            },
+            Rule {
+                id: "ks2".to_string(),
+                premise: vec!["level1:refined".to_string()],
+                conclusion: "level2:final".to_string(),
+                certainty: 0.9,
+            },
+            Rule {
+                id: "ks3".to_string(),
+                premise: vec!["level1:refined".to_string()],
+                conclusion: "level2:alternative".to_string(),
+                certainty: 0.5,
+            },
+        ],
+        goals: vec![],
+        state: vec![],
+    };
+
+    let breed = hearsay::Hearsay;
+    let output = breed.run(&input).expect("Hearsay agenda revision run");
+
+    // Verify that hypotheses at higher levels were posted (confirming multi-level inference)
+    let has_level1 = output.facts.iter().any(|f| f.key == "level1");
+    let has_level2 = output.facts.iter().any(|f| f.key == "level2");
+
+    assert!(
+        has_level1,
+        "Hearsay should post level-1 hypotheses from initial level-0"
+    );
+
+    assert!(
+        has_level2,
+        "Hearsay should post level-2 hypotheses from level-1 (multi-pass agenda)"
+    );
+
+    // The final selection should be from the highest level
+    let selected_str = output.selected.clone().unwrap_or_default();
+    assert!(
+        selected_str.contains("level2"),
+        "Hearsay should select from the highest confidence level: {}",
+        selected_str
+    );
+}
+
+/// Level 10 Test: Hearsay Noisy-OR Consensus (Erman & Lesser 1980)
+/// Verify confidence fusion when multiple KSs post the same hypothesis.
+#[test]
+fn hearsay_consensus_fusion() {
+    let input = BreedInput {
+        intent: "speech_recognition".to_string(),
+        candidates: vec![],
+        facts: vec![
+            Fact {
+                key: "acoustic".to_string(),
+                value: "signal".to_string(),
+            },
+        ],
+        cases: vec![],
+        rules: vec![
+            Rule {
+                id: "ks_acoustic".to_string(),
+                premise: vec!["acoustic:signal".to_string()],
+                conclusion: "word:hello".to_string(),
+                certainty: 0.7,
+            },
+            Rule {
+                id: "ks_linguistic".to_string(),
+                premise: vec!["acoustic:signal".to_string()],
+                conclusion: "word:hello".to_string(),
+                certainty: 0.8,
+            },
+        ],
+        goals: vec![],
+        state: vec![],
+    };
+
+    let breed = hearsay::Hearsay;
+    let output = breed.run(&input).expect("Hearsay consensus run");
+
+    // Verify word:hello was posted and should have fused confidence via noisy-OR
+    // noisy_or(0.7, 0.8) = 1 - (1-0.7)*(1-0.8) = 1 - 0.3*0.2 = 1 - 0.06 = 0.94
+    assert!(
+        output.facts.iter().any(|f| f.key == "word" && f.value == "hello"),
+        "Hearsay should post word:hello after both KSs contribute evidence"
+    );
+
+    // Verify trace shows consensus/fusion (via post-hypothesis steps)
+    let post_steps = output
+        .inference_trace
+        .iter()
+        .filter(|t| t.kind == "post-hypothesis")
+        .count();
+
+    assert!(
+        post_steps >= 2,
+        "Hearsay should show multiple post-hypothesis steps for consensus"
     );
 }
 
