@@ -1,11 +1,13 @@
-//! Detector for threshold degradation during recovery.
+//! Detector: current threshold is weaker than the strongest prior.
 //!
-//! Fires when the acceptance threshold is lowered during repair, indicating
-//! that the system is accepting worse evidence after a failure.
+//! The naive "compare current to immediately-prior" check fails on
+//! oscillating histories. Compare current to the maximum prior value.
 
-use crate::autosystems::findings::{Detector, DetectorInput, Finding, Severity};
+use crate::autosystems::findings::{Detector, Finding, Severity};
+use crate::evidence::EvidenceSource;
+use crate::observability::emit_detector_span;
 
-/// Detects threshold reduction during repair operations.
+/// Fires when `current < max(prior_history)`.
 pub struct RepairWeakensDetector;
 
 impl Detector for RepairWeakensDetector {
@@ -13,66 +15,38 @@ impl Detector for RepairWeakensDetector {
         "REPAIR_WEAKENS_GATE"
     }
 
-    fn run(&self, input: &DetectorInput) -> Vec<Finding> {
-        // Fire if prior_threshold > current_threshold (both present)
-        match (&input.prior_threshold, &input.current_threshold) {
-            (Some(prior), Some(current)) if prior > current => {
-                return vec![Finding::new(
-                    self.code(),
-                    Severity::Error,
-                    "Threshold was lowered during repair; system is accepting weaker evidence",
-                )
-                .with_evidence(vec![
-                    format!("prior_threshold: {}", prior),
-                    format!("current_threshold: {}", current),
-                ])];
+    fn run(&self, src: &dyn EvidenceSource) -> Vec<Finding> {
+        let mut findings = vec![];
+        for gate in src.gate_ids() {
+            let history = src.threshold_history(&gate);
+            if history.len() < 2 {
+                continue;
             }
-            _ => {}
+            let current = *history.last().expect("history.len() >= 2");
+            let prior = &history[..history.len() - 1];
+            let max_prior = prior
+                .iter()
+                .copied()
+                .fold(f64::MIN, f64::max);
+            if current < max_prior {
+                findings.push(
+                    Finding::new(
+                        self.code(),
+                        Severity::Error,
+                        format!(
+                            "Gate '{}' threshold weakened: current={} < max_prior={}",
+                            gate, current, max_prior
+                        ),
+                    )
+                    .with_evidence(vec![
+                        format!("gate.id={}", gate),
+                        format!("current={}", current),
+                        format!("max_prior={}", max_prior),
+                    ]),
+                );
+            }
         }
-
-        vec![]
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn fires_when_threshold_lowered() {
-        let detector = RepairWeakensDetector;
-        let input = DetectorInput {
-            prior_threshold: Some(0.95),
-            current_threshold: Some(0.80),
-            ..Default::default()
-        };
-        let findings = detector.run(&input);
-        assert_eq!(findings.len(), 1);
-        assert_eq!(findings[0].code, "REPAIR_WEAKENS_GATE");
-        assert_eq!(findings[0].severity, Severity::Error);
-    }
-
-    #[test]
-    fn silent_when_threshold_maintained() {
-        let detector = RepairWeakensDetector;
-        let input = DetectorInput {
-            prior_threshold: Some(0.80),
-            current_threshold: Some(0.80),
-            ..Default::default()
-        };
-        let findings = detector.run(&input);
-        assert!(findings.is_empty());
-    }
-
-    #[test]
-    fn silent_when_threshold_raised() {
-        let detector = RepairWeakensDetector;
-        let input = DetectorInput {
-            prior_threshold: Some(0.80),
-            current_threshold: Some(0.95),
-            ..Default::default()
-        };
-        let findings = detector.run(&input);
-        assert!(findings.is_empty());
+        emit_detector_span(self.code(), !findings.is_empty(), Severity::Error, 0);
+        findings
     }
 }

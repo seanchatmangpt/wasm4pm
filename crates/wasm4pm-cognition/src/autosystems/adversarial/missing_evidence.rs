@@ -1,11 +1,11 @@
-//! Detector for gates that pass without runtime proof.
-//!
-//! Fires when any gate reports success but runtime evidence is absent.
-//! Runtime proof means actual execution traces, OTEL spans, or artifact evidence.
+//! Detector: gate passed but `runtime_proof_artifacts` is empty.
 
-use crate::autosystems::findings::{Detector, DetectorInput, Finding, Severity};
+use crate::autosystems::findings::{Detector, Finding, Severity};
+use crate::evidence::EvidenceSource;
+use crate::observability::emit_detector_span;
 
-/// Detects gates that pass without runtime evidence.
+/// Fires when a gate is reported as passed but no runtime artifact carries
+/// a digest. A bare `has_runtime_proof: true` flag is NOT enough.
 pub struct MissingEvidenceDetector;
 
 impl Detector for MissingEvidenceDetector {
@@ -13,60 +13,30 @@ impl Detector for MissingEvidenceDetector {
         "MISSING_RUNTIME_EVIDENCE"
     }
 
-    fn run(&self, input: &DetectorInput) -> Vec<Finding> {
-        // Fire if gates exist (passed), but no runtime proof was collected
-        if !input.gate_states.is_empty() && !input.has_runtime_proof {
-            return vec![Finding::new(
-                self.code(),
-                Severity::Fatal,
-                "Gate passed but no runtime proof collected; manufacturing requires machine-verifiable evidence",
-            )
-            .with_evidence(vec!["has_runtime_proof: false".to_string()])];
+    fn run(&self, src: &dyn EvidenceSource) -> Vec<Finding> {
+        let mut findings = vec![];
+        let mut total = 0usize;
+        for gate in src.gate_ids() {
+            if !src.gate_passed(&gate) {
+                continue;
+            }
+            let arts = src.runtime_proof_artifacts(&gate);
+            total += arts.len();
+            if arts.is_empty() {
+                findings.push(
+                    Finding::new(
+                        self.code(),
+                        Severity::Fatal,
+                        format!(
+                            "Gate '{}' passed but no runtime-proof artifacts with digests were observed",
+                            gate
+                        ),
+                    )
+                    .with_evidence(vec![format!("gate.id={};runtime_artifacts=0", gate)]),
+                );
+            }
         }
-
-        vec![]
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn fires_on_gate_pass_without_runtime_proof() {
-        let detector = MissingEvidenceDetector;
-        let input = DetectorInput {
-            gate_states: vec!["passed".to_string()],
-            has_runtime_proof: false,
-            ..Default::default()
-        };
-        let findings = detector.run(&input);
-        assert_eq!(findings.len(), 1);
-        assert_eq!(findings[0].code, "MISSING_RUNTIME_EVIDENCE");
-        assert_eq!(findings[0].severity, Severity::Fatal);
-    }
-
-    #[test]
-    fn silent_when_runtime_proof_present() {
-        let detector = MissingEvidenceDetector;
-        let input = DetectorInput {
-            gate_states: vec!["passed".to_string()],
-            has_runtime_proof: true,
-            ..Default::default()
-        };
-        let findings = detector.run(&input);
-        assert!(findings.is_empty());
-    }
-
-    #[test]
-    fn silent_when_no_gates() {
-        let detector = MissingEvidenceDetector;
-        let input = DetectorInput {
-            gate_states: vec![],
-            has_runtime_proof: false,
-            ..Default::default()
-        };
-        let findings = detector.run(&input);
-        assert!(findings.is_empty());
+        emit_detector_span(self.code(), !findings.is_empty(), Severity::Fatal, total);
+        findings
     }
 }

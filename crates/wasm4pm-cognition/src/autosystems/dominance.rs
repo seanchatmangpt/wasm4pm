@@ -1,73 +1,109 @@
-//! Pareto dominance and candidate rejection.
+//! Pareto dominance over manifest-declared dimensions.
+//!
+//! Dominance is computed strictly from a candidate's declared dimensions and
+//! the manifest's [`DimensionSpec::direction`]. Profile weights tilt the
+//! comparison without altering ordering semantics.
 
 use crate::autosystems::candidates::Candidate;
+use crate::autosystems::dimension::{DimensionSpec, Direction};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 /// Domain-specific weighting profile for dominance checks.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+///
+/// `Custom(weights)` carries a key→weight mapping; missing keys default to 1.0.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum DomainProfile {
-    /// Balanced across all dimensions
+    /// All dimensions weighted equally.
     Balanced,
-    /// Favor low cost
+    /// Cost-favored.
     CostFirst,
-    /// Favor low latency
+    /// Latency-favored.
     LatencyFirst,
-    /// Favor high availability
+    /// Availability-favored.
     AvailabilityFirst,
-    /// Default (alias for Balanced)
+    /// Default = Balanced.
     Default,
-    /// High traffic / low latency prioritized
+    /// High-traffic: latency + throughput tilted.
     HighTraffic,
-    /// Mission critical / high availability
+    /// Mission-critical: availability + compliance tilted.
     MissionCritical,
-    /// Offline first / local execution
+    /// Offline: compliance + availability tilted.
     Offline,
+    /// User-defined weights keyed by dimension key.
+    Custom(HashMap<String, f64>),
 }
 
 impl DomainProfile {
-    /// Get weight overrides for this profile.
-    fn weights(&self) -> (f64, f64, f64, f64, f64, f64) {
-        // (cost, latency, throughput, availability, scalability, compliance)
+    /// Compute the weight for a dimension key under this profile.
+    pub fn weight(&self, key: &str) -> f64 {
         match self {
-            DomainProfile::Balanced => (1.0, 1.0, 1.0, 1.0, 1.0, 1.0),
-            DomainProfile::CostFirst => (2.0, 1.0, 1.0, 1.0, 0.5, 1.0),
-            DomainProfile::LatencyFirst => (1.0, 2.0, 1.5, 1.0, 0.5, 1.0),
-            DomainProfile::AvailabilityFirst => (0.5, 1.0, 1.0, 2.0, 1.0, 1.5),
-            DomainProfile::Default => (1.0, 1.0, 1.0, 1.0, 1.0, 1.0),
-            DomainProfile::HighTraffic => (1.0, 2.0, 1.5, 1.0, 0.5, 1.0),
-            DomainProfile::MissionCritical => (0.5, 1.0, 1.0, 2.0, 1.0, 1.5),
-            DomainProfile::Offline => (1.0, 1.0, 0.8, 1.2, 0.9, 2.0),
+            DomainProfile::Balanced | DomainProfile::Default => 1.0,
+            DomainProfile::CostFirst => match key {
+                "cost" | "cost_usd" => 2.0,
+                "scalability" => 0.5,
+                _ => 1.0,
+            },
+            DomainProfile::LatencyFirst | DomainProfile::HighTraffic => match key {
+                "latency" | "latency_ms" | "latency_s" => 2.0,
+                "throughput" => 1.5,
+                "scalability" => 0.5,
+                _ => 1.0,
+            },
+            DomainProfile::AvailabilityFirst | DomainProfile::MissionCritical => match key {
+                "availability" => 2.0,
+                "compliance" => 1.5,
+                "cost" | "cost_usd" => 0.5,
+                _ => 1.0,
+            },
+            DomainProfile::Offline => match key {
+                "compliance" => 2.0,
+                "availability" => 1.2,
+                "throughput" => 0.8,
+                _ => 1.0,
+            },
+            DomainProfile::Custom(map) => map.get(key).copied().unwrap_or(1.0),
         }
     }
 }
 
-/// Check if candidate `a` is dominated by candidate `b`.
-pub fn is_dominated(a: &Candidate, b: &Candidate, profile: DomainProfile) -> bool {
-    let (w_cost, w_lat, w_tput, w_avail, w_scale, w_comp) = profile.weights();
-    let dims = [
-        ("cost", w_cost, true),      // lower is better
-        ("latency", w_lat, true),    // lower is better
-        ("throughput", w_tput, false), // higher is better
-        ("availability", w_avail, false),
-        ("scalability", w_scale, false),
-        ("compliance", w_comp, false),
-    ];
-
+/// Returns true iff `a` is strictly Pareto-dominated by `b`.
+///
+/// `b` dominates `a` when `b` is at least as good on every declared dimension
+/// and strictly better on at least one. Direction is taken from each
+/// [`DimensionSpec`]. Weights scale magnitudes but never flip direction.
+pub fn is_dominated(
+    a: &Candidate,
+    b: &Candidate,
+    profile: &DomainProfile,
+    specs: &[DimensionSpec],
+) -> bool {
+    if a.id == b.id {
+        return false;
+    }
     let mut all_at_least_as_good = true;
     let mut strictly_better_in_one = false;
 
-    for (key, weight, lower_is_better) in dims {
-        let a_val = a.scores.get(key).copied().unwrap_or(1.0) * weight;
-        let b_val = b.scores.get(key).copied().unwrap_or(1.0) * weight;
-
-        let a_better = if lower_is_better { a_val <= b_val } else { a_val >= b_val };
-
-        if !a_better {
+    for s in specs {
+        let aw = profile.weight(&s.key);
+        let av = match a.get(&s.key) {
+            Some(v) => v * aw,
+            None => continue,
+        };
+        let bv = match b.get(&s.key) {
+            Some(v) => v * aw,
+            None => continue,
+        };
+        let (b_at_least_as_good, b_strictly_better) = match s.direction {
+            Direction::HigherIsBetter => (bv >= av, bv > av),
+            Direction::LowerIsBetter => (bv <= av, bv < av),
+        };
+        if !b_at_least_as_good {
             all_at_least_as_good = false;
             break;
         }
-
-        if (lower_is_better && b_val < a_val) || (!lower_is_better && b_val > a_val) {
+        if b_strictly_better {
             strictly_better_in_one = true;
         }
     }
@@ -78,38 +114,89 @@ pub fn is_dominated(a: &Candidate, b: &Candidate, profile: DomainProfile) -> boo
 /// Rejected candidate with reason.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RejectedCandidate {
-    /// Candidate ID
+    /// Candidate id.
     pub id: String,
-    /// Why it was rejected
+    /// Reason text.
     pub reason: String,
 }
 
-/// Reject dominated candidates; return (undominated, rejected).
+/// Filter dominated candidates. Returns `(kept, rejected)`.
 pub fn reject_dominated(
     candidates: Vec<Candidate>,
-    profile: DomainProfile,
+    profile: &DomainProfile,
+    specs: &[DimensionSpec],
 ) -> (Vec<Candidate>, Vec<RejectedCandidate>) {
-    let mut undominated = vec![];
-    let mut rejected = vec![];
-
+    let mut kept = Vec::new();
+    let mut rejected = Vec::new();
     for a in &candidates {
-        let mut is_dom = false;
+        let mut dominated_by = None;
         for b in &candidates {
-            if a.id != b.id && is_dominated(a, b, profile) {
-                is_dom = true;
+            if is_dominated(a, b, profile, specs) {
+                dominated_by = Some(b.id.clone());
                 break;
             }
         }
-
-        if is_dom {
-            rejected.push(RejectedCandidate {
+        match dominated_by {
+            Some(by) => rejected.push(RejectedCandidate {
                 id: a.id.clone(),
-                reason: "Dominated by another candidate".to_string(),
-            });
-        } else {
-            undominated.push(a.clone());
+                reason: format!("dominated by {}", by),
+            }),
+            None => kept.push(a.clone()),
+        }
+    }
+    (kept, rejected)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use indexmap::IndexMap;
+
+    fn cand(id: &str, dims: &[(&str, f64)]) -> Candidate {
+        let mut m = IndexMap::new();
+        for (k, v) in dims {
+            m.insert((*k).into(), *v);
+        }
+        Candidate {
+            id: id.into(),
+            family_id: "demo".into(),
+            runtime_boundaries: vec![],
+            dimensions: m,
+            provenance: None,
         }
     }
 
-    (undominated, rejected)
+    fn specs() -> Vec<DimensionSpec> {
+        vec![
+            DimensionSpec {
+                key: "score_a".into(),
+                unit: "score".into(),
+                direction: Direction::HigherIsBetter,
+                min: None,
+                max: None,
+            },
+            DimensionSpec {
+                key: "score_b".into(),
+                unit: "score".into(),
+                direction: Direction::HigherIsBetter,
+                min: None,
+                max: None,
+            },
+        ]
+    }
+
+    #[test]
+    fn dominated_when_strictly_worse() {
+        let a = cand("a", &[("score_a", 0.5), ("score_b", 0.5)]);
+        let b = cand("b", &[("score_a", 0.9), ("score_b", 0.9)]);
+        let s = specs();
+        assert!(is_dominated(&a, &b, &DomainProfile::Balanced, &s));
+        assert!(!is_dominated(&b, &a, &DomainProfile::Balanced, &s));
+    }
+
+    #[test]
+    fn irreflexive() {
+        let a = cand("a", &[("score_a", 0.5), ("score_b", 0.5)]);
+        assert!(!is_dominated(&a, &a, &DomainProfile::Balanced, &specs()));
+    }
 }

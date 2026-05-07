@@ -6,7 +6,8 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::autosystems::findings::{DetectorInput, Finding, FindingRegistry, Severity};
+use crate::autosystems::findings::{Finding, FindingRegistry, Severity};
+use crate::evidence::EvidenceSource;
 
 /// Result of contract execution.
 ///
@@ -62,8 +63,8 @@ pub struct CognitionContract<TIn, TOut> {
     pub preconditions: Box<dyn Fn(&TIn) -> bool + Send + Sync>,
     /// Execution function (runs if preconditions pass).
     pub execute: Box<dyn Fn(&TIn) -> Result<TOut, String> + Send + Sync>,
-    /// Adversarial detector input builder.
-    pub adversarial_checks: Box<dyn Fn(&TIn, &TOut) -> DetectorInput + Send + Sync>,
+    /// Adversarial evidence-source builder.
+    pub adversarial_checks: Box<dyn Fn(&TIn, &TOut) -> Box<dyn EvidenceSource> + Send + Sync>,
     /// Postcondition check function (returns true if satisfied).
     pub postconditions: Box<dyn Fn(&TOut) -> bool + Send + Sync>,
 }
@@ -112,8 +113,8 @@ impl<TIn, TOut> CognitionContract<TIn, TOut> {
         }
 
         // Phase 4: Adversarial checks
-        let detector_input = (self.adversarial_checks)(input, &output);
-        let findings = registry.run_all(&detector_input);
+        let evidence = (self.adversarial_checks)(input, &output);
+        let findings = registry.run_all(evidence.as_ref());
 
         // Phase 5: Compute exit code
         let exit_code = if findings.is_empty() {

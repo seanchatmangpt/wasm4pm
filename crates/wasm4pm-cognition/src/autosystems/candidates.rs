@@ -1,211 +1,220 @@
-//! Architecture candidates: 9 families with baseline scores.
+//! Open architecture candidate type with manifest-driven discovery.
+//!
+//! The previous revision baked nine architecture families into the source tree
+//! with hand-tuned scores that always punished centralized cloud. This module
+//! replaces that arrangement with an open [`Candidate`] type whose dimensions
+//! are validated against a manifest of [`DimensionSpec`] declarations.
+//!
+//! The legacy `ArchitectureFamily` enum is kept as a `#[deprecated]` shim so
+//! existing call sites continue to compile while migrations land.
 
+use crate::autosystems::dimension::DimensionSpec;
+use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
+
+#[cfg(not(target_arch = "wasm32"))]
+pub mod fs_walk;
+pub mod manifest;
+
+#[cfg(not(target_arch = "wasm32"))]
+pub use fs_walk::FilesystemDiscovery;
+pub use manifest::ManifestDiscovery;
 
 /// Runtime boundary where work executes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum RuntimeBoundary {
-    /// Client WASM execution
+    /// Client WASM execution.
     ClientWasm,
-    /// Customer's own infrastructure
+    /// Customer's own infrastructure.
     CustomerNode,
-    /// Peer node
+    /// Peer node.
     Peer,
-    /// Atomvm coordinator
+    /// Atomvm coordinator.
     AtomvmCoord,
-    /// Cloud residual services
+    /// Cloud residual services.
     CloudResidual,
-    /// Forbidden centralized work
+    /// Forbidden centralized work.
     ForbiddenCentralWork,
 }
 
-/// Architecture family.
+/// Legacy architecture family enumeration.
+///
+/// Retained for compile-time compatibility with prior dependents. Manifest-driven
+/// discovery uses [`Candidate::family_id`] (free-form string) instead.
+#[allow(deprecated)]
+#[deprecated(
+    since = "26.4.28",
+    note = "Use Candidate::family_id (manifest-driven) instead of the closed enum"
+)]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum ArchitectureFamily {
-    /// Centralized cloud service
+    /// Centralized cloud service.
     CentralizedCloud,
-    /// Local-first CRDT
+    /// Local-first CRDT.
     LocalFirstCrdt,
-    /// WASM-local compute
+    /// WASM-local compute.
     WasmLocal,
-    /// P2P gossip protocol
+    /// P2P gossip protocol.
     P2pGossip,
-    /// Edge compute
+    /// Edge compute.
     EdgeCompute,
-    /// Hybrid fog
+    /// Hybrid fog.
     HybridFog,
-    /// Mesh network
+    /// Mesh network.
     MeshNetwork,
-    /// Broadcast server
+    /// Broadcast server.
     BroadcastServer,
-    /// Event sourcing
+    /// Event sourcing.
     EventSourcing,
 }
 
 /// A candidate architecture with scored dimensions.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+///
+/// `dimensions` maps a free-form key (declared in the manifest's
+/// [`DimensionSpec`]) to a numeric value. Order is preserved so manifests are
+/// reproducible; lookups are O(1).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Candidate {
-    /// Unique candidate ID
+    /// Unique candidate identifier.
     pub id: String,
-    /// Architecture family
-    pub family: ArchitectureFamily,
-    /// Where work runs
+    /// Free-form family/category identifier (`"centralized-cloud"`, `"mesh"`, ...).
+    pub family_id: String,
+    /// Where work runs.
     pub runtime_boundaries: Vec<RuntimeBoundary>,
-    /// Dimension scores: cost, latency, throughput, availability, scalability, compliance
-    pub scores: BTreeMap<String, f64>,
+    /// Scored dimensions, keyed by [`DimensionSpec::key`].
+    pub dimensions: IndexMap<String, f64>,
+    /// Optional human-readable provenance (manifest path, discovery source).
+    #[serde(default)]
+    pub provenance: Option<String>,
 }
 
-/// Return all 9 authoritative candidates with baseline scores.
+impl Candidate {
+    /// Lookup a dimension value by key.
+    pub fn get(&self, key: &str) -> Option<f64> {
+        self.dimensions.get(key).copied()
+    }
+
+    /// Count of declared dimensions.
+    pub fn arity(&self) -> usize {
+        self.dimensions.len()
+    }
+}
+
+/// A manifest-described candidate registry, validated against [`DimensionSpec`]s.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct CandidateManifest {
+    /// Manifest version (semver-ish). Currently `"1"`.
+    #[serde(default = "default_version")]
+    pub version: String,
+    /// Dimension declarations.
+    pub dimensions: Vec<DimensionSpec>,
+    /// Candidate entries.
+    pub candidates: Vec<Candidate>,
+}
+
+fn default_version() -> String {
+    "1".to_string()
+}
+
+impl CandidateManifest {
+    /// Validate every candidate's dimensions against the declared specs.
+    ///
+    /// Returns the first violation encountered (if any).
+    pub fn validate(&self) -> Result<(), String> {
+        let by_key: IndexMap<&str, &DimensionSpec> = self
+            .dimensions
+            .iter()
+            .map(|d| (d.key.as_str(), d))
+            .collect();
+
+        for c in &self.candidates {
+            for (k, v) in &c.dimensions {
+                let spec = by_key
+                    .get(k.as_str())
+                    .ok_or_else(|| format!("candidate {}: undeclared dimension {}", c.id, k))?;
+                spec.validate(*v).map_err(|e| format!("{}: {}", c.id, e))?;
+            }
+        }
+        Ok(())
+    }
+}
+
+/// Discovery trait. Implementations may walk filesystems, load manifests,
+/// or query remote registries — they all yield a [`CandidateManifest`].
+pub trait CandidateDiscovery {
+    /// Produce a candidate manifest.
+    fn discover(&self) -> Result<CandidateManifest, String>;
+}
+
+/// **Deprecated.** Returns an empty list.
+///
+/// The previous implementation hardcoded nine candidates with poisoned baseline
+/// scores. Use [`ManifestDiscovery::from_path`] or [`FilesystemDiscovery`] with
+/// an actual manifest. The bundled `assets/manifests/9-family-demo.json`
+/// contains a neutral demo set for tests.
+#[deprecated(
+    since = "26.4.28",
+    note = "Hardcoded candidates were removed. Load a manifest with ManifestDiscovery."
+)]
 pub fn all_candidates() -> Vec<Candidate> {
-    let mut candidates = vec![];
+    Vec::new()
+}
 
-    candidates.push(Candidate {
-        id: "centralized-cloud".to_string(),
-        family: ArchitectureFamily::CentralizedCloud,
-        runtime_boundaries: vec![RuntimeBoundary::ForbiddenCentralWork],
-        scores: {
-            let mut m = BTreeMap::new();
-            m.insert("cost".to_string(), 0.90);
-            m.insert("latency".to_string(), 0.30);
-            m.insert("throughput".to_string(), 0.95);
-            m.insert("availability".to_string(), 0.99);
-            m.insert("scalability".to_string(), 0.85);
-            m.insert("compliance".to_string(), 0.20);
-            m
-        },
-    });
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::autosystems::dimension::Direction;
 
-    candidates.push(Candidate {
-        id: "local-first-crdt".to_string(),
-        family: ArchitectureFamily::LocalFirstCrdt,
-        runtime_boundaries: vec![RuntimeBoundary::ClientWasm, RuntimeBoundary::Peer],
-        scores: {
-            let mut m = BTreeMap::new();
-            m.insert("cost".to_string(), 0.18);
-            m.insert("latency".to_string(), 0.92);
-            m.insert("throughput".to_string(), 0.70);
-            m.insert("availability".to_string(), 0.88);
-            m.insert("scalability".to_string(), 0.72);
-            m.insert("compliance".to_string(), 0.95);
-            m
-        },
-    });
+    #[test]
+    fn manifest_validates_known_dimensions() {
+        let m = CandidateManifest {
+            version: "1".into(),
+            dimensions: vec![DimensionSpec {
+                key: "latency_ms".into(),
+                unit: "time".into(),
+                direction: Direction::LowerIsBetter,
+                min: Some(0.0),
+                max: Some(1000.0),
+            }],
+            candidates: vec![Candidate {
+                id: "alpha".into(),
+                family_id: "demo".into(),
+                runtime_boundaries: vec![RuntimeBoundary::ClientWasm],
+                dimensions: {
+                    let mut m = IndexMap::new();
+                    m.insert("latency_ms".into(), 50.0);
+                    m
+                },
+                provenance: None,
+            }],
+        };
+        assert!(m.validate().is_ok());
+    }
 
-    candidates.push(Candidate {
-        id: "wasm-local".to_string(),
-        family: ArchitectureFamily::WasmLocal,
-        runtime_boundaries: vec![RuntimeBoundary::ClientWasm],
-        scores: {
-            let mut m = BTreeMap::new();
-            m.insert("cost".to_string(), 0.15);
-            m.insert("latency".to_string(), 0.98);
-            m.insert("throughput".to_string(), 0.60);
-            m.insert("availability".to_string(), 0.75);
-            m.insert("scalability".to_string(), 0.50);
-            m.insert("compliance".to_string(), 0.98);
-            m
-        },
-    });
+    #[test]
+    fn manifest_rejects_undeclared_dimensions() {
+        let m = CandidateManifest {
+            version: "1".into(),
+            dimensions: vec![],
+            candidates: vec![Candidate {
+                id: "alpha".into(),
+                family_id: "demo".into(),
+                runtime_boundaries: vec![],
+                dimensions: {
+                    let mut m = IndexMap::new();
+                    m.insert("undeclared".into(), 1.0);
+                    m
+                },
+                provenance: None,
+            }],
+        };
+        assert!(m.validate().is_err());
+    }
 
-    candidates.push(Candidate {
-        id: "p2p-gossip".to_string(),
-        family: ArchitectureFamily::P2pGossip,
-        runtime_boundaries: vec![RuntimeBoundary::Peer],
-        scores: {
-            let mut m = BTreeMap::new();
-            m.insert("cost".to_string(), 0.25);
-            m.insert("latency".to_string(), 0.65);
-            m.insert("throughput".to_string(), 0.75);
-            m.insert("availability".to_string(), 0.80);
-            m.insert("scalability".to_string(), 0.88);
-            m.insert("compliance".to_string(), 0.90);
-            m
-        },
-    });
-
-    candidates.push(Candidate {
-        id: "edge-compute".to_string(),
-        family: ArchitectureFamily::EdgeCompute,
-        runtime_boundaries: vec![RuntimeBoundary::CloudResidual],
-        scores: {
-            let mut m = BTreeMap::new();
-            m.insert("cost".to_string(), 0.55);
-            m.insert("latency".to_string(), 0.50);
-            m.insert("throughput".to_string(), 0.80);
-            m.insert("availability".to_string(), 0.90);
-            m.insert("scalability".to_string(), 0.80);
-            m.insert("compliance".to_string(), 0.70);
-            m
-        },
-    });
-
-    candidates.push(Candidate {
-        id: "hybrid-fog".to_string(),
-        family: ArchitectureFamily::HybridFog,
-        runtime_boundaries: vec![
-            RuntimeBoundary::ClientWasm,
-            RuntimeBoundary::CloudResidual,
-        ],
-        scores: {
-            let mut m = BTreeMap::new();
-            m.insert("cost".to_string(), 0.48);
-            m.insert("latency".to_string(), 0.70);
-            m.insert("throughput".to_string(), 0.82);
-            m.insert("availability".to_string(), 0.92);
-            m.insert("scalability".to_string(), 0.78);
-            m.insert("compliance".to_string(), 0.78);
-            m
-        },
-    });
-
-    candidates.push(Candidate {
-        id: "mesh-network".to_string(),
-        family: ArchitectureFamily::MeshNetwork,
-        runtime_boundaries: vec![RuntimeBoundary::Peer, RuntimeBoundary::AtomvmCoord],
-        scores: {
-            let mut m = BTreeMap::new();
-            m.insert("cost".to_string(), 0.35);
-            m.insert("latency".to_string(), 0.72);
-            m.insert("throughput".to_string(), 0.68);
-            m.insert("availability".to_string(), 0.85);
-            m.insert("scalability".to_string(), 0.85);
-            m.insert("compliance".to_string(), 0.92);
-            m
-        },
-    });
-
-    candidates.push(Candidate {
-        id: "broadcast-server".to_string(),
-        family: ArchitectureFamily::BroadcastServer,
-        runtime_boundaries: vec![RuntimeBoundary::CloudResidual],
-        scores: {
-            let mut m = BTreeMap::new();
-            m.insert("cost".to_string(), 0.70);
-            m.insert("latency".to_string(), 0.42);
-            m.insert("throughput".to_string(), 0.92);
-            m.insert("availability".to_string(), 0.95);
-            m.insert("scalability".to_string(), 0.82);
-            m.insert("compliance".to_string(), 0.50);
-            m
-        },
-    });
-
-    candidates.push(Candidate {
-        id: "event-sourcing".to_string(),
-        family: ArchitectureFamily::EventSourcing,
-        runtime_boundaries: vec![RuntimeBoundary::CloudResidual, RuntimeBoundary::Peer],
-        scores: {
-            let mut m = BTreeMap::new();
-            m.insert("cost".to_string(), 0.45);
-            m.insert("latency".to_string(), 0.55);
-            m.insert("throughput".to_string(), 0.78);
-            m.insert("availability".to_string(), 0.88);
-            m.insert("scalability".to_string(), 0.82);
-            m.insert("compliance".to_string(), 0.85);
-            m
-        },
-    });
-
-    candidates
+    #[test]
+    #[allow(deprecated)]
+    fn deprecated_all_candidates_returns_empty() {
+        assert!(all_candidates().is_empty());
+    }
 }

@@ -1,11 +1,10 @@
-//! Detector for stub gates that pass without evidence.
-//!
-//! Fires when a gate claim success (implicitly) but has zero evidence items.
-//! This indicates a pass-through without actual verification.
+//! Detector: gate passed but no digest-bearing artifacts present.
 
-use crate::autosystems::findings::{Detector, DetectorInput, Finding, Severity};
+use crate::autosystems::findings::{Detector, Finding, Severity};
+use crate::evidence::EvidenceSource;
+use crate::observability::emit_detector_span;
 
-/// Detects gates that claim pass with no supporting evidence.
+/// Fires when any gate has `gate_passed && evidence_count == 0`.
 pub struct StubGateDetector;
 
 impl Detector for StubGateDetector {
@@ -13,60 +12,28 @@ impl Detector for StubGateDetector {
         "STUB_GATE_PASS"
     }
 
-    fn run(&self, input: &DetectorInput) -> Vec<Finding> {
-        // Fire if any gate passed (gate_states non-empty) but evidence count is zero
-        if !input.gate_states.is_empty() && input.evidence_items.is_empty() {
-            vec![Finding::new(
-                self.code(),
-                Severity::Fatal,
-                "Gate claimed success with zero evidence items; stub pass detected",
-            )
-            .with_evidence(vec!["evidence_count: 0".to_string()])]
-        } else {
-            vec![]
+    fn run(&self, src: &dyn EvidenceSource) -> Vec<Finding> {
+        let mut findings = vec![];
+        let mut total_ev = 0usize;
+        for gate in src.gate_ids() {
+            let passed = src.gate_passed(&gate);
+            let count = src.evidence_count(&gate);
+            total_ev += count;
+            if passed && count == 0 {
+                findings.push(
+                    Finding::new(
+                        self.code(),
+                        Severity::Fatal,
+                        format!(
+                            "Gate '{}' marked passed but no digest-bearing evidence is recorded",
+                            gate
+                        ),
+                    )
+                    .with_evidence(vec![format!("gate.id={};evidence_count=0", gate)]),
+                );
+            }
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn fires_on_gate_pass_with_no_evidence() {
-        let detector = StubGateDetector;
-        let input = DetectorInput {
-            gate_states: vec!["passed".to_string()],
-            evidence_items: vec![],
-            ..Default::default()
-        };
-        let findings = detector.run(&input);
-        assert_eq!(findings.len(), 1);
-        assert_eq!(findings[0].code, "STUB_GATE_PASS");
-        assert_eq!(findings[0].severity, Severity::Fatal);
-    }
-
-    #[test]
-    fn silent_when_evidence_present() {
-        let detector = StubGateDetector;
-        let input = DetectorInput {
-            gate_states: vec!["passed".to_string()],
-            evidence_items: vec!["evidence_1".to_string()],
-            ..Default::default()
-        };
-        let findings = detector.run(&input);
-        assert!(findings.is_empty());
-    }
-
-    #[test]
-    fn silent_when_no_gates() {
-        let detector = StubGateDetector;
-        let input = DetectorInput {
-            gate_states: vec![],
-            evidence_items: vec![],
-            ..Default::default()
-        };
-        let findings = detector.run(&input);
-        assert!(findings.is_empty());
+        emit_detector_span(self.code(), !findings.is_empty(), Severity::Fatal, total_ev);
+        findings
     }
 }

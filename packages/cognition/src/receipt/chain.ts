@@ -1,21 +1,17 @@
-//! Receipt chain facade
+//! Receipt-chain types re-exported as a stable surface.
+//!
+//! ZERO logic — every chain operation lives in Rust (`crates/wasm4pm-cognition`).
+//! The TS facade only re-exports types and the WASM-backed `replayReceipt`
+//! wrapper from `./replay`. No append/verify methods are implemented in TS;
+//! callers obtain a `ReceiptChainSnapshot` from `runContract` and a
+//! `ReplayRecord` from `replayReceipt`.
 
-import { initCognition } from '../init';
+export type {
+  Receipt,
+  ReceiptLink,
+  ReceiptChainSnapshot,
+  ReplayRecord,
+} from '../types';
 
-export class ReceiptChain {
-  links: any[] = [];
-
-  append(inputHash: string, outputHash: string) {
-    // Delegates to Rust via WASM if needed
-  }
-
-  verifyChain(): boolean {
-    // Delegates to Rust via WASM
-    return true;
-  }
-
-  replayPointer(): string {
-    // Delegates to Rust via WASM
-    return '0000000000000000';
-  }
-}
+export { replayReceipt } from './replay';
+export type { ReplayOptions } from './replay';

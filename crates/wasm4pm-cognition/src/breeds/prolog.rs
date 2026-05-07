@@ -25,6 +25,7 @@ impl CognitionBreed for Stub {
             facts: input.facts.clone(),
             selected: None,
             explanation: "prolog stub".to_string(),
+            inference_trace: vec![],
         })
     }
 

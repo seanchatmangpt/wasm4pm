@@ -30,8 +30,12 @@
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 
-pub mod breeds;
+pub mod authority;
 pub mod autosystems;
+pub mod breeds;
+pub mod evidence;
+pub mod observability;
+pub mod registry;
 
 #[cfg(feature = "wasm")]
 pub mod wasm;

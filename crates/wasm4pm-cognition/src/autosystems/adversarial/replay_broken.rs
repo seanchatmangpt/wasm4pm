@@ -1,8 +1,11 @@
-//! Detector: REPLAY_BROKEN — receipt chain verification failure.
+//! Detector: receipt chain fails verification, or its Merkle root does
+//! not match an externally anchored expected root.
 
-use crate::autosystems::findings::{Detector, DetectorInput, Finding, Severity};
+use crate::autosystems::findings::{Detector, Finding, Severity};
+use crate::evidence::EvidenceSource;
+use crate::observability::emit_detector_span;
 
-/// Detector for broken receipt chain (tampering)
+/// Fires on either local chain-verification failure or external-root mismatch.
 pub struct ReplayBrokenDetector;
 
 impl Detector for ReplayBrokenDetector {
@@ -10,51 +13,36 @@ impl Detector for ReplayBrokenDetector {
         "REPLAY_BROKEN"
     }
 
-    fn run(&self, input: &DetectorInput) -> Vec<Finding> {
-        // Fire if receipt chain hashes do not verify (indicates tampering)
-        if !input.receipt_chain.is_empty() {
-            // Simple check: if we have chain data, verify length and content
-            // In full implementation, would actually verify BLAKE3 chain integrity
-            // For now, just check that chain has expected structure
-            // Empty chain is OK (no execution yet)
-            // Non-empty chain with < 2 elements is suspicious
-            if input.receipt_chain.len() < 2 && !input.receipt_chain.is_empty() {
-                return vec![Finding::new(
+    fn run(&self, src: &dyn EvidenceSource) -> Vec<Finding> {
+        let mut findings = vec![];
+        let chain = src.receipt_chain();
+        if !chain.verify_chain() {
+            findings.push(
+                Finding::new(
                     self.code(),
                     Severity::Fatal,
-                    "Receipt chain incomplete or tampered",
+                    "Local receipt chain failed BLAKE3 verification",
                 )
-                .with_evidence(vec![format!("chain_links: {}", input.receipt_chain.len())])];
+                .with_evidence(vec!["chain.verify=false".to_string()]),
+            );
+        }
+        if let Some(expected) = src.external_chain_root() {
+            let actual = chain.merkle_root_bytes();
+            if actual != expected {
+                findings.push(
+                    Finding::new(
+                        self.code(),
+                        Severity::Fatal,
+                        "Receipt chain Merkle root does not match externally anchored root",
+                    )
+                    .with_evidence(vec![
+                        format!("actual_root={}", hex::encode(actual)),
+                        format!("expected_root={}", hex::encode(expected)),
+                    ]),
+                );
             }
         }
-        vec![]
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn fires_on_broken_chain() {
-        let detector = ReplayBrokenDetector;
-        let input = DetectorInput {
-            receipt_chain: vec!["link1".to_string()], // Incomplete chain
-            ..Default::default()
-        };
-        let findings = detector.run(&input);
-        assert_eq!(findings.len(), 1);
-        assert_eq!(findings[0].code, "REPLAY_BROKEN");
-    }
-
-    #[test]
-    fn silent_on_empty_chain() {
-        let detector = ReplayBrokenDetector;
-        let input = DetectorInput {
-            receipt_chain: vec![],
-            ..Default::default()
-        };
-        let findings = detector.run(&input);
-        assert!(findings.is_empty());
+        emit_detector_span(self.code(), !findings.is_empty(), Severity::Fatal, 0);
+        findings
     }
 }

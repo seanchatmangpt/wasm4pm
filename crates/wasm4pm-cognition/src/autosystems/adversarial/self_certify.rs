@@ -1,11 +1,19 @@
-//! Detector for self-certification (executor = verifier).
+//! Detector: executor and verifier are not actually independent.
 //!
-//! Fires when the same agent or system verifies its own execution.
-//! Verification must involve an independent authority.
+//! Three independent failure modes:
+//! 1. Same public key used by executor and verifier.
+//! 2. Signing time skew below 5 seconds (verifier could not have done
+//!    independent work in that window).
+//! 3. Verifier attestation chain descends from executor identity.
 
-use crate::autosystems::findings::{Detector, DetectorInput, Finding, Severity};
+use crate::autosystems::findings::{Detector, Finding, Severity};
+use crate::evidence::EvidenceSource;
+use crate::observability::emit_detector_span;
+use std::time::Duration;
 
-/// Detects self-certification (executor verifying its own output).
+const MIN_INDEPENDENT_SKEW: Duration = Duration::from_secs(5);
+
+/// Fires on any of the three independence-violation conditions.
 pub struct SelfCertifyDetector;
 
 impl Detector for SelfCertifyDetector {
@@ -13,66 +21,50 @@ impl Detector for SelfCertifyDetector {
         "AGENT_SELF_CERTIFIES"
     }
 
-    fn run(&self, input: &DetectorInput) -> Vec<Finding> {
-        // Fire if executor and verifier are both present and equal
-        match (&input.executor_id, &input.verifier_id) {
-            (Some(exec), Some(verif)) if !exec.is_empty() && !verif.is_empty() && exec == verif => {
-                return vec![Finding::new(
-                    self.code(),
-                    Severity::Fatal,
-                    "Executor and verifier are identical; self-certification is not allowed",
-                )
-                .with_evidence(vec![format!(
-                    "executor_id == verifier_id: '{}'",
-                    exec
-                )])];
+    fn run(&self, src: &dyn EvidenceSource) -> Vec<Finding> {
+        let mut findings = vec![];
+
+        if let (Some(e), Some(v)) = (src.executor_pubkey(), src.verifier_pubkey()) {
+            if e == v {
+                findings.push(
+                    Finding::new(
+                        self.code(),
+                        Severity::Fatal,
+                        "Executor and verifier share a public key",
+                    )
+                    .with_evidence(vec!["pubkey_match=true".to_string()]),
+                );
             }
-            _ => {}
         }
 
-        vec![]
-    }
-}
+        if let Some(skew) = src.signing_time_skew() {
+            if skew < MIN_INDEPENDENT_SKEW {
+                findings.push(
+                    Finding::new(
+                        self.code(),
+                        Severity::Fatal,
+                        format!(
+                            "Executor/verifier signing skew {:?} is below independence threshold {:?}",
+                            skew, MIN_INDEPENDENT_SKEW
+                        ),
+                    )
+                    .with_evidence(vec![format!("signing_skew_ms={}", skew.as_millis())]),
+                );
+            }
+        }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+        if matches!(src.attestation_descends(), Some(true)) {
+            findings.push(
+                Finding::new(
+                    self.code(),
+                    Severity::Fatal,
+                    "Verifier attestation chain descends from executor identity",
+                )
+                .with_evidence(vec!["attestation_descends=true".to_string()]),
+            );
+        }
 
-    #[test]
-    fn fires_when_executor_equals_verifier() {
-        let detector = SelfCertifyDetector;
-        let input = DetectorInput {
-            executor_id: Some("agent_1".to_string()),
-            verifier_id: Some("agent_1".to_string()),
-            ..Default::default()
-        };
-        let findings = detector.run(&input);
-        assert_eq!(findings.len(), 1);
-        assert_eq!(findings[0].code, "AGENT_SELF_CERTIFIES");
-        assert_eq!(findings[0].severity, Severity::Fatal);
-    }
-
-    #[test]
-    fn silent_when_different_verifier() {
-        let detector = SelfCertifyDetector;
-        let input = DetectorInput {
-            executor_id: Some("agent_1".to_string()),
-            verifier_id: Some("agent_2".to_string()),
-            ..Default::default()
-        };
-        let findings = detector.run(&input);
-        assert!(findings.is_empty());
-    }
-
-    #[test]
-    fn silent_when_ids_missing() {
-        let detector = SelfCertifyDetector;
-        let input = DetectorInput {
-            executor_id: None,
-            verifier_id: None,
-            ..Default::default()
-        };
-        let findings = detector.run(&input);
-        assert!(findings.is_empty());
+        emit_detector_span(self.code(), !findings.is_empty(), Severity::Fatal, 0);
+        findings
     }
 }

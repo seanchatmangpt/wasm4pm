@@ -1,12 +1,80 @@
-//! Run cognition contract via WASM bridge
+//! ZERO decision logic — only WASM forwarding + OTEL span emission.
 
-import { initCognition } from '../init';
+import { WasmLoader } from '../init';
+import { CognitionError } from '../errors';
+import type { SpanSink } from '../observability-types';
+import { defaultSpanSink, hexId } from '../span-utils';
 import type { BreedInput, ContractResult } from '../types';
 
-export async function runContract(input: BreedInput): Promise<ContractResult> {
-  const wasm = await initCognition();
-  const inputJson = JSON.stringify(input);
-  const resultJson = wasm.cognition_run(inputJson);
-  const result = JSON.parse(resultJson);
-  return result as ContractResult;
+export interface RunOptions {
+  spanSink?: SpanSink;
+}
+
+export async function runContract(
+  input: BreedInput,
+  options: RunOptions = {},
+): Promise<ContractResult> {
+  const loader = WasmLoader.getInstance();
+  await loader.init();
+  const wasm = loader.get();
+
+  const startNs = Date.now() * 1_000_000;
+  const startMs =
+    typeof performance !== 'undefined' ? performance.now() : Date.now();
+  let status: 'OK' | 'ERROR' = 'OK';
+  let errMsg: string | undefined;
+
+  try {
+    let inputJson: string;
+    try {
+      inputJson = JSON.stringify(input);
+    } catch (e) {
+      throw new CognitionError(
+        'Failed to serialize BreedInput',
+        'INPUT_SERIALIZE_FAILED',
+        { cause: e },
+      );
+    }
+
+    const raw = wasm.cognition_run(inputJson);
+
+    let parsed: unknown;
+    try {
+      parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    } catch (e) {
+      throw new CognitionError(
+        'Failed to parse cognition_run output',
+        'OUTPUT_PARSE_FAILED',
+        { cause: e },
+      );
+    }
+    return parsed as ContractResult;
+  } catch (err) {
+    status = 'ERROR';
+    errMsg = err instanceof Error ? err.message : String(err);
+    if (err instanceof CognitionError) throw err;
+    throw new CognitionError(errMsg, 'BREED_FAILED', { cause: err });
+  } finally {
+    try {
+      const sink = options.spanSink ?? defaultSpanSink;
+      const endMs =
+        typeof performance !== 'undefined' ? performance.now() : Date.now();
+      sink({
+        trace_id: hexId(32),
+        span_id: hexId(16),
+        name: 'cognition.run',
+        kind: 'INTERNAL',
+        start_time: startNs,
+        end_time: Date.now() * 1_000_000,
+        status: { code: status, message: errMsg },
+        attributes: {
+          'service.name': 'wasm4pm',
+          'cognition.operation': 'run',
+          'cognition.duration_ms': endMs - startMs,
+        },
+      });
+    } catch {
+      /* never block on OTEL */
+    }
+  }
 }

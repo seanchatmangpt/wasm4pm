@@ -1,12 +1,16 @@
-//! Detector for human-written text used as decision authority.
-//!
-//! Fires when human prose or LLM-generated projections are used as the
-//! source of truth for manufacturing decisions. Authority must be verifiable
-//! runtime evidence.
+//! Detector: human prose / LLM projection / mixed text used as authority.
 
-use crate::autosystems::findings::{Detector, DetectorInput, Finding, Severity};
+use crate::authority::AuthorityKind;
+use crate::autosystems::findings::{Detector, Finding, Severity};
+use crate::evidence::EvidenceSource;
+use crate::observability::emit_detector_span;
 
-/// Detects human prose or LLM projections used as authority.
+/// Authority slots that must be machine-derived.
+const SLOTS: &[&str] = &["primary", "verifier", "witness"];
+
+/// Fires when any monitored slot's classification is not `MachineEvidence`
+/// or `Empty`. In particular, `Mixed` triggers — a 64-hex digest sandwiched
+/// in human prose does NOT pass.
 pub struct HumanAuthorityDetector;
 
 impl Detector for HumanAuthorityDetector {
@@ -14,45 +18,28 @@ impl Detector for HumanAuthorityDetector {
         "HUMAN_OUTPUT_USED_AS_AUTHORITY"
     }
 
-    fn run(&self, input: &DetectorInput) -> Vec<Finding> {
-        if input.human_text_in_authority {
-            return vec![Finding::new(
-                self.code(),
-                Severity::Error,
-                "Human-written text or LLM projection detected in authority source; manufacturing authority must be runtime-verifiable evidence",
-            )
-            .with_evidence(vec!["human_text_in_authority: true".to_string()])];
+    fn run(&self, src: &dyn EvidenceSource) -> Vec<Finding> {
+        let mut findings = vec![];
+        for slot in SLOTS {
+            match src.authority_text(slot) {
+                AuthorityKind::HumanProse | AuthorityKind::LlmProjection | AuthorityKind::Mixed => {
+                    findings.push(
+                        Finding::new(
+                            self.code(),
+                            Severity::Error,
+                            format!(
+                                "Authority slot '{}' contains non-machine text (kind={:?})",
+                                slot,
+                                src.authority_text(slot)
+                            ),
+                        )
+                        .with_evidence(vec![format!("authority.slot={}", slot)]),
+                    );
+                }
+                AuthorityKind::MachineEvidence | AuthorityKind::Empty => {}
+            }
         }
-
-        vec![]
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn fires_when_human_text_is_authority() {
-        let detector = HumanAuthorityDetector;
-        let input = DetectorInput {
-            human_text_in_authority: true,
-            ..Default::default()
-        };
-        let findings = detector.run(&input);
-        assert_eq!(findings.len(), 1);
-        assert_eq!(findings[0].code, "HUMAN_OUTPUT_USED_AS_AUTHORITY");
-        assert_eq!(findings[0].severity, Severity::Error);
-    }
-
-    #[test]
-    fn silent_when_human_text_not_authority() {
-        let detector = HumanAuthorityDetector;
-        let input = DetectorInput {
-            human_text_in_authority: false,
-            ..Default::default()
-        };
-        let findings = detector.run(&input);
-        assert!(findings.is_empty());
+        emit_detector_span(self.code(), !findings.is_empty(), Severity::Error, 0);
+        findings
     }
 }

@@ -145,6 +145,22 @@ pub struct BreedInput {
     pub state: Vec<StateAtom>,
 }
 
+/// A single inference step recorded by a breed during `run()`.
+///
+/// Trace steps are append-only evidence that a real algorithm executed.
+/// An empty trace is a fraud signal: the breed did no work.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct TraceStep {
+    /// Monotonic step index (0-based)
+    pub step: usize,
+    /// Step kind (e.g. "fire-rule", "unify", "eliminate", "post-hypothesis")
+    pub kind: String,
+    /// Step detail (rule id, action id, candidate id, etc.)
+    pub detail: String,
+    /// Recursion depth at the time of the step
+    pub depth: u32,
+}
+
 /// Output from a breed's `run()` method.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BreedOutput {
@@ -158,6 +174,9 @@ pub struct BreedOutput {
     pub selected: Option<String>,
     /// Human-readable explanation of the breed's reasoning
     pub explanation: String,
+    /// Append-only inference trace: real algorithms produce non-empty traces.
+    #[serde(default)]
+    pub inference_trace: Vec<TraceStep>,
 }
 
 /// Receipt from a breed's `run()` method: BLAKE3 hashes for integrity.
