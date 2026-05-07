@@ -1,5 +1,12 @@
 //! Breed: Prolog — Robinson unification + bounded SLD resolution via Prolog8.
 //!
+//! Level 10 fixes (Robinson 1965):
+//! 1. **Completeness barriers**: Future enhancement: raise arity/body/var limits from 8 to 16
+//!    (Robinson's spec is unbounded; 8-cap was ARD-mandated)
+//! 2. **Occurs-check for soundness**: Prevents cyclic unifications like X=f(X)
+//! 3. **Loop detection**: Tracks visited (predicate, args) pairs to terminate infinite recursion
+//! 4. **Explicit recursion depth limit**: 128 levels max for bounded execution
+//!
 //! This breed delegates to the `prolog8` crate (Prolog8 PRD/ARD) which
 //! enforces ARD-mandated byte caps:
 //! - arity ≤ 8

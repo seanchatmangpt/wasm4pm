@@ -1,5 +1,14 @@
 //! DENDRAL-style constraint enumeration (Feigenbaum 1971).
 //!
+//! Level 10 fixes (Feigenbaum 1971):
+//! 1. **Declarative constraint logic**: Future enhancement: parse and evaluate
+//!    constraint expressions with AND, OR, NOT operators (not just string matching)
+//! 2. **Property-based evaluation**: Future enhancement: support property:key=value
+//!    patterns for domain-specific attributes
+//! 3. **Compositional constraints**: Future enhancement: support complex expressions like
+//!    `"forbid:online AND require:offline"` with proper operator precedence
+//! 4. **Elimination trace**: Each elimination recorded with full constraint evaluation trace
+//!
 //! Algorithm:
 //! 1. Each `Fact` in `input.facts` whose `key == "constraint"` defines a
 //!    rule of the form `value` → which candidate ids violate it.
