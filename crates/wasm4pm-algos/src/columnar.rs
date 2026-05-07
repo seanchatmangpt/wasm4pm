@@ -39,16 +39,18 @@ pub fn build_edge_counts(log: &EventLog, activity_key: &str) -> ColumnarEdgeCoun
         // Inline the interning to avoid a mutable closure capturing `vocab`.
         let mut ids: Vec<u32> = Vec::new();
         for event in &trace.events {
-            if let Some(AttributeValue::String(name)) = event.attributes.get(activity_key) {
-                let id = if let Some(&id) = activity_ids.get(name.as_str()) {
-                    id
-                } else {
-                    let id = vocab.len() as u32;
-                    vocab.push(name.clone());
-                    activity_ids.insert(name.clone(), id);
-                    id
-                };
-                ids.push(id);
+            if let Some(attr) = event.attributes.iter().find(|a| a.key == activity_key) {
+                if let AttributeValue::String(name) = &attr.value {
+                    let id = if let Some(&id) = activity_ids.get(name.as_str()) {
+                        id
+                    } else {
+                        let id = vocab.len() as u32;
+                        vocab.push(name.clone());
+                        activity_ids.insert(name.clone(), id);
+                        id
+                    };
+                    ids.push(id);
+                }
             }
         }
 
