@@ -15,12 +15,16 @@ export RAYON_NUM_THREADS := $(JOBS)
         bench-save-baseline bench-compare bench-regression bench-trends clean-bench \
         build-profile build-browser build-edge build-fog build-iot build-cloud \
         verify-profiles help doctor lint test verify check-debt \
-        cognition-build cognition-verify cognition-doctor cognition-dod cognition-cycle
+        cognition-build cognition-verify cognition-doctor cognition-dod cognition-cycle \
+        cognition-no-stub-gate cognition-examples
 
 # ── Definition of Done (DoD) Verification ─────────────────────────────────────
 # Consolidated target: test, lint, and quick benchmark smoke-test
 verify: test lint bench-quick check-debt
 	@echo "✅ DoD Verification Complete: Code passes all automated checks."
+
+verify-wasm: verify
+verify-ts: verify
 
 # ── Technical Debt Check ──────────────────────────────────────────────────────
 # Fails if any TODO, FIXME, or functional placeholder markers are found in production source.
@@ -273,3 +277,10 @@ help:
 	@echo "  make cognition-doctor   — Capability probe: 9-check registry vs runtime truth"
 	@echo "  make cognition-dod      — Definition of Done: 10-item checklist"
 	@echo "  make cognition-cycle    — Replay cycle: run -> receipt -> replay -> verify (determinism)"
+
+# ── Anti-fraud + examples (DX layer) ──────────────────────────────────────────
+cognition-no-stub-gate:
+	@bash scripts/cognition-no-stub-scan.sh --quick
+
+cognition-examples:
+	@cd examples/cognition && bash run-all.sh

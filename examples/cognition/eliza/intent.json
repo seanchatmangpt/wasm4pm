@@ -1,0 +1,16 @@
+{
+  "intent": "I feel sad about my deadlines",
+  "candidates": [],
+  "facts": [],
+  "cases": [],
+  "rules": [
+    {
+      "id": "feel-pattern",
+      "premise": ["pattern:I feel (\\w+)"],
+      "conclusion": "Why do you feel $1?",
+      "certainty": 1.0
+    }
+  ],
+  "goals": [],
+  "state": []
+}
