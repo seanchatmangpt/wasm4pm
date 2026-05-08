@@ -60,7 +60,12 @@ fn fire(marking: &mut Marking, pre: &[String], post: &[String]) -> (u32, u32) {
     (pre.len() as u32, post.len() as u32)
 }
 
-fn fire_silent_enabled(net: &PetriNet, marking: &mut Marking) -> (u32, u32) {
+/// Enabled silent transitions whose preset is *contested* — i.e. another enabled
+/// silent transition shares at least one preset place — represent a mutually-exclusive
+/// choice point. Eagerly firing one would arbitrarily commit to one branch, breaking
+/// downstream activity replay if the trace dictates a different branch. We defer those
+/// to [`fire_silent_to_enable`], which fires the specific branch the next activity needs.
+fn fire_silent_safely(net: &PetriNet, marking: &mut Marking) -> (u32, u32) {
     let mut total_c = 0u32;
     let mut total_p = 0u32;
     let mut budget = net.transitions.len() * 4 + 16;
@@ -68,27 +73,70 @@ fn fire_silent_enabled(net: &PetriNet, marking: &mut Marking) -> (u32, u32) {
         if budget == 0 {
             break;
         }
-        let mut fired = false;
-        for trans in &net.transitions {
-            if trans.label.is_some() {
-                continue;
-            }
-            let pre = preset(net, &trans.name);
-            if !pre.is_empty() && is_enabled(marking, &pre) {
-                let post = postset(net, &trans.name);
-                let (c, p) = fire(marking, &pre, &post);
+        // Snapshot every currently enabled silent transition.
+        let enabled: Vec<(String, Vec<String>, Vec<String>)> = net
+            .transitions
+            .iter()
+            .filter(|t| t.label.is_none())
+            .filter_map(|t| {
+                let pre = preset(net, &t.name);
+                if pre.is_empty() || !is_enabled(marking, &pre) {
+                    return None;
+                }
+                let post = postset(net, &t.name);
+                Some((t.name.clone(), pre, post))
+            })
+            .collect();
+        if enabled.is_empty() {
+            break;
+        }
+        // Find one whose preset places are NOT contested by any other enabled silent.
+        let safe_idx = enabled.iter().position(|(name, pre, _)| {
+            enabled.iter().all(|(other_name, other_pre, _)| {
+                other_name == name || pre.iter().all(|p| !other_pre.contains(p))
+            })
+        });
+        match safe_idx {
+            Some(i) => {
+                let (_, pre, post) = &enabled[i];
+                let (c, p) = fire(marking, pre, post);
                 total_c += c;
                 total_p += p;
                 budget -= 1;
-                fired = true;
-                break;
             }
-        }
-        if !fired {
-            break;
+            None => break, // All enabled silents are contested — wait for activity to disambiguate.
         }
     }
     (total_c, total_p)
+}
+
+/// One-step look-ahead silent firing: if `target_pre` is not currently enabled,
+/// look for an enabled silent transition whose firing would *contribute* to enabling
+/// it (its postset overlaps `target_pre`). Fires that silent and returns whether
+/// it succeeded.
+fn fire_silent_to_enable(
+    net: &PetriNet,
+    marking: &mut Marking,
+    target_pre: &[String],
+) -> Option<(u32, u32)> {
+    if is_enabled(marking, target_pre) {
+        return None;
+    }
+    for trans in &net.transitions {
+        if trans.label.is_some() {
+            continue;
+        }
+        let pre = preset(net, &trans.name);
+        if pre.is_empty() || !is_enabled(marking, &pre) {
+            continue;
+        }
+        let post = postset(net, &trans.name);
+        if post.iter().any(|p| target_pre.contains(p)) {
+            let (c, p) = fire(marking, &pre, &post);
+            return Some((c, p));
+        }
+    }
+    None
 }
 
 pub fn replay_trace(
@@ -101,7 +149,7 @@ pub fn replay_trace(
     let mut produced: u32 = initial_marking.values().sum();
     let mut consumed: u32 = 0;
     let mut missing: u32 = 0;
-    let (sc, sp) = fire_silent_enabled(net, &mut marking);
+    let (sc, sp) = fire_silent_safely(net, &mut marking);
     consumed += sc;
     produced += sp;
     for event in &trace.events {
@@ -115,15 +163,36 @@ pub fn replay_trace(
         if candidates.is_empty() {
             continue;
         }
-        let enabled_trans = candidates
+        // Try each candidate's preset for direct enablement first.
+        let mut chosen = candidates
             .iter()
             .find(|&&t| is_enabled(&marking, &preset(net, t)))
             .copied();
-        let chosen = if let Some(t) = enabled_trans {
-            t
-        } else {
-            candidates[0]
-        };
+        // If none is directly enabled, walk one step of silents (1-step look-ahead)
+        // to fire the silent path that would enable a candidate. This resolves
+        // mutually-exclusive silent choice points (e.g. per-edge τ_start branches)
+        // by letting the next activity dictate which branch wins.
+        if chosen.is_none() {
+            for &cand in &candidates {
+                let cand_pre = preset(net, cand);
+                let mut budget = net.transitions.len() + 4;
+                while budget > 0 && !is_enabled(&marking, &cand_pre) {
+                    match fire_silent_to_enable(net, &mut marking, &cand_pre) {
+                        Some((c, p)) => {
+                            consumed += c;
+                            produced += p;
+                            budget -= 1;
+                        }
+                        None => break,
+                    }
+                }
+                if is_enabled(&marking, &cand_pre) {
+                    chosen = Some(cand);
+                    break;
+                }
+            }
+        }
+        let chosen = chosen.unwrap_or(candidates[0]);
         let pre = preset(net, chosen);
         let post = postset(net, chosen);
         for p in &pre {
@@ -137,7 +206,7 @@ pub fn replay_trace(
         let (c, p) = fire(&mut marking, &pre, &post);
         consumed += c;
         produced += p;
-        let (sc, sp) = fire_silent_enabled(net, &mut marking);
+        let (sc, sp) = fire_silent_safely(net, &mut marking);
         consumed += sc;
         produced += sp;
     }

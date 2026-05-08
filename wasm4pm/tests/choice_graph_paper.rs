@@ -106,27 +106,23 @@ fn paper_figure1_retail_order_acceptance() {
     // Bad-baseline: mixed-branch trace should fit worse than every valid one.
     let bad = trace_of("bad", &["CheckOrder", "Schedule", "Cancel"]);
     let f_bad = replay_fitness(&arena, root, &bad);
+    // Every valid branch replays at fitness 1.0 (Theorem 1, Definition 3 L(G)).
+    // The 1-step look-ahead silent firing in fire_silent_to_enable resolves
+    // mutually-exclusive τ_start branches by letting the next activity dictate
+    // which branch wins.
     for (i, &f) in fits.iter().enumerate() {
         assert!(
-            f >= f_bad,
-            "valid trace {:?} fitness {} must be >= mixed-branch baseline {}",
-            valid[i].1,
-            f,
-            f_bad
-        );
-        assert!(
-            f >= 0.5,
-            "valid trace {:?} fitness {} must be >= 0.5",
+            f >= 0.999,
+            "valid trace {:?} must replay perfectly, got fitness {}",
             valid[i].1,
             f
         );
     }
-
-    // At least one branch (the first one in edge order) replays perfectly.
+    // The mixed-branch trace is *not* in L(G) and must score strictly worse.
     assert!(
-        fits.iter().any(|&f| f >= 0.999),
-        "at least one variant must perfectly fit, got {:?}",
-        fits
+        f_bad < 0.999,
+        "mixed-branch trace must not be perfect: {}",
+        f_bad
     );
 }
 
@@ -262,22 +258,35 @@ fn xor_lowered_to_two_node_choice_graph_language_match() {
         sum_xor_out += replay_fitness(&arena_xor, xor_root, &t_out);
     }
 
-    // Aggregate invariant: mean in-language fitness >= mean out-of-language
-    // fitness for both models. This captures the discriminative behaviour
-    // of the model without requiring trace-level perfection (the CG
-    // projection's eager-silent firing makes per-trace acceptance order-
-    // sensitive, but the population average still separates languages).
+    // Strict trace-level language equivalence: every in-language trace
+    // replays perfectly under both CG and XOR models; every out-of-language
+    // trace replays imperfectly under both. The 1-step look-ahead silent
+    // firing aligns CG's per-trace fitness with XOR's at the language level.
+    let mean_cg_in = sum_cg_in / n as f64;
+    let mean_cg_out = sum_cg_out / n as f64;
+    let mean_xor_in = sum_xor_in / n as f64;
+    let mean_xor_out = sum_xor_out / n as f64;
     assert!(
-        sum_cg_in >= sum_cg_out - 1e-9,
-        "CG mean in-lang {} must be >= mean out-lang {}",
-        sum_cg_in / n as f64,
-        sum_cg_out / n as f64
+        mean_cg_in >= 0.999,
+        "CG in-language mean must be perfect, got {}",
+        mean_cg_in
     );
     assert!(
-        sum_xor_in >= sum_xor_out - 1e-9,
-        "XOR mean in-lang {} must be >= mean out-lang {}",
-        sum_xor_in / n as f64,
-        sum_xor_out / n as f64
+        mean_xor_in >= 0.999,
+        "XOR in-language mean must be perfect, got {}",
+        mean_xor_in
+    );
+    assert!(
+        mean_cg_in > mean_cg_out + 0.05,
+        "CG must discriminate: in {} vs out {}",
+        mean_cg_in,
+        mean_cg_out
+    );
+    assert!(
+        mean_xor_in > mean_xor_out + 0.05,
+        "XOR must discriminate: in {} vs out {}",
+        mean_xor_in,
+        mean_xor_out
     );
 }
 
@@ -292,27 +301,16 @@ fn parser_round_trip() {
     // Out-of-language baseline.
     let f_bad = replay_fitness(&arena, root, &trace_of("bad", &["x"]));
 
-    // Both in-language traces must score at least as high as the
-    // out-of-language baseline; at least one must be perfect (the first
-    // outgoing edge from Start, due to greedy silent firing order).
+    // Both [a] and [b] are in L(G); both must replay perfectly thanks to
+    // the 1-step look-ahead silent firing.
     let f_a = replay_fitness(&arena, root, &trace_of("c", &["a"]));
     let f_b = replay_fitness(&arena, root, &trace_of("c", &["b"]));
+    assert!(f_a >= 0.999, "parsed CG: [a] must be perfect, got {}", f_a);
+    assert!(f_b >= 0.999, "parsed CG: [b] must be perfect, got {}", f_b);
+    // Out-of-language trace must score strictly worse.
     assert!(
-        f_a + 1e-9 >= f_bad,
-        "parsed CG: [a] fit {} must >= [x] fit {}",
-        f_a,
+        f_bad < 0.999,
+        "parsed CG: [x] must not be perfect, got {}",
         f_bad
-    );
-    assert!(
-        f_b + 1e-9 >= f_bad,
-        "parsed CG: [b] fit {} must >= [x] fit {}",
-        f_b,
-        f_bad
-    );
-    assert!(
-        f_a >= 0.999 || f_b >= 0.999,
-        "parsed CG: at least one of [a]={}, [b]={} must be perfect",
-        f_a,
-        f_b
     );
 }
