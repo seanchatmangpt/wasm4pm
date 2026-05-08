@@ -1,0 +1,18 @@
+PREFIX xes: <https://wasm4pm.dev/xes#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+# Extract all lifecycle transition events stored in the unrdf RDF graph.
+# Results feed directly into wasm4pm process mining algorithms.
+#
+# Usage: executeQuerySync(store, SPARQL_FROM_THIS_FILE)
+
+SELECT ?caseId ?activity ?timestamp ?fromStage ?toStage ?eventIndex
+WHERE {
+    ?event xes:caseId     ?caseId ;
+           xes:activity   ?activity ;
+           xes:timestamp  ?timestamp ;
+           xes:fromStage  ?fromStage ;
+           xes:toStage    ?toStage ;
+           xes:eventIndex ?eventIndex .
+}
+ORDER BY ?caseId xsd:integer(?eventIndex)

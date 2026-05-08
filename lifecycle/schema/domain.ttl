@@ -1,0 +1,178 @@
+@prefix lc:   <https://wasm4pm.dev/lifecycle#> .
+@prefix wpm:  <urn:wasm4pm:> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Ontology header
+# ─────────────────────────────────────────────────────────────────────────────
+<https://wasm4pm.dev/lifecycle>
+    a                 <http://www.w3.org/2002/07/owl#Ontology> ;
+    rdfs:label        "wasm4pm × unrdf Complete Lifecycle Ontology" ;
+    rdfs:comment      "Models the RDF-driven development lifecycle: Spec→Generate→Test→Deploy→Monitor→Improve→Spec. Drives ggen sync (Rust types) and unrdf sync (TypeScript types)." .
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Classes
+# ─────────────────────────────────────────────────────────────────────────────
+lc:Stage a rdfs:Class ;
+    rdfs:label   "Lifecycle Stage" ;
+    rdfs:comment "A discrete phase in the wasm4pm × unrdf development lifecycle." .
+
+lc:Transition a rdfs:Class ;
+    rdfs:label   "Stage Transition" ;
+    rdfs:comment "A valid directed edge between two lifecycle stages." .
+
+lc:AlgorithmAssignment a rdfs:Class ;
+    rdfs:label   "Algorithm Assignment" ;
+    rdfs:comment "Maps a wasm4pm algorithm to the lifecycle stage where it is applied." .
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Properties
+# ─────────────────────────────────────────────────────────────────────────────
+lc:order        a rdf:Property ; rdfs:domain lc:Stage ;      rdfs:range xsd:integer .
+lc:description  a rdf:Property ; rdfs:domain lc:Stage ;      rdfs:range xsd:string .
+lc:spanName     a rdf:Property ; rdfs:domain lc:Stage ;      rdfs:range xsd:string .
+lc:xesActivity  a rdf:Property ; rdfs:domain lc:Stage ;      rdfs:range xsd:string .
+lc:fromStage    a rdf:Property ; rdfs:domain lc:Transition ;  rdfs:range lc:Stage .
+lc:toStage      a rdf:Property ; rdfs:domain lc:Transition ;  rdfs:range lc:Stage .
+lc:guard        a rdf:Property ; rdfs:domain lc:Transition ;  rdfs:range xsd:string .
+lc:stage        a rdf:Property ; rdfs:domain lc:AlgorithmAssignment ; rdfs:range lc:Stage .
+lc:algorithmId  a rdf:Property ; rdfs:domain lc:AlgorithmAssignment ; rdfs:range xsd:string .
+lc:algorithmLabel a rdf:Property ; rdfs:domain lc:AlgorithmAssignment ; rdfs:range xsd:string .
+lc:purpose      a rdf:Property ; rdfs:domain lc:AlgorithmAssignment ; rdfs:range xsd:string .
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Lifecycle Stages
+# ─────────────────────────────────────────────────────────────────────────────
+lc:Spec a lc:Stage ;
+    rdfs:label      "Spec" ;
+    lc:order        "1"^^xsd:integer ;
+    lc:description  "Define the system in RDF ontology (source of truth)." ;
+    lc:spanName     "lifecycle.spec" ;
+    lc:xesActivity  "Spec" .
+
+lc:Generate a lc:Stage ;
+    rdfs:label      "Generate" ;
+    lc:order        "2"^^xsd:integer ;
+    lc:description  "Run ggen sync (Rust) and unrdf sync (TypeScript) to precipitate code from the ontology." ;
+    lc:spanName     "lifecycle.generate" ;
+    lc:xesActivity  "Generate" .
+
+lc:Test a lc:Stage ;
+    rdfs:label      "Test" ;
+    lc:order        "3"^^xsd:integer ;
+    lc:description  "Execute tests, SHACL validation, and conformance checks against generated artifacts." ;
+    lc:spanName     "lifecycle.test" ;
+    lc:xesActivity  "Test" .
+
+lc:Deploy a lc:Stage ;
+    rdfs:label      "Deploy" ;
+    lc:order        "4"^^xsd:integer ;
+    lc:description  "Publish WASM packages, Rust crates, and TypeScript libraries." ;
+    lc:spanName     "lifecycle.deploy" ;
+    lc:xesActivity  "Deploy" .
+
+lc:Monitor a lc:Stage ;
+    rdfs:label      "Monitor" ;
+    lc:order        "5"^^xsd:integer ;
+    lc:description  "Collect OTel traces, convert to XES event logs, store in unrdf RDF graph." ;
+    lc:spanName     "lifecycle.monitor" ;
+    lc:xesActivity  "Monitor" .
+
+lc:Improve a lc:Stage ;
+    rdfs:label      "Improve" ;
+    lc:order        "6"^^xsd:integer ;
+    lc:description  "Run wasm4pm DFG / AlphaMiner / InductiveMiner on event log; discover drift vs. intended process; produce improvement spec." ;
+    lc:spanName     "lifecycle.improve" ;
+    lc:xesActivity  "Improve" .
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Stage Transitions (directed cycle)
+# ─────────────────────────────────────────────────────────────────────────────
+lc:t1 a lc:Transition ;
+    rdfs:label   "Spec → Generate" ;
+    lc:fromStage lc:Spec ;
+    lc:toStage   lc:Generate ;
+    lc:guard     "ontology_validates" .
+
+lc:t2 a lc:Transition ;
+    rdfs:label   "Generate → Test" ;
+    lc:fromStage lc:Generate ;
+    lc:toStage   lc:Test ;
+    lc:guard     "artifacts_emitted" .
+
+lc:t3 a lc:Transition ;
+    rdfs:label   "Test → Deploy" ;
+    lc:fromStage lc:Test ;
+    lc:toStage   lc:Deploy ;
+    lc:guard     "all_tests_pass" .
+
+lc:t4 a lc:Transition ;
+    rdfs:label   "Deploy → Monitor" ;
+    lc:fromStage lc:Deploy ;
+    lc:toStage   lc:Monitor ;
+    lc:guard     "artifacts_published" .
+
+lc:t5 a lc:Transition ;
+    rdfs:label   "Monitor → Improve" ;
+    lc:fromStage lc:Monitor ;
+    lc:toStage   lc:Improve ;
+    lc:guard     "event_log_populated" .
+
+lc:t6 a lc:Transition ;
+    rdfs:label   "Improve → Spec" ;
+    lc:fromStage lc:Improve ;
+    lc:toStage   lc:Spec ;
+    lc:guard     "improvements_identified" .
+
+lc:t7 a lc:Transition ;
+    rdfs:label   "Test → Spec" ;
+    lc:fromStage lc:Test ;
+    lc:toStage   lc:Spec ;
+    lc:guard     "tests_fail_rework_needed" .
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Algorithm Assignments (wasm4pm algorithms applied per stage)
+# ─────────────────────────────────────────────────────────────────────────────
+lc:aa_monitor_dfg a lc:AlgorithmAssignment ;
+    rdfs:label      "DFG at Monitor" ;
+    lc:stage        lc:Monitor ;
+    lc:algorithmId  "dfg_discovery" ;
+    lc:algorithmLabel "Directly-Follows Graph Discovery" ;
+    lc:purpose      "Build DFG from OTel-derived XES event log to visualise actual stage flow." .
+
+lc:aa_improve_alpha a lc:AlgorithmAssignment ;
+    rdfs:label      "Alpha Miner at Improve" ;
+    lc:stage        lc:Improve ;
+    lc:algorithmId  "alpha_miner" ;
+    lc:algorithmLabel "Alpha Miner" ;
+    lc:purpose      "Discover Petri net from event log; compare against intended lifecycle Petri net." .
+
+lc:aa_improve_inductive a lc:AlgorithmAssignment ;
+    rdfs:label      "Inductive Miner at Improve" ;
+    lc:stage        lc:Improve ;
+    lc:algorithmId  "inductive_miner" ;
+    lc:algorithmLabel "Inductive Miner" ;
+    lc:purpose      "Produce sound process tree capturing loops, choices, and parallelism." .
+
+lc:aa_improve_conformance a lc:AlgorithmAssignment ;
+    rdfs:label      "Conformance Check at Improve" ;
+    lc:stage        lc:Improve ;
+    lc:algorithmId  "token_replay_conformance" ;
+    lc:algorithmLabel "Token-Replay Conformance" ;
+    lc:purpose      "Score observed event log against the declared lifecycle model; surface deviating cases." .
+
+lc:aa_improve_drift a lc:AlgorithmAssignment ;
+    rdfs:label      "Drift Detection at Improve" ;
+    lc:stage        lc:Improve ;
+    lc:algorithmId  "drift_detection" ;
+    lc:algorithmLabel "Concept Drift Detection" ;
+    lc:purpose      "Detect if lifecycle behaviour has shifted across sprints/releases." .
+
+lc:aa_test_variant a lc:AlgorithmAssignment ;
+    rdfs:label      "Variant Analysis at Test" ;
+    lc:stage        lc:Test ;
+    lc:algorithmId  "variant_analysis" ;
+    lc:algorithmLabel "Variant Analysis" ;
+    lc:purpose      "Count distinct test execution paths; flag variant explosion as a process smell." .

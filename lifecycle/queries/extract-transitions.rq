@@ -1,0 +1,14 @@
+PREFIX lc:   <https://wasm4pm.dev/lifecycle#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT ?label ?from_label ?to_label ?guard
+WHERE {
+    ?t a lc:Transition ;
+       rdfs:label   ?label ;
+       lc:fromStage ?from ;
+       lc:toStage   ?to ;
+       lc:guard     ?guard .
+    ?from rdfs:label ?from_label .
+    ?to   rdfs:label ?to_label .
+}
+ORDER BY ?from_label ?to_label

@@ -1,0 +1,13 @@
+PREFIX lc:   <https://wasm4pm.dev/lifecycle#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT ?stage_label ?algorithm_id ?algorithm_label ?purpose
+WHERE {
+    ?aa a lc:AlgorithmAssignment ;
+        lc:stage          ?stage ;
+        lc:algorithmId    ?algorithm_id ;
+        lc:algorithmLabel ?algorithm_label ;
+        lc:purpose        ?purpose .
+    ?stage rdfs:label ?stage_label .
+}
+ORDER BY ?stage_label ?algorithm_id

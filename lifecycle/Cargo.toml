@@ -1,0 +1,14 @@
+[package]
+name = "wasm4pm-lifecycle"
+version = "0.1.0"
+edition = "2021"
+description = "Complete RDF-driven lifecycle for wasm4pm × unrdf. Spec→Generate→Test→Deploy→Monitor→Improve→Spec."
+license = "MIT"
+
+[lib]
+name = "wasm4pm_lifecycle"
+path = "src/lib.rs"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }

@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 pub struct TraceReplayResult {
     pub case_id: String,
     pub fitness: f64,
+    pub precision: f64,
     pub produced_tokens: u32,
     pub consumed_tokens: u32,
     pub missing_tokens: u32,
@@ -23,6 +24,7 @@ impl TraceReplayResult {
 pub struct FitnessResult {
     pub percentage: f64,
     pub avg_trace_fitness: f64,
+    pub avg_trace_precision: f64,
     pub perfectly_fitting_traces: usize,
     pub total_traces: usize,
     pub trace_results: Vec<TraceReplayResult>,
@@ -228,9 +230,15 @@ pub fn replay_trace(
         let r = remaining as f64;
         (0.5 * (1.0 - m / c) + 0.5 * (1.0 - r / p)).clamp(0.0, 1.0)
     };
+    let precision = if produced == 0 {
+        1.0
+    } else {
+        (1.0 - remaining as f64 / produced as f64).clamp(0.0, 1.0)
+    };
     TraceReplayResult {
         case_id: trace.case_id.clone(),
         fitness,
+        precision,
         produced_tokens: produced,
         consumed_tokens: consumed,
         missing_tokens: missing,
@@ -256,6 +264,11 @@ pub fn compute_fitness(
     } else {
         trace_results.iter().map(|r| r.fitness).sum::<f64>() / total_traces as f64
     };
+    let avg_trace_precision = if total_traces == 0 {
+        1.0
+    } else {
+        trace_results.iter().map(|r| r.precision).sum::<f64>() / total_traces as f64
+    };
     let total_produced: u32 = trace_results.iter().map(|r| r.produced_tokens).sum();
     let total_consumed: u32 = trace_results.iter().map(|r| r.consumed_tokens).sum();
     let total_missing: u32 = trace_results.iter().map(|r| r.missing_tokens).sum();
@@ -272,6 +285,7 @@ pub fn compute_fitness(
     FitnessResult {
         percentage,
         avg_trace_fitness,
+        avg_trace_precision,
         perfectly_fitting_traces,
         total_traces,
         trace_results,
