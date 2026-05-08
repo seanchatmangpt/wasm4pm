@@ -308,9 +308,9 @@ export const rlConvergenceSchema = z
  * and how do we know the chosen policy has stabilised?"
  *
  * Hyperparameters control the tabular TD agents in `wasm4pm/src/rl_orchestrator.rs`.
- * The LinUCB knobs (`gpu_enabled`, `linucb_lambda`, `ucb1_exploration`) configure
+ * The LinUCB knobs (`linucb_lambda`, `ucb1_exploration`) configure
  * the contextual-bandit algorithm-selector defined in
- * `wasm4pm/src/gpu/linucb_kernel.wgsl` and `wasm4pm/src/ml/linucb.rs`.
+ * `wasm4pm/src/ml/linucb.rs`.
  */
 export const rlConfigSchema = z
   .object({
@@ -330,9 +330,6 @@ export const rlConfigSchema = z
     /** Convergence-detection sub-section. */
     convergence: rlConvergenceSchema.default({}),
 
-    // --- LinUCB / GPU dispatch (kept from schema v1 for compatibility) ---
-    /** Enable GPU dispatch via the LinUCB WGSL kernel (requires gpu feature). */
-    gpu_enabled: z.boolean().default(false),
     /**
      * LinUCB regularization coefficient λ.
      * A is initialised to λI; larger values produce more conservative exploration.

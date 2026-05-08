@@ -32,7 +32,7 @@
 //! | `get_verdict_explanation` | Human-readable breakdown of a `VerdictReceipt` JSON |
 //! | `build_motion_from_log_trace` | Construct a `RequestMotion` from a stored event log trace |
 
-#![cfg(feature = "miniml")]
+#![cfg(feature = "ml")]
 
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;

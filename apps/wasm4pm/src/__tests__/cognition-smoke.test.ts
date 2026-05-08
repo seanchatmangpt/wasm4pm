@@ -35,78 +35,96 @@ interface SmokeScenario {
 }
 
 /**
- * Build a portable wrapper bash script that mirrors the smoke script structure.
- * Uses Python3-based millisecond timing (same strategy as cognition-smoke.sh)
- * to avoid macOS arithmetic failures with date +%s%3N.
+ * Create a fake workspace root with stub binaries for each step.
+ * The real cognition-smoke.sh is spawned with WASM4PM_SMOKE_ROOT pointing to this tmpDir.
  */
-function buildWrapperScript(scenario: SmokeScenario): string {
-  const s = (v: boolean): string => (v ? '0' : '1');
+async function createFakeRoot(scenario: SmokeScenario, tmpDir: string): Promise<void> {
+  const binDir = path.join(tmpDir, 'apps', 'wasm4pm', 'dist', 'bin');
+  const scriptsDir = path.join(tmpDir, 'scripts');
+  await fs.mkdir(binDir, { recursive: true });
+  await fs.mkdir(scriptsDir, { recursive: true });
 
-  const lines: string[] = [
+  // cargo stub: branches on subcommand to control steps 1, 2, 3
+  // Steps 2 and 3 check for "test result: ok" in grep, so only output it on success
+  const cargoLines = [
     '#!/usr/bin/env bash',
-    'set -euo pipefail',
-    'GREEN=""',
-    'RED=""',
-    'BOLD=""',
-    'RESET=""',
-    '_ms() {',
-    '  if command -v python3 >/dev/null 2>&1; then',
-    '    python3 -c "import time; print(int(time.time()*1000))"',
-    '  elif command -v gdate >/dev/null 2>&1; then',
-    '    gdate +%s%3N',
-    '  else',
-    '    echo $(( $(date +%s) * 1000 ))',
-    '  fi',
-    '}',
-    'pass_count=0',
-    'fail_count=0',
-    'overall_start=$(_ms)',
-    'run_step() {',
-    '  local label="$1"; shift',
-    '  local step_start step_end elapsed_ms exit_code=0',
-    '  step_start=$(_ms)',
-    '  if "$@" >/dev/null 2>&1; then exit_code=0; else exit_code=$?; fi',
-    '  step_end=$(_ms)',
-    '  elapsed_ms=$(( step_end - step_start ))',
-    '  if [ "$exit_code" -eq 0 ]; then',
-    '    printf "${GREEN}[%4d ms] PASS${RESET} %s\\n" "$elapsed_ms" "$label"',
-    '    (( pass_count++ )) || true',
-    '  else',
-    '    printf "${RED}[%4d ms] FAIL${RESET} %s\\n" "$elapsed_ms" "$label"',
-    '    (( fail_count++ )) || true',
-    '  fi',
-    '}',
-    'run_step "cargo check -p wasm4pm-cognition" bash -c "exit ' + s(scenario.step1) + '"',
-    'run_step "cargo test -p wasm4pm-cognition --lib" bash -c "exit ' + s(scenario.step2) + '"',
-    'run_step "cargo test -p prolog8 --lib" bash -c "exit ' + s(scenario.step3) + '"',
-    'run_step "cognition-no-stub-scan.sh --quick" bash -c "exit ' + s(scenario.step4) + '"',
-    'run_step "node facade require" bash -c "exit ' + s(scenario.step5) + '"',
-    'run_step "wpm cognition adversarial detectors==8" bash -c "exit ' + s(scenario.step6) + '"',
-    'overall_end=$(_ms)',
-    'total_ms=$(( overall_end - overall_start ))',
-    'echo ""',
-    'printf "${BOLD}cognition-smoke: %d passed, %d failed -- %d ms total${RESET}\\n"' +
-      ' "$pass_count" "$fail_count" "$total_ms"',
-    '[ "$fail_count" -gt 0 ] && exit 1 || exit 0',
+    'case "$*" in',
+    `  *check*) exit ${scenario.step1 ? 0 : 1} ;;`,
+    scenario.step2
+      ? `  *wasm4pm-cognition*) echo "test result: ok. 1 passed"; exit 0 ;;`
+      : `  *wasm4pm-cognition*) echo "test result: FAILED. 0 passed"; exit 1 ;;`,
+    scenario.step3
+      ? `  *prolog8*) echo "test result: ok. 1 passed"; exit 0 ;;`
+      : `  *prolog8*) echo "test result: FAILED. 0 passed"; exit 1 ;;`,
+    '  *) exit 0 ;;',
+    'esac',
   ];
+  await fs.writeFile(path.join(tmpDir, 'cargo'), cargoLines.join('\n'), { mode: 0o755 });
 
-  return lines.join('\n') + '\n';
+  // cognition-no-stub-scan.sh stub (step 4)
+  await fs.writeFile(
+    path.join(scriptsDir, 'cognition-no-stub-scan.sh'),
+    `#!/usr/bin/env bash\nexit ${scenario.step4 ? 0 : 1}\n`,
+    { mode: 0o755 }
+  );
+
+  // node requires cognition module (step 5)
+  // Create a fake packages/cognition/dist/index.js that throws or succeeds based on scenario
+  const cognitionDistDir = path.join(tmpDir, 'packages', 'cognition', 'dist');
+  await fs.mkdir(cognitionDistDir, { recursive: true });
+  await fs.writeFile(
+    path.join(cognitionDistDir, 'index.js'),
+    scenario.step5
+      ? `// stub cognition module\nmodule.exports = {};\n`
+      : `throw new Error('cognition stub: step5=false');\n`
+  );
+
+  // wpm stub (step 6)
+  // The real step 6 invokes: wpm cognition adversarial --format json
+  // then pipes through jq and checks if payload.detectors.length === 8
+  // So the stub must output valid JSON with 8 detectors (or 0 if scenario.step6 = false)
+  const detectorCount = scenario.step6 ? 8 : 0;
+  const wpmOutput = {
+    status: 'success',
+    command: 'cognition adversarial',
+    payload: {
+      detectors: Array.from({ length: detectorCount }, (_, i) => ({
+        id: i + 1,
+        name: `detector_${i + 1}`,
+      })),
+    },
+  };
+  await fs.writeFile(
+    path.join(binDir, 'wpm.js'),
+    `#!/usr/bin/env node\nif (process.argv.includes('--format') && process.argv.includes('json')) {\n` +
+    `  console.log(${JSON.stringify(JSON.stringify(wpmOutput))});\n` +
+    `  process.exit(0);\n` +
+    `}\nprocess.exit(1);\n`,
+    { mode: 0o755 }
+  );
 }
 
-async function runWrapper(
+/**
+ * Spawn the real cognition-smoke.sh script with controlled stub binaries.
+ * Uses WASM4PM_SMOKE_ROOT env var to inject fake workspace root.
+ * The actual script logic (run_step, timing, counters, summary) executes.
+ */
+async function runRealSmokeScript(
   scenario: SmokeScenario
 ): Promise<{ stdout: string; stderr: string; exitCode: number; elapsedMs: number }> {
   const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cog-smoke-'));
-  const wrapperPath = path.join(tmpDir, 'wrapper.sh');
-
   try {
-    await fs.writeFile(wrapperPath, buildWrapperScript(scenario), { mode: 0o755 });
-
-    const t0 = Date.now();
+    await createFakeRoot(scenario, tmpDir);
+    const t0 = performance.now();
     const result = await new Promise<{ stdout: string; stderr: string; exitCode: number }>(
       (resolve) => {
-        const child = spawn('bash', [wrapperPath], {
-          env: { ...process.env, NO_COLOR: '1' },
+        const child = spawn('bash', [SMOKE_SCRIPT], {
+          env: {
+            ...process.env,
+            NO_COLOR: '1',
+            WASM4PM_SMOKE_ROOT: tmpDir,
+            PATH: `${tmpDir}:${process.env['PATH'] ?? ''}`,
+          },
         });
 
         let stdout = '';
@@ -123,7 +141,7 @@ async function runWrapper(
       }
     );
 
-    return { ...result, elapsedMs: Date.now() - t0 };
+    return { ...result, elapsedMs: Math.round(performance.now() - t0) };
   } finally {
     await fs.rm(tmpDir, { recursive: true, force: true });
   }
@@ -131,7 +149,7 @@ async function runWrapper(
 
 describe('cognition-smoke.sh behavioral contract', () => {
   it('emits PASS for all 6 steps and exits 0 on a synthetic happy path', async () => {
-    const { stdout, exitCode, elapsedMs } = await runWrapper({
+    const { stdout, exitCode, elapsedMs } = await runRealSmokeScript({
       step1: true,
       step2: true,
       step3: true,
@@ -153,7 +171,7 @@ describe('cognition-smoke.sh behavioral contract', () => {
   }, 15_000);
 
   it('exits 1 and emits one FAIL line when step 1 (cargo check) fails', async () => {
-    const { stdout, exitCode } = await runWrapper({
+    const { stdout, exitCode } = await runRealSmokeScript({
       step1: false,
       step2: true,
       step3: true,
@@ -170,7 +188,7 @@ describe('cognition-smoke.sh behavioral contract', () => {
   }, 15_000);
 
   it('exits 1 when step 4 (no-stub scan) detects fraud', async () => {
-    const { stdout, exitCode } = await runWrapper({
+    const { stdout, exitCode } = await runRealSmokeScript({
       step1: true,
       step2: true,
       step3: true,
@@ -185,7 +203,7 @@ describe('cognition-smoke.sh behavioral contract', () => {
   }, 15_000);
 
   it('exits 1 when step 6 (adversarial detector count) fails', async () => {
-    const { stdout, exitCode } = await runWrapper({
+    const { stdout, exitCode } = await runRealSmokeScript({
       step1: true,
       step2: true,
       step3: true,
@@ -200,7 +218,7 @@ describe('cognition-smoke.sh behavioral contract', () => {
   }, 15_000);
 
   it('emits timing bracket on every step line', async () => {
-    const { stdout } = await runWrapper({
+    const { stdout } = await runRealSmokeScript({
       step1: true,
       step2: true,
       step3: true,
@@ -223,7 +241,7 @@ describe('cognition-smoke.sh behavioral contract', () => {
   });
 
   it('emits summary line in format "cognition-smoke: N passed, M failed"', async () => {
-    const { stdout } = await runWrapper({
+    const { stdout } = await runRealSmokeScript({
       step1: true,
       step2: false,
       step3: true,
@@ -237,7 +255,7 @@ describe('cognition-smoke.sh behavioral contract', () => {
   }, 15_000);
 
   it('all 6 steps contribute to the pass/fail count in the summary', async () => {
-    const { stdout, exitCode } = await runWrapper({
+    const { stdout, exitCode } = await runRealSmokeScript({
       step1: true,
       step2: false,
       step3: true,

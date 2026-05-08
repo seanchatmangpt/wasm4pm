@@ -3,7 +3,7 @@
 import { defineCommand } from 'citty';
 import { emitResult, makeResult, makeErrorResult } from '../../output.js';
 import { EXIT_CODES } from '../../exit-codes.js';
-import { loadReceipt, mapWasmError } from './_shared.js';
+import { loadReceipt, mapWasmError, emitCognitionSpan } from './_shared.js';
 
 export const inspect = defineCommand({
   meta: { name: 'inspect', description: 'Inspect a cognition artifact by id' },
@@ -15,10 +15,14 @@ export const inspect = defineCommand({
     quiet: { type: 'boolean', alias: 'q' },
   },
   async run(ctx) {
-    const t0 = performance.now();
+    const startNs = Date.now() * 1_000_000;
+    const startMs = typeof performance !== 'undefined' ? performance.now() : Date.now();
     const format = (ctx.args.format as 'json' | 'human' | 'sarif' | 'jsonl') ?? 'human';
     const verbose = !!ctx.args.verbose;
     const quiet = !!ctx.args.quiet;
+    let spanStatus: 'OK' | 'ERROR' = 'OK';
+    let spanErrMsg: string | undefined;
+    let finalExitCode: number = EXIT_CODES.success;
     try {
       const id = ctx.args['artifact-id'] as string;
       const dir = ctx.args['ledger-dir'] as string;
@@ -37,19 +41,29 @@ export const inspect = defineCommand({
       const result = makeResult(
         'cognition inspect',
         { artifact_id: id, summary, artifact: data },
-        performance.now() - t0,
+        (typeof performance !== 'undefined' ? performance.now() : Date.now()) - startMs,
         EXIT_CODES.success,
       );
       emitResult(result, { format, verbose, quiet }, (res, p) => {
         const pl = res.payload as { artifact_id: string; summary: { link_count: number } };
         p.success(`Artifact '${pl.artifact_id}' — ${pl.summary.link_count} link(s)`);
       });
-      process.exit(EXIT_CODES.success);
     } catch (err) {
+      spanStatus = 'ERROR';
+      spanErrMsg = err instanceof Error ? err.message : String(err);
       const { code, exitCode } = mapWasmError(err);
       const result = makeErrorResult('cognition inspect', err, exitCode, code);
       emitResult(result, { format, verbose, quiet });
-      process.exit(exitCode);
+      finalExitCode = exitCode;
+    } finally {
+      emitCognitionSpan(
+        'inspect',
+        startNs,
+        (typeof performance !== 'undefined' ? performance.now() : Date.now()) - startMs,
+        spanStatus,
+        spanErrMsg,
+      );
     }
+    process.exit(finalExitCode);
   },
 });

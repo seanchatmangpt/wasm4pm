@@ -37,7 +37,6 @@
     "format": "prettier --write \"**/*.{js,ts,json,md}\"",
     "format:check": "prettier --check \"**/*.{js,ts,json,md}\"",
     "type:check": "tsc --noEmit",
-    "docs": "typedoc --out docs pkg/wasm4pm.d.ts",
     "bench": "node benchmarks/wasm_bench_runner.js",
     "bench:ci": "node benchmarks/wasm_bench_runner.js --ci",
     "bench:build": "npm run build:nodejs && npm run bench",
@@ -71,13 +70,10 @@
     "node": ">=14.0.0"
   },
   "devDependencies": {
-    "@testing-library/dom": "^9.3.3",
-    "@testing-library/jest-dom": "^6.1.5",
     "@types/node": "^20.10.6",
     "@vitest/browser": "^1.1.0",
     "playwright": "^1.40.0",
     "prettier": "^3.1.1",
-    "typedoc": "^0.25.4",
     "typescript": "^5.3.3",
     "vite-plugin-wasm": "^3.6.0",
     "vitest": "^1.1.0"

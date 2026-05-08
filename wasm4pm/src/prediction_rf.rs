@@ -25,7 +25,7 @@
 //! | 5 | `rework_count / prefix_len` (consecutive repeats) | [0, 1] |
 //! | 6 | `prefix_len / trace_len` | [0, 1] |
 
-#![cfg(feature = "miniml")]
+#![cfg(feature = "ml")]
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

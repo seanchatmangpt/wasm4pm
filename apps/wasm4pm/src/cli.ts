@@ -27,6 +27,7 @@ import { verify } from './commands/verify.js';
 import { benchmark } from './commands/benchmark.js';
 import { cognition } from './commands/cognition.js';
 import { completions } from './commands/completions.js';
+import { cellCommand as cell } from './commands/cell.js';
 
 export const main = defineCommand({
   meta: {
@@ -164,6 +165,7 @@ Activity key defaults to "concept:name" (XES standard). Pass --activity-key to o
     config,
     benchmark,
     verify,
+    cell,
     cognition,
     completions,
   },
@@ -198,4 +200,5 @@ export {
   membrane,
   config,
   verify,
+  cell,
 };

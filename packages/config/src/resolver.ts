@@ -615,8 +615,7 @@ min_cycles                = 50
 target_reward_improvement = 0.05
 window_size               = 10
 
-# LinUCB / GPU dispatch (algorithm-selector)
-gpu_enabled      = false
+# LinUCB algorithm-selector
 linucb_lambda    = 1.0
 ucb1_exploration = 1.4142  # √2
 

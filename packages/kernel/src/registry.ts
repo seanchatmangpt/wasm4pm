@@ -1357,6 +1357,164 @@ export class AlgorithmRegistry {
       robustToNoise: true,
       scalesWell: false,
     });
+
+    // ========================================================================
+    // CELL8 — Proof-Carrying Interchangeable Software Parts (5 stations)
+    // ========================================================================
+
+    // Cell8 Station 1: Manufacture
+    this.registerWithInferredProfiles({
+      id: 'cell_build',
+      name: 'Cell Build',
+      description:
+        'Station 1: Assemble Cell8 part from ontology, embed receipts and contracts, produce WASM binary with Receipt64.',
+      outputType: 'analytics',
+      complexity: 'O(n)',
+      speedTier: 5,
+      qualityTier: 85,
+      parameters: [
+        {
+          name: 'ontology_handle',
+          type: 'string',
+          description: 'Handle to RDF ontology (Cell8 or other)',
+          required: true,
+        },
+        {
+          name: 'config',
+          type: 'string',
+          description: 'JSON-formatted Cell8 build config',
+          required: false,
+          default: '{}',
+        },
+      ],
+      supportedProfiles: ['balanced', 'quality'],
+      estimatedDurationMs: 50,
+      estimatedMemoryMB: 200,
+      robustToNoise: false,
+      scalesWell: true,
+      references: ['https://cell8.chatman.ai'],
+    });
+
+    // Cell8 Station 2: Verify
+    this.registerWithInferredProfiles({
+      id: 'cell_verify',
+      name: 'Cell Verify',
+      description:
+        'Station 2: Verify Receipt64 chain integrity, CellCard Ed25519 signature, SHACL shape conformance.',
+      outputType: 'analytics',
+      complexity: 'O(n)',
+      speedTier: 3,
+      qualityTier: 100,
+      parameters: [
+        {
+          name: 'cell_handle',
+          type: 'string',
+          description: 'Handle to the Cell8 part to verify',
+          required: true,
+        },
+      ],
+      supportedProfiles: ['balanced', 'quality'],
+      estimatedDurationMs: 10,
+      estimatedMemoryMB: 100,
+      robustToNoise: false,
+      scalesWell: true,
+    });
+
+    // Cell8 Station 3: Replay
+    this.registerWithInferredProfiles({
+      id: 'cell_replay',
+      name: 'Cell Replay',
+      description:
+        'Station 3: Execute embedded replay fixtures against Cell8 binary, verify deterministic behavior.',
+      outputType: 'analytics',
+      complexity: 'O(n)',
+      speedTier: 10,
+      qualityTier: 100,
+      parameters: [
+        {
+          name: 'cell_handle',
+          type: 'string',
+          description: 'Handle to the Cell8 part to replay',
+          required: true,
+        },
+        {
+          name: 'fixture_id',
+          type: 'string',
+          description: 'Fixture ID to run (or "all")',
+          required: false,
+          default: 'all',
+        },
+      ],
+      supportedProfiles: ['balanced', 'quality'],
+      estimatedDurationMs: 20,
+      estimatedMemoryMB: 150,
+      robustToNoise: false,
+      scalesWell: true,
+    });
+
+    // Cell8 Station 4: Export
+    this.registerWithInferredProfiles({
+      id: 'cell_export',
+      name: 'Cell Export',
+      description:
+        'Station 4: Render host-language projections (JSON, TypeScript, Python, Markdown, OpenAPI).',
+      outputType: 'analytics',
+      complexity: 'O(n)',
+      speedTier: 2,
+      qualityTier: 85,
+      parameters: [
+        {
+          name: 'cell_handle',
+          type: 'string',
+          description: 'Handle to the Cell8 part to export',
+          required: true,
+        },
+        {
+          name: 'projection',
+          type: 'string',
+          description: 'Projection format: json, typescript, python, markdown, or openapi',
+          required: true,
+          default: 'json',
+        },
+      ],
+      supportedProfiles: ['balanced', 'quality'],
+      estimatedDurationMs: 5,
+      estimatedMemoryMB: 100,
+      robustToNoise: false,
+      scalesWell: true,
+    });
+
+    // Cell8 Station 5: Doctor
+    this.registerWithInferredProfiles({
+      id: 'cell_doctor',
+      name: 'Cell Doctor',
+      description:
+        'Station 5: 8-point readiness diagnostic (one check per CellReady conjunct): RuntimeVerified, AtomVMEmbedded, BoundaryBound, ContractsEmbedded, ReceiptsEmbedded, ReplayPassing, HostFitVerified, CellCardSigned.',
+      outputType: 'analytics',
+      complexity: 'O(n)',
+      speedTier: 1,
+      qualityTier: 100,
+      parameters: [
+        {
+          name: 'cell_handle',
+          type: 'string',
+          description: 'Handle to the Cell8 part to diagnose',
+          required: true,
+        },
+        {
+          name: 'strict',
+          type: 'boolean',
+          description: 'Fail if any conjunct is not satisfied',
+          required: false,
+          default: false,
+        },
+      ],
+      supportedProfiles: ['balanced', 'quality'],
+      estimatedDurationMs: 5,
+      estimatedMemoryMB: 100,
+      robustToNoise: false,
+      scalesWell: true,
+    });
   }
 
   /**

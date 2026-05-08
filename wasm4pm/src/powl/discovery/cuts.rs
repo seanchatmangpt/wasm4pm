@@ -389,7 +389,7 @@ pub fn detect_loop_cut(
     }
 
     let dfg = build_dfg(traces);
-    let efg = build_efg(traces);
+    let _efg = build_efg(traces);
 
     // Find start activities (activities that appear as first in any trace)
     let mut start_activities: HashSet<String> = HashSet::new();

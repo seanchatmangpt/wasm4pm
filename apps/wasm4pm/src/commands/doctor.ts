@@ -151,8 +151,8 @@ async function checkWasmBinary(): Promise<Diagnosis> {
     };
   }
 
-  const wasmFile = path.join(wasmPkgDir, 'wpm_bg.wasm');
-  const jsFile = path.join(wasmPkgDir, 'wpm.js');
+  const wasmFile = path.join(wasmPkgDir, 'wasm4pm_bg.wasm');
+  const jsFile = path.join(wasmPkgDir, 'wasm4pm.js');
 
   try {
     const [wasmStat, jsStat] = await Promise.all([fs.stat(wasmFile), fs.stat(jsFile)]);
@@ -202,13 +202,13 @@ async function checkWasmLoads(): Promise<Diagnosis> {
     };
   }
 
-  const jsFile = path.join(wasmPkgDir, 'wpm.js');
+  const jsFile = path.join(wasmPkgDir, 'wasm4pm.js');
   if (!existsSync(jsFile)) {
     return {
       name: 'WASM loads',
       pathology: 'ENVIRONMENT_FAULT',
       severity: 'STOP_THE_LINE',
-      message: 'wpm.js not found — module not built',
+      message: 'wasm4pm.js not found — module not built',
       fix: 'cd wasm4pm && pnpm run build',
     };
   }
@@ -779,7 +779,7 @@ async function checkAlgorithmRegistry(): Promise<Diagnosis> {
     };
   }
 
-  const jsFile = path.join(wasmPkgDir, 'wpm.js');
+  const jsFile = path.join(wasmPkgDir, 'wasm4pm.js');
   if (!existsSync(jsFile)) {
     return {
       name: 'Algorithm registry',
@@ -1671,11 +1671,7 @@ async function runChecks(
     printReportToProjection(p, report);
   });
 
-  if (!report.epistemicHealth) {
-    process.exitCode = EXIT_CODES.config_error;
-  }
-
-  return report;
+  process.exit(exitCode);
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -1832,8 +1828,7 @@ export const doctorTps = defineCommand({
           emitResult(result, { format, verbose, quiet }, (_res, proj) => {
             printReportToProjection(proj, report);
           });
-          process.exitCode = EXIT_CODES.config_error;
-          return;
+          process.exit(EXIT_CODES.config_error);
         }
       }
 
@@ -1977,6 +1972,9 @@ export const doctorFix = defineCommand({
       };
       const result = makeResult('doctor fix', payload, Date.now() - start);
       emitResult(result, { format, verbose, quiet });
+      process.exit(EXIT_CODES.success);
+    } else {
+      process.exit(EXIT_CODES.success);
     }
   },
 });
@@ -2082,7 +2080,7 @@ export const doctorPerf = defineCommand({
         );
         p.log('Run from within the wasm4pm workspace.');
       });
-      return;
+      process.exit(EXIT_CODES.success);
     }
 
     // Synthetic WASM stub — measures TypeScript dispatch overhead only (no real WASM needed)
@@ -2167,10 +2165,6 @@ export const doctorPerf = defineCommand({
       }
     });
 
-    if (!allOk) {
-      process.exitCode = EXIT_CODES.config_error;
-    }
-
     // Update baseline if requested
     if (updateBaseline && baselinePath) {
       let proceed = yes;
@@ -2200,6 +2194,8 @@ export const doctorPerf = defineCommand({
         }
       }
     }
+
+    process.exit(exitCode);
   },
 });
 
@@ -2461,6 +2457,8 @@ export const doctorReport = defineCommand({
         p.log(`Could not open ${outPath} automatically.`);
       }
     }
+
+    process.exit(EXIT_CODES.success);
   },
 });
 
@@ -2802,12 +2800,7 @@ export const doctorPublish = defineCommand({
     });
 
     if (!publishReady) {
-      process.exitCode = EXIT_CODES.config_error;
-      if (format !== 'json') {
-        // Already emitted error message via consoleRenderer above
-        return;
-      }
-      return;
+      process.exit(EXIT_CODES.config_error);
     }
 
     if (doPublish && publishReady) {
@@ -2826,6 +2819,8 @@ export const doctorPublish = defineCommand({
         execSync(`pnpm -r publish --access public${registryFlag}`, { stdio: 'inherit' });
       }
     }
+
+    process.exit(exitCode);
   },
 });
 

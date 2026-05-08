@@ -1146,16 +1146,6 @@ fn test_ec_batch_homogeneous_01() {
 // to be uncommented when the `wasm4pm::gpu::LinUCBGPU` type is available.
 // ===========================================================================
 
-/// GPU parity: for every conformance vector, CPU and GPU must agree.
-///
-/// Feature gate: `gpu` (disabled until Agent 11 delivers the kernel).
-/// When enabled:
-///   1. Builds CPU agent with each vector's update sequence
-///   2. Builds GPU kernel with the same state
-///   3. Asserts `select_gpu(x) == select_cpu(x)`
-///   4. Asserts `|Q̂_gpu(a, x) - Q̂_cpu(a, x)| < 1e-3` for all 40 actions
-#[cfg(feature = "gpu")]
-mod gpu_parity {
     use wasm4pm::ml::linucb::{LinUCBAgent, N_ACTIONS, N_FEATURES};
     // use wasm4pm::gpu::LinUCBGPU;   // Agent 11 — uncomment when ready
 
@@ -1281,4 +1271,3 @@ mod gpu_parity {
             }
         }
     }
-}

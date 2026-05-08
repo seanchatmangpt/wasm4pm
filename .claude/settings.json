@@ -1,4 +1,16 @@
 {
+  "model": "claude-haiku-4-5",
+  "permissions": { "mode": "acceptEdits" },
+  "env": {
+    "WASM_PACK_REQUIRED": "true",
+    "OCEL_VERSION": "2.0",
+    "CHICAGO_TDD": "true",
+    "ANDON_MONITORING": "true",
+    "BLAKE3_RECEIPTS": "true",
+    "PM4PY_CONFORMANCE_MIN": "0.9",
+    "OTEL_COVERAGE_MIN": "80",
+    "FM5_FORBIDDEN": "true"
+  },
   "hooks": {
     "SessionStart": [
       {
@@ -6,7 +18,54 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/session-start.sh"
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/session-start.sh",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/user-prompt.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/cognition-contract-guard.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/cognition-wasm-gate.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/cognition-test-gate.sh",
+            "async": true,
+            "asyncRewake": true,
+            "timeout": 120
           }
         ]
       }
@@ -17,7 +76,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/stop-gate.sh"
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/stop-gate.sh",
+            "timeout": 30
           }
         ]
       }
@@ -32,6 +92,32 @@
           }
         ]
       }
+    ],
+    "ConfigChange": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/config_change_auditor.sh",
+            "timeout": 5
+          }
+        ]
+      }
     ]
-  }
+  },
+  "buildSystem": {
+    "primary": "pnpm",
+    "commands": {
+      "build": "pnpm build",
+      "test": "pnpm test",
+      "check": "pnpm build",
+      "cognition": "make cognition-build"
+    },
+    "andonSignals": {
+      "critical": ["error[E", "test.*FAILED", "FM-5 violation", "panicked at"],
+      "action": "STOP_THE_LINE"
+    }
+  },
+  "qualityGates": ["pnpm build", "pnpm test", "wpm doctor", "make cognition-build"]
 }

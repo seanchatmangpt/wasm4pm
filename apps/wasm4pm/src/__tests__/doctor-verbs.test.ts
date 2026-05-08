@@ -11,7 +11,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
 
-const CLI = path.resolve(import.meta.dirname, '../../dist/cli.js');
+const CLI = path.resolve(import.meta.dirname, '../../dist/bin/wpm.js');
 
 function wpm(...args: string[]): { stdout: string; stderr: string; status: number } {
   const result = spawnSync(process.execPath, [CLI, ...args], {
@@ -33,10 +33,10 @@ describe('wpm doctor check', () => {
   it('exits 0-2, returns JSON with checks array and summary counts', () => {
     const { json, status } = wpmJson('doctor', 'check', '--format', 'json');
     expect(status).toBeOneOf([0, 1, 2]);
-    expect(Array.isArray((json as { checks: unknown[] }).checks)).toBe(true);
-    const summary = (json as { summary: Record<string, number> }).summary;
-    expect(typeof summary.pass).toBe('number');
-    expect(typeof summary.fail).toBe('number');
+    const payload = (json as { payload: { checks: unknown[]; summary: Record<string, number> } }).payload;
+    expect(Array.isArray(payload.checks)).toBe(true);
+    expect(typeof payload.summary.pass).toBe('number');
+    expect(typeof payload.summary.fail).toBe('number');
   });
 });
 
@@ -55,8 +55,9 @@ describe('wpm doctor publish', () => {
     const { status } = wpm('doctor', 'publish');
     expect(status).toBeOneOf([0, 1]);
     const { json } = wpmJson('doctor', 'publish', '--format', 'json');
-    expect(json).toHaveProperty('ready');
-    expect(typeof (json as { ready: boolean }).ready).toBe('boolean');
+    const pub = (json as { payload: { ready: boolean } }).payload;
+    expect(pub).toHaveProperty('ready');
+    expect(typeof pub.ready).toBe('boolean');
   });
 });
 
@@ -66,8 +67,9 @@ describe('wpm doctor env', () => {
     wpm('doctor', 'env');
     expect(Date.now() - start).toBeLessThan(5_000);
     const { json } = wpmJson('doctor', 'env', '--format', 'json');
-    expect(json).toHaveProperty('environment');
-    expect(Array.isArray((json as { environment: unknown[] }).environment)).toBe(true);
+    const env = (json as { payload: { environment: unknown[] } }).payload;
+    expect(env).toHaveProperty('environment');
+    expect(Array.isArray(env.environment)).toBe(true);
   });
 });
 
@@ -75,7 +77,7 @@ describe('wpm doctor tps', () => {
   it('exits 0 or 1 with JSON checks output and --fail-fast stays within 0-1', () => {
     const { json, status } = wpmJson('doctor', 'tps', '--format', 'json');
     expect(status).toBeOneOf([0, 1]);
-    expect(json).toHaveProperty('checks');
+    expect((json as { payload: { checks: unknown } }).payload).toHaveProperty('checks');
     const { status: ffStatus } = wpm('doctor', 'tps', '--fail-fast');
     expect(ffStatus).toBeOneOf([0, 1]);
   });
@@ -86,8 +88,9 @@ describe('wpm doctor perf', () => {
     const { status } = wpm('doctor', 'perf');
     expect(status).toBeOneOf([0, 1]);
     const { json } = wpmJson('doctor', 'perf', '--format', 'json');
-    expect(Array.isArray((json as { regressions: unknown[] }).regressions)).toBe(true);
-    expect(json).toHaveProperty('within_threshold');
+    const perf = (json as { payload: { regressions: unknown[]; within_threshold: unknown[] } }).payload;
+    expect(Array.isArray(perf.regressions)).toBe(true);
+    expect(perf).toHaveProperty('within_threshold');
   });
 });
 

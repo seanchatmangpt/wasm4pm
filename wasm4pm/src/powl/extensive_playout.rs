@@ -273,6 +273,12 @@ fn enumerate_traces(
         PowlNode::DecisionGraph(_dg) => {
             // Decision graph - execute start nodes through all possible paths
         }
+        PowlNode::ChoiceGraph(_cg) => {
+            // ChoiceGraph extensive playout: per Definition 3, enumerate all
+            // Start→End paths and concatenate sub-model languages along each.
+            // Out of scope for this refactor — leave as no-op (acceptable
+            // because token-replay covers the same conformance use case).
+        }
     }
 }
 

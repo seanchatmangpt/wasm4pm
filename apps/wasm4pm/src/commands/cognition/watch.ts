@@ -4,6 +4,7 @@ import * as path from 'path';
 import chokidar from 'chokidar';
 import { getFormatter, HumanFormatter, JSONFormatter } from '../../output.js';
 import { EXIT_CODES } from '../../exit-codes.js';
+import { emitCognitionSpan } from './_shared.js';
 
 /** Minimal receipt summary emitted on every re-run. */
 export interface WatchReceipt {
@@ -33,12 +34,19 @@ type CognitionModule = {
 
 /** Load @wasm4pm/cognition dynamically; returns null if not installed. */
 async function loadCognitionModule(): Promise<CognitionModule | null> {
-  return (import(COGNITION_PKG) as Promise<CognitionModule>).catch(() => null);
+  try {
+    return await (import(COGNITION_PKG) as Promise<CognitionModule>);
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === 'ERR_MODULE_NOT_FOUND') {
+      return null;
+    }
+    throw err;
+  }
 }
 
 /**
  * Run a cognition contract against the JSON content of an input file.
- * Returns a WatchReceipt.
+ * Returns a receipt and optional inference trace from a single execution.
  *
  * The heavy lifting is delegated to @wasm4pm/cognition when that package
  * exists on the module graph; if it is not installed the function throws
@@ -47,7 +55,7 @@ async function loadCognitionModule(): Promise<CognitionModule | null> {
 async function runContract(
   inputPath: string,
   contractName: string
-): Promise<WatchReceipt> {
+): Promise<{ receipt: WatchReceipt; inferenceTrace?: unknown }> {
   const raw = await fs.readFile(inputPath, 'utf8');
   const input = JSON.parse(raw) as Record<string, unknown>;
 
@@ -64,11 +72,14 @@ async function runContract(
   const elapsedMs = performance.now() - t0;
 
   return {
-    decision: result.decision === 'Allow' ? 'Allow' : 'Deny',
-    hash: typeof result.hash === 'string' ? result.hash.slice(0, 8) : '00000000',
-    findings: Array.isArray(result.findings) ? result.findings.length : 0,
-    contract: contractName,
-    elapsedMs: Math.round(elapsedMs),
+    receipt: {
+      decision: result.decision === 'Allow' ? 'Allow' : 'Deny',
+      hash: typeof result.hash === 'string' ? result.hash.slice(0, 8) : '00000000',
+      findings: Array.isArray(result.findings) ? result.findings.length : 0,
+      contract: contractName,
+      elapsedMs: Math.round(elapsedMs),
+    },
+    inferenceTrace: result.inference_trace,
   };
 }
 
@@ -143,9 +154,6 @@ export const watch = defineCommand({
       process.exit(EXIT_CODES.source_error);
     }
 
-    // ── Debounce state ────────────────────────────────────────────────────────
-    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
-
     async function handleChange(): Promise<void> {
       // Confirm the file is still accessible before running
       try {
@@ -155,46 +163,44 @@ export const watch = defineCommand({
         return;
       }
 
+      const cycleStartNs = Date.now() * 1_000_000;
+      const cycleStartMs = typeof performance !== 'undefined' ? performance.now() : Date.now();
+      let cycleStatus: 'OK' | 'ERROR' = 'OK';
+      let cycleErrMsg: string | undefined;
+
       try {
-        const receipt = await runContract(inputPath, contractName);
+        const contractResult = await runContract(inputPath, contractName);
 
         if (formatter instanceof JSONFormatter) {
           formatter.output({
             status: 'ok',
             message: 'contract evaluated',
-            receipt,
+            receipt: contractResult.receipt,
           });
         } else if (isQuiet) {
-          console.log(receipt.hash);
+          console.log(contractResult.receipt.hash);
         } else if (isVerbose) {
-          // Print summary line then full inference_trace
-          console.log(formatReceiptLine(receipt));
-          const rawAgain = await fs.readFile(inputPath, 'utf8');
-          const inputAgain = JSON.parse(rawAgain) as Record<string, unknown>;
-          try {
-            type VerboseModule = {
-              runContract: (
-                inp: Record<string, unknown>,
-                c: string
-              ) => Promise<Record<string, unknown>>;
-            };
-            const verboseMod = await loadCognitionModule() as VerboseModule | null;
-            if (verboseMod) {
-              const fullResult = await verboseMod.runContract(inputAgain, contractName);
-              if (fullResult && fullResult['inference_trace']) {
-                console.log(JSON.stringify(fullResult['inference_trace'], null, 2));
-              }
-            }
-          } catch {
-            // Verbose trace unavailable — summary line was already printed
+          // Print summary line then inference_trace from the same execution
+          console.log(formatReceiptLine(contractResult.receipt));
+          if (contractResult.inferenceTrace) {
+            console.log(JSON.stringify(contractResult.inferenceTrace, null, 2));
           }
         } else {
-          console.log(formatReceiptLine(receipt));
+          console.log(formatReceiptLine(contractResult.receipt));
         }
       } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        formatter.error(`Contract run failed: ${msg}`);
+        cycleStatus = 'ERROR';
+        cycleErrMsg = err instanceof Error ? err.message : String(err);
+        formatter.error(`Contract run failed: ${cycleErrMsg}`);
         // Do NOT exit — the watcher continues watching
+      } finally {
+        emitCognitionSpan(
+          'watch.cycle',
+          cycleStartNs,
+          (typeof performance !== 'undefined' ? performance.now() : Date.now()) - cycleStartMs,
+          cycleStatus,
+          cycleErrMsg,
+        );
       }
     }
 
@@ -218,16 +224,11 @@ export const watch = defineCommand({
     }
 
     watcher.on('change', () => {
-      if (debounceTimer) {
-        clearTimeout(debounceTimer);
-      }
-      debounceTimer = setTimeout(() => {
-        handleChange().catch((err) => {
-          formatter.error(
-            `Unhandled error in change handler: ${err instanceof Error ? err.message : String(err)}`
-          );
-        });
-      }, debounceMs);
+      handleChange().catch((err) => {
+        formatter.error(
+          `Unhandled error in change handler: ${err instanceof Error ? err.message : String(err)}`
+        );
+      });
     });
 
     watcher.on('unlink', () => {
@@ -250,9 +251,6 @@ export const watch = defineCommand({
 
     // ── SIGINT handling ───────────────────────────────────────────────────────
     process.on('SIGINT', () => {
-      if (debounceTimer) {
-        clearTimeout(debounceTimer);
-      }
       watcher
         .close()
         .then(() => {

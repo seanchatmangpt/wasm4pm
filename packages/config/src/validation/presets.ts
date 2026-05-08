@@ -152,7 +152,6 @@ export function getPresetConfig(scenario: PresetScenario): BaseConfig {
             target_reward_improvement: 0.01,
             window_size: 20,
           },
-          gpu_enabled: false,
           linucb_lambda: 1.0,
           ucb1_exploration: Math.SQRT2,
         },
@@ -394,8 +393,7 @@ target_reward_improvement = 0.05
 # Size of trailing window for computing mean reward (# cycles).
 window_size = 10
 
-# LinUCB / GPU dispatch (advanced)
-gpu_enabled = false       # Enable GPU dispatch? (requires wgpu feature)
+# LinUCB configuration (algorithm-selector)
 linucb_lambda = 1.0       # LinUCB regularization coefficient
 ucb1_exploration = 1.4142 # √2 (standard LinUCB recommendation)
 `;

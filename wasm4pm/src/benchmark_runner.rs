@@ -21,7 +21,7 @@
 //! | `get_builtin_benchmarks` | Return the 8 built-in benchmark traces as JSON |
 //! | `run_all_benchmarks` | Run all 8 built-in traces and return aggregate result |
 
-#![cfg(feature = "miniml")]
+#![cfg(feature = "ml")]
 
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;

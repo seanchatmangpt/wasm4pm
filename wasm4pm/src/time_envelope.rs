@@ -23,7 +23,7 @@
 //! | `score_time_motion` | Score a millisecond timestamp against the envelope |
 //! | `get_time_envelope_stats` | Return the full envelope struct as JSON |
 
-#![cfg(feature = "miniml")]
+#![cfg(feature = "ml")]
 
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;

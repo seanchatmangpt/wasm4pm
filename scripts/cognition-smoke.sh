@@ -10,7 +10,7 @@
 
 set -euo pipefail
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+REPO_ROOT="${WASM4PM_SMOKE_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 
 # ── ANSI color helpers ────────────────────────────────────────────────────────
 if [ "${NO_COLOR:-}" = "1" ] || [ ! -t 1 ]; then

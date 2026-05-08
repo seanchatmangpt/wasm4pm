@@ -23,7 +23,7 @@
 //! | `score_motion_automl`     | Score a motion feature JSON against the trained model |
 //! | `inspect_automl_envelope` | Return the full envelope metadata for UX inspection |
 
-#![cfg(feature = "miniml")]
+#![cfg(feature = "ml")]
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

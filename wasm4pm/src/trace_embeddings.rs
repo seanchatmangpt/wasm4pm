@@ -5,7 +5,7 @@
 //!
 //! Gated on the `miniml` feature (miniml-core crate).
 
-#![cfg(feature = "miniml")]
+#![cfg(feature = "ml")]
 
 use wasm_bindgen::prelude::*;
 

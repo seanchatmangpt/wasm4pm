@@ -1,10 +1,10 @@
 //! ZERO decision logic — fetches a stored receipt by run_id from WASM.
 
-import { WasmLoader } from '../init';
-import { CognitionError } from '../errors';
-import type { SpanSink } from '../observability-types';
-import { defaultSpanSink, hexId } from '../span-utils';
-import type { ReplayRecord } from '../types';
+import { WasmLoader } from '../init.js';
+import { CognitionError } from '../errors.js';
+import type { SpanSink } from '../observability-types.js';
+import { defaultSpanSink, hexId } from '../span-utils.js';
+import type { ReplayRecord } from '../types.js';
 
 export interface ReplayOptions {
   spanSink?: SpanSink;

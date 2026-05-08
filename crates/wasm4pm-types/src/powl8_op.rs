@@ -24,6 +24,10 @@ pub enum Powl8Op {
     Loop = 5,
     Block = 6,
     Silent = 7,
+    /// Non-block-structured choice over a directed acyclic graph of sub-models.
+    /// See: Kourani, Park, van der Aalst, "Unlocking Non-Block-Structured
+    /// Decisions: Inductive Mining with Choice Graphs" (arXiv:2505.07052).
+    ChoiceGraph = 8,
 }
 
 impl TryFrom<u8> for Powl8Op {
@@ -38,6 +42,7 @@ impl TryFrom<u8> for Powl8Op {
             5 => Ok(Self::Loop),
             6 => Ok(Self::Block),
             7 => Ok(Self::Silent),
+            8 => Ok(Self::ChoiceGraph),
             _ => Err(Powl8OpError::InvalidDiscriminant),
         }
     }

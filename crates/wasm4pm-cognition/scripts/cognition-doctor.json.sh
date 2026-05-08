@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# cognition-doctor.json.sh — 9-check cognition capability probe (JSON output)
+# cognition-doctor.json.sh — 11-check cognition capability probe (JSON output)
 #
 # Emits a machine-canonical JSON object to stdout.
 # Exit code: 0 if all checks pass, 1 if any check fails.
@@ -169,6 +169,20 @@ run_check 9 \
   "grep -q 'execution_error' '${WORKSPACE_ROOT}/apps/wasm4pm/src/exit-codes.ts' && grep -q 'system_error' '${WORKSPACE_ROOT}/apps/wasm4pm/src/exit-codes.ts'" \
   "exit-codes.ts contains expected constants" \
   "exit-codes.ts missing expected constants"
+
+# Check 10: Node.js >= 18 available
+run_check 10 \
+  "Node.js >= 18 available" \
+  "command -v node >/dev/null && node --version 2>/dev/null | grep -qE '^v(1[89]|[2-9][0-9])\.'" \
+  "$(node --version 2>/dev/null)" \
+  "Node.js not found or version < 18"
+
+# Check 11: wpm --version emits CalVer pattern
+run_check 11 \
+  "wpm --version emits CalVer (YY.MM.DD[a-z]?)" \
+  "[ -f '${WORKSPACE_ROOT}/apps/wasm4pm/dist/bin/wpm.js' ] && node '${WORKSPACE_ROOT}/apps/wasm4pm/dist/bin/wpm.js' --version 2>/dev/null | grep -qE '^[0-9]{2}\.(1[0-2]|[1-9])\.([12][0-9]|3[01]|[1-9])[a-z]?$'" \
+  "wpm version: $(node '${WORKSPACE_ROOT}/apps/wasm4pm/dist/bin/wpm.js' --version 2>/dev/null || echo 'N/A')" \
+  "wpm --version failed or output does not match CalVer pattern"
 
 # ── Summary ───────────────────────────────────────────────────────────────────
 

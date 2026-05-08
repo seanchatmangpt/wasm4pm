@@ -18,11 +18,12 @@ import { EventEmitter } from 'node:events';
 import type { ChildProcess } from 'node:child_process';
 import { runDoctor } from '../commands/cognition/doctor.js';
 import type { SpawnFn } from '../commands/cognition/doctor.js';
+import type { OtelSpan } from '@wasm4pm/cognition';
 
 // ── UUID v4 and CalVer regexes ────────────────────────────────────────────────
 
 const UUID_V4_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const CALVER_RE = /^\d{2}\.\d{1,2}\.\d{1,2}[a-z]?$/;
+const CALVER_RE = /^\d{2}\.(1[0-2]|[1-9])\.([12]\d|3[01]|[1-9])[a-z]?$/;
 
 // ── Envelope assertion ────────────────────────────────────────────────────────
 
@@ -92,7 +93,7 @@ function makeSpawnError(message: string): SpawnFn {
 // ── Report builders ───────────────────────────────────────────────────────────
 
 function allPassReport(): string {
-  const checks = Array.from({ length: 9 }, (_, i) => ({
+  const checks = Array.from({ length: 11 }, (_, i) => ({
     id: i + 1,
     name: `check ${i + 1}`,
     status: 'ok',
@@ -102,12 +103,12 @@ function allPassReport(): string {
   return JSON.stringify({
     doctor_version: 1,
     checks,
-    summary: { passed: 9, failed: 0, total: 9, duration_ms: 50 },
+    summary: { passed: 11, failed: 0, total: 11, duration_ms: 50 },
   });
 }
 
 function oneFailReport(): string {
-  const checks = Array.from({ length: 9 }, (_, i) => ({
+  const checks = Array.from({ length: 11 }, (_, i) => ({
     id: i + 1,
     name: `check ${i + 1}`,
     status: i === 2 ? 'fail' : 'ok',
@@ -117,7 +118,7 @@ function oneFailReport(): string {
   return JSON.stringify({
     doctor_version: 1,
     checks,
-    summary: { passed: 8, failed: 1, total: 9, duration_ms: 55 },
+    summary: { passed: 10, failed: 1, total: 11, duration_ms: 55 },
   });
 }
 
@@ -130,7 +131,8 @@ function oneFailReport(): string {
  */
 async function invokeDoctor(
   spawnFn: SpawnFn,
-  format: 'human' | 'json' = 'json'
+  format: 'human' | 'json' = 'json',
+  capturedSpans?: OtelSpan[]
 ): Promise<{ exitCode: number; output: string }> {
   const chunks: string[] = [];
   const origWrite = process.stdout.write.bind(process.stdout);
@@ -153,6 +155,7 @@ async function invokeDoctor(
       quiet: false,
       scriptPath: '/fake/cognition-doctor.json.sh',
       spawnFn,
+      spanSink: capturedSpans ? (s) => capturedSpans.push(s) : undefined,
     });
   } catch {
     // process.exit throws by design in this harness
@@ -172,7 +175,7 @@ describe('cognition doctor', () => {
   });
 
   // ── Test 1: Happy path ────────────────────────────────────────────────────
-  it('happy path: 9 ok checks → exit 0 and valid envelope', async () => {
+  it('happy path: 11 ok checks → exit 0 and valid envelope', async () => {
     const { exitCode, output } = await invokeDoctor(makeSpawnOk(allPassReport(), 0));
 
     expect(exitCode).toBe(0);
@@ -182,8 +185,8 @@ describe('cognition doctor', () => {
     expect(parsed.status).toBe('success');
 
     const payload = (parsed as Record<string, unknown>)['payload'] as Record<string, unknown>;
-    expect((payload['summary'] as Record<string, number>)['total']).toBe(9);
-    expect((payload['checks'] as unknown[]).length).toBe(9);
+    expect((payload['summary'] as Record<string, number>)['total']).toBe(11);
+    expect((payload['checks'] as unknown[]).length).toBe(11);
   });
 
   // ── Test 2: One fail → exit 3 and DOCTOR_CHECK_FAILED ────────────────────
@@ -210,11 +213,8 @@ describe('cognition doctor', () => {
 
     expect(exitCode).toBe(5);
 
-    // Output may be present (JSON format always emits envelope for errors)
-    if (output.trim()) {
-      const parsed = JSON.parse(output) as Record<string, unknown>;
-      expect(parsed['error_code']).toBe('DOCTOR_SPAWN_FAILED');
-    }
+    const parsed = JSON.parse(output) as Record<string, unknown>;
+    expect(parsed['error_code']).toBe('DOCTOR_SPAWN_FAILED');
   });
 
   // ── Test 4: Invalid JSON output → exit 3 and DOCTOR_PARSE_FAILED ──────────
@@ -225,14 +225,12 @@ describe('cognition doctor', () => {
 
     expect(exitCode).toBe(3);
 
-    if (output.trim()) {
-      const parsed = JSON.parse(output) as Record<string, unknown>;
-      expect(parsed['error_code']).toBe('DOCTOR_PARSE_FAILED');
-    }
+    const parsed = JSON.parse(output) as Record<string, unknown>;
+    expect(parsed['error_code']).toBe('DOCTOR_PARSE_FAILED');
   });
 
   // ── Test 5: --format json returns canonical envelope with payload.checks ──
-  it('--format json output has canonical envelope with payload.checks array of length 9', async () => {
+  it('--format json output has canonical envelope with payload.checks array of length 11', async () => {
     const { exitCode, output } = await invokeDoctor(makeSpawnOk(allPassReport(), 0), 'json');
 
     expect(exitCode).toBe(0);
@@ -246,9 +244,32 @@ describe('cognition doctor', () => {
     const payload = parsed['payload'] as Record<string, unknown>;
     expect(payload).toBeDefined();
     expect(Array.isArray(payload['checks'])).toBe(true);
-    expect((payload['checks'] as unknown[]).length).toBe(9);
+    expect((payload['checks'] as unknown[]).length).toBe(11);
 
     const summary = payload['summary'] as Record<string, number>;
-    expect(summary['total']).toBe(9);
+    expect(summary['total']).toBe(11);
+  });
+
+  // ── Test 6: span emitted on happy path ────────────────────────────────────
+  it('emits a "cognition.doctor" span with status OK on happy path', async () => {
+    const spans: OtelSpan[] = [];
+    const { exitCode } = await invokeDoctor(makeSpawnOk(allPassReport(), 0), 'json', spans);
+
+    expect(exitCode).toBe(0);
+    expect(spans).toHaveLength(1);
+    expect(spans[0].name).toBe('cognition.doctor');
+    expect(spans[0].status.code).toBe('OK');
+    expect(spans[0].attributes['service.name']).toBe('wasm4pm');
+    expect(spans[0].attributes['cognition.operation']).toBe('doctor');
+  });
+
+  // ── Test 7: span emitted with ERROR status on check failure ───────────────
+  it('emits a "cognition.doctor" span with status ERROR when checks fail', async () => {
+    const spans: OtelSpan[] = [];
+    await invokeDoctor(makeSpawnOk(oneFailReport(), 1), 'json', spans);
+
+    expect(spans).toHaveLength(1);
+    expect(spans[0].name).toBe('cognition.doctor');
+    expect(spans[0].status.code).toBe('ERROR');
   });
 });

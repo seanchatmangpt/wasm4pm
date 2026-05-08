@@ -1,3 +1,4 @@
+#![allow(deprecated)]
 //! Fall-through strategies for inductive miner.
 //!
 //! 80/20: Simple fall-through when no cut is detected.
@@ -176,6 +177,88 @@ fn build_choice_graph_model(
         end_partitions,
         has_empty_trace,
     ))
+}
+
+// ---------------------------------------------------------------------------
+// 1b. Choice Graph V2 Fall-Through (spec-compliant ChoiceGraph)
+// ---------------------------------------------------------------------------
+
+/// Spec-compliant choice graph fall-through: returns a `PowlNode::ChoiceGraph`
+/// rooted at the validated graph. Each partition becomes a `SubModel` whose
+/// arena tree is an XOR over its activities (a placeholder for recursive PM×).
+///
+/// This implements Algorithm 1 + Definition 5 of arXiv:2505.07052.
+pub fn choice_graph_v2_fall_through(
+    traces: &[Vec<String>],
+    arena: &mut PowlArena,
+    _config: &DiscoveryConfig,
+) -> Result<u32, String> {
+    if traces.is_empty() {
+        return Err("No traces for choice graph v2 fall-through".to_string());
+    }
+    let activities: HashSet<String> = traces
+        .iter()
+        .flat_map(|t| t.iter().cloned())
+        .collect();
+    if activities.is_empty() {
+        return Err("No activities found in traces".to_string());
+    }
+
+    let dfg: HashSet<(String, String)> = traces
+        .iter()
+        .flat_map(|t| t.windows(2).map(|w| (w[0].clone(), w[1].clone())))
+        .collect();
+    let starts: HashSet<String> = traces
+        .iter()
+        .filter_map(|t| t.first().cloned())
+        .collect();
+    let ends: HashSet<String> = traces
+        .iter()
+        .filter_map(|t| t.last().cloned())
+        .collect();
+    let has_empty_trace = traces.iter().any(|t| t.is_empty());
+
+    let cut = choice_graph::discover_choice_graph_v2(
+        &activities,
+        &dfg,
+        &starts,
+        &ends,
+        has_empty_trace,
+    )
+    .map_err(|e| format!("MineDG v2 failed: {}", e))?;
+
+    // Replace each Activity-node in the cut graph with a SubModel sub-tree.
+    // SubModel = XOR of partition activities (placeholder for recursive PM×).
+    let mut new_nodes: Vec<wasm4pm_types::ChoiceGraphNode> =
+        Vec::with_capacity(cut.graph.nodes.len());
+    for (i, n) in cut.graph.nodes.iter().enumerate() {
+        match n {
+            wasm4pm_types::ChoiceGraphNode::Start => {
+                new_nodes.push(wasm4pm_types::ChoiceGraphNode::Start)
+            }
+            wasm4pm_types::ChoiceGraphNode::End => {
+                new_nodes.push(wasm4pm_types::ChoiceGraphNode::End)
+            }
+            wasm4pm_types::ChoiceGraphNode::Activity(_)
+            | wasm4pm_types::ChoiceGraphNode::SubModel(_) => {
+                let p_idx = cut.partition_for_node[i].expect("Activity node maps to partition");
+                let part = &cut.partition[p_idx];
+                let trans_indices: Vec<u32> = part
+                    .iter()
+                    .map(|a| arena.add_transition(Some(a.clone())))
+                    .collect();
+                let sub_idx = if trans_indices.len() == 1 {
+                    trans_indices[0]
+                } else {
+                    arena.add_operator(Operator::Xor, trans_indices)
+                };
+                new_nodes.push(wasm4pm_types::ChoiceGraphNode::SubModel(sub_idx));
+            }
+        }
+    }
+    let new_graph = wasm4pm_types::ChoiceGraph::new(new_nodes, cut.graph.edges.clone())
+        .map_err(|e| format!("post-substitution CG invalid: {}", e))?;
+    Ok(arena.add_choice_graph(new_graph))
 }
 
 // ---------------------------------------------------------------------------

@@ -131,6 +131,15 @@ pub fn get_children(s: &str, arena_idx: u32) -> Result<JsValue, JsValue> {
         Some(crate::powl_arena::PowlNode::OperatorPowl(op)) => op.children.clone(),
         Some(crate::powl_arena::PowlNode::StrictPartialOrder(spo)) => spo.children.clone(),
         Some(crate::powl_arena::PowlNode::DecisionGraph(dg)) => dg.children.clone(),
+        Some(crate::powl_arena::PowlNode::ChoiceGraph(cg)) => cg
+            .graph
+            .nodes
+            .iter()
+            .filter_map(|n| match n {
+                wasm4pm_types::ChoiceGraphNode::SubModel(idx) => Some(*idx),
+                _ => None,
+            })
+            .collect(),
         _ => vec![],
     };
     to_js(&serde_json::json!({ "children": children }))
@@ -188,6 +197,28 @@ pub fn node_info_json(s: &str, arena_idx: u32) -> Result<String, JsValue> {
                 "end_nodes": dg.end_nodes,
                 "empty_path": dg.empty_path,
                 "node_count": dg.order.n,
+            })
+        }
+        Some(crate::powl_arena::PowlNode::ChoiceGraph(cg)) => {
+            let edges: Vec<Vec<usize>> =
+                cg.graph.edges.iter().map(|(a, b)| vec![*a, *b]).collect();
+            let node_kinds: Vec<String> = cg
+                .graph
+                .nodes
+                .iter()
+                .map(|n| match n {
+                    wasm4pm_types::ChoiceGraphNode::Start => "Start".into(),
+                    wasm4pm_types::ChoiceGraphNode::End => "End".into(),
+                    wasm4pm_types::ChoiceGraphNode::Activity(l) => format!("Activity({})", l),
+                    wasm4pm_types::ChoiceGraphNode::SubModel(i) => format!("SubModel({})", i),
+                })
+                .collect();
+            serde_json::json!({
+                "type": "choice_graph",
+                "nodes": node_kinds,
+                "edges": edges,
+                "start_idx": cg.graph.start_idx,
+                "end_idx": cg.graph.end_idx,
             })
         }
         None => serde_json::json!({ "error": "invalid index" }),

@@ -1,65 +1,19 @@
 #!/bin/bash
-# Stop Hook: wasm4pm (wpm) Doctor Gate
-#
-# Prevents Claude from stopping if wasm4pm environment has critical failures.
-# CRITICAL: Must fail loudly if doctor check fails.
+# Stop Release Gate — Block session end if doctor check fails
 
-set -e
+set -euo pipefail
 
-INPUT=$(cat)
+cd "$CLAUDE_PROJECT_DIR"
 
-# Check if hook is already active (prevent infinite loop)
-HOOK_ACTIVE=$(echo "$INPUT" | jq -r '.stop_hook_active // false' 2>/dev/null)
-if [ "$HOOK_ACTIVE" = "true" ]; then
-  exit 0  # Allow stop
+DOCTOR_OUTPUT=$(node apps/wasm4pm/dist/bin/wpm.js doctor check --format json 2>&1 | awk '/^\{/,/^\}/ {print}') || true
+
+HEALTHY=$(echo "$DOCTOR_OUTPUT" | jq -r '.payload.healthy' 2>/dev/null) || HEALTHY=""
+
+if [ "$HEALTHY" != "true" ]; then
+  FAIL=$(echo "$DOCTOR_OUTPUT" | jq -r '.payload.summary.fail // "unknown"' 2>/dev/null) || FAIL="unknown"
+  echo "ERROR: wpm doctor check failed ($FAIL critical issues) — fix before ending session" >&2
+  exit 2
 fi
 
-# Run wpm doctor via make target (must succeed)
-DOCTOR_OUTPUT=""
-cd "$CLAUDE_PROJECT_DIR" 2>/dev/null || {
-  echo "WARN: Cannot change to project directory, skipping doctor check" >&2
-  exit 0
-}
-
-# Try make doctor first (most reliable)
-if command -v make &>/dev/null && [ -f "Makefile" ]; then
-  DOCTOR_OUTPUT=$(make doctor 2>&1) || true
-fi
-
-# Fallback to direct node execution if make fails
-if [ -z "$DOCTOR_OUTPUT" ] || ! echo "$DOCTOR_OUTPUT" | jq -e '.healthy' >/dev/null 2>&1; then
-  if [ -f "apps/wasm4pm/dist/bin/wpm.js" ]; then
-    DOCTOR_OUTPUT=$(node apps/wasm4pm/dist/bin/wpm.js doctor --format json 2>&1 | awk '/^{/,/^}/ {print}') || true
-  fi
-fi
-
-if [ -z "$DOCTOR_OUTPUT" ]; then
-  echo "WARN: wpm doctor unavailable, skipping gate" >&2
-  exit 0  # Allow stop — can't check, don't block
-fi
-
-# Parse health status
-HEALTHY=$(echo "$DOCTOR_OUTPUT" | jq -r '.healthy // false' 2>/dev/null)
-if [ $? -ne 0 ] || [ -z "$HEALTHY" ]; then
-  echo "WARN: Cannot parse wpm doctor output, skipping gate" >&2
-  exit 0  # Allow stop — can't check, don't block
-fi
-
-if [ "$HEALTHY" = "true" ]; then
-  # Environment is healthy, allow stop
-  exit 0
-fi
-
-# Environment is degraded, block stop
-FAIL=$(echo "$DOCTOR_OUTPUT" | jq -r '.fail // 0')
-FAILS=$(echo "$DOCTOR_OUTPUT" | jq -r '.checks[] | select(.status == "fail") | "\(.name): \(.message) (fix: \(.fix))"' 2>/dev/null | head -3 | sed 's/^/  • /')
-
-REASON="wpm doctor: $FAIL critical failure(s) detected
-$FAILS
-
-Run: wpm doctor --verbose for full report"
-
-# Block stop with JSON decision (properly escape reason for JSON)
-REASON_JSON=$(echo "$REASON" | jq -Rs .)
-echo "{\"decision\":\"block\",\"reason\":$REASON_JSON}"
+echo '{"stop_allowed": true, "reason": "health_check_passed"}' >&2
 exit 0

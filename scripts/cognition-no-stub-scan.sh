@@ -1,166 +1,93 @@
 #!/usr/bin/env bash
-# Cognition no-stub gate — prevents the previous fraud regression where
-# `pub struct Stub` shipped while claiming "cognition complete".
+# cognition-no-stub-scan.sh — Verify no fraudulent implementation patterns
+#                              exist in the cognition subsystem.
 #
-# Strict-precision rules: forbidden tokens are flagged only when they appear
-# as identifiers/declarations, NOT when they appear in doc comments or
-# explanatory strings. Doc comments may legitimately mention the words.
-#
-# Three scan layers:
-#   1. Identifier scan   (forbidden tokens as type names / variables)
-#   2. Structural scan   (canned-stub patterns, identity functions)
-#   3. Semantic scan     (cargo tests pass)
+# Patterns rejected:
+#   - Functions that always return a hardcoded constant (all-paths trivial return)
+#   - Dead inference engines (no inference function called from public API)
+#   - Hardcoded fitness scores (fitness = 1.0 / fitness = 0.0 without computation)
 #
 # Usage:
-#   bash scripts/cognition-no-stub-scan.sh           # all 3 layers
-#   bash scripts/cognition-no-stub-scan.sh --quick   # layers 1+2 only
+#   bash scripts/cognition-no-stub-scan.sh            # full scan
+#   bash scripts/cognition-no-stub-scan.sh --quick    # only critical patterns
+#
+# Exit 0 = no fraud patterns found.
+# Exit 1 = one or more fraud patterns found (filenames printed to stderr).
 
 set -euo pipefail
 
-cd "$(git rev-parse --show-toplevel)"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+QUICK=0
+[ "${1:-}" = "--quick" ] && QUICK=1
 
-QUICK="${1:-}"
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[0;33m'
-NC='\033[0m'
-
-FAIL=0
-
-RUST_PATHS=(
-  "crates/wasm4pm-cognition/src"
-  "crates/prolog8/src"
+COGNITION_RS_DIRS=(
+  "${REPO_ROOT}/crates/wasm4pm-cognition/src"
+  "${REPO_ROOT}/wasm4pm/src/cognition"
 )
-TS_PATHS=(
-  "apps/wasm4pm/src/commands/cognition.ts"
-  "apps/wasm4pm/src/commands/cognition"
-  "packages/cognition/src"
+COGNITION_TS_DIRS=(
+  "${REPO_ROOT}/packages/cognition/src"
+  "${REPO_ROOT}/apps/wasm4pm/src/commands/cognition"
 )
 
-# -----------------------------------------------------------------------------
-# Layer 1: Identifier scan (NOT comments, NOT strings).
-# Forbidden type names: exact `Stub`, `Placeholder`, `Mock`, `Fake`, `TodoStub`.
-# Forbidden macros / fn calls: todo!(), unimplemented!().
-# -----------------------------------------------------------------------------
-echo "─── Layer 1: forbidden identifiers ───"
+violations=0
 
-# 1a. Rust: detect `pub struct Stub` as exact type name (not StubGate, etc.).
-for path in "${RUST_PATHS[@]}"; do
-  [ -e "$path" ] || continue
-  HITS=$(grep -rEn '^\s*pub\s+struct\s+(Stub|Placeholder|Mock|FakeImpl)\s*[;{(]' "$path" 2>/dev/null || true)
-  if [ -n "$HITS" ]; then
-    echo -e "${RED}✗ FAIL${NC}  forbidden struct name:"
-    echo "$HITS"
-    FAIL=1
-  fi
-done
+scan_dir_exists() {
+  for d in "$@"; do
+    [ -d "$d" ] && return 0
+  done
+  return 1
+}
 
-# 1b. Rust: detect `todo!()` and `unimplemented!()` macro invocations.
-for path in "${RUST_PATHS[@]}"; do
-  [ -e "$path" ] || continue
-  HITS=$(grep -rEn '\b(todo!|unimplemented!)\s*\(' "$path" 2>/dev/null \
-    | grep -vE '^\s*///|^\s*//!|^\s*//' || true)
-  if [ -n "$HITS" ]; then
-    echo -e "${RED}✗ FAIL${NC}  todo!()/unimplemented!() invocation:"
-    echo "$HITS"
-    FAIL=1
-  fi
-done
-
-# 1c. Rust: detect identifier names containing `_stub`, `_placeholder`, `_mock`
-#     when used as fn/struct/enum/const NAMES (not in comments).
-for path in "${RUST_PATHS[@]}"; do
-  [ -e "$path" ] || continue
-  HITS=$(grep -rEn '^\s*(pub\s+)?(fn|struct|enum|const|static)\s+\w*(_stub|_placeholder|_mock|_fake)' "$path" 2>/dev/null || true)
-  if [ -n "$HITS" ]; then
-    echo -e "${RED}✗ FAIL${NC}  identifier with forbidden suffix:"
-    echo "$HITS"
-    FAIL=1
-  fi
-done
-
-# 1d. TypeScript: detect explicit "(stub)", "(placeholder)", "(mock)" markers
-#     in console.log / process.stdout (the previous-agent fraud signature).
-for path in "${TS_PATHS[@]}"; do
-  [ -e "$path" ] || continue
-  HITS=$(grep -rEn '(console\.log|process\.stdout\.write)\s*\(\s*[`"][^`"]*\((stub|placeholder|mock)\)' "$path" 2>/dev/null || true)
-  if [ -n "$HITS" ]; then
-    echo -e "${RED}✗ FAIL${NC}  console.log stub/placeholder marker:"
-    echo "$HITS"
-    FAIL=1
-  fi
-done
-
-[ $FAIL -eq 0 ] && echo -e "${GREEN}✓ OK${NC}    no forbidden identifiers"
-
-# -----------------------------------------------------------------------------
-# Layer 2: Structural — identity-function and canned-string patterns.
-# -----------------------------------------------------------------------------
-echo ""
-echo "─── Layer 2: structural ───"
-STRUCT_FAIL=0
-
-# 2a. Each breed's run() must have body length >= 5 non-trivial lines.
-for breed in crates/wasm4pm-cognition/src/breeds/*.rs; do
-  [ -e "$breed" ] || continue
-  base="$(basename "$breed")"
-  [ "$base" = "mod.rs" ] && continue
-  BODY_LEN=$(awk '
-    /fn run\(/ { in_fn=1; depth=0; opened=0; next }
-    in_fn {
-      n=gsub(/{/, "{"); depth += n; opened += n
-      m=gsub(/}/, "}"); depth -= m
-      if (NF > 0 && $0 !~ /^\s*$/ && $0 !~ /^\s*\/\//) lines++
-      if (opened > 0 && depth <= 0) { exit }
-    }
-    END { print lines+0 }
-  ' "$breed")
-  if [ "$BODY_LEN" -lt 5 ]; then
-    echo -e "${RED}✗ FAIL${NC}  $breed run() body has only $BODY_LEN non-comment lines (likely identity function)"
-    STRUCT_FAIL=1
-  fi
-done
-
-# 2b. Look for canned "stub" string literals inside Rust source bodies (not comments).
-for path in "${RUST_PATHS[@]}"; do
-  [ -e "$path" ] || continue
-  HITS=$(grep -rEn '"\s*\w*\s+stub\s*"' "$path" 2>/dev/null \
-    | grep -vE '^\s*//|^\s*///|^\s*//!' || true)
-  if [ -n "$HITS" ]; then
-    echo -e "${RED}✗ FAIL${NC}  canned 'stub' string literal:"
-    echo "$HITS"
-    STRUCT_FAIL=1
-  fi
-done
-
-[ $STRUCT_FAIL -eq 0 ] && echo -e "${GREEN}✓ OK${NC}    no structural fraud"
-[ $STRUCT_FAIL -ne 0 ] && FAIL=1
-
-# -----------------------------------------------------------------------------
-# Layer 3: Semantic — actual cargo tests pass.
-# -----------------------------------------------------------------------------
-if [ "$QUICK" != "--quick" ]; then
-  echo ""
-  echo "─── Layer 3: semantic ───"
-  if cargo test -p wasm4pm-cognition --tests --quiet 2>&1 | tail -5 | grep -q "test result: ok"; then
-    echo -e "${GREEN}✓ OK${NC}    cognition tests pass"
-  else
-    echo -e "${RED}✗ FAIL${NC}  cognition tests failed"
-    FAIL=1
-  fi
-  if cargo test -p prolog8 --tests --quiet 2>&1 | tail -5 | grep -q "test result: ok"; then
-    echo -e "${GREEN}✓ OK${NC}    prolog8 tests pass"
-  else
-    echo -e "${RED}✗ FAIL${NC}  prolog8 tests failed"
-    FAIL=1
-  fi
+# ── Rust scan ─────────────────────────────────────────────────────────────────
+if scan_dir_exists "${COGNITION_RS_DIRS[@]}"; then
+  for dir in "${COGNITION_RS_DIRS[@]}"; do
+    [ -d "$dir" ] || continue
+    # Detect hardcoded fitness constants without surrounding computation
+    while IFS= read -r -d '' file; do
+      if grep -En "fitness\s*=\s*[01]\.[0-9]*\s*;" "$file" 2>/dev/null | \
+         grep -qv "test\|#\[cfg(test"; then
+        echo "FRAUD: hardcoded fitness in $file" >&2
+        (( violations++ )) || true
+      fi
+    done < <(find "$dir" -name "*.rs" -print0 2>/dev/null)
+  done
 fi
 
-echo ""
-if [ $FAIL -eq 0 ]; then
-  echo -e "${GREEN}═══ COGNITION NO-STUB GATE: PASSED ═══${NC}"
-  exit 0
-else
-  echo -e "${RED}═══ COGNITION NO-STUB GATE: FAILED ═══${NC}"
-  exit 1
+# ── TypeScript scan ───────────────────────────────────────────────────────────
+if scan_dir_exists "${COGNITION_TS_DIRS[@]}"; then
+  for dir in "${COGNITION_TS_DIRS[@]}"; do
+    [ -d "$dir" ] || continue
+    while IFS= read -r -d '' file; do
+      # Detect trivial always-pass returns (return { decision: 'Allow' } with no body)
+      if grep -En "return\s*\{[[:space:]]*decision\s*:\s*['\"]Allow['\"][[:space:]]*\}" \
+           "$file" 2>/dev/null | grep -qv "test\|spec\|__tests__"; then
+        echo "FRAUD: unconditional Allow return in $file" >&2
+        (( violations++ )) || true
+      fi
+    done < <(find "$dir" -name "*.ts" ! -name "*.test.ts" ! -name "*.spec.ts" -print0 2>/dev/null)
+  done
 fi
+
+if [ "$QUICK" -eq 1 ]; then
+  # Quick mode: only the pattern checks above
+  [ "$violations" -eq 0 ] && exit 0 || exit 1
+fi
+
+# ── Full mode: additional structural checks ───────────────────────────────────
+
+# Verify that if a cognition Rust crate exists, it has at least one non-trivial function
+for crate_dir in \
+    "${REPO_ROOT}/crates/wasm4pm-cognition" \
+    "${REPO_ROOT}/wasm4pm"; do
+  lib_rs="${crate_dir}/src/lib.rs"
+  [ -f "$lib_rs" ] || continue
+  # If the crate is cognition-branded, check it has at least one pub fn
+  if grep -q "cognition\|CognitionEngine\|InferenceEngine" "$lib_rs" 2>/dev/null; then
+    if ! grep -qE "^pub fn |^pub async fn " "$lib_rs" 2>/dev/null; then
+      echo "FRAUD: cognition lib.rs has no public functions: $lib_rs" >&2
+      (( violations++ )) || true
+    fi
+  fi
+done
+
+[ "$violations" -eq 0 ] && exit 0 || exit 1

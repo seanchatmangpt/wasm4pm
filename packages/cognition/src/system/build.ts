@@ -1,10 +1,10 @@
 //! ZERO decision logic — proposes architectures via WASM `system_build`.
 
-import { WasmLoader } from '../init';
-import { CognitionError } from '../errors';
-import type { SpanSink } from '../observability-types';
-import { defaultSpanSink, hexId } from '../span-utils';
-import type { SystemBuildResult, SystemIntent } from '../types';
+import { WasmLoader } from '../init.js';
+import { CognitionError } from '../errors.js';
+import type { SpanSink } from '../observability-types.js';
+import { defaultSpanSink, hexId } from '../span-utils.js';
+import type { SystemBuildResult, SystemIntent } from '../types.js';
 
 export interface SystemBuildOptions {
   spanSink?: SpanSink;

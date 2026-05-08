@@ -1,49 +1,43 @@
 #!/bin/bash
 # SessionStart Hook: wasm4pm (wpm) Environment Briefing
 #
-# Runs `wpm doctor` and injects health summary into Claude's context.
+# Runs `wpm doctor check` and injects health summary into Claude's context.
 # CRITICAL: Must succeed. Fails loudly if doctor is unavailable.
 
 set -e
 
 DOCTOR_OUTPUT=""
 
-# Run wpm doctor via make target (builds CLI if needed)
+# Run wpm doctor check via make target (builds CLI if needed)
 cd "$CLAUDE_PROJECT_DIR"
 DOCTOR_OUTPUT=$(make doctor 2>&1) || true
 
-# If output contains error or is empty, try direct node execution
-if [ -z "$DOCTOR_OUTPUT" ]; then
-  # Try fallback: direct node execution without make
+# If output is empty or not valid JSON, try direct node execution
+if [ -z "$DOCTOR_OUTPUT" ] || ! echo "$DOCTOR_OUTPUT" | jq -e '.payload.healthy' >/dev/null 2>&1; then
   if [ -f "apps/wasm4pm/dist/bin/wpm.js" ]; then
-    DOCTOR_OUTPUT=$(node apps/wasm4pm/dist/bin/wpm.js doctor --format json 2>&1 | awk '/^{/,/^}/ {print}') || true
-  fi
-elif ! echo "$DOCTOR_OUTPUT" | jq -e '.healthy' >/dev/null 2>&1; then
-  # JSON is invalid, try fallback
-  if [ -f "apps/wasm4pm/dist/bin/wpm.js" ]; then
-    DOCTOR_OUTPUT=$(node apps/wasm4pm/dist/bin/wpm.js doctor --format json 2>&1 | awk '/^{/,/^}/ {print}') || true
+    DOCTOR_OUTPUT=$(node apps/wasm4pm/dist/bin/wpm.js doctor check --format json 2>&1 | awk '/^\{/,/^\}/ {print}') || true
   fi
 fi
 
 if [ -z "$DOCTOR_OUTPUT" ]; then
-  echo "ERROR: wpm doctor returned empty output" >&2
+  echo "ERROR: wpm doctor check returned empty output" >&2
   exit 1
 fi
 
 # Parse the report with jq (strict — must succeed)
-HEALTHY=$(echo "$DOCTOR_OUTPUT" | jq -r '.healthy' 2>/dev/null) || {
+HEALTHY=$(echo "$DOCTOR_OUTPUT" | jq -r '.payload.healthy' 2>/dev/null) || {
   echo "ERROR: Cannot parse wpm doctor output" >&2
   exit 1
 }
 
-if [ -z "$HEALTHY" ]; then
-  echo "ERROR: Cannot parse wpm doctor output" >&2
+if [ -z "$HEALTHY" ] || [ "$HEALTHY" = "null" ]; then
+  echo "ERROR: Cannot parse wpm doctor output (missing .payload.healthy)" >&2
   exit 1
 fi
 
-OK=$(echo "$DOCTOR_OUTPUT" | jq -r '.ok // 0' 2>/dev/null) || OK="0"
-WARN=$(echo "$DOCTOR_OUTPUT" | jq -r '.warn // 0' 2>/dev/null) || WARN="0"
-FAIL=$(echo "$DOCTOR_OUTPUT" | jq -r '.fail // 0' 2>/dev/null) || FAIL="0"
+OK=$(echo "$DOCTOR_OUTPUT" | jq -r '.payload.summary.pass // 0' 2>/dev/null) || OK="0"
+WARN=$(echo "$DOCTOR_OUTPUT" | jq -r '.payload.summary.warn // 0' 2>/dev/null) || WARN="0"
+FAIL=$(echo "$DOCTOR_OUTPUT" | jq -r '.payload.summary.fail // 0' 2>/dev/null) || FAIL="0"
 
 # Output health status
 if [ "$HEALTHY" = "true" ]; then
@@ -52,7 +46,7 @@ else
   echo "✗ wasm4pm environment: DEGRADED ($OK ok, $WARN warn, $FAIL fail)"
   echo ""
   echo "Critical failures:"
-  echo "$DOCTOR_OUTPUT" | jq -r '.checks[] | select(.status == "fail") | "  • \(.name): \(.message)\n    Fix: \(.fix)"'
+  echo "$DOCTOR_OUTPUT" | jq -r '.payload.checks[] | select(.severity == "STOP_THE_LINE") | "  • \(.name): \(.message)\n    Fix: \(.fix)"'
 fi
 
 # Report checkpoint status if available

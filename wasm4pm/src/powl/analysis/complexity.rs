@@ -153,6 +153,25 @@ fn visit(arena: &PowlArena, idx: u32, depth: usize, col: &mut Collector) -> usiz
                 .collect();
             child_cfcs.iter().copied().max().unwrap_or(1)
         }
+
+        Some(PowlNode::ChoiceGraph(cg)) => {
+            let mut sub_indices: Vec<u32> = Vec::new();
+            for n in &cg.graph.nodes {
+                if let wasm4pm_types::ChoiceGraphNode::SubModel(idx) = n {
+                    sub_indices.push(*idx);
+                }
+            }
+            let n = sub_indices.len();
+            col.operator_types.insert("CG".to_string());
+            col.operator_total += 1;
+            col.operator_children_counts.push(n);
+            col.cognitive += depth + 1;
+            let child_cfcs: Vec<usize> = sub_indices
+                .iter()
+                .map(|&c| visit(arena, c, depth + 1, col))
+                .collect();
+            child_cfcs.iter().copied().max().unwrap_or(1)
+        }
     }
 }
 

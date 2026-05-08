@@ -9,7 +9,6 @@
  */
 
 use serde::{Deserialize, Serialize};
-use std::time::Instant;
 use wasm_bindgen::prelude::*;
 
 /// WASM-side metadata wrapper for algorithm outputs with provenance.

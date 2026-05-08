@@ -180,6 +180,27 @@ pub fn apply_recursive(arena: &PowlArena, node_idx: u32) -> PowlProcessTree {
 
         // DecisionGraph (same structure as SPO for conversion purposes)
         Some(PowlNode::DecisionGraph(dg)) => convert_partial_order(arena, &dg.children, &dg.order),
+
+        // ChoiceGraph: process-tree conversion approximates the CG as an XOR
+        // of the SubModel sub-trees (lossy — only used for visualization paths).
+        Some(PowlNode::ChoiceGraph(cg)) => {
+            let children: Vec<PowlProcessTree> = cg
+                .graph
+                .nodes
+                .iter()
+                .filter_map(|n| match n {
+                    wasm4pm_types::ChoiceGraphNode::SubModel(idx) => {
+                        Some(apply_recursive(arena, *idx))
+                    }
+                    _ => None,
+                })
+                .collect();
+            if children.is_empty() {
+                PowlProcessTree::leaf(None)
+            } else {
+                PowlProcessTree::internal(PtOperator::Xor, children)
+            }
+        }
     }
 }
 

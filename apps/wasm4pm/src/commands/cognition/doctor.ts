@@ -4,8 +4,9 @@ import type { ChildProcess } from 'node:child_process';
 import * as path from 'node:path';
 import * as url from 'node:url';
 import { EXIT_CODES } from '../../exit-codes.js';
+import { emitCognitionSpan } from './_shared.js';
 
-// Exported so tests can inject a controlled spawn without module-level mocking.
+/** Injectable spawn function — tests supply a fake to avoid real bash invocations. */
 export type SpawnFn = (cmd: string, args: string[], opts: object) => ChildProcess;
 
 // ── Path resolution ───────────────────────────────────────────────────────────
@@ -17,6 +18,7 @@ export type SpawnFn = (cmd: string, args: string[], opts: object) => ChildProces
 // We walk up from __dirname: cognition → commands → dist → apps/wasm4pm →
 // apps → <workspace-root>.
 
+/** Derives the absolute path to `cognition-doctor.json.sh` relative to the compiled binary. */
 export function resolveScriptPath(): string {
   const __filename = url.fileURLToPath(import.meta.url);
   const __dirname = path.dirname(__filename);
@@ -134,12 +136,24 @@ export interface RunDoctorOptions {
   quiet: boolean;
   scriptPath?: string;
   spawnFn?: SpawnFn;
+  /** OTEL span sink — injected by tests to capture the `cognition.doctor` span. */
+  spanSink?: (span: import('@wasm4pm/cognition').OtelSpan) => void;
 }
 
+/**
+ * Core logic for `wpm cognition doctor`. Spawns `cognition-doctor.json.sh`,
+ * parses its JSON output, and emits a `cognition.doctor` OTEL span.
+ * Exported so tests can inject `spawnFn` and `spanSink` without module mocking.
+ */
 export async function runDoctor(opts: RunDoctorOptions): Promise<void> {
   const { format, quiet } = opts;
   const scriptPath = opts.scriptPath ?? resolveScriptPath();
   const spawnFn = opts.spawnFn;
+  const startNs = Date.now() * 1_000_000;
+  const startMs = typeof performance !== 'undefined' ? performance.now() : Date.now();
+  let spanStatus: 'OK' | 'ERROR' = 'OK';
+  let spanErrMsg: string | undefined;
+  let finalExitCode: number = EXIT_CODES.success;
 
   const version = '26.4.23';
 
@@ -152,26 +166,13 @@ export async function runDoctor(opts: RunDoctorOptions): Promise<void> {
   }
 
   // ── 1. Spawn the JSON doctor script ────────────────────────────────────────
-  let spawnResult: { exitCode: number; stdout: string; stderr: string };
-  try {
-    spawnResult = await runDoctorScript(scriptPath, spawnFn);
-  } catch (spawnErr) {
-    const message = spawnErr instanceof Error ? spawnErr.message : String(spawnErr);
-    const envelope = {
-      status: 'error',
-      command: 'cognition doctor',
-      error_code: 'DOCTOR_SPAWN_FAILED',
-      message: `Failed to invoke cognition-doctor.json.sh: ${message}`,
-      meta: makeMeta(),
-    };
-    if (!quiet) {
-      process.stdout.write(JSON.stringify(envelope, null, 2) + '\n');
-    }
-    process.exit(EXIT_CODES.system_error);
-  }
+  // runDoctorScript always resolves (error event calls resolve, not reject)
+  const spawnResult = await runDoctorScript(scriptPath, spawnFn);
 
   // ── 2. Handle spawn-level ENOENT (bash not found or script path wrong) ────
   if (spawnResult.exitCode === -1) {
+    spanStatus = 'ERROR';
+    spanErrMsg = `DOCTOR_SPAWN_FAILED: ${spawnResult.stderr}`;
     const envelope = {
       status: 'error',
       command: 'cognition doctor',
@@ -188,7 +189,16 @@ export async function runDoctor(opts: RunDoctorOptions): Promise<void> {
         );
       }
     }
-    process.exit(EXIT_CODES.system_error);
+    finalExitCode = EXIT_CODES.system_error;
+    emitCognitionSpan(
+      'doctor',
+      startNs,
+      (typeof performance !== 'undefined' ? performance.now() : Date.now()) - startMs,
+      spanStatus,
+      spanErrMsg,
+      opts.spanSink,
+    );
+    process.exit(finalExitCode);
   }
 
   // ── 3. Parse JSON output ───────────────────────────────────────────────────
@@ -196,6 +206,8 @@ export async function runDoctor(opts: RunDoctorOptions): Promise<void> {
   try {
     report = JSON.parse(spawnResult.stdout) as DoctorReport;
   } catch (parseErr) {
+    spanStatus = 'ERROR';
+    spanErrMsg = `DOCTOR_PARSE_FAILED: ${parseErr instanceof Error ? parseErr.message : String(parseErr)}`;
     const envelope = {
       status: 'error',
       command: 'cognition doctor',
@@ -213,7 +225,16 @@ export async function runDoctor(opts: RunDoctorOptions): Promise<void> {
         );
       }
     }
-    process.exit(EXIT_CODES.execution_error);
+    finalExitCode = EXIT_CODES.execution_error;
+    emitCognitionSpan(
+      'doctor',
+      startNs,
+      (typeof performance !== 'undefined' ? performance.now() : Date.now()) - startMs,
+      spanStatus,
+      spanErrMsg,
+      opts.spanSink,
+    );
+    process.exit(finalExitCode);
   }
 
   // ── 4. Determine outcome ───────────────────────────────────────────────────
@@ -241,8 +262,21 @@ export async function runDoctor(opts: RunDoctorOptions): Promise<void> {
     }
   }
 
-  // ── 6. Exit ────────────────────────────────────────────────────────────────
-  process.exit(allPassed ? EXIT_CODES.success : EXIT_CODES.execution_error);
+  // ── 6. Emit span + exit ────────────────────────────────────────────────────
+  if (!allPassed) {
+    spanStatus = 'ERROR';
+    spanErrMsg = `${report.summary.failed} of ${report.summary.total} checks failed`;
+  }
+  finalExitCode = allPassed ? EXIT_CODES.success : EXIT_CODES.execution_error;
+  emitCognitionSpan(
+    'doctor',
+    startNs,
+    (typeof performance !== 'undefined' ? performance.now() : Date.now()) - startMs,
+    spanStatus,
+    spanErrMsg,
+    opts.spanSink,
+  );
+  process.exit(finalExitCode);
 }
 
 // ── Command definition ────────────────────────────────────────────────────────

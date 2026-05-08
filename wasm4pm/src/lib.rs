@@ -78,6 +78,7 @@
 //! - [Documentation](https://docs.rs/wasm4pm)
 
 pub mod cache_resident;
+pub mod cell8;
 pub mod error;
 pub mod io;
 pub mod ml_algorithms;
@@ -86,16 +87,19 @@ pub mod state;
 pub mod types;
 
 use std::cell::RefCell;
-use tracing_subscriber::fmt::format::FmtSpan;
 
 #[wasm_bindgen(start)]
 pub fn main() {
     #[cfg(feature = "console_error_panic_hook")]
     console_error_panic_hook::set_once();
 
-    tracing_subscriber::fmt()
-        .with_span_events(FmtSpan::CLOSE)
-        .init();
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        use tracing_subscriber::fmt::format::FmtSpan;
+        let _ = tracing_subscriber::fmt()
+            .with_span_events(FmtSpan::CLOSE)
+            .try_init();
+    }
 }
 
 // Drift detection thresholds (configurable via set_drift_thresholds)
@@ -381,32 +385,10 @@ pub mod prediction_outcome;
 pub mod prediction_remaining_time;
 #[cfg(feature = "ml")]
 pub mod prediction_resource;
-#[cfg(feature = "miniml")]
-pub mod prediction_rf;
-#[cfg(all(feature = "ml", feature = "miniml"))]
-pub mod statistical_analysis;
-#[cfg(feature = "miniml")]
-pub mod automembrane;
-#[cfg(feature = "miniml")]
-pub mod benchmark_runner;
-#[cfg(feature = "miniml")]
-pub mod actor_envelope;
-#[cfg(feature = "miniml")]
-pub mod object_envelope;
-#[cfg(feature = "miniml")]
-pub mod route_envelope;
-#[cfg(feature = "miniml")]
-pub mod automl_envelope;
-#[cfg(feature = "miniml")]
-pub mod drift_manager;
-#[cfg(feature = "miniml")]
-pub mod time_envelope;
 
 // Utilities always available
 pub mod duration_utils;
 
-// Trace embeddings (gated internally by #![cfg(feature = "miniml")])
-pub mod trace_embeddings;
 
 // Streaming algorithms (gated by streaming_basic or streaming_full features)
 #[cfg(feature = "streaming_basic")]
@@ -581,13 +563,6 @@ thread_local! {
 // ML contextual bandits — LinUCB CPU baseline (ground truth for GPU parity)
 #[cfg(feature = "ml")]
 pub mod ml;
-
-// GPU-accelerated LinUCB contextual bandit for algorithm selection
-// (van der Aalst: resource/intervention prediction perspective)
-// CPU fallback always available; GPU path activated by `gpu` feature flag.
-// Not compiled for wasm32 — wgpu targets native GPU (Vulkan/Metal/DX12).
-#[cfg(not(target_arch = "wasm32"))]
-pub mod gpu;
 
 // AutoProcessAgent — Vision 2030 autonomic loop (Perception → Decision → Protection → Optimization)
 #[cfg(feature = "cloud")]

@@ -4,7 +4,7 @@ import { defineCommand } from 'citty';
 import { emitResult, makeResult, makeErrorResult } from '../../output.js';
 import { EXIT_CODES } from '../../exit-codes.js';
 import { ReceiptChain } from '@wasm4pm/cognition';
-import { loadReceipt, mapWasmError } from './_shared.js';
+import { loadReceipt, mapWasmError, emitCognitionSpan } from './_shared.js';
 
 export const verify = defineCommand({
   meta: { name: 'verify', description: 'Verify adversarial gates on receipt(s)' },
@@ -18,10 +18,14 @@ export const verify = defineCommand({
     quiet: { type: 'boolean', alias: 'q' },
   },
   async run(ctx) {
-    const t0 = performance.now();
+    const startNs = Date.now() * 1_000_000;
+    const startMs = typeof performance !== 'undefined' ? performance.now() : Date.now();
     const format = (ctx.args.format as 'json' | 'human' | 'sarif' | 'jsonl') ?? 'human';
     const verbose = !!ctx.args.verbose;
     const quiet = !!ctx.args.quiet;
+    let spanStatus: 'OK' | 'ERROR' = 'OK';
+    let spanErrMsg: string | undefined;
+    let finalExitCode: number = EXIT_CODES.success;
     try {
       const ids: string[] = (() => {
         const list = (ctx.args.receipts as string | undefined)?.split(',').map((s) => s.trim()).filter(Boolean) ?? [];
@@ -50,10 +54,11 @@ export const verify = defineCommand({
       }
       const failing = findings.filter((f) => !f.chain_valid);
       const exitCode = failing.length === 0 ? EXIT_CODES.success : EXIT_CODES.execution_error;
+      finalExitCode = exitCode;
       const result = makeResult(
         'cognition verify',
         { count: ids.length, findings, failing_count: failing.length },
-        performance.now() - t0,
+        (typeof performance !== 'undefined' ? performance.now() : Date.now()) - startMs,
         exitCode,
       );
       emitResult(result, { format, verbose, quiet }, (res, p) => {
@@ -61,12 +66,22 @@ export const verify = defineCommand({
         if (pl.failing_count === 0) p.success(`Verified ${pl.count} receipt(s) — all chains valid`);
         else p.warn(`${pl.failing_count}/${pl.count} receipt(s) failed verification`);
       });
-      process.exit(exitCode);
     } catch (err) {
+      spanStatus = 'ERROR';
+      spanErrMsg = err instanceof Error ? err.message : String(err);
       const { code, exitCode } = mapWasmError(err);
       const result = makeErrorResult('cognition verify', err, exitCode, code);
       emitResult(result, { format, verbose, quiet });
-      process.exit(exitCode);
+      finalExitCode = exitCode;
+    } finally {
+      emitCognitionSpan(
+        'verify',
+        startNs,
+        (typeof performance !== 'undefined' ? performance.now() : Date.now()) - startMs,
+        spanStatus,
+        spanErrMsg,
+      );
     }
+    process.exit(finalExitCode);
   },
 });

@@ -3,8 +3,9 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, randomBytes } from 'node:crypto';
 import { EXIT_CODES, type ExitCode } from '../../exit-codes.js';
+import type { SpanSink, OtelSpan } from '@wasm4pm/cognition';
 
 /** Parse a JSON file into typed input. Throws with a precise message on any failure. */
 export function parseInputJson<T = unknown>(inputPath: string): T {
@@ -74,6 +75,40 @@ export function loadReceipt(receiptId: string, dirRel: string): unknown {
     );
     (err as Error & { code?: string }).code = 'RECEIPT_CORRUPT';
     throw err;
+  }
+}
+
+/**
+ * Emit a `cognition.<operation>` OTEL span into the provided sink.
+ * Follows the exact same shape as `packages/cognition/src/contract/*.ts`.
+ * Sink errors are swallowed — span emission must never block the CLI.
+ */
+export function emitCognitionSpan(
+  operation: string,
+  startNs: number,
+  durationMs: number,
+  status: 'OK' | 'ERROR',
+  errMsg?: string,
+  sink: SpanSink = () => { /* no-op */ },
+): void {
+  try {
+    const span: OtelSpan = {
+      trace_id: randomBytes(16).toString('hex'),
+      span_id: randomBytes(8).toString('hex'),
+      name: `cognition.${operation}`,
+      kind: 'INTERNAL',
+      start_time: startNs,
+      end_time: Date.now() * 1_000_000,
+      status: { code: status, message: errMsg },
+      attributes: {
+        'service.name': 'wasm4pm',
+        'cognition.operation': operation,
+        'cognition.duration_ms': durationMs,
+      },
+    };
+    sink(span);
+  } catch {
+    /* never block on OTEL */
   }
 }
 

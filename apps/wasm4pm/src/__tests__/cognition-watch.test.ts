@@ -24,7 +24,7 @@
  *   verify that the watcher keeps running despite the throw.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, beforeAll } from 'vitest';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
@@ -61,6 +61,10 @@ const BREED_INPUT_FIXTURE = {
 describe('wpm cognition watch — behavioral contract', () => {
   let tmpDir: string;
   let inputPath: string;
+  let cliBuilt = false;
+
+  const REPO_ROOT = path.resolve(__dirname, '../../../..');
+  const wpmBin = path.join(REPO_ROOT, 'apps', 'wasm4pm', 'dist', 'bin', 'wpm.js');
 
   beforeEach(async () => {
     tmpDir = await makeTmpDir();
@@ -71,6 +75,15 @@ describe('wpm cognition watch — behavioral contract', () => {
   afterEach(async () => {
     if (tmpDir) {
       await fs.rm(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  beforeAll(async () => {
+    try {
+      await fs.access(wpmBin);
+      cliBuilt = true;
+    } catch {
+      // CLI not built yet
     }
   });
 
@@ -106,45 +119,42 @@ describe('wpm cognition watch — behavioral contract', () => {
 
   // ── WatchReceipt shape ────────────────────────────────────────────────────
 
-  it('WatchReceipt type has required fields with correct types', async () => {
+  it('WatchReceipt domain contracts: decision is Allow or Deny, hash is 8 hex chars, metrics non-negative', async () => {
     const mod = await import('../commands/cognition/watch.js');
-    // The receipt is a TypeScript interface — we verify it via the exported
-    // formatReceiptLine-compatible structure by constructing one manually.
-    const receipt: import('../commands/cognition/watch.js').WatchReceipt = {
+    // Domain contracts (Rank 2) derived from the WatchReceipt specification
+    const validDecisions = new Set<string>(['Allow', 'Deny']);
+
+    // Verify Allow variant
+    const allow: import('../commands/cognition/watch.js').WatchReceipt = {
       decision: 'Allow',
-      hash: 'abcd1234',
-      findings: 0,
+      hash: 'f0e1d2c3',
+      findings: 3,
       contract: 'prolog',
-      elapsedMs: 12,
+      elapsedMs: 42,
     };
-    expect(receipt.decision).toMatch(/^(Allow|Deny)$/);
-    expect(receipt.hash).toHaveLength(8);
-    expect(typeof receipt.findings).toBe('number');
-    expect(typeof receipt.elapsedMs).toBe('number');
+    expect(validDecisions.has(allow.decision)).toBe(true);
+    expect(allow.hash).toMatch(/^[0-9a-f]{8}$/i);
+    expect(allow.findings).toBeGreaterThanOrEqual(0);
+    expect(allow.elapsedMs).toBeGreaterThanOrEqual(0);
+    expect(allow.contract.length).toBeGreaterThan(0);
+
+    // Verify Deny variant
+    const deny: import('../commands/cognition/watch.js').WatchReceipt = {
+      decision: 'Deny',
+      hash: 'a1b2c3d4',
+      findings: 1,
+      contract: 'policy',
+      elapsedMs: 18,
+    };
+    expect(validDecisions.has(deny.decision)).toBe(true);
+    expect(deny.hash).toMatch(/^[0-9a-f]{8}$/i);
+    expect(deny.findings).toBeGreaterThanOrEqual(0);
+    expect(deny.elapsedMs).toBeGreaterThanOrEqual(0);
   });
 
   // ── Child-process integration: SIGINT exits cleanly ───────────────────────
 
-  it('exits 0 and writes "stopped" to stderr when SIGINT is received', async () => {
-    const REPO_ROOT = path.resolve(__dirname, '../../../..');
-    const wpmBin = path.join(REPO_ROOT, 'apps', 'wasm4pm', 'dist', 'bin', 'wpm.js');
-
-    // Skip if CLI is not built yet
-    let cliBuilt = false;
-    try {
-      await fs.access(wpmBin);
-      cliBuilt = true;
-    } catch {
-      // CLI not built — skip
-    }
-
-    if (!cliBuilt) {
-      // Verify the behavior contract conceptually via the module
-      const { watch } = await import('../commands/cognition/watch.js');
-      expect(watch).toBeDefined();
-      return;
-    }
-
+  it.skipIf(!cliBuilt)('exits 0 and writes "stopped" to stderr when SIGINT is received', async () => {
     const child: ChildProcess = execFile('node', [wpmBin, 'cognition', 'watch', inputPath], {
       env: { ...process.env, NO_COLOR: '1' },
     });
@@ -170,25 +180,7 @@ describe('wpm cognition watch — behavioral contract', () => {
 
   // ── Child-process integration: file deletion keeps watcher alive ──────────
 
-  it('does not exit when the input file is deleted — keeps waiting', async () => {
-    const REPO_ROOT = path.resolve(__dirname, '../../../..');
-    const wpmBin = path.join(REPO_ROOT, 'apps', 'wasm4pm', 'dist', 'bin', 'wpm.js');
-
-    let cliBuilt = false;
-    try {
-      await fs.access(wpmBin);
-      cliBuilt = true;
-    } catch {
-      // not built
-    }
-
-    if (!cliBuilt) {
-      // Conceptual assertion: the watcher module doesn't exit on unlink
-      const { watch } = await import('../commands/cognition/watch.js');
-      expect(watch).toBeDefined();
-      return;
-    }
-
+  it.skipIf(!cliBuilt)('does not exit when the input file is deleted — keeps waiting', async () => {
     const child: ChildProcess = execFile('node', [wpmBin, 'cognition', 'watch', inputPath], {
       env: { ...process.env, NO_COLOR: '1' },
     });
@@ -198,6 +190,10 @@ describe('wpm cognition watch — behavioral contract', () => {
     child.stdout?.on('data', (d: Buffer) => { stdout += d.toString(); });
     child.stderr?.on('data', (d: Buffer) => { stderr += d.toString(); });
 
+    // Register close listener before any sleeps that might trigger exit
+    let exited = false;
+    child.on('close', () => { exited = true; });
+
     // Let the watcher start
     await sleep(800);
 
@@ -206,9 +202,6 @@ describe('wpm cognition watch — behavioral contract', () => {
     await sleep(600);
 
     // Process must still be running (not exited)
-    let exited = false;
-    child.on('close', () => { exited = true; });
-    await sleep(200);
     expect(exited).toBe(false);
 
     // Clean up
@@ -220,24 +213,7 @@ describe('wpm cognition watch — behavioral contract', () => {
 
   // ── Child-process integration: run errors don't crash the watcher ────────
 
-  it('logs an error but keeps running when the contract run fails', async () => {
-    const REPO_ROOT = path.resolve(__dirname, '../../../..');
-    const wpmBin = path.join(REPO_ROOT, 'apps', 'wasm4pm', 'dist', 'bin', 'wpm.js');
-
-    let cliBuilt = false;
-    try {
-      await fs.access(wpmBin);
-      cliBuilt = true;
-    } catch {
-      // not built
-    }
-
-    if (!cliBuilt) {
-      const { watch } = await import('../commands/cognition/watch.js');
-      expect(watch).toBeDefined();
-      return;
-    }
-
+  it.skipIf(!cliBuilt)('logs an error but keeps running when the contract run fails', async () => {
     const child: ChildProcess = execFile(
       'node',
       [wpmBin, 'cognition', 'watch', inputPath, '--contract', 'prolog'],
@@ -249,6 +225,10 @@ describe('wpm cognition watch — behavioral contract', () => {
     child.stdout?.on('data', (d: Buffer) => { stdout += d.toString(); });
     child.stderr?.on('data', (d: Buffer) => { stderr += d.toString(); });
 
+    // Register close listener before any sleeps that might trigger exit
+    let exited = false;
+    child.on('close', () => { exited = true; });
+
     // Let the watcher start
     await sleep(800);
 
@@ -257,9 +237,6 @@ describe('wpm cognition watch — behavioral contract', () => {
     await sleep(600);
 
     // Process must still be alive
-    let exited = false;
-    child.on('close', () => { exited = true; });
-    await sleep(200);
     expect(exited).toBe(false);
 
     // Clean up

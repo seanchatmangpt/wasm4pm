@@ -20,7 +20,7 @@
 //! | `score_route_motion` | Score a trace prefix against known route families |
 //! | `get_route_variants` | Return all stored variants sorted by frequency desc |
 
-#![cfg(feature = "miniml")]
+#![cfg(feature = "ml")]
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

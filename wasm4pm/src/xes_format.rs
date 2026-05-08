@@ -86,25 +86,6 @@ fn insert_attr(
 /// XES is the standard eXtensible Event Stream format for process logs
 #[wasm_bindgen]
 pub fn load_eventlog_from_xes(content: &str) -> Result<String, JsValue> {
-    #[cfg(feature = "import")]
-    {
-        use wasm4pm_types::import::xes::{import_xes, XESImportOptions};
-        let reader = std::io::BufReader::new(std::io::Cursor::new(content.as_bytes().to_vec()));
-        match import_xes(reader, XESImportOptions::default()) {
-            Ok(types_log) => {
-                let log: EventLog = types_log.into();
-                let handle = get_or_init_state()
-                    .store_object(StoredObject::EventLog(log))
-                    .map_err(|_e| crate::error::js_val("Failed to store EventLog"))?;
-                return Ok(handle);
-            }
-            Err(e) => {
-                return Err(crate::error::js_val(&format!("XES Parse Error: {:?}", e)));
-            }
-        }
-    }
-
-    #[cfg(not(feature = "import"))]
     {
         // Estimate trace count from file size to pre-allocate (heuristic: ~500 bytes per trace)
         let estimated_traces = (content.len() / 500).max(16);

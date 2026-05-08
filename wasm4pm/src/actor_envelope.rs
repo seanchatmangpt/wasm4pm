@@ -20,7 +20,7 @@
 //! | `score_actor_motion` | Score a (actor, action, hour) request against the envelope |
 //! | `get_actor_profiles` | Return all trained profiles as a JSON array |
 
-#![cfg(feature = "miniml")]
+#![cfg(feature = "ml")]
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

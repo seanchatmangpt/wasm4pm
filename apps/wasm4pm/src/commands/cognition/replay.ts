@@ -4,7 +4,7 @@ import { defineCommand } from 'citty';
 import { emitResult, makeResult, makeErrorResult } from '../../output.js';
 import { EXIT_CODES } from '../../exit-codes.js';
 import { ReceiptChain } from '@wasm4pm/cognition';
-import { loadReceipt, mapWasmError } from './_shared.js';
+import { loadReceipt, mapWasmError, emitCognitionSpan } from './_shared.js';
 
 export const replay = defineCommand({
   meta: { name: 'replay', description: 'Replay a receipt and verify chain integrity' },
@@ -17,10 +17,14 @@ export const replay = defineCommand({
     quiet: { type: 'boolean', alias: 'q' },
   },
   async run(ctx) {
-    const t0 = performance.now();
+    const startNs = Date.now() * 1_000_000;
+    const startMs = typeof performance !== 'undefined' ? performance.now() : Date.now();
     const format = (ctx.args.format as 'json' | 'human' | 'sarif' | 'jsonl') ?? 'human';
     const verbose = !!ctx.args.verbose;
     const quiet = !!ctx.args.quiet;
+    let spanStatus: 'OK' | 'ERROR' = 'OK';
+    let spanErrMsg: string | undefined;
+    let finalExitCode: number = EXIT_CODES.success;
     try {
       const id = ctx.args['receipt-id'] as string;
       const dir = ctx.args['ledger-dir'] as string;
@@ -33,6 +37,7 @@ export const replay = defineCommand({
       const pointer = chain.replayPointer();
       const exitCode =
         valid || !strict ? EXIT_CODES.success : EXIT_CODES.execution_error;
+      finalExitCode = exitCode;
       const result = makeResult(
         'cognition replay',
         {
@@ -42,7 +47,7 @@ export const replay = defineCommand({
           replay_pointer: pointer,
           strict,
         },
-        performance.now() - t0,
+        (typeof performance !== 'undefined' ? performance.now() : Date.now()) - startMs,
         exitCode,
       );
       emitResult(result, { format, verbose, quiet }, (res, p) => {
@@ -54,12 +59,22 @@ export const replay = defineCommand({
         if (pl.chain_valid) p.success(`Replay '${pl.receipt_id}' OK → pointer ${pl.replay_pointer}`);
         else p.warn(`Replay '${pl.receipt_id}' FAILED → pointer ${pl.replay_pointer}`);
       });
-      process.exit(exitCode);
     } catch (err) {
+      spanStatus = 'ERROR';
+      spanErrMsg = err instanceof Error ? err.message : String(err);
       const { code, exitCode } = mapWasmError(err);
       const result = makeErrorResult('cognition replay', err, exitCode, code);
       emitResult(result, { format, verbose, quiet });
-      process.exit(exitCode);
+      finalExitCode = exitCode;
+    } finally {
+      emitCognitionSpan(
+        'replay',
+        startNs,
+        (typeof performance !== 'undefined' ? performance.now() : Date.now()) - startMs,
+        spanStatus,
+        spanErrMsg,
+      );
     }
+    process.exit(finalExitCode);
   },
 });
