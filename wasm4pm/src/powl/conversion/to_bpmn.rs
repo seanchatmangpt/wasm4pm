@@ -358,6 +358,17 @@ impl Builder {
                     current = next;
                 }
             }
+            Some(PowlNode::ChoiceGraph(_)) => {
+                // ChoiceGraph → BPMN: render as a silent task (placeholder).
+                // Spec-compliant CG-to-BPMN export is out of scope for this refactor.
+                let t = self.ids.next("cg_silent");
+                self.elements.push(format!(
+                    r#"    <serviceTask id="{}" name="" pm4py:silent="true"/>"#,
+                    t
+                ));
+                self.flow(entry, &t);
+                self.flow(&t, exit);
+            }
         }
     }
 

@@ -16,6 +16,7 @@ pub mod provenance;
 pub mod dense_kernel;
 pub mod mask;
 pub mod powl8_op;
+pub mod choice_graph;
 pub mod import;
 
 // Re-exports for convenience
@@ -29,5 +30,6 @@ pub use models::{
 };
 pub use ocel::{OCELEvent, OCELObject, OCEL};
 pub use provenance::ProvenanceChain;
+pub use choice_graph::{ChoiceGraph, ChoiceGraphNode, ChoiceGraphError};
 
 pub const VERSION: &str = "26.4.10";

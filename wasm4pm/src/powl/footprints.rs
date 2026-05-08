@@ -401,6 +401,24 @@ pub fn compute(
                 children.iter().map(|&c| compute(arena, c, cache)).collect();
             footprints_of_partial_order(&child_fps, n, &|i, j| order.is_edge(i, j))
         }
+
+        Some(PowlNode::ChoiceGraph(cg)) => {
+            // Approximate as XOR over SubModel sub-trees for footprint computation.
+            let sub_indices: Vec<u32> = cg
+                .graph
+                .nodes
+                .iter()
+                .filter_map(|n| match n {
+                    wasm4pm_types::ChoiceGraphNode::SubModel(idx) => Some(*idx),
+                    _ => None,
+                })
+                .collect();
+            let child_fps: Vec<Footprints> = sub_indices
+                .iter()
+                .map(|&c| compute(arena, c, cache))
+                .collect();
+            footprints_of_xor(&child_fps)
+        }
     };
 
     cache.insert(node_idx, fp.clone());

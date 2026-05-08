@@ -1,3 +1,4 @@
+#![allow(deprecated)]
 //! POWL (Partially Ordered Workflow Language) core data model.
 //!
 //! Mirrors the Python class hierarchy in `pm4py/objects/powl/obj.py`:
@@ -328,6 +329,19 @@ pub struct DecisionGraphNode {
     pub empty_path: bool,
 }
 
+/// Spec-compliant Choice Graph (Definition 1, paper arXiv:2505.07052) node.
+///
+/// Stores a validated `wasm4pm_types::ChoiceGraph` plus arena indices for
+/// each `ChoiceGraphNode::SubModel(_)` it contains. `Activity(label)` nodes
+/// are normalized to `SubModel(arena.add_transition(Some(label)))` at
+/// construction time so the projection has a uniform sub-model handle.
+#[derive(Clone, Debug)]
+pub struct ChoiceGraphPowlNode {
+    /// The validated graph. All `ChoiceGraphNode::Activity(_)` entries have
+    /// been normalized to `SubModel(arena_idx)` before being stored here.
+    pub graph: wasm4pm_types::ChoiceGraph,
+}
+
 /// Discriminated union of all node kinds stored in the arena.
 #[derive(Clone, Debug)]
 pub enum PowlNode {
@@ -335,7 +349,14 @@ pub enum PowlNode {
     FrequentTransition(FrequentTransitionNode),
     StrictPartialOrder(StrictPartialOrderNode),
     OperatorPowl(OperatorPowlNode),
+    /// Legacy non-block-structured choice. Kept for backward compatibility.
+    /// New code should prefer `ChoiceGraph`.
+    #[deprecated(
+        note = "Use PowlNode::ChoiceGraph for spec-compliant Definition 1 invariants"
+    )]
     DecisionGraph(DecisionGraphNode),
+    /// Spec-compliant choice graph (paper arXiv:2505.07052, Definition 1).
+    ChoiceGraph(ChoiceGraphPowlNode),
 }
 
 impl PowlNode {
@@ -484,6 +505,42 @@ impl PowlArena {
         idx
     }
 
+    /// Add a spec-compliant ChoiceGraph node (Definition 1, arXiv:2505.07052).
+    ///
+    /// `Activity(label)` nodes in the input graph are normalized to
+    /// `SubModel(arena_idx_of_silent_or_labeled_transition)` before storage so
+    /// every node references a sub-model in the arena.
+    ///
+    /// Returns the arena index of the new ChoiceGraph node.
+    pub fn add_choice_graph(
+        &mut self,
+        graph: wasm4pm_types::ChoiceGraph,
+    ) -> u32 {
+        // Normalize Activity(_) → SubModel(arena_idx_of_transition).
+        let mut normalized_nodes = Vec::with_capacity(graph.nodes.len());
+        for n in &graph.nodes {
+            match n {
+                wasm4pm_types::ChoiceGraphNode::Activity(lbl) => {
+                    let t_idx = self.add_transition(Some(lbl.clone()));
+                    normalized_nodes
+                        .push(wasm4pm_types::ChoiceGraphNode::SubModel(t_idx));
+                }
+                other => normalized_nodes.push(other.clone()),
+            }
+        }
+        let normalized = wasm4pm_types::ChoiceGraph {
+            nodes: normalized_nodes,
+            edges: graph.edges.clone(),
+            start_idx: graph.start_idx,
+            end_idx: graph.end_idx,
+        };
+        let idx = self.nodes.len() as u32;
+        #[allow(deprecated)]
+        self.nodes
+            .push(PowlNode::ChoiceGraph(ChoiceGraphPowlNode { graph: normalized }));
+        idx
+    }
+
     /// Add an edge inside a StrictPartialOrder.
     pub fn add_order_edge(&mut self, spo_idx: u32, child_src: usize, child_tgt: usize) {
         if let Some(PowlNode::StrictPartialOrder(spo)) = self.nodes.get_mut(spo_idx as usize) {
@@ -543,6 +600,13 @@ impl PowlArena {
             Some(PowlNode::DecisionGraph(dg)) => {
                 for &child in &dg.children {
                     self.validate_partial_orders(child)?;
+                }
+            }
+            Some(PowlNode::ChoiceGraph(cg)) => {
+                for n in &cg.graph.nodes {
+                    if let wasm4pm_types::ChoiceGraphNode::SubModel(idx) = n {
+                        self.validate_partial_orders(*idx)?;
+                    }
                 }
             }
             _ => {}
@@ -615,10 +679,40 @@ impl PowlArena {
                     dg.empty_path,
                 )
             }
+            Some(PowlNode::ChoiceGraph(cg)) => {
+                let mut node_strs: Vec<String> = Vec::new();
+                for n in &cg.graph.nodes {
+                    match n {
+                        wasm4pm_types::ChoiceGraphNode::Start => node_strs.push("Start".into()),
+                        wasm4pm_types::ChoiceGraphNode::End => node_strs.push("End".into()),
+                        wasm4pm_types::ChoiceGraphNode::Activity(l) => node_strs.push(l.clone()),
+                        wasm4pm_types::ChoiceGraphNode::SubModel(i) => {
+                            node_strs.push(self.to_repr(*i))
+                        }
+                    }
+                }
+                let edges_str: Vec<String> = cg
+                    .graph
+                    .edges
+                    .iter()
+                    .map(|&(a, b)| {
+                        format!(
+                            "{}->{}",
+                            cg_node_label(&cg.graph.nodes, a, self),
+                            cg_node_label(&cg.graph.nodes, b, self)
+                        )
+                    })
+                    .collect();
+                format!(
+                    "CG=(nodes={{{}}}, edges={{{}}})",
+                    node_strs.join(", "),
+                    edges_str.join(", ")
+                )
+            }
         }
     }
 
-    fn node_label_or_id(&self, idx: u32) -> String {
+    pub(crate) fn node_label_or_id(&self, idx: u32) -> String {
         match self.nodes.get(idx as usize) {
             Some(PowlNode::Transition(t)) => match &t.label {
                 None => format!("id_{}", idx),
@@ -690,7 +784,55 @@ impl PowlArena {
                     dg.empty_path,
                 )
             }
+            Some(PowlNode::ChoiceGraph(cg)) => {
+                // Recursively copy any SubModel sub-trees, preserving Start/End markers.
+                let mut new_nodes = Vec::with_capacity(cg.graph.nodes.len());
+                for n in &cg.graph.nodes {
+                    match n {
+                        wasm4pm_types::ChoiceGraphNode::Start => {
+                            new_nodes.push(wasm4pm_types::ChoiceGraphNode::Start)
+                        }
+                        wasm4pm_types::ChoiceGraphNode::End => {
+                            new_nodes.push(wasm4pm_types::ChoiceGraphNode::End)
+                        }
+                        wasm4pm_types::ChoiceGraphNode::Activity(l) => new_nodes
+                            .push(wasm4pm_types::ChoiceGraphNode::Activity(l.clone())),
+                        wasm4pm_types::ChoiceGraphNode::SubModel(child) => {
+                            let new_child = self.copy_node_into(dest, *child);
+                            new_nodes.push(wasm4pm_types::ChoiceGraphNode::SubModel(new_child));
+                        }
+                    }
+                }
+                let new_graph = wasm4pm_types::ChoiceGraph {
+                    nodes: new_nodes,
+                    edges: cg.graph.edges.clone(),
+                    start_idx: cg.graph.start_idx,
+                    end_idx: cg.graph.end_idx,
+                };
+                // Add directly without re-normalizing (already normalized).
+                let idx = dest.nodes.len() as u32;
+                dest.nodes.push(PowlNode::ChoiceGraph(ChoiceGraphPowlNode {
+                    graph: new_graph,
+                }));
+                idx
+            }
         }
+    }
+}
+
+fn cg_node_label(
+    nodes: &[wasm4pm_types::ChoiceGraphNode],
+    i: usize,
+    arena: &PowlArena,
+) -> String {
+    match nodes.get(i) {
+        Some(wasm4pm_types::ChoiceGraphNode::Start) => "Start".to_string(),
+        Some(wasm4pm_types::ChoiceGraphNode::End) => "End".to_string(),
+        Some(wasm4pm_types::ChoiceGraphNode::Activity(l)) => l.clone(),
+        Some(wasm4pm_types::ChoiceGraphNode::SubModel(idx)) => {
+            arena.node_label_or_id(*idx)
+        }
+        None => format!("n{}", i),
     }
 }
 

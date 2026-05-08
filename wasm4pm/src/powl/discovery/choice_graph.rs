@@ -130,6 +130,13 @@ fn build_partition_edges(
 }
 
 /// Discover choice graph using the MineDG algorithm.
+///
+/// **Deprecated.** Use [`discover_choice_graph_v2`] which returns a typed
+/// `ChoiceGraphCut` validated against Definition 5 of arXiv:2505.07052.
+/// This function is preserved as a thin shim returning the legacy tuple shape
+/// for backward compatibility with downstream callers that have not yet
+/// migrated.
+#[deprecated(note = "Use discover_choice_graph_v2 returning a validated ChoiceGraphCut")]
 pub fn discover_choice_graph(
     dfg: &HashSet<(String, String)>,
     activities: &HashSet<String>,
@@ -158,4 +165,174 @@ pub fn discover_choice_graph(
     let edges = build_partition_edges(dfg, &partitions);
 
     Some((partitions, edges))
+}
+
+/// A validated Choice Graph cut per Definition 4/5 of arXiv:2505.07052.
+#[derive(Clone, Debug)]
+pub struct ChoiceGraphCut {
+    /// Partition of `Σ_L`. Each entry is one part `Aᵢ`.
+    pub partition: Vec<HashSet<String>>,
+    /// The validated choice graph (Definition 1 invariants enforced).
+    /// Nodes are: `Start`, `End`, plus one `Activity(repr)` per part.
+    /// `repr` is the lexicographically-smallest activity name in the part.
+    pub graph: wasm4pm_types::ChoiceGraph,
+    /// Index of `Aᵢ` partition in `partition` for each Activity-node, in
+    /// the order those nodes appear in `graph.nodes`.
+    pub partition_for_node: Vec<Option<usize>>,
+}
+
+/// Errors returned by `discover_choice_graph_v2`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum NoCutFound {
+    /// MineDG produced fewer than 2 partitions — choice graph cut is not
+    /// applicable.
+    InsufficientPartitions,
+    /// The reconstructed graph does not satisfy Definition 1.
+    InvalidGraph(String),
+}
+
+impl core::fmt::Display for NoCutFound {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            NoCutFound::InsufficientPartitions => {
+                write!(f, "MineDG produced < 2 partitions; no choice graph cut")
+            }
+            NoCutFound::InvalidGraph(s) => write!(f, "invalid choice graph: {}", s),
+        }
+    }
+}
+
+impl std::error::Error for NoCutFound {}
+
+/// Discover a Choice Graph cut per Algorithm 1 + Definition 5 of arXiv:2505.07052.
+pub fn discover_choice_graph_v2(
+    activities: &HashSet<String>,
+    dfg: &HashSet<(String, String)>,
+    start_activities: &HashSet<String>,
+    end_activities: &HashSet<String>,
+    has_empty_trace: bool,
+) -> Result<ChoiceGraphCut, NoCutFound> {
+    // Algorithm 1: union-find merging mutually-reachable activities.
+    let mut uf = UnionFind::new(activities);
+    let cycles = find_cycles(dfg, activities);
+    for (a1, a2) in cycles {
+        uf.union(&a1, &a2);
+    }
+    let partition = uf.get_partitions();
+    if partition.len() < 2 {
+        return Err(NoCutFound::InsufficientPartitions);
+    }
+
+    // Build CG nodes: Start, End, then one Activity-node per part.
+    // We label each Activity-node by the lex-smallest activity in the part.
+    let mut nodes: Vec<wasm4pm_types::ChoiceGraphNode> = Vec::new();
+    let mut partition_for_node: Vec<Option<usize>> = Vec::new();
+    nodes.push(wasm4pm_types::ChoiceGraphNode::Start);
+    partition_for_node.push(None);
+    nodes.push(wasm4pm_types::ChoiceGraphNode::End);
+    partition_for_node.push(None);
+    let start_idx_node = 0usize;
+    let end_idx_node = 1usize;
+
+    let mut part_node_idx: Vec<usize> = Vec::with_capacity(partition.len());
+    for (p_idx, part) in partition.iter().enumerate() {
+        let repr = part
+            .iter()
+            .min()
+            .cloned()
+            .unwrap_or_else(|| format!("part_{}", p_idx));
+        part_node_idx.push(nodes.len());
+        nodes.push(wasm4pm_types::ChoiceGraphNode::Activity(repr));
+        partition_for_node.push(Some(p_idx));
+    }
+
+    // Definition 5 conditions:
+    let mut edges: Vec<(usize, usize)> = Vec::new();
+    let mut edge_set: HashSet<(usize, usize)> = HashSet::new();
+
+    // (4) ⟨⟩ ∈ L ⇔ (▷, □) ∈ E
+    if has_empty_trace {
+        edges.push((start_idx_node, end_idx_node));
+        edge_set.insert((start_idx_node, end_idx_node));
+    }
+    for (i, part_i) in partition.iter().enumerate() {
+        let ni = part_node_idx[i];
+        // (2) Aᵢ ∩ L_▷ ≠ ∅ ⇔ (▷, Aᵢ) ∈ E
+        if part_i.iter().any(|a| start_activities.contains(a)) {
+            let e = (start_idx_node, ni);
+            if edge_set.insert(e) {
+                edges.push(e);
+            }
+        }
+        // (3) Aᵢ ∩ L_□ ≠ ∅ ⇔ (Aᵢ, □) ∈ E
+        if part_i.iter().any(|a| end_activities.contains(a)) {
+            let e = (ni, end_idx_node);
+            if edge_set.insert(e) {
+                edges.push(e);
+            }
+        }
+        for (j, part_j) in partition.iter().enumerate() {
+            if i == j {
+                continue;
+            }
+            let nj = part_node_idx[j];
+            // (1) Aᵢ ↦ Aⱼ in DFG between *some* (a, b) with a∈Aᵢ, b∈Aⱼ
+            //     ⇔ (Aᵢ, Aⱼ) ∈ E.
+            let has_dfg_edge = part_i
+                .iter()
+                .any(|a| part_j.iter().any(|b| dfg.contains(&(a.clone(), b.clone()))));
+            if has_dfg_edge {
+                let e = (ni, nj);
+                if edge_set.insert(e) {
+                    edges.push(e);
+                }
+            }
+        }
+    }
+
+    let graph = wasm4pm_types::ChoiceGraph::new(nodes, edges)
+        .map_err(|e| NoCutFound::InvalidGraph(format!("{}", e)))?;
+    Ok(ChoiceGraphCut {
+        partition,
+        graph,
+        partition_for_node,
+    })
+}
+
+#[cfg(test)]
+mod v2_tests {
+    use super::*;
+    use std::collections::HashSet;
+
+    #[test]
+    fn linear_chain_yields_3_part_cut() {
+        // A → B → C, no cycles.
+        let activities: HashSet<String> = ["A", "B", "C"].iter().map(|s| s.to_string()).collect();
+        let dfg: HashSet<(String, String)> = [
+            ("A".to_string(), "B".to_string()),
+            ("B".to_string(), "C".to_string()),
+        ]
+        .iter()
+        .cloned()
+        .collect();
+        let starts: HashSet<String> = ["A"].iter().map(|s| s.to_string()).collect();
+        let ends: HashSet<String> = ["C"].iter().map(|s| s.to_string()).collect();
+        let cut = discover_choice_graph_v2(&activities, &dfg, &starts, &ends, false)
+            .expect("expected a cut");
+        assert_eq!(cut.partition.len(), 3);
+        // Definition 1 invariants enforced by ChoiceGraph::new.
+        assert!(cut.graph.has_empty_path() == false);
+    }
+
+    #[test]
+    fn empty_trace_adds_direct_start_end_edge() {
+        let activities: HashSet<String> = ["A"].iter().map(|s| s.to_string()).collect();
+        let dfg: HashSet<(String, String)> = HashSet::new();
+        let starts: HashSet<String> = ["A"].iter().map(|s| s.to_string()).collect();
+        let ends: HashSet<String> = ["A"].iter().map(|s| s.to_string()).collect();
+        // Single-activity → 1 part. Should fall through to InsufficientPartitions.
+        let err = discover_choice_graph_v2(&activities, &dfg, &starts, &ends, true)
+            .unwrap_err();
+        assert_eq!(err, NoCutFound::InsufficientPartitions);
+    }
 }

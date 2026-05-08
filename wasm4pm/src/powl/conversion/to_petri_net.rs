@@ -1,3 +1,4 @@
+#![allow(deprecated)]
 /// Convert a POWL model to a Petri net.
 use crate::powl_arena::{Operator, PowlArena, PowlNode};
 use crate::powl_models::{
@@ -213,6 +214,130 @@ fn recursively_add_tree(
                         net.add_arc(fp, &sync);
                         net.add_arc(&sync, ip);
                     }
+                }
+            }
+        }
+        Some(PowlNode::ChoiceGraph(cg)) => {
+            // Spec-compliant projection (Definition 3, arXiv:2505.07052):
+            //   • One place per CG edge.
+            //   • One transition per CG node:
+            //       - Start  → silent τ_start, preset = parent initial_place,
+            //                  postset = the place(e) for every outgoing edge of Start.
+            //       - End    → silent τ_end,   preset = the place(e) for every
+            //                  incoming edge of End, postset = parent final_place.
+            //       - SubModel(idx) → recursively project into a fragment with
+            //                  input place p_in_v and output place p_out_v.
+            //                  Silent merge τ_e_in for each incoming edge e
+            //                  (place(e) → p_in_v); silent split τ_e_out for
+            //                  each outgoing edge e (p_out_v → place(e)).
+            //
+            // Token-replay semantics on this net = ⋃_{Π ∈ →G} L(Π_1) · … · L(Π_|Π|).
+            let n_nodes = cg.graph.nodes.len();
+            // Allocate one place per edge.
+            let edge_places: Vec<String> =
+                cg.graph.edges.iter().map(|_| new_place(net, counts)).collect();
+
+            // Build per-node helpers.
+            let outgoing_edges: Vec<Vec<usize>> = (0..n_nodes)
+                .map(|v| {
+                    cg.graph
+                        .edges
+                        .iter()
+                        .enumerate()
+                        .filter_map(|(ei, &(a, _))| if a == v { Some(ei) } else { None })
+                        .collect()
+                })
+                .collect();
+            let incoming_edges: Vec<Vec<usize>> = (0..n_nodes)
+                .map(|v| {
+                    cg.graph
+                        .edges
+                        .iter()
+                        .enumerate()
+                        .filter_map(|(ei, &(_, b))| if b == v { Some(ei) } else { None })
+                        .collect()
+                })
+                .collect();
+
+            // Snapshot the nodes vec so we can mutate `arena` indirectly via recursion.
+            let cg_nodes = cg.graph.nodes.clone();
+            let start_idx = cg.graph.start_idx;
+            let end_idx = cg.graph.end_idx;
+
+            for (v, node) in cg_nodes.iter().enumerate() {
+                if v == start_idx {
+                    // Per-edge τ_start_e: one transition per outgoing edge of
+                    // Start (XOR-style branching), each consuming from
+                    // initial_place and producing into place(e). This gives
+                    // each path through the CG its own activation choice.
+                    for &ei in &outgoing_edges[v] {
+                        let tau_start = new_hidden_trans(net, counts, "cg_start");
+                        net.add_arc(initial_place, &tau_start);
+                        net.add_arc(&tau_start, &edge_places[ei]);
+                    }
+                } else if v == end_idx {
+                    // Per-edge τ_end_e: one transition per incoming edge of
+                    // End. Each consumes from place(e) and produces to
+                    // final_place. (A single shared transition would force
+                    // ALL incoming edges to be live simultaneously, which
+                    // would over-constrain the language.)
+                    for &ei in &incoming_edges[v] {
+                        let tau_end = new_hidden_trans(net, counts, "cg_end");
+                        net.add_arc(&edge_places[ei], &tau_end);
+                        net.add_arc(&tau_end, &final_place_name);
+                    }
+                } else {
+                    // SubModel(idx) (or Activity, but Activity is normalized away).
+                    let sub_idx: u32 = match node {
+                        wasm4pm_types::ChoiceGraphNode::SubModel(i) => *i,
+                        wasm4pm_types::ChoiceGraphNode::Activity(_) => {
+                            // Defensive: should not occur (normalized in add_choice_graph).
+                            // Skip with a silent transition to keep replay sound.
+                            let p_in = new_place(net, counts);
+                            let p_out = new_place(net, counts);
+                            for &ei in &incoming_edges[v] {
+                                let tau_in = new_hidden_trans(net, counts, "cg_in");
+                                net.add_arc(&edge_places[ei], &tau_in);
+                                net.add_arc(&tau_in, &p_in);
+                            }
+                            let skip = new_hidden_trans(net, counts, "skip");
+                            net.add_arc(&p_in, &skip);
+                            net.add_arc(&skip, &p_out);
+                            for &ei in &outgoing_edges[v] {
+                                let tau_out = new_hidden_trans(net, counts, "cg_out");
+                                net.add_arc(&p_out, &tau_out);
+                                net.add_arc(&tau_out, &edge_places[ei]);
+                            }
+                            continue;
+                        }
+                        wasm4pm_types::ChoiceGraphNode::Start
+                        | wasm4pm_types::ChoiceGraphNode::End => unreachable!(),
+                    };
+                    let p_in = new_place(net, counts);
+                    let p_out = new_place(net, counts);
+
+                    // Silent merge τ_e_in for each incoming edge.
+                    for &ei in &incoming_edges[v] {
+                        let tau_in = new_hidden_trans(net, counts, "cg_in");
+                        net.add_arc(&edge_places[ei], &tau_in);
+                        net.add_arc(&tau_in, &p_in);
+                    }
+                    // Silent split τ_e_out for each outgoing edge.
+                    for &ei in &outgoing_edges[v] {
+                        let tau_out = new_hidden_trans(net, counts, "cg_out");
+                        net.add_arc(&p_out, &tau_out);
+                        net.add_arc(&tau_out, &edge_places[ei]);
+                    }
+                    // Recurse.
+                    recursively_add_tree(
+                        arena,
+                        sub_idx,
+                        net,
+                        &p_in,
+                        Some(&p_out),
+                        counts,
+                        false,
+                    );
                 }
             }
         }

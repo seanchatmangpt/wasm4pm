@@ -74,9 +74,21 @@ fn node_type_str(arena: &PowlArena, idx: u32) -> String {
         Some(PowlNode::FrequentTransition(_)) => "FrequentTransition".into(),
         Some(PowlNode::StrictPartialOrder(_)) => "StrictPartialOrder".into(),
         Some(PowlNode::DecisionGraph(_)) => "DecisionGraph".into(),
+        Some(PowlNode::ChoiceGraph(_)) => "ChoiceGraph".into(),
         Some(PowlNode::OperatorPowl(op)) => op.operator.as_str().to_string(),
         None => "Invalid".into(),
     }
+}
+
+fn cg_submodel_children(cg: &crate::powl_arena::ChoiceGraphPowlNode) -> Vec<u32> {
+    cg.graph
+        .nodes
+        .iter()
+        .filter_map(|n| match n {
+            wasm4pm_types::ChoiceGraphNode::SubModel(idx) => Some(*idx),
+            _ => None,
+        })
+        .collect()
 }
 
 fn structural_diff(
@@ -101,12 +113,14 @@ fn structural_diff(
     let children_a: Vec<u32> = match arena_a.get(idx_a) {
         Some(PowlNode::StrictPartialOrder(s)) => s.children.clone(),
         Some(PowlNode::DecisionGraph(d)) => d.children.clone(),
+        Some(PowlNode::ChoiceGraph(c)) => cg_submodel_children(c),
         Some(PowlNode::OperatorPowl(o)) => o.children.clone(),
         _ => vec![],
     };
     let children_b: Vec<u32> = match arena_b.get(idx_b) {
         Some(PowlNode::StrictPartialOrder(s)) => s.children.clone(),
         Some(PowlNode::DecisionGraph(d)) => d.children.clone(),
+        Some(PowlNode::ChoiceGraph(c)) => cg_submodel_children(c),
         Some(PowlNode::OperatorPowl(o)) => o.children.clone(),
         _ => vec![],
     };
