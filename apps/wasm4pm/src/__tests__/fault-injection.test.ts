@@ -151,7 +151,8 @@ describe('wpm status exit code contract', () => {
       const jsonStart = stdout.indexOf('{');
       const obj = JSON.parse(stdout.slice(jsonStart < 0 ? 0 : jsonStart));
       expect(obj).toHaveProperty('status');
-      expect(obj.status).toBe('success');
+      // Canonical envelope contract per output.ts: status ∈ {'ok', 'error'}
+      expect(obj.status).toBe('ok');
     }
   });
 });

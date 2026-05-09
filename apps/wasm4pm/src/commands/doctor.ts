@@ -1920,8 +1920,10 @@ export const doctorFix = defineCommand({
       p.log('');
 
       if (fixable.length === 0) {
-        p.log('No auto-fixable issues found.');
-        const noFixablePayload = { dry_run: false, fixable: [], unfixable: [], no_fixable: true };
+        p.log(dryRun
+          ? 'Dry-run: no auto-fixable issues found — nothing would be executed.'
+          : 'No auto-fixable issues found.');
+        const noFixablePayload = { dry_run: Boolean(dryRun), fixable: [], unfixable: [], no_fixable: true };
         emitResult(makeResult('doctor fix', noFixablePayload, Date.now() - start, EXIT_CODES.success), { format, verbose, quiet });
         process.exit(0);
       }
@@ -1994,6 +1996,7 @@ export const doctorFix = defineCommand({
       };
       const result = makeResult('doctor fix', payload, Date.now() - start);
       emitResult(result, { format, verbose, quiet });
+      process.exit(0);
     }
   },
 });

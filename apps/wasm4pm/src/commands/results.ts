@@ -131,6 +131,11 @@ export const results = defineCommand({
       description: 'Show full result data when listing',
       alias: 'v',
     },
+    path: {
+      type: 'string',
+      description: 'Path to a saved result JSON file to display',
+      alias: 'p',
+    },
     quiet: {
       type: 'boolean',
       description: 'Suppress non-error output',
@@ -159,6 +164,43 @@ export const results = defineCommand({
         process.exit(errResult.exit_code);
       }
       const limit = parsedLimit ?? 20;
+
+      // --path: cat a specific file by absolute or relative path
+      if (ctx.args.path) {
+        const filepath = path.resolve(process.cwd(), ctx.args.path as string);
+        if (!existsSync(filepath)) {
+          const errResult = makeErrorResult(
+            'results',
+            new Error(`Result file not found: ${filepath}`),
+            EXIT_CODES.source_error,
+            'RESULT_PATH_NOT_FOUND'
+          );
+          emitResult(errResult, { format, verbose, quiet });
+          process.exit(errResult.exit_code);
+        }
+        let parsed: unknown;
+        try {
+          parsed = await catResult(filepath);
+        } catch (e) {
+          const errResult = makeErrorResult(
+            'results',
+            new Error(`Failed to parse result file: ${(e as Error).message}`),
+            EXIT_CODES.source_error,
+            'RESULT_PATH_INVALID'
+          );
+          emitResult(errResult, { format, verbose, quiet });
+          process.exit(errResult.exit_code);
+        }
+        const result = makeResult('results', { cat: parsed, filepath }, performance.now() - t0);
+        emitResult(result, { format, verbose, quiet }, (_res, projection) => {
+          try {
+            printCatResult(filepath, parsed as SavedResult, projection);
+          } catch {
+            projection.log(JSON.stringify(parsed, null, 2));
+          }
+        });
+        process.exit(EXIT_CODES.success);
+      }
 
       // --last: cat the newest result
       if (ctx.args.last) {

@@ -125,12 +125,29 @@ async function runBenchmarks(
       catch { throw new Error(`Line ${i + 1}: invalid JSON`); }
     });
 
+    // When classify_motion is unavailable, synthesize per-trace failures so the
+    // verify subcommand can still emit a normal envelope with failed > 0 and
+    // exit non-zero. Honest: each trace becomes a failure with a clear reason.
+    const filteredTraces = traces.filter((t) => !traceFilter || t.trace_id === traceFilter);
     if (typeof wasm.classify_motion !== 'function') {
-      throw new Error('classify_motion not available — requires fog or browser profile');
+      const syntheticResults: BenchmarkResult[] = filteredTraces.map((t) => ({
+        trace_id: t.trace_id,
+        name: t.name,
+        pass: false,
+        final_verdict: 'Error',
+        expected_verdict: t.expected_verdict,
+        failure_reason: 'classify_motion not available — requires fog or browser profile',
+      }));
+      return {
+        builtIn: false,
+        results: syntheticResults,
+        total: syntheticResults.length,
+        passed: 0,
+        failed: syntheticResults.length,
+      };
     }
 
-    const results: BenchmarkResult[] = traces
-      .filter((t) => !traceFilter || t.trace_id === traceFilter)
+    const results: BenchmarkResult[] = filteredTraces
       .map((t) => {
         try {
           const raw = (wasm.classify_motion as (j: string) => unknown)(JSON.stringify(t.motion));

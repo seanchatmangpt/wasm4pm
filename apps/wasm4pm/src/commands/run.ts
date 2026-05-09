@@ -544,6 +544,20 @@ export const run = defineCommand({
       // Normalise result (WASM may return string or object)
       const resultData = typeof raw === 'string' ? JSON.parse(raw) : raw;
 
+      // Surface K: add `count` alias for `frequency` so consumers can read either name.
+      // Truth lives in WASM (frequency is authoritative); count is a presentation alias.
+      if (resultData && Array.isArray((resultData as { edges?: unknown[] }).edges)) {
+        const edges = (resultData as { edges: Array<Record<string, unknown>> }).edges;
+        for (const e of edges) {
+          if (typeof e.count === 'undefined' && typeof e.frequency === 'number') {
+            e.count = e.frequency;
+          }
+          if (typeof e.frequency === 'undefined' && typeof e.count === 'number') {
+            e.frequency = e.count;
+          }
+        }
+      }
+
       // Step 9: Build output payload
       const payload = {
         status: 'success',
@@ -604,6 +618,17 @@ export const run = defineCommand({
 
       // Step 11: Build canonical result and emit
       const cmdResult = makeResult('run', payload, elapsedMs, EXIT_CODES.success);
+
+      // Surface K: additive top-level mirror of payload.model so consumers reading
+      // `result.model.edges` (or `result.edges`) work alongside `result.payload.model.edges`.
+      // Preserves backward-compat — payload.model is unchanged.
+      if (resultData && typeof resultData === 'object') {
+        (cmdResult as unknown as Record<string, unknown>).model = resultData;
+        const edges = (resultData as { edges?: unknown }).edges;
+        if (Array.isArray(edges)) {
+          (cmdResult as unknown as Record<string, unknown>).edges = edges;
+        }
+      }
 
       emitResult(cmdResult, emitOptions, (res, projection) => {
         const p = res.payload as typeof payload;

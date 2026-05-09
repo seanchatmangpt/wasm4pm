@@ -259,7 +259,7 @@ describe('environment commands', () => {
   it('doctor check: checks non-empty, each has name; status: real platform/arch', { timeout: 30000 }, async () => {
     // ANTI-STUB: stub returns { checks: [] }
     const r = await cli(['doctor', 'check', '--format', 'json'], { timeout: 30000 });
-    const j = assertEnvelope(r, 'doctor');
+    const j = assertEnvelope(r, 'doctor check');
     const checks = (j.payload as Record<string, unknown>).checks as Array<Record<string, unknown>>;
     expect(checks?.length).toBeGreaterThan(0);
     expect('name' in checks[0] || 'check' in checks[0]).toBe(true);

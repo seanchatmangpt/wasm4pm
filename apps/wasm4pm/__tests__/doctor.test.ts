@@ -10,11 +10,14 @@ import { describe, it, expect } from 'vitest';
 import { doctor } from '../src/cli.js';
 
 describe('doctor command — shape', () => {
-  it('is a valid citty command with meta, args, and run', () => {
+  it('is a valid citty command with meta, args, and subCommands', () => {
     expect(doctor.meta?.name).toBe('doctor');
     expect(doctor.meta?.description).toContain('health');
     expect(doctor.args).toBeDefined();
-    expect(typeof doctor.run).toBe('function');
+    // doctor uses citty's subCommands pattern; citty dispatches to a matching
+    // subcommand (check/fix/publish/env/tps/perf/watch/report) or prints help.
+    expect(doctor.subCommands).toBeDefined();
+    expect(doctor.subCommands?.check).toBeDefined();
   });
 
   it('accepts --format, --verbose, and --quiet flags with correct types and aliases', () => {
