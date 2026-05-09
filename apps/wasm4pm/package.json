@@ -37,6 +37,7 @@
     "@wasm4pm/observability": "workspace:^",
     "@wasm4pm/planner": "workspace:*",
     "@wasm4pm/swarm": "workspace:*",
+    "wasm4pm": "workspace:*",
     "chokidar": "^4.0.1",
     "citty": "^0.1.6",
     "consola": "^3.2.3"

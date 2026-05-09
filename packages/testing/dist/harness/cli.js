@@ -6,6 +6,7 @@
  */
 import { execFile } from 'child_process';
 import * as fs from 'fs/promises';
+import { existsSync } from 'fs';
 import * as path from 'path';
 import { tmpdir } from 'os';
 /** Known exit codes — must match wpm exit-codes.ts */
@@ -46,12 +47,39 @@ export async function createCliTestEnv(configContent) {
  * Run a CLI command and capture output.
  */
 export function runCli(args, options) {
-    const cliPath = options?.cliPath ?? 'npx';
-    const fullArgs = cliPath === 'npx' ? ['wasm4pm', ...args] : args;
+    // Default: directly invoke the built CLI binary to avoid npx resolution issues.
+    // Tests can override via options.cliPath. Falls back to 'wpm' if dist not found.
+    const defaultBinary = (() => {
+        const candidates = [
+            path.resolve(process.cwd(), 'apps/wasm4pm/dist/bin/wpm.js'),
+            path.resolve(process.cwd(), '../../apps/wasm4pm/dist/bin/wpm.js'),
+            path.resolve(process.cwd(), '../apps/wasm4pm/dist/bin/wpm.js'),
+        ];
+        for (const c of candidates)
+            if (existsSync(c))
+                return c;
+        return undefined;
+    })();
+    // When user explicitly provides cliPath, honor it as the executable verbatim.
+    // When falling back to defaultBinary, run via `node <binary>`.
+    let exec;
+    let fullArgs;
+    if (options?.cliPath) {
+        exec = options.cliPath;
+        fullArgs = args;
+    }
+    else if (defaultBinary) {
+        exec = process.execPath;
+        fullArgs = [defaultBinary, ...args];
+    }
+    else {
+        exec = 'npx';
+        fullArgs = ['wasm4pm', ...args];
+    }
     const timeout = options?.timeout ?? 30000;
     return new Promise((resolve) => {
         const start = Date.now();
-        const child = execFile(cliPath, fullArgs, {
+        const child = execFile(exec, fullArgs, {
             cwd: options?.cwd,
             env: { ...process.env, ...options?.env },
             timeout,
