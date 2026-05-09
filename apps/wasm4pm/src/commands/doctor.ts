@@ -1629,13 +1629,19 @@ function printReportToProjection(p: ConsoleProjection, report: DoctorReport): vo
 // Shared check runner — builds CommandResult and emits via canonical path
 // ────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Canonical envelope payload shape:
+ * { checks: Diagnosis[], summary: { pass, warn, fail, critical }, healthy: boolean, ...extraFields }
+ * All subcommands using runChecks inherit this shape.
+ */
 async function runChecks(
   checks: Array<() => Promise<Diagnosis>>,
   format: 'json' | 'human',
   verbose: boolean,
   quiet: boolean,
   extraFields?: Record<string, unknown>,
-  precomputedDiagnoses?: Diagnosis[]
+  precomputedDiagnoses?: Diagnosis[],
+  commandName: string = 'doctor'
 ): Promise<DoctorReport> {
   const start = Date.now();
   const diagnoses: Diagnosis[] =
@@ -1665,17 +1671,14 @@ async function runChecks(
   };
 
   const exitCode = report.epistemicHealth ? EXIT_CODES.success : EXIT_CODES.config_error;
-  const result = makeResult('doctor', payload, Date.now() - start, exitCode);
+  const result = makeResult(commandName, payload, Date.now() - start, exitCode);
 
   emitResult(result, { format, verbose, quiet }, (_res, p) => {
     printReportToProjection(p, report);
   });
 
-  if (!report.epistemicHealth) {
-    process.exitCode = EXIT_CODES.config_error;
-  }
-
-  return report;
+  // Exit immediately to prevent parent main.run() from emitting trailing help text.
+  process.exit(exitCode);
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -1737,7 +1740,7 @@ export const doctorCheck = defineCommand({
       }
     }
 
-    await runChecks(checksToRun, format, verbose, quiet);
+    await runChecks(checksToRun, format, verbose, quiet, undefined, undefined, 'doctor check');
   },
 });
 
@@ -1772,7 +1775,7 @@ export const doctorEnv = defineCommand({
     const verbose = Boolean(ctx.args.verbose);
     const quiet = Boolean(ctx.args.quiet);
     const diagnoses = await Promise.all(ENV_CHECKS.map((fn) => fn()));
-    await runChecks(ENV_CHECKS, format, verbose, quiet, { environment: diagnoses }, diagnoses);
+    await runChecks(ENV_CHECKS, format, verbose, quiet, { environment: diagnoses }, diagnoses, 'doctor env');
   },
 });
 
@@ -1838,9 +1841,9 @@ export const doctorTps = defineCommand({
       }
 
       // All passed — run full report
-      await runChecks(TPS_CHECKS, format, verbose, quiet);
+      await runChecks(TPS_CHECKS, format, verbose, quiet, undefined, undefined, 'doctor tps');
     } else {
-      await runChecks(TPS_CHECKS, format, verbose, quiet);
+      await runChecks(TPS_CHECKS, format, verbose, quiet, undefined, undefined, 'doctor tps');
     }
   },
 });
@@ -1881,6 +1884,7 @@ export const doctorFix = defineCommand({
     },
   },
   async run(ctx) {
+    const start = Date.now();
     const format = (ctx.args.format as 'json' | 'human') ?? 'human';
     const verbose = Boolean(ctx.args.verbose);
     const quiet = Boolean(ctx.args.quiet);
@@ -1917,7 +1921,9 @@ export const doctorFix = defineCommand({
 
       if (fixable.length === 0) {
         p.log('No auto-fixable issues found.');
-        return;
+        const noFixablePayload = { dry_run: false, fixable: [], unfixable: [], no_fixable: true };
+        emitResult(makeResult('doctor fix', noFixablePayload, Date.now() - start, EXIT_CODES.success), { format, verbose, quiet });
+        process.exit(0);
       }
 
       if (dryRun) {
@@ -1926,7 +1932,15 @@ export const doctorFix = defineCommand({
           p.log(`  $ ${d.fix}`);
         }
         p.log('');
-        return;
+        const dryRunPayload = {
+          dry_run: true,
+          fixable: fixable.map((d) => d.fix),
+          unfixable: diagnoses
+            .filter((d) => d.severity !== 'INFO' && d.fix && !isAutoExecutable(d.fix))
+            .map((d) => d.fix),
+        };
+        emitResult(makeResult('doctor fix', dryRunPayload, Date.now() - start, EXIT_CODES.success), { format, verbose, quiet });
+        process.exit(0);
       }
 
       if (!yes) {
@@ -1935,7 +1949,9 @@ export const doctorFix = defineCommand({
         // In non-interactive mode, skip
         if (!process.stdin.isTTY) {
           p.log('Skipping — stdin is not a TTY. Use --yes to force.');
-          return;
+          const skipPayload = { dry_run: false, skipped: true, reason: 'non-tty', fixable_count: fixable.length };
+          emitResult(makeResult('doctor fix', skipPayload, Date.now() - start, EXIT_CODES.success), { format, verbose, quiet });
+          process.exit(0);
         }
         // Read one line
         const answer = await new Promise<string>((resolve) => {
@@ -1944,7 +1960,9 @@ export const doctorFix = defineCommand({
         });
         if (answer.toLowerCase() !== 'y') {
           p.log('Aborted.');
-          return;
+          const abortPayload = { dry_run: false, skipped: true, reason: 'user-aborted', fixable_count: fixable.length };
+          emitResult(makeResult('doctor fix', abortPayload, Date.now() - start, EXIT_CODES.success), { format, verbose, quiet });
+          process.exit(0);
         }
       }
 
@@ -1965,9 +1983,8 @@ export const doctorFix = defineCommand({
 
     // Final check run — skip if dry-run (already returned above for human formatter)
     if (!dryRun) {
-      await runChecks(ALL_CHECKS, format, verbose, quiet);
+      await runChecks(ALL_CHECKS, format, verbose, quiet, undefined, undefined, 'doctor fix');
     } else if (format === 'json') {
-      const start = Date.now();
       const payload = {
         dry_run: true,
         fixable: fixable.map((d) => d.fix),
@@ -2082,7 +2099,7 @@ export const doctorPerf = defineCommand({
         );
         p.log('Run from within the wasm4pm workspace.');
       });
-      return;
+      process.exit(EXIT_CODES.success);
     }
 
     // Synthetic WASM stub — measures TypeScript dispatch overhead only (no real WASM needed)
@@ -2200,6 +2217,7 @@ export const doctorPerf = defineCommand({
         }
       }
     }
+    process.exit(allOk ? EXIT_CODES.success : EXIT_CODES.config_error);
   },
 });
 
@@ -2239,6 +2257,7 @@ export const doctorWatch = defineCommand({
     },
   },
   async run(ctx) {
+    const start = Date.now();
     const format = (ctx.args.format as 'json' | 'human') ?? 'human';
     const verbose = Boolean(ctx.args.verbose);
     const quiet = Boolean(ctx.args.quiet);
@@ -2253,6 +2272,11 @@ export const doctorWatch = defineCommand({
       }
       intervalSec = 5;
     }
+
+    emitResult(
+      makeResult('doctor watch', { status: 'watching', interval_sec: intervalSec }, 0, EXIT_CODES.success),
+      { format, verbose, quiet }
+    );
 
     let prevResults: Map<string, Severity> = new Map();
     let iteration = 0;
@@ -2352,6 +2376,16 @@ export const doctorWatch = defineCommand({
       p.log('');
       p.log(`wpm doctor watch stopped after ${iteration} iteration(s).`);
     }
+
+    emitResult(
+      makeResult(
+        'doctor watch',
+        { iterations: iteration, stopped: true, status: 'stopped' },
+        Date.now() - start,
+        EXIT_CODES.success
+      ),
+      { format, verbose, quiet }
+    );
   },
 });
 
@@ -2390,6 +2424,7 @@ export const doctorReport = defineCommand({
     },
   },
   async run(ctx) {
+    const start = Date.now();
     const reportFormat = ((ctx.args.format as string) ?? 'json').toLowerCase();
     const openAfter = ctx.args.open as boolean | undefined;
     const verbose = Boolean(ctx.args.verbose);
@@ -2461,6 +2496,15 @@ export const doctorReport = defineCommand({
         p.log(`Could not open ${outPath} automatically.`);
       }
     }
+
+    const result = makeResult(
+      'doctor report',
+      { report_path: outPath, summary, format: reportFormat },
+      Date.now() - start,
+      EXIT_CODES.success
+    );
+    emitResult(result, { format: 'human', verbose, quiet });
+    process.exit(0);
   },
 });
 
@@ -2802,12 +2846,7 @@ export const doctorPublish = defineCommand({
     });
 
     if (!publishReady) {
-      process.exitCode = EXIT_CODES.config_error;
-      if (format !== 'json') {
-        // Already emitted error message via consoleRenderer above
-        return;
-      }
-      return;
+      process.exit(EXIT_CODES.config_error);
     }
 
     if (doPublish && publishReady) {
@@ -2826,6 +2865,7 @@ export const doctorPublish = defineCommand({
         execSync(`pnpm -r publish --access public${registryFlag}`, { stdio: 'inherit' });
       }
     }
+    process.exit(EXIT_CODES.success);
   },
 });
 

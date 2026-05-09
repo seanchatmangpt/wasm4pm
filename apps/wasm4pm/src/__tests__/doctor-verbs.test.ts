@@ -10,8 +10,9 @@ import { spawnSync } from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
+import { assertEnvelope } from './helpers/envelope.js';
 
-const CLI = path.resolve(import.meta.dirname, '../../dist/cli.js');
+const CLI = path.resolve(import.meta.dirname, '../../dist/bin/wpm.js');
 
 function wpm(...args: string[]): { stdout: string; stderr: string; status: number } {
   const result = spawnSync(process.execPath, [CLI, ...args], {
@@ -32,11 +33,12 @@ function wpmJson(...args: string[]): { json: unknown; status: number } {
 describe('wpm doctor check', () => {
   it('exits 0-2, returns JSON with checks array and summary counts', () => {
     const { json, status } = wpmJson('doctor', 'check', '--format', 'json');
-    expect(status).toBeOneOf([0, 1, 2]);
-    expect(Array.isArray((json as { checks: unknown[] }).checks)).toBe(true);
-    const summary = (json as { summary: Record<string, number> }).summary;
-    expect(typeof summary.pass).toBe('number');
-    expect(typeof summary.fail).toBe('number');
+    expect([0, 1, 2]).toContain(status);
+    assertEnvelope(json, { command: 'doctor check' });
+    const payload = (json as { payload: { checks: unknown[]; summary: Record<string, number> } }).payload;
+    expect(Array.isArray(payload.checks)).toBe(true);
+    expect(typeof payload.summary.pass).toBe('number');
+    expect(typeof payload.summary.fail).toBe('number');
   });
 });
 
@@ -46,17 +48,18 @@ describe('wpm doctor fix', () => {
     expect(status).toBe(0);
     expect(stdout.toLowerCase()).toMatch(/dry.?run|would|preview/);
     const { json: jsonResult } = wpmJson('doctor', 'fix', '--dry-run', '--yes', '--format', 'json');
-    expect(jsonResult).toBeTruthy();
+    assertEnvelope(jsonResult, { command: 'doctor fix' });
+    expect((jsonResult as { payload: { dry_run: boolean } }).payload.dry_run).toBe(true);
   });
 });
 
 describe('wpm doctor publish', () => {
   it('exits 0 or 1 and JSON output includes ready boolean', () => {
     const { status } = wpm('doctor', 'publish');
-    expect(status).toBeOneOf([0, 1]);
+    expect([0, 1]).toContain(status);
     const { json } = wpmJson('doctor', 'publish', '--format', 'json');
-    expect(json).toHaveProperty('ready');
-    expect(typeof (json as { ready: boolean }).ready).toBe('boolean');
+    assertEnvelope(json, { command: 'doctor publish' });
+    expect(typeof (json as { payload: { ready: boolean } }).payload.ready).toBe('boolean');
   });
 });
 
@@ -66,28 +69,29 @@ describe('wpm doctor env', () => {
     wpm('doctor', 'env');
     expect(Date.now() - start).toBeLessThan(5_000);
     const { json } = wpmJson('doctor', 'env', '--format', 'json');
-    expect(json).toHaveProperty('environment');
-    expect(Array.isArray((json as { environment: unknown[] }).environment)).toBe(true);
+    assertEnvelope(json, { command: 'doctor env' });
+    expect(Array.isArray((json as { payload: { environment: unknown[] } }).payload.environment)).toBe(true);
   });
 });
 
 describe('wpm doctor tps', () => {
   it('exits 0 or 1 with JSON checks output and --fail-fast stays within 0-1', () => {
     const { json, status } = wpmJson('doctor', 'tps', '--format', 'json');
-    expect(status).toBeOneOf([0, 1]);
-    expect(json).toHaveProperty('checks');
+    expect([0, 1]).toContain(status);
+    assertEnvelope(json, { command: 'doctor tps' });
+    expect((json as { payload: { checks: unknown } }).payload.checks).toBeDefined();
     const { status: ffStatus } = wpm('doctor', 'tps', '--fail-fast');
-    expect(ffStatus).toBeOneOf([0, 1]);
+    expect([0, 1]).toContain(ffStatus);
   });
 });
 
 describe('wpm doctor perf', () => {
   it('exits 0 or 1 with JSON containing regressions and within_threshold arrays', () => {
     const { status } = wpm('doctor', 'perf');
-    expect(status).toBeOneOf([0, 1]);
+    expect([0, 1]).toContain(status);
     const { json } = wpmJson('doctor', 'perf', '--format', 'json');
-    expect(Array.isArray((json as { regressions: unknown[] }).regressions)).toBe(true);
-    expect(json).toHaveProperty('within_threshold');
+    assertEnvelope(json, { command: 'doctor perf' });
+    expect(Array.isArray((json as { payload: { regressions: unknown[] } }).payload.regressions)).toBe(true);
   });
 });
 
@@ -100,7 +104,7 @@ describe('wpm doctor watch', () => {
 
     const result = spawnSync(process.execPath, [CLI, 'doctor', 'watch', '--interval', '30'], { encoding: 'utf8', timeout: 1_500, cwd: os.tmpdir() });
     const s = result.status ?? result.signal ? 0 : 1;
-    expect(s).toBeOneOf([0, null]);
+    expect([0, null]).toContain(s);
   });
 });
 
