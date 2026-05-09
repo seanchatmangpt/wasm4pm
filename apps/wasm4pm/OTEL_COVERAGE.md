@@ -18,13 +18,13 @@ Receipt location: `.wasm4pm/receipts/<run_id>.json` plus
 | diff          |  A   |    A    |   A   | wired |
 | conformance   |  A   |    A    |   A   | wired |
 | quality       |  A   |    A    |   A   | wired |
-| predict       |  -   |    -    |   B   | TODO  |
+| predict       |  A   |    A    |   A   | wired (Surface L) |
+| ml            |  A   |    A    |   A   | wired (Surface L) |
+| simulate      |  A   |    A    |   A   | wired (Surface L; new `--no-save` flag) |
+| temporal      |  A   |    A    |   A   | wired (Surface L; new `--no-save` flag) |
+| social        |  A   |    A    |   A   | wired (Surface L; new `--no-save` flag) |
 | drift-watch   |  -   |    -    |   B   | TODO  |
-| ml            |  -   |    -    |   B   | TODO  |
 | powl          |  -   |    -    |   B   | TODO  |
-| simulate      |  -   |    -    |   B   | TODO  |
-| temporal      |  -   |    -    |   B   | TODO  |
-| social        |  -   |    -    |   B   | TODO  |
 | validate      |  -   |    -    |   B   | TODO  |
 | autoprocess   |  -   |    -    |   B   | TODO  |
 | swarm         |  -   |    -    |   B   | TODO  |

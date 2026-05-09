@@ -6,6 +6,8 @@ import { withLogSession } from '../with-log-session.js';
 import { loadWasm4pmConfig, buildCliOverrides } from '../config-loader.js';
 import { savePredictionResult } from './results.js';
 import { VALID_PREDICT_CLI_TASKS } from '@wasm4pm/contracts';
+import { withSpan } from './_otel.js';
+import { saveCommandReceipt, blake3Hex, newReceipt, type CommandReceipt } from '../receipts/_shared.js';
 
 const VALID_TASKS = VALID_PREDICT_CLI_TASKS;
 type PredictTask = (typeof VALID_TASKS)[number];
@@ -78,6 +80,18 @@ export const predict = defineCommand({
     const quiet = Boolean(ctx.args.quiet);
     const start = Date.now();
 
+    return withSpan(
+      'predict',
+      {
+        task: String(ctx.args.task ?? ''),
+        input: String(ctx.args.input ?? ''),
+        activity_key: String(ctx.args['activity-key'] ?? ''),
+        top_k: Number(ctx.args['top-k'] ?? 0),
+        ngram_order: Number(ctx.args['ngram-order'] ?? 0),
+        drift_window: Number(ctx.args['drift-window'] ?? 0),
+        format,
+      },
+      async () => {
     try {
       // Step 1: Validate task
       const task = ctx.args.task as string;
@@ -194,6 +208,30 @@ export const predict = defineCommand({
           if (savedPath && verbose) {
             // debug already handled by projection.debug if needed
           }
+          try {
+            const inputBytes = await fs.readFile(inputPath).catch(() => Buffer.from(inputPath));
+            const predictionsCount = Array.isArray((taskResult as Record<string, unknown>).predictions)
+              ? ((taskResult as Record<string, unknown>).predictions as unknown[]).length
+              : 0;
+            const receipt: CommandReceipt = {
+              ...newReceipt('predict'),
+              command: 'predict',
+              input_hash: blake3Hex(inputBytes),
+              output_hash: blake3Hex(JSON.stringify(payload)),
+              status: 'success',
+              summary: {
+                task,
+                activity_key: activityKey,
+                top_k: topK,
+                ngram_order: ngramOrder,
+                drift_window: driftWindow,
+                predictions_count: predictionsCount,
+              },
+            };
+            saveCommandReceipt(receipt);
+          } catch {
+            /* receipt write must never break the command */
+          }
         }
 
         process.exit(result.exit_code);
@@ -208,6 +246,8 @@ export const predict = defineCommand({
       emitResult(result, { format, verbose, quiet });
       process.exit(result.exit_code);
     }
+      },
+    );
   },
 });
 

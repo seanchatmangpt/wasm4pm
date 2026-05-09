@@ -69,3 +69,40 @@ describe('OTEL integration: real sink capture (in-process)', () => {
     expect(names).toContain('wasm4pm.command.quality');
   });
 });
+
+describe('Surface L: Phase B OTEL — 5 commands', () => {
+  let captured: OtelSpan[] = [];
+  beforeEach(() => {
+    captured = [];
+    setGlobalSpanSink((s) => captured.push(s));
+  });
+
+  afterEach(() => {
+    resetGlobalSpanSink();
+  });
+
+  // Direct withSpan plumbing test — no command invocation (avoid process.exit)
+  it('all 5 Phase B command names produce a span when wrapped', async () => {
+    for (const name of ['predict', 'ml', 'simulate', 'temporal', 'social']) {
+      await withSpan(name, { input: 'fixture' }, async () => null);
+    }
+    const names = captured.map((s) => s.name);
+    expect(names).toContain('wasm4pm.command.predict');
+    expect(names).toContain('wasm4pm.command.ml');
+    expect(names).toContain('wasm4pm.command.simulate');
+    expect(names).toContain('wasm4pm.command.temporal');
+    expect(names).toContain('wasm4pm.command.social');
+  });
+
+  it('span status is OK for successful body', async () => {
+    await withSpan('predict', {}, async () => null);
+    expect(captured[0].status.code).toBe('OK');
+  });
+
+  it('span status is ERROR when body throws', async () => {
+    await withSpan('ml', {}, async () => {
+      throw new Error('fail');
+    }).catch(() => undefined);
+    expect(captured[0].status.code).toBe('ERROR');
+  });
+});

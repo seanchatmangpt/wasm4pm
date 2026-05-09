@@ -3,6 +3,8 @@ import * as fs from 'fs/promises';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { withLogSession } from '../with-log-session.js';
+import { withSpan } from './_otel.js';
+import { saveCommandReceipt, blake3Hex, newReceipt, type CommandReceipt } from '../receipts/_shared.js';
 
 export const simulate = defineCommand({
   meta: {
@@ -54,6 +56,10 @@ export const simulate = defineCommand({
       description: 'Suppress non-error output',
       alias: 'q',
     },
+    'no-save': {
+      type: 'boolean',
+      description: 'Skip auto-save and BLAKE3 receipt',
+    },
   },
   async run(ctx) {
     const t0 = performance.now();
@@ -61,6 +67,17 @@ export const simulate = defineCommand({
     const verbose = Boolean(ctx.args.verbose);
     const quiet = Boolean(ctx.args.quiet);
 
+    return withSpan(
+      'simulate',
+      {
+        input: String(ctx.args.input ?? ctx.args.file ?? ''),
+        activity_key: String(ctx.args['activity-key'] ?? ''),
+        cases: Number(ctx.args.cases ?? 0),
+        time: Number(ctx.args.time ?? 0),
+        seed: Number(ctx.args.seed ?? 0),
+        format,
+      },
+      async () => {
     try {
       // Resolve input path (positional OR --file/-i)
       const inputPath: string | undefined =
@@ -163,6 +180,28 @@ export const simulate = defineCommand({
         emitResult(result, { format, verbose, quiet }, (res, projection) => {
           printHumanSimulation(projection, res.payload as typeof payload);
         });
+
+        if (!ctx.args['no-save']) {
+          try {
+            const inputBytes = await fs.readFile(inputPath!).catch(() => Buffer.from(inputPath!));
+            const receipt: CommandReceipt = {
+              ...newReceipt('simulate'),
+              command: 'simulate',
+              input_hash: blake3Hex(inputBytes),
+              output_hash: blake3Hex(JSON.stringify(payload)),
+              status: 'success',
+              summary: {
+                cases_generated: payload.traces.length,
+                seed,
+                model_kind: 'monte-carlo',
+              },
+            };
+            saveCommandReceipt(receipt);
+          } catch {
+            /* receipt write must never break the command */
+          }
+        }
+
         process.exit(result.exit_code);
       });  // end withLogSession
     } catch (error) {
@@ -170,6 +209,8 @@ export const simulate = defineCommand({
       emitResult(result, { format, verbose, quiet });
       process.exit(result.exit_code);
     }
+      },
+    );
   },
 });
 

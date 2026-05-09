@@ -3,6 +3,8 @@ import * as fs from 'fs/promises';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { withLogSession } from '../with-log-session.js';
+import { withSpan } from './_otel.js';
+import { saveCommandReceipt, blake3Hex, newReceipt, type CommandReceipt } from '../receipts/_shared.js';
 
 export const social = defineCommand({
   meta: {
@@ -50,6 +52,10 @@ export const social = defineCommand({
       description: 'Suppress non-error output',
       alias: 'q',
     },
+    'no-save': {
+      type: 'boolean',
+      description: 'Skip auto-save and BLAKE3 receipt',
+    },
   },
   async run(ctx) {
     const t0 = performance.now();
@@ -57,6 +63,16 @@ export const social = defineCommand({
     const verbose = Boolean(ctx.args.verbose);
     const quiet = Boolean(ctx.args.quiet);
 
+    return withSpan(
+      'social',
+      {
+        metric: String(ctx.args.metric ?? ''),
+        input: String(ctx.args.input ?? ctx.args.file ?? ''),
+        activity_key: String(ctx.args['activity-key'] ?? ''),
+        resource_key: String(ctx.args['resource-key'] ?? ''),
+        format,
+      },
+      async () => {
     try {
       // Resolve input path (positional OR --file/-i)
       const inputPath: string | undefined =
@@ -139,6 +155,28 @@ export const social = defineCommand({
         emitResult(result, { format, verbose, quiet }, (res, projection) => {
           printHumanSocial(projection, res.payload as typeof payload);
         });
+
+        if (!ctx.args['no-save']) {
+          try {
+            const inputBytes = await fs.readFile(inputPath!).catch(() => Buffer.from(inputPath!));
+            const receipt: CommandReceipt = {
+              ...newReceipt('social'),
+              command: 'social',
+              input_hash: blake3Hex(inputBytes),
+              output_hash: blake3Hex(JSON.stringify(payload)),
+              status: 'success',
+              summary: {
+                metric,
+                resources_count: payload.network.nodes.length,
+                edges_count: payload.network.edges.length,
+              },
+            };
+            saveCommandReceipt(receipt);
+          } catch {
+            /* receipt write must never break the command */
+          }
+        }
+
         process.exit(result.exit_code);
       });  // end withLogSession
     } catch (error) {
@@ -146,6 +184,8 @@ export const social = defineCommand({
       emitResult(result, { format, verbose, quiet });
       process.exit(result.exit_code);
     }
+      },
+    );
   },
 });
 

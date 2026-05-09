@@ -6,6 +6,8 @@ import { withLogSession } from '../with-log-session.js';
 import { savePredictionResult } from './results.js';
 import { VALID_ML_TASKS, executeMlTask } from '../ml-runner.js';
 import type { MlTask } from '../ml-runner.js';
+import { withSpan } from './_otel.js';
+import { saveCommandReceipt, blake3Hex, newReceipt, type CommandReceipt } from '../receipts/_shared.js';
 
 export const ml = defineCommand({
   meta: {
@@ -67,6 +69,16 @@ export const ml = defineCommand({
     const verbose = Boolean(ctx.args.verbose);
     const quiet = Boolean(ctx.args.quiet);
 
+    return withSpan(
+      'ml',
+      {
+        task: String(ctx.args.task ?? ''),
+        input: String(ctx.args.input ?? ''),
+        activity_key: String(ctx.args['activity-key'] ?? ''),
+        method: String(ctx.args.method ?? ''),
+        format,
+      },
+      async () => {
     try {
       const task = ctx.args.task as string;
       if (!VALID_ML_TASKS.includes(task as MlTask)) {
@@ -122,6 +134,34 @@ export const ml = defineCommand({
             projection.debug(`Result saved: ${(data as Record<string, unknown>)['_savedPath']}`);
           }
         });
+
+        if (!ctx.args['no-save']) {
+          try {
+            const inputBytes = await fs.readFile(inputPath).catch(() => Buffer.from(inputPath));
+            const sampleSize = Array.isArray((mlResult as Record<string, unknown>).predictions)
+              ? ((mlResult as Record<string, unknown>).predictions as unknown[]).length
+              : Array.isArray((mlResult as Record<string, unknown>).assignments)
+                ? ((mlResult as Record<string, unknown>).assignments as unknown[]).length
+                : 0;
+            const receipt: CommandReceipt = {
+              ...newReceipt('ml'),
+              command: 'ml',
+              input_hash: blake3Hex(inputBytes),
+              output_hash: blake3Hex(JSON.stringify(payload)),
+              status: 'success',
+              summary: {
+                task,
+                method: String(ctx.args.method ?? ''),
+                activity_key: activityKey,
+                sample_size: sampleSize,
+              },
+            };
+            saveCommandReceipt(receipt);
+          } catch {
+            /* receipt write must never break the command */
+          }
+        }
+
         process.exit(result.exit_code);
       });  // end withLogSession
     } catch (error) {
@@ -129,6 +169,8 @@ export const ml = defineCommand({
       emitResult(result, { format, verbose, quiet });
       process.exit(result.exit_code);
     }
+      },
+    );
   },
 });
 
