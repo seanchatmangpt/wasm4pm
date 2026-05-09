@@ -28,11 +28,14 @@ verify-ts: verify
 
 # ── Technical Debt Check ──────────────────────────────────────────────────────
 # Fails if any TODO, FIXME, or functional placeholder markers are found in production source.
+# Whitelist-only: scans .rs / .ts / .tsx (canonical first-party sources).
+# Gate scripts (*.sh) and support files (.toml/.yaml/.json) are infrastructure
+# and frequently contain marker strings as scan patterns, not as debt.
 check-debt:
 	@echo "Checking for technical debt markers..."
 	@if grep -rE "TODO|FIXME|//\s*placeholder" packages/ crates/ src/ wasm4pm/src/ \
-		--exclude-dir={node_modules,target,pkg,dist,examples,docs} \
-		--exclude="*.d.ts" --exclude="*.md" --exclude="*.bak*" --exclude="*.backup*" --exclude="*.js" --exclude="*.py" --exclude="*.txt" | \
+		--include="*.rs" --include="*.ts" --include="*.tsx" \
+		--exclude-dir={node_modules,target,pkg,dist,examples,docs} | \
 		grep -vE "placeholder=\"|details: '.*placeholder'|//\s*TODO: footprint|//\s*TODO: Succession"; then \
 		echo "❌ ERROR: Technical debt markers found in production code. Please resolve them."; \
 		exit 1; \
