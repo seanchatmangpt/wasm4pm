@@ -10,10 +10,10 @@ describe('wpm run --preflight validation', () => {
     expect(result?.exitCode).toBe(EXIT_CODES.SOURCE_ERROR);
   });
 
-  it('returns Pass 1 structural error before attempting WASM call', async () => {
-    const result = await runCli(['run', '/nonexistent.xes']);
-    // Should exit with SOURCE_ERROR (2) for file not found, before WASM init
-    expect([EXIT_CODES.SOURCE_ERROR, 2]).toContain(result?.exitCode);
+  it('rejects unsupported input file extension with SOURCE_ERROR', async () => {
+    // Plan A preflight: unknown extensions must fail before WASM init.
+    const result = await runCli(['run', 'no-such.txt']);
+    expect(result?.exitCode).toBe(EXIT_CODES.SOURCE_ERROR);
   });
 
   it('requires --preflight flag for full Pass 2 (semantic) validation', async () => {

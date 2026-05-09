@@ -3,6 +3,9 @@ import * as fs from 'fs/promises';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { WasmLoader } from '@wasm4pm/engine';
+import { discriminate } from '../discriminator.js';
+import { withSpan } from './_otel.js';
+import { saveCommandReceipt, blake3Hex, newReceipt, type CommandReceipt } from '../receipts/_shared.js';
 
 interface DfgNode {
   id: string;
@@ -103,6 +106,14 @@ export const diff = defineCommand({
 
     const t0 = Date.now();
 
+    return withSpan(
+      'diff',
+      {
+        log1: String(ctx.args.log1 ?? ''),
+        log2: String(ctx.args.log2 ?? ''),
+        format,
+      },
+      async () => {
     try {
       const log1Path = ctx.args.log1 as string;
       const log2Path = ctx.args.log2 as string;
@@ -145,8 +156,23 @@ export const diff = defineCommand({
       const dfg1Raw = wasm.discover_dfg(handle1, activityKey);
       const dfg2Raw = wasm.discover_dfg(handle2, activityKey);
 
-      const dfg1: Dfg = typeof dfg1Raw === 'string' ? JSON.parse(dfg1Raw) : dfg1Raw;
-      const dfg2: Dfg = typeof dfg2Raw === 'string' ? JSON.parse(dfg2Raw) : dfg2Raw;
+      // Validate both outputs are DFGs (diff is DFG-only).
+      const shape1 = discriminate(dfg1Raw, 'dfg');
+      const shape2 = discriminate(dfg2Raw, 'dfg');
+      if (shape1.kind !== 'dfg' || shape2.kind !== 'dfg') {
+        const offending = shape1.kind !== 'dfg' ? shape1.kind : shape2.kind;
+        const result = makeErrorResult(
+          'diff',
+          new Error(`diff requires DFG output (got ${offending})`),
+          EXIT_CODES.execution_error,
+          'DIFF_REQUIRES_DFG'
+        );
+        emitResult(result, { format, verbose, quiet });
+        process.exit(result.exit_code);
+      }
+
+      const dfg1: Dfg = shape1.raw as Dfg;
+      const dfg2: Dfg = shape2.raw as Dfg;
 
       // Discover trace variants for both logs
       const variants1Raw = wasm.analyze_trace_variants(handle1, activityKey);
@@ -179,12 +205,37 @@ export const diff = defineCommand({
         printHumanDiff(res.payload, log1Path, log2Path, projection);
       });
 
+      // Persist BLAKE3 receipt for proof-of-execution
+      if (!ctx.args['no-save']) {
+        try {
+          const log1Bytes = await fs.readFile(log1Path);
+          const log2Bytes = await fs.readFile(log2Path);
+          const receipt: CommandReceipt = {
+            ...newReceipt('diff'),
+            input_hash: blake3Hex(Buffer.concat([log1Bytes, log2Bytes])),
+            output_hash: blake3Hex(JSON.stringify(payload)),
+            status: 'success',
+            summary: {
+              log1: log1Path,
+              log2: log2Path,
+              activityKey,
+              elapsedMs: Math.round(elapsedMs * 100) / 100,
+            },
+          };
+          saveCommandReceipt(receipt);
+        } catch {
+          /* receipt write must never break the command */
+        }
+      }
+
       process.exit(result.exit_code);
     } catch (error) {
       const result = makeErrorResult('diff', error, EXIT_CODES.execution_error, 'EXECUTION_ERROR');
       emitResult(result, { format, verbose, quiet });
       process.exit(result.exit_code);
     }
+      },
+    );
   },
 });
 

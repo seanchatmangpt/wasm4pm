@@ -3,6 +3,9 @@ import * as fs from 'fs/promises';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { withLogSession } from '../with-log-session.js';
+import { discriminate, toUniformStats } from '../discriminator.js';
+import { withSpan } from './_otel.js';
+import { saveCommandReceipt, blake3Hex, newReceipt, type CommandReceipt } from '../receipts/_shared.js';
 
 interface QualityPayload {
   status: string;
@@ -72,6 +75,14 @@ export const quality = defineCommand({
 
     const t0 = Date.now();
 
+    return withSpan(
+      'quality',
+      {
+        input: String(ctx.args.input ?? ctx.args.file ?? ''),
+        algorithm: String(ctx.args.algorithm ?? ''),
+        format,
+      },
+      async () => {
     try {
       // Resolve input path (positional OR --file/-i)
       const inputPath: string | undefined =
@@ -133,21 +144,27 @@ export const quality = defineCommand({
         throw new Error(`Failed to discover model: ${e instanceof Error ? e.message : String(e)}`);
       }
 
-      // Parse model JSON for structural info (nodes/edges)
-      let modelInfo: {
-        nodes?: unknown[];
-        edges?: unknown[];
-        places?: unknown[];
-        transitions?: unknown[];
-        arcs?: unknown[];
-      } = {};
+      // Discriminate model JSON for structural info.
+      // The inductive miner produces a process tree; we may also encounter Petri
+      // nets in this branch if the discovery path changes in the future.
+      let modelStats: { nodes: number; edges: number } = { nodes: 0, edges: 0 };
+      let petriCounts: { places: number; transitions: number; arcs: number } | null = null;
       try {
         const rawModelJson = wasm.get_object_json ? wasm.get_object_json(modelHandle) : null;
         if (rawModelJson) {
-          modelInfo = typeof rawModelJson === 'string' ? JSON.parse(rawModelJson) : rawModelJson;
+          const shape = discriminate(rawModelJson, 'inductive');
+          modelStats = toUniformStats(shape);
+          if (shape.kind === 'petrinet') {
+            petriCounts = {
+              places: shape.places,
+              transitions: shape.transitions,
+              arcs: shape.arcs,
+            };
+          }
         }
       } catch {
-        // Model JSON retrieval not available — will report 0 nodes/edges
+        // Model JSON retrieval not available, or shape did not match a known kind.
+        // Quality scoring will fall back to defaults below.
       }
 
       // Compute quality metrics via WASM conformance functions
@@ -220,30 +237,24 @@ export const quality = defineCommand({
       // Simplicity — via WASM compute_simplicity(places, transitions, arcs)
       if (requestedMetrics.includes('simplicity')) {
         try {
-          const numPlaces = (modelInfo.places as unknown[] | undefined)?.length ?? 0;
-          const numTransitions = (modelInfo.transitions as unknown[] | undefined)?.length ?? 0;
-          const numArcs = (modelInfo.arcs as unknown[] | undefined)?.length ?? 0;
           if (
+            petriCounts &&
             typeof wasm.wasm_compute_simplicity === 'function' &&
-            numPlaces + numTransitions + numArcs > 0
+            petriCounts.places + petriCounts.transitions + petriCounts.arcs > 0
           ) {
             qualityScores.simplicity = wasm.wasm_compute_simplicity(
-              numPlaces,
-              numTransitions,
-              numArcs
+              petriCounts.places,
+              petriCounts.transitions,
+              petriCounts.arcs
             );
           } else {
-            // Fallback: heuristic if WASM function unavailable or model empty
-            const numNodes = modelInfo.nodes?.length ?? 0;
-            const numEdges = modelInfo.edges?.length ?? 0;
-            const totalElements = numNodes + numEdges;
+            // Fallback: heuristic if WASM function unavailable or model is not a Petri net
+            const totalElements = modelStats.nodes + modelStats.edges;
             qualityScores.simplicity = 1.0 / (1.0 + totalElements / 10.0);
           }
         } catch {
           // Fallback: heuristic on failure
-          const numNodes = modelInfo.nodes?.length ?? 0;
-          const numEdges = modelInfo.edges?.length ?? 0;
-          const totalElements = numNodes + numEdges;
+          const totalElements = modelStats.nodes + modelStats.edges;
           qualityScores.simplicity = 1.0 / (1.0 + totalElements / 10.0);
         }
       }
@@ -281,8 +292,8 @@ export const quality = defineCommand({
         },
         model: {
           type: 'inductive_miner',
-          nodes: modelInfo.nodes?.length ?? 0,
-          edges: modelInfo.edges?.length ?? 0,
+          nodes: modelStats.nodes,
+          edges: modelStats.edges,
         },
       };
 
@@ -292,6 +303,27 @@ export const quality = defineCommand({
       emitResult(result, { format, verbose, quiet }, (res, projection) => {
         printHumanQuality(res.payload, projection);
       });
+
+        // Persist BLAKE3 receipt for proof-of-execution
+        if (!ctx.args['no-save']) {
+          try {
+            const inputBytes = await fs.readFile(inputPath);
+            const receipt: CommandReceipt = {
+              ...newReceipt('quality'),
+              input_hash: blake3Hex(inputBytes),
+              output_hash: blake3Hex(JSON.stringify(payload)),
+              status: 'success',
+              summary: {
+                algorithm: (payload as unknown as Record<string, unknown>).algorithm,
+                metrics: (payload as unknown as Record<string, unknown>).metrics,
+                elapsedMs,
+              },
+            };
+            saveCommandReceipt(receipt);
+          } catch {
+            /* receipt write must never break the command */
+          }
+        }
 
         process.exit(result.exit_code);
       });  // end withLogSession
@@ -305,6 +337,8 @@ export const quality = defineCommand({
       emitResult(result, { format, verbose, quiet });
       process.exit(result.exit_code);
     }
+      },
+    );
   },
 });
 

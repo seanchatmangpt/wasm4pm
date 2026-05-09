@@ -129,7 +129,28 @@ For more information on wasm4pm, see:
 }
 
 /**
+ * Tagged write-file errors — map to specific exit codes in the caller.
+ */
+export class InitFileSystemError extends Error {
+  constructor(public exitCode: number, public filepath: string, public cause: NodeJS.ErrnoException) {
+    super(`Failed to write ${filepath}: ${cause.code ?? 'UNKNOWN'} ${cause.message}`);
+    this.name = 'InitFileSystemError';
+  }
+}
+
+export class InitTomlSerializeError extends Error {
+  constructor(public filepath: string, public cause: Error) {
+    super(`TOML serialization error for ${filepath}: ${cause.message}`);
+    this.name = 'InitTomlSerializeError';
+  }
+}
+
+/**
  * Write file with safety checks — returns true if written, false if skipped.
+ *
+ * Throws InitFileSystemError on EACCES/ENOSPC so the caller can map to
+ * EXIT_CODES.system_error. Other I/O errors propagate as ordinary errors
+ * (default catch path → EXIT_CODES.execution_error).
  */
 async function safeWriteFile(
   filepath: string,
@@ -142,8 +163,16 @@ async function safeWriteFile(
     return false;
   }
 
-  await fs.writeFile(filepath, content, 'utf-8');
-  return true;
+  try {
+    await fs.writeFile(filepath, content, 'utf-8');
+    return true;
+  } catch (err) {
+    const e = err as NodeJS.ErrnoException;
+    if (e && (e.code === 'EACCES' || e.code === 'ENOSPC')) {
+      throw new InitFileSystemError(EXIT_CODES.system_error, filepath, e);
+    }
+    throw err;
+  }
 }
 
 /**
@@ -261,12 +290,19 @@ export const init = defineCommand({
       const configFilename = configFormat === 'toml' ? 'wasm4pm.toml' : 'wasm4pm.json';
       const configPath = path.join(cwd, configFilename);
       let configContent: string;
-      if (preset) {
-        configContent = configFormat === 'toml'
-          ? getExamplePresetConfig(preset as PublicPreset)
-          : JSON.stringify(getPublicPresetConfig(preset as PublicPreset), null, 2);
-      } else {
-        configContent = configFormat === 'toml' ? getExampleTomlConfig() : getExampleJsonConfig();
+      try {
+        if (preset) {
+          configContent = configFormat === 'toml'
+            ? getExamplePresetConfig(preset as PublicPreset)
+            : JSON.stringify(getPublicPresetConfig(preset as PublicPreset), null, 2);
+        } else {
+          configContent = configFormat === 'toml' ? getExampleTomlConfig() : getExampleJsonConfig();
+        }
+      } catch (serErr) {
+        throw new InitTomlSerializeError(
+          configPath,
+          serErr instanceof Error ? serErr : new Error(String(serErr))
+        );
       }
 
       const configCreated = await safeWriteFile(configPath, configContent, force, earlyProjection);
@@ -335,7 +371,16 @@ export const init = defineCommand({
       });
       process.exit(result.exit_code);
     } catch (error) {
-      const result = makeErrorResult('init', error, EXIT_CODES.system_error, 'INIT_ERROR');
+      let exitCode: number = EXIT_CODES.execution_error;
+      let code = 'INIT_ERROR';
+      if (error instanceof InitFileSystemError) {
+        exitCode = EXIT_CODES.system_error;
+        code = 'INIT_FILESYSTEM_ERROR';
+      } else if (error instanceof InitTomlSerializeError) {
+        exitCode = EXIT_CODES.config_error;
+        code = 'INIT_CONFIG_SERIALIZE_ERROR';
+      }
+      const result = makeErrorResult('init', error, exitCode, code);
       emitResult(result, { format, verbose, quiet });
       process.exit(result.exit_code);
     }

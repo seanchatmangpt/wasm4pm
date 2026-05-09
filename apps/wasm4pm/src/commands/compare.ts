@@ -1,9 +1,12 @@
 import { defineCommand } from 'citty';
-import * as fs from 'fs/promises';
 import { ALGORITHM_CLI_ALIASES } from '@wasm4pm/contracts';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { withLogSession } from '../with-log-session.js';
+import { discriminate, toUniformStats, DiscoveryShapeError } from '../discriminator.js';
+import * as fs from 'node:fs';
+import { withSpan } from './_otel.js';
+import { saveCommandReceipt, blake3Hex, newReceipt, type CommandReceipt } from '../receipts/_shared.js';
 
 /**
  * Algorithms supported by `wpm compare`.
@@ -106,51 +109,6 @@ function runDiscovery(
 }
 
 /**
- * Extract node/edge counts from a discovery result.
- * Results may be a parsed object already (JsValue) or a JSON string.
- * Throws if result format is invalid (failing fast, not silently).
- */
-function extractStats(raw: unknown): { nodes: number; edges: number } {
-  let obj: Record<string, unknown>;
-
-  if (typeof raw === 'string') {
-    try {
-      obj = JSON.parse(raw) as Record<string, unknown>;
-    } catch (err) {
-      throw new Error(
-        `Failed to parse discovery result JSON: ${err instanceof Error ? err.message : String(err)}`
-      );
-    }
-  } else if (raw !== null && typeof raw === 'object') {
-    obj = raw as Record<string, unknown>;
-  } else {
-    throw new Error(`Invalid discovery result: expected object or JSON string, got ${typeof raw}`);
-  }
-
-  // DFG / social-network shape: { nodes: [...], edges: [...] }
-  if (Array.isArray(obj['nodes']) && Array.isArray(obj['edges'])) {
-    return { nodes: obj['nodes'].length, edges: obj['edges'].length };
-  }
-
-  // Petri Net shape: { places: [...], transitions: [...], arcs: [...] }
-  if (Array.isArray(obj['places']) && Array.isArray(obj['transitions'])) {
-    const places = (obj['places'] as unknown[]).length;
-    const transitions = (obj['transitions'] as unknown[]).length;
-    const arcs = Array.isArray(obj['arcs']) ? (obj['arcs'] as unknown[]).length : 0;
-    return { nodes: places + transitions, edges: arcs };
-  }
-
-  // Edge-set shape (genetic / ant-colony): { edges: [{from, to}] }
-  if (Array.isArray(obj['edges'])) {
-    return { nodes: 0, edges: (obj['edges'] as unknown[]).length };
-  }
-
-  throw new Error(
-    `Unknown discovery result format: expected nodes/edges or places/transitions or edges array, got ${Object.keys(obj).join(', ')}`
-  );
-}
-
-/**
  * Run the model metrics WASM function to get variants, density, complexity.
  * Throws if metrics computation fails (failing fast, not silently).
  */
@@ -247,6 +205,14 @@ export const compare = defineCommand({
     const quiet = Boolean(ctx.args.quiet);
     const emitOptions = { format, verbose, quiet };
 
+    return withSpan(
+      'compare',
+      {
+        algorithms: String(ctx.args.algorithms ?? ''),
+        input: String(ctx.args.input ?? ''),
+        format,
+      },
+      async () => {
     try {
       // Parse algorithms from the single positional (citty collects remaining args as string)
       const rawAlgos = (ctx.args.algorithms as string)
@@ -297,7 +263,7 @@ export const compare = defineCommand({
         const stats: ModelStats[] = [];
         for (const algo of algos) {
           const { raw, elapsedMs } = runDiscovery(wasm, algo, logHandle, activityKey);
-          const { nodes, edges } = extractStats(raw);
+          const { nodes, edges } = toUniformStats(discriminate(raw, algo));
           stats.push({
             algorithm: algo,
             nodes,
@@ -330,6 +296,27 @@ export const compare = defineCommand({
         }
 
         const cmdResult = makeResult('compare', payload, totalElapsedMs, EXIT_CODES.success);
+
+        // Persist BLAKE3 receipt for proof-of-execution
+        if (!ctx.args['no-save']) {
+          try {
+            const inputBytes = fs.readFileSync(inputPath);
+            const receipt: CommandReceipt = {
+              ...newReceipt('compare'),
+              input_hash: blake3Hex(inputBytes),
+              output_hash: blake3Hex(JSON.stringify(payload)),
+              status: 'success',
+              summary: {
+                algorithms: algos,
+                activityKey,
+                elapsedMs: Math.round(totalElapsedMs * 100) / 100,
+              },
+            };
+            saveCommandReceipt(receipt);
+          } catch {
+            /* receipt write must never break the command */
+          }
+        }
 
       emitResult(cmdResult, emitOptions, (res, projection) => {
         const p = res.payload as typeof payload;
@@ -403,14 +390,18 @@ export const compare = defineCommand({
         process.exit(cmdResult.exit_code);
       });  // end withLogSession
     } catch (error) {
+      const code =
+        error instanceof DiscoveryShapeError ? 'DISCOVERY_SHAPE_MISMATCH' : 'COMPARISON_FAILED';
       const result = makeErrorResult(
         'compare',
         error instanceof Error ? error : new Error(String(error)),
         EXIT_CODES.execution_error,
-        'COMPARISON_FAILED'
+        code
       );
       emitResult(result, emitOptions);
       process.exit(result.exit_code);
     }
+      },
+    );
   },
 });

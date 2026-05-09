@@ -10,6 +10,9 @@ import { EXIT_CODES } from '../exit-codes.js';
 import { savePredictionResult } from './results.js';
 import { executeMlTask } from '../ml-runner.js';
 import type { MlTask } from '../ml-runner.js';
+import { discriminate, DiscoveryShapeError } from '../discriminator.js';
+import { withSpan } from './_otel.js';
+import { saveCommandReceipt, blake3Hex, newReceipt, type CommandReceipt } from '../receipts/_shared.js';
 
 export interface RunOptions {
   config?: string;
@@ -218,6 +221,14 @@ export const run = defineCommand({
     const quiet = Boolean(ctx.args.quiet);
     const emitOptions = { format, verbose, quiet };
 
+    return withSpan(
+      'run',
+      {
+        algorithm: String(ctx.args.algorithm ?? ''),
+        input: String(ctx.args.input ?? ''),
+        format,
+      },
+      async () => {
     try {
       // Step 1: Load and validate configuration
       const configPath = ctx.args.config || process.cwd();
@@ -293,6 +304,23 @@ export const run = defineCommand({
       }
 
       const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
+
+      // Preflight: only accept supported input extensions.
+      const lowerInput = inputPath.toLowerCase();
+      const acceptedExt =
+        lowerInput.endsWith('.xes') ||
+        lowerInput.endsWith('.xes.gz') ||
+        lowerInput.endsWith('.json');
+      if (!acceptedExt) {
+        const result = makeErrorResult(
+          'run',
+          new Error(`unsupported input file extension: ${inputPath}`),
+          EXIT_CODES.source_error,
+          'UNSUPPORTED_EXTENSION'
+        );
+        emitResult(result, emitOptions);
+        process.exit(result.exit_code);
+      }
 
       await withLogSession(
         { inputPath, activityKey, commandName: 'run', emitOptions },
@@ -399,6 +427,23 @@ export const run = defineCommand({
         const result = runDiscovery(wasm, resolvedAlgo, logHandle, activityKey);
         raw = result.raw;
         elapsedMs = result.elapsedMs;
+      }
+
+      // Validate discovery output shape — fail loudly on unknown shapes.
+      try {
+        discriminate(raw, resolvedAlgo);
+      } catch (shapeErr) {
+        if (shapeErr instanceof DiscoveryShapeError) {
+          const errResult = makeErrorResult(
+            'run',
+            shapeErr,
+            EXIT_CODES.execution_error,
+            'DISCOVERY_SHAPE_MISMATCH'
+          );
+          emitResult(errResult, emitOptions);
+          process.exit(errResult.exit_code);
+        }
+        throw shapeErr;
       }
 
       // Step 6b: Run ML analysis if configured
@@ -522,6 +567,25 @@ export const run = defineCommand({
           activityKey,
           payload as unknown as Record<string, unknown>
         );
+
+        // Step 9c: Persist BLAKE3 receipt for proof-of-execution
+        try {
+          const inputBytes = await fs.readFile(inputPath).catch(() => Buffer.from(inputPath));
+          const receipt: CommandReceipt = {
+            ...newReceipt('run'),
+            input_hash: blake3Hex(inputBytes),
+            output_hash: blake3Hex(JSON.stringify(payload)),
+            status: 'success',
+            summary: {
+              algorithm: resolvedAlgo,
+              activityKey,
+              elapsedMs: Math.round(elapsedMs * 100) / 100,
+            },
+          };
+          saveCommandReceipt(receipt);
+        } catch {
+          /* receipt write must never break the command */
+        }
       }
 
       // Step 10: Write output file if specified
@@ -660,6 +724,8 @@ export const run = defineCommand({
       emitResult(result, emitOptions);
       process.exit(result.exit_code);
     }
+      },
+    );
   },
 });
 
