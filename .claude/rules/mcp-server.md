@@ -11,7 +11,9 @@
 
 ## Available MCP Tools
 
-### Discovery (5 tools)
+The MCP server in `wasm4pm/src/mcp_server.ts` registers **~37 tools** (count of `name:` entries minus the server identifier). The categorization below is illustrative; for the authoritative list, grep `name:\s*['"]` in `wasm4pm/src/mcp_server.ts`.
+
+### Discovery (sample)
 
 | Tool | Algorithm | Speed |
 |------|-----------|-------|
@@ -20,8 +22,11 @@
 | `discover_ilp_optimization` | Petri net (ILP) | ~20ms/100 events |
 | `discover_genetic_algorithm` | Petri net (Genetic) | ~400ms/1000 events |
 | `discover_variants` | Trace variant analysis | Fast |
+| `discover_dfg_simd` | SIMD-accelerated DFG | Fast |
+| `discover_dfg_hierarchical` | Hierarchical DFG | Fast |
+| `discover_alpha_footprints` | Alpha footprint matrix | Fast |
 
-### Analysis (4 tools)
+### Analysis & Conformance (sample)
 
 | Tool | Purpose |
 |------|---------|
@@ -29,21 +34,22 @@
 | `analyze_statistics` | Log statistics and metrics |
 | `detect_bottlenecks` | Find slow activities |
 | `detect_concept_drift` | Detect process changes over time |
+| `compute_conformance_fitness` | Token-replay fitness |
+| `simd_replay` | SIMD-accelerated token replay |
 
-### Visualization (2 tools)
+### Object-Centric (OCEL)
 
-| Tool | Purpose |
-|------|---------|
-| `generate_mermaid_diagram` | Mermaid process diagram |
-| `generate_html_report` | Comprehensive HTML report |
+`load_ocel`, `flatten_ocel`, `discover_ocel_dfg_per_type`, `discover_oc_petri_net`, `encode_ocel_as_text`.
 
-### Utilities (3+ tools)
+### Predictive / ML
 
-| Tool | Purpose |
-|------|---------|
-| `compare_algorithms` | Benchmark multiple algorithms |
-| `parse_xes` | Parse XES event log |
-| `validate_model` | Validate process model soundness |
+`predict_next_activity`, `predict_case_duration`, `score_trace_anomaly`, `extract_case_features`, `ml_classify_traces`, `ml_cluster_traces`, `ml_forecast_throughput`, `ml_detect_anomalies`, `ml_regress_remaining_time`, `ml_pca_reduce`.
+
+### Encoding & Utilities
+
+`encode_dfg_as_text`, `compare_algorithms`, `streaming_log_estimate`, `smart_engine_run`, `get_capability_registry`, `clear_caches`, `cache_stats`, `check_backend_health`.
+
+> NOTE: previous versions of this doc claimed dedicated `generate_mermaid_diagram` and `generate_html_report` visualization tools and a separate `parse_xes` / `validate_model` utility set. Those names do **not** appear in `wasm4pm/src/mcp_server.ts` today. Visualization is currently delivered via `encode_dfg_as_text` / `encode_ocel_as_text`.
 
 ## MCP Tool Development
 

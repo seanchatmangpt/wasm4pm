@@ -2,13 +2,13 @@
 
 **Package structure, config system, CLI contracts.**
 
-## Package Structure (10 packages)
+## Package Structure (11 packages — `agents`, `cognition`, `config`, `contracts`, `engine`, `kernel`, `ml`, `observability`, `planner`, `swarm`, `testing`)
 
 ```
 packages/
 ├── contracts/    # Shared types, receipts, errors, plans, hashing (leaf, no deps)
 ├── config/       # Zod-validated config, resolveConfig(), 5-layer precedence
-├── kernel/       # WASM facade — 41 algorithms, run(), stream()
+├── kernel/       # WASM facade — 36 algorithms, run(), stream()
 ├── engine/       # Lifecycle state machine (uninitialized → watching / failed)
 ├── planner/      # plan(config) → ExecutionPlan, explain(config) → string
 ├── observability/# 3-layer: CLI human, JSONL machine, OTEL spans
@@ -40,7 +40,7 @@ cd packages/engine && npm test     # Test one package (npm)
 
 ## wasm4pm CLI (apps/wasm4pm/)
 
-**20 commands:**
+**29 commands** (count from `apps/wasm4pm/src/commands/*.ts`; the table below lists the original published set and may lag behind the source):
 
 | Category | Commands |
 |----------|----------|
@@ -84,7 +84,7 @@ Results auto-save to `.wasm4pm/results/<timestamp>-<task>.json`. Pass `--no-save
 4. **Environment variables** (`WASM4PM_*` prefix)
 5. **Defaults** (lowest priority)
 
-**IMPORTANT:** ENV var prefix is `WASM4PM_`, NOT `WASM4PM_`.
+**IMPORTANT:** ENV var prefix is `WASM4PM_` (verified in `packages/config/src/resolver.ts:157`). The earlier note "`WASM4PM_`, NOT `WASM4PM_`" was a copy-paste tautology — there is only one prefix.
 
 ### ENV Variables
 

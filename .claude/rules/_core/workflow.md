@@ -21,7 +21,7 @@ Profiles:
 - `iot` (~1MB) — basic discovery + conformance
 - `edge` (~1.5MB) — advanced discovery + streaming basic
 - `fog` (~2MB) — all except POWL, full ML + streaming
-- `browser` (default, ~2.7MB) — all 41 algorithms
+- `browser` (default, ~2.7MB) — all features (36 kernel-registered algorithms)
 
 Wait for the build to complete before proceeding.
 
