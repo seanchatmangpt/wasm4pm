@@ -1,16 +1,19 @@
 //! ZERO decision logic — only WASM forwarding + OTEL span emission.
 
-import { WasmLoader } from '../init';
-import { CognitionError } from '../errors';
-import type { SpanSink } from '../observability-types';
-import { defaultSpanSink, hexId } from '../span-utils';
-import type { BreedInput, ContractResult } from '../types';
+import { WasmLoader } from '../init.js';
+import { CognitionError } from '../errors.js';
+import type { SpanSink } from '../observability-types.js';
+import { defaultSpanSink, hexId } from '../span-utils.js';
+import type { BreedInput, ContractResult } from '../types.js';
 
 export interface RunOptions {
   spanSink?: SpanSink;
+  /** Optional profile string forwarded to Rust `ValidatedRunOptions.profile`. */
+  profile?: string;
 }
 
 export async function runContract(
+  breed: string,
   input: BreedInput,
   options: RunOptions = {},
 ): Promise<ContractResult> {
@@ -27,7 +30,17 @@ export async function runContract(
   try {
     let inputJson: string;
     try {
-      inputJson = JSON.stringify(input);
+      // Rust expects `{ breed, contract, options? }` with `deny_unknown_fields`.
+      // Sending a bare `BreedInput` here is rejected with "missing field 'breed'".
+      const wrapped: {
+        breed: string;
+        contract: BreedInput;
+        options?: { profile?: string };
+      } = { breed, contract: input };
+      if (options.profile !== undefined) {
+        wrapped.options = { profile: options.profile };
+      }
+      inputJson = JSON.stringify(wrapped);
     } catch (e) {
       throw new CognitionError(
         'Failed to serialize BreedInput',

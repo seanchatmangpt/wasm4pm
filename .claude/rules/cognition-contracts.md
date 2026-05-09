@@ -146,3 +146,20 @@ const r = result as { status?: string; output_hash?: string };
 decision: r.status === 'ok' ? 'Allow' : 'Deny',
 hash: typeof r.output_hash === 'string' ? r.output_hash.slice(0, 8) : '00000000',
 ```
+
+## FM-5 cleanup ritual (pnpm hard-copy trap)
+
+pnpm hard-copies file: dependencies into node_modules. Deleting only `crates/wasm4pm-cognition/pkg/` does NOT invalidate tests.
+
+**Honest cleanup ritual:**
+
+```bash
+rm -rf crates/wasm4pm-cognition/pkg/ \
+       node_modules/wasm4pm-cognition/ \
+       packages/cognition/node_modules/wasm4pm-cognition/
+pnpm test --filter @wasm4pm/cognition
+# Integration tests MUST FAIL with module-not-found.
+# If they pass, FM-5 is violated — tests are not exercising real WASM.
+```
+
+After validating, restore via `cd crates/wasm4pm-cognition && wasm-pack build --target nodejs --out-dir pkg -- --features wasm && cd ../.. && pnpm install`.

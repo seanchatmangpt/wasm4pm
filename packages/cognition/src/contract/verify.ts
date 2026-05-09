@@ -1,10 +1,10 @@
 //! ZERO decision logic — verifies a ContractResult via WASM.
 
-import { WasmLoader } from '../init';
-import { CognitionError } from '../errors';
-import type { SpanSink } from '../observability-types';
-import { defaultSpanSink, hexId } from '../span-utils';
-import type { ContractResult, VerifyResult } from '../types';
+import { WasmLoader } from '../init.js';
+import { CognitionError } from '../errors.js';
+import type { SpanSink } from '../observability-types.js';
+import { defaultSpanSink, hexId } from '../span-utils.js';
+import type { ContractResult, VerifyResult } from '../types.js';
 
 export interface VerifyOptions {
   spanSink?: SpanSink;

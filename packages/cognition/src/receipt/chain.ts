@@ -13,7 +13,7 @@ export type {
   ReceiptLink,
   ReceiptChainSnapshot,
   ReplayRecord,
-} from '../types';
+} from '../types.js';
 
 export { replayReceipt } from './replay.js';
 export type { ReplayOptions } from './replay.js';

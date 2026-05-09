@@ -49,8 +49,14 @@ function makeInput() {
   };
 }
 
+// Mirror the real Rust `cognition_run` output shape (wasm.rs lines 182-190).
 const SUCCESS_OUTPUT = JSON.stringify({
-  exit_code: 0,
+  status: 'ok',
+  breed: 'eliza',
+  run_id: '0'.repeat(64),
+  output_hash: '1'.repeat(64),
+  replay_pointer: '1'.repeat(16),
+  options_profile: null,
   output: { breed: 'ELIZA', candidates: [], facts: [], explanation: 'ELIZA pattern matching' },
 });
 
@@ -65,7 +71,7 @@ describe('runContract span emission', () => {
     mockCognitionRun.mockReturnValue(SUCCESS_OUTPUT);
     const spans: OtelSpan[] = [];
 
-    await runContract(makeInput(), { spanSink: (s) => spans.push(s) });
+    await runContract('eliza', makeInput(), { spanSink: (s) => spans.push(s) });
 
     expect(spans).toHaveLength(1);
     expect(spans[0].name).toBe('cognition.run');
@@ -75,7 +81,7 @@ describe('runContract span emission', () => {
     mockCognitionRun.mockReturnValue(SUCCESS_OUTPUT);
     const spans: OtelSpan[] = [];
 
-    await runContract(makeInput(), { spanSink: (s) => spans.push(s) });
+    await runContract('eliza', makeInput(), { spanSink: (s) => spans.push(s) });
 
     expect(spans[0].status.code).toBe('OK');
     expect(spans[0].status.message).toBeUndefined();
@@ -86,7 +92,7 @@ describe('runContract span emission', () => {
     const spans: OtelSpan[] = [];
 
     try {
-      await runContract(makeInput(), { spanSink: (s) => spans.push(s) });
+      await runContract('eliza', makeInput(), { spanSink: (s) => spans.push(s) });
     } catch {
       // expected
     }
@@ -100,7 +106,7 @@ describe('runContract span emission', () => {
     mockCognitionRun.mockReturnValue(SUCCESS_OUTPUT);
     const spans: OtelSpan[] = [];
 
-    await runContract(makeInput(), { spanSink: (s) => spans.push(s) });
+    await runContract('eliza', makeInput(), { spanSink: (s) => spans.push(s) });
 
     const attrs = spans[0].attributes;
     expect(attrs['service.name']).toBe('wasm4pm');
@@ -113,7 +119,7 @@ describe('runContract span emission', () => {
     mockCognitionRun.mockReturnValue(SUCCESS_OUTPUT);
     const spans: OtelSpan[] = [];
 
-    await runContract(makeInput(), { spanSink: (s) => spans.push(s) });
+    await runContract('eliza', makeInput(), { spanSink: (s) => spans.push(s) });
 
     expect(spans[0].trace_id).toMatch(/^[0-9a-f]{32}$/);
     expect(spans[0].span_id).toMatch(/^[0-9a-f]{16}$/);
@@ -128,7 +134,7 @@ describe('runContract span emission', () => {
     };
 
     // Should not throw even though the sink throws
-    await expect(runContract(makeInput(), { spanSink: throwingSink })).resolves.not.toThrow();
+    await expect(runContract('eliza', makeInput(), { spanSink: throwingSink })).resolves.not.toThrow();
     expect(sinkCalled).toBe(true);
   });
 });

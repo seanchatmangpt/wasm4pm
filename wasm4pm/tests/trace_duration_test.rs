@@ -11,16 +11,9 @@
 
 use wasm4pm::models::{AttributeValue, Event, EventLog, Trace};
 
-#[test]
-fn test_trace_duration_from_iso8601_timestamps() {
-    // The key verification: trace durations should be computed in seconds,
-    // not in character counts. This test verifies the parsing logic works.
-
-    // If we had access to the internal SPC state, we would verify that
-    // trace durations are computed correctly. Since we can't access
-    // internal state directly from the public API, we verify that
-    // timestamp parsing works correctly in the tests below.
-}
+// Removed: `test_trace_duration_from_iso8601_timestamps` was a vacuous test
+// (empty body, passed unconditionally). The remaining tests in this file
+// exercise the parsing logic via Rank-1 oracles.
 
 #[test]
 fn test_trace_duration_parsing_accuracy() {
@@ -128,6 +121,7 @@ fn test_trace_duration_not_string_length() {
 }
 
 // Helper function to create a test event log
+#[allow(dead_code)]
 fn create_test_log_with_timestamps() -> EventLog {
     EventLog {
         attributes: std::collections::HashMap::new(),

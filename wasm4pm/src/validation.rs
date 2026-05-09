@@ -7,7 +7,7 @@ use wasm_bindgen::prelude::*;
 use crate::state::{get_or_init_state, StoredObject};
 use crate::models::EventLog;
 use crate::error::{wasm_err, codes};
-use crate::utilities::to_js;
+use crate::utilities::to_js_str;
 use std::collections::HashSet;
 
 /// Simple LCG PRNG for deterministic, reproducible shuffles.
@@ -177,7 +177,7 @@ pub fn split_log(
         .store_object(StoredObject::EventLog(test_log))
         .map_err(|_| wasm_err(codes::INTERNAL_ERROR, "Failed to store test log"))?;
 
-    to_js(&serde_json::json!({
+    to_js_str(&serde_json::json!({
         "train_handle": train_handle,
         "test_handle": test_handle,
         "train_size": train_count,
@@ -250,7 +250,7 @@ pub fn holdout_validate(
     let _ = get_or_init_state().delete_object(train_handle);
     let _ = get_or_init_state().delete_object(test_handle);
 
-    to_js(&serde_json::json!({
+    to_js_str(&serde_json::json!({
         "train_fitness": train_fitness,
         "test_fitness": test_fitness,
         "overfitting_delta": overfitting_delta,
@@ -374,7 +374,7 @@ pub fn cross_validate(
         / k as f64;
     let std_fitness = variance.sqrt();
 
-    to_js(&serde_json::json!({
+    to_js_str(&serde_json::json!({
         "mean_fitness": mean_fitness,
         "std_fitness": std_fitness,
         "min_fitness": fitnesses.iter().cloned().fold(f64::INFINITY, f64::min),

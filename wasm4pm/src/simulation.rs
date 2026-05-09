@@ -10,7 +10,7 @@ use wasm_bindgen::prelude::*;
 use crate::state::{get_or_init_state, StoredObject};
 use crate::models::{EventLog, Trace, Event, AttributeValue};
 use crate::error::{wasm_err, codes};
-use crate::utilities::to_js;
+use crate::utilities::to_js_str;
 use std::collections::HashSet;
 
 /// Simulate removing an activity from all traces.
@@ -59,7 +59,7 @@ pub fn simulate_remove_activity(
         .store_object(StoredObject::EventLog(after_log))
         .map_err(|_| wasm_err(codes::INTERNAL_ERROR, "Failed to store modified log"))?;
 
-    to_js(&serde_json::json!({
+    to_js_str(&serde_json::json!({
         "after_handle": after_handle,
         "before": before_metrics,
         "after": after_metrics,
@@ -127,7 +127,7 @@ pub fn simulate_add_event(
         .store_object(StoredObject::EventLog(after_log))
         .map_err(|_| wasm_err(codes::INTERNAL_ERROR, "Failed to store modified log"))?;
 
-    to_js(&serde_json::json!({
+    to_js_str(&serde_json::json!({
         "after_handle": after_handle,
         "before": before_metrics,
         "after": after_metrics,
@@ -194,7 +194,7 @@ pub fn simulate_reorder(
         .store_object(StoredObject::EventLog(after_log))
         .map_err(|_| wasm_err(codes::INTERNAL_ERROR, "Failed to store modified log"))?;
 
-    to_js(&serde_json::json!({
+    to_js_str(&serde_json::json!({
         "after_handle": after_handle,
         "before": before_metrics,
         "after": after_metrics,
@@ -344,7 +344,7 @@ pub fn simulate_batch(
         .store_object(StoredObject::EventLog(after_log))
         .map_err(|_| wasm_err(codes::INTERNAL_ERROR, "Failed to store modified log"))?;
 
-    to_js(&serde_json::json!({
+    to_js_str(&serde_json::json!({
         "after_handle": after_handle,
         "before": before_metrics,
         "after": after_metrics,

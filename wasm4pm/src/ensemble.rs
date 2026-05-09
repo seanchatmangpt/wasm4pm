@@ -1,6 +1,6 @@
 use crate::error::{codes, wasm_err};
 use crate::state::{get_or_init_state, StoredObject};
-use crate::utilities::to_js;
+use crate::utilities::to_js_str;
 use std::collections::HashSet;
 /// Ensemble Discovery — Run multiple algorithms, rank by quality, find consensus.
 ///
@@ -226,7 +226,7 @@ pub fn ensemble_discover(log_handle: &str, activity_key: &str) -> Result<JsValue
         1.0
     };
 
-    to_js(&serde_json::json!({
+    to_js_str(&serde_json::json!({
         "models": models,
         "consensus": {
             "best_algorithm": best["algorithm"],

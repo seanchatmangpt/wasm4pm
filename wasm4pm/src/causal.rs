@@ -9,7 +9,7 @@
 use wasm_bindgen::prelude::*;
 use crate::state::{get_or_init_state, StoredObject};
 use crate::error::{wasm_err, codes};
-use crate::utilities::to_js;
+use crate::utilities::to_js_str;
 use std::collections::{HashMap, HashSet};
 
 /// Compute causal footprints: for each activity pair (from, to), measure
@@ -32,7 +32,7 @@ pub fn causal_footprint(
     })?;
 
     if traces.is_empty() {
-        return to_js(&serde_json::json!({
+        return to_js_str(&serde_json::json!({
             "pairs": [],
             "method": "causal_footprint",
         }));
@@ -136,7 +136,7 @@ pub fn causal_footprint(
             .unwrap_or(std::cmp::Ordering::Equal)
     });
 
-    to_js(&serde_json::json!({
+    to_js_str(&serde_json::json!({
         "pairs": pairs,
         "total_pairs": pairs.len(),
         "total_traces": traces.len(),
@@ -168,7 +168,7 @@ pub fn granger_like_test(
     })?;
 
     if traces.is_empty() {
-        return to_js(&serde_json::json!({
+        return to_js_str(&serde_json::json!({
             "pairs": [],
             "method": "granger_like_test",
         }));
@@ -259,7 +259,7 @@ pub fn granger_like_test(
             .unwrap_or(std::cmp::Ordering::Equal)
     });
 
-    to_js(&serde_json::json!({
+    to_js_str(&serde_json::json!({
         "pairs": pairs,
         "total_candidates": pairs.len(),
         "total_activities": all_activities.len(),

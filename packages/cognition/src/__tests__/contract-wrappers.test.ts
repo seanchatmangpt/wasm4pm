@@ -56,7 +56,10 @@ const { replayReceipt } = await import('../receipt/replay.js');
 
 const VERIFY_RESULT = JSON.stringify({ status: 'verified', findings: [] });
 const SHOW_RESULT = JSON.stringify({ breeds: [{ id: 'ELIZA', name: 'ELIZA', year: 1966 }] });
-const BUILD_RESULT = JSON.stringify({ candidates: [{ id: 'c1', score: 0.9 }] });
+const BUILD_RESULT = JSON.stringify({
+  pareto_front: [{ id: 'c1', family_id: 'f1', dimensions: {} }],
+  dominated: [],
+});
 const SYSTEM_VERIFY_RESULT = JSON.stringify({ target: 'system-1', status: 'ok', findings: [] });
 const REPLAY_RESULT = JSON.stringify({ run_id: 'r1', output_hash: 'abc', replay_pointer: 'ptr1' });
 
@@ -68,7 +71,7 @@ describe('verifyContract spans', () => {
   it('emits span named "cognition.verify" on success', async () => {
     mockCognitionVerify.mockReturnValue(VERIFY_RESULT);
     const spans: OtelSpan[] = [];
-    await verifyContract({ exit_code: 0 }, { spanSink: (s) => spans.push(s) });
+    await verifyContract({} as Parameters<typeof verifyContract>[0], { spanSink: (s) => spans.push(s) });
     expect(spans[0].name).toBe('cognition.verify');
     expect(spans[0].status.code).toBe('OK');
   });
@@ -77,7 +80,7 @@ describe('verifyContract spans', () => {
     mockCognitionVerify.mockImplementation(() => { throw new Error('verify panic'); });
     const spans: OtelSpan[] = [];
     try {
-      await verifyContract({}, { spanSink: (s) => spans.push(s) });
+      await verifyContract({} as Parameters<typeof verifyContract>[0], { spanSink: (s) => spans.push(s) });
     } catch { /* expected */ }
     expect(spans[0].status.code).toBe('ERROR');
     expect(spans[0].status.message).toContain('verify panic');
