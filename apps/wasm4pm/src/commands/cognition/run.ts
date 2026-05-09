@@ -31,20 +31,31 @@ export const run = defineCommand({
     const quiet = !!ctx.args.quiet;
     try {
       const input = parseInputJson<BreedInput>(ctx.args.input as string);
-      const cresult = await runContract(input);
+      const breed = ctx.args.contract as string;
+      const cresult = await runContract(breed, input);
+      // Rust `cognition_run` emits `status: "ok"` on success. There is no
+      // `exit_code`, `receipt_chain`, or top-level `findings` field.
       const exitCode =
-        cresult.exit_code === 0 ? EXIT_CODES.success : EXIT_CODES.execution_error;
+        cresult.status === 'ok' ? EXIT_CODES.success : EXIT_CODES.execution_error;
       let savedPath: string | undefined;
-      if (!ctx.args['no-save'] && cresult.exit_code === 0) {
-        savedPath = saveReceipt(cresult.receipt_chain, '.wasm4pm/receipts');
+      if (!ctx.args['no-save'] && cresult.status === 'ok') {
+        savedPath = saveReceipt(
+          {
+            run_id: cresult.run_id,
+            output_hash: cresult.output_hash,
+            replay_pointer: cresult.replay_pointer,
+          },
+          '.wasm4pm/receipts',
+        );
       }
       const result = makeResult(
         'cognition run',
         {
           contract: ctx.args.contract,
           output: cresult.output,
-          receipt_chain: cresult.receipt_chain,
-          findings: cresult.findings,
+          run_id: cresult.run_id,
+          output_hash: cresult.output_hash,
+          replay_pointer: cresult.replay_pointer,
           saved_path: savedPath,
         },
         performance.now() - t0,

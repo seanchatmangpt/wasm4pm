@@ -19,8 +19,9 @@ import {
   saveReceipt,
   loadReceipt,
   mapWasmError,
-  emitCognitionSpan,
 } from '../commands/cognition/_shared.js';
+import { withSpan } from '../commands/_otel.js';
+import { setGlobalSpanSink, resetGlobalSpanSink } from '../otel/sink.js';
 
 let tmpDir: string;
 
@@ -212,48 +213,62 @@ describe('mapWasmError', () => {
   });
 });
 
-// ── emitCognitionSpan ──────────────────────────────────────────────────────────
+// ── withSpan (Plan E replacement for emitCognitionSpan) ──────────────────────
 
-describe('emitCognitionSpan', () => {
-  it('calls the sink with span name "cognition.<operation>"', () => {
-    const spans: OtelSpan[] = [];
-    emitCognitionSpan('plan', Date.now() * 1_000_000, 1, 'OK', undefined, (s) => spans.push(s));
-    expect(spans).toHaveLength(1);
-    expect(spans[0].name).toBe('cognition.plan');
+describe('withSpan via global sink capture', () => {
+  let captured: OtelSpan[] = [];
+
+  beforeEach(() => {
+    captured = [];
+    setGlobalSpanSink((s) => captured.push(s));
   });
 
-  it('span kind is always INTERNAL', () => {
-    const spans: OtelSpan[] = [];
-    emitCognitionSpan('inspect', Date.now() * 1_000_000, 0, 'OK', undefined, (s) => spans.push(s));
-    expect(spans[0].kind).toBe('INTERNAL');
+  afterEach(() => {
+    resetGlobalSpanSink();
   });
 
-  it('status.code and message are forwarded correctly', () => {
-    const spans: OtelSpan[] = [];
-    emitCognitionSpan('verify', Date.now() * 1_000_000, 5, 'ERROR', 'chain mismatch', (s) => spans.push(s));
-    expect(spans[0].status.code).toBe('ERROR');
-    expect(spans[0].status.message).toBe('chain mismatch');
+  it('emits span with name "wasm4pm.command.<name>"', async () => {
+    await withSpan('plan', { algorithm: 'x' }, async () => 1);
+    expect(captured).toHaveLength(1);
+    expect(captured[0].name).toBe('wasm4pm.command.plan');
   });
 
-  it('attributes contain service.name, cognition.operation, cognition.duration_ms', () => {
-    const spans: OtelSpan[] = [];
-    emitCognitionSpan('receipt', Date.now() * 1_000_000, 7, 'OK', undefined, (s) => spans.push(s));
-    expect(spans[0].attributes['service.name']).toBe('wasm4pm');
-    expect(spans[0].attributes['cognition.operation']).toBe('receipt');
-    expect(spans[0].attributes['cognition.duration_ms']).toBe(7);
+  it('span kind is always INTERNAL', async () => {
+    await withSpan('inspect', {}, async () => null);
+    expect(captured[0].kind).toBe('INTERNAL');
   });
 
-  it('trace_id is 32 hex chars, span_id is 16 hex chars', () => {
-    const spans: OtelSpan[] = [];
-    emitCognitionSpan('adversarial', Date.now() * 1_000_000, 0, 'OK', undefined, (s) => spans.push(s));
-    expect(spans[0].trace_id).toMatch(/^[0-9a-f]{32}$/);
-    expect(spans[0].span_id).toMatch(/^[0-9a-f]{16}$/);
+  it('status code = OK on success; ERROR + message on throw', async () => {
+    await withSpan('verify-ok', {}, async () => null);
+    expect(captured[0].status.code).toBe('OK');
+
+    captured = [];
+    await expect(
+      withSpan('verify-bad', {}, async () => {
+        throw new Error('chain mismatch');
+      }),
+    ).rejects.toThrow('chain mismatch');
+    expect(captured[0].status.code).toBe('ERROR');
+    expect(captured[0].status.message).toBe('chain mismatch');
   });
 
-  it('swallows sink errors — never throws', () => {
-    const throwingSink = () => { throw new Error('sink boom'); };
-    expect(() =>
-      emitCognitionSpan('replay', Date.now() * 1_000_000, 0, 'OK', undefined, throwingSink)
-    ).not.toThrow();
+  it('attributes contain service.name and command keys plus caller attrs', async () => {
+    await withSpan('receipt', { foo: 'bar' }, async () => null);
+    expect(captured[0].attributes['service.name']).toBe('wasm4pm');
+    expect(captured[0].attributes['command']).toBe('receipt');
+    expect(captured[0].attributes['foo']).toBe('bar');
+  });
+
+  it('trace_id is 32 hex chars, span_id is 16 hex chars', async () => {
+    await withSpan('adversarial', {}, async () => null);
+    expect(captured[0].trace_id).toMatch(/^[0-9a-f]{32}$/);
+    expect(captured[0].span_id).toMatch(/^[0-9a-f]{16}$/);
+  });
+
+  it('swallows sink errors — never throws', async () => {
+    setGlobalSpanSink(() => {
+      throw new Error('sink boom');
+    });
+    await expect(withSpan('replay', {}, async () => 7)).resolves.toBe(7);
   });
 });

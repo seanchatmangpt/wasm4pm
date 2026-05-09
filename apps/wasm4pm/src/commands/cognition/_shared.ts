@@ -6,6 +6,11 @@ import * as path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { EXIT_CODES, type ExitCode } from '../../exit-codes.js';
 
+// NOTE: `emitCognitionSpan` was removed in Plan E. Command-level OTEL is now
+// handled uniformly by `apps/wasm4pm/src/commands/_otel.ts:withSpan`. Cognition
+// verbs may call `withSpan('cognition.<verb>', ...)` directly when wired in
+// Phase B.
+
 /** Parse a JSON file into typed input. Throws with a precise message on any failure. */
 export function parseInputJson<T = unknown>(inputPath: string): T {
   if (!inputPath) {
@@ -39,16 +44,21 @@ export function parseInputJson<T = unknown>(inputPath: string): T {
   }
 }
 
-/** Persist a receipt chain to disk. Returns absolute saved path. */
-export function saveReceipt(receiptChain: unknown, dirRel: string): string {
+/** Persist a cognition receipt to disk keyed by `run_id`. Returns absolute path. */
+export function saveReceipt(receipt: unknown, dirRel: string): string {
   const dir = path.resolve(dirRel);
   fs.mkdirSync(dir, { recursive: true });
-  const id =
-    (receiptChain && typeof receiptChain === 'object' && 'id' in receiptChain
-      ? String((receiptChain as { id: unknown }).id ?? '')
-      : '') || randomUUID();
+  // Rust `CognitionReceipt` exposes `run_id` (BLAKE3 hex). Fall back to
+  // legacy `id` for any callers that have not migrated yet.
+  let id = '';
+  if (receipt && typeof receipt === 'object') {
+    const r = receipt as { run_id?: unknown; id?: unknown };
+    if (typeof r.run_id === 'string' && r.run_id.length > 0) id = r.run_id;
+    else if (typeof r.id === 'string' && r.id.length > 0) id = r.id;
+  }
+  if (!id) id = randomUUID();
   const file = path.join(dir, `${id}.json`);
-  fs.writeFileSync(file, JSON.stringify(receiptChain, null, 2) + '\n');
+  fs.writeFileSync(file, JSON.stringify(receipt, null, 2) + '\n');
   return file;
 }
 

@@ -3,6 +3,8 @@ import * as fs from 'fs/promises';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { withLogSession } from '../with-log-session.js';
+import { withSpan } from './_otel.js';
+import { saveCommandReceipt, blake3Hex, newReceipt, type CommandReceipt } from '../receipts/_shared.js';
 
 interface ConformancePayload {
   schema: string;
@@ -85,6 +87,14 @@ export const conformance = defineCommand({
 
     const t0 = Date.now();
 
+    return withSpan(
+      'conformance',
+      {
+        input: String(ctx.args.input ?? ctx.args.file ?? ''),
+        method: String(ctx.args.method ?? ''),
+        format,
+      },
+      async () => {
     try {
       // Resolve input path (positional OR --file/-i)
       const inputPath: string | undefined =
@@ -227,6 +237,29 @@ export const conformance = defineCommand({
         printHumanConformance(res.payload, projection);
       });
 
+        // Persist BLAKE3 receipt for proof-of-execution
+        if (!ctx.args['no-save']) {
+          try {
+            const inputBytes = await fs.readFile(inputPath);
+            const receipt: CommandReceipt = {
+              ...newReceipt('conformance'),
+              input_hash: blake3Hex(inputBytes),
+              output_hash: blake3Hex(JSON.stringify(payload)),
+              status: isFit ? 'success' : 'partial',
+              summary: {
+                method: payload.method,
+                fitness: payload.fitness,
+                precision: payload.precision,
+                threshold: payload.threshold,
+                elapsedMs,
+              },
+            };
+            saveCommandReceipt(receipt);
+          } catch {
+            /* receipt write must never break the command */
+          }
+        }
+
         process.exit(result.exit_code);
       });  // end withLogSession
     } catch (error) {
@@ -239,6 +272,8 @@ export const conformance = defineCommand({
       emitResult(result, { format, verbose, quiet });
       process.exit(result.exit_code);
     }
+      },
+    );
   },
 });
 

@@ -1,0 +1,61 @@
+# OTEL & Receipt Coverage Matrix
+
+**Plan E (Phase A):** OTEL spans + BLAKE3 receipts wired for the 5 core
+discovery/quality commands. All other commands are deferred to Phase B or
+explicitly exempt.
+
+Span naming convention: `wasm4pm.command.<name>` (set by `withSpan` in
+`apps/wasm4pm/src/commands/_otel.ts`).
+
+Receipt location: `.wasm4pm/receipts/<run_id>.json` plus
+`.wasm4pm/receipts/latest.json` (BLAKE3 input/output hashes via
+`@wasm4pm/contracts.hashJsonString`).
+
+| Command       | Span | Receipt | Phase | Notes |
+|---------------|:----:|:-------:|:-----:|-------|
+| run           |  A   |    A    |   A   | wired |
+| compare       |  A   |    A    |   A   | wired |
+| diff          |  A   |    A    |   A   | wired |
+| conformance   |  A   |    A    |   A   | wired |
+| quality       |  A   |    A    |   A   | wired |
+| predict       |  -   |    -    |   B   | TODO  |
+| drift-watch   |  -   |    -    |   B   | TODO  |
+| ml            |  -   |    -    |   B   | TODO  |
+| powl          |  -   |    -    |   B   | TODO  |
+| simulate      |  -   |    -    |   B   | TODO  |
+| temporal      |  -   |    -    |   B   | TODO  |
+| social        |  -   |    -    |   B   | TODO  |
+| validate      |  -   |    -    |   B   | TODO  |
+| autoprocess   |  -   |    -    |   B   | TODO  |
+| swarm         |  -   |    -    |   B   | TODO  |
+| agent         |  -   |    -    |   B   | TODO  |
+| membrane      |  -   |    -    |   B   | TODO  |
+| benchmark     |  -   |    -    |   B   | TODO  |
+| verify        |  -   |    -    |   B   | TODO  |
+| watch         |  -   |    -    |   B   | TODO (long-running, separate semantics) |
+| cognition     |  -   |    -    |   B   | TODO (currently has its own receipt path; integrate later) |
+| status        |  -   |    -    | exempt | introspection — no input/output to hash |
+| doctor        |  -   |    -    | exempt | environment diagnostic only |
+| results       |  -   |    -    | exempt | reads existing receipts |
+| init          |  -   |    -    | exempt | scaffolding only |
+| explain       |  -   |    -    | exempt | static text output |
+| completions   |  -   |    -    | exempt | shell completions only |
+| config        |  -   |    -    | exempt | config introspection/edit only |
+
+**Legend:** `A` = wired in Phase A; `B` = deferred to Phase B; `-` = not present;
+`exempt` = command is read-only / introspective with no meaningful execution
+artifacts to receipt.
+
+## Bootstrap
+
+`apps/wasm4pm/src/bin/wpm.ts` calls `initOtel()` once at process start. When
+`WASM4PM_OTEL_ENABLED=true`, the global sink is wired to `OtelExporter` from
+`@wasm4pm/observability` (non-blocking queue, drop-oldest, OTLP HTTP). When
+disabled or unavailable, a noop sink is installed and a single warning is
+written to stderr.
+
+## Tests
+
+- `src/__tests__/otel-integration.test.ts` — `withSpan` round-trip via global sink
+- `src/__tests__/cognition-shared.test.ts` — `withSpan` invariants (replaces deleted `emitCognitionSpan` tests)
+- `src/__tests__/cognition-verbs.test.ts` — global sink capture for verb scaffolding

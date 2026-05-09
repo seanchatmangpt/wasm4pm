@@ -27,11 +27,12 @@ import { verify } from './commands/verify.js';
 import { benchmark } from './commands/benchmark.js';
 import { cognition } from './commands/cognition.js';
 import { completions } from './commands/completions.js';
+import pkg from '../package.json' with { type: 'json' };
 
 export const main = defineCommand({
   meta: {
     name: 'wpm',
-    version: '26.4.17',
+    version: pkg.version,
     description: 'High-performance process mining and workflow discovery CLI',
   },
   args: {

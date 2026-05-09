@@ -19,6 +19,11 @@ export const explain = defineCommand({
     description: 'Explain a discovered model or algorithm in human-readable terms',
   },
   args: {
+    target: {
+      type: 'positional',
+      description: 'Algorithm name to explain (dfg, alpha, heuristic, etc.). Equivalent to --algorithm.',
+      required: false,
+    },
     config: {
       type: 'string',
       description: 'Path to configuration file (optional)',
@@ -61,6 +66,11 @@ export const explain = defineCommand({
     const quiet = Boolean(ctx.args.quiet);
 
     try {
+      // Accept positional <algorithm> as alias for --algorithm
+      if (!ctx.args.algorithm && typeof ctx.args.target === 'string' && ctx.args.target.length > 0) {
+        ctx.args.algorithm = ctx.args.target;
+      }
+
       // Step 1: Validate input
       if (!ctx.args.model && !ctx.args.algorithm && !ctx.args.config) {
         const result = makeErrorResult(

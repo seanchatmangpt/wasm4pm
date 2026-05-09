@@ -146,7 +146,9 @@ describe('adversarial severity enum contract', () => {
 
 // ── plan pure-logic: candidate_count from BreedInput JSON ────────────────────
 
-import { parseInputJson, loadReceipt, emitCognitionSpan } from '../commands/cognition/_shared.js';
+import { parseInputJson, loadReceipt } from '../commands/cognition/_shared.js';
+import { withSpan } from '../commands/_otel.js';
+import { setGlobalSpanSink, resetGlobalSpanSink } from '../otel/sink.js';
 
 describe('plan pure-logic (parseInputJson path)', () => {
   it('parseInputJson parses candidate_count correctly from a real file', () => {
@@ -207,23 +209,29 @@ describe('replay/verify/receipt/inspect use loadReceipt correctly', () => {
   });
 });
 
-// ── span emission — pure-TS verbs exercise emitCognitionSpan via full run() ──
+// ── OTEL span emission via withSpan + global sink (Plan E) ──────────────────
 
-describe('OTEL span emission — pure-TS verbs via process.exit mock', () => {
-  // These tests verify that emitCognitionSpan fires inside the verb's finally block
-  // by injecting a spy on _shared's emitCognitionSpan export.
+describe('OTEL span emission — withSpan via global sink capture', () => {
+  let captured: OtelSpan[] = [];
 
-  it('emitCognitionSpan is exported from _shared and accepts a recording sink', () => {
-    const spans: OtelSpan[] = [];
-    emitCognitionSpan('adversarial', Date.now() * 1_000_000, 1, 'OK', undefined, (s) => spans.push(s));
-    expect(spans[0].name).toBe('cognition.adversarial');
+  beforeEach(() => {
+    captured = [];
+    setGlobalSpanSink((s) => captured.push(s));
   });
 
-  it('all 8 verb names match their meta.name (span name = "cognition.<meta.name>")', () => {
+  afterEach(() => {
+    resetGlobalSpanSink();
+  });
+
+  it('withSpan emits a real span captured by the global sink', async () => {
+    await withSpan('adversarial', {}, async () => null);
+    expect(captured[0].name).toBe('wasm4pm.command.adversarial');
+  });
+
+  it('all 8 verb names match their meta.name (span name = "wasm4pm.command.<meta.name>" when wired)', () => {
     const verbs = [run, explain, verify, receipt, adversarial, replay, plan, inspect];
     for (const verb of verbs) {
       const name = (verb as { meta?: { name?: string } }).meta?.name ?? '';
-      // Each verb calls emitCognitionSpan(name, ...) so span name = `cognition.${name}`
       expect(name).toBeTruthy();
       expect(['run','explain','verify','receipt','adversarial','replay','plan','inspect']).toContain(name);
     }

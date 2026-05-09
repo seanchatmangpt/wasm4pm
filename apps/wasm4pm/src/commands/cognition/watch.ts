@@ -19,16 +19,24 @@ export interface WatchReceipt {
 // is not installed — this is an intentionally optional runtime dependency.
 const COGNITION_PKG = '@wasm4pm' + '/cognition';
 
+// Shape of `cognition_run` output per Rust `wasm.rs` lines 182-190.
+// `findings`, `decision`, `hash`, and top-level `inference_trace` are NOT
+// emitted by `cognition_run` — do not look for them here.
+type CognitionRunResult = {
+  status?: string;
+  breed?: string;
+  run_id?: string;
+  output_hash?: string;
+  replay_pointer?: string;
+  options_profile?: string | null;
+  output?: { breed?: string; explanation?: string; [k: string]: unknown };
+};
+
 type CognitionModule = {
   runContract: (
+    breed: string,
     input: Record<string, unknown>,
-    contract: string
-  ) => Promise<{
-    decision?: string;
-    hash?: string;
-    findings?: unknown[];
-    inference_trace?: unknown;
-  }>;
+  ) => Promise<CognitionRunResult>;
 };
 
 /** Load @wasm4pm/cognition dynamically; returns null if not installed. */
@@ -60,13 +68,22 @@ async function runContract(
     );
   }
 
-  const result = await cognitionModule.runContract(input, contractName);
+  const result = await cognitionModule.runContract(contractName, input);
   const elapsedMs = performance.now() - t0;
 
+  // Map Rust output shape onto WatchReceipt:
+  //   status === 'ok'  → Allow (cognition_run only emits 'ok' on success;
+  //                     errors throw via `wasm_err`).
+  //   output_hash      → first 8 chars used as a short identifier.
+  //   findings is NOT emitted by cognition_run — always 0 here. Use
+  //   `cognition_verify` separately if you need adversarial findings.
   return {
-    decision: result.decision === 'Allow' ? 'Allow' : 'Deny',
-    hash: typeof result.hash === 'string' ? result.hash.slice(0, 8) : '00000000',
-    findings: Array.isArray(result.findings) ? result.findings.length : 0,
+    decision: result.status === 'ok' ? 'Allow' : 'Deny',
+    hash:
+      typeof result.output_hash === 'string'
+        ? result.output_hash.slice(0, 8)
+        : '00000000',
+    findings: 0,
     contract: contractName,
     elapsedMs: Math.round(elapsedMs),
   };
@@ -174,15 +191,18 @@ export const watch = defineCommand({
           try {
             type VerboseModule = {
               runContract: (
+                breed: string,
                 inp: Record<string, unknown>,
-                c: string
               ) => Promise<Record<string, unknown>>;
             };
             const verboseMod = await loadCognitionModule() as VerboseModule | null;
             if (verboseMod) {
-              const fullResult = await verboseMod.runContract(inputAgain, contractName);
-              if (fullResult && fullResult['inference_trace']) {
-                console.log(JSON.stringify(fullResult['inference_trace'], null, 2));
+              const fullResult = await verboseMod.runContract(contractName, inputAgain);
+              // `cognition_run` does NOT emit a top-level `inference_trace`.
+              // The breed-specific trace, if any, lives inside `output`.
+              const out = fullResult?.['output'];
+              if (out && typeof out === 'object') {
+                console.log(JSON.stringify(out, null, 2));
               }
             }
           } catch {

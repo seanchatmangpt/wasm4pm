@@ -23,7 +23,8 @@ export const explain = defineCommand({
     const quiet = !!ctx.args.quiet;
     try {
       const input = parseInputJson<BreedInput>(ctx.args.input as string);
-      const cresult = await runContract(input);
+      const breed = ctx.args.contract as string;
+      const cresult = await runContract(breed, input);
       const eliminations =
         (cresult.output?.candidates ?? []).filter((c) => c.eliminated).map((c) => ({
           id: c.id,
