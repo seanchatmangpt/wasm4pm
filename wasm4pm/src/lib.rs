@@ -86,16 +86,18 @@ pub mod state;
 pub mod types;
 
 use std::cell::RefCell;
-use tracing_subscriber::fmt::format::FmtSpan;
 
 #[wasm_bindgen(start)]
 pub fn main() {
     #[cfg(feature = "console_error_panic_hook")]
     console_error_panic_hook::set_once();
 
-    tracing_subscriber::fmt()
-        .with_span_events(FmtSpan::CLOSE)
-        .init();
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        tracing_subscriber::fmt()
+            .with_span_events(tracing_subscriber::fmt::format::FmtSpan::CLOSE)
+            .init();
+    }
 }
 
 // Drift detection thresholds (configurable via set_drift_thresholds)
