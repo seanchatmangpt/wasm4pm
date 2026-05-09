@@ -18,6 +18,7 @@
     "test:init-cmd": "vitest run -t 'Init Command'",
     "test:exit-codes": "vitest run -t 'Exit Codes'",
     "test:config": "vitest run -t 'Configuration Resolution'",
+    "test:published": "node ./scripts/test-published.mjs",
     "clean": "rm -rf node_modules"
   },
   "devDependencies": {
