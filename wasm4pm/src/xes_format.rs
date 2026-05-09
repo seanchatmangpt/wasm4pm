@@ -114,36 +114,55 @@ pub fn load_eventlog_from_xes(content: &str) -> Result<String, JsValue> {
         let mut current_trace: Option<Trace> = None;
         let mut current_event: Option<Event> = None;
 
-        for line in content.lines() {
-            let trimmed = line.trim();
-
-            if trimmed.is_empty() {
+        // Walk every `<...>` tag in the document, in order.
+        //
+        // Earlier versions iterated by line and treated each line as a single
+        // tag, which broke on inline event/attribute syntax such as
+        //   `<event><string key="..." value="..."/><date .../></event>`
+        // (one trace event collapsed onto a single line). The line-based
+        // walker would create the event but never see its closing tag or
+        // its inline attributes, so events were silently dropped during
+        // import. The tag-based walker below handles both line-per-tag
+        // and many-tags-per-line correctly.
+        let bytes = content.as_bytes();
+        let mut i = 0;
+        while i < bytes.len() {
+            if bytes[i] != b'<' {
+                i += 1;
                 continue;
             }
+            let mut j = i + 1;
+            while j < bytes.len() && bytes[j] != b'>' {
+                j += 1;
+            }
+            if j >= bytes.len() {
+                break;
+            }
+            let tag = &content[i..=j];
+            let tag_bytes = tag.as_bytes();
+            i = j + 1;
 
-            let bytes = trimmed.as_bytes();
-            if bytes.is_empty() || bytes[0] != b'<' {
+            if tag_bytes.len() < 2 {
                 continue;
             }
-
-            let second = if bytes.len() > 1 { bytes[1] } else { 0 };
+            let second = tag_bytes[1];
 
             match second {
-                b't' if (trimmed.starts_with("<trace>") || trimmed.starts_with("<trace ")) => {
+                b't' if (tag.starts_with("<trace>") || tag.starts_with("<trace ")) => {
                     current_trace = Some(Trace {
                         attributes: HashMap::new(),
                         events: Vec::with_capacity(20),
                     });
                 }
-                b'e' if (trimmed.starts_with("<event>") || trimmed.starts_with("<event ")) => {
+                b'e' if (tag.starts_with("<event>") || tag.starts_with("<event ")) => {
                     current_event = Some(Event {
                         attributes: HashMap::new(),
                     });
                 }
-                b's' if trimmed.len() > 8 && &bytes[..8] == b"<string " && bytes[bytes.len() - 1] == b'>' => {
+                b's' if tag_bytes.len() > 8 && &tag_bytes[..8] == b"<string " => {
                     if let (Some(key), Some(value)) = (
-                        extract_attr(trimmed, b"key"),
-                        extract_attr(trimmed, b"value"),
+                        extract_attr(tag, b"key"),
+                        extract_attr(tag, b"value"),
                     ) {
                         insert_attr(
                             &mut current_event,
@@ -153,10 +172,10 @@ pub fn load_eventlog_from_xes(content: &str) -> Result<String, JsValue> {
                         );
                     }
                 }
-                b'd' if trimmed.len() > 6 && &bytes[..6] == b"<date " => {
+                b'd' if tag_bytes.len() > 6 && &tag_bytes[..6] == b"<date " => {
                     if let (Some(key), Some(value)) = (
-                        extract_attr(trimmed, b"key"),
-                        extract_attr(trimmed, b"value"),
+                        extract_attr(tag, b"key"),
+                        extract_attr(tag, b"value"),
                     ) {
                         insert_attr(
                             &mut current_event,
@@ -166,10 +185,10 @@ pub fn load_eventlog_from_xes(content: &str) -> Result<String, JsValue> {
                         );
                     }
                 }
-                b'i' if trimmed.len() > 5 && &bytes[..5] == b"<int " => {
+                b'i' if tag_bytes.len() > 5 && &tag_bytes[..5] == b"<int " => {
                     if let (Some(key), Some(value_str)) = (
-                        extract_attr(trimmed, b"key"),
-                        extract_attr(trimmed, b"value"),
+                        extract_attr(tag, b"key"),
+                        extract_attr(tag, b"value"),
                     ) {
                         if let Ok(value) = value_str.parse::<i64>() {
                             insert_attr(
@@ -182,21 +201,23 @@ pub fn load_eventlog_from_xes(content: &str) -> Result<String, JsValue> {
                     }
                 }
                 b'/' => {
-                    let third = if bytes.len() > 2 { bytes[2] } else { 0 };
-                    match third {
-                        b't' => {
-                            if let Some(trace) = current_trace.take() {
-                                log.traces.push(trace);
-                            }
-                        }
-                        b'e' => {
-                            if let Some(event) = current_event.take() {
-                                if let Some(ref mut trace) = current_trace {
-                                    trace.events.push(event);
+                    if tag_bytes.len() > 2 {
+                        let third = tag_bytes[2];
+                        match third {
+                            b't' => {
+                                if let Some(trace) = current_trace.take() {
+                                    log.traces.push(trace);
                                 }
                             }
+                            b'e' => {
+                                if let Some(event) = current_event.take() {
+                                    if let Some(ref mut trace) = current_trace {
+                                        trace.events.push(event);
+                                    }
+                                }
+                            }
+                            _ => {}
                         }
-                        _ => {}
                     }
                 }
                 _ => {}
