@@ -2,6 +2,7 @@ import { defineCommand } from 'citty';
 import { emitResult, makeResult, makeErrorResult } from '../../output.js';
 import { EXIT_CODES } from '../../exit-codes.js';
 import { AuditStore } from '@wasm4pm/agents';
+import { withSpanRaw } from '../_otel.js';
 
 export const audit = defineCommand({
   meta: {
@@ -30,6 +31,10 @@ export const audit = defineCommand({
     },
   },
   async run(ctx) {
+    return withSpanRaw('wasm4pm.command.agent.audit', {
+      command: 'agent', subcommand: 'audit',
+      last: Number(ctx.args.last ?? 0),
+    }, async () => {
     const t0 = performance.now();
     const format = (ctx.args.format as 'json' | 'human') ?? 'human';
     const verbose = false;
@@ -79,5 +84,6 @@ export const audit = defineCommand({
       emitResult(result, { format, verbose, quiet });
       process.exit(result.exit_code);
     }
+    });
   },
 });

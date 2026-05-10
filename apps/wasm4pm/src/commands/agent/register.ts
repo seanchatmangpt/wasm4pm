@@ -2,6 +2,7 @@ import { defineCommand } from 'citty';
 import { emitResult, makeResult, makeErrorResult } from '../../output.js';
 import { EXIT_CODES } from '../../exit-codes.js';
 import { AgentRegistry } from '@wasm4pm/agents';
+import { withSpanRaw } from '../_otel.js';
 import type { AgentConfig } from '@wasm4pm/agents';
 import { readFileSync } from 'fs';
 
@@ -23,6 +24,10 @@ export const register = defineCommand({
     },
   },
   async run(ctx) {
+    return withSpanRaw('wasm4pm.command.agent.register', {
+      command: 'agent', subcommand: 'register',
+      config: String(ctx.args.config ?? ''),
+    }, async () => {
     const t0 = performance.now();
     const format = (ctx.args.format as 'json' | 'human') ?? 'human';
     const verbose = false;
@@ -90,5 +95,6 @@ export const register = defineCommand({
       emitResult(errResult, { format, verbose, quiet });
       process.exit(errResult.exit_code);
     }
+    });
   },
 });

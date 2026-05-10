@@ -2,6 +2,7 @@ import { defineCommand } from 'citty';
 import { emitResult, makeResult, makeErrorResult } from '../../output.js';
 import { EXIT_CODES } from '../../exit-codes.js';
 import { AgentOrchestrator } from '@wasm4pm/agents';
+import { withSpanRaw } from '../_otel.js';
 
 export interface AgentExecuteOptions {
   format?: 'human' | 'json';
@@ -46,6 +47,11 @@ export const execute = defineCommand({
     },
   },
   async run(ctx) {
+    return withSpanRaw('wasm4pm.command.agent.execute', {
+      command: 'agent', subcommand: 'execute',
+      agent: String(ctx.args.agent ?? ''),
+      input: String(ctx.args.input ?? ''),
+    }, async () => {
     const t0 = performance.now();
     const format = (ctx.args.format as 'json' | 'human') ?? 'human';
     const verbose = Boolean(ctx.args.verbose);
@@ -108,5 +114,6 @@ export const execute = defineCommand({
       emitResult(result, { format, verbose, quiet });
       process.exit(result.exit_code);
     }
+    });
   },
 });
