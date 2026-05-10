@@ -30,9 +30,9 @@ Receipt location: `.wasm4pm/receipts/<run_id>.json` plus
 | swarm         |  C   |    -    |   C   | wired (Round 5; span only — `runSwarm` is mock-LLM driven, no artifact to receipt) |
 | benchmark     |  C   |    -    |   C   | wired (Round 5; per-subcommand spans `wasm4pm.command.benchmark.<sub>` for build/replay/verify/export) |
 | verify        |  C   |    -    |   C   | wired (Round 5; certification gate run, span captures `fast` flag) |
-| agent         |  -   |    -    | TODO  | mechanical wrap pending |
+| cell          |  C   |    -    |   C   | wired (Round 5; per-subcommand spans `wasm4pm.command.cell.<sub>` for build/verify/replay/export/doctor) |
+| agent         |  -   |    -    | TODO  | dispatcher; subcommands in apps/wasm4pm/src/commands/agent/*.ts — mechanical wrap pending |
 | membrane      |  -   |    -    | TODO  | 13 subcommands — apply per-subcommand pattern from Surface Q |
-| cell          |  -   |    -    | TODO  | 5 subcommands — apply per-subcommand pattern from Surface Q |
 | watch         |  A   |    -    |   A   | wired (Surface S; manual parent + per-cycle child spans, no CommandReceipt — downstream `run` certifies artifacts) |
 | cognition     |  -   |    -    | exempt | has own receipt path via `apps/wasm4pm/src/commands/cognition/_shared.ts:saveReceipt` |
 | status        |  -   |    -    | exempt | introspection — no input/output to hash |

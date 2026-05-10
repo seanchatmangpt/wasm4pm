@@ -3,6 +3,7 @@ import * as fs from 'fs/promises';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { withLogSession } from '../with-log-session.js';
 import { EXIT_CODES } from '../exit-codes.js';
+import { withSpanRaw } from './_otel.js';
 
 export const cell = defineCommand({
   meta: {
@@ -35,6 +36,10 @@ export const cell = defineCommand({
         },
       },
       async run(ctx) {
+        return withSpanRaw('wasm4pm.command.cell.build', {
+          command: 'cell', subcommand: 'build',
+          ontology: String(ctx.args.ontology ?? ''),
+        }, async () => {
         const ontologyPath = ctx.args.ontology as string;
         const format = (ctx.args.format as 'json' | 'human') ?? 'human';
         const emitOptions = { format };
@@ -76,6 +81,7 @@ export const cell = defineCommand({
           emitResult(result, emitOptions);
           process.exit(result.exit_code);
         }
+        });
       },
     }),
 
@@ -96,6 +102,10 @@ export const cell = defineCommand({
         },
       },
       async run(ctx) {
+        return withSpanRaw('wasm4pm.command.cell.verify', {
+          command: 'cell', subcommand: 'verify',
+          cell_id: String(ctx.args['cell-id'] ?? ''),
+        }, async () => {
         const cellId = ctx.args['cell-id'] as string;
         const format = (ctx.args.format as 'json' | 'human') ?? 'human';
         const emitOptions = { format };
@@ -123,6 +133,7 @@ export const cell = defineCommand({
           emitResult(result, emitOptions);
           process.exit(result.exit_code);
         }
+        });
       },
     }),
 
@@ -147,6 +158,11 @@ export const cell = defineCommand({
         },
       },
       async run(ctx) {
+        return withSpanRaw('wasm4pm.command.cell.replay', {
+          command: 'cell', subcommand: 'replay',
+          cell_id: String(ctx.args['cell-id'] ?? ''),
+          fixture_id: String(ctx.args['fixture-id'] ?? 'all'),
+        }, async () => {
         const cellId = ctx.args['cell-id'] as string;
         const fixtureId = (ctx.args['fixture-id'] as string | undefined) ?? 'all';
         const format = (ctx.args.format as 'json' | 'human') ?? 'human';
@@ -175,6 +191,7 @@ export const cell = defineCommand({
           emitResult(result, emitOptions);
           process.exit(result.exit_code);
         }
+        });
       },
     }),
 
@@ -200,6 +217,11 @@ export const cell = defineCommand({
         },
       },
       async run(ctx) {
+        return withSpanRaw('wasm4pm.command.cell.export', {
+          command: 'cell', subcommand: 'export',
+          cell_id: String(ctx.args['cell-id'] ?? ''),
+          projection: String(ctx.args.projection ?? ''),
+        }, async () => {
         const cellId = ctx.args['cell-id'] as string;
         const projection = ctx.args.projection as string;
         const format = (ctx.args.format as 'json' | 'human') ?? 'human';
@@ -227,6 +249,7 @@ export const cell = defineCommand({
           emitResult(result, emitOptions);
           process.exit(result.exit_code);
         }
+        });
       },
     }),
 
@@ -251,6 +274,11 @@ export const cell = defineCommand({
         },
       },
       async run(ctx) {
+        return withSpanRaw('wasm4pm.command.cell.doctor', {
+          command: 'cell', subcommand: 'doctor',
+          cell_id: String(ctx.args['cell-id'] ?? ''),
+          strict: Boolean(ctx.args.strict),
+        }, async () => {
         const cellId = ctx.args['cell-id'] as string;
         const strict = Boolean(ctx.args.strict);
         const format = (ctx.args.format as 'json' | 'human') ?? 'human';
@@ -286,6 +314,7 @@ export const cell = defineCommand({
           emitResult(result, emitOptions);
           process.exit(result.exit_code);
         }
+        });
       },
     }),
   },
