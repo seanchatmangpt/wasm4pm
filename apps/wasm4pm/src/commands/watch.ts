@@ -2,14 +2,18 @@ import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
 import { watch as fsWatch } from 'fs';
 import * as path from 'path';
+import { randomBytes } from 'node:crypto';
 import chokidar from 'chokidar';
 import { resolveConfig as loadConfig } from '@wasm4pm/config';
 import { createFullEngine, WasmLoader } from '@wasm4pm/engine';
 import { getTracer, WatchingSpans } from '@wasm4pm/observability';
 import { WasmBackend } from '@wasm4pm/kernel';
 import { plan } from '@wasm4pm/planner';
+import type { OtelSpan } from '@wasm4pm/cognition';
 import { StreamingOutput, ConsoleProjection } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
+import { withSpanRaw } from './_otel.js';
+import { getGlobalSpanSink } from '../otel/sink.js';
 
 export interface WatchOptions {
   config?: string;
@@ -56,6 +60,36 @@ export const watch = defineCommand({
     const tracer = getTracer();
     const configPath = ctx.args.config || process.cwd();
 
+    // Manual parent span skeleton (long-running command — emit on shutdown).
+    const parentTraceId = randomBytes(16).toString('hex');
+    const parentSpanId = randomBytes(8).toString('hex');
+    const parentStartNs = Date.now() * 1_000_000;
+    let cyclesObserved = 0;
+    let parentStatus: 'OK' | 'ERROR' = 'OK';
+
+    const emitParentSpan = (): void => {
+      try {
+        const parentSpan: OtelSpan = {
+          trace_id: parentTraceId,
+          span_id: parentSpanId,
+          name: 'wasm4pm.command.watch',
+          kind: 'INTERNAL',
+          start_time: parentStartNs,
+          end_time: Date.now() * 1_000_000,
+          status: { code: parentStatus },
+          attributes: {
+            'service.name': 'wasm4pm',
+            command: 'watch',
+            config_path: configPath,
+            cycles_observed: cyclesObserved,
+          },
+        };
+        getGlobalSpanSink()(parentSpan);
+      } catch {
+        /* never block on OTEL */
+      }
+    };
+
     // Step 1: Initialize Engine and Backends
     const wasmLoader = WasmLoader.getInstance();
     await wasmLoader.init();
@@ -95,42 +129,70 @@ export const watch = defineCommand({
       message: 'Waiting for file changes...',
     });
 
-    watcher.on('change', async (filePath) => {
-      const span = tracer.startSpan(WatchingSpans.heartbeat());
-      try {
-        streaming.emitEvent('change_detected', { file: filePath });
+    // Per-file debouncers prevent editor-save bursts from flooding spans.
+    const debouncers = new Map<string, NodeJS.Timeout>();
+    const DEBOUNCE_MS = 200;
 
-        // Reload and Run
-        const config = await loadConfig({ configSearchPaths: [configPath] });
-        const executionPlan = plan(config as any);
+    watcher.on('change', (filePath: string) => {
+      const existing = debouncers.get(filePath);
+      if (existing) clearTimeout(existing);
+      debouncers.set(
+        filePath,
+        setTimeout(async () => {
+          debouncers.delete(filePath);
+          const idx = cyclesObserved;
+          cyclesObserved += 1;
+          const span = tracer.startSpan(WatchingSpans.heartbeat());
+          try {
+            await withSpanRaw(
+              'wasm4pm.watch.cycle',
+              {
+                event_kind: 'change',
+                cycle_index: idx,
+                file_path: filePath,
+              },
+              async () => {
+                streaming.emitEvent('change_detected', { file: filePath });
 
-        streaming.emitEvent('processing_started', {
-          planId: executionPlan.id,
-          steps: executionPlan.steps.length,
-        });
+                // Reload and Run
+                const config = await loadConfig({ configSearchPaths: [configPath] });
+                const executionPlan = plan(config as any);
 
-        // Use engine to execute
-        streaming.emitEvent('processing_completed', {
-          status: 'success',
-          timestamp: new Date().toISOString(),
-        });
-      } catch (error) {
-        streaming.emitEvent('error', {
-          message: error instanceof Error ? error.message : String(error),
-          code: 'WATCH_RELOAD_ERROR',
-        });
-        span.setStatus('ERROR', String(error));
-      } finally {
-        span.end();
-      }
+                streaming.emitEvent('processing_started', {
+                  planId: executionPlan.id,
+                  steps: executionPlan.steps.length,
+                });
+
+                // Use engine to execute
+                streaming.emitEvent('processing_completed', {
+                  status: 'success',
+                  timestamp: new Date().toISOString(),
+                });
+              },
+            );
+          } catch (error) {
+            parentStatus = 'ERROR';
+            streaming.emitEvent('error', {
+              message: error instanceof Error ? error.message : String(error),
+              code: 'WATCH_RELOAD_ERROR',
+            });
+            span.setStatus('ERROR', String(error));
+          } finally {
+            span.end();
+          }
+        }, DEBOUNCE_MS),
+      );
     });
 
-    // Handle process interruption
-    process.on('SIGINT', () => {
+    // Handle process interruption — emit parent span before exit.
+    const shutdown = (): void => {
       watcher.close();
       streaming.emitEvent('stopped', { message: 'Watch mode terminated' });
+      emitParentSpan();
       process.exit(0);
-    });
+    };
+    process.on('SIGINT', shutdown);
+    process.on('SIGTERM', shutdown);
 
     // Keep alive
     await new Promise(() => {});

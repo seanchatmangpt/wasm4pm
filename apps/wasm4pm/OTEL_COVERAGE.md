@@ -23,16 +23,16 @@ Receipt location: `.wasm4pm/receipts/<run_id>.json` plus
 | simulate      |  A   |    A    |   A   | wired (Surface L; new `--no-save` flag) |
 | temporal      |  A   |    A    |   A   | wired (Surface L; new `--no-save` flag) |
 | social        |  A   |    A    |   A   | wired (Surface L; new `--no-save` flag) |
-| drift-watch   |  -   |    -    |   B   | TODO  |
-| powl          |  -   |    -    |   B   | TODO  |
-| validate      |  -   |    -    |   B   | TODO  |
-| autoprocess   |  -   |    -    |   B   | TODO  |
+| drift-watch   |  R   |    R    |   R   | wired (Surface R; streaming model — parent `wasm4pm.command.drift-watch` + per-window child spans `wasm4pm.drift-watch.window`; session receipt on graceful SIGINT/SIGTERM exit only, `--no-save` to skip) |
+| powl          |  Q   |   Q*    |   Q   | wired (Surface Q; per-subcommand spans `wasm4pm.command.powl.<sub>`; receipts ONLY for write subs `simplify`/`convert`/`import`/`discover`; read subs span-only — prior `savePredictionResult()` forgery removed) |
+| validate      |  A   |    -    |   A   | wired (Surface P; span only — read-only, no receipt) |
+| autoprocess   |  A   |    A    |   A   | wired (Surface T; single-cycle invocation, state-hash chain receipt) |
 | swarm         |  -   |    -    |   B   | TODO  |
 | agent         |  -   |    -    |   B   | TODO  |
 | membrane      |  -   |    -    |   B   | TODO  |
 | benchmark     |  -   |    -    |   B   | TODO  |
 | verify        |  -   |    -    |   B   | TODO  |
-| watch         |  -   |    -    |   B   | TODO (long-running, separate semantics) |
+| watch         |  A   |    -    |   A   | wired (Surface S; manual parent + per-cycle child spans, no CommandReceipt — downstream `run` certifies artifacts) |
 | cognition     |  -   |    -    |   B   | TODO (currently has its own receipt path; integrate later) |
 | status        |  -   |    -    | exempt | introspection — no input/output to hash |
 | doctor        |  -   |    -    | exempt | environment diagnostic only |

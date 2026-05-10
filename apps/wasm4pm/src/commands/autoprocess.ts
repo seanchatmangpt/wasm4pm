@@ -1,9 +1,12 @@
 import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
+import * as fsp from 'node:fs/promises';
 import * as path from 'path';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { withLogSession } from '../with-log-session.js';
+import { withSpan } from './_otel.js';
+import { saveCommandReceipt, blake3Hex, newReceipt } from '../receipts/_shared.js';
 
 const AUTOPROCESS_STATE_FILE = '.wasm4pm/autoprocess-state.json';
 
@@ -13,6 +16,14 @@ async function ensureStateDir() {
     await fs.mkdir(dir, { recursive: true });
   } catch {
     // Directory might already exist
+  }
+}
+
+async function hashStateFile(stateFilePath: string): Promise<string> {
+  try {
+    return blake3Hex(await fsp.readFile(stateFilePath));
+  } catch {
+    return '0'.repeat(64); // cold-start sentinel; documented marker, not FM-5
   }
 }
 
@@ -105,13 +116,25 @@ export const autoprocess = defineCommand({
 
     try {
       const inputPath = ctx.args.input as string;
+      const stateFilePath = path.resolve(AUTOPROCESS_STATE_FILE);
+      let lateAttrs: Record<string, string | number | boolean> = {};
 
-      await withLogSession(
+      await withSpan(
+        'autoprocess',
+        {
+          input: inputPath,
+          activity_key: String(ctx.args['activity-key'] ?? 'concept:name'),
+        },
+        async () =>
+          withLogSession(
         { inputPath, commandName: 'autoprocess', emitOptions: { format, verbose, quiet } },
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         async (wasmBase, logHandle) => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const wasm = wasmBase as Record<string, any>;
+
+        // Capture state-file hash BEFORE load (cold-start sentinel if absent).
+        const initial_state_hash = await hashStateFile(stateFilePath);
 
         // 1. Load persisted state (RL, SPC, circuit breaker)
         await loadState(wasm);
@@ -127,6 +150,49 @@ export const autoprocess = defineCommand({
 
         // 3. Save persisted state (RL, SPC, circuit breaker)
         await saveState(wasm);
+
+        // Capture state-file hash AFTER save — chains across invocations.
+        const final_state_hash = await hashStateFile(stateFilePath);
+
+        // Emit single session receipt for this cycle, with state-hash chain.
+        if (!ctx.args['no-save']) {
+          try {
+            const inputBytes = await fsp.readFile(inputPath).catch(() => Buffer.from(inputPath));
+            saveCommandReceipt({
+              ...newReceipt('autoprocess'),
+              command: 'autoprocess',
+              input_hash: blake3Hex(inputBytes),
+              output_hash: blake3Hex(JSON.stringify(cycleResult)),
+              status: cycleResult.success ? 'success' : 'partial',
+              summary: {
+                cycles_run: 1,
+                final_health_level:
+                  (cycleResult.perception?.health_state as string | undefined) ?? 'unknown',
+                total_reward:
+                  (cycleResult.optimization?.reward as number | undefined) ?? 0,
+                spc_alerts_fired:
+                  (cycleResult.protection?.special_causes as unknown[] | undefined)?.length ?? 0,
+                initial_state_hash,
+                final_state_hash,
+              },
+            });
+          } catch {
+            /* receipt write must never break the command */
+          }
+        }
+
+        lateAttrs = {
+          health_state:
+            (cycleResult.perception?.health_state as string | undefined) ?? 'unknown',
+          rl_action:
+            (cycleResult.optimization?.rl_action as string | undefined) ?? 'none',
+          circuit_state:
+            (cycleResult.protection?.circuit_state as string | undefined) ?? 'unknown',
+          special_causes:
+            (cycleResult.protection?.special_causes as unknown[] | undefined)?.length ?? 0,
+          initial_state_hash,
+          final_state_hash,
+        };
 
         const result = makeResult('autoprocess', cycleResult, performance.now() - t0, EXIT_CODES.success);
         emitResult(result, { format, verbose, quiet }, (res, projection) => {
@@ -188,7 +254,9 @@ export const autoprocess = defineCommand({
         }
       });
         process.exit(result.exit_code);
-      });  // end withLogSession
+      }),  // end withLogSession
+        () => lateAttrs,
+      );  // end withSpan
     } catch (error) {
       const result = makeErrorResult('autoprocess', error, EXIT_CODES.execution_error);
       emitResult(result, { format, verbose, quiet });

@@ -4,6 +4,7 @@ import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { WasmLoader } from '@wasm4pm/engine';
 import { createQuietObservabilityLayer } from '../observability-util.js';
+import { withSpan } from './_otel.js';
 
 type CheckStatus = 'pass' | 'fail' | 'warn';
 interface ValidationCheck {
@@ -70,6 +71,11 @@ export const validate = defineCommand({
     },
   },
   async run(ctx) {
+    return withSpan('validate', {
+      input: String(ctx.args.input ?? ctx.args.file ?? ''),
+      format: String(ctx.args.format ?? 'xes'),
+      activity_key: String(ctx.args['activity-key'] ?? 'concept:name'),
+    }, async () => {
     const t0 = performance.now();
     const outFmt = (ctx.args['output-format'] as string | undefined) ?? 'human';
     const format = (outFmt === 'json' ? 'json' : 'human') as 'json' | 'human';
@@ -294,6 +300,7 @@ export const validate = defineCommand({
       emitResult(result, { format, verbose, quiet });
       process.exit(result.exit_code);
     }
+    });
   },
 });
 

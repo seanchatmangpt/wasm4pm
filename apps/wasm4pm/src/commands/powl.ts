@@ -16,7 +16,8 @@ import * as fs from 'fs/promises';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { WasmLoader } from '@wasm4pm/engine';
-import { savePredictionResult } from './results.js';
+import { withSpanRaw } from './_otel.js';
+import { saveCommandReceipt, blake3Hex, newReceipt } from '../receipts/_shared.js';
 
 const POWL_SUBCOMMANDS = [
   'parse',
@@ -32,6 +33,20 @@ const POWL_SUBCOMMANDS = [
   'node-info',
 ] as const;
 type PowlSubcommand = (typeof POWL_SUBCOMMANDS)[number];
+
+/**
+ * Surface Q: read vs write classification.
+ *
+ * Write subs produce a derived/transformed model artifact and emit a BLAKE3
+ * receipt. Read subs are pure analysis and emit only an OTEL span — saving a
+ * receipt for them was a forgery (asymmetric proof) and has been removed.
+ */
+const POWL_WRITE_SUBS = new Set<PowlSubcommand>([
+  'simplify',
+  'convert',
+  'import',
+  'discover',
+]);
 
 const CONVERT_TARGETS = ['petri-net', 'process-tree', 'bpmn'] as const;
 type ConvertTarget = (typeof CONVERT_TARGETS)[number];
@@ -122,80 +137,111 @@ export const powl = defineCommand({
     const format = (ctx.args.format as 'json' | 'human') ?? 'human';
     const verbose = Boolean(ctx.args.verbose);
     const quiet = Boolean(ctx.args.quiet);
+    const subcommand = ctx.args.subcommand as string;
 
-    try {
-      const subcommand = ctx.args.subcommand as string;
-      if (!POWL_SUBCOMMANDS.includes(subcommand as PowlSubcommand)) {
-        const result = makeErrorResult(
-          'powl',
-          `Unknown operation: "${subcommand}". Valid: ${POWL_SUBCOMMANDS.join(', ')}`,
-          EXIT_CODES.source_error,
-          'INVALID_SUBCOMMAND'
-        );
-        emitResult(result, { format, verbose, quiet });
-        process.exit(result.exit_code);
-      }
-
-      // Resolve model input (inline string or file)
-      const needsModel = !['discover'].includes(subcommand);
-      const modelInput = ctx.args.model as string;
-      if (needsModel && !modelInput) {
-        const result = makeErrorResult(
-          'powl',
-          'Missing required argument: --model',
-          EXIT_CODES.source_error,
-          'MISSING_MODEL'
-        );
-        emitResult(result, { format, verbose, quiet });
-        process.exit(result.exit_code);
-      }
-      const modelStr = needsModel ? ((await resolveModelInput(modelInput)) ?? '') : '';
-      if (needsModel && !modelStr) {
-        process.exit(EXIT_CODES.source_error);
-      }
-
-      // Load WASM — reset singleton to respect quiet flag for each command
-      WasmLoader.reset();
-      const loader = WasmLoader.getInstance({ quiet: ctx.args.quiet as boolean } as any);
-      await loader.init();
-      const wasm = loader.get();
-
-      // Execute subcommand
-      const payload = await executePowlCommand(
-        wasm,
-        subcommand as PowlSubcommand,
-        modelStr,
-        modelInput ?? '',
-        ctx.args
+    // Validate sub before opening a span — invalid sub is a usage error,
+    // not a powl execution.
+    if (!POWL_SUBCOMMANDS.includes(subcommand as PowlSubcommand)) {
+      const result = makeErrorResult(
+        'powl',
+        `Unknown operation: "${subcommand}". Valid: ${POWL_SUBCOMMANDS.join(', ')}`,
+        EXIT_CODES.source_error,
+        'INVALID_SUBCOMMAND'
       );
-
-      // Persist
-      if (!ctx.args['no-save']) {
-        const inputLabel =
-          modelInput && modelInput.length > 100
-            ? modelInput.slice(0, 100) + '...'
-            : modelInput || '';
-        const savedPath = await savePredictionResult(`powl-${subcommand}`, inputLabel, '', payload);
-        if (savedPath && format === 'human' && verbose) {
-          (payload as Record<string, unknown>)['_savedPath'] = savedPath;
-        }
-      }
-
-      const result = makeResult(`powl ${subcommand}`, payload, performance.now() - t0, EXIT_CODES.success);
-      emitResult(result, { format, verbose, quiet }, (res, projection) => {
-        const data = res.payload as typeof payload;
-        projection.success(`POWL ${subcommand} complete`);
-        formatHumanOutput(projection, subcommand as PowlSubcommand, data);
-        if (verbose && (data as Record<string, unknown>)['_savedPath']) {
-          projection.debug(`Result saved: ${(data as Record<string, unknown>)['_savedPath']}`);
-        }
-      });
-      process.exit(result.exit_code);
-    } catch (error) {
-      const result = makeErrorResult('powl', error, EXIT_CODES.execution_error);
       emitResult(result, { format, verbose, quiet });
       process.exit(result.exit_code);
     }
+
+    const sub = subcommand as PowlSubcommand;
+    const isWriteSub = POWL_WRITE_SUBS.has(sub);
+    const modelInput = (ctx.args.model as string) ?? '';
+
+    return withSpanRaw(
+      `wasm4pm.command.powl.${sub}`,
+      {
+        command: 'powl',
+        subcommand: sub,
+        kind: isWriteSub ? 'write' : 'read',
+        model_source: modelInput ? (modelInput.includes('/') ? 'file' : 'inline') : 'none',
+        ...(ctx.args.input ? { input: String(ctx.args.input) } : {}),
+        ...(ctx.args.to ? { target: String(ctx.args.to) } : {}),
+        ...(ctx.args.from ? { source: String(ctx.args.from) } : {}),
+        ...(ctx.args.log ? { log: String(ctx.args.log) } : {}),
+      },
+      async () => {
+        try {
+          // Resolve model input (inline string or file)
+          const needsModel = !['discover'].includes(sub);
+          if (needsModel && !modelInput) {
+            const result = makeErrorResult(
+              'powl',
+              'Missing required argument: --model',
+              EXIT_CODES.source_error,
+              'MISSING_MODEL'
+            );
+            emitResult(result, { format, verbose, quiet });
+            process.exit(result.exit_code);
+          }
+          const modelStr = needsModel ? ((await resolveModelInput(modelInput)) ?? '') : '';
+          if (needsModel && !modelStr) {
+            process.exit(EXIT_CODES.source_error);
+          }
+
+          // Load WASM — reset singleton to respect quiet flag for each command
+          WasmLoader.reset();
+          const loader = WasmLoader.getInstance({ quiet: ctx.args.quiet as boolean } as any);
+          await loader.init();
+          const wasm = loader.get();
+
+          // Execute subcommand
+          const payload = await executePowlCommand(
+            wasm,
+            sub,
+            modelStr,
+            modelInput ?? '',
+            ctx.args
+          );
+
+          // Persist — receipts only for WRITE subs (Surface Q).
+          // Read subs (parse/diff/complexity/footprints/conformance/get-children/node-info)
+          // emit a span only; saving a receipt for them would be forgery.
+          if (isWriteSub && !ctx.args['no-save']) {
+            const inputForHash = modelStr || (ctx.args.input ? String(ctx.args.input) : '');
+            const savedPath = saveCommandReceipt({
+              ...newReceipt(`powl ${sub}`),
+              command: `powl ${sub}`,
+              input_hash: blake3Hex(inputForHash),
+              output_hash: blake3Hex(JSON.stringify(payload)),
+              status: 'success',
+              summary: {
+                subcommand: sub,
+                ...(payload.root !== undefined ? { root: payload.root } : {}),
+                ...(payload.node_count !== undefined ? { node_count: payload.node_count } : {}),
+                ...(payload.target !== undefined ? { target: payload.target } : {}),
+              },
+            });
+            if (savedPath && format === 'human' && verbose) {
+              (payload as Record<string, unknown>)['_savedPath'] = savedPath;
+            }
+          }
+
+          const result = makeResult(`powl ${sub}`, payload, performance.now() - t0, EXIT_CODES.success);
+          emitResult(result, { format, verbose, quiet }, (res, projection) => {
+            const data = res.payload as typeof payload;
+            projection.success(`POWL ${sub} complete`);
+            formatHumanOutput(projection, sub, data);
+            if (verbose && (data as Record<string, unknown>)['_savedPath']) {
+              projection.debug(`Receipt saved: ${(data as Record<string, unknown>)['_savedPath']}`);
+            }
+          });
+          process.exit(result.exit_code);
+        } catch (error) {
+          const result = makeErrorResult('powl', error, EXIT_CODES.execution_error);
+          emitResult(result, { format, verbose, quiet });
+          process.exit(result.exit_code);
+        }
+      },
+    );
   },
 });
 

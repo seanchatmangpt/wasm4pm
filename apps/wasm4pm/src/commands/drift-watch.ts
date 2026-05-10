@@ -3,6 +3,8 @@ import * as fs from 'fs/promises';
 import { stat } from 'fs/promises';
 import { WasmLoader } from '@wasm4pm/engine';
 import { EXIT_CODES } from '../exit-codes.js';
+import { withSpan, withSpanRaw } from './_otel.js';
+import { saveCommandReceipt, blake3Hex, newReceipt } from '../receipts/_shared.js';
 
 const EWMA_ALPHA = 0.3;
 const DRIFT_THRESHOLD = 0.3;
@@ -89,6 +91,10 @@ export const driftWatch = defineCommand({
       type: 'boolean',
       description: 'Enable ML-enhanced anomaly detection alongside EWMA drift monitoring',
     },
+    'no-save': {
+      type: 'boolean',
+      description: 'Skip writing the session receipt to .wasm4pm/receipts/',
+    },
   },
 
   async run(ctx) {
@@ -163,8 +169,17 @@ export const driftWatch = defineCommand({
       console.log('  Press Ctrl+C to stop.\n');
     }
 
-    // ── Step 4: Poll loop ─────────────────────────────────────────────────────
-    const tick = async (): Promise<void> => {
+    // ── Step 4: Counters for session-level span/receipt ───────────────────────
+    let windowsProcessed = 0;
+    let alertsFired = 0;
+    let totalDriftPoints = 0;
+    const startedAtMs = Date.now();
+    // Per-tick mutable state for withSpanRaw late-attrs callback
+    let currentEwma = 0;
+    let currentNewDriftCount = 0;
+
+    // ── Step 4b: Poll loop ────────────────────────────────────────────────────
+    const tickInner = async (): Promise<void> => {
       // Check if the file has been modified since last run
       let currentMtimeMs: number;
       try {
@@ -225,6 +240,7 @@ export const driftWatch = defineCommand({
       // (we add each new drift's distance, or 0 if no new drifts this tick)
       const newDriftCount = detected - previousDriftCount;
       if (newDriftCount > 0) {
+        totalDriftPoints += newDriftCount;
         for (const dp of drifts.slice(previousDriftCount)) {
           distanceHistory.push(dp.distance);
         }
@@ -282,6 +298,7 @@ export const driftWatch = defineCommand({
 
         // Alert on new drift points
         if (newDriftCount > 0) {
+          alertsFired += 1;
           const latest = drifts[drifts.length - 1];
           const alertLine =
             `${BOLD}${RED}  ⚠  ALERT${RESET} — ${newDriftCount} new drift point${newDriftCount !== 1 ? 's' : ''} ` +
@@ -289,6 +306,9 @@ export const driftWatch = defineCommand({
           console.log(alertLine);
         }
       }
+      // Track ewma for late-attr callback
+      currentEwma = ewma;
+      currentNewDriftCount = newDriftCount;
 
       previousDriftCount = detected;
 
@@ -321,28 +341,88 @@ export const driftWatch = defineCommand({
       }
     };
 
-    // Run immediately, then on interval
-    await tick();
+    // Per-window child span wrapper around tickInner
+    const tick = async (): Promise<void> => {
+      const idx = windowsProcessed;
+      windowsProcessed += 1;
+      currentEwma = 0;
+      currentNewDriftCount = 0;
+      await withSpanRaw(
+        'wasm4pm.drift-watch.window',
+        { window_index: idx },
+        async () => { await tickInner(); },
+        () => ({
+          drift_score: currentEwma,
+          alert_fired: currentNewDriftCount > 0,
+        }),
+      );
+    };
 
-    const timer = setInterval(() => {
-      tick().catch((err) => {
-        console.error(
-          `[drift-watch] tick error: ${err instanceof Error ? err.message : String(err)}`
-        );
-      });
-    }, intervalMs);
+    // ── Step 5: Wrap session loop in parent span ─────────────────────────────
+    return withSpan(
+      'drift-watch',
+      {
+        input_path: inputPath,
+        window_size: windowSize,
+        interval_ms: intervalMs,
+        alpha: ewmaAlpha,
+        threshold: driftThreshold,
+        enhanced: enhancedMode,
+      },
+      async () => {
+        // Run immediately, then on interval
+        await tick();
 
-    // ── Step 5: Keep alive until Ctrl+C ─────────────────────────────────────
-    await new Promise<void>((resolve) => {
-      const shutdown = () => {
-        clearInterval(timer);
-        if (!jsonMode) {
-          console.log(`\n${BOLD}[drift-watch]${RESET} Stopped.`);
+        const timer = setInterval(() => {
+          tick().catch((err) => {
+            console.error(
+              `[drift-watch] tick error: ${err instanceof Error ? err.message : String(err)}`
+            );
+          });
+        }, intervalMs);
+
+        // Keep alive until Ctrl+C / SIGTERM
+        await new Promise<void>((resolve) => {
+          const shutdown = () => {
+            clearInterval(timer);
+            if (!jsonMode) {
+              console.log(`\n${BOLD}[drift-watch]${RESET} Stopped.`);
+            }
+            resolve();
+          };
+          process.once('SIGINT', shutdown);
+          process.once('SIGTERM', shutdown);
+        });
+
+        // Session receipt on graceful exit only
+        if (ctx.args['no-save'] !== true) {
+          try {
+            saveCommandReceipt({
+              ...newReceipt('drift-watch'),
+              command: 'drift-watch',
+              input_hash: blake3Hex(inputPath),
+              output_hash: blake3Hex(
+                JSON.stringify({ windowsProcessed, alertsFired, totalDriftPoints }),
+              ),
+              status: 'success',
+              summary: {
+                windows_processed: windowsProcessed,
+                alerts_fired: alertsFired,
+                total_drift_points: totalDriftPoints,
+                duration_ms: Date.now() - startedAtMs,
+              },
+            });
+          } catch {
+            /* never break command on receipt failure */
+          }
         }
-        resolve();
-      };
-      process.once('SIGINT', shutdown);
-      process.once('SIGTERM', shutdown);
-    });
+      },
+      () => ({
+        windows_processed: windowsProcessed,
+        alerts_fired: alertsFired,
+        total_drift_points: totalDriftPoints,
+        duration_ms: Date.now() - startedAtMs,
+      }),
+    );
   },
 });
