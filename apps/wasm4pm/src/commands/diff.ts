@@ -6,6 +6,7 @@ import { WasmLoader } from '@wasm4pm/engine';
 import { discriminate } from '../discriminator.js';
 import { withSpan } from './_otel.js';
 import { saveCommandReceipt, blake3Hex, newReceipt, type CommandReceipt } from '../receipts/_shared.js';
+import { exitWithFlush } from '../otel/exit.js';
 
 interface DfgNode {
   id: string;
@@ -134,7 +135,7 @@ export const diff = defineCommand({
             'SOURCE_ERROR'
           );
           emitResult(result, { format, verbose, quiet });
-          process.exit(result.exit_code);
+          await exitWithFlush(result.exit_code);
         }
       }
 
@@ -168,7 +169,7 @@ export const diff = defineCommand({
           'DIFF_REQUIRES_DFG'
         );
         emitResult(result, { format, verbose, quiet });
-        process.exit(result.exit_code);
+        await exitWithFlush(result.exit_code);
       }
 
       const dfg1: Dfg = shape1.raw as Dfg;
@@ -228,11 +229,11 @@ export const diff = defineCommand({
         }
       }
 
-      process.exit(result.exit_code);
+      await exitWithFlush(result.exit_code);
     } catch (error) {
       const result = makeErrorResult('diff', error, EXIT_CODES.execution_error, 'EXECUTION_ERROR');
       emitResult(result, { format, verbose, quiet });
-      process.exit(result.exit_code);
+      await exitWithFlush(result.exit_code);
     }
       },
     );

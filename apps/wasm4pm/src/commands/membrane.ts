@@ -5,6 +5,9 @@ import { emitResult, makeResult, makeErrorResult, EmitOptions, ConsoleProjection
 import { EXIT_CODES } from '../exit-codes.js';
 import { WasmLoader } from '@wasm4pm/engine';
 import { buildSarifOutput } from '../sarif.js';
+import { withSpanRaw } from './_otel.js';
+import { saveCommandReceipt, blake3Hex, newReceipt, type CommandReceipt } from '../receipts/_shared.js';
+import { exitWithFlush } from '../otel/exit.js';
 
 // ---------------------------------------------------------------------------
 // Shared parse helper — WASM functions return either a JS string or an object
@@ -68,6 +71,10 @@ const membraneVerify = defineCommand({
     quiet: { type: 'boolean', alias: 'q' },
   },
   async run(ctx) {
+    return withSpanRaw('wasm4pm.command.membrane.verify', {
+      command: 'membrane', subcommand: 'verify',
+      format: String(ctx.args.format ?? 'human'),
+    }, async () => {
     const format = (ctx.args.format as EmitOptions['format']) || 'human';
     const verbose = Boolean(ctx.args.verbose);
     const quiet = Boolean(ctx.args.quiet);
@@ -86,7 +93,7 @@ const membraneVerify = defineCommand({
           'FEATURE_GUARD'
         );
         emitResult(result, { format, verbose, quiet });
-        process.exit(result.exit_code);
+        await exitWithFlush(result.exit_code);
       }
 
       const raw = (wasm.run_all_benchmarks as () => unknown)();
@@ -116,7 +123,7 @@ const membraneVerify = defineCommand({
           missingEvidence: [] as string[],
         }));
         process.stdout.write(JSON.stringify(buildSarifOutput('26.4.28', sarifResults), null, 2) + '\n');
-        process.exit(EXIT_CODES.success);
+        await exitWithFlush(EXIT_CODES.success);
       }
 
       const result = makeResult(
@@ -147,7 +154,7 @@ const membraneVerify = defineCommand({
         p.log('');
       });
 
-      process.exit(result.exit_code);
+      await exitWithFlush(result.exit_code);
     } catch (error) {
       const result = makeErrorResult(
         'membrane verify',
@@ -155,8 +162,9 @@ const membraneVerify = defineCommand({
         EXIT_CODES.execution_error
       );
       emitResult(result, { format, verbose, quiet });
-      process.exit(result.exit_code);
+      await exitWithFlush(result.exit_code);
     }
+    });
   },
 });
 
@@ -207,6 +215,11 @@ const membraneReplayLog = defineCommand({
     quiet: { type: 'boolean', alias: 'q' },
   },
   async run(ctx) {
+    return withSpanRaw('wasm4pm.command.membrane.replay-log', {
+      command: 'membrane', subcommand: 'replay-log',
+      format: String(ctx.args.format ?? 'human'),
+      log: String(ctx.args.log ?? ''),
+    }, async () => {
     const format = (ctx.args.format as EmitOptions['format']) || 'human';
     const verbose = Boolean(ctx.args.verbose);
     const quiet = Boolean(ctx.args.quiet);
@@ -224,7 +237,7 @@ const membraneReplayLog = defineCommand({
           'SOURCE_NOT_FOUND'
         );
         emitResult(result, { format, verbose, quiet });
-        process.exit(result.exit_code);
+        await exitWithFlush(result.exit_code);
       }
 
       const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
@@ -243,7 +256,7 @@ const membraneReplayLog = defineCommand({
           'FEATURE_GUARD'
         );
         emitResult(result, { format, verbose, quiet });
-        process.exit(result.exit_code);
+        await exitWithFlush(result.exit_code);
       }
 
       const xesContent = await fs.readFile(logPath, 'utf-8');
@@ -257,7 +270,7 @@ const membraneReplayLog = defineCommand({
           'PARSE_FAILED'
         );
         emitResult(result, { format, verbose, quiet });
-        process.exit(result.exit_code);
+        await exitWithFlush(result.exit_code);
       }
 
       let motionJson: string;
@@ -296,7 +309,7 @@ const membraneReplayLog = defineCommand({
           },
         ];
         process.stdout.write(JSON.stringify(buildSarifOutput('26.4.28', sarifResults), null, 2) + '\n');
-        process.exit(EXIT_CODES.success);
+        await exitWithFlush(EXIT_CODES.success);
       }
 
       const result = makeResult(
@@ -362,7 +375,7 @@ const membraneReplayLog = defineCommand({
         p.log('');
       });
 
-      process.exit(result.exit_code);
+      await exitWithFlush(result.exit_code);
     } catch (error) {
       const result = makeErrorResult(
         'membrane classify',
@@ -370,8 +383,9 @@ const membraneReplayLog = defineCommand({
         EXIT_CODES.execution_error
       );
       emitResult(result, { format, verbose, quiet });
-      process.exit(result.exit_code);
+      await exitWithFlush(result.exit_code);
     }
+    });
   },
 });
 
@@ -398,6 +412,11 @@ const membraneShow = defineCommand({
     quiet: { type: 'boolean', alias: 'q' },
   },
   async run(ctx) {
+    return withSpanRaw('wasm4pm.command.membrane.show', {
+      command: 'membrane', subcommand: 'show',
+      format: String(ctx.args.format ?? 'human'),
+      handles: String(ctx.args.handles ?? ''),
+    }, async () => {
     const format = (ctx.args.format as EmitOptions['format']) || 'human';
     const verbose = Boolean(ctx.args.verbose);
     const quiet = Boolean(ctx.args.quiet);
@@ -418,7 +437,7 @@ const membraneShow = defineCommand({
         );
         p.log('');
       });
-      process.exit(result.exit_code);
+      await exitWithFlush(result.exit_code);
     }
 
     try {
@@ -434,7 +453,7 @@ const membraneShow = defineCommand({
           'FEATURE_GUARD'
         );
         emitResult(result, { format, verbose, quiet });
-        process.exit(result.exit_code);
+        await exitWithFlush(result.exit_code);
       }
 
       const handles = handlesArg
@@ -455,7 +474,7 @@ const membraneShow = defineCommand({
         p.log('');
       });
 
-      process.exit(result.exit_code);
+      await exitWithFlush(result.exit_code);
     } catch (error) {
       const result = makeErrorResult(
         'membrane show',
@@ -463,8 +482,9 @@ const membraneShow = defineCommand({
         EXIT_CODES.execution_error
       );
       emitResult(result, { format, verbose, quiet });
-      process.exit(result.exit_code);
+      await exitWithFlush(result.exit_code);
     }
+    });
   },
 });
 
@@ -511,7 +531,7 @@ const membraneInit = defineCommand({
       emitResult(result, { format, verbose, quiet }, (_res, p) => {
         p.warn('[membrane] section already exists in wasm4pm.toml. Use --force to overwrite.');
       });
-      process.exit(result.exit_code);
+      await exitWithFlush(result.exit_code);
     }
 
     if (dryRun) {
@@ -525,7 +545,7 @@ const membraneInit = defineCommand({
         p.log(MEMBRANE_TOML_SECTION);
         p.log('  Run without --dry-run to apply.\n');
       });
-      process.exit(result.exit_code);
+      await exitWithFlush(result.exit_code);
     }
 
     let base = existing;
@@ -548,7 +568,7 @@ const membraneInit = defineCommand({
       p.log('    2. Run `wpm membrane build <log.xes>` to build envelopes');
       p.log('    3. Run `wpm membrane health` to verify envelope status\n');
     });
-    process.exit(result.exit_code);
+    await exitWithFlush(result.exit_code);
   },
 });
 
@@ -605,7 +625,7 @@ const membraneBuild = defineCommand({
         'SOURCE_NOT_FOUND'
       );
       emitResult(result, { format, verbose, quiet });
-      process.exit(result.exit_code);
+      await exitWithFlush(result.exit_code);
     }
 
     const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
@@ -627,7 +647,7 @@ const membraneBuild = defineCommand({
         'FEATURE_GUARD'
       );
       emitResult(result, { format, verbose, quiet });
-      process.exit(result.exit_code);
+      await exitWithFlush(result.exit_code);
     }
 
     const xesContent = await fs.readFile(logPath, 'utf-8');
@@ -645,7 +665,7 @@ const membraneBuild = defineCommand({
         'PARSE_FAILED'
       );
       emitResult(result, { format, verbose, quiet });
-      process.exit(result.exit_code);
+      await exitWithFlush(result.exit_code);
     }
 
     const handles: Record<string, string> = {};
@@ -726,7 +746,7 @@ const membraneBuild = defineCommand({
       if (handleList) p.log(`\n  Next: wpm membrane health ${handleList}\n`);
     });
 
-    process.exit(result.exit_code);
+    await exitWithFlush(result.exit_code);
   },
 });
 
@@ -774,7 +794,7 @@ const membraneInspect = defineCommand({
         'FEATURE_GUARD'
       );
       emitResult(result, { format, verbose, quiet });
-      process.exit(result.exit_code);
+      await exitWithFlush(result.exit_code);
     }
 
     let inspectResult: unknown = null;
@@ -807,7 +827,7 @@ const membraneInspect = defineCommand({
         'ENVELOPE_NOT_FOUND'
       );
       emitResult(result, { format, verbose, quiet });
-      process.exit(result.exit_code);
+      await exitWithFlush(result.exit_code);
     }
 
     const payload = {
@@ -830,7 +850,7 @@ const membraneInspect = defineCommand({
       p.log('');
     });
 
-    process.exit(result.exit_code);
+    await exitWithFlush(result.exit_code);
   },
 });
 
@@ -885,7 +905,7 @@ const membraneReplay = defineCommand({
         'SOURCE_NOT_FOUND'
       );
       emitResult(result, { format, verbose, quiet });
-      process.exit(result.exit_code);
+      await exitWithFlush(result.exit_code);
     }
 
     let motionObj: Record<string, unknown>;
@@ -899,7 +919,7 @@ const membraneReplay = defineCommand({
         'INVALID_JSON'
       );
       emitResult(result, { format, verbose, quiet });
-      process.exit(result.exit_code);
+      await exitWithFlush(result.exit_code);
     }
 
     if (Boolean(ctx.args['dry-run'])) {
@@ -914,7 +934,7 @@ const membraneReplay = defineCommand({
         );
         p.log('\n  Remove --dry-run to classify.\n');
       });
-      process.exit(result.exit_code);
+      await exitWithFlush(result.exit_code);
     }
 
     const loader = WasmLoader.getInstance();
@@ -929,7 +949,7 @@ const membraneReplay = defineCommand({
         'FEATURE_GUARD'
       );
       emitResult(result, { format, verbose, quiet });
-      process.exit(result.exit_code);
+      await exitWithFlush(result.exit_code);
     }
 
     const raw = (wasm.classify_motion as (j: string) => unknown)(motionText);
@@ -998,7 +1018,7 @@ const membraneReplay = defineCommand({
       p.log(`\n  Model: ${receipt.model_version}   Request: ${receipt.request_id}\n`);
     });
 
-    process.exit(result.exit_code);
+    await exitWithFlush(result.exit_code);
   },
 });
 
@@ -1072,7 +1092,7 @@ const membraneList = defineCommand({
         p.log(`  Directory: ${dir}`);
         p.log('\n  To persist: wpm membrane build <log.xes> --persist\n');
       });
-      process.exit(result.exit_code);
+      await exitWithFlush(result.exit_code);
     }
 
     const envelopesMapped = entries.map((e) => ({
@@ -1114,7 +1134,7 @@ const membraneList = defineCommand({
       p.log('  Tip: wpm membrane health <handles>   Check health of envelopes\n');
     });
 
-    process.exit(result.exit_code);
+    await exitWithFlush(result.exit_code);
   },
 });
 
@@ -1363,7 +1383,7 @@ const membraneDoctor = defineCommand({
       }
     });
 
-    process.exit(result.exit_code);
+    await exitWithFlush(result.exit_code);
   },
 });
 
@@ -1434,7 +1454,7 @@ const membraneCheck = defineCommand({
       else p.warn('Membrane check: some checks failed.');
     });
 
-    process.exit(result.exit_code);
+    await exitWithFlush(result.exit_code);
   },
 });
 
@@ -1473,7 +1493,7 @@ const membraneExport = defineCommand({
           'FEATURE_GUARD'
         );
         emitResult(result, { format: 'human', quiet });
-        process.exit(result.exit_code);
+        await exitWithFlush(result.exit_code);
       }
 
       const raw = (wasm.run_all_benchmarks as () => unknown)();
@@ -1504,11 +1524,11 @@ const membraneExport = defineCommand({
         emitResult(result, { format: 'json', quiet });
       }
 
-      process.exit(EXIT_CODES.success);
+      await exitWithFlush(EXIT_CODES.success);
     } catch (e) {
       const result = makeErrorResult('membrane export', e, EXIT_CODES.execution_error);
       emitResult(result, { format: 'human', quiet });
-      process.exit(result.exit_code);
+      await exitWithFlush(result.exit_code);
     }
   },
 });
@@ -1559,7 +1579,7 @@ export const membrane = defineCommand({
   Run "wpm membrane <subcommand> --help" for detailed usage.
 `);
     }
-    process.exit(EXIT_CODES.success);
+    await exitWithFlush(EXIT_CODES.success);
   },
   subCommands: {
     // verb8 canonical

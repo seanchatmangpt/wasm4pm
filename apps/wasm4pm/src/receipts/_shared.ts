@@ -10,8 +10,19 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { randomUUID } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
 import { hashJsonString } from '@wasm4pm/contracts';
+
+function atomicWriteSync(target: string, content: string): void {
+  const tmp = `${target}.${process.pid}.${randomBytes(4).toString('hex')}.tmp`;
+  fs.writeFileSync(tmp, content);
+  try {
+    fs.renameSync(tmp, target);
+  } catch (err) {
+    try { fs.unlinkSync(tmp); } catch { /* ignore cleanup failure */ }
+    throw err;
+  }
+}
 
 export interface CommandReceipt {
   run_id: string;
@@ -43,6 +54,6 @@ export function saveCommandReceipt(receipt: CommandReceipt, dirRel = '.wasm4pm/r
   const file = path.join(dir, `${receipt.run_id}.json`);
   const json = JSON.stringify(receipt, null, 2) + '\n';
   fs.writeFileSync(file, json);
-  fs.writeFileSync(path.join(dir, 'latest.json'), json);
+  atomicWriteSync(path.join(dir, 'latest.json'), json);
   return file;
 }

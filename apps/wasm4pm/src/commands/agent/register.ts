@@ -5,6 +5,7 @@ import { AgentRegistry } from '@wasm4pm/agents';
 import { withSpanRaw } from '../_otel.js';
 import type { AgentConfig } from '@wasm4pm/agents';
 import { readFileSync } from 'fs';
+import { exitWithFlush } from '../../otel/exit.js';
 
 export const register = defineCommand({
   meta: {
@@ -46,7 +47,7 @@ export const register = defineCommand({
           'MISSING_NAME'
         );
         emitResult(errResult, { format, verbose, quiet });
-        process.exit(errResult.exit_code);
+        await exitWithFlush(errResult.exit_code);
       }
       if (!config.description) {
         const errResult = makeErrorResult(
@@ -56,7 +57,7 @@ export const register = defineCommand({
           'MISSING_DESCRIPTION'
         );
         emitResult(errResult, { format, verbose, quiet });
-        process.exit(errResult.exit_code);
+        await exitWithFlush(errResult.exit_code);
       }
 
       const registry = new AgentRegistry();
@@ -74,7 +75,7 @@ export const register = defineCommand({
         projection.log(`  Description: ${cfg.description}`);
         projection.log(`  Mode: ${cfg.mode || 'on_demand'}`);
       });
-      process.exit(result.exit_code);
+      await exitWithFlush(result.exit_code);
     } catch (error) {
       if (error instanceof SyntaxError) {
         const errResult = makeErrorResult(
@@ -84,7 +85,7 @@ export const register = defineCommand({
           'INVALID_JSON'
         );
         emitResult(errResult, { format, verbose, quiet });
-        process.exit(errResult.exit_code);
+        await exitWithFlush(errResult.exit_code);
       }
       const errResult = makeErrorResult(
         'agent register',
@@ -93,7 +94,7 @@ export const register = defineCommand({
         'AGENT_REGISTER_ERROR'
       );
       emitResult(errResult, { format, verbose, quiet });
-      process.exit(errResult.exit_code);
+      await exitWithFlush(errResult.exit_code);
     }
     });
   },

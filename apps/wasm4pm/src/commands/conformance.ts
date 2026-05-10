@@ -5,6 +5,7 @@ import { EXIT_CODES } from '../exit-codes.js';
 import { withLogSession } from '../with-log-session.js';
 import { withSpan } from './_otel.js';
 import { saveCommandReceipt, blake3Hex, newReceipt, type CommandReceipt } from '../receipts/_shared.js';
+import { exitWithFlush } from '../otel/exit.js';
 
 interface ConformancePayload {
   schema: string;
@@ -110,7 +111,7 @@ export const conformance = defineCommand({
           'SOURCE_ERROR'
         );
         emitResult(result, { format, verbose, quiet });
-        process.exit(result.exit_code);
+        await exitWithFlush(result.exit_code);
         return;
       }
 
@@ -126,7 +127,7 @@ export const conformance = defineCommand({
           'CONFIG_ERROR'
         );
         emitResult(result, { format, verbose, quiet });
-        process.exit(result.exit_code);
+        await exitWithFlush(result.exit_code);
         return;
       }
       const threshold = parsedThreshold ?? 0.8;
@@ -159,7 +160,7 @@ export const conformance = defineCommand({
             'SOURCE_ERROR'
           );
           emitResult(result, { format, verbose, quiet });
-          process.exit(result.exit_code);
+          await exitWithFlush(result.exit_code);
           return;
         }
       } else {
@@ -177,7 +178,7 @@ export const conformance = defineCommand({
             'EXECUTION_ERROR'
           );
           emitResult(result, { format, verbose, quiet });
-          process.exit(result.exit_code);
+          await exitWithFlush(result.exit_code);
           return;
         }
       }
@@ -260,7 +261,7 @@ export const conformance = defineCommand({
           }
         }
 
-        process.exit(result.exit_code);
+        await exitWithFlush(result.exit_code);
       });  // end withLogSession
     } catch (error) {
       const result = makeErrorResult(
@@ -270,7 +271,7 @@ export const conformance = defineCommand({
         'EXECUTION_ERROR'
       );
       emitResult(result, { format, verbose, quiet });
-      process.exit(result.exit_code);
+      await exitWithFlush(result.exit_code);
     }
       },
     );

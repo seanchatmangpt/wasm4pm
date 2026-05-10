@@ -2,6 +2,7 @@ import { defineCommand } from 'citty';
 import { resolveConfig, checkConfigWarnings } from '@wasm4pm/config';
 import { emitResult, makeResult, makeErrorResult } from '../../output.js';
 import { EXIT_CODES } from '../../exit-codes.js';
+import { exitWithFlush } from '../../otel/exit.js';
 
 export const configCheck = defineCommand({
   meta: {
@@ -35,11 +36,11 @@ export const configCheck = defineCommand({
         }
       });
 
-      process.exit(result.exit_code);
+      await exitWithFlush(result.exit_code);
     } catch (e) {
       const result = makeErrorResult('config check', e, EXIT_CODES.config_error, 'CONFIG_ERROR');
       emitResult(result, { format, quiet });
-      process.exit(EXIT_CODES.config_error);
+      await exitWithFlush(EXIT_CODES.config_error);
     }
   },
 });

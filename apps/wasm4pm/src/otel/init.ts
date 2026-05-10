@@ -10,6 +10,7 @@
 
 import type { OtelSpan, SpanSink } from '@wasm4pm/cognition';
 import { setGlobalSpanSink, resetGlobalSpanSink } from './sink.js';
+import { setOtelHandle } from './exit.js';
 
 export interface OtelHandle {
   sink: SpanSink;
@@ -52,6 +53,7 @@ export async function initOtel(): Promise<OtelHandle> {
   const enabled = process.env.WASM4PM_OTEL_ENABLED === 'true';
   if (!enabled) {
     setGlobalSpanSink(NOOP_HANDLE.sink);
+    setOtelHandle(NOOP_HANDLE);
     return NOOP_HANDLE;
   }
 
@@ -67,6 +69,7 @@ export async function initOtel(): Promise<OtelHandle> {
         '[wpm/otel] WASM4PM_OTEL_ENABLED=true but @wasm4pm/observability has no OtelExporter; falling back to noop sink\n',
       );
       setGlobalSpanSink(NOOP_HANDLE.sink);
+      setOtelHandle(NOOP_HANDLE);
       return NOOP_HANDLE;
     }
     const endpoint = process.env.WASM4PM_OTEL_ENDPOINT ?? 'http://localhost:4318';
@@ -84,6 +87,7 @@ export async function initOtel(): Promise<OtelHandle> {
       `[wpm/otel] WASM4PM_OTEL_ENABLED=true but exporter init failed (${e instanceof Error ? e.message : String(e)}); falling back to noop sink\n`,
     );
     setGlobalSpanSink(NOOP_HANDLE.sink);
+    setOtelHandle(NOOP_HANDLE);
     return NOOP_HANDLE;
   }
 
@@ -96,7 +100,7 @@ export async function initOtel(): Promise<OtelHandle> {
   };
   setGlobalSpanSink(sink);
 
-  return {
+  const handle: OtelHandle = {
     sink,
     shutdown: async (): Promise<void> => {
       try {
@@ -108,4 +112,6 @@ export async function initOtel(): Promise<OtelHandle> {
       }
     },
   };
+  setOtelHandle(handle);
+  return handle;
 }

@@ -7,6 +7,7 @@ import { EXIT_CODES } from '../exit-codes.js';
 import { withLogSession } from '../with-log-session.js';
 import { withSpan } from './_otel.js';
 import { saveCommandReceipt, blake3Hex, newReceipt } from '../receipts/_shared.js';
+import { exitWithFlush } from '../otel/exit.js';
 
 const AUTOPROCESS_STATE_FILE = '.wasm4pm/autoprocess-state.json';
 
@@ -157,7 +158,10 @@ export const autoprocess = defineCommand({
         // Emit single session receipt for this cycle, with state-hash chain.
         if (!ctx.args['no-save']) {
           try {
-            const inputBytes = await fsp.readFile(inputPath).catch(() => Buffer.from(inputPath));
+            // FM-5 fix: no path-as-content fallback. If the file is missing,
+            // the surrounding try/catch swallows and the receipt is omitted.
+            // Honest absence > fake presence.
+            const inputBytes = await fsp.readFile(inputPath);
             saveCommandReceipt({
               ...newReceipt('autoprocess'),
               command: 'autoprocess',
@@ -253,14 +257,14 @@ export const autoprocess = defineCommand({
           projection.log('  Result: Cycle completed with warnings');
         }
       });
-        process.exit(result.exit_code);
+        await exitWithFlush(result.exit_code);
       }),  // end withLogSession
         () => lateAttrs,
       );  // end withSpan
     } catch (error) {
       const result = makeErrorResult('autoprocess', error, EXIT_CODES.execution_error);
       emitResult(result, { format, verbose, quiet });
-      process.exit(result.exit_code);
+      await exitWithFlush(result.exit_code);
     }
   },
 });

@@ -3,6 +3,7 @@ import { emitResult, makeResult, makeErrorResult } from '../../output.js';
 import { EXIT_CODES } from '../../exit-codes.js';
 import { AuditStore } from '@wasm4pm/agents';
 import { withSpanRaw } from '../_otel.js';
+import { exitWithFlush } from '../../otel/exit.js';
 
 export const audit = defineCommand({
   meta: {
@@ -73,7 +74,7 @@ export const audit = defineCommand({
         }
       });
 
-      process.exit(result.exit_code);
+      await exitWithFlush(result.exit_code);
     } catch (error) {
       const result = makeErrorResult(
         'agent audit',
@@ -82,7 +83,7 @@ export const audit = defineCommand({
         'AGENT_AUDIT_ERROR'
       );
       emitResult(result, { format, verbose, quiet });
-      process.exit(result.exit_code);
+      await exitWithFlush(result.exit_code);
     }
     });
   },

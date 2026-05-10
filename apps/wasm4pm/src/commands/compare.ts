@@ -7,6 +7,7 @@ import { discriminate, toUniformStats, DiscoveryShapeError } from '../discrimina
 import * as fs from 'node:fs';
 import { withSpan } from './_otel.js';
 import { saveCommandReceipt, blake3Hex, newReceipt, type CommandReceipt } from '../receipts/_shared.js';
+import { exitWithFlush } from '../otel/exit.js';
 
 /**
  * Algorithms supported by `wpm compare`.
@@ -231,7 +232,7 @@ export const compare = defineCommand({
           'UNKNOWN_ALGORITHMS'
         );
         emitResult(result, emitOptions);
-        process.exit(result.exit_code);
+        await exitWithFlush(result.exit_code);
       }
 
       if (resolved.length < 2) {
@@ -242,7 +243,7 @@ export const compare = defineCommand({
           'TOO_FEW_ALGORITHMS'
         );
         emitResult(result, emitOptions);
-        process.exit(result.exit_code);
+        await exitWithFlush(result.exit_code);
       }
 
       const algos = resolved as Algorithm[];
@@ -289,7 +290,7 @@ export const compare = defineCommand({
           if (typeof wasm.get_cache_stats !== 'function') {
             const errResult = makeErrorResult('compare', new Error('Cache statistics requested but not available in WASM module'), EXIT_CODES.execution_error, 'CACHE_STATS_UNAVAILABLE');
             emitResult(errResult, emitOptions);
-            process.exit(errResult.exit_code);
+            await exitWithFlush(errResult.exit_code);
           }
           const statsRaw = wasm.get_cache_stats();
           cacheStats = (typeof statsRaw === 'string' ? JSON.parse(statsRaw) : statsRaw) as Record<string, unknown>;
@@ -387,7 +388,7 @@ export const compare = defineCommand({
         }
       });
 
-        process.exit(cmdResult.exit_code);
+        await exitWithFlush(cmdResult.exit_code);
       });  // end withLogSession
     } catch (error) {
       const code =
@@ -399,7 +400,7 @@ export const compare = defineCommand({
         code
       );
       emitResult(result, emitOptions);
-      process.exit(result.exit_code);
+      await exitWithFlush(result.exit_code);
     }
       },
     );

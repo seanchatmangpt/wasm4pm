@@ -6,6 +6,7 @@ import { EXIT_CODES } from '../../exit-codes.js';
 import { runContract } from '@wasm4pm/cognition';
 import type { BreedInput } from '@wasm4pm/cognition';
 import { parseInputJson, saveReceipt, mapWasmError } from './_shared.js';
+import { exitWithFlush } from '../../otel/exit.js';
 
 export const run = defineCommand({
   meta: {
@@ -66,12 +67,12 @@ export const run = defineCommand({
         p.success(`Contract '${(res.payload as { contract: string }).contract}' → breed '${breed}'`);
         if (savedPath) p.info(`Receipt saved: ${savedPath}`);
       });
-      process.exit(exitCode);
+      await exitWithFlush(exitCode);
     } catch (err) {
       const { code, exitCode } = mapWasmError(err);
       const result = makeErrorResult('cognition run', err, exitCode, code);
       emitResult(result, { format, verbose, quiet });
-      process.exit(exitCode);
+      await exitWithFlush(exitCode);
     }
   },
 });

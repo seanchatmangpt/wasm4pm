@@ -8,6 +8,7 @@ import { savePredictionResult } from './results.js';
 import { VALID_PREDICT_CLI_TASKS } from '@wasm4pm/contracts';
 import { withSpan } from './_otel.js';
 import { saveCommandReceipt, blake3Hex, newReceipt, type CommandReceipt } from '../receipts/_shared.js';
+import { exitWithFlush } from '../otel/exit.js';
 
 const VALID_TASKS = VALID_PREDICT_CLI_TASKS;
 type PredictTask = (typeof VALID_TASKS)[number];
@@ -103,7 +104,7 @@ export const predict = defineCommand({
           'INVALID_TASK'
         );
         emitResult(result, { format, verbose, quiet });
-        process.exit(result.exit_code);
+        await exitWithFlush(result.exit_code);
       }
 
       // Step 2: Load config to get prediction defaults
@@ -129,7 +130,7 @@ export const predict = defineCommand({
           'INVALID_ARG'
         );
         emitResult(result, { format, verbose, quiet });
-        process.exit(result.exit_code);
+        await exitWithFlush(result.exit_code);
       }
       const topK = parsedTopK ?? 3;
 
@@ -143,7 +144,7 @@ export const predict = defineCommand({
           'INVALID_ARG'
         );
         emitResult(result, { format, verbose, quiet });
-        process.exit(result.exit_code);
+        await exitWithFlush(result.exit_code);
       }
       const ngramOrder = parsedNgram ?? pred?.ngramOrder ?? 2;
 
@@ -157,7 +158,7 @@ export const predict = defineCommand({
           'INVALID_ARG'
         );
         emitResult(result, { format, verbose, quiet });
-        process.exit(result.exit_code);
+        await exitWithFlush(result.exit_code);
       }
       const driftWindow = parsedDrift ?? pred?.driftWindowSize ?? 10;
       const prefixActivities = ctx.args.prefix
@@ -234,7 +235,7 @@ export const predict = defineCommand({
           }
         }
 
-        process.exit(result.exit_code);
+        await exitWithFlush(result.exit_code);
       });  // end withLogSession
     } catch (error) {
       const result = makeErrorResult(
@@ -244,7 +245,7 @@ export const predict = defineCommand({
         'PREDICTION_ERROR'
       );
       emitResult(result, { format, verbose, quiet });
-      process.exit(result.exit_code);
+      await exitWithFlush(result.exit_code);
     }
       },
     );

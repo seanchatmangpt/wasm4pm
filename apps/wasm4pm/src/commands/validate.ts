@@ -5,6 +5,7 @@ import { EXIT_CODES } from '../exit-codes.js';
 import { WasmLoader } from '@wasm4pm/engine';
 import { createQuietObservabilityLayer } from '../observability-util.js';
 import { withSpan } from './_otel.js';
+import { exitWithFlush } from '../otel/exit.js';
 
 type CheckStatus = 'pass' | 'fail' | 'warn';
 interface ValidationCheck {
@@ -95,7 +96,7 @@ export const validate = defineCommand({
           'MISSING_INPUT'
         );
         emitResult(result, { format, verbose, quiet });
-        process.exit(result.exit_code);
+        await exitWithFlush(result.exit_code);
       }
 
       try {
@@ -108,7 +109,7 @@ export const validate = defineCommand({
           'FILE_NOT_FOUND'
         );
         emitResult(result, { format, verbose, quiet });
-        process.exit(result.exit_code);
+        await exitWithFlush(result.exit_code);
       }
 
       const logFormat = (ctx.args.format as string) || 'xes';
@@ -125,7 +126,7 @@ export const validate = defineCommand({
           'INVALID_FORMAT'
         );
         emitResult(result, { format, verbose, quiet });
-        process.exit(result.exit_code);
+        await exitWithFlush(result.exit_code);
       }
 
       // Load WASM module
@@ -155,7 +156,7 @@ export const validate = defineCommand({
           'PARSE_ERROR'
         );
         emitResult(result, { format, verbose, quiet });
-        process.exit(result.exit_code);
+        await exitWithFlush(result.exit_code);
       }
 
       const checks: ValidationCheck[] = [];
@@ -294,11 +295,11 @@ export const validate = defineCommand({
       emitResult(result, { format, verbose, quiet }, (res, projection) => {
         printHumanValidation(projection, res.payload as typeof payload);
       });
-      process.exit(result.exit_code);
+      await exitWithFlush(result.exit_code);
     } catch (error) {
       const result = makeErrorResult('validate', error, EXIT_CODES.execution_error);
       emitResult(result, { format, verbose, quiet });
-      process.exit(result.exit_code);
+      await exitWithFlush(result.exit_code);
     }
     });
   },

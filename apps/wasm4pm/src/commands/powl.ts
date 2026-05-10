@@ -18,6 +18,7 @@ import { EXIT_CODES } from '../exit-codes.js';
 import { WasmLoader } from '@wasm4pm/engine';
 import { withSpanRaw } from './_otel.js';
 import { saveCommandReceipt, blake3Hex, newReceipt } from '../receipts/_shared.js';
+import { exitWithFlush } from '../otel/exit.js';
 
 const POWL_SUBCOMMANDS = [
   'parse',
@@ -149,7 +150,7 @@ export const powl = defineCommand({
         'INVALID_SUBCOMMAND'
       );
       emitResult(result, { format, verbose, quiet });
-      process.exit(result.exit_code);
+      await exitWithFlush(result.exit_code);
     }
 
     const sub = subcommand as PowlSubcommand;
@@ -180,11 +181,11 @@ export const powl = defineCommand({
               'MISSING_MODEL'
             );
             emitResult(result, { format, verbose, quiet });
-            process.exit(result.exit_code);
+            await exitWithFlush(result.exit_code);
           }
           const modelStr = needsModel ? ((await resolveModelInput(modelInput)) ?? '') : '';
           if (needsModel && !modelStr) {
-            process.exit(EXIT_CODES.source_error);
+            await exitWithFlush(EXIT_CODES.source_error);
           }
 
           // Load WASM — reset singleton to respect quiet flag for each command
@@ -206,7 +207,17 @@ export const powl = defineCommand({
           // Read subs (parse/diff/complexity/footprints/conformance/get-children/node-info)
           // emit a span only; saving a receipt for them would be forgery.
           if (isWriteSub && !ctx.args['no-save']) {
-            const inputForHash = modelStr || (ctx.args.input ? String(ctx.args.input) : '');
+            // FM-5 fix: hash actual content, not the path string. modelStr is
+            // the resolved model contents (from inline or file). For `discover`
+            // the model is absent; hash the input log file's bytes instead.
+            let inputForHash: Buffer | string;
+            if (modelStr) {
+              inputForHash = modelStr;
+            } else if (ctx.args.input) {
+              inputForHash = await fs.readFile(String(ctx.args.input));
+            } else {
+              inputForHash = '';
+            }
             const savedPath = saveCommandReceipt({
               ...newReceipt(`powl ${sub}`),
               command: `powl ${sub}`,
@@ -234,11 +245,11 @@ export const powl = defineCommand({
               projection.debug(`Receipt saved: ${(data as Record<string, unknown>)['_savedPath']}`);
             }
           });
-          process.exit(result.exit_code);
+          await exitWithFlush(result.exit_code);
         } catch (error) {
           const result = makeErrorResult('powl', error, EXIT_CODES.execution_error);
           emitResult(result, { format, verbose, quiet });
-          process.exit(result.exit_code);
+          await exitWithFlush(result.exit_code);
         }
       },
     );
@@ -338,7 +349,7 @@ async function executePowlCommand(
     case 'convert': {
       const target = args.to as string;
       if (!target || !CONVERT_TARGETS.includes(target as ConvertTarget)) {
-        process.exit(EXIT_CODES.source_error);
+        await exitWithFlush(EXIT_CODES.source_error);
       }
       switch (target as ConvertTarget) {
         case 'petri-net': {
@@ -360,11 +371,11 @@ async function executePowlCommand(
     case 'diff': {
       const model2Input = args.model2 as string;
       if (!model2Input) {
-        process.exit(EXIT_CODES.source_error);
+        await exitWithFlush(EXIT_CODES.source_error);
       }
       const model2 = await resolveModelInput(model2Input);
       if (!model2) {
-        process.exit(EXIT_CODES.source_error);
+        await exitWithFlush(EXIT_CODES.source_error);
       }
       const raw: string = wasm.diff_models(modelStr, model2);
       return normalizeResult(raw);
@@ -383,14 +394,14 @@ async function executePowlCommand(
     case 'conformance': {
       const logPath = args.log as string;
       if (!logPath) {
-        process.exit(EXIT_CODES.source_error);
+        await exitWithFlush(EXIT_CODES.source_error);
       }
       let logContent: string;
       try {
         await fs.access(logPath);
         logContent = await fs.readFile(logPath, 'utf-8');
       } catch {
-        process.exit(EXIT_CODES.source_error);
+        await exitWithFlush(EXIT_CODES.source_error);
       }
       const confActivityKey = (args['activity-key'] as string) || 'concept:name';
       const logHandle: string = wasm.load_eventlog_from_xes(logContent);

@@ -6,6 +6,7 @@ import { EXIT_CODES } from '../../exit-codes.js';
 import { runContract } from '@wasm4pm/cognition';
 import type { BreedInput } from '@wasm4pm/cognition';
 import { parseInputJson, mapWasmError } from './_shared.js';
+import { exitWithFlush } from '../../otel/exit.js';
 
 export const explain = defineCommand({
   meta: { name: 'explain', description: 'Explain a cognition decision (eliminations, rationale)' },
@@ -47,12 +48,12 @@ export const explain = defineCommand({
         p.success(`Explanation for breed '${payload.breed ?? '?'}'`);
         if (payload.explanation) p.log(payload.explanation);
       });
-      process.exit(EXIT_CODES.success);
+      await exitWithFlush(EXIT_CODES.success);
     } catch (err) {
       const { code, exitCode } = mapWasmError(err);
       const result = makeErrorResult('cognition explain', err, exitCode, code);
       emitResult(result, { format, verbose, quiet });
-      process.exit(exitCode);
+      await exitWithFlush(exitCode);
     }
   },
 });

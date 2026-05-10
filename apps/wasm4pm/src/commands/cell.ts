@@ -4,6 +4,7 @@ import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { withLogSession } from '../with-log-session.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { withSpanRaw } from './_otel.js';
+import { exitWithFlush } from '../otel/exit.js';
 
 export const cell = defineCommand({
   meta: {
@@ -61,7 +62,7 @@ export const cell = defineCommand({
               if (!result) {
                 const err = makeErrorResult('cell build', new Error('cell_build not available in WASM module'), EXIT_CODES.execution_error, 'WASM_FUNCTION_UNAVAILABLE');
                 emitResult(err, emitOptions);
-                process.exit(err.exit_code);
+                await exitWithFlush(err.exit_code);
               }
 
               let parsed;
@@ -70,7 +71,7 @@ export const cell = defineCommand({
               } catch (parseErr) {
                 const err = makeErrorResult('cell build', new Error(`WASM returned invalid JSON: ${result}`), EXIT_CODES.execution_error, 'INVALID_WASM_OUTPUT');
                 emitResult(err, emitOptions);
-                process.exit(err.exit_code);
+                await exitWithFlush(err.exit_code);
               }
               const cmdResult = makeResult('cell build', parsed, 0, EXIT_CODES.success);
               emitResult(cmdResult, emitOptions);
@@ -79,7 +80,7 @@ export const cell = defineCommand({
         } catch (err) {
           const result = makeErrorResult('cell build', err instanceof Error ? err : new Error(String(err)), EXIT_CODES.execution_error, 'CELL_BUILD_FAILED');
           emitResult(result, emitOptions);
-          process.exit(result.exit_code);
+          await exitWithFlush(result.exit_code);
         }
         });
       },
@@ -120,7 +121,7 @@ export const cell = defineCommand({
               if (!result) {
                 const err = makeErrorResult('cell verify', new Error('cell_verify not available'), EXIT_CODES.execution_error, 'WASM_FUNCTION_UNAVAILABLE');
                 emitResult(err, emitOptions);
-                process.exit(err.exit_code);
+                await exitWithFlush(err.exit_code);
               }
 
               const parsed = typeof result === 'string' ? JSON.parse(result) : result;
@@ -131,7 +132,7 @@ export const cell = defineCommand({
         } catch (err) {
           const result = makeErrorResult('cell verify', err instanceof Error ? err : new Error(String(err)), EXIT_CODES.execution_error, 'CELL_VERIFY_FAILED');
           emitResult(result, emitOptions);
-          process.exit(result.exit_code);
+          await exitWithFlush(result.exit_code);
         }
         });
       },
@@ -178,7 +179,7 @@ export const cell = defineCommand({
               if (!result) {
                 const err = makeErrorResult('cell replay', new Error('cell_replay not available'), EXIT_CODES.execution_error, 'WASM_FUNCTION_UNAVAILABLE');
                 emitResult(err, emitOptions);
-                process.exit(err.exit_code);
+                await exitWithFlush(err.exit_code);
               }
 
               const parsed = typeof result === 'string' ? JSON.parse(result) : result;
@@ -189,7 +190,7 @@ export const cell = defineCommand({
         } catch (err) {
           const result = makeErrorResult('cell replay', err instanceof Error ? err : new Error(String(err)), EXIT_CODES.execution_error, 'CELL_REPLAY_FAILED');
           emitResult(result, emitOptions);
-          process.exit(result.exit_code);
+          await exitWithFlush(result.exit_code);
         }
         });
       },
@@ -237,7 +238,7 @@ export const cell = defineCommand({
               if (!result) {
                 const err = makeErrorResult('cell export', new Error('cell_export not available'), EXIT_CODES.execution_error, 'WASM_FUNCTION_UNAVAILABLE');
                 emitResult(err, emitOptions);
-                process.exit(err.exit_code);
+                await exitWithFlush(err.exit_code);
               }
 
               const cmdResult = makeResult('cell export', result, 0, EXIT_CODES.success);
@@ -247,7 +248,7 @@ export const cell = defineCommand({
         } catch (err) {
           const result = makeErrorResult('cell export', err instanceof Error ? err : new Error(String(err)), EXIT_CODES.execution_error, 'CELL_EXPORT_FAILED');
           emitResult(result, emitOptions);
-          process.exit(result.exit_code);
+          await exitWithFlush(result.exit_code);
         }
         });
       },
@@ -294,7 +295,7 @@ export const cell = defineCommand({
               if (!result) {
                 const err = makeErrorResult('cell doctor', new Error('cell_doctor not available'), EXIT_CODES.execution_error, 'WASM_FUNCTION_UNAVAILABLE');
                 emitResult(err, emitOptions);
-                process.exit(err.exit_code);
+                await exitWithFlush(err.exit_code);
               }
 
               const parsed = typeof result === 'string' ? JSON.parse(result) : result;
@@ -302,7 +303,7 @@ export const cell = defineCommand({
               if (strict && !parsed.ready) {
                 const err = makeErrorResult('cell doctor', new Error(`Not ready: ${parsed.summary}`), EXIT_CODES.execution_error, 'CELL_NOT_READY');
                 emitResult(err, emitOptions);
-                process.exit(err.exit_code);
+                await exitWithFlush(err.exit_code);
               }
 
               const cmdResult = makeResult('cell doctor', parsed, 0, EXIT_CODES.success);
@@ -312,7 +313,7 @@ export const cell = defineCommand({
         } catch (err) {
           const result = makeErrorResult('cell doctor', err instanceof Error ? err : new Error(String(err)), EXIT_CODES.execution_error, 'CELL_DOCTOR_FAILED');
           emitResult(result, emitOptions);
-          process.exit(result.exit_code);
+          await exitWithFlush(result.exit_code);
         }
         });
       },

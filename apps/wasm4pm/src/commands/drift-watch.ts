@@ -5,6 +5,7 @@ import { WasmLoader } from '@wasm4pm/engine';
 import { EXIT_CODES } from '../exit-codes.js';
 import { withSpan, withSpanRaw } from './_otel.js';
 import { saveCommandReceipt, blake3Hex, newReceipt } from '../receipts/_shared.js';
+import { exitWithFlush } from '../otel/exit.js';
 
 const EWMA_ALPHA = 0.3;
 const DRIFT_THRESHOLD = 0.3;
@@ -105,7 +106,7 @@ export const driftWatch = defineCommand({
     const parsedWindow = rawWindow != null ? parseInt(rawWindow, 10) : undefined;
     if (parsedWindow !== undefined && Number.isNaN(parsedWindow)) {
       console.error(`[drift-watch] Invalid --window value: must be a number`);
-      process.exit(EXIT_CODES.config_error);
+      await exitWithFlush(EXIT_CODES.config_error);
     }
     const windowSize = parsedWindow ?? DEFAULT_WINDOW;
 
@@ -113,7 +114,7 @@ export const driftWatch = defineCommand({
     const parsedInterval = rawInterval != null ? parseInt(rawInterval, 10) : undefined;
     if (parsedInterval !== undefined && Number.isNaN(parsedInterval)) {
       console.error(`[drift-watch] Invalid --interval value: must be a number`);
-      process.exit(EXIT_CODES.config_error);
+      await exitWithFlush(EXIT_CODES.config_error);
     }
     const intervalMs = parsedInterval ?? DEFAULT_INTERVAL_MS;
 
@@ -121,7 +122,7 @@ export const driftWatch = defineCommand({
     const parsedAlpha = rawAlpha != null ? parseFloat(rawAlpha) : undefined;
     if (parsedAlpha !== undefined && Number.isNaN(parsedAlpha)) {
       console.error(`[drift-watch] Invalid --alpha value: must be a number`);
-      process.exit(EXIT_CODES.config_error);
+      await exitWithFlush(EXIT_CODES.config_error);
     }
     const ewmaAlpha = parsedAlpha ?? EWMA_ALPHA;
 
@@ -129,7 +130,7 @@ export const driftWatch = defineCommand({
     const parsedThreshold = rawThreshold != null ? parseFloat(rawThreshold) : undefined;
     if (parsedThreshold !== undefined && Number.isNaN(parsedThreshold)) {
       console.error(`[drift-watch] Invalid --threshold value: must be a number`);
-      process.exit(EXIT_CODES.config_error);
+      await exitWithFlush(EXIT_CODES.config_error);
     }
     const driftThreshold = parsedThreshold ?? DRIFT_THRESHOLD;
     const jsonMode: boolean = ctx.args.json === true;
@@ -140,8 +141,10 @@ export const driftWatch = defineCommand({
       await fs.access(inputPath);
     } catch {
       console.error(`[drift-watch] Input file not found: ${inputPath}`);
-      process.exit(EXIT_CODES.source_error);
+      await exitWithFlush(EXIT_CODES.source_error);
     }
+    // FM-5 fix: hash file CONTENTS at session start, not the path string.
+    const inputBytes: Buffer = await fs.readFile(inputPath);
 
     // ── Step 2: Load WASM ────────────────────────────────────────────────────
     const loader = WasmLoader.getInstance();
@@ -151,7 +154,7 @@ export const driftWatch = defineCommand({
       console.error(
         `[drift-watch] Failed to initialise WASM: ${err instanceof Error ? err.message : String(err)}`
       );
-      process.exit(EXIT_CODES.execution_error);
+      await exitWithFlush(EXIT_CODES.execution_error);
     }
     const wasm = loader.get();
 
@@ -400,7 +403,7 @@ export const driftWatch = defineCommand({
             saveCommandReceipt({
               ...newReceipt('drift-watch'),
               command: 'drift-watch',
-              input_hash: blake3Hex(inputPath),
+              input_hash: blake3Hex(inputBytes),
               output_hash: blake3Hex(
                 JSON.stringify({ windowsProcessed, alertsFired, totalDriftPoints }),
               ),

@@ -38,6 +38,10 @@ export class OtelTracer implements Tracer {
   private flushTimer?: ReturnType<typeof setInterval>;
   private flushChain: Promise<void> = Promise.resolve();
   private shuttingDown = false;
+  private droppedCount = 0;
+
+  public getDropCount(): number { return this.droppedCount; }
+  public resetDropCount(): void { this.droppedCount = 0; }
 
   constructor(config: OtelConfig, requiredFields: RequiredFields) {
     this.config = config;
@@ -81,6 +85,7 @@ export class OtelTracer implements Tracer {
     const max = this.config.max_queue_size ?? 1000;
     if (this.queue.length >= max) {
       this.queue.shift();
+      this.droppedCount++;
       console.warn(`[observability] OTEL queue full (${max}), dropping oldest span`);
     }
     this.queue.push(span);

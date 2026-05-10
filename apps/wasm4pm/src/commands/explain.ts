@@ -2,6 +2,7 @@ import { defineCommand } from 'citty';
 import { resolveConfig as loadConfig } from '@wasm4pm/config';
 import { emitResult, makeResult, makeErrorResult, ConsoleProjection } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
+import { exitWithFlush } from '../otel/exit.js';
 
 export interface ExplainOptions {
   format?: 'human' | 'json';
@@ -80,7 +81,7 @@ export const explain = defineCommand({
           'MISSING_INPUT'
         );
         emitResult(result, { format, verbose, quiet });
-        process.exit(result.exit_code);
+        await exitWithFlush(result.exit_code);
       }
 
       // Step 2: Generate explanation content
@@ -126,7 +127,7 @@ export const explain = defineCommand({
         projection.log(p.content);
         projection.log('');
       });
-      process.exit(result.exit_code);
+      await exitWithFlush(result.exit_code);
     } catch (error) {
       const result = makeErrorResult(
         'explain',
@@ -135,7 +136,7 @@ export const explain = defineCommand({
         'EXPLAIN_ERROR'
       );
       emitResult(result, { format, verbose, quiet });
-      process.exit(result.exit_code);
+      await exitWithFlush(result.exit_code);
     }
   },
 });

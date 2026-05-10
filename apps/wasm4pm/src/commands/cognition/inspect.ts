@@ -4,6 +4,7 @@ import { defineCommand } from 'citty';
 import { emitResult, makeResult, makeErrorResult } from '../../output.js';
 import { EXIT_CODES } from '../../exit-codes.js';
 import { loadReceipt, mapWasmError } from './_shared.js';
+import { exitWithFlush } from '../../otel/exit.js';
 
 export const inspect = defineCommand({
   meta: { name: 'inspect', description: 'Inspect a cognition artifact by id' },
@@ -44,12 +45,12 @@ export const inspect = defineCommand({
         const pl = res.payload as { artifact_id: string; summary: { link_count: number } };
         p.success(`Artifact '${pl.artifact_id}' — ${pl.summary.link_count} link(s)`);
       });
-      process.exit(EXIT_CODES.success);
+      await exitWithFlush(EXIT_CODES.success);
     } catch (err) {
       const { code, exitCode } = mapWasmError(err);
       const result = makeErrorResult('cognition inspect', err, exitCode, code);
       emitResult(result, { format, verbose, quiet });
-      process.exit(exitCode);
+      await exitWithFlush(exitCode);
     }
   },
 });

@@ -14,6 +14,7 @@ import { StreamingOutput, ConsoleProjection } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { withSpanRaw } from './_otel.js';
 import { getGlobalSpanSink } from '../otel/sink.js';
+import { exitWithFlush } from '../otel/exit.js';
 
 export interface WatchOptions {
   config?: string;
@@ -189,7 +190,7 @@ export const watch = defineCommand({
       watcher.close();
       streaming.emitEvent('stopped', { message: 'Watch mode terminated' });
       emitParentSpan();
-      process.exit(0);
+      await exitWithFlush(0);
     };
     process.on('SIGINT', shutdown);
     process.on('SIGTERM', shutdown);

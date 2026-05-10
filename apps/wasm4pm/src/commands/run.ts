@@ -13,6 +13,7 @@ import type { MlTask } from '../ml-runner.js';
 import { discriminate, DiscoveryShapeError } from '../discriminator.js';
 import { withSpan } from './_otel.js';
 import { saveCommandReceipt, blake3Hex, newReceipt, type CommandReceipt } from '../receipts/_shared.js';
+import { exitWithFlush } from '../otel/exit.js';
 
 export interface RunOptions {
   config?: string;
@@ -242,7 +243,7 @@ export const run = defineCommand({
         const message = error instanceof Error ? error.message : String(error);
         const result = makeErrorResult('run', new Error(`Config error: ${message}`), EXIT_CODES.config_error, 'CONFIG_ERROR');
         emitResult(result, emitOptions);
-        process.exit(result.exit_code);
+        await exitWithFlush(result.exit_code);
       }
 
       // Step 2: Resolve algorithm (fixes operator-precedence bug: --algorithm flag was ignored)
@@ -285,7 +286,7 @@ export const run = defineCommand({
           'ALGORITHM_NOT_FOUND'
         );
         emitResult(result, emitOptions);
-        process.exit(result.exit_code);
+        await exitWithFlush(result.exit_code);
       }
 
       // Step 3: Resolve input path (positional OR --file/-i)
@@ -300,7 +301,7 @@ export const run = defineCommand({
           'INPUT_REQUIRED'
         );
         emitResult(result, emitOptions);
-        process.exit(result.exit_code);
+        await exitWithFlush(result.exit_code);
       }
 
       const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
@@ -319,7 +320,7 @@ export const run = defineCommand({
           'UNSUPPORTED_EXTENSION'
         );
         emitResult(result, emitOptions);
-        process.exit(result.exit_code);
+        await exitWithFlush(result.exit_code);
       }
 
       await withLogSession(
@@ -334,7 +335,7 @@ export const run = defineCommand({
           if (typeof wasm.clear_all_caches !== 'function') {
             const result = makeErrorResult('run', new Error('Cache clearing requested (--no-cache) but not available in WASM module'), EXIT_CODES.execution_error, 'CACHE_CLEAR_UNAVAILABLE');
             emitResult(result, emitOptions);
-            process.exit(result.exit_code);
+            await exitWithFlush(result.exit_code);
           }
           wasm.clear_all_caches();
         }
@@ -382,7 +383,7 @@ export const run = defineCommand({
           'STRUCTURAL_VALIDATION_FAILED'
         );
         emitResult(result, emitOptions);
-        process.exit(result.exit_code);
+        await exitWithFlush(result.exit_code);
       }
 
       // PASS 2: Optional semantic validation (data quality + advanced checks)
@@ -441,7 +442,7 @@ export const run = defineCommand({
             'DISCOVERY_SHAPE_MISMATCH'
           );
           emitResult(errResult, emitOptions);
-          process.exit(errResult.exit_code);
+          await exitWithFlush(errResult.exit_code);
         }
         throw shapeErr;
       }
@@ -612,7 +613,7 @@ export const run = defineCommand({
           const message = error instanceof Error ? error.message : String(error);
           const errResult = makeErrorResult('run', new Error(`Output error: ${message}`), EXIT_CODES.system_error, 'OUTPUT_WRITE_ERROR');
           emitResult(errResult, emitOptions);
-          process.exit(errResult.exit_code);
+          await exitWithFlush(errResult.exit_code);
         }
       }
 
@@ -716,7 +717,7 @@ export const run = defineCommand({
         if (typeof wasm.get_cache_stats !== 'function') {
           const errResult = makeErrorResult('run', new Error('Cache statistics requested (--cache-stats) but not available in WASM module'), EXIT_CODES.execution_error, 'CACHE_STATS_UNAVAILABLE');
           emitResult(errResult, emitOptions);
-          process.exit(errResult.exit_code);
+          await exitWithFlush(errResult.exit_code);
         }
         const statsRaw = wasm.get_cache_stats();
         const cacheStats = typeof statsRaw === 'string' ? JSON.parse(statsRaw) : statsRaw;
@@ -735,7 +736,7 @@ export const run = defineCommand({
         });
       }
 
-      process.exit(cmdResult.exit_code);
+      await exitWithFlush(cmdResult.exit_code);
       }); // end withLogSession
     } catch (error) {
       const result = makeErrorResult(
@@ -747,7 +748,7 @@ export const run = defineCommand({
         'DISCOVERY_FAILED'
       );
       emitResult(result, emitOptions);
-      process.exit(result.exit_code);
+      await exitWithFlush(result.exit_code);
     }
       },
     );

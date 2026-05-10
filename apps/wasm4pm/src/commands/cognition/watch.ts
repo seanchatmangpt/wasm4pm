@@ -4,6 +4,7 @@ import * as path from 'path';
 import chokidar from 'chokidar';
 import { getFormatter, HumanFormatter, JSONFormatter } from '../../output.js';
 import { EXIT_CODES } from '../../exit-codes.js';
+import { exitWithFlush } from '../../otel/exit.js';
 
 /** Minimal receipt summary emitted on every re-run. */
 export interface WatchReceipt {
@@ -157,7 +158,7 @@ export const watch = defineCommand({
       } else {
         formatter.error(`Input file not found: ${inputPath}`);
       }
-      process.exit(EXIT_CODES.source_error);
+      await exitWithFlush(EXIT_CODES.source_error);
     }
 
     // ── Debounce state ────────────────────────────────────────────────────────
@@ -277,11 +278,11 @@ export const watch = defineCommand({
         .close()
         .then(() => {
           process.stderr.write('stopped\n');
-          process.exit(EXIT_CODES.success);
+          await exitWithFlush(EXIT_CODES.success);
         })
         .catch(() => {
           process.stderr.write('stopped\n');
-          process.exit(EXIT_CODES.success);
+          await exitWithFlush(EXIT_CODES.success);
         });
     });
 

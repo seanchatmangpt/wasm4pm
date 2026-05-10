@@ -5,6 +5,7 @@ import { emitResult, makeResult, makeErrorResult } from '../../output.js';
 import { EXIT_CODES } from '../../exit-codes.js';
 import { ReceiptChain } from '@wasm4pm/cognition';
 import { loadReceipt, mapWasmError } from './_shared.js';
+import { exitWithFlush } from '../../otel/exit.js';
 
 export const replay = defineCommand({
   meta: { name: 'replay', description: 'Replay a receipt and verify chain integrity' },
@@ -54,12 +55,12 @@ export const replay = defineCommand({
         if (pl.chain_valid) p.success(`Replay '${pl.receipt_id}' OK → pointer ${pl.replay_pointer}`);
         else p.warn(`Replay '${pl.receipt_id}' FAILED → pointer ${pl.replay_pointer}`);
       });
-      process.exit(exitCode);
+      await exitWithFlush(exitCode);
     } catch (err) {
       const { code, exitCode } = mapWasmError(err);
       const result = makeErrorResult('cognition replay', err, exitCode, code);
       emitResult(result, { format, verbose, quiet });
-      process.exit(exitCode);
+      await exitWithFlush(exitCode);
     }
   },
 });

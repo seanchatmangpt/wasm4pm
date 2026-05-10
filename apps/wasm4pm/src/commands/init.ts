@@ -5,6 +5,7 @@ import { existsSync } from 'fs';
 import { emitResult, makeResult, makeErrorResult, ConsoleProjection } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { getExampleTomlConfig, getExampleJsonConfig, getPublicPresetConfig, getExamplePresetConfig, type PublicPreset } from '@wasm4pm/config';
+import { exitWithFlush } from '../otel/exit.js';
 
 // Template content generators
 function getEnvExampleContent(): string {
@@ -272,7 +273,7 @@ export const init = defineCommand({
           'INVALID_FORMAT'
         );
         emitResult(result, { format, verbose, quiet });
-        process.exit(result.exit_code);
+        await exitWithFlush(result.exit_code);
       }
 
       const VALID_PRESETS = ['fast', 'balanced', 'quality'];
@@ -284,7 +285,7 @@ export const init = defineCommand({
           'INVALID_PRESET'
         );
         emitResult(result, { format, verbose, quiet });
-        process.exit(result.exit_code);
+        await exitWithFlush(result.exit_code);
       }
 
       // Create config file
@@ -349,7 +350,7 @@ export const init = defineCommand({
           'CONFIG_INVALID'
         );
         emitResult(result, { format, verbose, quiet });
-        process.exit(result.exit_code);
+        await exitWithFlush(result.exit_code);
       }
 
       const result = makeResult('init', payload, performance.now() - t0, EXIT_CODES.success);
@@ -370,7 +371,7 @@ export const init = defineCommand({
           projection.info('All files already exist (use --force to overwrite)');
         }
       });
-      process.exit(result.exit_code);
+      await exitWithFlush(result.exit_code);
     } catch (error) {
       let exitCode: number = EXIT_CODES.execution_error;
       let code = 'INIT_ERROR';
@@ -383,7 +384,7 @@ export const init = defineCommand({
       }
       const result = makeErrorResult('init', error, exitCode, code);
       emitResult(result, { format, verbose, quiet });
-      process.exit(result.exit_code);
+      await exitWithFlush(result.exit_code);
     }
   },
 });
