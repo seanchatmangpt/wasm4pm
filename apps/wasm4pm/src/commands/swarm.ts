@@ -3,6 +3,7 @@ import * as fs from 'fs/promises';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { runSwarm } from '@wasm4pm/swarm';
+import { withSpan } from './_otel.js';
 
 export const swarm = defineCommand({
   meta: {
@@ -41,6 +42,11 @@ export const swarm = defineCommand({
     const verbose = Boolean(ctx.args.verbose);
     const quiet = Boolean(ctx.args.quiet);
 
+    return withSpan('swarm', {
+      input: String(ctx.args.input ?? ''),
+      max_episodes: Number(ctx.args['max-episodes'] ?? 3),
+      format,
+    }, async () => {
     try {
       const inputPath = ctx.args.input as string;
       const xesContent = await fs.readFile(inputPath, 'utf-8');
@@ -93,5 +99,6 @@ export const swarm = defineCommand({
       emitResult(result, { format, verbose, quiet });
       process.exit(result.exit_code);
     }
+    });
   },
 });

@@ -27,13 +27,14 @@ Receipt location: `.wasm4pm/receipts/<run_id>.json` plus
 | powl          |  Q   |   Q*    |   Q   | wired (Surface Q; per-subcommand spans `wasm4pm.command.powl.<sub>`; receipts ONLY for write subs `simplify`/`convert`/`import`/`discover`; read subs span-only — prior `savePredictionResult()` forgery removed) |
 | validate      |  A   |    -    |   A   | wired (Surface P; span only — read-only, no receipt) |
 | autoprocess   |  A   |    A    |   A   | wired (Surface T; single-cycle invocation, state-hash chain receipt) |
-| swarm         |  -   |    -    |   B   | TODO  |
-| agent         |  -   |    -    |   B   | TODO  |
-| membrane      |  -   |    -    |   B   | TODO  |
-| benchmark     |  -   |    -    |   B   | TODO  |
-| verify        |  -   |    -    |   B   | TODO  |
+| swarm         |  C   |    -    |   C   | wired (Round 5; span only — `runSwarm` is mock-LLM driven, no artifact to receipt) |
+| benchmark     |  C   |    -    |   C   | wired (Round 5; per-subcommand spans `wasm4pm.command.benchmark.<sub>` for build/replay/verify/export) |
+| verify        |  C   |    -    |   C   | wired (Round 5; certification gate run, span captures `fast` flag) |
+| agent         |  -   |    -    | TODO  | mechanical wrap pending |
+| membrane      |  -   |    -    | TODO  | 13 subcommands — apply per-subcommand pattern from Surface Q |
+| cell          |  -   |    -    | TODO  | 5 subcommands — apply per-subcommand pattern from Surface Q |
 | watch         |  A   |    -    |   A   | wired (Surface S; manual parent + per-cycle child spans, no CommandReceipt — downstream `run` certifies artifacts) |
-| cognition     |  -   |    -    |   B   | TODO (currently has its own receipt path; integrate later) |
+| cognition     |  -   |    -    | exempt | has own receipt path via `apps/wasm4pm/src/commands/cognition/_shared.ts:saveReceipt` |
 | status        |  -   |    -    | exempt | introspection — no input/output to hash |
 | doctor        |  -   |    -    | exempt | environment diagnostic only |
 | results       |  -   |    -    | exempt | reads existing receipts |

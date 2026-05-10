@@ -1,4 +1,5 @@
 import { defineCommand } from 'citty';
+import { withSpanRaw } from './_otel.js';
 import { readFileSync, existsSync } from 'node:fs';
 import { WasmLoader } from '@wasm4pm/engine';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
@@ -52,6 +53,10 @@ const benchmarkBuild = defineCommand({
     quiet: { type: 'boolean', alias: 'q' },
   },
   async run(ctx) {
+    return withSpanRaw('wasm4pm.command.benchmark.build', {
+      command: 'benchmark', subcommand: 'build',
+      corpus: String(ctx.args.corpus ?? ''),
+    }, async () => {
     const t0 = performance.now();
     const format = (ctx.args.format as 'json' | 'human') ?? 'human';
     const quiet = ctx.args.quiet ?? false;
@@ -102,6 +107,7 @@ const benchmarkBuild = defineCommand({
     });
 
     process.exit(exitCode);
+    });
   },
 });
 
@@ -196,6 +202,10 @@ const benchmarkReplay = defineCommand({
     quiet: { type: 'boolean', alias: 'q' },
   },
   async run(ctx) {
+    return withSpanRaw('wasm4pm.command.benchmark.replay', {
+      command: 'benchmark', subcommand: 'replay',
+      corpus: String(ctx.args.corpus ?? ''),
+    }, async () => {
     const t0 = performance.now();
     const format = (ctx.args.format as 'json' | 'human') ?? 'human';
     const verbose = ctx.args.verbose ?? false;
@@ -233,6 +243,7 @@ const benchmarkReplay = defineCommand({
       emitResult(result, { format, verbose, quiet });
       process.exit(EXIT_CODES.execution_error);
     }
+    });
   },
 });
 
@@ -252,6 +263,10 @@ const benchmarkVerify = defineCommand({
     quiet: { type: 'boolean', alias: 'q' },
   },
   async run(ctx) {
+    return withSpanRaw('wasm4pm.command.benchmark.verify', {
+      command: 'benchmark', subcommand: 'verify',
+      corpus: String(ctx.args.corpus ?? ''),
+    }, async () => {
     const t0 = performance.now();
     const format = (ctx.args.format as 'json' | 'sarif' | 'human') ?? 'human';
     const verbose = ctx.args.verbose ?? false;
@@ -293,6 +308,7 @@ const benchmarkVerify = defineCommand({
       emitResult(result, { format, verbose, quiet });
       process.exit(EXIT_CODES.execution_error);
     }
+    });
   },
 });
 
@@ -315,6 +331,11 @@ const benchmarkExport = defineCommand({
     quiet: { type: 'boolean', alias: 'q' },
   },
   async run(ctx) {
+    return withSpanRaw('wasm4pm.command.benchmark.export', {
+      command: 'benchmark', subcommand: 'export',
+      corpus: String(ctx.args.corpus ?? ''),
+      export_format: String(ctx.args.format ?? 'sarif'),
+    }, async () => {
     const quiet = ctx.args.quiet ?? false;
     const fmt = (ctx.args.format ?? 'sarif').toLowerCase();
 
@@ -350,6 +371,7 @@ const benchmarkExport = defineCommand({
       emitResult(result, { format: 'human', quiet });
       process.exit(EXIT_CODES.execution_error);
     }
+    });
   },
 });
 

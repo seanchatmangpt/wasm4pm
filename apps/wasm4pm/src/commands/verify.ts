@@ -2,6 +2,7 @@ import { defineCommand } from 'citty';
 import { runCertification } from '@wasm4pm/testing';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
+import { withSpan } from './_otel.js';
 import pkg from '../../package.json' with { type: 'json' };
 
 export const verify = defineCommand({
@@ -28,6 +29,7 @@ export const verify = defineCommand({
     const verbose = ctx.args.verbose ?? false;
     const quiet = ctx.args.quiet ?? false;
 
+    return withSpan('verify', { fast: Boolean(ctx.args.fast), format }, async () => {
     try {
       const version = pkg.version ?? '26.4.23';
       const report = await runCertification(version, { fast: ctx.args.fast ?? false });
@@ -65,5 +67,6 @@ export const verify = defineCommand({
       emitResult(result, { format, verbose, quiet });
       process.exit(EXIT_CODES.system_error);
     }
+    });
   },
 });
