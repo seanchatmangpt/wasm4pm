@@ -105,6 +105,22 @@ export function discriminate(raw: unknown, algorithmId?: string): DiscoveryShape
     };
   }
 
+  // 5. Handle-based DFG (heuristic miner et al.): model lives in WASM memory;
+  //    only metadata is exposed: { nodes: number, edges: number, handle: string }.
+  //    The counts are authoritative even though the full graph is opaque.
+  if (
+    typeof obj['nodes'] === 'number' &&
+    typeof obj['edges'] === 'number' &&
+    typeof obj['handle'] === 'string'
+  ) {
+    return {
+      kind: 'dfg',
+      nodes: obj['nodes'] as number,
+      edges: obj['edges'] as number,
+      raw: obj,
+    };
+  }
+
   throw new DiscoveryShapeError(algorithmId ?? 'unknown', Object.keys(obj));
 }
 

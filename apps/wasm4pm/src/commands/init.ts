@@ -216,7 +216,7 @@ export const init = defineCommand({
     description: 'Initialize wasm4pm configuration in current directory',
   },
   args: {
-    configFormat: {
+    'config-format': {
       type: 'string',
       description: 'Config format (toml or json)',
       alias: 'c',
@@ -259,7 +259,8 @@ export const init = defineCommand({
 
     try {
       const cwd = process.cwd();
-      const configFormat = ((ctx.args.configFormat as string) || 'toml').toLowerCase();
+      // Accept both camelCase (--configFormat) and kebab-case (--config-format).
+      const configFormat = ((ctx.args.configFormat as string) || (ctx.args['config-format'] as string) || 'toml').toLowerCase();
       const force = ctx.args.force ?? false;
       const preset = ctx.args.preset as string | undefined;
 
