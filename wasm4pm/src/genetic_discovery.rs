@@ -286,9 +286,11 @@ fn mutate_edges_seeded(
 ) {
     if rng.gen::<f64>() < mutation_rate {
         if !edge_set.is_empty() && rng.gen::<f64>() < 0.5 {
-            if let Some(&edge) = edge_set.iter().next() {
-                edge_set.remove(&edge);
-            }
+            // Sort for deterministic selection independent of HashSet RandomState.
+            let mut edges_sorted: Vec<(u32, u32)> = edge_set.iter().copied().collect();
+            edges_sorted.sort_unstable();
+            let pick = (rng.gen::<f64>() * edges_sorted.len() as f64) as usize;
+            edge_set.remove(&edges_sorted[pick]);
         } else if !edge_vocab.is_empty() {
             let idx = (rng.gen::<f64>() * edge_vocab.len() as f64) as usize;
             edge_set.insert(edge_vocab[idx]);
