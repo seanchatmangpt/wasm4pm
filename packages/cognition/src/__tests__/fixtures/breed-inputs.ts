@@ -1,0 +1,322 @@
+/**
+ * Minimal-but-valid `BreedInput` factories for each cognition breed.
+ *
+ * Each factory satisfies the breed's preconditions AND provides enough
+ * structure for the run() to fire a non-trivial inference path (so that the
+ * Rank-2 oracle in the integration test can detect real work).
+ *
+ * Source of truth for each breed's input shape:
+ *   crates/wasm4pm-cognition/src/breeds/<breed>.rs
+ */
+
+import type {
+  BreedInput,
+  Candidate,
+  Case,
+  Fact,
+  Goal,
+  Rule,
+  StateAtom,
+} from '../../types.js';
+
+// ---------------------------------------------------------------------------
+// ELIZA — frame.rs (Weizenbaum 1966). Only requires non-empty intent.
+// ---------------------------------------------------------------------------
+export function minimalElizaInput(): BreedInput {
+  return {
+    intent: 'I feel anxious about deployment',
+    candidates: [],
+    facts: [],
+    cases: [],
+    rules: [],
+    goals: [],
+    state: [],
+  };
+}
+
+// ---------------------------------------------------------------------------
+// CBR — cbr.rs. Requires ≥1 case AND ≥1 query fact (Jaccard similarity).
+// ---------------------------------------------------------------------------
+export function minimalCbrInput(): BreedInput {
+  const queryFacts: Fact[] = [
+    { key: 'requirement', value: 'offline' },
+    { key: 'scale', value: 'small' },
+  ];
+  const cases: Case[] = [
+    {
+      id: 'case-edge',
+      intent: 'edge deployment',
+      architecture: 'edge-local',
+      outcome_score: 0.9,
+      facts: [
+        { key: 'requirement', value: 'offline' },
+        { key: 'scale', value: 'small' },
+      ],
+    },
+    {
+      id: 'case-cloud',
+      intent: 'cloud deployment',
+      architecture: 'centralized-cloud',
+      outcome_score: 0.7,
+      facts: [
+        { key: 'requirement', value: 'online' },
+        { key: 'scale', value: 'large' },
+      ],
+    },
+  ];
+  return {
+    intent: 'select architecture',
+    candidates: [],
+    facts: queryFacts,
+    cases,
+    rules: [],
+    goals: [],
+    state: [],
+  };
+}
+
+// ---------------------------------------------------------------------------
+// DENDRAL — dendral.rs. Requires ≥1 candidate; constraint facts (key="constraint")
+// drive elimination via "forbid:<id>", "require:<token>", "max-score:<f>", "min-score:<f>".
+// ---------------------------------------------------------------------------
+export function minimalDendralInput(): BreedInput {
+  const candidates: Candidate[] = [
+    { id: 'centralized-cloud', score: 0.8, eliminated: false },
+    { id: 'edge-offline', score: 0.7, eliminated: false },
+    { id: 'hybrid-mesh', score: 0.6, eliminated: false },
+  ];
+  const facts: Fact[] = [
+    // Eliminate centralized-cloud explicitly.
+    { key: 'constraint', value: 'forbid:centralized-cloud' },
+    // Require survivors to contain "offline".
+    { key: 'constraint', value: 'require:offline' },
+  ];
+  return {
+    intent: 'pick architecture under constraints',
+    candidates,
+    facts,
+    cases: [],
+    rules: [],
+    goals: [],
+    state: [],
+  };
+}
+
+// ---------------------------------------------------------------------------
+// STRIPS — strips.rs. A *simplified* Sussman-style 2-block problem.
+//
+// NOTE: The full Sussman anomaly requires frame axioms (encoded in
+// input.facts with key="frame") to preserve atoms across actions; without
+// them, the goal-regression IDFS planner runs out of depth because each
+// stacking action deletes intermediate state atoms (e.g. clear=B). To keep
+// fixtures honest and the oracle truthful, we use a 1-step plan: stack A on
+// B from the table, with B already clear.
+//
+// Initial state: A on table, B on table, A clear, B clear.
+// Goal: A on B.
+// One action: stack-A-on-B (pre: on=A-table, clear=A, clear=B; effect: on=A-B; !on=A-table; !clear=B).
+// ---------------------------------------------------------------------------
+export function minimalStripsInput(): BreedInput {
+  const state: StateAtom[] = [
+    { predicate: 'on', value: 'A-table' },
+    { predicate: 'on', value: 'B-table' },
+    { predicate: 'clear', value: 'A' },
+    { predicate: 'clear', value: 'B' },
+  ];
+  const goals: Goal[] = [
+    { id: 'g-aob', predicate: 'on', value: 'A-B' },
+  ];
+  const rules: Rule[] = [
+    {
+      id: 'stack-A-on-B',
+      premise: ['on=A-table', 'clear=A', 'clear=B'],
+      conclusion: 'on=A-B;!on=A-table;!clear=B',
+      certainty: 1.0,
+    },
+  ];
+  return {
+    intent: 'stack two blocks',
+    candidates: [],
+    facts: [],
+    cases: [],
+    rules,
+    goals,
+    state,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// PROLOG — prolog.rs (Robinson 1965). Backed by prolog8 kernel.
+// Provide facts + a Horn-clause rule + a goal to query.
+// ---------------------------------------------------------------------------
+export function minimalPrologInput(): BreedInput {
+  const facts: Fact[] = [
+    { key: 'parent', value: 'alice' },
+    { key: 'parent', value: 'bob' },
+  ];
+  const rules: Rule[] = [
+    {
+      id: 'r-ancestor',
+      premise: ['parent'],
+      conclusion: 'ancestor',
+      certainty: 1.0,
+    },
+  ];
+  const goals: Goal[] = [
+    { id: 'g1', predicate: 'parent', value: 'alice' },
+  ];
+  return {
+    intent: 'parent',
+    candidates: [],
+    facts,
+    cases: [],
+    rules,
+    goals,
+    state: [],
+  };
+}
+
+// ---------------------------------------------------------------------------
+// MYCIN — production_rules.rs. Forward chaining with certainty factors.
+// Working memory seeded from facts (both "k=v" and bare "v" forms are inserted).
+// Rules: premise atoms must appear in working memory with cf>0.2.
+// ---------------------------------------------------------------------------
+export function minimalMycinInput(): BreedInput {
+  const facts: Fact[] = [
+    { key: 'symptom', value: 'fever' },
+    { key: 'symptom', value: 'cough' },
+  ];
+  const rules: Rule[] = [
+    {
+      id: 'r1-flu',
+      // Mycin checks both "key=value" and bare "value" in working memory; using
+      // the bare form here so rule fires.
+      premise: ['fever', 'cough'],
+      conclusion: 'diagnosis=flu',
+      certainty: 0.8,
+    },
+    {
+      id: 'r2-rest',
+      premise: ['diagnosis=flu'],
+      conclusion: 'treatment=rest',
+      certainty: 0.9,
+    },
+  ];
+  return {
+    intent: 'diagnose',
+    candidates: [],
+    facts,
+    cases: [],
+    rules,
+    goals: [],
+    state: [],
+  };
+}
+
+// ---------------------------------------------------------------------------
+// GPS — gps.rs. Means-ends with goal regression. Same encoding as STRIPS.
+// Use a *trivially achievable* goal so the gap can be reduced in one operator.
+// ---------------------------------------------------------------------------
+export function minimalGpsInput(): BreedInput {
+  const state: StateAtom[] = [
+    { predicate: 'at', value: 'home' },
+  ];
+  const goals: Goal[] = [
+    { id: 'g-office', predicate: 'at', value: 'office' },
+  ];
+  const rules: Rule[] = [
+    {
+      id: 'op-drive',
+      premise: ['at=home'],
+      conclusion: 'at=office;!at=home',
+      certainty: 1.0,
+    },
+  ];
+  return {
+    intent: 'commute',
+    candidates: [],
+    facts: [],
+    cases: [],
+    rules,
+    goals,
+    state,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// SOAR — soar.rs. Preference-based selection over candidates.
+// Use a "best:<id>" preference so the survivor set is exactly one.
+// ---------------------------------------------------------------------------
+export function minimalSoarInput(): BreedInput {
+  const candidates: Candidate[] = [
+    { id: 'op-A', score: 0.5, eliminated: false },
+    { id: 'op-B', score: 0.7, eliminated: false },
+    { id: 'op-C', score: 0.6, eliminated: false },
+  ];
+  const facts: Fact[] = [
+    { key: 'pref', value: 'best:op-B' },
+    { key: 'pref', value: 'prohibit:op-C' },
+  ];
+  return {
+    intent: 'pick operator',
+    candidates,
+    facts,
+    cases: [],
+    rules: [],
+    goals: [],
+    state: [],
+  };
+}
+
+// ---------------------------------------------------------------------------
+// HEARSAY — hearsay.rs. Blackboard consensus.
+// Initial hypotheses come from facts; KSs are encoded in rules.
+// trigger = rule.premise[0] must MATCH a blackboard content string `key:value`.
+// ---------------------------------------------------------------------------
+export function minimalHearsayInput(): BreedInput {
+  const facts: Fact[] = [
+    { key: 'phone', value: 'TH' },
+    { key: 'phone', value: 'AH' },
+  ];
+  const rules: Rule[] = [
+    {
+      id: 'ks-th-to-the',
+      premise: ['phone:TH'],
+      conclusion: 'word:THE',
+      certainty: 0.7,
+    },
+    {
+      id: 'ks-ah-to-the',
+      premise: ['phone:AH'],
+      conclusion: 'word:THE',
+      certainty: 0.6,
+    },
+  ];
+  return {
+    intent: 'speech',
+    candidates: [],
+    facts,
+    cases: [],
+    rules,
+    goals: [],
+    state: [],
+  };
+}
+
+// ---------------------------------------------------------------------------
+// runBreed — call into the real WASM kernel (no mocks; FM-5 compliant).
+// ---------------------------------------------------------------------------
+export async function runBreed(
+  breed: string,
+  contract: BreedInput,
+  options?: { profile?: string }
+): Promise<unknown> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const wasm: any = await import('wasm4pm-cognition' as string);
+  // Rust schema (`ValidatedRunOptions`) rejects `null`; omit when not provided.
+  const payload: Record<string, unknown> = { breed, contract };
+  if (options !== undefined) payload.options = options;
+  const inputJson = JSON.stringify(payload);
+  const raw = wasm.cognition_run(inputJson);
+  return typeof raw === 'string' ? JSON.parse(raw) : raw;
+}

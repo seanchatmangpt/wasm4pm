@@ -265,6 +265,10 @@ impl<'a> YawlExporter<'a> {
                     // Treat as simple task
                     self.export_simple_task(xml, node_id, "DecisionGraph", &input_id, &output_id)?;
                 }
+                PowlNode::ChoiceGraph(_) => {
+                    // Choice graphs not directly supported in YAWL — emit as task.
+                    self.export_simple_task(xml, node_id, "ChoiceGraph", &input_id, &output_id)?;
+                }
             }
         }
 

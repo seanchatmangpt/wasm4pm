@@ -1,0 +1,14 @@
+{
+  "intent": "parent",
+  "candidates": [],
+  "facts": [
+    { "key": "parent", "value": "alice" },
+    { "key": "parent", "value": "bob" }
+  ],
+  "cases": [],
+  "rules": [],
+  "goals": [
+    { "id": "g1", "predicate": "parent", "value": "alice" }
+  ],
+  "state": []
+}

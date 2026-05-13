@@ -243,24 +243,16 @@ beforeAll(() => {
 // ─── JTBD-1: Detect when close rate suddenly drops ──────────────────────────
 
 describe('JTBD-1: Detect when our close rate suddenly drops', () => {
-  it('detect_drift on the drift log returns a drifts array', () => {
-    const result = parse(wasm.detect_drift(driftHandle, 'concept:name', 2));
+  it('detect_drift on the drift log returns a drifts array + drifts_detected field is a non-negative integer + window_size field matches what was passed in', () => {
+    const windowSize = 2;
+    const result = parse(wasm.detect_drift(driftHandle, 'concept:name', windowSize));
 
     expect(result).toHaveProperty('drifts');
     expect(Array.isArray(result.drifts as unknown[])).toBe(true);
-  });
-
-  it('drifts_detected field is a non-negative integer', () => {
-    const result = parse(wasm.detect_drift(driftHandle, 'concept:name', 2));
 
     expect(typeof result.drifts_detected).toBe('number');
     expect(result.drifts_detected as number).toBeGreaterThanOrEqual(0);
     expect(Number.isInteger(result.drifts_detected as number)).toBe(true);
-  });
-
-  it('window_size field matches what was passed in', () => {
-    const windowSize = 2;
-    const result = parse(wasm.detect_drift(driftHandle, 'concept:name', windowSize));
 
     expect(result.window_size).toBe(windowSize);
   });
@@ -269,18 +261,13 @@ describe('JTBD-1: Detect when our close rate suddenly drops', () => {
 // ─── JTBD-2: EWMA trend analysis on activity event rates ────────────────────
 
 describe('JTBD-2: EWMA trend analysis on my activity event rates', () => {
-  it('compute_ewma on a rising sequence returns smoothed array of length 5', () => {
+  it('compute_ewma on a rising sequence returns smoothed array of length 5 + smoothed values are all finite numbers', () => {
     const result = parse(wasm.compute_ewma('[1.0, 1.0, 1.0, 5.0, 5.0]', 0.3));
 
     expect(result).toHaveProperty('smoothed');
     const smoothed = result.smoothed as number[];
     expect(Array.isArray(smoothed)).toBe(true);
     expect(smoothed.length).toBe(5);
-  });
-
-  it('smoothed values are all finite numbers', () => {
-    const result = parse(wasm.compute_ewma('[1.0, 1.0, 1.0, 5.0, 5.0]', 0.3));
-    const smoothed = result.smoothed as number[];
 
     for (const v of smoothed) {
       expect(typeof v).toBe('number');
@@ -298,7 +285,7 @@ describe('JTBD-2: EWMA trend analysis on my activity event rates', () => {
 // ─── JTBD-3: Transition probability changes to detect behavioral drift ───────
 
 describe('JTBD-3: Transition probability changes to detect behavioral drift', () => {
-  it('transition probabilities on baseline log parse as valid JSON object', () => {
+  it('transition probabilities on baseline log parse as valid JSON object + the start activity appears in the transitions activities list', () => {
     const raw = wasm.build_transition_probabilities(baselineHandle, 'concept:name');
 
     expect(() => parse(raw)).not.toThrow();
@@ -306,12 +293,8 @@ describe('JTBD-3: Transition probability changes to detect behavioral drift', ()
     expect(typeof result).toBe('object');
     expect(result).not.toBeNull();
     expect(result).toHaveProperty('edges');
-  });
 
-  it(`the start activity (V.leadCreated = "${V.leadCreated}") appears in the transitions activities list`, () => {
-    const result = parse(wasm.build_transition_probabilities(baselineHandle, 'concept:name'));
     const activities = result.activities as string[];
-
     expect(Array.isArray(activities)).toBe(true);
     expect(activities).toContain(V.leadCreated);
   });

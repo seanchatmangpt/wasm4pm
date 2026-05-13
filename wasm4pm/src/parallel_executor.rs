@@ -361,15 +361,13 @@ fn run_single_algorithm(log: &EventLog, activity_key: &str, name: &str) -> Strin
             serde_json::to_string(&dfg).unwrap_or_else(|_| "{}".to_string())
         }
         "alpha_plus_plus" => {
-            // Minimal alpha++ — produce a DFG-based approximation
-            let dfg = compute_dfg(log, activity_key);
-            let result = serde_json::json!({
-                "algorithm": "alpha_plus_plus",
-                "nodes": dfg.nodes.len(),
-                "edges": dfg.edges.len(),
-                "activities": dfg.nodes.iter().map(|n| &n.label).collect::<Vec<_>>(),
-            });
-            result.to_string()
+            match crate::algorithms::alpha_plus_plus_inner(log, activity_key, 0.0) {
+                Ok(petri_net) => serde_json::to_string(&petri_net).unwrap_or_else(|_| "{}".to_string()),
+                Err(_) => serde_json::json!({
+                    "algorithm": "alpha_plus_plus",
+                    "error": "alpha++ discovery failed"
+                }).to_string(),
+            }
         }
         "heuristic_miner" => {
             let dfg = compute_dfg(log, activity_key);

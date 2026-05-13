@@ -1,0 +1,102 @@
+Business Source License 1.1
+
+Copyright (c) 2026 Sean Chatman
+
+Parameters
+
+Licensor:             Sean Chatman
+Licensed Work:        miniml
+                     The licensed work is a browser-native AutoML library
+                     combining 70+ ML algorithms with genetic algorithm
+                     feature selection and PSO hyperparameter optimization.
+
+Additional Use Grant:  Any use of the Licensed Work for personal,
+                     non-commercial, educational, or research purposes
+                     is permitted without restriction.
+
+Change Date:          2028-04-08
+
+Change License:       GNU Affero General Public License v3 (AGPL-3.0)
+
+---
+
+Business Source License 1.1
+
+Terms
+
+The Licensor hereby grants you the right to copy, modify, create derivative
+works, redistribute, and make non-production use of the Licensed Work. The
+Licensor also grants you the right to make production use of the Licensed
+Work provided that you satisfy the conditions set forth below.
+
+1.  Grant of License
+
+    Subject to the terms and conditions of this License, the Licensor hereby
+    grants to you a non-exclusive, worldwide, non-sublicenseable, royalty-free
+    license to do the following:
+
+    a) Copy, modify, and create derivative works of the Licensed Work.
+
+    b) Redistribute the Licensed Work and derivative works thereof.
+
+    c) Use the Licensed Work for non-production purposes.
+
+    d) Use the Licensed Work for production purposes provided that:
+       i)  You are not a Competitor.
+       ii) You do not make the Licensed Work available as a managed service
+           or as part of a managed service to third parties.
+
+2.  Restrictions
+
+    You may not do any of the following:
+
+    a) Use the Licensed Work in competition with the Licensor.
+
+    b) Offer the Licensed Work as a managed service to third parties without
+       a separate commercial license from the Licensor.
+
+    c) Remove or alter any license notices in the Licensed Work.
+
+3.  Production Use
+
+    Production use means using the Licensed Work for internal business
+    purposes, or integrating the Licensed Work into a product or service that
+    is offered to third parties, excluding the restrictions in Section 2.
+
+    You may make production use of the Licensed Work if:
+    - Your use is permitted under the Additional Use Grant above; or
+    - You obtain a commercial license from the Licensor.
+
+4.  Change License
+
+    On or after the Change Date, the Licensed Work will be made available
+    under the Change License, as set forth above. From that date forward,
+    the Change License applies to all copies and derivative works of the
+    Licensed Work.
+
+5.  Termination
+
+    If you violate any term of this License, your rights under this License
+    will terminate automatically without notice from the Licensor. All
+    sublicenses granted by you will survive termination.
+
+6.  Disclaimer of Warranty
+
+    THE LICENSED WORK IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND,
+    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+    IN NO EVENT SHALL THE LICENSOR OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+    LICENSED WORK OR THE USE OR OTHER DEALINGS IN THE LICENSED WORK.
+
+7.  Limitation of Liability
+
+    IN NO EVENT SHALL THE LICENSOR OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+    DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+    DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+    OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+    HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+    STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
+    IN ANY WAY OUT OF THE USE OF THE LICENSED WORK, EVEN IF ADVISED OF THE
+    POSSIBILITY OF SUCH DAMAGE.

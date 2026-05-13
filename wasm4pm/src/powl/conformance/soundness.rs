@@ -225,6 +225,88 @@ pub fn check_soundness(net: &PetriNet, initial: &Marking, final_m: &Marking) -> 
     }
 }
 
+// ─── Choice Graph soundness (Definition 1, arXiv:2505.07052) ───────────────
+
+/// Soundness result for a `wasm4pm_types::ChoiceGraph`.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ChoiceGraphSoundness {
+    /// All Definition 1 invariants hold.
+    pub sound: bool,
+    /// The graph is acyclic.
+    pub acyclic: bool,
+    /// Every node lies on a Start→End path.
+    pub all_nodes_on_path: bool,
+}
+
+/// Check Definition 1 soundness of a choice graph.
+///
+/// Re-verifies the invariants that `ChoiceGraph::new` already enforces; useful
+/// after manual mutation or deserialization.
+pub fn check_choice_graph_soundness(
+    cg: &wasm4pm_types::ChoiceGraph,
+) -> ChoiceGraphSoundness {
+    // Acyclicity: rebuild adj and run a BFS/DFS check.
+    let n = cg.nodes.len();
+    let mut adj: Vec<Vec<usize>> = vec![Vec::new(); n];
+    for &(a, b) in &cg.edges {
+        adj[a].push(b);
+    }
+
+    // Topological-sort acyclicity check (Kahn's algorithm).
+    let mut indeg = vec![0usize; n];
+    for &(_, b) in &cg.edges {
+        indeg[b] += 1;
+    }
+    let mut queue: std::collections::VecDeque<usize> = std::collections::VecDeque::new();
+    for i in 0..n {
+        if indeg[i] == 0 {
+            queue.push_back(i);
+        }
+    }
+    let mut visited = 0usize;
+    while let Some(u) = queue.pop_front() {
+        visited += 1;
+        for &v in &adj[u] {
+            indeg[v] -= 1;
+            if indeg[v] == 0 {
+                queue.push_back(v);
+            }
+        }
+    }
+    let acyclic = visited == n;
+
+    // All nodes on Start→End path: forward-reachable from Start AND
+    // backward-reachable from End.
+    let mut radj: Vec<Vec<usize>> = vec![Vec::new(); n];
+    for &(a, b) in &cg.edges {
+        radj[b].push(a);
+    }
+    fn bfs(adj: &[Vec<usize>], src: usize, n: usize) -> Vec<bool> {
+        let mut seen = vec![false; n];
+        let mut q: std::collections::VecDeque<usize> = std::collections::VecDeque::new();
+        seen[src] = true;
+        q.push_back(src);
+        while let Some(u) = q.pop_front() {
+            for &v in &adj[u] {
+                if !seen[v] {
+                    seen[v] = true;
+                    q.push_back(v);
+                }
+            }
+        }
+        seen
+    }
+    let fwd = bfs(&adj, cg.start_idx, n);
+    let bwd = bfs(&radj, cg.end_idx, n);
+    let all_nodes_on_path = (0..n).all(|i| fwd[i] && bwd[i]);
+
+    ChoiceGraphSoundness {
+        sound: acyclic && all_nodes_on_path,
+        acyclic,
+        all_nodes_on_path,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

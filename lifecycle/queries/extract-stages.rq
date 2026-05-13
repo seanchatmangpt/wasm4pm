@@ -1,0 +1,14 @@
+PREFIX lc:   <https://wasm4pm.dev/lifecycle#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX xsd:  <http://www.w3.org/2001/XMLSchema#>
+
+SELECT ?label ?order ?description ?span_name ?xes_activity
+WHERE {
+    ?stage a lc:Stage ;
+           rdfs:label      ?label ;
+           lc:order        ?order ;
+           lc:description  ?description ;
+           lc:spanName     ?span_name ;
+           lc:xesActivity  ?xes_activity .
+}
+ORDER BY xsd:integer(?order)

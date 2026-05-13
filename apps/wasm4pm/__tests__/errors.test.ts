@@ -18,102 +18,53 @@ import {
 import { EXIT_CODES } from '../src/exit-codes.js';
 
 describe('Wasm4pmError (base class)', () => {
-  it('is an instance of Error', () => {
-    const err = new Wasm4pmError('test', EXIT_CODES.config_error);
+  it('is an instance of Error with correct message, exit code, and name', () => {
+    const err = new Wasm4pmError('something went wrong', EXIT_CODES.execution_error);
     expect(err).toBeInstanceOf(Error);
     expect(err).toBeInstanceOf(Wasm4pmError);
-  });
-
-  it('stores message and exit code', () => {
-    const err = new Wasm4pmError('something went wrong', EXIT_CODES.execution_error);
     expect(err.message).toBe('something went wrong');
     expect(err.exitCode).toBe(EXIT_CODES.execution_error);
-  });
-
-  it('has name set to "Wasm4pmError"', () => {
-    const err = new Wasm4pmError('test', EXIT_CODES.success);
     expect(err.name).toBe('Wasm4pmError');
   });
 });
 
 describe('ConfigError', () => {
-  it('is an instance of Wasm4pmError and Error', () => {
-    const err = new ConfigError('bad config');
+  it('has correct inheritance, exit code 1, name, and message', () => {
+    const err = new ConfigError('wasm4pm.toml not found');
     expect(err).toBeInstanceOf(Wasm4pmError);
     expect(err).toBeInstanceOf(Error);
-    expect(err).toBeInstanceOf(ConfigError);
-  });
-
-  it('has exit code 1 (config_error)', () => {
-    const err = new ConfigError('missing file');
     expect(err.exitCode).toBe(EXIT_CODES.config_error);
-  });
-
-  it('has name set to "ConfigError"', () => {
-    const err = new ConfigError('test');
     expect(err.name).toBe('ConfigError');
-  });
-
-  it('preserves message', () => {
-    const err = new ConfigError('wasm4pm.toml not found');
     expect(err.message).toBe('wasm4pm.toml not found');
   });
 });
 
 describe('SourceError', () => {
-  it('is an instance of Wasm4pmError', () => {
-    const err = new SourceError('bad file');
-    expect(err).toBeInstanceOf(Wasm4pmError);
-  });
-
-  it('has exit code 2 (source_error)', () => {
+  it('has correct inheritance, exit code 2, and name', () => {
     const err = new SourceError('file not found');
+    expect(err).toBeInstanceOf(Wasm4pmError);
     expect(err.exitCode).toBe(EXIT_CODES.source_error);
-  });
-
-  it('has name set to "SourceError"', () => {
-    const err = new SourceError('test');
     expect(err.name).toBe('SourceError');
   });
 });
 
 describe('ExecutionError', () => {
-  it('is an instance of Wasm4pmError', () => {
-    const err = new ExecutionError('algorithm failed');
-    expect(err).toBeInstanceOf(Wasm4pmError);
-  });
-
-  it('has exit code 3 (execution_error)', () => {
+  it('has correct inheritance, exit code 3, and name', () => {
     const err = new ExecutionError('timeout');
+    expect(err).toBeInstanceOf(Wasm4pmError);
     expect(err.exitCode).toBe(EXIT_CODES.execution_error);
-  });
-
-  it('has name set to "ExecutionError"', () => {
-    const err = new ExecutionError('test');
     expect(err.name).toBe('ExecutionError');
   });
 });
 
 describe('PartialFailureError', () => {
-  it('is an instance of Wasm4pmError', () => {
-    const err = new PartialFailureError('partial', ['a'], ['b']);
-    expect(err).toBeInstanceOf(Wasm4pmError);
-  });
-
-  it('has exit code 4 (partial_failure)', () => {
-    const err = new PartialFailureError('partial', ['a'], ['b']);
-    expect(err.exitCode).toBe(EXIT_CODES.partial_failure);
-  });
-
-  it('stores succeeded and failed arrays', () => {
+  it('has correct inheritance, exit code 4, name, and stores succeeded/failed arrays', () => {
     const err = new PartialFailureError('some failed', ['algo1', 'algo2'], ['algo3']);
+    expect(err).toBeInstanceOf(Wasm4pmError);
+    expect(err.exitCode).toBe(EXIT_CODES.partial_failure);
+    expect(err.name).toBe('PartialFailureError');
     expect(err.succeeded).toEqual(['algo1', 'algo2']);
     expect(err.failed).toEqual(['algo3']);
-  });
-
-  it('has name set to "PartialFailureError"', () => {
-    const err = new PartialFailureError('test', [], []);
-    expect(err.name).toBe('PartialFailureError');
   });
 
   it('handles empty succeeded/failed arrays', () => {
@@ -124,18 +75,10 @@ describe('PartialFailureError', () => {
 });
 
 describe('SystemError', () => {
-  it('is an instance of Wasm4pmError', () => {
-    const err = new SystemError('disk full');
-    expect(err).toBeInstanceOf(Wasm4pmError);
-  });
-
-  it('has exit code 5 (system_error)', () => {
+  it('has correct inheritance, exit code 5, and name', () => {
     const err = new SystemError('permission denied');
+    expect(err).toBeInstanceOf(Wasm4pmError);
     expect(err.exitCode).toBe(EXIT_CODES.system_error);
-  });
-
-  it('has name set to "SystemError"', () => {
-    const err = new SystemError('test');
     expect(err.name).toBe('SystemError');
   });
 });
@@ -148,49 +91,41 @@ describe('handleError', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
-  it('exits with config_error exit code for ConfigError', () => {
+  it('exits with correct code for each Wasm4pmError subclass and unknown errors', () => {
     handleError(new ConfigError('bad config'));
     expect(exitSpy).toHaveBeenCalledWith(EXIT_CODES.config_error);
-  });
+    exitSpy.mockClear();
 
-  it('exits with source_error exit code for SourceError', () => {
     handleError(new SourceError('file missing'));
     expect(exitSpy).toHaveBeenCalledWith(EXIT_CODES.source_error);
-  });
+    exitSpy.mockClear();
 
-  it('exits with execution_error exit code for ExecutionError', () => {
     handleError(new ExecutionError('timeout'));
     expect(exitSpy).toHaveBeenCalledWith(EXIT_CODES.execution_error);
-  });
+    exitSpy.mockClear();
 
-  it('exits with partial_failure exit code for PartialFailureError', () => {
     handleError(new PartialFailureError('partial', ['a'], ['b']));
     expect(exitSpy).toHaveBeenCalledWith(EXIT_CODES.partial_failure);
-  });
+    exitSpy.mockClear();
 
-  it('exits with system_error exit code for SystemError', () => {
     handleError(new SystemError('disk full'));
     expect(exitSpy).toHaveBeenCalledWith(EXIT_CODES.system_error);
-  });
+    exitSpy.mockClear();
 
-  it('exits with system_error exit code for unknown Error', () => {
     handleError(new Error('generic error'));
     expect(exitSpy).toHaveBeenCalledWith(EXIT_CODES.system_error);
-  });
+    exitSpy.mockClear();
 
-  it('exits with system_error exit code for non-Error thrown value', () => {
     handleError('string error');
     expect(exitSpy).toHaveBeenCalledWith(EXIT_CODES.system_error);
   });
 
-  it('logs error name and message for Wasm4pmError', () => {
+  it('logs correct format for Wasm4pmError and unknown errors', () => {
     const consoleSpy = vi.spyOn(console, 'error');
     handleError(new ConfigError('bad config'));
     expect(consoleSpy).toHaveBeenCalledWith('[ConfigError] bad config');
-  });
+    consoleSpy.mockClear();
 
-  it('logs as SystemError for unknown errors', () => {
-    const consoleSpy = vi.spyOn(console, 'error');
     handleError(new Error('generic'));
     expect(consoleSpy).toHaveBeenCalledWith('[SystemError] generic');
   });

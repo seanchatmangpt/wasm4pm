@@ -58,6 +58,11 @@ pub fn parse_powl_model_string(s: &str, arena: &mut PowlArena) -> Result<u32, St
         return Err("empty POWL string".to_string());
     }
 
+    // Choice graph (POWL 2.0, Definition 1, arXiv:2505.07052)
+    if s.starts_with("CG=") || s.starts_with("CG(") {
+        return parse_choice_graph(&s, arena);
+    }
+
     // Decision graph
     if s.starts_with("DG=") || s.starts_with("DG(") {
         return parse_decision_graph(&s, arena);
@@ -214,6 +219,100 @@ fn parse_node_list(s: &str, token_to_local: &[(String, u32)]) -> Result<Vec<usiz
         indices.push(idx);
     }
     Ok(indices)
+}
+
+// ─── Choice graph parsing (CG=) ──────────────────────────────────────────────
+//
+// Grammar:
+//   CG=(nodes={n0=Start, n1=Activity(a), n2=PO=(...), n3=End},
+//       edges={n0->n1, n0->n2, n1->n3, n2->n3})
+//
+// `Start` and `End` are reserved literals. `Activity(label)` wraps a label.
+// Any other expression is parsed as a nested POWL sub-model. Edges use `->`.
+fn parse_choice_graph(s: &str, arena: &mut PowlArena) -> Result<u32, String> {
+    let nodes_str = extract_braced_content(s, "nodes={")?;
+    let edges_str = extract_braced_content(s, "edges={")?;
+
+    let raw_node_tokens: Vec<String> = if nodes_str.trim().is_empty() {
+        Vec::new()
+    } else {
+        tokenize(nodes_str.trim())
+    };
+
+    // Each node is `nID=<spec>`; record (id_str, ChoiceGraphNode).
+    let mut id_to_idx: Vec<(String, usize)> = Vec::new();
+    let mut nodes: Vec<wasm4pm_types::ChoiceGraphNode> = Vec::new();
+
+    for tok in &raw_node_tokens {
+        let (id_str, spec) = match tok.find('=') {
+            Some(eq) => (
+                tok[..eq].trim().to_string(),
+                tok[eq + 1..].trim().to_string(),
+            ),
+            None => return Err(format!("CG node '{}' missing '=spec'", tok)),
+        };
+        let cg_node = parse_choice_graph_node_spec(&spec, arena)?;
+        id_to_idx.push((id_str, nodes.len()));
+        nodes.push(cg_node);
+    }
+
+    let mut edges: Vec<(usize, usize)> = Vec::new();
+    if !edges_str.trim().is_empty() {
+        let edge_tokens: Vec<String> = tokenize(edges_str.trim());
+        for edge_tok in &edge_tokens {
+            // Find `->` but not `-->` (used in PO/DG grammar).
+            let arrow_pos = match edge_tok.find("->") {
+                Some(p) => p,
+                None => continue,
+            };
+            // Reject `-->` (legacy PO arrow): must be `->` only.
+            if edge_tok.as_bytes().get(arrow_pos + 2) == Some(&b'>') {
+                return Err(format!(
+                    "CG edge '{}': use `->` (not `-->`) — `-->` belongs to PO/DG grammar",
+                    edge_tok
+                ));
+            }
+            let src_id = edge_tok[..arrow_pos].trim();
+            let tgt_id = edge_tok[arrow_pos + 2..].trim();
+            let src = id_to_idx
+                .iter()
+                .find(|(id, _)| id == src_id)
+                .map(|(_, i)| *i)
+                .ok_or_else(|| format!("CG edge source '{}' not found", src_id))?;
+            let tgt = id_to_idx
+                .iter()
+                .find(|(id, _)| id == tgt_id)
+                .map(|(_, i)| *i)
+                .ok_or_else(|| format!("CG edge target '{}' not found", tgt_id))?;
+            edges.push((src, tgt));
+        }
+    }
+
+    let cg = wasm4pm_types::ChoiceGraph::new(nodes, edges)
+        .map_err(|e| format!("invalid CG: {}", e))?;
+    Ok(arena.add_choice_graph(cg))
+}
+
+fn parse_choice_graph_node_spec(
+    spec: &str,
+    arena: &mut PowlArena,
+) -> Result<wasm4pm_types::ChoiceGraphNode, String> {
+    let s = spec.trim();
+    if s == "Start" {
+        return Ok(wasm4pm_types::ChoiceGraphNode::Start);
+    }
+    if s == "End" {
+        return Ok(wasm4pm_types::ChoiceGraphNode::End);
+    }
+    if let Some(rest) = s.strip_prefix("Activity(") {
+        let inner = rest
+            .strip_suffix(')')
+            .ok_or_else(|| format!("Activity(...) missing ')': '{}'", s))?;
+        return Ok(wasm4pm_types::ChoiceGraphNode::Activity(inner.trim().to_string()));
+    }
+    // Fallback: parse as nested POWL sub-model.
+    let sub_idx = parse_powl_model_string(s, arena)?;
+    Ok(wasm4pm_types::ChoiceGraphNode::SubModel(sub_idx))
 }
 
 fn extract_bracketed_content<'a>(s: &'a str, key: &str) -> Result<&'a str, String> {

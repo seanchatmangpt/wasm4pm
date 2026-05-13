@@ -11,6 +11,26 @@ use wasm_bindgen::prelude::*;
 /// Inductive Miner - recursive structure discovery via cuts
 /// Implements IM-basic (no noise filtering, all directly-follows preserved)
 /// Returns ProcessTree via XOR/Sequence/Parallel/Loop cuts
+/// Pure-Rust Inductive Miner: returns JSON string with the discovered process tree.
+/// Testable without wasm-bindgen runtime.
+pub fn discover_inductive_miner_from_log(log: &EventLog, activity_key: &str) -> String {
+    let activities = log.get_activities(activity_key);
+    let mut sorted_acts: Vec<_> = activities.to_vec();
+    sorted_acts.sort();
+    match inductive_miner_recursive(log, &sorted_acts, activity_key, 0) {
+        Ok(tree) => {
+            let nodes = tree.count_nodes();
+            serde_json::to_string(&json!({
+                "algorithm": "inductive_miner",
+                "root": tree,
+                "nodes": nodes,
+            }))
+            .unwrap_or_else(|_| r#"{"error":"serialize"}"#.to_string())
+        }
+        Err(_) => r#"{"error":"discovery"}"#.to_string(),
+    }
+}
+
 #[wasm_bindgen]
 pub fn discover_inductive_miner(
     eventlog_handle: &str,
@@ -194,34 +214,54 @@ fn find_parallel_cut(
     activities: &[String],
     df: &FxHashMap<(String, String), usize>,
 ) -> Option<Vec<Vec<String>>> {
-    // All pairs must have bidirectional edges
-    // For now, just check if all activities are mutually connected
-    let _activity_set: HashSet<_> = activities.iter().cloned().collect();
+    let n = activities.len();
+    if n < 2 {
+        return None;
+    }
 
-    let mut all_bidirectional = true;
-    for a1 in activities {
-        for a2 in activities {
-            if a1 != a2 {
-                let has_forward = df.contains_key(&(a1.clone(), a2.clone()));
-                let has_backward = df.contains_key(&(a2.clone(), a1.clone()));
+    // Union-Find: group activities connected by bidirectional df-edges.
+    let mut parent: Vec<usize> = (0..n).collect();
 
-                if !has_forward || !has_backward {
-                    all_bidirectional = false;
-                    break;
-                }
+    fn uf_find(parent: &mut Vec<usize>, mut x: usize) -> usize {
+        while parent[x] != x {
+            parent[x] = parent[parent[x]]; // path compression (halving)
+            x = parent[x];
+        }
+        x
+    }
+
+    fn uf_union(parent: &mut Vec<usize>, a: usize, b: usize) {
+        let ra = uf_find(parent, a);
+        let rb = uf_find(parent, b);
+        if ra != rb {
+            parent[ra] = rb;
+        }
+    }
+
+    for i in 0..n {
+        for j in (i + 1)..n {
+            let ab = df.contains_key(&(activities[i].clone(), activities[j].clone()));
+            let ba = df.contains_key(&(activities[j].clone(), activities[i].clone()));
+            if ab && ba {
+                uf_union(&mut parent, i, j);
             }
         }
-        if !all_bidirectional {
-            break;
-        }
     }
 
-    if all_bidirectional && activities.len() > 1 {
-        // Return as individual partitions (each activity is its own parallel branch)
-        return Some(activities.iter().map(|a| vec![a.clone()]).collect());
+    // Collect groups, sorting by root for deterministic output.
+    let mut groups: FxHashMap<usize, Vec<String>> = FxHashMap::default();
+    for i in 0..n {
+        let root = uf_find(&mut parent, i);
+        groups.entry(root).or_default().push(activities[i].clone());
     }
 
-    None
+    if groups.len() < 2 {
+        return None;
+    }
+
+    let mut result: Vec<Vec<String>> = groups.into_values().collect();
+    result.sort_by(|a, b| a[0].cmp(&b[0])); // deterministic order
+    Some(result)
 }
 
 fn find_loop_cut(
@@ -272,97 +312,19 @@ pub fn discover_simulated_annealing(
     temperature: f64,
     cooling_rate: f64,
 ) -> Result<JsValue, JsValue> {
-    let (best_edges, best_fitness, vocab) =
+    let (best_dfg, best_fitness) =
         get_or_init_state().with_object(eventlog_handle, |obj| match obj {
             Some(StoredObject::EventLog(log)) => {
-                let col_owned = crate::cache::columnar_cache_get(eventlog_handle, activity_key)
-                    .unwrap_or_else(|| {
-                        let owned = log.to_columnar_owned(activity_key);
-                        crate::cache::columnar_cache_insert(
-                            eventlog_handle.to_string(),
-                            activity_key.to_string(),
-                            owned.clone(),
-                        );
-                        owned
-                    });
-                let col = ColumnarLog::from_owned(&col_owned);
-
-                // Build edge vocabulary from columnar log
-                let mut edge_vocab: Vec<(u32, u32)> = Vec::new();
-                let mut edge_map: FxHashMap<(u32, u32), usize> = FxHashMap::default();
-
-                for t in 0..col.trace_offsets.len().saturating_sub(1) {
-                    let start = col.trace_offsets[t];
-                    let end = col.trace_offsets[t + 1];
-                    for i in start..end.saturating_sub(1) {
-                        let edge = (col.events[i], col.events[i + 1]);
-                        edge_map.entry(edge).and_modify(|_| {}).or_insert_with(|| {
-                            edge_vocab.push(edge);
-                            edge_vocab.len() - 1
-                        });
-                    }
-                }
-
-                // Collect vocab before closure ends
-                let vocab: Vec<String> = col.vocab.iter().map(|s| s.to_string()).collect();
-
-                let cooling_rate = cooling_rate.clamp(0.001_f64, 0.9999_f64);
-
-                // Deterministic RNG: seeded for reproducibility
-                let mut rng = StdRng::seed_from_u64(42);
-
-                // Start with empty edge set
-                let mut current_edges: HashSet<(u32, u32)> = HashSet::new();
-                let mut current_fitness = evaluate_edges_fitness(&current_edges, &col);
-                let mut best_edges = current_edges.clone();
-                let mut best_fitness = current_fitness;
-                let mut temp = temperature;
-
-                while temp > 0.01 {
-                    // Random neighbor move: add or remove one edge
-                    let mut neighbor = current_edges.clone();
-
-                    if rng.gen::<f64>() < 0.5 && !current_edges.is_empty() {
-                        // Remove random edge
-                        if let Some(&edge) = neighbor.iter().next() {
-                            neighbor.remove(&edge);
-                        }
-                    } else {
-                        // Add random edge from vocabulary
-                        if !edge_vocab.is_empty() {
-                            let idx = (rng.gen::<f64>() * edge_vocab.len() as f64) as usize;
-                            neighbor.insert(edge_vocab[idx]);
-                        }
-                    }
-
-                    let neighbor_fitness = evaluate_edges_fitness(&neighbor, &col);
-                    let delta = neighbor_fitness - current_fitness;
-
-                    // Standard SA acceptance: improvements always accepted; worse
-                    // solutions accepted with Boltzmann probability exp(delta/T).
-                    // delta < 0 here, so exp(delta/T) ∈ (0,1) — correctly decays with T.
-                    let accept = delta >= 0.0 || rng.gen::<f64>() < (delta / temp).exp();
-                    if accept {
-                        current_edges = neighbor;
-                        current_fitness = neighbor_fitness;
-
-                        if current_fitness > best_fitness {
-                            best_fitness = current_fitness;
-                            best_edges = current_edges.clone();
-                        }
-                    }
-
-                    temp *= cooling_rate;
-                }
-
-                Ok((best_edges, best_fitness, vocab))
+                Ok(discover_simulated_annealing_from_log(
+                    log,
+                    activity_key,
+                    temperature,
+                    cooling_rate,
+                ))
             }
             Some(_) => Err(crate::error::js_val("Not an EventLog")),
             None => Err(crate::error::js_val("EventLog not found")),
         })?;
-
-    // Materialize DFG from best edges
-    let best_dfg = edge_set_to_dfg(&best_edges, &vocab);
 
     let handle = get_or_init_state()
         .store_object(StoredObject::DirectlyFollowsGraph(best_dfg.clone()))
@@ -375,6 +337,75 @@ pub fn discover_simulated_annealing(
         "edges": best_dfg.edges.len(),
         "fitness": best_fitness,
     }))
+}
+
+/// Pure-Rust SA discovery: takes EventLog directly, returns (DFG, fitness).
+/// Testable without wasm-bindgen runtime — same logic as discover_simulated_annealing.
+pub fn discover_simulated_annealing_from_log(
+    log: &EventLog,
+    activity_key: &str,
+    temperature: f64,
+    cooling_rate: f64,
+) -> (DirectlyFollowsGraph, f64) {
+    use std::collections::HashSet as HS;
+    let col_owned = log.to_columnar_owned(activity_key);
+    let col = ColumnarLog::from_owned(&col_owned);
+
+    let mut edge_vocab: Vec<(u32, u32)> = Vec::new();
+    let mut edge_freq: FxHashMap<(u32, u32), f64> = FxHashMap::default();
+    let mut node_freq: FxHashMap<u32, usize> = FxHashMap::default();
+    for t in 0..col.trace_offsets.len().saturating_sub(1) {
+        let start = col.trace_offsets[t];
+        let end = col.trace_offsets[t + 1];
+        for i in start..end {
+            *node_freq.entry(col.events[i]).or_insert(0) += 1;
+            if i + 1 < end {
+                let edge = (col.events[i], col.events[i + 1]);
+                let cnt = edge_freq.entry(edge).or_insert(0.0);
+                if *cnt == 0.0 {
+                    edge_vocab.push(edge);
+                }
+                *cnt += 1.0;
+            }
+        }
+    }
+    let vocab: Vec<String> = col.vocab.iter().map(|s| s.to_string()).collect();
+    let vocab_len = edge_vocab.len();
+    let cooling_rate = cooling_rate.clamp(0.001_f64, 0.9999_f64);
+    let mut rng = StdRng::seed_from_u64(42);
+
+    let mut current_edges: HS<(u32, u32)> = HS::new();
+    let mut current_fitness = evaluate_edges_fitness(&current_edges, &col, vocab_len);
+    let mut best_edges = current_edges.clone();
+    let mut best_fitness = current_fitness;
+    let mut temp = temperature;
+
+    while temp > 0.01 {
+        let mut neighbor = current_edges.clone();
+        if rng.gen::<f64>() < 0.5 && !current_edges.is_empty() {
+            // Sort for deterministic selection independent of HashSet RandomState.
+            let mut edges_sorted: Vec<(u32, u32)> = neighbor.iter().copied().collect();
+            edges_sorted.sort_unstable();
+            let pick = (rng.gen::<f64>() * edges_sorted.len() as f64) as usize;
+            neighbor.remove(&edges_sorted[pick]);
+        } else if !edge_vocab.is_empty() {
+            let idx = (rng.gen::<f64>() * edge_vocab.len() as f64) as usize;
+            neighbor.insert(edge_vocab[idx]);
+        }
+        let neighbor_fitness = evaluate_edges_fitness(&neighbor, &col, vocab_len);
+        let delta = neighbor_fitness - current_fitness;
+        let accept = delta >= 0.0 || rng.gen::<f64>() < (delta / temp).exp();
+        if accept {
+            current_edges = neighbor;
+            current_fitness = neighbor_fitness;
+            if current_fitness > best_fitness {
+                best_fitness = current_fitness;
+                best_edges = current_edges.clone();
+            }
+        }
+        temp *= cooling_rate;
+    }
+    (edge_set_to_dfg(&best_edges, &vocab, &edge_freq, &node_freq), best_fitness)
 }
 
 /// Process Skeleton - extract minimal model structure
@@ -569,29 +600,34 @@ pub fn analyze_case_attributes(
 // Helper: Evaluate fitness of an edge set against columnar log (zero string allocation)
 #[inline]
 // Helper: Materialize a DirectlyFollowsGraph from edge set and vocabulary
-fn edge_set_to_dfg(edge_set: &HashSet<(u32, u32)>, vocab: &[String]) -> DirectlyFollowsGraph {
+fn edge_set_to_dfg(
+    edge_set: &HashSet<(u32, u32)>,
+    vocab: &[String],
+    edge_freq: &FxHashMap<(u32, u32), f64>,
+    node_freq: &FxHashMap<u32, usize>,
+) -> DirectlyFollowsGraph {
     let mut dfg = DirectlyFollowsGraph::new();
 
-    // Add all activities as nodes
-    for activity in vocab.iter() {
+    for (idx, activity) in vocab.iter().enumerate() {
         dfg.nodes.push(DFGNode {
             id: activity.clone(),
             label: activity.clone(),
-            frequency: 1,
+            frequency: node_freq.get(&(idx as u32)).copied().unwrap_or(0),
         });
     }
 
-    // Add edges from edge set
-    for &(from_id, to_id) in edge_set {
+    let mut sorted_edges: Vec<(u32, u32)> = edge_set.iter().copied().collect();
+    sorted_edges.sort_unstable();
+
+    for (from_id, to_id) in sorted_edges {
         let from_idx = from_id as usize;
         let to_idx = to_id as usize;
-
-        // Only add edge if indices are valid
         if from_idx < vocab.len() && to_idx < vocab.len() {
+            let freq = edge_freq.get(&(from_id, to_id)).copied().unwrap_or(1.0) as usize;
             dfg.edges.push(DirectlyFollowsRelation {
                 from: vocab[from_idx].clone(),
                 to: vocab[to_idx].clone(),
-                frequency: 1,
+                frequency: freq,
             });
         }
     }

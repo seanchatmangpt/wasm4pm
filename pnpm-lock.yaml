@@ -23,6 +23,9 @@ importers:
       '@wasm4pm/agents':
         specifier: workspace:*
         version: link:../../packages/agents
+      '@wasm4pm/cognition':
+        specifier: workspace:*
+        version: link:../../packages/cognition
       '@wasm4pm/config':
         specifier: workspace:*
         version: link:../../packages/config
@@ -56,6 +59,9 @@ importers:
       consola:
         specifier: ^3.2.3
         version: 3.4.2
+      wasm4pm:
+        specifier: workspace:*
+        version: link:../../wasm4pm
     devDependencies:
       '@faker-js/faker':
         specifier: ^10.4.0
@@ -104,6 +110,28 @@ importers:
       vitest:
         specifier: ^3.0.0
         version: 3.2.4(@types/node@20.19.39)
+
+  packages/cognition:
+    dependencies:
+      '@wasm4pm/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      wasm4pm-cognition:
+        specifier: file:../../crates/wasm4pm-cognition/pkg
+        version: file:crates/wasm4pm-cognition/pkg
+    devDependencies:
+      '@types/node':
+        specifier: ^20.10.0
+        version: 20.19.39
+      '@vitest/coverage-v8':
+        specifier: ^1.6.0
+        version: 1.6.1(vitest@1.6.1)
+      typescript:
+        specifier: ^5.3.3
+        version: 5.9.3
+      vitest:
+        specifier: ^1.1.0
+        version: 1.6.1(@types/node@20.19.39)(@vitest/browser@1.6.1)
 
   packages/config:
     dependencies:
@@ -372,6 +400,10 @@ importers:
         version: 1.6.1(@types/node@20.19.39)(@vitest/browser@1.6.1)
 
   wasm4pm:
+    dependencies:
+      '@wasm4pm/ml':
+        specifier: workspace:*
+        version: link:../packages/ml
     devDependencies:
       '@testing-library/dom':
         specifier: ^9.3.3
@@ -1979,6 +2011,9 @@ packages:
 
   vscode-textmate@8.0.0:
     resolution: {integrity: sha512-AFbieoL7a5LMqcnOF04ji+rpXadgOXnZsxQr//r83kLPr7biP7am3g9zbaZIaBGwBRWeSvoMD4mgPdX3e4NWBg==}
+
+  wasm4pm-cognition@file:crates/wasm4pm-cognition/pkg:
+    resolution: {directory: crates/wasm4pm-cognition/pkg, type: directory}
 
   which-boxed-primitive@1.1.1:
     resolution: {integrity: sha512-TbX3mj8n0odCBFVlY8AxkqcHASw3L60jIuF8jFP78az3C2YhmGvqbHBpAjTRH2/xqYunrJ9g1jSyjCjpoWzIAA==}
@@ -3625,6 +3660,8 @@ snapshots:
   vscode-oniguruma@1.7.0: {}
 
   vscode-textmate@8.0.0: {}
+
+  wasm4pm-cognition@file:crates/wasm4pm-cognition/pkg: {}
 
   which-boxed-primitive@1.1.1:
     dependencies:

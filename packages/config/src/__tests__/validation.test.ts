@@ -22,21 +22,14 @@ import { validate } from '../schema.js';
 import type { Config } from '../types.js';
 
 describe('Validation - Detailed Errors', () => {
-  it('validates algorithm in profile', () => {
-    // DFG should work in all profiles
+  it('validates algorithm in profile, warns on suspicious ML/RL/prediction config', () => {
     expect(validateAlgorithmProfile('dfg', 'fast')).toEqual({ compatible: true });
     expect(validateAlgorithmProfile('dfg', 'browser')).toEqual({ compatible: true });
-  });
-
-  it('accepts valid algorithm in profile', () => {
-    // DFG should be in all profiles
     const result = validateAlgorithmProfile('dfg', 'fast');
     expect(result.compatible).toBe(true);
     expect(result.warning).toBeUndefined();
-  });
 
-  it('warns on suspicious ML config (k > dataset size)', () => {
-    const config: Partial<Config> = {
+    const mlConfig: Partial<Config> = {
       ml: {
         enabled: true,
         tasks: ['cluster'],
@@ -52,18 +45,15 @@ describe('Validation - Detailed Errors', () => {
         eps: 1.0,
       },
     };
+    const mlWarnings = validateMlConfig(mlConfig, 50);
+    expect(mlWarnings.some((w) => w.field === 'ml.cluster.k')).toBe(true);
+    expect(mlWarnings.some((w) => w.warning.includes('larger than log size'))).toBe(true);
 
-    const warnings = validateMlConfig(config, 50); // Log size: 50 traces
-    expect(warnings.some((w) => w.field === 'ml.cluster.k')).toBe(true);
-    expect(warnings.some((w) => w.warning.includes('larger than log size'))).toBe(true);
-  });
-
-  it('warns on suspicious RL config (learning_rate > 0.5)', () => {
-    const config: Partial<Config> = {
+    const rlConfig: Partial<Config> = {
       rl: {
         enabled: true,
         agents: ['QLearning'],
-        learning_rate: 0.8, // Too high
+        learning_rate: 0.8,
         discount_factor: 0.99,
         epsilon: 0.1,
         convergence: { min_cycles: 50, target_reward_improvement: 0.05, window_size: 10 },
@@ -72,143 +62,98 @@ describe('Validation - Detailed Errors', () => {
         ucb1_exploration: Math.SQRT2,
       },
     };
+    const rlWarnings = validateRlConfig(rlConfig);
+    expect(rlWarnings.some((w) => w.field === 'rl.learning_rate')).toBe(true);
+    expect(rlWarnings.some((w) => w.warning.includes('very high'))).toBe(true);
 
-    const warnings = validateRlConfig(config);
-    expect(warnings.some((w) => w.field === 'rl.learning_rate')).toBe(true);
-    expect(warnings.some((w) => w.warning.includes('very high'))).toBe(true);
-  });
-
-  it('warns on suspicious prediction config (ngramOrder too low)', () => {
-    const config: Partial<Config> = {
+    const predConfig: Partial<Config> = {
       prediction: {
         enabled: true,
         activityKey: 'concept:name',
-        ngramOrder: 1, // Invalid
+        ngramOrder: 1,
         driftWindowSize: 10,
         tasks: ['next_activity'],
         drift: { ewma_alpha: 0.2, threshold: 0.3 },
       },
     };
-
-    const warnings = validatePredictionConfig(config);
-    expect(warnings.some((w) => w.field === 'prediction.ngramOrder')).toBe(true);
+    const predWarnings = validatePredictionConfig(predConfig);
+    expect(predWarnings.some((w) => w.field === 'prediction.ngramOrder')).toBe(true);
   });
 });
 
 describe('Validation - Profiles', () => {
-  it('gets capabilities for fast profile', () => {
-    const caps = getProfileCapabilities('fast');
-    expect(caps.name).toBe('fast');
-    expect(caps.algorithms.length).toBeLessThan(10);
-    expect(caps.features.length).toBeLessThan(5);
-  });
+  it('gets capabilities, makes suggestions, validates algorithms, and generates comparison table', () => {
+    const fastCaps = getProfileCapabilities('fast');
+    expect(fastCaps.name).toBe('fast');
+    expect(fastCaps.algorithms.length).toBeLessThan(10);
+    expect(fastCaps.features.length).toBeLessThan(5);
 
-  it('gets capabilities for quality profile (all algorithms)', () => {
-    const caps = getProfileCapabilities('quality');
-    expect(caps.name).toBe('quality');
-    expect(caps.algorithms.length).toBeGreaterThan(35); // Should have 41
-  });
+    const qualityCaps = getProfileCapabilities('quality');
+    expect(qualityCaps.name).toBe('quality');
+    expect(qualityCaps.algorithms.length).toBeGreaterThan(35);
 
-  it('suggests fast profile for low memory budget', () => {
-    const result = suggestProfile({ memoryBudgetMb: 0.5 });
-    expect(result.recommended).toBe('fast');
-  });
+    expect(suggestProfile({ memoryBudgetMb: 0.5 }).recommended).toBe('fast');
+    expect(suggestProfile({}).recommended).toBe('balanced');
+    expect(['balanced', 'quality']).toContain(suggestProfile({ requiredAlgorithms: ['ml_classify', 'ml_cluster'] }).recommended);
 
-  it('suggests balanced as default', () => {
-    const result = suggestProfile({}); // No constraints
-    expect(result.recommended).toBe('balanced');
-  });
-
-  it('suggests balanced for ML algorithms (available in balanced+)', () => {
-    const result = suggestProfile({
-      requiredAlgorithms: ['ml_classify', 'ml_cluster'],
-    });
-    // Should suggest balanced or higher since ML is available in balanced+
-    expect(['balanced', 'quality']).toContain(result.recommended);
-  });
-
-  it('validates algorithm in profile', () => {
     expect(validateAlgorithmInProfile('dfg', 'fast')).toEqual({ valid: true });
     const badResult = validateAlgorithmInProfile('ilp', 'fast');
     expect(badResult.valid).toBe(false);
     expect(badResult.error).toMatch(/not available/);
-  });
 
-  it('generates profile comparison table', () => {
     const table = getProfileComparisonTable();
     expect(table).toContain('Fast');
     expect(table).toContain('Balanced');
     expect(table).toContain('Quality');
     expect(table).toContain('Stream');
-    expect(table).toContain('Profile'); // Header
+    expect(table).toContain('Profile');
   });
 });
 
 describe('Validation - Presets', () => {
-  it('creates quick-test preset', () => {
-    const config = getPresetConfig('quick-test');
-    expect(config.version).toBe('26.4.5');
-    expect(config.execution.profile).toBe('fast');
-    expect(config.execution.timeout).toBe(60000);
-    expect(config.prediction?.enabled).toBe(false);
-  });
+  it('creates presets, validates against schema, generates TOML, and describes presets', () => {
+    const quickTest = getPresetConfig('quick-test');
+    expect(quickTest.version).toBe('26.4.5');
+    expect(quickTest.execution.profile).toBe('fast');
+    expect(quickTest.execution.timeout).toBe(60000);
+    expect(quickTest.prediction?.enabled).toBe(false);
 
-  it('creates production preset', () => {
-    const config = getPresetConfig('production');
-    expect(config.execution.profile).toBe('balanced');
-    expect(config.ml?.enabled).toBe(true);
-    expect(config.ml?.tasks).toContain('classify');
-    expect(config.prediction?.enabled).toBe(true);
-  });
+    const production = getPresetConfig('production');
+    expect(production.execution.profile).toBe('balanced');
+    expect(production.ml?.enabled).toBe(true);
+    expect(production.ml?.tasks).toContain('classify');
+    expect(production.prediction?.enabled).toBe(true);
 
-  it('creates research preset', () => {
-    const config = getPresetConfig('research');
-    expect(config.execution.profile).toBe('quality');
-    expect(config.algorithm.name).toBe('ilp');
-    expect(config.ml?.tasks?.length).toBeGreaterThanOrEqual(6);
-    expect(config.rl?.enabled).toBe(true);
-  });
+    const research = getPresetConfig('research');
+    expect(research.execution.profile).toBe('quality');
+    expect(research.algorithm.name).toBe('ilp');
+    expect(research.ml?.tasks?.length).toBeGreaterThanOrEqual(6);
+    expect(research.rl?.enabled).toBe(true);
 
-  it('validates preset configs against schema', () => {
     for (const scenario of ['quick-test', 'production', 'research'] as const) {
       const preset = getPresetConfig(scenario);
-      // Should not throw
-      expect(() => {
-        validate({
-          ...preset,
-          source: { kind: 'file' },
-        });
-      }).not.toThrow();
+      expect(() => validate({ ...preset, source: { kind: 'file' } })).not.toThrow();
     }
-  });
 
-  it('generates example TOML with comments', () => {
     const toml = getExampleTomlWithComments();
     expect(toml).toContain('[source]');
     expect(toml).toContain('[ml]');
     expect(toml).toContain('[rl]');
     expect(toml).toContain('[prediction]');
     expect(toml).toContain('# ');
-  });
 
-  it('describes presets', () => {
-    const desc = describePreset('quick-test');
-    expect(desc).toContain('Quick Test');
-    expect(desc).toContain('fast');
-
-    const prod = describePreset('production');
-    expect(prod).toContain('Production');
-    expect(prod).toContain('balanced');
-
-    const research = describePreset('research');
-    expect(research).toContain('Research');
-    expect(research).toContain('quality');
+    expect(describePreset('quick-test')).toContain('Quick Test');
+    expect(describePreset('quick-test')).toContain('fast');
+    expect(describePreset('production')).toContain('Production');
+    expect(describePreset('production')).toContain('balanced');
+    expect(describePreset('research')).toContain('Research');
+    expect(describePreset('research')).toContain('quality');
   });
 });
 
 describe('Config - Warnings', () => {
-  it('collects warnings from multiple sources', () => {
-    const config: Partial<Config> = {
+  it('collects warnings from multiple sources and returns empty warnings for valid config', () => {
+    const configWithIssues: Partial<Config> = {
       algorithm: { name: 'dfg', parameters: {} },
       execution: { profile: 'balanced' },
       ml: {
@@ -226,41 +171,31 @@ describe('Config - Warnings', () => {
         eps: 1.0,
       },
     };
-
-    const warnings = checkConfigWarnings(config, 100);
-    // Should warn about k > sqrt(logSize) = 10
+    const warnings = checkConfigWarnings(configWithIssues, 100);
     expect(warnings.some((w) => w.field === 'ml.cluster.k')).toBe(true);
-  });
 
-  it('returns empty warnings for valid config', () => {
-    const config: Partial<Config> = {
+    const validConfig: Partial<Config> = {
       algorithm: { name: 'dfg', parameters: {} },
       execution: { profile: 'fast' },
       ml: { enabled: false, tasks: [] },
     };
-
-    const warnings = checkConfigWarnings(config, 1000);
-    // Should be no warnings for DFG + fast profile + disabled ML
-    expect(warnings.filter((w) => w.field === 'algorithm.name').length).toBe(0);
+    const emptyWarnings = checkConfigWarnings(validConfig, 1000);
+    expect(emptyWarnings.filter((w) => w.field === 'algorithm.name').length).toBe(0);
   });
 });
 
 describe('Error Formatting', () => {
-  it('formats basic validation error', () => {
+  it('formats validation errors with paths for single and multiple issues', () => {
     const config = { version: '1.0', source: { kind: 'invalid' } };
-
     expect(() => validate(config)).toThrow(/validation failed/i);
-  });
 
-  it('shows multiple validation errors with paths', () => {
-    const config = {
+    const multiConfig = {
       version: 'bad',
       source: { kind: 'invalid' },
       execution: { profile: 'wrong' },
     };
-
     try {
-      validate(config);
+      validate(multiConfig);
       expect.fail('Should have thrown');
     } catch (error) {
       const message = String(error);

@@ -232,15 +232,11 @@ beforeAll(() => {
 // ─── JTBD-1: Classify ────────────────────────────────────────────────────────
 
 describe('JTBD-1: "I want to classify deals by likely outcome to prioritize my pipeline"', () => {
-  it('classify result is an array (empty arrays are valid per @wasm4pm/ml contract)', async () => {
+  it('classify result is an array (empty arrays are valid per @wasm4pm/ml contract) + if non-empty, each classification prediction has caseId and predicted fields + if non-empty, confidence values are in [0, 1]', async () => {
     const result = await executeMlTask(wasm, 'classify', logHandle, 'concept:name');
-    const predictions = result.predictions as unknown[];
+    const predictions = result.predictions as Array<{ caseId: string; predicted: string; confidence: number }>;
     expect(Array.isArray(predictions)).toBe(true);
-  });
 
-  it('if non-empty, each classification prediction has caseId and predicted fields', async () => {
-    const result = await executeMlTask(wasm, 'classify', logHandle, 'concept:name');
-    const predictions = result.predictions as Array<Record<string, unknown>>;
     if (predictions.length > 0) {
       for (const p of predictions) {
         expect(typeof p.caseId).toBe('string');
@@ -249,11 +245,7 @@ describe('JTBD-1: "I want to classify deals by likely outcome to prioritize my p
     }
     // Always passes — empty array is valid
     expect(true).toBe(true);
-  });
 
-  it('if non-empty, confidence values are in [0, 1]', async () => {
-    const result = await executeMlTask(wasm, 'classify', logHandle, 'concept:name');
-    const predictions = result.predictions as Array<{ caseId: string; predicted: string; confidence: number }>;
     for (const p of predictions) {
       expect(p.confidence).toBeGreaterThanOrEqual(0);
       expect(p.confidence).toBeLessThanOrEqual(1);
@@ -264,7 +256,7 @@ describe('JTBD-1: "I want to classify deals by likely outcome to prioritize my p
 // ─── JTBD-2: Cluster ─────────────────────────────────────────────────────────
 
 describe('JTBD-2: "I want to cluster similar deals to discover behavioral patterns"', () => {
-  it('cluster call completes without crashing', async () => {
+  it('cluster call completes without crashing + if result exists, it has assignments array and clusterCount field + cluster is deterministic — same input produces same output', async () => {
     // ml_cluster is TypeScript-layer (clustering.ts) — not a direct WASM export.
     // The clusterTraces() function in @wasm4pm/ml handles empty arrays gracefully.
     let threw = false;
@@ -275,9 +267,7 @@ describe('JTBD-2: "I want to cluster similar deals to discover behavioral patter
     }
     // Allowed to throw on degenerate input but must not hang
     expect(threw || true).toBe(true);
-  });
 
-  it('if result exists, it has assignments array and clusterCount field', async () => {
     let result: Record<string, unknown> | null = null;
     try {
       result = await executeMlTask(wasm, 'cluster', logHandle, 'concept:name', { k: '2' });
@@ -288,9 +278,7 @@ describe('JTBD-2: "I want to cluster similar deals to discover behavioral patter
       expect(Array.isArray(result.assignments)).toBe(true);
       expect(typeof result.clusterCount).toBe('number');
     }
-  });
 
-  it('cluster is deterministic — same input produces same output', async () => {
     let result1: Record<string, unknown> | null = null;
     let result2: Record<string, unknown> | null = null;
     try {
@@ -309,7 +297,7 @@ describe('JTBD-2: "I want to cluster similar deals to discover behavioral patter
 // ─── JTBD-3: Forecast ────────────────────────────────────────────────────────
 
 describe('JTBD-3: "I want to forecast next month\'s deal throughput for capacity planning"', () => {
-  it('forecast result has a trend field with direction, slope, and strength', async () => {
+  it('forecast result has a trend field with direction, slope, and strength + if forecast array exists, all values are finite numbers + requesting horizon=3 does not produce more than 3 forecast values', async () => {
     const result = await executeMlTask(wasm, 'forecast', logHandle, 'concept:name', {
       forecastPeriods: '3',
     });
@@ -317,12 +305,7 @@ describe('JTBD-3: "I want to forecast next month\'s deal throughput for capacity
     // With empty drift series (few traces), may return minimal result
     expect(result).toBeDefined();
     expect(typeof result).toBe('object');
-  });
 
-  it('if forecast array exists, all values are finite numbers', async () => {
-    const result = await executeMlTask(wasm, 'forecast', logHandle, 'concept:name', {
-      forecastPeriods: '3',
-    });
     const forecast = result.forecast as number[] | undefined;
     if (forecast !== undefined && forecast.length > 0) {
       for (const v of forecast) {
@@ -332,13 +315,7 @@ describe('JTBD-3: "I want to forecast next month\'s deal throughput for capacity
     }
     // Valid even if forecast is undefined (series too short to forecast)
     expect(true).toBe(true);
-  });
 
-  it('requesting horizon=3 does not produce more than 3 forecast values', async () => {
-    const result = await executeMlTask(wasm, 'forecast', logHandle, 'concept:name', {
-      forecastPeriods: '3',
-    });
-    const forecast = result.forecast as number[] | undefined;
     if (forecast !== undefined) {
       expect(forecast.length).toBeLessThanOrEqual(3);
     }
@@ -349,14 +326,11 @@ describe('JTBD-3: "I want to forecast next month\'s deal throughput for capacity
 // ─── JTBD-4: Anomaly ─────────────────────────────────────────────────────────
 
 describe('JTBD-4: "I want to find anomalous deals that deviate from standard process patterns"', () => {
-  it('anomaly result is a defined object (empty series produces empty result)', async () => {
+  it('anomaly result is a defined object (empty series produces empty result) + if peakIndices exists, each value is a non-negative integer index + originalLength field reflects the input series length (non-negative)', async () => {
     const result = await executeMlTask(wasm, 'anomaly', logHandle, 'concept:name');
     expect(result).toBeDefined();
     expect(typeof result).toBe('object');
-  });
 
-  it('if peakIndices exists, each value is a non-negative integer index', async () => {
-    const result = await executeMlTask(wasm, 'anomaly', logHandle, 'concept:name');
     const peakIndices = result.peakIndices as number[] | undefined;
     if (peakIndices !== undefined && peakIndices.length > 0) {
       for (const idx of peakIndices) {
@@ -366,10 +340,7 @@ describe('JTBD-4: "I want to find anomalous deals that deviate from standard pro
       }
     }
     expect(true).toBe(true);
-  });
 
-  it('originalLength field reflects the input series length (non-negative)', async () => {
-    const result = await executeMlTask(wasm, 'anomaly', logHandle, 'concept:name');
     const originalLength = result.originalLength as number | undefined;
     if (originalLength !== undefined) {
       expect(typeof originalLength).toBe('number');
@@ -382,26 +353,20 @@ describe('JTBD-4: "I want to find anomalous deals that deviate from standard pro
 // ─── JTBD-5: Regress ─────────────────────────────────────────────────────────
 
 describe('JTBD-5: "I want to regress deal duration against features to identify what drives cycle time"', () => {
-  it('regress result has rSquared field (valid regression always produces this)', async () => {
+  it('regress result has rSquared field (valid regression always produces this) + rSquared is in [-Infinity, 1] — a valid regression range + mae (mean absolute error) is non-negative', async () => {
     const result = await executeMlTask(wasm, 'regress', logHandle, 'concept:name');
     // RegressionResult always has rSquared per types.ts
     expect(result).toBeDefined();
     if ('rSquared' in result) {
       expect(typeof result.rSquared).toBe('number');
     }
-  });
 
-  it('rSquared is in [-Infinity, 1] — a valid regression range', async () => {
-    const result = await executeMlTask(wasm, 'regress', logHandle, 'concept:name');
     const rSquared = result.rSquared as number | undefined;
     if (rSquared !== undefined && Number.isFinite(rSquared)) {
       expect(rSquared).toBeLessThanOrEqual(1.0);
     }
     expect(true).toBe(true);
-  });
 
-  it('mae (mean absolute error) is non-negative', async () => {
-    const result = await executeMlTask(wasm, 'regress', logHandle, 'concept:name');
     const mae = result.mae as number | undefined;
     if (mae !== undefined) {
       expect(typeof mae).toBe('number');
@@ -428,7 +393,7 @@ describe('JTBD-6: "I want PCA to reduce the feature space for visualization"', (
     }
   }
 
-  it('pca result, when feature matrix is valid, has explainedVariance or components field', async () => {
+  it('pca result, when feature matrix is valid, has explainedVariance or components field + explainedVariance values, when present, are non-negative + requesting 2 components gives nComponents≤2 in the result (clamped to available features)', async () => {
     const result = await tryPca('2');
     if (result !== null) {
       const hasVariance = 'explainedVariance' in result || 'components' in result;
@@ -436,10 +401,7 @@ describe('JTBD-6: "I want PCA to reduce the feature space for visualization"', (
     }
     // null = degenerate input — not a product defect, graceful rejection is correct
     expect(true).toBe(true);
-  });
 
-  it('explainedVariance values, when present, are non-negative', async () => {
-    const result = await tryPca('2');
     if (result !== null) {
       const explainedVariance = result.explainedVariance as number[] | undefined;
       if (explainedVariance !== undefined) {
@@ -450,10 +412,7 @@ describe('JTBD-6: "I want PCA to reduce the feature space for visualization"', (
       }
     }
     expect(true).toBe(true);
-  });
 
-  it('requesting 2 components gives nComponents≤2 in the result (clamped to available features)', async () => {
-    const result = await tryPca('2');
     if (result !== null) {
       const nComponents = result.nComponents as number | undefined;
       if (nComponents !== undefined) {

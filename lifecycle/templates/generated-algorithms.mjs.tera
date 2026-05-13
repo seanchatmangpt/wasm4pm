@@ -1,0 +1,14 @@
+// GENERATED — DO NOT EDIT — source: schema/domain.ttl
+// Run `ggen sync` in lifecycle/ to regenerate.
+
+/** wasm4pm algorithm assignments per lifecycle stage. Mirrors Rust `ALGORITHM_ASSIGNMENTS`. */
+export const ALGORITHM_ASSIGNMENTS = Object.freeze([
+{% for entity in entities %}
+  { stage: '{{ entity.stage_label }}', algorithmId: '{{ entity.algorithm_id }}', algorithmLabel: '{{ entity.algorithm_label }}', purpose: '{{ entity.purpose | replace(from="'", to="\\'") }}' },
+{% endfor %}
+]);
+
+/** Returns algorithm IDs assigned to a given stage. */
+export function algorithmIdsForStage(stage) {
+  return ALGORITHM_ASSIGNMENTS.filter(a => a.stage === stage).map(a => a.algorithmId);
+}

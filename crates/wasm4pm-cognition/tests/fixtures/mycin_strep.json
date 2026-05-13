@@ -1,0 +1,27 @@
+{
+  "disease": "streptococcal_infection",
+  "rules": [
+    {
+      "id": "r1",
+      "premise": ["organism=gram_positive_cocci"],
+      "conclusion": "strep_infection",
+      "certainty": 0.7
+    },
+    {
+      "id": "r2",
+      "premise": ["growth=chains"],
+      "conclusion": "strep_infection",
+      "certainty": 0.6
+    },
+    {
+      "id": "r3",
+      "premise": ["strep_infection"],
+      "conclusion": "antibiotic=penicillin",
+      "certainty": 0.95
+    }
+  ],
+  "initial_facts": [
+    { "key": "organism", "value": "gram_positive_cocci" },
+    { "key": "growth", "value": "chains" }
+  ]
+}

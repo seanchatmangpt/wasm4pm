@@ -1,12 +1,14 @@
 import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
-import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
+import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
-import type { OutputOptions } from '../output.js';
-import { WasmLoader } from '@wasm4pm/engine';
+import { withLogSession } from '../with-log-session.js';
 import { savePredictionResult } from './results.js';
 import { VALID_ML_TASKS, executeMlTask } from '../ml-runner.js';
 import type { MlTask } from '../ml-runner.js';
+import { withSpan } from './_otel.js';
+import { saveCommandReceipt, blake3Hex, newReceipt, type CommandReceipt } from '../receipts/_shared.js';
+import { exitWithFlush } from '../otel/exit.js';
 
 export const ml = defineCommand({
   meta: {
@@ -63,42 +65,45 @@ export const ml = defineCommand({
     'no-save': { type: 'boolean' },
   },
   async run(ctx) {
-    const formatter = getFormatter({
-      format: ctx.args.format as 'human' | 'json',
-      verbose: ctx.args.verbose,
-      quiet: ctx.args.quiet,
-    });
+    const t0 = performance.now();
+    const format = (ctx.args.format as 'json' | 'human') ?? 'human';
+    const verbose = Boolean(ctx.args.verbose);
+    const quiet = Boolean(ctx.args.quiet);
 
+    return withSpan(
+      'ml',
+      {
+        task: String(ctx.args.task ?? ''),
+        input: String(ctx.args.input ?? ''),
+        activity_key: String(ctx.args['activity-key'] ?? ''),
+        method: String(ctx.args.method ?? ''),
+        format,
+      },
+      async () => {
     try {
       const task = ctx.args.task as string;
       if (!VALID_ML_TASKS.includes(task as MlTask)) {
-        formatter.error(`Unknown ML task: "${task}". Valid: ${VALID_ML_TASKS.join(', ')}`);
-        process.exit(EXIT_CODES.source_error);
+        const result = makeErrorResult(
+          'ml',
+          `Unknown ML task: "${task}". Valid: ${VALID_ML_TASKS.join(', ')}`,
+          EXIT_CODES.source_error,
+          'INVALID_TASK'
+        );
+        emitResult(result, { format, verbose, quiet });
+        return await exitWithFlush(result.exit_code);
       }
 
       const inputPath = ctx.args.input as string;
-      try {
-        await fs.access(inputPath);
-      } catch {
-        formatter.error(`Input file not found: ${inputPath}`);
-        process.exit(EXIT_CODES.source_error);
-      }
-
       const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
 
-      if (formatter instanceof HumanFormatter) {
-        formatter.info(`Running ML task: ${task}`);
-      }
+      await withLogSession(
+        { inputPath, activityKey, commandName: 'ml', emitOptions: { format, verbose, quiet } },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        async (wasmBase, logHandle) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const wasm = wasmBase as Record<string, any>;
 
-      const loader = WasmLoader.getInstance();
-      await loader.init();
-      const wasm = loader.get();
-
-      const xesContent = await fs.readFile(inputPath, 'utf-8');
-      const logHandle: string = wasm.load_eventlog_from_xes(xesContent);
-
-      try {
-        const result = await executeMlTask(wasm, task as MlTask, logHandle, activityKey, {
+        const mlResult = await executeMlTask(wasm, task as MlTask, logHandle, activityKey, {
           method: ctx.args.method as string,
           k: ctx.args.k as string,
           targetKey: ctx.args['target-key'] as string,
@@ -107,38 +112,71 @@ export const ml = defineCommand({
           eps: ctx.args.eps as string,
         });
 
-        if (formatter instanceof JSONFormatter) {
-          formatter.success(`ML complete: ${task}`, { task, input: inputPath, ...result });
-        } else {
-          formatter.success(`ML complete: ${task}`);
-          formatMlHumanOutput(formatter, task as MlTask, result);
-        }
-
         if (!ctx.args['no-save']) {
           const savedPath = await savePredictionResult(
             `ml-${task}`,
             inputPath,
             activityKey,
-            result
+            mlResult
           );
-          if (savedPath && formatter instanceof HumanFormatter) {
-            formatter.debug(`Result saved: ${savedPath}`);
+          if (savedPath && format === 'human' && verbose) {
+            // savedPath info surfaced via verbose in human renderer
+            (mlResult as Record<string, unknown>)['_savedPath'] = savedPath;
           }
         }
-      } finally {
-        wasm.delete_object(logHandle);
-      }
 
-      process.exit(EXIT_CODES.success);
+        const payload = { task, input: inputPath, ...mlResult };
+        const result = makeResult('ml', payload, performance.now() - t0, EXIT_CODES.success);
+        emitResult(result, { format, verbose, quiet }, (res, projection) => {
+          const data = res.payload as typeof payload;
+          projection.success(`ML complete: ${data.task}`);
+          formatMlHumanOutput(projection, data.task as MlTask, data);
+          if (verbose && (data as Record<string, unknown>)['_savedPath']) {
+            projection.debug(`Result saved: ${(data as Record<string, unknown>)['_savedPath']}`);
+          }
+        });
+
+        if (!ctx.args['no-save']) {
+          try {
+            const inputBytes = await fs.readFile(inputPath).catch(() => Buffer.from(inputPath));
+            const sampleSize = Array.isArray((mlResult as Record<string, unknown>).predictions)
+              ? ((mlResult as Record<string, unknown>).predictions as unknown[]).length
+              : Array.isArray((mlResult as Record<string, unknown>).assignments)
+                ? ((mlResult as Record<string, unknown>).assignments as unknown[]).length
+                : 0;
+            const receipt: CommandReceipt = {
+              ...newReceipt('ml'),
+              command: 'ml',
+              input_hash: blake3Hex(inputBytes),
+              output_hash: blake3Hex(JSON.stringify(payload)),
+              status: 'success',
+              summary: {
+                task,
+                method: String(ctx.args.method ?? ''),
+                activity_key: activityKey,
+                sample_size: sampleSize,
+              },
+            };
+            saveCommandReceipt(receipt);
+          } catch {
+            /* receipt write must never break the command */
+          }
+        }
+
+        return await exitWithFlush(result.exit_code);
+      });  // end withLogSession
     } catch (error) {
-      formatter.error(`ML failed: ${error instanceof Error ? error.message : String(error)}`);
-      process.exit(EXIT_CODES.execution_error);
+      const result = makeErrorResult('ml', error, EXIT_CODES.execution_error);
+      emitResult(result, { format, verbose, quiet });
+      return await exitWithFlush(result.exit_code);
     }
+      },
+    );
   },
 });
 
 function formatMlHumanOutput(
-  formatter: HumanFormatter,
+  projection: import('../output.js').ConsoleProjection,
   task: MlTask,
   result: Record<string, unknown>
 ): void {
@@ -150,47 +188,47 @@ function formatMlHumanOutput(
         confidence: number;
       }>;
       if (!predictions || predictions.length === 0) {
-        formatter.info('No predictions available.');
+        projection.info('No predictions available.');
         return;
       }
-      formatter.log('');
-      formatter.log('  Case ID              Predicted         Confidence');
-      formatter.log('  ───────────────────  ────────────────  ─────────');
+      projection.log('');
+      projection.log('  Case ID              Predicted         Confidence');
+      projection.log('  ───────────────────  ────────────────  ─────────');
       for (const p of predictions.slice(0, 10)) {
         const id = (p.caseId ?? '?').padEnd(19);
         const pred = (p.predicted ?? '?').padEnd(16);
         const conf = (p.confidence * 100).toFixed(1).padStart(8) + '%';
-        formatter.log(`  ${id}  ${pred}  ${conf}`);
+        projection.log(`  ${id}  ${pred}  ${conf}`);
       }
-      if (predictions.length > 10) formatter.log(`  ... (${predictions.length - 10} more)`);
+      if (predictions.length > 10) projection.log(`  ... (${predictions.length - 10} more)`);
       const info = result.modelInfo as Record<string, unknown>;
-      formatter.log(
+      projection.log(
         `  Method: ${result.method}, Traces: ${info?.traceCount}, Features: ${info?.featureCount}`
       );
-      formatter.log('');
+      projection.log('');
       break;
     }
 
     case 'cluster': {
       const assignments = result.assignments as Array<{ caseId: string; cluster: number }>;
       if (!assignments || assignments.length === 0) {
-        formatter.info('No cluster assignments.');
+        projection.info('No cluster assignments.');
         return;
       }
-      formatter.log('');
-      formatter.log('  Case ID              Cluster');
-      formatter.log('  ───────────────────  ───────');
+      projection.log('');
+      projection.log('  Case ID              Cluster');
+      projection.log('  ───────────────────  ───────');
       for (const a of assignments.slice(0, 10)) {
         const id = (a.caseId ?? '?').padEnd(19);
-        formatter.log(`  ${id}  ${String(a.cluster).padStart(6)}`);
+        projection.log(`  ${id}  ${String(a.cluster).padStart(6)}`);
       }
-      if (assignments.length > 10) formatter.log(`  ... (${assignments.length - 10} more)`);
+      if (assignments.length > 10) projection.log(`  ... (${assignments.length - 10} more)`);
       const info = result.modelInfo as Record<string, unknown>;
-      formatter.log(
+      projection.log(
         `  Method: ${result.method}, Clusters: ${result.clusterCount}, Noise: ${result.noiseCount}`
       );
-      if (info?.inertia !== undefined) formatter.log(`  Inertia: ${info.inertia}`);
-      formatter.log('');
+      if (info?.inertia !== undefined) projection.log(`  Inertia: ${info.inertia}`);
+      projection.log('');
       break;
     }
 
@@ -200,22 +238,22 @@ function formatMlHumanOutput(
         | undefined;
       const forecast = result.forecast as number[] | undefined;
       const seasonality = result.seasonality as { period?: number; strength?: number } | undefined;
-      formatter.log('');
-      formatter.log(
+      projection.log('');
+      projection.log(
         `  Trend: ${trend?.direction} (slope: ${(trend?.slope ?? 0).toFixed(4)}, strength: ${(trend?.strength ?? 0).toFixed(2)})`
       );
-      formatter.log(`  Window count: ${result.windowCount}`);
+      projection.log(`  Window count: ${result.windowCount}`);
       if (forecast) {
-        formatter.log(
+        projection.log(
           `  Forecast (${forecast.length} periods): ${forecast.map((v: number) => v.toFixed(1)).join(', ')}`
         );
       }
       if (seasonality) {
-        formatter.log(
+        projection.log(
           `  Seasonality: period=${seasonality.period}, strength=${(seasonality.strength ?? 0).toFixed(2)}`
         );
       }
-      formatter.log('');
+      projection.log('');
       break;
     }
 
@@ -223,49 +261,49 @@ function formatMlHumanOutput(
       const peakIndices = result.peakIndices as number[] | undefined;
       const peakValues = result.peakValues as number[] | undefined;
       const residualPeaks = result.residualPeaks as number[] | undefined;
-      formatter.log('');
-      formatter.log(`  Peaks detected: ${peakIndices?.length ?? 0}`);
+      projection.log('');
+      projection.log(`  Peaks detected: ${peakIndices?.length ?? 0}`);
       if (peakIndices && peakValues) {
         for (let i = 0; i < Math.min(peakIndices.length, 10); i++) {
-          formatter.log(`    Window ${peakIndices[i]}: drift=${peakValues[i]?.toFixed(4)}`);
+          projection.log(`    Window ${peakIndices[i]}: drift=${peakValues[i]?.toFixed(4)}`);
         }
       }
       if (residualPeaks && residualPeaks.length > 0) {
-        formatter.log(`  Residual anomalies: ${residualPeaks.length}`);
+        projection.log(`  Residual anomalies: ${residualPeaks.length}`);
       }
-      formatter.log(`  Original length: ${result.originalLength}`);
-      formatter.log('');
+      projection.log(`  Original length: ${result.originalLength}`);
+      projection.log('');
       break;
     }
 
     case 'regress': {
-      formatter.log('');
-      formatter.log(`  Method: ${result.method}`);
-      formatter.log(`  R-squared: ${Number(result.rSquared ?? 0).toFixed(4)}`);
-      formatter.log(
+      projection.log('');
+      projection.log(`  Method: ${result.method}`);
+      projection.log(`  R-squared: ${Number(result.rSquared ?? 0).toFixed(4)}`);
+      projection.log(
         `  Slope: ${Number(result.slope ?? 0).toFixed(4)}, Intercept: ${Number(result.intercept ?? 0).toFixed(4)}`
       );
-      formatter.log(
+      projection.log(
         `  RMSE: ${Number(result.rmse ?? 0).toFixed(2)}, MAE: ${Number(result.mae ?? 0).toFixed(2)}`
       );
-      formatter.log('');
+      projection.log('');
       break;
     }
 
     case 'pca': {
       const explainedVariance = result.explainedVariance as number[] | undefined;
       const transformedData = result.transformedData as number[][] | undefined;
-      formatter.log('');
-      formatter.log(
+      projection.log('');
+      projection.log(
         `  Components: ${result.nComponents} (from ${result.originalFeatureCount} features)`
       );
       if (explainedVariance) {
-        formatter.log(
+        projection.log(
           `  Explained variance: ${explainedVariance.map((v: number) => v.toFixed(4)).join(', ')}`
         );
       }
-      formatter.log(`  Transformed data: ${transformedData?.length ?? 0} rows`);
-      formatter.log('');
+      projection.log(`  Transformed data: ${transformedData?.length ?? 0} rows`);
+      projection.log('');
       break;
     }
   }

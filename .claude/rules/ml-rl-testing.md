@@ -36,7 +36,7 @@
 | `ExpectedSARSA` | On-policy TD | Expected value over actions |
 | `REINFORCE` | Policy gradient | Trajectory-based |
 
-### 8D State Space (460,800 states)
+### 8D State Space (368,640 states — product of the level counts in the table below: 5×8×8×4×3×8×3×4)
 
 | Dimension | Levels | Description |
 |-----------|--------|-------------|

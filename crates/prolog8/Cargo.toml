@@ -1,0 +1,29 @@
+[package]
+name = "prolog8"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Prolog8 — byte-capped proof engine for policy, workflow, and agent action admission"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+blake3 = { workspace = true }
+smallvec = { workspace = true }
+once_cell = "1.19"
+
+wasm-bindgen = { version = "0.2.92", optional = true }
+serde-wasm-bindgen = { version = "0.6", optional = true }
+js-sys = { version = "0.3", optional = true }
+
+[features]
+default = []
+wasm = ["dep:wasm-bindgen", "dep:serde-wasm-bindgen", "dep:js-sys"]
+
+[dev-dependencies]
+proptest = { workspace = true }

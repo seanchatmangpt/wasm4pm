@@ -295,6 +295,28 @@ pub fn apply_recursive(arena: &PowlArena, node_idx: u32) -> ProcessTree {
                 ProcessTree::internal(PtOperator::Parallel, component_trees)
             }
         }
+
+        Some(PowlNode::ChoiceGraph(cg)) => {
+            // Approximate as XOR of SubModel sub-trees (lossy — visualization only).
+            let sub_trees: Vec<ProcessTree> = cg
+                .graph
+                .nodes
+                .iter()
+                .filter_map(|n| match n {
+                    wasm4pm_types::ChoiceGraphNode::SubModel(idx) => {
+                        Some(apply_recursive(arena, *idx))
+                    }
+                    _ => None,
+                })
+                .collect();
+            if sub_trees.is_empty() {
+                ProcessTree::leaf(None)
+            } else if sub_trees.len() == 1 {
+                sub_trees.into_iter().next().unwrap()
+            } else {
+                ProcessTree::internal(PtOperator::Xor, sub_trees)
+            }
+        }
     }
 }
 

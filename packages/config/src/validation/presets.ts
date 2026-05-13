@@ -600,7 +600,7 @@ export function generateOptimalConfig(
       scored.sort((a, b) => b.score - a.score);
 
       const winner = scored[0];
-      selectedAlgorithm = winner.name;
+      selectedAlgorithm = winner.name as BaseConfig['algorithm']['name'];
       selectionReason = `Algorithm '${winner.name}' selected from benchmarks (score=${winner.score.toFixed(1)}, quality=${winner.measurement.quality_score}, speed=${winner.measurement.speed_score}) for preset '${preset}'`;
     }
   }

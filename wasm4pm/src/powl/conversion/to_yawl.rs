@@ -105,6 +105,11 @@ impl Builder {
             Some(PowlNode::DecisionGraph(_)) => {
                 self.flow(entry, exit);
             }
+
+            Some(PowlNode::ChoiceGraph(_)) => {
+                // ChoiceGraph → YAWL: approximate as a silent flow.
+                self.flow(entry, exit);
+            }
         }
     }
 

@@ -57,14 +57,14 @@ function buildFm1Stub(): KernelWasmModule & {
     },
 
     // Remaining interface members satisfied with no-ops.
-    async discover_alpha_plus_plus(h: string, _k: string) { return { handle: `ap_${h}` }; },
+    async discover_alpha_plus_plus(h: string, _k: string, _m: number) { return { handle: `ap_${h}` }; },
     async discover_heuristic_miner(h: string, _k: string, _t: number) { return { handle: `hm_${h}` }; },
     async discover_inductive_miner(h: string, _k: string, _n: number) { return { handle: `im_${h}` }; },
     async discover_genetic_algorithm(h: string, _k: string, _p: number, _g: number) { return { handle: `ga_${h}` }; },
     async discover_pso_algorithm(h: string, _k: string, _s: number, _i: number) { return { handle: `pso_${h}` }; },
     async discover_astar(h: string, _k: string, _m: number) { return { handle: `as_${h}` }; },
     async discover_hill_climbing(h: string, _k: string, _m: number) { return { handle: `hc_${h}` }; },
-    async discover_ilp_petri_net(h: string, _k: string, _t: number) { return { handle: `ilp_${h}` }; },
+    async discover_ilp_petri_net(h: string, _k: string) { return { handle: `ilp_${h}` }; },
     async discover_ant_colony(h: string, _k: string, _c: number, _i: number) { return { handle: `aco_${h}` }; },
     async discover_simulated_annealing(h: string, _k: string, _t: number, _c: number) { return { handle: `sa_${h}` }; },
     async discover_declare(h: string, _k: string, _s: number) { return { handle: `dc_${h}` }; },

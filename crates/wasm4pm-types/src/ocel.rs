@@ -1,93 +1,128 @@
-use crate::event_log::Attributes;
+use chrono::{DateTime, FixedOffset};
 use serde::{Deserialize, Serialize};
+use std::fmt::Display;
+use crate::event_log::AttributeValue;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct OCELEventObjectRef {
-    pub object_id: String,
-    pub object_type: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct OCELEvent {
-    pub event_id: String,
-    pub event_type: String,
-    pub timestamp: String,
-    pub attributes: Attributes,
-    pub object_refs: Vec<OCELEventObjectRef>,
-}
-
-impl OCELEvent {
-    pub fn new(event_id: String, event_type: String, timestamp: String) -> Self {
-        OCELEvent {
-            event_id,
-            event_type,
-            timestamp,
-            attributes: Attributes::new(),
-            object_refs: Vec::new(),
-        }
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct OCELObject {
-    pub object_id: String,
-    pub object_type: String,
-    pub ovmap: Attributes,
-}
-
-impl OCELObject {
-    pub fn new(object_id: String, object_type: String) -> Self {
-        OCELObject {
-            object_id,
-            object_type,
-            ovmap: Attributes::new(),
-        }
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct OCEL {
-    pub version: String,
-    pub ordering: String,
-    pub objects: Vec<OCELObject>,
+    #[serde(rename = "eventTypes")]
+    pub event_types: Vec<OCELType>,
+    #[serde(rename = "objectTypes")]
+    pub object_types: Vec<OCELType>,
+    #[serde(default)]
     pub events: Vec<OCELEvent>,
-    pub attributes: Attributes,
+    #[serde(default)]
+    pub objects: Vec<OCELObject>,
 }
 
-impl OCEL {
-    pub fn new() -> Self {
-        OCEL {
-            version: "2.0".to_string(),
-            ordering: "timestamp".to_string(),
-            objects: Vec::new(),
-            events: Vec::new(),
-            attributes: Attributes::new(),
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+pub struct OCELType {
+    pub name: String,
+    #[serde(default)]
+    pub attributes: Vec<OCELTypeAttribute>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct OCELTypeAttribute {
+    pub name: String,
+    #[serde(rename = "type")]
+    pub value_type: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct OCELEventAttribute {
+    pub name: String,
+    pub value: OCELAttributeValue,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct OCELEvent {
+    pub id: String,
+    #[serde(rename = "type")]
+    pub event_type: String,
+    pub time: DateTime<FixedOffset>,
+    #[serde(default)]
+    pub attributes: Vec<OCELEventAttribute>,
+    #[serde(default)]
+    pub relationships: Vec<OCELRelationship>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct OCELRelationship {
+    #[serde(rename = "objectId")]
+    pub object_id: String,
+    pub qualifier: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct OCELObject {
+    pub id: String,
+    #[serde(rename = "type")]
+    pub object_type: String,
+    #[serde(default)]
+    pub attributes: Vec<OCELObjectAttribute>,
+    #[serde(default)]
+    pub relationships: Vec<OCELRelationship>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct OCELObjectAttribute {
+    pub name: String,
+    pub value: OCELAttributeValue,
+    pub time: DateTime<FixedOffset>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default)]
+#[serde(untagged)]
+pub enum OCELAttributeValue {
+    Integer(i64),
+    Float(f64),
+    Boolean(bool),
+    Time(DateTime<FixedOffset>),
+    String(String),
+    #[default]
+    Null,
+}
+
+impl Display for OCELAttributeValue {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            OCELAttributeValue::Time(dt) => dt.to_rfc3339(),
+            OCELAttributeValue::Integer(i) => i.to_string(),
+            OCELAttributeValue::Float(f) => f.to_string(),
+            OCELAttributeValue::Boolean(b) => b.to_string(),
+            OCELAttributeValue::String(s) => s.clone(),
+            OCELAttributeValue::Null => String::default(),
+        };
+        write!(f, "{s}")
+    }
+}
+
+impl From<AttributeValue> for OCELAttributeValue {
+    fn from(value: AttributeValue) -> Self {
+        match value {
+            AttributeValue::String(s) => Self::String(s),
+            AttributeValue::Date(date_time) => Self::Time(date_time),
+            AttributeValue::Int(i) => Self::Integer(i),
+            AttributeValue::Float(f) => Self::Float(f),
+            AttributeValue::Boolean(b) => Self::Boolean(b),
+            AttributeValue::ID(uuid) => Self::String(uuid.to_string()),
+            AttributeValue::List(attributes) => Self::String(format!("{:?}", attributes)),
+            AttributeValue::Container(attributes) => Self::String(format!("{:?}", attributes)),
+            AttributeValue::None() => Self::Null,
         }
     }
-
-    pub fn len(&self) -> usize {
-        self.events.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.events.is_empty()
-    }
 }
 
-impl Default for OCEL {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_ocel_creation() {
-        let ocel = OCEL::new();
-        assert_eq!(ocel.version, "2.0");
-        assert!(ocel.is_empty());
+impl From<OCELAttributeValue> for AttributeValue {
+    fn from(value: OCELAttributeValue) -> AttributeValue {
+        match value {
+            OCELAttributeValue::String(s) => AttributeValue::String(s),
+            OCELAttributeValue::Integer(i) => AttributeValue::Int(i),
+            OCELAttributeValue::Float(f) => AttributeValue::Float(f),
+            OCELAttributeValue::Boolean(b) => AttributeValue::Boolean(b),
+            OCELAttributeValue::Time(date_time) => AttributeValue::Date(date_time),
+            OCELAttributeValue::Null => AttributeValue::None(),
+        }
     }
 }

@@ -1,7 +1,9 @@
 import { defineCommand } from 'citty';
-import { getFormatter, JSONFormatter, HumanFormatter } from '../../output.js';
+import { emitResult, makeResult, makeErrorResult } from '../../output.js';
 import { EXIT_CODES } from '../../exit-codes.js';
 import { AgentRegistry } from '@wasm4pm/agents';
+import { withSpanRaw } from '../_otel.js';
+import { exitWithFlush } from '../../otel/exit.js';
 
 export const status = defineCommand({
   meta: {
@@ -20,53 +22,72 @@ export const status = defineCommand({
     },
   },
   async run(ctx) {
-    const formatter = getFormatter({
-      format: ctx.args.format as 'human' | 'json',
-    });
+    return withSpanRaw('wasm4pm.command.agent.status', {
+      command: 'agent', subcommand: 'status',
+      agent: String(ctx.args.agent ?? ''),
+    }, async () => {
+    const t0 = performance.now();
+    const format = (ctx.args.format as 'json' | 'human') ?? 'human';
+    const verbose = false;
+    const quiet = false;
 
     try {
       const registry = new AgentRegistry();
 
-      if (formatter instanceof JSONFormatter) {
-        if (ctx.args.agent) {
-          const agent = registry.getAgent(ctx.args.agent as string);
-          formatter.success('Agent status', agent || { error: 'Agent not found' });
-        } else {
-          formatter.success('Registry summary', registry.getSummary());
-        }
-      } else {
-        if (ctx.args.agent) {
-          const agent = registry.getAgent(ctx.args.agent as string);
-          if (!agent) {
-            formatter.error(`Agent "${ctx.args.agent}" not found`);
-            process.exit(1);
-          }
+      if (ctx.args.agent) {
+        const agentName = ctx.args.agent as string;
+        const agentData = registry.getAgent(agentName);
 
-          formatter.log('');
-          formatter.log(`  Agent: ${agent.config.name}`);
-          formatter.log(`  Description: ${agent.config.description}`);
-          formatter.log(`  Mode: ${agent.config.mode}`);
-          formatter.log(`  Status: ${agent.status}`);
-          formatter.log(`  Version: ${agent.config.version}`);
-          formatter.log(`  Runs: ${agent.total_runs}`);
-          formatter.log(`  Violations: ${agent.total_violations}`);
-          formatter.log(`  Corrections: ${agent.total_corrections}`);
-          formatter.log(`  Last run: ${agent.last_run || 'never'}`);
-          if (agent.last_error) {
-            formatter.log(`  Last error: ${agent.last_error}`);
-          }
-        } else {
-          const summary = registry.getSummary();
-          const agents = registry.listAgents();
-
-          formatter.log('');
-          formatter.log('  Agent Registry Status');
-          formatter.log(
-            `  Total: ${summary.total}  Active: ${summary.active}  Disabled: ${summary.disabled}  Error: ${summary.error}`
+        if (!agentData) {
+          const errResult = makeErrorResult(
+            'agent status',
+            new Error(`Agent "${agentName}" not found`),
+            EXIT_CODES.source_error,
+            'AGENT_NOT_FOUND'
           );
-          formatter.log('');
+          emitResult(errResult, { format, verbose, quiet });
+          return await exitWithFlush(errResult.exit_code);
+        }
 
-          for (const agent of agents) {
+        const result = makeResult(
+          'agent status',
+          { agent: agentData },
+          performance.now() - t0,
+          EXIT_CODES.success
+        );
+        emitResult(result, { format, verbose, quiet }, (res, projection) => {
+          const agent = (res.payload as { agent: typeof agentData }).agent;
+          projection.log('');
+          projection.log(`  Agent: ${agent.config.name}`);
+          projection.log(`  Description: ${agent.config.description}`);
+          projection.log(`  Mode: ${agent.config.mode}`);
+          projection.log(`  Status: ${agent.status}`);
+          projection.log(`  Version: ${agent.config.version}`);
+          projection.log(`  Runs: ${agent.total_runs}`);
+          projection.log(`  Violations: ${agent.total_violations}`);
+          projection.log(`  Corrections: ${agent.total_corrections}`);
+          projection.log(`  Last run: ${agent.last_run || 'never'}`);
+          if (agent.last_error) {
+            projection.log(`  Last error: ${agent.last_error}`);
+          }
+        });
+        return await exitWithFlush(result.exit_code);
+      } else {
+        const summary = registry.getSummary();
+        const agents = registry.listAgents();
+
+        const payload = { summary, agents };
+        const result = makeResult('agent status', payload, performance.now() - t0, EXIT_CODES.success);
+        emitResult(result, { format, verbose, quiet }, (res, projection) => {
+          const p = res.payload as typeof payload;
+          projection.log('');
+          projection.log('  Agent Registry Status');
+          projection.log(
+            `  Total: ${p.summary.total}  Active: ${p.summary.active}  Disabled: ${p.summary.disabled}  Error: ${p.summary.error}`
+          );
+          projection.log('');
+
+          for (const agent of p.agents) {
             const icon =
               agent.status === 'active'
                 ? '+'
@@ -77,22 +98,21 @@ export const status = defineCommand({
                     : '?';
 
             const lastRun = agent.last_run ? new Date(agent.last_run).toLocaleString() : 'never';
-
-            formatter.log(`  ${icon} ${agent.config.name}  (${agent.status})  last: ${lastRun}`);
+            projection.log(`  ${icon} ${agent.config.name}  (${agent.status})  last: ${lastRun}`);
           }
-        }
+        });
+        return await exitWithFlush(result.exit_code);
       }
-
-      process.exit(EXIT_CODES.success);
     } catch (error) {
-      if (formatter instanceof JSONFormatter) {
-        formatter.error('Failed to get status', error);
-      } else {
-        formatter.error(
-          `Failed to get status: ${error instanceof Error ? error.message : String(error)}`
-        );
-      }
-      process.exit(EXIT_CODES.execution_error);
+      const result = makeErrorResult(
+        'agent status',
+        error,
+        EXIT_CODES.execution_error,
+        'AGENT_STATUS_ERROR'
+      );
+      emitResult(result, { format, verbose, quiet });
+      return await exitWithFlush(result.exit_code);
     }
+    });
   },
 });

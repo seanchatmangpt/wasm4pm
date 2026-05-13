@@ -28,43 +28,33 @@ const registry = getRegistry();
 // ─── JTBD-1: Understand what DFG does before recommending it ─────────────────
 
 describe('JTBD-1: I want to understand what DFG does before recommending it to my RevOps team', () => {
-  it('getRegistry().get("dfg") returns non-null metadata', () => {
+  it('getRegistry().get("dfg") returns non-null metadata + dfg metadata has name, speedTier, and qualityTier fields + dfg metadata.outputType is "dfg"', () => {
     const meta = registry.get('dfg');
     expect(meta).toBeDefined();
     expect(meta).not.toBeNull();
-  });
 
-  it('dfg metadata has name, speedTier, and qualityTier fields', () => {
-    const meta = registry.get('dfg')!;
-    expect(typeof meta.name).toBe('string');
-    expect(meta.name.length).toBeGreaterThan(0);
-    expect(typeof meta.speedTier).toBe('number');
-    expect(typeof meta.qualityTier).toBe('number');
-    expect(meta.speedTier).toBeGreaterThanOrEqual(0);
-    expect(meta.qualityTier).toBeGreaterThanOrEqual(0);
-  });
+    expect(typeof meta!.name).toBe('string');
+    expect(meta!.name.length).toBeGreaterThan(0);
+    expect(typeof meta!.speedTier).toBe('number');
+    expect(typeof meta!.qualityTier).toBe('number');
+    expect(meta!.speedTier).toBeGreaterThanOrEqual(0);
+    expect(meta!.qualityTier).toBeGreaterThanOrEqual(0);
 
-  it('dfg metadata.outputType is "dfg"', () => {
-    const meta = registry.get('dfg')!;
-    expect(meta.outputType).toBe('dfg');
+    expect(meta!.outputType).toBe('dfg');
   });
 });
 
 // ─── JTBD-2: Compare algorithm quality scores ─────────────────────────────────
 
 describe('JTBD-2: I want to compare algorithm quality scores to pick the best for a quality-focused analysis', () => {
-  it('genetic_algorithm quality score is greater than dfg quality score', () => {
+  it('genetic_algorithm quality score is greater than dfg quality score + ilp quality score is >= 80 + all registered algorithms have quality score between 0 and 100', () => {
     const dfg = registry.get('dfg')!;
     const genetic = registry.get('genetic_algorithm')!;
     expect(genetic.qualityTier).toBeGreaterThan(dfg.qualityTier);
-  });
 
-  it('ilp quality score is >= 80', () => {
     const ilp = registry.get('ilp')!;
     expect(ilp.qualityTier).toBeGreaterThanOrEqual(80);
-  });
 
-  it('all registered algorithms have quality score between 0 and 100', () => {
     const allAlgos = registry.list();
     expect(allAlgos.length).toBeGreaterThan(0);
     for (const algo of allAlgos) {
@@ -77,22 +67,36 @@ describe('JTBD-2: I want to compare algorithm quality scores to pick the best fo
 // ─── JTBD-3: Understand deployment profile availability ───────────────────────
 
 describe('JTBD-3: I want to understand which algorithms are available for my deployment profile', () => {
-  it('getRegistry().getForDeploymentProfile("browser") returns algorithms', () => {
+  it('getRegistry().getForDeploymentProfile("browser") returns algorithms + getRegistry().getForDeploymentProfile("iot") returns fewer algorithms than browser + faker-generated algorithm name (not real) returns undefined from getRegistry().get()', () => {
     const browserAlgos = registry.getForDeploymentProfile('browser');
     expect(Array.isArray(browserAlgos)).toBe(true);
     expect(browserAlgos.length).toBeGreaterThan(0);
-  });
 
-  it('getRegistry().getForDeploymentProfile("iot") returns fewer algorithms than browser', () => {
-    const browserAlgos = registry.getForDeploymentProfile('browser');
     const iotAlgos = registry.getForDeploymentProfile('iot');
     expect(iotAlgos.length).toBeLessThan(browserAlgos.length);
-  });
 
-  it('faker-generated algorithm name (not real) returns undefined from getRegistry().get()', () => {
     // Generate a name that will never match a real algorithm ID
     const fakeAlgoName = `fake_${faker.hacker.ingverb()}_${faker.hacker.noun()}_algo`.toLowerCase().replace(/[^a-z0-9_]/g, '_');
     const result = registry.get(fakeAlgoName);
     expect(result).toBeUndefined();
+  });
+});
+
+// ─── JTBD-4: Confirm dfg actually produces a graph from a real log ────────────
+
+describe('JTBD-4: I want to confirm dfg actually produces a graph from a real log', () => {
+  it('kernel.run("dfg", handle) returns dfg with non-empty nodes', async () => {
+    const xes = `<?xml version="1.0"?><log><trace><event><string key="concept:name" value="A"/><date key="time:timestamp" value="2024-01-01T00:00:00"/></event><event><string key="concept:name" value="B"/><date key="time:timestamp" value="2024-01-01T00:01:00"/></event><event><string key="concept:name" value="C"/><date key="time:timestamp" value="2024-01-01T00:02:00"/></event></trace></log>`;
+    const wasm = await import('wasm4pm');
+    const handle = (wasm as unknown as { load_eventlog_from_xes: (s: string) => unknown }).load_eventlog_from_xes(xes);
+
+    // Call discover_dfg directly per CLAUDE.md WASM API testing pattern
+    const raw = (wasm as unknown as { discover_dfg: (h: unknown, k: string) => unknown }).discover_dfg(handle, 'concept:name');
+    const result = typeof raw === 'string' ? JSON.parse(raw) : raw;
+
+    // Rank-2 oracle: dfg over A→B→C must contain those activities
+    expect(result).toBeDefined();
+    const nodes = result.nodes ?? Object.keys(result.activities ?? {});
+    expect(nodes.length).toBeGreaterThan(0);
   });
 });

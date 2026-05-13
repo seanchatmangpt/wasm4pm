@@ -1,0 +1,36 @@
+{
+  "intent": "best-recipe",
+  "candidates": [],
+  "facts": [
+    { "key": "ingredient", "value": "flour" },
+    { "key": "ingredient", "value": "egg" },
+    { "key": "prep_time", "value": "5min" }
+  ],
+  "cases": [
+    {
+      "id": "pancakes",
+      "intent": "best-recipe",
+      "architecture": "pancakes",
+      "outcome_score": 0.9,
+      "facts": [
+        { "key": "ingredient", "value": "flour" },
+        { "key": "ingredient", "value": "egg" },
+        { "key": "ingredient", "value": "milk" }
+      ]
+    },
+    {
+      "id": "scones",
+      "intent": "best-recipe",
+      "architecture": "scones",
+      "outcome_score": 0.7,
+      "facts": [
+        { "key": "ingredient", "value": "flour" },
+        { "key": "ingredient", "value": "butter" },
+        { "key": "prep_time", "value": "30min" }
+      ]
+    }
+  ],
+  "rules": [],
+  "goals": [],
+  "state": []
+}

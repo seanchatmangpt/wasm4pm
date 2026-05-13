@@ -7,9 +7,9 @@
 
 **wasm4pm** is a process mining platform with two layers:
 
-1. **Rust/WASM core** (`wasm4pm/` — Cargo workspace member) — 41 algorithms compiled to WebAssembly via wasm-pack. This is the algorithm backend. Users rarely touch it directly.
+1. **Rust/WASM core** (`wasm4pm/` — Cargo workspace member) — 36 algorithms registered in the kernel registry, compiled to WebAssembly via wasm-pack. This is the algorithm backend. Users rarely touch it directly.
 
-2. **TypeScript monorepo** (`packages/` + `apps/`) — 10 packages that wrap, orchestrate, and expose the WASM core via a professional CLI (`wpm` (wasm4pm)), configuration system, observability, contracts, and testing harnesses.
+2. **TypeScript monorepo** (`packages/` + `apps/`) — 11 packages that wrap, orchestrate, and expose the WASM core via a professional CLI (`wpm` (wasm4pm)), configuration system, observability, contracts, and testing harnesses.
 
 The primary entry point for users is **`wpm` (wasm4pm)** (`apps/wasm4pm/`). The primary entry point for developers extending the system is the **`packages/`** monorepo.
 
@@ -45,7 +45,7 @@ wasm4pm/
 │   ├── src/                # Rust sources (discovery.rs, conformance.rs, etc.)
 │   ├── Cargo.toml
 │   └── package.json        # npm package for the compiled WASM
-├── packages/               # TypeScript monorepo (10 packages)
+├── packages/               # TypeScript monorepo (11 packages)
 ├── apps/
 │   └── wasm4pm/              # CLI tool (@wasm4pm/cli)
 ├── lab/                    # Post-publish artifact validation (tests published npm package)
@@ -60,7 +60,7 @@ wasm4pm/
 |---|---|
 | `@wasm4pm/contracts` | Shared types + receipts + errors + plans + hashing + algorithm registry + prediction tasks (leaf package, no deps) |
 | `@wasm4pm/engine` | Engine lifecycle state machine (uninitialized → bootstrapping → ready → planning → running → watching / degraded / failed) |
-| `@wasm4pm/kernel` | WASM facade — 41 registered algorithms, `run(algorithmName, handle, params)`, streaming via `stream()` |
+| `@wasm4pm/kernel` | WASM facade — 36 registered algorithms (per `packages/kernel/src/registry.ts`), `run(algorithmName, handle, params)`, streaming via `stream()` |
 | `@wasm4pm/config` | Zod-validated config, `resolveConfig()`, 5-layer precedence (CLI > TOML > JSON > ENV > defaults), provenance tracking |
 | `@wasm4pm/planner` | `plan(config)` → `ExecutionPlan`, `explain(config)` → string. 4 profiles: fast/balanced/quality/stream |
 | `@wasm4pm/observability` | 3-layer: CLI human output, JSONL machine output, OTEL spans. `Instrumentation.create*Event()` |
@@ -117,7 +117,7 @@ Config file names searched: `wasm4pm.toml`, `wasm4pm.json`
 
 ---
 
-## wasm4pm commands (20 total)
+## wasm4pm commands (29 total — count from `apps/wasm4pm/src/commands/*.ts`)
 
 ### Core
 | Command | Exit codes | Description |
@@ -171,7 +171,7 @@ Auto-saves: discovery and prediction results to `.wasm4pm/results/<timestamp>-<t
 
 ---
 
-## Kernel algorithms (41 registered)
+## Kernel algorithms (36 registered)
 
 From `packages/kernel/src/registry.ts`:
 
@@ -319,7 +319,7 @@ wasm4pm uses **12 canonical feature flags** that map to **5 deployment profiles*
 | `iot` | IoT devices, embedded | ~1MB | basic discovery, conformance | ~12-18 |
 | `edge` | CDN workers, edge servers | ~1.5MB | adv. discovery, basic streaming | ~18-25 |
 | `fog` | Fog computing, gateways | ~2MB | all except POWL, full streaming, ML | ~35-40 |
-| `browser` | Web browsers (DEFAULT) | **2.7MB** (measured) | all 41 algorithms, all features | 41 |
+| `browser` | Web browsers (DEFAULT) | **2.7MB** (measured: 2,752,160 bytes in `wasm4pm/pkg/wasm4pm_bg.wasm`) | all features (36 kernel-registered algorithms; many additional internal WASM exports) | 36 |
 
 ### Build Commands by Profile
 
@@ -456,7 +456,7 @@ wasm4pm/src/agentic/           # Agentic framework (9 traits, 14 modules)
 
 - `WasmLoader` is a **singleton** — call `WasmLoader.reset()` between tests that need a clean state
 - All receipts auto-save to `.wasm4pm/results/` unless `--no-save` is passed
-- ENV var prefix is `WASM4PM_*` (NOT `WASM4PM_*`) — precedence is CLI > file > ENV > defaults
+- ENV var prefix is `WASM4PM_*` (verified in `packages/config/src/resolver.ts`) — precedence is CLI > file > ENV > defaults. Note: an older note in this file claimed "WASM4PM_* (NOT WASM4PM_*)" which was a copy-paste tautology; only one prefix exists.
 - `assertRequiredAttributes()`, `assertValidTraces()`, `assertNonBlocking()` in OtelCapture return `string[]` (violations), not void/throw
 - OTEL span `startTime`/`endTime` are in **nanoseconds** (`Date.now() * 1_000_000`)
 - "bad algorithm" exit code is `SOURCE_ERROR` (2), not `CONFIG_ERROR` (1) — intentional

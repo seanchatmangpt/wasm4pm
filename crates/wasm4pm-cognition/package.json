@@ -1,0 +1,25 @@
+{
+  "name": "@wasm4pm/cognition",
+  "version": "26.4.28",
+  "description": "AutoSystems old-AI cognition kernel for wasm4pm: frames, production rules, Prolog, STRIPS, Hearsay-II blackboard, BLAKE3 receipt chain, adversarial gates",
+  "license": "MIT OR Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/seanchatmangpt/wasm4pm"
+  },
+  "main": "pkg/index.js",
+  "types": "pkg/index.d.ts",
+  "files": [
+    "pkg"
+  ],
+  "scripts": {
+    "build": "wasm-pack build --target bundler --features wasm",
+    "build:nodejs": "wasm-pack build --target nodejs --features wasm",
+    "build:web": "wasm-pack build --target web --features wasm",
+    "build:all": "npm run build && npm run build:nodejs && npm run build:web",
+    "test": "vitest"
+  },
+  "devDependencies": {
+    "wasm-pack": "^1.3.4"
+  }
+}

@@ -21,217 +21,86 @@ describe('Plan Validation', () => {
   });
 
   describe('validatePlan()', () => {
-    it('should accept valid plan', () => {
-      const errors = validatePlan(validPlan);
-      const criticalErrors = errors.filter((e) => e.severity === 'error');
+    it('accepts valid plan and rejects all structural issues', () => {
+      expect(validatePlan(validPlan).filter((e) => e.severity === 'error')).toHaveLength(0);
 
-      expect(criticalErrors).toHaveLength(0);
-    });
+      const nullErrors = validatePlan(null as any);
+      expect(nullErrors.length).toBeGreaterThan(0);
+      expect(nullErrors[0].severity).toBe('error');
 
-    it('should reject null plan', () => {
-      const errors = validatePlan(null as any);
+      expect(validatePlan('plan' as any).length).toBeGreaterThan(0);
 
-      expect(errors.length).toBeGreaterThan(0);
-      expect(errors[0].severity).toBe('error');
-    });
+      const noId = { ...validPlan, id: undefined };
+      expect(validatePlan(noId as any).some((e) => e.path.includes('id'))).toBe(true);
 
-    it('should reject non-object plan', () => {
-      const errors = validatePlan('plan' as any);
+      const noHash = { ...validPlan, hash: undefined };
+      expect(validatePlan(noHash as any).some((e) => e.path.includes('hash'))).toBe(true);
 
-      expect(errors.length).toBeGreaterThan(0);
-    });
+      const badSteps = { ...validPlan, steps: 'not an array' };
+      expect(validatePlan(badSteps as any).some((e) => e.path.includes('steps'))).toBe(true);
 
-    it('should reject plan with missing ID', () => {
-      const badPlan = { ...validPlan, id: undefined };
-      const errors = validatePlan(badPlan as any);
+      const badGraph = { ...validPlan, graph: { nodes: 'invalid', edges: [] } };
+      expect(validatePlan(badGraph as any).some((e) => e.path.includes('graph'))).toBe(true);
 
-      expect(errors.some((e) => e.path.includes('id'))).toBe(true);
-    });
+      const dupSteps = { ...validPlan, steps: [validPlan.steps[0], validPlan.steps[0]] };
+      expect(validatePlan(dupSteps).some((e) => e.message.includes('Duplicate'))).toBe(true);
 
-    it('should reject plan with missing hash', () => {
-      const badPlan = { ...validPlan, hash: undefined };
-      const errors = validatePlan(badPlan as any);
+      const badType = { ...validPlan, steps: [{ ...validPlan.steps[0], type: 'invalid_type' }] };
+      expect(validatePlan(badType).some((e) => e.message.includes('Invalid step type'))).toBe(true);
 
-      expect(errors.some((e) => e.path.includes('hash'))).toBe(true);
-    });
+      const noBootstrap = { ...validPlan, steps: validPlan.steps.filter((s) => s.type !== PlanStepType.BOOTSTRAP) };
+      expect(validatePlan(noBootstrap).some((e) => e.message.includes('bootstrap'))).toBe(true);
 
-    it('should reject plan with invalid steps array', () => {
-      const badPlan = { ...validPlan, steps: 'not an array' };
-      const errors = validatePlan(badPlan as any);
+      const noLoad = { ...validPlan, steps: validPlan.steps.filter((s) => s.type !== PlanStepType.LOAD_SOURCE) };
+      expect(validatePlan(noLoad).some((e) => e.message.includes('load_source'))).toBe(true);
 
-      expect(errors.some((e) => e.path.includes('steps'))).toBe(true);
-    });
+      const noValidate = { ...validPlan, steps: validPlan.steps.filter((s) => s.type !== PlanStepType.VALIDATE_SOURCE) };
+      expect(validatePlan(noValidate).some((e) => e.message.includes('validate_source'))).toBe(true);
 
-    it('should reject plan with invalid graph', () => {
-      const badPlan = { ...validPlan, graph: { nodes: 'invalid', edges: [] } };
-      const errors = validatePlan(badPlan as any);
+      const badDeps = { ...validPlan, steps: [{ ...validPlan.steps[0], dependsOn: ['non_existent_step'] }] };
+      expect(validatePlan(badDeps).some((e) => e.message.includes('Dependency'))).toBe(true);
 
-      expect(errors.some((e) => e.path.includes('graph'))).toBe(true);
-    });
+      const extraNode = { ...validPlan, graph: { ...validPlan.graph, nodes: ['extra_node'] } };
+      expect(validatePlan(extraNode).some((e) => e.message.includes('nodes but plan has'))).toBe(true);
 
-    it('should check for duplicate step IDs', () => {
-      const badPlan = {
-        ...validPlan,
-        steps: [validPlan.steps[0], validPlan.steps[0]],
-      };
-      const errors = validatePlan(badPlan);
+      const missingNode = { ...validPlan, graph: { ...validPlan.graph, nodes: validPlan.graph.nodes.slice(1) } };
+      expect(validatePlan(missingNode).some((e) => e.message.includes('not found in graph'))).toBe(true);
 
-      expect(errors.some((e) => e.message.includes('Duplicate'))).toBe(true);
-    });
+      const negDuration = { ...validPlan, steps: [{ ...validPlan.steps[0], estimatedDurationMs: -100 }] };
+      expect(validatePlan(negDuration).some((e) => e.message.includes('non-negative'))).toBe(true);
 
-    it('should check for undefined step types', () => {
-      const badPlan = {
-        ...validPlan,
-        steps: [{ ...validPlan.steps[0], type: 'invalid_type' }],
-      };
-      const errors = validatePlan(badPlan);
+      const negMemory = { ...validPlan, steps: [{ ...validPlan.steps[0], estimatedMemoryMB: -50 }] };
+      expect(validatePlan(negMemory).some((e) => e.message.includes('non-negative'))).toBe(true);
 
-      expect(errors.some((e) => e.message.includes('Invalid step type'))).toBe(true);
-    });
+      const badProfile = { ...validPlan, profile: 'unknown_profile' };
+      expect(validatePlan(badProfile).some((e) => e.path.includes('profile') && e.severity === 'warning')).toBe(true);
 
-    it('should require bootstrap step', () => {
-      const noBootstrap = {
-        ...validPlan,
-        steps: validPlan.steps.filter((s) => s.type !== PlanStepType.BOOTSTRAP),
-      };
-      const errors = validatePlan(noBootstrap);
+      const emptySourceKind = { ...validPlan, sourceKind: '' };
+      expect(validatePlan(emptySourceKind).some((e) => e.path.includes('sourceKind'))).toBe(true);
 
-      expect(errors.some((e) => e.message.includes('bootstrap'))).toBe(true);
-    });
-
-    it('should require load_source step', () => {
-      const noLoad = {
-        ...validPlan,
-        steps: validPlan.steps.filter((s) => s.type !== PlanStepType.LOAD_SOURCE),
-      };
-      const errors = validatePlan(noLoad);
-
-      expect(errors.some((e) => e.message.includes('load_source'))).toBe(true);
-    });
-
-    it('should require validate_source step', () => {
-      const noValidate = {
-        ...validPlan,
-        steps: validPlan.steps.filter((s) => s.type !== PlanStepType.VALIDATE_SOURCE),
-      };
-      const errors = validatePlan(noValidate);
-
-      expect(errors.some((e) => e.message.includes('validate_source'))).toBe(true);
-    });
-
-    it('should detect invalid dependencies', () => {
-      const badPlan = {
-        ...validPlan,
-        steps: [
-          { ...validPlan.steps[0], dependsOn: ['non_existent_step'] },
-        ],
-      };
-      const errors = validatePlan(badPlan);
-
-      expect(errors.some((e) => e.message.includes('Dependency'))).toBe(true);
-    });
-
-    it('should detect mismatch between steps and graph nodes', () => {
-      const badPlan = {
-        ...validPlan,
-        graph: { ...validPlan.graph, nodes: ['extra_node'] },
-      };
-      const errors = validatePlan(badPlan);
-
-      expect(errors.some((e) => e.message.includes('nodes but plan has'))).toBe(true);
-    });
-
-    it('should detect missing graph nodes for steps', () => {
-      const badPlan = {
-        ...validPlan,
-        graph: {
-          ...validPlan.graph,
-          nodes: validPlan.graph.nodes.slice(1),
-        },
-      };
-      const errors = validatePlan(badPlan);
-
-      expect(errors.some((e) => e.message.includes('not found in graph'))).toBe(true);
-    });
-
-    it('should validate estimated duration is non-negative', () => {
-      const badPlan = {
-        ...validPlan,
-        steps: [
-          { ...validPlan.steps[0], estimatedDurationMs: -100 },
-        ],
-      };
-      const errors = validatePlan(badPlan);
-
-      expect(errors.some((e) => e.message.includes('non-negative'))).toBe(true);
-    });
-
-    it('should validate estimated memory is non-negative', () => {
-      const badPlan = {
-        ...validPlan,
-        steps: [
-          { ...validPlan.steps[0], estimatedMemoryMB: -50 },
-        ],
-      };
-      const errors = validatePlan(badPlan);
-
-      expect(errors.some((e) => e.message.includes('non-negative'))).toBe(true);
-    });
-
-    it('should warn on invalid profile', () => {
-      const badPlan = { ...validPlan, profile: 'unknown_profile' };
-      const errors = validatePlan(badPlan);
-
-      expect(errors.some((e) => e.path.includes('profile') && e.severity === 'warning')).toBe(
-        true
-      );
-    });
-
-    it('should validate sourceKind', () => {
-      const badPlan = { ...validPlan, sourceKind: '' };
-      const errors = validatePlan(badPlan);
-
-      expect(errors.some((e) => e.path.includes('sourceKind'))).toBe(true);
-    });
-
-    it('should validate sinkKind', () => {
-      const badPlan = { ...validPlan, sinkKind: undefined };
-      const errors = validatePlan(badPlan as any);
-
-      expect(errors.some((e) => e.path.includes('sinkKind'))).toBe(true);
+      const noSinkKind = { ...validPlan, sinkKind: undefined };
+      expect(validatePlan(noSinkKind as any).some((e) => e.path.includes('sinkKind'))).toBe(true);
     });
   });
 
   describe('assertPlanValid()', () => {
-    it('should not throw for valid plan', () => {
+    it('does not throw for valid plan, throws for invalid plan with error message, only on critical errors', () => {
       expect(() => assertPlanValid(validPlan)).not.toThrow();
-    });
 
-    it('should throw for invalid plan', () => {
-      const badPlan = { ...validPlan, id: '' };
-
-      expect(() => assertPlanValid(badPlan as any)).toThrow();
-    });
-
-    it('should throw with error message', () => {
-      const badPlan = { ...validPlan, profile: 'invalid' };
+      expect(() => assertPlanValid({ ...validPlan, id: '' } as any)).toThrow();
 
       try {
-        assertPlanValid(badPlan);
+        assertPlanValid({ ...validPlan, profile: 'invalid' });
         expect.fail('Should have thrown');
       } catch (err) {
         expect(err).toBeInstanceOf(Error);
       }
-    });
 
-    it('should only throw on critical errors, not warnings', () => {
-      // A plan with warnings but no errors should not throw
       const plans = [
         plan({ ...testConfig, execution: { profile: 'fast' } }),
         plan({ ...testConfig, execution: { profile: 'balanced' } }),
         plan({ ...testConfig, execution: { profile: 'quality' } }),
       ];
-
       for (const p of plans) {
         expect(() => assertPlanValid(p)).not.toThrow();
       }
@@ -239,41 +108,21 @@ describe('Plan Validation', () => {
   });
 
   describe('ValidationError type', () => {
-    it('should include path in errors', () => {
+    it('includes path, message, severity, and optional suggestion in all errors', () => {
       const badPlan = { ...validPlan, id: '' };
       const errors = validatePlan(badPlan as any);
 
       for (const error of errors) {
         expect(error).toHaveProperty('path');
         expect(typeof error.path).toBe('string');
-      }
-    });
-
-    it('should include message in errors', () => {
-      const badPlan = { ...validPlan, id: '' };
-      const errors = validatePlan(badPlan as any);
-
-      for (const error of errors) {
         expect(error).toHaveProperty('message');
         expect(typeof error.message).toBe('string');
-      }
-    });
-
-    it('should include severity in errors', () => {
-      const badPlan = { ...validPlan, id: '' };
-      const errors = validatePlan(badPlan as any);
-
-      for (const error of errors) {
         expect(error).toHaveProperty('severity');
         expect(['error', 'warning', 'info']).toContain(error.severity);
       }
-    });
 
-    it('should include suggestion when available', () => {
-      const badPlan = { ...validPlan, profile: 'unknown_profile' };
-      const errors = validatePlan(badPlan);
-
-      const warningError = errors.find((e) => e.severity === 'warning');
+      const profileErrors = validatePlan({ ...validPlan, profile: 'unknown_profile' });
+      const warningError = profileErrors.find((e) => e.severity === 'warning');
       expect(warningError).toBeDefined();
       if (warningError && warningError.suggestion) {
         expect(typeof warningError.suggestion).toBe('string');
@@ -282,32 +131,17 @@ describe('Plan Validation', () => {
   });
 
   describe('validatePlan() - Edge cases', () => {
-    it('should handle plan with no optional steps', () => {
-      const errors = validatePlan(validPlan);
-      const criticalErrors = errors.filter((e) => e.severity === 'error');
+    it('handles valid plans with no optional steps, all required steps, and large plans', () => {
+      expect(validatePlan(validPlan).filter((e) => e.severity === 'error')).toHaveLength(0);
 
-      expect(criticalErrors).toHaveLength(0);
-    });
-
-    it('should handle plan with all required steps', () => {
       const allRequired = {
         ...validPlan,
         steps: validPlan.steps.map((s) => ({ ...s, required: true })),
       };
+      expect(validatePlan(allRequired).filter((e) => e.severity === 'error')).toHaveLength(0);
 
-      const errors = validatePlan(allRequired);
-      const criticalErrors = errors.filter((e) => e.severity === 'error');
-
-      expect(criticalErrors).toHaveLength(0);
-    });
-
-    it('should validate large plans', () => {
       const largePlan = plan({ ...testConfig, execution: { profile: 'research' } });
-
-      const errors = validatePlan(largePlan);
-      const criticalErrors = errors.filter((e) => e.severity === 'error');
-
-      expect(criticalErrors).toHaveLength(0);
+      expect(validatePlan(largePlan).filter((e) => e.severity === 'error')).toHaveLength(0);
     });
   });
 });

@@ -54,6 +54,9 @@ fn get_node_info(arena: &PowlArena, idx: u32) -> (String, String, bool) {
         Some(crate::powl_arena::PowlNode::DecisionGraph(_)) => {
             ("DG".to_string(), COLORS[3].to_string(), true)
         }
+        Some(crate::powl_arena::PowlNode::ChoiceGraph(_)) => {
+            ("CG".to_string(), COLORS[3].to_string(), true)
+        }
     }
 }
 
@@ -64,6 +67,15 @@ fn get_children(arena: &PowlArena, idx: u32) -> Vec<u32> {
         Some(crate::powl_arena::PowlNode::OperatorPowl(op)) => op.children.clone(),
         Some(crate::powl_arena::PowlNode::StrictPartialOrder(spo)) => spo.children.clone(),
         Some(crate::powl_arena::PowlNode::DecisionGraph(dg)) => dg.children.clone(),
+        Some(crate::powl_arena::PowlNode::ChoiceGraph(cg)) => cg
+            .graph
+            .nodes
+            .iter()
+            .filter_map(|n| match n {
+                wasm4pm_types::ChoiceGraphNode::SubModel(idx) => Some(*idx),
+                _ => None,
+            })
+            .collect(),
         _ => Vec::new(),
     }
 }

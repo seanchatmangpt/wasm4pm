@@ -50,25 +50,23 @@ fastrand = "2.1.0"
 rand = "0.8"
 rand_distr = "0.4"
 tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["fmt", "registry"] }
-ts-rs = { version = "10.0", features = ["serde-json-impl"] }
 statrs = { version = "0.17", default-features = false, optional = true }
-rayon = { version = "1.10", optional = true }
-wgpu     = { version = "0.19", optional = true }
-pollster = { version = "0.3",  optional = true }
 bcinr = { workspace = true, optional = true }
+blake3 = "1"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-web-sys = { version = "0.3", features = [] }
 uuid = { version = "1.16.0", features = ["v4", "js"] }
 getrandom = { version = "0.2", features = ["js"] }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+tracing-subscriber = { version = "0.3", features = ["fmt", "registry"] }
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
 simd-json = "0.13"
-blake3 = "1"
-naga = { version = "29", features = ["wgsl-in", "spv-out"] }
 lazy_static = "1.4"
+fake = { workspace = true }
+proptest = { workspace = true }
 
 [[bench]]
 name = "fast_algorithms"
@@ -211,15 +209,20 @@ harness = false
 name = "ocel_flattening"
 harness = false
 
+[[bench]]
+name = "cache_efficiency_bench"
+harness = false
+
+[[bench]]
+name = "drift_detection_detailed"
+harness = false
+
 [[example]]
 name = "scalability_report"
 
-[[example]]
-name = "gpu_wgsl_benchmark"
-
 [features]
 # ─────────────────────────────────────────────────────────────────────────────
-# CANONICAL FEATURE FLAGS (NEW)
+# CANONICAL FEATURE FLAGS
 # These are the authoritative semantic features for API stability.
 # Internal features (below) map to these canonical names.
 # ─────────────────────────────────────────────────────────────────────────────
@@ -246,17 +249,11 @@ feature-streaming-basic = ["streaming_basic", "streaming_dfg"]
 # Streaming algorithms (full = SIMD-accelerated)
 feature-streaming-full = ["streaming_full", "streaming_basic", "simd"]
 
-# GPU acceleration (for non-WASM targets)
-feature-gpu = ["gpu", "dep:wgpu", "dep:pollster"]
-
 # Hand-rolled statistics (size optimization)
 feature-hand-rolled-stats = ["hand_rolled_stats"]
 
 # Full-precision statistics (full statrs library)
 feature-statrs = ["statrs", "dep:statrs"]
-
-# Parallel processing (rayon for non-WASM)
-feature-rayon = ["rayon", "dep:rayon"]
 
 # Branchless algorithms (bcinr integration)
 bcinr = ["dep:bcinr"]
@@ -266,12 +263,9 @@ default = ["browser"]
 
 # ─────────────────────────────────────────────────────────────────────────────
 # DEPLOYMENT PROFILES
-# These combine canonical features into preset configurations.
-# Each profile targets a specific deployment target with size constraints.
 # ─────────────────────────────────────────────────────────────────────────────
 
 # Mobile profile (~500KB): Minimal features for mobile devices
-# Includes: basic discovery (DFG, skeleton, heuristic), basic conformance, branchless
 mobile = [
   "feature-conformance-basic",
   "feature-hand-rolled-stats",
@@ -280,7 +274,6 @@ mobile = [
 ]
 
 # IoT profile (~1MB): Minimal features for IoT devices
-# Includes: basic discovery, basic conformance, branchless
 iot = [
   "feature-conformance-basic",
   "feature-hand-rolled-stats",
@@ -290,7 +283,6 @@ iot = [
 ]
 
 # Edge profile (~1.5MB): Advanced algorithms for edge servers (CDN workers)
-# Includes: basic + advanced discovery, basic conformance, basic streaming, bcinr
 edge = [
   "feature-conformance-basic",
   "feature-discovery-advanced",
@@ -302,7 +294,6 @@ edge = [
 ]
 
 # Fog profile (~2MB): Full features except POWL for fog computing
-# Includes: all discovery, full conformance, ML, full streaming, OCEL, bcinr
 fog = [
   "feature-conformance-full",
   "feature-discovery-advanced",
@@ -320,7 +311,6 @@ fog = [
 ]
 
 # Browser profile (~2.78MB): Full feature set for web browsers (DEFAULT)
-# Includes: all discovery, full conformance, ML, full streaming, OCEL, POWL, GPU, bcinr
 browser = [
   "feature-conformance-full",
   "feature-discovery-advanced",
@@ -342,29 +332,19 @@ browser = [
   "console_error_panic_hook"
 ]
 
-# Cloud profile: Deprecated alias for browser profile
+# Cloud profile: deprecated alias for browser profile
 cloud = ["browser"]
 
-# Backward compatibility alias
-compat = ["browser"]
-
 # ─────────────────────────────────────────────────────────────────────────────
-# INTERNAL FEATURE FLAGS (legacy, kept for compatibility)
-# These are used for #[cfg(feature = "...")] module gating in src/*.rs
+# INTERNAL FEATURE FLAGS
+# Used for #[cfg(feature = "...")] module gating in src/*.rs
 # ─────────────────────────────────────────────────────────────────────────────
-
-# pm4wasm Feature Tiers
-pm4wasm_tier1 = ["discovery_basic", "conformance_basic"]
-pm4wasm_tier2 = ["discovery_advanced", "conformance_full"]
-pm4wasm_tier3 = ["discovery_advanced", "conformance_full", "ml", "streaming_full", "ocel", "powl"]
 
 # Discovery algorithms
-discovery_minimal = []  # DFG only (always included)
 discovery_basic = ["alpha_plus_plus", "heuristic_miner", "inductive_miner"]
 discovery_advanced = ["discovery_basic", "genetic", "ilp", "a_star", "aco", "pso", "simulated_annealing"]
-discovery_swarm = ["discovery_advanced"]
 
-# Individual discovery algorithms (empty features for module-level cfg gating)
+# Individual discovery algorithms
 alpha_plus_plus = []
 heuristic_miner = []
 inductive_miner = []
@@ -376,7 +356,7 @@ pso = []
 simulated_annealing = []
 
 # Conformance
-conformance_basic = []  # Token replay, temporal profiles
+conformance_basic = []
 conformance_full = ["conformance_basic", "alignment_fitness", "align_etconformance"]
 
 # ML/Prediction
@@ -392,14 +372,8 @@ ml_pca = []
 streaming_basic = ["streaming_dfg"]
 streaming_full = ["streaming_basic", "simd"]
 streaming_dfg = []
-streaming_skeleton = []
-streaming_heuristic = []
-streaming_inductive = []
 
 # Conformance modules
-token_replay = []
-alignments = []
-diagnostics = []
 alignment_fitness = []
 petri_net_playout = []
 extensive_playout = []
@@ -415,9 +389,3 @@ ocel = []
 hand_rolled_stats = []
 simd = []
 console_error_panic_hook = ["dep:console_error_panic_hook"]
-
-# GPU acceleration
-gpu = []
-
-# Parallel processing
-rayon = ["dep:rayon"]

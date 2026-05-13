@@ -1,17 +1,15 @@
 import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
+import * as fsp from 'node:fs/promises';
 import * as path from 'path';
-import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
-import { EXIT_CODES, type ExitCode } from '../exit-codes.js';
-import { WasmLoader } from '@wasm4pm/engine';
-import type { OutputOptions } from '../output.js';
+import { emitResult, makeResult, makeErrorResult } from '../output.js';
+import { EXIT_CODES } from '../exit-codes.js';
+import { withLogSession } from '../with-log-session.js';
+import { withSpan } from './_otel.js';
+import { saveCommandReceipt, blake3Hex, newReceipt } from '../receipts/_shared.js';
+import { exitWithFlush } from '../otel/exit.js';
 
 const AUTOPROCESS_STATE_FILE = '.wasm4pm/autoprocess-state.json';
-
-export interface AutoProcessOptions extends OutputOptions {
-  'activity-key'?: string;
-  config?: string;
-}
 
 async function ensureStateDir() {
   try {
@@ -19,6 +17,14 @@ async function ensureStateDir() {
     await fs.mkdir(dir, { recursive: true });
   } catch {
     // Directory might already exist
+  }
+}
+
+async function hashStateFile(stateFilePath: string): Promise<string> {
+  try {
+    return blake3Hex(await fsp.readFile(stateFilePath));
+  } catch {
+    return '0'.repeat(64); // cold-start sentinel; documented marker, not FM-5
   }
 }
 
@@ -41,8 +47,8 @@ async function loadState(wasm: any): Promise<void> {
     if (state.circuit_breaker_state) {
       wasm.circuit_breaker_set_state(JSON.stringify(state.circuit_breaker_state));
     }
-  } catch (error) {
-    // File doesn't exist or is invalid - that's okay, we'll start fresh
+  } catch {
+    // File doesn't exist or is invalid - start fresh
   }
 }
 
@@ -61,7 +67,7 @@ async function saveState(wasm: any): Promise<void> {
 
     await ensureStateDir();
     await fs.writeFile(AUTOPROCESS_STATE_FILE, JSON.stringify(fullState, null, 2));
-  } catch (error) {
+  } catch {
     // Silently fail on save - don't block execution
   }
 }
@@ -104,125 +110,158 @@ export const autoprocess = defineCommand({
     },
   },
   async run(ctx) {
-    const formatter = getFormatter({
-      format: ctx.args.format as 'human' | 'json',
-      verbose: ctx.args.verbose,
-      quiet: ctx.args.quiet,
-    });
+    const t0 = performance.now();
+    const format = (ctx.args.format as 'json' | 'human') ?? 'human';
+    const verbose = Boolean(ctx.args.verbose);
+    const quiet = Boolean(ctx.args.quiet);
 
     try {
-      // 1. Load WASM module
-      const loader = WasmLoader.getInstance();
-      await loader.init();
-      const wasm = loader.get();
-
-      // 2. Load persisted state (RL, SPC, circuit breaker)
-      await loadState(wasm);
-
-      // 3. Load XES file
       const inputPath = ctx.args.input as string;
-      const xesContent = await fs.readFile(inputPath, 'utf-8');
-      const logHandle = wasm.load_eventlog_from_xes(xesContent);
+      const stateFilePath = path.resolve(AUTOPROCESS_STATE_FILE);
+      let lateAttrs: Record<string, string | number | boolean> = {};
 
-      // 4. Run AutoProcess cycle
-      const cycleConfig = (ctx.args.config as string) || '{}';
-      const rawResult = wasm.autonomic_execute_cycle(
-        logHandle,
-        ctx.args['activity-key'],
-        cycleConfig
-      );
-      const result = typeof rawResult === 'string' ? JSON.parse(rawResult) : rawResult;
+      await withSpan(
+        'autoprocess',
+        {
+          input: inputPath,
+          activity_key: String(ctx.args['activity-key'] ?? 'concept:name'),
+        },
+        async () =>
+          withLogSession(
+        { inputPath, commandName: 'autoprocess', emitOptions: { format, verbose, quiet } },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        async (wasmBase, logHandle) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const wasm = wasmBase as Record<string, any>;
 
-      // 4. Format output
-      if (formatter instanceof JSONFormatter) {
-        formatter.success('AutoProcess cycle completed', result);
-      } else {
-        const cycle = result.cycle_result;
-        const timing = result.timing;
+        // Capture state-file hash BEFORE load (cold-start sentinel if absent).
+        const initial_state_hash = await hashStateFile(stateFilePath);
 
-        formatter.info('AutoProcess Results');
-        formatter.log('');
+        // 1. Load persisted state (RL, SPC, circuit breaker)
+        await loadState(wasm);
 
-        // Perception
-        formatter.log('  Perception:');
-        formatter.log(`    Events: ${cycle.perception.event_count}`);
-        formatter.log(`    Activities: ${cycle.perception.unique_activities}`);
-        formatter.log(`    Traces: ${cycle.perception.trace_count}`);
-        formatter.log(
-          `    Health: ${cycle.perception.health_state} (score ${cycle.perception.health_score})`
+        // 2. Run AutoProcess cycle
+        const cycleConfig = (ctx.args.config as string) || '{}';
+        const rawResult = wasm.autonomic_execute_cycle(
+          logHandle,
+          ctx.args['activity-key'],
+          cycleConfig
         );
-        formatter.log('');
+        const cycleResult = typeof rawResult === 'string' ? JSON.parse(rawResult) : rawResult;
 
-        // Decision
-        formatter.log('  Decision:');
-        formatter.log(`    Guard: ${cycle.decision.guard_result ? 'PASS' : 'FAIL'}`);
-        formatter.log(
-          `    Pattern: ${cycle.decision.pattern_result} (${cycle.decision.pattern_ticks} ticks)`
-        );
-        formatter.log('');
+        // 3. Save persisted state (RL, SPC, circuit breaker)
+        await saveState(wasm);
 
-        // Protection
-        formatter.log('  Protection:');
-        formatter.log(`    Circuit: ${cycle.protection.circuit_state}`);
-        const spc = cycle.protection.spc_results;
-        if (spc) {
-          const spcEntries = Object.entries(spc);
-          for (const [metric, status] of spcEntries) {
-            const icon = status === 'OK' ? '+' : status === 'ALERT' ? '!' : '-';
-            formatter.log(`    SPC ${metric}: ${icon} ${status}`);
+        // Capture state-file hash AFTER save — chains across invocations.
+        const final_state_hash = await hashStateFile(stateFilePath);
+
+        // Emit single session receipt for this cycle, with state-hash chain.
+        if (!ctx.args['no-save']) {
+          try {
+            const inputBytes = await fsp.readFile(inputPath).catch(() => Buffer.from(inputPath));
+            saveCommandReceipt({
+              ...newReceipt('autoprocess'),
+              command: 'autoprocess',
+              input_hash: blake3Hex(inputBytes),
+              output_hash: blake3Hex(JSON.stringify(cycleResult)),
+              status: cycleResult.success ? 'success' : 'partial',
+              summary: {
+                cycles_run: 1,
+                final_health_level:
+                  (cycleResult.perception?.health_state as string | undefined) ?? 'unknown',
+                total_reward:
+                  (cycleResult.optimization?.reward as number | undefined) ?? 0,
+                spc_alerts_fired:
+                  (cycleResult.protection?.special_causes as unknown[] | undefined)?.length ?? 0,
+                initial_state_hash,
+                final_state_hash,
+              },
+            });
+          } catch {
+            /* receipt write must never break the command */
           }
         }
-        formatter.log(`    Special Causes: ${cycle.protection.special_causes.length}`);
-        formatter.log('');
+
+        lateAttrs = {
+          health_state:
+            (cycleResult.perception?.health_state as string | undefined) ?? 'unknown',
+          rl_action:
+            (cycleResult.optimization?.rl_action as string | undefined) ?? 'none',
+          circuit_state:
+            (cycleResult.protection?.circuit_state as string | undefined) ?? 'unknown',
+          special_causes:
+            (cycleResult.protection?.special_causes as unknown[] | undefined)?.length ?? 0,
+          initial_state_hash,
+          final_state_hash,
+        };
+
+        const result = makeResult('autoprocess', cycleResult, performance.now() - t0, EXIT_CODES.success);
+        emitResult(result, { format, verbose, quiet }, (res, projection) => {
+        const data = res.payload as Record<string, unknown>;
+        const cycle = data.cycle_result as Record<string, unknown>;
+        const timing = data.timing as Record<string, unknown>;
+
+        projection.info('AutoProcess Results');
+        projection.log('');
+
+        // Perception
+        const perception = cycle.perception as Record<string, unknown>;
+        projection.log('  Perception:');
+        projection.log(`    Events: ${perception.event_count}`);
+        projection.log(`    Activities: ${perception.unique_activities}`);
+        projection.log(`    Traces: ${perception.trace_count}`);
+        projection.log(`    Health: ${perception.health_state} (score ${perception.health_score})`);
+        projection.log('');
+
+        // Decision
+        const decision = cycle.decision as Record<string, unknown>;
+        projection.log('  Decision:');
+        projection.log(`    Guard: ${decision.guard_result ? 'PASS' : 'FAIL'}`);
+        projection.log(`    Pattern: ${decision.pattern_result} (${decision.pattern_ticks} ticks)`);
+        projection.log('');
+
+        // Protection
+        const protection = cycle.protection as Record<string, unknown>;
+        projection.log('  Protection:');
+        projection.log(`    Circuit: ${protection.circuit_state}`);
+        const spc = protection.spc_results as Record<string, unknown> | undefined;
+        if (spc) {
+          for (const [metric, status] of Object.entries(spc)) {
+            const icon = status === 'OK' ? '+' : status === 'ALERT' ? '!' : '-';
+            projection.log(`    SPC ${metric}: ${icon} ${status}`);
+          }
+        }
+        projection.log(`    Special Causes: ${(protection.special_causes as unknown[]).length}`);
+        projection.log('');
 
         // Optimization
-        formatter.log('  Optimization:');
-        formatter.log(`    Action: ${cycle.optimization.rl_action}`);
-        formatter.log('');
+        const optimization = cycle.optimization as Record<string, unknown>;
+        projection.log('  Optimization:');
+        projection.log(`    Action: ${optimization.rl_action}`);
+        projection.log('');
 
         // Timing
-        formatter.log('  Timing:');
-        formatter.log(
+        projection.log('  Timing:');
+        projection.log(
           `    Total: ${timing.total_ns} ns (see benchmarks for nanosecond measurements)`
         );
-        formatter.log('');
+        projection.log('');
 
-        // Success indicator
+        // Result
         if (cycle.success) {
-          formatter.log('  Result: Cycle completed successfully');
+          projection.log('  Result: Cycle completed successfully');
         } else {
-          formatter.log('  Result: Cycle completed with warnings');
+          projection.log('  Result: Cycle completed with warnings');
         }
-      }
-
-      // 5. Save persisted state (RL, SPC, circuit breaker)
-      await saveState(wasm);
-
-      // 6. Cleanup
-      wasm.delete_object(logHandle);
-
-      // Use process.exit() to prevent citty from printing help text
-      // The formatter uses synchronous console.log for output that flushes immediately
-      process.exit(EXIT_CODES.success);
+      });
+        return await exitWithFlush(result.exit_code);
+      }),  // end withLogSession
+        () => lateAttrs,
+      );  // end withSpan
     } catch (error) {
-      // Determine correct exit code based on error type
-      let exitCode: ExitCode = EXIT_CODES.execution_error;
-
-      // File not found or read errors are source errors
-      if (error instanceof Error) {
-        if ('code' in error && error.code === 'ENOENT') {
-          exitCode = EXIT_CODES.source_error;
-        }
-      }
-
-      if (formatter instanceof JSONFormatter) {
-        formatter.error('AutoProcess failed', error);
-      } else {
-        formatter.error(
-          `AutoProcess failed: ${error instanceof Error ? error.message : String(error)}`
-        );
-      }
-      process.exit(exitCode);
+      const result = makeErrorResult('autoprocess', error, EXIT_CODES.execution_error);
+      emitResult(result, { format, verbose, quiet });
+      return await exitWithFlush(result.exit_code);
     }
   },
 });

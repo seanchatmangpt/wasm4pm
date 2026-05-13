@@ -4,11 +4,11 @@ import { existsSync, readFileSync, statSync } from 'fs';
 import { execSync } from 'child_process';
 import * as path from 'path';
 import * as os from 'os';
-import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
+import { emitResult, makeResult, makeErrorResult, ConsoleProjection } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
-import type { OutputOptions } from '../output.js';
+import { exitWithFlush } from '../otel/exit.js';
 
-export interface DoctorOptions extends OutputOptions {
+export interface DoctorOptions {
   fix?: boolean;
 }
 
@@ -608,7 +608,7 @@ async function checkGitHooks(): Promise<Diagnosis> {
 // ────────────────────────────────────────────────────────────────────────────
 
 async function checkTypeScriptCompilation(): Promise<Diagnosis> {
-  const rootDir = await resolveWorkspaceRoot();
+  const rootDir = resolveWorkspaceRoot();
   if (!rootDir) {
     return {
       name: 'TypeScript compilation',
@@ -723,7 +723,7 @@ async function checkRustToolchain(): Promise<Diagnosis> {
 // ────────────────────────────────────────────────────────────────────────────
 
 async function checkResultsDir(): Promise<Diagnosis> {
-  const rootDir = await resolveWorkspaceRoot();
+  const rootDir = resolveWorkspaceRoot();
   if (!rootDir) {
     return {
       name: 'Results directory',
@@ -845,7 +845,7 @@ async function checkAlgorithmRegistry(): Promise<Diagnosis> {
 // ────────────────────────────────────────────────────────────────────────────
 
 async function checkWorkspaceIntegrity(): Promise<Diagnosis> {
-  const rootDir = await resolveWorkspaceRoot();
+  const rootDir = resolveWorkspaceRoot();
   if (!rootDir) {
     return {
       name: 'Workspace integrity',
@@ -1524,7 +1524,7 @@ export const ALL_CHECKS = [...ENV_CHECKS, ...TPS_CHECKS];
 // Helpers
 // ────────────────────────────────────────────────────────────────────────────
 
-async function resolveWorkspaceRoot(): Promise<string | null> {
+function resolveWorkspaceRoot(): string | null {
   let dir = process.cwd();
   for (let i = 0; i < 10; i++) {
     if (existsSync(path.join(dir, 'pnpm-workspace.yaml'))) return dir;
@@ -1536,7 +1536,7 @@ async function resolveWorkspaceRoot(): Promise<string | null> {
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// Formatting
+// Formatting helpers (used in ConsoleRenderers and interactive subcommands)
 // ────────────────────────────────────────────────────────────────────────────
 
 const BADGE = {
@@ -1549,24 +1549,24 @@ function renderBadge(severity: Diagnosis['severity']): string {
   return `[${BADGE[severity]}]`;
 }
 
-function printReport(formatter: HumanFormatter, report: DoctorReport): void {
-  formatter.log('');
-  formatter.log('wpm doctor — epistemic diagnostician & autonomic governor');
-  formatter.log('─'.repeat(80));
+function printReportToProjection(p: ConsoleProjection, report: DoctorReport): void {
+  p.log('');
+  p.log('wpm doctor — epistemic diagnostician & autonomic governor');
+  p.log('─'.repeat(80));
 
   let lastSection = '';
   for (const diag of report.diagnoses) {
     const isTps = diag.name.includes('(TPS)');
     const section = isTps ? 'TPS Pipeline & Epistemic Truth' : 'Environment & Deployment Truth';
     if (section !== lastSection) {
-      if (lastSection) formatter.log('');
-      formatter.log(`  ${section}:`);
+      if (lastSection) p.log('');
+      p.log(`  ${section}:`);
       lastSection = section;
     }
 
     const badge = renderBadge(diag.severity);
-    formatter.log(`    ${badge}  ${diag.name} [${diag.pathology || 'UNKNOWN'}]`);
-    formatter.log(`             Diagnosis: ${diag.message}`);
+    p.log(`    ${badge}  ${diag.name} [${diag.pathology || 'UNKNOWN'}]`);
+    p.log(`             Diagnosis: ${diag.message}`);
 
     if (diag.severity !== 'INFO') {
       const fixText = diag.fixGuide || diag.fix;
@@ -1597,53 +1597,54 @@ function printReport(formatter: HumanFormatter, report: DoctorReport): void {
       }
 
       if (inferredRepairMode !== 'MANUAL_INTERVENTION') {
-        formatter.log(`             Repair Mode: ${inferredRepairMode}`);
+        p.log(`             Repair Mode: ${inferredRepairMode}`);
         if (inferredRepairCmd) {
-          formatter.log(`             Smallest Lawful Repair: ${inferredRepairCmd}`);
+          p.log(`             Smallest Lawful Repair: ${inferredRepairCmd}`);
         }
       }
 
       if (fixText) {
-        formatter.log(`             Manual Treatment: ${fixText}`);
+        p.log(`             Manual Treatment: ${fixText}`);
       }
     }
   }
 
-  formatter.log('');
-  formatter.log('─'.repeat(80));
-  formatter.log(
+  p.log('');
+  p.log('─'.repeat(80));
+  p.log(
     `Result: ${report.info} INFO  ${report.warnings} WARNINGS  ${report.stopTheLine} STOP_THE_LINE`
   );
-  formatter.log('');
+  p.log('');
 
   if (report.epistemicHealth) {
-    formatter.success('System is epistemically healthy and operationally ready.');
+    p.success('System is epistemically healthy and operationally ready.');
   } else {
-    formatter.error(
+    p.error(
       'STOP THE LINE: System is epistemically unhealthy or missing critical deployment artifacts.'
     );
   }
-  formatter.log('');
+  p.log('');
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// Shared check runner
+// Shared check runner — builds CommandResult and emits via canonical path
 // ────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Canonical envelope payload shape:
+ * { checks: Diagnosis[], summary: { pass, warn, fail, critical }, healthy: boolean, ...extraFields }
+ * All subcommands using runChecks inherit this shape.
+ */
 async function runChecks(
   checks: Array<() => Promise<Diagnosis>>,
-  format: string,
-  verbose: boolean | undefined,
-  quiet: boolean | undefined,
+  format: 'json' | 'human',
+  verbose: boolean,
+  quiet: boolean,
   extraFields?: Record<string, unknown>,
-  precomputedDiagnoses?: Diagnosis[]
+  precomputedDiagnoses?: Diagnosis[],
+  commandName: string = 'doctor'
 ): Promise<DoctorReport> {
-  const formatter = getFormatter({
-    format: format as 'human' | 'json',
-    verbose,
-    quiet,
-  });
-
+  const start = Date.now();
   const diagnoses: Diagnosis[] =
     precomputedDiagnoses ?? (await Promise.all(checks.map((fn) => fn())));
 
@@ -1655,38 +1656,30 @@ async function runChecks(
     epistemicHealth: diagnoses.every((c) => c.severity !== 'STOP_THE_LINE'),
   };
 
-  if (formatter instanceof JSONFormatter) {
-    const checksPayload = report.diagnoses.map((c) => ({ ...c }));
-    const summaryPayload = {
-      pass: report.info,
-      warn: report.warnings,
-      fail: report.stopTheLine,
-      critical: report.stopTheLine,
-    };
-    if (report.epistemicHealth) {
-      formatter.success('wpm environment is healthy', {
-        checks: checksPayload,
-        summary: summaryPayload,
-        healthy: true,
-        ...extraFields,
-      });
-    } else {
-      formatter.warn('wpm environment has issues', {
-        checks: checksPayload,
-        summary: summaryPayload,
-        healthy: false,
-        ...extraFields,
-      });
-    }
-  } else {
-    printReport(formatter as HumanFormatter, report);
-  }
+  const checksPayload = report.diagnoses.map((c) => ({ ...c }));
+  const summaryPayload = {
+    pass: report.info,
+    warn: report.warnings,
+    fail: report.stopTheLine,
+    critical: report.stopTheLine,
+  };
 
-  if (!report.epistemicHealth) {
-    process.exitCode = EXIT_CODES.config_error;
-  }
+  const payload = {
+    checks: checksPayload,
+    summary: summaryPayload,
+    healthy: report.epistemicHealth,
+    ...extraFields,
+  };
 
-  return report;
+  const exitCode = report.epistemicHealth ? EXIT_CODES.success : EXIT_CODES.config_error;
+  const result = makeResult(commandName, payload, Date.now() - start, exitCode);
+
+  emitResult(result, { format, verbose, quiet }, (_res, p) => {
+    printReportToProjection(p, report);
+  });
+
+  // Exit immediately to prevent parent main.run() from emitting trailing help text.
+  return await exitWithFlush(exitCode);
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -1734,6 +1727,10 @@ export const doctorCheck = defineCommand({
     },
   },
   async run(ctx) {
+    const format = (ctx.args.format as 'json' | 'human') ?? 'human';
+    const verbose = Boolean(ctx.args.verbose);
+    const quiet = Boolean(ctx.args.quiet);
+
     let checksToRun = ALL_CHECKS;
 
     if (ctx.args.checks) {
@@ -1744,12 +1741,7 @@ export const doctorCheck = defineCommand({
       }
     }
 
-    await runChecks(
-      checksToRun,
-      (ctx.args.format as string) ?? 'human',
-      ctx.args.verbose,
-      ctx.args.quiet
-    );
+    await runChecks(checksToRun, format, verbose, quiet, undefined, undefined, 'doctor check');
   },
 });
 
@@ -1780,16 +1772,11 @@ export const doctorEnv = defineCommand({
     },
   },
   async run(ctx) {
-    const fmt = (ctx.args.format as string) ?? 'human';
+    const format = (ctx.args.format as 'json' | 'human') ?? 'human';
+    const verbose = Boolean(ctx.args.verbose);
+    const quiet = Boolean(ctx.args.quiet);
     const diagnoses = await Promise.all(ENV_CHECKS.map((fn) => fn()));
-    await runChecks(
-      ENV_CHECKS,
-      fmt,
-      ctx.args.verbose,
-      ctx.args.quiet,
-      { environment: diagnoses },
-      diagnoses
-    );
+    await runChecks(ENV_CHECKS, format, verbose, quiet, { environment: diagnoses }, diagnoses, 'doctor env');
   },
 });
 
@@ -1824,15 +1811,12 @@ export const doctorTps = defineCommand({
     },
   },
   async run(ctx) {
+    const format = (ctx.args.format as 'json' | 'human') ?? 'human';
+    const verbose = Boolean(ctx.args.verbose);
+    const quiet = Boolean(ctx.args.quiet);
     const failFast = ctx.args['fail-fast'] as boolean | undefined;
 
     if (failFast) {
-      const formatter = getFormatter({
-        format: (ctx.args.format as 'human' | 'json') ?? 'human',
-        verbose: ctx.args.verbose,
-        quiet: ctx.args.quiet,
-      });
-
       for (const fn of TPS_CHECKS) {
         const diag = await fn();
         if (diag.severity === 'STOP_THE_LINE') {
@@ -1843,30 +1827,24 @@ export const doctorTps = defineCommand({
             stopTheLine: 1,
             epistemicHealth: false,
           };
-          if (formatter instanceof JSONFormatter) {
-            formatter.warn('TPS check failed', { ...report, healthy: false });
-          } else {
-            printReport(formatter as HumanFormatter, report);
-          }
+          const result = makeErrorResult(
+            'doctor tps',
+            new Error(diag.message),
+            EXIT_CODES.config_error,
+            'TPS_CHECK_FAILED'
+          );
+          emitResult(result, { format, verbose, quiet }, (_res, proj) => {
+            printReportToProjection(proj, report);
+          });
           process.exitCode = EXIT_CODES.config_error;
           return;
         }
       }
 
       // All passed — run full report
-      await runChecks(
-        TPS_CHECKS,
-        (ctx.args.format as string) ?? 'human',
-        ctx.args.verbose,
-        ctx.args.quiet
-      );
+      await runChecks(TPS_CHECKS, format, verbose, quiet, undefined, undefined, 'doctor tps');
     } else {
-      await runChecks(
-        TPS_CHECKS,
-        (ctx.args.format as string) ?? 'human',
-        ctx.args.verbose,
-        ctx.args.quiet
-      );
+      await runChecks(TPS_CHECKS, format, verbose, quiet, undefined, undefined, 'doctor tps');
     }
   },
 });
@@ -1907,15 +1885,12 @@ export const doctorFix = defineCommand({
     },
   },
   async run(ctx) {
+    const start = Date.now();
+    const format = (ctx.args.format as 'json' | 'human') ?? 'human';
+    const verbose = Boolean(ctx.args.verbose);
+    const quiet = Boolean(ctx.args.quiet);
     const dryRun = ctx.args['dry-run'] as boolean | undefined;
     const yes = ctx.args.yes as boolean | undefined;
-    const fmt = (ctx.args.format as string) ?? 'human';
-
-    const formatter = getFormatter({
-      format: fmt as 'human' | 'json',
-      verbose: ctx.args.verbose,
-      quiet: ctx.args.quiet,
-    });
 
     // Run all checks first
     const diagnoses: Diagnosis[] = await Promise.all(ALL_CHECKS.map((fn) => fn()));
@@ -1925,47 +1900,61 @@ export const doctorFix = defineCommand({
       (d) => d.severity !== 'INFO' && d.fix && isAutoExecutable(d.fix)
     );
 
-    if (!(formatter instanceof JSONFormatter)) {
-      const hf = formatter as HumanFormatter;
-      hf.log('');
-      hf.log(`wpm doctor fix — found ${fixable.length} auto-fixable issue(s)`);
-      hf.log('─'.repeat(80));
+    if (format !== 'json') {
+      const p = new ConsoleProjection({ verbose, quiet });
+      p.log('');
+      p.log(`wpm doctor fix — found ${fixable.length} auto-fixable issue(s)`);
+      p.log('─'.repeat(80));
 
       for (const d of diagnoses) {
         const badge = renderBadge(d.severity);
-        hf.log(`  ${badge}  ${d.name}: ${d.message}`);
+        p.log(`  ${badge}  ${d.name}: ${d.message}`);
         if (d.severity !== 'INFO' && d.fix) {
           if (isAutoExecutable(d.fix)) {
-            hf.log(`         → Auto-fix: ${d.fix}`);
+            p.log(`         → Auto-fix: ${d.fix}`);
           } else {
-            hf.log(`         → Manual fix: ${d.fix}`);
+            p.log(`         → Manual fix: ${d.fix}`);
           }
         }
       }
 
-      hf.log('');
+      p.log('');
 
       if (fixable.length === 0) {
-        hf.log('No auto-fixable issues found.');
-        return;
+        p.log(dryRun
+          ? 'Dry-run: no auto-fixable issues found — nothing would be executed.'
+          : 'No auto-fixable issues found.');
+        const noFixablePayload = { dry_run: Boolean(dryRun), fixable: [], unfixable: [], no_fixable: true };
+        emitResult(makeResult('doctor fix', noFixablePayload, Date.now() - start, EXIT_CODES.success), { format, verbose, quiet });
+        return await exitWithFlush(0);
       }
 
       if (dryRun) {
-        hf.log(`Dry-run mode — would execute ${fixable.length} fix command(s):`);
+        p.log(`Dry-run mode — would execute ${fixable.length} fix command(s):`);
         for (const d of fixable) {
-          hf.log(`  $ ${d.fix}`);
+          p.log(`  $ ${d.fix}`);
         }
-        hf.log('');
-        return;
+        p.log('');
+        const dryRunPayload = {
+          dry_run: true,
+          fixable: fixable.map((d) => d.fix),
+          unfixable: diagnoses
+            .filter((d) => d.severity !== 'INFO' && d.fix && !isAutoExecutable(d.fix))
+            .map((d) => d.fix),
+        };
+        emitResult(makeResult('doctor fix', dryRunPayload, Date.now() - start, EXIT_CODES.success), { format, verbose, quiet });
+        return await exitWithFlush(0);
       }
 
       if (!yes) {
         // Simple confirmation (no readline — just skip if stdin is not a tty)
-        hf.log(`Run ${fixable.length} fix command(s)? [y/N]`);
+        p.log(`Run ${fixable.length} fix command(s)? [y/N]`);
         // In non-interactive mode, skip
         if (!process.stdin.isTTY) {
-          hf.log('Skipping — stdin is not a TTY. Use --yes to force.');
-          return;
+          p.log('Skipping — stdin is not a TTY. Use --yes to force.');
+          const skipPayload = { dry_run: false, skipped: true, reason: 'non-tty', fixable_count: fixable.length };
+          emitResult(makeResult('doctor fix', skipPayload, Date.now() - start, EXIT_CODES.success), { format, verbose, quiet });
+          return await exitWithFlush(0);
         }
         // Read one line
         const answer = await new Promise<string>((resolve) => {
@@ -1973,37 +1962,42 @@ export const doctorFix = defineCommand({
           process.stdin.once('data', (chunk) => resolve(String(chunk).trim()));
         });
         if (answer.toLowerCase() !== 'y') {
-          hf.log('Aborted.');
-          return;
+          p.log('Aborted.');
+          const abortPayload = { dry_run: false, skipped: true, reason: 'user-aborted', fixable_count: fixable.length };
+          emitResult(makeResult('doctor fix', abortPayload, Date.now() - start, EXIT_CODES.success), { format, verbose, quiet });
+          return await exitWithFlush(0);
         }
       }
 
       // Execute fixes
       for (const d of fixable) {
-        hf.log(`  $ ${d.fix}`);
+        p.log(`  $ ${d.fix}`);
         try {
           execSync(d.fix!, { stdio: 'inherit' });
         } catch (err) {
-          hf.log(`  ✗ Failed: ${err instanceof Error ? err.message : String(err)}`);
+          p.log(`  ✗ Failed: ${err instanceof Error ? err.message : String(err)}`);
         }
       }
 
       // Re-run all checks after fixes
-      hf.log('');
-      hf.log('Re-running checks after fixes...');
+      p.log('');
+      p.log('Re-running checks after fixes...');
     }
 
     // Final check run — skip if dry-run (already returned above for human formatter)
     if (!dryRun) {
-      await runChecks(ALL_CHECKS, fmt, ctx.args.verbose, ctx.args.quiet);
-    } else if (formatter instanceof JSONFormatter) {
-      formatter.success('Dry-run: fix commands preview', {
+      await runChecks(ALL_CHECKS, format, verbose, quiet, undefined, undefined, 'doctor fix');
+    } else if (format === 'json') {
+      const payload = {
         dry_run: true,
         fixable: fixable.map((d) => d.fix),
         unfixable: diagnoses
           .filter((d) => d.severity !== 'INFO' && d.fix && !isAutoExecutable(d.fix))
           .map((d) => d.fix),
-      });
+      };
+      const result = makeResult('doctor fix', payload, Date.now() - start);
+      emitResult(result, { format, verbose, quiet });
+      return await exitWithFlush(0);
     }
   },
 });
@@ -2062,23 +2056,20 @@ export const doctorPerf = defineCommand({
     },
   },
   async run(ctx) {
-    const fmt = (ctx.args.format as string) ?? 'human';
+    const format = (ctx.args.format as 'json' | 'human') ?? 'human';
+    const verbose = Boolean(ctx.args.verbose);
+    const quiet = Boolean(ctx.args.quiet);
     const updateBaseline = ctx.args['update-baseline'] as boolean | undefined;
     const thresholdPct = parseInt((ctx.args.threshold as string) ?? '20', 10);
     const yes = ctx.args.yes as boolean | undefined;
-
-    const formatter = getFormatter({
-      format: fmt as 'human' | 'json',
-      verbose: ctx.args.verbose,
-      quiet: ctx.args.quiet,
-    });
+    const start = Date.now();
 
     // Find the baseline file
     const baselinePaths = [
       path.join(process.cwd(), 'packages/kernel/performance_baseline.json'),
     ];
 
-    const rootDir = await resolveWorkspaceRoot();
+    const rootDir = resolveWorkspaceRoot();
     if (rootDir) {
       baselinePaths.unshift(path.join(rootDir, 'packages/kernel/performance_baseline.json'));
     }
@@ -2100,19 +2091,19 @@ export const doctorPerf = defineCommand({
     }
 
     if (!baseline || !baselinePath) {
-      if (formatter instanceof JSONFormatter) {
-        formatter.success('No baseline file found — no regressions to report', {
-          regressions: [],
-          within_threshold: [],
-        });
-      } else {
-        (formatter as HumanFormatter).log('');
-        (formatter as HumanFormatter).log(
+      const result = makeResult(
+        'doctor perf',
+        { regressions: [], within_threshold: [] },
+        Date.now() - start
+      );
+      emitResult(result, { format, verbose, quiet }, (_res, p) => {
+        p.log('');
+        p.log(
           'Performance baseline file not found (packages/kernel/performance_baseline.json)'
         );
-        (formatter as HumanFormatter).log('Run from within the wasm4pm workspace.');
-      }
-      return;
+        p.log('Run from within the wasm4pm workspace.');
+      });
+      return await exitWithFlush(EXIT_CODES.success);
     }
 
     // Synthetic WASM stub — measures TypeScript dispatch overhead only (no real WASM needed)
@@ -2139,11 +2130,11 @@ export const doctorPerf = defineCommand({
       const n = entry.n;
       const ceiling = entry.ceiling_ms;
 
-      const start = Date.now();
+      const runStart = Date.now();
       for (let i = 0; i < n; i++) {
         syntheticDfgRun(`handle-${i}`, 'concept:name');
       }
-      const measured = Date.now() - start;
+      const measured = Date.now() - runStart;
 
       const overPct = ((measured - ceiling) / ceiling) * 100;
       const status: 'OK' | 'REGRESSION' =
@@ -2152,22 +2143,23 @@ export const doctorPerf = defineCommand({
       results.push({ scenario: scenarioKey, measured_ms: measured, ceiling_ms: ceiling, status });
     }
 
-    if (formatter instanceof JSONFormatter) {
-      const allOk = results.every((r) => r.status === 'OK');
-      const regressions = results.filter((r) => r.status === 'REGRESSION');
-      const within_threshold = results.filter((r) => r.status === 'OK');
-      if (allOk) {
-        formatter.success('Performance baseline check passed', { results, regressions, within_threshold });
-      } else {
-        formatter.warn('Performance regression detected', { results, regressions, within_threshold });
-        process.exitCode = EXIT_CODES.config_error;
-      }
-    } else {
-      const hf = formatter as HumanFormatter;
-      hf.log('');
-      hf.log('wpm doctor perf — performance baseline comparison');
-      hf.log('─'.repeat(80));
-      hf.log('');
+    const allOk = results.every((r) => r.status === 'OK');
+    const regressions = results.filter((r) => r.status === 'REGRESSION');
+    const within_threshold = results.filter((r) => r.status === 'OK');
+
+    const exitCode = allOk ? EXIT_CODES.success : EXIT_CODES.config_error;
+    const perfResult = makeResult(
+      'doctor perf',
+      { results, regressions, within_threshold },
+      Date.now() - start,
+      exitCode
+    );
+
+    emitResult(perfResult, { format, verbose, quiet }, (_res, p) => {
+      p.log('');
+      p.log('wpm doctor perf — performance baseline comparison');
+      p.log('─'.repeat(80));
+      p.log('');
 
       const colWidths = { scenario: 22, measured: 12, ceiling: 10, status: 12 };
       const header =
@@ -2175,8 +2167,8 @@ export const doctorPerf = defineCommand({
         'Measured'.padEnd(colWidths.measured) +
         'Ceiling'.padEnd(colWidths.ceiling) +
         'Status';
-      hf.log(`  ${header}`);
-      hf.log('  ' + '─'.repeat(header.length));
+      p.log(`  ${header}`);
+      p.log('  ' + '─'.repeat(header.length));
 
       for (const r of results) {
         const row =
@@ -2184,27 +2176,28 @@ export const doctorPerf = defineCommand({
           `${r.measured_ms}ms`.padEnd(colWidths.measured) +
           `${r.ceiling_ms}ms`.padEnd(colWidths.ceiling) +
           (r.status === 'OK' ? '✓ OK' : '✗ REGRESSION');
-        hf.log(`  ${row}`);
+        p.log(`  ${row}`);
       }
 
-      hf.log('');
+      p.log('');
 
-      const regressions = results.filter((r) => r.status === 'REGRESSION');
       if (regressions.length === 0) {
-        hf.success('All performance checks within ceiling.');
+        p.success('All performance checks within ceiling.');
       } else {
-        hf.error(`${regressions.length} regression(s) detected (>${thresholdPct}% over ceiling).`);
-        process.exitCode = EXIT_CODES.config_error;
+        p.error(`${regressions.length} regression(s) detected (>${thresholdPct}% over ceiling).`);
       }
+    });
+
+    if (!allOk) {
+      process.exitCode = EXIT_CODES.config_error;
     }
 
     // Update baseline if requested
     if (updateBaseline && baselinePath) {
       let proceed = yes;
       if (!proceed && process.stdin.isTTY) {
-        (formatter as HumanFormatter).log(
-          `\nUpdate baseline at ${baselinePath}? [y/N]`
-        );
+        const p = new ConsoleProjection({ verbose, quiet });
+        p.log(`\nUpdate baseline at ${baselinePath}? [y/N]`);
         proceed = await new Promise<boolean>((resolve) => {
           process.stdin.setEncoding('utf8');
           process.stdin.once('data', (chunk) => resolve(String(chunk).trim().toLowerCase() === 'y'));
@@ -2222,11 +2215,13 @@ export const doctorPerf = defineCommand({
           baseline._updated = new Date().toISOString().slice(0, 10);
         }
         await fs.writeFile(baselinePath, JSON.stringify(baseline, null, 2) + '\n', 'utf-8');
-        if (!(formatter instanceof JSONFormatter)) {
-          (formatter as HumanFormatter).log(`Updated baseline: ${baselinePath}`);
+        if (format !== 'json') {
+          const p = new ConsoleProjection({ verbose, quiet });
+          p.log(`Updated baseline: ${baselinePath}`);
         }
       }
     }
+    return await exitWithFlush(allOk ? EXIT_CODES.success : EXIT_CODES.config_error);
   },
 });
 
@@ -2266,24 +2261,26 @@ export const doctorWatch = defineCommand({
     },
   },
   async run(ctx) {
-    const fmt = (ctx.args.format as string) ?? 'human';
+    const start = Date.now();
+    const format = (ctx.args.format as 'json' | 'human') ?? 'human';
+    const verbose = Boolean(ctx.args.verbose);
+    const quiet = Boolean(ctx.args.quiet);
     const onFail = ctx.args['on-fail'] as string | undefined;
     let intervalSec = parseInt((ctx.args.interval as string) ?? '30', 10);
 
-    const formatter = getFormatter({
-      format: fmt as 'human' | 'json',
-      verbose: ctx.args.verbose,
-      quiet: ctx.args.quiet,
-    });
+    const p = new ConsoleProjection({ verbose, quiet });
 
     if (intervalSec < 5) {
-      if (!(formatter instanceof JSONFormatter)) {
-        (formatter as HumanFormatter).log(
-          `Warning: --interval ${intervalSec} is below minimum (5). Using 5.`
-        );
+      if (format !== 'json') {
+        p.log(`Warning: --interval ${intervalSec} is below minimum (5). Using 5.`);
       }
       intervalSec = 5;
     }
+
+    emitResult(
+      makeResult('doctor watch', { status: 'watching', interval_sec: intervalSec }, 0, EXIT_CODES.success),
+      { format, verbose, quiet }
+    );
 
     let prevResults: Map<string, Severity> = new Map();
     let iteration = 0;
@@ -2309,8 +2306,8 @@ export const doctorWatch = defineCommand({
           stopTheLine: diagnoses.filter((d) => d.severity === 'STOP_THE_LINE').length,
           epistemicHealth: diagnoses.every((d) => d.severity !== 'STOP_THE_LINE'),
         };
-        if (!(formatter instanceof JSONFormatter)) {
-          printReport(formatter as HumanFormatter, report);
+        if (format !== 'json') {
+          printReportToProjection(p, report);
         }
       } else {
         // Only print changes
@@ -2331,22 +2328,19 @@ export const doctorWatch = defineCommand({
         }
 
         if (changes.length === 0) {
-          if (!(formatter instanceof JSONFormatter)) {
+          if (format !== 'json') {
             const now = new Date();
             const ts = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
-            (formatter as HumanFormatter).log(
-              `[${ts}] ✓ ${passing}/${total} checks passing`
-            );
+            p.log(`[${ts}] ✓ ${passing}/${total} checks passing`);
           }
         } else {
-          if (!(formatter instanceof JSONFormatter)) {
-            const hf = formatter as HumanFormatter;
-            hf.log('');
-            hf.log(`[CHANGED] ${changes.length} check(s) changed status:`);
+          if (format !== 'json') {
+            p.log('');
+            p.log(`[CHANGED] ${changes.length} check(s) changed status:`);
             for (const d of changes) {
               const prev = prevResults.get(d.name) ?? 'unknown';
-              hf.log(`  ${d.name}: ${prev} → ${d.severity}`);
-              if (d.fix) hf.log(`    fix: ${d.fix}`);
+              p.log(`  ${d.name}: ${prev} → ${d.severity}`);
+              if (d.fix) p.log(`    fix: ${d.fix}`);
             }
           }
         }
@@ -2382,11 +2376,20 @@ export const doctorWatch = defineCommand({
     }
 
     // Final summary on exit
-    if (!(formatter instanceof JSONFormatter)) {
-      const hf = formatter as HumanFormatter;
-      hf.log('');
-      hf.log(`wpm doctor watch stopped after ${iteration} iteration(s).`);
+    if (format !== 'json') {
+      p.log('');
+      p.log(`wpm doctor watch stopped after ${iteration} iteration(s).`);
     }
+
+    emitResult(
+      makeResult(
+        'doctor watch',
+        { iterations: iteration, stopped: true, status: 'stopped' },
+        Date.now() - start,
+        EXIT_CODES.success
+      ),
+      { format, verbose, quiet }
+    );
   },
 });
 
@@ -2425,15 +2428,13 @@ export const doctorReport = defineCommand({
     },
   },
   async run(ctx) {
+    const start = Date.now();
     const reportFormat = ((ctx.args.format as string) ?? 'json').toLowerCase();
     const openAfter = ctx.args.open as boolean | undefined;
+    const verbose = Boolean(ctx.args.verbose);
+    const quiet = Boolean(ctx.args.quiet);
 
-    const formatter = getFormatter({
-      format: 'human',
-      verbose: ctx.args.verbose,
-      quiet: ctx.args.quiet,
-    });
-    const hf = formatter as HumanFormatter;
+    const p = new ConsoleProjection({ verbose, quiet });
 
     const diagnoses = await Promise.all(ALL_CHECKS.map((fn) => fn()));
 
@@ -2480,9 +2481,9 @@ export const doctorReport = defineCommand({
       await fs.writeFile(outPath, JSON.stringify(reportData, null, 2) + '\n', 'utf-8');
     }
 
-    hf.log('');
-    hf.log(`Report written to: ${outPath}`);
-    hf.log(
+    p.log('');
+    p.log(`Report written to: ${outPath}`);
+    p.log(
       `Summary: ${summary.pass} pass, ${summary.warn} warn, ${summary.fail} fail`
     );
 
@@ -2496,9 +2497,18 @@ export const doctorReport = defineCommand({
       try {
         execSync(openCmd, { stdio: 'ignore' });
       } catch {
-        hf.log(`Could not open ${outPath} automatically.`);
+        p.log(`Could not open ${outPath} automatically.`);
       }
     }
+
+    const result = makeResult(
+      'doctor report',
+      { report_path: outPath, summary, format: reportFormat },
+      Date.now() - start,
+      EXIT_CODES.success
+    );
+    emitResult(result, { format: 'human', verbose, quiet });
+    return await exitWithFlush(0);
   },
 });
 
@@ -2590,7 +2600,7 @@ interface PublishCheck {
   message: string;
 }
 
-async function runPublishChecks(rootDir: string): Promise<PublishCheck[]> {
+function runPublishChecks(rootDir: string): PublishCheck[] {
   const checks: PublishCheck[] = [];
 
   // 1. Versions — all package.json must match CalVer /^\d+\.\d+\.\d+[a-z]?$/
@@ -2783,15 +2793,12 @@ export const doctorPublish = defineCommand({
     },
   },
   async run(ctx) {
-    const fmt = (ctx.args.format as string) ?? 'human';
+    const format = (ctx.args.format as 'json' | 'human') ?? 'human';
+    const verbose = Boolean(ctx.args.verbose);
+    const quiet = Boolean(ctx.args.quiet);
     const doPublish = ctx.args.publish as boolean | undefined;
     const yes = ctx.args.yes as boolean | undefined;
-
-    const formatter = getFormatter({
-      format: fmt as 'human' | 'json',
-      verbose: ctx.args.verbose,
-      quiet: ctx.args.quiet,
-    });
+    const start = Date.now();
 
     // Run core checks first
     const diagnoses = await Promise.all(ALL_CHECKS.map((fn) => fn()));
@@ -2804,58 +2811,53 @@ export const doctorPublish = defineCommand({
     };
 
     // Run publish-specific checks
-    const rootDir = await resolveWorkspaceRoot();
+    const rootDir = resolveWorkspaceRoot();
     let publishChecks: PublishCheck[] = [];
     if (rootDir) {
-      publishChecks = await runPublishChecks(rootDir);
+      publishChecks = runPublishChecks(rootDir);
     }
 
     const publishReady =
       coreReport.epistemicHealth && publishChecks.every((c) => c.status !== 'fail');
 
-    if (formatter instanceof JSONFormatter) {
-      if (publishReady) {
-        formatter.success('Ready to publish', {
-          coreReport,
-          publishChecks,
-          publishReady,
-          ready: publishReady,
-        });
-      } else {
-        formatter.warn('Not ready to publish', {
-          coreReport,
-          publishChecks,
-          publishReady,
-          ready: publishReady,
-        });
-        process.exitCode = EXIT_CODES.config_error;
-      }
-    } else {
-      const hf = formatter as HumanFormatter;
-      printReport(hf, coreReport);
+    const payload = {
+      coreReport,
+      publishChecks,
+      publishReady,
+      ready: publishReady,
+    };
 
-      hf.log('');
-      hf.log('Publish readiness checks:');
-      hf.log('─'.repeat(80));
+    const exitCode = publishReady ? EXIT_CODES.success : EXIT_CODES.config_error;
+    const result = makeResult('doctor publish', payload, Date.now() - start, exitCode);
+
+    emitResult(result, { format, verbose, quiet }, (_res, p) => {
+      printReportToProjection(p, coreReport);
+
+      p.log('');
+      p.log('Publish readiness checks:');
+      p.log('─'.repeat(80));
       for (const c of publishChecks) {
         const icon = c.status === 'pass' ? '✓' : c.status === 'warn' ? '⚠' : '✗';
-        hf.log(`  ${icon}  ${c.name}: ${c.message}`);
+        p.log(`  ${icon}  ${c.name}: ${c.message}`);
       }
-      hf.log('');
+      p.log('');
 
       if (publishReady) {
-        hf.success('Package is ready to publish.');
+        p.success('Package is ready to publish.');
       } else {
-        hf.error('Package is NOT ready to publish. Fix issues above.');
-        process.exitCode = EXIT_CODES.config_error;
-        return;
+        p.error('Package is NOT ready to publish. Fix issues above.');
       }
+    });
+
+    if (!publishReady) {
+      return await exitWithFlush(EXIT_CODES.config_error);
     }
 
     if (doPublish && publishReady) {
       let proceed = yes;
-      if (!proceed && !(formatter instanceof JSONFormatter) && process.stdin.isTTY) {
-        (formatter as HumanFormatter).log('\nRun pnpm -r publish --access public? [y/N]');
+      if (!proceed && format !== 'json' && process.stdin.isTTY) {
+        const p = new ConsoleProjection({ verbose, quiet });
+        p.log('\nRun pnpm -r publish --access public? [y/N]');
         proceed = await new Promise<boolean>((resolve) => {
           process.stdin.setEncoding('utf8');
           process.stdin.once('data', (chunk) => resolve(String(chunk).trim().toLowerCase() === 'y'));
@@ -2867,6 +2869,7 @@ export const doctorPublish = defineCommand({
         execSync(`pnpm -r publish --access public${registryFlag}`, { stdio: 'inherit' });
       }
     }
+    return await exitWithFlush(EXIT_CODES.success);
   },
 });
 

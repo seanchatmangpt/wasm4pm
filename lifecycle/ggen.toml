@@ -1,0 +1,70 @@
+[project]
+name = "wasm4pm-lifecycle"
+version = "0.1.0"
+description = "Complete RDF-driven lifecycle for wasm4pm × unrdf integration. Spec→Generate→Test→Deploy→Monitor→Improve→Spec."
+
+[ontology]
+source = "schema/domain.ttl"
+
+[[inference.rules]]
+name = "normalize"
+description = "Pass-through normalization to satisfy DMAIC measurement gates"
+construct = "CONSTRUCT { ?s ?p ?o } WHERE { ?s ?p ?o . FILTER(false) }"
+order = 1
+
+[generation]
+output_dir = "."
+
+# ─── Rust types ──────────────────────────────────────────────────────────────
+
+[[generation.rules]]
+name = "stages"
+description = "Generate LifecycleStage enum from RDF lifecycle stages"
+query = { file = "queries/extract-stages.rq" }
+template = { file = "templates/stages.rs.tera" }
+output_file = "src/stages.rs"
+mode = "Overwrite"
+
+[[generation.rules]]
+name = "transitions"
+description = "Generate valid stage transition table from RDF"
+query = { file = "queries/extract-transitions.rq" }
+template = { file = "templates/transitions.rs.tera" }
+output_file = "src/transitions.rs"
+mode = "Overwrite"
+
+[[generation.rules]]
+name = "algorithms"
+description = "Generate algorithm-to-stage mapping from RDF"
+query = { file = "queries/extract-algorithm-map.rq" }
+template = { file = "templates/algorithms.rs.tera" }
+output_file = "src/algorithms.rs"
+mode = "Overwrite"
+
+# ─── ESM / JavaScript ────────────────────────────────────────────────────────
+
+[[generation.rules]]
+name = "generated-stages-mjs"
+description = "Generate ESM stage constants (mirrors Rust stages.rs)"
+query = { file = "queries/extract-stages.rq" }
+template = { file = "templates/generated-stages.mjs.tera" }
+output_file = "ts/src/generated-stages.mjs"
+mode = "Overwrite"
+
+[[generation.rules]]
+name = "generated-algorithms-mjs"
+description = "Generate ESM algorithm assignment constants (mirrors Rust algorithms.rs)"
+query = { file = "queries/extract-algorithm-map.rq" }
+template = { file = "templates/generated-algorithms.mjs.tera" }
+output_file = "ts/src/generated-algorithms.mjs"
+mode = "Overwrite"
+
+# ─── Documentation ───────────────────────────────────────────────────────────
+
+[[generation.rules]]
+name = "lifecycle-doc"
+description = "Generate lifecycle reference doc from RDF"
+query = { file = "queries/extract-stages.rq" }
+template = { file = "templates/LIFECYCLE.md.tera" }
+output_file = "docs/LIFECYCLE.md"
+mode = "Overwrite"

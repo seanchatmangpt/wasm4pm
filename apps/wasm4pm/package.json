@@ -1,6 +1,6 @@
 {
   "name": "@wasm4pm/cli",
-  "version": "26.4.23",
+  "version": "26.5.13",
   "description": "wasm4pm — High-performance WASM-powered process mining CLI",
   "type": "module",
   "bin": {
@@ -23,11 +23,13 @@
     "dev": "tsc --watch",
     "test": "vitest run",
     "test:watch": "vitest",
+    "bench": "vitest bench --run",
     "lint": "tsc --noEmit",
     "clean": "rm -rf dist"
   },
   "dependencies": {
     "@wasm4pm/agents": "workspace:*",
+    "@wasm4pm/cognition": "workspace:*",
     "@wasm4pm/config": "workspace:*",
     "@wasm4pm/contracts": "workspace:*",
     "@wasm4pm/engine": "workspace:*",
@@ -36,6 +38,7 @@
     "@wasm4pm/observability": "workspace:^",
     "@wasm4pm/planner": "workspace:*",
     "@wasm4pm/swarm": "workspace:*",
+    "wasm4pm": "workspace:*",
     "chokidar": "^4.0.1",
     "citty": "^0.1.6",
     "consola": "^3.2.3"

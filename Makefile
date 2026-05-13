@@ -14,20 +14,28 @@ export RAYON_NUM_THREADS := $(JOBS)
 .PHONY: bench bench-rust bench-wasm bench-data bench-ci bench-quick \
         bench-save-baseline bench-compare bench-regression bench-trends clean-bench \
         build-profile build-browser build-edge build-fog build-iot build-cloud \
-        verify-profiles help doctor lint test verify check-debt
+        verify-profiles help doctor lint test verify check-debt \
+        cognition-build cognition-verify cognition-doctor cognition-dod cognition-cycle \
+        cognition-no-stub-gate cognition-examples cognition-smoke
 
 # ── Definition of Done (DoD) Verification ─────────────────────────────────────
 # Consolidated target: test, lint, and quick benchmark smoke-test
 verify: test lint bench-quick check-debt
 	@echo "✅ DoD Verification Complete: Code passes all automated checks."
 
+verify-wasm: verify
+verify-ts: verify
+
 # ── Technical Debt Check ──────────────────────────────────────────────────────
 # Fails if any TODO, FIXME, or functional placeholder markers are found in production source.
+# Whitelist-only: scans .rs / .ts / .tsx (canonical first-party sources).
+# Gate scripts (*.sh) and support files (.toml/.yaml/.json) are infrastructure
+# and frequently contain marker strings as scan patterns, not as debt.
 check-debt:
 	@echo "Checking for technical debt markers..."
 	@if grep -rE "TODO|FIXME|//\s*placeholder" packages/ crates/ src/ wasm4pm/src/ \
-		--exclude-dir={node_modules,target,pkg,dist,examples,docs} \
-		--exclude="*.d.ts" --exclude="*.md" --exclude="*.bak*" --exclude="*.backup*" --exclude="*.js" --exclude="*.py" --exclude="*.txt" | \
+		--include="*.rs" --include="*.ts" --include="*.tsx" \
+		--exclude-dir={node_modules,target,pkg,dist,examples,docs} | \
 		grep -vE "placeholder=\"|details: '.*placeholder'|//\s*TODO: footprint|//\s*TODO: Succession"; then \
 		echo "❌ ERROR: Technical debt markers found in production code. Please resolve them."; \
 		exit 1; \
@@ -207,7 +215,31 @@ clean-bench:
 # ── Environment & Development ─────────────────────────────────────────────────
 doctor:
 	@cd apps/wasm4pm && pnpm run build > /dev/null 2>&1
-	@node apps/wasm4pm/dist/bin/wpm.js doctor --format json 2>&1 | awk '/^{/,/^}/ {print}'
+	@node apps/wasm4pm/dist/bin/wpm.js doctor check --format json 2>&1
+
+# ── Cognition Layer Targets ──────────────────────────────────────────────────
+# Build, verify, diagnose, and cycle the wasm4pm-cognition layer.
+# Architecture diagrams: #11 (Phase 1), #12 (Pipeline), #19 (Doctor),
+#                        #25 (Verify Gate), #34-35 (Replay), #39 (DoD).
+
+cognition-build:
+	@echo "=== Cognition Build ==="
+	cd crates/wasm4pm-cognition && cargo make build-all
+	@if [ -f packages/cognition/package.json ]; then cd packages/cognition && pnpm build; fi
+	@if [ -f apps/wasm4pm/package.json ]; then cd apps/wasm4pm && pnpm build; fi
+
+cognition-verify:
+	@echo "=== Cognition Verify Gate (V1-V8) ==="
+	cd crates/wasm4pm-cognition && cargo make verify
+
+cognition-doctor:
+	@bash crates/wasm4pm-cognition/scripts/cognition-doctor.sh
+
+cognition-dod:
+	@bash crates/wasm4pm-cognition/scripts/cognition-dod-checklist.sh
+
+cognition-cycle:
+	@bash crates/wasm4pm-cognition/scripts/cognition-replay-cycle.sh
 
 help:
 	@echo "╔═══════════════════════════════════════════════════════════════════════════╗"
@@ -241,3 +273,20 @@ help:
 	@echo "Cleanup & Diagnostics:"
 	@echo "  make clean-bench        — Remove result files and criterion cache"
 	@echo "  make doctor             — Run environment diagnostics"
+	@echo ""
+	@echo "Cognition Layer (diagrams #11,#12,#19,#25,#34-35,#39):"
+	@echo "  make cognition-build    — Full build: Rust + wasm-pack + TS facade + CLI"
+	@echo "  make cognition-verify   — Full verify: type-check + tests + anti-fraud + adversarial (V1-V8)"
+	@echo "  make cognition-doctor   — Capability probe: 9-check registry vs runtime truth"
+	@echo "  make cognition-dod      — Definition of Done: 10-item checklist"
+	@echo "  make cognition-cycle    — Replay cycle: run -> receipt -> replay -> verify (determinism)"
+
+# ── Anti-fraud + examples (DX layer) ──────────────────────────────────────────
+cognition-no-stub-gate:
+	@bash scripts/cognition-no-stub-scan.sh --quick
+
+cognition-examples:
+	@cd examples/cognition && bash run-all.sh
+
+cognition-smoke:
+	@bash scripts/cognition-smoke.sh

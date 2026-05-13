@@ -1,0 +1,28 @@
+{
+  "intent": "diagnosis",
+  "candidates": [],
+  "facts": [
+    { "key": "organism", "value": "gram_positive_cocci" },
+    { "key": "organism", "value": "strep" },
+    { "key": "site", "value": "throat" }
+  ],
+  "cases": [],
+  "rules": [
+    {
+      "id": "r1",
+      "premise": ["organism=gram_positive_cocci", "organism=strep"],
+      "conclusion": "diagnosis=strep_infection",
+      "certainty": 0.7
+    },
+    {
+      "id": "r2",
+      "premise": ["diagnosis=strep_infection"],
+      "conclusion": "antibiotic=penicillin",
+      "certainty": 0.95
+    }
+  ],
+  "goals": [
+    { "id": "g1", "predicate": "antibiotic", "value": "penicillin" }
+  ],
+  "state": []
+}

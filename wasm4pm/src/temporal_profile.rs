@@ -1,4 +1,4 @@
-use crate::models::{parse_timestamp_ms, AttributeValue, TemporalProfile};
+use crate::models::{parse_timestamp_ms, AttributeValue, EventLog, TemporalProfile};
 use crate::state::{get_or_init_state, StoredObject};
 use serde_json::json;
 /// Priority 4 — Temporal profile discovery and conformance.
@@ -8,6 +8,61 @@ use serde_json::json;
 /// Conformance checking flags edges whose observed duration deviates more than
 /// `zeta` standard deviations from the mean.
 use wasm_bindgen::prelude::*;
+
+/// Pure-Rust temporal profile discovery without wasm-bindgen. Used by integration tests.
+pub fn discover_temporal_profile_from_log(
+    log: &EventLog,
+    activity_key: &str,
+    timestamp_key: &str,
+) -> TemporalProfile {
+    let mut acc: std::collections::HashMap<(String, String), (f64, f64, usize)> =
+        std::collections::HashMap::new();
+
+    for trace in &log.traces {
+        let pairs: Vec<(String, Option<i64>)> = trace
+            .events
+            .iter()
+            .filter_map(|e| {
+                let act = e
+                    .attributes
+                    .get(activity_key)
+                    .and_then(|v| v.as_string())
+                    .map(str::to_owned)?;
+                let ts = e.attributes.get(timestamp_key).and_then(|v| {
+                    if let AttributeValue::Date(s) = v {
+                        parse_timestamp_ms(s)
+                    } else {
+                        None
+                    }
+                });
+                Some((act, ts))
+            })
+            .collect();
+
+        for i in 0..pairs.len().saturating_sub(1) {
+            if let (Some(t1), Some(t2)) = (pairs[i].1, pairs[i + 1].1) {
+                if t2 >= t1 {
+                    let dur = (t2 - t1) as f64;
+                    let key = (pairs[i].0.clone(), pairs[i + 1].0.clone());
+                    let e = acc.entry(key).or_insert((0.0, 0.0, 0));
+                    e.0 += dur;
+                    e.1 += dur * dur;
+                    e.2 += 1;
+                }
+            }
+        }
+    }
+
+    let mut pairs_map = std::collections::HashMap::new();
+    for ((a, b), (sum, sum_sq, cnt)) in acc {
+        let mean = sum / cnt as f64;
+        let variance = (sum_sq / cnt as f64) - mean * mean;
+        let stdev = variance.max(0.0).sqrt();
+        pairs_map.insert((a, b), (mean, stdev, cnt));
+    }
+
+    TemporalProfile { pairs: pairs_map }
+}
 
 /// Discover a temporal profile from an event log.
 ///
@@ -24,62 +79,12 @@ pub fn discover_temporal_profile(
     activity_key: &str,
     timestamp_key: &str,
 ) -> Result<JsValue, JsValue> {
-    let profile = get_or_init_state().with_object(log_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
-            // Accumulate (sum, sum_sq, count) per (A, B) pair
-            let mut acc: std::collections::HashMap<(String, String), (f64, f64, usize)> =
-                std::collections::HashMap::new();
-
-            for trace in &log.traces {
-                let pairs: Vec<(String, Option<i64>)> = trace
-                    .events
-                    .iter()
-                    .filter_map(|e| {
-                        let act = e
-                            .attributes
-                            .get(activity_key)
-                            .and_then(|v| v.as_string())
-                            .map(str::to_owned)?;
-                        let ts = e.attributes.get(timestamp_key).and_then(|v| {
-                            if let AttributeValue::Date(s) = v {
-                                parse_timestamp_ms(s)
-                            } else {
-                                None
-                            }
-                        });
-                        Some((act, ts))
-                    })
-                    .collect();
-
-                for i in 0..pairs.len().saturating_sub(1) {
-                    if let (Some(t1), Some(t2)) = (pairs[i].1, pairs[i + 1].1) {
-                        if t2 >= t1 {
-                            let dur = (t2 - t1) as f64;
-                            let key = (pairs[i].0.clone(), pairs[i + 1].0.clone());
-                            let e = acc.entry(key).or_insert((0.0, 0.0, 0));
-                            e.0 += dur;
-                            e.1 += dur * dur;
-                            e.2 += 1;
-                        }
-                    }
-                }
-            }
-
-            // Convert to (mean, stdev) pairs
-            let mut pairs_map = std::collections::HashMap::new();
-            for ((a, b), (sum, sum_sq, cnt)) in acc {
-                let mean = sum / cnt as f64;
-                let variance = (sum_sq / cnt as f64) - mean * mean;
-                let stdev = variance.max(0.0).sqrt();
-                pairs_map.insert((a, b), (mean, stdev, cnt));
-            }
-
-            Ok(TemporalProfile { pairs: pairs_map })
-        }
+    let log = get_or_init_state().with_object(log_handle, |obj| match obj {
+        Some(StoredObject::EventLog(log)) => Ok(log.clone()),
         Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
         None => Err(crate::error::js_val("EventLog handle not found")),
     })?;
-
+    let profile = discover_temporal_profile_from_log(&log, activity_key, timestamp_key);
     let handle = get_or_init_state().store_object(StoredObject::TemporalProfile(profile))?;
     Ok(crate::error::js_val(&handle))
 }

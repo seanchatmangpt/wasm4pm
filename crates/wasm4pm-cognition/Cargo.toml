@@ -1,0 +1,43 @@
+[package]
+name = "wasm4pm-cognition"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "AutoSystems old-AI cognition kernel for wasm4pm: frames, production rules, Prolog, STRIPS, Hearsay-II blackboard, BLAKE3 receipt chain, adversarial gates"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+blake3 = { workspace = true }
+smallvec = { workspace = true }
+lazy_static = "1.4"
+indexmap = { version = "2.2", features = ["serde"] }
+once_cell = "1.19"
+hex = "0.4"
+regex = "1.10"
+prolog8 = { path = "../prolog8" }
+ed25519-dalek = { version = "2.1", default-features = false, features = ["rand_core"], optional = true }
+rand_core = { version = "0.6", default-features = false, optional = true }
+
+# wasm bindings — gated behind a feature so the crate can be tested
+# natively with `cargo test` while still building as cdylib for browsers.
+wasm-bindgen = { version = "0.2.92", optional = true }
+serde-wasm-bindgen = { version = "0.6", optional = true }
+js-sys = { version = "0.3", optional = true }
+
+[features]
+default = ["actor-ed25519"]
+wasm = ["dep:wasm-bindgen", "dep:serde-wasm-bindgen", "dep:js-sys"]
+actor-ed25519 = ["dep:ed25519-dalek", "dep:rand_core"]
+actor-mac-fallback = []
+
+[dev-dependencies]
+serde_json = { workspace = true }
+proptest = { workspace = true }
+trybuild = "1.0"
+

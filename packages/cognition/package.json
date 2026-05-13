@@ -1,0 +1,57 @@
+{
+  "name": "@wasm4pm/cognition",
+  "version": "26.5.13",
+  "description": "Old-AI cognition kernel for AutoSystems: frames, rules, constraints, search, scoring, verify, receipt, contract",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./contract": {
+      "import": "./dist/contract/run.js",
+      "types": "./dist/contract/run.d.ts"
+    },
+    "./adversarial": {
+      "import": "./dist/adversarial/catalogue.js",
+      "types": "./dist/adversarial/catalogue.d.ts"
+    },
+    "./receipt": {
+      "import": "./dist/receipt/chain.js",
+      "types": "./dist/receipt/chain.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest --watch",
+    "test:coverage": "vitest --coverage",
+    "lint": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@wasm4pm/contracts": "workspace:*",
+    "wasm4pm-cognition": "file:../../crates/wasm4pm-cognition/pkg"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@vitest/coverage-v8": "^1.6.0",
+    "typescript": "^5.3.3",
+    "vitest": "^1.1.0"
+  },
+  "keywords": [
+    "old-ai",
+    "cognition",
+    "autosystems",
+    "manufacturing",
+    "process-mining"
+  ],
+  "author": "Sean Chatman",
+  "license": "SEE LICENSE IN LICENSE"
+}

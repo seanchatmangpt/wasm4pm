@@ -526,7 +526,7 @@ const output = await kernel.implementAlgorithmStep(
 ```typescript
 const output = await kernel.implementAlgorithmStep(
   {
-    type: PlanStepType.DISCOVER_A_STAR, // TODO: Add DISCOVER_HILL_CLIMBING
+    type: PlanStepType.DISCOVER_A_STAR,
     parameters: {
       activity_key: 'concept:name',
       max_iterations: 100

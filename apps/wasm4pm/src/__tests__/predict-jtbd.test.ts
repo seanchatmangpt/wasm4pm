@@ -230,21 +230,15 @@ beforeAll(async () => {
 // ─── JTBD-1: Next Activity ────────────────────────────────────────────────────
 
 describe('JTBD-1: I want to predict the next activity so I can proactively assign the right resource', () => {
-  it('build_ngram_predictor + predict_next_activity returns a non-empty array', () => {
-    const predictorHandle = wasm.build_ngram_predictor(logHandle, ACTIVITY_KEY, 2) as string;
-    const candidates = parse(wasm.predict_next_activity(predictorHandle, JSON.stringify([V.leadCreated])));
-    wasm.delete_object(predictorHandle);
-
-    expect(Array.isArray(candidates)).toBe(true);
-    expect((candidates as unknown as unknown[]).length).toBeGreaterThan(0);
-  });
-
-  it('every candidate prediction has activity (string) and probability (0–1)', () => {
+  it('build_ngram_predictor + predict_next_activity returns a non-empty array + every candidate prediction has activity (string) and probability (0–1) + top prediction for the start activity is a valid known activity from the vocab', () => {
+    const knownActivities = new Set(Object.values(V).filter((v) => !v.startsWith('sdr') && !v.startsWith('ae') && !v.startsWith('mgr') && !v.startsWith('legal')));
     const predictorHandle = wasm.build_ngram_predictor(logHandle, ACTIVITY_KEY, 2) as string;
     const candidates = parse(wasm.predict_next_activity(predictorHandle, JSON.stringify([V.leadCreated]))) as unknown as Array<{activity: string; probability: number}>;
     wasm.delete_object(predictorHandle);
 
     expect(Array.isArray(candidates)).toBe(true);
+    expect((candidates as unknown as unknown[]).length).toBeGreaterThan(0);
+
     for (const candidate of candidates) {
       expect(typeof candidate.activity).toBe('string');
       expect(candidate.activity.length).toBeGreaterThan(0);
@@ -252,13 +246,6 @@ describe('JTBD-1: I want to predict the next activity so I can proactively assig
       expect(candidate.probability).toBeGreaterThanOrEqual(0);
       expect(candidate.probability).toBeLessThanOrEqual(1);
     }
-  });
-
-  it('top prediction for the start activity is a valid known activity from the vocab', () => {
-    const knownActivities = new Set(Object.values(V).filter((v) => !v.startsWith('sdr') && !v.startsWith('ae') && !v.startsWith('mgr') && !v.startsWith('legal')));
-    const predictorHandle = wasm.build_ngram_predictor(logHandle, ACTIVITY_KEY, 2) as string;
-    const candidates = parse(wasm.predict_next_activity(predictorHandle, JSON.stringify([V.leadCreated]))) as unknown as Array<{activity: string; probability: number}>;
-    wasm.delete_object(predictorHandle);
 
     expect(candidates.length).toBeGreaterThan(0);
     const topActivity = candidates[0].activity;
@@ -269,31 +256,19 @@ describe('JTBD-1: I want to predict the next activity so I can proactively assig
 // ─── JTBD-2: Remaining Time ───────────────────────────────────────────────────
 
 describe('JTBD-2: I want to estimate remaining time so I can set accurate SLA expectations', () => {
-  it('build_remaining_time_model + predict_case_duration returns predicted_remaining_ms >= 0', () => {
+  it('build_remaining_time_model + predict_case_duration returns predicted_remaining_ms >= 0 + predict_case_duration result has a non-empty method field + prediction for a longer prefix (3 activities) has a different or equal remaining_ms vs prefix of 1 activity', () => {
     const modelHandle = wasm.build_remaining_time_model(logHandle, ACTIVITY_KEY, 'time:timestamp') as string;
     const result = parse(
       wasm.predict_case_duration(modelHandle, JSON.stringify([V.leadCreated]))
     );
-    wasm.delete_object(modelHandle);
 
     const remaining = result['remaining_ms'] as number;
     expect(typeof remaining).toBe('number');
     expect(remaining).toBeGreaterThanOrEqual(0);
-  });
-
-  it('predict_case_duration result has a non-empty method field', () => {
-    const modelHandle = wasm.build_remaining_time_model(logHandle, ACTIVITY_KEY, 'time:timestamp') as string;
-    const result = parse(
-      wasm.predict_case_duration(modelHandle, JSON.stringify([V.leadCreated]))
-    );
-    wasm.delete_object(modelHandle);
 
     expect(typeof result['method']).toBe('string');
     expect((result['method'] as string).length).toBeGreaterThan(0);
-  });
 
-  it('prediction for a longer prefix (3 activities) has a different or equal remaining_ms vs prefix of 1 activity', () => {
-    const modelHandle = wasm.build_remaining_time_model(logHandle, ACTIVITY_KEY, 'time:timestamp') as string;
     const shortPrediction = parse(
       wasm.predict_case_duration(modelHandle, JSON.stringify([V.leadCreated]))
     );
@@ -318,96 +293,71 @@ describe('JTBD-2: I want to estimate remaining time so I can set accurate SLA ex
 // ─── JTBD-3: Outcome Prediction ───────────────────────────────────────────────
 
 describe('JTBD-3: I want to predict deal outcome to prioritize sales effort', () => {
-  it('score_anomaly returns score in [0, 1]', () => {
+  it('score_anomaly returns score in [0, 1] + score_anomaly result has an is_anomalous boolean field + score_log_anomalies returns an array (may be empty if no anomalies detected)', () => {
     const dfgHandle = wasm.discover_dfg_handle(logHandle, ACTIVITY_KEY) as string;
     const result = parse(
       wasm.score_anomaly(dfgHandle, JSON.stringify([V.leadCreated, V.leadQualified]))
     );
-    wasm.delete_object(dfgHandle);
 
     const score = result['score'] as number;
     expect(typeof score).toBe('number');
     expect(score).toBeGreaterThanOrEqual(0);
     expect(score).toBeLessThanOrEqual(1);
-  });
-
-  it('score_anomaly result has an is_anomalous boolean field', () => {
-    const dfgHandle = wasm.discover_dfg_handle(logHandle, ACTIVITY_KEY) as string;
-    const result = parse(
-      wasm.score_anomaly(dfgHandle, JSON.stringify([V.leadCreated, V.leadQualified]))
-    );
-    wasm.delete_object(dfgHandle);
 
     expect(typeof result['is_anomalous']).toBe('boolean');
-  });
 
-  it('score_log_anomalies returns an array (may be empty if no anomalies detected)', () => {
-    const dfgHandle = wasm.discover_dfg_handle(logHandle, ACTIVITY_KEY) as string;
-    const result = parse(wasm.score_log_anomalies(logHandle, dfgHandle, ACTIVITY_KEY));
+    const logAnomalies = parse(wasm.score_log_anomalies(logHandle, dfgHandle, ACTIVITY_KEY));
     wasm.delete_object(dfgHandle);
 
-    expect(Array.isArray(result)).toBe(true);
+    expect(Array.isArray(logAnomalies)).toBe(true);
   });
 });
 
 // ─── JTBD-4: Drift Detection ──────────────────────────────────────────────────
 
 describe('JTBD-4: I want to detect when our sales process is drifting from the standard', () => {
-  it('detect_drift result has a drifts array field', () => {
+  it('detect_drift result has a drifts array field + detect_drift drifts array length is >= 0 (non-negative) + detect_drift with a larger window (window=50) still returns valid parseable JSON without crashing', () => {
     const result = parse(wasm.detect_drift(logHandle, ACTIVITY_KEY, 2));
 
     expect(result).toHaveProperty('drifts');
     expect(Array.isArray(result['drifts'])).toBe(true);
-  });
-
-  it('detect_drift drifts array length is >= 0 (non-negative)', () => {
-    const result = parse(wasm.detect_drift(logHandle, ACTIVITY_KEY, 2));
 
     const drifts = result['drifts'] as unknown[];
     expect(drifts.length).toBeGreaterThanOrEqual(0);
-  });
 
-  it('detect_drift with a larger window (window=50) still returns valid parseable JSON without crashing', () => {
     let threw = false;
-    let result: Record<string, unknown> | null = null;
+    let largeResult: Record<string, unknown> | null = null;
     try {
-      result = parse(wasm.detect_drift(logHandle, ACTIVITY_KEY, 50));
+      largeResult = parse(wasm.detect_drift(logHandle, ACTIVITY_KEY, 50));
     } catch {
       threw = true;
     }
 
     expect(threw).toBe(false);
-    expect(result).not.toBeNull();
-    expect(result).toHaveProperty('drifts');
+    expect(largeResult).not.toBeNull();
+    expect(largeResult).toHaveProperty('drifts');
   });
 });
 
 // ─── JTBD-5: Feature Extraction ───────────────────────────────────────────────
 
 describe('JTBD-5: I want to extract features from partial cases to feed into ML models', () => {
-  it('extract_prefix_features_wasm returns features with prefix_length (length) field = 2', () => {
+  it('extract_prefix_features_wasm returns features with prefix_length (length) field = 2 + extract_prefix_features_wasm returns distinct_activities (unique_activities) field >= 1 + build_transition_probabilities returns edges array with at least one entry for the start activity', () => {
     const prefix = [V.leadCreated, V.leadQualified];
     const result = parse(wasm.extract_prefix_features_wasm(JSON.stringify(prefix)));
 
     // The function returns "length" not "prefix_length"
     expect(typeof result['length']).toBe('number');
     expect(result['length'] as number).toBe(2);
-  });
-
-  it('extract_prefix_features_wasm returns distinct_activities (unique_activities) field >= 1', () => {
-    const prefix = [V.leadCreated, V.leadQualified];
-    const result = parse(wasm.extract_prefix_features_wasm(JSON.stringify(prefix)));
 
     // The function returns "unique_activities"
     expect(typeof result['unique_activities']).toBe('number');
     expect(result['unique_activities'] as number).toBeGreaterThanOrEqual(1);
-  });
 
-  it('build_transition_probabilities returns edges array with at least one entry for the start activity', () => {
-    const result = parse(wasm.build_transition_probabilities(logHandle, ACTIVITY_KEY));
+    const tpResult = parse(wasm.build_transition_probabilities(logHandle, ACTIVITY_KEY));
 
-    expect(result).toHaveProperty('edges');
-    const edges = result['edges'] as Array<{from: string; to: string; probability: number; count: number}>;
+    expect(tpResult).toHaveProperty('edges');
+    const edges = tpResult['edges'] as Array<{from: string; to: string; probability: number; count: number}>;
     expect(Array.isArray(edges)).toBe(true);
     expect(edges.length).toBeGreaterThan(0);
 
@@ -419,35 +369,29 @@ describe('JTBD-5: I want to extract features from partial cases to feed into ML 
 // ─── JTBD-6: Resource Recommendation ─────────────────────────────────────────
 
 describe('JTBD-6: I want to recommend the optimal resource for the next case step', () => {
-  it('estimate_queue_delay returns wait_time >= 0', () => {
+  it('estimate_queue_delay returns wait_time >= 0 + estimate_queue_delay utilization field (utilization) is between 0 and 1 for stable queue + build_transition_probabilities returns valid JSON with at least one outgoing edge from the start activity', () => {
     // arrival_rate=1.0, service_rate=2.0 → stable M/M/1 queue
     const result = parse(wasm.estimate_queue_delay(1.0, 2.0));
 
     const waitTime = result['wait_time'] as number;
     expect(typeof waitTime).toBe('number');
     expect(waitTime).toBeGreaterThanOrEqual(0);
-  });
 
-  it('estimate_queue_delay utilization field (utilization) is between 0 and 1 for stable queue', () => {
     // arrival_rate=1.0, service_rate=2.0 → utilization = 0.5
-    const result = parse(wasm.estimate_queue_delay(1.0, 2.0));
-
     const utilization = result['utilization'] as number;
     expect(typeof utilization).toBe('number');
     expect(utilization).toBeGreaterThanOrEqual(0);
     expect(utilization).toBeLessThanOrEqual(1);
-  });
 
-  it('build_transition_probabilities returns valid JSON with at least one outgoing edge from the start activity', () => {
-    const result = parse(wasm.build_transition_probabilities(logHandle, ACTIVITY_KEY));
+    const tpResult = parse(wasm.build_transition_probabilities(logHandle, ACTIVITY_KEY));
 
-    expect(result).toHaveProperty('activities');
-    const activities = result['activities'] as string[];
+    expect(tpResult).toHaveProperty('activities');
+    const activities = tpResult['activities'] as string[];
     expect(Array.isArray(activities)).toBe(true);
     expect(activities.length).toBeGreaterThan(0);
 
-    expect(result).toHaveProperty('edges');
-    const edges = result['edges'] as Array<{from: string; to: string}>;
+    expect(tpResult).toHaveProperty('edges');
+    const edges = tpResult['edges'] as Array<{from: string; to: string}>;
     const hasStartEdge = edges.some((e) => e.from === V.leadCreated);
     expect(hasStartEdge).toBe(true);
   });

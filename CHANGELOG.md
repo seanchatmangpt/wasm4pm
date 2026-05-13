@@ -5,6 +5,62 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [26.5.13] - 2026-05-13 — POWL 2.0, Cell8 Proof Gates, OTEL Phases A–C
+
+### Added
+
+**POWL 2.0 Process Discovery**
+- Formal POWL 2.0 implementation per van der Aalst BPM 2025 paper
+- `MineDG` choice-graph discovery algorithm (PM×)
+- ChoiceGraph integrated across 24 POWL touchpoints
+- 144 POWL tests (unit, integration, system, adversarial, pm4py validation): 100% pass; 0 regressions across 38/40 algorithms
+
+**Cell8 Proof-Carrying Gates**
+- 8 `CellReady` conjunct checks with real gate logic and evidence strings
+- `cell_build` emits BLAKE3 content hash + all 8 gates + persistent manifest
+- `cell_verify` returns real status (`verified` / `not_ready` / `not_found`)
+- `cell_doctor` formats per-conjunct diagnostic report
+- `cell_replay` does fixture determinism via BLAKE3 hash comparison
+- `cell_export` emits EARL-compatible machine-readable proof assertions
+
+**OTEL Observability — Phases A → C**
+- Bootstrap + `withSpan` / `withSpanRaw` helper + receipts (Phase A)
+- 22 of 29 CLI commands instrumented (Phase B/C); 7 explicit exempts + 2 deferred
+- Late-attrs callback for child-span model
+- `exitWithFlush` helper drains OTEL spans before `process.exit`
+
+**Benchmark Subcommands**
+- `wpm benchmark build|replay|verify|export` with SARIF 2.1.0 output
+- WASM-unavailable path emits structured actionable errors (no unhandled rejections)
+
+**Testing & Tooling**
+- 36 JTBD command tests + 57 error-state tests in `apps/wasm4pm/src/__tests__/`
+- 20 algorithm-oracle correctness tests (single-impl pattern)
+- `scripts/scan-ghost-impls.sh` — detect fake implementations
+- `lab/test:published` — post-publish artifact validation script
+- `apps/wasm4pm/__tests__/perf.bench.ts`, `receipts-race.test.ts`
+
+### Fixed
+
+- Kebab-case `init` flag, handle-based DFG response shape (Round 3 of CLI hardening: 11 → 3 failure surfaces)
+- XES tag-based parser handles inline `event` / `attribute` syntax
+- WASM `tracing_subscriber` init gated to non-wasm32 target (was breaking WASM build)
+- Doctor envelope path corrected to `.payload.*` for JSON output
+- Cell8 CLI `JSON.parse` bug on `build` subcommand
+- `watch.ts` + `cognition/watch.ts` `.then()` / `.catch()` callbacks made async; ESM SyntaxError fixed
+- `check-debt` Makefile target whitelists `.rs` / `.ts` / `.tsx`, ignores gate scripts
+- Three POWL discovery cuts: sequence (Tarjan SCC), XOR (connected components), loop (do/redo decomposition)
+- Eager-silent firing at choice points (POWL τ_start gap closed)
+- `verify-versions.sh`: read workspace version from root `Cargo.toml`; `require('./$pkg')` path prefix for Node 25+
+
+### Changed
+
+- Per-trace precision added to `TraceReplayResult` and `FitnessResult`
+- STRIPS frame axioms + GPS subgoal ordering in cognition (Level 10 features)
+- `wasm-pack` nodejs target added for cognition crate; breed coverage extended
+- `runCli` auto-detects built CLI binary; `@wasm4pm/cli` adds wasm4pm dep
+- All 16 version-carrying manifests aligned to 26.5.13 (root + wasm4pm + apps/wasm4pm + 11 packages/* + Cargo workspace + cli.ts banner)
+
 ## [26.4.28] - 2026-04-28 — Swarm Intelligence & Adversarial Resilience
 
 ### Added

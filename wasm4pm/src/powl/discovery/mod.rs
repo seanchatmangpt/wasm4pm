@@ -15,6 +15,7 @@
 //!   - brute_force:             XOR -> Sequence -> Concurrency -> Loop -> BruteForcePO
 
 pub mod base_case;
+pub mod choice_graph;
 pub mod cuts;
 pub mod fall_through;
 pub mod from_dfg;
@@ -140,8 +141,8 @@ impl CutFilter {
                 cut_order: vec![
                     CutType::Xor,
                     CutType::Sequence,
-                    CutType::Concurrency,
                     CutType::Loop,
+                    CutType::Concurrency,
                     CutType::MaximalPartialOrder,
                 ],
                 decision_graph_fall_through: false,
@@ -160,8 +161,8 @@ impl CutFilter {
                 cut_order: vec![
                     CutType::Xor,
                     CutType::Sequence,
-                    CutType::Concurrency,
                     CutType::Loop,
+                    CutType::Concurrency,
                     CutType::BruteForcePartialOrder,
                 ],
                 decision_graph_fall_through: false,

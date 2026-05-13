@@ -4,6 +4,7 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as wasm from '../pkg/wasm4pm.js';
+import { XES_MINIMAL } from './helpers/fixtures';
 
 describe('Analysis - Event Statistics', () => {
   beforeEach(async () => {
@@ -196,13 +197,13 @@ describe('Analysis - Process Speedup', () => {
     const logHandle = wasm.load_eventlog_from_xes(xes);
     expect(logHandle).toBeTruthy();
 
-    const speedup = wasm.analyze_process_speedup(logHandle, 'time:timestamp');
+    const speedup = wasm.analyze_process_speedup(logHandle, 'time:timestamp', 100);
     expect(speedup).toBeTruthy();
   });
 
   it('should fail with invalid EventLog handle', () => {
     expect(() => {
-      wasm.analyze_process_speedup('obj_999999', 'time:timestamp');
+      wasm.analyze_process_speedup('obj_999999', 'time:timestamp', 100);
     }).toThrow();
   });
 });
@@ -292,5 +293,80 @@ describe('Analysis - Available Functions List', () => {
     const functionNames = functionsObj.functions.map((fn: any) => fn.name);
     expect(functionNames).toContain('event_statistics');
     expect(functionNames).toContain('case_duration');
+  });
+});
+
+// ─── Consolidated from analysis/ subdir ──────────────────────────────────────
+
+describe('Analysis - Event Statistics (fixture)', () => {
+  beforeEach(async () => {
+    try {
+      await wasm.init();
+      await wasm.clear_all_objects();
+    } catch (e) {}
+  });
+
+  afterEach(async () => {
+    try {
+      await wasm.clear_all_objects();
+    } catch (e) {}
+  });
+
+  it('should analyze event statistics and fail on invalid handle', () => {
+    const logHandle = wasm.load_eventlog_from_xes(XES_MINIMAL);
+    expect(logHandle).toBeTruthy();
+    const stats = wasm.analyze_event_statistics(logHandle);
+    expect(stats).toBeTruthy();
+    expect(() => wasm.analyze_event_statistics('obj_999999')).toThrow();
+  });
+});
+
+describe('Analysis - Case Duration (fixture)', () => {
+  beforeEach(async () => {
+    try {
+      await wasm.init();
+      await wasm.clear_all_objects();
+    } catch (e) {}
+  });
+
+  afterEach(async () => {
+    try {
+      await wasm.clear_all_objects();
+    } catch (e) {}
+  });
+
+  it('should analyze case duration and fail on invalid handle', () => {
+    const logHandle = wasm.load_eventlog_from_xes(XES_MINIMAL);
+    expect(logHandle).toBeTruthy();
+    const duration = wasm.analyze_case_duration(logHandle);
+    expect(duration).toBeTruthy();
+    expect(() => wasm.analyze_case_duration('obj_999999')).toThrow();
+  });
+});
+
+describe('Analysis - Conformance Info', () => {
+  beforeEach(async () => {
+    try {
+      await wasm.init();
+      await wasm.clear_all_objects();
+    } catch (e) {}
+  });
+
+  afterEach(async () => {
+    try {
+      await wasm.clear_all_objects();
+    } catch (e) {}
+  });
+
+  it('should provide conformance info with algorithms array', () => {
+    const logHandle = wasm.load_eventlog_from_xes(XES_MINIMAL);
+    expect(logHandle).toBeTruthy();
+
+    const info = wasm.conformance_info();
+    expect(info).toBeTruthy();
+    expect(typeof info).toBe('string');
+    const infoObj = JSON.parse(info);
+    expect(infoObj.algorithms).toBeTruthy();
+    expect(Array.isArray(infoObj.algorithms)).toBe(true);
   });
 });

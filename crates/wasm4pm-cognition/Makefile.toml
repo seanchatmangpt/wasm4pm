@@ -1,0 +1,109 @@
+# crates/wasm4pm-cognition/Makefile.toml
+# cargo-make task definitions for the wasm4pm-cognition crate.
+# Run any task with: cargo make <task-name>
+# List all tasks:    cargo make --list-all-steps
+
+[config]
+default_to_workspace = false
+
+[tasks.default]
+alias = "verify"
+
+# ── Type-checking ──────────────────────────────────────────────────────────────
+
+[tasks.check]
+description = "Native type-check (no codegen)"
+command = "cargo"
+args = ["check", "-p", "wasm4pm-cognition"]
+
+[tasks.check-wasm]
+description = "WASM type-check (wasm32-unknown-unknown target)"
+command = "cargo"
+args = ["check", "-p", "wasm4pm-cognition", "--features", "wasm", "--target", "wasm32-unknown-unknown"]
+
+# ── Tests ──────────────────────────────────────────────────────────────────────
+
+[tasks.test-native]
+description = "Run native unit + integration tests"
+command = "cargo"
+args = ["test", "-p", "wasm4pm-cognition"]
+
+[tasks.test-anti-fraud]
+description = "Run the anti-fraud gate (forbidden lexicon + structural scans)"
+command = "cargo"
+args = ["test", "-p", "wasm4pm-cognition", "--test", "anti_fraud_gate"]
+
+[tasks.test-adversarial]
+description = "Run the 8 adversarial bypass tests"
+command = "cargo"
+args = ["test", "-p", "wasm4pm-cognition", "--test", "adversarial_bypass"]
+
+# ── WASM pack builds ───────────────────────────────────────────────────────────
+
+[tasks.wasm-pack-nodejs]
+description = "Build wasm-pack nodejs target into pkg/"
+script_runner = "@shell"
+cwd = "."
+script = """
+wasm-pack build --target nodejs --features wasm --out-dir pkg
+"""
+
+[tasks.wasm-pack-bundler]
+description = "Build wasm-pack bundler target into pkg-bundler/"
+script_runner = "@shell"
+cwd = "."
+script = """
+wasm-pack build --target bundler --features wasm --out-dir pkg-bundler
+"""
+
+# ── Composite build ───────────────────────────────────────────────────────────
+
+[tasks.build-all]
+description = "Full cognition build: native check + wasm check + wasm-pack nodejs + wasm-pack bundler"
+dependencies = ["check", "check-wasm", "wasm-pack-nodejs", "wasm-pack-bundler"]
+
+# ── Verify gate ───────────────────────────────────────────────────────────────
+
+[tasks.verify]
+description = "Full verify gate: type-check + all tests + anti-fraud + adversarial (V1-V8 per diagram #25)"
+dependencies = ["check", "check-wasm", "test-native", "test-anti-fraud", "test-adversarial"]
+
+# ── Doctor probe ──────────────────────────────────────────────────────────────
+
+[tasks.doctor]
+description = "Run the cognition capability probe (diagram #19)"
+script_runner = "@shell"
+cwd = "."
+script = """
+bash scripts/cognition-doctor.sh
+"""
+
+# ── DoD checklist ─────────────────────────────────────────────────────────────
+
+[tasks.dod]
+description = "Run the Definition of Done checklist (10 items, diagram #39)"
+script_runner = "@shell"
+cwd = "."
+script = """
+bash scripts/cognition-dod-checklist.sh
+"""
+
+# ── Replay cycle ──────────────────────────────────────────────────────────────
+
+[tasks.cycle]
+description = "Run a complete decision cycle: run -> receipt -> replay -> verify (diagrams #34-35)"
+script_runner = "@shell"
+cwd = "."
+script = """
+bash scripts/cognition-replay-cycle.sh
+"""
+
+# ── Verify gate script ────────────────────────────────────────────────────────
+
+[tasks.verify-gate]
+description = "Run the V1-V8 verify gate script (diagram #25)"
+script_runner = "@shell"
+cwd = "."
+script = """
+bash scripts/cognition-verify-gate.sh
+"""

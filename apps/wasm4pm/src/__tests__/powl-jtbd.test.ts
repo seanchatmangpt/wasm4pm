@@ -295,29 +295,24 @@ beforeAll(async () => {
 // ─── JTBD-1: Discover ────────────────────────────────────────────────────────
 
 describe('JTBD-1: Discover a POWL model from a RevOps event log', () => {
-  it('produces a model with non-zero node_count from the RevOps log', () => {
+  it('produces a model with non-zero node_count from the RevOps log + discovery with config (noise_threshold=0.2, min_trace_count=1) produces valid model + discovered repr is parseable and contains faker-generated RevOps activity names', () => {
     const result = parse(wasm.discover_powl_from_log(modelsLogJson, 'decision_graph_cyclic'));
     expect(typeof result.node_count).toBe('number');
     expect(result.node_count as number).toBeGreaterThan(0);
     expect(typeof result.root).toBe('number');
     expect(typeof result.repr).toBe('string');
     expect(result.variant).toBe('decision_graph_cyclic');
-  });
 
-  it('discovery with config (noise_threshold=0.2, min_trace_count=1) produces valid model', () => {
-    const result = parse(
+    const configResult = parse(
       wasm.discover_powl_from_log_config(modelsLogJson, 'concept:name', 'decision_graph_cyclic', 1, 0.2)
     );
-    expect((result.node_count as number)).toBeGreaterThan(0);
-    expect(typeof result.repr).toBe('string');
-    const config = result.config as Record<string, unknown>;
+    expect((configResult.node_count as number)).toBeGreaterThan(0);
+    expect(typeof configResult.repr).toBe('string');
+    const config = configResult.config as Record<string, unknown>;
     expect(config.activity_key).toBe('concept:name');
     expect(config.min_trace_count).toBe(1);
     expect(config.noise_threshold).toBe(0.2);
-  });
 
-  it('discovered repr is parseable and contains faker-generated RevOps activity names', () => {
-    const result = parse(wasm.discover_powl_from_log(modelsLogJson, 'decision_graph_cyclic'));
     const repr = result.repr as string;
     expect(repr.length).toBeGreaterThan(0);
 
@@ -334,7 +329,7 @@ describe('JTBD-1: Discover a POWL model from a RevOps event log', () => {
 // ─── JTBD-2: Simplify ────────────────────────────────────────────────────────
 
 describe('JTBD-2: Simplify a POWL model to communicate it to stakeholders', () => {
-  it('simplify produces a valid parseable POWL model', () => {
+  it('simplify produces a valid parseable POWL model + simplified model still contains faker-generated RevOps core activities + simplify is idempotent: simplify(simplify(m)) equals simplify(m)', () => {
     const original = parse(wasm.discover_powl_from_log(modelsLogJson, 'decision_graph_cyclic'));
     const simplified = parse(wasm.simplify_powl(original.repr as string));
 
@@ -344,23 +339,15 @@ describe('JTBD-2: Simplify a POWL model to communicate it to stakeholders', () =
 
     const reparsed = parse(wasm.parse_powl(simplified.repr as string));
     expect((reparsed.node_count as number)).toBeGreaterThan(0);
-  });
 
-  it('simplified model still contains faker-generated RevOps core activities', () => {
-    const original = parse(wasm.discover_powl_from_log(modelsLogJson, 'decision_graph_cyclic'));
-    const simplified = parse(wasm.simplify_powl(original.repr as string));
     const repr = simplified.repr as string;
-
     const hasCoreActivities =
       repr.includes(V.leadCreated) ||
       repr.includes(V.leadQualified) ||
       repr.includes(V.dealClosedWon) ||
       repr.includes(V.dealClosedLost);
     expect(hasCoreActivities).toBe(true);
-  });
 
-  it('simplify is idempotent: simplify(simplify(m)) equals simplify(m)', () => {
-    const original = parse(wasm.discover_powl_from_log(modelsLogJson, 'decision_graph_cyclic'));
     const once = parse(wasm.simplify_powl(original.repr as string));
     const twice = parse(wasm.simplify_powl(once.repr as string));
 
@@ -372,29 +359,19 @@ describe('JTBD-2: Simplify a POWL model to communicate it to stakeholders', () =
 // ─── JTBD-3: Footprints ──────────────────────────────────────────────────────
 
 describe('JTBD-3: Get footprints to see ordering constraints between activities', () => {
-  it('footprints returns a non-empty structured result with activity list', () => {
+  it(`footprints returns a non-empty structured result with activity list + faker-generated start activity (${V.leadCreated}) appears in start_activities + faker-generated terminal activities (${V.dealClosedWon} / ${V.dealClosedLost}) appear in end_activities`, () => {
     const repr = parse(wasm.discover_powl_from_log(modelsLogJson, 'decision_graph_cyclic')).repr as string;
     const fp = parse(wasm.powl_footprints(repr));
 
     expect(fp.activities).toBeDefined();
     expect(Array.isArray(fp.activities as unknown[])).toBe(true);
     expect((fp.activities as string[]).length).toBeGreaterThan(0);
-  });
 
-  it(`faker-generated start activity (${V.leadCreated}) appears in start_activities`, () => {
-    const repr = parse(wasm.discover_powl_from_log(modelsLogJson, 'decision_graph_cyclic')).repr as string;
-    const fp = parse(wasm.powl_footprints(repr));
     const startActivities = (fp.start_activities as string[]) ?? [];
-
     expect(Array.isArray(startActivities)).toBe(true);
     expect(startActivities).toContain(V.leadCreated);
-  });
 
-  it(`faker-generated terminal activities (${V.dealClosedWon} / ${V.dealClosedLost}) appear in end_activities`, () => {
-    const repr = parse(wasm.discover_powl_from_log(modelsLogJson, 'decision_graph_cyclic')).repr as string;
-    const fp = parse(wasm.powl_footprints(repr));
     const endActivities = (fp.end_activities as string[]) ?? [];
-
     expect(Array.isArray(endActivities)).toBe(true);
     const hasTerminal =
       endActivities.includes(V.dealClosedWon) ||
@@ -406,7 +383,7 @@ describe('JTBD-3: Get footprints to see ordering constraints between activities'
 // ─── JTBD-4: Complexity ──────────────────────────────────────────────────────
 
 describe('JTBD-4: Get complexity metrics for a process improvement report', () => {
-  it('complexity returns non-negative numeric metrics', () => {
+  it('complexity returns non-negative numeric metrics + full RevOps model has equal or higher complexity than a single-activity model + at least one complexity metric > 0 for the multi-variant RevOps model', () => {
     const repr = parse(wasm.discover_powl_from_log(modelsLogJson, 'decision_graph_cyclic')).repr as string;
     const c = parse(wasm.measure_complexity(repr));
 
@@ -416,20 +393,10 @@ describe('JTBD-4: Get complexity metrics for a process improvement report', () =
     expect(c.cfc as number).toBeGreaterThanOrEqual(0);
     expect(typeof c.cognitive).toBe('number');
     expect(c.cognitive as number).toBeGreaterThanOrEqual(0);
-  });
 
-  it('full RevOps model has equal or higher complexity than a single-activity model', () => {
-    const fullRepr = parse(wasm.discover_powl_from_log(modelsLogJson, 'decision_graph_cyclic')).repr as string;
-    const fullC = parse(wasm.measure_complexity(fullRepr));
     // Trivial model: single faker-generated activity name
     const trivialC = parse(wasm.measure_complexity(V.leadCreated));
-
-    expect(fullC.cfc as number).toBeGreaterThanOrEqual(trivialC.cfc as number);
-  });
-
-  it('at least one complexity metric > 0 for the multi-variant RevOps model', () => {
-    const repr = parse(wasm.discover_powl_from_log(modelsLogJson, 'decision_graph_cyclic')).repr as string;
-    const c = parse(wasm.measure_complexity(repr));
+    expect(c.cfc as number).toBeGreaterThanOrEqual(trivialC.cfc as number);
 
     const nonTrivial =
       (c.cyclomatic as number) > 0 ||
@@ -442,65 +409,53 @@ describe('JTBD-4: Get complexity metrics for a process improvement report', () =
 // ─── JTBD-5: Diff ────────────────────────────────────────────────────────────
 
 describe('JTBD-5: Diff two POWL models to document sales process changes', () => {
-  it('diff of identical models returns behaviourally_equivalent = true', () => {
+  it(`diff of identical models returns behaviourally_equivalent = true + diff detects faker-generated new activity (${V.newQualificationStep}) added to the process + diff output contains severity and required structural fields`, () => {
     const repr = parse(wasm.discover_powl_from_log(modelsLogJson, 'decision_graph_cyclic')).repr as string;
     const diff = parse(wasm.diff_models(repr, repr));
 
     expect(diff.behaviourally_equivalent).toBe(true);
     expect((diff.added_activities as string[]) ?? []).toHaveLength(0);
     expect((diff.removed_activities as string[]) ?? []).toHaveLength(0);
-  });
 
-  it(`diff detects faker-generated new activity (${V.newQualificationStep}) added to the process`, () => {
     // Original: lead → qualify → close_won
     const original = linearPowl([V.leadCreated, V.leadQualified, V.dealClosedWon]);
     // Enhanced: lead → qualify → budget_check → close_won
     const enhanced = linearPowl([V.leadCreated, V.leadQualified, V.newQualificationStep, V.dealClosedWon]);
 
-    const diff = parse(wasm.diff_models(original, enhanced));
-    const added = (diff.added_activities as string[]) ?? [];
+    const diff2 = parse(wasm.diff_models(original, enhanced));
+    const added = (diff2.added_activities as string[]) ?? [];
 
     expect(added).toContain(V.newQualificationStep);
-    expect(diff.behaviourally_equivalent).toBe(false);
-  });
+    expect(diff2.behaviourally_equivalent).toBe(false);
 
-  it('diff output contains severity and required structural fields', () => {
     const modelA = `X ( ${V.leadCreated}, ${V.leadQualified} )`;
     const modelB = `X ( ${V.leadCreated}, ${V.leadQualified}, ${V.newQualificationStep} )`;
-    const diff = parse(wasm.diff_models(modelA, modelB));
+    const diff3 = parse(wasm.diff_models(modelA, modelB));
 
-    expect(diff.severity).toBeDefined();
-    expect(typeof diff.severity).toBe('string');
-    expect(diff).toHaveProperty('added_activities');
-    expect(diff).toHaveProperty('behaviourally_equivalent');
+    expect(diff3.severity).toBeDefined();
+    expect(typeof diff3.severity).toBe('string');
+    expect(diff3).toHaveProperty('added_activities');
+    expect(diff3).toHaveProperty('behaviourally_equivalent');
   });
 });
 
 // ─── JTBD-6: Convert ─────────────────────────────────────────────────────────
 
 describe('JTBD-6: Convert a POWL model to process tree for enterprise BPM tooling', () => {
-  it('convert to process tree produces valid non-empty JSON', () => {
+  it('convert to process tree produces valid non-empty JSON + process tree contains faker-generated RevOps activity labels + BPMN export produces non-empty XML with BPMN definitions structure', () => {
     const repr = parse(wasm.discover_powl_from_log(modelsLogJson, 'decision_graph_cyclic')).repr as string;
     const treeJson: string = wasm.powl_to_process_tree(repr);
 
     expect(typeof treeJson).toBe('string');
     expect(treeJson.length).toBeGreaterThan(0);
     expect(() => JSON.parse(treeJson)).not.toThrow();
-  });
-
-  it('process tree contains faker-generated RevOps activity labels', () => {
-    const repr = parse(wasm.discover_powl_from_log(modelsLogJson, 'decision_graph_cyclic')).repr as string;
-    const treeJson: string = wasm.powl_to_process_tree(repr);
 
     const hasActivity =
       treeJson.includes(V.leadCreated) ||
       treeJson.includes(V.leadQualified) ||
       treeJson.includes(V.dealClosedWon);
     expect(hasActivity).toBe(true);
-  });
 
-  it('BPMN export produces non-empty XML with BPMN definitions structure', () => {
-    const repr = parse(wasm.discover_powl_from_log(modelsLogJson, 'decision_graph_cyclic')).repr as string;
     const bpmnXml: string = wasm.powl_to_bpmn(repr);
 
     expect(typeof bpmnXml).toBe('string');
@@ -513,7 +468,7 @@ describe('JTBD-6: Convert a POWL model to process tree for enterprise BPM toolin
 // ─── JTBD-7: Conformance ─────────────────────────────────────────────────────
 
 describe('JTBD-7: Check if specific deals followed the prescribed sales process', () => {
-  it('a conforming trace (standard won path with faker activities) has fitness > 0', () => {
+  it('a conforming trace (standard won path with faker activities) has fitness > 0 + deviating trace (skipped qualification step) has lower fitness than conforming trace + conformance output includes percentage, avg_trace_fitness, and total_traces fields', () => {
     const model = linearPowl([
       V.leadCreated, V.leadQualified, V.proposalSent, V.contractSigned, V.dealClosedWon,
     ]);
@@ -524,12 +479,7 @@ describe('JTBD-7: Check if specific deals followed the prescribed sales process'
 
     expect(typeof fitness.percentage).toBe('number');
     expect(fitness.percentage as number).toBeGreaterThan(0);
-  });
 
-  it('deviating trace (skipped qualification step) has lower fitness than conforming trace', () => {
-    const model = linearPowl([
-      V.leadCreated, V.leadQualified, V.proposalSent, V.contractSigned, V.dealClosedWon,
-    ]);
     const conforming = buildPowlLog([
       V.leadCreated, V.leadQualified, V.proposalSent, V.contractSigned, V.dealClosedWon,
     ]);
@@ -541,24 +491,22 @@ describe('JTBD-7: Check if specific deals followed the prescribed sales process'
     const fitDeviating = JSON.parse(wasm.token_replay_fitness(model, deviating)).percentage as number;
 
     expect(fitDeviating).toBeLessThanOrEqual(fitConforming);
-  });
 
-  it('conformance output includes percentage, avg_trace_fitness, and total_traces fields', () => {
-    const model = linearPowl([V.leadCreated, V.leadQualified, V.dealClosedWon]);
-    const log = buildPowlLog([V.leadCreated, V.leadQualified, V.dealClosedWon]);
-    const fitness = JSON.parse(wasm.token_replay_fitness(model, log));
+    const simpleModel = linearPowl([V.leadCreated, V.leadQualified, V.dealClosedWon]);
+    const simpleLog = buildPowlLog([V.leadCreated, V.leadQualified, V.dealClosedWon]);
+    const simpleFitness = JSON.parse(wasm.token_replay_fitness(simpleModel, simpleLog));
 
-    expect(fitness).toHaveProperty('percentage');
-    expect(fitness).toHaveProperty('avg_trace_fitness');
-    expect(fitness).toHaveProperty('total_traces');
-    expect(fitness.total_traces).toBe(1);
+    expect(simpleFitness).toHaveProperty('percentage');
+    expect(simpleFitness).toHaveProperty('avg_trace_fitness');
+    expect(simpleFitness).toHaveProperty('total_traces');
+    expect(simpleFitness.total_traces).toBe(1);
   });
 });
 
 // ─── JTBD-8: Parse ───────────────────────────────────────────────────────────
 
 describe('JTBD-8: Parse an externally-provided POWL model string', () => {
-  it('parse of a valid POWL repr using faker-generated activity names succeeds', () => {
+  it('parse of a valid POWL repr using faker-generated activity names succeeds + parse of the discovered model repr returns equivalent node_count (round-trip) + parse of an invalid string returns an error without crashing', () => {
     const validPowl = linearPowl([V.leadCreated, V.leadQualified, V.dealClosedWon]);
     const result = parse(wasm.parse_powl(validPowl));
 
@@ -566,16 +514,12 @@ describe('JTBD-8: Parse an externally-provided POWL model string', () => {
     expect((result.node_count as number)).toBeGreaterThan(0);
     expect(typeof result.root).toBe('number');
     expect(typeof result.repr).toBe('string');
-  });
 
-  it('parse of the discovered model repr returns equivalent node_count (round-trip)', () => {
     const discovered = parse(wasm.discover_powl_from_log(modelsLogJson, 'decision_graph_cyclic'));
     const reparsed = parse(wasm.parse_powl(discovered.repr as string));
 
     expect(reparsed.node_count).toBe(discovered.node_count);
-  });
 
-  it('parse of an invalid string returns an error without crashing', () => {
     const invalidInput = `!!!${faker.string.alphanumeric(12)}!!!`;
     let threw = false;
     try {
@@ -591,7 +535,7 @@ describe('JTBD-8: Parse an externally-provided POWL model string', () => {
 // ─── JTBD-9: Full Pipeline ───────────────────────────────────────────────────
 
 describe('JTBD-9: Full pipeline — discover → simplify → convert → export for wiki embedding', () => {
-  it('all pipeline stages complete without error and produce non-empty output', () => {
+  it('all pipeline stages complete without error and produce non-empty output + each pipeline stage output is compatible with the next stage input + final BPMN export contains faker-generated RevOps activity names and BPMN structure', () => {
     const discovered = parse(wasm.discover_powl_from_log(modelsLogJson, 'decision_graph_cyclic'));
     expect((discovered.node_count as number)).toBeGreaterThan(0);
 
@@ -603,9 +547,7 @@ describe('JTBD-9: Full pipeline — discover → simplify → convert → export
 
     const bpmnXml: string = wasm.powl_to_bpmn(simplified.repr as string);
     expect(bpmnXml.length).toBeGreaterThan(0);
-  });
 
-  it('each pipeline stage output is compatible with the next stage input', () => {
     const discoverRepr = parse(
       wasm.discover_powl_from_log(modelsLogJson, 'decision_graph_cyclic')
     ).repr as string;
@@ -614,35 +556,27 @@ describe('JTBD-9: Full pipeline — discover → simplify → convert → export
     const simplifiedRepr = parse(wasm.simplify_powl(discoverRepr)).repr as string;
     expect(typeof simplifiedRepr).toBe('string');
 
-    const treeJson: string = wasm.powl_to_process_tree(simplifiedRepr);
-    expect(() => JSON.parse(treeJson)).not.toThrow();
+    const treeJson2: string = wasm.powl_to_process_tree(simplifiedRepr);
+    expect(() => JSON.parse(treeJson2)).not.toThrow();
 
-    const bpmnXml: string = wasm.powl_to_bpmn(simplifiedRepr);
-    expect(bpmnXml).toContain('<');
-  });
+    const bpmnXml2: string = wasm.powl_to_bpmn(simplifiedRepr);
+    expect(bpmnXml2).toContain('<');
 
-  it('final BPMN export contains faker-generated RevOps activity names and BPMN structure', () => {
-    const discoverRepr = parse(
-      wasm.discover_powl_from_log(modelsLogJson, 'decision_graph_cyclic')
-    ).repr as string;
-    const simplifiedRepr = parse(wasm.simplify_powl(discoverRepr)).repr as string;
-    const bpmnXml: string = wasm.powl_to_bpmn(simplifiedRepr);
-
-    expect(bpmnXml).toContain('<definitions');
-    expect(bpmnXml).toContain('</definitions>');
-    expect(bpmnXml).toContain('process');
+    expect(bpmnXml2).toContain('<definitions');
+    expect(bpmnXml2).toContain('</definitions>');
+    expect(bpmnXml2).toContain('process');
 
     const hasTaskElement =
-      bpmnXml.includes('task') ||
-      bpmnXml.includes('Task') ||
-      bpmnXml.includes('serviceTask');
+      bpmnXml2.includes('task') ||
+      bpmnXml2.includes('Task') ||
+      bpmnXml2.includes('serviceTask');
     expect(hasTaskElement).toBe(true);
 
     // At least one faker-generated activity must appear in the export
     const hasRevOpsActivity =
-      bpmnXml.includes(V.leadCreated) ||
-      bpmnXml.includes(V.dealClosedWon) ||
-      bpmnXml.includes(V.dealClosedLost);
+      bpmnXml2.includes(V.leadCreated) ||
+      bpmnXml2.includes(V.dealClosedWon) ||
+      bpmnXml2.includes(V.dealClosedLost);
     expect(hasRevOpsActivity).toBe(true);
   });
 });

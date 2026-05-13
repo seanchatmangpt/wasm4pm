@@ -9,7 +9,7 @@ use std::collections::{HashMap, HashSet};
 use wasm_bindgen::prelude::*;
 
 /// Footprint relation between two activities
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum FootprintRelation {
     DirectlyFollows, // >
     Causal,          // ->
@@ -25,61 +25,57 @@ pub struct FootprintMatrix {
     pub matrix: Vec<Vec<FootprintRelation>>,
 }
 
+/// Pure-Rust footprint discovery without wasm-bindgen. Used by integration tests.
+pub fn discover_footprints_from_log(log: &EventLog, activity_key: &str) -> FootprintMatrix {
+    let col = log.to_columnar(activity_key);
+    let n = col.vocab.len();
+    let mut df = vec![vec![false; n]; n];
+
+    for t in 0..col.trace_offsets.len().saturating_sub(1) {
+        let start = col.trace_offsets[t];
+        let end = col.trace_offsets[t + 1];
+        for i in start..end.saturating_sub(1) {
+            let from = col.events[i] as usize;
+            let to = col.events[i + 1] as usize;
+            df[from][to] = true;
+        }
+    }
+
+    let mut matrix = vec![vec![FootprintRelation::NeverFollows; n]; n];
+    for i in 0..n {
+        for j in 0..n {
+            let i_j = df[i][j];
+            let j_i = df[j][i];
+            matrix[i][j] = if i_j && !j_i {
+                FootprintRelation::Causal
+            } else if !i_j && j_i {
+                FootprintRelation::CausalInv
+            } else if i_j && j_i {
+                FootprintRelation::Parallel
+            } else {
+                FootprintRelation::NeverFollows
+            };
+        }
+    }
+
+    FootprintMatrix {
+        activities: col.vocab.iter().map(|s| s.to_string()).collect(),
+        matrix,
+    }
+}
+
 /// Discover the footprint matrix from an event log
 #[wasm_bindgen]
 pub fn discover_footprints(eventlog_handle: &str, activity_key: &str) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
-            let col = log.to_columnar(activity_key);
-            let n = col.vocab.len();
-            let mut df = vec![vec![false; n]; n];
-
-            // 1. Find all directly-follows relations (a > b)
-            for t in 0..col.trace_offsets.len().saturating_sub(1) {
-                let start = col.trace_offsets[t];
-                let end = col.trace_offsets[t + 1];
-                for i in start..end.saturating_sub(1) {
-                    let from = col.events[i] as usize;
-                    let to = col.events[i + 1] as usize;
-                    df[from][to] = true;
-                }
-            }
-
-            // 2. Derive footprint matrix based on Alpha Miner logic:
-            //    - a -> b  iff (a > b) and not (b > a)
-            //    - a || b  iff (a > b) and (b > a)
-            //    - a # b   iff not (a > b) and not (b > a)
-            let mut matrix = vec![vec![FootprintRelation::NeverFollows; n]; n];
-            for i in 0..n {
-                for j in 0..n {
-                    let i_j = df[i][j];
-                    let j_i = df[j][i];
-
-                    matrix[i][j] = if i_j && !j_i {
-                        FootprintRelation::Causal
-                    } else if !i_j && j_i {
-                        FootprintRelation::CausalInv
-                    } else if i_j && j_i {
-                        FootprintRelation::Parallel
-                    } else {
-                        FootprintRelation::NeverFollows
-                    };
-                }
-            }
-
-            let result = FootprintMatrix {
-                activities: col.vocab.iter().map(|s| s.to_string()).collect(),
-                matrix,
-            };
-
-            to_js_str(&result)
-        }
+    let log = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
+        Some(StoredObject::EventLog(log)) => Ok(log.clone()),
         Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
         None => Err(wasm_err(
             codes::INVALID_HANDLE,
             format!("EventLog '{}' not found", eventlog_handle),
         )),
-    })
+    })?;
+    to_js_str(&discover_footprints_from_log(&log, activity_key))
 }
 
 /// Internal Alpha++ implementation operating on a plain `EventLog`.
@@ -95,7 +91,7 @@ pub fn discover_footprints(eventlog_handle: &str, activity_key: &str) -> Result<
 /// 6. Retain only maximal (A,B) pairs.
 /// 7. Construct Petri net: source → start-transitions → places → end-transitions → sink.
 ///    L1L activities get a self-loop place.
-fn alpha_plus_plus_inner(
+pub(crate) fn alpha_plus_plus_inner(
     log: &EventLog,
     activity_key: &str,
     min_support: f64,
@@ -472,6 +468,79 @@ pub fn discover_alpha_plus_plus(
     }))
 }
 
+/// Public thin wrapper around `alpha_plus_plus_inner` for integration tests and
+/// external callers that cannot access `pub(crate)` items.
+pub fn discover_alpha_plus_plus_from_log(
+    log: &EventLog,
+    activity_key: &str,
+    min_support: f64,
+) -> Result<PetriNet, String> {
+    alpha_plus_plus_inner(log, activity_key, min_support)
+        .map_err(|e| e.as_string().unwrap_or_else(|| "alpha++ error".to_string()))
+}
+
+/// Pure-Rust DFG filtered discovery without wasm-bindgen. Used by integration tests.
+pub fn discover_dfg_filtered_from_log(
+    log: &EventLog,
+    activity_key: &str,
+    min_frequency: usize,
+) -> DirectlyFollowsGraph {
+    let mut dfg = DirectlyFollowsGraph::new();
+
+    let all_activities = log.get_activities(activity_key);
+    for activity in &all_activities {
+        dfg.nodes.push(DFGNode {
+            id: activity.clone(),
+            label: activity.clone(),
+            frequency: 0,
+        });
+    }
+
+    let node_index: FxHashMap<&str, usize> = all_activities
+        .iter()
+        .enumerate()
+        .map(|(i, a)| (a.as_str(), i))
+        .collect();
+
+    for trace in &log.traces {
+        for event in &trace.events {
+            if let Some(AttributeValue::String(activity)) = event.attributes.get(activity_key) {
+                if let Some(&idx) = node_index.get(activity.as_str()) {
+                    dfg.nodes[idx].frequency += 1;
+                }
+            }
+        }
+    }
+
+    let all_relations = log.get_directly_follows(activity_key);
+    for (from, to, freq) in all_relations {
+        if freq >= min_frequency {
+            dfg.edges.push(DirectlyFollowsRelation { from, to, frequency: freq });
+        }
+    }
+
+    for trace in &log.traces {
+        if let Some(act) = trace
+            .events
+            .first()
+            .and_then(|e| e.attributes.get(activity_key))
+            .and_then(|v| v.as_string())
+        {
+            *dfg.start_activities.entry(act.to_owned()).or_insert(0) += 1;
+        }
+        if let Some(act) = trace
+            .events
+            .last()
+            .and_then(|e| e.attributes.get(activity_key))
+            .and_then(|v| v.as_string())
+        {
+            *dfg.end_activities.entry(act.to_owned()).or_insert(0) += 1;
+        }
+    }
+
+    dfg
+}
+
 /// Discover DFG with frequency filtering
 #[wasm_bindgen]
 pub fn discover_dfg_filtered(
@@ -479,75 +548,8 @@ pub fn discover_dfg_filtered(
     activity_key: &str,
     min_frequency: usize,
 ) -> Result<JsValue, JsValue> {
-    // Compute inside closure (no store — avoids mutex re-entry), store outside.
-    let dfg = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
-            let mut dfg = DirectlyFollowsGraph::new();
-
-            // Get all activities
-            let all_activities = log.get_activities(activity_key);
-            for activity in &all_activities {
-                dfg.nodes.push(DFGNode {
-                    id: activity.clone(),
-                    label: activity.clone(),
-                    frequency: 0,
-                });
-            }
-
-            // Build O(1) index: activity name → node position
-            let node_index: FxHashMap<&str, usize> = all_activities
-                .iter()
-                .enumerate()
-                .map(|(i, a)| (a.as_str(), i))
-                .collect();
-
-            // Count activity frequencies
-            for trace in &log.traces {
-                for event in &trace.events {
-                    if let Some(AttributeValue::String(activity)) =
-                        event.attributes.get(activity_key)
-                    {
-                        if let Some(&idx) = node_index.get(activity.as_str()) {
-                            dfg.nodes[idx].frequency += 1;
-                        }
-                    }
-                }
-            }
-
-            // Get directly-follows relations with filtering
-            let all_relations = log.get_directly_follows(activity_key);
-            for (from, to, freq) in all_relations {
-                if freq >= min_frequency {
-                    dfg.edges.push(DirectlyFollowsRelation {
-                        from,
-                        to,
-                        frequency: freq,
-                    });
-                }
-            }
-
-            // Get start and end activities using .first()/.last() — no index arithmetic
-            for trace in &log.traces {
-                if let Some(act) = trace
-                    .events
-                    .first()
-                    .and_then(|e| e.attributes.get(activity_key))
-                    .and_then(|v| v.as_string())
-                {
-                    *dfg.start_activities.entry(act.to_owned()).or_insert(0) += 1;
-                }
-                if let Some(act) = trace
-                    .events
-                    .last()
-                    .and_then(|e| e.attributes.get(activity_key))
-                    .and_then(|v| v.as_string())
-                {
-                    *dfg.end_activities.entry(act.to_owned()).or_insert(0) += 1;
-                }
-            }
-
-            Ok(dfg)
-        }
+    let log = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
+        Some(StoredObject::EventLog(log)) => Ok(log.clone()),
         Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
         None => Err(wasm_err(
             codes::INVALID_HANDLE,
@@ -555,6 +557,7 @@ pub fn discover_dfg_filtered(
         )),
     })?;
 
+    let dfg = discover_dfg_filtered_from_log(&log, activity_key, min_frequency);
     let n_nodes = dfg.nodes.len();
     let n_edges = dfg.edges.len();
     let handle = get_or_init_state()

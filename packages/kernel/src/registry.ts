@@ -183,10 +183,10 @@ export class AlgorithmRegistry {
     // Alpha++ (improved Alpha algorithm)
     this.registerWithInferredProfiles({
       id: 'alpha_plus_plus',
-      name: 'Alpha++ (Improved Alpha) — STUB',
+      name: 'Alpha++ (Improved Alpha)',
       description:
-        'INCOMPLETE STUB: Frequency-filtered DFG wrapped as Petri net. True Alpha++ place discovery not implemented. For production use, prefer Genetic Algorithm or ILP.',
-      outputType: 'dfg',
+        'Alpha++ algorithm (de Medeiros et al. 2004). Extends the original Alpha algorithm with explicit handling of length-1 loops (self-loops) and length-2 loops, reclassifying parallel short-loop pairs as causal. Produces a proper Petri net with source/sink places and maximal (A,B) place candidates.',
+      outputType: 'petrinet',
       complexity: 'O(n²)',
       speedTier: 20,
       qualityTier: 45,
@@ -197,6 +197,14 @@ export class AlgorithmRegistry {
           description: 'Event attribute key for activity names',
           required: true,
           default: 'concept:name',
+        },
+        {
+          name: 'min_support',
+          type: 'number',
+          description:
+            'Minimum support threshold [0,1] for filtering rare directly-follows relations. 0.0 = no filtering.',
+          required: false,
+          default: 0.0,
         },
       ],
       supportedProfiles: ['balanced', 'quality'],
@@ -591,13 +599,13 @@ export class AlgorithmRegistry {
       scalesWell: false,
     });
 
-    // ILP Discovery (STUB)
+    // ILP Discovery
     this.registerWithInferredProfiles({
       id: 'ilp',
-      name: 'Integer Linear Programming (ILP) — STUB',
+      name: 'Integer Linear Programming (ILP)',
       description:
-        'INCOMPLETE STUB: DFG projected as Petri net. True ILP solver with place minimization not implemented. Use Optimized DFG or Genetic Algorithm for similar quality.',
-      outputType: 'dfg',
+        'Region-based Petri net discovery. Finds causal place candidates (1-to-1, AND-splits, AND-joins) validated by token replay, with greedy minimization. Produces precise Petri nets with explicit parallel-join/split structure.',
+      outputType: 'petrinet',
       complexity: 'NP-Hard',
       speedTier: 80,
       qualityTier: 90,

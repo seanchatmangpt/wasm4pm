@@ -86,16 +86,18 @@ pub mod state;
 pub mod types;
 
 use std::cell::RefCell;
-use tracing_subscriber::fmt::format::FmtSpan;
 
 #[wasm_bindgen(start)]
 pub fn main() {
     #[cfg(feature = "console_error_panic_hook")]
     console_error_panic_hook::set_once();
 
-    tracing_subscriber::fmt()
-        .with_span_events(FmtSpan::CLOSE)
-        .init();
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        tracing_subscriber::fmt()
+            .with_span_events(tracing_subscriber::fmt::format::FmtSpan::CLOSE)
+            .init();
+    }
 }
 
 // Drift detection thresholds (configurable via set_drift_thresholds)
@@ -381,6 +383,32 @@ pub mod prediction_outcome;
 pub mod prediction_remaining_time;
 #[cfg(feature = "ml")]
 pub mod prediction_resource;
+#[cfg(feature = "miniml")]
+pub mod prediction_rf;
+#[cfg(all(feature = "ml", feature = "miniml"))]
+pub mod statistical_analysis;
+#[cfg(feature = "miniml")]
+pub mod automembrane;
+#[cfg(feature = "miniml")]
+pub mod benchmark_runner;
+#[cfg(feature = "miniml")]
+pub mod actor_envelope;
+#[cfg(feature = "miniml")]
+pub mod object_envelope;
+#[cfg(feature = "miniml")]
+pub mod route_envelope;
+#[cfg(feature = "miniml")]
+pub mod automl_envelope;
+#[cfg(feature = "miniml")]
+pub mod drift_manager;
+#[cfg(feature = "miniml")]
+pub mod time_envelope;
+
+// Utilities always available
+pub mod duration_utils;
+
+// Trace embeddings (gated internally by #![cfg(feature = "miniml")])
+pub mod trace_embeddings;
 
 // Streaming algorithms (gated by streaming_basic or streaming_full features)
 #[cfg(feature = "streaming_basic")]
@@ -543,6 +571,13 @@ thread_local! {
     #[cfg(feature = "cloud")]
     pub static AUTO_PROCESS_AGENT: RefCell<autoprocess::AutoProcessAgent> =
         RefCell::new(autoprocess::AutoProcessAgent::new());
+
+    /// UCB1 bandit for Fallback action — selects best discovery algorithm when
+    /// the RL system triggers a Fallback action, replacing the hardcoded "dfg".
+    /// Gated on ml feature (prediction_resource is ml-gated).
+    #[cfg(feature = "ml")]
+    pub static FALLBACK_BANDIT: RefCell<Option<crate::prediction_resource::BanditState>> =
+        RefCell::new(None);
 }
 
 // ML contextual bandits — LinUCB CPU baseline (ground truth for GPU parity)
@@ -702,7 +737,8 @@ pub fn reset_drift_thresholds() -> String {
 /// SIMD-accelerated token replay for conformance checking.
 ///
 /// Discovers a DFG from the log, builds a SimdPetriNet, then replays
-/// every trace and returns fitness / precision / per-case diagnostics.
+/// every trace and returns a JSON string with `overall_fitness`, `precision`,
+/// and per-case diagnostics (each trace has a `fitness` field).
 #[cfg(feature = "conformance_basic")]
 #[wasm_bindgen]
 pub fn simd_token_replay(log_handle: &str, activity_key: &str) -> String {
@@ -1566,12 +1602,48 @@ pub fn autonomic_execute_cycle(
             )
         }
         "Fallback" => {
-            // Override algorithm to "dfg", reduce event budget to 10%
+            // Use UCB1 bandit to select fallback algorithm; default to "dfg"
+            #[cfg(feature = "ml")]
+            let fallback_algo = FALLBACK_BANDIT.with(|fb| {
+                let mut guard = fb.borrow_mut();
+                // Lazy-init on first use
+                if guard.is_none() {
+                    *guard = Some(crate::prediction_resource::BanditState {
+                        arms: vec![
+                            crate::prediction_resource::BanditArm {
+                                name: "dfg".to_string(),
+                                total_reward: 0.0,
+                                pull_count: 0,
+                            },
+                            crate::prediction_resource::BanditArm {
+                                name: "heuristic_miner".to_string(),
+                                total_reward: 0.0,
+                                pull_count: 0,
+                            },
+                            crate::prediction_resource::BanditArm {
+                                name: "alpha_plus_plus".to_string(),
+                                total_reward: 0.0,
+                                pull_count: 0,
+                            },
+                        ],
+                        total_pulls: 0,
+                    });
+                }
+                crate::prediction_resource::compute_ucb1_selection(
+                    guard.as_ref().unwrap(),
+                    std::f64::consts::SQRT_2,
+                )
+                .map(|sel| sel.selected.clone())
+                .unwrap_or_else(|_| "dfg".to_string())
+            });
+            #[cfg(not(feature = "ml"))]
+            let fallback_algo = "dfg".to_string();
+
             LAST_ALGORITHM.with(|la| {
-                *la.borrow_mut() = "dfg".to_string();
+                *la.borrow_mut() = fallback_algo.clone();
             });
             (
-                "fallback: switch to dfg, reduce event budget 10%".to_string(),
+                format!("fallback: switch to {}, reduce event budget 10%", fallback_algo),
                 "fallback".to_string(),
             )
         }

@@ -1,0 +1,1637 @@
+{
+  "timestamp": "2026-05-07T14:55:42.229Z",
+  "wasm_version": "26.4.28",
+  "total_algorithms": 41,
+  "passing": 39,
+  "failing": 2,
+  "pass_rate": "95.1%",
+  "log_sizes_tested": [
+    50,
+    500,
+    5000
+  ],
+  "algorithms": {
+    "dfg": {
+      "name": "dfg",
+      "category": "discovery",
+      "errors": 0,
+      "tested": 3,
+      "total_time_ms": 3,
+      "log_results": {
+        "50": {
+          "algorithm": "dfg",
+          "category": "discovery",
+          "logSize": 50,
+          "edges": 7,
+          "activities": 4,
+          "time_ms": 2,
+          "error": null
+        },
+        "500": {
+          "algorithm": "dfg",
+          "category": "discovery",
+          "logSize": 500,
+          "edges": 21,
+          "activities": 7,
+          "time_ms": 0,
+          "error": null
+        },
+        "5000": {
+          "algorithm": "dfg",
+          "category": "discovery",
+          "logSize": 5000,
+          "edges": 21,
+          "activities": 7,
+          "time_ms": 1,
+          "error": null
+        }
+      },
+      "pass_rate": 100,
+      "avg_time_ms": 1,
+      "status": "PASS"
+    },
+    "simd_streaming_dfg": {
+      "name": "simd_streaming_dfg",
+      "category": "discovery",
+      "errors": 0,
+      "tested": 3,
+      "total_time_ms": 2,
+      "log_results": {
+        "50": {
+          "algorithm": "simd_streaming_dfg",
+          "category": "discovery",
+          "logSize": 50,
+          "edges": 7,
+          "activities": 4,
+          "time_ms": 1,
+          "error": null
+        },
+        "500": {
+          "algorithm": "simd_streaming_dfg",
+          "category": "discovery",
+          "logSize": 500,
+          "edges": 21,
+          "activities": 7,
+          "time_ms": 0,
+          "error": null
+        },
+        "5000": {
+          "algorithm": "simd_streaming_dfg",
+          "category": "discovery",
+          "logSize": 5000,
+          "edges": 21,
+          "activities": 7,
+          "time_ms": 1,
+          "error": null
+        }
+      },
+      "pass_rate": 100,
+      "avg_time_ms": 0.6666666666666666,
+      "status": "PASS"
+    },
+    "process_skeleton": {
+      "name": "process_skeleton",
+      "category": "discovery",
+      "errors": 0,
+      "tested": 3,
+      "total_time_ms": 2,
+      "log_results": {
+        "50": {
+          "algorithm": "process_skeleton",
+          "category": "discovery",
+          "logSize": 50,
+          "edges": 7,
+          "activities": 4,
+          "handle": "obj_3",
+          "time_ms": 1,
+          "error": null
+        },
+        "500": {
+          "algorithm": "process_skeleton",
+          "category": "discovery",
+          "logSize": 500,
+          "edges": 21,
+          "activities": 7,
+          "handle": "obj_68",
+          "time_ms": 0,
+          "error": null
+        },
+        "5000": {
+          "algorithm": "process_skeleton",
+          "category": "discovery",
+          "logSize": 5000,
+          "edges": 21,
+          "activities": 7,
+          "handle": "obj_133",
+          "time_ms": 1,
+          "error": null
+        }
+      },
+      "pass_rate": 100,
+      "avg_time_ms": 0.6666666666666666,
+      "status": "PASS"
+    },
+    "alpha_plus_plus": {
+      "name": "alpha_plus_plus",
+      "category": "discovery",
+      "errors": 0,
+      "tested": 3,
+      "total_time_ms": 2,
+      "log_results": {
+        "50": {
+          "algorithm": "alpha_plus_plus",
+          "category": "discovery",
+          "logSize": 50,
+          "places": 6,
+          "transitions": 4,
+          "arcs": 10,
+          "handle": "obj_5",
+          "time_ms": 1,
+          "error": null
+        },
+        "500": {
+          "algorithm": "alpha_plus_plus",
+          "category": "discovery",
+          "logSize": 500,
+          "places": 13,
+          "transitions": 7,
+          "arcs": 25,
+          "handle": "obj_70",
+          "time_ms": 0,
+          "error": null
+        },
+        "5000": {
+          "algorithm": "alpha_plus_plus",
+          "category": "discovery",
+          "logSize": 5000,
+          "places": 13,
+          "transitions": 7,
+          "arcs": 25,
+          "handle": "obj_135",
+          "time_ms": 1,
+          "error": null
+        }
+      },
+      "pass_rate": 100,
+      "avg_time_ms": 0.6666666666666666,
+      "status": "PASS"
+    },
+    "heuristic_miner": {
+      "name": "heuristic_miner",
+      "category": "discovery",
+      "errors": 0,
+      "tested": 3,
+      "total_time_ms": 1,
+      "log_results": {
+        "50": {
+          "algorithm": "heuristic_miner",
+          "category": "discovery",
+          "logSize": 50,
+          "edges": 0,
+          "activities": 4,
+          "time_ms": 0,
+          "error": null
+        },
+        "500": {
+          "algorithm": "heuristic_miner",
+          "category": "discovery",
+          "logSize": 500,
+          "edges": 0,
+          "activities": 7,
+          "time_ms": 0,
+          "error": null
+        },
+        "5000": {
+          "algorithm": "heuristic_miner",
+          "category": "discovery",
+          "logSize": 5000,
+          "edges": 0,
+          "activities": 7,
+          "time_ms": 1,
+          "error": null
+        }
+      },
+      "pass_rate": 100,
+      "avg_time_ms": 0.3333333333333333,
+      "status": "PASS"
+    },
+    "inductive_miner": {
+      "name": "inductive_miner",
+      "category": "discovery",
+      "errors": 0,
+      "tested": 3,
+      "total_time_ms": 8,
+      "log_results": {
+        "50": {
+          "algorithm": "inductive_miner",
+          "category": "discovery",
+          "logSize": 50,
+          "nodes": 1,
+          "depth": 0,
+          "time_ms": 1,
+          "error": null
+        },
+        "500": {
+          "algorithm": "inductive_miner",
+          "category": "discovery",
+          "logSize": 500,
+          "nodes": 1,
+          "depth": 0,
+          "time_ms": 1,
+          "error": null
+        },
+        "5000": {
+          "algorithm": "inductive_miner",
+          "category": "discovery",
+          "logSize": 5000,
+          "nodes": 1,
+          "depth": 0,
+          "time_ms": 6,
+          "error": null
+        }
+      },
+      "pass_rate": 100,
+      "avg_time_ms": 2.6666666666666665,
+      "status": "PASS"
+    },
+    "hill_climbing": {
+      "name": "hill_climbing",
+      "category": "discovery",
+      "errors": 0,
+      "tested": 3,
+      "total_time_ms": 1,
+      "log_results": {
+        "50": {
+          "algorithm": "hill_climbing",
+          "category": "discovery",
+          "logSize": 50,
+          "places": 0,
+          "transitions": 0,
+          "fitness": 0,
+          "time_ms": 0,
+          "error": null
+        },
+        "500": {
+          "algorithm": "hill_climbing",
+          "category": "discovery",
+          "logSize": 500,
+          "places": 0,
+          "transitions": 0,
+          "fitness": 0,
+          "time_ms": 0,
+          "error": null
+        },
+        "5000": {
+          "algorithm": "hill_climbing",
+          "category": "discovery",
+          "logSize": 5000,
+          "places": 0,
+          "transitions": 0,
+          "fitness": 0,
+          "time_ms": 1,
+          "error": null
+        }
+      },
+      "pass_rate": 100,
+      "avg_time_ms": 0.3333333333333333,
+      "status": "PASS"
+    },
+    "declare": {
+      "name": "declare",
+      "category": "discovery",
+      "errors": 0,
+      "tested": 3,
+      "total_time_ms": 3,
+      "log_results": {
+        "50": {
+          "algorithm": "declare",
+          "category": "discovery",
+          "logSize": 50,
+          "constraints": 25,
+          "activities": 4,
+          "time_ms": 0,
+          "error": null
+        },
+        "500": {
+          "algorithm": "declare",
+          "category": "discovery",
+          "logSize": 500,
+          "constraints": 55,
+          "activities": 7,
+          "time_ms": 1,
+          "error": null
+        },
+        "5000": {
+          "algorithm": "declare",
+          "category": "discovery",
+          "logSize": 5000,
+          "constraints": 53,
+          "activities": 7,
+          "time_ms": 2,
+          "error": null
+        }
+      },
+      "pass_rate": 100,
+      "avg_time_ms": 1,
+      "status": "PASS"
+    },
+    "simulated_annealing": {
+      "name": "simulated_annealing",
+      "category": "discovery",
+      "errors": 0,
+      "tested": 3,
+      "total_time_ms": 1,
+      "log_results": {
+        "50": {
+          "algorithm": "simulated_annealing",
+          "category": "discovery",
+          "logSize": 50,
+          "places": 0,
+          "transitions": 0,
+          "fitness": 0.2,
+          "time_ms": 1,
+          "error": null
+        },
+        "500": {
+          "algorithm": "simulated_annealing",
+          "category": "discovery",
+          "logSize": 500,
+          "places": 0,
+          "transitions": 0,
+          "fitness": 0.2,
+          "time_ms": 0,
+          "error": null
+        },
+        "5000": {
+          "algorithm": "simulated_annealing",
+          "category": "discovery",
+          "logSize": 5000,
+          "places": 0,
+          "transitions": 0,
+          "fitness": 0.2,
+          "time_ms": 0,
+          "error": null
+        }
+      },
+      "pass_rate": 100,
+      "avg_time_ms": 0.3333333333333333,
+      "status": "PASS"
+    },
+    "a_star": {
+      "name": "a_star",
+      "category": "discovery",
+      "errors": 0,
+      "tested": 3,
+      "total_time_ms": 4,
+      "log_results": {
+        "50": {
+          "algorithm": "a_star",
+          "category": "discovery",
+          "logSize": 50,
+          "places": 0,
+          "transitions": 0,
+          "fitness": 0,
+          "time_ms": 1,
+          "error": null
+        },
+        "500": {
+          "algorithm": "a_star",
+          "category": "discovery",
+          "logSize": 500,
+          "places": 0,
+          "transitions": 0,
+          "fitness": 0,
+          "time_ms": 0,
+          "error": null
+        },
+        "5000": {
+          "algorithm": "a_star",
+          "category": "discovery",
+          "logSize": 5000,
+          "places": 0,
+          "transitions": 0,
+          "fitness": 0,
+          "time_ms": 3,
+          "error": null
+        }
+      },
+      "pass_rate": 100,
+      "avg_time_ms": 1.3333333333333333,
+      "status": "PASS"
+    },
+    "aco": {
+      "name": "aco",
+      "category": "discovery",
+      "errors": 0,
+      "tested": 3,
+      "total_time_ms": 7,
+      "log_results": {
+        "50": {
+          "algorithm": "aco",
+          "category": "discovery",
+          "logSize": 50,
+          "places": 0,
+          "transitions": 0,
+          "fitness": 0,
+          "time_ms": 2,
+          "error": null
+        },
+        "500": {
+          "algorithm": "aco",
+          "category": "discovery",
+          "logSize": 500,
+          "places": 0,
+          "transitions": 0,
+          "fitness": 0,
+          "time_ms": 2,
+          "error": null
+        },
+        "5000": {
+          "algorithm": "aco",
+          "category": "discovery",
+          "logSize": 5000,
+          "places": 0,
+          "transitions": 0,
+          "fitness": 0,
+          "time_ms": 3,
+          "error": null
+        }
+      },
+      "pass_rate": 100,
+      "avg_time_ms": 2.3333333333333335,
+      "status": "PASS"
+    },
+    "pso": {
+      "name": "pso",
+      "category": "discovery",
+      "errors": 0,
+      "tested": 3,
+      "total_time_ms": 8,
+      "log_results": {
+        "50": {
+          "algorithm": "pso",
+          "category": "discovery",
+          "logSize": 50,
+          "places": 0,
+          "fitness": 0,
+          "time_ms": 2,
+          "error": null
+        },
+        "500": {
+          "algorithm": "pso",
+          "category": "discovery",
+          "logSize": 500,
+          "places": 0,
+          "fitness": 0,
+          "time_ms": 2,
+          "error": null
+        },
+        "5000": {
+          "algorithm": "pso",
+          "category": "discovery",
+          "logSize": 5000,
+          "places": 0,
+          "fitness": 0,
+          "time_ms": 4,
+          "error": null
+        }
+      },
+      "pass_rate": 100,
+      "avg_time_ms": 2.6666666666666665,
+      "status": "PASS"
+    },
+    "genetic_algorithm": {
+      "name": "genetic_algorithm",
+      "category": "discovery",
+      "errors": 0,
+      "tested": 3,
+      "total_time_ms": 10,
+      "log_results": {
+        "50": {
+          "algorithm": "genetic_algorithm",
+          "category": "discovery",
+          "logSize": 50,
+          "places": 0,
+          "fitness": 0,
+          "time_ms": 2,
+          "error": null
+        },
+        "500": {
+          "algorithm": "genetic_algorithm",
+          "category": "discovery",
+          "logSize": 500,
+          "places": 0,
+          "fitness": 0,
+          "time_ms": 3,
+          "error": null
+        },
+        "5000": {
+          "algorithm": "genetic_algorithm",
+          "category": "discovery",
+          "logSize": 5000,
+          "places": 0,
+          "fitness": 0,
+          "time_ms": 5,
+          "error": null
+        }
+      },
+      "pass_rate": 100,
+      "avg_time_ms": 3.3333333333333335,
+      "status": "PASS"
+    },
+    "optimized_dfg": {
+      "name": "optimized_dfg",
+      "category": "discovery",
+      "errors": 0,
+      "tested": 3,
+      "total_time_ms": 1,
+      "log_results": {
+        "50": {
+          "algorithm": "optimized_dfg",
+          "category": "discovery",
+          "logSize": 50,
+          "edges": 0,
+          "activities": 0,
+          "time_ms": 0,
+          "error": null
+        },
+        "500": {
+          "algorithm": "optimized_dfg",
+          "category": "discovery",
+          "logSize": 500,
+          "edges": 0,
+          "activities": 0,
+          "time_ms": 0,
+          "error": null
+        },
+        "5000": {
+          "algorithm": "optimized_dfg",
+          "category": "discovery",
+          "logSize": 5000,
+          "edges": 0,
+          "activities": 0,
+          "time_ms": 1,
+          "error": null
+        }
+      },
+      "pass_rate": 100,
+      "avg_time_ms": 0.3333333333333333,
+      "status": "PASS"
+    },
+    "ilp": {
+      "name": "ilp",
+      "category": "discovery",
+      "errors": 0,
+      "tested": 3,
+      "total_time_ms": 2,
+      "log_results": {
+        "50": {
+          "algorithm": "ilp",
+          "category": "discovery",
+          "logSize": 50,
+          "places": 9,
+          "transitions": 4,
+          "fitness": 1,
+          "time_ms": 0,
+          "error": null
+        },
+        "500": {
+          "algorithm": "ilp",
+          "category": "discovery",
+          "logSize": 500,
+          "places": 23,
+          "transitions": 7,
+          "fitness": 1,
+          "time_ms": 1,
+          "error": null
+        },
+        "5000": {
+          "algorithm": "ilp",
+          "category": "discovery",
+          "logSize": 5000,
+          "places": 23,
+          "transitions": 7,
+          "fitness": 1,
+          "time_ms": 1,
+          "error": null
+        }
+      },
+      "pass_rate": 100,
+      "avg_time_ms": 0.6666666666666666,
+      "status": "PASS"
+    },
+    "token_replay": {
+      "name": "token_replay",
+      "category": "conformance",
+      "errors": 0,
+      "tested": 3,
+      "total_time_ms": 6,
+      "log_results": {
+        "50": {
+          "algorithm": "token_replay",
+          "category": "conformance",
+          "logSize": 50,
+          "fitness": 0.21336206896551724,
+          "traces": 5,
+          "time_ms": 1,
+          "error": null
+        },
+        "500": {
+          "algorithm": "token_replay",
+          "category": "conformance",
+          "logSize": 500,
+          "fitness": 0.3194172646227441,
+          "traces": 50,
+          "time_ms": 1,
+          "error": null
+        },
+        "5000": {
+          "algorithm": "token_replay",
+          "category": "conformance",
+          "logSize": 5000,
+          "fitness": 0.343441788523016,
+          "traces": 500,
+          "time_ms": 4,
+          "error": null
+        }
+      },
+      "pass_rate": 100,
+      "avg_time_ms": 2,
+      "status": "PASS"
+    },
+    "alignments": {
+      "name": "alignments",
+      "category": "conformance",
+      "errors": 0,
+      "tested": 3,
+      "total_time_ms": 22,
+      "log_results": {
+        "50": {
+          "algorithm": "alignments",
+          "category": "conformance",
+          "logSize": 50,
+          "fitness": 0.5652173913043479,
+          "total_cost": 10,
+          "traces": 5,
+          "time_ms": 1,
+          "error": null
+        },
+        "500": {
+          "algorithm": "alignments",
+          "category": "conformance",
+          "logSize": 500,
+          "fitness": 0,
+          "total_cost": 302,
+          "traces": 50,
+          "time_ms": 2,
+          "error": null
+        },
+        "5000": {
+          "algorithm": "alignments",
+          "category": "conformance",
+          "logSize": 5000,
+          "fitness": 0,
+          "total_cost": 3270,
+          "traces": 500,
+          "time_ms": 19,
+          "error": null
+        }
+      },
+      "pass_rate": 100,
+      "avg_time_ms": 7.333333333333333,
+      "status": "PASS"
+    },
+    "compute_alignments": {
+      "name": "compute_alignments",
+      "category": "conformance",
+      "errors": 0,
+      "tested": 3,
+      "total_time_ms": 14,
+      "log_results": {
+        "50": {
+          "algorithm": "compute_alignments",
+          "category": "conformance",
+          "logSize": 50,
+          "alignment_count": 5,
+          "avg_fitness": 1,
+          "time_ms": 1,
+          "error": null
+        },
+        "500": {
+          "algorithm": "compute_alignments",
+          "category": "conformance",
+          "logSize": 500,
+          "alignment_count": 50,
+          "avg_fitness": 1,
+          "time_ms": 1,
+          "error": null
+        },
+        "5000": {
+          "algorithm": "compute_alignments",
+          "category": "conformance",
+          "logSize": 5000,
+          "alignment_count": 500,
+          "avg_fitness": 1,
+          "time_ms": 12,
+          "error": null
+        }
+      },
+      "pass_rate": 100,
+      "avg_time_ms": 4.666666666666667,
+      "status": "PASS"
+    },
+    "petri_net_reduction": {
+      "name": "petri_net_reduction",
+      "category": "analysis",
+      "errors": 0,
+      "tested": 3,
+      "total_time_ms": 3,
+      "log_results": {
+        "50": {
+          "algorithm": "petri_net_reduction",
+          "category": "analysis",
+          "logSize": 50,
+          "original_places": 6,
+          "reduced_places": 5,
+          "places_removed": 1,
+          "time_ms": 1,
+          "error": null
+        },
+        "500": {
+          "algorithm": "petri_net_reduction",
+          "category": "analysis",
+          "logSize": 500,
+          "original_places": 13,
+          "reduced_places": 11,
+          "places_removed": 2,
+          "time_ms": 1,
+          "error": null
+        },
+        "5000": {
+          "algorithm": "petri_net_reduction",
+          "category": "analysis",
+          "logSize": 5000,
+          "original_places": 13,
+          "reduced_places": 11,
+          "places_removed": 2,
+          "time_ms": 1,
+          "error": null
+        }
+      },
+      "pass_rate": 100,
+      "avg_time_ms": 1,
+      "status": "PASS"
+    },
+    "complexity_metrics": {
+      "name": "complexity_metrics",
+      "category": "analysis",
+      "errors": 0,
+      "tested": 3,
+      "total_time_ms": 2,
+      "log_results": {
+        "50": {
+          "algorithm": "complexity_metrics",
+          "category": "analysis",
+          "logSize": 50,
+          "cfc": 1,
+          "density": 0,
+          "places": 0,
+          "time_ms": 1,
+          "error": null
+        },
+        "500": {
+          "algorithm": "complexity_metrics",
+          "category": "analysis",
+          "logSize": 500,
+          "cfc": 1,
+          "density": 0,
+          "places": 0,
+          "time_ms": 0,
+          "error": null
+        },
+        "5000": {
+          "algorithm": "complexity_metrics",
+          "category": "analysis",
+          "logSize": 5000,
+          "cfc": 1,
+          "density": 0,
+          "places": 0,
+          "time_ms": 1,
+          "error": null
+        }
+      },
+      "pass_rate": 100,
+      "avg_time_ms": 0.6666666666666666,
+      "status": "PASS"
+    },
+    "performance_spectrum": {
+      "name": "performance_spectrum",
+      "category": "analysis",
+      "errors": 0,
+      "tested": 3,
+      "total_time_ms": 2,
+      "log_results": {
+        "50": {
+          "algorithm": "performance_spectrum",
+          "category": "analysis",
+          "logSize": 50,
+          "measurements": 0,
+          "time_ms": 0,
+          "error": null
+        },
+        "500": {
+          "algorithm": "performance_spectrum",
+          "category": "analysis",
+          "logSize": 500,
+          "measurements": 0,
+          "time_ms": 1,
+          "error": null
+        },
+        "5000": {
+          "algorithm": "performance_spectrum",
+          "category": "analysis",
+          "logSize": 5000,
+          "measurements": 0,
+          "time_ms": 1,
+          "error": null
+        }
+      },
+      "pass_rate": 100,
+      "avg_time_ms": 0.6666666666666666,
+      "status": "PASS"
+    },
+    "correlation_miner": {
+      "name": "correlation_miner",
+      "category": "analysis",
+      "errors": 0,
+      "tested": 3,
+      "total_time_ms": 4,
+      "log_results": {
+        "50": {
+          "algorithm": "correlation_miner",
+          "category": "analysis",
+          "logSize": 50,
+          "edges": 2,
+          "time_ms": 1,
+          "error": null
+        },
+        "500": {
+          "algorithm": "correlation_miner",
+          "category": "analysis",
+          "logSize": 500,
+          "edges": 7,
+          "time_ms": 0,
+          "error": null
+        },
+        "5000": {
+          "algorithm": "correlation_miner",
+          "category": "analysis",
+          "logSize": 5000,
+          "edges": 7,
+          "time_ms": 3,
+          "error": null
+        }
+      },
+      "pass_rate": 100,
+      "avg_time_ms": 1.3333333333333333,
+      "status": "PASS"
+    },
+    "batches": {
+      "name": "batches",
+      "category": "analysis",
+      "errors": 0,
+      "tested": 3,
+      "total_time_ms": 26,
+      "log_results": {
+        "50": {
+          "algorithm": "batches",
+          "category": "analysis",
+          "logSize": 50,
+          "batch_count": 3,
+          "time_ms": 1,
+          "error": null
+        },
+        "500": {
+          "algorithm": "batches",
+          "category": "analysis",
+          "logSize": 500,
+          "batch_count": 66,
+          "time_ms": 2,
+          "error": null
+        },
+        "5000": {
+          "algorithm": "batches",
+          "category": "analysis",
+          "logSize": 5000,
+          "batch_count": 682,
+          "time_ms": 23,
+          "error": null
+        }
+      },
+      "pass_rate": 100,
+      "avg_time_ms": 8.666666666666666,
+      "status": "PASS"
+    },
+    "transition_system": {
+      "name": "transition_system",
+      "category": "analysis",
+      "errors": 0,
+      "tested": 3,
+      "total_time_ms": 5,
+      "log_results": {
+        "50": {
+          "algorithm": "transition_system",
+          "category": "analysis",
+          "logSize": 50,
+          "states": 0,
+          "transitions": 0,
+          "time_ms": 1,
+          "error": null
+        },
+        "500": {
+          "algorithm": "transition_system",
+          "category": "analysis",
+          "logSize": 500,
+          "states": 0,
+          "transitions": 0,
+          "time_ms": 2,
+          "error": null
+        },
+        "5000": {
+          "algorithm": "transition_system",
+          "category": "analysis",
+          "logSize": 5000,
+          "states": 0,
+          "transitions": 0,
+          "time_ms": 2,
+          "error": null
+        }
+      },
+      "pass_rate": 100,
+      "avg_time_ms": 1.6666666666666667,
+      "status": "PASS"
+    },
+    "log_to_trie": {
+      "name": "log_to_trie",
+      "category": "analysis",
+      "errors": 0,
+      "tested": 3,
+      "total_time_ms": 1,
+      "log_results": {
+        "50": {
+          "algorithm": "log_to_trie",
+          "category": "analysis",
+          "logSize": 50,
+          "nodes": 0,
+          "time_ms": 0,
+          "error": null
+        },
+        "500": {
+          "algorithm": "log_to_trie",
+          "category": "analysis",
+          "logSize": 500,
+          "nodes": 0,
+          "time_ms": 0,
+          "error": null
+        },
+        "5000": {
+          "algorithm": "log_to_trie",
+          "category": "analysis",
+          "logSize": 5000,
+          "nodes": 0,
+          "time_ms": 1,
+          "error": null
+        }
+      },
+      "pass_rate": 100,
+      "avg_time_ms": 0.3333333333333333,
+      "status": "PASS"
+    },
+    "temporal": {
+      "name": "temporal",
+      "category": "analysis",
+      "errors": 3,
+      "tested": 3,
+      "total_time_ms": 21,
+      "log_results": {
+        "50": {
+          "algorithm": "temporal",
+          "category": "analysis",
+          "logSize": 50,
+          "time_ms": 1,
+          "error": "memory access out of bounds"
+        },
+        "500": {
+          "algorithm": "temporal",
+          "category": "analysis",
+          "logSize": 500,
+          "time_ms": 2,
+          "error": "memory access out of bounds"
+        },
+        "5000": {
+          "algorithm": "temporal",
+          "category": "analysis",
+          "logSize": 5000,
+          "time_ms": 18,
+          "error": "memory access out of bounds"
+        }
+      },
+      "pass_rate": 0,
+      "avg_time_ms": 7,
+      "status": "FAIL"
+    },
+    "ml_classify": {
+      "name": "ml_classify",
+      "category": "ml",
+      "errors": 0,
+      "tested": 3,
+      "total_time_ms": 1,
+      "log_results": {
+        "50": {
+          "algorithm": "ml_classify",
+          "category": "ml",
+          "logSize": 50,
+          "accuracy": 0,
+          "error_msg": "Insufficient data for classification",
+          "time_ms": 0,
+          "error": null
+        },
+        "500": {
+          "algorithm": "ml_classify",
+          "category": "ml",
+          "logSize": 500,
+          "accuracy": 1,
+          "error_msg": null,
+          "time_ms": 0,
+          "error": null
+        },
+        "5000": {
+          "algorithm": "ml_classify",
+          "category": "ml",
+          "logSize": 5000,
+          "accuracy": 1,
+          "error_msg": null,
+          "time_ms": 1,
+          "error": null
+        }
+      },
+      "pass_rate": 100,
+      "avg_time_ms": 0.3333333333333333,
+      "status": "PASS"
+    },
+    "ml_cluster": {
+      "name": "ml_cluster",
+      "category": "ml",
+      "errors": 0,
+      "tested": 3,
+      "total_time_ms": 1,
+      "log_results": {
+        "50": {
+          "algorithm": "ml_cluster",
+          "category": "ml",
+          "logSize": 50,
+          "clusters": 3,
+          "silhouette": 0,
+          "time_ms": 0,
+          "error": null
+        },
+        "500": {
+          "algorithm": "ml_cluster",
+          "category": "ml",
+          "logSize": 500,
+          "clusters": 3,
+          "silhouette": 0,
+          "time_ms": 0,
+          "error": null
+        },
+        "5000": {
+          "algorithm": "ml_cluster",
+          "category": "ml",
+          "logSize": 5000,
+          "clusters": 3,
+          "silhouette": 0,
+          "time_ms": 1,
+          "error": null
+        }
+      },
+      "pass_rate": 100,
+      "avg_time_ms": 0.3333333333333333,
+      "status": "PASS"
+    },
+    "ml_forecast": {
+      "name": "ml_forecast",
+      "category": "ml",
+      "errors": 0,
+      "tested": 3,
+      "total_time_ms": 2,
+      "log_results": {
+        "50": {
+          "algorithm": "ml_forecast",
+          "category": "ml",
+          "logSize": 50,
+          "rmse": 0,
+          "mae": 0,
+          "predictions": 0,
+          "time_ms": 0,
+          "error": null
+        },
+        "500": {
+          "algorithm": "ml_forecast",
+          "category": "ml",
+          "logSize": 500,
+          "rmse": 0,
+          "mae": 0,
+          "predictions": 0,
+          "time_ms": 0,
+          "error": null
+        },
+        "5000": {
+          "algorithm": "ml_forecast",
+          "category": "ml",
+          "logSize": 5000,
+          "rmse": 0,
+          "mae": 0,
+          "predictions": 0,
+          "time_ms": 2,
+          "error": null
+        }
+      },
+      "pass_rate": 100,
+      "avg_time_ms": 0.6666666666666666,
+      "status": "PASS"
+    },
+    "ml_anomaly": {
+      "name": "ml_anomaly",
+      "category": "ml",
+      "errors": 0,
+      "tested": 3,
+      "total_time_ms": 20,
+      "log_results": {
+        "50": {
+          "algorithm": "ml_anomaly",
+          "category": "ml",
+          "logSize": 50,
+          "anomaly_count": 5,
+          "avg_score": 1.1108490523867034,
+          "time_ms": 0,
+          "error": null
+        },
+        "500": {
+          "algorithm": "ml_anomaly",
+          "category": "ml",
+          "logSize": 500,
+          "anomaly_count": 50,
+          "avg_score": 1.4854934872151808,
+          "time_ms": 1,
+          "error": null
+        },
+        "5000": {
+          "algorithm": "ml_anomaly",
+          "category": "ml",
+          "logSize": 5000,
+          "anomaly_count": 500,
+          "avg_score": 1.5464162876780785,
+          "time_ms": 19,
+          "error": null
+        }
+      },
+      "pass_rate": 100,
+      "avg_time_ms": 6.666666666666667,
+      "status": "PASS"
+    },
+    "ml_regress": {
+      "name": "ml_regress",
+      "category": "ml",
+      "errors": 0,
+      "tested": 3,
+      "total_time_ms": 2,
+      "log_results": {
+        "50": {
+          "algorithm": "ml_regress",
+          "category": "ml",
+          "logSize": 50,
+          "r2": 0,
+          "mae": 0,
+          "model_type": "",
+          "time_ms": 0,
+          "error": null
+        },
+        "500": {
+          "algorithm": "ml_regress",
+          "category": "ml",
+          "logSize": 500,
+          "r2": 0,
+          "mae": 0,
+          "model_type": "",
+          "time_ms": 0,
+          "error": null
+        },
+        "5000": {
+          "algorithm": "ml_regress",
+          "category": "ml",
+          "logSize": 5000,
+          "r2": 0,
+          "mae": 0,
+          "model_type": "",
+          "time_ms": 2,
+          "error": null
+        }
+      },
+      "pass_rate": 100,
+      "avg_time_ms": 0.6666666666666666,
+      "status": "PASS"
+    },
+    "ml_pca": {
+      "name": "ml_pca",
+      "category": "ml",
+      "errors": 0,
+      "tested": 3,
+      "total_time_ms": 1,
+      "log_results": {
+        "50": {
+          "algorithm": "ml_pca",
+          "category": "ml",
+          "logSize": 50,
+          "components": 0,
+          "variance_explained": 0,
+          "time_ms": 0,
+          "error": null
+        },
+        "500": {
+          "algorithm": "ml_pca",
+          "category": "ml",
+          "logSize": 500,
+          "components": 0,
+          "variance_explained": 0,
+          "time_ms": 0,
+          "error": null
+        },
+        "5000": {
+          "algorithm": "ml_pca",
+          "category": "ml",
+          "logSize": 5000,
+          "components": 0,
+          "variance_explained": 0,
+          "time_ms": 1,
+          "error": null
+        }
+      },
+      "pass_rate": 100,
+      "avg_time_ms": 0.3333333333333333,
+      "status": "PASS"
+    },
+    "pnml_import": {
+      "name": "pnml_import",
+      "category": "import_export",
+      "errors": 0,
+      "tested": 3,
+      "total_time_ms": 6,
+      "log_results": {
+        "50": {
+          "algorithm": "pnml_import",
+          "category": "import_export",
+          "logSize": 50,
+          "round_trip_ok": true,
+          "handle": "obj_54",
+          "time_ms": 3,
+          "error": null
+        },
+        "500": {
+          "algorithm": "pnml_import",
+          "category": "import_export",
+          "logSize": 500,
+          "round_trip_ok": true,
+          "handle": "obj_119",
+          "time_ms": 1,
+          "error": null
+        },
+        "5000": {
+          "algorithm": "pnml_import",
+          "category": "import_export",
+          "logSize": 5000,
+          "round_trip_ok": true,
+          "handle": "obj_184",
+          "time_ms": 2,
+          "error": null
+        }
+      },
+      "pass_rate": 100,
+      "avg_time_ms": 2,
+      "status": "PASS"
+    },
+    "bpmn_import": {
+      "name": "bpmn_import",
+      "category": "import_export",
+      "errors": 0,
+      "tested": 3,
+      "total_time_ms": 37,
+      "log_results": {
+        "50": {
+          "algorithm": "bpmn_import",
+          "category": "import_export",
+          "logSize": 50,
+          "bpmn_ok": true,
+          "bpmn_len": 1218,
+          "time_ms": 3,
+          "error": null
+        },
+        "500": {
+          "algorithm": "bpmn_import",
+          "category": "import_export",
+          "logSize": 500,
+          "bpmn_ok": true,
+          "bpmn_len": 1529,
+          "time_ms": 4,
+          "error": null
+        },
+        "5000": {
+          "algorithm": "bpmn_import",
+          "category": "import_export",
+          "logSize": 5000,
+          "bpmn_ok": true,
+          "bpmn_len": 1529,
+          "time_ms": 30,
+          "error": null
+        }
+      },
+      "pass_rate": 100,
+      "avg_time_ms": 12.333333333333334,
+      "status": "PASS"
+    },
+    "powl_to_process_tree": {
+      "name": "powl_to_process_tree",
+      "category": "import_export",
+      "errors": 0,
+      "tested": 3,
+      "total_time_ms": 33,
+      "log_results": {
+        "50": {
+          "algorithm": "powl_to_process_tree",
+          "category": "import_export",
+          "logSize": 50,
+          "conversion_ok": true,
+          "node_count": 6,
+          "time_ms": 1,
+          "error": null
+        },
+        "500": {
+          "algorithm": "powl_to_process_tree",
+          "category": "import_export",
+          "logSize": 500,
+          "conversion_ok": true,
+          "node_count": 9,
+          "time_ms": 4,
+          "error": null
+        },
+        "5000": {
+          "algorithm": "powl_to_process_tree",
+          "category": "import_export",
+          "logSize": 5000,
+          "conversion_ok": true,
+          "node_count": 9,
+          "time_ms": 28,
+          "error": null
+        }
+      },
+      "pass_rate": 100,
+      "avg_time_ms": 11,
+      "status": "PASS"
+    },
+    "causal_graph": {
+      "name": "causal_graph",
+      "category": "analysis",
+      "errors": 0,
+      "tested": 3,
+      "total_time_ms": 1,
+      "log_results": {
+        "50": {
+          "algorithm": "causal_graph",
+          "category": "analysis",
+          "logSize": 50,
+          "edges": 0,
+          "activities": 4,
+          "time_ms": 0,
+          "error": null
+        },
+        "500": {
+          "algorithm": "causal_graph",
+          "category": "analysis",
+          "logSize": 500,
+          "edges": 0,
+          "activities": 7,
+          "time_ms": 0,
+          "error": null
+        },
+        "5000": {
+          "algorithm": "causal_graph",
+          "category": "analysis",
+          "logSize": 5000,
+          "edges": 0,
+          "activities": 7,
+          "time_ms": 1,
+          "error": null
+        }
+      },
+      "pass_rate": 100,
+      "avg_time_ms": 0.3333333333333333,
+      "status": "PASS"
+    },
+    "streaming_log": {
+      "name": "streaming_log",
+      "category": "streaming",
+      "errors": 0,
+      "tested": 3,
+      "total_time_ms": 1,
+      "log_results": {
+        "50": {
+          "algorithm": "streaming_log",
+          "category": "streaming",
+          "logSize": 50,
+          "events": 5,
+          "traces": 2,
+          "ok": true,
+          "time_ms": 1,
+          "error": null
+        },
+        "500": {
+          "algorithm": "streaming_log",
+          "category": "streaming",
+          "logSize": 500,
+          "events": 5,
+          "traces": 2,
+          "ok": true,
+          "time_ms": 0,
+          "error": null
+        },
+        "5000": {
+          "algorithm": "streaming_log",
+          "category": "streaming",
+          "logSize": 5000,
+          "events": 5,
+          "traces": 2,
+          "ok": true,
+          "time_ms": 0,
+          "error": null
+        }
+      },
+      "pass_rate": 100,
+      "avg_time_ms": 0.3333333333333333,
+      "status": "PASS"
+    },
+    "smart_engine": {
+      "name": "smart_engine",
+      "category": "utility",
+      "errors": 0,
+      "tested": 3,
+      "total_time_ms": 1,
+      "log_results": {
+        "50": {
+          "algorithm": "smart_engine",
+          "category": "utility",
+          "logSize": 50,
+          "nodes": 4,
+          "edges": 5,
+          "time_ms": 1,
+          "error": null
+        },
+        "500": {
+          "algorithm": "smart_engine",
+          "category": "utility",
+          "logSize": 500,
+          "nodes": 4,
+          "edges": 5,
+          "time_ms": 0,
+          "error": null
+        },
+        "5000": {
+          "algorithm": "smart_engine",
+          "category": "utility",
+          "logSize": 5000,
+          "nodes": 4,
+          "edges": 5,
+          "time_ms": 0,
+          "error": null
+        }
+      },
+      "pass_rate": 100,
+      "avg_time_ms": 0.3333333333333333,
+      "status": "PASS"
+    },
+    "hierarchical_dfg": {
+      "name": "hierarchical_dfg",
+      "category": "discovery",
+      "errors": 0,
+      "tested": 3,
+      "total_time_ms": 3,
+      "log_results": {
+        "50": {
+          "algorithm": "hierarchical_dfg",
+          "category": "discovery",
+          "logSize": 50,
+          "edges": 7,
+          "nodes": 4,
+          "time_ms": 1,
+          "error": null
+        },
+        "500": {
+          "algorithm": "hierarchical_dfg",
+          "category": "discovery",
+          "logSize": 500,
+          "edges": 21,
+          "nodes": 7,
+          "time_ms": 1,
+          "error": null
+        },
+        "5000": {
+          "algorithm": "hierarchical_dfg",
+          "category": "discovery",
+          "logSize": 5000,
+          "edges": 21,
+          "nodes": 7,
+          "time_ms": 1,
+          "error": null
+        }
+      },
+      "pass_rate": 100,
+      "avg_time_ms": 1,
+      "status": "PASS"
+    },
+    "generalization": {
+      "name": "generalization",
+      "category": "conformance",
+      "errors": 0,
+      "tested": 3,
+      "total_time_ms": 24,
+      "log_results": {
+        "50": {
+          "algorithm": "generalization",
+          "category": "conformance",
+          "logSize": 50,
+          "generalization": 0.5436672873042961,
+          "places": 6,
+          "time_ms": 1,
+          "error": null
+        },
+        "500": {
+          "algorithm": "generalization",
+          "category": "conformance",
+          "logSize": 500,
+          "generalization": 0.7777766243330309,
+          "places": 13,
+          "time_ms": 2,
+          "error": null
+        },
+        "5000": {
+          "algorithm": "generalization",
+          "category": "conformance",
+          "logSize": 5000,
+          "generalization": 0.9341491466763624,
+          "places": 13,
+          "time_ms": 21,
+          "error": null
+        }
+      },
+      "pass_rate": 100,
+      "avg_time_ms": 8,
+      "status": "PASS"
+    },
+    "footprints_conformance": {
+      "name": "footprints_conformance",
+      "category": "conformance",
+      "errors": 3,
+      "tested": 3,
+      "total_time_ms": 19,
+      "log_results": {
+        "50": {
+          "algorithm": "footprints_conformance",
+          "category": "conformance",
+          "logSize": 50,
+          "time_ms": 1,
+          "error": "log parse error: expected value at line 1 column 1"
+        },
+        "500": {
+          "algorithm": "footprints_conformance",
+          "category": "conformance",
+          "logSize": 500,
+          "time_ms": 1,
+          "error": "log parse error: expected value at line 1 column 1"
+        },
+        "5000": {
+          "algorithm": "footprints_conformance",
+          "category": "conformance",
+          "logSize": 5000,
+          "time_ms": 17,
+          "error": "log parse error: expected value at line 1 column 1"
+        }
+      },
+      "pass_rate": 0,
+      "avg_time_ms": 6.333333333333333,
+      "status": "FAIL"
+    }
+  },
+  "pm4py_comparison": {
+    "50": {},
+    "500": {},
+    "5000": {}
+  }
+}

@@ -2,10 +2,10 @@ import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { existsSync } from 'fs';
-import { getFormatter } from '../output.js';
-import type { OutputOptions } from '../output.js';
-import type { HumanFormatter, JSONFormatter } from '../output.js';
+import { emitResult, makeResult, makeErrorResult, ConsoleProjection } from '../output.js';
+import { EXIT_CODES } from '../exit-codes.js';
 import { getExampleTomlConfig, getExampleJsonConfig, getPublicPresetConfig, getExamplePresetConfig, type PublicPreset } from '@wasm4pm/config';
+import { exitWithFlush } from '../otel/exit.js';
 
 // Template content generators
 function getEnvExampleContent(): string {
@@ -130,82 +130,84 @@ For more information on wasm4pm, see:
 }
 
 /**
- * Write file with safety checks
+ * Tagged write-file errors — map to specific exit codes in the caller.
+ */
+export class InitFileSystemError extends Error {
+  constructor(public exitCode: number, public filepath: string, public cause: NodeJS.ErrnoException) {
+    super(`Failed to write ${filepath}: ${cause.code ?? 'UNKNOWN'} ${cause.message}`);
+    this.name = 'InitFileSystemError';
+  }
+}
+
+export class InitTomlSerializeError extends Error {
+  constructor(public filepath: string, public cause: Error) {
+    super(`TOML serialization error for ${filepath}: ${cause.message}`);
+    this.name = 'InitTomlSerializeError';
+  }
+}
+
+/**
+ * Write file with safety checks — returns true if written, false if skipped.
+ *
+ * Throws InitFileSystemError on EACCES/ENOSPC so the caller can map to
+ * EXIT_CODES.system_error. Other I/O errors propagate as ordinary errors
+ * (default catch path → EXIT_CODES.execution_error).
  */
 async function safeWriteFile(
   filepath: string,
   content: string,
   force: boolean,
-  formatter: HumanFormatter | JSONFormatter,
-  outputFormat: 'human' | 'json'
+  projection: ConsoleProjection
 ): Promise<boolean> {
   if (existsSync(filepath) && !force) {
-    if (outputFormat === 'human') {
-      (formatter as HumanFormatter).warn(
-        `File already exists: ${filepath} (use --force to overwrite)`
-      );
-    }
+    projection.warn(`File already exists: ${filepath} (use --force to overwrite)`);
     return false;
   }
 
-  await fs.writeFile(filepath, content, 'utf-8');
-  return true;
+  try {
+    await fs.writeFile(filepath, content, 'utf-8');
+    return true;
+  } catch (err) {
+    const e = err as NodeJS.ErrnoException;
+    if (e && (e.code === 'EACCES' || e.code === 'ENOSPC')) {
+      throw new InitFileSystemError(EXIT_CODES.system_error, filepath, e);
+    }
+    throw err;
+  }
 }
 
 /**
- * Create directory safely
+ * Validate configuration files by attempting to load them.
+ * CRITICAL: Config errors are not recoverable — must propagate to fail fast.
  */
-async function ensureDirectory(dirpath: string): Promise<void> {
-  await fs.mkdir(dirpath, { recursive: true });
-}
-
-/**
- * Validate configuration files by attempting to load them
- * CRITICAL: Config errors are not recoverable — must propagate to fail fast
- */
-async function validateConfigFiles(
-  dirpath: string,
-  formatter: HumanFormatter | JSONFormatter,
-  outputFormat: 'human' | 'json'
-): Promise<boolean> {
+async function validateConfigFiles(dirpath: string): Promise<boolean> {
   const tomlPath = path.join(dirpath, 'wasm4pm.toml');
   const jsonPath = path.join(dirpath, 'wasm4pm.json');
 
-  // Try to load TOML if it exists
   if (existsSync(tomlPath)) {
     try {
       const { resolveConfig } = await import('@wasm4pm/config');
       await resolveConfig({ configSearchPaths: [dirpath] });
-      if (outputFormat === 'human') {
-        (formatter as HumanFormatter).debug(`✓ TOML config is valid: ${tomlPath}`);
-      }
       return true;
     } catch (error) {
-      // Config validation error is FATAL — user must fix it
       throw new Error(
         `Configuration validation failed for ${tomlPath}: ${error instanceof Error ? error.message : String(error)}`
       );
     }
   }
 
-  // Try to load JSON if it exists
   if (existsSync(jsonPath)) {
     try {
       const { resolveConfig } = await import('@wasm4pm/config');
       await resolveConfig({ configSearchPaths: [dirpath] });
-      if (outputFormat === 'human') {
-        (formatter as HumanFormatter).debug(`✓ JSON config is valid: ${jsonPath}`);
-      }
       return true;
     } catch (error) {
-      // Config validation error is FATAL — user must fix it
       throw new Error(
         `Configuration validation failed for ${jsonPath}: ${error instanceof Error ? error.message : String(error)}`
       );
     }
   }
 
-  // No config files found yet, which is ok during init
   return true;
 }
 
@@ -215,7 +217,7 @@ export const init = defineCommand({
     description: 'Initialize wasm4pm configuration in current directory',
   },
   args: {
-    configFormat: {
+    'config-format': {
       type: 'string',
       description: 'Config format (toml or json)',
       alias: 'c',
@@ -248,86 +250,89 @@ export const init = defineCommand({
     },
   },
   async run(ctx) {
-    const outputFormat = ctx.args.format as 'human' | 'json';
-    const formatter = getFormatter({
-      format: outputFormat,
-      verbose: ctx.args.verbose,
-      quiet: ctx.args.quiet,
-    });
+    const t0 = performance.now();
+    const format = (ctx.args.format as 'json' | 'human') ?? 'human';
+    const verbose = Boolean(ctx.args.verbose);
+    const quiet = Boolean(ctx.args.quiet);
+
+    // Use a temporary projection for early validation warnings before the result is built
+    const earlyProjection = new ConsoleProjection({ verbose, quiet });
 
     try {
       const cwd = process.cwd();
-      const configFormat = ((ctx.args.configFormat as string) || 'toml').toLowerCase();
+      // Accept both camelCase (--configFormat) and kebab-case (--config-format).
+      const configFormat = ((ctx.args.configFormat as string) || (ctx.args['config-format'] as string) || 'toml').toLowerCase();
       const force = ctx.args.force ?? false;
       const preset = ctx.args.preset as string | undefined;
 
       if (configFormat !== 'toml' && configFormat !== 'json') {
-        formatter.error(`Invalid format: ${configFormat}. Must be 'toml' or 'json'`);
-        const { EXIT_CODES } = await import('../exit-codes.js');
-        process.exit(EXIT_CODES.config_error);
+        const result = makeErrorResult(
+          'init',
+          new Error(`Invalid format: ${configFormat}. Must be 'toml' or 'json'`),
+          EXIT_CODES.config_error,
+          'INVALID_FORMAT'
+        );
+        emitResult(result, { format, verbose, quiet });
+        return await exitWithFlush(result.exit_code);
       }
 
       const VALID_PRESETS = ['fast', 'balanced', 'quality'];
       if (preset && !VALID_PRESETS.includes(preset)) {
-        formatter.error(`Invalid preset: ${preset}. Must be one of: ${VALID_PRESETS.join(', ')}`);
-        const { EXIT_CODES } = await import('../exit-codes.js');
-        process.exit(EXIT_CODES.config_error);
+        const result = makeErrorResult(
+          'init',
+          new Error(`Invalid preset: ${preset}. Must be one of: ${VALID_PRESETS.join(', ')}`),
+          EXIT_CODES.config_error,
+          'INVALID_PRESET'
+        );
+        emitResult(result, { format, verbose, quiet });
+        return await exitWithFlush(result.exit_code);
       }
 
       // Create config file
       const configFilename = configFormat === 'toml' ? 'wasm4pm.toml' : 'wasm4pm.json';
       const configPath = path.join(cwd, configFilename);
       let configContent: string;
-      if (preset) {
-        configContent = configFormat === 'toml'
-          ? getExamplePresetConfig(preset as PublicPreset)
-          : JSON.stringify(getPublicPresetConfig(preset as PublicPreset), null, 2);
-      } else {
-        configContent = configFormat === 'toml' ? getExampleTomlConfig() : getExampleJsonConfig();
+      try {
+        if (preset) {
+          configContent = configFormat === 'toml'
+            ? getExamplePresetConfig(preset as PublicPreset)
+            : JSON.stringify(getPublicPresetConfig(preset as PublicPreset), null, 2);
+        } else {
+          configContent = configFormat === 'toml' ? getExampleTomlConfig() : getExampleJsonConfig();
+        }
+      } catch (serErr) {
+        throw new InitTomlSerializeError(
+          configPath,
+          serErr instanceof Error ? serErr : new Error(String(serErr))
+        );
       }
 
-      const configCreated = await safeWriteFile(
-        configPath,
-        configContent,
-        force,
-        formatter,
-        outputFormat
-      );
+      const configCreated = await safeWriteFile(configPath, configContent, force, earlyProjection);
 
-      // Create .env.example
       const envPath = path.join(cwd, '.env.example');
-      const envCreated = await safeWriteFile(
-        envPath,
-        getEnvExampleContent(),
-        force,
-        formatter,
-        outputFormat
-      );
+      const envCreated = await safeWriteFile(envPath, getEnvExampleContent(), force, earlyProjection);
 
-      // Create .gitignore if it doesn't exist
       const gitignorePath = path.join(cwd, '.gitignore');
       const gitignoreCreated = !existsSync(gitignorePath)
-        ? await safeWriteFile(gitignorePath, getGitignoreContent(), force, formatter, outputFormat)
+        ? await safeWriteFile(gitignorePath, getGitignoreContent(), force, earlyProjection)
         : false;
 
-      // Create README.md if it doesn't exist
       const readmePath = path.join(cwd, 'README.md');
       const readmeCreated = !existsSync(readmePath)
-        ? await safeWriteFile(readmePath, getReadmeContent(), force, formatter, outputFormat)
+        ? await safeWriteFile(readmePath, getReadmeContent(), force, earlyProjection)
         : false;
 
-      // Validate configuration files
-      const isValid = await validateConfigFiles(cwd, formatter, outputFormat);
+      const isValid = await validateConfigFiles(cwd);
 
-      // Prepare result
-      const filesCreated = [];
+      const filesCreated: string[] = [];
       if (configCreated) filesCreated.push(configFilename);
       if (envCreated) filesCreated.push('.env.example');
       if (gitignoreCreated) filesCreated.push('.gitignore');
       if (readmeCreated) filesCreated.push('README.md');
 
-      const initResult = {
+      const payload = {
         format: configFormat,
+        preset: preset ?? null,
         files_created: filesCreated,
         valid: isValid,
         instructions: [
@@ -337,42 +342,49 @@ export const init = defineCommand({
         ],
       };
 
-      if (outputFormat === 'json') {
-        (formatter as JSONFormatter).success('Configuration initialized', initResult);
-      } else {
-        const humanFormatter = formatter as HumanFormatter;
-        if (filesCreated.length > 0) {
-          const presetLabel = preset ? ` with ${preset} preset` : '';
-          humanFormatter.success(`Configuration initialized successfully${presetLabel}`);
-          humanFormatter.log(`\nCreated files:`);
-          filesCreated.forEach((file) => {
-            humanFormatter.log(`  ✓ ${file}`);
-          });
-          humanFormatter.log(`\nNext steps:`);
-          initResult.instructions.forEach((instruction) => {
-            humanFormatter.log(`  ${instruction}`);
-          });
-          if (!isValid) {
-            humanFormatter.error(
-              `\n✗ Configuration validation failed. Please review your config file.`
-            );
-            const { EXIT_CODES } = await import('../exit-codes.js');
-            process.exit(EXIT_CODES.execution_error);
-          }
-        } else {
-          humanFormatter.info('All files already exist (use --force to overwrite)');
-        }
-      }
-    } catch (error) {
-      if (outputFormat === 'json') {
-        (formatter as JSONFormatter).error('Initialization failed', error);
-      } else {
-        formatter.error(
-          `Initialization failed: ${error instanceof Error ? error.message : String(error)}`
+      if (!isValid) {
+        const result = makeErrorResult(
+          'init',
+          new Error('Configuration validation failed. Please review your config file.'),
+          EXIT_CODES.execution_error,
+          'CONFIG_INVALID'
         );
+        emitResult(result, { format, verbose, quiet });
+        return await exitWithFlush(result.exit_code);
       }
-      const { EXIT_CODES } = await import('../exit-codes.js');
-      process.exit(EXIT_CODES.system_error);
+
+      const result = makeResult('init', payload, performance.now() - t0, EXIT_CODES.success);
+      emitResult(result, { format, verbose, quiet }, (res, projection) => {
+        const p = res.payload as typeof payload;
+        if (p.files_created.length > 0) {
+          const presetLabel = p.preset ? ` with ${p.preset} preset` : '';
+          projection.success(`Configuration initialized successfully${presetLabel}`);
+          projection.log('\nCreated files:');
+          p.files_created.forEach((file) => {
+            projection.log(`  ✓ ${file}`);
+          });
+          projection.log('\nNext steps:');
+          p.instructions.forEach((instruction) => {
+            projection.log(`  ${instruction}`);
+          });
+        } else {
+          projection.info('All files already exist (use --force to overwrite)');
+        }
+      });
+      return await exitWithFlush(result.exit_code);
+    } catch (error) {
+      let exitCode: number = EXIT_CODES.execution_error;
+      let code = 'INIT_ERROR';
+      if (error instanceof InitFileSystemError) {
+        exitCode = EXIT_CODES.system_error;
+        code = 'INIT_FILESYSTEM_ERROR';
+      } else if (error instanceof InitTomlSerializeError) {
+        exitCode = EXIT_CODES.config_error;
+        code = 'INIT_CONFIG_SERIALIZE_ERROR';
+      }
+      const result = makeErrorResult('init', error, exitCode, code);
+      emitResult(result, { format, verbose, quiet });
+      return await exitWithFlush(result.exit_code);
     }
   },
 });

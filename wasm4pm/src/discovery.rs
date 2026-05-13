@@ -6,161 +6,67 @@ use rustc_hash::{FxHashMap, FxHashSet};
 use serde_json::json;
 use wasm_bindgen::prelude::*;
 
+/// Pure-Rust DFG discovery without wasm-bindgen. Used by integration tests.
+pub fn discover_dfg_from_log(log: &EventLog, activity_key: &str) -> DirectlyFollowsGraph {
+    let mut dfg = DirectlyFollowsGraph::new();
+    let col_owned = log.to_columnar_owned(activity_key);
+    let col = ColumnarLog::from_owned(&col_owned);
+
+    dfg.nodes.extend(col.vocab.iter().map(|&act| DFGNode {
+        id: act.to_owned(),
+        label: act.to_owned(),
+        frequency: 0,
+    }));
+
+    let mut edge_counts: FxHashMap<(u32, u32), usize> = FxHashMap::default();
+
+    for t in 0..col.trace_offsets.len().saturating_sub(1) {
+        let start = col.trace_offsets[t];
+        let end = col.trace_offsets[t + 1];
+        if start >= end {
+            continue;
+        }
+        for &id in &col.events[start..end] {
+            dfg.nodes[id as usize].frequency += 1;
+        }
+        for i in start..end - 1 {
+            *edge_counts
+                .entry((col.events[i], col.events[i + 1]))
+                .or_insert(0) += 1;
+        }
+        *dfg.start_activities
+            .entry(col.vocab[col.events[start] as usize].to_owned())
+            .or_insert(0) += 1;
+        *dfg.end_activities
+            .entry(col.vocab[col.events[end - 1] as usize].to_owned())
+            .or_insert(0) += 1;
+    }
+
+    dfg.edges.extend(
+        edge_counts
+            .into_iter()
+            .map(|((f, t), freq)| DirectlyFollowsRelation {
+                from: col.vocab[f as usize].to_owned(),
+                to: col.vocab[t as usize].to_owned(),
+                frequency: freq,
+            }),
+    );
+
+    dfg
+}
+
 /// Discover a Directly-Follows Graph (DFG) from an EventLog
 #[wasm_bindgen]
 pub fn discover_dfg(eventlog_handle: &str, activity_key: &str) -> Result<JsValue, JsValue> {
-    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
-            let mut dfg = DirectlyFollowsGraph::new();
-
-            // Single-pass columnar DFG construction:
-            //   1. to_columnar() encodes activities as u32 IDs into a flat Vec<u32>
-            //   2. One sequential scan computes node freq, edge counts, start/end — all at once
-            //   3. Integer-keyed HashMap<(u32,u32),usize> is ~6× smaller than (String,String)
-            let col_owned = crate::cache::columnar_cache_get(eventlog_handle, activity_key)
-                .unwrap_or_else(|| {
-                    let owned = log.to_columnar_owned(activity_key);
-                    crate::cache::columnar_cache_insert(
-                        eventlog_handle.to_string(),
-                        activity_key.to_string(),
-                        owned.clone(),
-                    );
-                    owned
-                });
-            let col = ColumnarLog::from_owned(&col_owned);
-
-            // Pre-allocate nodes from vocabulary (already deduplicated by to_columnar)
-            dfg.nodes.extend(col.vocab.iter().map(|&act| DFGNode {
-                id: act.to_owned(),
-                label: act.to_owned(),
-                frequency: 0,
-            }));
-
-            let mut edge_counts: FxHashMap<(u32, u32), usize> = FxHashMap::default();
-
-            // Single sequential pass over flat integer array
-            for t in 0..col.trace_offsets.len().saturating_sub(1) {
-                let start = col.trace_offsets[t];
-                let end = col.trace_offsets[t + 1];
-                if start >= end {
-                    continue;
-                }
-
-                // Node frequencies
-                for &id in &col.events[start..end] {
-                    dfg.nodes[id as usize].frequency += 1;
-                }
-                // Directly-follows edges
-                for i in start..end - 1 {
-                    *edge_counts
-                        .entry((col.events[i], col.events[i + 1]))
-                        .or_insert(0) += 1;
-                }
-                // Start / end activities
-                *dfg.start_activities
-                    .entry(col.vocab[col.events[start] as usize].to_owned())
-                    .or_insert(0) += 1;
-                *dfg.end_activities
-                    .entry(col.vocab[col.events[end - 1] as usize].to_owned())
-                    .or_insert(0) += 1;
-            }
-
-            // Materialise edges (integer IDs → string names)
-            dfg.edges
-                .extend(
-                    edge_counts
-                        .into_iter()
-                        .map(|((f, t), freq)| DirectlyFollowsRelation {
-                            from: col.vocab[f as usize].to_owned(),
-                            to: col.vocab[t as usize].to_owned(),
-                            frequency: freq,
-                        }),
-                );
-
-            to_js_str(&dfg)
-        }
+    let log = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
+        Some(StoredObject::EventLog(log)) => Ok(log.clone()),
         Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
         None => Err(wasm_err(
             codes::INVALID_HANDLE,
             format!("EventLog '{}' not found", eventlog_handle),
         )),
-    })
-}
-
-/// Discover a DFG and store it in WASM state, returning a handle string.
-///
-/// Identical to `discover_dfg` but stores the result internally so that
-/// handle-based functions (e.g. `score_anomaly`) can reference it.
-#[wasm_bindgen]
-pub fn discover_dfg_handle(eventlog_handle: &str, activity_key: &str) -> Result<JsValue, JsValue> {
-    let dfg =
-        get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-            Some(StoredObject::EventLog(log)) => {
-                let mut dfg = DirectlyFollowsGraph::new();
-
-                let col_owned = crate::cache::columnar_cache_get(eventlog_handle, activity_key)
-                    .unwrap_or_else(|| {
-                        let owned = log.to_columnar_owned(activity_key);
-                        crate::cache::columnar_cache_insert(
-                            eventlog_handle.to_string(),
-                            activity_key.to_string(),
-                            owned.clone(),
-                        );
-                        owned
-                    });
-                let col = ColumnarLog::from_owned(&col_owned);
-
-                dfg.nodes.extend(col.vocab.iter().map(|&act| DFGNode {
-                    id: act.to_owned(),
-                    label: act.to_owned(),
-                    frequency: 0,
-                }));
-
-                let mut edge_counts: FxHashMap<(u32, u32), usize> = FxHashMap::default();
-
-                for t in 0..col.trace_offsets.len().saturating_sub(1) {
-                    let start = col.trace_offsets[t];
-                    let end = col.trace_offsets[t + 1];
-                    if start >= end {
-                        continue;
-                    }
-
-                    for &id in &col.events[start..end] {
-                        dfg.nodes[id as usize].frequency += 1;
-                    }
-                    for i in start..end - 1 {
-                        *edge_counts
-                            .entry((col.events[i], col.events[i + 1]))
-                            .or_insert(0) += 1;
-                    }
-                    *dfg.start_activities
-                        .entry(col.vocab[col.events[start] as usize].to_owned())
-                        .or_insert(0) += 1;
-                    *dfg.end_activities
-                        .entry(col.vocab[col.events[end - 1] as usize].to_owned())
-                        .or_insert(0) += 1;
-                }
-
-                dfg.edges
-                    .extend(edge_counts.into_iter().map(|((f, t), freq)| {
-                        DirectlyFollowsRelation {
-                            from: col.vocab[f as usize].to_owned(),
-                            to: col.vocab[t as usize].to_owned(),
-                            frequency: freq,
-                        }
-                    }));
-
-                Ok(dfg)
-            }
-            Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
-            None => Err(wasm_err(
-                codes::INVALID_HANDLE,
-                format!("EventLog '{}' not found", eventlog_handle),
-            )),
-        })?;
-
-    let handle = get_or_init_state().store_object(StoredObject::DirectlyFollowsGraph(dfg))?;
-    Ok(crate::error::js_val(&handle))
+    })?;
+    to_js_str(&discover_dfg_from_log(&log, activity_key))
 }
 
 /// Pure-Rust OCEL DFG discovery: returns DirectlyFollowsGraph without wasm-bindgen.

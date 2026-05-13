@@ -1,21 +1,23 @@
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use chrono::{DateTime, FixedOffset};
+use uuid::Uuid;
 
-/// Attribute value types for event data
+/// Possible attribute values according to the XES Standard
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(tag = "tag", content = "value")]
+#[serde(tag = "type", content = "content")]
 pub enum AttributeValue {
     String(String),
+    Date(DateTime<FixedOffset>),
     Int(i64),
     Float(f64),
-    Date(String), // ISO 8601
     Boolean(bool),
-    List(Vec<AttributeValue>),
-    Container(HashMap<String, AttributeValue>),
+    ID(Uuid),
+    List(Vec<Attribute>),
+    Container(Vec<Attribute>),
+    None(),
 }
 
 impl AttributeValue {
-    #[inline]
     pub fn as_string(&self) -> Option<&str> {
         match self {
             AttributeValue::String(s) => Some(s.as_str()),
@@ -23,7 +25,6 @@ impl AttributeValue {
         }
     }
 
-    #[inline]
     pub fn as_i64(&self) -> Option<i64> {
         match self {
             AttributeValue::Int(i) => Some(*i),
@@ -31,7 +32,6 @@ impl AttributeValue {
         }
     }
 
-    #[inline]
     pub fn as_f64(&self) -> Option<f64> {
         match self {
             AttributeValue::Float(f) => Some(*f),
@@ -39,7 +39,6 @@ impl AttributeValue {
         }
     }
 
-    #[inline]
     pub fn as_bool(&self) -> Option<bool> {
         match self {
             AttributeValue::Boolean(b) => Some(*b),
@@ -48,10 +47,52 @@ impl AttributeValue {
     }
 }
 
-pub type Attributes = HashMap<String, AttributeValue>;
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct Attribute {
+    pub key: String,
+    pub value: AttributeValue,
+    pub own_attributes: Option<Vec<Attribute>>,
+}
+
+impl Attribute {
+    pub fn new(key: String, value: AttributeValue) -> Self {
+        Attribute {
+            key,
+            value,
+            own_attributes: None,
+        }
+    }
+}
+
+pub type Attributes = Vec<Attribute>;
+
+pub trait XESEditableAttribute {
+    fn add_to_attributes(&mut self, key: String, value: AttributeValue);
+    fn add_attribute(&mut self, attr: Attribute);
+    fn get_by_key(&self, key: &str) -> Option<&Attribute>;
+    fn get_by_key_mut(&mut self, key: &str) -> Option<&mut Attribute>;
+}
+
+impl XESEditableAttribute for Attributes {
+    fn add_to_attributes(&mut self, key: String, value: AttributeValue) {
+        self.push(Attribute::new(key, value));
+    }
+
+    fn add_attribute(&mut self, attr: Attribute) {
+        self.push(attr);
+    }
+
+    fn get_by_key(&self, key: &str) -> Option<&Attribute> {
+        self.iter().find(|a| a.key == key)
+    }
+
+    fn get_by_key_mut(&mut self, key: &str) -> Option<&mut Attribute> {
+        self.iter_mut().find(|a| a.key == key)
+    }
+}
 
 /// A single event in a trace
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub struct Event {
     pub attributes: Attributes,
 }
@@ -61,31 +102,34 @@ impl Event {
         Event { attributes }
     }
 
-    pub fn get_activity(&self, key: &str) -> Option<String> {
-        self.attributes
-            .get(key)
-            .and_then(|v| v.as_string().map(|s| s.to_string()))
+    pub fn with_activity(activity: &str) -> Self {
+        let mut attributes = Vec::new();
+        attributes.add_to_attributes("concept:name".to_string(), AttributeValue::String(activity.to_string()));
+        Event { attributes }
     }
 
-    pub fn get_timestamp(&self, key: &str) -> Option<String> {
-        match self.attributes.get(key)? {
-            AttributeValue::Date(d) => Some(d.clone()),
-            AttributeValue::String(s) => Some(s.clone()),
-            _ => None,
-        }
+    pub fn get_activity(&self, key: &str) -> Option<String> {
+        self.attributes
+            .get_by_key(key)
+            .and_then(|a| a.value.as_string().map(|s| s.to_string()))
     }
 }
 
 /// A trace (sequence of events for one case)
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub struct Trace {
-    pub case_id: String,
+    pub attributes: Attributes,
     pub events: Vec<Event>,
 }
 
 impl Trace {
     pub fn new(case_id: String, events: Vec<Event>) -> Self {
-        Trace { case_id, events }
+        let mut attributes = Vec::new();
+        attributes.add_to_attributes("concept:name".to_string(), AttributeValue::String(case_id));
+        Trace {
+            attributes,
+            events,
+        }
     }
 
     pub fn len(&self) -> usize {
@@ -95,24 +139,17 @@ impl Trace {
     pub fn is_empty(&self) -> bool {
         self.events.is_empty()
     }
-
-    pub fn activities(&self, activity_key: &str) -> Vec<String> {
-        self.events
-            .iter()
-            .filter_map(|e| e.get_activity(activity_key))
-            .collect()
-    }
 }
 
 /// An event log (collection of traces)
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub struct EventLog {
-    pub traces: Vec<Trace>,
     pub attributes: Attributes,
-    #[serde(default)]
-    pub format: String,
-    #[serde(default)]
-    pub source_hash: String,
+    pub traces: Vec<Trace>,
+    pub extensions: Option<Vec<EventLogExtension>>,
+    pub classifiers: Option<Vec<EventLogClassifier>>,
+    pub global_trace_attrs: Option<Attributes>,
+    pub global_event_attrs: Option<Attributes>,
 }
 
 impl EventLog {
@@ -120,19 +157,8 @@ impl EventLog {
         EventLog {
             traces,
             attributes,
-            format: String::new(),
-            source_hash: String::new(),
+            ..Default::default()
         }
-    }
-
-    pub fn with_format(mut self, format: String) -> Self {
-        self.format = format;
-        self
-    }
-
-    pub fn with_source_hash(mut self, hash: String) -> Self {
-        self.source_hash = hash;
-        self
     }
 
     pub fn len(&self) -> usize {
@@ -146,53 +172,17 @@ impl EventLog {
     pub fn event_count(&self) -> usize {
         self.traces.iter().map(|t| t.len()).sum()
     }
-
-    pub fn get_activities(&self, activity_key: &str) -> Vec<String> {
-        let mut activities = Vec::new();
-        for trace in &self.traces {
-            for activity in trace.activities(activity_key) {
-                if !activities.contains(&activity) {
-                    activities.push(activity);
-                }
-            }
-        }
-        activities.sort();
-        activities
-    }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct EventLogExtension {
+    pub name: String,
+    pub prefix: String,
+    pub uri: String,
+}
 
-    #[test]
-    fn test_event_creation() {
-        let mut attrs = HashMap::new();
-        attrs.insert(
-            "concept:name".to_string(),
-            AttributeValue::String("A".to_string()),
-        );
-        let event = Event::new(attrs);
-        assert_eq!(event.get_activity("concept:name"), Some("A".to_string()));
-    }
-
-    #[test]
-    fn test_trace_activities() {
-        let mut attrs1 = HashMap::new();
-        attrs1.insert(
-            "concept:name".to_string(),
-            AttributeValue::String("A".to_string()),
-        );
-        let mut attrs2 = HashMap::new();
-        attrs2.insert(
-            "concept:name".to_string(),
-            AttributeValue::String("B".to_string()),
-        );
-
-        let trace = Trace::new(
-            "case1".to_string(),
-            vec![Event::new(attrs1), Event::new(attrs2)],
-        );
-        assert_eq!(trace.activities("concept:name"), vec!["A", "B"]);
-    }
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct EventLogClassifier {
+    pub name: String,
+    pub keys: Vec<String>,
 }

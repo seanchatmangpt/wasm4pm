@@ -62,56 +62,50 @@ function buildSampleResult(): Record<string, unknown> {
 // ─── JTBD-1: Save and retrieve prediction result ─────────────────────────────
 
 describe('JTBD-1: I want to save a prediction result and later retrieve it for a client presentation', () => {
-  it('savePredictionResult saves a JSON file to the results dir', async () => {
-    const task = slug(faker.hacker.ingverb()) + '-activity';
-    const inputPath = `/${slug(faker.company.name())}/revops.xes`;
+  it('savePredictionResult saves a JSON file to the results dir + saved file has correct task name in the filename + saved file contains the original result data', async () => {
+    const task1 = slug(faker.hacker.ingverb()) + '-activity';
+    const inputPath1 = `/${slug(faker.company.name())}/revops.xes`;
     const activityKey = 'concept:name';
-    const result = buildSampleResult();
+    const result1 = buildSampleResult();
 
-    const filepath = await savePredictionResult(task, inputPath, activityKey, result);
+    const filepath1 = await savePredictionResult(task1, inputPath1, activityKey, result1);
 
-    expect(filepath).not.toBeNull();
+    expect(filepath1).not.toBeNull();
     // File should exist
-    const stat = await fs.stat(filepath!);
+    const stat = await fs.stat(filepath1!);
     expect(stat.isFile()).toBe(true);
-  });
 
-  it('saved file has correct task name in the filename', async () => {
-    const task = slug(faker.hacker.ingverb()) + '-outcome';
-    const inputPath = `/${slug(faker.company.name())}/revops.xes`;
-    const activityKey = 'concept:name';
-    const result = buildSampleResult();
+    const task2 = slug(faker.hacker.ingverb()) + '-outcome';
+    const inputPath2 = `/${slug(faker.company.name())}/revops.xes`;
+    const result2 = buildSampleResult();
 
-    const filepath = await savePredictionResult(task, inputPath, activityKey, result);
+    const filepath2 = await savePredictionResult(task2, inputPath2, activityKey, result2);
 
-    expect(filepath).not.toBeNull();
-    const basename = path.basename(filepath!);
-    expect(basename).toContain(task);
+    expect(filepath2).not.toBeNull();
+    const basename = path.basename(filepath2!);
+    expect(basename).toContain(task2);
     expect(basename.endsWith('.json')).toBe(true);
-  });
 
-  it('saved file contains the original result data', async () => {
-    const task = slug(faker.hacker.ingverb()) + '-drift';
-    const inputPath = `/${slug(faker.company.name())}/revops.xes`;
-    const activityKey = 'concept:name';
-    const result = buildSampleResult();
+    const task3 = slug(faker.hacker.ingverb()) + '-drift';
+    const inputPath3 = `/${slug(faker.company.name())}/revops.xes`;
+    const result3 = buildSampleResult();
 
-    const filepath = await savePredictionResult(task, inputPath, activityKey, result);
+    const filepath3 = await savePredictionResult(task3, inputPath3, activityKey, result3);
 
-    expect(filepath).not.toBeNull();
-    const raw = await fs.readFile(filepath!, 'utf-8');
+    expect(filepath3).not.toBeNull();
+    const raw = await fs.readFile(filepath3!, 'utf-8');
     const saved: SavedResult = JSON.parse(raw);
-    expect(saved.task).toBe(task);
-    expect(saved.input).toBe(inputPath);
+    expect(saved.task).toBe(task3);
+    expect(saved.input).toBe(inputPath3);
     expect(saved.activityKey).toBe(activityKey);
-    expect(saved.result).toEqual(result);
+    expect(saved.result).toEqual(result3);
   });
 });
 
 // ─── JTBD-2: List past analysis runs ─────────────────────────────────────────
 
 describe('JTBD-2: I want to list all past analysis runs for my RevOps log', () => {
-  it('saved files are enumerable via fs.readdir', async () => {
+  it('saved files are enumerable via fs.readdir + filenames follow the {timestamp}-{task}.json pattern + multiple saves produce multiple distinct files', async () => {
     // Save a fresh result
     const task = slug(faker.hacker.ingverb()) + '-resource';
     await savePredictionResult(task, '/revops.xes', 'concept:name', buildSampleResult());
@@ -123,21 +117,13 @@ describe('JTBD-2: I want to list all past analysis runs for my RevOps log', () =
     for (const entry of entries) {
       expect(entry.endsWith('.json')).toBe(true);
     }
-  });
-
-  it('filenames follow the {timestamp}-{task}.json pattern', async () => {
-    const resultsDir = path.join(tempDir, '.wasm4pm', 'results');
-    const entries = await fs.readdir(resultsDir);
 
     // Pattern: YYYYMMDDTHHmmss-<task>.json (timestamp 15 chars + dash + task + .json)
     const timestampPattern = /^\d{8}T\d{6}-.+\.json$/;
     for (const entry of entries) {
       expect(timestampPattern.test(entry)).toBe(true);
     }
-  });
 
-  it('multiple saves produce multiple distinct files', async () => {
-    const resultsDir = path.join(tempDir, '.wasm4pm', 'results');
     const beforeEntries = await fs.readdir(resultsDir);
 
     // Save two more results
@@ -160,50 +146,46 @@ describe('JTBD-2: I want to list all past analysis runs for my RevOps log', () =
 // ─── JTBD-3: Round-trip read saved result ────────────────────────────────────
 
 describe('JTBD-3: I want to read a saved result back to compare with a new run', () => {
-  it('reading a saved file returns valid JSON', async () => {
-    const task = slug(faker.hacker.ingverb()) + '-next';
-    const filepath = await savePredictionResult(task, '/revops.xes', 'concept:name', buildSampleResult());
+  it('reading a saved file returns valid JSON + round-trip (save then read) preserves the original data exactly + faker-generated task name (slugified hacker.ingverb) is preserved in filename', async () => {
+    const task1 = slug(faker.hacker.ingverb()) + '-next';
+    const filepath1 = await savePredictionResult(task1, '/revops.xes', 'concept:name', buildSampleResult());
 
-    expect(filepath).not.toBeNull();
-    const raw = await fs.readFile(filepath!, 'utf-8');
-    expect(() => JSON.parse(raw)).not.toThrow();
-    const parsed: SavedResult = JSON.parse(raw);
-    expect(parsed.version).toBe(1);
-    expect(typeof parsed.savedAt).toBe('string');
-  });
+    expect(filepath1).not.toBeNull();
+    const raw1 = await fs.readFile(filepath1!, 'utf-8');
+    expect(() => JSON.parse(raw1)).not.toThrow();
+    const parsed1: SavedResult = JSON.parse(raw1);
+    expect(parsed1.version).toBe(1);
+    expect(typeof parsed1.savedAt).toBe('string');
 
-  it('round-trip (save then read) preserves the original data exactly', async () => {
-    const task = slug(faker.hacker.ingverb()) + '-forecast';
-    const inputPath = `/data/${slug(faker.company.name())}/pipeline.xes`;
+    const task2 = slug(faker.hacker.ingverb()) + '-forecast';
+    const inputPath2 = `/data/${slug(faker.company.name())}/pipeline.xes`;
     const activityKey = 'concept:name';
     const originalResult = buildSampleResult();
 
-    const filepath = await savePredictionResult(task, inputPath, activityKey, originalResult);
+    const filepath2 = await savePredictionResult(task2, inputPath2, activityKey, originalResult);
 
-    expect(filepath).not.toBeNull();
-    const raw = await fs.readFile(filepath!, 'utf-8');
-    const saved: SavedResult = JSON.parse(raw);
+    expect(filepath2).not.toBeNull();
+    const raw2 = await fs.readFile(filepath2!, 'utf-8');
+    const saved2: SavedResult = JSON.parse(raw2);
 
-    expect(saved.task).toBe(task);
-    expect(saved.input).toBe(inputPath);
-    expect(saved.activityKey).toBe(activityKey);
-    expect(saved.result).toEqual(originalResult);
-    expect(saved.version).toBe(1);
-  });
+    expect(saved2.task).toBe(task2);
+    expect(saved2.input).toBe(inputPath2);
+    expect(saved2.activityKey).toBe(activityKey);
+    expect(saved2.result).toEqual(originalResult);
+    expect(saved2.version).toBe(1);
 
-  it('faker-generated task name (slugified hacker.ingverb) is preserved in filename', async () => {
     const taskBase = slug(faker.hacker.ingverb());
-    const task = `${taskBase}-revops`;
-    const filepath = await savePredictionResult(task, '/revops.xes', 'concept:name', buildSampleResult());
+    const task3 = `${taskBase}-revops`;
+    const filepath3 = await savePredictionResult(task3, '/revops.xes', 'concept:name', buildSampleResult());
 
-    expect(filepath).not.toBeNull();
-    const basename = path.basename(filepath!);
+    expect(filepath3).not.toBeNull();
+    const basename = path.basename(filepath3!);
     // The faker-generated task slug must appear in the filename
-    expect(basename).toContain(task);
+    expect(basename).toContain(task3);
 
     // Also verify the saved payload has the same task
-    const raw = await fs.readFile(filepath!, 'utf-8');
-    const saved: SavedResult = JSON.parse(raw);
-    expect(saved.task).toBe(task);
+    const raw3 = await fs.readFile(filepath3!, 'utf-8');
+    const saved3: SavedResult = JSON.parse(raw3);
+    expect(saved3.task).toBe(task3);
   });
 });

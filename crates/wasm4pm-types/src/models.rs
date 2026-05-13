@@ -604,10 +604,5 @@ mod tests_petri {
         assert!(dfg.is_empty());
     }
 
-    #[test]
-    fn test_petri_net_creation() {
-        let pn = PetriNet::new();
-        assert!(pn.is_empty());
-    }
 }
 

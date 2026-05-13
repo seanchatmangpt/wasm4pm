@@ -11,22 +11,12 @@ import { describe, it, expect } from 'vitest';
 import { VALID_ML_TASKS, executeMlTask } from '../src/ml-runner.js';
 
 describe('VALID_ML_TASKS', () => {
-  it('contains exactly 6 tasks', () => {
-    expect(VALID_ML_TASKS).toHaveLength(6);
-  });
-
-  it('includes all expected ML tasks', () => {
-    expect(VALID_ML_TASKS).toContain('classify');
-    expect(VALID_ML_TASKS).toContain('cluster');
-    expect(VALID_ML_TASKS).toContain('forecast');
-    expect(VALID_ML_TASKS).toContain('anomaly');
-    expect(VALID_ML_TASKS).toContain('regress');
-    expect(VALID_ML_TASKS).toContain('pca');
-  });
-
-  it('is a const assertion (readonly at type level)', () => {
+  it('contains exactly the 6 expected ML tasks as a readonly array', () => {
     expect(Array.isArray(VALID_ML_TASKS)).toBe(true);
-    expect(VALID_ML_TASKS.length).toBe(6);
+    expect(VALID_ML_TASKS).toHaveLength(6);
+    for (const task of ['classify', 'cluster', 'forecast', 'anomaly', 'regress', 'pca']) {
+      expect(VALID_ML_TASKS).toContain(task);
+    }
   });
 });
 
@@ -38,73 +28,30 @@ describe('executeMlTask — parameter validation', () => {
   const logHandle = 'test-handle';
   const activityKey = 'concept:name';
 
-  // ── classify ────────────────────────────────────────────────────────────
-
-  it('classify rejects negative k', async () => {
-    await expect(
-      executeMlTask(mockWasm, 'classify', logHandle, activityKey, { k: -1 })
-    ).rejects.toThrow('positive number');
+  it('classify and cluster reject invalid k (negative, zero, NaN)', async () => {
+    for (const task of ['classify', 'cluster'] as const) {
+      await expect(executeMlTask(mockWasm, task, logHandle, activityKey, { k: -1 })).rejects.toThrow('positive number');
+      await expect(executeMlTask(mockWasm, task, logHandle, activityKey, { k: 0 })).rejects.toThrow('positive number');
+    }
+    await expect(executeMlTask(mockWasm, 'classify', logHandle, activityKey, { k: 'abc' })).rejects.toThrow('positive number');
+    await expect(executeMlTask(mockWasm, 'cluster', logHandle, activityKey, { eps: 'not-a-number' })).rejects.toThrow('positive number');
   });
 
-  it('classify rejects NaN k', async () => {
-    await expect(
-      executeMlTask(mockWasm, 'classify', logHandle, activityKey, { k: 'abc' })
-    ).rejects.toThrow('positive number');
-  });
-
-  it('classify rejects zero k', async () => {
-    await expect(
-      executeMlTask(mockWasm, 'classify', logHandle, activityKey, { k: 0 })
-    ).rejects.toThrow('positive number');
-  });
-
-  // ── cluster ─────────────────────────────────────────────────────────────
-
-  it('cluster rejects negative k', async () => {
-    await expect(
-      executeMlTask(mockWasm, 'cluster', logHandle, activityKey, { k: -1 })
-    ).rejects.toThrow('positive number');
-  });
-
-  it('cluster rejects NaN eps', async () => {
-    await expect(
-      executeMlTask(mockWasm, 'cluster', logHandle, activityKey, { eps: 'not-a-number' })
-    ).rejects.toThrow('positive number');
-  });
-
-  // ── forecast ────────────────────────────────────────────────────────────
-
-  it('forecast rejects negative forecastPeriods', async () => {
-    await expect(
-      executeMlTask(mockWasm, 'forecast', logHandle, activityKey, { forecastPeriods: -5 })
-    ).rejects.toThrow('positive number');
-  });
-
-  it('forecast returns trend structure with empty data', async () => {
+  it('forecast rejects negative forecastPeriods, returns trend structure on valid input', async () => {
+    await expect(executeMlTask(mockWasm, 'forecast', logHandle, activityKey, { forecastPeriods: -5 })).rejects.toThrow('positive number');
     const result = await executeMlTask(mockWasm, 'forecast', logHandle, activityKey, { forecastPeriods: 3 });
     expect(result).toBeDefined();
     expect('trend' in result).toBe(true);
   });
 
-  // ── anomaly ────────────────────────────────────────────────────────────
-
-  it('anomaly returns peakIndices with empty data', async () => {
+  it('anomaly returns result with peakIndices on empty data', async () => {
     const result = await executeMlTask(mockWasm, 'anomaly', logHandle, activityKey);
     expect(result).toBeDefined();
     expect('peakIndices' in result).toBe(true);
   });
 
-  // ── pca ────────────────────────────────────────────────────────────────
-
-  it('pca rejects zero nComponents', async () => {
-    await expect(
-      executeMlTask(mockWasm, 'pca', logHandle, activityKey, { nComponents: 0 })
-    ).rejects.toThrow('positive number');
-  });
-
-  it('pca rejects negative nComponents', async () => {
-    await expect(
-      executeMlTask(mockWasm, 'pca', logHandle, activityKey, { nComponents: -1 })
-    ).rejects.toThrow('positive number');
+  it('pca rejects non-positive nComponents (zero and negative)', async () => {
+    await expect(executeMlTask(mockWasm, 'pca', logHandle, activityKey, { nComponents: 0 })).rejects.toThrow('positive number');
+    await expect(executeMlTask(mockWasm, 'pca', logHandle, activityKey, { nComponents: -1 })).rejects.toThrow('positive number');
   });
 });

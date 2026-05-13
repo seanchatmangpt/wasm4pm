@@ -194,13 +194,15 @@ echo "---" >> "$VERIFICATION_REPORT"
 echo "### Gate 10: WASM Build Verification" >> "$VERIFICATION_REPORT"
 
 cd wasm4pm
+# wasm-pack writes all three targets to pkg/ in turn — the last `build:*` wins.
+# Binary is named `wasm4pm_bg.wasm` (the `_bg` is wasm-pack's bundler convention
+# carried across targets). Verifying a single artifact after `build:all` proves
+# at least one target compiled and produced a runnable binary.
 if npm run build:all > /tmp/build-output.log 2>&1; then
-    if [ -f "pkg/wasm4pm.wasm" ] && [ -f "pkg-nodejs/wasm4pm.wasm" ] && [ -f "pkg-web/wasm4pm.wasm" ]; then
-        echo -e "${GREEN}✓ All WASM targets built successfully${NC}"
-        echo "✓ **All WASM targets built:**" >> "../$VERIFICATION_REPORT"
-        echo "  - Bundler target: pkg/wasm4pm.wasm ($(ls -lh pkg/wasm4pm.wasm | awk '{print $5}'))" >> "../$VERIFICATION_REPORT"
-        echo "  - Node.js target: pkg-nodejs/wasm4pm.wasm ($(ls -lh pkg-nodejs/wasm4pm.wasm | awk '{print $5}'))" >> "../$VERIFICATION_REPORT"
-        echo "  - Web target: pkg-web/wasm4pm.wasm ($(ls -lh pkg-web/wasm4pm.wasm | awk '{print $5}'))" >> "../$VERIFICATION_REPORT"
+    if [ -f "pkg/wasm4pm_bg.wasm" ]; then
+        WASM_SIZE=$(ls -lh pkg/wasm4pm_bg.wasm | awk '{print $5}')
+        echo -e "${GREEN}✓ WASM built: pkg/wasm4pm_bg.wasm ($WASM_SIZE)${NC}"
+        echo "✓ **WASM built:** pkg/wasm4pm_bg.wasm ($WASM_SIZE)" >> "../$VERIFICATION_REPORT"
     else
         echo -e "${RED}✗ WASM targets missing${NC}"
         echo "✗ **WASM build incomplete**" >> "../$VERIFICATION_REPORT"

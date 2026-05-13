@@ -17,6 +17,32 @@ pub fn simplify(arena: &mut PowlArena, idx: u32) -> u32 {
         None => idx,
         Some(PowlNode::Transition(_)) | Some(PowlNode::FrequentTransition(_)) => idx,
         Some(PowlNode::DecisionGraph(dg)) => simplify_decision_graph(arena, &dg),
+        // ChoiceGraph: simplify each SubModel sub-tree in place; the graph
+        // structure (Definition 1 invariants) is preserved.
+        Some(PowlNode::ChoiceGraph(cg)) => {
+            let new_nodes: Vec<wasm4pm_types::ChoiceGraphNode> = cg
+                .graph
+                .nodes
+                .into_iter()
+                .map(|n| match n {
+                    wasm4pm_types::ChoiceGraphNode::SubModel(c) => {
+                        wasm4pm_types::ChoiceGraphNode::SubModel(simplify(arena, c))
+                    }
+                    other => other,
+                })
+                .collect();
+            let new_graph = wasm4pm_types::ChoiceGraph {
+                nodes: new_nodes,
+                edges: cg.graph.edges,
+                start_idx: cg.graph.start_idx,
+                end_idx: cg.graph.end_idx,
+            };
+            // Replace the node in-place to keep the index stable.
+            arena.nodes[idx as usize] = PowlNode::ChoiceGraph(
+                crate::powl_arena::ChoiceGraphPowlNode { graph: new_graph },
+            );
+            idx
+        }
         Some(PowlNode::OperatorPowl(op)) => {
             let simplified_children: Vec<u32> =
                 op.children.iter().map(|&c| simplify(arena, c)).collect();
@@ -375,7 +401,8 @@ pub fn simplify_using_frequent_transitions(arena: &mut PowlArena, idx: u32) -> u
         None
         | Some(PowlNode::Transition(_))
         | Some(PowlNode::FrequentTransition(_))
-        | Some(PowlNode::DecisionGraph(_)) => idx,
+        | Some(PowlNode::DecisionGraph(_))
+        | Some(PowlNode::ChoiceGraph(_)) => idx,
         Some(PowlNode::StrictPartialOrder(spo)) => {
             let children = spo.children.clone();
             let old_order = spo.order.clone();

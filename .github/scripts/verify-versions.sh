@@ -9,10 +9,11 @@ echo "========================================"
 echo "Version Consistency Check"
 echo "========================================"
 
-# Extract versions
+# Extract versions. The WASM crate's Cargo.toml inherits via `version.workspace = true`,
+# so the literal version lives in the workspace Cargo.toml at the repo root.
 PACKAGE_VERSION=$(node -p "require('./package.json').version")
 WASM4PM_VERSION=$(node -p "require('./wasm4pm/package.json').version")
-WASM4PM_CARGO=$(grep '^version' wasm4pm/Cargo.toml | head -1 | cut -d'"' -f2)
+WASM4PM_CARGO=$(awk '/^\[workspace.package\]/{f=1;next} /^\[/{f=0} f && /^version *=/{gsub(/[" ]/,"",$3); print $3; exit}' Cargo.toml)
 
 echo "Root package.json:     $PACKAGE_VERSION"
 echo "wasm4pm/package.json:  $WASM4PM_VERSION"
@@ -41,8 +42,8 @@ if [ -d "packages" ]; then
     echo ""
     echo "Checking @wasm4pm/* packages..."
     for pkg in packages/*/package.json; do
-        PKG_NAME=$(node -p "require('$pkg').name")
-        PKG_VERSION=$(node -p "require('$pkg').version")
+        PKG_NAME=$(node -p "require('./$pkg').name")
+        PKG_VERSION=$(node -p "require('./$pkg').version")
 
         if [ "$PKG_VERSION" != "$WASM4PM_VERSION" ]; then
             echo "✗ ERROR: $PKG_NAME version ($PKG_VERSION) != root version ($WASM4PM_VERSION)"

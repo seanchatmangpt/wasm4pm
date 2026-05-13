@@ -1,8 +1,10 @@
 import { defineCommand } from 'citty';
-import { getFormatter, JSONFormatter, HumanFormatter } from '../../output.js';
+import { emitResult, makeResult, makeErrorResult } from '../../output.js';
 import { EXIT_CODES } from '../../exit-codes.js';
 import { AgentRegistry } from '@wasm4pm/agents';
+import { withSpanRaw } from '../_otel.js';
 import type { AgentMode } from '@wasm4pm/agents';
+import { exitWithFlush } from '../../otel/exit.js';
 
 export const list = defineCommand({
   meta: {
@@ -31,29 +33,31 @@ export const list = defineCommand({
     },
   },
   async run(ctx) {
-    const formatter = getFormatter({
-      format: ctx.args.format as 'human' | 'json',
-      verbose: ctx.args.verbose,
-      quiet: ctx.args.quiet,
-    });
+    return withSpanRaw('wasm4pm.command.agent.list', {
+      command: 'agent', subcommand: 'list',
+    }, async () => {
+    const t0 = performance.now();
+    const format = (ctx.args.format as 'json' | 'human') ?? 'human';
+    const verbose = Boolean(ctx.args.verbose);
+    const quiet = Boolean(ctx.args.quiet);
 
     try {
       const registry = new AgentRegistry();
       const filter = ctx.args.filter as AgentMode | undefined;
       const agents = registry.listAgents(filter);
+      const summary = registry.getSummary();
 
-      if (formatter instanceof JSONFormatter) {
-        formatter.success('Agents', agents);
-      } else {
-        const summary = registry.getSummary();
-
-        formatter.log('');
-        formatter.log(
-          `  Agents: ${summary.active} active, ${summary.disabled} disabled, ${summary.error} error`
+      const payload = { agents, summary };
+      const result = makeResult('agent list', payload, performance.now() - t0, EXIT_CODES.success);
+      emitResult(result, { format, verbose, quiet }, (res, projection) => {
+        const p = res.payload as typeof payload;
+        projection.log('');
+        projection.log(
+          `  Agents: ${p.summary.active} active, ${p.summary.disabled} disabled, ${p.summary.error} error`
         );
-        formatter.log('');
+        projection.log('');
 
-        for (const agent of agents) {
+        for (const agent of p.agents) {
           const statusIcon =
             agent.status === 'active'
               ? '+'
@@ -64,32 +68,33 @@ export const list = defineCommand({
                   : '?';
 
           const modeTag = agent.config.mode === 'continuous' ? 'C' : 'D';
-          formatter.log(
+          projection.log(
             `  ${statusIcon} ${agent.config.name}  [${modeTag}]  ${agent.config.description}`
           );
-          formatter.log(
+          projection.log(
             `     Runs: ${agent.total_runs}  Violations: ${agent.total_violations}  Corrections: ${agent.total_corrections}`
           );
 
-          if (ctx.args.verbose && agent.config.target_gates.length > 0) {
-            formatter.log(`     Gates: ${agent.config.target_gates.join(', ')}`);
+          if (verbose && agent.config.target_gates.length > 0) {
+            projection.log(`     Gates: ${agent.config.target_gates.join(', ')}`);
           }
-          if (ctx.args.verbose && agent.config.tags.length > 0) {
-            formatter.log(`     Tags: ${agent.config.tags.join(', ')}`);
+          if (verbose && agent.config.tags.length > 0) {
+            projection.log(`     Tags: ${agent.config.tags.join(', ')}`);
           }
         }
-      }
+      });
 
-      process.exit(EXIT_CODES.success);
+      return await exitWithFlush(result.exit_code);
     } catch (error) {
-      if (formatter instanceof JSONFormatter) {
-        formatter.error('Failed to list agents', error);
-      } else {
-        formatter.error(
-          `Failed to list agents: ${error instanceof Error ? error.message : String(error)}`
-        );
-      }
-      process.exit(EXIT_CODES.execution_error);
+      const result = makeErrorResult(
+        'agent list',
+        error,
+        EXIT_CODES.execution_error,
+        'AGENT_LIST_ERROR'
+      );
+      emitResult(result, { format, verbose, quiet });
+      return await exitWithFlush(result.exit_code);
     }
+    });
   },
 });

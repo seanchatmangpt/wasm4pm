@@ -1,22 +1,29 @@
 import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { resolveConfig as loadConfig } from '@wasm4pm/config';
-import { WasmLoader } from '@wasm4pm/engine';
-import { ALGORITHM_CLI_ALIASES } from '@wasm4pm/contracts';
-import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
+import { resolveConfig as loadConfig, checkConfigWarnings } from '@wasm4pm/config';
+import { plan as makePlan } from '@wasm4pm/planner';
+import { ALGORITHM_CLI_ALIASES, findClosestMatch } from '@wasm4pm/contracts';
+import { emitResult, makeResult, makeErrorResult } from '../output.js';
+import { withLogSession } from '../with-log-session.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { savePredictionResult } from './results.js';
 import { executeMlTask } from '../ml-runner.js';
 import type { MlTask } from '../ml-runner.js';
-import type { OutputOptions } from '../output.js';
+import { discriminate, DiscoveryShapeError } from '../discriminator.js';
+import { withSpan } from './_otel.js';
+import { saveCommandReceipt, blake3Hex, newReceipt, type CommandReceipt } from '../receipts/_shared.js';
+import { exitWithFlush } from '../otel/exit.js';
 
-export interface RunOptions extends OutputOptions {
+export interface RunOptions {
   config?: string;
   algorithm?: string;
   input?: string;
   output?: string;
   timeout?: number;
+  format?: string;
+  verbose?: boolean;
+  quiet?: boolean;
 }
 
 /** All algorithms supported by wpm run, mapped to their WASM discovery functions. */
@@ -199,14 +206,30 @@ export const run = defineCommand({
       description:
         'Compute and display quality metrics (fitness, precision, simplicity) after discovery',
     },
+    preflight: {
+      type: 'boolean',
+      description:
+        'Run full two-pass preflight validation (structural + semantic) before discovery',
+    },
+    stream: {
+      type: 'boolean',
+      description: 'Show elapsed time during discovery (for long-running algorithms)',
+    },
   },
   async run(ctx) {
-    const formatter = getFormatter({
-      format: ctx.args.format as 'human' | 'json',
-      verbose: ctx.args.verbose,
-      quiet: ctx.args.quiet,
-    });
+    const format = (ctx.args.format as 'json' | 'human') ?? 'human';
+    const verbose = Boolean(ctx.args.verbose);
+    const quiet = Boolean(ctx.args.quiet);
+    const emitOptions = { format, verbose, quiet };
 
+    return withSpan(
+      'run',
+      {
+        algorithm: String(ctx.args.algorithm ?? ''),
+        input: String(ctx.args.input ?? ''),
+        format,
+      },
+      async () => {
     try {
       // Step 1: Load and validate configuration
       const configPath = ctx.args.config || process.cwd();
@@ -218,8 +241,9 @@ export const run = defineCommand({
         });
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
-        formatter.error(`Config error: ${message}`);
-        process.exit(EXIT_CODES.config_error);
+        const result = makeErrorResult('run', new Error(`Config error: ${message}`), EXIT_CODES.config_error, 'CONFIG_ERROR');
+        emitResult(result, emitOptions);
+        return await exitWithFlush(result.exit_code);
       }
 
       // Step 2: Resolve algorithm (fixes operator-precedence bug: --algorithm flag was ignored)
@@ -252,10 +276,17 @@ export const run = defineCommand({
         })();
 
       if (!resolvedAlgo) {
-        formatter.error(
-          `Unknown algorithm: "${rawAlgo}"\nAvailable: ${Object.keys(ALGORITHM_CLI_ALIASES).join(', ')}`
+        const available = Object.keys(ALGORITHM_CLI_ALIASES);
+        const suggestion = findClosestMatch(rawAlgo.toLowerCase(), available.map((a) => a.toLowerCase()), 3);
+        const didYouMean = suggestion ? `\nDid you mean '${suggestion}'?` : '';
+        const result = makeErrorResult(
+          'run',
+          new Error(`Algorithm '${rawAlgo}' not found.${didYouMean}\nAvailable algorithms: ${available.slice(0, 5).join(', ')}... (${available.length} total)`),
+          EXIT_CODES.source_error,
+          'ALGORITHM_NOT_FOUND'
         );
-        process.exit(EXIT_CODES.source_error);
+        emitResult(result, emitOptions);
+        return await exitWithFlush(result.exit_code);
       }
 
       // Step 3: Resolve input path (positional OR --file/-i)
@@ -263,101 +294,163 @@ export const run = defineCommand({
         (ctx.args.input as string | undefined) || (ctx.args.file as string | undefined);
 
       if (!inputPath) {
-        formatter.error(
-          'Input file required.\n\nUsage:  wpm run <log.xes>\n        wpm run <log.xes> --algorithm heuristic\n\nRun "wpm --help" to see all commands.'
+        const result = makeErrorResult(
+          'run',
+          new Error('Input file required.\n\nUsage:  wpm run <log.xes>\n        wpm run <log.xes> --algorithm heuristic\n\nRun "wpm --help" to see all commands.'),
+          EXIT_CODES.source_error,
+          'INPUT_REQUIRED'
         );
-        process.exit(EXIT_CODES.source_error);
-      }
-
-      try {
-        await fs.access(inputPath);
-      } catch {
-        formatter.error(
-          `Input file not found: ${inputPath}\n\nCheck that the path is correct and the file is readable.`
-        );
-        process.exit(EXIT_CODES.source_error);
-      }
-
-      // Step 4: Load WASM module
-      if (formatter instanceof HumanFormatter) {
-        formatter.info(`Discovering process model with ${resolvedAlgo}...`);
-      }
-
-      const loader = WasmLoader.getInstance();
-      await loader.init();
-      const wasm = loader.get();
-
-      // Step 4b: Handle --no-cache flag
-      if (ctx.args['no-cache']) {
-        if (typeof wasm.clear_all_caches !== 'function') {
-          formatter.error('Cache clearing requested (--no-cache) but not available in WASM module');
-          process.exit(EXIT_CODES.execution_error);
-        }
-        wasm.clear_all_caches();
-        if (formatter instanceof HumanFormatter) {
-          formatter.debug('Caches cleared (--no-cache)');
-        }
-      }
-
-      // Step 5: Parse XES and load log
-      if (formatter instanceof HumanFormatter) {
-        formatter.debug(`Loading event log from: ${inputPath}`);
-      }
-
-      // Step 5a: Reject non-XES extensions early (before reading file content)
-      const ext = path.extname(inputPath).toLowerCase();
-      if (ext && !['.xes', '.xml'].includes(ext)) {
-        formatter.error('Input file must be an XES or XML event log', { path: inputPath, extension: ext });
-        process.exit(EXIT_CODES.source_error);
+        emitResult(result, emitOptions);
+        return await exitWithFlush(result.exit_code);
       }
 
       const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
-      const xesContent = await fs.readFile(inputPath, 'utf-8');
-      if (xesContent.trim() === '') {
-        formatter.error('Input file is empty', { path: inputPath });
-        process.exit(EXIT_CODES.source_error);
-      }
-      const looksLikeXes = xesContent.includes('<log') || xesContent.includes('<trace') || xesContent.includes('<event');
-      const isWellFormed = xesContent.includes('</log>') || xesContent.includes('</trace>');
-      if (looksLikeXes && !isWellFormed) {
-        formatter.error('XES file is malformed — missing closing tags', { path: inputPath });
-        process.exit(EXIT_CODES.source_error);
-      }
-      if (!looksLikeXes) {
-        formatter.error('Input does not appear to be a valid XES event log', { path: inputPath });
-        process.exit(EXIT_CODES.source_error);
-      }
-      const logHandle: string = wasm.load_eventlog_from_xes(xesContent);
-      if (!logHandle) {
-        formatter.error('Failed to parse XES event log — file may be corrupted or malformed', { path: inputPath });
-        process.exit(EXIT_CODES.source_error);
+
+      // Preflight: only accept supported input extensions.
+      const lowerInput = inputPath.toLowerCase();
+      const acceptedExt =
+        lowerInput.endsWith('.xes') ||
+        lowerInput.endsWith('.xes.gz') ||
+        lowerInput.endsWith('.json');
+      if (!acceptedExt) {
+        const result = makeErrorResult(
+          'run',
+          new Error(`unsupported input file extension: ${inputPath}`),
+          EXIT_CODES.source_error,
+          'UNSUPPORTED_EXTENSION'
+        );
+        emitResult(result, emitOptions);
+        return await exitWithFlush(result.exit_code);
       }
 
-      // Zero-trace check: count <trace elements in the XES content.
-      // A log with no traces cannot be meaningfully discovered.
-      const traceMatches = xesContent.match(/<trace[\s>]/g);
-      const traceCount = traceMatches ? traceMatches.length : 0;
-      if (traceCount === 0) {
-        wasm.delete_object(logHandle);
-        formatter.error('XES file contains no traces — nothing to discover', { path: inputPath });
-        process.exit(EXIT_CODES.source_error);
+      await withLogSession(
+        { inputPath, activityKey, commandName: 'run', emitOptions },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        async (wasmBase, logHandle) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const wasm = wasmBase as Record<string, any>;
+
+        // Step 4b: Handle --no-cache flag
+        if (ctx.args['no-cache']) {
+          if (typeof wasm.clear_all_caches !== 'function') {
+            const result = makeErrorResult('run', new Error('Cache clearing requested (--no-cache) but not available in WASM module'), EXIT_CODES.execution_error, 'CACHE_CLEAR_UNAVAILABLE');
+            emitResult(result, emitOptions);
+            return await exitWithFlush(result.exit_code);
+          }
+          wasm.clear_all_caches();
+        }
+
+        // Step 5b: Mandatory Pass 1 (structural) + Optional Pass 2 (semantic) preflight validation
+      const preflightErrors: string[] = [];
+      const preflightWarnings: string[] = [];
+
+      // PASS 1: ALWAYS-ON Structural validation
+      try {
+        const schemaResult = typeof wasm.validate_log_schema === 'function'
+          ? wasm.validate_log_schema(logHandle, 'xes')
+          : null;
+        if (schemaResult) {
+          const schema = typeof schemaResult === 'string' ? JSON.parse(schemaResult) : schemaResult;
+          if (!(schema.valid as boolean)) {
+            preflightErrors.push(`Schema validation failed: ${schema.message as string}`);
+          }
+        }
+      } catch {
+        // Schema validation optional
+      }
+
+      try {
+        const attrsResult = typeof wasm.validate_required_attributes === 'function'
+          ? wasm.validate_required_attributes(logHandle, activityKey, 'case:concept:name', 'time:timestamp', 'org:resource')
+          : null;
+        if (attrsResult) {
+          const attrs = typeof attrsResult === 'string' ? JSON.parse(attrsResult) : attrsResult;
+          const missing = (attrs.missing as string[]) ?? [];
+          if (missing.length > 0) {
+            preflightErrors.push(`Missing required attributes: ${missing.join(', ')}`);
+          }
+        }
+      } catch {
+        // Attribute validation optional
+      }
+
+      // Pass 1 failure is FATAL
+      if (preflightErrors.length > 0) {
+        const result = makeErrorResult(
+          'run',
+          new Error(`Structural validation failed:\n${preflightErrors.map((e) => `  ✗ ${e}`).join('\n')}`),
+          EXIT_CODES.source_error,
+          'STRUCTURAL_VALIDATION_FAILED'
+        );
+        emitResult(result, emitOptions);
+        return await exitWithFlush(result.exit_code);
+      }
+
+      // PASS 2: Optional semantic validation (data quality + advanced checks)
+      if (ctx.args.preflight) {
+        try {
+          const qualityResult = typeof wasm.validate_data_quality === 'function'
+            ? wasm.validate_data_quality(logHandle)
+            : null;
+          if (qualityResult) {
+            const quality = typeof qualityResult === 'string' ? JSON.parse(qualityResult) : qualityResult;
+            const issues = (quality.issues as number) ?? 0;
+            if (issues > 0) {
+              preflightWarnings.push(`Data quality: ${issues} issue(s) found`);
+            }
+          }
+        } catch {
+          // Quality validation optional
+        }
+      }
+
+      // Step 5c: Estimate discovery duration and show ETA
+      let estimatedMs = 0;
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const executionPlan = makePlan(config as any) as any;
+        estimatedMs = executionPlan?.budget?.estimated_duration_ms ?? 0;
+      } catch {
+        // ETA estimation is optional
       }
 
       // Step 6: Execute discovery
-      if (formatter instanceof HumanFormatter) {
-        formatter.debug(`Running ${resolvedAlgo} discovery...`);
+      const t0 = performance.now();
+
+      let raw: unknown;
+      let elapsedMs: number;
+
+      if (ctx.args.stream) {
+        const result = runDiscovery(wasm, resolvedAlgo, logHandle, activityKey);
+        raw = result.raw;
+        elapsedMs = result.elapsedMs;
+      } else {
+        const result = runDiscovery(wasm, resolvedAlgo, logHandle, activityKey);
+        raw = result.raw;
+        elapsedMs = result.elapsedMs;
       }
 
-      const { raw, elapsedMs } = runDiscovery(wasm, resolvedAlgo, logHandle, activityKey);
+      // Validate discovery output shape — fail loudly on unknown shapes.
+      try {
+        discriminate(raw, resolvedAlgo);
+      } catch (shapeErr) {
+        if (shapeErr instanceof DiscoveryShapeError) {
+          const errResult = makeErrorResult(
+            'run',
+            shapeErr,
+            EXIT_CODES.execution_error,
+            'DISCOVERY_SHAPE_MISMATCH'
+          );
+          emitResult(errResult, emitOptions);
+          return await exitWithFlush(errResult.exit_code);
+        }
+        throw shapeErr;
+      }
 
       // Step 6b: Run ML analysis if configured
       const mlResults: Record<string, unknown> = {};
       const mlConfig = (config as any)?.ml;
       if (mlConfig?.enabled && mlConfig.tasks && mlConfig.tasks.length > 0) {
-        if (formatter instanceof HumanFormatter) {
-          formatter.info(`Running ML analysis (${mlConfig.tasks.length} tasks)...`);
-        }
-
         for (const task of mlConfig.tasks) {
           const mlResult = await executeMlTask(wasm, task as MlTask, logHandle, activityKey, {
             method: mlConfig.method,
@@ -368,10 +461,6 @@ export const run = defineCommand({
             eps: mlConfig.eps,
           });
           mlResults[task] = mlResult;
-        }
-
-        if (Object.keys(mlResults).length > 0 && formatter instanceof HumanFormatter) {
-          formatter.info(`ML analysis complete: ${Object.keys(mlResults).join(', ')}`);
         }
       }
 
@@ -391,17 +480,7 @@ export const run = defineCommand({
           Array.isArray(resultDataEarly?.arcs);
         const isPetriNet = hasPetriNetFields;
 
-        if (!isPetriNet) {
-          if (formatter instanceof HumanFormatter) {
-            formatter.warn(
-              `Quality metrics require a Petri net model. Algorithm '${resolvedAlgo}' does not produce one.`
-            );
-          }
-        } else {
-          if (formatter instanceof HumanFormatter) {
-            formatter.info('Computing quality metrics...');
-          }
-
+        if (isPetriNet) {
           try {
             const modelHandle = resultDataEarly?.handle as string | undefined;
 
@@ -457,24 +536,31 @@ export const run = defineCommand({
             }
 
             qualityMetrics = { fitness, precision, simplicity };
-          } catch (qualityError) {
-            if (formatter instanceof HumanFormatter) {
-              formatter.warn(
-                `Quality metrics computation failed: ${qualityError instanceof Error ? qualityError.message : String(qualityError)}`
-              );
-            }
+          } catch {
+            // quality metrics failure is non-fatal; will be reported in consoleRenderer
           }
         }
       }
 
-      // Step 8: Free handle
-      wasm.delete_object(logHandle);
-
       // Normalise result (WASM may return string or object)
       const resultData = typeof raw === 'string' ? JSON.parse(raw) : raw;
 
-      // Step 9: Build output
-      const result = {
+      // Surface K: add `count` alias for `frequency` so consumers can read either name.
+      // Truth lives in WASM (frequency is authoritative); count is a presentation alias.
+      if (resultData && Array.isArray((resultData as { edges?: unknown[] }).edges)) {
+        const edges = (resultData as { edges: Array<Record<string, unknown>> }).edges;
+        for (const e of edges) {
+          if (typeof e.count === 'undefined' && typeof e.frequency === 'number') {
+            e.count = e.frequency;
+          }
+          if (typeof e.frequency === 'undefined' && typeof e.count === 'number') {
+            e.frequency = e.count;
+          }
+        }
+      }
+
+      // Step 9: Build output payload
+      const payload = {
         status: 'success',
         algorithm: resolvedAlgo,
         activityKey,
@@ -483,18 +569,37 @@ export const run = defineCommand({
         model: resultData,
         ...(Object.keys(mlResults).length > 0 && { ml: mlResults }),
         ...(qualityMetrics && { quality: qualityMetrics }),
+        ...(preflightWarnings.length > 0 && { preflightWarnings }),
+        ...(estimatedMs > 0 && { estimatedMs }),
       };
 
-      // Step 9: Auto-save result to .wasm4pm/results/ (unless --no-save)
+      // Step 9b: Auto-save result to .wasm4pm/results/ (unless --no-save)
+      let savedPath: string | null = null;
       if (!ctx.args['no-save']) {
-        const savedPath = await savePredictionResult(
+        savedPath = await savePredictionResult(
           `discover-${resolvedAlgo}`,
           inputPath,
           activityKey,
-          result as unknown as Record<string, unknown>
+          payload as unknown as Record<string, unknown>
         );
-        if (savedPath && formatter instanceof HumanFormatter) {
-          formatter.debug(`Result saved: ${path.relative(process.cwd(), savedPath)}`);
+
+        // Step 9c: Persist BLAKE3 receipt for proof-of-execution
+        try {
+          const inputBytes = await fs.readFile(inputPath).catch(() => Buffer.from(inputPath));
+          const receipt: CommandReceipt = {
+            ...newReceipt('run'),
+            input_hash: blake3Hex(inputBytes),
+            output_hash: blake3Hex(JSON.stringify(payload)),
+            status: 'success',
+            summary: {
+              algorithm: resolvedAlgo,
+              activityKey,
+              elapsedMs: Math.round(elapsedMs * 100) / 100,
+            },
+          };
+          saveCommandReceipt(receipt);
+        } catch {
+          /* receipt write must never break the command */
         }
       }
 
@@ -503,91 +608,150 @@ export const run = defineCommand({
         try {
           const outputDir = path.dirname(ctx.args.output);
           await fs.mkdir(outputDir, { recursive: true });
-          await fs.writeFile(ctx.args.output, JSON.stringify(result, null, 2));
-          if (formatter instanceof HumanFormatter) {
-            formatter.info(`Results written to: ${ctx.args.output}`);
-          }
+          await fs.writeFile(ctx.args.output, JSON.stringify(payload, null, 2));
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
-          formatter.error(`Output error: ${message}`);
-          process.exit(EXIT_CODES.system_error);
+          const errResult = makeErrorResult('run', new Error(`Output error: ${message}`), EXIT_CODES.system_error, 'OUTPUT_WRITE_ERROR');
+          emitResult(errResult, emitOptions);
+          return await exitWithFlush(errResult.exit_code);
         }
       }
 
-      // Step 11: Format and output results
-      if (formatter instanceof JSONFormatter) {
-        formatter.success('Discovery completed', result);
-      } else {
-        formatter.success(`Discovery completed in ${elapsedMs.toFixed(1)}ms`);
-        formatter.info(`Algorithm: ${resolvedAlgo}`);
-        formatter.info(`Activity key: ${activityKey}`);
-        if (ctx.args.output) {
-          formatter.info(`Output: ${ctx.args.output}`);
+      // Step 11: Build canonical result and emit
+      const cmdResult = makeResult('run', payload, elapsedMs, EXIT_CODES.success);
+
+      // Surface K: additive top-level mirror of payload.model so consumers reading
+      // `result.model.edges` (or `result.edges`) work alongside `result.payload.model.edges`.
+      // Preserves backward-compat — payload.model is unchanged.
+      if (resultData && typeof resultData === 'object') {
+        (cmdResult as unknown as Record<string, unknown>).model = resultData;
+        const edges = (resultData as { edges?: unknown }).edges;
+        if (Array.isArray(edges)) {
+          (cmdResult as unknown as Record<string, unknown>).edges = edges;
         }
-        // Always show model summary (not just in verbose mode — it's the point of the command)
-        const summary = extractModelSummary(resultData);
-        if (summary) {
-          formatter.log('');
-          for (const [key, value] of Object.entries(summary)) {
-            formatter.info(`  ${key}: ${value}`);
+      }
+
+      emitResult(cmdResult, emitOptions, (res, projection) => {
+        const p = res.payload as typeof payload;
+
+        // Preflight warnings
+        if (p.preflightWarnings && p.preflightWarnings.length > 0) {
+          for (const warn of p.preflightWarnings) {
+            projection.warn(`⚠ ${warn}`);
+          }
+          if (ctx.args.preflight) {
+            projection.success('Preflight validation complete — log is ready for discovery');
           }
         }
 
-        // Display quality metrics if computed
-        if (qualityMetrics) {
-          formatter.log('');
-          formatter.info('Quality Metrics (van der Aalst):');
-          formatter.info(`  Fitness:    ${(qualityMetrics.fitness * 100).toFixed(1)}%`);
-          formatter.info(`  Precision:  ${(qualityMetrics.precision * 100).toFixed(1)}%`);
-          formatter.info(`  Simplicity: ${(qualityMetrics.simplicity * 100).toFixed(1)}%`);
+        // Inform about WASM init and algorithm selection
+        projection.info(`Discovering process model with ${p.algorithm}...`);
+
+        // ML analysis summary
+        if (p.ml && Object.keys(p.ml as Record<string, unknown>).length > 0) {
+          projection.info(`ML analysis complete: ${Object.keys(p.ml as Record<string, unknown>).join(', ')}`);
         }
 
-        formatter.log('');
-        formatter.log('  Run "wpm results" to view saved results.');
-        formatter.log(
+        if (ctx.args['no-cache']) {
+          projection.debug('Caches cleared (--no-cache)');
+        }
+
+        projection.debug(`Loading event log from: ${p.input}`);
+
+        const etaStr = (p.estimatedMs as number | undefined) && (p.estimatedMs as number) > 0
+          ? ` (~${Math.ceil((p.estimatedMs as number) / 1000)}s estimated)`
+          : '';
+        projection.info(`Discovering with ${p.algorithm}${etaStr}...`);
+
+        projection.success(`Discovery completed in ${p.elapsedMs.toFixed(1)}ms`);
+        projection.info(`Algorithm: ${p.algorithm}`);
+        projection.info(`Activity key: ${p.activityKey}`);
+        if (ctx.args.output) {
+          projection.info(`Output: ${ctx.args.output}`);
+        }
+
+        // Model summary
+        const summary = extractModelSummary(p.model);
+        if (summary) {
+          projection.log('');
+          for (const [key, value] of Object.entries(summary)) {
+            projection.info(`  ${key}: ${value}`);
+          }
+        }
+
+        // Quality metrics
+        if (p.quality) {
+          const q = p.quality as { fitness: number; precision: number; simplicity: number };
+          projection.log('');
+          projection.info('Quality Metrics (van der Aalst):');
+          projection.info(`  Fitness:    ${(q.fitness * 100).toFixed(1)}%`);
+          projection.info(`  Precision:  ${(q.precision * 100).toFixed(1)}%`);
+          projection.info(`  Simplicity: ${(q.simplicity * 100).toFixed(1)}%`);
+        } else if (ctx.args['with-quality'] && p.model) {
+          // If model is not a Petri net, warn about quality metrics
+          const resultDataCheck = p.model as Record<string, unknown>;
+          const hasPetriNetFields =
+            'places' in resultDataCheck || 'transitions' in resultDataCheck || 'arcs' in resultDataCheck;
+          if (!hasPetriNetFields) {
+            projection.warn(
+              `Quality metrics require a Petri net model. Algorithm '${p.algorithm}' does not produce one.`
+            );
+          }
+        }
+
+        projection.log('');
+        projection.log('  Run "wpm results" to view saved results.');
+        projection.log(
           '  Run "wpm compare dfg,heuristic -i ' +
-            path.basename(inputPath) +
+            path.basename(p.input) +
             '" to compare algorithms.'
         );
-      }
+
+        if (savedPath) {
+          projection.debug(`Result saved: ${path.relative(process.cwd(), savedPath)}`);
+        }
+      });
 
       // Step 12: Print cache statistics if requested
       if (ctx.args['cache-stats']) {
         if (typeof wasm.get_cache_stats !== 'function') {
-          formatter.error(
-            'Cache statistics requested (--cache-stats) but not available in WASM module'
-          );
-          process.exit(EXIT_CODES.execution_error);
+          const errResult = makeErrorResult('run', new Error('Cache statistics requested (--cache-stats) but not available in WASM module'), EXIT_CODES.execution_error, 'CACHE_STATS_UNAVAILABLE');
+          emitResult(errResult, emitOptions);
+          return await exitWithFlush(errResult.exit_code);
         }
         const statsRaw = wasm.get_cache_stats();
-        const stats = typeof statsRaw === 'string' ? JSON.parse(statsRaw) : statsRaw;
-        if (formatter instanceof JSONFormatter) {
-          formatter.success('Cache statistics', { cache: stats });
-        } else if (formatter instanceof HumanFormatter) {
+        const cacheStats = typeof statsRaw === 'string' ? JSON.parse(statsRaw) : statsRaw;
+        const cacheResult = makeResult('run/cache-stats', { cache: cacheStats }, 0, EXIT_CODES.success);
+        emitResult(cacheResult, emitOptions, (_res, projection) => {
           const hitRate =
-            stats.parse_hits + stats.parse_misses > 0
-              ? ((stats.parse_hits / (stats.parse_hits + stats.parse_misses)) * 100).toFixed(1)
+            cacheStats.parse_hits + cacheStats.parse_misses > 0
+              ? ((cacheStats.parse_hits / (cacheStats.parse_hits + cacheStats.parse_misses)) * 100).toFixed(1)
               : 'N/A';
-          formatter.info('Cache statistics:');
-          formatter.info(`  Parse hits: ${stats.parse_hits}`);
-          formatter.info(`  Parse misses: ${stats.parse_misses}`);
-          formatter.info(`  Hit rate: ${hitRate}%`);
-          formatter.info(`  Columnar entries: ${stats.columnar_entries}`);
-          formatter.info(`  Interner entries: ${stats.interner_entries}`);
-        }
+          projection.info('Cache statistics:');
+          projection.info(`  Parse hits: ${cacheStats.parse_hits}`);
+          projection.info(`  Parse misses: ${cacheStats.parse_misses}`);
+          projection.info(`  Hit rate: ${hitRate}%`);
+          projection.info(`  Columnar entries: ${cacheStats.columnar_entries}`);
+          projection.info(`  Interner entries: ${cacheStats.interner_entries}`);
+        });
       }
 
-      process.exit(EXIT_CODES.success);
+      return await exitWithFlush(cmdResult.exit_code);
+      }); // end withLogSession
     } catch (error) {
-      if (formatter instanceof JSONFormatter) {
-        formatter.error('Discovery failed', error);
-      } else {
-        formatter.error(
+      const result = makeErrorResult(
+        'run',
+        new Error(
           `Discovery failed: ${error instanceof Error ? error.message : String(error)}\n\nRun "wpm doctor" to check your environment.`
-        );
-      }
-      process.exit(EXIT_CODES.execution_error);
+        ),
+        EXIT_CODES.execution_error,
+        'DISCOVERY_FAILED'
+      );
+      emitResult(result, emitOptions);
+      return await exitWithFlush(result.exit_code);
     }
+      },
+    );
   },
 });
 

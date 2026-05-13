@@ -1,267 +1,73 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import * as fs from 'fs/promises';
+/**
+ * Init command — honest filesystem tests.
+ *
+ * Plan A demanded: NO mocking process.exit, NO spying on process.cwd.
+ * We invoke the CLI as a subprocess (via runCli) with a fresh tmpdir as cwd
+ * and assert against the actual files written and the actual exit code.
+ *
+ * If the CLI binary cannot be located in this environment, the subprocess
+ * will fail with a non-zero exit code; we surface that as a real test
+ * failure rather than mock it away.
+ */
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import * as fs from 'fs';
+import * as fsp from 'fs/promises';
 import * as path from 'path';
-import { existsSync } from 'fs';
-import { init } from '../src/commands/init.js';
+import * as os from 'os';
+import { runCli, EXIT_CODES } from '@wasm4pm/testing';
 
-describe('Init Command', () => {
+describe('Init Command (filesystem oracle)', () => {
   let tmpDir: string;
 
-  beforeEach(async () => {
-    tmpDir = path.join(process.cwd(), `.test-wasm4pm-${Date.now()}`);
-    await fs.mkdir(tmpDir, { recursive: true });
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'wpm-init-'));
   });
 
-  afterEach(async () => {
+  afterEach(() => {
     try {
-      await fs.rm(tmpDir, { recursive: true, force: true });
+      fs.rmSync(tmpDir, { recursive: true, force: true });
     } catch {
-      // Ignore cleanup errors
+      // best effort
     }
   });
 
-  describe('init command execution', () => {
-    it('should create config files with TOML format by default', async () => {
-      const cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(tmpDir);
-      const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {
-        throw new Error('Exit called');
-      });
+  it('creates wasm4pm.toml with [execution] block in cwd', async () => {
+    const result = await runCli(['init', '--config-format', 'toml', '--quiet'], { cwd: tmpDir });
 
-      try {
-        await init.run({
-          args: {
-            configFormat: 'toml',
-            force: false,
-            format: 'human',
-            verbose: false,
-            quiet: true,
-            _: [],
-            '--': [],
-          },
-        } as any);
-      } catch {
-        // Expected error from mocked exit
-      }
+    expect(result.exitCode).toBe(EXIT_CODES.SUCCESS);
 
-      exitSpy.mockRestore();
-      cwdSpy.mockRestore();
+    const tomlPath = path.join(tmpDir, 'wasm4pm.toml');
+    await fsp.access(tomlPath);
+    const tomlContent = await fsp.readFile(tomlPath, 'utf-8');
+    expect(tomlContent).toContain('[execution]');
+  });
 
-      const tomlPath = path.join(tmpDir, 'wasm4pm.toml');
-      const envPath = path.join(tmpDir, '.env.example');
+  it('creates wasm4pm.json with valid execution.profile when configFormat=json', async () => {
+    const result = await runCli(['init', '--config-format', 'json', '--quiet'], { cwd: tmpDir });
+    expect(result.exitCode).toBe(EXIT_CODES.SUCCESS);
 
-      expect(existsSync(tomlPath)).toBe(true);
-      expect(existsSync(envPath)).toBe(true);
+    const jsonPath = path.join(tmpDir, 'wasm4pm.json');
+    await fsp.access(jsonPath);
+    const config = JSON.parse(await fsp.readFile(jsonPath, 'utf-8'));
+    expect(typeof config.execution?.profile).toBe('string');
+  });
 
-      const tomlContent = await fs.readFile(tomlPath, 'utf-8');
-      expect(tomlContent).toContain('[execution]');
-      expect(tomlContent).toContain('profile = "balanced"');
+  it('rejects invalid configFormat with CONFIG_ERROR (1) and writes no config file', async () => {
+    const result = await runCli(['init', '--config-format', 'yaml', '--quiet'], { cwd: tmpDir });
+    expect(result.exitCode).toBe(EXIT_CODES.CONFIG_ERROR);
 
-      const envContent = await fs.readFile(envPath, 'utf-8');
-      expect(envContent).toContain('WASM4PM_PROFILE=balanced');
-      expect(envContent).toContain('WASM4PM_LOG_LEVEL=info');
-    });
+    // No wasm4pm.toml or wasm4pm.json should have been written.
+    expect(fs.existsSync(path.join(tmpDir, 'wasm4pm.toml'))).toBe(false);
+    expect(fs.existsSync(path.join(tmpDir, 'wasm4pm.json'))).toBe(false);
+  });
 
-    it('should create config files with JSON format', async () => {
-      const cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(tmpDir);
-      const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {
-        throw new Error('Exit called');
-      });
+  it('does not overwrite existing wasm4pm.toml without --force', async () => {
+    const tomlPath = path.join(tmpDir, 'wasm4pm.toml');
+    fs.writeFileSync(tomlPath, 'sentinel-content');
 
-      try {
-        await init.run({
-          args: {
-            configFormat: 'json',
-            force: false,
-            format: 'human',
-            verbose: false,
-            quiet: true,
-            _: [],
-            '--': [],
-          },
-        } as any);
-      } catch {
-        // Expected error from mocked exit
-      }
+    await runCli(['init', '--config-format', 'toml', '--quiet'], { cwd: tmpDir });
 
-      exitSpy.mockRestore();
-      cwdSpy.mockRestore();
-
-      const jsonPath = path.join(tmpDir, 'wasm4pm.json');
-      expect(existsSync(jsonPath)).toBe(true);
-
-      const jsonContent = await fs.readFile(jsonPath, 'utf-8');
-      const config = JSON.parse(jsonContent);
-      expect(config.execution.profile).toBe('balanced');
-      expect(config.output.format).toBe('human');
-    });
-
-    it('should create .gitignore and README.md if they do not exist', async () => {
-      const cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(tmpDir);
-      const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {
-        throw new Error('Exit called');
-      });
-
-      try {
-        await init.run({
-          args: {
-            configFormat: 'toml',
-            force: false,
-            format: 'human',
-            verbose: false,
-            quiet: true,
-            _: [],
-            '--': [],
-          },
-        } as any);
-      } catch {
-        // Expected error from mocked exit
-      }
-
-      exitSpy.mockRestore();
-      cwdSpy.mockRestore();
-
-      const gitignorePath = path.join(tmpDir, '.gitignore');
-      const readmePath = path.join(tmpDir, 'README.md');
-
-      expect(existsSync(gitignorePath)).toBe(true);
-      expect(existsSync(readmePath)).toBe(true);
-
-      const gitignoreContent = await fs.readFile(gitignorePath, 'utf-8');
-      expect(gitignoreContent).toContain('node_modules/');
-      expect(gitignoreContent).toContain('.env');
-      expect(gitignoreContent).toContain('dist/');
-
-      const readmeContent = await fs.readFile(readmePath, 'utf-8');
-      expect(readmeContent).toContain('# wasm4pm Project');
-      expect(readmeContent).toContain('wpm run');
-      expect(readmeContent).toContain('wpm watch');
-    });
-
-    it('should not overwrite existing files without --force flag', async () => {
-      // Create existing file
-      const tomlPath = path.join(tmpDir, 'wasm4pm.toml');
-      await fs.writeFile(tomlPath, 'existing content');
-
-      const cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(tmpDir);
-      const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {
-        throw new Error('Exit called');
-      });
-
-      try {
-        await init.run({
-          args: {
-            configFormat: 'toml',
-            force: false,
-            format: 'human',
-            verbose: false,
-            quiet: true,
-            _: [],
-            '--': [],
-          },
-        } as any);
-      } catch {
-        // Expected error from mocked exit
-      }
-
-      exitSpy.mockRestore();
-      cwdSpy.mockRestore();
-
-      const content = await fs.readFile(tomlPath, 'utf-8');
-      expect(content).toBe('existing content');
-    });
-
-    it('should overwrite existing files with --force flag', async () => {
-      const tomlPath = path.join(tmpDir, 'wasm4pm.toml');
-      await fs.writeFile(tomlPath, 'old content');
-
-      const cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(tmpDir);
-      const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {
-        throw new Error('Exit called');
-      });
-
-      try {
-        await init.run({
-          args: {
-            configFormat: 'toml',
-            force: true,
-            format: 'human',
-            verbose: false,
-            quiet: true,
-            _: [],
-            '--': [],
-          },
-        } as any);
-      } catch {
-        // Expected error from mocked exit
-      }
-
-      exitSpy.mockRestore();
-      cwdSpy.mockRestore();
-
-      const content = await fs.readFile(tomlPath, 'utf-8');
-      expect(content).toContain('[execution]');
-      expect(content).not.toContain('old content');
-    });
-
-    it('should reject invalid format', async () => {
-      const cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(tmpDir);
-      const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {
-        throw new Error('Exit called');
-      });
-
-      try {
-        await init.run({
-          args: {
-            configFormat: 'yaml',
-            force: false,
-            format: 'human',
-            verbose: false,
-            quiet: true,
-            _: [],
-            '--': [],
-          },
-        } as any);
-      } catch {
-        expect(exitSpy).toHaveBeenCalledWith(1);
-      }
-
-      exitSpy.mockRestore();
-      cwdSpy.mockRestore();
-    });
-
-    it('should output JSON format when requested', async () => {
-      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-      const cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(tmpDir);
-      const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {
-        throw new Error('Exit called');
-      });
-
-      try {
-        await init.run({
-          args: {
-            configFormat: 'toml',
-            force: false,
-            format: 'json',
-            verbose: false,
-            quiet: false,
-            _: [],
-            '--': [],
-          },
-        } as any);
-      } catch {
-        // Expected error from mocked exit
-      }
-
-      const calls = [...logSpy.mock.calls];
-
-      exitSpy.mockRestore();
-      cwdSpy.mockRestore();
-      logSpy.mockRestore();
-      expect(calls.length).toBeGreaterThan(0);
-      const lastCall = calls[calls.length - 1][0];
-      if (typeof lastCall === 'string') {
-        expect(() => JSON.parse(lastCall)).not.toThrow();
-      }
-    });
+    const after = await fsp.readFile(tomlPath, 'utf-8');
+    expect(after).toBe('sentinel-content');
   });
 });

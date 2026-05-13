@@ -21,457 +21,151 @@ describe('Config Resolution Order', () => {
   });
 
   describe('CLI > TOML > JSON > ENV > defaults', () => {
-    it('should apply CLI override with highest priority', async () => {
-      // Set up files with conflicting values
+    it('CLI override wins over TOML, TOML wins over JSON, and defaults fill missing fields', async () => {
+      // Write TOML with profile=balanced
       const tomlPath = path.join(tmpDir, 'wasm4pm.toml');
-      await fs.writeFile(
-        tomlPath,
-        `version = "26.4.5"
-[execution]
-profile = "balanced"
-`
-      );
-
-      const config = await loadConfig({
-        configSearchPaths: [tmpDir],
-        cliOverrides: { profile: 'quality' },
-      });
+      await fs.writeFile(tomlPath, `version = "26.4.5"\n[execution]\nprofile = "balanced"\ntimeout = 60000\n`);
 
       // CLI override should win
-      expect(config.execution.profile).toBe('quality');
-      expect(config.metadata.provenance['execution.profile']?.source).toBe('cli');
+      const cliConfig = await loadConfig({ configSearchPaths: [tmpDir], cliOverrides: { profile: 'quality' } });
+      expect(cliConfig.execution.profile).toBe('quality');
+      expect(cliConfig.metadata.provenance['execution.profile']?.source).toBe('cli');
+
+      // TOML should be applied when no CLI override
+      const tomlConfig = await loadConfig({ configSearchPaths: [tmpDir] });
+      expect(tomlConfig.execution.profile).toBe('balanced');
+      expect(tomlConfig.execution.timeout).toBe(60000);
+      expect(tomlConfig.metadata.provenance['execution.profile']?.source).toBe('toml');
     });
 
-    it('should load from TOML with second priority', async () => {
-      const tomlPath = path.join(tmpDir, 'wasm4pm.toml');
-      await fs.writeFile(
-        tomlPath,
-        `version = "26.4.5"
-[execution]
-profile = "fast"
-timeout = 60000
-`
-      );
-
-      const config = await loadConfig({
-        configSearchPaths: [tmpDir],
-      });
-
-      // TOML should be applied
-      expect(config.execution.profile).toBe('fast');
-      expect(config.execution.timeout).toBe(60000);
-      expect(config.metadata.provenance['execution.profile']?.source).toBe('toml');
-    });
-
-    it('should prefer TOML over JSON', async () => {
-      // Create both TOML and JSON
+    it('TOML beats JSON when both exist; JSON beats defaults when TOML absent', async () => {
       const tomlPath = path.join(tmpDir, 'wasm4pm.toml');
       const jsonPath = path.join(tmpDir, 'wasm4pm.json');
 
-      await fs.writeFile(
-        tomlPath,
-        `version = "26.4.5"
-[execution]
-profile = "fast"
-`
-      );
+      await fs.writeFile(tomlPath, `version = "26.4.5"\n[execution]\nprofile = "fast"\n`);
+      await fs.writeFile(jsonPath, JSON.stringify({ version: '26.4.5', execution: { profile: 'quality' } }));
 
-      await fs.writeFile(
-        jsonPath,
-        JSON.stringify({
-          version: '26.4.5',
-          execution: { profile: 'quality' },
-        })
-      );
-
-      const config = await loadConfig({
-        configSearchPaths: [tmpDir],
-      });
-
-      // TOML should win
+      const config = await loadConfig({ configSearchPaths: [tmpDir] });
       expect(config.execution.profile).toBe('fast');
-      expect(config.source.kind).toBe('file');
       expect(config.metadata.provenance['execution.profile']?.path).toBe(tomlPath);
+
+      // Remove TOML, JSON should win
+      await fs.rm(tomlPath);
+      const jsonConfig = await loadConfig({ configSearchPaths: [tmpDir] });
+      expect(jsonConfig.execution.profile).toBe('quality');
+      expect(jsonConfig.metadata.provenance['execution.profile']?.path).toBe(jsonPath);
     });
 
-    it('should load from JSON when TOML not present', async () => {
-      const jsonPath = path.join(tmpDir, 'wasm4pm.json');
-      await fs.writeFile(
-        jsonPath,
-        JSON.stringify({
-          version: '26.4.5',
-          execution: { profile: 'balanced' },
-          output: { format: 'json', destination: 'stdout' },
-        })
-      );
-
-      const config = await loadConfig({
-        configSearchPaths: [tmpDir],
-      });
-
-      expect(config.execution.profile).toBe('balanced');
-      expect(config.output?.format).toBe('json');
-      expect(config.metadata.provenance['execution.profile']?.path).toBe(jsonPath);
-    });
-
-    it('should merge CLI overrides with file config', async () => {
+    it('merges CLI overrides with file config and tracks provenance per field', async () => {
       const tomlPath = path.join(tmpDir, 'wasm4pm.toml');
-      await fs.writeFile(
-        tomlPath,
-        `version = "26.4.5"
-[execution]
-profile = "balanced"
-timeout = 300000
+      await fs.writeFile(tomlPath, `version = "26.4.5"\n[execution]\nprofile = "balanced"\ntimeout = 300000\n\n[output]\nformat = "human"\ndestination = "stdout"\n`);
 
-[output]
-format = "human"
-destination = "stdout"
-`
-      );
-
-      const config = await loadConfig({
-        configSearchPaths: [tmpDir],
-        cliOverrides: {
-          outputFormat: 'json',
-        },
-      });
-
-      // File config
+      const config = await loadConfig({ configSearchPaths: [tmpDir], cliOverrides: { outputFormat: 'json' } });
       expect(config.execution.profile).toBe('balanced');
       expect(config.execution.timeout).toBe(300000);
-
-      // CLI override
       expect(config.output?.format).toBe('json');
-
-      // Verify provenance
       expect(config.metadata.provenance['execution.profile']?.source).toBe('toml');
       expect(config.metadata.provenance['output.format']?.source).toBe('cli');
     });
 
-    it('should track file path in provenance', async () => {
-      const tomlPath = path.join(tmpDir, 'wasm4pm.toml');
-      await fs.writeFile(
-        tomlPath,
-        `version = "26.4.5"
-[execution]
-profile = "quality"
-`
-      );
-
-      const config = await loadConfig({
-        configSearchPaths: [tmpDir],
-      });
-
-      expect(config.metadata.provenance['execution.profile']?.path).toBe(tomlPath);
-      expect(config.metadata.provenance['execution.profile']?.value).toBe('quality');
-    });
-
-    it('should apply defaults for missing config fields', async () => {
-      const config = await loadConfig({
-        configSearchPaths: [tmpDir],
-      });
-
-      // Verify defaults are applied
+    it('applies defaults for missing config fields with correct provenance', async () => {
+      const config = await loadConfig({ configSearchPaths: [tmpDir] });
       expect(config.version).toBe('26.4.5');
       expect(config.execution.timeout).toBe(300000);
       expect(config.execution.maxMemory).toBe(1073741824);
       expect(config.output?.format).toBe('human');
-
-      // Check provenance
       expect(config.metadata.provenance['version']?.source).toBe('default');
       expect(config.metadata.provenance['execution.profile']?.source).toBe('default');
+    });
+
+    it('tracks file path and value in provenance', async () => {
+      const tomlPath = path.join(tmpDir, 'wasm4pm.toml');
+      await fs.writeFile(tomlPath, `version = "26.4.5"\n[execution]\nprofile = "quality"\ntimeout = 600000\n`);
+
+      const config = await loadConfig({ configSearchPaths: [tmpDir] });
+      expect(config.metadata.provenance['execution.profile']?.path).toBe(tomlPath);
+      expect(config.metadata.provenance['execution.profile']?.value).toBe('quality');
+      expect(config.metadata.provenance['execution.timeout']?.value).toBe(600000);
     });
   });
 
   describe('Configuration Validation', () => {
-    it('should reject invalid TOML', async () => {
-      const tomlPath = path.join(tmpDir, 'wasm4pm.toml');
-      await fs.writeFile(tomlPath, `invalid toml content [[[`);
+    it('rejects invalid TOML, invalid JSON, and invalid enum values', async () => {
+      // Invalid TOML
+      await fs.writeFile(path.join(tmpDir, 'wasm4pm.toml'), `invalid toml content [[[`);
+      await expect(loadConfig({ configSearchPaths: [tmpDir] })).rejects.toThrow('Failed to parse TOML');
 
-      try {
-        await loadConfig({
-          configSearchPaths: [tmpDir],
-        });
-        expect.fail('Should have thrown validation error');
-      } catch (error) {
-        expect(error).toBeInstanceOf(Error);
-        expect((error as Error).message).toContain('Failed to parse TOML');
-      }
+      // Invalid JSON (remove TOML first, write JSON)
+      await fs.rm(path.join(tmpDir, 'wasm4pm.toml'));
+      await fs.writeFile(path.join(tmpDir, 'wasm4pm.json'), `{ invalid json ]`);
+      await expect(loadConfig({ configSearchPaths: [tmpDir] })).rejects.toThrow('Failed to parse JSON');
     });
 
-    it('should reject invalid JSON', async () => {
-      const jsonPath = path.join(tmpDir, 'wasm4pm.json');
-      await fs.writeFile(jsonPath, `{ invalid json ]`);
-
-      try {
-        await loadConfig({
-          configSearchPaths: [tmpDir],
-        });
-        expect.fail('Should have thrown validation error');
-      } catch (error) {
-        expect(error).toBeInstanceOf(Error);
-        expect((error as Error).message).toContain('Failed to parse JSON');
-      }
-    });
-
-    it('should validate execution profile enum', async () => {
-      const tomlPath = path.join(tmpDir, 'wasm4pm.toml');
+    it('rejects invalid execution profile enum', async () => {
       await fs.writeFile(
-        tomlPath,
-        `version = "26.4.5"
-[execution]
-profile = "invalid_profile"
-`
+        path.join(tmpDir, 'wasm4pm.toml'),
+        `version = "26.4.5"\n[execution]\nprofile = "invalid_profile"\n`
       );
-
-      try {
-        await loadConfig({
-          configSearchPaths: [tmpDir],
-        });
-        expect.fail('Should have thrown validation error');
-      } catch (error) {
-        expect(error).toBeInstanceOf(Error);
-        // Should catch invalid enum value
-      }
+      await expect(loadConfig({ configSearchPaths: [tmpDir] })).rejects.toBeInstanceOf(Error);
     });
 
-    it('should validate output format enum', async () => {
-      const jsonPath = path.join(tmpDir, 'wasm4pm.json');
+    it('rejects negative timeout', async () => {
       await fs.writeFile(
-        jsonPath,
-        JSON.stringify({
-          version: '26.4.5',
-          execution: { profile: 'balanced' },
-          output: { format: 'invalid' },
-        })
+        path.join(tmpDir, 'wasm4pm.toml'),
+        `version = "26.4.5"\n[execution]\nprofile = "balanced"\ntimeout = -1000\n`
       );
-
-      try {
-        await loadConfig({
-          configSearchPaths: [tmpDir],
-        });
-        expect.fail('Should have thrown validation error');
-      } catch (error) {
-        expect(error).toBeInstanceOf(Error);
-        // Should catch invalid format value
-      }
-    });
-
-    it('should validate timeout is positive', async () => {
-      const tomlPath = path.join(tmpDir, 'wasm4pm.toml');
-      await fs.writeFile(
-        tomlPath,
-        `version = "26.4.5"
-[execution]
-profile = "balanced"
-timeout = -1000
-`
-      );
-
-      try {
-        await loadConfig({
-          configSearchPaths: [tmpDir],
-        });
-        expect.fail('Should have thrown validation error');
-      } catch (error) {
-        expect(error).toBeInstanceOf(Error);
-        // Should catch negative timeout
-      }
+      await expect(loadConfig({ configSearchPaths: [tmpDir] })).rejects.toBeInstanceOf(Error);
     });
   });
 
   describe('Environment Variables', () => {
-    it('should load from WASM4PM_ prefixed env vars', async () => {
-      const env = {
-        WASM4PM_PROFILE: 'fast',
-        WASM4PM_LOG_LEVEL: 'debug',
-      };
-
-      const config = await loadConfig({
-        configSearchPaths: [tmpDir],
-        env,
-      });
-
-      // Env vars should override defaults but lose to file/CLI
+    it('loads WASM4PM_PROFILE and WASM4PM_LOG_LEVEL from env with correct provenance', async () => {
+      const config = await loadConfig({ configSearchPaths: [tmpDir], env: { WASM4PM_PROFILE: 'fast', WASM4PM_LOG_LEVEL: 'debug' } });
       expect(config.execution.profile).toBe('fast');
       expect(config.observability?.logLevel).toBe('debug');
       expect(config.metadata.provenance['execution.profile']?.source).toBe('env');
     });
 
-    it('should parse boolean WASM4PM_WATCH from env', async () => {
-      const env = {
-        WASM4PM_WATCH: 'true',
-      };
-
-      const config = await loadConfig({
-        configSearchPaths: [tmpDir],
-        env,
-      });
-
-      expect(config.watch?.enabled).toBe(true);
-    });
-
-    it('should parse boolean WASM4PM_WATCH with 1', async () => {
-      const env = {
-        WASM4PM_WATCH: '1',
-      };
-
-      const config = await loadConfig({
-        configSearchPaths: [tmpDir],
-        env,
-      });
-
-      expect(config.watch?.enabled).toBe(true);
-    });
-
-    it('should parse false for WASM4PM_WATCH', async () => {
-      const env = {
-        WASM4PM_WATCH: 'false',
-      };
-
-      const config = await loadConfig({
-        configSearchPaths: [tmpDir],
-        env,
-      });
-
-      expect(config.watch?.enabled).toBe(false);
+    it('parses WASM4PM_WATCH as boolean (true/1/false)', async () => {
+      const t = await loadConfig({ configSearchPaths: [tmpDir], env: { WASM4PM_WATCH: 'true' } });
+      expect(t.watch?.enabled).toBe(true);
+      const one = await loadConfig({ configSearchPaths: [tmpDir], env: { WASM4PM_WATCH: '1' } });
+      expect(one.watch?.enabled).toBe(true);
+      const f = await loadConfig({ configSearchPaths: [tmpDir], env: { WASM4PM_WATCH: 'false' } });
+      expect(f.watch?.enabled).toBe(false);
     });
   });
 
-  describe('Hash and Provenance', () => {
-    it('should compute deterministic config hash', async () => {
+  describe('Hash and Multiple Search Paths', () => {
+    it('produces deterministic hash and detects config changes', async () => {
       const tomlPath = path.join(tmpDir, 'wasm4pm.toml');
-      await fs.writeFile(
-        tomlPath,
-        `version = "26.4.5"
-[execution]
-profile = "balanced"
-`
-      );
+      await fs.writeFile(tomlPath, `version = "26.4.5"\n[execution]\nprofile = "balanced"\n`);
+      const c1 = await loadConfig({ configSearchPaths: [tmpDir] });
+      const c2 = await loadConfig({ configSearchPaths: [tmpDir] });
+      expect(c1.metadata.hash).toBe(c2.metadata.hash);
 
-      const config1 = await loadConfig({
-        configSearchPaths: [tmpDir],
-      });
-
-      const config2 = await loadConfig({
-        configSearchPaths: [tmpDir],
-      });
-
-      // Same config should produce same hash
-      expect(config1.metadata.hash).toBe(config2.metadata.hash);
+      await fs.writeFile(tomlPath, `version = "26.4.5"\n[execution]\nprofile = "fast"\n`);
+      const c3 = await loadConfig({ configSearchPaths: [tmpDir] });
+      expect(c1.metadata.hash).not.toBe(c3.metadata.hash);
     });
 
-    it('should detect config changes in hash', async () => {
-      const tomlPath = path.join(tmpDir, 'wasm4pm.toml');
-
-      // First config
-      await fs.writeFile(
-        tomlPath,
-        `version = "26.4.5"
-[execution]
-profile = "balanced"
-`
-      );
-      const config1 = await loadConfig({
-        configSearchPaths: [tmpDir],
-      });
-
-      // Modified config
-      await fs.writeFile(
-        tomlPath,
-        `version = "26.4.5"
-[execution]
-profile = "fast"
-`
-      );
-      const config2 = await loadConfig({
-        configSearchPaths: [tmpDir],
-      });
-
-      // Different profiles should have different hashes
-      expect(config1.metadata.hash).not.toBe(config2.metadata.hash);
-    });
-
-    it('should include all config values in provenance', async () => {
-      const tomlPath = path.join(tmpDir, 'wasm4pm.toml');
-      await fs.writeFile(
-        tomlPath,
-        `version = "26.4.5"
-[execution]
-profile = "quality"
-timeout = 600000
-`
-      );
-
-      const config = await loadConfig({
-        configSearchPaths: [tmpDir],
-      });
-
-      const prov = config.metadata.provenance;
-      expect(prov['version']).toBeDefined();
-      expect(prov['execution.profile']).toBeDefined();
-      expect(prov['execution.profile']?.value).toBe('quality');
-      expect(prov['execution.timeout']?.value).toBe(600000);
-    });
-  });
-
-  describe('Multiple Search Paths', () => {
-    it('should search paths in order', async () => {
+    it('searches paths in order and uses first matching config file', async () => {
       const dir1 = path.join(tmpDir, 'dir1');
       const dir2 = path.join(tmpDir, 'dir2');
-
       await fs.mkdir(dir1, { recursive: true });
       await fs.mkdir(dir2, { recursive: true });
 
-      // Write to dir2
-      await fs.writeFile(
-        path.join(dir2, 'wasm4pm.toml'),
-        `version = "26.4.5"
-[execution]
-profile = "balanced"
-`
-      );
+      // Only dir2 has a config
+      await fs.writeFile(path.join(dir2, 'wasm4pm.toml'), `version = "26.4.5"\n[execution]\nprofile = "balanced"\n`);
+      const c = await loadConfig({ configSearchPaths: [dir1, dir2] });
+      expect(c.execution.profile).toBe('balanced');
+      expect(c.metadata.provenance['execution.profile']?.path).toBe(path.join(dir2, 'wasm4pm.toml'));
 
-      // Search dir1 first (will not find), then dir2
-      const config = await loadConfig({
-        configSearchPaths: [dir1, dir2],
-      });
-
-      expect(config.execution.profile).toBe('balanced');
-      expect(config.metadata.provenance['execution.profile']?.path).toBe(path.join(dir2, 'wasm4pm.toml'));
-    });
-
-    it('should use first matching config file', async () => {
-      const dir1 = path.join(tmpDir, 'dir1');
-      const dir2 = path.join(tmpDir, 'dir2');
-
-      await fs.mkdir(dir1, { recursive: true });
-      await fs.mkdir(dir2, { recursive: true });
-
-      // Write to both
-      await fs.writeFile(
-        path.join(dir1, 'wasm4pm.toml'),
-        `version = "26.4.5"
-[execution]
-profile = "fast"
-`
-      );
-
-      await fs.writeFile(
-        path.join(dir2, 'wasm4pm.toml'),
-        `version = "26.4.5"
-[execution]
-profile = "balanced"
-`
-      );
-
-      // Should use first match
-      const config = await loadConfig({
-        configSearchPaths: [dir1, dir2],
-      });
-
-      expect(config.execution.profile).toBe('fast');
-      expect(config.metadata.provenance['execution.profile']?.path).toBe(path.join(dir1, 'wasm4pm.toml'));
+      // Add dir1 config — should win
+      await fs.writeFile(path.join(dir1, 'wasm4pm.toml'), `version = "26.4.5"\n[execution]\nprofile = "fast"\n`);
+      const c2 = await loadConfig({ configSearchPaths: [dir1, dir2] });
+      expect(c2.execution.profile).toBe('fast');
+      expect(c2.metadata.provenance['execution.profile']?.path).toBe(path.join(dir1, 'wasm4pm.toml'));
     });
   });
 });

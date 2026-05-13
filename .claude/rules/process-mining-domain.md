@@ -28,7 +28,7 @@
 - Custom format for direct JavaScript consumption
 - Parse: `load_eventlog_from_json(json_content)`
 
-## Discovery Algorithms (41 registered)
+## Discovery Algorithms (36 registered in `packages/kernel/src/registry.ts`)
 
 ### Tier 1 — Fast (Speed Score 0-30)
 

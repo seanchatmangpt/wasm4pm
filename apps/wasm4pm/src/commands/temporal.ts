@@ -1,17 +1,11 @@
 import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
-import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
+import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
-import type { OutputOptions } from '../output.js';
-import { WasmLoader } from '@wasm4pm/engine';
-import { createQuietObservabilityLayer } from '../observability-util.js';
-
-export interface TemporalOptions extends OutputOptions {
-  input?: string;
-  threshold?: number;
-  activityKey?: string;
-  timestampKey?: string;
-}
+import { withLogSession } from '../with-log-session.js';
+import { withSpan } from './_otel.js';
+import { saveCommandReceipt, blake3Hex, newReceipt, type CommandReceipt } from '../receipts/_shared.js';
+import { exitWithFlush } from '../otel/exit.js';
 
 export const temporal = defineCommand({
   meta: {
@@ -59,222 +53,215 @@ export const temporal = defineCommand({
       description: 'Suppress non-error output',
       alias: 'q',
     },
+    'no-save': {
+      type: 'boolean',
+      description: 'Skip auto-save and BLAKE3 receipt',
+    },
   },
   async run(ctx) {
-    const formatter = getFormatter({
-      format: ctx.args.format as 'human' | 'json',
-      verbose: ctx.args.verbose,
-      quiet: ctx.args.quiet,
-    });
+    const t0 = performance.now();
+    const format = (ctx.args.format as 'json' | 'human') ?? 'human';
+    const verbose = Boolean(ctx.args.verbose);
+    const quiet = Boolean(ctx.args.quiet);
 
+    return withSpan(
+      'temporal',
+      {
+        input: String(ctx.args.input ?? ctx.args.file ?? ''),
+        activity_key: String(ctx.args['activity-key'] ?? ''),
+        timestamp_key: String(ctx.args['timestamp-key'] ?? ''),
+        threshold: Number(ctx.args.threshold ?? 0),
+        format,
+      },
+      async () => {
     try {
-      // In JSON mode, suppress observability logs to keep output clean
-      if (ctx.args.format === 'json') {
-        WasmLoader.reset();
-      }
       // Resolve input path (positional OR --file/-i)
       const inputPath: string | undefined =
         (ctx.args.input as string | undefined) || (ctx.args.file as string | undefined);
 
       if (!inputPath) {
-        formatter.error(
-          'Input file required.\n\nUsage:  wpm temporal <log.xes>\n        wpm temporal <log.xes> --threshold 0.01\n\nRun "wpm temporal --help" for details.'
+        const result = makeErrorResult(
+          'temporal',
+          'Input file required.\n\nUsage:  wpm temporal <log.xes>\n        wpm temporal <log.xes> --threshold 0.01\n\nRun "wpm temporal --help" for details.',
+          EXIT_CODES.source_error,
+          'MISSING_INPUT'
         );
-        process.exit(EXIT_CODES.source_error);
-      }
-
-      // Validate input file exists
-      try {
-        await fs.access(inputPath);
-      } catch {
-        formatter.error(`Input file not found: ${inputPath}`);
-        process.exit(EXIT_CODES.source_error);
+        emitResult(result, { format, verbose, quiet });
+        return await exitWithFlush(result.exit_code);
       }
 
       const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
       const timestampKey = (ctx.args['timestamp-key'] as string) || 'time:timestamp';
       const threshold = parseFloat((ctx.args.threshold as string) || '0.05');
 
-      if (formatter instanceof HumanFormatter) {
-        formatter.info(`Temporal analysis: ${inputPath}`);
-        formatter.debug(`Threshold: ${threshold}, Timestamp key: ${timestampKey}`);
-      }
+      await withLogSession(
+        { inputPath, activityKey, commandName: 'temporal', emitOptions: { format, verbose, quiet } },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        async (wasmBase, logHandle) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const wasm = wasmBase as Record<string, any>;
 
-      // Load WASM module with quiet observability in JSON mode
-      const loaderConfig =
-        ctx.args.format === 'json' ? { observability: createQuietObservabilityLayer() } : {};
-      const loader = WasmLoader.getInstance(loaderConfig);
-      await loader.init();
-      const wasm = loader.get();
+        const rawDfg = wasm.discover_dfg(logHandle, activityKey);
+        const dfg = typeof rawDfg === 'string' ? JSON.parse(rawDfg) : rawDfg;
 
-      // Parse XES and load log
-      if (formatter instanceof HumanFormatter) {
-        formatter.debug('Loading event log from XES file...');
-      }
+        let temporalProfile: Record<string, unknown> | null = null;
+        try {
+          const rawProfile = wasm.compute_temporal_profile(logHandle, activityKey, timestampKey);
+          temporalProfile = typeof rawProfile === 'string' ? JSON.parse(rawProfile) : rawProfile;
+        } catch {
+          // Temporal profile not available
+        }
 
-      const xesContent = await fs.readFile(inputPath, 'utf-8');
-      const logHandle: string = wasm.load_eventlog_from_xes(xesContent);
+        let violations: Array<Record<string, unknown>> = [];
+        try {
+          const rawViolations = wasm.check_temporal_conformance(
+            logHandle,
+            activityKey,
+            timestampKey,
+            threshold
+          );
+          const violationsResult =
+            typeof rawViolations === 'string' ? JSON.parse(rawViolations) : rawViolations;
+          violations = (violationsResult.violations as Array<Record<string, unknown>>) ?? [];
+        } catch {
+          // Temporal conformance not available
+        }
 
-      // Discover DFG for temporal analysis
-      if (formatter instanceof HumanFormatter) {
-        formatter.debug('Discovering directly-follows graph for temporal analysis...');
-      }
+        let performanceDfg: Record<string, unknown> | null = null;
+        try {
+          const rawPerf = wasm.compute_performance_dfg(logHandle, activityKey, timestampKey);
+          performanceDfg = typeof rawPerf === 'string' ? JSON.parse(rawPerf) : rawPerf;
+        } catch {
+          // Performance DFG not available
+        }
 
-      const rawDfg = wasm.discover_dfg(logHandle, activityKey);
-      const dfg = typeof rawDfg === 'string' ? JSON.parse(rawDfg) : rawDfg;
+        let activityDurations: Record<string, unknown> | null = null;
+        try {
+          const rawDurations = wasm.compute_activity_durations(logHandle, activityKey, timestampKey);
+          activityDurations =
+            typeof rawDurations === 'string' ? JSON.parse(rawDurations) : rawDurations;
+        } catch {
+          // Activity durations not available
+        }
 
-      // Compute temporal profile
-      if (formatter instanceof HumanFormatter) {
-        formatter.debug('Computing temporal profile...');
-      }
-
-      let temporalProfile: Record<string, unknown> | null = null;
-      try {
-        const rawProfile = wasm.compute_temporal_profile(logHandle, activityKey, timestampKey);
-        temporalProfile = typeof rawProfile === 'string' ? JSON.parse(rawProfile) : rawProfile;
-      } catch {
-        // Temporal profile not available
-      }
-
-      // Check for temporal violations
-      if (formatter instanceof HumanFormatter) {
-        formatter.debug('Checking for temporal violations...');
-      }
-
-      let violations: Array<Record<string, unknown>> = [];
-      try {
-        const rawViolations = wasm.check_temporal_conformance(
-          logHandle,
+        const payload = {
+          input: inputPath,
           activityKey,
           timestampKey,
-          threshold
-        );
-        const violationsResult =
-          typeof rawViolations === 'string' ? JSON.parse(rawViolations) : rawViolations;
-        violations = (violationsResult.violations as Array<Record<string, unknown>>) ?? [];
-      } catch {
-        // Temporal conformance not available
-      }
-
-      // Compute performance DFG (edge durations)
-      if (formatter instanceof HumanFormatter) {
-        formatter.debug('Computing performance DFG...');
-      }
-
-      let performanceDfg: Record<string, unknown> | null = null;
-      try {
-        const rawPerf = wasm.compute_performance_dfg(logHandle, activityKey, timestampKey);
-        performanceDfg = typeof rawPerf === 'string' ? JSON.parse(rawPerf) : rawPerf;
-      } catch {
-        // Performance DFG not available
-      }
-
-      // Compute activity duration statistics
-      let activityDurations: Record<string, unknown> | null = null;
-      try {
-        const rawDurations = wasm.compute_activity_durations(logHandle, activityKey, timestampKey);
-        activityDurations =
-          typeof rawDurations === 'string' ? JSON.parse(rawDurations) : rawDurations;
-      } catch {
-        // Activity durations not available
-      }
-
-      // Free log handle
-      wasm.delete_object(logHandle);
-
-      // Build result
-      const result = {
-        status: 'success',
-        input: inputPath,
-        activityKey,
-        timestampKey,
-        threshold,
-        dfg: {
-          nodes: (dfg as Record<string, unknown>).nodes ?? [],
-          edges: (dfg as Record<string, unknown>).edges ?? [],
-        },
-        temporalProfile,
-        violations: {
-          count: violations.length,
           threshold,
-          items: violations,
-        },
-        performanceDfg,
-        activityDurations,
-      };
+          dfg: {
+            nodes: (dfg as Record<string, unknown>).nodes ?? [],
+            edges: (dfg as Record<string, unknown>).edges ?? [],
+          },
+          temporalProfile,
+          violations: {
+            count: violations.length,
+            threshold,
+            items: violations,
+          },
+          performanceDfg,
+          activityDurations,
+        };
 
-      // Output results
-      if (formatter instanceof JSONFormatter) {
-        formatter.success('Temporal analysis complete', result);
-      } else {
-        printHumanTemporal(formatter as HumanFormatter, result);
-      }
+        const result = makeResult('temporal', payload, performance.now() - t0, EXIT_CODES.success);
+        emitResult(result, { format, verbose, quiet }, (res, projection) => {
+          printHumanTemporal(projection, res.payload as typeof payload);
+        });
 
-      process.exit(EXIT_CODES.success);
+        if (!ctx.args['no-save']) {
+          try {
+            const inputBytes = await fs.readFile(inputPath!).catch(() => Buffer.from(inputPath!));
+            const activitiesAnalyzed = Array.isArray(payload.dfg.nodes)
+              ? (payload.dfg.nodes as unknown[]).length
+              : 0;
+            const receipt: CommandReceipt = {
+              ...newReceipt('temporal'),
+              command: 'temporal',
+              input_hash: blake3Hex(inputBytes),
+              output_hash: blake3Hex(JSON.stringify(payload)),
+              status: 'success',
+              summary: {
+                activities_analyzed: activitiesAnalyzed,
+                bottleneck_count: payload.violations.count,
+                threshold,
+              },
+            };
+            saveCommandReceipt(receipt);
+          } catch {
+            /* receipt write must never break the command */
+          }
+        }
+
+        return await exitWithFlush(result.exit_code);
+      });  // end withLogSession
     } catch (error) {
-      if (formatter instanceof JSONFormatter) {
-        formatter.error('Temporal analysis failed', error);
-      } else {
-        formatter.error(
-          `Temporal analysis failed: ${error instanceof Error ? error.message : String(error)}`
-        );
-      }
-      process.exit(EXIT_CODES.execution_error);
+      const result = makeErrorResult('temporal', error, EXIT_CODES.execution_error);
+      emitResult(result, { format, verbose, quiet });
+      return await exitWithFlush(result.exit_code);
     }
+      },
+    );
   },
 });
 
-function printHumanTemporal(formatter: HumanFormatter, result: Record<string, unknown>): void {
-  const violations = result.violations as Record<string, unknown>;
-  const perfDfg = result.performanceDfg as Record<string, unknown> | null;
-  const activityDurs = result.activityDurations as Record<string, unknown> | null;
+function printHumanTemporal(
+  projection: import('../output.js').ConsoleProjection,
+  payload: {
+    input: string;
+    activityKey: string;
+    timestampKey: string;
+    threshold: number;
+    violations: { count: number; threshold: number; items: Array<Record<string, unknown>> };
+    performanceDfg: Record<string, unknown> | null;
+    activityDurations: Record<string, unknown> | null;
+  }
+): void {
+  const { violations, performanceDfg, activityDurations } = payload;
 
-  formatter.log('');
-  formatter.success(`Temporal Analysis — ${result.input as string}`);
-  formatter.log(`  Activity key: ${result.activityKey as string}`);
-  formatter.log(`  Timestamp key: ${result.timestampKey as string}`);
-  formatter.log(`  Threshold: ${(result.threshold as number).toFixed(3)}`);
-  formatter.log('');
+  projection.log('');
+  projection.success(`Temporal Analysis — ${payload.input}`);
+  projection.log(`  Activity key: ${payload.activityKey}`);
+  projection.log(`  Timestamp key: ${payload.timestampKey}`);
+  projection.log(`  Threshold: ${payload.threshold.toFixed(3)}`);
+  projection.log('');
 
-  const violationCount = violations.count as number;
-  if (violationCount > 0) {
-    formatter.warn(`Found ${violationCount} temporal violation(s):`);
-    const items = violations.items as Array<Record<string, unknown>>;
-    for (const v of items.slice(0, 10)) {
+  if (violations.count > 0) {
+    projection.warn(`Found ${violations.count} temporal violation(s):`);
+    for (const v of violations.items.slice(0, 10)) {
       const activity = v.activity as string;
       const expected = v.expected as number;
       const actual = v.actual as number;
       const diff = v.diff as number;
-      formatter.log(
+      projection.log(
         `  - ${activity}: expected ${expected.toFixed(2)}ms, got ${actual.toFixed(2)}ms (diff: ${diff > 0 ? '+' : ''}${diff.toFixed(2)}ms)`
       );
     }
-    if (items.length > 10) {
-      formatter.log(`  ... and ${items.length - 10} more violations`);
+    if (violations.items.length > 10) {
+      projection.log(`  ... and ${violations.items.length - 10} more violations`);
     }
   } else {
-    formatter.success('No temporal violations found');
+    projection.success('No temporal violations found');
   }
-  formatter.log('');
+  projection.log('');
 
-  if (activityDurs) {
-    formatter.log('  Activity durations (ms):');
-    const durations = activityDurs.durations as Record<
+  if (activityDurations) {
+    projection.log('  Activity durations (ms):');
+    const durations = activityDurations.durations as Record<
       string,
       { mean: number; min: number; max: number; median: number }
     >;
     if (durations) {
       for (const [activity, stats] of Object.entries(durations).slice(0, 10)) {
-        formatter.log(
+        projection.log(
           `    ${activity}: mean=${stats.mean.toFixed(1)}, min=${stats.min.toFixed(1)}, max=${stats.max.toFixed(1)}, median=${stats.median.toFixed(1)}`
         );
       }
     }
-    formatter.log('');
+    projection.log('');
   }
 
-  if (perfDfg) {
-    const edges = perfDfg.edges as Array<{
+  if (performanceDfg) {
+    const edges = performanceDfg.edges as Array<{
       from: string;
       to: string;
       avgDuration: number;
@@ -282,14 +269,14 @@ function printHumanTemporal(formatter: HumanFormatter, result: Record<string, un
       maxDuration: number;
     }>;
     if (edges && edges.length > 0) {
-      formatter.log('  Performance DFG (top 10 edges by duration):');
+      projection.log('  Performance DFG (top 10 edges by duration):');
       const sortedEdges = [...edges].sort((a, b) => b.avgDuration - a.avgDuration).slice(0, 10);
       for (const edge of sortedEdges) {
-        formatter.log(
+        projection.log(
           `    ${edge.from} → ${edge.to}: avg=${edge.avgDuration.toFixed(1)}ms (min: ${edge.minDuration.toFixed(1)}, max: ${edge.maxDuration.toFixed(1)})`
         );
       }
     }
-    formatter.log('');
+    projection.log('');
   }
 }

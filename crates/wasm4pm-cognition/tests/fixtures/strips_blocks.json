@@ -1,0 +1,26 @@
+{
+  "initial_state": [
+    { "on": ["a", "b"] },
+    { "on": ["b", "table"] },
+    { "clear": ["a"] },
+    { "clear": ["c"] },
+    { "on": ["c", "table"] }
+  ],
+  "goals": [
+    { "on": ["a", "b"] },
+    { "on": ["b", "c"] },
+    { "on": ["c", "table"] }
+  ],
+  "actions": [
+    {
+      "name": "move",
+      "preconditions": [
+        { "clear": ["X"] },
+        { "clear": ["Y"] }
+      ],
+      "effects": [
+        { "on": ["X", "Y"] }
+      ]
+    }
+  ]
+}

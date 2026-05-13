@@ -7,7 +7,7 @@
 use wasm_bindgen::prelude::*;
 use crate::state::{get_or_init_state, StoredObject};
 use crate::error::{wasm_err, codes};
-use crate::utilities::to_js;
+use crate::utilities::to_js_str;
 use std::collections::HashSet;
 
 /// Run an ablation study: for each target activity, measure its impact on the process model.
@@ -149,7 +149,7 @@ pub fn ablation_study(
             .unwrap_or(std::cmp::Ordering::Equal)
     });
 
-    to_js(&serde_json::json!({
+    to_js_str(&serde_json::json!({
         "results": results,
         "total_traces": total_traces,
         "original_edges": orig_edge_count,

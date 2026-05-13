@@ -1,6 +1,6 @@
 use crate::error::{codes, wasm_err};
 use crate::state::{get_or_init_state, StoredObject};
-use crate::utilities::to_js;
+use crate::utilities::to_js_str;
 /// Feature Importance (SHAP-lite) — Permutation-based importance for process prediction.
 ///
 /// Answers: "Which prefix activities matter most for predicting the next activity?"
@@ -37,7 +37,7 @@ pub fn compute_feature_importance(
 
     if prefix.len() < 2 {
         // With a single activity, removing it leaves nothing — importance is trivially the activity itself
-        return to_js(&serde_json::json!({
+        return to_js_str(&serde_json::json!({
             "baseline": 0.0,
             "importances": [{
                 "activity": prefix[0],
@@ -129,7 +129,7 @@ pub fn compute_feature_importance(
         }
     }
 
-    to_js(&serde_json::json!({
+    to_js_str(&serde_json::json!({
         "baseline": baseline_confidence,
         "importances": importances,
         "ngram_order": ngram_order,
@@ -185,8 +185,8 @@ pub fn global_feature_importance(
         })?;
 
     if prefixes.is_empty() {
-        return to_js(&serde_json::json!({
-            "activities": [],
+        return to_js_str(&serde_json::json!({
+            "activities": [], // empty: no prefixes in log
             "total_prefixes": 0,
             "ngram_order": ngram_order,
             "method": "global_permutation_importance",
@@ -267,7 +267,7 @@ pub fn global_feature_importance(
             .unwrap_or(std::cmp::Ordering::Equal)
     });
 
-    to_js(&serde_json::json!({
+    to_js_str(&serde_json::json!({
         "activities": activities,
         "total_prefixes": prefixes.len(),
         "ngram_order": ngram_order,

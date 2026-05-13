@@ -302,6 +302,38 @@ function parseEnvConfig(env: NodeJS.ProcessEnv): Record<string, unknown> {
     config.rl = { ...(config.rl as Record<string, unknown>), epsilon: v };
   }
 
+  // --- Membrane environment variables ---
+  if (env.WASM4PM_MEMBRANE_ENABLED) {
+    config.membrane = { ...(config.membrane as Record<string, unknown> ?? {}), enabled: env.WASM4PM_MEMBRANE_ENABLED === 'true' || env.WASM4PM_MEMBRANE_ENABLED === '1' };
+  }
+  if (env.WASM4PM_MEMBRANE_CUSTODY_ACTIONS) {
+    config.membrane = { ...(config.membrane as Record<string, unknown> ?? {}), custody_actions: env.WASM4PM_MEMBRANE_CUSTODY_ACTIONS.split(',').map((a: string) => a.trim()).filter(Boolean) };
+  }
+  if (env.WASM4PM_MEMBRANE_PERSIST) {
+    const existing = (config.membrane as Record<string, unknown>) ?? {};
+    const envelopes = (existing.envelopes as Record<string, unknown>) ?? {};
+    config.membrane = { ...existing, envelopes: { ...envelopes, persist: env.WASM4PM_MEMBRANE_PERSIST === 'true' } };
+  }
+  if (env.WASM4PM_MEMBRANE_PATH) {
+    const existing = (config.membrane as Record<string, unknown>) ?? {};
+    const envelopes = (existing.envelopes as Record<string, unknown>) ?? {};
+    config.membrane = { ...existing, envelopes: { ...envelopes, path: env.WASM4PM_MEMBRANE_PATH } };
+  }
+  if (env.WASM4PM_MEMBRANE_ACTOR_ESCALATE) {
+    const v = parseFloat(env.WASM4PM_MEMBRANE_ACTOR_ESCALATE);
+    if (Number.isNaN(v) || v < 0 || v > 1) throw new Error(`Invalid WASM4PM_MEMBRANE_ACTOR_ESCALATE: "${env.WASM4PM_MEMBRANE_ACTOR_ESCALATE}" must be a number in [0, 1]`);
+    const existing = (config.membrane as Record<string, unknown>) ?? {};
+    const thresholds = (existing.thresholds as Record<string, unknown>) ?? {};
+    config.membrane = { ...existing, thresholds: { ...thresholds, actor_anomaly_escalate: v } };
+  }
+  if (env.WASM4PM_MEMBRANE_AUTOML_ESCALATE) {
+    const v = parseFloat(env.WASM4PM_MEMBRANE_AUTOML_ESCALATE);
+    if (Number.isNaN(v) || v < 0 || v > 1) throw new Error(`Invalid WASM4PM_MEMBRANE_AUTOML_ESCALATE: "${env.WASM4PM_MEMBRANE_AUTOML_ESCALATE}" must be a number in [0, 1]`);
+    const existing = (config.membrane as Record<string, unknown>) ?? {};
+    const thresholds = (existing.thresholds as Record<string, unknown>) ?? {};
+    config.membrane = { ...existing, thresholds: { ...thresholds, automl_escalate: v } };
+  }
+
   // --- Prediction drift environment variables ---
   if (env.WASM4PM_PREDICTION_DRIFT_THRESHOLD) {
     const v = parseFloat(env.WASM4PM_PREDICTION_DRIFT_THRESHOLD);
@@ -587,6 +619,32 @@ window_size               = 10
 gpu_enabled      = false
 linucb_lambda    = 1.0
 ucb1_exploration = 1.4142  # √2
+
+# ---------------------------------------------------------------------------
+# AutoMembrane — pre-execution 5-layer conformance membrane
+# Layers: actor → object → route → automl → custody
+# Set enabled = true to activate the membrane for all algorithm executions.
+# ---------------------------------------------------------------------------
+# [membrane]
+# enabled = false
+# custody_actions = ["approve", "release", "transfer"]   # "delete" is also valid
+#
+# [membrane.thresholds]
+# actor_anomaly_escalate = 0.7   # score above which actor layer escalates
+# actor_anomaly_warn     = 0.4   # score above which actor layer warns
+# route_match_allow      = 0.5   # score below which route layer allows
+# automl_escalate        = 0.9   # score above which automl layer escalates
+# automl_warn            = 0.7   # score above which automl layer warns
+#
+# [membrane.drift]
+# stable_threshold   = 0.10
+# moderate_threshold = 0.25
+# high_threshold     = 0.50
+# severe_threshold   = 0.75
+#
+# [membrane.envelopes]
+# persist = true
+# path    = ".wasm4pm/envelopes"
 `;
 }
 

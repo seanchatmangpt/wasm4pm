@@ -1,12 +1,8 @@
 import { defineCommand } from 'citty';
-import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
+import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { WasmLoader } from '@wasm4pm/engine';
-import type { OutputOptions } from '../output.js';
-
-export interface StatusOptions extends OutputOptions {
-  verbose?: boolean;
-}
+import { exitWithFlush } from '../otel/exit.js';
 
 export const status = defineCommand({
   meta: {
@@ -31,11 +27,10 @@ export const status = defineCommand({
     },
   },
   async run(ctx) {
-    const formatter = getFormatter({
-      format: ctx.args.format as 'human' | 'json',
-      verbose: ctx.args.verbose,
-      quiet: ctx.args.quiet,
-    });
+    const format = (ctx.args.format as 'json' | 'human') ?? 'human';
+    const verbose = Boolean(ctx.args.verbose);
+    const quiet = Boolean(ctx.args.quiet);
+    const start = Date.now();
 
     try {
       // Step 1: Gather system information
@@ -77,52 +72,45 @@ export const status = defineCommand({
         },
       };
 
-      // Step 4: Format and output status
-      if (formatter instanceof JSONFormatter) {
-        formatter.success('System status retrieved', statusReport);
-      } else {
-        formatter.info('System Status Report');
-        formatter.log('');
+      const result = makeResult('status', statusReport, Date.now() - start);
+      emitResult(result, { format, verbose, quiet }, (res, p) => {
+        const r = res.payload;
+        p.info('System Status Report');
+        p.log('');
 
         // Engine status section
-        formatter.log('Engine Status:');
-        formatter.log(`  State: ${statusReport.engine.state}`);
-        formatter.log(`  WASM Loaded: Yes`);
-        if (wasmVersion) {
-          formatter.log(`  WASM Version: ${wasmVersion}`);
+        p.log('Engine Status:');
+        p.log(`  State: ${r.engine.state}`);
+        p.log(`  WASM Loaded: Yes`);
+        if (r.engine.version) {
+          p.log(`  WASM Version: ${r.engine.version}`);
         }
-        formatter.log(`  Kernel Ready: Yes`);
+        p.log(`  Kernel Ready: Yes`);
 
         // System section
-        formatter.log('');
-        formatter.log('System Information:');
-        formatter.log(`  Platform: ${statusReport.system.platform}/${statusReport.system.arch}`);
-        formatter.log(`  Node Version: ${statusReport.system.nodeVersion}`);
-        formatter.log(
-          `  Uptime: ${Math.floor(statusReport.system.uptime / 60)}m ${statusReport.system.uptime % 60}s`
+        p.log('');
+        p.log('System Information:');
+        p.log(`  Platform: ${r.system.platform}/${r.system.arch}`);
+        p.log(`  Node Version: ${r.system.nodeVersion}`);
+        p.log(
+          `  Uptime: ${Math.floor(r.system.uptime / 60)}m ${r.system.uptime % 60}s`
         );
 
         // Memory section
-        formatter.log('');
-        formatter.log('Memory Usage:');
-        formatter.log(`  Heap Used: ${statusReport.memory.heapUsed} MB`);
-        formatter.log(`  Heap Total: ${statusReport.memory.heapTotal} MB`);
-        formatter.log(`  RSS: ${statusReport.memory.rss} MB`);
-        formatter.log(`  External: ${statusReport.memory.external} MB`);
+        p.log('');
+        p.log('Memory Usage:');
+        p.log(`  Heap Used: ${r.memory.heapUsed} MB`);
+        p.log(`  Heap Total: ${r.memory.heapTotal} MB`);
+        p.log(`  RSS: ${r.memory.rss} MB`);
+        p.log(`  External: ${r.memory.external} MB`);
 
-        formatter.log('');
-      }
-
-      process.exit(EXIT_CODES.success);
+        p.log('');
+      });
+      return await exitWithFlush(result.exit_code);
     } catch (error) {
-      if (formatter instanceof JSONFormatter) {
-        formatter.error('Failed to retrieve status', error);
-      } else {
-        formatter.error(
-          `Failed to retrieve status: ${error instanceof Error ? error.message : String(error)}`
-        );
-      }
-      process.exit(EXIT_CODES.system_error);
+      const result = makeErrorResult('status', error, EXIT_CODES.system_error, 'STATUS_ERROR');
+      emitResult(result, { format, verbose, quiet });
+      return await exitWithFlush(result.exit_code);
     }
   },
 });

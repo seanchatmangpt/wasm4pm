@@ -61,20 +61,8 @@ export class ObservabilityLayer {
     emitCli(event) {
         const timestamp = event.timestamp ?? new Date();
         const level = event.level.toUpperCase().padEnd(5);
-        switch (event.level) {
-            case 'error':
-                console.error(`[${level}] ${timestamp.toISOString()} ${event.message}`);
-                break;
-            case 'warn':
-                console.warn(`[${level}] ${timestamp.toISOString()} ${event.message}`);
-                break;
-            case 'info':
-                console.info(`[${level}] ${timestamp.toISOString()} ${event.message}`);
-                break;
-            case 'debug':
-                console.debug(`[${level}] ${timestamp.toISOString()} ${event.message}`);
-                break;
-        }
+        // All diagnostic logs go to stderr — stdout is reserved for machine-readable output
+        process.stderr.write(`[${level}] ${timestamp.toISOString()} ${event.message}\n`);
     }
     /**
      * Emit a JSON event (Layer 2 - machine-readable)

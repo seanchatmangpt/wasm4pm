@@ -149,6 +149,57 @@ export class Engine {
     return this.statusTracker.getStatus();
   }
 
+  // ── Private helpers ──────────────────────────────────────────────────────────
+
+  /** Record an error, emit OTEL + JSON events, and transition to recovery/fallback state. */
+  private handleEngineError(
+    err: unknown,
+    code: string,
+    suggestion: string,
+    fallbackState: EngineState = 'failed'
+  ): EngineError {
+    const error: EngineError = {
+      code,
+      message: err instanceof Error ? err.message : String(err),
+      severity: 'error',
+      recoverable: fallbackState !== 'failed',
+      suggestion,
+    };
+    this.statusTracker.addError(error);
+    if (this.requiredOtelAttrs) {
+      const errorEvent = Instrumentation.createErrorEvent(
+        this.traceId,
+        error.code,
+        error.message,
+        this.requiredOtelAttrs,
+        { severity: error.severity }
+      );
+      this.observability.emitOtelSafe(errorEvent.otelEvent);
+      this.observability.emitJsonSafe(errorEvent.jsonEvent);
+    }
+    const recovered = TransitionValidator.suggestRecoveryState(this.state(), [error]);
+    const target = (recovered && this.stateMachine.canTransition(recovered))
+      ? recovered
+      : (this.stateMachine.canTransition(fallbackState) ? fallbackState : null);
+    if (target) {
+      this.stateMachine.transition(target, `${code}: ${error.message}`);
+    }
+    this.statusTracker.setState(this.state());
+    return error;
+  }
+
+  /** Wrap a promise in a hard timeout; throws the same error shape as the rest of the engine. */
+  private withTimeout<T>(work: Promise<T>, timeoutMs: number, timeoutCode: string): Promise<T> {
+    return Promise.race([
+      work,
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error(`${timeoutCode} after ${timeoutMs}ms`)), timeoutMs)
+      ),
+    ]);
+  }
+
+  // ── Lifecycle methods ────────────────────────────────────────────────────────
+
   /**
    * Bootstraps the engine: loads WASM, initializes kernel
    * Transitions: uninitialized -> bootstrapping -> ready | failed
@@ -257,26 +308,7 @@ export class Engine {
         },
       });
     } catch (err) {
-      const error = createBootstrapError(err);
-
-      this.statusTracker.addError(error);
-
-      // Emit error event
-      if (this.requiredOtelAttrs) {
-        const errorEvent = Instrumentation.createErrorEvent(
-          this.traceId,
-          error.code,
-          error.message,
-          this.requiredOtelAttrs,
-          { severity: error.severity, context: error.context }
-        );
-        this.observability.emitOtelSafe(errorEvent.otelEvent);
-        this.observability.emitJsonSafe(errorEvent.jsonEvent);
-      }
-
-      this.stateMachine.transition('failed', `Bootstrap failed: ${error.message}`);
-      this.statusTracker.setState('failed');
-
+      this.handleEngineError(err, 'BOOTSTRAP_FAILED', 'Check WASM module availability and system resources', 'failed');
       throw err;
     }
   }
@@ -418,36 +450,7 @@ export class Engine {
 
       return plan;
     } catch (err) {
-      const error: EngineError = {
-        code: 'PLANNING_FAILED',
-        message: err instanceof Error ? err.message : String(err),
-        severity: 'error',
-        recoverable: true,
-        suggestion: 'Verify configuration is valid and try again',
-      };
-
-      this.statusTracker.addError(error);
-
-      // Emit error event
-      if (this.requiredOtelAttrs) {
-        const errorEvent = Instrumentation.createErrorEvent(
-          this.traceId,
-          error.code,
-          error.message,
-          this.requiredOtelAttrs,
-          { severity: error.severity }
-        );
-        this.observability.emitOtelSafe(errorEvent.otelEvent);
-        this.observability.emitJsonSafe(errorEvent.jsonEvent);
-      }
-
-      // Try to recover to ready or degrade
-      const recoveryState = TransitionValidator.suggestRecoveryState(this.state(), [error]);
-      if (recoveryState && this.stateMachine.canTransition(recoveryState)) {
-        this.stateMachine.transition(recoveryState, `Recovered from planning error`);
-      }
-
-      this.statusTracker.setState(this.state());
+      this.handleEngineError(err, 'PLANNING_FAILED', 'Verify configuration is valid and try again', 'degraded');
       throw err;
     }
   }
@@ -497,51 +500,14 @@ export class Engine {
       this.observability.emitOtelSafe(stateChangeRunning.otelEvent);
 
       // Execute the plan with timeout
-      const receipt = await Promise.race([
+      const receipt = await this.withTimeout(
         this.executor.run(plan),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error(`Execution timeout after ${timeoutMs}ms`)), timeoutMs)
-        ),
-      ]).catch((err) => {
+        timeoutMs,
+        'EXECUTION_TIMEOUT'
+      ).catch((err) => {
         this.statusTracker.finish();
-
-        const timeoutError: EngineError = {
-          code: 'EXECUTION_TIMEOUT',
-          message: err instanceof Error ? err.message : String(err),
-          severity: 'error',
-          recoverable: true,
-          suggestion: 'Check plan complexity and algorithm performance',
-        };
-
-        this.statusTracker.addError(timeoutError);
-
-        // Emit error event
-        if (this.requiredOtelAttrs) {
-          const runDuration = Date.now() - runStart;
-          const errorEvent = Instrumentation.createErrorEvent(
-            this.traceId,
-            timeoutError.code,
-            timeoutError.message,
-            this.requiredOtelAttrs,
-            { severity: timeoutError.severity }
-          );
-          this.observability.emitOtelSafe(errorEvent.otelEvent);
-          this.observability.emitJsonSafe(errorEvent.jsonEvent);
-        }
-
-        // Try to recover or degrade
-        const recoveryState = TransitionValidator.suggestRecoveryState(this.state(), [
-          timeoutError,
-        ]);
-        if (recoveryState && this.stateMachine.canTransition(recoveryState)) {
-          this.stateMachine.transition(recoveryState, `Execution timeout: ${timeoutError.message}`);
-        } else {
-          this.stateMachine.transition('failed', `Execution timeout: ${timeoutError.message}`);
-        }
-
-        this.statusTracker.setState(this.state());
-
-        throw timeoutError;
+        this.handleEngineError(err, 'EXECUTION_TIMEOUT', 'Check plan complexity and algorithm performance', 'degraded');
+        throw err;
       });
 
       // Return to ready after execution
@@ -580,41 +546,7 @@ export class Engine {
       return receipt;
     } catch (err) {
       this.statusTracker.finish();
-
-      const error: EngineError = {
-        code: 'EXECUTION_FAILED',
-        message: err instanceof Error ? err.message : String(err),
-        severity: 'error',
-        recoverable: true,
-        suggestion: 'Review execution logs and try again',
-      };
-
-      this.statusTracker.addError(error);
-
-      // Emit error event
-      if (this.requiredOtelAttrs) {
-        const runDuration = Date.now() - runStart;
-        const errorEvent = Instrumentation.createErrorEvent(
-          this.traceId,
-          error.code,
-          error.message,
-          this.requiredOtelAttrs,
-          { severity: error.severity }
-        );
-        this.observability.emitOtelSafe(errorEvent.otelEvent);
-        this.observability.emitJsonSafe(errorEvent.jsonEvent);
-      }
-
-      // Try to recover or degrade
-      const recoveryState = TransitionValidator.suggestRecoveryState(this.state(), [error]);
-      if (recoveryState && this.stateMachine.canTransition(recoveryState)) {
-        this.stateMachine.transition(recoveryState, `Recovered from execution error`);
-      } else if (this.state() !== 'failed') {
-        this.stateMachine.transition('failed', `Execution failed: ${error.message}`);
-      }
-
-      this.statusTracker.setState(this.state());
-
+      this.handleEngineError(err, 'EXECUTION_FAILED', 'Review execution logs and try again', 'degraded');
       throw err;
     }
   }
@@ -723,35 +655,12 @@ export class Engine {
 
       this.statusTracker.setState(this.state());
     } catch (err) {
-      // Stop watch session on error
       if (this.watchSession?.isActive()) {
         this.watchSession.stop();
       }
-
       this.statusTracker.finish();
-
-      const error: EngineError = {
-        code: 'WATCH_FAILED',
-        message: err instanceof Error ? err.message : String(err),
-        severity: 'error',
-        recoverable: true,
-      };
-
-      this.statusTracker.addError(error);
-
-      // Try to recover
-      const recoveryState = TransitionValidator.suggestRecoveryState(this.state(), [error]);
-      if (recoveryState && this.stateMachine.canTransition(recoveryState)) {
-        this.stateMachine.transition(recoveryState, `Recovered from watch error`);
-      } else if (this.state() !== 'failed') {
-        this.stateMachine.transition('failed', `Watch failed: ${error.message}`);
-      }
-
-      this.statusTracker.setState(this.state());
-
-      // Yield error update before throwing
+      const error = this.handleEngineError(err, 'WATCH_FAILED', 'Check executor and watch configuration', 'degraded');
       yield this.createStatusUpdate(error);
-
       throw err;
     }
   }
@@ -836,22 +745,8 @@ export class Engine {
       // Track MTTR in state machine
       this.stateMachine.recordRecovery(recoveryDuration);
     } catch (err) {
-      // Handle timeout specifically
       const isTimeout = err instanceof Error && err.message.includes('timeout');
-
-      const error: EngineError = {
-        code: isTimeout ? 'RECOVERY_TIMEOUT' : 'RECOVERY_FAILED',
-        message: err instanceof Error ? err.message : String(err),
-        severity: 'error',
-        recoverable: false,
-      };
-
-      this.statusTracker.addError(error);
-      if (this.state() !== 'failed') {
-        this.stateMachine.transition('failed', isTimeout ? 'Recovery timeout' : 'Recovery failed');
-      }
-      this.statusTracker.setState('failed');
-
+      this.handleEngineError(err, isTimeout ? 'RECOVERY_TIMEOUT' : 'RECOVERY_FAILED', 'Check WASM module and kernel state', 'failed');
       throw err;
     }
   }

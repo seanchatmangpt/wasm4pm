@@ -60,6 +60,10 @@ export {
   rlConvergenceSchema,
   rlAgentSchema,
   mlTaskSchema,
+  membraneConfigSchema,
+  membraneThresholdsSchema,
+  membraneDriftSchema,
+  membraneEnvelopesSchema,
 } from './schema.js';
 export type { AlgorithmId } from './schema.js';
 
@@ -106,6 +110,10 @@ export type {
   RlConvergenceConfig,
   RlAgent,
   MlTask,
+  MembraneConfig,
+  MembraneThresholds,
+  MembraneDrift,
+  MembraneEnvelopes,
   SourceKind,
   SinkKind,
   ExecutionProfile,

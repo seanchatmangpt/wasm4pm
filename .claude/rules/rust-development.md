@@ -6,18 +6,22 @@
 
 ```
 wasm4pm/                          # Workspace root
-├── Cargo.toml                  # members = ["wasm4pm", "tps-metrics"]
+├── Cargo.toml                  # members = ["wasm4pm", "tps-metrics", "crates/wasm4pm-types",
+│                               #            "crates/wasm4pm-algos", "crates/wasm4pm-cli",
+│                               #            "crates/wasm4pm-utils", "crates/miniml-core",
+│                               #            "crates/wasm4pm-cognition", "crates/prolog8"]
 ├── wasm4pm/                    # WASM crate (source: wasm4pm/src/)
-│   ├── Cargo.toml              # crate name: "wasm4pm"
-│   ├── package.json            # npm package: "@wasm4pm/cli"
-│   └── src/                    # 114 modules
+│   ├── Cargo.toml              # crate name: "wasm4pm" (verified: wasm4pm/Cargo.toml line 1)
+│   ├── package.json            # npm package: "wasm4pm" (root npm package; CLI app is "@wasm4pm/cli" in apps/wasm4pm/)
+│   └── src/                    # 100+ modules
 ├── tps-metrics/               # Metrics crate
+├── crates/                    # Additional workspace crates (cognition, types, algos, cli, utils, miniml-core, prolog8)
 └── target/                    # Build artifacts (auto-generated)
 ```
 
 **Key naming:**
-- Crate name: `wpm` (wasm4pm)
-- npm package: `@wasm4pm/cli`
+- Cargo crate name: `wasm4pm` (per `wasm4pm/Cargo.toml`). Earlier text in this doc claimed `wpm` — that is the **CLI binary alias** / brand name, not the crate name.
+- npm package: `wasm4pm` (root) and `@wasm4pm/cli` (CLI app at `apps/wasm4pm/`)
 - Source directory: `wasm4pm/` (historical, not renamed)
 - Binary artifact: `liblinucb.rlib` (in workspace root, gitignored)
 
@@ -149,8 +153,11 @@ Cargo auto-discovers `tests/*.rs` but NOT `tests/subdir/*.rs`.
 - Multiple releases same day: `v26.4.10a`, `v26.4.10b` (letter suffixes)
 - Never use PATCH > 31
 
-**Known inconsistency:** Four different version numbers exist across the project:
-- `apps/wasm4pm/package.json`: `26.4.10`
-- `wasm4pm/Cargo.toml`: `26.4.10`
-- `wasm4pm/package.json`: `26.4.6`
-- `apps/wasm4pm/src/cli.ts` (hardcoded): `26.4.7`
+**Known inconsistency (audit 2026-05-08):** version strings still drift across the project. Snapshot:
+- `Cargo.toml` (workspace): `26.4.28`
+- `apps/wasm4pm/package.json`: `26.4.23`
+- `wasm4pm/package.json`: `26.4.23`
+- `apps/wasm4pm/src/cli.ts` (hardcoded): `26.4.17`
+- `wasm4pm/Cargo.toml`: inherits via `version.workspace = true` (so `26.4.28`)
+
+The cli.ts hardcoded value lags the package versions — confirm before publishing.

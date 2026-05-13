@@ -9,6 +9,11 @@ export interface GateResult {
     passed: boolean;
     details: string;
     duration_ms: number;
+    timing?: {
+        median_ms: number;
+        p95_ms: number;
+        peak_memory_mb?: number;
+    };
 }
 export interface CertificationReport {
     timestamp: string;
@@ -16,6 +21,17 @@ export interface CertificationReport {
     gates: GateResult[];
     passed: boolean;
     summary: string;
+    evidence?: {
+        corpus_hash: string;
+        generator_seed?: number;
+        feature_flags: string[];
+        wasm_build_profile: string;
+        run_environment: {
+            node_version: string;
+            platform: string;
+            arch: string;
+        };
+    };
 }
 export type GateFunction = () => Promise<GateResult> | GateResult;
 /**
@@ -26,7 +42,9 @@ export declare function registerGate(name: string, fn: GateFunction): void;
 /**
  * Run all registered certification gates.
  */
-export declare function runCertification(version: string): Promise<CertificationReport>;
+export declare function runCertification(version: string, options?: {
+    fast?: boolean;
+}): Promise<CertificationReport>;
 /**
  * Clear all registered gates (for testing the certification system itself).
  * @internal

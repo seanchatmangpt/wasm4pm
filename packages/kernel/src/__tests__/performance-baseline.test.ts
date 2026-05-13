@@ -81,7 +81,7 @@ function buildPerfStub(): KernelWasmModule & {
       return { handle: `heuristic_${logHandle}_${dispatchCount}` };
     },
 
-    async discover_alpha_plus_plus(logHandle: string, _activityKey: string) {
+    async discover_alpha_plus_plus(logHandle: string, _activityKey: string, _minSupport: number) {
       dispatchCount++;
       return { handle: `alpha_${logHandle}_${dispatchCount}` };
     },
@@ -102,7 +102,7 @@ function buildPerfStub(): KernelWasmModule & {
     async discover_hill_climbing(h: string, _k: string, _m: number) {
       return { handle: `hc_${h}` };
     },
-    async discover_ilp_petri_net(h: string, _k: string, _t: number) {
+    async discover_ilp_petri_net(h: string, _k: string) {
       return { handle: `ilp_${h}` };
     },
     async discover_ant_colony(h: string, _k: string, _c: number, _i: number) {

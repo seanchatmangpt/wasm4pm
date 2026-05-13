@@ -1,6 +1,6 @@
 {
   "name": "wasm4pm",
-  "version": "26.4.23",
+  "version": "26.5.13",
   "description": "Process Mining in WebAssembly - High-Speed Algorithms for Browser and Node.js",
   "main": "pkg/wasm4pm.js",
   "types": "pkg/wasm4pm.d.ts",
@@ -69,6 +69,9 @@
   "license": "MIT OR Apache-2.0",
   "engines": {
     "node": ">=14.0.0"
+  },
+  "dependencies": {
+    "@wasm4pm/ml": "workspace:*"
   },
   "devDependencies": {
     "@testing-library/dom": "^9.3.3",

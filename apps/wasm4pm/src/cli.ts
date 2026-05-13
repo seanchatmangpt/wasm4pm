@@ -21,11 +21,18 @@ import { validate } from './commands/validate.js';
 import { autoprocess } from './commands/autoprocess.js';
 import { swarm } from './commands/swarm.js';
 import { agent } from './commands/agent.js';
+import { membrane } from './commands/membrane.js';
+import { config } from './commands/config.js';
+import { verify } from './commands/verify.js';
+import { benchmark } from './commands/benchmark.js';
+import { cognition } from './commands/cognition.js';
+import { completions } from './commands/completions.js';
+import pkg from '../package.json' with { type: 'json' };
 
 export const main = defineCommand({
   meta: {
     name: 'wpm',
-    version: '26.4.17',
+    version: pkg.version,
     description: 'High-performance process mining and workflow discovery CLI',
   },
   args: {
@@ -46,7 +53,7 @@ export const main = defineCommand({
     const RESET = '\x1b[0m';
 
     process.stdout.write(`
-${BOLD}wpm${RESET} (wasm4pm) v26.4.17  —  Process Mining CLI  ${DIM}(wasm4pm)${RESET}
+${BOLD}wpm${RESET} (wasm4pm) v26.5.13  —  Process Mining CLI  ${DIM}(wasm4pm)${RESET}
 
 ${BOLD}DISCOVERY${RESET}
   ${GREEN}wpm run${RESET} <log.xes>                   Discover a process model (default: heuristic miner)
@@ -86,6 +93,22 @@ ${BOLD}ML ANALYSIS${RESET}  ${DIM}(classification, clustering, forecasting, anom
 ${BOLD}POWL${RESET}  ${DIM}(process-oriented workflow language)${RESET}
   ${GREEN}wpm powl${RESET} construct  -i <log>          Construct POWL model from log
   ${GREEN}wpm powl${RESET} replay     -i <log>          Replay log against POWL model
+
+${BOLD}AUTOMEMBRANE${RESET}  ${DIM}(verb8: show · init · build · check · doctor · replay · verify · export)${RESET}
+  ${GREEN}wpm membrane show${RESET}                        Show state, health, and installed envelopes
+  ${GREEN}wpm membrane init${RESET}                        Scaffold [membrane] config in wasm4pm.toml
+  ${GREEN}wpm membrane build${RESET} <log.xes>             Build all envelope layers from an event log
+  ${GREEN}wpm membrane check${RESET}                       Fast preflight: profile, config, envelopes
+  ${GREEN}wpm membrane doctor${RESET}                      Run 8 definition-of-done gate checks
+  ${GREEN}wpm membrane replay${RESET} <motion.json>        Replay a RequestMotion through the classifier
+  ${GREEN}wpm membrane verify${RESET}                      Run benchmarks — exit non-zero on failure
+  ${GREEN}wpm membrane export${RESET} [--format sarif]     Emit SARIF / JSON / report
+
+${BOLD}BENCHMARK${RESET}  ${DIM}(verb8: build · replay · verify · export)${RESET}
+  ${GREEN}wpm benchmark build${RESET}  --corpus <path>     Validate JSONL corpus format
+  ${GREEN}wpm benchmark replay${RESET} [--corpus <path>]   Run traces, show per-trace results
+  ${GREEN}wpm benchmark verify${RESET} [--corpus <path>]   CI gate — exit non-zero on failure
+  ${GREEN}wpm benchmark export${RESET} [--format sarif]    Export SARIF / JSON / CSV
 
 ${BOLD}AUTOPROCESS${RESET}  ${DIM}(Perception → Decision → Protection → Optimization)${RESET}
   ${GREEN}wpm autoprocess${RESET} <log.xes>              Run full autonomic control loop
@@ -138,6 +161,12 @@ Activity key defaults to "concept:name" (XES standard). Pass --activity-key to o
     autoprocess,
     swarm,
     agent,
+    membrane,
+    config,
+    benchmark,
+    verify,
+    cognition,
+    completions,
   },
 });
 
@@ -167,4 +196,7 @@ export {
   autoprocess,
   swarm,
   agent,
+  membrane,
+  config,
+  verify,
 };

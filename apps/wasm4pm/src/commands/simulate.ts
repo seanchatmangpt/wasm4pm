@@ -1,18 +1,11 @@
 import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
-import { getFormatter, HumanFormatter, JSONFormatter } from '../output.js';
+import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
-import type { OutputOptions } from '../output.js';
-import { WasmLoader } from '@wasm4pm/engine';
-import { createQuietObservabilityLayer } from '../observability-util.js';
-
-export interface SimulateOptions extends OutputOptions {
-  input?: string;
-  cases?: number;
-  time?: number;
-  seed?: number;
-  activityKey?: string;
-}
+import { withLogSession } from '../with-log-session.js';
+import { withSpan } from './_otel.js';
+import { saveCommandReceipt, blake3Hex, newReceipt, type CommandReceipt } from '../receipts/_shared.js';
+import { exitWithFlush } from '../otel/exit.js';
 
 export const simulate = defineCommand({
   meta: {
@@ -64,192 +57,203 @@ export const simulate = defineCommand({
       description: 'Suppress non-error output',
       alias: 'q',
     },
+    'no-save': {
+      type: 'boolean',
+      description: 'Skip auto-save and BLAKE3 receipt',
+    },
   },
   async run(ctx) {
-    const formatter = getFormatter({
-      format: ctx.args.format as 'human' | 'json',
-      verbose: ctx.args.verbose,
-      quiet: ctx.args.quiet,
-    });
+    const t0 = performance.now();
+    const format = (ctx.args.format as 'json' | 'human') ?? 'human';
+    const verbose = Boolean(ctx.args.verbose);
+    const quiet = Boolean(ctx.args.quiet);
 
+    return withSpan(
+      'simulate',
+      {
+        input: String(ctx.args.input ?? ctx.args.file ?? ''),
+        activity_key: String(ctx.args['activity-key'] ?? ''),
+        cases: Number(ctx.args.cases ?? 0),
+        time: Number(ctx.args.time ?? 0),
+        seed: Number(ctx.args.seed ?? 0),
+        format,
+      },
+      async () => {
     try {
       // Resolve input path (positional OR --file/-i)
       const inputPath: string | undefined =
         (ctx.args.input as string | undefined) || (ctx.args.file as string | undefined);
 
       if (!inputPath) {
-        formatter.error(
-          'Input file required.\n\nUsage:  wpm simulate <log.xes>\n        wpm simulate <log.xes> --cases 500\n\nRun "wpm simulate --help" for details.'
+        const result = makeErrorResult(
+          'simulate',
+          'Input file required.\n\nUsage:  wpm simulate <log.xes>\n        wpm simulate <log.xes> --cases 500\n\nRun "wpm simulate --help" for details.',
+          EXIT_CODES.source_error,
+          'MISSING_INPUT'
         );
-        process.exit(EXIT_CODES.source_error);
-      }
-
-      // Validate input file exists
-      try {
-        await fs.access(inputPath);
-      } catch {
-        formatter.error(`Input file not found: ${inputPath}`);
-        process.exit(EXIT_CODES.source_error);
+        emitResult(result, { format, verbose, quiet });
+        return await exitWithFlush(result.exit_code);
       }
 
       const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
       const rawCases = ctx.args.cases as string | undefined;
       const parsedCases = rawCases != null ? parseInt(rawCases, 10) : undefined;
       if (parsedCases !== undefined && Number.isNaN(parsedCases)) {
-        formatter.error('Invalid --cases value: must be a number');
-        process.exit(EXIT_CODES.config_error);
+        const result = makeErrorResult(
+          'simulate',
+          'Invalid --cases value: must be a number',
+          EXIT_CODES.config_error,
+          'INVALID_ARG'
+        );
+        emitResult(result, { format, verbose, quiet });
+        return await exitWithFlush(result.exit_code);
       }
       const numCases = parsedCases ?? 100;
 
       const rawTime = ctx.args.time as string | undefined;
       const parsedTime = rawTime != null ? parseInt(rawTime, 10) : undefined;
       if (parsedTime !== undefined && Number.isNaN(parsedTime)) {
-        formatter.error('Invalid --time value: must be a number');
-        process.exit(EXIT_CODES.config_error);
+        const result = makeErrorResult(
+          'simulate',
+          'Invalid --time value: must be a number',
+          EXIT_CODES.config_error,
+          'INVALID_ARG'
+        );
+        emitResult(result, { format, verbose, quiet });
+        return await exitWithFlush(result.exit_code);
       }
       const maxTime = parsedTime ?? 60000;
       const seed = ctx.args.seed
         ? parseInt(ctx.args.seed as string, 10)
         : Math.floor(Math.random() * 2_147_483_647);
 
-      if (formatter instanceof HumanFormatter) {
-        formatter.info(`Monte Carlo simulation: ${inputPath}`);
-        formatter.debug(`Cases: ${numCases}, Max time: ${maxTime}ms, Seed: ${seed}`);
-      }
+      await withLogSession(
+        { inputPath, activityKey, commandName: 'simulate', emitOptions: { format, verbose, quiet } },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        async (wasmBase, logHandle) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const wasm = wasmBase as Record<string, any>;
 
-      // Load WASM module
-      const loaderConfig =
-        ctx.args.format === 'json' ? { observability: createQuietObservabilityLayer() } : {};
-      const loader = WasmLoader.getInstance(loaderConfig);
-      await loader.init();
-      const wasm = loader.get();
+        const config = JSON.stringify({
+          num_cases: numCases,
+          inter_arrival_mean_ms: 1000.0,
+          activity_service_time_ms: {},
+          resource_capacity: {},
+          simulation_time_ms: maxTime,
+          random_seed: seed,
+        });
+        const rawSim = wasm.monte_carlo_simulation(logHandle, '', '', config);
+        const simResult = typeof rawSim === 'string' ? JSON.parse(rawSim) : rawSim;
 
-      // Parse XES and load log
-      if (formatter instanceof HumanFormatter) {
-        formatter.debug('Loading event log from XES file...');
-      }
+        let playoutResult: Record<string, unknown> | null = null;
+        try {
+          const rawPlayout = wasm.simulate_process_tree_playout(
+            logHandle,
+            activityKey,
+            numCases,
+            seed
+          );
+          playoutResult = typeof rawPlayout === 'string' ? JSON.parse(rawPlayout) : rawPlayout;
+        } catch {
+          // Process tree playout not available
+        }
 
-      const xesContent = await fs.readFile(inputPath, 'utf-8');
-      const logHandle: string = wasm.load_eventlog_from_xes(xesContent);
-
-      // Discover process tree for simulation
-      if (formatter instanceof HumanFormatter) {
-        formatter.debug('Discovering process tree for simulation...');
-      }
-
-      const rawTree = wasm.discover_inductive_miner(logHandle, activityKey);
-      const processTree = typeof rawTree === 'string' ? JSON.parse(rawTree) : rawTree;
-
-      // Run Monte Carlo simulation
-      if (formatter instanceof HumanFormatter) {
-        formatter.debug('Running Monte Carlo simulation...');
-      }
-
-      const t0 = performance.now();
-      const config = JSON.stringify({
-        num_cases: numCases,
-        inter_arrival_mean_ms: 1000.0,
-        activity_service_time_ms: {},
-        resource_capacity: {},
-        simulation_time_ms: maxTime,
-        random_seed: seed,
-      });
-      const rawSim = wasm.monte_carlo_simulation(logHandle, '', '', config);
-      const elapsedMs = performance.now() - t0;
-
-      const simResult = typeof rawSim === 'string' ? JSON.parse(rawSim) : rawSim;
-
-      // Extract process tree playout results if available
-      let playoutResult: Record<string, unknown> | null = null;
-      try {
-        const rawPlayout = wasm.simulate_process_tree_playout(
-          logHandle,
+        const payload = {
+          input: inputPath,
           activityKey,
-          numCases,
-          seed
-        );
-        playoutResult = typeof rawPlayout === 'string' ? JSON.parse(rawPlayout) : rawPlayout;
-      } catch {
-        // Process tree playout not available
-      }
+          simulation: {
+            method: 'monte_carlo',
+            casesRequested: numCases,
+            casesCompleted: (simResult as Record<string, unknown>).completed_cases ?? numCases,
+            elapsedMs: Math.round((performance.now() - t0) * 100) / 100,
+            seed,
+          },
+          statistics: {
+            avgTraceLength: (simResult as Record<string, unknown>).avg_trace_length ?? 0,
+            avgSojournTime: (simResult as Record<string, unknown>).avg_sojourn_time ?? 0,
+            resourceUtilization: (simResult as Record<string, unknown>).resource_utilization ?? 0,
+          },
+          traces: ((simResult as Record<string, unknown>).traces ?? []) as Array<Record<string, unknown>>,
+          ...(playoutResult && { playout: playoutResult }),
+        };
 
-      // Free log handle
-      wasm.delete_object(logHandle);
+        const result = makeResult('simulate', payload, performance.now() - t0, EXIT_CODES.success);
+        emitResult(result, { format, verbose, quiet }, (res, projection) => {
+          printHumanSimulation(projection, res.payload as typeof payload);
+        });
 
-      // Build result
-      const result = {
-        status: 'success',
-        input: inputPath,
-        activityKey,
-        simulation: {
-          method: 'monte_carlo',
-          casesRequested: numCases,
-          casesCompleted: (simResult as Record<string, unknown>).completed_cases ?? numCases,
-          elapsedMs: Math.round(elapsedMs * 100) / 100,
-          seed,
-        },
-        statistics: {
-          avgTraceLength: (simResult as Record<string, unknown>).avg_trace_length ?? 0,
-          avgSojournTime: (simResult as Record<string, unknown>).avg_sojourn_time ?? 0,
-          resourceUtilization: (simResult as Record<string, unknown>).resource_utilization ?? 0,
-        },
-        traces: (simResult as Record<string, unknown>).traces ?? [],
-        ...(playoutResult && { playout: playoutResult }),
-      };
+        if (!ctx.args['no-save']) {
+          try {
+            const inputBytes = await fs.readFile(inputPath!).catch(() => Buffer.from(inputPath!));
+            const receipt: CommandReceipt = {
+              ...newReceipt('simulate'),
+              command: 'simulate',
+              input_hash: blake3Hex(inputBytes),
+              output_hash: blake3Hex(JSON.stringify(payload)),
+              status: 'success',
+              summary: {
+                cases_generated: payload.traces.length,
+                seed,
+                model_kind: 'monte-carlo',
+              },
+            };
+            saveCommandReceipt(receipt);
+          } catch {
+            /* receipt write must never break the command */
+          }
+        }
 
-      // Output results
-      if (formatter instanceof JSONFormatter) {
-        formatter.success('Simulation complete', result);
-      } else {
-        printHumanSimulation(formatter as HumanFormatter, result);
-      }
-
-      process.exit(EXIT_CODES.success);
+        return await exitWithFlush(result.exit_code);
+      });  // end withLogSession
     } catch (error) {
-      if (formatter instanceof JSONFormatter) {
-        formatter.error('Simulation failed', error);
-      } else {
-        formatter.error(
-          `Simulation failed: ${error instanceof Error ? error.message : String(error)}`
-        );
-      }
-      process.exit(EXIT_CODES.execution_error);
+      const result = makeErrorResult('simulate', error, EXIT_CODES.execution_error);
+      emitResult(result, { format, verbose, quiet });
+      return await exitWithFlush(result.exit_code);
     }
+      },
+    );
   },
 });
 
-function printHumanSimulation(formatter: HumanFormatter, result: Record<string, unknown>): void {
-  const sim = result.simulation as Record<string, unknown>;
-  const stats = result.statistics as Record<string, unknown>;
+function printHumanSimulation(
+  projection: import('../output.js').ConsoleProjection,
+  payload: {
+    input: string;
+    activityKey: string;
+    simulation: { method: string; casesRequested: number; casesCompleted: unknown; elapsedMs: number; seed: number };
+    statistics: { avgTraceLength: unknown; avgSojournTime: unknown; resourceUtilization: unknown };
+    traces: Array<Record<string, unknown>>;
+  }
+): void {
+  const { simulation: sim, statistics: stats } = payload;
 
-  formatter.log('');
-  formatter.success(`Monte Carlo Simulation — ${result.input as string}`);
-  formatter.log(`  Activity key: ${result.activityKey as string}`);
-  formatter.log(`  Seed: ${sim.seed as number}`);
-  formatter.log('');
-  formatter.log('  Simulation:');
-  formatter.log(`    Cases requested:  ${sim.casesRequested as number}`);
-  formatter.log(`    Cases completed:  ${sim.casesCompleted as number}`);
-  formatter.log(`    Elapsed time:     ${sim.elapsedMs as number}ms`);
-  formatter.log('');
-  formatter.log('  Statistics:');
-  formatter.log(`    Avg trace length:    ${stats.avgTraceLength as number}`);
-  formatter.log(`    Avg sojourn time:    ${stats.avgSojournTime as number}`);
-  formatter.log(
+  projection.log('');
+  projection.success(`Monte Carlo Simulation — ${payload.input}`);
+  projection.log(`  Activity key: ${payload.activityKey}`);
+  projection.log(`  Seed: ${sim.seed}`);
+  projection.log('');
+  projection.log('  Simulation:');
+  projection.log(`    Cases requested:  ${sim.casesRequested}`);
+  projection.log(`    Cases completed:  ${sim.casesCompleted}`);
+  projection.log(`    Elapsed time:     ${sim.elapsedMs}ms`);
+  projection.log('');
+  projection.log('  Statistics:');
+  projection.log(`    Avg trace length:    ${stats.avgTraceLength}`);
+  projection.log(`    Avg sojourn time:    ${stats.avgSojournTime}`);
+  projection.log(
     `    Resource utilization: ${((stats.resourceUtilization as number) * 100).toFixed(1)}%`
   );
-  formatter.log('');
+  projection.log('');
 
-  const traces = result.traces as Array<Record<string, unknown>>;
-  if (traces.length > 0 && formatter instanceof HumanFormatter) {
-    formatter.log('  Sample traces (first 5):');
-    for (const trace of traces.slice(0, 5)) {
+  if (payload.traces.length > 0) {
+    projection.log('  Sample traces (first 5):');
+    for (const trace of payload.traces.slice(0, 5)) {
       const activities = trace.activities as string[];
-      formatter.log(`    ${activities.join(' → ')}`);
+      projection.log(`    ${activities.join(' → ')}`);
     }
-    if (traces.length > 5) {
-      formatter.log(`    ... and ${traces.length - 5} more traces`);
+    if (payload.traces.length > 5) {
+      projection.log(`    ... and ${payload.traces.length - 5} more traces`);
     }
-    formatter.log('');
+    projection.log('');
   }
 }

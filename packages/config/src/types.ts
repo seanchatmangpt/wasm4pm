@@ -22,6 +22,10 @@ import type {
   rlConvergenceSchema,
   rlAgentSchema,
   mlTaskSchema,
+  membraneConfigSchema,
+  membraneThresholdsSchema,
+  membraneDriftSchema,
+  membraneEnvelopesSchema,
 } from './schema.js';
 import type { ProvenanceMap } from './provenance.js';
 
@@ -49,6 +53,10 @@ export type RlConfig = z.infer<typeof rlConfigSchema>;
 export type RlConvergenceConfig = z.infer<typeof rlConvergenceSchema>;
 export type RlAgent = z.infer<typeof rlAgentSchema>;
 export type MlTask = z.infer<typeof mlTaskSchema>;
+export type MembraneConfig     = z.infer<typeof membraneConfigSchema>;
+export type MembraneThresholds = z.infer<typeof membraneThresholdsSchema>;
+export type MembraneDrift      = z.infer<typeof membraneDriftSchema>;
+export type MembraneEnvelopes  = z.infer<typeof membraneEnvelopesSchema>;
 
 export type SourceKind = SourceConfig['kind'];
 export type SinkKind = SinkConfig['kind'];

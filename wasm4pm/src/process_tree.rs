@@ -1,3 +1,4 @@
+use crate::models::EventLog;
 use serde_json::json;
 /// Priority 9 — Process tree types and basic discovery.
 ///
@@ -141,9 +142,52 @@ pub fn validate_process_tree(tree_json: &str) -> Result<JsValue, JsValue> {
     Ok(crate::error::js_val(&out))
 }
 
-/// Discover a simple process tree from an event log using frequency-based
-/// heuristics (flower model as a baseline — SEQ of all activities in
-/// frequency order, with a top-level XOR for branching).
+/// Pure-Rust process tree discovery without wasm-bindgen. Used by integration tests.
+pub fn discover_simple_process_tree_from_log(log: &EventLog, activity_key: &str) -> String {
+    let mut freq: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+
+    for trace in &log.traces {
+        let acts: Vec<String> = trace
+            .events
+            .iter()
+            .filter_map(|e| {
+                e.attributes
+                    .get(activity_key)
+                    .and_then(|v| v.as_string())
+                    .map(str::to_owned)
+            })
+            .collect();
+        for a in &acts {
+            *freq.entry(a.clone()).or_insert(0) += 1;
+        }
+    }
+
+    let mut sorted_acts: Vec<(String, usize)> = freq.into_iter().collect();
+    sorted_acts.sort_by(|a, b| b.1.cmp(&a.1));
+
+    let children: Vec<serde_json::Value> = sorted_acts
+        .iter()
+        .map(|(label, _)| json!({"type": "activity", "label": label}))
+        .collect();
+
+    let tree = if children.len() == 1 {
+        children
+            .into_iter()
+            .next()
+            .expect("children.len() == 1 guarantees one element")
+    } else {
+        json!({
+            "type": "operator",
+            "operator": "SEQ",
+            "children": children,
+        })
+    };
+
+    serde_json::to_string(&tree)
+        .unwrap_or_else(|_| r#"{"type":"operator","operator":"SEQ","children":[]}"#.to_string())
+}
+
+/// Discover a simple process tree from an event log using frequency-based heuristics.
 ///
 /// Returns a JSON string representing the process tree.
 #[wasm_bindgen]
@@ -153,63 +197,10 @@ pub fn discover_simple_process_tree(
 ) -> Result<JsValue, JsValue> {
     use crate::state::{get_or_init_state, StoredObject};
 
-    let result_json = get_or_init_state().with_object(log_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
-            // Count activity frequencies
-            let mut freq: std::collections::HashMap<String, usize> =
-                std::collections::HashMap::new();
-            let mut directly_follows: std::collections::HashMap<(String, String), usize> =
-                std::collections::HashMap::new();
-
-            for trace in &log.traces {
-                let acts: Vec<String> = trace
-                    .events
-                    .iter()
-                    .filter_map(|e| {
-                        e.attributes
-                            .get(activity_key)
-                            .and_then(|v| v.as_string())
-                            .map(str::to_owned)
-                    })
-                    .collect();
-                for a in &acts {
-                    *freq.entry(a.clone()).or_insert(0) += 1;
-                }
-                for i in 0..acts.len().saturating_sub(1) {
-                    *directly_follows
-                        .entry((acts[i].clone(), acts[i + 1].clone()))
-                        .or_insert(0) += 1;
-                }
-            }
-
-            // Sort activities by frequency descending
-            let mut sorted_acts: Vec<(String, usize)> = freq.into_iter().collect();
-            sorted_acts.sort_by(|a, b| b.1.cmp(&a.1));
-
-            // Build a simple SEQ tree of the top activities
-            let children: Vec<serde_json::Value> = sorted_acts
-                .iter()
-                .map(|(label, _)| json!({"type": "activity", "label": label}))
-                .collect();
-
-            let tree = if children.len() == 1 {
-                children
-                    .into_iter()
-                    .next()
-                    .expect("children.len() == 1 guarantees one element")
-            } else {
-                json!({
-                    "type": "operator",
-                    "operator": "SEQ",
-                    "children": children,
-                })
-            };
-
-            serde_json::to_string(&tree).map_err(|e| crate::error::js_val(&e.to_string()))
-        }
+    let log = get_or_init_state().with_object(log_handle, |obj| match obj {
+        Some(StoredObject::EventLog(log)) => Ok(log.clone()),
         Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
         None => Err(crate::error::js_val("EventLog handle not found")),
     })?;
-
-    Ok(crate::error::js_val(&result_json))
+    Ok(crate::error::js_val(&discover_simple_process_tree_from_log(&log, activity_key)))
 }

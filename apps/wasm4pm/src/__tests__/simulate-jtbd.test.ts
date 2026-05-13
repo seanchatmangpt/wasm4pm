@@ -218,58 +218,48 @@ beforeAll(() => {
 // ─── JTBD-1: Simulate Process Model for Throughput Prediction ────────────────
 
 describe('JTBD-1: I want to simulate my process model to predict future throughput', () => {
-  it('discover_inductive_miner returns a result (tree handle or JSON)', () => {
-    let result: unknown = null;
+  it('discover_inductive_miner returns a result (tree handle or JSON) + monte_carlo_simulation returns a non-null result + simulation result has num_simulations, traces, or completed_cases field', () => {
+    let inductiveResult: unknown = null;
     try {
-      result = wasm.discover_inductive_miner(logHandle, ACTIVITY_KEY, 0.2);
+      inductiveResult = wasm.discover_inductive_miner(logHandle, ACTIVITY_KEY, 0.2);
     } catch {
       // Try without noise_threshold parameter
       try {
-        result = wasm.discover_inductive_miner(logHandle, ACTIVITY_KEY);
+        inductiveResult = wasm.discover_inductive_miner(logHandle, ACTIVITY_KEY);
       } catch {
         // not available
       }
     }
     // Either returns something or unavailable — must not crash
-    expect(result === null || result !== null).toBe(true);
-    if (result !== null) {
+    expect(inductiveResult === null || inductiveResult !== null).toBe(true);
+    if (inductiveResult !== null) {
       // Must be parseable if string
-      if (typeof result === 'string') {
-        expect(() => JSON.parse(result as string)).not.toThrow();
+      if (typeof inductiveResult === 'string') {
+        expect(() => JSON.parse(inductiveResult as string)).not.toThrow();
       }
     }
-  });
 
-  it('monte_carlo_simulation returns a non-null result', () => {
-    let result: Record<string, unknown> | null = null;
+    let simResult: Record<string, unknown> | null = null;
     try {
-      result = parse(wasm.monte_carlo_simulation(logHandle, '', '', simConfig(5)));
+      simResult = parse(wasm.monte_carlo_simulation(logHandle, '', '', simConfig(5)));
     } catch {
       // not available
     }
-    expect(result === null || result !== null).toBe(true);
-    if (result !== null) {
-      expect(typeof result).toBe('object');
+    expect(simResult === null || simResult !== null).toBe(true);
+    if (simResult !== null) {
+      expect(typeof simResult).toBe('object');
     }
-  });
 
-  it('simulation result has num_simulations, traces, or completed_cases field', () => {
-    let result: Record<string, unknown> | null = null;
-    try {
-      result = parse(wasm.monte_carlo_simulation(logHandle, '', '', simConfig(5)));
-    } catch {
-      // not available
-    }
-    if (result === null) {
+    if (simResult === null) {
       expect(true).toBe(true);
       return;
     }
     const hasSimField =
-      'num_simulations' in result ||
-      'traces' in result ||
-      'completed_cases' in result ||
-      'cases' in result ||
-      'simulations' in result;
+      'num_simulations' in simResult ||
+      'traces' in simResult ||
+      'completed_cases' in simResult ||
+      'cases' in simResult ||
+      'simulations' in simResult;
     expect(hasSimField).toBe(true);
   });
 });
@@ -277,32 +267,30 @@ describe('JTBD-1: I want to simulate my process model to predict future throughp
 // ─── JTBD-2: Monte Carlo Stress Testing for Bottleneck Discovery ──────────────
 
 describe('JTBD-2: I want Monte Carlo stress testing to find process bottlenecks under load', () => {
-  it('simulation with 20 cases produces result with summary statistics', () => {
-    let result: Record<string, unknown> | null = null;
+  it('simulation with 20 cases produces result with summary statistics + simulation is deterministic — same config gives same output + simulation with more cases (20 vs 5) produces structurally same output shape', () => {
+    let large: Record<string, unknown> | null = null;
     try {
-      result = parse(wasm.monte_carlo_simulation(logHandle, '', '', simConfig(20)));
+      large = parse(wasm.monte_carlo_simulation(logHandle, '', '', simConfig(20)));
     } catch {
       // not available
     }
-    if (result === null) {
+    if (large === null) {
       expect(true).toBe(true);
-      return;
+    } else {
+      // Must have at least one field
+      expect(Object.keys(large).length).toBeGreaterThan(0);
+      // Check for typical summary stats fields
+      const hasSummary =
+        'avg_trace_length' in large ||
+        'avg_sojourn_time' in large ||
+        'resource_utilization' in large ||
+        'mean_duration' in large ||
+        'statistics' in large ||
+        'summary' in large ||
+        'traces' in large;
+      expect(hasSummary).toBe(true);
     }
-    // Must have at least one field
-    expect(Object.keys(result).length).toBeGreaterThan(0);
-    // Check for typical summary stats fields
-    const hasSummary =
-      'avg_trace_length' in result ||
-      'avg_sojourn_time' in result ||
-      'resource_utilization' in result ||
-      'mean_duration' in result ||
-      'statistics' in result ||
-      'summary' in result ||
-      'traces' in result;
-    expect(hasSummary).toBe(true);
-  });
 
-  it('simulation is deterministic — same config gives same output', () => {
     let result1: Record<string, unknown> | null = null;
     let result2: Record<string, unknown> | null = null;
     const config = simConfig(5, 99999);
@@ -312,45 +300,39 @@ describe('JTBD-2: I want Monte Carlo stress testing to find process bottlenecks 
     } catch {
       // not available
     }
-    if (result1 === null || result2 === null) {
-      expect(true).toBe(true);
-      return;
+    if (result1 !== null && result2 !== null) {
+      // Same seed must produce same numeric results (key order may differ in HashMap output)
+      // Compare via sorted JSON to be robust against HashMap non-determinism in key ordering
+      const sortedStringify = (obj: unknown): string =>
+        JSON.stringify(obj, (_, v) =>
+          v !== null && typeof v === 'object' && !Array.isArray(v)
+            ? Object.fromEntries(Object.entries(v as Record<string, unknown>).sort())
+            : v
+        );
+      expect(sortedStringify(result1)).toBe(sortedStringify(result2));
     }
-    // Same seed must produce same numeric results (key order may differ in HashMap output)
-    // Compare via sorted JSON to be robust against HashMap non-determinism in key ordering
-    const sortedStringify = (obj: unknown): string =>
-      JSON.stringify(obj, (_, v) =>
-        v !== null && typeof v === 'object' && !Array.isArray(v)
-          ? Object.fromEntries(Object.entries(v as Record<string, unknown>).sort())
-          : v
-      );
-    expect(sortedStringify(result1)).toBe(sortedStringify(result2));
-  });
 
-  it('simulation with more cases (20 vs 5) produces structurally same output shape', () => {
     let small: Record<string, unknown> | null = null;
-    let large: Record<string, unknown> | null = null;
+    let large2: Record<string, unknown> | null = null;
     try {
       small = parse(wasm.monte_carlo_simulation(logHandle, '', '', simConfig(5, 42)));
-      large = parse(wasm.monte_carlo_simulation(logHandle, '', '', simConfig(20, 42)));
+      large2 = parse(wasm.monte_carlo_simulation(logHandle, '', '', simConfig(20, 42)));
     } catch {
       // not available
     }
-    if (small === null || large === null) {
-      expect(true).toBe(true);
-      return;
+    if (small !== null && large2 !== null) {
+      // Both must be objects with the same top-level keys
+      const smallKeys = Object.keys(small).sort();
+      const largeKeys = Object.keys(large2).sort();
+      expect(smallKeys).toEqual(largeKeys);
     }
-    // Both must be objects with the same top-level keys
-    const smallKeys = Object.keys(small).sort();
-    const largeKeys = Object.keys(large).sort();
-    expect(smallKeys).toEqual(largeKeys);
   });
 });
 
 // ─── JTBD-3: Process Tree Playout for Synthetic Trace Generation ─────────────
 
 describe('JTBD-3: I want to playout a process tree to generate synthetic traces for testing', () => {
-  it('simulate_process_tree_playout completes without error', () => {
+  it('simulate_process_tree_playout completes without error + playout result has traces or events field + requested n traces produces output with n or fewer traces', () => {
     let threw = false;
     let result: unknown = null;
     try {
@@ -360,49 +342,43 @@ describe('JTBD-3: I want to playout a process tree to generate synthetic traces 
     }
     // Either succeeds or throws — must not hang
     expect(threw || result !== null || result === null).toBe(true);
-  });
 
-  it('playout result has traces or events field', () => {
-    let result: Record<string, unknown> | null = null;
+    let parsedResult: Record<string, unknown> | null = null;
     try {
       const raw = wasm.simulate_process_tree_playout(logHandle, ACTIVITY_KEY, 5, 42);
-      result = parse(raw);
+      parsedResult = parse(raw);
     } catch {
       // not available in current WASM build
     }
-    if (result === null) {
-      expect(true).toBe(true);
-      return;
+    if (parsedResult !== null) {
+      const hasTraceData =
+        'traces' in parsedResult ||
+        'events' in parsedResult ||
+        'cases' in parsedResult ||
+        'playout' in parsedResult ||
+        'sequences' in parsedResult;
+      expect(hasTraceData).toBe(true);
     }
-    const hasTraceData =
-      'traces' in result ||
-      'events' in result ||
-      'cases' in result ||
-      'playout' in result ||
-      'sequences' in result;
-    expect(hasTraceData).toBe(true);
-  });
 
-  it('requested n traces produces output with n or fewer traces', () => {
     const requestedN = 3;
-    let result: Record<string, unknown> | null = null;
+    let nResult: Record<string, unknown> | null = null;
     try {
       const raw = wasm.simulate_process_tree_playout(logHandle, ACTIVITY_KEY, requestedN, 42);
-      result = parse(raw);
+      nResult = parse(raw);
     } catch {
       // not available in current WASM build
     }
-    if (result === null) {
+    if (nResult === null) {
       expect(true).toBe(true);
       return;
     }
     // If there's a traces array, it should have <= requestedN entries
-    const traces = (result.traces as unknown[]) ?? (result.cases as unknown[]) ?? null;
+    const traces = (nResult.traces as unknown[]) ?? (nResult.cases as unknown[]) ?? null;
     if (traces !== null) {
       expect(traces.length).toBeLessThanOrEqual(requestedN);
     } else {
       // Output uses different structure — just verify it's non-empty
-      expect(Object.keys(result).length).toBeGreaterThan(0);
+      expect(Object.keys(nResult).length).toBeGreaterThan(0);
     }
   });
 });

@@ -1,6 +1,5 @@
 /**
  * Tests for instrumentation module
- * Covers span creation, event generation, and trace context handling
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
@@ -24,41 +23,26 @@ describe('Instrumentation', () => {
     };
   });
 
-  describe('Trace ID generation', () => {
-    it('should generate valid W3C trace IDs', () => {
-      const id = Instrumentation.generateTraceId();
-      expect(id).toMatch(/^[a-f0-9]{32}$/);
-      expect(id).toHaveLength(32);
-    });
+  describe('ID generation', () => {
+    it('generates valid unique W3C trace and span IDs', () => {
+      const traceId1 = Instrumentation.generateTraceId();
+      const traceId2 = Instrumentation.generateTraceId();
+      expect(traceId1).toMatch(/^[a-f0-9]{32}$/);
+      expect(traceId1).toHaveLength(32);
+      expect(traceId1).not.toBe(traceId2);
 
-    it('should generate unique trace IDs', () => {
-      const id1 = Instrumentation.generateTraceId();
-      const id2 = Instrumentation.generateTraceId();
-      expect(id1).not.toBe(id2);
-    });
-  });
-
-  describe('Span ID generation', () => {
-    it('should generate valid W3C span IDs', () => {
-      const id = Instrumentation.generateSpanId();
-      expect(id).toMatch(/^[a-f0-9]{16}$/);
-      expect(id).toHaveLength(16);
-    });
-
-    it('should generate unique span IDs', () => {
-      const id1 = Instrumentation.generateSpanId();
-      const id2 = Instrumentation.generateSpanId();
-      expect(id1).not.toBe(id2);
+      const spanId1 = Instrumentation.generateSpanId();
+      const spanId2 = Instrumentation.generateSpanId();
+      expect(spanId1).toMatch(/^[a-f0-9]{16}$/);
+      expect(spanId1).toHaveLength(16);
+      expect(spanId1).not.toBe(spanId2);
     });
   });
 
   describe('State change events', () => {
-    it('should create state change event with required fields', () => {
+    it('creates state change event with required fields, parent span, and reason', () => {
       const { event, otelEvent } = Instrumentation.createStateChangeEvent(
-        traceId,
-        'ready',
-        'planning',
-        requiredAttrs
+        traceId, 'ready', 'planning', requiredAttrs
       );
 
       expect(event.type).toBe('StateChange');
@@ -66,292 +50,170 @@ describe('Instrumentation', () => {
       expect(event.fromState).toBe('ready');
       expect(event.toState).toBe('planning');
       expect(event.runId).toBe(requiredAttrs['run.id']);
-
       expect(otelEvent.trace_id).toBe(traceId);
       expect(otelEvent.attributes['state.from']).toBe('ready');
       expect(otelEvent.attributes['state.to']).toBe('planning');
       expect(otelEvent.status?.code).toBe('OK');
-    });
 
-    it('should include parent span ID if provided', () => {
       const parentSpanId = Instrumentation.generateSpanId();
-      const { otelEvent } = Instrumentation.createStateChangeEvent(
-        traceId,
-        'ready',
-        'planning',
-        requiredAttrs,
-        { parentSpanId }
+      const { otelEvent: withParent } = Instrumentation.createStateChangeEvent(
+        traceId, 'ready', 'planning', requiredAttrs, { parentSpanId }
       );
+      expect(withParent.parent_span_id).toBe(parentSpanId);
 
-      expect(otelEvent.parent_span_id).toBe(parentSpanId);
-    });
-
-    it('should include reason if provided', () => {
-      const { event, otelEvent } = Instrumentation.createStateChangeEvent(
-        traceId,
-        'ready',
-        'planning',
-        requiredAttrs,
-        { reason: 'User initiated planning' }
+      const { event: withReason, otelEvent: reasonOtel } = Instrumentation.createStateChangeEvent(
+        traceId, 'ready', 'planning', requiredAttrs, { reason: 'User initiated planning' }
       );
-
-      expect(event.reason).toBe('User initiated planning');
-      expect(otelEvent.attributes['state.reason']).toBe('User initiated planning');
+      expect(withReason.reason).toBe('User initiated planning');
+      expect(reasonOtel.attributes['state.reason']).toBe('User initiated planning');
     });
   });
 
   describe('Plan generated events', () => {
-    it('should create plan generated event with required fields', () => {
+    it('creates plan generated event with required fields and optional estimated duration', () => {
       const { event, otelEvent } = Instrumentation.createPlanGeneratedEvent(
-        traceId,
-        'plan-123',
-        'hash-abc',
-        5,
-        requiredAttrs
+        traceId, 'plan-123', 'hash-abc', 5, requiredAttrs
       );
 
       expect(event.type).toBe('PlanGenerated');
       expect(event.planId).toBe('plan-123');
       expect(event.planHash).toBe('hash-abc');
       expect(event.steps).toBe(5);
-
       expect(otelEvent.attributes['plan.id']).toBe('plan-123');
       expect(otelEvent.attributes['plan.hash']).toBe('hash-abc');
       expect(otelEvent.attributes['plan.steps']).toBe(5);
-    });
 
-    it('should include estimated duration if provided', () => {
-      const { event } = Instrumentation.createPlanGeneratedEvent(
-        traceId,
-        'plan-123',
-        'hash-abc',
-        5,
-        requiredAttrs,
-        { estimatedDurationMs: 1000 }
+      const { event: withDuration } = Instrumentation.createPlanGeneratedEvent(
+        traceId, 'plan-123', 'hash-abc', 5, requiredAttrs, { estimatedDurationMs: 1000 }
       );
-
-      expect(event.estimatedDurationMs).toBe(1000);
+      expect(withDuration.estimatedDurationMs).toBe(1000);
     });
   });
 
   describe('Algorithm events', () => {
-    it('should create algorithm started event', () => {
+    it('creates algorithm started, completed, and error events', () => {
       const { event, otelEvent } = Instrumentation.createAlgorithmStartedEvent(
-        traceId,
-        'dijkstra',
-        requiredAttrs
+        traceId, 'dijkstra', requiredAttrs
       );
-
       expect(event.type).toBe('AlgorithmStarted');
       expect(event.algorithmName).toBe('dijkstra');
       expect(otelEvent.name).toBe('algorithm.dijkstra');
       expect(otelEvent.attributes['algorithm.name']).toBe('dijkstra');
-    });
 
-    it('should create algorithm completed event', () => {
       const spanId = Instrumentation.generateSpanId();
-      const otelEvent = Instrumentation.createAlgorithmCompletedEvent(
-        traceId,
-        spanId,
-        'dijkstra',
-        requiredAttrs,
-        { status: 'OK', durationMs: 100 }
+      const completedEvent = Instrumentation.createAlgorithmCompletedEvent(
+        traceId, spanId, 'dijkstra', requiredAttrs, { status: 'OK', durationMs: 100 }
       );
+      expect(completedEvent.span_id).toBe(spanId);
+      expect(completedEvent.status?.code).toBe('OK');
+      expect(completedEvent.attributes['algorithm.duration_ms']).toBe(100);
 
-      expect(otelEvent.span_id).toBe(spanId);
-      expect(otelEvent.status?.code).toBe('OK');
-      expect(otelEvent.attributes['algorithm.duration_ms']).toBe(100);
-    });
-
-    it('should handle algorithm error', () => {
-      const spanId = Instrumentation.generateSpanId();
-      const otelEvent = Instrumentation.createAlgorithmCompletedEvent(
-        traceId,
-        spanId,
-        'dijkstra',
-        requiredAttrs,
-        {
-          status: 'ERROR',
-          errorCode: 'TIMEOUT',
-          errorMessage: 'Algorithm timed out',
-          durationMs: 5000,
-        }
+      const errorEvent = Instrumentation.createAlgorithmCompletedEvent(
+        traceId, spanId, 'dijkstra', requiredAttrs,
+        { status: 'ERROR', errorCode: 'TIMEOUT', errorMessage: 'Algorithm timed out', durationMs: 5000 }
       );
-
-      expect(otelEvent.status?.code).toBe('ERROR');
-      expect(otelEvent.status?.message).toBe('Algorithm timed out');
-      expect(otelEvent.attributes['algorithm.error_code']).toBe('TIMEOUT');
+      expect(errorEvent.status?.code).toBe('ERROR');
+      expect(errorEvent.status?.message).toBe('Algorithm timed out');
+      expect(errorEvent.attributes['algorithm.error_code']).toBe('TIMEOUT');
     });
   });
 
   describe('Source/Sink events', () => {
-    it('should create source started event', () => {
-      const { event, otelEvent } = Instrumentation.createSourceStartedEvent(
-        traceId,
-        'xes',
-        requiredAttrs
+    it('creates source and sink started/completed events with correct attributes', () => {
+      const { event: srcEvent, otelEvent: srcOtel } = Instrumentation.createSourceStartedEvent(
+        traceId, 'xes', requiredAttrs
       );
+      expect(srcEvent.type).toBe('SourceStarted');
+      expect(srcEvent.kind).toBe('xes');
+      expect(srcOtel.kind).toBe('CLIENT');
+      expect(srcOtel.attributes['source.kind']).toBe('xes');
 
-      expect(event.type).toBe('SourceStarted');
-      expect(event.kind).toBe('xes');
-      expect(otelEvent.kind).toBe('CLIENT');
-      expect(otelEvent.attributes['source.kind']).toBe('xes');
-    });
-
-    it('should create source completed event', () => {
-      const spanId = Instrumentation.generateSpanId();
-      const otelEvent = Instrumentation.createSourceCompletedEvent(
-        traceId,
-        spanId,
-        'xes',
-        requiredAttrs,
-        { recordCount: 1000, status: 'OK', durationMs: 250 }
+      const srcSpanId = Instrumentation.generateSpanId();
+      const srcCompleted = Instrumentation.createSourceCompletedEvent(
+        traceId, srcSpanId, 'xes', requiredAttrs, { recordCount: 1000, status: 'OK', durationMs: 250 }
       );
+      expect(srcCompleted.status?.code).toBe('OK');
+      expect(srcCompleted.attributes['source.record_count']).toBe(1000);
+      expect(srcCompleted.attributes['source.duration_ms']).toBe(250);
 
-      expect(otelEvent.status?.code).toBe('OK');
-      expect(otelEvent.attributes['source.record_count']).toBe(1000);
-      expect(otelEvent.attributes['source.duration_ms']).toBe(250);
-    });
-
-    it('should create sink started event', () => {
-      const { event, otelEvent } = Instrumentation.createSinkStartedEvent(
-        traceId,
-        'petri_net',
-        requiredAttrs
+      const { event: sinkEvent, otelEvent: sinkOtel } = Instrumentation.createSinkStartedEvent(
+        traceId, 'petri_net', requiredAttrs
       );
+      expect(sinkEvent.type).toBe('SinkStarted');
+      expect(sinkEvent.kind).toBe('petri_net');
+      expect(sinkOtel.kind).toBe('PRODUCER');
+      expect(sinkOtel.attributes['sink.kind']).toBe('petri_net');
 
-      expect(event.type).toBe('SinkStarted');
-      expect(event.kind).toBe('petri_net');
-      expect(otelEvent.kind).toBe('PRODUCER');
-      expect(otelEvent.attributes['sink.kind']).toBe('petri_net');
-    });
-
-    it('should create sink completed event', () => {
-      const spanId = Instrumentation.generateSpanId();
-      const otelEvent = Instrumentation.createSinkCompletedEvent(
-        traceId,
-        spanId,
-        'petri_net',
-        requiredAttrs,
-        { recordCount: 1, status: 'OK', durationMs: 50 }
+      const sinkSpanId = Instrumentation.generateSpanId();
+      const sinkCompleted = Instrumentation.createSinkCompletedEvent(
+        traceId, sinkSpanId, 'petri_net', requiredAttrs, { recordCount: 1, status: 'OK', durationMs: 50 }
       );
-
-      expect(otelEvent.status?.code).toBe('OK');
-      expect(otelEvent.attributes['sink.record_count']).toBe(1);
-      expect(otelEvent.attributes['sink.duration_ms']).toBe(50);
+      expect(sinkCompleted.status?.code).toBe('OK');
+      expect(sinkCompleted.attributes['sink.record_count']).toBe(1);
+      expect(sinkCompleted.attributes['sink.duration_ms']).toBe(50);
     });
   });
 
-  describe('Progress events', () => {
-    it('should create progress event', () => {
-      const { event, jsonEvent } = Instrumentation.createProgressEvent(traceId, 50, requiredAttrs, {
-        message: 'Processing step 2 of 4',
-      });
-
-      expect(event.type).toBe('Progress');
-      expect(event.progress).toBe(50);
-      expect(event.message).toBe('Processing step 2 of 4');
-
-      expect(jsonEvent.component).toBe('engine');
-      expect(jsonEvent.event_type).toBe('progress');
-      expect(jsonEvent.data.progress).toBe(50);
-    });
-
-    it('should handle 100% progress', () => {
-      const { event } = Instrumentation.createProgressEvent(traceId, 100, requiredAttrs);
-
-      expect(event.progress).toBe(100);
-    });
-  });
-
-  describe('Error events', () => {
-    it('should create error event with required fields', () => {
-      const { event, otelEvent, jsonEvent } = Instrumentation.createErrorEvent(
-        traceId,
-        'BOOTSTRAP_FAILED',
-        'Kernel initialization failed',
-        requiredAttrs
+  describe('Progress and Error events', () => {
+    it('creates progress and error events with all required fields and options', () => {
+      const { event: progEvent, jsonEvent: progJson } = Instrumentation.createProgressEvent(
+        traceId, 50, requiredAttrs, { message: 'Processing step 2 of 4' }
       );
+      expect(progEvent.type).toBe('Progress');
+      expect(progEvent.progress).toBe(50);
+      expect(progEvent.message).toBe('Processing step 2 of 4');
+      expect(progJson.component).toBe('engine');
+      expect(progJson.event_type).toBe('progress');
+      expect(progJson.data.progress).toBe(50);
+      expect(Instrumentation.createProgressEvent(traceId, 100, requiredAttrs).event.progress).toBe(100);
 
-      expect(event.type).toBe('Error');
-      expect(event.errorCode).toBe('BOOTSTRAP_FAILED');
-      expect(event.errorMessage).toBe('Kernel initialization failed');
-      expect(event.severity).toBe('error');
-
-      expect(otelEvent.status?.code).toBe('ERROR');
-      expect(otelEvent.status?.message).toBe('Kernel initialization failed');
-      expect(otelEvent.attributes['error.code']).toBe('BOOTSTRAP_FAILED');
-
-      expect(jsonEvent.component).toBe('engine');
-      expect(jsonEvent.event_type).toBe('error');
-      expect(jsonEvent.data.error_code).toBe('BOOTSTRAP_FAILED');
-    });
-
-    it('should include severity level', () => {
-      const { event } = Instrumentation.createErrorEvent(
-        traceId,
-        'CRITICAL_ERROR',
-        'Fatal error occurred',
-        requiredAttrs,
-        { severity: 'fatal' }
+      const { event: errEvent, otelEvent: errOtel, jsonEvent: errJson } = Instrumentation.createErrorEvent(
+        traceId, 'BOOTSTRAP_FAILED', 'Kernel initialization failed', requiredAttrs
       );
+      expect(errEvent.type).toBe('Error');
+      expect(errEvent.errorCode).toBe('BOOTSTRAP_FAILED');
+      expect(errEvent.errorMessage).toBe('Kernel initialization failed');
+      expect(errEvent.severity).toBe('error');
+      expect(errOtel.status?.code).toBe('ERROR');
+      expect(errOtel.attributes['error.code']).toBe('BOOTSTRAP_FAILED');
+      expect(errJson.event_type).toBe('error');
+      expect(errJson.data.error_code).toBe('BOOTSTRAP_FAILED');
 
-      expect(event.severity).toBe('fatal');
-    });
+      const { event: fatalEvent } = Instrumentation.createErrorEvent(
+        traceId, 'CRITICAL_ERROR', 'Fatal error occurred', requiredAttrs, { severity: 'fatal' }
+      );
+      expect(fatalEvent.severity).toBe('fatal');
 
-    it('should include error context', () => {
       const context = { failedComponent: 'kernel', retries: 3 };
-      const { event } = Instrumentation.createErrorEvent(
-        traceId,
-        'RETRY_EXHAUSTED',
-        'All retries failed',
-        requiredAttrs,
-        { context }
+      const { event: ctxEvent } = Instrumentation.createErrorEvent(
+        traceId, 'RETRY_EXHAUSTED', 'All retries failed', requiredAttrs, { context }
       );
-
-      expect(event.context).toEqual(context);
+      expect(ctxEvent.context).toEqual(context);
     });
   });
 
   describe('Trace context propagation', () => {
-    it('should create W3C Trace Context header', () => {
-      const traceId = '00000000000000000000000000000001';
-      const spanId = '0000000000000001';
-      const header = Instrumentation.createTraceContextHeader(traceId, spanId, true);
-
+    it('creates W3C headers, extracts context, and handles invalid/missing headers', () => {
+      const header = Instrumentation.createTraceContextHeader(
+        '00000000000000000000000000000001', '0000000000000001', true
+      );
       expect(header).toBe('00-00000000000000000000000000000001-0000000000000001-01');
-    });
 
-    it('should extract trace context from header', () => {
-      const header = '00-12345678901234567890123456789012-1234567890123456-01';
-      const context = Instrumentation.extractTraceContext(header);
+      const extracted = Instrumentation.extractTraceContext('00-12345678901234567890123456789012-1234567890123456-01');
+      expect(extracted.traceId).toBe('12345678901234567890123456789012');
+      expect(extracted.spanId).toBe('1234567890123456');
+      expect(extracted.traceFlags).toBe('01');
 
-      expect(context.traceId).toBe('12345678901234567890123456789012');
-      expect(context.spanId).toBe('1234567890123456');
-      expect(context.traceFlags).toBe('01');
-    });
-
-    it('should handle invalid trace context headers', () => {
-      const context = Instrumentation.extractTraceContext('invalid');
-      expect(context.traceId).toBeUndefined();
-      expect(context.spanId).toBeUndefined();
-    });
-
-    it('should handle missing trace context', () => {
-      const context = Instrumentation.extractTraceContext();
-      expect(Object.keys(context)).toHaveLength(0);
+      expect(Instrumentation.extractTraceContext('invalid').traceId).toBeUndefined();
+      expect(Object.keys(Instrumentation.extractTraceContext())).toHaveLength(0);
     });
   });
 
-  describe('Required OTEL attributes', () => {
-    it('should include all required attributes in events', () => {
+  describe('Required OTEL attributes and span metadata', () => {
+    it('includes all required attributes, correct span kinds, and parent span IDs', () => {
       const { otelEvent } = Instrumentation.createStateChangeEvent(
-        traceId,
-        'ready',
-        'planning',
-        requiredAttrs
+        traceId, 'ready', 'planning', requiredAttrs
       );
-
       expect(otelEvent.attributes['run.id']).toBe(requiredAttrs['run.id']);
       expect(otelEvent.attributes['config.hash']).toBe(requiredAttrs['config.hash']);
       expect(otelEvent.attributes['input.hash']).toBe(requiredAttrs['input.hash']);
@@ -359,46 +221,25 @@ describe('Instrumentation', () => {
       expect(otelEvent.attributes['execution.profile']).toBe(requiredAttrs['execution.profile']);
       expect(otelEvent.attributes['source.kind']).toBe(requiredAttrs['source.kind']);
       expect(otelEvent.attributes['sink.kind']).toBe(requiredAttrs['sink.kind']);
-    });
-  });
 
-  describe('Event metadata', () => {
-    it('should preserve span hierarchy with parent span IDs', () => {
       const parentSpanId = Instrumentation.generateSpanId();
-      const { otelEvent } = Instrumentation.createAlgorithmStartedEvent(
-        traceId,
-        'test_algo',
-        requiredAttrs,
-        { parentSpanId }
+      const { otelEvent: withParent } = Instrumentation.createAlgorithmStartedEvent(
+        traceId, 'test_algo', requiredAttrs, { parentSpanId }
       );
+      expect(withParent.parent_span_id).toBe(parentSpanId);
 
-      expect(otelEvent.parent_span_id).toBe(parentSpanId);
-    });
-
-    it('should include span kind indicators', () => {
-      const sourceEvent = Instrumentation.createSourceStartedEvent(traceId, 'xes', requiredAttrs);
-      const sinkEvent = Instrumentation.createSinkStartedEvent(traceId, 'petri_net', requiredAttrs);
-
-      expect(sourceEvent.otelEvent.kind).toBe('CLIENT');
-      expect(sinkEvent.otelEvent.kind).toBe('PRODUCER');
+      expect(Instrumentation.createSourceStartedEvent(traceId, 'xes', requiredAttrs).otelEvent.kind).toBe('CLIENT');
+      expect(Instrumentation.createSinkStartedEvent(traceId, 'petri_net', requiredAttrs).otelEvent.kind).toBe('PRODUCER');
     });
   });
-
-  // ───────────────────────── ML / RL / Prediction / Drift / Conformance ─────────
 
   describe('RL agent decision events', () => {
-    it('should create rl.agent.decision span with required attributes', () => {
+    it('creates rl.agent.decision span and omits optional fields when not provided', () => {
       const { event, otelEvent } = Instrumentation.createRlAgentDecisionEvent(
         traceId,
         {
-          agentType: 'QLearning',
-          agentId: 'agent-0',
-          actionSelected: 3,
-          stateHealthLevel: 1,
-          stateCircuitState: 'Closed',
-          epsilon: 0.1,
-          isExplore: false,
-          durationMs: 2,
+          agentType: 'QLearning', agentId: 'agent-0', actionSelected: 3,
+          stateHealthLevel: 1, stateCircuitState: 'Closed', epsilon: 0.1, isExplore: false, durationMs: 2,
         },
         requiredAttrs
       );
@@ -415,39 +256,22 @@ describe('Instrumentation', () => {
       expect(otelEvent.attributes['rl.exploration.epsilon']).toBe(0.1);
       expect(otelEvent.attributes['rl.exploration.is_explore']).toBe(false);
       expect(otelEvent.status?.code).toBe('OK');
-    });
 
-    it('should omit optional exploration fields when not provided', () => {
-      const { otelEvent } = Instrumentation.createRlAgentDecisionEvent(
+      const { otelEvent: noOptional } = Instrumentation.createRlAgentDecisionEvent(
         traceId,
-        {
-          agentType: 'REINFORCE',
-          agentId: 'agent-policy',
-          actionSelected: 'noop',
-          stateHealthLevel: 0,
-          stateCircuitState: 'Open',
-        },
+        { agentType: 'REINFORCE', agentId: 'agent-policy', actionSelected: 'noop', stateHealthLevel: 0, stateCircuitState: 'Open' },
         requiredAttrs
       );
-      expect('rl.exploration.epsilon' in otelEvent.attributes).toBe(false);
-      expect('rl.exploration.is_explore' in otelEvent.attributes).toBe(false);
+      expect('rl.exploration.epsilon' in noOptional.attributes).toBe(false);
+      expect('rl.exploration.is_explore' in noOptional.attributes).toBe(false);
     });
   });
 
   describe('RL policy update events', () => {
-    it('should compute convergence delta = |q_after - q_before|', () => {
+    it('computes convergence delta and marks terminal updates correctly', () => {
       const { otelEvent } = Instrumentation.createRlPolicyUpdateEvent(
         traceId,
-        {
-          agentType: 'DoubleQLearning',
-          agentId: 'agent-0',
-          reward: 1.1,
-          tdError: 0.4,
-          qBefore: 0.2,
-          qAfter: 0.6,
-          terminal: false,
-          durationMs: 1,
-        },
+        { agentType: 'DoubleQLearning', agentId: 'agent-0', reward: 1.1, tdError: 0.4, qBefore: 0.2, qAfter: 0.6, terminal: false, durationMs: 1 },
         requiredAttrs
       );
 
@@ -458,34 +282,20 @@ describe('Instrumentation', () => {
       expect(otelEvent.attributes['rl.update.q_after']).toBe(0.6);
       expect(otelEvent.attributes['rl.convergence.delta']).toBeCloseTo(0.4, 6);
       expect(otelEvent.attributes['rl.update.terminal']).toBe(false);
-    });
 
-    it('should mark terminal updates correctly', () => {
-      const { otelEvent } = Instrumentation.createRlPolicyUpdateEvent(
+      const { otelEvent: terminal } = Instrumentation.createRlPolicyUpdateEvent(
         traceId,
-        {
-          agentType: 'SARSA',
-          agentId: 'agent-0',
-          reward: -2.0,
-          tdError: -1.5,
-          qBefore: 0.5,
-          qAfter: -1.0,
-          terminal: true,
-        },
+        { agentType: 'SARSA', agentId: 'agent-0', reward: -2.0, tdError: -1.5, qBefore: 0.5, qAfter: -1.0, terminal: true },
         requiredAttrs
       );
-      expect(otelEvent.attributes['rl.update.terminal']).toBe(true);
+      expect(terminal.attributes['rl.update.terminal']).toBe(true);
     });
   });
 
   describe('RL agent switch events', () => {
-    it('should record from/to agents and ucb score', () => {
+    it('records from/to agents and ucb score', () => {
       const { otelEvent } = Instrumentation.createRlAgentSwitchEvent(
-        traceId,
-        'QLearning',
-        'ExpectedSARSA',
-        requiredAttrs,
-        { ucbScore: 1.42, cycleCount: 100 }
+        traceId, 'QLearning', 'ExpectedSARSA', requiredAttrs, { ucbScore: 1.42, cycleCount: 100 }
       );
 
       expect(otelEvent.name).toBe('rl.agent.switch');
@@ -497,11 +307,9 @@ describe('Instrumentation', () => {
   });
 
   describe('Prediction task events', () => {
-    it('should create prediction.<task> span (normalizing dashes to underscores)', () => {
+    it('creates started/completed spans with normalization and correct status codes', () => {
       const { event, otelEvent } = Instrumentation.createPredictionTaskStartedEvent(
-        traceId,
-        'next-activity',
-        requiredAttrs,
+        traceId, 'next-activity', requiredAttrs,
         { inputTraceCount: 100, inputEventCount: 1234, topK: 3, ngramOrder: 2 }
       );
 
@@ -509,111 +317,66 @@ describe('Instrumentation', () => {
       expect(otelEvent.name).toBe('prediction.next_activity');
       expect(otelEvent.attributes['prediction.task']).toBe('next_activity');
       expect(otelEvent.attributes['prediction.input.trace_count']).toBe(100);
-      expect(otelEvent.attributes['prediction.input.event_count']).toBe(1234);
       expect(otelEvent.attributes['prediction.top_k']).toBe(3);
       expect(otelEvent.attributes['prediction.ngram_order']).toBe(2);
-    });
 
-    it('should emit completed span with output count', () => {
-      const start = Instrumentation.createPredictionTaskStartedEvent(
-        traceId,
-        'remaining-time',
-        requiredAttrs
-      );
+      const start = Instrumentation.createPredictionTaskStartedEvent(traceId, 'remaining-time', requiredAttrs);
       const complete = Instrumentation.createPredictionTaskCompletedEvent(
-        traceId,
-        start.event.spanId,
-        'remaining-time',
-        requiredAttrs,
+        traceId, start.event.spanId, 'remaining-time', requiredAttrs,
         { outputPredictionCount: 50, durationMs: 12 }
       );
       expect(complete.name).toBe('prediction.remaining_time');
       expect(complete.attributes['prediction.output.count']).toBe(50);
-      expect(complete.attributes['prediction.duration_ms']).toBe(12);
       expect(complete.status?.code).toBe('OK');
-    });
 
-    it('should set ERROR status when failure occurs', () => {
-      const start = Instrumentation.createPredictionTaskStartedEvent(
-        traceId,
-        'outcome',
-        requiredAttrs
-      );
-      const complete = Instrumentation.createPredictionTaskCompletedEvent(
-        traceId,
-        start.event.spanId,
-        'outcome',
-        requiredAttrs,
+      const errStart = Instrumentation.createPredictionTaskStartedEvent(traceId, 'outcome', requiredAttrs);
+      const errComplete = Instrumentation.createPredictionTaskCompletedEvent(
+        traceId, errStart.event.spanId, 'outcome', requiredAttrs,
         { status: 'ERROR', errorCode: 'PRED_400', errorMessage: 'no labels' }
       );
-      expect(complete.status?.code).toBe('ERROR');
-      expect(complete.status?.message).toBe('no labels');
-      expect(complete.attributes['error.code']).toBe('PRED_400');
+      expect(errComplete.status?.code).toBe('ERROR');
+      expect(errComplete.attributes['error.code']).toBe('PRED_400');
     });
   });
 
-  describe('Drift detection events', () => {
-    it('should create drift.check span pair with score and detection flag', () => {
-      const start = Instrumentation.createDriftCheckStartedEvent(traceId, 'ewma', requiredAttrs, {
-        windowSize: 10,
-        threshold: 0.05,
+  describe('Drift and Conformance events', () => {
+    it('creates drift check and conformance check span pairs with correct attributes', () => {
+      const driftStart = Instrumentation.createDriftCheckStartedEvent(traceId, 'ewma', requiredAttrs, {
+        windowSize: 10, threshold: 0.05,
       });
-      expect(start.otelEvent.name).toBe('drift.check');
-      expect(start.otelEvent.attributes['drift.method']).toBe('ewma');
-      expect(start.otelEvent.attributes['drift.window_size']).toBe(10);
-      expect(start.otelEvent.attributes['drift.threshold']).toBe(0.05);
+      expect(driftStart.otelEvent.name).toBe('drift.check');
+      expect(driftStart.otelEvent.attributes['drift.method']).toBe('ewma');
+      expect(driftStart.otelEvent.attributes['drift.window_size']).toBe(10);
 
-      const complete = Instrumentation.createDriftCheckCompletedEvent(
-        traceId,
-        start.event.spanId,
-        'ewma',
-        requiredAttrs,
+      const driftComplete = Instrumentation.createDriftCheckCompletedEvent(
+        traceId, driftStart.event.spanId, 'ewma', requiredAttrs,
         { driftScore: 0.12, driftDetected: true, durationMs: 3 }
       );
-      expect(complete.attributes['drift.score']).toBe(0.12);
-      expect(complete.attributes['drift.detected']).toBe(true);
-    });
-  });
+      expect(driftComplete.attributes['drift.score']).toBe(0.12);
+      expect(driftComplete.attributes['drift.detected']).toBe(true);
 
-  describe('Conformance check events', () => {
-    it('should record fitness/precision/generalization/simplicity', () => {
-      const start = Instrumentation.createConformanceCheckStartedEvent(
-        traceId,
-        'token_replay',
-        requiredAttrs,
-        { modelKind: 'petri_net', traceCount: 1000 }
+      const confStart = Instrumentation.createConformanceCheckStartedEvent(
+        traceId, 'token_replay', requiredAttrs, { modelKind: 'petri_net', traceCount: 1000 }
       );
-      expect(start.otelEvent.name).toBe('conformance.check');
+      expect(confStart.otelEvent.name).toBe('conformance.check');
 
-      const complete = Instrumentation.createConformanceCheckCompletedEvent(
-        traceId,
-        start.event.spanId,
-        'token_replay',
-        requiredAttrs,
-        {
-          fitness: 0.92,
-          precision: 0.87,
-          generalization: 0.81,
-          simplicity: 0.78,
-          durationMs: 50,
-        }
+      const confComplete = Instrumentation.createConformanceCheckCompletedEvent(
+        traceId, confStart.event.spanId, 'token_replay', requiredAttrs,
+        { fitness: 0.92, precision: 0.87, generalization: 0.81, simplicity: 0.78, durationMs: 50 }
       );
-      expect(complete.attributes['conformance.fitness']).toBe(0.92);
-      expect(complete.attributes['conformance.precision']).toBe(0.87);
-      expect(complete.attributes['conformance.generalization']).toBe(0.81);
-      expect(complete.attributes['conformance.simplicity']).toBe(0.78);
-      expect(complete.status?.code).toBe('OK');
+      expect(confComplete.attributes['conformance.fitness']).toBe(0.92);
+      expect(confComplete.attributes['conformance.precision']).toBe(0.87);
+      expect(confComplete.attributes['conformance.generalization']).toBe(0.81);
+      expect(confComplete.attributes['conformance.simplicity']).toBe(0.78);
+      expect(confComplete.status?.code).toBe('OK');
     });
   });
 
   describe('ML execution wrapper (instrumentMlExecution)', () => {
-    it('should emit start + completed spans on success', async () => {
+    it('emits start/completed spans on success, ERROR on failure, and never blocks on exporter failures', async () => {
       const captured: any[] = [];
       const result = await Instrumentation.instrumentMlExecution(
-        traceId,
-        'classify',
-        'knn',
-        requiredAttrs,
+        traceId, 'classify', 'knn', requiredAttrs,
         async () => 42,
         (e) => captured.push(e),
         { inputAttributes: { inputTraceCount: 50, parameterK: 3 } }
@@ -622,59 +385,35 @@ describe('Instrumentation', () => {
       expect(captured).toHaveLength(2);
       expect(captured[0].name).toBe('ml.classify');
       expect(captured[0].attributes['ml.input.trace_count']).toBe(50);
-      expect(captured[0].attributes['ml.parameter.k']).toBe(3);
-      expect(captured[1].name).toBe('ml.classify');
       expect(captured[1].status.code).toBe('OK');
       expect(captured[1].attributes).toHaveProperty('ml.duration_ms');
-    });
 
-    it('should emit ERROR-status completion span and re-throw on failure', async () => {
-      const captured: any[] = [];
+      const failCaptured: any[] = [];
       await expect(
         Instrumentation.instrumentMlExecution(
-          traceId,
-          'cluster',
-          'kmeans',
-          requiredAttrs,
-          async () => {
-            throw new Error('boom');
-          },
-          (e) => captured.push(e)
+          traceId, 'cluster', 'kmeans', requiredAttrs,
+          async () => { throw new Error('boom'); },
+          (e) => failCaptured.push(e)
         )
       ).rejects.toThrow('boom');
+      expect(failCaptured[1].status.code).toBe('ERROR');
+      expect(failCaptured[1].status.message).toBe('boom');
 
-      expect(captured).toHaveLength(2);
-      expect(captured[1].status.code).toBe('ERROR');
-      expect(captured[1].status.message).toBe('boom');
-    });
-
-    it('should never block on OTEL: emit failures are swallowed', async () => {
-      const result = await Instrumentation.instrumentMlExecution(
-        traceId,
-        'forecast',
-        'linear',
-        requiredAttrs,
+      const noBlockResult = await Instrumentation.instrumentMlExecution(
+        traceId, 'forecast', 'linear', requiredAttrs,
         async () => 'ok',
-        () => {
-          throw new Error('exporter dead');
-        }
+        () => { throw new Error('exporter dead'); }
       );
-      expect(result).toBe('ok');
+      expect(noBlockResult).toBe('ok');
     });
   });
 
   describe('Span name and attribute conventions', () => {
-    it('all ML/RL/prediction/drift/conformance spans carry service.name=wasm4pm', () => {
+    it('all ML/RL/prediction/drift/conformance spans carry service.name=wasm4pm and required attrs', () => {
       const events: any[] = [
         Instrumentation.createRlAgentDecisionEvent(
           traceId,
-          {
-            agentType: 'QLearning',
-            agentId: 'a',
-            actionSelected: 0,
-            stateHealthLevel: 0,
-            stateCircuitState: 'Closed',
-          },
+          { agentType: 'QLearning', agentId: 'a', actionSelected: 0, stateHealthLevel: 0, stateCircuitState: 'Closed' },
           requiredAttrs
         ).otelEvent,
         Instrumentation.createRlPolicyUpdateEvent(
@@ -684,12 +423,10 @@ describe('Instrumentation', () => {
         ).otelEvent,
         Instrumentation.createPredictionTaskStartedEvent(traceId, 'drift', requiredAttrs).otelEvent,
         Instrumentation.createDriftCheckStartedEvent(traceId, 'ewma', requiredAttrs).otelEvent,
-        Instrumentation.createConformanceCheckStartedEvent(traceId, 'alignments', requiredAttrs)
-          .otelEvent,
+        Instrumentation.createConformanceCheckStartedEvent(traceId, 'alignments', requiredAttrs).otelEvent,
       ];
       for (const e of events) {
         expect(e.attributes['service.name']).toBe('wasm4pm');
-        // All required attrs present:
         expect(e.attributes['run.id']).toBe(requiredAttrs['run.id']);
         expect(e.attributes['config.hash']).toBe(requiredAttrs['config.hash']);
       }

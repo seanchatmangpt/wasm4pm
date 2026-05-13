@@ -349,6 +349,38 @@ export const rlConfigSchema = z
     'RL system configuration — agents, hyperparameters, convergence criteria, LinUCB selection'
   );
 
+// =============================================================================
+// Membrane configuration — AutoMembrane 5-layer conformance membrane
+// =============================================================================
+
+export const membraneThresholdsSchema = z.object({
+  actor_anomaly_escalate: z.number().min(0).max(1).default(0.7),
+  actor_anomaly_warn:     z.number().min(0).max(1).default(0.4),
+  route_match_allow:      z.number().min(0).max(1).default(0.5),
+  automl_escalate:        z.number().min(0).max(1).default(0.9),
+  automl_warn:            z.number().min(0).max(1).default(0.7),
+}).describe('Membrane layer thresholds (all values in [0, 1])');
+
+export const membraneDriftSchema = z.object({
+  stable_threshold:   z.number().min(0).max(1).default(0.10),
+  moderate_threshold: z.number().min(0).max(1).default(0.25),
+  high_threshold:     z.number().min(0).max(1).default(0.50),
+  severe_threshold:   z.number().min(0).max(1).default(0.75),
+}).describe('Membrane drift-band thresholds (stable < moderate < high < severe)');
+
+export const membraneEnvelopesSchema = z.object({
+  persist: z.boolean().default(true),
+  path:    z.string().default('.wasm4pm/envelopes'),
+}).describe('Envelope persistence configuration');
+
+export const membraneConfigSchema = z.object({
+  enabled:         z.boolean().default(false),
+  custody_actions: z.array(z.string()).min(1).default(['approve', 'release', 'transfer']),
+  thresholds:      membraneThresholdsSchema.default({}),
+  drift:           membraneDriftSchema.default({}),
+  envelopes:       membraneEnvelopesSchema.default({}),
+}).describe('AutoMembrane — pre-execution 5-layer conformance membrane (actor/object/route/automl/custody)');
+
 // --- Root Schema ---
 
 export const configSchema = z
@@ -365,6 +397,7 @@ export const configSchema = z
     prediction: predictionConfigSchema.optional(),
     ml: mlConfigSchema.optional(),
     rl: rlConfigSchema.optional(),
+    membrane: membraneConfigSchema.optional(),
   })
   .describe('wasm4pm configuration');
 

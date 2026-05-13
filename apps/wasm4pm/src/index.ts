@@ -27,5 +27,4 @@ export type { ResolvedConfigPath } from './config/resolver.js';
 // Export command types for external use
 export type { RunOptions } from './commands/run.js';
 export type { WatchOptions } from './commands/watch.js';
-export type { StatusOptions } from './commands/status.js';
 export type { ExplainOptions } from './commands/explain.js';
